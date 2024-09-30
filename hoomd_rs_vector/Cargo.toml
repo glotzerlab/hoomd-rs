@@ -1,0 +1,18 @@
+[lib]
+path = "src/hoomd_rs_vector.rs"
+
+[package]
+name = "hoomd_rs_vector"
+categories.workspace = true
+description = "Vector and quaternion math library."
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+
+[dev-dependencies]

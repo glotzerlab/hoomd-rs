@@ -1,0 +1,16 @@
+[workspace]
+
+members = [
+  "hoomd_rs_vector"
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.77" # TODO: discover this version https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field
+homepage = "https://glotzerlab.engin.umich.edu"
+repository = "https://github.com/glotzerlab/hoomd"
+license = "BSD-3-Clause"
+keywords = ["molecular-dynamics", "monte-carlo", "simulation"]
+categories = ["science"]

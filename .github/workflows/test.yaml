@@ -1,0 +1,110 @@
+name: test
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+  push:
+    branches:
+    - trunk
+
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CARGO_TERM_COLOR: always
+  CLICOLOR: 1
+  RUST_LATEST_VERSION: 1.81.0
+
+jobs:
+  unit_test:
+    name: Unit test [${{ matrix.mode }}-rust-${{ matrix.rust }}-${{ matrix.os }}]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-22.04
+          - macos-14
+        rust:
+          # Oldest supported version of rust
+          - 1.77.2
+          - 1.81.0
+        mode:
+         - debug
+
+        include:
+        # Add a release build on linux with the latest version of rust
+        - os: ubuntu-22.04
+          rust: 1.81.0
+          mode: release
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+    - name: Update rust
+      run: rustup install ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
+    - name: Check rust installation
+      run: rustc -vV
+    - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+      with:
+        path: |
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-rust-${{ matrix.rust }}-cargo-unit-test-${{ matrix.mode }}-${{ hashFiles('**/Cargo.lock') }}
+    - name: Build
+      run: cargo build ${{ matrix.mode == 'release' && '--release' || '' }} --verbose
+    - name: Run tests
+      run: cargo test ${{ matrix.mode == 'release' && '--release' || '' }} --verbose
+
+  # build_documentation:
+  #   name: Build documentation
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #   - name: Checkout
+  #     uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+  #   - name: Set up mdbook
+  #     uses: glotzerlab/workflows/setup-mdbook@ae7e7c6931098a313ef8069ef04b88a55c3a40f6 # 0.3.0
+  #   - name: Build documentation
+  #     run: mdbook build doc
+  #     env:
+  #       RUST_LOG: "mdbook=info"
+  #   - name: Check links
+  #     uses: lycheeverse/lychee-action@2b973e86fc7b1f6b36a93795fe2c9c6ae1118621  # v1.10.0
+  #     with:
+  #       args: -n
+  #             --exclude https://glotzerlab.engin.umich.edu
+  #             --exclude 'https://github.com/glotzerlab/hoomd/edit.*'
+  #             --exclude doi.org
+  #             './**/*.md'
+  #             './**/*.html'
+  #       fail: true
+
+  # check_licenses:
+  #   name: Check licenses
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #   - name: Checkout
+  #     uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+  #   - name: Set up cargo-bundle-licenses
+  #     uses: glotzerlab/workflows/setup-cargo-bundle-licenses@ae7e7c6931098a313ef8069ef04b88a55c3a40f6 # 0.3.0
+  #   - name: Check bundled licenses
+  #     run: cargo bundle-licenses --format yaml --output CI.yaml --previous THIRDPARTY.yaml --check-previous
+
+  tests_complete:
+    name: All tests
+    if: always()
+    # needs: [unit_test, execute_tutorials, build_documentation,check_licenses]
+    needs: [unit_test]
+    runs-on: ubuntu-latest
+
+    steps:
+    - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
+    - name: Done
+      run: exit 0
