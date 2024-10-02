@@ -22,7 +22,7 @@ customization with Python scripts evaluated at runtime.
 **HOOMD-rs** lacks domain decomposition and GPU parallelization, so it is best for small
 to moderate sized simulations and when customization is important. [HOOMD-blue] is best
 for large simulations and when using models that rely only on built-in functionality.
-When you need both large simulations and custom code, write a 
+When you need both large simulations and custom code, write a
 [C++ component for HOOMD-blue].
 
 TODO: some comment about how performance compares for simulations in the middle -
