@@ -16,3 +16,8 @@ version.workspace = true
 [dependencies]
 
 [dev-dependencies]
+divan = "0.1.14"
+
+[[bench]]
+name = "cartesian"
+harness = false

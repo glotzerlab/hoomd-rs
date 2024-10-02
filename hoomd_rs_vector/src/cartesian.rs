@@ -12,6 +12,12 @@ pub struct CartesianVector<const N: usize> {
     coordinates: [f64; N],
 }
 
+impl<const N: usize> Default for CartesianVector<N> {
+    fn default() -> Self {
+        CartesianVector::from([0.0; N])
+    }
+}
+
 impl<const N: usize> From<[f64; N]> for CartesianVector<N> {
     #[inline]
     fn from(coordinates: [f64; N]) -> Self {
