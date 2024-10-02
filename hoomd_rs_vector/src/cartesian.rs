@@ -7,7 +7,7 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 use crate::Vector;
 
-/// A Cartesian vector with dimension `N` and `Real`-valued coordinates.
+/// A Cartesian vector with dimension `N`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct CartesianVector<const N: usize> {
     coordinates: [f64; N],
