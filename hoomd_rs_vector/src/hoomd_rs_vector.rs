@@ -9,7 +9,10 @@
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 mod cartesian;
+mod vec3;
+
 pub use cartesian::CartesianVector;
+pub use vec3::CartesianVector3;
 
 /// A generic vector.
 pub trait Vector:
