@@ -2,6 +2,7 @@
 // Part of hoomd_rs, released under the BSD 3-Clause License.
 
 use std::fmt::Display;
+use std::iter::zip;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 use crate::Vector;
@@ -21,7 +22,7 @@ impl<const N: usize> Default for CartesianVector<N> {
 impl<const N: usize> From<[f64; N]> for CartesianVector<N> {
     #[inline]
     fn from(coordinates: [f64; N]) -> Self {
-        CartesianVector { coordinates }
+        Self { coordinates }
     }
 }
 
@@ -30,11 +31,8 @@ impl<const N: usize> Vector for CartesianVector<N> {
 
     #[inline]
     fn dot(&self, rhs: &Self) -> f64 {
-        let mut product = 0.0;
-        for i in 0..N {
-            product += self.coordinates[i] * rhs.coordinates[i];
-        }
-        product
+        zip(self.coordinates.iter(), rhs.coordinates.iter())
+            .fold(0.0, |product, x| product + x.0 * x.1)
     }
 }
 
@@ -43,21 +41,19 @@ impl<const N: usize> Add for CartesianVector<N> {
 
     #[inline]
     fn add(self, rhs: Self) -> Self {
-        let mut result = [0.0; N];
-        for i in 0..N {
-            result[i] = self.coordinates[i] + rhs.coordinates[i];
+        let mut coordinates = [0.0; N];
+        for (i, coordinate) in coordinates.iter_mut().enumerate() {
+            *coordinate = self.coordinates[i] + rhs.coordinates[i];
         }
-        CartesianVector {
-            coordinates: result,
-        }
+        Self { coordinates }
     }
 }
 
 impl<const N: usize> AddAssign for CartesianVector<N> {
     #[inline]
     fn add_assign(&mut self, rhs: Self) {
-        for i in 0..N {
-            self.coordinates[i] += rhs.coordinates[i];
+        for (i, coordinate) in self.coordinates.iter_mut().enumerate() {
+            *coordinate += rhs.coordinates[i];
         }
     }
 }
@@ -67,21 +63,20 @@ impl<const N: usize> Div<f64> for CartesianVector<N> {
 
     #[inline]
     fn div(self, rhs: f64) -> Self {
-        let mut result = [0.0; N];
-        for i in 0..N {
-            result[i] = self.coordinates[i] / rhs;
+        let mut coordinates = [0.0; N];
+
+        for (i, coordinate) in coordinates.iter_mut().enumerate() {
+            *coordinate = self.coordinates[i] / rhs;
         }
-        CartesianVector {
-            coordinates: result,
-        }
+        Self { coordinates }
     }
 }
 
 impl<const N: usize> DivAssign<f64> for CartesianVector<N> {
     #[inline]
     fn div_assign(&mut self, rhs: f64) {
-        for i in 0..N {
-            self.coordinates[i] /= rhs;
+        for coordinate in self.coordinates.iter_mut() {
+            *coordinate /= rhs;
         }
     }
 }
@@ -91,21 +86,19 @@ impl<const N: usize> Mul<f64> for CartesianVector<N> {
 
     #[inline]
     fn mul(self, rhs: f64) -> Self {
-        let mut result = [0.0; N];
-        for i in 0..N {
-            result[i] = self.coordinates[i] * rhs;
+        let mut coordinates = [0.0; N];
+        for (i, coordinate) in coordinates.iter_mut().enumerate() {
+            *coordinate = self.coordinates[i] * rhs;
         }
-        CartesianVector {
-            coordinates: result,
-        }
+        Self { coordinates }
     }
 }
 
 impl<const N: usize> MulAssign<f64> for CartesianVector<N> {
     #[inline]
     fn mul_assign(&mut self, rhs: f64) {
-        for i in 0..N {
-            self.coordinates[i] *= rhs;
+        for coordinate in self.coordinates.iter_mut() {
+            *coordinate *= rhs;
         }
     }
 }
@@ -115,21 +108,19 @@ impl<const N: usize> Sub for CartesianVector<N> {
 
     #[inline]
     fn sub(self, rhs: Self) -> Self {
-        let mut result = [0.0; N];
-        for i in 0..N {
-            result[i] = self.coordinates[i] - rhs.coordinates[i];
+        let mut coordinates = [0.0; N];
+        for (i, coordinate) in coordinates.iter_mut().enumerate() {
+            *coordinate = self.coordinates[i] - rhs.coordinates[i];
         }
-        CartesianVector {
-            coordinates: result,
-        }
+        Self { coordinates }
     }
 }
 
 impl<const N: usize> SubAssign for CartesianVector<N> {
     #[inline]
     fn sub_assign(&mut self, rhs: Self) {
-        for i in 0..N {
-            self.coordinates[i] -= rhs.coordinates[i];
+        for (i, coordinate) in self.coordinates.iter_mut().enumerate() {
+            *coordinate -= rhs.coordinates[i];
         }
     }
 }
@@ -158,21 +149,21 @@ mod tests {
         a: &CartesianVector<N>,
         b: &CartesianVector<N>,
     ) -> CartesianVector<N> {
-        a.clone() + b.clone()
+        *a + *b
     }
 
     fn compute_add_ref_type<const N: usize>(
         a: &CartesianVector<N>,
         b: CartesianVector<N>,
     ) -> CartesianVector<N> {
-        a.clone() + b
+        *a + b
     }
 
     fn compute_add_type_ref<const N: usize>(
         a: CartesianVector<N>,
         b: &CartesianVector<N>,
     ) -> CartesianVector<N> {
-        a + b.clone()
+        a + *b
     }
 
     #[test]
@@ -187,5 +178,13 @@ mod tests {
 
         let c = compute_add_type_ref(a, &b);
         assert_eq!(c, [5.0, 7.0, 9.0].into());
+    }
+
+    #[test]
+    fn dot() {
+        let a = CartesianVector::from([1.0, 2.0, 3.0]);
+        let b = CartesianVector::from([4.0, 5.0, 6.0]);
+        let c = a.dot(&b);
+        assert_eq!(c, 32.0);
     }
 }

@@ -5,7 +5,7 @@ use divan::counter::ItemsCount;
 use divan::{self, Bencher};
 use std::iter::repeat;
 
-use hoomd_rs_vector::{Vector, CartesianVector, CartesianVector3};
+use hoomd_rs_vector::{CartesianVector, CartesianVector3, Vector};
 
 fn main() {
     divan::main();
@@ -18,7 +18,7 @@ fn create_vec3s(n_vectors: usize) -> Vec<CartesianVector3> {
     Vec::from_iter(repeat(CartesianVector3::default()).take(n_vectors))
 }
 
-const N_VECTORS: usize = 1_000_000;
+const N_VECTORS: usize = 200_000;
 const DIMENSIONS: &[usize] = &[2, 3, 8, 16, 32, 128];
 
 #[divan::bench(consts = DIMENSIONS)]

@@ -1,7 +1,6 @@
 // Copyright (c) 2024 The Regents of the University of Michigan.
 // Part of hoomd_rs, released under the BSD 3-Clause License.
 
-use std::fmt::Display;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 use crate::Vector;
@@ -23,9 +22,11 @@ impl Default for CartesianVector3 {
 impl From<[f64; 3]> for CartesianVector3 {
     #[inline]
     fn from(coordinates: [f64; 3]) -> Self {
-        Self { x: coordinates[0],
-                          y: coordinates[1],
-                          z: coordinates[2], }
+        Self {
+            x: coordinates[0],
+            y: coordinates[1],
+            z: coordinates[2],
+        }
     }
 }
 
@@ -146,25 +147,16 @@ mod tests {
         assert_eq!(c, [5.0, 7.0, 9.0].into());
     }
 
-    fn compute_add_ref_ref(
-        a: &CartesianVector3,
-        b: &CartesianVector3,
-    ) -> CartesianVector3 {
-        a.clone() + b.clone()
+    fn compute_add_ref_ref(a: &CartesianVector3, b: &CartesianVector3) -> CartesianVector3 {
+        *a + *b
     }
 
-    fn compute_add_ref_type(
-        a: &CartesianVector3,
-        b: CartesianVector3,
-    ) -> CartesianVector3 {
-        a.clone() + b
+    fn compute_add_ref_type(a: &CartesianVector3, b: CartesianVector3) -> CartesianVector3 {
+        *a + b
     }
 
-    fn compute_add_type_ref(
-        a: CartesianVector3,
-        b: &CartesianVector3,
-    ) -> CartesianVector3 {
-        a + b.clone()
+    fn compute_add_type_ref(a: CartesianVector3, b: &CartesianVector3) -> CartesianVector3 {
+        a + *b
     }
 
     #[test]
