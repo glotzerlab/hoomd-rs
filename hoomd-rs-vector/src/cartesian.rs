@@ -151,13 +151,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn display() {
-        let a = CartesianVector::from([1.15, 2.0, 3.999999999]);
-        println!("Test array: {a}, printed.");
-        assert_eq!(a.to_string(), "[1.15, 2, 3.999999999]");
-    }
-
-    #[test]
     fn add_explicit() {
         let a = CartesianVector::from([1.0, 2.0, 3.0]);
         let b = CartesianVector::from([4.0, 5.0, 6.0]);
@@ -223,5 +216,12 @@ mod tests {
         let b = CartesianVector::from([4.0, 5.0, 6.0]);
         let c = a.dot(&b);
         assert_eq!(c, 32.0);
+    }
+
+    #[test]
+    fn display() {
+        let a = CartesianVector::from([1.15, 2.0, 3.999999999]);
+        println!("Test array: {a}, printed.");
+        assert_eq!(a.to_string(), "[1.15, 2, 3.999999999]");
     }
 }
