@@ -42,8 +42,12 @@ impl<const N: usize> Add for CartesianVector<N> {
     #[inline]
     fn add(self, rhs: Self) -> Self {
         let mut coordinates = [0.0; N];
-        for (i, coordinate) in coordinates.iter_mut().enumerate() {
-            *coordinate = self.coordinates[i] + rhs.coordinates[i];
+
+        for (result, (a, b)) in coordinates
+            .iter_mut()
+            .zip(self.coordinates.iter().zip(rhs.coordinates.iter()))
+        {
+            *result = a + b
         }
         Self { coordinates }
     }
@@ -52,8 +56,8 @@ impl<const N: usize> Add for CartesianVector<N> {
 impl<const N: usize> AddAssign for CartesianVector<N> {
     #[inline]
     fn add_assign(&mut self, rhs: Self) {
-        for (i, coordinate) in self.coordinates.iter_mut().enumerate() {
-            *coordinate += rhs.coordinates[i];
+        for (result, a) in self.coordinates.iter_mut().zip(rhs.coordinates.iter()) {
+            *result += a;
         }
     }
 }
@@ -65,8 +69,8 @@ impl<const N: usize> Div<f64> for CartesianVector<N> {
     fn div(self, rhs: f64) -> Self {
         let mut coordinates = [0.0; N];
 
-        for (i, coordinate) in coordinates.iter_mut().enumerate() {
-            *coordinate = self.coordinates[i] / rhs;
+        for (result, a) in coordinates.iter_mut().zip(self.coordinates) {
+            *result = a / rhs;
         }
         Self { coordinates }
     }
@@ -75,8 +79,8 @@ impl<const N: usize> Div<f64> for CartesianVector<N> {
 impl<const N: usize> DivAssign<f64> for CartesianVector<N> {
     #[inline]
     fn div_assign(&mut self, rhs: f64) {
-        for coordinate in self.coordinates.iter_mut() {
-            *coordinate /= rhs;
+        for result in self.coordinates.iter_mut() {
+            *result /= rhs;
         }
     }
 }
@@ -87,8 +91,8 @@ impl<const N: usize> Mul<f64> for CartesianVector<N> {
     #[inline]
     fn mul(self, rhs: f64) -> Self {
         let mut coordinates = [0.0; N];
-        for (i, coordinate) in coordinates.iter_mut().enumerate() {
-            *coordinate = self.coordinates[i] * rhs;
+        for (result, a) in coordinates.iter_mut().zip(self.coordinates) {
+            *result = a * rhs;
         }
         Self { coordinates }
     }
@@ -97,8 +101,8 @@ impl<const N: usize> Mul<f64> for CartesianVector<N> {
 impl<const N: usize> MulAssign<f64> for CartesianVector<N> {
     #[inline]
     fn mul_assign(&mut self, rhs: f64) {
-        for coordinate in self.coordinates.iter_mut() {
-            *coordinate *= rhs;
+        for result in self.coordinates.iter_mut() {
+            *result *= rhs;
         }
     }
 }
@@ -109,8 +113,11 @@ impl<const N: usize> Sub for CartesianVector<N> {
     #[inline]
     fn sub(self, rhs: Self) -> Self {
         let mut coordinates = [0.0; N];
-        for (i, coordinate) in coordinates.iter_mut().enumerate() {
-            *coordinate = self.coordinates[i] - rhs.coordinates[i];
+        for (result, (a, b)) in coordinates
+            .iter_mut()
+            .zip(self.coordinates.iter().zip(rhs.coordinates.iter()))
+        {
+            *result = a - b
         }
         Self { coordinates }
     }
@@ -119,8 +126,8 @@ impl<const N: usize> Sub for CartesianVector<N> {
 impl<const N: usize> SubAssign for CartesianVector<N> {
     #[inline]
     fn sub_assign(&mut self, rhs: Self) {
-        for (i, coordinate) in self.coordinates.iter_mut().enumerate() {
-            *coordinate -= rhs.coordinates[i];
+        for (result, a) in self.coordinates.iter_mut().zip(rhs.coordinates) {
+            *result -= a;
         }
     }
 }
@@ -142,6 +149,15 @@ mod tests {
         let a = CartesianVector::from([1.0, 2.0, 3.0]);
         let b = CartesianVector::from([4.0, 5.0, 6.0]);
         let c = a + b;
+        assert_eq!(c, [5.0, 7.0, 9.0].into());
+    }
+
+    #[test]
+    fn add_assign() {
+        let a = CartesianVector::from([1.0, 2.0, 3.0]);
+        let b = CartesianVector::from([4.0, 5.0, 6.0]);
+        let mut c = a;
+        c += b;
         assert_eq!(c, [5.0, 7.0, 9.0].into());
     }
 
