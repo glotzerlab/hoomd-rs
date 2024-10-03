@@ -1,7 +1,7 @@
 [workspace]
 
 members = [
-  "hoomd_rs_vector"
+  "hoomd-rs-vector"
 ]
 resolver = "2"
 

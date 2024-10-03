@@ -1,5 +1,5 @@
 [lib]
-path = "src/hoomd_rs_vector.rs"
+path = "src/hoomd-rs-vector.rs"
 
 [package]
 name = "hoomd_rs_vector"
