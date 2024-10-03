@@ -134,7 +134,12 @@ impl<const N: usize> SubAssign for CartesianVector<N> {
 
 impl<const N: usize> fmt::Display for CartesianVector<N> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let _temp: String = self.coordinates.iter().map(|x| x.to_string()).collect();
+        let _temp: String = self
+            .coordinates
+            .iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
         write!(f, "[{}]", _temp)
     }
 }
