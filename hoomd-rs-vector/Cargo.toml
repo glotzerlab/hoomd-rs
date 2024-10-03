@@ -17,6 +17,8 @@ version.workspace = true
 
 [dev-dependencies]
 divan = "0.1.14"
+rstest = "0.23.0"
+
 
 [[bench]]
 name = "cartesian"

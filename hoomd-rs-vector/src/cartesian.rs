@@ -26,6 +26,18 @@ impl<const N: usize> From<[f64; N]> for CartesianVector<N> {
     }
 }
 
+impl<const N: usize> From<std::ops::Range<usize>> for CartesianVector<N> {
+    #[inline]
+    fn from(coordinates: std::ops::Range<usize>) -> Self {
+        let arr: [f64; N] = coordinates
+            .map(|x| x as f64)
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+        CartesianVector::from(arr)
+    }
+}
+
 impl<const N: usize> Vector for CartesianVector<N> {
     const DIMENSION: usize = N;
 
@@ -149,6 +161,38 @@ impl<const N: usize> fmt::Display for CartesianVector<N> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::*;
+
+    const N: usize = 3;
+
+    #[fixture]
+    fn pairs() -> (CartesianVector<N>, CartesianVector<N>) {
+        (CartesianVector::from(0..N), CartesianVector::from(N..N * 2))
+    }
+
+    #[rstest]
+    fn test_arrays(pairs: (CartesianVector<N>, CartesianVector<N>)) {
+        let (array1, array2) = pairs;
+
+        // Test that array1 has all 1s and array2 has all 2s
+        println!("{array1}");
+        println!("{array2}");
+    }
+
+    // #[rstest]
+    // fn the_test(#[from(generate_vector_pairs)] (a, b): (u32, u32)) {
+    //     println!("{} {}", a, b);
+    // }
+
+    // #[fixture]
+    // fn generate_vector_pairs(D: usize)->(CartesianVector<{D}>, CartesianVector<{D}>) {
+    // // fn generate_vector_pairs() -> (CartesianVector<N>, CartesianVector<N>){
+
+    //     (
+    //     CartesianVector::from(0..D),
+    //     CartesianVector::from(D..D*2)
+    //     )
+    // }
 
     #[test]
     fn add_explicit() {
