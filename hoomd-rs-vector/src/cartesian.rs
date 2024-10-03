@@ -164,19 +164,24 @@ mod tests {
     use rstest::*;
 
     const N: usize = 3;
+    const DIMENSIONS: &[usize] = &[2, 3, 8, 16, 32, 128];
 
-    #[fixture]
-    fn pairs() -> (CartesianVector<N>, CartesianVector<N>) {
+    // #[fixture]
+    fn generate_vector_pairs<const N: usize>() -> (CartesianVector<N>, CartesianVector<N>) {
         (CartesianVector::from(0..N), CartesianVector::from(N..N * 2))
     }
 
     #[rstest]
-    fn test_arrays(pairs: (CartesianVector<N>, CartesianVector<N>)) {
-        let (array1, array2) = pairs;
+    // fn test_value(#[values(DIMENSIONS)] val: &[usize]){
+    fn test_value() {
+        let (arr1, arr2) = generate_vector_pairs::<2>();
 
-        // Test that array1 has all 1s and array2 has all 2s
-        println!("{array1}");
-        println!("{array2}");
+        println!("{:?}", DIMENSIONS);
+        println!("{:?}", arr1);
+        println!("{:?}", arr2);
+        println!();
+        println!();
+        assert!(true);
     }
 
     // #[rstest]
@@ -184,14 +189,25 @@ mod tests {
     //     println!("{} {}", a, b);
     // }
 
-    // #[fixture]
-    // fn generate_vector_pairs(D: usize)->(CartesianVector<{D}>, CartesianVector<{D}>) {
-    // // fn generate_vector_pairs() -> (CartesianVector<N>, CartesianVector<N>){
+    // #[rstest]
+    // fn test_arrays(pairs: (CartesianVector<N>, CartesianVector<N>)) {
+    //     let (array1, array2) = pairs;
 
-    //     (
-    //     CartesianVector::from(0..D),
-    //     CartesianVector::from(D..D*2)
-    //     )
+    //     // Test that array1 has all 1s and array2 has all 2s
+    //     println!("{array1}");
+    //     println!("{array2}");
+    // }
+
+    // #[rstest]
+    // fn test_arrays(
+    //     #[values(DIMENSIONS)] n: &[usize]
+    // ) {
+    //     let array1:CartesianVector<n> = CartesianVector::from(0..n);
+    //     let array2:CartesianVector<n> = CartesianVector::from(n..n * 2);
+
+    //     // Test that the vectors are as expected
+    //     println!("{array1}");
+    //     println!("{array2}");
     // }
 
     #[test]
