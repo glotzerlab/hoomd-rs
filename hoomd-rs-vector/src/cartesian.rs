@@ -1,7 +1,7 @@
 // Copyright (c) 2024 The Regents of the University of Michigan.
 // Part of hoomd_rs, released under the BSD 3-Clause License.
 
-use std::fmt::Display;
+use std::fmt;
 use std::iter::zip;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
@@ -132,9 +132,22 @@ impl<const N: usize> SubAssign for CartesianVector<N> {
     }
 }
 
+impl<const N: usize> fmt::Display for CartesianVector<N> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let _temp: String = self.coordinates.iter().map(|x| x.to_string()).collect();
+        write!(f, "[{}]", _temp)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn display() {
+        let a = CartesianVector::from([1.0, 2.0, 3.0]);
+        println!("{a}")
+    }
 
     #[test]
     fn add_explicit() {
