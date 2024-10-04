@@ -241,20 +241,21 @@ mod tests {
     use paste::paste;
 
     macro_rules! parameterized_tests {
-        ($test_body:ident) => {
-            paste! {
-                #[test]
-                fn [< $test_body 2>]() {
-                    const DIM: usize = 2;
-                    $test_body::<DIM>();
-                }
+        // macro with name as above that takes an identifier (fn) and an expression
+        // $(...),* matches 0 or more expressions (values) separated by commas
+        ($test_body:ident, [$($dim:expr),*]) => {
 
-                #[test]
-                fn [< $test_body 3 >]() {
-                    const DIM: usize = 3;
-                    $test_body::<DIM>();
+            // Now, we repeat the test block 0 or more times, one for each $dim
+            $(
+                // paste package combines values in [< >] to form a new ident
+                paste! {
+                    #[test]
+                    fn [< $test_body "_" $dim>]() {
+                        const DIM: usize = $dim;
+                        $test_body::<DIM>();
+                    }
                 }
-            }
+            )*
         };
     }
 
@@ -262,8 +263,11 @@ mod tests {
         println!("Worked! {}", N);
         println!("{}", CartesianVector::<N>::from(0..N));
     }
+    fn this_is_another_test_name<const N: usize>() {
+        println!("Worked! {}", N);
+        println!("{}", CartesianVector::<N>::from(0..N));
+    }
 
-    // Usage example
-
-    parameterized_tests!(this_is_my_test_name);
+    parameterized_tests!(this_is_my_test_name, [2, 3]);
+    parameterized_tests!(this_is_another_test_name, [2, 3]);
 }
