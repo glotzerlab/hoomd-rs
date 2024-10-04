@@ -161,54 +161,7 @@ impl<const N: usize> fmt::Display for CartesianVector<N> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rstest::*;
-
-    const N: usize = 3;
-    const DIMENSIONS: &[usize] = &[2, 3, 8, 16, 32, 128];
-
-    // #[fixture]
-    fn generate_vector_pairs<const N: usize>() -> (CartesianVector<N>, CartesianVector<N>) {
-        (CartesianVector::from(0..N), CartesianVector::from(N..N * 2))
-    }
-
-    #[rstest]
-    // fn test_value(#[values(DIMENSIONS)] val: &[usize]){
-    fn test_value() {
-        let (arr1, arr2) = generate_vector_pairs::<2>();
-
-        println!("{:?}", DIMENSIONS);
-        println!("{:?}", arr1);
-        println!("{:?}", arr2);
-        println!();
-        println!();
-        assert!(true);
-    }
-
-    // #[rstest]
-    // fn the_test(#[from(generate_vector_pairs)] (a, b): (u32, u32)) {
-    //     println!("{} {}", a, b);
-    // }
-
-    // #[rstest]
-    // fn test_arrays(pairs: (CartesianVector<N>, CartesianVector<N>)) {
-    //     let (array1, array2) = pairs;
-
-    //     // Test that array1 has all 1s and array2 has all 2s
-    //     println!("{array1}");
-    //     println!("{array2}");
-    // }
-
-    // #[rstest]
-    // fn test_arrays(
-    //     #[values(DIMENSIONS)] n: &[usize]
-    // ) {
-    //     let array1:CartesianVector<n> = CartesianVector::from(0..n);
-    //     let array2:CartesianVector<n> = CartesianVector::from(n..n * 2);
-
-    //     // Test that the vectors are as expected
-    //     println!("{array1}");
-    //     println!("{array2}");
-    // }
+    // use rstest::*;
 
     #[test]
     fn add_explicit() {
@@ -284,4 +237,33 @@ mod tests {
         println!("Test array: {a}, printed.");
         assert_eq!(a.to_string(), "[1.15, 2, 3.999999999]");
     }
+
+    use paste::paste;
+
+    macro_rules! parameterized_tests {
+        ($test_body:ident) => {
+            paste! {
+                #[test]
+                fn [< $test_body 2>]() {
+                    const DIM: usize = 2;
+                    $test_body::<DIM>();
+                }
+
+                #[test]
+                fn [< $test_body 3 >]() {
+                    const DIM: usize = 3;
+                    $test_body::<DIM>();
+                }
+            }
+        };
+    }
+
+    fn this_is_my_test_name<const N: usize>() {
+        println!("Worked! {}", N);
+        println!("{}", CartesianVector::<N>::from(0..N));
+    }
+
+    // Usage example
+
+    parameterized_tests!(this_is_my_test_name);
 }
