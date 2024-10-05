@@ -38,6 +38,20 @@ impl<const N: usize> From<std::ops::Range<usize>> for CartesianVector<N> {
     }
 }
 
+impl<const N: usize> FromIterator<f64> for CartesianVector<N> {
+    fn from_iter<T>(iter: T) -> Self
+    where
+        T: IntoIterator<Item = f64>,
+    {
+        let coordinates = iter
+            .into_iter()
+            .collect::<Vec<_>>()
+            .try_into()
+            .expect("CartesianVector cannot be initialized with any None");
+        Self { coordinates }
+    }
+}
+
 impl<const N: usize> Vector for CartesianVector<N> {
     const DIMENSION: usize = N;
 
