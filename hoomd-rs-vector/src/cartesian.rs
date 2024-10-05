@@ -33,7 +33,7 @@ impl<const N: usize> From<std::ops::Range<usize>> for CartesianVector<N> {
             .map(|x| x as f64)
             .collect::<Vec<_>>()
             .try_into()
-            .unwrap();
+            .expect("CartesianVector cannot be initialized with any None");
         CartesianVector::from(arr)
     }
 }
