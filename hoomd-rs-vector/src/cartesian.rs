@@ -185,7 +185,6 @@ impl<const N: usize> fmt::Display for CartesianVector<N> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // use rstest::*;
     use paste::paste;
 
     macro_rules! parameterize_vector_length {
@@ -216,30 +215,43 @@ mod tests {
     fn add_explicit<const N: usize>() {
         let (a, b) = generate_vector_pair::<N>();
         let c = a.add(b);
-        let mut ans = (0..(2 * N)).step_by(2).map(|x| (x + N) as f64);
-        assert_eq!(
-            c,
-            CartesianVector::from(std::array::from_fn(|_| ans.next().unwrap()))
-        );
+
+        let addition_answer: Vec<f64> = (0..(2 * N))
+            .step_by(2)
+            .map(|x| (x + N) as f64)
+            .collect::<Vec<_>>();
+
+        assert_eq!(c, CartesianVector::from(addition_answer));
     }
     parameterize_vector_length!(add_explicit, [2, 3, 4, 8, 16, 32]);
 
-    #[test]
-    fn add_operator() {
-        let a = CartesianVector::from([1.0, 2.0, 3.0]);
-        let b = CartesianVector::from([4.0, 5.0, 6.0]);
+    fn add_operator<const N: usize>() {
+        let (a, b) = generate_vector_pair::<N>();
         let c = a + b;
-        assert_eq!(c, [5.0, 7.0, 9.0].into());
-    }
 
-    #[test]
-    fn add_assign() {
-        let a = CartesianVector::from([1.0, 2.0, 3.0]);
-        let b = CartesianVector::from([4.0, 5.0, 6.0]);
+        let addition_answer: Vec<f64> = (0..(2 * N))
+            .step_by(2)
+            .map(|x| (x + N) as f64)
+            .collect::<Vec<_>>();
+
+        assert_eq!(c, CartesianVector::from(addition_answer));
+    }
+    parameterize_vector_length!(add_operator, [2, 3, 4, 8, 16, 32]);
+
+    fn add_assign<const N: usize>() {
+        let (a, b) = generate_vector_pair::<N>();
         let mut c = a;
         c += b;
-        assert_eq!(c, [5.0, 7.0, 9.0].into());
+
+        let addition_answer: Vec<f64> = (0..(2 * N))
+            .step_by(2)
+            .map(|x| (x + N) as f64)
+            .collect::<Vec<_>>();
+
+        assert_eq!(c, CartesianVector::from(addition_answer));
     }
+
+    parameterize_vector_length!(add_assign, [2, 3, 4, 8, 16, 32]);
 
     fn compute_add_ref_ref<const N: usize>(
         a: &CartesianVector<N>,
@@ -262,65 +274,43 @@ mod tests {
         a + *b
     }
 
-    #[test]
-    fn add_with_refs() {
-        let a = CartesianVector::from([1.0, 2.0, 3.0]);
-        let b = CartesianVector::from([4.0, 5.0, 6.0]);
+    fn add_with_refs<const N: usize>() {
+        let (a, b) = generate_vector_pair::<N>();
+
+        let addition_answer = CartesianVector::from(
+            (0..(2 * N))
+                .step_by(2)
+                .map(|x| (x + N) as f64)
+                .collect::<Vec<_>>(),
+        );
+
         let c = compute_add_ref_ref(&a, &b);
-        assert_eq!(c, [5.0, 7.0, 9.0].into());
+        assert_eq!(c, addition_answer);
 
         let c = compute_add_ref_type(&a, b);
-        assert_eq!(c, [5.0, 7.0, 9.0].into());
+        assert_eq!(c, addition_answer);
 
         let c = compute_add_type_ref(a, &b);
-        assert_eq!(c, [5.0, 7.0, 9.0].into());
+        assert_eq!(c, addition_answer);
     }
+    parameterize_vector_length!(add_with_refs, [2, 3, 4, 8, 16, 32]);
 
-    #[test]
-    fn dot() {
-        let a = CartesianVector::from([1.0, 2.0, 3.0]);
-        let b = CartesianVector::from([4.0, 5.0, 6.0]);
+    fn dot<const N: usize>() {
+        let (a, b) = generate_vector_pair::<N>();
         let c = a.dot(&b);
-        assert_eq!(c, 32.0);
-    }
 
-    #[test]
-    fn display() {
-        let a = CartesianVector::from([1.15, 2.0, 3.999999999]);
+        let n = N as f64;
+
+        // Analytical solution to sum of k * (n+k), k = 0 to n-1
+        let dot_ans = (5.0 * n.powi(3) - 6.0 * n.powi(2) + n) / 6.0;
+
+        assert_eq!(c, dot_ans);
+    }
+    parameterize_vector_length!(dot, [2, 3, 4, 8, 16, 32]);
+
+    fn display<const N: usize>() {
+        let (a, _) = generate_vector_pair::<N>();
         println!("Test array: {a}, printed.");
-        assert_eq!(a.to_string(), "[1.15, 2, 3.999999999]");
     }
-
-    use paste::paste;
-
-    macro_rules! parameterized_tests {
-        // macro with name as above that takes an identifier (fn) and an expression
-        // $(...),* matches 0 or more expressions (values) separated by commas
-        ($test_body:ident, [$($dim:expr),*]) => {
-
-            // Now, we repeat the test block 0 or more times, one for each $dim
-            $(
-                // paste package combines values in [< >] to form a new ident
-                paste! {
-                    #[test]
-                    fn [< $test_body "_" $dim>]() {
-                        const DIM: usize = $dim;
-                        $test_body::<DIM>();
-                    }
-                }
-            )*
-        };
-    }
-
-    fn this_is_my_test_name<const N: usize>() {
-        println!("Worked! {}", N);
-        println!("{}", CartesianVector::<N>::from(0..N));
-    }
-    fn this_is_another_test_name<const N: usize>() {
-        println!("Worked! {}", N);
-        println!("{}", CartesianVector::<N>::from(0..N));
-    }
-
-    parameterized_tests!(this_is_my_test_name, [2, 3]);
-    parameterized_tests!(this_is_another_test_name, [2, 3]);
+    parameterize_vector_length!(display, [2, 3, 4, 8, 16, 32]);
 }
