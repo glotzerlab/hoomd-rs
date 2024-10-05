@@ -26,6 +26,16 @@ impl<const N: usize> From<[f64; N]> for CartesianVector<N> {
     }
 }
 
+impl<const N: usize> From<Vec<f64>> for CartesianVector<N> {
+    #[inline]
+    fn from(coordinates: Vec<f64>) -> Self {
+        let coordinates = coordinates
+            .try_into()
+            .expect("Failed to initialize CartesianVector from Vec<f64>");
+        Self { coordinates }
+    }
+}
+
 impl<const N: usize> From<std::ops::Range<usize>> for CartesianVector<N> {
     #[inline]
     fn from(coordinates: std::ops::Range<usize>) -> Self {
