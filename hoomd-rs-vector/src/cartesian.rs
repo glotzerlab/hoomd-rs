@@ -176,14 +176,43 @@ impl<const N: usize> fmt::Display for CartesianVector<N> {
 mod tests {
     use super::*;
     // use rstest::*;
+    use paste::paste;
 
-    #[test]
-    fn add_explicit() {
-        let a = CartesianVector::from([1.0, 2.0, 3.0]);
-        let b = CartesianVector::from([4.0, 5.0, 6.0]);
-        let c = a.add(b);
-        assert_eq!(c, [5.0, 7.0, 9.0].into());
+    macro_rules! parameterize_vector_length {
+        // macro with name as above that takes an identifier (fn) and an expression
+        // $(...),* matches 0 or more expressions (values) separated by commas
+        ($test_body:ident, [$($dim:expr),*]) => {
+
+            // Now, we repeat the test block 0 or more times, one for each $dim
+            $(
+                // paste package combines values in [< >] to form a new ident
+                paste! {
+                    #[test]
+                    fn [< $test_body "_" $dim>]() {
+                        const DIM: usize = $dim;
+                        $test_body::<DIM>();
+                    }
+                }
+            )*
+        };
     }
+
+    /// Generate a pair of length N vectors.
+    /// The first vector ranges from [0, N-1] and the second ranges from [N, 2*N-1]
+    fn generate_vector_pair<const N: usize>() -> (CartesianVector<N>, CartesianVector<N>) {
+        (CartesianVector::from(0..N), CartesianVector::from(N..N * 2))
+    }
+
+    fn add_explicit<const N: usize>() {
+        let (a, b) = generate_vector_pair::<N>();
+        let c = a.add(b);
+        let mut ans = (0..(2 * N)).step_by(2).map(|x| (x + N) as f64);
+        assert_eq!(
+            c,
+            CartesianVector::from(std::array::from_fn(|_| ans.next().unwrap()))
+        );
+    }
+    parameterize_vector_length!(add_explicit, [2, 3, 4, 8, 16, 32]);
 
     #[test]
     fn add_operator() {
