@@ -46,16 +46,11 @@ fn create_vecn_tryfrom_vec<const N: usize>(bencher: Bencher) {
     let mut rng = thread_rng();
 
     // TODO: replace rng.gen with something in a more reasonable range
-    let random_arrays = (0..N_VECTORS)
-        .map(|_| (0..N).map(|_| rng.gen::<f64>()).collect())
-        .collect::<Vec<Vec<f64>>>();
-
     bencher
         .counter(ItemsCount::from(N_VECTORS))
-        .bench_local(|| {
-            for a in &random_arrays {
-                let mut _temp = CartesianVector::<N>::try_from(a.clone());
-            }
+        .with_inputs(|| (0..N).map(|_| rng.gen::<f64>()).collect::<Vec<f64>>())
+        .bench_local_values(|vec| {
+            let _ = CartesianVector::<N>::try_from(vec);
         });
 }
 
