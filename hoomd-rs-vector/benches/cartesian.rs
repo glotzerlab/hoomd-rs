@@ -27,16 +27,11 @@ fn create_vecn_from_arr<const N: usize>(bencher: Bencher) {
     let mut rng = thread_rng();
 
     // TODO: replace rng.gen with something in a more reasonable range
-    let random_arrays = (0..N_VECTORS)
-        .map(|_| std::array::from_fn(|_| rng.gen::<f64>()))
-        .collect::<Vec<[f64; N]>>();
-
     bencher
         .counter(ItemsCount::from(N_VECTORS))
-        .bench_local(|| {
-            for a in &random_arrays {
-                let mut _temp = CartesianVector::from(*a);
-            }
+        .with_inputs(|| std::array::from_fn::<_, N, _>(|_| rng.gen::<f64>()))
+        .bench_local_values(|arr| {
+            let _ = CartesianVector::from(arr);
         });
 }
 
