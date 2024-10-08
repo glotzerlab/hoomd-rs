@@ -19,6 +19,7 @@ version.workspace = true
 divan = "0.1.14"
 # rstest = "0.23.0"
 paste = "*"
+rand = "*"
 
 [[bench]]
 name = "cartesian"

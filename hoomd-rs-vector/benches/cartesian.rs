@@ -4,6 +4,8 @@
 use divan::counter::ItemsCount;
 use divan::{self, Bencher};
 use std::iter::repeat;
+// use rand::distributions::Uniform;
+use rand::{thread_rng, Rng};
 
 use hoomd_rs_vector::{CartesianVector, CartesianVector3, Vector};
 
@@ -20,6 +22,24 @@ fn create_vec3s(n_vectors: usize) -> Vec<CartesianVector3> {
 
 const N_VECTORS: usize = 200_000;
 const DIMENSIONS: &[usize] = &[2, 3, 8, 16, 32, 128];
+
+#[divan::bench(consts = DIMENSIONS)]
+fn create_vecn<const N: usize>(bencher: Bencher) {
+    let mut rng = thread_rng();
+
+    // TODO: replace rng.gen with something in a more reasonable range
+    let random_arrays = (0..N_VECTORS)
+        .map(|_| std::array::from_fn(|_| rng.gen::<f64>()))
+        .collect::<Vec<[f64; N]>>();
+
+    bencher
+        .counter(ItemsCount::from(N_VECTORS))
+        .bench_local(|| {
+            for a in &random_arrays {
+                let mut _temp = CartesianVector::from(*a);
+            }
+        });
+}
 
 #[divan::bench(consts = DIMENSIONS)]
 fn add_vecn<const N: usize>(bencher: Bencher) {
