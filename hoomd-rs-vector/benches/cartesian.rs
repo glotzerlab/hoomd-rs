@@ -3,9 +3,8 @@
 
 use divan::counter::ItemsCount;
 use divan::{self, Bencher};
-use std::iter::repeat;
-// use rand::distributions::Uniform;
 use rand::{thread_rng, Rng};
+use std::iter::repeat;
 
 use hoomd_rs_vector::{CartesianVector, CartesianVector3, Vector};
 
