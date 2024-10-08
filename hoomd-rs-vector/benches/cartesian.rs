@@ -24,7 +24,7 @@ const N_VECTORS: usize = 200_000;
 const DIMENSIONS: &[usize] = &[2, 3, 8, 16, 32, 128];
 
 #[divan::bench(consts = DIMENSIONS)]
-fn create_vecn<const N: usize>(bencher: Bencher) {
+fn create_vecn_from_arr<const N: usize>(bencher: Bencher) {
     let mut rng = thread_rng();
 
     // TODO: replace rng.gen with something in a more reasonable range
@@ -37,6 +37,24 @@ fn create_vecn<const N: usize>(bencher: Bencher) {
         .bench_local(|| {
             for a in &random_arrays {
                 let mut _temp = CartesianVector::from(*a);
+            }
+        });
+}
+
+#[divan::bench(consts = DIMENSIONS)]
+fn create_vecn_tryfrom_vec<const N: usize>(bencher: Bencher) {
+    let mut rng = thread_rng();
+
+    // TODO: replace rng.gen with something in a more reasonable range
+    let random_arrays = (0..N_VECTORS)
+        .map(|_| (0..N).map(|_| rng.gen::<f64>()).collect())
+        .collect::<Vec<Vec<f64>>>();
+
+    bencher
+        .counter(ItemsCount::from(N_VECTORS))
+        .bench_local(|| {
+            for a in &random_arrays {
+                let mut _temp = CartesianVector::<N>::try_from(a.clone());
             }
         });
 }
