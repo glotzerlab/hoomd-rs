@@ -51,6 +51,7 @@ impl<const N: usize> FromIterator<f64> for CartesianVector<N> {
     where
         T: IntoIterator<Item = f64>,
     {
+        // TODO: TryFromIterator does not exist, but we call unwrap here. How to handle?
         let mut iter = iter.into_iter();
         let coordinates = std::array::from_fn(|_| iter.next().unwrap());
         Self { coordinates }
@@ -216,7 +217,7 @@ mod tests {
             .map(|x| (x + N) as f64)
             .collect::<Vec<_>>();
 
-        assert_eq!(c, CartesianVector::from(addition_answer));
+        assert_eq!(c, CartesianVector::try_from(addition_answer).unwrap());
     }
     parameterize_vector_length!(add_explicit, [2, 3, 4, 8, 16, 32]);
 
@@ -229,7 +230,7 @@ mod tests {
             .map(|x| (x + N) as f64)
             .collect::<Vec<_>>();
 
-        assert_eq!(c, CartesianVector::from(addition_answer));
+        assert_eq!(c, CartesianVector::try_from(addition_answer).unwrap());
     }
     parameterize_vector_length!(add_operator, [2, 3, 4, 8, 16, 32]);
 
@@ -243,7 +244,7 @@ mod tests {
             .map(|x| (x + N) as f64)
             .collect::<Vec<_>>();
 
-        assert_eq!(c, CartesianVector::from(addition_answer));
+        assert_eq!(c, CartesianVector::try_from(addition_answer).unwrap());
     }
 
     parameterize_vector_length!(add_assign, [2, 3, 4, 8, 16, 32]);
@@ -272,12 +273,13 @@ mod tests {
     fn add_with_refs<const N: usize>() {
         let (a, b) = generate_vector_pair::<N>();
 
-        let addition_answer = CartesianVector::from(
+        let addition_answer = CartesianVector::try_from(
             (0..(2 * N))
                 .step_by(2)
                 .map(|x| (x + N) as f64)
                 .collect::<Vec<_>>(),
-        );
+        )
+        .unwrap();
 
         let c = compute_add_ref_ref(&a, &b);
         assert_eq!(c, addition_answer);
