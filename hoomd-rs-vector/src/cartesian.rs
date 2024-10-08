@@ -41,12 +41,8 @@ impl<const N: usize> TryFrom<Vec<f64>> for CartesianVector<N> {
 impl<const N: usize> From<std::ops::Range<usize>> for CartesianVector<N> {
     #[inline]
     fn from(coordinates: std::ops::Range<usize>) -> Self {
-        let arr: [f64; N] = coordinates
-            .map(|x| x as f64)
-            .collect::<Vec<_>>()
-            .try_into()
-            .expect("CartesianVector cannot be initialized with any None");
-        CartesianVector::from(arr)
+        let coordinates = coordinates.map(|x| x as f64);
+        CartesianVector::from_iter(coordinates)
     }
 }
 
