@@ -53,11 +53,8 @@ impl<const N: usize> FromIterator<f64> for CartesianVector<N> {
     where
         T: IntoIterator<Item = f64>,
     {
-        let coordinates = iter
-            .into_iter()
-            .collect::<Vec<_>>()
-            .try_into()
-            .expect("CartesianVector cannot be initialized with any None");
+        let mut iter = iter.into_iter();
+        let coordinates = std::array::from_fn(|_| iter.next().unwrap());
         Self { coordinates }
     }
 }
