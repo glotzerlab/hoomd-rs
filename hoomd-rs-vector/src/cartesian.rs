@@ -26,13 +26,15 @@ impl<const N: usize> From<[f64; N]> for CartesianVector<N> {
     }
 }
 
-impl<const N: usize> From<Vec<f64>> for CartesianVector<N> {
+impl<const N: usize> TryFrom<Vec<f64>> for CartesianVector<N> {
+    type Error = &'static str;
+
     #[inline]
-    fn from(coordinates: Vec<f64>) -> Self {
+    fn try_from(coordinates: Vec<f64>) -> Result<Self, Self::Error> {
         let coordinates = coordinates
             .try_into()
-            .expect("Failed to initialize CartesianVector from Vec<f64>");
-        Self { coordinates }
+            .map_err(|_| "Failed to initialize CartesianVector.")?;
+        Ok(Self { coordinates })
     }
 }
 
