@@ -9,7 +9,7 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use crate::{Error, Vector};
 
 /// A Cartesian vector with dimension `N`.
-#[expect(
+#[allow(
     clippy::module_name_repetitions,
     reason = "cartesian.rs is a private implementation"
 )]
