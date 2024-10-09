@@ -36,10 +36,8 @@
 //!
 
 mod cartesian;
-mod vec3;
 
 pub use cartesian::CartesianVector;
-pub use vec3::CartesianVector3;
 
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use thiserror::Error;
@@ -85,29 +83,6 @@ pub trait Vector:
     #[must_use]
     fn dot(&self, rhs: &Self) -> f64;
 }
-
-// This is an alternative to supertraits. It allows trait bounds to opt-in to requiring
-// vector operations. I'm not sure that we need that flexibility, the supertrait solution is
-// simpler - JAA.
-// pub trait  : Add + Copy + PartialEqVectorOps<Rhs = Self, Output = Self>:
-//     Add<Rhs, Output = Output>
-//     + Copy
-//     + PartialEq
-//     // + Sub<Rhs, Output = Output>
-//     // + Mul<Rhs, Output = Output>
-//     // + Div<Rhs, Output = Output>
-// {
-// }
-
-// impl<T, Rhs, Output> VectorOps<Rhs, Output> for T where
-//     T: Add<Rhs, Output = Output>
-//     + Copy
-//     + PartialEq
-//         // + Sub<Rhs, Output = Output>
-//         // + Mul<Rhs, Output = Output>
-//         // + Div<Rhs, Output = Output>
-// {
-// }
 
 #[cfg(test)]
 mod tests {

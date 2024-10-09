@@ -2,13 +2,14 @@
 path = "src/hoomd-rs-vector.rs"
 
 [package]
-name = "hoomd_rs_vector"
+name = "hoomd-rs-vector"
 categories.workspace = true
 description = "Vector and quaternion math library."
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 license.workspace = true
+readme = "hoomd-rs-vector/README.md"
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
