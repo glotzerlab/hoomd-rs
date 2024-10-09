@@ -2,18 +2,21 @@
 // Part of hoomd_rs, released under the BSD 3-Clause License.
 
 use std::fmt;
+use std::array;
 use std::iter::zip;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-use crate::Vector;
+use crate::{Error, Vector};
 
 /// A Cartesian vector with dimension `N`.
+#[expect(clippy::module_name_repetitions, reason="cartesian.rs is a private implementation")]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct CartesianVector<const N: usize> {
     coordinates: [f64; N],
 }
 
 impl<const N: usize> Default for CartesianVector<N> {
+    #[inline]
     fn default() -> Self {
         CartesianVector::from([0.0; N])
     }
@@ -27,34 +30,30 @@ impl<const N: usize> From<[f64; N]> for CartesianVector<N> {
 }
 
 impl<const N: usize> TryFrom<Vec<f64>> for CartesianVector<N> {
-    type Error = &'static str;
+    type Error = Error;
 
     #[inline]
-    fn try_from(coordinates: Vec<f64>) -> Result<Self, Self::Error> {
-        let coordinates = coordinates
+    fn try_from(value: Vec<f64>) -> Result<Self, Self::Error> {
+        let coordinates = value
             .try_into()
-            .map_err(|_| "Failed to initialize CartesianVector.")?;
+            .map_err(|_| Error::InvalidVectorLength)?;
         Ok(Self { coordinates })
     }
 }
 
-impl<const N: usize> From<std::ops::Range<usize>> for CartesianVector<N> {
+impl<const N: usize> TryFrom<std::ops::Range<usize>> for CartesianVector<N> {
+    type Error = Error;
+    
     #[inline]
-    fn from(coordinates: std::ops::Range<usize>) -> Self {
-        let coordinates = coordinates.map(|x| x as f64);
-        CartesianVector::from_iter(coordinates)
-    }
-}
+    fn try_from(value: std::ops::Range<usize>) -> Result<Self, Self::Error> {
+        if value.len() != N {
+            return Err(Error::InvalidVectorLength)
+        }
 
-impl<const N: usize> FromIterator<f64> for CartesianVector<N> {
-    fn from_iter<T>(iter: T) -> Self
-    where
-        T: IntoIterator<Item = f64>,
-    {
-        // TODO: TryFromIterator does not exist, but we call unwrap here. How to handle?
-        let mut iter = iter.into_iter();
-        let coordinates = std::array::from_fn(|_| iter.next().unwrap());
-        Self { coordinates }
+        // The default value of 0 will never be used due to the above error check.
+        let mut iter = value;
+        let coordinates = array::from_fn(|_| iter.next().unwrap_or(0) as f64);
+        Ok( Self { coordinates })
     }
 }
 
@@ -79,7 +78,7 @@ impl<const N: usize> Add for CartesianVector<N> {
             .iter_mut()
             .zip(self.coordinates.iter().zip(rhs.coordinates.iter()))
         {
-            *result = a + b
+            *result = a + b;
         }
         Self { coordinates }
     }
@@ -111,7 +110,7 @@ impl<const N: usize> Div<f64> for CartesianVector<N> {
 impl<const N: usize> DivAssign<f64> for CartesianVector<N> {
     #[inline]
     fn div_assign(&mut self, rhs: f64) {
-        for result in self.coordinates.iter_mut() {
+        for result in &mut self.coordinates {
             *result /= rhs;
         }
     }
@@ -133,7 +132,7 @@ impl<const N: usize> Mul<f64> for CartesianVector<N> {
 impl<const N: usize> MulAssign<f64> for CartesianVector<N> {
     #[inline]
     fn mul_assign(&mut self, rhs: f64) {
-        for result in self.coordinates.iter_mut() {
+        for result in &mut self.coordinates {
             *result *= rhs;
         }
     }
@@ -149,7 +148,7 @@ impl<const N: usize> Sub for CartesianVector<N> {
             .iter_mut()
             .zip(self.coordinates.iter().zip(rhs.coordinates.iter()))
         {
-            *result = a - b
+            *result = a - b;
         }
         Self { coordinates }
     }
@@ -165,13 +164,14 @@ impl<const N: usize> SubAssign for CartesianVector<N> {
 }
 
 impl<const N: usize> fmt::Display for CartesianVector<N> {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
             "[{}]",
             self.coordinates
                 .iter()
-                .map(|x| x.to_string())
+                .map(f64::to_string)
                 .collect::<Vec<String>>()
                 .join(", ")
         )
@@ -205,7 +205,7 @@ mod tests {
     /// Generate a pair of length N vectors.
     /// The first vector ranges from [0, N-1] and the second ranges from [N, 2*N-1]
     fn generate_vector_pair<const N: usize>() -> (CartesianVector<N>, CartesianVector<N>) {
-        (CartesianVector::from(0..N), CartesianVector::from(N..N * 2))
+        (CartesianVector::try_from(0..N).unwrap(), CartesianVector::try_from(N..N * 2).unwrap())
     }
 
     fn add_explicit<const N: usize>() {
@@ -307,7 +307,7 @@ mod tests {
 
     fn display<const N: usize>() {
         let (a, _) = generate_vector_pair::<N>();
-        println!("Test array: {a}, printed.");
+        let _ = format!("Test array: {a}, printed.");
     }
     parameterize_vector_length!(display, [2, 3, 4, 8, 16, 32]);
 }

@@ -6,6 +6,7 @@
 
 // allow some pedantic rules
 #![allow(clippy::cast_precision_loss)]
+#![allow(clippy::float_cmp)]
 
 // restrictions
 #![warn(clippy::allow_attributes,
@@ -34,13 +35,21 @@
 //! Generic vector and quaternion operations exposed through _traits_.
 //!
 
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
-
 mod cartesian;
 mod vec3;
 
 pub use cartesian::CartesianVector;
 pub use vec3::CartesianVector3;
+
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use thiserror::Error;
+
+#[non_exhaustive]
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error("Source does not match the target vector length.")]
+    InvalidVectorLength,
+}
 
 /// A generic vector.
 pub trait Vector:
@@ -60,12 +69,14 @@ pub trait Vector:
 
     /// Length of the vector, squared.
     #[must_use]
+    #[inline]
     fn length_squared(&self) -> f64 {
         self.dot(self)
     }
 
     /// Length of the vector.
     #[must_use]
+    #[inline]
     fn length(&self) -> f64 {
         self.length_squared().sqrt()
     }
