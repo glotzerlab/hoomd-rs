@@ -1,6 +1,3 @@
-[lib]
-path = "src/hoomd-rs-vector.rs"
-
 [package]
 name = "hoomd-rs-vector"
 categories.workspace = true
