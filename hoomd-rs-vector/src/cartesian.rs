@@ -1,15 +1,18 @@
 // Copyright (c) 2024 The Regents of the University of Michigan.
 // Part of hoomd_rs, released under the BSD 3-Clause License.
 
-use std::fmt;
 use std::array;
+use std::fmt;
 use std::iter::zip;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 use crate::{Error, Vector};
 
 /// A Cartesian vector with dimension `N`.
-#[expect(clippy::module_name_repetitions, reason="cartesian.rs is a private implementation")]
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "cartesian.rs is a private implementation"
+)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct CartesianVector<const N: usize> {
     coordinates: [f64; N],
@@ -34,26 +37,24 @@ impl<const N: usize> TryFrom<Vec<f64>> for CartesianVector<N> {
 
     #[inline]
     fn try_from(value: Vec<f64>) -> Result<Self, Self::Error> {
-        let coordinates = value
-            .try_into()
-            .map_err(|_| Error::InvalidVectorLength)?;
+        let coordinates = value.try_into().map_err(|_| Error::InvalidVectorLength)?;
         Ok(Self { coordinates })
     }
 }
 
 impl<const N: usize> TryFrom<std::ops::Range<usize>> for CartesianVector<N> {
     type Error = Error;
-    
+
     #[inline]
     fn try_from(value: std::ops::Range<usize>) -> Result<Self, Self::Error> {
         if value.len() != N {
-            return Err(Error::InvalidVectorLength)
+            return Err(Error::InvalidVectorLength);
         }
 
         // The default value of 0 will never be used due to the above error check.
         let mut iter = value;
         let coordinates = array::from_fn(|_| iter.next().unwrap_or(0) as f64);
-        Ok( Self { coordinates })
+        Ok(Self { coordinates })
     }
 }
 
@@ -205,7 +206,10 @@ mod tests {
     /// Generate a pair of length N vectors.
     /// The first vector ranges from [0, N-1] and the second ranges from [N, 2*N-1]
     fn generate_vector_pair<const N: usize>() -> (CartesianVector<N>, CartesianVector<N>) {
-        (CartesianVector::try_from(0..N).unwrap(), CartesianVector::try_from(N..N * 2).unwrap())
+        (
+            CartesianVector::try_from(0..N).unwrap(),
+            CartesianVector::try_from(N..N * 2).unwrap(),
+        )
     }
 
     fn add_explicit<const N: usize>() {

@@ -3,31 +3,31 @@
 
 #![warn(clippy::cargo)]
 #![warn(clippy::pedantic)]
-
 // allow some pedantic rules
 #![allow(clippy::cast_precision_loss)]
 #![allow(clippy::float_cmp)]
-
 // restrictions
-#![warn(clippy::allow_attributes,
-        clippy::allow_attributes_without_reason,
-        clippy::exhaustive_enums,
-        clippy::impl_trait_in_params,
-        clippy::missing_inline_in_public_items,
-        clippy::partial_pub_fields,
-        clippy::print_stderr,
-        clippy::print_stdout,
-        clippy::mod_module_files,
-        clippy::redundant_type_annotations,
-        clippy::renamed_function_params,
-        clippy::same_name_method,
-        clippy::todo)]
-
+#![warn(
+    clippy::allow_attributes,
+    clippy::allow_attributes_without_reason,
+    clippy::exhaustive_enums,
+    clippy::impl_trait_in_params,
+    clippy::missing_inline_in_public_items,
+    clippy::partial_pub_fields,
+    clippy::print_stderr,
+    clippy::print_stdout,
+    clippy::mod_module_files,
+    clippy::redundant_type_annotations,
+    clippy::renamed_function_params,
+    clippy::same_name_method,
+    clippy::todo
+)]
 // nursery
-#![warn(clippy::fallible_impl_from,
-        clippy::needless_collect,
-        clippy::needless_pass_by_ref_mut)]
-
+#![warn(
+    clippy::fallible_impl_from,
+    clippy::needless_collect,
+    clippy::needless_pass_by_ref_mut
+)]
 #![deny(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
 
 //! Vector and quaternion math.
