@@ -9,10 +9,7 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use crate::{Error, Vector};
 
 /// A Cartesian vector with dimension `N`.
-#[allow(
-    clippy::module_name_repetitions,
-    reason = "cartesian.rs is a private implementation"
-)]
+#[allow(clippy::module_name_repetitions)] // cartesian.rs is a private implementation module.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct CartesianVector<const N: usize> {
     coordinates: [f64; N],
