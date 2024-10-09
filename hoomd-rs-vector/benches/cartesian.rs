@@ -28,7 +28,7 @@ fn create_vecn_from_arr<const N: usize>(bencher: Bencher) {
 
     // TODO: replace rng.gen with something in a more reasonable range
     bencher
-        .counter(ItemsCount::from(N_VECTORS))
+        .counter(ItemsCount::from(1_u32))
         .with_inputs(|| std::array::from_fn::<_, N, _>(|_| rng.gen::<f64>()))
         .bench_local_values(|arr| {
             let _ = CartesianVector::from(arr);
@@ -41,7 +41,7 @@ fn create_vecn_tryfrom_vec<const N: usize>(bencher: Bencher) {
 
     // TODO: replace rng.gen with something in a more reasonable range
     bencher
-        .counter(ItemsCount::from(N_VECTORS))
+        .counter(ItemsCount::from(1_u32))
         .with_inputs(|| (0..N).map(|_| rng.gen::<f64>()).collect::<Vec<f64>>())
         .bench_local_values(|vec| {
             let _ = CartesianVector::<N>::try_from(vec);
