@@ -26,6 +26,7 @@ jobs:
     name: Unit test [${{ matrix.mode }}-rust-${{ matrix.rust }}-${{ matrix.os }}]
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os:
           - ubuntu-22.04
