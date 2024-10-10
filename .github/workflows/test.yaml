@@ -64,6 +64,8 @@ jobs:
       run: cargo test ${{ matrix.mode == 'release' && '--release' || '' }} --verbose
     - name: Build API documentation
       run: cargo doc --no-deps
+    - name: Run benchmarks
+      run: cargo bench
 
   # build_documentation:
   #   name: Build documentation
