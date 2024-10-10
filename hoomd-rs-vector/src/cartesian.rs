@@ -49,7 +49,7 @@ pub struct CartesianVector<const N: usize> {
 
 impl<const N: usize> Default for CartesianVector<N> {
     /** Create a 0 vector.
-   
+
     ```
     # use hoomd_rs_vector::CartesianVector;
     let v = CartesianVector::<3>::default();
@@ -64,7 +64,7 @@ impl<const N: usize> Default for CartesianVector<N> {
 
 impl<const N: usize> From<[f64; N]> for CartesianVector<N> {
     /** Create a Cartesian vector with the given coordinates.
-   
+
     ```
     # use hoomd_rs_vector::CartesianVector;
     let v = CartesianVector::from([4.0, 3.0]);
@@ -98,7 +98,7 @@ impl<const N: usize> TryFrom<Vec<f64>> for CartesianVector<N> {
     type Error = Error;
 
     /** Create a Cartesian vector with coordinates given by a [`Vec<f64>`]
-   
+
     ```
     # use hoomd_rs_vector::CartesianVector;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -107,7 +107,7 @@ impl<const N: usize> TryFrom<Vec<f64>> for CartesianVector<N> {
     # Ok(())
     # }
     ```
-   
+
     > Note: Use `CartesianVector::From<[f64; N]>` in performance critical code.
     */
     #[inline]
@@ -121,7 +121,7 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for CartesianVector<N> {
     type Error = Error;
 
     /** Create a Cartesian vector with coordinates given by a range.
-   
+
     ```
     # use hoomd_rs_vector::CartesianVector;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -130,7 +130,7 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for CartesianVector<N> {
     # Ok(())
     # }
     ```
-   
+
     > Note: Use `CartesianVector::From<[f64; N]>` in performance critical code.
     */
     #[inline]

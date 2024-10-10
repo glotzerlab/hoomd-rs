@@ -199,7 +199,7 @@ pub enum Error {
 }
 
 /** Placeholder type for use in trait bounds on [`Vector`] dimension.
-   
+
     This placeholder will be removed when Rust allows the use of associated constants in trait
     bounds.
 */
@@ -228,7 +228,7 @@ pub trait Vector:
     // Instead, introduce an empty type for use with trait bounds on an associated type.
 
     /** Compute the squared length of the vector.
-       
+
     # Example:
     ```
     # use hoomd_rs_vector::{CartesianVector, Vector};
@@ -246,14 +246,14 @@ pub trait Vector:
     }
 
     /** Compute the length of the vector.
-       
+
     <div class="warning">
-   
+
     Computing the length calls `sqrt`. Prefer
     [`length_squared`](Vector::length_squared) unless you need the actual length.
-   
+
     </div>
-   
+
     # Example:
     ```
     # use hoomd_rs_vector::{CartesianVector, Vector};
@@ -271,7 +271,7 @@ pub trait Vector:
     }
 
     /** Compute the vector dot product between two vectors.
-    
+
     # Example:
     ```
     # use hoomd_rs_vector::{CartesianVector, Vector};
