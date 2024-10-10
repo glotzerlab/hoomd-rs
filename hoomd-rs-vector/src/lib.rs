@@ -33,19 +33,10 @@
 
 //! Vector and quaternion math.
 //!
-//! Generic vector and quaternion operations exposed through _traits_. Use the
-//! [`Vector`] trait to implement generic functions that do not depend on the
-//! dimension or the representation of the vector:
+//! Generic vector and quaternion operations exposed through _traits_.
 //!
-//! ```
-//! use hoomd_rs_vector::Vector;
-//!
-//! fn some_function<T: Vector>(a: &T, b: &T) -> f64 {
-//!     a.dot(b) / (a.length() * b.length())
-//! }
-//! ```
-//!
-//! [`CartesianVector`] is the canonical vector representation.
+//! [`CartesianVector`] is the canonical vector representation. You can use it directly when
+//! a specific representation is needed.
 //!
 //! ## Operations
 //!
@@ -159,6 +150,36 @@
 //! # }
 //! ```
 //!
+//! # Functions on generic vectors
+//! Use the [`Vector`] trait to implement generic functions that do not depend on the dimension
+//! or the representation of the vector:
+//!
+//! ```
+//! # use hoomd_rs_vector::Vector;
+//! fn some_function<T: Vector>(a: &T, b: &T) -> f64 {
+//!     a.dot(b) / (a.length() * b.length())
+//! }
+//! ```
+//!
+//! Require additional trait bounds to perform more specific operations, such as [`Cross`]:
+//!
+//! ```
+//! # use hoomd_rs_vector::CartesianVector;
+//! # use hoomd_rs_vector::{Cross, Vector};
+//! fn triple<T: Vector + Cross>(a: &T, b: &T, c: &T) -> f64 {
+//!     a.dot(&b.cross(c))
+//! }
+//! ```
+//!
+//! Or to require a specific number of dimensions with [`Dimension`]:
+//!
+//! ```
+//! # use hoomd_rs_vector::CartesianVector;
+//! # use hoomd_rs_vector::{Dimension, Vector};
+//! fn some_3d_function<T: Vector<Dimension = Dimension<3>>>(a: &T) {
+//!     // ...
+//! }
+//! ```
 
 mod cartesian;
 
@@ -176,6 +197,12 @@ pub enum Error {
     InvalidVectorLength,
 }
 
+/// Placeholder type for use in trait bounds on [`Vector`] dimension.
+///
+/// This placeholder will be removed when Rust allows the use of associated constants in trait
+/// bounds.
+pub struct Dimension<const N: usize>;
+
 /// A generic vector.
 pub trait Vector:
     Add<Self, Output = Self>
@@ -190,11 +217,17 @@ pub trait Vector:
     + SubAssign
 {
     /// The dimension of the vector space.
-    const DIMENSION: usize;
+    type Dimension;
+
+    // Ideally, we would use:
+    // const DIMENSION: usize;
+    // but trait bounds cannot be applied to associated constants as of rust 1.81.0.
+    // https://github.com/rust-lang/rust/issues/92827
+    // Instead, introduce an empty type for use with trait bounds on an associated type.
 
     /// Compute the squared length of the vector.
     ///
-    /// Example:
+    /// # Example:
     /// ```
     /// # use hoomd_rs_vector::{CartesianVector, Vector};
     /// # fn main() {
@@ -213,12 +246,12 @@ pub trait Vector:
     ///
     /// <div class="warning">
     ///
-    /// Computing the length requires calls `sqrt`. Prefer
+    /// Computing the length calls `sqrt`. Prefer
     /// [`length_squared`](Vector::length_squared) unless you need the actual length.
     ///
     /// </div>
     ///
-    /// Example:
+    /// # Example:
     /// ```
     /// # use hoomd_rs_vector::{CartesianVector, Vector};
     /// # fn main() {
@@ -236,7 +269,7 @@ pub trait Vector:
 
     /// Compute the vector dot product between two vectors.
     ///
-    /// Example:
+    /// # Example:
     /// ```
     /// # use hoomd_rs_vector::{CartesianVector, Vector};
     /// # fn main() {
@@ -249,6 +282,14 @@ pub trait Vector:
     ///
     #[must_use]
     fn dot(&self, rhs: &Self) -> f64;
+}
+
+/// The vector cross product.
+pub trait Cross {
+    /// Perform the cross product.
+    ///
+    #[must_use]
+    fn cross(&self, rhs: &Self) -> Self;
 }
 
 #[cfg(test)]

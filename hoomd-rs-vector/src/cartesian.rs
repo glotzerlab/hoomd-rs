@@ -6,7 +6,7 @@ use std::fmt;
 use std::iter::zip;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-use crate::{Error, Vector};
+use crate::{Dimension, Error, Vector};
 
 /// A Cartesian vector represented by an array of `N` `f64` coordinates.
 ///
@@ -142,7 +142,7 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for CartesianVector<N> {
 }
 
 impl<const N: usize> Vector for CartesianVector<N> {
-    const DIMENSION: usize = N;
+    type Dimension = Dimension<N>;
 
     #[inline]
     fn dot(&self, rhs: &Self) -> f64 {
