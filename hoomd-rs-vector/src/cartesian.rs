@@ -21,8 +21,8 @@ use crate::{Dimension, Error, Vector};
 /// 2D and 3D vectors can also be initialized from tuples:
 /// ```
 /// # use hoomd_rs_vector::CartesianVector;
-/// let a = CartesianVector::from([1.0, 2.0, 3.0]);
-/// let b = CartesianVector::from([4.0, 5.0]);
+/// let a = CartesianVector::from((1.0, 2.0, 3.0));
+/// let b = CartesianVector::from((4.0, 5.0));
 /// ```
 ///
 /// Use vector math operations when you can:
