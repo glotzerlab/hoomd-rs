@@ -392,9 +392,14 @@ mod tests {
     }
     parameterize_vector_length!(dot, [2, 3, 4, 8, 16, 32]);
 
-    fn display<const N: usize>() {
-        let (a, _) = generate_vector_pair::<N>();
-        let _ = format!("Test array: {a}, printed.");
+    #[test]
+    fn display() {
+        let a = CartesianVector::from([1.5, 2.125, -3.875]);
+        let s = format!("{a}");
+        assert_eq!(s, "[1.5, 2.125, -3.875]");
+
+        let a = CartesianVector::from([10.0, 20.0, 30.0, 40.0]);
+        let s = format!("{a}");
+        assert_eq!(s, "[10, 20, 30, 40]");
     }
-    parameterize_vector_length!(display, [2, 3, 4, 8, 16, 32]);
 }
