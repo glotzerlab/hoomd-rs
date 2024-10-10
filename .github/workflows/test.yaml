@@ -29,7 +29,9 @@ jobs:
       matrix:
         os:
           - ubuntu-24.04
-          - macos-14
+          # Disable macOS tests to avoid burning through free GitHub Actions minutes.
+          # TODO: Enable after the project made public.
+          # - macos-14
         rust:
           # Oldest supported version of rust
           - 1.77.2
