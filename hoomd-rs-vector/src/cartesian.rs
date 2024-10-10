@@ -8,37 +8,38 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 use crate::{Dimension, Error, Vector};
 
-/// A Cartesian vector represented by an array of `N` `f64` coordinates.
-///
-/// `CartesianVector` is the canonical implementation of [`Vector`].
-///
-/// Create a vector with an array of coordinates:
-/// ```
-/// # use hoomd_rs_vector::CartesianVector;
-/// let v = CartesianVector::from([1.0, 2.0, 3.0, 4.0, 5.0]);
-/// ```
-///
-/// 2D and 3D vectors can also be initialized from tuples:
-/// ```
-/// # use hoomd_rs_vector::CartesianVector;
-/// let a = CartesianVector::from((1.0, 2.0, 3.0));
-/// let b = CartesianVector::from((4.0, 5.0));
-/// ```
-///
-/// Use vector math operations when you can:
-/// ```
-/// # use hoomd_rs_vector::{CartesianVector, Vector};
-/// let a = CartesianVector::from([1.0, 2.0]);
-/// let b = CartesianVector::from([4.0, 8.0]);
-/// let c = (a + b).dot(&a);
-/// ```
-///
-/// Access the coordinates directly when needed:
-/// ```
-/// # use hoomd_rs_vector::CartesianVector;
-/// # let a = CartesianVector::from((1.0, 2.0));
-/// let b = CartesianVector::from((a.coordinates[1], 0.0));
-/// ```
+/** A Cartesian vector represented by an array of `N` `f64` coordinates.
+
+`CartesianVector` is the canonical implementation of [`Vector`].
+
+Create a vector with an array of coordinates:
+```
+# use hoomd_rs_vector::CartesianVector;
+let v = CartesianVector::from([1.0, 2.0, 3.0, 4.0, 5.0]);
+```
+
+2D and 3D vectors can also be initialized from tuples:
+```
+# use hoomd_rs_vector::CartesianVector;
+let a = CartesianVector::from((1.0, 2.0, 3.0));
+let b = CartesianVector::from((4.0, 5.0));
+```
+
+Use vector math operations when you can:
+```
+# use hoomd_rs_vector::{CartesianVector, Vector};
+let a = CartesianVector::from([1.0, 2.0]);
+let b = CartesianVector::from([4.0, 8.0]);
+let c = (a + b).dot(&a);
+```
+
+Access the coordinates directly when needed:
+```
+# use hoomd_rs_vector::CartesianVector;
+# let a = CartesianVector::from((1.0, 2.0));
+let b = CartesianVector::from((a.coordinates[1], 0.0));
+```
+*/
 #[allow(clippy::module_name_repetitions)] // cartesian.rs is a private implementation module.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct CartesianVector<const N: usize> {
@@ -47,13 +48,14 @@ pub struct CartesianVector<const N: usize> {
 }
 
 impl<const N: usize> Default for CartesianVector<N> {
-    /// Create a 0 vector.
-    ///
-    /// ```
-    /// # use hoomd_rs_vector::CartesianVector;
-    /// let v = CartesianVector::<3>::default();
-    /// assert_eq!(v, [0.0; 3].into())
-    /// ```
+    /** Create a 0 vector.
+   
+    ```
+    # use hoomd_rs_vector::CartesianVector;
+    let v = CartesianVector::<3>::default();
+    assert_eq!(v, [0.0; 3].into())
+    ```
+    */
     #[inline]
     fn default() -> Self {
         CartesianVector::from([0.0; N])
@@ -61,12 +63,13 @@ impl<const N: usize> Default for CartesianVector<N> {
 }
 
 impl<const N: usize> From<[f64; N]> for CartesianVector<N> {
-    /// Create a Cartesian vector with the given coordinates.
-    ///
-    /// ```
-    /// # use hoomd_rs_vector::CartesianVector;
-    /// let v = CartesianVector::from([4.0, 3.0]);
-    /// ```
+    /** Create a Cartesian vector with the given coordinates.
+   
+    ```
+    # use hoomd_rs_vector::CartesianVector;
+    let v = CartesianVector::from([4.0, 3.0]);
+    ```
+    */
     #[inline]
     fn from(coordinates: [f64; N]) -> Self {
         Self { coordinates }
@@ -94,18 +97,19 @@ impl From<(f64, f64, f64)> for CartesianVector<3> {
 impl<const N: usize> TryFrom<Vec<f64>> for CartesianVector<N> {
     type Error = Error;
 
-    /// Create a Cartesian vector with coordinates given by a [`Vec<f64>`]
-    ///
-    /// ```
-    /// # use hoomd_rs_vector::CartesianVector;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let v = CartesianVector::<3>::try_from(vec![3.0, 4.0, 5.0])?;
-    /// assert_eq!(v, [3.0, 4.0, 5.0].into());
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// > Note: Use `CartesianVector::From<[f64; N]>` in performance critical code.
+    /** Create a Cartesian vector with coordinates given by a [`Vec<f64>`]
+   
+    ```
+    # use hoomd_rs_vector::CartesianVector;
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let v = CartesianVector::<3>::try_from(vec![3.0, 4.0, 5.0])?;
+    assert_eq!(v, [3.0, 4.0, 5.0].into());
+    # Ok(())
+    # }
+    ```
+   
+    > Note: Use `CartesianVector::From<[f64; N]>` in performance critical code.
+    */
     #[inline]
     fn try_from(value: Vec<f64>) -> Result<Self, Self::Error> {
         let coordinates = value.try_into().map_err(|_| Error::InvalidVectorLength)?;
@@ -116,18 +120,19 @@ impl<const N: usize> TryFrom<Vec<f64>> for CartesianVector<N> {
 impl<const N: usize> TryFrom<std::ops::Range<usize>> for CartesianVector<N> {
     type Error = Error;
 
-    /// Create a Cartesian vector with coordinates given by a range.
-    ///
-    /// ```
-    /// # use hoomd_rs_vector::CartesianVector;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let v = CartesianVector::<3>::try_from(3..6)?;
-    /// assert_eq!(v, [3.0, 4.0, 5.0].into());
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// > Note: Use `CartesianVector::From<[f64; N]>` in performance critical code.
+    /** Create a Cartesian vector with coordinates given by a range.
+   
+    ```
+    # use hoomd_rs_vector::CartesianVector;
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let v = CartesianVector::<3>::try_from(3..6)?;
+    assert_eq!(v, [3.0, 4.0, 5.0].into());
+    # Ok(())
+    # }
+    ```
+   
+    > Note: Use `CartesianVector::From<[f64; N]>` in performance critical code.
+    */
     #[inline]
     fn try_from(value: std::ops::Range<usize>) -> Result<Self, Self::Error> {
         if value.len() != N {

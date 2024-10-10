@@ -31,155 +31,156 @@
 #![deny(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
 #![warn(missing_docs)]
 
-//! Vector and quaternion math.
-//!
-//! Generic vector and quaternion operations exposed through _traits_.
-//!
-//! [`CartesianVector`] is the canonical vector representation. You can use it directly when
-//! a specific representation is needed.
-//!
-//! ## Operations
-//!
-//! The following examples demonstrate vector operations applied to the following
-//! vectors:
-//!
-//! ```
-//! # use hoomd_rs_vector::CartesianVector;
-//! # fn main() {
-//! let mut a = CartesianVector::from([1.0, 2.0]);
-//! let mut b = CartesianVector::from([4.0, 8.0]);
-//! # }
-//! ```
-//!
-//! Vector addition:
-//!
-//! ```
-//! # use hoomd_rs_vector::CartesianVector;
-//! # fn main() {
-//! # let mut a = CartesianVector::from([1.0, 2.0]);
-//! # let mut b = CartesianVector::from([4.0, 8.0]);
-//! let c = a + b;
-//! assert_eq!(c, [5.0, 10.0].into())
-//! # }
-//! ```
-//!
-//! ```
-//! # use hoomd_rs_vector::CartesianVector;
-//! # fn main() {
-//! # let mut a = CartesianVector::from([1.0, 2.0]);
-//! # let mut b = CartesianVector::from([4.0, 8.0]);
-//! a += b;
-//! assert_eq!(a, [5.0, 10.0].into())
-//! # }
-//! ```
-//!
-//! Vector subtraction:
-//!
-//! ```
-//! # use hoomd_rs_vector::CartesianVector;
-//! # fn main() {
-//! # let mut a = CartesianVector::from([1.0, 2.0]);
-//! # let mut b = CartesianVector::from([4.0, 8.0]);
-//! let c = b - a;
-//! assert_eq!(c, [3.0, 6.0].into())
-//! # }
-//! ```
-//!
-//! ```
-//! # use hoomd_rs_vector::CartesianVector;
-//! # fn main() {
-//! # let mut a = CartesianVector::from([1.0, 2.0]);
-//! # let mut b = CartesianVector::from([4.0, 8.0]);
-//! b -= a;
-//! assert_eq!(b, [3.0, 6.0].into())
-//! # }
-//! ```
-//!
-//! Multiplication of a vector by a scalar:
-//!
-//! ```
-//! # use hoomd_rs_vector::CartesianVector;
-//! # fn main() {
-//! # let mut a = CartesianVector::from([1.0, 2.0]);
-//! # let mut b = CartesianVector::from([4.0, 8.0]);
-//! let c = a * 2.0;
-//! assert_eq!(c, [2.0, 4.0].into())
-//! # }
-//! ```
-//!
-//! ```
-//! # use hoomd_rs_vector::CartesianVector;
-//! # fn main() {
-//! # let mut a = CartesianVector::from([1.0, 2.0]);
-//! # let mut b = CartesianVector::from([4.0, 8.0]);
-//! a *= 2.0;
-//! assert_eq!(a, [2.0, 4.0].into())
-//! # }
-//! ```
-//!
-//! Division of a vector by a scalar:
-//!
-//! ```
-//! # use hoomd_rs_vector::CartesianVector;
-//! # fn main() {
-//! # let mut a = CartesianVector::from([1.0, 2.0]);
-//! # let mut b = CartesianVector::from([4.0, 8.0]);
-//! let c = b / 2.0;
-//! assert_eq!(c, [2.0, 4.0].into())
-//! # }
-//! ```
-//!
-//! ```
-//! # use hoomd_rs_vector::CartesianVector;
-//! # fn main() {
-//! # let mut a = CartesianVector::from([1.0, 2.0]);
-//! # let mut b = CartesianVector::from([4.0, 8.0]);
-//! b /= 2.0;
-//! assert_eq!(b, [2.0, 4.0].into())
-//! # }
-//! ```
-//!
-//! Equality:
-//!
-//! ```
-//! # use hoomd_rs_vector::CartesianVector;
-//! # fn main() {
-//! # let mut a = CartesianVector::from([1.0, 2.0]);
-//! # let mut b = CartesianVector::from([4.0, 8.0]);
-//! assert!(a != b)
-//! # }
-//! ```
-//!
-//! # Functions on generic vectors
-//! Use the [`Vector`] trait to implement generic functions that do not depend on the dimension
-//! or the representation of the vector:
-//!
-//! ```
-//! # use hoomd_rs_vector::Vector;
-//! fn some_function<T: Vector>(a: &T, b: &T) -> f64 {
-//!     a.dot(b) / (a.length() * b.length())
-//! }
-//! ```
-//!
-//! Require additional trait bounds to perform more specific operations, such as [`Cross`]:
-//!
-//! ```
-//! # use hoomd_rs_vector::CartesianVector;
-//! # use hoomd_rs_vector::{Cross, Vector};
-//! fn triple<T: Vector + Cross>(a: &T, b: &T, c: &T) -> f64 {
-//!     a.dot(&b.cross(c))
-//! }
-//! ```
-//!
-//! Or to require a specific number of dimensions with [`Dimension`]:
-//!
-//! ```
-//! # use hoomd_rs_vector::CartesianVector;
-//! # use hoomd_rs_vector::{Dimension, Vector};
-//! fn some_3d_function<T: Vector<Dimension = Dimension<3>>>(a: &T) {
-//!     // ...
-//! }
-//! ```
+/*! Vector and quaternion math.
+
+Generic vector and quaternion operations exposed through _traits_.
+
+[`CartesianVector`] is the canonical vector representation. You can use it directly when
+a specific representation is needed.
+
+## Operations
+
+The following examples demonstrate vector operations applied to the following
+vectors:
+
+```
+# use hoomd_rs_vector::CartesianVector;
+# fn main() {
+let mut a = CartesianVector::from([1.0, 2.0]);
+let mut b = CartesianVector::from([4.0, 8.0]);
+# }
+```
+
+Vector addition:
+
+```
+# use hoomd_rs_vector::CartesianVector;
+# fn main() {
+# let mut a = CartesianVector::from([1.0, 2.0]);
+# let mut b = CartesianVector::from([4.0, 8.0]);
+let c = a + b;
+assert_eq!(c, [5.0, 10.0].into())
+# }
+```
+
+```
+# use hoomd_rs_vector::CartesianVector;
+# fn main() {
+# let mut a = CartesianVector::from([1.0, 2.0]);
+# let mut b = CartesianVector::from([4.0, 8.0]);
+a += b;
+assert_eq!(a, [5.0, 10.0].into())
+# }
+```
+
+Vector subtraction:
+
+```
+# use hoomd_rs_vector::CartesianVector;
+# fn main() {
+# let mut a = CartesianVector::from([1.0, 2.0]);
+# let mut b = CartesianVector::from([4.0, 8.0]);
+let c = b - a;
+assert_eq!(c, [3.0, 6.0].into())
+# }
+```
+
+```
+# use hoomd_rs_vector::CartesianVector;
+# fn main() {
+# let mut a = CartesianVector::from([1.0, 2.0]);
+# let mut b = CartesianVector::from([4.0, 8.0]);
+b -= a;
+assert_eq!(b, [3.0, 6.0].into())
+# }
+```
+
+Multiplication of a vector by a scalar:
+
+```
+# use hoomd_rs_vector::CartesianVector;
+# fn main() {
+# let mut a = CartesianVector::from([1.0, 2.0]);
+# let mut b = CartesianVector::from([4.0, 8.0]);
+let c = a * 2.0;
+assert_eq!(c, [2.0, 4.0].into())
+# }
+```
+
+```
+# use hoomd_rs_vector::CartesianVector;
+# fn main() {
+# let mut a = CartesianVector::from([1.0, 2.0]);
+# let mut b = CartesianVector::from([4.0, 8.0]);
+a *= 2.0;
+assert_eq!(a, [2.0, 4.0].into())
+# }
+```
+
+Division of a vector by a scalar:
+
+```
+# use hoomd_rs_vector::CartesianVector;
+# fn main() {
+# let mut a = CartesianVector::from([1.0, 2.0]);
+# let mut b = CartesianVector::from([4.0, 8.0]);
+let c = b / 2.0;
+assert_eq!(c, [2.0, 4.0].into())
+# }
+```
+
+```
+# use hoomd_rs_vector::CartesianVector;
+# fn main() {
+# let mut a = CartesianVector::from([1.0, 2.0]);
+# let mut b = CartesianVector::from([4.0, 8.0]);
+b /= 2.0;
+assert_eq!(b, [2.0, 4.0].into())
+# }
+```
+
+Equality:
+
+```
+# use hoomd_rs_vector::CartesianVector;
+# fn main() {
+# let mut a = CartesianVector::from([1.0, 2.0]);
+# let mut b = CartesianVector::from([4.0, 8.0]);
+assert!(a != b)
+# }
+```
+
+# Functions on generic vectors
+Use the [`Vector`] trait to implement generic functions that do not depend on the dimension
+or the representation of the vector:
+
+```
+# use hoomd_rs_vector::Vector;
+fn some_function<T: Vector>(a: &T, b: &T) -> f64 {
+    a.dot(b) / (a.length() * b.length())
+}
+```
+
+Require additional trait bounds to perform more specific operations, such as [`Cross`]:
+
+```
+# use hoomd_rs_vector::CartesianVector;
+# use hoomd_rs_vector::{Cross, Vector};
+fn triple<T: Vector + Cross>(a: &T, b: &T, c: &T) -> f64 {
+    a.dot(&b.cross(c))
+}
+```
+
+Or to require a specific number of dimensions with [`Dimension`]:
+
+```
+# use hoomd_rs_vector::CartesianVector;
+# use hoomd_rs_vector::{Dimension, Vector};
+fn some_3d_function<T: Vector<Dimension = Dimension<3>>>(a: &T) {
+    // ...
+}
+```
+*/
 
 mod cartesian;
 
@@ -197,10 +198,11 @@ pub enum Error {
     InvalidVectorLength,
 }
 
-/// Placeholder type for use in trait bounds on [`Vector`] dimension.
-///
-/// This placeholder will be removed when Rust allows the use of associated constants in trait
-/// bounds.
+/** Placeholder type for use in trait bounds on [`Vector`] dimension.
+   
+    This placeholder will be removed when Rust allows the use of associated constants in trait
+    bounds.
+*/
 pub struct Dimension<const N: usize>;
 
 /// A generic vector.
@@ -225,61 +227,62 @@ pub trait Vector:
     // https://github.com/rust-lang/rust/issues/92827
     // Instead, introduce an empty type for use with trait bounds on an associated type.
 
-    /// Compute the squared length of the vector.
-    ///
-    /// # Example:
-    /// ```
-    /// # use hoomd_rs_vector::{CartesianVector, Vector};
-    /// # fn main() {
-    /// let v = CartesianVector::from([2.0, 4.0]);
-    /// let length_squared = v.length_squared();
-    /// assert_eq!(length_squared, 20.0);
-    /// # }
-    /// ```
+    /** Compute the squared length of the vector.
+       
+    # Example:
+    ```
+    # use hoomd_rs_vector::{CartesianVector, Vector};
+    # fn main() {
+    let v = CartesianVector::from([2.0, 4.0]);
+    let length_squared = v.length_squared();
+    assert_eq!(length_squared, 20.0);
+    # }
+    ```
+    */
     #[must_use]
     #[inline]
     fn length_squared(&self) -> f64 {
         self.dot(self)
     }
 
-    /// Compute the length of the vector.
-    ///
-    /// <div class="warning">
-    ///
-    /// Computing the length calls `sqrt`. Prefer
-    /// [`length_squared`](Vector::length_squared) unless you need the actual length.
-    ///
-    /// </div>
-    ///
-    /// # Example:
-    /// ```
-    /// # use hoomd_rs_vector::{CartesianVector, Vector};
-    /// # fn main() {
-    /// let v = CartesianVector::from([3.0, 4.0]);
-    /// let length = v.length();
-    /// assert_eq!(length, 5.0);
-    /// # }
-    /// ```
-    ///
+    /** Compute the length of the vector.
+       
+    <div class="warning">
+   
+    Computing the length calls `sqrt`. Prefer
+    [`length_squared`](Vector::length_squared) unless you need the actual length.
+   
+    </div>
+   
+    # Example:
+    ```
+    # use hoomd_rs_vector::{CartesianVector, Vector};
+    # fn main() {
+    let v = CartesianVector::from([3.0, 4.0]);
+    let length = v.length();
+    assert_eq!(length, 5.0);
+    # }
+    ```
+    */
     #[must_use]
     #[inline]
     fn length(&self) -> f64 {
         self.length_squared().sqrt()
     }
 
-    /// Compute the vector dot product between two vectors.
-    ///
-    /// # Example:
-    /// ```
-    /// # use hoomd_rs_vector::{CartesianVector, Vector};
-    /// # fn main() {
-    /// let a = CartesianVector::from([1.0, 2.0]);
-    /// let b = CartesianVector::from([3.0, 4.0]);
-    /// let product = a.dot(&b);
-    /// assert_eq!(product, 11.0);
-    /// # }
-    /// ```
-    ///
+    /** Compute the vector dot product between two vectors.
+    
+    # Example:
+    ```
+    # use hoomd_rs_vector::{CartesianVector, Vector};
+    # fn main() {
+    let a = CartesianVector::from([1.0, 2.0]);
+    let b = CartesianVector::from([3.0, 4.0]);
+    let product = a.dot(&b);
+    assert_eq!(product, 11.0);
+    # }
+    ```
+    */
     #[must_use]
     fn dot(&self, rhs: &Self) -> f64;
 }
@@ -287,7 +290,6 @@ pub trait Vector:
 /// The vector cross product.
 pub trait Cross {
     /// Perform the cross product.
-    ///
     #[must_use]
     fn cross(&self, rhs: &Self) -> Self;
 }
