@@ -1,5 +1,5 @@
 // Copyright (c) 2024 The Regents of the University of Michigan.
-// Part of hoomd_rs, released under the BSD 3-Clause License.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![warn(clippy::cargo)]
 #![warn(clippy::pedantic)]

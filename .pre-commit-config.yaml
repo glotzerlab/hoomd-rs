@@ -42,7 +42,7 @@ repos:
     types_or: [rust]
     args:
     - --license-file=LICENSE
-    - --add=Part of hoomd_rs, released under the BSD 3-Clause License.
+    - --add=Part of hoomd-rs, released under the BSD 3-Clause License.
 - repo: https://github.com/crate-ci/typos
   rev: v1.22.9
   hooks:
