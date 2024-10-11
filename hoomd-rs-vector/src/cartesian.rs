@@ -6,7 +6,7 @@ use std::fmt;
 use std::iter::zip;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-use crate::{Dimension, Error, Vector};
+use crate::{Dimension, Error, Vector, Cross};
 
 /** A Cartesian vector represented by an array of `N` `f64` coordinates.
 
@@ -267,6 +267,16 @@ impl<const N: usize> fmt::Display for CartesianVector<N> {
     }
 }
 
+impl Cross for CartesianVector<3> {
+    fn cross(&self, rhs: &Self) -> Self {
+        CartesianVector::from((
+            self.coordinates[1] * rhs.coordinates[2] - self.coordinates[2] * rhs.coordinates[1],
+            self.coordinates[2] * rhs.coordinates[0] - self.coordinates[0] * rhs.coordinates[2],
+            self.coordinates[0] * rhs.coordinates[1] - self.coordinates[1] * rhs.coordinates[0]
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -396,6 +406,17 @@ mod tests {
         assert_eq!(c, dot_ans);
     }
     parameterize_vector_length!(dot, [2, 3, 4, 8, 16, 32]);
+
+    #[test]
+    fn cross() {
+        let (a, b) = generate_vector_pair::<3>();
+        let c = a.cross(&b);
+
+        // Analytical solution
+        let cross_ans = CartesianVector::from((-3.0, 6.0, -3.0));
+        
+        assert_eq!(c, cross_ans);
+    }
 
     #[test]
     fn display() {
