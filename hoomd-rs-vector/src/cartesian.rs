@@ -278,6 +278,7 @@ impl<const N: usize> Neg for CartesianVector<N> {
 }
 
 impl Cross for CartesianVector<3> {
+    #[inline]
     fn cross(&self, rhs: &Self) -> Self {
         CartesianVector::from((
             self.coordinates[1] * rhs.coordinates[2] - self.coordinates[2] * rhs.coordinates[1],
