@@ -4,7 +4,7 @@
 use std::array;
 use std::fmt;
 use std::iter::zip;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign, Neg};
 
 use crate::{Dimension, Error, Vector};
 
@@ -267,6 +267,17 @@ impl<const N: usize> fmt::Display for CartesianVector<N> {
     }
 }
 
+
+impl<const N: usize> Neg for CartesianVector<N>{
+    type Output = Self;
+    #[inline]
+    fn neg(self) -> Self::Output {
+        let mut result = self;
+        result.coordinates.iter_mut().for_each(|x| *x = -*x);
+        result
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -396,6 +407,15 @@ mod tests {
         assert_eq!(c, dot_ans);
     }
     parameterize_vector_length!(dot, [2, 3, 4, 8, 16, 32]);
+
+    fn neg<const N: usize>() {
+        let a: CartesianVector<N> = CartesianVector::try_from(0..N).unwrap();
+        let b = -a;
+        for (i, j) in zip(a.coordinates.iter(), b.coordinates.iter()) {
+            assert_eq!(*i, -j);
+        }
+    }
+    parameterize_vector_length!(neg, [2, 3, 4, 8, 16, 32]);
 
     #[test]
     fn display() {

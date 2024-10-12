@@ -186,7 +186,7 @@ mod cartesian;
 
 pub use cartesian::CartesianVector;
 
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign, Neg};
 use thiserror::Error;
 
 /// The error type provided by all fallible vector math operations.
@@ -217,6 +217,7 @@ pub trait Vector:
     + MulAssign<f64>
     + Sub<Self, Output = Self>
     + SubAssign
+    + Neg
 {
     /// The dimension of the vector space.
     type Dimension;
