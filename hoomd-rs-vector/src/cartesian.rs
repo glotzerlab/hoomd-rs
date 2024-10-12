@@ -4,7 +4,7 @@
 use std::array;
 use std::fmt;
 use std::iter::zip;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign, Neg};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use crate::{Dimension, Error, Vector};
 
@@ -267,8 +267,7 @@ impl<const N: usize> fmt::Display for CartesianVector<N> {
     }
 }
 
-
-impl<const N: usize> Neg for CartesianVector<N>{
+impl<const N: usize> Neg for CartesianVector<N> {
     type Output = Self;
     #[inline]
     fn neg(self) -> Self::Output {

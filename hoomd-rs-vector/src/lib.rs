@@ -186,7 +186,7 @@ mod cartesian;
 
 pub use cartesian::CartesianVector;
 
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign, Neg};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use thiserror::Error;
 
 /// The error type provided by all fallible vector math operations.
