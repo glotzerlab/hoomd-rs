@@ -139,6 +139,19 @@ assert_eq!(b, [2.0, 4.0].into())
 # }
 ```
 
+Negation:
+
+```
+# use hoomd_rs_vector::CartesianVector;
+# fn main() {
+# let mut a = CartesianVector::from([1.0, 2.0]);
+# let mut b = CartesianVector::from([4.0, 8.0]);
+let mut c = -a;
+assert_eq!(c, [-1.0, -2.0].into());
+# }
+```
+
+
 Equality:
 
 ```
@@ -288,7 +301,20 @@ pub trait Vector:
     fn dot(&self, rhs: &Self) -> f64;
 }
 
-/// The vector cross product.
+/** The vector cross product.
+
+Compute the cross product (right-handed) of two vectors.
+
+```
+# use hoomd_rs_vector::{CartesianVector, Cross, Vector};
+# fn main() {
+let a = CartesianVector::from([1.0, 0.0, 0.0]);
+let b = CartesianVector::from([0.0, 1.0, 0.0]);
+let product = a.cross(&b);
+assert_eq!(product, [0.0, 0.0, 1.0].into());
+# }
+```
+*/
 pub trait Cross {
     /// Perform the cross product.
     #[must_use]
