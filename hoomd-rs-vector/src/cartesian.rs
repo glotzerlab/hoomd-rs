@@ -436,6 +436,18 @@ mod tests {
         let cross_ans = CartesianVector::from((-3.0, 6.0, -3.0));
 
         assert_eq!(c, cross_ans);
+
+        let a = CartesianVector::from([1.0, 0.0, 0.0]);
+        let b = CartesianVector::from([0.0, 1.0, 0.0]);
+        assert_eq!(a.cross(&b), [0.0, 0.0, 1.0].into());
+
+        let a = CartesianVector::from([0.0, 3.0, 0.0]);
+        let b = CartesianVector::from([0.0, 0.0, 2.0]);
+        assert_eq!(a.cross(&b), [6.0, 0.0, 0.0].into());
+
+        let a = CartesianVector::from([2.0, 0.0, 0.0]);
+        let b = CartesianVector::from([0.0, 0.0, 4.0]);
+        assert_eq!(a.cross(&b), [0.0, -8.0, 0.0].into());
     }
 
     #[test]
