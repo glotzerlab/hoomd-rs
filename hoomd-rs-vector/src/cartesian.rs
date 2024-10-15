@@ -362,6 +362,74 @@ mod tests {
 
     parameterize_vector_length!(add_assign, [2, 3, 4, 8, 16, 32]);
 
+    fn sub_operator<const N: usize>() {
+        let (a, b) = generate_vector_pair::<N>();
+        let c = a - b;
+
+        let subtraction_answer = [-(N as f64); N];
+
+        assert_eq!(c, subtraction_answer.into());
+    }
+    parameterize_vector_length!(sub_operator, [2, 3, 4, 8, 16, 32]);
+
+    fn sub_assign<const N: usize>() {
+        let (a, b) = generate_vector_pair::<N>();
+        let mut c = a;
+        c -= b;
+
+        let subtraction_answer = [-(N as f64); N];
+
+        assert_eq!(c, subtraction_answer.into());
+    }
+
+    parameterize_vector_length!(sub_assign, [2, 3, 4, 8, 16, 32]);
+
+    fn mul_operator<const N: usize>() {
+        let (a, _) = generate_vector_pair::<N>();
+        let b = 12.0;
+        let c = a * b;
+
+        let multiplication_answer: Vec<f64> = (0..N).map(|x| (x as f64) * b).collect::<Vec<_>>();
+
+        assert_eq!(c, CartesianVector::try_from(multiplication_answer).unwrap());
+    }
+    parameterize_vector_length!(mul_operator, [2, 3, 4, 8, 16, 32]);
+
+    fn mul_assign<const N: usize>() {
+        let (mut a, _) = generate_vector_pair::<N>();
+        let b = 12.0;
+        a *= b;
+
+        let multiplication_answer: Vec<f64> = (0..N).map(|x| (x as f64) * b).collect::<Vec<_>>();
+
+        assert_eq!(a, CartesianVector::try_from(multiplication_answer).unwrap());
+    }
+
+    parameterize_vector_length!(mul_assign, [2, 3, 4, 8, 16, 32]);
+
+    fn div_operator<const N: usize>() {
+        let (a, _) = generate_vector_pair::<N>();
+        let b = 12.0;
+        let c = a / b;
+
+        let division_answer: Vec<f64> = (0..N).map(|x| (x as f64) / b).collect::<Vec<_>>();
+
+        assert_eq!(c, CartesianVector::try_from(division_answer).unwrap());
+    }
+    parameterize_vector_length!(div_operator, [2, 3, 4, 8, 16, 32]);
+
+    fn div_assign<const N: usize>() {
+        let (mut a, _) = generate_vector_pair::<N>();
+        let b = 12.0;
+        a /= b;
+
+        let division_answer: Vec<f64> = (0..N).map(|x| (x as f64) / b).collect::<Vec<_>>();
+
+        assert_eq!(a, CartesianVector::try_from(division_answer).unwrap());
+    }
+
+    parameterize_vector_length!(div_assign, [2, 3, 4, 8, 16, 32]);
+
     fn compute_add_ref_ref<const N: usize>(
         a: &CartesianVector<N>,
         b: &CartesianVector<N>,
