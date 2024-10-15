@@ -6,7 +6,7 @@ use divan::{self, Bencher};
 use rand::{thread_rng, Rng};
 use rand::distributions::Uniform;
 
-use hoomd_rs_vector::{CartesianVector, Vector};
+use hoomd_rs_vector::{CartesianVector, Cross, Vector};
 
 fn main() {
     divan::main();
@@ -87,5 +87,16 @@ fn dot_vecn<const N: usize>(bencher: Bencher) {
         .with_inputs(create_random_vector_pair::<N>)
         .bench_local_values(|(a, b)| {
             result += a.dot(&b);
+        });
+}
+
+#[divan::bench]
+fn cross_vec3(bencher: Bencher) {
+    let mut result = CartesianVector::default();
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(create_random_vector_pair::<3>)
+        .bench_local_values(|(a, b)| {
+            result += a.cross(&b);
         });
 }
