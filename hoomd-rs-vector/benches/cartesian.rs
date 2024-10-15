@@ -4,6 +4,7 @@
 use divan::counter::ItemsCount;
 use divan::{self, Bencher};
 use rand::{thread_rng, Rng};
+use rand::distributions::Uniform;
 
 use hoomd_rs_vector::{CartesianVector, Vector};
 
@@ -25,10 +26,10 @@ const DIMENSIONS: &[usize] = &[2, 3, 8, 16, 32, 128];
 fn create_vecn_tryfrom_vec<const N: usize>(bencher: Bencher) {
     let mut rng = thread_rng();
 
-    // TODO: replace rng.gen with something in a more reasonable range
+    let range = Uniform::new(-100.0, 100.0);
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| (0..N).map(|_| rng.gen::<f64>()).collect::<Vec<f64>>())
+        .with_inputs(||->Vec<f64> { (&mut rng).sample_iter(range).take(N).collect()})
         .bench_local_values(|vec| {
             let _ = CartesianVector::<N>::try_from(vec);
         });
@@ -42,6 +43,39 @@ fn add_vecn<const N: usize>(bencher: Bencher) {
         .with_inputs(create_random_vector_pair::<N>)
         .bench_local_values(|(a, b)| {
             result += a + b;
+        });
+}
+
+#[divan::bench(consts = DIMENSIONS)]
+fn sub_vecn<const N: usize>(bencher: Bencher) {
+    let mut result = CartesianVector::default();
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(create_random_vector_pair::<N>)
+        .bench_local_values(|(a, b)| {
+            result += a - b;
+        });
+}
+
+#[divan::bench(consts = DIMENSIONS)]
+fn mul_vecn<const N: usize>(bencher: Bencher) {
+    let mut result = CartesianVector::default();
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(create_random_vector_pair::<N>)
+        .bench_local_values(|(a, b)| {
+            result += a * b.coordinates[0];
+        });
+}
+
+#[divan::bench(consts = DIMENSIONS)]
+fn div_vecn<const N: usize>(bencher: Bencher) {
+    let mut result = CartesianVector::default();
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(create_random_vector_pair::<N>)
+        .bench_local_values(|(a, b)| {
+            result += a / b.coordinates[0];
         });
 }
 
