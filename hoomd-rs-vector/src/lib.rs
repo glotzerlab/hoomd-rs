@@ -204,7 +204,7 @@ use thiserror::Error;
 
 /// The error type provided by all fallible vector math operations.
 #[non_exhaustive]
-#[derive(Error, Debug)]
+#[derive(Error, PartialEq, Debug)]
 pub enum Error {
     /// Attempted converting a value to a vector with a dimension not equal to the value's length.
     #[error("Source does not match the target vector length.")]

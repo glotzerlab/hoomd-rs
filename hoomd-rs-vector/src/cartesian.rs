@@ -460,4 +460,39 @@ mod tests {
         let s = format!("{a}");
         assert_eq!(s, "[10, 20, 30, 40]");
     }
+
+    #[test]
+    fn from_2_tuple() {
+        let a = CartesianVector::from((3.0, 0.125));
+        assert_eq!(a.coordinates, [3.0, 0.125]);
+    }
+
+    #[test]
+    fn from_3_tuple() {
+        let a = CartesianVector::from((-0.5, 2.0, 18.125));
+        assert_eq!(a.coordinates, [-0.5, 2.0, 18.125]);
+    }
+
+    fn from_vec<const N: usize>() {
+        let mut vec = Vec::with_capacity(N);
+
+        assert_eq!(
+            CartesianVector::<N>::try_from(vec.clone()),
+            Err(Error::InvalidVectorLength)
+        );
+
+        for i in 0..N {
+            vec.push(i as f64 * 0.5);
+        }
+        let a = CartesianVector::<N>::try_from(vec.clone()).unwrap();
+
+        assert_eq!(vec, Vec::from(a.coordinates));
+
+        vec.push(1.0);
+        assert_eq!(
+            CartesianVector::<N>::try_from(vec.clone()),
+            Err(Error::InvalidVectorLength)
+        );
+    }
+    parameterize_vector_length!(from_vec, [2, 3, 4, 8, 16, 32]);
 }
