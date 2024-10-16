@@ -3,8 +3,8 @@
 
 use divan::counter::ItemsCount;
 use divan::{self, Bencher};
-use rand::{thread_rng, Rng};
 use rand::distributions::Uniform;
+use rand::{thread_rng, Rng};
 
 use hoomd_rs_vector::{CartesianVector, Cross, Vector};
 
@@ -29,7 +29,7 @@ fn create_vecn_tryfrom_vec<const N: usize>(bencher: Bencher) {
     let range = Uniform::new(-100.0, 100.0);
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(||->Vec<f64> { (&mut rng).sample_iter(range).take(N).collect()})
+        .with_inputs(|| -> Vec<f64> { (&mut rng).sample_iter(range).take(N).collect() })
         .bench_local_values(|vec| {
             let _ = CartesianVector::<N>::try_from(vec);
         });
