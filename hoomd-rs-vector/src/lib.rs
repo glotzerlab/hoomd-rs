@@ -213,8 +213,8 @@ pub enum Error {
 
 /** Placeholder type for use in trait bounds on [`Vector`] dimension.
 
-    This placeholder will be removed when Rust allows the use of associated constants in trait
-    bounds.
+    This placeholder will be removed when Rust allows the use of [associated constants in trait
+    bounds](https://github.com/rust-lang/rust/issues/92827).
 */
 pub struct Dimension<const N: usize>;
 
