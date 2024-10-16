@@ -15,9 +15,9 @@ This design allows the majority of HOOMD-rs code to be written _independent_ of 
 vector's representation and dimension. Some specific calculations may require
 cross products, defined in specific trait: `Cross`.
 
-## CartesianVector
+## Cartesian vector
 
-`hoomd_rs_vector` implements an n-dimension `CartesianVector` type for general use,
+`hoomd_rs_vector` implements an n-dimension `Cartesian` vector type for general use,
 which includes methods for element access, element-wise multiplication, and other
 operations specific to Cartesian vectors.
 
@@ -27,13 +27,13 @@ Users can implement custom types (e.g. spherical coordinates) that implement `Ve
 as needed. Many internal computations inside HOOMD-rs rely on Cartesian vectors, so
 all user-defined vectors must implement the conversion traits:
 ```
-impl From<CustomVector> for CartesianVector<3> {
+impl From<CustomVector> for vector::Cartesian<3> {
 ...
 }
 ```
 and
 ```
-impl From<CartesianVector<3>> for CustomVector {
+impl From<vector::Cartesian<3>> for CustomVector {
 ...
 }
 ```
@@ -46,3 +46,5 @@ TODO
 
 `hoomd_rs_vector` implements [`rand`] distributions to sample random vectors and
 rotations.
+
+[`rand`]: https://docs.rs/rand/latest/rand/

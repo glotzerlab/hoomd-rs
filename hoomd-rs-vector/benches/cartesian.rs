@@ -6,17 +6,17 @@ use divan::{self, Bencher};
 use rand::distributions::Uniform;
 use rand::{thread_rng, Rng};
 
-use hoomd_rs_vector::{CartesianVector, Cross, Vector};
+use hoomd_rs_vector::{vector::Cartesian, Cross, Vector};
 
 fn main() {
     divan::main();
 }
 
-fn create_random_vector_pair<const N: usize>() -> (CartesianVector<N>, CartesianVector<N>) {
+fn create_random_vector_pair<const N: usize>() -> (Cartesian<N>, Cartesian<N>) {
     let mut rng = thread_rng();
     (
-        CartesianVector::from(std::array::from_fn::<_, N, _>(|_| rng.gen::<f64>())),
-        CartesianVector::from(std::array::from_fn::<_, N, _>(|_| rng.gen::<f64>())),
+        Cartesian::from(std::array::from_fn::<_, N, _>(|_| rng.gen::<f64>())),
+        Cartesian::from(std::array::from_fn::<_, N, _>(|_| rng.gen::<f64>())),
     )
 }
 
@@ -31,13 +31,13 @@ fn create_vecn_tryfrom_vec<const N: usize>(bencher: Bencher) {
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| -> Vec<f64> { (&mut rng).sample_iter(range).take(N).collect() })
         .bench_local_values(|vec| {
-            let _ = CartesianVector::<N>::try_from(vec);
+            let _ = Cartesian::<N>::try_from(vec);
         });
 }
 
 #[divan::bench(consts = DIMENSIONS)]
 fn add_vecn<const N: usize>(bencher: Bencher) {
-    let mut result = CartesianVector::default();
+    let mut result = Cartesian::default();
     bencher
         .counter(ItemsCount::from(1_u32))
         .with_inputs(create_random_vector_pair::<N>)
@@ -48,7 +48,7 @@ fn add_vecn<const N: usize>(bencher: Bencher) {
 
 #[divan::bench(consts = DIMENSIONS)]
 fn sub_vecn<const N: usize>(bencher: Bencher) {
-    let mut result = CartesianVector::default();
+    let mut result = Cartesian::default();
     bencher
         .counter(ItemsCount::from(1_u32))
         .with_inputs(create_random_vector_pair::<N>)
@@ -59,7 +59,7 @@ fn sub_vecn<const N: usize>(bencher: Bencher) {
 
 #[divan::bench(consts = DIMENSIONS)]
 fn mul_vecn<const N: usize>(bencher: Bencher) {
-    let mut result = CartesianVector::default();
+    let mut result = Cartesian::default();
     bencher
         .counter(ItemsCount::from(1_u32))
         .with_inputs(create_random_vector_pair::<N>)
@@ -70,7 +70,7 @@ fn mul_vecn<const N: usize>(bencher: Bencher) {
 
 #[divan::bench(consts = DIMENSIONS)]
 fn div_vecn<const N: usize>(bencher: Bencher) {
-    let mut result = CartesianVector::default();
+    let mut result = Cartesian::default();
     bencher
         .counter(ItemsCount::from(1_u32))
         .with_inputs(create_random_vector_pair::<N>)
@@ -92,7 +92,7 @@ fn dot_vecn<const N: usize>(bencher: Bencher) {
 
 #[divan::bench]
 fn cross_vec3(bencher: Bencher) {
-    let mut result = CartesianVector::default();
+    let mut result = Cartesian::default();
     bencher
         .counter(ItemsCount::from(1_u32))
         .with_inputs(create_random_vector_pair::<3>)
