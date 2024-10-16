@@ -13,8 +13,7 @@ in a vector space with *n* dimensions:
 
 This design allows the majority of HOOMD-rs code to be written _independent_ of the
 vector's representation and dimension. Some specific calculations may require
-cross or perpendicular dot products. These are defined in specific traits `Cross`
-and `PerpendicularDot`.
+cross products, defined in specific trait: `Cross`.
 
 ## CartesianVector
 
@@ -42,3 +41,8 @@ impl From<CartesianVector<3>> for CustomVector {
 ## Rotate
 
 TODO
+
+## Random sampling
+
+`hoomd_rs_vector` implements [`rand`] distributions to sample random vectors and
+rotations.
