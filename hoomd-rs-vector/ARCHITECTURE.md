@@ -6,10 +6,10 @@ The `hoomd_rs_vector` crate defines a generic `Vector` trait that is independent
 representation. The trait consists of methods that can _only_ be applied to all vectors
 in a vector space with *n* dimensions:
 
-- Vector addition/subtraction
+- Vector addition & subtraction
 - Multiplication by a scalar
 - Dot product
-- Length / length squared
+- Length & length squared
 
 This design allows the majority of HOOMD-rs code to be written _independent_ of the
 vector's representation and dimension. Some specific calculations may require
