@@ -18,7 +18,7 @@ use crate::{Cross, Dimension, Error, Vector};
 ## Examples:
 
 ```
-use hoomd_rs_vector::vector
+use hoomd_rs_vector::vector;
 ```
 
 Create a vector with an array of coordinates:
@@ -440,24 +440,15 @@ mod tests {
 
     parameterize_vector_length!(div_assign, [2, 3, 4, 8, 16, 32]);
 
-    fn compute_add_ref_ref<const N: usize>(
-        a: &Cartesian<N>,
-        b: &Cartesian<N>,
-    ) -> Cartesian<N> {
+    fn compute_add_ref_ref<const N: usize>(a: &Cartesian<N>, b: &Cartesian<N>) -> Cartesian<N> {
         *a + *b
     }
 
-    fn compute_add_ref_type<const N: usize>(
-        a: &Cartesian<N>,
-        b: Cartesian<N>,
-    ) -> Cartesian<N> {
+    fn compute_add_ref_type<const N: usize>(a: &Cartesian<N>, b: Cartesian<N>) -> Cartesian<N> {
         *a + b
     }
 
-    fn compute_add_type_ref<const N: usize>(
-        a: Cartesian<N>,
-        b: &Cartesian<N>,
-    ) -> Cartesian<N> {
+    fn compute_add_type_ref<const N: usize>(a: Cartesian<N>, b: &Cartesian<N>) -> Cartesian<N> {
         a + *b
     }
 

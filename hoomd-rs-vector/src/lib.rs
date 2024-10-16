@@ -30,9 +30,12 @@
 )]
 #![deny(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
 #![warn(missing_docs)]
-
-#![doc(html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg")]
-#![doc(html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg")]
+#![doc(
+    html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+)]
+#![doc(
+    html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+)]
 
 /*! Vector and quaternion math.
 
