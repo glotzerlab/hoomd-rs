@@ -293,6 +293,7 @@ mod tests {
     use super::*;
     use paste::paste;
 
+    // Parameterize a test function over an array of vector lengths
     macro_rules! parameterize_vector_length {
         // macro with name as above that takes an identifier (fn) and an expression
         // $(...),* matches 0 or more expressions (values) separated by commas
