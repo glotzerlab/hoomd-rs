@@ -2,8 +2,8 @@
 
 ## Organization
 
-HOOMD is organized in many individual crates so that external code does not need to
-compile all of HOOMD when using only a portion. 
+HOOMD-rs is organized in many individual crates so that external code does not need to
+compile all of HOOMD-rs when using only a portion.
 
 ### hoomd_rs_vector
 
@@ -86,21 +86,22 @@ custom interactions for their model. Keeping the code **simple** will reduce the
 researchers need to spend when implementing a drastically different model or simulation
 method.
 
-Minimizing the wall clock time needed to complete a simulation is also important, but is
-not at the top of the list. Keeping **flexibility**, **readability**, and **simplicity**
-in mind - HOOMD uses appropriate algorithms and data structures (e.g. spatial searches)
-everywhere needed so that simulations can execute quickly. Domain decomposition and
-GPU algorithms are completely off the table as they are not flexible, readable, or
-simple (use [HOOMD-blue] if you need that level of performance). Multithreaded
-CPU calculations may be achievable for some simulation algorithms within this framework,
-but certainly not for all. Therefore, HOOMD does not **require** that every method
-support multithreading by default. This section will be updated after we evaluate the
-performance possible by multithreading vs the cost to simplicity and flexibility. It
-may be that we need to offer a simpler serial implementation with more flexibility in
-addition to a more complex multithreaded implementation with restrictions.
+Minimizing the wall clock time needed to complete a simulation is also important,
+but is not at the top of the list. Keeping **flexibility**, **readability**, and
+**simplicity** in mind - HOOMD-rs uses appropriate algorithms and data structures
+(e.g. spatial searches) everywhere needed so that simulations can execute quickly.
+Domain decomposition and GPU algorithms are completely off the table as they are not
+flexible, readable, or simple (use [HOOMD-blue] if you need that level of performance).
+Multithreaded CPU calculations may be achievable for some simulation algorithms within
+this framework, but certainly not for all. Therefore, HOOMD-rs does not **require**
+that every method support multithreading by default. This section will be updated
+after we evaluate the performance possible by multithreading vs the cost to simplicity
+and flexibility. It may be that we need to offer a simpler serial implementation
+with more flexibility in addition to a more complex multithreaded implementation with
+restrictions.
 
-HOOMD rarely implements **micro-optimizations that target specific hardware**. For
-example, HOOMD uses an _array-of-structures_ for the simulation state because this is
+HOOMD-rs rarely implements **micro-optimizations that target specific hardware**. For
+example, HOOMD-rs uses an _array-of-structures_ for the simulation state because this is
 vastly **simpler** than a _structure-of-arrays_ and at the same time allows users to
 easily add custom per-particle attributes. The cost is slightly reduced performance
 due to cache memory inefficiencies.
@@ -108,7 +109,7 @@ due to cache memory inefficiencies.
 ### Crate-specific Design
 
 Each crate's rustdoc documentation explains its own architecture. This document focuses
-on architecture common to all HOOMD crates.
+on architecture common to all HOOMD-rs crates.
 
 ## Logging
 

@@ -19,17 +19,19 @@ defaults:
 env:
   CARGO_TERM_COLOR: always
   CLICOLOR: 1
-  RUST_LATEST_VERSION: 1.81.0
 
 jobs:
   unit_test:
     name: Unit test [${{ matrix.mode }}-rust-${{ matrix.rust }}-${{ matrix.os }}]
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os:
-          - ubuntu-22.04
-          - macos-14
+          - ubuntu-24.04
+          # Disable macOS tests to avoid burning through free GitHub Actions minutes.
+          # TODO: Enable after the project made public.
+          # - macos-14
         rust:
           # Oldest supported version of rust
           - 1.77.2
@@ -39,7 +41,7 @@ jobs:
 
         include:
         # Add a release build on linux with the latest version of rust
-        - os: ubuntu-22.04
+        - os: ubuntu-24.04
           rust: 1.81.0
           mode: release
 
@@ -62,6 +64,10 @@ jobs:
       run: cargo build ${{ matrix.mode == 'release' && '--release' || '' }} --verbose
     - name: Run tests
       run: cargo test ${{ matrix.mode == 'release' && '--release' || '' }} --verbose
+    - name: Build API documentation
+      run: cargo doc --no-deps
+    - name: Run benchmarks
+      run: cargo bench
 
   # build_documentation:
   #   name: Build documentation
