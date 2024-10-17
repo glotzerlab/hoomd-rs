@@ -206,6 +206,7 @@ fn some_3d_function<T: Vector<Dimension = Dimension<3>>>(a: &T) {
 ```
 */
 
+pub mod rotation;
 pub mod vector;
 
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
@@ -328,6 +329,27 @@ pub trait Cross {
     /// Perform the cross product.
     #[must_use]
     fn cross(&self, rhs: &Self) -> Self;
+}
+
+/** Rotate a vector or rotation.
+*/
+pub trait Rotate<V: Vector> {
+    /** Rotate a vector.
+     */
+    #[must_use]
+    fn rotate(&self, vector: &V) -> V;
+}
+
+/** A rotation.
+*/
+pub trait Rotation {
+    /** Combine two rotations.
+
+    The resulting rotation `c = a.combine(b)` will rotate by `b` followed by a rotation of
+    `a`.
+    */
+    #[must_use]
+    fn combine(&self, rotation: &Self) -> Self;
 }
 
 #[cfg(test)]
