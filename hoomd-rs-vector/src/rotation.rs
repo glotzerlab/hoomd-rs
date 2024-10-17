@@ -11,14 +11,14 @@ pub struct Quaternion;
 impl Rotate<vector::Cartesian<3>> for Quaternion {
     #[inline]
     fn rotate(&self, vector: &vector::Cartesian<3>) -> vector::Cartesian<3> {
-        vector::Cartesian::from([0.0, 0.0, 0.0])
+        todo!();
     }
 }
 
 impl Rotation for Quaternion {
     #[inline]
     fn combine(&self, rotation: &Self) -> Self {
-        Self::default();
+        todo!();
     }
 }
 
@@ -27,13 +27,13 @@ pub struct Angle;
 impl Rotate<vector::Cartesian<2>> for Angle {
     #[inline]
     fn rotate(&self, vector: &vector::Cartesian<2>) -> vector::Cartesian<2> {
-        vector::Cartesian::from([0.0, 0.0])
+        todo!();
     }
 }
 
 impl Rotation for Angle {
     #[inline]
     fn combine(&self, rotation: &Self) -> Self {
-        Self::default();
+        todo!();
     }
 }
