@@ -11,14 +11,14 @@ pub struct Quaternion;
 impl Rotate<vector::Cartesian<3>> for Quaternion {
     #[inline]
     fn rotate(&self, vector: &vector::Cartesian<3>) -> vector::Cartesian<3> {
-        todo!();
+        todo!()
     }
 }
 
 impl Rotation for Quaternion {
     #[inline]
     fn combine(&self, rotation: &Self) -> Self {
-        todo!();
+        todo!()
     }
 }
 
