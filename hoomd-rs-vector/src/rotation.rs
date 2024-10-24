@@ -22,8 +22,9 @@ impl Rotation for Quaternion {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Angle{
-    pub angle: f64, // theta instead
+    pub theta: f64,
 }
 
 
@@ -33,7 +34,7 @@ impl Default for Angle {
     ```
     # use hoomd_rs_vector::rotation;
     let a = rotation::Angle::default();
-    assert_eq!(a, 0.0)
+    assert_eq!(a.theta, 0.0)
     ```
     */
     #[inline]
@@ -46,25 +47,25 @@ impl Default for Angle {
 
 impl From<f64> for Angle {
     #[inline]
-    fn from(angle: f64) -> Self {
-        Self {angle}
+    fn from(theta: f64) -> Self {
+        Self {theta}
     }
 }
 
 impl Rotate<vector::Cartesian<2>> for Angle {
     #[inline]
     fn rotate(&self, vector: &vector::Cartesian<2>) -> vector::Cartesian<2> {
-        let sin = self.angle.sin();
-        let cos = self.angle.cos();
-        return Cartesian::from([vector.coordinates[0] * cos - vector.coordinates[1] * sin,
-                                vector.coordinates[0] * sin + vector.coordinates[1] * cos]);
+        let sin = self.theta.sin();
+        let cos = self.theta.cos();
+        Cartesian::from([vector.coordinates[0] * cos - vector.coordinates[1] * sin,
+                                vector.coordinates[0] * sin + vector.coordinates[1] * cos])
     }
 }
 
 impl Rotation for Angle {
     #[inline]
     fn combine(&self, rotation: &Self) -> Self {
-        Self::from(self.angle+rotation.angle)
+        Self::from(self.theta+rotation.theta)
     }
 }
 
@@ -72,11 +73,15 @@ impl Rotation for Angle {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use approx::assert_relative_eq;
 
+    #[test]
     fn test_rotate() {
         let angle = Angle::from(std::f64::consts::PI/2.0);
         let vec = Cartesian::from([1.0, 0.0]);
         let rotated_vec = angle.rotate(&vec);
-        assert_eq!(rotated_vec, Cartesian::from([0.0, 1.0]));
+        let vec2 = Cartesian::from([0.0, 1.0]);
+        assert_relative_eq!(rotated_vec.coordinates[0], vec2.coordinates[0]);
+        assert_relative_eq!(rotated_vec.coordinates[1], vec2.coordinates[1]);
     }
 }
