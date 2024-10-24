@@ -81,7 +81,6 @@ mod tests {
         let vec = Cartesian::from([1.0, 0.0]);
         let rotated_vec = angle.rotate(&vec);
         let vec2 = Cartesian::from([0.0, 1.0]);
-        assert_relative_eq!(rotated_vec.coordinates[0], vec2.coordinates[0]);
-        assert_relative_eq!(rotated_vec.coordinates[1], vec2.coordinates[1]);
+        assert_relative_eq!(rotated_vec, vec2);
     }
 }
