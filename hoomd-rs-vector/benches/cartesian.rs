@@ -8,13 +8,15 @@ use rand::{thread_rng, Rng};
 
 use hoomd_rs_vector::{vector::Cartesian, Cross, Vector};
 
-
 fn main() {
     divan::main();
 }
 
 fn create_random_vector_pair<const N: usize>() -> (Cartesian<N>, Cartesian<N>) {
-    (rand::random::<Cartesian<N>>(), rand::random::<Cartesian<N>>())
+    (
+        rand::random::<Cartesian<N>>(),
+        rand::random::<Cartesian<N>>(),
+    )
 }
 
 const DIMENSIONS: &[usize] = &[2, 3, 8, 16, 32, 128];
