@@ -9,8 +9,8 @@ use std::fmt;
 use std::iter::zip;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use rand::Rng;
 use rand::distributions::{Distribution, Standard};
+use rand::Rng;
 
 use crate::{Cross, Dimension, Error, Vector};
 
@@ -303,7 +303,9 @@ impl Cross for Cartesian<3> {
 impl<const N: usize> Distribution<Cartesian<N>> for Standard {
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
-        Cartesian { coordinates: rng.gen() }
+        Cartesian {
+            coordinates: rng.gen(),
+        }
     }
 }
 
