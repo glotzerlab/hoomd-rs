@@ -9,6 +9,9 @@ use std::fmt;
 use std::iter::zip;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
+use rand::Rng;
+use rand::distributions::{Distribution, Standard};
+
 use crate::{Cross, Dimension, Error, Vector};
 
 /** A Cartesian vector represented by an array of `N` `f64` coordinates.
@@ -294,6 +297,13 @@ impl Cross for Cartesian<3> {
             self.coordinates[2] * rhs.coordinates[0] - self.coordinates[0] * rhs.coordinates[2],
             self.coordinates[0] * rhs.coordinates[1] - self.coordinates[1] * rhs.coordinates[0],
         ))
+    }
+}
+
+impl<const N: usize> Distribution<Cartesian<N>> for Standard {
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
+        Cartesian { coordinates: rng.gen() }
     }
 }
 
