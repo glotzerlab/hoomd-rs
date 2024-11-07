@@ -116,11 +116,20 @@ mod tests {
     #[case::two_pi(PI*2.0, (3.1, -0.2), (3.1, -0.2))]
     #[case::zero(0.0, (3.1, -0.2), (3.1, -0.2))]
     #[case::negative_zero(-0.0, (3.1, -0.2), (3.1, -0.2))]
-    fn test_rotate_2d(#[case] angle: f64, #[case] vec: (f64, f64), #[case] ans: (f64, f64)) {
+    fn test_angle_rotate_2d(#[case] angle: f64, #[case] vec: (f64, f64), #[case] ans: (f64, f64)) {
         let angle = Angle::from(angle);
         let vec = Cartesian::from(vec);
         let ans = Cartesian::from(ans);
 
         assert_relative_eq!(angle.rotate(&vec), ans, epsilon = 4.0 * f64::EPSILON);
+    }
+
+    #[rstest(
+        ang1 => [0.0, PI/2.0, 1e-12 * PI, -3.0, 12345.6],
+        ang2 => [-0.0, -PI/3.0, PI, 2.0 * PI]
+    )]
+    fn test_angle_combine_2d(ang1: f64, ang2: f64) {
+        let (angle1, angle2) = (Angle::from(ang1), Angle::from(ang2));
+        assert_relative_eq!(angle1.combine(&angle2).theta, ang1 + ang2);
     }
 }
