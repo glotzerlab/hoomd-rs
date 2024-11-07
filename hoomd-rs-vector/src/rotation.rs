@@ -22,8 +22,39 @@ impl Rotation for Quaternion {
     }
 }
 
+
+/** A 2D rotation represented by an angle of rotation in 2D cartesian coordinates.
+
+`Angle` is the 2D implementation for rotation of vectors.
+
+## Examples:
+
+```
+use hoomd_rs_vector::rotation;
+```
+Create an angle from a float:
+```
+# use hoomd_rs_vector::rotation;
+let a = rotation::Angle::from(std::f64::consts::PI/2.0);
+```
+Using subsequent rotations can be done by combining angles instead of rotating the vector multiple times:
+```
+# use hoomd_rs_vector::rotation;
+# use hoomd_rs_vector::Rotation;
+let a = rotation::Angle::from(std::f64::consts::PI/2.0);
+let b = rotation::Angle::from(std::f64::consts::PI/4.0);
+let c = a.combine(&b);
+```
+Access the angle directly when needed:
+```
+# use hoomd_rs_vector::rotation;
+# let a = rotation::Angle::from(std::f64::consts::PI/2.0);
+let half_angle = rotation::Angle::from((a.theta/2.0));
+```
+*/
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Angle{
+    /// Rotation in 2D Euclidean space using angle rotation.
     pub theta: f64,
 }
 
