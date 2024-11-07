@@ -15,6 +15,7 @@ version.workspace = true
 thiserror = "1.0.64"
 
 [dev-dependencies]
+approx = "0.5.1"
 divan = "0.1.14"
 paste = "1.0.15"
 rand = "0.8.5"
