@@ -12,6 +12,7 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
+rstest = "0.23.0"
 thiserror = "1.0.64"
 
 [dev-dependencies]
