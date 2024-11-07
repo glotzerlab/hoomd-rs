@@ -88,30 +88,39 @@ impl Rotate<vector::Cartesian<2>> for Angle {
     fn rotate(&self, vector: &vector::Cartesian<2>) -> vector::Cartesian<2> {
         let sin = self.theta.sin();
         let cos = self.theta.cos();
-        Cartesian::from([vector.coordinates[0] * cos - vector.coordinates[1] * sin,
-                                vector.coordinates[0] * sin + vector.coordinates[1] * cos])
+        Cartesian::from([
+            vector.coordinates[0] * cos - vector.coordinates[1] * sin,
+            vector.coordinates[0] * sin + vector.coordinates[1] * cos,
+        ])
     }
 }
 
 impl Rotation for Angle {
     #[inline]
     fn combine(&self, rotation: &Self) -> Self {
-        Self::from(self.theta+rotation.theta)
+        Self::from(self.theta + rotation.theta)
     }
 }
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
+    use rstest::*;
+    use std::f64::consts::PI;
 
-    #[test]
-    fn test_rotate() {
-        let angle = Angle::from(std::f64::consts::PI/2.0);
-        let vec = Cartesian::from([1.0, 0.0]);
-        let rotated_vec = angle.rotate(&vec);
-        let vec2 = Cartesian::from([0.0, 1.0]);
-        assert_relative_eq!(rotated_vec, vec2);
+    #[rstest]
+    #[case::pi_halves(PI/2.0, (1.0, -0.5), (0.5, 1.0))]
+    #[case::negative_pi_thirds(-PI/3.0, (1.0, 0.0), (0.5, -f64::sqrt(3.0) / 2.0))]
+    #[case::negative_pi(-PI, (3.1, -0.2), (-3.1, 0.2))]
+    #[case::two_pi(PI*2.0, (3.1, -0.2), (3.1, -0.2))]
+    #[case::zero(0.0, (3.1, -0.2), (3.1, -0.2))]
+    #[case::negative_zero(-0.0, (3.1, -0.2), (3.1, -0.2))]
+    fn test_rotate_2d(#[case] angle: f64, #[case] vec: (f64, f64), #[case] ans: (f64, f64)) {
+        let angle = Angle::from(angle);
+        let vec = Cartesian::from(vec);
+        let ans = Cartesian::from(ans);
+
+        assert_relative_eq!(angle.rotate(&vec), ans, epsilon = 4.0 * f64::EPSILON);
     }
 }
