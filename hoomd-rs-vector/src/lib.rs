@@ -313,6 +313,16 @@ pub trait Vector:
     */
     #[must_use]
     fn dot(&self, rhs: &Self) -> f64;
+
+    #[must_use]
+    fn normalized(&self) -> Result<Self, crate::Error> {
+        let mag = self.magnitude();
+        if mag == 0.0 {
+            Err(Error::InvalidMagnitude)
+        } else {
+            Ok(*self / mag)
+        }
+    }
 }
 
 /** The vector cross product.
