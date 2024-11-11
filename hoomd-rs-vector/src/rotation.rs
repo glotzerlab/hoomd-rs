@@ -6,7 +6,22 @@
 
 use crate::{vector::{self, Cartesian}, Cross, Rotate, Rotation, Vector};
 
-pub struct Quaternion;
+pub struct Quaternion {
+    /// Scalar component
+    pub s: f64,
+
+    /// Vector component
+    pub v: vector::Cartesian<3>
+}
+
+/// inherent methods
+impl Quaternion {
+    #[inline]
+    fn from_axis_angle(axis: &vector::Cartesian<3>, angle: f64) -> Result<Self, crate::Error> {
+        Ok(Quaternion {s: (angle/2.0).cos(), v: axis.normalized()? * (angle/2.0).sin()})
+    }
+} 
+
 
 impl Rotate<vector::Cartesian<3>> for Quaternion {
     #[inline]
