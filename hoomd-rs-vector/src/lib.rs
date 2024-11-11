@@ -219,6 +219,10 @@ pub enum Error {
     /// Attempted converting a value to a vector with a dimension not equal to the value's length.
     #[error("Source does not match the target vector length.")]
     InvalidVectorLength,
+
+    /// Attempted normalizing a vector with an invalid magnitude (e.g., zero).
+    #[error("Invalid magnitude for normalization.")]
+    InvalidMagnitude,
 }
 
 /** Placeholder type for use in trait bounds on [`Vector`] dimension.
