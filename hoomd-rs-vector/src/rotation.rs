@@ -36,7 +36,10 @@ impl Rotate<vector::Cartesian<3>> for Quaternion {
 impl Rotation for Quaternion {
     #[inline]
     fn combine(&self, rotation: &Self) -> Self {
-        todo!()
+        let a = self;
+        let b = rotation;
+
+        return Quaternion { s: (a.s * b.s - a.v.dot(&b.v)), v: (b.v * a.s + a.v * b.s + a.v.cross(&b.v)) }
     }
 }
 
