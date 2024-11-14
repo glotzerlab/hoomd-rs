@@ -29,7 +29,7 @@ impl Rotate<Cartesian<3>> for Quaternion {
         let a = self;
         let b = vector;
 
-        return *b * (a.s * a.s - a.v.dot(&a.v)) + a.v.cross(&b) * (2.0 * a.s) + a.v * (2.0 * a.v.dot(&b));
+        *b * (a.s * a.s - a.v.dot(&a.v)) + a.v.cross(&b) * (2.0 * a.s) + a.v * (2.0 * a.v.dot(&b))
     }
 }
 
@@ -39,7 +39,7 @@ impl Rotation for Quaternion {
         let a = self;
         let b = rotation;
 
-        return Quaternion { s: (a.s * b.s - a.v.dot(&b.v)), v: (b.v * a.s + a.v * b.s + a.v.cross(&b.v)) }
+        Quaternion { s: (a.s * b.s - a.v.dot(&b.v)), v: (b.v * a.s + a.v * b.s + a.v.cross(&b.v)) }
     }
 }
 
