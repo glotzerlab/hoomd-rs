@@ -104,4 +104,12 @@ mod tests {
         let vec2 = Cartesian::from([0.0, 1.0]);
         assert_relative_eq!(rotated_vec, vec2);
     }
+
+    #[test]
+    fn test_quaternion_rotate() {
+        let quat = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), 0.0).expect("A valid quaternion");
+        let vec = Cartesian::from([1.0, 1.0, 1.0]);
+        let rotated_quat = quat.rotate(&vec);
+        assert_relative_eq!(rotated_quat, [1.0, 1.0, 1.0].into());
+    }
 }
