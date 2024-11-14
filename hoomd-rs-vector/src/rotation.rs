@@ -11,21 +11,21 @@ pub struct Quaternion {
     pub s: f64,
 
     /// Vector component
-    pub v: vector::Cartesian<3>
+    pub v: Cartesian<3>
 }
 
 /// inherent methods
 impl Quaternion {
     #[inline]
-    fn from_axis_angle(axis: &vector::Cartesian<3>, angle: f64) -> Result<Self, crate::Error> {
+    fn from_axis_angle(axis: Cartesian<3>, angle: f64) -> Result<Self, crate::Error> {
         Ok(Quaternion {s: (angle/2.0).cos(), v: axis.normalized()? * (angle/2.0).sin()})
     }
 } 
 
 
-impl Rotate<vector::Cartesian<3>> for Quaternion {
+impl Rotate<Cartesian<3>> for Quaternion {
     #[inline]
-    fn rotate(&self, vector: &vector::Cartesian<3>) -> vector::Cartesian<3> {
+    fn rotate(&self, vector: &Cartesian<3>) -> Cartesian<3> {
         let a = self;
         let b = vector;
 
@@ -53,7 +53,7 @@ impl Default for Angle {
     /** Create an angle of 0.0 radians. 
 
     ```
-    # use hoomd_rs_vector::rotation;
+    # use hoomd_rs_rotation;
     let a = rotation::Angle::default();
     assert_eq!(a.theta, 0.0)
     ```
@@ -73,9 +73,9 @@ impl From<f64> for Angle {
     }
 }
 
-impl Rotate<vector::Cartesian<2>> for Angle {
+impl Rotate<Cartesian<2>> for Angle {
     #[inline]
-    fn rotate(&self, vector: &vector::Cartesian<2>) -> vector::Cartesian<2> {
+    fn rotate(&self, vector: &Cartesian<2>) -> Cartesian<2> {
         let sin = self.theta.sin();
         let cos = self.theta.cos();
         Cartesian::from([vector.coordinates[0] * cos - vector.coordinates[1] * sin,
