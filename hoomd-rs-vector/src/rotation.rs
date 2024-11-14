@@ -109,6 +109,7 @@ mod tests {
     use rstest::*;
     use std::f64::consts::PI;
 
+    // Test named cases of the three input values (angle, vector input, and answer)
     #[rstest]
     #[case::pi_halves(PI/2.0, (1.0, -0.5), (0.5, 1.0))]
     #[case::negative_pi_thirds(-PI/3.0, (1.0, 0.0), (0.5, -f64::sqrt(3.0) / 2.0))]
@@ -124,6 +125,7 @@ mod tests {
         assert_relative_eq!(angle.rotate(&vec), ans, epsilon = 4.0 * f64::EPSILON);
     }
 
+    // Test with cartesian product of the input arrays
     #[rstest(
         ang1 => [0.0, PI/2.0, 1e-12 * PI, -3.0, 12345.6],
         ang2 => [-0.0, -PI/3.0, PI, 2.0 * PI]
