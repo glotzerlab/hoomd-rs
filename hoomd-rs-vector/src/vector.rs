@@ -301,7 +301,7 @@ impl Cross for Cartesian<3> {
 }
 
 impl<const N: usize> Distribution<Cartesian<N>> for Standard {
-    /** Create a Cartesian vector with coordinates drawn from a unit (hyper)cube.
+    /** Create a Cartesian vector with coordinates drawn from a unit hypercube.
 
     ```
     # use hoomd_rs_vector::vector;
