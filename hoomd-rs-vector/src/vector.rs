@@ -596,11 +596,13 @@ mod tests {
         let mut rng = rand::thread_rng();
         let a: Cartesian<N> = rng.gen();
 
-        assert!(a
-            .coordinates
-            .map(|x| -1.0 < x && x < 1.0)
-            .iter()
-            .all(|&x| x));
+        assert!(a.coordinates.iter().all(|&x| -1.0 < x && x < 1.0));
+
+        // This test will fail ~1e-3008 percent of the time - it's probably fine
+        if N == 10_000 {
+            assert!(a.coordinates.iter().any(|&x| x < 0.0));
+        }
     }
+
     parameterize_vector_length!(random_in_range, [2, 3, 4, 8, 16, 32, 10_000]);
 }
