@@ -9,7 +9,7 @@ use std::fmt;
 use std::iter::zip;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use rand::distributions::{Distribution, Standard};
+use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
 
 use crate::{Cross, Dimension, Error, Vector};
@@ -301,10 +301,24 @@ impl Cross for Cartesian<3> {
 }
 
 impl<const N: usize> Distribution<Cartesian<N>> for Standard {
+    /** Create a Cartesian vector with coordinates drawn from a unit (hyper)cube.
+
+    ```
+    # use hoomd_rs_vector::vector;
+    # use rand::{thread_rng, Rng};
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut rng = rand::thread_rng();
+    let v: vector::Cartesian::<3> = rng.gen();
+    // assert_eq!(v, [3.0, 4.0, 5.0].into());
+    # Ok(())
+    # }
+    ```
+    */
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
+        let dist = Uniform::new_inclusive(-1.0, 1.0);
         Cartesian {
-            coordinates: rng.gen(),
+            coordinates: array::from_fn(|_| dist.sample(rng)),
         }
     }
 }
@@ -576,4 +590,17 @@ mod tests {
         );
     }
     parameterize_vector_length!(from_vec, [2, 3, 4, 8, 16, 32]);
+
+    fn random_in_range<const N: usize>() {
+        // At a minimum, this check should verify that we are drawing from a unit cube
+        let mut rng = rand::thread_rng();
+        let a: Cartesian<N> = rng.gen();
+
+        assert!(a
+            .coordinates
+            .map(|x| -1.0 < x && x < 1.0)
+            .iter()
+            .all(|&x| x));
+    }
+    parameterize_vector_length!(random_in_range, [2, 3, 4, 8, 16, 32, 10_000]);
 }
