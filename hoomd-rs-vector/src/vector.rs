@@ -592,7 +592,7 @@ mod tests {
     parameterize_vector_length!(from_vec, [2, 3, 4, 8, 16, 32]);
 
     fn random_in_range<const N: usize>() {
-        // At a minimum, this check should verify that we are drawing from a unit cube
+        // Loosely verify we are drawing from the correct distribution
         let mut rng = rand::thread_rng();
         let a: Cartesian<N> = rng.gen();
 
