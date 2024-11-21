@@ -81,3 +81,10 @@ fn cross_vec3(bencher: Bencher) {
         .with_inputs(create_random_vector_pair::<3>)
         .bench_local_values(|(a, b)| black_box(a.cross(&b)));
 }
+
+#[divan::bench(consts = DIMENSIONS)]
+fn gen_random<const N: usize>(bencher: Bencher) {
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .bench(|| black_box(rand::random::<Cartesian<N>>()));
+}
