@@ -6,6 +6,42 @@
 
 use crate::{vector::{self, Cartesian}, Cross, Rotate, Rotation, Vector};
 
+/** A 3D rotation represented by a quaternion of rotation in 3D cartesian coordinates.
+
+`Quaternion` is the 3D implementation for rotation of vectors.
+
+## Examples:
+
+```
+use hoomd_rs_vector::rotation;
+```
+Create a quaternion from an axis and angle:
+```
+# use hoomd_rs_vector::rotation;
+let a = rotation::Quaternion::from_axis_angle([0.0,0.0,1.0].into(),std::f64::consts::PI/2.0);
+```
+Using subsequent rotations can be done by combining angles instead of rotating the vector multiple times:
+```
+# use hoomd_rs_vector::rotation;
+let a = rotation::Quaternion::from_axis_angle([0.0,0.0,1.0].into(),std::f64::consts::PI/2.0);
+let b = rotation::Quaternion::from_axis_angle([0.0,0.0,1.0].into(),std::f64::consts::PI/4.0);
+let c = a.combine(&b);
+```
+Access the angle directly when needed:
+```
+# use hoomd_rs_vector::rotation;
+# let q = rotation::Quaternion::from_axis_angle([0.0,0.0,1.0].into(),std::f64::consts::PI/2.0);
+let half_angle = rotation::Quaternion::from_axis_angle(q.v,q.s/2.0);
+```
+Rotate a 3D Cartesian vector:
+```
+# use hoomd_rs_vector::rotation;
+# use hoomd_rs_vector::vector;
+# let vec = vector::Cartesian::from([1.0, 1.0, 1.0]);
+# let a = rotation::Quaternion::from_axis_angle([0.0,0.0,1.0].into(),std::f64::consts::PI/2.0);
+let rotated_vec = a.rotate(&vec);
+```
+*/
 pub struct Quaternion {
     /// Scalar component
     pub s: f64,
@@ -17,7 +53,7 @@ pub struct Quaternion {
 /// inherent methods
 impl Quaternion {
     #[inline]
-    fn from_axis_angle(axis: Cartesian<3>, angle: f64) -> Result<Self, crate::Error> {
+    pub fn from_axis_angle(axis: Cartesian<3>, angle: f64) -> Result<Self, crate::Error> {
         Ok(Quaternion {s: (angle/2.0).cos(), v: axis.normalized()? * (angle/2.0).sin()})
     }
 } 
