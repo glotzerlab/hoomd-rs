@@ -303,13 +303,15 @@ impl Cross for Cartesian<3> {
 impl<const N: usize> Distribution<Cartesian<N>> for Standard {
     /** Create a Cartesian vector with coordinates drawn from a unit hypercube.
 
+    Each coordinate in the vector is in the closed range [-1, 1].
+
+
     ```
     # use hoomd_rs_vector::vector;
-    # use rand::{thread_rng, Rng};
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    use rand::{thread_rng, Rng};
     let mut rng = rand::thread_rng();
     let v: vector::Cartesian::<3> = rng.gen();
-    // assert_eq!(v, [3.0, 4.0, 5.0].into());
     # Ok(())
     # }
     ```
