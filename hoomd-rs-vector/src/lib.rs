@@ -19,7 +19,7 @@ a specific representation is needed.
 use hoomd_rs_vector::vector;
 ```
 
-## Operations
+## Vector Operations
 
 The following examples demonstrate vector operations applied to the following
 vectors:
@@ -144,7 +144,7 @@ assert!(a != b)
 # }
 ```
 
-# Functions on generic vectors
+# Functions on Generic Vectors
 Use the [`Vector`] trait to implement generic functions that do not depend on the dimension
 or the representation of the vector:
 
@@ -302,7 +302,9 @@ pub trait Cross {
     fn cross(&self, rhs: &Self) -> Self;
 }
 
-/** Rotate a vector or rotation.
+/** Rotate a vector.
+
+The [`Rotate`] trait describes a type that can rotate a given vector.
 */
 pub trait Rotate<V: Vector> {
     /** Rotate a vector.
@@ -312,8 +314,21 @@ pub trait Rotate<V: Vector> {
 }
 
 /** A rotation.
+
+A [`Rotation`] represents a single rotation operation. Rotations change the direction of a vector
+while keeping its magnitude constant.
 */
 pub trait Rotation {
+    /** The identity rotation.
+     */
+    #[must_use]
+    fn identity() -> Self;
+
+    /** Inverse the rotation.
+     */
+    #[must_use]
+    fn inversed(self) -> Self;
+
     /** Combine two rotations.
 
     The resulting rotation `c = a.combine(b)` will rotate by `b` followed by a rotation of

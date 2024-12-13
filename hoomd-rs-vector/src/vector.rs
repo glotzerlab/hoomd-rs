@@ -344,11 +344,10 @@ impl<const N: usize> Distribution<Cartesian<N>> for Standard {
 
 #[cfg(test)]
 mod approx {
-    use std::iter::zip;
     use approx::{AbsDiffEq, RelativeEq};
+    use std::iter::zip;
 
-    impl<const N: usize> AbsDiffEq for super::Cartesian<N>
-    {
+    impl<const N: usize> AbsDiffEq for super::Cartesian<N> {
         type Epsilon = <f64 as AbsDiffEq>::Epsilon;
 
         fn default_epsilon() -> Self::Epsilon {
@@ -361,13 +360,17 @@ mod approx {
         }
     }
 
-    impl<const N: usize> RelativeEq for super::Cartesian<N>
-    {
+    impl<const N: usize> RelativeEq for super::Cartesian<N> {
         fn default_max_relative() -> Self::Epsilon {
             f64::default_max_relative()
         }
 
-        fn relative_eq(&self, other: &Self, epsilon: Self::Epsilon, max_relative: Self::Epsilon) -> bool {
+        fn relative_eq(
+            &self,
+            other: &Self,
+            epsilon: Self::Epsilon,
+            max_relative: Self::Epsilon,
+        ) -> bool {
             zip(self.coordinates.iter(), other.coordinates.iter())
                 .all(|x| f64::relative_eq(x.0, x.1, epsilon, max_relative))
         }
