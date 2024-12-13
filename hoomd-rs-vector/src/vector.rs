@@ -18,11 +18,13 @@ use crate::{Cross, Dimension, Error, Vector};
 
 `Cartesian` is the canonical implementation of [`Vector`].
 
-## Examples:
+All examples assume:
 
 ```
 use hoomd_rs_vector::vector;
 ```
+
+## Constructing vectors
 
 Create a vector with an array of coordinates:
 ```
@@ -36,6 +38,20 @@ let v = vector::Cartesian::from([1.0, 2.0, 3.0, 4.0, 5.0]);
 let a = vector::Cartesian::from((1.0, 2.0, 3.0));
 let b = vector::Cartesian::from((4.0, 5.0));
 ```
+
+Construct a random vector in the [-1, 1] hypercube:
+
+```
+# use hoomd_rs_vector::vector;
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+use rand::{thread_rng, Rng};
+let mut rng = rand::thread_rng();
+let v: vector::Cartesian::<3> = rng.gen();
+# Ok(())
+# }
+``` 
+
+## Operating on vectors
 
 Use vector math operations when you can:
 ```
@@ -301,7 +317,7 @@ impl Cross for Cartesian<3> {
 }
 
 impl<const N: usize> Distribution<Cartesian<N>> for Standard {
-    /** Create a Cartesian vector with coordinates drawn from a unit hypercube.
+    /** Create a Cartesian vector with coordinates drawn from the [-1, 1] hypercube.
 
     Each coordinate in the vector is in the closed range [-1, 1].
 
