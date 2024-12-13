@@ -11,6 +11,9 @@ repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 thiserror = "1.0.64"
 rand = {version = "0.8.5"}

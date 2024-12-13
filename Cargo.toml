@@ -14,3 +14,38 @@ repository = "https://github.com/glotzerlab/hoomd"
 license = "BSD-3-Clause"
 keywords = ["molecular-dynamics", "monte-carlo", "simulation"]
 categories = ["science"]
+
+[workspace.lints.rust]
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+cargo = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+
+# allow some pedantic rules
+cast_precision_loss = "allow"
+float_cmp = "allow"
+
+# opt-in to restrictions
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+exhaustive_enums = "warn"
+expect_used = "warn"
+impl_trait_in_params = "warn"
+missing_docs_in_private_items = "warn"
+missing_inline_in_public_items = "warn"
+mod_module_files = "warn"
+panic = "warn"
+partial_pub_fields = "warn"
+print_stderr = "warn"
+print_stdout = "warn"
+redundant_type_annotations = "warn"
+renamed_function_params = "warn"
+same_name_method = "warn"
+todo = "warn"
+unwrap_used = "warn"
+
+# lints currently in nursery
+fallible_impl_from = "warn"
+needless_collect = "warn"
+needless_pass_by_ref_mut = "warn"
