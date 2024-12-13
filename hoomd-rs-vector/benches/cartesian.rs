@@ -13,10 +13,9 @@ fn main() {
 }
 
 fn create_random_vector_pair<const N: usize>() -> (Cartesian<N>, Cartesian<N>) {
-    let mut rng = thread_rng();
     (
-        Cartesian::from(std::array::from_fn::<_, N, _>(|_| rng.gen::<f64>())),
-        Cartesian::from(std::array::from_fn::<_, N, _>(|_| rng.gen::<f64>())),
+        rand::random::<Cartesian<N>>(),
+        rand::random::<Cartesian<N>>(),
     )
 }
 
@@ -81,4 +80,11 @@ fn cross_vec3(bencher: Bencher) {
         .counter(ItemsCount::from(1_u32))
         .with_inputs(create_random_vector_pair::<3>)
         .bench_local_values(|(a, b)| black_box(a.cross(&b)));
+}
+
+#[divan::bench(consts = DIMENSIONS)]
+fn gen_random<const N: usize>(bencher: Bencher) {
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .bench(|| black_box(rand::random::<Cartesian<N>>()));
 }

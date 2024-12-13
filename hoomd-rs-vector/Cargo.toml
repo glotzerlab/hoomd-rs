@@ -13,11 +13,11 @@ version.workspace = true
 
 [dependencies]
 thiserror = "1.0.64"
+rand = {version = "0.8.5"}
 
 [dev-dependencies]
 divan = "0.1.14"
 paste = "1.0.15"
-rand = "0.8.5"
 
 [[bench]]
 name = "cartesian"
