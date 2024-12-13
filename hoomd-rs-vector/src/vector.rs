@@ -9,17 +9,22 @@ use std::fmt;
 use std::iter::zip;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
+use rand::distributions::{Distribution, Standard, Uniform};
+use rand::Rng;
+
 use crate::{Cross, Dimension, Error, Vector};
 
 /** A Cartesian vector represented by an array of `N` `f64` coordinates.
 
 `Cartesian` is the canonical implementation of [`Vector`].
 
-## Examples:
+All examples assume:
 
 ```
 use hoomd_rs_vector::vector;
 ```
+
+## Constructing vectors
 
 Create a vector with an array of coordinates:
 ```
@@ -33,6 +38,20 @@ let v = vector::Cartesian::from([1.0, 2.0, 3.0, 4.0, 5.0]);
 let a = vector::Cartesian::from((1.0, 2.0, 3.0));
 let b = vector::Cartesian::from((4.0, 5.0));
 ```
+
+Construct a random vector in the [-1, 1] hypercube:
+
+```
+# use hoomd_rs_vector::vector;
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+use rand::{thread_rng, Rng};
+let mut rng = rand::thread_rng();
+let v: vector::Cartesian::<3> = rng.gen();
+# Ok(())
+# }
+```
+
+## Operating on vectors
 
 Use vector math operations when you can:
 ```
@@ -295,6 +314,31 @@ impl Cross for Cartesian<3> {
             self.coordinates[2] * rhs.coordinates[0] - self.coordinates[0] * rhs.coordinates[2],
             self.coordinates[0] * rhs.coordinates[1] - self.coordinates[1] * rhs.coordinates[0],
         ))
+    }
+}
+
+impl<const N: usize> Distribution<Cartesian<N>> for Standard {
+    /** Create a Cartesian vector with coordinates drawn from the [-1, 1] hypercube.
+
+    Each coordinate in the vector is in the closed range [-1, 1].
+
+
+    ```
+    # use hoomd_rs_vector::vector;
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    use rand::{thread_rng, Rng};
+    let mut rng = rand::thread_rng();
+    let v: vector::Cartesian::<3> = rng.gen();
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
+        let dist = Uniform::new_inclusive(-1.0, 1.0);
+        Cartesian {
+            coordinates: array::from_fn(|_| dist.sample(rng)),
+        }
     }
 }
 
@@ -597,4 +641,19 @@ mod tests {
         );
     }
     parameterize_vector_length!(from_vec, [2, 3, 4, 8, 16, 32]);
+
+    fn random_in_range<const N: usize>() {
+        // Loosely verify we are drawing from the correct distribution
+        let mut rng = rand::thread_rng();
+        let a: Cartesian<N> = rng.gen();
+
+        assert!(a.coordinates.iter().all(|&x| -1.0 < x && x < 1.0));
+
+        // This test will fail ~1e-3008 percent of the time - it's probably fine
+        if N == 10_000 {
+            assert!(a.coordinates.iter().any(|&x| x < 0.0));
+        }
+    }
+
+    parameterize_vector_length!(random_in_range, [2, 3, 4, 8, 16, 32, 10_000]);
 }

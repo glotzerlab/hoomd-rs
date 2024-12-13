@@ -1,35 +1,6 @@
 // Copyright (c) 2024 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-#![warn(clippy::cargo)]
-#![warn(clippy::pedantic)]
-// allow some pedantic rules
-#![allow(clippy::cast_precision_loss)]
-#![allow(clippy::float_cmp)]
-// restrictions
-#![warn(
-    clippy::allow_attributes,
-    clippy::allow_attributes_without_reason,
-    clippy::exhaustive_enums,
-    clippy::impl_trait_in_params,
-    clippy::missing_inline_in_public_items,
-    clippy::partial_pub_fields,
-    clippy::print_stderr,
-    clippy::print_stdout,
-    clippy::mod_module_files,
-    clippy::redundant_type_annotations,
-    clippy::renamed_function_params,
-    clippy::same_name_method,
-    clippy::todo
-)]
-// nursery
-#![warn(
-    clippy::fallible_impl_from,
-    clippy::needless_collect,
-    clippy::needless_pass_by_ref_mut
-)]
-#![deny(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
-#![warn(missing_docs)]
 #![doc(
     html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
@@ -181,7 +152,7 @@ or the representation of the vector:
 use hoomd_rs_vector::Vector;
 
 fn some_function<T: Vector>(a: &T, b: &T) -> f64 {
-    a.dot(b) / (a.length() * b.length())
+    a.dot(b) / (a.magnitude() * b.magnitude())
 }
 ```
 
@@ -251,30 +222,30 @@ pub trait Vector:
     // https://github.com/rust-lang/rust/issues/92827
     // Instead, introduce an empty type for use with trait bounds on an associated type.
 
-    /** Compute the squared length of the vector.
+    /** Compute the squared magnitude of the vector.
 
     # Example:
     ```
     # use hoomd_rs_vector::{vector, Vector};
     # fn main() {
     let v = vector::Cartesian::from([2.0, 4.0]);
-    let length_squared = v.length_squared();
-    assert_eq!(length_squared, 20.0);
+    let magnitude_squared = v.magnitude_squared();
+    assert_eq!(magnitude_squared, 20.0);
     # }
     ```
     */
     #[must_use]
     #[inline]
-    fn length_squared(&self) -> f64 {
+    fn magnitude_squared(&self) -> f64 {
         self.dot(self)
     }
 
-    /** Compute the length of the vector.
+    /** Compute the magnitude of the vector.
 
     <div class="warning">
 
-    Computing the length calls `sqrt`. Prefer
-    [`length_squared`](Vector::length_squared) unless you need the actual length.
+    Computing the magnitude calls `sqrt`. Prefer
+    [`magnitude_squared`](Vector::magnitude_squared) unless you need the actual magnitude.
 
     </div>
 
@@ -283,15 +254,15 @@ pub trait Vector:
     # use hoomd_rs_vector::{vector, Vector};
     # fn main() {
     let v = vector::Cartesian::from([3.0, 4.0]);
-    let length = v.length();
-    assert_eq!(length, 5.0);
+    let magnitude= v.magnitude();
+    assert_eq!(magnitude, 5.0);
     # }
     ```
     */
     #[must_use]
     #[inline]
-    fn length(&self) -> f64 {
-        self.length_squared().sqrt()
+    fn magnitude(&self) -> f64 {
+        self.magnitude_squared().sqrt()
     }
 
     /** Compute the vector dot product between two vectors.
