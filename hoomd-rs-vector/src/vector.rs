@@ -49,7 +49,7 @@ let mut rng = rand::thread_rng();
 let v: vector::Cartesian::<3> = rng.gen();
 # Ok(())
 # }
-``` 
+```
 
 ## Operating on vectors
 
