@@ -315,9 +315,9 @@ impl Cross for Cartesian<3> {
     #[inline]
     fn cross(&self, other: &Self) -> Self {
         Cartesian::from((
-            self.coordinates[1] * other.coordinates[2] - self.coordinates[2] * other.coordinates[1],
-            self.coordinates[2] * other.coordinates[0] - self.coordinates[0] * other.coordinates[2],
-            self.coordinates[0] * other.coordinates[1] - self.coordinates[1] * other.coordinates[0],
+            self[1] * other[2] - self[2] * other[1],
+            self[2] * other[0] - self[0] * other[2],
+            self[0] * other[1] - self[1] * other[0],
         ))
     }
 }
