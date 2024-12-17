@@ -4,11 +4,13 @@
 /*! Implement [`Angle`]
 */
 
+use std::f64::consts::PI;
 use std::fmt;
+use std::ops::Rem;
 
 use crate::{vector::Cartesian, Rotate, Rotation};
 
-// TODO: benchmark, impl Display, pre-computed rotation, normalized.
+// TODO: benchmark, pre-computed rotation.
 
 /** Represent a 2D rotation in the plane by an angle.
 
@@ -43,6 +45,32 @@ let rotated = a.rotate(&v);
 pub struct Angle {
     /// Rotation angle (radians).
     pub theta: f64,
+}
+
+impl Angle {
+    /** Normalize the rotation.
+
+    [`Angle`] rotations are well-defined for any value of `theta`. However, there are numerical
+    issues when combining small rotations with large ones due to floating point round-off error.
+    Normalizing an [`Angle`] creates an equivalent rotation with `theta` in the rage from 0 to
+    2 pi.
+
+    ## Example
+
+    ```
+    use hoomd_rs_vector::rotation;
+    let a = rotation::Angle::from(20.0 * std::f64::consts::PI);
+    let b= a.normalized();
+    assert_eq!(b.theta, 0.0)
+    ```
+    */
+    #[inline]
+    #[must_use]
+    pub fn normalized(self) -> Self {
+        Self {
+            theta: self.theta.rem_euclid(2.0 * PI),
+        }
+    }
 }
 
 impl Default for Angle {
@@ -149,13 +177,10 @@ impl Rotation for Angle {
 }
 
 impl fmt::Display for Angle {
+    /// Format an Angle as `<{theta}>`.
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "<{}>",
-            self.theta
-        )
+        write!(f, "<{}>", self.theta)
     }
 }
 
@@ -249,5 +274,31 @@ mod tests {
         let a = Angle::from(1.5);
         let s = format!("{a}");
         assert_eq!(s, "<1.5>");
-        }
+    }
+
+    #[test]
+    fn normalized() {
+        let two_pi = 2.0 * PI;
+
+        assert_relative_eq!(Angle::from(0.125).normalized(), (0.125).into());
+        assert_relative_eq!(Angle::from(2.0 * PI + 0.125).normalized(), (0.125).into());
+        assert_relative_eq!(Angle::from(2.0 * 2.0 * PI + 0.5).normalized(), (0.5).into());
+        assert_relative_eq!(Angle::from(3.0 * 2.0 * PI + 3.0).normalized(), (3.0).into());
+        assert_relative_eq!(
+            Angle::from(2.0 * PI - 0.125).normalized(),
+            (2.0 * PI - 0.125).into()
+        );
+
+        assert_relative_eq!(Angle::from(two_pi).normalized(), (0.0).into());
+        assert_relative_eq!(Angle::from(-0.125).normalized(), (2.0 * PI - 0.125).into());
+        assert_relative_eq!(Angle::from(-3.0).normalized(), (2.0 * PI - 3.0).into());
+        assert_relative_eq!(
+            Angle::from(-2.0 * PI - 0.125).normalized(),
+            (2.0 * PI - 0.125).into()
+        );
+        assert_relative_eq!(
+            Angle::from(10.0 * -2.0 * PI - 0.125).normalized(),
+            (2.0 * PI - 0.125).into()
+        );
+    }
 }
