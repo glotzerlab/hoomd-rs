@@ -61,7 +61,7 @@ Access the coordinates directly when needed:
 ```
 use hoomd_rs_vector::vector;
 # let a = vector::Cartesian::from((1.0, 2.0));
-let b = vector::Cartesian::from((a.coordinates[1], 0.0));
+let b = vector::Cartesian::from((a[1], 0.0));
 ```
 */
 
