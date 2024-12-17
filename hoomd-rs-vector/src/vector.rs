@@ -7,7 +7,7 @@
 use std::array;
 use std::fmt;
 use std::iter::zip;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
@@ -345,6 +345,51 @@ impl<const N: usize> Distribution<Cartesian<N>> for Standard {
     }
 }
 
+
+impl<const N: usize, T> Index<T> for Cartesian<N>
+    where T:
+        Into<usize> + Copy + std::slice::SliceIndex<[f64], Output = f64>
+{
+    type Output = f64;
+    /** Get the value of the vector at coordinate i.
+    ```
+    # use hoomd_rs_vector::vector;
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let v = vector::Cartesian::<3>::try_from(3..6)?;
+    assert_eq!((v[0], v[1], v[2]), (3.0, 4.0, 5.0));
+    assert_eq!((v[0], v[1], v[2]), (v.coordinates[0], v.coordinates[1], v.coordinates[2]));
+    # Ok(())
+    # }
+    ```
+    */
+    fn index(&self, i: T) -> &Self::Output {
+        &self.coordinates[i]
+    }
+}
+
+
+impl<const N: usize, T> IndexMut<T> for Cartesian<N>
+    where T:
+        Into<usize> + Copy + std::slice::SliceIndex<[f64], Output = f64>
+{
+    /** Get the value of the vector at coordinate i as a mutable value.
+    ```
+    # use hoomd_rs_vector::vector;
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut v = vector::Cartesian::<3>::try_from(3..6)?;
+    assert_eq!((v[0], v[1], v[2]), (3.0, 4.0, 5.0));
+    v[0] += 1.0;
+    assert_eq!(v[0], 4.0);
+    # Ok(())
+    # }
+    ```
+    */
+    fn index_mut(&mut self, i: T) -> &mut Self::Output {
+        &mut self.coordinates[i]
+    }
+}
+
+
 #[cfg(test)]
 mod approx {
     use approx::{AbsDiffEq, RelativeEq};
@@ -413,6 +458,14 @@ mod tests {
             Cartesian::try_from(N..N * 2).unwrap(),
         )
     }
+
+
+    fn index<const N: usize>() {
+        let (a, b) = generate_vector_pair::<N>();
+        assert!(zip(0..N, b.coordinates.iter()).all(|(i, &x)| b[i]==x))
+    }
+    parameterize_vector_length!(index, [2, 3, 4, 8, 16, 32]);
+
 
     fn add_explicit<const N: usize>() {
         let (a, b) = generate_vector_pair::<N>();
