@@ -350,7 +350,7 @@ impl<const N: usize> Distribution<Cartesian<N>> for Standard {
 
 impl<const N: usize, T> Index<T> for Cartesian<N>
 where
-    T: Into<usize> + Copy + std::slice::SliceIndex<[f64], Output = f64>,
+    T: Into<usize> + std::slice::SliceIndex<[f64], Output = f64>,
 {
     type Output = f64;
     /** Get the value of the vector at coordinate i.
@@ -374,10 +374,10 @@ where
 
 impl<const N: usize, T> IndexMut<T> for Cartesian<N>
 where
-    T: Into<usize> + Copy + std::slice::SliceIndex<[f64], Output = f64>,
+    T: Into<usize> + std::slice::SliceIndex<[f64], Output = f64>,
 {
-    /** Get the value of the vector at coordinate i as a mutable value
-    
+    /** Get a mutable reference to the value of the vector at coordinate i.
+
     ## Example.
     ```
     use hoomd_rs_vector::vector;
