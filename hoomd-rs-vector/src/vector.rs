@@ -7,7 +7,9 @@
 use std::array;
 use std::fmt;
 use std::iter::zip;
-use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::ops::{
+    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
+};
 
 use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
@@ -345,10 +347,9 @@ impl<const N: usize> Distribution<Cartesian<N>> for Standard {
     }
 }
 
-
 impl<const N: usize, T> Index<T> for Cartesian<N>
-    where T:
-        Into<usize> + Copy + std::slice::SliceIndex<[f64], Output = f64>
+where
+    T: Into<usize> + Copy + std::slice::SliceIndex<[f64], Output = f64>,
 {
     type Output = f64;
     /** Get the value of the vector at coordinate i.
@@ -367,10 +368,9 @@ impl<const N: usize, T> Index<T> for Cartesian<N>
     }
 }
 
-
 impl<const N: usize, T> IndexMut<T> for Cartesian<N>
-    where T:
-        Into<usize> + Copy + std::slice::SliceIndex<[f64], Output = f64>
+where
+    T: Into<usize> + Copy + std::slice::SliceIndex<[f64], Output = f64>,
 {
     /** Get the value of the vector at coordinate i as a mutable value.
     ```
@@ -388,7 +388,6 @@ impl<const N: usize, T> IndexMut<T> for Cartesian<N>
         &mut self.coordinates[i]
     }
 }
-
 
 #[cfg(test)]
 mod approx {
@@ -459,13 +458,11 @@ mod tests {
         )
     }
 
-
     fn index<const N: usize>() {
         let (a, b) = generate_vector_pair::<N>();
-        assert!(zip(0..N, b.coordinates.iter()).all(|(i, &x)| b[i]==x))
+        assert!(zip(0..N, b.coordinates.iter()).all(|(i, &x)| b[i] == x))
     }
     parameterize_vector_length!(index, [2, 3, 4, 8, 16, 32]);
-
 
     fn add_explicit<const N: usize>() {
         let (a, b) = generate_vector_pair::<N>();
