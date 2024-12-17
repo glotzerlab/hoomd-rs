@@ -6,11 +6,10 @@
 
 use std::f64::consts::PI;
 use std::fmt;
-use std::ops::Rem;
 
-use crate::{vector::Cartesian, Rotate, Rotation};
+use crate::{vector::Cartesian, Rotate, Rotation, Vector};
 
-// TODO: benchmark, pre-computed rotation.
+// TODO: benchmark.
 
 /** Represent a 2D rotation in the plane by an angle.
 
@@ -47,6 +46,13 @@ pub struct Angle {
     pub theta: f64,
 }
 
+/// A precomputed rotation about an [`Angle`]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Precomputed {
+    /// Rows of the rotation matrix.
+    row: [Cartesian<2>; 2],
+}
+
 impl Angle {
     /** Normalize the rotation.
 
@@ -71,6 +77,24 @@ impl Angle {
             theta: self.theta.rem_euclid(2.0 * PI),
         }
     }
+
+    /** Precompute the rotation.
+
+    When rotating many vectors by the same [`Angle`], precompute the rotation to improve
+    performance.
+    */
+    #[inline]
+    #[must_use]
+    pub fn precomputed(&self) -> Precomputed {
+        let sin_theta = self.theta.sin();
+        let cos_theta = self.theta.cos();
+        Precomputed {
+            row: [
+            [cos_theta, -sin_theta].into(),
+            [sin_theta, cos_theta].into(),
+            ]
+        }
+    }
 }
 
 impl Default for Angle {
@@ -91,7 +115,6 @@ impl Default for Angle {
 }
 
 impl From<f64> for Angle {
-    #[inline]
     /** Create a rotation by `theta` radians
 
     ## Example
@@ -101,6 +124,7 @@ impl From<f64> for Angle {
     assert_eq!(a.theta, 1.5);
     ```
     */
+    #[inline]
     fn from(theta: f64) -> Self {
         Self { theta }
     }
@@ -120,11 +144,33 @@ impl Rotate<Cartesian<2>> for Angle {
     ```
     */
     fn rotate(&self, vector: &Cartesian<2>) -> Cartesian<2> {
-        let sin = self.theta.sin();
-        let cos = self.theta.cos();
+        let sin_theta = self.theta.sin();
+        let cos_theta = self.theta.cos();
         Cartesian::from([
-            vector.coordinates[0] * cos - vector.coordinates[1] * sin,
-            vector.coordinates[0] * sin + vector.coordinates[1] * cos,
+            vector.coordinates[0] * cos_theta - vector.coordinates[1] * sin_theta,
+            vector.coordinates[0] * sin_theta + vector.coordinates[1] * cos_theta,
+        ])
+    }
+}
+
+impl Rotate<Cartesian<2>> for Precomputed {
+    #[inline]
+    /** Rotate a [`Cartesian<2>`] in the plane by an [`Angle`]
+
+    ## Example
+    ```
+    use hoomd_rs_vector::{rotation, Rotate, Rotation, vector};
+    let v = vector::Cartesian::from([-1.0, 0.0]);
+    let a = rotation::Angle::from(std::f64::consts::PI/2.0);
+    let precomputed = a.precomputed();
+    let rotated = precomputed.rotate(&v);
+    // rotated is approximately [0.0, -1.0]
+    ```
+    */
+    fn rotate(&self, vector: &Cartesian<2>) -> Cartesian<2> {
+        Cartesian::from([
+            self.row[0].dot(vector),
+            self.row[1].dot(vector),
         ])
     }
 }
@@ -237,6 +283,7 @@ mod tests {
         let ans = Cartesian::from(ans);
 
         assert_relative_eq!(angle.rotate(&vec), ans, epsilon = 4.0 * f64::EPSILON);
+        assert_relative_eq!(angle.precomputed().rotate(&vec), ans, epsilon = 4.0 * f64::EPSILON);
     }
 
     // Test with Cartesian product of the input arrays
