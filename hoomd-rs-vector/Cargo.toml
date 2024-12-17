@@ -27,3 +27,7 @@ paste = "1.0.15"
 [[bench]]
 name = "cartesian"
 harness = false
+
+[[bench]]
+name = "angle"
+harness = false

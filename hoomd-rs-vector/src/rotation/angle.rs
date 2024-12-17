@@ -11,8 +11,6 @@ use std::fmt;
 
 use crate::{vector::Cartesian, Rotate, Rotation, Vector};
 
-// TODO: benchmark
-
 /** Represent a 2D rotation in the plane by an angle.
 
 ## Constructing [`Angle`]
