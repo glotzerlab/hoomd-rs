@@ -323,15 +323,16 @@ impl Cross for Cartesian<3> {
 }
 
 impl<const N: usize> Distribution<Cartesian<N>> for Standard {
-    /** Create a Cartesian vector with coordinates drawn from the [-1, 1] hypercube.
+    /** Sample a Cartesian vector from the uniform [-1, 1] hypercube.
 
     Each coordinate in the vector is in the closed range [-1, 1].
 
+    # Example
 
     ```
-    # use hoomd_rs_vector::vector;
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    use hoomd_rs_vector::vector;
     use rand::{thread_rng, Rng};
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = rand::thread_rng();
     let v: vector::Cartesian::<3> = rng.gen();
     # Ok(())
@@ -340,9 +341,9 @@ impl<const N: usize> Distribution<Cartesian<N>> for Standard {
     */
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
-        let dist = Uniform::new_inclusive(-1.0, 1.0);
+        let uniform = Uniform::new_inclusive(-1.0, 1.0);
         Cartesian {
-            coordinates: array::from_fn(|_| dist.sample(rng)),
+            coordinates: array::from_fn(|_| uniform.sample(rng)),
         }
     }
 }

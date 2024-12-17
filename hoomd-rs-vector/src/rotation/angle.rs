@@ -4,22 +4,35 @@
 /*! Implement [`Angle`]
 */
 
+use rand::distributions::{Distribution, Standard, Uniform};
+use rand::Rng;
 use std::f64::consts::PI;
 use std::fmt;
 
 use crate::{vector::Cartesian, Rotate, Rotation, Vector};
 
-// TODO: benchmark.
+// TODO: benchmark
 
 /** Represent a 2D rotation in the plane by an angle.
 
-## Examples
+## Constructing [`Angle`]
 
 Create an [`Angle`] with a given value:
 ```
 use hoomd_rs_vector::rotation;
 let a = rotation::Angle::from(std::f64::consts::PI/2.0);
 assert_eq!(a.theta, std::f64::consts::PI/2.0);
+```
+
+Create a random [`Angle`]:
+```
+use hoomd_rs_vector::rotation;
+use rand::{thread_rng, Rng};
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut rng = rand::thread_rng();
+let v: rotation::Angle = rng.gen();
+# Ok(())
+# }
 ```
 
 Combine two rotations together:
@@ -31,9 +44,11 @@ let c = a.combine(&b);
 assert_eq!(c.theta, std::f64::consts::PI/4.0);
 ```
 
+## Operations using [`Angle`]
+
 Rotate a [`Cartesian<2>`] vector by an [`Angle`]:
 ```
-# use hoomd_rs_vector::{rotation, Rotate, Rotation, vector};
+use hoomd_rs_vector::{rotation, Rotate, Rotation, vector};
 let v = vector::Cartesian::from([-1.0, 0.0]);
 let a = rotation::Angle::from(std::f64::consts::PI/2.0);
 let rotated = a.rotate(&v);
@@ -90,9 +105,9 @@ impl Angle {
         let cos_theta = self.theta.cos();
         Precomputed {
             row: [
-            [cos_theta, -sin_theta].into(),
-            [sin_theta, cos_theta].into(),
-            ]
+                [cos_theta, -sin_theta].into(),
+                [sin_theta, cos_theta].into(),
+            ],
         }
     }
 }
@@ -168,10 +183,7 @@ impl Rotate<Cartesian<2>> for Precomputed {
     ```
     */
     fn rotate(&self, vector: &Cartesian<2>) -> Cartesian<2> {
-        Cartesian::from([
-            self.row[0].dot(vector),
-            self.row[1].dot(vector),
-        ])
+        Cartesian::from([self.row[0].dot(vector), self.row[1].dot(vector)])
     }
 }
 
@@ -230,6 +242,28 @@ impl fmt::Display for Angle {
     }
 }
 
+impl Distribution<Angle> for Standard {
+    /** Sample a random angle from the uniform distribution.
+
+    # Example
+
+    ```
+    use hoomd_rs_vector::rotation;
+    use rand::{thread_rng, Rng};
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut rng = rand::thread_rng();
+    let v: rotation::Angle = rng.gen();
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Angle {
+        let uniform = Uniform::new(0.0, 2.0 * PI);
+        Angle::from(uniform.sample(rng))
+    }
+}
+
 #[cfg(test)]
 mod approx {
     use approx::{AbsDiffEq, RelativeEq};
@@ -283,7 +317,11 @@ mod tests {
         let ans = Cartesian::from(ans);
 
         assert_relative_eq!(angle.rotate(&vec), ans, epsilon = 4.0 * f64::EPSILON);
-        assert_relative_eq!(angle.precomputed().rotate(&vec), ans, epsilon = 4.0 * f64::EPSILON);
+        assert_relative_eq!(
+            angle.precomputed().rotate(&vec),
+            ans,
+            epsilon = 4.0 * f64::EPSILON
+        );
     }
 
     // Test with Cartesian product of the input arrays
@@ -347,5 +385,14 @@ mod tests {
             Angle::from(10.0 * -2.0 * PI - 0.125).normalized(),
             (2.0 * PI - 0.125).into()
         );
+    }
+
+    #[test]
+    fn random() {
+        let mut rng = rand::thread_rng();
+        for _ in 0..10000 {
+            let a: Angle = rng.gen();
+            assert!(a.theta >= 0.0 && a.theta < 2.0 * PI);
+        }
     }
 }

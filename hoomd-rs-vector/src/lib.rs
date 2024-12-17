@@ -214,7 +214,7 @@ pub trait Vector:
 
     # Example:
     ```
-    # use hoomd_rs_vector::{vector, Vector};
+    use hoomd_rs_vector::{vector, Vector};
     # fn main() {
     let v = vector::Cartesian::from([2.0, 4.0]);
     let magnitude_squared = v.magnitude_squared();
