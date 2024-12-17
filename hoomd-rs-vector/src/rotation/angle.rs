@@ -4,6 +4,8 @@
 /*! Implement [`Angle`]
 */
 
+use std::fmt;
+
 use crate::{vector::Cartesian, Rotate, Rotation};
 
 // TODO: benchmark, impl Display, pre-computed rotation, normalized.
@@ -146,6 +148,17 @@ impl Rotation for Angle {
     }
 }
 
+impl fmt::Display for Angle {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "<{}>",
+            self.theta
+        )
+    }
+}
+
 #[cfg(test)]
 mod approx {
     use approx::{AbsDiffEq, RelativeEq};
@@ -230,4 +243,11 @@ mod tests {
         assert!(angle2.theta == -theta);
         assert_relative_eq!(angle1.combine(&angle2), Angle::identity());
     }
+
+    #[test]
+    fn display() {
+        let a = Angle::from(1.5);
+        let s = format!("{a}");
+        assert_eq!(s, "<1.5>");
+        }
 }
