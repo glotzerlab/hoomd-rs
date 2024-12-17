@@ -466,10 +466,17 @@ mod tests {
     }
 
     fn index<const N: usize>() {
-        let (a, b) = generate_vector_pair::<N>();
+        let (_, b) = generate_vector_pair::<N>();
         assert!(zip(0..N, b.coordinates.iter()).all(|(i, &x)| b[i] == x))
     }
     parameterize_vector_length!(index, [2, 3, 4, 8, 16, 32]);
+
+    fn index_mut<const N: usize>() {
+        let (a, mut b) = generate_vector_pair::<N>();
+        zip(0..N, b.coordinates.iter_mut()).for_each(|(i, x)| *x = a[i]);
+        assert_eq!(a, b)
+    }
+    parameterize_vector_length!(index_mut, [2, 3, 4, 8, 16, 32]);
 
     fn add_explicit<const N: usize>() {
         let (a, b) = generate_vector_pair::<N>();
