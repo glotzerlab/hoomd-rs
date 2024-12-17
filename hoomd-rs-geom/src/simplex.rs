@@ -1,18 +1,25 @@
 use hoomd_rs_vector::vector::Cartesian;
+// TODO: many shape properties are computable with 2d matrcies - imlpement these 
+// as generics
+
+
 
 #[derive(Debug)]
 pub struct Simplex<const N: usize>
 where
     [(); N + 1]:,
 {
-    coordinates: [Cartesian<N>; N + 1],
+    vertices: [Cartesian<N>; N + 1],
 }
 
 impl<const N: usize> Default for Simplex<N>
 where
     [(); N + 1]:,
 {
-    /** Create a regular N-Simplex
+    /** Create a regular N-Simplex.
+
+    The default simplex is the convex hull of the basis vectors of ℝ^N and a point 
+    at TODO:.
 
     ```
     # use hoomd_rs_geom::simplex;
@@ -22,12 +29,21 @@ where
     */
     #[inline]
     fn default() -> Simplex<N> {
-        let mut coordinates = std::array::from_fn(|i| {
+        let mut vertices = std::array::from_fn(|i| {
             Cartesian::from(std::array::from_fn(|j| if i == j { 1.0 } else { 0.0 }))
         });
 
         let c = (1.0 + (1.0 + N as f64).sqrt()) / (N as f64);
-        coordinates[coordinates.len() - 1] = Cartesian::from([c; N]);
-        Simplex { coordinates }
+        vertices[N] = Cartesian::from([c; N]);
+        Simplex { vertices }
     }
+}
+
+impl<const N: usize> Simplex<N> 
+    where
+        [(); N+1]:
+{
+    // fn centroid(self) -> Cartesian::<N> {
+        
+    // }
 }

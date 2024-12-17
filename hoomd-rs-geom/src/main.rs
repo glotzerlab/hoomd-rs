@@ -1,6 +1,7 @@
-#![feature(generic_const_exprs)]
+#![feature(generic_const_exprs)] // See https://hackmd.io/OZG_XiLFRs2Xmw5s39jRzA?view
 
 pub mod simplex;
+pub mod matrix;
 
 fn main() {
     println!("Hello, world!");
