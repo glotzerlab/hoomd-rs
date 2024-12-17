@@ -105,6 +105,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "hoomd-rs-geom"
+version = "0.0.0"
+dependencies = [
+ "hoomd-rs-vector",
+]
+
+[[package]]
 name = "hoomd-rs-vector"
 version = "0.0.0"
 dependencies = [
