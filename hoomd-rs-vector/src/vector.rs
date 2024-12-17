@@ -12,29 +12,23 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssi
 use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
 
-use crate::{Cross, Dimension, Error, Vector};
+use crate::{Cross, Error, Vector};
 
 /** A Cartesian vector represented by an array of `N` `f64` coordinates.
 
-`Cartesian` is the canonical implementation of [`Vector`].
-
-All examples assume:
-
-```
-use hoomd_rs_vector::vector;
-```
+[`Cartesian`] is the canonical implementation of [`Vector`].
 
 ## Constructing vectors
 
 Create a vector with an array of coordinates:
 ```
-# use hoomd_rs_vector::vector;
+use hoomd_rs_vector::vector;
 let v = vector::Cartesian::from([1.0, 2.0, 3.0, 4.0, 5.0]);
 ```
 
 2D and 3D vectors can also be initialized from tuples:
 ```
-# use hoomd_rs_vector::vector;
+use hoomd_rs_vector::vector;
 let a = vector::Cartesian::from((1.0, 2.0, 3.0));
 let b = vector::Cartesian::from((4.0, 5.0));
 ```
@@ -42,7 +36,7 @@ let b = vector::Cartesian::from((4.0, 5.0));
 Construct a random vector in the [-1, 1] hypercube:
 
 ```
-# use hoomd_rs_vector::vector;
+use hoomd_rs_vector::vector;
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 use rand::{thread_rng, Rng};
 let mut rng = rand::thread_rng();
@@ -55,7 +49,7 @@ let v: vector::Cartesian::<3> = rng.gen();
 
 Use vector math operations when you can:
 ```
-# use hoomd_rs_vector::{vector, Vector};
+use hoomd_rs_vector::{vector, Vector};
 let a = vector::Cartesian::from([1.0, 2.0]);
 let b = vector::Cartesian::from([4.0, 8.0]);
 let c = (a + b).dot(&a);
@@ -63,7 +57,7 @@ let c = (a + b).dot(&a);
 
 Access the coordinates directly when needed:
 ```
-# use hoomd_rs_vector::vector;
+use hoomd_rs_vector::vector;
 # let a = vector::Cartesian::from((1.0, 2.0));
 let b = vector::Cartesian::from((a.coordinates[1], 0.0));
 ```
@@ -78,8 +72,9 @@ pub struct Cartesian<const N: usize> {
 impl<const N: usize> Default for Cartesian<N> {
     /** Create a 0 vector.
 
+    ## Example
     ```
-    # use hoomd_rs_vector::vector;
+    use hoomd_rs_vector::vector;
     let v = vector::Cartesian::<3>::default();
     assert_eq!(v, [0.0; 3].into())
     ```
@@ -94,8 +89,9 @@ impl<const N: usize> Default for Cartesian<N> {
 impl<const N: usize> From<[f64; N]> for Cartesian<N> {
     /** Create a Cartesian vector with the given coordinates.
 
+    ## Example
     ```
-    # use hoomd_rs_vector::vector;
+    use hoomd_rs_vector::vector;
     let v = vector::Cartesian::from([4.0, 3.0]);
     ```
     */
@@ -128,16 +124,20 @@ impl<const N: usize> TryFrom<Vec<f64>> for Cartesian<N> {
 
     /** Create a Cartesian vector with coordinates given by a [`Vec<f64>`]
 
+    ## Example
     ```
-    # use hoomd_rs_vector::vector;
+    use hoomd_rs_vector::vector;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let v = vector::Cartesian::<3>::try_from(vec![3.0, 4.0, 5.0])?;
     assert_eq!(v, [3.0, 4.0, 5.0].into());
     # Ok(())
     # }
     ```
+    <div class="warning">
 
-    > Note: Use `Cartesian::From<[f64; N]>` in performance critical code.
+    Use `Cartesian::From<[f64; N]>` in performance critical code.
+
+    </div>
     */
     #[inline]
     fn try_from(value: Vec<f64>) -> Result<Self, Self::Error> {
@@ -151,8 +151,9 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for Cartesian<N> {
 
     /** Create a Cartesian vector with coordinates given by a range.
 
+    ## Example
     ```
-    # use hoomd_rs_vector::vector;
+    use hoomd_rs_vector::vector;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let v = vector::Cartesian::<3>::try_from(3..6)?;
     assert_eq!(v, [3.0, 4.0, 5.0].into());
@@ -160,7 +161,11 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for Cartesian<N> {
     # }
     ```
 
-    > Note: Use `Cartesian::From<[f64; N]>` in performance critical code.
+    <div class="warning">
+
+    Use `Cartesian::From<[f64; N]>` in performance critical code.
+
+    </div>
     */
     #[inline]
     fn try_from(value: std::ops::Range<usize>) -> Result<Self, Self::Error> {
@@ -176,11 +181,9 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for Cartesian<N> {
 }
 
 impl<const N: usize> Vector for Cartesian<N> {
-    type Dimension = Dimension<N>;
-
     #[inline]
-    fn dot(&self, rhs: &Self) -> f64 {
-        zip(self.coordinates.iter(), rhs.coordinates.iter())
+    fn dot(&self, other: &Self) -> f64 {
+        zip(self.coordinates.iter(), other.coordinates.iter())
             .fold(0.0, |product, x| product + x.0 * x.1)
     }
 }
@@ -308,11 +311,11 @@ impl<const N: usize> Neg for Cartesian<N> {
 
 impl Cross for Cartesian<3> {
     #[inline]
-    fn cross(&self, rhs: &Self) -> Self {
+    fn cross(&self, other: &Self) -> Self {
         Cartesian::from((
-            self.coordinates[1] * rhs.coordinates[2] - self.coordinates[2] * rhs.coordinates[1],
-            self.coordinates[2] * rhs.coordinates[0] - self.coordinates[0] * rhs.coordinates[2],
-            self.coordinates[0] * rhs.coordinates[1] - self.coordinates[1] * rhs.coordinates[0],
+            self.coordinates[1] * other.coordinates[2] - self.coordinates[2] * other.coordinates[1],
+            self.coordinates[2] * other.coordinates[0] - self.coordinates[0] * other.coordinates[2],
+            self.coordinates[0] * other.coordinates[1] - self.coordinates[1] * other.coordinates[0],
         ))
     }
 }

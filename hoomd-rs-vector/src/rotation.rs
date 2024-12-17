@@ -33,7 +33,7 @@ impl Rotation for Quaternion {
     }
 
     #[inline]
-    fn combine(&self, rotation: &Self) -> Self {
+    fn combine(&self, other: &Self) -> Self {
         todo!()
     }
 }

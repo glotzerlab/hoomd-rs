@@ -6,11 +6,9 @@
 
 use crate::{vector::Cartesian, Rotate, Rotation};
 
-// TODO: impl Display, pre-computed rotation, normalized.
+// TODO: benchmark, impl Display, pre-computed rotation, normalized.
 
 /** Represent a 2D rotation in the plane by an angle.
-
-[`Angle`] rotates 2D vectors in the plane.
 
 ## Examples
 
@@ -48,8 +46,9 @@ pub struct Angle {
 impl Default for Angle {
     /** Create a rotation by 0 radians.
 
+    ## Example
     ```
-    # use hoomd_rs_vector::rotation;
+    use hoomd_rs_vector::rotation;
     let a = rotation::Angle::default();
     assert_eq!(a.theta, 0.0)
     ```
@@ -64,7 +63,14 @@ impl Default for Angle {
 impl From<f64> for Angle {
     #[inline]
     /** Create a rotation by `theta` radians
-     */
+
+    ## Example
+    ```
+    use hoomd_rs_vector::rotation;
+    let a = rotation::Angle::from(1.5);
+    assert_eq!(a.theta, 1.5);
+    ```
+    */
     fn from(theta: f64) -> Self {
         Self { theta }
     }
@@ -72,10 +78,11 @@ impl From<f64> for Angle {
 
 impl Rotate<Cartesian<2>> for Angle {
     #[inline]
-    /** Rotate a [`Cartesian<2>`] in the plane by an [`Angle`]:
+    /** Rotate a [`Cartesian<2>`] in the plane by an [`Angle`]
 
+    ## Example
     ```
-    # use hoomd_rs_vector::{rotation, Rotate, Rotation, vector};
+    use hoomd_rs_vector::{rotation, Rotate, Rotation, vector};
     let v = vector::Cartesian::from([-1.0, 0.0]);
     let a = rotation::Angle::from(std::f64::consts::PI/2.0);
     let rotated = a.rotate(&v);
@@ -95,6 +102,8 @@ impl Rotate<Cartesian<2>> for Angle {
 impl Rotation for Angle {
     #[inline]
     /** Create an [`Angle`] that rotates by 0 radians.
+
+    ## Example
     ```
     use hoomd_rs_vector::{rotation, Rotation};
     let a = rotation::Angle::identity();
@@ -107,6 +116,8 @@ impl Rotation for Angle {
 
     #[inline]
     /** Create an [`Angle`] that rotates by the same amount in the opposite direction.
+
+    ## Example
     ```
     use hoomd_rs_vector::{rotation, Rotation};
     let a = rotation::Angle::from(std::f64::consts::PI/3.0);
@@ -121,6 +132,7 @@ impl Rotation for Angle {
     #[inline]
     /** Create an [`Angle`] that rotates by the sum of the two angles.
 
+    ## Example
     ```
     use hoomd_rs_vector::{rotation, Rotation};
     let a = rotation::Angle::from(std::f64::consts::PI/2.0);
@@ -129,8 +141,8 @@ impl Rotation for Angle {
     assert_eq!(c.theta, std::f64::consts::PI/4.0);
     ```
     */
-    fn combine(&self, rotation: &Self) -> Self {
-        Self::from(self.theta + rotation.theta)
+    fn combine(&self, other: &Self) -> Self {
+        Self::from(self.theta + other.theta)
     }
 }
 
