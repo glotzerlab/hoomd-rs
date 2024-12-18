@@ -63,7 +63,7 @@ pub struct Angle {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Precomputed {
     /// Rows of the rotation matrix.
-    row: [Cartesian<2>; 2],
+    rows: [Cartesian<2>; 2],
 }
 
 impl Angle {
@@ -102,7 +102,7 @@ impl Angle {
         let sin_theta = self.theta.sin();
         let cos_theta = self.theta.cos();
         Precomputed {
-            row: [
+            rows: [
                 [cos_theta, -sin_theta].into(),
                 [sin_theta, cos_theta].into(),
             ],
@@ -181,7 +181,7 @@ impl Rotate<Cartesian<2>> for Precomputed {
     ```
     */
     fn rotate(&self, vector: &Cartesian<2>) -> Cartesian<2> {
-        Cartesian::from([self.row[0].dot(vector), self.row[1].dot(vector)])
+        Cartesian::from([self.rows[0].dot(vector), self.rows[1].dot(vector)])
     }
 }
 
