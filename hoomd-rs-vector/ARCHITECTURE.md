@@ -9,7 +9,7 @@ in a vector space with *n* dimensions:
 - Vector addition & subtraction
 - Multiplication by a scalar
 - Dot product
-- Length & length squared
+- Magnitude & magnitude squared
 
 This design allows the majority of HOOMD-rs code to be written _independent_ of the
 vector's representation and dimension. Some specific calculations may require
@@ -18,8 +18,8 @@ cross products, defined in specific trait: `Cross`.
 ## Cartesian vector
 
 `hoomd_rs_vector` implements an n-dimension `Cartesian` vector type for general use,
-which includes methods for element access, element-wise multiplication, and other
-operations specific to Cartesian vectors.
+which includes methods for element access, and other operations specific to Cartesian
+vectors.
 
 ## User-defined vectors
 
@@ -38,9 +38,12 @@ impl From<vector::Cartesian<3>> for CustomVector {
 }
 ```
 
-## Rotate
+## Rotations
 
-TODO
+The `Rotation` trait describes types that represent a given rotation operation.
+`Rotations` can be _combined_ to chain their operation and there always exists an
+**identity** rotation. The `Rotate` trait applies to types that can apply a rotation
+operation to a vector.
 
 ## Random sampling
 

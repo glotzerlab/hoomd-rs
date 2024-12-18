@@ -1,35 +1,6 @@
 // Copyright (c) 2024 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-#![warn(clippy::cargo)]
-#![warn(clippy::pedantic)]
-// allow some pedantic rules
-#![allow(clippy::cast_precision_loss)]
-#![allow(clippy::float_cmp)]
-// restrictions
-#![warn(
-    clippy::allow_attributes,
-    clippy::allow_attributes_without_reason,
-    clippy::exhaustive_enums,
-    clippy::impl_trait_in_params,
-    clippy::missing_inline_in_public_items,
-    clippy::partial_pub_fields,
-    clippy::print_stderr,
-    clippy::print_stdout,
-    clippy::mod_module_files,
-    clippy::redundant_type_annotations,
-    clippy::renamed_function_params,
-    clippy::same_name_method,
-    clippy::todo
-)]
-// nursery
-#![warn(
-    clippy::fallible_impl_from,
-    clippy::needless_collect,
-    clippy::needless_pass_by_ref_mut
-)]
-#![deny(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
-#![warn(missing_docs)]
 #![doc(
     html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
@@ -39,22 +10,80 @@
 
 /*! Vector and quaternion math.
 
-Generic vector and quaternion operations exposed through _traits_.
+## Overview
 
-[`vector::Cartesian`] is the canonical vector representation. You can use it directly when
-a specific representation is needed.
+`hoomd_rs_vector` implements common vector math operations. The base traits [`Vector`] and
+[`Rotation`] provide a generic interface. Generalize code on these base traits when possible so
+so that it can be used with any type that implements the traits:
 
 ```
-use hoomd_rs_vector::vector;
+use hoomd_rs_vector::Vector;
+
+fn some_function<V: Vector>(a: &V, b: &V) -> f64 {
+    a.dot(b) / (a.magnitude() * b.magnitude())
+}
 ```
 
-## Operations
+Require additional trait bounds to perform more specific operations, such as [`Cross`]:
+```
+use hoomd_rs_vector::{Cross, Vector};
+
+fn triple<V: Vector + Cross>(a: &V, b: &V, c: &V) -> f64 {
+    a.dot(&b.cross(c))
+}
+```
+
+Use trait bounds similarly when working with rotations:
+```
+use hoomd_rs_vector::{Rotate, Vector};
+
+fn rotate_and_translate<R: Rotate<V>, V: Vector>(r: &R, a: &V, b: &V) -> V {
+    r.rotate(a) + *b
+}
+```
+
+Using these traits, you can implement custom vector types for use througought `hoomd-rs`.
+
+## Canonical implementations
+
+`hoomd_rs_vector` provides canonical implementations of [`Vector`] and [`Rotation`]:
+
+* [`vector::Cartesian`] - N-dimensional cartesian vector.
+* [`rotation::Angle`] - Rotation in the xy plane (interoperates with [`vector::Cartesian<2>`].
+* [`rotation::Quaternion`] - 3D rotation (interoperates with [`vector::Cartesian<3>`].
+*/
+
+pub mod rotation;
+pub mod vector;
+
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use thiserror::Error;
+
+/// The error type provided by all fallible vector math operations.
+#[non_exhaustive]
+#[derive(Error, PartialEq, Debug)]
+pub enum Error {
+    /// Attempted converting a value to a vector with a dimension not equal to the value's length.
+    #[error("Source does not match the target vector length.")]
+    InvalidVectorLength,
+
+    /// Attempted normalizing a vector with an invalid magnitude (e.g., zero).
+    #[error("Invalid magnitude for normalization.")]
+    InvalidMagnitude,
+}
+
+/** A generic vector.
+
+Specifically, [`Vector`] defines methods that can be performed on any vector in a normed vector
+space (an inner product space by default).
+
+## Vector Operations
 
 The following examples demonstrate vector operations applied to the following
 vectors:
 
 ```
-# use hoomd_rs_vector::vector;
+use hoomd_rs_vector::vector;
 # fn main() {
 let mut a = vector::Cartesian::from([1.0, 2.0]);
 let mut b = vector::Cartesian::from([4.0, 8.0]);
@@ -161,7 +190,6 @@ assert_eq!(c, [-1.0, -2.0].into());
 # }
 ```
 
-
 Equality:
 
 ```
@@ -172,67 +200,7 @@ Equality:
 assert!(a != b)
 # }
 ```
-
-# Functions on generic vectors
-Use the [`Vector`] trait to implement generic functions that do not depend on the dimension
-or the representation of the vector:
-
-```
-use hoomd_rs_vector::Vector;
-
-fn some_function<T: Vector>(a: &T, b: &T) -> f64 {
-    a.dot(b) / (a.magnitude() * b.magnitude())
-}
-```
-
-Require additional trait bounds to perform more specific operations, such as [`Cross`]:
-
-```
-use hoomd_rs_vector::{Cross, Vector};
-
-fn triple<T: Vector + Cross>(a: &T, b: &T, c: &T) -> f64 {
-    a.dot(&b.cross(c))
-}
-```
-
-Or to require a specific number of dimensions with [`Dimension`]:
-
-```
-use hoomd_rs_vector::{Dimension, Vector};
-
-fn some_3d_function<T: Vector<Dimension = Dimension<3>>>(a: &T) {
-    // ...
-}
-```
 */
-
-pub mod rotation;
-pub mod vector;
-
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-use thiserror::Error;
-
-/// The error type provided by all fallible vector math operations.
-#[non_exhaustive]
-#[derive(Error, PartialEq, Debug)]
-pub enum Error {
-    /// Attempted converting a value to a vector with a dimension not equal to the value's length.
-    #[error("Source does not match the target vector length.")]
-    InvalidVectorLength,
-
-    /// Attempted normalizing a vector with an invalid magnitude (e.g., zero).
-    #[error("Invalid magnitude for normalization.")]
-    InvalidMagnitude,
-}
-
-/** Placeholder type for use in trait bounds on [`Vector`] dimension.
-
-    This placeholder will be removed when Rust allows the use of [associated constants in trait
-    bounds](https://github.com/rust-lang/rust/issues/92827).
-*/
-pub struct Dimension<const N: usize>;
-
-/// A generic vector.
 pub trait Vector:
     Add<Self, Output = Self>
     + AddAssign
@@ -246,20 +214,11 @@ pub trait Vector:
     + SubAssign
     + Neg
 {
-    /// The dimension of the vector space.
-    type Dimension;
-
-    // Ideally, we would use:
-    // const DIMENSION: usize;
-    // but trait bounds cannot be applied to associated constants as of rust 1.81.0.
-    // https://github.com/rust-lang/rust/issues/92827
-    // Instead, introduce an empty type for use with trait bounds on an associated type.
-
     /** Compute the squared magnitude of the vector.
 
     # Example:
     ```
-    # use hoomd_rs_vector::{vector, Vector};
+    use hoomd_rs_vector::{vector, Vector};
     # fn main() {
     let v = vector::Cartesian::from([2.0, 4.0]);
     let magnitude_squared = v.magnitude_squared();
@@ -312,7 +271,7 @@ pub trait Vector:
     ```
     */
     #[must_use]
-    fn dot(&self, rhs: &Self) -> f64;
+    fn dot(&self, other: &Self) -> f64;
 
     #[must_use]
     fn normalized(&self) -> Result<Self, crate::Error> {
@@ -326,44 +285,106 @@ pub trait Vector:
 }
 
 /** The vector cross product.
-
-Compute the cross product (right-handed) of two vectors.
-
-```
-# use hoomd_rs_vector::{vector, Cross, Vector};
-# fn main() {
-let a = vector::Cartesian::from([1.0, 0.0, 0.0]);
-let b = vector::Cartesian::from([0.0, 1.0, 0.0]);
-let product = a.cross(&b);
-assert_eq!(product, [0.0, 0.0, 1.0].into());
-# }
-```
 */
 pub trait Cross {
-    /// Perform the cross product.
+    /** Perform the cross product.
+    Compute the cross product (right-handed) of two vectors:
+
+    <!-- \vec{c} = \vec{a} \cross \vec{b} -->
+    <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>c</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mspace width="0.2222em"></mspace><mo lspace="0em" rspace="0em" style="font-weight:bold;">×</mo><mspace width="0.2222em"></mspace></mrow><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover></mrow><annotation encoding="application/x-tex">\vec{c} = \vec{a} \cross \vec{b}</annotation></semantics></math>
+
+    ## Example
+    ```
+    # use hoomd_rs_vector::{vector, Cross, Vector};
+    # fn main() {
+    let a = vector::Cartesian::from([1.0, 0.0, 0.0]);
+    let b = vector::Cartesian::from([0.0, 1.0, 0.0]);
+    let c = a.cross(&b);
+    assert_eq!(c, [0.0, 0.0, 1.0].into());
+    # }
+    ```
+    */
     #[must_use]
-    fn cross(&self, rhs: &Self) -> Self;
+    fn cross(&self, other: &Self) -> Self;
 }
 
-/** Rotate a vector or rotation.
+/** Rotate a vector.
+
+The [`Rotate`] trait describes a type that can rotate a given vector. The rotated vector has the
+same magnitude, but possibly a different direction.
+
+Types that implement [`Rotate`] may or _may not_ implement [`Rotation`].
 */
 pub trait Rotate<V: Vector> {
     /** Rotate a vector.
+
+    <!-- \vec{b} = R(\vec{a}) -->
+    <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><mi>R</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\vec{b} = R(\vec{a})</annotation></semantics></math>
+
+    ## Example
+    ```
+    # use hoomd_rs_vector::{Rotate, Vector};
+    # fn rotate<R: Rotate<V>, V: Vector>(r: &R, a: &V) {
+    let b = r.rotate(a);
+    # }
+    ```
      */
     #[must_use]
     fn rotate(&self, vector: &V) -> V;
 }
 
 /** A rotation.
+
+A [`Rotation`] represents a single rotation operation. Rotations change the direction of a vector
+while keeping its magnitude constant. To maintain generality, this documentation shows rotations
+mathematically as _functions_:
+<!-- \vec{b} = R(\vec{a}) -->
+<math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><mi>R</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\vec{b} = R(\vec{a})</annotation></semantics></math>
+
+All types that implement [`Rotation`] _should_ implement [`Rotate`] for at least one vector type.
 */
 pub trait Rotation {
-    /** Combine two rotations.
-
-    The resulting rotation `c = a.combine(b)` will rotate by `b` followed by a rotation of
-    `a`.
+    /** The identity rotation.
+    <!-- \vec{a} = I(\vec{a}) -->
+    <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><mi>I</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\vec{a} = I(\vec{a})</annotation></semantics></math>
     */
     #[must_use]
-    fn combine(&self, rotation: &Self) -> Self;
+    fn identity() -> Self;
+
+    /** Inverse the rotation.
+    <!-- \vec{a} = R^{-1}(R(\vec{a})) -->
+    <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><msup><mi>R</mi><mrow><mo lspace="0em" rspace="0em">−</mo><mn>1</mn></mrow></msup><mo form="prefix" stretchy="false">(</mo><mi>R</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\vec{a} = R^{-1}(R(\vec{a}))</annotation></semantics></math>
+
+    ## Example
+    ```
+    # use hoomd_rs_vector::{Rotation};
+    # fn inverse<R: Rotation>(r: R) {
+    let r_inverse = r.inversed();
+    # }
+    ```
+    */
+    #[must_use]
+    fn inversed(self) -> Self;
+
+    #[allow(clippy::doc_markdown)]
+    /** Combine two rotations.
+
+    The resulting rotation `R_ab` will rotate by `R_b` followed by a rotation of
+    `R_a`.
+
+    <!-- R_{ab}(\vec{v})= R_a(R_b(\vec{v})) -->
+    <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><msub><mi>R</mi><mrow><mi>a</mi><mi>b</mi></mrow></msub><mo form="prefix" stretchy="false">(</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo><mo>=</mo><msub><mi>R</mi><mi>a</mi></msub><mo form="prefix" stretchy="false">(</mo><msub><mi>R</mi><mi>b</mi></msub><mo form="prefix" stretchy="false">(</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">R_{ab}(\vec{v})= R_a(R_b(\vec{v}))</annotation></semantics></math>
+
+    ## Example
+    ```
+    # use hoomd_rs_vector::{Rotation};
+    # fn inverse<R: Rotation>(R_a: &R, R_b: &R) {
+    let R_ab = R_a.combine(R_b);
+    # }
+    ```
+    */
+    #[must_use]
+    fn combine(&self, other: &Self) -> Self;
 }
 
 #[cfg(test)]
