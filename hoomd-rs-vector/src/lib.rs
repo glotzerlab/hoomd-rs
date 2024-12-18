@@ -67,7 +67,7 @@ pub enum Error {
     #[error("Source does not match the target vector length.")]
     InvalidVectorLength,
 
-    /// Attempted normalizing a vector with an invalid magnitude (e.g., zero).
+    /// Attempted normalizing a vector with an invalid magnitude.
     #[error("Invalid magnitude for normalization.")]
     InvalidMagnitude,
 }
@@ -273,8 +273,14 @@ pub trait Vector:
     #[must_use]
     fn dot(&self, other: &Self) -> f64;
 
-    #[must_use]
-    fn normalized(&self) -> Result<Self, crate::Error> {
+    /** Create a vector of unit length pointing in the same direction as the given vector.
+
+    # Errors
+
+    [`Error::InvalidMagnitude`] when `self` is the 0 vector.
+    */
+    #[inline]
+    fn normalized(&self) -> Result<Self, Error> {
         let mag = self.magnitude();
         if mag == 0.0 {
             Err(Error::InvalidMagnitude)
