@@ -31,7 +31,7 @@ use rand::{thread_rng, Rng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut rng = rand::thread_rng();
-let v: Angle = rng.gen();
+let a: Angle = rng.gen();
 # Ok(())
 # }
 ```

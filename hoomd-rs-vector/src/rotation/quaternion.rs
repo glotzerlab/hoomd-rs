@@ -3,7 +3,7 @@
 
 /*! Implement [`Quaternion`]
 */
-use rand::distributions::{Distribution, Standard};
+use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
 use std::fmt;
 
@@ -29,7 +29,17 @@ let q = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), PI/2.0)?;
 ```
 
 Create a random [`Quaternion`]:
-TODO
+```
+use hoomd_rs_vector::rotation::Quaternion;
+use rand::{thread_rng, Rng};
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut rng = rand::thread_rng();
+let v: Quaternion = rng.gen();
+# Ok(())
+# }
+```
+
 
 Combine two rotations together:
 ```
@@ -128,7 +138,7 @@ impl Quaternion {
     */
     #[inline]
     pub fn normalized(self) -> Result<Self, Error> {
-        let magnitude_squared = self.s * self.s + self.v.dot(&self.v);
+        let magnitude_squared = self.magnitude_squared();
 
         if magnitude_squared == 0.0 {
             Err(Error::InvalidMagnitude)
@@ -192,6 +202,14 @@ impl Quaternion {
                 .into(),
             ],
         }
+    }
+
+    /** The magnitude of the quaternion, squared.
+     */
+    #[inline]
+    #[must_use]
+    fn magnitude_squared(&self) -> f64 {
+        self.s * self.s + self.v.dot(&self.v)
     }
 }
 
@@ -375,7 +393,30 @@ impl Distribution<Quaternion> for Standard {
     */
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Quaternion {
-        todo!();
+        // Algorithm from: https://stackoverflow.com/questions/31600717/how-to-generate-a-random-quaternion-quickly
+        let uniform = Uniform::new(-1.0, 1.0);
+
+        let (u, v) = loop {
+            let u: f64 = uniform.sample(rng);
+            let v: f64 = uniform.sample(rng);
+            if u * u + v * v < 1.0 {
+                break (u, v);
+            }
+        };
+
+        let (x, y) = loop {
+            let x: f64 = uniform.sample(rng);
+            let y: f64 = uniform.sample(rng);
+            if x * x + y * y < 1.0 {
+                break (x, y);
+            }
+        };
+
+        let scale = ((1.0 - (x * x + y * y)) / (u * u + v * v)).sqrt();
+        Quaternion {
+            s: x,
+            v: [y, scale * u, scale * v].into(),
+        }
     }
 }
 
@@ -418,7 +459,8 @@ mod approx {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::approx::assert_relative_eq;
+    use ::approx::{assert_abs_diff_eq, assert_relative_eq};
+    use rand::{rngs::StdRng, SeedableRng};
     use rstest::*;
     use std::f64::consts::PI;
 
@@ -460,6 +502,16 @@ mod tests {
         let theta = theta_1 + theta_2;
         assert_relative_eq!(q.s, (theta / 2.0).cos());
         assert_relative_eq!(q.v, axis * (theta / 2.0).sin());
+    }
+
+    #[test]
+    fn rotate() {
+        todo!();
+    }
+
+    #[test]
+    fn precompute() {
+        todo!();
     }
 
     #[test]
@@ -505,5 +557,47 @@ mod tests {
                 v: [3.0 / 6.0, -1.0 / 6.0, 1.0 / 6.0].into()
             }
         );
+    }
+
+    #[test]
+    fn random() {
+        const CHECK_VECTORS: [Cartesian<3>; 3] = [
+            Cartesian {
+                coordinates: [1.0, 0.0, 0.0],
+            },
+            Cartesian {
+                coordinates: [0.0, 1.0, 0.0],
+            },
+            Cartesian {
+                coordinates: [1.0, 0.0, 1.0],
+            },
+        ];
+
+        // Perform basic checks on random quaternions.
+        // 1) Ensure that each randomly generated quaternion is normalized.
+        // 2) Check that the result of rotating a reference vector by random quaternions does not
+        // point in any special direction. The average dot product should be close to 0.
+        let samples: u32 = 20_000;
+
+        let reference = Cartesian::from([1.0, 0.0, 0.0]);
+        let mut dot_sums = [0.0; CHECK_VECTORS.len()];
+
+        let mut rng = StdRng::seed_from_u64(1);
+
+        for _ in 0..samples {
+            let q: Quaternion = rng.gen();
+            assert_relative_eq!(q.magnitude_squared(), 1.0, max_relative = 1e-15);
+
+            let v = q.rotate(&reference);
+            for i in 0..CHECK_VECTORS.len() {
+                dot_sums[i] += v.dot(&CHECK_VECTORS[i]);
+            }
+        }
+
+        for dot_sum in dot_sums {
+            assert_abs_diff_eq!(dot_sum / f64::from(samples), 0.0, epsilon = 0.01);
+        }
+
+        // TODO: Trevor has a better unit test, but it requires shape overlap tests.
     }
 }
