@@ -361,7 +361,7 @@ where
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let v = vector::Cartesian::<3>::try_from(3..6)?;
     assert_eq!((v[0], v[1], v[2]), (3.0, 4.0, 5.0));
-    assert_eq!((v[0], v[1], v[2]), (v.coordinates[0], v.coordinates[1], v.coordinates[2]));
+    assert_eq!((v[0], v[1], v[2]), (v[0], v[1], v[2]));
     # Ok(())
     # }
     ```
