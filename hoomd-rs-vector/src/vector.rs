@@ -367,8 +367,8 @@ where
     ```
     */
     #[inline]
-    fn index(&self, i: T) -> &Self::Output {
-        &self.coordinates[i]
+    fn index(&self, index: T) -> &Self::Output {
+        &self.coordinates[index]
     }
 }
 
@@ -391,8 +391,8 @@ where
     ```
     */
     #[inline]
-    fn index_mut(&mut self, i: T) -> &mut Self::Output {
-        &mut self.coordinates[i]
+    fn index_mut(&mut self, index: T) -> &mut Self::Output {
+        &mut self.coordinates[index]
     }
 }
 
@@ -467,14 +467,14 @@ mod tests {
 
     fn index<const N: usize>() {
         let (_, b) = generate_vector_pair::<N>();
-        assert!(zip(0..N, b.coordinates.iter()).all(|(i, &x)| b[i] == x))
+        assert!(zip(0..N, b.coordinates.iter()).all(|(i, &x)| b[i] == x));
     }
     parameterize_vector_length!(index, [2, 3, 4, 8, 16, 32]);
 
     fn index_mut<const N: usize>() {
         let (a, mut b) = generate_vector_pair::<N>();
         zip(0..N, b.coordinates.iter_mut()).for_each(|(i, x)| *x = a[i]);
-        assert_eq!(a, b)
+        assert_eq!(a, b);
     }
     parameterize_vector_length!(index_mut, [2, 3, 4, 8, 16, 32]);
 
