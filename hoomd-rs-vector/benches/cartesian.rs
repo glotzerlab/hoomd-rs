@@ -9,7 +9,7 @@
 use divan::counter::ItemsCount;
 use divan::{self, black_box, Bencher};
 use rand::distributions::Uniform;
-use rand::{thread_rng, Rng};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use hoomd_rs_vector::{vector::Cartesian, Cross, Vector};
 
@@ -28,7 +28,7 @@ const DIMENSIONS: &[usize] = &[2, 3, 8, 16, 32, 128];
 
 #[divan::bench(consts = DIMENSIONS)]
 fn create_vecn_tryfrom_vec<const N: usize>(bencher: Bencher) {
-    let mut rng = thread_rng();
+    let mut rng = StdRng::seed_from_u64(1);
 
     let range = Uniform::new(-100.0, 100.0);
     bencher
@@ -89,7 +89,9 @@ fn cross_vec3(bencher: Bencher) {
 
 #[divan::bench(consts = DIMENSIONS)]
 fn gen_random<const N: usize>(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
     bencher
         .counter(ItemsCount::from(1_u32))
-        .bench(|| black_box(rand::random::<Cartesian<N>>()));
+        .bench_local(|| black_box(rng.gen::<Cartesian<N>>()));
 }

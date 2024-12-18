@@ -8,7 +8,7 @@
 
 use divan::counter::ItemsCount;
 use divan::{self, black_box, Bencher};
-use rand::{thread_rng, Rng};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use hoomd_rs_vector::rotation::Angle;
 use hoomd_rs_vector::vector::Cartesian;
@@ -20,7 +20,7 @@ fn main() {
 
 #[divan::bench]
 fn rotate(bencher: Bencher) {
-    let mut rng = thread_rng();
+    let mut rng = StdRng::seed_from_u64(1);
 
     let a: Angle = rng.gen();
 
@@ -32,7 +32,7 @@ fn rotate(bencher: Bencher) {
 
 #[divan::bench]
 fn rotate_precomputed(bencher: Bencher) {
-    let mut rng = thread_rng();
+    let mut rng = StdRng::seed_from_u64(1);
 
     let a: Angle = rng.gen();
     let precomputed = a.precomputed();
@@ -45,7 +45,9 @@ fn rotate_precomputed(bencher: Bencher) {
 
 #[divan::bench]
 fn gen_random(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
     bencher
         .counter(ItemsCount::from(1_u32))
-        .bench(|| black_box(rand::random::<Angle>()));
+        .bench_local(|| black_box(rng.gen::<Angle>()));
 }
