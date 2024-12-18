@@ -25,12 +25,14 @@ use crate::{Cross, Error, Vector};
 Create a vector with an array of coordinates:
 ```
 use hoomd_rs_vector::vector;
+
 let v = vector::Cartesian::from([1.0, 2.0, 3.0, 4.0, 5.0]);
 ```
 
 2D and 3D vectors can also be initialized from tuples:
 ```
 use hoomd_rs_vector::vector;
+
 let a = vector::Cartesian::from((1.0, 2.0, 3.0));
 let b = vector::Cartesian::from((4.0, 5.0));
 ```
@@ -39,6 +41,7 @@ Construct a random vector in the [-1, 1] hypercube:
 
 ```
 use hoomd_rs_vector::vector;
+
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 use rand::{thread_rng, Rng};
 let mut rng = rand::thread_rng();
@@ -52,6 +55,7 @@ let v: vector::Cartesian::<3> = rng.gen();
 Use vector math operations when you can:
 ```
 use hoomd_rs_vector::{vector, Vector};
+
 let a = vector::Cartesian::from([1.0, 2.0]);
 let b = vector::Cartesian::from([4.0, 8.0]);
 let c = (a + b).dot(&a);
@@ -59,9 +63,10 @@ let c = (a + b).dot(&a);
 
 Access the coordinates directly when needed:
 ```
-use hoomd_rs_vector::vector;
-# let a = vector::Cartesian::from((1.0, 2.0));
-let b = vector::Cartesian::from((a[1], 0.0));
+use hoomd_rs_vector::vector::Cartesian;
+
+let a = Cartesian::from((1.0, 2.0));
+let b = Cartesian::from((a[1], 0.0));
 ```
 */
 
@@ -76,8 +81,9 @@ impl<const N: usize> Default for Cartesian<N> {
 
     # Example
     ```
-    use hoomd_rs_vector::vector;
-    let v = vector::Cartesian::<3>::default();
+    use hoomd_rs_vector::vector::Cartesian;
+    
+    let v = Cartesian::<3>::default();
     assert_eq!(v, [0.0; 3].into())
     ```
     */
@@ -93,8 +99,9 @@ impl<const N: usize> From<[f64; N]> for Cartesian<N> {
 
     # Example
     ```
-    use hoomd_rs_vector::vector;
-    let v = vector::Cartesian::from([4.0, 3.0]);
+    use hoomd_rs_vector::vector::Cartesian;
+    
+    let v = Cartesian::from([4.0, 3.0]);
     ```
     */
     #[inline]
@@ -128,9 +135,10 @@ impl<const N: usize> TryFrom<Vec<f64>> for Cartesian<N> {
 
     # Example
     ```
-    use hoomd_rs_vector::vector;
+    use hoomd_rs_vector::vector::Cartesian;
+    
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let v = vector::Cartesian::<3>::try_from(vec![3.0, 4.0, 5.0])?;
+    let v = Cartesian::<3>::try_from(vec![3.0, 4.0, 5.0])?;
     assert_eq!(v, [3.0, 4.0, 5.0].into());
     # Ok(())
     # }
@@ -155,9 +163,10 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for Cartesian<N> {
 
     # Example
     ```
-    use hoomd_rs_vector::vector;
+    use hoomd_rs_vector::vector::Cartesian;
+    
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let v = vector::Cartesian::<3>::try_from(3..6)?;
+    let v = Cartesian::<3>::try_from(3..6)?;
     assert_eq!(v, [3.0, 4.0, 5.0].into());
     # Ok(())
     # }
@@ -330,11 +339,12 @@ impl<const N: usize> Distribution<Cartesian<N>> for Standard {
     # Example
 
     ```
-    use hoomd_rs_vector::vector;
+    use hoomd_rs_vector::vector::Cartesian;
     use rand::{thread_rng, Rng};
+    
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = rand::thread_rng();
-    let v: vector::Cartesian::<3> = rng.gen();
+    let v: Cartesian::<3> = rng.gen();
     # Ok(())
     # }
     ```
@@ -357,9 +367,10 @@ where
 
     # Example
     ```
-    use hoomd_rs_vector::vector;
+    use hoomd_rs_vector::vector::Cartesian;
+    
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let v = vector::Cartesian::<3>::try_from(3..6)?;
+    let v = Cartesian::<3>::try_from(3..6)?;
     assert_eq!((v[0], v[1], v[2]), (3.0, 4.0, 5.0));
     assert_eq!((v[0], v[1], v[2]), (v[0], v[1], v[2]));
     # Ok(())
@@ -380,9 +391,10 @@ where
 
     # Example
     ```
-    use hoomd_rs_vector::vector;
+    use hoomd_rs_vector::vector::Cartesian;
+    
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut v = vector::Cartesian::<3>::try_from(3..6)?;
+    let mut v = Cartesian::<3>::try_from(3..6)?;
     assert_eq!((v[0], v[1], v[2]), (3.0, 4.0, 5.0));
     v[0] += 1.0;
     assert_eq!(v[0], 4.0);

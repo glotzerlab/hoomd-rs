@@ -79,30 +79,31 @@ The following examples demonstrate vector operations applied to the following
 vectors:
 
 ```
-use hoomd_rs_vector::vector;
+use hoomd_rs_vector::vector::Cartesian;
+
 # fn main() {
-let mut a = vector::Cartesian::from([1.0, 2.0]);
-let mut b = vector::Cartesian::from([4.0, 8.0]);
+let mut a = Cartesian::from([1.0, 2.0]);
+let mut b = Cartesian::from([4.0, 8.0]);
 # }
 ```
 
 Vector addition:
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 let c = a + b;
 assert_eq!(c, [5.0, 10.0].into())
 # }
 ```
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 a += b;
 assert_eq!(a, [5.0, 10.0].into())
 # }
@@ -111,20 +112,20 @@ assert_eq!(a, [5.0, 10.0].into())
 Vector subtraction:
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 let c = b - a;
 assert_eq!(c, [3.0, 6.0].into())
 # }
 ```
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 b -= a;
 assert_eq!(b, [3.0, 6.0].into())
 # }
@@ -133,20 +134,20 @@ assert_eq!(b, [3.0, 6.0].into())
 Multiplication of a vector by a scalar:
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 let c = a * 2.0;
 assert_eq!(c, [2.0, 4.0].into())
 # }
 ```
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 a *= 2.0;
 assert_eq!(a, [2.0, 4.0].into())
 # }
@@ -155,20 +156,20 @@ assert_eq!(a, [2.0, 4.0].into())
 Division of a vector by a scalar:
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 let c = b / 2.0;
 assert_eq!(c, [2.0, 4.0].into())
 # }
 ```
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 b /= 2.0;
 assert_eq!(b, [2.0, 4.0].into())
 # }
@@ -177,10 +178,10 @@ assert_eq!(b, [2.0, 4.0].into())
 Negation:
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 let mut c = -a;
 assert_eq!(c, [-1.0, -2.0].into());
 # }
@@ -189,10 +190,10 @@ assert_eq!(c, [-1.0, -2.0].into());
 Equality:
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 assert!(a != b)
 # }
 ```
@@ -217,9 +218,10 @@ pub trait Vector:
 
     # Example
     ```
-    use hoomd_rs_vector::{vector, Vector};
+    use hoomd_rs_vector::{vector::Cartesian, Vector};
+    
     # fn main() {
-    let v = vector::Cartesian::from([2.0, 4.0]);
+    let v = Cartesian::from([2.0, 4.0]);
     let magnitude_squared = v.magnitude_squared();
     assert_eq!(magnitude_squared, 20.0);
     # }
@@ -245,9 +247,10 @@ pub trait Vector:
 
     # Example
     ```
-    use hoomd_rs_vector::{vector, Vector};
+    use hoomd_rs_vector::{vector::Cartesian, Vector};
+    
     # fn main() {
-    let v = vector::Cartesian::from([3.0, 4.0]);
+    let v = Cartesian::from([3.0, 4.0]);
     let magnitude= v.magnitude();
     assert_eq!(magnitude, 5.0);
     # }
@@ -266,10 +269,11 @@ pub trait Vector:
 
     # Example
     ```
-    use hoomd_rs_vector::{vector, Vector};
+    use hoomd_rs_vector::{vector::Cartesian, Vector};
+    
     # fn main() {
-    let a = vector::Cartesian::from([1.0, 2.0]);
-    let b = vector::Cartesian::from([3.0, 4.0]);
+    let a = Cartesian::from([1.0, 2.0]);
+    let b = Cartesian::from([3.0, 4.0]);
     let c = a.dot(&b);
     assert_eq!(c, 11.0);
     # }
@@ -290,10 +294,11 @@ pub trait Cross {
 
     # Example
     ```
-    # use hoomd_rs_vector::{vector, Cross, Vector};
+    use hoomd_rs_vector::{vector::Cartesian, Cross, Vector};
+    
     # fn main() {
-    let a = vector::Cartesian::from([1.0, 0.0, 0.0]);
-    let b = vector::Cartesian::from([0.0, 1.0, 0.0]);
+    let a = Cartesian::from([1.0, 0.0, 0.0]);
+    let b = Cartesian::from([0.0, 1.0, 0.0]);
     let c = a.cross(&b);
     assert_eq!(c, [0.0, 0.0, 1.0].into());
     # }
@@ -318,9 +323,10 @@ pub trait Rotate<V: Vector> {
 
     # Example
     ```
-    use hoomd_rs_vector::{rotation, Rotate, Rotation, vector};
-    let v = vector::Cartesian::from([-1.0, 0.0]);
-    let a = rotation::Angle::from(std::f64::consts::PI/2.0);
+    use hoomd_rs_vector::{rotation::Angle, Rotate, Rotation, vector::Cartesian};
+    
+    let v = Cartesian::from([-1.0, 0.0]);
+    let a = Angle::from(std::f64::consts::PI/2.0);
     let rotated = a.rotate(&v);
     // rotated is approximately [0.0, -1.0]
     ```
