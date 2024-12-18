@@ -25,12 +25,14 @@ use crate::{Cross, Error, Vector};
 Create a vector with an array of coordinates:
 ```
 use hoomd_rs_vector::vector;
+
 let v = vector::Cartesian::from([1.0, 2.0, 3.0, 4.0, 5.0]);
 ```
 
 2D and 3D vectors can also be initialized from tuples:
 ```
 use hoomd_rs_vector::vector;
+
 let a = vector::Cartesian::from((1.0, 2.0, 3.0));
 let b = vector::Cartesian::from((4.0, 5.0));
 ```
@@ -39,6 +41,7 @@ Construct a random vector in the [-1, 1] hypercube:
 
 ```
 use hoomd_rs_vector::vector;
+
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 use rand::{thread_rng, Rng};
 let mut rng = rand::thread_rng();
@@ -52,6 +55,7 @@ let v: vector::Cartesian::<3> = rng.gen();
 Use vector math operations when you can:
 ```
 use hoomd_rs_vector::{vector, Vector};
+
 let a = vector::Cartesian::from([1.0, 2.0]);
 let b = vector::Cartesian::from([4.0, 8.0]);
 let c = (a + b).dot(&a);
@@ -59,9 +63,10 @@ let c = (a + b).dot(&a);
 
 Access the coordinates directly when needed:
 ```
-use hoomd_rs_vector::vector;
-# let a = vector::Cartesian::from((1.0, 2.0));
-let b = vector::Cartesian::from((a[1], 0.0));
+use hoomd_rs_vector::vector::Cartesian;
+
+let a = Cartesian::from((1.0, 2.0));
+let b = Cartesian::from((a[1], 0.0));
 ```
 */
 
@@ -74,10 +79,11 @@ pub struct Cartesian<const N: usize> {
 impl<const N: usize> Default for Cartesian<N> {
     /** Create a 0 vector.
 
-    ## Example
+    # Example
     ```
-    use hoomd_rs_vector::vector;
-    let v = vector::Cartesian::<3>::default();
+    use hoomd_rs_vector::vector::Cartesian;
+    
+    let v = Cartesian::<3>::default();
     assert_eq!(v, [0.0; 3].into())
     ```
     */
@@ -91,10 +97,11 @@ impl<const N: usize> Default for Cartesian<N> {
 impl<const N: usize> From<[f64; N]> for Cartesian<N> {
     /** Create a Cartesian vector with the given coordinates.
 
-    ## Example
+    # Example
     ```
-    use hoomd_rs_vector::vector;
-    let v = vector::Cartesian::from([4.0, 3.0]);
+    use hoomd_rs_vector::vector::Cartesian;
+    
+    let v = Cartesian::from([4.0, 3.0]);
     ```
     */
     #[inline]
@@ -126,11 +133,12 @@ impl<const N: usize> TryFrom<Vec<f64>> for Cartesian<N> {
 
     /** Create a Cartesian vector with coordinates given by a [`Vec<f64>`]
 
-    ## Example
+    # Example
     ```
-    use hoomd_rs_vector::vector;
+    use hoomd_rs_vector::vector::Cartesian;
+    
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let v = vector::Cartesian::<3>::try_from(vec![3.0, 4.0, 5.0])?;
+    let v = Cartesian::<3>::try_from(vec![3.0, 4.0, 5.0])?;
     assert_eq!(v, [3.0, 4.0, 5.0].into());
     # Ok(())
     # }
@@ -153,11 +161,12 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for Cartesian<N> {
 
     /** Create a Cartesian vector with coordinates given by a range.
 
-    ## Example
+    # Example
     ```
-    use hoomd_rs_vector::vector;
+    use hoomd_rs_vector::vector::Cartesian;
+    
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let v = vector::Cartesian::<3>::try_from(3..6)?;
+    let v = Cartesian::<3>::try_from(3..6)?;
     assert_eq!(v, [3.0, 4.0, 5.0].into());
     # Ok(())
     # }
@@ -315,9 +324,9 @@ impl Cross for Cartesian<3> {
     #[inline]
     fn cross(&self, other: &Self) -> Self {
         Cartesian::from((
-            self.coordinates[1] * other.coordinates[2] - self.coordinates[2] * other.coordinates[1],
-            self.coordinates[2] * other.coordinates[0] - self.coordinates[0] * other.coordinates[2],
-            self.coordinates[0] * other.coordinates[1] - self.coordinates[1] * other.coordinates[0],
+            self[1] * other[2] - self[2] * other[1],
+            self[2] * other[0] - self[0] * other[2],
+            self[0] * other[1] - self[1] * other[0],
         ))
     }
 }
@@ -330,11 +339,12 @@ impl<const N: usize> Distribution<Cartesian<N>> for Standard {
     # Example
 
     ```
-    use hoomd_rs_vector::vector;
+    use hoomd_rs_vector::vector::Cartesian;
     use rand::{thread_rng, Rng};
+    
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = rand::thread_rng();
-    let v: vector::Cartesian::<3> = rng.gen();
+    let v: Cartesian::<3> = rng.gen();
     # Ok(())
     # }
     ```
@@ -355,20 +365,21 @@ where
     type Output = f64;
     /** Get the value of the vector at coordinate i.
 
-    ## Example
+    # Example
     ```
-    use hoomd_rs_vector::vector;
+    use hoomd_rs_vector::vector::Cartesian;
+    
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let v = vector::Cartesian::<3>::try_from(3..6)?;
+    let v = Cartesian::<3>::try_from(3..6)?;
     assert_eq!((v[0], v[1], v[2]), (3.0, 4.0, 5.0));
-    assert_eq!((v[0], v[1], v[2]), (v.coordinates[0], v.coordinates[1], v.coordinates[2]));
+    assert_eq!((v[0], v[1], v[2]), (v[0], v[1], v[2]));
     # Ok(())
     # }
     ```
     */
     #[inline]
-    fn index(&self, i: T) -> &Self::Output {
-        &self.coordinates[i]
+    fn index(&self, index: T) -> &Self::Output {
+        &self.coordinates[index]
     }
 }
 
@@ -378,11 +389,12 @@ where
 {
     /** Get a mutable reference to the value of the vector at coordinate i.
 
-    ## Example.
+    # Example
     ```
-    use hoomd_rs_vector::vector;
+    use hoomd_rs_vector::vector::Cartesian;
+    
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut v = vector::Cartesian::<3>::try_from(3..6)?;
+    let mut v = Cartesian::<3>::try_from(3..6)?;
     assert_eq!((v[0], v[1], v[2]), (3.0, 4.0, 5.0));
     v[0] += 1.0;
     assert_eq!(v[0], 4.0);
@@ -391,8 +403,8 @@ where
     ```
     */
     #[inline]
-    fn index_mut(&mut self, i: T) -> &mut Self::Output {
-        &mut self.coordinates[i]
+    fn index_mut(&mut self, index: T) -> &mut Self::Output {
+        &mut self.coordinates[index]
     }
 }
 
@@ -467,14 +479,14 @@ mod tests {
 
     fn index<const N: usize>() {
         let (_, b) = generate_vector_pair::<N>();
-        assert!(zip(0..N, b.coordinates.iter()).all(|(i, &x)| b[i] == x))
+        assert!(zip(0..N, b.coordinates.iter()).all(|(i, &x)| b[i] == x));
     }
     parameterize_vector_length!(index, [2, 3, 4, 8, 16, 32]);
 
     fn index_mut<const N: usize>() {
         let (a, mut b) = generate_vector_pair::<N>();
         zip(0..N, b.coordinates.iter_mut()).for_each(|(i, x)| *x = a[i]);
-        assert_eq!(a, b)
+        assert_eq!(a, b);
     }
     parameterize_vector_length!(index_mut, [2, 3, 4, 8, 16, 32]);
 

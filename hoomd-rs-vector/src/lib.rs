@@ -83,30 +83,31 @@ The following examples demonstrate vector operations applied to the following
 vectors:
 
 ```
-use hoomd_rs_vector::vector;
+use hoomd_rs_vector::vector::Cartesian;
+
 # fn main() {
-let mut a = vector::Cartesian::from([1.0, 2.0]);
-let mut b = vector::Cartesian::from([4.0, 8.0]);
+let mut a = Cartesian::from([1.0, 2.0]);
+let mut b = Cartesian::from([4.0, 8.0]);
 # }
 ```
 
 Vector addition:
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 let c = a + b;
 assert_eq!(c, [5.0, 10.0].into())
 # }
 ```
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 a += b;
 assert_eq!(a, [5.0, 10.0].into())
 # }
@@ -115,20 +116,20 @@ assert_eq!(a, [5.0, 10.0].into())
 Vector subtraction:
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 let c = b - a;
 assert_eq!(c, [3.0, 6.0].into())
 # }
 ```
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 b -= a;
 assert_eq!(b, [3.0, 6.0].into())
 # }
@@ -137,20 +138,20 @@ assert_eq!(b, [3.0, 6.0].into())
 Multiplication of a vector by a scalar:
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 let c = a * 2.0;
 assert_eq!(c, [2.0, 4.0].into())
 # }
 ```
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 a *= 2.0;
 assert_eq!(a, [2.0, 4.0].into())
 # }
@@ -159,20 +160,20 @@ assert_eq!(a, [2.0, 4.0].into())
 Division of a vector by a scalar:
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 let c = b / 2.0;
 assert_eq!(c, [2.0, 4.0].into())
 # }
 ```
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 b /= 2.0;
 assert_eq!(b, [2.0, 4.0].into())
 # }
@@ -181,10 +182,10 @@ assert_eq!(b, [2.0, 4.0].into())
 Negation:
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 let mut c = -a;
 assert_eq!(c, [-1.0, -2.0].into());
 # }
@@ -193,10 +194,10 @@ assert_eq!(c, [-1.0, -2.0].into());
 Equality:
 
 ```
-# use hoomd_rs_vector::vector;
+# use hoomd_rs_vector::vector::Cartesian;
 # fn main() {
-# let mut a = vector::Cartesian::from([1.0, 2.0]);
-# let mut b = vector::Cartesian::from([4.0, 8.0]);
+# let mut a = Cartesian::from([1.0, 2.0]);
+# let mut b = Cartesian::from([4.0, 8.0]);
 assert!(a != b)
 # }
 ```
@@ -216,11 +217,15 @@ pub trait Vector:
 {
     /** Compute the squared magnitude of the vector.
 
-    # Example:
+    <!-- \left| \vec{v} \right|^2 -->
+    <math display="block" class="tml-display" style="display:block math;"><msup><mrow><mo fence="true" form="prefix">|</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo fence="true" form="postfix">|</mo></mrow><mn>2</mn></msup></math>
+
+    # Example
     ```
-    use hoomd_rs_vector::{vector, Vector};
+    use hoomd_rs_vector::{vector::Cartesian, Vector};
+    
     # fn main() {
-    let v = vector::Cartesian::from([2.0, 4.0]);
+    let v = Cartesian::from([2.0, 4.0]);
     let magnitude_squared = v.magnitude_squared();
     assert_eq!(magnitude_squared, 20.0);
     # }
@@ -234,6 +239,9 @@ pub trait Vector:
 
     /** Compute the magnitude of the vector.
 
+    <!-- \left| \vec{v} \right| -->
+    <math display="block" class="tml-display" style="display:block math;"><mrow><mo fence="true" form="prefix">|</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo fence="true" form="postfix">|</mo></mrow></math>
+
     <div class="warning">
 
     Computing the magnitude calls `sqrt`. Prefer
@@ -241,11 +249,12 @@ pub trait Vector:
 
     </div>
 
-    # Example:
+    # Example
     ```
-    # use hoomd_rs_vector::{vector, Vector};
+    use hoomd_rs_vector::{vector::Cartesian, Vector};
+    
     # fn main() {
-    let v = vector::Cartesian::from([3.0, 4.0]);
+    let v = Cartesian::from([3.0, 4.0]);
     let magnitude= v.magnitude();
     assert_eq!(magnitude, 5.0);
     # }
@@ -259,14 +268,18 @@ pub trait Vector:
 
     /** Compute the vector dot product between two vectors.
 
-    # Example:
+    <-- c = \vec{a} \cdot \vec{b} -->
+    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>c</mi><mo>=</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>⋅</mo><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover></mrow></math>
+
+    # Example
     ```
-    # use hoomd_rs_vector::{vector, Vector};
+    use hoomd_rs_vector::{vector::Cartesian, Vector};
+    
     # fn main() {
-    let a = vector::Cartesian::from([1.0, 2.0]);
-    let b = vector::Cartesian::from([3.0, 4.0]);
-    let product = a.dot(&b);
-    assert_eq!(product, 11.0);
+    let a = Cartesian::from([1.0, 2.0]);
+    let b = Cartesian::from([3.0, 4.0]);
+    let c = a.dot(&b);
+    assert_eq!(c, 11.0);
     # }
     ```
     */
@@ -299,12 +312,13 @@ pub trait Cross {
     <!-- \vec{c} = \vec{a} \cross \vec{b} -->
     <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>c</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mspace width="0.2222em"></mspace><mo lspace="0em" rspace="0em" style="font-weight:bold;">×</mo><mspace width="0.2222em"></mspace></mrow><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover></mrow><annotation encoding="application/x-tex">\vec{c} = \vec{a} \cross \vec{b}</annotation></semantics></math>
 
-    ## Example
+    # Example
     ```
-    # use hoomd_rs_vector::{vector, Cross, Vector};
+    use hoomd_rs_vector::{vector::Cartesian, Cross, Vector};
+    
     # fn main() {
-    let a = vector::Cartesian::from([1.0, 0.0, 0.0]);
-    let b = vector::Cartesian::from([0.0, 1.0, 0.0]);
+    let a = Cartesian::from([1.0, 0.0, 0.0]);
+    let b = Cartesian::from([0.0, 1.0, 0.0]);
     let c = a.cross(&b);
     assert_eq!(c, [0.0, 0.0, 1.0].into());
     # }
@@ -327,12 +341,14 @@ pub trait Rotate<V: Vector> {
     <!-- \vec{b} = R(\vec{a}) -->
     <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><mi>R</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\vec{b} = R(\vec{a})</annotation></semantics></math>
 
-    ## Example
+    # Example
     ```
-    # use hoomd_rs_vector::{Rotate, Vector};
-    # fn rotate<R: Rotate<V>, V: Vector>(r: &R, a: &V) {
-    let b = r.rotate(a);
-    # }
+    use hoomd_rs_vector::{rotation::Angle, Rotate, Rotation, vector::Cartesian};
+    
+    let v = Cartesian::from([-1.0, 0.0]);
+    let a = Angle::from(std::f64::consts::PI/2.0);
+    let rotated = a.rotate(&v);
+    // rotated is approximately [0.0, -1.0]
     ```
      */
     #[must_use]
@@ -361,7 +377,7 @@ pub trait Rotation {
     <!-- \vec{a} = R^{-1}(R(\vec{a})) -->
     <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><msup><mi>R</mi><mrow><mo lspace="0em" rspace="0em">−</mo><mn>1</mn></mrow></msup><mo form="prefix" stretchy="false">(</mo><mi>R</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\vec{a} = R^{-1}(R(\vec{a}))</annotation></semantics></math>
 
-    ## Example
+    # Example
     ```
     # use hoomd_rs_vector::{Rotation};
     # fn inverse<R: Rotation>(r: R) {
@@ -381,7 +397,7 @@ pub trait Rotation {
     <!-- R_{ab}(\vec{v})= R_a(R_b(\vec{v})) -->
     <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><msub><mi>R</mi><mrow><mi>a</mi><mi>b</mi></mrow></msub><mo form="prefix" stretchy="false">(</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo><mo>=</mo><msub><mi>R</mi><mi>a</mi></msub><mo form="prefix" stretchy="false">(</mo><msub><mi>R</mi><mi>b</mi></msub><mo form="prefix" stretchy="false">(</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">R_{ab}(\vec{v})= R_a(R_b(\vec{v}))</annotation></semantics></math>
 
-    ## Example
+    # Example
     ```
     # use hoomd_rs_vector::{Rotation};
     # fn inverse<R: Rotation>(R_a: &R, R_b: &R) {
