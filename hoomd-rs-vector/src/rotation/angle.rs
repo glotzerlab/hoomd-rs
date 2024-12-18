@@ -74,7 +74,7 @@ impl Angle {
     Normalizing an [`Angle`] creates an equivalent rotation with `theta` in the rage from 0 to
     2 pi.
 
-    ## Example
+    # Example
 
     ```
     use hoomd_rs_vector::rotation;
@@ -95,6 +95,17 @@ impl Angle {
 
     When rotating many vectors by the same [`Angle`], precompute the rotation to improve
     performance.
+
+    # Example
+    ```
+    use hoomd_rs_vector::{rotation, Rotate, Rotation, vector};
+    let v = vector::Cartesian::from([-1.0, 0.0]);
+    let a = rotation::Angle::from(std::f64::consts::PI/2.0);
+
+    let precomputed = a.precomputed();
+    let rotated = precomputed.rotate(&v);
+    // rotated is approximately [0.0, -1.0]
+    ```
     */
     #[inline]
     #[must_use]
@@ -113,7 +124,7 @@ impl Angle {
 impl Default for Angle {
     /** Create a rotation by 0 radians.
 
-    ## Example
+    # Example
     ```
     use hoomd_rs_vector::rotation;
     let a = rotation::Angle::default();
@@ -130,7 +141,7 @@ impl Default for Angle {
 impl From<f64> for Angle {
     /** Create a rotation by `theta` radians
 
-    ## Example
+    # Example
     ```
     use hoomd_rs_vector::rotation;
     let a = rotation::Angle::from(1.5);
@@ -147,7 +158,7 @@ impl Rotate<Cartesian<2>> for Angle {
     #[inline]
     /** Rotate a [`Cartesian<2>`] in the plane by an [`Angle`]
 
-    ## Example
+    # Example
     ```
     use hoomd_rs_vector::{rotation, Rotate, Rotation, vector};
     let v = vector::Cartesian::from([-1.0, 0.0]);
@@ -170,7 +181,7 @@ impl Rotate<Cartesian<2>> for Precomputed {
     #[inline]
     /** Rotate a [`Cartesian<2>`] in the plane by an [`Angle`]
 
-    ## Example
+    # Example
     ```
     use hoomd_rs_vector::{rotation, Rotate, Rotation, vector};
     let v = vector::Cartesian::from([-1.0, 0.0]);
@@ -189,7 +200,7 @@ impl Rotation for Angle {
     #[inline]
     /** Create an [`Angle`] that rotates by 0 radians.
 
-    ## Example
+    # Example
     ```
     use hoomd_rs_vector::{rotation, Rotation};
     let a = rotation::Angle::identity();
@@ -203,7 +214,7 @@ impl Rotation for Angle {
     #[inline]
     /** Create an [`Angle`] that rotates by the same amount in the opposite direction.
 
-    ## Example
+    # Example
     ```
     use hoomd_rs_vector::{rotation, Rotation};
     let a = rotation::Angle::from(std::f64::consts::PI/3.0);
@@ -218,7 +229,7 @@ impl Rotation for Angle {
     #[inline]
     /** Create an [`Angle`] that rotates by the sum of the two angles.
 
-    ## Example
+    # Example
     ```
     use hoomd_rs_vector::{rotation, Rotation};
     let a = rotation::Angle::from(std::f64::consts::PI/2.0);

@@ -74,7 +74,7 @@ pub struct Cartesian<const N: usize> {
 impl<const N: usize> Default for Cartesian<N> {
     /** Create a 0 vector.
 
-    ## Example
+    # Example
     ```
     use hoomd_rs_vector::vector;
     let v = vector::Cartesian::<3>::default();
@@ -91,7 +91,7 @@ impl<const N: usize> Default for Cartesian<N> {
 impl<const N: usize> From<[f64; N]> for Cartesian<N> {
     /** Create a Cartesian vector with the given coordinates.
 
-    ## Example
+    # Example
     ```
     use hoomd_rs_vector::vector;
     let v = vector::Cartesian::from([4.0, 3.0]);
@@ -126,7 +126,7 @@ impl<const N: usize> TryFrom<Vec<f64>> for Cartesian<N> {
 
     /** Create a Cartesian vector with coordinates given by a [`Vec<f64>`]
 
-    ## Example
+    # Example
     ```
     use hoomd_rs_vector::vector;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -153,7 +153,7 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for Cartesian<N> {
 
     /** Create a Cartesian vector with coordinates given by a range.
 
-    ## Example
+    # Example
     ```
     use hoomd_rs_vector::vector;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -355,7 +355,7 @@ where
     type Output = f64;
     /** Get the value of the vector at coordinate i.
 
-    ## Example
+    # Example
     ```
     use hoomd_rs_vector::vector;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -378,7 +378,7 @@ where
 {
     /** Get a mutable reference to the value of the vector at coordinate i.
 
-    ## Example.
+    # Example
     ```
     use hoomd_rs_vector::vector;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
