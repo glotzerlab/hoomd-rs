@@ -223,7 +223,7 @@ pub trait Vector:
     # Example
     ```
     use hoomd_rs_vector::{vector::Cartesian, Vector};
-    
+
     # fn main() {
     let v = Cartesian::from([2.0, 4.0]);
     let magnitude_squared = v.magnitude_squared();
@@ -252,7 +252,7 @@ pub trait Vector:
     # Example
     ```
     use hoomd_rs_vector::{vector::Cartesian, Vector};
-    
+
     # fn main() {
     let v = Cartesian::from([3.0, 4.0]);
     let magnitude= v.magnitude();
@@ -274,7 +274,7 @@ pub trait Vector:
     # Example
     ```
     use hoomd_rs_vector::{vector::Cartesian, Vector};
-    
+
     # fn main() {
     let a = Cartesian::from([1.0, 2.0]);
     let b = Cartesian::from([3.0, 4.0]);
@@ -315,7 +315,7 @@ pub trait Cross {
     # Example
     ```
     use hoomd_rs_vector::{vector::Cartesian, Cross, Vector};
-    
+
     # fn main() {
     let a = Cartesian::from([1.0, 0.0, 0.0]);
     let b = Cartesian::from([0.0, 1.0, 0.0]);
@@ -344,7 +344,7 @@ pub trait Rotate<V: Vector> {
     # Example
     ```
     use hoomd_rs_vector::{rotation::Angle, Rotate, Rotation, vector::Cartesian};
-    
+
     let v = Cartesian::from([-1.0, 0.0]);
     let a = Angle::from(std::f64::consts::PI/2.0);
     let rotated = a.rotate(&v);
