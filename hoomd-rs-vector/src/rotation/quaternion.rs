@@ -505,29 +505,52 @@ mod tests {
     }
 
     fn validate_rotations<R: Rotate<Cartesian<3>>>(z_pi_2: &R, y_pi_4: &R) {
-
-        assert_relative_eq!(z_pi_2.rotate(&[0.0, 0.0, 1.0].into()), [0.0, 0.0, 1.0].into());
-        assert_relative_eq!(z_pi_2.rotate(&[1.0, 0.0, 4.25].into()), [0.0, 1.0, 4.25].into());
-        assert_relative_eq!(z_pi_2.rotate(&[0.0, 1.0, -8.75].into()), [-1.0, 0.0, -8.75].into());
+        assert_relative_eq!(
+            z_pi_2.rotate(&[0.0, 0.0, 1.0].into()),
+            [0.0, 0.0, 1.0].into()
+        );
+        assert_relative_eq!(
+            z_pi_2.rotate(&[1.0, 0.0, 4.25].into()),
+            [0.0, 1.0, 4.25].into()
+        );
+        assert_relative_eq!(
+            z_pi_2.rotate(&[0.0, 1.0, -8.75].into()),
+            [-1.0, 0.0, -8.75].into()
+        );
 
         let sqrt_2_2 = 2.0_f64.sqrt() / 2.0;
-        assert_relative_eq!(y_pi_4.rotate(&[0.0, -10.0, 0.0].into()), [0.0, -10.0, 0.0].into());
-        assert_relative_eq!(y_pi_4.rotate(&[1.0, -15.0, 0.0].into()), [sqrt_2_2, -15.0, -sqrt_2_2].into());
-        assert_relative_eq!(y_pi_4.rotate(&[sqrt_2_2, -15.0, -sqrt_2_2].into()), [0.0, -15.0, -1.0].into());
+        assert_relative_eq!(
+            y_pi_4.rotate(&[0.0, -10.0, 0.0].into()),
+            [0.0, -10.0, 0.0].into()
+        );
+        assert_relative_eq!(
+            y_pi_4.rotate(&[1.0, -15.0, 0.0].into()),
+            [sqrt_2_2, -15.0, -sqrt_2_2].into()
+        );
+        assert_relative_eq!(
+            y_pi_4.rotate(&[sqrt_2_2, -15.0, -sqrt_2_2].into()),
+            [0.0, -15.0, -1.0].into()
+        );
     }
 
     #[test]
     fn rotate() {
-        let z_pi_2 = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/2.0).expect("non-zero axis");
-        let y_pi_4 = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), PI/4.0).expect("non-zero axis");
+        let z_pi_2 =
+            Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI / 2.0).expect("non-zero axis");
+        let y_pi_4 =
+            Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), PI / 4.0).expect("non-zero axis");
 
         validate_rotations(&z_pi_2, &y_pi_4);
     }
 
     #[test]
     fn precompute() {
-        let z_pi_2 = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/2.0).expect("non-zero axis").precomputed();
-        let y_pi_4 = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), PI/4.0).expect("non-zero axis").precomputed();
+        let z_pi_2 = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI / 2.0)
+            .expect("non-zero axis")
+            .precomputed();
+        let y_pi_4 = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), PI / 4.0)
+            .expect("non-zero axis")
+            .precomputed();
 
         validate_rotations(&z_pi_2, &y_pi_4);
     }
