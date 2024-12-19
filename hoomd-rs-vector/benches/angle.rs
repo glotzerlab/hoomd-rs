@@ -51,3 +51,8 @@ fn gen_random(bencher: Bencher) {
         .counter(ItemsCount::from(1_u32))
         .bench_local(|| black_box(rng.gen::<Angle>()));
 }
+
+// TODO: rename to to_precomputed
+// TODO: rename quaternion s and v to scalar and vector
+// TODO: Add [f64; 4] conversion for quaternion
+// TODO: inversed to inverted.

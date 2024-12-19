@@ -367,7 +367,7 @@ impl Rotation for Quaternion {
 }
 
 impl fmt::Display for Quaternion {
-    /// Format a [`Quaternion`] as `[{s}, [{v[0]}, {v[1]}, {v[2]}]`.
+    /// Format a [`Quaternion`] as `[{s}, [{v[0]}, {v[1]}, {v[2]}]]`.
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[{}, {}]", self.s, self.v)
