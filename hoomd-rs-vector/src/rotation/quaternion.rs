@@ -7,7 +7,7 @@ use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
 use std::fmt;
 
-use crate::{vector::Cartesian, Cross, Error, Rotate, Rotation, Vector};
+use crate::{vector::Cartesian, Cross, Error, Normalized, Rotate, Rotation, Vector};
 
 /** Represent a 3D rotation with a quaternion.
 
@@ -23,7 +23,7 @@ use hoomd_rs_vector::rotation::Quaternion;
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let q = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), PI/2.0)?;
+let q = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), PI/2.0);
 # Ok(())
 # }
 ```
@@ -47,8 +47,8 @@ use hoomd_rs_vector::{rotation::Quaternion, Rotation};
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let a = Quaternion::from_axis_angle([1.0, 0.0, 1.0].into(), PI/2.0)?;
-let b = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/4.0)?;
+let a = Quaternion::from_axis_angle([1.0, 0.0, 1.0].into(), PI/2.0);
+let b = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/4.0);
 let c = a.combine(&b);
 # Ok(())
 # }
@@ -63,7 +63,7 @@ use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let a = Cartesian::from([-1.0, 0.0, 0.0]);
-let q = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/2.0)?;
+let q = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/2.0);
 let b = q.rotate(&a);
 // b is approximately [0.0, -1.0, 0.0]
 # Ok(())
@@ -96,21 +96,20 @@ impl Quaternion {
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let q = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), PI/2.0)?;
+    let q = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), PI/2.0);
     # Ok(())
     # }
     ```
-
-    # Errors
-
-    [`Error::InvalidMagnitude`] when `axis` is the 0 vector.
     */
     #[inline]
-    pub fn from_axis_angle(axis: Cartesian<3>, angle: f64) -> Result<Self, Error> {
-        Ok(Quaternion {
+    #[must_use]
+    pub fn from_axis_angle(axis: Normalized<Cartesian<3>>, angle: f64) -> Self {
+        let Normalized(axis_vector) = axis;
+        
+        Quaternion {
             s: (angle / 2.0).cos(),
-            v: axis.normalized()? * (angle / 2.0).sin(),
-        })
+            v: axis_vector * (angle / 2.0).sin(),
+        }
     }
 
     /** Normalize the quaternion.
@@ -126,7 +125,7 @@ impl Quaternion {
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let a = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), PI/2.0)?;
+    let a = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), PI/2.0);
     let b = a.normalized()?;
     # Ok(())
     # }
@@ -163,7 +162,7 @@ impl Quaternion {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
-    let q = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/2.0)?;
+    let q = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/2.0);
 
     let precomputed = q.precomputed();
     let b = precomputed.rotate(&a);
@@ -247,7 +246,7 @@ impl Rotate<Cartesian<3>> for Quaternion {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
-    let q = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/2.0)?;
+    let q = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/2.0);
     let b = q.rotate(&a);
     // b is approximately [0.0, -1.0, 0.0]
     # Ok(())
@@ -280,7 +279,7 @@ impl Rotate<Cartesian<3>> for Precomputed {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
-    let q = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/2.0)?;
+    let q = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/2.0);
 
     let precomputed = q.precomputed();
     let b = precomputed.rotate(&a);
@@ -311,8 +310,8 @@ impl Rotation for Quaternion {
     use hoomd_rs_vector::{rotation::Quaternion, Rotation};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let q_a = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), 1.5)?;
-    let q_b = Quaternion::from_axis_angle([1.0, 0.0, 0.0].into(), 0.125)?;
+    let q_a = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), 1.5);
+    let q_b = Quaternion::from_axis_angle([1.0, 0.0, 0.0].into(), 0.125);
     let q_ab = q_a.combine(&q_b);
     # Ok(())
     # }
@@ -355,7 +354,7 @@ impl Rotation for Quaternion {
     use hoomd_rs_vector::{rotation::Quaternion, Rotation};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let q = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), 1.5)?;
+    let q = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), 1.5);
     let q_star = q.inversed();
     # Ok(())
     # }
@@ -480,13 +479,14 @@ mod tests {
 
     #[rstest(
         theta => [0.0, PI/2.0, 1e-12 * PI, -3.0, 12345.6],
-        axis => [Cartesian::from([1.0, 0.0, 0.0]), Cartesian::from([1.0, -1.0, 1.0])],
+        axis => [Cartesian::from([1.0, 0.0, 0.0]).to_normalized_unchecked(), Cartesian::from([1.0, -1.0, 1.0]).to_normalized_unchecked()],
     )]
-    fn from_axis_angle(theta: f64, axis: Cartesian<3>) {
-        let axis_hat = axis.normalized().expect("non-zero axis");
-        let q = Quaternion::from_axis_angle(axis, theta).expect("non-zero axis");
+    fn from_axis_angle(theta: f64, axis: Normalized<Cartesian<3>>) {
+        let Normalized(axis_vector) = axis;
+    
+        let q = Quaternion::from_axis_angle(axis, theta);
         assert_relative_eq!(q.s, (theta / 2.0).cos());
-        assert_relative_eq!(q.v, axis_hat * (theta / 2.0).sin());
+        assert_relative_eq!(q.v, axis_vector * (theta / 2.0).sin());
     }
 
     #[rstest(
@@ -494,14 +494,16 @@ mod tests {
         theta_2 => [-0.0, -PI/3.0, PI, 2.0 * PI]
     )]
     fn combine_same_axis(theta_1: f64, theta_2: f64) {
-        let axis = Cartesian::from([1.0, 0.0, 0.0]);
-        let a = Quaternion::from_axis_angle(axis, theta_1).expect("non-zero axis");
-        let b = Quaternion::from_axis_angle(axis, theta_2).expect("non-zero axis");
+        let axis = Cartesian::from([1.0, 0.0, 0.0]).to_normalized_unchecked();
+        let Normalized(axis_vector) = axis;
+        
+        let a = Quaternion::from_axis_angle(axis, theta_1);
+        let b = Quaternion::from_axis_angle(axis, theta_2);
         let q = a.combine(&b);
 
         let theta = theta_1 + theta_2;
         assert_relative_eq!(q.s, (theta / 2.0).cos());
-        assert_relative_eq!(q.v, axis * (theta / 2.0).sin());
+        assert_relative_eq!(q.v, axis_vector * (theta / 2.0).sin());
     }
 
     fn validate_rotations<R: Rotate<Cartesian<3>>>(z_pi_2: &R, y_pi_4: &R) {
@@ -536,20 +538,18 @@ mod tests {
     #[test]
     fn rotate() {
         let z_pi_2 =
-            Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI / 2.0).expect("non-zero axis");
+            Quaternion::from_axis_angle(Cartesian::from([0.0, 0.0, 1.0]).to_normalized_unchecked(), PI / 2.0);
         let y_pi_4 =
-            Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), PI / 4.0).expect("non-zero axis");
+            Quaternion::from_axis_angle(Cartesian::from([0.0, 1.0, 0.0]).to_normalized_unchecked(), PI / 4.0);
 
         validate_rotations(&z_pi_2, &y_pi_4);
     }
 
     #[test]
     fn precompute() {
-        let z_pi_2 = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI / 2.0)
-            .expect("non-zero axis")
+        let z_pi_2 = Quaternion::from_axis_angle(Cartesian::from([0.0, 0.0, 1.0]).to_normalized_unchecked(), PI / 2.0)
             .precomputed();
-        let y_pi_4 = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), PI / 4.0)
-            .expect("non-zero axis")
+        let y_pi_4 = Quaternion::from_axis_angle(Cartesian::from([0.0, 1.0, 0.0]).to_normalized_unchecked(), PI / 4.0)
             .precomputed();
 
         validate_rotations(&z_pi_2, &y_pi_4);
@@ -558,9 +558,9 @@ mod tests {
     #[test]
     fn combine_different_axis() {
         let a =
-            Quaternion::from_axis_angle([1.0, 0.0, 0.0].into(), PI / 4.0).expect("non-zero axis");
+            Quaternion::from_axis_angle(Cartesian::from([1.0, 0.0, 0.0]).to_normalized_unchecked(), PI / 4.0);
         let b =
-            Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI / 2.0).expect("non-zero axis");
+            Quaternion::from_axis_angle(Cartesian::from([0.0, 0.0, 1.0]).to_normalized_unchecked(), PI / 2.0);
 
         let q = a.combine(&b);
         let v = q.rotate(&[1.0, 0.0, 0.0].into());
@@ -570,7 +570,7 @@ mod tests {
     #[rstest(theta => [0.0, 1.0, 2.125])]
     fn inversed(theta: f64) {
         let q1 =
-            Quaternion::from_axis_angle([1.0, 0.5, -2.0].into(), theta).expect("non-zero axis");
+            Quaternion::from_axis_angle(Cartesian::from([1.0, 0.5, -2.0]).to_normalized_unchecked(), theta);
         let q2 = q1.inversed();
         assert_relative_eq!(q1.combine(&q2), Quaternion::identity());
     }

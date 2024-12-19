@@ -72,6 +72,8 @@ pub enum Error {
     InvalidMagnitude,
 }
 
+// TODO: Result newtype
+
 /** A generic vector.
 
 Specifically, [`Vector`] defines methods that can be performed on any vector in a normed vector
@@ -293,15 +295,30 @@ pub trait Vector:
     [`Error::InvalidMagnitude`] when `self` is the 0 vector.
     */
     #[inline]
-    fn normalized(&self) -> Result<Self, Error> {
+    fn to_normalized(self) -> Result<Normalized<Self>, Error> {
         let mag = self.magnitude();
         if mag == 0.0 {
             Err(Error::InvalidMagnitude)
         } else {
-            Ok(*self / mag)
+            Ok(Normalized(self / mag))
         }
     }
+
+    /** Create a vector of unit length pointing in the same direction as the given vector.
+
+    # Panics
+
+    Divide by 0 when `self` is the 0 vector.
+    */
+    #[inline]
+    fn to_normalized_unchecked(self) -> Normalized<Self> {
+        Normalized(self / self.magnitude())
+    }
 }
+
+/// A vector with magnitude 1.0
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Normalized<V: Vector>(V);
 
 /** The vector cross product.
 */
