@@ -31,10 +31,10 @@ let q = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), PI/2.0)?;
 Create a random [`Quaternion`]:
 ```
 use hoomd_rs_vector::rotation::Quaternion;
-use rand::{thread_rng, Rng};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let mut rng = rand::thread_rng();
+let mut rng = StdRng::seed_from_u64(1);
 let v: Quaternion = rng.gen();
 # Ok(())
 # }
@@ -382,10 +382,10 @@ impl Distribution<Quaternion> for Standard {
 
     ```
     use hoomd_rs_vector::rotation::Quaternion;
-    use rand::{thread_rng, Rng};
+    use rand::{rngs::StdRng, Rng, SeedableRng};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut rng = rand::thread_rng();
+    let mut rng = StdRng::seed_from_u64(1);
     let v: Quaternion = rng.gen();
     # Ok(())
     # }

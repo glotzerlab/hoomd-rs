@@ -27,10 +27,10 @@ assert_eq!(a.theta, PI/2.0);
 Create a random [`Angle`]:
 ```
 use hoomd_rs_vector::rotation::Angle;
-use rand::{thread_rng, Rng};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let mut rng = rand::thread_rng();
+let mut rng = StdRng::seed_from_u64(1);
 let a: Angle = rng.gen();
 # Ok(())
 # }
@@ -280,10 +280,10 @@ impl Distribution<Angle> for Standard {
 
     ```
     use hoomd_rs_vector::rotation::Angle;
-    use rand::{thread_rng, Rng};
+    use rand::{rngs::StdRng, Rng, SeedableRng};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut rng = rand::thread_rng();
+    let mut rng = StdRng::seed_from_u64(1);
     let v: Angle = rng.gen();
     # Ok(())
     # }
@@ -332,6 +332,7 @@ mod approx {
 mod tests {
     use super::*;
     use ::approx::assert_relative_eq;
+    use rand::{rngs::StdRng, SeedableRng};
     use rstest::*;
     use std::f64::consts::PI;
 
@@ -421,7 +422,8 @@ mod tests {
 
     #[test]
     fn random() {
-        let mut rng = rand::thread_rng();
+        let mut rng = StdRng::seed_from_u64(1);
+
         for _ in 0..10000 {
             let a: Angle = rng.gen();
             assert!(a.theta >= 0.0 && a.theta < 2.0 * PI);

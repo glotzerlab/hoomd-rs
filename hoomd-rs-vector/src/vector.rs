@@ -41,10 +41,10 @@ Construct a random vector in the [-1, 1] hypercube:
 
 ```
 use hoomd_rs_vector::vector::Cartesian;
-use rand::{thread_rng, Rng};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let mut rng = rand::thread_rng();
+let mut rng = StdRng::seed_from_u64(1);
 let v: Cartesian::<3> = rng.gen();
 # Ok(())
 # }
@@ -340,10 +340,10 @@ impl<const N: usize> Distribution<Cartesian<N>> for Standard {
 
     ```
     use hoomd_rs_vector::vector::Cartesian;
-    use rand::{thread_rng, Rng};
+    use rand::{rngs::StdRng, Rng, SeedableRng};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut rng = rand::thread_rng();
+    let mut rng = StdRng::seed_from_u64(1);
     let v: Cartesian::<3> = rng.gen();
     # Ok(())
     # }
@@ -447,6 +447,7 @@ mod approx {
 mod tests {
     use super::*;
     use paste::paste;
+    use rand::{rngs::StdRng, SeedableRng};
 
     // Parameterize a test function over an array of vector lengths
     macro_rules! parameterize_vector_length {
@@ -726,7 +727,7 @@ mod tests {
 
     fn random_in_range<const N: usize>() {
         // Loosely verify we are drawing from the correct distribution
-        let mut rng = rand::thread_rng();
+        let mut rng = StdRng::seed_from_u64(1);
         let a: Cartesian<N> = rng.gen();
 
         assert!(a.coordinates.iter().all(|&x| -1.0 < x && x < 1.0));
