@@ -4,36 +4,7 @@
 /*! Implement 2D and 3D rotations.
 */
 mod angle;
-
-use crate::{
-    vector::{self, Cartesian},
-    Cross, Rotate, Rotation, Vector,
-};
+mod quaternion;
 
 pub use angle::Angle;
-
-pub struct Quaternion;
-
-impl Rotate<vector::Cartesian<3>> for Quaternion {
-    #[inline]
-    fn rotate(&self, vector: &vector::Cartesian<3>) -> vector::Cartesian<3> {
-        todo!()
-    }
-}
-
-impl Rotation for Quaternion {
-    #[inline]
-    fn identity() -> Self {
-        todo!()
-    }
-
-    #[inline]
-    fn inversed(self) -> Self {
-        todo!()
-    }
-
-    #[inline]
-    fn combine(&self, other: &Self) -> Self {
-        todo!()
-    }
-}
+pub use quaternion::Quaternion;

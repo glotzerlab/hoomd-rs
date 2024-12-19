@@ -27,11 +27,11 @@ assert_eq!(a.theta, PI/2.0);
 Create a random [`Angle`]:
 ```
 use hoomd_rs_vector::rotation::Angle;
-use rand::{thread_rng, Rng};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let mut rng = rand::thread_rng();
-let v: Angle = rng.gen();
+let mut rng = StdRng::seed_from_u64(1);
+let a: Angle = rng.gen();
 # Ok(())
 # }
 ```
@@ -86,9 +86,9 @@ impl Angle {
     ```
     use hoomd_rs_vector::rotation::Angle;
     use std::f64::consts::PI;
-    
+
     let a = Angle::from(20.0 * PI);
-    let b= a.normalized();
+    let b = a.normalized();
     assert_eq!(b.theta, 0.0)
     ```
     */
@@ -109,10 +109,10 @@ impl Angle {
     ```
     use hoomd_rs_vector::{rotation::Angle, Rotate, Rotation, vector::Cartesian};
     use std::f64::consts::PI;
-    
+
     let v = Cartesian::from([-1.0, 0.0]);
     let a = Angle::from(PI/2.0);
-    
+
     let precomputed = a.precomputed();
     let rotated = precomputed.rotate(&v);
     // rotated is approximately [0.0, -1.0]
@@ -138,7 +138,7 @@ impl Default for Angle {
     # Example
     ```
     use hoomd_rs_vector::rotation::Angle;
-    
+
     let a = Angle::default();
     assert_eq!(a.theta, 0.0)
     ```
@@ -156,7 +156,7 @@ impl From<f64> for Angle {
     # Example
     ```
     use hoomd_rs_vector::rotation::Angle;
-    
+
     let a = Angle::from(1.5);
     assert_eq!(a.theta, 1.5);
     ```
@@ -175,7 +175,7 @@ impl Rotate<Cartesian<2>> for Angle {
     ```
     use hoomd_rs_vector::{rotation::Angle, Rotate, Rotation, vector::Cartesian};
     use std::f64::consts::PI;
-    
+
     let v = Cartesian::from([-1.0, 0.0]);
     let a = Angle::from(PI/2.0);
     let rotated = a.rotate(&v);
@@ -200,7 +200,7 @@ impl Rotate<Cartesian<2>> for Precomputed {
     ```
     use hoomd_rs_vector::{rotation::Angle, Rotate, Rotation, vector::Cartesian};
     use std::f64::consts::PI;
-    
+
     let v = Cartesian::from([-1.0, 0.0]);
     let a = Angle::from(PI/2.0);
     let precomputed = a.precomputed();
@@ -220,7 +220,7 @@ impl Rotation for Angle {
     # Example
     ```
     use hoomd_rs_vector::{rotation::Angle, Rotation};
-    
+
     let a = Angle::identity();
     assert_eq!(a.theta, 0.0);
     ```
@@ -236,7 +236,7 @@ impl Rotation for Angle {
     ```
     use hoomd_rs_vector::{rotation::Angle, Rotation};
     use std::f64::consts::PI;
-    
+
     let a = Angle::from(PI/3.0);
     let b = a.inversed();
     assert_eq!(b.theta, -PI/3.0);
@@ -274,16 +274,16 @@ impl fmt::Display for Angle {
 }
 
 impl Distribution<Angle> for Standard {
-    /** Sample a random angle from the uniform distribution.
+    /** Sample a random angle from the uniform distribution over all rotations.
 
     # Example
 
     ```
     use hoomd_rs_vector::rotation::Angle;
-    use rand::{thread_rng, Rng};
-    
+    use rand::{rngs::StdRng, Rng, SeedableRng};
+
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut rng = rand::thread_rng();
+    let mut rng = StdRng::seed_from_u64(1);
     let v: Angle = rng.gen();
     # Ok(())
     # }
@@ -332,6 +332,7 @@ mod approx {
 mod tests {
     use super::*;
     use ::approx::assert_relative_eq;
+    use rand::{rngs::StdRng, SeedableRng};
     use rstest::*;
     use std::f64::consts::PI;
 
@@ -421,7 +422,8 @@ mod tests {
 
     #[test]
     fn random() {
-        let mut rng = rand::thread_rng();
+        let mut rng = StdRng::seed_from_u64(1);
+
         for _ in 0..10000 {
             let a: Angle = rng.gen();
             assert!(a.theta >= 0.0 && a.theta < 2.0 * PI);

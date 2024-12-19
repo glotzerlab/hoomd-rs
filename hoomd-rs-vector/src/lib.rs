@@ -66,6 +66,10 @@ pub enum Error {
     /// Attempted converting a value to a vector with a dimension not equal to the value's length.
     #[error("Source does not match the target vector length.")]
     InvalidVectorLength,
+
+    /// Attempted normalizing a vector with an invalid magnitude.
+    #[error("Invalid magnitude for normalization.")]
+    InvalidMagnitude,
 }
 
 /** A generic vector.
@@ -219,7 +223,7 @@ pub trait Vector:
     # Example
     ```
     use hoomd_rs_vector::{vector::Cartesian, Vector};
-    
+
     # fn main() {
     let v = Cartesian::from([2.0, 4.0]);
     let magnitude_squared = v.magnitude_squared();
@@ -248,7 +252,7 @@ pub trait Vector:
     # Example
     ```
     use hoomd_rs_vector::{vector::Cartesian, Vector};
-    
+
     # fn main() {
     let v = Cartesian::from([3.0, 4.0]);
     let magnitude= v.magnitude();
@@ -270,7 +274,7 @@ pub trait Vector:
     # Example
     ```
     use hoomd_rs_vector::{vector::Cartesian, Vector};
-    
+
     # fn main() {
     let a = Cartesian::from([1.0, 2.0]);
     let b = Cartesian::from([3.0, 4.0]);
@@ -281,6 +285,22 @@ pub trait Vector:
     */
     #[must_use]
     fn dot(&self, other: &Self) -> f64;
+
+    /** Create a vector of unit length pointing in the same direction as the given vector.
+
+    # Errors
+
+    [`Error::InvalidMagnitude`] when `self` is the 0 vector.
+    */
+    #[inline]
+    fn normalized(&self) -> Result<Self, Error> {
+        let mag = self.magnitude();
+        if mag == 0.0 {
+            Err(Error::InvalidMagnitude)
+        } else {
+            Ok(*self / mag)
+        }
+    }
 }
 
 /** The vector cross product.
@@ -295,7 +315,7 @@ pub trait Cross {
     # Example
     ```
     use hoomd_rs_vector::{vector::Cartesian, Cross, Vector};
-    
+
     # fn main() {
     let a = Cartesian::from([1.0, 0.0, 0.0]);
     let b = Cartesian::from([0.0, 1.0, 0.0]);
@@ -324,7 +344,7 @@ pub trait Rotate<V: Vector> {
     # Example
     ```
     use hoomd_rs_vector::{rotation::Angle, Rotate, Rotation, vector::Cartesian};
-    
+
     let v = Cartesian::from([-1.0, 0.0]);
     let a = Angle::from(std::f64::consts::PI/2.0);
     let rotated = a.rotate(&v);
