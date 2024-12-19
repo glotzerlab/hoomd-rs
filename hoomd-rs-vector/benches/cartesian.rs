@@ -17,10 +17,10 @@ fn main() {
     divan::main();
 }
 
-fn create_random_vector_pair<const N: usize>() -> (Cartesian<N>, Cartesian<N>) {
+fn create_random_vector_pair<const N: usize, R: Rng>(rng: &mut R) -> (Cartesian<N>, Cartesian<N>) {
     (
-        rand::random::<Cartesian<N>>(),
-        rand::random::<Cartesian<N>>(),
+        rng.gen::<Cartesian<N>>(),
+        rng.gen::<Cartesian<N>>(),
     )
 }
 
@@ -39,25 +39,31 @@ fn create_vecn_tryfrom_vec<const N: usize>(bencher: Bencher) {
 
 #[divan::bench(consts = DIMENSIONS)]
 fn add_vecn<const N: usize>(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+    
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(create_random_vector_pair::<N>)
+        .with_inputs(|| create_random_vector_pair::<N, _>(&mut rng))
         .bench_local_values(|(a, b)| black_box(a + b));
 }
 
 #[divan::bench(consts = DIMENSIONS)]
 fn sub_vecn<const N: usize>(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+    
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(create_random_vector_pair::<N>)
+        .with_inputs(|| create_random_vector_pair::<N, _>(&mut rng))
         .bench_local_values(|(a, b)| black_box(a - b));
 }
 
 #[divan::bench(consts = DIMENSIONS)]
 fn mul_vecn<const N: usize>(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+    
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(create_random_vector_pair::<N>)
+        .with_inputs(|| create_random_vector_pair::<N, _>(&mut rng))
         .bench_local_values(|(a, b)| {
             black_box(a * b.coordinates[0]);
         });
@@ -65,25 +71,31 @@ fn mul_vecn<const N: usize>(bencher: Bencher) {
 
 #[divan::bench(consts = DIMENSIONS)]
 fn div_vecn<const N: usize>(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+    
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(create_random_vector_pair::<N>)
+        .with_inputs(|| create_random_vector_pair::<N, _>(&mut rng))
         .bench_local_values(|(a, b)| black_box(a / b.coordinates[0]));
 }
 
 #[divan::bench(consts = DIMENSIONS)]
 fn dot_vecn<const N: usize>(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+    
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(create_random_vector_pair::<N>)
+        .with_inputs(|| create_random_vector_pair::<N, _>(&mut rng))
         .bench_local_values(|(a, b)| black_box(a.dot(&b)));
 }
 
 #[divan::bench]
 fn cross_vec3(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+    
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(create_random_vector_pair::<3>)
+        .with_inputs(|| create_random_vector_pair::<3, _>(&mut rng))
         .bench_local_values(|(a, b)| black_box(a.cross(&b)));
 }
 

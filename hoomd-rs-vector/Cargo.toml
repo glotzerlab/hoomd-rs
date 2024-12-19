@@ -31,3 +31,7 @@ harness = false
 [[bench]]
 name = "angle"
 harness = false
+
+[[bench]]
+name = "quaternion"
+harness = false
