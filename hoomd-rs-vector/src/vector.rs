@@ -14,7 +14,7 @@ use std::ops::{
 use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
 
-use crate::{Cross, Error, Vector};
+use crate::{Cross, Error, Normalized, Vector};
 
 /** A Cartesian vector represented by an array of `N` `f64` coordinates.
 
@@ -128,6 +128,8 @@ impl From<(f64, f64, f64)> for Cartesian<3> {
     }
 }
 
+// TODO: Rewrite to work with a slice instead of a Vec explicitly.
+
 impl<const N: usize> TryFrom<Vec<f64>> for Cartesian<N> {
     type Error = Error;
 
@@ -188,6 +190,28 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for Cartesian<N> {
         let mut iter = value;
         let coordinates = array::from_fn(|_| iter.next().unwrap_or(0) as f64);
         Ok(Self { coordinates })
+    }
+}
+
+impl<const N: usize> TryFrom<[f64; N]> for Normalized<Cartesian<N>> {
+    type Error = Error;
+
+    /** Create a normalized Cartesian vector from the given coordinates.
+
+    # Example
+    ```
+    use hoomd_rs_vector::{Normalized, vector::Cartesian};
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let n = Normalized::<Cartesian<3>>::try_from([2.0, 0.0, 0.0])?;
+    assert_eq!(*n.get(), [1.0, 0.0, 0.0].into());
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    fn try_from(value: [f64; N]) -> Result<Self, Self::Error> {
+        Cartesian::from(value).to_normalized()
     }
 }
 
@@ -740,5 +764,5 @@ mod tests {
 
     parameterize_vector_length!(random_in_range, [2, 3, 4, 8, 16, 32, 10_000]);
 
-    // TODO: test to_normalized
+    // TODO: test to_normalized, try_from for Normalized
 }

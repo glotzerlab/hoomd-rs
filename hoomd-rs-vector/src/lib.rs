@@ -320,6 +320,14 @@ pub trait Vector:
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Normalized<V: Vector>(V);
 
+impl<V: Vector> Normalized<V> {
+    /// Get the normalized vector.
+    #[inline]
+    pub fn get(&self) -> &V {
+        &self.0
+    }
+}
+
 /** The vector cross product.
 */
 pub trait Cross {

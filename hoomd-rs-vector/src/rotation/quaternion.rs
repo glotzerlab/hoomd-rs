@@ -23,7 +23,7 @@ use hoomd_rs_vector::rotation::Quaternion;
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let q = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), PI/2.0);
+let q = Quaternion::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI/2.0);
 # Ok(())
 # }
 ```
@@ -47,8 +47,8 @@ use hoomd_rs_vector::{rotation::Quaternion, Rotation};
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let a = Quaternion::from_axis_angle([1.0, 0.0, 1.0].into(), PI/2.0);
-let b = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/4.0);
+let a = Quaternion::from_axis_angle([1.0, 0.0, 1.0].try_into()?, PI/2.0);
+let b = Quaternion::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/4.0);
 let c = a.combine(&b);
 # Ok(())
 # }
@@ -63,7 +63,7 @@ use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let a = Cartesian::from([-1.0, 0.0, 0.0]);
-let q = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/2.0);
+let q = Quaternion::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
 let b = q.rotate(&a);
 // b is approximately [0.0, -1.0, 0.0]
 # Ok(())
@@ -96,7 +96,7 @@ impl Quaternion {
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let q = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), PI/2.0);
+    let q = Quaternion::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI/2.0);
     # Ok(())
     # }
     ```
@@ -125,7 +125,7 @@ impl Quaternion {
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let a = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), PI/2.0);
+    let a = Quaternion::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI/2.0);
     let b = a.normalized()?;
     # Ok(())
     # }
@@ -162,7 +162,7 @@ impl Quaternion {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
-    let q = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/2.0);
+    let q = Quaternion::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
 
     let precomputed = q.to_precomputed();
     let b = precomputed.rotate(&a);
@@ -232,6 +232,21 @@ impl Default for Quaternion {
     }
 }
 
+impl From<[f64; 4]> for Quaternion {
+    /** Construct a [`Quaternion`] from 4 values.
+
+    The first value is the real part. The 2nd through 4th are the complex vector part:
+    `[scalar, vector_0, vector_1, vector_2]`.
+    */
+    #[inline]
+    fn from(value: [f64; 4]) -> Self {
+        Self {
+            scalar: value[0],
+            vector: [value[1], value[2], value[3]].into(),
+        }
+    }
+}
+
 impl Rotate<Cartesian<3>> for Quaternion {
     /** Rotate a [`Cartesian<3>`] by a [`Quaternion`]
 
@@ -246,7 +261,7 @@ impl Rotate<Cartesian<3>> for Quaternion {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
-    let q = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/2.0);
+    let q = Quaternion::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
     let b = q.rotate(&a);
     // b is approximately [0.0, -1.0, 0.0]
     # Ok(())
@@ -279,9 +294,9 @@ impl Rotate<Cartesian<3>> for Precomputed {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
-    let q = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/2.0);
+    let q = Quaternion::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
 
-    let precomputed = q.precomputed();
+    let precomputed = q.to_precomputed();
     let b = precomputed.rotate(&a);
     // b is approximately [0.0, -1.0, 0.0]
     # Ok(())
@@ -310,8 +325,8 @@ impl Rotation for Quaternion {
     use hoomd_rs_vector::{rotation::Quaternion, Rotation};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let q_a = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), 1.5);
-    let q_b = Quaternion::from_axis_angle([1.0, 0.0, 0.0].into(), 0.125);
+    let q_a = Quaternion::from_axis_angle([0.0, 1.0, 0.0].try_into()?, 1.5);
+    let q_b = Quaternion::from_axis_angle([1.0, 0.0, 0.0].try_into()?, 0.125);
     let q_ab = q_a.combine(&q_b);
     # Ok(())
     # }
@@ -354,7 +369,7 @@ impl Rotation for Quaternion {
     use hoomd_rs_vector::{rotation::Quaternion, Rotation};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let q = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), 1.5);
+    let q = Quaternion::from_axis_angle([0.0, 1.0, 0.0].try_into()?, 1.5);
     let q_star = q.inverted();
     # Ok(())
     # }
@@ -362,7 +377,10 @@ impl Rotation for Quaternion {
     */
     #[inline]
     fn inverted(self) -> Self {
-        Quaternion { vector: -self.vector, ..self }
+        Quaternion {
+            vector: -self.vector,
+            ..self
+        }
     }
 }
 
@@ -475,6 +493,13 @@ mod tests {
         let a = Quaternion::identity();
         assert!(a.scalar == 1.0);
         assert!(a.vector == [0.0, 0.0, 0.0].into());
+    }
+
+    #[test]
+    fn from_array() {
+        let q = Quaternion::from([2.0, -3.0, 4.0, 7.0]);
+        assert!(q.scalar == 2.0);
+        assert!(q.vector == [-3.0, 4.0, 7.0].into());
     }
 
     #[rstest(

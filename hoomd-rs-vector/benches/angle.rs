@@ -52,6 +52,7 @@ fn gen_random(bencher: Bencher) {
         .bench_local(|| black_box(rng.gen::<Angle>()));
 }
 
-// TODO: Add [f64; 4] conversion for quaternion
-// TODO: Versors implement rotate, Quaternions don't - construct Versors like normalized vector
-// TODO: try_from [f64; N] into Normalized(Cartesian<N>)
+// TODO: Move quaternion to the library level. Give them multiplication, conjugate, and other ops.
+// TODO: Versors are a newtype based on Quaternion and live in `rotation`. Versors implement rotate,
+// Quaternions don't - construct Versors like normalized vector. Quternions get from [f64, 4],
+// Versors get from_axis_angle.

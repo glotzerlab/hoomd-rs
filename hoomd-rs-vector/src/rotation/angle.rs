@@ -113,7 +113,7 @@ impl Angle {
     let v = Cartesian::from([-1.0, 0.0]);
     let a = Angle::from(PI/2.0);
 
-    let precomputed = a.precomputed();
+    let precomputed = a.to_precomputed();
     let rotated = precomputed.rotate(&v);
     // rotated is approximately [0.0, -1.0]
     ```
@@ -203,7 +203,7 @@ impl Rotate<Cartesian<2>> for Precomputed {
 
     let v = Cartesian::from([-1.0, 0.0]);
     let a = Angle::from(PI/2.0);
-    let precomputed = a.precomputed();
+    let precomputed = a.to_precomputed();
     let rotated = precomputed.rotate(&v);
     // rotated is approximately [0.0, -1.0]
     ```
