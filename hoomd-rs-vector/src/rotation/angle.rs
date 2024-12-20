@@ -120,7 +120,7 @@ impl Angle {
     */
     #[inline]
     #[must_use]
-    pub fn precomputed(&self) -> Precomputed {
+    pub fn to_precomputed(self) -> Precomputed {
         let sin_theta = self.theta.sin();
         let cos_theta = self.theta.cos();
         Precomputed {
@@ -238,11 +238,11 @@ impl Rotation for Angle {
     use std::f64::consts::PI;
 
     let a = Angle::from(PI/3.0);
-    let b = a.inversed();
+    let b = a.inverted();
     assert_eq!(b.theta, -PI/3.0);
     ```
     */
-    fn inversed(self) -> Self {
+    fn inverted(self) -> Self {
         Self::from(-self.theta)
     }
 
@@ -351,7 +351,7 @@ mod tests {
 
         assert_relative_eq!(angle.rotate(&vec), ans, epsilon = 4.0 * f64::EPSILON);
         assert_relative_eq!(
-            angle.precomputed().rotate(&vec),
+            angle.to_precomputed().rotate(&vec),
             ans,
             epsilon = 4.0 * f64::EPSILON
         );
@@ -380,9 +380,9 @@ mod tests {
     }
 
     #[rstest(theta => [0.0, 1.0, 2.125, 14.875, -4.5])]
-    fn inversed(theta: f64) {
+    fn inverted(theta: f64) {
         let angle1 = Angle::from(theta);
-        let angle2 = angle1.inversed();
+        let angle2 = angle1.inverted();
         assert!(angle2.theta == -theta);
         assert_relative_eq!(angle1.combine(&angle2), Angle::identity());
     }

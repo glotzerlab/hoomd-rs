@@ -73,10 +73,10 @@ let b = q.rotate(&a);
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Quaternion {
     /// Scalar component
-    pub s: f64,
+    pub scalar: f64,
 
     /// Vector component
-    pub v: Cartesian<3>,
+    pub vector: Cartesian<3>,
 }
 
 /// A precomputed rotation by a [`Quaternion`]
@@ -107,8 +107,8 @@ impl Quaternion {
         let Normalized(axis_vector) = axis;
 
         Quaternion {
-            s: (angle / 2.0).cos(),
-            v: axis_vector * (angle / 2.0).sin(),
+            scalar: (angle / 2.0).cos(),
+            vector: axis_vector * (angle / 2.0).sin(),
         }
     }
 
@@ -144,8 +144,8 @@ impl Quaternion {
         } else {
             let f = 1.0 / magnitude_squared.sqrt();
             Ok(Self {
-                s: self.s * f,
-                v: self.v * f,
+                scalar: self.scalar * f,
+                vector: self.vector * f,
             })
         }
     }
@@ -164,7 +164,7 @@ impl Quaternion {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
     let q = Quaternion::from_axis_angle([0.0, 0.0, 1.0].into(), PI/2.0);
 
-    let precomputed = q.precomputed();
+    let precomputed = q.to_precomputed();
     let b = precomputed.rotate(&a);
     // b is approximately [0.0, -1.0, 0.0]
     # Ok(())
@@ -173,11 +173,11 @@ impl Quaternion {
     */
     #[inline]
     #[must_use]
-    pub fn precomputed(&self) -> Precomputed {
-        let a = self.s;
-        let b = self.v[0];
-        let c = self.v[1];
-        let d = self.v[2];
+    pub fn to_precomputed(self) -> Precomputed {
+        let a = self.scalar;
+        let b = self.vector[0];
+        let c = self.vector[1];
+        let d = self.vector[2];
 
         Precomputed {
             rows: [
@@ -208,7 +208,7 @@ impl Quaternion {
     #[inline]
     #[must_use]
     fn magnitude_squared(&self) -> f64 {
-        self.s * self.s + self.v.dot(&self.v)
+        self.scalar * self.scalar + self.vector.dot(&self.vector)
     }
 }
 
@@ -226,8 +226,8 @@ impl Default for Quaternion {
     #[must_use]
     fn default() -> Self {
         Self {
-            s: 1.0,
-            v: [0.0, 0.0, 0.0].into(),
+            scalar: 1.0,
+            vector: [0.0, 0.0, 0.0].into(),
         }
     }
 }
@@ -262,9 +262,9 @@ impl Rotate<Cartesian<3>> for Quaternion {
     */
     #[inline]
     fn rotate(&self, vector: &Cartesian<3>) -> Cartesian<3> {
-        *vector * (self.s * self.s - self.v.dot(&self.v))
-            + self.v.cross(vector) * (2.0 * self.s)
-            + self.v * (2.0 * self.v.dot(vector))
+        *vector * (self.scalar * self.scalar - self.vector.dot(&self.vector))
+            + self.vector.cross(vector) * (2.0 * self.scalar)
+            + self.vector * (2.0 * self.vector.dot(vector))
     }
 }
 
@@ -323,8 +323,8 @@ impl Rotation for Quaternion {
         let b = other;
 
         Quaternion {
-            s: (a.s * b.s - a.v.dot(&b.v)),
-            v: (b.v * a.s + a.v * b.s + a.v.cross(&b.v)),
+            scalar: (a.scalar * b.scalar - a.vector.dot(&b.vector)),
+            vector: (b.vector * a.scalar + a.vector * b.scalar + a.vector.cross(&b.vector)),
         }
     }
 
@@ -355,14 +355,14 @@ impl Rotation for Quaternion {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let q = Quaternion::from_axis_angle([0.0, 1.0, 0.0].into(), 1.5);
-    let q_star = q.inversed();
+    let q_star = q.inverted();
     # Ok(())
     # }
     ```
     */
     #[inline]
-    fn inversed(self) -> Self {
-        Quaternion { v: -self.v, ..self }
+    fn inverted(self) -> Self {
+        Quaternion { vector: -self.vector, ..self }
     }
 }
 
@@ -370,7 +370,7 @@ impl fmt::Display for Quaternion {
     /// Format a [`Quaternion`] as `[{s}, [{v[0]}, {v[1]}, {v[2]}]]`.
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "[{}, {}]", self.s, self.v)
+        write!(f, "[{}, {}]", self.scalar, self.vector)
     }
 }
 
@@ -413,8 +413,8 @@ impl Distribution<Quaternion> for Standard {
 
         let scale = ((1.0 - (x * x + y * y)) / (u * u + v * v)).sqrt();
         Quaternion {
-            s: x,
-            v: [y, scale * u, scale * v].into(),
+            scalar: x,
+            vector: [y, scale * u, scale * v].into(),
         }
     }
 }
@@ -433,8 +433,8 @@ mod approx {
         }
 
         fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
-            f64::abs_diff_eq(&self.s, &other.s, epsilon)
-                && Cartesian::abs_diff_eq(&self.v, &other.v, epsilon)
+            f64::abs_diff_eq(&self.scalar, &other.scalar, epsilon)
+                && Cartesian::abs_diff_eq(&self.vector, &other.vector, epsilon)
         }
     }
 
@@ -449,8 +449,8 @@ mod approx {
             epsilon: Self::Epsilon,
             max_relative: Self::Epsilon,
         ) -> bool {
-            f64::relative_eq(&self.s, &other.s, epsilon, max_relative)
-                && Cartesian::relative_eq(&self.v, &other.v, epsilon, max_relative)
+            f64::relative_eq(&self.scalar, &other.scalar, epsilon, max_relative)
+                && Cartesian::relative_eq(&self.vector, &other.vector, epsilon, max_relative)
         }
     }
 }
@@ -466,15 +466,15 @@ mod tests {
     #[test]
     fn default() {
         let a = Quaternion::default();
-        assert!(a.s == 1.0);
-        assert!(a.v == [0.0, 0.0, 0.0].into());
+        assert!(a.scalar == 1.0);
+        assert!(a.vector == [0.0, 0.0, 0.0].into());
     }
 
     #[test]
     fn identity() {
         let a = Quaternion::identity();
-        assert!(a.s == 1.0);
-        assert!(a.v == [0.0, 0.0, 0.0].into());
+        assert!(a.scalar == 1.0);
+        assert!(a.vector == [0.0, 0.0, 0.0].into());
     }
 
     #[rstest(
@@ -485,8 +485,8 @@ mod tests {
         let Normalized(axis_vector) = axis;
 
         let q = Quaternion::from_axis_angle(axis, theta);
-        assert_relative_eq!(q.s, (theta / 2.0).cos());
-        assert_relative_eq!(q.v, axis_vector * (theta / 2.0).sin());
+        assert_relative_eq!(q.scalar, (theta / 2.0).cos());
+        assert_relative_eq!(q.vector, axis_vector * (theta / 2.0).sin());
     }
 
     #[rstest(
@@ -502,8 +502,8 @@ mod tests {
         let q = a.combine(&b);
 
         let theta = theta_1 + theta_2;
-        assert_relative_eq!(q.s, (theta / 2.0).cos());
-        assert_relative_eq!(q.v, axis_vector * (theta / 2.0).sin());
+        assert_relative_eq!(q.scalar, (theta / 2.0).cos());
+        assert_relative_eq!(q.vector, axis_vector * (theta / 2.0).sin());
     }
 
     fn validate_rotations<R: Rotate<Cartesian<3>>>(z_pi_2: &R, y_pi_4: &R) {
@@ -555,12 +555,12 @@ mod tests {
             Cartesian::from([0.0, 0.0, 1.0]).to_normalized_unchecked(),
             PI / 2.0,
         )
-        .precomputed();
+        .to_precomputed();
         let y_pi_4 = Quaternion::from_axis_angle(
             Cartesian::from([0.0, 1.0, 0.0]).to_normalized_unchecked(),
             PI / 4.0,
         )
-        .precomputed();
+        .to_precomputed();
 
         validate_rotations(&z_pi_2, &y_pi_4);
     }
@@ -582,20 +582,20 @@ mod tests {
     }
 
     #[rstest(theta => [0.0, 1.0, 2.125])]
-    fn inversed(theta: f64) {
+    fn inverted(theta: f64) {
         let q1 = Quaternion::from_axis_angle(
             Cartesian::from([1.0, 0.5, -2.0]).to_normalized_unchecked(),
             theta,
         );
-        let q2 = q1.inversed();
+        let q2 = q1.inverted();
         assert_relative_eq!(q1.combine(&q2), Quaternion::identity());
     }
 
     #[test]
     fn display() {
         let q = Quaternion {
-            s: 0.5,
-            v: [0.125, -0.875, 2.125].into(),
+            scalar: 0.5,
+            vector: [0.125, -0.875, 2.125].into(),
         };
         let s = format!("{q}");
         assert_eq!(s, "[0.5, [0.125, -0.875, 2.125]]");
@@ -604,14 +604,14 @@ mod tests {
     #[test]
     fn normalized() {
         let q = Quaternion {
-            s: 5.0,
-            v: [3.0, -1.0, 1.0].into(),
+            scalar: 5.0,
+            vector: [3.0, -1.0, 1.0].into(),
         };
         assert_relative_eq!(
             q.normalized().expect("non-zero quaternion"),
             Quaternion {
-                s: 5.0 / 6.0,
-                v: [3.0 / 6.0, -1.0 / 6.0, 1.0 / 6.0].into()
+                scalar: 5.0 / 6.0,
+                vector: [3.0 / 6.0, -1.0 / 6.0, 1.0 / 6.0].into()
             }
         );
     }

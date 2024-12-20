@@ -398,12 +398,12 @@ pub trait Rotation {
     ```
     # use hoomd_rs_vector::{Rotation};
     # fn inverse<R: Rotation>(r: R) {
-    let r_inverse = r.inversed();
+    let r_inverse = r.inverted();
     # }
     ```
     */
     #[must_use]
-    fn inversed(self) -> Self;
+    fn inverted(self) -> Self;
 
     #[allow(clippy::doc_markdown)]
     /** Combine two rotations.

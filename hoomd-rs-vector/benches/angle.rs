@@ -35,7 +35,7 @@ fn rotate_precomputed(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
     let a: Angle = rng.gen();
-    let precomputed = a.precomputed();
+    let precomputed = a.to_precomputed();
 
     bencher
         .counter(ItemsCount::from(1_u32))
@@ -52,7 +52,6 @@ fn gen_random(bencher: Bencher) {
         .bench_local(|| black_box(rng.gen::<Angle>()));
 }
 
-// TODO: rename to to_precomputed
-// TODO: rename quaternion s and v to scalar and vector
 // TODO: Add [f64; 4] conversion for quaternion
-// TODO: inversed to inverted.
+// TODO: Versors implement rotate, Quaternions don't - construct Versors like normalized vector
+// TODO: try_from [f64; N] into Normalized(Cartesian<N>)

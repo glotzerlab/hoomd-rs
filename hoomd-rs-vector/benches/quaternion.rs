@@ -35,7 +35,7 @@ fn rotate_precomputed(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
     let a: Quaternion = rng.gen();
-    let precomputed = a.precomputed();
+    let precomputed = a.to_precomputed();
 
     bencher
         .counter(ItemsCount::from(1_u32))
