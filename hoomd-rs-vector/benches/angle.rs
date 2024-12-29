@@ -10,9 +10,7 @@ use divan::counter::ItemsCount;
 use divan::{self, black_box, Bencher};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
-use hoomd_rs_vector::rotation::Angle;
-use hoomd_rs_vector::Cartesian;
-use hoomd_rs_vector::Rotate;
+use hoomd_rs_vector::{Angle, Cartesian, Rotate};
 
 fn main() {
     divan::main();
@@ -56,4 +54,3 @@ fn gen_random(bencher: Bencher) {
 // TODO: Versors are a newtype based on Quaternion and live in `rotation`. Versors implement rotate,
 // Quaternions don't - construct Versors like unit vector. Quternions get from [f64, 4],
 // Versors get from_axis_angle.
-// TODO: Make a flat namespace - remove the vector and rotation module.

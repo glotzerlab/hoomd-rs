@@ -10,9 +10,7 @@ use divan::counter::ItemsCount;
 use divan::{self, black_box, Bencher};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
-use hoomd_rs_vector::rotation::Quaternion;
-use hoomd_rs_vector::Cartesian;
-use hoomd_rs_vector::Rotate;
+use hoomd_rs_vector::{Cartesian, Rotate, Quaternion};
 
 fn main() {
     divan::main();

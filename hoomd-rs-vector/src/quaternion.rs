@@ -19,7 +19,7 @@ Hamilton convention.
 
 Create a [`Quaternion`] from an axis and angle:
 ```
-use hoomd_rs_vector::rotation::Quaternion;
+use hoomd_rs_vector::Quaternion;
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -30,7 +30,7 @@ let q = Quaternion::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI/2.0);
 
 Create a random [`Quaternion`]:
 ```
-use hoomd_rs_vector::rotation::Quaternion;
+use hoomd_rs_vector::Quaternion;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -43,7 +43,7 @@ let v: Quaternion = rng.gen();
 
 Combine two rotations together:
 ```
-use hoomd_rs_vector::{rotation::Quaternion, Rotation};
+use hoomd_rs_vector::{Quaternion, Rotation};
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -58,7 +58,7 @@ let c = a.combine(&b);
 
 Rotate a [`Cartesian<3>`] vector by a [`Quaternion`]:
 ```
-use hoomd_rs_vector::{rotation::Quaternion, Rotate, Rotation, Cartesian};
+use hoomd_rs_vector::{Quaternion, Rotate, Rotation, Cartesian};
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -92,7 +92,7 @@ impl Quaternion {
     # Example
 
     ```
-    use hoomd_rs_vector::rotation::Quaternion;
+    use hoomd_rs_vector::Quaternion;
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -121,7 +121,7 @@ impl Quaternion {
     # Example
 
     ```
-    use hoomd_rs_vector::rotation::Quaternion;
+    use hoomd_rs_vector::Quaternion;
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -157,7 +157,7 @@ impl Quaternion {
 
     # Example
     ```
-    use hoomd_rs_vector::{rotation::Quaternion, Rotate, Rotation, Cartesian};
+    use hoomd_rs_vector::{Quaternion, Rotate, Rotation, Cartesian};
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -217,7 +217,7 @@ impl Default for Quaternion {
 
     # Example
     ```
-    use hoomd_rs_vector::rotation::Quaternion;
+    use hoomd_rs_vector::Quaternion;
 
     let q = Quaternion::default();
     ```
@@ -256,7 +256,7 @@ impl Rotate<Cartesian<3>> for Quaternion {
     # Example
 
     ```
-    use hoomd_rs_vector::{rotation::Quaternion, Rotate, Rotation, Cartesian};
+    use hoomd_rs_vector::{Quaternion, Rotate, Rotation, Cartesian};
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -289,7 +289,7 @@ impl Rotate<Cartesian<3>> for Precomputed {
 
     # Example
     ```
-    use hoomd_rs_vector::{rotation::Quaternion, Rotate, Rotation, Cartesian};
+    use hoomd_rs_vector::{Quaternion, Rotate, Rotation, Cartesian};
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -322,7 +322,7 @@ impl Rotation for Quaternion {
     # Example
 
     ```
-    use hoomd_rs_vector::{rotation::Quaternion, Rotation};
+    use hoomd_rs_vector::{Quaternion, Rotation};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let q_a = Quaternion::from_axis_angle([0.0, 1.0, 0.0].try_into()?, 1.5);
@@ -348,7 +348,7 @@ impl Rotation for Quaternion {
     # Example
 
     ```
-    use hoomd_rs_vector::{rotation::Quaternion, Rotation};
+    use hoomd_rs_vector::{Quaternion, Rotation};
 
     let identity = Quaternion::identity();
     ```
@@ -366,7 +366,7 @@ impl Rotation for Quaternion {
     # Example
 
     ```
-    use hoomd_rs_vector::{rotation::Quaternion, Rotation};
+    use hoomd_rs_vector::{Quaternion, Rotation};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let q = Quaternion::from_axis_angle([0.0, 1.0, 0.0].try_into()?, 1.5);
@@ -398,7 +398,7 @@ impl Distribution<Quaternion> for Standard {
     # Example
 
     ```
-    use hoomd_rs_vector::rotation::Quaternion;
+    use hoomd_rs_vector::Quaternion;
     use rand::{rngs::StdRng, Rng, SeedableRng};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {

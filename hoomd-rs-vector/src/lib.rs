@@ -49,17 +49,18 @@ Using these traits, you can implement custom vector types for use througought `h
 `hoomd_rs_vector` provides canonical implementations of [`Vector`] and [`Rotation`]:
 
 * [`Cartesian`] - N-dimensional cartesian vector.
-* [`rotation::Angle`] - Rotation in the xy plane (interoperates with [`Cartesian<2>`].
-* [`rotation::Quaternion`] - 3D rotation (interoperates with [`Cartesian<3>`].
+* [`Angle`] - Rotation in the xy plane (interoperates with [`Cartesian<2>`].
+* [`Quaternion`] - 3D rotation (interoperates with [`Cartesian<3>`].
 
 TODO: completely rewrite docs - follow the `std::cell` module as an example.
 */
 
 
-pub mod rotation;
 mod cartesian;
+mod quaternion;
+mod angle;
 
-pub use cartesian::Cartesian;
+pub use {angle::Angle, cartesian::Cartesian, quaternion::Quaternion};
 
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use thiserror::Error;
@@ -373,7 +374,7 @@ pub trait Rotate<V: Vector> {
 
     # Example
     ```
-    use hoomd_rs_vector::{rotation::Angle, Rotate, Rotation, Cartesian};
+    use hoomd_rs_vector::{Angle, Rotate, Rotation, Cartesian};
 
     let v = Cartesian::from([-1.0, 0.0]);
     let a = Angle::from(std::f64::consts::PI/2.0);
