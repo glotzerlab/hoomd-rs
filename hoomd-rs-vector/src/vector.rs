@@ -14,7 +14,7 @@ use std::ops::{
 use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
 
-use crate::{Cross, Error, Normalized, Vector};
+use crate::{Cross, Error, Unit, Vector};
 
 /** A Cartesian vector represented by an array of `N` `f64` coordinates.
 
@@ -193,17 +193,17 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for Cartesian<N> {
     }
 }
 
-impl<const N: usize> TryFrom<[f64; N]> for Normalized<Cartesian<N>> {
+impl<const N: usize> TryFrom<[f64; N]> for Unit<Cartesian<N>> {
     type Error = Error;
 
-    /** Create a normalized Cartesian vector from the given coordinates.
+    /** Create a unit Cartesian vector from the given coordinates.
 
     # Example
     ```
-    use hoomd_rs_vector::{Normalized, vector::Cartesian};
+    use hoomd_rs_vector::{Unit, vector::Cartesian};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let n = Normalized::<Cartesian<3>>::try_from([2.0, 0.0, 0.0])?;
+    let n = Unit::<Cartesian<3>>::try_from([2.0, 0.0, 0.0])?;
     assert_eq!(*n.get(), [1.0, 0.0, 0.0].into());
     # Ok(())
     # }
@@ -211,7 +211,7 @@ impl<const N: usize> TryFrom<[f64; N]> for Normalized<Cartesian<N>> {
     */
     #[inline]
     fn try_from(value: [f64; N]) -> Result<Self, Self::Error> {
-        Cartesian::from(value).to_normalized()
+        Cartesian::from(value).to_unit()
     }
 }
 
@@ -764,5 +764,5 @@ mod tests {
 
     parameterize_vector_length!(random_in_range, [2, 3, 4, 8, 16, 32, 10_000]);
 
-    // TODO: test to_normalized, try_from for Normalized
+    // TODO: test to_unit, try_from for Unit
 }

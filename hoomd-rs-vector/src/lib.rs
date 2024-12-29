@@ -67,7 +67,7 @@ pub enum Error {
     #[error("Source does not match the target vector length.")]
     InvalidVectorLength,
 
-    /// Attempted normalizing a vector with an invalid magnitude.
+    /// Attempted normalizing a vector or quaternion with an invalid magnitude.
     #[error("Invalid magnitude for normalization.")]
     InvalidMagnitude,
 }
@@ -295,12 +295,12 @@ pub trait Vector:
     [`Error::InvalidMagnitude`] when `self` is the 0 vector.
     */
     #[inline]
-    fn to_normalized(self) -> Result<Normalized<Self>, Error> {
+    fn to_unit(self) -> Result<Unit<Self>, Error> {
         let mag = self.magnitude();
         if mag == 0.0 {
             Err(Error::InvalidMagnitude)
         } else {
-            Ok(Normalized(self / mag))
+            Ok(Unit(self / mag))
         }
     }
 
@@ -311,17 +311,17 @@ pub trait Vector:
     Divide by 0 when `self` is the 0 vector.
     */
     #[inline]
-    fn to_normalized_unchecked(self) -> Normalized<Self> {
-        Normalized(self / self.magnitude())
+    fn to_unit_unchecked(self) -> Unit<Self> {
+        Unit(self / self.magnitude())
     }
 }
 
 /// A vector with magnitude 1.0
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Normalized<V: Vector>(V);
+pub struct Unit<V: Vector>(V);
 
-impl<V: Vector> Normalized<V> {
-    /// Get the normalized vector.
+impl<V: Vector> Unit<V> {
+    /// Get the unit vector.
     #[inline]
     pub fn get(&self) -> &V {
         &self.0

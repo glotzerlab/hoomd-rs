@@ -7,7 +7,7 @@ use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
 use std::fmt;
 
-use crate::{vector::Cartesian, Cross, Error, Normalized, Rotate, Rotation, Vector};
+use crate::{vector::Cartesian, Cross, Error, Unit, Rotate, Rotation, Vector};
 
 /** Represent a 3D rotation with a quaternion.
 
@@ -103,8 +103,8 @@ impl Quaternion {
     */
     #[inline]
     #[must_use]
-    pub fn from_axis_angle(axis: Normalized<Cartesian<3>>, angle: f64) -> Self {
-        let Normalized(axis_vector) = axis;
+    pub fn from_axis_angle(axis: Unit<Cartesian<3>>, angle: f64) -> Self {
+        let Unit(axis_vector) = axis;
 
         Quaternion {
             scalar: (angle / 2.0).cos(),
@@ -114,7 +114,7 @@ impl Quaternion {
 
     /** Normalize the quaternion.
 
-    Nominally, all [`Quaternion`] instances remain normalized. Due to limited floating point
+    Nominally, all [`Quaternion`] instances remain unit. Due to limited floating point
     precision, this assumption may not hold after repeated operations. Normalize quaternions
     when needed to correct this issue.
 
@@ -126,7 +126,7 @@ impl Quaternion {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Quaternion::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI/2.0);
-    let b = a.normalized()?;
+    let b = a.unit()?;
     # Ok(())
     # }
     ```
@@ -136,7 +136,7 @@ impl Quaternion {
     [`Error::InvalidMagnitude`] when `self` is the 0 quaternion.
     */
     #[inline]
-    pub fn normalized(self) -> Result<Self, Error> {
+    pub fn unit(self) -> Result<Self, Error> {
         let magnitude_squared = self.magnitude_squared();
 
         if magnitude_squared == 0.0 {
@@ -270,8 +270,8 @@ impl Rotate<Cartesian<3>> for Quaternion {
 
     <div class="warning">
 
-    The given [`Quaternion`] is assumed to be normalized. `rotate` produces undefined results
-    when the quaternion is not normalized.
+    The given [`Quaternion`] is assumed to be unit. `rotate` produces undefined results
+    when the quaternion is not unit.
 
     </div>
     */
@@ -504,10 +504,10 @@ mod tests {
 
     #[rstest(
         theta => [0.0, PI/2.0, 1e-12 * PI, -3.0, 12345.6],
-        axis => [Cartesian::from([1.0, 0.0, 0.0]).to_normalized_unchecked(), Cartesian::from([1.0, -1.0, 1.0]).to_normalized_unchecked()],
+        axis => [Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked(), Cartesian::from([1.0, -1.0, 1.0]).to_unit_unchecked()],
     )]
-    fn from_axis_angle(theta: f64, axis: Normalized<Cartesian<3>>) {
-        let Normalized(axis_vector) = axis;
+    fn from_axis_angle(theta: f64, axis: Unit<Cartesian<3>>) {
+        let Unit(axis_vector) = axis;
 
         let q = Quaternion::from_axis_angle(axis, theta);
         assert_relative_eq!(q.scalar, (theta / 2.0).cos());
@@ -519,8 +519,8 @@ mod tests {
         theta_2 => [-0.0, -PI/3.0, PI, 2.0 * PI]
     )]
     fn combine_same_axis(theta_1: f64, theta_2: f64) {
-        let axis = Cartesian::from([1.0, 0.0, 0.0]).to_normalized_unchecked();
-        let Normalized(axis_vector) = axis;
+        let axis = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
+        let Unit(axis_vector) = axis;
 
         let a = Quaternion::from_axis_angle(axis, theta_1);
         let b = Quaternion::from_axis_angle(axis, theta_2);
@@ -563,11 +563,11 @@ mod tests {
     #[test]
     fn rotate() {
         let z_pi_2 = Quaternion::from_axis_angle(
-            Cartesian::from([0.0, 0.0, 1.0]).to_normalized_unchecked(),
+            Cartesian::from([0.0, 0.0, 1.0]).to_unit_unchecked(),
             PI / 2.0,
         );
         let y_pi_4 = Quaternion::from_axis_angle(
-            Cartesian::from([0.0, 1.0, 0.0]).to_normalized_unchecked(),
+            Cartesian::from([0.0, 1.0, 0.0]).to_unit_unchecked(),
             PI / 4.0,
         );
 
@@ -577,12 +577,12 @@ mod tests {
     #[test]
     fn precompute() {
         let z_pi_2 = Quaternion::from_axis_angle(
-            Cartesian::from([0.0, 0.0, 1.0]).to_normalized_unchecked(),
+            Cartesian::from([0.0, 0.0, 1.0]).to_unit_unchecked(),
             PI / 2.0,
         )
         .to_precomputed();
         let y_pi_4 = Quaternion::from_axis_angle(
-            Cartesian::from([0.0, 1.0, 0.0]).to_normalized_unchecked(),
+            Cartesian::from([0.0, 1.0, 0.0]).to_unit_unchecked(),
             PI / 4.0,
         )
         .to_precomputed();
@@ -593,11 +593,11 @@ mod tests {
     #[test]
     fn combine_different_axis() {
         let a = Quaternion::from_axis_angle(
-            Cartesian::from([1.0, 0.0, 0.0]).to_normalized_unchecked(),
+            Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked(),
             PI / 4.0,
         );
         let b = Quaternion::from_axis_angle(
-            Cartesian::from([0.0, 0.0, 1.0]).to_normalized_unchecked(),
+            Cartesian::from([0.0, 0.0, 1.0]).to_unit_unchecked(),
             PI / 2.0,
         );
 
@@ -609,7 +609,7 @@ mod tests {
     #[rstest(theta => [0.0, 1.0, 2.125])]
     fn inverted(theta: f64) {
         let q1 = Quaternion::from_axis_angle(
-            Cartesian::from([1.0, 0.5, -2.0]).to_normalized_unchecked(),
+            Cartesian::from([1.0, 0.5, -2.0]).to_unit_unchecked(),
             theta,
         );
         let q2 = q1.inverted();
@@ -627,13 +627,13 @@ mod tests {
     }
 
     #[test]
-    fn normalized() {
+    fn unit() {
         let q = Quaternion {
             scalar: 5.0,
             vector: [3.0, -1.0, 1.0].into(),
         };
         assert_relative_eq!(
-            q.normalized().expect("non-zero quaternion"),
+            q.unit().expect("non-zero quaternion"),
             Quaternion {
                 scalar: 5.0 / 6.0,
                 vector: [3.0 / 6.0, -1.0 / 6.0, 1.0 / 6.0].into()
@@ -656,7 +656,7 @@ mod tests {
         ];
 
         // Perform basic checks on random quaternions.
-        // 1) Ensure that each randomly generated quaternion is normalized.
+        // 1) Ensure that each randomly generated quaternion is unit.
         // 2) Check that the result of rotating a reference vector by random quaternions does not
         // point in any special direction. The average dot product should be close to 0.
         let samples: u32 = 20_000;
