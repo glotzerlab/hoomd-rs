@@ -7,7 +7,7 @@ use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
 use std::fmt;
 
-use crate::{vector::Cartesian, Cross, Error, Unit, Rotate, Rotation, Vector};
+use crate::{Cartesian, Cross, Error, Unit, Rotate, Rotation, Vector};
 
 /** Represent a 3D rotation with a quaternion.
 
@@ -58,7 +58,7 @@ let c = a.combine(&b);
 
 Rotate a [`Cartesian<3>`] vector by a [`Quaternion`]:
 ```
-use hoomd_rs_vector::{rotation::Quaternion, Rotate, Rotation, vector::Cartesian};
+use hoomd_rs_vector::{rotation::Quaternion, Rotate, Rotation, Cartesian};
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -157,7 +157,7 @@ impl Quaternion {
 
     # Example
     ```
-    use hoomd_rs_vector::{rotation::Quaternion, Rotate, Rotation, vector::Cartesian};
+    use hoomd_rs_vector::{rotation::Quaternion, Rotate, Rotation, Cartesian};
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -256,7 +256,7 @@ impl Rotate<Cartesian<3>> for Quaternion {
     # Example
 
     ```
-    use hoomd_rs_vector::{rotation::Quaternion, Rotate, Rotation, vector::Cartesian};
+    use hoomd_rs_vector::{rotation::Quaternion, Rotate, Rotation, Cartesian};
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -289,7 +289,7 @@ impl Rotate<Cartesian<3>> for Precomputed {
 
     # Example
     ```
-    use hoomd_rs_vector::{rotation::Quaternion, Rotate, Rotation, vector::Cartesian};
+    use hoomd_rs_vector::{rotation::Quaternion, Rotate, Rotation, Cartesian};
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -441,7 +441,7 @@ impl Distribution<Quaternion> for Standard {
 mod approx {
     use approx::{AbsDiffEq, RelativeEq};
 
-    use crate::vector::Cartesian;
+    use crate::Cartesian;
 
     impl AbsDiffEq for super::Quaternion {
         type Epsilon = <f64 as AbsDiffEq>::Epsilon;

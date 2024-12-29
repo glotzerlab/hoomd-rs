@@ -11,7 +11,7 @@ use divan::{self, black_box, Bencher};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use hoomd_rs_vector::rotation::Quaternion;
-use hoomd_rs_vector::vector::Cartesian;
+use hoomd_rs_vector::Cartesian;
 use hoomd_rs_vector::Rotate;
 
 fn main() {

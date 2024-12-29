@@ -11,7 +11,7 @@ use divan::{self, black_box, Bencher};
 use rand::distributions::Uniform;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
-use hoomd_rs_vector::{vector::Cartesian, Cross, Vector};
+use hoomd_rs_vector::{Cartesian, Cross, Vector};
 
 fn main() {
     divan::main();

@@ -9,7 +9,7 @@ use rand::Rng;
 use std::f64::consts::PI;
 use std::fmt;
 
-use crate::{vector::Cartesian, Rotate, Rotation, Vector};
+use crate::{Cartesian, Rotate, Rotation, Vector};
 
 /** Represent a 2D rotation in the plane by an angle.
 
@@ -51,7 +51,7 @@ assert_eq!(c.theta, PI/4.0);
 
 Rotate a [`Cartesian<2>`] vector by an [`Angle`]:
 ```
-use hoomd_rs_vector::{rotation::Angle, Rotate, Rotation, vector::Cartesian};
+use hoomd_rs_vector::{rotation::Angle, Rotate, Rotation, Cartesian};
 use std::f64::consts::PI;
 
 let v = Cartesian::from([-1.0, 0.0]);
@@ -106,7 +106,7 @@ impl Angle {
 
     # Example
     ```
-    use hoomd_rs_vector::{rotation::Angle, Rotate, Rotation, vector::Cartesian};
+    use hoomd_rs_vector::{rotation::Angle, Rotate, Rotation, Cartesian};
     use std::f64::consts::PI;
 
     let v = Cartesian::from([-1.0, 0.0]);
@@ -172,7 +172,7 @@ impl Rotate<Cartesian<2>> for Angle {
 
     # Example
     ```
-    use hoomd_rs_vector::{rotation::Angle, Rotate, Rotation, vector::Cartesian};
+    use hoomd_rs_vector::{rotation::Angle, Rotate, Rotation, Cartesian};
     use std::f64::consts::PI;
 
     let v = Cartesian::from([-1.0, 0.0]);
@@ -197,7 +197,7 @@ impl Rotate<Cartesian<2>> for Precomputed {
 
     # Example
     ```
-    use hoomd_rs_vector::{rotation::Angle, Rotate, Rotation, vector::Cartesian};
+    use hoomd_rs_vector::{rotation::Angle, Rotate, Rotation, Cartesian};
     use std::f64::consts::PI;
 
     let v = Cartesian::from([-1.0, 0.0]);
