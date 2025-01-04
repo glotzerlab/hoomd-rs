@@ -57,8 +57,8 @@ TODO: completely rewrite docs - follow the `std::cell` module as an example.
 
 
 mod cartesian;
-mod quaternion;
-mod angle;
+pub mod quaternion;
+pub mod angle;
 
 pub use {angle::Angle, cartesian::Cartesian, quaternion::{Versor, Quaternion}};
 
@@ -78,7 +78,8 @@ pub enum Error {
     InvalidMagnitude,
 }
 
-// TODO: Result newtype
+/// A specialized `Result` type for fallible vector math operations.
+type Result<T> = std::result::Result<T, Error>;
 
 /** A generic vector.
 
@@ -301,7 +302,7 @@ pub trait Vector:
     [`Error::InvalidMagnitude`] when `self` is the 0 vector.
     */
     #[inline]
-    fn to_unit(self) -> Result<Unit<Self>, Error> {
+    fn to_unit(self) -> Result<Unit<Self>> {
         let mag = self.norm();
         if mag == 0.0 {
             Err(Error::InvalidMagnitude)

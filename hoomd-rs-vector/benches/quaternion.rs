@@ -10,7 +10,7 @@ use divan::counter::ItemsCount;
 use divan::{self, black_box, Bencher};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
-use hoomd_rs_vector::{Cartesian, Rotate, Quaternion};
+use hoomd_rs_vector::{Cartesian, Rotate, Versor};
 
 fn main() {
     divan::main();
@@ -20,7 +20,7 @@ fn main() {
 fn rotate(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
-    let q: Quaternion = rng.gen();
+    let q: Versor = rng.gen();
 
     bencher
         .counter(ItemsCount::from(1_u32))
@@ -32,7 +32,7 @@ fn rotate(bencher: Bencher) {
 fn rotate_precomputed(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
-    let a: Quaternion = rng.gen();
+    let a: Versor = rng.gen();
     let precomputed = a.to_precomputed();
 
     bencher
@@ -47,5 +47,5 @@ fn gen_random(bencher: Bencher) {
 
     bencher
         .counter(ItemsCount::from(1_u32))
-        .bench_local(|| black_box(rng.gen::<Quaternion>()));
+        .bench_local(|| black_box(rng.gen::<Versor>()));
 }

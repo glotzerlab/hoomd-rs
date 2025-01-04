@@ -6,15 +6,15 @@
 use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
 use std::fmt;
+use std::ops::{
+    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign,
+};
 
-use crate::{Cartesian, Cross, Error, Unit, Rotate, Rotation, Vector};
+use crate::{Cartesian, Cross, Error, Unit, Rotate, Rotation, Vector, Result};
 
-/** A general Quaternion
+/** Quaternion
 
 // TODO: documentation
-// TODO: Add, Sub, Mul, etc.. traits
-// TODO: conjugate
-// TODO: to_versor, to_versor_unchecked
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Quaternion {
@@ -27,19 +27,67 @@ pub struct Quaternion {
 
 impl Quaternion {
     /** The norm of the quaternion, squared.
+    <!-- |\mathbf{q}|^2 -->
+    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>|</mi><mi>𝐪</mi><msup><mi>|</mi><mn>2</mn></msup></mrow></math>
      */
     #[inline]
     #[must_use]
-    fn norm_squared(&self) -> f64 {
+    pub fn norm_squared(&self) -> f64 {
         self.scalar * self.scalar + self.vector.dot(&self.vector)
     }
 
     /** The norm of the quaternion.
+    <!-- |\mathbf{q}| -->
+    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>|</mi><mi>𝐪</mi><mi>|</mi></mrow></math>
      */
     #[inline]
     #[must_use]
-    fn norm(&self) -> f64 {
+    pub fn norm(&self) -> f64 {
         self.norm_squared().sqrt()
+    }
+
+    /** Construct the conjugate of this quaternion.
+    <!-- \mathbf{q}^* = (s, -\vec{v}) -->
+    <math display="block" class="tml-display" style="display:block math;"><mrow><msup><mi>𝐪</mi><mo>*</mo></msup><mo>=</mo><mo form="prefix" stretchy="false">(</mo><mi>s</mi><mo separator="true">,</mo><mo form="prefix" stretchy="false">−</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow></math>
+    */
+    #[inline]
+    #[must_use]
+    pub fn conjugate(self) -> Self {
+        Self { scalar: self.scalar, vector: -self.vector }
+    }
+
+    /** Create a [`Versor`] by normalizing the given quaternion.
+
+    <!-- \mathbf{v} = \frac{\mathbf{q}}{|\mathbf{q}|} -->
+    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>𝐯</mi><mo>=</mo><mfrac><mi>𝐪</mi><mrow><mi>|</mi><mi>𝐪</mi><mi>|</mi></mrow></mfrac></mrow></math>
+
+    # Errors
+
+    [`Error::InvalidMagnitude`] when `self` is the 0 quaternion.
+    */
+    #[inline]
+    pub fn to_versor(self) -> Result<Versor> {
+        let mag = self.norm();
+        if mag == 0.0 {
+            Err(Error::InvalidMagnitude)
+        } else {
+            Ok(Versor(self / mag))
+        }
+    }
+
+    /** Create a [`Versor`] by normalizing the given quaternion.
+
+    <!-- \mathbf{v} = \frac{\mathbf{q}}{|\mathbf{q}|} -->
+    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>𝐯</mi><mo>=</mo><mfrac><mi>𝐪</mi><mrow><mi>|</mi><mi>𝐪</mi><mi>|</mi></mrow></mfrac></mrow></math>
+
+    # Panics
+
+    Divide by 0 when `self` is the 0 quaternion.
+    */
+    #[inline]
+    #[must_use]
+    pub fn to_versor_unchecked(self) -> Versor {
+            Versor(self / self.norm())
     }
 }
 
@@ -63,6 +111,85 @@ impl fmt::Display for Quaternion {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[{}, {}]", self.scalar, self.vector)
+    }
+}
+
+// TODO: Test all ops
+impl Add for Quaternion {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, rhs: Self) -> Self {
+        Self { scalar: self.scalar + rhs.scalar, vector: self.vector + rhs.vector }
+    }
+}
+
+impl AddAssign for Quaternion {
+    #[inline]
+    fn add_assign(&mut self, rhs: Self) {
+        self.scalar += rhs.scalar;
+        self.vector += rhs.vector;
+    }
+}
+
+impl Div<f64> for Quaternion {
+    type Output = Self;
+
+    #[inline]
+    fn div(self, rhs: f64) -> Self {
+        Self { scalar: self.scalar / rhs, vector: self.vector / rhs }
+    }
+}
+
+impl DivAssign<f64> for Quaternion {
+    #[inline]
+    fn div_assign(&mut self, rhs: f64) {
+        self.scalar /= rhs;
+        self.vector /= rhs;
+    }
+}
+
+impl Mul<f64> for Quaternion {
+    type Output = Self;
+
+    #[inline]
+    fn mul(self, rhs: f64) -> Self {
+        Self { scalar: self.scalar * rhs, vector: self.vector * rhs }
+    }
+}
+
+impl MulAssign<f64> for Quaternion {
+    #[inline]
+    fn mul_assign(&mut self, rhs: f64) {
+        self.scalar *= rhs;
+        self.vector *= rhs;
+    }
+}
+
+impl Mul<Quaternion> for Quaternion {
+    type Output = Self;
+
+    #[inline]
+    fn mul(self, rhs: Quaternion) -> Self {
+        Self { scalar: (self.scalar * rhs.scalar - self.vector.dot(&rhs.vector)),
+            vector: (rhs.vector * self.scalar + self.vector * rhs.scalar + self.vector.cross(&rhs.vector)),
+ }    }
+}
+
+impl Sub for Quaternion {
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, rhs: Self) -> Self {
+        Self { scalar: self.scalar - rhs.scalar, vector: self.vector - rhs.vector }
+    }
+}
+
+impl SubAssign for Quaternion {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Self) {
+        self.scalar -= rhs.scalar;
+        self.vector -= rhs.vector;
     }
 }
 
@@ -365,12 +492,8 @@ impl Rotation for Versor {
     fn combine(&self, other: &Self) -> Self {
         let Versor(a) = self;
         let Versor(b) = other;
-        // TODO: Use Quaternion Mul when implemented.
 
-        Versor(Quaternion {
-            scalar: (a.scalar * b.scalar - a.vector.dot(&b.vector)),
-            vector: (b.vector * a.scalar + a.vector * b.scalar + a.vector.cross(&b.vector)),
-        })
+        Versor(a.mul(*b))
     }
 
     /** Create the identity [`Versor`]: [1, [0, 0, 0]]
@@ -409,10 +532,7 @@ impl Rotation for Versor {
     fn inverted(self) -> Self {
         let Versor(quaternion) = self;
     
-        Versor(Quaternion {
-            vector: -quaternion.vector,
-            ..quaternion
-        })
+        Versor(quaternion.conjugate())
     }
 }
 
@@ -549,6 +669,39 @@ mod tests {
         let q = Quaternion::from([2.0, -3.0, 4.0, 7.0]);
         assert!(q.scalar == 2.0);
         assert!(q.vector == [-3.0, 4.0, 7.0].into());
+    }
+
+    // TODO: test norm, norm_squared
+    #[test]
+    fn conjugate() {
+        let q1 = Quaternion::from([1.0, -2.0, 4.0, -0.5]);
+        let q2 = q1.conjugate();
+        assert_eq!(q2, [1.0, 2.0, -4.0, 0.5].into());
+        assert_relative_eq!(q2 * q1, [q2.norm() * q1.norm(), 0.0, 0.0, 0.0].into());
+    }
+
+    #[test]
+    fn to_versor() {
+        let q = Quaternion::from([5.0, 3.0, -1.0, 1.0]);
+
+        assert_relative_eq!(
+            q.to_versor().expect("non-zero quaternion"),
+            Versor(Quaternion {
+                scalar: 5.0 / 6.0,
+                vector: [3.0 / 6.0, -1.0 / 6.0, 1.0 / 6.0].into()
+            })
+        );
+
+        assert_relative_eq!(
+            q.to_versor_unchecked(),
+            Versor(Quaternion {
+                scalar: 5.0 / 6.0,
+                vector: [3.0 / 6.0, -1.0 / 6.0, 1.0 / 6.0].into()
+            })
+        );
+
+        let zero = Quaternion::from([0.0, 0.0, 0.0, 0.0]);
+        assert!(matches!(zero.to_versor(), Err(Error::InvalidMagnitude)));
     }
 
     #[test]
