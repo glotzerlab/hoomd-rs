@@ -26,20 +26,20 @@ pub struct Quaternion {
 }
 
 impl Quaternion {
-    /** The magnitude of the quaternion, squared.
+    /** The norm of the quaternion, squared.
      */
     #[inline]
     #[must_use]
-    fn magnitude_squared(&self) -> f64 {
+    fn norm_squared(&self) -> f64 {
         self.scalar * self.scalar + self.vector.dot(&self.vector)
     }
 
-    /** The magnitude of the quaternion.
+    /** The norm of the quaternion.
      */
     #[inline]
     #[must_use]
-    fn magnitude(&self) -> f64 {
-        self.magnitude_squared().sqrt()
+    fn norm(&self) -> f64 {
+        self.norm_squared().sqrt()
     }
 }
 
@@ -185,7 +185,7 @@ impl Versor {
     #[must_use]
     pub fn normalized(self) -> Self {
         let Versor(q) = self;
-        let f = 1.0 / q.magnitude();
+        let f = 1.0 / q.norm();
         Self(Quaternion {
             scalar: q.scalar * f,
             vector: q.vector * f,
@@ -744,7 +744,7 @@ mod tests {
 
         for _ in 0..samples {
             let q: Versor = rng.gen();
-            assert_relative_eq!(q.get().magnitude_squared(), 1.0, max_relative = 1e-15);
+            assert_relative_eq!(q.get().norm_squared(), 1.0, max_relative = 1e-15);
 
             let v = q.rotate(&reference);
             for i in 0..CHECK_VECTORS.len() {

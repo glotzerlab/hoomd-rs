@@ -20,7 +20,7 @@ so that it can be used with any type that implements the traits:
 use hoomd_rs_vector::Vector;
 
 fn some_function<V: Vector>(a: &V, b: &V) -> f64 {
-    a.dot(b) / (a.magnitude() * b.magnitude())
+    a.dot(b) / (a.norm_squared())
 }
 ```
 
@@ -223,7 +223,7 @@ pub trait Vector:
     + SubAssign
     + Neg
 {
-    /** Compute the squared magnitude of the vector.
+    /** Compute the squared norm of the vector.
 
     <!-- \left| \vec{v} \right|^2 -->
     <math display="block" class="tml-display" style="display:block math;"><msup><mrow><mo fence="true" form="prefix">|</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo fence="true" form="postfix">|</mo></mrow><mn>2</mn></msup></math>
@@ -234,26 +234,26 @@ pub trait Vector:
 
     # fn main() {
     let v = Cartesian::from([2.0, 4.0]);
-    let magnitude_squared = v.magnitude_squared();
-    assert_eq!(magnitude_squared, 20.0);
+    let norm_squared = v.norm_squared();
+    assert_eq!(norm_squared, 20.0);
     # }
     ```
     */
     #[must_use]
     #[inline]
-    fn magnitude_squared(&self) -> f64 {
+    fn norm_squared(&self) -> f64 {
         self.dot(self)
     }
 
-    /** Compute the magnitude of the vector.
+    /** Compute the norm of the vector.
 
     <!-- \left| \vec{v} \right| -->
     <math display="block" class="tml-display" style="display:block math;"><mrow><mo fence="true" form="prefix">|</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo fence="true" form="postfix">|</mo></mrow></math>
 
     <div class="warning">
 
-    Computing the magnitude calls `sqrt`. Prefer
-    [`magnitude_squared`](Vector::magnitude_squared) unless you need the actual magnitude.
+    Computing the norm calls `sqrt`. Prefer
+    [`norm_squared`](Vector::norm_squared) when possible.
 
     </div>
 
@@ -263,15 +263,15 @@ pub trait Vector:
 
     # fn main() {
     let v = Cartesian::from([3.0, 4.0]);
-    let magnitude= v.magnitude();
-    assert_eq!(magnitude, 5.0);
+    let norm= v.norm();
+    assert_eq!(norm, 5.0);
     # }
     ```
     */
     #[must_use]
     #[inline]
-    fn magnitude(&self) -> f64 {
-        self.magnitude_squared().sqrt()
+    fn norm(&self) -> f64 {
+        self.norm_squared().sqrt()
     }
 
     /** Compute the vector dot product between two vectors.
@@ -302,7 +302,7 @@ pub trait Vector:
     */
     #[inline]
     fn to_unit(self) -> Result<Unit<Self>, Error> {
-        let mag = self.magnitude();
+        let mag = self.norm();
         if mag == 0.0 {
             Err(Error::InvalidMagnitude)
         } else {
@@ -318,7 +318,7 @@ pub trait Vector:
     */
     #[inline]
     fn to_unit_unchecked(self) -> Unit<Self> {
-        Unit(self / self.magnitude())
+        Unit(self / self.norm())
     }
 }
 
