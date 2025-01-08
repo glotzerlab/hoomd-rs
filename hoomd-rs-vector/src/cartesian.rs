@@ -127,8 +127,6 @@ impl From<(f64, f64, f64)> for Cartesian<3> {
     }
 }
 
-// TODO: Rewrite to work with a slice instead of a Vec explicitly.
-
 impl<const N: usize> TryFrom<Vec<f64>> for Cartesian<N> {
     type Error = Error;
 
