@@ -782,5 +782,9 @@ mod tests {
 
         let Unit(unit_a) = Unit::<Cartesian<3>>::try_from([3.0, 0.0, 4.0]).expect("non-zero vector");
         assert_eq!(unit_a, [3.0/5.0, 0.0, 4.0/5.0].into());
+
+        let a = Cartesian::from((0.0, 0.0, 0.0));
+        assert!(matches!(a.to_unit(), Err(Error::InvalidMagnitude)));
+        assert!(matches!(Unit::<Cartesian<3>>::try_from([0.0, 0.0, 0.0]), Err(Error::InvalidMagnitude)));
     }
 }

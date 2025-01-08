@@ -114,7 +114,6 @@ impl fmt::Display for Quaternion {
     }
 }
 
-// TODO: Test all ops
 impl Add for Quaternion {
     type Output = Self;
 
@@ -174,6 +173,15 @@ impl Mul<Quaternion> for Quaternion {
         Self { scalar: (self.scalar * rhs.scalar - self.vector.dot(&rhs.vector)),
             vector: (rhs.vector * self.scalar + self.vector * rhs.scalar + self.vector.cross(&rhs.vector)),
  }    }
+}
+
+impl MulAssign<Quaternion> for Quaternion {
+    #[inline]
+    fn mul_assign(&mut self, rhs: Quaternion) {
+        let result = *self * rhs;
+        self.scalar = result.scalar;
+        self.vector = result.vector;
+    }
 }
 
 impl Sub for Quaternion {
@@ -671,7 +679,13 @@ mod tests {
         assert!(q.vector == [-3.0, 4.0, 7.0].into());
     }
 
-    // TODO: test norm, norm_squared
+    #[test]
+    fn norm() {
+        let q = Quaternion::from([1.0, 4.0, -3.0, -2.0]);
+        assert_eq!(q.norm_squared(), 30.0);
+        assert_eq!(q.norm(), 30.0_f64.sqrt());
+    }
+    
     #[test]
     fn conjugate() {
         let q1 = Quaternion::from([1.0, -2.0, 4.0, -0.5]);
@@ -702,6 +716,41 @@ mod tests {
 
         let zero = Quaternion::from([0.0, 0.0, 0.0, 0.0]);
         assert!(matches!(zero.to_versor(), Err(Error::InvalidMagnitude)));
+    }
+
+    #[test]
+    fn ops() {
+        let a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
+        let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
+
+        // +, +=
+        assert_eq!(a + b, [-1.0, 4.0, 10.0, -3.0].into());
+        let mut c = a;
+        c += b;
+        assert_eq!(c, [-1.0, 4.0, 10.0, -3.0].into());
+
+        // -, -=
+        assert_eq!(a - b, [3.0, -8.0, 2.0, -5.0].into());
+        let mut c = a;
+        c -= b;
+        assert_eq!(c, [3.0, -8.0, 2.0, -5.0].into());
+
+        // Scalar * and /
+        assert_eq!(a * 2.0, [2.0, -4.0, 12.0, -8.0].into());
+        let mut c = a;
+        c *= 2.0;
+        assert_eq!(c, [2.0, -4.0, 12.0, -8.0].into());
+
+        assert_eq!(a / 2.0, [0.5, -1.0, 3.0, -2.0].into());
+        let mut c = a;
+        c /= 2.0;
+        assert_eq!(c, [0.5, -1.0, 3.0, -2.0].into());
+
+        // Quaternion multiplication
+        assert_eq!(a * b, [-10.0, 32.0, -30.0, -35.0].into());
+        let mut c = a;
+        c *= b;
+        assert_eq!(c, [-10.0, 32.0, -30.0, -35.0].into());
     }
 
     #[test]
