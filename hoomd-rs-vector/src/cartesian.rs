@@ -763,5 +763,26 @@ mod tests {
 
     parameterize_vector_length!(random_in_range, [2, 3, 4, 8, 16, 32, 10_000]);
 
-    // TODO: test to_unit, try_from for Unit
+    #[test]
+    fn to_unit() {
+        let a = Cartesian::from((2.0, 0.0, 0.0));
+        let Unit(unit_a) = a.to_unit().expect("non-zero vector");
+        assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
+
+        let Unit(unit_a) = a.to_unit_unchecked();
+        assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
+
+        let Unit(unit_a) = Unit::<Cartesian<3>>::try_from([1.0, 0.0, 0.0]).expect("non-zero vector");
+        assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
+
+        let a = Cartesian::from((3.0, 0.0, 4.0));
+        let Unit(unit_a) = a.to_unit().expect("non-zero vector");
+        assert_eq!(unit_a, [3.0/5.0, 0.0, 4.0/5.0].into());
+
+        let Unit(unit_a) = a.to_unit_unchecked();
+        assert_eq!(unit_a, [3.0/5.0, 0.0, 4.0/5.0].into());
+
+        let Unit(unit_a) = Unit::<Cartesian<3>>::try_from([3.0, 0.0, 4.0]).expect("non-zero vector");
+        assert_eq!(unit_a, [3.0/5.0, 0.0, 4.0/5.0].into());
+    }
 }
