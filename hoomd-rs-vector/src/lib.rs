@@ -60,6 +60,7 @@ mod cartesian;
 pub mod quaternion;
 pub mod angle;
 
+#[doc(inline)]
 pub use {angle::Angle, cartesian::Cartesian, quaternion::{Versor, Quaternion}};
 
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
