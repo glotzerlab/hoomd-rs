@@ -10,7 +10,7 @@ use std::ops::{
     Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign,
 };
 
-use crate::{Cartesian, Cross, Error, Unit, Rotate, Rotation, Vector, Result};
+use crate::{Cartesian, Cross, Error, Unit, Rotate, Rotation, Vector};
 
 /** Quaternion
 
@@ -66,7 +66,7 @@ impl Quaternion {
     [`Error::InvalidMagnitude`] when `self` is the 0 quaternion.
     */
     #[inline]
-    pub fn to_versor(self) -> Result<Versor> {
+    pub fn to_versor(self) -> Result<Versor, Error> {
         let mag = self.norm();
         if mag == 0.0 {
             Err(Error::InvalidMagnitude)

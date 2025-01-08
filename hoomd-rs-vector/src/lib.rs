@@ -78,9 +78,6 @@ pub enum Error {
     InvalidMagnitude,
 }
 
-/// A specialized `Result` type for fallible vector math operations.
-type Result<T> = std::result::Result<T, Error>;
-
 /** A generic vector.
 
 Specifically, [`Vector`] defines methods that can be performed on any vector in a normed vector
@@ -302,7 +299,7 @@ pub trait Vector:
     [`Error::InvalidMagnitude`] when `self` is the 0 vector.
     */
     #[inline]
-    fn to_unit(self) -> Result<Unit<Self>> {
+    fn to_unit(self) -> Result<Unit<Self>, Error> {
         let mag = self.norm();
         if mag == 0.0 {
             Err(Error::InvalidMagnitude)
