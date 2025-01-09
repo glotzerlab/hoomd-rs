@@ -57,11 +57,10 @@ TODO: completely rewrite docs - follow the `std::cell` module as an example.
 
 
 mod cartesian;
-pub mod quaternion;
-pub mod angle;
+mod quaternion;
+mod angle;
 
-#[doc(inline)]
-pub use {angle::Angle, cartesian::Cartesian, quaternion::{Versor, Quaternion}};
+pub use {angle::Angle, cartesian::{Cartesian, RotationMatrix}, quaternion::{Versor, Quaternion}};
 
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use thiserror::Error;
@@ -295,6 +294,22 @@ pub trait Vector:
 
     /** Create a vector of unit length pointing in the same direction as the given vector.
 
+    <!--\frac{\vec{v}}{|\vec{v}|} -->
+    <math display="block" class="tml-display" style="display:block math;"><mfrac><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>|</mi><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mi>|</mi></mrow></mfrac></math>
+
+    # Example
+
+    ```
+    use hoomd_rs_vector::{Cartesian, Unit, Vector};
+    
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let a = Cartesian::from([3.0, 4.0]);
+    let unit = a.to_unit()?;
+    assert_eq!(*unit.get(), [3.0/5.0, 4.0/5.0].into());
+    # Ok(())
+    # }
+    ```
+
     # Errors
 
     [`Error::InvalidMagnitude`] when `self` is the 0 vector.
@@ -311,6 +326,22 @@ pub trait Vector:
 
     /** Create a vector of unit length pointing in the same direction as the given vector.
 
+    <!--\frac{\vec{v}}{|\vec{v}|} -->
+    <math display="block" class="tml-display" style="display:block math;"><mfrac><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>|</mi><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mi>|</mi></mrow></mfrac></math>
+
+    # Example
+
+    ```
+    use hoomd_rs_vector::{Cartesian, Unit, Vector};
+    
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let a = Cartesian::from([3.0, 4.0]);
+    let unit = a.to_unit_unchecked();
+    assert_eq!(*unit.get(), [3.0/5.0, 4.0/5.0].into());
+    # Ok(())
+    # }
+    ```
+
     # Panics
 
     Divide by 0 when `self` is the 0 vector.
@@ -321,7 +352,7 @@ pub trait Vector:
     }
 }
 
-/// A vector with magnitude 1.0
+/// A vector with magnitude 1.0.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Unit<V: Vector>(V);
 

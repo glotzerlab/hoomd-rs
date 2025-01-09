@@ -9,9 +9,12 @@ use rand::Rng;
 use std::f64::consts::PI;
 use std::fmt;
 
-use crate::{Cartesian, Rotate, Rotation, Vector};
+use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
 
-/** Represent a 2D rotation in the plane by an angle.
+/** 2D rotation in the plane.
+
+The rotation is represented by an angle `theta` in radians. Positive values rotate
+counter-clockwise.
 
 ## Constructing [`Angle`]
 
@@ -24,7 +27,7 @@ let a = Angle::from(PI/2.0);
 assert_eq!(a.theta, PI/2.0);
 ```
 
-Create a random [`Angle`]:
+Create a random [`Angle`] from the uniform distribution over all rotations:
 ```
 use hoomd_rs_vector::Angle;
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -66,18 +69,11 @@ pub struct Angle {
     pub theta: f64,
 }
 
-/// A precomputed rotation about an [`Angle`]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Precomputed {
-    /// Rows of the rotation matrix.
-    rows: [Cartesian<2>; 2],
-}
-
 impl Angle {
     /** Reduce the rotation.
 
     [`Angle`] rotations are well-defined for any value of `theta`. However, combining small
-    rotations  with large ones will introduce floating point round-off error. Reducing an [`Angle`]
+    rotations with large ones will introduce floating point round-off error. Reducing an [`Angle`]
     creates an equivalent rotation with `theta` in the rage from 0 to 2 pi.
 
     # Example
@@ -112,17 +108,17 @@ impl Angle {
     let v = Cartesian::from([-1.0, 0.0]);
     let a = Angle::from(PI/2.0);
 
-    let precomputed = a.to_precomputed();
-    let rotated = precomputed.rotate(&v);
+    let matrix = a.to_rotation_matrix();
+    let rotated = matrix.rotate(&v);
     // rotated is approximately [0.0, -1.0]
     ```
     */
     #[inline]
     #[must_use]
-    pub fn to_precomputed(self) -> Precomputed {
+    pub fn to_rotation_matrix(self) -> RotationMatrix<2> {
         let sin_theta = self.theta.sin();
         let cos_theta = self.theta.cos();
-        Precomputed {
+        RotationMatrix {
             rows: [
                 [cos_theta, -sin_theta].into(),
                 [sin_theta, cos_theta].into(),
@@ -150,7 +146,7 @@ impl Default for Angle {
 }
 
 impl From<f64> for Angle {
-    /** Create a rotation by `theta` radians
+    /** Create a rotation by `theta` radians.
 
     # Example
     ```
@@ -191,27 +187,6 @@ impl Rotate<Cartesian<2>> for Angle {
     }
 }
 
-impl Rotate<Cartesian<2>> for Precomputed {
-    #[inline]
-    /** Rotate a [`Cartesian<2>`] in the plane by an [`Angle`]
-
-    # Example
-    ```
-    use hoomd_rs_vector::{Angle, Rotate, Rotation, Cartesian};
-    use std::f64::consts::PI;
-
-    let v = Cartesian::from([-1.0, 0.0]);
-    let a = Angle::from(PI/2.0);
-    let precomputed = a.to_precomputed();
-    let rotated = precomputed.rotate(&v);
-    // rotated is approximately [0.0, -1.0]
-    ```
-    */
-    fn rotate(&self, vector: &Cartesian<2>) -> Cartesian<2> {
-        Cartesian::from([self.rows[0].dot(vector), self.rows[1].dot(vector)])
-    }
-}
-
 impl Rotation for Angle {
     #[inline]
     /** Create an [`Angle`] that rotates by 0 radians.
@@ -220,7 +195,7 @@ impl Rotation for Angle {
     ```
     use hoomd_rs_vector::{Angle, Rotation};
 
-    let a = Angle::identity();
+    let a = Angle::default();
     assert_eq!(a.theta, 0.0);
     ```
     */
@@ -350,7 +325,7 @@ mod tests {
 
         assert_relative_eq!(angle.rotate(&vec), ans, epsilon = 4.0 * f64::EPSILON);
         assert_relative_eq!(
-            angle.to_precomputed().rotate(&vec),
+            angle.to_rotation_matrix().rotate(&vec),
             ans,
             epsilon = 4.0 * f64::EPSILON
         );

@@ -1,7 +1,7 @@
 // Copyright (c) 2024 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`Quaternion`]
+/*! Implement [`Quaternion`] and related types.
 */
 use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
@@ -10,11 +10,145 @@ use std::ops::{
     Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign,
 };
 
-use crate::{Cartesian, Cross, Error, Unit, Rotate, Rotation, Vector};
+use crate::{Cartesian, Cross, Error, Unit, Rotate, Rotation, RotationMatrix, Vector};
 
-/** Quaternion
+/** Extended complex number.
 
-// TODO: documentation
+A quaternion has a real value and three complex values, represented by scalar and 3-vector
+respectively:
+<!-- \mathbf{q} = (s, \vec{v}) -->
+<math display="block" class="tml-display" style="display:block math;"><mrow><mi>𝐪</mi><mo>=</mo><mo form="prefix" stretchy="false">(</mo><mi>s</mi><mo separator="true">,</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow></math>
+
+Looking for the quaternion representation of 3D rotations? See [`Versor`].
+
+## Constructing quaternions
+
+Create a quaternion with an array of coordinates (`[scalar, vector_0, vector_1, vector_2]`).
+```
+use hoomd_rs_vector::Quaternion;
+
+let q = Quaternion::from([1.0, 2.0, 3.0, 4.0]);
+assert_eq!(q.scalar, 1.0);
+assert_eq!(q.vector, [2.0, 3.0, 4.0].into());
+```
+
+## Quaternion properties
+
+Compute a quaternion's norm:
+```
+use hoomd_rs_vector::Quaternion;
+
+let q = Quaternion::from([3.0, 0.0, 4.0, 0.0]);
+let norm = q.norm();
+assert_eq!(norm, 5.0);
+```
+
+Form the conjugate:
+```
+use hoomd_rs_vector::Quaternion;
+
+let q = Quaternion::from([1.0, 2.0, 3.0, 4.0]);
+let q_star = q.conjugate();
+assert_eq!(q_star, [1.0, -2.0, -3.0, -4.0].into());
+```
+
+## Operating on quaternions
+
+All operation examples use the following two quaternions:
+```
+use hoomd_rs_vector::Quaternion;
+
+let a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
+let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
+```
+
+Addition:
+
+```
+# use hoomd_rs_vector::Quaternion;
+# let a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
+# let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
+let c = a + b;
+assert_eq!(c, [-1.0, 4.0, 10.0, -3.0].into());
+```
+
+```
+# use hoomd_rs_vector::Quaternion;
+# let mut a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
+# let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
+a += b;
+assert_eq!(a, [-1.0, 4.0, 10.0, -3.0].into());
+```
+
+Subtraction:
+
+```
+# use hoomd_rs_vector::Quaternion;
+# let a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
+# let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
+let c = a - b;
+assert_eq!(c, [3.0, -8.0, 2.0, -5.0].into());
+```
+
+```
+# use hoomd_rs_vector::Quaternion;
+# let mut a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
+# let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
+a -= b;
+assert_eq!(a, [3.0, -8.0, 2.0, -5.0].into());
+```
+
+Multiplication by a scalar:
+
+```
+# use hoomd_rs_vector::Quaternion;
+# let a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
+let c = a * 2.0;
+assert_eq!(c, [2.0, -4.0, 12.0, -8.0].into());
+```
+
+```
+# use hoomd_rs_vector::Quaternion;
+# let mut a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
+# let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
+a *= 2.0;
+assert_eq!(a, [2.0, -4.0, 12.0, -8.0].into());
+```
+
+Division by a scalar:
+
+```
+# use hoomd_rs_vector::Quaternion;
+# let a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
+let c = a / 2.0;
+assert_eq!(c, [0.5, -1.0, 3.0, -2.0].into());
+```
+
+```
+# use hoomd_rs_vector::Quaternion;
+# let mut a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
+# let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
+a /= 2.0;
+assert_eq!(a, [0.5, -1.0, 3.0, -2.0].into());
+```
+
+Quaternion multiplication:
+
+```
+# use hoomd_rs_vector::Quaternion;
+# let a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
+# let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
+let c = a * b;
+assert_eq!(c, [-10.0, 32.0, -30.0, -35.0].into());
+```
+
+```
+# use hoomd_rs_vector::Quaternion;
+# let mut a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
+# let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
+a *= b;
+assert_eq!(a, [-10.0, 32.0, -30.0, -35.0].into());
+```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Quaternion {
@@ -29,7 +163,16 @@ impl Quaternion {
     /** The norm of the quaternion, squared.
     <!-- |\mathbf{q}|^2 -->
     <math display="block" class="tml-display" style="display:block math;"><mrow><mi>|</mi><mi>𝐪</mi><msup><mi>|</mi><mn>2</mn></msup></mrow></math>
-     */
+
+    # Example
+    ```
+    use hoomd_rs_vector::Quaternion;
+
+    let q = Quaternion::from([3.0, 0.0, 4.0, 0.0]);
+    let norm_squared = q.norm_squared();
+    assert_eq!(norm_squared, 25.0);
+    ```
+    */
     #[inline]
     #[must_use]
     pub fn norm_squared(&self) -> f64 {
@@ -39,6 +182,15 @@ impl Quaternion {
     /** The norm of the quaternion.
     <!-- |\mathbf{q}| -->
     <math display="block" class="tml-display" style="display:block math;"><mrow><mi>|</mi><mi>𝐪</mi><mi>|</mi></mrow></math>
+
+    # Example
+    ```
+    use hoomd_rs_vector::Quaternion;
+
+    let q = Quaternion::from([3.0, 0.0, 4.0, 0.0]);
+    let norm = q.norm();
+    assert_eq!(norm, 5.0);
+    ```
      */
     #[inline]
     #[must_use]
@@ -49,6 +201,15 @@ impl Quaternion {
     /** Construct the conjugate of this quaternion.
     <!-- \mathbf{q}^* = (s, -\vec{v}) -->
     <math display="block" class="tml-display" style="display:block math;"><mrow><msup><mi>𝐪</mi><mo>*</mo></msup><mo>=</mo><mo form="prefix" stretchy="false">(</mo><mi>s</mi><mo separator="true">,</mo><mo form="prefix" stretchy="false">−</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow></math>
+
+    # Example
+    ```
+    use hoomd_rs_vector::Quaternion;
+
+    let q = Quaternion::from([1.0, 2.0, 3.0, 4.0]);
+    let q_star = q.conjugate();
+    assert_eq!(q_star, [1.0, -2.0, -3.0, -4.0].into());
+    ```
     */
     #[inline]
     #[must_use]
@@ -60,6 +221,19 @@ impl Quaternion {
 
     <!-- \mathbf{v} = \frac{\mathbf{q}}{|\mathbf{q}|} -->
     <math display="block" class="tml-display" style="display:block math;"><mrow><mi>𝐯</mi><mo>=</mo><mfrac><mi>𝐪</mi><mrow><mi>|</mi><mi>𝐪</mi><mi>|</mi></mrow></mfrac></mrow></math>
+
+    # Example
+
+    ```
+    use hoomd_rs_vector::{Quaternion, Versor};
+    
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let q = Quaternion::from([3.0, 0.0, 0.0, 4.0]);
+    let v = q.to_versor()?;
+    assert_eq!(*v.get(), [3.0/5.0, 0.0, 0.0, 4.0/5.0].into());
+    # Ok(())
+    # }
+    ```
 
     # Errors
 
@@ -80,6 +254,19 @@ impl Quaternion {
     <!-- \mathbf{v} = \frac{\mathbf{q}}{|\mathbf{q}|} -->
     <math display="block" class="tml-display" style="display:block math;"><mrow><mi>𝐯</mi><mo>=</mo><mfrac><mi>𝐪</mi><mrow><mi>|</mi><mi>𝐪</mi><mi>|</mi></mrow></mfrac></mrow></math>
 
+    # Example
+
+    ```
+    use hoomd_rs_vector::{Quaternion, Versor};
+    
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let q = Quaternion::from([3.0, 0.0, 0.0, 4.0]);
+    let v = q.to_versor_unchecked();
+    assert_eq!(*v.get(), [3.0/5.0, 0.0, 0.0, 4.0/5.0].into());
+    # Ok(())
+    # }
+    ```
+
     # Panics
 
     Divide by 0 when `self` is the 0 quaternion.
@@ -96,6 +283,15 @@ impl From<[f64; 4]> for Quaternion {
 
     The first value is the real part. The 2nd through 4th are the complex vector part:
     `[scalar, vector_0, vector_1, vector_2]`.
+   
+    # Example
+    ```
+    use hoomd_rs_vector::Quaternion;
+
+    let q = Quaternion::from([1.0, 2.0, 3.0, 4.0]);
+    assert_eq!(q.scalar, 1.0);
+    assert_eq!(q.vector, [2.0, 3.0, 4.0].into());
+    ```
     */
     #[inline]
     fn from(value: [f64; 4]) -> Self {
@@ -208,13 +404,26 @@ convention.
 
 ## Constructing a [`Versor`]:
 
-Create a [`Versor`] from a rotation by an angle about an axis:
+Create a [`Versor`] that rotates by an angle about an axis:
 ```
 use hoomd_rs_vector::Versor;
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let q = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI/2.0);
+let v = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI/2.0);
+assert_eq!(*v.get(), [(PI/4.0).cos(), 0.0, (PI/4.0).sin(), 0.0].into());
+# Ok(())
+# }
+```
+
+Create a [`Versor`] by normalizing a [`Quaternion`]:
+```
+use hoomd_rs_vector::{Quaternion, Versor};
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let q = Quaternion::from([3.0, 0.0, 0.0, 4.0]);
+let v = q.to_versor()?;
+assert_eq!(*v.get(), [3.0/5.0, 0.0, 0.0, 4.0/5.0].into());
 # Ok(())
 # }
 ```
@@ -231,7 +440,6 @@ let v: Versor = rng.gen();
 # }
 ```
 
-
 Combine two rotations together:
 ```
 use hoomd_rs_vector::{Versor, Rotation};
@@ -247,15 +455,15 @@ let c = a.combine(&b);
 
 ## Operations using [`Versor`]
 
-Rotate a [`Cartesian<3>`] vector by a [`Versor`]:
+Rotate a [`Cartesian<3>`] by a [`Versor`]:
 ```
 use hoomd_rs_vector::{Versor, Rotate, Rotation, Cartesian};
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let a = Cartesian::from([-1.0, 0.0, 0.0]);
-let q = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
-let b = q.rotate(&a);
+let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
+let b = v.rotate(&a);
 // b is approximately [0.0, -1.0, 0.0]
 # Ok(())
 # }
@@ -264,15 +472,8 @@ let b = q.rotate(&a);
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Versor(Quaternion);
 
-/// A precomputed rotation by a [`Versor`]
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Precomputed {
-    /// Rows of the rotation matrix.
-    rows: [Cartesian<3>; 3],
-}
-
 impl Versor {
-    /** Create a [`Versor`] from a given axis and a rotation angle about that axis.
+    /** Create a [`Versor`] that rotates by an angle (in radians) about an axis.
 
     # Example
 
@@ -281,7 +482,8 @@ impl Versor {
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let q = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI/2.0);
+    let v = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI/2.0);
+    assert_eq!(*v.get(), [(PI/4.0).cos(), 0.0, (PI/4.0).sin(), 0.0].into());
     # Ok(())
     # }
     ```
@@ -299,9 +501,9 @@ impl Versor {
 
     /** Normalize the versor.
 
-    Nominally, all [`Versor`] instances remain unit. Due to limited floating
-    point precision, this assumption may not hold after repeated operations.
-    Normalize versors when needed to correct this issue.
+    Nominally, all [`Versor`] instances retain a unit norm. Due to limited
+    floating point precision, this assumption may not hold after repeated
+    operations. Normalize versors when needed to correct this issue.
 
     # Example
 
@@ -339,10 +541,10 @@ impl Versor {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
-    let q = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
+    let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
 
-    let precomputed = q.to_precomputed();
-    let b = precomputed.rotate(&a);
+    let matrix = v.to_rotation_matrix();
+    let b = matrix.rotate(&a);
     // b is approximately [0.0, -1.0, 0.0]
     # Ok(())
     # }
@@ -350,14 +552,14 @@ impl Versor {
     */
     #[inline]
     #[must_use]
-    pub fn to_precomputed(&self) -> Precomputed {
+    pub fn to_rotation_matrix(&self) -> RotationMatrix<3> {
         let Versor(quaternion) = *self;
         let a = quaternion.scalar;
         let b = quaternion.vector[0];
         let c = quaternion.vector[1];
         let d = quaternion.vector[2];
 
-        Precomputed {
+        RotationMatrix {
             rows: [
                 [
                     a * a + b * b - c * c - d * d,
@@ -396,7 +598,7 @@ impl Default for Versor {
     ```
     use hoomd_rs_vector::Versor;
 
-    let q = Versor::default();
+    let v = Versor::default();
     ```
     */
     #[inline]
@@ -423,19 +625,12 @@ impl Rotate<Cartesian<3>> for Versor {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
-    let q = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
-    let b = q.rotate(&a);
+    let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
+    let b = v.rotate(&a);
     // b is approximately [0.0, -1.0, 0.0]
     # Ok(())
     # }
     ```
-
-    <div class="warning">
-
-    The given [`Versor`] is assumed to be unit. `rotate` produces undefined results
-    when the quaternion is not unit.
-
-    </div>
     */
     #[inline]
     fn rotate(&self, vector: &Cartesian<3>) -> Cartesian<3> {
@@ -444,35 +639,6 @@ impl Rotate<Cartesian<3>> for Versor {
         *vector * (quaternion.scalar * quaternion.scalar - quaternion.vector.dot(&quaternion.vector))
             + quaternion.vector.cross(vector) * (2.0 * quaternion.scalar)
             + quaternion.vector * (2.0 * quaternion.vector.dot(vector))
-    }
-}
-
-impl Rotate<Cartesian<3>> for Precomputed {
-    #[inline]
-    /** Rotate a [`Cartesian<3>`] by a [`Versor`]
-
-    # Example
-    ```
-    use hoomd_rs_vector::{Versor, Rotate, Rotation, Cartesian};
-    use std::f64::consts::PI;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let a = Cartesian::from([-1.0, 0.0, 0.0]);
-    let q = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
-
-    let precomputed = q.to_precomputed();
-    let b = precomputed.rotate(&a);
-    // b is approximately [0.0, -1.0, 0.0]
-    # Ok(())
-    # }
-    ```
-    */
-    fn rotate(&self, vector: &Cartesian<3>) -> Cartesian<3> {
-        Cartesian::from([
-            self.rows[0].dot(vector),
-            self.rows[1].dot(vector),
-            self.rows[2].dot(vector),
-        ])
     }
 }
 
@@ -530,8 +696,8 @@ impl Rotation for Versor {
     use hoomd_rs_vector::{Versor, Rotation};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let q = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, 1.5);
-    let q_star = q.inverted();
+    let v = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, 1.5);
+    let v_star = v.inverted();
     # Ok(())
     # }
     ```
@@ -858,12 +1024,12 @@ mod tests {
             Cartesian::from([0.0, 0.0, 1.0]).to_unit_unchecked(),
             PI / 2.0,
         )
-        .to_precomputed();
+        .to_rotation_matrix();
         let y_pi_4 = Versor::from_axis_angle(
             Cartesian::from([0.0, 1.0, 0.0]).to_unit_unchecked(),
             PI / 4.0,
         )
-        .to_precomputed();
+        .to_rotation_matrix();
 
         validate_rotations(&z_pi_2, &y_pi_4);
     }

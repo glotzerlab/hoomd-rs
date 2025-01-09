@@ -14,7 +14,7 @@ use std::ops::{
 use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
 
-use crate::{Cross, Error, Unit, Vector};
+use crate::{Cross, Error, Rotate, Unit, Vector};
 
 /**A Cartesian vector represented by an array of `N` `f64` coordinates.
 
@@ -426,6 +426,68 @@ where
     #[inline]
     fn index_mut(&mut self, index: T) -> &mut Self::Output {
         &mut self.coordinates[index]
+    }
+}
+
+/** Rotate vectors efficiently.
+
+Construct a [`RotationMatrix`] to efficiently rotate many vectors by the same rotation.
+
+See:
+* [`Angle::to_rotation_matrix()`](crate::Angle::to_rotation_matrix)
+* [`Versor::to_rotation_matrix()`](crate::Versor::to_rotation_matrix)
+
+[`RotationMatrix`] _intentionally_ does not implement [`Rotation`](crate::Rotation).
+[`Angle`](crate::Angle) and [`Versor`](crate::Versor) are representations of
+rotations that are often the most effective and numerically stable to
+manipulate, even though they are more expensive to apply directly to vectors.
+*/
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct RotationMatrix<const N: usize> {
+    /// Rows of the rotation matrix.
+    pub(crate) rows: [Cartesian<N>; N],
+}
+
+impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
+    #[inline]
+    /** Rotate a [`Cartesian<N>`] by a [`RotationMatrix`]
+
+    # Examples
+    ```
+    use hoomd_rs_vector::{Angle, Rotate, Rotation, Cartesian};
+    use std::f64::consts::PI;
+
+    let v = Cartesian::from([-1.0, 0.0]);
+    let a = Angle::from(PI/2.0);
+
+    let matrix = a.to_rotation_matrix();
+    let rotated = matrix.rotate(&v);
+    // rotated is approximately [0.0, -1.0]
+    ```
+
+    ```
+    use hoomd_rs_vector::{Versor, Rotate, Rotation, Cartesian};
+    use std::f64::consts::PI;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let a = Cartesian::from([-1.0, 0.0, 0.0]);
+    let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
+
+    let matrix = v.to_rotation_matrix();
+    let b = matrix.rotate(&a);
+    // b is approximately [0.0, -1.0, 0.0]
+    # Ok(())
+    # }
+    ```
+    */
+    fn rotate(&self, vector: &Cartesian<N>) -> Cartesian<N> {
+        let mut coordinates = [0.0; N];
+
+        for (result, row) in coordinates.iter_mut().zip(self.rows.iter()) {
+            *result = row.dot(vector);
+        }
+    
+        Cartesian { coordinates }
     }
 }
 

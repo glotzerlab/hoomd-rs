@@ -29,16 +29,16 @@ fn rotate(bencher: Bencher) {
 }
 
 #[divan::bench]
-fn rotate_precomputed(bencher: Bencher) {
+fn rotate_matrix(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
     let a: Angle = rng.gen();
-    let precomputed = a.to_precomputed();
+    let matrix = a.to_rotation_matrix();
 
     bencher
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| -> Cartesian<2> { rng.gen::<Cartesian<2>>() })
-        .bench_local_values(|vec| black_box(precomputed.rotate(&vec)));
+        .bench_local_values(|vec| black_box(matrix.rotate(&vec)));
 }
 
 #[divan::bench]
