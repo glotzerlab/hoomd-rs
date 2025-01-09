@@ -4,13 +4,13 @@
 #![allow(missing_docs)]
 #![allow(clippy::missing_docs_in_private_items)]
 
-/*! Benchmark Quaternion */
+/*! Benchmark Angle */
 
 use divan::counter::ItemsCount;
 use divan::{self, black_box, Bencher};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
-use hoomd_rs_vector::{Cartesian, Rotate, Versor};
+use hoomd_vector::{Angle, Cartesian, Rotate};
 
 fn main() {
     divan::main();
@@ -20,24 +20,24 @@ fn main() {
 fn rotate(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
-    let q: Versor = rng.gen();
+    let a: Angle = rng.gen();
 
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| -> Cartesian<3> { rng.gen::<Cartesian<3>>() })
-        .bench_local_values(|vec| black_box(q.rotate(&vec)));
+        .with_inputs(|| -> Cartesian<2> { rng.gen::<Cartesian<2>>() })
+        .bench_local_values(|vec| black_box(a.rotate(&vec)));
 }
 
 #[divan::bench]
 fn rotate_matrix(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
-    let a: Versor = rng.gen();
+    let a: Angle = rng.gen();
     let matrix = a.to_rotation_matrix();
 
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| -> Cartesian<3> { rng.gen::<Cartesian<3>>() })
+        .with_inputs(|| -> Cartesian<2> { rng.gen::<Cartesian<2>>() })
         .bench_local_values(|vec| black_box(matrix.rotate(&vec)));
 }
 
@@ -47,5 +47,5 @@ fn gen_random(bencher: Bencher) {
 
     bencher
         .counter(ItemsCount::from(1_u32))
-        .bench_local(|| black_box(rng.gen::<Versor>()));
+        .bench_local(|| black_box(rng.gen::<Angle>()));
 }

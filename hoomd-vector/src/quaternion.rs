@@ -25,7 +25,7 @@ Looking for the quaternion representation of 3D rotations? See [`Versor`].
 
 Create a quaternion with an array of coordinates (`[scalar, vector_0, vector_1, vector_2]`).
 ```
-use hoomd_rs_vector::Quaternion;
+use hoomd_vector::Quaternion;
 
 let q = Quaternion::from([1.0, 2.0, 3.0, 4.0]);
 assert_eq!(q.scalar, 1.0);
@@ -36,7 +36,7 @@ assert_eq!(q.vector, [2.0, 3.0, 4.0].into());
 
 Compute a quaternion's norm:
 ```
-use hoomd_rs_vector::Quaternion;
+use hoomd_vector::Quaternion;
 
 let q = Quaternion::from([3.0, 0.0, 4.0, 0.0]);
 let norm = q.norm();
@@ -45,7 +45,7 @@ assert_eq!(norm, 5.0);
 
 Form the conjugate:
 ```
-use hoomd_rs_vector::Quaternion;
+use hoomd_vector::Quaternion;
 
 let q = Quaternion::from([1.0, 2.0, 3.0, 4.0]);
 let q_star = q.conjugate();
@@ -56,7 +56,7 @@ assert_eq!(q_star, [1.0, -2.0, -3.0, -4.0].into());
 
 All operation examples use the following two quaternions:
 ```
-use hoomd_rs_vector::Quaternion;
+use hoomd_vector::Quaternion;
 
 let a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
 let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
@@ -65,7 +65,7 @@ let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
 Addition:
 
 ```
-# use hoomd_rs_vector::Quaternion;
+# use hoomd_vector::Quaternion;
 # let a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
 # let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
 let c = a + b;
@@ -73,7 +73,7 @@ assert_eq!(c, [-1.0, 4.0, 10.0, -3.0].into());
 ```
 
 ```
-# use hoomd_rs_vector::Quaternion;
+# use hoomd_vector::Quaternion;
 # let mut a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
 # let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
 a += b;
@@ -83,7 +83,7 @@ assert_eq!(a, [-1.0, 4.0, 10.0, -3.0].into());
 Subtraction:
 
 ```
-# use hoomd_rs_vector::Quaternion;
+# use hoomd_vector::Quaternion;
 # let a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
 # let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
 let c = a - b;
@@ -91,7 +91,7 @@ assert_eq!(c, [3.0, -8.0, 2.0, -5.0].into());
 ```
 
 ```
-# use hoomd_rs_vector::Quaternion;
+# use hoomd_vector::Quaternion;
 # let mut a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
 # let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
 a -= b;
@@ -101,14 +101,14 @@ assert_eq!(a, [3.0, -8.0, 2.0, -5.0].into());
 Multiplication by a scalar:
 
 ```
-# use hoomd_rs_vector::Quaternion;
+# use hoomd_vector::Quaternion;
 # let a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
 let c = a * 2.0;
 assert_eq!(c, [2.0, -4.0, 12.0, -8.0].into());
 ```
 
 ```
-# use hoomd_rs_vector::Quaternion;
+# use hoomd_vector::Quaternion;
 # let mut a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
 # let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
 a *= 2.0;
@@ -118,14 +118,14 @@ assert_eq!(a, [2.0, -4.0, 12.0, -8.0].into());
 Division by a scalar:
 
 ```
-# use hoomd_rs_vector::Quaternion;
+# use hoomd_vector::Quaternion;
 # let a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
 let c = a / 2.0;
 assert_eq!(c, [0.5, -1.0, 3.0, -2.0].into());
 ```
 
 ```
-# use hoomd_rs_vector::Quaternion;
+# use hoomd_vector::Quaternion;
 # let mut a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
 # let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
 a /= 2.0;
@@ -135,7 +135,7 @@ assert_eq!(a, [0.5, -1.0, 3.0, -2.0].into());
 Quaternion multiplication:
 
 ```
-# use hoomd_rs_vector::Quaternion;
+# use hoomd_vector::Quaternion;
 # let a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
 # let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
 let c = a * b;
@@ -143,7 +143,7 @@ assert_eq!(c, [-10.0, 32.0, -30.0, -35.0].into());
 ```
 
 ```
-# use hoomd_rs_vector::Quaternion;
+# use hoomd_vector::Quaternion;
 # let mut a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
 # let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
 a *= b;
@@ -166,7 +166,7 @@ impl Quaternion {
 
     # Example
     ```
-    use hoomd_rs_vector::Quaternion;
+    use hoomd_vector::Quaternion;
 
     let q = Quaternion::from([3.0, 0.0, 4.0, 0.0]);
     let norm_squared = q.norm_squared();
@@ -185,7 +185,7 @@ impl Quaternion {
 
     # Example
     ```
-    use hoomd_rs_vector::Quaternion;
+    use hoomd_vector::Quaternion;
 
     let q = Quaternion::from([3.0, 0.0, 4.0, 0.0]);
     let norm = q.norm();
@@ -204,7 +204,7 @@ impl Quaternion {
 
     # Example
     ```
-    use hoomd_rs_vector::Quaternion;
+    use hoomd_vector::Quaternion;
 
     let q = Quaternion::from([1.0, 2.0, 3.0, 4.0]);
     let q_star = q.conjugate();
@@ -225,7 +225,7 @@ impl Quaternion {
     # Example
 
     ```
-    use hoomd_rs_vector::{Quaternion, Versor};
+    use hoomd_vector::{Quaternion, Versor};
     
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let q = Quaternion::from([3.0, 0.0, 0.0, 4.0]);
@@ -257,7 +257,7 @@ impl Quaternion {
     # Example
 
     ```
-    use hoomd_rs_vector::{Quaternion, Versor};
+    use hoomd_vector::{Quaternion, Versor};
     
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let q = Quaternion::from([3.0, 0.0, 0.0, 4.0]);
@@ -286,7 +286,7 @@ impl From<[f64; 4]> for Quaternion {
    
     # Example
     ```
-    use hoomd_rs_vector::Quaternion;
+    use hoomd_vector::Quaternion;
 
     let q = Quaternion::from([1.0, 2.0, 3.0, 4.0]);
     assert_eq!(q.scalar, 1.0);
@@ -406,7 +406,7 @@ convention.
 
 Create a [`Versor`] that rotates by an angle about an axis:
 ```
-use hoomd_rs_vector::Versor;
+use hoomd_vector::Versor;
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -418,7 +418,7 @@ assert_eq!(*v.get(), [(PI/4.0).cos(), 0.0, (PI/4.0).sin(), 0.0].into());
 
 Create a [`Versor`] by normalizing a [`Quaternion`]:
 ```
-use hoomd_rs_vector::{Quaternion, Versor};
+use hoomd_vector::{Quaternion, Versor};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let q = Quaternion::from([3.0, 0.0, 0.0, 4.0]);
@@ -430,7 +430,7 @@ assert_eq!(*v.get(), [3.0/5.0, 0.0, 0.0, 4.0/5.0].into());
 
 Create a random [`Versor`]:
 ```
-use hoomd_rs_vector::Versor;
+use hoomd_vector::Versor;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -442,7 +442,7 @@ let v: Versor = rng.gen();
 
 Combine two rotations together:
 ```
-use hoomd_rs_vector::{Versor, Rotation};
+use hoomd_vector::{Versor, Rotation};
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -457,7 +457,7 @@ let c = a.combine(&b);
 
 Rotate a [`Cartesian<3>`] by a [`Versor`]:
 ```
-use hoomd_rs_vector::{Versor, Rotate, Rotation, Cartesian};
+use hoomd_vector::{Versor, Rotate, Rotation, Cartesian};
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -479,7 +479,7 @@ impl Versor {
     # Example
 
     ```
-    use hoomd_rs_vector::Versor;
+    use hoomd_vector::Versor;
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -509,7 +509,7 @@ impl Versor {
     # Example
 
     ```
-    use hoomd_rs_vector::Versor;
+    use hoomd_vector::Versor;
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -537,7 +537,7 @@ impl Versor {
     
     # Example
     ```
-    use hoomd_rs_vector::{Versor, Rotate, Rotation, Cartesian};
+    use hoomd_vector::{Versor, Rotate, Rotation, Cartesian};
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -597,7 +597,7 @@ impl Default for Versor {
 
     # Example
     ```
-    use hoomd_rs_vector::Versor;
+    use hoomd_vector::Versor;
 
     let v = Versor::default();
     ```
@@ -621,7 +621,7 @@ impl Rotate<Cartesian<3>> for Versor {
     # Example
 
     ```
-    use hoomd_rs_vector::{Versor, Rotate, Rotation, Cartesian};
+    use hoomd_vector::{Versor, Rotate, Rotation, Cartesian};
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -653,7 +653,7 @@ impl Rotation for Versor {
     # Example
 
     ```
-    use hoomd_rs_vector::{Versor, Rotation};
+    use hoomd_vector::{Versor, Rotation};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let q_a = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, 1.5);
@@ -676,7 +676,7 @@ impl Rotation for Versor {
     # Example
 
     ```
-    use hoomd_rs_vector::{Versor, Rotation};
+    use hoomd_vector::{Versor, Rotation};
 
     let identity = Versor::identity();
     ```
@@ -694,7 +694,7 @@ impl Rotation for Versor {
     # Example
 
     ```
-    use hoomd_rs_vector::{Versor, Rotation};
+    use hoomd_vector::{Versor, Rotation};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let v = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, 1.5);
@@ -725,7 +725,7 @@ impl Distribution<Versor> for Standard {
     # Example
 
     ```
-    use hoomd_rs_vector::Versor;
+    use hoomd_vector::Versor;
     use rand::{rngs::StdRng, Rng, SeedableRng};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {

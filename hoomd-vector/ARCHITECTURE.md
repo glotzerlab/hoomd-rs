@@ -1,8 +1,8 @@
-# hoomd_rs_vector
+# hoomd_vector
 
 ## Vector
 
-The `hoomd_rs_vector` crate defines a generic `Vector` trait that is independent of
+The `hoomd_vector` crate defines a generic `Vector` trait that is independent of
 representation. The trait consists of methods that can _only_ be applied to all vectors
 in a normed vector space with *n* dimensions:
 
@@ -17,7 +17,7 @@ cross products, defined in specific trait: `Cross`.
 
 ### Cartesian vector
 
-`hoomd_rs_vector` implements an n-dimension `Cartesian` vector type for general use,
+`hoomd_vector` implements an n-dimension `Cartesian` vector type for general use,
 which includes methods for element access, and other operations specific to Cartesian
 vectors.
 
@@ -58,7 +58,7 @@ The `Versor` type, a unit `Quaternion`, rotates 3D Cartesian vectors.
 
 ## Random sampling
 
-`hoomd_rs_vector` implements [`rand`] distributions to sample random vectors and
+`hoomd_vector` implements [`rand`] distributions to sample random vectors and
 rotations.
 
 [`rand`]: https://docs.rs/rand/latest/rand/

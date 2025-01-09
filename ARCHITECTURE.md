@@ -5,9 +5,9 @@
 HOOMD-rs is organized in many individual crates so that external code does not need to
 compile all of HOOMD-rs when using only a portion.
 
-### hoomd_rs_vector
+### hoomd_vector
 
-`hoomd_rs_vector` implements vector and quaternion math. It also defines general traits
+`hoomd_vector` implements vector and quaternion math. It also defines general traits
 so that users can define custom vector storage types (and associated operations).
 
 ### hoomd_rs_spatial

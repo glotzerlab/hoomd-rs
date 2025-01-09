@@ -242,7 +242,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a9bfc1af68b1726ea47d3d5109de126281def866b33970e10fbab11b5dafab3"
 
 [[package]]
-name = "hoomd-rs-vector"
+name = "hoomd-vector"
 version = "0.0.0"
 dependencies = [
  "approx",

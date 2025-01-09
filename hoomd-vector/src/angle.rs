@@ -20,7 +20,7 @@ counter-clockwise.
 
 Create an [`Angle`] with a given value:
 ```
-use hoomd_rs_vector::Angle;
+use hoomd_vector::Angle;
 use std::f64::consts::PI;
 
 let a = Angle::from(PI/2.0);
@@ -29,7 +29,7 @@ assert_eq!(a.theta, PI/2.0);
 
 Create a random [`Angle`] from the uniform distribution over all rotations:
 ```
-use hoomd_rs_vector::Angle;
+use hoomd_vector::Angle;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -41,7 +41,7 @@ let a: Angle = rng.gen();
 
 Combine two rotations together:
 ```
-use hoomd_rs_vector::{Angle, Rotation};
+use hoomd_vector::{Angle, Rotation};
 use std::f64::consts::PI;
 
 let a = Angle::from(PI/2.0);
@@ -54,7 +54,7 @@ assert_eq!(c.theta, PI/4.0);
 
 Rotate a [`Cartesian<2>`] vector by an [`Angle`]:
 ```
-use hoomd_rs_vector::{Angle, Rotate, Rotation, Cartesian};
+use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
 use std::f64::consts::PI;
 
 let v = Cartesian::from([-1.0, 0.0]);
@@ -79,7 +79,7 @@ impl Angle {
     # Example
 
     ```
-    use hoomd_rs_vector::Angle;
+    use hoomd_vector::Angle;
     use std::f64::consts::PI;
 
     let a = Angle::from(20.0 * PI);
@@ -102,7 +102,7 @@ impl Angle {
 
     # Example
     ```
-    use hoomd_rs_vector::{Angle, Rotate, Rotation, Cartesian};
+    use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
     use std::f64::consts::PI;
 
     let v = Cartesian::from([-1.0, 0.0]);
@@ -132,7 +132,7 @@ impl Default for Angle {
 
     # Example
     ```
-    use hoomd_rs_vector::Angle;
+    use hoomd_vector::Angle;
 
     let a = Angle::default();
     assert_eq!(a.theta, 0.0)
@@ -150,7 +150,7 @@ impl From<f64> for Angle {
 
     # Example
     ```
-    use hoomd_rs_vector::Angle;
+    use hoomd_vector::Angle;
 
     let a = Angle::from(1.5);
     assert_eq!(a.theta, 1.5);
@@ -168,7 +168,7 @@ impl Rotate<Cartesian<2>> for Angle {
 
     # Example
     ```
-    use hoomd_rs_vector::{Angle, Rotate, Rotation, Cartesian};
+    use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
     use std::f64::consts::PI;
 
     let v = Cartesian::from([-1.0, 0.0]);
@@ -193,7 +193,7 @@ impl Rotation for Angle {
 
     # Example
     ```
-    use hoomd_rs_vector::{Angle, Rotation};
+    use hoomd_vector::{Angle, Rotation};
 
     let a = Angle::default();
     assert_eq!(a.theta, 0.0);
@@ -208,7 +208,7 @@ impl Rotation for Angle {
 
     # Example
     ```
-    use hoomd_rs_vector::{Angle, Rotation};
+    use hoomd_vector::{Angle, Rotation};
     use std::f64::consts::PI;
 
     let a = Angle::from(PI/3.0);
@@ -225,7 +225,7 @@ impl Rotation for Angle {
 
     # Example
     ```
-    use hoomd_rs_vector::{Angle, Rotation};
+    use hoomd_vector::{Angle, Rotation};
     use std::f64::consts::PI;
 
     let a = Angle::from(PI/2.0);
@@ -253,7 +253,7 @@ impl Distribution<Angle> for Standard {
     # Example
 
     ```
-    use hoomd_rs_vector::Angle;
+    use hoomd_vector::Angle;
     use rand::{rngs::StdRng, Rng, SeedableRng};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {

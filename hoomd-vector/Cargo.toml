@@ -1,12 +1,12 @@
 [package]
-name = "hoomd-rs-vector"
+name = "hoomd-vector"
 categories.workspace = true
 description = "Vector and quaternion math library."
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 license.workspace = true
-readme = "hoomd-rs-vector/README.md"
+readme = "hoomd-vector/README.md"
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
