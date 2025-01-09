@@ -161,12 +161,15 @@ let versor: Versor = rng.gen();
 ```
 */
 
-
+mod angle;
 mod cartesian;
 mod quaternion;
-mod angle;
 
-pub use {angle::Angle, cartesian::{Cartesian, RotationMatrix}, quaternion::{Versor, Quaternion}};
+pub use {
+    angle::Angle,
+    cartesian::{Cartesian, RotationMatrix},
+    quaternion::{Quaternion, Versor},
+};
 
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use thiserror::Error;
@@ -407,7 +410,7 @@ pub trait Vector:
 
     ```
     use hoomd_vector::{Cartesian, Unit, Vector};
-    
+
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([3.0, 4.0]);
     let unit = a.to_unit()?;
@@ -439,7 +442,7 @@ pub trait Vector:
 
     ```
     use hoomd_vector::{Cartesian, Unit, Vector};
-    
+
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([3.0, 4.0]);
     let unit = a.to_unit_unchecked();

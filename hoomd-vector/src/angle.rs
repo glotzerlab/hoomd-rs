@@ -373,28 +373,16 @@ mod tests {
         let two_pi = 2.0 * PI;
 
         assert_relative_eq!(Angle::from(0.125).to_reduced(), (0.125).into());
-        assert_relative_eq!(
-            Angle::from(2.0 * PI + 0.125).to_reduced(),
-            (0.125).into()
-        );
-        assert_relative_eq!(
-            Angle::from(2.0 * 2.0 * PI + 0.5).to_reduced(),
-            (0.5).into()
-        );
-        assert_relative_eq!(
-            Angle::from(3.0 * 2.0 * PI + 3.0).to_reduced(),
-            (3.0).into()
-        );
+        assert_relative_eq!(Angle::from(2.0 * PI + 0.125).to_reduced(), (0.125).into());
+        assert_relative_eq!(Angle::from(2.0 * 2.0 * PI + 0.5).to_reduced(), (0.5).into());
+        assert_relative_eq!(Angle::from(3.0 * 2.0 * PI + 3.0).to_reduced(), (3.0).into());
         assert_relative_eq!(
             Angle::from(2.0 * PI - 0.125).to_reduced(),
             (2.0 * PI - 0.125).into()
         );
 
         assert_relative_eq!(Angle::from(two_pi).to_reduced(), (0.0).into());
-        assert_relative_eq!(
-            Angle::from(-0.125).to_reduced(),
-            (2.0 * PI - 0.125).into()
-        );
+        assert_relative_eq!(Angle::from(-0.125).to_reduced(), (2.0 * PI - 0.125).into());
         assert_relative_eq!(Angle::from(-3.0).to_reduced(), (2.0 * PI - 3.0).into());
         assert_relative_eq!(
             Angle::from(-2.0 * PI - 0.125).to_reduced(),

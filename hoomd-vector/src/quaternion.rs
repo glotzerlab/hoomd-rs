@@ -6,11 +6,9 @@
 use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
 use std::fmt;
-use std::ops::{
-    Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign,
-};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-use crate::{Cartesian, Cross, Error, Unit, Rotate, Rotation, RotationMatrix, Vector};
+use crate::{Cartesian, Cross, Error, Rotate, Rotation, RotationMatrix, Unit, Vector};
 
 /** Extended complex number.
 
@@ -214,7 +212,10 @@ impl Quaternion {
     #[inline]
     #[must_use]
     pub fn conjugate(self) -> Self {
-        Self { scalar: self.scalar, vector: -self.vector }
+        Self {
+            scalar: self.scalar,
+            vector: -self.vector,
+        }
     }
 
     /** Create a [`Versor`] by normalizing the given quaternion.
@@ -226,7 +227,7 @@ impl Quaternion {
 
     ```
     use hoomd_vector::{Quaternion, Versor};
-    
+
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let q = Quaternion::from([3.0, 0.0, 0.0, 4.0]);
     let v = q.to_versor()?;
@@ -258,7 +259,7 @@ impl Quaternion {
 
     ```
     use hoomd_vector::{Quaternion, Versor};
-    
+
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let q = Quaternion::from([3.0, 0.0, 0.0, 4.0]);
     let v = q.to_versor_unchecked();
@@ -274,7 +275,7 @@ impl Quaternion {
     #[inline]
     #[must_use]
     pub fn to_versor_unchecked(self) -> Versor {
-            Versor(self / self.norm())
+        Versor(self / self.norm())
     }
 }
 
@@ -283,7 +284,7 @@ impl From<[f64; 4]> for Quaternion {
 
     The first value is the real part. The 2nd through 4th are the complex vector part:
     `[scalar, vector_0, vector_1, vector_2]`.
-   
+
     # Example
     ```
     use hoomd_vector::Quaternion;
@@ -315,7 +316,10 @@ impl Add for Quaternion {
 
     #[inline]
     fn add(self, rhs: Self) -> Self {
-        Self { scalar: self.scalar + rhs.scalar, vector: self.vector + rhs.vector }
+        Self {
+            scalar: self.scalar + rhs.scalar,
+            vector: self.vector + rhs.vector,
+        }
     }
 }
 
@@ -332,7 +336,10 @@ impl Div<f64> for Quaternion {
 
     #[inline]
     fn div(self, rhs: f64) -> Self {
-        Self { scalar: self.scalar / rhs, vector: self.vector / rhs }
+        Self {
+            scalar: self.scalar / rhs,
+            vector: self.vector / rhs,
+        }
     }
 }
 
@@ -349,7 +356,10 @@ impl Mul<f64> for Quaternion {
 
     #[inline]
     fn mul(self, rhs: f64) -> Self {
-        Self { scalar: self.scalar * rhs, vector: self.vector * rhs }
+        Self {
+            scalar: self.scalar * rhs,
+            vector: self.vector * rhs,
+        }
     }
 }
 
@@ -366,9 +376,13 @@ impl Mul<Quaternion> for Quaternion {
 
     #[inline]
     fn mul(self, rhs: Quaternion) -> Self {
-        Self { scalar: (self.scalar * rhs.scalar - self.vector.dot(&rhs.vector)),
-            vector: (rhs.vector * self.scalar + self.vector * rhs.scalar + self.vector.cross(&rhs.vector)),
- }    }
+        Self {
+            scalar: (self.scalar * rhs.scalar - self.vector.dot(&rhs.vector)),
+            vector: (rhs.vector * self.scalar
+                + self.vector * rhs.scalar
+                + self.vector.cross(&rhs.vector)),
+        }
+    }
 }
 
 impl MulAssign<Quaternion> for Quaternion {
@@ -385,7 +399,10 @@ impl Sub for Quaternion {
 
     #[inline]
     fn sub(self, rhs: Self) -> Self {
-        Self { scalar: self.scalar - rhs.scalar, vector: self.vector - rhs.vector }
+        Self {
+            scalar: self.scalar - rhs.scalar,
+            vector: self.vector - rhs.vector,
+        }
     }
 }
 
@@ -399,7 +416,7 @@ impl SubAssign for Quaternion {
 
 /** A unit [`Quaternion`] that represents a 3D rotation.
 
-[`Versor`] represents a 3D rotation with a **unit quaternion**. Rotation follows the Hamilton 
+[`Versor`] represents a 3D rotation with a **unit quaternion**. Rotation follows the Hamilton
 convention.
 
 ## Constructing a [`Versor`]:
@@ -497,7 +514,7 @@ impl Versor {
         Versor(Quaternion {
             scalar: (angle / 2.0).cos(),
             vector: axis_vector * (angle / 2.0).sin(),
-            })
+        })
     }
 
     /** Normalize the versor.
@@ -534,7 +551,7 @@ impl Versor {
 
     When rotating many vectors by the same [`Versor`], improve performance
     by converting to a matrix first and applying that matrix to the vectors.
-    
+
     # Example
     ```
     use hoomd_vector::{Versor, Rotate, Rotation, Cartesian};
@@ -636,8 +653,9 @@ impl Rotate<Cartesian<3>> for Versor {
     #[inline]
     fn rotate(&self, vector: &Cartesian<3>) -> Cartesian<3> {
         let Versor(quaternion) = self;
-        
-        *vector * (quaternion.scalar * quaternion.scalar - quaternion.vector.dot(&quaternion.vector))
+
+        *vector
+            * (quaternion.scalar * quaternion.scalar - quaternion.vector.dot(&quaternion.vector))
             + quaternion.vector.cross(vector) * (2.0 * quaternion.scalar)
             + quaternion.vector * (2.0 * quaternion.vector.dot(vector))
     }
@@ -706,7 +724,7 @@ impl Rotation for Versor {
     #[inline]
     fn inverted(self) -> Self {
         let Versor(quaternion) = self;
-    
+
         Versor(quaternion.conjugate())
     }
 }
@@ -766,8 +784,8 @@ impl Distribution<Versor> for Standard {
 
 #[cfg(test)]
 mod approx {
-    use approx::{AbsDiffEq, RelativeEq};
     use super::{Quaternion, Versor};
+    use approx::{AbsDiffEq, RelativeEq};
 
     use crate::Cartesian;
 
@@ -837,295 +855,294 @@ mod tests {
     use std::f64::consts::PI;
 
     mod quaternion {
-    use super::*;
-    
-    #[test]
-    fn from_array() {
-        let q = Quaternion::from([2.0, -3.0, 4.0, 7.0]);
-        assert!(q.scalar == 2.0);
-        assert!(q.vector == [-3.0, 4.0, 7.0].into());
-    }
+        use super::*;
 
-    #[test]
-    fn norm() {
-        let q = Quaternion::from([1.0, 4.0, -3.0, -2.0]);
-        assert_eq!(q.norm_squared(), 30.0);
-        assert_eq!(q.norm(), 30.0_f64.sqrt());
-    }
-    
-    #[test]
-    fn conjugate() {
-        let q1 = Quaternion::from([1.0, -2.0, 4.0, -0.5]);
-        let q2 = q1.conjugate();
-        assert_eq!(q2, [1.0, 2.0, -4.0, 0.5].into());
-        assert_relative_eq!(q2 * q1, [q2.norm() * q1.norm(), 0.0, 0.0, 0.0].into());
-    }
+        #[test]
+        fn from_array() {
+            let q = Quaternion::from([2.0, -3.0, 4.0, 7.0]);
+            assert!(q.scalar == 2.0);
+            assert!(q.vector == [-3.0, 4.0, 7.0].into());
+        }
 
-    #[test]
-    fn to_versor() {
-        let q = Quaternion::from([5.0, 3.0, -1.0, 1.0]);
+        #[test]
+        fn norm() {
+            let q = Quaternion::from([1.0, 4.0, -3.0, -2.0]);
+            assert_eq!(q.norm_squared(), 30.0);
+            assert_eq!(q.norm(), 30.0_f64.sqrt());
+        }
 
-        assert_relative_eq!(
-            q.to_versor().expect("non-zero quaternion"),
-            Versor(Quaternion {
-                scalar: 5.0 / 6.0,
-                vector: [3.0 / 6.0, -1.0 / 6.0, 1.0 / 6.0].into()
-            })
-        );
+        #[test]
+        fn conjugate() {
+            let q1 = Quaternion::from([1.0, -2.0, 4.0, -0.5]);
+            let q2 = q1.conjugate();
+            assert_eq!(q2, [1.0, 2.0, -4.0, 0.5].into());
+            assert_relative_eq!(q2 * q1, [q2.norm() * q1.norm(), 0.0, 0.0, 0.0].into());
+        }
 
-        assert_relative_eq!(
-            q.to_versor_unchecked(),
-            Versor(Quaternion {
-                scalar: 5.0 / 6.0,
-                vector: [3.0 / 6.0, -1.0 / 6.0, 1.0 / 6.0].into()
-            })
-        );
+        #[test]
+        fn to_versor() {
+            let q = Quaternion::from([5.0, 3.0, -1.0, 1.0]);
 
-        let zero = Quaternion::from([0.0, 0.0, 0.0, 0.0]);
-        assert!(matches!(zero.to_versor(), Err(Error::InvalidMagnitude)));
-    }
+            assert_relative_eq!(
+                q.to_versor().expect("non-zero quaternion"),
+                Versor(Quaternion {
+                    scalar: 5.0 / 6.0,
+                    vector: [3.0 / 6.0, -1.0 / 6.0, 1.0 / 6.0].into()
+                })
+            );
 
-    #[test]
-    fn ops() {
-        let a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
-        let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
+            assert_relative_eq!(
+                q.to_versor_unchecked(),
+                Versor(Quaternion {
+                    scalar: 5.0 / 6.0,
+                    vector: [3.0 / 6.0, -1.0 / 6.0, 1.0 / 6.0].into()
+                })
+            );
 
-        // +, +=
-        assert_eq!(a + b, [-1.0, 4.0, 10.0, -3.0].into());
-        let mut c = a;
-        c += b;
-        assert_eq!(c, [-1.0, 4.0, 10.0, -3.0].into());
+            let zero = Quaternion::from([0.0, 0.0, 0.0, 0.0]);
+            assert!(matches!(zero.to_versor(), Err(Error::InvalidMagnitude)));
+        }
 
-        // -, -=
-        assert_eq!(a - b, [3.0, -8.0, 2.0, -5.0].into());
-        let mut c = a;
-        c -= b;
-        assert_eq!(c, [3.0, -8.0, 2.0, -5.0].into());
+        #[test]
+        fn ops() {
+            let a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
+            let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
 
-        // Scalar * and /
-        assert_eq!(a * 2.0, [2.0, -4.0, 12.0, -8.0].into());
-        let mut c = a;
-        c *= 2.0;
-        assert_eq!(c, [2.0, -4.0, 12.0, -8.0].into());
+            // +, +=
+            assert_eq!(a + b, [-1.0, 4.0, 10.0, -3.0].into());
+            let mut c = a;
+            c += b;
+            assert_eq!(c, [-1.0, 4.0, 10.0, -3.0].into());
 
-        assert_eq!(a / 2.0, [0.5, -1.0, 3.0, -2.0].into());
-        let mut c = a;
-        c /= 2.0;
-        assert_eq!(c, [0.5, -1.0, 3.0, -2.0].into());
+            // -, -=
+            assert_eq!(a - b, [3.0, -8.0, 2.0, -5.0].into());
+            let mut c = a;
+            c -= b;
+            assert_eq!(c, [3.0, -8.0, 2.0, -5.0].into());
 
-        // Quaternion multiplication
-        assert_eq!(a * b, [-10.0, 32.0, -30.0, -35.0].into());
-        let mut c = a;
-        c *= b;
-        assert_eq!(c, [-10.0, 32.0, -30.0, -35.0].into());
-    }
+            // Scalar * and /
+            assert_eq!(a * 2.0, [2.0, -4.0, 12.0, -8.0].into());
+            let mut c = a;
+            c *= 2.0;
+            assert_eq!(c, [2.0, -4.0, 12.0, -8.0].into());
 
-    #[test]
-    fn display() {
-        let q = Quaternion {
-            scalar: 0.5,
-            vector: [0.125, -0.875, 2.125].into(),
-        };
-        let s = format!("{q}");
-        assert_eq!(s, "[0.5, [0.125, -0.875, 2.125]]");
-    }
+            assert_eq!(a / 2.0, [0.5, -1.0, 3.0, -2.0].into());
+            let mut c = a;
+            c /= 2.0;
+            assert_eq!(c, [0.5, -1.0, 3.0, -2.0].into());
 
+            // Quaternion multiplication
+            assert_eq!(a * b, [-10.0, 32.0, -30.0, -35.0].into());
+            let mut c = a;
+            c *= b;
+            assert_eq!(c, [-10.0, 32.0, -30.0, -35.0].into());
+        }
+
+        #[test]
+        fn display() {
+            let q = Quaternion {
+                scalar: 0.5,
+                vector: [0.125, -0.875, 2.125].into(),
+            };
+            let s = format!("{q}");
+            assert_eq!(s, "[0.5, [0.125, -0.875, 2.125]]");
+        }
     }
 
     mod versor {
-    use super::*;
-    #[test]
-    fn default() {
-        let a = Versor::default();
-        assert!(a.get() == &[1.0, 0.0, 0.0, 0.0].into());
-    }
+        use super::*;
+        #[test]
+        fn default() {
+            let a = Versor::default();
+            assert!(a.get() == &[1.0, 0.0, 0.0, 0.0].into());
+        }
 
-    #[test]
-    fn identity() {
-        let a = Versor::identity();
-        assert!(a.get() == &[1.0, 0.0, 0.0, 0.0].into());
-    }
+        #[test]
+        fn identity() {
+            let a = Versor::identity();
+            assert!(a.get() == &[1.0, 0.0, 0.0, 0.0].into());
+        }
 
-    #[rstest(
+        #[rstest(
         theta => [0.0, PI/2.0, 1e-12 * PI, -3.0, 12345.6],
         axis => [Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked(), Cartesian::from([1.0, -1.0, 1.0]).to_unit_unchecked()],
     )]
-    fn from_axis_angle(theta: f64, axis: Unit<Cartesian<3>>) {
-        let Unit(axis_vector) = axis;
+        fn from_axis_angle(theta: f64, axis: Unit<Cartesian<3>>) {
+            let Unit(axis_vector) = axis;
 
-        let Versor(q) = Versor::from_axis_angle(axis, theta);
-        assert_relative_eq!(q.scalar, (theta / 2.0).cos());
-        assert_relative_eq!(q.vector, axis_vector * (theta / 2.0).sin());
-    }
+            let Versor(q) = Versor::from_axis_angle(axis, theta);
+            assert_relative_eq!(q.scalar, (theta / 2.0).cos());
+            assert_relative_eq!(q.vector, axis_vector * (theta / 2.0).sin());
+        }
 
-    #[rstest(
+        #[rstest(
         theta_1 => [0.0, PI/2.0, -3.0],
         theta_2 => [-0.0, -PI/3.0, PI, 2.0 * PI]
     )]
-    fn combine_same_axis(theta_1: f64, theta_2: f64) {
-        let axis = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
-        let Unit(axis_vector) = axis;
+        fn combine_same_axis(theta_1: f64, theta_2: f64) {
+            let axis = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
+            let Unit(axis_vector) = axis;
 
-        let a = Versor::from_axis_angle(axis, theta_1);
-        let b = Versor::from_axis_angle(axis, theta_2);
-        let c = a.combine(&b);
+            let a = Versor::from_axis_angle(axis, theta_1);
+            let b = Versor::from_axis_angle(axis, theta_2);
+            let c = a.combine(&b);
 
-        let theta = theta_1 + theta_2;
-        let Versor(q) = c;
-        assert_relative_eq!(q.scalar, (theta / 2.0).cos());
-        assert_relative_eq!(q.vector, axis_vector * (theta / 2.0).sin());
-    }
+            let theta = theta_1 + theta_2;
+            let Versor(q) = c;
+            assert_relative_eq!(q.scalar, (theta / 2.0).cos());
+            assert_relative_eq!(q.vector, axis_vector * (theta / 2.0).sin());
+        }
 
-    fn validate_rotations<R: Rotate<Cartesian<3>>>(z_pi_2: &R, y_pi_4: &R) {
-        assert_relative_eq!(
-            z_pi_2.rotate(&[0.0, 0.0, 1.0].into()),
-            [0.0, 0.0, 1.0].into()
-        );
-        assert_relative_eq!(
-            z_pi_2.rotate(&[1.0, 0.0, 4.25].into()),
-            [0.0, 1.0, 4.25].into()
-        );
-        assert_relative_eq!(
-            z_pi_2.rotate(&[0.0, 1.0, -8.75].into()),
-            [-1.0, 0.0, -8.75].into()
-        );
+        fn validate_rotations<R: Rotate<Cartesian<3>>>(z_pi_2: &R, y_pi_4: &R) {
+            assert_relative_eq!(
+                z_pi_2.rotate(&[0.0, 0.0, 1.0].into()),
+                [0.0, 0.0, 1.0].into()
+            );
+            assert_relative_eq!(
+                z_pi_2.rotate(&[1.0, 0.0, 4.25].into()),
+                [0.0, 1.0, 4.25].into()
+            );
+            assert_relative_eq!(
+                z_pi_2.rotate(&[0.0, 1.0, -8.75].into()),
+                [-1.0, 0.0, -8.75].into()
+            );
 
-        let sqrt_2_2 = 2.0_f64.sqrt() / 2.0;
-        assert_relative_eq!(
-            y_pi_4.rotate(&[0.0, -10.0, 0.0].into()),
-            [0.0, -10.0, 0.0].into()
-        );
-        assert_relative_eq!(
-            y_pi_4.rotate(&[1.0, -15.0, 0.0].into()),
-            [sqrt_2_2, -15.0, -sqrt_2_2].into()
-        );
-        assert_relative_eq!(
-            y_pi_4.rotate(&[sqrt_2_2, -15.0, -sqrt_2_2].into()),
-            [0.0, -15.0, -1.0].into()
-        );
-    }
+            let sqrt_2_2 = 2.0_f64.sqrt() / 2.0;
+            assert_relative_eq!(
+                y_pi_4.rotate(&[0.0, -10.0, 0.0].into()),
+                [0.0, -10.0, 0.0].into()
+            );
+            assert_relative_eq!(
+                y_pi_4.rotate(&[1.0, -15.0, 0.0].into()),
+                [sqrt_2_2, -15.0, -sqrt_2_2].into()
+            );
+            assert_relative_eq!(
+                y_pi_4.rotate(&[sqrt_2_2, -15.0, -sqrt_2_2].into()),
+                [0.0, -15.0, -1.0].into()
+            );
+        }
 
-    #[test]
-    fn rotate() {
-        let z_pi_2 = Versor::from_axis_angle(
-            Cartesian::from([0.0, 0.0, 1.0]).to_unit_unchecked(),
-            PI / 2.0,
-        );
-        let y_pi_4 = Versor::from_axis_angle(
-            Cartesian::from([0.0, 1.0, 0.0]).to_unit_unchecked(),
-            PI / 4.0,
-        );
+        #[test]
+        fn rotate() {
+            let z_pi_2 = Versor::from_axis_angle(
+                Cartesian::from([0.0, 0.0, 1.0]).to_unit_unchecked(),
+                PI / 2.0,
+            );
+            let y_pi_4 = Versor::from_axis_angle(
+                Cartesian::from([0.0, 1.0, 0.0]).to_unit_unchecked(),
+                PI / 4.0,
+            );
 
-        validate_rotations(&z_pi_2, &y_pi_4);
-    }
+            validate_rotations(&z_pi_2, &y_pi_4);
+        }
 
-    #[test]
-    fn precompute() {
-        let z_pi_2 = Versor::from_axis_angle(
-            Cartesian::from([0.0, 0.0, 1.0]).to_unit_unchecked(),
-            PI / 2.0,
-        )
-        .to_rotation_matrix();
-        let y_pi_4 = Versor::from_axis_angle(
-            Cartesian::from([0.0, 1.0, 0.0]).to_unit_unchecked(),
-            PI / 4.0,
-        )
-        .to_rotation_matrix();
+        #[test]
+        fn precompute() {
+            let z_pi_2 = Versor::from_axis_angle(
+                Cartesian::from([0.0, 0.0, 1.0]).to_unit_unchecked(),
+                PI / 2.0,
+            )
+            .to_rotation_matrix();
+            let y_pi_4 = Versor::from_axis_angle(
+                Cartesian::from([0.0, 1.0, 0.0]).to_unit_unchecked(),
+                PI / 4.0,
+            )
+            .to_rotation_matrix();
 
-        validate_rotations(&z_pi_2, &y_pi_4);
-    }
+            validate_rotations(&z_pi_2, &y_pi_4);
+        }
 
-    #[test]
-    fn combine_different_axis() {
-        let a = Versor::from_axis_angle(
-            Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked(),
-            PI / 4.0,
-        );
-        let b = Versor::from_axis_angle(
-            Cartesian::from([0.0, 0.0, 1.0]).to_unit_unchecked(),
-            PI / 2.0,
-        );
+        #[test]
+        fn combine_different_axis() {
+            let a = Versor::from_axis_angle(
+                Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked(),
+                PI / 4.0,
+            );
+            let b = Versor::from_axis_angle(
+                Cartesian::from([0.0, 0.0, 1.0]).to_unit_unchecked(),
+                PI / 2.0,
+            );
 
-        let q = a.combine(&b);
-        let v = q.rotate(&[1.0, 0.0, 0.0].into());
-        assert_relative_eq!(v, [0.0, 2.0_f64.sqrt() / 2.0, 2.0_f64.sqrt() / 2.0].into());
-    }
+            let q = a.combine(&b);
+            let v = q.rotate(&[1.0, 0.0, 0.0].into());
+            assert_relative_eq!(v, [0.0, 2.0_f64.sqrt() / 2.0, 2.0_f64.sqrt() / 2.0].into());
+        }
 
-    #[rstest(theta => [0.0, 1.0, 2.125])]
-    fn inverted(theta: f64) {
-        let q1 = Versor::from_axis_angle(
-            Cartesian::from([1.0, 0.5, -2.0]).to_unit_unchecked(),
-            theta,
-        );
-        let q2 = q1.inverted();
-        assert_relative_eq!(q1.combine(&q2), Versor::identity());
-    }
+        #[rstest(theta => [0.0, 1.0, 2.125])]
+        fn inverted(theta: f64) {
+            let q1 = Versor::from_axis_angle(
+                Cartesian::from([1.0, 0.5, -2.0]).to_unit_unchecked(),
+                theta,
+            );
+            let q2 = q1.inverted();
+            assert_relative_eq!(q1.combine(&q2), Versor::identity());
+        }
 
-    #[test]
-    fn display() {
-        let v = Versor(Quaternion {
-            scalar: 0.5,
-            vector: [0.125, -0.875, 2.125].into(),
-        });
-        let s = format!("{v}");
-        assert_eq!(s, "[0.5, [0.125, -0.875, 2.125]]");
-    }
+        #[test]
+        fn display() {
+            let v = Versor(Quaternion {
+                scalar: 0.5,
+                vector: [0.125, -0.875, 2.125].into(),
+            });
+            let s = format!("{v}");
+            assert_eq!(s, "[0.5, [0.125, -0.875, 2.125]]");
+        }
 
-    #[test]
-    fn normalized() {
-        let v = Versor(Quaternion {
-            scalar: 5.0,
-            vector: [3.0, -1.0, 1.0].into(),
-        });
-        assert_relative_eq!(
-            v.normalized(),
-            Versor(Quaternion {
-                scalar: 5.0 / 6.0,
-                vector: [3.0 / 6.0, -1.0 / 6.0, 1.0 / 6.0].into()
-            })
-        );
-    }
+        #[test]
+        fn normalized() {
+            let v = Versor(Quaternion {
+                scalar: 5.0,
+                vector: [3.0, -1.0, 1.0].into(),
+            });
+            assert_relative_eq!(
+                v.normalized(),
+                Versor(Quaternion {
+                    scalar: 5.0 / 6.0,
+                    vector: [3.0 / 6.0, -1.0 / 6.0, 1.0 / 6.0].into()
+                })
+            );
+        }
 
-    #[test]
-    fn random() {
-        const CHECK_VECTORS: [Cartesian<3>; 3] = [
-            Cartesian {
-                coordinates: [1.0, 0.0, 0.0],
-            },
-            Cartesian {
-                coordinates: [0.0, 1.0, 0.0],
-            },
-            Cartesian {
-                coordinates: [1.0, 0.0, 1.0],
-            },
-        ];
+        #[test]
+        fn random() {
+            const CHECK_VECTORS: [Cartesian<3>; 3] = [
+                Cartesian {
+                    coordinates: [1.0, 0.0, 0.0],
+                },
+                Cartesian {
+                    coordinates: [0.0, 1.0, 0.0],
+                },
+                Cartesian {
+                    coordinates: [1.0, 0.0, 1.0],
+                },
+            ];
 
-        // Perform basic checks on random versors.
-        // 1) Ensure that each randomly generated versor is unit.
-        // 2) Check that the result of rotating a reference vector by random versors does not
-        // point in any special direction. The average dot product should be close to 0.
-        let samples: u32 = 20_000;
+            // Perform basic checks on random versors.
+            // 1) Ensure that each randomly generated versor is unit.
+            // 2) Check that the result of rotating a reference vector by random versors does not
+            // point in any special direction. The average dot product should be close to 0.
+            let samples: u32 = 20_000;
 
-        let reference = Cartesian::from([1.0, 0.0, 0.0]);
-        let mut dot_sums = [0.0; CHECK_VECTORS.len()];
+            let reference = Cartesian::from([1.0, 0.0, 0.0]);
+            let mut dot_sums = [0.0; CHECK_VECTORS.len()];
 
-        let mut rng = StdRng::seed_from_u64(1);
+            let mut rng = StdRng::seed_from_u64(1);
 
-        for _ in 0..samples {
-            let q: Versor = rng.gen();
-            assert_relative_eq!(q.get().norm_squared(), 1.0, max_relative = 1e-15);
+            for _ in 0..samples {
+                let q: Versor = rng.gen();
+                assert_relative_eq!(q.get().norm_squared(), 1.0, max_relative = 1e-15);
 
-            let v = q.rotate(&reference);
-            for i in 0..CHECK_VECTORS.len() {
-                dot_sums[i] += v.dot(&CHECK_VECTORS[i]);
+                let v = q.rotate(&reference);
+                for i in 0..CHECK_VECTORS.len() {
+                    dot_sums[i] += v.dot(&CHECK_VECTORS[i]);
+                }
             }
-        }
 
-        for dot_sum in dot_sums {
-            assert_abs_diff_eq!(dot_sum / f64::from(samples), 0.0, epsilon = 0.01);
-        }
+            for dot_sum in dot_sums {
+                assert_abs_diff_eq!(dot_sum / f64::from(samples), 0.0, epsilon = 0.01);
+            }
 
-        // TODO: Trevor has a better unit test, but it requires shape overlap tests.
-    }
+            // TODO: Trevor has a better unit test, but it requires shape overlap tests.
+        }
     }
 }

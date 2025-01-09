@@ -485,7 +485,7 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
         for (result, row) in coordinates.iter_mut().zip(self.rows.iter()) {
             *result = row.dot(vector);
         }
-    
+
         Cartesian { coordinates }
     }
 }
@@ -831,21 +831,26 @@ mod tests {
         let Unit(unit_a) = a.to_unit_unchecked();
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
-        let Unit(unit_a) = Unit::<Cartesian<3>>::try_from([1.0, 0.0, 0.0]).expect("non-zero vector");
+        let Unit(unit_a) =
+            Unit::<Cartesian<3>>::try_from([1.0, 0.0, 0.0]).expect("non-zero vector");
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
         let a = Cartesian::from((3.0, 0.0, 4.0));
         let Unit(unit_a) = a.to_unit().expect("non-zero vector");
-        assert_eq!(unit_a, [3.0/5.0, 0.0, 4.0/5.0].into());
+        assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
         let Unit(unit_a) = a.to_unit_unchecked();
-        assert_eq!(unit_a, [3.0/5.0, 0.0, 4.0/5.0].into());
+        assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
-        let Unit(unit_a) = Unit::<Cartesian<3>>::try_from([3.0, 0.0, 4.0]).expect("non-zero vector");
-        assert_eq!(unit_a, [3.0/5.0, 0.0, 4.0/5.0].into());
+        let Unit(unit_a) =
+            Unit::<Cartesian<3>>::try_from([3.0, 0.0, 4.0]).expect("non-zero vector");
+        assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
         let a = Cartesian::from((0.0, 0.0, 0.0));
         assert!(matches!(a.to_unit(), Err(Error::InvalidMagnitude)));
-        assert!(matches!(Unit::<Cartesian<3>>::try_from([0.0, 0.0, 0.0]), Err(Error::InvalidMagnitude)));
+        assert!(matches!(
+            Unit::<Cartesian<3>>::try_from([0.0, 0.0, 0.0]),
+            Err(Error::InvalidMagnitude)
+        ));
     }
 }
