@@ -10,11 +10,18 @@
 
 /*! Vector and quaternion math.
 
-## Overview
+`hoomd_vector` implements vector math types and operations used in scientific
+computations, specifically those used in the HOOMD molecular simulation software
+suite. Its API is firmly rooted in mathematical principles. Users in
+other fields may find `hoomd_vector` useful outside the context of `HOOMD`.
 
-`hoomd_vector` implements common vector math operations. The base traits [`Vector`] and
-[`Rotation`] provide a generic interface. Generalize code on these base traits when possible so
-so that it can be used with any type that implements the traits:
+## Vectors
+
+The [`Vector`] trait describes any type that is a member of a normed vector
+space. Write code with a [`Vector`] trait bound when you can express the
+computation with vector arithmetic and dot products. Your generic code can
+then be invoked on vector types with any dimension or representation (e.g.
+spherical coordinates).
 
 ```
 use hoomd_vector::Vector;
@@ -33,7 +40,68 @@ fn triple<V: Vector + Cross>(a: &V, b: &V, c: &V) -> f64 {
 }
 ```
 
-Use trait bounds similarly when working with rotations:
+Use the provided [`Cartesian`] type to concretely represent N-dimensional
+vectors, or when your algorithm requires Cartesian coordinates:
+
+```
+use hoomd_vector::{Cartesian, Vector};
+
+let a = Cartesian::from([1.0, 2.0]);
+let b = Cartesian::from([-2.0, 1.0]);
+
+let product = a.dot(&b);
+assert_eq!(product, 0.0);
+
+let x = a[0];
+let y = a[1];
+```
+
+## Quaternions
+
+Quaternions are generalized complex numbers and a convenient way to describe the motion
+of rotating bodies. The [`Quaternion`] type describes a single quaternion and implements
+the associated algebra.
+
+```
+use hoomd_vector::Quaternion;
+
+let a = Quaternion::from([1.0, -2.0, 6.0, -4.0]);
+let b = Quaternion::from([-2.0, 6.0, 4.0, 1.0]);
+
+let norm = a.norm();
+assert_eq!(norm, 57.0_f64.sqrt());
+
+let sum = a + b;
+assert_eq!(sum, [-1.0, 4.0, 10.0, -3.0].into());
+
+let product = a * b;
+assert_eq!(product, [-10.0, 32.0, -30.0, -35.0].into());
+```
+
+A **unit quaternion** (called a [`Versor`] in mathematics) can represent a 3D rotation.
+
+```
+use hoomd_vector::{Quaternion, Versor};
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let q = Quaternion::from([3.0, 0.0, 0.0, 4.0]);
+let v = q.to_versor()?;
+assert_eq!(*v.get(), [3.0/5.0, 0.0, 0.0, 4.0/5.0].into());
+# Ok(())
+# }
+```
+
+## Rotations
+
+A [`Rotation`] describes a transformation from one orthonormal basis to
+another. A type that implements [`Rotation`] has an
+[`identity`](Rotation::identity). Instances of that type have an
+[`inverse`](Rotation::inverted) and can be [`combined`](Rotation::combine)
+with other rotations.
+
+Through the [`Rotate<V>`] trait, a [`Rotation`] can rotate a vector.
+
+As with [`Vector`], you can implement methods that operate on generic types:
 ```
 use hoomd_vector::{Rotate, Vector};
 
@@ -42,17 +110,55 @@ fn rotate_and_translate<R: Rotate<V>, V: Vector>(r: &R, a: &V, b: &V) -> V {
 }
 ```
 
-Using these traits, you can implement custom vector types for use througought `hoomd-rs`.
+[`Angle`] implements rotations on [`Cartesian<2>`] vectors.
+```
+use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
+use std::f64::consts::PI;
 
-## Canonical implementations
+let v = Cartesian::from([-1.0, 0.0]);
+let a = Angle::from(PI/2.0);
+let rotated = a.rotate(&v);
+// rotated is approximately [0.0, -1.0]
+```
 
-`hoomd_vector` provides canonical implementations of [`Vector`] and [`Rotation`]:
+[`Versor`] implements rotations on [`Cartesian<3>`] vectors.
+```
+use hoomd_vector::{Versor, Rotate, Rotation, Cartesian};
+use std::f64::consts::PI;
 
-* [`Cartesian`] - N-dimensional cartesian vector.
-* [`Angle`] - Rotation in the xy plane (interoperates with [`Cartesian<2>`].
-* [`Quaternion`] - 3D rotation (interoperates with [`Cartesian<3>`].
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let a = Cartesian::from([-1.0, 0.0, 0.0]);
+let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
+let b = v.rotate(&a);
+// b is approximately [0.0, -1.0, 0.0]
+# Ok(())
+# }
+```
 
-TODO: completely rewrite docs - follow the `std::cell` module as an example.
+Convert to a [`RotationMatrix`] when you need to rotate many vectors by the same
+rotation. [`RotationMatrix::rotate`] is typically several times faster than
+[`Versor::rotate`].
+
+# Random distributions
+
+`hoomd_vector` interoperators with [`rand`] to generate random vectors and rotations.
+
+The [`Standard`](rand::distributions::Standard) distribution samples rotations
+uniformly from the set of all rotations and vectors from the `[-1,1]` hypercube.
+
+
+```
+use hoomd_vector::{Angle, Cartesian, Versor};
+use rand::{rngs::StdRng, Rng, SeedableRng};
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut rng = StdRng::seed_from_u64(1);
+let angle: Angle = rng.gen();
+let vector: Cartesian::<3> = rng.gen();
+let versor: Versor = rng.gen();
+# Ok(())
+# }
+```
 */
 
 
@@ -65,7 +171,7 @@ pub use {angle::Angle, cartesian::{Cartesian, RotationMatrix}, quaternion::{Vers
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use thiserror::Error;
 
-/// The error type provided by all fallible vector math operations.
+/// Enumerate possible sources of error in fallible vector math operations.
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
@@ -78,7 +184,7 @@ pub enum Error {
     InvalidMagnitude,
 }
 
-/** A generic vector.
+/** Operate on elements of a normed vector space.
 
 Specifically, [`Vector`] defines methods that can be performed on any vector in a normed vector
 space (an inner product space by default).
@@ -352,7 +458,7 @@ pub trait Vector:
     }
 }
 
-/// A vector with magnitude 1.0.
+/// A [`Vector`] with magnitude 1.0.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Unit<V: Vector>(V);
 
@@ -364,7 +470,7 @@ impl<V: Vector> Unit<V> {
     }
 }
 
-/** The vector cross product.
+/** A vector space where the cross product is defined.
 */
 pub trait Cross {
     /** Perform the cross product.
@@ -389,7 +495,7 @@ pub trait Cross {
     fn cross(&self, other: &Self) -> Self;
 }
 
-/** Rotate a vector.
+/** Applies the rotation operation to vectors.
 
 The [`Rotate`] trait describes a type that can rotate a given vector. The rotated vector has the
 same magnitude, but possibly a different direction.
@@ -416,7 +522,7 @@ pub trait Rotate<V: Vector> {
     fn rotate(&self, vector: &V) -> V;
 }
 
-/** A rotation.
+/** Describes the transformation from one orthonormal basis to another.
 
 A [`Rotation`] represents a single rotation operation. Rotations change the direction of a vector
 while keeping its magnitude constant. To maintain generality, this documentation shows rotations

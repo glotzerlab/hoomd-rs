@@ -397,7 +397,7 @@ impl SubAssign for Quaternion {
     }
 }
 
-/** Represent a 3D rotation with a versor (a unit [`Quaternion`]).
+/** A unit [`Quaternion`] that represents a 3D rotation.
 
 [`Versor`] represents a 3D rotation with a **unit quaternion**. Rotation follows the Hamilton 
 convention.
@@ -440,19 +440,6 @@ let v: Versor = rng.gen();
 # }
 ```
 
-Combine two rotations together:
-```
-use hoomd_vector::{Versor, Rotation};
-use std::f64::consts::PI;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let a = Versor::from_axis_angle([1.0, 0.0, 1.0].try_into()?, PI/2.0);
-let b = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/4.0);
-let c = a.combine(&b);
-# Ok(())
-# }
-```
-
 ## Operations using [`Versor`]
 
 Rotate a [`Cartesian<3>`] by a [`Versor`]:
@@ -465,6 +452,19 @@ let a = Cartesian::from([-1.0, 0.0, 0.0]);
 let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
 let b = v.rotate(&a);
 // b is approximately [0.0, -1.0, 0.0]
+# Ok(())
+# }
+```
+
+Combine two rotations together:
+```
+use hoomd_vector::{Versor, Rotation};
+use std::f64::consts::PI;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let a = Versor::from_axis_angle([1.0, 0.0, 1.0].try_into()?, PI/2.0);
+let b = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/4.0);
+let c = a.combine(&b);
 # Ok(())
 # }
 ```

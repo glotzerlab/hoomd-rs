@@ -11,7 +11,7 @@ use std::fmt;
 
 use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
 
-/** 2D rotation in the plane.
+/** Rotation in the plane.
 
 The rotation is represented by an angle `theta` in radians. Positive values rotate
 counter-clockwise.
@@ -39,17 +39,6 @@ let a: Angle = rng.gen();
 # }
 ```
 
-Combine two rotations together:
-```
-use hoomd_vector::{Angle, Rotation};
-use std::f64::consts::PI;
-
-let a = Angle::from(PI/2.0);
-let b = Angle::from(-PI/4.0);
-let c = a.combine(&b);
-assert_eq!(c.theta, PI/4.0);
-```
-
 ## Operations using [`Angle`]
 
 Rotate a [`Cartesian<2>`] vector by an [`Angle`]:
@@ -61,6 +50,17 @@ let v = Cartesian::from([-1.0, 0.0]);
 let a = Angle::from(PI/2.0);
 let rotated = a.rotate(&v);
 // rotated is approximately [0.0, -1.0]
+```
+
+Combine two rotations together:
+```
+use hoomd_vector::{Angle, Rotation};
+use std::f64::consts::PI;
+
+let a = Angle::from(PI/2.0);
+let b = Angle::from(-PI/4.0);
+let c = a.combine(&b);
+assert_eq!(c.theta, PI/4.0);
 ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]

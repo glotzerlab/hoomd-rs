@@ -16,7 +16,7 @@ use rand::Rng;
 
 use crate::{Cross, Error, Rotate, Unit, Vector};
 
-/**A Cartesian vector represented by an array of `N` `f64` coordinates.
+/** A [`Vector`] represented by `N` `f64` coordinates.
 
 [`Cartesian`] is the canonical implementation of [`Vector`].
 
@@ -439,7 +439,7 @@ See:
 [`RotationMatrix`] _intentionally_ does not implement [`Rotation`](crate::Rotation).
 [`Angle`](crate::Angle) and [`Versor`](crate::Versor) are representations of
 rotations that are often the most effective and numerically stable to
-manipulate, even though they are more expensive to apply directly to vectors.
+manipulate.
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct RotationMatrix<const N: usize> {
