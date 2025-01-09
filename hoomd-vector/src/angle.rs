@@ -74,7 +74,7 @@ impl Angle {
 
     [`Angle`] rotations are well-defined for any value of `theta`. However, combining small
     rotations with large ones will introduce floating point round-off error. Reducing an [`Angle`]
-    creates an equivalent rotation with `theta` in the rage from 0 to 2 pi.
+    creates an equivalent rotation with `theta` in the range from 0 to 2 pi.
 
     # Example
 
