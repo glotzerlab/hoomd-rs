@@ -193,7 +193,7 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for Cartesian<N> {
 impl<const N: usize> TryFrom<[f64; N]> for Unit<Cartesian<N>> {
     type Error = Error;
 
-    /** Create a unit Cartesian vector from the given coordinates.
+    /** Create a unit Cartesian vector by normalizing the given coordinates.
 
     # Example
     ```
@@ -393,7 +393,6 @@ where
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let v = Cartesian::<3>::try_from(3..6)?;
     assert_eq!((v[0], v[1], v[2]), (3.0, 4.0, 5.0));
-    assert_eq!((v[0], v[1], v[2]), (v[0], v[1], v[2]));
     # Ok(())
     # }
     ```

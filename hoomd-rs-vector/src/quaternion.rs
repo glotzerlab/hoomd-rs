@@ -473,7 +473,8 @@ let b = v.rotate(&a);
 pub struct Versor(Quaternion);
 
 impl Versor {
-    /** Create a [`Versor`] that rotates by an angle (in radians) about an axis.
+    /** Create a [`Versor`] that rotates by an angle (in radians)
+    counterclockwise about an axis.
 
     # Example
 
@@ -529,11 +530,11 @@ impl Versor {
         })
     }
 
-    /** Precompute the rotation.
+    /** Construct a rotation matrix equivalent to this versor's rotation.
 
-    When rotating many vectors by the same [`Versor`], precompute the rotation
-    to improve performance.
-
+    When rotating many vectors by the same [`Versor`], improve performance
+    by converting to a matrix first and applying that matrix to the vectors.
+    
     # Example
     ```
     use hoomd_rs_vector::{Versor, Rotate, Rotation, Cartesian};

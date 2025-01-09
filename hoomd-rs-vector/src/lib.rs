@@ -452,8 +452,8 @@ pub trait Rotation {
     #[allow(clippy::doc_markdown)]
     /** Combine two rotations.
 
-    The resulting rotation `R_ab` will rotate by `R_b` followed by a rotation of
-    `R_a`.
+    The resulting rotation `R_ab` will rotate by **first** `R_b` _followed by_ a
+    rotation of `R_a`.
 
     <!-- R_{ab}(\vec{v})= R_a(R_b(\vec{v})) -->
     <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><msub><mi>R</mi><mrow><mi>a</mi><mi>b</mi></mrow></msub><mo form="prefix" stretchy="false">(</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo><mo>=</mo><msub><mi>R</mi><mi>a</mi></msub><mo form="prefix" stretchy="false">(</mo><msub><mi>R</mi><mi>b</mi></msub><mo form="prefix" stretchy="false">(</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">R_{ab}(\vec{v})= R_a(R_b(\vec{v}))</annotation></semantics></math>

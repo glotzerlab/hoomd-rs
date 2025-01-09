@@ -95,10 +95,10 @@ impl Angle {
         }
     }
 
-    /** Precompute the rotation.
+    /** Construct a rotation matrix equivalent to this angle's rotation.
 
-    When rotating many vectors by the same [`Angle`], precompute the rotation to improve
-    performance.
+    When rotating many vectors by the same [`Angle`], improve performance
+    by converting to a matrix first and applying that matrix to the vectors.
 
     # Example
     ```
