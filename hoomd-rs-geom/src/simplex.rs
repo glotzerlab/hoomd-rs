@@ -2,7 +2,18 @@ use hoomd_rs_vector::vector::Cartesian;
 // TODO: many shape properties are computable with 2d matrcies - imlpement these 
 // as generics
 
+impl<const N: usize> Intersects<Sphere> for Shape<N> {
+    fn intersects(self, &rhs: Shape) where Shape: Intersects::<Sphere> -> bool {
+        todo!()
+    }
+    // Xeonocollide only needs vertices - prioritize implementing this
+}// all we need for MC
+trait Convex {} // Not necessarily needed for mc, but could be useful down the line
 
+
+trait Volume {}
+trait Particle {} // In different crate! - should be copyable (array based?)
+trait Shape {} // vec![Cartesian::from(etc!())]
 
 #[derive(Debug)]
 pub struct Simplex<const N: usize>
