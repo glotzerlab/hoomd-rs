@@ -1,7 +1,8 @@
 [workspace]
 
 members = [
-  "hoomd-vector"
+  "hoomd-vector",
+  "hoomd-interaction"
 ]
 resolver = "2"
 
