@@ -1,12 +1,12 @@
 [package]
-name = "hoomd-rs-vector"
+name = "hoomd-vector"
 categories.workspace = true
 description = "Vector and quaternion math library."
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 license.workspace = true
-readme = "hoomd-rs-vector/README.md"
+readme = "hoomd-vector/README.md"
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
@@ -16,12 +16,22 @@ workspace = true
 
 [dependencies]
 thiserror = "1.0.64"
-rand = {version = "0.8.5"}
+rand = "0.8.5"
 
 [dev-dependencies]
+approx = "0.5.1"
 divan = "0.1.14"
 paste = "1.0.15"
+rstest = "0.23.0"
 
 [[bench]]
 name = "cartesian"
+harness = false
+
+[[bench]]
+name = "angle"
+harness = false
+
+[[bench]]
+name = "quaternion"
 harness = false
