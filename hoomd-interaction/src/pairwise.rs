@@ -6,13 +6,17 @@
 
 use hoomd_vector::{Rotate, Rotation, Vector};
 
-mod lennard_jones;
-mod weeks_chandler_anderson;
-mod shifted;
+mod boxcar;
+pub use boxcar::Boxcar;
 
+mod lennard_jones;
 pub use lennard_jones::LennardJones;
-pub use weeks_chandler_anderson::WeeksChandlerAnderson;
+
+mod shifted;
 pub use shifted::Shifted;
+
+mod weeks_chandler_anderson;
+pub use weeks_chandler_anderson::WeeksChandlerAnderson;
 
 pub trait IsotropicEnergy {
     /** Compute the pairwise energy between two point particles.
@@ -59,5 +63,7 @@ pub trait AnisotropicEnergy<V: Vector, R: Rotation+Rotate<V>> {
 // TODO: Document WeeksChandlerAnderson and write examples
 // TODO: Document Shifted and write examples
 // TODO: Implement Xplor
-// TODO: Implement SquareWell
 // TODO: Implement AngularMask
+// TODO: Implement Harmonic
+// TODO: Implement HarmonicRepulsion
+// TODO: Implement Expanded as an adapter (like shifted)

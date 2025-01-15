@@ -6,7 +6,7 @@
 
 use super::{IsotropicEnergy, IsotropicForce};
 
-/** Lennard-Jones pairwise potential
+/** Potential with a steep repulsive core and an attractive well.
     
 <!-- U(r) = 4 \varepsilon \left[ \left( \frac{\sigma}{r} \right)^{N} - \left( \frac{\sigma}{r} \right)^{M} \right] -->
 <math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mn>4</mn><mi>ε</mi><mrow><mo fence="true" form="prefix">[</mo><msup><mrow><mo fence="true" form="prefix">(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo fence="true" form="postfix">)</mo></mrow><mi>N</mi></msup><mo>−</mo><msup><mrow><mo fence="true" form="prefix">(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo fence="true" form="postfix">)</mo></mrow><mi>M</mi></msup><mo fence="true" form="postfix">]</mo></mrow></mrow></math>
@@ -51,6 +51,7 @@ let mut lj: LennardJones = LennardJones::new(1.0, 2.5);
 lj.epsilon = 1.5;
 lj.sigma = 3.0;
 */
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct LennardJones<const N: i32 = 12, const M: i32 = 6> {
     /// Energy scale `[energy]`.
     pub epsilon: f64,
@@ -63,14 +64,14 @@ impl<const N: i32, const M: i32> LennardJones<N, M> {
 
     The default sets `N=12` and `M=6`.
     ```
-    use hoomd_interaction::pairwise::{LennardJones};
+    use hoomd_interaction::pairwise::LennardJones;
 
     let lj: LennardJones = LennardJones::new(2.0, 3.0);
     ```
 
     Choose the exponents:
     ```
-    use hoomd_interaction::pairwise::{LennardJones};
+    use hoomd_interaction::pairwise::LennardJones;
 
     let lj: LennardJones<8,4> = LennardJones::new(1.0, 2.5);
     ```
@@ -108,7 +109,7 @@ mod tests {
     use rstest::*;
 
     #[rstest]
-    fn test_12_6_special_points(
+    fn special_points_12_6(
         #[values(1.0, 2.0, 12.125, 0.25)]
         epsilon: f64,
         #[values(1.0, 2.0, 0.5)]
@@ -132,7 +133,7 @@ mod tests {
         }
 
     #[rstest]
-    fn test_8_4_special_points(
+    fn special_points_8_4(
         #[values(1.0, 2.0, 12.125, 0.25)]
         epsilon: f64,
         #[values(1.0, 2.0, 0.5)]
