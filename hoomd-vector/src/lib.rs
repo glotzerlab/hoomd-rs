@@ -328,7 +328,7 @@ pub trait Vector:
     + MulAssign<f64>
     + Sub<Self, Output = Self>
     + SubAssign
-    + Neg
+    + Neg<Output = Self>
 {
     /** Compute the squared norm of the vector.
 

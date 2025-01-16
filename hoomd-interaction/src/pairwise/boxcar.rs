@@ -20,6 +20,10 @@ U(r) = \begin{cases}
 Compute boxcar potential function. Some uses of this in the literature call it
 the "square well" potential.
 
+# Examples
+
+Basic usage:
+
 ```
 use hoomd_interaction::pairwise::{IsotropicEnergy, Boxcar};
 
@@ -57,6 +61,8 @@ pub struct Boxcar {
 
 impl Boxcar {
     /** Construct a [`Boxcar`] with the given values for `epsilon`, `a`, and `b`.
+
+    # Example
 
     ```
     use hoomd_interaction::pairwise::Boxcar;

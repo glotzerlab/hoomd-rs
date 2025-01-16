@@ -11,8 +11,11 @@ use super::{IsotropicEnergy, IsotropicForce};
 <!-- U(r) = 4 \varepsilon \left[ \left( \frac{\sigma}{r} \right)^{N} - \left( \frac{\sigma}{r} \right)^{M} \right] -->
 <math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mn>4</mn><mi>ε</mi><mrow><mo fence="true" form="prefix">[</mo><msup><mrow><mo fence="true" form="prefix">(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo fence="true" form="postfix">)</mo></mrow><mi>N</mi></msup><mo>−</mo><msup><mrow><mo fence="true" form="prefix">(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo fence="true" form="postfix">)</mo></mrow><mi>M</mi></msup><mo fence="true" form="postfix">]</mo></mrow></mrow></math>
 
-Compute the Lennard-Jones potential and force as a function of `r`. The exponents `N`
-and `M` default to 12 and 6, respectively.
+Compute the Lennard-Jones potential and force as a function of `r`.
+
+# Examples
+
+In basic usage, the exponents `N` and `M` default to 12 and 6, respectively:
 
 ```
 use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, LennardJones};
@@ -62,7 +65,9 @@ pub struct LennardJones<const N: i32 = 12, const M: i32 = 6> {
 impl<const N: i32, const M: i32> LennardJones<N, M> {
     /** Construct a [`LennardJones`] with the given values for `epsilon` and `sigma`.
 
-    The default sets `N=12` and `M=6`.
+    # Examples
+
+    The default sets `N=12` and `M=6`:
     ```
     use hoomd_interaction::pairwise::LennardJones;
 

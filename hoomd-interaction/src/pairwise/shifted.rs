@@ -11,7 +11,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 <!-- U(r) = f(r) - f(r_\mathrm{shift}) -->
 <math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mi>f</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>−</mo><mi>f</mi><mo form="prefix" stretchy="false">(</mo><msub><mi>r</mi><mrow><mtext></mtext><mi>shift</mi></mrow></msub><mo form="postfix" stretchy="false">)</mo></mrow></math>
 */
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Shifted<F> {
     /// The original potential.
     pub f: F,

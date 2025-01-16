@@ -6,6 +6,9 @@
 
 use hoomd_vector::{Rotate, Rotation, Vector};
 
+mod angular_mask;
+pub use angular_mask::{AngularMask, Patch};
+
 mod boxcar;
 pub use boxcar::Boxcar;
 
@@ -64,6 +67,5 @@ pub trait AnisotropicEnergy<V: Vector, R: Rotation+Rotate<V>> {
 // TODO: Document Shifted and write examples
 // TODO: Implement Xplor
 // TODO: Implement AngularMask
-// TODO: Implement Harmonic
-// TODO: Implement HarmonicRepulsion
+// TODO: Implement Harmonic and HarmonicRepulsion based on that (Harmonic cut off at r_0)
 // TODO: Implement Expanded as an adapter (like shifted)
