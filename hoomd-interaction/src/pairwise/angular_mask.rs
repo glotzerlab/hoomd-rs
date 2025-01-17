@@ -76,7 +76,39 @@ and single patch in both `masks_i` and `masks_j`.
 
 # Examples
 
-Basic usage:
+Construction:
+
+```
+use hoomd_interaction::pairwise::{AngularMask, Boxcar, Patch};
+use hoomd_vector::Angle;
+use std::f64::consts::PI;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
+let masks = [Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos())];
+let angular_mask = AngularMask::new(boxcar, masks, masks);
+# Ok(())
+# }
+```
+
+All fields are public and can be directly manupipated:
+```
+use hoomd_interaction::pairwise::{AngularMask, Boxcar, Patch};
+use hoomd_vector::Angle;
+use std::f64::consts::PI;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
+let masks = [Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos())];
+let mut angular_mask = AngularMask::new(boxcar, masks, masks);
+
+angular_mask.masks_i[0].cos_delta = (PI/4.0).cos();
+angular_mask.f.epsilon = -2.0;
+# Ok(())
+# }
+```
+
+Evaluating energy between particles:
 
 ```
 use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, Boxcar, Patch};
@@ -85,8 +117,8 @@ use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
-let masks = vec![Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos())];
-let angular_mask = AngularMask::new(boxcar, &masks, &masks);
+let masks = [Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos())];
+let angular_mask = AngularMask::new(boxcar, masks, masks);
 
 // With the same relative orientation, the patches do not overlap and the
 // energy is 0.
@@ -108,10 +140,10 @@ use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
-let masks_i = vec![Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos()),
+let masks_i = [Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos()),
     Patch::new([-1.0, 0.0].try_into()?, (PI/8.0).cos())];
-let masks_j = vec![Patch::new([0.0, 1.0].try_into()?, (PI/8.0).cos())];
-let angular_mask = AngularMask::new(boxcar, &masks_i, &masks_j);
+let masks_j = [Patch::new([0.0, 1.0].try_into()?, (PI/8.0).cos())];
+let angular_mask = AngularMask::new(boxcar, masks_i, masks_j);
 
 // With the same relative orientation, the patches do not overlap and the
 // energy is 0.
@@ -130,26 +162,30 @@ Evaluate the angular mask potential on 3D particles:
 ```
 */
 #[derive(Clone, Debug, PartialEq)]
-pub struct AngularMask<F, I1, I2>
+pub struct AngularMask<F, V>
 {
 
     /// The original potential.
     pub f: F,
 
     /// Masks on the i particle.
-    pub masks_i: I1, 
+    pub masks_i: Vec<Patch<V>>, 
 
     /// Masks on the j particle.
-    pub masks_j: I2, 
+    pub masks_j: Vec<Patch<V>>, 
 }
 
-impl<'a, F, V, I1, I2> AngularMask<F, I1, I2>
+impl<F, V> AngularMask<F, V>
 where
-    V: Vector + 'a,
-    I1: IntoIterator<Item = &'a Patch<V>>,
-    I2: IntoIterator<Item = &'a Patch<V>>,
+    V: Vector,
  {
     /** Construct a [`AngularMask`] with the given function and masks.
+
+    To obtain the best performance, construct [`AngularMask`] once and
+    call use it many times. `new` dynamically allocates `Vec` types
+    and is therefore not suitable to be called per particle,
+    unlike other potentials such as [`LennardJones`](super::LennardJones)
+    or [`Boxcar`](super::Boxcar).
 
     # Example
 
@@ -159,46 +195,28 @@ where
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
-    let masks = vec![Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos())];
-    let angular_mask = AngularMask::new(boxcar, &masks, &masks);
+    let masks = [Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos())];
+    let angular_mask = AngularMask::new(boxcar, masks, masks);
     # Ok(())
     # }
     ```
     */
     #[inline]
     #[must_use]
-    pub fn new(f: F, masks_i: I1, masks_j: I2) -> Self {
-        Self { f, masks_i, masks_j }
+    pub fn new<I1, I2>(f: F, masks_i: I1, masks_j: I2) -> Self
+        where
+            I1: IntoIterator<Item = Patch<V>>,
+            I2: IntoIterator<Item = Patch<V>>,
+        {
+        Self { f, masks_i: Vec::from_iter(masks_i), masks_j: Vec::from_iter(masks_j) }
         }
 }
 
-/** [`AngularMask`] is intended to be constructed once and then allow `energy`
-to be called multiple times. The trait bound
-`IntoIterator<Item = &'a Patch<V>> + Copy` ensures that the masks provide a
-cheaply copyable iterator over references to patches. This works with references
-to arrays `&[Patch<V>; N]` and vectors `&Vec<Patch<V>>`.
-
-As a consequence, [`AngularMask`] does not take ownership of the mask data
-structures. It is meant to be constructed when needed to evaluate energies
-and then dropped. You should maintain your own separate data structure
-to store the masks and other potential parameters as needed.
-
-TODO: determine if there is some way to store owned masks as well.
-Some use-cases may find that more conveneient as they will not need to
-implement a separate storage type. It is weird that AngularMask owns `f`
-but not the masks... Maybe the best solution is to remove the general
-I1, I2 and make AnulgarMask store owned Vec<Patch<V>> directly....
-The IntoIterator could be accepted in new and users should then be
-cautioned that new is possibly an expensive operation that should be
-done once per simulation - not per pair of particles.
-*/
-impl<'a, F, V, R, I1, I2> AnisotropicEnergy<V, R> for AngularMask<F, I1, I2>
+impl<F, V, R> AnisotropicEnergy<V, R> for AngularMask<F, V>
 where
     F: IsotropicEnergy,
-    V: Vector + 'a,
+    V: Vector,
     R: Rotation+Rotate<V>,
-    I1: IntoIterator<Item = &'a Patch<V>> + Copy,
-    I2: IntoIterator<Item = &'a Patch<V>> + Copy,
 {
     #[inline]
     fn energy(&self, r_ij: &V, o_ij: &R) -> f64 {
@@ -207,10 +225,10 @@ where
         let unit_r_ij = r_ij.to_unit_unchecked();
         let unit_r_ji: V = -(*unit_r_ij.get());
     
-        for mask_j in self.masks_j {
+        for mask_j in &self.masks_j {
             let d_j = o_ij_matrix.rotate(mask_j.director.get());
 
-            for mask_i in self.masks_i {
+            for mask_i in &self.masks_i {
                 if mask_i.director.get().dot(unit_r_ij.get()) >= mask_i.cos_delta
                      && d_j.dot(&unit_r_ji) >= mask_j.cos_delta {
                     return self.f.energy(r_ij.norm());
@@ -241,7 +259,7 @@ mod tests {
 
         // First case: identical directors in the +x direction
         let mask = [Patch::new([1.0, 0.0].try_into().expect("valid unit vector"), (PI/8.0).cos())];
-        let angular_mask = AngularMask::new(boxcar, &mask, &mask);
+        let angular_mask = AngularMask::new(boxcar, mask, mask);
 
         // Check corner cases when the j particle is along the patch direction.
         assert_eq!(angular_mask.energy(&Cartesian::from([1.0, 0.0]), &Angle::from(0.0)), 0.0);
@@ -257,7 +275,7 @@ mod tests {
 
         // Second case: identical directors in the 1,1 direction
         let mask = [Patch::new([1.0, 1.0].try_into().expect("valid unit vector"), (PI/3.0).cos())];
-        let angular_mask = AngularMask::new(boxcar, &mask, &mask);
+        let angular_mask = AngularMask::new(boxcar, mask, mask);
 
         // Check corner cases when the j particle is along the patch direction
         assert_eq!(angular_mask.energy(&Cartesian::from([1.0, 1.0]), &Angle::from(0.0)), 0.0);
@@ -302,7 +320,7 @@ mod tests {
             Patch::new([0.0, 1.0].try_into().expect("valid unit vector"), (PI/8.0).cos()),
             Patch::new([0.0, -1.0].try_into().expect("valid unit vector"), (PI/8.0).cos()),
         ];
-        let angular_mask = AngularMask::new(boxcar, &mask_i, &mask_j);
+        let angular_mask = AngularMask::new(boxcar, mask_i, mask_j);
 
         assert_eq!(angular_mask.energy(&r_ij, &Angle::from(theta)), expected);
         }
@@ -314,7 +332,7 @@ mod tests {
         let lj: LennardJones = LennardJones::new(epsilon, sigma);
 
         let mask = [Patch::new([1.0, 0.0].try_into().expect("valid unit vector"), (PI).cos())];
-        let angular_mask = AngularMask::new(lj, &mask, &mask);
+        let angular_mask = AngularMask::new(lj, mask, mask);
 
         // The patch covers the full surface. angular_mask.energy() should evaluate to the same
         // as lj.energy() for all orientations.
