@@ -448,6 +448,8 @@ pub struct RotationMatrix<const N: usize> {
 }
 
 impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
+    type Matrix = RotationMatrix<N>;
+
     #[inline]
     /** Rotate a [`Cartesian<N>`] by a [`RotationMatrix`]
 

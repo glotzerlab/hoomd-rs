@@ -216,12 +216,11 @@ impl<F, V, R> AnisotropicEnergy<V, R> for AngularMask<F, V>
 where
     F: IsotropicEnergy,
     V: Vector,
-    R: Rotate<V>,
+    R: Rotate<V> + Into<R::Matrix> + Copy,
 {
     #[inline]
     fn energy(&self, r_ij: &V, o_ij: &R) -> f64 {
-        // TODO: to_rotation_matrix in base rotate trait
-        let o_ij_matrix = o_ij; // .to_rotation_matrix();
+        let o_ij_matrix: R::Matrix = (*o_ij).into();
         let unit_r_ij = r_ij.to_unit_unchecked();
         let unit_r_ji: V = -(*unit_r_ij.get());
     

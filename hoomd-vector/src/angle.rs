@@ -165,6 +165,8 @@ impl From<f64> for Angle {
 }
 
 impl Rotate<Cartesian<2>> for Angle {
+    type Matrix = RotationMatrix<2>;
+
     #[inline]
     /** Rotate a [`Cartesian<2>`] in the plane by an [`Angle`]
 

@@ -633,6 +633,8 @@ impl Default for Versor {
 }
 
 impl Rotate<Cartesian<3>> for Versor {
+    type Matrix = RotationMatrix<3>;
+    
     /** Rotate a [`Cartesian<3>`] by a [`Versor`]
 
     <!-- \mathbf{q} \vec{a} \mathbf{q}^* -->

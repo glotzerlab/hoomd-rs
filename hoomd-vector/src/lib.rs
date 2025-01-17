@@ -506,6 +506,9 @@ same magnitude, but possibly a different direction.
 Types that implement [`Rotate`] may or _may not_ implement [`Rotation`].
 */
 pub trait Rotate<V: Vector> {
+    /// Type of the related rotation matrix
+    type Matrix: Rotate<V>;
+
     /** Rotate a vector.
 
     <!-- \vec{b} = R(\vec{a}) -->
