@@ -10,14 +10,14 @@ use hoomd_vector::{Rotate, Rotation, Vector, Unit};
 /** A single patch in the [`AngularMask`] potential.
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Patch<V: Vector> {
+pub struct Patch<V> {
     /// Vector pointing from the center of the particle to the center of the mask [unitless].
     pub d: Unit<V>,
     /// Cosine of the half-angle width of the mask [unitless].
     pub cos_delta: f64,
 }
 
-impl<V: Vector> Patch<V> {
+impl<V> Patch<V> {
     /** Construct a new patch with the given direction and width.
 
     TODO: Possibly this name is too general? Should we consider exposing this module
@@ -65,13 +65,29 @@ s(\vec{a}, \vec{b}, \delta_a, \delta_b) =
 \end{cases}
 -->
 <math display="block" class="tml-display" style="display:block math;"><mrow><mi>s</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo separator="true">,</mo><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo separator="true">,</mo><msub><mi>δ</mi><mi>a</mi></msub><mo separator="true">,</mo><msub><mi>δ</mi><mi>b</mi></msub><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mrow><mo fence="true" form="prefix">{</mo><mtable><mtr><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 0em;"><mn>1</mn></mtd><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 1em;"><mrow><mover><mi>a</mi><mo stretchy="false" class="tml-xshift" style="math-style:normal;math-depth:0;">^</mo></mover><mo>⋅</mo><msub><mover><mi>r</mi><mo stretchy="false" class="tml-xshift" style="math-style:normal;math-depth:0;">^</mo></mover><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>≥</mo><mrow><mi>cos</mi><mo>⁡</mo><mspace width="0.1667em"></mspace></mrow><msub><mi>δ</mi><mi>a</mi></msub><mo>∧</mo><mover><mi>b</mi><mo stretchy="false" class="tml-capshift" style="math-style:normal;math-depth:0;">^</mo></mover><mo>⋅</mo><msub><mover><mi>r</mi><mo stretchy="false" class="tml-xshift" style="math-style:normal;math-depth:0;">^</mo></mover><mrow><mi>j</mi><mi>i</mi></mrow></msub><mo>≥</mo><mrow><mi>cos</mi><mo>⁡</mo><mspace width="0.1667em"></mspace></mrow><msub><mi>δ</mi><mi>b</mi></msub></mrow></mtd></mtr><mtr><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 0em;"><mn>0</mn></mtd><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 1em;"><mtext>otherwise</mtext></mtd></mtr></mtable><mo fence="true" form="postfix"></mo></mrow></mrow></math>
+
+# Examples
+
+Basic usage:
+
+```
+use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, Boxcar, Patch};
+use hoomd_vector::Angle;
+use std::f64::consts::PI;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
+let mask = vec![Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos())];
+let angular_mask = AngularMask::new(boxcar, &mask, &mask);
+
+let energy = angular_mask.energy(&[1.0, 0.0].into(), &Angle::from(PI));
+assert_eq!(energy, -1.0);
+# Ok(())
+# }
+```
 */
 #[derive(Clone, Debug, PartialEq)]
-pub struct AngularMask<F, V, I1, I2>
-where
-    V: Vector,
-    I1: IntoIterator<Item = Patch<V>> + Copy,
-    I2: IntoIterator<Item = Patch<V>> + Copy,
+pub struct AngularMask<F, I1, I2>
 {
 
     /// The original potential.
@@ -84,11 +100,11 @@ where
     pub masks_j: I2, 
 }
 
-impl<F, V, I1, I2> AngularMask<F, V, I1, I2>
+impl<'a, F, V, I1, I2> AngularMask<F, I1, I2>
 where
-    V: Vector,
-    I1: IntoIterator<Item = Patch<V>> + Copy,
-    I2: IntoIterator<Item = Patch<V>> + Copy,
+    V: Vector + 'a,
+    I1: IntoIterator<Item = &'a Patch<V>> + Copy,
+    I2: IntoIterator<Item = &'a Patch<V>> + Copy,
  {
     /** Construct a [`Boxcar`] with the given values for `epsilon`, `a`, and `b`.
 
@@ -105,13 +121,13 @@ where
         }
 }
 
-impl<F, V, R, I1, I2> AnisotropicEnergy<V, R> for AngularMask<F, V, I1, I2>
+impl<'a, F, V, R, I1, I2> AnisotropicEnergy<V, R> for AngularMask<F, I1, I2>
 where
     F: IsotropicEnergy,
-    V: Vector,
+    V: Vector + 'a,
     R: Rotation+Rotate<V>,
-    I1: IntoIterator<Item = Patch<V>> + Copy,
-    I2: IntoIterator<Item = Patch<V>> + Copy,
+    I1: IntoIterator<Item = &'a Patch<V>> + Copy,
+    I2: IntoIterator<Item = &'a Patch<V>> + Copy,
 {
     #[inline]
     fn energy(&self, r_ij: &V, o_ij: &R) -> f64 {
@@ -154,7 +170,7 @@ mod tests {
 
         // First case: identical directors in the +x direction
         let mask = [Patch::new([1.0, 0.0].try_into().expect("valid unit vector"), (PI/8.0).cos())];
-        let angular_mask = AngularMask::new(boxcar, mask, mask);
+        let angular_mask = AngularMask::new(boxcar, &mask, &mask);
 
         // Check corner cases when the j particle is along the patch direction.
         assert_eq!(angular_mask.energy(&Cartesian::from([1.0, 0.0]), &Angle::from(0.0)), 0.0);
@@ -170,7 +186,7 @@ mod tests {
 
         // Second case: identical directors in the 1,1 direction
         let mask = [Patch::new([1.0, 1.0].try_into().expect("valid unit vector"), (PI/3.0).cos())];
-        let angular_mask = AngularMask::new(boxcar, mask, mask);
+        let angular_mask = AngularMask::new(boxcar, &mask, &mask);
 
         // Check corner cases when the j particle is along the patch direction
         assert_eq!(angular_mask.energy(&Cartesian::from([1.0, 1.0]), &Angle::from(0.0)), 0.0);
@@ -215,7 +231,7 @@ mod tests {
             Patch::new([0.0, 1.0].try_into().expect("valid unit vector"), (PI/8.0).cos()),
             Patch::new([0.0, -1.0].try_into().expect("valid unit vector"), (PI/8.0).cos()),
         ];
-        let angular_mask = AngularMask::new(boxcar, mask_i, mask_j);
+        let angular_mask = AngularMask::new(boxcar, &mask_i, &mask_j);
 
         assert_eq!(angular_mask.energy(&r_ij, &Angle::from(theta)), expected);
         }
@@ -227,14 +243,17 @@ mod tests {
         let lj: LennardJones = LennardJones::new(epsilon, sigma);
 
         let mask = [Patch::new([1.0, 0.0].try_into().expect("valid unit vector"), (PI).cos())];
-        let angular_mask = AngularMask::new(lj, mask, mask);
+        let angular_mask = AngularMask::new(lj, &mask, &mask);
 
+        // The patch covers the full surface. angular_mask.energy() should evaluate to the same
+        // as lj.energy() for all orientations.
         for theta in (0..100).map(|x| f64::from(x) * 2.0 * PI / 100.0) {
             let r_ij = Angle::from(theta).rotate(&Cartesian::from([0.0, r]));
             assert_relative_eq!(angular_mask.energy(&r_ij, &Angle::from(0.0)), lj.energy(r), epsilon=1e-12);
             }
         }
 
+    // TODO: 3D implementation
     
     }
 

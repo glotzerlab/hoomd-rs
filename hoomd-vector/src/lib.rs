@@ -463,7 +463,7 @@ pub trait Vector:
 
 /// A [`Vector`] with magnitude 1.0.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Unit<V: Vector>(V);
+pub struct Unit<V>(V);
 
 impl<V: Vector> Unit<V> {
     /// Get the unit vector.
