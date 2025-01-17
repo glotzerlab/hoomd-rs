@@ -5,7 +5,7 @@
 */
 
 use super::{AnisotropicEnergy, IsotropicEnergy};
-use hoomd_vector::{Rotate, Rotation, Vector, Unit};
+use hoomd_vector::{Rotate, RotationMatrix, Vector, Unit};
 
 /** A single patch in the [`AngularMask`] potential.
 */
@@ -216,11 +216,11 @@ impl<F, V, R> AnisotropicEnergy<V, R> for AngularMask<F, V>
 where
     F: IsotropicEnergy,
     V: Vector,
-    R: Rotation+Rotate<V>,
+    R: Rotate<V>,
 {
     #[inline]
     fn energy(&self, r_ij: &V, o_ij: &R) -> f64 {
-        // TODO: to_rotation_matrix in base rotate trate
+        // TODO: to_rotation_matrix in base rotate trait
         let o_ij_matrix = o_ij; // .to_rotation_matrix();
         let unit_r_ij = r_ij.to_unit_unchecked();
         let unit_r_ji: V = -(*unit_r_ij.get());

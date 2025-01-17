@@ -43,7 +43,7 @@ pub trait IsotropicForce {
     fn force(&self, r: f64) -> f64;
 }
 
-pub trait AnisotropicEnergy<V: Vector, R: Rotation+Rotate<V>> {
+pub trait AnisotropicEnergy<V: Vector, R: Rotate<V>> {
     /** Compute the pairwise energy between two oriented particles.
     <!-- U(\vec{r}_{ij}, \mathbf{o}_{ij}) -->
     <math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><msub><mover><mi>r</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo separator="true">,</mo><msub><mi>𝐨</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo form="postfix" stretchy="false">)</mo></mrow></math>    */

@@ -10,6 +10,31 @@ use super::{IsotropicEnergy, IsotropicForce};
 
 <!-- U(r) = f(r) - f(r_\mathrm{shift}) -->
 <math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mi>f</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>−</mo><mi>f</mi><mo form="prefix" stretchy="false">(</mo><msub><mi>r</mi><mrow><mtext></mtext><mi>shift</mi></mrow></msub><mo form="postfix" stretchy="false">)</mo></mrow></math>
+
+# Example
+
+Shifted Lennard-Jones:
+```
+use hoomd_interaction::pairwise::{LennardJones, Shifted};
+
+let epsilon = 1.5;
+let sigma = 1.0;
+let r_shift = 2.5;
+let shifted_lj = Shifted::new(LennardJones::<12,6>::new(epsilon, sigma), r_shift);
+```
+
+Fields can be accessed directly:
+```
+use hoomd_interaction::pairwise::{LennardJones, Shifted};
+
+let epsilon = 1.5;
+let sigma = 1.0;
+let r_shift = 2.5;
+let mut shifted_lj = Shifted::new(LennardJones::<12,6>::new(epsilon, sigma), r_shift);
+
+shifted_lj.r_shift = 3.0;
+shifted_lj.f.sigma = 1.2;
+```
 */
 #[derive(Clone, Debug, PartialEq)]
 pub struct Shifted<F> {

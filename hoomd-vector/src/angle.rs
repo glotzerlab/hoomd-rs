@@ -247,6 +247,14 @@ impl fmt::Display for Angle {
     }
 }
 
+// TODO: rewrite to_rotation_matrix as From like this
+// impl From<Angle> for RotationMatrix<2> {
+//     #[inline]
+//     fn from(angle: Angle) -> Self {
+//         angle.to_rotation_matrix()
+//     }
+// }
+
 impl Distribution<Angle> for Standard {
     /** Sample a random angle from the uniform distribution over all rotations.
 
