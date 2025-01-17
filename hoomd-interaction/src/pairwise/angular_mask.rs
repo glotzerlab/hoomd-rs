@@ -5,7 +5,7 @@
 */
 
 use super::{AnisotropicEnergy, IsotropicEnergy};
-use hoomd_vector::{Rotate, RotationMatrix, Vector, Unit};
+use hoomd_vector::{Rotate, Unit, Vector};
 
 /** A single patch in the [`AngularMask`] potential.
 */
@@ -41,14 +41,17 @@ impl<V> Patch<V> {
     #[inline]
     #[must_use]
     pub fn new(director: Unit<V>, cos_delta: f64) -> Self {
-        Self { director, cos_delta }
+        Self {
+            director,
+            cos_delta,
+        }
     }
 }
 
 /** Evaluate an isotropic pairwise energy masked by angular patches.
 
 <!--
-U(\vec{r}_{ij}, \mathbf{o}_{ij}) = f(|\vec{r}_{ij}|) \cdot \max 
+U(\vec{r}_{ij}, \mathbf{o}_{ij}) = f(|\vec{r}_{ij}|) \cdot \max
     \left(1,
     \sum_{m=1}^{N_{\mathrm{masks},i}}
     \sum_{n=1}^{N_{\mathrm{masks},j}}
@@ -70,7 +73,7 @@ s(\vec{a}, \vec{b}, \delta_a, \delta_b) =
 <math display="block" class="tml-display" style="display:block math;"><mrow><mi>s</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo separator="true">,</mo><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo separator="true">,</mo><msub><mi>δ</mi><mi>a</mi></msub><mo separator="true">,</mo><msub><mi>δ</mi><mi>b</mi></msub><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mrow><mo fence="true" form="prefix">{</mo><mtable><mtr><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 0em;"><mn>1</mn></mtd><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 1em;"><mrow><mover><mi>a</mi><mo stretchy="false" class="tml-xshift" style="math-style:normal;math-depth:0;">^</mo></mover><mo>⋅</mo><msub><mover><mi>r</mi><mo stretchy="false" class="tml-xshift" style="math-style:normal;math-depth:0;">^</mo></mover><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>≥</mo><mrow><mi>cos</mi><mo>⁡</mo><mspace width="0.1667em"></mspace></mrow><msub><mi>δ</mi><mi>a</mi></msub><mo>∧</mo><mover><mi>b</mi><mo stretchy="false" class="tml-capshift" style="math-style:normal;math-depth:0;">^</mo></mover><mo>⋅</mo><msub><mover><mi>r</mi><mo stretchy="false" class="tml-xshift" style="math-style:normal;math-depth:0;">^</mo></mover><mrow><mi>j</mi><mi>i</mi></mrow></msub><mo>≥</mo><mrow><mi>cos</mi><mo>⁡</mo><mspace width="0.1667em"></mspace></mrow><msub><mi>δ</mi><mi>b</mi></msub></mrow></mtd></mtr><mtr><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 0em;"><mn>0</mn></mtd><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 1em;"><mtext>otherwise</mtext></mtd></mtr></mtable><mo fence="true" form="postfix"></mo></mrow></mrow></math>
 
 Implement the [Kern-Frenkel] potential with the [`Boxcar`](super::Boxcar) isotropic potential
-and single patch in both `masks_i` and `masks_j`. 
+and single patch in both `masks_i` and `masks_j`.
 
 [Kern-Frenkel]: http://dx.doi.org/10.1063/1.1569473
 
@@ -162,23 +165,21 @@ Evaluate the angular mask potential on 3D particles:
 ```
 */
 #[derive(Clone, Debug, PartialEq)]
-pub struct AngularMask<F, V>
-{
-
+pub struct AngularMask<F, V> {
     /// The original potential.
     pub f: F,
 
     /// Masks on the i particle.
-    pub masks_i: Vec<Patch<V>>, 
+    pub masks_i: Vec<Patch<V>>,
 
     /// Masks on the j particle.
-    pub masks_j: Vec<Patch<V>>, 
+    pub masks_j: Vec<Patch<V>>,
 }
 
 impl<F, V> AngularMask<F, V>
 where
     V: Vector,
- {
+{
     /** Construct a [`AngularMask`] with the given function and masks.
 
     To obtain the best performance, construct [`AngularMask`] once and
@@ -204,12 +205,16 @@ where
     #[inline]
     #[must_use]
     pub fn new<I1, I2>(f: F, masks_i: I1, masks_j: I2) -> Self
-        where
-            I1: IntoIterator<Item = Patch<V>>,
-            I2: IntoIterator<Item = Patch<V>>,
-        {
-        Self { f, masks_i: Vec::from_iter(masks_i), masks_j: Vec::from_iter(masks_j) }
+    where
+        I1: IntoIterator<Item = Patch<V>>,
+        I2: IntoIterator<Item = Patch<V>>,
+    {
+        Self {
+            f,
+            masks_i: Vec::from_iter(masks_i),
+            masks_j: Vec::from_iter(masks_j),
         }
+    }
 }
 
 impl<F, V, R> AnisotropicEnergy<V, R> for AngularMask<F, V>
@@ -223,28 +228,29 @@ where
         let o_ij_matrix: R::Matrix = (*o_ij).into();
         let unit_r_ij = r_ij.to_unit_unchecked();
         let unit_r_ji: V = -(*unit_r_ij.get());
-    
+
         for mask_j in &self.masks_j {
             let d_j = o_ij_matrix.rotate(mask_j.director.get());
 
             for mask_i in &self.masks_i {
                 if mask_i.director.get().dot(unit_r_ij.get()) >= mask_i.cos_delta
-                     && d_j.dot(&unit_r_ji) >= mask_j.cos_delta {
+                    && d_j.dot(&unit_r_ji) >= mask_j.cos_delta
+                {
                     return self.f.energy(r_ij.norm());
-                    }
+                }
             }
         }
 
-    0.0
+        0.0
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ::approx::assert_relative_eq;
     use rstest::*;
     use std::f64::consts::PI;
-    use ::approx::assert_relative_eq;
 
     use crate::pairwise::{Boxcar, LennardJones};
     use hoomd_vector::{Angle, Cartesian};
@@ -257,37 +263,106 @@ mod tests {
         let boxcar = Boxcar::new(epsilon, 0.0, 1000.0);
 
         // First case: identical directors in the +x direction
-        let mask = [Patch::new([1.0, 0.0].try_into().expect("valid unit vector"), (PI/8.0).cos())];
+        let mask = [Patch::new(
+            [1.0, 0.0].try_into().expect("valid unit vector"),
+            (PI / 8.0).cos(),
+        )];
         let angular_mask = AngularMask::new(boxcar, mask, mask);
 
         // Check corner cases when the j particle is along the patch direction.
-        assert_eq!(angular_mask.energy(&Cartesian::from([1.0, 0.0]), &Angle::from(0.0)), 0.0);
-        assert_eq!(angular_mask.energy(&Cartesian::from([1.0, 0.0]), &Angle::from(PI)), epsilon);
-        assert_eq!(angular_mask.energy(&Cartesian::from([1.0, 0.0]), &Angle::from(PI + PI/8.0 - 0.001)), epsilon);
-        assert_eq!(angular_mask.energy(&Cartesian::from([1.0, 0.0]), &Angle::from(PI + PI/8.0 + 0.001)), 0.0);
-        assert_eq!(angular_mask.energy(&Cartesian::from([1.0, 0.0]), &Angle::from(PI + PI/8.0 + 0.001)), 0.0);
+        assert_eq!(
+            angular_mask.energy(&Cartesian::from([1.0, 0.0]), &Angle::from(0.0)),
+            0.0
+        );
+        assert_eq!(
+            angular_mask.energy(&Cartesian::from([1.0, 0.0]), &Angle::from(PI)),
+            epsilon
+        );
+        assert_eq!(
+            angular_mask.energy(
+                &Cartesian::from([1.0, 0.0]),
+                &Angle::from(PI + PI / 8.0 - 0.001)
+            ),
+            epsilon
+        );
+        assert_eq!(
+            angular_mask.energy(
+                &Cartesian::from([1.0, 0.0]),
+                &Angle::from(PI + PI / 8.0 + 0.001)
+            ),
+            0.0
+        );
+        assert_eq!(
+            angular_mask.energy(
+                &Cartesian::from([1.0, 0.0]),
+                &Angle::from(PI + PI / 8.0 + 0.001)
+            ),
+            0.0
+        );
 
         // When the j particle is orthogonal to the patch direction, no orientation will interact.
         for theta in (0..100).map(|x| f64::from(x) * 2.0 * PI / 100.0) {
-            assert_eq!(angular_mask.energy(&Cartesian::from([0.0, 1.0]), &Angle::from(theta)), 0.0);
+            assert_eq!(
+                angular_mask.energy(&Cartesian::from([0.0, 1.0]), &Angle::from(theta)),
+                0.0
+            );
         }
 
         // Second case: identical directors in the 1,1 direction
-        let mask = [Patch::new([1.0, 1.0].try_into().expect("valid unit vector"), (PI/3.0).cos())];
+        let mask = [Patch::new(
+            [1.0, 1.0].try_into().expect("valid unit vector"),
+            (PI / 3.0).cos(),
+        )];
         let angular_mask = AngularMask::new(boxcar, mask, mask);
 
         // Check corner cases when the j particle is along the patch direction
-        assert_eq!(angular_mask.energy(&Cartesian::from([1.0, 1.0]), &Angle::from(0.0)), 0.0);
-        assert_eq!(angular_mask.energy(&Cartesian::from([1.0, 1.0]), &Angle::from(PI)), epsilon);
-        assert_eq!(angular_mask.energy(&Cartesian::from([1.0, 1.0]), &Angle::from(PI + PI/3.0 - 0.001)), epsilon);
-        assert_eq!(angular_mask.energy(&Cartesian::from([1.0, 1.0]), &Angle::from(PI + PI/3.0 + 0.001)), 0.0);
-        assert_eq!(angular_mask.energy(&Cartesian::from([1.0, 1.0]), &Angle::from(PI + PI/3.0 + 0.001)), 0.0);
-        assert_eq!(angular_mask.energy(&Cartesian::from([1.0, 1.0]), &Angle::from(PI + PI/3.0 + 0.001)), 0.0);
+        assert_eq!(
+            angular_mask.energy(&Cartesian::from([1.0, 1.0]), &Angle::from(0.0)),
+            0.0
+        );
+        assert_eq!(
+            angular_mask.energy(&Cartesian::from([1.0, 1.0]), &Angle::from(PI)),
+            epsilon
+        );
+        assert_eq!(
+            angular_mask.energy(
+                &Cartesian::from([1.0, 1.0]),
+                &Angle::from(PI + PI / 3.0 - 0.001)
+            ),
+            epsilon
+        );
+        assert_eq!(
+            angular_mask.energy(
+                &Cartesian::from([1.0, 1.0]),
+                &Angle::from(PI + PI / 3.0 + 0.001)
+            ),
+            0.0
+        );
+        assert_eq!(
+            angular_mask.energy(
+                &Cartesian::from([1.0, 1.0]),
+                &Angle::from(PI + PI / 3.0 + 0.001)
+            ),
+            0.0
+        );
+        assert_eq!(
+            angular_mask.energy(
+                &Cartesian::from([1.0, 1.0]),
+                &Angle::from(PI + PI / 3.0 + 0.001)
+            ),
+            0.0
+        );
 
         // With the large PI/3.0 patch, a PI/4 offset r_ij can interact.
-        assert_eq!(angular_mask.energy(&Cartesian::from([0.0, 1.0]), &Angle::from(0.0)), 0.0);
-        assert_eq!(angular_mask.energy(&Cartesian::from([0.0, 1.0]), &Angle::from(-3.0 * PI/4.0)), epsilon);
-        }
+        assert_eq!(
+            angular_mask.energy(&Cartesian::from([0.0, 1.0]), &Angle::from(0.0)),
+            0.0
+        );
+        assert_eq!(
+            angular_mask.energy(&Cartesian::from([0.0, 1.0]), &Angle::from(-3.0 * PI / 4.0)),
+            epsilon
+        );
+    }
 
     #[rstest]
     #[case([0.0, 1.0].into(), 0.0, 1.0)]
@@ -302,27 +377,43 @@ mod tests {
     #[case([-1.0, 0.0].into(), 0.0, 0.0)]
     #[case([-1.0, 0.0].into(), PI/2.0, 1.0)]
     #[case([-1.0, 0.0].into(), PI, 0.0)]
-    fn multiple_patches_2d(#[case] r_ij: Cartesian<2>,
-    #[case] theta: f64,
-    #[case] expected: f64) {
+    fn multiple_patches_2d(#[case] r_ij: Cartesian<2>, #[case] theta: f64, #[case] expected: f64) {
         let epsilon = 1.0;
         let boxcar = Boxcar::new(epsilon, 0.0, 1000.0);
 
         // Third case: multiple patches and different i,j masks.
         let mask_i = [
-            Patch::new([0.0, 1.0].try_into().expect("valid unit vector"), (PI/8.0).cos()),
-            Patch::new([0.0, -1.0].try_into().expect("valid unit vector"), (PI/8.0).cos()),
-            Patch::new([1.0, 0.0].try_into().expect("valid unit vector"), (PI/8.0).cos()),
-            Patch::new([-1.0, 0.0].try_into().expect("valid unit vector"), (PI/8.0).cos()),
+            Patch::new(
+                [0.0, 1.0].try_into().expect("valid unit vector"),
+                (PI / 8.0).cos(),
+            ),
+            Patch::new(
+                [0.0, -1.0].try_into().expect("valid unit vector"),
+                (PI / 8.0).cos(),
+            ),
+            Patch::new(
+                [1.0, 0.0].try_into().expect("valid unit vector"),
+                (PI / 8.0).cos(),
+            ),
+            Patch::new(
+                [-1.0, 0.0].try_into().expect("valid unit vector"),
+                (PI / 8.0).cos(),
+            ),
         ];
         let mask_j = [
-            Patch::new([0.0, 1.0].try_into().expect("valid unit vector"), (PI/8.0).cos()),
-            Patch::new([0.0, -1.0].try_into().expect("valid unit vector"), (PI/8.0).cos()),
+            Patch::new(
+                [0.0, 1.0].try_into().expect("valid unit vector"),
+                (PI / 8.0).cos(),
+            ),
+            Patch::new(
+                [0.0, -1.0].try_into().expect("valid unit vector"),
+                (PI / 8.0).cos(),
+            ),
         ];
         let angular_mask = AngularMask::new(boxcar, mask_i, mask_j);
 
         assert_eq!(angular_mask.energy(&r_ij, &Angle::from(theta)), expected);
-        }
+    }
 
     #[rstest]
     fn smooth_potential(#[values(0.9, 1.1, 1.2, 3.0)] r: f64) {
@@ -330,18 +421,23 @@ mod tests {
         let sigma = 1.0;
         let lj: LennardJones = LennardJones::new(epsilon, sigma);
 
-        let mask = [Patch::new([1.0, 0.0].try_into().expect("valid unit vector"), (PI).cos())];
+        let mask = [Patch::new(
+            [1.0, 0.0].try_into().expect("valid unit vector"),
+            (PI).cos(),
+        )];
         let angular_mask = AngularMask::new(lj, mask, mask);
 
         // The patch covers the full surface. angular_mask.energy() should evaluate to the same
         // as lj.energy() for all orientations.
         for theta in (0..100).map(|x| f64::from(x) * 2.0 * PI / 100.0) {
             let r_ij = Angle::from(theta).rotate(&Cartesian::from([0.0, r]));
-            assert_relative_eq!(angular_mask.energy(&r_ij, &Angle::from(0.0)), lj.energy(r), epsilon=1e-12);
-            }
+            assert_relative_eq!(
+                angular_mask.energy(&r_ij, &Angle::from(0.0)),
+                lj.energy(r),
+                epsilon = 1e-12
+            );
         }
-
-    // TODO: 3D implementation
-    
     }
 
+    // TODO: 3D implementation
+}

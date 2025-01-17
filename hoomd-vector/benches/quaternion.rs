@@ -10,7 +10,7 @@ use divan::counter::ItemsCount;
 use divan::{self, black_box, Bencher};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
-use hoomd_vector::{Cartesian, Rotate, Versor};
+use hoomd_vector::{Cartesian, Rotate, RotationMatrix, Versor};
 
 fn main() {
     divan::main();
@@ -33,7 +33,7 @@ fn rotate_matrix(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
     let a: Versor = rng.gen();
-    let matrix = a.to_rotation_matrix();
+    let matrix = RotationMatrix::from(a);
 
     bencher
         .counter(ItemsCount::from(1_u32))

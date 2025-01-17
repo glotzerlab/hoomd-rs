@@ -433,8 +433,8 @@ where
 Construct a [`RotationMatrix`] to efficiently rotate many vectors by the same rotation.
 
 See:
-* [`Angle::to_rotation_matrix()`](crate::Angle::to_rotation_matrix)
-* [`Versor::to_rotation_matrix()`](crate::Versor::to_rotation_matrix)
+* [`RotationMatrix::from<Angle>`]
+* [`RotationMatrix::from<Versor>`]
 
 [`RotationMatrix`] _intentionally_ does not implement [`Rotation`](crate::Rotation).
 [`Angle`](crate::Angle) and [`Versor`](crate::Versor) are representations of

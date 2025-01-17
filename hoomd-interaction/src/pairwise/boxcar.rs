@@ -56,7 +56,7 @@ pub struct Boxcar {
     /// Left side of the boxcar `[length]`.
     pub a: f64,
     /// Right side of the boxcar `[length]`.
-    pub b: f64
+    pub b: f64,
 }
 
 impl Boxcar {
@@ -74,7 +74,7 @@ impl Boxcar {
     #[must_use]
     pub fn new(epsilon: f64, a: f64, b: f64) -> Self {
         Self { epsilon, a, b }
-        }
+    }
 }
 
 impl IsotropicEnergy for Boxcar {
@@ -95,34 +95,32 @@ mod tests {
 
     #[rstest]
     fn general_case(
-        #[values(1.0, -2.0, 12.125, 0.25)]
-        epsilon: f64,
-        #[values(1.0, 2.0, 0.5)]
-        a: f64,
-        #[values(0.5, 0.125)]
-        w: f64) {
-            let b = a + w;
-            let boxcar = Boxcar::new(epsilon, a, b);
+        #[values(1.0, -2.0, 12.125, 0.25)] epsilon: f64,
+        #[values(1.0, 2.0, 0.5)] a: f64,
+        #[values(0.5, 0.125)] w: f64,
+    ) {
+        let b = a + w;
+        let boxcar = Boxcar::new(epsilon, a, b);
 
-            assert_eq!(boxcar.epsilon, epsilon);
-            assert_eq!(boxcar.a, a);
-            assert_eq!(boxcar.b, b);
-            
-            // Note: These tests could be cleaner with the next_up_down feature to come in a
-            // future version of Rust: https://github.com/rust-lang/rust/issues/91399
+        assert_eq!(boxcar.epsilon, epsilon);
+        assert_eq!(boxcar.a, a);
+        assert_eq!(boxcar.b, b);
 
-            // Left
-            assert_eq!(boxcar.energy(0.0), 0.0);
-            assert_eq!(boxcar.energy(a * (1.0-f64::EPSILON)), 0.0);
+        // Note: These tests could be cleaner with the next_up_down feature to come in a
+        // future version of Rust: https://github.com/rust-lang/rust/issues/91399
 
-            // Center
-            assert_eq!(boxcar.energy(a), epsilon);
-            assert_eq!(boxcar.energy(a * (1.0+f64::EPSILON)), epsilon);
-            assert_eq!(boxcar.energy(a + w/2.0), epsilon);
-            assert_eq!(boxcar.energy(b * (1.0-f64::EPSILON)), epsilon);
+        // Left
+        assert_eq!(boxcar.energy(0.0), 0.0);
+        assert_eq!(boxcar.energy(a * (1.0 - f64::EPSILON)), 0.0);
 
-            // Right
-            assert_eq!(boxcar.energy(b), 0.0);
-            assert_eq!(boxcar.energy(b * 10.0), 0.0);
-        }
+        // Center
+        assert_eq!(boxcar.energy(a), epsilon);
+        assert_eq!(boxcar.energy(a * (1.0 + f64::EPSILON)), epsilon);
+        assert_eq!(boxcar.energy(a + w / 2.0), epsilon);
+        assert_eq!(boxcar.energy(b * (1.0 - f64::EPSILON)), epsilon);
+
+        // Right
+        assert_eq!(boxcar.energy(b), 0.0);
+        assert_eq!(boxcar.energy(b * 10.0), 0.0);
+    }
 }

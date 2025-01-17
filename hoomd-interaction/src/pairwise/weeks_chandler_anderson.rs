@@ -4,11 +4,11 @@
 /*! Implement [`WeeksChandlerAnderson`]
 */
 
-use super::{IsotropicEnergy, IsotropicForce};
 use super::LennardJones;
+use super::{IsotropicEnergy, IsotropicForce};
 
 /** Potential with a steep repulsive core.
-    
+
 <!--
 U(r) = \begin{cases}
 4 \varepsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\sigma}{r} \right)^{6} \right] + \varepsilon & r \lt 2^{1/6} \sigma \\
@@ -23,7 +23,7 @@ pub struct WeeksChandlerAnderson {
     /// Energy scale `[energy]`.
     pub epsilon: f64,
     /// Interaction width `[length]`.
-    pub sigma: f64
+    pub sigma: f64,
 }
 
 impl WeeksChandlerAnderson {
@@ -31,33 +31,29 @@ impl WeeksChandlerAnderson {
     #[must_use]
     pub fn new(epsilon: f64, sigma: f64) -> Self {
         Self { epsilon, sigma }
-        }
+    }
 }
 
 impl IsotropicEnergy for WeeksChandlerAnderson {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
-        if r < 2.0_f64.powf(1.0/6.0) * self.sigma {
-            let lj = LennardJones::<12,6>::new(self.epsilon, self.sigma);
+        if r < 2.0_f64.powf(1.0 / 6.0) * self.sigma {
+            let lj = LennardJones::<12, 6>::new(self.epsilon, self.sigma);
             lj.energy(r) + self.epsilon
-            }
-        else
-            {
+        } else {
             0.0
-            }
         }
     }
+}
 
 impl IsotropicForce for WeeksChandlerAnderson {
     #[inline]
     fn force(&self, r: f64) -> f64 {
-        if r < 2.0_f64.powf(1.0/6.0) * self.sigma {
-            let lj = LennardJones::<12,6>::new(self.epsilon, self.sigma);
+        if r < 2.0_f64.powf(1.0 / 6.0) * self.sigma {
+            let lj = LennardJones::<12, 6>::new(self.epsilon, self.sigma);
             lj.force(r)
-            }
-        else
-            {
+        } else {
             0.0
-            }
         }
     }
+}

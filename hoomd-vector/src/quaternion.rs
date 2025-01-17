@@ -555,7 +555,6 @@ impl Versor {
     }
 }
 
-
 impl From<Versor> for RotationMatrix<3> {
     /** Construct a rotation matrix equivalent to this versor's rotation.
 
@@ -634,7 +633,7 @@ impl Default for Versor {
 
 impl Rotate<Cartesian<3>> for Versor {
     type Matrix = RotationMatrix<3>;
-    
+
     /** Rotate a [`Cartesian<3>`] by a [`Versor`]
 
     <!-- \mathbf{q} \vec{a} \mathbf{q}^* -->

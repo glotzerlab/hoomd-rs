@@ -4,7 +4,7 @@
 /*! Pairwise interactions.
 */
 
-use hoomd_vector::{Rotate, Rotation, Vector};
+use hoomd_vector::{Rotate, Vector};
 
 mod angular_mask;
 pub use angular_mask::{AngularMask, Patch};
