@@ -250,7 +250,7 @@ mod tests {
     use std::f64::consts::PI;
 
     use crate::pairwise::{Boxcar, LennardJones};
-    use hoomd_vector::{Angle, Cartesian};
+    use hoomd_vector::{Angle, Cartesian, Versor};
 
     #[test]
     fn single_patch_2d() {
@@ -436,5 +436,69 @@ mod tests {
         }
     }
 
-    // TODO: 3D implementation
+    #[test]
+    fn single_patch_3d() {
+        // Evaluate that patch directors, widths, and relative orientations are
+        // handled properly in 3D.
+        let epsilon = 1.125;
+        let boxcar = Boxcar::new(epsilon, 0.0, 1000.0);
+
+        // First case: identical directors in the +z direction
+        let mask = [Patch::new(
+            [0.0, 0.0, 1.0].try_into().expect("valid unit vector"),
+            (PI / 8.0).cos(),
+        )];
+        let angular_mask = AngularMask::new(boxcar, mask, mask);
+
+        let x_axis = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
+        let y_axis = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
+
+        // Check corner cases when the j particle is along the patch direction.
+        assert_eq!(
+            angular_mask.energy(
+                &Cartesian::from([0.0, 0.0, 1.0]),
+                &Versor::from_axis_angle(x_axis, 0.0)
+            ),
+            0.0
+        );
+        assert_eq!(
+            angular_mask.energy(
+                &Cartesian::from([0.0, 0.0, 1.0]),
+                &Versor::from_axis_angle(y_axis, PI)
+            ),
+            epsilon
+        );
+        assert_eq!(
+            angular_mask.energy(
+                &Cartesian::from([0.0, 0.0, 1.0]),
+                &Versor::from_axis_angle(x_axis, PI + PI / 8.0 - 0.001)
+            ),
+            epsilon
+        );
+        assert_eq!(
+            angular_mask.energy(
+                &Cartesian::from([0.0, 0.0, 1.0]),
+                &Versor::from_axis_angle(y_axis, PI + PI / 8.0 + 0.001)
+            ),
+            0.0
+        );
+        assert_eq!(
+            angular_mask.energy(
+                &Cartesian::from([0.0, 0.0, 1.0]),
+                &Versor::from_axis_angle(x_axis, PI + PI / 8.0 + 0.001)
+            ),
+            0.0
+        );
+
+        // When the j particle is orthogonal to the patch direction, no orientation will interact.
+        for theta in (0..100).map(|x| f64::from(x) * 2.0 * PI / 100.0) {
+            assert_eq!(
+                angular_mask.energy(
+                    &Cartesian::from([0.0, 1.0, 0.0]),
+                    &Versor::from_axis_angle(x_axis, theta)
+                ),
+                0.0
+            );
+        }
+    }
 }
