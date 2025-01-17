@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`AngularMask`]
+/*! Implement [`AngularMask`] and related data structures.
 */
 
 use super::{AnisotropicEnergy, IsotropicEnergy};
@@ -22,14 +22,10 @@ impl<V> Patch<V> {
 
     The width of the patch is given as the cosine of its half-angle.
 
-    TODO: Possibly this name is too general? Should we consider exposing this module
-    as public to group it with [`AngularMask`]? Patches for the MD potential will have different
-    parameters.
-
     # Example
 
     ```
-    use hoomd_interaction::pairwise::Patch;
+    use hoomd_interaction::pairwise::angular_mask::Patch;
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -82,7 +78,7 @@ and single patch in both `masks_i` and `masks_j`.
 Construction:
 
 ```
-use hoomd_interaction::pairwise::{AngularMask, Boxcar, Patch};
+use hoomd_interaction::pairwise::{AngularMask, Boxcar, angular_mask::Patch};
 use hoomd_vector::Angle;
 use std::f64::consts::PI;
 
@@ -96,7 +92,7 @@ let angular_mask = AngularMask::new(boxcar, masks, masks);
 
 All fields are public and can be directly manupipated:
 ```
-use hoomd_interaction::pairwise::{AngularMask, Boxcar, Patch};
+use hoomd_interaction::pairwise::{AngularMask, Boxcar, angular_mask::Patch};
 use hoomd_vector::Angle;
 use std::f64::consts::PI;
 
@@ -114,7 +110,7 @@ angular_mask.f.epsilon = -2.0;
 Evaluating energy between particles:
 
 ```
-use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, Boxcar, Patch};
+use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch};
 use hoomd_vector::Angle;
 use std::f64::consts::PI;
 
@@ -137,7 +133,7 @@ assert_eq!(energy, -1.0);
 
 Apply different patches to the _i_ and _j_ particles:
 ```
-use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, Boxcar, Patch};
+use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch};
 use hoomd_vector::Angle;
 use std::f64::consts::PI;
 
@@ -164,6 +160,7 @@ Evaluate the angular mask potential on 3D particles:
 ```
 ```
 */
+#[doc(hidden)]
 #[derive(Clone, Debug, PartialEq)]
 pub struct AngularMask<F, V> {
     /// The original potential.
@@ -191,7 +188,7 @@ where
     # Example
 
     ```
-    use hoomd_interaction::pairwise::{AngularMask, Boxcar, Patch};
+    use hoomd_interaction::pairwise::{AngularMask, Boxcar, angular_mask::Patch};
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {

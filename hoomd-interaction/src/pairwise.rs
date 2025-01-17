@@ -6,8 +6,9 @@
 
 use hoomd_vector::{Rotate, Vector};
 
-mod angular_mask;
-pub use angular_mask::{AngularMask, Patch};
+pub mod angular_mask;
+#[doc(inline)]
+pub use angular_mask::AngularMask;
 
 mod boxcar;
 pub use boxcar::Boxcar;
