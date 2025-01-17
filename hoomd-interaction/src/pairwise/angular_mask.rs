@@ -11,17 +11,20 @@ use hoomd_vector::{Rotate, Rotation, Vector, Unit};
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Patch<V> {
-    /// Vector pointing from the center of the particle to the center of the mask [unitless].
-    pub d: Unit<V>,
-    /// Cosine of the half-angle width of the mask [unitless].
+    /// Vector pointing from the center of the particle to the center of the mask `[unitless]`.
+    pub director: Unit<V>,
+    /// Cosine of the half-angle width of the mask `[unitless]`.
     pub cos_delta: f64,
 }
 
 impl<V> Patch<V> {
     /** Construct a new patch with the given direction and width.
 
+    The width of the patch is given as the cosine of its half-angle.
+
     TODO: Possibly this name is too general? Should we consider exposing this module
-    as public to group it with [`AngularMask`]?
+    as public to group it with [`AngularMask`]? Patches for the MD potential will have different
+    parameters.
 
     # Example
 
@@ -37,8 +40,8 @@ impl<V> Patch<V> {
     */
     #[inline]
     #[must_use]
-    pub fn new(d: Unit<V>, cos_delta: f64) -> Self {
-        Self { d, cos_delta }
+    pub fn new(director: Unit<V>, cos_delta: f64) -> Self {
+        Self { director, cos_delta }
     }
 }
 
@@ -66,6 +69,11 @@ s(\vec{a}, \vec{b}, \delta_a, \delta_b) =
 -->
 <math display="block" class="tml-display" style="display:block math;"><mrow><mi>s</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo separator="true">,</mo><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo separator="true">,</mo><msub><mi>δ</mi><mi>a</mi></msub><mo separator="true">,</mo><msub><mi>δ</mi><mi>b</mi></msub><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mrow><mo fence="true" form="prefix">{</mo><mtable><mtr><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 0em;"><mn>1</mn></mtd><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 1em;"><mrow><mover><mi>a</mi><mo stretchy="false" class="tml-xshift" style="math-style:normal;math-depth:0;">^</mo></mover><mo>⋅</mo><msub><mover><mi>r</mi><mo stretchy="false" class="tml-xshift" style="math-style:normal;math-depth:0;">^</mo></mover><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>≥</mo><mrow><mi>cos</mi><mo>⁡</mo><mspace width="0.1667em"></mspace></mrow><msub><mi>δ</mi><mi>a</mi></msub><mo>∧</mo><mover><mi>b</mi><mo stretchy="false" class="tml-capshift" style="math-style:normal;math-depth:0;">^</mo></mover><mo>⋅</mo><msub><mover><mi>r</mi><mo stretchy="false" class="tml-xshift" style="math-style:normal;math-depth:0;">^</mo></mover><mrow><mi>j</mi><mi>i</mi></mrow></msub><mo>≥</mo><mrow><mi>cos</mi><mo>⁡</mo><mspace width="0.1667em"></mspace></mrow><msub><mi>δ</mi><mi>b</mi></msub></mrow></mtd></mtr><mtr><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 0em;"><mn>0</mn></mtd><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 1em;"><mtext>otherwise</mtext></mtd></mtr></mtable><mo fence="true" form="postfix"></mo></mrow></mrow></math>
 
+Implement the [Kern-Frenkel] potential with the [`Boxcar`](super::Boxcar) isotropic potential
+and single patch in both `masks_i` and `masks_j`. 
+
+[Kern-Frenkel]: http://dx.doi.org/10.1063/1.1569473
+
 # Examples
 
 Basic usage:
@@ -77,13 +85,48 @@ use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
-let mask = vec![Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos())];
-let angular_mask = AngularMask::new(boxcar, &mask, &mask);
+let masks = vec![Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos())];
+let angular_mask = AngularMask::new(boxcar, &masks, &masks);
 
+// With the same relative orientation, the patches do not overlap and the
+// energy is 0.
+let energy = angular_mask.energy(&[1.0, 0.0].into(), &Angle::from(0.0));
+assert_eq!(energy, 0.0);
+
+// Rotate the j particle to point at the i particle so the patches overlap.
 let energy = angular_mask.energy(&[1.0, 0.0].into(), &Angle::from(PI));
 assert_eq!(energy, -1.0);
 # Ok(())
 # }
+```
+
+Apply different patches to the _i_ and _j_ particles:
+```
+use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, Boxcar, Patch};
+use hoomd_vector::Angle;
+use std::f64::consts::PI;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
+let masks_i = vec![Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos()),
+    Patch::new([-1.0, 0.0].try_into()?, (PI/8.0).cos())];
+let masks_j = vec![Patch::new([0.0, 1.0].try_into()?, (PI/8.0).cos())];
+let angular_mask = AngularMask::new(boxcar, &masks_i, &masks_j);
+
+// With the same relative orientation, the patches do not overlap and the
+// energy is 0.
+let energy = angular_mask.energy(&[-1.0, 0.0].into(), &Angle::from(0.0));
+assert_eq!(energy, 0.0);
+
+// Rotate the j particle to point at the i particle so the patches overlap.
+let energy = angular_mask.energy(&[-1.0, 0.0].into(), &Angle::from(-PI/2.0));
+assert_eq!(energy, -1.0);
+# Ok(())
+# }
+```
+
+Evaluate the angular mask potential on 3D particles:
+```
 ```
 */
 #[derive(Clone, Debug, PartialEq)]
@@ -103,15 +146,23 @@ pub struct AngularMask<F, I1, I2>
 impl<'a, F, V, I1, I2> AngularMask<F, I1, I2>
 where
     V: Vector + 'a,
-    I1: IntoIterator<Item = &'a Patch<V>> + Copy,
-    I2: IntoIterator<Item = &'a Patch<V>> + Copy,
+    I1: IntoIterator<Item = &'a Patch<V>>,
+    I2: IntoIterator<Item = &'a Patch<V>>,
  {
-    /** Construct a [`Boxcar`] with the given values for `epsilon`, `a`, and `b`.
+    /** Construct a [`AngularMask`] with the given function and masks.
+
+    # Example
 
     ```
-    use hoomd_interaction::pairwise::Boxcar;
+    use hoomd_interaction::pairwise::{AngularMask, Boxcar, Patch};
+    use std::f64::consts::PI;
 
-    let boxcar = Boxcar::new(-2.0, 0.0, 1.0);
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
+    let masks = vec![Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos())];
+    let angular_mask = AngularMask::new(boxcar, &masks, &masks);
+    # Ok(())
+    # }
     ```
     */
     #[inline]
@@ -121,6 +172,26 @@ where
         }
 }
 
+/** [`AngularMask`] is intended to be constructed once and then allow `energy`
+to be called multiple times. The trait bound
+`IntoIterator<Item = &'a Patch<V>> + Copy` ensures that the masks provide a
+cheaply copyable iterator over references to patches. This works with references
+to arrays `&[Patch<V>; N]` and vectors `&Vec<Patch<V>>`.
+
+As a consequence, [`AngularMask`] does not take ownership of the mask data
+structures. It is meant to be constructed when needed to evaluate energies
+and then dropped. You should maintain your own separate data structure
+to store the masks and other potential parameters as needed.
+
+TODO: determine if there is some way to store owned masks as well.
+Some use-cases may find that more conveneient as they will not need to
+implement a separate storage type. It is weird that AngularMask owns `f`
+but not the masks... Maybe the best solution is to remove the general
+I1, I2 and make AnulgarMask store owned Vec<Patch<V>> directly....
+The IntoIterator could be accepted in new and users should then be
+cautioned that new is possibly an expensive operation that should be
+done once per simulation - not per pair of particles.
+*/
 impl<'a, F, V, R, I1, I2> AnisotropicEnergy<V, R> for AngularMask<F, I1, I2>
 where
     F: IsotropicEnergy,
@@ -137,10 +208,10 @@ where
         let unit_r_ji: V = -(*unit_r_ij.get());
     
         for mask_j in self.masks_j {
-            let d_j = o_ij_matrix.rotate(mask_j.d.get());
+            let d_j = o_ij_matrix.rotate(mask_j.director.get());
 
             for mask_i in self.masks_i {
-                if mask_i.d.get().dot(unit_r_ij.get()) >= mask_i.cos_delta
+                if mask_i.director.get().dot(unit_r_ij.get()) >= mask_i.cos_delta
                      && d_j.dot(&unit_r_ji) >= mask_j.cos_delta {
                     return self.f.energy(r_ij.norm());
                     }
