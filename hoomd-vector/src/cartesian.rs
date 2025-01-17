@@ -453,26 +453,26 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
 
     # Examples
     ```
-    use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
+    use hoomd_vector::{Angle, Rotate, RotationMatrix, Cartesian};
     use std::f64::consts::PI;
 
     let v = Cartesian::from([-1.0, 0.0]);
     let a = Angle::from(PI/2.0);
 
-    let matrix = a.to_rotation_matrix();
+    let matrix = RotationMatrix::from(a);
     let rotated = matrix.rotate(&v);
     // rotated is approximately [0.0, -1.0]
     ```
 
     ```
-    use hoomd_vector::{Versor, Rotate, Rotation, Cartesian};
+    use hoomd_vector::{Versor, Rotate, RotationMatrix, Cartesian};
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
     let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
 
-    let matrix = v.to_rotation_matrix();
+    let matrix = RotationMatrix::from(v);
     let b = matrix.rotate(&a);
     // b is approximately [0.0, -1.0, 0.0]
     # Ok(())

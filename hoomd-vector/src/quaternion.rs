@@ -547,6 +547,16 @@ impl Versor {
         })
     }
 
+    /// Get the unit quaternion.
+    #[inline]
+    #[must_use]
+    pub fn get(&self) -> &Quaternion {
+        &self.0
+    }
+}
+
+
+impl From<Versor> for RotationMatrix<3> {
     /** Construct a rotation matrix equivalent to this versor's rotation.
 
     When rotating many vectors by the same [`Versor`], improve performance
@@ -554,14 +564,14 @@ impl Versor {
 
     # Example
     ```
-    use hoomd_vector::{Versor, Rotate, Rotation, Cartesian};
+    use hoomd_vector::{Versor, Rotate, RotationMatrix, Cartesian};
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
     let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
 
-    let matrix = v.to_rotation_matrix();
+    let matrix = RotationMatrix::from(v);
     let b = matrix.rotate(&a);
     // b is approximately [0.0, -1.0, 0.0]
     # Ok(())
@@ -570,8 +580,8 @@ impl Versor {
     */
     #[inline]
     #[must_use]
-    pub fn to_rotation_matrix(&self) -> RotationMatrix<3> {
-        let Versor(quaternion) = *self;
+    fn from(versor: Versor) -> RotationMatrix<3> {
+        let Versor(quaternion) = versor;
         let a = quaternion.scalar;
         let b = quaternion.vector[0];
         let c = quaternion.vector[1];
@@ -599,13 +609,6 @@ impl Versor {
                 .into(),
             ],
         }
-    }
-
-    /// Get the unit quaternion.
-    #[inline]
-    #[must_use]
-    pub fn get(&self) -> &Quaternion {
-        &self.0
     }
 }
 
@@ -1038,16 +1041,14 @@ mod tests {
 
         #[test]
         fn precompute() {
-            let z_pi_2 = Versor::from_axis_angle(
+            let z_pi_2 = RotationMatrix::from(Versor::from_axis_angle(
                 Cartesian::from([0.0, 0.0, 1.0]).to_unit_unchecked(),
                 PI / 2.0,
-            )
-            .to_rotation_matrix();
-            let y_pi_4 = Versor::from_axis_angle(
+            ));
+            let y_pi_4 = RotationMatrix::from(Versor::from_axis_angle(
                 Cartesian::from([0.0, 1.0, 0.0]).to_unit_unchecked(),
                 PI / 4.0,
-            )
-            .to_rotation_matrix();
+            ));
 
             validate_rotations(&z_pi_2, &y_pi_4);
         }

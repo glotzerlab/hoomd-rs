@@ -94,7 +94,9 @@ impl Angle {
             theta: self.theta.rem_euclid(2.0 * PI),
         }
     }
+}
 
+impl From<Angle> for RotationMatrix<2> {
     /** Construct a rotation matrix equivalent to this angle's rotation.
 
     When rotating many vectors by the same [`Angle`], improve performance
@@ -102,22 +104,22 @@ impl Angle {
 
     # Example
     ```
-    use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
+    use hoomd_vector::{Angle, Rotate, RotationMatrix, Cartesian};
     use std::f64::consts::PI;
 
     let v = Cartesian::from([-1.0, 0.0]);
     let a = Angle::from(PI/2.0);
 
-    let matrix = a.to_rotation_matrix();
+    let matrix = RotationMatrix::from(a);
     let rotated = matrix.rotate(&v);
     // rotated is approximately [0.0, -1.0]
     ```
     */
     #[inline]
     #[must_use]
-    pub fn to_rotation_matrix(self) -> RotationMatrix<2> {
-        let sin_theta = self.theta.sin();
-        let cos_theta = self.theta.cos();
+    fn from(angle: Angle) -> RotationMatrix<2> {
+        let sin_theta = angle.theta.sin();
+        let cos_theta = angle.theta.cos();
         RotationMatrix {
             rows: [
                 [cos_theta, -sin_theta].into(),
@@ -247,14 +249,6 @@ impl fmt::Display for Angle {
     }
 }
 
-// TODO: rewrite to_rotation_matrix as From like this
-// impl From<Angle> for RotationMatrix<2> {
-//     #[inline]
-//     fn from(angle: Angle) -> Self {
-//         angle.to_rotation_matrix()
-//     }
-// }
-
 impl Distribution<Angle> for Standard {
     /** Sample a random angle from the uniform distribution over all rotations.
 
@@ -333,7 +327,7 @@ mod tests {
 
         assert_relative_eq!(angle.rotate(&vec), ans, epsilon = 4.0 * f64::EPSILON);
         assert_relative_eq!(
-            angle.to_rotation_matrix().rotate(&vec),
+            RotationMatrix::from(angle).rotate(&vec),
             ans,
             epsilon = 4.0 * f64::EPSILON
         );
