@@ -15,15 +15,20 @@ use super::{IsotropicEnergy, IsotropicForce};
 
 Shifted Lennard-Jones:
 ```
-use hoomd_interaction::pairwise::{LennardJones, Shifted};
+use hoomd_interaction::pairwise::{LennardJones, IsotropicEnergy, Shifted};
+use approx::{assert_abs_diff_eq, assert_relative_eq};
 
 let epsilon = 1.5;
 let sigma = 1.0;
 let r_shift = 2.5;
-let shifted_lj = Shifted::new(LennardJones::<12,6>::new(epsilon, sigma), r_shift);
+let lj: LennardJones = LennardJones::<12,6>::new(epsilon, sigma);
+let shifted_lj = Shifted::new(lj, r_shift);
+
+assert_abs_diff_eq!(shifted_lj.energy(r_shift), 0.0);
+assert_relative_eq!(shifted_lj.energy(2.0_f64.powf(1.0/6.0) * sigma), -epsilon - lj.energy(r_shift));
 ```
 
-Fields can be accessed directly:
+Fields can be accessed directly, including those of the original potential `f`:
 ```
 use hoomd_interaction::pairwise::{LennardJones, Shifted};
 
@@ -45,6 +50,20 @@ pub struct Shifted<F> {
 }
 
 impl<F> Shifted<F> {
+    /** Construct a [`Shifted`] with the given potential `f` and the shift point.
+
+    # Example
+
+    Construct a shifted Lennard-Jones potential.
+    ```
+    use hoomd_interaction::pairwise::{LennardJones, Shifted};
+
+    let epsilon = 1.5;
+    let sigma = 1.0;
+    let r_shift = 2.5;
+    let shifted_lj = Shifted::new(LennardJones::<12,6>::new(epsilon, sigma), r_shift);
+    ```
+    */
     #[inline]
     #[must_use]
     pub fn new(f: F, r_shift: f64) -> Self {
