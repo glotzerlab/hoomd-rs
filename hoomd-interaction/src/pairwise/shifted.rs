@@ -84,3 +84,53 @@ impl<F: IsotropicForce> IsotropicForce for Shifted<F> {
         self.f.force(r)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use approx::{assert_abs_diff_eq, assert_relative_eq};
+    use rstest::*;
+
+    use crate::pairwise::LennardJones;
+
+    #[rstest]
+    fn special_points_12_6(
+        #[values(1.0, 2.0, 12.125, 0.25)] epsilon: f64,
+        #[values(1.0, 2.0, 0.5)] sigma: f64,
+    ) {
+        let lj: LennardJones = LennardJones::new(epsilon, sigma);
+        let r_shift = 2.5 * sigma;
+        let shifted_lj = Shifted::new(lj, r_shift);
+
+        assert_eq!(shifted_lj.f.epsilon, epsilon);
+        assert_eq!(shifted_lj.f.sigma, sigma);
+        assert_eq!(shifted_lj.r_shift, r_shift);
+
+        let delta_e = lj.energy(r_shift);
+
+        // Zero crossing
+        assert_abs_diff_eq!(shifted_lj.energy(sigma), 0.0 - delta_e);
+        assert_relative_eq!(shifted_lj.force(sigma), 24.0 * epsilon / sigma);
+
+        // Bottom of the well
+        assert_relative_eq!(
+            shifted_lj.energy(2.0_f64.powf(1.0 / 6.0) * sigma),
+            -epsilon - delta_e
+        );
+        assert_abs_diff_eq!(
+            shifted_lj.force(2.0_f64.powf(1.0 / 6.0) * sigma),
+            0.0,
+            epsilon = 1e-12
+        );
+
+        // r = 2 sigma
+        assert_relative_eq!(
+            shifted_lj.energy(2.0 * sigma),
+            -63.0 / 1024.0 * epsilon - delta_e
+        );
+        assert_relative_eq!(
+            shifted_lj.force(2.0 * sigma),
+            -93.0 / 512.0 * epsilon / sigma
+        );
+    }
+}

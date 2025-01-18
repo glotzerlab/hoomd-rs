@@ -192,7 +192,6 @@ assert_eq!(
 
 ```
 */
-#[doc(hidden)]
 #[derive(Clone, Debug, PartialEq)]
 pub struct AngularMask<F, V> {
     /// The original potential.
