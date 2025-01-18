@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement [`Angle`]
-*/
+ */
 
 use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;

@@ -474,7 +474,7 @@ impl<V: Vector> Unit<V> {
 }
 
 /** A vector space where the cross product is defined.
-*/
+ */
 pub trait Cross {
     /** Perform the cross product.
     Compute the cross product (right-handed) of two vectors:

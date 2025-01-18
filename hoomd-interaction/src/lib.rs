@@ -9,6 +9,6 @@
 )]
 
 /*! Particle interactions.
-*/
+ */
 
 pub mod pairwise;

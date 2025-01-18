@@ -2,13 +2,13 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement [`AngularMask`] and related data structures.
-*/
+ */
 
 use super::{AnisotropicEnergy, IsotropicEnergy};
 use hoomd_vector::{Rotate, Unit, Vector};
 
 /** A single patch in the [`AngularMask`] potential.
-*/
+ */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Patch<V> {
     /// Vector pointing from the center of the particle to the center of the mask `[unitless]`.

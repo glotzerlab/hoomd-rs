@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Pairwise interactions.
-*/
+ */
 
 use hoomd_vector::{Rotate, Vector};
 
