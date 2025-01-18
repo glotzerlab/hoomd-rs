@@ -38,7 +38,7 @@ assert_eq!(boxcar.energy(2.5), 0.0);
 assert_eq!(boxcar.energy(1000.0), 0.0);
 ```
 
-The parameters are public fields and may be set directly:
+The parameters are public fields and may be accessed directly:
 
 ```
 use hoomd_interaction::pairwise::{IsotropicEnergy, Boxcar};

@@ -11,7 +11,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 <!-- U(r) = 4 \varepsilon \left[ \left( \frac{\sigma}{r} \right)^{N} - \left( \frac{\sigma}{r} \right)^{M} \right] -->
 <math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mn>4</mn><mi>ε</mi><mrow><mo fence="true" form="prefix">[</mo><msup><mrow><mo fence="true" form="prefix">(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo fence="true" form="postfix">)</mo></mrow><mi>N</mi></msup><mo>−</mo><msup><mrow><mo fence="true" form="prefix">(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo fence="true" form="postfix">)</mo></mrow><mi>M</mi></msup><mo fence="true" form="postfix">]</mo></mrow></mrow></math>
 
-Compute the Lennard-Jones potential and force as a function of `r`.
+Compute the Lennard-Jones (LJ) potential and force as a function of `r`.
 
 # Examples
 
@@ -19,7 +19,7 @@ In basic usage, the exponents `N` and `M` default to 12 and 6, respectively:
 
 ```
 use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, LennardJones};
-use ::approx::{assert_abs_diff_eq, assert_relative_eq};
+use approx::{assert_abs_diff_eq, assert_relative_eq};
 
 let epsilon = 1.5;
 let sigma = 2.5;
@@ -34,7 +34,7 @@ You can choose any values for `N` and `M` _at compile time_:
 
 ```
 use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, LennardJones};
-use ::approx::{assert_abs_diff_eq, assert_relative_eq};
+use approx::{assert_abs_diff_eq, assert_relative_eq};
 
 let epsilon = 1.5;
 let sigma = 2.5;
@@ -45,7 +45,7 @@ assert_relative_eq!(lj.energy(2.0_f64.powf(1.0/4.0) * sigma), -epsilon);
 assert_abs_diff_eq!(lj.force(2.0_f64.powf(1.0/4.0) * sigma), 0.0, epsilon=1e-12);
 ```
 
-The parameters are public fields and may be set directly:
+The parameters are public fields and may be accessed directly:
 
 ```
 use hoomd_interaction::pairwise::{LennardJones};
@@ -53,6 +53,7 @@ use hoomd_interaction::pairwise::{LennardJones};
 let mut lj: LennardJones = LennardJones::new(1.0, 2.5);
 lj.epsilon = 1.5;
 lj.sigma = 3.0;
+```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct LennardJones<const N: i32 = 12, const M: i32 = 6> {

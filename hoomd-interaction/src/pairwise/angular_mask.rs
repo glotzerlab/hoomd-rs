@@ -107,7 +107,7 @@ angular_mask.f.epsilon = -2.0;
 # }
 ```
 
-Evaluating energy between particles:
+Evaluate energy between particles:
 
 ```
 use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch};
@@ -158,6 +158,38 @@ assert_eq!(energy, -1.0);
 
 Evaluate the angular mask potential on 3D particles:
 ```
+use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch};
+use hoomd_vector::{Cartesian, Vector, Versor};
+use std::f64::consts::PI;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
+
+let mask = [Patch::new(
+    [0.0, 0.0, 1.0].try_into().expect("valid unit vector"),
+    (PI / 8.0).cos(),
+)];
+let x_axis = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
+
+let angular_mask = AngularMask::new(boxcar, mask, mask);
+
+assert_eq!(
+    angular_mask.energy(
+        &Cartesian::from([0.0, 0.0, 1.0]),
+        &Versor::from_axis_angle(x_axis, 0.0)
+    ),
+    0.0
+);
+assert_eq!(
+    angular_mask.energy(
+        &Cartesian::from([0.0, 0.0, 1.0]),
+        &Versor::from_axis_angle(x_axis, PI)
+    ),
+    -1.0
+);
+# Ok(())
+# }
+
 ```
 */
 #[doc(hidden)]

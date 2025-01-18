@@ -62,11 +62,8 @@ pub trait AnisotropicEnergy<V: Vector, R: Rotate<V>> {
 //     fn energy(&self, r_ij: &V, o_ij: &R) -> f64;
 // }
 
-// TODO: Unit test WeeksChandlerAnderson
 // TODO: Unit test Shifted
-// TODO: Document WeeksChandlerAnderson and write examples
 // TODO: Document Shifted and write examples
-// TODO: Implement Xplor
-// TODO: Implement AngularMask
+// TODO: Implement Xplor smoothing
 // TODO: Implement Harmonic and HarmonicRepulsion based on that (Harmonic cut off at r_0)
 // TODO: Implement Expanded as an adapter (like shifted)
