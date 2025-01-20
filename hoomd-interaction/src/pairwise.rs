@@ -19,6 +19,9 @@ pub use lennard_jones::LennardJones;
 mod shifted;
 pub use shifted::Shifted;
 
+mod xplor;
+pub use xplor::Xplor;
+
 mod weeks_chandler_anderson;
 pub use weeks_chandler_anderson::WeeksChandlerAnderson;
 
