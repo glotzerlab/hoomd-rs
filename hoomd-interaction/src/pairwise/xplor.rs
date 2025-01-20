@@ -72,7 +72,8 @@ impl<F: IsotropicForce + IsotropicEnergy> IsotropicForce for Xplor<F> {
             self.f.force(r)
         } else if r > self.r_cut {
             0.0
-        } else { // Chain rule of s(r)*U(r)
+        } else {
+            // Chain rule of s(r)*U(r)
             self.s(r) * self.f.force(r) + self.ds_dr(r) * self.f.energy(r)
         }
     }
@@ -104,8 +105,8 @@ mod tests {
         // Values should not be shifted below r_on
         assert_abs_diff_eq!(xplor_lj.energy(r_on / 2.0), lj.energy(r_on / 2.0));
         assert_abs_diff_eq!(xplor_lj.energy(r_on - 1e-6), lj.energy(r_on - 1e-6));
-        assert_abs_diff_eq!(xplor_lj.force(r_on/2.0), lj.force(r_on/2.0)); // TODO
-        assert_abs_diff_eq!(xplor_lj.force(r_on-1e-6), lj.force(r_on-1e-6)); // TODO
+        assert_abs_diff_eq!(xplor_lj.force(r_on / 2.0), lj.force(r_on / 2.0)); // TODO
+        assert_abs_diff_eq!(xplor_lj.force(r_on - 1e-6), lj.force(r_on - 1e-6)); // TODO
 
         // Values should be zero at and above r_cut
         assert_abs_diff_eq!(xplor_lj.energy(r_cut), 0.0);
@@ -120,8 +121,14 @@ mod tests {
         // assert_relative_eq!(xplor_lj.force(sigma), 24.0 * epsilon / sigma); // TODO
 
         // Values should not be the same between r_on and r_cut
-        assert_abs_diff_ne!(xplor_lj.energy((r_on+r_cut)/2.0), lj.energy((r_on+r_cut)/2.0));
-        assert_abs_diff_ne!(xplor_lj.force((r_on+r_cut)/2.0), lj.force((r_on+r_cut)/2.0));
+        assert_abs_diff_ne!(
+            xplor_lj.energy((r_on + r_cut) / 2.0),
+            lj.energy((r_on + r_cut) / 2.0)
+        );
+        assert_abs_diff_ne!(
+            xplor_lj.force((r_on + r_cut) / 2.0),
+            lj.force((r_on + r_cut) / 2.0)
+        );
 
         // Zero crossing
         assert_abs_diff_eq!(xplor_lj.energy(sigma), 0.0);
