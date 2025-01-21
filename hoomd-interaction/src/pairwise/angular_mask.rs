@@ -169,7 +169,7 @@ let mask = [Patch::new(
     [0.0, 0.0, 1.0].try_into().expect("valid unit vector"),
     (PI / 8.0).cos(),
 )];
-let x_axis = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
+let (x_axis, _) = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
 
 let angular_mask = AngularMask::new(boxcar, mask, mask);
 
@@ -254,7 +254,7 @@ where
     #[inline]
     fn energy(&self, r_ij: &V, o_ij: &R) -> f64 {
         let o_ij_matrix: R::Matrix = (*o_ij).into();
-        let unit_r_ij = r_ij.to_unit_unchecked();
+        let (unit_r_ij, r_ij_norm) = r_ij.to_unit_unchecked();
         let unit_r_ji: V = -(*unit_r_ij.get());
 
         for mask_j in &self.masks_j {
@@ -264,7 +264,7 @@ where
                 if mask_i.director.get().dot(unit_r_ij.get()) >= mask_i.cos_delta
                     && d_j.dot(&unit_r_ji) >= mask_j.cos_delta
                 {
-                    return self.f.energy(r_ij.norm());
+                    return self.f.energy(r_ij_norm);
                 }
             }
         }
@@ -481,8 +481,8 @@ mod tests {
         )];
         let angular_mask = AngularMask::new(boxcar, mask, mask);
 
-        let x_axis = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
-        let y_axis = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
+        let (x_axis, _) = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
+        let (y_axis, _) = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
 
         // Check corner cases when the j particle is along the patch direction.
         assert_eq!(

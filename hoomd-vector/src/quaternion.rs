@@ -969,7 +969,7 @@ mod tests {
 
         #[rstest(
         theta => [0.0, PI/2.0, 1e-12 * PI, -3.0, 12345.6],
-        axis => [Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked(), Cartesian::from([1.0, -1.0, 1.0]).to_unit_unchecked()],
+        axis => [[1.0, 0.0, 0.0].try_into().expect("valid unit vector"), [1.0, -1.0, 1.0].try_into().expect("valid unit vector")],
     )]
         fn from_axis_angle(theta: f64, axis: Unit<Cartesian<3>>) {
             let Unit(axis_vector) = axis;
@@ -984,7 +984,7 @@ mod tests {
         theta_2 => [-0.0, -PI/3.0, PI, 2.0 * PI]
     )]
         fn combine_same_axis(theta_1: f64, theta_2: f64) {
-            let axis = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
+            let axis = [1.0, 0.0, 0.0].try_into().expect("valid unit vector");
             let Unit(axis_vector) = axis;
 
             let a = Versor::from_axis_angle(axis, theta_1);
@@ -1029,11 +1029,11 @@ mod tests {
         #[test]
         fn rotate() {
             let z_pi_2 = Versor::from_axis_angle(
-                Cartesian::from([0.0, 0.0, 1.0]).to_unit_unchecked(),
+                [0.0, 0.0, 1.0].try_into().expect("valid unit vector"),
                 PI / 2.0,
             );
             let y_pi_4 = Versor::from_axis_angle(
-                Cartesian::from([0.0, 1.0, 0.0]).to_unit_unchecked(),
+                [0.0, 1.0, 0.0].try_into().expect("valid unit vector"),
                 PI / 4.0,
             );
 
@@ -1043,11 +1043,11 @@ mod tests {
         #[test]
         fn precompute() {
             let z_pi_2 = RotationMatrix::from(Versor::from_axis_angle(
-                Cartesian::from([0.0, 0.0, 1.0]).to_unit_unchecked(),
+                [0.0, 0.0, 1.0].try_into().expect("valid unit vector"),
                 PI / 2.0,
             ));
             let y_pi_4 = RotationMatrix::from(Versor::from_axis_angle(
-                Cartesian::from([0.0, 1.0, 0.0]).to_unit_unchecked(),
+                [0.0, 1.0, 0.0].try_into().expect("valid unit vector"),
                 PI / 4.0,
             ));
 
@@ -1057,11 +1057,11 @@ mod tests {
         #[test]
         fn combine_different_axis() {
             let a = Versor::from_axis_angle(
-                Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked(),
+                [1.0, 0.0, 0.0].try_into().expect("valid unit vector"),
                 PI / 4.0,
             );
             let b = Versor::from_axis_angle(
-                Cartesian::from([0.0, 0.0, 1.0]).to_unit_unchecked(),
+                [0.0, 0.0, 1.0].try_into().expect("valid unit vector"),
                 PI / 2.0,
             );
 
@@ -1073,7 +1073,7 @@ mod tests {
         #[rstest(theta => [0.0, 1.0, 2.125])]
         fn inverted(theta: f64) {
             let q1 = Versor::from_axis_angle(
-                Cartesian::from([1.0, 0.5, -2.0]).to_unit_unchecked(),
+                [1.0, 0.5, -2.0].try_into().expect("valid unit vector"),
                 theta,
             );
             let q2 = q1.inverted();

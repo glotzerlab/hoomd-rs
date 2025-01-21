@@ -208,7 +208,7 @@ impl<const N: usize> TryFrom<[f64; N]> for Unit<Cartesian<N>> {
     */
     #[inline]
     fn try_from(value: [f64; N]) -> Result<Self, Self::Error> {
-        Cartesian::from(value).to_unit()
+        Cartesian::from(value).to_unit().map(|t| t.0)
     }
 }
 
@@ -827,10 +827,10 @@ mod tests {
     #[test]
     fn to_unit() {
         let a = Cartesian::from((2.0, 0.0, 0.0));
-        let Unit(unit_a) = a.to_unit().expect("non-zero vector");
+        let (Unit(unit_a), _) = a.to_unit().expect("non-zero vector");
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
-        let Unit(unit_a) = a.to_unit_unchecked();
+        let (Unit(unit_a), _) = a.to_unit_unchecked();
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
         let Unit(unit_a) =
@@ -838,10 +838,10 @@ mod tests {
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
         let a = Cartesian::from((3.0, 0.0, 4.0));
-        let Unit(unit_a) = a.to_unit().expect("non-zero vector");
+        let (Unit(unit_a), _) = a.to_unit().expect("non-zero vector");
         assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
-        let Unit(unit_a) = a.to_unit_unchecked();
+        let (Unit(unit_a), _) = a.to_unit_unchecked();
         assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
         let Unit(unit_a) =

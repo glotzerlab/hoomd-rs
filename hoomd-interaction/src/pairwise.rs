@@ -99,3 +99,4 @@ pub trait AnisotropicEnergy<V: Vector, R: Rotate<V>> {
 // TODO: Implement Xplor smoothing
 // TODO: Implement Harmonic and HarmonicRepulsion based on that (Harmonic cut off at r_0)
 // TODO: Implement Expanded as an adapter (like shifted)
+// TODO: Benchmark LJ, AngularMask
