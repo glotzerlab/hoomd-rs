@@ -246,7 +246,9 @@ name = "hoomd-interaction"
 version = "0.0.0"
 dependencies = [
  "approx",
+ "divan",
  "hoomd-vector",
+ "rand",
  "rstest",
 ]
 

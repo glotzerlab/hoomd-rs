@@ -19,4 +19,14 @@ hoomd-vector = { path = "../hoomd-vector" }
 
 [dev-dependencies]
 approx = "0.5.1"
+divan = "0.1.14"
 rstest = "0.23.0"
+rand = "0.8.5"
+
+[[bench]]
+name = "lennard-jones"
+harness = false
+
+[[bench]]
+name = "angular-mask"
+harness = false

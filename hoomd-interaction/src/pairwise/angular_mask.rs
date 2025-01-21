@@ -255,7 +255,7 @@ where
     fn energy(&self, r_ij: &V, o_ij: &R) -> f64 {
         let o_ij_matrix: R::Matrix = (*o_ij).into();
         let (unit_r_ij, r_ij_norm) = r_ij.to_unit_unchecked();
-        let unit_r_ji: V = -(*unit_r_ij.get());
+        let unit_r_ji = -(*unit_r_ij.get());
 
         for mask_j in &self.masks_j {
             let d_j = o_ij_matrix.rotate(mask_j.director.get());
