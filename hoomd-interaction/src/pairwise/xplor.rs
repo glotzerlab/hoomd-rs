@@ -6,9 +6,10 @@
 
 use super::{IsotropicEnergy, IsotropicForce};
 
-/** Smoothly shift a potential (and its force) to 0 at some `r`.
+/** Smoothly shift a potential (and its force) to 0 at some `r_cut`, beginning at `r_on`.
 
 # Example
+TODO
 */
 
 #[derive(Clone, Debug, PartialEq)]
@@ -22,6 +23,24 @@ pub struct Xplor<F> {
 }
 
 impl<F> Xplor<F> {
+    /** Construct an [`Xplor`] with the given potential `f`, a cutoff `r_cut`, and a
+    start point `r_on`.
+
+    # Example
+
+    Smooth a Lennard-Jones potential to 0 at some `r_cut`.
+    ```
+    use hoomd_interaction::pairwise::{LennardJones, Xplor};
+
+    let epsilon = 1.5;
+    let sigma = 1.0;
+    let r_cut = 2.5 * sigma;
+    let r_on = 1.5 * sigma;
+    let shifted_lj = Shifted::new(
+        LennardJones::<12,6>::new(epsilon, sigma), r_cut, r_on
+    );
+    ```
+    */
     #[inline]
     #[must_use]
     pub fn new(f: F, r_cut: f64, r_on: f64) -> Self {
@@ -31,6 +50,7 @@ impl<F> Xplor<F> {
     /// The xplor shifting function
     #[inline]
     fn s(&self, r: f64) -> f64 {
+        // NOTE: r checks must be performed here to scale the forces properly
         if r < self.r_on {
             1.0
         } else if r > self.r_cut {
@@ -43,10 +63,9 @@ impl<F> Xplor<F> {
                 / (r_cut_sq - r_on_sq).powi(3)
         }
     }
-    /// The xplor shifting function
+    /// Partial derivative of the xplor function with respect to r
     #[inline]
     fn ds_dr(&self, r: f64) -> f64 {
-        // TODO: can we share r_*sq between energy and force?
         let r_sq = r.powi(2);
         let r_cut_sq = self.r_cut.powi(2);
         let r_on_sq = self.r_on.powi(2);
@@ -57,12 +76,8 @@ impl<F> Xplor<F> {
 impl<F: IsotropicEnergy> IsotropicEnergy for Xplor<F> {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
-        // self.f.energy(r) - self.f.energy(self.r_on)
-        // if r < self.r_on {self.f.energy(r)} else {self.s(r) * self.f.energy(r)}
         self.s(r) * self.f.energy(r)
     }
-    // NOTE: HOOMD impl has special case where r_on > r_cut. However, because each pot
-    // is separate in this version, users can just not xplor on WCA
 }
 
 impl<F: IsotropicForce + IsotropicEnergy> IsotropicForce for Xplor<F> {
