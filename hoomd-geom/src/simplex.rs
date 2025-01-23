@@ -1,60 +1,46 @@
-use hoomd_vector::vector::Cartesian;
-// TODO: many shape properties are computable with 2d matrcies - imlpement these 
-// as generics
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
 
-impl<const N: usize> Intersects<Sphere> for Shape<N> {
-    fn intersects(self, &rhs: Shape) where Shape: Intersects::<Sphere> -> bool {
-        todo!()
-    }
-    // Xeonocollide only needs vertices - prioritize implementing this
-}// all we need for MC
-trait Convex {} // Not necessarily needed for mc, but could be useful down the line
+// #[derive(Debug)]
+// pub struct Simplex<const N: usize>
+// where
+//     [(); N + 1]:,
+// {
+//     vertices: [Cartesian<N>; N + 1],
+// }
 
+// impl<const N: usize> Default for Simplex<N>
+// where
+//     [(); N + 1]:,
+// {
+//     /** Create a regular N-Simplex.
 
-trait Volume {}
-trait Particle {} // In different crate! - should be copyable (array based?)
-trait Shape {} // vec![Cartesian::from(etc!())]
+//     The default simplex is the convex hull of the basis vectors of ℝ^N and a point
+//     at TODO:.
 
-#[derive(Debug)]
-pub struct Simplex<const N: usize>
-where
-    [(); N + 1]:,
-{
-    vertices: [Cartesian<N>; N + 1],
-}
+//     ```
+//     # use hoomd_rs_geom::simplex;
+//     let tet = simplex::Simplex::<3>::default();
+//     // assert_eq!(tet, [0.0; 3].into())
+//     ```
+//     */
+//     #[inline]
+//     fn default() -> Simplex<N> {
+//         let mut vertices = std::array::from_fn(|i| {
+//             Cartesian::from(std::array::from_fn(|j| if i == j { 1.0 } else { 0.0 }))
+//         });
 
-impl<const N: usize> Default for Simplex<N>
-where
-    [(); N + 1]:,
-{
-    /** Create a regular N-Simplex.
+//         let c = (1.0 + (1.0 + N as f64).sqrt()) / (N as f64);
+//         vertices[N] = Cartesian::from([c; N]);
+//         Simplex { vertices }
+//     }
+// }
 
-    The default simplex is the convex hull of the basis vectors of ℝ^N and a point 
-    at TODO:.
+// impl<const N: usize> Simplex<N>
+//     where
+//         [(); N+1]:
+// {
+//     // fn centroid(self) -> Cartesian::<N> {
 
-    ```
-    # use hoomd_rs_geom::simplex;
-    let tet = simplex::Simplex::<3>::default();
-    // assert_eq!(tet, [0.0; 3].into())
-    ```
-    */
-    #[inline]
-    fn default() -> Simplex<N> {
-        let mut vertices = std::array::from_fn(|i| {
-            Cartesian::from(std::array::from_fn(|j| if i == j { 1.0 } else { 0.0 }))
-        });
-
-        let c = (1.0 + (1.0 + N as f64).sqrt()) / (N as f64);
-        vertices[N] = Cartesian::from([c; N]);
-        Simplex { vertices }
-    }
-}
-
-impl<const N: usize> Simplex<N> 
-    where
-        [(); N+1]:
-{
-    // fn centroid(self) -> Cartesian::<N> {
-        
-    // }
-}
+//     // }
+// }

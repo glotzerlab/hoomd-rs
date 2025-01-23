@@ -1,13 +1,14 @@
-#![feature(generic_const_exprs)] // See https://hackmd.io/OZG_XiLFRs2Xmw5s39jRzA?view
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
 
-pub mod simplex;
 pub mod matrix;
+pub mod simplex;
 
 fn main() {
     println!("Hello, world!");
 
     const N: usize = 3;
 
-    let s = simplex::Simplex::<N>::default();
-    println!("{:?}", s)
+    // let s = simplex::Simplex::<N>::default();
+    // println!("{:?}", s)
 }
