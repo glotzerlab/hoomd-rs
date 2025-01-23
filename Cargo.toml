@@ -1,7 +1,8 @@
 [workspace]
 
-members = [ "hoomd-rs-geom",
-  "hoomd-rs-vector"
+
+members = [ "hoomd-geom",
+  "hoomd-vector"
 ]
 resolver = "2"
 
