@@ -12,9 +12,9 @@ use divan::{self, black_box, Bencher};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use std::f64::consts::PI;
 
-use hoomd_interaction::pairwise::{AnisotropicEnergy, AngularMask, LennardJones};
 use hoomd_interaction::pairwise::angular_mask::Patch;
-use hoomd_vector::{Cartesian, Angle, Versor};
+use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, LennardJones};
+use hoomd_vector::{Angle, Cartesian, Versor};
 
 fn main() {
     divan::main();
@@ -27,19 +27,33 @@ fn energy_2d(bencher: Bencher) {
     let epsilon: f64 = rng.gen();
     let sigma: f64 = rng.gen();
     let lj: LennardJones = LennardJones::new(epsilon, sigma);
-   
-    let masks = [Patch::new([1.0, 0.0].try_into().expect("valid unit vector"), (PI/8.0).cos()),
 
-    Patch::new([-1.0, 0.0].try_into().expect("valid unit vector"), (PI/16.0).cos()),
-    Patch::new([0.0, 1.0].try_into().expect("valid unit vector"), (PI/16.0).cos()),
-    Patch::new([0.0, -1.0].try_into().expect("valid unit vector"), (PI/16.0).cos()),
-       ];
+    let masks = [
+        Patch::new(
+            [1.0, 0.0].try_into().expect("valid unit vector"),
+            (PI / 8.0).cos(),
+        ),
+        Patch::new(
+            [-1.0, 0.0].try_into().expect("valid unit vector"),
+            (PI / 16.0).cos(),
+        ),
+        Patch::new(
+            [0.0, 1.0].try_into().expect("valid unit vector"),
+            (PI / 16.0).cos(),
+        ),
+        Patch::new(
+            [0.0, -1.0].try_into().expect("valid unit vector"),
+            (PI / 16.0).cos(),
+        ),
+    ];
 
     let angular_mask = AngularMask::new(lj, masks, masks);
 
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| -> (Cartesian<2>, Angle) { (rng.gen::<Cartesian<2>>(), rng.gen::<Angle>()) })
+        .with_inputs(|| -> (Cartesian<2>, Angle) {
+            (rng.gen::<Cartesian<2>>(), rng.gen::<Angle>())
+        })
         .bench_local_values(|(r_ij, angle)| black_box(angular_mask.energy(&r_ij, &angle)));
 }
 
@@ -50,19 +64,33 @@ fn energy_3d(bencher: Bencher) {
     let epsilon: f64 = rng.gen();
     let sigma: f64 = rng.gen();
     let lj: LennardJones = LennardJones::new(epsilon, sigma);
-   
-    let masks = [Patch::new([1.0, 0.0, 0.0].try_into().expect("valid unit vector"), (PI/16.0).cos()),
 
-    Patch::new([-1.0, 0.0, 0.0].try_into().expect("valid unit vector"), (PI/16.0).cos()),
-    Patch::new([0.0, 1.0, 0.0].try_into().expect("valid unit vector"), (PI/16.0).cos()),
-    Patch::new([0.0, -1.0, 0.0].try_into().expect("valid unit vector"), (PI/16.0).cos()),
-       ];
+    let masks = [
+        Patch::new(
+            [1.0, 0.0, 0.0].try_into().expect("valid unit vector"),
+            (PI / 16.0).cos(),
+        ),
+        Patch::new(
+            [-1.0, 0.0, 0.0].try_into().expect("valid unit vector"),
+            (PI / 16.0).cos(),
+        ),
+        Patch::new(
+            [0.0, 1.0, 0.0].try_into().expect("valid unit vector"),
+            (PI / 16.0).cos(),
+        ),
+        Patch::new(
+            [0.0, -1.0, 0.0].try_into().expect("valid unit vector"),
+            (PI / 16.0).cos(),
+        ),
+    ];
 
     let angular_mask = AngularMask::new(lj, masks, masks);
 
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| -> (Cartesian<3>, Versor) { (rng.gen::<Cartesian<3>>(), rng.gen::<Versor>()) })
+        .with_inputs(|| -> (Cartesian<3>, Versor) {
+            (rng.gen::<Cartesian<3>>(), rng.gen::<Versor>())
+        })
         .bench_local_values(|(r_ij, angle)| black_box(angular_mask.energy(&r_ij, &angle)));
 }
 
