@@ -8,6 +8,21 @@ use super::{IsotropicEnergy, IsotropicForce};
 
 /** Smoothly shift a potential (and its force) to 0 at some `r_cut`, beginning at `r_on`.
 
+<!-- U(r) = S(r) \cdot f(r) -->
+<math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mi>S</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>⋅</mo><mi>f</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo></mrow></math>
+where:
+<!-- S(r) =
+\begin{cases}
+1 & r < r_{\mathrm{on}} \\
+\frac{(r_{\mathrm{cut}}^2 - r^2)^2 \cdot
+(r_{\mathrm{cut}}^2 + 2r^2 -
+3r_{\mathrm{on}}^2)}{(r_{\mathrm{cut}}^2 -
+r_{\mathrm{on}}^2)^3}
+& r_{\mathrm{on}} < r \le r_{\mathrm{cut}} \\
+0 & r \ge r_{\mathrm{cut}} \\
+\end{cases}
+-->
+<math display="block" class="tml-display" style="display:block math;"><mrow><mi>S</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mrow><mo fence="true" form="prefix">{</mo><mtable><mtr><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 0em;"><mn>1</mn></mtd><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 1em;"><mrow><mi>r</mi><mo>&lt;</mo><msub><mi>r</mi><mrow><mtext></mtext><mi>on</mi></mrow></msub></mrow></mtd></mtr><mtr><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 0em;"><mfrac><mrow><mo form="prefix" stretchy="false" lspace="0em" rspace="0em">(</mo><msubsup><mi>r</mi><mrow><mtext></mtext><mi>cut</mi></mrow><mn>2</mn></msubsup><mo>−</mo><msup><mi>r</mi><mn>2</mn></msup><msup><mo form="postfix" stretchy="false">)</mo><mn>2</mn></msup><mo>⋅</mo><mo form="prefix" stretchy="false">(</mo><msubsup><mi>r</mi><mrow><mtext></mtext><mi>cut</mi></mrow><mn>2</mn></msubsup><mo>+</mo><mn>2</mn><msup><mi>r</mi><mn>2</mn></msup><mo>−</mo><mn>3</mn><msubsup><mi>r</mi><mrow><mtext></mtext><mi>on</mi></mrow><mn>2</mn></msubsup><mo form="postfix" stretchy="false" lspace="0em" rspace="0em">)</mo></mrow><mrow><mo form="prefix" stretchy="false" lspace="0em" rspace="0em">(</mo><msubsup><mi>r</mi><mrow><mtext></mtext><mi>cut</mi></mrow><mn>2</mn></msubsup><mo>−</mo><msubsup><mi>r</mi><mrow><mtext></mtext><mi>on</mi></mrow><mn>2</mn></msubsup><msup><mo form="postfix" stretchy="false">)</mo><mn>3</mn></msup></mrow></mfrac></mtd><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 1em;"><mrow><msub><mi>r</mi><mrow><mtext></mtext><mi>on</mi></mrow></msub><mo>≤</mo><mi>r</mi><mo>&lt;</mo><msub><mi>r</mi><mrow><mtext></mtext><mi>cut</mi></mrow></msub></mrow></mtd></mtr><mtr><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 0em;"><mn>0</mn></mtd><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 1em;"><mrow><mi>r</mi><mo>≥</mo><msub><mi>r</mi><mrow><mtext></mtext><mi>cut</mi></mrow></msub></mrow></mtd></mtr></mtable><mo fence="true" form="postfix"></mo></mrow></mrow></math>
 # Example
 TODO
 */
@@ -36,7 +51,7 @@ impl<F> Xplor<F> {
     let sigma = 1.0;
     let r_cut = 2.5 * sigma;
     let r_on = 1.5 * sigma;
-    let shifted_lj = Shifted::new(
+    let xplor_lj = Xplor::new(
         LennardJones::<12,6>::new(epsilon, sigma), r_cut, r_on
     );
     ```
