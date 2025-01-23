@@ -1,4 +1,4 @@
-use hoomd_rs_vector::vector::Cartesian;
+use hoomd_vector::vector::Cartesian;
 use std::ops::{Add, Index};
 use std::array;
 

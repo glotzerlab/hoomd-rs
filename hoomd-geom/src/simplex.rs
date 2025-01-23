@@ -1,4 +1,4 @@
-use hoomd_rs_vector::vector::Cartesian;
+use hoomd_vector::vector::Cartesian;
 // TODO: many shape properties are computable with 2d matrcies - imlpement these 
 // as generics
 

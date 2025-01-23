@@ -230,6 +230,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "glob"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8d1add55171497b4705a648c6b583acafb01d58050a51727785f0b2c8e0a2b2"
+
+[[package]]
+name = "hashbrown"
+version = "0.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf151400ff0baff5465007dd2f3e717f3fe502074ca563069ce3a6629d07b289"
+
+[[package]]
+name = "hoomd-geom"
+version = "0.0.0"
+dependencies = [
+ "hoomd-vector",
+]
+
+[[package]]
+name = "hoomd-vector"
 version = "0.0.0"
 dependencies = [
  "approx",

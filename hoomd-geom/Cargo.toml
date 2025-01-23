@@ -1,5 +1,5 @@
 [package]
-name = "hoomd-rs-geom"
+name = "hoomd-geom"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -10,7 +10,7 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-hoomd-rs-vector = { path= "../hoomd-rs-vector" }
+hoomd-vector = { path= "../hoomd-vector" }
 
 [lints]
 workspace = true
