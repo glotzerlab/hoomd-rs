@@ -1,8 +1,9 @@
 [workspace]
 
 members = [
+  "hoomd-interaction",
+  "hoomd-microstate",
   "hoomd-vector",
-  "hoomd-interaction"
 ]
 resolver = "2"
 
