@@ -1,6 +1,9 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+use crate::sphere::Sphere;
 /// General traits for shapes
 use hoomd_vector::Vector;
-use crate::sphere::Sphere;
 
 ///
 pub trait Volume {
@@ -30,5 +33,5 @@ pub trait Shape<const N: usize, V: Vector> {
     /// Center of mass
     fn centroid(&self) -> V;
     /// Bounding sphere. Maybe should be part of the Particle trait?
-    fn bounding_sphere(&self) -> Sphere<N, V>; // NOT minimal bounding sphere: jsut a small one
+    fn bounding_sphere(&self) -> Sphere<N, V>; // NOT minimal bounding sphere: just a small one
 }

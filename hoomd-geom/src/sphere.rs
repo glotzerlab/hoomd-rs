@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 use crate::{Convex, Shape, Volume};
 use hoomd_vector::{Cartesian, Vector};
 
@@ -20,7 +23,10 @@ fn double_factorial(n: usize) -> usize {
 
 /// An n-hypersphere ===================================================================
 #[derive(Clone, Copy, Debug)]
-pub struct Sphere<const N: usize, V> where V: Vector + Copy {
+pub struct Sphere<const N: usize, V>
+where
+    V: Vector + Copy,
+{
     /// Radius of the sphere
     pub r: f64,
     /// Centroid of the sphere
@@ -75,10 +81,7 @@ impl<const N: usize, V: Vector + Default> From<f64> for Sphere<{ N }, V> {
 
     #[inline]
     fn from(r: f64) -> Self {
-        Self {
-            r,
-            c: V::default(),
-        }
+        Self { r, c: V::default() }
     }
 }
 
@@ -87,12 +90,14 @@ impl<const N: usize, V: Vector + Default> From<f64> for Sphere<{ N }, V> {
 impl<const N: usize, V: Vector> Convex for Sphere<N, V> {}
 
 /// Redundant in this case, but helps me test the trait bounds
-impl<const N: usize, V: Vector> Shape<N, V> for Sphere<N,V> {
+impl<const N: usize, V: Vector> Shape<N, V> for Sphere<N, V> {
     // type V = Vector;
     fn centroid(&self) -> V {
         self.c
     }
-    fn bounding_sphere(&self) -> Sphere<N, V> { *self }
+    fn bounding_sphere(&self) -> Sphere<N, V> {
+        *self
+    }
 }
 impl<const N: usize, V: Vector> Volume for Sphere<N, V> {
     fn volume(&self) -> f64 {
