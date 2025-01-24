@@ -11,6 +11,7 @@ categories.workspace = true
 
 [dependencies]
 hoomd-vector = { path= "../hoomd-vector" }
+rstest = "0.24.0"
 
 [lints]
 workspace = true
