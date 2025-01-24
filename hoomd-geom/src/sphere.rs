@@ -1,5 +1,5 @@
 use crate::{Convex, Shape, Volume};
-use hoomd_vector::Cartesian;
+use hoomd_vector::{Cartesian, Vector};
 
 use std::f64::consts::PI;
 
@@ -20,14 +20,14 @@ fn double_factorial(n: usize) -> usize {
 
 /// An n-hypersphere ===================================================================
 #[derive(Clone, Copy, Debug)]
-pub struct Sphere<const N: usize> {
+pub struct Sphere<const N: usize, V> where V: Vector + Copy {
     /// Radius of the sphere
     pub r: f64,
     /// Centroid of the sphere
-    pub c: Cartesian<N>,
+    pub c: V,
 }
 
-impl<const N: usize> Default for Sphere<N> {
+impl<const N: usize> Default for Sphere<N, Cartesian<N>> {
     fn default() -> Self {
         Sphere {
             r: 1.0,
@@ -38,7 +38,7 @@ impl<const N: usize> Default for Sphere<N> {
 
 // Const generic params :(
 // impl<const N: usize> From<[f64; N+1]> for Sphere<{N}> {
-impl<const N: usize> From<(f64, [f64; N])> for Sphere<{ N }> {
+impl<const N: usize, V: Vector + From<[f64; N]>> From<(f64, [f64; N])> for Sphere<{ N }, V> {
     /** Construct a [`Sphere`] from 4 values.
 
     The first value is the radius. The 2nd through 4th are the center of mass:
@@ -60,7 +60,7 @@ impl<const N: usize> From<(f64, [f64; N])> for Sphere<{ N }> {
         Self { r, c: c.into() }
     }
 }
-impl<const N: usize> From<f64> for Sphere<{ N }> {
+impl<const N: usize, V: Vector + Default> From<f64> for Sphere<{ N }, V> {
     /** Construct a [`Sphere`] of radius `r` centered at the origin
 
     # Example
@@ -77,24 +77,24 @@ impl<const N: usize> From<f64> for Sphere<{ N }> {
     fn from(r: f64) -> Self {
         Self {
             r,
-            c: Cartesian::<N>::default(),
+            c: V::default(),
         }
     }
 }
 
 // TRAITS
 
-impl<const N: usize> Convex for Sphere<N> {}
+impl<const N: usize, V: Vector> Convex for Sphere<N, V> {}
 
 /// Redundant in this case, but helps me test the trait bounds
-impl<const N: usize> Shape<N> for Sphere<N> {
-    type V = Cartesian<N>;
-    fn centroid(&self) -> Self::V {
+impl<const N: usize, V: Vector> Shape<N, V> for Sphere<N,V> {
+    // type V = Vector;
+    fn centroid(&self) -> V {
         self.c
     }
-    fn bounding_sphere(&self) -> Self { *self }
+    fn bounding_sphere(&self) -> Sphere<N, V> { *self }
 }
-impl<const N: usize> Volume for Sphere<N> {
+impl<const N: usize, V: Vector> Volume for Sphere<N, V> {
     fn volume(&self) -> f64 {
         let dim_factor = (if N.rem_euclid(2) == 0 { N } else { N - 1 } / 2)
             .try_into()

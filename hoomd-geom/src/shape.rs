@@ -22,12 +22,13 @@ pub trait Convex {
     // Can be used to enable Xenocollide or something? provides a nice trait bound
 }
 
-/// A generalization of properties that are well defined for arbitrary shapes.
-pub trait Shape<const N: usize> {
-    /// TODO
-    type V: Vector;
+/** A generalization of properties that are well defined for arbitrary shapes.
+
+This trait requires a dimension `N` and a coordinate system defined by a [`Vector`] `V`.
+*/
+pub trait Shape<const N: usize, V: Vector> {
     /// Center of mass
-    fn centroid(&self) -> Self::V;
+    fn centroid(&self) -> V;
     /// Bounding sphere. Maybe should be part of the Particle trait?
-    fn bounding_sphere(&self) -> Sphere<N>;
+    fn bounding_sphere(&self) -> Sphere<N, V>; // NOT minimal bounding sphere: jsut a small one
 }

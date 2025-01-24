@@ -2,15 +2,15 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use crate::Sphere;
-use hoomd_vector::Vector;
+use hoomd_vector::{Cartesian, Vector};
 // use crate::Shape; // TODO: do we want this as a trait bound on S?
 
 pub trait Intersects<S> {
     fn intersects(&self, other: S) -> bool;
 }
 
-impl<const N: usize> Intersects<Sphere<N>> for Sphere<N> {
-    fn intersects(&self, other: Sphere<N>) -> bool {
+impl<const N: usize> Intersects<Sphere<N, Cartesian<N>>> for Sphere<N, Cartesian<N>> {
+    fn intersects(&self, other: Sphere<N, Cartesian<N>>) -> bool {
         (other.c - self.c).norm_squared() <= (other.r + self.r).powi(2)
     }
 }

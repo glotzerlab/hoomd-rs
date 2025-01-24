@@ -9,14 +9,14 @@ pub mod sphere;
 use crate::intersects::Intersects;
 use crate::shape::{Convex, Shape, Volume};
 use crate::sphere::Sphere;
-// use hoomd_vector::Cartesian;
+use hoomd_vector::Cartesian;
 
 fn main() {
     println!("Hello, world!");
 
     const N: usize = 3;
-    let s = Sphere::<N>::default();
-    let other = Sphere::<N>::from((1.0, [2.0000001, 0.0, 0.0]));
+    let s = Sphere::<N, Cartesian<N>>::default();
+    let other = Sphere::<N, Cartesian<N>>::from((1.0, [2.0000001, 0.0, 0.0]));
 
     println!("{:?}", s);
     println!("{:?}", s.volume());
