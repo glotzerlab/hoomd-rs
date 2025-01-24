@@ -92,6 +92,7 @@ impl<const N: usize> Shape<N> for Sphere<N> {
     fn centroid(&self) -> Self::V {
         self.c
     }
+    fn bounding_sphere(&self) -> Self { *self }
 }
 impl<const N: usize> Volume for Sphere<N> {
     fn volume(&self) -> f64 {

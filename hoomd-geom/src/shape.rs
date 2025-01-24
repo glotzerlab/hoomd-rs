@@ -1,5 +1,6 @@
 /// General traits for shapes
 use hoomd_vector::Vector;
+use crate::sphere::Sphere;
 
 ///
 pub trait Volume {
@@ -8,7 +9,7 @@ pub trait Volume {
     fn volume(&self) -> f64;
 }
 
-///
+/// Bounding trait for structs that are valid simulation particles
 trait Particle {} // In different crate! - should be copyable (array based?)
 
 pub trait Convex {
@@ -27,4 +28,6 @@ pub trait Shape<const N: usize> {
     type V: Vector;
     /// Center of mass
     fn centroid(&self) -> Self::V;
+    /// Bounding sphere. Maybe should be part of the Particle trait?
+    fn bounding_sphere(&self) -> Sphere<N>;
 }
