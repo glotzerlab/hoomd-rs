@@ -3,9 +3,13 @@
 
 pub mod intersects;
 pub mod matrix;
+pub mod shape;
 pub mod simplex;
-use crate::intersects::{Convex, Intersects, Shape, Sphere, Volume};
-use hoomd_vector::Cartesian;
+pub mod sphere;
+use crate::intersects::Intersects;
+use crate::shape::{Convex, Shape, Volume};
+use crate::sphere::Sphere;
+// use hoomd_vector::Cartesian;
 
 fn main() {
     println!("Hello, world!");
