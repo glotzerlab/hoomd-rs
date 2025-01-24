@@ -4,7 +4,7 @@
 pub mod intersects;
 pub mod matrix;
 pub mod simplex;
-use crate::intersects::{Convex, Shape, Sphere, Volume, Intersects};
+use crate::intersects::{Convex, Intersects, Shape, Sphere, Volume};
 use hoomd_vector::Cartesian;
 
 fn main() {
@@ -12,7 +12,7 @@ fn main() {
 
     const N: usize = 3;
     let s = Sphere::<N>::default();
-    let other = Sphere::<N>::from((1.0, [2.0000001,0.0,0.0]));
+    let other = Sphere::<N>::from((1.0, [2.0000001, 0.0, 0.0]));
 
     println!("{:?}", s);
     println!("{:?}", s.volume());

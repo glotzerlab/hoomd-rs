@@ -66,7 +66,7 @@ impl<const N: usize> Default for Sphere<N> {
 
 // Const generic params :(
 // impl<const N: usize> From<[f64; N+1]> for Sphere<{N}> {
-impl<const N: usize> From<(f64, [f64; N])> for Sphere<{N}> {
+impl<const N: usize> From<(f64, [f64; N])> for Sphere<{ N }> {
     /** Construct a [`Sphere`] from 4 values.
 
     The first value is the radius. The 2nd through 4th are the center of mass:
@@ -81,14 +81,14 @@ impl<const N: usize> From<(f64, [f64; N])> for Sphere<{N}> {
     assert_eq!(q.c, [2.0, 3.0, 4.0].into());
     ```
     */
-    
+
     #[inline]
     fn from(value: (f64, [f64; N])) -> Self {
         let (r, c) = value;
         Self { r, c: c.into() }
     }
 }
-impl<const N: usize> From<f64> for Sphere<{N}> {
+impl<const N: usize> From<f64> for Sphere<{ N }> {
     /** Construct a [`Sphere`] of radius `r` centered at the origin
 
     # Example
@@ -100,19 +100,24 @@ impl<const N: usize> From<f64> for Sphere<{N}> {
     assert_eq!(q.c, [0.0, 0.0, 0.0].into());
     ```
     */
-    
+
     #[inline]
     fn from(r: f64) -> Self {
-        Self { r, c: Cartesian::<N>::default() }
+        Self {
+            r,
+            c: Cartesian::<N>::default(),
+        }
     }
 }
 
 impl<const N: usize> Convex for Sphere<N> {}
 
 /// Redundant in this case, but helps me test the trait bounds
-impl<const N: usize> Shape<N> for Sphere<N>{
+impl<const N: usize> Shape<N> for Sphere<N> {
     type V = Cartesian<N>;
-    fn centroid(&self) -> Self::V { self.c }
+    fn centroid(&self) -> Self::V {
+        self.c
+    }
 }
 
 impl<const N: usize> Volume for Sphere<N> {
@@ -128,14 +133,13 @@ impl<const N: usize> Volume for Sphere<N> {
     }
 }
 
-
 // impl<const N: usize> Intersects<Sphere> for Shape<N> {
 //     fn intersects(self, &rhs: Shape) where Shape: Intersects::<Sphere> -> bool {
 //         todo!()
 //     }
 //     // Xeonocollide only needs vertices - prioritize implementing this
 // }// all we need for MC
-pub trait Intersects<S>{
+pub trait Intersects<S> {
     fn intersects(&self, other: S) -> bool;
 }
 
@@ -155,8 +159,8 @@ mod tests {
         r1 => [0.0, 2.0, 99.9],
         c1 => [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [99.9, 0.0, 0.0]],
     )]
-        fn check_intersects(r0: f64, r1: f64, c1:[f64;3]) {
-            let (s0, s1) = (Sphere::<3>::from(r0), Sphere::<3>::from((r1, c1)));
-            assert!(s0.intersects(s1) == (s1.c[0] <= (s0.r + s1.r)))
-        }
+    fn check_intersects(r0: f64, r1: f64, c1: [f64; 3]) {
+        let (s0, s1) = (Sphere::<3>::from(r0), Sphere::<3>::from((r1, c1)));
+        assert!(s0.intersects(s1) == (s1.c[0] <= (s0.r + s1.r)))
+    }
 }
