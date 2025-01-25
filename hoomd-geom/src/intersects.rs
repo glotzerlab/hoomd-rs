@@ -9,13 +9,17 @@ pub trait Intersects<S> {
     fn intersects(&self, other: S) -> bool;
 }
 
+/// Whether a shape is fully bounded by another
+pub trait Contains<S> {
+    fn contains(&self, other: S) -> bool;
+}
+
 impl<const N: usize> Intersects<Sphere<N, Cartesian<N>>> for Sphere<N, Cartesian<N>> {
     fn intersects(&self, other: Sphere<N, Cartesian<N>>) -> bool {
         (other.c - self.c).norm_squared() <= (other.r + self.r).powi(2)
     }
 }
 
-// TODO: refactor into proper filenames
 // TODO: Jen - Xenocollide
 // TODO: Jen - Polyhedron
 // TODO: further tests
@@ -31,7 +35,22 @@ mod tests {
         c1 => [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [99.9, 0.0, 0.0]],
     )]
     fn check_sphere_intersections(r0: f64, r1: f64, c1: [f64; 3]) {
-        let (s0, s1) = (Sphere::<3>::from(r0), Sphere::<3>::from((r1, c1)));
+        let (s0, s1) = (
+            Sphere::<3, Cartesian<3>>::from(r0),
+            Sphere::<3, Cartesian<3>>::from((r1, c1)),
+        );
         assert!(s0.intersects(s1) == (s1.c[0] <= (s0.r + s1.r)))
+    }
+    #[rstest(
+        r0 => [0.0, 0.5, 1.234],
+        r1 => [0.0, 2.0, 99.9],
+        c1 => [[0.0, 0.0], [0.0, 2.0], [0.0, 99.9]],
+    )]
+    fn check_disc_intersections(r0: f64, r1: f64, c1: [f64; 2]) {
+        let (s0, s1) = (
+            Sphere::<2, Cartesian<2>>::from(r0),
+            Sphere::<2, Cartesian<2>>::from((r1, c1)),
+        );
+        assert!(s0.intersects(s1) == (s1.c[1] <= (s0.r + s1.r)))
     }
 }
