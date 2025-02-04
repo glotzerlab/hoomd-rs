@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use crate::Sphere;
-use hoomd_vector::{Cartesian, Vector, Rotate};
+use hoomd_vector::{Cartesian, Rotate, Vector};
 // use crate::Shape; // TODO: do we want this as a trait bound on S?
 
 /**
@@ -19,12 +19,7 @@ Define a position and orientation-dependent intersection between two bodies.
 */
 pub trait IntersectsAt<S, V: Vector, R: Rotate<V>> {
     ///Determine whether a Particle intersects another shape at some position and orientation.
-    fn intersects_at(&self, other:S, r_ij: &V, o_ij: &R) -> bool;
-}
-
-/// Whether a shape is fully bounded by another
-pub trait Contains<S> {
-    fn contains(&self, other: S) -> bool;
+    fn intersects_at(&self, other: S, r_ij: &V, o_ij: &R) -> bool;
 }
 
 impl<const N: usize> Intersects<Sphere<N, Cartesian<N>>> for Sphere<N, Cartesian<N>> {

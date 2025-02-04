@@ -6,31 +6,36 @@ use hoomd_vector::Cartesian;
 use std::iter::zip;
 
 /** An axis-aligned N-cuboid
-
-
 */
 #[derive(Clone, Copy, Debug)]
 pub struct Cuboid<const N: usize> {
+    /// The lengths of each edge of the cuboid.
     pub edge_lengths: Cartesian<N>,
+    /// The center of mass of the Cuboid.
     pub center: Cartesian<N>,
 }
 
 impl Cuboid<3> {
+    /// Length of the `Cuboid` edge along the x axis
     pub fn a(&self) -> f64 {
         self.edge_lengths[0]
     }
+    /// Length of the `Cuboid` edge along the y axis
     pub fn b(&self) -> f64 {
         self.edge_lengths[1]
     }
+    /// Length of the `Cuboid` edge along the z axis
     pub fn c(&self) -> f64 {
         self.edge_lengths[2]
     }
 }
 
 impl<const N: usize> Cuboid<N> {
+    /// Determine the maximal extents of the cuboid along each Cartesian axis.
     pub fn maximal_extents(&self) -> Cartesian<N> {
         self.center + (self.edge_lengths / 2.0)
     }
+    /// Determine the minimal extents of the cuboid along each Cartesian axis.
     pub fn minimal_extents(&self) -> Cartesian<N> {
         self.center - (self.edge_lengths / 2.0)
     }

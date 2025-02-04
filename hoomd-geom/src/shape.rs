@@ -5,7 +5,7 @@ use crate::sphere::Sphere;
 /// General traits for shapes
 use hoomd_vector::Vector;
 
-///
+/// The N-hypervolume of a geometry. In 2D, this is area and in 3D this is Volume.
 pub trait Volume {
     /// The N-hypervolume of a geometry
     #[must_use]
@@ -15,6 +15,10 @@ pub trait Volume {
 /// Bounding trait for structs that are valid simulation particles
 trait Particle {} // In different crate! - should be copyable (array based?)
 
+/**
+Trait bound to assert a shape is convex. This allows additional optimizations in e.g.
+`Intersects` implementations.
+*/
 pub trait Convex {
     /// Whether a shape is convex.
     #[must_use]
