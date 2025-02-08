@@ -10,7 +10,6 @@ use super::Particle;
 */
 struct Point<V> {
     position: V,
-    tag: u32,
 }
 
 impl Particle<V> for Point<V> {

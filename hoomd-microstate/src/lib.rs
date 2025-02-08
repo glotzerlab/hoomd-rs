@@ -17,9 +17,8 @@ pub mod particle;
 
 /** Properties common to all particles.
 
-Every particle in a [`Microstate`] has a position vector and a tag. The
-position vector locates the particle in space. The tag is an integer that
-uniquely identifies this particle in a given [`Microstate`].
+Every particle in a [`Microstate`] has a position vector that locates the
+particle in space.
 
 Every [`Particle`] type must implement [`Copy`] to ensure that it can be
 efficiently copied.
@@ -30,9 +29,6 @@ pub trait Particle<V>: Copy {
 
     /// The position of this particle (mutable).
     fn position_mut(&mut self) -> &mut V;
-
-    /// The tag of this particle.
-    fn tag(&self) -> &u32;
 }
 
 /** Particles that have an orientation.
