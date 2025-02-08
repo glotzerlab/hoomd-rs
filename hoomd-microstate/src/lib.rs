@@ -13,7 +13,7 @@
     TODO: Expand documentation.
  */
 
-use hoomd_vector::{Rotate, Rotation, Vector};
+pub mod particle;
 
 /** Properties common to all particles.
 
@@ -24,7 +24,7 @@ uniquely identifies this particle in a given [`Microstate`].
 Every [`Particle`] type must implement [`Copy`] to ensure that it can be
 efficiently copied.
 */
-pub trait Particle<V: Vector>: Copy {
+pub trait Particle<V>: Copy {
     /// The position of this particle `[length]`.
     fn position(&self) -> &V;
 
@@ -33,9 +33,6 @@ pub trait Particle<V: Vector>: Copy {
 
     /// The tag of this particle.
     fn tag(&self) -> &u32;
-
-    /// The tag of this particle (mutable).
-    fn tag_mut(&mut self) -> &mut u32;
 }
 
 /** Particles that have an orientation.
@@ -45,9 +42,6 @@ local coordinate frame of the [`Particle`] to the global frame of the
 [`Microstate`].
 */
 pub trait Orientable<V, R> : Particle<V>
-where
-V: Vector,
-R: Rotation+Rotate<V>
 {
     /// The orientation of this particle.
     fn orientation(&self) -> &R;

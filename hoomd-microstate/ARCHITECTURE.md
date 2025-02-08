@@ -14,7 +14,7 @@ Specific goals:
 
 * User-provided `Particle` type.
 * User-defined boundary conditions.
-* Iterate over particles.
+* Iterate over particles, possibly with built-in filtering.
 * Access specific particles.
 * Efficient addition/deletion of particles, bonds, angles, dihedrals, etc...
 * Incremental updates of individual particles.
@@ -89,7 +89,11 @@ temperature and pressure. These are emergent parameters that arise from how
 the model evolves the state (e.g. the Metropolis acceptance rule ensures a
 constant temperature). At the time of this writing, it is not clear whether a
 `Macrostate` struct would be helpful in sharing these parameters across model
-instances. That will become clear in time.
+instances. However, MD integration methods DO effectively add new degrees of
+freedom to the microstate through the thermostat and barostat variables.
+TODO: Consider how to account for this? Store them in Microstate? Or keep the
+HOOMD-blue approach of maintaining them in the struct that applies the
+thermostat?
 
 The user-chosen RNG seed, required to ensure that replicate simulations do not
 use the same RNG stream, will also be part of the microstate. It does not fit
@@ -135,7 +139,8 @@ HOOMD-rs will solve this problem by storing ghost particles explicitly. Spatial
 data structures will not need to be aware of the periodic boundary conditions,
 nor will they need to be aligned with the boundaries in any way. This also
 opens up the ability for very complex user-provided boundary conditions.
-It will add some other management costs, but those will be O(N).
+It will add some other management costs, but those can be manged to not
+scale with the number of neighbors..
 
 ## Boundary conditions
 
@@ -143,45 +148,35 @@ TODO
 
 ## Particle storage
 
-TODO: This section is a rough draft. Many of these design decisions depend a lot
-on whether we require a fixed number of ghosts per particle or allow variable
-ghosts. It will take some prototype testing and more thought to determine
-whether fixed all-image ghosts (while simple), are a performance problem.
-
 It is tempting to take the path of choosing a single spatial data structure
 (the cell list) and store particles directly in that structure. However, that
 would make updating ghost particles, finding particles by tag, and other needed
-methods very complex. It would seem that the best approach is the simplest:
-Soring particles in a `Vec` where the first _N_ elements are the particles in
-the primary image and particles with indices greater than or equal to _N_ are
-the ghost particles.
+methods very complex. Microstate will maintain a simple approach and store
+particles in a Vec. 
 
 To allow efficient addition/removal of particles from this structure,
 particles must have a unique `tag` that indicates their ordering in the initial
 state. Removal of a particle at index _i_ would be accomplished by swapping
 particle _N-1_ into the _i_ position (and updating auxiliary data structures
-accordingly). This will leave a gap between the end of the primary image
-particles and the ghost particles. This gap is desirable for particle addition
-as adding a new particle in the gap costs O(1). When there is no gap, insertion
-costs O(N) to regenerate all ghost particles. We can follow the standard trick
-of doubling the gap size to amortize the cost of insertions.
+accordingly). We need to prevent callers from modifying the particle
+tag along with the other attributes. The `Tagged<T>` type will store the
+tag along with the particle. Read only access `tag()` will be public, but
+the field itself will be `pub(crate)` to allow only this crate to set the tag
+field.
 
-One alternative to consider would be to store a separate Vec of ghost particles.
-However, this would require some special handling in spatial data structures.
-They would be cleaner to work on a single Vec. The gap between particles and
-ghosts also adds complications there: TODO: think about this some more. The
-complications in the spatial data structures might be less than the O(n) expense
-of keeping no gap.
+Ghost particles will be stored in a separate `Vec<Option<Tagged<P>>>`. Adding
+a new particle also requires adding its ghosts (to the end of the ghosts Vec).
+Removing a particle will remove all of its ghosts. Ghost removal will operate
+differently than above. Simply **moving** a particle can result in the addition
+or removal of ghosts -- when a particle moves toward or away from a periodic
+boundary. In a cost amortized neighbor list, ghosts may appear as neighbors of
+multiple particles. It would not cost O(1) to remove all those. Instead, we will
+allow removed ghost particles to leave a `None` sentinel at the same index in
+the array to maintain O(1) particle updates with a neighbor list.
 
-Adding a new particle also requires adding its ghosts. Removing a particle will
-remove all of its ghosts. Following the same procedure as above ghost particles
-can also be removed from the `Vec` efficiently. However, we will need to somehow
-maintain a list of ghost indices for each particle in order to enable efficient
-particle updates. Swapping the ghost particles from the end into the middle of
-the array will require that this table is also updated. This is trivial if all
-particles have the same number of ghosts (e.g. 26) but could be more complex if
-we allow for a variable number of ghosts (e.g. only particles within r_cut of
-the boundary). In either case, the cost is O(1).
+Microstate will need to maintain auxiliary data structures to maintain
+O(1) updates, including a mapping from tag to index, and a list of
+ghost particle indices for each particle. 
 
 Removing a particle should also either a) remove all bonds connected to that
 particle or b) produce an error if the particle participates in a bond.
@@ -190,7 +185,22 @@ Incremental updates to particles must also update all of its ghosts and the
 linked spatial data structures. Complete system updates are likely best off
 removing all ghosts/spatial data structures and rebuilding them with the new
 particles. MC will be the primary driver of incremental updates and MD will
-primarily use full system updates, although this is not a strict rule.
+primarily use full system updates, although this is not a strict rule. With
+amortized neighbor lists, these rebuilds will need to be coordinated with the
+spatial data structure.
+
+As of this writing, the spatial data structures have not yet been designed
+for hoomd-rs. It is clear, however, that we would like the design to be
+usable with or without a Microstate. Therefore, spatial data structures
+will likely operate on a set of indexed particle positions. Microstate
+maintains two vectors, one for real particles and one for ghosts. One
+solution (not ideal) would be to use signed indices in the spatial data
+structures, with signed indices for real particles and negative values
+for ghosts. This would not be ideal because it could cause off-by-one
+errors when accessing ghosts (there is no -0 integer). We could
+keep the same idea by using a new type for the index with helper methods
+to decode the index separately from the real/ghost flag (stashed in the
+highest bit of the integer).
 
 ## Rigid bodies
 
@@ -198,3 +208,12 @@ TODO: Consider unifying rigid body representations across MD and MC codes.
 HOOMD-blue uses constituent particles in the microstate and HPMC uses union
 potentials. HOOMD-rs could potentially use constituent particles for both and
 manage rigid bodies directly within `Microstate`.
+
+## Update API methods
+
+TODO: Single particle updates
+
+Full system updates will occur via a method that takes a Fn that operates on a
+mutable slice of particles. In this way, the update function can take steps such
+as reinitializing all ghost particles and rebuilding spatial data structures
+after calling the provided Fn.
