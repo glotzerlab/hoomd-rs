@@ -10,10 +10,13 @@
 
 /*! Store and manage the simulation state.
 
-    TODO: Expand documentation.
- */
+   TODO: Expand documentation.
+*/
 
+mod microstate;
 pub mod particle;
+
+pub use microstate::{Microstate, Particles};
 
 /** Properties common to all particles.
 
@@ -27,7 +30,7 @@ pub trait Particle<V>: Copy {
     /// The position of this particle `[length]`.
     fn position(&self) -> &V;
 
-    /// The position of this particle (mutable).
+    /// The mutable position of this particle `[length]`.
     fn position_mut(&mut self) -> &mut V;
 }
 
@@ -37,12 +40,10 @@ A particle's `orientation` is a rotation that transforms vectors from the
 local coordinate frame of the [`Particle`] to the global frame of the
 [`Microstate`].
 */
-pub trait Orientable<V, R> : Particle<V>
-{
+pub trait Orientable<V, R>: Particle<V> {
     /// The orientation of this particle.
     fn orientation(&self) -> &R;
 
     /// The orientation of this particle (mutable).
     fn orientation_mut(&mut self) -> &mut R;
 }
-

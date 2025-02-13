@@ -6,12 +6,30 @@
 
 use super::Particle;
 
-/** Point 
+/** Point
 */
-struct Point<V> {
+#[derive(Clone, Copy)]
+pub struct Point<V> {
     position: V,
 }
 
-// impl<V> Particle<V> for Point<V> {
+impl<V: Copy> Particle<V> for Point<V> {
+    #[inline]
+    fn position(&self) -> &V {
+        &self.position
+    }
 
-// }
+    #[inline]
+    fn position_mut(&mut self) -> &mut V {
+        &mut self.position
+    }
+}
+
+impl<V: Default> Default for Point<V> {
+    #[inline]
+    fn default() -> Self {
+        Self {
+            position: V::default(),
+        }
+    }
+}

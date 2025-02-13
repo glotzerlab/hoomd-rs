@@ -17,6 +17,7 @@ Specific goals:
 * Iterate over particles, possibly with built-in filtering.
 * Access specific particles.
 * Efficient addition/deletion of particles, bonds, angles, dihedrals, etc...
+* Consider allowing custom topology types.
 * Incremental updates of individual particles.
 * Full system updates of all particles.
 * User-defined additional state data.
