@@ -8,8 +8,8 @@ pub mod shape;
 pub mod simplex;
 pub mod sphere;
 use crate::cuboid::Cuboid;
-use crate::intersects::Intersects;
-use crate::shape::{Convex, Shape, Volume};
+use crate::intersects::{Intersects, IntersectsAt};
+use crate::shape::{Shape, Volume};
 use crate::sphere::Sphere;
 use hoomd_vector::Cartesian;
 
@@ -17,13 +17,12 @@ fn main() {
     println!("Hello, world!");
 
     const N: usize = 3;
-    let s = Sphere::<N, Cartesian<N>>::default();
-    let other = Sphere::<N, Cartesian<N>>::from((1.0, [2.0000001, 0.0, 0.0]));
+    let s = Sphere::<N>::default();
+    let other = Sphere::<N>::from(1.0);
 
     println!("{:?}", s);
     println!("{:?}", s.volume());
-    println!("{:?}", s.centroid());
-    println!("{:?}", s.is_convex());
+    // println!("{:?}", s.centroid());
 
     let aab = Cuboid::<N> {
         edge_lengths: [1.0, 1.0, 1.0].into(),
@@ -37,5 +36,5 @@ fn main() {
     println!("Cuboid intersects {:?}", aab.intersects(aab1));
 
     // println!("{:?}", double_factorial(35));
-    println!("Intersects: {:?}", s.intersects(other));
+    println!("Intersects: {:?}", s.intersects_at(other, &2.01, (&[1.0,0.0,0.0,0.0]).into()));
 }

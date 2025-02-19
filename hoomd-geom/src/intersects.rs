@@ -22,9 +22,9 @@ pub trait IntersectsAt<S, V: Vector, R: Rotate<V>> {
     fn intersects_at(&self, other: S, r_ij: &V, o_ij: &R) -> bool;
 }
 
-impl<const N: usize> Intersects<Sphere<N, Cartesian<N>>> for Sphere<N, Cartesian<N>> {
-    fn intersects(&self, other: Sphere<N, Cartesian<N>>) -> bool {
-        (other.c - self.c).norm_squared() <= (other.r + self.r).powi(2)
+impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Sphere<N>, V, R> for Sphere<N> {
+    fn intersects_at(&self, other: Sphere<N>, r_ij: &V, _o_ij: &R) -> bool {
+        (r_ij).norm_squared() <= (other.r + self.r).powi(2)
     }
 }
 
