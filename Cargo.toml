@@ -1,6 +1,6 @@
 [workspace]
 
-members = [
+members = [ "hoomd-spatial",
   "hoomd-vector"
 ]
 resolver = "2"
