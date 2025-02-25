@@ -23,17 +23,14 @@ fn double_factorial(n: usize) -> usize {
 
 /// An n-hypersphere ===================================================================
 #[derive(Clone, Copy, Debug)]
-pub struct Sphere<const N: usize>
-{
+pub struct Sphere<const N: usize> {
     /// Radius of the sphere
     pub r: f64,
 }
 
 impl<const N: usize> Default for Sphere<N> {
     fn default() -> Self {
-        Sphere {
-            r: 1.0
-        }
+        Sphere { r: 1.0 }
     }
 }
 
@@ -44,9 +41,7 @@ impl<const N: usize> From<f64> for Sphere<N> {
     }
 }
 
-
 // TRAITS
-
 
 /// Redundant in this case, but helps me test the trait bounds
 impl<const N: usize, V: Vector> Shape<N, V> for Sphere<N> {
@@ -62,7 +57,6 @@ impl<const N: usize, V: Vector> Shape<N, V> for Sphere<N> {
 //         vec[self.id]
 //     }
 // }
-
 
 impl<const N: usize> Volume for Sphere<N> {
     fn volume(&self) -> f64 {

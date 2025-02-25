@@ -36,5 +36,8 @@ fn main() {
     println!("Cuboid intersects {:?}", aab.intersects(aab1));
 
     // println!("{:?}", double_factorial(35));
-    println!("Intersects: {:?}", s.intersects_at(other, &2.01, (&[1.0,0.0,0.0,0.0]).into()));
+    println!(
+        "Intersects: {:?}",
+        s.intersects_at(other, &2.01, (&[1.0, 0.0, 0.0, 0.0]).into())
+    );
 }

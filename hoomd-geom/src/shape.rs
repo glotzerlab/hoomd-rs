@@ -7,7 +7,7 @@ use hoomd_vector::Vector;
 
 // CLoneable but not copyable
 // Intersects works on a centered reference to a shape?
-// "Intersects" should take position and orientation as params 
+// "Intersects" should take position and orientation as params
 // Even if Centered/Oriented doesnt work for HPMC, maybe we use something different for that
 
 /// The N-hypervolume of a geometry. In 2D, this is area and in 3D this is Volume.
@@ -22,11 +22,9 @@ pub trait Volume {
 This trait requires a dimension `N` and a coordinate system defined by a [`Vector`] `V`.
 */
 pub trait Shape<const N: usize, V: Vector> {
-    /// Intertia Tensor
+    /// Inertia Tensor
     // fn inertia_tensor(&self) -> Cartesian::<N, Cartesian<N>>;
 
     /// Bounding sphere. Maybe should be part of the Particle trait?
     fn bounding_sphere(&self) -> Sphere<N>; // NOT minimal bounding sphere: just a small one
 }
-
-
