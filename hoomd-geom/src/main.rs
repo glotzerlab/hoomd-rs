@@ -7,11 +7,12 @@ pub mod matrix;
 pub mod shape;
 pub mod simplex;
 pub mod sphere;
+pub mod poly;
 use crate::cuboid::Cuboid;
 use crate::intersects::{Intersects, IntersectsAt};
 use crate::shape::{Shape, Volume};
 use crate::sphere::Sphere;
-use hoomd_vector::Cartesian;
+use hoomd_vector::{Cartesian, Versor, Rotation};
 
 fn main() {
     println!("Hello, world!");
@@ -33,11 +34,11 @@ fn main() {
         center: [9.0; 3].into(),
     };
     println!("{:?}: {},{},{}", aab, aab.a(), aab.b(), aab.c());
-    println!("Cuboid intersects {:?}", aab.intersects(aab1));
+    // println!("Cuboid intersects {:?}", aab.intersects(aab1));
 
     // println!("{:?}", double_factorial(35));
     println!(
         "Intersects: {:?}",
-        s.intersects_at(other, &2.01, (&[1.0, 0.0, 0.0, 0.0]).into())
+        s.intersects_at(&other, &(Cartesian::from([2.01, 0.0, 0.0])), &Versor::identity())
     );
 }

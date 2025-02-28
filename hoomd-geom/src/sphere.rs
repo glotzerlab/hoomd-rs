@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use crate::{Shape, Volume};
-use hoomd_vector::{Cartesian, Vector};
+use hoomd_vector::{Vector};
 
 use std::f64::consts::PI;
 
@@ -43,9 +43,8 @@ impl<const N: usize> From<f64> for Sphere<N> {
 
 // TRAITS
 
-/// Redundant in this case, but helps me test the trait bounds
 impl<const N: usize, V: Vector> Shape<N, V> for Sphere<N> {
-    // type V = Vector;
+    fn euler_characteristic(&self) -> i32 { 2 }
     fn bounding_sphere(&self) -> Sphere<N> {
         *self
     }

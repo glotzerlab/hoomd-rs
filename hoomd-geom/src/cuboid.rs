@@ -1,8 +1,10 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use crate::intersects::Intersects;
+use crate::intersects::{IntersectsAt};
+use crate::sphere::Sphere;
 use hoomd_vector::Cartesian;
+use hoomd_vector::{Vector, Rotate};
 use std::iter::zip;
 
 /** An axis-aligned N-cuboid
@@ -41,20 +43,17 @@ impl<const N: usize> Cuboid<N> {
     }
 }
 
-impl<const N: usize> Intersects<Cuboid<N>> for Cuboid<N> {
+// impl<const N: usize, V: Vector, R: Rotate<V>, S> IntersectsAt<S, V, R> for Cuboid<N> {
+//     // TODO: wip, these conditions are not the correct checks.
+//     type S = Self;
+//     fn intersects_at(&self, other: &S, r_ij: &V, o_ij: &R) -> bool {
+//         todo!()
+//     }
+// }
+impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Sphere<N>, V, R> for Cuboid<N> {
     // TODO: wip, these conditions are not the correct checks.
-    fn intersects(&self, other: Self) -> bool {
-        let (self_max, other_min) = (self.maximal_extents(), other.minimal_extents());
-        let (self_min, other_max) = (self.minimal_extents(), other.maximal_extents());
-        let temp0 =
-            zip(self_max.coordinates.iter(), other_min.coordinates.iter()).any(|(x, y)| x > y);
-        let temp1 =
-            zip(self_min.coordinates.iter(), other_max.coordinates.iter()).any(|(x, y)| x > y);
-
-        // println!("temp: {:?}, {:?}", temp0, temp1);
-        // println!("selfmax: {}", self_max);
-        // println!("othermin: {}", other_min);
-        temp0 && temp1
+    fn intersects_at(&self, other: &Sphere<N>, r_ij: &V, o_ij: &R) -> bool {
+        todo!()
     }
 }
 
