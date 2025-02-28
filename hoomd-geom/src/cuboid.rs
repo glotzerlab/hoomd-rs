@@ -1,10 +1,10 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use crate::intersects::{IntersectsAt};
+use crate::intersects::IntersectsAt;
 use crate::sphere::Sphere;
 use hoomd_vector::Cartesian;
-use hoomd_vector::{Vector, Rotate};
+use hoomd_vector::{Rotate, Vector};
 use std::iter::zip;
 
 /** An axis-aligned N-cuboid

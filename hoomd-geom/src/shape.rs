@@ -3,7 +3,7 @@
 
 use crate::sphere::Sphere;
 /// General traits for shapes
-use hoomd_vector::{Rotate, Vector, Cartesian};
+use hoomd_vector::{Cartesian, Rotate, Vector};
 
 // Cloneable but not copyable
 // Intersects works on a centered reference to a shape?
@@ -33,7 +33,7 @@ pub trait Shape<const N: usize, V: Vector> {
 
     /// Bounding sphere. Maybe should be part of the Particle trait?
     fn bounding_sphere(&self) -> Sphere<N>; // NOT minimal bounding sphere: just a small one
-    // NOTE: HPMC will often access the (centered) bounding sphere - should be cached?
+                                            // NOTE: HPMC will often access the (centered) bounding sphere - should be cached?
 
     // fn is_inside(&self, v: V) -> bool;
 }
