@@ -11,7 +11,6 @@ pub struct ConvexPolytope<const N: usize> {
     // minimal_centered_bounding_sphere_radius: f64,
 }
 
-
 /**
 Calculate the intersection between two convex polygons in cartesian coordinates.
 */

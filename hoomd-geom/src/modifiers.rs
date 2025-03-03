@@ -1,12 +1,12 @@
-use hoomd_vector::{Cartesian, Quaternion};
-use crate::{Intersects, IntersectsAt};
-
 /*!
 Modifier structs to provide additional information via encapsulation.
 
 [`Sphero`] rounds a geometry with some radius, and [`Centered`] provides a notion of the
 origin of a particular shape.
 */
+
+use crate::{Intersects, IntersectsAt};
+use hoomd_vector::{Cartesian, Quaternion};
 
 /**
 Round a `Shape` with some radius.
@@ -29,7 +29,6 @@ pub struct Centered<S, const N: usize> {
     pub centroid: Cartesian<N>,
 }
 
-
 // impl<B, S> Intersects<S> for Centered<B> where B: Intersects<S> {
-  
+
 // }

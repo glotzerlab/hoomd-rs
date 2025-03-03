@@ -4,11 +4,6 @@ use crate::{Shape, Volume};
 use hoomd_vector::Vector;
 use std::f64::consts::PI;
 
-/*!
-An N-hypersphere
-*/
-
-
 /// The (single, double, ...)-factorial function
 fn factorial(n: usize, ntuple: usize) -> usize {
     assert!(ntuple > 0);

@@ -39,7 +39,7 @@ impl<const N: usize> Cuboid<N> {
     }
     /// Determine the minimal extents of the cuboid along each Cartesian axis.
     pub fn minimal_extents(&self) -> Cartesian<N> {
-        - self.edge_lengths / 2.0
+        -self.edge_lengths / 2.0
     }
 }
 

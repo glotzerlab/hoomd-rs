@@ -4,8 +4,8 @@
 pub mod cuboid;
 pub mod intersects;
 pub mod matrix;
-pub mod poly;
 pub mod modifiers;
+pub mod poly;
 pub mod shape;
 pub mod simplex;
 pub mod sphere;
