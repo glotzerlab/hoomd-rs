@@ -35,21 +35,21 @@ impl Cuboid<3> {
 impl<const N: usize> Cuboid<N> {
     /// Determine the maximal extents of the cuboid along each Cartesian axis.
     pub fn maximal_extents(&self) -> Cartesian<N> {
-        self.center + (self.edge_lengths / 2.0)
+        self.edge_lengths / 2.0
     }
     /// Determine the minimal extents of the cuboid along each Cartesian axis.
     pub fn minimal_extents(&self) -> Cartesian<N> {
-        self.center - (self.edge_lengths / 2.0)
+        - self.edge_lengths / 2.0
     }
 }
 
-// impl<const N: usize, V: Vector, R: Rotate<V>, S> IntersectsAt<S, V, R> for Cuboid<N> {
-//     // TODO: wip, these conditions are not the correct checks.
-//     type S = Self;
-//     fn intersects_at(&self, other: &S, r_ij: &V, o_ij: &R) -> bool {
-//         todo!()
-//     }
-// }
+impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Cuboid<N>, V, R> for Cuboid<N> {
+    // TODO: wip, these conditions are not the correct checks.
+    fn intersects_at(&self, other: &Cuboid<N>, r_ij: &V, o_ij: &R) -> bool {
+        // self.minimal_extents <= (r_ij + other.maximal_extents)
+        todo!()
+    }
+}
 impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Sphere<N>, V, R> for Cuboid<N> {
     // TODO: wip, these conditions are not the correct checks.
     fn intersects_at(&self, other: &Sphere<N>, r_ij: &V, o_ij: &R) -> bool {

@@ -2,23 +2,15 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use crate::sphere::Sphere;
-/// General traits for shapes
 use hoomd_vector::{Cartesian, Rotate, Vector};
 
-// Cloneable but not copyable
-// Intersects works on a centered reference to a shape?
-// "Intersects" should take position and orientation as params
-// Even if Centered/Oriented doesnt work for HPMC, maybe we use something different for that
+/// General traits for [`Shape`]s.
 
 /// The N-hypervolume of a geometry. In 2D, this is area and in 3D this is Volume.
 pub trait Volume {
     /// The N-hypervolume of a geometry
     #[must_use]
     fn volume(&self) -> f64;
-
-    // /// The (N-1)-hypervolume of a geometry
-    // #[must_use]
-    // fn surface_area(&self) -> f64;
 }
 
 /** A generalization of properties that are well defined for arbitrary shapes.
@@ -42,13 +34,16 @@ pub trait Shape<const N: usize, V: Vector> {
 Definitions of the minimum distance between two `Shape`s. Will be zero if points are on
 a boundary (within floating-point precision) and negative if the shapes are overlapping.
 
-TODO: is it possible to have this return an intersection "depth"?
 */
 pub trait MinDistance<const N: usize, V: Vector, R: Rotate<V>, S: Shape<N, V>> {
     /// Minimum distance between two `Shape`s in `N` dimensions
     fn min_distance(&self, other: &S, v_ij: &V, o_ij: R) -> f64;
 }
 
-pub trait SupportFn<const N: usize> {
-    fn support(&self) -> Cartesian<N>;
+/**
+The support function of a geometry.
+*/
+pub trait SupportFn {
+    /// Distances from the origin to each supporting hyperplane.
+    fn support(&self) -> Vec<f64>;
 }

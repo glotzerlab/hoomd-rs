@@ -10,14 +10,7 @@ pub struct ConvexPolytope<const N: usize> {
     // rounding_radius: f64,
     // minimal_centered_bounding_sphere_radius: f64,
 }
-pub struct Sphero<S> {
-    pub shape: S,
-    pub rounding_radius: f64,
-}
 
-// impl ConvexPolytope<N> {
-//   pub fn support_fn(&self)
-// }
 
 /**
 Calculate the intersection between two convex polygons in cartesian coordinates.
