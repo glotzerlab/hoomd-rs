@@ -10,16 +10,9 @@ fn factorial(n: usize, ntuple: usize) -> usize {
     if n == 0 {
         1
     } else {
-        (1..=n).reduce(|acc, x| acc * x).unwrap()
+        (1..=n).step_by(ntuple).reduce(|acc, x| acc * x).unwrap()
     }
 }
-// fn double_factorial(n: usize) -> usize {
-//     if n == 0 {
-//         1
-//     } else {
-//         (1..=n).step_by(2).reduce(|acc, x| acc * x).unwrap()
-//     }
-// }
 
 /// An n-hypersphere ===================================================================
 #[derive(Clone, Copy, Debug)]
@@ -44,20 +37,11 @@ impl<const N: usize> From<f64> for Sphere<N> {
 // TRAITS
 
 impl<const N: usize, V: Vector> Shape<N, V> for Sphere<N> {
-    fn euler_characteristic(&self) -> i32 {
-        2
-    }
     fn bounding_sphere(&self) -> Sphere<N> {
         *self
     }
 }
 
-// impl<const N: usize, V: Vector> Particle<N, V> for Sphere<N, V> {
-//     fn position(self, vec: Vec<V>) -> V {
-//         // "Extrinsic" position of the shape - doesn't have to be the center of mass
-//         vec[self.id]
-//     }
-// }
 
 impl<const N: usize> Volume for Sphere<N> {
     fn volume(&self) -> f64 {
@@ -70,4 +54,47 @@ impl<const N: usize> Volume for Sphere<N> {
             2.0 * (2.0 * PI).powi(dim_factor) / (factorial(N, 2) as f64)
         } // TODO: replace with std::f64::gamma when its in main
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::*;
+    use approx::assert_relative_eq;
+    use paste::paste;
+
+    fn volume_map(N: usize) -> f64 {
+        match N {
+            0 => 1.0,
+            1 => 2.0,
+            2 => PI,
+            3 => 4.0 / 3.0 * PI,
+            4 => PI.powi(2) / 2.0,
+            5 => 8.0 * PI.powi(2) / 15.0,
+            _ => unreachable!(),
+        }
+    }
+    // Parameterize a test function over an array of vector lengths
+    macro_rules! parameterize_vector_length {
+        ($test_body:ident, [$($dim:expr),*]) => {
+            $(
+                paste! {
+                    #[test]
+                    fn [< $test_body "_" $dim>]() {
+                        const DIM: usize = $dim;
+                        $test_body::<DIM>();
+                    }
+                }
+            )*
+        };
+    }
+    
+    fn volume_and_radius<const N: usize>() {
+        let s = Sphere::<N>::default();
+        assert_eq!(s.r, 1.0);
+        let ans = volume_map(N);
+        assert_relative_eq!(s.volume(), ans)
+    }
+    parameterize_vector_length!(volume_and_radius, [0, 1, 2, 3, 4, 5]);
+
 }

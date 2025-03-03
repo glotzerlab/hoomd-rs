@@ -13,11 +13,12 @@ some cases.
 
 ```
 use hoomd_geom::{Sphere, IntersectsAt};
+use hoomd_vector::Versor;
 
-let s0 = Sphere::from(1.0);
-let s1 = Sphere::from(1.0);
+let s0 = Sphere::<3>::from(1.0);
+let s1 = Sphere::<3>::from(1.0);
 
-assert!(s0.intersects_at(&s1, &[1.0, 0.0, 0.0].into(), &Versor::identity()))
+assert!(s0.intersects_at(&s1, &[1.0, 0.0, 0.0].into(), &Versor::default()))
 
 ```
 */
@@ -49,37 +50,9 @@ impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Sphere<N>, V, R> for 
     }
 }
 
-// TODO: Jen - Xenocollide
-// TODO: Jen - Polyhedron
-// TODO: further tests
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use rstest::*;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rstest::*;
-
-    #[rstest(
-        r0 => [0.0, 0.5, 1.234],
-        r1 => [0.0, 2.0, 99.9],
-        c1 => [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [99.9, 0.0, 0.0]],
-    )]
-    fn check_sphere_intersections(r0: f64, r1: f64, c1: [f64; 3]) {
-        let (s0, s1) = (
-            Sphere::<3, Cartesian<3>>::from(r0),
-            Sphere::<3, Cartesian<3>>::from((r1, c1)),
-        );
-        assert!(s0.intersects(s1) == (s1.c[0] <= (s0.r + s1.r)))
-    }
-    #[rstest(
-        r0 => [0.0, 0.5, 1.234],
-        r1 => [0.0, 2.0, 99.9],
-        c1 => [[0.0, 0.0], [0.0, 2.0], [0.0, 99.9]],
-    )]
-    fn check_disc_intersections(r0: f64, r1: f64, c1: [f64; 2]) {
-        let (s0, s1) = (
-            Sphere::<2, Cartesian<2>>::from(r0),
-            Sphere::<2, Cartesian<2>>::from((r1, c1)),
-        );
-        assert!(s0.intersects(s1) == (s1.c[1] <= (s0.r + s1.r)))
-    }
-}
+// }

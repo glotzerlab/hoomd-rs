@@ -18,8 +18,6 @@ pub trait Volume {
 This trait requires a dimension `N` and a coordinate system defined by a [`Vector`] `V`.
 */
 pub trait Shape<const N: usize, V: Vector> {
-    /// The Euler Characteristic of the `Shape`
-    fn euler_characteristic(&self) -> i32;
     /// Inertia Tensor
     // fn inertia_tensor(&self) -> Cartesian::<N, Cartesian<N>>;
 

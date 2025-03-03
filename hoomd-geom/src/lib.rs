@@ -1,4 +1,3 @@
-
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
@@ -9,28 +8,34 @@
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
 
-/*! Vector and quaternion math.
+/*! General, performant computational geometry code.
 
-`hoomd_vector` implements vector math types and operations used in scientific
-computations, specifically those used in the HOOMD molecular simulation software
-suite. Its API is firmly rooted in mathematical principles. Users in
-other fields may find `hoomd_vector` useful outside the context of `HOOMD`.
+`hoomd_geom` implements common operations for widely-used geometric primitives, with
+additional functionality to accomodate hard-particle Monte Carlo simulations.
 
-## Vectors
+## Geometric Primitives
 
-The [`Vector`] trait describes any type that is a member of a normed vector
-space. Write code with a [`Vector`] trait bound when you can express the
-computation with vector arithmetic and dot products. Your generic code can
-then be invoked on vector types with any dimension or representation (e.g.
-spherical coordinates).
+The [`Sphere`] is an excellent example of the design philosophy of `hoomd_geom`. The
+struct is initialized from a single radius value, and immediately provides access to
+a variety of methods. [`Sphere`]s are well defined in arbitrary dimension, and therefore
+are parameterized with a const generic `N` representing the embedding dimension.
 
 ```
-use hoomd_vector::Vector;
+use hoomd_geom::{Sphere, Volume, IntersectsAt};
+use approx::assert_relative_eq;
+use std::f64::consts::PI;
 
-fn some_function<V: Vector>(a: &V, b: &V) -> f64 {
-    a.dot(b) / (a.norm_squared())
-}
+const N: usize = 3;
+let s = Sphere::<N>::from(1.0);
+assert_relative_eq!(s.volume(), (4.0/3.0 * PI));
 ```
+
+
+
+## Struct Modifiers
+
+## Traits
+
 */
 mod sphere;
 mod cuboid;
