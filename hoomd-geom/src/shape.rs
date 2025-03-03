@@ -17,7 +17,7 @@ pub trait Volume {
 
 This trait requires a dimension `N` and a coordinate system defined by a [`Vector`] `V`.
 */
-pub trait Shape<const N: usize, V: Vector> {
+pub trait Shape<const N: usize> {
     /// Inertia Tensor
     // fn inertia_tensor(&self) -> Cartesian::<N, Cartesian<N>>;
 
@@ -33,7 +33,7 @@ Definitions of the minimum distance between two `Shape`s. Will be zero if points
 a boundary (within floating-point precision) and negative if the shapes are overlapping.
 
 */
-pub trait MinDistance<const N: usize, V: Vector, R: Rotate<V>, S: Shape<N, V>> {
+pub trait MinDistance<const N: usize, V: Vector, R: Rotate<V>, S: Shape<N>> {
     /// Minimum distance between two `Shape`s in `N` dimensions
     fn min_distance(&self, other: &S, v_ij: &V, o_ij: R) -> f64;
 }

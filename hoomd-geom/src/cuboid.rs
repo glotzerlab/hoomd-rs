@@ -5,7 +5,6 @@ use crate::intersects::IntersectsAt;
 use crate::sphere::Sphere;
 use hoomd_vector::Cartesian;
 use hoomd_vector::{Rotate, Vector};
-use std::iter::zip;
 
 /** An axis-aligned N-cuboid
 */

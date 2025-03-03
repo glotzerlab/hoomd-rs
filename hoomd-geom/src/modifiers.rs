@@ -5,8 +5,7 @@ Modifier structs to provide additional information via encapsulation.
 origin of a particular shape.
 */
 
-use crate::{Intersects, IntersectsAt};
-use hoomd_vector::{Cartesian, Quaternion};
+use hoomd_vector::Cartesian;
 
 /**
 Round a `Shape` with some radius.

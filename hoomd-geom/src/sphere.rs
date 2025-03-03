@@ -15,7 +15,7 @@ fn factorial(n: usize, ntuple: usize) -> usize {
 }
 
 /// An n-hypersphere ===================================================================
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Sphere<const N: usize> {
     /// Radius of the sphere
     pub r: f64,
@@ -36,7 +36,7 @@ impl<const N: usize> From<f64> for Sphere<N> {
 
 // TRAITS
 
-impl<const N: usize, V: Vector> Shape<N, V> for Sphere<N> {
+impl<const N: usize> Shape<N> for Sphere<N> {
     fn bounding_sphere(&self) -> Sphere<N> {
         *self
     }
@@ -91,8 +91,13 @@ mod tests {
     fn volume_and_radius<const N: usize>() {
         let s = Sphere::<N>::default();
         assert_eq!(s.r, 1.0);
-        let ans = volume_map(N);
-        assert_relative_eq!(s.volume(), ans)
+        assert_relative_eq!(s.volume(), volume_map(N))
     }
     parameterize_vector_length!(volume_and_radius, [0, 1, 2, 3, 4, 5]);
+
+    fn bounding_sphere<const N: usize>() {
+        let s = Sphere::<N>::default();
+        assert_eq!(s, s.bounding_sphere());
+    }
+    parameterize_vector_length!(bounding_sphere, [0, 1, 2, 3, 4, 5]);
 }
