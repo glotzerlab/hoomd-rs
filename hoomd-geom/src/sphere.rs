@@ -42,7 +42,6 @@ impl<const N: usize, V: Vector> Shape<N, V> for Sphere<N> {
     }
 }
 
-
 impl<const N: usize> Volume for Sphere<N> {
     fn volume(&self) -> f64 {
         let dim_factor = (if N.rem_euclid(2) == 0 { N } else { N - 1 } / 2)
@@ -59,9 +58,9 @@ impl<const N: usize> Volume for Sphere<N> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rstest::*;
     use approx::assert_relative_eq;
     use paste::paste;
+    use rstest::*;
 
     fn volume_map(N: usize) -> f64 {
         match N {
@@ -88,7 +87,7 @@ mod tests {
             )*
         };
     }
-    
+
     fn volume_and_radius<const N: usize>() {
         let s = Sphere::<N>::default();
         assert_eq!(s.r, 1.0);
@@ -96,5 +95,4 @@ mod tests {
         assert_relative_eq!(s.volume(), ans)
     }
     parameterize_vector_length!(volume_and_radius, [0, 1, 2, 3, 4, 5]);
-
 }

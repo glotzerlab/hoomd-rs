@@ -37,16 +37,15 @@ assert_relative_eq!(s.volume(), (4.0/3.0 * PI));
 ## Traits
 
 */
-mod sphere;
 mod cuboid;
 mod intersects;
-mod shape;
 pub mod modifiers;
+mod shape;
+mod sphere;
 
 pub use {
-    sphere::Sphere,
     cuboid::Cuboid,
     intersects::{Intersects, IntersectsAt},
-    shape::{Volume, SupportFn, Shape, MinDistance} 
+    shape::{MinDistance, Shape, SupportFn, Volume},
+    sphere::Sphere,
 };
-
