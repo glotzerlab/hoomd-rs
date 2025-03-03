@@ -89,8 +89,9 @@ mod tests {
     }
 
     fn volume_and_radius<const N: usize>() {
-        let s = Sphere::<N>::default();
+        let s = Sphere::<N>::from(1.0);
         assert_eq!(s.r, 1.0);
+        assert_eq!(s, Sphere::<N>::default());
         assert_relative_eq!(s.volume(), volume_map(N))
     }
     parameterize_vector_length!(volume_and_radius, [0, 1, 2, 3, 4, 5]);
