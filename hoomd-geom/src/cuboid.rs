@@ -4,8 +4,8 @@
 use crate::intersects::IntersectsAt;
 use hoomd_vector::Cartesian;
 use hoomd_vector::{Rotate, Rotation};
-use std::cmp::PartialEq;
 use itertools::multizip;
+use std::cmp::PartialEq;
 
 /** An axis-aligned N-cuboid
 */
@@ -31,10 +31,16 @@ impl Cuboid<3> {
 }
 
 impl<const N: usize> From<[f64; N]> for Cuboid<N> {
-    fn from(edge_lengths: [f64; N]) -> Cuboid<N> { Cuboid { edge_lengths: edge_lengths.into() } }
+    fn from(edge_lengths: [f64; N]) -> Cuboid<N> {
+        Cuboid {
+            edge_lengths: edge_lengths.into(),
+        }
+    }
 }
 impl<const N: usize> From<Cartesian<N>> for Cuboid<N> {
-    fn from(edge_lengths: Cartesian<N>) -> Cuboid<N> { Cuboid { edge_lengths } }
+    fn from(edge_lengths: Cartesian<N>) -> Cuboid<N> {
+        Cuboid { edge_lengths }
+    }
 }
 
 impl<const N: usize> Cuboid<N> {
@@ -48,7 +54,9 @@ impl<const N: usize> Cuboid<N> {
     }
 }
 
-impl<const N: usize, R: Rotate<Cartesian<N>> + Rotation + PartialEq> IntersectsAt<Cuboid<N>, Cartesian<N>, R> for Cuboid<N> {
+impl<const N: usize, R: Rotate<Cartesian<N>> + Rotation + PartialEq>
+    IntersectsAt<Cuboid<N>, Cartesian<N>, R> for Cuboid<N>
+{
     // TODO: Should o_ij be an Option?
     /**
     Determine the intersection between two axis-aligned cuboids.
@@ -59,32 +67,29 @@ impl<const N: usize, R: Rotate<Cartesian<N>> + Rotation + PartialEq> IntersectsA
         println!("{}", r_ij <= &Cartesian::<N>::from([0.0; N]));
         let other_mins = other.minimal_extents() + *r_ij;
         let other_maxs = other.maximal_extents() + *r_ij;
-        for (l_min, o_max, o_min, l_max) in multizip(
-            (
-                self.minimal_extents(),
-                other_maxs,
-                self.maximal_extents(),
-                other_mins,
-            )
-        ) {
+        for (l_min, o_max, o_min, l_max) in multizip((
+            self.minimal_extents(),
+            other_maxs,
+            self.maximal_extents(),
+            other_mins,
+        )) {
             println!("{} <= {}, {} >= {}", l_min, o_max, o_min, l_max)
         }
-        multizip(
-            (
-                self.minimal_extents(),
-                other_maxs,
-                self.maximal_extents(),
-                other_mins,
-            )
-        ).all(|(l_min, o_max, l_max, o_min)| (l_min <= o_max) && (l_max >= o_min))
+        multizip((
+            self.minimal_extents(),
+            other_maxs,
+            self.maximal_extents(),
+            other_mins,
+        ))
+        .all(|(l_min, o_max, l_max, o_min)| (l_min <= o_max) && (l_max >= o_min))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rstest::*;
     use hoomd_vector::Versor;
+    use rstest::*;
 
     #[rstest(
         edges0 => [[2.0, 2.0, 2.0]],

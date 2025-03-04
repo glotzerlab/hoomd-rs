@@ -70,7 +70,7 @@ mod sphere;
 pub use {
     cuboid::Cuboid,
     intersects::{Intersects, IntersectsAt},
-    shape::{MinDistance, Shape, SupportFn, Volume},
     modifiers::{Centered, Sphero},
+    shape::{MinDistance, Shape, SupportFn, Volume},
     sphere::Sphere,
 };
