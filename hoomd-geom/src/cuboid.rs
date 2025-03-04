@@ -2,9 +2,8 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use crate::intersects::IntersectsAt;
-use crate::sphere::Sphere;
 use hoomd_vector::Cartesian;
-use hoomd_vector::{Rotate, Vector};
+use hoomd_vector::{Rotate};
 
 /** An axis-aligned N-cuboid
 */
@@ -12,8 +11,6 @@ use hoomd_vector::{Rotate, Vector};
 pub struct Cuboid<const N: usize> {
     /// The lengths of each edge of the cuboid.
     pub edge_lengths: Cartesian<N>,
-    /// The center of mass of the Cuboid.
-    pub center: Cartesian<N>,
 }
 
 impl Cuboid<3> {
@@ -31,6 +28,13 @@ impl Cuboid<3> {
     }
 }
 
+impl<const N: usize> From<[f64; N]> for Cuboid<N> {
+    fn from(edge_lengths: [f64; N]) -> Cuboid<N> { Cuboid { edge_lengths: edge_lengths.into() } }
+}
+impl<const N: usize> From<Cartesian<N>> for Cuboid<N> {
+    fn from(edge_lengths: Cartesian<N>) -> Cuboid<N> { Cuboid { edge_lengths } }
+}
+
 impl<const N: usize> Cuboid<N> {
     /// Determine the maximal extents of the cuboid along each Cartesian axis.
     pub fn maximal_extents(&self) -> Cartesian<N> {
@@ -42,16 +46,16 @@ impl<const N: usize> Cuboid<N> {
     }
 }
 
-impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Cuboid<N>, V, R> for Cuboid<N> {
+impl<const N: usize, R: Rotate<Cartesian<N>>> IntersectsAt<Cuboid<N>, Cartesian<N>, R> for Cuboid<N> {
     // TODO: wip, these conditions are not the correct checks.
-    fn intersects_at(&self, other: &Cuboid<N>, r_ij: &V, o_ij: &R) -> bool {
-        // self.minimal_extents <= (r_ij + other.maximal_extents)
-        todo!()
-    }
-}
-impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Sphere<N>, V, R> for Cuboid<N> {
-    // TODO: wip, these conditions are not the correct checks.
-    fn intersects_at(&self, other: &Sphere<N>, r_ij: &V, o_ij: &R) -> bool {
+    fn intersects_at(&self, other: &Cuboid<N>, r_ij: &Cartesian<N>, o_ij: &R) -> bool {
+        // TODO: how can we assert that o_ij does not rotate the vector?
+        println!("{}", r_ij <= &Cartesian::<N>::from([0.0; N]));
+        // let it = self.minimal_extents() <= (*r_ij + other.maximal_extents()).into_iter().zip( 
+        //     self.maximal_extents() <= (*r_ij + other.minimal_extents())
+        // );
+        // println!("{:?}", it);
+        true
         todo!()
     }
 }

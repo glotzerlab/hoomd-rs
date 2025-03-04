@@ -28,6 +28,17 @@ pub struct Centered<S, const N: usize> {
     pub centroid: Cartesian<N>,
 }
 
+impl<S, const N: usize> From<(S, [f64; N])> for Centered<S, N> {
+    fn from(input: (S, [f64; N])) -> Centered<S, N> {
+        Centered {shape: input.0, centroid: input.1.into()}
+    }
+}
+impl<S, const N: usize> From<(S, Cartesian<N>)> for Centered<S, N> {
+    fn from(input: (S, Cartesian<N>)) -> Centered<S, N> {
+        Centered {shape: input.0, centroid: input.1}
+    }
+}
+
 // impl<B, S> Intersects<S> for Centered<B> where B: Intersects<S> {
 
 // }

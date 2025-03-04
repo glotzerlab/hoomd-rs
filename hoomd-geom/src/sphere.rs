@@ -1,7 +1,6 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 use crate::{Shape, Volume};
-use hoomd_vector::Vector;
 use std::f64::consts::PI;
 
 /// The (single, double, ...)-factorial function

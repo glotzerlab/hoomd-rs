@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use crate::sphere::Sphere;
-use hoomd_vector::{Cartesian, Rotate, Vector};
+use hoomd_vector::{Rotate, Vector};
 
 /// General traits for [`Shape`]s.
 

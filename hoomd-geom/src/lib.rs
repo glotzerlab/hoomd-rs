@@ -30,11 +30,35 @@ let s = Sphere::<N>::from(1.0);
 assert_relative_eq!(s.volume(), (4.0/3.0 * PI));
 ```
 
+Common properties are implemented in the [`Shape`] trait, which provides the `Volume`
+compute from the previous example. [`Shape`] also implements `bounding_sphere`, which
+represents a tight-fitting (but not necessarily minimal) bounding sphere. For a sphere,
+of course, this implementation is trivial.
 
+In general, the [`Shape`] trait is designed to include commonly-used methods that are
+relatively easy to implement for arbitrary shapes. More complicated properties are
+included in additional methods, including [`IntersectsAt`], [`MinDistance`], and
+[`SupportFn`].
 
-## Struct Modifiers
+Note that the `Sphere` struct in the previous example is defined solely by a radius. To
+maximize generality, no `Shape`s should explicitly store the center of mass. This allows
+shared utility between HPMC and pure computational geometry applications without wasted
+memory.
 
-## Traits
+For cases where an explicit centroid is required, consider the [`Centered`] struct. This
+-- and the [`Sphero`] struct -- provide extensions to a core shape definition through
+encapsulation.
+
+```
+use hoomd_geom::{Cuboid, Centered, IntersectsAt};
+use std::f64::consts::PI;
+
+let centered_cuboid = Centered::from(
+    (Cuboid::from([1.0, 2.0, 3.0]), [0.0, 0.0, 0.0])
+);
+
+assert_eq!(centered_cuboid.centroid, [0.0; 3].into());
+```
 
 */
 mod cuboid;
@@ -47,5 +71,6 @@ pub use {
     cuboid::Cuboid,
     intersects::{Intersects, IntersectsAt},
     shape::{MinDistance, Shape, SupportFn, Volume},
+    modifiers::{Centered, Sphero},
     sphere::Sphere,
 };
