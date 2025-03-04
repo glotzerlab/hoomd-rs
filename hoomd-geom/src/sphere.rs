@@ -59,10 +59,9 @@ mod tests {
     use super::*;
     use approx::assert_relative_eq;
     use paste::paste;
-    use rstest::*;
 
-    fn volume_map(N: usize) -> f64 {
-        match N {
+    fn volume_map(n: usize) -> f64 {
+        match n {
             0 => 1.0,
             1 => 2.0,
             2 => PI,

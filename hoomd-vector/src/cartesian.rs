@@ -109,6 +109,15 @@ impl<const N: usize> From<[f64; N]> for Cartesian<N> {
     }
 }
 
+impl<const N: usize> IntoIterator for Cartesian<N>
+{
+    type Item = f64;
+    type IntoIter = <[f64; N] as IntoIterator>::IntoIter;
+    fn into_iter(self) -> Self::IntoIter {
+        self.coordinates.into_iter()
+    }
+}
+
 impl From<(f64, f64)> for Cartesian<2> {
     #[inline]
     fn from(coordinates: (f64, f64)) -> Self {
