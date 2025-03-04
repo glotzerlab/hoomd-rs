@@ -64,7 +64,6 @@ impl<const N: usize, R: Rotate<Cartesian<N>> + Rotation + PartialEq>
     */
     fn intersects_at(&self, other: &Cuboid<N>, r_ij: &Cartesian<N>, o_ij: &R) -> bool {
         assert!(*o_ij == R::identity());
-        println!("{}", r_ij <= &Cartesian::<N>::from([0.0; N]));
         let other_mins = other.minimal_extents() + *r_ij;
         let other_maxs = other.maximal_extents() + *r_ij;
         multizip((
