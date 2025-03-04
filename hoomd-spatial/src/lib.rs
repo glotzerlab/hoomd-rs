@@ -223,14 +223,28 @@ impl<const N: usize> CellList<N> {
         particle_index: usize,
         new_particle_position: Cartesian<N>,
     ) {
+        // TODO I have code repetition from add and remove particles, think about refactoring
         let current_cell_idx = self
             .particle_idx_to_cell_index
             .get(&particle_index)
             .expect("Particle index found in the cell list.");
         let new_cell_idx = Self::cell_index_from_position(self.cell_width, &new_particle_position);
         if *current_cell_idx != new_cell_idx {
-            self.remove_particle(particle_index);
-            self.add_particle(&new_particle_position);
+            let particle_indices = self
+                .cell_idx_to_particle_indices
+                .get_mut(current_cell_idx)
+                .expect("Cell index found in the cell list.");
+            let index = particle_indices
+                .iter()
+                .position(|&x| x == particle_index)
+                .expect("Particle index is in the cell list.");
+            particle_indices.swap_remove(index);
+            self.cell_idx_to_particle_indices
+                .entry(new_cell_idx)
+                .or_insert(Vec::new())
+                .push(particle_index);
+            self.particle_idx_to_cell_index
+                .insert(particle_index, new_cell_idx);
         }
     }
 
@@ -380,10 +394,7 @@ mod tests {
         cell_list.translate_particle(0, new_position);
 
         let expected_cell_idx = CellList::<2>::cell_index_from_position(cell_width, &new_position);
-        // TODO fix so this is zero index!
-        let cell_idx_after = cell_list
-            .cell_index_from_particle_index(cell_list.particle_max_index - 1)
-            .unwrap();
+        let cell_idx_after = cell_list.cell_index_from_particle_index(0).unwrap();
         assert_eq!(*cell_idx_after, expected_cell_idx);
     }
 
