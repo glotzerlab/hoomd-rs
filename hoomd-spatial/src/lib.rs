@@ -233,4 +233,102 @@ impl<const N: usize> CellList<N> {
         }
     }
 
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_add_particle() {
+        let cell_width = 1.0;
+        let positions = vec![Cartesian {
+            coordinates: [0.2, 0.3],
+        }];
+        let mut cell_list = CellList::<2>::new(cell_width, &positions);
+
+        let new_position = Cartesian {
+            coordinates: [1.2, 1.3],
+        };
+        cell_list.add_particle(&new_position);
+
+        let cell_idx_new = cell_list
+            .cell_index_from_particle_index(cell_list.particle_max_index)
+            .unwrap();
+        let expected_cell_idx = CellList::<2>::cell_index_from_position(cell_width, &new_position);
+        assert_eq!(*cell_idx_new, expected_cell_idx);
+
+        let idx_in_new_cell = cell_list
+            .cell_idx_to_particle_indices
+            .get(&expected_cell_idx)
+            .unwrap();
+        assert!(idx_in_new_cell.contains(&cell_list.particle_max_index));
+    }
+
+    #[test]
+    fn test_translate_particle() {
+        let cell_width = 1.0;
+        let positions = vec![
+            Cartesian {
+                coordinates: [0.2, 0.3],
+            }, // initially in cell [0,0]
+            Cartesian {
+                coordinates: [1.2, 0.3],
+            }, // in cell [1,0]
+        ];
+        let mut cell_list = CellList::<2>::new(cell_width, &positions);
+
+        // Translate first particle to a new position in a different cell.
+        let new_position = Cartesian {
+            coordinates: [1.1, 1.2],
+        }; // expected cell [1,1]
+        cell_list.translate_particle(0, new_position);
+
+        let expected_cell_idx = CellList::<2>::cell_index_from_position(cell_width, &new_position);
+        let cell_idx_after = cell_list.cell_index_from_particle_index(0).unwrap();
+        assert_eq!(*cell_idx_after, expected_cell_idx);
+    }
+
+    #[test]
+    fn test_remove_particle() {
+        let cell_width = 1.0;
+        let positions = vec![
+            Cartesian {
+                coordinates: [0.2, 0.3],
+            },
+            Cartesian {
+                coordinates: [1.2, 1.3],
+            },
+        ];
+        let mut cell_list = CellList::<2>::new(cell_width, &positions);
+
+        // Cell id of particle to be removed
+        let cell_idx = cell_list.cell_index_from_particle_index(0).copied();
+
+        // Remove the first particle (index 0).
+        cell_list.remove_particle(0);
+        let removed_particle_cell_index = cell_list.cell_index_from_particle_index(0);
+        assert!(removed_particle_cell_index.is_none());
+
+        // The cell corresponding to the removed particle should not hold the index.
+        let particle_indices_in_old_cell = cell_list
+            .cell_idx_to_particle_indices
+            .get(&cell_idx.unwrap())
+            .expect("The cell index should exist");
+        assert!(
+            particle_indices_in_old_cell.is_empty(),
+            "Expected cell to be empty after removal"
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Particle index not found in cell list")]
+    fn test_remove_nonexistent_particle() {
+        let cell_width = 1.0;
+        let positions = vec![Cartesian {
+            coordinates: [0.2, 0.3],
+        }];
+        let mut cell_list = CellList::<2>::new(cell_width, &positions);
+        // Attempt to remove a particle that doesn't exist.
+        cell_list.remove_particle(42);
+    }
 }
