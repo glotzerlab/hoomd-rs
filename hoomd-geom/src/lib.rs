@@ -11,7 +11,7 @@
 /*! General, performant computational geometry code.
 
 `hoomd_geom` implements common operations for widely-used geometric primitives, with
-additional functionality to accomodate hard-particle Monte Carlo simulations.
+additional functionality to accommodate hard-particle Monte Carlo simulations.
 
 ## Geometric Primitives
 

@@ -92,8 +92,8 @@ mod tests {
         assert!(!s0.intersects_at(&s1, &[10.0, 10.0, 10.0].into(), &Versor::identity()));
         // Boundaries are aligned
         assert!(s0.intersects_at(&s1, &[1.5, 1.5, 1.5].into(), &Versor::identity()));
-        // Both at origin - will allways intersect for any cuboids
+        // Both at origin - will always intersect for any cuboids
         assert!(s0.intersects_at(&s1, &[0.0, 0.0, 0.0].into(), &Versor::identity()));
-        // TODO: is there a more programatic way to test this?
+        // TODO: is there a more programmatic way to test this?
     }
 }
