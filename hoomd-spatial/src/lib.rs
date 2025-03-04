@@ -55,8 +55,8 @@ impl<const N:usize> CellList<N> {
         }
     }
 
-    pub fn cell_index_from_particle_index(&self, particle_index: i32) -> Option<[i32; N]> {
-        self.particle_idx_to_cell_index.get(&particle_index).copied()
+    pub fn cell_index_from_particle_index(&self, particle_index: i32) -> Option<&[i32; N]> {
+        self.particle_idx_to_cell_index.get(&particle_index)
     }
 
     pub fn add_particle(&mut self, position: &Cartesian<N>) {
@@ -82,7 +82,7 @@ impl<const N:usize> CellList<N> {
     pub fn translate_particle(&mut self, particle_index: i32, new_particle_position: Cartesian<N>){
         let current_cell_idx = self.particle_idx_to_cell_index.get(&particle_index).unwrap();
         let new_cell_idx = Self::cell_index_from_position(self.cell_width,&new_particle_position);
-        if current_cell_idx != &new_cell_idx {
+        if *current_cell_idx != new_cell_idx {
             self.remove_particle(particle_index);
             self.add_particle(&new_particle_position);
         }
