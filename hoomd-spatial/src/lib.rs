@@ -20,15 +20,17 @@ pub enum ParticleFlag {
 
 pub struct CellList<const N: usize> {
     pub cell_width: f64,
-    pub cell_idx_to_particle_indices: HashMap<[usize; N], Vec<usize>>,
-    pub particle_idx_to_cell_index: HashMap<usize, [usize; N]>,
+    pub cell_idx_to_particle_indices: HashMap<[isize; N], Vec<usize>>,
+    /// A map from particle indices to cell indices.
+    pub particle_idx_to_cell_index: HashMap<usize, [isize; N]>,
+    /// The maximum particle index.
     pub particle_max_index: usize,
 }
 
 impl<const N: usize> CellList<N> {
     #[inline]
-    fn cell_index_from_position(cell_width: f64, position: &Cartesian<N>) -> [usize; N] {
-        std::array::from_fn(|j| (position.coordinates[j] / cell_width).floor() as usize)
+    fn cell_index_from_position(cell_width: f64, position: &Cartesian<N>) -> [isize; N] {
+        std::array::from_fn(|j| (position.coordinates[j] / cell_width).floor() as isize)
     }
 
     pub fn new(cell_width: f64, positions: &Vec<Cartesian<N>>) -> Self {
@@ -46,7 +48,7 @@ impl<const N: usize> CellList<N> {
         instance
     }
 
-    pub fn cell_index_from_particle_index(&self, particle_index: usize) -> Option<&[usize; N]> {
+    pub fn cell_index_from_particle_index(&self, particle_index: usize) -> Option<&[isize; N]> {
         self.particle_idx_to_cell_index.get(&particle_index)
     }
 
