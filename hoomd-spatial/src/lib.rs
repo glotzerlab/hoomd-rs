@@ -39,6 +39,7 @@ impl<const N:usize> CellList<N> {
         let mut cell_idx_to_particle_indices = HashMap::new();
         for (i, position) in positions.iter().enumerate() {
             // Create the cell index for each particle.
+            // Use add_particle fn
             let cell_idx = Self::cell_index_from_position(cell_width, position);
             let particle_index: i32 = i as i32;
             cell_idx_to_particle_indices
@@ -60,7 +61,6 @@ impl<const N:usize> CellList<N> {
     }
 
     pub fn add_particle(&mut self, position: &Cartesian<N>) {
-        self.particle_max_index += 1;
         let particle_index = self.particle_max_index;
         let cell_idx = Self::cell_index_from_position(self.cell_width, position);
         self.cell_idx_to_particle_indices
@@ -71,16 +71,19 @@ impl<const N:usize> CellList<N> {
     }
 
     pub fn remove_particle(&mut self, particle_index: i32) {
-        // check if particle idx is smaller then particle max index
-        assert!(particle_index <= self.particle_max_index);
-        let cell_idx = self.particle_idx_to_cell_index.remove(&particle_index).unwrap();
-        let particle_indices = self.cell_idx_to_particle_indices.get_mut(&cell_idx).unwrap();
-        let index = particle_indices.iter().position(|&x| x == particle_index).unwrap();
-        particle_indices.swap_remove(index);
+        //  unwrap will panic if particle index is not present
+        // TODO think about using entry_and_modify to make this code cleaner
+        if let Some(cell_idx) = self.particle_idx_to_cell_index.remove(&particle_index){
+            let particle_indices = self.cell_idx_to_particle_indices.get_mut(&cell_idx).expect("Cell index found in the cell list.");
+            let index = particle_indices.iter().position(|&x| x == particle_index).expect("Particle index is in the cell list.");
+            particle_indices.swap_remove(index);
+        } else {
+            panic!("Particle index not found in cell list");
+        }
     }
 
     pub fn translate_particle(&mut self, particle_index: i32, new_particle_position: Cartesian<N>){
-        let current_cell_idx = self.particle_idx_to_cell_index.get(&particle_index).unwrap();
+        let current_cell_idx = self.particle_idx_to_cell_index.get(&particle_index).expect("Particle index found in the cell list.");
         let new_cell_idx = Self::cell_index_from_position(self.cell_width,&new_particle_position);
         if *current_cell_idx != new_cell_idx {
             self.remove_particle(particle_index);
