@@ -33,25 +33,18 @@ impl<const N: usize> CellList<N> {
     }
 
     pub fn new(cell_width: f64, positions: &Vec<Cartesian<N>>) -> Self {
-        let mut particle_idx_to_cell_index = HashMap::new();
-        let mut cell_idx_to_particle_indices = HashMap::new();
-        for (i, position) in positions.iter().enumerate() {
-            // Create the cell index for each particle.
-            // Use add_particle fn
-            let cell_idx = Self::cell_index_from_position(cell_width, position);
-            let particle_index: usize = i as usize;
-            cell_idx_to_particle_indices
-                .entry(cell_idx)
-                .or_insert(Vec::new())
-                .push(particle_index);
-            particle_idx_to_cell_index.insert(particle_index, cell_idx);
-        }
-        Self {
+        let mut instance = Self {
             cell_width,
-            cell_idx_to_particle_indices,
-            particle_idx_to_cell_index,
-            particle_max_index: positions.len() as usize,
+            cell_idx_to_particle_indices: HashMap::new(),
+            particle_idx_to_cell_index: HashMap::new(),
+            particle_max_index: 0,
+        };
+
+        for position in positions {
+            instance.add_particle(position);
         }
+
+        instance
     }
 
     pub fn cell_index_from_particle_index(&self, particle_index: usize) -> Option<&[usize; N]> {
