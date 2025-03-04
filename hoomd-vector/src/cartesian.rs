@@ -109,8 +109,7 @@ impl<const N: usize> From<[f64; N]> for Cartesian<N> {
     }
 }
 
-impl<const N: usize> IntoIterator for Cartesian<N>
-{
+impl<const N: usize> IntoIterator for Cartesian<N> {
     type Item = f64;
     type IntoIter = <[f64; N] as IntoIterator>::IntoIter;
     fn into_iter(self) -> Self::IntoIter {
