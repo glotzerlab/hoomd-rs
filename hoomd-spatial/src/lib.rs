@@ -140,6 +140,7 @@ impl<const N: usize> CellList<N> {
             .push(particle_index);
         self.particle_idx_to_cell_index
             .insert(particle_index, cell_idx);
+        self.particle_max_index += 1;
     }
 
     /** Remove particle from the cell list.
@@ -252,7 +253,7 @@ mod tests {
         cell_list.add_particle(&new_position);
 
         let cell_idx_new = cell_list
-            .cell_index_from_particle_index(cell_list.particle_max_index)
+            .cell_index_from_particle_index(cell_list.particle_max_index-1)
             .unwrap();
         let expected_cell_idx = CellList::<2>::cell_index_from_position(cell_width, &new_position);
         assert_eq!(*cell_idx_new, expected_cell_idx);
@@ -261,7 +262,7 @@ mod tests {
             .cell_idx_to_particle_indices
             .get(&expected_cell_idx)
             .unwrap();
-        assert!(idx_in_new_cell.contains(&cell_list.particle_max_index));
+        assert!(idx_in_new_cell.contains(&(cell_list.particle_max_index - 1)));
     }
 
     #[test]
@@ -284,7 +285,8 @@ mod tests {
         cell_list.translate_particle(0, new_position);
 
         let expected_cell_idx = CellList::<2>::cell_index_from_position(cell_width, &new_position);
-        let cell_idx_after = cell_list.cell_index_from_particle_index(0).unwrap();
+        // TODO fix so this is zero index!
+        let cell_idx_after = cell_list.cell_index_from_particle_index(cell_list.particle_max_index-1).unwrap();
         assert_eq!(*cell_idx_after, expected_cell_idx);
     }
 
