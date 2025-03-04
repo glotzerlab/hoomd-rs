@@ -3,7 +3,9 @@
 
 use crate::intersects::IntersectsAt;
 use hoomd_vector::Cartesian;
-use hoomd_vector::{Rotate};
+use hoomd_vector::{Rotate, Rotation};
+use std::cmp::PartialEq;
+use itertools::multizip;
 
 /** An axis-aligned N-cuboid
 */
@@ -46,17 +48,35 @@ impl<const N: usize> Cuboid<N> {
     }
 }
 
-impl<const N: usize, R: Rotate<Cartesian<N>>> IntersectsAt<Cuboid<N>, Cartesian<N>, R> for Cuboid<N> {
-    // TODO: wip, these conditions are not the correct checks.
+impl<const N: usize, R: Rotate<Cartesian<N>> + Rotation + PartialEq> IntersectsAt<Cuboid<N>, Cartesian<N>, R> for Cuboid<N> {
+    // TODO: Should o_ij be an Option?
+    /**
+    Determine the intersection between two axis-aligned cuboids.
+    MUST be passed an identity `Rotation` or the method will panic.
+    */
     fn intersects_at(&self, other: &Cuboid<N>, r_ij: &Cartesian<N>, o_ij: &R) -> bool {
-        // TODO: how can we assert that o_ij does not rotate the vector?
+        assert!(*o_ij == R::identity());
         println!("{}", r_ij <= &Cartesian::<N>::from([0.0; N]));
-        // let it = self.minimal_extents() <= (*r_ij + other.maximal_extents()).into_iter().zip( 
-        //     self.maximal_extents() <= (*r_ij + other.minimal_extents())
-        // );
-        // println!("{:?}", it);
-        true
-        todo!()
+        let other_mins = other.minimal_extents() + *r_ij;
+        let other_maxs = other.maximal_extents() + *r_ij;
+        for (l_min, o_max, o_min, l_max) in multizip(
+            (
+                self.minimal_extents(),
+                other_maxs,
+                self.maximal_extents(),
+                other_mins,
+            )
+        ) {
+            println!("{} <= {}, {} >= {}", l_min, o_max, o_min, l_max)
+        }
+        multizip(
+            (
+                self.minimal_extents(),
+                other_maxs,
+                self.maximal_extents(),
+                other_mins,
+            )
+        ).all(|(l_min, o_max, l_max, o_min)| (l_min <= o_max) && (l_max >= o_min))
     }
 }
 
@@ -64,14 +84,21 @@ impl<const N: usize, R: Rotate<Cartesian<N>>> IntersectsAt<Cuboid<N>, Cartesian<
 mod tests {
     use super::*;
     use rstest::*;
+    use hoomd_vector::Versor;
 
     #[rstest(
         edges0 => [[2.0, 2.0, 2.0]],
         edges1 => [[1.0, 1.0, 1.0]],
-        c1 => [[0.0; 3], [1.0; 3], [4.0; 3]],
+        // c1 => [[0.0, 1.0, 2.0], [1.0; 3], [4.0; 3]],
     )]
-    fn check_box_intersections(edges0: [f64; 3], edges1: [f64; 3], c1: [f64; 3]) {
-        // let (s0, s1) = (Cuboid::<3>::from(r0), Cuboid::<3>::from((r1, c1)));
-        // assert!(s0.intersects(s1) == (s1.c[0] <= (s0.r + s1.r)))
+    fn check_box_intersections(edges0: [f64; 3], edges1: [f64; 3]) {
+        let (s0, s1) = (Cuboid::<3>::from(edges0), Cuboid::<3>::from(edges1));
+        // Should all be false (no intersection), which we invert to true
+        assert!(!s0.intersects_at(&s1, &[10.0, 10.0, 10.0].into(), &Versor::identity()));
+        // Boundaries are aligned
+        assert!(s0.intersects_at(&s1, &[1.5, 1.5, 1.5].into(), &Versor::identity()));
+        // Both at origin - will allways intersect for any cuboids
+        assert!(s0.intersects_at(&s1, &[0.0, 0.0, 0.0].into(), &Versor::identity()));
+        // TODO: is there a more programatic way to test this?
     }
 }
