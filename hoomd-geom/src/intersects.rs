@@ -43,9 +43,3 @@ pub trait IntersectsAt<S, V: Vector, R: Rotate<V>> {
     fn intersects_at(&self, other: &S, r_ij: &V, o_ij: &R) -> bool;
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use rstest::*;
-
-// }
