@@ -25,7 +25,6 @@ pub struct CellList<const N: usize> {
     pub particle_max_index: usize,
 }
 
-// TODO change usize to usize
 impl<const N: usize> CellList<N> {
     #[inline]
     fn cell_index_from_position(cell_width: f64, position: &Cartesian<N>) -> [usize; N] {
