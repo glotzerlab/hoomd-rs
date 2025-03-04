@@ -67,14 +67,6 @@ impl<const N: usize, R: Rotate<Cartesian<N>> + Rotation + PartialEq>
         println!("{}", r_ij <= &Cartesian::<N>::from([0.0; N]));
         let other_mins = other.minimal_extents() + *r_ij;
         let other_maxs = other.maximal_extents() + *r_ij;
-        for (l_min, o_max, o_min, l_max) in multizip((
-            self.minimal_extents(),
-            other_maxs,
-            self.maximal_extents(),
-            other_mins,
-        )) {
-            println!("{} <= {}, {} >= {}", l_min, o_max, o_min, l_max)
-        }
         multizip((
             self.minimal_extents(),
             other_maxs,
@@ -94,7 +86,6 @@ mod tests {
     #[rstest(
         edges0 => [[2.0, 2.0, 2.0]],
         edges1 => [[1.0, 1.0, 1.0]],
-        // c1 => [[0.0, 1.0, 2.0], [1.0; 3], [4.0; 3]],
     )]
     fn check_box_intersections(edges0: [f64; 3], edges1: [f64; 3]) {
         let (s0, s1) = (Cuboid::<3>::from(edges0), Cuboid::<3>::from(edges1));

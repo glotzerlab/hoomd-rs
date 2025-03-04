@@ -40,6 +40,8 @@ relatively easy to implement for arbitrary shapes. More complicated properties a
 included in additional methods, including [`IntersectsAt`], [`MinDistance`], and
 [`SupportFn`].
 
+## Modifiers through Encapsulation
+
 Note that the `Sphere` struct in the previous example is defined solely by a radius. To
 maximize generality, no `Shape`s should explicitly store the center of mass. This allows
 shared utility between HPMC and pure computational geometry applications without wasted
