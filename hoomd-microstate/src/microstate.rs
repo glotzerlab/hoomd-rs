@@ -4,9 +4,22 @@
 /*! Implement [`Microstate`] and related types.
  */
 
+use std::collections::BinaryHeap;
+use std::cmp::Reverse;
+
 use hoomd_vector::Vector;
 
-use crate::Particle;
+use crate::{Body, Site, Transform};
+
+/** Track a unique identifier for items in a [`Microstate`]
+*/
+#[derive(Clone, Debug, PartialEq)]
+pub struct Tagged<T> {
+    /// The unique identifier.
+    pub tag: usize,
+    /// The tagged item.
+    pub item: T,
+}
 
 /** Store and manage all the degrees of freedom of a single microstate in phase space.
 
@@ -19,7 +32,7 @@ there aren't enough seed bits.
 TODO: Add boundary conditions
 */
 #[derive(Clone)]
-pub struct Microstate<P /*, B*/> {
+pub struct Microstate<B, S, /*, C*/> {
     /// Total number of steps that this microstate has been advanced in a simulation model.
     step: u64,
 
@@ -29,17 +42,36 @@ pub struct Microstate<P /*, B*/> {
     /// User chosen random number seed.
     seed: u32,
 
-    /// Particle degrees of freedom in the microstate, store in index order.
-    particles: Vec<P>,
+    /// Bodies in the microstate, stored in index order.
+    bodies: Vec<Tagged<Body<B, S>>>,
+
+    /// Indices of the bodies, in tag order.
+    body_indices: Vec<Option<usize>>,
+
+    /// Body tags that can be reused.
+    free_body_tags: BinaryHeap<Reverse<usize>>,
+
+    /// Sites in the system reference frame.
+    sites: Vec<Site<S>>,
+
+    /// Indices of the sites, in tag order.
+    site_indices: Vec<Option<usize>>,
+
+    /// Body tags that can be reused.
+    free_site_tags: BinaryHeap<Reverse<usize>>,
+
+    /// Indices of the sites associated with the bodies (in index order).
+    bodies_sites: Vec<Vec<usize>>, 
+
     // The range of allowed particle positions and a description of any periodicity.
-    // boundary: B,
+    // boundary: C,
 }
 
-impl<P /*, B*/> Default for Microstate<P /*, B*/> {
+impl<B, S /*, C*/> Default for Microstate<B, S /*, C*/> {
     /** Create an empty microstate.
 
     The default microstate starts at step 0, substep 0, random number seed 0,
-    and has no particles.
+    and has no bodies.
 
     # Example
 
@@ -61,13 +93,19 @@ impl<P /*, B*/> Default for Microstate<P /*, B*/> {
             step: 0,
             substep: 0,
             seed: 0,
-            particles: Vec::new(),
+            bodies: Vec::new(),
+            body_indices: Vec::new(),
+            free_body_tags: BinaryHeap::new(),
+            sites: Vec::new(),
+            site_indices: Vec::new(),
+            free_site_tags: BinaryHeap::new(),
+            bodies_sites: Vec::new(),
         }
     }
 }
 
 /// Access and manage the simulation step, substep, and RNG seeds.
-impl<P /*, B*/> Microstate<P /*, B*/> {
+impl<B, S /*, C*/> Microstate<B, S /*, C*/> {
     /** Get the simulation step.
 
     # Example
@@ -196,37 +234,34 @@ https://stackoverflow.com/questions/50671177/specify-fn-trait-bound-on-struct-de
 The PhantomData solution feels like more of a hack, so this code implements the trait solution.
 */
 
-/** Methods that operate on particles in a [`Microstate`].
+// /** Methods that operate on particles in a [`Microstate`].
 
-See [`Microstate`] for more information.
-*/
-pub trait Particles<P, V> {
-    /// Add a new particle to the microstate.
-    fn add_particle(&mut self, particle: P);
+// See [`Microstate`] for more information.
+// */
+// pub trait Particles<P, V> {
+//     /// Add a new particle to the microstate.
+//     fn add_particle(&mut self, particle: P);
 
-    // fn extend_particles( // TODO
+//     // fn extend_particles( // TODO
 
-    /// Remove a particle at the given index from the microstate.
-    fn remove_particle(&mut self, index: usize);
+//     /// Remove a particle at the given index from the microstate.
+//     fn remove_particle(&mut self, index: usize);
 
-    /// Access all particles in the microstate.
-    fn particles(&self) -> &[P];
+//     /// Access all particles in the microstate.
+//     fn particles(&self) -> &[P];
 
-    /// Update a single particle at the given index in the microstate.
-    fn update_particle(&mut self, index: usize, particle: P);
+//     /// Update a single particle at the given index in the microstate.
+//     fn update_particle(&mut self, index: usize, particle: P);
 
-    // TODO: how to efficiently update all particles? We could provide a method that calls
-    // a Fn with &mut [P], but then we have to assume that the caller may have reordered the
-    // particles. In MD, a full system update without reordering is common and would not
-    // require rebuilding the neighbor list.
-}
+//     // TODO: how to efficiently update all particles? We could provide a method that calls
+//     // a Fn with &mut [P], but then we have to assume that the caller may have reordered the
+//     // particles. In MD, a full system update without reordering is common and would not
+//     // require rebuilding the neighbor list.
+// }
 
-impl<P, V> Particles<P, V> for Microstate<P>
-where
-    P: Particle<V>,
-    V: Vector,
+impl<B, S, /* C */> Microstate<B, S, /* C*/>
 {
-    /** Add a new particle to the microstate.
+    /** Add a new body to the microstate.
 
     # Example
 
@@ -241,13 +276,28 @@ where
     ```
     */
     #[inline]
-    fn add_particle(&mut self, particle: P) {
-        self.particles.push(particle);
+    pub fn add_body(&mut self, body: Body<B, S>) {
+        let tag = match self.free_body_tags.pop() {
+            None => self.body_indices.len(),
+            Some(t) => t.0,
+        };
+        self.bodies.push(Tagged { tag, item: body });
+
+        let index = Some(self.bodies.len()-1);
+
+        if tag == self.body_indices.len() {
+            self.body_indices.push(index);
+        } else {
+            debug_assert_eq!(self.body_indices[tag], None);
+            self.body_indices[tag] = index;
+        }
+
+        // TODO: add sites
     }
 
-    // fn extend_particles( // TODO
+    // fn extend_bodies( // TODO
 
-    /** Remove a particle at the given index from the microstate.
+    /** Remove a body at the given index from the microstate.
 
     # Example
 
@@ -267,16 +317,34 @@ where
     Panics when `index` is out of bounds.
     */
     #[inline]
-    fn remove_particle(&mut self, index: usize) {
-        self.particles.swap_remove(index);
+    pub fn remove_body(&mut self, index: usize) {
+        let tag = self.bodies[index].tag;
+        debug_assert_eq!(self.body_indices[tag], Some(index));
+
+        self.bodies.swap_remove(index);
+        self.body_indices[tag] = None;
+        self.free_body_tags.push(Reverse(tag));
+
+        // TODO: Remove sites
     }
 
-    fn particles(&self) -> &[P] {
-        &self.particles
+    #[inline]
+    pub fn update_body_properties(&mut self, index: usize, properties: B) {
+        self.bodies[index].item.properties = properties;
+
+        // TODO: Update site properties
     }
 
-    fn update_particle(&mut self, index: usize, particle: P) {
-        self.particles[index] = particle;
+    #[inline]
+    #[must_use]
+    pub fn bodies(&self) -> &[Tagged<Body<B,S>>] {
+        &self.bodies
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn sites(&self) -> &[Site<S>] {
+        &self.sites
     }
 }
 

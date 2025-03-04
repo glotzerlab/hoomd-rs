@@ -13,37 +13,61 @@
    TODO: Expand documentation.
 */
 
+pub mod properties;
 mod microstate;
-pub mod particle;
 
-pub use microstate::{Microstate, Particles};
+pub use microstate::Microstate;
 
-/** Properties common to all particles.
+/** Interactions in `hoomd-rs` apply between sites.
 
-Every particle in a [`Microstate`] has a position vector that locates the
-particle in space.
+A [`Site`] (often called an *atom* or a *particle* in other codes) has a `tag`
+that uniquely identities it in the [`Microstate`] and is associated with a given
+`body` (see [`Body`]). All interactions in `hoomd-rs` occur between sites
+as a function of their `properties`. At a minimum, [`Microstate`] assumes that
+`properties` implements [`Position`]. The `properties` type is generic so that
+users can build custom types that store orientation, charge, mass, color, or
+whatever other fields are needed to implement their model.
 
-Every [`Particle`] type must implement [`Copy`] to ensure that it can be
-efficiently copied.
+Add sites to the [`Microstate`] as members of bodies ([`Body`]).
 */
-pub trait Particle<V>: Copy {
-    /// The position of this particle `[length]`.
-    fn position(&self) -> &V;
-
-    /// The mutable position of this particle `[length]`.
-    fn position_mut(&mut self) -> &mut V;
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Site<S> {
+    /// Every site in a [`Microstate`] has a unique value in its `tag`.
+    pub tag: u32,
+    /// `body` stores the body tag of the [`Body`] associated with this site.
+    pub body: u32,
+    /// The properties of the site (for example, position, orientation).
+    pub properties: S,
 }
 
-/** Particles that have an orientation.
+/** A collection of interaction sites with that can be placed in a [`Microstate`].
 
-A particle's `orientation` is a rotation that transforms vectors from the
-local coordinate frame of the [`Particle`] to the global frame of the
-[`Microstate`].
+The [`Body`] `properties` have a generic type that includes all the body's
+degrees of freedom and any other fields needed to implement the user's model.
+Bodies interact indirectly via one or more `sites`. The `sites` vector stores
+the properties of the body's sites in the body frame. The body `properties`
+stores the body's degrees of freedom (such as position and orientation) in the
+system frame. The [`Transform`] describes how a given body transforms its sites
+from the body frame to the system frame.
+
+In typical cases, such as those implemented in `hoomd-rs`, [`Body`] describes
+a rigid collection of sites that transform together. However, creative
+implementations of [`Transform`] could achieve other behaviors.
 */
-pub trait Orientable<V, R>: Particle<V> {
-    /// The orientation of this particle.
-    fn orientation(&self) -> &R;
+#[derive(Clone, Debug, PartialEq)]
+pub struct Body<B, S> {
+    pub properties: B,
+    pub sites: Vec<S>,
+}
 
-    /// The orientation of this particle (mutable).
-    fn orientation_mut(&mut self) -> &mut R;
+/** Take [`Site`] properties in the body frame into the system frame.
+*/
+pub trait Transform<S> {
+    /** Transform site properties.
+
+    Given `site_properties` in the body frame, `transform` returns the
+    corresponding site properties in the system frame.
+    */
+    #[must_use]
+    fn transform(&self, site_properties: &S) -> S;
 }

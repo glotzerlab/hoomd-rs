@@ -178,21 +178,24 @@ is generalized on both the body and site types and stores them in arrays of
 structures. Code that uses `Microstate` can require one or more trait bounds to
 ensure that the particle has the appropriate attributes.
 
-_Ideally_, the `Body` and `Site` traits have position only to enable
-simulations of isotropic systems without needing to store unused
+_Ideally_, the `BodyProperties` and `SiteProperties` general types allow position
+only to enable simulations of isotropic systems without needing to store unused
 orientations. However, Rust lacks specialization. As the implementation
 evolves, we will see if this remains feasible or if we can keep orientation
 in a separate trait or not.
 
-* `Body` - Describes a type that has a position and a number of sites.
-   Generalized on the site.
-* `Site` - A site has a position.
-* `Orientable` - Provides `orientation`. Can be applied to both bodies and
-   sites.
+Here are the traits that the `*Properties` types may have:
+
+* `Position<V>` - Holds a position vector that describes the location of the
+  body or site in space.
+* `Orientation<R>` - Holds an orientation that describes a rotation from a
+  local reference frame to the space frame of a body or site.
 * `Dynamic`? - Mass, velocity, ... needed for MD. TODO: Need separate
   names to differentiate between dynamic point particles and dynamic orientable
   particles? Nominally only applies to bodies. However, some algorithms
-  (e.g. DPD) need to know the velocity of individual sites.
+  (e.g. DPD) need to know the velocity of individual sites. OR: Do we make
+  Mass, Velocity, AngularMomentum, etc... all separate traits to allow complete
+  generality when any subset is required (or not).
 
 ## Topology
 
