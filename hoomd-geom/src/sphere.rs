@@ -1,7 +1,8 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use crate::{Shape, Volume};
+use crate::{IntersectsAt, Shape, Volume};
+use hoomd_vector::{Rotate, Vector};
 use std::f64::consts::PI;
 
 /// The (single, double, ...)-factorial function
@@ -52,6 +53,12 @@ impl<const N: usize> Volume for Sphere<N> {
         } else {
             2.0 * (2.0 * PI).powi(dim_factor) / (factorial(N, 2) as f64)
         } // TODO: replace with std::f64::gamma when its in main
+    }
+}
+
+impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Sphere<N>, V, R> for Sphere<N> {
+    fn intersects_at(&self, other: &Sphere<N>, r_ij: &V, _o_ij: &R) -> bool {
+        (r_ij).norm_squared() <= (other.r + self.r).powi(2)
     }
 }
 
