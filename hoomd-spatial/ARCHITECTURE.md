@@ -21,10 +21,10 @@ struct is independent of spatial dimension and works only for N-dimensional Cart
 - **Contains:**
   - **Cell Width**
     Uses cube boxes to partition space. The cell size is user-defined and exposed as a parameter.
-  - **Primary Hash Map:**  
-    Maps cell indices (keys, represented as an array of cell indices) to vectors of particle indices (values).  
+  - **Primary Hash Map:**
+    Maps cell indices (keys, represented as an array of cell indices) to vectors of particle indices (values).
     *Note: This structure may be extended to use tuples to distinguish between ghost and real particles.*
-  - **Secondary Hash Map:**  
+  - **Secondary Hash Map:**
     Provides a mapping from individual particle indices to their corresponding cell index.
 
 ### Methods and Operations
@@ -48,17 +48,17 @@ struct is independent of spatial dimension and works only for N-dimensional Cart
 - **Adding a Particle:**
   - Insert the particle into the appropriate cell.
   - Update both hash maps accordingly.
-  
+
 - **Removing a Particle:**
   - Delete the particle entry from the relevant cell.
   - Update both hash maps accordingly.
-  
+
 - **Moving (Translating) a Particle:**
   - **If the particle crosses cell boundaries:**
     - Remove it from the old cell and add it to the new one.
   - **If the particle remains in the same cell:**
     - No action is required.
-  
+
 - **Rebuilding the Cell List:**
   - Provide a convenience method to rebuild both hash maps.
 
@@ -67,4 +67,3 @@ struct is independent of spatial dimension and works only for N-dimensional Cart
 - **Parallelism Support:**
   - Introduce an origin offset for translating cube coordinates, which will aid in parallel computation.
   - Develop an efficient method for iterating over all particle indices within a given cell.
-  
