@@ -67,28 +67,40 @@ pub struct Microstate<B, S, /*, C*/> {
     // boundary: C,
 }
 
-impl<B, S /*, C*/> Default for Microstate<B, S /*, C*/> {
-    /** Create an empty microstate.
+impl<B, S /*, C*/> Default for Microstate<B, S /*, C*/> {   
+    /** Construct an empty microstate.
 
-    The default microstate starts at step 0, substep 0, random number seed 0,
+    See [`Microstate::new`].
+    */
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<B, S /*, C*/> Microstate<B, S /*, C*/> {
+    /** Construct an empty microstate.
+
+    The microstate starts at step 0, substep 0, random number seed 0,
     and has no bodies.
 
     # Example
 
     ```
-    use hoomd_microstate::{Microstate, Particles, particle::Point};
+    use hoomd_microstate::{Microstate, properties::Point};
     use hoomd_vector::Cartesian;
 
-    let microstate = Microstate::<Point<Cartesian<2>>>::default();
+    let microstate = Microstate::<Point<Cartesian<2>>, Point<Cartesian<2>>>::new();
     assert_eq!(microstate.step(), 0);
     assert_eq!(microstate.substep(), 0);
     assert_eq!(microstate.seed(), 0);
-    assert_eq!(microstate.particles().len(), 0);
+    assert_eq!(microstate.bodies().len(), 0);
+    assert_eq!(microstate.sites().len(), 0);
     ```
     */
     #[inline]
     #[must_use]
-    fn default() -> Self {
+    pub fn new() -> Self {
         Microstate {
             step: 0,
             substep: 0,
@@ -101,8 +113,7 @@ impl<B, S /*, C*/> Default for Microstate<B, S /*, C*/> {
             free_site_tags: BinaryHeap::new(),
             bodies_sites: Vec::new(),
         }
-    }
-}
+    }}
 
 /// Access and manage the simulation step, substep, and RNG seeds.
 impl<B, S /*, C*/> Microstate<B, S /*, C*/> {
@@ -259,7 +270,10 @@ The PhantomData solution feels like more of a hack, so this code implements the 
 //     // require rebuilding the neighbor list.
 // }
 
-impl<B, S, /* C */> Microstate<B, S, /* C*/>
+/** Manage bodies in the microstate.
+*/
+impl<B, S, /* C */> Microstate<B, S, /* C*/> where
+B: Transform<S>
 {
     /** Add a new body to the microstate.
 
@@ -334,6 +348,12 @@ impl<B, S, /* C */> Microstate<B, S, /* C*/>
 
         // TODO: Update site properties
     }
+}
+
+/** Access contents of the microstate.
+*/
+impl<B, S, /* C */> Microstate<B, S, /* C*/> {
+
 
     #[inline]
     #[must_use]
@@ -348,6 +368,18 @@ impl<B, S, /* C */> Microstate<B, S, /* C*/>
     }
 }
 
-// TODO: Implement builder to initialize a microstate with parameters.
+/** Choose parameters when constructing a [`Microstate`].
+
+By default, a [`Microstate`] 
+
+# Examples
+
+TODO
+*/
+pub struct MicrostateBuilder<B, S, /*, C*/> {
+    step: u64,
+    seed: u32,
+    bodies: Vec<Body<B, S>>,
+}
 
 // TODO: Tests

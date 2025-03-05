@@ -154,11 +154,21 @@ temperature and pressure. These are emergent parameters that arise from how
 the model evolves the state (e.g. the Metropolis acceptance rule ensures a
 constant temperature). At the time of this writing, it is not clear whether a
 `Macrostate` struct would be helpful in sharing these parameters across model
-instances. However, MD integration methods DO effectively add new degrees of
-freedom to the microstate through the thermostat and barostat variables.
-TODO: Consider how to account for this? Store them in Microstate? Or keep the
-HOOMD-blue approach of maintaining them in the struct that applies the
-thermostat?
+instances.
+
+However, MD integration methods DO effectively add new degrees of freedom to
+the microstate through the thermostat and barostat variables. TODO: Consider how
+to account for this? Store them in Microstate? Or keep the HOOMD-blue approach
+of maintaining them in the struct that applies the thermostat? A third idea is
+to introduce "Auxiliary state" structs for these methods. They don't belong in
+the method, because the method is just that and will be used immutably - yet
+it needs somewhere to store its state. It is not convenient to add an arbitrary
+number of arbitrarily typed structs into `Microstate`, so these types nominally
+should exist on their own. There is no concept of "attaching" in hoomd-rs,
+so one method instance could easily be applied to any number of different
+microstates. Therefore, it should not be used in a mutable way and cannot store
+internal state. This will show up in MC simulations as well for the trial move
+counters.
 
 The user-chosen RNG seed, required to ensure that replicate simulations do not
 use the same RNG stream, will also be part of the microstate. It does not fit

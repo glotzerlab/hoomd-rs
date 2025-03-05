@@ -24,7 +24,7 @@ A [`Site`] (often called an *atom* or a *particle* in other codes) has a `tag`
 that uniquely identities it in the [`Microstate`] and is associated with a given
 `body` (see [`Body`]). All interactions in `hoomd-rs` occur between sites
 as a function of their `properties`. At a minimum, [`Microstate`] assumes that
-`properties` implements [`Position`]. The `properties` type is generic so that
+`properties` implements [`Position`](properties::Position). The `properties` type is generic so that
 users can build custom types that store orientation, charge, mass, color, or
 whatever other fields are needed to implement their model.
 
@@ -47,7 +47,7 @@ degrees of freedom and any other fields needed to implement the user's model.
 Bodies interact indirectly via one or more `sites`. The `sites` vector stores
 the properties of the body's sites in the body frame. The body `properties`
 stores the body's degrees of freedom (such as position and orientation) in the
-system frame. The [`Transform`] describes how a given body transforms its sites
+system frame. [`Transform`] describes how a given body transforms its sites
 from the body frame to the system frame.
 
 In typical cases, such as those implemented in `hoomd-rs`, [`Body`] describes
