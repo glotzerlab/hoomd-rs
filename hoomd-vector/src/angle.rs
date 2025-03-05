@@ -18,6 +18,15 @@ counter-clockwise.
 
 ## Constructing [`Angle`]
 
+The default Angle rotates by 0 radians:
+
+```
+use hoomd_vector::Angle;
+
+let a = Angle::default();
+assert_eq!(a.theta, 0.0)
+```
+
 Create an [`Angle`] with a given value:
 ```
 use hoomd_vector::Angle;
@@ -63,7 +72,7 @@ let c = a.combine(&b);
 assert_eq!(c.theta, PI/4.0);
 ```
 */
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Angle {
     /// Rotation angle (radians).
     pub theta: f64,
@@ -126,24 +135,6 @@ impl From<Angle> for RotationMatrix<2> {
                 [sin_theta, cos_theta].into(),
             ],
         }
-    }
-}
-
-impl Default for Angle {
-    /** Create a rotation by 0 radians.
-
-    # Example
-    ```
-    use hoomd_vector::Angle;
-
-    let a = Angle::default();
-    assert_eq!(a.theta, 0.0)
-    ```
-    */
-    #[inline]
-    #[must_use]
-    fn default() -> Self {
-        Angle::from(0.0)
     }
 }
 

@@ -421,6 +421,15 @@ convention.
 
 ## Constructing a [`Versor`]:
 
+The default [`Versor`] is the identity:
+
+```
+use hoomd_vector::Versor;
+
+let v = Versor::default();
+assert_eq!(*v.get(), [1.0, 0.0, 0.0, 0.0].into());
+```
+
 Create a [`Versor`] that rotates by an angle about an axis:
 ```
 use hoomd_vector::Versor;

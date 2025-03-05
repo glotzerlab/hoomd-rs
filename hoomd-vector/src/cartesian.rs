@@ -22,6 +22,14 @@ use crate::{Cross, Error, Rotate, Unit, Vector};
 
 ## Constructing vectors
 
+The default is the 0 vector:
+```
+use hoomd_vector::Cartesian;
+
+let v = Cartesian::<3>::default();
+assert_eq!(v, [0.0; 3].into())
+```
+
 Create a vector with an array of coordinates:
 ```
 use hoomd_vector::Cartesian;
