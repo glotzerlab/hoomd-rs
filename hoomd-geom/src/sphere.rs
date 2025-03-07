@@ -54,8 +54,8 @@ impl<const N: usize> Shape<N> for Sphere<N> {
 
 impl<const N: usize> Volume for Sphere<N> {
     #[inline]
+    #[allow(clippy::expect_used)] // If users need a 2^31-1 hypersphere, raise an issue.
     fn volume(&self) -> f64 {
-        assert!(N < i32::MAX as usize);
         let dim_factor = (if N.rem_euclid(2) == 0 { N } else { N - 1 } / 2)
             .try_into()
             .expect("N > i32::MAX and would overflow!");
