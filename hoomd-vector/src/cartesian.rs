@@ -6,7 +6,7 @@
 
 use std::array;
 use std::fmt;
-use std::iter::zip;
+use std::iter::{Sum, zip};
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
@@ -75,6 +75,15 @@ use hoomd_vector::Cartesian;
 
 let a = Cartesian::from((1.0, 2.0));
 let b = Cartesian::from((a[1], 0.0));
+```
+
+Compute the sum of an iterator over vectors:
+```
+use hoomd_vector::Cartesian;
+
+let total: Cartesian<2> = [Cartesian::from((1.0, 2.0)), Cartesian::from((3.0, 4.0))]
+    .into_iter()
+    .sum();
 ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -434,6 +443,14 @@ where
     fn index_mut(&mut self, index: T) -> &mut Self::Output {
         &mut self.coordinates[index]
     }
+}
+
+impl<const N: usize> Sum for Cartesian<N> {
+    #[inline]
+    fn sum<I>(iter: I) -> Self
+           where I: Iterator<Item = Self> {
+                iter.fold(Cartesian::default(), |acc, x| acc + x)
+        }
 }
 
 /** Rotate vectors efficiently.
@@ -862,5 +879,12 @@ mod tests {
             Unit::<Cartesian<3>>::try_from([0.0, 0.0, 0.0]),
             Err(Error::InvalidMagnitude)
         ));
+    }
+
+    #[test]
+    fn sum() {
+        let total: Cartesian<2> = [Cartesian::from((1.0, 2.0)), Cartesian::from((-2.0, -1.0))].into_iter().sum();
+
+        assert_eq!(total, [-1.0, 1.0].into());
     }
 }
