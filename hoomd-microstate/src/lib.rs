@@ -36,9 +36,9 @@ Add sites to the [`Microstate`] as members of bodies ([`Body`]).
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Site<S> {
     /// Every site in a [`Microstate`] has a unique value in its `tag`.
-    pub tag: u32,
+    pub site_tag: usize,
     /// `body` stores the body tag of the [`Body`] associated with this site.
-    pub body: u32,
+    pub body_tag: usize,
     /// The properties of the site (for example, position, orientation).
     pub properties: S,
 }
