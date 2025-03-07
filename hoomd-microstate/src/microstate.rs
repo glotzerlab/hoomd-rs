@@ -61,7 +61,7 @@ pub struct Microstate<B, S = B, C = Open> {
     /// Body tags that can be reused.
     free_site_tags: BinaryHeap<Reverse<usize>>,
 
-    /// Indices of the sites associated with the bodies (in index order).
+    /// Tags of the sites associated with the bodies (in body index order).
     bodies_sites: Vec<Vec<usize>>, 
 
     // The range of allowed particle positions and a description of any periodicity.
@@ -341,11 +341,36 @@ impl<B, S, C> Microstate<B, S, C>
     #[inline]
     pub fn add_body(&mut self, body: Body<B, S>) -> usize where
 B: Transform<S>{
+        // Find body tag before adding sites
         let body_tag = match self.free_body_tags.pop() {
             None => self.body_indices.len(),
             Some(t) => t.0,
         };
+    
+        // Add sites
+        let mut body_sites = Vec::with_capacity(body.sites.len());
+        for s in &body.sites {
+            let site_tag = match self.free_site_tags.pop() {
+                None => self.site_indices.len(),
+                Some(t) => t.0,
+            };
+            self.sites.push(Site { site_tag, properties: body.properties.transform(s), body_tag });
+
+            let index = self.sites.len()-1;
+
+            if site_tag == self.site_indices.len() {
+                self.site_indices.push(Some(index));
+            } else {
+                debug_assert_eq!(self.site_indices[site_tag], None);
+                self.site_indices[site_tag] = Some(index);
+            }
+
+            body_sites.push(site_tag);
+        }
+
+        // Add body
         self.bodies.push(Tagged { tag: body_tag, item: body });
+        self.bodies_sites.push(body_sites);
 
         let index = Some(self.bodies.len()-1);
 
@@ -355,8 +380,6 @@ B: Transform<S>{
             debug_assert_eq!(self.body_indices[body_tag], None);
             self.body_indices[body_tag] = index;
         }
-
-        // TODO: add sites
 
         body_tag
     }
