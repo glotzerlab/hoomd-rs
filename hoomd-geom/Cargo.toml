@@ -8,6 +8,8 @@ repository.workspace = true
 license.workspace = true
 keywords.workspace = true
 categories.workspace = true
+description = "Performant, general computational geometry methods in Rust."
+readme = "hoomd-geom/README.md"
 
 [dependencies]
 hoomd-vector = { path= "../hoomd-vector" }
