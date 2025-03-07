@@ -17,7 +17,7 @@ pub mod boundary;
 pub mod property;
 mod microstate;
 
-pub use microstate::{Microstate, MicrostateBuilder};
+pub use microstate::{Microstate, MicrostateBuilder, Tagged};
 
 use property::Point;
 
