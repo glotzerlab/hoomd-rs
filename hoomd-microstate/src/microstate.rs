@@ -445,15 +445,26 @@ B: Transform<S>{
     ```
     */
     #[inline]
-    pub fn remove_body(&mut self, index: usize) {
-        let tag = self.bodies[index].tag;
-        debug_assert_eq!(self.body_indices[tag], Some(index));
+    pub fn remove_body(&mut self, body_index: usize) {
+        let body_tag = self.bodies[body_index].tag;
+        debug_assert_eq!(self.body_indices[body_tag], Some(body_index));
 
-        self.bodies.swap_remove(index);
-        self.body_indices[tag] = None;
-        self.free_body_tags.push(Reverse(tag));
+        // Remove sites
+        let body_sites = self.bodies_sites.swap_remove(body_index);
+        for site_tag in body_sites {
+            let site_index = self.site_indices[site_tag].expect("A valid site.");
+            let removed_site = self.sites.swap_remove(site_index);
+            self.site_indices[self.sites[site_index].site_tag] = Some(site_index);
+            self.site_indices[removed_site.site_tag] = None;
+            self.free_site_tags.push(Reverse(removed_site.site_tag));
+        }
 
-        // TODO: Remove sites
+        // Remove body
+        self.bodies.swap_remove(body_index);
+        self.body_indices[self.bodies[body_index].tag] = Some(body_index);
+        self.body_indices[body_tag] = None;
+        self.free_body_tags.push(Reverse(body_tag));
+
     }
 
     #[inline]
