@@ -13,10 +13,13 @@
    TODO: Expand documentation.
 */
 
-pub mod properties;
+pub mod boundary;
+pub mod property;
 mod microstate;
 
-pub use microstate::Microstate;
+pub use microstate::{Microstate, MicrostateBuilder};
+
+use property::Point;
 
 /** Interactions in `hoomd-rs` apply between sites.
 
@@ -60,6 +63,22 @@ pub struct Body<B, S> {
     pub sites: Vec<S>,
 }
 
+impl<V> Body<Point<V>, Point<V>> {
+    /** Construct a point particle.
+
+    A point particle is a [`Body`] with a single interaction site at the body's
+    origin. The body and site properties are identical and have only a
+    `position` field. Use point particles for simulations of monodisperse hard
+    spheres, identical particles with pairwise interactions, or any time you
+    need a [`Microstate`] that consists only of point particles.
+    */
+    #[inline]
+    #[must_use]
+    pub fn point(position: V) -> Self where V: Default{
+        Self { properties: Point::new(position), sites: vec![Point::default()], }
+    }
+}
+
 /** Take [`Site`] properties in the body frame into the system frame.
 */
 pub trait Transform<S> {
@@ -71,3 +90,4 @@ pub trait Transform<S> {
     #[must_use]
     fn transform(&self, site_properties: &S) -> S;
 }
+
