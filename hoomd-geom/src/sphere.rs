@@ -1,6 +1,9 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+/*!
+Methods and implementations for an N-hypersphere, where N is the dimension.
+*/
 use crate::{IntersectsAt, Shape, Volume};
 use hoomd_vector::{Rotate, Vector};
 use std::f64::consts::PI;
@@ -11,7 +14,11 @@ fn factorial(n: usize, ntuple: usize) -> usize {
     if n == 0 {
         1
     } else {
-        (1..=n).step_by(ntuple).reduce(|acc, x| acc * x).unwrap()
+        (1..=n)
+            .rev()
+            .step_by(ntuple)
+            .reduce(|acc, x| acc * x)
+            .unwrap_or_default() // inaccessible: 1..=(n!=0) is never empty
     }
 }
 
@@ -23,6 +30,7 @@ pub struct Sphere<const N: usize> {
 }
 
 impl<const N: usize> Default for Sphere<N> {
+    #[inline]
     fn default() -> Self {
         Sphere { r: 1.0 }
     }
@@ -38,16 +46,19 @@ impl<const N: usize> From<f64> for Sphere<N> {
 // TRAITS
 
 impl<const N: usize> Shape<N> for Sphere<N> {
+    #[inline]
     fn bounding_sphere(&self) -> Sphere<N> {
         *self
     }
 }
 
 impl<const N: usize> Volume for Sphere<N> {
+    #[inline]
     fn volume(&self) -> f64 {
+        assert!(N < i32::MAX as usize);
         let dim_factor = (if N.rem_euclid(2) == 0 { N } else { N - 1 } / 2)
             .try_into()
-            .unwrap();
+            .expect("N > i32::MAX and would overflow!");
         if N.rem_euclid(2) == 0 {
             PI.powi(dim_factor) / (factorial(N / 2, 1) as f64)
         } else {
@@ -57,6 +68,7 @@ impl<const N: usize> Volume for Sphere<N> {
 }
 
 impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Sphere<N>, V, R> for Sphere<N> {
+    #[inline]
     fn intersects_at(&self, other: &Sphere<N>, r_ij: &V, _o_ij: &R) -> bool {
         (r_ij).norm_squared() <= (other.r + self.r).powi(2)
     }
@@ -67,6 +79,7 @@ mod tests {
     use super::*;
     use approx::assert_relative_eq;
     use paste::paste;
+    use rstest::*;
 
     fn volume_map(n: usize) -> f64 {
         match n {
@@ -98,7 +111,7 @@ mod tests {
         let s = Sphere::<N>::from(1.0);
         assert_eq!(s.r, 1.0);
         assert_eq!(s, Sphere::<N>::default());
-        assert_relative_eq!(s.volume(), volume_map(N))
+        assert_relative_eq!(s.volume(), volume_map(N));
     }
     parameterize_vector_length!(volume_and_radius, [0, 1, 2, 3, 4, 5]);
 
@@ -107,4 +120,13 @@ mod tests {
         assert_eq!(s, s.bounding_sphere());
     }
     parameterize_vector_length!(bounding_sphere, [0, 1, 2, 3, 4, 5]);
+
+    #[rstest]
+    fn test_n_factorial(#[values(1, 2, 3, 4)] m: usize) {
+        assert_eq!(factorial(m, m), m);
+    }
+    #[rstest]
+    fn test_single_double_factorial(#[values(1, 5, 10, 18, 20)] n: usize) {
+        assert_eq!(factorial(n, 1), factorial(n, 2) * factorial(n - 1, 2));
+    }
 }

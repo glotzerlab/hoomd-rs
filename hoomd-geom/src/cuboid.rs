@@ -1,6 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+/*!Axis-aligned N-cuboids, particularly used for bounding volume hierarchies.*/
 use crate::intersects::IntersectsAt;
 use hoomd_vector::Cartesian;
 use hoomd_vector::{Rotate, Rotation};
@@ -17,20 +18,27 @@ pub struct Cuboid<const N: usize> {
 
 impl Cuboid<3> {
     /// Length of the `Cuboid` edge along the x axis
+    #[inline]
+    #[must_use]
     pub fn a(&self) -> f64 {
         self.edge_lengths[0]
     }
     /// Length of the `Cuboid` edge along the y axis
+    #[inline]
+    #[must_use]
     pub fn b(&self) -> f64 {
         self.edge_lengths[1]
     }
     /// Length of the `Cuboid` edge along the z axis
+    #[inline]
+    #[must_use]
     pub fn c(&self) -> f64 {
         self.edge_lengths[2]
     }
 }
 
 impl<const N: usize> From<[f64; N]> for Cuboid<N> {
+    #[inline]
     fn from(edge_lengths: [f64; N]) -> Cuboid<N> {
         Cuboid {
             edge_lengths: edge_lengths.into(),
@@ -38,16 +46,21 @@ impl<const N: usize> From<[f64; N]> for Cuboid<N> {
     }
 }
 impl<const N: usize> From<Cartesian<N>> for Cuboid<N> {
+    #[inline]
     fn from(edge_lengths: Cartesian<N>) -> Cuboid<N> {
         Cuboid { edge_lengths }
     }
 }
 
 impl<const N: usize> Cuboid<N> {
+    #[inline]
+    #[must_use]
     /// Determine the maximal extents of the cuboid along each Cartesian axis.
     pub fn maximal_extents(&self) -> Cartesian<N> {
         self.edge_lengths / 2.0
     }
+    #[inline]
+    #[must_use]
     /// Determine the minimal extents of the cuboid along each Cartesian axis.
     pub fn minimal_extents(&self) -> Cartesian<N> {
         -self.edge_lengths / 2.0
@@ -62,6 +75,7 @@ impl<const N: usize, R: Rotate<Cartesian<N>> + Rotation + PartialEq>
     Determine the intersection between two axis-aligned cuboids.
     MUST be passed an identity `Rotation` or the method will panic.
     */
+    #[inline]
     fn intersects_at(&self, other: &Cuboid<N>, r_ij: &Cartesian<N>, o_ij: &R) -> bool {
         assert!(*o_ij == R::identity());
         let other_mins = other.minimal_extents() + *r_ij;
@@ -96,4 +110,11 @@ mod tests {
         assert!(s0.intersects_at(&s1, &[0.0, 0.0, 0.0].into(), &Versor::identity()));
         // TODO: is there a more programmatic way to test this?
     }
+
+    //     #[rstest]
+    //     // fn check_box_extents<#[values(1, 2, 3)] const N: usize>() {
+    //     #[case(4)]
+    //     fn check_box_extents<const N: usize>() {
+    //         let (s0, s1) = (Cuboid::from([0.0; N]), Cuboid::from([1.0; N]));
+    //     }
 }

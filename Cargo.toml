@@ -1,7 +1,7 @@
 [workspace]
 members = [ "hoomd-geom",
   "hoomd-vector"
-]
+  ]
 resolver = "2"
 
 [workspace.package]

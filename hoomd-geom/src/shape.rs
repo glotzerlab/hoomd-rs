@@ -1,10 +1,9 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+/*! General traits for [`Shape`]s.*/
 use crate::sphere::Sphere;
 use hoomd_vector::{Rotate, Vector};
-
-/// General traits for [`Shape`]s.
 
 /// The N-hypervolume of a geometry. In 2D, this is area and in 3D this is Volume.
 pub trait Volume {
@@ -18,9 +17,6 @@ pub trait Volume {
 This trait requires a dimension `N` and a coordinate system defined by a [`Vector`] `V`.
 */
 pub trait Shape<const N: usize> {
-    /// Inertia Tensor
-    // fn inertia_tensor(&self) -> Cartesian::<N, Cartesian<N>>;
-
     /// Bounding sphere. Maybe should be part of the Particle trait?
     fn bounding_sphere(&self) -> Sphere<N>; // NOT minimal bounding sphere: just a small one
                                             // NOTE: HPMC will often access the (centered) bounding sphere - should be cached?
