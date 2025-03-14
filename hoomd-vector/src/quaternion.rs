@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement [`Quaternion`] and related types.
-*/
+ */
 use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
 use std::fmt;
@@ -547,6 +547,15 @@ impl Versor {
         })
     }
 
+    /// Get the unit quaternion.
+    #[inline]
+    #[must_use]
+    pub fn get(&self) -> &Quaternion {
+        &self.0
+    }
+}
+
+impl From<Versor> for RotationMatrix<3> {
     /** Construct a rotation matrix equivalent to this versor's rotation.
 
     When rotating many vectors by the same [`Versor`], improve performance
@@ -554,14 +563,14 @@ impl Versor {
 
     # Example
     ```
-    use hoomd_vector::{Versor, Rotate, Rotation, Cartesian};
+    use hoomd_vector::{Versor, Rotate, RotationMatrix, Cartesian};
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
     let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
 
-    let matrix = v.to_rotation_matrix();
+    let matrix = RotationMatrix::from(v);
     let b = matrix.rotate(&a);
     // b is approximately [0.0, -1.0, 0.0]
     # Ok(())
@@ -570,8 +579,8 @@ impl Versor {
     */
     #[inline]
     #[must_use]
-    pub fn to_rotation_matrix(&self) -> RotationMatrix<3> {
-        let Versor(quaternion) = *self;
+    fn from(versor: Versor) -> RotationMatrix<3> {
+        let Versor(quaternion) = versor;
         let a = quaternion.scalar;
         let b = quaternion.vector[0];
         let c = quaternion.vector[1];
@@ -600,13 +609,6 @@ impl Versor {
             ],
         }
     }
-
-    /// Get the unit quaternion.
-    #[inline]
-    #[must_use]
-    pub fn get(&self) -> &Quaternion {
-        &self.0
-    }
 }
 
 impl Default for Versor {
@@ -630,6 +632,8 @@ impl Default for Versor {
 }
 
 impl Rotate<Cartesian<3>> for Versor {
+    type Matrix = RotationMatrix<3>;
+
     /** Rotate a [`Cartesian<3>`] by a [`Versor`]
 
     <!-- \mathbf{q} \vec{a} \mathbf{q}^* -->
@@ -965,7 +969,7 @@ mod tests {
 
         #[rstest(
         theta => [0.0, PI/2.0, 1e-12 * PI, -3.0, 12345.6],
-        axis => [Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked(), Cartesian::from([1.0, -1.0, 1.0]).to_unit_unchecked()],
+        axis => [[1.0, 0.0, 0.0].try_into().expect("valid unit vector"), [1.0, -1.0, 1.0].try_into().expect("valid unit vector")],
     )]
         fn from_axis_angle(theta: f64, axis: Unit<Cartesian<3>>) {
             let Unit(axis_vector) = axis;
@@ -980,7 +984,7 @@ mod tests {
         theta_2 => [-0.0, -PI/3.0, PI, 2.0 * PI]
     )]
         fn combine_same_axis(theta_1: f64, theta_2: f64) {
-            let axis = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
+            let axis = [1.0, 0.0, 0.0].try_into().expect("valid unit vector");
             let Unit(axis_vector) = axis;
 
             let a = Versor::from_axis_angle(axis, theta_1);
@@ -1025,11 +1029,11 @@ mod tests {
         #[test]
         fn rotate() {
             let z_pi_2 = Versor::from_axis_angle(
-                Cartesian::from([0.0, 0.0, 1.0]).to_unit_unchecked(),
+                [0.0, 0.0, 1.0].try_into().expect("valid unit vector"),
                 PI / 2.0,
             );
             let y_pi_4 = Versor::from_axis_angle(
-                Cartesian::from([0.0, 1.0, 0.0]).to_unit_unchecked(),
+                [0.0, 1.0, 0.0].try_into().expect("valid unit vector"),
                 PI / 4.0,
             );
 
@@ -1038,16 +1042,14 @@ mod tests {
 
         #[test]
         fn precompute() {
-            let z_pi_2 = Versor::from_axis_angle(
-                Cartesian::from([0.0, 0.0, 1.0]).to_unit_unchecked(),
+            let z_pi_2 = RotationMatrix::from(Versor::from_axis_angle(
+                [0.0, 0.0, 1.0].try_into().expect("valid unit vector"),
                 PI / 2.0,
-            )
-            .to_rotation_matrix();
-            let y_pi_4 = Versor::from_axis_angle(
-                Cartesian::from([0.0, 1.0, 0.0]).to_unit_unchecked(),
+            ));
+            let y_pi_4 = RotationMatrix::from(Versor::from_axis_angle(
+                [0.0, 1.0, 0.0].try_into().expect("valid unit vector"),
                 PI / 4.0,
-            )
-            .to_rotation_matrix();
+            ));
 
             validate_rotations(&z_pi_2, &y_pi_4);
         }
@@ -1055,11 +1057,11 @@ mod tests {
         #[test]
         fn combine_different_axis() {
             let a = Versor::from_axis_angle(
-                Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked(),
+                [1.0, 0.0, 0.0].try_into().expect("valid unit vector"),
                 PI / 4.0,
             );
             let b = Versor::from_axis_angle(
-                Cartesian::from([0.0, 0.0, 1.0]).to_unit_unchecked(),
+                [0.0, 0.0, 1.0].try_into().expect("valid unit vector"),
                 PI / 2.0,
             );
 
@@ -1071,7 +1073,7 @@ mod tests {
         #[rstest(theta => [0.0, 1.0, 2.125])]
         fn inverted(theta: f64) {
             let q1 = Versor::from_axis_angle(
-                Cartesian::from([1.0, 0.5, -2.0]).to_unit_unchecked(),
+                [1.0, 0.5, -2.0].try_into().expect("valid unit vector"),
                 theta,
             );
             let q2 = q1.inverted();

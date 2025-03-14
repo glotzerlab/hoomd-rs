@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement canonical vector types.
-*/
+ */
 
 use std::array;
 use std::fmt;
@@ -208,7 +208,7 @@ impl<const N: usize> TryFrom<[f64; N]> for Unit<Cartesian<N>> {
     */
     #[inline]
     fn try_from(value: [f64; N]) -> Result<Self, Self::Error> {
-        Cartesian::from(value).to_unit()
+        Cartesian::from(value).to_unit().map(|t| t.0)
     }
 }
 
@@ -433,8 +433,8 @@ where
 Construct a [`RotationMatrix`] to efficiently rotate many vectors by the same rotation.
 
 See:
-* [`Angle::to_rotation_matrix()`](crate::Angle::to_rotation_matrix)
-* [`Versor::to_rotation_matrix()`](crate::Versor::to_rotation_matrix)
+* [`RotationMatrix::from<Angle>`]
+* [`RotationMatrix::from<Versor>`]
 
 [`RotationMatrix`] _intentionally_ does not implement [`Rotation`](crate::Rotation).
 [`Angle`](crate::Angle) and [`Versor`](crate::Versor) are representations of
@@ -448,31 +448,33 @@ pub struct RotationMatrix<const N: usize> {
 }
 
 impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
+    type Matrix = RotationMatrix<N>;
+
     #[inline]
     /** Rotate a [`Cartesian<N>`] by a [`RotationMatrix`]
 
     # Examples
     ```
-    use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
+    use hoomd_vector::{Angle, Rotate, RotationMatrix, Cartesian};
     use std::f64::consts::PI;
 
     let v = Cartesian::from([-1.0, 0.0]);
     let a = Angle::from(PI/2.0);
 
-    let matrix = a.to_rotation_matrix();
+    let matrix = RotationMatrix::from(a);
     let rotated = matrix.rotate(&v);
     // rotated is approximately [0.0, -1.0]
     ```
 
     ```
-    use hoomd_vector::{Versor, Rotate, Rotation, Cartesian};
+    use hoomd_vector::{Versor, Rotate, RotationMatrix, Cartesian};
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
     let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
 
-    let matrix = v.to_rotation_matrix();
+    let matrix = RotationMatrix::from(v);
     let b = matrix.rotate(&a);
     // b is approximately [0.0, -1.0, 0.0]
     # Ok(())
@@ -825,10 +827,10 @@ mod tests {
     #[test]
     fn to_unit() {
         let a = Cartesian::from((2.0, 0.0, 0.0));
-        let Unit(unit_a) = a.to_unit().expect("non-zero vector");
+        let (Unit(unit_a), _) = a.to_unit().expect("non-zero vector");
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
-        let Unit(unit_a) = a.to_unit_unchecked();
+        let (Unit(unit_a), _) = a.to_unit_unchecked();
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
         let Unit(unit_a) =
@@ -836,10 +838,10 @@ mod tests {
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
         let a = Cartesian::from((3.0, 0.0, 4.0));
-        let Unit(unit_a) = a.to_unit().expect("non-zero vector");
+        let (Unit(unit_a), _) = a.to_unit().expect("non-zero vector");
         assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
-        let Unit(unit_a) = a.to_unit_unchecked();
+        let (Unit(unit_a), _) = a.to_unit_unchecked();
         assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
         let Unit(unit_a) =
