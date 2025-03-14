@@ -3,7 +3,7 @@
 
 /*! Implement [`Quaternion`] and related types.
  */
-use rand::distributions::{Distribution, Standard, Uniform};
+use rand::distr::{Distribution, StandardUniform, Uniform};
 use rand::Rng;
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
@@ -452,7 +452,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut rng = StdRng::seed_from_u64(1);
-let v: Versor = rng.gen();
+let v: Versor = rng.random();
 # Ok(())
 # }
 ```
@@ -741,7 +741,7 @@ impl fmt::Display for Versor {
     }
 }
 
-impl Distribution<Versor> for Standard {
+impl Distribution<Versor> for StandardUniform {
     /** Sample a random [`Versor`] from the uniform distribution over all rotations.
 
     # Example
@@ -752,7 +752,7 @@ impl Distribution<Versor> for Standard {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = StdRng::seed_from_u64(1);
-    let v: Versor = rng.gen();
+    let v: Versor = rng.random();
     # Ok(())
     # }
     ```
@@ -760,7 +760,8 @@ impl Distribution<Versor> for Standard {
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Versor {
         // Algorithm from: https://stackoverflow.com/questions/31600717/how-to-generate-a-random-quaternion-quickly
-        let uniform = Uniform::new(-1.0, 1.0);
+        #[expect(clippy::expect_used, reason="This constants chosen for this distribution are valid")]
+        let uniform = Uniform::new(-1.0, 1.0).expect("a valid distribution");
 
         let (u, v) = loop {
             let u: f64 = uniform.sample(rng);
@@ -1131,7 +1132,7 @@ mod tests {
             let mut rng = StdRng::seed_from_u64(1);
 
             for _ in 0..samples {
-                let q: Versor = rng.gen();
+                let q: Versor = rng.random();
                 assert_relative_eq!(q.get().norm_squared(), 1.0, max_relative = 1e-15);
 
                 let v = q.rotate(&reference);

@@ -20,13 +20,13 @@ fn main() {
 fn energy(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
-    let epsilon: f64 = rng.gen();
-    let sigma: f64 = rng.gen();
+    let epsilon: f64 = rng.random();
+    let sigma: f64 = rng.random();
     let lj: LennardJones = LennardJones::new(epsilon, sigma);
 
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| -> f64 { rng.gen::<f64>() })
+        .with_inputs(|| -> f64 { rng.random::<f64>() })
         .bench_local_values(|r| black_box(lj.energy(r)));
 }
 
@@ -34,12 +34,12 @@ fn energy(bencher: Bencher) {
 fn force(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
-    let epsilon: f64 = rng.gen();
-    let sigma: f64 = rng.gen();
+    let epsilon: f64 = rng.random();
+    let sigma: f64 = rng.random();
     let lj: LennardJones = LennardJones::new(epsilon, sigma);
 
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| -> f64 { rng.gen::<f64>() })
+        .with_inputs(|| -> f64 { rng.random::<f64>() })
         .bench_local_values(|r| black_box(lj.force(r)));
 }

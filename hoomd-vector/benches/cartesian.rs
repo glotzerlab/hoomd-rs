@@ -3,12 +3,13 @@
 
 #![allow(missing_docs)]
 #![allow(clippy::missing_docs_in_private_items)]
+#![allow(clippy::expect_used)]
 
 /*! Benchmark Cartesian */
 
 use divan::counter::ItemsCount;
 use divan::{self, black_box, Bencher};
-use rand::distributions::Uniform;
+use rand::distr::Uniform;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use hoomd_vector::{Cartesian, Cross, Vector};
@@ -18,7 +19,7 @@ fn main() {
 }
 
 fn create_random_vector_pair<const N: usize, R: Rng>(rng: &mut R) -> (Cartesian<N>, Cartesian<N>) {
-    (rng.gen::<Cartesian<N>>(), rng.gen::<Cartesian<N>>())
+    (rng.random::<Cartesian<N>>(), rng.random::<Cartesian<N>>())
 }
 
 const DIMENSIONS: &[usize] = &[2, 3, 8, 16, 32, 128];
@@ -27,7 +28,7 @@ const DIMENSIONS: &[usize] = &[2, 3, 8, 16, 32, 128];
 fn create_vecn_tryfrom_vec<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
-    let range = Uniform::new(-100.0, 100.0);
+    let range = Uniform::new(-100.0, 100.0).expect("a valid distribution");
     bencher
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| -> Vec<f64> { (&mut rng).sample_iter(range).take(N).collect() })
@@ -102,5 +103,5 @@ fn gen_random<const N: usize>(bencher: Bencher) {
 
     bencher
         .counter(ItemsCount::from(1_u32))
-        .bench_local(|| black_box(rng.gen::<Cartesian<N>>()));
+        .bench_local(|| black_box(rng.random::<Cartesian<N>>()));
 }

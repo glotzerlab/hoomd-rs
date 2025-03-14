@@ -153,9 +153,9 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut rng = StdRng::seed_from_u64(1);
-let angle: Angle = rng.gen();
-let vector: Cartesian::<3> = rng.gen();
-let versor: Versor = rng.gen();
+let angle: Angle = rng.random();
+let vector: Cartesian::<3> = rng.random();
+let versor: Versor = rng.random();
 # Ok(())
 # }
 ```
