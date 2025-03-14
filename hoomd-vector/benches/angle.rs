@@ -7,8 +7,8 @@
 /*! Benchmark Angle */
 
 use divan::counter::ItemsCount;
-use divan::{self, black_box, Bencher};
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use divan::{self, Bencher, black_box};
+use rand::{Rng, SeedableRng, rngs::StdRng};
 
 use hoomd_vector::{Angle, Cartesian, Rotate, RotationMatrix};
 

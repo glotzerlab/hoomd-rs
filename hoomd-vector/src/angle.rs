@@ -4,8 +4,8 @@
 /*! Implement [`Angle`]
  */
 
-use rand::distr::{Distribution, StandardUniform, Uniform};
 use rand::Rng;
+use rand::distr::{Distribution, StandardUniform, Uniform};
 use std::f64::consts::PI;
 use std::fmt;
 
@@ -269,7 +269,10 @@ impl Distribution<Angle> for StandardUniform {
     */
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Angle {
-        #[expect(clippy::expect_used, reason="This constants chosen for this distribution are valid")]
+        #[expect(
+            clippy::expect_used,
+            reason = "This constants chosen for this distribution are valid"
+        )]
         let uniform = Uniform::new(0.0, 2.0 * PI).expect("a valid distribution");
         Angle::from(uniform.sample(rng))
     }
@@ -311,7 +314,7 @@ mod approx {
 mod tests {
     use super::*;
     use ::approx::assert_relative_eq;
-    use rand::{rngs::StdRng, SeedableRng};
+    use rand::{SeedableRng, rngs::StdRng};
     use rstest::*;
     use std::f64::consts::PI;
 

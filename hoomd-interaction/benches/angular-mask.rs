@@ -8,8 +8,8 @@
 /*! Benchmark `LennardJones` */
 
 use divan::counter::ItemsCount;
-use divan::{self, black_box, Bencher};
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use divan::{self, Bencher, black_box};
+use rand::{Rng, SeedableRng, rngs::StdRng};
 use std::f64::consts::PI;
 
 use hoomd_interaction::pairwise::angular_mask::Patch;

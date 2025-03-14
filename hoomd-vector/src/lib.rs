@@ -568,7 +568,7 @@ pub trait Rotation {
     #[must_use]
     fn inverted(self) -> Self;
 
-    #[expect(clippy::doc_markdown, reason="False positive error")]
+    #[expect(clippy::doc_markdown, reason = "False positive error")]
     /** Combine two rotations.
 
     The resulting rotation `R_ab` will rotate by **first** `R_b` _followed by_ a

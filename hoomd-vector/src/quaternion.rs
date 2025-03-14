@@ -3,8 +3,8 @@
 
 /*! Implement [`Quaternion`] and related types.
  */
-use rand::distr::{Distribution, StandardUniform, Uniform};
 use rand::Rng;
+use rand::distr::{Distribution, StandardUniform, Uniform};
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
@@ -760,7 +760,10 @@ impl Distribution<Versor> for StandardUniform {
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Versor {
         // Algorithm from: https://stackoverflow.com/questions/31600717/how-to-generate-a-random-quaternion-quickly
-        #[expect(clippy::expect_used, reason="This constants chosen for this distribution are valid")]
+        #[expect(
+            clippy::expect_used,
+            reason = "This constants chosen for this distribution are valid"
+        )]
         let uniform = Uniform::new(-1.0, 1.0).expect("a valid distribution");
 
         let (u, v) = loop {
@@ -855,7 +858,7 @@ mod approx {
 mod tests {
     use super::*;
     use ::approx::{assert_abs_diff_eq, assert_relative_eq};
-    use rand::{rngs::StdRng, SeedableRng};
+    use rand::{SeedableRng, rngs::StdRng};
     use rstest::*;
     use std::f64::consts::PI;
 

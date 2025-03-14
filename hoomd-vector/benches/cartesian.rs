@@ -8,9 +8,9 @@
 /*! Benchmark Cartesian */
 
 use divan::counter::ItemsCount;
-use divan::{self, black_box, Bencher};
+use divan::{self, Bencher, black_box};
 use rand::distr::Uniform;
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::{Rng, SeedableRng, rngs::StdRng};
 
 use hoomd_vector::{Cartesian, Cross, Vector};
 

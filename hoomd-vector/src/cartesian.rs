@@ -11,8 +11,8 @@ use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
 
-use rand::distr::{Distribution, StandardUniform, Uniform};
 use rand::Rng;
+use rand::distr::{Distribution, StandardUniform, Uniform};
 
 use crate::{Cross, Error, Rotate, Unit, Vector};
 
@@ -372,7 +372,10 @@ impl<const N: usize> Distribution<Cartesian<N>> for StandardUniform {
     */
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
-        #[expect(clippy::expect_used, reason="This constants chosen for this distribution are valid")]
+        #[expect(
+            clippy::expect_used,
+            reason = "This constants chosen for this distribution are valid"
+        )]
         let uniform = Uniform::new_inclusive(-1.0, 1.0).expect("a valid distribution");
         Cartesian {
             coordinates: array::from_fn(|_| uniform.sample(rng)),
@@ -532,7 +535,7 @@ mod approx {
 mod tests {
     use super::*;
     use paste::paste;
-    use rand::{rngs::StdRng, SeedableRng};
+    use rand::{SeedableRng, rngs::StdRng};
 
     // Parameterize a test function over an array of vector lengths
     macro_rules! parameterize_vector_length {
