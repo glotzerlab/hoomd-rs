@@ -11,8 +11,8 @@ use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
 
-use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
+use rand::distr::{Distribution, StandardUniform, Uniform};
 
 use crate::{Cross, Error, Rotate, Unit, Vector};
 
@@ -45,7 +45,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut rng = StdRng::seed_from_u64(1);
-let v: Cartesian::<3> = rng.gen();
+let v: Cartesian::<3> = rng.random();
 # Ok(())
 # }
 ```
@@ -352,7 +352,7 @@ impl Cross for Cartesian<3> {
     }
 }
 
-impl<const N: usize> Distribution<Cartesian<N>> for Standard {
+impl<const N: usize> Distribution<Cartesian<N>> for StandardUniform {
     /** Sample a Cartesian vector from the uniform [-1, 1] hypercube.
 
     Each coordinate in the vector is in the closed range [-1, 1].
@@ -365,14 +365,18 @@ impl<const N: usize> Distribution<Cartesian<N>> for Standard {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = StdRng::seed_from_u64(1);
-    let v: Cartesian::<3> = rng.gen();
+    let v: Cartesian::<3> = rng.random();
     # Ok(())
     # }
     ```
     */
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
-        let uniform = Uniform::new_inclusive(-1.0, 1.0);
+        #[expect(
+            clippy::expect_used,
+            reason = "This constants chosen for this distribution are valid"
+        )]
+        let uniform = Uniform::new_inclusive(-1.0, 1.0).expect("a valid distribution");
         Cartesian {
             coordinates: array::from_fn(|_| uniform.sample(rng)),
         }
@@ -531,7 +535,7 @@ mod approx {
 mod tests {
     use super::*;
     use paste::paste;
-    use rand::{rngs::StdRng, SeedableRng};
+    use rand::{SeedableRng, rngs::StdRng};
 
     // Parameterize a test function over an array of vector lengths
     macro_rules! parameterize_vector_length {
@@ -812,7 +816,7 @@ mod tests {
     fn random_in_range<const N: usize>() {
         // Loosely verify we are drawing from the correct distribution
         let mut rng = StdRng::seed_from_u64(1);
-        let a: Cartesian<N> = rng.gen();
+        let a: Cartesian<N> = rng.random();
 
         assert!(a.coordinates.iter().all(|&x| -1.0 < x && x < 1.0));
 

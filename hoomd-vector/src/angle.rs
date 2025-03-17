@@ -4,8 +4,8 @@
 /*! Implement [`Angle`]
  */
 
-use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
+use rand::distr::{Distribution, StandardUniform, Uniform};
 use std::f64::consts::PI;
 use std::fmt;
 
@@ -34,7 +34,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut rng = StdRng::seed_from_u64(1);
-let a: Angle = rng.gen();
+let a: Angle = rng.random();
 # Ok(())
 # }
 ```
@@ -251,7 +251,7 @@ impl fmt::Display for Angle {
     }
 }
 
-impl Distribution<Angle> for Standard {
+impl Distribution<Angle> for StandardUniform {
     /** Sample a random angle from the uniform distribution over all rotations.
 
     # Example
@@ -262,14 +262,18 @@ impl Distribution<Angle> for Standard {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = StdRng::seed_from_u64(1);
-    let v: Angle = rng.gen();
+    let v: Angle = rng.random();
     # Ok(())
     # }
     ```
     */
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Angle {
-        let uniform = Uniform::new(0.0, 2.0 * PI);
+        #[expect(
+            clippy::expect_used,
+            reason = "This constants chosen for this distribution are valid"
+        )]
+        let uniform = Uniform::new(0.0, 2.0 * PI).expect("a valid distribution");
         Angle::from(uniform.sample(rng))
     }
 }
@@ -310,7 +314,7 @@ mod approx {
 mod tests {
     use super::*;
     use ::approx::assert_relative_eq;
-    use rand::{rngs::StdRng, SeedableRng};
+    use rand::{SeedableRng, rngs::StdRng};
     use rstest::*;
     use std::f64::consts::PI;
 
@@ -403,7 +407,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(1);
 
         for _ in 0..10000 {
-            let a: Angle = rng.gen();
+            let a: Angle = rng.random();
             assert!(a.theta >= 0.0 && a.theta < 2.0 * PI);
         }
     }
