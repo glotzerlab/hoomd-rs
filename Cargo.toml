@@ -2,7 +2,8 @@
 
 members = [
   "hoomd-vector",
-  "hoomd-interaction"
+  "hoomd-interaction",
+  "hoomd-random"
 ]
 
 resolver = "3"
