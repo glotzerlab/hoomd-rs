@@ -40,10 +40,35 @@ use rand::{Rng, SeedableRng};
     use these as needed when many independent streams are needed per particle,
     per substep.
 
+    # Performance
+
+    The current implementation uses `ChaCha8`. `ChaCha` generates random numbers
+    in 64 word batches. Benchmarks show that `Counter.new(...).make_rng()`
+    and sampling values that fall in the first batch runs at approximately
+    10 million operations per second (run `cargo bench` to see the measured
+    performance on your architecture). This is slow enough that serial
+    algorithms should make ONE random generator and sample from it repeatedly
+    (instead of e.g. making one random generator per particle). Parallel
+    algorithms by necessity must make many different random generators from
+    different counters. Should `ChaCha` prove to be a bottleneck in practice,
+    this implementation may be switched to a more efficient RNG.
+
     # Example
 
-    TODO
+    ```
+    use hoomd_random::Counter;
+    use rand::Rng;
+
+    # let step = 100_000;
+    # let substep = 10;
+    # let seed = 100;
+    let mut rng = Counter::new(step, substep, seed)
+        .make_rng();
+
+    let r: f64 = rng.random();
+    ```
 */
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Counter {
     /// The current simulation step.
     step: u64,
@@ -76,7 +101,6 @@ impl Counter {
     # let step = 100_000;
     # let substep = 10;
     # let seed = 100;
-
     let counter = Counter::new(step, substep, seed);
     ```
     */
@@ -97,8 +121,8 @@ impl Counter {
 
     /** Set indices.
 
-    There are only 2 indices. Calling [`indices`] (or [`index`]) more than once
-    will overwrite existing values.
+    There are only 2 indices. Calling `indices` (or [`index`](Self::index)) more
+    than once will overwrite existing values.
 
     # Example
 
@@ -111,7 +135,6 @@ impl Counter {
     # let seed = 100;
     # let i = 12;
     # let j = 152;
-
     let counter = Counter::new(step, substep, seed)
         .indices(cmp::min(i, j), cmp::max(i, j));
     ```
@@ -137,7 +160,6 @@ impl Counter {
     # let substep = 10;
     # let seed = 100;
     # let i = 12;
-
     let counter = Counter::new(step, substep, seed)
         .index(i);
     ```
@@ -151,8 +173,8 @@ impl Counter {
 
     /** Set counters.
 
-    There are only 3 counters. Calling [`counter`] (or [`counter`]) more than
-    once will overwrite existing values.
+    There are only 3 counters. Calling `counters` (or
+    [`counter`](Self::counter)) more than once will overwrite existing values.
 
     # Example
 
@@ -165,7 +187,6 @@ impl Counter {
     # let a = 12;
     # let b = 54;
     # let c = 62;
-
     let counter = Counter::new(step, substep, seed)
         .counters(a, b, c);
     ```
@@ -191,7 +212,6 @@ impl Counter {
     # let step = 100_000;
     # let substep = 10;
     # let seed = 100;
-
     let counter = Counter::new(step, substep, seed)
         .counter(1);
     ```
@@ -205,6 +225,8 @@ impl Counter {
 
     /** Seed a [`Rng`] with the counter.
 
+    # Example
+
     ```
     use hoomd_random::Counter;
     use rand::Rng;
@@ -212,7 +234,6 @@ impl Counter {
     # let step = 100_000;
     # let substep = 10;
     # let seed = 100;
-
     let mut rng = Counter::new(step, substep, seed)
         .make_rng();
 
@@ -245,5 +266,46 @@ impl Counter {
         let mut rng = ChaCha8Rng::from_seed(seed);
         rng.set_stream(stream);
         rng
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Number of stream elements to sample.
+    const N: usize = 256;
+
+    #[test]
+    fn independent() {
+        // This test is not exhaustive, but serves as a quick check that the
+        // different elements in Counter indeed produce different random
+        // number streams.
+
+        let counters = vec![
+            Counter::new(0, 0, 0),
+            Counter::new(1, 0, 0),
+            Counter::new(0, 1, 0),
+            Counter::new(0, 0, 1),
+            *Counter::new(0, 0, 0).indices(1, 0),
+            *Counter::new(0, 0, 0).indices(0, 1),
+            *Counter::new(0, 0, 0).index(2),
+            *Counter::new(0, 0, 0).counters(1, 0, 0),
+            *Counter::new(0, 0, 0).counters(0, 1, 0),
+            *Counter::new(0, 0, 0).counters(0, 0, 1),
+            *Counter::new(0, 0, 0).counter(2),
+        ];
+
+        for (i, counter_i) in counters.iter().enumerate() {
+            for (j, counter_j) in counters.iter().enumerate() {
+                let mut rng_i = counter_i.make_rng();
+                let values_i = core::array::from_fn::<_, N, _>(|_| rng_i.random::<f64>());
+
+                let mut rng_j = counter_j.make_rng();
+                let values_j = core::array::from_fn::<_, N, _>(|_| rng_j.random::<f64>());
+
+                assert_eq!(values_i == values_j, i == j);
+            }
+        }
     }
 }
