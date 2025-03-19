@@ -11,7 +11,7 @@ Based on the usage in HOOMD-blue, methods will need a way to create RNGs with
 a fixed seed layout that includes the timestep, substep, and user seed. HOOMD-blue
 uses 1 to 3 counter values to generate unique random numbers along with that seed.
 Those values may be particle tags, chain ids, MPI ranks, etc... The caller chooses
-whatever is needed for its algorithm. 
+whatever is needed for its algorithm.
 
 The ChaCha CBRNG is readily available in Rust. Unless it proves to be too slow, hoomd-rs
 will use it. ChaCha has 32 bytes in the seed and 12 in the stream identifier. These are
@@ -31,8 +31,7 @@ pattern to construct the seed along these lines:
 
 ```
 let rng = Counter::new(step, substep, seed)
-    .index0(i)
-    .index1(j)
-    .counter0(chain)
+    .indices(i, j)
+    .counter(chain)
     .make_rng();
 ```

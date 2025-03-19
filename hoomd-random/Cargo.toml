@@ -16,12 +16,12 @@ workspace = true
 
 [dependencies]
 rand = "0.9.0"
+chacha20 = { version = "0.10.0-pre.3", default-features = false, features = ["rng"]}
 
 [dev-dependencies]
 divan = "0.1.17"
 rstest = "0.25.0"
 rand_chacha = "0.9.0"
-chacha20 = { version = "0.10.0-pre.3", default-features = false, features = ["rng"]}
 
 [[bench]]
 name = "chacha"
