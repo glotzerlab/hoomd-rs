@@ -4,8 +4,8 @@
 /*! Implement [`Microstate`] and related types.
  */
 
-use std::collections::BinaryHeap;
 use std::cmp::Reverse;
+use std::collections::BinaryHeap;
 
 use crate::{Body, Site, Transform, boundary::Open};
 
@@ -59,13 +59,13 @@ pub struct Microstate<B, S = B, C = Open> {
     free_site_tags: BinaryHeap<Reverse<usize>>,
 
     /// Indices of the sites associated with the bodies (in index order).
-    bodies_sites: Vec<Vec<usize>>, 
+    bodies_sites: Vec<Vec<usize>>,
 
     /// The range of allowed particle positions and a description of any periodicity.
     boundary: C,
 }
 
-impl<B, S> Default for Microstate<B, S, Open> {   
+impl<B, S> Default for Microstate<B, S, Open> {
     /** Construct an empty microstate with open boundary conditions.
 
     See [`Microstate::new`].
@@ -112,7 +112,8 @@ impl<B, S> Microstate<B, S, Open> {
             bodies_sites: Vec::new(),
             boundary: Open,
         }
-    }}
+    }
+}
 
 /// Access and manage the simulation step, substep, and RNG seeds.
 impl<B, S, C> Microstate<B, S, C> {
@@ -227,7 +228,7 @@ impl<B, S, C> Microstate<B, S, C> {
     /** Get the simulation seed.
 
     # Examples:
-    
+
     Get the simulation seed.
     ```
     use hoomd_microstate::{Microstate, property::Point};
@@ -301,8 +302,7 @@ The PhantomData solution feels like more of a hack, so this code implements the 
 
 /** Manage bodies in the microstate.
 */
-impl<B, S, C> Microstate<B, S, C>
-{
+impl<B, S, C> Microstate<B, S, C> {
     /** Add a new body to the microstate.
 
     Each body is assigned a unique tag. The first body is given tag 0,
@@ -339,15 +339,20 @@ impl<B, S, C> Microstate<B, S, C>
     ```
     */
     #[inline]
-    pub fn add_body(&mut self, body: Body<B, S>) -> usize where
-B: Transform<S>{
+    pub fn add_body(&mut self, body: Body<B, S>) -> usize
+    where
+        B: Transform<S>,
+    {
         let body_tag = match self.free_body_tags.pop() {
             None => self.body_indices.len(),
             Some(t) => t.0,
         };
-        self.bodies.push(Tagged { tag: body_tag, item: body });
+        self.bodies.push(Tagged {
+            tag: body_tag,
+            item: body,
+        });
 
-        let index = Some(self.bodies.len()-1);
+        let index = Some(self.bodies.len() - 1);
 
         if body_tag == self.body_indices.len() {
             self.body_indices.push(index);
@@ -379,9 +384,11 @@ B: Transform<S>{
     ```
     */
     #[inline]
-    pub fn extend_bodies<T>(&mut self, bodies: T) where
-    T: IntoIterator<Item = Body<B, S>>,
-    B: Transform<S>{
+    pub fn extend_bodies<T>(&mut self, bodies: T)
+    where
+        T: IntoIterator<Item = Body<B, S>>,
+        B: Transform<S>,
+    {
         for body in bodies {
             self.add_body(body);
         }
@@ -434,8 +441,10 @@ B: Transform<S>{
     }
 
     #[inline]
-    pub fn update_body_properties(&mut self, index: usize, properties: B) where
-B: Transform<S>{
+    pub fn update_body_properties(&mut self, index: usize, properties: B)
+    where
+        B: Transform<S>,
+    {
         self.bodies[index].item.properties = properties;
 
         // TODO: Update site properties
@@ -445,7 +454,6 @@ B: Transform<S>{
 /** Access contents of the microstate.
 */
 impl<B, S, C> Microstate<B, S, C> {
-
     /** Access the microstate's tagged bodies in index order.
 
     [`Microstate`] stores bodies in a flat memory region. The [`Tagged`] type
@@ -490,14 +498,14 @@ impl<B, S, C> Microstate<B, S, C> {
     ```
     */
     #[inline]
-    pub fn bodies(&self) -> &[Tagged<Body<B,S>>] {
+    pub fn bodies(&self) -> &[Tagged<Body<B, S>>] {
         &self.bodies
     }
 
     /** Identify the index of a body given a tag.
 
     Use `body_indices` to locate a specific body in [`Microstate::bodies`].
-    
+
     `body_indices()[tag]` is:
     * `None` when there is no body with the given tag in the microstate.
     * `Some(index)` when the body with the given tag is in the microstate.
@@ -561,11 +569,11 @@ assert_eq!(microstate.seed(), 0x1234abcd);
 assert_eq!(microstate.bodies().len(), 2);
 ```
 */
-pub struct MicrostateBuilder<B, S=B, C=Open> {
+pub struct MicrostateBuilder<B, S = B, C = Open> {
     /// The initial value for step in the resulting [`Microstate`].
     step: u64,
     /// The random number seed to set in the resulting [`Microstate`].
-    seed: u32,   
+    seed: u32,
     /// Bodies to add to the resulting [`Microstate`].
     bodies: Vec<Body<B, S>>,
     /// Boundary conditions to apply in the resulting [`Microstate`].
@@ -615,7 +623,12 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     */
     #[inline]
     pub fn with_boundary(boundary: C) -> Self {
-        Self { step: 0, seed: 0, bodies: Vec::new(), boundary }
+        Self {
+            step: 0,
+            seed: 0,
+            bodies: Vec::new(),
+            boundary,
+        }
     }
 
     /** Choose the initial step in the resulting [`Microstate`].
@@ -688,8 +701,9 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     */
     #[inline]
     #[must_use]
-    pub fn bodies<T>(mut self, bodies: T) -> Self where
-    T: IntoIterator<Item = Body<B, S>>,
+    pub fn bodies<T>(mut self, bodies: T) -> Self
+    where
+        T: IntoIterator<Item = Body<B, S>>,
     {
         self.bodies.extend(bodies);
         self
@@ -717,9 +731,14 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     */
     #[inline]
     #[must_use]
-    pub fn build(self) -> Microstate<B, S, C> where
-    B: Transform<S> {
-        let mut microstate = Microstate { step: self.step, substep: 0, seed: self.seed,
+    pub fn build(self) -> Microstate<B, S, C>
+    where
+        B: Transform<S>,
+    {
+        let mut microstate = Microstate {
+            step: self.step,
+            substep: 0,
+            seed: self.seed,
             boundary: self.boundary,
             bodies: Vec::new(),
             body_indices: Vec::new(),
@@ -731,7 +750,7 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
         };
 
         microstate.extend_bodies(self.bodies);
-        
+
         microstate
     }
 }

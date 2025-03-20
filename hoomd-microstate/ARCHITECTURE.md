@@ -290,7 +290,7 @@ of sites does not change. We could use `Box<[Site]>` which is not as convenient
 to resize, but a caller could still replace the site pointer when given a
 mutable `Body`, so this offers no additional benefits. `Body` will provide
 access to sites through an accessor method that provides a slice. Callers with
-a mutable `Body` can rearrange the slice, but not change the number of elements. 
+a mutable `Body` can rearrange the slice, but not change the number of elements.
 
 The Body should retain ownership of its sites in the process, as moving
 ownership to the `Microstate` will prevent `Body` from standing on its own.
@@ -369,7 +369,7 @@ allow removed ghost particles to leave a `None` sentinel at the same index in
 the array to maintain O(1) particle updates with a neighbor list.
 
 Microstate will need to maintain auxiliary data structures to maintain
-O(1) updates such as a list of ghost site indices for each site. 
+O(1) updates such as a list of ghost site indices for each site.
 
 Incremental updates to bodies must also update all of their sites and sites'
 ghosts AND the linked spatial data structures. Complete system updates are

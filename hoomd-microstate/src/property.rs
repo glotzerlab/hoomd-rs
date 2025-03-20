@@ -4,8 +4,8 @@
 /*! Traits that describe body and/or site properties a a selection types that implement them.
  */
 
-use hoomd_vector::Vector;
 use crate::Transform;
+use hoomd_vector::Vector;
 
 /** Locate sites and bodies.
 
@@ -86,7 +86,6 @@ pub struct Point<V> {
 }
 
 impl<V> Point<V> {
-
     /** Construct a new point at the given position.
 
     # Example
@@ -100,12 +99,13 @@ impl<V> Point<V> {
     pub fn new(position: V) -> Self {
         Self { position }
     }
-}   
+}
 
 /** Move [`Point`] properties from the local body frame to the system frame.
 */
-impl<V> Transform<Point<V>> for Point<V> where
-V: Vector
+impl<V> Transform<Point<V>> for Point<V>
+where
+    V: Vector,
 {
     /** Points transform by vector addition.
 
@@ -114,6 +114,8 @@ V: Vector
     */
     #[inline]
     fn transform(&self, site_properties: &Point<V>) -> Point<V> {
-        Point { position: self.position + site_properties.position }
+        Point {
+            position: self.position + site_properties.position,
+        }
     }
 }

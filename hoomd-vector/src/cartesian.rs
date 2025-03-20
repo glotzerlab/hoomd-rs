@@ -452,9 +452,11 @@ where
 impl<const N: usize> Sum for Cartesian<N> {
     #[inline]
     fn sum<I>(iter: I) -> Self
-           where I: Iterator<Item = Self> {
-                iter.fold(Cartesian::default(), |acc, x| acc + x)
-        }
+    where
+        I: Iterator<Item = Self>,
+    {
+        iter.fold(Cartesian::default(), |acc, x| acc + x)
+    }
 }
 
 /** Rotate vectors efficiently.
@@ -887,7 +889,9 @@ mod tests {
 
     #[test]
     fn sum() {
-        let total: Cartesian<2> = [Cartesian::from((1.0, 2.0)), Cartesian::from((-2.0, -1.0))].into_iter().sum();
+        let total: Cartesian<2> = [Cartesian::from((1.0, 2.0)), Cartesian::from((-2.0, -1.0))]
+            .into_iter()
+            .sum();
 
         assert_eq!(total, [-1.0, 1.0].into());
     }
