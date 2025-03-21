@@ -128,7 +128,6 @@ impl Counter {
 
     ```
     use hoomd_random::Counter;
-    use std::cmp;
 
     # let step = 100_000;
     # let substep = 10;
@@ -136,7 +135,7 @@ impl Counter {
     # let i = 12;
     # let j = 152;
     let counter = Counter::new(step, substep, seed)
-        .indices(cmp::min(i, j), cmp::max(i, j));
+        .indices(i.max(j), i.min(j));
     ```
     */
     #[must_use]
