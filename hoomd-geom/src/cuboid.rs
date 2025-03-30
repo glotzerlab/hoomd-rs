@@ -95,6 +95,7 @@ mod tests {
     use super::*;
     use hoomd_vector::Versor;
     use rstest::*;
+    use std::marker::PhantomData;
 
     #[rstest(
         edges0 => [[2.0, 2.0, 2.0]],
@@ -111,10 +112,27 @@ mod tests {
         // TODO: is there a more programmatic way to test this?
     }
 
-    //     #[rstest]
-    //     // fn check_box_extents<#[values(1, 2, 3)] const N: usize>() {
-    //     #[case(4)]
-    //     fn check_box_extents<const N: usize>() {
-    //         let (s0, s1) = (Cuboid::from([0.0; N]), Cuboid::from([1.0; N]));
-    //     }
+    #[rstest(
+        _n => [
+            PhantomData::<Cuboid<0>>::default(),
+            PhantomData::<Cuboid<1>>::default(),
+            PhantomData::<Cuboid<2>>::default(),
+            PhantomData::<Cuboid<3>>::default(),
+            PhantomData::<Cuboid<4>>::default()
+        ],
+        l => [1e-6, 1.0, 3.456, 99999999.9],
+    )]
+    fn check_box_extents<const N: usize>(_n: PhantomData<Cuboid<N>>, l: f64) {
+        let c = Cuboid::from([l; N]);
+        assert_eq!(c.maximal_extents(), [l / 2.0; N].into());
+        assert_eq!(c.minimal_extents(), [-l / 2.0; N].into());
+    }
+
+    #[rstest(
+        l => [1e-6, 1.0, 3.456, 99999999.9],
+    )]
+    fn check_box_abc(l: f64) {
+        let c = Cuboid::from([l; 3]);
+        assert_eq!([c.a(), c.b(), c.c()], [l; 3]);
+    }
 }

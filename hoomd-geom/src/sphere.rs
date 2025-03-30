@@ -78,8 +78,8 @@ impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Sphere<N>, V, R> for 
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
-    use paste::paste;
     use rstest::*;
+    use std::marker::PhantomData;
 
     fn volume_map(n: usize) -> f64 {
         match n {
@@ -92,34 +92,32 @@ mod tests {
             _ => unreachable!(),
         }
     }
-    // Parameterize a test function over an array of vector lengths
-    macro_rules! parameterize_vector_length {
-        ($test_body:ident, [$($dim:expr),*]) => {
-            $(
-                paste! {
-                    #[test]
-                    fn [< $test_body "_" $dim>]() {
-                        const DIM: usize = $dim;
-                        $test_body::<DIM>();
-                    }
-                }
-            )*
-        };
-    }
 
-    fn volume_and_radius<const N: usize>() {
+    #[rstest]
+    #[case(PhantomData::<Sphere<0>>::default())]
+    #[case(PhantomData::<Sphere<1>>::default())]
+    #[case(PhantomData::<Sphere<2>>::default())]
+    #[case(PhantomData::<Sphere<3>>::default())]
+    #[case(PhantomData::<Sphere<4>>::default())]
+    #[case(PhantomData::<Sphere<5>>::default())]
+    fn test_volume_and_radius<const N: usize>(#[case] _n: PhantomData<Sphere<N>>) {
         let s = Sphere::<N>::from(1.0);
         assert_eq!(s.r, 1.0);
         assert_eq!(s, Sphere::<N>::default());
         assert_relative_eq!(s.volume(), volume_map(N));
     }
-    parameterize_vector_length!(volume_and_radius, [0, 1, 2, 3, 4, 5]);
 
-    fn bounding_sphere<const N: usize>() {
+    #[rstest]
+    #[case(PhantomData::<Sphere<0>>::default())]
+    #[case(PhantomData::<Sphere<1>>::default())]
+    #[case(PhantomData::<Sphere<2>>::default())]
+    #[case(PhantomData::<Sphere<3>>::default())]
+    #[case(PhantomData::<Sphere<4>>::default())]
+    #[case(PhantomData::<Sphere<5>>::default())]
+    fn test_bounding_sphere<const N: usize>(#[case] _n: PhantomData<Sphere<N>>) {
         let s = Sphere::<N>::default();
         assert_eq!(s, s.bounding_sphere());
     }
-    parameterize_vector_length!(bounding_sphere, [0, 1, 2, 3, 4, 5]);
 
     #[rstest]
     fn test_n_factorial(#[values(1, 2, 3, 4)] m: usize) {
