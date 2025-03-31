@@ -470,10 +470,14 @@ B: Transform<S>{
     #[inline]
     pub fn update_body_properties(&mut self, body_index: usize, properties: B) where
 B: Transform<S>{
-        self.bodies[body_index].item.properties = properties;
+        let body = &mut self.bodies[body_index].item;
+        body.properties = properties;
 
-        // TODO: Update site properties
-        // TODO: Joseph
+        // Update site properties
+        for (i, site_tag) in self.bodies_sites[body_index].iter().enumerate() {
+            let site_index = self.site_indices[*site_tag].expect("site_tag should be a valid tag");
+            self.sites[site_index].properties = body.properties.transform(&body.sites[i]);
+        }
     }
 }
 
