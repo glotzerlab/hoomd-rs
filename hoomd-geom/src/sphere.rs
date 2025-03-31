@@ -75,6 +75,7 @@ impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Sphere<N>, V, R> for 
 }
 
 #[cfg(test)]
+#[allow(clippy::used_underscore_binding)]
 mod tests {
     use super::*;
     use approx::assert_relative_eq;

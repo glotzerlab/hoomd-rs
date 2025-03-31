@@ -39,11 +39,8 @@ impl Cuboid<3> {
 }
 
 impl<const N: usize> Volume for Cuboid<N> {
+    #[inline]
     fn volume(&self) -> f64 {
-        // match N {
-        //     0 => 0.0,
-        //     _ => self.edge_lengths.into_iter().reduce(|acc, x| acc * x).unwrap_or(0.0),
-        // }
         self.edge_lengths
             .into_iter()
             .reduce(|acc, x| acc * x)
@@ -105,6 +102,7 @@ impl<const N: usize, R: Rotate<Cartesian<N>> + Rotation + PartialEq>
 }
 
 #[cfg(test)]
+#[allow(clippy::used_underscore_binding)]
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
