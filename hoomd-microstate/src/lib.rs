@@ -14,10 +14,10 @@
 */
 
 pub mod boundary;
-pub mod property;
 mod microstate;
+pub mod property;
 
-pub use microstate::{Microstate, MicrostateBuilder};
+pub use microstate::{Microstate, MicrostateBuilder, Tagged};
 
 use property::Point;
 
@@ -74,8 +74,14 @@ impl<V> Body<Point<V>, Point<V>> {
     */
     #[inline]
     #[must_use]
-    pub fn point(position: V) -> Self where V: Default{
-        Self { properties: Point::new(position), sites: vec![Point::default()], }
+    pub fn point(position: V) -> Self
+    where
+        V: Default,
+    {
+        Self {
+            properties: Point::new(position),
+            sites: vec![Point::default()],
+        }
     }
 }
 
@@ -90,4 +96,3 @@ pub trait Transform<S> {
     #[must_use]
     fn transform(&self, site_properties: &S) -> S;
 }
-

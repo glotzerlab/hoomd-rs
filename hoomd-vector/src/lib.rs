@@ -143,8 +143,9 @@ rotation. [`RotationMatrix::rotate`] is typically several times faster than
 
 `hoomd_vector` interoperators with [`rand`] to generate random vectors and rotations.
 
-The [`Standard`](rand::distributions::Standard) distribution samples rotations
-uniformly from the set of all rotations and vectors from the `[-1,1]` hypercube.
+The [`StandardUniform`](rand::distr::StandardUniform) distribution
+samples rotations uniformly from the set of all rotations and vectors from the
+`[-1,1]` hypercube.
 
 
 ```
@@ -153,9 +154,9 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut rng = StdRng::seed_from_u64(1);
-let angle: Angle = rng.gen();
-let vector: Cartesian::<3> = rng.gen();
-let versor: Versor = rng.gen();
+let angle: Angle = rng.random();
+let vector: Cartesian::<3> = rng.random();
+let versor: Versor = rng.random();
 # Ok(())
 # }
 ```
@@ -568,7 +569,7 @@ pub trait Rotation {
     #[must_use]
     fn inverted(self) -> Self;
 
-    #[allow(clippy::doc_markdown)]
+    #[expect(clippy::doc_markdown, reason = "False positive error")]
     /** Combine two rotations.
 
     The resulting rotation `R_ab` will rotate by **first** `R_b` _followed by_ a

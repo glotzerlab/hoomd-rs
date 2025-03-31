@@ -15,14 +15,14 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-thiserror = "1.0.64"
-rand = "0.8.5"
+thiserror = "2.0.12"
+rand = "0.9.0"
 
 [dev-dependencies]
 approx = "0.5.1"
-divan = "0.1.14"
+divan = "0.1.17"
 paste = "1.0.15"
-rstest = "0.23.0"
+rstest = "0.25.0"
 
 [[bench]]
 name = "cartesian"

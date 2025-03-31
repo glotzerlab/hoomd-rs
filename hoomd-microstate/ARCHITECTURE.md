@@ -290,7 +290,7 @@ of sites does not change. We could use `Box<[Site]>` which is not as convenient
 to resize, but a caller could still replace the site pointer when given a
 mutable `Body`, so this offers no additional benefits. `Body` will provide
 access to sites through an accessor method that provides a slice. Callers with
-a mutable `Body` can rearrange the slice, but not change the number of elements. 
+a mutable `Body` can rearrange the slice, but not change the number of elements.
 
 The Body should retain ownership of its sites in the process, as moving
 ownership to the `Microstate` will prevent `Body` from standing on its own.
@@ -363,20 +363,20 @@ a new site also requires adding its ghosts (to the end of the ghosts Vec).
 Removing a site will remove all of its ghosts. Ghost removal will operate
 differently than above. Simply **moving** a body can result in the addition
 or removal of ghosts -- when a body moves toward or away from a periodic
-boundary. In a cost amortized neighbor list, ghosts may appear as neighbors of
+boundary. In a cost amortized pair list, ghosts may appear as neighbors of
 multiple site. It would not cost O(1) to remove all those. Instead, we will
-allow removed ghost particles to leave a `None` sentinel at the same index in
-the array to maintain O(1) particle updates with a neighbor list.
+allow removed ghost sites to leave a `None` sentinel at the same index in
+the array to maintain O(1) body updates with a pair list.
 
 Microstate will need to maintain auxiliary data structures to maintain
-O(1) updates such as a list of ghost site indices for each site. 
+O(1) updates such as a list of ghost site indices for each site.
 
 Incremental updates to bodies must also update all of their sites and sites'
 ghosts AND the linked spatial data structures. Complete system updates are
 likely best off removing all ghosts/spatial data structures and rebuilding them
 with the new sites. MC will be the primary driver of incremental updates and MD
 will primarily use full system updates, although this is not a strict rule. With
-amortized neighbor lists, these rebuilds will need to be coordinated with the
+amortized pair lists, these rebuilds will need to be coordinated with the
 spatial data structure.
 
 As of this writing, the spatial data structures have not yet been designed
@@ -385,18 +385,100 @@ usable with or without a Microstate. Therefore, spatial data structures
 will likely operate on a set of indexed site positions. Microstate
 maintains two vectors, one for real sites and one for ghosts. One
 solution (not ideal) would be to use signed indices in the spatial data
-structures, with signed indices for real particles and negative values
+structures, with signed indices for real sites and negative values
 for ghosts. This would not be ideal because it could cause off-by-one
 errors when accessing ghosts (there is no -0 integer). We could
 keep the same idea by using a new type for the index with helper methods
 to decode the index separately from the real/ghost flag (stashed in the
 highest bit of the integer).
 
+Note: The above design needs to be revised. There are several problems
+with it.
+
+1) Self interactions: In small boxes, it is possible for sites to interact
+   with their own images. To implement this, the boundary condition would need
+   to properly generate many ghost images for each site. When computing
+   interactions of a primary image site with another site, all need to be
+   considered except the primary image with the primary image. That could
+   be handled with a == check on position. However, the situation is more
+   complicated with bodies.
+
+   A body's sites do not interact with other sites in the same body. When a
+   body is near the box edge, some of its sites will be wrapped to the other
+   side of the box. A simple (`body_i != body_j`) check would prevent the body
+   from interacting with its own images. The solution to this is not obvious.
+   Some ideas include a) Require the minimum image convention and disallow small
+   boxes? b) Store an image flag along with the ghost site that the boundary
+   condition sets when creating multiple images? c) Store and manage ghost
+   bodies? I lean toward option b, but need to think on this further -JAA.
+
+2) Amortized pair list builds: In the solution mentioned above, the number
+   of ghosts for a given site can change as it moves. Assume that a neighbor
+   list stores indices of sites (and indices of ghosts). For such a neighbor
+   list to be valid over multiple steps, the identities of those sites must
+   remain constant with respect to their index. Somehow that means that the code
+   generating the ghosts needs a way to tag the ghosts. I'm not sure how to do
+   that. One alternative is to take the LAMMPS approach and allow sites to
+   move slightly outside the boundary and only wrap it back in on the same step
+   as a pair list build. Such a design doesn't cleanly fit with Microstate's
+   design goal to always be in a valid state -- the cell list wouldn't be able
+   to find all neighbors in this case.
+
+   Another potential solution would be to store neighbor pairs by their
+   primary image site tag instead of by index. In this scheme, an amortized
+   neighborlist will remain valid no matter how many times a site changes the
+   number of ghosts it has. Tracking total site movement becomes slightly more
+   difficult, as a site moving across the periodic boundaries a small amount
+   does not invalidate the pair list. This could possibly be handled in the
+   update API (below) by adding explicit calls to translate bodies. Although
+   in the general case where a body translates/rotates/morphs, the motion of
+   the sites relative to the body may not be as clear. We may need to require
+   that boundary conditions can compute the distance between two points, taking
+   into account the periodic boundaries. When *using* a pair list based
+   on tags, the caller will need to compute the unwrapped distance between the
+   primary *i* site and the primary *j* site, *and* all of *j*'s ghosts. Here,
+   the minimum image convention can be applied A relaxed implementation could
+   add all interactions to account for small boxes, though it would also need to
+   include the interactions between *i* and its own ghosts. This is still better
+   than the HOOMD-blue situation because these delta vectors do not need to
+   wrapped, and the majority of the sites will have no ghosts.
+
+   I think that pair lists with tags is the only viable solution. It also
+   provides a schematic of a solution for bonds (which will also be stored as
+   pairs of tags). TODO: update the above documentation to reflect the actual
+   design after thinking more on this and prototyping the solution.
+
+3) Applying forces and torques across boundaries: In MD, the *i, j* force
+   typically needs to be computed only once for *i < j*. The force is applied
+   to *i* and the negative of the force to *j*. Site *i* will always be in the
+   primary image, but *j* might be a ghost. In a similar situation, site *i*
+   might be wrapped on the other side of the box from its body's center. In
+   either case, applying the force across the boundary might not be as simple
+   as the negative of the given force. For example, if the boundary conditions
+   impose a twist (more generally, anything other than a translation), then
+   the force will also need to be transformed. Somehow, the boundary condition
+   implementation will need to be able to compute that. It is unclear how
+   at this time, JAA. The easy solution is to not use the Newton's third law
+   optimization and compute both the *i, j* and *j, i* force in the primary
+   image. But that would halve performance and still require some way to handle
+   body centers that are across the box.
+
+   Similarly, how can torques be handled?.
+
 ## Update API methods
 
-TODO: Single particle updates
+TODO: Single body updates
 
 Full system updates will occur via a method that takes a Fn that operates on a
 mutable slice of particles. In this way, the update function can take steps such
 as reinitializing all ghost particles and rebuilding spatial data structures
 after calling the provided Fn.
+
+## Linked spatial data structures
+
+TODO: Discuss how Microstate owns a Cell list (and a pair list?) so that it can
+keep them always up to date. These should be optional as some algorithms will
+require both data structures, some will need only one, and others will need none
+at all. For example, MC will use the cell list while MD will use the pair list.
+There also should be a way to efficiently clone a Microstate without its spatial
+data structures (for example when writing the microstate out to a file).

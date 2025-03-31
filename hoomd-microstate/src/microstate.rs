@@ -4,16 +4,13 @@
 /*! Implement [`Microstate`] and related types.
  */
 
-use std::collections::BinaryHeap;
 use std::cmp::Reverse;
-
-use hoomd_vector::Vector;
+use std::collections::BinaryHeap;
 
 use crate::{Body, Site, Transform, boundary::Open};
 
 /** Track a unique identifier for an item in [`Microstate`].
-        microstate.extend_bodies(self.bodies);
-    */
+*/
 #[derive(Clone, Debug, PartialEq)]
 pub struct Tagged<T> {
     /// The unique identifier.
@@ -64,11 +61,11 @@ pub struct Microstate<B, S = B, C = Open> {
     /// Tags of the sites associated with the bodies (in body index order).
     bodies_sites: Vec<Vec<usize>>, 
 
-    // The range of allowed particle positions and a description of any periodicity.
+    /// The range of allowed particle positions and a description of any periodicity.
     boundary: C,
 }
 
-impl<B, S> Default for Microstate<B, S, Open> {   
+impl<B, S> Default for Microstate<B, S, Open> {
     /** Construct an empty microstate with open boundary conditions.
 
     See [`Microstate::new`].
@@ -115,7 +112,8 @@ impl<B, S> Microstate<B, S, Open> {
             bodies_sites: Vec::new(),
             boundary: Open,
         }
-    }}
+    }
+}
 
 /// Access and manage the simulation step, substep, and RNG seeds.
 impl<B, S, C> Microstate<B, S, C> {
@@ -137,7 +135,9 @@ impl<B, S, C> Microstate<B, S, C> {
     use hoomd_microstate::{Microstate, MicrostateBuilder, property::Point};
     use hoomd_vector::Cartesian;
 
-    let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::new().step(100_000).build();
+    let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::new()
+        .step(100_000)
+        .build();
     assert_eq!(microstate.step(), 100_000);
     ```
     */
@@ -228,7 +228,7 @@ impl<B, S, C> Microstate<B, S, C> {
     /** Get the simulation seed.
 
     # Examples:
-    
+
     Get the simulation seed.
     ```
     use hoomd_microstate::{Microstate, property::Point};
@@ -244,7 +244,9 @@ impl<B, S, C> Microstate<B, S, C> {
     use hoomd_microstate::{Microstate, MicrostateBuilder, property::Point};
     use hoomd_vector::Cartesian;
 
-    let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::new().seed(0x1234abcd).build();
+    let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::new()
+        .seed(0x1234abcd)
+        .build();
     assert_eq!(microstate.seed(), 0x1234abcd);
     ```
     */
@@ -300,19 +302,17 @@ The PhantomData solution feels like more of a hack, so this code implements the 
 
 /** Manage bodies in the microstate.
 */
-impl<B, S, C> Microstate<B, S, C>
-{
+impl<B, S, C> Microstate<B, S, C> {
     /** Add a new body to the microstate.
 
     Each body is assigned a unique tag. The first body is given tag 0,
     the second is given tag 1, and so on. When a body is removed (see
-    [`remove_body`](Microstate::remove_body)), its tag becomes unused. The next
-    call to [`add_body`](Microstate::add_body) will assign the smallest unused
-    tag.
+    [`Microstate::remove_body()`], its tag becomes unused. The next call to
+    `add_body` will assign the smallest unused tag.
 
-    [`add_body`] also adds the body's sites to the microstate's
-    [`sites`](Microstate::sites) (in system coordinates) and assigns unique
-    tags to the sites similarly.
+    `add_body` also adds the body's sites to the microstate's
+    [`sites`](Microstate::sites) (in system coordinates) and assigns unique tags
+    to the sites similarly.
 
     # Cost
 
@@ -372,7 +372,7 @@ B: Transform<S>{
         self.bodies.push(Tagged { tag: body_tag, item: body });
         self.bodies_sites.push(body_sites);
 
-        let index = Some(self.bodies.len()-1);
+        let index = Some(self.bodies.len() - 1);
 
         if body_tag == self.body_indices.len() {
             self.body_indices.push(index);
@@ -386,7 +386,7 @@ B: Transform<S>{
 
     /** Add multiple bodies to the microstate.
 
-    See [`add_body`](Microstate::add_body) for details.
+    See [`Microstate::add_body()`] for details.
 
     # Example
 
@@ -402,9 +402,11 @@ B: Transform<S>{
     ```
     */
     #[inline]
-    pub fn extend_bodies<T>(&mut self, bodies: T) where
-    T: IntoIterator<Item = Body<B, S>>,
-    B: Transform<S>{
+    pub fn extend_bodies<T>(&mut self, bodies: T)
+    where
+        T: IntoIterator<Item = Body<B, S>>,
+        B: Transform<S>,
+    {
         for body in bodies {
             self.add_body(body);
         }
@@ -412,8 +414,8 @@ B: Transform<S>{
 
     /** Remove a body at the given *index* from the microstate.
 
-    The body's tag (and the tags of its sites) are then free to be reused by
-    [`add_body`](Microstate::add_body).
+    Also remove all the body's sites. The body's tag (and the tags of its
+    sites) are then free to be reused by [`Microstate::add_body`].
 
     Removing a body will change the index order of the
     [`bodies`](Microstate::bodies) and [`sites`](Microstate::sites) arrays.
@@ -484,8 +486,14 @@ B: Transform<S>{
 /** Access contents of the microstate.
 */
 impl<B, S, C> Microstate<B, S, C> {
-
     /** Access the microstate's tagged bodies in index order.
+
+    [`Microstate`] stores bodies in a flat memory region. The [`Tagged`] type
+    holds the unique identifier for each body in [`Tagged::tag`] and the
+    [`Body`] itself in [`Tagged::item`].
+
+    `bodies` provides direct immutable access to this slice. To mutate a body
+    (and by extension, its sites), see [`Microstate::update_body_properties()`].
 
     # Examples
 
@@ -500,6 +508,7 @@ impl<B, S, C> Microstate<B, S, C> {
                  Body::point(Cartesian::from([-1.0, 2.0]))])
         .build();
 
+    // The initial index order is equivalent to the tag order.
     assert_eq!(microstate.bodies()[0].tag, 0);
     assert_eq!(microstate.bodies()[1].tag, 1);
     ```
@@ -521,10 +530,42 @@ impl<B, S, C> Microstate<B, S, C> {
     ```
     */
     #[inline]
-    pub fn bodies(&self) -> &[Tagged<Body<B,S>>] {
+    pub fn bodies(&self) -> &[Tagged<Body<B, S>>] {
         &self.bodies
     }
 
+    /** Identify the index of a body given a tag.
+
+    Use `body_indices` to locate a specific body in [`Microstate::bodies`].
+
+    `body_indices()[tag]` is:
+    * `None` when there is no body with the given tag in the microstate.
+    * `Some(index)` when the body with the given tag is in the microstate.
+      `index` is the index of the body in [`Microstate::bodies`].
+
+    # Example
+
+    ```
+    use hoomd_microstate::{Microstate, MicrostateBuilder, Body};
+    use hoomd_vector::Cartesian;
+
+    let mut microstate = MicrostateBuilder::new()
+        .bodies([Body::point(Cartesian::from([1.0, 2.0])),
+                 Body::point(Cartesian::from([3.0, 4.0])),
+                 Body::point(Cartesian::from([5.0, 6.0])),
+                 Body::point(Cartesian::from([7.0, 8.0]))])
+        .build();
+
+    microstate.remove_body(microstate.body_indices()[0].expect("valid tag"));
+
+    assert_eq!(microstate.body_indices()[0], None);
+    assert!(matches!(microstate.body_indices()[3], Some(_)));
+
+    if let Some(index) = microstate.body_indices()[2] {
+        assert_eq!(microstate.bodies()[index].item.properties.position, [5.0, 6.0].into());
+    }
+    ```
+    */
     #[inline]
     pub fn body_indices(&self) -> &[Option<usize>] {
         &self.body_indices
@@ -538,20 +579,51 @@ impl<B, S, C> Microstate<B, S, C> {
 
 /** Choose parameters when constructing a [`Microstate`].
 
-By default, a [`Microstate`] 
+Use a [`MicrostateBuilder`] to choose the values of optional parameters when
+constructing a [`Microstate`]. Some parameters, such as `seed` and `step`,
+cannot be directly modified after building the [`Microstate`].
 
-# Examples
+# Example
 
-TODO
+```
+use hoomd_microstate::{Microstate, MicrostateBuilder, Body};
+use hoomd_vector::Cartesian;
+
+let mut microstate = MicrostateBuilder::new()
+    .step(100_000)
+    .seed(0x1234abcd)
+    .bodies([Body::point(Cartesian::from([1.0, 0.0])),
+             Body::point(Cartesian::from([-1.0, 2.0]))])
+    .build();
+
+assert_eq!(microstate.step(), 100_000);
+assert_eq!(microstate.seed(), 0x1234abcd);
+assert_eq!(microstate.bodies().len(), 2);
+```
 */
-pub struct MicrostateBuilder<B, S=B, C=Open> {
+pub struct MicrostateBuilder<B, S = B, C = Open> {
+    /// The initial value for step in the resulting [`Microstate`].
     step: u64,
+    /// The random number seed to set in the resulting [`Microstate`].
     seed: u32,
+    /// Bodies to add to the resulting [`Microstate`].
     bodies: Vec<Body<B, S>>,
+    /// Boundary conditions to apply in the resulting [`Microstate`].
     boundary: C,
 }
 
 impl<B, S> MicrostateBuilder<B, S, Open> {
+    /** Construct an empty [`MicrostateBuilder`] with open boundary conditions.
+
+    # Example
+
+    ```
+    use hoomd_microstate::{Microstate, MicrostateBuilder, property::Point};
+    use hoomd_vector::Cartesian;
+
+    let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::new().build();
+    ```
+    */
     #[inline]
     #[must_use]
     pub fn new() -> Self {
@@ -559,31 +631,146 @@ impl<B, S> MicrostateBuilder<B, S, Open> {
     }
 }
 
+impl<B, S> Default for MicrostateBuilder<B, S, Open> {
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<B, S, C> MicrostateBuilder<B, S, C> {
+    /** Construct an empty [`MicrostateBuilder`] with the given boundary conditions.
+
+    # Example
+
+    ```
+    use hoomd_microstate::{Microstate, MicrostateBuilder, property::Point};
+    use hoomd_microstate::boundary::Open;
+    use hoomd_vector::Cartesian;
+
+    let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::with_boundary(Open).build();
+    ```
+
+    TODO: Show non-trivial boundary conditions.
+    */
+    #[inline]
     pub fn with_boundary(boundary: C) -> Self {
-        Self { step: 0, seed: 0, bodies: Vec::new(), boundary }
+        Self {
+            step: 0,
+            seed: 0,
+            bodies: Vec::new(),
+            boundary,
+        }
     }
 
+    /** Choose the initial step in the resulting [`Microstate`].
+
+    The default `step` is 0.
+
+    # Example
+
+    ```
+    use hoomd_microstate::{Microstate, MicrostateBuilder, property::Point};
+    use hoomd_microstate::boundary::Open;
+    use hoomd_vector::Cartesian;
+
+    let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::new()
+        .step(100_000)
+        .build();
+
+    assert_eq!(microstate.step(), 100_000);
+    ```
+    */
+    #[inline]
+    #[must_use]
     pub fn step(mut self, step: u64) -> Self {
         self.step = step;
         self
     }
 
+    /** Choose the random number seed in the resulting [`Microstate`].
+
+    The default `seed` is 0.
+
+    # Example
+
+    ```
+    use hoomd_microstate::{Microstate, MicrostateBuilder, property::Point};
+    use hoomd_microstate::boundary::Open;
+    use hoomd_vector::Cartesian;
+
+    let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::new()
+        .seed(0x1234abcd)
+        .build();
+
+    assert_eq!(microstate.seed(), 0x1234abcd);
+    ```
+    */
+    #[inline]
+    #[must_use]
     pub fn seed(mut self, seed: u32) -> Self {
         self.seed = seed;
         self
     }
 
-    pub fn bodies<T>(mut self, bodies: T) -> Self where
-    T: IntoIterator<Item = Body<B, S>>,
+    /** Add bodies to the resulting [`Microstate`].
+
+    All bodies will be appended when this method is called multiple times.
+
+    # Example
+
+    ```
+    use hoomd_microstate::{Microstate, MicrostateBuilder, Body};
+    use hoomd_vector::Cartesian;
+
+    let mut microstate = MicrostateBuilder::new()
+        .bodies([Body::point(Cartesian::from([1.0, 0.0])),
+                 Body::point(Cartesian::from([-1.0, 2.0]))])
+        .build();
+
+    assert_eq!(microstate.bodies().len(), 2);
+    ```
+    */
+    #[inline]
+    #[must_use]
+    pub fn bodies<T>(mut self, bodies: T) -> Self
+    where
+        T: IntoIterator<Item = Body<B, S>>,
     {
         self.bodies.extend(bodies);
         self
     }
 
-    pub fn build(self) -> Microstate<B, S, C> where
-    B: Transform<S> {
-        let mut microstate = Microstate { step: self.step, substep: 0, seed: self.seed,
+    /** Construct a [`Microstate`] with the chosen options.
+
+    # Example
+
+    ```
+    use hoomd_microstate::{Microstate, MicrostateBuilder, Body};
+    use hoomd_vector::Cartesian;
+
+    let mut microstate = MicrostateBuilder::new()
+        .step(100_000)
+        .seed(0x1234abcd)
+        .bodies([Body::point(Cartesian::from([1.0, 0.0])),
+                 Body::point(Cartesian::from([-1.0, 2.0]))])
+        .build();
+
+    assert_eq!(microstate.step(), 100_000);
+    assert_eq!(microstate.seed(), 0x1234abcd);
+    assert_eq!(microstate.bodies().len(), 2);
+    ```
+    */
+    #[inline]
+    #[must_use]
+    pub fn build(self) -> Microstate<B, S, C>
+    where
+        B: Transform<S>,
+    {
+        let mut microstate = Microstate {
+            step: self.step,
+            substep: 0,
+            seed: self.seed,
             boundary: self.boundary,
             bodies: Vec::new(),
             body_indices: Vec::new(),
@@ -595,7 +782,7 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
         };
 
         microstate.extend_bodies(self.bodies);
-        
+
         microstate
     }
 }

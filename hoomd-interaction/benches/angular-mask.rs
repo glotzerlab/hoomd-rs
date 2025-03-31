@@ -1,15 +1,20 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-#![allow(missing_docs)]
-#![allow(clippy::missing_docs_in_private_items)]
-#![allow(clippy::expect_used)]
+#![expect(
+    clippy::missing_docs_in_private_items,
+    reason = "benches don't need public documentation"
+)]
+#![expect(
+    clippy::expect_used,
+    reason = "benches can use expect without individual reasons"
+)]
 
 /*! Benchmark `LennardJones` */
 
 use divan::counter::ItemsCount;
-use divan::{self, black_box, Bencher};
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use divan::{self, Bencher, black_box};
+use rand::{Rng, SeedableRng, rngs::StdRng};
 use std::f64::consts::PI;
 
 use hoomd_interaction::pairwise::angular_mask::Patch;
@@ -24,8 +29,8 @@ fn main() {
 fn energy_2d(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
-    let epsilon: f64 = rng.gen();
-    let sigma: f64 = rng.gen();
+    let epsilon: f64 = rng.random();
+    let sigma: f64 = rng.random();
     let lj: LennardJones = LennardJones::new(epsilon, sigma);
 
     let masks = [
@@ -52,7 +57,7 @@ fn energy_2d(bencher: Bencher) {
     bencher
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| -> (Cartesian<2>, Angle) {
-            (rng.gen::<Cartesian<2>>(), rng.gen::<Angle>())
+            (rng.random::<Cartesian<2>>(), rng.random::<Angle>())
         })
         .bench_local_values(|(r_ij, angle)| black_box(angular_mask.energy(&r_ij, &angle)));
 }
@@ -61,8 +66,8 @@ fn energy_2d(bencher: Bencher) {
 fn energy_3d(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
-    let epsilon: f64 = rng.gen();
-    let sigma: f64 = rng.gen();
+    let epsilon: f64 = rng.random();
+    let sigma: f64 = rng.random();
     let lj: LennardJones = LennardJones::new(epsilon, sigma);
 
     let masks = [
@@ -89,7 +94,7 @@ fn energy_3d(bencher: Bencher) {
     bencher
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| -> (Cartesian<3>, Versor) {
-            (rng.gen::<Cartesian<3>>(), rng.gen::<Versor>())
+            (rng.random::<Cartesian<3>>(), rng.random::<Versor>())
         })
         .bench_local_values(|(r_ij, angle)| black_box(angular_mask.energy(&r_ij, &angle)));
 }
