@@ -468,11 +468,12 @@ B: Transform<S>{
     }
 
     #[inline]
-    pub fn update_body_properties(&mut self, index: usize, properties: B) where
+    pub fn update_body_properties(&mut self, body_index: usize, properties: B) where
 B: Transform<S>{
-        self.bodies[index].item.properties = properties;
+        self.bodies[body_index].item.properties = properties;
 
         // TODO: Update site properties
+        // TODO: Joseph
     }
 }
 
