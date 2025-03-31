@@ -3,6 +3,7 @@
 
 /*!Axis-aligned N-cuboids, particularly used for bounding volume hierarchies.*/
 use crate::intersects::IntersectsAt;
+use crate::Volume;
 use hoomd_vector::Cartesian;
 use hoomd_vector::{Rotate, Rotation};
 use itertools::multizip;
@@ -34,6 +35,19 @@ impl Cuboid<3> {
     #[must_use]
     pub fn c(&self) -> f64 {
         self.edge_lengths[2]
+    }
+}
+
+impl<const N: usize> Volume for Cuboid<N> {
+    fn volume(&self) -> f64 {
+        // match N {
+        //     0 => 0.0,
+        //     _ => self.edge_lengths.into_iter().reduce(|acc, x| acc * x).unwrap_or(0.0),
+        // }
+        self.edge_lengths
+            .into_iter()
+            .reduce(|acc, x| acc * x)
+            .unwrap_or(0.0)
     }
 }
 
@@ -93,6 +107,7 @@ impl<const N: usize, R: Rotate<Cartesian<N>> + Rotation + PartialEq>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use approx::assert_relative_eq;
     use hoomd_vector::Versor;
     use rstest::*;
     use std::marker::PhantomData;
@@ -101,7 +116,7 @@ mod tests {
         edges0 => [[2.0, 2.0, 2.0]],
         edges1 => [[1.0, 1.0, 1.0]],
     )]
-    fn check_box_intersections(edges0: [f64; 3], edges1: [f64; 3]) {
+    fn test_box_intersections(edges0: [f64; 3], edges1: [f64; 3]) {
         let (s0, s1) = (Cuboid::<3>::from(edges0), Cuboid::<3>::from(edges1));
         // Should all be false (no intersection), which we invert to true
         assert!(!s0.intersects_at(&s1, &[10.0, 10.0, 10.0].into(), &Versor::identity()));
@@ -114,24 +129,46 @@ mod tests {
 
     #[rstest(
         _n => [
-            PhantomData::<Cuboid<0>>::default(),
-            PhantomData::<Cuboid<1>>::default(),
-            PhantomData::<Cuboid<2>>::default(),
-            PhantomData::<Cuboid<3>>::default(),
-            PhantomData::<Cuboid<4>>::default()
+            PhantomData::<Cuboid<0>>,
+            PhantomData::<Cuboid<1>>,
+            PhantomData::<Cuboid<2>>,
+            PhantomData::<Cuboid<3>>,
+            PhantomData::<Cuboid<4>>
         ],
-        l => [1e-6, 1.0, 3.456, 99999999.9],
+        l => [1e-6, 1.0, 3.456, 99_999_999.9],
     )]
-    fn check_box_extents<const N: usize>(_n: PhantomData<Cuboid<N>>, l: f64) {
+    fn test_box_extents<const N: usize>(_n: PhantomData<Cuboid<N>>, l: f64) {
         let c = Cuboid::from([l; N]);
         assert_eq!(c.maximal_extents(), [l / 2.0; N].into());
         assert_eq!(c.minimal_extents(), [-l / 2.0; N].into());
     }
 
     #[rstest(
-        l => [1e-6, 1.0, 3.456, 99999999.9],
+        _n => [
+            PhantomData::<Cuboid<0>>,
+            PhantomData::<Cuboid<1>>,
+            PhantomData::<Cuboid<2>>,
+            PhantomData::<Cuboid<3>>,
+            PhantomData::<Cuboid<4>>
+        ],
+        l => [1e-6, 1.0, 3.456, 99_999_999.9],
     )]
-    fn check_box_abc(l: f64) {
+    fn test_box_volume<const N: usize>(_n: PhantomData<Cuboid<N>>, l: f64) {
+        let c = Cuboid::from([l; N]);
+        assert_relative_eq!(
+            c.volume(),
+            if N != 0 {
+                l.powi(i32::try_from(N).unwrap())
+            } else {
+                0.0
+            }
+        );
+    }
+
+    #[rstest(
+        l => [1e-6, 1.0, 3.456, 99_999_999.9],
+    )]
+    fn test_box_abc(l: f64) {
         let c = Cuboid::from([l; 3]);
         assert_eq!([c.a(), c.b(), c.c()], [l; 3]);
     }

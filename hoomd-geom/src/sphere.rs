@@ -94,12 +94,12 @@ mod tests {
     }
 
     #[rstest]
-    #[case(PhantomData::<Sphere<0>>::default())]
-    #[case(PhantomData::<Sphere<1>>::default())]
-    #[case(PhantomData::<Sphere<2>>::default())]
-    #[case(PhantomData::<Sphere<3>>::default())]
-    #[case(PhantomData::<Sphere<4>>::default())]
-    #[case(PhantomData::<Sphere<5>>::default())]
+    #[case(PhantomData::<Sphere<0>>)]
+    #[case(PhantomData::<Sphere<1>>)]
+    #[case(PhantomData::<Sphere<2>>)]
+    #[case(PhantomData::<Sphere<3>>)]
+    #[case(PhantomData::<Sphere<4>>)]
+    #[case(PhantomData::<Sphere<5>>)]
     fn test_volume_and_radius<const N: usize>(#[case] _n: PhantomData<Sphere<N>>) {
         let s = Sphere::<N>::from(1.0);
         assert_eq!(s.r, 1.0);
@@ -108,12 +108,12 @@ mod tests {
     }
 
     #[rstest]
-    #[case(PhantomData::<Sphere<0>>::default())]
-    #[case(PhantomData::<Sphere<1>>::default())]
-    #[case(PhantomData::<Sphere<2>>::default())]
-    #[case(PhantomData::<Sphere<3>>::default())]
-    #[case(PhantomData::<Sphere<4>>::default())]
-    #[case(PhantomData::<Sphere<5>>::default())]
+    #[case(PhantomData::<Sphere<0>>)]
+    #[case(PhantomData::<Sphere<1>>)]
+    #[case(PhantomData::<Sphere<2>>)]
+    #[case(PhantomData::<Sphere<3>>)]
+    #[case(PhantomData::<Sphere<4>>)]
+    #[case(PhantomData::<Sphere<5>>)]
     fn test_bounding_sphere<const N: usize>(#[case] _n: PhantomData<Sphere<N>>) {
         let s = Sphere::<N>::default();
         assert_eq!(s, s.bounding_sphere());
