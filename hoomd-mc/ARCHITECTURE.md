@@ -50,21 +50,18 @@ infinity and valid floats?
 ## Trial moves
 
 Each trial move is implemented in its own type. The struct fields hold the
-parameters of the move (such as the maximum move size). A trial move implements
-an apply method that attempts a trial move and modifies the microstate when
-accepted given the Hamiltonian. The trial move type has no internal state and
-is not specifically associated with any simulation or microstate object. One
-trial move can be reused on many different systems, provided they have the same
-generic types and the move size parameters are meaningful to set the same. This
-design therefore requires an auxiliary type to track the trial move counts for
-use with monitoring and tuning moves. It is the responsibility of the caller to
-accumulate counter values (if desired). The method signature will look something
-like: `fn apply(&self, &mut microstate: Microstate, &hamiltonian: H) -> Counter`
-
-TODO: Consider whether `TrialMove` should be a trait or not. It would be easy
-enough to write one, but what would it achieve? Do we have a need to write
-higher level methods that operate on a generic trial move or a set of trial moves?
-Tuners (see below) are one possible case for that.
+parameters of the move (such as the maximum move size). Microstate implements
+an apply method (as part of a TrialMove trait) that attempts a trial move and
+modifies the microstate when accepted given the Hamiltonian. The trial move type
+has no internal state and is not specifically associated with any simulation
+or microstate object. One trial move can be reused on many different systems,
+provided they have the same generic types and the move size parameters are
+meaningful to set the same. This design therefore requires an auxiliary type
+to track the trial move counts for use with monitoring and tuning moves. It
+is the responsibility of the caller to accumulate counter values (if desired).
+The method signature will look something like: `fn apply(&mut self, &trial:
+T, &hamiltonian: H) -> Counter` To make accumulation easy, the `Counter` types
+should implement the necessary arithmetic traits.
 
 ### Tuning move sizes
 
@@ -78,10 +75,12 @@ and excludes other operations that the user inserts into the simulation loop
 (e.g. trajectory file writes). However, it does force users to not continuously
 tune (which breaks detailed balance).
 
-Tuning box move sizes requires local trial moves. Otherwise, box moves of a
-given size will always be accepted and tuning requires sampling the probability
-of acceptance. Therefore, the recipe needs some way to identify additional move
-types. Users might find missing trajectory frames or other operations during
-tuning is not acceptable. Perhaps we can think of a more general solution to
-this as the idea of recipes in hoomd-rs expands.
+Tuning box move sizes requires local trial moves. Otherwise, box moves
+of a given size will always be accepted and tuning requires sampling the
+probability of acceptance. Therefore, the recipe needs some way to identify
+additional move types. Users might find missing trajectory frames or other
+operations during tuning is not acceptable. To allow this, the tuner should be
+implemented as a basic building block that users could incorporate into their
+own simulation loops as desired. The move size tuner recipe should be built on
+that implementation.
 
