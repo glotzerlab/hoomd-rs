@@ -59,7 +59,7 @@ pub struct Microstate<B, S = B, C = Open> {
     free_site_tags: BinaryHeap<Reverse<usize>>,
 
     /// Tags of the sites associated with the bodies (in body index order).
-    bodies_sites: Vec<Vec<usize>>, 
+    bodies_sites: Vec<Vec<usize>>,
 
     /// The range of allowed particle positions and a description of any periodicity.
     boundary: C,
@@ -339,14 +339,16 @@ impl<B, S, C> Microstate<B, S, C> {
     ```
     */
     #[inline]
-    pub fn add_body(&mut self, body: Body<B, S>) -> usize where
-B: Transform<S>{
+    pub fn add_body(&mut self, body: Body<B, S>) -> usize
+    where
+        B: Transform<S>,
+    {
         // Find body tag before adding sites
         let body_tag = match self.free_body_tags.pop() {
             None => self.body_indices.len(),
             Some(t) => t.0,
         };
-    
+
         // Add sites
         let mut body_sites = Vec::with_capacity(body.sites.len());
         for s in &body.sites {
@@ -354,9 +356,13 @@ B: Transform<S>{
                 None => self.site_indices.len(),
                 Some(t) => t.0,
             };
-            self.sites.push(Site { site_tag, properties: body.properties.transform(s), body_tag });
+            self.sites.push(Site {
+                site_tag,
+                properties: body.properties.transform(s),
+                body_tag,
+            });
 
-            let index = self.sites.len()-1;
+            let index = self.sites.len() - 1;
 
             if site_tag == self.site_indices.len() {
                 self.site_indices.push(Some(index));
@@ -369,7 +375,10 @@ B: Transform<S>{
         }
 
         // Add body
-        self.bodies.push(Tagged { tag: body_tag, item: body });
+        self.bodies.push(Tagged {
+            tag: body_tag,
+            item: body,
+        });
         self.bodies_sites.push(body_sites);
 
         let index = Some(self.bodies.len() - 1);
@@ -466,12 +475,13 @@ B: Transform<S>{
         self.body_indices[self.bodies[body_index].tag] = Some(body_index);
         self.body_indices[body_tag] = None;
         self.free_body_tags.push(Reverse(body_tag));
-
     }
 
     #[inline]
-    pub fn update_body_properties(&mut self, body_index: usize, properties: B) where
-B: Transform<S>{
+    pub fn update_body_properties(&mut self, body_index: usize, properties: B)
+    where
+        B: Transform<S>,
+    {
         let body = &mut self.bodies[body_index].item;
         body.properties = properties;
 

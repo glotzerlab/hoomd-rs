@@ -9,6 +9,9 @@
 )]
 
 /*! Particle interactions.
+
+TODO: Expand documentation.
  */
 
+pub mod external;
 pub mod pairwise;

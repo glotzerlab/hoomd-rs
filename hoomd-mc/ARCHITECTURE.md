@@ -8,7 +8,7 @@ Hamiltonian of the system and the trial moves that evolve the microstate.
 
 The **Hamiltonian** of the system defines how the bodies interact. The
 `Hamiltonian` trait itself is more general and therefore lives in another crate
-(probably `hoomd_interaction`) so that it can be used by MD simulations or for
+(`hoomd_model`) so that it can be used by MD simulations or for
 offline analysis. What MC simulations need is a way to evaluate the change in
 the Hamiltonian between two states: the `DeltaHamiltonian`.
 
@@ -84,3 +84,4 @@ implemented as a basic building block that users could incorporate into their
 own simulation loops as desired. The move size tuner recipe should be built on
 that implementation.
 
+TODO: Implement for_each to automatically increment the time step.
