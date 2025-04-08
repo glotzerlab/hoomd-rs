@@ -5,11 +5,12 @@
  */
 
 use hoomd_vector::{Unit, Vector};
+use super::IsotropicEnergy;
 
 /** Linear potential based on position.
 
-<!-- U = \alpha \\cdot \vec{n} \cdot ( \\vec{r} - \\vec{p} ) -->
-TODO: Render math
+<!-- U = \alpha \cdot \vec{n} \cdot ( \vec{r} - \vec{p} ) -->
+<math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo>=</mo><mi>α</mi><mo>⋅</mo><mover><mi>n</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>⋅</mo><mo form="prefix" stretchy="false">(</mo><mover><mi>r</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>−</mo><mover><mi>p</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow></math>
 
 Computes a linear external potential at a point in space relative to the plane
 origin `p`, plane normal `n`, and the interaction strength `alpha`.
@@ -33,15 +34,15 @@ let linear = Linear { alpha: 2.0,
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Linear<V> {
-    /// Interaction strength `[energy] [length]^(-1)`.
+    /// Interaction strength (`[energy] [length]^(-1)`).
     pub alpha: f64,
-    /// Point on the plane where U=0 `[length]`.
+    /// Point on the plane where U=0 (`[length]`).
     pub plane_origin: V,
     /// Vector normal to the plane (unitless).
     pub plane_normal: Unit<V>,
 }
 
-impl<V> Linear<V>
+impl<V> IsotropicEnergy<V> for Linear<V>
 where
     V: Vector,
 {
@@ -50,7 +51,7 @@ where
     # Example
 
     ```
-    use hoomd_interaction::external::Linear;
+    use hoomd_interaction::external::{Linear, IsotropicEnergy};
     use hoomd_vector::{Cartesian, Unit};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -67,7 +68,7 @@ where
     */
     #[inline]
     #[must_use]
-    pub fn energy(&self, r: &V) -> f64 {
+    fn energy(&self, r: &V) -> f64 {
         self.alpha * self.plane_normal.get().dot(&(*r - self.plane_origin))
     }
 }

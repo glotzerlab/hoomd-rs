@@ -50,9 +50,9 @@ wca.sigma = 3.0;
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct WeeksChandlerAnderson {
-    /// Energy scale `[energy]`.
+    /// Energy scale (`[energy]`).
     pub epsilon: f64,
-    /// Interaction width `[length]`.
+    /// Interaction width (`[length]`).
     pub sigma: f64,
 }
 
