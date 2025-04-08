@@ -2,25 +2,26 @@
 
 The `hoomd_mc` crate implements Monte Carlo (MC) simulations for systems
 of interacting bodies. There are two main components to MC simulations: The
-Hamiltonian of the system and the trial moves that evolve the microstate.
+energy of the system and the trial moves that evolve the microstate.
 
-## DeltaHamiltonian
+## DeltaEnergy
 
-The **Hamiltonian** of the system defines how the bodies interact. The
-`Hamiltonian` trait itself is more general and therefore lives in another crate
-(`hoomd_model`) so that it can be used by MD simulations or for
-offline analysis. What MC simulations need is a way to evaluate the change in
-the Hamiltonian between two states: the `DeltaHamiltonian`.
+The **Energy** of the system defines how the bodies interact. The `Energy` trait
+itself is more general and therefore lives in another crate (`hoomd_model`)
+so that it can be used by MD simulations or for offline analysis. What MC
+simulations need is a way to evaluate the change in the Energy between two
+states: the `DeltaEnergy`.
 
-There are many types of `DeltaHamiltonian` to facilitate efficient evaluation
-of different types of trial moves. The most general type is `DeltaHamiltonian`
-which defines a method that evaluates the delta-H between two microstates:
-`fn delta_hamiltonian(a: &Microstate, b: &Microstate) -> f64`. This method will be
-called when the entire simulation box is scaled, for example. However, it
-requires a full O(N) computation which is inefficient when only one particle is moved.
+There are many types of `DeltaEnergy` to facilitate efficient evaluation of
+different types of trial moves. The most general type is `DeltaEnergy` which
+defines a method that evaluates the delta-H between two microstates: `fn
+delta_hamiltonian(a: &Microstate, b: &Microstate) -> f64`. This method will
+be called when the entire simulation box is scaled, for example. However, it
+requires a full O(N) computation which is inefficient when only one particle
+is moved.
 
-The second type is `DeltaHamiltonianOne` that can efficiently compute the
-change in energy when a single body is moved. The function signature will look
+The second type is `DeltaEnergyOne` that can efficiently compute the change
+in energy when a single body is moved. The function signature will look
 something like: `fn delta_hamiltonian_one(microstate: &Microstate, new_body:
 &Tagged<Body>) -> f64`. The `new_body` defines the properties and sites of the
 new body after the trial move and the method computes the change in energy from
@@ -31,13 +32,12 @@ only allows changing the body properties would be helpful.
 Two more types compute the energy delta when inserting and removing bodies from
 the microstate.
 
-`DeltaHamiltonian` and friends are defined as traits so that users can implement
+`DeltaEnergy` and friends are defined as traits so that users can implement
 custom interactions in their MC simulations. `hoomd_mc` will implement these
-traits for very commonly used interactions (e.g. cutoff pair potentials) in
-the `hoomd_interaction` crate. `hoomd_mc` should also implement some solution
-for summing several `DeltaHamiltonian` types together, for example via an
-implementation on a tuple of different types, each implementing the appropriate
-traits.
+traits for very commonly used interactions (e.g. cutoff pair potentials) in the
+`hoomd_interaction` crate. `hoomd_mc` should also implement some solution for
+summing several `DeltaEnergy` types together, for example via an implementation
+on a tuple of different types, each implementing the appropriate traits.
 
 ### Energy return type
 

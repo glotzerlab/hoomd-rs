@@ -4,8 +4,8 @@
 /*! Implement [`Linear`]
  */
 
-use hoomd_vector::{Unit, Vector};
 use super::IsotropicEnergy;
+use hoomd_vector::{Unit, Vector};
 
 /** Linear potential based on position.
 

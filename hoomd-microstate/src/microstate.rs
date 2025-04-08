@@ -257,49 +257,6 @@ impl<B, S, C> Microstate<B, S, C> {
     }
 }
 
-/* What we want to do is:
-
-```
-impl<P, B, V> Microstate<P, B> where
-P: Particle<V>,
-V: Vector
-```
-
-This is not possible due to compile error E0207.
-* One workaround involves placing the bounds on the struct and using PhantomData.
-* The other involves grouping the methods that require the use of V in a trait.
-
-https://stackoverflow.com/questions/55519710/how-to-make-a-generic-of-generic-with-trait?noredirect=1&lq=1
-https://stackoverflow.com/questions/50671177/specify-fn-trait-bound-on-struct-definition-without-fixing-one-of-the-fn-par?noredirect=1&lq=1
-
-The PhantomData solution feels like more of a hack, so this code implements the trait solution.
-*/
-
-// /** Methods that operate on particles in a [`Microstate`].
-
-// See [`Microstate`] for more information.
-// */
-// pub trait Particles<P, V> {
-//     /// Add a new particle to the microstate.
-//     fn add_particle(&mut self, particle: P);
-
-//     // fn extend_particles( // TODO
-
-//     /// Remove a particle at the given index from the microstate.
-//     fn remove_particle(&mut self, index: usize);
-
-//     /// Access all particles in the microstate.
-//     fn particles(&self) -> &[P];
-
-//     /// Update a single particle at the given index in the microstate.
-//     fn update_particle(&mut self, index: usize, particle: P);
-
-//     // TODO: how to efficiently update all particles? We could provide a method that calls
-//     // a Fn with &mut [P], but then we have to assume that the caller may have reordered the
-//     // particles. In MD, a full system update without reordering is common and would not
-//     // require rebuilding the neighbor list.
-// }
-
 /** Manage bodies in the microstate.
 */
 impl<B, S, C> Microstate<B, S, C> {

@@ -13,6 +13,8 @@
 TODO: Expand documentation.
 */
 
+pub mod external;
+
 /**
 
 */
@@ -21,27 +23,4 @@ pub trait Energy<M> {
 
     */
     fn energy(&self, microstate: &M) -> f64;
-}
-
-/**
-
-*/
-pub trait Hamiltonian<M> {
-    /**
-
-    */
-    fn hamiltonian(&self, microstate: &M) -> f64;
-}
-
-impl<M, T> Hamiltonian<M> for T
-where
-    T: Energy<M>,
-{
-    /**
-
-    */
-    #[inline]
-    fn hamiltonian(&self, microstate: &M) -> f64 {
-        self.energy(microstate)
-    }
 }
