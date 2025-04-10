@@ -43,5 +43,5 @@ The support function of a geometry.
 pub trait SupportFn {
     /// Center of mass of the shape
     /// Distances from the origin to each supporting hyperplane.
-    fn support<V: Vector>(&self, v: V) -> V;
+    fn support<V: Vector>(&self, v: &V) -> V;
 }

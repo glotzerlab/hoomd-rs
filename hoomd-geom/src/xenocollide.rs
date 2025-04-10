@@ -9,36 +9,42 @@ pub fn perp(v: Cartesian<2>) -> Cartesian<2> {
 
 /// Composite support function
 #[inline]
-fn composite_support<const N: usize, R: Rotation + Rotate<Cartesian<N>>>(
+fn composite_support<const N: usize, R: Copy + Rotation + Rotate<Cartesian<N>>>(
     sa: &impl SupportFn,
     sb: &impl SupportFn,
-    v_ij: Cartesian<N>, // Probably ok to take ownership?
-    q_ij: R,
-    // ) -> Cartesian<N> {
-) {
+    v_ij: &Cartesian<N>,
+    q_ij: &R, // RotationMatrix derives copy, so this should always be valid
+    n: &Cartesian<N>,
+) -> Cartesian<N> {
+    // TODO: this should hold state of the components, so you only need to pass in n
+    // For now, this is ok
     // Support point of b in the direction of vij
     // "translation/rotation formula comes from pg 168 of "Games Programming Gems 7""
-    let sb_vij = q_ij.rotate(&q_ij.inverted().rotate(&v_ij));
+    // Formula is dimension agnostic: q @ sb.support(q_inverse @ n) + v_ij
+    let sb_n = q_ij.rotate(&sb.support(&q_ij.inverted().rotate(n))) + *v_ij;
+
+    sb_n - sa.support(&-*n)
 }
 
 /// Xenocollide in 2 dimensions. For now, hard coded to 2
 #[inline]
-fn collide<R: Rotate<Cartesian<2>>>(
+fn collide<R: Rotate<Cartesian<2>> + Rotation + Copy>(
     sa: &impl SupportFn,
     sb: &impl SupportFn,
-    v_ij: Cartesian<2>, // Probably ok to take ownership?
-    q_ij: R,
+    v_ij: &Cartesian<2>, // Probably ok to take ownership?
+    q_ij: &R,
 ) -> bool {
     // Phase 1: Portal discovery
 
     // 1a: Determine whether the origin lies in B⊖A, given only the support mapping
     // 1b: Obtain a point that lies deep in B⊖A:
-    let v0 = v_ij; // self.centroid()-other.centroid() in extrinsic coords
+    let v0 = *v_ij; // self.centroid()-other.centroid() in extrinsic coords
 
     // 1c: Construct a normal pointing from p to the origin: this is just p̂?
     // Find support point in this direction
     // Find a candidate portal
-    let v1 = sa.support(-v0); // 2egative, to ensure ||v1|| > 0
+    // let v1 = sa.support(&-v0); // negative, to ensure ||v1|| > 0
+    let v1 = composite_support(sa, sb, v_ij, q_ij, &-v0); // negative, to ensure ||v1|| > 0
 
     // 1d. We construct a ray that is perpendicular to the line between the
     // support just discovered and the interior point. There are two choices for this
@@ -52,7 +58,7 @@ fn collide<R: Rotate<Cartesian<2>>>(
         v_perp_v1v0 = -v_perp_v1v0;
     }
 
-    let v2 = sb.support(v_perp_v1v0);
+    let v2 = sb.support(&v_perp_v1v0);
 
     // Now we have three points, which form a frustum (angle in 2d). The origin lies
     // somewhere within this frustum
@@ -77,7 +83,7 @@ fn collide<R: Rotate<Cartesian<2>>>(
 
     // Check if origin is inside the initial portal. MUST be >= to cover exact overlaps.
     if v1.dot(&p0_perp) >= 0.0 {
-        return true; // TODO: why is this >0.0? origin should be
+        return true; // TODO: why is this >0.0? origin should be facing away?
     }
     // TODO: mock the diagram in python to verify signs, etc.
 
