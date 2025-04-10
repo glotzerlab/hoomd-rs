@@ -4,7 +4,8 @@
 /*! Implement [`Linear`]
  */
 
-use super::IsotropicEnergy;
+use super::super::SiteEnergy;
+use hoomd_microstate::property::Position;
 use hoomd_vector::{Unit, Vector};
 
 /** Linear potential based on position.
@@ -42,7 +43,7 @@ pub struct Linear<V> {
     pub plane_normal: Unit<V>,
 }
 
-impl<V> IsotropicEnergy<V> for Linear<V>
+impl<V> Linear<V>
 where
     V: Vector,
 {
@@ -51,7 +52,7 @@ where
     # Example
 
     ```
-    use hoomd_interaction::external::{Linear, IsotropicEnergy};
+    use hoomd_interaction::external::Linear;
     use hoomd_vector::{Cartesian, Unit};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -68,8 +69,19 @@ where
     */
     #[inline]
     #[must_use]
-    fn energy(&self, r: &V) -> f64 {
+    pub fn energy(&self, r: &V) -> f64 {
         self.alpha * self.plane_normal.get().dot(&(*r - self.plane_origin))
+    }
+}
+
+impl<S, V> SiteEnergy<S> for Linear<V> where
+S: Position<V>,
+V: Vector,
+    {
+    #[inline]
+    fn site_energy(&self, site_properties: &S) -> f64 where
+    {
+        self.energy(site_properties.position())
     }
 }
 

@@ -3,7 +3,6 @@
 members = [
   "hoomd-interaction",
   "hoomd-microstate",
-  "hoomd-model",
   "hoomd-random",
   "hoomd-vector"
 ]

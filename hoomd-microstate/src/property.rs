@@ -32,10 +32,10 @@ follow this example:
 ```
 */
 pub trait Position<V> {
-    /// The position of this body or site `[length]`.
+    /// The position of this body or site (`[length]`).
     fn position(&self) -> &V;
 
-    /// The mutable position of this body or site `[length]`.
+    /// The mutable position of this body or site (`[length]`).
     fn position_mut(&mut self) -> &mut V;
 }
 
@@ -117,5 +117,17 @@ where
         Point {
             position: self.position + site_properties.position,
         }
+    }
+}
+
+impl<V> Position<V> for Point<V> {
+    #[inline]
+    fn position(&self) -> &V {
+        &self.position
+    }
+
+    #[inline]
+    fn position_mut(&mut self) -> &mut V {
+        &mut self.position
     }
 }
