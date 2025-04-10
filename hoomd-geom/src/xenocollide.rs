@@ -7,6 +7,18 @@ pub fn perp(v: Cartesian<2>) -> Cartesian<2> {
     Cartesian::from([-v[1], v[0]])
 }
 
+/// Functor for Support Function calculations
+struct SupportFunctor<'a, const N: usize, R: Copy + Rotation + Rotate<Cartesian<N>>, T: SupportFn> {
+    /// Support-function shape A
+    sa: &'a T,
+    /// Support-function shape B
+    sb: &'a T,
+    /// Vector separating A and B
+    v_ij: &'a Cartesian<N>,
+    /// Relative orientation between A and B
+    q_ij: &'a R,
+}
+
 /// Composite support function
 #[inline]
 fn composite_support<const N: usize, R: Copy + Rotation + Rotate<Cartesian<N>>>(
@@ -14,16 +26,16 @@ fn composite_support<const N: usize, R: Copy + Rotation + Rotate<Cartesian<N>>>(
     sb: &impl SupportFn,
     v_ij: &Cartesian<N>,
     q_ij: &R, // RotationMatrix derives copy, so this should always be valid
-    n: &Cartesian<N>,
+    n: Cartesian<N>,
 ) -> Cartesian<N> {
     // TODO: this should hold state of the components, so you only need to pass in n
     // For now, this is ok
     // Support point of b in the direction of vij
     // "translation/rotation formula comes from pg 168 of "Games Programming Gems 7""
     // Formula is dimension agnostic: q @ sb.support(q_inverse @ n) + v_ij
-    let sb_n = q_ij.rotate(&sb.support(&q_ij.inverted().rotate(n))) + *v_ij;
+    let sb_n = q_ij.rotate(&sb.support(&q_ij.inverted().rotate(&n))) + *v_ij;
 
-    sb_n - sa.support(&-*n)
+    sb_n - sa.support(&-n)
 }
 
 /// Xenocollide in 2 dimensions. For now, hard coded to 2
@@ -44,7 +56,7 @@ fn collide<R: Rotate<Cartesian<2>> + Rotation + Copy>(
     // Find support point in this direction
     // Find a candidate portal
     // let v1 = sa.support(&-v0); // negative, to ensure ||v1|| > 0
-    let v1 = composite_support(sa, sb, v_ij, q_ij, &-v0); // negative, to ensure ||v1|| > 0
+    let v1 = composite_support(sa, sb, v_ij, q_ij, -v0); // negative, to ensure ||v1|| > 0
 
     // 1d. We construct a ray that is perpendicular to the line between the
     // support just discovered and the interior point. There are two choices for this
