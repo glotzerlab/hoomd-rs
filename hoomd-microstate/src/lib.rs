@@ -57,7 +57,7 @@ In typical cases, such as those implemented in `hoomd-rs`, [`Body`] describes
 a rigid collection of sites that transform together. However, creative
 implementations of [`Transform`] could achieve other behaviors.
 */
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Body<B, S> {
     pub properties: B,
     pub sites: Vec<S>,

@@ -16,7 +16,7 @@ TODO: Expand documentation.
 pub mod external;
 pub mod pairwise;
 
-use hoomd_microstate::{Microstate, property::Position};
+use hoomd_microstate::Microstate;
 
 /** Compute the total external energy of the microstate.
 

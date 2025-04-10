@@ -1,2 +1,50 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
+
+#![doc(
+    html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+)]
+#![doc(
+    html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
+)]
+
+/*! Apply the Metropolis Monte Carlo simulation method to systems of particles.
+
+TODO: Expand documentation.
+ */
+
+use rand::Rng;
+
+mod sweep;
+mod translate;
+
+pub use translate::Translate;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Count {
+    pub accepted: usize,
+    pub rejected: usize,
+}
+
+/** Propose a trial microstate, evaluate the change in energy and accept or reject accordingly.
+
+*/
+pub trait Trial<M> {
+    type Count;
+
+    fn apply(&self, microstate: &mut M) -> Count;
+}
+
+/** Propose a new configuration for given body properties.
+*/
+pub trait LocalTrial<B> {
+    #[must_use]
+    fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B;
+}
+
+/** Apply a local trial move to every body in the microsstate.
+*/
+pub struct Sweep<L> {
+    pub local: L
+} 
+

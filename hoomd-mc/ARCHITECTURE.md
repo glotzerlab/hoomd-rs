@@ -50,8 +50,8 @@ infinity and valid floats?
 ## Trial moves
 
 Each trial move is implemented in its own type. The struct fields hold the
-parameters of the move (such as the maximum move size). Microstate implements
-an apply method (as part of a TrialMove trait) that attempts a trial move and
+parameters of the move (such as the maximum move size). The
+apply method (which takes a mutable reference to a microstate) attempts a trial move and
 modifies the microstate when accepted given the Hamiltonian. The trial move type
 has no internal state and is not specifically associated with any simulation
 or microstate object. One trial move can be reused on many different systems,
@@ -59,9 +59,54 @@ provided they have the same generic types and the move size parameters are
 meaningful to set the same. This design therefore requires an auxiliary type
 to track the trial move counts for use with monitoring and tuning moves. It
 is the responsibility of the caller to accumulate counter values (if desired).
-The method signature will look something like: `fn apply(&mut self, &trial:
-T, &hamiltonian: H) -> Counter` To make accumulation easy, the `Counter` types
+The method signature will look something like: `fn apply(&self, &mut microstate:
+M, &hamiltonian: H) -> Counter` To make accumulation easy, the `Counter` types
 should implement the necessary arithmetic traits.
+
+## Model parameters
+
+There are many model parameters, and different trial moves use different ones.
+For example, kT will be used by practically every type of trial. Pressure will
+be used by box moves, and fugacity by insert/remove moves. The Hamiltonian
+itself is also a model parameter.
+
+Should MC define a `Model` type that collects all these together?
+
+There are problems with a catch-all `Model` type.
+* NVT simulations have no set pressure. Therefore, pressure should be an option.
+  However, it is an error to apply a volume-changing move to a system with no
+  pressure set. The validation that `pressure` matches `Some(value)` will occur
+  at runtime, where errors like this would be best detected at compile time.
+* New types of trial moves in the future may require adding new model parameters.
+  This would be an API breaking change, and also impossible for users to achieve
+  with custom implementations of `Trial`.
+
+The only advantage to a `Model` type is that these values would all be held
+in one place. Interoperation with MD is a possibility, but only if the `Model`
+were to also include parameters like `delta_t` that are meaningless to MC
+simulations.
+
+Whether the model parameters are held in a `Model` type or as separate
+variables, the second question is this: Who owns (and/or holds references) to
+the parameters? Should a `Trial` object copy or clone parameters given to it?
+Probably not, as that can easily lead to errors where a parameter is changed in
+one place but not others. To avoid this, should a `Trial` hold a reference to the
+parameters? Doing so would avoid the possibility of accidentally passing one
+temperature to the local moves and another to the box moves. However, doing this
+will tie the lifetime of the `Trial` to the lifetime of the parameters - which
+prevents `Trial` from being reused on different models or generally standing on
+its own.
+
+One solution for this is to implement `apply` separately for each trial move
+type that accepts the model parameters it needs. This is a simple and clean
+approach with the disadvantage that we can no longer have an overarching
+`Trial` trait with a common `apply` method signature!
+
+JAA- On balance, I think that `Trial` should hold reference to the parameters.
+It really cannot stand on its own and other parameters (such as move sizes)
+are inherently related to the model parameters (move sizes are smaller at lower
+temperatures). I will leave the other proposal here in case we want to revisit
+this design after testing.
 
 ### Tuning move sizes
 
