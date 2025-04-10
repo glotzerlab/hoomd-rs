@@ -412,6 +412,15 @@ where
     }
 }
 
+impl Cartesian<2> {
+    /// Compute a 2-vector perpendicular to self.
+    #[inline]
+    #[must_use]
+    pub fn perp(self) -> Self {
+        Cartesian::from([-self[1], self[0]])
+    }
+}
+
 impl<const N: usize, T> IndexMut<T> for Cartesian<N>
 where
     T: Into<usize> + std::slice::SliceIndex<[f64], Output = f64>,

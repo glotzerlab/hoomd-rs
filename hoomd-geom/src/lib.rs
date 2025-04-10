@@ -66,8 +66,10 @@ assert_eq!(centered_cuboid.centroid, [0.0; 3].into());
 mod cuboid;
 mod intersects;
 pub mod modifiers;
+mod poly;
 mod shape;
 mod sphere;
+pub mod xenocollide;
 
 pub use {
     cuboid::Cuboid,

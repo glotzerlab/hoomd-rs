@@ -29,6 +29,9 @@ Definitions of the minimum distance between two `Shape`s. Will be zero if points
 a boundary (within floating-point precision) and negative if the shapes are overlapping.
 
 */
+
+const XENOCOLLIDE_2D_MAX_ITERATIONS: usize = 1024;
+
 pub trait MinDistance<const N: usize, V: Vector, R: Rotate<V>, S: Shape<N>> {
     /// Minimum distance between two `Shape`s in `N` dimensions
     fn min_distance(&self, other: &S, v_ij: &V, o_ij: R) -> f64;
@@ -38,6 +41,7 @@ pub trait MinDistance<const N: usize, V: Vector, R: Rotate<V>, S: Shape<N>> {
 The support function of a geometry.
 */
 pub trait SupportFn {
+    /// Center of mass of the shape
     /// Distances from the origin to each supporting hyperplane.
-    fn support(&self) -> Vec<f64>;
+    fn support<V: Vector>(&self, v: V) -> V;
 }

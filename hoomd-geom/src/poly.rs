@@ -33,3 +33,17 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Self, Cartesian<3>, R> for ConvexPoly
         todo!() // TODO: Xenocollide 3d
     }
 }
+
+impl ConvexPolytope<2> {
+    /// Xeonocolloide 2d
+    fn mpr<R: Rotate<Cartesian<2>>>(&self, other: &Self, r_ij: &Cartesian<2>, o_ij: &R) -> bool {
+        // 1a: Determine whether the origin lies in B⊖A, given only the support mapping
+        // 1b: Obtain a point that lies deep in B⊖A:
+        let p = r_ij; // self.centroid()-other.centroid() in extrinsic coords
+
+        // 1c: Construct a normal pointing from p to the origin: this is just p̂?
+        // Find support point in this direction
+
+        false
+    }
+}
