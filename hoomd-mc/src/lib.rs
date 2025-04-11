@@ -13,7 +13,7 @@
 TODO: Expand documentation.
  */
 
-use hoomd_microstate::Tagged;
+use hoomd_microstate::{Body, Microstate, Tagged};
 use rand::Rng;
 
 mod external;
@@ -47,9 +47,9 @@ pub trait LocalTrial<B> {
 
 /** Compute the change in energy after making changes to a single body in the microstate.
 */
-pub trait DeltaEnergyOne {
+pub trait DeltaEnergyOne<B, S, C> {
     #[must_use]
-    fn delta_energy_one<M, B>(&self, microstate: &M, new_body: &Tagged<B>) -> f64;
+    fn delta_energy_one(&self, microstate: &Microstate<B, S, C>, new_body: &Tagged<Body<B, S>>) -> f64;
 }
 
 /** Set the energy of any system to 0.
@@ -59,9 +59,9 @@ It returns 0 for all delta energies.
 */
 pub struct Zero;
 
-impl DeltaEnergyOne for Zero {
+impl<B, S, C> DeltaEnergyOne<B, S, C> for Zero {
     #[inline]
-    fn delta_energy_one<M, B>(&self, _microstate: &M, _new_body: &Tagged<B>) -> f64 {
+    fn delta_energy_one(&self, _microstate: &Microstate<B, S, C>, _new_body: &Tagged<Body<B, S>>) -> f64 {
         0.0
     }
 }

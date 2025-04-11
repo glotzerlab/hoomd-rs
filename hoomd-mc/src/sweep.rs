@@ -32,7 +32,7 @@ where
     B: Copy + Clone + Default + Transform<S>,
     S: Clone + Default,
     L: LocalTrial<B>,
-    H: DeltaEnergyOne,
+    H: DeltaEnergyOne<B, S, C>,
 {
     type Count = Count;
 

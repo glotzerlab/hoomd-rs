@@ -18,6 +18,8 @@ pub mod pairwise;
 
 use hoomd_microstate::Microstate;
 
+// TODO: should M and S be trait parameters? Or parameters on the methods in the traits?
+
 /** Compute the total external energy of the microstate.
 
 */
@@ -68,7 +70,7 @@ that hold each hold an inner type that implements SitePairEnergy (and other futu
 */
 pub struct Single<E> {
     /// Evaluate the energy/force/etc... on a single site.
-    inner: E,
+    pub inner: E,
 }
 
 impl<E> Single<E> {
