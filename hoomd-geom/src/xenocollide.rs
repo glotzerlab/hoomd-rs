@@ -1,11 +1,11 @@
 use crate::{IntersectsAt, Shape, SupportFn, Volume};
 use hoomd_vector::{Cartesian, Cross, Rotate, Rotation, Vector};
 
-/// Get a vector perpendicular to a 2-vector
-#[inline]
-pub fn perp(v: Cartesian<2>) -> Cartesian<2> {
-    Cartesian::from([-v[1], v[0]])
-}
+// /// Get a vector perpendicular to a 2-vector
+// #[inline]
+// pub fn perp(v: Cartesian<2>) -> Cartesian<2> {
+//     Cartesian::from([-v[1], v[0]])
+// }
 
 /// Functor for Support Function calculations
 struct SupportFunctor<'a, const N: usize, R: Copy + Rotation + Rotate<Cartesian<N>>, T: SupportFn> {
@@ -22,12 +22,12 @@ struct SupportFunctor<'a, const N: usize, R: Copy + Rotation + Rotate<Cartesian<
 impl<const N: usize, T: SupportFn, R: Copy + Rotation + Rotate<Cartesian<N>>>
     SupportFunctor<'_, N, R, T>
 {
-    /// Composite support function
+    /// Compute the support function on the Minkowski difference of two shapes.
     #[inline]
     fn composite_support(&self, n: Cartesian<N>) -> Cartesian<N> {
         // Support point of b in the direction of vij
-        // "translation/rotation formula comes from pg 168 of "Games Programming Gems 7""
-        // Formula is dimension agnostic: q @ sb.support(q_inverse @ n) + v_ij
+        // 'translation/rotation formula comes from pg 168 of "Games Programming Gems 7"'
+        // Dimension-agnostic formula: r @ sb.support(r_inverse @ n) + v_ij
         let sb_n = self
             .q_ij
             .rotate(&self.sb.support(&self.q_ij.inverted().rotate(&n)))
@@ -38,6 +38,7 @@ impl<const N: usize, T: SupportFn, R: Copy + Rotation + Rotate<Cartesian<N>>>
 }
 
 /// Xenocollide in 2 dimensions. For now, hard coded to 2
+#[allow(dead_code)] // TODO: temp
 #[inline]
 fn collide<R: Rotate<Cartesian<2>> + Rotation + Copy, T: SupportFn>(
     sa: &T,
@@ -103,7 +104,12 @@ fn collide<R: Rotate<Cartesian<2>> + Rotation + Copy, T: SupportFn>(
     // surface of B–A. If the origin lies outside of the support line formed by the
     // point and the normal, we know that the origin lies outside of B–A. In this case,
     // the point lies on the inside of the support line, so the algorithm continue
-    // let v3
+    let v3 = s.composite_support(p0_perp);
+
+    // If origin is outside the support plane, we are not overlapping
+    if v3.dot(&p0_perp) < 0.0 {
+        return false;
+    }
 
     false
 }
