@@ -51,7 +51,7 @@ where
             // TODO: Handle boundary conditions
 
             let delta_h = self.hamiltonian.delta_energy_one(microstate, &trial);
-            if rng.random::<f64>() < (delta_h / self.kt).exp() {
+            if rng.random::<f64>() < (-delta_h / self.kt).exp() {
                 microstate.update_body_properties(body_index, trial.item.properties);
                 count.accepted += 1;
             } else {
