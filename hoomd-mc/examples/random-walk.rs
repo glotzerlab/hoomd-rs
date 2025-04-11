@@ -1,25 +1,24 @@
 /*! This is an example
 */
 
-use hoomd_microstate::{Body, Microstate};
+use hoomd_mc::{Sweep, Translate, Trial, Zero};
 use hoomd_microstate::property::Position;
-use hoomd_mc::{Sweep, Translate, Trial};
+use hoomd_microstate::{Body, Microstate};
 use hoomd_vector::Cartesian;
 
+fn main() {
+    let mut microstate = Microstate::new();
+    microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-let mut microstate = Microstate::new();
-microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
+    let kt = 1.0;
+    let hamiltonian = Zero;
 
-let translate = Translate::with_maximum_distance(0.1);
-let translate_sweep = Sweep::new(translate);
+    let translate = Translate::with_maximum_distance(0.1);
+    let translate_sweep = Sweep::new(translate, &kt, &hamiltonian);
 
-for _ in 0..100_000 {
-    translate_sweep.apply(&mut microstate);
-    println!("{}", microstate.bodies()[0].item.properties.position());
-    microstate.increment_step();
-}
-
-
-Ok(())
+    for _ in 0..100_000 {
+        translate_sweep.apply(&mut microstate);
+        println!("{}", microstate.bodies()[0].item.properties.position());
+        microstate.increment_step();
+    }
 }

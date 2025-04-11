@@ -21,13 +21,17 @@ requires a full O(N) computation which is inefficient when only one particle
 is moved.
 
 The second type is `DeltaEnergyOne` that can efficiently compute the change
-in energy when a single body is moved. The function signature will look
-something like: `fn delta_hamiltonian_one(microstate: &Microstate, new_body:
-&Tagged<Body>) -> f64`. The `new_body` defines the properties and sites of the
-new body after the trial move and the method computes the change in energy from
-moving the body with the given tag (ignoring self-interactions). TODO: consider
-whether this fully general approach is fine, or if a more optimized version that
-only allows changing the body properties would be helpful.
+in energy when a single body is moved. One possible function signature is:
+`fn delta_energy_one(microstate: &Microstate, new_body: &Tagged<Body>) -> f64`
+where `new_body` defines the properties and sites of the new body after the
+trial move and the method computes the change in energy from moving the body
+with the given tag (ignoring self-interactions). This general scheme allows the
+evaluation of energy deltas when trial moves mutate sites in the body, and in
+general add/remove sites. Typical trial moves mutate only the body properties.
+However, there is no reason to limit `DeltaEnergyOne` to this subset as the
+implementation is essentially the same. Due to limitations in `Microstate`,
+changing the number of sites in the body requires removing and then adding it
+back in, but that is a problem for the `Trial` implementation.
 
 Two more types compute the energy delta when inserting and removing bodies from
 the microstate.
@@ -39,13 +43,47 @@ traits for very commonly used interactions (e.g. cutoff pair potentials) in the
 summing several `DeltaEnergy` types together, for example via an implementation
 on a tuple of different types, each implementing the appropriate traits.
 
-### Energy return type
+### Handling infinite energies
 
-TODO: Evaluate the implications (performance an otherwise) of returning f64
-results that may be infinity for hard interactions. Is `exp(-inf)` expensive to
-compute? What about `isinf` checks to avoid unnecessary calculations? Would it
-be cleaner or more complicated to return an enum that differentiates between
-infinity and valid floats?
+Hard particle simulations model systems where overlapping particles yield an
+infinite energy. In an ideal world, the `Energy` traits could simply return
+the floating point representation of `inf`: `exp(-inf)` is correctly evaluated
+as 0, so these trial moves will be rejected. The problem is that floating point
+math is not perfect, nor can user inputs be trusted. For example, a user might
+provide an initial condition where particles overlap. Or, MC accepts a move
+with no overlaps, then wraps the particle around the periodic boundary. Due to
+round-off errors, the new ghost particle ends up in a slightly different position
+than the trial causing an overlap. In the latter case, these miniscule overlaps
+can safely be ignored. In the former, MC trial moves may or may not be able to
+remove the overlaps present in the initial condition.
+
+In both cases, `DeltaEnergy` would effectively be computing `inf - inf` which
+is undefined. HOOMD-blue avoids this issue (and also boosts performance for
+hard particle simulations) by _skipping_ the overlap checks in the current
+configuration. This is equivalent to assuming that the current configuration is
+always valid, leading to an effective delta E of `0 - inf` and a rejection of
+the move.
+
+TODO: Determine a way to express this. 1) We need to express the delta E both
+with the finite part and the infinite part to enable simulations where there
+are both hard and soft interactions. 2) Hard and soft interactions need separate
+`DeltaEnergy` implementations so that the current configuration can be ignored
+for hard interactions. Consider implementing `exp` for the type to handle the
+conditions in a single piece of code. Also consider panicking if the finite part
+of the energy is ever inf or NaN.
+
+On second thought, do we really need a new type for this? Will need to sketch
+out the solution.
+
+## Overlap counts and early exit conditions
+
+The hard potential types themselves can exit early after finding the first overlap
+when producing a value for `DeltaEnergy`. However, some algorithms (like `QuickCompress`
+need to know the full count. TODO: Determine how to opt-out of early exit conditions.
+
+When using `DeltaEnergy` for trial moves, there is no need to evaluate the soft
+potentials if the hard potential has already found an overlap. Is an opt-out
+of this early exit also needed?
 
 ## Trial moves
 

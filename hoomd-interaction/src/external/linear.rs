@@ -74,13 +74,13 @@ where
     }
 }
 
-impl<S, V> SiteEnergy<S> for Linear<V> where
-S: Position<V>,
-V: Vector,
-    {
+impl<S, V> SiteEnergy<S> for Linear<V>
+where
+    S: Position<V>,
+    V: Vector,
+{
     #[inline]
-    fn site_energy(&self, site_properties: &S) -> f64 where
-    {
+    fn site_energy(&self, site_properties: &S) -> f64 where {
         self.energy(site_properties.position())
     }
 }

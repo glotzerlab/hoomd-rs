@@ -14,11 +14,14 @@ TODO: Expand documentation.
  */
 
 use rand::Rng;
+use hoomd_microstate::Tagged;
 
 mod sweep;
 mod translate;
+mod external;
 
 pub use translate::Translate;
+pub use sweep::Sweep;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Count {
@@ -42,9 +45,23 @@ pub trait LocalTrial<B> {
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B;
 }
 
-/** Apply a local trial move to every body in the microsstate.
+/** Compute the change in energy after making changes to a single body in the microstate.
 */
-pub struct Sweep<L> {
-    pub local: L
-} 
+pub trait DeltaEnergyOne {
+    #[must_use]
+    fn delta_energy_one<M, B>(&self, microstate: &M, new_body: &Tagged<B>) -> f64;
+}
 
+/** Set the energy of any system to 0.
+
+[`Zero`] is useful for trivial code examples that demonstrate MC simulations.
+It returns 0 for all delta energies.
+*/
+pub struct Zero;
+
+impl DeltaEnergyOne for Zero {
+    #[inline]
+    fn delta_energy_one<M, B>(&self, _microstate: &M, _new_body: &Tagged<B>) -> f64 {
+        0.0
+    }
+}

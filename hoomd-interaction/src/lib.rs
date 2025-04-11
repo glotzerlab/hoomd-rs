@@ -69,7 +69,7 @@ that hold each hold an inner type that implements SitePairEnergy (and other futu
 pub struct Single<E> {
     /// Evaluate the energy/force/etc... on a single site.
     inner: E,
-    }
+}
 
 impl<E> Single<E> {
     pub fn new(inner: E) -> Self {
@@ -77,8 +77,9 @@ impl<E> Single<E> {
     }
 }
 
-impl<B, S, C, E> TotalEnergy<Microstate<B, S, C>> for Single<E> where
-    E: SiteEnergy<S>
+impl<B, S, C, E> TotalEnergy<Microstate<B, S, C>> for Single<E>
+where
+    E: SiteEnergy<S>,
 {
     /** Compute the total energy of the microstate contributed by functions of a single site.
 
@@ -88,14 +89,15 @@ impl<B, S, C, E> TotalEnergy<Microstate<B, S, C>> for Single<E> where
     */
     #[inline]
     fn total_energy(&self, microstate: &Microstate<B, S, C>) -> f64 {
-        microstate.sites()
-            .iter()
-            .fold(0.0, |total, s| total + self.inner.site_energy(&s.properties))
+        microstate.sites().iter().fold(0.0, |total, s| {
+            total + self.inner.site_energy(&s.properties)
+        })
     }
 }
 
-impl<E, S> SiteEnergy<S> for Single<E> where
-    E: SiteEnergy<S>
+impl<E, S> SiteEnergy<S> for Single<E>
+where
+    E: SiteEnergy<S>,
 {
     #[inline]
     fn site_energy(&self, site_properties: &S) -> f64 {

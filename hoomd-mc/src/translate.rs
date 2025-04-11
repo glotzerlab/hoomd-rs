@@ -19,14 +19,18 @@ pub struct Translate<V> {
 
 impl<V> Translate<V> {
     pub fn with_maximum_distance(maximum_distance: f64) -> Self {
-        Self {maximum_distance, vector_type: PhantomData }
+        Self {
+            maximum_distance,
+            vector_type: PhantomData,
+        }
     }
 }
 
-impl<B, V> LocalTrial<B> for Translate<V> where
-B: Position<V>,
-V: Vector,
-StandardUniform: Distribution<V>
+impl<B, V> LocalTrial<B> for Translate<V>
+where
+    B: Position<V>,
+    V: Vector,
+    StandardUniform: Distribution<V>,
 {
     #[inline]
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B {

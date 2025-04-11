@@ -185,7 +185,7 @@ TODO: Sketch out how enums and `SiteEnergy`/`SitePairEnergy` work with match exp
 * Implement SiteEnergy for Linear directly, or wrap it in a Uniform/Single type
   indicate that it applies the same to all sites? The latter seems redundant...
   but it will be necessary for the pair energies as there are many that implement
-  the same interface via a trait. 
+  the same interface via a trait.
 * Create a type External that holds an inner `SiteEnergy` and implements
   `TotalEnergy`. That way, the code can be reused for every `SiteEnergy` type.
 * Possibly "inherit" `SiteEnergy` from the inner type? That one, one variable

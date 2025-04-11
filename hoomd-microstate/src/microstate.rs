@@ -11,7 +11,7 @@ use crate::{Body, Site, Transform, boundary::Open};
 
 /** Track a unique identifier for an item in [`Microstate`].
 */
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Tagged<T> {
     /// The unique identifier.
     pub tag: usize,
