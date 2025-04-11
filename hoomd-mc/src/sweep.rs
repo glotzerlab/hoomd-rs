@@ -19,7 +19,11 @@ pub struct Sweep<'a, L, H> {
 
 impl<'a, L, H> Sweep<'a, L, H> {
     pub fn new(local: L, kt: &'a f64, hamiltonian: &'a H) -> Self {
-        Self { local, kt, hamiltonian }
+        Self {
+            local,
+            kt,
+            hamiltonian,
+        }
     }
 }
 
@@ -54,7 +58,7 @@ where
                 count.accepted += 1;
             } else {
                 count.rejected += 1;
-            }                     
+            }
         }
 
         microstate.increment_substep();

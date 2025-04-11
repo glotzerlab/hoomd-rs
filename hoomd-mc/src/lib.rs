@@ -13,15 +13,15 @@
 TODO: Expand documentation.
  */
 
-use rand::Rng;
 use hoomd_microstate::Tagged;
+use rand::Rng;
 
+mod external;
 mod sweep;
 mod translate;
-mod external;
 
-pub use translate::Translate;
 pub use sweep::Sweep;
+pub use translate::Translate;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Count {
