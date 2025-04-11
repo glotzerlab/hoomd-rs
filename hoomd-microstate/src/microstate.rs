@@ -8,6 +8,7 @@ use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 
 use crate::{Body, Site, Transform, boundary::Open};
+use hoomd_random::Counter;
 
 /** Track a unique identifier for an item in [`Microstate`].
 */
@@ -254,6 +255,41 @@ impl<B, S, C> Microstate<B, S, C> {
     #[must_use]
     pub fn seed(&self) -> u32 {
         self.seed
+    }
+
+    /** Create a partially constructed [`Counter`] from the current step, substep, and seed.
+
+    Use the produced [`Counter`] to make a independent random number generator at each
+    substep. Call additional methods on the [`Counter`] first to further differentiate
+    the stream.
+
+    # Example
+
+    Make a random number generator unique to this substep:
+    ```
+    use hoomd_microstate::{Microstate, property::Point};
+    use hoomd_vector::Cartesian;
+
+    let mut microstate = Microstate::<Point<Cartesian<2>>>::new();
+
+    let rng = microstate.counter().make_rng();
+    ```
+
+    Make a random number generator unique to a particular particle on this substep:
+
+    ```
+    use hoomd_microstate::{Microstate, property::Point};
+    use hoomd_vector::Cartesian;
+
+    let mut microstate = Microstate::<Point<Cartesian<2>>>::new();
+
+    let tag = 10;
+    let rng = microstate.counter().index(tag).make_rng();
+    ```
+    */
+    #[inline]
+    pub fn counter(&self) -> Counter {
+        Counter::new(self.step, self.substep, self.seed)
     }
 }
 

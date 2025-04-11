@@ -27,10 +27,10 @@ impl<'a, L, H> Sweep<'a, L, H> {
     }
 }
 
-impl<'a, B, S, C, L, H> Trial<Microstate<B, S, C>> for Sweep<'a, L, H>
+impl<B, S, C, L, H> Trial<Microstate<B, S, C>> for Sweep<'_, L, H>
 where
     B: Copy + Clone + Default + Transform<S>,
-    S: Copy + Clone + Default,
+    S: Clone + Default,
     L: LocalTrial<B>,
     H: DeltaEnergyOne,
 {
@@ -38,9 +38,7 @@ where
 
     #[inline]
     fn apply(&self, microstate: &mut Microstate<B, S, C>) -> Self::Count {
-        // TODO: Implement a convenience to create Counter from Microstate so this code isn't repeated?
-        let mut rng =
-            Counter::new(microstate.step(), microstate.substep(), microstate.seed()).make_rng();
+        let mut rng = microstate.counter().make_rng();
         let mut count = Self::Count::default();
         let mut trial = Tagged::<Body<B, S>>::default();
 

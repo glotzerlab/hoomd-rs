@@ -16,8 +16,8 @@ workspace = true
 
 [dependencies]
 hoomd-vector = { path = "../hoomd-vector" }
+hoomd-random = { path = "../hoomd-random" }
 
 [dev-dependencies]
 divan = "0.1.14"
 rstest = "0.23.0"
-rand = "0.8.5"
