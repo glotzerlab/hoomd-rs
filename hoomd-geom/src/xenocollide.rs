@@ -10,7 +10,10 @@ use hoomd_vector::{Angle, Cartesian, Cross, Rotate, Rotation, Vector};
 //     Cartesian::from([-v[1], v[0]])
 // }
 
+/// Maximum allowed iterations for Xenocollide in 2D
 const XENOCOLLIDE_2D_MAX_ITER: usize = 1024;
+/// Maximum allowed iterations for Xenocollide in 3D
+const XENOCOLLIDE_3D_MAX_ITER: usize = 1024;
 
 /// Stateful function for support function calculations on Minkowski differences.
 struct SupportFunctor<
@@ -122,8 +125,72 @@ pub fn collide2d<R: Rotate<Cartesian<2>> + Rotation + Copy, T: SupportFn<Cartesi
     }
 }
 
+#[inline]
+pub fn collide3d<R: Rotate<Cartesian<3>> + Rotation + Copy, T: SupportFn<Cartesian<3>>>(
+    sa: &T,
+    sb: &T,
+    v_ij: &Cartesian<3>, // Probably ok to take ownership?
+    q_ij: &R,
+) -> bool {
+    let precision_tol = 2e-15; // Set fixed tol, rather than rounding-radius based
+    let s = SupportFunctor { sa, sb, v_ij, q_ij };
+
+    // Phase 1: Portal discovery
+    // Obtain a point lying deep within B⊖A
+    let v0 = *v_ij; // self.centroid()-other.centroid() in extrinsic coords
+
+    // find_candidate_portal()
+
+    // Support point in the direction of the origin ray
+    let mut v1 = s.composite_support(-v0); // negative, to ensure ||v1|| > 0
+
+    // Equivalent to v1 . (v1-v0) <= 0 by convexity
+    if v1.dot(&v0) > 0.0 {
+        return false; // Origin is outside the v1 support plane
+    }
+
+    // Direction perpendicular to v0, v1 plane
+    let n = v1.cross(&v0);
+
+    // Cross product is zero if v0,v1 colinear with origin, but we have already
+    // determined origin is within v1 support plane. If origin is on a line between
+    // v1 and v0, particles overlap. We assume precision_tol has units l**2
+    if n.into_iter().all(|x| x.abs() < precision_tol) {
+        return true;
+    }
+
+    // Support point perpendicular to plane containing the origin, v0, and v1
+    let mut v2 = s.composite_support(n);
+
+    if v2.dot(&n) < 0.0 {
+        return false; // Origin lies outside the v2 support plane
+    }
+
+    // Support point perpendicular to plane containing interior point and first 2 supports
+    let mut n = (v2 - v0).cross(&(v1 - v0));
+
+    // Maintain known handedness of the portal
+    if n.dot(&v0) >= 0.0 {
+        (v1, v2) = (v2, v1);
+        n = -n;
+    }
+
+    // while origin_ray_does_not_intersect_candidate()
+    let mut intersects = false;
+    let mut count = 0usize;
+    loop {
+        count += 1;
+        if intersects {
+            break false; // TODO: is this correct?
+        }
+
+        if count >= XENOCOLLIDE_3D_MAX_ITER {
+            return true;
+        }
+    }
+}
+
 #[cfg(test)]
-#[allow(clippy::used_underscore_binding)]
 mod tests {
     use super::*;
     use rstest::*;
