@@ -56,8 +56,8 @@ impl<const N: usize> SupportFn<Cartesian<N>> for Cuboid<N> {
         result
             .coordinates
             .iter_mut()
-            .zip((*n / n.norm()).into_iter().zip(self.edge_lengths))
-            .for_each(|(x, (n_i, l_i))| *x = l_i * n_i.signum());
+            .zip((*n).into_iter().zip(self.edge_lengths))
+            .for_each(|(x, (n_i, l_i))| *x = l_i / 2.0 * n_i.signum());
         result
     }
 }
@@ -120,7 +120,6 @@ impl<const N: usize, R: Rotate<Cartesian<N>> + Rotation + PartialEq>
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
-    use arrcomp::arr;
     use hoomd_vector::Versor;
     use rstest::*;
     use std::marker::PhantomData;

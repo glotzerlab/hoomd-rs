@@ -48,7 +48,6 @@ impl<const N: usize, T: SupportFn<Cartesian<N>>, R: Copy + Rotation + Rotate<Car
 }
 
 /// Xenocollide in 2 dimensions. For now, hard coded to 2
-#[allow(dead_code)] // TODO: temp
 #[inline]
 fn collide<R: Rotate<Cartesian<2>> + Rotation + Copy, T: SupportFn<Cartesian<2>>>(
     sa: &T,
@@ -147,7 +146,7 @@ mod tests {
     use super::*;
     use rstest::*;
 
-    use crate::Sphere;
+    use crate::{Cuboid, Sphere};
 
     #[rstest(
         v => [[0.1, 0.1], [999.9, 0.0], [0.0, 5.123], [0.0, 5.123_000_000_000_001]]
@@ -159,5 +158,18 @@ mod tests {
         let overlaps = collide(&s0, &s1, &v.into(), theta);
 
         assert_eq!(overlaps, s0.intersects_at(&s1, &v.into(), theta),);
+    }
+
+    #[rstest(
+        v => [[0.1, 0.1], [999.9, 0.0], [0.0, 5.123], [0.0, 5.123_000_000_000_001]],
+        rect => [[1.0, 1.0], [999.0, 0.1], [1.0, 2.0*4.623]]
+    )]
+    fn test_aabrs_collide(v: [f64; 2], rect: [f64; 2]) {
+        let c0 = Cuboid::from(rect);
+        let c1 = Cuboid::from([1.0; 2]);
+        let theta = &Angle::from(0.0);
+
+        let overlaps = collide(&c0, &c1, &v.into(), theta);
+        assert_eq!(overlaps, c0.intersects_at(&c1, &v.into(), theta),);
     }
 }
