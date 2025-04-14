@@ -19,7 +19,7 @@ This trait requires a dimension `N` and a coordinate system defined by a [`Vecto
 pub trait Shape<const N: usize> {
     /// Bounding sphere. Maybe should be part of the Particle trait?
     fn bounding_sphere(&self) -> Sphere<N>; // NOT minimal bounding sphere: just a small one
-                                            // NOTE: HPMC will often access the (centered) bounding sphere - should be cached?
+    // NOTE: HPMC will often access the (centered) bounding sphere - should be cached?
 
     // fn is_inside(&self, v: V) -> bool;
 }
@@ -27,11 +27,7 @@ pub trait Shape<const N: usize> {
 /**
 Definitions of the minimum distance between two `Shape`s. Will be zero if points are on
 a boundary (within floating-point precision) and negative if the shapes are overlapping.
-
 */
-
-const XENOCOLLIDE_2D_MAX_ITERATIONS: usize = 1024;
-
 pub trait MinDistance<const N: usize, V: Vector, R: Rotate<V>, S: Shape<N>> {
     /// Minimum distance between two `Shape`s in `N` dimensions
     fn min_distance(&self, other: &S, v_ij: &V, o_ij: R) -> f64;
