@@ -24,7 +24,7 @@ def plot_polygon_with_lines(
     # Draw lines
     for (p0, p1), color, linestyle, has_arrow, lab, text_offset in lines:
         # Draw main line
-        ax.plot([p0[0], p1[0]], [p0[1], p1[1]], color=color, linestyle=linestyle)
+        ax.plot([p0[0], p1[0]], [p0[1], p1[1]], color=color, linestyle=linestyle, zorder=0)
 
         # Draw arrowhead if needed
         if has_arrow:
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     fig, ax = plt.subplots(2, 6, figsize=(12, 4), sharex=True, sharey=True)
     poly = _make_ngon(7, angle=np.pi / 7)[:, :2]
 
-    ORIGIN = np.array([-0.15, 0.45])
+    ORIGIN = np.array([-0.15, 0.48])
     v0 = np.zeros(2) # Not generally true, but ok for now
 
     ax[0, 0].set_ylabel("Portal Discovery")
@@ -190,9 +190,9 @@ if __name__ == "__main__":
     )
 
     p0 = v2-v1
-    p0_perp = perp(p0)
-    if (v1-v0).dot(p0_perp) < 0.0:
-        p0_perp = -p0_perp
+    v_perp_v2v1 = perp(p0)
+    if (v1-v0).dot(v_perp_v2v1) < 0.0:
+        v_perp_v2v1 = -v_perp_v2v1
     
     plot_polygon_with_lines(
         poly,
@@ -205,14 +205,31 @@ if __name__ == "__main__":
             (((0, 0), v1), "grey", "dotted", False, "", None),
             (((0, 0), v2), "grey", "dotted", False, "", None),
             ((v1, v2), "black", "dotted", False, "", None), # p0
-            (((v1+v2)/2, p0_perp/1.5), "black", "solid", True, "", None),
+            (((v1+v2)/2, v_perp_v2v1/1.5), "black", "solid", True, "", None),
+            ((v1+v_perp_v2v1/4.5, v2+v_perp_v2v1/4.5), "black", "dotted", False, "", None),
         ],
         additional_points=[v1, v2],
     )
 
     print(
-        v1.dot(p0_perp) >= 0.0 # Point is inside the initial portal
+        v1.dot(v_perp_v2v1) >= 0.0 # Point is inside the initial portal
     )    
+
+    v3 = poly[1]
+    plot_polygon_with_lines(
+        poly,
+        ax=ax[1, 1],
+        origin_color="#72618D",
+        label_origin=False,
+        v0_color="grey",
+        lines=[
+            (((0, 0), v1), "grey", "dotted", False, "", None),
+            (((0, 0), v2), "grey", "dotted", False, "", None),
+            ((v1, v2), "black", "solid", False, "", None), # p0
+            (((v1+v2)/2, v_perp_v2v1/1.5), "black", "solid", True, "", None),
+        ],
+        additional_points=[v1, v2, v3],
+    )
 
 
     
