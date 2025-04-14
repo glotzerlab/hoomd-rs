@@ -45,10 +45,10 @@ impl<const N: usize> From<f64> for Sphere<N> {
 
 // TRAITS
 
-impl<const N: usize> SupportFn for Sphere<N> {
+impl<const N: usize, V: Vector> SupportFn<V> for Sphere<N> {
     #[inline]
-    fn support<V: Vector>(&self, v: &V) -> V {
-        *v * self.r
+    fn support(&self, n: &V) -> V {
+        *n / n.norm() * self.r
     }
 }
 
@@ -86,6 +86,7 @@ impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Sphere<N>, V, R> for 
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
+    // use hoomd_vector::approx::*;
     use rstest::*;
     use std::marker::PhantomData;
 
@@ -149,6 +150,6 @@ mod tests {
     ) {
         let s = Sphere::<N>::from(r);
         let v = Cartesian::<N>::from([r.powi(2) / 1.8; N]);
-        assert_eq!(v * r, s.support(&v));
+        assert_eq!(v / v.norm() * r, s.support(&v));
     }
 }
