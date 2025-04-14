@@ -119,6 +119,7 @@ impl<const N: usize, R: Rotate<Cartesian<N>> + Rotation + PartialEq>
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
+    use arrcomp::arr;
     use hoomd_vector::Versor;
     use rstest::*;
     use std::marker::PhantomData;
@@ -192,10 +193,25 @@ mod tests {
             PhantomData::<Cuboid<4>>
         ],
         l => [1e-6, 1.0, 3.456],
-        // normal_form => [[]]
+        normal_form => ["pos", "neg", "alternating"]
     )]
-    fn test_box_support<const N: usize>(_n: PhantomData<Cuboid<N>>, l: f64) {
+    fn test_box_support<const N: usize>(_n: PhantomData<Cuboid<N>>, l: f64, normal_form: &str) {
         let c = Cuboid::from([l; 3]);
-        // println!("{}", c.edge_lengths);
+        let mut n_base = Cartesian::from([1.5; N]);
+        let n = match normal_form {
+            "pos" => n_base,
+            "neg" => -n_base,
+            "alternating" => {
+                n_base
+                    .coordinates
+                    .iter_mut()
+                    .zip(0..N)
+                    .for_each(|(x, i)| *x = if i % 2 == 0 { -*x } else { *x });
+                n_base
+            }
+            _ => unreachable!(),
+        };
+        assert_eq!(c.support(n), )
+        println!("{normal_form}");
     }
 }
