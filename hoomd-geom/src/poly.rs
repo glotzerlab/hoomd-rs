@@ -1,8 +1,8 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use crate::{IntersectsAt, Shape, Volume};
-use hoomd_vector::{Cartesian, Rotate, Vector};
+use crate::{IntersectsAt, Shape, Volume, xenocollide};
+use hoomd_vector::{Cartesian, Rotate, Rotation, Vector};
 
 /**
 A convex, faceter polyhedron
@@ -17,10 +17,14 @@ pub struct ConvexPolytope<const N: usize> {
 /**
 Calculate the intersection between two convex polygons in cartesian coordinates.
 */
-impl<R: Rotate<Cartesian<2>>> IntersectsAt<Self, Cartesian<2>, R> for ConvexPolytope<2> {
+impl<R: Rotate<Cartesian<2>>> IntersectsAt<Self, Cartesian<2>, R> for ConvexPolytope<2>
+where
+    R: Rotate<Cartesian<2>> + Copy + Rotation,
+{
     ///
     fn intersects_at(&self, other: &Self, r_ij: &Cartesian<2>, o_ij: &R) -> bool {
-        todo!() // TODO: Xenocollide 2d
+        // xenocollide::collide2d(self, other, r_ij, o_ij)
+        todo!()
     }
 }
 

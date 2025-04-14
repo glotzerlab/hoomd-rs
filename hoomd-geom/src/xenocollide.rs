@@ -49,7 +49,7 @@ impl<const N: usize, T: SupportFn<Cartesian<N>>, R: Copy + Rotation + Rotate<Car
 
 /// Xenocollide in 2 dimensions. For now, hard coded to 2
 #[inline]
-fn collide<R: Rotate<Cartesian<2>> + Rotation + Copy, T: SupportFn<Cartesian<2>>>(
+pub fn collide2d<R: Rotate<Cartesian<2>> + Rotation + Copy, T: SupportFn<Cartesian<2>>>(
     sa: &T,
     sb: &T,
     v_ij: &Cartesian<2>, // Probably ok to take ownership?
@@ -155,7 +155,7 @@ mod tests {
         let (s0, s1) = (Sphere::<2>::from(1.0), Sphere::<2>::from(4.123));
         let theta = &Angle::from(0.0);
 
-        let overlaps = collide(&s0, &s1, &v.into(), theta);
+        let overlaps = collide2d(&s0, &s1, &v.into(), theta);
 
         assert_eq!(overlaps, s0.intersects_at(&s1, &v.into(), theta),);
     }
@@ -169,7 +169,7 @@ mod tests {
         let c1 = Cuboid::from([1.0; 2]);
         let theta = &Angle::from(0.0);
 
-        let overlaps = collide(&c0, &c1, &v.into(), theta);
+        let overlaps = collide2d(&c0, &c1, &v.into(), theta);
         assert_eq!(overlaps, c0.intersects_at(&c1, &v.into(), theta),);
     }
 }
