@@ -7,7 +7,7 @@ use hoomd_vector::{Cartesian, Cross, Rotate, Rotation, Vector};
 //     Cartesian::from([-v[1], v[0]])
 // }
 
-/// Functor for Support Function calculations
+/// Stateful function for support function calculations on Minkowski differences.
 struct SupportFunctor<'a, const N: usize, R: Copy + Rotation + Rotate<Cartesian<N>>, T: SupportFn> {
     /// Support-function shape A
     sa: &'a T,
@@ -33,7 +33,7 @@ impl<const N: usize, T: SupportFn, R: Copy + Rotation + Rotate<Cartesian<N>>>
             .rotate(&self.sb.support(&self.q_ij.inverted().rotate(&n)))
             + *self.v_ij;
 
-        sb_n - self.sa.support(&-n)
+        sb_n - self.sa.support(&-n) // eq. 2.5.6 in GPG7
     }
 }
 

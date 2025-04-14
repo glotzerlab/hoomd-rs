@@ -11,6 +11,7 @@ def plot_polygon_with_lines(
     label_origin=True,
     origin_color="grey",
     v0_color="black",
+    marker_color="black",
     additional_points=None,
 ):
     if ax is None:
@@ -70,7 +71,7 @@ def plot_polygon_with_lines(
 
     # Point deep within the difference
     ax.scatter(0, 0, c=v0_color)
-    ax.text(0.05, 0.0, r"$V_0$", fontsize=10)
+    ax.text(0.075, -0.15, r"$V_0$", fontsize=10, color=v0_color)
 
     # ORIGIN (unknown to us)
 
@@ -81,8 +82,8 @@ def plot_polygon_with_lines(
     if additional_points is not None:
         for i, pt in enumerate(additional_points):
             # ax.scatter(*pt, color="k", s=15)
-            ax.scatter(*pt, color="k")
-            ax.text(pt[0] * 1.05, pt[1] * 1.12, rf"$V_{i + 1}$", fontsize=10)
+            ax.scatter(*pt, color=marker_color)
+            ax.text(pt[0] * 1.05, pt[1] * 1.20, rf"$V_{i + 1}$", fontsize=10, color=marker_color)
 
     ax.set_xticks([])
     ax.set_yticks([])
@@ -90,6 +91,10 @@ def plot_polygon_with_lines(
     ax.set_ylim(np.array(ax.get_ylim())*1.05)
     ax.set_aspect("equal")
 
+# TODO: calculate the real vectors as in rs code
+
+def perp(vec2):
+    return np.array([-vec2[1], vec2[0]])
 
 if __name__ == "__main__":
     from coxeter.families.common import _make_ngon
@@ -97,32 +102,46 @@ if __name__ == "__main__":
     fig, ax = plt.subplots(2, 6, figsize=(12, 4), sharex=True, sharey=True)
     poly = _make_ngon(7, angle=np.pi / 7)[:, :2]
 
-    ORIGIN = np.array([-0.2, 0.45])
+    ORIGIN = np.array([-0.15, 0.45])
+    v0 = np.zeros(2) # Not generally true, but ok for now
 
+    ax[0, 0].set_ylabel("Portal Discovery")
     plot_polygon_with_lines(
         poly,
         ax=ax[0, 0],
         origin_color="#72618D",
     )
+
+    # Support point along the vector v_0 O
+    v1 = poly[2]
+    if np.dot(v1, v0) > 0.0:
+        print("Shapes do not overlap!")
+    
+    
     plot_polygon_with_lines(
         poly,
         ax=ax[0, 1],
         origin_color="#72618D",
-        lines=[(((0, 0), ORIGIN), "black", "solid", True, "", None)],
-        # additional_points=[poly[2]]
+        lines=[(((0, 0), ORIGIN), "black", "solid", True, r"", None)],
+        additional_points=[v1]
     )
+    
     plot_polygon_with_lines(
         poly,
         ax=ax[0, 2],
         origin_color="grey",
         label_origin=False,
         lines=[(((0, 0), ORIGIN * 0.5), "black", "solid", True, r"$n$", [0.07, -0.04])],
-        additional_points=[poly[2]],
+        additional_points=[v1],
     )
+    
+    # Choose the ray that points toward the origin: TODO: is this wrong?
+    v_perp_v1v0 = perp(v1-v0)
+    if v1.dot(v_perp_v1v0) > 0.0: # TODO: this is greater than in the primary code!
+        v_perp_v1v0 *= -1 # Is this wrong?
+    
     x0 = poly[2] / 2
-    # x1 = (-x0[1]+x0[0], x0[0]+x0[1])
-    x1 = np.asarray((-x0[1] + x0[0], x0[0] + x0[1]))
-    x1 += poly[2][::-1] * [1, -1]
+    v2 = poly[0]
     plot_polygon_with_lines(
         poly,
         ax=ax[0, 3],
@@ -130,10 +149,9 @@ if __name__ == "__main__":
         label_origin=False,
         # lines=[(((0, 0), ORIGIN*0.5), "black", "solid", True, r"$n$")],
         lines=[
-            (((0, 0), poly[2]), "black", "dotted", False, "", None),
+            (((0, 0), v1), "black", "dotted", False, "", None),
             (
-                # ((poly[2] / 2, [-poly[2][1] / 2, -poly[2][0] / 2])),
-                (x0, x1),
+                (x0, (x0+v_perp_v1v0/2)),
                 "k",
                 "solid",
                 True,
@@ -141,6 +159,62 @@ if __name__ == "__main__":
                 [-0.10, -0.12],
             ),
         ],
-        additional_points=[poly[2], poly[0]],
+        additional_points=[v1, v2],
     )
+
+    # Find the second support point
+    plot_polygon_with_lines(
+        poly,
+        ax=ax[0, 4],
+        origin_color="grey",
+        label_origin=False,
+        lines=[
+            (((0, 0), v1), "black", "dotted", False, "", None),
+            (((0, 0), v2), "black", "dotted", False, "", None),
+        ],
+        additional_points=[v1, v2],
+    )
+    plot_polygon_with_lines(
+        poly,
+        ax=ax[0, 5],
+        origin_color="#72618D",
+        v0_color="grey",
+        marker_color="grey",
+        label_origin=False,
+        lines=[
+            (((0, 0), v1), "grey", "dotted", False, "", None),
+            (((0, 0), v2), "grey", "dotted", False, "", None),
+            ((v1, v2), "black", "dotted", False, "", None), # p0
+        ],
+        additional_points=[v1, v2],
+    )
+
+    p0 = v2-v1
+    p0_perp = perp(p0)
+    if (v1-v0).dot(p0_perp) < 0.0:
+        p0_perp = -p0_perp
+    
+    plot_polygon_with_lines(
+        poly,
+        ax=ax[1, 0],
+        origin_color="#72618D",
+        v0_color="grey",
+        marker_color="grey",
+        label_origin=False,
+        lines=[
+            (((0, 0), v1), "grey", "dotted", False, "", None),
+            (((0, 0), v2), "grey", "dotted", False, "", None),
+            ((v1, v2), "black", "dotted", False, "", None), # p0
+            (((v1+v2)/2, p0_perp/1.5), "black", "solid", True, "", None),
+        ],
+        additional_points=[v1, v2],
+    )
+
+    print(
+        v1.dot(p0_perp) >= 0.0 # Point is inside the initial portal
+    )    
+
+
+    
+    
     plt.show()
