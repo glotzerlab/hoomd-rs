@@ -49,7 +49,11 @@ pub trait LocalTrial<B> {
 */
 pub trait DeltaEnergyOne<B, S, C> {
     #[must_use]
-    fn delta_energy_one(&self, microstate: &Microstate<B, S, C>, new_body: &Tagged<Body<B, S>>) -> f64;
+    fn delta_energy_one(
+        &self,
+        microstate: &Microstate<B, S, C>,
+        new_body: &Tagged<Body<B, S>>,
+    ) -> f64;
 }
 
 /** Set the energy of any system to 0.
@@ -61,7 +65,11 @@ pub struct Zero;
 
 impl<B, S, C> DeltaEnergyOne<B, S, C> for Zero {
     #[inline]
-    fn delta_energy_one(&self, _microstate: &Microstate<B, S, C>, _new_body: &Tagged<Body<B, S>>) -> f64 {
+    fn delta_energy_one(
+        &self,
+        _microstate: &Microstate<B, S, C>,
+        _new_body: &Tagged<Body<B, S>>,
+    ) -> f64 {
         0.0
     }
 }
