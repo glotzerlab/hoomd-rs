@@ -48,6 +48,7 @@ impl<const N: usize> Volume for Cuboid<N> {
     }
 }
 
+// TODO: requires test
 impl<const N: usize> SupportFn<Cartesian<N>> for Cuboid<N> {
     #[inline]
     fn support(&self, n: &Cartesian<N>) -> Cartesian<N> {
@@ -55,7 +56,7 @@ impl<const N: usize> SupportFn<Cartesian<N>> for Cuboid<N> {
         result
             .coordinates
             .iter_mut()
-            .zip(n.into_iter().zip(self.edge_lengths))
+            .zip((*n / n.norm()).into_iter().zip(self.edge_lengths))
             .for_each(|(x, (n_i, l_i))| *x = l_i * n_i.signum());
         result
     }
@@ -183,35 +184,5 @@ mod tests {
     fn test_box_abc(l: f64) {
         let c = Cuboid::from([l; 3]);
         assert_eq!([c.a(), c.b(), c.c()], [l; 3]);
-    }
-
-    #[rstest(
-        _n => [
-            PhantomData::<Cuboid<1>>,
-            PhantomData::<Cuboid<2>>,
-            PhantomData::<Cuboid<3>>,
-            PhantomData::<Cuboid<4>>
-        ],
-        l => [1e-6, 1.0, 3.456],
-        normal_form => ["pos", "neg", "alternating"]
-    )]
-    fn test_box_support<const N: usize>(_n: PhantomData<Cuboid<N>>, l: f64, normal_form: &str) {
-        let c = Cuboid::from([l; 3]);
-        let mut n_base = Cartesian::from([1.5; N]);
-        let n = match normal_form {
-            "pos" => n_base,
-            "neg" => -n_base,
-            "alternating" => {
-                n_base
-                    .coordinates
-                    .iter_mut()
-                    .zip(0..N)
-                    .for_each(|(x, i)| *x = if i % 2 == 0 { -*x } else { *x });
-                n_base
-            }
-            _ => unreachable!(),
-        };
-        assert_eq!(c.support(n), )
-        println!("{normal_form}");
     }
 }
