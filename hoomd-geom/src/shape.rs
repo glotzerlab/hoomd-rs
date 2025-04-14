@@ -40,8 +40,8 @@ pub trait MinDistance<const N: usize, V: Vector, R: Rotate<V>, S: Shape<N>> {
 /**
 The support function of a geometry.
 */
-pub trait SupportFn {
+pub trait SupportFn<V: Vector> {
     /// Center of mass of the shape
     /// Distances from the origin to each supporting hyperplane.
-    fn support<V: Vector>(&self, v: &V) -> V;
+    fn support(&self, n: &V) -> V;
 }
