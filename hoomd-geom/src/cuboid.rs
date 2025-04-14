@@ -3,9 +3,9 @@
 
 /*!Axis-aligned N-cuboids, particularly used for bounding volume hierarchies.*/
 use crate::intersects::IntersectsAt;
-use crate::Volume;
+use crate::{SupportFn, Volume};
 use hoomd_vector::Cartesian;
-use hoomd_vector::{Rotate, Rotation};
+use hoomd_vector::{Rotate, Rotation, Vector};
 use itertools::multizip;
 use std::cmp::PartialEq;
 
@@ -45,6 +45,19 @@ impl<const N: usize> Volume for Cuboid<N> {
             .into_iter()
             .reduce(|acc, x| acc * x)
             .unwrap_or(0.0)
+    }
+}
+
+impl<const N: usize> SupportFn<Cartesian<N>> for Cuboid<N> {
+    #[inline]
+    fn support(&self, n: &Cartesian<N>) -> Cartesian<N> {
+        let mut result = Cartesian::<N>::default();
+        result
+            .coordinates
+            .iter_mut()
+            .zip(n.into_iter().zip(self.edge_lengths))
+            .for_each(|(x, (n_i, l_i))| *x = l_i * n_i.signum());
+        result
     }
 }
 
@@ -169,5 +182,20 @@ mod tests {
     fn test_box_abc(l: f64) {
         let c = Cuboid::from([l; 3]);
         assert_eq!([c.a(), c.b(), c.c()], [l; 3]);
+    }
+
+    #[rstest(
+        _n => [
+            PhantomData::<Cuboid<1>>,
+            PhantomData::<Cuboid<2>>,
+            PhantomData::<Cuboid<3>>,
+            PhantomData::<Cuboid<4>>
+        ],
+        l => [1e-6, 1.0, 3.456],
+        // normal_form => [[]]
+    )]
+    fn test_box_support<const N: usize>(_n: PhantomData<Cuboid<N>>, l: f64) {
+        let c = Cuboid::from([l; 3]);
+        // println!("{}", c.edge_lengths);
     }
 }
