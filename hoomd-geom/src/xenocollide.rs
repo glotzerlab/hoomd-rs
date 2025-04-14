@@ -7,7 +7,7 @@ use hoomd_vector::{Angle, Cartesian, Cross, Rotate, Rotation, Vector};
 //     Cartesian::from([-v[1], v[0]])
 // }
 
-const XENOCOLLIDE_2D_MAX_ITER: usize = 16;
+const XENOCOLLIDE_2D_MAX_ITER: usize = 1024;
 
 /// Stateful function for support function calculations on Minkowski differences.
 struct SupportFunctor<
@@ -53,7 +53,6 @@ fn collide<R: Rotate<Cartesian<2>> + Rotation + Copy, T: SupportFn<Cartesian<2>>
     v_ij: &Cartesian<2>, // Probably ok to take ownership?
     q_ij: &R,
 ) -> bool {
-    let tol_multiplier = 10_000f64;
     let s = SupportFunctor { sa, sb, v_ij, q_ij };
 
     // Phase 1: Portal discovery
@@ -115,9 +114,6 @@ fn collide<R: Rotate<Cartesian<2>> + Rotation + Copy, T: SupportFn<Cartesian<2>>
             v1 = v3;
         }
 
-        // TODO: does this need to be a loop?
-
-        println!("LOOPING # {count}");
         if count >= XENOCOLLIDE_2D_MAX_ITER {
             return true;
         }
@@ -151,14 +147,13 @@ mod tests {
     use crate::Sphere;
 
     #[rstest(
-        v => [[0.1, 0.1], [999.9, 0.0], [0.0, 5.123], [0.0, 5.124]]
+        v => [[0.1, 0.1], [999.9, 0.0], [0.0, 5.123], [0.0, 5.123_000_000_000_001]]
     )]
     fn test_discs_collide(v: [f64; 2]) {
         let (s0, s1) = (Sphere::<2>::from(1.0), Sphere::<2>::from(4.123));
         let theta = &Angle::from(0.0);
 
         let overlaps = collide(&s0, &s1, &v.into(), theta);
-        println!("{v:?}, {overlaps}");
 
         assert_eq!(overlaps, s0.intersects_at(&s1, &v.into(), theta),);
     }
