@@ -4,8 +4,8 @@
 /*!
 Methods and implementations for an N-hypersphere, where N is the dimension.
 */
-use crate::{IntersectsAt, Shape, Volume};
-use hoomd_vector::{Rotate, Vector};
+use crate::{IntersectsAt, Shape, SupportFn, Volume};
+use hoomd_vector::{Cartesian, Rotate, Vector};
 use std::f64::consts::PI;
 
 /// The (single, double, ...)-factorial function
@@ -44,6 +44,13 @@ impl<const N: usize> From<f64> for Sphere<N> {
 }
 
 // TRAITS
+
+impl<const N: usize> SupportFn for Sphere<N> {
+    #[inline]
+    fn support<V: Vector>(&self, v: &V) -> V {
+        *v * self.r
+    }
+}
 
 impl<const N: usize> Shape<N> for Sphere<N> {
     #[inline]
@@ -127,5 +134,21 @@ mod tests {
     #[rstest]
     fn test_single_double_factorial(#[values(1, 5, 10, 18, 20)] n: usize) {
         assert_eq!(factorial(n, 1), factorial(n, 2) * factorial(n - 1, 2));
+    }
+
+    #[rstest]
+    #[case(PhantomData::<Sphere<0>>)]
+    #[case(PhantomData::<Sphere<1>>)]
+    #[case(PhantomData::<Sphere<2>>)]
+    #[case(PhantomData::<Sphere<3>>)]
+    #[case(PhantomData::<Sphere<4>>)]
+    #[case(PhantomData::<Sphere<5>>)]
+    fn test_support_fn<const N: usize>(
+        #[case] _n: PhantomData<Sphere<N>>,
+        #[values(0.1, 1.0, 33.3)] r: f64,
+    ) {
+        let s = Sphere::<N>::from(r);
+        let v = Cartesian::<N>::from([r.powi(2) / 1.8; N]);
+        assert_eq!(v * r, s.support(&v));
     }
 }
