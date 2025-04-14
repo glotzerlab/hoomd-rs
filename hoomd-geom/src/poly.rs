@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use crate::{IntersectsAt, Shape, Volume, xenocollide};
+use crate::{IntersectsAt, Shape, SupportFn, Volume, xenocollide};
 use hoomd_vector::{Cartesian, Rotate, Rotation, Vector};
 
 /**
@@ -21,10 +21,23 @@ impl<R: Rotate<Cartesian<2>>> IntersectsAt<Self, Cartesian<2>, R> for ConvexPoly
 where
     R: Rotate<Cartesian<2>> + Copy + Rotation,
 {
-    ///
     fn intersects_at(&self, other: &Self, r_ij: &Cartesian<2>, o_ij: &R) -> bool {
-        // xenocollide::collide2d(self, other, r_ij, o_ij)
-        todo!()
+        xenocollide::collide2d(self, other, r_ij, o_ij)
+    }
+}
+
+#[allow(clippy::expect_used)]
+impl<const N: usize> SupportFn<Cartesian<N>> for ConvexPolytope<N> {
+    fn support(&self, n: &Cartesian<N>) -> Cartesian<N> {
+        *self
+            .vertices
+            .iter()
+            .max_by(|a, b| {
+                a.dot(n)
+                    .partial_cmp(&b.dot(n))
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+            .expect("Support function not valid with 0 vertices!")
     }
 }
 

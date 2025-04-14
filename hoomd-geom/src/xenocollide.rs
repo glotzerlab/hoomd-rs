@@ -120,24 +120,6 @@ pub fn collide2d<R: Rotate<Cartesian<2>> + Rotation + Copy, T: SupportFn<Cartesi
             return true;
         }
     }
-
-    // If the origin lies on the same side of the portal as the interior point, then it
-    // lies within the dotted triangle, and must therefore lie within B⊖A. When this is
-    // the case, we terminate with a hit.
-
-    // TODO: mock the diagram in python to verify signs, etc.
-
-    // 1g: We construct a normal perpendicular to the portal, pointing away from the
-    // interior. We use this normal (p0_perp) to obtain a third support point on the
-    // surface of B–A. If the origin lies outside of the support line formed by the
-    // point and the normal, we know that the origin lies outside of B–A. In this case,
-    // the point lies on the inside of the support line, so the algorithm continue
-    // let v3 = s.composite_support(p0_perp);
-
-    // If origin is outside the support plane, we are not overlapping
-    // if v3.dot(&p0_perp) < 0.0 {
-    //     return false;
-    // }
 }
 
 #[cfg(test)]
