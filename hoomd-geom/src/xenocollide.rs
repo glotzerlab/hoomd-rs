@@ -125,6 +125,7 @@ pub fn collide2d<R: Rotate<Cartesian<2>> + Rotation + Copy, T: SupportFn<Cartesi
     }
 }
 
+/// Minkowski Portal Refinement-based collision detection in 3d
 #[inline]
 pub fn collide3d<R: Rotate<Cartesian<3>> + Rotation + Copy, T: SupportFn<Cartesian<3>>>(
     sa: &T,
@@ -180,13 +181,30 @@ pub fn collide3d<R: Rotate<Cartesian<3>> + Rotation + Copy, T: SupportFn<Cartesi
     let mut count = 0usize;
     loop {
         count += 1;
-        if intersects {
-            break false; // TODO: is this correct?
-        }
 
         if count >= XENOCOLLIDE_3D_MAX_ITER {
             return true;
         }
+
+        let v3 = s.composite_support(n);
+        if v3.dot(&n) <= 0.0 {
+            return false; // Origin is outside the v3 support plane
+        }
+
+        // If origin lies on the opposite side of the plane from our third support
+        // point, use the outer facing plane normal.
+        // Check the v3, v0, v1 plane for validity
+        if v1.cross(&v3).dot(&v0) < 0.0 {
+            v2 = v3; // Preserve handedness
+            n = (v1 - v0).cross(&(v2 - v0));
+            continue; // Continue iterating to find a valid portal
+        }
+        if v3.cross(&v2).dot(&v0) < 0.0 {
+            v1 = v3; // Preserve handedness
+            n = (v1 - v0).cross(&(v2 - v0));
+            continue;
+        }
+        break false; // If we've made it this far, we've found a valid portal
     }
 }
 
