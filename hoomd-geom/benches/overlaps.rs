@@ -7,11 +7,11 @@
 
 use divan::counter::ItemsCount;
 use divan::{self, black_box, Bencher};
-use hoomd_geom::{xenocollide::collide2d, IntersectsAt, Sphere};
+use hoomd_geom::{poly::ConvexPolytope, xenocollide::collide2d, Cuboid, IntersectsAt, Sphere};
 use rand::distributions::Uniform;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
-use hoomd_vector::{Angle, Cartesian, RotationMatrix};
+use hoomd_vector::{Angle, Cartesian, Rotate, Rotation, RotationMatrix};
 
 fn main() {
     divan::main();
@@ -19,22 +19,33 @@ fn main() {
 
 fn create_sphere_pair<const N: usize, R: Rng>(rng: &mut R) -> (Sphere<N>, Sphere<N>) {
     (
-        Sphere::from(rng.gen_range(0f64..100f64)),
-        Sphere::from(rng.gen_range(0f64..100f64)),
+        Sphere::from(rng.gen_range(0.0..100.0)),
+        Sphere::from(rng.gen_range(0.0..100.0)),
     )
+}
+fn create_cuboid_pair<const N: usize, R: Rng>(rng: &mut R) -> (Cuboid<N>, Cuboid<N>) {
+    (
+        Cuboid::from(rng.gen::<Cartesian<N>>() * 100.0),
+        Cuboid::from(rng.gen::<Cartesian<N>>() * 100.0),
+    )
+}
+
+fn create_polygon_pair<const N: usize>() -> (ConvexPolytope<2>, ConvexPolytope<2>) {
+    (ConvexPolytope::from(N), ConvexPolytope::from(N))
 }
 
 fn create_offset_2d<R: Rng>(rng: &mut R) -> (Cartesian<2>, Angle) {
     (
-        rng.gen::<Cartesian<2>>() * 100f64,
+        rng.gen::<Cartesian<2>>() * 100.0,
         Angle::from(rng.gen_range((-2.0 * std::f64::consts::PI)..(2.0 * std::f64::consts::PI))),
     )
 }
 
-const DIMENSIONS: &[usize] = &[1, 2, 3, 4];
+// const DIMENSIONS: &[usize] = &[1, 2, 3, 4];
+const NUM_VERTICES: &[usize] = &[3, 8, 16, 64, 256];
 
 #[divan::bench]
-fn sphere_overlap_fast_2d(bencher: Bencher) {
+fn sphere_fast_2d(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
     bencher
@@ -47,8 +58,25 @@ fn sphere_overlap_fast_2d(bencher: Bencher) {
         })
         .bench_local_values(|((s0, s1), (t, r))| black_box(s0.intersects_at(&s1, &t, &r)));
 }
+
+#[divan::bench]
+fn cuboid_fast_2d(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| {
+            (
+                create_cuboid_pair::<2, _>(&mut rng),
+                create_offset_2d(&mut rng),
+                Angle::identity(),
+            )
+        })
+        .bench_local_values(|((c0, c1), (t, _), r)| black_box(c0.intersects_at(&c1, &t, &r)));
+}
+
 #[divan::bench()]
-fn sphere_overlap_xenocollide_2d(bencher: Bencher) {
+fn sphere_xenocollide_2d(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
     bencher
@@ -60,4 +88,30 @@ fn sphere_overlap_xenocollide_2d(bencher: Bencher) {
             )
         })
         .bench_local_values(|((s0, s1), (t, r))| black_box(collide2d(&s0, &s1, &t, &r)));
+}
+
+/// Note this is not 1:1 with the naive test, as this uses oriented cuboids!
+#[divan::bench()]
+fn cuboid_xenocollide_2d(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| {
+            (
+                create_cuboid_pair::<2, _>(&mut rng),
+                create_offset_2d(&mut rng),
+            )
+        })
+        .bench_local_values(|((c0, c1), (t, r))| black_box(collide2d(&c0, &c1, &t, &r)));
+}
+
+#[divan::bench(consts = NUM_VERTICES, )]
+fn polygon_xenocollide_2d<const N: usize>(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| (create_polygon_pair::<N>(), create_offset_2d(&mut rng)))
+        .bench_local_values(|((p0, p1), (t, r))| black_box(collide2d(&p0, &p1, &t, &r)));
 }
