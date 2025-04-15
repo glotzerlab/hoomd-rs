@@ -5,7 +5,7 @@
 use crate::intersects::IntersectsAt;
 use crate::{SupportFn, Volume};
 use hoomd_vector::Cartesian;
-use hoomd_vector::{Rotate, Rotation, Vector};
+use hoomd_vector::{Angle, Rotate, Rotation, Vector};
 use itertools::multizip;
 use std::cmp::PartialEq;
 
@@ -137,6 +137,19 @@ mod tests {
         // Both at origin - will always intersect for any cuboids
         assert!(s0.intersects_at(&s1, &[0.0, 0.0, 0.0].into(), &Versor::identity()));
         // TODO: is there a more programmatic way to test this?
+    }
+    #[rstest(
+        edges0 => [[2.0, 2.0]],
+        edges1 => [[1.0, 1.0]],
+    )]
+    fn test_box_intersections_2d(edges0: [f64; 2], edges1: [f64; 2]) {
+        let (c0, c1) = (Cuboid::<2>::from(edges0), Cuboid::<2>::from(edges1));
+        // Should all be false (no intersection), which we invert to true
+        assert!(!c0.intersects_at(&c1, &[10.0, 10.0].into(), &Angle::identity()));
+        // Boundaries are aligned
+        assert!(c0.intersects_at(&c1, &[1.5, 1.5].into(), &Angle::identity()));
+        // Both at origin - will always intersect for any cuboids
+        assert!(c0.intersects_at(&c1, &[0.0, 0.0].into(), &Angle::identity()));
     }
 
     #[rstest(
