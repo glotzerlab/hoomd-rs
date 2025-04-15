@@ -246,9 +246,11 @@ name = "hoomd-geom"
 version = "0.0.0"
 dependencies = [
  "approx",
+ "divan",
  "hoomd-vector",
  "itertools",
  "paste",
+ "rand",
  "rstest 0.24.0",
 ]
 
