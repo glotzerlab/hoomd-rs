@@ -206,6 +206,8 @@ pub fn collide3d<R: Rotate<Cartesian<3>> + Rotation + Copy, T: SupportFn<Cartesi
         }
         break false; // If we've made it this far, we've found a valid portal
     }
+
+    // TODO: continue
 }
 
 #[cfg(test)]
