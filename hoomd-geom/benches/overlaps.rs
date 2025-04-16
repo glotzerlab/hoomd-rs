@@ -101,7 +101,7 @@ fn sphere_xenocollide_2d(bencher: Bencher) {
         .bench_local_values(|((s0, s1), (t, r))| black_box(collide2d(&s0, &s1, &t, &r)));
 }
 
-#[divan::bench]
+#[divan::bench(sample_size = 10_000)]
 fn sphere_xenocollide_3d(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
