@@ -141,15 +141,16 @@ impl From<(f64, f64, f64)> for Cartesian<3> {
 
 impl<const N: usize> FromIterator<f64> for Cartesian<N> {
     #[inline]
-    fn from_iter<I: IntoIterator<Item = f64>>(iter: I) -> Self {
+    fn from_iter<I: IntoIterator<Item = f64>>(iter: I) -> Result<Self, Error> {
         // ISSUE: Does this result in a dynamic allocation?
-        let mut result = Cartesian::default();
-        result
-            .coordinates
-            .iter_mut()
-            .zip(iter)
-            .for_each(|(res, x)| *res = x);
-        result
+        let iter = iter.into_iter();
+        let coordinates = std::array::from_fn(|_| iter.next().ok_or(Error::InvalidVectorLength))
+            .into_iter()
+            .collect()?;
+        if iter.next().is_some() {
+            return Error::InvalidVectorLength;
+        }
+        Ok(Cartesian { coordinates })
     }
 }
 
