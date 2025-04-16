@@ -52,13 +52,10 @@ impl<const N: usize> Volume for Cuboid<N> {
 impl<const N: usize> SupportFn<Cartesian<N>> for Cuboid<N> {
     #[inline]
     fn support(&self, n: &Cartesian<N>) -> Cartesian<N> {
-        let mut result = Cartesian::<N>::default();
-        result
-            .coordinates
-            .iter_mut()
-            .zip((*n).into_iter().zip(self.edge_lengths))
-            .for_each(|(x, (n_i, l_i))| *x = l_i / 2.0 * n_i.signum());
-        result
+        n.into_iter()
+            .zip(self.edge_lengths)
+            .map(|((n_i, l_i))| l_i / 2.0 * n_i.signum())
+            .collect()
     }
 }
 

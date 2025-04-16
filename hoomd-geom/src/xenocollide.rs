@@ -275,35 +275,18 @@ where
         */
         let v_perp_v4v0 = v4.cross(&v0);
 
-        // would be nice to have this as a match statement
-        // We always need to evaluate 2 dot products
-        if v_perp_v4v0.dot(&v1) > 0.0 {
-            if v_perp_v4v0.dot(&v2) > 0.0 {
-                v1 = v4; // Inside v1 && inside v2   => eliminate v1
-            } else {
-                v3 = v4; // Inside v1 && OUTside v2  => eliminate v3
-            }
-        } else {
-            if v_perp_v4v0.dot(&v3) > 0.0 {
-                v2 = v4; // OUTside v1 && inside v3  => eliminate v2
-            } else {
-                v1 = v4; // OUTside v1 && OUTside v3 => eliminate v1
-            }
+        // Compiles to the same code as the original if-else, despite the extra dot
+        #[allow(clippy::match_same_arms)]
+        match (
+            v_perp_v4v0.dot(&v1) > 0.0,
+            v_perp_v4v0.dot(&v2) > 0.0,
+            v_perp_v4v0.dot(&v3) > 0.0,
+        ) {
+            (true, true, _) => v1 = v4,   // Inside  v1 && inside  v2 => eliminate v1
+            (true, false, _) => v3 = v4,  // Inside  v1 && OUTside v2 => eliminate v3
+            (false, _, true) => v2 = v4,  // OUTside v1 && inside  v3 => eliminate v2
+            (false, _, false) => v1 = v4, // OUTside v1 && OUTside v3 => eliminate v1
         }
-
-        // /* Match case is way cleaner but less efficient (calcualtes all 3 dot products)
-        // TODO: benchmark once method is complete and tested
-        // #[allow(clippy::match_same_arms)]
-        // match (
-        //     v_perp_v4v0.dot(&v1) > 0.0,
-        //     v_perp_v4v0.dot(&v2) > 0.0,
-        //     v_perp_v4v0.dot(&v3) > 0.0,
-        // ) {
-        //     (true, true, _) => v1 = v4,   // Inside  v1 && inside  v2 => eliminate v1
-        //     (true, false, _) => v3 = v4,  // Inside  v1 && OUTside v2 => eliminate v3
-        //     (false, _, true) => v2 = v4,  // OUTside v1 && inside  v3 => eliminate v2
-        //     (false, _, false) => v1 = v4, // OUTside v1 && OUTside v3 => eliminate v1
-        // }
     }
 }
 
