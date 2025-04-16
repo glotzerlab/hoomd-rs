@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use crate::{IntersectsAt, Shape, SupportFn, Volume};
-use hoomd_vector::{Cartesian, Cross, Rotate, Rotation, Vector};
+use hoomd_vector::{Cartesian, Cross, Rotate, Rotation, RotationMatrix, Vector};
 
 // /// Get a vector perpendicular to a 2-vector
 // #[inline]
@@ -19,7 +19,7 @@ const XENOCOLLIDE_3D_MAX_ITER: usize = 1024;
 struct SupportFunctor<
     'a,
     const N: usize,
-    R: Copy + Rotation + Rotate<Cartesian<N>>,
+    // R: Copy + Rotate<Cartesian<N>>,
     T: SupportFn<Cartesian<N>>,
 > {
     /// Support-function shape A
@@ -29,12 +29,12 @@ struct SupportFunctor<
     /// Vector separating A and B
     v_ij: &'a Cartesian<N>,
     /// Relative orientation between A and B
-    q_ij: &'a R,
+    q_ij: RotationMatrix<N>,
+    /// Inverse of relative orientation between A and B
+    q_ij_inv: RotationMatrix<N>,
 }
 
-impl<const N: usize, T: SupportFn<Cartesian<N>>, R: Copy + Rotation + Rotate<Cartesian<N>>>
-    SupportFunctor<'_, N, R, T>
-{
+impl<'a, const N: usize, T: SupportFn<Cartesian<N>>> SupportFunctor<'_, N, T> {
     /// Compute the support function on the Minkowski difference of two shapes.
     #[inline]
     fn composite_support(&self, n: Cartesian<N>) -> Cartesian<N> {
@@ -43,10 +43,25 @@ impl<const N: usize, T: SupportFn<Cartesian<N>>, R: Copy + Rotation + Rotate<Car
         // Dimension-agnostic formula: r @ sb.support(r_inverse @ n) + v_ij
         let sb_n = self
             .q_ij
-            .rotate(&self.sb.support(&self.q_ij.inverted().rotate(&n)))
+            .rotate(&self.sb.support(&self.q_ij_inv.rotate(&n)))
             + *self.v_ij;
 
         sb_n - self.sa.support(&-n) // eq. 2.5.6 in GPG7
+    }
+    fn new<R: Rotation + Into<RotationMatrix<N>>>(
+        sa: &'_ T,
+        sb: &'_ T,
+        v_ij: &Cartesian<N>,
+        r: R,
+    ) -> SupportFunctor<'a, N, T> {
+        let q_ij = RotationMatrix::<N>::from(r);
+        SupportFunctor {
+            sa,
+            sb,
+            v_ij,
+            q_ij,
+            q_ij_inv: q_ij,
+        }
     }
 }
 
@@ -58,7 +73,7 @@ pub fn collide2d<R: Rotate<Cartesian<2>> + Rotation + Copy, T: SupportFn<Cartesi
     v_ij: &Cartesian<2>, // Probably ok to take ownership?
     q_ij: &R,
 ) -> bool {
-    let s = SupportFunctor { sa, sb, v_ij, q_ij };
+    let s = SupportFunctor::new(sa, sb, v_ij, *q_ij);
 
     // Phase 1: Portal discovery
     // Obtain a point lying deep within B⊖A
