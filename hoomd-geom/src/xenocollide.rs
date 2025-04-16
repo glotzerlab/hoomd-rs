@@ -205,7 +205,7 @@ pub fn collide3d<R: Rotate<Cartesian<3>> + Rotation + Copy, T: SupportFn<Cartesi
             continue;
         }
         break v3; // If we've made it this far, we've found a valid portal
-    }; // NOTE: this is some syntax fuckery but it should work
+    };
 
     count = 0;
     loop {
@@ -216,13 +216,16 @@ pub fn collide3d<R: Rotate<Cartesian<3>> + Rotation + Copy, T: SupportFn<Cartesi
 
         // Check if origin is inside (or overlapping) the portal
         if n.dot(&v1) >= 0.0 {
+            // We already know that the origin lies within 3 of the faces of our portal
+            // simplex. If it lies within the final face, it lies within B⊖A
             return true;
         }
 
         // Support point in direction of outer-facing normal of portal
+        // This point helps us determine how far outside the portal the origin lies
         let v4 = s.composite_support(n);
 
-        // If the origin is outside the support plane
+        // If the origin is outside the support plane, it cannot lie inside B⊖A
         if n.dot(&v4) < 0.0 {
             return false;
         }
@@ -250,19 +253,6 @@ pub fn collide3d<R: Rotate<Cartesian<3>> + Rotation + Copy, T: SupportFn<Cartesi
 
         // would be nice to have this as a match statement
         // We always need to evaluate 2 dot products
-        // if v_perp_v4v0.dot(&v1) > 0.0 {
-        //     if v_perp_v4v0.dot(&v2) > 0.0 {
-        //         v1 = v4; // Inside v1 && inside v2   => eliminate v1
-        //     } else {
-        //         v3 = v4; // Inside v1 && OUTside v2  => eliminate v3
-        //     }
-        // } else {
-        //     if v_perp_v4v0.dot(&v3) > 0.0 {
-        //         v2 = v4; // OUTside v1 && inside v3  => eliminate v2
-        //     } else {
-        //         v1 = v4; // OUTside v1 && OUTside v3 => eliminate v1
-        //     }
-        // }
         if v_perp_v4v0.dot(&v1) > 0.0 {
             if v_perp_v4v0.dot(&v2) > 0.0 {
                 v1 = v4; // Inside v1 && inside v2   => eliminate v1
