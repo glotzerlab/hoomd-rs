@@ -67,12 +67,14 @@ mod cuboid;
 mod intersects;
 pub mod modifiers;
 
+mod common;
 pub mod poly;
 mod shape;
 mod sphere;
 pub mod xenocollide;
 
 pub use {
+    common::*,
     cuboid::Cuboid,
     intersects::{Intersects, IntersectsAt},
     modifiers::{Centered, Sphero},
