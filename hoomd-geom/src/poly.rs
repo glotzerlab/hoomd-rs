@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use crate::{xenocollide, IntersectsAt, Shape, SupportFn, Volume};
-use hoomd_vector::{Cartesian, Rotate, Rotation, Vector};
+use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
 
 /**
 A convex, faceter polyhedron
@@ -10,8 +10,6 @@ A convex, faceter polyhedron
 pub struct ConvexPolytope<const N: usize> {
     /// The vertices of the shape.
     pub vertices: Vec<Cartesian<N>>,
-    // rounding_radius: f64,
-    // minimal_centered_bounding_sphere_radius: f64,
 }
 
 /**
@@ -19,8 +17,10 @@ Calculate the intersection between two convex polygons in cartesian coordinates.
 */
 impl<R: Rotate<Cartesian<2>>> IntersectsAt<Self, Cartesian<2>, R> for ConvexPolytope<2>
 where
-    R: Rotate<Cartesian<2>> + Copy + Rotation,
+    R: Copy + Rotation,
+    RotationMatrix<2>: From<R>,
 {
+    #[inline]
     fn intersects_at(&self, other: &Self, r_ij: &Cartesian<2>, o_ij: &R) -> bool {
         xenocollide::collide2d(self, other, r_ij, o_ij)
     }
@@ -45,6 +45,32 @@ impl From<usize> for ConvexPolytope<2> {
                     Cartesian::from([f64::cos(theta), f64::cos(theta)])
                 })
                 .collect::<Vec<_>>(),
+        }
+    }
+}
+
+impl<const N: usize> From<Vec<Cartesian<N>>> for ConvexPolytope<N> {
+    /** Create a regular N-gon with N vertices and circumradius one.
+
+    # Example
+    ```
+    use hoomd_geom::poly::ConvexPolytope;
+
+    let equilateral_triangle = ConvexPolytope::from(3);
+    ```
+    */
+    #[inline]
+    fn from(vertices: Vec<Cartesian<N>>) -> ConvexPolytope<N> {
+        ConvexPolytope { vertices }
+    }
+}
+
+impl<const N: usize> FromIterator<Cartesian<N>> for ConvexPolytope<N> {
+    /// Create a `ConvexPolytope` from an iterator of vertices.
+    #[inline]
+    fn from_iter<I: IntoIterator<Item = Cartesian<N>>>(iter: I) -> ConvexPolytope<N> {
+        ConvexPolytope {
+            vertices: iter.into_iter().collect::<Vec<_>>(),
         }
     }
 }
