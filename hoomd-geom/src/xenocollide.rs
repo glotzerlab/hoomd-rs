@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use crate::{IntersectsAt, Shape, SupportFn, Volume};
-use hoomd_vector::{Angle, Cartesian, Cross, Rotate, Rotation, Vector};
+use hoomd_vector::{Cartesian, Cross, Rotate, Rotation, Vector};
 
 // /// Get a vector perpendicular to a 2-vector
 // #[inline]
@@ -126,6 +126,7 @@ pub fn collide2d<R: Rotate<Cartesian<2>> + Rotation + Copy, T: SupportFn<Cartesi
 }
 
 /// Minkowski Portal Refinement-based collision detection in 3d
+#[allow(clippy::collapsible_else_if)] // TODO: temp
 #[inline]
 pub fn collide3d<R: Rotate<Cartesian<3>> + Rotation + Copy, T: SupportFn<Cartesian<3>>>(
     sa: &T,
@@ -177,9 +178,8 @@ pub fn collide3d<R: Rotate<Cartesian<3>> + Rotation + Copy, T: SupportFn<Cartesi
     }
 
     // while origin_ray_does_not_intersect_candidate()
-    let mut intersects = false;
     let mut count = 0usize;
-    loop {
+    let mut v3 = loop {
         count += 1;
 
         if count >= XENOCOLLIDE_3D_MAX_ITER {
@@ -204,10 +204,93 @@ pub fn collide3d<R: Rotate<Cartesian<3>> + Rotation + Copy, T: SupportFn<Cartesi
             n = (v1 - v0).cross(&(v2 - v0));
             continue;
         }
-        break false; // If we've made it this far, we've found a valid portal
-    }
+        break v3; // If we've made it this far, we've found a valid portal
+    }; // NOTE: this is some syntax fuckery but it should work
 
-    // TODO: continue
+    count = 0;
+    loop {
+        count += 1;
+
+        // Outer-facing normal of the current portal
+        n = (v2 - v1).cross(&(v3 - v1));
+
+        // Check if origin is inside (or overlapping) the portal
+        if n.dot(&v1) >= 0.0 {
+            return true;
+        }
+
+        // Support point in direction of outer-facing normal of portal
+        let v4 = s.composite_support(n);
+
+        // If the origin is outside the support plane
+        if n.dot(&v4) < 0.0 {
+            return false;
+        }
+
+        // TODO: tolerance checks?
+
+        // Choose a new portal. Two of its edges will be from the planes (v4,v0,v1),
+        // (v4,v0,v2), (v4,v0,v3). Find which two have the origin on the same side.
+
+        /* Comment inherited from HOOMD source code:
+        "MEI: As I understand this statement, I don't believe it is correct. An _inside_
+        needs to be defined and used. The only way I can think to do this is to consider
+        all three pairs of planes to find which pair has the origin between them. Need
+        to better understand and document this. The following code was directly adapted
+        from example code."
+
+        Test origin against the three planes that separate the new portal candidates
+        Note:  We're taking advantage of the triple product identities here
+        as an optimization
+               (v1 % v4) * v0 == v1 * (v4 % v0) > 0 if origin inside (v1, v4, v0)
+               (v2 % v4) * v0 == v2 * (v4 % v0) > 0 if origin inside (v2, v4, v0)
+               (v3 % v4) * v0 == v3 * (v4 % v0) > 0 if origin inside (v3, v4, v0)
+        */
+        let v_perp_v4v0 = v4.cross(&v0);
+
+        // would be nice to have this as a match statement
+        // We always need to evaluate 2 dot products
+        // if v_perp_v4v0.dot(&v1) > 0.0 {
+        //     if v_perp_v4v0.dot(&v2) > 0.0 {
+        //         v1 = v4; // Inside v1 && inside v2   => eliminate v1
+        //     } else {
+        //         v3 = v4; // Inside v1 && OUTside v2  => eliminate v3
+        //     }
+        // } else {
+        //     if v_perp_v4v0.dot(&v3) > 0.0 {
+        //         v2 = v4; // OUTside v1 && inside v3  => eliminate v2
+        //     } else {
+        //         v1 = v4; // OUTside v1 && OUTside v3 => eliminate v1
+        //     }
+        // }
+        if v_perp_v4v0.dot(&v1) > 0.0 {
+            if v_perp_v4v0.dot(&v2) > 0.0 {
+                v1 = v4; // Inside v1 && inside v2   => eliminate v1
+            } else {
+                v3 = v4; // Inside v1 && OUTside v2  => eliminate v3
+            }
+        } else {
+            if v_perp_v4v0.dot(&v3) > 0.0 {
+                v2 = v4; // OUTside v1 && inside v3  => eliminate v2
+            } else {
+                v1 = v4; // OUTside v1 && OUTside v3 => eliminate v1
+            }
+        }
+
+        /* Match case is way cleaner but less efficient (calcualtes all 3 dot products)
+        // TODO: benchmark once method is complete and tested
+        match (
+            v_perp_v4v0.dot(&v1) > 0.0,
+            v_perp_v4v0.dot(&v2) > 0.0,
+            v_perp_v4v0.dot(&v3) > 0.0,
+        ) {
+            (true, true, _) => v1 = v4,   // Inside  v1 && inside  v2 => eliminate v1
+            (true, false, _) => v3 = v4,  // Inside  v1 && OUTside v2 => eliminate v3
+            (false, _, true) => v2 = v4,  // OUTside v1 && inside  v3 => eliminate v2
+            (false, _, false) => v1 = v4, // OUTside v1 && OUTside v3 => eliminate v1
+        }
+        */
+    }
 }
 
 #[cfg(test)]
@@ -216,6 +299,7 @@ mod tests {
     use rstest::*;
 
     use crate::{Cuboid, Sphere};
+    use hoomd_vector::{Angle, Versor};
 
     #[rstest(
         v => [[0.1, 0.1], [999.9, 0.0], [0.0, 5.123], [0.0, 5.123_000_000_000_001]]
@@ -225,6 +309,17 @@ mod tests {
         let theta = &Angle::from(0.0);
 
         let overlaps = collide2d(&s0, &s1, &v.into(), theta);
+
+        assert_eq!(overlaps, s0.intersects_at(&s1, &v.into(), theta),);
+    }
+    #[rstest(
+        v => [[0.1, 0.1, 0.1], [999.9, 0.0, -10.9], [0.0, 5.123, 0.0], [0.0, 0.0, 5.123_000_000_000_001]]
+    )]
+    fn test_spheres_collide(v: [f64; 3]) {
+        let (s0, s1) = (Sphere::<3>::from(1.0), Sphere::<3>::from(4.123));
+        let theta = &Versor::identity();
+
+        let overlaps = collide3d(&s0, &s1, &v.into(), theta);
 
         assert_eq!(overlaps, s0.intersects_at(&s1, &v.into(), theta),);
     }
