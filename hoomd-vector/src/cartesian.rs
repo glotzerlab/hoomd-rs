@@ -465,6 +465,31 @@ pub struct RotationMatrix<const N: usize> {
     pub(crate) rows: [Cartesian<N>; N],
 }
 
+impl<const N: usize> Default for RotationMatrix<N> {
+    /// Create an N by N identity matrix.
+    #[inline]
+    fn default() -> RotationMatrix<N> {
+        RotationMatrix {
+            rows: array::from_fn(|i| array::from_fn(|j| if i == j { 1.0 } else { 0.0 }).into()),
+        }
+    }
+}
+
+impl<const N: usize> fmt::Display for RotationMatrix<N> {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "[{}]",
+            self.rows
+                .iter()
+                .map(Cartesian::<N>::to_string)
+                .collect::<Vec<String>>()
+                .join(",\n ")
+        )
+    }
+}
+
 impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
     #[inline]
     /** Rotate a [`Cartesian<N>`] by a [`RotationMatrix`]
@@ -870,5 +895,11 @@ mod tests {
             Unit::<Cartesian<3>>::try_from([0.0, 0.0, 0.0]),
             Err(Error::InvalidMagnitude)
         ));
+    }
+    #[allow(clippy::print_stdout)]
+    #[test]
+    fn test_display_rotationmatrix() {
+        println!("\n{}", RotationMatrix::<2>::default());
+        println!("\n{}", RotationMatrix::<3>::default());
     }
 }
