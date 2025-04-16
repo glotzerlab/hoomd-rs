@@ -267,19 +267,19 @@ pub fn collide3d<R: Rotate<Cartesian<3>> + Rotation + Copy, T: SupportFn<Cartesi
             }
         }
 
-        /* Match case is way cleaner but less efficient (calcualtes all 3 dot products)
+        // /* Match case is way cleaner but less efficient (calcualtes all 3 dot products)
         // TODO: benchmark once method is complete and tested
-        match (
-            v_perp_v4v0.dot(&v1) > 0.0,
-            v_perp_v4v0.dot(&v2) > 0.0,
-            v_perp_v4v0.dot(&v3) > 0.0,
-        ) {
-            (true, true, _) => v1 = v4,   // Inside  v1 && inside  v2 => eliminate v1
-            (true, false, _) => v3 = v4,  // Inside  v1 && OUTside v2 => eliminate v3
-            (false, _, true) => v2 = v4,  // OUTside v1 && inside  v3 => eliminate v2
-            (false, _, false) => v1 = v4, // OUTside v1 && OUTside v3 => eliminate v1
-        }
-        */
+        // #[allow(clippy::match_same_arms)]
+        // match (
+        //     v_perp_v4v0.dot(&v1) > 0.0,
+        //     v_perp_v4v0.dot(&v2) > 0.0,
+        //     v_perp_v4v0.dot(&v3) > 0.0,
+        // ) {
+        //     (true, true, _) => v1 = v4,   // Inside  v1 && inside  v2 => eliminate v1
+        //     (true, false, _) => v3 = v4,  // Inside  v1 && OUTside v2 => eliminate v3
+        //     (false, _, true) => v2 = v4,  // OUTside v1 && inside  v3 => eliminate v2
+        //     (false, _, false) => v1 = v4, // OUTside v1 && OUTside v3 => eliminate v1
+        // }
     }
 }
 
@@ -324,6 +324,18 @@ mod tests {
         let theta = &Angle::from(0.0);
 
         let overlaps = collide2d(&c0, &c1, &v.into(), theta);
+        assert_eq!(overlaps, c0.intersects_at(&c1, &v.into(), theta),);
+    }
+    #[rstest(
+        v => [[0.1, 2.1, 0.1], [999.9, 0.0, 0.05], [0.0, 5.123, 0.0], [0.0, 5.123_000_000_001, 0.0]],
+        aabb => [[1.0, 1.0, 1.0], [999.0, 0.1, 0.5], [1.0, 2.0*4.623, 5.0]]
+    )]
+    fn test_aabbs_collide(v: [f64; 3], aabb: [f64; 3]) {
+        let c0 = Cuboid::from(aabb);
+        let c1 = Cuboid::from([1.0; 3]);
+        let theta = &Versor::identity();
+
+        let overlaps = collide3d(&c0, &c1, &v.into(), theta);
         assert_eq!(overlaps, c0.intersects_at(&c1, &v.into(), theta),);
     }
 }
