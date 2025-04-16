@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use crate::{IntersectsAt, Shape, SupportFn, Volume};
+use crate::{IntersectsAt, SupportFn};
 use hoomd_vector::{Cartesian, Cross, Rotate, Rotation, RotationMatrix, Vector};
 
 // /// Get a vector perpendicular to a 2-vector
@@ -48,12 +48,15 @@ impl<'a, const N: usize, T: SupportFn<Cartesian<N>>> SupportFunctor<'_, N, T> {
 
         sb_n - self.sa.support(&-n) // eq. 2.5.6 in GPG7
     }
-    fn new<R: Rotation + Into<RotationMatrix<N>>>(
-        sa: &'_ T,
-        sb: &'_ T,
-        v_ij: &Cartesian<N>,
+    fn new<R: Rotation>(
+        sa: &'a T,
+        sb: &'a T,
+        v_ij: &'a Cartesian<N>,
         r: R,
-    ) -> SupportFunctor<'a, N, T> {
+    ) -> SupportFunctor<'a, N, T>
+    where
+        RotationMatrix<N>: From<R>,
+    {
         let q_ij = RotationMatrix::<N>::from(r);
         SupportFunctor {
             sa,
@@ -67,12 +70,15 @@ impl<'a, const N: usize, T: SupportFn<Cartesian<N>>> SupportFunctor<'_, N, T> {
 
 /// Xenocollide in 2 dimensions. For now, hard coded to 2
 #[inline]
-pub fn collide2d<R: Rotate<Cartesian<2>> + Rotation + Copy, T: SupportFn<Cartesian<2>>>(
+pub fn collide2d<R: Copy + Rotation, T: SupportFn<Cartesian<2>>>(
     sa: &T,
     sb: &T,
     v_ij: &Cartesian<2>, // Probably ok to take ownership?
     q_ij: &R,
-) -> bool {
+) -> bool
+where
+    RotationMatrix<2>: From<R>,
+{
     let s = SupportFunctor::new(sa, sb, v_ij, *q_ij);
 
     // Phase 1: Portal discovery
@@ -142,15 +148,18 @@ pub fn collide2d<R: Rotate<Cartesian<2>> + Rotation + Copy, T: SupportFn<Cartesi
 
 /// Minkowski Portal Refinement-based collision detection in 3d
 #[allow(clippy::collapsible_else_if)] // TODO: temp
-#[inline]
-pub fn collide3d<R: Rotate<Cartesian<3>> + Rotation + Copy, T: SupportFn<Cartesian<3>>>(
+#[inline(never)]
+pub fn collide3d<R: Rotation + Copy, T: SupportFn<Cartesian<3>>>(
     sa: &T,
     sb: &T,
     v_ij: &Cartesian<3>, // Probably ok to take ownership?
     q_ij: &R,
-) -> bool {
+) -> bool
+where
+    RotationMatrix<3>: From<R>,
+{
     let precision_tol = 2e-15; // Set fixed tol, rather than rounding-radius based
-    let s = SupportFunctor { sa, sb, v_ij, q_ij };
+    let s = SupportFunctor::new(sa, sb, v_ij, *q_ij);
 
     // Phase 1: Portal discovery
     // Obtain a point lying deep within B⊖A
