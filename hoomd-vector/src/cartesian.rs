@@ -14,6 +14,9 @@ use std::ops::{
 use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
 
+use crate::Angle;
+use crate::Quaternion;
+use crate::Versor;
 use crate::{Cross, Error, Rotate, Unit, Vector};
 
 /** A [`Vector`] represented by `N` `f64` coordinates.
@@ -472,6 +475,20 @@ impl<const N: usize> Default for RotationMatrix<N> {
         RotationMatrix {
             rows: array::from_fn(|i| array::from_fn(|j| if i == j { 1.0 } else { 0.0 }).into()),
         }
+    }
+}
+impl From<Versor> for RotationMatrix<3> {
+    /// Create a 3 by 3 rotation matrix from a Versor.
+    #[inline]
+    fn from(v: Versor) -> RotationMatrix<3> {
+        v.to_rotation_matrix()
+    }
+}
+impl From<Angle> for RotationMatrix<2> {
+    /// Create a 2 by 2 rotation matrix from an Angle.
+    #[inline]
+    fn from(theta: Angle) -> RotationMatrix<2> {
+        theta.to_rotation_matrix()
     }
 }
 
