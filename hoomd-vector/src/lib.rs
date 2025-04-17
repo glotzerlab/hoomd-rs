@@ -143,8 +143,9 @@ rotation. [`RotationMatrix::rotate`] is typically several times faster than
 
 `hoomd_vector` interoperators with [`rand`] to generate random vectors and rotations.
 
-The [`Standard`](rand::distributions::Standard) distribution samples rotations
-uniformly from the set of all rotations and vectors from the `[-1,1]` hypercube.
+The [`StandardUniform`](rand::distr::StandardUniform) distribution
+samples rotations uniformly from the set of all rotations and vectors from the
+`[-1,1]` hypercube.
 
 
 ```
@@ -153,9 +154,9 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut rng = StdRng::seed_from_u64(1);
-let angle: Angle = rng.gen();
-let vector: Cartesian::<3> = rng.gen();
-let versor: Versor = rng.gen();
+let angle: Angle = rng.random();
+let vector: Cartesian::<3> = rng.random();
+let versor: Versor = rng.random();
 # Ok(())
 # }
 ```
@@ -328,7 +329,7 @@ pub trait Vector:
     + MulAssign<f64>
     + Sub<Self, Output = Self>
     + SubAssign
-    + Neg
+    + Neg<Output = Self>
 {
     /** Compute the squared norm of the vector.
 
@@ -403,6 +404,8 @@ pub trait Vector:
 
     /** Create a vector of unit length pointing in the same direction as the given vector.
 
+    Returns a tuple containing unit vector along with the original vector's norm.
+
     <!--\frac{\vec{v}}{|\vec{v}|} -->
     <math display="block" class="tml-display" style="display:block math;"><mfrac><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>|</mi><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mi>|</mi></mrow></mfrac></math>
 
@@ -413,8 +416,9 @@ pub trait Vector:
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([3.0, 4.0]);
-    let unit = a.to_unit()?;
+    let (unit, norm) = a.to_unit()?;
     assert_eq!(*unit.get(), [3.0/5.0, 4.0/5.0].into());
+    assert_eq!(norm, 5.0);
     # Ok(())
     # }
     ```
@@ -424,16 +428,18 @@ pub trait Vector:
     [`Error::InvalidMagnitude`] when `self` is the 0 vector.
     */
     #[inline]
-    fn to_unit(self) -> Result<Unit<Self>, Error> {
-        let mag = self.norm();
-        if mag == 0.0 {
+    fn to_unit(self) -> Result<(Unit<Self>, f64), Error> {
+        let norm = self.norm();
+        if norm == 0.0 {
             Err(Error::InvalidMagnitude)
         } else {
-            Ok(Unit(self / mag))
+            Ok((Unit(self / norm), norm))
         }
     }
 
     /** Create a vector of unit length pointing in the same direction as the given vector.
+
+    Returns a tuple containing unit vector along with the original vector's norm.
 
     <!--\frac{\vec{v}}{|\vec{v}|} -->
     <math display="block" class="tml-display" style="display:block math;"><mfrac><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>|</mi><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mi>|</mi></mrow></mfrac></math>
@@ -445,8 +451,9 @@ pub trait Vector:
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([3.0, 4.0]);
-    let unit = a.to_unit_unchecked();
+    let (unit, norm) = a.to_unit_unchecked();
     assert_eq!(*unit.get(), [3.0/5.0, 4.0/5.0].into());
+    assert_eq!(norm, 5.0);
     # Ok(())
     # }
     ```
@@ -456,14 +463,15 @@ pub trait Vector:
     Divide by 0 when `self` is the 0 vector.
     */
     #[inline]
-    fn to_unit_unchecked(self) -> Unit<Self> {
-        Unit(self / self.norm())
+    fn to_unit_unchecked(self) -> (Unit<Self>, f64) {
+        let norm = self.norm();
+        (Unit(self / norm), norm)
     }
 }
 
 /// A [`Vector`] with magnitude 1.0.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Unit<V: Vector>(V);
+pub struct Unit<V>(V);
 
 impl<V: Vector> Unit<V> {
     /// Get the unit vector.
@@ -474,7 +482,7 @@ impl<V: Vector> Unit<V> {
 }
 
 /** A vector space where the cross product is defined.
-*/
+ */
 pub trait Cross {
     /** Perform the cross product.
     Compute the cross product (right-handed) of two vectors:
@@ -506,6 +514,9 @@ same magnitude, but possibly a different direction.
 Types that implement [`Rotate`] may or _may not_ implement [`Rotation`].
 */
 pub trait Rotate<V: Vector> {
+    /// Type of the related rotation matrix
+    type Matrix: Rotate<V>;
+
     /** Rotate a vector.
 
     <!-- \vec{b} = R(\vec{a}) -->
@@ -558,7 +569,7 @@ pub trait Rotation {
     #[must_use]
     fn inverted(self) -> Self;
 
-    #[allow(clippy::doc_markdown)]
+    #[expect(clippy::doc_markdown, reason = "False positive error")]
     /** Combine two rotations.
 
     The resulting rotation `R_ab` will rotate by **first** `R_b` _followed by_ a

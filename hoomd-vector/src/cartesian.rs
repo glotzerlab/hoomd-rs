@@ -10,8 +10,8 @@ use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
 
-use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
+use rand::distr::{Distribution, StandardUniform, Uniform};
 
 use crate::Angle;
 use crate::Versor;
@@ -46,7 +46,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut rng = StdRng::seed_from_u64(1);
-let v: Cartesian::<3> = rng.gen();
+let v: Cartesian::<3> = rng.random();
 # Ok(())
 # }
 ```
@@ -218,7 +218,7 @@ impl<const N: usize> TryFrom<[f64; N]> for Unit<Cartesian<N>> {
     */
     #[inline]
     fn try_from(value: [f64; N]) -> Result<Self, Self::Error> {
-        Cartesian::from(value).to_unit()
+        Cartesian::from(value).to_unit().map(|t| t.0)
     }
 }
 
@@ -390,7 +390,7 @@ impl Cross for Cartesian<3> {
     }
 }
 
-impl<const N: usize> Distribution<Cartesian<N>> for Standard {
+impl<const N: usize> Distribution<Cartesian<N>> for StandardUniform {
     /** Sample a Cartesian vector from the uniform [-1, 1] hypercube.
 
     Each coordinate in the vector is in the closed range [-1, 1].
@@ -403,14 +403,18 @@ impl<const N: usize> Distribution<Cartesian<N>> for Standard {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = StdRng::seed_from_u64(1);
-    let v: Cartesian::<3> = rng.gen();
+    let v: Cartesian::<3> = rng.random();
     # Ok(())
     # }
     ```
     */
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
-        let uniform = Uniform::new_inclusive(-1.0, 1.0);
+        #[expect(
+            clippy::expect_used,
+            reason = "This constants chosen for this distribution are valid"
+        )]
+        let uniform = Uniform::new_inclusive(-1.0, 1.0).expect("a valid distribution");
         Cartesian {
             coordinates: array::from_fn(|_| uniform.sample(rng)),
         }
@@ -482,8 +486,8 @@ where
 Construct a [`RotationMatrix`] to efficiently rotate many vectors by the same rotation.
 
 See:
-* [`Angle::to_rotation_matrix()`](crate::Angle::to_rotation_matrix)
-* [`Versor::to_rotation_matrix()`](crate::Versor::to_rotation_matrix)
+* [`RotationMatrix::from<Angle>`]
+* [`RotationMatrix::from<Versor>`]
 
 [`RotationMatrix`] _intentionally_ does not implement [`Rotation`](crate::Rotation).
 [`Angle`](crate::Angle) and [`Versor`](crate::Versor) are representations of
@@ -545,31 +549,33 @@ impl<const N: usize> fmt::Display for RotationMatrix<N> {
 }
 
 impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
+    type Matrix = RotationMatrix<N>;
+
     #[inline]
     /** Rotate a [`Cartesian<N>`] by a [`RotationMatrix`]
 
     # Examples
     ```
-    use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
+    use hoomd_vector::{Angle, Rotate, RotationMatrix, Cartesian};
     use std::f64::consts::PI;
 
     let v = Cartesian::from([-1.0, 0.0]);
     let a = Angle::from(PI/2.0);
 
-    let matrix = a.to_rotation_matrix();
+    let matrix = RotationMatrix::from(a);
     let rotated = matrix.rotate(&v);
     // rotated is approximately [0.0, -1.0]
     ```
 
     ```
-    use hoomd_vector::{Versor, Rotate, Rotation, Cartesian};
+    use hoomd_vector::{Versor, Rotate, RotationMatrix, Cartesian};
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
     let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
 
-    let matrix = v.to_rotation_matrix();
+    let matrix = RotationMatrix::from(v);
     let b = matrix.rotate(&a);
     // b is approximately [0.0, -1.0, 0.0]
     # Ok(())
@@ -626,7 +632,7 @@ mod approx {
 mod tests {
     use super::*;
     use paste::paste;
-    use rand::{rngs::StdRng, SeedableRng};
+    use rand::{SeedableRng, rngs::StdRng};
 
     // Parameterize a test function over an array of vector lengths
     macro_rules! parameterize_vector_length {
@@ -907,7 +913,7 @@ mod tests {
     fn random_in_range<const N: usize>() {
         // Loosely verify we are drawing from the correct distribution
         let mut rng = StdRng::seed_from_u64(1);
-        let a: Cartesian<N> = rng.gen();
+        let a: Cartesian<N> = rng.random();
 
         assert!(a.coordinates.iter().all(|&x| -1.0 < x && x < 1.0));
 
@@ -922,10 +928,10 @@ mod tests {
     #[test]
     fn to_unit() {
         let a = Cartesian::from((2.0, 0.0, 0.0));
-        let Unit(unit_a) = a.to_unit().expect("non-zero vector");
+        let (Unit(unit_a), _) = a.to_unit().expect("non-zero vector");
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
-        let Unit(unit_a) = a.to_unit_unchecked();
+        let (Unit(unit_a), _) = a.to_unit_unchecked();
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
         let Unit(unit_a) =
@@ -933,10 +939,10 @@ mod tests {
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
         let a = Cartesian::from((3.0, 0.0, 4.0));
-        let Unit(unit_a) = a.to_unit().expect("non-zero vector");
+        let (Unit(unit_a), _) = a.to_unit().expect("non-zero vector");
         assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
-        let Unit(unit_a) = a.to_unit_unchecked();
+        let (Unit(unit_a), _) = a.to_unit_unchecked();
         assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
         let Unit(unit_a) =

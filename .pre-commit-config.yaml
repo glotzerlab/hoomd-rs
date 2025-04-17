@@ -9,8 +9,18 @@ default_language_version:
   rust: 1.81.0
 
 repos:
-- repo: https://github.com/backplane/pre-commit-rust-hooks
-  rev: v1.1.0
+- repo: https://github.com/glotzerlab/fix-license-header
+  rev: v0.4.1
+  hooks:
+  - id: fix-license-header
+    name: Fix license headers
+    types_or: [rust]
+    exclude: .*/examples/.*
+    args:
+    - --license-file=LICENSE
+    - --add=Part of hoomd-rs, released under the BSD 3-Clause License.
+- repo: https://github.com/glotzerlab/pre-commit-rust-hooks
+  rev: 766490b4a83f979ad61bf6ee6fb03ba394fe4170
   hooks:
   - id: fmt
   - id: check
@@ -34,17 +44,3 @@ repos:
   rev: v1.7.1
   hooks:
     - id: actionlint
-- repo: https://github.com/glotzerlab/fix-license-header
-  rev: v0.4.1
-  hooks:
-  - id: fix-license-header
-    name: Fix license headers
-    types_or: [rust]
-    args:
-    - --license-file=LICENSE
-    - --add=Part of hoomd-rs, released under the BSD 3-Clause License.
-- repo: https://github.com/crate-ci/typos
-  rev: v1.22.9
-  hooks:
-    - id: typos
-      exclude_types: [css]

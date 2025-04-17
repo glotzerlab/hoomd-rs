@@ -33,16 +33,15 @@ jobs:
           # TODO: Enable after the project made public.
           # - macos-14
         rust:
-          # Oldest supported version of rust
-          - 1.77.2
-          - 1.81.0
+          # Test multiple rust versions on multiple platforms in debug mode.
+          - 1.85.0
         mode:
          - debug
 
         include:
-        # Add a release build on linux with the latest version of rust
+        # Add a release build on linux with the latest version of rust.
         - os: ubuntu-24.04
-          rust: 1.81.0
+          rust: 1.85.0
           mode: release
 
     steps:
@@ -69,44 +68,9 @@ jobs:
     - name: Run benchmarks
       run: cargo bench
 
-  # build_documentation:
-  #   name: Build documentation
-  #   runs-on: ubuntu-22.04
-  #   steps:
-  #   - name: Checkout
-  #     uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-  #   - name: Set up mdbook
-  #     uses: glotzerlab/workflows/setup-mdbook@ae7e7c6931098a313ef8069ef04b88a55c3a40f6 # 0.3.0
-  #   - name: Build documentation
-  #     run: mdbook build doc
-  #     env:
-  #       RUST_LOG: "mdbook=info"
-  #   - name: Check links
-  #     uses: lycheeverse/lychee-action@2b973e86fc7b1f6b36a93795fe2c9c6ae1118621  # v1.10.0
-  #     with:
-  #       args: -n
-  #             --exclude https://glotzerlab.engin.umich.edu
-  #             --exclude 'https://github.com/glotzerlab/hoomd/edit.*'
-  #             --exclude doi.org
-  #             './**/*.md'
-  #             './**/*.html'
-  #       fail: true
-
-  # check_licenses:
-  #   name: Check licenses
-  #   runs-on: ubuntu-22.04
-  #   steps:
-  #   - name: Checkout
-  #     uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-  #   - name: Set up cargo-bundle-licenses
-  #     uses: glotzerlab/workflows/setup-cargo-bundle-licenses@ae7e7c6931098a313ef8069ef04b88a55c3a40f6 # 0.3.0
-  #   - name: Check bundled licenses
-  #     run: cargo bundle-licenses --format yaml --output CI.yaml --previous THIRDPARTY.yaml --check-previous
-
   tests_complete:
     name: All tests
     if: always()
-    # needs: [unit_test, execute_tutorials, build_documentation,check_licenses]
     needs: [unit_test]
     runs-on: ubuntu-latest
 

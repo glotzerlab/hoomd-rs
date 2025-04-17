@@ -1,13 +1,18 @@
 [workspace]
-members = [ "hoomd-geom",
-  "hoomd-vector"
-  ]
-resolver = "2"
+
+members = [ 
+  "hoomd-geom",
+  "hoomd-vector",
+  "hoomd-interaction",
+  "hoomd-random"
+]
+
+resolver = "3"
 
 [workspace.package]
 version = "0.0.0"
-edition = "2021"
-rust-version = "1.77" # TODO: discover this version https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field
+edition = "2024"
+rust-version = "1.85"
 homepage = "https://glotzerlab.engin.umich.edu"
 repository = "https://github.com/glotzerlab/hoomd"
 license = "BSD-3-Clause"
