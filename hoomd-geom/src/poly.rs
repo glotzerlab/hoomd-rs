@@ -88,6 +88,7 @@ impl<const N: usize> SupportFn<Cartesian<N>> for ConvexPolytope<N> {
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
             .expect("Support function not valid with 0 vertices!")
+        // TODO: could test hand-coded SIMD here
     }
 }
 
