@@ -4,12 +4,6 @@
 use crate::{IntersectsAt, SupportFn};
 use hoomd_vector::{Cartesian, Cross, Rotate, Rotation, RotationMatrix, Vector};
 
-// /// Get a vector perpendicular to a 2-vector
-// #[inline]
-// pub fn perp(v: Cartesian<2>) -> Cartesian<2> {
-//     Cartesian::from([-v[1], v[0]])
-// }
-
 /// Maximum allowed iterations for Xenocollide in 2D
 const XENOCOLLIDE_2D_MAX_ITER: usize = 1024;
 /// Maximum allowed iterations for Xenocollide in 3D
@@ -48,6 +42,8 @@ impl<'a, const N: usize, T: SupportFn<Cartesian<N>>> SupportFunctor<'_, N, T> {
 
         sb_n - self.sa.support(&-n) // eq. 2.5.6 in GPG7
     }
+    /// Create a new SupportFunctor from a Rotation that can be converted into a RotMat
+    #[inline]
     fn new<R: Rotation>(
         sa: &'a T,
         sb: &'a T,
