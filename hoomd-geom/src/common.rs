@@ -3,8 +3,6 @@
 
 /*! Common geometric primitives that implement only a small number of operations.*/
 
-use std::arch::aarch64::vsetq_lane_f64;
-
 use crate::{IntersectsAt, SupportFn};
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Unit, Vector};
 
@@ -82,6 +80,8 @@ impl<R: Rotate<Cartesian<3>> + Rotation> IntersectsAt<Capsule, Cartesian<3>, R> 
         let penetration_depth = self.r + other.r - (best_a - best_b).norm();
 
         penetration_depth > 0.0
+
+        // TODO: test against XenoCollide
     }
 }
 
