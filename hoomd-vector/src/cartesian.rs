@@ -468,6 +468,15 @@ pub struct RotationMatrix<const N: usize> {
     pub(crate) rows: [Cartesian<N>; N],
 }
 
+impl<const N: usize> RotationMatrix<N> {
+    /// View the rows of the rotation matrix.
+    #[inline]
+    #[must_use]
+    pub fn rows(&self) -> [Cartesian<N>; N] {
+        self.rows
+    }
+}
+
 impl<const N: usize> Default for RotationMatrix<N> {
     /// Create an N by N identity matrix.
     #[inline]
