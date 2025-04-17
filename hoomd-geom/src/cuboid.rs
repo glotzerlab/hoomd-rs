@@ -55,7 +55,7 @@ impl<const N: usize> SupportFn<Cartesian<N>> for Cuboid<N> {
         let mut iter = n
             .into_iter()
             .zip(self.edge_lengths)
-            .map(|(n_i, l_i)| 2.0 * l_i / n_i.signum());
+            .map(|(n_i, l_i)| l_i / 2.0 * n_i.signum());
         std::array::from_fn(|_| iter.next().unwrap_or_default()).into()
     }
 }
