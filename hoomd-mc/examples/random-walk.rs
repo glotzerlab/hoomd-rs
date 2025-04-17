@@ -14,10 +14,10 @@ fn main() {
     let hamiltonian = Zero;
 
     let translate = Translate::with_maximum_distance(0.1);
-    let translate_sweep = Sweep::new(translate, &kt, &hamiltonian);
+    let translate_sweep = Sweep::new(translate);
 
     for _ in 0..100_000 {
-        translate_sweep.apply(&mut microstate);
+        translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
         println!("{}", microstate.bodies()[0].item.properties.position());
         microstate.increment_step();
     }

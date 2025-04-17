@@ -64,16 +64,22 @@ configuration. This is equivalent to assuming that the current configuration is
 always valid, leading to an effective delta E of `0 - inf` and a rejection of
 the move.
 
-TODO: Determine a way to express this. 1) We need to express the delta E both
-with the finite part and the infinite part to enable simulations where there
-are both hard and soft interactions. 2) Hard and soft interactions need separate
-`DeltaEnergy` implementations so that the current configuration can be ignored
-for hard interactions. Consider implementing `exp` for the type to handle the
-conditions in a single piece of code. Also consider panicking if the finite part
-of the energy is ever inf or NaN.
+`inf - inf` is `NaN` which correctly evaluates to a rejected move in the
+Metropolis check. Therefore, potentials that return `inf` are technically
+well-defined and should not be prevented. To boost performance, specialized
+implementations of `DeltaEnergy` for hard overlaps will skip the initial
+energy calculation.
 
-On second thought, do we really need a new type for this? Will need to sketch
-out the solution.
+In some cases, such as Frenkel-Ladd integration, the move sizes may be so small
+that the phantom overlaps cannot be resolved. In such cases, potentials can
+compute an energy of 1000 instead of inf. In double precision `exp(-1000) == 0`,
+so this is effectively infinite. What changes is that `E_final - E_initial` is
+now computed as `1000 - 1000 == 0` when going from a microstate with overlaps
+to another with overlaps. In a narrow set of cases, this may be desirable. In
+the Frenkel-Ladd case, it could allow a phantom overlap to be resolved over the
+course of a few trial moves. Users of this mode should be careful, as competing
+energies on the same order of magnitude could cancel out. For example, a high
+pressure simulation could easily collapse all particles onto a single point.
 
 ## Overlap counts and early exit conditions
 
@@ -82,24 +88,24 @@ when producing a value for `DeltaEnergy`. However, some algorithms (like `QuickC
 need to know the full count. TODO: Determine how to opt-out of early exit conditions.
 
 When using `DeltaEnergy` for trial moves, there is no need to evaluate the soft
-potentials if the hard potential has already found an overlap. Is an opt-out
-of this early exit also needed?
+potentials if the hard potential has already found an overlap. An opt-out
+of this early exit should also be implemented in a composite hamiltonian.
 
 ## Trial moves
 
 Each trial move is implemented in its own type. The struct fields hold the
-parameters of the move (such as the maximum move size). The
-apply method (which takes a mutable reference to a microstate) attempts a trial move and
-modifies the microstate when accepted given the Hamiltonian. The trial move type
-has no internal state and is not specifically associated with any simulation
-or microstate object. One trial move can be reused on many different systems,
+parameters of the move (such as the maximum move size). The apply method (which
+takes a mutable reference to a microstate) attempts a trial move and modifies
+the microstate when accepted given the Hamiltonian. The trial move type has
+no internal state and is not specifically associated with any simulation or
+microstate object. One trial move can be reused on many different systems,
 provided they have the same generic types and the move size parameters are
 meaningful to set the same. This design therefore requires an auxiliary type
-to track the trial move counts for use with monitoring and tuning moves. It
-is the responsibility of the caller to accumulate counter values (if desired).
-The method signature will look something like: `fn apply(&self, &mut microstate:
-M, &hamiltonian: H) -> Counter` To make accumulation easy, the `Counter` types
-should implement the necessary arithmetic traits.
+to track the trial move counts for use with monitoring and tuning moves. It is
+the responsibility of the caller to accumulate counter values (if desired). The
+method signature will look something like: `fn apply(&self, &mut microstate: M,
+hamiltonian: &H, state: &Macrostate ) -> Counter` To make accumulation easy, the
+`Counter` types should implement the necessary arithmetic traits. 
 
 ## Model parameters
 
@@ -108,43 +114,17 @@ For example, kT will be used by practically every type of trial. Pressure will
 be used by box moves, and fugacity by insert/remove moves. The Hamiltonian
 itself is also a model parameter.
 
-Should MC define a `Model` type that collects all these together?
+The caller owns the model parameters. This way, the caller can change the
+parameters at will. Rust purposefully makes sharing state difficult (it is
+possible with `Arc`). `Trial` will not take a shared state, but will borrow
+the state on every call to `apply`. This makes the flow of information clear
+to the user, and makes it obvious when and where that state can be modified.
+Additionally, it allows a single trial move object to be reused on many
+microstates with different Hamiltonians and/or at different macrostates.
 
-There are problems with a catch-all `Model` type.
-* NVT simulations have no set pressure. Therefore, pressure should be an option.
-  However, it is an error to apply a volume-changing move to a system with no
-  pressure set. The validation that `pressure` matches `Some(value)` will occur
-  at runtime, where errors like this would be best detected at compile time.
-* New types of trial moves in the future may require adding new model parameters.
-  This would be an API breaking change, and also impossible for users to achieve
-  with custom implementations of `Trial`.
-
-The only advantage to a `Model` type is that these values would all be held
-in one place. Interoperation with MD is a possibility, but only if the `Model`
-were to also include parameters like `delta_t` that are meaningless to MC
-simulations.
-
-Whether the model parameters are held in a `Model` type or as separate
-variables, the second question is this: Who owns (and/or holds references) to
-the parameters? Should a `Trial` object copy or clone parameters given to it?
-Probably not, as that can easily lead to errors where a parameter is changed in
-one place but not others. To avoid this, should a `Trial` hold a reference to the
-parameters? Doing so would avoid the possibility of accidentally passing one
-temperature to the local moves and another to the box moves. However, doing this
-will tie the lifetime of the `Trial` to the lifetime of the parameters - which
-prevents `Trial` from being reused on different models or generally standing on
-its own.
-
-One solution for this is to implement `apply` separately for each trial move
-type that accepts the model parameters it needs. This is a simple and clean
-approach with the disadvantage that we can no longer have an overarching
-`Trial` trait with a common `apply` method signature!
-
-JAA- On balance, I think that `Trial` should hold reference to the parameters.
-It really cannot stand on its own and other parameters (such as move sizes)
-are inherently related to the model parameters (move sizes are smaller at lower
-temperatures). I will leave the other proposal here in case we want to revisit
-this design after testing.
+The `Macrostate` associated type on `Trial` describes which parameters a
+particular trial move needs. It should be set to a scalar or a tuple of the
+state parameters (`(kt, pressure)` for example) used by the trial move.
 
 ### Tuning move sizes
 
@@ -156,7 +136,10 @@ that runs several batches of steps, counts the moves, and adjusts the move size
 accordingly. This solution would only allow tuning one trial move type at a time
 and excludes other operations that the user inserts into the simulation loop
 (e.g. trajectory file writes). However, it does force users to not continuously
-tune (which breaks detailed balance).
+tune (which breaks detailed balance). Additionally, this type of tuning could
+be much more efficient for local moves. Instead of tuning after N full sweeps
+(which can be expensive in large simulations), it could perform N individual
+trial moves. The cost of tuning would be fixed regardless of system size.
 
 Tuning box move sizes requires local trial moves. Otherwise, box moves
 of a given size will always be accepted and tuning requires sampling the
@@ -167,4 +150,8 @@ implemented as a basic building block that users could incorporate into their
 own simulation loops as desired. The move size tuner recipe should be built on
 that implementation.
 
-TODO: Implement for_each to automatically increment the time step.
+The tuning recipe should take ownership of the microstate, and return the
+modified microstate back. This way, users could even opt to clone their
+microstate so that the moves introduced by the tuner do not appear in the
+trajectory.
+

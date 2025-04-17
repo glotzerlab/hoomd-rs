@@ -6,28 +6,23 @@
 
 use super::{Count, DeltaEnergyOne, LocalTrial, Trial};
 use hoomd_microstate::{Body, Microstate, Tagged, Transform};
-use hoomd_random::Counter;
 use rand::Rng;
 
 /** Apply a local trial move to every body in the microsstate.
 */
-pub struct Sweep<'a, L, H> {
+pub struct Sweep<L> {
     pub local: L,
-    pub kt: &'a f64,
-    pub hamiltonian: &'a H,
 }
 
-impl<'a, L, H> Sweep<'a, L, H> {
-    pub fn new(local: L, kt: &'a f64, hamiltonian: &'a H) -> Self {
+impl<L> Sweep<L> {
+    pub fn new(local: L) -> Self {
         Self {
             local,
-            kt,
-            hamiltonian,
         }
     }
 }
 
-impl<B, S, C, L, H> Trial<Microstate<B, S, C>> for Sweep<'_, L, H>
+impl<B, S, C, L, H> Trial<Microstate<B, S, C>, H> for Sweep<L>
 where
     B: Copy + Clone + Default + Transform<S>,
     S: Clone + Default,
@@ -35,9 +30,12 @@ where
     H: DeltaEnergyOne<B, S, C>,
 {
     type Count = Count;
+    type Macrostate = f64;
 
     #[inline]
-    fn apply(&self, microstate: &mut Microstate<B, S, C>) -> Self::Count {
+    fn apply(&self, microstate: &mut Microstate<B, S, C>, hamiltonian: &H, state: &Self::Macrostate) -> Self::Count where
+    {
+        let kt = state;
         let mut rng = microstate.counter().make_rng();
         let mut count = Self::Count::default();
         let mut trial = Tagged::<Body<B, S>>::default();
@@ -50,8 +48,8 @@ where
 
             // TODO: Handle boundary conditions
 
-            let delta_h = self.hamiltonian.delta_energy_one(microstate, &trial);
-            if rng.random::<f64>() < (-delta_h / self.kt).exp() {
+            let delta_h = hamiltonian.delta_energy_one(microstate, &trial);
+            if rng.random::<f64>() < (-delta_h / kt).exp() {
                 microstate.update_body_properties(body_index, trial.item.properties);
                 count.accepted += 1;
             } else {

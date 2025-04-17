@@ -18,29 +18,85 @@ pub mod pairwise;
 
 use hoomd_microstate::Microstate;
 
-// TODO: should M and S be trait parameters? Or parameters on the methods in the traits?
+/** Compute the total energy of a potential applied to the microstate.
 
-/** Compute the total external energy of the microstate.
+The `TotalEnergy` trait describes a type that can compute the energy of a
+given microstate. Depending on the type, `total_energy` might compute the total
+potential energy of the system or a single term, such as the Lennard-Jones
+potential energy.
 
+TODO: Provide a LennardJones example.
 */
 pub trait TotalEnergy<M> {
-    /** Compute the total external energy of the microstate.
-
-    */
+    /// Compute the energy.
     #[must_use]
     fn total_energy(&self, microstate: &M) -> f64;
 }
 
 /** Compute the energy contribution of a single site.
 
-TODO: expand documentation.
+The `SiteEnergy` trait describes a type that can compute the energy contribution
+of a site to the system's total energy, *as a function only of that site's
+properties*.
+
+The [`external`] module provides a number of commonly used implementations.
+Combine them with [`Single`] for use with MC and MD simulations or to compute
+system-wide properties.
+
+## Examples
+
+Implement a custom site energy function:
+
+```
+use hoomd_interaction::{Single, TotalEnergy, SiteEnergy};
+use hoomd_microstate::{Microstate, Body};
+use hoomd_microstate::property::{Point, Position};
+use hoomd_vector::Cartesian;
+
+struct Custom {
+    a: f64,
+    b: f64,
+}
+
+impl<S> SiteEnergy<S> for Custom
+where
+    S: Position<Cartesian<2>>
+{
+    fn site_energy(&self, site_properties: &S) -> f64 {
+        self.a * (site_properties.position()[0] / self.b).cos()
+    }
+}
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut microstate = Microstate::new();
+microstate.extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
+                          Body::point(Cartesian::from([-1.0, 2.0]))]);
+
+let custom_evaluator = Custom { a: 1.0, b: 10.0 };
+let site_energy = custom_evaluator.site_energy(&microstate.sites()[0].properties);
+
+let custom = Single::new(custom_evaluator);
+let total_energy = custom.total_energy(&microstate);
+# Ok(())
+# }
+```
 */
 pub trait SiteEnergy<S> {
+    /// Evaluate the energy contribution of a single site.
     #[must_use]
     fn site_energy(&self, site_properties: &S) -> f64;
 }
 
-/**
+/** Compute system-wide properties given a [`SiteEnergy`]
+
+`Single` is a convenience wrapper type that provides a single implementation
+for system-wide properties, like [`TotalEnergy`], for all types that implement
+[`SiteEnergy`]. It also reimplements [`SiteEnergy`] by forwarding the call to
+the inner type.
+
+Use types that implement [`SiteEnergy`], such as one from [`external`] or your
+own custom type, directly when you only need to call `site_energy`. Wrap the
+type in `Single` to use it with MC simulations or to call `total_energy`.
 
 # Example
 
@@ -64,16 +120,16 @@ assert_eq!(total_energy, 2.0);
 # Ok(())
 # }
 ```
-
-TODO: Naming is hard. Is there a better name? Single goes along with CutoffPairs
-that hold each hold an inner type that implements SitePairEnergy (and other future types).
 */
 pub struct Single<E> {
-    /// Evaluate the energy/force/etc... on a single site.
+    /// Evaluate the energy, fore, or torque on a single site.
     pub inner: E,
 }
 
 impl<E> Single<E> {
+    /// Construct a new `Single` with the given site energy evaluator.
+    #[inline]
+    #[must_use]
     pub fn new(inner: E) -> Self {
         Self { inner }
     }
@@ -104,5 +160,51 @@ where
     #[inline]
     fn site_energy(&self, site_properties: &S) -> f64 {
         self.inner.site_energy(site_properties)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::*;
+    use hoomd_microstate::{Microstate, Body};
+    use hoomd_microstate::boundary::Open;
+    use hoomd_microstate::property::{Point, Position};
+    use hoomd_vector::Cartesian;
+
+    struct TestSE;
+
+    impl<S> SiteEnergy<S> for TestSE
+    where
+        S: Position<Cartesian<2>>
+    {
+        fn site_energy(&self, site_properties: &S) -> f64 {
+            site_properties.position()[0] + site_properties.position()[1]
+        }
+    }
+
+    #[fixture]
+    fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
+        let mut microstate = Microstate::new();
+        microstate.extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
+                                  Body::point(Cartesian::from([-1.0, 3.0]))]);
+        microstate
+        }
+        
+    #[rstest]
+    fn single_total(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+        let test_se = TestSE;
+        let single = Single::new(test_se);
+
+        assert_eq!(single.total_energy(&microstate), 3.0);
+    }
+
+    #[rstest]
+    fn single_site(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+        let test_se = TestSE;
+        let single = Single::new(test_se);
+
+        assert_eq!(single.site_energy(&microstate.sites()[0].properties), 1.0);
+        assert_eq!(single.site_energy(&microstate.sites()[1].properties), 2.0);
     }
 }
