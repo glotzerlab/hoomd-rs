@@ -9,8 +9,6 @@ use std::iter::zip;
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
-// use wide::f64x4;
-use std::simd::{f64x16, f64x4, f64x8, simd_swizzle, Simd};
 
 use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
@@ -229,29 +227,6 @@ impl<const N: usize> Vector for Cartesian<N> {
     fn dot(&self, other: &Self) -> f64 {
         zip(self.coordinates.iter(), other.coordinates.iter())
             .fold(0.0, |product, x| product + x.0 * x.1)
-    }
-}
-
-impl<const N: usize> Cartesian<N> {
-    /// Take the dot product of a vector with four other vectors
-    #[inline(never)]
-    #[must_use]
-    pub fn quad_dot(&self, values: [Cartesian<N>; 4]) -> [f64; 4] {
-        let iter = self.into_iter().map(f64x4::splat);
-        let flat: &[f64] =
-            unsafe { std::slice::from_raw_parts(values.as_ptr() as *const f64, 4 * N) };
-        // let packed = f64x16::from_slice(flat);
-
-        let rhs: [f64x4; 4] = array::from_fn(|i| {
-            f64x4::gather_or_default(flat, Simd::from_array([i, i + N, i + (2 * N), i + (3 * N)]))
-        });
-
-        // let rhs: [f64x4; N] =
-        //     std::array::from_fn(|i| f64x4::from(std::array::from_fn(|j| values[j][i]))); // Rather than new array: f64x4 from slices
-        iter.zip(rhs)
-            .fold(f64x4::default(), |product, (l, r)| product + (l * r))
-            .to_array()
-        // [0.0; 4]
     }
 }
 

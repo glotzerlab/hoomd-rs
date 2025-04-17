@@ -85,7 +85,6 @@ fn dot_vecn<const N: usize>(bencher: Bencher) {
         .with_inputs(|| create_random_vector_pair::<N, _>(&mut rng))
         .bench_local_values(|(a, b)| black_box(a.dot(&b)));
 }
-
 #[divan::bench]
 fn cross_vec3(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
