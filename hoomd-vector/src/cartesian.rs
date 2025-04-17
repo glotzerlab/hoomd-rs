@@ -139,20 +139,6 @@ impl From<(f64, f64, f64)> for Cartesian<3> {
     }
 }
 
-impl<const N: usize> FromIterator<f64> for Cartesian<N> {
-    #[inline]
-    fn from_iter<I: IntoIterator<Item = f64>>(iter: I) -> Self {
-        // ISSUE: Does this result in a dynamic allocation?
-        let mut result = Cartesian::default();
-        result
-            .coordinates
-            .iter_mut()
-            .zip(iter)
-            .for_each(|(res, x)| *res = x);
-        result
-    }
-}
-
 impl<const N: usize> TryFrom<Vec<f64>> for Cartesian<N> {
     type Error = Error;
 
