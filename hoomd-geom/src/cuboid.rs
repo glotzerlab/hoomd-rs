@@ -118,7 +118,7 @@ impl<const N: usize, R: Rotate<Cartesian<N>> + Rotation + PartialEq>
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
-    use hoomd_vector::Versor;
+    use hoomd_vector::{Angle, Versor};
     use rstest::*;
     use std::marker::PhantomData;
 
