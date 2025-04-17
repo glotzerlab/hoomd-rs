@@ -24,6 +24,34 @@ pub struct Capsule {
     h: f64,
 }
 
+impl From<(f64, f64)> for Capsule {
+    #[inline]
+    fn from(value: (f64, f64)) -> Self {
+        Capsule {
+            r: value.0,
+            h: value.1,
+        }
+    }
+}
+
+#[allow(clippy::expect_used)]
+impl SupportFn<Cartesian<3>> for Capsule {
+    #[inline]
+    fn support(&self, n: &Cartesian<3>) -> Cartesian<3> {
+        /*Same support function as a ConvexPolyhedron with 2 vertices, plus the radius*/
+        let (v_tip, v_base) = ([0.0, 0.0, self.h].into(), [0.0, 0.0, -self.h].into());
+
+        let (v_tip_dot_n, v_base_dot_n) = (n.dot(&v_tip), n.dot(&v_base));
+
+        let rshift = *n * self.r * n.norm();
+        if v_tip_dot_n > v_base_dot_n {
+            v_tip / n.norm() + rshift
+        } else {
+            v_base / n.norm() + rshift
+        }
+    }
+}
+
 /// Closest point on a line segment bounded by `a` and `b` to a sphere at point `p`
 fn closest_point_on_line_segment(
     a: Cartesian<3>,
@@ -189,3 +217,38 @@ impl HyperEllipsoid<3> {
 // }
 
 impl<const N: usize> HyperEllipsoid<N> {} // TODO matrix form and IntersectsAt
+
+/// The simplest three-dimensional geometry.
+#[derive(Clone, Copy, Debug)]
+pub struct Simplex3 {
+    /// Vertices of the simplex
+    vertices: [Cartesian<3>; 4],
+}
+
+impl SupportFn<Cartesian<3>> for Simplex3 {
+    #[allow(clippy::expect_used)]
+    #[inline]
+    fn support(&self, n: &Cartesian<3>) -> Cartesian<3> {
+        *self
+            .vertices
+            .iter()
+            .max_by(|a, b| {
+                a.dot(n)
+                    .partial_cmp(&b.dot(n))
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+            .expect("Support function not valid with 0 vertices!")
+    }
+}
+
+impl<R: Rotate<Cartesian<3>> + Rotation> IntersectsAt<Simplex3, Cartesian<3>, R> for Simplex3 {
+    #[inline]
+    fn intersects_at(&self, other: &Simplex3, r_ij: &Cartesian<3>, o_ij: &R) -> bool {
+        /* Based on the implementation from the following publication:
+            http://vcg.isti.cnr.it/Publications/2003/GPR03/fast_tetrahedron_tetrahedron_overlap_algorithm.pdf
+        */
+        false // TODO: use this as test case. Not round, so should be
+    }
+}
+
+// TODO: tolerance check
