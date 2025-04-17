@@ -9,7 +9,8 @@ use std::iter::zip;
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
-use wide::f64x4;
+// use wide::f64x4;
+use std::simd::{f64x4, f64x8, Simd};
 
 use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
@@ -233,15 +234,16 @@ impl<const N: usize> Vector for Cartesian<N> {
 
 impl<const N: usize> Cartesian<N> {
     /// Take the dot product of a vector with four other vectors
-    #[inline]
+    #[inline(never)]
     #[must_use]
     pub fn quad_dot(&self, values: [Cartesian<N>; 4]) -> [f64; 4] {
-        let mut iter = self.into_iter().map(f64x4::splat);
-        let lhs: [f64x4; N] = array::from_fn(|_| iter.next().unwrap_or_default());
+        let iter = self.into_iter().map(f64x4::splat);
+        // lhs.iter_mut().zip().map(|(x,)|);
+
         let rhs: [f64x4; N] =
             std::array::from_fn(|i| f64x4::from(std::array::from_fn(|j| values[j][i]))); // Rather than new array: f64x4 from slices
-        zip(lhs.iter(), rhs.iter())
-            .fold(f64x4::ZERO, |product, (&l, r)| product + (l * r))
+        iter.zip(rhs)
+            .fold(f64x4::default(), |product, (l, r)| product + (l * r))
             .to_array()
     }
 }
