@@ -243,7 +243,7 @@ impl<const N: usize> Cartesian<N> {
         // let packed = f64x16::from_slice(flat);
 
         let rhs: [f64x4; 4] = array::from_fn(|i| {
-            f64x4::gather_or_default(flat, Simd::from_array([i, i + 1, i + 2, i + 3]))
+            f64x4::gather_or_default(flat, Simd::from_array([i, i + N, i + (2 * N), i + (3 * N)]))
         });
 
         // let rhs: [f64x4; N] =
