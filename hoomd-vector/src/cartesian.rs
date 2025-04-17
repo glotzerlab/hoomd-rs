@@ -249,6 +249,34 @@ impl<const N: usize> Add for Cartesian<N> {
     }
 }
 
+impl<const N: usize> Mul for Cartesian<N> {
+    type Output = Self;
+
+    #[inline]
+    fn mul(self, rhs: Self) -> Self {
+        let mut coordinates = [0.0; N];
+
+        for (result, (a, b)) in coordinates
+            .iter_mut()
+            .zip(self.coordinates.iter().zip(rhs.coordinates.iter()))
+        {
+            *result = a * b;
+        }
+        Self { coordinates }
+    }
+}
+
+impl<const N: usize> Add<f64> for Cartesian<N> {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, rhs: f64) -> Self {
+        let mut result = self;
+        result.coordinates.iter_mut().for_each(|x| *x += rhs);
+        result
+    }
+}
+
 impl<const N: usize> AddAssign for Cartesian<N> {
     #[inline]
     fn add_assign(&mut self, rhs: Self) {
