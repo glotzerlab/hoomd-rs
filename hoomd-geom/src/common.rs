@@ -3,8 +3,10 @@
 
 /*! Common geometric primitives that implement only a small number of operations.*/
 
+use std::arch::aarch64::vsetq_lane_f64;
+
 use crate::{IntersectsAt, SupportFn};
-use hoomd_vector::{Cartesian, RotationMatrix, Vector};
+use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Unit, Vector};
 
 /// A [`Cylinder`] in three dimensions.
 #[derive(Clone, Copy, Debug)]
@@ -13,6 +15,74 @@ pub struct Cylinder {
     r: f64,
     /// Height of the [`Cylinder`]
     h: f64,
+}
+/// A [`Capsule`] in three dimensions.
+#[derive(Clone, Copy, Debug)]
+// pub struct Capsule<const N: usize> {
+pub struct Capsule {
+    /// Radius of the [`Capsule`]'s spherical caps.
+    r: f64,
+    /// Distance between the centers of the spherical caps.
+    h: f64,
+}
+
+/// Closest point on a line segment bounded by `a` and `b` to a sphere at point `p`
+fn closest_point_on_line_segment(
+    a: Cartesian<3>,
+    b: Cartesian<3>,
+    p: Cartesian<3>,
+) -> Cartesian<3> {
+    let ab = b - a;
+    let t = (p - a).dot(&ab) / ab.norm_squared();
+    ab * (a + 1f64.min(0f64.max(t)))
+}
+
+// impl<S, V: Vector, R: Rotate<Cartesian<3>>> IntersectsAt<S, V, R> for Capsule {
+impl<R: Rotate<Cartesian<3>> + Rotation> IntersectsAt<Capsule, Cartesian<3>, R> for Capsule {
+    #[inline]
+    fn intersects_at(&self, other: &Capsule, r_ij: &Cartesian<3>, o_ij: &R) -> bool {
+        /*
+
+        Capsule-Capsule intersection can be though of as a two step process:
+        1. Find the closest pair of spheres from A and B
+        2. Check if those spheres overlap
+
+        This implementation is based on code from the following link:
+        https://wickedengine.net/2020/04/capsule-collision-detection/
+        */
+        // First capsule is axis-aligned by convention
+        let a_b = Cartesian::from([0.0, 0.0, -self.r]) + self.h / 2.0;
+        let a_a = -a_b;
+        // let a_a = Cartesian::from([0.0, 0.0, -self.r]) + self.h / 2.0;
+
+        let b_line_end_offset = o_ij.rotate(&(*r_ij + Cartesian::from([0.0, 0.0, other.r])));
+        let b_b = -b_line_end_offset + other.h / 2.0;
+        let b_a = -b_b;
+
+        // Squared distances between line endpoints
+        let d0 = (b_a - a_a).norm_squared();
+        let d1 = (b_b - a_a).norm_squared();
+        let d2 = (b_a - a_b).norm_squared();
+        let d3 = (b_b - a_b).norm_squared();
+
+        // select best potential endpoint on capsule A:
+        let best_a = if d2 < d0 || d2 < d1 || d3 < d0 || d3 < d1 {
+            a_b
+        } else {
+            a_a
+        };
+
+        // Select the point on capsule B's primary axis that is nearest to the best potential endpoing on capsule A
+        let best_b = closest_point_on_line_segment(b_a, b_b, best_a);
+
+        // Repeat for the primary axis of capsule A
+        let best_a = closest_point_on_line_segment(a_a, a_b, best_b);
+
+        // Now we have the closest points, just do a sphere intersection at those pts.
+        let penetration_depth = self.r + other.r - (best_a - best_b).norm();
+
+        penetration_depth > 0.0
+    }
 }
 
 /// An N-Dimensional [`HyperEllipsoid`] defined by its semi-major axes.
