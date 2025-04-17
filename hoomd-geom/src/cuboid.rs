@@ -5,7 +5,7 @@
 use crate::intersects::IntersectsAt;
 use crate::{SupportFn, Volume};
 use hoomd_vector::Cartesian;
-use hoomd_vector::{Angle, Rotate, Rotation, Vector};
+use hoomd_vector::{Rotate, Rotation};
 use itertools::multizip;
 use std::cmp::PartialEq;
 
