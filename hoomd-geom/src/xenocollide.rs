@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use crate::{IntersectsAt, SupportFn};
+use crate::{Capsule, IntersectsAt, SupportFn};
 use hoomd_vector::{Cartesian, Cross, Rotate, Rotation, RotationMatrix, Vector};
 
 /// Maximum allowed iterations for Xenocollide in 2D
@@ -137,6 +137,7 @@ where
         }
 
         if count >= XENOCOLLIDE_2D_MAX_ITER {
+            println!("\n\nWARNING! Exceeded max iterations\n\n");
             return true;
         }
     }
@@ -283,12 +284,17 @@ where
             (false, _, true) => v2 = v4,  // OUTside v1 && inside  v3 => eliminate v2
             (false, _, false) => v1 = v4, // OUTside v1 && OUTside v3 => eliminate v1
         }
+        if count >= XENOCOLLIDE_3D_MAX_ITER {
+            println!("WARNING! Exceeded max iterations");
+            return true;
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::{rngs::StdRng, Rng, SeedableRng};
     use rstest::*;
 
     use crate::{Cuboid, Sphere};
@@ -341,4 +347,25 @@ mod tests {
         let overlaps = collide3d(&c0, &c1, &v.into(), theta);
         assert_eq!(overlaps, c0.intersects_at(&c1, &v.into(), theta),);
     }
+
+    // Two issues: first, we need the tolerance in xenocollide for rounded shapes
+    // Second, we need to make sure our support fn is correct
+    // #[rstest]
+    // fn test_capsules_collide() {
+    //     let (r, h) = (20.0, 2.0);
+    //     let c0 = Capsule::from((r, h));
+    //     let c1 = Capsule::from((r, h));
+    //     let mut rng = StdRng::seed_from_u64(1);
+    //     let theta = rng.gen::<Versor>();
+    //     let v = rng.gen::<Cartesian<3>>() * 10.0;
+    //     // println!("({r}, {h}),\n{v}\n{theta}");
+
+    //     let origin = [0.0, 0.0, 0.0];
+    //     let should_col = c0.intersects_at(&c1, &origin.into(), &theta);
+    //     // assert_eq!(collide3d(&c0, &c1, &origin.into(), &theta), should_col);
+    //     assert!(should_col);
+
+    //     // let overlaps = collide3d(&c0, &c1, &v, &theta);
+    //     // assert_eq!(overlaps, c0.intersects_at(&c1, &v, &theta),);
+    // }
 }
