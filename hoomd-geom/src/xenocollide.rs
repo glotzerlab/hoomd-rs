@@ -294,7 +294,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::{rngs::StdRng, Rng, SeedableRng};
+    use rand::{Rng, SeedableRng, rngs::StdRng};
     use rstest::*;
 
     use crate::{Cuboid, Sphere};
@@ -356,8 +356,8 @@ mod tests {
     //     let c0 = Capsule::from((r, h));
     //     let c1 = Capsule::from((r, h));
     //     let mut rng = StdRng::seed_from_u64(1);
-    //     let theta = rng.gen::<Versor>();
-    //     let v = rng.gen::<Cartesian<3>>() * 10.0;
+    //     let theta: Versor = rng.random();
+    //     let v = rng.random::<Cartesian<3>>() * 10.0;
     //     // println!("({r}, {h}),\n{v}\n{theta}");
 
     //     let origin = [0.0, 0.0, 0.0];

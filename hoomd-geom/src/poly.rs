@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use crate::{xenocollide, IntersectsAt, SupportFn};
+use crate::{IntersectsAt, SupportFn, xenocollide};
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
 
 /**
@@ -79,12 +79,13 @@ impl<const N: usize> FromIterator<Cartesian<N>> for ConvexPolytope<N> {
 impl<const N: usize> SupportFn<Cartesian<N>> for ConvexPolytope<N> {
     #[inline]
     fn support(&self, n: &Cartesian<N>) -> Cartesian<N> {
+        let n = *n / n.norm(); // TODO: does this need to be normalized?
         *self
             .vertices
             .iter()
             .max_by(|a, b| {
-                a.dot(n)
-                    .partial_cmp(&b.dot(n))
+                a.dot(&n)
+                    .partial_cmp(&b.dot(&n))
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
             .expect("Support function not valid with 0 vertices!")
