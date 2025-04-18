@@ -23,7 +23,7 @@ workspace = true
 approx = "0.5.1"
 divan = "0.1.16"
 paste = "1.0.15"
-rand = "0.8.5"
+rand = "0.9.1"
 
 [[bench]]
 name = "overlaps"

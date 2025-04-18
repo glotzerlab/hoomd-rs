@@ -15,7 +15,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-rand = "0.9.0"
+rand = "0.9.1"
 chacha20 = { version = "0.10.0-pre.3", default-features = false, features = ["rng"]}
 
 [dev-dependencies]

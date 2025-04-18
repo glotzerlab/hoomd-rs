@@ -10,8 +10,8 @@ use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
 
-use rand::Rng;
 use rand::distr::{Distribution, StandardUniform, Uniform};
+use rand::Rng;
 
 use crate::Angle;
 use crate::Versor;
@@ -518,20 +518,6 @@ impl<const N: usize> Default for RotationMatrix<N> {
         }
     }
 }
-impl From<Versor> for RotationMatrix<3> {
-    /// Create a 3 by 3 rotation matrix from a Versor.
-    #[inline]
-    fn from(v: Versor) -> RotationMatrix<3> {
-        v.to_rotation_matrix()
-    }
-}
-impl From<Angle> for RotationMatrix<2> {
-    /// Create a 2 by 2 rotation matrix from an Angle.
-    #[inline]
-    fn from(theta: Angle) -> RotationMatrix<2> {
-        theta.to_rotation_matrix()
-    }
-}
 
 impl<const N: usize> fmt::Display for RotationMatrix<N> {
     #[inline]
@@ -632,7 +618,7 @@ mod approx {
 mod tests {
     use super::*;
     use paste::paste;
-    use rand::{SeedableRng, rngs::StdRng};
+    use rand::{rngs::StdRng, SeedableRng};
 
     // Parameterize a test function over an array of vector lengths
     macro_rules! parameterize_vector_length {
