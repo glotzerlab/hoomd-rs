@@ -115,7 +115,7 @@
     (if e
       [edges e]
       (let [ep (epoints id), e (sub (ep 0) (ep 1))]
-        [(assoc edges id e) e]))))
+        [(assoc edges id e) e])))) ; return a lookup map for edges
 
 (defn check-faces-a
   "Takes the 4 delta vectors between the two tetras, edge definitions
@@ -145,7 +145,7 @@
             (recur masks affine edges (next s)))))
       masks)))
 
-(defn check-faces-b
+(defn check-faces-b?
   "Much like check-faces-a, but for 2nd tetra and specs encoding calls to face-b1/2?.
   Returns true if tetras do intersect."
   [deltas epoints verts p specs]
@@ -167,7 +167,7 @@
   [p q]
   (let [[pa pb pc pd :as p] (orient-tetra p)
         [qa qb qc qd :as q] (orient-tetra q)
-        masks (check-faces-a
+        masks (check-faces-a ; save the output of check-faces-a to masks and return
                (map #(sub % pa) q) ; deltas
                [[pb pa] [pc pa] [pd pa] [pc pb] [pd pb]] ; edge endpoints
                q ; verts
@@ -175,9 +175,9 @@
                [[:f 0 1] [:f 2 0] [:e 0 1] [:f 1 2] ; specs 
                 [:e 0 2] [:e 1 2] [:f* 4 3] [:e 0 3]
                 [:e 1 3] [:e 2 3]])]
-    (if masks
-      (or (not= 15 (apply bit-or masks))
-          (check-faces-b
+    (if masks ; exit early if masks is all nil, or all masks are 1111
+      (or (not= 15 (apply bit-or masks)) ; bitwise or on array of masks, skipping if 
+          (check-faces-b?
            (map #(sub % qa) p)
            [[qb qa] [qc qa] [qd qa] [qc qb] [qd qb]]
            p qb [[:f 0 1] [:f 2 0] [:f 1 2] [:f* 4 3]])))))

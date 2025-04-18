@@ -3,10 +3,10 @@
 
 /*! Common geometric primitives that implement only a small number of operations.*/
 
-use std::array;
-
 use crate::{IntersectsAt, SupportFn};
+use arrcomp::arr;
 use hoomd_vector::{Cartesian, Cross, Rotate, Rotation, RotationMatrix, Unit, Vector};
+use std::array;
 
 /// A [`Cylinder`] in three dimensions.
 #[derive(Clone, Copy, Debug)]
@@ -231,12 +231,13 @@ impl SupportFn<Cartesian<3>> for Simplex3 {
     #[allow(clippy::expect_used)]
     #[inline]
     fn support(&self, n: &Cartesian<3>) -> Cartesian<3> {
+        let n = *n / n.norm(); // TODO: does this need to be normalized?
         *self
             .vertices
             .iter()
             .max_by(|a, b| {
-                a.dot(n)
-                    .partial_cmp(&b.dot(n))
+                a.dot(&n)
+                    .partial_cmp(&b.dot(&n))
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
             .expect("Support function not valid with 0 vertices!")
@@ -244,17 +245,22 @@ impl SupportFn<Cartesian<3>> for Simplex3 {
 }
 
 impl From<[Cartesian<3>; 4]> for Simplex3 {
+    #[inline]
+    #[must_use]
     fn from(vertices: [Cartesian<3>; 4]) -> Self {
         let s = Simplex3 { vertices };
         s.orient()
     }
 }
-const EDGES: [(usize, usize); 5] = [(1, 0), (2, 0), (3, 0), (2, 1), (3, 2)];
+// const EDGES: [(usize, usize); 5] = [(1, 0), (2, 0), (3, 0), (2, 1), (3, 2)];
 
+/// GOAL: Extreme performance for simulations of hard tetrahedra. Useful for a paper on
+/// non-uniform simplices, and provides an excellent test case for paper
 impl Simplex3 {
     /// Get the edges of the tetrahedron as edge endpoint coordinates. In vertex index
     /// form, this returns values in the order [(1, 0), (2, 0), (3, 0), (2, 1), (3, 2)]
     #[inline]
+    #[must_use]
     pub fn get_edges(&self) -> [[Cartesian<3>; 2]; 5] {
         [
             [self.b(), self.a()],
@@ -264,19 +270,35 @@ impl Simplex3 {
             [self.d(), self.b()],
         ]
     }
+
+    /// Edge vectors, in the same order as get_edges and pointing left to right.
     #[inline]
+    #[must_use]
+    pub fn get_edge_vectors(&self) -> [Cartesian<3>; 5] {
+        self.get_edges().map(|[l, r]| l - r)
+    }
+
+    #[inline]
+    #[must_use]
+    /// 0th vertex of the tetrahedron
     pub(crate) fn a(&self) -> Cartesian<3> {
         self.vertices[0]
     }
     #[inline]
+    #[must_use]
+    /// 1st vertex of the tetrahedron
     pub(crate) fn b(&self) -> Cartesian<3> {
         self.vertices[1]
     }
     #[inline]
+    #[must_use]
+    /// 2nd vertex of the tetrahedron
     pub(crate) fn c(&self) -> Cartesian<3> {
         self.vertices[2]
     }
     #[inline]
+    #[must_use]
+    /// 3rd vertex of the tetrahedron
     pub(crate) fn d(&self) -> Cartesian<3> {
         self.vertices[3]
     }
@@ -284,7 +306,7 @@ impl Simplex3 {
     /// side of the plane defined by the first three points.
     #[inline]
     fn orient_in_place(&mut self) {
-        *self = self.orient()
+        *self = self.orient();
     }
     /// Return the vertices of an oriented tetrahedron. Users should call ``orient_in_place``
     #[inline]
@@ -310,12 +332,32 @@ impl Simplex3 {
         let mut iter = aff.iter().map(|&x| x > 0.0);
         array::from_fn::<_, 4, _>(|_| iter.next().unwrap_or_default())
     }
+
+    // fn face_a(&self, deltas: [Cartesian<3>; 4]) {
+    //     let affine = deltas.map();
+    //     (self.compute_mask(affine), affine)
+    // }
+    /// todo
+    fn face_a(&self, deltas: [Cartesian<3>; 4], n: &Cartesian<3>) -> ([bool; 4], [f64; 4]) {
+        let affine = deltas.map(|l| Cartesian::dot(&l, n));
+        (self.compute_mask(affine), affine)
+    }
     /**Check the faces of tetrahedron 0, returning a vector of bitmasks*/
-    fn check_faces_a(&self, deltas: [Cartesian<3>; 4], q: &Simplex3) {
+    fn check_faces_a(&self, deltas: [Cartesian<3>; 4], q: &Simplex3) -> [bool; 4] {
         let edges = self.get_edges();
+        let edge_vectors = self.get_edge_vectors();
 
         let p = self.b(); // Reference point on simplex 0
-        // let n = ea.cross(&eb);
+
+        // While the original source performs these in a loop, we can hand-unroll to
+        // simplify the code
+
+        // [:f 0 1]
+        let (ea, eb) = (edge_vectors[0], edge_vectors[1]);
+        let n = ea.cross(&eb);
+        // let (m, a) =
+
+        [false; 4]
     }
 }
 
@@ -326,8 +368,14 @@ impl<R: Rotate<Cartesian<3>> + Rotation> IntersectsAt<Simplex3, Cartesian<3>, R>
             http://vcg.isti.cnr.it/Publications/2003/GPR03/fast_tetrahedron_tetrahedron_overlap_algorithm.pdf
         */
         // p, q = self, other. Oriented by default, as all constructors MUST call orient
+        let deltas = other.vertices.map(|q| self.a() - q); // Should be pa - q
+        let masks = self.check_faces_a(deltas, other);
 
-        // let masks = self.check_faces_a(deltas, /*self.get_edges()*/, other.vertices,);
+        /* List of possible checks to perform
+           [[:f 0 1] [:f 2 0] [:e 0 1] [:f 1 2]
+            [:e 0 2] [:e 1 2] [:f* 4 3] [:e 0 3]
+            [:e 1 3] [:e 2 3]]
+        */
 
         false // TODO: use this as test case. Not round, so should be
     }
