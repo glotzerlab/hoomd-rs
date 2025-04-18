@@ -116,8 +116,8 @@ if __name__ == "__main__":
     v1 = poly[2]
     if np.dot(v1, v0) > 0.0:
         print("Shapes do not overlap!")
-    
-    
+
+
     plot_polygon_with_lines(
         poly,
         ax=ax[0, 1],
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         lines=[(((0, 0), ORIGIN), "black", "solid", True, r"", None)],
         additional_points=[v1]
     )
-    
+
     plot_polygon_with_lines(
         poly,
         ax=ax[0, 2],
@@ -134,12 +134,12 @@ if __name__ == "__main__":
         lines=[(((0, 0), ORIGIN * 0.5), "black", "solid", True, r"$n$", [0.07, -0.04])],
         additional_points=[v1],
     )
-    
+
     # Choose the ray that points toward the origin: TODO: is this wrong?
     v_perp_v1v0 = perp(v1-v0)
     if v1.dot(v_perp_v1v0) > 0.0: # TODO: this is greater than in the primary code!
         v_perp_v1v0 *= -1 # Is this wrong?
-    
+
     x0 = poly[2] / 2
     v2 = poly[0]
     plot_polygon_with_lines(
@@ -193,7 +193,7 @@ if __name__ == "__main__":
     v_perp_v2v1 = perp(p0)
     if (v1-v0).dot(v_perp_v2v1) < 0.0:
         v_perp_v2v1 = -v_perp_v2v1
-    
+
     plot_polygon_with_lines(
         poly,
         ax=ax[1, 0],
@@ -213,7 +213,7 @@ if __name__ == "__main__":
 
     print(
         v1.dot(v_perp_v2v1) >= 0.0 # Point is inside the initial portal
-    )    
+    )
 
     v3 = poly[1]
     plot_polygon_with_lines(
@@ -225,13 +225,10 @@ if __name__ == "__main__":
         lines=[
             (((0, 0), v1), "grey", "dotted", False, "", None),
             (((0, 0), v2), "grey", "dotted", False, "", None),
-            ((v1, v2), "black", "solid", False, "", None), # p0
-            (((v1+v2)/2, v_perp_v2v1/1.5), "black", "solid", True, "", None),
-        ],
-        additional_points=[v1, v2, v3],
+            ((v1, v2), "black", "solid", False, "", None), (((v1+v2)/2, v_perp_v2v1/1.5), "black", "solid", True, "", None),],additional_points=[v1, v2, v3],
     )
 
+    # asdfsadffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffaa
 
-    
-    
+
     plt.show()
