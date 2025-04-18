@@ -3,8 +3,10 @@
 
 /*! Common geometric primitives that implement only a small number of operations.*/
 
+use std::array;
+
 use crate::{IntersectsAt, SupportFn};
-use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Unit, Vector};
+use hoomd_vector::{Cartesian, Cross, Rotate, Rotation, RotationMatrix, Unit, Vector};
 
 /// A [`Cylinder`] in three dimensions.
 #[derive(Clone, Copy, Debug)]
@@ -222,7 +224,7 @@ impl<const N: usize> HyperEllipsoid<N> {} // TODO matrix form and IntersectsAt
 #[derive(Clone, Copy, Debug)]
 pub struct Simplex3 {
     /// Vertices of the simplex
-    vertices: [Cartesian<3>; 4],
+    vertices: [Cartesian<3>; 4], // NOT public, to force orientation on construction
 }
 
 impl SupportFn<Cartesian<3>> for Simplex3 {
@@ -241,12 +243,92 @@ impl SupportFn<Cartesian<3>> for Simplex3 {
     }
 }
 
+impl From<[Cartesian<3>; 4]> for Simplex3 {
+    fn from(vertices: [Cartesian<3>; 4]) -> Self {
+        let s = Simplex3 { vertices };
+        s.orient()
+    }
+}
+const EDGES: [(usize, usize); 5] = [(1, 0), (2, 0), (3, 0), (2, 1), (3, 2)];
+
+impl Simplex3 {
+    /// Get the edges of the tetrahedron as edge endpoint coordinates. In vertex index
+    /// form, this returns values in the order [(1, 0), (2, 0), (3, 0), (2, 1), (3, 2)]
+    #[inline]
+    pub fn get_edges(&self) -> [[Cartesian<3>; 2]; 5] {
+        [
+            [self.b(), self.a()],
+            [self.c(), self.a()],
+            [self.d(), self.a()],
+            [self.c(), self.b()],
+            [self.d(), self.b()],
+        ]
+    }
+    #[inline]
+    pub(crate) fn a(&self) -> Cartesian<3> {
+        self.vertices[0]
+    }
+    #[inline]
+    pub(crate) fn b(&self) -> Cartesian<3> {
+        self.vertices[1]
+    }
+    #[inline]
+    pub(crate) fn c(&self) -> Cartesian<3> {
+        self.vertices[2]
+    }
+    #[inline]
+    pub(crate) fn d(&self) -> Cartesian<3> {
+        self.vertices[3]
+    }
+    /// Orient the vertices of a simplex such that the fourth vertex is on the opposite
+    /// side of the plane defined by the first three points.
+    #[inline]
+    fn orient_in_place(&mut self) {
+        *self = self.orient()
+    }
+    /// Return the vertices of an oriented tetrahedron. Users should call ``orient_in_place``
+    #[inline]
+    pub(crate) fn orient(&self) -> Simplex3 {
+        let dp = (self.d() - self.a()).dot(&((self.b() - self.a()).cross(&(self.c() - self.a()))));
+        if dp < 0.0 {
+            self.vertices.into()
+        } else {
+            [self.a(), self.c(), self.b(), self.d()].into()
+        }
+    }
+
+    /// Compute a bitmask for a sequence of four affine coordinates
+    #[inline]
+    pub(crate) fn compute_mask(&self, aff: [f64; 4]) -> [bool; 4] {
+        /*
+        if aff[0] > 0.0 {1} else {0}
+        if aff[1] > 0.0 {2} else {0}
+        if aff[2] > 0.0 {4} else {0}
+        if aff[3] > 0.0 {8} else {0}
+        bit or'd together. Not hard, but unnecessary optimization
+        */
+        let mut iter = aff.iter().map(|&x| x > 0.0);
+        array::from_fn::<_, 4, _>(|_| iter.next().unwrap_or_default())
+    }
+    /**Check the faces of tetrahedron 0, returning a vector of bitmasks*/
+    fn check_faces_a(&self, deltas: [Cartesian<3>; 4], q: &Simplex3) {
+        let edges = self.get_edges();
+
+        let p = self.b(); // Reference point on simplex 0
+        // let n = ea.cross(&eb);
+    }
+}
+
 impl<R: Rotate<Cartesian<3>> + Rotation> IntersectsAt<Simplex3, Cartesian<3>, R> for Simplex3 {
     #[inline]
     fn intersects_at(&self, other: &Simplex3, r_ij: &Cartesian<3>, o_ij: &R) -> bool {
         /* Based on the implementation from the following publication:
             http://vcg.isti.cnr.it/Publications/2003/GPR03/fast_tetrahedron_tetrahedron_overlap_algorithm.pdf
         */
+        // p, q = self, other. Oriented by default, as all constructors MUST call orient
+
+        // let masks = self.check_faces_a(deltas, /*self.get_edges()*/, other.vertices,);
+
         false // TODO: use this as test case. Not round, so should be
     }
 }
