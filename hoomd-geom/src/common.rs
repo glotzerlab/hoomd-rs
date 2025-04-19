@@ -4,9 +4,8 @@
 /*! Common geometric primitives that implement only a small number of operations.*/
 
 use crate::{IntersectsAt, SupportFn};
-use arrcomp::arr;
+
 use hoomd_vector::{Cartesian, Cross, Rotate, Rotation, RotationMatrix, Unit, Vector};
-use std::array;
 
 /// A [`Cylinder`] in three dimensions.
 #[derive(Clone, Copy, Debug)]
@@ -252,7 +251,54 @@ impl From<[Cartesian<3>; 4]> for Simplex3 {
         s.orient()
     }
 }
+impl From<[[f64; 3]; 4]> for Simplex3 {
+    #[inline]
+    #[must_use]
+    fn from(arrs: [[f64; 3]; 4]) -> Self {
+        let s = Simplex3 {
+            vertices: arrs.map(Cartesian::from),
+        };
+        s.orient()
+    }
+}
+
+impl Default for Simplex3 {
+    /// A uniform tetrahedron.
+    #[inline]
+    fn default() -> Self {
+        let s = Simplex3 {
+            vertices: [
+                [1.0, 0.0, 0.0].into(),
+                [0.0, 1.0, 0.0].into(),
+                [0.0, 0.0, 1.0].into(),
+                [1.0, 1.0, 1.0].into(),
+            ],
+        };
+        s.orient()
+    }
+}
 // const EDGES: [(usize, usize); 5] = [(1, 0), (2, 0), (3, 0), (2, 1), (3, 2)];
+
+/// Compute ???
+fn edge(abij: [u8; 4], ea: &[f64; 4], eb: &[f64; 4], xa: u8, xb: u8) -> bool {
+    let [a, b, i, j] = abij;
+    // Determinant of [ea; eb]
+    let cp = (ea[i as usize] * eb[j as usize]) - (ea[j as usize] * eb[i as usize]);
+    // println!("ea[i]*eb[j] ={}", ea[i as usize] * eb[j as usize]);
+    // println!("ea[j]*eb[i] ={}", ea[j as usize] * eb[i as usize]);
+    // println!("ea[i]={:?}, eb[j]={:?}", ea[i as usize], eb[j as usize]);
+    println!(
+        "\n({}, {}):\n\nea[i]={:?}, eb[j]={:?}\nea[j]={:?}, eb[i]={:?}",
+        i, j, ea[j as usize], eb[i as usize], ea[j as usize], eb[i as usize]
+    );
+    println!("cp: {cp} (xa={xa}, xb={xb})");
+
+    // Verify edges are counterclockwise?
+    let cond0 = cp > 0.0 && (xa | a) > 0 && (xb | b) > 0;
+    let cond1 = cp < 0.0 && (xa | b) > 0 && (xb | a) > 0;
+
+    cond0 || cond1
+}
 
 /// GOAL: Extreme performance for simulations of hard tetrahedra. Useful for a paper on
 /// non-uniform simplices, and provides an excellent test case for paper
@@ -313,51 +359,131 @@ impl Simplex3 {
     pub(crate) fn orient(&self) -> Simplex3 {
         let dp = (self.d() - self.a()).dot(&((self.b() - self.a()).cross(&(self.c() - self.a()))));
         if dp < 0.0 {
-            self.vertices.into()
+            Simplex3 {
+                vertices: self.vertices,
+            }
         } else {
-            [self.a(), self.c(), self.b(), self.d()].into()
+            Simplex3 {
+                vertices: [self.a(), self.c(), self.b(), self.d()],
+            }
         }
     }
 
     /// Compute a bitmask for a sequence of four affine coordinates
     #[inline]
-    pub(crate) fn compute_mask(&self, aff: [f64; 4]) -> [bool; 4] {
-        /*
-        if aff[0] > 0.0 {1} else {0}
-        if aff[1] > 0.0 {2} else {0}
-        if aff[2] > 0.0 {4} else {0}
-        if aff[3] > 0.0 {8} else {0}
-        bit or'd together. Not hard, but unnecessary optimization
+    pub(crate) fn compute_mask(&self, aff: [f64; 4]) -> u8 {
+        /*let res = 0u8;
+        if aff[0] > 0.0 {res |= 1}
+        if aff[1] > 0.0 {res |= 2}
+        if aff[2] > 0.0 {res |= 4}
+        if aff[3] > 0.0 {res |= 8}
+        res
         */
-        let mut iter = aff.iter().map(|&x| x > 0.0);
-        array::from_fn::<_, 4, _>(|_| iter.next().unwrap_or_default())
+        aff.iter().enumerate().fold(
+            0u8,
+            |acc, (i, &x)| if x > 0.0 { acc | (1 << i) } else { acc },
+        )
     }
 
-    // fn face_a(&self, deltas: [Cartesian<3>; 4]) {
-    //     let affine = deltas.map();
-    //     (self.compute_mask(affine), affine)
-    // }
-    /// todo
-    fn face_a(&self, deltas: [Cartesian<3>; 4], n: &Cartesian<3>) -> ([bool; 4], [f64; 4]) {
+    /// In contrast to the original implementation, this function applies a fixed
+    /// operation (deltas.dot(&n)).
+    fn face_a(&self, deltas: &[Cartesian<3>; 4], n: &Cartesian<3>) -> (u8, [f64; 4]) {
         let affine = deltas.map(|l| Cartesian::dot(&l, n));
         (self.compute_mask(affine), affine)
     }
+
+    /// Check if there is a seperating plane between the faces shaped by an edge
+    /// between the faces shared by that edge.
+    #[inline] // DONE:
+    fn edge_a(&self, ma: u8, mb: u8, ea: &[f64; 4], eb: &[f64; 4]) -> bool {
+        let xa = ma & (ma ^ mb);
+        let xb = mb & (xa ^ mb);
+
+        // Unique pairs of tetrahedron edge bitmasks
+        let possible_masks = [
+            [1, 2, 1, 0],
+            [1, 4, 2, 0],
+            [1, 8, 3, 0],
+            [2, 4, 2, 1],
+            [2, 8, 3, 1],
+            [4, 8, 3, 2],
+        ];
+        // If mask is full or there is a separating plane between the faces spanned by
+        // each edge
+        // println!("ea: {ea:?}");
+        // println!("eb: {eb:?}");
+        // println!("xa: {xa:?}");
+        // println!("xb: {xb:?}");
+        !((ma | mb != 15)
+            || possible_masks
+                .iter()
+                .any(|abij| edge(*abij, ea, eb, xa, xb)))
+    }
+
     /**Check the faces of tetrahedron 0, returning a vector of bitmasks*/
-    fn check_faces_a(&self, deltas: [Cartesian<3>; 4], q: &Simplex3) -> [bool; 4] {
+    #[expect(clippy::many_single_char_names, reason = "Temporary")]
+    fn check_faces_a(&self, deltas: [Cartesian<3>; 4], q: &Simplex3) -> [u8; 4] {
         let edges = self.get_edges();
         let edge_vectors = self.get_edge_vectors();
 
         let p = self.b(); // Reference point on simplex 0
 
-        // While the original source performs these in a loop, we can hand-unroll to
-        // simplify the code
+        //
+        let mut masks = [0u8; 4];
+        let mut affine = [[0f64; 4]; 4];
 
         // [:f 0 1]
-        let (ea, eb) = (edge_vectors[0], edge_vectors[1]);
-        let n = ea.cross(&eb);
-        // let (m, a) =
+        let mut i = 0usize;
+        println!("\n");
+        for (&f, (a, b)) in [
+            "f", "f", "e", "f", "e", "e", "f*", /*star*/
+            "e", "e", "e",
+        ]
+        .iter()
+        .zip([
+            (0, 1),
+            (2, 0),
+            (0, 1),
+            (1, 2),
+            (0, 2),
+            (1, 2),
+            (4, 3),
+            (0, 3),
+            (1, 3),
+            (2, 3),
+        ]) {
+            println!("{f}, ({a}, {b})");
 
-        [false; 4]
+            // Get the two edge vectors that define the face
+            if f.contains('f') {
+                let (ea, eb) = (edge_vectors[a], edge_vectors[b]);
+
+                // Compute the normal of the face
+                let n = ea.cross(&eb);
+
+                // Compute the mask and affine points
+                let diff = if f == "f" {
+                    deltas
+                } else {
+                    println!("Triggered special case f*!");
+                    q.vertices.map(|l| l - p)
+                };
+                let (m, a) = self.face_a(&diff, &n);
+                masks[i] = m;
+                affine[i] = a;
+                i += 1;
+
+                // Mask is not yet full, need to keep iterating
+                if m < 15 {
+                    continue;
+                }
+            }
+            // If we find a separating plane, we can break
+            if self.edge_a(masks[0], masks[1], &affine[0], &affine[1]) {
+                break;
+            }
+        }
+        masks
     }
 }
 
@@ -367,9 +493,19 @@ impl<R: Rotate<Cartesian<3>> + Rotation> IntersectsAt<Simplex3, Cartesian<3>, R>
         /* Based on the implementation from the following publication:
             http://vcg.isti.cnr.it/Publications/2003/GPR03/fast_tetrahedron_tetrahedron_overlap_algorithm.pdf
         */
-        // p, q = self, other. Oriented by default, as all constructors MUST call orient
+        // p, q = self, other. p is oriented, but q is not
+
+        //TODO: need to translate and rotate other, then re-orient
+
+        //
         let deltas = other.vertices.map(|q| self.a() - q); // Should be pa - q
         let masks = self.check_faces_a(deltas, other);
+
+        // TODO: resume
+        println!("{masks:?}");
+        if masks == [0, 0, 0, 0] || masks.iter().fold(0u8, |acc, m| acc | m) != 15 {
+            // self.check_faces_b
+        }
 
         /* List of possible checks to perform
            [[:f 0 1] [:f 2 0] [:e 0 1] [:f 1 2]
@@ -382,3 +518,78 @@ impl<R: Rotate<Cartesian<3>> + Rotation> IntersectsAt<Simplex3, Cartesian<3>, R>
 }
 
 // TODO: tolerance check
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hoomd_vector::Versor;
+    use rstest::rstest;
+
+    #[test]
+    fn test_compute_mask() {
+        let t = Simplex3::default();
+        let arrays = (0u8..=15).map(|i| {
+            (
+                i,
+                [
+                    f64::from(i & 1),
+                    f64::from((i >> 1) & 1),
+                    f64::from((i >> 2) & 1),
+                    f64::from((i >> 3) & 1),
+                ],
+            )
+        });
+        arrays.for_each(|(i, arr)| assert_eq!(t.compute_mask(arr), i));
+    }
+
+    /// Test if there is a separating plane between the faces shared by an edge
+    #[rstest(
+        xaxb => [(0, 6), (0, 2), (4, 2)]
+    )]
+    fn test_edge(xaxb: (u8, u8)) {
+        let ea = [0.0, 100_000.0, 0.0, 500_000.0];
+        let eb = [0.0, -1_025_000.0, -500_000.0, 500_000.0];
+        let (xa, xb) = xaxb;
+
+        assert!(!edge([1, 2, 1, 0], &ea, &eb, xa, xb));
+        assert!(!edge([1, 4, 2, 0], &ea, &eb, xa, xb));
+        assert!(!edge([1, 8, 3, 0], &ea, &eb, xa, xb));
+        assert!(edge([2, 4, 2, 1], &ea, &eb, xa, xb));
+    }
+    #[test]
+    fn test_edge_special_cases() {
+        let ea = [0.0, 1_025_000.0, 500_000.0, -500_000.0];
+        let eb = [0.0, 50_000.0, -500_000.0, 0.0];
+        let (xa, xb) = (4, 2);
+        assert!(!edge([1, 2, 1, 0], &ea, &eb, xa, xb));
+        assert!(!edge([1, 4, 2, 0], &ea, &eb, xa, xb));
+        assert!(!edge([1, 8, 3, 0], &ea, &eb, xa, xb));
+        assert!(edge([2, 4, 2, 1], &ea, &eb, xa, xb));
+        // Remaining tests should all be true
+        let (ea, eb) = (
+            [0.0, -100_000.0, 0.0, -500_000.0],
+            [-500_000.0, -1_475_000.0, -500_000.0, 500_000.0],
+        );
+        let (xa, xb) = (0, 8);
+        assert!(edge([1, 2, 1, 0], &ea, &eb, xa, xb));
+    }
+
+    #[test]
+    fn test_tetisect_true() {
+        let p = Simplex3::from([
+            [0.0, 0.0, 0.0],
+            [50.0, 50.0, 0.0],
+            [100.0, 0.0, 0.0],
+            [50.0, 25.0, 100.0],
+        ]);
+        let q = Simplex3::from([
+            [0.0, 0.0, 0.0],
+            [-50.0, 50.0, 0.0],
+            [-200.0, 0.0, 20.0],
+            [150.0, 25.0, 100.0],
+        ]);
+        // let (p, q) = (Simplex3::default(), Simplex3::default());
+        // assert!(p.intersects_at(&q, &Cartesian::from([0.0, 0.0, 0.0]), &Versor::identity()));
+        p.intersects_at(&q, &Cartesian::from([10.0, 0.0, 0.0]), &Versor::identity());
+        // TODO: test cases from
+    }
+}
