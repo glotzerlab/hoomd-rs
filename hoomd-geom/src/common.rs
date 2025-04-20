@@ -219,7 +219,8 @@ impl HyperEllipsoid<3> {
 
 impl<const N: usize> HyperEllipsoid<N> {} // TODO matrix form and IntersectsAt
 
-/// The simplest three-dimensional geometry.
+/// The simplest three-dimensional geometry. This struct has a wide range of defined
+/// functionality and is useful as a primitive in a variety of contexts.
 #[derive(Clone, Copy, Debug)]
 pub struct Simplex3 {
     /// Vertices of the simplex
@@ -578,6 +579,91 @@ mod tests {
         );
         let (xa, xb) = (6, 8);
         assert!(edge([1, 2, 1, 0], &ea, &eb, xa, xb));
+    }
+
+    // Test cases drawn from code associated with original paper
+    #[rstest(
+        ma, mb, ea, eb,
+        case(
+            0, 2,
+            [0.0, -100_000.0, 0.0, -500_000.0],
+            [0.0, 50_000.0, -500_000.0, 0.0]
+        ),
+        case(
+            6, 2,
+            [0.0, 1_025_000.0, 500_000.0, -500_000.0],
+            [0.0, 50_000.0, -500_000.0, 0.0]
+        ),
+        case(
+            0, 8,
+            [0.0, -100_000.0, 0.0, -500_000.0],
+            [-500_000.0, -1_475_000.0, -500_000.0, 500_000.0]
+        ),
+        case(
+            6, 8,
+            [0.0, 1_025_000.0, 500_000.0, -500_000.0],
+            [-500_000.0, -1_475_000.0, -500_000.0, 500_000.0]
+        ),
+        case(
+            2, 8,
+            [0.0, 50_000.0, -500_000.0, 0.0],
+            [-500_000.0, -1_475_000.0, -500_000.0, 500_000.0]
+        ),
+        case(
+            0, 0,
+            [0.0, 0.0, 0.0, -50_000.0],
+            [-500_005.0, -500_000.0, -1_000_000.0, -612_500.0]
+        ),
+        case(
+            0, 0,
+            [0.0, 0.0, 0.0, -50_000.0],
+            [0.0, -500_000.0, 0.0, -225_000.0]
+        ),
+        case(
+            0, 0,
+            [-500_005.0, -500_000.0, -1_000_000.0, -612_500.0],
+            [0.0, -500_000.0, 0.0, -225_000.0]
+        )
+    )]
+    fn test_edge_a(ma: u8, mb: u8, ea: [f64; 4], eb: [f64; 4]) {
+        let t = Simplex3::default();
+        assert!(!t.edge_a(ma, mb, &ea, &eb));
+    }
+
+    #[rstest(
+        n=> [[0.0, 0.0, -5000.0], [-5000.0, 5000.0, 1250.0], [0.0, -10000.0, 2500.0]],
+    )]
+    fn test_face_a(n: [f64; 3]) {
+        let deltas: [Cartesian<3>; 4] = [
+            [0.0, 0.0, 0.0],
+            [-200.0, 0.0, 20.0],
+            [-50.0, 50.0, 0.0],
+            [150.0, 25.0, 100.0],
+        ]
+        .map(Cartesian::from);
+        let t = Simplex3::default();
+        let result = t.face_a(&deltas, &n.into());
+        let expected_result = match n {
+            [0.0, 0.0, -5000.0] => (0, [0.0, -100_000.0, 0.0, -500_000.0]),
+            [-5000.0, 5000.0, 1250.0] => (6, [0.0, 1_025_000.0, 500_000.0, -500_000.0]),
+            [0.0, -10000.0, 2500.0] => (2, [0.0, 50_000.0, -500_000.0, 0.0]),
+            _ => unreachable!(),
+        };
+        assert_eq!(result, expected_result);
+    }
+
+    #[test]
+    fn test_face_a_zero() {
+        let t = Simplex3::default();
+        assert_eq!(
+            (0, [0.0; 4]),
+            t.face_a(&[[9.9; 3].into(); 4], &[0.0; 3].into())
+        );
+
+        assert_eq!(
+            (0, [0.0; 4]),
+            t.face_a(&[[0.0; 3].into(); 4], &[9.9; 3].into())
+        );
     }
 
     #[test]
