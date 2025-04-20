@@ -10,8 +10,8 @@ use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
 
-use rand::distr::{Distribution, StandardUniform, Uniform};
 use rand::Rng;
+use rand::distr::{Distribution, StandardUniform, Uniform};
 
 use crate::Angle;
 use crate::Versor;
@@ -269,9 +269,9 @@ impl<const N: usize> Add<f64> for Cartesian<N> {
 
     #[inline]
     fn add(self, rhs: f64) -> Self {
-        let mut result = self;
-        result.coordinates.iter_mut().for_each(|x| *x += rhs);
-        result
+        Self {
+            coordinates: self.coordinates.map(|x| x + rhs),
+        }
     }
 }
 
@@ -289,21 +289,16 @@ impl<const N: usize> Div<f64> for Cartesian<N> {
 
     #[inline]
     fn div(self, rhs: f64) -> Self {
-        let mut coordinates = [0.0; N];
-
-        for (result, a) in coordinates.iter_mut().zip(self.coordinates) {
-            *result = a / rhs;
+        Self {
+            coordinates: self.coordinates.map(|x| x / rhs),
         }
-        Self { coordinates }
     }
 }
 
 impl<const N: usize> DivAssign<f64> for Cartesian<N> {
     #[inline]
     fn div_assign(&mut self, rhs: f64) {
-        for result in &mut self.coordinates {
-            *result /= rhs;
-        }
+        self.coordinates = self.coordinates.map(|x| x / rhs);
     }
 }
 
@@ -312,20 +307,16 @@ impl<const N: usize> Mul<f64> for Cartesian<N> {
 
     #[inline]
     fn mul(self, rhs: f64) -> Self {
-        let mut coordinates = [0.0; N];
-        for (result, a) in coordinates.iter_mut().zip(self.coordinates) {
-            *result = a * rhs;
+        Self {
+            coordinates: self.coordinates.map(|x| x * rhs),
         }
-        Self { coordinates }
     }
 }
 
 impl<const N: usize> MulAssign<f64> for Cartesian<N> {
     #[inline]
     fn mul_assign(&mut self, rhs: f64) {
-        for result in &mut self.coordinates {
-            *result *= rhs;
-        }
+        self.coordinates = self.coordinates.map(|x| x * rhs);
     }
 }
 
@@ -373,9 +364,9 @@ impl<const N: usize> Neg for Cartesian<N> {
     type Output = Self;
     #[inline]
     fn neg(self) -> Self::Output {
-        let mut result = self;
-        result.coordinates.iter_mut().for_each(|x| *x = -*x);
-        result
+        Self {
+            coordinates: self.coordinates.map(|x| -x),
+        }
     }
 }
 
@@ -453,8 +444,6 @@ impl Cartesian<2> {
         Cartesian::from([-self[1], self[0]])
     }
 }
-
-// TODO: Cartesian::multidot based on simd
 
 impl<const N: usize, T> IndexMut<T> for Cartesian<N>
 where
@@ -618,7 +607,7 @@ mod approx {
 mod tests {
     use super::*;
     use paste::paste;
-    use rand::{rngs::StdRng, SeedableRng};
+    use rand::{SeedableRng, rngs::StdRng};
 
     // Parameterize a test function over an array of vector lengths
     macro_rules! parameterize_vector_length {
@@ -702,6 +691,16 @@ mod tests {
     }
 
     parameterize_vector_length!(add_assign, [2, 3, 4, 8, 16, 32]);
+    fn add_f64<const N: usize>() {
+        let (a, _) = generate_vector_pair::<N>();
+        let b = a;
+        let c = Cartesian::from([2.0; N]);
+
+        assert_eq!(a + 2.0, a + c);
+        assert_eq!(a, b);
+    }
+
+    parameterize_vector_length!(add_f64, [2, 3, 4, 8, 16, 32]);
 
     fn sub_operator<const N: usize>() {
         let (a, b) = generate_vector_pair::<N>();
