@@ -70,6 +70,7 @@
   [f deltas]
   ; Map function f across deltas (self.vertices-other.vertices)
   ; The `let` binding lets us define a variable, operate on it, then return it
+  ; (println "deltas: " deltas)
   (let [affine (mapv f deltas)] [(compute-mask affine) affine]))
 
 (defn face-b1? ; Question mark indicates "predicate function" (returns bool)
@@ -98,26 +99,6 @@
                (let [cp (- (* (ea i) (eb j)) (* (ea j) (eb i)))
                      result (or (and (pos? cp) (pos? (bit-or xa a)) (pos? (bit-or xb b)))
                                 (and (neg? cp) (pos? (bit-or xa b)) (pos? (bit-or xb a))))]
-                 (println {
-                      :ea ea
-                      :eb eb
-                       :e-ai (ea i)
-                       :e-bj (eb j)
-                       :e-aj (ea i)
-                       :e-bi (eb j)
-                       ; :index-a a
-                       ; :index-b b
-                       :index-i i
-                       :index-j j
-                       ; :d0 (* (ea i) (eb j))
-                       ; :d1 (* (ea j) (eb i))
-                       ; :edge-mask-b b
-                      
-                       :cp cp
-                       :xa xa
-                       :xb xb
-                       :result result}
-                      ) (prn)
                  result))]
     (not
      (or
@@ -157,28 +138,49 @@
         (if (or (= :f f) (= :f* f))
           (let [[edges ea] (get-edge edges epoints a)
                 [edges eb] (get-edge edges epoints b)
-                n (cross ea eb)
+                ; n (cross ea eb)
+                      n (do
+                        ; (println "deltas:" deltas)
+                        (println "ea:" ea)
+                        (println "n:" (cross ea eb) "")
+                        (cross ea eb)
+                          
+                          )       ; :f
                 [m a] (if (= :f f)
                         ; face-a takes in a function #(dot|subdot % n) and maps it onto
                         ; delta vectors or vertices 
-                        (face-a #(dot % n) deltas)       ; :f
+                        ; (face-a #(dot % n) deltas)       ; :f
+                      (do
+                        ; (println "deltas:" deltas)
+                        (println "deltas:" deltas)
+                        (let [result (face-a #(dot % n) deltas)]
+                          (println "[m a]:" result "\n")
+                          result))       ; :f
                         (face-a #(subdot % p n) verts))] ; :f*
             (if (< m 15)
               ; append m to masks, a to affine, then rerun loop with the new calues and next s
-              (recur (conj masks m) (conj affine a) edges (next s))
-            )
-          )
-          ; f = :e
-          (if-not (edge-a (masks a) (masks b) (affine a) (affine b)); if not (edge-a?)
-            ; Enter the loop again, incrementing through array s
-            (recur masks affine edges (next s))
-          )
-        )
-      )
-      masks
-      )
-    )
-  )
+              (recur (conj masks m) (conj affine a) edges (next s))))
+
+; f = :e
+          ; (if-not (edge-a (masks a) (masks b) (affine a) (affine b)); if not (edge-a?)
+          ;   ; Enter the loop again, incrementing through array s
+          ;   (recur masks affine edges (next s))
+          (let [ma (masks a)
+                mb (masks b)
+                aa (affine a)
+                ab (affine b)
+                result (edge-a ma mb aa ab)]
+            ; (println "masks a:" ma)
+            ; (println "masks b:" mb)
+            ; (println "affine a:" aa)
+            ; (println "affine b:" ab)
+            ; (println "edge-a result:" result)
+            ; (println "\n")
+
+            (if-not result
+              (recur masks affine edges (next s))))))
+
+      masks)))
 
 (defn check-faces-b?
   "Much like check-faces-a, but for 2nd tetra and specs encoding calls to face-b1/2?.
