@@ -226,7 +226,7 @@ impl<const N: usize> Vector for Cartesian<N> {
     #[inline]
     fn dot(&self, other: &Self) -> f64 {
         zip(self.coordinates.iter(), other.coordinates.iter())
-            .fold(0.0, |product, x| product + x.0 * x.1)
+            .fold(0.0, |product, (&x, &y)| x.mul_add(y, product))
     }
 }
 
