@@ -141,10 +141,28 @@ fn check_face_on_p_is_separating(aff: &[f64; 4]) -> (u8, bool) {
 }
 
 /// Check whether plane ``P_j`` parallel to a face on q is a separating plane.
+#[inline]
 #[must_use]
 fn check_face_on_q_is_separating(aff: &[f64; 4]) -> bool {
     aff.iter().all(|&x| x > 0.0)
 }
+
+/// Check that no point in our projected vertices lies in the (-, -) quadrant
+/// If a point satisfying that condition is found, there exists a separating line.
+#[allow(clippy::too_many_arguments), reason="Internal function not exposed to users."]
+#[inline]
+#[must_use]
+fn edge_test(ma: u8, mb: u8, a: u8, b: u8, ea_i: f64, ea_j: f64, eb_i: f64, eb_j: f64) -> bool {
+    let cp = (ea_i * eb_j) - (ea_j * eb_i);
+
+    if (ma & a) != 0 && (mb & b) != 0 && cp > 0.0 {
+        false
+    }
+    else if (ma & b) != 0 && (mb & a) != 0 && cp < 0.0 { false} else {true}
+
+    true
+}
+
 /// Check if there exists a seperating plane containing the edge e shared by faces
 /// f0 and f1 of the tetrahedron.
 #[inline]
@@ -158,11 +176,15 @@ fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) 
     ma &= ma ^ mb;
     mb &= ma ^ mb;
 
-    // TODO: clean up with match cases
+    // Apply test for edge 0 0-1
 
     // the vertex 0 of b is in (-, +) && v1 of b is in (+, -) && the edge [0, 1] of b
     // intersects (-, -)
     if (ma & 1) != 0 && (mb & 2) != 0 && ((aff_a[1] * aff_a[2]) - (aff_a[0] * aff_b[1]) > 0.0) {
+        return false;
+    }
+
+    if ((ma & 2) != 0 && (mb & 1) != 0) && (((aff_a[1] * aff_b[0]) - (aff_a[0] * aff_b[1])) < 0.0) {
         return false;
     }
 
