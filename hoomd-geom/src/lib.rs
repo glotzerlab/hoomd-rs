@@ -70,6 +70,7 @@ pub mod modifiers;
 mod common;
 pub mod poly;
 mod shape;
+pub mod simplex3;
 mod sphere;
 pub mod xenocollide;
 

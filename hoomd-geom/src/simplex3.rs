@@ -149,18 +149,16 @@ fn check_face_on_q_is_separating(aff: &[f64; 4]) -> bool {
 
 /// Check that no point in our projected vertices lies in the (-, -) quadrant
 /// If a point satisfying that condition is found, there exists a separating line.
-#[allow(clippy::too_many_arguments), reason="Internal function not exposed to users."]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Internal function not exposed to users."
+)]
 #[inline]
 #[must_use]
-fn edge_test(ma: u8, mb: u8, a: u8, b: u8, ea_i: f64, ea_j: f64, eb_i: f64, eb_j: f64) -> bool {
+fn edge_test(ma: u8, mb: u8, a: u8, b: u8, ea_i: f64, eb_j: f64, ea_j: f64, eb_i: f64) -> bool {
     let cp = (ea_i * eb_j) - (ea_j * eb_i);
 
-    if (ma & a) != 0 && (mb & b) != 0 && cp > 0.0 {
-        false
-    }
-    else if (ma & b) != 0 && (mb & a) != 0 && cp < 0.0 { false} else {true}
-
-    true
+    ((ma | a) > 0 && (mb | b) > 0 && cp > 0.0) || (ma | b) > 0 && (mb | a) > 0 && cp < 0.0
 }
 
 /// Check if there exists a seperating plane containing the edge e shared by faces
@@ -176,19 +174,22 @@ fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) 
     ma &= ma ^ mb;
     mb &= ma ^ mb;
 
-    // Apply test for edge 0 0-1
-
-    // the vertex 0 of b is in (-, +) && v1 of b is in (+, -) && the edge [0, 1] of b
-    // intersects (-, -)
-    if (ma & 1) != 0 && (mb & 2) != 0 && ((aff_a[1] * aff_a[2]) - (aff_a[0] * aff_b[1]) > 0.0) {
-        return false;
+    // Apply test for Edge 0: 0--1, 2--0, 3--0, 2--1, 3--1, 3--2
+    for (a, b, i, j) in [
+        (1, 2, 1, 0),
+        (1, 4, 2, 0),
+        (1, 8, 3, 0),
+        (2, 4, 2, 1),
+        (2, 8, 3, 1),
+        (4, 8, 3, 2),
+    ] {
+        if edge_test(ma, mb, a, b, aff_a[i], aff_b[j], aff_a[j], aff_b[i]) {
+            return false;
+        }
     }
 
-    if ((ma & 2) != 0 && (mb & 1) != 0) && (((aff_a[1] * aff_b[0]) - (aff_a[0] * aff_b[1])) < 0.0) {
-        return false;
-    }
-
-    false
+    // There exists a separating plane supported by the edge shared by f0 and f1
+    true
 }
 
 impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simplex3 {
@@ -271,7 +272,8 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
             }
         }
 
-        // If any of the masks is NOT full, there is not separating plane
+        // If (at least) a vertex of q is inside tetrahedron p
+        // (vertex bounded by all 4 halfspaces)
         if masks.iter().any(|&m| m != 15) {
             return true;
         }
@@ -323,6 +325,131 @@ mod tests {
     use super::*;
     use hoomd_vector::{Rotation, Versor};
     use rstest::rstest;
+    #[test]
+    fn test_compute_mask() {
+        let arrays = (0u8..=15).map(|i| {
+            (
+                i,
+                [
+                    f64::from(i & 1),
+                    f64::from((i >> 1) & 1),
+                    f64::from((i >> 2) & 1),
+                    f64::from((i >> 3) & 1),
+                ],
+            )
+        });
+        arrays.for_each(|(i, arr)| assert_eq!(check_face_on_p_is_separating(&arr).0, i));
+    }
+
+    #[rstest(
+        xaxb => [(0, 6), (0, 2), (4, 2)]
+    )]
+    fn test_edge(xaxb: (u8, u8)) {
+        let ea = [0.0, 100_000.0, 0.0, 500_000.0];
+        let eb = [0.0, -1_025_000.0, -500_000.0, 500_000.0];
+        let (xa, xb) = xaxb;
+
+        assert!(!edge_test(xa, xb, 1, 2, ea[1], eb[0], ea[0], eb[1]));
+        assert!(!edge_test(xa, xb, 1, 4, ea[2], eb[0], ea[0], eb[2]));
+        assert!(!edge_test(xa, xb, 1, 8, ea[3], eb[0], ea[0], eb[3]));
+        assert!(edge_test(xa, xb, 2, 4, ea[2], eb[1], ea[1], eb[2]));
+    }
+    #[test]
+    fn test_edge_special_cases() {
+        // First test data set
+        let ea = [0.0, 1_025_000.0, 500_000.0, -500_000.0];
+        let eb = [0.0, 50_000.0, -500_000.0, 0.0];
+        let (xa, xb) = (4, 2);
+
+        // Assertions based on edge_test function
+        assert!(!edge_test(xa, xb, 1, 2, ea[1], eb[0], ea[0], eb[1]));
+        assert!(!edge_test(xa, xb, 1, 4, ea[2], eb[0], ea[0], eb[2]));
+        assert!(!edge_test(xa, xb, 1, 8, ea[3], eb[0], ea[0], eb[3]));
+        assert!(edge_test(xa, xb, 2, 4, ea[2], eb[1], ea[1], eb[2]));
+
+        // Second test data set
+        let (ea, eb) = (
+            [0.0, -100_000.0, 0.0, -500_000.0],
+            [-500_000.0, -1_475_000.0, -500_000.0, 500_000.0],
+        );
+        let (xa, xb) = (0, 8);
+        assert!(edge_test(xa, xb, 1, 2, ea[1], eb[0], ea[0], eb[1])); // Expect true
+
+        let (ea, eb) = (
+            [0.0, 1_025_000.0, 500_000.0, -500_000.0],
+            [-500_000.0, -1_475_000.0, -500_000.0, 500_000.0],
+        );
+        let (xa, xb) = (6, 8);
+        assert!(edge_test(xa, xb, 1, 2, ea[1], eb[0], ea[0], eb[1]));
+    }
+    #[rstest(
+        ma, mb, ea, eb,
+        case(
+            0, 2,
+            [0.0, -100_000.0, 0.0, -500_000.0],
+            [0.0, 50_000.0, -500_000.0, 0.0]
+        ),
+        case(
+            6, 2,
+            [0.0, 1_025_000.0, 500_000.0, -500_000.0],
+            [0.0, 50_000.0, -500_000.0, 0.0]
+        ),
+        case(
+            0, 8,
+            [0.0, -100_000.0, 0.0, -500_000.0],
+            [-500_000.0, -1_475_000.0, -500_000.0, 500_000.0]
+        ),
+        case(
+            6, 8,
+            [0.0, 1_025_000.0, 500_000.0, -500_000.0],
+            [-500_000.0, -1_475_000.0, -500_000.0, 500_000.0]
+        ),
+        case(
+            2, 8,
+            [0.0, 50_000.0, -500_000.0, 0.0],
+            [-500_000.0, -1_475_000.0, -500_000.0, 500_000.0]
+        ),
+        case(
+            0, 0,
+            [0.0, 0.0, 0.0, -50_000.0],
+            [-500_005.0, -500_000.0, -1_000_000.0, -612_500.0]
+        ),
+        case(
+            0, 0,
+            [0.0, 0.0, 0.0, -50_000.0],
+            [0.0, -500_000.0, 0.0, -225_000.0]
+        ),
+        case(
+            0, 0,
+            [-500_005.0, -500_000.0, -1_000_000.0, -612_500.0],
+            [0.0, -500_000.0, 0.0, -225_000.0]
+        )
+    )]
+    fn test_edge_a(ma: u8, mb: u8, ea: [f64; 4], eb: [f64; 4]) {
+        // let t = Simplex3::default();
+        assert!(!check_edge_is_separating(&ea, &eb, ma, mb));
+    }
+    #[rstest(
+        n=> [[0.0, 0.0, -5000.0], [-5000.0, 5000.0, 1250.0], [0.0, -10000.0, 2500.0]],
+    )]
+    fn test_face_a(n: [f64; 3]) {
+        let deltas: [Cartesian<3>; 4] = [
+            [0.0, 0.0, 0.0],
+            [-200.0, 0.0, 20.0],
+            [-50.0, 50.0, 0.0],
+            [150.0, 25.0, 100.0],
+        ]
+        .map(Cartesian::from);
+        let aff = deltas.map(|v| v.dot(&n.into()));
+        let (result, _) = check_face_on_p_is_separating(&aff);
+        let expected_result = match n {
+            [0.0, 0.0, -5000.0] => (0, [0.0, -100_000.0, 0.0, -500_000.0]),
+            [-5000.0, 5000.0, 1250.0] => (6, [0.0, 1_025_000.0, 500_000.0, -500_000.0]),
+            [0.0, -10_000.0, 2500.0] => (2, [0.0, 50_000.0, -500_000.0, 0.0]),
+            _ => unreachable!(),
+        };
+        assert_eq!((result, aff), expected_result);
+    }
 
     #[test]
     fn test_testisect() {
@@ -358,6 +485,6 @@ mod tests {
         // assert_eq!(
         //     p.intersects_at(&q, &Cartesian::default(), &Versor::identity()),
         //     collide3d(&p, &q, &Cartesian::default(), &Versor::identity())
-        // );
+        // ); // TODO: why does this not work?
     }
 }
