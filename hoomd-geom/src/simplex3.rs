@@ -125,11 +125,9 @@ impl Simplex3 {
             }
         }
     }
-
-    /// Check if plane ``P_i`` defined by 4 coordinates and containing face ``i`` is a
-    /// separating plane (or conversely, if the face normal is a separating axis)
-    
 }
+/// Check if plane ``P_i`` defined by 4 coordinates and containing face ``i`` is a
+/// separating plane (or conversely, if the face normal is a separating axis)
 #[inline]
 #[must_use]
 pub fn check_face_is_separating(
@@ -148,12 +146,7 @@ pub fn check_face_is_separating(
 /// f0 and f1 of the tetrahedron.
 #[inline]
 #[must_use]
-pub fn check_edge_is_separating(
-    aff_a: &[f64; 4],
-    aff_b: &[f64; 4],
-    ma: u8,
-    mb: u8,
-) -> bool {
+pub fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) -> bool {
     false // TODO: fill out function!
 }
 
@@ -163,17 +156,17 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         let q_deltas = other.vertices.map(|q| q - self.vertices[0]);
         // TODO: update to use extrinsic coodinates, and orient
         // Edge difference vectors for tetrahedron p
-        let mut ev_p = [Cartesian::<3>::default(); 5];
+        let mut edge_vectors_p = [Cartesian::<3>::default(); 5];
         let mut masks = [0u8; 4];
         let mut affs = [[0f64; 4]; 4];
 
-        ev_p[0] = self.vertices[1] - self.vertices[0];
-        ev_p[1] = self.vertices[2] - self.vertices[0];
+        edge_vectors_p[0] = self.vertices[1] - self.vertices[0];
+        edge_vectors_p[1] = self.vertices[2] - self.vertices[0];
 
         // Handle all possible SAT cases, in a performance-optimized order
 
         // f 0 1
-        affs[0] = q_deltas.map(|v| v.dot(&ev_p[0].cross(&ev_p[1])));
+        affs[0] = q_deltas.map(|v| v.dot(&edge_vectors_p[0].cross(&edge_vectors_p[1])));
         let (mask, is_sep) = check_face_is_separating(affs[0]);
         if is_sep {
             return false;
@@ -181,9 +174,9 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         masks[0] = mask;
 
         // f 2 0
-        ev_p[2] = self.vertices[3] - self.vertices[0];
+        edge_vectors_p[2] = self.vertices[3] - self.vertices[0];
 
-        affs[1] = q_deltas.map(|v| v.dot(&ev_p[0].cross(&ev_p[1])));
+        affs[1] = q_deltas.map(|v| v.dot(&edge_vectors_p[0].cross(&edge_vectors_p[1])));
         let (mask, is_sep) = check_face_is_separating(affs[1]);
         if is_sep {
             return false;
@@ -196,7 +189,7 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         }
 
         // f 1 2
-        affs[2] = q_deltas.map(|v| v.dot(&ev_p[1].cross(&ev_p[2])));
+        affs[2] = q_deltas.map(|v| v.dot(&edge_vectors_p[1].cross(&edge_vectors_p[2])));
         let (mask, is_sep) = check_face_is_separating(affs[2]);
         if is_sep {
             return false;
@@ -214,10 +207,10 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         }
 
         // f 4 3
-        ev_p[3] = self.vertices[2] - self.vertices[1];
-        ev_p[4] = self.vertices[3] - self.vertices[1];
+        edge_vectors_p[3] = self.vertices[2] - self.vertices[1];
+        edge_vectors_p[4] = self.vertices[3] - self.vertices[1];
 
-        affs[3] = q_deltas.map(|v| v.dot(&ev_p[4].cross(&ev_p[3])));
+        affs[3] = q_deltas.map(|v| v.dot(&edge_vectors_p[4].cross(&edge_vectors_p[3])));
         let (mask, is_sep) = check_face_is_separating(affs[3]);
         if is_sep {
             return false;
@@ -240,9 +233,9 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
 
         // Difference between vertices on p and a vertex on q
         let p_deltas = self.vertices.map(|v| v - other.vertices[0]);
-        let mut ev_q = [Cartesian::<3>::default(); 5];
-        ev_q[0] = other.vertices[1] - other.vertices[0];
-        ev_q[1] = other.vertices[2] - other.vertices[0];
+        let mut edge_vectors_q = [Cartesian::<3>::default(); 5];
+        edge_vectors_q[0] = other.vertices[1] - other.vertices[0];
+        edge_vectors_q[1] = other.vertices[2] - other.vertices[0];
 
         false
     }
