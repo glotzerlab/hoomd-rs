@@ -130,10 +130,7 @@ impl Simplex3 {
 /// separating plane (or conversely, if the face normal is a separating axis)
 #[inline]
 #[must_use]
-pub fn check_face_is_separating(
-    aff: [f64; 4], // deltas: &[Cartesian<3>; 4],
-                   // n: &Cartesian<3>,
-) -> (u8, bool) {
+fn check_face_on_p_is_separating(aff: &[f64; 4]) -> (u8, bool) {
     let mask = aff.iter().enumerate().fold(
         0u8,
         |acc, (i, &x)| {
@@ -142,12 +139,34 @@ pub fn check_face_is_separating(
     );
     (mask, mask == 15)
 }
+
+/// Check whether plane ``P_j`` parallel to a face on q is a separating plane.
+#[must_use]
+fn check_face_on_q_is_separating(aff: &[f64; 4]) -> bool {
+    aff.iter().all(|&x| x > 0.0)
+}
 /// Check if there exists a seperating plane containing the edge e shared by faces
 /// f0 and f1 of the tetrahedron.
 #[inline]
 #[must_use]
-pub fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) -> bool {
-    false // TODO: fill out function!
+fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) -> bool {
+    let (mut ma, mut mb) = (ma, mb);
+    if (ma | mb) != 15 {
+        return false; // If there is a vertex of b contained in the (-, -) quadrant
+    }
+    // exclude the vertices in (+,+) quadrant
+    ma &= ma ^ mb;
+    mb &= ma ^ mb;
+
+    // TODO: clean up with match cases
+
+    // the vertex 0 of b is in (-, +) && v1 of b is in (+, -) && the edge [0, 1] of b
+    // intersects (-, -)
+    if (ma & 1) != 0 && (mb & 2) != 0 && ((aff_a[1] * aff_a[2]) - (aff_a[0] * aff_b[1]) > 0.0) {
+        return false;
+    }
+
+    false
 }
 
 impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simplex3 {
@@ -166,8 +185,9 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         // Handle all possible SAT cases, in a performance-optimized order
 
         // f 0 1
-        affs[0] = q_deltas.map(|v| v.dot(&edge_vectors_p[0].cross(&edge_vectors_p[1])));
-        let (mask, is_sep) = check_face_is_separating(affs[0]);
+        let n = edge_vectors_p[0].cross(&edge_vectors_p[1]);
+        affs[0] = q_deltas.map(|v| v.dot(&n));
+        let (mask, is_sep) = check_face_on_p_is_separating(&affs[0]);
         if is_sep {
             return false;
         }
@@ -176,8 +196,10 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         // f 2 0
         edge_vectors_p[2] = self.vertices[3] - self.vertices[0];
 
-        affs[1] = q_deltas.map(|v| v.dot(&edge_vectors_p[0].cross(&edge_vectors_p[1])));
-        let (mask, is_sep) = check_face_is_separating(affs[1]);
+        let n = edge_vectors_p[2].cross(&edge_vectors_p[0]);
+
+        affs[1] = q_deltas.map(|v| v.dot(&n));
+        let (mask, is_sep) = check_face_on_p_is_separating(&affs[1]);
         if is_sep {
             return false;
         }
@@ -189,8 +211,9 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         }
 
         // f 1 2
-        affs[2] = q_deltas.map(|v| v.dot(&edge_vectors_p[1].cross(&edge_vectors_p[2])));
-        let (mask, is_sep) = check_face_is_separating(affs[2]);
+        let n = edge_vectors_p[1].cross(&edge_vectors_p[2]);
+        affs[2] = q_deltas.map(|v| v.dot(&n));
+        let (mask, is_sep) = check_face_on_p_is_separating(&affs[2]);
         if is_sep {
             return false;
         }
@@ -206,12 +229,14 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
             return false;
         }
 
-        // f 4 3
+        // f* 4 3
         edge_vectors_p[3] = self.vertices[2] - self.vertices[1];
         edge_vectors_p[4] = self.vertices[3] - self.vertices[1];
 
-        affs[3] = q_deltas.map(|v| v.dot(&edge_vectors_p[4].cross(&edge_vectors_p[3])));
-        let (mask, is_sep) = check_face_is_separating(affs[3]);
+        let n = edge_vectors_p[4].cross(&edge_vectors_p[3]);
+        // affs[3] = q_deltas.map(|v| v.dot(&n)));
+        affs[3] = other.vertices.map(|v| (v - self.vertices[1]).dot(&n));
+        let (mask, is_sep) = check_face_on_p_is_separating(&affs[3]);
         if is_sep {
             return false;
         }
@@ -237,6 +262,80 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         edge_vectors_q[0] = other.vertices[1] - other.vertices[0];
         edge_vectors_q[1] = other.vertices[2] - other.vertices[0];
 
-        false
+        // f 0 1
+        let n = edge_vectors_q[0].cross(&edge_vectors_q[1]);
+        if check_face_on_q_is_separating(&p_deltas.map(|v| v.dot(&n))) {
+            return false;
+        }
+
+        edge_vectors_q[2] = other.vertices[3] - other.vertices[0];
+
+        // f 2 0
+        let n = edge_vectors_q[2].cross(&edge_vectors_q[0]);
+        if check_face_on_q_is_separating(&p_deltas.map(|v| v.dot(&n))) {
+            return false;
+        }
+
+        // f 1 2
+        let n = edge_vectors_q[1].cross(&edge_vectors_q[2]);
+        if check_face_on_q_is_separating(&p_deltas.map(|v| v.dot(&n))) {
+            return false;
+        }
+        edge_vectors_q[3] = other.vertices[2] - other.vertices[1];
+        edge_vectors_q[4] = other.vertices[3] - other.vertices[1];
+
+        // f* 4 3
+        let n = edge_vectors_q[4].cross(&edge_vectors_q[3]);
+        let aff = self.vertices.map(|v| (v - other.vertices[1]).dot(&n));
+        if check_face_on_q_is_separating(&aff) {
+            return false;
+        }
+
+        true // No separating planes -> intersection!
+    }
+}
+#[cfg(test)]
+mod tests {
+    use crate::xenocollide::collide3d;
+
+    use super::*;
+    use hoomd_vector::{Rotation, Versor};
+    use rstest::rstest;
+
+    #[test]
+    fn test_testisect() {
+        let p = Simplex3::from([
+            [0.0, 0.0, 0.0],
+            [50.0, 50.0, 0.0],
+            [100.0, 0.0, 0.0],
+            [50.0, 25.0, 100.0],
+        ]);
+        let q = Simplex3::from([
+            [0.0, 0.0, 0.0],
+            [-50.0, 50.0, 0.0],
+            [-200.0, 0.0, 20.0],
+            [150.0, 25.0, 100.0],
+        ]);
+
+        // First test case is constructed to intersect
+        assert!(p.intersects_at(&q, &Cartesian::from([0.0, 0.0, 0.0]), &Versor::identity()));
+        assert_eq!(
+            p.intersects_at(&q, &Cartesian::default(), &Versor::identity()),
+            collide3d(&p, &q, &Cartesian::default(), &Versor::identity())
+        );
+
+        let q = Simplex3::from([
+            [100.001, 0.0, 0.0],
+            [150.0, 50.0, 0.0],
+            [200.0, 0.0, 0.0],
+            [150.0, 25.0, 10.0],
+        ]);
+
+        // Second test case is constructed to NOT intersect
+        assert!(!p.intersects_at(&q, &Cartesian::default(), &Versor::identity()));
+        // assert_eq!(
+        //     p.intersects_at(&q, &Cartesian::default(), &Versor::identity()),
+        //     collide3d(&p, &q, &Cartesian::default(), &Versor::identity())
+        // );
     }
 }
