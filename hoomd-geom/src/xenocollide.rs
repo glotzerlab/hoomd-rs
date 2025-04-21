@@ -75,6 +75,8 @@ pub fn collide2d<R: Copy + Rotation, T: SupportFn<Cartesian<2>>>(
 where
     RotationMatrix<2>: From<R>,
 {
+    let tol_multiplier = 10000.0;
+    let tol = 1e-16 * tol_multiplier;
     let s = SupportFunctor::new(sa, sb, v_ij, *q_ij);
 
     // Phase 1: Portal discovery
@@ -119,8 +121,11 @@ where
             return false;
         }
 
-        // TODO: Tolerance check. Do we need this with f64?
-        // let d = ((v3 - v1) - project(v3 - v1, v2 - v1)) * tol_multiplier;
+        // Tolerance check. NOTE: may not always be necessary?
+        let d = (v3 - v1) - (v3 - v1).project(&(v2 - v1)) * tol_multiplier;
+        if d.norm_squared() < tol.powi(2) * v3.norm_squared() {
+            return true;
+        }
 
         // Choose new portal, which may either be v3v2 or v1v3
         let mut v_perp_v3v0 = (v3 - v0).perp();
