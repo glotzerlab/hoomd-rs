@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2025 The Rerandomts of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![allow(missing_docs)]
@@ -7,13 +7,14 @@
 /*! Benchmark overlaps*/
 
 use divan::counter::ItemsCount;
-use divan::{self, black_box, Bencher};
+use divan::{self, Bencher, black_box};
+use hoomd_geom::Simplex3;
 use hoomd_geom::{
+    Cuboid, IntersectsAt, Sphere,
     poly::ConvexPolytope,
     xenocollide::{collide2d, collide3d},
-    Cuboid, IntersectsAt, Sphere,
 };
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::{Rng, SeedableRng, rngs::StdRng};
 
 use hoomd_vector::{Angle, Cartesian, Rotation, RotationMatrix, Versor};
 
@@ -32,14 +33,14 @@ fn main() {
 
 fn create_sphere_pair<const N: usize, R: Rng>(rng: &mut R) -> (Sphere<N>, Sphere<N>) {
     (
-        Sphere::from(rng.gen_range(0.0..10.0)),
-        Sphere::from(rng.gen_range(0.0..10.0)),
+        Sphere::from(rng.random_range(0.0..10.0)),
+        Sphere::from(rng.random_range(0.0..10.0)),
     )
 }
 fn create_cuboid_pair<const N: usize, R: Rng>(rng: &mut R) -> (Cuboid<N>, Cuboid<N>) {
     (
-        Cuboid::from(rng.gen::<Cartesian<N>>() * 10.0),
-        Cuboid::from(rng.gen::<Cartesian<N>>() * 10.0),
+        Cuboid::from(rng.random::<Cartesian<N>>() * 10.0),
+        Cuboid::from(rng.random::<Cartesian<N>>() * 10.0),
     )
 }
 /// Create a pair of N-dipyramids with random half-heights between 0 and h_max
@@ -54,8 +55,8 @@ fn create_dipyramid_pair<const N: usize, R: Rng>(
                 .iter()
                 .map(|x| Cartesian::from([x[0], x[1], 0.0]))
                 .chain([
-                    [0.0, 0.0, rng.gen_range(0.0..h_max)].into(),
-                    [0.0, 0.0, -rng.gen_range(0.0..h_max)].into(),
+                    [0.0, 0.0, rng.random_range(0.0..h_max)].into(),
+                    [0.0, 0.0, -rng.random_range(0.0..h_max)].into(),
                 ])
                 .collect::<Vec<_>>(),
         ),
@@ -64,8 +65,8 @@ fn create_dipyramid_pair<const N: usize, R: Rng>(
                 .iter()
                 .map(|x| Cartesian::from([x[0], x[1], 0.0]))
                 .chain([
-                    [0.0, 0.0, rng.gen_range(0.0..h_max)].into(),
-                    [0.0, 0.0, -rng.gen_range(0.0..h_max)].into(),
+                    [0.0, 0.0, rng.random_range(0.0..h_max)].into(),
+                    [0.0, 0.0, -rng.random_range(0.0..h_max)].into(),
                 ])
                 .collect::<Vec<_>>(),
         ),
@@ -78,16 +79,19 @@ fn create_polygon_pair<const N: usize>() -> (ConvexPolytope<2>, ConvexPolytope<2
 
 fn create_offset_2d<R: Rng>(rng: &mut R) -> (Cartesian<2>, Angle) {
     (
-        rng.gen::<Cartesian<2>>() * 10.0,
-        Angle::from(rng.gen_range((-2.0 * std::f64::consts::PI)..(2.0 * std::f64::consts::PI))),
+        rng.random::<Cartesian<2>>() * 10.0,
+        Angle::from(rng.random_range((-2.0 * std::f64::consts::PI)..(2.0 * std::f64::consts::PI))),
     )
 }
 
 fn create_offset<const N: usize, R: Rng>(rng: &mut R) -> (Cartesian<N>, RotationMatrix<N>) {
-    (rng.gen::<Cartesian<N>>() * 10.0, RotationMatrix::default())
+    (
+        rng.random::<Cartesian<N>>() * 10.0,
+        RotationMatrix::default(),
+    )
 }
 fn create_offset_3d<R: Rng>(rng: &mut R) -> (Cartesian<3>, Versor) {
-    (rng.gen::<Cartesian<3>>() * 10.0, rng.gen())
+    (rng.random::<Cartesian<3>>() * 10.0, rng.random())
 }
 
 const DIMENSIONS: &[usize] = &[2, 3, 4];
@@ -204,6 +208,21 @@ fn dipyramid_xenocollide_3d<const N: usize>(bencher: Bencher) {
         .with_inputs(|| {
             (
                 create_dipyramid_pair::<N, _>(&mut rng, 10.0),
+                create_offset_3d(&mut rng),
+            )
+        })
+        .bench_local_values(|((p0, p1), (t, r))| black_box(collide3d(&p0, &p1, &t, &r)));
+}
+
+#[divan::bench]
+fn simplex_xenocollide_3d(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| {
+            (
+                (Simplex3::default(), Simplex3::default()),
                 create_offset_3d(&mut rng),
             )
         })
