@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Common geometric primitives that implement only a small number of operations.*/
-
+// TODO: make better use of enums
 use crate::{IntersectsAt, SupportFn};
 
 use hoomd_vector::{Cartesian, Cross, Rotate, Rotation, RotationMatrix, Unit, Vector};
@@ -288,11 +288,11 @@ fn edge(abij: [u8; 4], ea: &[f64; 4], eb: &[f64; 4], xa: u8, xb: u8) -> bool {
     // println!("ea[i]*eb[j] ={}", ea[i as usize] * eb[j as usize]);
     // println!("ea[j]*eb[i] ={}", ea[j as usize] * eb[i as usize]);
     // println!("ea[i]={:?}, eb[j]={:?}", ea[i as usize], eb[j as usize]);
-    println!(
-        "\n({}, {}):\n\nea[i]={:?}, eb[j]={:?}\nea[j]={:?}, eb[i]={:?}",
-        i, j, ea[j as usize], eb[i as usize], ea[j as usize], eb[i as usize]
-    );
-    println!("cp: {cp} (xa={xa}, xb={xb})");
+    // println!(
+    //     "\n({}, {}):\n\nea[i]={:?}, eb[j]={:?}\nea[j]={:?}, eb[i]={:?}",
+    //     i, j, ea[j as usize], eb[i as usize], ea[j as usize], eb[i as usize]
+    // );
+    // println!("cp: {cp} (xa={xa}, xb={xb})");
 
     // Verify edges are counterclockwise?
     let cond0 = cp > 0.0 && (xa | a) > 0 && (xb | b) > 0;
@@ -380,14 +380,13 @@ impl Simplex3 {
         if aff[3] > 0.0 {res |= 8}
         res
         */
-        aff.iter().enumerate().fold(
-            0u8,
-            |acc, (i, &x)| if x > 0.0 { acc | (1 << i) } else { acc },
-        )
+        aff.iter().enumerate().fold(0u8, |acc, (i, &x)| {
+            // println!("acc: {acc}, i={i}");
+            if x > 0.0 { acc | (1 << i) } else { acc }
+        })
     }
 
-    /// In contrast to the original implementation, this function applies a fixed
-    /// operation (deltas.dot(&n)).
+    /// Check if the plane containing a face
     fn face_a(&self, deltas: &[Cartesian<3>; 4], n: &Cartesian<3>) -> (u8, [f64; 4]) {
         let affine = deltas.map(|l| Cartesian::dot(&l, n));
         (self.compute_mask(affine), affine)
@@ -424,7 +423,7 @@ impl Simplex3 {
     /**Check the faces of tetrahedron 0, returning a vector of bitmasks*/
     #[expect(clippy::many_single_char_names, reason = "Temporary")]
     fn check_faces_a(&self, deltas: [Cartesian<3>; 4], q: &Simplex3) -> [u8; 4] {
-        let edges = self.get_edges();
+        // let edges = self.get_edges();
         let edge_vectors = self.get_edge_vectors();
 
         let p = self.b(); // Reference point on simplex 0
@@ -436,24 +435,20 @@ impl Simplex3 {
         // [:f 0 1]
         let mut i = 0usize;
         println!("\n");
-        for (&f, (a, b)) in [
-            "f", "f", "e", "f", "e", "e", "f*", /*star*/
-            "e", "e", "e",
-        ]
-        .iter()
-        .zip([
-            (0, 1),
-            (2, 0),
-            (0, 1),
-            (1, 2),
-            (0, 2),
-            (1, 2),
-            (4, 3),
-            (0, 3),
-            (1, 3),
-            (2, 3),
-        ]) {
-            println!("{f}, ({a}, {b})");
+        let intersection_cases = [
+            ("f", 0, 1),
+            ("f", 2, 0),
+            ("e", 0, 1),
+            ("f", 1, 2),
+            ("e", 0, 2),
+            ("e", 1, 2),
+            ("f*", 4, 3),
+            ("e", 0, 3),
+            ("e", 1, 3),
+            ("e", 2, 3),
+        ];
+        for (f, a, b) in intersection_cases {
+            // println!("{f}, ({a}, {b})");
 
             // Get the two edge vectors that define the face
             if f.contains('f') {
@@ -466,12 +461,13 @@ impl Simplex3 {
                 let diff = if f == "f" {
                     deltas
                 } else {
-                    println!("Triggered special case f*!");
+                    // println!("Triggered special case f*!");
                     q.vertices.map(|l| l - p)
                 };
                 let (m, a) = self.face_a(&diff, &n);
                 masks[i] = m;
                 affine[i] = a;
+                // println!("[m, a]: [{m:?}, {a:?}]");
                 i += 1;
 
                 // Mask is not yet full, need to keep iterating
@@ -480,10 +476,11 @@ impl Simplex3 {
                 }
             }
             // If we find a separating plane, we can break
-            if self.edge_a(masks[0], masks[1], &affine[0], &affine[1]) {
+            if self.edge_a(masks[a], masks[b], &affine[a], &affine[b]) {
                 break;
             }
         }
+        println!("masks: {masks:?}");
         masks
     }
 }
@@ -498,14 +495,12 @@ impl<R: Rotate<Cartesian<3>> + Rotation> IntersectsAt<Simplex3, Cartesian<3>, R>
 
         //TODO: need to translate and rotate other, then re-orient
 
-        //
-        let deltas = other.vertices.map(|q| self.a() - q); // Should be pa - q
+        let deltas = other.vertices.map(|q| q - self.a());
         let masks = self.check_faces_a(deltas, other);
 
-        // TODO: resume
-        println!("{masks:?}");
+        // TODO: Original code triggers this path if check_faces_a finds no data
         if masks == [0, 0, 0, 0] || masks.iter().fold(0u8, |acc, m| acc | m) != 15 {
-            // self.check_faces_b
+            // self.check_faces_b // TODO: resume
         }
 
         /* List of possible checks to perform
@@ -646,7 +641,7 @@ mod tests {
         let expected_result = match n {
             [0.0, 0.0, -5000.0] => (0, [0.0, -100_000.0, 0.0, -500_000.0]),
             [-5000.0, 5000.0, 1250.0] => (6, [0.0, 1_025_000.0, 500_000.0, -500_000.0]),
-            [0.0, -10000.0, 2500.0] => (2, [0.0, 50_000.0, -500_000.0, 0.0]),
+            [0.0, -10_000.0, 2500.0] => (2, [0.0, 50_000.0, -500_000.0, 0.0]),
             _ => unreachable!(),
         };
         assert_eq!(result, expected_result);
