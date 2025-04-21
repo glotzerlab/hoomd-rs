@@ -43,6 +43,22 @@ fn create_cuboid_pair<const N: usize, R: Rng>(rng: &mut R) -> (Cuboid<N>, Cuboid
         Cuboid::from(rng.random::<Cartesian<N>>() * 10.0),
     )
 }
+fn create_simplex_pair<R: Rng>(rng: &mut R) -> (Simplex3, Simplex3) {
+    (
+        Simplex3::from([
+            rng.random::<Cartesian<3>>() * 10.0,
+            rng.random::<Cartesian<3>>() * 10.0,
+            rng.random::<Cartesian<3>>() * 10.0,
+            rng.random::<Cartesian<3>>() * 10.0,
+        ]),
+        Simplex3::from([
+            rng.random::<Cartesian<3>>() * 10.0,
+            rng.random::<Cartesian<3>>() * 10.0,
+            rng.random::<Cartesian<3>>() * 10.0,
+            rng.random::<Cartesian<3>>() * 10.0,
+        ]),
+    )
+}
 /// Create a pair of N-dipyramids with random half-heights between 0 and h_max
 fn create_dipyramid_pair<const N: usize, R: Rng>(
     rng: &mut R,
@@ -220,11 +236,15 @@ fn simplex_xenocollide_3d(bencher: Bencher) {
 
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| {
-            (
-                (Simplex3::default(), Simplex3::default()),
-                create_offset_3d(&mut rng),
-            )
-        })
-        .bench_local_values(|((p0, p1), (t, r))| black_box(collide3d(&p0, &p1, &t, &r)));
+        .with_inputs(|| (create_simplex_pair(&mut rng), create_offset_3d(&mut rng)))
+        .bench_local_values(|((t0, t1), (t, r))| black_box(collide3d(&t0, &t1, &t, &r)));
+}
+#[divan::bench]
+fn simplex_fast(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| (create_simplex_pair(&mut rng), create_offset_3d(&mut rng)))
+        .bench_local_values(|((t0, t1), (t, r))| black_box(t0.intersects_at(&t1, &t, &r)));
 }

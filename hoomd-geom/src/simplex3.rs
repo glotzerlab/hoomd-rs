@@ -195,15 +195,18 @@ fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) 
 impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simplex3 {
     #[inline]
     fn intersects_at(&self, other: &Simplex3, r_ij: &Cartesian<3>, o_ij: &R) -> bool {
-        let q_deltas = other.vertices.map(|q| q - self.vertices[0]);
+        let p = *self;
+        let q = Simplex3::from(other.vertices.map(|v| o_ij.rotate(&(v + *r_ij))));
+        let q_deltas = q.vertices.map(|v| v - p.vertices[0]);
         // TODO: update to use extrinsic coodinates, and orient
+        //
         // Edge difference vectors for tetrahedron p
         let mut edge_vectors_p = [Cartesian::<3>::default(); 5];
         let mut masks = [0u8; 4];
         let mut affs = [[0f64; 4]; 4];
 
-        edge_vectors_p[0] = self.vertices[1] - self.vertices[0];
-        edge_vectors_p[1] = self.vertices[2] - self.vertices[0];
+        edge_vectors_p[0] = p.vertices[1] - p.vertices[0];
+        edge_vectors_p[1] = p.vertices[2] - p.vertices[0];
 
         // Handle all possible SAT cases, in a performance-optimized order
 
@@ -217,7 +220,7 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         masks[0] = mask;
 
         // f 2 0
-        edge_vectors_p[2] = self.vertices[3] - self.vertices[0];
+        edge_vectors_p[2] = p.vertices[3] - p.vertices[0];
 
         let n = edge_vectors_p[2].cross(&edge_vectors_p[0]);
 
@@ -253,12 +256,12 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         }
 
         // f* 4 3
-        edge_vectors_p[3] = self.vertices[2] - self.vertices[1];
-        edge_vectors_p[4] = self.vertices[3] - self.vertices[1];
+        edge_vectors_p[3] = p.vertices[2] - p.vertices[1];
+        edge_vectors_p[4] = p.vertices[3] - p.vertices[1];
 
         let n = edge_vectors_p[4].cross(&edge_vectors_p[3]);
         // affs[3] = q_deltas.map(|v| v.dot(&n)));
-        affs[3] = other.vertices.map(|v| (v - self.vertices[1]).dot(&n));
+        affs[3] = q.vertices.map(|v| (v - p.vertices[1]).dot(&n));
         let (mask, is_sep) = check_face_on_p_is_separating(&affs[3]);
         if is_sep {
             return false;
@@ -281,10 +284,10 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         // From now on, if there is a separating plane it is parallel to a face of q
 
         // Difference between vertices on p and a vertex on q
-        let p_deltas = self.vertices.map(|v| v - other.vertices[0]);
+        let p_deltas = p.vertices.map(|v| v - q.vertices[0]);
         let mut edge_vectors_q = [Cartesian::<3>::default(); 5];
-        edge_vectors_q[0] = other.vertices[1] - other.vertices[0];
-        edge_vectors_q[1] = other.vertices[2] - other.vertices[0];
+        edge_vectors_q[0] = q.vertices[1] - q.vertices[0];
+        edge_vectors_q[1] = q.vertices[2] - q.vertices[0];
 
         // f 0 1
         let n = edge_vectors_q[0].cross(&edge_vectors_q[1]);
@@ -292,7 +295,7 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
             return false;
         }
 
-        edge_vectors_q[2] = other.vertices[3] - other.vertices[0];
+        edge_vectors_q[2] = q.vertices[3] - q.vertices[0];
 
         // f 2 0
         let n = edge_vectors_q[2].cross(&edge_vectors_q[0]);
@@ -305,12 +308,12 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         if check_face_on_q_is_separating(&p_deltas.map(|v| v.dot(&n))) {
             return false;
         }
-        edge_vectors_q[3] = other.vertices[2] - other.vertices[1];
-        edge_vectors_q[4] = other.vertices[3] - other.vertices[1];
+        edge_vectors_q[3] = q.vertices[2] - q.vertices[1];
+        edge_vectors_q[4] = q.vertices[3] - q.vertices[1];
 
         // f* 4 3
         let n = edge_vectors_q[4].cross(&edge_vectors_q[3]);
-        let aff = self.vertices.map(|v| (v - other.vertices[1]).dot(&n));
+        let aff = p.vertices.map(|v| (v - other.vertices[1]).dot(&n));
         if check_face_on_q_is_separating(&aff) {
             return false;
         }
