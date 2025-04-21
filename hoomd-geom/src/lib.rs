@@ -70,7 +70,7 @@ pub mod modifiers;
 mod common;
 pub mod poly;
 mod shape;
-pub mod simplex3;
+mod simplex3;
 mod sphere;
 pub mod xenocollide;
 
@@ -80,5 +80,6 @@ pub use {
     intersects::{Intersects, IntersectsAt},
     modifiers::{Centered, Sphero},
     shape::{MinDistance, Shape, SupportFn, Volume},
+    simplex3::Simplex3,
     sphere::Sphere,
 };
