@@ -12,6 +12,7 @@ pub struct Simplex3 {
 
 impl SupportFn<Cartesian<3>> for Simplex3 {
     #[inline]
+    #[allow(clippy::expect_used)]
     fn support(&self, n: &Cartesian<3>) -> Cartesian<3> {
         let n = *n / n.norm(); // TODO: does this need to be normalized?
         *self
@@ -127,37 +128,122 @@ impl Simplex3 {
 
     /// Check if plane ``P_i`` defined by 4 coordinates and containing face ``i`` is a
     /// separating plane (or conversely, if the face normal is a separating axis)
-    #[inline]
-    #[must_use]
-    pub fn check_face_is_separating(
-        &self,
-        deltas: &[Cartesian<3>; 4],
-        n: &Cartesian<3>,
-    ) -> (u8, bool) {
-        let aff = deltas.map(|v| v.dot(n));
-        let mask = aff.iter().enumerate().fold(
-            0u8,
-            |acc, (i, &x)| {
-                if x > 0.0 { acc | (1 << i) } else { acc }
-            },
-        );
-        (mask, mask == 15)
-    }
+    
+}
+#[inline]
+#[must_use]
+pub fn check_face_is_separating(
+    aff: [f64; 4], // deltas: &[Cartesian<3>; 4],
+                   // n: &Cartesian<3>,
+) -> (u8, bool) {
+    let mask = aff.iter().enumerate().fold(
+        0u8,
+        |acc, (i, &x)| {
+            if x > 0.0 { acc | (1 << i) } else { acc }
+        },
+    );
+    (mask, mask == 15)
+}
+/// Check if there exists a seperating plane containing the edge e shared by faces
+/// f0 and f1 of the tetrahedron.
+#[inline]
+#[must_use]
+pub fn check_edge_is_separating(
+    aff_a: &[f64; 4],
+    aff_b: &[f64; 4],
+    ma: u8,
+    mb: u8,
+) -> bool {
+    false // TODO: fill out function!
 }
 
 impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simplex3 {
     #[inline]
     fn intersects_at(&self, other: &Simplex3, r_ij: &Cartesian<3>, o_ij: &R) -> bool {
-        let a = self.a();
-        let deltas = other.vertices.map(|q| q - a);
+        let q_deltas = other.vertices.map(|q| q - self.vertices[0]);
+        // TODO: update to use extrinsic coodinates, and orient
+        // Edge difference vectors for tetrahedron p
+        let mut ev_p = [Cartesian::<3>::default(); 5];
+        let mut masks = [0u8; 4];
+        let mut affs = [[0f64; 4]; 4];
 
-        let (ea, eb) = (self.b() - a, self.c() - a);
-        let n = ea.cross(&eb);
+        ev_p[0] = self.vertices[1] - self.vertices[0];
+        ev_p[1] = self.vertices[2] - self.vertices[0];
 
-        let (mask, is_sep) = self.check_face_is_separating(&deltas, &n);
+        // Handle all possible SAT cases, in a performance-optimized order
+
+        // f 0 1
+        affs[0] = q_deltas.map(|v| v.dot(&ev_p[0].cross(&ev_p[1])));
+        let (mask, is_sep) = check_face_is_separating(affs[0]);
         if is_sep {
             return false;
         }
+        masks[0] = mask;
+
+        // f 2 0
+        ev_p[2] = self.vertices[3] - self.vertices[0];
+
+        affs[1] = q_deltas.map(|v| v.dot(&ev_p[0].cross(&ev_p[1])));
+        let (mask, is_sep) = check_face_is_separating(affs[1]);
+        if is_sep {
+            return false;
+        }
+        masks[1] = mask;
+
+        // e 0 1
+        if check_edge_is_separating(&affs[0], &affs[1], masks[0], masks[1]) {
+            return false;
+        }
+
+        // f 1 2
+        affs[2] = q_deltas.map(|v| v.dot(&ev_p[1].cross(&ev_p[2])));
+        let (mask, is_sep) = check_face_is_separating(affs[2]);
+        if is_sep {
+            return false;
+        }
+        masks[2] = mask;
+
+        // e 0 2
+        if check_edge_is_separating(&affs[0], &affs[2], masks[0], masks[2]) {
+            return false;
+        }
+
+        // e 1 2
+        if check_edge_is_separating(&affs[1], &affs[2], masks[1], masks[2]) {
+            return false;
+        }
+
+        // f 4 3
+        ev_p[3] = self.vertices[2] - self.vertices[1];
+        ev_p[4] = self.vertices[3] - self.vertices[1];
+
+        affs[3] = q_deltas.map(|v| v.dot(&ev_p[4].cross(&ev_p[3])));
+        let (mask, is_sep) = check_face_is_separating(affs[3]);
+        if is_sep {
+            return false;
+        }
+        masks[3] = mask;
+
+        // e 0|1|2 3
+        for (i, j) in [(0, 3), (1, 3), (2, 3)] {
+            if check_edge_is_separating(&affs[i], &affs[j], masks[i], masks[j]) {
+                return false;
+            }
+        }
+
+        // If any of the masks is NOT full, there is not separating plane
+        if masks.iter().any(|&m| m != 15) {
+            return true;
+        }
+
+        // From now on, if there is a separating plane it is parallel to a face of q
+
+        // Difference between vertices on p and a vertex on q
+        let p_deltas = self.vertices.map(|v| v - other.vertices[0]);
+        let mut ev_q = [Cartesian::<3>::default(); 5];
+        ev_q[0] = other.vertices[1] - other.vertices[0];
+        ev_q[1] = other.vertices[2] - other.vertices[0];
+
         false
     }
 }
