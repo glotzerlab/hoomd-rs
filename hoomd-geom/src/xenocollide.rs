@@ -69,7 +69,7 @@ impl<'a, const N: usize, T: SupportFn<Cartesian<N>>> SupportFunctor<'_, N, T> {
 pub fn collide2d<R: Copy + Rotation, T: SupportFn<Cartesian<2>>>(
     sa: &T,
     sb: &T,
-    v_ij: &Cartesian<2>, // Probably ok to take ownership?
+    v_ij: &Cartesian<2>,
     q_ij: &R,
 ) -> bool
 where
@@ -355,22 +355,21 @@ mod tests {
 
     // Two issues: first, we need the tolerance in xenocollide for rounded shapes
     // Second, we need to make sure our support fn is correct
-    // #[rstest]
-    // fn test_capsules_collide() {
-    //     let (r, h) = (20.0, 2.0);
-    //     let c0 = Capsule::from((r, h));
-    //     let c1 = Capsule::from((r, h));
-    //     let mut rng = StdRng::seed_from_u64(1);
-    //     let theta: Versor = rng.random();
-    //     let v = rng.random::<Cartesian<3>>() * 10.0;
-    //     // println!("({r}, {h}),\n{v}\n{theta}");
+    #[rstest]
+    fn test_capsules_collide() {
+        let (r, h) = (20.0, 2.0);
+        let c0 = Capsule::from((r, h));
+        let c1 = Capsule::from((r, h));
+        let mut rng = StdRng::seed_from_u64(1);
+        let theta: Versor = rng.random();
 
-    //     let origin = [0.0, 0.0, 0.0];
-    //     let should_col = c0.intersects_at(&c1, &origin.into(), &theta);
-    //     // assert_eq!(collide3d(&c0, &c1, &origin.into(), &theta), should_col);
-    //     assert!(should_col);
+        let origin = [0.0, 0.0, 0.0];
+        let should_col = c0.intersects_at(&c1, &origin.into(), &theta);
+        assert!(should_col);
+        // assert_eq!(collide3d(&c0, &c1, &origin.into(), &theta), should_col);
 
-    //     // let overlaps = collide3d(&c0, &c1, &v, &theta);
-    //     // assert_eq!(overlaps, c0.intersects_at(&c1, &v, &theta),);
-    // }
+        // let v = rng.random::<Cartesian<3>>() * 10.0;
+        // let overlaps = collide3d(&c0, &c1, &v, &theta);
+        // assert_eq!(overlaps, c0.intersects_at(&c1, &v, &theta),);
+    }
 }
