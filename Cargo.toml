@@ -1,6 +1,6 @@
 [workspace]
 
-members = [ 
+members = [
   "hoomd-geom",
   "hoomd-vector",
   "hoomd-interaction",
