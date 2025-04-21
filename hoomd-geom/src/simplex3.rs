@@ -199,10 +199,11 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
     #[inline]
     fn intersects_at(&self, other: &Simplex3, r_ij: &Cartesian<3>, o_ij: &R) -> bool {
         let p = *self;
-        let q = Simplex3::from(other.vertices.map(|v| o_ij.rotate(&(v + *r_ij))));
+        // TODO: is this the correct way to rotate?
+        let q = Simplex3::from(other.vertices.map(|v| o_ij.rotate(&v) + *r_ij));
+
         let q_deltas = q.vertices.map(|v| v - p.vertices[0]);
-        // TODO: update to use extrinsic coodinates, and orient
-        //
+
         // Edge difference vectors for tetrahedron p
         let mut edge_vectors_p = [Cartesian::<3>::default(); 5];
         let mut masks = [0u8; 4];
