@@ -39,7 +39,6 @@ impl<'a, const N: usize, T: SupportFn<Cartesian<N>>> SupportFunctor<'_, N, T> {
             .q_ij
             .rotate(&self.sb.support(&self.q_ij_inv.rotate(&n)))
             + *self.v_ij;
-
         sb_n - self.sa.support(&-n) // eq. 2.5.6 in GPG7
     }
     /// Create a new SupportFunctor from a Rotation that can be converted into a RotMat
@@ -306,26 +305,43 @@ mod tests {
     use hoomd_vector::{Angle, Versor};
 
     #[rstest(
-        v => [[0.1, 0.1], [999.9, 0.0], [0.0, 5.123], [0.0, 5.123_000_000_000_001]]
+        v => [[0.1, 0.1], [999.9, 0.0], [0.0, 5.123], [0.0, 5.123_000_001]],
+        r => [0.001, 1.0, 4.123, 99.05],
+        o_ij => [
+            Angle::default(),
+            Angle::from(std::f64::consts::PI / 3.0),
+            Angle::from(1.234)
+        ],
     )]
-    fn test_discs_collide(v: [f64; 2]) {
-        let (s0, s1) = (Sphere::<2>::from(1.0), Sphere::<2>::from(4.123));
-        let theta = &Angle::from(0.0);
+    fn test_discs_collide(v: [f64; 2], r: f64, o_ij: Angle) {
+        let (s0, s1) = (Sphere::<2>::from(1.0), Sphere::<2>::from(r));
 
-        let overlaps = collide2d(&s0, &s1, &v.into(), theta);
+        let overlaps = collide2d(&s0, &s1, &v.into(), &o_ij);
 
-        assert_eq!(overlaps, s0.intersects_at(&s1, &v.into(), theta),);
+        assert_eq!(overlaps, s0.intersects_at(&s1, &v.into(), &o_ij),);
     }
     #[rstest(
-        v => [[0.1, 0.1, 0.1], [999.9, 0.0, -10.9], [0.0, 5.123, 0.0], [0.0, 0.0, 5.123_000_000_000_001]]
+        v => [[0.1, 0.1, 0.1], [999.9, 0.0, -10.9], [0.0, 5.123, 0.0], [0.0, 0.0, 5.123_000_001]],
+        r => [0.001, 1.0, 4.123, 99.05],
+        o_ij => [
+            Versor::default(),
+            // Versor::from_axis_angle(
+            //     [1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2
+            // ),
+            // Versor::from_axis_angle([0.0, 1.0, 0.0].try_into().unwrap(), 0.1234)
+        ]
     )]
-    fn test_spheres_collide(v: [f64; 3]) {
-        let (s0, s1) = (Sphere::<3>::from(1.0), Sphere::<3>::from(4.123));
-        let theta = &Versor::identity();
+    fn test_spheres_collide(v: [f64; 3], r: f64, o_ij: Versor) {
+        let (s0, s1) = (Sphere::<3>::from(1.0), Sphere::<3>::from(r));
+        // let theta = &Versor::identity();
+        println!("v: {v:?}");
+        let overlaps = collide3d(&s0, &s1, &v.into(), &o_ij);
 
-        let overlaps = collide3d(&s0, &s1, &v.into(), theta);
-
-        assert_eq!(overlaps, s0.intersects_at(&s1, &v.into(), theta),);
+        assert_eq!(
+            overlaps,
+            s0.intersects_at(&s1, &v.into(), &o_ij),
+            "Xenocollide result did not match standard implementation!"
+        );
     }
 
     #[rstest(
