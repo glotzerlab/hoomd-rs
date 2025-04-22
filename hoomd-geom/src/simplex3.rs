@@ -142,12 +142,6 @@ impl Simplex3 {
     pub(crate) fn d(&self) -> Cartesian<3> {
         self.vertices[3]
     }
-    /// Orient the vertices of a simplex such that the fourth vertex is on the opposite
-    /// side of the plane defined by the first three points.
-    #[inline]
-    fn orient_in_place(&mut self) {
-        *self = self.orient();
-    }
     /// Return the vertices of an oriented tetrahedron. Users should call ``orient_in_place``
     #[inline]
     pub(crate) fn orient(&self) -> Simplex3 {
@@ -205,6 +199,7 @@ fn edge_test(ma: u8, mb: u8, a: u8, b: u8, ea_i: f64, eb_j: f64, ea_j: f64, eb_i
 fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) -> bool {
     let (mut ma, mut mb) = (ma, mb);
     if (ma | mb) != 15 {
+        println!("Masks are full, no separating edge can be found");
         return false; // If there is a vertex of b contained in the (-, -) quadrant
     }
     // exclude the vertices in (+,+) quadrant
@@ -221,6 +216,7 @@ fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) 
         (4, 8, 3, 2),
     ] {
         if edge_test(ma, mb, a, b, aff_a[i], aff_b[j], aff_a[j], aff_b[i]) {
+            println!("Exiting edge test for {a} {b} {i} {j} with false");
             return false;
         }
     }
@@ -239,6 +235,7 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
     #[inline]
     fn intersects_at(&self, other: &Simplex3, r_ij: &Cartesian<3>, o_ij: &R) -> bool {
         let p = *self;
+
         // TODO: is this the correct way to rotate?
         let q = Simplex3::from(other.vertices.map(|v| o_ij.rotate(&v))).translate_by(r_ij);
 
@@ -259,6 +256,7 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         affs[0] = q_deltas.map(|v| v.dot(&n));
         let (mask, is_sep) = check_face_on_p_is_separating(&affs[0]);
         if is_sep {
+            println!("Exited in case f 0 1 with overlaps=false");
             return false;
         }
         masks[0] = mask;
@@ -271,12 +269,14 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         affs[1] = q_deltas.map(|v| v.dot(&n));
         let (mask, is_sep) = check_face_on_p_is_separating(&affs[1]);
         if is_sep {
+            println!("Exited in case f 2 0 with overlaps=false");
             return false;
         }
         masks[1] = mask;
 
         // e 0 1
         if check_edge_is_separating(&affs[0], &affs[1], masks[0], masks[1]) {
+            println!("Exited in case e 0 1 with overlaps=false");
             return false;
         }
 
@@ -285,17 +285,20 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         affs[2] = q_deltas.map(|v| v.dot(&n));
         let (mask, is_sep) = check_face_on_p_is_separating(&affs[2]);
         if is_sep {
+            println!("Exited in case f 1 2 with overlaps=false");
             return false;
         }
         masks[2] = mask;
 
         // e 0 2
         if check_edge_is_separating(&affs[0], &affs[2], masks[0], masks[2]) {
+            println!("Exited in case e 0 2 with overlaps=false");
             return false;
         }
 
         // e 1 2
         if check_edge_is_separating(&affs[1], &affs[2], masks[1], masks[2]) {
+            println!("Exited in case e 1 2 with overlaps=false");
             return false;
         }
 
@@ -304,10 +307,10 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         edge_vectors_p[4] = p.vertices[3] - p.vertices[1];
 
         let n = edge_vectors_p[4].cross(&edge_vectors_p[3]);
-        // affs[3] = q_deltas.map(|v| v.dot(&n)));
         affs[3] = q.vertices.map(|v| (v - p.vertices[1]).dot(&n));
         let (mask, is_sep) = check_face_on_p_is_separating(&affs[3]);
         if is_sep {
+            println!("Exited in case f* 4 3 with overlaps=false");
             return false;
         }
         masks[3] = mask;
@@ -315,6 +318,7 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         // e 0|1|2 3
         for (i, j) in [(0, 3), (1, 3), (2, 3)] {
             if check_edge_is_separating(&affs[i], &affs[j], masks[i], masks[j]) {
+                println!("Exited in case e {i} 3 with overlaps=false");
                 return false;
             }
         }
@@ -322,6 +326,7 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         // If (at least) a vertex of q is inside tetrahedron p
         // (vertex bounded by all 4 halfspaces)
         if masks.iter().fold(0, |acc, &m| acc | m) != 15 {
+            println!("Masks are not full! A vertex of q is inside p");
             return true;
         }
 
@@ -336,6 +341,7 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         // f 0 1
         let n = edge_vectors_q[0].cross(&edge_vectors_q[1]);
         if check_face_on_q_is_separating(&p_deltas.map(|v| v.dot(&n))) {
+            println!("Exited in case f 0 1 with overlaps=false");
             return false;
         }
 
@@ -344,12 +350,14 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         // f 2 0
         let n = edge_vectors_q[2].cross(&edge_vectors_q[0]);
         if check_face_on_q_is_separating(&p_deltas.map(|v| v.dot(&n))) {
+            println!("Exited in case f 2 0 with overlaps=false");
             return false;
         }
 
         // f 1 2
         let n = edge_vectors_q[1].cross(&edge_vectors_q[2]);
         if check_face_on_q_is_separating(&p_deltas.map(|v| v.dot(&n))) {
+            println!("Exited in case f 1 2 with overlaps=false");
             return false;
         }
         edge_vectors_q[3] = q.vertices[2] - q.vertices[1];
@@ -359,9 +367,10 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         let n = edge_vectors_q[4].cross(&edge_vectors_q[3]);
         let aff = p.vertices.map(|v| (v - other.vertices[1]).dot(&n));
         if check_face_on_q_is_separating(&aff) {
+            println!("Exited in case f* 4 3 with overlaps=false");
             return false;
         }
-
+        println!("No separating planes found!");
         true // No separating planes -> intersection!
     }
 }
@@ -373,6 +382,7 @@ mod tests {
     use hoomd_vector::{Quaternion, Rotation, Unit, Versor};
     use rand::{Rng, SeedableRng, rngs::StdRng};
     use rstest::rstest;
+
     #[test]
     fn test_compute_mask() {
         let arrays = (0u8..=15).map(|i| {
