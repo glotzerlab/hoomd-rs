@@ -619,6 +619,11 @@ mod tests {
             Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
             true,
         ),
+        case::tip_tip_intersection_nooverlap(
+            [2.001, 2.001, 2.001].into(),
+            Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
+            false,
+        ),
         case::unrotated_tip_tip_intersection_exact(
             [2.0, 2.0, 0.0].into(),
             Versor::identity(),
@@ -628,6 +633,11 @@ mod tests {
             [1.999, 1.999, 0.0].into(),
             Versor::identity(),
             true,
+        ),
+        case::unrotated_tip_tip_intersection_nooverlap(
+            [2.001, 2.001, 0.0].into(),
+            Versor::identity(),
+            false,
         ),
         case::tip_edge_intersection_exact(
             [1.0, 1.0, 2.0].into(),
@@ -639,6 +649,11 @@ mod tests {
             Versor::default(),
             true,
         ),
+        case::tip_edge_intersection_nooverlap(
+            [1.0, 1.0, 2.000_001].into(),
+            Versor::default(),
+            false,
+        ),
         case::parallel_edge_edge_intersection_exact(
             [1.0, 1.0, 2.0].into(),
             Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
@@ -648,6 +663,11 @@ mod tests {
             [1.0, 1.0, 1.999].into(),
             Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
             true,
+        ),
+        case::parallel_edge_edge_intersection_nooverlap(
+            [1.0, 1.0, 2.001].into(),
+            Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
+            false,
         ),
         case::orthogonal_edge_edge_intersection_exact(
             [1.0, 0.0, 2.0].into(),
@@ -659,6 +679,11 @@ mod tests {
             Versor::identity(),
             true,
         ),
+        case::orthogonal_edge_edge_intersection_nooverlap(
+            [1.0, 0.0, 2.001].into(),
+            Versor::identity(),
+            false,
+        ),
         case::nonorthogonal_edge_edge_intersection_exact(
             [1.0, 0.0, 2.0].into(),
             Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().unwrap(), std::f64::consts::PI / 3.1),
@@ -669,6 +694,11 @@ mod tests {
             Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().unwrap(), std::f64::consts::PI / 3.1),
             true,
         ),
+        // case::nonorthogonal_edge_edge_intersection_nooverlap(
+        //     [1.0, 0.0, 2.01].into(),
+        //     Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().unwrap(), std::f64::consts::PI / 3.1),
+        //     false,
+        // ), TODO
         // Overlapping portions of the shape exactly align faces and edges
         case::partial_aligned_overlap_exact(
             [0.0, 1.0, -1.0].into(),
@@ -692,7 +722,7 @@ mod tests {
             Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_4),
             true,
         ),
-        case::vertex_into_edge_shallow_exact(
+        case::vertex_into_edge_shallow_imprecise(
             [0.0, 0.999, 2.0].into(),
             Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_4),
             true,
