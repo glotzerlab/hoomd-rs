@@ -3,7 +3,7 @@
 
 use std::{array, fmt};
 
-use hoomd_vector::{Cartesian, Cross, Rotate, Vector};
+use hoomd_vector::{Cartesian, Cross, Rotate, RotationMatrix, Vector};
 use itertools::Itertools;
 
 use crate::{IntersectsAt, SupportFn};
@@ -227,9 +227,11 @@ fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) 
 impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simplex3 {
     /**
 
-    Original C code of algorithm: <https://web.archive.org/web/20030907000716/http://www.acm.org/jgt/papers/GanovelliPonchioRocchini02/tet_a_tet.html>
+    Original C code of algorithm:
+    <https://web.archive.org/web/20030907000716/http://www.acm.org/jgt/papers/GanovelliPonchioRocchini02/tet_a_tet.html>
 
-    Recent Clojure reimplementation that orients shapes: <https://gist.github.com/postspectacular/9021724>
+    Recent Clojure reimplementation that orients shapes:
+    <https://gist.github.com/postspectacular/9021724>
     */
     #[inline]
     fn intersects_at(&self, other: &Simplex3, r_ij: &Cartesian<3>, o_ij: &R) -> bool {
@@ -665,7 +667,7 @@ mod tests {
             Versor::default(),
             true,
         ),
-        case::tip_edge_intersection_nooverlap(
+        case::tip_edge_intersection_nooverlap( // ISSUE: fails for tetAtet
             [1.0, 1.0, 2.001].into(),
             Versor::default(),
             false,
@@ -695,7 +697,7 @@ mod tests {
             Versor::identity(),
             true,
         ),
-        case::orthogonal_edge_edge_intersection_nooverlap(
+        case::orthogonal_edge_edge_intersection_nooverlap( // ISSUE: fails for tetAtet
             [1.0, 0.0, 2.001].into(),
             Versor::identity(),
             false,
@@ -710,7 +712,7 @@ mod tests {
             Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().unwrap(), std::f64::consts::PI / 3.1),
             true,
         ),
-        case::nonorthogonal_edge_edge_intersection_nooverlap(
+        case::nonorthogonal_edge_edge_intersection_nooverlap( // ISSUE: fails for tetAtet
             [1.0, 0.0, 2.01].into(),
             Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().unwrap(), std::f64::consts::PI / 3.1),
             false,
