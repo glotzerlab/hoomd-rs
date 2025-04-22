@@ -4,8 +4,8 @@
 /*! Traits that describe body and/or site properties a a selection types that implement them.
  */
 
-use crate::Transform;
-use hoomd_vector::Vector;
+mod point;
+pub use point::Point;
 
 /** Locate sites and bodies.
 
@@ -19,23 +19,38 @@ the position of the body's origin in the system reference frame.
 
 # Units
 
-Position vectors have units of `[length]`.
+Position vectors have units of *\[length\]*.
 
 # Usage
 
-[`Position`] is implemented for a number of built-in types, such as TODO
-and others (see below). To implement [`Position`] for a custom property type,
-follow this example:
+[`Position`] is implemented for a number of built-in types, such as [`Point`].
+To implement [`Position`] for a custom property type, follow this example:
 
 ```
-# TODO
+use hoomd_vector::Cartesian;
+use hoomd_microstate::property::Position;
+
+struct Custom {
+    position: Cartesian<3>,
+    custom_property: f64,
+    }
+
+impl Position<Cartesian<3>> for Custom {
+    fn position(&self) -> &Cartesian<3> {
+        &self.position
+    }
+
+    fn position_mut(&mut self) -> &mut Cartesian<3> {
+        &mut self.position
+    }
+}
 ```
 */
 pub trait Position<V> {
-    /// The position of this body or site (`[length]`).
+    /// The position of this body or site *\[length\]*.
     fn position(&self) -> &V;
 
-    /// The mutable position of this body or site (`[length]`).
+    /// The mutable position of this body or site *\[length\]*.
     fn position_mut(&mut self) -> &mut V;
 }
 
@@ -50,17 +65,34 @@ body frame to the system.
 # Units
 
 The units of [`Orientation`] depend on the representation chosen for `R`.
-For example, [`hoomd_vector::Angle`] has units of radians while [`hoomd_vector::Quaternion`]
-is unitless.
+For example, [`hoomd_vector::Angle`] has units of radians while
+[`hoomd_vector::Versor`] is unitless.
 
 # Usage
 
-[`Orientation`] is implemented for a number of built-in types, such as TODO
-and others (see below). To implement [`Orientation`] for a custom property type,
+[`Orientation`] is implemented for a number of built-in types, such as TODO.
+To implement [`Orientation`] for a custom property type,
 follow this example:
 
 ```
-# TODO
+use hoomd_vector::{Cartesian, Versor};
+use hoomd_microstate::property::Orientation;
+
+struct Custom {
+    position: Cartesian<3>,
+    orientation: Versor,
+    custom_property: f64,
+    }
+
+impl Orientation<Versor> for Custom {
+    fn orientation(&self) -> &Versor {
+        &self.orientation
+    }
+
+    fn orientation_mut(&mut self) -> &mut Versor {
+        &mut self.orientation
+    }
+}
 ```
 */
 pub trait Orientation<R> {
@@ -69,65 +101,4 @@ pub trait Orientation<R> {
 
     /// The orientation of this body or site (mutable).
     fn orientation_mut(&mut self) -> &mut R;
-}
-
-/** A position in space and nothing more.
-
-Use [`Point`] as a [`Body`](crate::Body) or [`Site`](crate::Site) property type.
-
-# Example
-
-TODO
-*/
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct Point<V> {
-    /// The location of the point in space.
-    pub position: V,
-}
-
-impl<V> Point<V> {
-    /** Construct a new point at the given position.
-
-    # Example
-
-    ```
-    # TODO
-    ```
-    */
-    #[inline]
-    #[must_use]
-    pub fn new(position: V) -> Self {
-        Self { position }
-    }
-}
-
-/** Move [`Point`] properties from the local body frame to the system frame.
-*/
-impl<V> Transform<Point<V>> for Point<V>
-where
-    V: Vector,
-{
-    /** Points transform by vector addition.
-
-    TODO: Math
-    TODO: Example
-    */
-    #[inline]
-    fn transform(&self, site_properties: &Point<V>) -> Point<V> {
-        Point {
-            position: self.position + site_properties.position,
-        }
-    }
-}
-
-impl<V> Position<V> for Point<V> {
-    #[inline]
-    fn position(&self) -> &V {
-        &self.position
-    }
-
-    #[inline]
-    fn position_mut(&mut self) -> &mut V {
-        &mut self.position
-    }
 }
