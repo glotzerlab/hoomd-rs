@@ -12,13 +12,34 @@ use rand::Rng;
 use rand::distr::{Distribution, StandardUniform};
 use std::marker::PhantomData;
 
+/** Move the position of a body by a small distance.
+
+`Translate` proposes local trial moves that translate the position of a body
+in space by a random vector up a given maximum length.
+*/
 pub struct Translate<V> {
+    /// The maximum distance a body can be translated in one trial move.
     pub maximum_distance: f64,
+
+    /// Make translate depend on the vector type V even though it doesn't store a vector.
     vector_type: PhantomData<V>,
 }
 
 impl<V> Translate<V> {
-    pub fn with_maximum_distance(maximum_distance: f64) -> Self {
+    /** Construct a [`Translate`] with the given maximum distance.
+
+    # Example
+
+    ```
+    use hoomd_mc::Translate;
+    use hoomd_vector::Cartesian;
+
+    let translate = Translate::<Cartesian<2>>::new(0.1);
+    ```
+    */
+    #[inline]
+    #[must_use]
+    pub fn new(maximum_distance: f64) -> Self {
         Self {
             maximum_distance,
             vector_type: PhantomData,
@@ -32,6 +53,24 @@ where
     V: Vector,
     StandardUniform: Distribution<V>,
 {
+    /** Randomly translate a body's position.
+
+    # Example
+
+    ```
+    use hoomd_mc::{LocalTrial, Translate};
+    use hoomd_microstate::property::Point;
+    use hoomd_vector::{Cartesian, Vector};
+    use rand::{rngs::StdRng, Rng, SeedableRng};
+
+    let mut rng = StdRng::seed_from_u64(1);
+    let body_properties = Point::new(Cartesian::from([0.0, 0.0]));
+    let translate = Translate::new(1.0);
+
+    let new_body_properties = translate.propose(&mut rng, body_properties);
+    assert!(new_body_properties.position.norm() < 1.0);
+    ```
+    */
     #[inline]
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B {
         let mut trial = body_properties;
@@ -42,5 +81,49 @@ where
         *trial.position_mut() += delta_r;
 
         trial
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hoomd_microstate::property::Point;
+    use hoomd_vector::{Cartesian, Vector};
+    use rand::{SeedableRng, rngs::StdRng};
+    use rstest::*;
+
+    /// Number of trial moves to test.
+    const N: usize = 256;
+
+    #[rstest]
+    fn translate(#[values(0.1, 1.0)] d: f64) {
+        // Ensure that `Translate` proposes moves that translate the body with a valid
+        // range of maximum distances.
+
+        let mut total = Cartesian::from([0.0, 0.0, 0.0]);
+        let mut min_norm = f64::INFINITY;
+        let mut max_norm = 0.0_f64;
+
+        let mut rng = StdRng::seed_from_u64(1);
+        let a = Point::new(Cartesian::from([1.0, -5.0, 2.5]));
+        let translate = Translate::new(d);
+
+        for _ in 0..N {
+            let b = translate.propose(&mut rng, a);
+
+            let delta_r = b.position - a.position;
+            total += delta_r;
+            min_norm = min_norm.min(total.norm());
+            max_norm = max_norm.max(total.norm());
+        }
+
+        assert!(max_norm <= d);
+
+        // Validate with appropriately loose tolerances to account for the small sample size.
+        assert!(min_norm < d * 0.1);
+        assert!(max_norm > d * 0.9);
+        assert!(total[0].abs() < d * 0.01);
+        assert!(total[1].abs() < d * 0.01);
+        assert!(total[2].abs() < d * 0.01);
     }
 }

@@ -6,6 +6,7 @@
 
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
+use std::slice;
 
 use crate::{Body, Site, Transform, boundary::Open};
 use hoomd_random::Counter;
@@ -23,10 +24,6 @@ pub struct Tagged<T> {
 /** Store and manage all the degrees of freedom of a single microstate in phase space.
 
 TODO: document this
-
-TODO: After planning the RNG seed layout, consider reducing the width of step,
-substep, and seed. For example, we could combine step and substep into 1 u64 if
-there aren't enough seed bits.
 
 TODO: Process boundary conditions
 */
@@ -577,6 +574,13 @@ impl<B, S, C> Microstate<B, S, C> {
     #[inline]
     pub fn sites(&self) -> &[Site<S>] {
         &self.sites
+    }
+
+    #[inline]
+    pub fn iter_body_sites(&self, body_index: usize) -> impl Iterator<Item = &Site<S>> {
+        self.bodies_sites[body_index]
+            .iter()
+            .map(|site_index| &self.sites[*site_index])
     }
 }
 

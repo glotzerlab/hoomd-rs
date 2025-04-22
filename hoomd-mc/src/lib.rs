@@ -26,15 +26,16 @@ pub use translate::Translate;
 
 /** Propose trial moves in the microstate, evaluate the changes in energy and accept or reject accordingly.
 
-`Trial` describes a type that applies trial moves to microstates. One call to
-`apply` will attempt one or more individual trial moves to the microstate. It
-evaluates the change in energy with the given `hamiltonian`, then accepts or
-rejects the trial based on the `state` parameters.
+`Trial` describes a type that applies trial moves to microstates. Specifically,
+the method `apply` will attempt one or more individual trial moves to the
+microstate. For each individual move, it evaluates the change in energy with
+the given `hamiltonian`, then accepts or rejects the trial based on the `state`
+parameters.
 
 Each type of trial move in *hoomd-rs* implements the `Trial` trait so that they
 may be used as generic arguments in higher level functions.
 
-See [`Sweep`] or any of the other implementations of `Trial` for examples.
+See [`Sweep`] or any of the other implementations of `Trial` for code examples.
 */
 pub trait Trial<M, H> {
     /** Represent the number of accepted and rejected individual trial moves.
@@ -57,26 +58,52 @@ pub trait Trial<M, H> {
 }
 
 /** Propose a new configuration for given body properties.
+
+A *local* trial move is one applied to a specific body in the microstate.
+Implementations of [`Trial`], such as [`Sweep`], apply a given local move
+to one or more bodies in the microstate.
+
+Use one of the provided local trials to [`Translate`] and/or `Rotate` (TODO: make link)
+bodies or implement your own custom [`LocalTrial`].
+
+Local trial moves **MUST** satisfy *local detailed balance*,
+as defined in [Manousiouthakis & Deem](https://doi.org/10.1063/1.477973).
 */
 pub trait LocalTrial<B> {
+    /// Propose a new configuration for the given body properties.
     #[must_use]
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B;
 }
 
-/** Compute the change in energy after making changes to a single body in the microstate.
+/** Compute the change energy as a function of a single body.
+
+Some implementations of [`Trial`] apply to a single body at a time and use a
+Hamiltonian that implements `DeltaEnergyOne` to efficiently compute the change
+in energy.
 */
 pub trait DeltaEnergyOne<B, S, C> {
+    /** Compute the change in energy.
+
+    `initial_microstate` describes the initial configuration and `final_body`
+    describes the new body configuration. In the final configuration, the
+    body may have changed properties and/or sites. The tag given in `new_body`
+    identifies which body in `initial_microstate` is changing.
+
+    Returns:
+    <!-- \Delta E = E_\mathrm{final} - E_\mathrm{initial} -->
+    <math display="block" class="tml-display" style="display:block math;"><mrow><mpadded lspace="0"><mi mathvariant="normal">Δ</mi></mpadded><mi>E</mi><mo>=</mo><msub><mi>E</mi><mpadded lspace="0"><mi>final</mi></mpadded></msub><mo>−</mo><msub><mi>E</mi><mpadded lspace="0"><mi>initial</mi></mpadded></msub></mrow></math>
+    */
     #[must_use]
     fn delta_energy_one(
         &self,
-        microstate: &Microstate<B, S, C>,
-        new_body: &Tagged<Body<B, S>>,
+        initial_microstate: &Microstate<B, S, C>,
+        final_body: &Tagged<Body<B, S>>,
     ) -> f64;
 }
 
 /** Set the energy of any system to 0.
 
-[`Zero`] is useful for trivial code examples that demonstrate MC simulations.
+*hoomd-rs* uses [`Zero`] in minimal examples that demonstrate MC simulations.
 It returns 0 for all delta energies.
 */
 pub struct Zero;
@@ -85,8 +112,8 @@ impl<B, S, C> DeltaEnergyOne<B, S, C> for Zero {
     #[inline]
     fn delta_energy_one(
         &self,
-        _microstate: &Microstate<B, S, C>,
-        _new_body: &Tagged<Body<B, S>>,
+        _initial_microstate: &Microstate<B, S, C>,
+        _final_body: &Tagged<Body<B, S>>,
     ) -> f64 {
         0.0
     }
@@ -101,7 +128,6 @@ methods that compute often used properties, like the acceptance rate.
 # Example
 
 Count the total number of trial moves performed over a number of sweeps:
-
 ```
 use hoomd_mc::{Count, Sweep, Translate, Trial, Zero};
 use hoomd_microstate::property::Position;
@@ -110,7 +136,7 @@ use hoomd_vector::Cartesian;
 
 let mut microstate = Microstate::new();
 microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
-let translate_sweep = Sweep::new(Translate::with_maximum_distance(0.1));
+let translate_sweep = Sweep::new(Translate::new(0.1));
 
 let mut count = Count::default();
 
@@ -137,7 +163,7 @@ impl Count {
 
     ```
     use hoomd_mc::Count;
-    
+
     let count = Count { accepted: 2_000, rejected: 8_000 };
     let total = count.total();
 
@@ -160,7 +186,7 @@ impl Count {
 
     ```
     use hoomd_mc::Count;
-    
+
     let count = Count { accepted: 2_000, rejected: 8_000 };
     let acceptance_ratio = count.acceptance_ratio();
 
@@ -169,7 +195,7 @@ impl Count {
 
     ```
     use hoomd_mc::Count;
-    
+
     let count = Count::default();
     let acceptance_ratio = count.acceptance_ratio();
 
@@ -180,7 +206,7 @@ impl Count {
     #[must_use]
     pub fn acceptance_ratio(&self) -> Option<f64> {
         let total = self.total();
-        
+
         if total > 0 {
             Some(self.accepted as f64 / total as f64)
         } else {
@@ -194,5 +220,35 @@ impl AddAssign for Count {
     fn add_assign(&mut self, rhs: Self) {
         self.accepted += rhs.accepted;
         self.rejected += rhs.rejected;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn count() {
+        let default = Count::default();
+        assert_eq!(default.accepted, 0);
+        assert_eq!(default.rejected, 0);
+        assert_eq!(default.total(), 0);
+        assert_eq!(default.acceptance_ratio(), None);
+
+        let a = Count {
+            accepted: 1_500,
+            rejected: 500,
+        };
+        assert_eq!(a.total(), 2_000);
+        assert_eq!(a.acceptance_ratio(), Some(0.75));
+
+        let mut b = Count {
+            accepted: 500,
+            rejected: 200,
+        };
+        b += a;
+        assert_eq!(b.accepted, 2_000);
+        assert_eq!(b.rejected, 700);
+        assert_eq!(b.total(), 2_700);
     }
 }

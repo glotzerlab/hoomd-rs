@@ -13,7 +13,7 @@ fn main() {
     let kt = 1.0;
     let hamiltonian = Zero;
 
-    let translate = Translate::with_maximum_distance(0.1);
+    let translate = Translate::new(0.1);
     let translate_sweep = Sweep::new(translate);
 
     for _ in 0..100_000 {

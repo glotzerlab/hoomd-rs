@@ -33,6 +33,8 @@ pub trait TotalEnergy<M> {
     fn total_energy(&self, microstate: &M) -> f64;
 }
 
+// TODO: convert to standard newtype pattern and name it a newtype
+
 /** Compute the energy contribution of a single site.
 
 The `SiteEnergy` trait describes a type that can compute the energy contribution
@@ -166,17 +168,17 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rstest::*;
-    use hoomd_microstate::{Microstate, Body};
     use hoomd_microstate::boundary::Open;
     use hoomd_microstate::property::{Point, Position};
+    use hoomd_microstate::{Body, Microstate};
     use hoomd_vector::Cartesian;
+    use rstest::*;
 
     struct TestSE;
 
     impl<S> SiteEnergy<S> for TestSE
     where
-        S: Position<Cartesian<2>>
+        S: Position<Cartesian<2>>,
     {
         fn site_energy(&self, site_properties: &S) -> f64 {
             site_properties.position()[0] + site_properties.position()[1]
@@ -186,11 +188,13 @@ mod tests {
     #[fixture]
     fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
         let mut microstate = Microstate::new();
-        microstate.extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
-                                  Body::point(Cartesian::from([-1.0, 3.0]))]);
+        microstate.extend_bodies([
+            Body::point(Cartesian::from([1.0, 0.0])),
+            Body::point(Cartesian::from([-1.0, 3.0])),
+        ]);
         microstate
-        }
-        
+    }
+
     #[rstest]
     fn single_total(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
         let test_se = TestSE;

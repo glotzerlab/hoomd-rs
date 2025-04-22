@@ -22,6 +22,7 @@ where
         let energy_final = new_body.item.sites.iter().fold(0.0, |total, s| {
             let new_site = new_body.item.properties.transform(s);
             // TODO: boundary conditions
+            // TODO: What is the energy if a site cannot be wrapped? infinite?
             total + self.inner.site_energy(&new_site)
         });
 

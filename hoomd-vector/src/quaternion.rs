@@ -1156,8 +1156,6 @@ mod tests {
             for dot_sum in dot_sums {
                 assert_abs_diff_eq!(dot_sum / f64::from(samples), 0.0, epsilon = 0.01);
             }
-
-            // TODO: Trevor has a better unit test, but it requires shape overlap tests.
         }
     }
 }

@@ -105,7 +105,7 @@ to track the trial move counts for use with monitoring and tuning moves. It is
 the responsibility of the caller to accumulate counter values (if desired). The
 method signature will look something like: `fn apply(&self, &mut microstate: M,
 hamiltonian: &H, state: &Macrostate ) -> Counter` To make accumulation easy, the
-`Counter` types should implement the necessary arithmetic traits. 
+`Counter` types should implement the necessary arithmetic traits.
 
 ## Model parameters
 
@@ -154,4 +154,3 @@ The tuning recipe should take ownership of the microstate, and return the
 modified microstate back. This way, users could even opt to clone their
 microstate so that the moves introduced by the tuner do not appear in the
 trajectory.
-

@@ -8,17 +8,48 @@ use super::{Count, DeltaEnergyOne, LocalTrial, Trial};
 use hoomd_microstate::{Body, Microstate, Tagged, Transform};
 use rand::Rng;
 
-/** Apply a local trial move to every body in the microsstate.
+/** Apply a local trial move to every body in the microstate.
+
+Each trial move is accepted when:
+<!-- r < \exp\left(\frac{-\Delta H}{kT}\right) -->
+<math display="block" class="tml-display" style="display:block math;"><mrow><mi>r</mi><mo>&lt;</mo><mrow><mi>exp</mi><mo>⁡</mo></mrow><mrow><mo fence="true" form="prefix">(</mo><mfrac><mrow><mo lspace="0em" rspace="0em">−</mo><mpadded lspace="0"><mi mathvariant="normal">Δ</mi></mpadded><mi>H</mi></mrow><mrow><mi>k</mi><mi>T</mi></mrow></mfrac><mo fence="true" form="postfix">)</mo></mrow></mrow></math>
+where `r` is a random value uniformly distributed in `[0,1)`, `\Delta H` is
+the change in energy computed by the given `hamiltonian` and `kT` is the given
+`state` value (the last argument to `apply`).
+
+
+# Example
+
+```
+use hoomd_mc::{Sweep, Translate, Trial, Zero};
+use hoomd_microstate::property::Position;
+use hoomd_microstate::{Body, Microstate};
+use hoomd_vector::Cartesian;
+
+let mut microstate = Microstate::new();
+microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
+let translate_sweep = Sweep::new(Translate::new(0.1));
+
+let hamiltonian = Zero();
+let kt = 1.0;
+
+for _ in 0..1_000 {
+    translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
+    microstate.increment_step();
+}
+```
 */
 pub struct Sweep<L> {
+    /// The local trial to apply.
     pub local: L,
 }
 
 impl<L> Sweep<L> {
+    /// Construct a new `Sweep` with the given local trial.
+    #[inline]
+    #[must_use]
     pub fn new(local: L) -> Self {
-        Self {
-            local,
-        }
+        Self { local }
     }
 }
 
@@ -33,8 +64,12 @@ where
     type Macrostate = f64;
 
     #[inline]
-    fn apply(&self, microstate: &mut Microstate<B, S, C>, hamiltonian: &H, state: &Self::Macrostate) -> Self::Count where
-    {
+    fn apply(
+        &self,
+        microstate: &mut Microstate<B, S, C>,
+        hamiltonian: &H,
+        state: &Self::Macrostate,
+    ) -> Self::Count where {
         let kt = state;
         let mut rng = microstate.counter().make_rng();
         let mut count = Self::Count::default();
@@ -59,5 +94,63 @@ where
 
         microstate.increment_substep();
         count
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Translate;
+    use ::approx::assert_relative_eq;
+    use hoomd_interaction::{Single, SiteEnergy, TotalEnergy};
+    use hoomd_microstate::property::Point;
+    use hoomd_vector::{Cartesian, Vector};
+    use rstest::*;
+
+    const K: f64 = 2.0;
+    const N_STEPS: u64 = 200_000;
+
+    struct Harmonic(Cartesian<2>);
+
+    impl SiteEnergy<Point<Cartesian<2>>> for Harmonic {
+        fn site_energy(&self, site_properties: &Point<Cartesian<2>>) -> f64 {
+            1.0 / 2.0 * K * (site_properties.position - self.0).norm_squared()
+        }
+    }
+
+    #[rstest]
+    fn harmonic_oscillators(#[values(1.0, 2.5)] kt: f64) {
+        // Model a harmonic oscillator and validate the average position and energy distribution.
+        // Check with a relatively large tolerance because N_STEPS is relatively
+        // small to keep the test run short.
+        const EPSILON: f64 = 0.2;
+
+        let origin = Cartesian::from([1.0, -2.0]);
+
+        let mut microstate = Microstate::new();
+        microstate.add_body(Body::point(origin));
+        let hamiltonian = Single::new(Harmonic(origin));
+
+        let translate = Translate::new(0.1);
+        let translate_sweep = Sweep::new(translate);
+
+        let mut position_accumulator = Cartesian::default();
+        let mut energy_accumulator = 0.0;
+
+        for _ in 0..N_STEPS {
+            translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
+
+            position_accumulator += microstate.bodies()[0].item.properties.position;
+            energy_accumulator += hamiltonian.total_energy(&microstate);
+
+            microstate.increment_step();
+        }
+
+        let position_average = position_accumulator / (N_STEPS as f64);
+        assert_relative_eq!(position_average[0], origin[0], epsilon = EPSILON);
+        assert_relative_eq!(position_average[1], origin[1], epsilon = EPSILON);
+
+        let energy_average = energy_accumulator / (N_STEPS as f64);
+        assert_relative_eq!(energy_average, kt, epsilon = EPSILON);
     }
 }
