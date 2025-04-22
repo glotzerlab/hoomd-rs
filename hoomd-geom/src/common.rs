@@ -60,8 +60,8 @@ fn closest_point_on_line_segment(
     p: Cartesian<3>,
 ) -> Cartesian<3> {
     let ab = b - a;
-    let t = (p - a).dot(&ab) / ab.norm_squared();
-    ab * (a + 1f64.min(0f64.max(t)))
+    let t = (p - a).dot(&ab) / ab.dot(&ab);
+    ab * (a + t.clamp(0.0, 1.0))
 }
 
 // impl<S, V: Vector, R: Rotate<Cartesian<3>>> IntersectsAt<S, V, R> for Capsule {
@@ -77,14 +77,16 @@ impl<R: Rotate<Cartesian<3>> + Rotation> IntersectsAt<Capsule, Cartesian<3>, R> 
         This implementation is based on code from the following link:
         https://wickedengine.net/2020/04/capsule-collision-detection/
         */
+        println!("{r_ij}");
         // First capsule is axis-aligned by convention
-        let a_b = Cartesian::from([0.0, 0.0, -self.r]) + self.h / 2.0;
+        let a_b = Cartesian::from([0.0, 0.0, self.r + self.h / 2.0]);
         let a_a = -a_b;
+        println!("{}, {}", a_b, a_a);
         // let a_a = Cartesian::from([0.0, 0.0, -self.r]) + self.h / 2.0;
 
-        let b_line_end_offset = o_ij.rotate(&(*r_ij + Cartesian::from([0.0, 0.0, other.r])));
-        let b_b = -b_line_end_offset + other.h / 2.0;
-        let b_a = -b_b;
+        let b_a = o_ij.rotate(&a_a) + *r_ij;
+        let b_b = o_ij.rotate(&a_b) + *r_ij;
+        println!("{}, {}", b_b, b_a);
 
         // Squared distances between line endpoints
         let d0 = (b_a - a_a).norm_squared();
@@ -105,12 +107,13 @@ impl<R: Rotate<Cartesian<3>> + Rotation> IntersectsAt<Capsule, Cartesian<3>, R> 
         // Repeat for the primary axis of capsule A
         let best_a = closest_point_on_line_segment(a_a, a_b, best_b);
 
+        println!("best b: {best_b}");
+        println!("best a: {best_a}");
+
         // Now we have the closest points, just do a sphere intersection at those pts.
-        let penetration_depth = self.r + other.r - (best_a - best_b).norm();
-
-        penetration_depth > 0.0
-
-        // TODO: test against XenoCollide
+        let penetration_depth = (self.r + other.r) - (best_a - best_b).norm();
+        println!("pen depth: {penetration_depth}");
+        penetration_depth >= 0.0
     }
 }
 
