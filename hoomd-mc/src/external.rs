@@ -27,10 +27,10 @@ where
             total + self.site_energy(&new_site)
         });
 
-        let energy_initial = initial_microstate.iter_body_sites(body_index).fold(0.0, |total, s| {
-            total + self.site_energy(&s.properties)
-        });
-        
+        let energy_initial = initial_microstate
+            .iter_body_sites(body_index)
+            .fold(0.0, |total, s| total + self.site_energy(&s.properties));
+
         energy_final - energy_initial
     }
 }
