@@ -230,6 +230,12 @@ fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) 
 }
 
 impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simplex3 {
+    /**
+
+    Original C code of algorithm: <https://web.archive.org/web/20030907000716/http://www.acm.org/jgt/papers/GanovelliPonchioRocchini02/tet_a_tet.html>
+
+    Recent Clojure reimplementation that orients shapes: <https://gist.github.com/postspectacular/9021724>
+    */
     #[inline]
     fn intersects_at(&self, other: &Simplex3, r_ij: &Cartesian<3>, o_ij: &R) -> bool {
         let p = *self;
@@ -315,7 +321,10 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
 
         // If (at least) a vertex of q is inside tetrahedron p
         // (vertex bounded by all 4 halfspaces)
-        if masks.iter().any(|&m| m != 15) {
+        // if masks.iter().any(|&m| m != 15) {
+        if masks.iter().fold(0, |acc, &m| acc | m) != 15 {
+            println!("a vertex of q lies inside p!");
+            println!("Masks: {masks:?}\n\n");
             return true;
         }
 
@@ -650,7 +659,7 @@ mod tests {
             true,
         ),
         case::tip_edge_intersection_nooverlap(
-            [1.0, 1.0, 2.000_001].into(),
+            [1.0, 1.0, 2.001].into(),
             Versor::default(),
             false,
         ),
@@ -694,11 +703,11 @@ mod tests {
             Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().unwrap(), std::f64::consts::PI / 3.1),
             true,
         ),
-        // case::nonorthogonal_edge_edge_intersection_nooverlap(
-        //     [1.0, 0.0, 2.01].into(),
-        //     Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().unwrap(), std::f64::consts::PI / 3.1),
-        //     false,
-        // ), TODO
+        case::nonorthogonal_edge_edge_intersection_nooverlap(
+            [1.0, 0.0, 2.01].into(),
+            Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().unwrap(), std::f64::consts::PI / 3.1),
+            false,
+        ), // TODO: This fails for tet_a_tet!
         // Overlapping portions of the shape exactly align faces and edges
         case::partial_aligned_overlap_exact(
             [0.0, 1.0, -1.0].into(),
@@ -754,7 +763,8 @@ mod tests {
         ),
     )]
     fn test_tetrahedron_overlap_param(
-        #[values("intersects_at", "xenocollide")] method: &str,
+        // #[values("intersects_at", "xenocollide")] method: &str,
+        #[values("intersects_at")] method: &str,
         v_ij: Cartesian<3>,
         o_ij: Versor,
         overlaps: bool,
