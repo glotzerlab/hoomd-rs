@@ -4,6 +4,7 @@
 use std::{array, fmt};
 
 use hoomd_vector::{Cartesian, Cross, Rotate, Vector};
+use itertools::Itertools;
 
 use crate::{IntersectsAt, SupportFn};
 
@@ -17,18 +18,16 @@ pub struct Simplex3 {
 
 impl SupportFn<Cartesian<3>> for Simplex3 {
     #[inline]
-    #[allow(clippy::expect_used)]
+    #[expect(
+        clippy::expect_used,
+        reason = "Support function of a vector containing NaN is undefined."
+    )]
     fn support(&self, n: &Cartesian<3>) -> Cartesian<3> {
-        let n = *n / n.norm(); // TODO: does this need to be normalized?
-        *self
-            .vertices
+        let dots = self.vertices.map(|v| v.dot(n));
+        self.vertices[dots
             .iter()
-            .max_by(|a, b| {
-                a.dot(&n)
-                    .partial_cmp(&b.dot(&n))
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            })
-            .expect("Support function not valid with 0 vertices!")
+            .position_max_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal))
+            .expect("Took dot product with NaN!")]
     }
 }
 
@@ -325,6 +324,7 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
 
         // If (at least) a vertex of q is inside tetrahedron p
         // (vertex bounded by all 4 halfspaces)
+        // TODO: do we need to check if masks are empty?
         if masks.iter().fold(0, |acc, &m| acc | m) != 15 {
             println!("Masks are not full! A vertex of q is inside p");
             return true;
@@ -771,7 +771,8 @@ mod tests {
     )]
     fn test_tetrahedron_overlap_param(
         // #[values("intersects_at", "xenocollide")] method: &str,
-        #[values("intersects_at")] method: &str,
+        #[values("xenocollide")] method: &str,
+        // #[values("intersects_at")] method: &str,
         v_ij: Cartesian<3>,
         o_ij: Versor,
         overlaps: bool,
