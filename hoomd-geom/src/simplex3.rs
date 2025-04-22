@@ -1,6 +1,8 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+use std::{array, fmt};
+
 use hoomd_vector::{Cartesian, Cross, Rotate, Vector};
 
 use crate::{IntersectsAt, SupportFn};
@@ -48,21 +50,53 @@ impl From<[[f64; 3]; 4]> for Simplex3 {
 }
 
 impl Default for Simplex3 {
-    /// A uniform tetrahedron.
+    /// A uniform tetrahedron, centered on the origin with edges bisecting half of
+    /// the faces of a cube on their diagonals.
     #[inline]
     fn default() -> Self {
-        let s = Simplex3 {
+        // Oriented by construction.
+        Simplex3 {
             vertices: [
-                [1.0, 0.0, 0.0].into(),
-                [0.0, 1.0, 0.0].into(),
-                [0.0, 0.0, 1.0].into(),
                 [1.0, 1.0, 1.0].into(),
+                [1.0, -1.0, -1.0].into(),
+                [-1.0, 1.0, -1.0].into(),
+                [-1.0, -1.0, 1.0].into(),
             ],
-        };
-        s.orient()
+        }
+    }
+}
+
+impl fmt::Display for Simplex3 {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Simplex {{ [{}] }}",
+            self.vertices
+                .iter()
+                .map(Cartesian::to_string)
+                .collect::<Vec<String>>()
+                .join(", ")
+        )
     }
 }
 impl Simplex3 {
+    /// Translate a simplex via rowwise addition of a Cartesian3
+    #[inline]
+    #[must_use]
+    pub fn translate_by(&mut self, rhs: &Cartesian<3>) -> Self {
+        Self {
+            vertices: self.vertices.map(|v| v + *rhs),
+        }
+    }
+
+    /// The center of mass of the tetrahedron.
+    #[inline]
+    #[must_use]
+    pub fn centroid(&self) -> Cartesian<3> {
+        array::from_fn::<_, 3, _>(|i| self.vertices.iter().fold(0.0, |acc, v| acc + v[i])).into()
+    }
+
     /// Get the edges of the tetrahedron as edge endpoint coordinates. In vertex index
     /// form, this returns values in the order [(1, 0), (2, 0), (3, 0), (2, 1), (3, 2)]
     #[inline]
@@ -200,7 +234,7 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
     fn intersects_at(&self, other: &Simplex3, r_ij: &Cartesian<3>, o_ij: &R) -> bool {
         let p = *self;
         // TODO: is this the correct way to rotate?
-        let q = Simplex3::from(other.vertices.map(|v| o_ij.rotate(&v) + *r_ij));
+        let q = Simplex3::from(other.vertices.map(|v| o_ij.rotate(&v))).translate_by(r_ij);
 
         let q_deltas = q.vertices.map(|v| v - p.vertices[0]);
 
@@ -330,7 +364,8 @@ mod tests {
     use crate::xenocollide::collide3d;
 
     use super::*;
-    use hoomd_vector::{Rotation, Versor};
+    use hoomd_vector::{Quaternion, Rotation, Unit, Versor};
+    use rand::{Rng, SeedableRng, rngs::StdRng};
     use rstest::rstest;
     #[test]
     fn test_compute_mask() {
@@ -459,14 +494,14 @@ mod tests {
     }
 
     #[test]
-    fn test_testisect() {
-        let p = Simplex3::from([
+    fn test_tetisect() {
+        let mut p = Simplex3::from([
             [0.0, 0.0, 0.0],
             [50.0, 50.0, 0.0],
             [100.0, 0.0, 0.0],
             [50.0, 25.0, 100.0],
         ]);
-        let q = Simplex3::from([
+        let mut q = Simplex3::from([
             [0.0, 0.0, 0.0],
             [-50.0, 50.0, 0.0],
             [-200.0, 0.0, 20.0],
@@ -474,13 +509,22 @@ mod tests {
         ]);
 
         // First test case is constructed to intersect
-        assert!(p.intersects_at(&q, &Cartesian::from([0.0, 0.0, 0.0]), &Versor::identity()));
+        assert!(p.intersects_at(&q, &Cartesian::default(), &Versor::identity()));
+
+        let p_centered = p.translate_by(&-p.centroid());
+        let q_centered = q.translate_by(&-q.centroid());
+
         assert_eq!(
             p.intersects_at(&q, &Cartesian::default(), &Versor::identity()),
-            collide3d(&p, &q, &Cartesian::default(), &Versor::identity())
+            collide3d(
+                &p_centered,
+                &q_centered,
+                &(q.centroid() - p.centroid()),
+                &Versor::identity()
+            )
         );
 
-        let q = Simplex3::from([
+        let mut q_nooverlap = Simplex3::from([
             [100.001, 0.0, 0.0],
             [150.0, 50.0, 0.0],
             [200.0, 0.0, 0.0],
@@ -488,10 +532,144 @@ mod tests {
         ]);
 
         // Second test case is constructed to NOT intersect
-        assert!(!p.intersects_at(&q, &Cartesian::default(), &Versor::identity()));
-        // assert_eq!(
-        //     p.intersects_at(&q, &Cartesian::default(), &Versor::identity()),
-        //     collide3d(&p, &q, &Cartesian::default(), &Versor::identity())
-        // ); // TODO: why does this not work?
+        assert!(!p.intersects_at(&q_nooverlap, &Cartesian::default(), &Versor::identity()));
+        let q_nooverlap_centered = q_nooverlap.translate_by(&-p.centroid());
+        assert_eq!(
+            p.intersects_at(&q_nooverlap, &Cartesian::default(), &Versor::identity()),
+            collide3d(
+                &p_centered,
+                &q_nooverlap_centered,
+                &(q_nooverlap.centroid() - p.centroid()),
+                &Versor::identity()
+            )
+        );
+    }
+
+    /*
+    #[test] // TODO: is this correct? Xenocollide converges, but tetAtet does not!
+    fn test_percolation_collisions() {
+        const N_SAMPLES: usize = 500_000;
+        const VOLUME: f64 = 1.0 / 3.0;
+        const AREA: f64 = 3.464_101_615_137_755; // 2.0 * sqrt(3)
+        const CURVATURE: f64 = 0.645_065_353_795_142;
+        const BOX_L: f64 = 20.0;
+        const BOX_VOLUME: f64 = BOX_L * BOX_L * BOX_L;
+
+        let expected_value = (2.0 * (VOLUME + AREA * CURVATURE)) / BOX_VOLUME;
+
+        // Assume 1000x1000x1000 box, which has bo
+
+        let mut rng = StdRng::seed_from_u64(1);
+        let (mut t0, mut t1) = (Simplex3::default(), Simplex3::default());
+        t0 = t0.translate_by(&-t0.centroid());
+        t1 = t1.translate_by(&-t1.centroid());
+        t1 = t1.translate_by(&[1.1, 1.1, 1.1].into()); // Just barely not touching
+
+        let (mut n_acc, mut n_rej) = (0, 0);
+        for i in 0..N_SAMPLES {
+            let mut t_test = Simplex3::default();
+            t_test = t_test.translate_by(&-t_test.centroid());
+
+            let theta: Versor = rng.random();
+            let r_ij = Cartesian::from([
+                rng.random_range((-BOX_L / 2.0)..(BOX_L / 2.0)),
+                rng.random_range((-BOX_L / 2.0)..(BOX_L / 2.0)),
+                rng.random_range((-BOX_L / 2.0)..(BOX_L / 2.0)),
+            ]);
+            // if t0.intersects_at(&t_test, &r_ij, &theta) {
+            if collide3d(&t0, &t_test, &r_ij, &theta) {
+                n_rej += 1;
+            } else {
+                n_acc += 1;
+            }
+
+            // TODO: assert two methods are equal
+        }
+        println!(
+            "expected {}, got {}",
+            expected_value,
+            n_rej as f64 / (n_acc + n_rej) as f64
+        );
+    }
+    */
+    #[rstest(
+        v_ij, o_ij, overlaps,
+        case::perfect_overlap(
+            [0.0, 0.0, 0.0].into(),
+            Versor::identity(),
+            true,
+        ),
+        case::particle_at_infinity(
+            [f64::INFINITY, 0.0, 0.0].into(),
+            Versor::identity(),
+            false,
+        ),
+        case::particle_at_negative_infinity(
+            [f64::NEG_INFINITY, 0.0, 0.0].into(),
+            Versor::identity(),
+            false,
+        ),
+        case::tip_tip_intersection_exact(
+            [2.0, 2.0, 2.0].into(),
+            Quaternion::from(
+                [f64::sqrt(2.0)/2.0, f64::sqrt(2.0)/2.0,0.0,0.0]
+            ).to_versor().expect("Quaternion must be unit"),
+            true,
+        ),
+        case::tip_tip_intersection_imprecise(
+            [1.999, 1.999, 1.999].into(),
+            Quaternion::from(
+                [f64::sqrt(2.0)/2.0, f64::sqrt(2.0)/2.0,0.0,0.0]
+            ).to_versor().expect("Quaternion must be unit"),
+            true,
+        ),
+        case::tip_edge_intersection_exact(
+            [1.0, 1.0, 2.0].into(),
+            Versor::default(),
+            true,
+        ),
+        case::tip_edge_intersection_imprecise(
+            [1.0, 1.0, 1.999_999].into(),
+            Versor::default(),
+            true,
+        ),
+        case::parallel_edge_edge_intersection_exact(
+            [1.0, 1.0, 2.0].into(),
+            Quaternion::from(
+                [f64::sqrt(2.0)/2.0, f64::sqrt(2.0)/2.0,0.0,0.0]
+            ).to_versor().expect("Quaternion must be unit"),
+            true,
+        ),
+        case::parallel_edge_edge_intersection_imprecise(
+            [1.0, 1.0, 1.999].into(),
+            Quaternion::from(
+                [f64::sqrt(2.0)/2.0, f64::sqrt(2.0)/2.0,0.0,0.0]
+            ).to_versor().expect("Quaternion must be unit"),
+            true,
+        ),
+        case::orthogonal_edge_edge_intersection_exact(
+            [1.0, 0.0, 2.0].into(),
+            Versor::identity(),
+            true,
+        ),
+        case::orthogonal_edge_edge_intersection_imprecise(
+            [1.0, 0.0, 1.999].into(),
+            Versor::identity(),
+            true,
+        ),
+    )]
+    fn test_tetrahedron_overlaps(v_ij: Cartesian<3>, o_ij: Versor, overlaps: bool) {
+        let p = Simplex3::default();
+        let q = Simplex3::default();
+        assert_eq!(
+            p.intersects_at(&q, &v_ij, &o_ij),
+            overlaps,
+            "tet_a_tet gave wrong overlap!"
+        );
+        assert_eq!(
+            collide3d(&p, &q, &v_ij, &o_ij),
+            overlaps,
+            "xenocollide gave wrong overlap!"
+        );
     }
 }
