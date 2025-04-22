@@ -321,10 +321,7 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
 
         // If (at least) a vertex of q is inside tetrahedron p
         // (vertex bounded by all 4 halfspaces)
-        // if masks.iter().any(|&m| m != 15) {
         if masks.iter().fold(0, |acc, &m| acc | m) != 15 {
-            println!("a vertex of q lies inside p!");
-            println!("Masks: {masks:?}\n\n");
             return true;
         }
 
