@@ -611,16 +611,22 @@ mod tests {
         ),
         case::tip_tip_intersection_exact(
             [2.0, 2.0, 2.0].into(),
-            Quaternion::from(
-                [f64::sqrt(2.0)/2.0, f64::sqrt(2.0)/2.0,0.0,0.0]
-            ).to_versor().expect("Quaternion must be unit"),
+            Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
             true,
         ),
         case::tip_tip_intersection_imprecise(
             [1.999, 1.999, 1.999].into(),
-            Quaternion::from(
-                [f64::sqrt(2.0)/2.0, f64::sqrt(2.0)/2.0,0.0,0.0]
-            ).to_versor().expect("Quaternion must be unit"),
+            Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
+            true,
+        ),
+        case::unrotated_tip_tip_intersection_exact(
+            [2.0, 2.0, 0.0].into(),
+            Versor::identity(),
+            true,
+        ),
+        case::unrotated_tip_tip_intersection_imprecise(
+            [1.999, 1.999, 0.0].into(),
+            Versor::identity(),
             true,
         ),
         case::tip_edge_intersection_exact(
@@ -635,16 +641,12 @@ mod tests {
         ),
         case::parallel_edge_edge_intersection_exact(
             [1.0, 1.0, 2.0].into(),
-            Quaternion::from(
-                [f64::sqrt(2.0)/2.0, f64::sqrt(2.0)/2.0,0.0,0.0]
-            ).to_versor().expect("Quaternion must be unit"),
+            Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
             true,
         ),
         case::parallel_edge_edge_intersection_imprecise(
             [1.0, 1.0, 1.999].into(),
-            Quaternion::from(
-                [f64::sqrt(2.0)/2.0, f64::sqrt(2.0)/2.0,0.0,0.0]
-            ).to_versor().expect("Quaternion must be unit"),
+            Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
             true,
         ),
         case::orthogonal_edge_edge_intersection_exact(
@@ -657,19 +659,88 @@ mod tests {
             Versor::identity(),
             true,
         ),
+        case::nonorthogonal_edge_edge_intersection_exact(
+            [1.0, 0.0, 2.0].into(),
+            Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().unwrap(), std::f64::consts::PI / 3.1),
+            true,
+        ),
+        case::nonorthogonal_edge_edge_intersection_imprecise(
+            [1.0, 0.0, 1.999].into(),
+            Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().unwrap(), std::f64::consts::PI / 3.1),
+            true,
+        ),
+        // Overlapping portions of the shape exactly align faces and edges
+        case::partial_aligned_overlap_exact(
+            [0.0, 1.0, -1.0].into(),
+            Versor::identity(),
+            true,
+        ),
+        case::partial_aligned_overlap_imprecise(
+            [0.0, 1.0, -0.999].into(),
+            Versor::identity(),
+            true,
+        ),
+        // Top edges are parallel, shapes partially within one another
+        case::partial_parallel_overlap(
+            [0.0, 0.0, -1.0].into(),
+            Versor::identity(),
+            true,
+        ),
+        // Vertex of p passes through q and lies on an edge
+        case::vertex_into_edge_shallow_exact(
+            [0.0, 1.0, 2.0].into(),
+            Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_4),
+            true,
+        ),
+        case::vertex_into_edge_shallow_exact(
+            [0.0, 0.999, 2.0].into(),
+            Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_4),
+            true,
+        ),
+        case::vertex_into_edge_deep_exact(
+            [0.0, 1.0, 1.0].into(),
+            Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_4),
+            true,
+        ),
+        case::vertex_into_edge_deep_imprecise(
+            [0.0, 0.999, 1.0].into(),
+            Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_4),
+            true,
+        ),
+        case::vertex_face_imprecise(
+            [1.0, 1.0, 2.0].into(),
+            Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_4),
+            true,
+        ),
+        case::vertex_face_nooverlap(
+            [1.2765, -1.2765, 1.2765].into(),
+            Versor::from_axis_angle([1.0, 1.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
+            false,
+        ),
+        case::vertex_face_near_exact(
+            [1.275, -1.275, 1.275].into(),
+            Versor::from_axis_angle([1.0, 1.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
+            true,
+        ),
     )]
-    fn test_tetrahedron_overlaps(v_ij: Cartesian<3>, o_ij: Versor, overlaps: bool) {
+    fn test_tetrahedron_overlap_param(
+        #[values("intersects_at", "xenocollide")] method: &str,
+        v_ij: Cartesian<3>,
+        o_ij: Versor,
+        overlaps: bool,
+    ) {
         let p = Simplex3::default();
         let q = Simplex3::default();
+
+        let result = if method == "intersects_at" {
+            p.intersects_at(&q, &v_ij, &o_ij)
+        } else {
+            collide3d(&p, &q, &v_ij, &o_ij)
+        };
+
         assert_eq!(
-            p.intersects_at(&q, &v_ij, &o_ij),
-            overlaps,
-            "tet_a_tet gave wrong overlap!"
-        );
-        assert_eq!(
-            collide3d(&p, &q, &v_ij, &o_ij),
-            overlaps,
-            "xenocollide gave wrong overlap!"
+            result, overlaps,
+            "Method `{method}` gave wrong overlap result.",
         );
     }
 }
