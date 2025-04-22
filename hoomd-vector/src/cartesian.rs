@@ -274,6 +274,16 @@ impl<const N: usize> Add<f64> for Cartesian<N> {
         }
     }
 }
+impl<const N: usize> Sub<f64> for Cartesian<N> {
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, rhs: f64) -> Self {
+        Self {
+            coordinates: self.coordinates.map(|x| x - rhs),
+        }
+    }
+}
 
 impl<const N: usize> AddAssign for Cartesian<N> {
     #[inline]
