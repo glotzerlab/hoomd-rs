@@ -6,7 +6,6 @@
 
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
-use std::slice;
 
 use crate::{Body, Site, Transform, boundary::Open};
 use hoomd_random::Counter;

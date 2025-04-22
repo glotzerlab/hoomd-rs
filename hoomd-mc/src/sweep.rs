@@ -5,7 +5,7 @@
 */
 
 use super::{Count, DeltaEnergyOne, LocalTrial, Trial};
-use hoomd_microstate::{Body, Microstate, Tagged, Transform};
+use hoomd_microstate::{Body, Microstate, Transform};
 use rand::Rng;
 
 /** Apply a local trial move to every body in the microstate.
@@ -73,19 +73,19 @@ where
         let kt = state;
         let mut rng = microstate.counter().make_rng();
         let mut count = Self::Count::default();
-        let mut trial = Tagged::<Body<B, S>>::default();
+        let mut trial = Body::<B, S>::default();
 
         // For loop over a range instead of bodies().iter() as the latter holds an immutable borrow.
         // The call to `update_body_properties` makes a mutable borrow of microstate.
         for body_index in 0..microstate.bodies().len() {
-            trial.clone_from(&microstate.bodies()[body_index]);
-            trial.item.properties = self.local.propose(&mut rng, trial.item.properties);
+            trial.clone_from(&microstate.bodies()[body_index].item);
+            trial.properties = self.local.propose(&mut rng, trial.properties);
 
             // TODO: Handle boundary conditions
 
-            let delta_h = hamiltonian.delta_energy_one(microstate, &trial);
+            let delta_h = hamiltonian.delta_energy_one(microstate, body_index, &trial);
             if rng.random::<f64>() < (-delta_h / kt).exp() {
-                microstate.update_body_properties(body_index, trial.item.properties);
+                microstate.update_body_properties(body_index, trial.properties);
                 count.accepted += 1;
             } else {
                 count.rejected += 1;
@@ -129,7 +129,7 @@ mod tests {
 
         let mut microstate = Microstate::new();
         microstate.add_body(Body::point(origin));
-        let hamiltonian = Single::new(Harmonic(origin));
+        let hamiltonian = Single(Harmonic(origin));
 
         let translate = Translate::new(0.1);
         let translate_sweep = Sweep::new(translate);

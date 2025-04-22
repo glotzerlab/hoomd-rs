@@ -33,8 +33,6 @@ pub trait TotalEnergy<M> {
     fn total_energy(&self, microstate: &M) -> f64;
 }
 
-// TODO: convert to standard newtype pattern and name it a newtype
-
 /** Compute the energy contribution of a single site.
 
 The `SiteEnergy` trait describes a type that can compute the energy contribution
@@ -42,8 +40,8 @@ of a site to the system's total energy, *as a function only of that site's
 properties*.
 
 The [`external`] module provides a number of commonly used implementations.
-Combine them with [`Single`] for use with MC and MD simulations or to compute
-system-wide properties.
+Combine them with [`Single`] newtype for use with MC and MD simulations or to
+compute system-wide properties.
 
 ## Examples
 
@@ -77,7 +75,7 @@ microstate.extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
 let custom_evaluator = Custom { a: 1.0, b: 10.0 };
 let site_energy = custom_evaluator.site_energy(&microstate.sites()[0].properties);
 
-let custom = Single::new(custom_evaluator);
+let custom = Single(custom_evaluator);
 let total_energy = custom.total_energy(&microstate);
 # Ok(())
 # }
@@ -91,10 +89,9 @@ pub trait SiteEnergy<S> {
 
 /** Compute system-wide properties given a [`SiteEnergy`]
 
-`Single` is a convenience wrapper type that provides a single implementation
-for system-wide properties, like [`TotalEnergy`], for all types that implement
-[`SiteEnergy`]. It also reimplements [`SiteEnergy`] by forwarding the call to
-the inner type.
+`Single` is a newtype that provides a single implementation for system-wide
+properties, like [`TotalEnergy`], for all types that implement [`SiteEnergy`].
+It also reimplements [`SiteEnergy`] by forwarding the call to the inner type.
 
 Use types that implement [`SiteEnergy`], such as one from [`external`] or your
 own custom type, directly when you only need to call `site_energy`. Wrap the
@@ -113,7 +110,7 @@ let mut microstate = Microstate::new();
 microstate.extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
                           Body::point(Cartesian::from([-1.0, 2.0]))]);
 
-let linear = Single::new(Linear{ alpha: 1.0,
+let linear = Single(Linear{ alpha: 1.0,
     plane_origin: Cartesian::default(),
     plane_normal: [0.0, 1.0].try_into()? });
 
@@ -123,19 +120,7 @@ assert_eq!(total_energy, 2.0);
 # }
 ```
 */
-pub struct Single<E> {
-    /// Evaluate the energy, fore, or torque on a single site.
-    pub inner: E,
-}
-
-impl<E> Single<E> {
-    /// Construct a new `Single` with the given site energy evaluator.
-    #[inline]
-    #[must_use]
-    pub fn new(inner: E) -> Self {
-        Self { inner }
-    }
-}
+pub struct Single<E>(pub E);
 
 impl<B, S, C, E> TotalEnergy<Microstate<B, S, C>> for Single<E>
 where
@@ -149,9 +134,10 @@ where
     */
     #[inline]
     fn total_energy(&self, microstate: &Microstate<B, S, C>) -> f64 {
-        microstate.sites().iter().fold(0.0, |total, s| {
-            total + self.inner.site_energy(&s.properties)
-        })
+        microstate
+            .sites()
+            .iter()
+            .fold(0.0, |total, s| total + self.0.site_energy(&s.properties))
     }
 }
 
@@ -161,7 +147,7 @@ where
 {
     #[inline]
     fn site_energy(&self, site_properties: &S) -> f64 {
-        self.inner.site_energy(site_properties)
+        self.0.site_energy(site_properties)
     }
 }
 
@@ -198,7 +184,7 @@ mod tests {
     #[rstest]
     fn single_total(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
         let test_se = TestSE;
-        let single = Single::new(test_se);
+        let single = Single(test_se);
 
         assert_eq!(single.total_energy(&microstate), 3.0);
     }
@@ -206,7 +192,7 @@ mod tests {
     #[rstest]
     fn single_site(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
         let test_se = TestSE;
-        let single = Single::new(test_se);
+        let single = Single(test_se);
 
         assert_eq!(single.site_energy(&microstate.sites()[0].properties), 1.0);
         assert_eq!(single.site_energy(&microstate.sites()[1].properties), 2.0);

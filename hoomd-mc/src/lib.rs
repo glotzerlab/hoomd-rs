@@ -13,7 +13,7 @@
 TODO: Expand documentation.
  */
 
-use hoomd_microstate::{Body, Microstate, Tagged};
+use hoomd_microstate::{Body, Microstate};
 use rand::Rng;
 use std::ops::AddAssign;
 
@@ -86,7 +86,7 @@ pub trait DeltaEnergyOne<B, S, C> {
 
     `initial_microstate` describes the initial configuration and `final_body`
     describes the new body configuration. In the final configuration, the
-    body may have changed properties and/or sites. The tag given in `new_body`
+    body may have changed properties and/or sites. The index `body_index`
     identifies which body in `initial_microstate` is changing.
 
     Returns:
@@ -97,7 +97,8 @@ pub trait DeltaEnergyOne<B, S, C> {
     fn delta_energy_one(
         &self,
         initial_microstate: &Microstate<B, S, C>,
-        final_body: &Tagged<Body<B, S>>,
+        body_index: usize,
+        final_body: &Body<B, S>,
     ) -> f64;
 }
 
@@ -113,7 +114,8 @@ impl<B, S, C> DeltaEnergyOne<B, S, C> for Zero {
     fn delta_energy_one(
         &self,
         _initial_microstate: &Microstate<B, S, C>,
-        _final_body: &Tagged<Body<B, S>>,
+        _body_index: usize,
+        _final_body: &Body<B, S>,
     ) -> f64 {
         0.0
     }

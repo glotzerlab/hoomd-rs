@@ -6,7 +6,7 @@
 
 use super::DeltaEnergyOne;
 use hoomd_interaction::{Single, SiteEnergy};
-use hoomd_microstate::{Body, Microstate, Tagged, Transform};
+use hoomd_microstate::{Body, Microstate, Transform};
 
 impl<B, S, C, E> DeltaEnergyOne<B, S, C> for Single<E>
 where
@@ -16,18 +16,21 @@ where
     #[inline]
     fn delta_energy_one(
         &self,
-        microstate: &Microstate<B, S, C>,
-        new_body: &Tagged<Body<B, S>>,
+        initial_microstate: &Microstate<B, S, C>,
+        body_index: usize,
+        final_body: &Body<B, S>,
     ) -> f64 {
-        let energy_final = new_body.item.sites.iter().fold(0.0, |total, s| {
-            let new_site = new_body.item.properties.transform(s);
+        let energy_final = final_body.sites.iter().fold(0.0, |total, s| {
+            let new_site = final_body.properties.transform(s);
             // TODO: boundary conditions
             // TODO: What is the energy if a site cannot be wrapped? infinite?
-            total + self.inner.site_energy(&new_site)
+            total + self.site_energy(&new_site)
         });
 
-        let energy_initial = 0.0; // TODO
-        // - self.inner.site_energy(&old_body.item.properties);
+        let energy_initial = initial_microstate.iter_body_sites(body_index).fold(0.0, |total, s| {
+            total + self.site_energy(&s.properties)
+        });
+        
         energy_final - energy_initial
     }
 }
