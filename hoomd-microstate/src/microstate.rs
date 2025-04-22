@@ -22,9 +22,27 @@ pub struct Tagged<T> {
 
 /** Store and manage all the degrees of freedom of a single microstate in phase space.
 
-TODO: document this
+`Microstate` facilitates simulations of particle systems. It is the central data
+structure used by MC, MD, and supporting calculations implemented in `hoomd-rs`.
+`Microstate` holds a set of bodies that exist in a space set by the boundary
+conditions. The degrees of freedom consist of the properties of the bodies and
+the parameters of the boundary conditions. TODO: Mention GSD.
 
-TODO: Process boundary conditions
+`Microstate` also stores many auxiliary data structures and implements
+convenience methods to facilitate the efficient implementation of simulation
+models. These include a set of all interaction sites in the system frame
+of reference, ghost sites near the periodic boundaries, and spatial data
+structures.
+
+# Bodies and sites
+
+# GSD files
+
+# Boundary conditions
+
+# Ghost sites
+
+# Spatial searches
 */
 #[derive(Clone)]
 pub struct Microstate<B, S = B, C = Open> {
