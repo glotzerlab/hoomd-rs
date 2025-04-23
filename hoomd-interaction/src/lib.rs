@@ -25,7 +25,7 @@ given microstate. Depending on the type, `total_energy` might compute the total
 potential energy of the system or a single term, such as the Lennard-Jones
 potential energy.
 
-TODO: Provide a LennardJones example.
+TODO: Provide a `LennardJones` example.
 */
 pub trait TotalEnergy<M> {
     /// Compute the energy.

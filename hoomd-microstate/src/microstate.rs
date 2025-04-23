@@ -498,7 +498,8 @@ impl<B, S, C> Microstate<B, S, C> {
 
     /** Sets the properties of the given body.
 
-    Also updates the properties of the sites associated with the body.
+    Also updates the properties of the sites (in the system frame) associated
+    with the body.
 
     # Example
 
@@ -545,8 +546,9 @@ impl<B, S, C> Microstate<B, S, C> {
     holds the unique identifier for each body in [`Tagged::tag`] and the
     [`Body`] itself in [`Tagged::item`].
 
-    `bodies` provides direct immutable access to this slice. To mutate a body
-    (and by extension, its sites), see [`Microstate::update_body_properties()`].
+    [`bodies`](Microstate::bodies) provides direct immutable access
+    to this slice. To mutate a body (and by extension, its sites), see
+    [`Microstate::update_body_properties()`].
 
     # Examples
 
@@ -589,7 +591,8 @@ impl<B, S, C> Microstate<B, S, C> {
 
     /** Identify the index of a body given a tag.
 
-    Use `body_indices` to locate a specific body in [`Microstate::bodies`].
+    Use [`body_indices`](Microstate::body_indices) to locate a specific body in
+    [`Microstate::bodies`].
 
     `body_indices()[tag]` is:
     * `None` when there is no body with the given tag in the microstate.
@@ -624,16 +627,97 @@ impl<B, S, C> Microstate<B, S, C> {
         &self.body_indices
     }
 
+    /** Access the microstate's sites (in the system frame) in index order.
+
+    [`Microstate`] stores sites twice. Each body in
+    [`bodies`](Microstate::bodies) stores its sites in the body frame of
+    reference. [`Microstate`] also stores a flat vector of sites that have been
+    transformed (see [`Transform`]) to the system reference frame. The [`Site`]
+    type holds the unique identifier for each site in [`Site::site_tag`],
+    the associated body tag in [`Site::body_tag`] and the site's properties in
+    [`Site::properties`].
+
+    [`sites`](Microstate::sites) provides direct immutable access to
+    this slice. To mutate a body (and by extension, its sites), see
+    [`Microstate::update_body_properties()`].
+
+    # Examples
+
+    Identify the site and body tags of a site at a given index:
+
+    ```
+    use hoomd_microstate::{Microstate, MicrostateBuilder, Body};
+    use hoomd_vector::Cartesian;
+
+    let microstate = MicrostateBuilder::new()
+        .bodies([Body::point(Cartesian::from([1.0, 0.0])),
+                 Body::point(Cartesian::from([-1.0, 2.0]))])
+        .build();
+
+    // The initial index order is equivalent to the tag order.
+    assert_eq!(microstate.sites()[0].site_tag, 0);
+    assert_eq!(microstate.sites()[0].body_tag, 0);
+
+    assert_eq!(microstate.sites()[1].body_tag, 1);
+    assert_eq!(microstate.sites()[1].body_tag, 1);
+    ```
+
+    Compute system-wide properties that are order-independent:
+    ```
+    use hoomd_microstate::{Microstate, MicrostateBuilder, Body};
+    use hoomd_vector::{Vector, Cartesian};
+
+    let microstate = MicrostateBuilder::new()
+        .bodies([Body::point(Cartesian::from([1.0, 0.0])),
+                 Body::point(Cartesian::from([-1.0, 2.0]))])
+        .build();
+
+    let average_position = microstate.sites()
+        .iter()
+        .map(|site| site.properties.position)
+        .sum::<Cartesian<2>>() / (microstate.sites().len() as f64);
+    ```
+    */
     #[inline]
     pub fn sites(&self) -> &[Site<S>] {
         &self.sites
     }
 
+    /** Identify the index of a site given a tag.
+
+    Use [`site_indices`](Microstate::site_indices) to locate a specific site in
+    [`Microstate::sites`].
+
+    See [`body_indices`](Microstate::body_indices) for details.
+    */
     #[inline]
     pub fn site_indices(&self) -> &[Option<usize>] {
         &self.site_indices
     }
 
+    /** Iterate over all the sites (in the system reference frame) associated with a body.
+
+    Use [`iter_body_sites`](Microstate::iter_body_sites) to perform computations
+    in the system reference frame on all sites that are associated with a given
+    body *index*. The borrowed sites are immutable. Call
+    [`Microstate::update_body_properties()`] to mutate a body.
+
+    # Example
+
+    ```
+    use hoomd_microstate::{Microstate, MicrostateBuilder, Body};
+    use hoomd_vector::{Vector, Cartesian};
+
+    let microstate = MicrostateBuilder::new()
+        .bodies([Body::point(Cartesian::from([1.0, 0.0])),
+                 Body::point(Cartesian::from([-1.0, 2.0]))])
+        .build();
+
+    let average_position = microstate.iter_body_sites(0)
+        .map(|site| site.properties.position)
+        .sum::<Cartesian<2>>() / (microstate.bodies()[0].item.sites.len() as f64);
+    ```
+    */
     #[inline]
     pub fn iter_body_sites(&self, body_index: usize) -> impl Iterator<Item = &Site<S>> {
         self.bodies_sites[body_index]
