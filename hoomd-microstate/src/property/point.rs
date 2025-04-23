@@ -64,9 +64,7 @@ where
     let site_properties = Point::new(Cartesian::from([-3.0, 2.0, 1.0]));
 
     let system_site = body_properties.transform(&site_properties);
-    assert_eq!(system_site.position[0], -2.0);
-    assert_eq!(system_site.position[1], 0.0);
-    assert_eq!(system_site.position[2], 4.0);
+    assert_eq!(system_site.position, [-2.0, 0.0, 4.0].into());
     ```
     */
     #[inline]

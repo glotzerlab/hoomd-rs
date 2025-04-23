@@ -117,7 +117,7 @@ impl<B, S> Microstate<B, S, Open> {
     }
 }
 
-/// Access and manage the simulation step, substep, and RNG seeds.
+/// Access and manage the simulation step, substep, RNG seeds.
 impl<B, S, C> Microstate<B, S, C> {
     /** Get the simulation step.
 
@@ -291,6 +291,31 @@ impl<B, S, C> Microstate<B, S, C> {
     #[inline]
     pub fn counter(&self) -> Counter {
         Counter::new(self.step, self.substep, self.seed)
+    }
+}
+
+/// Access and manage the boundary condition.
+impl<B, S, C> Microstate<B, S, C> {
+    /** Get the boundary condition.
+
+    # Example
+
+    TODO: Write once we have a non-trivial boundary type.
+    */
+    #[inline]
+    pub fn boundary(&self) -> &C {
+        &self.boundary
+    }
+
+    /** Get the boundary condition (mutable).
+
+    # Example
+
+    TODO: Write once we have a non-trivial boundary type.
+    */
+    #[inline]
+    pub fn boundary_mut(&mut self) -> &mut C {
+        &mut self.boundary
     }
 }
 
@@ -471,7 +496,31 @@ impl<B, S, C> Microstate<B, S, C> {
         self.free_body_tags.push(Reverse(body_tag));
     }
 
+    /** Sets the properties of the given body.
+
+    Also updates the properties of the sites associated with the body.
+
+    # Example
+
+    ```
+    use hoomd_microstate::{Microstate, MicrostateBuilder, Body};
+    use hoomd_microstate::property::Point;
+    use hoomd_vector::Cartesian;
+
+    let mut microstate = MicrostateBuilder::new()
+        .bodies([Body::point(Cartesian::from([1.0, 0.0]))])
+        .build();
+
+    microstate.update_body_properties(0, Point::new(Cartesian::from([-2.0, 3.0])));
+    assert_eq!(microstate.bodies()[0].item.properties.position, [-2.0, 3.0].into());
+    assert_eq!(microstate.sites()[0].properties.position, [-2.0, 3.0].into());
+    ```
+    */
     #[inline]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "Panic would occur due to a bug in hoomd-rs."
+    )]
     pub fn update_body_properties(&mut self, body_index: usize, properties: B)
     where
         B: Transform<S>,
@@ -578,6 +627,11 @@ impl<B, S, C> Microstate<B, S, C> {
     #[inline]
     pub fn sites(&self) -> &[Site<S>] {
         &self.sites
+    }
+
+    #[inline]
+    pub fn site_indices(&self) -> &[Option<usize>] {
+        &self.site_indices
     }
 
     #[inline]
@@ -795,6 +849,28 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
         microstate.extend_bodies(self.bodies);
 
         microstate
+    }
+}
+
+impl<B, S, C> PartialEq<Microstate<B, S, C>> for Microstate<B, S, C>
+where
+    B: PartialEq,
+    S: PartialEq,
+    C: PartialEq,
+{
+    #[inline]
+    fn eq(&self, other: &Microstate<B, S, C>) -> bool {
+        // `PartialEq` cannot be derived for Microstate, so implement it manually.
+        //
+        // Not all fields matter for equality. Check only those that do.
+        self.step == other.step
+            && self.substep == other.substep
+            && self.seed == other.seed
+            && self.bodies == other.bodies
+            && self.body_indices == other.body_indices
+            && self.sites == other.sites
+            && self.site_indices == other.site_indices
+            && self.boundary == other.boundary
     }
 }
 

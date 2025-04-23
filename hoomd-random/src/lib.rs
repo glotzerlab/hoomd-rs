@@ -8,7 +8,7 @@
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
 
-/*! Helpers to enable consistent use of random numbers througought hoomd-rs.
+/*! Helpers that enable consistent use of random numbers througought hoomd-rs.
 */
 
 use chacha20::ChaCha8Rng;

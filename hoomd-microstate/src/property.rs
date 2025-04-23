@@ -8,7 +8,16 @@ properties interact with [`Microstate`](crate::Microstate) and model methods.
 
 # Provided types
 
-TODO:
+The structs provided in `property` may be used as [`Body`](crate::Body) and/or
+[`Site`](crate::Site) properties.
+
+[`Point`] represents a position in space:
+```
+use hoomd_microstate::property::Point;
+use hoomd_vector::Cartesian;
+
+let point = Point::new(Cartesian::from([1.0, -3.0]));
+```
 
 # Custom property types
 
@@ -52,14 +61,12 @@ impl Position<Cartesian<3>> for Custom {
 }
 ```
 
-TODO: File issue about macro to reduce the boilerplate.
-
 ## Transformations
 
-TODO: Demonstrate transform for a custom type. Transformations may not be formulaic enough
-for a macro to work in general. Though we could provide convenience methods that implement
-typical rigid transformations.
- */
+TODO: Demonstrate transform for a custom type. Need the `OrientedPoint` type to
+use as a body property first. Transformations may not be formulaic enough for a
+macro to work in general.
+*/
 
 mod point;
 pub use point::Point;

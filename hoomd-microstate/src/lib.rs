@@ -64,27 +64,111 @@ site properties (the generic type `S`) do not need to be the same. For example,
 a body might have mass, position and velocity while that body's sites have
 position and type.
 
-The `property` module contains a number of ready-to-use property types. It also
-defines traits that you can use to implement custom property types. At a
-minimum, *both `B` and `S` MUST implement [`property::Position`]* so that
-[`Microstate`] can place your bodys and sites inside the boundary conditions
-and maintain spatial data structures. Some model methods (such as shap overlap
-energies) will require other traits (such as [`property::Orientation`]).
-The `property` module documentation provides more details on using the
-types it provides and how to define custom types.
+The `property` module provides a number of property types. It also defines
+traits that you can use to implement custom property types. At a minimum, *both
+`B` and `S` MUST implement [`property::Position`]* so that [`Microstate`] can
+place your bodys and sites inside the boundary conditions and maintain spatial
+data structures. Some model methods (such as shap overlap energies) will
+require other traits (such as [`property::Orientation`]). The `property` module
+documentation provides more details on using the types it provides and how to
+define custom types.
 
-TODO: Add/remove/update
-TODO: Access sites, iter_body_sites
+[`Microstate::add_body`] and [`Microstate::extend_bodies`] add new bodies (and
+their sites) to the microstate. Similarly, [`Microstate::remove_body`] removes a
+body (and all associated sites). [`Microstate::update_body_properties`] modifies
+the properties of a given body and correspondingly the properties of all sites
+associated with that body. All these methods have a cost proportional to the
+number of sites in the body.
 
-## On tags
+[`Microstate::bodies`] provides direct (immutable) access to the bodies in
+the microstate, including their properties and sites in the body frame. While
+some algorithms may find this useful, many model algorithms instead operate
+on site properties in the system frame. [`Microstate::sites`] provides direct
+(immutable) access to a slice of all sites in the system frame for this
+purpose. Any method that adds, removes, or changes a body immediately updates
+[`Microstate::sites`] accordingly. [`Microstate::iter_body_sites`] iterates over
+all the sites (in the system frame) associated with a given body.
+
+## Tags
+
+The elements of [`Microstate::bodies`] and [`Microstate::sites`] are stored in
+**no particular order** to allow efficient addition and removal of bodies and
+for the possibility sorting to improve cache coherency. Callers are welcome
+to iterate over these data structures when computing order-independent overall
+properties. However, a caller should never maintain indices into these vectors.
+Instead, the caller should store the appropriate **tag** when it needs to
+persistently refer to a specific body or site.
+
+Elements in [`Microstate::bodies`] have the type [`Tagged<Body>`].
+The [`item`](Tagged::item) field holds the body itself while the
+[`tag`](Tagged::tag) field is a unique identifier that identifies this
+specific body. The tag will remain the same even when [`Microstate::bodies`] is
+reordered. Use [`Microstate::body_indices`] to find the current index of a body
+with a given tag.
+
+Elements in [`Microstate::sites`] have the type [`Site<S>`]. As with bodies,
+each site has a unique [`site_tag`](Site::site_tag) that remains the same even
+when sites are reodered. Each site also has a [`body_tag`](Site::body_tag) that
+identifies which body the site is part of. Use [`Microstate::site_indices`]
+to find the current index of a site with a given site tag and
+[`Microstate::iter_body_sites`] to find all the sites associated with a given
+body *index*.
 
 ## Boundary conditions
 
+The positions of all bodies and all sites **must** be insite the microstate's
+boundary at all times. Periodic boundaries can wrap positions outside to a
+corresponding point on the inside. When a boundary is aperiodic (or partially
+aperiodic), the wrapping process may fail. MC models reject trial moves that
+cannot be wrapped. MD models fail with an error should bodies or sites move in a
+way that cannot be wrapped.
+
+[`Microstate`] is generic on the type of boundary condition. The [`boundary`]
+module implements standard types and documents how you can implement custom
+implementations.
+
+TODO: Implement boundary conditions, then document.
+
 ## Ghost sites
+
+TODO: Implement ghost sites, then document.
 
 ## Spatial searches
 
-## Constructing [`Microstate`]
+TODO: Implement spatial search, then document.
+
+## Constructing Microstate
+
+You will find many examples in this documentation using [`Microstate::new`].
+It is designed to be terse, is inflexible as a consequence.
+[`Microstate::new`] always sets [`Open`](boundary::Open) boundary conditions and
+initializes the seed and step to 0.
+```
+use hoomd_microstate::{Microstate, property::Point};
+use hoomd_vector::Cartesian;
+
+let microstate = Microstate::<Point<Cartesian<2>>>::new();
+```
+
+When you need more control, use [`MicrostateBuilder`] to set the boundary conditions,
+use a different seed or starting step:
+
+```
+use hoomd_microstate::{Microstate, MicrostateBuilder, property::Point};
+use hoomd_microstate::boundary::Open;
+use hoomd_vector::Cartesian;
+
+let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::with_boundary(Open)
+    .seed(0x43abf1)
+    .step(100_000)
+    .build();
+```
+
+TODO: Show a non-trivial boundary condition.
+
+TODO: Show a GSD file example when implemented.
+
+TODO: Show the use of a random particle placement recipe when implemented.
 */
 
 pub mod boundary;
@@ -97,13 +181,14 @@ use property::Point;
 
 /** Interactions in `hoomd-rs` apply between sites.
 
-A [`Site`] (often called an *atom* or a *particle* in other codes) has a `tag`
-that uniquely identities it in the [`Microstate`] and is associated with a
-given `body` (see [`Body`]). All interactions in `hoomd-rs` occur between sites
-as a function of their `properties`. At a minimum, [`Microstate`] assumes that
-`properties` implements [`Position`](property::Position). The `properties` type
-is generic so that users can build custom types that store orientation, charge,
-mass, color, or whatever other fields are needed to implement their model.
+A [`Site`] (often called an *atom* or a *particle* in other codes) has a
+`tag` that uniquely identities it in the [`Microstate`] and is associated
+with a given `body` (see [`Body`]). All interactions in `hoomd-rs` occur
+on or between sites as a function of their `properties` which has the
+generic type `S`. At a minimum, [`Microstate`] assumes that `S` implements
+[`Position`](property::Position). `S` is generic so that users can build custom
+types that store orientation, charge, mass, color, or whatever other fields are
+needed to implement their model.
 
 Add sites to the [`Microstate`] as members of bodies ([`Body`]).
 
@@ -152,7 +237,7 @@ implementations of [`Transform`] could achieve other behaviors.
 Use the properties defined in [`property`] to construct bodies that meet
 the needs of your model.
 
-# Example
+# Examples
 
 Construct body with a single interaction site at one point:
 ```
@@ -163,10 +248,11 @@ let body = Body::point(Cartesian::from([-3.0, 5.0]));
 ```
 
 TODO: Construct a body with an oriented point.
+TODO: Construct an oriented body with several point interaction sites.
 
 # Custom body and site properties
 
-The `property` module documentation shows you how to define custom body
+The [`property`] module documentation shows you how to define custom body
 and site property types.
 */
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -212,6 +298,9 @@ impl<V> Body<Point<V>, Point<V>> {
 }
 
 /** Take [`Site`] properties in the body frame into the system frame.
+
+See the [`property`] module-level documentation for an example
+that implements [`Transform`] for a custom type.
 */
 pub trait Transform<S> {
     /** Transform site properties.
