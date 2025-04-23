@@ -160,6 +160,13 @@ where
     RotationMatrix<3>: From<R>,
 {
     let precision_tol = 2e-15; // Set fixed tol, rather than rounding-radius based
+    let root_tol = 4e-8;
+
+    if v_ij.into_iter().all(|x| x.abs() < root_tol) {
+        // Interior point is at the origin => shapes overlap
+        return true;
+    }
+
     let s = SupportFunctor::new(sa, sb, v_ij, *q_ij);
 
     // Phase 1: Portal discovery
@@ -195,7 +202,6 @@ where
 
     // Support point perpendicular to plane containing interior point and first 2 supports
     let mut n = (v1 - v0).cross(&(v2 - v0));
-
     // Maintain known handedness of the portal
     if n.dot(&v0) > 0.0 {
         (v1, v2) = (v2, v1);
@@ -256,6 +262,22 @@ where
         }
 
         // TODO: tolerance checks?
+        let tol_multiplier = 10_000.0;
+        n = (v2 - v1).cross(&(v3 - v1));
+        let mut d = ((v4 - v1) * tol_multiplier).dot(&n);
+        // let R = 1.0; // Average circumsphere diameter of the two shapes
+        let tol = precision_tol * tol_multiplier * n.norm();
+
+        // First, check if v4 is on plane (v2, v1, v3)
+        if d.abs() < tol {
+            // No more refinement possible, but not intersection detected
+            return false;
+        }
+        // Second, check if origin is on plane (v2, v1, v3) and has been missed by other checks
+        d = (v1 * tol_multiplier).dot(&n);
+        if d.abs() < tol {
+            return true;
+        }
 
         // Choose a new portal. Two of its edges will be from the planes (v4,v0,v1),
         // (v4,v0,v2), (v4,v0,v3). Find which two have the origin on the same side.
@@ -277,7 +299,10 @@ where
         let v_perp_v4v0 = v4.cross(&v0);
 
         // Compiles to the same code as the original if-else, despite the extra dot
-        #[allow(clippy::match_same_arms)]
+        #[expect(
+            clippy::match_same_arms,
+            reason = "Clearly illustrate translation from c."
+        )]
         match (
             v_perp_v4v0.dot(&v1) > 0.0,
             v_perp_v4v0.dot(&v2) > 0.0,
