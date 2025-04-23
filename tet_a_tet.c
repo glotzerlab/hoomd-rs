@@ -131,14 +131,21 @@ inline static bool EdgeA(const int &f0, const int &f1) {
   int maskf1 = masks[f1];
 
   if ((maskf0 | maskf1) != 017) // if there is a vertex of b
-
+  {
+    printf("Masks are full: mamb = %d, %d\n", maskf0, maskf1);
     return false; // included in (-,-) return false
-
+  }
   maskf0 &= (maskf0 ^ maskf1); // exclude the vertices in (+,+)
 
   maskf1 &= (maskf0 ^ maskf1);
+  printf("Modified mask f0 = %d\n", maskf0);
+  printf("Modified mask f1 = %d\n", maskf1);
 
   // edge 0: 0--1
+
+  double cp = (coord_f0[1] * coord_f1[0]) - (coord_f0[0] * coord_f1[1]);
+  printf("Edge test 0--1a: %d && %d && %f > 0.0\n", maskf0 & 001, maskf1 & 002, cp);
+  printf("Edge test 0--1b: %d && %d && %f < 0.0\n", maskf0 & 002, maskf1 & 001, cp);
 
   if (((maskf0 & 001) && // the vertex 0 of b is in (-,+)
 
@@ -147,62 +154,98 @@ inline static bool EdgeA(const int &f0, const int &f1) {
       (((coord_f0[1] * coord_f1[0]) - (coord_f0[0] * coord_f1[1])) > 0))
     // the edge of b (0,1) intersect (-,-) (see the paper)
 
-    return false;
+    {
+      printf("edge_test 0--1a \n");
+      return false;
+    }
 
   if (((maskf0 & 002) && (maskf1 & 001)) &&
       (((coord_f0[1] * coord_f1[0]) - (coord_f0[0] * coord_f1[1])) < 0))
-    return false;
+    {
+      printf("edge_test 0--1b \n");
+      return false;
+    }
 
   // edge 1: 0--2
 
   if (((maskf0 & 001) && (maskf1 & 004)) &&
       (((coord_f0[2] * coord_f1[0]) - (coord_f0[0] * coord_f1[2])) > 0))
-    return false;
+    {
+      printf("edge_test  \n");
+      return false;
+    }
 
   if (((maskf0 & 004) && (maskf1 & 001)) &&
       (((coord_f0[2] * coord_f1[0]) - (coord_f0[0] * coord_f1[2])) < 0))
-    return false;
+    {
+      printf("edge_test  \n");
+      return false;
+    }
 
   // edge 2: 0--3
 
   if (((maskf0 & 001) && (maskf1 & 010)) &&
       (((coord_f0[3] * coord_f1[0]) - (coord_f0[0] * coord_f1[3])) > 0))
-    return false;
+    {
+      printf("edge_test  \n");
+      return false;
+    }
 
   if (((maskf0 & 010) && (maskf1 & 001)) &&
       (((coord_f0[3] * coord_f1[0]) - (coord_f0[0] * coord_f1[3])) < 0))
-    return false;
+    {
+      printf("edge_test  \n");
+      return false;
+    }
 
   // edge 3: 1--2
 
   if (((maskf0 & 002) && (maskf1 & 004)) &&
       (((coord_f0[2] * coord_f1[1]) - (coord_f0[1] * coord_f1[2])) > 0))
-    return false;
+    {
+      printf("edge_test  \n");
+      return false;
+    }
 
   if (((maskf0 & 004) && (maskf1 & 002)) &&
       (((coord_f0[2] * coord_f1[1]) - (coord_f0[1] * coord_f1[2])) < 0))
-    return false;
+    {
+      printf("edge_test  \n");
+      return false;
+    }
 
   // edge 4: 1--3
 
   if (((maskf0 & 002) && (maskf1 & 010)) &&
       (((coord_f0[3] * coord_f1[1]) - (coord_f0[1] * coord_f1[3])) > 0))
-    return false;
+    {
+      printf("edge_test  \n");
+      return false;
+    }
 
   if (((maskf0 & 010) && (maskf1 & 002)) &&
       (((coord_f0[3] * coord_f1[1]) - (coord_f0[1] * coord_f1[3])) < 0))
-    return false;
+    {
+      printf("edge_test  \n");
+      return false;
+    }
 
   // edge 5: 2--3
 
   if (((maskf0 & 004) && (maskf1 & 010)) &&
       (((coord_f0[3] * coord_f1[2]) - (coord_f0[2] * coord_f1[3])) > 0))
-    return false;
+    {
+      printf("edge_test  \n");
+      return false;
+    }
 
   if (((maskf0 & 010) && (maskf1 & 004)) &&
       (((coord_f0[3] * coord_f1[2]) - (coord_f0[2] * coord_f1[3])) < 0))
-    return false;
-
+    {
+      printf("edge_test  \n");
+      return false;
+    }
+  printf("All edge tests failed! Returning true\n");
   return true; // there exists a separting plane supported by the edge shared by
                // f0 and f1
 }
@@ -233,33 +276,49 @@ bool tet_a_tet(double V_1[4][3], double V_2[4][3]) {
   if (FaceA_1(&Coord_1[1][0], masks[1]))
     return false;
 
-  if (EdgeA(0, 1))
+  if (EdgeA(0, 1)) {
+    printf("e 0 1");
     return false;
+  }
 
   VECT(n, e_v1[1], e_v1[2]);
 
-  if (FaceA_1(&Coord_1[2][0], masks[2]))
+  if (FaceA_1(&Coord_1[2][0], masks[2])) {
+    printf("f 1 2");
     return false;
+  }
 
-  if (EdgeA(0, 2))
+  if (EdgeA(0, 2)) {
+    printf("e 0 2");
     return false;
-  if (EdgeA(1, 2))
+  }
+  if (EdgeA(1, 2)) {
+    printf("e 1 2\n");
     return false;
+  }
 
   SUB(e_v1[4], V1[3], V1[1]);
   SUB(e_v1[3], V1[2], V1[1]);
 
   VECT(n, e_v1[4], e_v1[3]);
 
-  if (FaceA_2(&Coord_1[3][0], masks[3]))
+  if (FaceA_2(&Coord_1[3][0], masks[3])) {
+    printf("f* 4 3");
     return false;
+  }
 
-  if (EdgeA(0, 3))
+  if (EdgeA(0, 3)) {
+    printf("e 0 3");
     return false;
-  if (EdgeA(1, 3))
+  }
+  if (EdgeA(1, 3)) {
+    printf("e 1 3");
     return false;
-  if (EdgeA(2, 3))
+  }
+  if (EdgeA(2, 3)) {
+    printf("e 2 3");
     return false;
+  }
 
   if ((masks[0] | masks[1] | masks[2] | masks[3]) != 017)
     return true;
@@ -275,73 +334,87 @@ bool tet_a_tet(double V_1[4][3], double V_2[4][3]) {
   SUB(e_v2[1], V2[2], V2[0]);
 
   VECT(n, e_v2[0], e_v2[1]);
-  if (FaceB_1())
+  if (FaceB_1()) {
+    printf("f_b 0 1");
     return false;
+  }
 
   SUB(e_v2[2], V2[3], V2[0]);
 
   VECT(n, e_v2[2], e_v2[0]);
 
-  if (FaceB_1())
+  if (FaceB_1()) {
+    printf("f_b 2 0");
     return false;
+  }
 
   VECT(n, e_v2[1], e_v2[2]);
 
-  if (FaceB_1())
+  // if (FaceB_1())
+  //   return false;
+  if (FaceB_1()) {
+    printf("f_b 1 2");
     return false;
+  }
 
   SUB(e_v2[4], V2[3], V2[1]);
   SUB(e_v2[3], V2[2], V2[1]);
 
   VECT(n, e_v2[4], e_v2[3]);
 
-  if (FaceB_2())
+  // if (FaceB_2())
+  //   return false;
+  if (FaceB_1()) {
+    printf("f_b 4 3");
     return false;
+  }
 
   return true;
 }
 
 int main() {
-    static point p[4] = {
-        {1.0, 1.0, 1.0},
-        {1.0, -1.0, -1.0},
-        {-1.0, 1.0, -1.0},
-        {-1.0, -1.0, 1.0}
-    };
-    static point q[4] = {
-        // Does not intersect (as expected)
-        // {2.0, 1.0, 3.001},
-        // {2.0, -1.0, 1.001},
-        // {0.0, 1.0, 1.001},
-        // {0.0, -1.0, 3.001}
+  static point p[4] = {
+      {1.0, 1.0, 1.0}, {1.0, -1.0, -1.0}, {-1.0, 1.0, -1.0}, {-1.0, -1.0, 1.0}};
+  static point q[4] = {
+      // Does not intersect (as expected)
+      // {2.0, 1.0, 3.001},
+      // {2.0, -1.0, 1.001},
+      // {0.0, 1.0, 1.001},
+      // {0.0, -1.0, 3.001}
 
-        // Does not intersect (UNEXPECTED, FLOATING POINT?)
-        // This is an exact intersection though, so it's fine.
-        {2.0, 1.0, 3.000},
-        {2.0, -1.0, 1.000},
-        {0.0, 1.0, 1.000},
-        {0.0, -1.0, 3.000}
+      // Does not intersect (UNEXPECTED, FLOATING POINT?)
+      // This is an exact intersection though, so it's fine.
+      // {2.0, 1.0, 3.000},
+      // {2.0, -1.0, 1.000},
+      // {0.0, 1.0, 1.000},
+      // {0.0, -1.0, 3.000}
 
-        // Intersects as expected 
-        // {2.0, 1.0, 2.999999999999999},
-        // {2.0, -1.0, 0.999999999999999},
-        // {0.0, 1.0, 0.999999999999999},
-        // {0.0, -1.0, 2.999999999999999}
-    };
+      // Intersects as expected
+      // {2.0, 1.0, 2.999999999999999},
+      // {2.0, -1.0, 0.999999999999999},
+      // {0.0, 1.0, 0.999999999999999},
+      // {0.0, -1.0, 2.999999999999999}
+
+      // NEW CASE
+       {0.6803197528322115, 1.3776082678217132, 3.01},
+       {2.377608267821713, 0.31968024716778853, 1.0099999999999998},
+       {-0.3776082678217132, -0.31968024716778853, 1.0099999999999998},
+       {1.3196802471677884, -1.3776082678217132, 3.01}};
   V1 = p;
   V2 = q;
 
   // for (int i = 0; i < 4; ++i) {
   //   printf("V1[%d] = (%.1f, %.1f, %.1f)\n", i, V1[i][0], V1[i][1], V1[i][2]);
-    
+
   // }
   // printf("\n");
   // for (int i = 0; i < 4; ++i) {
-  //   printf("V2[%d] = (%.1f, %.1f, %.1f)\n", i, V2[i][0], V2[i][1], V2[i][2]);}
+  //   printf("V2[%d] = (%.1f, %.1f, %.1f)\n", i, V2[i][0], V2[i][1],
+  //   V2[i][2]);}
 
   bool intersects = tet_a_tet(V1, V2);
   printf("Tetrahedra intersect: %s\n", intersects ? "true" : "false");
-  }
+}
 
 #undef DOT
 #undef SUB
