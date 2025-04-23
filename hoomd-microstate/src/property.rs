@@ -2,6 +2,63 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Traits that describe body and/or site properties a a selection types that implement them.
+
+See the [crate-level documentation](crate) for an overview of how body and site
+properties interact with [`Microstate`](crate::Microstate) and model methods.
+
+# Provided types
+
+TODO:
+
+# Custom property types
+
+When none of the provided types meets your needs, you can define a custom type.
+You must implement [`Position`] for your type and may implement other
+property traits as needed by your model.
+
+For example, this `Custom` type implements [`Position`], [`Orientation`],
+and has a `custom` field. The full site properties type is available when
+hoomd-rs computes interactions on sites, so you can use the custom fields
+in your own custom interaction potentials.
+
+```
+use hoomd_vector::{Cartesian, Versor};
+use hoomd_microstate::property::{Orientation, Position};
+
+struct Custom {
+    position: Cartesian<3>,
+    orientation: Versor,
+    custom: f64,
+    }
+
+impl Orientation<Versor> for Custom {
+    fn orientation(&self) -> &Versor {
+        &self.orientation
+    }
+
+    fn orientation_mut(&mut self) -> &mut Versor {
+        &mut self.orientation
+    }
+}
+
+impl Position<Cartesian<3>> for Custom {
+    fn position(&self) -> &Cartesian<3> {
+        &self.position
+    }
+
+    fn position_mut(&mut self) -> &mut Cartesian<3> {
+        &mut self.position
+    }
+}
+```
+
+TODO: File issue about macro to reduce the boilerplate.
+
+## Transformations
+
+TODO: Demonstrate transform for a custom type. Transformations may not be formulaic enough
+for a macro to work in general. Though we could provide convenience methods that implement
+typical rigid transformations.
  */
 
 mod point;
@@ -20,31 +77,6 @@ the position of the body's origin in the system reference frame.
 # Units
 
 Position vectors have units of *\[length\]*.
-
-# Usage
-
-[`Position`] is implemented for a number of built-in types, such as [`Point`].
-To implement [`Position`] for a custom property type, follow this example:
-
-```
-use hoomd_vector::Cartesian;
-use hoomd_microstate::property::Position;
-
-struct Custom {
-    position: Cartesian<3>,
-    custom_property: f64,
-    }
-
-impl Position<Cartesian<3>> for Custom {
-    fn position(&self) -> &Cartesian<3> {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Cartesian<3> {
-        &mut self.position
-    }
-}
-```
 */
 pub trait Position<V> {
     /// The position of this body or site *\[length\]*.
@@ -68,32 +100,6 @@ The units of [`Orientation`] depend on the representation chosen for `R`.
 For example, [`hoomd_vector::Angle`] has units of radians while
 [`hoomd_vector::Versor`] is unitless.
 
-# Usage
-
-[`Orientation`] is implemented for a number of built-in types, such as TODO.
-To implement [`Orientation`] for a custom property type,
-follow this example:
-
-```
-use hoomd_vector::{Cartesian, Versor};
-use hoomd_microstate::property::Orientation;
-
-struct Custom {
-    position: Cartesian<3>,
-    orientation: Versor,
-    custom_property: f64,
-    }
-
-impl Orientation<Versor> for Custom {
-    fn orientation(&self) -> &Versor {
-        &self.orientation
-    }
-
-    fn orientation_mut(&mut self) -> &mut Versor {
-        &mut self.orientation
-    }
-}
-```
 */
 pub trait Orientation<R> {
     /// The orientation of this body or site.

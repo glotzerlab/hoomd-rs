@@ -10,7 +10,81 @@
 
 /*! Store and manage the simulation state.
 
-   TODO: Expand documentation.
+# Microstate
+
+[`Microstate`] facilitates simulations of particle systems. It is the central
+data structure used by MC, MD, and supporting calculations implemented in
+`hoomd-rs`. [`Microstate`] holds a set of bodies that exist in a space defined
+by the boundary conditions. The degrees of freedom consist of the properties of
+the bodies and the parameters of the boundary conditions.
+
+[`Microstate`] also stores many auxiliary data structures and implements
+convenience methods to facilitate the efficient implementation of simulation
+models. These include a set of all interaction sites in the system frame
+of reference, ghost sites near the periodic boundaries, and spatial data
+structures.
+
+## Step, substep and seed
+
+[`Microstate`] tracks the current simulation step ([`Microstate::step`]),
+substep ([`Microstate::substep`]), and seed ([`Microstate::seed`])
+that allow models to generate uncorrelated random number streams via
+[`Microstate::counter`].
+
+The **step** is the current step in the simulation as defined by the user.
+For example, a single step could be one MD timestep or the application
+of a set of MC moves. Users should call [`Microstate::increment_step`]
+after each step in the model is completed. The **substep** is a running
+counter tracking the number of operations called so far during the current
+step. Model methods in *hoomd-rs* (such as the MC trial move `apply`) call
+[`increment_substep`](Microstate::increment_substep) internally. Users should
+call it at the end of any custom methods that implement new substeps.
+**A failure to call [`increment_substep`](Microstate::increment_substep)
+will cause the reuse of the same random numbers from one substep to the next!**
+
+The **seed** allows users to select independent random number streams for
+simulations that would otherwise be identical. It may only be set once on
+creation by [`MicrostateBuilder::seed`].
+
+## Bodies and sites
+
+[`Microstate`] differentiates between the degrees of freedom of the system and
+points where interactions take place. Each [`Body`] in the microstate has one
+or more interaction sites ([`Site`]). The bodies have degrees of freedom that
+are evolved by the simulation model, which defines how bodies interact through
+their sites. The properties of the sites *in the system frame* are a function
+of the body's properties and the site properties *in the body frame*. In a
+particle-only simulation model each body has one site at the origin in the body
+frame. In a simulation of squares, each body might be made up of four sites on
+the vertices. In both cases, the net force on the body is the sum of the forces
+applied to all of its sites.
+
+In [`Microstate`], the body properties (the generic type `B` throughout) and the
+site properties (the generic type `S`) do not need to be the same. For example,
+a body might have mass, position and velocity while that body's sites have
+position and type.
+
+The `property` module contains a number of ready-to-use property types. It also
+defines traits that you can use to implement custom property types. At a
+minimum, *both `B` and `S` MUST implement [`property::Position`]* so that
+[`Microstate`] can place your bodys and sites inside the boundary conditions
+and maintain spatial data structures. Some model methods (such as shap overlap
+energies) will require other traits (such as [`property::Orientation`]).
+The `property` module documentation provides more details on using the
+types it provides and how to define custom types.
+
+TODO: Add/remove/update
+TODO: Access sites, iter_body_sites
+
+## On tags
+
+## Boundary conditions
+
+## Ghost sites
+
+## Spatial searches
+
+## Constructing [`Microstate`]
 */
 
 pub mod boundary;
@@ -75,7 +149,7 @@ In typical cases, such as those implemented in `hoomd-rs`, [`Body`] describes
 a rigid collection of sites that transform together. However, creative
 implementations of [`Transform`] could achieve other behaviors.
 
-Use the built-in properties in [`property`] to construct bodies that meet
+Use the properties defined in [`property`] to construct bodies that meet
 the needs of your model.
 
 # Example
@@ -92,9 +166,8 @@ TODO: Construct a body with an oriented point.
 
 # Custom body and site properties
 
-You can also implement custom property types:
-
-TODO: Demonstrate how to customize body and site properties, then construct a custom body.
+The `property` module documentation shows you how to define custom body
+and site property types.
 */
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Body<B, S> {

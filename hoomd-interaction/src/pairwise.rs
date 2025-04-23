@@ -32,7 +32,7 @@ particles.
 <!-- U(r) -->
 <math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo></mrow></math>
 
-Implement [`IsotropicEnergy`] on a custom type or use one of the built-in
+Implement [`IsotropicEnergy`] on a custom type or use one of the provided
 potentials in [`pairwise`](crate::pairwise) in MD or MC simulations.
 */
 pub trait IsotropicEnergy {
@@ -49,7 +49,7 @@ pub trait IsotropicEnergy {
 An isotropic pairwise force is function only of the distances between the
 particles and acts along the vector separating the particles.
 
-Implement [`IsotropicForce`] on a custom type or use one of the built-in
+Implement [`IsotropicForce`] on a custom type or use one of the provided
 forces in [`pairwise`](crate::pairwise) in MD simulations.
 */
 pub trait IsotropicForce {
@@ -75,7 +75,7 @@ orientation of the *j* particle in *i's* reference frame:
 <!-- U(\vec{r}_{ij}, \mathbf{o}_{ij}) -->
 <math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><msub><mover><mi>r</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo separator="true">,</mo><msub><mi>𝐨</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo form="postfix" stretchy="false">)</mo></mrow></math>
 
-Implement [`AnisotropicEnergy`] on a custom type or use one of the built-in
+Implement [`AnisotropicEnergy`] on a custom type or use one of the provided
 potentials in [`pairwise`](crate::pairwise) in MD or MC simulations.
 */
 pub trait AnisotropicEnergy<V: Vector, R: Rotate<V>> {
