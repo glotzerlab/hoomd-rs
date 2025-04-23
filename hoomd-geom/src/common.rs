@@ -64,59 +64,6 @@ fn closest_point_on_line_segment(
     ab * (a + t.clamp(0.0, 1.0))
 }
 
-// impl<S, V: Vector, R: Rotate<Cartesian<3>>> IntersectsAt<S, V, R> for Capsule {
-impl<R: Rotate<Cartesian<3>> + Rotation> IntersectsAt<Capsule, Cartesian<3>, R> for Capsule {
-    #[inline]
-    fn intersects_at(&self, other: &Capsule, r_ij: &Cartesian<3>, o_ij: &R) -> bool {
-        /*
-
-        Capsule-Capsule intersection can be though of as a two step process:
-        1. Find the closest pair of spheres from A and B
-        2. Check if those spheres overlap
-
-        This implementation is based on code from the following link:
-        https://wickedengine.net/2020/04/capsule-collision-detection/
-        */
-        println!("{r_ij}");
-        // First capsule is axis-aligned by convention
-        let a_b = Cartesian::from([0.0, 0.0, self.r + self.h / 2.0]);
-        let a_a = -a_b;
-        println!("{}, {}", a_b, a_a);
-        // let a_a = Cartesian::from([0.0, 0.0, -self.r]) + self.h / 2.0;
-
-        let b_a = o_ij.rotate(&a_a) + *r_ij;
-        let b_b = o_ij.rotate(&a_b) + *r_ij;
-        println!("{}, {}", b_b, b_a);
-
-        // Squared distances between line endpoints
-        let d0 = (b_a - a_a).norm_squared();
-        let d1 = (b_b - a_a).norm_squared();
-        let d2 = (b_a - a_b).norm_squared();
-        let d3 = (b_b - a_b).norm_squared();
-
-        // select best potential endpoint on capsule A:
-        let best_a = if d2 < d0 || d2 < d1 || d3 < d0 || d3 < d1 {
-            a_b
-        } else {
-            a_a
-        };
-
-        // Select the point on capsule B's primary axis that is nearest to the best potential endpoing on capsule A
-        let best_b = closest_point_on_line_segment(b_a, b_b, best_a);
-
-        // Repeat for the primary axis of capsule A
-        let best_a = closest_point_on_line_segment(a_a, a_b, best_b);
-
-        println!("best b: {best_b}");
-        println!("best a: {best_a}");
-
-        // Now we have the closest points, just do a sphere intersection at those pts.
-        let penetration_depth = (self.r + other.r) - (best_a - best_b).norm();
-        println!("pen depth: {penetration_depth}");
-        penetration_depth >= 0.0
-    }
-}
-
 /// An N-Dimensional [`HyperEllipsoid`] defined by its semi-major axes.
 #[derive(Clone, Copy, Debug)]
 pub struct HyperEllipsoid<const N: usize> {

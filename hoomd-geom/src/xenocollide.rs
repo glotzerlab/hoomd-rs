@@ -159,8 +159,9 @@ pub fn collide3d<R: Rotation + Copy, T: SupportFn<Cartesian<3>>>(
 where
     RotationMatrix<3>: From<R>,
 {
-    let precision_tol = 2e-15; // Set fixed tol, rather than rounding-radius based
+    let precision_tol = 2e-12; // Set fixed tol, rather than rounding-radius based
     let root_tol = 4e-8;
+    let tol_multiplier = 10_000.0;
 
     if v_ij.into_iter().all(|x| x.abs() < root_tol) {
         // Interior point is at the origin => shapes overlap
@@ -262,7 +263,6 @@ where
         }
 
         // TODO: tolerance checks?
-        let tol_multiplier = 10_000.0;
         n = (v2 - v1).cross(&(v3 - v1));
         let mut d = ((v4 - v1) * tol_multiplier).dot(&n);
         // let R = 1.0; // Average circumsphere diameter of the two shapes
@@ -326,7 +326,7 @@ mod tests {
     use rand::{Rng, SeedableRng, rngs::StdRng};
     use rstest::*;
 
-    use crate::{Capsule, Cuboid, Sphere};
+    use crate::{Cuboid, Sphere};
     use hoomd_vector::{Angle, Versor};
 
     #[rstest(
@@ -393,27 +393,6 @@ mod tests {
         let overlaps = collide3d(&c0, &c1, &v.into(), theta);
         assert_eq!(overlaps, c0.intersects_at(&c1, &v.into(), theta),);
     }
-
-    // Two issues: first, we need the tolerance in xenocollide for rounded shapes
-    // Second, we need to make sure our support fn is correct
-    // #[rstest]
-    // fn test_capsules_collide() {
-    //     let (r, h) = (10.0, 1.0);
-    //     let c0 = Capsule::from((r, h));
-    //     let c1 = Capsule::from((r, h));
-    //     let mut rng = StdRng::seed_from_u64(1);
-    //     let theta: Versor = rng.random();
-
-    //     let origin = [0.0, 0.0, 0.0];
-    //     let should_col = c0.intersects_at(&c1, &origin.into(), &theta);
-    //     assert!(should_col);
-    //     assert!(c0.intersects_at(&c1, &origin.into(), &theta));
-    //     assert_eq!(collide3d(&c0, &c1, &origin.into(), &theta), should_col);
-
-    //     // let v = rng.random::<Cartesian<3>>() * 10.0;
-    //     // let overlaps = collide3d(&c0, &c1, &v, &theta);
-    //     // assert_eq!(overlaps, c0.intersects_at(&c1, &v, &theta),);
-    // }
 }
 
 // TODO:
