@@ -197,7 +197,7 @@ where
     let mut n = (v1 - v0).cross(&(v2 - v0));
 
     // Maintain known handedness of the portal
-    if n.dot(&v0) >= 0.0 {
+    if n.dot(&v0) > 0.0 {
         (v1, v2) = (v2, v1);
         n = -n;
     }
