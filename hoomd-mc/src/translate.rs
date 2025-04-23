@@ -17,6 +17,10 @@ use std::marker::PhantomData;
 `Translate` proposes local trial moves that translate the position of a body
 in space by a random vector up a given maximum length.
 */
+#[expect(
+    clippy::partial_pub_fields,
+    reason = "Users do not need to be aware of phantom data."
+)]
 pub struct Translate<V> {
     /// The maximum distance a body can be translated in one trial move.
     pub maximum_distance: f64,

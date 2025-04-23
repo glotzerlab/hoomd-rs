@@ -1,3 +1,5 @@
+#![allow(clippy::print_stdout, reason = "Demonstration purposes")]
+
 /*! This is an example
 */
 
