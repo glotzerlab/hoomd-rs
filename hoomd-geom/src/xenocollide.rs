@@ -194,7 +194,7 @@ where
     }
 
     // Support point perpendicular to plane containing interior point and first 2 supports
-    let mut n = (v2 - v0).cross(&(v1 - v0));
+    let mut n = (v1 - v0).cross(&(v2 - v0));
 
     // Maintain known handedness of the portal
     if n.dot(&v0) >= 0.0 {
