@@ -213,17 +213,16 @@ const _SEPARATING_EDGE_CASES: [(u8, u8, usize, usize); 6] = [
 #[inline]
 #[must_use]
 fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) -> bool {
-    let (mut ma, mut mb) = (ma, mb);
     if (ma | mb) != 15 {
         return false; // If there is a vertex of b contained in the (-, -) quadrant
     }
     // exclude the vertices in (+,+) quadrant
-    ma &= ma ^ mb;
-    mb &= ma ^ mb;
+    let xa = ma & (ma ^ mb);
+    let xb = mb & (ma ^ mb);
 
     if _SEPARATING_EDGE_CASES
         .iter()
-        .any(|&(a, b, i, j)| edge_test(ma, mb, a, b, i, j, aff_a, aff_b))
+        .any(|&(a, b, i, j)| edge_test(xa, xb, a, b, i, j, aff_a, aff_b))
     {
         return false;
     }
@@ -318,10 +317,11 @@ where
         masks[3] = mask;
 
         // e 0|1|2 3
-        for (i, j) in [(0, 3), (1, 3), (2, 3)] {
-            if check_edge_is_separating(&affs[i], &affs[j], masks[i], masks[j]) {
-                return false;
-            }
+        if [(0, 3), (1, 3), (2, 3)]
+            .iter()
+            .any(|&(i, j)| check_edge_is_separating(&affs[i], &affs[j], masks[i], masks[j]))
+        {
+            return false;
         }
 
         // If (at least) a vertex of q is inside tetrahedron p
