@@ -231,7 +231,10 @@ fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) 
     true
 }
 
-impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simplex3 {
+impl<R: Rotate<Cartesian<3>> + Copy> IntersectsAt<Simplex3, Cartesian<3>, R> for Simplex3
+where
+    RotationMatrix<3>: From<R>,
+{
     /**
 
     Original C code of algorithm:
@@ -242,10 +245,11 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
     */
     #[inline]
     fn intersects_at(&self, other: &Simplex3, r_ij: &Cartesian<3>, o_ij: &R) -> bool {
+        let r = RotationMatrix::from(*o_ij);
         let p = *self;
 
         // TODO: is this the correct way to rotate?
-        let q = Simplex3::from(other.vertices.map(|v| o_ij.rotate(&v))).translate_by(r_ij);
+        let q = Simplex3::from(other.vertices.map(|v| r.rotate(&v))).translate_by(r_ij);
 
         let q_deltas = q.vertices.map(|v| v - p.vertices[0]);
 
@@ -256,6 +260,7 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
 
         edge_vectors_p[0] = p.vertices[1] - p.vertices[0];
         edge_vectors_p[1] = p.vertices[2] - p.vertices[0];
+        edge_vectors_p[2] = p.vertices[3] - p.vertices[0];
 
         // Handle all possible SAT cases, in a performance-optimized order
 
@@ -269,7 +274,6 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         masks[0] = mask;
 
         // f 2 0
-        edge_vectors_p[2] = p.vertices[3] - p.vertices[0];
 
         let n = edge_vectors_p[2].cross(&edge_vectors_p[0]);
 
