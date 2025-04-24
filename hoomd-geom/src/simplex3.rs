@@ -199,21 +199,6 @@ fn edge_test(
     // let cp = -((ea_j * eb_i) - (ea_i * eb_j));
     let cp = (ea[j] * eb[i]) - (ea[i] * eb[j]);
     // in c: all nonzero ints are truthy. Therefore, ma & 001 is True if != 0
-    println!("(i, j): {i}, {j}");
-    println!("(a, b): {a}, {b}");
-    println!(
-        "Edge test 0--1a: {} && {} && {cp} > 0.0 = {}",
-        (ma & a) != 0,
-        (mb & b) != 0,
-        (ma & a) != 0 && (mb & b) != 0 && (cp > 0.0)
-    );
-    println!("two_conds: {}", false && false && (cp > 0.0));
-    println!(
-        "Edge test 0--1b: {} && {} && {cp} < 0.0 = {}\n",
-        ma & b,
-        mb & a,
-        (ma | b) != 0 && (mb | a) != 0 && (cp < 0.0)
-    );
     // TODO: should this be & or | ?
     ((ma & a) != 0 && (mb & b) != 0 && (cp > 0.0)) || (ma & b) != 0 && (mb & a) != 0 && (cp < 0.0)
 }
