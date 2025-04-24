@@ -98,7 +98,7 @@ impl<const N: usize, R: Rotate<Cartesian<N>> + Rotation + PartialEq>
     Determine the intersection between two axis-aligned cuboids.
     MUST be passed an identity `Rotation` or the method will panic.
     */
-    #[inline]
+    #[inline] // TODO: make orientation an option! unwrap_or_default for other cases
     fn intersects_at(&self, other: &Cuboid<N>, r_ij: &Cartesian<N>, o_ij: &R) -> bool {
         assert!(*o_ij == R::identity());
         let other_mins = other.minimal_extents() + *r_ij;
