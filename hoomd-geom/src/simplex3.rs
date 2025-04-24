@@ -196,8 +196,7 @@ fn edge_test(
     eb: &[f64; 4],
 ) -> bool {
     let cp = (ea[j] * eb[i]) - (ea[i] * eb[j]);
-    // NOTE: original paper used cp >|< 0.0, but we want to detect exact edge-edge
-    //       overlaps.
+    // NOTE: original paper used cp > | < 0.0, but we want to detect exact edge-edge overlaps.
     ((ma & a) != 0 && (mb & b) != 0 && (cp >= 0.0)) || (ma & b) != 0 && (mb & a) != 0 && (cp <= 0.0)
 }
 
@@ -395,47 +394,6 @@ mod tests {
         arrays.for_each(|(i, arr)| assert_eq!(check_face_on_p_is_separating(&arr).0, i));
     }
 
-    #[rstest(
-        xaxb => [(0, 6), (0, 2), (4, 2)]
-    )]
-    fn test_edge(xaxb: (u8, u8)) {
-        let ea = [0.0, 100_000.0, 0.0, 500_000.0];
-        let eb = [0.0, -1_025_000.0, -500_000.0, 500_000.0];
-        let (xa, xb) = xaxb;
-
-        // assert!(!edge_test(xa, xb, 1, 2, ea[1], eb[0], ea[0], eb[1]));
-        // assert!(!edge_test(xa, xb, 1, 4, ea[2], eb[0], ea[0], eb[2]));
-        // assert!(!edge_test(xa, xb, 1, 8, ea[3], eb[0], ea[0], eb[3]));
-        // assert!(edge_test(xa, xb, 2, 4, ea[2], eb[1], ea[1], eb[2]));
-    }
-    #[test]
-    fn test_edge_special_cases() {
-        // First test data set
-        let ea = [0.0, 1_025_000.0, 500_000.0, -500_000.0];
-        let eb = [0.0, 50_000.0, -500_000.0, 0.0];
-        let (xa, xb) = (4, 2);
-
-        // Assertions based on edge_test function
-        // assert!(!edge_test(xa, xb, 1, 2, ea[1], eb[0], ea[0], eb[1]));
-        // assert!(!edge_test(xa, xb, 1, 4, ea[2], eb[0], ea[0], eb[2]));
-        // assert!(!edge_test(xa, xb, 1, 8, ea[3], eb[0], ea[0], eb[3]));
-        // assert!(edge_test(xa, xb, 2, 4, ea[2], eb[1], ea[1], eb[2]));
-
-        // Second test data set
-        let (ea, eb) = (
-            [0.0, -100_000.0, 0.0, -500_000.0],
-            [-500_000.0, -1_475_000.0, -500_000.0, 500_000.0],
-        );
-        let (xa, xb) = (0, 8);
-        // assert!(edge_test(xa, xb, 1, 2, ea[1], eb[0], ea[0], eb[1])); // Expect true
-
-        let (ea, eb) = (
-            [0.0, 1_025_000.0, 500_000.0, -500_000.0],
-            [-500_000.0, -1_475_000.0, -500_000.0, 500_000.0],
-        );
-        let (xa, xb) = (6, 8);
-        // assert!(edge_test(xa, xb, 1, 2, ea[1], eb[0], ea[0], eb[1]));
-    }
     #[rstest(
         ma, mb, ea, eb,
         case(
