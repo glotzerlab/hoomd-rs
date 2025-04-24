@@ -35,6 +35,7 @@ impl<'a, const N: usize, T: SupportFn<Cartesian<N>>> SupportFunctor<'_, N, T> {
         // Support point of b in the direction of vij
         // 'translation/rotation formula comes from pg 168 of "Games Programming Gems 7"'
         // Dimension-agnostic formula: r @ sb.support(r_inverse @ n) + v_ij
+        // Applying rotation takes ~24% of total runtime in collide3d simplex3
         let sb_n = self
             .q_ij
             .rotate(&self.sb.support(&self.q_ij_inv.rotate(&n)))
