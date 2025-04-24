@@ -34,17 +34,16 @@ impl SupportFn<Cartesian<3>> for Simplex3 {
 impl From<[Cartesian<3>; 4]> for Simplex3 {
     #[inline]
     fn from(vertices: [Cartesian<3>; 4]) -> Self {
-        let s = Simplex3 { vertices };
-        s.orient()
+        Simplex3 { vertices }.orient()
     }
 }
 impl From<[[f64; 3]; 4]> for Simplex3 {
     #[inline]
     fn from(arrs: [[f64; 3]; 4]) -> Self {
-        let s = Simplex3 {
+        Simplex3 {
             vertices: arrs.map(Cartesian::from),
-        };
-        s.orient()
+        }
+        .orient()
     }
 }
 
@@ -246,7 +245,6 @@ where
     fn intersects_at(&self, other: &Simplex3, r_ij: &Cartesian<3>, o_ij: &R) -> bool {
         let r = RotationMatrix::from(*o_ij);
 
-        // TODO: is this the correct way to rotate?
         let q = Simplex3::from(other.vertices.map(|v| r.rotate(&v))).translate_by(r_ij);
 
         let q_deltas = q.vertices.map(|v| v - self.vertices[0]);
@@ -258,7 +256,6 @@ where
 
         edge_vectors_p[0] = self.vertices[1] - self.vertices[0];
         edge_vectors_p[1] = self.vertices[2] - self.vertices[0];
-        edge_vectors_p[2] = self.vertices[3] - self.vertices[0];
 
         // Handle all possible SAT cases, in a performance-optimized order
 
@@ -272,7 +269,7 @@ where
         masks[0] = mask;
 
         // f 2 0
-
+        edge_vectors_p[2] = self.vertices[3] - self.vertices[0];
         let n = edge_vectors_p[2].cross(&edge_vectors_p[0]);
 
         affs[1] = q_deltas.map(|v| v.dot(&n));
