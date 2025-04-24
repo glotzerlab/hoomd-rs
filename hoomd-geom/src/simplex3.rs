@@ -198,6 +198,16 @@ fn edge_test(
     ((ma & a) != 0 && (mb & b) != 0 && (cp >= 0.0)) || (ma & b) != 0 && (mb & a) != 0 && (cp <= 0.0)
 }
 
+/// Separating edge cases used in ``check_edge_is_separating``
+const _SEPARATING_EDGE_CASES: [(u8, u8, usize, usize); 6] = [
+    (1, 2, 0, 1),
+    (1, 4, 0, 2),
+    (1, 8, 0, 3),
+    (2, 4, 1, 2),
+    (2, 8, 1, 3),
+    (4, 8, 2, 3),
+];
+
 /// Check if there exists a seperating plane containing the edge e shared by faces
 /// f0 and f1 of the tetrahedron.
 #[inline]
@@ -211,18 +221,11 @@ fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) 
     ma &= ma ^ mb;
     mb &= ma ^ mb;
 
-    // Apply test for Edge 0: 0--1, 2--0, 3--0, 2--1, 3--1, 3--2
-    for (a, b, i, j) in [
-        (1, 2, 0, 1),
-        (1, 4, 0, 2),
-        (1, 8, 0, 3),
-        (2, 4, 1, 2),
-        (2, 8, 1, 3),
-        (4, 8, 2, 3),
-    ] {
-        if edge_test(ma, mb, a, b, i, j, aff_a, aff_b) {
-            return false;
-        }
+    if _SEPARATING_EDGE_CASES
+        .iter()
+        .any(|&(a, b, i, j)| edge_test(ma, mb, a, b, i, j, aff_a, aff_b))
+    {
+        return false;
     }
 
     // There exists a separating plane supported by the edge shared by f0 and f1
@@ -244,7 +247,6 @@ where
     #[inline]
     fn intersects_at(&self, other: &Simplex3, r_ij: &Cartesian<3>, o_ij: &R) -> bool {
         let r = RotationMatrix::from(*o_ij);
-
         let q = Simplex3::from(other.vertices.map(|v| r.rotate(&v))).translate_by(r_ij);
 
         let q_deltas = q.vertices.map(|v| v - self.vertices[0]);
