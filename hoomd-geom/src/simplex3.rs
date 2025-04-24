@@ -195,27 +195,10 @@ fn edge_test(
     ea: &[f64; 4],
     eb: &[f64; 4],
 ) -> bool {
-    // let cp = (ea_j * eb_i) - (ea_i * eb_j);
-    // let cp = -((ea_j * eb_i) - (ea_i * eb_j));
     let cp = (ea[j] * eb[i]) - (ea[i] * eb[j]);
-    // in c: all nonzero ints are truthy. Therefore, ma & 001 is True if != 0
-    // println!("(i, j): {i}, {j}");
-    // println!("(a, b): {a}, {b}");
-    // println!(
-    //     "Edge test 0--1a: {} && {} && {cp} > 0.0 = {}",
-    //     (ma & a) != 0,
-    //     (mb & b) != 0,
-    //     (ma & a) != 0 && (mb & b) != 0 && (cp > 0.0)
-    // );
-    // println!("two_conds: {}", false && false && (cp > 0.0));
-    // println!(
-    //     "Edge test 0--1b: {} && {} && {cp} < 0.0 = {}\n",
-    //     ma & b,
-    //     mb & a,
-    //     (ma | b) != 0 && (mb | a) != 0 && (cp < 0.0)
-    // );
-    // TODO: should this be & or | ?
-    ((ma & a) != 0 && (mb & b) != 0 && (cp > 0.0)) || (ma & b) != 0 && (mb & a) != 0 && (cp < 0.0)
+    // NOTE: original paper used cp >|< 0.0, but we want to detect exact edge-edge
+    //       overlaps.
+    ((ma & a) != 0 && (mb & b) != 0 && (cp >= 0.0)) || (ma & b) != 0 && (mb & a) != 0 && (cp <= 0.0)
 }
 
 /// Check if there exists a seperating plane containing the edge e shared by faces
@@ -225,14 +208,11 @@ fn edge_test(
 fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) -> bool {
     let (mut ma, mut mb) = (ma, mb);
     if (ma | mb) != 15 {
-        // println!("Masks are full, no separating edge can be found: mamb = {ma}, {mb}");
         return false; // If there is a vertex of b contained in the (-, -) quadrant
     }
     // exclude the vertices in (+,+) quadrant
     ma &= ma ^ mb;
     mb &= ma ^ mb;
-    // println!("Modified ma: {ma}");
-    // println!("Modified mb: {mb}");
 
     // Apply test for Edge 0: 0--1, 2--0, 3--0, 2--1, 3--1, 3--2
     for (a, b, i, j) in [
@@ -244,7 +224,6 @@ fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) 
         (4, 8, 2, 3),
     ] {
         if edge_test(ma, mb, a, b, i, j, aff_a, aff_b) {
-            // println!("Exiting check_edge_is_separating {a} {b} {i} {j} with false");
             return false;
         }
     }
@@ -268,7 +247,6 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
 
         // TODO: is this the correct way to rotate?
         let q = Simplex3::from(other.vertices.map(|v| o_ij.rotate(&v))).translate_by(r_ij);
-        println!("q_vertices: \n {q}");
 
         let q_deltas = q.vertices.map(|v| v - p.vertices[0]);
 
@@ -287,7 +265,6 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         affs[0] = q_deltas.map(|v| v.dot(&n));
         let (mask, is_sep) = check_face_on_p_is_separating(&affs[0]);
         if is_sep {
-            // println!("Exited in case f 0 1 with overlaps=false");
             return false;
         }
         masks[0] = mask;
@@ -300,14 +277,12 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         affs[1] = q_deltas.map(|v| v.dot(&n));
         let (mask, is_sep) = check_face_on_p_is_separating(&affs[1]);
         if is_sep {
-            // println!("Exited in case f 2 0 with overlaps=false");
             return false;
         }
         masks[1] = mask;
 
         // e 0 1
         if check_edge_is_separating(&affs[0], &affs[1], masks[0], masks[1]) {
-            // println!("Exited in case e 0 1 with overlaps=false");
             return false;
         }
 
@@ -316,20 +291,17 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         affs[2] = q_deltas.map(|v| v.dot(&n));
         let (mask, is_sep) = check_face_on_p_is_separating(&affs[2]);
         if is_sep {
-            // println!("Exited in case f 1 2 with overlaps=false");
             return false;
         }
         masks[2] = mask;
 
         // e 0 2
         if check_edge_is_separating(&affs[0], &affs[2], masks[0], masks[2]) {
-            // println!("Exited in case e 0 2 with overlaps=false");
             return false;
         }
 
         // e 1 2
         if check_edge_is_separating(&affs[1], &affs[2], masks[1], masks[2]) {
-            // println!("Exited in case e 1 2 with overlaps=false");
             return false;
         }
 
@@ -341,7 +313,6 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         affs[3] = q.vertices.map(|v| (v - p.vertices[1]).dot(&n));
         let (mask, is_sep) = check_face_on_p_is_separating(&affs[3]);
         if is_sep {
-            // println!("Exited in case f* 4 3 with overlaps=false");
             return false;
         }
         masks[3] = mask;
@@ -349,7 +320,6 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         // e 0|1|2 3
         for (i, j) in [(0, 3), (1, 3), (2, 3)] {
             if check_edge_is_separating(&affs[i], &affs[j], masks[i], masks[j]) {
-                // println!("Exited in case e {i} 3 with overlaps=false");
                 return false;
             }
         }
@@ -358,7 +328,6 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         // (vertex bounded by all 4 halfspaces)
         // TODO: do we need to check if masks are empty?
         if masks.iter().fold(0, |acc, &m| acc | m) != 15 {
-            // println!("Masks are not full! A vertex of q is inside p");
             return true;
         }
 
@@ -373,7 +342,6 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         // f 0 1
         let n = edge_vectors_q[0].cross(&edge_vectors_q[1]);
         if check_face_on_q_is_separating(&p_deltas.map(|v| v.dot(&n))) {
-            // println!("Exited in case f 0 1 with overlaps=false");
             return false;
         }
 
@@ -382,14 +350,12 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         // f 2 0
         let n = edge_vectors_q[2].cross(&edge_vectors_q[0]);
         if check_face_on_q_is_separating(&p_deltas.map(|v| v.dot(&n))) {
-            // println!("Exited in case f 2 0 with overlaps=false");
             return false;
         }
 
         // f 1 2
         let n = edge_vectors_q[1].cross(&edge_vectors_q[2]);
         if check_face_on_q_is_separating(&p_deltas.map(|v| v.dot(&n))) {
-            // println!("Exited in case f 1 2 with overlaps=false");
             return false;
         }
         edge_vectors_q[3] = q.vertices[2] - q.vertices[1];
@@ -399,10 +365,8 @@ impl<R: Rotate<Cartesian<3>>> IntersectsAt<Simplex3, Cartesian<3>, R> for Simple
         let n = edge_vectors_q[4].cross(&edge_vectors_q[3]);
         let aff = p.vertices.map(|v| (v - other.vertices[1]).dot(&n));
         if check_face_on_q_is_separating(&aff) {
-            // println!("Exited in case f* 4 3 with overlaps=false");
             return false;
         }
-        // println!("No separating planes found!");
         true // No separating planes -> intersection!
     }
 }
@@ -663,12 +627,12 @@ mod tests {
             true,
         ),
         case::tip_tip_intersection_imprecise(
-            [1.999, 1.999, 1.999].into(),
+            [1.999_999_999, 1.999_999_999, 1.999_999_999].into(),
             Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
             true,
         ),
         case::tip_tip_intersection_nooverlap(
-            [2.001, 2.001, 2.001].into(),
+            [2.000_000_001, 2.000_000_001, 2.000_000_001].into(),
             Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
             false,
         ),
@@ -678,12 +642,12 @@ mod tests {
             true,
         ),
         case::unrotated_tip_tip_intersection_imprecise(
-            [1.999, 1.999, 0.0].into(),
+            [1.999_999_999, 1.999_999_999, 0.0].into(),
             Versor::identity(),
             true,
         ),
         case::unrotated_tip_tip_intersection_nooverlap(
-            [2.001, 2.001, 0.0].into(),
+            [2.000_000_001, 2.000_000_001, 0.0].into(),
             Versor::identity(),
             false,
         ),
@@ -694,12 +658,12 @@ mod tests {
             true,
         ),
         case::tip_edge_intersection_imprecise(
-            [1.0, 1.0, 1.999_999].into(),
+            [1.0, 1.0, 1.999_999_999].into(),
             Versor::default(),
             true,
         ),
         case::tip_edge_intersection_nooverlap(
-            [1.0, 1.0, 2.001].into(),
+            [1.0, 1.0, 2.000_000_001].into(),
             Versor::default(),
             false,
         ),
@@ -709,12 +673,12 @@ mod tests {
             true,
         ),
         case::parallel_edge_edge_intersection_imprecise(
-            [1.0, 1.0, 1.999].into(),
+            [1.0, 1.0, 1.999_999_999].into(),
             Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
             true,
         ),
         case::parallel_edge_edge_intersection_nooverlap(
-            [1.0, 1.0, 2.001].into(),
+            [1.0, 1.0, 2.000_000_001].into(),
             Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
             false,
         ),
@@ -724,12 +688,12 @@ mod tests {
             true,
         ),
         case::orthogonal_edge_edge_intersection_imprecise(
-            [1.0, 0.0, 1.999].into(),
+            [1.0, 0.0, 1.999_999_999].into(),
             Versor::identity(),
             true,
         ),
         case::orthogonal_edge_edge_intersection_nooverlap(
-            [1.0, 0.0, 2.001].into(),
+            [1.0, 0.0, 2.000_000_001].into(),
             Versor::identity(),
             false,
         ),
@@ -739,12 +703,12 @@ mod tests {
             true,
         ),
         case::nonorthogonal_edge_edge_intersection_imprecise(
-            [1.0, 0.0, 1.999].into(),
+            [1.0, 0.0, 1.999_999_999].into(),
             Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().unwrap(), std::f64::consts::PI / 3.1),
             true,
         ),
         case::nonorthogonal_edge_edge_intersection_nooverlap(
-            [1.0, 0.0, 2.01].into(),
+            [1.0, 0.0, 2.000_000_001].into(),
             Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().unwrap(), std::f64::consts::PI / 3.1),
             false,
         ),
@@ -755,7 +719,7 @@ mod tests {
             true,
         ),
         case::partial_aligned_overlap_imprecise(
-            [0.0, 1.0, -0.999].into(),
+            [0.0, 1.0, -0.999_999_999].into(),
             Versor::identity(),
             true,
         ),
@@ -772,7 +736,7 @@ mod tests {
             true,
         ),
         case::vertex_into_edge_shallow_imprecise(
-            [0.0, 0.999, 2.0].into(),
+            [0.0, 0.999_999_999, 2.0].into(),
             Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_4),
             true,
         ),
@@ -782,7 +746,7 @@ mod tests {
             true,
         ),
         case::vertex_into_edge_deep_imprecise(
-            [0.0, 0.999, 1.0].into(),
+            [0.0, 0.999_999_999, 1.0].into(),
             Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_4),
             true,
         ),
