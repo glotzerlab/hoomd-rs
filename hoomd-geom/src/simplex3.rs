@@ -610,7 +610,7 @@ mod tests {
             Versor::identity(),
             false,
         ),
-        // ISSUE: fails in original tet_a_tet!
+        // NOTE: as above, this type of overlap was not counted in the original paper
         case::tip_edge_intersection_exact(
             [1.0, 1.0, 2.0].into(),
             Versor::default(),
