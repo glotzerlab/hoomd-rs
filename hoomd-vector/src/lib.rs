@@ -164,6 +164,7 @@ let versor: Versor = rng.random();
 
 mod angle;
 mod cartesian;
+pub mod distribution;
 mod quaternion;
 
 pub use {
@@ -186,6 +187,14 @@ pub enum Error {
     /// Attempted normalizing a vector or quaternion with an invalid magnitude.
     #[error("Invalid magnitude for normalization.")]
     InvalidMagnitude,
+
+    /// A positive value greater than 0 is required.
+    #[error("Expected a value greater than 0, got: {0}")]
+    NotPositive(f64),
+
+    /// A finite value is required.
+    #[error("Expected a real value, got: {0}")]
+    NotFinite(f64),
 }
 
 /** Operate on elements of a normed vector space.
@@ -590,6 +599,39 @@ pub trait Rotation {
     fn combine(&self, other: &Self) -> Self;
 }
 
+/** Represent a positive real value.
+
+Specifically, a f64 that is not +/- inf, nan, or a value <= 0.
+*/
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PositiveReal(f64);
+
+impl PositiveReal {
+    /** Construct a new [`PositiveReal`] value.
+
+    # Example
+
+    TODO
+
+    TODO: This be `try_from` instead of new.
+
+    # Errors
+
+    * `[Error::NotFinite]` when `v` is not finite.
+    * `[Error::NotPositive]` when `v` is not a positive value
+    */
+    #[inline]
+    pub fn new(v: f64) -> Result<PositiveReal, Error> {
+        if !v.is_finite() {
+            Err(Error::NotFinite(v))
+        } else if v <= 0.0 {
+            Err(Error::NotPositive(v))
+        } else {
+            Ok(PositiveReal(v))
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -607,5 +649,23 @@ mod tests {
         let b = Cartesian::from([4.0, 5.0, 6.0]);
         let c = compute_add_generic(a, b);
         assert_eq!(c, [5.0, 7.0, 9.0].into());
+    }
+
+    #[test]
+    fn positive_real_validation() {
+        let result = PositiveReal::new(f64::INFINITY);
+        assert_eq!(result, Err(Error::NotFinite(f64::INFINITY)));
+
+        let result = PositiveReal::new(-f64::INFINITY);
+        assert_eq!(result, Err(Error::NotFinite(-f64::INFINITY)));
+
+        let result = PositiveReal::new(f64::NAN);
+        assert!(matches!(result, Err(Error::NotFinite(_))));
+
+        let result = PositiveReal::new(0.0);
+        assert_eq!(result, Err(Error::NotPositive(0.0)));
+
+        let result = PositiveReal::new(-1.0);
+        assert_eq!(result, Err(Error::NotPositive(-1.0)));
     }
 }

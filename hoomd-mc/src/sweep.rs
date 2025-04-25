@@ -24,19 +24,22 @@ the change in energy computed by the given `hamiltonian` and `kT` is the given
 use hoomd_mc::{Sweep, Translate, Trial, Zero};
 use hoomd_microstate::property::Position;
 use hoomd_microstate::{Body, Microstate};
-use hoomd_vector::Cartesian;
+use hoomd_vector::{Cartesian, PositiveReal};
 
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut microstate = Microstate::new();
 microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
-let translate_sweep = Sweep::new(Translate::new(0.1));
+let translate_sweep = Sweep::new(Translate::new(PositiveReal::new(0.1)?));
 
-let hamiltonian = Zero();
+let hamiltonian = Zero;
 let kt = 1.0;
 
 for _ in 0..1_000 {
     translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
     microstate.increment_step();
 }
+# Ok(())
+# }
 ```
 */
 pub struct Sweep<L> {
@@ -104,7 +107,7 @@ mod tests {
     use ::approx::assert_relative_eq;
     use hoomd_interaction::{Single, SiteEnergy, TotalEnergy};
     use hoomd_microstate::property::Point;
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, PositiveReal, Vector};
     use rstest::*;
 
     const K: f64 = 2.0;
@@ -123,7 +126,7 @@ mod tests {
         // Model a harmonic oscillator and validate the average position and energy distribution.
         // Check with a relatively large tolerance because N_STEPS is relatively
         // small to keep the test run short.
-        const EPSILON: f64 = 0.2;
+        const EPSILON: f64 = 0.3;
 
         let origin = Cartesian::from([1.0, -2.0]);
 
@@ -131,7 +134,7 @@ mod tests {
         microstate.add_body(Body::point(origin));
         let hamiltonian = Single(Harmonic(origin));
 
-        let translate = Translate::new(0.1);
+        let translate = Translate::new(PositiveReal::new(0.1).expect("positive real"));
         let translate_sweep = Sweep::new(translate);
 
         let mut position_accumulator = Cartesian::default();

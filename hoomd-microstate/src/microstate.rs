@@ -958,4 +958,9 @@ where
     }
 }
 
-// TODO: Tests
+#[cfg(test)]
+mod tests {
+    use hoomd_vector::Cartesian;
+
+    use super::*;
+}

@@ -6,7 +6,7 @@
 use hoomd_mc::{Sweep, Translate, Trial, Zero};
 use hoomd_microstate::property::Position;
 use hoomd_microstate::{Body, Microstate};
-use hoomd_vector::Cartesian;
+use hoomd_vector::{Cartesian, PositiveReal};
 
 fn main() {
     let mut microstate = Microstate::new();
@@ -15,7 +15,7 @@ fn main() {
     let kt = 1.0;
     let hamiltonian = Zero;
 
-    let translate = Translate::new(0.1);
+    let translate = Translate::new(PositiveReal::new(0.1).expect("positive real"));
     let translate_sweep = Sweep::new(translate);
 
     for _ in 0..100_000 {

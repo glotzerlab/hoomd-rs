@@ -6,10 +6,10 @@
 
 use super::LocalTrial;
 use hoomd_microstate::property::Position;
-use hoomd_vector::Vector;
+use hoomd_vector::{PositiveReal, Vector, distribution::Ball};
 
 use rand::Rng;
-use rand::distr::{Distribution, StandardUniform};
+use rand::distr::Distribution;
 use std::marker::PhantomData;
 
 /** Move the position of a body by a small distance.
@@ -23,7 +23,7 @@ in space by a random vector up a given maximum length.
 )]
 pub struct Translate<V> {
     /// The maximum distance a body can be translated in one trial move.
-    pub maximum_distance: f64,
+    pub maximum_distance: PositiveReal,
 
     /// Make translate depend on the vector type V even though it doesn't store a vector.
     vector_type: PhantomData<V>,
@@ -36,14 +36,17 @@ impl<V> Translate<V> {
 
     ```
     use hoomd_mc::Translate;
-    use hoomd_vector::Cartesian;
+    use hoomd_vector::{Cartesian, PositiveReal};
 
-    let translate = Translate::<Cartesian<2>>::new(0.1);
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let translate = Translate::<Cartesian<2>>::new(PositiveReal::new(0.1)?);
+    # Ok(())
+    # }
     ```
     */
     #[inline]
     #[must_use]
-    pub fn new(maximum_distance: f64) -> Self {
+    pub fn new(maximum_distance: PositiveReal) -> Self {
         Self {
             maximum_distance,
             vector_type: PhantomData,
@@ -55,7 +58,7 @@ impl<B, V> LocalTrial<B> for Translate<V>
 where
     B: Position<V>,
     V: Vector,
-    StandardUniform: Distribution<V>,
+    Ball: Distribution<V>,
 {
     /** Randomly translate a body's position.
 
@@ -64,24 +67,29 @@ where
     ```
     use hoomd_mc::{LocalTrial, Translate};
     use hoomd_microstate::property::Point;
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, PositiveReal, Vector};
     use rand::{rngs::StdRng, Rng, SeedableRng};
 
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = StdRng::seed_from_u64(1);
     let body_properties = Point::new(Cartesian::from([0.0, 0.0]));
-    let translate = Translate::new(1.0);
+    let translate = Translate::new(PositiveReal::new(1.0)?);
 
     let new_body_properties = translate.propose(&mut rng, body_properties);
     assert!(new_body_properties.position.norm() < 1.0);
+    # Ok(())
+    # }
     ```
     */
     #[inline]
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B {
         let mut trial = body_properties;
 
-        // TODO: Replace draw vector from the ball with radius maximum_distance
-        // Implement the Ball distribution in hoomd-vector
-        let delta_r = rng.random::<V>() * self.maximum_distance;
+        let ball = Ball {
+            r: self.maximum_distance,
+        };
+
+        let delta_r = ball.sample(rng);
         *trial.position_mut() += delta_r;
 
         trial
@@ -97,7 +105,7 @@ mod tests {
     use rstest::*;
 
     /// Number of trial moves to test.
-    const N: usize = 256;
+    const N: usize = 1024;
 
     #[rstest]
     fn translate(#[values(0.1, 1.0)] d: f64) {
@@ -110,24 +118,26 @@ mod tests {
 
         let mut rng = StdRng::seed_from_u64(1);
         let a = Point::new(Cartesian::from([1.0, -5.0, 2.5]));
-        let translate = Translate::new(d);
+        let translate = Translate::new(PositiveReal::new(d).expect("positive real"));
 
         for _ in 0..N {
             let b = translate.propose(&mut rng, a);
 
             let delta_r = b.position - a.position;
             total += delta_r;
-            min_norm = min_norm.min(total.norm());
-            max_norm = max_norm.max(total.norm());
+            min_norm = min_norm.min(delta_r.norm());
+            max_norm = max_norm.max(delta_r.norm());
         }
 
         assert!(max_norm <= d);
 
+        let average = total / N as f64;
+
         // Validate with appropriately loose tolerances to account for the small sample size.
         assert!(min_norm < d * 0.1);
         assert!(max_norm > d * 0.9);
-        assert!(total[0].abs() < d * 0.01);
-        assert!(total[1].abs() < d * 0.01);
-        assert!(total[2].abs() < d * 0.01);
+        for x in average.coordinates {
+            assert!(x.abs() < d * 0.1);
+        }
     }
 }
