@@ -6,4 +6,5 @@
 
 /** Open boundary conditions.
 */
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Open;

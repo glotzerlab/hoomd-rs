@@ -787,7 +787,7 @@ impl<B, S> MicrostateBuilder<B, S, Open> {
     assert_eq!(microstate.step(), 0);
     assert_eq!(microstate.seed(), 0);
     assert_eq!(microstate.bodies().len(), 0);
-    assert_eq!(microstate.boundary(), hoomd_microstate::boundary::Open);
+    assert_eq!(*microstate.boundary(), hoomd_microstate::boundary::Open);
     ```
     */
     #[inline]
@@ -821,7 +821,7 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     assert_eq!(microstate.step(), 0);
     assert_eq!(microstate.seed(), 0);
     assert_eq!(microstate.bodies().len(), 0);
-    assert_eq!(microstate.boundary(), hoomd_microstate::boundary::Open);
+    assert_eq!(*microstate.boundary(), hoomd_microstate::boundary::Open);
     ```
 
     TODO: Show non-trivial boundary conditions.
@@ -960,27 +960,29 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     }
 }
 
-impl<B, S, C> PartialEq<Microstate<B, S, C>> for Microstate<B, S, C>
-where
-    B: PartialEq,
-    S: PartialEq,
-    C: PartialEq,
-{
-    #[inline]
-    fn eq(&self, other: &Microstate<B, S, C>) -> bool {
-        // `PartialEq` cannot be derived for Microstate, so implement it manually.
-        //
-        // Not all fields matter for equality. Check only those that do.
-        self.step == other.step
-            && self.substep == other.substep
-            && self.seed == other.seed
-            && self.bodies == other.bodies
-            && self.body_indices == other.body_indices
-            && self.sites == other.sites
-            && self.site_indices == other.site_indices
-            && self.boundary == other.boundary
-    }
-}
+// This might be useful in future tests. I'm not sure if it would be interesting for users...
+
+// impl<B, S, C> PartialEq<Microstate<B, S, C>> for Microstate<B, S, C>
+// where
+//     B: PartialEq,
+//     S: PartialEq,
+//     C: PartialEq,
+// {
+//     #[inline]
+//     fn eq(&self, other: &Microstate<B, S, C>) -> bool {
+//         // `PartialEq` cannot be derived for Microstate, so implement it manually.
+//         //
+//         // Not all fields matter for equality. Check only those that do.
+//         self.step == other.step
+//             && self.substep == other.substep
+//             && self.seed == other.seed
+//             && self.bodies == other.bodies
+//             && self.body_indices == other.body_indices
+//             && self.sites == other.sites
+//             && self.site_indices == other.site_indices
+//             && self.boundary == other.boundary
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
