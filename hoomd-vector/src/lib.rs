@@ -187,14 +187,6 @@ pub enum Error {
     /// Attempted normalizing a vector or quaternion with an invalid magnitude.
     #[error("Invalid magnitude for normalization.")]
     InvalidMagnitude,
-
-    /// A positive value greater than 0 is required.
-    #[error("Expected a value greater than 0, got: {0}")]
-    NotPositive(f64),
-
-    /// A finite value is required.
-    #[error("Expected a real value, got: {0}")]
-    NotFinite(f64),
 }
 
 /** Operate on elements of a normed vector space.
@@ -599,86 +591,6 @@ pub trait Rotation {
     fn combine(&self, other: &Self) -> Self;
 }
 
-/** A f64 value that is not +/- inf, nan, or a value <= 0.
-
-# Example
-
-```
-use hoomd_vector::PositiveReal;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let positive = PositiveReal::try_from(1.0)?;
-# Ok(())
-# }
-```
-*/
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct PositiveReal(f64);
-
-impl PositiveReal {
-    /** Access the value.
-
-    # Example
-
-    ```
-    use hoomd_vector::PositiveReal;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let positive = PositiveReal::try_from(1.0)?;
-
-    assert_eq!(positive.get(), 1.0);
-    # Ok(())
-    # }
-    */
-    #[must_use]
-    #[inline]
-    pub fn get(&self) -> f64 {
-        self.0
-    }
-}
-
-impl TryFrom<f64> for PositiveReal {
-    type Error = Error;
-
-    /** Convert [`f64`] to [`PositiveReal`].
-
-    # Example
-
-    Valid conversion:
-    ```
-    use hoomd_vector::PositiveReal;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let positive = PositiveReal::try_from(1.0)?;
-    # Ok(())
-    # }
-    ```
-
-    Invalid conversion
-    ```
-    use hoomd_vector::PositiveReal;
-
-    let result = PositiveReal::try_from(-1.0);
-    assert!(matches!(result, Err(hoomd_vector::Error::NotPositive(_))));
-    ```
-
-    # Errors
-
-    * `[Error::NotFinite]` when `v` is not finite.
-    * `[Error::NotPositive]` when `v` is not a positive value
-    */
-    #[inline]
-    fn try_from(v: f64) -> Result<PositiveReal, Error> {
-        if !v.is_finite() {
-            Err(Error::NotFinite(v))
-        } else if v <= 0.0 {
-            Err(Error::NotPositive(v))
-        } else {
-            Ok(PositiveReal(v))
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -696,23 +608,5 @@ mod tests {
         let b = Cartesian::from([4.0, 5.0, 6.0]);
         let c = compute_add_generic(a, b);
         assert_eq!(c, [5.0, 7.0, 9.0].into());
-    }
-
-    #[test]
-    fn positive_real_validation() {
-        let result = PositiveReal::try_from(f64::INFINITY);
-        assert_eq!(result, Err(Error::NotFinite(f64::INFINITY)));
-
-        let result = PositiveReal::try_from(-f64::INFINITY);
-        assert_eq!(result, Err(Error::NotFinite(-f64::INFINITY)));
-
-        let result = PositiveReal::try_from(f64::NAN);
-        assert!(matches!(result, Err(Error::NotFinite(_))));
-
-        let result = PositiveReal::try_from(0.0);
-        assert_eq!(result, Err(Error::NotPositive(0.0)));
-
-        let result = PositiveReal::try_from(-1.0);
-        assert_eq!(result, Err(Error::NotPositive(-1.0)));
     }
 }

@@ -6,7 +6,8 @@
 
 use super::LocalTrial;
 use hoomd_microstate::property::Position;
-use hoomd_vector::{PositiveReal, Vector, distribution::Ball};
+use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::{Vector, distribution::Ball};
 
 use rand::Rng;
 use rand::distr::Distribution;

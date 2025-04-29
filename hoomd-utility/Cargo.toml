@@ -17,6 +17,7 @@ workspace = true
 [dependencies]
 rand = "0.9.0"
 chacha20 = { version = "0.10.0-pre.3", default-features = false, features = ["rng"]}
+thiserror = "2.0.12"
 
 [dev-dependencies]
 divan = "0.1.17"

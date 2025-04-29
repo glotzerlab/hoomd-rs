@@ -4,7 +4,8 @@
 /*! Random distributions of vectors.
  */
 
-use super::{Cartesian, PositiveReal, Vector};
+use super::{Cartesian, Vector};
+use hoomd_utility::valid::PositiveReal;
 
 use rand::Rng;
 use rand::distr::{Distribution, Uniform};
@@ -37,7 +38,7 @@ pub struct Ball {
 impl<const N: usize> Distribution<Cartesian<N>> for Ball {
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
-        let r = self.r.0;
+        let r = self.r.get();
 
         let uniform = Uniform::new_inclusive(-r, r).expect("valid distribution");
 

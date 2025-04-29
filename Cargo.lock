@@ -251,6 +251,7 @@ dependencies = [
  "rand",
  "rand_chacha",
  "rstest",
+ "thiserror",
 ]
 
 [[package]]
@@ -259,6 +260,7 @@ version = "0.0.0"
 dependencies = [
  "approx",
  "divan",
+ "hoomd-utility",
  "paste",
  "rand",
  "rstest",

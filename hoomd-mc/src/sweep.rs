@@ -24,7 +24,7 @@ the change in energy computed by the given `hamiltonian` and `kT` is the given
 use hoomd_mc::{Sweep, Translate, Trial, Zero};
 use hoomd_microstate::property::Position;
 use hoomd_microstate::{Body, Microstate};
-use hoomd_vector::{Cartesian, PositiveReal};
+use hoomd_vector::Cartesian;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut microstate = Microstate::new();

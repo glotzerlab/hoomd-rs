@@ -14,3 +14,19 @@ Common utility code used by many other hoomd-rs crates.
 */
 
 pub mod random;
+pub mod valid;
+
+use thiserror::Error;
+
+/// Enumerate possible sources of error in fallible utility methods.
+#[non_exhaustive]
+#[derive(Error, PartialEq, Debug)]
+pub enum Error {
+    /// A positive value greater than 0 is required.
+    #[error("Expected a value greater than 0, got: {0}")]
+    NotPositive(f64),
+
+    /// A finite value is required.
+    #[error("Expected a real value, got: {0}")]
+    NotFinite(f64),
+}
