@@ -134,12 +134,13 @@ Count the total number of trial moves performed over a number of sweeps:
 use hoomd_mc::{Count, Sweep, Translate, Trial, Zero};
 use hoomd_microstate::property::Position;
 use hoomd_microstate::{Body, Microstate};
-use hoomd_vector::{Cartesian, PositiveReal};
+use hoomd_vector::Cartesian;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut microstate = Microstate::new();
 microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
-let translate_sweep = Sweep::new(Translate::new(PositiveReal::new(0.1)?));
+let d = 0.1;
+let translate_sweep = Sweep::new(Translate::new(d.try_into()?));
 
 let mut count = Count::default();
 

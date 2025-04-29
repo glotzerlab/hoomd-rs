@@ -36,10 +36,11 @@ impl<V> Translate<V> {
 
     ```
     use hoomd_mc::Translate;
-    use hoomd_vector::{Cartesian, PositiveReal};
+    use hoomd_vector::Cartesian;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let translate = Translate::<Cartesian<2>>::new(PositiveReal::new(0.1)?);
+    let d = 0.1;
+    let translate = Translate::<Cartesian<2>>::new(d.try_into()?);
     # Ok(())
     # }
     ```
@@ -67,13 +68,14 @@ where
     ```
     use hoomd_mc::{LocalTrial, Translate};
     use hoomd_microstate::property::Point;
-    use hoomd_vector::{Cartesian, PositiveReal, Vector};
+    use hoomd_vector::{Cartesian, Vector};
     use rand::{rngs::StdRng, Rng, SeedableRng};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = StdRng::seed_from_u64(1);
     let body_properties = Point::new(Cartesian::from([0.0, 0.0]));
-    let translate = Translate::new(PositiveReal::new(1.0)?);
+    let d = 1.0;
+    let translate = Translate::new(d.try_into()?);
 
     let new_body_properties = translate.propose(&mut rng, body_properties);
     assert!(new_body_properties.position.norm() < 1.0);
@@ -118,7 +120,7 @@ mod tests {
 
         let mut rng = StdRng::seed_from_u64(1);
         let a = Point::new(Cartesian::from([1.0, -5.0, 2.5]));
-        let translate = Translate::new(PositiveReal::new(d).expect("positive real"));
+        let translate = Translate::new(d.try_into().expect("positive real"));
 
         for _ in 0..N {
             let b = translate.propose(&mut rng, a);

@@ -29,7 +29,8 @@ use hoomd_vector::{Cartesian, PositiveReal};
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut microstate = Microstate::new();
 microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
-let translate_sweep = Sweep::new(Translate::new(PositiveReal::new(0.1)?));
+let d = 0.1;
+let translate_sweep = Sweep::new(Translate::new(d.try_into()?));
 
 let hamiltonian = Zero;
 let kt = 1.0;
@@ -107,7 +108,7 @@ mod tests {
     use ::approx::assert_relative_eq;
     use hoomd_interaction::{Single, SiteEnergy, TotalEnergy};
     use hoomd_microstate::property::Point;
-    use hoomd_vector::{Cartesian, PositiveReal, Vector};
+    use hoomd_vector::{Cartesian, Vector};
     use rstest::*;
 
     const K: f64 = 2.0;
@@ -134,7 +135,8 @@ mod tests {
         microstate.add_body(Body::point(origin));
         let hamiltonian = Single(Harmonic(origin));
 
-        let translate = Translate::new(PositiveReal::new(0.1).expect("positive real"));
+        let d = 0.1;
+        let translate = Translate::new(d.try_into().expect("positive real"));
         let translate_sweep = Sweep::new(translate);
 
         let mut position_accumulator = Cartesian::default();

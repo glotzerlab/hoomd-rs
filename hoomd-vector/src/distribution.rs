@@ -15,13 +15,14 @@ use std::array;
 # Example
 
 ```
-use hoomd_vector::{Cartesian, distribution::Ball, PositiveReal};
+use hoomd_vector::{Cartesian, distribution::Ball};
 use rand::{distr::Distribution, Rng, rngs::StdRng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut rng = StdRng::seed_from_u64(1);
 
-let ball = Ball { r: PositiveReal::new(5.0)? };
+let r = 5.0;
+let ball = Ball { r: r.try_into()? };
 let v: Cartesian<3> = ball.sample(&mut rng);
 # Ok(())
 # }
@@ -66,7 +67,7 @@ mod test {
         r => [0.5, 1.0, 12.0])]
     fn ball(r: f64) {
         let ball = Ball {
-            r: PositiveReal::new(r).expect("valid distribution"),
+            r: r.try_into().expect("valid distribution"),
         };
         let mut rng = StdRng::seed_from_u64(1);
 

@@ -602,26 +602,53 @@ pub trait Rotation {
 /** Represent a positive real value.
 
 Specifically, a f64 that is not +/- inf, nan, or a value <= 0.
+
+# Example
+
+```
+use hoomd_vector::PositiveReal;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let positive = PositiveReal::try_from(1.0)?;
+# Ok(())
+# }
+```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PositiveReal(f64);
 
-impl PositiveReal {
-    /** Construct a new [`PositiveReal`] value.
+impl TryFrom<f64> for PositiveReal {
+    type Error = Error;
+
+    /** Convert [`f64`] to [`PositiveReal`].
 
     # Example
 
-    TODO
+    Valid conversion:
+    ```
+    use hoomd_vector::PositiveReal;
 
-    TODO: This be `try_from` instead of new.
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let positive = PositiveReal::try_from(1.0)?;
+    # Ok(())
+    # }
+    ```
 
+    Invalid conversion
+    ```
+    use hoomd_vector::PositiveReal;
+
+    let result = PositiveReal::try_from(-1.0);
+    assert!(matches!(result, Err(hoomd_vector::Error::NotPositive(_))));
+    ```
+    
     # Errors
 
     * `[Error::NotFinite]` when `v` is not finite.
     * `[Error::NotPositive]` when `v` is not a positive value
     */
     #[inline]
-    pub fn new(v: f64) -> Result<PositiveReal, Error> {
+    fn try_from(v: f64) -> Result<PositiveReal, Error> {
         if !v.is_finite() {
             Err(Error::NotFinite(v))
         } else if v <= 0.0 {
@@ -653,19 +680,19 @@ mod tests {
 
     #[test]
     fn positive_real_validation() {
-        let result = PositiveReal::new(f64::INFINITY);
+        let result = PositiveReal::try_from(f64::INFINITY);
         assert_eq!(result, Err(Error::NotFinite(f64::INFINITY)));
 
-        let result = PositiveReal::new(-f64::INFINITY);
+        let result = PositiveReal::try_from(-f64::INFINITY);
         assert_eq!(result, Err(Error::NotFinite(-f64::INFINITY)));
 
-        let result = PositiveReal::new(f64::NAN);
+        let result = PositiveReal::try_from(f64::NAN);
         assert!(matches!(result, Err(Error::NotFinite(_))));
 
-        let result = PositiveReal::new(0.0);
+        let result = PositiveReal::try_from(0.0);
         assert_eq!(result, Err(Error::NotPositive(0.0)));
 
-        let result = PositiveReal::new(-1.0);
+        let result = PositiveReal::try_from(-1.0);
         assert_eq!(result, Err(Error::NotPositive(-1.0)));
     }
 }
