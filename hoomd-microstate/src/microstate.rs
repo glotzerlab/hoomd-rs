@@ -479,19 +479,25 @@ impl<B, S, C> Microstate<B, S, C> {
         let body_tag = self.bodies[body_index].tag;
         debug_assert_eq!(self.body_indices[body_tag], Some(body_index));
 
-        // Remove sites
+        // Remove sites. `add_body` adds sites in increasing index order, so
+        // remove them in reverse order to avoid keep the other bodies' sites
+        // in increasing order.
         let body_sites = self.bodies_sites.swap_remove(body_index);
-        for site_tag in body_sites {
-            let site_index = self.site_indices[site_tag].expect("A valid site.");
+        for site_tag in body_sites.iter().rev() {
+            let site_index = self.site_indices[*site_tag].expect("A valid site.");
             let removed_site = self.sites.swap_remove(site_index);
-            self.site_indices[self.sites[site_index].site_tag] = Some(site_index);
+            if site_index < self.sites.len() {
+                self.site_indices[self.sites[site_index].site_tag] = Some(site_index);
+            }
             self.site_indices[removed_site.site_tag] = None;
             self.free_site_tags.push(Reverse(removed_site.site_tag));
         }
 
         // Remove body
         self.bodies.swap_remove(body_index);
-        self.body_indices[self.bodies[body_index].tag] = Some(body_index);
+        if body_index < self.bodies.len() {
+            self.body_indices[self.bodies[body_index].tag] = Some(body_index);
+        }
         self.body_indices[body_tag] = None;
         self.free_body_tags.push(Reverse(body_tag));
     }
@@ -719,10 +725,14 @@ impl<B, S, C> Microstate<B, S, C> {
     ```
     */
     #[inline]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "Panic would occur due to a bug in hoomd-rs."
+    )]
     pub fn iter_body_sites(&self, body_index: usize) -> impl Iterator<Item = &Site<S>> {
         self.bodies_sites[body_index]
             .iter()
-            .map(|site_index| &self.sites[*site_index])
+            .map(|site_tag| &self.sites[self.site_indices[*site_tag].expect("valid site tag")])
     }
 }
 
@@ -764,6 +774,8 @@ pub struct MicrostateBuilder<B, S = B, C = Open> {
 impl<B, S> MicrostateBuilder<B, S, Open> {
     /** Construct an empty [`MicrostateBuilder`] with open boundary conditions.
 
+    The resulting microstate starts at step 0 and has a random seed of 0.
+
     # Example
 
     ```
@@ -771,6 +783,11 @@ impl<B, S> MicrostateBuilder<B, S, Open> {
     use hoomd_vector::Cartesian;
 
     let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::new().build();
+
+    assert_eq!(microstate.step(), 0);
+    assert_eq!(microstate.seed(), 0);
+    assert_eq!(microstate.bodies().len(), 0);
+    assert_eq!(microstate.boundary(), hoomd_microstate::boundary::Open);
     ```
     */
     #[inline]
@@ -790,6 +807,8 @@ impl<B, S> Default for MicrostateBuilder<B, S, Open> {
 impl<B, S, C> MicrostateBuilder<B, S, C> {
     /** Construct an empty [`MicrostateBuilder`] with the given boundary conditions.
 
+    The resulting microstate starts at step 0 and has a random seed of 0.
+
     # Example
 
     ```
@@ -798,6 +817,11 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     use hoomd_vector::Cartesian;
 
     let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::with_boundary(Open).build();
+
+    assert_eq!(microstate.step(), 0);
+    assert_eq!(microstate.seed(), 0);
+    assert_eq!(microstate.bodies().len(), 0);
+    assert_eq!(microstate.boundary(), hoomd_microstate::boundary::Open);
     ```
 
     TODO: Show non-trivial boundary conditions.
@@ -960,7 +984,147 @@ where
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::property::Point;
     use hoomd_vector::Cartesian;
 
-    use super::*;
+    use rand::{Rng, SeedableRng, rngs::StdRng, seq::SliceRandom};
+    use rstest::*;
+    use std::collections::HashMap;
+
+    // The doc tests above cover all the trivial cases for every method which
+    // are not repeated here. The following tests perform self-consistency
+    // checks on the internal data structures after calling many methods randomly.
+
+    const N_STEPS: usize = 1024;
+    const MAX_BODY_SIZE: usize = 20;
+    const MAX_INITIAL_BODY_COORDINATE: f64 = 10.0;
+    const MAX_SITE_COORDINATE: f64 = 5.0;
+    const MAX_BODY_TRANSLATE: f64 = 0.125;
+
+    fn create_body<R: Rng>(rng: &mut R) -> Body<Point<Cartesian<2>>> {
+        let mut body = Body::point(rng.random::<Cartesian<2>>() * MAX_INITIAL_BODY_COORDINATE);
+
+        let n = rng.random_range(1..MAX_BODY_SIZE);
+        body.sites = (0..n)
+            .map(|_| Point::new(rng.random::<Cartesian<2>>() * MAX_SITE_COORDINATE))
+            .collect();
+
+        body
+    }
+
+    #[rstest]
+    fn consistency_open(#[values(1, 2, 3, 4)] seed: u64) {
+        // Rather than crafting many corner cases by hand, generate many
+        // microstates randomly by adding, removing, and updating bodies.
+        // Validate the internal consistency of the microstate when compared
+        // to an alternate reference.
+
+        let mut rng = StdRng::seed_from_u64(seed);
+        let mut reference_bodies = HashMap::new();
+        let mut microstate = Microstate::new();
+
+        for _ in 0..N_STEPS {
+            let move_type_r: f64 = rng.random();
+            if move_type_r > 0.7 {
+                // Add bodies more often than removing bodies so that typical
+                // test executions will result in a non-empty microstate.
+                let body = create_body(&mut rng);
+                let tag = microstate.add_body(body.clone());
+                reference_bodies.insert(tag, body);
+            } else if move_type_r > 0.5 && !microstate.bodies.is_empty() {
+                let index = rng.random_range(..microstate.bodies.len());
+                let tag = microstate.bodies()[index].tag;
+                microstate.remove_body(index);
+                reference_bodies.remove(&tag);
+            } else if !microstate.bodies.is_empty() {
+                let index = rng.random_range(..microstate.bodies.len());
+                let tag = microstate.bodies()[index].tag;
+                let body = reference_bodies.get_mut(&tag).expect("valid body tag");
+
+                body.properties.position += rng.random::<Cartesian<2>>() * MAX_BODY_TRANSLATE;
+                microstate.update_body_properties(index, body.properties);
+            }
+        }
+
+        assert_eq!(microstate.bodies.len(), reference_bodies.len());
+        assert_eq!(
+            microstate.sites.len(),
+            reference_bodies.values().map(|body| body.sites.len()).sum()
+        );
+
+        for (tag, optional_index) in microstate.body_indices.iter().enumerate() {
+            if let Some(index) = optional_index {
+                assert_eq!(microstate.bodies()[*index].tag, tag);
+                assert!(reference_bodies.contains_key(&tag));
+            } else {
+                assert!(!reference_bodies.contains_key(&tag));
+            }
+        }
+
+        for (tag, body) in &reference_bodies {
+            let body_index = microstate.body_indices()[*tag].expect("valid index");
+            assert_eq!(microstate.bodies()[body_index].item, *body);
+        }
+
+        for (tag, optional_index) in microstate.site_indices.iter().enumerate() {
+            if let Some(index) = optional_index {
+                assert_eq!(microstate.sites()[*index].site_tag, tag);
+            }
+        }
+
+        for site in microstate.sites() {
+            let body_index = microstate.body_indices()[site.body_tag].expect("valid body");
+            assert!(microstate.bodies_sites[body_index].contains(&site.site_tag));
+        }
+
+        assert_eq!(microstate.bodies().len(), microstate.bodies_sites.len());
+        for (body, body_sites) in microstate
+            .bodies()
+            .iter()
+            .zip(microstate.bodies_sites.iter())
+        {
+            assert_eq!(body.item.sites.len(), body_sites.len());
+            for site_tag in body_sites {
+                let site_index = microstate.site_indices()[*site_tag].expect("valid index");
+                assert_eq!(microstate.sites()[site_index].body_tag, body.tag);
+            }
+        }
+
+        for (body_index, body) in microstate.bodies().iter().enumerate() {
+            for (system_site, local_site) in microstate
+                .iter_body_sites(body_index)
+                .zip(body.item.sites.iter())
+            {
+                assert_eq!(system_site.body_tag, microstate.bodies()[body_index].tag);
+                assert_eq!(
+                    system_site.properties,
+                    body.item.properties.transform(local_site)
+                );
+            }
+        }
+    }
+
+    #[rstest]
+    fn remove_all(#[values(1, 2, 3, 4)] seed: u64) {
+        let mut microstate = Microstate::new();
+        let mut rng = StdRng::seed_from_u64(seed);
+
+        for _ in 0..N_STEPS {
+            let body = create_body(&mut rng);
+            microstate.add_body(body);
+        }
+
+        let mut removal_order = (0..N_STEPS).collect::<Vec<_>>();
+        removal_order.shuffle(&mut rng);
+
+        for body_tag in removal_order {
+            let body_index = microstate.body_indices()[body_tag].expect("valid tag");
+            microstate.remove_body(body_index);
+        }
+
+        assert!(microstate.bodies().is_empty());
+        assert!(microstate.bodies_sites.is_empty());
+        assert!(microstate.sites().is_empty());
+    }
 }

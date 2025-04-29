@@ -256,7 +256,7 @@ The [`property`] module documentation shows you how to define custom body
 and site property types.
 */
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct Body<B, S> {
+pub struct Body<B, S = B> {
     /// The body's degrees of freedom.
     pub properties: B,
     /// Interaction sites in the body's frame of reference.
