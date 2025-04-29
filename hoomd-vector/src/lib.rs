@@ -661,7 +661,7 @@ impl TryFrom<f64> for PositiveReal {
     let result = PositiveReal::try_from(-1.0);
     assert!(matches!(result, Err(hoomd_vector::Error::NotPositive(_))));
     ```
-    
+
     # Errors
 
     * `[Error::NotFinite]` when `v` is not finite.
