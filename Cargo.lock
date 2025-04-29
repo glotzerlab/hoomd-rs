@@ -224,7 +224,7 @@ dependencies = [
  "divan",
  "hoomd-interaction",
  "hoomd-microstate",
- "hoomd-random",
+ "hoomd-utility",
  "hoomd-vector",
  "rand",
  "rstest",
@@ -236,14 +236,14 @@ version = "0.0.0"
 dependencies = [
  "approx",
  "divan",
- "hoomd-random",
+ "hoomd-utility",
  "hoomd-vector",
  "rand",
  "rstest",
 ]
 
 [[package]]
-name = "hoomd-random"
+name = "hoomd-utility"
 version = "0.0.0"
 dependencies = [
  "chacha20",

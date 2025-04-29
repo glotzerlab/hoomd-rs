@@ -4,7 +4,7 @@ members = [
   "hoomd-interaction",
   "hoomd-mc",
   "hoomd-microstate",
-  "hoomd-random",
+  "hoomd-utility",
   "hoomd-vector"
 ]
 

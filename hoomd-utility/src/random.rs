@@ -1,13 +1,6 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-#![doc(
-    html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
-)]
-#![doc(
-    html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
-)]
-
 /*! Helpers that enable consistent use of random numbers througought hoomd-rs.
 */
 
@@ -56,7 +49,7 @@ use rand::{Rng, SeedableRng};
     # Example
 
     ```
-    use hoomd_random::Counter;
+    use hoomd_utility::random::Counter;
     use rand::Rng;
 
     # let step = 100_000;
@@ -96,7 +89,7 @@ impl Counter {
     # Example
 
     ```
-    use hoomd_random::Counter;
+    use hoomd_utility::random::Counter;
 
     # let step = 100_000;
     # let substep = 10;
@@ -127,7 +120,7 @@ impl Counter {
     # Example
 
     ```
-    use hoomd_random::Counter;
+    use hoomd_utility::random::Counter;
 
     # let step = 100_000;
     # let substep = 10;
@@ -153,7 +146,7 @@ impl Counter {
     # Example
 
     ```
-    use hoomd_random::Counter;
+    use hoomd_utility::random::Counter;
 
     # let step = 100_000;
     # let substep = 10;
@@ -178,7 +171,7 @@ impl Counter {
     # Example
 
     ```
-    use hoomd_random::Counter;
+    use hoomd_utility::random::Counter;
 
     # let step = 100_000;
     # let substep = 10;
@@ -206,7 +199,7 @@ impl Counter {
     # Example
 
     ```
-    use hoomd_random::Counter;
+    use hoomd_utility::random::Counter;
 
     # let step = 100_000;
     # let substep = 10;
@@ -227,7 +220,7 @@ impl Counter {
     # Example
 
     ```
-    use hoomd_random::Counter;
+    use hoomd_utility::random::Counter;
     use rand::Rng;
 
     # let step = 100_000;

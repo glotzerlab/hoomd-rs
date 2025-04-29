@@ -17,7 +17,7 @@ workspace = true
 [dependencies]
 hoomd-interaction = { path = "../hoomd-interaction" }
 hoomd-microstate = { path = "../hoomd-microstate" }
-hoomd-random = { path = "../hoomd-random" }
+hoomd-utility = { path = "../hoomd-utility" }
 hoomd-vector = { path = "../hoomd-vector" }
 rand = "0.9.0"
 

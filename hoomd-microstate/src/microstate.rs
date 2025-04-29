@@ -8,7 +8,7 @@ use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 
 use crate::{Body, Site, Transform, boundary::Open};
-use hoomd_random::Counter;
+use hoomd_utility::random::Counter;
 
 /** Track a unique identifier for an item in [`Microstate`].
 */

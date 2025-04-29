@@ -1,12 +1,12 @@
 [package]
-name = "hoomd-random"
+name = "hoomd-utility"
 categories.workspace = true
 description = "."
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 license.workspace = true
-readme = "hoomd-microstate/README.md"
+readme = "hoomd-utility/README.md"
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true

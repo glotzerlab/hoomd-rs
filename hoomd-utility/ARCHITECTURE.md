@@ -1,11 +1,11 @@
-# hoomd_random
+# hoomd_utility
 
 ## Seeds and counters
 
 Like HOOMD-blue, hoomd-rs will use a counter based random number generator to provide
-reproducible results, consistent performance, and support for parallel execution.
-The `hoomd_random` crate provides a unified API so that other parts of hoomd-rs can
-consistently initialize CBRNG types without overlaps.
+reproducible results, consistent performance, and support for parallel execution. The
+`hoomd_utility::random` module provides a unified API so that other parts of hoomd-rs
+can consistently initialize CBRNG types without overlaps.
 
 Based on the usage in HOOMD-blue, methods will need a way to create RNGs with
 a fixed seed layout that includes the timestep, substep, and user seed. HOOMD-blue
@@ -26,8 +26,8 @@ and 3 general use u32 counters. Should we need to expand the number of counters 
 the future (not likely) then this implementation moves the u64 -> u32 downcast to
 only one place in the codebase.
 
-Not all algorithms will use all counters, so `hoomd_random` implements the builder
-pattern to construct the seed along these lines:
+Not all algorithms will use all counters, so `hoomd_utility::random` implements the
+builder pattern to construct the seed along these lines:
 
 ```
 let rng = Counter::new(step, substep, seed)
@@ -35,3 +35,7 @@ let rng = Counter::new(step, substep, seed)
     .counter(chain)
     .make_rng();
 ```
+
+## Value validation
+
+TODO
