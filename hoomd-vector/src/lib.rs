@@ -599,9 +599,7 @@ pub trait Rotation {
     fn combine(&self, other: &Self) -> Self;
 }
 
-/** Represent a positive real value.
-
-Specifically, a f64 that is not +/- inf, nan, or a value <= 0.
+/** A f64 value that is not +/- inf, nan, or a value <= 0.
 
 # Example
 
@@ -616,6 +614,28 @@ let positive = PositiveReal::try_from(1.0)?;
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PositiveReal(f64);
+
+impl PositiveReal {
+    /** Access the value.
+
+    # Example
+
+    ```
+    use hoomd_vector::PositiveReal;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let positive = PositiveReal::try_from(1.0)?;
+
+    assert_eq!(positive.get(), 1.0);
+    # Ok(())
+    # }
+    */
+    #[must_use]
+    #[inline]
+    pub fn get(&self) -> f64 {
+        self.0
+    }
+}
 
 impl TryFrom<f64> for PositiveReal {
     type Error = Error;
