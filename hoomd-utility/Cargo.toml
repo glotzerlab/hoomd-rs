@@ -15,13 +15,13 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-rand = "0.9.0"
+rand.workspace = true
 chacha20 = { version = "0.10.0-pre.3", default-features = false, features = ["rng"]}
-thiserror = "2.0.12"
+thiserror.workspace = true
 
 [dev-dependencies]
-divan = "0.1.17"
-rstest = "0.25.0"
+divan.workspace = true
+rstest.workspace = true
 rand_chacha = "0.9.0"
 
 [[bench]]

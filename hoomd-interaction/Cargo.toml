@@ -15,14 +15,14 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-hoomd-microstate = { path = "../hoomd-microstate" }
-hoomd-vector = { path = "../hoomd-vector" }
+hoomd-microstate.workspace = true
+hoomd-vector.workspace = true
 
 [dev-dependencies]
-approx = "0.5.1"
-divan = "0.1.17"
-rstest = "0.25.0"
-rand = "0.9.0"
+approx.workspace = true
+divan.workspace = true
+rstest.workspace = true
+rand.workspace = true
 
 [[bench]]
 name = "lennard-jones"

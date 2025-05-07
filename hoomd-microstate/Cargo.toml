@@ -15,11 +15,11 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-hoomd-vector = { path = "../hoomd-vector" }
-hoomd-utility = { path = "../hoomd-utility" }
+hoomd-vector.workspace = true
+hoomd-utility.workspace = true
 
 [dev-dependencies]
-rand = "0.9.0"
-divan = "0.1.17"
-rstest = "0.25.0"
-approx = "0.5.1"
+rand.workspace = true
+divan.workspace = true
+rstest.workspace = true
+approx.workspace = true

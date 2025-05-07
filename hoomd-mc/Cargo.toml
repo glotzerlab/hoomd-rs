@@ -15,14 +15,14 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-hoomd-interaction = { path = "../hoomd-interaction" }
-hoomd-microstate = { path = "../hoomd-microstate" }
-hoomd-utility = { path = "../hoomd-utility" }
-hoomd-vector = { path = "../hoomd-vector" }
-rand = "0.9.0"
+hoomd-interaction.workspace = true
+hoomd-microstate.workspace = true
+hoomd-utility.workspace = true
+hoomd-vector.workspace = true
+rand.workspace = true
 
 [dev-dependencies]
-approx = "0.5.1"
-divan = "0.1.17"
-rstest = "0.25.0"
-rand = "0.9.0"
+approx.workspace = true
+divan.workspace = true
+rstest.workspace = true
+rand.workspace = true

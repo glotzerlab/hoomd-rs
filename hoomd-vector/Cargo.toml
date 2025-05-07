@@ -15,15 +15,15 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-thiserror = "2.0.12"
-rand = "0.9.0"
-hoomd-utility = { path = "../hoomd-utility" }
+thiserror.workspace = true
+rand.workspace = true
+hoomd-utility.workspace = true
 
 [dev-dependencies]
-approx = "0.5.1"
-divan = "0.1.17"
+approx.workspace = true
+divan.workspace = true
 paste = "1.0.15"
-rstest = "0.25.0"
+rstest.workspace = true
 
 [[bench]]
 name = "cartesian"

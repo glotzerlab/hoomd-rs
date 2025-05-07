@@ -20,6 +20,23 @@ license = "BSD-3-Clause"
 keywords = ["molecular-dynamics", "monte-carlo", "simulation"]
 categories = ["science"]
 
+[workspace.dependencies]
+# Subcrates
+hoomd-interaction = { path = "hoomd-interaction" }
+hoomd-mc = { path = "hoomd-microstate" }
+hoomd-microstate = { path = "hoomd-microstate" }
+hoomd-utility = { path = "hoomd-utility" }
+hoomd-vector = { path = "hoomd-vector" }
+
+# Common dependencies
+rand = "0.9.0"
+thiserror = "2.0.12"
+
+# Common dev dependencies
+approx = "0.5.1"
+divan = "0.1.17"
+rstest = "0.25.0"
+
 [workspace.lints.rust]
 missing_docs = "warn"
 
