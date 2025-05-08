@@ -1,12 +1,12 @@
 [package]
-name = "hoomd-vector"
+name = "hoomd-utility"
 categories.workspace = true
-description = "Vector and quaternion math library."
+description = "."
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 license.workspace = true
-readme = "hoomd-vector/README.md"
+readme = "hoomd-utility/README.md"
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
@@ -15,24 +15,15 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-thiserror.workspace = true
 rand.workspace = true
-hoomd-utility.workspace = true
+chacha20 = { version = "0.10.0-pre.3", default-features = false, features = ["rng"]}
+thiserror.workspace = true
 
 [dev-dependencies]
-approx.workspace = true
 divan.workspace = true
-paste = "1.0.15"
 rstest.workspace = true
+rand_chacha = "0.9.0"
 
 [[bench]]
-name = "cartesian"
-harness = false
-
-[[bench]]
-name = "angle"
-harness = false
-
-[[bench]]
-name = "quaternion"
+name = "chacha"
 harness = false

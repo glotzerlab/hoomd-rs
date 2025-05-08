@@ -421,6 +421,15 @@ convention.
 
 ## Constructing a [`Versor`]:
 
+The default [`Versor`] is the identity:
+
+```
+use hoomd_vector::Versor;
+
+let v = Versor::default();
+assert_eq!(*v.get(), [1.0, 0.0, 0.0, 0.0].into());
+```
+
 Create a [`Versor`] that rotates by an angle about an axis:
 ```
 use hoomd_vector::Versor;
@@ -1147,8 +1156,6 @@ mod tests {
             for dot_sum in dot_sums {
                 assert_abs_diff_eq!(dot_sum / f64::from(samples), 0.0, epsilon = 0.01);
             }
-
-            // TODO: Trevor has a better unit test, but it requires shape overlap tests.
         }
     }
 }

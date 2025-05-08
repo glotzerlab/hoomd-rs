@@ -57,9 +57,9 @@ lj.sigma = 3.0;
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct LennardJones<const N: i32 = 12, const M: i32 = 6> {
-    /// Energy scale `[energy]`.
+    /// Energy scale (`[energy]`).
     pub epsilon: f64,
-    /// Interaction width `[length]`.
+    /// Interaction width (`[length]`).
     pub sigma: f64,
 }
 

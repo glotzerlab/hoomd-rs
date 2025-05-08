@@ -164,6 +164,7 @@ let versor: Versor = rng.random();
 
 mod angle;
 mod cartesian;
+pub mod distribution;
 mod quaternion;
 
 pub use {

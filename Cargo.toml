@@ -1,9 +1,11 @@
 [workspace]
 
 members = [
-  "hoomd-vector",
   "hoomd-interaction",
-  "hoomd-random"
+  "hoomd-mc",
+  "hoomd-microstate",
+  "hoomd-utility",
+  "hoomd-vector"
 ]
 
 resolver = "3"
@@ -17,6 +19,23 @@ repository = "https://github.com/glotzerlab/hoomd"
 license = "BSD-3-Clause"
 keywords = ["molecular-dynamics", "monte-carlo", "simulation"]
 categories = ["science"]
+
+[workspace.dependencies]
+# Subcrates
+hoomd-interaction = { path = "hoomd-interaction" }
+hoomd-mc = { path = "hoomd-microstate" }
+hoomd-microstate = { path = "hoomd-microstate" }
+hoomd-utility = { path = "hoomd-utility" }
+hoomd-vector = { path = "hoomd-vector" }
+
+# Common dependencies
+rand = "0.9.0"
+thiserror = "2.0.12"
+
+# Common dev dependencies
+approx = "0.5.1"
+divan = "0.1.17"
+rstest = "0.25.0"
 
 [workspace.lints.rust]
 missing_docs = "warn"
@@ -33,7 +52,6 @@ float_cmp = "allow"
 allow_attributes = "warn"
 allow_attributes_without_reason = "warn"
 exhaustive_enums = "warn"
-expect_used = "warn"
 impl_trait_in_params = "warn"
 missing_docs_in_private_items = "warn"
 missing_inline_in_public_items = "warn"
@@ -47,6 +65,11 @@ renamed_function_params = "warn"
 same_name_method = "warn"
 todo = "warn"
 unwrap_used = "warn"
+# unwrap_used is warn, but expect_used is allowed. Ideally, we would like to warn on expect_used,
+# but the use of expect is unavoidable. As a rule, `expect` should only be used when it will panic
+# due to a bug IN HOOMD-RS. `expect` should never be used to validate input from the caller,
+# or panic as a result of the caller's action. Such cases should return a `Result` or `Option`
+# type as appropriate and allow the caller to handle the error appropriately.
 
 # lints currently in nursery
 fallible_impl_from = "warn"
