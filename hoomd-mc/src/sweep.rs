@@ -5,8 +5,12 @@
 */
 
 use super::{Count, DeltaEnergyOne, LocalTrial, Trial};
+use hoomd_microstate::boundary::Boundary;
+use hoomd_microstate::property::Position;
 use hoomd_microstate::{Body, Microstate, Transform};
+
 use rand::Rng;
+use std::marker::PhantomData;
 
 /** Apply a local trial move to every body in the microstate.
 
@@ -43,26 +47,33 @@ for _ in 0..1_000 {
 # }
 ```
 */
-pub struct Sweep<L> {
+pub struct Sweep<L, V> {
     /// The local trial to apply.
     pub local: L,
+
+    /// Make sweep depend on the vector type V even though it doesn't store a vector.
+    vector_type: PhantomData<V>,
 }
 
-impl<L> Sweep<L> {
+impl<L, V> Sweep<L, V> {
     /// Construct a new `Sweep` with the given local trial.
     #[inline]
     #[must_use]
     pub fn new(local: L) -> Self {
-        Self { local }
+        Self {
+            local,
+            vector_type: PhantomData,
+        }
     }
 }
 
-impl<B, S, C, L, H> Trial<Microstate<B, S, C>, H> for Sweep<L>
+impl<B, S, C, L, H, V> Trial<Microstate<B, S, C>, H> for Sweep<L, V>
 where
-    B: Copy + Clone + Default + Transform<S>,
-    S: Clone + Default,
+    B: Copy + Clone + Default + Transform<S> + Position<V>,
+    S: Clone + Default + Position<V>,
     L: LocalTrial<B>,
     H: DeltaEnergyOne<B, S, C>,
+    C: Boundary<V>,
 {
     type Count = Count;
     type Macrostate = f64;
@@ -83,16 +94,32 @@ where
         // The call to `update_body_properties` makes a mutable borrow of microstate.
         for body_index in 0..microstate.bodies().len() {
             trial.clone_from(&microstate.bodies()[body_index].item);
-            trial.properties = self.local.propose(&mut rng, trial.properties);
 
-            // TODO: Handle boundary conditions
+            // Wrap the body position here. The site positions will be wrapped
+            // by the delta_energy methods and again by update_body_properties.
+            // We could early reject if we checked the site properties first. If
+            // performance becomes an issue, we could also wrap site properties
+            // once here and pass those to unchecked variants of the delta
+            // energy and update methods.
+            match microstate
+                .boundary()
+                .wrap(self.local.propose(&mut rng, trial.properties))
+            {
+                Ok(new_properties) => {
+                    trial.properties = new_properties;
 
-            let delta_h = hamiltonian.delta_energy_one(microstate, body_index, &trial);
-            if rng.random::<f64>() < (-delta_h / kt).exp() {
-                microstate.update_body_properties(body_index, trial.properties);
-                count.accepted += 1;
-            } else {
-                count.rejected += 1;
+                    let delta_h = hamiltonian.delta_energy_one(microstate, body_index, &trial);
+                    if rng.random::<f64>() < (-delta_h / kt).exp()
+                        && microstate
+                            .update_body_properties(body_index, trial.properties)
+                            .is_ok()
+                    {
+                        count.accepted += 1;
+                    } else {
+                        count.rejected += 1;
+                    }
+                }
+                Err(_) => count.rejected += 1,
             }
         }
 

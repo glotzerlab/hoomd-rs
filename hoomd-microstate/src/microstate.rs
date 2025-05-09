@@ -568,6 +568,12 @@ impl<B, S, C> Microstate<B, S, C> {
     Also updates the properties of the sites (in the system frame) associated
     with the body.
 
+    # Errors
+
+    [`Error::CannotWrapPosition`] when any the body position or one of the
+    site positions cannot be wrapped into the boundary. When an error occurs,
+    `update_body_properties` makes no change to the microstate.
+
     # Example
 
     ```
@@ -580,7 +586,7 @@ impl<B, S, C> Microstate<B, S, C> {
         .bodies([Body::point(Cartesian::from([1.0, 0.0]))])
         .try_build()?;
 
-    microstate.update_body_properties(0, Point::new(Cartesian::from([-2.0, 3.0])));
+    microstate.update_body_properties(0, Point::new(Cartesian::from([-2.0, 3.0])))?;
     assert_eq!(microstate.bodies()[0].item.properties.position, [-2.0, 3.0].into());
     assert_eq!(microstate.sites()[0].properties.position, [-2.0, 3.0].into());
     # Ok(())
@@ -592,18 +598,40 @@ impl<B, S, C> Microstate<B, S, C> {
         clippy::missing_panics_doc,
         reason = "Panic would occur due to a bug in hoomd-rs."
     )]
-    pub fn update_body_properties(&mut self, body_index: usize, properties: B)
+    pub fn update_body_properties<V>(
+        &mut self,
+        body_index: usize,
+        properties: B,
+    ) -> Result<(), Error>
     where
-        B: Transform<S>,
+        B: Transform<S> + Position<V>,
+        S: Position<V>,
+        C: Boundary<V>,
     {
         let body = &mut self.bodies[body_index].item;
-        body.properties = properties;
+        let new_body_properties = self.boundary.wrap(properties)?;
+
+        // An unknown site in the body might not wrap into the boundary.
+        // Check that they do first before starting to modify internal data
+        // structures. This wraps every site twice on update. Should that prove
+        // to be a performance bottleneck, we could alternately implement a
+        // staging Vec (would require allocation/deallocation per update or a
+        // reusable scratch storage).
+        for s in &body.sites {
+            self.boundary.wrap(new_body_properties.transform(s))?;
+        }
+
+        body.properties = new_body_properties;
 
         // Update site properties
         for (i, site_tag) in self.bodies_sites[body_index].iter().enumerate() {
             let site_index = self.site_indices[*site_tag].expect("site_tag should be a valid tag");
-            self.sites[site_index].properties = body.properties.transform(&body.sites[i]);
+            self.sites[site_index].properties = self
+                .boundary
+                .wrap(body.properties.transform(&body.sites[i]))?;
         }
+
+        Ok(())
     }
 }
 
@@ -1153,7 +1181,9 @@ mod tests {
                 let body = reference_bodies.get_mut(&tag).expect("valid body tag");
 
                 body.properties.position += rng.random::<Cartesian<2>>() * MAX_BODY_TRANSLATE;
-                microstate.update_body_properties(index, body.properties);
+                microstate
+                    .update_body_properties(index, body.properties)
+                    .expect("valid update");
             }
         }
 
