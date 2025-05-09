@@ -4,7 +4,52 @@
 /*! Traits that describe boundary conditions and a selection of types that implement them.
  */
 
+use crate::property::Position;
+
+/** Define the subset of the vector space where body and site positions exist.
+
+A `Boundary` also describes how body and site properties transform to periodic
+images. See the specific implementations of `Boundary` for examples.
+
+When implementing a custom `Boundary`, you need to implement `is_inside` at
+a minimum. The default implementations of the other methods describe fully
+non-periodic boundary conditions. You can make your boundary periodic by
+implementing the other methods accordingly.
+*/
+pub trait Boundary<V, P: Position<V>> {
+    /// Test whether a given point is inside the boundary.
+    fn is_inside(&self, point: &V) -> bool;
+
+    /** Transform body and site properties into the boundary.
+
+    `wrap` takes a body/site properties type with a position that may be outside
+    the boundary. It attempts to wrap that body/site back inside the following
+    the boundary's periodicity. `wrap` returns `Some(properties)` when this
+    process is successful.  When it fails (i.e. a body's position is outside the
+    radius of a cylinder that is only periodic along its: axis), `wrap` returns
+    `None`.
+    */
+    #[inline]
+    fn wrap(&self, properties: P) -> Option<P> {
+        if self.is_inside(properties.position()) {
+            Some(properties)
+        } else {
+            None
+        }
+    }
+}
+
 /** Open boundary conditions.
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Open;
+
+impl<V, P> Boundary<V, P> for Open
+where
+    P: Position<V>,
+{
+    #[inline]
+    fn is_inside(&self, _point: &V) -> bool {
+        true
+    }
+}
