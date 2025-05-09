@@ -11,7 +11,7 @@ use hoomd_vector::Cartesian;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut microstate = Microstate::new();
-    microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
+    microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
 
     let kt = 1.0;
     let hamiltonian = Single(Linear {

@@ -69,8 +69,8 @@ where
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut microstate = Microstate::new();
-microstate.extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
-                          Body::point(Cartesian::from([-1.0, 2.0]))]);
+microstate.try_extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
+                              Body::point(Cartesian::from([-1.0, 2.0]))])?;
 
 let custom_evaluator = Custom { a: 1.0, b: 10.0 };
 let site_energy = custom_evaluator.site_energy(&microstate.sites()[0].properties);
@@ -107,8 +107,8 @@ use hoomd_vector::Cartesian;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut microstate = Microstate::new();
-microstate.extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
-                          Body::point(Cartesian::from([-1.0, 2.0]))]);
+microstate.try_extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
+                              Body::point(Cartesian::from([-1.0, 2.0]))])?;
 
 let linear = Single(Linear{ alpha: 1.0,
     plane_origin: Cartesian::default(),
@@ -174,10 +174,12 @@ mod tests {
     #[fixture]
     fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
         let mut microstate = Microstate::new();
-        microstate.extend_bodies([
-            Body::point(Cartesian::from([1.0, 0.0])),
-            Body::point(Cartesian::from([-1.0, 3.0])),
-        ]);
+        microstate
+            .try_extend_bodies([
+                Body::point(Cartesian::from([1.0, 0.0])),
+                Body::point(Cartesian::from([-1.0, 3.0])),
+            ])
+            .expect("valid bodies");
         microstate
     }
 

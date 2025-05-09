@@ -240,6 +240,7 @@ dependencies = [
  "hoomd-vector",
  "rand",
  "rstest",
+ "thiserror",
 ]
 
 [[package]]

@@ -8,9 +8,9 @@ use hoomd_microstate::property::Position;
 use hoomd_microstate::{Body, Microstate};
 use hoomd_vector::Cartesian;
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut microstate = Microstate::new();
-    microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
+    microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
 
     let kt = 1.0;
     let hamiltonian = Zero;
@@ -24,4 +24,6 @@ fn main() {
         println!("{}", microstate.bodies()[0].item.properties.position());
         microstate.increment_step();
     }
+
+    Ok(())
 }

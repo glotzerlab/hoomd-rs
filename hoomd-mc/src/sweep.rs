@@ -132,7 +132,9 @@ mod tests {
         let origin = Cartesian::from([1.0, -2.0]);
 
         let mut microstate = Microstate::new();
-        microstate.add_body(Body::point(origin));
+        microstate
+            .add_body(Body::point(origin))
+            .expect("valid body");
         let hamiltonian = Single(Harmonic(origin));
 
         let d = 0.1;

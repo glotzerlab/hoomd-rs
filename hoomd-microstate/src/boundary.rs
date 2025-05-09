@@ -7,7 +7,7 @@ See the [crate-level documentation](crate) for an overview of how [`Boundary`]
 interacts with [`Microstate`](crate::Microstate) and model methods.
  */
 
-use crate::property::Position;
+use crate::{Error, property::Position};
 
 /** Define the subset of the vector space where body and site positions exist.
 
@@ -19,7 +19,7 @@ When implementing a custom [`Boundary`], you need to implement
 methods describe fully non-periodic boundary conditions. You can make your
 boundary periodic by implementing the other methods accordingly.
 */
-pub trait Boundary<V, P: Position<V>> {
+pub trait Boundary<V> {
     /// Test whether a given point is inside the boundary.
     fn is_inside(&self, point: &V) -> bool;
 
@@ -27,18 +27,24 @@ pub trait Boundary<V, P: Position<V>> {
 
     `wrap` takes a body/site with a position that may be outside the boundary.
     It attempts to wrap that body/site back inside following the boundary's
-    periodicity. `wrap` returns `Some(properties)` when this process is
-    successful.  When it fails `wrap` returns [`None`].
+    periodicity. `wrap` returns [`Ok(properties)`](Ok) when this process is
+    successful.
 
-    For example, [`None`] would be returned when a body's position is outside the
-    radius of a cylinder that is only periodic along its axis.
+    # Errors
+
+    `wrap` returns [`Error::CannotWrapPosition`] when it is not possible to wrap
+    the body/site into the boundary. For example, when the position is outside
+    the radius of a cylinder that is only periodic along its axis.
     */
     #[inline]
-    fn wrap(&self, properties: P) -> Option<P> {
+    fn wrap<P>(&self, properties: P) -> Result<P, Error>
+    where
+        P: Position<V>,
+    {
         if self.is_inside(properties.position()) {
-            Some(properties)
+            Ok(properties)
         } else {
-            None
+            Err(Error::CannotWrapPosition)
         }
     }
 }
@@ -50,10 +56,7 @@ Every point lies inside `Open` boundary conditions.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Open;
 
-impl<V, P> Boundary<V, P> for Open
-where
-    P: Position<V>,
-{
+impl<V> Boundary<V> for Open {
     #[inline]
     fn is_inside(&self, _point: &V) -> bool {
         true
