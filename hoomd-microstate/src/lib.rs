@@ -326,5 +326,5 @@ pub trait Transform<S> {
 pub enum Error {
     /// Attempted to wrap a body/site with a position not covered by the periodic boundary.
     #[error("This position cannot be wrapped into the boundary.")]
-    CannotWrapPosition,
+    CannotWrapProperties,
 }

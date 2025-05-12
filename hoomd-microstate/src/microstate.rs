@@ -361,7 +361,7 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
 
     # Errors
 
-    [`Error::CannotWrapPosition`] when either the body position or one of the site
+    [`Error::CannotWrapProperties`] when either the body position or one of the site
     positions cannot be wrapped into the boundary.
 
     # Example
@@ -467,7 +467,7 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
 
     # Errors
 
-    [`Error::CannotWrapPosition`] when any of the body positions or one of the
+    [`Error::CannotWrapProperties`] when any of the body positions or one of the
     site positions cannot be wrapped into the boundary. `try_extend_bodies` adds
     each body one by one. When an error occurs, it short-circuits and does not
     attempt to add any further bodies. The bodies added before the error will
@@ -576,7 +576,7 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
 
     # Errors
 
-    [`Error::CannotWrapPosition`] when any the body position or one of the
+    [`Error::CannotWrapProperties`] when any the body position or one of the
     site positions cannot be wrapped into the boundary. When an error occurs,
     `update_body_properties` makes no change to the microstate.
 

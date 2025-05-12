@@ -9,6 +9,12 @@ interacts with [`Microstate`](crate::Microstate) and model methods.
 
 use crate::{Error, property::Position};
 
+mod open;
+mod square;
+
+pub use open::Open;
+pub use square::Square;
+
 /** Define the subset of the vector space where body and site positions exist.
 
 A [`Boundary`] also describes how body and site properties transform from/to
@@ -37,7 +43,7 @@ pub trait Boundary<V, B, S> {
 
     # Errors
 
-    `wrap` returns [`Error::CannotWrapPosition`] when it is not possible to wrap
+    `wrap` returns [`Error::CannotWrapProperties`] when it is not possible to wrap
     the body into the boundary. For example, when the position is outside the
     radius of a cylinder that is only periodic along its axis.
     */
@@ -45,12 +51,11 @@ pub trait Boundary<V, B, S> {
     fn wrap_body(&self, body_properties: B) -> Result<B, Error>
     where
         B: Position<V>,
-        S: Position<V>,
     {
         if self.is_inside(body_properties.position()) {
             Ok(body_properties)
         } else {
-            Err(Error::CannotWrapPosition)
+            Err(Error::CannotWrapProperties)
         }
     }
 
@@ -63,34 +68,19 @@ pub trait Boundary<V, B, S> {
 
     # Errors
 
-    `wrap` returns [`Error::CannotWrapPosition`] when it is not possible to wrap
+    `wrap` returns [`Error::CannotWrapProperties`] when it is not possible to wrap
     the site into the boundary. For example, when the position is outside the
     radius of a cylinder that is only periodic along its axis.
     */
     #[inline]
     fn wrap_site(&self, site_properties: S) -> Result<S, Error>
     where
-        B: Position<V>,
         S: Position<V>,
     {
         if self.is_inside(site_properties.position()) {
             Ok(site_properties)
         } else {
-            Err(Error::CannotWrapPosition)
+            Err(Error::CannotWrapProperties)
         }
-    }
-}
-
-/** Allow bodies and sites to exist anywhere in space.
-
-Every point lies inside `Open` boundary conditions.
-*/
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Open;
-
-impl<V, B, S> Boundary<V, B, S> for Open {
-    #[inline]
-    fn is_inside(&self, _point: &V) -> bool {
-        true
     }
 }
