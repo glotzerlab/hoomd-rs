@@ -122,7 +122,7 @@ assert_eq!(total_energy, 2.0);
 */
 pub struct Single<E>(pub E);
 
-impl<B, S, C, E> TotalEnergy<Microstate<B, S, C>> for Single<E>
+impl<V, B, S, C, E> TotalEnergy<Microstate<V, B, S, C>> for Single<E>
 where
     E: SiteEnergy<S>,
 {
@@ -133,7 +133,7 @@ where
     to sites. Use a custom implementation to compute energies over body centers.
     */
     #[inline]
-    fn total_energy(&self, microstate: &Microstate<B, S, C>) -> f64 {
+    fn total_energy(&self, microstate: &Microstate<V, B, S, C>) -> f64 {
         microstate
             .sites()
             .iter()
@@ -172,7 +172,7 @@ mod tests {
     }
 
     #[fixture]
-    fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
+    fn microstate() -> Microstate<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
         let mut microstate = Microstate::new();
         microstate
             .try_extend_bodies([
@@ -184,7 +184,9 @@ mod tests {
     }
 
     #[rstest]
-    fn single_total(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+    fn single_total(
+        microstate: Microstate<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>, Open>,
+    ) {
         let test_se = TestSE;
         let single = Single(test_se);
 
@@ -192,7 +194,9 @@ mod tests {
     }
 
     #[rstest]
-    fn single_site(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+    fn single_site(
+        microstate: Microstate<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>, Open>,
+    ) {
         let test_se = TestSE;
         let single = Single(test_se);
 

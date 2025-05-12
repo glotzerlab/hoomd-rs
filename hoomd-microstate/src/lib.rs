@@ -147,7 +147,7 @@ initializes the seed and step to 0.
 use hoomd_microstate::{Microstate, property::Point};
 use hoomd_vector::Cartesian;
 
-let microstate = Microstate::<Point<Cartesian<2>>>::new();
+let microstate = Microstate::<Cartesian<2>, Point<Cartesian<2>>>::new();
 ```
 
 When you need more control, use [`MicrostateBuilder`] to set the boundary conditions,

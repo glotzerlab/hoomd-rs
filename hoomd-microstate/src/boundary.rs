@@ -18,31 +18,63 @@ When implementing a custom [`Boundary`], you need to implement
 [`Boundary::is_inside`] at a minimum. The default implementations of the other
 methods describe fully non-periodic boundary conditions. You can make your
 boundary periodic by implementing the other methods accordingly.
+
+The generic type names are:
+* `V`: The [`Vector`] space in which bodies and sites exist.
+* `B`: The [`Body::properties`](crate::Body) type.
+* `S`: The [`Site::properties`](crate::Site) type.
 */
-pub trait Boundary<V> {
+pub trait Boundary<V, B, S> {
     /// Test whether a given point is inside the boundary.
     fn is_inside(&self, point: &V) -> bool;
 
-    /** Transform body and site properties into the boundary.
+    /** Transform body properties into the boundary.
 
-    `wrap` takes a body/site with a position that may be outside the boundary.
-    It attempts to wrap that body/site back inside following the boundary's
+    `wrap_body` takes a body with a position that may be outside the boundary.
+    It attempts to wrap that body back inside following the boundary's
     periodicity. `wrap` returns [`Ok(properties)`](Ok) when this process is
     successful.
 
     # Errors
 
     `wrap` returns [`Error::CannotWrapPosition`] when it is not possible to wrap
-    the body/site into the boundary. For example, when the position is outside
-    the radius of a cylinder that is only periodic along its axis.
+    the body into the boundary. For example, when the position is outside the
+    radius of a cylinder that is only periodic along its axis.
     */
     #[inline]
-    fn wrap<P>(&self, properties: P) -> Result<P, Error>
+    fn wrap_body(&self, body_properties: B) -> Result<B, Error>
     where
-        P: Position<V>,
+        B: Position<V>,
+        S: Position<V>,
     {
-        if self.is_inside(properties.position()) {
-            Ok(properties)
+        if self.is_inside(body_properties.position()) {
+            Ok(body_properties)
+        } else {
+            Err(Error::CannotWrapPosition)
+        }
+    }
+
+    /** Transform site properties into the boundary.
+
+    `wrap_site` takes a site with a position that may be outside the boundary.
+    It attempts to wrap that site back inside following the boundary's
+    periodicity. `wrap` returns [`Ok(properties)`](Ok) when this process is
+    successful.
+
+    # Errors
+
+    `wrap` returns [`Error::CannotWrapPosition`] when it is not possible to wrap
+    the site into the boundary. For example, when the position is outside the
+    radius of a cylinder that is only periodic along its axis.
+    */
+    #[inline]
+    fn wrap_site(&self, site_properties: S) -> Result<S, Error>
+    where
+        B: Position<V>,
+        S: Position<V>,
+    {
+        if self.is_inside(site_properties.position()) {
+            Ok(site_properties)
         } else {
             Err(Error::CannotWrapPosition)
         }
@@ -56,7 +88,7 @@ Every point lies inside `Open` boundary conditions.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Open;
 
-impl<V> Boundary<V> for Open {
+impl<V, B, S> Boundary<V, B, S> for Open {
     #[inline]
     fn is_inside(&self, _point: &V) -> bool {
         true

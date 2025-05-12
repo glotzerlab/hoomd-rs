@@ -47,6 +47,10 @@ for _ in 0..1_000 {
 # }
 ```
 */
+#[expect(
+    clippy::partial_pub_fields,
+    reason = "Users do not need to be aware of phantom data."
+)]
 pub struct Sweep<L, V> {
     /// The local trial to apply.
     pub local: L,
@@ -67,13 +71,13 @@ impl<L, V> Sweep<L, V> {
     }
 }
 
-impl<B, S, C, L, H, V> Trial<Microstate<B, S, C>, H> for Sweep<L, V>
+impl<V, B, S, C, L, H> Trial<Microstate<V, B, S, C>, H> for Sweep<L, V>
 where
     B: Copy + Clone + Default + Transform<S> + Position<V>,
     S: Clone + Default + Position<V>,
     L: LocalTrial<B>,
-    H: DeltaEnergyOne<B, S, C>,
-    C: Boundary<V>,
+    H: DeltaEnergyOne<V, B, S, C>,
+    C: Boundary<V, B, S>,
 {
     type Count = Count;
     type Macrostate = f64;
@@ -81,7 +85,7 @@ where
     #[inline]
     fn apply(
         &self,
-        microstate: &mut Microstate<B, S, C>,
+        microstate: &mut Microstate<V, B, S, C>,
         hamiltonian: &H,
         state: &Self::Macrostate,
     ) -> Self::Count where {
@@ -103,7 +107,7 @@ where
             // energy and update methods.
             match microstate
                 .boundary()
-                .wrap(self.local.propose(&mut rng, trial.properties))
+                .wrap_body(self.local.propose(&mut rng, trial.properties))
             {
                 Ok(new_properties) => {
                     trial.properties = new_properties;

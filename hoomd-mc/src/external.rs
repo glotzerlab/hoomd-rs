@@ -8,7 +8,7 @@ use super::DeltaEnergyOne;
 use hoomd_interaction::{Single, SiteEnergy};
 use hoomd_microstate::{Body, Microstate, Transform};
 
-impl<B, S, C, E> DeltaEnergyOne<B, S, C> for Single<E>
+impl<V, B, S, C, E> DeltaEnergyOne<V, B, S, C> for Single<E>
 where
     E: SiteEnergy<S>,
     B: Transform<S>,
@@ -16,7 +16,7 @@ where
     #[inline]
     fn delta_energy_one(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<V, B, S, C>,
         body_index: usize,
         final_body: &Body<B, S>,
     ) -> f64 {

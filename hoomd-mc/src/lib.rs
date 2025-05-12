@@ -81,7 +81,7 @@ Some implementations of [`Trial`] apply to a single body at a time and use a
 Hamiltonian that implements `DeltaEnergyOne` to efficiently compute the change
 in energy.
 */
-pub trait DeltaEnergyOne<B, S, C> {
+pub trait DeltaEnergyOne<V, B, S, C> {
     /** Compute the change in energy.
 
     `initial_microstate` describes the initial configuration and `final_body`
@@ -96,7 +96,7 @@ pub trait DeltaEnergyOne<B, S, C> {
     #[must_use]
     fn delta_energy_one(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<V, B, S, C>,
         body_index: usize,
         final_body: &Body<B, S>,
     ) -> f64;
@@ -109,11 +109,11 @@ It returns 0 for all delta energies.
 */
 pub struct Zero;
 
-impl<B, S, C> DeltaEnergyOne<B, S, C> for Zero {
+impl<V, B, S, C> DeltaEnergyOne<V, B, S, C> for Zero {
     #[inline]
     fn delta_energy_one(
         &self,
-        _initial_microstate: &Microstate<B, S, C>,
+        _initial_microstate: &Microstate<V, B, S, C>,
         _body_index: usize,
         _final_body: &Body<B, S>,
     ) -> f64 {
