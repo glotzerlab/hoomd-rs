@@ -40,7 +40,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     let d = 0.1;
 
     let translate = Translate::new(d.try_into().expect("positive real"));
-    let translate_sweep = Sweep::new(translate);
+    let translate_sweep = Sweep { local: translate };
 
     loop {
         terminal.draw(|frame| render(frame, &microstate))?;

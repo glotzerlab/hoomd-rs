@@ -10,9 +10,8 @@ use hoomd_microstate::property::Position;
 use hoomd_microstate::{Body, Microstate, Transform};
 
 use rand::Rng;
-use std::marker::PhantomData;
 
-/** Apply a local trial move to every body in the microstate.
+/** Apply a local trial move to each body in the microstate.
 
 Each trial move is accepted when:
 <!-- r < \exp\left(\frac{-\Delta H}{kT}\right) -->
@@ -20,7 +19,6 @@ Each trial move is accepted when:
 where `r` is a random value uniformly distributed in `[0,1)`, `\Delta H` is
 the change in energy computed by the given `hamiltonian` and `kT` is the given
 `state` value (the last argument to `apply`).
-
 
 # Example
 
@@ -34,7 +32,7 @@ use hoomd_vector::Cartesian;
 let mut microstate = Microstate::new();
 microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
 let d = 0.1;
-let translate_sweep = Sweep::new(Translate::new(d.try_into()?));
+let translate_sweep = Sweep { local: Translate::new(d.try_into()?) };
 
 let hamiltonian = Zero;
 let kt = 1.0;
@@ -51,27 +49,21 @@ for _ in 0..1_000 {
     clippy::partial_pub_fields,
     reason = "Users do not need to be aware of phantom data."
 )]
-pub struct Sweep<L, V> {
+pub struct Sweep<L> {
     /// The local trial to apply.
     pub local: L,
-
-    /// Make sweep depend on the vector type V even though it doesn't store a vector.
-    vector_type: PhantomData<V>,
 }
 
-impl<L, V> Sweep<L, V> {
+impl<L> Sweep<L> {
     /// Construct a new `Sweep` with the given local trial.
     #[inline]
     #[must_use]
     pub fn new(local: L) -> Self {
-        Self {
-            local,
-            vector_type: PhantomData,
-        }
+        Self { local }
     }
 }
 
-impl<V, B, S, C, L, H> Trial<Microstate<V, B, S, C>, H> for Sweep<L, V>
+impl<V, B, S, C, L, H> Trial<Microstate<V, B, S, C>, H> for Sweep<L>
 where
     B: Copy + Clone + Default + Transform<S> + Position<V>,
     S: Clone + Default + Position<V>,
@@ -183,7 +175,7 @@ mod tests {
 
         let d = 0.1;
         let translate = Translate::new(d.try_into().expect("positive real"));
-        let translate_sweep = Sweep::new(translate);
+        let translate_sweep = Sweep { local: translate };
 
         let mut position_accumulator = Cartesian::default();
         let mut energy_accumulator = 0.0;
@@ -218,7 +210,7 @@ mod tests {
             .expect("the hard-coded bodies should be in the boundary");
         let hamiltonian = Zero;
         let translate = Right;
-        let translate_sweep = Sweep::new(translate);
+        let translate_sweep = Sweep { local: translate };
 
         // The first move to the right ends in the boundary and should be accepted.
         let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);
@@ -250,7 +242,7 @@ mod tests {
             .expect("the hard-coded bodies should be in the boundary");
         let hamiltonian = Zero;
         let translate = Right;
-        let translate_sweep = Sweep::new(translate);
+        let translate_sweep = Sweep { local: translate };
 
         // The first move to the right ends in the boundary and should be accepted.
         let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);

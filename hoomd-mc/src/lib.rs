@@ -140,7 +140,7 @@ use hoomd_vector::Cartesian;
 let mut microstate = Microstate::new();
 microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
 let d = 0.1;
-let translate_sweep = Sweep::new(Translate::new(d.try_into()?));
+let translate_sweep = Sweep{ local: Translate::new(d.try_into()?) };
 
 let mut count = Count::default();
 

@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let d = 0.1;
 
     let translate = Translate::new(d.try_into()?);
-    let translate_sweep = Sweep::new(translate);
+    let translate_sweep = Sweep { local: translate };
 
     for _ in 0..100_000 {
         translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
