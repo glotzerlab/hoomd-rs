@@ -207,11 +207,15 @@ mod tests {
 
     #[test]
     fn reject_boundary_body() {
-        let square = Square { l: 4.0 };
+        let square = Square {
+            l: 4.0
+                .try_into()
+                .expect("hard-coded constant should be positive"),
+        };
         let mut microstate = MicrostateBuilder::with_boundary(square)
             .bodies([Body::point([0.0, 0.0].into())])
             .try_build()
-            .expect("the hard-coded bodies should be in the boundary.");
+            .expect("the hard-coded bodies should be in the boundary");
         let hamiltonian = Zero;
         let translate = Right;
         let translate_sweep = Sweep::new(translate);
@@ -235,11 +239,15 @@ mod tests {
             sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
         };
 
-        let square = Square { l: 6.0 };
+        let square = Square {
+            l: 6.0
+                .try_into()
+                .expect("hard-coded constant should be positive"),
+        };
         let mut microstate = MicrostateBuilder::with_boundary(square)
             .bodies([body])
             .try_build()
-            .expect("the hard-coded bodies should be in the boundary.");
+            .expect("the hard-coded bodies should be in the boundary");
         let hamiltonian = Zero;
         let translate = Right;
         let translate_sweep = Sweep::new(translate);

@@ -29,9 +29,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 /// Run the simulation
 fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> {
-    let mut microstate = MicrostateBuilder::with_boundary(Square { l: 10.0 })
-        .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
-        .try_build()?;
+    let mut microstate = MicrostateBuilder::with_boundary(Square {
+        l: 10.0.try_into()?,
+    })
+    .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
+    .try_build()?;
 
     let kt = 1.0;
     let hamiltonian = Zero;
@@ -59,7 +61,7 @@ fn render(
 ) {
     let properties = &microstate.bodies()[0].item.properties;
 
-    let l = microstate.boundary().l;
+    let l = microstate.boundary().l.get();
 
     let canvas = Canvas::default()
         .block(Block::bordered().title("Bounded random walk"))

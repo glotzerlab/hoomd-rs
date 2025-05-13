@@ -6,6 +6,7 @@
 
 use super::Boundary;
 use crate::property::Point;
+use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
 /** Restrict bodies and sites to the inside of a square.
@@ -13,20 +14,30 @@ use hoomd_vector::Cartesian;
 The square covers the points:
 * `-l/2 <= x < l/2`
 * `-l/2 <= y < l/2`
+
+# Example
+
+```
+use hoomd_microstate::boundary::Square;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let square = Square { l: 10.0.try_into()? };
+
+assert_eq!(square.l.get(), 10.0);
+# Ok(())
+# }
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Square {
     /// Side length *(\[length\])*.
-    pub l: f64,
+    pub l: PositiveReal,
 }
 
 impl Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>> for Square {
     #[inline]
     fn is_inside(&self, point: &Cartesian<2>) -> bool {
-        point[0] >= -self.l / 2.0
-            && point[1] >= -self.l / 2.0
-            && point[0] < self.l / 2.0
-            && point[1] < self.l / 2.0
+        let l = self.l.get();
+        point[0] >= -l / 2.0 && point[1] >= -l / 2.0 && point[0] < l / 2.0 && point[1] < l / 2.0
     }
 }
 
@@ -43,7 +54,11 @@ mod tests {
 
     #[rstest]
     fn valid_points(#[values([0.0, 0.0], [-1.0, -1.0], [-1.0, 0.0], [TOP, TOP])] v: [f64; 2]) {
-        let square = Square { l: 2.0 };
+        let square = Square {
+            l: 2.0
+                .try_into()
+                .expect("hard-coded constant should be positive"),
+        };
         let v = v.into();
 
         assert!(square.is_inside(&v));
@@ -60,7 +75,11 @@ mod tests {
         #[values([-10.0, 10.0], [OUTSIDE_BOTTOM, 0.0], [-1.0, OUTSIDE_BOTTOM], [OUTSIDE_BOTTOM, 0.0], [OUTSIDE_TOP, OUTSIDE_TOP])]
         v: [f64; 2],
     ) {
-        let square = Square { l: 2.0 };
+        let square = Square {
+            l: 2.0
+                .try_into()
+                .expect("hard-coded constant should be positive"),
+        };
         let v = v.into();
 
         assert!(!square.is_inside(&v));
