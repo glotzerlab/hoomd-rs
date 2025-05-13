@@ -1287,7 +1287,10 @@ mod tests {
             .try_build()
             .expect("the hard-coded bodies should be in the boundary");
 
-        assert_eq!(microstate.add_body(Body::point([2.0, 0.0].into())), Err(Error::CannotWrapProperties));
+        assert_eq!(
+            microstate.add_body(Body::point([2.0, 0.0].into())),
+            Err(Error::CannotWrapProperties)
+        );
     }
 
     #[rstest]
@@ -1297,7 +1300,15 @@ mod tests {
             .try_build()
             .expect("the hard-coded bodies should be in the boundary");
 
-        assert_eq!(microstate.update_body_properties(0, Point { position: [2.0, 0.0].into() }), Err(Error::CannotWrapProperties));
+        assert_eq!(
+            microstate.update_body_properties(
+                0,
+                Point {
+                    position: [2.0, 0.0].into()
+                }
+            ),
+            Err(Error::CannotWrapProperties)
+        );
     }
 
     #[rstest]
@@ -1306,7 +1317,7 @@ mod tests {
             properties: Point::new(Cartesian::from([1.0, 0.0])),
             sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
         };
-        
+
         let mut microstate = MicrostateBuilder::with_boundary(square)
             .try_build()
             .expect("the hard-coded bodies should be in the boundary");
@@ -1326,7 +1337,15 @@ mod tests {
             .try_build()
             .expect("the hard-coded bodies should be in the boundary");
 
-        assert_eq!(microstate.update_body_properties(0, Point { position: [1.0, 0.0].into() }), Err(Error::CannotWrapProperties));
+        assert_eq!(
+            microstate.update_body_properties(
+                0,
+                Point {
+                    position: [1.0, 0.0].into()
+                }
+            ),
+            Err(Error::CannotWrapProperties)
+        );
     }
 
     // TODO: Test add_bodies and update_body_properties with periodic boundaries that result in wrapping.

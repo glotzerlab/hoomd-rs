@@ -6,7 +6,7 @@
 
 use super::DeltaEnergyOne;
 use hoomd_interaction::{Single, SiteEnergy};
-use hoomd_microstate::{Body, boundary::Boundary, Microstate, Transform, property::Position};
+use hoomd_microstate::{Body, Microstate, Transform, boundary::Boundary, property::Position};
 
 impl<V, B, S, C, E> DeltaEnergyOne<V, B, S, C> for Single<E>
 where
@@ -24,9 +24,12 @@ where
     ) -> f64 {
         let mut energy_final = 0.0;
         for s in &final_body.sites {
-            match initial_microstate.boundary().wrap_site(final_body.properties.transform(s)) {
+            match initial_microstate
+                .boundary()
+                .wrap_site(final_body.properties.transform(s))
+            {
                 Ok(wrapped_site) => energy_final += self.site_energy(&wrapped_site),
-                Err(_) => return f64::INFINITY
+                Err(_) => return f64::INFINITY,
             }
         }
 
@@ -41,7 +44,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hoomd_microstate::{boundary::Square, property::Point, MicrostateBuilder};
+    use hoomd_microstate::{MicrostateBuilder, boundary::Square, property::Point};
     use hoomd_vector::Cartesian;
 
     struct Zero;
@@ -66,7 +69,7 @@ mod tests {
         };
         let mut final_body = body.clone();
         final_body.properties.position[0] = 1.0;
-        
+
         let microstate = MicrostateBuilder::with_boundary(square)
             .bodies([body])
             .try_build()
@@ -74,7 +77,9 @@ mod tests {
 
         let energy = Single(Zero);
 
-        assert_eq!(energy.delta_energy_one(&microstate, 0, &final_body), f64::INFINITY);
-
+        assert_eq!(
+            energy.delta_energy_one(&microstate, 0, &final_body),
+            f64::INFINITY
+        );
     }
 }
