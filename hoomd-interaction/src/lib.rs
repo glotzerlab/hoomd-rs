@@ -69,7 +69,7 @@ where
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut microstate = Microstate::new();
-microstate.try_extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
+microstate.extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
                               Body::point(Cartesian::from([-1.0, 2.0]))])?;
 
 let custom_evaluator = Custom { a: 1.0, b: 10.0 };
@@ -107,7 +107,7 @@ use hoomd_vector::Cartesian;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut microstate = Microstate::new();
-microstate.try_extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
+microstate.extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
                               Body::point(Cartesian::from([-1.0, 2.0]))])?;
 
 let linear = Single(Linear{ alpha: 1.0,
@@ -175,7 +175,7 @@ mod tests {
     fn microstate() -> Microstate<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
         let mut microstate = Microstate::new();
         microstate
-            .try_extend_bodies([
+            .extend_bodies([
                 Body::point(Cartesian::from([1.0, 0.0])),
                 Body::point(Cartesian::from([-1.0, 3.0])),
             ])

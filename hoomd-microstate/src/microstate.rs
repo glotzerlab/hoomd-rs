@@ -468,7 +468,7 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
     # Errors
 
     [`Error::CannotWrapProperties`] when any of the body positions or one of the
-    site positions cannot be wrapped into the boundary. `try_extend_bodies` adds
+    site positions cannot be wrapped into the boundary. `extend_bodies` adds
     each body one by one. When an error occurs, it short-circuits and does not
     attempt to add any further bodies. The bodies added before the error will
     remain in the microstate.
@@ -481,7 +481,7 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut microstate = Microstate::new();
-    microstate.try_extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
+    microstate.extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
                                   Body::point(Cartesian::from([-1.0, 2.0]))])?;
 
     assert_eq!(microstate.bodies().len(), 2);
@@ -490,7 +490,7 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
     ```
     */
     #[inline]
-    pub fn try_extend_bodies<T>(&mut self, bodies: T) -> Result<(), Error>
+    pub fn extend_bodies<T>(&mut self, bodies: T) -> Result<(), Error>
     where
         T: IntoIterator<Item = Body<B, S>>,
         B: Transform<S> + Position<V>,
@@ -1049,7 +1049,7 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
 
     # Errors
 
-    See [`Microstate::try_extend_bodies()`].
+    See [`Microstate::extend_bodies()`].
 
     # Example
 
@@ -1094,7 +1094,7 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
             vector_type: PhantomData,
         };
 
-        microstate.try_extend_bodies(self.bodies)?;
+        microstate.extend_bodies(self.bodies)?;
 
         Ok(microstate)
     }

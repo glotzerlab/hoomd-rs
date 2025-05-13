@@ -45,10 +45,6 @@ for _ in 0..1_000 {
 # }
 ```
 */
-#[expect(
-    clippy::partial_pub_fields,
-    reason = "Users do not need to be aware of phantom data."
-)]
 pub struct Sweep<L> {
     /// The local trial to apply.
     pub local: L,
