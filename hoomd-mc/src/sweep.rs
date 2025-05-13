@@ -135,10 +135,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Translate;
+    use crate::{Translate, Zero};
     use ::approx::assert_relative_eq;
     use hoomd_interaction::{Single, SiteEnergy, TotalEnergy};
-    use hoomd_microstate::property::Point;
+    use hoomd_microstate::{MicrostateBuilder, boundary::Square, property::Point};
     use hoomd_vector::{Cartesian, Vector};
     use rstest::*;
 
@@ -150,6 +150,19 @@ mod tests {
     impl SiteEnergy<Point<Cartesian<2>>> for Harmonic {
         fn site_energy(&self, site_properties: &Point<Cartesian<2>>) -> f64 {
             1.0 / 2.0 * K * (site_properties.position - self.0).norm_squared()
+        }
+    }
+
+    struct Right;
+    impl LocalTrial<Point<Cartesian<2>>> for Right {
+        fn propose<R: Rng>(
+            &self,
+            _rng: &mut R,
+            body_properties: Point<Cartesian<2>>,
+        ) -> Point<Cartesian<2>> {
+            let mut trial = body_properties;
+            trial.position_mut()[0] += 1.0;
+            trial
         }
     }
 
@@ -190,5 +203,56 @@ mod tests {
 
         let energy_average = energy_accumulator / (N_STEPS as f64);
         assert_relative_eq!(energy_average, kt, epsilon = EPSILON);
+    }
+
+    #[test]
+    fn reject_boundary_body() {
+        let square = Square { l: 4.0 };
+        let mut microstate = MicrostateBuilder::with_boundary(square)
+            .bodies([Body::point([0.0, 0.0].into())])
+            .try_build()
+            .expect("the hard-coded bodies should be in the boundary.");
+        let hamiltonian = Zero;
+        let translate = Right;
+        let translate_sweep = Sweep::new(translate);
+
+        // The first move to the right ends in the boundary and should be accepted.
+        let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);
+        assert_eq!(counter.accepted, 1);
+        assert_eq!(counter.rejected, 0);
+
+        // The second move to the right places the body just on the boundary and should be
+        // rejected.
+        let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);
+        assert_eq!(counter.accepted, 0);
+        assert_eq!(counter.rejected, 1);
+    }
+
+    #[test]
+    fn reject_boundary_site() {
+        let body = Body {
+            properties: Point::new(Cartesian::from([0.0, 0.0])),
+            sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
+        };
+
+        let square = Square { l: 6.0 };
+        let mut microstate = MicrostateBuilder::with_boundary(square)
+            .bodies([body])
+            .try_build()
+            .expect("the hard-coded bodies should be in the boundary.");
+        let hamiltonian = Zero;
+        let translate = Right;
+        let translate_sweep = Sweep::new(translate);
+
+        // The first move to the right ends in the boundary and should be accepted.
+        let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);
+        assert_eq!(counter.accepted, 1);
+        assert_eq!(counter.rejected, 0);
+
+        // The second move to the right places the body just on the boundary and should be
+        // rejected.
+        let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);
+        assert_eq!(counter.accepted, 0);
+        assert_eq!(counter.rejected, 1);
     }
 }
