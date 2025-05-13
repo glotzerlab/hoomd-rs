@@ -4,13 +4,34 @@
 */
 
 use hoomd_mc::{Sweep, Translate, Trial, Zero};
-use hoomd_microstate::property::Position;
-use hoomd_microstate::{Body, Microstate};
+use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Square, property::Point};
 use hoomd_vector::Cartesian;
 
+use ratatui::{
+    crossterm::event::{self, Event, poll},
+    layout::{Flex, Layout},
+    style::Color,
+    symbols::Marker,
+    widgets::{
+        Block,
+        canvas::{Canvas, Circle},
+    },
+    {DefaultTerminal, Frame},
+};
+use std::time::Duration;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut microstate = Microstate::new();
-    microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
+    let terminal = ratatui::init();
+    let result = run(terminal);
+    ratatui::restore();
+    result
+}
+
+/// Run the simulation
+fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> {
+    let mut microstate = MicrostateBuilder::with_boundary(Square { l: 10.0 })
+        .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
+        .try_build()?;
 
     let kt = 1.0;
     let hamiltonian = Zero;
@@ -19,11 +40,43 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let translate = Translate::new(d.try_into().expect("positive real"));
     let translate_sweep = Sweep::new(translate);
 
-    for _ in 0..100_000 {
+    loop {
+        terminal.draw(|frame| render(frame, &microstate))?;
+
+        if poll(Duration::from_millis(0))? && matches!(event::read()?, Event::Key(_)) {
+            break Ok(());
+        }
+
         translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
-        println!("{}", microstate.bodies()[0].item.properties.position());
         microstate.increment_step();
     }
+}
 
-    Ok(())
+/// Render the system state.
+fn render(
+    frame: &mut Frame,
+    microstate: &Microstate<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>, Square>,
+) {
+    let properties = &microstate.bodies()[0].item.properties;
+
+    let l = microstate.boundary().l;
+
+    let canvas = Canvas::default()
+        .block(Block::bordered().title("Bounded random walk"))
+        .marker(Marker::Braille)
+        .paint(|ctx| {
+            ctx.draw(&Circle {
+                x: properties.position[0],
+                y: properties.position[1],
+                radius: 0.5,
+                color: Color::Yellow,
+            });
+        })
+        .x_bounds([-l / 2.0, l / 2.0])
+        .y_bounds([-l / 2.0, l / 2.0]);
+
+    let horizontal = Layout::horizontal([frame.area().height * 2]).flex(Flex::Center);
+    let [area] = horizontal.areas(frame.area());
+
+    frame.render_widget(canvas, area);
 }

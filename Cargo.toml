@@ -75,3 +75,6 @@ unwrap_used = "warn"
 fallible_impl_from = "warn"
 needless_collect = "warn"
 needless_pass_by_ref_mut = "warn"
+
+[workspace.metadata.typos]
+default.extend-words = { ratatui = "ratatui" }

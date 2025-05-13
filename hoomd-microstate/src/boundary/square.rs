@@ -17,7 +17,7 @@ The square covers the points:
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Square {
     /// Side length *(\[length\])*.
-    l: f64,
+    pub l: f64,
 }
 
 impl Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>> for Square {
