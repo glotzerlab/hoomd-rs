@@ -1127,7 +1127,7 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::property::Point;
+    use crate::{boundary::Square, property::Point};
     use hoomd_vector::Cartesian;
 
     use rand::{Rng, SeedableRng, rngs::StdRng, seq::SliceRandom};
@@ -1272,6 +1272,62 @@ mod tests {
         assert!(microstate.sites().is_empty());
     }
 
-    // TODO: Test add_bodies and update_body_properties with boundaries that result in errors.
+    #[fixture]
+    fn square() -> Square {
+        Square {
+            l: 4.0
+                .try_into()
+                .expect("hard-coded constant should be positive"),
+        }
+    }
+
+    #[rstest]
+    fn add_body_outside(square: Square) {
+        let mut microstate = MicrostateBuilder::with_boundary(square)
+            .try_build()
+            .expect("the hard-coded bodies should be in the boundary");
+
+        assert_eq!(microstate.add_body(Body::point([2.0, 0.0].into())), Err(Error::CannotWrapProperties));
+    }
+
+    #[rstest]
+    fn update_body_outside(square: Square) {
+        let mut microstate = MicrostateBuilder::with_boundary(square)
+            .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
+            .try_build()
+            .expect("the hard-coded bodies should be in the boundary");
+
+        assert_eq!(microstate.update_body_properties(0, Point { position: [2.0, 0.0].into() }), Err(Error::CannotWrapProperties));
+    }
+
+    #[rstest]
+    fn add_site_outside(square: Square) {
+        let body = Body {
+            properties: Point::new(Cartesian::from([1.0, 0.0])),
+            sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
+        };
+        
+        let mut microstate = MicrostateBuilder::with_boundary(square)
+            .try_build()
+            .expect("the hard-coded bodies should be in the boundary");
+
+        assert_eq!(microstate.add_body(body), Err(Error::CannotWrapProperties));
+    }
+
+    #[rstest]
+    fn update_site_outside(square: Square) {
+        let body = Body {
+            properties: Point::new(Cartesian::from([0.0, 0.0])),
+            sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
+        };
+
+        let mut microstate = MicrostateBuilder::with_boundary(square)
+            .bodies([body])
+            .try_build()
+            .expect("the hard-coded bodies should be in the boundary");
+
+        assert_eq!(microstate.update_body_properties(0, Point { position: [1.0, 0.0].into() }), Err(Error::CannotWrapProperties));
+    }
+
     // TODO: Test add_bodies and update_body_properties with periodic boundaries that result in wrapping.
 }
