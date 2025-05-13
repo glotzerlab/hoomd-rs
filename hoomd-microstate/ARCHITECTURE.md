@@ -241,7 +241,7 @@ these methods:
 * TODO: Additional methods to generate ghost particles (possibly including
   a `distance_to` - but what would that return for open boundaries?).
 
-`wrap` is fallible. It returns `None` when it is not possible to wrap the given
+`wrap` is fallible. It returns `Err` when it is not possible to wrap the given
 properties into the boundary. It takes a properties type to enable use-cases
 where wrapping applies operations other than translation. For example, a twisted
 cylinder.
