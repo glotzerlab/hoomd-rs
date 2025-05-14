@@ -13,8 +13,6 @@ use std::ops::{
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform, Uniform};
 
-use crate::Angle;
-use crate::Versor;
 use crate::{Cross, Error, Rotate, Unit, Vector};
 
 /** A [`Vector`] represented by `N` `f64` coordinates.
@@ -515,6 +513,15 @@ impl<const N: usize> RotationMatrix<N> {
     pub fn rows(&self) -> [Cartesian<N>; N] {
         self.rows
     }
+
+    /// Invert a RotationMatrix. This is equivalent to R^T
+    #[inline]
+    #[must_use]
+    pub fn inverted(self) -> Self {
+        Self {
+            rows: array::from_fn(|i| array::from_fn::<_, N, _>(|j| self.rows()[j][i]).into()),
+        }
+    }
 }
 
 impl<const N: usize> Default for RotationMatrix<N> {
@@ -624,9 +631,15 @@ mod approx {
 
 #[cfg(test)]
 mod tests {
+    use crate::Angle;
+    use crate::Rotation;
+    use crate::Versor;
+
     use super::*;
+    use ::approx::assert_relative_eq;
     use paste::paste;
     use rand::{SeedableRng, rngs::StdRng};
+    use rstest::rstest;
 
     // Parameterize a test function over an array of vector lengths
     macro_rules! parameterize_vector_length {
@@ -962,8 +975,38 @@ mod tests {
     }
     #[allow(clippy::print_stdout)]
     #[test]
-    fn test_display_rotationmatrix() {
+    fn test_rotationmatrix_display() {
         println!("\n{}", RotationMatrix::<2>::default());
         println!("\n{}", RotationMatrix::<3>::default());
+    }
+
+    #[rstest(
+        angle => [
+            Angle::default(),
+            Angle::from(std::f64::consts::FRAC_PI_3),
+            Angle::from(999.9 * std::f64::consts::PI / 1.234)
+        ]
+    )]
+    fn test_rotationmatrix_invert_2d(angle: Angle) {
+        let transposed = RotationMatrix::from(angle).inverted();
+        let inverted = RotationMatrix::from(angle.inverted());
+        for (a, b) in transposed.rows().iter().zip(inverted.rows().iter()) {
+            assert_relative_eq!(a, b);
+        }
+    }
+    #[rstest(
+        versor => [
+            Versor::default(),
+            Versor::from_axis_angle(
+                Unit::try_from([1.0, 0.0, 0.0]).unwrap(), std::f64::consts::PI / 1.234
+            )
+        ]
+    )]
+    fn test_rotationmatrix_invert_3d(versor: Versor) {
+        let transposed = RotationMatrix::from(versor).inverted();
+        let inverted = RotationMatrix::from(versor.inverted());
+        for (a, b) in transposed.rows().iter().zip(inverted.rows().iter()) {
+            assert_relative_eq!(a, b);
+        }
     }
 }
