@@ -121,7 +121,10 @@ mod tests {
 
         let mut rng = StdRng::seed_from_u64(1);
         let a = Point::new(Cartesian::from([1.0, -5.0, 2.5]));
-        let translate = Translate::new(d.try_into().expect("positive real"));
+        let translate = Translate::new(
+            d.try_into()
+                .expect("hard-coded constant should be a positive real"),
+        );
 
         for _ in 0..N {
             let b = translate.propose(&mut rng, a);

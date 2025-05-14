@@ -99,7 +99,8 @@ mod tests {
         #[values([0.0, 0.0], [-10.0, 15.0], [16.0, 3.0])] plane_origin: [f64; 2],
         #[values([1.0, 1.0], [-1.0, 0.2], [-5.0, -1.0])] plane_normal: [f64; 2],
     ) {
-        let n = Unit::<Cartesian<2>>::try_from(plane_normal).expect("normalizable vector");
+        let n = Unit::<Cartesian<2>>::try_from(plane_normal)
+            .expect("hard-coded vector should have non-zero length");
 
         let linear = Linear {
             plane_origin: plane_origin.into(),

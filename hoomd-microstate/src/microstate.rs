@@ -454,7 +454,7 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
                 properties: self
                     .boundary
                     .wrap_site(body.properties.transform(s))
-                    .expect("can wrap site"),
+                    .expect("sites should be validated as wrappable prior to this loop"),
                 body_tag,
             });
 
@@ -579,7 +579,8 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
         // in increasing order.
         let body_sites = self.bodies_sites.swap_remove(body_index);
         for site_tag in body_sites.iter().rev() {
-            let site_index = self.site_indices[*site_tag].expect("A valid site.");
+            let site_index = self.site_indices[*site_tag]
+                .expect("bodies_sites and site_indices should be consistent");
             let removed_site = self.sites.swap_remove(site_index);
             if site_index < self.sites.len() {
                 self.site_indices[self.sites[site_index].site_tag] = Some(site_index);
@@ -655,11 +656,12 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
 
         // Update site properties
         for (i, site_tag) in self.bodies_sites[body_index].iter().enumerate() {
-            let site_index = self.site_indices[*site_tag].expect("site_tag should be a valid tag");
+            let site_index = self.site_indices[*site_tag]
+                .expect("bodies_sites and site_indices should be consistent");
             self.sites[site_index].properties = self
                 .boundary
                 .wrap_site(body.properties.transform(&body.sites[i]))
-                .expect("valid site");
+                .expect("sites should be validated as wrappable prior to this loop");
         }
 
         Ok(())
@@ -748,7 +750,8 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
                  Body::point(Cartesian::from([7.0, 8.0]))])
         .try_build()?;
 
-    microstate.remove_body(microstate.body_indices()[0].expect("valid tag"));
+    microstate.remove_body(microstate.body_indices()[0]
+        .expect("the body with index 0 should be present in the microstate"));
 
     assert_eq!(microstate.body_indices()[0], None);
     assert!(matches!(microstate.body_indices()[3], Some(_)));
@@ -871,9 +874,10 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
         reason = "Panic would occur due to a bug in hoomd-rs."
     )]
     pub fn iter_body_sites(&self, body_index: usize) -> impl Iterator<Item = &Site<S>> {
-        self.bodies_sites[body_index]
-            .iter()
-            .map(|site_tag| &self.sites[self.site_indices[*site_tag].expect("valid site tag")])
+        self.bodies_sites[body_index].iter().map(|site_tag| {
+            &self.sites[self.site_indices[*site_tag]
+                .expect("bodies_sites and site_indices should be consistent")]
+        })
     }
 }
 
@@ -1200,7 +1204,9 @@ mod tests {
                 // Add bodies more often than removing bodies so that typical
                 // test executions will result in a non-empty microstate.
                 let body = create_body(&mut rng);
-                let tag = microstate.add_body(body.clone()).expect("valid body");
+                let tag = microstate
+                    .add_body(body.clone())
+                    .expect("all bodies should be allowed with open boundary conditions");
                 reference_bodies.insert(tag, body);
             } else if move_type_r > 0.5 && !microstate.bodies.is_empty() {
                 let index = rng.random_range(..microstate.bodies.len());
@@ -1210,12 +1216,14 @@ mod tests {
             } else if !microstate.bodies.is_empty() {
                 let index = rng.random_range(..microstate.bodies.len());
                 let tag = microstate.bodies()[index].tag;
-                let body = reference_bodies.get_mut(&tag).expect("valid body tag");
+                let body = reference_bodies
+                    .get_mut(&tag)
+                    .expect("tags in the microstate should also be present in the reference");
 
                 body.properties.position += rng.random::<Cartesian<2>>() * MAX_BODY_TRANSLATE;
                 microstate
                     .update_body_properties(index, body.properties)
-                    .expect("valid update");
+                    .expect("all bodies should be allowed with open boundary conditions");
             }
         }
 
@@ -1235,7 +1243,8 @@ mod tests {
         }
 
         for (tag, body) in &reference_bodies {
-            let body_index = microstate.body_indices()[*tag].expect("valid index");
+            let body_index = microstate.body_indices()[*tag]
+                .expect("tags in the reference should also be present in the microstate");
             assert_eq!(microstate.bodies()[body_index].item, *body);
         }
 
@@ -1246,7 +1255,8 @@ mod tests {
         }
 
         for site in microstate.sites() {
-            let body_index = microstate.body_indices()[site.body_tag].expect("valid body");
+            let body_index = microstate.body_indices()[site.body_tag]
+                .expect("tags in the microstate should also be in the reference");
             assert!(microstate.bodies_sites[body_index].contains(&site.site_tag));
         }
 
@@ -1258,7 +1268,8 @@ mod tests {
         {
             assert_eq!(body.item.sites.len(), body_sites.len());
             for site_tag in body_sites {
-                let site_index = microstate.site_indices()[*site_tag].expect("valid index");
+                let site_index = microstate.site_indices()[*site_tag]
+                    .expect("body_sites should be consistent with site_indices");
                 assert_eq!(microstate.sites()[site_index].body_tag, body.tag);
             }
         }
@@ -1284,14 +1295,17 @@ mod tests {
 
         for _ in 0..N_STEPS {
             let body = create_body(&mut rng);
-            microstate.add_body(body).expect("valid body");
+            microstate
+                .add_body(body)
+                .expect("all bodies should be allowed in open boundary conditions");
         }
 
         let mut removal_order = (0..N_STEPS).collect::<Vec<_>>();
         removal_order.shuffle(&mut rng);
 
         for body_tag in removal_order {
-            let body_index = microstate.body_indices()[body_tag].expect("valid tag");
+            let body_index =
+                microstate.body_indices()[body_tag].expect("body tags should be assigned in order");
             microstate.remove_body(body_index);
         }
 

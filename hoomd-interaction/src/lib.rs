@@ -179,7 +179,7 @@ mod tests {
                 Body::point(Cartesian::from([1.0, 0.0])),
                 Body::point(Cartesian::from([-1.0, 3.0])),
             ])
-            .expect("valid bodies");
+            .expect("hard-coded bodies should be in the boundary");
         microstate
     }
 

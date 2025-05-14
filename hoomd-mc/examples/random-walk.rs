@@ -39,7 +39,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     let hamiltonian = Zero;
     let d = 0.1;
 
-    let translate = Translate::new(d.try_into().expect("positive real"));
+    let translate = Translate::new(d.try_into().expect("hard-coded value should be positive"));
     let translate_sweep = Sweep { local: translate };
 
     loop {

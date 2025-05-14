@@ -166,11 +166,14 @@ mod tests {
         let mut microstate = Microstate::new();
         microstate
             .add_body(Body::point(origin))
-            .expect("valid body");
+            .expect("the hard-coded body should be inside the boundary");
         let hamiltonian = Single(Harmonic(origin));
 
         let d = 0.1;
-        let translate = Translate::new(d.try_into().expect("positive real"));
+        let translate = Translate::new(
+            d.try_into()
+                .expect("hard-coded constant should be positive"),
+        );
         let translate_sweep = Sweep { local: translate };
 
         let mut position_accumulator = Cartesian::default();
