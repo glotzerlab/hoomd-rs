@@ -44,7 +44,7 @@ impl<'a, const N: usize, T: SupportFn<Cartesian<N>>> SupportFunctor<'_, N, T> {
     }
     /// Create a new SupportFunctor from a Rotation that can be converted into a RotMat
     #[inline]
-    fn new<R: Rotation>(
+    fn new<R: Rotation + Copy>(
         sa: &'a T,
         sb: &'a T,
         v_ij: &'a Cartesian<N>,
@@ -54,12 +54,13 @@ impl<'a, const N: usize, T: SupportFn<Cartesian<N>>> SupportFunctor<'_, N, T> {
         RotationMatrix<N>: From<R>,
     {
         let q_ij = RotationMatrix::<N>::from(r);
+        let q_ij_inv = RotationMatrix::<N>::from(r.inverted());
         SupportFunctor {
             sa,
             sb,
             v_ij,
             q_ij,
-            q_ij_inv: q_ij,
+            q_ij_inv,
         }
     }
 }
