@@ -6,3 +6,6 @@
 
 mod linear;
 pub use linear::Linear;
+
+mod harmonicfield;
+pub use harmonicfield::HarmonicField;
