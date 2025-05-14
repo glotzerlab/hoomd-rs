@@ -336,8 +336,8 @@ mod tests {
         r => [0.001, 1.0, 4.123, 99.05],
         o_ij => [
             Angle::default(),
-            // Angle::from(std::f64::consts::PI / 3.0),
-            // Angle::from(1.234)
+            Angle::from(std::f64::consts::PI / 3.0),
+            Angle::from(1.234)
         ],
     )]
     fn test_discs_collide(v: [f64; 2], r: f64, o_ij: Angle) {
@@ -352,16 +352,14 @@ mod tests {
         r => [0.001, 1.0, 4.123, 99.05],
         o_ij => [
             Versor::default(),
-            // Versor::from_axis_angle(
-            //     [1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2
-            // ),
-            // Versor::from_axis_angle([0.0, 1.0, 0.0].try_into().unwrap(), 0.1234)
+            Versor::from_axis_angle(
+                [1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2
+            ),
+            Versor::from_axis_angle([0.0, 1.0, 0.0].try_into().unwrap(), 0.1234)
         ]
     )]
     fn test_spheres_collide(v: [f64; 3], r: f64, o_ij: Versor) {
         let (s0, s1) = (Sphere::<3>::from(1.0), Sphere::<3>::from(r));
-        // let theta = &Versor::identity();
-        println!("v: {v:?}");
         let overlaps = collide3d(&s0, &s1, &v.into(), &o_ij);
 
         assert_eq!(

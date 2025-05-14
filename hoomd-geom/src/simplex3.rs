@@ -730,9 +730,7 @@ mod tests {
         ),
     )]
     fn test_tetrahedron_overlap_param(
-        // #[values("intersects_at", "xenocollide")] method: &str,
-        // #[values("xenocollide")] method: &str,
-        #[values("intersects_at")] method: &str,
+        #[values("intersects_at", "xenocollide")] method: &str,
         v_ij: Cartesian<3>,
         o_ij: Versor,
         overlaps: bool,
