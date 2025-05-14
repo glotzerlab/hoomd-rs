@@ -30,7 +30,7 @@ documentation](crate) for a full overview and the method-specific documentation
 for additional details.
 
 The generic type names are:
-* `V`: The [`Vector`] space in which bodies and sites exist.
+* `V`: The [`Vector`](hoomd_vector::Vector) space in which bodies and sites exist.
 * `B`: The [`Body::properties`](crate::Body) type.
 * `S`: The [`Site::properties`](crate::Site) type.
 * `C`: The [`boundary`](crate::boundary) condition type.
@@ -314,7 +314,20 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
 
     # Example
 
-    TODO: Write once we have a non-trivial boundary type.
+    ```
+    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square};
+    use hoomd_vector::Cartesian;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let square = Square { l: 10.0.try_into()? };
+
+    let microstate = MicrostateBuilder::with_boundary(square)
+        .try_build()?;
+
+    assert_eq!(microstate.boundary().l.get(), 10.0);
+    # Ok(())
+    # }
+    ```
     */
     #[inline]
     pub fn boundary(&self) -> &C {
@@ -325,7 +338,21 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
 
     # Example
 
-    TODO: Write once we have a non-trivial boundary type.
+    ```
+    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square};
+    use hoomd_vector::Cartesian;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let square = Square { l: 10.0.try_into()? };
+
+    let mut microstate = MicrostateBuilder::with_boundary(square)
+        .try_build()?;
+
+    microstate.boundary_mut().l = 11.0.try_into()?;
+    assert_eq!(microstate.boundary().l.get(), 11.0);
+    # Ok(())
+    # }
+    ```
     */
     #[inline]
     pub fn boundary_mut(&mut self) -> &mut C {
@@ -407,20 +434,21 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
         }
 
         // Find body tag before adding sites
-        let body_tag = match self.free_body_tags.pop() {
-            None => self.body_indices.len(),
-            Some(t) => t.0,
-        };
+        let body_tag = self
+            .free_body_tags
+            .pop()
+            .map_or(self.body_indices.len(), |t| t.0);
 
         // Add sites.
         // Should the Vec allocation prove a bottleneck, we could recycle the body_sites
         // vecs along with the tags.
         let mut body_sites = Vec::with_capacity(body.sites.len());
         for s in &body.sites {
-            let site_tag = match self.free_site_tags.pop() {
-                None => self.site_indices.len(),
-                Some(t) => t.0,
-            };
+            let site_tag = self
+                .free_site_tags
+                .pop()
+                .map_or(self.site_indices.len(), |t| t.0);
+
             self.sites.push(Site {
                 site_tag,
                 properties: self
@@ -931,22 +959,22 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     # Example
 
     ```
-    use hoomd_microstate::{Microstate, MicrostateBuilder, property::Point};
-    use hoomd_microstate::boundary::Open;
+    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square};
     use hoomd_vector::Cartesian;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::with_boundary(Open).try_build()?;
+    let square = Square { l: 10.0.try_into()? };
+
+    let microstate = MicrostateBuilder::with_boundary(square)
+        .try_build()?;
 
     assert_eq!(microstate.step(), 0);
     assert_eq!(microstate.seed(), 0);
     assert_eq!(microstate.bodies().len(), 0);
-    assert_eq!(*microstate.boundary(), hoomd_microstate::boundary::Open);
+    assert_eq!(microstate.boundary().l.get(), 10.0);
     # Ok(())
     # }
     ```
-
-    TODO: Show non-trivial boundary conditions.
     */
     #[inline]
     pub fn with_boundary(boundary: C) -> Self {

@@ -26,7 +26,7 @@ methods describe fully non-periodic boundary conditions. You can make your
 boundary periodic by implementing the other methods accordingly.
 
 The generic type names are:
-* `V`: The [`Vector`] space in which bodies and sites exist.
+* `V`: The [`Vector`](hoomd_vector::Vector) space in which bodies and sites exist.
 * `B`: The [`Body::properties`](crate::Body) type.
 * `S`: The [`Site::properties`](crate::Site) type.
 */

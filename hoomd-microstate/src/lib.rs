@@ -124,10 +124,9 @@ cannot be wrapped. MD models fail with an error should bodies or sites move in a
 way that cannot be wrapped.
 
 [`Microstate`] is generic on the type of boundary condition. The [`boundary`]
-module implements standard types and documents how you can implement custom
-implementations.
-
-TODO: Implement boundary conditions, then document.
+module implements standard types and documents how you can provide custom
+implementations. For example [`Square`](boundary::Square) restricts 2D
+particles inside a square.
 
 ## Ghost sites
 
@@ -140,7 +139,7 @@ TODO: Implement spatial search, then document.
 ## Constructing Microstate
 
 You will find many examples in this documentation using [`Microstate::new`].
-It is designed to be terse, is inflexible as a consequence.
+It is designed to be terse, and is inflexible as a consequence.
 [`Microstate::new`] always sets [`Open`](boundary::Open) boundary conditions and
 initializes the seed and step to 0.
 ```
@@ -155,19 +154,19 @@ use a different seed or starting step:
 
 ```
 use hoomd_microstate::{Microstate, MicrostateBuilder, property::Point};
-use hoomd_microstate::boundary::Open;
+use hoomd_microstate::boundary::Square;
 use hoomd_vector::Cartesian;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::with_boundary(Open)
+let square = Square { l: 10.0.try_into()? };
+
+let microstate = MicrostateBuilder::with_boundary(square)
     .seed(0x43abf1)
     .step(100_000)
     .try_build()?;
 # Ok(())
 # }
 ```
-
-TODO: Show a non-trivial boundary condition.
 
 TODO: Show a GSD file example when implemented.
 
