@@ -918,7 +918,10 @@ mod tests {
             );
 
             let zero = Quaternion::from([0.0, 0.0, 0.0, 0.0]);
-            assert!(matches!(zero.to_versor(), Err(Error::InvalidQuaternionMagnitude)));
+            assert!(matches!(
+                zero.to_versor(),
+                Err(Error::InvalidQuaternionMagnitude)
+            ));
         }
 
         #[test]

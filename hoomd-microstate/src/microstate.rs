@@ -425,9 +425,11 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
             .free_body_tags
             .peek()
             .map_or(self.body_indices.len(), |t| t.0);
-            
+
         let mut body = body;
-        body.properties = self.boundary.wrap_body(body.properties)
+        body.properties = self
+            .boundary
+            .wrap_body(body.properties)
             .map_err(|e| Error::AddBody(body_tag, e))?;
 
         // An unknown site in the body might not wrap into the boundary.
@@ -437,14 +439,15 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
         // (complicated) or a staging Vec (would require additional allocations
         // or a reusable scratch storage).
         for s in &body.sites {
-            self.boundary.wrap_site(body.properties.transform(s))
+            self.boundary
+                .wrap_site(body.properties.transform(s))
                 .map_err(|e| Error::AddBody(body_tag, e))?;
         }
 
         // Now that all errors have been checked, it is safe to mark the tag as
         // used.
         self.free_body_tags.pop();
-        
+
         // Add sites.
         // Should the Vec allocation prove a bottleneck, we could recycle the body_sites
         // vecs along with the tags.
@@ -645,8 +648,10 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
         C: Boundary<V, B, S>,
     {
         let body = &mut self.bodies[body_index];
-        
-        let new_body_properties = self.boundary.wrap_body(properties)
+
+        let new_body_properties = self
+            .boundary
+            .wrap_body(properties)
             .map_err(|e| Error::UpdateBody(body.tag, e))?;
 
         // An unknown site in the body might not wrap into the boundary.
@@ -656,9 +661,9 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
         // staging Vec (would require allocation/deallocation per update or a
         // reusable scratch storage).
         for s in &body.item.sites {
-            self.boundary.wrap_site(new_body_properties.transform(s))
+            self.boundary
+                .wrap_site(new_body_properties.transform(s))
                 .map_err(|e| Error::UpdateBody(body.tag, e))?;
-
         }
 
         body.item.properties = new_body_properties;
@@ -1168,7 +1173,10 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{boundary::{self, Square}, property::Point};
+    use crate::{
+        boundary::{self, Square},
+        property::Point,
+    };
     use hoomd_vector::Cartesian;
 
     use rand::{Rng, SeedableRng, rngs::StdRng, seq::SliceRandom};
@@ -1358,7 +1366,10 @@ mod tests {
                     position: [2.0, 0.0].into()
                 }
             ),
-            Err(Error::UpdateBody(0, boundary::Error::CannotWrapBodyProperties))
+            Err(Error::UpdateBody(
+                0,
+                boundary::Error::CannotWrapBodyProperties
+            ))
         );
     }
 
@@ -1373,7 +1384,10 @@ mod tests {
             .try_build()
             .expect("the hard-coded bodies should be in the boundary");
 
-        assert_eq!(microstate.add_body(body), Err(Error::AddBody(0, boundary::Error::CannotWrapSiteProperties)));
+        assert_eq!(
+            microstate.add_body(body),
+            Err(Error::AddBody(0, boundary::Error::CannotWrapSiteProperties))
+        );
     }
 
     #[rstest]
@@ -1395,7 +1409,10 @@ mod tests {
                     position: [1.0, 0.0].into()
                 }
             ),
-            Err(Error::UpdateBody(0, boundary::Error::CannotWrapSiteProperties))
+            Err(Error::UpdateBody(
+                0,
+                boundary::Error::CannotWrapSiteProperties
+            ))
         );
     }
 

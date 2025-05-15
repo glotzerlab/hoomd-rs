@@ -44,7 +44,7 @@ impl Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>> for Square
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Body, boundary::Error, Transform};
+    use crate::{Body, Transform, boundary::Error};
 
     use rstest::*;
 
