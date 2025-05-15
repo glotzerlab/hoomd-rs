@@ -367,15 +367,14 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
 
     Each body is assigned a unique tag. The first body is given tag 0,
     the second is given tag 1, and so on. When a body is removed (see
-    [`Microstate::remove_body()`], its tag becomes unused. The next call to
+    [`Microstate::remove_body()`]), its tag becomes unused. The next call to
     `add_body` will assign the smallest unused tag.
 
     `add_body` also adds the body's sites to the microstate's
-    [`sites`](Microstate::sites) (in system coordinates) and assigns unique tags
-    to the sites similarly.
-
-    `add_body` wraps the body's position (and the positions of its sites in
-    system coordinates) into the boundary (see `Boundary::wrap()`).
+    [`sites`](Microstate::sites) (in system coordinates) and assigns unique
+    tags to the sites similarly. It wraps the body's position (and the
+    positions of its sites in system coordinates) into the boundary (see
+    [`Boundary`]).
 
     # Cost
 
@@ -384,7 +383,7 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
 
     # Returns
 
-    [`Ok(tag)`] with the tag of the added body on success.
+    [`Ok(tag)`](Result::Ok) with the tag of the added body on success.
 
     # Errors
 
@@ -608,14 +607,14 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
 
     /** Sets the properties of the given body.
 
-    Also updates the properties of the sites (in the system frame) associated
-    with the body.
+    `update_body_properties` also updates the properties of the sites (in the
+    system frame) associated with the body accordingly.
 
     # Errors
 
     [`Error::UpdateBody`] the body properties cannot be updated because the body
     position or any site position cannot be wrapped into the boundary. When an
-    error occurs, `update_body_properties` makes no change to the microstate.
+    error occurs, `update_body_properties` makes no change to the [`Microstate`].
 
     # Example
 
@@ -746,9 +745,9 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
     [`Microstate::bodies`].
 
     `body_indices()[tag]` is:
-    * `None` when there is no body with the given tag in the microstate.
-    * `Some(index)` when the body with the given tag is in the microstate.
-      `index` is the index of the body in [`Microstate::bodies`].
+    * [`None`] when there is no body with the given tag in the microstate.
+    * [`Some(index)`](Option::Some) when the body with the given tag is in the
+      microstate. `index` is the index of the body in [`Microstate::bodies`].
 
     # Example
 
@@ -792,8 +791,8 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
     the associated body tag in [`Site::body_tag`] and the site's properties in
     [`Site::properties`].
 
-    [`sites`](Microstate::sites) provides direct immutable access to
-    this slice. To mutate a body (and by extension, its sites), see
+    [`sites`](Microstate::sites) provides direct immutable access to the
+    slice of all sites. To mutate a body (and by extension, its sites), see
     [`Microstate::update_body_properties()`].
 
     # Examples

@@ -323,11 +323,11 @@ pub trait Transform<S> {
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
-    /// Failed to add a body to a `Microstate`.
+    /// Failed to add a body to a [`Microstate`].
     #[error("failed to add body (tag={0})")]
     AddBody(usize, #[source] boundary::Error),
 
-    /// Failed to update a body in a `Microstate`.
+    /// Failed to update a body in a [`Microstate`].
     #[error("failed to update body (tag={0})")]
     UpdateBody(usize, #[source] boundary::Error),
 }
