@@ -379,10 +379,10 @@ mod tests {
     fn test_aabrs_collide(v: [f64; 2], rect: [f64; 2]) {
         let c0 = Cuboid::from(rect);
         let c1 = Cuboid::from([1.0; 2]);
-        let theta = &Angle::from(0.0);
+        let theta = Angle::from(0.0);
 
-        let overlaps = collide2d(&c0, &c1, &v.into(), theta);
-        assert_eq!(overlaps, c0.intersects_at(&c1, &v.into(), theta),);
+        let overlaps = collide2d(&c0, &c1, &v.into(), &theta);
+        assert_eq!(overlaps, c0.intersects_at(&c1, &v.into(), &None::<Angle>));
     }
     #[rstest(
         v => [[0.1, 2.1, 0.1], [999.9, 0.0, 0.05], [0.0, 5.123, 0.0], [0.0, 5.123_000_000_001, 0.0]],
@@ -391,10 +391,10 @@ mod tests {
     fn test_aabbs_collide(v: [f64; 3], aabb: [f64; 3]) {
         let c0 = Cuboid::from(aabb);
         let c1 = Cuboid::from([1.0; 3]);
-        let theta = &Versor::identity();
+        let theta = Versor::identity();
 
-        let overlaps = collide3d(&c0, &c1, &v.into(), theta);
-        assert_eq!(overlaps, c0.intersects_at(&c1, &v.into(), theta),);
+        let overlaps = collide3d(&c0, &c1, &v.into(), &theta);
+        assert_eq!(overlaps, c0.intersects_at(&c1, &v.into(), &None::<Versor>),);
     }
 }
 

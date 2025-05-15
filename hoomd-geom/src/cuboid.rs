@@ -98,18 +98,27 @@ impl<const N: usize, R: Rotate<Cartesian<N>> + Rotation + PartialEq>
     Determine the intersection between two axis-aligned cuboids.
     MUST be passed an identity `Rotation` or the method will panic.
     */
+    type OptionalRotation = Option<R>;
     #[inline] // TODO: make orientation an option! unwrap_or_default for other cases
-    fn intersects_at(&self, other: &Cuboid<N>, v_ij: &Cartesian<N>, o_ij: &R) -> bool {
-        assert!(*o_ij == R::identity());
-        let other_mins = other.minimal_extents() + *v_ij;
-        let other_maxs = other.maximal_extents() + *v_ij;
-        multizip((
-            self.minimal_extents(),
-            other_maxs,
-            self.maximal_extents(),
-            other_mins,
-        ))
-        .all(|(l_min, o_max, l_max, o_min)| (l_min <= o_max) && (l_max >= o_min))
+    fn intersects_at(
+        &self,
+        other: &Cuboid<N>,
+        v_ij: &Cartesian<N>,
+        o_ij: &Self::OptionalRotation,
+    ) -> bool {
+        if o_ij.is_none() {
+            let other_mins = other.minimal_extents() + *v_ij;
+            let other_maxs = other.maximal_extents() + *v_ij;
+            multizip((
+                self.minimal_extents(),
+                other_maxs,
+                self.maximal_extents(),
+                other_mins,
+            ))
+            .all(|(l_min, o_max, l_max, o_min)| (l_min <= o_max) && (l_max >= o_min))
+        } else {
+            false
+        } // TODO: implement other path!
     }
 }
 
@@ -126,28 +135,28 @@ mod tests {
         edges0 => [[2.0, 2.0, 2.0]],
         edges1 => [[1.0, 1.0, 1.0]],
     )]
-    fn test_box_intersections(edges0: [f64; 3], edges1: [f64; 3]) {
+    fn test_box_intersections_aligned(edges0: [f64; 3], edges1: [f64; 3]) {
         let (s0, s1) = (Cuboid::<3>::from(edges0), Cuboid::<3>::from(edges1));
         // Should all be false (no intersection), which we invert to true
-        assert!(!s0.intersects_at(&s1, &[10.0, 10.0, 10.0].into(), &Versor::identity()));
+        assert!(!s0.intersects_at(&s1, &[10.0, 10.0, 10.0].into(), &None::<Versor>));
         // Boundaries are aligned
-        assert!(s0.intersects_at(&s1, &[1.5, 1.5, 1.5].into(), &Versor::identity()));
+        assert!(s0.intersects_at(&s1, &[1.5, 1.5, 1.5].into(), &None::<Versor>));
         // Both at origin - will always intersect for any cuboids
-        assert!(s0.intersects_at(&s1, &[0.0, 0.0, 0.0].into(), &Versor::identity()));
+        assert!(s0.intersects_at(&s1, &[0.0, 0.0, 0.0].into(), &None::<Versor>));
         // TODO: is there a more programmatic way to test this?
     }
     #[rstest(
         edges0 => [[2.0, 2.0]],
         edges1 => [[1.0, 1.0]],
     )]
-    fn test_box_intersections_2d(edges0: [f64; 2], edges1: [f64; 2]) {
+    fn test_box_intersections_2d_aligned(edges0: [f64; 2], edges1: [f64; 2]) {
         let (c0, c1) = (Cuboid::<2>::from(edges0), Cuboid::<2>::from(edges1));
         // Should all be false (no intersection), which we invert to true
-        assert!(!c0.intersects_at(&c1, &[10.0, 10.0].into(), &Angle::identity()));
+        assert!(!c0.intersects_at(&c1, &[10.0, 10.0].into(), &None::<Angle>));
         // Boundaries are aligned
-        assert!(c0.intersects_at(&c1, &[1.5, 1.5].into(), &Angle::identity()));
+        assert!(c0.intersects_at(&c1, &[1.5, 1.5].into(), &None::<Angle>));
         // Both at origin - will always intersect for any cuboids
-        assert!(c0.intersects_at(&c1, &[0.0, 0.0].into(), &Angle::identity()));
+        assert!(c0.intersects_at(&c1, &[0.0, 0.0].into(), &None::<Angle>));
     }
 
     #[rstest(

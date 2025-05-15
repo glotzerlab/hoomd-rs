@@ -244,6 +244,7 @@ where
     Recent Clojure reimplementation that orients shapes:
     <https://gist.github.com/postspectacular/9021724>
     */
+    type OptionalRotation = R;
     #[inline]
     fn intersects_at(&self, other: &Simplex3, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
         let r = RotationMatrix::from(*o_ij);

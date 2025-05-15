@@ -25,6 +25,7 @@ where
     R: Copy + Rotation,
     RotationMatrix<2>: From<R>,
 {
+    type OptionalRotation = R;
     #[inline]
     fn intersects_at(&self, other: &S, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
         xenocollide::collide2d(self, other, v_ij, o_ij)
@@ -107,6 +108,7 @@ where
     RotationMatrix<3>: From<R>,
 {
     /// Determine whether a convex polyhedron intersects another shape at some position and orientation.
+    type OptionalRotation = R;
     #[inline]
     fn intersects_at(&self, other: &S, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
         collide3d(self, other, v_ij, o_ij)
