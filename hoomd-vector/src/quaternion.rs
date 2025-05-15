@@ -578,7 +578,6 @@ impl From<Versor> for RotationMatrix<3> {
     ```
     */
     #[inline]
-    #[must_use]
     fn from(versor: Versor) -> RotationMatrix<3> {
         let Versor(quaternion) = versor;
         let a = quaternion.scalar;
@@ -622,7 +621,6 @@ impl Default for Versor {
     ```
     */
     #[inline]
-    #[must_use]
     fn default() -> Self {
         Self(Quaternion {
             scalar: 1.0,

@@ -86,7 +86,6 @@ impl<const N: usize> Default for Cartesian<N> {
     ```
     */
     #[inline]
-    #[must_use]
     fn default() -> Self {
         Cartesian::from([0.0; N])
     }

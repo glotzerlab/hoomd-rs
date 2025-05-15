@@ -116,7 +116,6 @@ impl From<Angle> for RotationMatrix<2> {
     ```
     */
     #[inline]
-    #[must_use]
     fn from(angle: Angle) -> RotationMatrix<2> {
         let sin_theta = angle.theta.sin();
         let cos_theta = angle.theta.cos();
@@ -141,7 +140,6 @@ impl Default for Angle {
     ```
     */
     #[inline]
-    #[must_use]
     fn default() -> Self {
         Angle::from(0.0)
     }
