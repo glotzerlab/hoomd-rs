@@ -245,9 +245,9 @@ where
     <https://gist.github.com/postspectacular/9021724>
     */
     #[inline]
-    fn intersects_at(&self, other: &Simplex3, r_ij: &Cartesian<3>, o_ij: &R) -> bool {
+    fn intersects_at(&self, other: &Simplex3, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
         let r = RotationMatrix::from(*o_ij);
-        let q = Simplex3::from(other.vertices.map(|v| r.rotate(&v))).translate_by(r_ij);
+        let q = Simplex3::from(other.vertices.map(|v| r.rotate(&v))).translate_by(v_ij);
 
         let q_deltas = q.vertices.map(|v| v - self.vertices[0]);
 
@@ -543,13 +543,13 @@ mod tests {
             t_test = t_test.translate_by(&-t_test.centroid());
 
             let theta: Versor = rng.random();
-            let r_ij = Cartesian::from([
+            let v_ij = Cartesian::from([
                 rng.random_range((-BOX_L / 2.0)..(BOX_L / 2.0)),
                 rng.random_range((-BOX_L / 2.0)..(BOX_L / 2.0)),
                 rng.random_range((-BOX_L / 2.0)..(BOX_L / 2.0)),
             ]);
-            // if t0.intersects_at(&t_test, &r_ij, &theta) {
-            if collide3d(&t0, &t_test, &r_ij, &theta) {
+            // if t0.intersects_at(&t_test, &v_ij, &theta) {
+            if collide3d(&t0, &t_test, &v_ij, &theta) {
                 n_rej += 1;
             } else {
                 n_acc += 1;
@@ -629,7 +629,8 @@ mod tests {
         ),
         case::parallel_edge_edge_intersection_exact(
             [1.0, 1.0, 2.0].into(),
-            Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().unwrap(), std::f64::consts::FRAC_PI_2),
+            // Hard-coded quaternion required to prevent error accumulation
+            Quaternion::from([2.0_f64.sqrt() / 2.0, 2.0_f64.sqrt()/2.0, 0.0, 0.0]).to_versor_unchecked(),
             true,
         ),
         case::parallel_edge_edge_intersection_imprecise(

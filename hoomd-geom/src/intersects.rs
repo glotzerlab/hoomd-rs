@@ -40,5 +40,5 @@ Define a position and orientation-dependent intersection between two bodies.
 */
 pub trait IntersectsAt<S, V: Vector, R: Rotate<V>> {
     ///Determine whether a Particle intersects another shape at some position and orientation.
-    fn intersects_at(&self, other: &S, r_ij: &V, o_ij: &R) -> bool;
+    fn intersects_at(&self, other: &S, v_ij: &V, o_ij: &R) -> bool;
 }

@@ -99,10 +99,10 @@ impl<const N: usize, R: Rotate<Cartesian<N>> + Rotation + PartialEq>
     MUST be passed an identity `Rotation` or the method will panic.
     */
     #[inline] // TODO: make orientation an option! unwrap_or_default for other cases
-    fn intersects_at(&self, other: &Cuboid<N>, r_ij: &Cartesian<N>, o_ij: &R) -> bool {
+    fn intersects_at(&self, other: &Cuboid<N>, v_ij: &Cartesian<N>, o_ij: &R) -> bool {
         assert!(*o_ij == R::identity());
-        let other_mins = other.minimal_extents() + *r_ij;
-        let other_maxs = other.maximal_extents() + *r_ij;
+        let other_mins = other.minimal_extents() + *v_ij;
+        let other_maxs = other.maximal_extents() + *v_ij;
         multizip((
             self.minimal_extents(),
             other_maxs,

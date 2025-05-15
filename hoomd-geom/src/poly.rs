@@ -1,7 +1,10 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use crate::{IntersectsAt, SupportFn, xenocollide};
+use crate::{
+    IntersectsAt, SupportFn,
+    xenocollide::{self, collide3d},
+};
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
 
 /**
@@ -96,9 +99,13 @@ impl<const N: usize> SupportFn<Cartesian<N>> for ConvexPolytope<N> {
 /**
 Calculate the intersection between two convex polyhedra in cartesian coordinates.
 */
-impl<R: Rotate<Cartesian<3>>> IntersectsAt<Self, Cartesian<3>, R> for ConvexPolytope<3> {
+impl<R: Rotate<Cartesian<3>> + Rotation + Copy> IntersectsAt<Self, Cartesian<3>, R>
+    for ConvexPolytope<3>
+{
     ///
-    fn intersects_at(&self, other: &Self, r_ij: &Cartesian<3>, o_ij: &R) -> bool {
-        todo!() // TODO: Xenocollide 3d
+    #[inline]
+    fn intersects_at(&self, other: &Self, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
+        // collide3d(self, &other, v_ij, o_ij)
+        todo!()
     }
 }
