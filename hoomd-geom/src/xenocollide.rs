@@ -1,7 +1,12 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use crate::{IntersectsAt, SupportFn};
+/*! Implementations of the Xenocollide collision detection algorithm.
+
+`collide2d` and `collide3d` allow for intersections between arbitrary geometries that
+define the `SupportFn<Cartesian<2|3>>` trait.
+*/
+use crate::SupportFn;
 use hoomd_vector::{Cartesian, Cross, Rotate, Rotation, RotationMatrix, Vector};
 
 /// Maximum allowed iterations for Xenocollide in 2D
@@ -323,7 +328,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::{Rng, SeedableRng, rngs::StdRng};
+    use crate::IntersectsAt;
     use rstest::*;
 
     use crate::{Cuboid, Sphere};

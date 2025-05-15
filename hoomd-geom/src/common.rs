@@ -5,7 +5,7 @@
 // TODO: make better use of enums
 use crate::{IntersectsAt, SupportFn, xenocollide::collide3d};
 
-use hoomd_vector::{Cartesian, Cross, Rotate, Rotation, RotationMatrix, Unit, Vector};
+use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
 
 /// A [`Cylinder`] in three dimensions.
 #[derive(Clone, Copy, Debug)]
@@ -51,17 +51,6 @@ impl SupportFn<Cartesian<3>> for Capsule {
             v_base / n.norm() + rshift
         }
     }
-}
-
-/// Closest point on a line segment bounded by `a` and `b` to a sphere at point `p`
-fn closest_point_on_line_segment(
-    a: Cartesian<3>,
-    b: Cartesian<3>,
-    p: Cartesian<3>,
-) -> Cartesian<3> {
-    let ab = b - a;
-    let t = (p - a).dot(&ab) / ab.dot(&ab);
-    ab * (a + t.clamp(0.0, 1.0))
 }
 
 /// An N-Dimensional [`HyperEllipsoid`] defined by its semi-major axes.

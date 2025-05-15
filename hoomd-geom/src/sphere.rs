@@ -5,7 +5,7 @@
 Methods and implementations for an N-hypersphere, where N is the dimension.
 */
 use crate::{IntersectsAt, Shape, SupportFn, Volume};
-use hoomd_vector::{Cartesian, Rotate, Vector};
+use hoomd_vector::{Rotate, Vector};
 use std::f64::consts::PI;
 
 /// The (single, double, ...)-factorial function
@@ -86,7 +86,7 @@ impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Sphere<N>, V, R> for 
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
-    // use hoomd_vector::approx::*;
+    use hoomd_vector::Cartesian;
     use rstest::*;
     use std::marker::PhantomData;
 
