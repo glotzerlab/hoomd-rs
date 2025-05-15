@@ -75,10 +75,10 @@ impl<const N: usize> Volume for Sphere<N> {
 }
 
 impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Sphere<N>, V, R> for Sphere<N> {
-    type OptionalRotation = R;
+    type OptionalRotation = Option<R>;
     #[inline]
-    fn intersects_at(&self, other: &Sphere<N>, r_ij: &V, _o_ij: &R) -> bool {
-        (r_ij).norm_squared() <= (other.r + self.r).powi(2)
+    fn intersects_at(&self, other: &Sphere<N>, v_ij: &V, _o_ij: &Option<R>) -> bool {
+        (v_ij).norm_squared() <= (other.r + self.r).powi(2)
     }
 }
 
