@@ -123,7 +123,7 @@ inline static bool FaceB_2() {
 // EdgeA -------------------------------------------------------
 
 inline static bool EdgeA(const int &f0, const int &f1) {
-
+  printf("f0 = %d, f1 = %d\n", f0, f1);
   double *coord_f0 = &Coord_1[f0][0];
   double *coord_f1 = &Coord_1[f1][0];
 
@@ -135,116 +135,153 @@ inline static bool EdgeA(const int &f0, const int &f1) {
     printf("Masks are full: mamb = %d, %d\n", maskf0, maskf1);
     return false; // included in (-,-) return false
   }
+  printf("m_f0 = %d\n", maskf0);
+  printf("m_f1 = %d\n", maskf1);
   maskf0 &= (maskf0 ^ maskf1); // exclude the vertices in (+,+)
 
   maskf1 &= (maskf0 ^ maskf1);
-  printf("Modified mask f0 = %d\n", maskf0);
-  printf("Modified mask f1 = %d\n", maskf1);
+  printf("Modified m_f0 = %d\n", maskf0);
+  printf("Modified m_f1 = %d\n", maskf1);
 
   // edge 0: 0--1
 
   double cp = (coord_f0[1] * coord_f1[0]) - (coord_f0[0] * coord_f1[1]);
-  printf("Edge test 0--1a: %d && %d && %f > 0.0\n", maskf0 & 001, maskf1 & 002, cp);
-  printf("Edge test 0--1b: %d && %d && %f < 0.0\n", maskf0 & 002, maskf1 & 001, cp);
+  // printf("Edge test 0--1a: %d && %d && %f > 0.0\n", maskf0 & 001, maskf1 &
+  // 002, cp); printf("Edge test 0--1b: %d && %d && %f < 0.0\n", maskf0 & 002,
+  // maskf1 & 001, cp);
 
   if (((maskf0 & 001) && // the vertex 0 of b is in (-,+)
 
        (maskf1 & 002)) && // the vertex 1 of b is in (+,-)
 
       (((coord_f0[1] * coord_f1[0]) - (coord_f0[0] * coord_f1[1])) > 0))
-    // the edge of b (0,1) intersect (-,-) (see the paper)
+  // the edge of b (0,1) intersect (-,-) (see the paper)
 
-    {
-      printf("edge_test 0--1a \n");
-      return false;
-    }
+  {
+    printf("edge_test 0--1a \n");
+    return false;
+  } else {
+    printf("%d && ", maskf0 & 001);
+    printf("%d && ", maskf1 & 001);
+    printf("%d\n",
+           ((coord_f0[1] * coord_f1[0]) - (coord_f0[0] * coord_f1[1])) > 0);
+  }
 
   if (((maskf0 & 002) && (maskf1 & 001)) &&
-      (((coord_f0[1] * coord_f1[0]) - (coord_f0[0] * coord_f1[1])) < 0))
-    {
-      printf("edge_test 0--1b \n");
-      return false;
-    }
+      (((coord_f0[1] * coord_f1[0]) - (coord_f0[0] * coord_f1[1])) < 0)) {
+    printf("edge_test 0--1b \n");
+    return false;
 
+  } else {
+    printf("%d && ", maskf0 & 002);
+    printf("%d && ", maskf1 & 001);
+    printf("%d\n\n",
+           ((coord_f0[1] * coord_f1[0]) - (coord_f0[0] * coord_f1[1])) < 0);
+  }
   // edge 1: 0--2
 
   if (((maskf0 & 001) && (maskf1 & 004)) &&
-      (((coord_f0[2] * coord_f1[0]) - (coord_f0[0] * coord_f1[2])) > 0))
-    {
-      printf("edge_test  \n");
-      return false;
-    }
+      (((coord_f0[2] * coord_f1[0]) - (coord_f0[0] * coord_f1[2])) > 0)) {
+    printf("edge_test  \n");
+    return false;
+  // }
+  } else {
+    printf("%d && ", maskf0 & 001);
+    printf("%d && ", maskf1 & 004);
+    printf("%d\n",
+           ((coord_f0[1] * coord_f1[0]) - (coord_f0[0] * coord_f1[1])) > 0);
+  }
 
   if (((maskf0 & 004) && (maskf1 & 001)) &&
-      (((coord_f0[2] * coord_f1[0]) - (coord_f0[0] * coord_f1[2])) < 0))
-    {
-      printf("edge_test  \n");
-      return false;
-    }
+      (((coord_f0[2] * coord_f1[0]) - (coord_f0[0] * coord_f1[2])) < 0)) {
+    printf("edge_test  \n");
+    return false;
+  // }
+  } else {
+    printf("%d && ", maskf0 & 004);
+    printf("%d && ", maskf1 & 001);
+    printf("%d\n\n",
+           ((coord_f0[1] * coord_f1[0]) - (coord_f0[0] * coord_f1[1])) < 0);
+  }
 
   // edge 2: 0--3
 
   if (((maskf0 & 001) && (maskf1 & 010)) &&
-      (((coord_f0[3] * coord_f1[0]) - (coord_f0[0] * coord_f1[3])) > 0))
-    {
-      printf("edge_test  \n");
-      return false;
-    }
+      (((coord_f0[3] * coord_f1[0]) - (coord_f0[0] * coord_f1[3])) > 0)) {
+    printf("edge_test  \n");
+    return false;
+  } else {
+    printf("%d && ", maskf0 & 001);
+    printf("%d && ", maskf1 & 010);
+    printf("%d\n",
+           ((coord_f0[3] * coord_f1[0]) - (coord_f0[0] * coord_f1[3])) > 0);
+  }
 
   if (((maskf0 & 010) && (maskf1 & 001)) &&
-      (((coord_f0[3] * coord_f1[0]) - (coord_f0[0] * coord_f1[3])) < 0))
-    {
-      printf("edge_test  \n");
-      return false;
-    }
+      (((coord_f0[3] * coord_f1[0]) - (coord_f0[0] * coord_f1[3])) < 0)) {
+    printf("edge_test  \n");
+    return false;
+    // }
+  } else {
+    printf("%d && ", maskf0 & 010);
+    printf("%d && ", maskf1 & 001);
+    printf("%d\n\n",
+           ((coord_f0[3] * coord_f1[0]) - (coord_f0[0] * coord_f1[3])) < 0);
+  }
 
   // edge 3: 1--2
 
   if (((maskf0 & 002) && (maskf1 & 004)) &&
-      (((coord_f0[2] * coord_f1[1]) - (coord_f0[1] * coord_f1[2])) > 0))
-    {
-      printf("edge_test  \n");
-      return false;
-    }
+      (((coord_f0[2] * coord_f1[1]) - (coord_f0[1] * coord_f1[2])) > 0)) {
+    printf("edge_test  \n");
+    return false;
+    // }
+  } else {
+    printf("%d && ", maskf0 & 002);
+    printf("%d && ", maskf1 & 004);
+    printf("%d\n",
+           ((coord_f0[2] * coord_f1[1]) - (coord_f0[1] * coord_f1[2])) > 0);
+  }
 
   if (((maskf0 & 004) && (maskf1 & 002)) &&
-      (((coord_f0[2] * coord_f1[1]) - (coord_f0[1] * coord_f1[2])) < 0))
-    {
-      printf("edge_test  \n");
-      return false;
-    }
+      (((coord_f0[2] * coord_f1[1]) - (coord_f0[1] * coord_f1[2])) < 0)) {
+    printf("edge_test  \n");
+    return false;
+  // }
+  } else {
+    printf("%d && ", maskf0 & 004);
+    printf("%d && ", maskf1 & 002);
+    printf("%d\n\n",
+           ((coord_f0[2] * coord_f1[1]) - (coord_f0[1] * coord_f1[2])) < 0);
+  }
 
   // edge 4: 1--3
 
   if (((maskf0 & 002) && (maskf1 & 010)) &&
-      (((coord_f0[3] * coord_f1[1]) - (coord_f0[1] * coord_f1[3])) > 0))
-    {
-      printf("edge_test  \n");
-      return false;
-    }
+      (((coord_f0[3] * coord_f1[1]) - (coord_f0[1] * coord_f1[3])) > 0)) {
+    printf("edge_test  \n");
+    return false;
+  }
 
   if (((maskf0 & 010) && (maskf1 & 002)) &&
-      (((coord_f0[3] * coord_f1[1]) - (coord_f0[1] * coord_f1[3])) < 0))
-    {
-      printf("edge_test  \n");
-      return false;
-    }
+      (((coord_f0[3] * coord_f1[1]) - (coord_f0[1] * coord_f1[3])) < 0)) {
+    printf("edge_test  \n");
+    return false;
+  }
 
   // edge 5: 2--3
 
   if (((maskf0 & 004) && (maskf1 & 010)) &&
-      (((coord_f0[3] * coord_f1[2]) - (coord_f0[2] * coord_f1[3])) > 0))
-    {
-      printf("edge_test  \n");
-      return false;
-    }
+      (((coord_f0[3] * coord_f1[2]) - (coord_f0[2] * coord_f1[3])) > 0)) {
+    printf("edge_test  \n");
+    return false;
+  }
 
   if (((maskf0 & 010) && (maskf1 & 004)) &&
-      (((coord_f0[3] * coord_f1[2]) - (coord_f0[2] * coord_f1[3])) < 0))
-    {
-      printf("edge_test  \n");
-      return false;
-    }
+      (((coord_f0[3] * coord_f1[2]) - (coord_f0[2] * coord_f1[3])) < 0)) {
+    printf("edge_test  \n");
+    return false;
+  }
   printf("All edge tests failed! Returning true\n");
   return true; // there exists a separting plane supported by the edge shared by
                // f0 and f1
@@ -293,7 +330,7 @@ bool tet_a_tet(double V_1[4][3], double V_2[4][3]) {
     return false;
   }
   if (EdgeA(1, 2)) {
-    printf("e 1 2\n");
+    printf("e 1 2 returned TRUE: separating plane found\n");
     return false;
   }
 
@@ -395,11 +432,20 @@ int main() {
       // {0.0, 1.0, 0.999999999999999},
       // {0.0, -1.0, 2.999999999999999}
 
-      // NEW CASE
-       {0.6803197528322115, 1.3776082678217132, 3.01},
-       {2.377608267821713, 0.31968024716778853, 1.0099999999999998},
-       {-0.3776082678217132, -0.31968024716778853, 1.0099999999999998},
-       {1.3196802471677884, -1.3776082678217132, 3.01}};
+      // NEW CASE - now passes
+      // {0.6803197528322115, 1.3776082678217132, 3.01},
+      // {2.377608267821713, 0.31968024716778853, 1.0099999999999998},
+      // {-0.3776082678217132, -0.31968024716778853, 1.0099999999999998},
+      // {1.3196802471677884, -1.3776082678217132, 3.01}};
+      // {2, 0.9999999999999999, 3.414213562373095},
+      //  {2, 1, 0.5857864376269051},
+      //  {0, 2.414213562373095, 2},
+      //  {0, -0.4142135623730949, 2}};
+      // tip_edge_intersection_exact
+      {2, 2, 3},
+      {2, 0, 1},
+      {0, 2, 1},
+      {0, 0, 3}};
   V1 = p;
   V2 = q;
 
