@@ -754,6 +754,7 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
     ```
     use hoomd_microstate::{Microstate, MicrostateBuilder, Body};
     use hoomd_vector::Cartesian;
+    use anyhow::anyhow;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut microstate = MicrostateBuilder::new()
@@ -763,15 +764,17 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
                  Body::point(Cartesian::from([7.0, 8.0]))])
         .try_build()?;
 
-    microstate.remove_body(microstate.body_indices()[0]
-        .expect("the body with index 0 should be present in the microstate"));
+    let index = microstate.body_indices()[0]
+        .ok_or(anyhow!("body 0 is not present"))?;
+    microstate.remove_body(index);
 
     assert_eq!(microstate.body_indices()[0], None);
     assert!(matches!(microstate.body_indices()[3], Some(_)));
 
-    if let Some(index) = microstate.body_indices()[2] {
-        assert_eq!(microstate.bodies()[index].item.properties.position, [5.0, 6.0].into());
-    }
+    let index = microstate.body_indices()[2]
+        .ok_or(anyhow!("body 2 is not present"))?;
+    assert_eq!(microstate.bodies()[index].item.properties.position,
+        [5.0, 6.0].into());
     # Ok(())
     # }
     ```
