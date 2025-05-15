@@ -323,7 +323,11 @@ pub trait Transform<S> {
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
-    /// Attempted to wrap a body/site with a position not covered by the periodic boundary.
-    #[error("This position cannot be wrapped into the boundary.")]
-    CannotWrapProperties,
+    /// Failed to add a body to a `Microstate`.
+    #[error("failed to add body (tag={0})")]
+    AddBody(usize, #[source] boundary::Error),
+
+    /// Failed to update a body in a `Microstate`.
+    #[error("failed to update body (tag={0})")]
+    UpdateBody(usize, #[source] boundary::Error),
 }

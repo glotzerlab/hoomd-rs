@@ -166,7 +166,7 @@ use std::f64::consts::PI;
 let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
 
 let mask = [Patch::new(
-    [0.0, 0.0, 1.0].try_into().expect("hard-coded vector should have non-zero length"),
+    [0.0, 0.0, 1.0].try_into()?,
     (PI / 8.0).cos(),
 )];
 let (x_axis, _) = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();

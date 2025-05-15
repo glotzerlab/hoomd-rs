@@ -181,12 +181,16 @@ use thiserror::Error;
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
     /// Attempted converting a value to a vector with a dimension not equal to the value's length.
-    #[error("Source does not match the target vector length.")]
+    #[error("source length does not match the target dimensions")]
     InvalidVectorLength,
 
-    /// Attempted normalizing a vector or quaternion with an invalid magnitude.
-    #[error("Invalid magnitude for normalization.")]
-    InvalidMagnitude,
+    /// Attempted to normalize a vector with an invalid magnitude.
+    #[error("cannot normalize the 0 vector")]
+    InvalidVectorMagnitude,
+
+    /// Attempted to normalize a quaternion with an invalid magnitude.
+    #[error("cannot normalize the 0 quaternion")]
+    InvalidQuaternionMagnitude,
 }
 
 /** Operate on elements of a normed vector space.
@@ -426,13 +430,13 @@ pub trait Vector:
 
     # Errors
 
-    [`Error::InvalidMagnitude`] when `self` is the 0 vector.
+    [`Error::InvalidVectorMagnitude`] when `self` is the 0 vector.
     */
     #[inline]
     fn to_unit(self) -> Result<(Unit<Self>, f64), Error> {
         let norm = self.norm();
         if norm == 0.0 {
-            Err(Error::InvalidMagnitude)
+            Err(Error::InvalidVectorMagnitude)
         } else {
             Ok((Unit(self / norm), norm))
         }

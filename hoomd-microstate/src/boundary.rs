@@ -7,13 +7,28 @@ See the [crate-level documentation](crate) for an overview of how [`Boundary`]
 interacts with [`Microstate`](crate::Microstate) and model methods.
  */
 
-use crate::{Error, property::Position};
+use crate::property::Position;
+
+use thiserror::Error;
 
 mod open;
 mod square;
 
 pub use open::Open;
 pub use square::Square;
+
+/// Enumerate possible sources of error in fallible boundary methods.
+#[non_exhaustive]
+#[derive(Error, PartialEq, Debug)]
+pub enum Error {
+    /// Failed to wrap body properties.
+    #[error("body property cannot be wrapped")]
+    CannotWrapBodyProperties,
+
+    /// Failed to wrap site properties.
+    #[error("site property cannot be wrapped")]
+    CannotWrapSiteProperties,
+}
 
 /** Define the subset of the vector space where body and site positions exist.
 
@@ -43,9 +58,9 @@ pub trait Boundary<V, B, S> {
 
     # Errors
 
-    `wrap` returns [`Error::CannotWrapProperties`] when it is not possible to wrap
-    the body into the boundary. For example, when the position is outside the
-    radius of a cylinder that is only periodic along its axis.
+    `wrap` returns [`Error::CannotWrapBodyProperties`] when it is not possible
+    to wrap the body into the boundary. For example, when the position is
+    outside the radius of a cylinder that is only periodic along its axis.
     */
     #[inline]
     fn wrap_body(&self, body_properties: B) -> Result<B, Error>
@@ -55,7 +70,7 @@ pub trait Boundary<V, B, S> {
         if self.is_inside(body_properties.position()) {
             Ok(body_properties)
         } else {
-            Err(Error::CannotWrapProperties)
+            Err(Error::CannotWrapBodyProperties)
         }
     }
 
@@ -68,9 +83,9 @@ pub trait Boundary<V, B, S> {
 
     # Errors
 
-    `wrap` returns [`Error::CannotWrapProperties`] when it is not possible to wrap
-    the site into the boundary. For example, when the position is outside the
-    radius of a cylinder that is only periodic along its axis.
+    `wrap` returns [`Error::CannotWrapSiteProperties`] when it is not possible
+    to wrap the site into the boundary. For example, when the position is
+    outside the radius of a cylinder that is only periodic along its axis.
     */
     #[inline]
     fn wrap_site(&self, site_properties: S) -> Result<S, Error>
@@ -80,7 +95,7 @@ pub trait Boundary<V, B, S> {
         if self.is_inside(site_properties.position()) {
             Ok(site_properties)
         } else {
-            Err(Error::CannotWrapProperties)
+            Err(Error::CannotWrapSiteProperties)
         }
     }
 }

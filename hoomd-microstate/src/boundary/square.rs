@@ -44,7 +44,7 @@ impl Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>> for Square
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Body, Error, Transform};
+    use crate::{Body, boundary::Error, Transform};
 
     use rstest::*;
 
@@ -87,10 +87,10 @@ mod tests {
         let body = Body::point(v);
         assert_eq!(
             square.wrap_body(body.properties),
-            Err(Error::CannotWrapProperties)
+            Err(Error::CannotWrapBodyProperties)
         );
 
         let site = body.properties.transform(&body.sites[0]);
-        assert_eq!(square.wrap_site(site), Err(Error::CannotWrapProperties));
+        assert_eq!(square.wrap_site(site), Err(Error::CannotWrapSiteProperties));
     }
 }

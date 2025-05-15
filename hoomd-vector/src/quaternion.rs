@@ -238,13 +238,13 @@ impl Quaternion {
 
     # Errors
 
-    [`Error::InvalidMagnitude`] when `self` is the 0 quaternion.
+    [`Error::InvalidQuaternionMagnitude`] when `self` is the 0 quaternion.
     */
     #[inline]
     pub fn to_versor(self) -> Result<Versor, Error> {
         let mag = self.norm();
         if mag == 0.0 {
-            Err(Error::InvalidMagnitude)
+            Err(Error::InvalidQuaternionMagnitude)
         } else {
             Ok(Versor(self / mag))
         }
@@ -918,7 +918,7 @@ mod tests {
             );
 
             let zero = Quaternion::from([0.0, 0.0, 0.0, 0.0]);
-            assert!(matches!(zero.to_versor(), Err(Error::InvalidMagnitude)));
+            assert!(matches!(zero.to_versor(), Err(Error::InvalidQuaternionMagnitude)));
         }
 
         #[test]
