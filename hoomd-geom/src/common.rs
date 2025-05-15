@@ -3,7 +3,7 @@
 
 /*! Common geometric primitives that implement only a small number of operations.*/
 // TODO: make better use of enums
-use crate::{IntersectsAt, SupportFn};
+use crate::{IntersectsAt, SupportFn, xenocollide::collide3d};
 
 use hoomd_vector::{Cartesian, Cross, Rotate, Rotation, RotationMatrix, Unit, Vector};
 
@@ -163,8 +163,14 @@ impl HyperEllipsoid<3> {
     }
 }
 
-// impl IntersectsAt for HyperEllipsoid<3> {
-//     fn intersects_at(&self, other: &S, r_ij: &V, o_ij: &R) -> bool {}
-// }
+impl<S: SupportFn<Cartesian<3>>, R: Copy + Rotation + Rotate<Cartesian<3>>>
+    IntersectsAt<S, Cartesian<3>, R> for HyperEllipsoid<3>
+where
+    RotationMatrix<3>: From<R>,
+{
+    fn intersects_at(&self, other: &S, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
+        collide3d(self, other, v_ij, o_ij)
+    } // TODO: implement fast ellipsoid overlap
+}
 
 impl<const N: usize> HyperEllipsoid<N> {} // TODO matrix form and IntersectsAt

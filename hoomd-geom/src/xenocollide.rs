@@ -10,16 +10,11 @@ const XENOCOLLIDE_2D_MAX_ITER: usize = 1024;
 const XENOCOLLIDE_3D_MAX_ITER: usize = 1024;
 
 /// Stateful function for support function calculations on Minkowski differences.
-struct SupportFunctor<
-    'a,
-    const N: usize,
-    // R: Copy + Rotate<Cartesian<N>>,
-    T: SupportFn<Cartesian<N>>,
-> {
+struct SupportFunctor<'a, const N: usize, A: SupportFn<Cartesian<N>>, B: SupportFn<Cartesian<N>>> {
     /// Support-function shape A
-    sa: &'a T,
+    sa: &'a A,
     /// Support-function shape B
-    sb: &'a T,
+    sb: &'a B,
     /// Vector separating A and B
     v_ij: &'a Cartesian<N>,
     /// Relative orientation between A and B
@@ -28,7 +23,9 @@ struct SupportFunctor<
     q_ij_inv: RotationMatrix<N>,
 }
 
-impl<'a, const N: usize, T: SupportFn<Cartesian<N>>> SupportFunctor<'_, N, T> {
+impl<'a, const N: usize, A: SupportFn<Cartesian<N>>, B: SupportFn<Cartesian<N>>>
+    SupportFunctor<'_, N, A, B>
+{
     /// Compute the support function on the Minkowski difference of two shapes.
     #[inline]
     fn composite_support(&self, n: Cartesian<N>) -> Cartesian<N> {
@@ -45,11 +42,11 @@ impl<'a, const N: usize, T: SupportFn<Cartesian<N>>> SupportFunctor<'_, N, T> {
     /// Create a new SupportFunctor from a Rotation that can be converted into a RotMat
     #[inline]
     fn new<R: Rotation + Copy>(
-        sa: &'a T,
-        sb: &'a T,
+        sa: &'a A,
+        sb: &'a B,
         v_ij: &'a Cartesian<N>,
         r: R,
-    ) -> SupportFunctor<'a, N, T>
+    ) -> SupportFunctor<'a, N, A, B>
     where
         RotationMatrix<N>: From<R>,
     {
@@ -67,9 +64,9 @@ impl<'a, const N: usize, T: SupportFn<Cartesian<N>>> SupportFunctor<'_, N, T> {
 
 /// Xenocollide in 2 dimensions. For now, hard coded to 2
 #[inline]
-pub fn collide2d<R: Copy + Rotation, T: SupportFn<Cartesian<2>>>(
-    sa: &T,
-    sb: &T,
+pub fn collide2d<R: Copy + Rotation, A: SupportFn<Cartesian<2>>, B: SupportFn<Cartesian<2>>>(
+    sa: &A,
+    sb: &B,
     v_ij: &Cartesian<2>,
     q_ij: &R,
 ) -> bool
@@ -153,9 +150,9 @@ where
 /// Minkowski Portal Refinement-based collision detection in 3d
 // #[allow(clippy::collapsible_else_if)] // TODO: temp
 #[inline(never)]
-pub fn collide3d<R: Rotation + Copy, T: SupportFn<Cartesian<3>>>(
-    sa: &T,
-    sb: &T,
+pub fn collide3d<R: Rotation + Copy, A: SupportFn<Cartesian<3>>, B: SupportFn<Cartesian<3>>>(
+    sa: &A,
+    sb: &B,
     v_ij: &Cartesian<3>, // Probably ok to take ownership?
     q_ij: &R,
 ) -> bool

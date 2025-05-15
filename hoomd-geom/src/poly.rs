@@ -101,11 +101,12 @@ Calculate the intersection between two convex polyhedra in cartesian coordinates
 */
 impl<R: Rotate<Cartesian<3>> + Rotation + Copy> IntersectsAt<Self, Cartesian<3>, R>
     for ConvexPolytope<3>
+where
+    RotationMatrix<3>: From<R>,
 {
-    ///
+    /// Determine whether a convex polyhedron intersects another shape at some position and orientation.
     #[inline]
     fn intersects_at(&self, other: &Self, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
-        // collide3d(self, &other, v_ij, o_ij)
-        todo!()
+        collide3d(self, other, v_ij, o_ij)
     }
 }
