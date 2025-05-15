@@ -38,6 +38,7 @@ thiserror = "2.0.12"
 approx = "0.5.1"
 divan = "0.1.17"
 rstest = "0.25.0"
+anyhow = "1.0.98"
 
 [workspace.lints.rust]
 missing_docs = "warn"
