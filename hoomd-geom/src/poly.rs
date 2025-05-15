@@ -19,14 +19,15 @@ pub struct ConvexPolytope<const N: usize> {
 /**
 Calculate the intersection between two convex polygons in cartesian coordinates.
 */
-impl<R: Rotate<Cartesian<2>>> IntersectsAt<Self, Cartesian<2>, R> for ConvexPolytope<2>
+impl<S: SupportFn<Cartesian<2>>, R: Rotate<Cartesian<2>>> IntersectsAt<S, Cartesian<2>, R>
+    for ConvexPolytope<2>
 where
     R: Copy + Rotation,
     RotationMatrix<2>: From<R>,
 {
     #[inline]
-    fn intersects_at(&self, other: &Self, r_ij: &Cartesian<2>, o_ij: &R) -> bool {
-        xenocollide::collide2d(self, other, r_ij, o_ij)
+    fn intersects_at(&self, other: &S, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
+        xenocollide::collide2d(self, other, v_ij, o_ij)
     }
 }
 
@@ -100,14 +101,14 @@ impl<const N: usize> SupportFn<Cartesian<N>> for ConvexPolytope<N> {
 /**
 Calculate the intersection between two convex polyhedra in cartesian coordinates.
 */
-impl<R: Rotate<Cartesian<3>> + Rotation + Copy> IntersectsAt<Self, Cartesian<3>, R>
-    for ConvexPolytope<3>
+impl<S: SupportFn<Cartesian<3>>, R: Rotate<Cartesian<3>> + Rotation + Copy>
+    IntersectsAt<S, Cartesian<3>, R> for ConvexPolytope<3>
 where
     RotationMatrix<3>: From<R>,
 {
     /// Determine whether a convex polyhedron intersects another shape at some position and orientation.
     #[inline]
-    fn intersects_at(&self, other: &Self, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
+    fn intersects_at(&self, other: &S, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
         collide3d(self, other, v_ij, o_ij)
     }
 }
