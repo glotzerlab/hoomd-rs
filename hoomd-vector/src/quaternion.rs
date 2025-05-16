@@ -238,13 +238,13 @@ impl Quaternion {
 
     # Errors
 
-    [`Error::InvalidMagnitude`] when `self` is the 0 quaternion.
+    [`Error::InvalidQuaternionMagnitude`] when `self` is the 0 quaternion.
     */
     #[inline]
     pub fn to_versor(self) -> Result<Versor, Error> {
         let mag = self.norm();
         if mag == 0.0 {
-            Err(Error::InvalidMagnitude)
+            Err(Error::InvalidQuaternionMagnitude)
         } else {
             Ok(Versor(self / mag))
         }
@@ -773,7 +773,7 @@ impl Distribution<Versor> for StandardUniform {
             clippy::expect_used,
             reason = "This constants chosen for this distribution are valid"
         )]
-        let uniform = Uniform::new(-1.0, 1.0).expect("a valid distribution");
+        let uniform = Uniform::new(-1.0, 1.0).expect("hard-coded distribution should be valid");
 
         let (u, v) = loop {
             let u: f64 = uniform.sample(rng);
@@ -901,7 +901,8 @@ mod tests {
             let q = Quaternion::from([5.0, 3.0, -1.0, 1.0]);
 
             assert_relative_eq!(
-                q.to_versor().expect("non-zero quaternion"),
+                q.to_versor()
+                    .expect("hard-coded quatnernion should be non zero"),
                 Versor(Quaternion {
                     scalar: 5.0 / 6.0,
                     vector: [3.0 / 6.0, -1.0 / 6.0, 1.0 / 6.0].into()
@@ -917,7 +918,10 @@ mod tests {
             );
 
             let zero = Quaternion::from([0.0, 0.0, 0.0, 0.0]);
-            assert!(matches!(zero.to_versor(), Err(Error::InvalidMagnitude)));
+            assert!(matches!(
+                zero.to_versor(),
+                Err(Error::InvalidQuaternionMagnitude)
+            ));
         }
 
         #[test]
@@ -982,7 +986,7 @@ mod tests {
 
         #[rstest(
         theta => [0.0, PI/2.0, 1e-12 * PI, -3.0, 12345.6],
-        axis => [[1.0, 0.0, 0.0].try_into().expect("valid unit vector"), [1.0, -1.0, 1.0].try_into().expect("valid unit vector")],
+        axis => [[1.0, 0.0, 0.0].try_into().expect("hard-coded vector should have non-zero length"), [1.0, -1.0, 1.0].try_into().expect("hard-coded vector should have non-zero length")],
     )]
         fn from_axis_angle(theta: f64, axis: Unit<Cartesian<3>>) {
             let Unit(axis_vector) = axis;
@@ -997,7 +1001,9 @@ mod tests {
         theta_2 => [-0.0, -PI/3.0, PI, 2.0 * PI]
     )]
         fn combine_same_axis(theta_1: f64, theta_2: f64) {
-            let axis = [1.0, 0.0, 0.0].try_into().expect("valid unit vector");
+            let axis = [1.0, 0.0, 0.0]
+                .try_into()
+                .expect("hard-coded vector should have non-zero length");
             let Unit(axis_vector) = axis;
 
             let a = Versor::from_axis_angle(axis, theta_1);
@@ -1042,11 +1048,15 @@ mod tests {
         #[test]
         fn rotate() {
             let z_pi_2 = Versor::from_axis_angle(
-                [0.0, 0.0, 1.0].try_into().expect("valid unit vector"),
+                [0.0, 0.0, 1.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 PI / 2.0,
             );
             let y_pi_4 = Versor::from_axis_angle(
-                [0.0, 1.0, 0.0].try_into().expect("valid unit vector"),
+                [0.0, 1.0, 0.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 PI / 4.0,
             );
 
@@ -1056,11 +1066,15 @@ mod tests {
         #[test]
         fn precompute() {
             let z_pi_2 = RotationMatrix::from(Versor::from_axis_angle(
-                [0.0, 0.0, 1.0].try_into().expect("valid unit vector"),
+                [0.0, 0.0, 1.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 PI / 2.0,
             ));
             let y_pi_4 = RotationMatrix::from(Versor::from_axis_angle(
-                [0.0, 1.0, 0.0].try_into().expect("valid unit vector"),
+                [0.0, 1.0, 0.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 PI / 4.0,
             ));
 
@@ -1070,11 +1084,15 @@ mod tests {
         #[test]
         fn combine_different_axis() {
             let a = Versor::from_axis_angle(
-                [1.0, 0.0, 0.0].try_into().expect("valid unit vector"),
+                [1.0, 0.0, 0.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 PI / 4.0,
             );
             let b = Versor::from_axis_angle(
-                [0.0, 0.0, 1.0].try_into().expect("valid unit vector"),
+                [0.0, 0.0, 1.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 PI / 2.0,
             );
 
@@ -1086,7 +1104,9 @@ mod tests {
         #[rstest(theta => [0.0, 1.0, 2.125])]
         fn inverted(theta: f64) {
             let q1 = Versor::from_axis_angle(
-                [1.0, 0.5, -2.0].try_into().expect("valid unit vector"),
+                [1.0, 0.5, -2.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 theta,
             );
             let q2 = q1.inverted();

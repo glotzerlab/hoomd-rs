@@ -166,7 +166,7 @@ use std::f64::consts::PI;
 let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
 
 let mask = [Patch::new(
-    [0.0, 0.0, 1.0].try_into().expect("valid unit vector"),
+    [0.0, 0.0, 1.0].try_into()?,
     (PI / 8.0).cos(),
 )];
 let (x_axis, _) = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
@@ -292,7 +292,9 @@ mod tests {
 
         // First case: identical directors in the +x direction
         let mask = [Patch::new(
-            [1.0, 0.0].try_into().expect("valid unit vector"),
+            [1.0, 0.0]
+                .try_into()
+                .expect("hard-coded vector should have non-zero length"),
             (PI / 8.0).cos(),
         )];
         let angular_mask = AngularMask::new(boxcar, mask, mask);
@@ -338,7 +340,9 @@ mod tests {
 
         // Second case: identical directors in the 1,1 direction
         let mask = [Patch::new(
-            [1.0, 1.0].try_into().expect("valid unit vector"),
+            [1.0, 1.0]
+                .try_into()
+                .expect("hard-coded vector should have non-zero length"),
             (PI / 3.0).cos(),
         )];
         let angular_mask = AngularMask::new(boxcar, mask, mask);
@@ -412,29 +416,41 @@ mod tests {
         // Third case: multiple patches and different i,j masks.
         let mask_i = [
             Patch::new(
-                [0.0, 1.0].try_into().expect("valid unit vector"),
+                [0.0, 1.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 (PI / 8.0).cos(),
             ),
             Patch::new(
-                [0.0, -1.0].try_into().expect("valid unit vector"),
+                [0.0, -1.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 (PI / 8.0).cos(),
             ),
             Patch::new(
-                [1.0, 0.0].try_into().expect("valid unit vector"),
+                [1.0, 0.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 (PI / 8.0).cos(),
             ),
             Patch::new(
-                [-1.0, 0.0].try_into().expect("valid unit vector"),
+                [-1.0, 0.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 (PI / 8.0).cos(),
             ),
         ];
         let mask_j = [
             Patch::new(
-                [0.0, 1.0].try_into().expect("valid unit vector"),
+                [0.0, 1.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 (PI / 8.0).cos(),
             ),
             Patch::new(
-                [0.0, -1.0].try_into().expect("valid unit vector"),
+                [0.0, -1.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 (PI / 8.0).cos(),
             ),
         ];
@@ -450,7 +466,9 @@ mod tests {
         let lj: LennardJones = LennardJones::new(epsilon, sigma);
 
         let mask = [Patch::new(
-            [1.0, 0.0].try_into().expect("valid unit vector"),
+            [1.0, 0.0]
+                .try_into()
+                .expect("hard-coded vector should have non-zero length"),
             (PI).cos(),
         )];
         let angular_mask = AngularMask::new(lj, mask, mask);
@@ -476,7 +494,9 @@ mod tests {
 
         // First case: identical directors in the +z direction
         let mask = [Patch::new(
-            [0.0, 0.0, 1.0].try_into().expect("valid unit vector"),
+            [0.0, 0.0, 1.0]
+                .try_into()
+                .expect("hard-coded vector should have non-zero length"),
             (PI / 8.0).cos(),
         )];
         let angular_mask = AngularMask::new(boxcar, mask, mask);

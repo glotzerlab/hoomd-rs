@@ -11,7 +11,7 @@ use hoomd_vector::Cartesian;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut microstate = Microstate::new();
-    microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
+    microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
 
     let kt = 1.0;
     let hamiltonian = Single(Linear {
@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let d = 0.1;
 
     let translate = Translate::new(d.try_into()?);
-    let translate_sweep = Sweep::new(translate);
+    let translate_sweep = Sweep { local: translate };
 
     for _ in 0..100_000 {
         translate_sweep.apply(&mut microstate, &hamiltonian, &kt);

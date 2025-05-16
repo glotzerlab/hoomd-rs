@@ -13,7 +13,7 @@ resolver = "3"
 [workspace.package]
 version = "0.0.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.86"
 homepage = "https://glotzerlab.engin.umich.edu"
 repository = "https://github.com/glotzerlab/hoomd"
 license = "BSD-3-Clause"
@@ -31,11 +31,14 @@ hoomd-vector = { path = "hoomd-vector" }
 # Common dependencies
 rand = "0.9.0"
 thiserror = "2.0.12"
+# Note: thiserror does not appear in the public API and therefore does not
+# impact semantic versioning.
 
 # Common dev dependencies
 approx = "0.5.1"
 divan = "0.1.17"
 rstest = "0.25.0"
+anyhow = "1.0.98"
 
 [workspace.lints.rust]
 missing_docs = "warn"
@@ -75,3 +78,6 @@ unwrap_used = "warn"
 fallible_impl_from = "warn"
 needless_collect = "warn"
 needless_pass_by_ref_mut = "warn"
+
+[workspace.metadata.typos]
+default.extend-words = { ratatui = "ratatui" }

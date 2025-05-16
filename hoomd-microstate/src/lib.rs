@@ -124,10 +124,9 @@ cannot be wrapped. MD models fail with an error should bodies or sites move in a
 way that cannot be wrapped.
 
 [`Microstate`] is generic on the type of boundary condition. The [`boundary`]
-module implements standard types and documents how you can implement custom
-implementations.
-
-TODO: Implement boundary conditions, then document.
+module implements standard types and documents how you can provide custom
+implementations. For example [`Square`](boundary::Square) restricts 2D
+particles inside a square.
 
 ## Ghost sites
 
@@ -140,14 +139,14 @@ TODO: Implement spatial search, then document.
 ## Constructing Microstate
 
 You will find many examples in this documentation using [`Microstate::new`].
-It is designed to be terse, is inflexible as a consequence.
+It is designed to be terse, and is inflexible as a consequence.
 [`Microstate::new`] always sets [`Open`](boundary::Open) boundary conditions and
 initializes the seed and step to 0.
 ```
 use hoomd_microstate::{Microstate, property::Point};
 use hoomd_vector::Cartesian;
 
-let microstate = Microstate::<Point<Cartesian<2>>>::new();
+let microstate = Microstate::<Cartesian<2>, Point<Cartesian<2>>>::new();
 ```
 
 When you need more control, use [`MicrostateBuilder`] to set the boundary conditions,
@@ -155,16 +154,19 @@ use a different seed or starting step:
 
 ```
 use hoomd_microstate::{Microstate, MicrostateBuilder, property::Point};
-use hoomd_microstate::boundary::Open;
+use hoomd_microstate::boundary::Square;
 use hoomd_vector::Cartesian;
 
-let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::with_boundary(Open)
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let square = Square { l: 10.0.try_into()? };
+
+let microstate = MicrostateBuilder::with_boundary(square)
     .seed(0x43abf1)
     .step(100_000)
-    .build();
+    .try_build()?;
+# Ok(())
+# }
 ```
-
-TODO: Show a non-trivial boundary condition.
 
 TODO: Show a GSD file example when implemented.
 
@@ -176,8 +178,9 @@ mod microstate;
 pub mod property;
 
 pub use microstate::{Microstate, MicrostateBuilder, Tagged};
-
 use property::Point;
+
+use thiserror::Error;
 
 /** Interactions in `hoomd-rs` apply between sites.
 
@@ -199,15 +202,18 @@ Find the center of all interaction sites in a [`Microstate`]:
 use hoomd_microstate::{Microstate, MicrostateBuilder, Body};
 use hoomd_vector::{Vector, Cartesian};
 
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
 let microstate = MicrostateBuilder::new()
     .bodies([Body::point(Cartesian::from([1.0, 0.0])),
              Body::point(Cartesian::from([-1.0, 2.0]))])
-    .build();
+    .try_build()?;
 
 let average_site_position = microstate.sites()
     .iter()
     .map(|site| site.properties.position)
     .sum::<Cartesian<2>>() / (microstate.sites().len() as f64);
+# Ok(())
+# }
 ```
 */
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -311,4 +317,17 @@ pub trait Transform<S> {
     */
     #[must_use]
     fn transform(&self, site_properties: &S) -> S;
+}
+
+/// Enumerate possible sources of error in fallible microstate methods.
+#[non_exhaustive]
+#[derive(Error, PartialEq, Debug)]
+pub enum Error {
+    /// Failed to add a body to a [`Microstate`].
+    #[error("failed to add body (tag={0})")]
+    AddBody(usize, #[source] boundary::Error),
+
+    /// Failed to update a body in a [`Microstate`].
+    #[error("failed to update body (tag={0})")]
+    UpdateBody(usize, #[source] boundary::Error),
 }
