@@ -87,7 +87,11 @@ impl HyperEllipsoid<3> {
     #[inline]
     #[must_use]
     /// Compute a matrix representation of the ellipsoid.
-    #[allow(clippy::many_single_char_names, dead_code)]
+    #[expect(
+        clippy::many_single_char_names,
+        dead_code,
+        reason = "Ported from HOOMD-Blue, with variable names maintained for consistency."
+    )]
     fn compute_ellipsoid_matrix<R>(&self, r_ij: &Cartesian<3>, o_ij: &R) -> Cartesian<10>
     where
         RotationMatrix<3>: From<R>,

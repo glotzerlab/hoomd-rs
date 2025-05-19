@@ -44,7 +44,7 @@ impl<'a, const N: usize, A: SupportFn<Cartesian<N>>, B: SupportFn<Cartesian<N>>>
             + *self.v_ij;
         sb_n - self.sa.support(&-n) // eq. 2.5.6 in GPG7
     }
-    /// Create a new SupportFunctor from a Rotation that can be converted into a RotMat
+    /// Create a new `SupportFunctor` from a Rotation that can be converted into a `RotationMatrix`
     #[inline]
     fn new<R: Rotation + Copy>(
         sa: &'a A,
@@ -145,7 +145,6 @@ where
         }
 
         if count >= XENOCOLLIDE_2D_MAX_ITER {
-            println!("\n\nWARNING! Exceeded max iterations\n\n");
             return true;
         }
     }
@@ -317,7 +316,6 @@ where
             (false, _, false) => v1 = v4, // OUTside v1 && OUTside v3 => eliminate v1
         }
         if count >= XENOCOLLIDE_3D_MAX_ITER {
-            println!("WARNING! Exceeded max iterations");
             return true;
         }
     }

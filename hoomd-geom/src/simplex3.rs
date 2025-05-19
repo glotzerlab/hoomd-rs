@@ -1,6 +1,9 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+/*! A tetrahedron in three dimensions. This struct should be viewed as a prototype for
+more complex geometries in addition to its standalone functionality.
+*/
 use std::{array, fmt};
 
 use hoomd_vector::{Cartesian, Cross, Rotate, RotationMatrix, Vector};
@@ -110,7 +113,7 @@ impl Simplex3 {
         ]
     }
 
-    /// Edge vectors, in the same order as get_edges and pointing left to right.
+    /// Edge vectors, in the same order as `get_edges` and pointing left to right.
     #[inline]
     #[must_use]
     pub fn get_edge_vectors(&self) -> [Cartesian<3>; 5] {
