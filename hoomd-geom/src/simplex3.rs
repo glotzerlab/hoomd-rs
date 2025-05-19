@@ -209,7 +209,7 @@ const _SEPARATING_EDGE_CASES: [(u8, u8, usize, usize); 6] = [
     (4, 8, 2, 3),
 ];
 
-/// Check if there exists a seperating plane containing the edge e shared by faces
+/// Check if there exists a separating plane containing the edge e shared by faces
 /// f0 and f1 of the tetrahedron.
 #[inline]
 #[must_use]
