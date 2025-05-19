@@ -125,7 +125,7 @@ fn sphere_fast_nd<const N: usize>(bencher: Bencher) {
                 create_offset::<N, _>(&mut rng),
             )
         })
-        .bench_local_values(|((s0, s1), (t, r))| black_box(s0.intersects_at(&s1, &t, &r)));
+        .bench_local_values(|((s0, s1), (t, r))| black_box(s0.intersects_at(&s1, &t, &Some(r))));
 }
 
 #[divan::bench]
@@ -138,10 +138,11 @@ fn cuboid_fast_2d(bencher: Bencher) {
             (
                 create_cuboid_pair::<2, _>(&mut rng),
                 create_offset_2d(&mut rng),
-                Angle::identity(),
             )
         })
-        .bench_local_values(|((c0, c1), (t, _), r)| black_box(c0.intersects_at(&c1, &t, &r)));
+        .bench_local_values(|((c0, c1), (t, _))| {
+            black_box(c0.intersects_at(&c1, &t, &None::<Angle>))
+        });
 }
 
 #[divan::bench]
@@ -187,7 +188,7 @@ fn cuboid_xenocollide_2d(bencher: Bencher) {
                 create_offset_2d(&mut rng),
             )
         })
-        .bench_local_values(|((c0, c1), (t, r))| black_box(collide2d(&c0, &c1, &t, &r)));
+        .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &Some(r))));
 }
 #[divan::bench]
 fn cuboid_xenocollide_3d(bencher: Bencher) {
@@ -199,10 +200,9 @@ fn cuboid_xenocollide_3d(bencher: Bencher) {
             (
                 create_cuboid_pair::<3, _>(&mut rng),
                 create_offset_3d(&mut rng),
-                Versor::identity(),
             )
         })
-        .bench_local_values(|((c0, c1), (t, _), r)| black_box(collide3d(&c0, &c1, &t, &r)));
+        .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &Some(r))));
 }
 
 #[divan::bench(consts = NUM_VERTICES, )]
