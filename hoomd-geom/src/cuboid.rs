@@ -4,7 +4,7 @@
 /*!Axis-aligned N-cuboids, particularly used for bounding volume hierarchies.*/
 use crate::intersects::IntersectsAt;
 use crate::xenocollide::{collide2d, collide3d};
-use crate::{SupportFn, Volume};
+use crate::{Shape, Sphere, SupportFn, Volume};
 use hoomd_vector::{Cartesian, RotationMatrix};
 use hoomd_vector::{Rotate, Rotation};
 use itertools::multizip;
@@ -15,7 +15,7 @@ use std::cmp::PartialEq;
 #[derive(Clone, Copy, Debug)]
 pub struct Cuboid<const N: usize> {
     /// The lengths of each edge of the cuboid.
-    pub edge_lengths: Cartesian<N>,
+    pub edge_lengths: Cartesian<N>, // TODO: use PositiveReal
 }
 
 impl Cuboid<3> {
@@ -36,6 +36,13 @@ impl Cuboid<3> {
     #[must_use]
     pub fn c(&self) -> f64 {
         self.edge_lengths[2]
+    }
+}
+
+impl<const N: usize> Shape<N> for Cuboid<N> {
+    #[inline]
+    fn bounding_sphere(&self) -> Sphere<N> {
+        Sphere::from(self.edge_lengths.into_iter().fold(f64::NAN, f64::max))
     }
 }
 
@@ -215,6 +222,19 @@ mod tests {
                 0.0
             }
         );
+    }
+    #[rstest(
+        _n => [
+            PhantomData::<Cuboid<1>>,
+            PhantomData::<Cuboid<2>>,
+            PhantomData::<Cuboid<3>>,
+            PhantomData::<Cuboid<4>>
+        ],
+        l => [0.0, 1e-6, 1.0, 3.456, 99_999_999.9],
+    )]
+    fn test_box_bounding_sphere<const N: usize>(_n: PhantomData<Cuboid<N>>, l: f64) {
+        let c = Cuboid::from([l; N]);
+        assert_relative_eq!(c.bounding_sphere().r, l);
     }
 
     #[rstest(
