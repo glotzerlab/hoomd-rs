@@ -26,10 +26,7 @@ assert!(s0.intersects_at(&s1, &[1.0, 0.0, 0.0].into(), &Some(Versor::default()))
 ```
 */
 
-use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
-
-use crate::{SupportFn, xenocollide::collide3d};
-// use crate::Shape; // TODO: do we want this as a trait bound on S?
+use hoomd_vector::{Rotate, Vector};
 
 /**
 Define a position and orientation-independent intersection based solely on the geometry

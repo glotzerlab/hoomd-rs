@@ -2,7 +2,6 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Common geometric primitives that implement only a small number of operations.*/
-// TODO: make better use of enums
 use crate::{IntersectsAt, SupportFn, xenocollide::collide3d};
 
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};

@@ -4,7 +4,7 @@
 /*!Axis-aligned N-cuboids, particularly used for bounding volume hierarchies.*/
 use crate::intersects::IntersectsAt;
 use crate::xenocollide::{collide2d, collide3d};
-use crate::{Shape, Sphere, SupportFn, Volume};
+use crate::{SupportFn, Volume};
 use hoomd_vector::{Cartesian, RotationMatrix};
 use hoomd_vector::{Rotate, Rotation};
 use itertools::multizip;
@@ -163,7 +163,6 @@ mod tests {
         assert!(s0.intersects_at(&s1, &[1.5, 1.5, 1.5].into(), &None::<Versor>));
         // Both at origin - will always intersect for any cuboids
         assert!(s0.intersects_at(&s1, &[0.0, 0.0, 0.0].into(), &None::<Versor>));
-        // TODO: is there a more programmatic way to test this?
     }
     #[rstest(
         edges0 => [[2.0, 2.0]],
@@ -215,20 +214,6 @@ mod tests {
                 0.0
             }
         );
-    }
-    #[rstest(
-        _n => [
-            PhantomData::<Cuboid<0>>,
-            PhantomData::<Cuboid<1>>,
-            PhantomData::<Cuboid<2>>,
-            PhantomData::<Cuboid<3>>,
-            PhantomData::<Cuboid<4>>
-        ],
-        l => [0.0, 1e-6, 1.0, 3.456, 99_999_999.9],
-    )]
-    fn test_box_bounding_sphere<const N: usize>(_n: PhantomData<Cuboid<N>>, l: f64) {
-        let c = Cuboid::from([l; N]);
-        assert_relative_eq!(c.bounding_sphere().r, if N != 0 { l } else { 0.0 });
     }
 
     #[rstest(

@@ -147,13 +147,11 @@ where
         if count >= XENOCOLLIDE_2D_MAX_ITER {
             println!("\n\nWARNING! Exceeded max iterations\n\n");
             return true;
-            // TODO: should this return an Option<bool> to determine error state?
         }
     }
 }
 
 /// Minkowski Portal Refinement-based collision detection in 3d
-// #[allow(clippy::collapsible_else_if)] // TODO: temp
 #[inline(never)]
 pub fn collide3d<R: Rotation + Copy, A: SupportFn<Cartesian<3>>, B: SupportFn<Cartesian<3>>>(
     sa: &A,
