@@ -7,9 +7,10 @@ Traits for determining the intersection between various bodies.
 Most `Shape`s should implement [`IntersectsAt`] to allow for the calculation of
 intersections between two bodies without a built-in origin. This definition is compatible
 with HPMC and allows for the method's definition without requiring internal state regarding
-the position or orientation of each body. [`Intersects`] provides an alternative for
-centered and oriented bodies, and can be automatically derived from [`Intersects`] in
-some cases.
+the position or orientation of each body.
+For non-orientable shapes, or for bodies who have special intersection
+tests for particular orientations, [`IntersectsAt`] can be written to accept an Option
+rather than a pure Rotation.
 
 ```
 use hoomd_geom::{Sphere, IntersectsAt};
@@ -18,7 +19,9 @@ use hoomd_vector::Versor;
 let s0 = Sphere::<3>::from(1.0);
 let s1 = Sphere::<3>::from(1.0);
 
-assert!(s0.intersects_at(&s1, &[1.0, 0.0, 0.0].into(), &Versor::default()))
+// Spheres are not orientable, so we can provide a None rotation for clarity.
+assert!(s0.intersects_at(&s1, &[1.0, 0.0, 0.0].into(), &None::<Versor>));
+assert!(s0.intersects_at(&s1, &[1.0, 0.0, 0.0].into(), &Some(Versor::default())));
 
 ```
 */
