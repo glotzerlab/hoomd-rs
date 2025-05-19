@@ -39,7 +39,7 @@ where
     T: SupportFn<Cartesian<3>>,
 {
     /// Determine whether a convex object intersects another shape at some position and orientation.
-    type OptionalRotation = R; // In most cases, orientation matters and 
+    type OptionalRotation = R; // In most cases, orientation matters and
     #[inline]
     fn intersects_at(&self, other: &S, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
         collide3d(self, other, v_ij, o_ij)
@@ -47,4 +47,4 @@ where
 }
 ```
 
-To implement `IntersectsAt` for concave geometries, subdivide the primitive into convex subsets and apply the appropriate collision detection algorithms. While no examples are currently included with `hoomd-geom` a `ShapeUnion` struct would be the most natural extension. 
+To implement `IntersectsAt` for concave geometries, subdivide the primitive into convex subsets and apply the appropriate collision detection algorithms. While no examples are currently included with `hoomd-geom` a `ShapeUnion` struct would be the most natural extension.

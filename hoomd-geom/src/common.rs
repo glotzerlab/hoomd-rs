@@ -35,7 +35,6 @@ impl From<(f64, f64)> for Capsule {
     }
 }
 
-#[allow(clippy::expect_used)]
 impl SupportFn<Cartesian<3>> for Capsule {
     #[inline]
     fn support(&self, n: &Cartesian<3>) -> Cartesian<3> {
