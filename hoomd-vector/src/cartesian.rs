@@ -1004,7 +1004,7 @@ mod tests {
             Err(Error::InvalidVectorMagnitude)
         ));
     }
-    #[allow(clippy::print_stdout)]
+    #[expect(clippy::print_stdout, reason = "Testing output.")]
     #[test]
     fn test_rotationmatrix_display() {
         println!("\n{}", RotationMatrix::<2>::default());
