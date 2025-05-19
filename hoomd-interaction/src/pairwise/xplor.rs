@@ -152,12 +152,12 @@ mod tests {
 
         // Values should not be the same between r_on and r_cut
         assert_abs_diff_ne!(
-            xplor_lj.energy((r_on + r_cut) / 2.0),
-            lj.energy((r_on + r_cut) / 2.0)
+            xplor_lj.energy(f64::midpoint(r_on, r_cut)),
+            lj.energy(f64::midpoint(r_on, r_cut))
         );
         assert_abs_diff_ne!(
-            xplor_lj.force((r_on + r_cut) / 2.0),
-            lj.force((r_on + r_cut) / 2.0)
+            xplor_lj.force(f64::midpoint(r_on, r_cut)),
+            lj.force(f64::midpoint(r_on, r_cut))
         );
 
         // Zero crossing

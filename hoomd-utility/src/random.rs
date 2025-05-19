@@ -62,6 +62,10 @@ use rand::{Rng, SeedableRng};
     ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[expect(
+    clippy::struct_field_names,
+    reason = "The counters must be distinguishable from the indices."
+)]
 pub struct Counter {
     /// The current simulation step.
     step: u64,
