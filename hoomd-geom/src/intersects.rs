@@ -23,7 +23,9 @@ assert!(s0.intersects_at(&s1, &[1.0, 0.0, 0.0].into(), &Versor::default()))
 ```
 */
 
-use hoomd_vector::{Rotate, Vector};
+use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
+
+use crate::{SupportFn, xenocollide::collide3d};
 // use crate::Shape; // TODO: do we want this as a trait bound on S?
 
 /**
@@ -39,7 +41,8 @@ pub trait Intersects<S> {
 Define a position and orientation-dependent intersection between two bodies.
 */
 pub trait IntersectsAt<S, V: Vector, R: Rotate<V>> {
+    /// The associated Rotation type for a given intersection method.
     type OptionalRotation;
-    ///Determine whether a Particle intersects another shape at some position and orientation.
+    /// Determine whether a Particle intersects another shape at some position and orientation.
     fn intersects_at(&self, other: &S, v_ij: &V, o_ij: &Self::OptionalRotation) -> bool;
 }

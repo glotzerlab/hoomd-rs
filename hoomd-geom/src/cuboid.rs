@@ -3,8 +3,9 @@
 
 /*!Axis-aligned N-cuboids, particularly used for bounding volume hierarchies.*/
 use crate::intersects::IntersectsAt;
+use crate::xenocollide::{collide2d, collide3d};
 use crate::{SupportFn, Volume};
-use hoomd_vector::Cartesian;
+use hoomd_vector::{Cartesian, RotationMatrix};
 use hoomd_vector::{Rotate, Rotation};
 use itertools::multizip;
 use std::cmp::PartialEq;
@@ -90,36 +91,55 @@ impl<const N: usize> Cuboid<N> {
     }
 }
 
-impl<const N: usize, R: Rotate<Cartesian<N>> + Rotation + PartialEq>
-    IntersectsAt<Cuboid<N>, Cartesian<N>, R> for Cuboid<N>
+impl<R> IntersectsAt<Cuboid<2>, Cartesian<2>, R> for Cuboid<2>
+where
+    R: Rotate<Cartesian<2>> + Rotation + PartialEq + Copy,
+    RotationMatrix<2>: From<R>,
 {
-    // TODO: Should o_ij be an Option?
-    /**
-    Determine the intersection between two axis-aligned cuboids.
-    MUST be passed an identity `Rotation` or the method will panic.
-    */
     type OptionalRotation = Option<R>;
-    #[inline] // TODO: make orientation an option! unwrap_or_default for other cases
+
+    #[inline]
     fn intersects_at(
         &self,
-        other: &Cuboid<N>,
-        v_ij: &Cartesian<N>,
+        other: &Cuboid<2>,
+        v_ij: &Cartesian<2>,
         o_ij: &Self::OptionalRotation,
     ) -> bool {
-        if o_ij.is_none() {
-            let other_mins = other.minimal_extents() + *v_ij;
-            let other_maxs = other.maximal_extents() + *v_ij;
-            multizip((
-                self.minimal_extents(),
-                other_maxs,
-                self.maximal_extents(),
-                other_mins,
-            ))
-            .all(|(l_min, o_max, l_max, o_min)| (l_min <= o_max) && (l_max >= o_min))
-        } else {
-            false
-        } // TODO: implement other path!
+        match o_ij {
+            None => aabb_intersects(self, other, v_ij),
+            Some(rotation) => collide2d(self, other, v_ij, rotation),
+        }
     }
+}
+
+impl<R> IntersectsAt<Cuboid<3>, Cartesian<3>, R> for Cuboid<3>
+where
+    R: Rotate<Cartesian<3>> + Rotation + PartialEq + Copy,
+    RotationMatrix<3>: From<R>,
+{
+    type OptionalRotation = Option<R>;
+
+    #[inline]
+    fn intersects_at(
+        &self,
+        other: &Cuboid<3>,
+        v_ij: &Cartesian<3>,
+        o_ij: &Self::OptionalRotation,
+    ) -> bool {
+        match o_ij {
+            None => aabb_intersects(self, other, v_ij),
+            Some(rotation) => collide3d(self, other, v_ij, rotation),
+        }
+    }
+}
+
+/// Determine whether two *axis-aligned* cuboids intersect.
+#[inline]
+fn aabb_intersects<const N: usize>(a: &Cuboid<N>, b: &Cuboid<N>, v_ij: &Cartesian<N>) -> bool {
+    let b_mins = b.minimal_extents() + *v_ij;
+    let b_maxs = b.maximal_extents() + *v_ij;
+    multizip((a.minimal_extents(), b_maxs, a.maximal_extents(), b_mins))
+        .all(|(a_min, b_max, a_max, b_min)| (a_min <= b_max) && (a_max >= b_min))
 }
 
 #[cfg(test)]
