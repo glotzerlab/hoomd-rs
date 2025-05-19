@@ -34,14 +34,15 @@ jobs:
           # - macos-14
         rust:
           # Test multiple rust versions on multiple platforms in debug mode.
-          - 1.85.0
+          - 1.86.0
+          - 1.87.0
         mode:
          - debug
 
         include:
         # Add a release build on linux with the latest version of rust.
         - os: ubuntu-24.04
-          rust: 1.85.0
+          rust: 1.87.0
           mode: release
 
     steps:

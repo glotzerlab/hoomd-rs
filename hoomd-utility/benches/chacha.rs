@@ -12,7 +12,7 @@ use divan::counter::ItemsCount;
 use divan::{self, Bencher, black_box};
 use rand::{Rng, SeedableRng};
 
-use hoomd_random::Counter;
+use hoomd_utility::random::Counter;
 
 fn main() {
     divan::main();

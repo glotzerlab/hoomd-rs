@@ -1,14 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-#![doc(
-    html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
-)]
-#![doc(
-    html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
-)]
-
-/*! Helpers to enable consistent use of random numbers througought hoomd-rs.
+/*! Helpers that enable consistent use of random numbers througought hoomd-rs.
 */
 
 use chacha20::ChaCha8Rng;
@@ -56,7 +49,7 @@ use rand::{Rng, SeedableRng};
     # Example
 
     ```
-    use hoomd_random::Counter;
+    use hoomd_utility::random::Counter;
     use rand::Rng;
 
     # let step = 100_000;
@@ -69,6 +62,10 @@ use rand::{Rng, SeedableRng};
     ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[expect(
+    clippy::struct_field_names,
+    reason = "The counters must be distinguishable from the indices."
+)]
 pub struct Counter {
     /// The current simulation step.
     step: u64,
@@ -96,7 +93,7 @@ impl Counter {
     # Example
 
     ```
-    use hoomd_random::Counter;
+    use hoomd_utility::random::Counter;
 
     # let step = 100_000;
     # let substep = 10;
@@ -127,8 +124,7 @@ impl Counter {
     # Example
 
     ```
-    use hoomd_random::Counter;
-    use std::cmp;
+    use hoomd_utility::random::Counter;
 
     # let step = 100_000;
     # let substep = 10;
@@ -136,7 +132,7 @@ impl Counter {
     # let i = 12;
     # let j = 152;
     let counter = Counter::new(step, substep, seed)
-        .indices(cmp::min(i, j), cmp::max(i, j));
+        .indices(i.max(j), i.min(j));
     ```
     */
     #[must_use]
@@ -154,7 +150,7 @@ impl Counter {
     # Example
 
     ```
-    use hoomd_random::Counter;
+    use hoomd_utility::random::Counter;
 
     # let step = 100_000;
     # let substep = 10;
@@ -179,7 +175,7 @@ impl Counter {
     # Example
 
     ```
-    use hoomd_random::Counter;
+    use hoomd_utility::random::Counter;
 
     # let step = 100_000;
     # let substep = 10;
@@ -207,7 +203,7 @@ impl Counter {
     # Example
 
     ```
-    use hoomd_random::Counter;
+    use hoomd_utility::random::Counter;
 
     # let step = 100_000;
     # let substep = 10;
@@ -228,7 +224,7 @@ impl Counter {
     # Example
 
     ```
-    use hoomd_random::Counter;
+    use hoomd_utility::random::Counter;
     use rand::Rng;
 
     # let step = 100_000;

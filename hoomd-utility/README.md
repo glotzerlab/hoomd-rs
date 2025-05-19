@@ -1,5 +1,5 @@
-# hoomd-vector
+# hoomd-utility
 
-Vector math library for [hoomd-rs].
+Utilities for [hoomd-rs].
 
 [hoomd-rs]: https://github.com/glotzerlab/hoomd-rs

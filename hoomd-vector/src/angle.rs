@@ -18,6 +18,15 @@ counter-clockwise.
 
 ## Constructing [`Angle`]
 
+The default Angle rotates by 0 radians:
+
+```
+use hoomd_vector::Angle;
+
+let a = Angle::default();
+assert_eq!(a.theta, 0.0)
+```
+
 Create an [`Angle`] with a given value:
 ```
 use hoomd_vector::Angle;
@@ -63,7 +72,7 @@ let c = a.combine(&b);
 assert_eq!(c.theta, PI/4.0);
 ```
 */
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Angle {
     /// Rotation angle (radians).
     pub theta: f64,
@@ -271,7 +280,7 @@ impl Distribution<Angle> for StandardUniform {
             clippy::expect_used,
             reason = "This constants chosen for this distribution are valid"
         )]
-        let uniform = Uniform::new(0.0, 2.0 * PI).expect("a valid distribution");
+        let uniform = Uniform::new(0.0, 2.0 * PI).expect("hard-coded distribution should be valid");
         Angle::from(uniform.sample(rng))
     }
 }

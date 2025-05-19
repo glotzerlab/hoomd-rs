@@ -35,19 +35,27 @@ fn energy_2d(bencher: Bencher) {
 
     let masks = [
         Patch::new(
-            [1.0, 0.0].try_into().expect("valid unit vector"),
+            [1.0, 0.0]
+                .try_into()
+                .expect("hard-coded vector should have non-zero length"),
             (PI / 8.0).cos(),
         ),
         Patch::new(
-            [-1.0, 0.0].try_into().expect("valid unit vector"),
+            [-1.0, 0.0]
+                .try_into()
+                .expect("hard-coded vector should have non-zero length"),
             (PI / 16.0).cos(),
         ),
         Patch::new(
-            [0.0, 1.0].try_into().expect("valid unit vector"),
+            [0.0, 1.0]
+                .try_into()
+                .expect("hard-coded vector should have non-zero length"),
             (PI / 16.0).cos(),
         ),
         Patch::new(
-            [0.0, -1.0].try_into().expect("valid unit vector"),
+            [0.0, -1.0]
+                .try_into()
+                .expect("hard-coded vector should have non-zero length"),
             (PI / 16.0).cos(),
         ),
     ];
@@ -72,19 +80,27 @@ fn energy_3d(bencher: Bencher) {
 
     let masks = [
         Patch::new(
-            [1.0, 0.0, 0.0].try_into().expect("valid unit vector"),
+            [1.0, 0.0, 0.0]
+                .try_into()
+                .expect("hard-coded vector should have non-zero length"),
             (PI / 16.0).cos(),
         ),
         Patch::new(
-            [-1.0, 0.0, 0.0].try_into().expect("valid unit vector"),
+            [-1.0, 0.0, 0.0]
+                .try_into()
+                .expect("hard-coded vector should have non-zero length"),
             (PI / 16.0).cos(),
         ),
         Patch::new(
-            [0.0, 1.0, 0.0].try_into().expect("valid unit vector"),
+            [0.0, 1.0, 0.0]
+                .try_into()
+                .expect("hard-coded vector should have non-zero length"),
             (PI / 16.0).cos(),
         ),
         Patch::new(
-            [0.0, -1.0, 0.0].try_into().expect("valid unit vector"),
+            [0.0, -1.0, 0.0]
+                .try_into()
+                .expect("hard-coded vector should have non-zero length"),
             (PI / 16.0).cos(),
         ),
     ];
@@ -98,9 +114,3 @@ fn energy_3d(bencher: Bencher) {
         })
         .bench_local_values(|(r_ij, angle)| black_box(angular_mask.energy(&r_ij, &angle)));
 }
-
-// To inspect the energy function with cargo-show-asm
-// #[no_mangle]
-// pub fn asm(angular_mask: &AngularMask<LennardJones, Cartesian<3>>, r_ij: &Cartesian<3>, v: &Versor) -> f64 {
-//     angular_mask.energy(r_ij, v)
-// }

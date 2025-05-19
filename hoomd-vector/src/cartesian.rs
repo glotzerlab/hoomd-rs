@@ -5,7 +5,7 @@
 */
 use std::array;
 use std::fmt;
-use std::iter::zip;
+use std::iter::{Sum, zip};
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
@@ -20,6 +20,14 @@ use crate::{Cross, Error, Rotate, Unit, Vector};
 [`Cartesian`] is the canonical implementation of [`Vector`].
 
 ## Constructing vectors
+
+The default is the 0 vector:
+```
+use hoomd_vector::Cartesian;
+
+let v = Cartesian::<3>::default();
+assert_eq!(v, [0.0; 3].into())
+```
 
 Create a vector with an array of coordinates:
 ```
@@ -66,6 +74,15 @@ use hoomd_vector::Cartesian;
 
 let a = Cartesian::from((1.0, 2.0));
 let b = Cartesian::from((a[1], 0.0));
+```
+
+Compute the sum of an iterator over vectors:
+```
+use hoomd_vector::Cartesian;
+
+let total: Cartesian<2> = [Cartesian::from((1.0, 2.0)), Cartesian::from((3.0, 4.0))]
+    .into_iter()
+    .sum();
 ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -412,7 +429,8 @@ impl<const N: usize> Distribution<Cartesian<N>> for StandardUniform {
             clippy::expect_used,
             reason = "This constants chosen for this distribution are valid"
         )]
-        let uniform = Uniform::new_inclusive(-1.0, 1.0).expect("a valid distribution");
+        let uniform = Uniform::new_inclusive(-1.0, 1.0)
+            .expect("hard-coded range should form a valid distribution");
         Cartesian {
             coordinates: array::from_fn(|_| uniform.sample(rng)),
         }
@@ -483,6 +501,16 @@ where
     #[inline]
     fn index_mut(&mut self, index: T) -> &mut Self::Output {
         &mut self.coordinates[index]
+    }
+}
+
+impl<const N: usize> Sum for Cartesian<N> {
+    #[inline]
+    fn sum<I>(iter: I) -> Self
+    where
+        I: Iterator<Item = Self>,
+    {
+        iter.fold(Cartesian::default(), |acc, x| acc + x)
     }
 }
 
@@ -944,32 +972,36 @@ mod tests {
     #[test]
     fn to_unit() {
         let a = Cartesian::from((2.0, 0.0, 0.0));
-        let (Unit(unit_a), _) = a.to_unit().expect("non-zero vector");
+        let (Unit(unit_a), _) = a
+            .to_unit()
+            .expect("hard-coded vector should have non-zero length");
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
         let (Unit(unit_a), _) = a.to_unit_unchecked();
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
-        let Unit(unit_a) =
-            Unit::<Cartesian<3>>::try_from([1.0, 0.0, 0.0]).expect("non-zero vector");
+        let Unit(unit_a) = Unit::<Cartesian<3>>::try_from([1.0, 0.0, 0.0])
+            .expect("hard-coded vector should have non-zero length");
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
         let a = Cartesian::from((3.0, 0.0, 4.0));
-        let (Unit(unit_a), _) = a.to_unit().expect("non-zero vector");
+        let (Unit(unit_a), _) = a
+            .to_unit()
+            .expect("hard-coded vector should have non-zero length");
         assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
         let (Unit(unit_a), _) = a.to_unit_unchecked();
         assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
-        let Unit(unit_a) =
-            Unit::<Cartesian<3>>::try_from([3.0, 0.0, 4.0]).expect("non-zero vector");
+        let Unit(unit_a) = Unit::<Cartesian<3>>::try_from([3.0, 0.0, 4.0])
+            .expect("hard-coded vector should have non-zero length");
         assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
         let a = Cartesian::from((0.0, 0.0, 0.0));
-        assert!(matches!(a.to_unit(), Err(Error::InvalidMagnitude)));
+        assert!(matches!(a.to_unit(), Err(Error::InvalidVectorMagnitude)));
         assert!(matches!(
             Unit::<Cartesian<3>>::try_from([0.0, 0.0, 0.0]),
-            Err(Error::InvalidMagnitude)
+            Err(Error::InvalidVectorMagnitude)
         ));
     }
     #[allow(clippy::print_stdout)]
