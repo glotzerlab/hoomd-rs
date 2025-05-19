@@ -143,7 +143,7 @@ fn aabb_intersects<const N: usize>(a: &Cuboid<N>, b: &Cuboid<N>, v_ij: &Cartesia
 }
 
 #[cfg(test)]
-#[expect(clippy::used_underscore_binding)]
+#[expect(clippy::used_underscore_binding, reason = "Required for const tests.")]
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
