@@ -541,7 +541,7 @@ impl<const N: usize> RotationMatrix<N> {
         self.rows
     }
 
-    /// Invert a RotationMatrix. This is equivalent to R^T
+    /// Invert a `RotationMatrix`. This is equivalent to R^T
     #[inline]
     #[must_use]
     pub fn inverted(self) -> Self {
