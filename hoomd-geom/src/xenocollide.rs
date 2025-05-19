@@ -395,9 +395,3 @@ mod tests {
         assert_eq!(overlaps, c0.intersects_at(&c1, &v.into(), &None::<Versor>),);
     }
 }
-
-// TODO:
-// 1. get vertices from tetAtet and verify they overlap/don't overlap in HOOMD
-// DONE: hoomd properly detects no overlap. => Bug in Xenocollide
-// 2. Hard code vertices in tet_a_tet.h and verify they overlap/don't
-// DONE: vertices overlap/don't overlap where expected => Bug in tetAtet

@@ -7,6 +7,7 @@ use crate::{IntersectsAt, SupportFn, xenocollide::collide3d};
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
 
 /// A [`Cylinder`] in three dimensions.
+#[expect(dead_code, reason = "End users will make use of this struct.")]
 #[derive(Clone, Copy, Debug)]
 pub struct Cylinder {
     /// Radius of the [`Cylinder`]
