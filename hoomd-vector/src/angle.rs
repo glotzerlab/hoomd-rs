@@ -137,23 +137,6 @@ impl From<Angle> for RotationMatrix<2> {
     }
 }
 
-impl Default for Angle {
-    /** Create a rotation by 0 radians.
-
-    # Example
-    ```
-    use hoomd_vector::Angle;
-
-    let a = Angle::default();
-    assert_eq!(a.theta, 0.0)
-    ```
-    */
-    #[inline]
-    fn default() -> Self {
-        Angle::from(0.0)
-    }
-}
-
 impl From<f64> for Angle {
     /** Create a rotation by `theta` radians.
 
