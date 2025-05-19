@@ -42,7 +42,11 @@ impl Cuboid<3> {
 impl<const N: usize> Shape<N> for Cuboid<N> {
     #[inline]
     fn bounding_sphere(&self) -> Sphere<N> {
-        Sphere::from(self.edge_lengths.into_iter().fold(f64::NAN, f64::max))
+        // f64::max ignores nan, so we always get the "correct" sphere
+        match N {
+            0 => Sphere::from(0.0),
+            _ => Sphere::from(self.edge_lengths.into_iter().fold(f64::NAN, f64::max)),
+        }
     }
 }
 
@@ -225,6 +229,7 @@ mod tests {
     }
     #[rstest(
         _n => [
+            PhantomData::<Cuboid<0>>,
             PhantomData::<Cuboid<1>>,
             PhantomData::<Cuboid<2>>,
             PhantomData::<Cuboid<3>>,
@@ -234,7 +239,7 @@ mod tests {
     )]
     fn test_box_bounding_sphere<const N: usize>(_n: PhantomData<Cuboid<N>>, l: f64) {
         let c = Cuboid::from([l; N]);
-        assert_relative_eq!(c.bounding_sphere().r, l);
+        assert_relative_eq!(c.bounding_sphere().r, if N != 0 { l } else { 0.0 });
     }
 
     #[rstest(
