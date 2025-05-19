@@ -19,9 +19,6 @@ This trait requires a dimension `N` and a coordinate system defined by a [`Vecto
 pub trait Shape<const N: usize> {
     /// Bounding sphere. Maybe should be part of the Particle trait?
     fn bounding_sphere(&self) -> Sphere<N>; // NOT minimal bounding sphere: just a small one
-    // NOTE: HPMC will often access the (centered) bounding sphere - should be cached?
-
-    // fn is_inside(&self, v: V) -> bool;
 }
 
 /**
