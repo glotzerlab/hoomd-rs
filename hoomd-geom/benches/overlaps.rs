@@ -16,7 +16,7 @@ use hoomd_geom::{
 };
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
-use hoomd_vector::{Angle, Cartesian, Rotation, RotationMatrix, Versor};
+use hoomd_vector::{Angle, Cartesian, RotationMatrix, Versor};
 
 #[inline(never)]
 fn asm_collide3d() {
@@ -59,7 +59,7 @@ fn create_simplex_pair<R: Rng>(rng: &mut R) -> (Simplex3, Simplex3) {
         ]),
     )
 }
-/// Create a pair of N-dipyramids with random half-heights between 0 and h_max
+/// Create a pair of N-dipyramids with random half-heights between 0 and `h_max`
 fn create_dipyramid_pair<const N: usize, R: Rng>(
     rng: &mut R,
     h_max: f64,

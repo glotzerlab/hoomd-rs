@@ -380,8 +380,8 @@ mod tests {
     use crate::xenocollide::collide3d;
 
     use super::*;
-    use hoomd_vector::{Quaternion, Rotation, Unit, Versor};
-    use rand::{Rng, SeedableRng, rngs::StdRng};
+    use hoomd_vector::{Quaternion, Rotation, Versor};
+
     use rstest::rstest;
 
     #[test]
