@@ -43,6 +43,7 @@ impl<const N: usize> Shape<N> for Cuboid<N> {
     #[inline]
     fn bounding_sphere(&self) -> Sphere<N> {
         // f64::max ignores nan, so we always get the "correct" sphere
+        // TODO: I think this math is incorrect - we actually need the norm to the vertices
         match N {
             0 => Sphere::from(0.0),
             _ => Sphere::from(self.edge_lengths.into_iter().fold(f64::NAN, f64::max)),
