@@ -81,19 +81,26 @@ impl<const N: usize> FromIterator<Cartesian<N>> for ConvexPolytope<N> {
     }
 }
 
-#[allow(clippy::expect_used)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "Unwrap case is handled in a match statement."
+)]
 impl<const N: usize> SupportFn<Cartesian<N>> for ConvexPolytope<N> {
     #[inline]
     fn support(&self, n: &Cartesian<N>) -> Cartesian<N> {
-        *self
-            .vertices
-            .iter()
-            .max_by(|a, b| {
-                a.dot(n)
-                    .partial_cmp(&b.dot(n))
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            })
-            .expect("Support function not valid with 0 vertices!")
+        match N {
+            0 => Cartesian::<N>::default(),
+            1 => self.vertices[0],
+            _ => *self
+                .vertices
+                .iter()
+                .max_by(|a, b| {
+                    a.dot(n)
+                        .partial_cmp(&b.dot(n))
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
+                .unwrap(),
+        }
     }
 }
 
