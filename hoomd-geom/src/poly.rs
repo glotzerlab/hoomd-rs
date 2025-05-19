@@ -85,17 +85,15 @@ impl<const N: usize> FromIterator<Cartesian<N>> for ConvexPolytope<N> {
 impl<const N: usize> SupportFn<Cartesian<N>> for ConvexPolytope<N> {
     #[inline]
     fn support(&self, n: &Cartesian<N>) -> Cartesian<N> {
-        let n = *n / n.norm(); // TODO: does this need to be normalized?
         *self
             .vertices
             .iter()
             .max_by(|a, b| {
-                a.dot(&n)
-                    .partial_cmp(&b.dot(&n))
+                a.dot(n)
+                    .partial_cmp(&b.dot(n))
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
             .expect("Support function not valid with 0 vertices!")
-        // TODO: could test hand-coded SIMD here
     }
 }
 
