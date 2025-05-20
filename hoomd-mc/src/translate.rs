@@ -35,7 +35,7 @@ pub struct Translate {
     pub maximum_distance: PositiveReal,
 }
 
-impl<B, V> LocalTrial<B> for Translate
+impl<V, B> LocalTrial<B> for Translate
 where
     B: Position<Vector = V>,
     V: Vector,

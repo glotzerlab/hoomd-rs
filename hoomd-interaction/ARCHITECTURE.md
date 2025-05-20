@@ -99,7 +99,7 @@ to handle the orphan rule with both base interactions and models in the
 same crate/module. Callers are still free to use the base type implementations
 without the models.
 
-## Hamiltonian
+### Hamiltonian
 
 In physics, the **Hamiltonian** is the sum of all the energies (potential and
 kinetic) that apply to a given system. It turns out to be problematic to expose
@@ -119,7 +119,7 @@ various terms of the Hamiltonian. The concept of a Hamiltonian will appear, but
 in more focused cases. MC trial moves will take a `hamiltonian` argument that
 implements `TotalEnergy`. It will appear more implicitly in MD.
 
-## TotalEnergy
+### TotalEnergy
 
 The **energy** of the system defines how the bodies of a microstate interact.
 The `TotalEnergy` trait describes a type that computes the energy of a given
@@ -131,12 +131,12 @@ TODO: Provide a convenient mechanism to add multiple energies together.
 One solution would be to implement `Energy` for a heterogeneous tuple
 where each element implements `Energy`.
 
-## Forces and torques
+### Forces and torques
 
 TODO: Determine how to implement force and torque calculations on these types
 for MD.
 
-## Infinite energies
+### Infinite energies
 
 The `TotalEnergy` trait must serve the needs of both MD and MC simulations.
 MD simulations will call `total_energy` only for logging and rely mainly
@@ -147,7 +147,7 @@ infinite potentials. To improve performance, the `TotalEnergy` implementations
 should exit early after encountering the first infinity as there is no need to
 spend time computing values that will not change the total.
 
-## Layers of abstraction
+### Layers of abstraction
 
 `hoomd_model` breaks each energy/force computation up into multiple layers.
 For example, the external potential module defines the `SiteEnergy` trait
@@ -165,9 +165,6 @@ type. Rust does not allow multiple blanket implementations (even if they do not
 overlap). In other potentials, such as cutoff pair energies, the wrapper type
 will also hold parameters (e.g. r_cut).
 
-Should the user want to call the base type energy method (e.g. `energy(&self, r:
-&V)`), they can call it on the inner type of the wrapper.
-
 In this way, a user can customize force and energy computations at any
 level. To use a new functional form for an external potential, the user could
 implement `SiteEnergy` for their type. To apply site-specific potentials
@@ -175,18 +172,23 @@ implement `SiteEnergy` for their type. To apply site-specific potentials
 appropriate logic (possibly using types internally). Lastly, the user could
 implement an entirely custom implementation of `TotalEnergy`.
 
+Similarly, `SitePairEnergy` describes a type that can compute an energy between
+a pair of sites (as a function of their properties). The wrappers `Isotropic`
+and `Anisotropic` implement this for the implement `SitePairEnergy` for the
+potentials described above. `CutoffPair` implements `TotalEnergy` for pairwise
+interactions that are cutoff to 0 at a given distance `r_cut`.
+
 ## Type dependent parameters
 
 TODO: Sketch out how enums and `SiteEnergy`/`SitePairEnergy` work with match expressions.
 
+## Cutoff potentials, spatial data structures, and periodic boundary conditions
 
-* Merge interatcion and model. This allows the SiteEnergy implementation for
-  each potential form to exist next to the base implementation.
-* Implement SiteEnergy for Linear directly, or wrap it in a Uniform/Single type
-  indicate that it applies the same to all sites? The latter seems redundant...
-  but it will be necessary for the pair energies as there are many that implement
-  the same interface via a trait.
-* Create a type External that holds an inner `SiteEnergy` and implements
-  `TotalEnergy`. That way, the code can be reused for every `SiteEnergy` type.
-* Possibly "inherit" `SiteEnergy` from the inner type? That one, one variable
-  can do it all.
+`CutoffPair` needs to find all sites (including ghost sites with periodic
+boundaries) that are close to a given point in space. The `r_cut` value
+thus needs to be consistent between 3 different structs, the boundary,
+the spatial data structure, and `CutoffPair` itself.
+
+At this point, the best `hoomd-rs` can do is check for this consistency at
+runtime and panic when it is not met. Perhaps a cleaner solution will present
+itself.

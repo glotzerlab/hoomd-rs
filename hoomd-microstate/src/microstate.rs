@@ -10,7 +10,9 @@ use std::collections::BinaryHeap;
 use crate::boundary::{Boundary, Open};
 use crate::property::Position;
 use crate::{Body, Error, Site, Transform};
+
 use hoomd_utility::random::Counter;
+use hoomd_vector::Vector;
 
 /** Track a unique identifier for an item in [`Microstate`].
 */
@@ -889,6 +891,25 @@ impl<B, S, C> Microstate<B, S, C> {
     }
 }
 
+impl<V, B, S, C> Microstate<B, S, C>
+    where
+        S: Position<Vector = V>,
+        V: Vector,
+    {
+
+    /** Find sites near a point in space.
+
+    Iterate over all sites (and later, ghost sites) within a distance `r` of
+    the given `point`.
+
+    TODO: Revise the API and description after implementing periodic boundary conditions.
+    */
+    #[inline]
+    pub fn iter_sites_near(&self, point: &V, r: f64) -> impl Iterator<Item = &Site<S>> {
+        self.sites.iter().filter(move |s| (*s.properties.position() - *point).norm_squared() < r.powi(2))
+    }
+}
+
 /** Choose parameters when constructing a [`Microstate`].
 
 Use a [`MicrostateBuilder`] to choose the values of optional parameters when
@@ -1410,4 +1431,5 @@ mod tests {
     }
 
     // TODO: Test add_bodies and update_body_properties with periodic boundaries that result in wrapping.
+    // TODO: Test iter_sites_near
 }

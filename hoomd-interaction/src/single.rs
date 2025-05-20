@@ -29,7 +29,7 @@ use hoomd_vector::Cartesian;
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut microstate = Microstate::new();
 microstate.extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
-                              Body::point(Cartesian::from([-1.0, 2.0]))])?;
+                          Body::point(Cartesian::from([-1.0, 2.0]))])?;
 
 let linear = Single(Linear{ alpha: 1.0,
     plane_origin: Cartesian::default(),

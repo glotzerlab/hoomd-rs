@@ -19,6 +19,9 @@ pub mod pairwise;
 mod single;
 pub use single::Single;
 
+mod cutoff_pair;
+pub use cutoff_pair::CutoffPair;
+
 /** Compute the total energy of a potential applied to the microstate.
 
 The `TotalEnergy` trait describes a type that can compute the energy of a
@@ -163,4 +166,6 @@ mod tests {
         assert_eq!(single.site_energy(&microstate.sites()[0].properties), 1.0);
         assert_eq!(single.site_energy(&microstate.sites()[1].properties), 2.0);
     }
+
+    // TODO: Test CutoffPair
 }

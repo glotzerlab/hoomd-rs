@@ -77,7 +77,7 @@ where
         microstate: &mut Microstate<B, S, C>,
         hamiltonian: &H,
         state: &Self::Macrostate,
-    ) -> Self::Count where {
+    ) -> Self::Count {
         let kt = state;
         let mut rng = microstate.counter().make_rng();
         let mut count = Self::Count::default();
