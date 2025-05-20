@@ -13,7 +13,7 @@ use anyhow::Context;
 
 /// Add an invalid body to the microstate.
 fn my_method(
-    microstate: &mut Microstate<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>, Square>,
+    microstate: &mut Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Square>,
 ) -> anyhow::Result<()> {
     microstate
         .add_body(Body::point(Cartesian::from([5.0, 0.0])))

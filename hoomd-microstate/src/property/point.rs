@@ -75,7 +75,9 @@ where
     }
 }
 
-impl<V> Position<V> for Point<V> {
+impl<V> Position for Point<V> {
+    type Vector = V;
+
     #[inline]
     fn position(&self) -> &V {
         &self.position

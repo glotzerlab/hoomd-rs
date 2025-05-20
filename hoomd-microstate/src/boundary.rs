@@ -65,7 +65,7 @@ pub trait Boundary<V, B, S> {
     #[inline]
     fn wrap_body(&self, body_properties: B) -> Result<B, Error>
     where
-        B: Position<V>,
+        B: Position<Vector = V>,
     {
         if self.is_inside(body_properties.position()) {
             Ok(body_properties)
@@ -90,7 +90,7 @@ pub trait Boundary<V, B, S> {
     #[inline]
     fn wrap_site(&self, site_properties: S) -> Result<S, Error>
     where
-        S: Position<V>,
+        S: Position<Vector = V>,
     {
         if self.is_inside(site_properties.position()) {
             Ok(site_properties)

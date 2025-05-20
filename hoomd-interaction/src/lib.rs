@@ -61,6 +61,7 @@ struct Custom {
 impl<S> SiteEnergy<S> for Custom
 where
     S: Position<Cartesian<2>>
+    S: Position<Vector = Cartesian<2>>
 {
     fn site_energy(&self, site_properties: &S) -> f64 {
         self.a * (site_properties.position()[0] / self.b).cos()
@@ -164,7 +165,7 @@ mod tests {
 
     impl<S> SiteEnergy<S> for TestSE
     where
-        S: Position<Cartesian<2>>,
+        S: Position<Vector = Cartesian<2>>,
     {
         fn site_energy(&self, site_properties: &S) -> f64 {
             site_properties.position()[0] + site_properties.position()[1]
@@ -172,7 +173,7 @@ mod tests {
     }
 
     #[fixture]
-    fn microstate() -> Microstate<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
+    fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
         let mut microstate = Microstate::new();
         microstate
             .extend_bodies([
@@ -185,7 +186,7 @@ mod tests {
 
     #[rstest]
     fn single_total(
-        microstate: Microstate<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>, Open>,
+        microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>,
     ) {
         let test_se = TestSE;
         let single = Single(test_se);
@@ -195,7 +196,7 @@ mod tests {
 
     #[rstest]
     fn single_site(
-        microstate: Microstate<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>, Open>,
+        microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>,
     ) {
         let test_se = TestSE;
         let single = Single(test_se);

@@ -50,7 +50,9 @@ impl Orientation<Versor> for Custom {
     }
 }
 
-impl Position<Cartesian<3>> for Custom {
+impl Position for Custom {
+    type Vector = Cartesian<3>;
+
     fn position(&self) -> &Cartesian<3> {
         &self.position
     }
@@ -85,12 +87,15 @@ the position of the body's origin in the system reference frame.
 
 Position vectors have units of *\[length\]*.
 */
-pub trait Position<V> {
+pub trait Position {
+    /// Every position is located in this vector space.
+    type Vector;
+
     /// The position of this body or site *\[length\]*.
-    fn position(&self) -> &V;
+    fn position(&self) -> &Self::Vector;
 
     /// The mutable position of this body or site *\[length\]*.
-    fn position_mut(&mut self) -> &mut V;
+    fn position_mut(&mut self) -> &mut Self::Vector;
 }
 
 /** Rotate sites and bodies.
