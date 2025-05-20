@@ -16,7 +16,8 @@ TODO: Expand documentation.
 pub mod external;
 pub mod pairwise;
 
-use hoomd_microstate::Microstate;
+mod single;
+pub use single::Single;
 
 /** Compute the total energy of a potential applied to the microstate.
 
@@ -60,7 +61,6 @@ struct Custom {
 
 impl<S> SiteEnergy<S> for Custom
 where
-    S: Position<Cartesian<2>>
     S: Position<Vector = Cartesian<2>>
 {
     fn site_energy(&self, site_properties: &S) -> f64 {
@@ -88,68 +88,24 @@ pub trait SiteEnergy<S> {
     fn site_energy(&self, site_properties: &S) -> f64;
 }
 
-/** Compute system-wide properties given a [`SiteEnergy`]
+/** Compute the energy contribution from a pair of sites.
 
-`Single` is a newtype that provides a single implementation for system-wide
-properties, like [`TotalEnergy`], for all types that implement [`SiteEnergy`].
-It also reimplements [`SiteEnergy`] by forwarding the call to the inner type.
+The `SitePairEnergy` trait describes a type that can compute the energy
+contribution from a pair of sites to the system's total energy, *as a function
+only of those site's properties*.
 
-Use types that implement [`SiteEnergy`], such as one from [`external`] or your
-own custom type, directly when you only need to call `site_energy`. Wrap the
-type in `Single` to use it with MC simulations or to call `total_energy`.
+The [`pairwise`] module provides a number of commonly used implementations.
+Combine them with the [`CutoffPair`] and [`Isotropic`]/[`Anisotropic`], newtypes
+for use with MC and MD simulations or to compute system-wide properties.
 
-# Example
+## Examples
 
-```
-use hoomd_interaction::{Single, TotalEnergy, external::Linear};
-use hoomd_microstate::{Microstate, Body};
-use hoomd_microstate::property::{Point, Position};
-use hoomd_vector::Cartesian;
+TODO Implement a custom site pair energy function:
 
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let mut microstate = Microstate::new();
-microstate.extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
-                              Body::point(Cartesian::from([-1.0, 2.0]))])?;
-
-let linear = Single(Linear{ alpha: 1.0,
-    plane_origin: Cartesian::default(),
-    plane_normal: [0.0, 1.0].try_into()? });
-
-let total_energy = linear.total_energy(&microstate);
-assert_eq!(total_energy, 2.0);
-# Ok(())
-# }
-```
 */
-pub struct Single<E>(pub E);
-
-impl<V, B, S, C, E> TotalEnergy<Microstate<V, B, S, C>> for Single<E>
-where
-    E: SiteEnergy<S>,
-{
-    /** Compute the total energy of the microstate contributed by functions of a single site.
-
-    The sum over sites differs from HOOMD-blue where external energies are
-    evaluated only at the body centers. In general, hoomd-rs interactions apply
-    to sites. Use a custom implementation to compute energies over body centers.
-    */
-    #[inline]
-    fn total_energy(&self, microstate: &Microstate<V, B, S, C>) -> f64 {
-        microstate
-            .sites()
-            .iter()
-            .fold(0.0, |total, s| total + self.0.site_energy(&s.properties))
-    }
-}
-
-impl<E, S> SiteEnergy<S> for Single<E>
-where
-    E: SiteEnergy<S>,
-{
-    #[inline]
-    fn site_energy(&self, site_properties: &S) -> f64 {
-        self.0.site_energy(site_properties)
-    }
+pub trait SitePairEnergy<S> {
+    /// Evaluate the energy contribution of a single site.
+    fn site_pair_energy(&self, a: &S, b: &S) -> f64;
 }
 
 #[cfg(test)]
