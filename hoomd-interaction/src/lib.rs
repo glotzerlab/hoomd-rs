@@ -16,7 +16,8 @@ TODO: Expand documentation.
 pub mod external;
 pub mod pairwise;
 
-use hoomd_microstate::Microstate;
+mod single;
+pub use single::Single;
 
 /** Compute the total energy of a potential applied to the microstate.
 
@@ -43,6 +44,9 @@ The [`external`] module provides a number of commonly used implementations.
 Combine them with [`Single`] newtype for use with MC and MD simulations or to
 compute system-wide properties.
 
+The generic type names are:
+* `S`: The `Site::properties` type.
+
 ## Examples
 
 Implement a custom site energy function:
@@ -60,7 +64,7 @@ struct Custom {
 
 impl<S> SiteEnergy<S> for Custom
 where
-    S: Position<Cartesian<2>>
+    S: Position<Vector = Cartesian<2>>
 {
     fn site_energy(&self, site_properties: &S) -> f64 {
         self.a * (site_properties.position()[0] / self.b).cos()
@@ -87,104 +91,24 @@ pub trait SiteEnergy<S> {
     fn site_energy(&self, site_properties: &S) -> f64;
 }
 
-/** TODO: Add Force documentation */
-pub trait Force {
-    /// Compute the net force on a single site.
-    fn net_force_on_site();
-    
-    /// Compute the net force on a body.
-    fn net_force_on_body();
-}
+/** Compute the energy contribution from a pair of sites.
 
-/** TODO: Add Torque documentation */
-pub trait Torque {
-    /// Compute the net torque on a single site.
-    fn net_torque_on_site();
-    
-    /// Compute the net torque on a body.
-    fn net_torque_on_body();
-}
+The `SitePairEnergy` trait describes a type that can compute the energy
+contribution from a pair of sites to the system's total energy, *as a function
+only of those site's properties*.
 
-/** Compute system-wide properties given a [`SiteEnergy`]
+The [`pairwise`] module provides a number of commonly used implementations.
+Combine them with the [`CutoffPair`] and [`Isotropic`]/[`Anisotropic`], newtypes
+for use with MC and MD simulations or to compute system-wide properties.
 
-`Single` is a newtype that provides a single implementation for system-wide
-properties, like [`TotalEnergy`], for all types that implement [`SiteEnergy`].
-It also reimplements [`SiteEnergy`] by forwarding the call to the inner type.
+## Examples
 
-Use types that implement [`SiteEnergy`], such as one from [`external`] or your
-own custom type, directly when you only need to call `site_energy`. Wrap the
-type in `Single` to use it with MC simulations or to call `total_energy`.
+TODO Implement a custom site pair energy function:
 
-# Example
-
-```
-use hoomd_interaction::{Single, TotalEnergy, external::Linear};
-use hoomd_microstate::{Microstate, Body};
-use hoomd_microstate::property::{Point, Position};
-use hoomd_vector::Cartesian;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let mut microstate = Microstate::new();
-microstate.extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
-                              Body::point(Cartesian::from([-1.0, 2.0]))])?;
-
-let linear = Single(Linear{ alpha: 1.0,
-    plane_origin: Cartesian::default(),
-    plane_normal: [0.0, 1.0].try_into()? });
-
-let total_energy = linear.total_energy(&microstate);
-assert_eq!(total_energy, 2.0);
-# Ok(())
-# }
-```
 */
-pub struct Single<E>(pub E);
-
-impl<V, B, S, C, E> TotalEnergy<Microstate<V, B, S, C>> for Single<E>
-where
-    E: SiteEnergy<S>,
-{
-    /** Compute the total energy of the microstate contributed by functions of a single site.
-
-    The sum over sites differs from HOOMD-blue where external energies are
-    evaluated only at the body centers. In general, hoomd-rs interactions apply
-    to sites. Use a custom implementation to compute energies over body centers.
-    */
-    #[inline]
-    fn total_energy(&self, microstate: &Microstate<V, B, S, C>) -> f64 {
-        microstate
-            .sites()
-            .iter()
-            .fold(0.0, |total, s| total + self.0.site_energy(&s.properties))
-    }
-}
-
-impl<E, S> SiteEnergy<S> for Single<E>
-where
-    E: SiteEnergy<S>,
-{
-    #[inline]
-    fn site_energy(&self, site_properties: &S) -> f64 {
-        self.0.site_energy(site_properties)
-    }
-}
-
-impl<F> Force for Single<F>{
-    // TODO
-    /// Compute the net force on a single site.
-    fn net_force_on_site() {}
-    
-    /// Compute the net force on a body.
-    fn net_force_on_body() {}
-}
-
-impl<T> Torque for Single<T>{
-    // TODO
-    /// Compute the net torque on a single site.
-    fn net_torque_on_site() {}
-    
-    /// Compute the net torque on a body.
-    fn net_torque_on_body() {}
+pub trait SitePairEnergy<S> {
+    /// Evaluate the energy contribution of a single site.
+    fn site_pair_energy(&self, a: &S, b: &S) -> f64;
 }
 
 #[cfg(test)]
@@ -200,7 +124,7 @@ mod tests {
 
     impl<S> SiteEnergy<S> for TestSE
     where
-        S: Position<Cartesian<2>>,
+        S: Position<Vector = Cartesian<2>>,
     {
         fn site_energy(&self, site_properties: &S) -> f64 {
             site_properties.position()[0] + site_properties.position()[1]
@@ -208,7 +132,7 @@ mod tests {
     }
 
     #[fixture]
-    fn microstate() -> Microstate<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
+    fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
         let mut microstate = Microstate::new();
         microstate
             .extend_bodies([
@@ -221,7 +145,7 @@ mod tests {
 
     #[rstest]
     fn single_total(
-        microstate: Microstate<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>, Open>,
+        microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>,
     ) {
         let test_se = TestSE;
         let single = Single(test_se);
@@ -231,7 +155,7 @@ mod tests {
 
     #[rstest]
     fn single_site(
-        microstate: Microstate<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>, Open>,
+        microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>,
     ) {
         let test_se = TestSE;
         let single = Single(test_se);

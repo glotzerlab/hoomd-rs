@@ -39,7 +39,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     let hamiltonian = Zero;
     let d = 0.1;
 
-    let translate = Translate::new(d.try_into().expect("hard-coded value should be positive"));
+    let translate = Translate { maximum_distance: d.try_into()? };
     let translate_sweep = Sweep { local: translate };
 
     loop {
@@ -57,7 +57,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
 /// Render the system state.
 fn render(
     frame: &mut Frame,
-    microstate: &Microstate<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>, Square>,
+    microstate: &Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Square>,
 ) {
     let properties = &microstate.bodies()[0].item.properties;
 
