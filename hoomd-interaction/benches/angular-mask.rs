@@ -79,25 +79,25 @@ fn energy_3d(bencher: Bencher) {
     let lj: LennardJones = LennardJones { epsilon, sigma };
 
     let masks = [
-        Patch { 
+        Patch {
             director: [1.0, 0.0, 0.0]
                 .try_into()
                 .expect("hard-coded vector should have non-zero length"),
             cos_delta: (PI / 16.0).cos(),
         },
-        Patch { 
+        Patch {
             director: [-1.0, 0.0, 0.0]
                 .try_into()
                 .expect("hard-coded vector should have non-zero length"),
             cos_delta: (PI / 16.0).cos(),
         },
-        Patch { 
+        Patch {
             director: [0.0, 1.0, 0.0]
                 .try_into()
                 .expect("hard-coded vector should have non-zero length"),
             cos_delta: (PI / 16.0).cos(),
         },
-        Patch { 
+        Patch {
             director: [0.0, -1.0, 0.0]
                 .try_into()
                 .expect("hard-coded vector should have non-zero length"),

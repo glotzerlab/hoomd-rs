@@ -69,15 +69,21 @@ impl Default for WeeksChandlerAnderson {
     */
     #[inline]
     fn default() -> Self {
-        WeeksChandlerAnderson { epsilon: 1.0, sigma: 1.0 }
+        WeeksChandlerAnderson {
+            epsilon: 1.0,
+            sigma: 1.0,
         }
     }
+}
 
 impl IsotropicEnergy for WeeksChandlerAnderson {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         if r < 2.0_f64.powf(1.0 / 6.0) * self.sigma {
-            let lj = LennardJones::<12, 6> { epsilon: self.epsilon, sigma: self.sigma };
+            let lj = LennardJones::<12, 6> {
+                epsilon: self.epsilon,
+                sigma: self.sigma,
+            };
             lj.energy(r) + self.epsilon
         } else {
             0.0
@@ -89,7 +95,10 @@ impl IsotropicForce for WeeksChandlerAnderson {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         if r < 2.0_f64.powf(1.0 / 6.0) * self.sigma {
-            let lj = LennardJones::<12, 6> { epsilon: self.epsilon, sigma: self.sigma };
+            let lj = LennardJones::<12, 6> {
+                epsilon: self.epsilon,
+                sigma: self.sigma,
+            };
             lj.force(r)
         } else {
             0.0

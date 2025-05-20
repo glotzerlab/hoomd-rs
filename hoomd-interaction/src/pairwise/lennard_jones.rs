@@ -75,7 +75,10 @@ impl<const N: i32, const M: i32> Default for LennardJones<N, M> {
     ```
     */
     fn default() -> Self {
-        Self { epsilon: 1.0, sigma: 1.0 }
+        Self {
+            epsilon: 1.0,
+            sigma: 1.0,
+        }
     }
 }
 

@@ -51,8 +51,8 @@ pub struct Shifted<F> {
 
 impl<F> Default for Shifted<F>
 where
-    F: Default
-    {
+    F: Default,
+{
     /** Construct a shifted potential with default parameters
 
     The defaults are:
@@ -69,7 +69,10 @@ where
     */
     #[inline]
     fn default() -> Self {
-        Self { f: F::default(), r_shift: 0.0 }
+        Self {
+            f: F::default(),
+            r_shift: 0.0,
+        }
     }
 }
 

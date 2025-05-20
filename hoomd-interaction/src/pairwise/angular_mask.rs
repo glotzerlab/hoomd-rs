@@ -275,7 +275,11 @@ mod tests {
         // Evaluate that patch directors, widths, and relative orientations are
         // handled properly.
         let epsilon = 1.125;
-        let boxcar = Boxcar { epsilon, a: 0.0, b: 1000.0 };
+        let boxcar = Boxcar {
+            epsilon,
+            a: 0.0,
+            b: 1000.0,
+        };
 
         // First case: identical directors in the +x direction
         let mask = [Patch {
@@ -398,7 +402,11 @@ mod tests {
     #[case([-1.0, 0.0].into(), PI, 0.0)]
     fn multiple_patches_2d(#[case] r_ij: Cartesian<2>, #[case] theta: f64, #[case] expected: f64) {
         let epsilon = 1.0;
-        let boxcar = Boxcar { epsilon, a: 0.0, b: 1000.0 };
+        let boxcar = Boxcar {
+            epsilon,
+            a: 0.0,
+            b: 1000.0,
+        };
 
         // Third case: multiple patches and different i,j masks.
         let mask_i = [
@@ -477,7 +485,11 @@ mod tests {
         // Evaluate that patch directors, widths, and relative orientations are
         // handled properly in 3D.
         let epsilon = 1.125;
-        let boxcar = Boxcar { epsilon, a: 0.0, b: 1000.0 };
+        let boxcar = Boxcar {
+            epsilon,
+            a: 0.0,
+            b: 1000.0,
+        };
 
         // First case: identical directors in the +z direction
         let mask = [Patch {
