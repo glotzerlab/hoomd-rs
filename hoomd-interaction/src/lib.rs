@@ -87,6 +87,24 @@ pub trait SiteEnergy<S> {
     fn site_energy(&self, site_properties: &S) -> f64;
 }
 
+/** TODO: Add Force documentation */
+pub trait Force {
+    /// Compute the net force on a single site.
+    fn net_force_on_site();
+    
+    /// Compute the net force on a body.
+    fn net_force_on_body();
+}
+
+/** TODO: Add Torque documentation */
+pub trait Torque {
+    /// Compute the net torque on a single site.
+    fn net_torque_on_site();
+    
+    /// Compute the net torque on a body.
+    fn net_torque_on_body();
+}
+
 /** Compute system-wide properties given a [`SiteEnergy`]
 
 `Single` is a newtype that provides a single implementation for system-wide
@@ -149,6 +167,24 @@ where
     fn site_energy(&self, site_properties: &S) -> f64 {
         self.0.site_energy(site_properties)
     }
+}
+
+impl<F> Force for Single<F>{
+    // TODO
+    /// Compute the net force on a single site.
+    fn net_force_on_site() {}
+    
+    /// Compute the net force on a body.
+    fn net_force_on_body() {}
+}
+
+impl<T> Torque for Single<T>{
+    // TODO
+    /// Compute the net torque on a single site.
+    fn net_torque_on_site() {}
+    
+    /// Compute the net torque on a body.
+    fn net_torque_on_body() {}
 }
 
 #[cfg(test)]
