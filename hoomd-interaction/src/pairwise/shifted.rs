@@ -49,6 +49,30 @@ pub struct Shifted<F> {
     pub r_shift: f64,
 }
 
+impl<F> Default for Shifted<F>
+where
+    F: Default
+    {
+    /** Construct a shifted potential with default parameters
+
+    The defaults are:
+    * `f = F::default()`
+    * `r_shift = 0.0`
+
+    # Example
+
+    ```
+    use hoomd_interaction::pairwise::{LennardJones, Shifted};
+
+    let shifted_lj = Shifted::<LennardJones>::default();
+    ```
+    */
+    #[inline]
+    fn default() -> Self {
+        Self { f: F::default(), r_shift: 0.0 }
+    }
+}
+
 impl<F: IsotropicEnergy> IsotropicEnergy for Shifted<F> {
     #[inline]
     fn energy(&self, r: f64) -> f64 {

@@ -105,13 +105,3 @@ pub trait AnisotropicEnergy<V: Vector, R: Rotate<V>> {
 // TODO: Consider implementing IsotropicEnergy for Fn(f64) -> f64 to allow the user to directly
 //       use a closure in place of an IsotropicEnergy. It isn't clear how to do the same for
 //       both energy and force.
-// TODO: Implement Default for types where it is appropriate (e.g. LennardJones with epsilon=1
-//       and sigma=1, and Shifted with r_shift=0 (for potential types that implement default).
-// TODO: Consider Removing redundant new methods for types with all public fields.
-//       Rust provides a language mechanic that allows the caller to initialize these types.
-//       Compare:
-//       `LennardJones { epsilon: 1.0, sigma: 2.0 }`
-//       `LennardJones::new(1.0, 2.0)`
-//       The second is shorter, but there is confusion over which parameter is which.
-//       Some, like AngularMask::new, can remain because they provide some level of
-//       convenience.

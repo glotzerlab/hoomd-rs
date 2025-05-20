@@ -24,7 +24,15 @@ r_{\mathrm{on}}^2)^3}
 -->
 <math display="block" class="tml-display" style="display:block math;"><mrow><mi>S</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mrow><mo fence="true" form="prefix">{</mo><mtable><mtr><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 0em;"><mn>1</mn></mtd><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 1em;"><mrow><mi>r</mi><mo>&lt;</mo><msub><mi>r</mi><mrow><mtext></mtext><mi>on</mi></mrow></msub></mrow></mtd></mtr><mtr><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 0em;"><mfrac><mrow><mo form="prefix" stretchy="false" lspace="0em" rspace="0em">(</mo><msubsup><mi>r</mi><mrow><mtext></mtext><mi>cut</mi></mrow><mn>2</mn></msubsup><mo>−</mo><msup><mi>r</mi><mn>2</mn></msup><msup><mo form="postfix" stretchy="false">)</mo><mn>2</mn></msup><mo>⋅</mo><mo form="prefix" stretchy="false">(</mo><msubsup><mi>r</mi><mrow><mtext></mtext><mi>cut</mi></mrow><mn>2</mn></msubsup><mo>+</mo><mn>2</mn><msup><mi>r</mi><mn>2</mn></msup><mo>−</mo><mn>3</mn><msubsup><mi>r</mi><mrow><mtext></mtext><mi>on</mi></mrow><mn>2</mn></msubsup><mo form="postfix" stretchy="false" lspace="0em" rspace="0em">)</mo></mrow><mrow><mo form="prefix" stretchy="false" lspace="0em" rspace="0em">(</mo><msubsup><mi>r</mi><mrow><mtext></mtext><mi>cut</mi></mrow><mn>2</mn></msubsup><mo>−</mo><msubsup><mi>r</mi><mrow><mtext></mtext><mi>on</mi></mrow><mn>2</mn></msubsup><msup><mo form="postfix" stretchy="false">)</mo><mn>3</mn></msup></mrow></mfrac></mtd><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 1em;"><mrow><msub><mi>r</mi><mrow><mtext></mtext><mi>on</mi></mrow></msub><mo>≤</mo><mi>r</mi><mo>&lt;</mo><msub><mi>r</mi><mrow><mtext></mtext><mi>cut</mi></mrow></msub></mrow></mtd></mtr><mtr><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 0em;"><mn>0</mn></mtd><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 1em;"><mrow><mi>r</mi><mo>≥</mo><msub><mi>r</mi><mrow><mtext></mtext><mi>cut</mi></mrow></msub></mrow></mtd></mtr></mtable><mo fence="true" form="postfix"></mo></mrow></mrow></math>
 # Example
-TODO
+
+```
+use hoomd_interaction::pairwise::{LennardJones, Xplor};
+
+let epsilon = 1.5;
+let sigma = 1.0;
+let r_cut = 2.5 * sigma;
+let r_on = 1.5 * sigma;
+let xplor_lj = Xplor { f: LennardJones::<12,6> { epsilon, sigma }, r_cut, r_on };
 */
 
 #[derive(Clone, Debug, PartialEq)]
@@ -38,30 +46,6 @@ pub struct Xplor<F> {
 }
 
 impl<F> Xplor<F> {
-    /** Construct an [`Xplor`] with the given potential `f`, a cutoff `r_cut`, and a
-    start point `r_on`.
-
-    # Example
-
-    Smooth a Lennard-Jones potential to 0 at some `r_cut`.
-    ```
-    use hoomd_interaction::pairwise::{LennardJones, Xplor};
-
-    let epsilon = 1.5;
-    let sigma = 1.0;
-    let r_cut = 2.5 * sigma;
-    let r_on = 1.5 * sigma;
-    let xplor_lj = Xplor::new(
-        LennardJones::<12,6> { epsilon, sigma }, r_cut, r_on
-    );
-    ```
-    */
-    #[inline]
-    #[must_use]
-    pub fn new(f: F, r_cut: f64, r_on: f64) -> Self {
-        Self { f, r_cut, r_on }
-    }
-
     /// The xplor shifting function
     #[inline]
     fn s(&self, r: f64) -> f64 {
@@ -125,7 +109,7 @@ mod tests {
         let lj: LennardJones = LennardJones { epsilon, sigma };
         let r_on = 1.0; // Provides cases where r_on <, =, > sigma and epsilon
         let r_cut = 2.5 * sigma;
-        let xplor_lj = Xplor::new(lj, r_cut, r_on);
+        let xplor_lj = Xplor { f: lj, r_cut, r_on };
 
         assert_eq!(xplor_lj.f.epsilon, epsilon);
         assert_eq!(xplor_lj.f.sigma, sigma);
@@ -143,7 +127,7 @@ mod tests {
         assert_abs_diff_eq!(xplor_lj.energy(r_cut + 1e-6), 0.0);
         assert_abs_diff_eq!(xplor_lj.energy(r_cut * 2.0), 0.0);
 
-        assert_abs_diff_eq!(xplor_lj.force(r_cut), 0.0); // TODO: should be zero!
+        assert_abs_diff_eq!(xplor_lj.force(r_cut), 0.0);
         assert_abs_diff_eq!(xplor_lj.force(r_cut + 1e-6), 0.0);
         assert_abs_diff_eq!(xplor_lj.force(r_cut * 2.0), 0.0);
 

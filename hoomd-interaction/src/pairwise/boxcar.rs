@@ -30,7 +30,7 @@ use hoomd_interaction::pairwise::{IsotropicEnergy, Boxcar};
 let epsilon = 1.5;
 let (a,b) = (1.0, 2.5);
 
-let boxcar = Boxcar::new(epsilon, a, b);
+let boxcar = Boxcar { epsilon, a, b };
 assert_eq!(boxcar.energy(0.0), 0.0);
 assert_eq!(boxcar.energy(1.0), 1.5);
 assert_eq!(boxcar.energy(2.0), 1.5);
@@ -43,7 +43,7 @@ The parameters are public fields and may be accessed directly:
 ```
 use hoomd_interaction::pairwise::{IsotropicEnergy, Boxcar};
 
-let mut boxcar = Boxcar::new(1.5, 1.0, 2.5);
+let mut boxcar = Boxcar { epsilon: 1.5, a: 1.0, b: 2.5 };
 boxcar.epsilon = -2.0;
 boxcar.a = 0.0;
 boxcar.b = 1.0;
@@ -57,24 +57,6 @@ pub struct Boxcar {
     pub a: f64,
     /// Right side of the boxcar (`[length]`).
     pub b: f64,
-}
-
-impl Boxcar {
-    /** Construct a [`Boxcar`] with the given values for `epsilon`, `a`, and `b`.
-
-    # Example
-
-    ```
-    use hoomd_interaction::pairwise::Boxcar;
-
-    let boxcar = Boxcar::new(-2.0, 0.0, 1.0);
-    ```
-    */
-    #[inline]
-    #[must_use]
-    pub fn new(epsilon: f64, a: f64, b: f64) -> Self {
-        Self { epsilon, a, b }
-    }
 }
 
 impl IsotropicEnergy for Boxcar {
@@ -100,7 +82,7 @@ mod tests {
         #[values(0.5, 0.125)] w: f64,
     ) {
         let b = a + w;
-        let boxcar = Boxcar::new(epsilon, a, b);
+        let boxcar = Boxcar { epsilon, a, b };
 
         assert_eq!(boxcar.epsilon, epsilon);
         assert_eq!(boxcar.a, a);

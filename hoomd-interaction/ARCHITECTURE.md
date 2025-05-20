@@ -30,11 +30,11 @@ interaction type can implement (or not) as appropriate:
 
 Here are some sketches of what this might look like.
 ```
-let lj = LennardJones::new(1.0, 1.0);
+let lj = LennardJones { epsilon: 1.0, sigma: 1.0 };
 let e = lj.energy(2.0);
 let f = lj.force(2.0);
 
-let boxcar = Boxcar::new(-1.0, 0.0, 2.0);
+let boxcar = Boxcar { epsilon: -1.0, a: 0.0, b: 2.0 };
 let f = step.force(0.5); // compile error, does not implement force trait
 let e = step.energy(0.5);
 ```
@@ -68,7 +68,7 @@ these transformations as their own type allowing users to combine
 any transformation with any potential.
 
 ```
-let shifted_lj = Shifted(LennardJones::new(1.0, 1.0), 2.5);
+let shifted_lj = Shifted { f: LennardJones { epsilon: 1.0, sigma: 1.0 }, r_shift: 2.5 };
 ```
 
 This greatly simplifies the design used in HOOMD-blue where each
