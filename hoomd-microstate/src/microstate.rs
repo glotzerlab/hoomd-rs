@@ -358,12 +358,12 @@ impl<B, S, C> Microstate<B, S, C> {
 
 /** Manage bodies in the microstate.
 */
-impl<V, B, S, C> Microstate<B, S, C> 
-    where
-        B: Transform<S> + Position<Vector = V>,
-        S: Position<Vector = V>,
-        C: Boundary<V, B, S>,
-    {
+impl<V, B, S, C> Microstate<B, S, C>
+where
+    B: Transform<S> + Position<Vector = V>,
+    S: Position<Vector = V>,
+    C: Boundary<V, B, S>,
+{
     /** Add a new body to the microstate.
 
     Each body is assigned a unique tag. The first body is given tag 0,
@@ -414,8 +414,7 @@ impl<V, B, S, C> Microstate<B, S, C>
         clippy::missing_panics_doc,
         reason = "Panic would occur due to a bug in hoomd-rs."
     )]
-    pub fn add_body(&mut self, body: Body<B, S>) -> Result<usize, Error>
-    {
+    pub fn add_body(&mut self, body: Body<B, S>) -> Result<usize, Error> {
         // Find the tag of the new body.
         let body_tag = self
             .free_body_tags
@@ -892,11 +891,10 @@ impl<B, S, C> Microstate<B, S, C> {
 }
 
 impl<V, B, S, C> Microstate<B, S, C>
-    where
-        S: Position<Vector = V>,
-        V: Vector,
-    {
-
+where
+    S: Position<Vector = V>,
+    V: Vector,
+{
     /** Find sites near a point in space.
 
     Iterate over all sites (and later, ghost sites) within a distance `r` of
@@ -906,7 +904,9 @@ impl<V, B, S, C> Microstate<B, S, C>
     */
     #[inline]
     pub fn iter_sites_near(&self, point: &V, r: f64) -> impl Iterator<Item = &Site<S>> {
-        self.sites.iter().filter(move |s| (*s.properties.position() - *point).norm_squared() < r.powi(2))
+        self.sites
+            .iter()
+            .filter(move |s| (*s.properties.position() - *point).norm_squared() < r.powi(2))
     }
 }
 

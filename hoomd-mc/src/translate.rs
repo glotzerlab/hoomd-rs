@@ -101,7 +101,8 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(1);
         let a = Point::new(Cartesian::from([1.0, -5.0, 2.5]));
         let translate = Translate {
-            maximum_distance: d.try_into()
+            maximum_distance: d
+                .try_into()
                 .expect("hard-coded constant should be a positive real"),
         };
 

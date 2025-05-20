@@ -4,8 +4,8 @@
 /*! Implement Isotropic
 */
 
-use crate::SitePairEnergy;
 use super::IsotropicEnergy;
+use crate::SitePairEnergy;
 use hoomd_microstate::property::Position;
 use hoomd_vector::Vector;
 
@@ -38,19 +38,22 @@ assert_eq!(energy, -1.5);
 */
 pub struct Isotropic<E>(pub E);
 
-impl<V, S, E> SitePairEnergy<S> for Isotropic<E> where
-S: Position<Vector = V>,
-V: Vector,
-E: IsotropicEnergy
+impl<V, S, E> SitePairEnergy<S> for Isotropic<E>
+where
+    S: Position<Vector = V>,
+    V: Vector,
+    E: IsotropicEnergy,
 {
-
     #[inline]
     fn site_pair_energy(&self, a: &S, b: &S) -> f64 {
         self.0.energy((*a.position() - *b.position()).norm())
     }
 }
 
-impl<E> IsotropicEnergy for Isotropic<E> where E: IsotropicEnergy{
+impl<E> IsotropicEnergy for Isotropic<E>
+where
+    E: IsotropicEnergy,
+{
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         self.0.energy(r)

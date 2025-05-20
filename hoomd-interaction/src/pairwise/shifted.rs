@@ -21,7 +21,7 @@ use approx::{assert_abs_diff_eq, assert_relative_eq};
 let epsilon = 1.5;
 let sigma = 1.0;
 let r_shift = 2.5;
-let lj: LennardJones = LennardJones::<12,6>::new(epsilon, sigma);
+let lj: LennardJones = LennardJones { epsilon, sigma };
 let shifted_lj = Shifted::new(lj, r_shift);
 
 assert_abs_diff_eq!(shifted_lj.energy(r_shift), 0.0);
@@ -35,7 +35,7 @@ use hoomd_interaction::pairwise::{LennardJones, Shifted};
 let epsilon = 1.5;
 let sigma = 1.0;
 let r_shift = 2.5;
-let mut shifted_lj = Shifted::new(LennardJones::<12,6>::new(epsilon, sigma), r_shift);
+let mut shifted_lj = Shifted::new(LennardJones::<12,6> { epsilon, sigma }, r_shift);
 
 shifted_lj.r_shift = 3.0;
 shifted_lj.f.sigma = 1.2;
@@ -61,7 +61,7 @@ impl<F> Shifted<F> {
     let epsilon = 1.5;
     let sigma = 1.0;
     let r_shift = 2.5;
-    let shifted_lj = Shifted::new(LennardJones::<12,6>::new(epsilon, sigma), r_shift);
+    let shifted_lj = Shifted::new(LennardJones::<12,6> { epsilon, sigma }, r_shift);
     ```
     */
     #[inline]
@@ -98,7 +98,7 @@ mod tests {
         #[values(1.0, 2.0, 12.125, 0.25)] epsilon: f64,
         #[values(1.0, 2.0, 0.5)] sigma: f64,
     ) {
-        let lj: LennardJones = LennardJones::new(epsilon, sigma);
+        let lj: LennardJones = LennardJones { epsilon, sigma };
         let r_shift = 2.5 * sigma;
         let shifted_lj = Shifted::new(lj, r_shift);
 

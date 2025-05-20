@@ -52,7 +52,7 @@ impl<F> Xplor<F> {
     let r_cut = 2.5 * sigma;
     let r_on = 1.5 * sigma;
     let xplor_lj = Xplor::new(
-        LennardJones::<12,6>::new(epsilon, sigma), r_cut, r_on
+        LennardJones::<12,6> { epsilon, sigma }, r_cut, r_on
     );
     ```
     */
@@ -122,7 +122,7 @@ mod tests {
         #[values(1.0, 2.0, 12.125, 0.25)] epsilon: f64,
         #[values(1.0, 2.0, 0.5)] sigma: f64,
     ) {
-        let lj: LennardJones = LennardJones::new(epsilon, sigma);
+        let lj: LennardJones = LennardJones { epsilon, sigma };
         let r_on = 1.0; // Provides cases where r_on <, =, > sigma and epsilon
         let r_cut = 2.5 * sigma;
         let xplor_lj = Xplor::new(lj, r_cut, r_on);

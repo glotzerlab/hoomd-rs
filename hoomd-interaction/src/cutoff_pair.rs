@@ -1,10 +1,10 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement CutoffPair
+/*! Implement `CutoffPair`
 */
 
-use crate::{TotalEnergy, SitePairEnergy};
+use crate::{SitePairEnergy, TotalEnergy};
 use hoomd_microstate::{Microstate, property::Position};
 
 use hoomd_vector::Vector;
@@ -14,10 +14,10 @@ use hoomd_vector::Vector;
 [`CutoffPair`] provides a single implementation for system properties, like
 [`TotalEnergy`], for all types that implement [`SitePairEnergy`].
 
-Use types that implement [`SitePairEnergy`], such as one from [`pairwise`] or
-your own custom type, directly when you only need to call `site_pair_energy`.
-Wrap the type in `CutoffPair` to use it with MC simulations or to compute the
-total energy.
+Use types that implement [`SitePairEnergy`], such as one from
+[`pairwise`](crate::pairwise) or your own custom type, directly when you only
+need to call `site_pair_energy`. Wrap the type in `CutoffPair` to use it with MC
+simulations or to compute the total energy.
 
 TODO: Reword this when Single also implements `SiteForce`.
 
@@ -45,7 +45,7 @@ microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
 
 let lennard_jones: LennardJones = LennardJones { epsilon: 1.5, sigma: 1.0 / 2.0_f64.powf(1.0/6.0) };
 let lennard_jones = Isotropic(lennard_jones);
-let cutoff_pair = CutoffPair { r_cut: 2.0, evaluator: lennard_jones, };
+let cutoff_pair = CutoffPair { r_cut: 2.5, evaluator: lennard_jones, };
 
 let total_energy = cutoff_pair.total_energy(&microstate);
 assert_eq!(total_energy, -3.0);
@@ -66,8 +66,7 @@ pub struct CutoffPair<E> {
 
     /// Computes the pairwise energies and forces.
     pub evaluator: E,
-    }
-    
+}
 
 impl<V, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPair<E>
 where
@@ -86,9 +85,13 @@ where
     fn total_energy(&self, microstate: &Microstate<B, S, C>) -> f64 {
         let mut total = 0.0;
         for site_i in microstate.sites() {
-            for site_j in microstate.iter_sites_near(site_i.properties.position(), self.r_cut)
-                .filter(|s| site_i.site_tag < s.site_tag && site_i.body_tag != s.body_tag) {
-                    total += self.evaluator.site_pair_energy(&site_i.properties, &site_j.properties);
+            for site_j in microstate
+                .iter_sites_near(site_i.properties.position(), self.r_cut)
+                .filter(|s| site_i.site_tag < s.site_tag && site_i.body_tag != s.body_tag)
+            {
+                total += self
+                    .evaluator
+                    .site_pair_energy(&site_i.properties, &site_j.properties);
             }
         }
 

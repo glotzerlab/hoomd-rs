@@ -29,7 +29,33 @@ given microstate. Depending on the type, `total_energy` might compute the total
 potential energy of the system or a single term, such as the Lennard-Jones
 potential energy.
 
-TODO: Provide a `LennardJones` example.
+# Example
+
+```
+use hoomd_interaction::{CutoffPair, SitePairEnergy, TotalEnergy,
+    pairwise::{Isotropic, LennardJones}};
+use hoomd_microstate::{Microstate, Body};
+use hoomd_microstate::property::{Point, Position};
+use hoomd_vector::{Cartesian, Vector};
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut microstate = Microstate::new();
+// Place two pairs of particles separated by a large distance.
+microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
+                          Body::point(Cartesian::from([1.0, 0.0])),
+                          Body::point(Cartesian::from([0.0, 5.0])),
+                          Body::point(Cartesian::from([-1.0, 5.0])),
+                        ])?;
+
+let lennard_jones: LennardJones = LennardJones { epsilon: 1.5, sigma: 1.0 / 2.0_f64.powf(1.0/6.0) };
+let lennard_jones = Isotropic(lennard_jones);
+let cutoff_pair = CutoffPair { r_cut: 2.5, evaluator: lennard_jones, };
+
+let total_energy = cutoff_pair.total_energy(&microstate);
+assert_eq!(total_energy, -3.0);
+# Ok(())
+# }
+```
 */
 pub trait TotalEnergy<M> {
     /// Compute the energy.
@@ -101,8 +127,9 @@ contribution from a pair of sites to the system's total energy, *as a function
 only of those site's properties*.
 
 The [`pairwise`] module provides a number of commonly used implementations.
-Combine them with the [`CutoffPair`] and [`Isotropic`]/[`Anisotropic`], newtypes
-for use with MC and MD simulations or to compute system-wide properties.
+Combine them with the [`CutoffPair`] and the [`Isotropic`](pairwise::Isotropic)
+or [`Anisotropic`](pairwise::Anisotropic) newtypes for use with MC and MD
+simulations or to compute system-wide properties.
 
 ## Examples
 
@@ -110,7 +137,7 @@ TODO Implement a custom site pair energy function:
 
 */
 pub trait SitePairEnergy<S> {
-    /// Evaluate the energy contribution of a single site.
+    /// Evaluate the energy contribution from a pair of sites.
     fn site_pair_energy(&self, a: &S, b: &S) -> f64;
 }
 
@@ -147,9 +174,7 @@ mod tests {
     }
 
     #[rstest]
-    fn single_total(
-        microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>,
-    ) {
+    fn single_total(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
         let test_se = TestSE;
         let single = Single(test_se);
 
@@ -157,9 +182,7 @@ mod tests {
     }
 
     #[rstest]
-    fn single_site(
-        microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>,
-    ) {
+    fn single_site(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
         let test_se = TestSE;
         let single = Single(test_se);
 

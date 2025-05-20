@@ -31,7 +31,7 @@ use approx::{assert_abs_diff_eq, assert_relative_eq};
 let epsilon = 1.5;
 let sigma = 2.5;
 
-let wca = WeeksChandlerAnderson::new(epsilon, sigma);
+let wca = WeeksChandlerAnderson { epsilon, sigma };
 assert_relative_eq!(wca.energy(sigma), epsilon);
 assert_abs_diff_eq!(wca.energy(2.0*sigma), 0.0);
 assert_relative_eq!(wca.energy(2.0_f64.powf(1.0/6.0) * sigma), 0.0);
@@ -43,7 +43,7 @@ The parameters are public fields and may be accessed directly:
 ```
 use hoomd_interaction::pairwise::WeeksChandlerAnderson;
 
-let mut wca = WeeksChandlerAnderson::new(1.0, 2.5);
+let mut wca = WeeksChandlerAnderson::default();
 wca.epsilon = 1.5;
 wca.sigma = 3.0;
 ```
@@ -56,29 +56,28 @@ pub struct WeeksChandlerAnderson {
     pub sigma: f64,
 }
 
-impl WeeksChandlerAnderson {
-    /** Construct a [`WeeksChandlerAnderson`] with the given values for `epsilon` and `sigma`.
+impl Default for WeeksChandlerAnderson {
+    /** Construct a [`WeeksChandlerAnderson`] with default parameters (epsilon=1.0, sigma=1.0)
 
     # Example
 
     ```
     use hoomd_interaction::pairwise::WeeksChandlerAnderson;
 
-    let wca = WeeksChandlerAnderson::new(2.0, 3.0);
+    let wca = WeeksChandlerAnderson::default();
     ```
     */
     #[inline]
-    #[must_use]
-    pub fn new(epsilon: f64, sigma: f64) -> Self {
-        Self { epsilon, sigma }
+    fn default() -> Self {
+        WeeksChandlerAnderson { epsilon: 1.0, sigma: 1.0 }
+        }
     }
-}
 
 impl IsotropicEnergy for WeeksChandlerAnderson {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         if r < 2.0_f64.powf(1.0 / 6.0) * self.sigma {
-            let lj = LennardJones::<12, 6>::new(self.epsilon, self.sigma);
+            let lj = LennardJones::<12, 6> { epsilon: self.epsilon, sigma: self.sigma };
             lj.energy(r) + self.epsilon
         } else {
             0.0
@@ -90,7 +89,7 @@ impl IsotropicForce for WeeksChandlerAnderson {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         if r < 2.0_f64.powf(1.0 / 6.0) * self.sigma {
-            let lj = LennardJones::<12, 6>::new(self.epsilon, self.sigma);
+            let lj = LennardJones::<12, 6> { epsilon: self.epsilon, sigma: self.sigma };
             lj.force(r)
         } else {
             0.0
@@ -109,7 +108,7 @@ mod tests {
         #[values(1.0, 2.0, 12.125, 0.25)] epsilon: f64,
         #[values(1.0, 2.0, 0.5)] sigma: f64,
     ) {
-        let wca = WeeksChandlerAnderson::new(epsilon, sigma);
+        let wca = WeeksChandlerAnderson { epsilon, sigma };
 
         assert_eq!(wca.epsilon, epsilon);
         assert_eq!(wca.sigma, sigma);

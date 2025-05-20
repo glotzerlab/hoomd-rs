@@ -463,7 +463,7 @@ mod tests {
     fn smooth_potential(#[values(0.9, 1.1, 1.2, 3.0)] r: f64) {
         let epsilon = 1.0;
         let sigma = 1.0;
-        let lj: LennardJones = LennardJones::new(epsilon, sigma);
+        let lj: LennardJones = LennardJones { epsilon, sigma };
 
         let mask = [Patch::new(
             [1.0, 0.0]

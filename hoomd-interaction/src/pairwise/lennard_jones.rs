@@ -24,10 +24,10 @@ use approx::{assert_abs_diff_eq, assert_relative_eq};
 let epsilon = 1.5;
 let sigma = 2.5;
 
-let lj: LennardJones = LennardJones::new(epsilon, sigma);
-assert_abs_diff_eq!(lj.energy(sigma), 0.0);
-assert_relative_eq!(lj.energy(2.0_f64.powf(1.0/6.0) * sigma), -epsilon);
-assert_abs_diff_eq!(lj.force(2.0_f64.powf(1.0/6.0) * sigma), 0.0, epsilon=1e-12);
+let lennard_jones: LennardJones = LennardJones { epsilon, sigma };
+assert_abs_diff_eq!(lennard_jones.energy(sigma), 0.0);
+assert_relative_eq!(lennard_jones.energy(2.0_f64.powf(1.0/6.0) * sigma), -epsilon);
+assert_abs_diff_eq!(lennard_jones.force(2.0_f64.powf(1.0/6.0) * sigma), 0.0, epsilon=1e-12);
 ```
 
 You can choose any values for `N` and `M` _at compile time_:
@@ -39,10 +39,10 @@ use approx::{assert_abs_diff_eq, assert_relative_eq};
 let epsilon = 1.5;
 let sigma = 2.5;
 
-let lj: LennardJones<8,4> = LennardJones::new(epsilon, sigma);
-assert_abs_diff_eq!(lj.energy(sigma), 0.0);
-assert_relative_eq!(lj.energy(2.0_f64.powf(1.0/4.0) * sigma), -epsilon);
-assert_abs_diff_eq!(lj.force(2.0_f64.powf(1.0/4.0) * sigma), 0.0, epsilon=1e-12);
+let lennard_jones: LennardJones<8,4> = LennardJones { epsilon, sigma };
+assert_abs_diff_eq!(lennard_jones.energy(sigma), 0.0);
+assert_relative_eq!(lennard_jones.energy(2.0_f64.powf(1.0/4.0) * sigma), -epsilon);
+assert_abs_diff_eq!(lennard_jones.force(2.0_f64.powf(1.0/4.0) * sigma), 0.0, epsilon=1e-12);
 ```
 
 The parameters are public fields and may be accessed directly:
@@ -50,9 +50,9 @@ The parameters are public fields and may be accessed directly:
 ```
 use hoomd_interaction::pairwise::{LennardJones};
 
-let mut lj: LennardJones = LennardJones::new(1.0, 2.5);
-lj.epsilon = 1.5;
-lj.sigma = 3.0;
+let mut lennard_jones: LennardJones = LennardJones::default();
+lennard_jones.epsilon = 1.5;
+lennard_jones.sigma = 3.0;
 ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -63,29 +63,19 @@ pub struct LennardJones<const N: i32 = 12, const M: i32 = 6> {
     pub sigma: f64,
 }
 
-impl<const N: i32, const M: i32> LennardJones<N, M> {
-    /** Construct a [`LennardJones`] with the given values for `epsilon` and `sigma`.
+impl<const N: i32, const M: i32> Default for LennardJones<N, M> {
+    /** Construct a [`LennardJones`] with default parameters (epsilon=1.0, sigma=1.0)
 
-    # Examples
+    # Example
 
-    The default sets `N=12` and `M=6`:
     ```
     use hoomd_interaction::pairwise::LennardJones;
 
-    let lj: LennardJones = LennardJones::new(2.0, 3.0);
-    ```
-
-    Choose the exponents:
-    ```
-    use hoomd_interaction::pairwise::LennardJones;
-
-    let lj: LennardJones<8,4> = LennardJones::new(1.0, 2.5);
+    let lennard_jones: LennardJones = LennardJones::default();
     ```
     */
-    #[inline]
-    #[must_use]
-    pub fn new(epsilon: f64, sigma: f64) -> Self {
-        Self { epsilon, sigma }
+    fn default() -> Self {
+        Self { epsilon: 1.0, sigma: 1.0 }
     }
 }
 
@@ -121,7 +111,7 @@ mod tests {
         #[values(1.0, 2.0, 12.125, 0.25)] epsilon: f64,
         #[values(1.0, 2.0, 0.5)] sigma: f64,
     ) {
-        let lj: LennardJones = LennardJones::new(epsilon, sigma);
+        let lj: LennardJones = LennardJones { epsilon, sigma };
 
         assert_eq!(lj.epsilon, epsilon);
         assert_eq!(lj.sigma, sigma);
@@ -148,7 +138,7 @@ mod tests {
         #[values(1.0, 2.0, 12.125, 0.25)] epsilon: f64,
         #[values(1.0, 2.0, 0.5)] sigma: f64,
     ) {
-        let lj: LennardJones<8, 4> = LennardJones::new(epsilon, sigma);
+        let lj: LennardJones<8, 4> = LennardJones { epsilon, sigma };
 
         assert_eq!(lj.epsilon, epsilon);
         assert_eq!(lj.sigma, sigma);

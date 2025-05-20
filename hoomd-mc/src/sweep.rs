@@ -172,7 +172,8 @@ mod tests {
 
         let d = 0.1;
         let translate = Translate {
-            maximum_distance: d.try_into()
+            maximum_distance: d
+                .try_into()
                 .expect("hard-coded constant should be positive"),
         };
         let translate_sweep = Sweep { local: translate };

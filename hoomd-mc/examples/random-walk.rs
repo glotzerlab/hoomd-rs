@@ -39,7 +39,9 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     let hamiltonian = Zero;
     let d = 0.1;
 
-    let translate = Translate { maximum_distance: d.try_into()? };
+    let translate = Translate {
+        maximum_distance: d.try_into()?,
+    };
     let translate_sweep = Sweep { local: translate };
 
     loop {

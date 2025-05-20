@@ -4,7 +4,7 @@
 /*! Implement Single
 */
 
-use crate::{TotalEnergy, SiteEnergy};
+use crate::{SiteEnergy, TotalEnergy};
 use hoomd_microstate::Microstate;
 
 /** Compute system properties given a [`SiteEnergy`]
@@ -12,9 +12,10 @@ use hoomd_microstate::Microstate;
 [`Single`] is a newtype that provides a single implementation for system
 properties, like [`TotalEnergy`], for all types that implement [`SiteEnergy`].
 
-Use types that implement [`SiteEnergy`], such as one from [`external`] or your
-own custom type, directly when you only need to call `site_energy`. Wrap the
-type in `Single` to use it with MC simulations or to compute the total energy.
+Use types that implement [`SiteEnergy`], such as one from
+[`external`](crate::external) or your own custom type, directly when you
+only need to call `site_energy`. Wrap the type in `Single` to use it with MC
+simulations or to compute the total energy.
 
 TODO: Reword this when Single also implements `SiteForce`.
 

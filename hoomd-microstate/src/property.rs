@@ -118,7 +118,7 @@ For example, [`hoomd_vector::Angle`] has units of radians while
 pub trait Orientation {
     /// Type that can express the orientation of a body or site.
     type Rotation;
-    
+
     /// The orientation of this body or site.
     fn orientation(&self) -> &Self::Rotation;
 
