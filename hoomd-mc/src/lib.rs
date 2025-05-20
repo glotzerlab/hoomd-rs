@@ -36,6 +36,10 @@ Each type of trial move in *hoomd-rs* implements the `Trial` trait so that they
 may be used as generic arguments in higher level functions.
 
 See [`Sweep`] or any of the other implementations of `Trial` for code examples.
+
+The generic type names are:
+* `M`: The [`Microstate`] type.
+* `H`: The Hamiltonian type.
 */
 pub trait Trial<M, H> {
     /** Represent the number of accepted and rejected individual trial moves.
@@ -68,6 +72,9 @@ bodies or implement your own custom [`LocalTrial`].
 
 Local trial moves **MUST** satisfy *local detailed balance*,
 as defined in [Manousiouthakis & Deem](https://doi.org/10.1063/1.477973).
+
+The generic type names are:
+* `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 */
 pub trait LocalTrial<B> {
     /// Propose a new configuration for the given body properties.
@@ -80,6 +87,11 @@ pub trait LocalTrial<B> {
 Some implementations of [`Trial`] apply to a single body at a time and use a
 Hamiltonian that implements `DeltaEnergyOne` to efficiently compute the change
 in energy.
+
+The generic type names are:
+* `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+* `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+* `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 */
 pub trait DeltaEnergyOne<B, S, C> {
     /** Compute the change in energy.

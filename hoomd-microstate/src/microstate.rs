@@ -29,7 +29,6 @@ documentation](crate) for a full overview and the method-specific documentation
 for additional details.
 
 The generic type names are:
-* `V`: The [`Vector`](hoomd_vector::Vector) space in which bodies and sites exist.
 * `B`: The [`Body::properties`](crate::Body) type.
 * `S`: The [`Site::properties`](crate::Site) type.
 * `C`: The [`boundary`](crate::boundary) condition type.

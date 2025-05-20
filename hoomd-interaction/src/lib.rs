@@ -44,6 +44,9 @@ The [`external`] module provides a number of commonly used implementations.
 Combine them with [`Single`] newtype for use with MC and MD simulations or to
 compute system-wide properties.
 
+The generic type names are:
+* `S`: The `Site::properties` type.
+
 ## Examples
 
 Implement a custom site energy function:
