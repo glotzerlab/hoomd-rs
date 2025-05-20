@@ -362,6 +362,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "hoomd-md"
+version = "0.0.0"
+dependencies = [
+ "approx",
+ "divan",
+ "hoomd-interaction",
+ "hoomd-microstate",
+ "hoomd-utility",
+ "hoomd-vector",
+ "rand",
+ "ratatui",
+ "rstest",
+]
+
+[[package]]
 name = "hoomd-microstate"
 version = "0.0.0"
 dependencies = [
