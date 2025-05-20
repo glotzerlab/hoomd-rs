@@ -3,6 +3,7 @@
 members = [
   "hoomd-interaction",
   "hoomd-mc",
+  "hoomd-md",
   "hoomd-microstate",
   "hoomd-utility",
   "hoomd-vector"
@@ -23,7 +24,8 @@ categories = ["science"]
 [workspace.dependencies]
 # Subcrates
 hoomd-interaction = { path = "hoomd-interaction" }
-hoomd-mc = { path = "hoomd-microstate" }
+hoomd-mc = { path = "hoomd-mc" }
+hoomd-md = { path = "hoomd-md" }
 hoomd-microstate = { path = "hoomd-microstate" }
 hoomd-utility = { path = "hoomd-utility" }
 hoomd-vector = { path = "hoomd-vector" }
