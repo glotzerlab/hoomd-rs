@@ -40,7 +40,9 @@ struct Custom {
     custom: f64,
     }
 
-impl Orientation<Versor> for Custom {
+impl Orientation for Custom {
+    type Rotation = Versor;
+
     fn orientation(&self) -> &Versor {
         &self.orientation
     }
@@ -113,10 +115,13 @@ For example, [`hoomd_vector::Angle`] has units of radians while
 [`hoomd_vector::Versor`] is unitless.
 
 */
-pub trait Orientation<R> {
+pub trait Orientation {
+    /// Type that can express the orientation of a body or site.
+    type Rotation;
+    
     /// The orientation of this body or site.
-    fn orientation(&self) -> &R;
+    fn orientation(&self) -> &Self::Rotation;
 
     /// The orientation of this body or site (mutable).
-    fn orientation_mut(&mut self) -> &mut R;
+    fn orientation_mut(&mut self) -> &mut Self::Rotation;
 }
