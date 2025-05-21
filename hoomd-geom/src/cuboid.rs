@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*!Axis-aligned N-cuboids, particularly used for bounding volume hierarchies.*/
+/*!N-cuboids, which may or may not be treated as axis aligned.*/
 use crate::intersects::IntersectsAt;
 use crate::xenocollide::{collide2d, collide3d};
 use crate::{SupportFn, Volume};
@@ -38,6 +38,21 @@ impl Cuboid<3> {
         self.edge_lengths[2]
     }
     // TODO: inherent implementation for intersects_aligned
+}
+
+impl<const N: usize> Cuboid<N> {
+    /// Compute the intersection between two *axis-aligned* cuboids.
+    fn intersects_aligned(&self, other: &Cuboid<N>, v_ij: &Cartesian<N>) -> bool {
+        let b_mins = other.minimal_extents() + *v_ij;
+        let b_maxs = other.maximal_extents() + *v_ij;
+        multizip((
+            self.minimal_extents(),
+            b_maxs,
+            self.maximal_extents(),
+            b_mins,
+        ))
+        .all(|(a_min, b_max, a_max, b_min)| (a_min <= b_max) && (a_max >= b_min))
+    }
 }
 
 impl<const N: usize> Volume for Cuboid<N> {
@@ -114,15 +129,6 @@ where
     }
 }
 
-/// Determine whether two *axis-aligned* cuboids intersect.
-#[inline]
-fn aabb_intersects<const N: usize>(a: &Cuboid<N>, b: &Cuboid<N>, v_ij: &Cartesian<N>) -> bool {
-    let b_mins = b.minimal_extents() + *v_ij;
-    let b_maxs = b.maximal_extents() + *v_ij;
-    multizip((a.minimal_extents(), b_maxs, a.maximal_extents(), b_mins))
-        .all(|(a_min, b_max, a_max, b_min)| (a_min <= b_max) && (a_max >= b_min))
-}
-
 #[cfg(test)]
 #[expect(clippy::used_underscore_binding, reason = "Required for const tests.")]
 mod tests {
@@ -139,11 +145,11 @@ mod tests {
     fn test_box_intersections_aligned(edges0: [f64; 3], edges1: [f64; 3]) {
         let (s0, s1) = (Cuboid::<3>::from(edges0), Cuboid::<3>::from(edges1));
         // Should all be false (no intersection), which we invert to true
-        assert!(!s0.intersects_at(&s1, &[10.0, 10.0, 10.0].into(), &Versor::default()));
+        assert!(!s0.intersects_aligned(&s1, &[10.0, 10.0, 10.0].into()));
         // Boundaries are aligned
-        assert!(s0.intersects_at(&s1, &[1.5, 1.5, 1.5].into(), &Versor::default()));
+        assert!(s0.intersects_aligned(&s1, &[1.5, 1.5, 1.5].into()));
         // Both at origin - will always intersect for any cuboids
-        assert!(s0.intersects_at(&s1, &[0.0, 0.0, 0.0].into(), &Versor::default()));
+        assert!(s0.intersects_aligned(&s1, &[0.0, 0.0, 0.0].into()));
     }
     #[rstest(
         edges0 => [[2.0, 2.0]],
