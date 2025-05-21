@@ -344,7 +344,7 @@ mod tests {
 
         let overlaps = collide2d(&s0, &s1, &v.into(), &o_ij);
 
-        assert_eq!(overlaps, s0.intersects_at(&s1, &v.into(), &None::<Angle>),);
+        assert_eq!(overlaps, s0.intersects_at(&s1, &v.into(), &o_ij));
     }
     #[rstest(
         v => [[0.1, 0.1, 0.1], [999.9, 0.0, -10.9], [0.0, 5.123, 0.0], [0.0, 0.0, 5.123_000_001]],
@@ -363,7 +363,7 @@ mod tests {
 
         assert_eq!(
             overlaps,
-            s0.intersects_at(&s1, &v.into(), &None::<Versor>),
+            s0.intersects_at(&s1, &v.into(), &o_ij),
             "Xenocollide result did not match standard implementation!"
         );
     }
@@ -378,7 +378,10 @@ mod tests {
         let theta = Angle::from(0.0);
 
         let overlaps = collide2d(&c0, &c1, &v.into(), &theta);
-        assert_eq!(overlaps, c0.intersects_at(&c1, &v.into(), &None::<Angle>));
+        assert_eq!(
+            overlaps,
+            c0.intersects_at(&c1, &v.into(), &Angle::default())
+        );
     }
     #[rstest(
         v => [[0.1, 2.1, 0.1], [999.9, 0.0, 0.05], [0.0, 5.123, 0.0], [0.0, 5.123_000_000_001, 0.0]],
@@ -390,6 +393,9 @@ mod tests {
         let theta = Versor::identity();
 
         let overlaps = collide3d(&c0, &c1, &v.into(), &theta);
-        assert_eq!(overlaps, c0.intersects_at(&c1, &v.into(), &None::<Versor>),);
+        assert_eq!(
+            overlaps,
+            c0.intersects_at(&c1, &v.into(), &Versor::default())
+        );
     }
 }

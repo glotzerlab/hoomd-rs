@@ -37,6 +37,7 @@ impl Cuboid<3> {
     pub fn c(&self) -> f64 {
         self.edge_lengths[2]
     }
+    // TODO: inherent implementation for intersects_aligned
 }
 
 impl<const N: usize> Volume for Cuboid<N> {
@@ -96,19 +97,9 @@ where
     R: Rotate<Cartesian<2>> + Rotation + PartialEq + Copy,
     RotationMatrix<2>: From<R>,
 {
-    type OptionalRotation = Option<R>;
-
     #[inline]
-    fn intersects_at(
-        &self,
-        other: &Cuboid<2>,
-        v_ij: &Cartesian<2>,
-        o_ij: &Self::OptionalRotation,
-    ) -> bool {
-        match o_ij {
-            None => aabb_intersects(self, other, v_ij),
-            Some(rotation) => collide2d(self, other, v_ij, rotation),
-        }
+    fn intersects_at(&self, other: &Cuboid<2>, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
+        collide2d(self, other, v_ij, o_ij)
     }
 }
 
@@ -117,19 +108,9 @@ where
     R: Rotate<Cartesian<3>> + Rotation + PartialEq + Copy,
     RotationMatrix<3>: From<R>,
 {
-    type OptionalRotation = Option<R>;
-
     #[inline]
-    fn intersects_at(
-        &self,
-        other: &Cuboid<3>,
-        v_ij: &Cartesian<3>,
-        o_ij: &Self::OptionalRotation,
-    ) -> bool {
-        match o_ij {
-            None => aabb_intersects(self, other, v_ij),
-            Some(rotation) => collide3d(self, other, v_ij, rotation),
-        }
+    fn intersects_at(&self, other: &Cuboid<3>, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
+        collide3d(self, other, v_ij, o_ij)
     }
 }
 
@@ -158,11 +139,11 @@ mod tests {
     fn test_box_intersections_aligned(edges0: [f64; 3], edges1: [f64; 3]) {
         let (s0, s1) = (Cuboid::<3>::from(edges0), Cuboid::<3>::from(edges1));
         // Should all be false (no intersection), which we invert to true
-        assert!(!s0.intersects_at(&s1, &[10.0, 10.0, 10.0].into(), &None::<Versor>));
+        assert!(!s0.intersects_at(&s1, &[10.0, 10.0, 10.0].into(), &Versor::default()));
         // Boundaries are aligned
-        assert!(s0.intersects_at(&s1, &[1.5, 1.5, 1.5].into(), &None::<Versor>));
+        assert!(s0.intersects_at(&s1, &[1.5, 1.5, 1.5].into(), &Versor::default()));
         // Both at origin - will always intersect for any cuboids
-        assert!(s0.intersects_at(&s1, &[0.0, 0.0, 0.0].into(), &None::<Versor>));
+        assert!(s0.intersects_at(&s1, &[0.0, 0.0, 0.0].into(), &Versor::default()));
     }
     #[rstest(
         edges0 => [[2.0, 2.0]],
@@ -171,11 +152,11 @@ mod tests {
     fn test_box_intersections_2d_aligned(edges0: [f64; 2], edges1: [f64; 2]) {
         let (c0, c1) = (Cuboid::<2>::from(edges0), Cuboid::<2>::from(edges1));
         // Should all be false (no intersection), which we invert to true
-        assert!(!c0.intersects_at(&c1, &[10.0, 10.0].into(), &None::<Angle>));
+        assert!(!c0.intersects_at(&c1, &[10.0, 10.0].into(), &Angle::default()));
         // Boundaries are aligned
-        assert!(c0.intersects_at(&c1, &[1.5, 1.5].into(), &None::<Angle>));
+        assert!(c0.intersects_at(&c1, &[1.5, 1.5].into(), &Angle::default()));
         // Both at origin - will always intersect for any cuboids
-        assert!(c0.intersects_at(&c1, &[0.0, 0.0].into(), &None::<Angle>));
+        assert!(c0.intersects_at(&c1, &[0.0, 0.0].into(), &Angle::default()));
     }
 
     #[rstest(

@@ -32,6 +32,8 @@ pub trait MinDistance<const N: usize, V: Vector, R: Rotate<V>, S: Shape<N>> {
 
 /**
 The support function of a geometry.
+
+TODO: SupportFn should be called SupportMapping (fn typically returns dot product)
 */
 pub trait SupportFn<V: Vector> {
     /// Center of mass of the shape
