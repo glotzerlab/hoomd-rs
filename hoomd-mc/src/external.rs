@@ -82,4 +82,6 @@ mod tests {
             f64::INFINITY
         );
     }
+
+    // TODO: Test inside
 }
