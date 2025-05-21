@@ -19,7 +19,7 @@ Use types that implement [`SitePairEnergy`], such as one from
 need to call `site_pair_energy`. Wrap the type in `CutoffPair` to use it with MC
 simulations or to compute the total energy.
 
-TODO: Reword this when Single also implements `SiteForce`.
+TODO: Reword this when `CutoffPair` also implements `SitePairForce`.
 
 [`CutoffPair`] sums properties over all:
 * pairs that are separated by a distance less than `r_cut`.

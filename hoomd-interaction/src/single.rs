@@ -17,7 +17,7 @@ Use types that implement [`SiteEnergy`], such as one from
 only need to call `site_energy`. Wrap the type in `Single` to use it with MC
 simulations or to compute the total energy.
 
-TODO: Reword this when Single also implements `SiteForce`.
+TODO: Reword this when `Single` also implements `SiteForce`.
 
 # Example
 
