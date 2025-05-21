@@ -6,7 +6,7 @@
 
 use super::{IsotropicEnergy, IsotropicForce};
 
-/** Smoothly shift a potential (and its force) to 0 at some `r_cut`, beginning at `r_on`.
+/** Smoothly shift a potential (and its force) to 0 at some `r_cut`, beginning at `r_smooth`.
 
 <!-- U(r) = S(r) \cdot f(r) -->
 <math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mi>S</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>⋅</mo><mi>f</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo></mrow></math>
@@ -31,8 +31,8 @@ use hoomd_interaction::pairwise::{LennardJones, Xplor};
 let epsilon = 1.5;
 let sigma = 1.0;
 let r_cut = 2.5 * sigma;
-let r_on = 1.5 * sigma;
-let xplor_lj = Xplor { f: LennardJones::<12,6> { epsilon, sigma }, r_cut, r_on };
+let r_smooth = 1.5 * sigma;
+let xplor_lj = Xplor { f: LennardJones::<12,6> { epsilon, sigma }, r_cut, r_smooth };
 */
 
 #[derive(Clone, Debug, PartialEq)]
@@ -42,23 +42,23 @@ pub struct Xplor<F> {
     /// `r` value `[length]` where the smoothed potential will be 0.
     pub r_cut: f64,
     /// `r` value `[length]` where the smoothing function is enabled. Should be < `r_cut`
-    pub r_on: f64, // TODO: find alternate name?
+    pub r_smooth: f64,
 }
 
 impl<F> Xplor<F> {
     /// The xplor shifting function
     #[inline]
     fn s(&self, r: f64) -> f64 {
-        if r < self.r_on {
+        if r < self.r_smooth {
             1.0
         } else if r > self.r_cut {
             0.0
         } else {
             let r_sq = r.powi(2);
             let r_cut_sq = self.r_cut.powi(2);
-            let r_on_sq = self.r_on.powi(2);
-            (r_cut_sq - r_sq).powi(2) * (r_cut_sq + 2.0 * r_sq - 3.0 * r_on_sq)
-                / (r_cut_sq - r_on_sq).powi(3)
+            let r_smooth_sq = self.r_smooth.powi(2);
+            (r_cut_sq - r_sq).powi(2) * (r_cut_sq + 2.0 * r_sq - 3.0 * r_smooth_sq)
+                / (r_cut_sq - r_smooth_sq).powi(3)
         }
     }
     /// Partial derivative of the xplor function with respect to r
@@ -66,8 +66,8 @@ impl<F> Xplor<F> {
     fn ds_dr(&self, r: f64) -> f64 {
         let r_sq = r.powi(2);
         let r_cut_sq = self.r_cut.powi(2);
-        let r_on_sq = self.r_on.powi(2);
-        12.0 * r * ((r_cut_sq - r_sq) * (r_on_sq - r_sq)) / (r_cut_sq - r_on_sq).powi(3)
+        let r_smooth_sq = self.r_smooth.powi(2);
+        12.0 * r * ((r_cut_sq - r_sq) * (r_smooth_sq - r_sq)) / (r_cut_sq - r_smooth_sq).powi(3)
     }
 }
 
@@ -81,7 +81,7 @@ impl<F: IsotropicEnergy> IsotropicEnergy for Xplor<F> {
 impl<F: IsotropicForce + IsotropicEnergy> IsotropicForce for Xplor<F> {
     #[inline]
     fn force(&self, r: f64) -> f64 {
-        if r < self.r_on {
+        if r < self.r_smooth {
             self.f.force(r)
         } else if r > self.r_cut {
             0.0
@@ -106,25 +106,25 @@ mod tests {
         #[values(1.0, 2.0, 0.5)] sigma: f64,
     ) {
         let lj: LennardJones = LennardJones { epsilon, sigma };
-        let r_on = 1.0; // Provides cases where r_on <, =, > sigma and epsilon
+        let r_smooth = 1.0; // Provides cases where r_smooth <, =, > sigma and epsilon
         let r_cut = 2.5 * sigma;
-        let xplor_lj = Xplor { f: lj, r_cut, r_on };
+        let xplor_lj = Xplor { f: lj, r_cut, r_smooth };
 
         assert_eq!(xplor_lj.f.epsilon, epsilon);
         assert_eq!(xplor_lj.f.sigma, sigma);
-        assert_eq!(xplor_lj.r_on, r_on);
+        assert_eq!(xplor_lj.r_smooth, r_smooth);
         assert_eq!(xplor_lj.r_cut, r_cut);
 
-        // Values should not be shifted below r_on
-        assert_abs_diff_eq!(xplor_lj.energy(r_on / 2.0), lj.energy(r_on / 2.0));
+        // Values should not be shifted below r_smooth
+        assert_abs_diff_eq!(xplor_lj.energy(r_smooth / 2.0), lj.energy(r_smooth / 2.0));
         assert_abs_diff_eq!(
-            xplor_lj.energy(r_on.next_down()),
-            lj.energy(r_on.next_down())
+            xplor_lj.energy(r_smooth.next_down()),
+            lj.energy(r_smooth.next_down())
         );
-        assert_abs_diff_eq!(xplor_lj.force(r_on / 2.0), lj.force(r_on / 2.0));
-        assert_abs_diff_eq!(xplor_lj.force(r_on.next_down()), lj.force(r_on.next_down()));
+        assert_abs_diff_eq!(xplor_lj.force(r_smooth / 2.0), lj.force(r_smooth / 2.0));
+        assert_abs_diff_eq!(xplor_lj.force(r_smooth.next_down()), lj.force(r_smooth.next_down()));
 
-        if sigma < r_on {
+        if sigma < r_smooth {
             assert_abs_diff_eq!(xplor_lj.energy(sigma), 0.0);
             assert_relative_eq!(xplor_lj.force(sigma), 24.0 * epsilon / sigma);
         }
@@ -138,20 +138,20 @@ mod tests {
         assert_abs_diff_eq!(xplor_lj.force(r_cut.next_up()), 0.0);
         assert_abs_diff_eq!(xplor_lj.force(r_cut * 2.0), 0.0);
 
-        // Values should not be the same between r_on and r_cut
+        // Values should not be the same between r_smooth and r_cut
         assert_abs_diff_ne!(
-            xplor_lj.energy(f64::midpoint(r_on, r_cut)),
-            lj.energy(f64::midpoint(r_on, r_cut))
+            xplor_lj.energy(f64::midpoint(r_smooth, r_cut)),
+            lj.energy(f64::midpoint(r_smooth, r_cut))
         );
         assert_abs_diff_ne!(
-            xplor_lj.force(f64::midpoint(r_on, r_cut)),
-            lj.force(f64::midpoint(r_on, r_cut))
+            xplor_lj.force(f64::midpoint(r_smooth, r_cut)),
+            lj.force(f64::midpoint(r_smooth, r_cut))
         );
 
         // Bottom of the well (without the xplor modification)
         let r_min = 2.0_f64.powf(1.0 / 6.0) * sigma;
         assert_relative_eq!(xplor_lj.energy(r_min), -epsilon * xplor_lj.s(r_min));
-        if sigma < r_on {
+        if sigma < r_smooth {
             assert_abs_diff_eq!(xplor_lj.force(r_min), 0.0, epsilon = 1e-12);
         }
 
@@ -162,14 +162,14 @@ mod tests {
         );
         assert_relative_eq!(
             xplor_lj.force(2.0 * sigma),
-            -(93.0 * r_cut.powi(6) * epsilon - 279.0 * r_cut.powi(4) * r_on.powi(2) * epsilon
-                + 1476.0 * r_cut.powi(2) * r_on.powi(2) * sigma.powi(2) * epsilon
+            -(93.0 * r_cut.powi(6) * epsilon - 279.0 * r_cut.powi(4) * r_smooth.powi(2) * epsilon
+                + 1476.0 * r_cut.powi(2) * r_smooth.powi(2) * sigma.powi(2) * epsilon
                 - 1440.0 * r_cut.powi(2) * sigma.powi(4) * epsilon
-                - 1440.0 * r_on.powi(2) * sigma.powi(4) * epsilon
+                - 1440.0 * r_smooth.powi(2) * sigma.powi(4) * epsilon
                 - 192.0 * sigma.powi(6) * epsilon)
-                / (512.0 * r_cut.powi(6) * sigma - 1536.0 * r_cut.powi(4) * r_on.powi(2) * sigma
-                    + 1536.0 * r_cut.powi(2) * r_on.powi(4) * sigma
-                    - 512.0 * r_on.powi(6) * sigma)
+                / (512.0 * r_cut.powi(6) * sigma - 1536.0 * r_cut.powi(4) * r_smooth.powi(2) * sigma
+                    + 1536.0 * r_cut.powi(2) * r_smooth.powi(4) * sigma
+                    - 512.0 * r_smooth.powi(6) * sigma)
         );
     }
 }
