@@ -49,7 +49,6 @@ impl<F> Xplor<F> {
     /// The xplor shifting function
     #[inline]
     fn s(&self, r: f64) -> f64 {
-        // NOTE: r checks must be performed here to scale the forces properly
         if r < self.r_on {
             1.0
         } else if r > self.r_cut {
@@ -87,8 +86,8 @@ impl<F: IsotropicForce + IsotropicEnergy> IsotropicForce for Xplor<F> {
         } else if r > self.r_cut {
             0.0
         } else {
-            // Chain rule of s(r)*U(r)
-            self.s(r) * self.f.force(r) + self.ds_dr(r) * self.f.energy(r)
+            // Chain rule of -d/dr(s(r)*U(r))
+            self.s(r) * self.f.force(r) - self.ds_dr(r) * self.f.energy(r)
         }
     }
 }
@@ -118,21 +117,23 @@ mod tests {
 
         // Values should not be shifted below r_on
         assert_abs_diff_eq!(xplor_lj.energy(r_on / 2.0), lj.energy(r_on / 2.0));
-        assert_abs_diff_eq!(xplor_lj.energy(r_on - 1e-6), lj.energy(r_on - 1e-6));
-        assert_abs_diff_eq!(xplor_lj.force(r_on / 2.0), lj.force(r_on / 2.0)); // TODO
-        assert_abs_diff_eq!(xplor_lj.force(r_on - 1e-6), lj.force(r_on - 1e-6)); // TODO
+        assert_abs_diff_eq!(xplor_lj.energy(r_on.next_down()), lj.energy(r_on.next_down()));
+        assert_abs_diff_eq!(xplor_lj.force(r_on / 2.0), lj.force(r_on / 2.0));
+        assert_abs_diff_eq!(xplor_lj.force(r_on.next_down()), lj.force(r_on.next_down()));
+
+        if sigma < r_on {
+            assert_abs_diff_eq!(xplor_lj.energy(sigma), 0.0);
+            assert_relative_eq!(xplor_lj.force(sigma), 24.0 * epsilon / sigma);
+        }
 
         // Values should be zero at and above r_cut
         assert_abs_diff_eq!(xplor_lj.energy(r_cut), 0.0);
-        assert_abs_diff_eq!(xplor_lj.energy(r_cut + 1e-6), 0.0);
+        assert_abs_diff_eq!(xplor_lj.energy(r_cut.next_up()), 0.0);
         assert_abs_diff_eq!(xplor_lj.energy(r_cut * 2.0), 0.0);
 
         assert_abs_diff_eq!(xplor_lj.force(r_cut), 0.0);
-        assert_abs_diff_eq!(xplor_lj.force(r_cut + 1e-6), 0.0);
+        assert_abs_diff_eq!(xplor_lj.force(r_cut.next_up()), 0.0);
         assert_abs_diff_eq!(xplor_lj.force(r_cut * 2.0), 0.0);
-
-        assert_abs_diff_eq!(xplor_lj.energy(sigma), 0.0);
-        // assert_relative_eq!(xplor_lj.force(sigma), 24.0 * epsilon / sigma); // TODO
 
         // Values should not be the same between r_on and r_cut
         assert_abs_diff_ne!(
@@ -144,23 +145,21 @@ mod tests {
             lj.force(f64::midpoint(r_on, r_cut))
         );
 
-        // Zero crossing
-        assert_abs_diff_eq!(xplor_lj.energy(sigma), 0.0);
-        // assert_relative_eq!(xplor_lj.force(sigma), 24.0 * epsilon / sigma); // TODO
-
-        // Bottom of the well
+        // Bottom of the well (without the xplor modification)
         let r_min = 2.0_f64.powf(1.0 / 6.0) * sigma;
         assert_relative_eq!(xplor_lj.energy(r_min), -epsilon * xplor_lj.s(r_min));
-        // assert_abs_diff_eq!(xplor_lj.force(r_min), 0.0, epsilon = 1e-12); // TODO
+        if sigma < r_on {
+            assert_abs_diff_eq!(xplor_lj.force(r_min), 0.0, epsilon = 1e-12);
+        }
 
         // r = 2 sigma
         assert_relative_eq!(
             xplor_lj.energy(2.0 * sigma),
             -63.0 / 1024.0 * epsilon * xplor_lj.s(2.0 * sigma)
         );
-        // assert_relative_eq!(
-        //     xplor_lj.force(2.0 * sigma),
-        //     -93.0 / 512.0 * epsilon / sigma
-        // ); // TODO: should be shifted
+        assert_relative_eq!(
+            xplor_lj.force(2.0 * sigma),
+            -(93.0 * r_cut.powi(6) * epsilon - 279.0 * r_cut.powi(4) * r_on.powi(2) * epsilon + 1476.0 * r_cut.powi(2) * r_on.powi(2) * sigma.powi(2) * epsilon - 1440.0 * r_cut.powi(2) * sigma.powi(4) * epsilon - 1440.0 * r_on.powi(2) * sigma.powi(4) * epsilon - 192.0 * sigma.powi(6) * epsilon)/(512.0 * r_cut.powi(6) * sigma - 1536.0 * r_cut.powi(4) * r_on.powi(2) * sigma + 1536.0 * r_cut.powi(2) * r_on.powi(4) * sigma - 512.0 * r_on.powi(6) * sigma)
+        );
     }
 }

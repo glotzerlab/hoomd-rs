@@ -99,7 +99,6 @@ pub trait AnisotropicEnergy<V: Vector, R: Rotate<V>> {
 //     fn energy(&self, r_ij: &V, o_ij: &R) -> f64;
 // }
 
-// TODO: Implement Xplor smoothing
 // TODO: Implement Harmonic and HarmonicRepulsion based on that (Harmonic cut off at r_0)
 // TODO: Implement Expanded as an adapter (like shifted)
 // TODO: Consider implementing IsotropicEnergy for Fn(f64) -> f64 to allow the user to directly
