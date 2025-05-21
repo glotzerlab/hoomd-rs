@@ -117,7 +117,10 @@ mod tests {
 
         // Values should not be shifted below r_on
         assert_abs_diff_eq!(xplor_lj.energy(r_on / 2.0), lj.energy(r_on / 2.0));
-        assert_abs_diff_eq!(xplor_lj.energy(r_on.next_down()), lj.energy(r_on.next_down()));
+        assert_abs_diff_eq!(
+            xplor_lj.energy(r_on.next_down()),
+            lj.energy(r_on.next_down())
+        );
         assert_abs_diff_eq!(xplor_lj.force(r_on / 2.0), lj.force(r_on / 2.0));
         assert_abs_diff_eq!(xplor_lj.force(r_on.next_down()), lj.force(r_on.next_down()));
 
@@ -159,7 +162,14 @@ mod tests {
         );
         assert_relative_eq!(
             xplor_lj.force(2.0 * sigma),
-            -(93.0 * r_cut.powi(6) * epsilon - 279.0 * r_cut.powi(4) * r_on.powi(2) * epsilon + 1476.0 * r_cut.powi(2) * r_on.powi(2) * sigma.powi(2) * epsilon - 1440.0 * r_cut.powi(2) * sigma.powi(4) * epsilon - 1440.0 * r_on.powi(2) * sigma.powi(4) * epsilon - 192.0 * sigma.powi(6) * epsilon)/(512.0 * r_cut.powi(6) * sigma - 1536.0 * r_cut.powi(4) * r_on.powi(2) * sigma + 1536.0 * r_cut.powi(2) * r_on.powi(4) * sigma - 512.0 * r_on.powi(6) * sigma)
+            -(93.0 * r_cut.powi(6) * epsilon - 279.0 * r_cut.powi(4) * r_on.powi(2) * epsilon
+                + 1476.0 * r_cut.powi(2) * r_on.powi(2) * sigma.powi(2) * epsilon
+                - 1440.0 * r_cut.powi(2) * sigma.powi(4) * epsilon
+                - 1440.0 * r_on.powi(2) * sigma.powi(4) * epsilon
+                - 192.0 * sigma.powi(6) * epsilon)
+                / (512.0 * r_cut.powi(6) * sigma - 1536.0 * r_cut.powi(4) * r_on.powi(2) * sigma
+                    + 1536.0 * r_cut.powi(2) * r_on.powi(4) * sigma
+                    - 512.0 * r_on.powi(6) * sigma)
         );
     }
 }

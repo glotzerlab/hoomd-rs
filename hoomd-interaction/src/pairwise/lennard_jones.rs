@@ -74,6 +74,7 @@ impl<const N: i32, const M: i32> Default for LennardJones<N, M> {
     let lennard_jones: LennardJones = LennardJones::default();
     ```
     */
+    #[inline]
     fn default() -> Self {
         Self {
             epsilon: 1.0,
