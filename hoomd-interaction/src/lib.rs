@@ -150,45 +150,74 @@ mod tests {
     use hoomd_vector::Cartesian;
     use rstest::*;
 
-    struct TestSE;
+    mod single {
+        use super::*;
+        
+        struct TestSE;
 
-    impl<S> SiteEnergy<S> for TestSE
-    where
-        S: Position<Vector = Cartesian<2>>,
-    {
-        fn site_energy(&self, site_properties: &S) -> f64 {
-            site_properties.position()[0] + site_properties.position()[1]
+        impl<S> SiteEnergy<S> for TestSE
+        where
+            S: Position<Vector = Cartesian<2>>,
+        {
+            fn site_energy(&self, site_properties: &S) -> f64 {
+                site_properties.position()[0] + site_properties.position()[1]
+            }
+        }
+
+        #[fixture]
+        fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
+            let mut microstate = Microstate::new();
+            microstate
+                .extend_bodies([
+                    Body::point(Cartesian::from([1.0, 0.0])),
+                    Body::point(Cartesian::from([-1.0, 3.0])),
+                ])
+                .expect("hard-coded bodies should be in the boundary");
+            microstate
+        }
+
+        #[rstest]
+        fn single_total(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+            let test_se = TestSE;
+            let single = Single(test_se);
+
+            assert_eq!(single.total_energy(&microstate), 3.0);
+        }
+
+        #[rstest]
+        fn single_site(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+            let test_se = TestSE;
+            let single = Single(test_se);
+
+            assert_eq!(single.site_energy(&microstate.sites()[0].properties), 1.0);
+            assert_eq!(single.site_energy(&microstate.sites()[1].properties), 2.0);
         }
     }
 
-    #[fixture]
-    fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
-        let mut microstate = Microstate::new();
-        microstate
-            .extend_bodies([
-                Body::point(Cartesian::from([1.0, 0.0])),
-                Body::point(Cartesian::from([-1.0, 3.0])),
-            ])
-            .expect("hard-coded bodies should be in the boundary");
-        microstate
-    }
 
-    #[rstest]
-    fn single_total(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
-        let test_se = TestSE;
-        let single = Single(test_se);
+    mod cutoff_pair {
+        use super::*;
+        use crate::pairwise::Isotropic;
 
-        assert_eq!(single.total_energy(&microstate), 3.0);
-    }
+        #[fixture]
+        fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
+            let mut microstate = Microstate::new();
+                microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
+                                  Body::point(Cartesian::from([1.0, 0.0])),
+                                  Body::point(Cartesian::from([0.0, 5.0])),
+                                  Body::point(Cartesian::from([-1.0, 5.0])),
+                                ])
+                .expect("hard-coded bodies should be in the boundary");
+            microstate
+        }
 
-    #[rstest]
-    fn single_site(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
-        let test_se = TestSE;
-        let single = Single(test_se);
+        #[rstest]
+        fn blanket_fn(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+            let cutoff_pair = CutoffPair { r_cut: 2.0, evaluator: Isotropic(|r| 1.0 / (r * 2.0)) };
 
-        assert_eq!(single.site_energy(&microstate.sites()[0].properties), 1.0);
-        assert_eq!(single.site_energy(&microstate.sites()[1].properties), 2.0);
-    }
+            assert_eq!(cutoff_pair.total_energy(&microstate), 1.0);
+        }
 
     // TODO: Test CutoffPair
+    }
 }

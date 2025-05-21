@@ -27,6 +27,7 @@ TODO: Reword this when `CutoffPair` also implements `SitePairForce`.
 
 # Example
 
+Basic usage:
 ```
 use hoomd_interaction::{CutoffPair, SitePairEnergy, TotalEnergy,
     pairwise::{Isotropic, LennardJones}};
@@ -58,6 +59,10 @@ assert_eq!((*a.position() - *b.position()).norm(), 5.0);
 assert!(cutoff_pair.evaluator.site_pair_energy(a, b) < 0.0);
 # Ok(())
 # }
+```
+
+Set a one-off custom potential:
+```
 ```
 */
 pub struct CutoffPair<E> {

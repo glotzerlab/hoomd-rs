@@ -47,6 +47,14 @@ pub trait IsotropicEnergy {
     fn energy(&self, r: f64) -> f64;
 }
 
+impl<F> IsotropicEnergy for F where
+    F: Fn(f64) -> f64 {
+    #[inline]
+    fn energy(&self, r: f64) -> f64 {
+        self(r)
+    }
+}
+
 /** Computes pairwise forces between point particles.
 
 An isotropic pairwise force is function only of the distances between the
