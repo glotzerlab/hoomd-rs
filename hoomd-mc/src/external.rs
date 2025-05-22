@@ -8,6 +8,31 @@ use super::DeltaEnergyOne;
 use hoomd_interaction::{Single, SiteEnergy};
 use hoomd_microstate::{Body, Microstate, Transform, boundary::Boundary, property::Position};
 
+/** Evaluate the change in energy due to functions that act on single sites.
+
+# Example
+
+```
+use hoomd_interaction::{Single, external::Linear};
+use hoomd_mc::DeltaEnergyOne;
+use hoomd_microstate::{Microstate, Body, property::Point};
+use hoomd_vector::Cartesian;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut microstate = Microstate::new();
+microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
+
+let linear = Single(Linear{ alpha: 1.0,
+    plane_origin: Cartesian::default(),
+    plane_normal: [0.0, 1.0].try_into()? });
+
+let delta_energy = linear.delta_energy_one(&microstate, 0,
+    &Body::point([0.0, -1.0].into()));
+assert_eq!(delta_energy, -1.0);
+# Ok(())
+# }
+```
+*/
 impl<V, B, S, C, E> DeltaEnergyOne<B, S, C> for Single<E>
 where
     E: SiteEnergy<S>,
@@ -82,6 +107,4 @@ mod tests {
             f64::INFINITY
         );
     }
-
-    // TODO: Test inside
 }

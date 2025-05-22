@@ -23,8 +23,7 @@ TODO: Reword this when `Single` also implements `SiteForce`.
 
 ```
 use hoomd_interaction::{Single, TotalEnergy, external::Linear};
-use hoomd_microstate::{Microstate, Body};
-use hoomd_microstate::property::{Point, Position};
+use hoomd_microstate::{Microstate, Body, property::Point};
 use hoomd_vector::Cartesian;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {

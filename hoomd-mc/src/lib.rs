@@ -17,6 +17,7 @@ use hoomd_microstate::{Body, Microstate};
 use rand::Rng;
 use std::ops::AddAssign;
 
+mod cutoff_pair;
 mod external;
 mod sweep;
 mod translate;
