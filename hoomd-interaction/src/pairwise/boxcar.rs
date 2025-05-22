@@ -51,11 +51,11 @@ boxcar.b = 1.0;
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Boxcar {
-    /// Energy scale (`[energy]`).
+    /// Energy scale *(\[energy\])*.
     pub epsilon: f64,
-    /// Left side of the boxcar (`[length]`).
+    /// Left side of the boxcar *(\[length\])*.
     pub a: f64,
-    /// Right side of the boxcar (`[length]`).
+    /// Right side of the boxcar *(\[length\])*.
     pub b: f64,
 }
 

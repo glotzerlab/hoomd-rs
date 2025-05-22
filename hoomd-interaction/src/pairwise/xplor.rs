@@ -39,9 +39,9 @@ let xplor_lj = Xplor { f: LennardJones::<12,6> { epsilon, sigma }, r_cut, r_smoo
 pub struct Xplor<F> {
     /// The original potential.
     pub f: F,
-    /// `r` value `[length]` where the smoothed potential will be 0.
+    /// `r` value *(\[length\])* where the smoothed potential will be 0.
     pub r_cut: f64,
-    /// `r` value `[length]` where the smoothing function is enabled. Should be < `r_cut`
+    /// `r` value *(\[length\])* where the smoothing function is enabled. Should be less than `r_cut`
     pub r_smooth: f64,
 }
 
@@ -108,7 +108,11 @@ mod tests {
         let lj: LennardJones = LennardJones { epsilon, sigma };
         let r_smooth = 1.0; // Provides cases where r_smooth <, =, > sigma and epsilon
         let r_cut = 2.5 * sigma;
-        let xplor_lj = Xplor { f: lj, r_cut, r_smooth };
+        let xplor_lj = Xplor {
+            f: lj,
+            r_cut,
+            r_smooth,
+        };
 
         assert_eq!(xplor_lj.f.epsilon, epsilon);
         assert_eq!(xplor_lj.f.sigma, sigma);
@@ -122,7 +126,10 @@ mod tests {
             lj.energy(r_smooth.next_down())
         );
         assert_abs_diff_eq!(xplor_lj.force(r_smooth / 2.0), lj.force(r_smooth / 2.0));
-        assert_abs_diff_eq!(xplor_lj.force(r_smooth.next_down()), lj.force(r_smooth.next_down()));
+        assert_abs_diff_eq!(
+            xplor_lj.force(r_smooth.next_down()),
+            lj.force(r_smooth.next_down())
+        );
 
         if sigma < r_smooth {
             assert_abs_diff_eq!(xplor_lj.energy(sigma), 0.0);
@@ -167,7 +174,8 @@ mod tests {
                 - 1440.0 * r_cut.powi(2) * sigma.powi(4) * epsilon
                 - 1440.0 * r_smooth.powi(2) * sigma.powi(4) * epsilon
                 - 192.0 * sigma.powi(6) * epsilon)
-                / (512.0 * r_cut.powi(6) * sigma - 1536.0 * r_cut.powi(4) * r_smooth.powi(2) * sigma
+                / (512.0 * r_cut.powi(6) * sigma
+                    - 1536.0 * r_cut.powi(4) * r_smooth.powi(2) * sigma
                     + 1536.0 * r_cut.powi(2) * r_smooth.powi(4) * sigma
                     - 512.0 * r_smooth.powi(6) * sigma)
         );

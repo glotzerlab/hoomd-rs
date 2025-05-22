@@ -45,7 +45,7 @@ shifted_lj.f.sigma = 1.2;
 pub struct Shifted<F> {
     /// The original potential.
     pub f: F,
-    /// `r` value `[length]` where the shifted potential will be 0.
+    /// `r` value *(\[length\])* where the shifted potential will be 0.
     pub r_shift: f64,
 }
 

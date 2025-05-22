@@ -35,11 +35,11 @@ let linear = Linear { alpha: 2.0,
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Linear<V> {
-    /// Interaction strength (`[energy] [length]^(-1)`).
+    /// Interaction strength *(\[energy\] \[length\]^(-1))*.
     pub alpha: f64,
-    /// Point on the plane where U=0 (`[length]`).
+    /// Point on the plane where U=0 *(\[length\])*.
     pub plane_origin: V,
-    /// Vector normal to the plane (unitless).
+    /// Vector normal to the plane *(unitless)*.
     pub plane_normal: Unit<V>,
 }
 

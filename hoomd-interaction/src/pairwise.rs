@@ -37,6 +37,44 @@ particles.
 
 Implement [`IsotropicEnergy`] on a custom type or use one of the provided
 potentials in [`pairwise`](crate::pairwise) in MD or MC simulations.
+Use an [`IsotropicEnergy`] in combination with [`Isotropic`] and
+[`CutoffPair`](crate::CutoffPair).
+
+# Examples
+
+Set a custom potential using a closure:
+```
+use hoomd_interaction::pairwise::IsotropicEnergy;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let a = 2.0;
+let custom = |r: f64| a / (r.powi(12));
+
+let energy = custom.energy(1.0);
+assert_eq!(energy, 2.0);
+# Ok(())
+# }
+```
+
+Implement a custom potential via a type:
+```
+use hoomd_interaction::pairwise::IsotropicEnergy;
+
+struct Custom {
+    a: f64,
+}
+
+impl IsotropicEnergy for Custom {
+    fn energy(&self, r: f64) -> f64 {
+        self.a / r.powi(12)
+    }
+}
+
+let custom = Custom { a: 2.0 };
+
+let energy = custom.energy(1.0);
+assert_eq!(energy, 2.0);
+```
 */
 pub trait IsotropicEnergy {
     /** Compute the pairwise energy between two point particles.
@@ -47,8 +85,10 @@ pub trait IsotropicEnergy {
     fn energy(&self, r: f64) -> f64;
 }
 
-impl<F> IsotropicEnergy for F where
-    F: Fn(f64) -> f64 {
+impl<F> IsotropicEnergy for F
+where
+    F: Fn(f64) -> f64,
+{
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         self(r)
@@ -109,6 +149,3 @@ pub trait AnisotropicEnergy<V: Vector, R: Rotate<V>> {
 
 // TODO: Implement Harmonic and HarmonicRepulsion based on that (Harmonic cut off at r_0)
 // TODO: Implement Expanded as an adapter (like shifted)
-// TODO: Consider implementing IsotropicEnergy for Fn(f64) -> f64 to allow the user to directly
-//       use a closure in place of an IsotropicEnergy. It isn't clear how to do the same for
-//       both energy and force.

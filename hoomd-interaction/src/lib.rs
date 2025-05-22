@@ -152,7 +152,7 @@ mod tests {
 
     mod single {
         use super::*;
-        
+
         struct TestSE;
 
         impl<S> SiteEnergy<S> for TestSE
@@ -194,7 +194,6 @@ mod tests {
         }
     }
 
-
     mod cutoff_pair {
         use super::*;
         use crate::pairwise::Isotropic;
@@ -202,22 +201,37 @@ mod tests {
         #[fixture]
         fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
             let mut microstate = Microstate::new();
-                microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
-                                  Body::point(Cartesian::from([1.0, 0.0])),
-                                  Body::point(Cartesian::from([0.0, 5.0])),
-                                  Body::point(Cartesian::from([-1.0, 5.0])),
-                                ])
+            microstate
+                .extend_bodies([
+                    Body::point(Cartesian::from([0.0, 0.0])),
+                    Body::point(Cartesian::from([1.0, 0.0])),
+                    Body::point(Cartesian::from([0.0, 5.0])),
+                    Body::point(Cartesian::from([1.0, 5.0])),
+                ])
                 .expect("hard-coded bodies should be in the boundary");
             microstate
         }
 
         #[rstest]
         fn blanket_fn(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
-            let cutoff_pair = CutoffPair { r_cut: 2.0, evaluator: Isotropic(|r| 1.0 / (r * 2.0)) };
+            let cutoff_pair = CutoffPair {
+                r_cut: 2.0,
+                evaluator: Isotropic(|r| 1.0 / (r * 2.0)),
+            };
 
             assert_eq!(cutoff_pair.total_energy(&microstate), 1.0);
         }
 
-    // TODO: Test CutoffPair
+        #[rstest]
+        fn large_r_cut(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+            let cutoff_pair = CutoffPair {
+                r_cut: 5.0_f64.next_up(),
+                evaluator: Isotropic(|r| 1.0 / (r * 2.0)),
+            };
+
+            assert_eq!(cutoff_pair.total_energy(&microstate), 1.2);
+        }
+
+        // TODO: Test CutoffPair
     }
 }

@@ -31,7 +31,7 @@ pub struct Patch<V> {
     pub cos_delta: f64,
 }
 
-/** Evaluate an isotropic pairwise energy masked by angular patches.
+/** Evaluate an isotropic pairwise energy masked by angular patches (_not differentiable_).
 
 <!--
 U(\vec{r}_{ij}, \mathbf{o}_{ij}) = f(|\vec{r}_{ij}|) \cdot \max

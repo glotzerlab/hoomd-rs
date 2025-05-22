@@ -11,10 +11,13 @@ use hoomd_vector::Vector;
 
 /** Compute isotropic properties from a pair of sites
 
-[`Isotropic`] is a newtype that provides a single implementation of pairwise
-properties. It fills the gap between traits like [`SitePairEnergy`] which
-operates on site properties and [`IsotropicEnergy`] which is a function
+[`Isotropic`] is a newtype that provides a single implementation to compute
+pairwise properties. It fills the gap between traits like [`SitePairEnergy`]
+which operates on site properties and [`IsotropicEnergy`] which is a function
 only of the separation distance.
+
+Use [`Isotropic`] with [`CutoffPair`](crate::CutoffPair) in MD and MC
+simulations.
 
 # Example
 
