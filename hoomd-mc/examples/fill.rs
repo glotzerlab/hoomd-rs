@@ -3,7 +3,11 @@
 /*! This is an example
 */
 
-use hoomd_interaction::{CutoffPair, Single, external::Linear, pairwise::{Boxcar, Isotropic}};
+use hoomd_interaction::{
+    CutoffPair, Single,
+    external::Linear,
+    pairwise::{Boxcar, Isotropic},
+};
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Square, property::Point};
 use hoomd_vector::Cartesian;
@@ -20,8 +24,8 @@ use ratatui::{
     {DefaultTerminal, Frame},
 };
 
-use std::time::{Duration, Instant};
 use std::thread::sleep;
+use std::time::{Duration, Instant};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let terminal = ratatui::init();
@@ -39,14 +43,23 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     })
     .try_build()?;
 
-    let boxcar = Boxcar { epsilon: 1000.0, a: 0.0, b: 1.0 };
+    let boxcar = Boxcar {
+        epsilon: 1000.0,
+        a: 0.0,
+        b: 1.0,
+    };
     let evaluator = Isotropic(boxcar);
-    let cutoff_pair = CutoffPair { r_cut: 1.0, evaluator };
+    let cutoff_pair = CutoffPair {
+        r_cut: 1.0,
+        evaluator,
+    };
 
-    let linear = Single(Linear{ alpha: 10.0,
-    plane_origin: Cartesian::default(),
-    plane_normal: [0.0, 1.0].try_into()? });
-    
+    let linear = Single(Linear {
+        alpha: 10.0,
+        plane_origin: Cartesian::default(),
+        plane_normal: [0.0, 1.0].try_into()?,
+    });
+
     let hamiltonian = (cutoff_pair, linear);
 
     let kt = 1.0;
@@ -76,8 +89,8 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
         if elapsed < FRAME_TIME {
             sleep(FRAME_TIME - time.elapsed());
         }
-        }
     }
+}
 
 /// Render the system state.
 fn render(
@@ -91,13 +104,13 @@ fn render(
         .marker(Marker::Braille)
         .paint(|ctx| {
             for site in microstate.sites() {
-            ctx.draw(&Circle {
-                x: site.properties.position[0],
-                y: site.properties.position[1],
-                radius: 0.5,
-                color: Color::Yellow,
-            });
-        }
+                ctx.draw(&Circle {
+                    x: site.properties.position[0],
+                    y: site.properties.position[1],
+                    radius: 0.5,
+                    color: Color::Yellow,
+                });
+            }
         })
         .x_bounds([-l / 2.0, l / 2.0])
         .y_bounds([-l / 2.0, l / 2.0]);

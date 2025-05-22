@@ -10,11 +10,9 @@ impl<M, E1, E2> TotalEnergy<M> for (E1, E2)
 where
     E1: TotalEnergy<M>,
     E2: TotalEnergy<M>,
-    {
+{
     #[inline]
-    fn total_energy(
-        &self,
-        microstate: &M) -> f64 {
+    fn total_energy(&self, microstate: &M) -> f64 {
         let mut total = self.0.total_energy(microstate);
         if total != f64::INFINITY {
             total += self.1.total_energy(microstate);

@@ -46,7 +46,7 @@ impl<B, S, C, E1, E2> DeltaEnergyOne<B, S, C> for (E1, E2)
 where
     E1: DeltaEnergyOne<B, S, C>,
     E2: DeltaEnergyOne<B, S, C>,
-    {
+{
     #[inline]
     fn delta_energy_one(
         &self,
@@ -54,9 +54,13 @@ where
         body_index: usize,
         final_body: &Body<B, S>,
     ) -> f64 {
-        let mut total = self.0.delta_energy_one(initial_microstate, body_index, final_body);
+        let mut total = self
+            .0
+            .delta_energy_one(initial_microstate, body_index, final_body);
         if total != f64::INFINITY {
-            total += self.1.delta_energy_one(initial_microstate, body_index, final_body);
+            total += self
+                .1
+                .delta_energy_one(initial_microstate, body_index, final_body);
         }
         total
     }
