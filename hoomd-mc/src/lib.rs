@@ -19,6 +19,7 @@ use std::ops::AddAssign;
 
 mod cutoff_pair;
 mod external;
+mod hamiltonian;
 mod sweep;
 mod translate;
 
@@ -93,6 +94,8 @@ The generic type names are:
 * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
+
+See the [Implementations on Foreign Types](#foreign-impls) section below for examples.
 */
 pub trait DeltaEnergyOne<B, S, C> {
     /** Compute the change in energy.

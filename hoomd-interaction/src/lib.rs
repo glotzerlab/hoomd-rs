@@ -22,6 +22,8 @@ pub use single::Single;
 mod cutoff_pair;
 pub use cutoff_pair::CutoffPair;
 
+mod hamiltonian;
+
 /** Compute the total energy of a potential applied to the microstate.
 
 The `TotalEnergy` trait describes a type that can compute the energy of a
