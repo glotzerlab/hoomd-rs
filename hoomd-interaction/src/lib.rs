@@ -8,7 +8,7 @@
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
 
-/*! Particle interactions and physical models that apply them to microstates.
+/*! Particle interactions and physical models that apply to microstates.
 
 TODO: Expand documentation.
  */
