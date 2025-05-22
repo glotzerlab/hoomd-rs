@@ -103,7 +103,7 @@ where
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut microstate = Microstate::new();
 microstate.extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
-                              Body::point(Cartesian::from([-1.0, 2.0]))])?;
+                          Body::point(Cartesian::from([-1.0, 2.0]))])?;
 
 let custom_evaluator = Custom { a: 1.0, b: 10.0 };
 let site_energy = custom_evaluator.site_energy(&microstate.sites()[0].properties);
@@ -133,8 +133,42 @@ simulations or to compute system-wide properties.
 
 ## Examples
 
-TODO Implement a custom site pair energy function:
+Implement a custom site energy function:
 
+```
+use hoomd_interaction::{CutoffPair, TotalEnergy, SitePairEnergy};
+use hoomd_microstate::{Microstate, Body};
+use hoomd_microstate::property::{Point, Position};
+use hoomd_vector::{Cartesian, Vector};
+
+struct Custom {
+    epsilon: f64,
+}
+
+impl<S> SitePairEnergy<S> for Custom
+where
+    S: Position<Vector = Cartesian<2>>
+{
+    fn site_pair_energy(&self, a: &S, b: &S) -> f64 {
+        self.epsilon * a.position().dot(&b.position())
+    }
+}
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut microstate = Microstate::new();
+microstate.extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
+                          Body::point(Cartesian::from([0.0, 1.0]))])?;
+
+let evaluator = Custom { epsilon: 1.0 };
+let site_pair_energy = evaluator.site_pair_energy(
+    &microstate.sites()[0].properties,
+    &microstate.sites()[1].properties);
+
+let custom = CutoffPair { r_cut: 2.5, evaluator };
+let total_energy = custom.total_energy(&microstate);
+# Ok(())
+# }
+```
 */
 pub trait SitePairEnergy<S> {
     /// Evaluate the energy contribution from a pair of sites.
@@ -214,24 +248,59 @@ mod tests {
 
         #[rstest]
         fn blanket_fn(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+            // Ensure that closures can be used as IsotropicEnergy
             let cutoff_pair = CutoffPair {
                 r_cut: 2.0,
                 evaluator: Isotropic(|r| 1.0 / (r * 2.0)),
             };
 
+            // Two pairs at a distance of 1.0 each with energy 1/2.
             assert_eq!(cutoff_pair.total_energy(&microstate), 1.0);
         }
 
         #[rstest]
         fn large_r_cut(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+            // Ensure that CutoffPair respects the r_cut value set.
             let cutoff_pair = CutoffPair {
                 r_cut: 5.0_f64.next_up(),
                 evaluator: Isotropic(|r| 1.0 / (r * 2.0)),
             };
 
+            // Two pairs at a distance of 1.0 each with energy 1/2.
+            // Plus two pairs at a distance of 5.0 with energy 1/10
             assert_eq!(cutoff_pair.total_energy(&microstate), 1.2);
         }
 
-        // TODO: Test CutoffPair
+        #[test]
+        fn body_exclusion() {
+            // Ensure that CutoffPair excludes pairs in the same body.
+            let body_a = Body {
+                properties: Point::new(Cartesian::from([0.0, 0.0])),
+                sites: [
+                    Point::new(Cartesian::from([1.0, 1.0])),
+                    Point::new(Cartesian::from([1.0, -1.0])),
+                    Point::new(Cartesian::from([-1.0, 1.0])),
+                    Point::new(Cartesian::from([-1.0, -1.0])),
+                ]
+                .into(),
+            };
+            let body_b = Body {
+                properties: Point::new(Cartesian::from([3.0, 0.0])),
+                sites: body_a.sites.clone(),
+            };
+
+            let mut microstate = Microstate::new();
+            microstate
+                .extend_bodies([body_a, body_b])
+                .expect("hard-coded bodies should be in the boundary");
+
+            let cutoff_pair = CutoffPair {
+                r_cut: 1.0_f64.next_up(),
+                evaluator: Isotropic(|_r| 1.0),
+            };
+
+            // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
+            assert_eq!(cutoff_pair.total_energy(&microstate), 2.0);
+        }
     }
 }

@@ -1432,4 +1432,5 @@ mod tests {
 
     // TODO: Test add_bodies and update_body_properties with periodic boundaries that result in wrapping.
     // TODO: Test iter_sites_near
+    // TODO: Test bodies with multiple sites
 }
