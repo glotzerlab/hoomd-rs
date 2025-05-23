@@ -18,8 +18,6 @@ equilibrium spring length `r0`.
 
 # Examples
 
-In basic usage, the `r0` defaults to 0, respectively:
-
 ```
 use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, Harmonic};
 use approx::{assert_abs_diff_eq, assert_relative_eq};
