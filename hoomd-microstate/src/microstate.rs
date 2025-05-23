@@ -349,6 +349,17 @@ impl<B, S, C> Microstate<B, S, C> {
     # Ok(())
     # }
     ```
+
+    TODO: Replace with setter. `boundary_mut` allows the caller to create an
+    invalid microstate by changing the boundary in such a way that sites may
+    be outside. Changing the boundary will also require regenerating ghost
+    sites. Just checking for a valid boundary on set will pose some difficulty
+    to the caller. To increase the boundary, the caller will need to set
+    the new boundary and then move the bodies. To decrease the boundary, the
+    caller will need to move the bodies and then set the boundary. Perhaps a
+    `set_boundary_and_update_bodies` method that does both simultaneously would
+    solve this? It could take a function that updates the bodies along with the
+    new boundary.
     */
     #[inline]
     pub fn boundary_mut(&mut self) -> &mut C {
