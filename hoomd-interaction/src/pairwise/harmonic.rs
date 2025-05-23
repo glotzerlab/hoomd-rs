@@ -25,8 +25,9 @@ use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, Harmonic};
 use approx::{assert_abs_diff_eq, assert_relative_eq};
 
 let k = 2.0;
+let r0 = 0.0;
 
-let harmonic = Harmonic::new(k, None);
+let harmonic = Harmonic{ k: k, r0: r0};
 assert_abs_diff_eq!(harmonic.energy(0.0), 0.0);
 assert_relative_eq!(harmonic.energy(1.0), 1.0);
 assert_abs_diff_eq!(harmonic.force(1.0), -2.0, epsilon=1e-12);
@@ -37,39 +38,28 @@ The parameters are public fields and may be accessed directly:
 ```
 use hoomd_interaction::pairwise::Harmonic;
 
-let mut harmonic = Harmonic::new(2.0, None);
+let mut harmonic = Harmonic{ k: 1.0, r0: 0.0};
 harmonic.k = 5.0;
 harmonic.r0 = 1.0;
 ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Harmonic {
-    /// Spring constant (`[energy] [length]^(-2)`).
-    pub k: f64,
-    /// Equilibrium spring length (`[length]`).
-    pub r0: f64,
-}
-
-impl Harmonic {
     /** Construct a [`Harmonic`] with the given values for `k` and `r0`.
 
     # Examples
 
-    The default sets `r0=0`:
     ```
     use hoomd_interaction::pairwise::Harmonic;
 
-    let harmonic = Harmonic::new(2.0, None);
+    let harmonic = Harmonic{ k: 1.0, r0: 0.0};
     ```
     */
-    #[inline]
-    #[must_use]
-    pub fn new(k: f64, r0: Option<f64>) -> Self {
-        Harmonic {
-            k: k,
-            r0: r0.unwrap_or(0.0), // Use 0.0 if r0 is None
-        }
-    }
+
+    /// Spring constant (`[energy] [length]^(-2)`).
+    pub k: f64,
+    /// Equilibrium spring length (`[length]`).
+    pub r0: f64,
 }
 
 impl IsotropicEnergy for Harmonic {
@@ -89,16 +79,30 @@ impl IsotropicForce for Harmonic {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::approx::{assert_abs_diff_eq, assert_relative_eq};
+    use ::approx::{assert_relative_eq};
     use rstest::*;
 
     #[rstest]
-    fn user_defined_r0(
+    fn zero_energy_point(
+        #[values(1.0, 2.0, 5.0, 10.0)] k: f64,
+        #[values(0.0, 1.0, 2.0)] r0: f64,
+    ) {
+        let harmonic = Harmonic{ k: k, r0: r0};
+
+        assert_eq!(harmonic.k, k);
+        assert_eq!(harmonic.r0, r0);
+
+        assert_eq!(harmonic.energy(r0), 0.0);
+        assert_eq!(harmonic.force(r0), 0.0);
+    }
+
+    #[rstest]
+    fn general_case(
         #[values(1.0, 2.0, 5.0, 10.0)] k: f64,
         #[values(0.0, 1.0, 2.0)] r0: f64,
     ) {
         let r = 5.0;
-        let harmonic = Harmonic::new(k, Some(r0));
+        let harmonic = Harmonic{ k: k, r0: r0};
 
         assert_eq!(harmonic.k, k);
         assert_eq!(harmonic.r0, r0);
@@ -106,7 +110,7 @@ mod tests {
         let expected_energy = 0.5 * k * (r - r0) * (r - r0);
         let expected_force = -k * (r - r0);
 
-        assert_abs_diff_eq!(harmonic.energy(r), expected_energy);
+        assert_relative_eq!(harmonic.energy(r), expected_energy);
         assert_relative_eq!(harmonic.force(r), expected_force);
     }
 }
