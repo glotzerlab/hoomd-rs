@@ -14,4 +14,4 @@ after = ["links"]
 [output.html]
 git-repository-url = "https://github.com/glotzerlab/hoomd-rs"
 mathjax-support = false
-edit-url-template = "https://github.com/glotzerlab/documentation/edit/trunk/{path}"
+edit-url-template = "https://github.com/glotzerlab/hoomd-rs/edit/trunk/doc/{path}"

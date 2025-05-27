@@ -10,7 +10,7 @@ build:
     - curl -sSL "https://github.com/lzanini/mdbook-katex/releases/download/0.9.3-binaries/mdbook-katex-v0.9.3-x86_64-unknown-linux-gnu.tar.gz" | tar -xvz --directory "bin"
     - ls bin
     # Build the book
-    - mkdir -p $READTHEDOCS_OUTPUT/html/api
+    - mkdir -p $READTHEDOCS_OUTPUT/html
     - echo "site-url = \"/$READTHEDOCS_LANGUAGE/$READTHEDOCS_VERSION/\"" >> doc/book.toml
     - PATH="$(pwd)/bin:$PATH" mdbook build doc --dest-dir=$READTHEDOCS_OUTPUT/html
     # Build the API reference
