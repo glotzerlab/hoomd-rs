@@ -31,9 +31,7 @@ pub use isotropic::Isotropic;
 /** Computes pairwise energies between point particles.
 
 An isotropic pairwise energy is function only of the distances between the
-particles.
-<!-- U(r) -->
-<math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo></mrow></math>
+particles: $`U(r)`$
 
 Implement [`IsotropicEnergy`] on a custom type or use one of the provided
 potentials in [`pairwise`](crate::pairwise) in MD or MC simulations.
@@ -78,8 +76,9 @@ assert_eq!(energy, 2.0);
 */
 pub trait IsotropicEnergy {
     /** Compute the pairwise energy between two point particles.
-    <!-- U(r) -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo></mrow></math>
+    ```math
+    U(r)
+    ```
     */
     #[must_use]
     fn energy(&self, r: f64) -> f64;
@@ -112,8 +111,9 @@ pub trait IsotropicForce {
 
     When the force is associated with a potential energy [`IsotropicEnergy`],
     it must follow:
-    <!-- -\frac{\mathrm{d} U}{\mathrm{d} r} -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mo>−</mo><mfrac><mrow><mrow><mi mathvariant="normal">d</mi></mrow><mi>U</mi></mrow><mrow><mrow><mi mathvariant="normal">d</mi></mrow><mi>r</mi></mrow></mfrac></mrow></math>
+    ```math
+    -\frac{\mathrm{d} U}{\mathrm{d} r}
+    ```
     */
     #[must_use]
     fn force(&self, r: f64) -> f64;
@@ -123,16 +123,19 @@ pub trait IsotropicForce {
 
 An anisotropic pairwise energy is function of the relative position and
 orientation of the *j* particle in *i's* reference frame:
-<!-- U(\vec{r}_{ij}, \mathbf{o}_{ij}) -->
-<math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><msub><mover><mi>r</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo separator="true">,</mo><msub><mi>𝐨</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo form="postfix" stretchy="false">)</mo></mrow></math>
+```math
+U(\vec{r}_{ij}, \mathbf{o}_{ij})
+```
 
 Implement [`AnisotropicEnergy`] on a custom type or use one of the provided
 potentials in [`pairwise`](crate::pairwise) in MD or MC simulations.
 */
 pub trait AnisotropicEnergy<V: Vector, R: Rotate<V>> {
     /** Compute the pairwise energy between two oriented particles.
-    <!-- U(\vec{r}_{ij}, \mathbf{o}_{ij}) -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><msub><mover><mi>r</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo separator="true">,</mo><msub><mi>𝐨</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo form="postfix" stretchy="false">)</mo></mrow></math>    */
+    ```math
+    U(\vec{r}_{ij}, \mathbf{o}_{ij})
+    ```
+    */
     #[must_use]
     fn energy(&self, r_ij: &V, o_ij: &R) -> f64;
 }

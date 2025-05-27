@@ -11,6 +11,12 @@
 /*! Apply the Metropolis Monte Carlo simulation method to systems of particles.
 
 TODO: Expand documentation.
+
+```math
+a_i + \vec{b}_i
+```
+
+$`\sqrt{3x-1}+(1+x)^2`$
  */
 
 use hoomd_microstate::{Body, Microstate};
@@ -106,8 +112,9 @@ pub trait DeltaEnergyOne<B, S, C> {
     identifies which body in `initial_microstate` is changing.
 
     Returns:
-    <!-- \Delta E = E_\mathrm{final} - E_\mathrm{initial} -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mpadded lspace="0"><mi mathvariant="normal">Δ</mi></mpadded><mi>E</mi><mo>=</mo><msub><mi>E</mi><mpadded lspace="0"><mi>final</mi></mpadded></msub><mo>−</mo><msub><mi>E</mi><mpadded lspace="0"><mi>initial</mi></mpadded></msub></mrow></math>
+    ```math
+    \Delta E = E_\mathrm{final} - E_\mathrm{initial}
+    ```
     */
     #[must_use]
     fn delta_energy_one(
