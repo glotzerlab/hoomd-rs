@@ -11,12 +11,6 @@
 /*! Apply the Metropolis Monte Carlo simulation method to systems of particles.
 
 TODO: Expand documentation.
-
-```math
-a_i + \vec{b}_i
-```
-
-$`\sqrt{3x-1}+(1+x)^2`$
  */
 
 use hoomd_microstate::{Body, Microstate};
