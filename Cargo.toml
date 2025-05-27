@@ -81,3 +81,8 @@ needless_pass_by_ref_mut = "warn"
 
 [workspace.metadata.typos]
 default.extend-words = { ratatui = "ratatui" }
+
+[workspace.metadata.docs.rs]
+# TODO: Check that this works after release. It may need to be in package.metadata
+# https://docs.rs/about/metadata
+rustdoc-args = [ "--html-in-header", "katex.html" ]
