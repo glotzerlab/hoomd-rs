@@ -13,5 +13,5 @@ after = ["links"]
 # [output.html] must be the last table so that .readthedocs.yaml can easily add a key to it
 [output.html]
 git-repository-url = "https://github.com/glotzerlab/hoomd-rs"
-mathjax-support = true
+mathjax-support = false
 edit-url-template = "https://github.com/glotzerlab/documentation/edit/trunk/{path}"
