@@ -41,6 +41,7 @@ let delta_energy = hamiltonian.delta_energy_one(&microstate, 0,
 assert_eq!(delta_energy, -2.0);
 # Ok(())
 # }
+```
 */
 impl<B, S, C, E1, E2> DeltaEnergyOne<B, S, C> for (E1, E2)
 where
