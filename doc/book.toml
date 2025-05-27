@@ -1,0 +1,17 @@
+[book]
+language = "en"
+multilingual = false
+src = "src"
+title = "hoomd-rs Documentation"
+
+[build]
+create-missing = false
+
+[preprocessor.katex]
+after = ["links"]
+
+# [output.html] must be the last table so that .readthedocs.yaml can easily add a key to it
+[output.html]
+git-repository-url = "https://github.com/glotzerlab/hoomd-rs"
+mathjax-support = true
+edit-url-template = "https://github.com/glotzerlab/documentation/edit/trunk/{path}"

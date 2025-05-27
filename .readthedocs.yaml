@@ -4,8 +4,15 @@ build:
   tools:
     rust: "1.86"
   commands:
-    # Build the API documentation
-    - RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --no-deps
+    # Install mdbook
+    - mkdir -p bin
+    - curl -sSL "https://github.com/rust-lang/mdBook/releases/download/v0.4.51/mdbook-v0.4.51-x86_64-unknown-linux-gnu.tar.gz" | tar -xvz --directory "bin"
+    - curl -sSL "https://github.com/lzanini/mdbook-katex/releases/download/0.9.3-binaries/mdbook-katex-v0.9.3-x86_64-unknown-linux-gnu.tar.gz" | tar -xvz --directory "bin"
+    # Build the book
     - mkdir -p $READTHEDOCS_OUTPUT/html/api
+    - echo "site-url = \"/$READTHEDOCS_LANGUAGE/$READTHEDOCS_VERSION/\"" >> doc/book.toml
+    - bin/mdbook build doc --dest-dir=$READTHEDOCS_OUTPUT/html
+    # Build the API reference
+    - mkdir -p $READTHEDOCS_OUTPUT/html/api
+    - RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --no-deps
     - mv target/doc/* $READTHEDOCS_OUTPUT/html/api
-    - touch $READTHEDOCS_OUTPUT/html/index.html
