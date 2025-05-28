@@ -1006,6 +1006,15 @@ mod tests {
     }
 
     #[test]
+    fn sum() {
+        let total: Cartesian<2> = [Cartesian::from((1.0, 2.0)), Cartesian::from((-2.0, -1.0))]
+            .into_iter()
+            .sum();
+
+        assert_eq!(total, [-1.0, 1.0].into());
+    }
+
+    #[test]
     fn perpendicular() {
         let v = Cartesian::from([1.0, -4.5]);
         assert_eq!(v.perpendicular(), [4.5, 1.0].into());
