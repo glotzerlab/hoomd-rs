@@ -20,6 +20,7 @@ itertools.workspace = true
 workspace = true
 
 [dev-dependencies]
+hoomd-vector = { features = ["approx"], workspace = true }
 approx.workspace = true
 divan.workspace = true
 rand.workspace = true

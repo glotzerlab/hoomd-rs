@@ -167,6 +167,10 @@ mod cartesian;
 pub mod distribution;
 mod quaternion;
 
+#[cfg(any(test, feature = "approx"))]
+pub mod approx;
+
+
 pub use {
     angle::Angle,
     cartesian::{Cartesian, RotationMatrix},

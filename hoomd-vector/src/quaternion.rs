@@ -502,7 +502,7 @@ let c = a.combine(&b);
 ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Versor(Quaternion);
+pub struct Versor(pub(crate) Quaternion);
 
 impl Versor {
     /** Create a [`Versor`] that rotates by an angle (in radians)
@@ -807,73 +807,9 @@ impl Distribution<Versor> for StandardUniform {
 }
 
 #[cfg(test)]
-mod approx {
-    use super::{Quaternion, Versor};
-    use approx::{AbsDiffEq, RelativeEq};
-
-    use crate::Cartesian;
-
-    impl AbsDiffEq for Quaternion {
-        type Epsilon = <f64 as AbsDiffEq>::Epsilon;
-
-        fn default_epsilon() -> Self::Epsilon {
-            f64::default_epsilon()
-        }
-
-        fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
-            f64::abs_diff_eq(&self.scalar, &other.scalar, epsilon)
-                && Cartesian::abs_diff_eq(&self.vector, &other.vector, epsilon)
-        }
-    }
-
-    impl AbsDiffEq for Versor {
-        type Epsilon = <f64 as AbsDiffEq>::Epsilon;
-
-        fn default_epsilon() -> Self::Epsilon {
-            f64::default_epsilon()
-        }
-
-        fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
-            super::Quaternion::abs_diff_eq(&self.0, &other.0, epsilon)
-        }
-    }
-
-    impl RelativeEq for Quaternion {
-        fn default_max_relative() -> Self::Epsilon {
-            f64::default_max_relative()
-        }
-
-        fn relative_eq(
-            &self,
-            other: &Self,
-            epsilon: Self::Epsilon,
-            max_relative: Self::Epsilon,
-        ) -> bool {
-            f64::relative_eq(&self.scalar, &other.scalar, epsilon, max_relative)
-                && Cartesian::relative_eq(&self.vector, &other.vector, epsilon, max_relative)
-        }
-    }
-
-    impl RelativeEq for Versor {
-        fn default_max_relative() -> Self::Epsilon {
-            f64::default_max_relative()
-        }
-
-        fn relative_eq(
-            &self,
-            other: &Self,
-            epsilon: Self::Epsilon,
-            max_relative: Self::Epsilon,
-        ) -> bool {
-            Quaternion::relative_eq(&self.0, &other.0, epsilon, max_relative)
-        }
-    }
-}
-
-#[cfg(test)]
 mod tests {
     use super::*;
-    use ::approx::{assert_abs_diff_eq, assert_relative_eq};
+    use approx::{assert_abs_diff_eq, assert_relative_eq};
     use rand::{SeedableRng, rngs::StdRng};
     use rstest::*;
     use std::f64::consts::PI;

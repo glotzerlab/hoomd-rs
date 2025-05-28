@@ -640,48 +640,13 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
 }
 
 #[cfg(test)]
-mod approx {
-    use approx::{AbsDiffEq, RelativeEq};
-    use std::iter::zip;
-
-    impl<const N: usize> AbsDiffEq for super::Cartesian<N> {
-        type Epsilon = <f64 as AbsDiffEq>::Epsilon;
-
-        fn default_epsilon() -> Self::Epsilon {
-            f64::default_epsilon()
-        }
-
-        fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
-            zip(self.coordinates.iter(), other.coordinates.iter())
-                .all(|x| f64::abs_diff_eq(x.0, x.1, epsilon))
-        }
-    }
-
-    impl<const N: usize> RelativeEq for super::Cartesian<N> {
-        fn default_max_relative() -> Self::Epsilon {
-            f64::default_max_relative()
-        }
-
-        fn relative_eq(
-            &self,
-            other: &Self,
-            epsilon: Self::Epsilon,
-            max_relative: Self::Epsilon,
-        ) -> bool {
-            zip(self.coordinates.iter(), other.coordinates.iter())
-                .all(|x| f64::relative_eq(x.0, x.1, epsilon, max_relative))
-        }
-    }
-}
-
-#[cfg(test)]
 mod tests {
     use crate::Angle;
     use crate::Rotation;
     use crate::Versor;
 
     use super::*;
-    use ::approx::assert_relative_eq;
+    use approx::assert_relative_eq;
     use paste::paste;
     use rand::{SeedableRng, rngs::StdRng};
     use rstest::rstest;
