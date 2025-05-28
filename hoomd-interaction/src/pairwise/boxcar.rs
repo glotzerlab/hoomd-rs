@@ -8,14 +8,13 @@ use super::IsotropicEnergy;
 
 /** Constant valued potential in a given range of `r` (_not differentiable_).
 
-<!--
+```math
 U(r) = \begin{cases}
 0 & r \lt a \\
 \varepsilon & a \le r \lt b \\
 0 & r \ge b
 \end{cases}
--->
-<math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mrow><mo fence="true" form="prefix">{</mo><mtable><mtr><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 0em;"><mn>0</mn></mtd><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 1em;"><mrow><mi>r</mi><mo>&lt;</mo><mi>a</mi></mrow></mtd></mtr><mtr><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 0em;"><mi>ε</mi></mtd><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 1em;"><mrow><mi>a</mi><mo>≤</mo><mi>r</mi><mo>&lt;</mo><mi>b</mi></mrow></mtd></mtr><mtr><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 0em;"><mn>0</mn></mtd><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 1em;"><mrow><mi>r</mi><mo>≥</mo><mi>b</mi></mrow></mtd></mtr></mtable><mo fence="true" form="postfix"></mo></mrow></mrow></math>
+```
 
 Compute boxcar potential function. Some uses of this in the literature call it
 the "square well" potential.

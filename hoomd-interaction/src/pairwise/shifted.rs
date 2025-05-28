@@ -8,8 +8,9 @@ use super::{IsotropicEnergy, IsotropicForce};
 
 /** Shift another potential to 0 at a given `r`.
 
-<!-- U(r) = f(r) - f(r_\mathrm{shift}) -->
-<math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mi>f</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>−</mo><mi>f</mi><mo form="prefix" stretchy="false">(</mo><msub><mi>r</mi><mrow><mtext></mtext><mi>shift</mi></mrow></msub><mo form="postfix" stretchy="false">)</mo></mrow></math>
+```math
+U(r) = f(r) - f(r_\mathrm{shift})
+```
 
 # Example
 

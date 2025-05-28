@@ -10,8 +10,9 @@ use hoomd_vector::{Unit, Vector};
 
 /** Linear potential based on position.
 
-<!-- U = \alpha \cdot \vec{n} \cdot ( \vec{r} - \vec{p} ) -->
-<math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo>=</mo><mi>α</mi><mo>⋅</mo><mover><mi>n</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>⋅</mo><mo form="prefix" stretchy="false">(</mo><mover><mi>r</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>−</mo><mover><mi>p</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow></math>
+```math
+U = \alpha \cdot \vec{n} \cdot ( \vec{r} - \vec{p} )
+```
 
 Computes a linear external potential at a point in space relative to the plane
 origin `p`, plane normal `n`, and the interaction strength `alpha`.

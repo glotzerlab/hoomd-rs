@@ -53,8 +53,9 @@ where
 {
     /** Points transform by vector addition.
 
-    <!-- \vec{r} = \vec{r}_\mathrm{body} + \vec{r}_\mathrm{site} -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mover><mi>r</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><msub><mover><mi>r</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mpadded lspace="0"><mi>body</mi></mpadded></msub><mo>+</mo><msub><mover><mi>r</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mpadded lspace="0"><mi>site</mi></mpadded></msub></mrow></math>
+    ```math
+    \vec{r} = \vec{r}_\mathrm{body} + \vec{r}_\mathrm{site}
+    ```
 
     ```
     use hoomd_vector::Cartesian;
