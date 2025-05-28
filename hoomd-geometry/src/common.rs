@@ -71,16 +71,8 @@ impl<const N: usize> IntoIterator for HyperEllipsoid<N> {
 impl<const N: usize> SupportFn<Cartesian<N>> for HyperEllipsoid<N> {
     #[inline]
     fn support(&self, n: &Cartesian<N>) -> Cartesian<N> {
-        let mut denominator = self.into_iter().zip(*n).map(|(r, n)| r * n);
-        let denominator: f64 = Cartesian::<N>::from(std::array::from_fn(|_| {
-            denominator.next().unwrap_or_default()
-        }))
-        .norm();
-        let mut iter = n
-            .into_iter()
-            .zip(self.axes)
-            .map(|(r, n)| r.powi(2) * n / denominator);
-        std::array::from_fn(|_| iter.next().unwrap_or_default()).into()
+        let denominator = Cartesian::<N>::from(std::array::from_fn(|i| self.axes[i] * n[i])).norm();
+        std::array::from_fn(|i| n[i] * self.axes[i].powi(2) / denominator).into()
     }
 }
 
@@ -168,3 +160,32 @@ where
 }
 
 impl<const N: usize> HyperEllipsoid<N> {} // TODO matrix form and IntersectsAt
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Sphere;
+    use ::approx::{assert_abs_diff_eq, assert_relative_eq};
+    use hoomd_vector::Cartesian;
+    use rstest::*;
+    use std::marker::PhantomData;
+
+    #[rstest]
+    #[case(PhantomData::<Sphere<0>>)]
+    #[case(PhantomData::<Sphere<1>>)]
+    #[case(PhantomData::<Sphere<2>>)]
+    #[case(PhantomData::<Sphere<3>>)]
+    #[case(PhantomData::<Sphere<4>>)]
+    #[case(PhantomData::<Sphere<5>>)]
+    fn test_support_hyperellipsoid<const N: usize>(
+        #[case] _n: PhantomData<Sphere<N>>,
+        #[values(0.1, 1.0, 33.3)] r: f64,
+    ) {
+        let s = Sphere::<N>::from(r);
+        let he = HyperEllipsoid {
+            axes: [r; N].into(),
+        };
+        let v = [1.0; N].into();
+        assert_relative_eq!(he.support(&v), s.support(&v));
+    }
+}
