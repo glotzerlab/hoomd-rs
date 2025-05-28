@@ -455,10 +455,17 @@ where
 }
 
 impl Cartesian<2> {
-    /// Compute a 2-vector perpendicular to self.
+    /** Construct a 2-vector perpendicular to self.
+
+    Given a vector $`(v_x, v_y)`$ `perpendicular` returns the vector
+    rotated by $`\pi/2`$:
+    ```math
+    (-v_y, v_x)
+    ```
+    */
     #[inline]
     #[must_use]
-    pub fn perp(self) -> Self {
+    pub fn perpendicular(self) -> Self {
         Cartesian::from([-self[1], self[0]])
     }
 }
@@ -997,6 +1004,13 @@ mod tests {
             Err(Error::InvalidVectorMagnitude)
         ));
     }
+
+    #[test]
+    fn perpendicular() {
+        let v = Cartesian::from([1.0, -4.5]);
+        assert_eq!(v.perpendicular(), [4.5, 1.0].into());
+    }
+    
     #[expect(clippy::print_stdout, reason = "Testing output.")]
     #[test]
     fn test_rotationmatrix_display() {

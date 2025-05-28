@@ -90,7 +90,7 @@ where
     let mut v1 = s.composite_support(-v0); // negative, to ensure ||v1|| > 0
 
     // v_perp is on the same side as the origin if v1.dot(v_perp) < 0
-    let mut v_perp_v1v0 = (v1 - v0).perp();
+    let mut v_perp_v1v0 = (v1 - v0).perpendicular();
     if v1.dot(&v_perp_v1v0) > 0.0 {
         v_perp_v1v0 = -v_perp_v1v0;
     }
@@ -106,7 +106,7 @@ where
         count += 1;
 
         // Vector normal to the portal segment, facing away from the interior point
-        let mut v_perp_v2v1 = (v2 - v1).perp();
+        let mut v_perp_v2v1 = (v2 - v1).perpendicular();
         if (v1 - v0).dot(&v_perp_v2v1) < 0.0 {
             v_perp_v2v1 = -v_perp_v2v1;
         }
@@ -131,7 +131,7 @@ where
         }
 
         // Choose new portal, which may either be v3v2 or v1v3
-        let mut v_perp_v3v0 = (v3 - v0).perp();
+        let mut v_perp_v3v0 = (v3 - v0).perpendicular();
         // make v_perp_v3v0 point toward v1
         if (v1 - v3).dot(&v_perp_v3v0) < 0.0 {
             v_perp_v3v0 = -v_perp_v3v0;
