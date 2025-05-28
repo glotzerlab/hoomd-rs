@@ -168,6 +168,7 @@ impl<const N: usize> TryFrom<Vec<f64>> for Cartesian<N> {
     ```
     <div class="warning">
 
+    This method deallocates the Vec after copying it.
     Use `Cartesian::From<[f64; N]>` in performance critical code.
 
     </div>
@@ -194,12 +195,6 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for Cartesian<N> {
     # Ok(())
     # }
     ```
-
-    <div class="warning">
-
-    Use `Cartesian::From<[f64; N]>` in performance critical code.
-
-    </div>
     */
     #[inline]
     fn try_from(value: std::ops::Range<usize>) -> Result<Self, Self::Error> {
@@ -207,9 +202,7 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for Cartesian<N> {
             return Err(Error::InvalidVectorLength);
         }
 
-        // The default value of 0 will never be used due to the above error check.
-        let mut iter = value;
-        let coordinates = array::from_fn(|_| iter.next().unwrap_or(0) as f64);
+        let coordinates = array::from_fn(|i| (value.start + i) as f64);
         Ok(Self { coordinates })
     }
 }
