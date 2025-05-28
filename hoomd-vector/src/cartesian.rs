@@ -571,7 +571,7 @@ impl<const N: usize> fmt::Display for RotationMatrix<N> {
                 .iter()
                 .map(Cartesian::<N>::to_string)
                 .collect::<Vec<String>>()
-                .join(",\n ")
+                .join("\n ")
         )
     }
 }
@@ -1010,12 +1010,25 @@ mod tests {
         let v = Cartesian::from([1.0, -4.5]);
         assert_eq!(v.perpendicular(), [4.5, 1.0].into());
     }
-    
-    #[expect(clippy::print_stdout, reason = "Testing output.")]
+
     #[test]
     fn test_rotationmatrix_display() {
-        println!("\n{}", RotationMatrix::<2>::default());
-        println!("\n{}", RotationMatrix::<3>::default());
+        let m = RotationMatrix::<3>::default();
+        let s = format!("{m}");
+        assert_eq!(
+            s,
+            "[[1, 0, 0]
+ [0, 1, 0]
+ [0, 0, 1]]"
+        );
+
+        let m = RotationMatrix::<2>::default();
+        let s = format!("{m}");
+        assert_eq!(
+            s,
+            "[[1, 0]
+ [0, 1]]"
+        );
     }
 
     #[rstest(
