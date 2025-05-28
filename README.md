@@ -53,7 +53,7 @@ cd hoomd-rs
 
 Build the documentation and open it in your browser:
 ```shell
-cargo doc --no-deps --open
+RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --no-deps --open
 ```
 
 ## Example

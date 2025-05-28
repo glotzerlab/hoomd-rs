@@ -31,33 +31,33 @@ fn energy_2d(bencher: Bencher) {
 
     let epsilon: f64 = rng.random();
     let sigma: f64 = rng.random();
-    let lj: LennardJones = LennardJones::new(epsilon, sigma);
+    let lj: LennardJones = LennardJones { epsilon, sigma };
 
     let masks = [
-        Patch::new(
-            [1.0, 0.0]
+        Patch {
+            director: [1.0, 0.0]
                 .try_into()
                 .expect("hard-coded vector should have non-zero length"),
-            (PI / 8.0).cos(),
-        ),
-        Patch::new(
-            [-1.0, 0.0]
+            cos_delta: (PI / 8.0).cos(),
+        },
+        Patch {
+            director: [-1.0, 0.0]
                 .try_into()
                 .expect("hard-coded vector should have non-zero length"),
-            (PI / 16.0).cos(),
-        ),
-        Patch::new(
-            [0.0, 1.0]
+            cos_delta: (PI / 16.0).cos(),
+        },
+        Patch {
+            director: [0.0, 1.0]
                 .try_into()
                 .expect("hard-coded vector should have non-zero length"),
-            (PI / 16.0).cos(),
-        ),
-        Patch::new(
-            [0.0, -1.0]
+            cos_delta: (PI / 16.0).cos(),
+        },
+        Patch {
+            director: [0.0, -1.0]
                 .try_into()
                 .expect("hard-coded vector should have non-zero length"),
-            (PI / 16.0).cos(),
-        ),
+            cos_delta: (PI / 16.0).cos(),
+        },
     ];
 
     let angular_mask = AngularMask::new(lj, masks, masks);
@@ -76,33 +76,33 @@ fn energy_3d(bencher: Bencher) {
 
     let epsilon: f64 = rng.random();
     let sigma: f64 = rng.random();
-    let lj: LennardJones = LennardJones::new(epsilon, sigma);
+    let lj: LennardJones = LennardJones { epsilon, sigma };
 
     let masks = [
-        Patch::new(
-            [1.0, 0.0, 0.0]
+        Patch {
+            director: [1.0, 0.0, 0.0]
                 .try_into()
                 .expect("hard-coded vector should have non-zero length"),
-            (PI / 16.0).cos(),
-        ),
-        Patch::new(
-            [-1.0, 0.0, 0.0]
+            cos_delta: (PI / 16.0).cos(),
+        },
+        Patch {
+            director: [-1.0, 0.0, 0.0]
                 .try_into()
                 .expect("hard-coded vector should have non-zero length"),
-            (PI / 16.0).cos(),
-        ),
-        Patch::new(
-            [0.0, 1.0, 0.0]
+            cos_delta: (PI / 16.0).cos(),
+        },
+        Patch {
+            director: [0.0, 1.0, 0.0]
                 .try_into()
                 .expect("hard-coded vector should have non-zero length"),
-            (PI / 16.0).cos(),
-        ),
-        Patch::new(
-            [0.0, -1.0, 0.0]
+            cos_delta: (PI / 16.0).cos(),
+        },
+        Patch {
+            director: [0.0, -1.0, 0.0]
                 .try_into()
                 .expect("hard-coded vector should have non-zero length"),
-            (PI / 16.0).cos(),
-        ),
+            cos_delta: (PI / 16.0).cos(),
+        },
     ];
 
     let angular_mask = AngularMask::new(lj, masks, masks);

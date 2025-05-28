@@ -24,7 +24,7 @@ fn energy(bencher: Bencher) {
 
     let epsilon: f64 = rng.random();
     let sigma: f64 = rng.random();
-    let lj: LennardJones = LennardJones::new(epsilon, sigma);
+    let lj: LennardJones = LennardJones { epsilon, sigma };
 
     bencher
         .counter(ItemsCount::from(1_u32))
@@ -38,7 +38,7 @@ fn force(bencher: Bencher) {
 
     let epsilon: f64 = rng.random();
     let sigma: f64 = rng.random();
-    let lj: LennardJones = LennardJones::new(epsilon, sigma);
+    let lj: LennardJones = LennardJones { epsilon, sigma };
 
     bencher
         .counter(ItemsCount::from(1_u32))

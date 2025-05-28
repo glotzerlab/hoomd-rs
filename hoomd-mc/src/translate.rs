@@ -11,54 +11,33 @@ use hoomd_vector::{Vector, distribution::Ball};
 
 use rand::Rng;
 use rand::distr::Distribution;
-use std::marker::PhantomData;
 
 /** Move the position of a body by a small distance.
 
 `Translate` proposes local trial moves that translate the position of a body
 in space by a random vector up a given maximum length.
+
+# Example
+
+```
+use hoomd_mc::Translate;
+use hoomd_vector::Cartesian;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let d = 0.1;
+let translate = Translate { maximum_distance: d.try_into()? };
+# Ok(())
+# }
+```
 */
-#[expect(
-    clippy::partial_pub_fields,
-    reason = "Users do not need to be aware of phantom data."
-)]
-pub struct Translate<V> {
+pub struct Translate {
     /// The maximum distance a body can be translated in one trial move.
     pub maximum_distance: PositiveReal,
-
-    /// Make translate depend on the vector type V even though it doesn't store a vector.
-    vector_type: PhantomData<V>,
 }
 
-impl<V> Translate<V> {
-    /** Construct a [`Translate`] with the given maximum distance.
-
-    # Example
-
-    ```
-    use hoomd_mc::Translate;
-    use hoomd_vector::Cartesian;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let d = 0.1;
-    let translate = Translate::<Cartesian<2>>::new(d.try_into()?);
-    # Ok(())
-    # }
-    ```
-    */
-    #[inline]
-    #[must_use]
-    pub fn new(maximum_distance: PositiveReal) -> Self {
-        Self {
-            maximum_distance,
-            vector_type: PhantomData,
-        }
-    }
-}
-
-impl<B, V> LocalTrial<B> for Translate<V>
+impl<V, B> LocalTrial<B> for Translate
 where
-    B: Position<V>,
+    B: Position<Vector = V>,
     V: Vector,
     Ball: Distribution<V>,
 {
@@ -76,7 +55,7 @@ where
     let mut rng = StdRng::seed_from_u64(1);
     let body_properties = Point::new(Cartesian::from([0.0, 0.0]));
     let d = 1.0;
-    let translate = Translate::new(d.try_into()?);
+    let translate = Translate { maximum_distance: d.try_into()? };
 
     let new_body_properties = translate.propose(&mut rng, body_properties);
     assert!(new_body_properties.position.norm() < 1.0);
@@ -121,10 +100,11 @@ mod tests {
 
         let mut rng = StdRng::seed_from_u64(1);
         let a = Point::new(Cartesian::from([1.0, -5.0, 2.5]));
-        let translate = Translate::new(
-            d.try_into()
+        let translate = Translate {
+            maximum_distance: d
+                .try_into()
                 .expect("hard-coded constant should be a positive real"),
-        );
+        };
 
         for _ in 0..N {
             let b = translate.propose(&mut rng, a);
