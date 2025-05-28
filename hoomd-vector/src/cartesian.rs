@@ -552,7 +552,25 @@ impl<const N: usize> RotationMatrix<N> {
 }
 
 impl<const N: usize> Default for RotationMatrix<N> {
-    /// Create an N by N identity matrix.
+    /** Create an identity matrix.
+
+    ```math
+    \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix}
+    ```
+    ,
+    ```math
+    \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \end{bmatrix}
+    ```
+    , and so on.
+
+    # Example
+
+    ```
+    use hoomd_vector::RotationMatrix;
+
+    let identity = RotationMatrix::<3>::default();
+    ```
+    */
     #[inline]
     fn default() -> RotationMatrix<N> {
         RotationMatrix {
