@@ -42,7 +42,9 @@ impl Cuboid<3> {
 
 impl<const N: usize> Cuboid<N> {
     /// Compute the intersection between two *axis-aligned* cuboids.
-    fn intersects_aligned(&self, other: &Cuboid<N>, v_ij: &Cartesian<N>) -> bool {
+    #[must_use]
+    #[inline]
+    pub fn intersects_aligned(&self, other: &Cuboid<N>, v_ij: &Cartesian<N>) -> bool {
         let b_mins = other.minimal_extents() + *v_ij;
         let b_maxs = other.maximal_extents() + *v_ij;
         multizip((
@@ -134,7 +136,7 @@ where
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
-    use hoomd_vector::{Angle, Versor};
+    use hoomd_vector::Angle;
     use rstest::*;
     use std::marker::PhantomData;
 

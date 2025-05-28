@@ -1,6 +1,32 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+// TODO: shapes in module
+// embedded trait?
+// Bounded shape pair for intersections (prevents code repetition, but doesn't add anything new)
+// Would need to implement a way to create bound anyway, so not that useful
+// For polytope: private field for bounding shape is the right way to go
+// TODO: [Jen] Generalize capsule on N
+// TODO: [Jen] Define type alias for Ellipse in 2d, Rectangle, Circle, ConvexPolygon
+// TODO: [Jen] SimplePolygon (same in memory, but interpreted differently)
+// TODO: [Jen] Polyhedron (non-convex, not general on dimension, requires faces (ragged list?))
+// TODO: use Sphero to xenocollide
+// TODO: implement Volume for Sphero<Volume>
+// TODO: move Sphero to `shape`
+// TODO: remove Intersects
+// TODO: remove Shape
+// TODO: SupportFn -> SupportMapping
+// TODO: move contents of poly to shapes
+// TODO: meshes - talk to Joseph & Philipp
+// TODO: "Functions with a clear receiver are methods" for ConvexPolytope
+// TODO: implement MinDistance for spheres
+// TODO: GSD_shape_spec trait
+// TODO: impl Normals for Mesh: Mesh can have lots of cached information, with From
+//       ConvexPolytope/Polytope
+// TODO: IsInside trait (Dom)
+// TODO: scale? instead of set_volume
+// TODO: surface area, mean curvature
+
 #![doc(
     html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
@@ -40,28 +66,6 @@ relatively easy to implement for arbitrary shapes. More complicated properties a
 included in additional methods, including [`IntersectsAt`], [`MinDistance`], and
 [`SupportFn`].
 
-## Modifiers through Encapsulation
-
-Note that the `Sphere` struct in the previous example is defined solely by a radius. To
-maximize generality, no `Shape`s should explicitly store the center of mass. This allows
-shared utility between HPMC and pure computational geometry applications without wasted
-memory.
-
-For cases where an explicit centroid is required, consider the [`Centered`] struct. This
--- and the [`Sphero`] struct -- provide extensions to a core shape definition through
-encapsulation.
-
-```
-use hoomd_geometry::{Cuboid, Centered, IntersectsAt};
-use std::f64::consts::PI;
-
-let centered_cuboid = Centered::from(
-    (Cuboid::from([1.0, 2.0, 3.0]), [0.0, 0.0, 0.0])
-);
-
-assert_eq!(centered_cuboid.centroid, [0.0; 3].into());
-```
-
 */
 mod cuboid;
 mod intersects;
@@ -77,9 +81,9 @@ pub mod xenocollide;
 pub use {
     common::*,
     cuboid::Cuboid,
-    intersects::{Intersects, IntersectsAt},
-    modifiers::{Centered, Sphero},
-    shape::{MinDistance, Shape, SupportFn, Volume},
+    intersects::IntersectsAt,
+    modifiers::Sphero,
+    shape::{MinDistance, SupportFn, Volume},
     simplex3::Simplex3,
     sphere::Sphere,
 };

@@ -15,6 +15,7 @@ pub struct Cylinder {
     /// Height of the [`Cylinder`]
     h: f64,
 }
+
 /// A [`Capsule`] in three dimensions.
 #[derive(Clone, Copy, Debug)]
 // pub struct Capsule<const N: usize> {

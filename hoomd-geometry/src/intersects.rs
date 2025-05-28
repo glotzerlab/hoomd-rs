@@ -4,38 +4,31 @@
 /*!
 Traits for determining the intersection between various bodies.
 
-Most `Shape`s should implement [`IntersectsAt`] to allow for the calculation of
-intersections between two bodies without a built-in origin. This definition is compatible
-with HPMC and allows for the method's definition without requiring internal state regarding
+[`IntersectsAt`] allows for the calculation of intersections between two bodies without a built-in origin. This definition is compatible with HPMC and allows for the method's definition without requiring internal state regarding
 the position or orientation of each body.
 For non-orientable shapes, or for bodies who have special intersection
-tests for particular orientations, [`IntersectsAt`] can be written to accept an Option
-rather than a pure Rotation.
-
+tests for particular orientations, and inherent method `intersects` can be implemented
+as well.
 ```
-use hoomd_geometry::{Sphere, IntersectsAt};
+use hoomd_geometry::{Cuboid, Sphere, IntersectsAt};
 use hoomd_vector::Versor;
 
-let s0 = Sphere::<3>::from(1.0);
-let s1 = Sphere::<3>::from(1.0);
+let c0 = Cuboid::<3>::from([1.0, 1.0, 1.0]);
+let c1 = Cuboid::<3>::from([1.0, 1.0, 1.0]);
 
-// Spheres are not orientable, so we can provide a None rotation for clarity.
-assert!(s0.intersects_at(&s1, &[1.0, 0.0, 0.0].into(), &Versor::default()));
-assert!(s0.intersects_at(&s1, &[1.0, 0.0, 0.0].into(), &Versor::default()));
+// Determine the intersection between two spheres.
+assert!(c0.intersects_at(&c1, &[1.0, 0.0, 0.0].into(), &Versor::default()) == true);
+assert!(c0.intersects_at(&c1, &[9.9, 0.0, 0.0].into(), &Versor::default()) == false);
 
+
+// Determine the intersection between two *axis-aligned cuboids*. This yields the same
+// results as the code above, but uses a faster intersection check!
+assert!(c0.intersects_aligned(&c1, &[1.0, 0.0, 0.0].into()) == true);
+assert!(c0.intersects_aligned(&c1, &[9.9, 0.0, 0.0].into()) == false);
 ```
 */
 
 use hoomd_vector::{Rotate, Vector};
-
-/**
-Define a position and orientation-independent intersection based solely on the geometry
-of the shape.
-*/
-pub trait Intersects<S> {
-    /// Determine whether a Shape intersects another shape (based on intrinsic location).
-    fn intersects(&self, other: &S) -> bool;
-}
 
 /**
 Define a position and orientation-dependent intersection between two bodies.

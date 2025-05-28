@@ -4,8 +4,7 @@
 /*!
 Modifier structs to provide additional information via encapsulation.
 
-[`Sphero`] rounds a geometry with some radius, and [`Centered`] provides a notion of the
-origin of a particular shape.
+[`Sphero`] rounds a geometry with some radius
 */
 
 use hoomd_vector::Cartesian;
@@ -19,37 +18,3 @@ pub struct Sphero<S> {
     /// The radius of the rounding sphere
     pub rounding_radius: f64,
 }
-
-/**
-Provide an origin to a `Shape` struct.
-*/
-#[derive(Clone)]
-pub struct Centered<S, const N: usize> {
-    /// The struct to be centered. This is typically a `Shape`, but does not have to be
-    pub shape: S,
-    /// The center of mass of the struct
-    pub centroid: Cartesian<N>,
-}
-
-impl<S, const N: usize> From<(S, [f64; N])> for Centered<S, N> {
-    #[inline]
-    fn from(input: (S, [f64; N])) -> Centered<S, N> {
-        Centered {
-            shape: input.0,
-            centroid: input.1.into(),
-        }
-    }
-}
-impl<S, const N: usize> From<(S, Cartesian<N>)> for Centered<S, N> {
-    #[inline]
-    fn from(input: (S, Cartesian<N>)) -> Centered<S, N> {
-        Centered {
-            shape: input.0,
-            centroid: input.1,
-        }
-    }
-}
-
-// impl<B, S> Intersects<S> for Centered<B> where B: Intersects<S> {
-
-// }

@@ -4,7 +4,7 @@
 /*!
 Methods and implementations for an N-hypersphere, where N is the dimension.
 */
-use crate::{IntersectsAt, Shape, SupportFn, Volume};
+use crate::{IntersectsAt, SupportFn, Volume};
 use hoomd_vector::{Rotate, Vector};
 use std::f64::consts::PI;
 
@@ -49,13 +49,6 @@ impl<const N: usize, V: Vector> SupportFn<V> for Sphere<N> {
     #[inline]
     fn support(&self, n: &V) -> V {
         *n / n.norm() * self.r
-    }
-}
-
-impl<const N: usize> Shape<N> for Sphere<N> {
-    #[inline]
-    fn bounding_sphere(&self) -> Sphere<N> {
-        *self
     }
 }
 
@@ -114,18 +107,6 @@ mod tests {
         assert_eq!(s.r, 1.0);
         assert_eq!(s, Sphere::<N>::default());
         assert_relative_eq!(s.volume(), volume_map(N));
-    }
-
-    #[rstest]
-    #[case(PhantomData::<Sphere<0>>)]
-    #[case(PhantomData::<Sphere<1>>)]
-    #[case(PhantomData::<Sphere<2>>)]
-    #[case(PhantomData::<Sphere<3>>)]
-    #[case(PhantomData::<Sphere<4>>)]
-    #[case(PhantomData::<Sphere<5>>)]
-    fn test_bounding_sphere<const N: usize>(#[case] _n: PhantomData<Sphere<N>>) {
-        let s = Sphere::<N>::default();
-        assert_eq!(s, s.bounding_sphere());
     }
 
     #[rstest]
