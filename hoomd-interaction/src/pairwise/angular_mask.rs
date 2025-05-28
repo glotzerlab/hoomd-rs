@@ -68,7 +68,7 @@ use hoomd_vector::Angle;
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let boxcar = Boxcar { epsilon: -1.0, a: 1.0, b: 1.5 };
+let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
 let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() }];
 let angular_mask = AngularMask::new(boxcar, masks, masks);
 # Ok(())
@@ -82,7 +82,7 @@ use hoomd_vector::Angle;
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let boxcar = Boxcar { epsilon: -1.0, a: 1.0, b: 1.5 };
+let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
 let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() }];
 let mut angular_mask = AngularMask::new(boxcar, masks, masks);
 
@@ -100,7 +100,7 @@ use hoomd_vector::Angle;
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let boxcar = Boxcar { epsilon: -1.0, a: 1.0, b: 1.5 };
+let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
 let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() }];
 let angular_mask = AngularMask::new(boxcar, masks, masks);
 
@@ -123,7 +123,7 @@ use hoomd_vector::Angle;
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let boxcar = Boxcar { epsilon: -1.0, a: 1.0, b: 1.5 };
+let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
 let masks_i = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() },
     Patch { director: [-1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() }];
 let masks_j = [Patch { director: [0.0, 1.0].try_into()?, cos_delta: (PI/8.0).cos() }];
@@ -148,7 +148,7 @@ use hoomd_vector::{Cartesian, Vector, Versor};
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let boxcar = Boxcar { epsilon: -1.0, a: 1.0, b: 1.5 };
+let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
 
 let mask = [Patch {
     director: [0.0, 0.0, 1.0].try_into()?,
@@ -208,7 +208,7 @@ where
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let boxcar = Boxcar { epsilon: -1.0, a: 1.0, b: 1.5 };
+    let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
     let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() }];
     let angular_mask = AngularMask::new(boxcar, masks, masks);
     # Ok(())
@@ -275,8 +275,8 @@ mod tests {
         let epsilon = 1.125;
         let boxcar = Boxcar {
             epsilon,
-            a: 0.0,
-            b: 1000.0,
+            left: 0.0,
+            right: 1000.0,
         };
 
         // First case: identical directors in the +x direction
@@ -402,8 +402,8 @@ mod tests {
         let epsilon = 1.0;
         let boxcar = Boxcar {
             epsilon,
-            a: 0.0,
-            b: 1000.0,
+            left: 0.0,
+            right: 1000.0,
         };
 
         // Third case: multiple patches and different i,j masks.
@@ -485,8 +485,8 @@ mod tests {
         let epsilon = 1.125;
         let boxcar = Boxcar {
             epsilon,
-            a: 0.0,
-            b: 1000.0,
+            left: 0.0,
+            right: 1000.0,
         };
 
         // First case: identical directors in the +z direction

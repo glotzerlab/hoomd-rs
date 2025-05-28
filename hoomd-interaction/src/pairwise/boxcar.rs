@@ -27,9 +27,9 @@ Basic usage:
 use hoomd_interaction::pairwise::{IsotropicEnergy, Boxcar};
 
 let epsilon = 1.5;
-let (a,b) = (1.0, 2.5);
+let (left,right) = (1.0, 2.5);
 
-let boxcar = Boxcar { epsilon, a, b };
+let boxcar = Boxcar { epsilon, left, right };
 assert_eq!(boxcar.energy(0.0), 0.0);
 assert_eq!(boxcar.energy(1.0), 1.5);
 assert_eq!(boxcar.energy(2.0), 1.5);
@@ -42,10 +42,10 @@ The parameters are public fields and may be accessed directly:
 ```
 use hoomd_interaction::pairwise::{IsotropicEnergy, Boxcar};
 
-let mut boxcar = Boxcar { epsilon: 1.5, a: 1.0, b: 2.5 };
+let mut boxcar = Boxcar { epsilon: 1.5, left: 1.0, right: 2.5 };
 boxcar.epsilon = -2.0;
-boxcar.a = 0.0;
-boxcar.b = 1.0;
+boxcar.left = 0.0;
+boxcar.right = 1.0;
 ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -53,17 +53,17 @@ pub struct Boxcar {
     /// Energy scale *(\[energy\])*.
     pub epsilon: f64,
     /// Left side of the boxcar *(\[length\])*.
-    pub a: f64,
+    pub left: f64,
     /// Right side of the boxcar *(\[length\])*.
-    pub b: f64,
+    pub right: f64,
 }
 
 impl IsotropicEnergy for Boxcar {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         match r {
-            x if x < self.a => 0.0,
-            x if x < self.b => self.epsilon,
+            x if x < self.left => 0.0,
+            x if x < self.right => self.epsilon,
             _ => 0.0,
         }
     }
@@ -77,31 +77,32 @@ mod tests {
     #[rstest]
     fn general_case(
         #[values(1.0, -2.0, 12.125, 0.25)] epsilon: f64,
-        #[values(1.0, 2.0, 0.5)] a: f64,
+        #[values(1.0, 2.0, 0.5)] left: f64,
         #[values(0.5, 0.125)] w: f64,
     ) {
-        let b = a + w;
-        let boxcar = Boxcar { epsilon, a, b };
+        let right = left + w;
+        let boxcar = Boxcar {
+            epsilon,
+            left,
+            right,
+        };
 
         assert_eq!(boxcar.epsilon, epsilon);
-        assert_eq!(boxcar.a, a);
-        assert_eq!(boxcar.b, b);
-
-        // Note: These tests could be cleaner with the next_up_down feature to come in a
-        // future version of Rust: https://github.com/rust-lang/rust/issues/91399
+        assert_eq!(boxcar.left, left);
+        assert_eq!(boxcar.right, right);
 
         // Left
         assert_eq!(boxcar.energy(0.0), 0.0);
-        assert_eq!(boxcar.energy(a * (1.0 - f64::EPSILON)), 0.0);
+        assert_eq!(boxcar.energy(left.next_down()), 0.0);
 
         // Center
-        assert_eq!(boxcar.energy(a), epsilon);
-        assert_eq!(boxcar.energy(a * (1.0 + f64::EPSILON)), epsilon);
-        assert_eq!(boxcar.energy(a + w / 2.0), epsilon);
-        assert_eq!(boxcar.energy(b * (1.0 - f64::EPSILON)), epsilon);
+        assert_eq!(boxcar.energy(left), epsilon);
+        assert_eq!(boxcar.energy(left.next_up()), epsilon);
+        assert_eq!(boxcar.energy(left + w / 2.0), epsilon);
+        assert_eq!(boxcar.energy(right.next_down()), epsilon);
 
         // Right
-        assert_eq!(boxcar.energy(b), 0.0);
-        assert_eq!(boxcar.energy(b * 10.0), 0.0);
+        assert_eq!(boxcar.energy(right), 0.0);
+        assert_eq!(boxcar.energy(right * 10.0), 0.0);
     }
 }

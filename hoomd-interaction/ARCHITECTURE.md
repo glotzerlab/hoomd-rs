@@ -34,7 +34,7 @@ let lj = LennardJones { epsilon: 1.0, sigma: 1.0 };
 let e = lj.energy(2.0);
 let f = lj.force(2.0);
 
-let boxcar = Boxcar { epsilon: -1.0, a: 0.0, b: 2.0 };
+let boxcar = Boxcar { epsilon: -1.0, left: 0.0, right: 2.0 };
 let f = step.force(0.5); // compile error, does not implement force trait
 let e = step.energy(0.5);
 ```

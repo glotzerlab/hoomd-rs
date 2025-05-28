@@ -45,8 +45,8 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
 
     let boxcar = Boxcar {
         epsilon: 1000.0,
-        a: 0.0,
-        b: 1.0,
+        left: 0.0,
+        right: 1.0,
     };
     let evaluator = Isotropic(boxcar);
     let cutoff_pair = CutoffPair {

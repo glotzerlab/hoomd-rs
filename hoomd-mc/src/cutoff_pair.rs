@@ -27,8 +27,8 @@ microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
 
 
 let epsilon = 2.0;
-let (a,b) = (0.0, 1.5);
-let boxcar = Boxcar { epsilon, a, b };
+let (left,right) = (0.0, 1.5);
+let boxcar = Boxcar { epsilon, left, right };
 let evaluator = Isotropic(boxcar);
 let cutoff_pair = CutoffPair { r_cut: 1.5, evaluator };
 
