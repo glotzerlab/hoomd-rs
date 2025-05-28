@@ -14,8 +14,9 @@ use crate::{Cartesian, Cross, Error, Rotate, Rotation, RotationMatrix, Unit, Vec
 
 A quaternion has a real value and three complex values, represented by scalar and 3-vector
 respectively:
-<!-- \mathbf{q} = (s, \vec{v}) -->
-<math display="block" class="tml-display" style="display:block math;"><mrow><mi>𝐪</mi><mo>=</mo><mo form="prefix" stretchy="false">(</mo><mi>s</mi><mo separator="true">,</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow></math>
+```math
+\mathbf{q} = (s, \vec{v})
+```
 
 Looking for the quaternion representation of 3D rotations? See [`Versor`].
 
@@ -159,8 +160,9 @@ pub struct Quaternion {
 
 impl Quaternion {
     /** The norm of the quaternion, squared.
-    <!-- |\mathbf{q}|^2 -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>|</mi><mi>𝐪</mi><msup><mi>|</mi><mn>2</mn></msup></mrow></math>
+    ```math
+    |\mathbf{q}|^2
+    ```
 
     # Example
     ```
@@ -178,8 +180,9 @@ impl Quaternion {
     }
 
     /** The norm of the quaternion.
-    <!-- |\mathbf{q}| -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>|</mi><mi>𝐪</mi><mi>|</mi></mrow></math>
+    ```math
+    |\mathbf{q}|
+    ```
 
     # Example
     ```
@@ -197,8 +200,9 @@ impl Quaternion {
     }
 
     /** Construct the conjugate of this quaternion.
-    <!-- \mathbf{q}^* = (s, -\vec{v}) -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><msup><mi>𝐪</mi><mo>*</mo></msup><mo>=</mo><mo form="prefix" stretchy="false">(</mo><mi>s</mi><mo separator="true">,</mo><mo form="prefix" stretchy="false">−</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow></math>
+    ```math
+    \mathbf{q}^* = (s, -\vec{v})
+    ```
 
     # Example
     ```
@@ -220,8 +224,9 @@ impl Quaternion {
 
     /** Create a [`Versor`] by normalizing the given quaternion.
 
-    <!-- \mathbf{v} = \frac{\mathbf{q}}{|\mathbf{q}|} -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>𝐯</mi><mo>=</mo><mfrac><mi>𝐪</mi><mrow><mi>|</mi><mi>𝐪</mi><mi>|</mi></mrow></mfrac></mrow></math>
+    ```math
+    \mathbf{v} = \frac{\mathbf{q}}{|\mathbf{q}|}
+    ```
 
     # Example
 
@@ -252,8 +257,9 @@ impl Quaternion {
 
     /** Create a [`Versor`] by normalizing the given quaternion.
 
-    <!-- \mathbf{v} = \frac{\mathbf{q}}{|\mathbf{q}|} -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>𝐯</mi><mo>=</mo><mfrac><mi>𝐪</mi><mrow><mi>|</mi><mi>𝐪</mi><mi>|</mi></mrow></mfrac></mrow></math>
+    ```math
+    \mathbf{v} = \frac{\mathbf{q}}{|\mathbf{q}|}
+    ```
 
     # Example
 
@@ -643,8 +649,9 @@ impl Rotate<Cartesian<3>> for Versor {
 
     /** Rotate a [`Cartesian<3>`] by a [`Versor`]
 
-    <!-- \mathbf{q} \vec{a} \mathbf{q}^* -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>𝐪</mi><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><msup><mi>𝐪</mi><mo>*</mo></msup></mrow></math>
+    ```math
+    \mathbf{q} \vec{a} \mathbf{q}^*
+    ```
 
     # Example
 
@@ -676,8 +683,9 @@ impl Rotation for Versor {
     /** Combine two rotations.
 
     The resulting versor is obtained by quaternion multiplication.
-    <!-- \mathbf{q}_{ab} = \mathbf{q}_a \mathbf{q}_b -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><msub><mi>𝐪</mi><mrow><mi>a</mi><mi>b</mi></mrow></msub><mo>=</mo><msub><mi>𝐪</mi><mi>a</mi></msub><msub><mi>𝐪</mi><mi>b</mi></msub></mrow></math>
+    ```math
+    \mathbf{q}_{ab} = \mathbf{q}_a \mathbf{q}_b
+    ```
 
     # Example
 
@@ -717,8 +725,9 @@ impl Rotation for Versor {
 
     /** Create a [`Versor`] that performs the inverse rotation of the given versor.
 
-    <!-- \mathbf{q}^* -->
-    <math display="block" class="tml-display" style="display:block math;"><msup><mi>𝐪</mi><mo>*</mo></msup></math>
+    ```math
+    \mathbf{q}^*
+    ```
 
     # Example
 

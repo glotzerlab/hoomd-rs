@@ -6,12 +6,13 @@
 
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
-use std::marker::PhantomData;
 
 use crate::boundary::{Boundary, Open};
 use crate::property::Position;
 use crate::{Body, Error, Site, Transform};
+
 use hoomd_utility::random::Counter;
+use hoomd_vector::Vector;
 
 /** Track a unique identifier for an item in [`Microstate`].
 */
@@ -30,13 +31,12 @@ documentation](crate) for a full overview and the method-specific documentation
 for additional details.
 
 The generic type names are:
-* `V`: The [`Vector`](hoomd_vector::Vector) space in which bodies and sites exist.
 * `B`: The [`Body::properties`](crate::Body) type.
 * `S`: The [`Site::properties`](crate::Site) type.
 * `C`: The [`boundary`](crate::boundary) condition type.
 */
 #[derive(Clone)]
-pub struct Microstate<V, B, S = B, C = Open> {
+pub struct Microstate<B, S = B, C = Open> {
     /// Total number of steps that this microstate has been advanced in a simulation model.
     step: u64,
 
@@ -69,12 +69,9 @@ pub struct Microstate<V, B, S = B, C = Open> {
 
     /// The range of allowed particle positions and a description of any periodicity.
     boundary: C,
-
-    /// Make Microstate depend on the vector type V even though it doesn't store a vector.
-    vector_type: PhantomData<V>,
 }
 
-impl<V, B, S> Default for Microstate<V, B, S, Open> {
+impl<B, S> Default for Microstate<B, S, Open> {
     /** Construct an empty microstate with open boundary conditions.
 
     See [`Microstate::new`].
@@ -85,7 +82,7 @@ impl<V, B, S> Default for Microstate<V, B, S, Open> {
     }
 }
 
-impl<V, B, S> Microstate<V, B, S, Open> {
+impl<B, S> Microstate<B, S, Open> {
     /** Construct an empty microstate with open boundary conditions.
 
     The microstate starts at step 0, substep 0, random number seed 0,
@@ -120,13 +117,12 @@ impl<V, B, S> Microstate<V, B, S, Open> {
             free_site_tags: BinaryHeap::new(),
             bodies_sites: Vec::new(),
             boundary: Open,
-            vector_type: PhantomData,
         }
     }
 }
 
 /// Access and manage the simulation step, substep, RNG seeds.
-impl<V, B, S, C> Microstate<V, B, S, C> {
+impl<B, S, C> Microstate<B, S, C> {
     /** Get the simulation step.
 
     # Examples
@@ -309,7 +305,7 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
 }
 
 /// Access and manage the boundary condition.
-impl<V, B, S, C> Microstate<V, B, S, C> {
+impl<B, S, C> Microstate<B, S, C> {
     /** Get the boundary condition.
 
     # Example
@@ -353,6 +349,17 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
     # Ok(())
     # }
     ```
+
+    TODO: Replace with setter. `boundary_mut` allows the caller to create an
+    invalid microstate by changing the boundary in such a way that sites may
+    be outside. Changing the boundary will also require regenerating ghost
+    sites. Just checking for a valid boundary on set will pose some difficulty
+    to the caller. To increase the boundary, the caller will need to set
+    the new boundary and then move the bodies. To decrease the boundary, the
+    caller will need to move the bodies and then set the boundary. Perhaps a
+    `set_boundary_and_update_bodies` method that does both simultaneously would
+    solve this? It could take a function that updates the bodies along with the
+    new boundary.
     */
     #[inline]
     pub fn boundary_mut(&mut self) -> &mut C {
@@ -362,7 +369,12 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
 
 /** Manage bodies in the microstate.
 */
-impl<V, B, S, C> Microstate<V, B, S, C> {
+impl<V, B, S, C> Microstate<B, S, C>
+where
+    B: Transform<S> + Position<Vector = V>,
+    S: Position<Vector = V>,
+    C: Boundary<V, B, S>,
+{
     /** Add a new body to the microstate.
 
     Each body is assigned a unique tag. The first body is given tag 0,
@@ -413,12 +425,7 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
         clippy::missing_panics_doc,
         reason = "Panic would occur due to a bug in hoomd-rs."
     )]
-    pub fn add_body(&mut self, body: Body<B, S>) -> Result<usize, Error>
-    where
-        B: Transform<S> + Position<V>,
-        S: Position<V>,
-        C: Boundary<V, B, S>,
-    {
+    pub fn add_body(&mut self, body: Body<B, S>) -> Result<usize, Error> {
         // Find the tag of the new body.
         let body_tag = self
             .free_body_tags
@@ -528,9 +535,6 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
     pub fn extend_bodies<T>(&mut self, bodies: T) -> Result<(), Error>
     where
         T: IntoIterator<Item = Body<B, S>>,
-        B: Transform<S> + Position<V>,
-        S: Position<V>,
-        C: Boundary<V, B, S>,
     {
         for body in bodies {
             self.add_body(body)?;
@@ -642,8 +646,8 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
     )]
     pub fn update_body_properties(&mut self, body_index: usize, properties: B) -> Result<(), Error>
     where
-        B: Transform<S> + Position<V>,
-        S: Position<V>,
+        B: Transform<S> + Position<Vector = V>,
+        S: Position<Vector = V>,
         C: Boundary<V, B, S>,
     {
         let body = &mut self.bodies[body_index];
@@ -683,7 +687,7 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
 
 /** Access contents of the microstate.
 */
-impl<V, B, S, C> Microstate<V, B, S, C> {
+impl<B, S, C> Microstate<B, S, C> {
     /** Access the microstate's tagged bodies in index order.
 
     [`Microstate`] stores bodies in a flat memory region. The [`Tagged`] type
@@ -894,6 +898,26 @@ impl<V, B, S, C> Microstate<V, B, S, C> {
             &self.sites[self.site_indices[*site_tag]
                 .expect("bodies_sites and site_indices should be consistent")]
         })
+    }
+}
+
+impl<V, B, S, C> Microstate<B, S, C>
+where
+    S: Position<Vector = V>,
+    V: Vector,
+{
+    /** Find sites near a point in space.
+
+    Iterate over all sites (and later, ghost sites) within a distance `r` of
+    the given `point`.
+
+    TODO: Revise the API and description after implementing periodic boundary conditions.
+    */
+    #[inline]
+    pub fn iter_sites_near(&self, point: &V, r: f64) -> impl Iterator<Item = &Site<S>> {
+        self.sites
+            .iter()
+            .filter(move |s| (*s.properties.position() - *point).norm_squared() < r.powi(2))
     }
 }
 
@@ -1121,10 +1145,10 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     ```
     */
     #[inline]
-    pub fn try_build<V>(self) -> Result<Microstate<V, B, S, C>, Error>
+    pub fn try_build<V>(self) -> Result<Microstate<B, S, C>, Error>
     where
-        B: Transform<S> + Position<V>,
-        S: Position<V>,
+        B: Transform<S> + Position<Vector = V>,
+        S: Position<Vector = V>,
         C: Boundary<V, B, S>,
     {
         let mut microstate = Microstate {
@@ -1139,7 +1163,6 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
             site_indices: Vec::new(),
             free_site_tags: BinaryHeap::new(),
             bodies_sites: Vec::new(),
-            vector_type: PhantomData,
         };
 
         microstate.extend_bodies(self.bodies)?;
@@ -1418,5 +1441,6 @@ mod tests {
         );
     }
 
-    // TODO: Test add_bodies and update_body_properties with periodic boundaries that result in wrapping.
+    // TODO: Test iter_sites_near
+    // TODO: Test add_bodies, update_body_properties, and iter_sites_near with periodic boundaries that result in wrapping.
 }

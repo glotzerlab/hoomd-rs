@@ -14,10 +14,11 @@ use rand::Rng;
 /** Apply a local trial move to each body in the microstate.
 
 Each trial move is accepted when:
-<!-- r < \exp\left(\frac{-\Delta H}{kT}\right) -->
-<math display="block" class="tml-display" style="display:block math;"><mrow><mi>r</mi><mo>&lt;</mo><mrow><mi>exp</mi><mo>⁡</mo></mrow><mrow><mo fence="true" form="prefix">(</mo><mfrac><mrow><mo lspace="0em" rspace="0em">−</mo><mpadded lspace="0"><mi mathvariant="normal">Δ</mi></mpadded><mi>H</mi></mrow><mrow><mi>k</mi><mi>T</mi></mrow></mfrac><mo fence="true" form="postfix">)</mo></mrow></mrow></math>
-where `r` is a random value uniformly distributed in `[0,1)`, `\Delta H` is
-the change in energy computed by the given `hamiltonian` and `kT` is the given
+```math
+r < \exp\left(\frac{-\Delta H}{kT}\right)
+```
+where `r` is a random value uniformly distributed in `[0,1)`, $`\Delta H`$ is
+the change in energy computed by the given `hamiltonian` and $`kT`$ is the given
 `state` value (the last argument to `apply`).
 
 # Example
@@ -32,7 +33,8 @@ use hoomd_vector::Cartesian;
 let mut microstate = Microstate::new();
 microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
 let d = 0.1;
-let translate_sweep = Sweep { local: Translate::new(d.try_into()?) };
+let translate = Translate { maximum_distance: d.try_into()? };
+let translate_sweep = Sweep { local: translate };
 
 let hamiltonian = Zero;
 let kt = 1.0;
@@ -59,12 +61,12 @@ impl<L> Sweep<L> {
     }
 }
 
-impl<V, B, S, C, L, H> Trial<Microstate<V, B, S, C>, H> for Sweep<L>
+impl<V, B, S, C, L, H> Trial<Microstate<B, S, C>, H> for Sweep<L>
 where
-    B: Copy + Clone + Default + Transform<S> + Position<V>,
-    S: Clone + Default + Position<V>,
+    B: Copy + Clone + Default + Transform<S> + Position<Vector = V>,
+    S: Clone + Default + Position<Vector = V>,
     L: LocalTrial<B>,
-    H: DeltaEnergyOne<V, B, S, C>,
+    H: DeltaEnergyOne<B, S, C>,
     C: Boundary<V, B, S>,
 {
     type Count = Count;
@@ -73,10 +75,10 @@ where
     #[inline]
     fn apply(
         &self,
-        microstate: &mut Microstate<V, B, S, C>,
+        microstate: &mut Microstate<B, S, C>,
         hamiltonian: &H,
         state: &Self::Macrostate,
-    ) -> Self::Count where {
+    ) -> Self::Count {
         let kt = state;
         let mut rng = microstate.counter().make_rng();
         let mut count = Self::Count::default();
@@ -170,10 +172,11 @@ mod tests {
         let hamiltonian = Single(Harmonic(origin));
 
         let d = 0.1;
-        let translate = Translate::new(
-            d.try_into()
+        let translate = Translate {
+            maximum_distance: d
+                .try_into()
                 .expect("hard-coded constant should be positive"),
-        );
+        };
         let translate_sweep = Sweep { local: translate };
 
         let mut position_accumulator = Cartesian::default();

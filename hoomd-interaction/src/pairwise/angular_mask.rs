@@ -8,6 +8,20 @@ use super::{AnisotropicEnergy, IsotropicEnergy};
 use hoomd_vector::{Rotate, Unit, Vector};
 
 /** A single patch in the [`AngularMask`] potential.
+
+The width of the patch is given as the cosine of its half-angle.
+
+# Example
+
+```
+use hoomd_interaction::pairwise::angular_mask::Patch;
+use std::f64::consts::PI;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let patch = Patch { director: [0.0, 1.0, 0.0].try_into()?, cos_delta: (PI/4.0).cos() };
+# Ok(())
+# }
+```
  */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Patch<V> {
@@ -17,36 +31,9 @@ pub struct Patch<V> {
     pub cos_delta: f64,
 }
 
-impl<V> Patch<V> {
-    /** Construct a new patch with the given direction and width.
+/** Evaluate an isotropic pairwise energy masked by angular patches (_not differentiable_).
 
-    The width of the patch is given as the cosine of its half-angle.
-
-    # Example
-
-    ```
-    use hoomd_interaction::pairwise::angular_mask::Patch;
-    use std::f64::consts::PI;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let patch = Patch::new([0.0, 1.0, 0.0].try_into()?, (PI/4.0).cos());
-    # Ok(())
-    # }
-    ```
-    */
-    #[inline]
-    #[must_use]
-    pub fn new(director: Unit<V>, cos_delta: f64) -> Self {
-        Self {
-            director,
-            cos_delta,
-        }
-    }
-}
-
-/** Evaluate an isotropic pairwise energy masked by angular patches.
-
-<!--
+```math
 U(\vec{r}_{ij}, \mathbf{o}_{ij}) = f(|\vec{r}_{ij}|) \cdot \max
     \left(1,
     \sum_{m=1}^{N_{\mathrm{masks},i}}
@@ -55,18 +42,16 @@ U(\vec{r}_{ij}, \mathbf{o}_{ij}) = f(|\vec{r}_{ij}|) \cdot \max
       \mathbf{o}_{ij} \vec{d}_{n,j} \mathbf{o}_{ij}^*,
       \delta_{m,i},
       \delta_{n,j}) \right)
--->
-<math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><msub><mover><mi>r</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo separator="true">,</mo><msub><mi>𝐨</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mi>f</mi><mo form="prefix" stretchy="false">(</mo><mi>|</mi><msub><mover><mi>r</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>i</mi><mi>j</mi></mrow></msub><mi>|</mi><mo form="postfix" stretchy="false">)</mo><mo>⋅</mo><mrow><mi>max</mi><mo>⁡</mo></mrow><mrow><mo fence="true" form="prefix">(</mo><mn>1</mn><mo separator="true">,</mo><mrow><munderover><mo stretchy="true">∑</mo><mrow><mi>m</mi><mo>=</mo><mn>1</mn></mrow><msub><mi>N</mi><mrow><mrow><mtext></mtext><mi>masks</mi></mrow><mo separator="true">,</mo><mi>i</mi></mrow></msub></munderover></mrow><mrow><munderover><mo stretchy="true">∑</mo><mrow><mi>n</mi><mo>=</mo><mn>1</mn></mrow><msub><mi>N</mi><mrow><mrow><mtext></mtext><mi>masks</mi></mrow><mo separator="true">,</mo><mi>j</mi></mrow></msub></munderover></mrow><mi>s</mi><mo form="prefix" stretchy="false">(</mo><msub><mover><mi>d</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>m</mi><mo separator="true">,</mo><mi>i</mi></mrow></msub><mo separator="true">,</mo><msub><mi>𝐨</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><msub><mover><mi>d</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>n</mi><mo separator="true">,</mo><mi>j</mi></mrow></msub><msubsup><mi>𝐨</mi><mrow><mi>i</mi><mi>j</mi></mrow><mo>*</mo></msubsup><mo separator="true">,</mo><msub><mi>δ</mi><mrow><mi>m</mi><mo separator="true">,</mo><mi>i</mi></mrow></msub><mo separator="true">,</mo><msub><mi>δ</mi><mrow><mi>n</mi><mo separator="true">,</mo><mi>j</mi></mrow></msub><mo form="postfix" stretchy="false">)</mo><mo fence="true" form="postfix">)</mo></mrow></mrow></math>
+```
 where
-<!--
+```math
 s(\vec{a}, \vec{b}, \delta_a, \delta_b) =
  \begin{cases}
  1 & \hat{a} \cdot \hat{r}_{ij} \ge \cos \delta_{a} \land
  \hat{b} \cdot \hat{r}_{ji} \ge \cos \delta_{b} \\
  0 & \text{otherwise} \\
 \end{cases}
--->
-<math display="block" class="tml-display" style="display:block math;"><mrow><mi>s</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo separator="true">,</mo><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo separator="true">,</mo><msub><mi>δ</mi><mi>a</mi></msub><mo separator="true">,</mo><msub><mi>δ</mi><mi>b</mi></msub><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mrow><mo fence="true" form="prefix">{</mo><mtable><mtr><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 0em;"><mn>1</mn></mtd><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 1em;"><mrow><mover><mi>a</mi><mo stretchy="false" class="tml-xshift" style="math-style:normal;math-depth:0;">^</mo></mover><mo>⋅</mo><msub><mover><mi>r</mi><mo stretchy="false" class="tml-xshift" style="math-style:normal;math-depth:0;">^</mo></mover><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>≥</mo><mrow><mi>cos</mi><mo>⁡</mo><mspace width="0.1667em"></mspace></mrow><msub><mi>δ</mi><mi>a</mi></msub><mo>∧</mo><mover><mi>b</mi><mo stretchy="false" class="tml-capshift" style="math-style:normal;math-depth:0;">^</mo></mover><mo>⋅</mo><msub><mover><mi>r</mi><mo stretchy="false" class="tml-xshift" style="math-style:normal;math-depth:0;">^</mo></mover><mrow><mi>j</mi><mi>i</mi></mrow></msub><mo>≥</mo><mrow><mi>cos</mi><mo>⁡</mo><mspace width="0.1667em"></mspace></mrow><msub><mi>δ</mi><mi>b</mi></msub></mrow></mtd></mtr><mtr><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 0em;"><mn>0</mn></mtd><mtd class="tml-left" style="padding:0.5ex 0em 0.5ex 1em;"><mtext>otherwise</mtext></mtd></mtr></mtable><mo fence="true" form="postfix"></mo></mrow></mrow></math>
+```
 
 Implement the [Kern-Frenkel] potential with the [`Boxcar`](super::Boxcar) isotropic potential
 and single patch in both `masks_i` and `masks_j`.
@@ -83,8 +68,8 @@ use hoomd_vector::Angle;
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
-let masks = [Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos())];
+let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
+let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() }];
 let angular_mask = AngularMask::new(boxcar, masks, masks);
 # Ok(())
 # }
@@ -97,8 +82,8 @@ use hoomd_vector::Angle;
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
-let masks = [Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos())];
+let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
+let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() }];
 let mut angular_mask = AngularMask::new(boxcar, masks, masks);
 
 angular_mask.masks_i[0].cos_delta = (PI/4.0).cos();
@@ -115,8 +100,8 @@ use hoomd_vector::Angle;
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
-let masks = [Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos())];
+let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
+let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() }];
 let angular_mask = AngularMask::new(boxcar, masks, masks);
 
 // With the same relative orientation, the patches do not overlap and the
@@ -138,10 +123,10 @@ use hoomd_vector::Angle;
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
-let masks_i = [Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos()),
-    Patch::new([-1.0, 0.0].try_into()?, (PI/8.0).cos())];
-let masks_j = [Patch::new([0.0, 1.0].try_into()?, (PI/8.0).cos())];
+let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
+let masks_i = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() },
+    Patch { director: [-1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() }];
+let masks_j = [Patch { director: [0.0, 1.0].try_into()?, cos_delta: (PI/8.0).cos() }];
 let angular_mask = AngularMask::new(boxcar, masks_i, masks_j);
 
 // With the same relative orientation, the patches do not overlap and the
@@ -163,12 +148,12 @@ use hoomd_vector::{Cartesian, Vector, Versor};
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
+let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
 
-let mask = [Patch::new(
-    [0.0, 0.0, 1.0].try_into()?,
-    (PI / 8.0).cos(),
-)];
+let mask = [Patch {
+    director: [0.0, 0.0, 1.0].try_into()?,
+    cos_delta: (PI / 8.0).cos(),
+}];
 let (x_axis, _) = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
 
 let angular_mask = AngularMask::new(boxcar, mask, mask);
@@ -223,8 +208,8 @@ where
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let boxcar = Boxcar::new(-1.0, 1.0, 1.5);
-    let masks = [Patch::new([1.0, 0.0].try_into()?, (PI/8.0).cos())];
+    let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
+    let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() }];
     let angular_mask = AngularMask::new(boxcar, masks, masks);
     # Ok(())
     # }
@@ -288,15 +273,19 @@ mod tests {
         // Evaluate that patch directors, widths, and relative orientations are
         // handled properly.
         let epsilon = 1.125;
-        let boxcar = Boxcar::new(epsilon, 0.0, 1000.0);
+        let boxcar = Boxcar {
+            epsilon,
+            left: 0.0,
+            right: 1000.0,
+        };
 
         // First case: identical directors in the +x direction
-        let mask = [Patch::new(
-            [1.0, 0.0]
+        let mask = [Patch {
+            director: [1.0, 0.0]
                 .try_into()
                 .expect("hard-coded vector should have non-zero length"),
-            (PI / 8.0).cos(),
-        )];
+            cos_delta: (PI / 8.0).cos(),
+        }];
         let angular_mask = AngularMask::new(boxcar, mask, mask);
 
         // Check corner cases when the j particle is along the patch direction.
@@ -339,12 +328,12 @@ mod tests {
         }
 
         // Second case: identical directors in the 1,1 direction
-        let mask = [Patch::new(
-            [1.0, 1.0]
+        let mask = [Patch {
+            director: [1.0, 1.0]
                 .try_into()
                 .expect("hard-coded vector should have non-zero length"),
-            (PI / 3.0).cos(),
-        )];
+            cos_delta: (PI / 3.0).cos(),
+        }];
         let angular_mask = AngularMask::new(boxcar, mask, mask);
 
         // Check corner cases when the j particle is along the patch direction
@@ -411,48 +400,52 @@ mod tests {
     #[case([-1.0, 0.0].into(), PI, 0.0)]
     fn multiple_patches_2d(#[case] r_ij: Cartesian<2>, #[case] theta: f64, #[case] expected: f64) {
         let epsilon = 1.0;
-        let boxcar = Boxcar::new(epsilon, 0.0, 1000.0);
+        let boxcar = Boxcar {
+            epsilon,
+            left: 0.0,
+            right: 1000.0,
+        };
 
         // Third case: multiple patches and different i,j masks.
         let mask_i = [
-            Patch::new(
-                [0.0, 1.0]
+            Patch {
+                director: [0.0, 1.0]
                     .try_into()
                     .expect("hard-coded vector should have non-zero length"),
-                (PI / 8.0).cos(),
-            ),
-            Patch::new(
-                [0.0, -1.0]
+                cos_delta: (PI / 8.0).cos(),
+            },
+            Patch {
+                director: [0.0, -1.0]
                     .try_into()
                     .expect("hard-coded vector should have non-zero length"),
-                (PI / 8.0).cos(),
-            ),
-            Patch::new(
-                [1.0, 0.0]
+                cos_delta: (PI / 8.0).cos(),
+            },
+            Patch {
+                director: [1.0, 0.0]
                     .try_into()
                     .expect("hard-coded vector should have non-zero length"),
-                (PI / 8.0).cos(),
-            ),
-            Patch::new(
-                [-1.0, 0.0]
+                cos_delta: (PI / 8.0).cos(),
+            },
+            Patch {
+                director: [-1.0, 0.0]
                     .try_into()
                     .expect("hard-coded vector should have non-zero length"),
-                (PI / 8.0).cos(),
-            ),
+                cos_delta: (PI / 8.0).cos(),
+            },
         ];
         let mask_j = [
-            Patch::new(
-                [0.0, 1.0]
+            Patch {
+                director: [0.0, 1.0]
                     .try_into()
                     .expect("hard-coded vector should have non-zero length"),
-                (PI / 8.0).cos(),
-            ),
-            Patch::new(
-                [0.0, -1.0]
+                cos_delta: (PI / 8.0).cos(),
+            },
+            Patch {
+                director: [0.0, -1.0]
                     .try_into()
                     .expect("hard-coded vector should have non-zero length"),
-                (PI / 8.0).cos(),
-            ),
+                cos_delta: (PI / 8.0).cos(),
+            },
         ];
         let angular_mask = AngularMask::new(boxcar, mask_i, mask_j);
 
@@ -463,14 +456,14 @@ mod tests {
     fn smooth_potential(#[values(0.9, 1.1, 1.2, 3.0)] r: f64) {
         let epsilon = 1.0;
         let sigma = 1.0;
-        let lj: LennardJones = LennardJones::new(epsilon, sigma);
+        let lj: LennardJones = LennardJones { epsilon, sigma };
 
-        let mask = [Patch::new(
-            [1.0, 0.0]
+        let mask = [Patch {
+            director: [1.0, 0.0]
                 .try_into()
                 .expect("hard-coded vector should have non-zero length"),
-            (PI).cos(),
-        )];
+            cos_delta: (PI).cos(),
+        }];
         let angular_mask = AngularMask::new(lj, mask, mask);
 
         // The patch covers the full surface. angular_mask.energy() should evaluate to the same
@@ -490,15 +483,19 @@ mod tests {
         // Evaluate that patch directors, widths, and relative orientations are
         // handled properly in 3D.
         let epsilon = 1.125;
-        let boxcar = Boxcar::new(epsilon, 0.0, 1000.0);
+        let boxcar = Boxcar {
+            epsilon,
+            left: 0.0,
+            right: 1000.0,
+        };
 
         // First case: identical directors in the +z direction
-        let mask = [Patch::new(
-            [0.0, 0.0, 1.0]
+        let mask = [Patch {
+            director: [0.0, 0.0, 1.0]
                 .try_into()
                 .expect("hard-coded vector should have non-zero length"),
-            (PI / 8.0).cos(),
-        )];
+            cos_delta: (PI / 8.0).cos(),
+        }];
         let angular_mask = AngularMask::new(boxcar, mask, mask);
 
         let (x_axis, _) = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
