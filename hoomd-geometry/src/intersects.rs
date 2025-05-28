@@ -20,8 +20,8 @@ let s0 = Sphere::<3>::from(1.0);
 let s1 = Sphere::<3>::from(1.0);
 
 // Spheres are not orientable, so we can provide a None rotation for clarity.
-assert!(s0.intersects_at(&s1, &[1.0, 0.0, 0.0].into(), &None::<Versor>));
-assert!(s0.intersects_at(&s1, &[1.0, 0.0, 0.0].into(), &Some(Versor::default())));
+assert!(s0.intersects_at(&s1, &[1.0, 0.0, 0.0].into(), &Versor::default()));
+assert!(s0.intersects_at(&s1, &[1.0, 0.0, 0.0].into(), &Versor::default()));
 
 ```
 */
