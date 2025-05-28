@@ -10,8 +10,8 @@
 
 use divan::counter::ItemsCount;
 use divan::{self, Bencher, black_box};
-use hoomd_geom::Simplex3;
-use hoomd_geom::{
+use hoomd_geometry::Simplex3;
+use hoomd_geometry::{
     Cuboid, IntersectsAt, Sphere,
     poly::ConvexPolytope,
     xenocollide::{collide2d, collide3d},

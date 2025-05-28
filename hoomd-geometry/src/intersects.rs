@@ -13,7 +13,7 @@ tests for particular orientations, [`IntersectsAt`] can be written to accept an 
 rather than a pure Rotation.
 
 ```
-use hoomd_geom::{Sphere, IntersectsAt};
+use hoomd_geometry::{Sphere, IntersectsAt};
 use hoomd_vector::Versor;
 
 let s0 = Sphere::<3>::from(1.0);

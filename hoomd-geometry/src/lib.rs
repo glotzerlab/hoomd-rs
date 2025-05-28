@@ -10,18 +10,18 @@
 
 /*! General, performant computational geometry code.
 
-`hoomd_geom` implements common operations for widely-used geometric primitives, with
+`hoomd_geometry` implements common operations for widely-used geometric primitives, with
 additional functionality to accommodate hard-particle Monte Carlo simulations.
 
 ## Geometric Primitives
 
-The [`Sphere`] is an excellent example of the design philosophy of `hoomd_geom`. The
+The [`Sphere`] is an excellent example of the design philosophy of `hoomd_geometry`. The
 struct is initialized from a single radius value, and immediately provides access to
 a variety of methods. [`Sphere`]s are well defined in arbitrary dimension, and therefore
 are parameterized with a const generic `N` representing the embedding dimension.
 
 ```
-use hoomd_geom::{Sphere, Volume, IntersectsAt};
+use hoomd_geometry::{Sphere, Volume, IntersectsAt};
 use approx::assert_relative_eq;
 use std::f64::consts::PI;
 
@@ -52,7 +52,7 @@ For cases where an explicit centroid is required, consider the [`Centered`] stru
 encapsulation.
 
 ```
-use hoomd_geom::{Cuboid, Centered, IntersectsAt};
+use hoomd_geometry::{Cuboid, Centered, IntersectsAt};
 use std::f64::consts::PI;
 
 let centered_cuboid = Centered::from(

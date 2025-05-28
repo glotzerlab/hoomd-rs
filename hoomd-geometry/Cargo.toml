@@ -1,5 +1,5 @@
 [package]
-name = "hoomd-geom"
+name = "hoomd-geometry"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,7 +9,7 @@ license.workspace = true
 keywords.workspace = true
 categories.workspace = true
 description = "Performant, general computational geometry methods in Rust."
-readme = "hoomd-geom/README.md"
+readme = "hoomd-geometry/README.md"
 
 [dependencies]
 hoomd-vector.workspace = true

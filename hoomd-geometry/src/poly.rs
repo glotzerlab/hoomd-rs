@@ -36,7 +36,7 @@ impl From<usize> for ConvexPolytope<2> {
 
     # Example
     ```
-    use hoomd_geom::poly::ConvexPolytope;
+    use hoomd_geometry::poly::ConvexPolytope;
 
     let equilateral_triangle = ConvexPolytope::from(3);
     ```
@@ -59,7 +59,7 @@ impl<const N: usize> From<Vec<Cartesian<N>>> for ConvexPolytope<N> {
 
     # Example
     ```
-    use hoomd_geom::poly::ConvexPolytope;
+    use hoomd_geometry::poly::ConvexPolytope;
 
     let equilateral_triangle = ConvexPolytope::from(3);
     ```

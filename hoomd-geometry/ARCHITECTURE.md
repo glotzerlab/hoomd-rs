@@ -13,7 +13,7 @@ shapes like self-intersecting polyhedra or infinite geometries.
 
 ## Structs
 
-The `Sphere` is an excellent prototype of HOOMD-geom's function: it implements both `Shape`
+The `Sphere` is an excellent prototype of hoomd-geometry's function: it implements both `Shape`
 and `Volume`, and its dimension can be specified with the const generic param `N`. It also
 has utility as the return type of the `bounding_sphere` method of the `Shape` trait.
 
@@ -46,4 +46,4 @@ where
 }
 ```
 
-To implement `IntersectsAt` for concave geometries, subdivide the primitive into convex subsets and apply the appropriate collision detection algorithms. While no examples are currently included with `hoomd-geom` a `ShapeUnion` struct would be the most natural extension.
+To implement `IntersectsAt` for concave geometries, subdivide the primitive into convex subsets and apply the appropriate collision detection algorithms. While no examples are currently included with `hoomd-geometry` a `ShapeUnion` struct would be the most natural extension.
