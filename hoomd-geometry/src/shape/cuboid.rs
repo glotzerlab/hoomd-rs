@@ -79,10 +79,10 @@ impl<const N: usize> Volume for Cuboid<N> {
 //     }
 // }
 
-impl<const N: usize, R: Rotate<Cartesian<N>>> BoundingShape<Cartesian<N>, R, Hypersphere<N>>
-    for Cuboid<N>
-{
-    fn bounding_shape(&self) -> Hypersphere<N> {
+impl<const N: usize, R: Rotate<Cartesian<N>>> BoundingShape<Cartesian<N>, R> for Cuboid<N> {
+    type Shape = Hypersphere<N>;
+    #[inline]
+    fn bounding_shape(&self) -> Self::Shape {
         let r = f64::sqrt(3.0) / 2.0 * self.edge_lengths.into_iter().fold(f64::NAN, f64::max);
         Hypersphere { r }
     }

@@ -115,11 +115,17 @@ pub trait IntersectsAt<S, V, R> {
     /// Determine whether a Particle intersects another shape at some position and orientation.
     fn intersects_at(&self, other: &S, v_ij: &V, o_ij: &R) -> bool;
 }
+/// TODO: delete!!!
+pub trait BoundingSphere<const N: usize> {
+    /// A reasonably tight-fitting bounding Hypersphere for a shape.
+    fn bounding_sphere(&self) -> Hypersphere<N>;
+}
 
 /// TODO
-pub trait BoundingShape<V, R, S: IntersectsAt<S, V, R>> {
-    /// TODO
-    fn bounding_shape(&self) -> S;
+pub trait BoundingShape<V, R> {
+    type Shape: IntersectsAt<Self::Shape, V, R>;
+
+    fn bounding_shape(&self) -> Self::Shape;
 }
 
 /// TODO

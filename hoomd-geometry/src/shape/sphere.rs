@@ -5,7 +5,8 @@
 Methods and implementations for an N-hypersphere, where N is the dimension.
 */
 use crate::{
-    BoundingSphere, IntersectsAt, MinDistance, SupportMapping, Volume, xenocollide::collide3d,
+    BoundingShape, BoundingSphere, IntersectsAt, MinDistance, SupportMapping, Volume,
+    xenocollide::collide3d,
 };
 use hoomd_vector::{Cartesian, Rotate, Vector};
 use std::f64::consts::PI;
@@ -80,9 +81,10 @@ impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Hypersphere<N>, V, R>
     }
 }
 
-impl<const N: usize> BoundingSphere<N> for Hypersphere<N> {
+impl<const N: usize, V: Vector, R: Rotate<V>> BoundingShape<V, R> for Hypersphere<N> {
+    type Shape = Hypersphere<N>;
     #[inline]
-    fn bounding_sphere(&self) -> Hypersphere<N> {
+    fn bounding_shape(&self) -> Hypersphere<N> {
         *self
     }
 }

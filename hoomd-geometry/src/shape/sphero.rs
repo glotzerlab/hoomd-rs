@@ -3,8 +3,13 @@
 
 /*! Implement [`Sphero`] */
 
-use crate::{IntersectsAt, SupportMapping, xenocollide::{collide3d, collide2d}};
-use hoomd_vector::{Angle, Cartesian, Vector, Versor};
+use crate::{
+    BoundingShape, IntersectsAt, SupportMapping,
+    xenocollide::{collide2d, collide3d},
+};
+use hoomd_vector::{Angle, Cartesian, Rotate, Vector, Versor};
+
+use super::Hypersphere;
 
 /** Round a shape with a given radius.
 
@@ -41,10 +46,22 @@ impl<S, V> SupportMapping<V> for Sphero<S>
 where
     S: SupportMapping<V>,
     V: Vector,
-     {
+{
     #[inline]
     fn support_mapping(&self, n: &V) -> V {
         self.shape.support_mapping(n) + *n / n.norm() * self.rounding_radius
     }
 }
 
+impl<S, V, R, const N: usize> BoundingShape<V, R> for Sphero<S>
+where
+    S: BoundingShape<V, R, Shape = Hypersphere<N>>,
+    V: Vector,
+    R: Rotate<V>,
+{
+    type Shape = S::Shape;
+    #[inline]
+    fn bounding_shape(&self) -> Self::Shape {
+        self.shape.bounding_shape()
+    }
+}
