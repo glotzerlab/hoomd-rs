@@ -67,7 +67,7 @@ impl AbsDiffEq for Versor {
 
     #[inline]
     fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
-        super::Quaternion::abs_diff_eq(&self.0, &other.0, epsilon)
+        super::Quaternion::abs_diff_eq(self.get(), other.get(), epsilon)
     }
 }
 
@@ -102,6 +102,6 @@ impl RelativeEq for Versor {
         epsilon: Self::Epsilon,
         max_relative: Self::Epsilon,
     ) -> bool {
-        Quaternion::relative_eq(&self.0, &other.0, epsilon, max_relative)
+        Quaternion::relative_eq(self.get(), other.get(), epsilon, max_relative)
     }
 }

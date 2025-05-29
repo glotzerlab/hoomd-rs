@@ -502,7 +502,7 @@ let c = a.combine(&b);
 ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Versor(pub(crate) Quaternion);
+pub struct Versor(Quaternion);
 
 impl Versor {
     /** Create a [`Versor`] that rotates by an angle (in radians)
