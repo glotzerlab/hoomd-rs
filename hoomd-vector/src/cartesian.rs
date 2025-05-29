@@ -269,44 +269,6 @@ impl<const N: usize> Add for Cartesian<N> {
     }
 }
 
-impl<const N: usize> Mul for Cartesian<N> {
-    type Output = Self;
-
-    #[inline]
-    fn mul(self, rhs: Self) -> Self {
-        let mut coordinates = [0.0; N];
-
-        for (result, (a, b)) in coordinates
-            .iter_mut()
-            .zip(self.coordinates.iter().zip(rhs.coordinates.iter()))
-        {
-            *result = a * b;
-        }
-        Self { coordinates }
-    }
-}
-
-impl<const N: usize> Add<f64> for Cartesian<N> {
-    type Output = Self;
-
-    #[inline]
-    fn add(self, rhs: f64) -> Self {
-        Self {
-            coordinates: self.coordinates.map(|x| x + rhs),
-        }
-    }
-}
-impl<const N: usize> Sub<f64> for Cartesian<N> {
-    type Output = Self;
-
-    #[inline]
-    fn sub(self, rhs: f64) -> Self {
-        Self {
-            coordinates: self.coordinates.map(|x| x - rhs),
-        }
-    }
-}
-
 impl<const N: usize> AddAssign for Cartesian<N> {
     #[inline]
     fn add_assign(&mut self, rhs: Self) {
@@ -768,18 +730,7 @@ mod tests {
 
         assert_eq!(c, Cartesian::try_from(addition_answer).unwrap());
     }
-
     parameterize_vector_length!(add_assign, [2, 3, 4, 8, 16, 32]);
-    fn add_f64<const N: usize>() {
-        let (a, _) = generate_vector_pair::<N>();
-        let b = a;
-        let c = Cartesian::from([2.0; N]);
-
-        assert_eq!(a + 2.0, a + c);
-        assert_eq!(a, b);
-    }
-
-    parameterize_vector_length!(add_f64, [2, 3, 4, 8, 16, 32]);
 
     fn sub_operator<const N: usize>() {
         let (a, b) = generate_vector_pair::<N>();
