@@ -14,6 +14,7 @@ pub use convex_polytope::ConvexPolytope;
 
 mod cuboid;
 pub use cuboid::Cuboid;
+pub use cuboid::Rectangle;
 
 mod cylinder;
 pub use cylinder::Cylinder;
