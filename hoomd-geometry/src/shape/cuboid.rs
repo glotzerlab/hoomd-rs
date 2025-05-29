@@ -18,6 +18,11 @@ pub struct Cuboid<const N: usize> {
     pub edge_lengths: Cartesian<N>, // TODO: use PositiveReal
 }
 
+/**A line segment defined by its length.*/
+type LineSegment = Cuboid<1>;
+/**A rectangle defined by its edge lengths.*/
+type Rectangle = Cuboid<2>;
+
 impl Cuboid<3> {
     /// Length of the `Cuboid` edge along the x axis
     #[inline]

@@ -16,6 +16,11 @@ pub struct ConvexPolytope<const N: usize> {
     pub vertices: Vec<Cartesian<N>>,
 }
 
+/**A two-dimensional faceted convex body.*/
+type ConvexPolygon = ConvexPolytope<2>;
+/**A three-dimensional faceted convex body.*/
+type ConvexPolyhedron = ConvexPolytope<3>;
+
 /**
 Calculate the intersection between two convex polygons in cartesian coordinates.
 */

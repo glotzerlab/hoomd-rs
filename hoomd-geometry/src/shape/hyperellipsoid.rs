@@ -13,6 +13,12 @@ pub struct Hyperellipsoid<const N: usize> {
     /// The principle semi-axes of the [`Hyperellipsoid`] along each direction.
     axes: Cartesian<N>,
 }
+
+/**A two-dimensional ellipse.*/
+type Ellipse = Hyperellipsoid<2>;
+/**A three-dimensional ellipsoid.*/
+type Ellipsoid = Hyperellipsoid<3>;
+
 impl<const N: usize> IntoIterator for Hyperellipsoid<N> {
     type Item = f64;
     type IntoIter = <[f64; N] as IntoIterator>::IntoIter;
