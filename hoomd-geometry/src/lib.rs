@@ -26,7 +26,7 @@ use approx::assert_relative_eq;
 use std::f64::consts::PI;
 
 const N: usize = 3;
-let s = Hypersphere::<N>::from(1.0);
+let s = Hypersphere::<N>::from_radius(1.0);
 assert_relative_eq!(s.volume(), (4.0/3.0 * PI));
 ```
 
@@ -51,8 +51,8 @@ as well.
 use hoomd_geometry::{ IntersectsAt, shape::{Cuboid, Sphere} , Convex };
 use hoomd_vector::Versor;
 
-let s0 = Sphere::from(1.0);
-let s1 = Sphere::from(1.0);
+let s0 = Sphere {r: 1.0};
+let s1 = Sphere {r: 1.0};
 
 let q_id = Versor::default();
 

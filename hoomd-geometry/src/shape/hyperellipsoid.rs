@@ -146,7 +146,7 @@ mod tests {
         #[case] _n: PhantomData<Hypersphere<N>>,
         #[values(0.1, 1.0, 33.3)] r: f64,
     ) {
-        let s = Hypersphere::<N>::from(r);
+        let s = Hypersphere::<N> { r };
         let he = Hyperellipsoid {
             axes: [r; N].into(),
         };

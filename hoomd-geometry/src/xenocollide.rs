@@ -353,7 +353,7 @@ mod tests {
         ],
     )]
     fn test_discs_collide(v: [f64; 2], r: f64, o_ij: Angle) {
-        let (s0, s1) = (Hypersphere::<2>::from(1.0), Circle::from(r));
+        let (s0, s1) = (Hypersphere::<2> { r: 1.0 }, Circle { r });
 
         let overlaps = collide2d(&s0, &s1, &v.into(), &o_ij);
 
@@ -371,7 +371,7 @@ mod tests {
         ]
     )]
     fn test_spheres_collide(v: [f64; 3], r: f64, o_ij: Versor) {
-        let (s0, s1) = (Hypersphere::<3>::from(1.0), Hypersphere::<3>::from(r));
+        let (s0, s1) = (Hypersphere::<3> { r: 1.0 }, Hypersphere::<3> { r });
         let overlaps = collide3d(&s0, &s1, &v.into(), &o_ij);
 
         assert_eq!(

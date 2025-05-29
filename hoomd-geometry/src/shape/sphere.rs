@@ -44,9 +44,11 @@ impl<const N: usize> Default for Hypersphere<N> {
     }
 }
 
-impl<const N: usize> From<f64> for Hypersphere<N> {
+impl<const N: usize> Hypersphere<N> {
+    /// Create a sphere from a float with a given radius.
+    #[must_use]
     #[inline]
-    fn from(r: f64) -> Self {
+    pub fn from_radius(r: f64) -> Self {
         Hypersphere { r }
     }
 }
@@ -121,7 +123,7 @@ mod tests {
     #[case(PhantomData::<Hypersphere<4>>)]
     #[case(PhantomData::<Hypersphere<5>>)]
     fn test_volume_and_radius<const N: usize>(#[case] _n: PhantomData<Hypersphere<N>>) {
-        let s = Hypersphere::<N>::from(1.0);
+        let s = Hypersphere::<N> { r: 1.0 };
         assert_eq!(s.r, 1.0);
         assert_eq!(s, Hypersphere::<N>::default());
         assert_relative_eq!(s.volume(), volume_map(N));
@@ -147,7 +149,7 @@ mod tests {
         #[case] _n: PhantomData<Hypersphere<N>>,
         #[values(0.1, 1.0, 33.3)] r: f64,
     ) {
-        let s = Hypersphere::<N>::from(r);
+        let s = Hypersphere::<N> { r };
         let v = Cartesian::<N>::from([r.powi(2) / 1.8; N]);
         assert_eq!(v / v.norm() * r, s.support_mapping(&v));
     }
