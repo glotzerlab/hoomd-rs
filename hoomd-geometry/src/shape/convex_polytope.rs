@@ -15,7 +15,7 @@ pub struct ConvexPolytope<const N: usize> {
     /// The vertices of the shape.
     vertices: Vec<Cartesian<N>>,
     /// The radius of a bounding sphere of the geometry.
-    bounding_radius: f64,
+    pub(crate) bounding_radius: f64,
 }
 
 /**A two-dimensional faceted convex body.
@@ -75,7 +75,7 @@ where
 }
 
 impl From<usize> for ConvexPolytope<2> {
-    /** Create a regular N-gon with N vertices and circumradius one.
+    /** Create a regular *n*-gon with *n* vertices and circumradius one.
 
     # Example
     ```
@@ -100,13 +100,22 @@ impl From<usize> for ConvexPolytope<2> {
 
 impl<const N: usize> TryFrom<Vec<Cartesian<N>>> for ConvexPolytope<N> {
     type Error = Error;
-    /** Create a regular N-gon with N vertices and circumradius one.
+    /** Create an `N`-polytope from a `Vector` of `Cartesian<N>`.
 
     # Example
     ```
     use hoomd_geometry::shape::ConvexPolytope;
 
-    let equilateral_triangle = ConvexPolytope::from(3);
+    # fn main() -> Result<(), hoomd_geometry::Error> {
+    let equilateral_triangle = ConvexPolytope::try_from(
+        vec![
+            [1.0, 0.0].into(),
+            [0.5, f64::sqrt(3.0)/2.0].into(),
+            [-0.5, f64::sqrt(3.0)/2.0].into(),
+       ]
+    )?;
+    # Ok(())
+    # }
     ```
     # Errors
 
@@ -166,5 +175,46 @@ where
     #[inline]
     fn intersects_at(&self, other: &S, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
         collide3d(self, other, v_ij, o_ij)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::*;
+    #[fixture]
+    fn simplex3() -> ConvexPolyhedron {
+        ConvexPolyhedron::try_from(vec![
+            [1.0, 1.0, 1.0].into(),
+            [1.0, -1.0, -1.0].into(),
+            [-1.0, 1.0, -1.0].into(),
+            [-1.0, -1.0, 1.0].into(),
+        ])
+        .unwrap()
+    }
+
+    #[fixture]
+    fn equilateral_triangle() -> ConvexPolytope<2> {
+        ConvexPolytope::try_from(vec![
+            [1.0, 0.0].into(),
+            [0.5, f64::sqrt(3.0) / 2.0].into(),
+            [-0.5, f64::sqrt(3.0) / 2.0].into(),
+        ])
+        .unwrap()
+    }
+
+    #[rstest]
+    fn test_bounding_radius_computed(
+        simplex3: ConvexPolyhedron,
+        equilateral_triangle: ConvexPolygon,
+    ) {
+        assert_eq!(simplex3.bounding_radius, f64::sqrt(3.0));
+        assert_eq!(equilateral_triangle.bounding_radius, f64::sqrt(1.0));
+    }
+
+    #[rstest]
+    fn test_bounding_radius_regular_polygons(#[values(1, 3, 8, 64)] n: usize) {
+        assert_eq!(ConvexPolygon::from(n).bounding_radius, 1.0);
+        assert_eq!(ConvexPolytope::from(n).bounding_radius, 1.0);
     }
 }
