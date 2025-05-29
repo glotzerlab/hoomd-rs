@@ -43,4 +43,3 @@ impl SupportFn<Cartesian<3>> for Capsule {
         }
     }
 }
-
