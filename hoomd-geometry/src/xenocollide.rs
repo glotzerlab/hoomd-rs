@@ -340,7 +340,7 @@ mod tests {
     use crate::IntersectsAt;
     use rstest::*;
 
-    use crate::shape::{Cuboid, Hypersphere};
+    use crate::shape::{Circle, Cuboid, Hypersphere};
     use hoomd_vector::{Angle, Versor};
 
     #[rstest(
@@ -353,7 +353,7 @@ mod tests {
         ],
     )]
     fn test_discs_collide(v: [f64; 2], r: f64, o_ij: Angle) {
-        let (s0, s1) = (Hypersphere::<2>::from(1.0), Hypersphere::<2>::from(r));
+        let (s0, s1) = (Hypersphere::<2>::from(1.0), Circle::from(r));
 
         let overlaps = collide2d(&s0, &s1, &v.into(), &o_ij);
 
@@ -391,10 +391,7 @@ mod tests {
         let theta = Angle::from(0.0);
 
         let overlaps = collide2d(&c0, &c1, &v.into(), &theta);
-        assert_eq!(
-            overlaps,
-            c0.intersects_at(&c1, &v.into(), &Angle::default())
-        );
+        assert_eq!(overlaps, c0.intersects_aligned(&c1, &v.into()));
     }
     #[rstest(
         v => [[0.1, 2.1, 0.1], [999.9, 0.0, 0.05], [0.0, 5.123, 0.0], [0.0, 5.123_000_000_001, 0.0]],
@@ -406,9 +403,6 @@ mod tests {
         let theta = Versor::identity();
 
         let overlaps = collide3d(&c0, &c1, &v.into(), &theta);
-        assert_eq!(
-            overlaps,
-            c0.intersects_at(&c1, &v.into(), &Versor::default())
-        );
+        assert_eq!(overlaps, c0.intersects_aligned(&c1, &v.into()));
     }
 }

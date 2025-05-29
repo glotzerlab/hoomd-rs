@@ -118,7 +118,6 @@ impl<const N: usize> Cuboid<N> {
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
-    use hoomd_vector::Angle;
     use rstest::*;
     use std::marker::PhantomData;
 
@@ -142,11 +141,11 @@ mod tests {
     fn test_box_intersections_2d_aligned(edges0: [f64; 2], edges1: [f64; 2]) {
         let (c0, c1) = (Cuboid::<2>::from(edges0), Cuboid::<2>::from(edges1));
         // Should all be false (no intersection), which we invert to true
-        assert!(!c0.intersects_at(&c1, &[10.0, 10.0].into(), &Angle::default()));
+        assert!(!c0.intersects_aligned(&c1, &[10.0, 10.0].into()));
         // Boundaries are aligned
-        assert!(c0.intersects_at(&c1, &[1.5, 1.5].into(), &Angle::default()));
+        assert!(c0.intersects_aligned(&c1, &[1.5, 1.5].into()));
         // Both at origin - will always intersect for any cuboids
-        assert!(c0.intersects_at(&c1, &[0.0, 0.0].into(), &Angle::default()));
+        assert!(c0.intersects_aligned(&c1, &[0.0, 0.0].into()));
     }
 
     #[rstest(

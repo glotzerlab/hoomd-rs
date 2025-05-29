@@ -69,20 +69,31 @@ For non-orientable shapes, or for bodies who have special intersection
 tests for particular orientations, and inherent method `intersects` can be implemented
 as well.
 ```
-use hoomd_geometry::{ IntersectsAt, shape::Cuboid };
+use hoomd_geometry::{ IntersectsAt, shape::{Cuboid, Sphere} , Convex };
 use hoomd_vector::Versor;
 
-let c0 = Cuboid::<3>::from([1.0, 1.0, 1.0]);
-let c1 = Cuboid::<3>::from([1.0, 1.0, 1.0]);
+let s0 = Sphere::from(1.0);
+let s1 = Sphere::from(1.0);
 
-// Determine the intersection between two oriented cuboids.
-assert!(c0.intersects_at(&c1, &[1.0, 0.0, 0.0].into(), &Versor::default()) == true);
-assert!(c0.intersects_at(&c1, &[9.9, 0.0, 0.0].into(), &Versor::default()) == false);
+// Determine the intersection between two spheres, using a fast overlap check
+assert_eq!(s0.intersects_at(&s1, &[1.9, 0.0, 0.0].into(), &Versor::default()), true);
+assert_eq!(s0.intersects_at(&s1, &[2.1, 0.0, 0.0].into(), &Versor::default()), false);
 
-// Determine the intersection between two *axis-aligned cuboids*. This yields the same
-// results as the code above, but uses a faster intersection check!
-assert!(c0.intersects_aligned(&c1, &[1.0, 0.0, 0.0].into()) == true);
-assert!(c0.intersects_aligned(&c1, &[9.9, 0.0, 0.0].into()) == false);
+// For more complex bodies, the `Convex` wrapper allows for robust overlap checks using xenocollide
+assert_eq!(Convex(s0).intersects_at(&Convex(s1), &[1.0, 0.0, 0.0].into(), &Versor::default()), true);
+assert_eq!(Convex(s0).intersects_at(&Convex(s1), &[9.9, 0.0, 0.0].into(), &Versor::default()), false);
+
+// The `Convex` wrapper also allows for overlap checks between heterogeneous particles
+let cuboid = Cuboid::from([2.0, 2.0, 2.0]);
+
+assert_eq!(
+    Convex(s0).intersects_at(&Convex(cuboid), &[1.9, 0.0, 0.0].into(), &Versor::default()),
+    true
+);
+assert_eq!(
+    Convex(s0).intersects_at(&Convex(cuboid), &[2.1, 0.0, 0.0].into(), &Versor::default()),
+    false
+);
 */
 
 pub mod shape;
@@ -125,31 +136,10 @@ pub trait IntersectsAt<S, V, R> {
 }
 
 /// TODO
-pub struct Convex<S>(pub S);
+mod convex;
+pub use convex::Convex;
 
-impl<V: Vector, S> SupportMapping<V> for Convex<S>
-where
-    S: SupportMapping<V>,
-{
-    #[inline]
-    fn support_mapping(&self, n: &V) -> V {
-        self.0.support_mapping(n)
-    }
-}
-
-impl<S: SupportMapping<Cartesian<3>>, R> IntersectsAt<Convex<S>, Cartesian<3>, R> for Convex<S>
-where
-    R: Rotate<Cartesian<3>> + Rotation + PartialEq + Copy,
-    RotationMatrix<3>: From<R>,
-{
-    #[inline]
-    fn intersects_at(&self, other: &Convex<S>, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
-        collide3d(self, other, v_ij, o_ij)
-    }
-}
-use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
 use thiserror::Error;
-use xenocollide::collide3d;
 /// Enumerate possible sources of error in fallible utility methods.
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]

@@ -29,6 +29,11 @@ pub struct Hypersphere<const N: usize> {
     pub r: f64,
 }
 
+/// A `Circle` in two dimensions.
+pub type Circle = Hypersphere<2>;
+/// A `Sphere` in three dimensions.
+pub type Sphere = Hypersphere<3>;
+
 impl<const N: usize> Default for Hypersphere<N> {
     #[inline]
     fn default() -> Self {
