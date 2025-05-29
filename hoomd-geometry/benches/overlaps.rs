@@ -10,10 +10,9 @@
 
 use divan::counter::ItemsCount;
 use divan::{self, Bencher, black_box};
-use hoomd_geometry::Simplex3;
 use hoomd_geometry::{
-    Cuboid, IntersectsAt, Sphere,
-    poly::ConvexPolytope,
+    IntersectsAt,
+    shape::{ConvexPolytope, Cuboid, Simplex3, Sphere},
     xenocollide::{collide2d, collide3d},
 };
 use rand::{Rng, SeedableRng, rngs::StdRng};
