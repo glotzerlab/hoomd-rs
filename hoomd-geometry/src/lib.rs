@@ -124,7 +124,32 @@ pub trait IntersectsAt<S, V, R> {
     fn intersects_at(&self, other: &S, v_ij: &V, o_ij: &R) -> bool;
 }
 
+/// TODO
+pub struct Convex<S>(pub S);
+
+impl<V: Vector, S> SupportMapping<V> for Convex<S>
+where
+    S: SupportMapping<V>,
+{
+    #[inline]
+    fn support_mapping(&self, n: &V) -> V {
+        self.0.support_mapping(n)
+    }
+}
+
+impl<S: SupportMapping<Cartesian<3>>, R> IntersectsAt<Convex<S>, Cartesian<3>, R> for Convex<S>
+where
+    R: Rotate<Cartesian<3>> + Rotation + PartialEq + Copy,
+    RotationMatrix<3>: From<R>,
+{
+    #[inline]
+    fn intersects_at(&self, other: &Convex<S>, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
+        collide3d(self, other, v_ij, o_ij)
+    }
+}
+use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
 use thiserror::Error;
+use xenocollide::collide3d;
 /// Enumerate possible sources of error in fallible utility methods.
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]

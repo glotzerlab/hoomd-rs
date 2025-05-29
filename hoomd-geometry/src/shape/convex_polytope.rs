@@ -58,22 +58,6 @@ impl<const N: usize> ConvexPolytope<N> {
     }
 }
 
-/**
-Calculate the intersection between two convex polygons in cartesian coordinates.
-*/
-impl<S: SupportMapping<Cartesian<2>>, R: Rotate<Cartesian<2>>> IntersectsAt<S, Cartesian<2>, R>
-    for ConvexPolytope<2>
-where
-    R: Copy + Rotation,
-    RotationMatrix<2>: From<R>,
-{
-    #[inline]
-    fn intersects_at(&self, other: &S, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
-        // TODO: how can I early exit for a type that does not implement a bounding radius?
-        xenocollide::collide2d(self, other, v_ij, o_ij)
-    }
-}
-
 impl From<usize> for ConvexPolytope<2> {
     /** Create a regular *n*-gon with *n* vertices and circumradius one.
 

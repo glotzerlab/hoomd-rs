@@ -8,7 +8,6 @@ use crate::{
 };
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix};
 use itertools::multizip;
-use std::cmp::PartialEq;
 
 /** An axis-aligned N-cuboid
 */
@@ -111,28 +110,6 @@ impl<const N: usize> Cuboid<N> {
     /// Determine the minimal extents of the cuboid along each Cartesian axis.
     pub fn minimal_extents(&self) -> Cartesian<N> {
         -self.edge_lengths / 2.0
-    }
-}
-
-impl<R> IntersectsAt<Cuboid<2>, Cartesian<2>, R> for Cuboid<2>
-where
-    R: Rotate<Cartesian<2>> + Rotation + PartialEq + Copy,
-    RotationMatrix<2>: From<R>,
-{
-    #[inline]
-    fn intersects_at(&self, other: &Cuboid<2>, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
-        collide2d(self, other, v_ij, o_ij)
-    }
-}
-
-impl<R> IntersectsAt<Cuboid<3>, Cartesian<3>, R> for Cuboid<3>
-where
-    R: Rotate<Cartesian<3>> + Rotation + PartialEq + Copy,
-    RotationMatrix<3>: From<R>,
-{
-    #[inline]
-    fn intersects_at(&self, other: &Cuboid<3>, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
-        collide3d(self, other, v_ij, o_ij)
     }
 }
 
