@@ -6,14 +6,14 @@
 
 use super::{IsotropicEnergy, IsotropicForce};
 
-/** Harmonic potential between pair of particles. Can be used to perform 
+/** Harmonic  potential between pair of particles. Can be used to perform
     Frenkel-Ladd free energy calculation and simulate the covalent bonds
     between particles.
 
 <!-- U = \frac{1}{2} k (r - r0)^2 -->
 <math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mn>4</mn><mi>ε</mi><mrow><mo fence="true" form="prefix">[</mo><msup><mrow><mo fence="true" form="prefix">(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo fence="true" form="postfix">)</mo></mrow><mi>N</mi></msup><mo>−</mo><msup><mrow><mo fence="true" form="prefix">(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo fence="true" form="postfix">)</mo></mrow><mi>M</mi></msup><mo fence="true" form="postfix">]</mo></mrow></mrow></math>
 
-Compute the harmonic potential and force as a function of `r` with 
+Compute the harmonic potential and force as a function of `r` with
 equilibrium spring length `r0`.
 
 # Examples
@@ -25,7 +25,7 @@ use approx::{assert_abs_diff_eq, assert_relative_eq};
 let k = 2.0;
 let r0 = 0.0;
 
-let harmonic = Harmonic{ k: k, r0: r0};
+let harmonic = Harmonic{ k, r0 };
 assert_abs_diff_eq!(harmonic.energy(0.0), 0.0);
 assert_relative_eq!(harmonic.energy(1.0), 1.0);
 assert_abs_diff_eq!(harmonic.force(1.0), -2.0, epsilon=1e-12);
@@ -77,15 +77,12 @@ impl IsotropicForce for Harmonic {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::approx::{assert_relative_eq};
+    use ::approx::assert_relative_eq;
     use rstest::*;
 
     #[rstest]
-    fn zero_energy_point(
-        #[values(1.0, 2.0, 5.0, 10.0)] k: f64,
-        #[values(0.0, 1.0, 2.0)] r0: f64,
-    ) {
-        let harmonic = Harmonic{ k: k, r0: r0};
+    fn zero_energy_point(#[values(1.0, 2.0, 5.0, 10.0)] k: f64, #[values(0.0, 1.0, 2.0)] r0: f64) {
+        let harmonic = Harmonic { k, r0 };
 
         assert_eq!(harmonic.k, k);
         assert_eq!(harmonic.r0, r0);
@@ -95,12 +92,9 @@ mod tests {
     }
 
     #[rstest]
-    fn general_case(
-        #[values(1.0, 2.0, 5.0, 10.0)] k: f64,
-        #[values(0.0, 1.0, 2.0)] r0: f64,
-    ) {
+    fn general_case(#[values(1.0, 2.0, 5.0, 10.0)] k: f64, #[values(0.0, 1.0, 2.0)] r0: f64) {
         let r = 5.0;
-        let harmonic = Harmonic{ k: k, r0: r0};
+        let harmonic = Harmonic { k, r0 };
 
         assert_eq!(harmonic.k, k);
         assert_eq!(harmonic.r0, r0);
