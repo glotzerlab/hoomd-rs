@@ -164,4 +164,19 @@ mod tests {
         let v = [1.0; N].into();
         assert_relative_eq!(he.support_mapping(&v), s.support_mapping(&v));
     }
+    #[rstest]
+    #[case(PhantomData::<Hypersphere<0>>)]
+    #[case(PhantomData::<Hypersphere<1>>)]
+    #[case(PhantomData::<Hypersphere<2>>)]
+    #[case(PhantomData::<Hypersphere<3>>)]
+    #[case(PhantomData::<Hypersphere<4>>)]
+    #[case(PhantomData::<Hypersphere<5>>)]
+    fn test_volume_hyperellipsoid<const N: usize>(
+        #[case] _n: PhantomData<Hypersphere<N>>,
+        #[values(0.1, 1.0, 33.3)] r: f64,
+    ) {
+        let s = Hypersphere::<N> { r };
+        let he = Hyperellipsoid { axes: [r; N] };
+        assert_relative_eq!(he.volume(), s.volume());
+    }
 }
