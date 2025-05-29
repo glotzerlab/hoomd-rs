@@ -422,6 +422,29 @@ pub trait Vector:
     #[must_use]
     fn dot(&self, other: &Self) -> f64;
 
+    /** Project one vector onto another.
+
+    ```math
+    \frac{\vec{a} \cdot \vec{b}}{\left| \vec{b} \right|^2} \vec{b}
+    ```
+    where `self` is $`\vec{a}`$.
+
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, Vector};
+
+    let a = Cartesian::from([1.0, 2.0]);
+    let b = Cartesian::from([4.0, 0.0]);
+    let c = a.project(&b);
+    assert_eq!(c, [1.0, 0.0].into());
+    ```
+    */
+    #[inline]
+    #[must_use]
+    fn project(&self, b: &Self) -> Self {
+        *b * self.dot(b) / b.norm_squared()
+    }
+
     /** Create a vector of unit length pointing in the same direction as the given vector.
 
     Returns a tuple containing unit vector along with the original vector's norm:

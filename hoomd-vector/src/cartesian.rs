@@ -470,15 +470,6 @@ impl Cartesian<2> {
     }
 }
 
-impl<const N: usize> Cartesian<N> {
-    /// Compute the projection of an N-vector onto another N-vector.
-    #[inline]
-    #[must_use]
-    pub fn project(&self, rhs: &Self) -> Self {
-        *rhs * self.dot(rhs) / rhs.norm_squared()
-    }
-}
-
 impl<const N: usize, T> IndexMut<T> for Cartesian<N>
 where
     T: Into<usize> + std::slice::SliceIndex<[f64], Output = f64>,
