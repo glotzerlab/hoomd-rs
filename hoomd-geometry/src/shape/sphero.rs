@@ -9,7 +9,7 @@ use crate::{
 };
 use hoomd_vector::{Angle, Cartesian, Rotate, Vector, Versor};
 
-use super::Hypersphere;
+use super::{ConvexPolygon, Hypersphere};
 
 /** Round a shape with a given radius.
 
@@ -62,6 +62,8 @@ where
     type Shape = S::Shape;
     #[inline]
     fn bounding_shape(&self) -> Self::Shape {
-        self.shape.bounding_shape()
+        Hypersphere {
+            r: self.shape.bounding_shape().r + self.rounding_radius,
+        }
     }
 }
