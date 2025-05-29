@@ -1,25 +1,14 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-// TODO: shapes in module
-// embedded trait?
-// Bounded shape pair for intersections (prevents code repetition, but doesn't add anything new)
-// Would need to implement a way to create bound anyway, so not that useful
-// For polytope: private field for bounding shape is the right way to go
 // TODO: [Jen] SimplePolygon (same in memory, but interpreted differently)
-// TODO: [Jen] Polyhedron (non-convex, not general on dimension, requires faces (ragged list?))
-// TODO: BoundingVolume trait
-// TODO: use Sphero to xenocollide
+// TODO: [Jen] Polyhedron (non-convex, not general on dimension, requires faces)
 // TODO: implement Volume for Sphero<Volume>
-// TODO: meshes - talk to Joseph & Philipp
-// TODO: "Functions with a clear receiver are methods" for ConvexPolytope
-// TODO: implement MinDistance for spheres
+// TODO: Implement Mesh primitive, which should be a nonconvex simplex mesh with many
+//       cached properties and values. Should impl From for Polytope
 // TODO: GSD_shape_spec trait
-// TODO: impl Normals for Mesh: Mesh can have lots of cached information, with From
-//       ConvexPolytope/Polytope
 // TODO: IsInside trait (Dom)
-// TODO: scale? instead of set_volume
-// TODO: surface area, mean curvature
+// TODO: computes or traits for SurfaceArea, MeanCurvature, and 3Volume
 
 #![doc(
     html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"

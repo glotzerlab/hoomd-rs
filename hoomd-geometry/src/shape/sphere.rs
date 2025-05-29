@@ -4,7 +4,9 @@
 /*!
 Methods and implementations for an N-hypersphere, where N is the dimension.
 */
-use crate::{BoundingSphere, IntersectsAt, SupportMapping, Volume, xenocollide::collide3d};
+use crate::{
+    BoundingSphere, IntersectsAt, MinDistance, SupportMapping, Volume, xenocollide::collide3d,
+};
 use hoomd_vector::{Cartesian, Rotate, Vector};
 use std::f64::consts::PI;
 
