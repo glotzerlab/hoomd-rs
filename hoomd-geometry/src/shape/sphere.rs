@@ -68,7 +68,7 @@ impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Hypersphere<N>, V, R>
     for Hypersphere<N>
 {
     #[inline]
-    fn intersects_at(&self, other: &Hypersphere<N>, v_ij: &V, _o_ij: &R, fast: bool) -> bool {
+    fn intersects_at(&self, other: &Hypersphere<N>, v_ij: &V, _o_ij: &R) -> bool {
         (v_ij).norm_squared() <= (other.r + self.r).powi(2)
     }
 }
