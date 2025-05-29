@@ -1,65 +1,19 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Common geometric primitives that implement only a small number of operations.*/
+/*! Implement [`Hyperellipsoid`] */
+
 use crate::{IntersectsAt, SupportFn, xenocollide::collide3d};
 
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
 
-/// A [`Cylinder`] in three dimensions.
-#[expect(dead_code, reason = "End users will make use of this struct.")]
+/// An N-Dimensional [`Hyperellipsoid`] defined by its semi-major axes.
 #[derive(Clone, Copy, Debug)]
-pub struct Cylinder {
-    /// Radius of the [`Cylinder`]
-    r: f64,
-    /// Height of the [`Cylinder`]
-    h: f64,
-}
-
-/// A [`Capsule`] in three dimensions.
-#[derive(Clone, Copy, Debug)]
-// pub struct Capsule<const N: usize> {
-pub struct Capsule {
-    /// Radius of the [`Capsule`]'s spherical caps.
-    r: f64,
-    /// Distance between the centers of the spherical caps.
-    h: f64,
-}
-
-impl From<(f64, f64)> for Capsule {
-    #[inline]
-    fn from(value: (f64, f64)) -> Self {
-        Capsule {
-            r: value.0,
-            h: value.1,
-        }
-    }
-}
-
-impl SupportFn<Cartesian<3>> for Capsule {
-    #[inline]
-    fn support(&self, n: &Cartesian<3>) -> Cartesian<3> {
-        /*Same support function as a ConvexPolyhedron with 2 vertices, plus the radius*/
-        let (v_tip, v_base) = ([0.0, 0.0, self.h].into(), [0.0, 0.0, -self.h].into());
-
-        let (v_tip_dot_n, v_base_dot_n) = (n.dot(&v_tip), n.dot(&v_base));
-
-        let rshift = *n * self.r * n.norm();
-        if v_tip_dot_n > v_base_dot_n {
-            v_tip / n.norm() + rshift
-        } else {
-            v_base / n.norm() + rshift
-        }
-    }
-}
-
-/// An N-Dimensional [`HyperEllipsoid`] defined by its semi-major axes.
-#[derive(Clone, Copy, Debug)]
-pub struct HyperEllipsoid<const N: usize> {
-    /// The principle semi-axes of the [`HyperEllipsoid`] along each direction.
+pub struct Hyperellipsoid<const N: usize> {
+    /// The principle semi-axes of the [`Hyperellipsoid`] along each direction.
     axes: Cartesian<N>,
 }
-impl<const N: usize> IntoIterator for HyperEllipsoid<N> {
+impl<const N: usize> IntoIterator for Hyperellipsoid<N> {
     type Item = f64;
     type IntoIter = <[f64; N] as IntoIterator>::IntoIter;
     #[inline]
@@ -68,7 +22,7 @@ impl<const N: usize> IntoIterator for HyperEllipsoid<N> {
     }
 }
 
-impl<const N: usize> SupportFn<Cartesian<N>> for HyperEllipsoid<N> {
+impl<const N: usize> SupportFn<Cartesian<N>> for Hyperellipsoid<N> {
     #[inline]
     fn support(&self, n: &Cartesian<N>) -> Cartesian<N> {
         let denominator = Cartesian::<N>::from(std::array::from_fn(|i| self.axes[i] * n[i])).norm();
@@ -76,7 +30,7 @@ impl<const N: usize> SupportFn<Cartesian<N>> for HyperEllipsoid<N> {
     }
 }
 
-impl HyperEllipsoid<3> {
+impl Hyperellipsoid<3> {
     #[inline]
     #[must_use]
     /// Compute a matrix representation of the ellipsoid.
@@ -149,7 +103,7 @@ impl HyperEllipsoid<3> {
 }
 
 impl<S: SupportFn<Cartesian<3>>, R: Copy + Rotation + Rotate<Cartesian<3>>>
-    IntersectsAt<S, Cartesian<3>, R> for HyperEllipsoid<3>
+    IntersectsAt<S, Cartesian<3>, R> for Hyperellipsoid<3>
 where
     RotationMatrix<3>: From<R>,
 {
@@ -159,14 +113,13 @@ where
     } // TODO: implement fast ellipsoid overlap
 }
 
-impl<const N: usize> HyperEllipsoid<N> {} // TODO matrix form and IntersectsAt
+impl<const N: usize> Hyperellipsoid<N> {} // TODO matrix form and IntersectsAt
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Sphere;
-    use ::approx::{assert_abs_diff_eq, assert_relative_eq};
-    use hoomd_vector::Cartesian;
+    use crate::shape::Sphere;
+    use ::approx::assert_relative_eq;
     use rstest::*;
     use std::marker::PhantomData;
 
@@ -182,7 +135,7 @@ mod tests {
         #[values(0.1, 1.0, 33.3)] r: f64,
     ) {
         let s = Sphere::<N>::from(r);
-        let he = HyperEllipsoid {
+        let he = Hyperellipsoid {
             axes: [r; N].into(),
         };
         let v = [1.0; N].into();

@@ -327,7 +327,7 @@ mod tests {
     use crate::IntersectsAt;
     use rstest::*;
 
-    use crate::{Cuboid, Sphere};
+    use crate::shape::{Cuboid, Sphere};
     use hoomd_vector::{Angle, Versor};
 
     #[rstest(

@@ -22,7 +22,7 @@ fn factorial(n: usize, ntuple: usize) -> usize {
     }
 }
 
-/// An n-hypersphere ===================================================================
+/// An n-hypersphere
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Sphere<const N: usize> {
     /// Radius of the sphere

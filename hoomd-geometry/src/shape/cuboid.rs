@@ -2,11 +2,8 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*!N-cuboids, which may or may not be treated as axis aligned.*/
-use crate::intersects::IntersectsAt;
-use crate::xenocollide::{collide2d, collide3d};
-use crate::{SupportFn, Volume};
-use hoomd_vector::{Cartesian, RotationMatrix};
-use hoomd_vector::{Rotate, Rotation};
+use crate::{ IntersectsAt, SupportFn, Volume, xenocollide::{collide2d, collide3d} };
+use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix};
 use itertools::multizip;
 use std::cmp::PartialEq;
 
