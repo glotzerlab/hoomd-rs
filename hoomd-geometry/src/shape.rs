@@ -8,6 +8,8 @@ mod capsule;
 pub use capsule::Capsule;
 
 mod convex_polytope;
+pub use convex_polytope::ConvexPolygon;
+pub use convex_polytope::ConvexPolyhedron;
 pub use convex_polytope::ConvexPolytope;
 
 mod cuboid;

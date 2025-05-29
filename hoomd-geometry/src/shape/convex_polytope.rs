@@ -13,13 +13,39 @@ A convex, faceted polyhedron
 */
 pub struct ConvexPolytope<const N: usize> {
     /// The vertices of the shape.
-    pub vertices: Vec<Cartesian<N>>,
+    vertices: Vec<Cartesian<N>>,
 }
 
-/**A two-dimensional faceted convex body.*/
-type ConvexPolygon = ConvexPolytope<2>;
-/**A three-dimensional faceted convex body.*/
-type ConvexPolyhedron = ConvexPolytope<3>;
+/**A two-dimensional faceted convex body.
+
+```rust
+
+use hoomd_geometry::shape::ConvexPolygon;
+let poly = ConvexPolygon::from(6); // A regular hexagon
+```
+*/
+pub type ConvexPolygon = ConvexPolytope<2>;
+/**A three-dimensional faceted convex body.
+
+```rust
+
+use hoomd_geometry::shape::ConvexPolyhedron;
+// Create a cube from its vertices
+let poly = ConvexPolyhedron::from(
+    vec![
+        [-1.0, -1.0, -1.0].into(),
+        [-1.0, -1.0,  1.0].into(),
+        [-1.0,  1.0, -1.0].into(),
+        [ 1.0, -1.0, -1.0].into(),
+        [-1.0,  1.0,  1.0].into(),
+        [ 1.0, -1.0,  1.0].into(),
+        [ 1.0,  1.0, -1.0].into(),
+        [ 1.0,  1.0,  1.0].into(),
+    ]
+);
+```
+*/
+pub type ConvexPolyhedron = ConvexPolytope<3>;
 
 /**
 Calculate the intersection between two convex polygons in cartesian coordinates.
@@ -71,6 +97,7 @@ impl<const N: usize> From<Vec<Cartesian<N>>> for ConvexPolytope<N> {
     */
     #[inline]
     fn from(vertices: Vec<Cartesian<N>>) -> ConvexPolytope<N> {
+        // TODO: compute convex hull and assert convex!
         ConvexPolytope { vertices }
     }
 }
