@@ -3,7 +3,7 @@
 
 /*! N-Dimensional generalization of a convex polyhedron.*/
 use crate::{
-    IntersectsAt, SupportFn,
+    IntersectsAt, SupportMapping,
     xenocollide::{self, collide3d},
 };
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
@@ -24,7 +24,7 @@ type ConvexPolyhedron = ConvexPolytope<3>;
 /**
 Calculate the intersection between two convex polygons in cartesian coordinates.
 */
-impl<S: SupportFn<Cartesian<2>>, R: Rotate<Cartesian<2>>> IntersectsAt<S, Cartesian<2>, R>
+impl<S: SupportMapping<Cartesian<2>>, R: Rotate<Cartesian<2>>> IntersectsAt<S, Cartesian<2>, R>
     for ConvexPolytope<2>
 where
     R: Copy + Rotation,
@@ -89,9 +89,9 @@ impl<const N: usize> FromIterator<Cartesian<N>> for ConvexPolytope<N> {
     clippy::unwrap_used,
     reason = "Unwrap case is handled in a match statement."
 )]
-impl<const N: usize> SupportFn<Cartesian<N>> for ConvexPolytope<N> {
+impl<const N: usize> SupportMapping<Cartesian<N>> for ConvexPolytope<N> {
     #[inline]
-    fn support(&self, n: &Cartesian<N>) -> Cartesian<N> {
+    fn support_mapping(&self, n: &Cartesian<N>) -> Cartesian<N> {
         match N {
             0 => Cartesian::<N>::default(),
             1 => self.vertices[0],
@@ -111,7 +111,7 @@ impl<const N: usize> SupportFn<Cartesian<N>> for ConvexPolytope<N> {
 /**
 Calculate the intersection between two convex polyhedra in cartesian coordinates.
 */
-impl<S: SupportFn<Cartesian<3>>, R: Rotate<Cartesian<3>> + Rotation + Copy>
+impl<S: SupportMapping<Cartesian<3>>, R: Rotate<Cartesian<3>> + Rotation + Copy>
     IntersectsAt<S, Cartesian<3>, R> for ConvexPolytope<3>
 where
     RotationMatrix<3>: From<R>,

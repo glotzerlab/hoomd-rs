@@ -3,7 +3,7 @@
 
 /*! Implement [`Hyperellipsoid`] */
 
-use crate::{IntersectsAt, SupportFn, xenocollide::collide3d};
+use crate::{IntersectsAt, SupportMapping, xenocollide::collide3d};
 
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
 
@@ -28,9 +28,9 @@ impl<const N: usize> IntoIterator for Hyperellipsoid<N> {
     }
 }
 
-impl<const N: usize> SupportFn<Cartesian<N>> for Hyperellipsoid<N> {
+impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperellipsoid<N> {
     #[inline]
-    fn support(&self, n: &Cartesian<N>) -> Cartesian<N> {
+    fn support_mapping(&self, n: &Cartesian<N>) -> Cartesian<N> {
         let denominator = Cartesian::<N>::from(std::array::from_fn(|i| self.axes[i] * n[i])).norm();
         std::array::from_fn(|i| n[i] * self.axes[i].powi(2) / denominator).into()
     }
@@ -108,7 +108,7 @@ impl Hyperellipsoid<3> {
     }
 }
 
-impl<S: SupportFn<Cartesian<3>>, R: Copy + Rotation + Rotate<Cartesian<3>>>
+impl<S: SupportMapping<Cartesian<3>>, R: Copy + Rotation + Rotate<Cartesian<3>>>
     IntersectsAt<S, Cartesian<3>, R> for Hyperellipsoid<3>
 where
     RotationMatrix<3>: From<R>,
@@ -145,6 +145,6 @@ mod tests {
             axes: [r; N].into(),
         };
         let v = [1.0; N].into();
-        assert_relative_eq!(he.support(&v), s.support(&v));
+        assert_relative_eq!(he.support_mapping(&v), s.support_mapping(&v));
     }
 }

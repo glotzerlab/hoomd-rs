@@ -3,7 +3,7 @@
 
 /*!N-cuboids, which may or may not be treated as axis aligned.*/
 use crate::{
-    IntersectsAt, SupportFn, Volume,
+    IntersectsAt, SupportMapping, Volume,
     xenocollide::{collide2d, collide3d},
 };
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix};
@@ -73,9 +73,9 @@ impl<const N: usize> Volume for Cuboid<N> {
 }
 
 // TODO: requires test
-impl<const N: usize> SupportFn<Cartesian<N>> for Cuboid<N> {
+impl<const N: usize> SupportMapping<Cartesian<N>> for Cuboid<N> {
     #[inline]
-    fn support(&self, n: &Cartesian<N>) -> Cartesian<N> {
+    fn support_mapping(&self, n: &Cartesian<N>) -> Cartesian<N> {
         let mut iter = n
             .into_iter()
             .zip(self.edge_lengths)

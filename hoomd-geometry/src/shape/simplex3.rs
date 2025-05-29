@@ -9,7 +9,7 @@ use std::{array, fmt};
 use hoomd_vector::{Cartesian, Cross, Rotate, RotationMatrix, Vector};
 use itertools::Itertools;
 
-use crate::{IntersectsAt, SupportFn};
+use crate::{IntersectsAt, SupportMapping};
 
 /// The simplest three-dimensional geometry. This struct has a wide range of defined
 /// functionality and is useful as a primitive in a variety of contexts.
@@ -19,13 +19,13 @@ pub struct Simplex3 {
     vertices: [Cartesian<3>; 4], // NOT public, to force orientation on construction
 }
 
-impl SupportFn<Cartesian<3>> for Simplex3 {
+impl SupportMapping<Cartesian<3>> for Simplex3 {
     #[inline]
     #[expect(
         clippy::expect_used,
         reason = "Support function of a vector containing NaN is undefined."
     )]
-    fn support(&self, n: &Cartesian<3>) -> Cartesian<3> {
+    fn support_mapping(&self, n: &Cartesian<3>) -> Cartesian<3> {
         let dots = self.vertices.map(|v| v.dot(n));
         self.vertices[dots
             .iter()

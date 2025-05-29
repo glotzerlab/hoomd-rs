@@ -4,7 +4,7 @@
 /*!
 Methods and implementations for an N-hypersphere, where N is the dimension.
 */
-use crate::{IntersectsAt, SupportFn, Volume};
+use crate::{IntersectsAt, SupportMapping, Volume};
 use hoomd_vector::{Rotate, Vector};
 use std::f64::consts::PI;
 
@@ -45,9 +45,9 @@ impl<const N: usize> From<f64> for Sphere<N> {
 
 // TRAITS
 
-impl<const N: usize, V: Vector> SupportFn<V> for Sphere<N> {
+impl<const N: usize, V: Vector> SupportMapping<V> for Sphere<N> {
     #[inline]
-    fn support(&self, n: &V) -> V {
+    fn support_mapping(&self, n: &V) -> V {
         *n / n.norm() * self.r
     }
 }
@@ -131,6 +131,6 @@ mod tests {
     ) {
         let s = Sphere::<N>::from(r);
         let v = Cartesian::<N>::from([r.powi(2) / 1.8; N]);
-        assert_eq!(v / v.norm() * r, s.support(&v));
+        assert_eq!(v / v.norm() * r, s.support_mapping(&v));
     }
 }

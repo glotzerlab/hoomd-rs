@@ -3,7 +3,7 @@
 
 /*! Implement [`Capsule`] */
 
-use crate::SupportFn;
+use crate::SupportMapping;
 
 use hoomd_vector::{Cartesian, Vector};
 
@@ -27,9 +27,9 @@ impl From<(f64, f64)> for Capsule {
     }
 }
 
-impl SupportFn<Cartesian<3>> for Capsule {
+impl SupportMapping<Cartesian<3>> for Capsule {
     #[inline]
-    fn support(&self, n: &Cartesian<3>) -> Cartesian<3> {
+    fn support_mapping(&self, n: &Cartesian<3>) -> Cartesian<3> {
         /*Same support function as a ConvexPolyhedron with 2 vertices, plus the radius*/
         let (v_tip, v_base) = ([0.0, 0.0, self.h].into(), [0.0, 0.0, -self.h].into());
 

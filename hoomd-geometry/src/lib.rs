@@ -12,7 +12,6 @@
 // TODO: [Jen] Polyhedron (non-convex, not general on dimension, requires faces (ragged list?))
 // TODO: use Sphero to xenocollide
 // TODO: implement Volume for Sphero<Volume>
-// TODO: SupportFn -> SupportMapping
 // TODO: meshes - talk to Joseph & Philipp
 // TODO: "Functions with a clear receiver are methods" for ConvexPolytope
 // TODO: implement MinDistance for spheres
@@ -60,7 +59,7 @@ of course, this implementation is trivial.
 In general, the [`Shape`] trait is designed to include commonly-used methods that are
 relatively easy to implement for arbitrary shapes. More complicated properties are
 included in additional methods, including [`IntersectsAt`], [`MinDistance`], and
-[`SupportFn`].
+[`SupportMapping`].
 
 Traits for determining the intersection between various bodies.
 
@@ -108,12 +107,12 @@ pub trait MinDistance<const N: usize, V, R, S> {
 /**
 The support function of a geometry.
 
-TODO: SupportFn should be called SupportMapping (fn typically returns dot product)
+TODO: SupportMapping should be called SupportMapping (fn typically returns dot product)
 */
-pub trait SupportFn<V> {
+pub trait SupportMapping<V> {
     /// Center of mass of the shape
     /// Distances from the origin to each supporting hyperplane.
-    fn support(&self, n: &V) -> V;
+    fn support_mapping(&self, n: &V) -> V;
 }
 
 /**
