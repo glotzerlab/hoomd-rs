@@ -40,7 +40,7 @@ impl<const N: usize> Distribution<Cartesian<N>> for Ball {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
         let r = self.r.get();
 
-        let uniform = Uniform::new_inclusive(-r, r).expect("valid distribution");
+        let uniform = Uniform::new_inclusive(-r, r).expect("r should be a positive real value");
 
         loop {
             let v = Cartesian {
@@ -68,7 +68,8 @@ mod test {
         r => [0.5, 1.0, 12.0])]
     fn ball(r: f64) {
         let ball = Ball {
-            r: r.try_into().expect("valid distribution"),
+            r: r.try_into()
+                .expect("hard-coded constant should be positive"),
         };
         let mut rng = StdRng::seed_from_u64(1);
 

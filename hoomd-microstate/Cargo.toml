@@ -17,9 +17,11 @@ workspace = true
 [dependencies]
 hoomd-vector.workspace = true
 hoomd-utility.workspace = true
+thiserror.workspace = true
 
 [dev-dependencies]
 rand.workspace = true
 divan.workspace = true
 rstest.workspace = true
 approx.workspace = true
+anyhow.workspace = true

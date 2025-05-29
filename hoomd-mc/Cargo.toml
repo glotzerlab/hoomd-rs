@@ -26,3 +26,4 @@ approx.workspace = true
 divan.workspace = true
 rstest.workspace = true
 rand.workspace = true
+ratatui = "0.28.0"

@@ -7,8 +7,8 @@ with a variety of particle interaction. **HOOMD-rs** provides public APIs for ve
 math, spatial data structures, energy calculations, and all other components of the
 simulation that users can employ in their own analysis and simulation methods.
 
-**HOOMD-rs** implements a subset of the methods available in the Python package
-[HOOMD-blue] but can be customized in many ways that [HOOMD-blue] cannot, such as:
+**HOOMD-rs** implements many of the methods available in the Python package
+[HOOMD-blue] and can be customized in many ways that [HOOMD-blue] cannot, such as:
 
 * Custom per-particle attributes.
 * Custom particle interactions that can _depend on custom per-particle attributes_.
@@ -19,12 +19,12 @@ simulation that users can employ in their own analysis and simulation methods.
 
 Users are expected to make use of these customization opportunities. **HOOMD-rs** _does
 not_ come with batteries included. It provides built-in implementations only for the
-most commonly used methods. Users compile their simulation code with [Rust], which
-will inline user-provided code in the innermost loops allowing the resulting executables
+most commonly used methods. Users compile their simulation code with [Rust], which will
+inline user-provided code in the innermost loops allowing the resulting executables
 can realize the full performance of the CPU. In contrast, [HOOMD-blue] offers limited
-opportunities for user customization with Python scripts _interpreted_ at runtime.
-Furthermore, configuring an environment to build **HOOMD-rs** code takes far fewer steps
-than even installing a Python environment for [HOOMD-blue]!
+opportunities for user customization with Python scripts that are _interpreted_ at
+runtime. Furthermore, configuring an environment to build **HOOMD-rs** code takes far
+fewer steps than even installing a Python environment for [HOOMD-blue]!
 
 **HOOMD-rs** lacks domain decomposition and GPU parallelization, so it is best for small
 to moderate sized simulations or when customization is important. [HOOMD-blue] is best
@@ -40,6 +40,21 @@ is HOOMD-blue or HOOMD-rs faster on the same CPU?
 [C++ component for HOOMD-blue]: https://github.com/glotzerlab/hoomd-component-template/
 
 ## Resources
+
+To view the documentation, clone this repository if you haven't already done so:
+```shell
+git clone git@github.com:glotzerlab/hoomd-rs
+```
+
+Enter the `hoomd-rs` directory:
+```shell
+cd hoomd-rs
+```
+
+Build the documentation and open it in your browser:
+```shell
+RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --no-deps --open
+```
 
 ## Example
 
