@@ -121,10 +121,12 @@ pub trait BoundingSphere<const N: usize> {
     fn bounding_sphere(&self) -> Hypersphere<N>;
 }
 
-/// TODO
+/// Define a bounding shape for a particular primitive.
 pub trait BoundingShape<V, R> {
+    /// The type of the bounding shape
     type Shape: IntersectsAt<Self::Shape, V, R>;
 
+    /// A bounding shape for a given primitive.
     fn bounding_shape(&self) -> Self::Shape;
 }
 
