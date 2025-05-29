@@ -127,6 +127,21 @@ impl<const N: usize> From<[f64; N]> for Cartesian<N> {
 impl<const N: usize> IntoIterator for Cartesian<N> {
     type Item = f64;
     type IntoIter = <[f64; N] as IntoIterator>::IntoIter;
+
+    /** Iterate over the components of the vector.
+
+    # Example
+    ```
+    use hoomd_vector::Cartesian;
+
+    let a = Cartesian::from([1.0, 2.0]);
+    let mut iter = a.into_iter();
+
+    assert_eq!(iter.next(), Some(1.0));
+    assert_eq!(iter.next(), Some(2.0));
+    assert_eq!(iter.next(), None);
+    ```
+    */
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.coordinates.into_iter()

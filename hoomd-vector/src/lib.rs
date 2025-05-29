@@ -425,7 +425,7 @@ pub trait Vector:
     /** Project one vector onto another.
 
     ```math
-    \frac{\vec{a} \cdot \vec{b}}{\left| \vec{b} \right|^2} \vec{b}
+    \left(\frac{\vec{a} \cdot \vec{b}}{|\vec{b}|^2}\right) \vec{b}
     ```
     where `self` is $`\vec{a}`$.
 
