@@ -1,15 +1,6 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-// TODO: [Jen] SimplePolygon (same in memory, but interpreted differently)
-// TODO: [Jen] Polyhedron (non-convex, not general on dimension, requires faces)
-// TODO: implement Volume for Sphero<Volume>
-// TODO: Implement Mesh primitive, which should be a nonconvex simplex mesh with many
-//       cached properties and values. Should impl From for Polytope
-// TODO: GSD_shape_spec trait
-// TODO: IsInside trait (Dom)
-// TODO: computes or traits for SurfaceArea, MeanCurvature, and 3Volume
-
 #![doc(
     html_favicon_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
