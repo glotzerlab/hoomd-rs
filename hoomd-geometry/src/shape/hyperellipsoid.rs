@@ -16,7 +16,9 @@ pub struct Hyperellipsoid<const N: usize> {
 
 /**A two-dimensional ellipse.*/
 type Ellipse = Hyperellipsoid<2>;
-/**A three-dimensional ellipsoid.*/
+/**A three-dimensional ellipsoid.
+
+*/
 type Ellipsoid = Hyperellipsoid<3>;
 
 impl<const N: usize> IntoIterator for Hyperellipsoid<N> {
@@ -121,26 +123,30 @@ where
 
 impl<const N: usize> Hyperellipsoid<N> {} // TODO matrix form and IntersectsAt
 
+#[expect(
+    clippy::used_underscore_binding,
+    reason = "Used for const parameterization."
+)]
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shape::Sphere;
+    use crate::shape::Hypersphere;
     use ::approx::assert_relative_eq;
     use rstest::*;
     use std::marker::PhantomData;
 
     #[rstest]
-    #[case(PhantomData::<Sphere<0>>)]
-    #[case(PhantomData::<Sphere<1>>)]
-    #[case(PhantomData::<Sphere<2>>)]
-    #[case(PhantomData::<Sphere<3>>)]
-    #[case(PhantomData::<Sphere<4>>)]
-    #[case(PhantomData::<Sphere<5>>)]
+    #[case(PhantomData::<Hypersphere<0>>)]
+    #[case(PhantomData::<Hypersphere<1>>)]
+    #[case(PhantomData::<Hypersphere<2>>)]
+    #[case(PhantomData::<Hypersphere<3>>)]
+    #[case(PhantomData::<Hypersphere<4>>)]
+    #[case(PhantomData::<Hypersphere<5>>)]
     fn test_support_hyperellipsoid<const N: usize>(
-        #[case] _n: PhantomData<Sphere<N>>,
+        #[case] _n: PhantomData<Hypersphere<N>>,
         #[values(0.1, 1.0, 33.3)] r: f64,
     ) {
-        let s = Sphere::<N>::from(r);
+        let s = Hypersphere::<N>::from(r);
         let he = Hyperellipsoid {
             axes: [r; N].into(),
         };
