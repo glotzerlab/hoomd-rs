@@ -69,6 +69,7 @@ where
 {
     #[inline]
     fn intersects_at(&self, other: &S, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
+        // TODO: how can I early exit for a type that does not implement a bounding radius?
         xenocollide::collide2d(self, other, v_ij, o_ij)
     }
 }
@@ -97,7 +98,6 @@ impl From<usize> for ConvexPolytope<2> {
     }
 }
 
-// TODO: should be TryFrom! some input vertices may not be convex
 impl<const N: usize> TryFrom<Vec<Cartesian<N>>> for ConvexPolytope<N> {
     type Error = Error;
     /** Create a regular N-gon with N vertices and circumradius one.
@@ -110,8 +110,7 @@ impl<const N: usize> TryFrom<Vec<Cartesian<N>>> for ConvexPolytope<N> {
     ```
     # Errors
 
-    * `[Error::NotFinite]` when a vertex is not finite.
-    * `[Error::NotPositive]` when all vertices are at the origin.
+    * `[Error::NotConvex]` when the set of input vertices is not convex.
     */
     #[inline]
     fn try_from(vertices: Vec<Cartesian<N>>) -> Result<ConvexPolytope<N>, Error> {
@@ -119,7 +118,7 @@ impl<const N: usize> TryFrom<Vec<Cartesian<N>>> for ConvexPolytope<N> {
         let bounding_radius = vertices
             .iter()
             .map(Cartesian::norm_squared)
-            .fold(f64::NAN, |max, x| f64::max(max, x))
+            .fold(f64::NAN, f64::max)
             .sqrt();
         if true {
             Ok(ConvexPolytope {
@@ -128,17 +127,6 @@ impl<const N: usize> TryFrom<Vec<Cartesian<N>>> for ConvexPolytope<N> {
             }) // TODO: currently no verification that vertices are convex
         } else {
             Err(Error::NotConvex())
-        }
-    }
-}
-
-impl<const N: usize> FromIterator<Cartesian<N>> for ConvexPolytope<N> {
-    /// Create a `ConvexPolytope` from an iterator of vertices.
-    #[inline]
-    fn from_iter<I: IntoIterator<Item = Cartesian<N>>>(iter: I) -> ConvexPolytope<N> {
-        ConvexPolytope {
-            vertices: iter.into_iter().collect::<Vec<_>>(),
-            bounding_radius: 1.0, // TODO: use real value!
         }
     }
 }
