@@ -211,6 +211,7 @@ dependencies = [
  "approx",
  "divan",
  "hoomd-microstate",
+ "hoomd-utility",
  "hoomd-vector",
  "rand",
  "rstest",

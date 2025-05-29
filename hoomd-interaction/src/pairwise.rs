@@ -28,6 +28,9 @@ pub use weeks_chandler_anderson::WeeksChandlerAnderson;
 mod harmonic;
 pub use harmonic::Harmonic;
 
+mod chimes_cheby2b;
+pub use chimes_cheby2b::ChIMES_2B;
+
 /** Computes pairwise energies between point particles.
 
 An isotropic pairwise energy is function only of the distances between the
