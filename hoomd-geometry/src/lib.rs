@@ -6,7 +6,6 @@
 // Bounded shape pair for intersections (prevents code repetition, but doesn't add anything new)
 // Would need to implement a way to create bound anyway, so not that useful
 // For polytope: private field for bounding shape is the right way to go
-// TODO: [Jen] Generalize capsule on N
 // TODO: [Jen] SimplePolygon (same in memory, but interpreted differently)
 // TODO: [Jen] Polyhedron (non-convex, not general on dimension, requires faces (ragged list?))
 // TODO: BoundingVolume trait

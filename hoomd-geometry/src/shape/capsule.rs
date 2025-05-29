@@ -3,21 +3,22 @@
 
 /*! Implement [`Capsule`] */
 
-use crate::SupportMapping;
+use crate::{BoundingSphere, SupportMapping};
 
 use hoomd_vector::{Cartesian, Vector};
 
-/// A [`Capsule`] in three dimensions.
+use super::Hypersphere;
+
+/// All points less than or equal to a distance `r` along a line of length `h`.
 #[derive(Clone, Copy, Debug)]
-// pub struct Capsule<const N: usize> {
-pub struct Capsule {
+pub struct Capsule<const N: usize> {
     /// Radius of the [`Capsule`]'s spherical caps.
-    r: f64,
+    pub r: f64,
     /// Distance between the centers of the spherical caps.
-    h: f64,
+    pub h: f64,
 }
 
-impl From<(f64, f64)> for Capsule {
+impl<const N: usize> From<(f64, f64)> for Capsule<N> {
     #[inline]
     fn from(value: (f64, f64)) -> Self {
         Capsule {
@@ -27,11 +28,17 @@ impl From<(f64, f64)> for Capsule {
     }
 }
 
-impl SupportMapping<Cartesian<3>> for Capsule {
+impl<const N: usize> SupportMapping<Cartesian<N>> for Capsule<N> {
     #[inline]
-    fn support_mapping(&self, n: &Cartesian<3>) -> Cartesian<3> {
-        /*Same support function as a ConvexPolyhedron with 2 vertices, plus the radius*/
-        let (v_tip, v_base) = ([0.0, 0.0, self.h].into(), [0.0, 0.0, -self.h].into());
+    fn support_mapping(&self, n: &Cartesian<N>) -> Cartesian<N> {
+        // Same support function as a ConvexPolyhedron with 2 vertices, plus the radius.
+        let mut v_tip = [0.0; N];
+        v_tip[N - 1] = self.h;
+        let v_tip = v_tip.into();
+
+        let mut v_base = [0.0; N];
+        v_base[N - 1] = -self.h;
+        let v_base = v_base.into();
 
         let (v_tip_dot_n, v_base_dot_n) = (n.dot(&v_tip), n.dot(&v_base));
 
@@ -40,6 +47,15 @@ impl SupportMapping<Cartesian<3>> for Capsule {
             v_tip / n.norm() + rshift
         } else {
             v_base / n.norm() + rshift
+        }
+    }
+}
+
+impl<const N: usize> BoundingSphere<N> for Capsule<N> {
+    #[inline]
+    fn bounding_sphere(&self) -> Hypersphere<N> {
+        Hypersphere {
+            r: self.h / 2.0 + self.r,
         }
     }
 }
