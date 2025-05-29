@@ -7,9 +7,9 @@
 // Would need to implement a way to create bound anyway, so not that useful
 // For polytope: private field for bounding shape is the right way to go
 // TODO: [Jen] Generalize capsule on N
-// TODO: [Jen] Define type alias for Ellipse in 2d, Rectangle, Circle, ConvexPolygon
 // TODO: [Jen] SimplePolygon (same in memory, but interpreted differently)
 // TODO: [Jen] Polyhedron (non-convex, not general on dimension, requires faces (ragged list?))
+// TODO: BoundingVolume trait
 // TODO: use Sphero to xenocollide
 // TODO: implement Volume for Sphero<Volume>
 // TODO: meshes - talk to Joseph & Philipp
