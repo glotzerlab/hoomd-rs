@@ -75,23 +75,25 @@ use hoomd_vector::Versor;
 let s0 = Sphere::from(1.0);
 let s1 = Sphere::from(1.0);
 
+let q_id = Versor::default();
+
 // Determine the intersection between two spheres, using a fast overlap check
-assert_eq!(s0.intersects_at(&s1, &[1.9, 0.0, 0.0].into(), &Versor::default()), true);
-assert_eq!(s0.intersects_at(&s1, &[2.1, 0.0, 0.0].into(), &Versor::default()), false);
+assert_eq!(s0.intersects_at(&s1, &[1.9, 0.0, 0.0].into(), &q_id), true);
+assert_eq!(s0.intersects_at(&s1, &[2.1, 0.0, 0.0].into(), &q_id), false);
 
 // For more complex bodies, the `Convex` wrapper allows for robust overlap checks using xenocollide
-assert_eq!(Convex(s0).intersects_at(&Convex(s1), &[1.9, 0.0, 0.0].into(), &Versor::default()), true);
-assert_eq!(Convex(s0).intersects_at(&Convex(s1), &[2.1, 0.0, 0.0].into(), &Versor::default()), false);
+assert_eq!(Convex(s0).intersects_at(&Convex(s1), &[1.9, 0.0, 0.0].into(), &q_id), true);
+assert_eq!(Convex(s0).intersects_at(&Convex(s1), &[2.1, 0.0, 0.0].into(), &q_id), false);
 
 // The `Convex` wrapper also allows for overlap checks between heterogeneous particles
 let cuboid = Cuboid::from([2.0, 2.0, 2.0]);
 
 assert_eq!(
-    Convex(s0).intersects_at(&Convex(cuboid), &[1.9, 0.0, 0.0].into(), &Versor::default()),
+    Convex(s0).intersects_at(&Convex(cuboid), &[1.9, 0.0, 0.0].into(), &q_id),
     true
 );
 assert_eq!(
-    Convex(s0).intersects_at(&Convex(cuboid), &[2.1, 0.0, 0.0].into(), &Versor::default()),
+    Convex(s0).intersects_at(&Convex(cuboid), &[2.1, 0.0, 0.0].into(), &q_id),
     false
 );
 */
