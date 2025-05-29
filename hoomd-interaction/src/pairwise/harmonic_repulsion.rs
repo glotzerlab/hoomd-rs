@@ -10,7 +10,7 @@ use super::{IsotropicEnergy, IsotropicForce};
  *  Known as the dissipative particle dynamics soft potential.
  *  A soft potential to penalize particle overlaps. 
  
-The potential produce the force between particles as:
+The potential produce the repulsive force between particles as:
 <!-- w^\mathrm{C}(r) = \begin{cases}
 A \left( 1 - \frac{r}{r_\mathrm{cut}}\right)\hat{r} & r < r_\mathrm{cut} \\
 
@@ -28,7 +28,7 @@ A (r_\mathrm{cut} - r) - \frac{1}{2}\frac{A}{r_\mathrm{cut}} \left(r^2_\mathrm{c
 <math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mn>4</mn><mi>ε</mi><mrow><mo fence="true" form="prefix">[</mo><msup><mrow><mo fence="true" form="prefix">(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo fence="true" form="postfix">)</mo></mrow><mi>N</mi></msup><mo>−</mo><msup><mrow><mo fence="true" form="prefix">(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo fence="true" form="postfix">)</mo></mrow><mi>M</mi></msup><mo fence="true" form="postfix">]</mo></mrow></mrow></math>
 
 Compute the harmonic repulsive potential and force as a function of `r` 
-with potential strength `a` and distance cut-off `rcut`.
+with potential strength `A` and distance cut-off `r_cut`.
 
 # Examples
 
@@ -37,10 +37,10 @@ with potential strength `a` and distance cut-off `rcut`.
 use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, HarmonicRepulsion};
 use approx::{assert_abs_diff_eq, assert_relative_eq};
 
-let a = 1.0;
-let rcut = 1.0;
+let A = 1.0;
+let r_cut = 1.0;
 
-let h_repsulsion = HarmonicRepulsion{ a: a, rcut: rcut };
+let h_repsulsion = HarmonicRepulsion{ A: A, r_cut: r_cut };
 assert_abs_diff_eq!(h_repsulsion.energy(1.5), 0.0);
 assert_relative_eq!(h_repsulsion.energy(0.5), 0.125);
 assert_abs_diff_eq!(h_repsulsion.force(0.5), 0.5, epsilon=1e-12);
@@ -51,9 +51,9 @@ The parameters are public fields and may be accessed directly:
 ```
 use hoomd_interaction::pairwise::HarmonicRepulsion;
 
-let mut h_repulsion = HarmonicRepulsion{ a: 1.0, rcut: 1.0};
-h_repulsion.a = 5.0;
-h_repulsion.rcut = 0.75;
+let mut h_repulsion = HarmonicRepulsion{ A: 1.0, r_cut: 1.0};
+h_repulsion.A = 5.0;
+h_repulsion.r_cut = 0.75;
 ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -65,21 +65,21 @@ pub struct HarmonicRepulsion {
     ```
     use hoomd_interaction::pairwise::HarmonicRepulsion;
 
-    let h_repulsion = HarmonicRepulsion{ a: 1.0, rcut: 0.0};
+    let h_repulsion = HarmonicRepulsion{ A: 1.0, r_cut: 0.0};
     ```
     */
 
     /// Potential strength (`[energy] [length]^(-1)`).
-    pub a: f64,
+    pub A: f64,
     /// Distance cut-off (`[length]`).
-    pub rcut: f64,
+    pub r_cut: f64,
 }
 
 impl IsotropicEnergy for HarmonicRepulsion {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
-        if r < self.rcut {
-            self.a * (self.rcut - r) - 0.5 * self.a / self.rcut * (self.rcut*self.rcut - r*r)
+        if r < self.r_cut {
+            self.A * (self.r_cut - r) - 0.5 * self.A / self.r_cut * (self.r_cut*self.r_cut - r*r)
         }
         else {
             0.0
@@ -90,8 +90,8 @@ impl IsotropicEnergy for HarmonicRepulsion {
 impl IsotropicForce for HarmonicRepulsion {
     #[inline]
     fn force(&self, r: f64) -> f64 {
-        if r < self.rcut {
-            self.a * (1.0 - r / self.rcut)
+        if r < self.r_cut {
+            self.A * (1.0 - r / self.r_cut)
         }
         else {
             0.0
@@ -107,31 +107,31 @@ mod tests {
 
     #[rstest]
     fn outside_rcut(
-        #[values(1.0, 2.0, 5.0, 10.0)] a: f64,
-        #[values(1.0, 2.0, 3.0)] rcut: f64,
+        #[values(1.0, 2.0, 5.0, 10.0)] A: f64,
+        #[values(1.0, 2.0, 3.0)] r_cut: f64,
     ) {
-        let h_repulsion = HarmonicRepulsion{ a: a, rcut: rcut};
+        let h_repulsion = HarmonicRepulsion{ A: A, r_cut: r_cut};
 
-        assert_eq!(h_repulsion.a, a);
-        assert_eq!(h_repulsion.rcut, rcut);
+        assert_eq!(h_repulsion.A, A);
+        assert_eq!(h_repulsion.r_cut, r_cut);
 
-        assert_eq!(h_repulsion.energy(rcut + 1.0), 0.0);
-        assert_eq!(h_repulsion.force(rcut + 1.0), 0.0);
+        assert_eq!(h_repulsion.energy(r_cut + 1.0), 0.0);
+        assert_eq!(h_repulsion.force(r_cut + 1.0), 0.0);
     }
 
     #[rstest]
     fn general_case(
-        #[values(1.0, 2.0, 5.0, 10.0)] a: f64,
-        #[values(1.0, 2.0, 3.0)] rcut: f64,
+        #[values(1.0, 2.0, 5.0, 10.0)] A: f64,
+        #[values(1.0, 2.0, 3.0)] r_cut: f64,
     ) {
         let r = 0.5;
-        let h_repulsion = HarmonicRepulsion{ a: a, rcut: rcut};
+        let h_repulsion = HarmonicRepulsion{ A: A, r_cut: r_cut};
 
-        assert_eq!(h_repulsion.a, a);
-        assert_eq!(h_repulsion.rcut, rcut);
+        assert_eq!(h_repulsion.A, A);
+        assert_eq!(h_repulsion.r_cut, r_cut);
 
-        let expected_energy = a * (rcut - r) - 0.5 * a / rcut * (rcut*rcut - r*r);
-        let expected_force = a * (1.0 - r / rcut);
+        let expected_energy = A * (r_cut - r) - 0.5 * A / r_cut * (r_cut*r_cut - r*r);
+        let expected_force = A * (1.0 - r / r_cut);
 
         assert_relative_eq!(h_repulsion.energy(r), expected_energy);
         assert_relative_eq!(h_repulsion.force(r), expected_force);
