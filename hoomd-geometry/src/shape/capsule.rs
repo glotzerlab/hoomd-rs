@@ -10,7 +10,7 @@ use hoomd_vector::{Cartesian, Vector};
 use super::Hypersphere;
 
 /// All points less than or equal to a distance `r` along a line of length `h`.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug)] // TODO: describe origin and orientation
 pub struct Capsule<const N: usize> {
     /// Radius of of points that are considered enclosed in the shape.
     pub r: f64,

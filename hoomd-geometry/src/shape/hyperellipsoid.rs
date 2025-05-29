@@ -14,7 +14,7 @@ use std::f64::consts::PI;
 #[derive(Clone, Copy, Debug)]
 pub struct Hyperellipsoid<const N: usize> {
     /// The principle semi-axes of the [`Hyperellipsoid`] along each direction.
-    axes: [f64; N],
+    pub axes: [f64; N],
 }
 
 /**A two-dimensional ellipse.*/
@@ -23,15 +23,6 @@ type Ellipse = Hyperellipsoid<2>;
 
 */
 type Ellipsoid = Hyperellipsoid<3>;
-
-impl<const N: usize> IntoIterator for Hyperellipsoid<N> {
-    type Item = f64;
-    type IntoIter = <[f64; N] as IntoIterator>::IntoIter;
-    #[inline]
-    fn into_iter(self) -> Self::IntoIter {
-        self.axes.into_iter()
-    }
-}
 
 impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperellipsoid<N> {
     #[inline]
