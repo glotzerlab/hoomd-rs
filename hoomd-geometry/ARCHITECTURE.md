@@ -1,49 +1,81 @@
-# Notes
+# hoomd_geometry
+
+The `hoomd_geometry` crate implements types that describe geometric shapes and
+traits that operate on them. The initial design prioritizes intersection tests
+between pairs of particles for use in hard particle Monte Carlo simulations.
+Over time, `hoomd_geometry` will grow with new methods that compute shape
+properties and manipulate shapes in ways that researchers need for simulation
+an analysis.
+
+As `hoomd_geometry` expands, it cannot lose sight of the primary goal. For
+example, the `ConvexPolytope` class should always remain as a set of vertices
+(and possibly a precomputed bounding radius) where the shape is implicitly the
+convex hull of the vertices. That is the representation needed for fast overlap
+checks with Xenocollide. When `hoomd_geometry` gains methods that operate on
+faces or edges, those should be implemented on a more general `Mesh` type. Users
+can convert a `ConvexPolytope` to a `Mesh` when needed.
+
+## Shapes
+
+`hoomd_geometry` provides a number of types, each of which can describe a shape
+in a given class: `Hyperellipsoid` and `ConvexPolytope`, for example. When
+possible, shape types are generic on the number of dimensions. Each shape (for
+example a `Sphere` with radius `r`) describes both the *surface* of the shape,
+and the *set of interior points*.
+
+Each shape is expressed as if it exists in a local space centered on some
+natural origin. `hoomd_geometry` makes no specific requirements on that origin
+in general, though the `xenocollide` implementation currently requires that the
+origin lie inside the shape.
 
 ## Traits
 
-The `Shape` trait provides basic, general methods that are useful for most geometries and
-applications. Bounding spheres (not necessarily minimal) are a good example, as they are
-well defined for arbitrary geometries and a reasonably tight bounding radius is simple
-to determine for most shapes.
+It is not straightforward (or desirable) to implement all shape properties for
+every single shape type. Therefore, `hoomd_geometry` provides each property
+(and operation) as a separate trait that types can implement when possible
+and necessary.
 
-The `Volume` trait provides a notion of n-hypervolume for `Shape`s or other structs: however,
-it is kept as a separate trait to allow for the creation of abstract & less well-defined
-shapes like self-intersecting polyhedra or infinite geometries.
+* `IntersectsAt`: Determine whether two shapes (possibly of different
+  types) intersect given their relative position and orientation. Formally,
+  `intersects_at` tests if the set intersection of the two shape's interior
+  points is not empty.
+* `IsInside`: Test if a point is inside the shape.
+* `MinDistance`: Compute the minimum distance (TODO: between two shapes?
+  Or between a point and a shape?).
+* `SupportMapping`: Find the point in the shape that is furthest in a particular
+  direction.
+* `Volume`: Compute the hypervolume of the space contained within the shape.
 
-## Structs
+`hoomd_geometry` will add traits over time.
 
-The `Sphere` is an excellent prototype of hoomd-geometry's function: it implements both `Shape`
-and `Volume`, and its dimension can be specified with the const generic param `N`. It also
-has utility as the return type of the `bounding_sphere` method of the `Shape` trait.
+## Intersection algorithms
 
-It is important to note that structs in this crate do not have fields for the center of mass:
-rather, the additional `Centered` struct provides this functionality via encapsulation.
-This simplification allows the same structs and methods to be used in both simulation and computational geometry codes.
+Shapes may implement `IntersectsAt` via any appropriate algorithm. For
+example, `Sphere` intersection tests are trivial. There are also fast `Capsule`
+intersection tests based in the literature that we could use.
 
-The `Cuboid` struct also provides a useful example of the idea of an orientable geometry. While an axis-aligned cuboid has an orientation by definition, there is no need to explicitly store that information in most cases. The `Oriented` wrapper struct can encapsulate cuboids if this functionality is needed.
+`IntersectsAt` requires that the shapes be orientable. In some cases (such as
+axis aligned boxes), there are extremely fast intersection tests that assume the
+shapes are not rotated. These types will implement ad-hoc intersection methods
+in their inherent implementations.
 
-## Intersections
+## XenoCollide for convex geometry
 
-The `IntersectsAt` trait makes up a significant portion of the code in this crate, and provides a wide variety of methods that allow for the calculation of overlaps between geometric primitives. Most provided methods are an overlap _test_, taking in two geometries, a displacement `Vector`, and a `Rotation` and returning a boolean indicating whether the geometries intersect. Many shapes -- including spheres, oriented cuboids, and tetrahedra -- implement shape-specific overlap checks that are faster than general methods for determining overlaps. An implementation of the Xenocollide collision detection test is included in the `collide[2|3]d` functions, and will function properly for any convex geometry that implements `SupportFn<V: Cartesian<[2|3]>>`. While all methods should provide the same results, more specialized subroutines often provide greater performance than Xenocollide.
+`hoomd_geometry` implements the XenoCollide algorithm, which can determine
+whether any two convex shapes overlap in 2 and 3 dimensions. Most shape types
+perform `IntersectsAt` checks using XenoCollide, see code in `shapes` for
+examples.
 
-The `IntersectsAt` trait includes a helper type that allows implementations to accept either an `&R: Rotation` or `&Option<R: Rotation>`. This allows for much clearer distinction of axis-aligned intersection modes for AABBs, and ensures users do not have to initialize an `Angle` or `Versor` for sphere overlaps.
+## Concave geometries
 
-Note that, although the following code is valid, such an implementation precludes specific, optimized overlap methods. Instead, this method should be implemented for
-each `T` to ensure special cases can be handled performantly.
-```rust
-impl<S: SupportFn<Cartesian<3>>, R: Rotate<Cartesian<3>> + Rotation + Copy, T>
-    IntersectsAt<S, Cartesian<3>, R> for T
-where
-    RotationMatrix<3>: From<R>,
-    T: SupportFn<Cartesian<3>>,
-{
-    /// Determine whether a convex object intersects another shape at some position and orientation.
-    #[inline]
-    fn intersects_at(&self, other: &S, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
-        collide3d(self, other, v_ij, o_ij)
-    }
-}
-```
-
-To implement `IntersectsAt` for concave geometries, subdivide the primitive into convex subsets and apply the appropriate collision detection algorithms. While no examples are currently included with `hoomd-geometry` a `ShapeUnion` struct would be the most natural extension.
+Concave geometries are particularly challenging to test for overlaps. There are
+several strategies available:
+* If possible, users can express a concave geometry as a union of convex
+  geometries. Ideally, users would add bodies to the microstate where each site
+  is one of the convex shapes in the decomposition. This approach allows the use
+  of spatial data structures to minimize the number of shape overlaps checks.
+* Alternately, a single shape type could implement the N^2 checks needed in its
+  `intersects_at` implementation.
+* Not all concave shapes nicely decompose into a set of convex shapes (e.g.
+  an arbitrary simple polygon). In such cases, developers must implement an
+  appropriately generic algorithm.

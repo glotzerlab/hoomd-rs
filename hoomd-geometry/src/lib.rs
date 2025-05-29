@@ -12,11 +12,7 @@
 // TODO: [Jen] Polyhedron (non-convex, not general on dimension, requires faces (ragged list?))
 // TODO: use Sphero to xenocollide
 // TODO: implement Volume for Sphero<Volume>
-// TODO: move Sphero to `shape`
-// TODO: remove Intersects
-// TODO: remove Shape
 // TODO: SupportFn -> SupportMapping
-// TODO: move contents of poly to shapes
 // TODO: meshes - talk to Joseph & Philipp
 // TODO: "Functions with a clear receiver are methods" for ConvexPolytope
 // TODO: implement MinDistance for spheres
