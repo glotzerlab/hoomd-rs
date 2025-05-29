@@ -137,10 +137,17 @@ pub trait IntersectsAt<S, V, R> {
     fn intersects_at(&self, other: &S, v_ij: &V, o_ij: &R) -> bool;
 }
 
+/// A reasonably tight-fitting bounding Hypersphere for a shape.
+pub trait BoundingSphere<const N: usize> {
+    /// A reasonably tight-fitting bounding Hypersphere for a shape.
+    fn bounding_sphere(&self) -> Hypersphere<N>;
+}
+
 /// TODO
 mod convex;
 pub use convex::Convex;
 
+use shape::Hypersphere;
 use thiserror::Error;
 /// Enumerate possible sources of error in fallible utility methods.
 #[non_exhaustive]

@@ -3,10 +3,12 @@
 
 /*! N-Dimensional generalization of a convex polyhedron.*/
 use crate::{
-    Error, IntersectsAt, SupportMapping,
+    BoundingSphere, Error, IntersectsAt, SupportMapping,
     xenocollide::{self, collide3d},
 };
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
+
+use super::Hypersphere;
 
 /**
 A convex, faceted polyhedron.
@@ -147,18 +149,12 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for ConvexPolytope<N> {
     }
 }
 
-/**
-Calculate the intersection between two convex polyhedra in cartesian coordinates.
-*/
-impl<S: SupportMapping<Cartesian<3>>, R: Rotate<Cartesian<3>> + Rotation + Copy>
-    IntersectsAt<S, Cartesian<3>, R> for ConvexPolytope<3>
-where
-    RotationMatrix<3>: From<R>,
-{
-    /// Determine whether a convex polyhedron intersects another shape at some position and orientation.
+impl<const N: usize> BoundingSphere<N> for ConvexPolytope<N> {
     #[inline]
-    fn intersects_at(&self, other: &S, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
-        collide3d(self, other, v_ij, o_ij)
+    fn bounding_sphere(&self) -> Hypersphere<N> {
+        Hypersphere {
+            r: self.bounding_radius,
+        }
     }
 }
 

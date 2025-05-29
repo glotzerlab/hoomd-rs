@@ -4,7 +4,7 @@
 /*!
 Methods and implementations for an N-hypersphere, where N is the dimension.
 */
-use crate::{IntersectsAt, SupportMapping, Volume, xenocollide::collide3d};
+use crate::{BoundingSphere, IntersectsAt, SupportMapping, Volume, xenocollide::collide3d};
 use hoomd_vector::{Cartesian, Rotate, Vector};
 use std::f64::consts::PI;
 
@@ -75,6 +75,13 @@ impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Hypersphere<N>, V, R>
     #[inline]
     fn intersects_at(&self, other: &Hypersphere<N>, v_ij: &V, _o_ij: &R) -> bool {
         (v_ij).norm_squared() <= (other.r + self.r).powi(2)
+    }
+}
+
+impl<const N: usize> BoundingSphere<N> for Hypersphere<N> {
+    #[inline]
+    fn bounding_sphere(&self) -> Hypersphere<N> {
+        *self
     }
 }
 

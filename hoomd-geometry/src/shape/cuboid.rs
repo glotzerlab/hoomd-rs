@@ -3,11 +3,13 @@
 
 /*!N-cuboids, which may or may not be treated as axis aligned.*/
 use crate::{
-    IntersectsAt, SupportMapping, Volume,
+    BoundingSphere, IntersectsAt, SupportMapping, Volume,
     xenocollide::{collide2d, collide3d},
 };
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix};
 use itertools::multizip;
+
+use super::Hypersphere;
 
 /** An axis-aligned N-cuboid
 */
@@ -66,6 +68,14 @@ impl<const N: usize> Volume for Cuboid<N> {
             .into_iter()
             .reduce(|acc, x| acc * x)
             .unwrap_or(0.0)
+    }
+}
+
+impl<const N: usize> BoundingSphere<N> for Cuboid<N> {
+    #[inline]
+    fn bounding_sphere(&self) -> Hypersphere<N> {
+        let r = f64::sqrt(3.0) / 2.0 * self.edge_lengths.into_iter().fold(f64::NAN, f64::max);
+        Hypersphere { r }
     }
 }
 

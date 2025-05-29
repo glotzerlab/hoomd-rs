@@ -3,9 +3,11 @@
 
 /*! Implement [`Hyperellipsoid`] */
 
-use crate::{IntersectsAt, SupportMapping, xenocollide::collide3d};
+use crate::{BoundingSphere, IntersectsAt, SupportMapping, xenocollide::collide3d};
 
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
+
+use super::Hypersphere;
 
 /// An N-Dimensional [`Hyperellipsoid`] defined by its semi-major axes.
 #[derive(Clone, Copy, Debug)]
@@ -107,6 +109,15 @@ impl Hyperellipsoid<3> {
             + r_ij[2] * (m5x2 + 2.0 * m3x0);
 
         m
+    }
+}
+
+impl<const N: usize> BoundingSphere<N> for Hyperellipsoid<N> {
+    #[inline]
+    fn bounding_sphere(&self) -> Hypersphere<N> {
+        Hypersphere {
+            r: self.axes.into_iter().fold(f64::NAN, f64::max),
+        }
     }
 }
 
