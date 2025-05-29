@@ -105,13 +105,13 @@ pub trait MinDistance<const N: usize, V, R, S> {
 }
 
 /**
-The support function of a geometry.
+The support mapping of a geometry.
 
-TODO: SupportMapping should be called SupportMapping (fn typically returns dot product)
+The function associated with this trait should take a direction vector and return the
+point on a (convex) shape lying furthest in that direction.
 */
 pub trait SupportMapping<V> {
-    /// Center of mass of the shape
-    /// Distances from the origin to each supporting hyperplane.
+    /// Return the furthest extent of a shape along a direction vector.
     fn support_mapping(&self, n: &V) -> V;
 }
 
