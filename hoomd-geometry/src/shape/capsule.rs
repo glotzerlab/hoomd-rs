@@ -12,9 +12,9 @@ use super::Hypersphere;
 /// All points less than or equal to a distance `r` along a line of length `h`.
 #[derive(Clone, Copy, Debug)]
 pub struct Capsule<const N: usize> {
-    /// Radius of the [`Capsule`]'s spherical caps.
+    /// Radius of of points that are considered enclosed in the shape.
     pub r: f64,
-    /// Distance between the centers of the spherical caps.
+    /// Length of the line segment.
     pub h: f64,
 }
 
