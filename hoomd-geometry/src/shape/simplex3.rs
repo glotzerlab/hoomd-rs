@@ -83,6 +83,13 @@ impl fmt::Display for Simplex3 {
     }
 }
 impl Simplex3 {
+    /// The vertices of the simplex.
+    #[inline]
+    #[must_use]
+    pub fn vertices(&self) -> [Cartesian<3>; 4] {
+        self.vertices
+    }
+
     /// Translate a simplex via rowwise addition of a Cartesian3
     #[inline]
     #[must_use]

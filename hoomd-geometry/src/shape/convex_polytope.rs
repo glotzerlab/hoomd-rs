@@ -9,7 +9,7 @@ use crate::{
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
 
 /**
-A convex, faceted polyhedron
+A convex, faceted polyhedron.
 */
 pub struct ConvexPolytope<const N: usize> {
     /// The vertices of the shape.
@@ -29,23 +29,30 @@ pub type ConvexPolygon = ConvexPolytope<2>;
 
 ```rust
 
-use hoomd_geometry::shape::ConvexPolyhedron;
-// Create a cube from its vertices
+use hoomd_geometry::shape::{ConvexPolyhedron, Simplex3};
+// Create a regular tetrahedron from its vertices
 let poly = ConvexPolyhedron::from(
     vec![
-        [-1.0, -1.0, -1.0].into(),
-        [-1.0, -1.0,  1.0].into(),
-        [-1.0,  1.0, -1.0].into(),
-        [ 1.0, -1.0, -1.0].into(),
-        [-1.0,  1.0,  1.0].into(),
-        [ 1.0, -1.0,  1.0].into(),
-        [ 1.0,  1.0, -1.0].into(),
-        [ 1.0,  1.0,  1.0].into(),
+        [1.0, 1.0, 1.0].into(),
+        [1.0, -1.0, -1.0].into(),
+        [-1.0, 1.0, -1.0].into(),
+        [-1.0, -1.0, 1.0].into(),
     ]
 );
+
+assert_eq!(poly.vertices(), Simplex3::default().vertices())
 ```
 */
 pub type ConvexPolyhedron = ConvexPolytope<3>;
+
+impl<const N: usize> ConvexPolytope<N> {
+    /// The vertices of the shape.
+    #[inline]
+    #[must_use]
+    pub fn vertices(&self) -> Vec<Cartesian<N>> {
+        self.vertices.clone()
+    }
+}
 
 /**
 Calculate the intersection between two convex polygons in cartesian coordinates.
