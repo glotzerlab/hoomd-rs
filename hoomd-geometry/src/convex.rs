@@ -20,6 +20,18 @@ where
     }
 }
 
+impl<A, B, R> IntersectsAt<Convex<A>, Cartesian<2>, R> for Convex<B>
+where
+    A: SupportMapping<Cartesian<2>>,
+    B: SupportMapping<Cartesian<2>>,
+    R: Rotate<Cartesian<2>> + Rotation + PartialEq + Copy,
+    RotationMatrix<2>: From<R>,
+{
+    #[inline]
+    fn intersects_at(&self, other: &Convex<A>, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
+        collide2d(self, other, v_ij, o_ij)
+    }
+}
 impl<A, B, R> IntersectsAt<Convex<A>, Cartesian<3>, R> for Convex<B>
 where
     A: SupportMapping<Cartesian<3>>,
