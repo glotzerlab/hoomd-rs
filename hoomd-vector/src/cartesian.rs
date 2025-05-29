@@ -534,14 +534,45 @@ pub struct RotationMatrix<const N: usize> {
 }
 
 impl<const N: usize> RotationMatrix<N> {
-    /// View the rows of the rotation matrix.
+    /** Get the rows of the rotation matrix.
+
+    # Example
+    ```
+    use hoomd_vector::{Angle, RotationMatrix, Vector};
+    use std::f64::consts::PI;
+
+    let a = Angle::from(PI/2.0);
+
+    let matrix = RotationMatrix::from(a);
+    assert!(matrix.rows()[0].dot(&[0.0, -1.0].into()) > 0.99);
+    assert!(matrix.rows()[1].dot(&[1.0, 0.0].into()) > 0.99);
+    ```
+    */
     #[inline]
     #[must_use]
     pub fn rows(&self) -> [Cartesian<N>; N] {
         self.rows
     }
 
-    /// Invert a `RotationMatrix`. This is equivalent to R^T
+    /** Create a matrix that performs the inverse rotation.
+
+    Matrix inversion is cheaper than [`Angle`] -> [`RotationMatrix`] and
+    [`Versor`] -> [`RotationMatrix`] conversions. When you need both rotations,
+    convert once and then invert.
+
+    # Example
+    ```
+    use hoomd_vector::{Angle, RotationMatrix, Vector};
+    use std::f64::consts::PI;
+
+    let a = Angle::from(PI/2.0);
+
+    let matrix = RotationMatrix::from(a);
+    let inverted_matrix = matrix.inverted();
+    assert!(inverted_matrix.rows()[0].dot(&[0.0, 1.0].into()) > 0.99);
+    assert!(inverted_matrix.rows()[1].dot(&[-1.0, 0.0].into()) > 0.99);
+    ```
+    */
     #[inline]
     #[must_use]
     pub fn inverted(self) -> Self {
