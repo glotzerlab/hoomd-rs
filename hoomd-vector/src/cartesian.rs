@@ -439,6 +439,14 @@ impl Cartesian<2> {
     ```math
     (-v_y, v_x)
     ```
+
+    # Example
+    ```
+    use hoomd_vector::Cartesian;
+
+    let v = Cartesian::from([1.0, -4.5]);
+    assert_eq!(v.perpendicular(), [4.5, 1.0].into());
+    ```
     */
     #[inline]
     #[must_use]
