@@ -36,18 +36,18 @@ additional functionality to accommodate hard-particle Monte Carlo simulations.
 
 ## Geometric Primitives
 
-The [`Sphere`] is an excellent example of the design philosophy of `hoomd_geometry`. The
+The [`Hypersphere`] is an excellent example of the design philosophy of `hoomd_geometry`. The
 struct is initialized from a single radius value, and immediately provides access to
-a variety of methods. [`Sphere`]s are well defined in arbitrary dimension, and therefore
+a variety of methods. [`Hypersphere`]s are well defined in arbitrary dimension, and therefore
 are parameterized with a const generic `N` representing the embedding dimension.
 
 ```
-use hoomd_geometry::{ IntersectsAt, Volume, shape::Sphere };
+use hoomd_geometry::{ IntersectsAt, Volume, shape::Hypersphere };
 use approx::assert_relative_eq;
 use std::f64::consts::PI;
 
 const N: usize = 3;
-let s = Sphere::<N>::from(1.0);
+let s = Hypersphere::<N>::from(1.0);
 assert_relative_eq!(s.volume(), (4.0/3.0 * PI));
 ```
 

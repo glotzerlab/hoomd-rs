@@ -25,7 +25,7 @@ mod simplex3;
 pub use simplex3::Simplex3;
 
 mod sphere;
-pub use sphere::Sphere;
+pub use sphere::Hypersphere;
 
 mod sphero;
 pub use sphero::Sphero;

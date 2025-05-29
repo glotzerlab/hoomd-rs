@@ -4,8 +4,8 @@
 /*!
 Methods and implementations for an N-hypersphere, where N is the dimension.
 */
-use crate::{IntersectsAt, SupportMapping, Volume};
-use hoomd_vector::{Rotate, Vector};
+use crate::{IntersectsAt, SupportMapping, Volume, xenocollide::collide3d};
+use hoomd_vector::{Cartesian, Rotate, Vector};
 use std::f64::consts::PI;
 
 /// The (single, double, ...)-factorial function
@@ -24,35 +24,35 @@ fn factorial(n: usize, ntuple: usize) -> usize {
 
 /// An n-hypersphere
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Sphere<const N: usize> {
+pub struct Hypersphere<const N: usize> {
     /// Radius of the sphere
     pub r: f64,
 }
 
-impl<const N: usize> Default for Sphere<N> {
+impl<const N: usize> Default for Hypersphere<N> {
     #[inline]
     fn default() -> Self {
-        Sphere { r: 1.0 }
+        Hypersphere { r: 1.0 }
     }
 }
 
-impl<const N: usize> From<f64> for Sphere<N> {
+impl<const N: usize> From<f64> for Hypersphere<N> {
     #[inline]
     fn from(r: f64) -> Self {
-        Sphere { r }
+        Hypersphere { r }
     }
 }
 
 // TRAITS
 
-impl<const N: usize, V: Vector> SupportMapping<V> for Sphere<N> {
+impl<const N: usize, V: Vector> SupportMapping<V> for Hypersphere<N> {
     #[inline]
     fn support_mapping(&self, n: &V) -> V {
         *n / n.norm() * self.r
     }
 }
 
-impl<const N: usize> Volume for Sphere<N> {
+impl<const N: usize> Volume for Hypersphere<N> {
     #[inline]
     fn volume(&self) -> f64 {
         let dim_factor = (if N.rem_euclid(2) == 0 { N } else { N - 1 } / 2) as f64;
@@ -64,9 +64,11 @@ impl<const N: usize> Volume for Sphere<N> {
     }
 }
 
-impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Sphere<N>, V, R> for Sphere<N> {
+impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Hypersphere<N>, V, R>
+    for Hypersphere<N>
+{
     #[inline]
-    fn intersects_at(&self, other: &Sphere<N>, v_ij: &V, _o_ij: &R) -> bool {
+    fn intersects_at(&self, other: &Hypersphere<N>, v_ij: &V, _o_ij: &R, fast: bool) -> bool {
         (v_ij).norm_squared() <= (other.r + self.r).powi(2)
     }
 }
@@ -96,16 +98,16 @@ mod tests {
     }
 
     #[rstest]
-    #[case(PhantomData::<Sphere<0>>)]
-    #[case(PhantomData::<Sphere<1>>)]
-    #[case(PhantomData::<Sphere<2>>)]
-    #[case(PhantomData::<Sphere<3>>)]
-    #[case(PhantomData::<Sphere<4>>)]
-    #[case(PhantomData::<Sphere<5>>)]
-    fn test_volume_and_radius<const N: usize>(#[case] _n: PhantomData<Sphere<N>>) {
-        let s = Sphere::<N>::from(1.0);
+    #[case(PhantomData::<Hypersphere<0>>)]
+    #[case(PhantomData::<Hypersphere<1>>)]
+    #[case(PhantomData::<Hypersphere<2>>)]
+    #[case(PhantomData::<Hypersphere<3>>)]
+    #[case(PhantomData::<Hypersphere<4>>)]
+    #[case(PhantomData::<Hypersphere<5>>)]
+    fn test_volume_and_radius<const N: usize>(#[case] _n: PhantomData<Hypersphere<N>>) {
+        let s = Hypersphere::<N>::from(1.0);
         assert_eq!(s.r, 1.0);
-        assert_eq!(s, Sphere::<N>::default());
+        assert_eq!(s, Hypersphere::<N>::default());
         assert_relative_eq!(s.volume(), volume_map(N));
     }
 
@@ -119,17 +121,17 @@ mod tests {
     }
 
     #[rstest]
-    #[case(PhantomData::<Sphere<0>>)]
-    #[case(PhantomData::<Sphere<1>>)]
-    #[case(PhantomData::<Sphere<2>>)]
-    #[case(PhantomData::<Sphere<3>>)]
-    #[case(PhantomData::<Sphere<4>>)]
-    #[case(PhantomData::<Sphere<5>>)]
+    #[case(PhantomData::<Hypersphere<0>>)]
+    #[case(PhantomData::<Hypersphere<1>>)]
+    #[case(PhantomData::<Hypersphere<2>>)]
+    #[case(PhantomData::<Hypersphere<3>>)]
+    #[case(PhantomData::<Hypersphere<4>>)]
+    #[case(PhantomData::<Hypersphere<5>>)]
     fn test_support_fn<const N: usize>(
-        #[case] _n: PhantomData<Sphere<N>>,
+        #[case] _n: PhantomData<Hypersphere<N>>,
         #[values(0.1, 1.0, 33.3)] r: f64,
     ) {
-        let s = Sphere::<N>::from(r);
+        let s = Hypersphere::<N>::from(r);
         let v = Cartesian::<N>::from([r.powi(2) / 1.8; N]);
         assert_eq!(v / v.norm() * r, s.support_mapping(&v));
     }

@@ -20,7 +20,7 @@ can convert a `ConvexPolytope` to a `Mesh` when needed.
 `hoomd_geometry` provides a number of types, each of which can describe a shape
 in a given class: `Hyperellipsoid` and `ConvexPolytope`, for example. When
 possible, shape types are generic on the number of dimensions. Each shape (for
-example a `Sphere` with radius `r`) describes both the *surface* of the shape,
+example a `Hypersphere` with radius `r`) describes both the *surface* of the shape,
 and the *set of interior points*.
 
 Each shape is expressed as if it exists in a local space centered on some
@@ -51,7 +51,7 @@ and necessary.
 ## Intersection algorithms
 
 Shapes may implement `IntersectsAt` via any appropriate algorithm. For
-example, `Sphere` intersection tests are trivial. There are also fast `Capsule`
+example, `Hypersphere` intersection tests are trivial. There are also fast `Capsule`
 intersection tests based in the literature that we could use.
 
 `IntersectsAt` requires that the shapes be orientable. In some cases (such as

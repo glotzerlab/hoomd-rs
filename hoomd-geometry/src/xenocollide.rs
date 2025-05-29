@@ -340,7 +340,7 @@ mod tests {
     use crate::IntersectsAt;
     use rstest::*;
 
-    use crate::shape::{Cuboid, Sphere};
+    use crate::shape::{Cuboid, Hypersphere};
     use hoomd_vector::{Angle, Versor};
 
     #[rstest(
@@ -353,7 +353,7 @@ mod tests {
         ],
     )]
     fn test_discs_collide(v: [f64; 2], r: f64, o_ij: Angle) {
-        let (s0, s1) = (Sphere::<2>::from(1.0), Sphere::<2>::from(r));
+        let (s0, s1) = (Hypersphere::<2>::from(1.0), Hypersphere::<2>::from(r));
 
         let overlaps = collide2d(&s0, &s1, &v.into(), &o_ij);
 
@@ -371,7 +371,7 @@ mod tests {
         ]
     )]
     fn test_spheres_collide(v: [f64; 3], r: f64, o_ij: Versor) {
-        let (s0, s1) = (Sphere::<3>::from(1.0), Sphere::<3>::from(r));
+        let (s0, s1) = (Hypersphere::<3>::from(1.0), Hypersphere::<3>::from(r));
         let overlaps = collide3d(&s0, &s1, &v.into(), &o_ij);
 
         assert_eq!(

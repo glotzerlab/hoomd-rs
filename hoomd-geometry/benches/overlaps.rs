@@ -12,7 +12,7 @@ use divan::counter::ItemsCount;
 use divan::{self, Bencher, black_box};
 use hoomd_geometry::{
     IntersectsAt,
-    shape::{ConvexPolytope, Cuboid, Simplex3, Sphere},
+    shape::{ConvexPolytope, Cuboid, Hypersphere, Simplex3},
     xenocollide::{collide2d, collide3d},
 };
 use rand::{Rng, SeedableRng, rngs::StdRng};
@@ -32,10 +32,10 @@ fn main() {
     divan::main();
 }
 
-fn create_sphere_pair<const N: usize, R: Rng>(rng: &mut R) -> (Sphere<N>, Sphere<N>) {
+fn create_sphere_pair<const N: usize, R: Rng>(rng: &mut R) -> (Hypersphere<N>, Hypersphere<N>) {
     (
-        Sphere::from(rng.random_range(0.0..10.0)),
-        Sphere::from(rng.random_range(0.0..10.0)),
+        Hypersphere::from(rng.random_range(0.0..10.0)),
+        Hypersphere::from(rng.random_range(0.0..10.0)),
     )
 }
 fn create_cuboid_pair<const N: usize, R: Rng>(rng: &mut R) -> (Cuboid<N>, Cuboid<N>) {
