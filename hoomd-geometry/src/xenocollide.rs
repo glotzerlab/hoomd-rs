@@ -61,7 +61,7 @@ impl<'a, const N: usize, A: SupportMapping<Cartesian<N>>, B: SupportMapping<Cart
         RotationMatrix<N>: From<R>,
     {
         let q_ij = RotationMatrix::<N>::from(r);
-        let q_ij_inv = RotationMatrix::<N>::from(r.inverted());
+        let q_ij_inv = q_ij.inverted();
         SupportFunctor {
             sa,
             sb,
