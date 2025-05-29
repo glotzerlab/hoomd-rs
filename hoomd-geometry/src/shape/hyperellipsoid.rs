@@ -3,17 +3,18 @@
 
 /*! Implement [`Hyperellipsoid`] */
 
-use crate::{BoundingSphere, IntersectsAt, SupportMapping, xenocollide::collide3d};
+use crate::{BoundingSphere, IntersectsAt, SupportMapping, Volume, xenocollide::collide3d};
 
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
 
-use super::Hypersphere;
+use super::{Hypersphere, sphere::factorial};
+use std::f64::consts::PI;
 
 /// An N-Dimensional [`Hyperellipsoid`] defined by its semi-major axes.
 #[derive(Clone, Copy, Debug)]
 pub struct Hyperellipsoid<const N: usize> {
     /// The principle semi-axes of the [`Hyperellipsoid`] along each direction.
-    axes: Cartesian<N>,
+    axes: [f64; N],
 }
 
 /**A two-dimensional ellipse.*/
@@ -120,6 +121,18 @@ impl<const N: usize> BoundingSphere<N> for Hyperellipsoid<N> {
         }
     }
 }
+impl<const N: usize> Volume for Hyperellipsoid<N> {
+    #[inline]
+    fn volume(&self) -> f64 {
+        let dim_factor = (if N.rem_euclid(2) == 0 { N } else { N - 1 } / 2) as f64;
+        let prefactor = if N.rem_euclid(2) == 0 {
+            PI.powf(dim_factor) / (factorial(N / 2, 1) as f64)
+        } else {
+            2.0 * (2.0 * PI).powf(dim_factor) / (factorial(N, 2) as f64)
+        };
+        self.axes.into_iter().fold(prefactor, |prod, x| prod * x)
+    }
+}
 
 impl<const N: usize> Hyperellipsoid<N> {} // TODO matrix form and IntersectsAt
 
@@ -147,9 +160,7 @@ mod tests {
         #[values(0.1, 1.0, 33.3)] r: f64,
     ) {
         let s = Hypersphere::<N> { r };
-        let he = Hyperellipsoid {
-            axes: [r; N].into(),
-        };
+        let he = Hyperellipsoid { axes: [r; N] };
         let v = [1.0; N].into();
         assert_relative_eq!(he.support_mapping(&v), s.support_mapping(&v));
     }

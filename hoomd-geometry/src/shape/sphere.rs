@@ -12,7 +12,7 @@ use hoomd_vector::{Cartesian, Rotate, Vector};
 use std::f64::consts::PI;
 
 /// The (single, double, ...)-factorial function
-fn factorial(n: usize, ntuple: usize) -> usize {
+pub(crate) fn factorial(n: usize, ntuple: usize) -> usize {
     assert!(ntuple > 0);
     if n == 0 {
         1
@@ -66,11 +66,16 @@ impl<const N: usize> Volume for Hypersphere<N> {
     #[inline]
     fn volume(&self) -> f64 {
         let dim_factor = (if N.rem_euclid(2) == 0 { N } else { N - 1 } / 2) as f64;
-        if N.rem_euclid(2) == 0 {
+        let prefactor = if N.rem_euclid(2) == 0 {
             PI.powf(dim_factor) / (factorial(N / 2, 1) as f64)
         } else {
             2.0 * (2.0 * PI).powf(dim_factor) / (factorial(N, 2) as f64)
-        } // TODO: replace with std::f64::gamma when its in main
+        };
+        prefactor
+            * self
+                .r
+                .powi(N.try_into().expect("Dimension would overflow i32!"))
+        // TODO: replace with std::f64::gamma when its in main
     }
 }
 
@@ -103,14 +108,14 @@ mod tests {
     use rstest::*;
     use std::marker::PhantomData;
 
-    fn volume_map(n: usize) -> f64 {
+    fn volume_map(n: usize, r: f64) -> f64 {
         match n {
-            0 => 1.0,
-            1 => 2.0,
-            2 => PI,
-            3 => 4.0 / 3.0 * PI,
-            4 => PI.powi(2) / 2.0,
-            5 => 8.0 * PI.powi(2) / 15.0,
+            0 => 1.0 * r.powi(i32::try_from(n).unwrap()),
+            1 => 2.0 * r.powi(i32::try_from(n).unwrap()),
+            2 => PI * r.powi(i32::try_from(n).unwrap()),
+            3 => 4.0 / 3.0 * PI * r.powi(i32::try_from(n).unwrap()),
+            4 => PI.powi(2) / 2.0 * r.powi(i32::try_from(n).unwrap()),
+            5 => 8.0 * PI.powi(2) / 15.0 * r.powi(i32::try_from(n).unwrap()),
             _ => unreachable!(),
         }
     }
@@ -122,11 +127,20 @@ mod tests {
     #[case(PhantomData::<Hypersphere<3>>)]
     #[case(PhantomData::<Hypersphere<4>>)]
     #[case(PhantomData::<Hypersphere<5>>)]
-    fn test_volume_and_radius<const N: usize>(#[case] _n: PhantomData<Hypersphere<N>>) {
-        let s = Hypersphere::<N> { r: 1.0 };
-        assert_eq!(s.r, 1.0);
-        assert_eq!(s, Hypersphere::<N>::default());
-        assert_relative_eq!(s.volume(), volume_map(N));
+    fn test_volume_and_radius<const N: usize>(
+        #[case] _n: PhantomData<Hypersphere<N>>,
+        #[values(0.01, 1.0, 33.3, 1e6)] r: f64,
+    ) {
+        let s = Hypersphere::<N> { r };
+
+        if r == 1.0 {
+            assert_eq!(s.r, 1.0);
+            assert_eq!(s, Hypersphere::<N>::default());
+        } else {
+            assert_eq!(s.r, r);
+        }
+
+        assert_relative_eq!(s.volume(), volume_map(N, r));
     }
 
     #[rstest]
