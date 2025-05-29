@@ -123,3 +123,13 @@ pub trait IntersectsAt<S, V, R> {
     /// Determine whether a Particle intersects another shape at some position and orientation.
     fn intersects_at(&self, other: &S, v_ij: &V, o_ij: &R) -> bool;
 }
+
+use thiserror::Error;
+/// Enumerate possible sources of error in fallible utility methods.
+#[non_exhaustive]
+#[derive(Error, PartialEq, Debug)]
+pub enum Error {
+    /// A set of vertices is not convex.
+    #[error("Vertices do not define a convex body.")]
+    NotConvex(),
+}

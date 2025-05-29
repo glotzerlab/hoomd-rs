@@ -3,7 +3,7 @@
 
 /*! N-Dimensional generalization of a convex polyhedron.*/
 use crate::{
-    IntersectsAt, SupportMapping,
+    Error, IntersectsAt, SupportMapping,
     xenocollide::{self, collide3d},
 };
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
@@ -14,6 +14,8 @@ A convex, faceted polyhedron.
 pub struct ConvexPolytope<const N: usize> {
     /// The vertices of the shape.
     vertices: Vec<Cartesian<N>>,
+    /// The radius of a bounding sphere of the geometry.
+    bounding_radius: f64,
 }
 
 /**A two-dimensional faceted convex body.
@@ -28,19 +30,21 @@ pub type ConvexPolygon = ConvexPolytope<2>;
 /**A three-dimensional faceted convex body.
 
 ```rust
-
 use hoomd_geometry::shape::{ConvexPolyhedron, Simplex3};
+# fn main() -> Result<(), hoomd_geometry::Error> {
 // Create a regular tetrahedron from its vertices
-let poly = ConvexPolyhedron::from(
+let poly = ConvexPolyhedron::try_from(
     vec![
         [1.0, 1.0, 1.0].into(),
         [1.0, -1.0, -1.0].into(),
         [-1.0, 1.0, -1.0].into(),
         [-1.0, -1.0, 1.0].into(),
     ]
-);
+)?;
 
-assert_eq!(poly.vertices(), Simplex3::default().vertices())
+assert_eq!(poly.vertices(), Simplex3::default().vertices());
+# Ok(())
+# }
 ```
 */
 pub type ConvexPolyhedron = ConvexPolytope<3>;
@@ -88,11 +92,14 @@ impl From<usize> for ConvexPolytope<2> {
                     Cartesian::from([f64::cos(theta), f64::cos(theta)])
                 })
                 .collect::<Vec<_>>(),
+            bounding_radius: 1.0,
         }
     }
 }
 
-impl<const N: usize> From<Vec<Cartesian<N>>> for ConvexPolytope<N> {
+// TODO: should be TryFrom! some input vertices may not be convex
+impl<const N: usize> TryFrom<Vec<Cartesian<N>>> for ConvexPolytope<N> {
+    type Error = Error;
     /** Create a regular N-gon with N vertices and circumradius one.
 
     # Example
@@ -101,11 +108,27 @@ impl<const N: usize> From<Vec<Cartesian<N>>> for ConvexPolytope<N> {
 
     let equilateral_triangle = ConvexPolytope::from(3);
     ```
+    # Errors
+
+    * `[Error::NotFinite]` when a vertex is not finite.
+    * `[Error::NotPositive]` when all vertices are at the origin.
     */
     #[inline]
-    fn from(vertices: Vec<Cartesian<N>>) -> ConvexPolytope<N> {
+    fn try_from(vertices: Vec<Cartesian<N>>) -> Result<ConvexPolytope<N>, Error> {
         // TODO: compute convex hull and assert convex!
-        ConvexPolytope { vertices }
+        let bounding_radius = vertices
+            .iter()
+            .map(Cartesian::norm_squared)
+            .fold(f64::NAN, |max, x| f64::max(max, x))
+            .sqrt();
+        if true {
+            Ok(ConvexPolytope {
+                vertices,
+                bounding_radius,
+            }) // TODO: currently no verification that vertices are convex
+        } else {
+            Err(Error::NotConvex())
+        }
     }
 }
 
@@ -115,6 +138,7 @@ impl<const N: usize> FromIterator<Cartesian<N>> for ConvexPolytope<N> {
     fn from_iter<I: IntoIterator<Item = Cartesian<N>>>(iter: I) -> ConvexPolytope<N> {
         ConvexPolytope {
             vertices: iter.into_iter().collect::<Vec<_>>(),
+            bounding_radius: 1.0, // TODO: use real value!
         }
     }
 }
