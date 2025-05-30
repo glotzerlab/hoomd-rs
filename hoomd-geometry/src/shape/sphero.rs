@@ -4,12 +4,10 @@
 /*! Implement [`Sphero`] */
 
 use crate::{
-    BoundingSphereRadius, IntersectsAt, SupportMapping,
-    xenocollide::{collide2d, collide3d},
+    BoundingSphereRadius, SupportMapping,
 };
-use hoomd_vector::{Angle, Cartesian, Rotate, Vector, Versor};
+use hoomd_vector::Vector;
 
-use super::{ConvexPolygon, Hypersphere};
 
 /** Round a shape with a given radius.
 

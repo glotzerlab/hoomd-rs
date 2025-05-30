@@ -3,12 +3,10 @@
 
 /*! N-Dimensional generalization of a convex polyhedron.*/
 use crate::{
-    BoundingSphereRadius, Error, IntersectsAt, SupportMapping,
-    xenocollide::{self, collide3d},
+    BoundingSphereRadius, Error, SupportMapping,
 };
-use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
+use hoomd_vector::{Cartesian, Vector};
 
-use super::Hypersphere;
 
 /**
 A convex, faceted polyhedron.

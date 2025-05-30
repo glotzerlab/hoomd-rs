@@ -3,15 +3,11 @@
 
 /*! Implement [`Hyperellipsoid`] */
 
-use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume, xenocollide::collide3d};
+use crate::{BoundingSphereRadius, SupportMapping, Volume};
 
-use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
+use hoomd_vector::{Cartesian, RotationMatrix, Vector};
 
-use super::{
-    Hypersphere,
-    sphere::{factorial, sphere_volume_prefactor},
-};
-use std::f64::consts::PI;
+use super::sphere::sphere_volume_prefactor;
 
 /// An N-Dimensional [`Hyperellipsoid`] defined by its semi-major axes.
 #[derive(Clone, Copy, Debug, PartialEq)]

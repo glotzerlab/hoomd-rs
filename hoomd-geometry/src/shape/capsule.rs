@@ -3,7 +3,7 @@
 
 /*! Implement [`Capsule`] */
 
-use crate::{BoundingSphereRadius, Hypersphere, SupportMapping, Volume};
+use crate::{BoundingSphereRadius, SupportMapping, Volume};
 
 use hoomd_vector::{Cartesian, Vector};
 

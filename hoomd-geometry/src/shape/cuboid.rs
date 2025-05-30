@@ -3,13 +3,11 @@
 
 /*!N-cuboids, which may or may not be treated as axis aligned.*/
 use crate::{
-    BoundingSphereRadius, IntersectsAt, SupportMapping, Volume,
-    xenocollide::{collide2d, collide3d},
+    BoundingSphereRadius, SupportMapping, Volume,
 };
-use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix};
+use hoomd_vector::Cartesian;
 use itertools::multizip;
 
-use super::Hypersphere;
 
 /** An axis-aligned N-cuboid
 */

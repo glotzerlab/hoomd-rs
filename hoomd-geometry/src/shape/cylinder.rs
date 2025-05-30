@@ -3,11 +3,10 @@
 
 /*! Implement [`Cylinder`] */
 
-use hoomd_vector::{Cartesian, Rotate, Vector};
 
-use crate::{SupportMapping, Volume};
+use crate::Volume;
 
-use super::{Capsule, Circle};
+use super::Circle;
 
 /** A [`Cylinder`] in three dimensions. This should be interpreted as a circle with
 normal `[0 0 1]` swept by `h/2` in the `+z` and `-z` directions.*/
