@@ -35,6 +35,7 @@ assert!(rounded_rectangle.intersects_at(&circle, &[2.4, 0.0].into(), &Angle::def
 assert!(!rounded_rectangle.intersects_at(&circle, &[0.0, 2.4].into(), &Angle::default()));
 assert!(circle.intersects_at(&rounded_rectangle, &[0.0, 2.4].into(), &Angle::from(PI/2.0)));
 */
+#[derive(Clone, Debug, PartialEq)]
 pub struct Sphero<S> {
     /// The shape round.
     pub shape: S,

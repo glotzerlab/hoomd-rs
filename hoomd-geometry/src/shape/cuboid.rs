@@ -13,10 +13,10 @@ use super::Hypersphere;
 
 /** An axis-aligned N-cuboid
 */
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Cuboid<const N: usize> {
     /// The lengths of each edge of the cuboid.
-    pub edge_lengths: Cartesian<N>, // TODO: use PositiveReal
+    pub edge_lengths: Cartesian<N>, // TODO: use array of PositiveReal
 }
 
 /**A rectangle defined by its edge lengths.*/

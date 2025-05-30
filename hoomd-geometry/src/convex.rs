@@ -8,6 +8,7 @@ use crate::{
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
 
 /// TODO
+#[derive(Clone, Debug, PartialEq)]
 pub struct Convex<S>(pub S);
 
 impl<V: Vector, S> SupportMapping<V> for Convex<S>

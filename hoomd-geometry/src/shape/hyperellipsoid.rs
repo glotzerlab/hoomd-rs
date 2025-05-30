@@ -11,7 +11,7 @@ use super::{Hypersphere, sphere::factorial};
 use std::f64::consts::PI;
 
 /// An N-Dimensional [`Hyperellipsoid`] defined by its semi-major axes.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Hyperellipsoid<const N: usize> {
     /// The principle semi-axes of the [`Hyperellipsoid`] along each direction.
     pub axes: [f64; N],

@@ -13,7 +13,7 @@ use crate::{IntersectsAt, SupportMapping};
 
 /// The simplest three-dimensional geometry. This struct has a wide range of defined
 /// functionality and is useful as a primitive in a variety of contexts.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Simplex3 {
     /// Vertices of the simplex
     vertices: [Cartesian<3>; 4], // NOT public, to force orientation on construction
