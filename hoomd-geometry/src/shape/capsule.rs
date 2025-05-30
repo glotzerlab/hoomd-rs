@@ -67,6 +67,7 @@ impl<const N: usize> Volume for Capsule<N> {
     }
 }
 
+#[expect(clippy::used_underscore_binding, reason = "Required for const tests.")]
 #[cfg(test)]
 mod tests {
 
