@@ -15,7 +15,7 @@ pub struct ConvexPolytope<const N: usize> {
     pub(crate) bounding_radius: f64,
 }
 
-/**A two-dimensional faceted convex body.
+/**A faceted convex body in two dimensions.
 
 ```rust
 
@@ -24,7 +24,7 @@ let poly = ConvexPolygon::from(6); // A regular hexagon
 ```
 */
 pub type ConvexPolygon = ConvexPolytope<2>;
-/**A three-dimensional faceted convex body.
+/**A faceted convex body in three dimensions.
 
 ```rust
 use hoomd_geometry::shape::{ConvexPolyhedron, Simplex3};

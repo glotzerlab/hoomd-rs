@@ -22,18 +22,16 @@ use hoomd_vector::{Cartesian, RotationMatrix, Vector};
 
 use super::sphere::sphere_volume_prefactor;
 
-/// An N-Dimensional [`Hyperellipsoid`] defined by its semi-major axes.
+/// An n-[`Hyperellipsoid`] defined by its semi-major axes.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Hyperellipsoid<const N: usize> {
     /// The principle semi-axes of the [`Hyperellipsoid`] along each direction.
     pub axes: [f64; N],
 }
 
-/**A two-dimensional ellipse.*/
+/**An ellipse in two dimensions.*/
 pub type Ellipse = Hyperellipsoid<2>;
-/**A three-dimensional ellipsoid.
-
-*/
+/**An ellipsoid in three dimensions.*/
 pub type Ellipsoid = Hyperellipsoid<3>;
 
 impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperellipsoid<N> {

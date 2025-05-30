@@ -11,10 +11,10 @@ use itertools::multizip;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Cuboid<const N: usize> {
     /// The lengths of each edge of the cuboid.
-    pub edge_lengths: Cartesian<N>, // TODO: use array of PositiveReal
+    pub edge_lengths: Cartesian<N>,
 }
 
-/**A rectangle defined by its edge lengths.*/
+/**A rectangle defined by its two edge lengths.*/
 pub type Rectangle = Cuboid<2>;
 
 impl Cuboid<3> {

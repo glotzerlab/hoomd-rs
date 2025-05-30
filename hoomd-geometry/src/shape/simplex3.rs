@@ -11,7 +11,7 @@ use itertools::Itertools;
 
 use crate::{IntersectsAt, SupportMapping};
 
-/// The simplest three-dimensional geometry. This struct has a wide range of defined
+/// The simplest faceted three-dimensional geometry. This struct has a wide range of defined
 /// functionality and is useful as a primitive in a variety of contexts.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Simplex3 {
