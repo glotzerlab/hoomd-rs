@@ -12,14 +12,18 @@ normal `[0 0 1]` swept by `h/2` in the `+z` and `-z` directions.*/
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Cylinder {
     /// Radius of the [`Cylinder`]
-    pub r: f64,
+    pub radius: f64,
     /// Height of the [`Cylinder`]
-    pub h: f64,
+    pub height: f64,
 }
 
 impl Volume for Cylinder {
     #[inline]
     fn volume(&self) -> f64 {
-        Circle { r: self.r }.volume() * self.h
+        Circle {
+            radius: self.radius,
+        }
+        .volume()
+            * self.height
     }
 }

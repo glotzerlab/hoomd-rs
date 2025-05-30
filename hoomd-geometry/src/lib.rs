@@ -51,8 +51,8 @@ as well.
 use hoomd_geometry::{ IntersectsAt, shape::{Cuboid, Sphere} , Convex };
 use hoomd_vector::Versor;
 
-let s0 = Sphere {r: 1.0};
-let s1 = Sphere {r: 1.0};
+let s0 = Sphere {radius: 1.0};
+let s1 = Sphere {radius: 1.0};
 
 let q_id = Versor::default();
 

@@ -22,7 +22,7 @@ use hoomd_geometry::{Convex, IntersectsAt, shape::{Circle, Rectangle, Sphero}};
 use hoomd_vector::{Cartesian, Angle};
 use std::f64::consts::PI;
 
-let circle = Convex(Circle { r: 0.5 });
+let circle = Convex(Circle { radius:  0.5 });
 let rectangle = Rectangle { edge_lengths: [3.0, 2.0].into() };
 let rounded_rectangle = Convex(Sphero { shape: rectangle, rounding_radius: 0.5 });
 

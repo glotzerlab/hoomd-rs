@@ -37,7 +37,7 @@ pub(crate) fn sphere_volume_prefactor(n: usize) -> f64 {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Hypersphere<const N: usize> {
     /// Radius of the sphere
-    pub r: f64,
+    pub radius: f64,
 }
 
 /// A `Circle` in two dimensions.
@@ -48,7 +48,7 @@ pub type Sphere = Hypersphere<3>;
 impl<const N: usize> Default for Hypersphere<N> {
     #[inline]
     fn default() -> Self {
-        Hypersphere { r: 1.0 }
+        Hypersphere { radius: 1.0 }
     }
 }
 
@@ -56,8 +56,8 @@ impl<const N: usize> Hypersphere<N> {
     /// Create a sphere from a float with a given radius.
     #[must_use]
     #[inline]
-    pub fn from_radius(r: f64) -> Self {
-        Hypersphere { r }
+    pub fn from_radius(radius: f64) -> Self {
+        Hypersphere { radius }
     }
 }
 
@@ -66,7 +66,7 @@ impl<const N: usize> Hypersphere<N> {
 impl<const N: usize, V: Vector> SupportMapping<V> for Hypersphere<N> {
     #[inline]
     fn support_mapping(&self, n: &V) -> V {
-        *n / n.norm() * self.r
+        *n / n.norm() * self.radius
     }
 }
 
@@ -75,7 +75,7 @@ impl<const N: usize> Volume for Hypersphere<N> {
     fn volume(&self) -> f64 {
         sphere_volume_prefactor(N)
             * self
-                .r
+                .radius
                 .powi(N.try_into().expect("Dimension would overflow i32!"))
     }
 }
@@ -85,14 +85,14 @@ impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Hypersphere<N>, V, R>
 {
     #[inline]
     fn intersects_at(&self, other: &Hypersphere<N>, v_ij: &V, _o_ij: &R) -> bool {
-        (v_ij).norm_squared() <= (other.r + self.r).powi(2)
+        (v_ij).norm_squared() <= (other.radius + self.radius).powi(2)
     }
 }
 
 impl<const N: usize> BoundingSphereRadius for Hypersphere<N> {
     #[inline]
     fn bounding_sphere_radius(&self) -> f64 {
-        self.r
+        self.radius
     }
 }
 
@@ -129,18 +129,18 @@ mod tests {
     #[case(PhantomData::<Hypersphere<5>>)]
     fn test_volume_and_radius<const N: usize>(
         #[case] _n: PhantomData<Hypersphere<N>>,
-        #[values(0.01, 1.0, 33.3, 1e6)] r: f64,
+        #[values(0.01, 1.0, 33.3, 1e6)] radius: f64,
     ) {
-        let s = Hypersphere::<N> { r };
+        let s = Hypersphere::<N> { radius };
 
-        if r == 1.0 {
-            assert_eq!(s.r, 1.0);
+        if radius == 1.0 {
+            assert_eq!(s.radius, 1.0);
             assert_eq!(s, Hypersphere::<N>::default());
         } else {
-            assert_eq!(s.r, r);
+            assert_eq!(s.radius, radius);
         }
 
-        assert_relative_eq!(s.volume(), volume_map(N, r));
+        assert_relative_eq!(s.volume(), volume_map(N, radius));
     }
 
     #[rstest]
@@ -161,10 +161,10 @@ mod tests {
     #[case(PhantomData::<Hypersphere<5>>)]
     fn test_support_fn<const N: usize>(
         #[case] _n: PhantomData<Hypersphere<N>>,
-        #[values(0.1, 1.0, 33.3)] r: f64,
+        #[values(0.1, 1.0, 33.3)] radius: f64,
     ) {
-        let s = Hypersphere::<N> { r };
-        let v = Cartesian::<N>::from([r.powi(2) / 1.8; N]);
-        assert_eq!(v / v.norm() * r, s.support_mapping(&v));
+        let s = Hypersphere::<N> { radius };
+        let v = Cartesian::<N>::from([radius.powi(2) / 1.8; N]);
+        assert_eq!(v / v.norm() * radius, s.support_mapping(&v));
     }
 }

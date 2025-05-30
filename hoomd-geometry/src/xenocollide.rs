@@ -345,15 +345,15 @@ mod tests {
 
     #[rstest(
         v => [[0.1, 0.1], [999.9, 0.0], [0.0, 5.123_f64.next_down()], [0.0, 5.123_000_001]],
-        r => [0.001, 1.0, 4.123, 99.05],
+        radius => [0.001, 1.0, 4.123, 99.05],
         o_ij => [
             Angle::default(),
             Angle::from(std::f64::consts::PI / 3.0),
             Angle::from(1.234)
         ],
     )]
-    fn test_discs_collide(v: [f64; 2], r: f64, o_ij: Angle) {
-        let (s0, s1) = (Hypersphere::<2> { r: 1.0 }, Circle { r });
+    fn test_discs_collide(v: [f64; 2], radius: f64, o_ij: Angle) {
+        let (s0, s1) = (Hypersphere { radius: 1.0 }, Circle { radius });
 
         let overlaps = collide2d(&s0, &s1, &v.into(), &o_ij);
 
@@ -361,7 +361,7 @@ mod tests {
     }
     #[rstest(
         v => [[0.1, 0.1, 0.1], [999.9, 0.0, -10.9], [0.0, 5.123, 0.0], [0.0, 0.0, 5.123_000_001]],
-        r => [0.001, 1.0, 4.123, 99.05],
+        radius => [0.001, 1.0, 4.123, 99.05],
         o_ij => [
             Versor::default(),
             Versor::from_axis_angle(
@@ -370,8 +370,8 @@ mod tests {
             Versor::from_axis_angle([0.0, 1.0, 0.0].try_into().unwrap(), 0.1234)
         ]
     )]
-    fn test_spheres_collide(v: [f64; 3], r: f64, o_ij: Versor) {
-        let (s0, s1) = (Hypersphere::<3> { r: 1.0 }, Hypersphere::<3> { r });
+    fn test_spheres_collide(v: [f64; 3], radius: f64, o_ij: Versor) {
+        let (s0, s1) = (Hypersphere { radius: 1.0 }, Hypersphere::<3> { radius });
         let overlaps = collide3d(&s0, &s1, &v.into(), &o_ij);
 
         assert_eq!(

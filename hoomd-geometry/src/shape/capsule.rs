@@ -16,9 +16,9 @@ along that axis.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Capsule<const N: usize> {
     /// Radius of of points that are considered enclosed in the shape.
-    pub r: f64,
+    pub radius: f64,
     /// Length of the line segment.
-    pub h: f64,
+    pub height: f64,
 }
 
 impl<const N: usize> SupportMapping<Cartesian<N>> for Capsule<N> {
@@ -26,16 +26,16 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Capsule<N> {
     fn support_mapping(&self, n: &Cartesian<N>) -> Cartesian<N> {
         // Same support function as a ConvexPolyhedron with 2 vertices, plus the radius.
         let mut v_tip = [0.0; N];
-        v_tip[N - 1] = self.h / 2.0;
+        v_tip[N - 1] = self.height / 2.0;
         let v_tip = v_tip.into();
 
         let mut v_base = [0.0; N];
-        v_base[N - 1] = -self.h / 2.0;
+        v_base[N - 1] = -self.height / 2.0;
         let v_base = v_base.into();
 
         let (v_tip_dot_n, v_base_dot_n) = (n.dot(&v_tip), n.dot(&v_base));
 
-        let rshift = *n * self.r * n.norm();
+        let rshift = *n * self.radius * n.norm();
         if v_tip_dot_n > v_base_dot_n {
             v_tip / n.norm() + rshift
         } else {
@@ -47,7 +47,7 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Capsule<N> {
 impl<const N: usize> BoundingSphereRadius for Capsule<N> {
     #[inline]
     fn bounding_sphere_radius(&self) -> f64 {
-        self.h / 2.0 + self.r
+        self.height / 2.0 + self.radius
     }
 }
 
@@ -57,13 +57,13 @@ impl<const N: usize> Volume for Capsule<N> {
         if N == 0 {
             return 0.0;
         }
-        let r_n_minus_one = self.r.powi(
+        let r_n_minus_one = self.radius.powi(
             (N - 1)
                 .try_into()
                 .expect("Dimension {N}-1 would overflow i32!"),
         );
-        let cylinder_volume = sphere_volume_prefactor(N - 1) * r_n_minus_one * self.h;
-        cylinder_volume + sphere_volume_prefactor(N) * (r_n_minus_one * self.r)
+        let cylinder_volume = sphere_volume_prefactor(N - 1) * r_n_minus_one * self.height;
+        cylinder_volume + sphere_volume_prefactor(N) * (r_n_minus_one * self.radius)
     }
 }
 
@@ -84,23 +84,32 @@ mod tests {
             PhantomData::<Capsule<4>>,
             PhantomData::<Capsule<5>>
         ],
-        r => [0.0, 1e-6, 1.0, 34.56],
+        radius => [0.0, 1e-6, 1.0, 34.56],
     )]
-    fn test_capsule_volume<const N: usize>(_n: PhantomData<Capsule<N>>, r: f64) {
+    fn test_capsule_volume<const N: usize>(_n: PhantomData<Capsule<N>>, radius: f64) {
         assert_eq!(
-            Capsule::<N> { r, h: 0.0 }.volume(),
-            Hypersphere::<N> { r }.volume()
+            Capsule::<N> {
+                radius,
+                height: 0.0
+            }
+            .volume(),
+            Hypersphere::<N> { radius }.volume()
         );
     }
     #[rstest(
-        r => [0.0, 1e-6, 1.0, 34.56],
-        h => [0.0, 1e-6, 1.0, 34.56],
+        radius => [0.0, 1e-6, 1.0, 34.56],
+        height => [0.0, 1e-6, 1.0, 34.56],
     )]
-    fn test_elongated_capsule_volume(r: f64, h: f64) {
-        let cap = Capsule::<3> { r, h };
+    fn test_elongated_capsule_volume(radius: f64, height: f64) {
+        let cap = Capsule::<3> { radius, height };
         assert_eq!(
             cap.volume(),
-            Hypersphere::<3> { r }.volume() + Cylinder { r, h: cap.h }.volume()
+            Hypersphere::<3> { radius }.volume()
+                + Cylinder {
+                    radius,
+                    height: cap.height
+                }
+                .volume()
         );
     }
 }

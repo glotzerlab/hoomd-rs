@@ -32,11 +32,11 @@ where
     #[inline]
     fn intersects_at(&self, other: &Convex<A>, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
         if !(Circle {
-            r: self.0.bounding_sphere_radius(),
+            radius: self.0.bounding_sphere_radius(),
         })
         .intersects_at(
             &Circle {
-                r: other.0.bounding_sphere_radius(),
+                radius: other.0.bounding_sphere_radius(),
             },
             v_ij,
             o_ij,
@@ -56,11 +56,11 @@ where
     #[inline]
     fn intersects_at(&self, other: &Convex<A>, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
         if !(Sphere {
-            r: self.0.bounding_sphere_radius(),
+            radius: self.0.bounding_sphere_radius(),
         })
         .intersects_at(
             &Sphere {
-                r: other.0.bounding_sphere_radius(),
+                radius: other.0.bounding_sphere_radius(),
             },
             v_ij,
             o_ij,

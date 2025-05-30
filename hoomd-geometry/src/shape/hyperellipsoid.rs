@@ -11,7 +11,7 @@ use hoomd_geometry::Volume;
 let ellipse = Hyperellipsoid {axes: [1.0, 2.0]};
 
 assert_eq!(ellipse.volume(), Ellipse {axes: [2.0, 1.0]}.volume());
-assert_eq!(Ellipsoid{ axes: [1.0, 1.0, 1.0] }.volume(), Sphere { r: 1.0 }.volume());
+assert_eq!(Ellipsoid{ axes: [1.0, 1.0, 1.0] }.volume(), Sphere {radius: 1.0 }.volume());
 
 ```
 */
@@ -155,10 +155,10 @@ mod tests {
     #[case(PhantomData::<Hypersphere<5>>)]
     fn test_support_hyperellipsoid<const N: usize>(
         #[case] _n: PhantomData<Hypersphere<N>>,
-        #[values(0.1, 1.0, 33.3)] r: f64,
+        #[values(0.1, 1.0, 33.3)] radius: f64,
     ) {
-        let s = Hypersphere::<N> { r };
-        let he = Hyperellipsoid { axes: [r; N] };
+        let s = Hypersphere::<N> { radius };
+        let he = Hyperellipsoid { axes: [radius; N] };
         let v = [1.0; N].into();
         assert_relative_eq!(he.support_mapping(&v), s.support_mapping(&v));
     }
@@ -171,10 +171,10 @@ mod tests {
     #[case(PhantomData::<Hypersphere<5>>)]
     fn test_volume_hyperellipsoid<const N: usize>(
         #[case] _n: PhantomData<Hypersphere<N>>,
-        #[values(0.1, 1.0, 33.3)] r: f64,
+        #[values(0.1, 1.0, 33.3)] radius: f64,
     ) {
-        let s = Hypersphere::<N> { r };
-        let he = Hyperellipsoid { axes: [r; N] };
+        let s = Hypersphere::<N> { radius };
+        let he = Hyperellipsoid { axes: [radius; N] };
         assert_relative_eq!(he.volume(), s.volume());
     }
 }
