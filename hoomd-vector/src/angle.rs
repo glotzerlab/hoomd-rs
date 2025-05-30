@@ -2,10 +2,10 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement [`Angle`]
-*/
+ */
 
-use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
+use rand::distr::{Distribution, StandardUniform, Uniform};
 use std::f64::consts::PI;
 use std::fmt;
 
@@ -17,6 +17,15 @@ The rotation is represented by an angle `theta` in radians. Positive values rota
 counter-clockwise.
 
 ## Constructing [`Angle`]
+
+The default Angle rotates by 0 radians:
+
+```
+use hoomd_vector::Angle;
+
+let a = Angle::default();
+assert_eq!(a.theta, 0.0)
+```
 
 Create an [`Angle`] with a given value:
 ```
@@ -34,7 +43,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut rng = StdRng::seed_from_u64(1);
-let a: Angle = rng.gen();
+let a: Angle = rng.random();
 # Ok(())
 # }
 ```
@@ -63,7 +72,7 @@ let c = a.combine(&b);
 assert_eq!(c.theta, PI/4.0);
 ```
 */
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Angle {
     /// Rotation angle (radians).
     pub theta: f64,
@@ -94,7 +103,9 @@ impl Angle {
             theta: self.theta.rem_euclid(2.0 * PI),
         }
     }
+}
 
+impl From<Angle> for RotationMatrix<2> {
     /** Construct a rotation matrix equivalent to this angle's rotation.
 
     When rotating many vectors by the same [`Angle`], improve performance
@@ -102,46 +113,27 @@ impl Angle {
 
     # Example
     ```
-    use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
+    use hoomd_vector::{Angle, Rotate, RotationMatrix, Cartesian};
     use std::f64::consts::PI;
 
     let v = Cartesian::from([-1.0, 0.0]);
     let a = Angle::from(PI/2.0);
 
-    let matrix = a.to_rotation_matrix();
+    let matrix = RotationMatrix::from(a);
     let rotated = matrix.rotate(&v);
     // rotated is approximately [0.0, -1.0]
     ```
     */
     #[inline]
-    #[must_use]
-    pub fn to_rotation_matrix(self) -> RotationMatrix<2> {
-        let sin_theta = self.theta.sin();
-        let cos_theta = self.theta.cos();
+    fn from(angle: Angle) -> RotationMatrix<2> {
+        let sin_theta = angle.theta.sin();
+        let cos_theta = angle.theta.cos();
         RotationMatrix {
             rows: [
                 [cos_theta, -sin_theta].into(),
                 [sin_theta, cos_theta].into(),
             ],
         }
-    }
-}
-
-impl Default for Angle {
-    /** Create a rotation by 0 radians.
-
-    # Example
-    ```
-    use hoomd_vector::Angle;
-
-    let a = Angle::default();
-    assert_eq!(a.theta, 0.0)
-    ```
-    */
-    #[inline]
-    #[must_use]
-    fn default() -> Self {
-        Angle::from(0.0)
     }
 }
 
@@ -163,6 +155,8 @@ impl From<f64> for Angle {
 }
 
 impl Rotate<Cartesian<2>> for Angle {
+    type Matrix = RotationMatrix<2>;
+
     #[inline]
     /** Rotate a [`Cartesian<2>`] in the plane by an [`Angle`]
 
@@ -247,7 +241,7 @@ impl fmt::Display for Angle {
     }
 }
 
-impl Distribution<Angle> for Standard {
+impl Distribution<Angle> for StandardUniform {
     /** Sample a random angle from the uniform distribution over all rotations.
 
     # Example
@@ -258,14 +252,18 @@ impl Distribution<Angle> for Standard {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = StdRng::seed_from_u64(1);
-    let v: Angle = rng.gen();
+    let v: Angle = rng.random();
     # Ok(())
     # }
     ```
     */
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Angle {
-        let uniform = Uniform::new(0.0, 2.0 * PI);
+        #[expect(
+            clippy::expect_used,
+            reason = "This constants chosen for this distribution are valid"
+        )]
+        let uniform = Uniform::new(0.0, 2.0 * PI).expect("hard-coded distribution should be valid");
         Angle::from(uniform.sample(rng))
     }
 }
@@ -306,7 +304,7 @@ mod approx {
 mod tests {
     use super::*;
     use ::approx::assert_relative_eq;
-    use rand::{rngs::StdRng, SeedableRng};
+    use rand::{SeedableRng, rngs::StdRng};
     use rstest::*;
     use std::f64::consts::PI;
 
@@ -325,7 +323,7 @@ mod tests {
 
         assert_relative_eq!(angle.rotate(&vec), ans, epsilon = 4.0 * f64::EPSILON);
         assert_relative_eq!(
-            angle.to_rotation_matrix().rotate(&vec),
+            RotationMatrix::from(angle).rotate(&vec),
             ans,
             epsilon = 4.0 * f64::EPSILON
         );
@@ -399,7 +397,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(1);
 
         for _ in 0..10000 {
-            let a: Angle = rng.gen();
+            let a: Angle = rng.random();
             assert!(a.theta >= 0.0 && a.theta < 2.0 * PI);
         }
     }

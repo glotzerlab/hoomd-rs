@@ -2,17 +2,17 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement canonical vector types.
-*/
+ */
 
 use std::array;
 use std::fmt;
-use std::iter::zip;
+use std::iter::{Sum, zip};
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
 
-use rand::distributions::{Distribution, Standard, Uniform};
 use rand::Rng;
+use rand::distr::{Distribution, StandardUniform, Uniform};
 
 use crate::{Cross, Error, Rotate, Unit, Vector};
 
@@ -21,6 +21,14 @@ use crate::{Cross, Error, Rotate, Unit, Vector};
 [`Cartesian`] is the canonical implementation of [`Vector`].
 
 ## Constructing vectors
+
+The default is the 0 vector:
+```
+use hoomd_vector::Cartesian;
+
+let v = Cartesian::<3>::default();
+assert_eq!(v, [0.0; 3].into())
+```
 
 Create a vector with an array of coordinates:
 ```
@@ -45,7 +53,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut rng = StdRng::seed_from_u64(1);
-let v: Cartesian::<3> = rng.gen();
+let v: Cartesian::<3> = rng.random();
 # Ok(())
 # }
 ```
@@ -68,6 +76,15 @@ use hoomd_vector::Cartesian;
 let a = Cartesian::from((1.0, 2.0));
 let b = Cartesian::from((a[1], 0.0));
 ```
+
+Compute the sum of an iterator over vectors:
+```
+use hoomd_vector::Cartesian;
+
+let total: Cartesian<2> = [Cartesian::from((1.0, 2.0)), Cartesian::from((3.0, 4.0))]
+    .into_iter()
+    .sum();
+```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Cartesian<const N: usize> {
@@ -87,7 +104,6 @@ impl<const N: usize> Default for Cartesian<N> {
     ```
     */
     #[inline]
-    #[must_use]
     fn default() -> Self {
         Cartesian::from([0.0; N])
     }
@@ -208,7 +224,7 @@ impl<const N: usize> TryFrom<[f64; N]> for Unit<Cartesian<N>> {
     */
     #[inline]
     fn try_from(value: [f64; N]) -> Result<Self, Self::Error> {
-        Cartesian::from(value).to_unit()
+        Cartesian::from(value).to_unit().map(|t| t.0)
     }
 }
 
@@ -352,7 +368,7 @@ impl Cross for Cartesian<3> {
     }
 }
 
-impl<const N: usize> Distribution<Cartesian<N>> for Standard {
+impl<const N: usize> Distribution<Cartesian<N>> for StandardUniform {
     /** Sample a Cartesian vector from the uniform [-1, 1] hypercube.
 
     Each coordinate in the vector is in the closed range [-1, 1].
@@ -365,14 +381,19 @@ impl<const N: usize> Distribution<Cartesian<N>> for Standard {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = StdRng::seed_from_u64(1);
-    let v: Cartesian::<3> = rng.gen();
+    let v: Cartesian::<3> = rng.random();
     # Ok(())
     # }
     ```
     */
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
-        let uniform = Uniform::new_inclusive(-1.0, 1.0);
+        #[expect(
+            clippy::expect_used,
+            reason = "This constants chosen for this distribution are valid"
+        )]
+        let uniform = Uniform::new_inclusive(-1.0, 1.0)
+            .expect("hard-coded range should form a valid distribution");
         Cartesian {
             coordinates: array::from_fn(|_| uniform.sample(rng)),
         }
@@ -428,13 +449,23 @@ where
     }
 }
 
+impl<const N: usize> Sum for Cartesian<N> {
+    #[inline]
+    fn sum<I>(iter: I) -> Self
+    where
+        I: Iterator<Item = Self>,
+    {
+        iter.fold(Cartesian::default(), |acc, x| acc + x)
+    }
+}
+
 /** Rotate vectors efficiently.
 
 Construct a [`RotationMatrix`] to efficiently rotate many vectors by the same rotation.
 
 See:
-* [`Angle::to_rotation_matrix()`](crate::Angle::to_rotation_matrix)
-* [`Versor::to_rotation_matrix()`](crate::Versor::to_rotation_matrix)
+* [`RotationMatrix::from<Angle>`]
+* [`RotationMatrix::from<Versor>`]
 
 [`RotationMatrix`] _intentionally_ does not implement [`Rotation`](crate::Rotation).
 [`Angle`](crate::Angle) and [`Versor`](crate::Versor) are representations of
@@ -448,31 +479,33 @@ pub struct RotationMatrix<const N: usize> {
 }
 
 impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
+    type Matrix = RotationMatrix<N>;
+
     #[inline]
     /** Rotate a [`Cartesian<N>`] by a [`RotationMatrix`]
 
     # Examples
     ```
-    use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
+    use hoomd_vector::{Angle, Rotate, RotationMatrix, Cartesian};
     use std::f64::consts::PI;
 
     let v = Cartesian::from([-1.0, 0.0]);
     let a = Angle::from(PI/2.0);
 
-    let matrix = a.to_rotation_matrix();
+    let matrix = RotationMatrix::from(a);
     let rotated = matrix.rotate(&v);
     // rotated is approximately [0.0, -1.0]
     ```
 
     ```
-    use hoomd_vector::{Versor, Rotate, Rotation, Cartesian};
+    use hoomd_vector::{Versor, Rotate, RotationMatrix, Cartesian};
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
     let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
 
-    let matrix = v.to_rotation_matrix();
+    let matrix = RotationMatrix::from(v);
     let b = matrix.rotate(&a);
     // b is approximately [0.0, -1.0, 0.0]
     # Ok(())
@@ -529,7 +562,7 @@ mod approx {
 mod tests {
     use super::*;
     use paste::paste;
-    use rand::{rngs::StdRng, SeedableRng};
+    use rand::{SeedableRng, rngs::StdRng};
 
     // Parameterize a test function over an array of vector lengths
     macro_rules! parameterize_vector_length {
@@ -810,7 +843,7 @@ mod tests {
     fn random_in_range<const N: usize>() {
         // Loosely verify we are drawing from the correct distribution
         let mut rng = StdRng::seed_from_u64(1);
-        let a: Cartesian<N> = rng.gen();
+        let a: Cartesian<N> = rng.random();
 
         assert!(a.coordinates.iter().all(|&x| -1.0 < x && x < 1.0));
 
@@ -825,32 +858,45 @@ mod tests {
     #[test]
     fn to_unit() {
         let a = Cartesian::from((2.0, 0.0, 0.0));
-        let Unit(unit_a) = a.to_unit().expect("non-zero vector");
+        let (Unit(unit_a), _) = a
+            .to_unit()
+            .expect("hard-coded vector should have non-zero length");
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
-        let Unit(unit_a) = a.to_unit_unchecked();
+        let (Unit(unit_a), _) = a.to_unit_unchecked();
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
-        let Unit(unit_a) =
-            Unit::<Cartesian<3>>::try_from([1.0, 0.0, 0.0]).expect("non-zero vector");
+        let Unit(unit_a) = Unit::<Cartesian<3>>::try_from([1.0, 0.0, 0.0])
+            .expect("hard-coded vector should have non-zero length");
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
         let a = Cartesian::from((3.0, 0.0, 4.0));
-        let Unit(unit_a) = a.to_unit().expect("non-zero vector");
+        let (Unit(unit_a), _) = a
+            .to_unit()
+            .expect("hard-coded vector should have non-zero length");
         assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
-        let Unit(unit_a) = a.to_unit_unchecked();
+        let (Unit(unit_a), _) = a.to_unit_unchecked();
         assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
-        let Unit(unit_a) =
-            Unit::<Cartesian<3>>::try_from([3.0, 0.0, 4.0]).expect("non-zero vector");
+        let Unit(unit_a) = Unit::<Cartesian<3>>::try_from([3.0, 0.0, 4.0])
+            .expect("hard-coded vector should have non-zero length");
         assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
         let a = Cartesian::from((0.0, 0.0, 0.0));
-        assert!(matches!(a.to_unit(), Err(Error::InvalidMagnitude)));
+        assert!(matches!(a.to_unit(), Err(Error::InvalidVectorMagnitude)));
         assert!(matches!(
             Unit::<Cartesian<3>>::try_from([0.0, 0.0, 0.0]),
-            Err(Error::InvalidMagnitude)
+            Err(Error::InvalidVectorMagnitude)
         ));
+    }
+
+    #[test]
+    fn sum() {
+        let total: Cartesian<2> = [Cartesian::from((1.0, 2.0)), Cartesian::from((-2.0, -1.0))]
+            .into_iter()
+            .sum();
+
+        assert_eq!(total, [-1.0, 1.0].into());
     }
 }

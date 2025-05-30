@@ -143,8 +143,9 @@ rotation. [`RotationMatrix::rotate`] is typically several times faster than
 
 `hoomd_vector` interoperators with [`rand`] to generate random vectors and rotations.
 
-The [`Standard`](rand::distributions::Standard) distribution samples rotations
-uniformly from the set of all rotations and vectors from the `[-1,1]` hypercube.
+The [`StandardUniform`](rand::distr::StandardUniform) distribution
+samples rotations uniformly from the set of all rotations and vectors from the
+`[-1,1]` hypercube.
 
 
 ```
@@ -153,9 +154,9 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut rng = StdRng::seed_from_u64(1);
-let angle: Angle = rng.gen();
-let vector: Cartesian::<3> = rng.gen();
-let versor: Versor = rng.gen();
+let angle: Angle = rng.random();
+let vector: Cartesian::<3> = rng.random();
+let versor: Versor = rng.random();
 # Ok(())
 # }
 ```
@@ -163,6 +164,7 @@ let versor: Versor = rng.gen();
 
 mod angle;
 mod cartesian;
+pub mod distribution;
 mod quaternion;
 
 pub use {
@@ -179,12 +181,16 @@ use thiserror::Error;
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
     /// Attempted converting a value to a vector with a dimension not equal to the value's length.
-    #[error("Source does not match the target vector length.")]
+    #[error("source length does not match the target dimensions")]
     InvalidVectorLength,
 
-    /// Attempted normalizing a vector or quaternion with an invalid magnitude.
-    #[error("Invalid magnitude for normalization.")]
-    InvalidMagnitude,
+    /// Attempted to normalize a vector with an invalid magnitude.
+    #[error("cannot normalize the 0 vector")]
+    InvalidVectorMagnitude,
+
+    /// Attempted to normalize a quaternion with an invalid magnitude.
+    #[error("cannot normalize the 0 quaternion")]
+    InvalidQuaternionMagnitude,
 }
 
 /** Operate on elements of a normed vector space.
@@ -328,12 +334,13 @@ pub trait Vector:
     + MulAssign<f64>
     + Sub<Self, Output = Self>
     + SubAssign
-    + Neg
+    + Neg<Output = Self>
 {
     /** Compute the squared norm of the vector.
 
-    <!-- \left| \vec{v} \right|^2 -->
-    <math display="block" class="tml-display" style="display:block math;"><msup><mrow><mo fence="true" form="prefix">|</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo fence="true" form="postfix">|</mo></mrow><mn>2</mn></msup></math>
+    ```math
+    \left| \vec{v} \right|^2
+    ```
 
     # Example
     ```
@@ -354,8 +361,9 @@ pub trait Vector:
 
     /** Compute the norm of the vector.
 
-    <!-- \left| \vec{v} \right| -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mo fence="true" form="prefix">|</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo fence="true" form="postfix">|</mo></mrow></math>
+    ```math
+    \left| \vec{v} \right|
+    ```
 
     <div class="warning">
 
@@ -383,8 +391,9 @@ pub trait Vector:
 
     /** Compute the vector dot product between two vectors.
 
-    <!-- c = \vec{a} \cdot \vec{b} -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>c</mi><mo>=</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>⋅</mo><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover></mrow></math>
+    ```math
+    c = \vec{a} \cdot \vec{b}
+    ```
 
     # Example
     ```
@@ -403,8 +412,10 @@ pub trait Vector:
 
     /** Create a vector of unit length pointing in the same direction as the given vector.
 
-    <!--\frac{\vec{v}}{|\vec{v}|} -->
-    <math display="block" class="tml-display" style="display:block math;"><mfrac><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>|</mi><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mi>|</mi></mrow></mfrac></math>
+    Returns a tuple containing unit vector along with the original vector's norm:
+    ```math
+    \frac{\vec{v}}{|\vec{v}|}
+    ```
 
     # Example
 
@@ -413,30 +424,33 @@ pub trait Vector:
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([3.0, 4.0]);
-    let unit = a.to_unit()?;
+    let (unit, norm) = a.to_unit()?;
     assert_eq!(*unit.get(), [3.0/5.0, 4.0/5.0].into());
+    assert_eq!(norm, 5.0);
     # Ok(())
     # }
     ```
 
     # Errors
 
-    [`Error::InvalidMagnitude`] when `self` is the 0 vector.
+    [`Error::InvalidVectorMagnitude`] when `self` is the 0 vector.
     */
     #[inline]
-    fn to_unit(self) -> Result<Unit<Self>, Error> {
-        let mag = self.norm();
-        if mag == 0.0 {
-            Err(Error::InvalidMagnitude)
+    fn to_unit(self) -> Result<(Unit<Self>, f64), Error> {
+        let norm = self.norm();
+        if norm == 0.0 {
+            Err(Error::InvalidVectorMagnitude)
         } else {
-            Ok(Unit(self / mag))
+            Ok((Unit(self / norm), norm))
         }
     }
 
     /** Create a vector of unit length pointing in the same direction as the given vector.
 
-    <!--\frac{\vec{v}}{|\vec{v}|} -->
-    <math display="block" class="tml-display" style="display:block math;"><mfrac><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>|</mi><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mi>|</mi></mrow></mfrac></math>
+    Returns a tuple containing unit vector along with the original vector's norm:
+    ```math
+    \frac{\vec{v}}{|\vec{v}|}
+    ```
 
     # Example
 
@@ -445,8 +459,9 @@ pub trait Vector:
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([3.0, 4.0]);
-    let unit = a.to_unit_unchecked();
+    let (unit, norm) = a.to_unit_unchecked();
     assert_eq!(*unit.get(), [3.0/5.0, 4.0/5.0].into());
+    assert_eq!(norm, 5.0);
     # Ok(())
     # }
     ```
@@ -456,14 +471,15 @@ pub trait Vector:
     Divide by 0 when `self` is the 0 vector.
     */
     #[inline]
-    fn to_unit_unchecked(self) -> Unit<Self> {
-        Unit(self / self.norm())
+    fn to_unit_unchecked(self) -> (Unit<Self>, f64) {
+        let norm = self.norm();
+        (Unit(self / norm), norm)
     }
 }
 
 /// A [`Vector`] with magnitude 1.0.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Unit<V: Vector>(V);
+pub struct Unit<V>(V);
 
 impl<V: Vector> Unit<V> {
     /// Get the unit vector.
@@ -474,13 +490,14 @@ impl<V: Vector> Unit<V> {
 }
 
 /** A vector space where the cross product is defined.
-*/
+ */
 pub trait Cross {
     /** Perform the cross product.
     Compute the cross product (right-handed) of two vectors:
 
-    <!-- \vec{c} = \vec{a} \cross \vec{b} -->
-    <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>c</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mspace width="0.2222em"></mspace><mo lspace="0em" rspace="0em" style="font-weight:bold;">×</mo><mspace width="0.2222em"></mspace></mrow><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover></mrow><annotation encoding="application/x-tex">\vec{c} = \vec{a} \cross \vec{b}</annotation></semantics></math>
+    ```math
+    \vec{c} = \vec{a} × \vec{b}
+    ```
 
     # Example
     ```
@@ -506,10 +523,14 @@ same magnitude, but possibly a different direction.
 Types that implement [`Rotate`] may or _may not_ implement [`Rotation`].
 */
 pub trait Rotate<V: Vector> {
+    /// Type of the related rotation matrix
+    type Matrix: Rotate<V>;
+
     /** Rotate a vector.
 
-    <!-- \vec{b} = R(\vec{a}) -->
-    <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><mi>R</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\vec{b} = R(\vec{a})</annotation></semantics></math>
+    ```math
+    \vec{b} = R(\vec{a})
+    ```
 
     # Example
     ```
@@ -530,22 +551,25 @@ pub trait Rotate<V: Vector> {
 A [`Rotation`] represents a single rotation operation. Rotations change the direction of a vector
 while keeping its magnitude constant. To maintain generality, this documentation shows rotations
 mathematically as _functions_:
-<!-- \vec{b} = R(\vec{a}) -->
-<math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><mi>R</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\vec{b} = R(\vec{a})</annotation></semantics></math>
+```math
+\vec{b} = R(\vec{a})
+```
 
 All types that implement [`Rotation`] _should_ implement [`Rotate`] for at least one vector type.
 */
 pub trait Rotation {
     /** The identity rotation.
-    <!-- \vec{a} = I(\vec{a}) -->
-    <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><mi>I</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\vec{a} = I(\vec{a})</annotation></semantics></math>
+    ```math
+    \vec{a} = I(\vec{a})
+    ```
     */
     #[must_use]
     fn identity() -> Self;
 
     /** Inverse the rotation.
-    <!-- \vec{a} = R^{-1}(R(\vec{a})) -->
-    <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><msup><mi>R</mi><mrow><mo lspace="0em" rspace="0em">−</mo><mn>1</mn></mrow></msup><mo form="prefix" stretchy="false">(</mo><mi>R</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\vec{a} = R^{-1}(R(\vec{a}))</annotation></semantics></math>
+    ```math
+    \vec{a} = R^{-1}(R(\vec{a}))
+    ```
 
     # Example
     ```
@@ -558,14 +582,14 @@ pub trait Rotation {
     #[must_use]
     fn inverted(self) -> Self;
 
-    #[allow(clippy::doc_markdown)]
     /** Combine two rotations.
 
     The resulting rotation `R_ab` will rotate by **first** `R_b` _followed by_ a
     rotation of `R_a`.
 
-    <!-- R_{ab}(\vec{v})= R_a(R_b(\vec{v})) -->
-    <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><msub><mi>R</mi><mrow><mi>a</mi><mi>b</mi></mrow></msub><mo form="prefix" stretchy="false">(</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo><mo>=</mo><msub><mi>R</mi><mi>a</mi></msub><mo form="prefix" stretchy="false">(</mo><msub><mi>R</mi><mi>b</mi></msub><mo form="prefix" stretchy="false">(</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">R_{ab}(\vec{v})= R_a(R_b(\vec{v}))</annotation></semantics></math>
+    ```math
+    R_{ab}(\vec{v})= R_a(R_b(\vec{v}))
+    ```
 
     # Example
     ```

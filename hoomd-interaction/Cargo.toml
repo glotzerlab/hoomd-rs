@@ -1,0 +1,33 @@
+[package]
+name = "hoomd-interaction"
+categories.workspace = true
+description = "Evaluate interactions on particles."
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+readme = "hoomd-interaction/README.md"
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+hoomd-microstate.workspace = true
+hoomd-vector.workspace = true
+
+[dev-dependencies]
+approx.workspace = true
+divan.workspace = true
+rstest.workspace = true
+rand.workspace = true
+
+[[bench]]
+name = "lennard-jones"
+harness = false
+
+[[bench]]
+name = "angular-mask"
+harness = false

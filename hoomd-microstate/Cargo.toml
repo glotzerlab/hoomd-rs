@@ -1,0 +1,27 @@
+[package]
+name = "hoomd-microstate"
+categories.workspace = true
+description = "Store and manage a system microstate."
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+readme = "hoomd-microstate/README.md"
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+hoomd-vector.workspace = true
+hoomd-utility.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+rand.workspace = true
+divan.workspace = true
+rstest.workspace = true
+approx.workspace = true
+anyhow.workspace = true
