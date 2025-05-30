@@ -14,9 +14,9 @@ normal `[0 0 1]` swept by `h/2` in the `+z` and `-z` directions.*/
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Cylinder {
     /// Radius of the [`Cylinder`]
-    r: f64,
+    pub r: f64,
     /// Height of the [`Cylinder`]
-    h: f64,
+    pub h: f64,
 }
 
 impl Volume for Cylinder {

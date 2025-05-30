@@ -7,7 +7,10 @@ use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume, xenocoll
 
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
 
-use super::{Hypersphere, sphere::factorial};
+use super::{
+    Hypersphere,
+    sphere::{factorial, sphere_volume_prefactor},
+};
 use std::f64::consts::PI;
 
 /// An N-Dimensional [`Hyperellipsoid`] defined by its semi-major axes.
@@ -113,13 +116,9 @@ impl<const N: usize> BoundingSphereRadius for Hyperellipsoid<N> {
 impl<const N: usize> Volume for Hyperellipsoid<N> {
     #[inline]
     fn volume(&self) -> f64 {
-        let dim_factor = (if N.rem_euclid(2) == 0 { N } else { N - 1 } / 2) as f64;
-        let prefactor = if N.rem_euclid(2) == 0 {
-            PI.powf(dim_factor) / (factorial(N / 2, 1) as f64)
-        } else {
-            2.0 * (2.0 * PI).powf(dim_factor) / (factorial(N, 2) as f64)
-        };
-        self.axes.into_iter().fold(prefactor, |prod, x| prod * x)
+        self.axes
+            .into_iter()
+            .fold(sphere_volume_prefactor(N), |prod, x| prod * x)
     }
 }
 

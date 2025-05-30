@@ -7,6 +7,8 @@ use crate::{BoundingSphereRadius, Hypersphere, SupportMapping, Volume};
 
 use hoomd_vector::{Cartesian, Vector};
 
+use super::sphere::sphere_volume_prefactor;
+
 /** All points less than or equal to a distance `r` along a line of length `h`.
 This line is oriented along the `[0 0 ... 1]` direction, and has extents `+h/2`, `-h/2`
 along that axis.
@@ -49,26 +51,56 @@ impl<const N: usize> BoundingSphereRadius for Capsule<N> {
     }
 }
 
-// impl<const N: usize> Volume for Capsule<N> {
-//     #[inline]
-//     fn volume(&self) -> f64 {
-//         Hypersphere::<{ N - 1 }> { r: self.r }.volume() * self.h
-//             + Hypersphere::<N> { r: self.r }.volume()
-//     }
-// }
+impl<const N: usize> Volume for Capsule<N> {
+    #[inline]
+    fn volume(&self) -> f64 {
+        if N == 0 {
+            return 0.0;
+        }
+        let r_n_minus_one = self.r.powi(
+            (N - 1)
+                .try_into()
+                .expect("Dimension {N}-1 would overflow i32!"),
+        );
+        let cylinder_volume = sphere_volume_prefactor(N - 1) * r_n_minus_one * self.h;
+        cylinder_volume + sphere_volume_prefactor(N) * (r_n_minus_one * self.r)
+    }
+}
 
 #[cfg(test)]
 mod tests {
 
-    use crate::shape::Sphere;
+    use crate::shape::Cylinder;
 
     use super::*;
-    use approx::assert_relative_eq;
     use rstest::*;
     use std::marker::PhantomData;
 
-    // #[rstest]
-    // fn test_capsule_volume(#[values(0.0, 0.1, 1.0, 99.9)] r: f64) {
-    //     assert_eq!(Capsule::<3> { r, h: 0.0 }.volume(), Sphere { r }.volume())
-    // }
+    #[rstest(
+        _n => [
+            PhantomData::<Capsule<1>>,
+            PhantomData::<Capsule<2>>,
+            PhantomData::<Capsule<3>>,
+            PhantomData::<Capsule<4>>,
+            PhantomData::<Capsule<5>>
+        ],
+        r => [0.0, 1e-6, 1.0, 34.56],
+    )]
+    fn test_capsule_volume<const N: usize>(_n: PhantomData<Capsule<N>>, r: f64) {
+        assert_eq!(
+            Capsule::<N> { r, h: 0.0 }.volume(),
+            Hypersphere::<N> { r }.volume()
+        );
+    }
+    #[rstest(
+        r => [0.0, 1e-6, 1.0, 34.56],
+        h => [0.0, 1e-6, 1.0, 34.56],
+    )]
+    fn test_elongated_capsule_volume(r: f64, h: f64) {
+        let cap = Capsule::<3> { r, h };
+        assert_eq!(
+            cap.volume(),
+            Hypersphere::<3> { r }.volume() + Cylinder { r, h: cap.h }.volume()
+        );
+    }
 }

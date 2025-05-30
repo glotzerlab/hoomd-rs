@@ -4,10 +4,8 @@
 /*!
 Methods and implementations for an N-hypersphere, where N is the dimension.
 */
-use crate::{
-    BoundingSphereRadius, IntersectsAt, MinDistance, SupportMapping, Volume, xenocollide::collide3d,
-};
-use hoomd_vector::{Cartesian, Rotate, Vector};
+use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
+use hoomd_vector::{Rotate, Vector};
 use std::f64::consts::PI;
 
 /// The (single, double, ...)-factorial function
@@ -21,6 +19,16 @@ pub(crate) fn factorial(n: usize, ntuple: usize) -> usize {
             .step_by(ntuple)
             .reduce(|acc, x| acc * x)
             .unwrap_or_default() // inaccessible: 1..=(n!=0) is never empty
+    }
+}
+
+/// Compute the volume prefactor for the volume of a rounded shape
+pub(crate) fn sphere_volume_prefactor(n: usize) -> f64 {
+    let dim_factor = (if n.rem_euclid(2) == 0 { n } else { n - 1 } / 2) as f64;
+    if n.rem_euclid(2) == 0 {
+        PI.powf(dim_factor) / (factorial(n / 2, 1) as f64)
+    } else {
+        2.0 * (2.0 * PI).powf(dim_factor) / (factorial(n, 2) as f64)
     }
 }
 
@@ -64,13 +72,9 @@ impl<const N: usize, V: Vector> SupportMapping<V> for Hypersphere<N> {
 impl<const N: usize> Volume for Hypersphere<N> {
     #[inline]
     fn volume(&self) -> f64 {
-        let dim_factor = (if N.rem_euclid(2) == 0 { N } else { N - 1 } / 2) as f64;
-        let prefactor = if N.rem_euclid(2) == 0 {
-            PI.powf(dim_factor) / (factorial(N / 2, 1) as f64)
-        } else {
-            2.0 * (2.0 * PI).powf(dim_factor) / (factorial(N, 2) as f64)
-        };
-        prefactor
+        println!("prefactor_sphere {}", sphere_volume_prefactor(N));
+        println!("N in sphere: {N}");
+        sphere_volume_prefactor(N)
             * self
                 .r
                 .powi(N.try_into().expect("Dimension would overflow i32!"))
