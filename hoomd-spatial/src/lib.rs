@@ -11,37 +11,40 @@
  */
 
 use hoomd_vector::Cartesian;
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Iter};
 
-/** For ghost particles
+/** This enum represents the flags for particles in the cell list.
+It is used to distinguish between real particles and ghost particles.
+This is useful for simulations where ghost particles are used to handle periodic boundary conditions or other special cases.
 **/
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+// TODO: use enums for particle flags
 pub enum ParticleFlag {
-    // Real particles
+    /// Real particles
     Real = 0,
-    // Ghost particles
+    /// Ghost particles - usually used for periodic boundary conditions or other special cases.
     Ghost = 1,
 }
 
 /** Cell list docs. */
-pub struct CellList<const N: usize> {
+pub struct CellList<const D: usize> {
     /// The width of each cell.
     pub cell_width: f64,
     /// A map from cell indices to particle indices.
-    pub cell_idx_to_particle_indices: HashMap<[isize; N], Vec<usize>>,
+    pub particle_indices: HashMap<[i32; D], Vec<usize>>,
     /// A map from particle indices to cell indices.
-    pub particle_idx_to_cell_index: HashMap<usize, [isize; N]>,
-    /// The maximum particle index.
-    pub particle_max_index: usize,
+    pub cell_index: HashMap<usize, [i32; D]>,
 }
-
-impl<const N: usize> CellList<N> {
+//TODO think about providing shrink_to_fit() method to reduce memory usage after many
+//insertions and deletions and we are left with many empty cells.
+impl<const D: usize> CellList<D> {
     /** A helper function which converts given positions to cell indices.
+    // To generalize this we will have to make it a Trait function
      */
     #[inline]
-    fn cell_index_from_position(cell_width: f64, position: &Cartesian<N>) -> [isize; N] {
-        std::array::from_fn(|j| (position.coordinates[j] / cell_width).floor() as isize)
+    fn cell_index_from_position(cell_width: f64, position: &Cartesian<D>) -> [i32; D] {
+        std::array::from_fn(|j| (position.coordinates[j] / cell_width).floor() as i32) // TODO: instead We can have tryinto() here with expect. would need to test performance.
     }
 
     /** Create a new cell list from the given cell width and positions.
@@ -58,25 +61,51 @@ impl<const N: usize> CellList<N> {
         Cartesian { coordinates: [0.8, 1.3] },
         Cartesian { coordinates: [8.5, 9.5] },
     ];
+    let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
+    // Define the cell width.
     let cell_width = 1.0;
     // Build the cell list from positions.
-    let cell_list = CellList::<2>::new(cell_width, &positions);
+    let cell_list = CellList::<2>::new(cell_width, &positions, &indices);
     ```
     */
     #[inline]
-    pub fn new(cell_width: f64, positions: &Vec<Cartesian<N>>) -> Self {
+    #[must_use]
+    // TODO: Take a look into builder API and make positions optional. Keep new as is,
+    // and make a default without positions.
+    pub fn new(cell_width: f64, positions: &[Cartesian<D>], indices: &[usize]) -> Self {
         let mut instance = Self {
             cell_width,
-            cell_idx_to_particle_indices: HashMap::new(),
-            particle_idx_to_cell_index: HashMap::new(),
-            particle_max_index: 0,
+            particle_indices: HashMap::new(),
+            cell_index: HashMap::new(),
         };
 
-        for position in positions {
-            instance.add_particle(position);
+        for (position, index) in positions.iter().zip(indices.iter()) {
+            instance.insert(position, index);
         }
 
         instance
+    }
+
+    /** Create an empty cell list with the given cell width.
+    This is useful for initializing a cell list
+    that will be populated later.
+     
+    # Example
+    ```
+    use hoomd_spatial::CellList;
+    // Create an empty 2D cell list with a cell width of 1.0.
+    let cell_width = 1.0;
+    let cell_list = CellList::<2>::empty(cell_width);
+    ```
+    */
+    #[inline]
+    #[must_use]
+    pub fn empty(cell_width: f64) -> Self {
+        Self {
+            cell_width,
+            particle_indices: HashMap::new(),
+            cell_index: HashMap::new(),
+        }
     }
 
     /** Returns a cell index (in form of a tuple) for a given particle index.
@@ -93,21 +122,25 @@ impl<const N: usize> CellList<N> {
         Cartesian { coordinates: [0.8, 1.3] },
         Cartesian { coordinates: [8.5, 9.5] },
     ];
+    // Indices of particles corresponding to positions.
+    let indices = vec![0, 1, 2];
+    // Define the cell width.
     let cell_width = 1.0;
     // Build the cell list from positions.
-    let cell_list = CellList::<2>::new(cell_width, &positions);
+    let cell_list = CellList::<2>::new(cell_width, &positions, &indices);
 
     // Get the cell index for the first particle.
-    let cell_index = cell_list.cell_index_from_particle_index(0).unwrap();
+    let cell_index = cell_list.cell_index(0).unwrap();
     ```
      */
     #[inline]
     #[must_use]
-    pub fn cell_index_from_particle_index(&self, particle_index: usize) -> Option<&[isize; N]> {
-        self.particle_idx_to_cell_index.get(&particle_index)
+    pub fn cell_index(&self, particle_index: usize) -> Option<&[i32; D]> {
+        self.cell_index.get(&particle_index)
     }
 
-    /** Add particle to the cell list.
+    /** Add particle to the cell list. If the particle is already in the cell list,
+    it will update its position in the cell list.
 
     # Example
 
@@ -121,26 +154,40 @@ impl<const N: usize> CellList<N> {
         Cartesian { coordinates: [0.8, 1.3] },
         Cartesian { coordinates: [8.5, 9.5] },
     ];
+    // Particle indices corresponding to positions.
+    let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
+    // Define the cell width.
     let cell_width = 1.0;
     // Build the cell list from positions.
-    let mut cell_list = CellList::<2>::new(cell_width, &positions);
+    let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
 
     // Add a new particle to the cell list.
     let new_position = Cartesian { coordinates: [1.2, 1.3] };
-    cell_list.add_particle(&new_position);
+    cell_list.insert(&new_position, 3);
     ```
     */
     #[inline]
-    pub fn add_particle(&mut self, position: &Cartesian<N>) {
-        let particle_index = self.particle_max_index;
+    pub fn insert(&mut self, position: &Cartesian<D>, index: &usize) {
         let cell_idx = Self::cell_index_from_position(self.cell_width, position);
-        self.cell_idx_to_particle_indices
-            .entry(cell_idx)
-            .or_insert(Vec::new())
-            .push(particle_index);
-        self.particle_idx_to_cell_index
-            .insert(particle_index, cell_idx);
-        self.particle_max_index += 1;
+        let old_cell_index = self.cell_index.insert(*index, cell_idx);
+        // This checks if old_cell_index is None or if it is different from the new cell index.
+        if old_cell_index != Some(cell_idx) {
+            // Add the particle index to the new cell index vector.
+            self.particle_indices
+                .entry(cell_idx)
+                .or_default()
+                .push(*index);
+            if let Some(old_cell_index) = old_cell_index {
+                // If the particle was in a different cell, we need to remove it from the old cell.
+                self.particle_indices
+                    .entry(old_cell_index)
+                    .and_modify(|particle_indices| {
+                        if let Some(pos) = particle_indices.iter().position(|&x| x == *index) {
+                            particle_indices.swap_remove(pos);
+                        }
+                    });
+            }
+        }
     }
 
     /** Remove particle from the cell list.
@@ -159,34 +206,34 @@ impl<const N: usize> CellList<N> {
         Cartesian { coordinates: [0.8, 1.3] },
         Cartesian { coordinates: [8.5, 9.5] },
     ];
+    // Particle indices corresponding to positions.
+    let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
+    // Define the cell width.
     let cell_width = 1.0;
     // Build the cell list from positions.
-    let mut cell_list = CellList::<2>::new(cell_width, &positions);
+    let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
 
     // Remove the first particle from the cell list.
-    cell_list.remove_particle(0);
+    cell_list.remove(0);
     ```
-
-    # Panics
-
-    This function will panic if the particle index is not found in the cell list.
     */
     #[inline]
-    pub fn remove_particle(&mut self, particle_index: usize) {
-        //  unwrap will panic if particle index is not present
-        // TODO think about using entry_and_modify to make this code cleaner
-        if let Some(cell_idx) = self.particle_idx_to_cell_index.remove(&particle_index) {
-            let particle_indices = self
-                .cell_idx_to_particle_indices
-                .get_mut(&cell_idx)
-                .expect("Cell index found in the cell list.");
-            let index = particle_indices
-                .iter()
-                .position(|&x| x == particle_index)
-                .expect("Particle index is in the cell list.");
-            particle_indices.swap_remove(index);
-        } else {
-            panic!("Particle index not found in cell list");
+    pub fn remove(&mut self, particle_index: usize) {
+        let cell_idx = self.cell_index.remove(&particle_index);
+        if let Some(cell_idx) = cell_idx {
+            // If the particle was found in the cell list, remove it from the particle indices.
+            self.particle_indices
+                .entry(cell_idx)
+                .and_modify(|particle_indices| {
+                    // Find the index of removed particle in the vector of particle indices.
+                    if let Some(idx) = particle_indices
+                        .iter()
+                        .position(|&x| x == particle_index)
+                    {
+                        // Remove the particle index from the vector.
+                        particle_indices.swap_remove(idx);
+                    }
+                });
         }
     }
 
@@ -212,40 +259,15 @@ impl<const N: usize> CellList<N> {
     let new_position = Cartesian { coordinates: [1.2, 1.3] };
     cell_list.translate_particle(0, new_position);
     ```
-
-    # Panics
-
-    This function will panic if the particle index is not found in the cell list.
     */
     #[inline]
+    // TODO: Do I even need this function? It is the same as insert...
     pub fn translate_particle(
         &mut self,
         particle_index: usize,
-        new_particle_position: Cartesian<N>,
+        new_particle_position: Cartesian<D>,
     ) {
-        // TODO I have code repetition from add and remove particles, think about refactoring
-        let current_cell_idx = self
-            .particle_idx_to_cell_index
-            .get(&particle_index)
-            .expect("Particle index found in the cell list.");
-        let new_cell_idx = Self::cell_index_from_position(self.cell_width, &new_particle_position);
-        if *current_cell_idx != new_cell_idx {
-            let particle_indices = self
-                .cell_idx_to_particle_indices
-                .get_mut(current_cell_idx)
-                .expect("Cell index found in the cell list.");
-            let index = particle_indices
-                .iter()
-                .position(|&x| x == particle_index)
-                .expect("Particle index is in the cell list.");
-            particle_indices.swap_remove(index);
-            self.cell_idx_to_particle_indices
-                .entry(new_cell_idx)
-                .or_insert(Vec::new())
-                .push(particle_index);
-            self.particle_idx_to_cell_index
-                .insert(particle_index, new_cell_idx);
-        }
+        self.insert(&new_particle_position, &particle_index);
     }
 
     /** Find potential neighbor indices.
@@ -283,64 +305,72 @@ impl<const N: usize> CellList<N> {
     ```
      */
     #[inline]
+    // TODO: Return an iterator instead of a mutable vector argument.
+    // instead of recursion, loop over the number of iterations and use //
     pub fn find_potential_neighbor_indices(
         &self,
-        position: &Cartesian<N>,
-        cutoff_radius: &f64,
-        potential_neighbor_indices: &mut Vec<usize>,
-    ) {
-        // use logic similar to collect into
-        // return the result in neighbor indices -> probably first clear and then push
-        // Check if the neighbor_indices (output argument) goes first or last
-        // return potential index only - not actual neighbors.
-        let cell_idx = Self::cell_index_from_position(self.cell_width, position);
-        // clean neighbor_indices
-        potential_neighbor_indices.clear();
-        // calculate how many cell widths in ids need to be checked in each dimension,
-        // this is a single integer number
-        let max_cell_translations_to_check = (cutoff_radius / self.cell_width).ceil() as isize;
-        let max_offset = max_cell_translations_to_check - 1;
+        position: &Cartesian<D>,
+        cutoff_radius: &f64
+    ) -> Iter {
+        // implement later
+        // This function will find the potential neighbor indices for a given position
+        // and cutoff radius. It will return an iterator over the potential neighbor
+        // indices.
+        unimplemented!("find_potential_neighbor_indices is not yet implemented");
 
-        let mut cells_translations_to_check: Vec<[isize; N]> = Vec::new();
+        // old code
+      //  // Plan: use logic similar to collect into
+      //  // return the result in neighbor indices -> probably first clear and then push
+      //  // Check if the neighbor_indices (output argument) goes first or last
+      //  // return potential index only - not actual neighbors.
+      //  let cell_idx = Self::cell_index_from_position(self.cell_width, position);
+      //  // clean neighbor_indices
+      //  potential_neighbor_indices.clear();
+      //  // calculate how many cell widths in ids need to be checked in each dimension,
+      //  // this is a single integer number
+      //  let max_cell_translations_to_check = (cutoff_radius / self.cell_width).ceil() as i32;
+      //  let max_offset = max_cell_translations_to_check;
 
-        // Define a recursive helper function to generate all translation combinations.
-        // For each dimension, it iterates from -max_offset to max_offset.
-        fn generate_translations<const N: usize>(
-            dim: usize,
-            current: &mut Vec<isize>,
-            max_offset: isize,
-            translations: &mut Vec<[isize; N]>,
-        ) {
-            if dim == N {
-                // Convert the current vector to an array of length N.
-                let arr: [isize; N] = current.clone().try_into().expect("Incorrect length");
-                translations.push(arr);
-                return;
-            }
-            for offset in -max_offset..=max_offset {
-                current.push(offset);
-                generate_translations(dim + 1, current, max_offset, translations);
-                current.pop();
-            }
-        }
+      //  let mut cells_translations_to_check: Vec<[i32; D]> = Vec::new();
 
-        let mut current = Vec::new();
-        generate_translations::<N>(
-            0,
-            &mut current,
-            max_offset,
-            &mut cells_translations_to_check,
-        );
+      //  // Define a recursive helper function to generate all translation combinations.
+      //  // For each dimension, it iterates from -max_offset to max_offset.
+      //  // TODO figure out if there is a better way to do this. Is there an itertools
+      //  // like functionality in std library? cartesian product?
+      //  fn generate_translations<const D: usize>(
+      //      dim: usize,
+      //      current: &mut Vec<i32>,
+      //      max_offset: i32,
+      //      translations: &mut Vec<[i32; D]>,
+      //  ) {
+      //      if dim == D {
+      //          // Convert the current vector to an array of length D.
+      //          let arr: [i32; D] = current.clone().try_into().expect("Incorrect length");
+      //          translations.push(arr);
+      //          return;
+      //      }
+      //      for offset in -max_offset..=max_offset {
+      //          current.push(offset);
+      //          generate_translations(dim + 1, current, max_offset, translations);
+      //          current.pop();
+      //      }
+      //  }
 
-        // For each cell translation, compute the neighbor cell index and add any particle indices.
-        for cell_translation in cells_translations_to_check.iter() {
-            let neighbor_cell_idx = std::array::from_fn(|i| cell_idx[i] + cell_translation[i]);
-            if let Some(particle_indices) =
-                self.cell_idx_to_particle_indices.get(&neighbor_cell_idx)
-            {
-                potential_neighbor_indices.extend(particle_indices);
-            }
-        }
+      //  let mut current = Vec::new();
+      //  generate_translations::<D>(
+      //      0,
+      //      &mut current,
+      //      max_offset,
+      //      &mut cells_translations_to_check,
+      //  );
+
+      //  // For each cell translation, compute the neighbor cell index and add any particle indices.
+      //  for cell_translation in cells_translations_to_check.iter() {
+      //      let neighbor_cell_idx = std::array::from_fn(|i| cell_idx[i] + cell_translation[i]);
+      //      if let Some(particle_indices) = self.particle_indices.get(&neighbor_cell_idx) {
+      //          potential_neighbor_indices.extend(particle_indices);
+      //      }
+      //  }
     }
 }
 
@@ -354,24 +384,21 @@ mod tests {
         let positions = vec![Cartesian {
             coordinates: [0.2, 0.3],
         }];
-        let mut cell_list = CellList::<2>::new(cell_width, &positions);
+        let indices = vec![0]; // Particle index corresponding to the position.
+        let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
 
         let new_position = Cartesian {
             coordinates: [1.2, 1.3],
-        };
-        cell_list.add_particle(&new_position);
+        }; // cell index [1,1]
+        let new_index: usize = 1; // New particle index.
+        cell_list.insert(&new_position, &new_index);
 
-        let cell_idx_new = cell_list
-            .cell_index_from_particle_index(cell_list.particle_max_index - 1)
-            .unwrap();
+        let cell_idx_new = cell_list.cell_index(new_index).unwrap();
         let expected_cell_idx = CellList::<2>::cell_index_from_position(cell_width, &new_position);
         assert_eq!(*cell_idx_new, expected_cell_idx);
 
-        let idx_in_new_cell = cell_list
-            .cell_idx_to_particle_indices
-            .get(&expected_cell_idx)
-            .unwrap();
-        assert!(idx_in_new_cell.contains(&(cell_list.particle_max_index - 1)));
+        let idx_in_new_cell = cell_list.particle_indices.get(&expected_cell_idx).unwrap();
+        assert!(idx_in_new_cell.contains(&new_index));
     }
 
     #[test]
@@ -385,7 +412,8 @@ mod tests {
                 coordinates: [1.2, 0.3],
             }, // in cell [1,0]
         ];
-        let mut cell_list = CellList::<2>::new(cell_width, &positions);
+        let indices = vec![0, 1]; // Particle indices corresponding to positions.
+        let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
 
         // Translate first particle to a new position in a different cell.
         let new_position = Cartesian {
@@ -394,7 +422,7 @@ mod tests {
         cell_list.translate_particle(0, new_position);
 
         let expected_cell_idx = CellList::<2>::cell_index_from_position(cell_width, &new_position);
-        let cell_idx_after = cell_list.cell_index_from_particle_index(0).unwrap();
+        let cell_idx_after = cell_list.cell_index(0).unwrap();
         assert_eq!(*cell_idx_after, expected_cell_idx);
     }
 
@@ -409,19 +437,20 @@ mod tests {
                 coordinates: [1.2, 1.3],
             },
         ];
-        let mut cell_list = CellList::<2>::new(cell_width, &positions);
+        let indices = vec![0, 1]; // Particle indices corresponding to positions.
+        let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
 
         // Cell id of particle to be removed
-        let cell_idx = cell_list.cell_index_from_particle_index(0).copied();
+        let cell_idx = cell_list.cell_index(0).copied();
 
         // Remove the first particle (index 0).
-        cell_list.remove_particle(0);
-        let removed_particle_cell_index = cell_list.cell_index_from_particle_index(0);
+        cell_list.remove(0);
+        let removed_particle_cell_index = cell_list.cell_index(0);
         assert!(removed_particle_cell_index.is_none());
 
         // The cell corresponding to the removed particle should not hold the index.
         let particle_indices_in_old_cell = cell_list
-            .cell_idx_to_particle_indices
+            .particle_indices
             .get(&cell_idx.unwrap())
             .expect("The cell index should exist");
         assert!(
@@ -431,15 +460,23 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Particle index not found in cell list")]
     fn test_remove_nonexistent_particle() {
         let cell_width = 1.0;
         let positions = vec![Cartesian {
             coordinates: [0.2, 0.3],
         }];
-        let mut cell_list = CellList::<2>::new(cell_width, &positions);
+        let indices = vec![0]; // Particle index corresponding to the position.
+        let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
         // Attempt to remove a particle that doesn't exist.
-        cell_list.remove_particle(42);
+        cell_list.remove(42);
+        // check if cell lists contains the original particle.
+        let cell_idx = cell_list.cell_index(0).unwrap();
+        let particle_indices_in_cell = cell_list
+            .particle_indices
+            .get(cell_idx)
+            .expect("The cell index should exist");
+        assert!(!particle_indices_in_cell.is_empty(), "Cell should not be empty");
+        assert!(particle_indices_in_cell.contains(&0), "Cell should contain the original particle");
     }
 
     #[test]
@@ -463,24 +500,24 @@ mod tests {
         // Construct a vector of positions.
         let positions = vec![p0, p1, p2, p3];
 
+        let indices = vec![0, 1, 2, 3]; // Particle indices corresponding to positions.
+
         // Build the CellList.
-        let cell_list = CellList::<2>::new(cell_width, &positions);
+        let cell_list = CellList::<2>::new(cell_width, &positions, &indices);
 
         // Define a cutoff radius.
         let cutoff_radius = 10.5;
-        let mut potential_neighbor_indices = Vec::new();
 
         // Use p0 ([0.2, 0.3] falls in cell [0,0]) as the query position.
-        cell_list.find_potential_neighbor_indices(
+        let it = cell_list.find_potential_neighbor_indices(
             &p0,
             &cutoff_radius,
-            &mut potential_neighbor_indices,
         );
 
         // p0's index should appear.
-        assert!(potential_neighbor_indices.contains(&0));
-        assert!(potential_neighbor_indices.contains(&1));
-        assert!(potential_neighbor_indices.contains(&2));
-        assert!(potential_neighbor_indices.contains(&3));
+        //assert!(potential_neighbor_indices.contains(&0));
+        //assert!(potential_neighbor_indices.contains(&1));
+        //assert!(potential_neighbor_indices.contains(&2));
+        //assert!(potential_neighbor_indices.contains(&3));
     }
 }
