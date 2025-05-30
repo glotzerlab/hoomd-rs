@@ -3,7 +3,7 @@
 
 /*! Implement [`Hyperellipsoid`] */
 
-use crate::{BoundingSphere, IntersectsAt, SupportMapping, Volume, xenocollide::collide3d};
+use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume, xenocollide::collide3d};
 
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
 
@@ -104,12 +104,10 @@ impl Hyperellipsoid<3> {
     }
 }
 
-impl<const N: usize> BoundingSphere<N> for Hyperellipsoid<N> {
+impl<const N: usize> BoundingSphereRadius for Hyperellipsoid<N> {
     #[inline]
-    fn bounding_sphere(&self) -> Hypersphere<N> {
-        Hypersphere {
-            r: self.axes.into_iter().fold(f64::NAN, f64::max),
-        }
+    fn bounding_sphere_radius(&self) -> f64 {
+        self.axes.into_iter().fold(f64::NAN, f64::max)
     }
 }
 impl<const N: usize> Volume for Hyperellipsoid<N> {

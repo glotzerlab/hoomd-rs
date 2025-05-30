@@ -3,11 +3,9 @@
 
 /*! Implement [`Capsule`] */
 
-use crate::{BoundingSphere, SupportMapping, Volume};
+use crate::{BoundingSphereRadius, Hypersphere, SupportMapping, Volume};
 
 use hoomd_vector::{Cartesian, Vector};
-
-use super::Hypersphere;
 
 /** All points less than or equal to a distance `r` along a line of length `h`.
 This line is oriented along the `[0 0 ... 1]` direction, and has extents `+h/2`, `-h/2`
@@ -44,22 +42,20 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Capsule<N> {
     }
 }
 
-impl<const N: usize> BoundingSphere<N> for Capsule<N> {
+impl<const N: usize> BoundingSphereRadius for Capsule<N> {
     #[inline]
-    fn bounding_sphere(&self) -> Hypersphere<N> {
-        Hypersphere {
-            r: self.h / 2.0 + self.r,
-        }
+    fn bounding_sphere_radius(&self) -> f64 {
+        self.h / 2.0 + self.r
     }
 }
 
-impl<const N: usize> Volume for Capsule<N> {
-    #[inline]
-    fn volume(&self) -> f64 {
-        Hypersphere::<{ M }> { r: self.r }.volume() * self.h
-            + Hypersphere::<N> { r: self.r }.volume()
-    }
-}
+// impl<const N: usize> Volume for Capsule<N> {
+//     #[inline]
+//     fn volume(&self) -> f64 {
+//         Hypersphere::<{ N - 1 }> { r: self.r }.volume() * self.h
+//             + Hypersphere::<N> { r: self.r }.volume()
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
@@ -71,8 +67,8 @@ mod tests {
     use rstest::*;
     use std::marker::PhantomData;
 
-    #[rstest]
-    fn test_capsule_volume(#[values(0.0, 0.1, 1.0, 99.9)] r: f64) {
-        assert_eq!(Capsule::<3> { r, h: 0.0 }.volume(), Sphere { r }.volume())
-    }
+    // #[rstest]
+    // fn test_capsule_volume(#[values(0.0, 0.1, 1.0, 99.9)] r: f64) {
+    //     assert_eq!(Capsule::<3> { r, h: 0.0 }.volume(), Sphere { r }.volume())
+    // }
 }

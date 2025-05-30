@@ -4,7 +4,7 @@
 /*! Implement [`Sphero`] */
 
 use crate::{
-    BoundingShape, IntersectsAt, SupportMapping,
+    BoundingSphereRadius, IntersectsAt, SupportMapping,
     xenocollide::{collide2d, collide3d},
 };
 use hoomd_vector::{Angle, Cartesian, Rotate, Vector, Versor};
@@ -54,17 +54,12 @@ where
     }
 }
 
-impl<S, V, R, const N: usize> BoundingShape<V, R> for Sphero<S>
+impl<S> BoundingSphereRadius for Sphero<S>
 where
-    S: BoundingShape<V, R, Shape = Hypersphere<N>>,
-    V: Vector,
-    R: Rotate<V>,
+    S: BoundingSphereRadius,
 {
-    type Shape = S::Shape;
     #[inline]
-    fn bounding_shape(&self) -> Self::Shape {
-        Hypersphere {
-            r: self.shape.bounding_shape().r + self.rounding_radius,
-        }
+    fn bounding_sphere_radius(&self) -> f64 {
+        self.shape.bounding_sphere_radius() + self.rounding_radius
     }
 }

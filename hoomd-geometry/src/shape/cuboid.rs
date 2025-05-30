@@ -3,7 +3,7 @@
 
 /*!N-cuboids, which may or may not be treated as axis aligned.*/
 use crate::{
-    BoundingShape, BoundingSphere, IntersectsAt, SupportMapping, Volume,
+    BoundingSphereRadius, IntersectsAt, SupportMapping, Volume,
     xenocollide::{collide2d, collide3d},
 };
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix};
@@ -71,20 +71,10 @@ impl<const N: usize> Volume for Cuboid<N> {
     }
 }
 
-// impl<const N: usize> BoundingSphere<N> for Cuboid<N> {
-//     #[inline]
-//     fn bounding_sphere(&self) -> Hypersphere<N> {
-//         let r = f64::sqrt(3.0) / 2.0 * self.edge_lengths.into_iter().fold(f64::NAN, f64::max);
-//         Hypersphere { r }
-//     }
-// }
-
-impl<const N: usize, R: Rotate<Cartesian<N>>> BoundingShape<Cartesian<N>, R> for Cuboid<N> {
-    type Shape = Hypersphere<N>;
+impl<const N: usize> BoundingSphereRadius for Cuboid<N> {
     #[inline]
-    fn bounding_shape(&self) -> Self::Shape {
-        let r = f64::sqrt(3.0) / 2.0 * self.edge_lengths.into_iter().fold(f64::NAN, f64::max);
-        Hypersphere { r }
+    fn bounding_sphere_radius(&self) -> f64 {
+        f64::sqrt(3.0) / 2.0 * self.edge_lengths.into_iter().fold(f64::NAN, f64::max)
     }
 }
 

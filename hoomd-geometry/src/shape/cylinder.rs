@@ -5,7 +5,7 @@
 
 use hoomd_vector::{Cartesian, Rotate, Vector};
 
-use crate::{BoundingShape, SupportMapping, Volume};
+use crate::{SupportMapping, Volume};
 
 use super::{Capsule, Circle};
 
@@ -25,13 +25,3 @@ impl Volume for Cylinder {
         Circle { r: self.r }.volume() * self.h
     }
 }
-
-// impl<R: Rotate<Cartesian<3>>> BoundingShape<Cartesian<3>, R> for Cylinder {
-//     type Shape = Capsule<3>; // Requires IntersectsAt for Capsule<3>
-//     fn bounding_shape(&self) -> Self::Shape {
-//         Self::Shape {
-//             r: self.r,
-//             h: self.h,
-//         }
-//     }
-// }

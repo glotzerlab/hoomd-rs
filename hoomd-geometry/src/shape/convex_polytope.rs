@@ -3,7 +3,7 @@
 
 /*! N-Dimensional generalization of a convex polyhedron.*/
 use crate::{
-    BoundingSphere, Error, IntersectsAt, SupportMapping,
+    BoundingSphereRadius, Error, IntersectsAt, SupportMapping,
     xenocollide::{self, collide3d},
 };
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
@@ -149,12 +149,10 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for ConvexPolytope<N> {
     }
 }
 
-impl<const N: usize> BoundingSphere<N> for ConvexPolytope<N> {
+impl<const N: usize> BoundingSphereRadius for ConvexPolytope<N> {
     #[inline]
-    fn bounding_sphere(&self) -> Hypersphere<N> {
-        Hypersphere {
-            r: self.bounding_radius,
-        }
+    fn bounding_sphere_radius(&self) -> f64 {
+        self.bounding_radius
     }
 }
 
