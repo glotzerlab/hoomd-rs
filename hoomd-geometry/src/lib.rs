@@ -125,7 +125,6 @@ pub trait BoundingSphereRadius {
 mod convex;
 pub use convex::Convex;
 
-use shape::Hypersphere;
 use thiserror::Error;
 /// Enumerate possible sources of error in fallible utility methods.
 #[non_exhaustive]
