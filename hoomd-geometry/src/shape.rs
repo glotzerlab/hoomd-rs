@@ -20,7 +20,7 @@ mod cylinder;
 pub use cylinder::Cylinder;
 
 mod hyperellipsoid;
-pub use hyperellipsoid::Hyperellipsoid;
+pub use hyperellipsoid::{Ellipse, Ellipsoid, Hyperellipsoid};
 
 mod simplex3;
 pub use simplex3::Simplex3;

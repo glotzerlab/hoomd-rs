@@ -3,7 +3,6 @@
 
 /*! Implement [`Cylinder`] */
 
-
 use crate::Volume;
 
 use super::Circle;

@@ -24,6 +24,7 @@ pub(crate) fn factorial(n: usize, ntuple: usize) -> usize {
 
 /// Compute the volume prefactor for the volume of a rounded shape
 pub(crate) fn sphere_volume_prefactor(n: usize) -> f64 {
+    // TODO: replace with std::f64::gamma when its in main
     let dim_factor = (if n.rem_euclid(2) == 0 { n } else { n - 1 } / 2) as f64;
     if n.rem_euclid(2) == 0 {
         PI.powf(dim_factor) / (factorial(n / 2, 1) as f64)
@@ -72,13 +73,10 @@ impl<const N: usize, V: Vector> SupportMapping<V> for Hypersphere<N> {
 impl<const N: usize> Volume for Hypersphere<N> {
     #[inline]
     fn volume(&self) -> f64 {
-        println!("prefactor_sphere {}", sphere_volume_prefactor(N));
-        println!("N in sphere: {N}");
         sphere_volume_prefactor(N)
             * self
                 .r
                 .powi(N.try_into().expect("Dimension would overflow i32!"))
-        // TODO: replace with std::f64::gamma when its in main
     }
 }
 

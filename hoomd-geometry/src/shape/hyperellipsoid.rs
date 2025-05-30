@@ -1,7 +1,20 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`Hyperellipsoid`] */
+/*! Implement [`Hyperellipsoid`].
+
+
+```rust
+use hoomd_geometry::shape::{Hyperellipsoid, Ellipse, Ellipsoid, Sphere};
+use hoomd_geometry::Volume;
+
+let ellipse = Hyperellipsoid {axes: [1.0, 2.0]};
+
+assert_eq!(ellipse.volume(), Ellipse {axes: [2.0, 1.0]}.volume());
+assert_eq!(Ellipsoid{ axes: [1.0, 1.0, 1.0] }.volume(), Sphere { r: 1.0 }.volume());
+
+```
+*/
 
 use crate::{BoundingSphereRadius, SupportMapping, Volume};
 
@@ -17,11 +30,11 @@ pub struct Hyperellipsoid<const N: usize> {
 }
 
 /**A two-dimensional ellipse.*/
-type Ellipse = Hyperellipsoid<2>;
+pub type Ellipse = Hyperellipsoid<2>;
 /**A three-dimensional ellipsoid.
 
 */
-type Ellipsoid = Hyperellipsoid<3>;
+pub type Ellipsoid = Hyperellipsoid<3>;
 
 impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperellipsoid<N> {
     #[inline]

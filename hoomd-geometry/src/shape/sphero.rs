@@ -3,11 +3,8 @@
 
 /*! Implement [`Sphero`] */
 
-use crate::{
-    BoundingSphereRadius, SupportMapping,
-};
+use crate::{BoundingSphereRadius, SupportMapping};
 use hoomd_vector::Vector;
-
 
 /** Round a shape with a given radius.
 

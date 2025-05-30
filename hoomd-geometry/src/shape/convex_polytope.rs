@@ -2,11 +2,8 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! N-Dimensional generalization of a convex polyhedron.*/
-use crate::{
-    BoundingSphereRadius, Error, SupportMapping,
-};
+use crate::{BoundingSphereRadius, Error, SupportMapping};
 use hoomd_vector::{Cartesian, Vector};
-
 
 /**
 A convex, faceted polyhedron.

@@ -2,12 +2,9 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*!N-cuboids, which may or may not be treated as axis aligned.*/
-use crate::{
-    BoundingSphereRadius, SupportMapping, Volume,
-};
+use crate::{BoundingSphereRadius, SupportMapping, Volume};
 use hoomd_vector::Cartesian;
 use itertools::multizip;
-
 
 /** An axis-aligned N-cuboid
 */
