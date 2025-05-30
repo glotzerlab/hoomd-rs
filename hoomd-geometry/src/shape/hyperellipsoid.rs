@@ -29,6 +29,16 @@ pub struct Hyperellipsoid<const N: usize> {
     pub axes: [f64; N],
 }
 
+impl<const N: usize> Hyperellipsoid<N> {
+    /// The degree of the polynomial representation of the hyperellipsoid (N+1).
+    pub const POLYNOMIAL_DEGREE: usize = Self::_compute_polynomial_degree();
+
+    /// Compute the degree of the polynomial representation of the hyperellipsoid.
+    const fn _compute_polynomial_degree() -> usize {
+        N + 1
+    }
+}
+
 /**An ellipse in two dimensions.*/
 pub type Ellipse = Hyperellipsoid<2>;
 /**An ellipsoid in three dimensions.*/
@@ -174,5 +184,16 @@ mod tests {
         let s = Hypersphere::<N> { radius };
         let he = Hyperellipsoid { axes: [radius; N] };
         assert_relative_eq!(he.volume(), s.volume());
+    }
+
+    #[rstest]
+    #[case(PhantomData::<Hypersphere<0>>)]
+    #[case(PhantomData::<Hypersphere<1>>)]
+    #[case(PhantomData::<Hypersphere<2>>)]
+    #[case(PhantomData::<Hypersphere<3>>)]
+    #[case(PhantomData::<Hypersphere<4>>)]
+    #[case(PhantomData::<Hypersphere<5>>)]
+    fn test_m_hyperellipsoid<const N: usize>(#[case] _n: PhantomData<Hypersphere<N>>) {
+        assert_eq!(Hyperellipsoid::<N>::POLYNOMIAL_DEGREE, N + 1);
     }
 }
