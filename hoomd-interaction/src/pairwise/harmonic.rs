@@ -6,12 +6,12 @@
 
 use super::{IsotropicEnergy, IsotropicForce};
 
-/** Harmonic  potential between pair of particles. Can be used to perform
-    Frenkel-Ladd free energy calculation and simulate the covalent bonds
-    between particles.
+/**
+Harmonic  potential between pair of particles.
 
-<!-- U = \frac{1}{2} k (r - r0)^2 -->
-<math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mn>4</mn><mi>ε</mi><mrow><mo fence="true" form="prefix">[</mo><msup><mrow><mo fence="true" form="prefix">(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo fence="true" form="postfix">)</mo></mrow><mi>N</mi></msup><mo>−</mo><msup><mrow><mo fence="true" form="prefix">(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo fence="true" form="postfix">)</mo></mrow><mi>M</mi></msup><mo fence="true" form="postfix">]</mo></mrow></mrow></math>
+```math
+U = \frac{1}{2} k (r - r0)^2
+```
 
 Compute the harmonic potential and force as a function of `r` with
 equilibrium spring length `r0`.
@@ -54,9 +54,9 @@ pub struct Harmonic {
     ```
     */
 
-    /// Spring constant (`[energy] [length]^(-2)`).
+    /// Spring constant *(\[energy\] \[lenght\]^{-2})*.
     pub k: f64,
-    /// Equilibrium spring length (`[length]`).
+    /// Equilibrium spring length *(\[lenght\])*.
     pub r0: f64,
 }
 

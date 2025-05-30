@@ -6,26 +6,29 @@
 
 use super::{IsotropicEnergy, IsotropicForce};
 
-/** Harmonic  repulsive potential between pair of particles.
- *  Known as the dissipative particle dynamics soft potential.
- *  A soft potential to penalize particle overlaps.
+/**
+Harmonic repulsive potential between pair of particles
+to penalize particle overlaps. Known as the
+dissipative particle dynamics soft potential.
 
 The potential produce the repulsive force between particles as:
-<!-- w^\mathrm{C}(r) = \begin{cases}
+```math
+w^\mathrm{C}(r) = \begin{cases}
 A \left( 1 - \frac{r}{r_\mathrm{cut}}\right)\hat{r} & r < r_\mathrm{cut} \\
 
 0 & r \ge r_\mathrm{cut}
-\end{cases} -->
-<math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mn>4</mn><mi>ε</mi><mrow><mo fence="true" form="prefix">[</mo><msup><mrow><mo fence="true" form="prefix">(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo fence="true" form="postfix">)</mo></mrow><mi>N</mi></msup><mo>−</mo><msup><mrow><mo fence="true" form="prefix">(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo fence="true" form="postfix">)</mo></mrow><mi>M</mi></msup><mo fence="true" form="postfix">]</mo></mrow></mrow></math>
-Where \hat{r} is the unit vector connecting particle i to j.
+\end{cases}
+```
+Where `\hat{r}` is the unit vector connecting particle i to j.
 
 It results in the potential energy as:
-<!-- U(r) = \begin{cases}
+```math
+U(r) = \begin{cases}
 A (r_\mathrm{cut} - r) - \frac{1}{2}\frac{A}{r_\mathrm{cut}} \left(r^2_\mathrm{cut} - r^2\right) & r \lt r_\mathrm{cut} \\
 
 0 & r \ge r_\mathrm{cut}
-\end{cases} -->
-<math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo><mo>=</mo><mn>4</mn><mi>ε</mi><mrow><mo fence="true" form="prefix">[</mo><msup><mrow><mo fence="true" form="prefix">(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo fence="true" form="postfix">)</mo></mrow><mi>N</mi></msup><mo>−</mo><msup><mrow><mo fence="true" form="prefix">(</mo><mfrac><mi>σ</mi><mi>r</mi></mfrac><mo fence="true" form="postfix">)</mo></mrow><mi>M</mi></msup><mo fence="true" form="postfix">]</mo></mrow></mrow></math>
+\end{cases}
+```
 
 Compute the harmonic repulsive potential and force as a function of `r`
 with potential strength `a` and distance cut-off `r_cut`.
@@ -69,9 +72,9 @@ pub struct HarmonicRepulsion {
     ```
     */
 
-    /// Potential strength (`[energy] [length]^(-1)`).
+    /// Potential strength *(\[energy\] \[lenght\]^{-1})* .
     pub a: f64,
-    /// Distance cut-off (`[length]`).
+    /// Distance cut-off *(\[energy\])*.
     pub r_cut: f64,
 }
 
