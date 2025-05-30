@@ -70,7 +70,7 @@ impl<const N: usize> Volume for Capsule<N> {
 #[cfg(test)]
 mod tests {
 
-    use crate::shape::Cylinder;
+    use crate::shape::{Cylinder, Hypersphere};
 
     use super::*;
     use rstest::*;
