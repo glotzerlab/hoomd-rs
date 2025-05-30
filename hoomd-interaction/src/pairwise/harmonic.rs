@@ -43,17 +43,6 @@ harmonic.r0 = 1.0;
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Harmonic {
-    /** Construct a [`Harmonic`] with the given values for `k` and `r0`.
-
-    # Examples
-
-    ```
-    use hoomd_interaction::pairwise::Harmonic;
-
-    let harmonic = Harmonic{ k: 1.0, r0: 0.0};
-    ```
-    */
-
     /// Spring constant *(\[energy\] \[lenght\]^{-2})*.
     pub k: f64,
     /// Equilibrium spring length *(\[lenght\])*.

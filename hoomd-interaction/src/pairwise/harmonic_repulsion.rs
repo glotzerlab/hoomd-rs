@@ -61,17 +61,6 @@ h_repulsion.r_cut = 0.75;
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct HarmonicRepulsion {
-    /** Construct a [`HarmonicRepulsion`] with the given values for `a` and `rcut`.
-
-    # Examples
-
-    ```
-    use hoomd_interaction::pairwise::HarmonicRepulsion;
-
-    let h_repulsion = HarmonicRepulsion{ a: 1.0, r_cut: 0.0};
-    ```
-    */
-
     /// Potential strength *(\[energy\] \[lenght\]^{-1})* .
     pub a: f64,
     /// Distance cut-off *(\[energy\])*.
