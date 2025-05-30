@@ -22,6 +22,7 @@ thiserror.workspace = true
 [dev-dependencies]
 divan.workspace = true
 rstest.workspace = true
+approx.workspace = true
 rand_chacha = "0.9.0"
 
 [[bench]]

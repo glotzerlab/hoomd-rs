@@ -25,11 +25,8 @@ pub use xplor::Xplor;
 mod weeks_chandler_anderson;
 pub use weeks_chandler_anderson::WeeksChandlerAnderson;
 
-mod harmonic;
-pub use harmonic::Harmonic;
-
 mod chimes_cheby2b;
-pub use chimes_cheby2b::ChIMES_2B;
+pub use chimes_cheby2b::Chimes2b;
 
 /** Computes pairwise energies between point particles.
 
