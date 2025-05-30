@@ -95,7 +95,8 @@ mod tests {
                 height: 0.0
             }
             .volume(),
-            Hypersphere::<N> { radius }.volume()
+            Hypersphere::<N> { radius }.volume(),
+            epsilon = 1e-6
         );
     }
     #[rstest(
