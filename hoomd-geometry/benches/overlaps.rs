@@ -5,11 +5,13 @@
     clippy::missing_docs_in_private_items,
     reason = "benches don't need public documentation"
 )]
+#![expect(clippy::unwrap_used, reason = "benches can use unwrap where needed")]
 
 /*! Benchmark overlaps*/
 
 use divan::counter::ItemsCount;
 use divan::{self, Bencher, black_box};
+use hoomd_geometry::Convex;
 use hoomd_geometry::{
     IntersectsAt,
     shape::{ConvexPolytope, Cuboid, Hypersphere, Simplex3},
@@ -32,12 +34,21 @@ fn main() {
     divan::main();
 }
 
+fn shapes_to_convex<S>(tup: (S, S)) -> (Convex<S>, Convex<S>) {
+    (Convex(tup.0), Convex(tup.1))
+}
+
 fn create_sphere_pair<const N: usize, R: Rng>(rng: &mut R) -> (Hypersphere<N>, Hypersphere<N>) {
     (
-        Hypersphere::from(rng.random_range(0.0..10.0)),
-        Hypersphere::from(rng.random_range(0.0..10.0)),
+        Hypersphere::<N> {
+            radius: rng.random_range(0.0..10.0),
+        },
+        Hypersphere::<N> {
+            radius: rng.random_range(0.0..10.0),
+        },
     )
 }
+
 fn create_cuboid_pair<const N: usize, R: Rng>(rng: &mut R) -> (Cuboid<N>, Cuboid<N>) {
     (
         Cuboid::from(rng.random::<Cartesian<N>>() * 10.0),
@@ -67,8 +78,8 @@ fn create_dipyramid_pair<const N: usize, R: Rng>(
 ) -> (ConvexPolytope<3>, ConvexPolytope<3>) {
     let base = ConvexPolytope::<2>::from(N);
     (
-        ConvexPolytope::<3>::from(
-            base.vertices
+        ConvexPolytope::<3>::try_from(
+            base.vertices()
                 .iter()
                 .map(|x| Cartesian::from([x[0], x[1], 0.0]))
                 .chain([
@@ -76,9 +87,10 @@ fn create_dipyramid_pair<const N: usize, R: Rng>(
                     [0.0, 0.0, -rng.random_range(0.0..h_max)].into(),
                 ])
                 .collect::<Vec<_>>(),
-        ),
-        ConvexPolytope::<3>::from(
-            base.vertices
+        )
+        .unwrap(),
+        ConvexPolytope::<3>::try_from(
+            base.vertices()
                 .iter()
                 .map(|x| Cartesian::from([x[0], x[1], 0.0]))
                 .chain([
@@ -86,7 +98,8 @@ fn create_dipyramid_pair<const N: usize, R: Rng>(
                     [0.0, 0.0, -rng.random_range(0.0..h_max)].into(),
                 ])
                 .collect::<Vec<_>>(),
-        ),
+        )
+        .unwrap(),
     )
 }
 
@@ -130,23 +143,6 @@ fn sphere_fast_nd<const N: usize>(bencher: Bencher) {
 }
 
 #[divan::bench]
-fn cuboid_fast_2d(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
-
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| {
-            (
-                create_cuboid_pair::<2, _>(&mut rng),
-                create_offset_2d(&mut rng),
-            )
-        })
-        .bench_local_values(|((c0, c1), (t, _))| {
-            black_box(c0.intersects_at(&c1, &t, &Angle::default()))
-        });
-}
-
-#[divan::bench]
 fn sphere_xenocollide_2d(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
@@ -154,7 +150,7 @@ fn sphere_xenocollide_2d(bencher: Bencher) {
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| {
             (
-                create_sphere_pair::<2, _>(&mut rng),
+                shapes_to_convex(create_sphere_pair::<2, _>(&mut rng)),
                 create_offset_2d(&mut rng),
             )
         })
@@ -169,7 +165,7 @@ fn sphere_xenocollide_3d(bencher: Bencher) {
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| {
             (
-                create_sphere_pair::<3, _>(&mut rng),
+                shapes_to_convex(create_sphere_pair::<3, _>(&mut rng)),
                 create_offset_3d(&mut rng),
             )
         })
@@ -185,7 +181,7 @@ fn cuboid_xenocollide_2d(bencher: Bencher) {
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| {
             (
-                create_cuboid_pair::<2, _>(&mut rng),
+                shapes_to_convex(create_cuboid_pair::<2, _>(&mut rng)),
                 create_offset_2d(&mut rng),
             )
         })
@@ -199,7 +195,7 @@ fn cuboid_xenocollide_3d(bencher: Bencher) {
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| {
             (
-                create_cuboid_pair::<3, _>(&mut rng),
+                shapes_to_convex(create_cuboid_pair::<3, _>(&mut rng)),
                 create_offset_3d(&mut rng),
             )
         })
@@ -212,7 +208,12 @@ fn polygon_xenocollide_2d<const N: usize>(bencher: Bencher) {
 
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| (create_polygon_pair::<N>(), create_offset_2d(&mut rng)))
+        .with_inputs(|| {
+            (
+                shapes_to_convex(create_polygon_pair::<N>()),
+                create_offset_2d(&mut rng),
+            )
+        })
         .bench_local_values(|((p0, p1), (t, r))| black_box(collide2d(&p0, &p1, &t, &r)));
 }
 
@@ -224,7 +225,7 @@ fn dipyramid_xenocollide_3d<const N: usize>(bencher: Bencher) {
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| {
             (
-                create_dipyramid_pair::<N, _>(&mut rng, 10.0),
+                shapes_to_convex(create_dipyramid_pair::<N, _>(&mut rng, 10.0)),
                 create_offset_3d(&mut rng),
             )
         })
@@ -237,7 +238,12 @@ fn simplex_xenocollide_3d(bencher: Bencher) {
 
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| (create_simplex_pair(&mut rng), create_offset_3d(&mut rng)))
+        .with_inputs(|| {
+            (
+                shapes_to_convex(create_simplex_pair(&mut rng)),
+                create_offset_3d(&mut rng),
+            )
+        })
         .bench_local_values(|((t0, t1), (t, r))| black_box(collide3d(&t0, &t1, &t, &r)));
 }
 #[divan::bench]
