@@ -74,6 +74,7 @@ mod tests {
     use crate::shape::{Cylinder, Hypersphere};
 
     use super::*;
+    use approx::assert_relative_eq;
     use rstest::*;
     use std::marker::PhantomData;
 
@@ -88,7 +89,7 @@ mod tests {
         radius => [0.0, 1e-6, 1.0, 34.56],
     )]
     fn test_capsule_volume<const N: usize>(_n: PhantomData<Capsule<N>>, radius: f64) {
-        assert_eq!(
+        assert_relative_eq!(
             Capsule::<N> {
                 radius,
                 height: 0.0
@@ -103,7 +104,7 @@ mod tests {
     )]
     fn test_elongated_capsule_volume(radius: f64, height: f64) {
         let cap = Capsule::<3> { radius, height };
-        assert_eq!(
+        assert_relative_eq!(
             cap.volume(),
             Hypersphere::<3> { radius }.volume()
                 + Cylinder {
