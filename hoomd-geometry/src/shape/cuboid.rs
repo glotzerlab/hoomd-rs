@@ -86,6 +86,7 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Cuboid<N> {
 }
 
 impl<const N: usize> From<[f64; N]> for Cuboid<N> {
+    /// Create a Cuboid from its extents along each cartesian axis
     #[inline]
     fn from(edge_lengths: [f64; N]) -> Cuboid<N> {
         Cuboid {
@@ -94,6 +95,7 @@ impl<const N: usize> From<[f64; N]> for Cuboid<N> {
     }
 }
 impl<const N: usize> From<Cartesian<N>> for Cuboid<N> {
+    /// Create a Cuboid from its extents along each cartesian axis
     #[inline]
     fn from(edge_lengths: Cartesian<N>) -> Cuboid<N> {
         Cuboid { edge_lengths }
