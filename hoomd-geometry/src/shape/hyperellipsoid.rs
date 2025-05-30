@@ -132,6 +132,7 @@ impl<const N: usize> Volume for Hyperellipsoid<N> {
 }
 
 impl<const N: usize> Hyperellipsoid<N> {} // TODO matrix form and IntersectsAt
+// TODO: https://www.iri.upc.edu/files/scidoc/1852-New-algebraic-conditions-for-the-identification-of-the-relative-position-of-two-coplanar-ellipses.pdf
 
 #[expect(
     clippy::used_underscore_binding,
