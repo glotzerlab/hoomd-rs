@@ -4,7 +4,7 @@
 /*! Implement [`TersoffSmooth`]
  */
 
-use super::{IsotropicEnergy, IsotropicForce, Chimes2b};
+use super::{Chimes2b, IsotropicEnergy, IsotropicForce};
 use std::f64::consts::PI;
 
 /**
@@ -21,7 +21,7 @@ f_s(r) =
 0 &\text{if } r > r_{\mathrm{out}} \\
 1 &\text{if } r < r_{\mathrm{in}} \\
 \frac{1}{2} +  \frac{1}{2}
-\sin{\left( \pi \left[ \frac{r-d_t}{r_\mathrm{out} - d_t}\right] 
+\sin{\left( \pi \left[ \frac{r-d_t}{r_\mathrm{out} - d_t}\right]
 + \frac{\pi}{2}\right)} &\text{, otherwise}\\
 \end{cases}
 ```
@@ -41,7 +41,7 @@ See equation 8 in <https://doi.org/10.1038/s41524-024-01497-y>.
 #[derive(Clone, Debug, PartialEq)]
 pub struct TersoffSmooth<F> {
     /// The [`Chimes2b`] fucntion.
-    pub f: F, 
+    pub f: F,
     /// Outer radial cut-off (`[length]`).
     pub r_out: f64,
     /// Inner radial cut-off (`[length]`).
@@ -61,7 +61,7 @@ impl<F> TersoffSmooth<F> {
         } else if r > self.r_out {
             0.0
         } else {
-            0.5 + 0.5 * (PI * (r - dt)/(self.r_out - dt) + 0.5*PI).sin()
+            0.5 + 0.5 * (PI * (r - dt) / (self.r_out - dt) + 0.5 * PI).sin()
         }
     }
 
@@ -77,7 +77,7 @@ impl<F> TersoffSmooth<F> {
             0.0
         } else {
             let pref = PI / (self.r_out - dt);
-            0.5 * pref * (pref * (r - dt) + 0.5*PI).cos()
-        } 
+            0.5 * pref * (pref * (r - dt) + 0.5 * PI).cos()
+        }
     }
 }
