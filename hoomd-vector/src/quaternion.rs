@@ -14,8 +14,9 @@ use crate::{Cartesian, Cross, Error, Rotate, Rotation, RotationMatrix, Unit, Vec
 
 A quaternion has a real value and three complex values, represented by scalar and 3-vector
 respectively:
-<!-- \mathbf{q} = (s, \vec{v}) -->
-<math display="block" class="tml-display" style="display:block math;"><mrow><mi>𝐪</mi><mo>=</mo><mo form="prefix" stretchy="false">(</mo><mi>s</mi><mo separator="true">,</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow></math>
+```math
+\mathbf{q} = (s, \vec{v})
+```
 
 Looking for the quaternion representation of 3D rotations? See [`Versor`].
 
@@ -159,8 +160,9 @@ pub struct Quaternion {
 
 impl Quaternion {
     /** The norm of the quaternion, squared.
-    <!-- |\mathbf{q}|^2 -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>|</mi><mi>𝐪</mi><msup><mi>|</mi><mn>2</mn></msup></mrow></math>
+    ```math
+    |\mathbf{q}|^2
+    ```
 
     # Example
     ```
@@ -178,8 +180,9 @@ impl Quaternion {
     }
 
     /** The norm of the quaternion.
-    <!-- |\mathbf{q}| -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>|</mi><mi>𝐪</mi><mi>|</mi></mrow></math>
+    ```math
+    |\mathbf{q}|
+    ```
 
     # Example
     ```
@@ -197,8 +200,9 @@ impl Quaternion {
     }
 
     /** Construct the conjugate of this quaternion.
-    <!-- \mathbf{q}^* = (s, -\vec{v}) -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><msup><mi>𝐪</mi><mo>*</mo></msup><mo>=</mo><mo form="prefix" stretchy="false">(</mo><mi>s</mi><mo separator="true">,</mo><mo form="prefix" stretchy="false">−</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow></math>
+    ```math
+    \mathbf{q}^* = (s, -\vec{v})
+    ```
 
     # Example
     ```
@@ -220,8 +224,9 @@ impl Quaternion {
 
     /** Create a [`Versor`] by normalizing the given quaternion.
 
-    <!-- \mathbf{v} = \frac{\mathbf{q}}{|\mathbf{q}|} -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>𝐯</mi><mo>=</mo><mfrac><mi>𝐪</mi><mrow><mi>|</mi><mi>𝐪</mi><mi>|</mi></mrow></mfrac></mrow></math>
+    ```math
+    \mathbf{v} = \frac{\mathbf{q}}{|\mathbf{q}|}
+    ```
 
     # Example
 
@@ -238,13 +243,13 @@ impl Quaternion {
 
     # Errors
 
-    [`Error::InvalidMagnitude`] when `self` is the 0 quaternion.
+    [`Error::InvalidQuaternionMagnitude`] when `self` is the 0 quaternion.
     */
     #[inline]
     pub fn to_versor(self) -> Result<Versor, Error> {
         let mag = self.norm();
         if mag == 0.0 {
-            Err(Error::InvalidMagnitude)
+            Err(Error::InvalidQuaternionMagnitude)
         } else {
             Ok(Versor(self / mag))
         }
@@ -252,8 +257,9 @@ impl Quaternion {
 
     /** Create a [`Versor`] by normalizing the given quaternion.
 
-    <!-- \mathbf{v} = \frac{\mathbf{q}}{|\mathbf{q}|} -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>𝐯</mi><mo>=</mo><mfrac><mi>𝐪</mi><mrow><mi>|</mi><mi>𝐪</mi><mi>|</mi></mrow></mfrac></mrow></math>
+    ```math
+    \mathbf{v} = \frac{\mathbf{q}}{|\mathbf{q}|}
+    ```
 
     # Example
 
@@ -587,7 +593,6 @@ impl From<Versor> for RotationMatrix<3> {
     ```
     */
     #[inline]
-    #[must_use]
     fn from(versor: Versor) -> RotationMatrix<3> {
         let Versor(quaternion) = versor;
         let a = quaternion.scalar;
@@ -631,7 +636,6 @@ impl Default for Versor {
     ```
     */
     #[inline]
-    #[must_use]
     fn default() -> Self {
         Self(Quaternion {
             scalar: 1.0,
@@ -645,8 +649,9 @@ impl Rotate<Cartesian<3>> for Versor {
 
     /** Rotate a [`Cartesian<3>`] by a [`Versor`]
 
-    <!-- \mathbf{q} \vec{a} \mathbf{q}^* -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>𝐪</mi><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><msup><mi>𝐪</mi><mo>*</mo></msup></mrow></math>
+    ```math
+    \mathbf{q} \vec{a} \mathbf{q}^*
+    ```
 
     # Example
 
@@ -678,8 +683,9 @@ impl Rotation for Versor {
     /** Combine two rotations.
 
     The resulting versor is obtained by quaternion multiplication.
-    <!-- \mathbf{q}_{ab} = \mathbf{q}_a \mathbf{q}_b -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><msub><mi>𝐪</mi><mrow><mi>a</mi><mi>b</mi></mrow></msub><mo>=</mo><msub><mi>𝐪</mi><mi>a</mi></msub><msub><mi>𝐪</mi><mi>b</mi></msub></mrow></math>
+    ```math
+    \mathbf{q}_{ab} = \mathbf{q}_a \mathbf{q}_b
+    ```
 
     # Example
 
@@ -719,8 +725,9 @@ impl Rotation for Versor {
 
     /** Create a [`Versor`] that performs the inverse rotation of the given versor.
 
-    <!-- \mathbf{q}^* -->
-    <math display="block" class="tml-display" style="display:block math;"><msup><mi>𝐪</mi><mo>*</mo></msup></math>
+    ```math
+    \mathbf{q}^*
+    ```
 
     # Example
 
@@ -773,7 +780,7 @@ impl Distribution<Versor> for StandardUniform {
             clippy::expect_used,
             reason = "This constants chosen for this distribution are valid"
         )]
-        let uniform = Uniform::new(-1.0, 1.0).expect("a valid distribution");
+        let uniform = Uniform::new(-1.0, 1.0).expect("hard-coded distribution should be valid");
 
         let (u, v) = loop {
             let u: f64 = uniform.sample(rng);
@@ -901,7 +908,8 @@ mod tests {
             let q = Quaternion::from([5.0, 3.0, -1.0, 1.0]);
 
             assert_relative_eq!(
-                q.to_versor().expect("non-zero quaternion"),
+                q.to_versor()
+                    .expect("hard-coded quatnernion should be non zero"),
                 Versor(Quaternion {
                     scalar: 5.0 / 6.0,
                     vector: [3.0 / 6.0, -1.0 / 6.0, 1.0 / 6.0].into()
@@ -917,7 +925,10 @@ mod tests {
             );
 
             let zero = Quaternion::from([0.0, 0.0, 0.0, 0.0]);
-            assert!(matches!(zero.to_versor(), Err(Error::InvalidMagnitude)));
+            assert!(matches!(
+                zero.to_versor(),
+                Err(Error::InvalidQuaternionMagnitude)
+            ));
         }
 
         #[test]
@@ -982,7 +993,7 @@ mod tests {
 
         #[rstest(
         theta => [0.0, PI/2.0, 1e-12 * PI, -3.0, 12345.6],
-        axis => [[1.0, 0.0, 0.0].try_into().expect("valid unit vector"), [1.0, -1.0, 1.0].try_into().expect("valid unit vector")],
+        axis => [[1.0, 0.0, 0.0].try_into().expect("hard-coded vector should have non-zero length"), [1.0, -1.0, 1.0].try_into().expect("hard-coded vector should have non-zero length")],
     )]
         fn from_axis_angle(theta: f64, axis: Unit<Cartesian<3>>) {
             let Unit(axis_vector) = axis;
@@ -997,7 +1008,9 @@ mod tests {
         theta_2 => [-0.0, -PI/3.0, PI, 2.0 * PI]
     )]
         fn combine_same_axis(theta_1: f64, theta_2: f64) {
-            let axis = [1.0, 0.0, 0.0].try_into().expect("valid unit vector");
+            let axis = [1.0, 0.0, 0.0]
+                .try_into()
+                .expect("hard-coded vector should have non-zero length");
             let Unit(axis_vector) = axis;
 
             let a = Versor::from_axis_angle(axis, theta_1);
@@ -1042,11 +1055,15 @@ mod tests {
         #[test]
         fn rotate() {
             let z_pi_2 = Versor::from_axis_angle(
-                [0.0, 0.0, 1.0].try_into().expect("valid unit vector"),
+                [0.0, 0.0, 1.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 PI / 2.0,
             );
             let y_pi_4 = Versor::from_axis_angle(
-                [0.0, 1.0, 0.0].try_into().expect("valid unit vector"),
+                [0.0, 1.0, 0.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 PI / 4.0,
             );
 
@@ -1056,11 +1073,15 @@ mod tests {
         #[test]
         fn precompute() {
             let z_pi_2 = RotationMatrix::from(Versor::from_axis_angle(
-                [0.0, 0.0, 1.0].try_into().expect("valid unit vector"),
+                [0.0, 0.0, 1.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 PI / 2.0,
             ));
             let y_pi_4 = RotationMatrix::from(Versor::from_axis_angle(
-                [0.0, 1.0, 0.0].try_into().expect("valid unit vector"),
+                [0.0, 1.0, 0.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 PI / 4.0,
             ));
 
@@ -1070,11 +1091,15 @@ mod tests {
         #[test]
         fn combine_different_axis() {
             let a = Versor::from_axis_angle(
-                [1.0, 0.0, 0.0].try_into().expect("valid unit vector"),
+                [1.0, 0.0, 0.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 PI / 4.0,
             );
             let b = Versor::from_axis_angle(
-                [0.0, 0.0, 1.0].try_into().expect("valid unit vector"),
+                [0.0, 0.0, 1.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 PI / 2.0,
             );
 
@@ -1086,7 +1111,9 @@ mod tests {
         #[rstest(theta => [0.0, 1.0, 2.125])]
         fn inverted(theta: f64) {
             let q1 = Versor::from_axis_angle(
-                [1.0, 0.5, -2.0].try_into().expect("valid unit vector"),
+                [1.0, 0.5, -2.0]
+                    .try_into()
+                    .expect("hard-coded vector should have non-zero length"),
                 theta,
             );
             let q2 = q1.inverted();

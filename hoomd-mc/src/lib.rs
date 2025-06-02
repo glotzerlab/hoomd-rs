@@ -17,7 +17,9 @@ use hoomd_microstate::{Body, Microstate};
 use rand::Rng;
 use std::ops::AddAssign;
 
+mod cutoff_pair;
 mod external;
+mod hamiltonian;
 mod sweep;
 mod translate;
 
@@ -36,6 +38,10 @@ Each type of trial move in *hoomd-rs* implements the `Trial` trait so that they
 may be used as generic arguments in higher level functions.
 
 See [`Sweep`] or any of the other implementations of `Trial` for code examples.
+
+The generic type names are:
+* `M`: The [`Microstate`] type.
+* `H`: The Hamiltonian type.
 */
 pub trait Trial<M, H> {
     /** Represent the number of accepted and rejected individual trial moves.
@@ -68,6 +74,9 @@ bodies or implement your own custom [`LocalTrial`].
 
 Local trial moves **MUST** satisfy *local detailed balance*,
 as defined in [Manousiouthakis & Deem](https://doi.org/10.1063/1.477973).
+
+The generic type names are:
+* `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 */
 pub trait LocalTrial<B> {
     /// Propose a new configuration for the given body properties.
@@ -80,6 +89,13 @@ pub trait LocalTrial<B> {
 Some implementations of [`Trial`] apply to a single body at a time and use a
 Hamiltonian that implements `DeltaEnergyOne` to efficiently compute the change
 in energy.
+
+The generic type names are:
+* `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+* `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+* `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
+
+See the [Implementations on Foreign Types](#foreign-impls) section below for examples.
 */
 pub trait DeltaEnergyOne<B, S, C> {
     /** Compute the change in energy.
@@ -90,8 +106,9 @@ pub trait DeltaEnergyOne<B, S, C> {
     identifies which body in `initial_microstate` is changing.
 
     Returns:
-    <!-- \Delta E = E_\mathrm{final} - E_\mathrm{initial} -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mpadded lspace="0"><mi mathvariant="normal">Δ</mi></mpadded><mi>E</mi><mo>=</mo><msub><mi>E</mi><mpadded lspace="0"><mi>final</mi></mpadded></msub><mo>−</mo><msub><mi>E</mi><mpadded lspace="0"><mi>initial</mi></mpadded></msub></mrow></math>
+    ```math
+    \Delta E = E_\mathrm{final} - E_\mathrm{initial}
+    ```
     */
     #[must_use]
     fn delta_energy_one(
@@ -140,7 +157,8 @@ use hoomd_vector::Cartesian;
 let mut microstate = Microstate::new();
 microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
 let d = 0.1;
-let translate_sweep = Sweep::new(Translate::new(d.try_into()?));
+let translate = Translate { maximum_distance: d.try_into()? };
+let translate_sweep = Sweep{ local: translate };
 
 let mut count = Count::default();
 

@@ -25,10 +25,10 @@ use thiserror::Error;
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
     /// A positive value greater than 0 is required.
-    #[error("Expected a value greater than 0, got: {0}")]
+    #[error("{0} is not greater than 0")]
     NotPositive(f64),
 
     /// A finite value is required.
-    #[error("Expected a real value, got: {0}")]
+    #[error("{0} is not finite")]
     NotFinite(f64),
 }

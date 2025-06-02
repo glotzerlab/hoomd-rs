@@ -231,7 +231,24 @@ scale with the number of neighbors.
 
 ## Boundary conditions
 
-TODO
+The microstate's **boundary** defines a subset of the vector space that contains
+all body and site positions. This boundary *may* be periodic, but does not
+necessarily need to tile space. A `Boundary` type expresses this interface via
+these methods:
+
+* `is_inside` - test if a point is inside the boundary.
+* `wrap` - wrap any site/body properties into the boundary.
+* TODO: Additional methods to generate ghost particles (possibly including
+  a `distance_to` - but what would that return for open boundaries?).
+
+`wrap` is fallible. It returns `Err` when it is not possible to wrap the given
+properties into the boundary. It takes a properties type to enable use-cases
+where wrapping applies operations other than translation. For example, a twisted
+cylinder.
+
+The TBD methods allow callers to generate ghost sites outside, but within a
+defined distance range, to the edge of the boundary. The ghost sites facilitate
+pairwise interactions across periodic boundaries.
 
 ## Body storage
 

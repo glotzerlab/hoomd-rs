@@ -125,7 +125,6 @@ impl From<Angle> for RotationMatrix<2> {
     ```
     */
     #[inline]
-    #[must_use]
     fn from(angle: Angle) -> RotationMatrix<2> {
         let sin_theta = angle.theta.sin();
         let cos_theta = angle.theta.cos();
@@ -264,7 +263,7 @@ impl Distribution<Angle> for StandardUniform {
             clippy::expect_used,
             reason = "This constants chosen for this distribution are valid"
         )]
-        let uniform = Uniform::new(0.0, 2.0 * PI).expect("a valid distribution");
+        let uniform = Uniform::new(0.0, 2.0 * PI).expect("hard-coded distribution should be valid");
         Angle::from(uniform.sample(rng))
     }
 }

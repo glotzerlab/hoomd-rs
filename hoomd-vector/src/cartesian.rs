@@ -104,7 +104,6 @@ impl<const N: usize> Default for Cartesian<N> {
     ```
     */
     #[inline]
-    #[must_use]
     fn default() -> Self {
         Cartesian::from([0.0; N])
     }
@@ -393,7 +392,8 @@ impl<const N: usize> Distribution<Cartesian<N>> for StandardUniform {
             clippy::expect_used,
             reason = "This constants chosen for this distribution are valid"
         )]
-        let uniform = Uniform::new_inclusive(-1.0, 1.0).expect("a valid distribution");
+        let uniform = Uniform::new_inclusive(-1.0, 1.0)
+            .expect("hard-coded range should form a valid distribution");
         Cartesian {
             coordinates: array::from_fn(|_| uniform.sample(rng)),
         }
@@ -858,32 +858,36 @@ mod tests {
     #[test]
     fn to_unit() {
         let a = Cartesian::from((2.0, 0.0, 0.0));
-        let (Unit(unit_a), _) = a.to_unit().expect("non-zero vector");
+        let (Unit(unit_a), _) = a
+            .to_unit()
+            .expect("hard-coded vector should have non-zero length");
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
         let (Unit(unit_a), _) = a.to_unit_unchecked();
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
-        let Unit(unit_a) =
-            Unit::<Cartesian<3>>::try_from([1.0, 0.0, 0.0]).expect("non-zero vector");
+        let Unit(unit_a) = Unit::<Cartesian<3>>::try_from([1.0, 0.0, 0.0])
+            .expect("hard-coded vector should have non-zero length");
         assert_eq!(unit_a, [1.0, 0.0, 0.0].into());
 
         let a = Cartesian::from((3.0, 0.0, 4.0));
-        let (Unit(unit_a), _) = a.to_unit().expect("non-zero vector");
+        let (Unit(unit_a), _) = a
+            .to_unit()
+            .expect("hard-coded vector should have non-zero length");
         assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
         let (Unit(unit_a), _) = a.to_unit_unchecked();
         assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
-        let Unit(unit_a) =
-            Unit::<Cartesian<3>>::try_from([3.0, 0.0, 4.0]).expect("non-zero vector");
+        let Unit(unit_a) = Unit::<Cartesian<3>>::try_from([3.0, 0.0, 4.0])
+            .expect("hard-coded vector should have non-zero length");
         assert_eq!(unit_a, [3.0 / 5.0, 0.0, 4.0 / 5.0].into());
 
         let a = Cartesian::from((0.0, 0.0, 0.0));
-        assert!(matches!(a.to_unit(), Err(Error::InvalidMagnitude)));
+        assert!(matches!(a.to_unit(), Err(Error::InvalidVectorMagnitude)));
         assert!(matches!(
             Unit::<Cartesian<3>>::try_from([0.0, 0.0, 0.0]),
-            Err(Error::InvalidMagnitude)
+            Err(Error::InvalidVectorMagnitude)
         ));
     }
 
