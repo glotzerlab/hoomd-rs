@@ -4,7 +4,7 @@
 /*! Implement [`Chimes2b`]
  */
 
-use super::{IsotropicEnergy, IsotropicForce};
+use super::{IsotropicEnergy, IsotropicForce, TersoffSmooth};
 use hoomd_utility::cheby::Chebyshev;
 use hoomd_utility::chimes_transformation::Transformation;
 
@@ -22,10 +22,9 @@ Where `c_i` is the `ChIMES` coefficent, `T_i` is the
 Chebyshev polynomials, and `s` is the transformed
 distance between particles, given by [`Transformation`].
 
-See equation 2 in <https://doi.org/10.1038/s41524-024-01497-y>.
-
 # Note:
-Must be used with the [`TersoffSmooth`] and [`ChimesPenalty`]
+* See equation 2 in <https://doi.org/10.1038/s41524-024-01497-y>.
+* Must be used with the [`TersoffSmooth`] and [`ChimesPenalty`]
 to enable correct potential calculation.
  */
 #[derive(Clone, Debug, PartialEq)]

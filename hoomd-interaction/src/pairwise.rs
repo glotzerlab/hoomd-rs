@@ -28,6 +28,9 @@ pub use weeks_chandler_anderson::WeeksChandlerAnderson;
 mod chimes_cheby2b;
 pub use chimes_cheby2b::Chimes2b;
 
+mod tersoff_smooth;
+pub use tersoff_smooth::TersoffSmooth;
+
 mod isotropic;
 pub use isotropic::Isotropic;
 
