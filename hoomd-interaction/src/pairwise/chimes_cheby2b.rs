@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`ChIMES_2B`]
+/*! Implement [`Chimes2b`]
  */
 
 use super::{IsotropicEnergy, IsotropicForce};
@@ -9,8 +9,24 @@ use hoomd_utility::cheby::Chebyshev;
 use hoomd_utility::chimes_transformation::Transformation;
 
 /**
-Implement the one- plus two-body
-part of `ChIMES` potential.
+Implement the main body of one- plus two-body
+part of `ChIMES` potential. It performs the
+sum of product between `ChIMES` coefficient
+and the corresponding Chebyshev polynomials as:
+
+```math
+U = c_{0} + \sum^{\mathcal{n-1}}}_{O=1} c_{O} T_{O}(s(r))
+```
+
+Where `c_i` is the `ChIMES` coefficent, `T_i` is the
+Chebyshev polynomials, and `s` is the transformed
+distance between particles, given by [`Transformation`].
+
+See equation 2 in <https://doi.org/10.1038/s41524-024-01497-y>.
+
+# Note:
+Must be used with the [`TersoffSmooth`] and [`ChimesPenalty`]
+to enable correct potential calculation.
  */
 #[derive(Clone, Debug, PartialEq)]
 pub struct Chimes2b<F: Transformation, T = Chebyshev> {
@@ -27,7 +43,10 @@ pub struct Chimes2b<F: Transformation, T = Chebyshev> {
 }
 
 impl<F: Transformation> Chimes2b<F, Chebyshev> {
-    /** Construct a [`ChIMES_2B_Cheby`] with the given values for `epsilon` and `sigma`.
+    /** Construct a [`Chimes2b`] with the given a transformation
+    fucntion `trans_style`, defined in [`Transformation`], `ChIMES`
+    one- plus two-body coefficient `coeff`, and the inner
+    distance cutoff `r_in`.
 
     # Example
 

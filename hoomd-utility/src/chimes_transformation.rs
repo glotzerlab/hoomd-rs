@@ -15,12 +15,19 @@ on particle pairwise distances of `ChIMES`
 potential.
  */
 pub trait Transformation {
-    /** Construct the Transformation trait.
-
+    /**
     Implement the transformation function `f(r)`
     that transform `r` into `s`, `s = f(r)`
 
     `s` is a variable fall in the interval [-1, 1].
+
+    # Note:
+    To be consistent with the origianl `ChIMES`
+    potential implementation, when `s` is equal
+    or larger than 1 (inner distance cut-off),
+    this function always return 1, and do not
+    take care of the case when `s` is equal or
+    smaller than -1.
 
      */
     #[must_use]
@@ -28,10 +35,10 @@ pub trait Transformation {
 
     /**
     Implement the derivative of transformation
-    function `\frac{ds}{dr} = \frac{f(r)}{r}`
+    function `\frac{ds}{dr} = \frac{f(r)}{r}`.
 
-    `s` is a variable fall in the interval [-1, 1].
-
+    Follows the same behaviour as the fucntion
+    `Transformation.s`.
      */
     #[must_use]
     fn ds_dr(&self, r: &f64) -> f64;

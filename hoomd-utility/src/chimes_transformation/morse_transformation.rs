@@ -10,7 +10,8 @@ use super::Transformation;
     outer radial cutoff `r_out` , and inner radial
     cutoff `r_in`. Finally, return a variable `s(r)`
     falls between [-1, 1] and its derivative `dr_dr(r)`
-    with respect to r.
+    with respect to r. See equation 3 to 5 in
+    <https://doi.org/10.1038/s41524-024-01497-y>.
 
 ```math
     s(r) = (x(r) - x_\mathrm{avg}) / x_\mathrm{diff}
