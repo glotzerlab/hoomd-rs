@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+  "hoomd-gsd",
   "hoomd-interaction",
   "hoomd-mc",
   "hoomd-microstate",
