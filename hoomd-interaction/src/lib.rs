@@ -141,7 +141,7 @@ Implement a custom site energy function:
 use hoomd_interaction::{CutoffPair, TotalEnergy, SitePairEnergy};
 use hoomd_microstate::{Microstate, Body};
 use hoomd_microstate::property::{Point, Position};
-use hoomd_vector::{Cartesian, Vector};
+use hoomd_vector::{Cartesian, InnerProduct};
 
 struct Custom {
     epsilon: f64,
@@ -183,7 +183,7 @@ mod tests {
     use hoomd_microstate::boundary::Open;
     use hoomd_microstate::property::{Point, Position};
     use hoomd_microstate::{Body, Microstate};
-    use hoomd_vector::Cartesian;
+    use hoomd_vector::{Cartesian};
     use rstest::*;
 
     mod single {

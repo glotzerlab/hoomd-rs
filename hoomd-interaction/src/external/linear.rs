@@ -6,7 +6,7 @@
 
 use super::super::SiteEnergy;
 use hoomd_microstate::property::Position;
-use hoomd_vector::{Unit, Vector};
+use hoomd_vector::{Unit, InnerProduct};
 
 /** Linear potential based on position.
 
@@ -46,7 +46,7 @@ pub struct Linear<V> {
 
 impl<V> Linear<V>
 where
-    V: Vector,
+    V: InnerProduct,
 {
     /** Compute the energy of a point in the linear field.
 
@@ -78,7 +78,7 @@ where
 impl<S, V> SiteEnergy<S> for Linear<V>
 where
     S: Position<Vector = V>,
-    V: Vector,
+    V: InnerProduct,
 {
     #[inline]
     fn site_energy(&self, site_properties: &S) -> f64 where {
