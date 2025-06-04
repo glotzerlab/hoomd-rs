@@ -725,11 +725,11 @@ impl GsdFile {
         };
 
         file.write_all(&header.to_ne_bytes()).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
-        let index = [0u8; INITIAL_INDEX_SIZE * INDEX_ENTRY_SIZE];
-        file.write_all(&index).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
-        let namelist = [0u8; INITIAL_NAME_BUFFER_SIZE];
-        file.write_all(&namelist).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
 
+        file.set_len((HEADER_SIZE + INDEX_ENTRY_SIZE * INITIAL_INDEX_SIZE + INITIAL_NAME_BUFFER_SIZE) as u64).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;;
+
+        file.sync_all().map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
+        
         Ok(())
     }
 
@@ -999,7 +999,7 @@ impl GsdFile {
 
     # Errors
 
-    `read_arrayk` may experience I/O errors or find corrupt data in the file. The
+    `read_array` may experience I/O errors or find corrupt data in the file. The
     returned [`ReadError`] describes the cause of any error encountered.
 
     # Example
