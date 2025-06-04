@@ -6,8 +6,6 @@
 TODO: Expand documentation.
  */
 
-#![allow(clippy::cast_possible_truncation, reason = "Casts are error checked on load and sync.")]
-
 use memmap2::Mmap;
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -24,8 +22,14 @@ const NAME_SIZE: u64 = 64;
 /// Number of bytes in an index entry.
 const INDEX_ENTRY_SIZE: u64 = 32;
 
+/// Index entry as a usize.
+const INDEX_ENTRY_USIZE: usize = 32;
+
 /// Number of bytes in the header.
 const HEADER_SIZE: u64 = 256;
+
+/// Header size as a usize.
+const HEADER_USIZE: usize = 256;
 
 /// Magic value identifying a GSD file
 const MAGIC_ID: u64 = 0x65DF_65DF_65DF_65DF;
@@ -321,6 +325,19 @@ pub(crate) struct GsdHeader {
     schema: String,
 }
 
+/// Details about the name list
+#[derive(Debug)]
+struct NameList {
+    /// Name/id mapping.
+    name_id: HashMap<String, u16>,
+
+    /// Number of names in the map.
+    n_names: u32,
+
+    /// Insert position in the name list.
+    insert_position: u64,
+}       
+
 /** Interact with GSD files on the filesystem.
 */
 #[derive(Debug)]
@@ -340,11 +357,8 @@ pub struct GsdFile {
     /// Length of the file in bytes.
     file_len: u64,
 
-    /// Name/id mapping.
-    name_id: HashMap<String, u16>,
-
-    /// Number of names in the map.
-    n_names: u32,
+    /// The name list.
+    name_list: NameList,
 
     /// Number of index entries.
     n_index_entries: u64,
@@ -499,7 +513,7 @@ fn extract_null_terminated_utf8(bytes: &[u8]) -> Result<(String, &[u8]), FromUtf
 impl GsdHeader {
 
     /// Parse the header.
-    fn try_from_ne_bytes(value: [u8; HEADER_SIZE as usize]) -> Result<Self, DecodeError> {
+    fn try_from_ne_bytes(value: [u8; HEADER_USIZE]) -> Result<Self, DecodeError> {
         // Validate the magic number first to ensure that we expect the rest
         // of the header to be formatted appropriately. Otherwise, later
         // error checks in this method will be examining undefined data.
@@ -557,8 +571,8 @@ impl GsdHeader {
     }
 
     /// Encode the header into bytes following the GSD specification.
-    fn to_ne_bytes(&self) -> [u8; HEADER_SIZE as usize] {
-        let mut result = [0u8; HEADER_SIZE as usize];
+    fn to_ne_bytes(&self) -> [u8; HEADER_USIZE] {
+        let mut result = [0u8; HEADER_USIZE];
         result[0..8].copy_from_slice(&self.magic.to_ne_bytes());
         result[8..16].copy_from_slice(&self.index_location.to_ne_bytes());
         result[16..24].copy_from_slice(&self.index_allocated_entries.to_ne_bytes());
@@ -762,13 +776,13 @@ impl GsdFile {
         let mut file = file;
         file.rewind()?;
 
-        let mut header_bytes = [0_u8; HEADER_SIZE as usize];
+        let mut header_bytes = [0_u8; HEADER_USIZE];
         file.read_exact(&mut header_bytes)?;
         let header = GsdHeader::try_from_ne_bytes(header_bytes)?;
 
         let file_len = file.seek(SeekFrom::End(0))?;
         // Verify that the entire file is addressable in the mmap. This makes
-        // the "as usize" conversions in mmap addressing safe.
+        // the usize::try_from checks in get_index will not fail.
         usize::try_from(file_len).map_err(DecodeError::UnaddressableContent)?;
 
         // Provide the caller with helpful errors when the code would otherwise
@@ -784,8 +798,7 @@ impl GsdFile {
         }
         let namelist_range_end =
             header.namelist_location + header.namelist_allocated_entries * NAME_SIZE;
-        if header.namelist_location > file_len
-            || namelist_range_end > file_len
+        if namelist_range_end > file_len
             || header.namelist_allocated_entries == 0
         {
             return Err(DecodeError::NameListOutOfBounds(
@@ -795,12 +808,14 @@ impl GsdFile {
         }
 
         let mmap = unsafe { Mmap::map(&file)? };
-        if mmap[(namelist_range_end - 1) as usize] != 0 {
+        let last_namelist_offset = usize::try_from(namelist_range_end - 1).map_err(DecodeError::UnaddressableIndex)?;
+        if mmap[last_namelist_offset] != 0 {
             return Err(DecodeError::NameListNotTerminated);
         }
 
-        let (name_id, n_names) =
-            GsdFile::decode_name_map(&mmap[header.namelist_location as usize..namelist_range_end as usize])?;
+        let start = usize::try_from(header.namelist_location).map_err(DecodeError::UnaddressableIndex)?;
+        let end = usize::try_from(namelist_range_end).map_err(DecodeError::UnaddressableIndex)?;
+        let name_list = GsdFile::decode_name_map(&mmap[start..end])?;
 
         // TODO: Write buffers.
         // TODO: silently upgrade writable files to the latest minor version.
@@ -811,41 +826,47 @@ impl GsdFile {
             header,
             mmap,
             file_len,
-            name_id,
-            n_names,
+            name_list,
             n_index_entries: 0,
             current_frame: 0,
         };
 
         gsd_file.n_index_entries = gsd_file.count_index_entries()?;
         if gsd_file.n_index_entries > 0 {
-            gsd_file.current_frame = gsd_file.get_index(gsd_file.n_index_entries - 1).frame + 1;
+            let last_entry = gsd_file.get_index(gsd_file.n_index_entries - 1)?;
+            gsd_file.current_frame = last_entry.frame + 1;
         }
 
         Ok(gsd_file)
     }
 
     /// Read the initial name map from the file.
-    fn decode_name_map(bytes: &[u8]) -> Result<(HashMap<String, u16>, u32), DecodeError> {
+    fn decode_name_map(bytes: &[u8]) -> Result<NameList, DecodeError> {
         let mut name_id = HashMap::new();
         let mut bytes = bytes;
 
         let mut current_id: u16 = 0;
-        loop {
+        let mut insert_position: u64 = 0;
+        while !bytes.is_empty() && bytes[0] != 0 {
             let (name, rest) =
                 extract_null_terminated_utf8(bytes).map_err(DecodeError::InvalidChunkName)?;
             bytes = rest;
+
+            // The GSD spec ensures that all names in the map are always terminated.
+            insert_position += (name.len()+1) as u64;
+            
             let previous = name_id.insert(name, current_id);
             if previous.is_some() {
                 return Err(DecodeError::DuplicateChunkName);
             }
             current_id += 1;
 
-            if bytes.is_empty() || bytes[0] == 0 {
-                break;
-            }
         }
-        Ok((name_id, u32::from(current_id)))
+
+        Ok(NameList { name_id,
+            n_names: u32::from(current_id),
+            insert_position,
+            })
     }
 
     /// Remap the file
@@ -863,7 +884,7 @@ impl GsdFile {
     }
 
     /// Access a single index entry from the memory map.
-    fn get_index(&self, i: u64) -> IndexEntry {
+    fn get_index(&self, i: u64) -> Result<IndexEntry, DecodeError> {
         // get_index is an internal method, assume that any caller has already
         // called remap() if needed. Verify this in debug builds.
         debug_assert!(self.mmap.len() as u64 == self.file_len);
@@ -874,10 +895,15 @@ impl GsdFile {
             end < self.header.index_location
                 + self.header.index_allocated_entries * INDEX_ENTRY_SIZE
         );
-        let bytes: [u8; INDEX_ENTRY_SIZE as usize] = self.mmap[start as usize..end as usize]
+
+        let start = usize::try_from(start)
+            .map_err(DecodeError::UnaddressableIndex)?;
+        let end = usize::try_from(end)
+            .map_err(DecodeError::UnaddressableIndex)?;
+        let bytes: [u8; INDEX_ENTRY_USIZE] = self.mmap[start..end]
             .try_into()
             .expect("slice should always be the correct size");
-        IndexEntry::from_ne_bytes(bytes)
+        Ok(IndexEntry::from_ne_bytes(bytes))
     }
 
     /// Get the size of a type given by its identifier.
@@ -918,7 +944,7 @@ impl GsdFile {
         }
 
         // TODO: include buffered names
-        if u32::from(entry.id) >= self.n_names {
+        if u32::from(entry.id) >= self.name_list.n_names {
             return false;
         }
 
@@ -931,12 +957,12 @@ impl GsdFile {
 
     /// Determine the number of frames in the file.
     fn count_index_entries(&self) -> Result<u64, DecodeError> {
-        let first_entry = self.get_index(0);
+        let first_entry = self.get_index(0)?;
         if first_entry.location != 0 && !self.is_entry_valid(&first_entry) {
             return Err(DecodeError::CorruptIndexEntry(first_entry));
         }
 
-        if self.get_index(0).location == 0 {
+        if first_entry.location == 0 {
             return Ok(0);
         }
 
@@ -951,8 +977,8 @@ impl GsdFile {
 
             // file is corrupt if any index entry is invalid or frame does not increase
             // monotonically
-            let entry_m = self.get_index(m);
-            let entry_l = self.get_index(l);
+            let entry_m = self.get_index(m)?;
+            let entry_l = self.get_index(l)?;
 
             if entry_m.location != 0 {
                 if !self.is_entry_valid(&entry_m) || entry_m.frame < entry_l.frame {
@@ -998,7 +1024,7 @@ impl GsdFile {
             return None;
         }
 
-        let id = match self.name_id.get(name) {
+        let id = match self.name_list.name_id.get(name) {
             None => return None,
             Some(id) => *id,
         };
@@ -1009,11 +1035,17 @@ impl GsdFile {
 
         while l <= r {
             let m = l.midpoint(r);
-            let index_entry_m = self.get_index(m);
-            match (index_entry_m.frame, index_entry_m.id).cmp(&(frame, id)) {
-                Ordering::Less => l = m + 1,
-                Ordering::Greater => r = m - 1,
-                Ordering::Equal => return Some(index_entry_m),
+
+            // We can map an error to None here because the unaddressable index error
+            // would have previously been caught on open or sync.
+            if let Ok(index_entry_m) = self.get_index(m) {
+                match (index_entry_m.frame, index_entry_m.id).cmp(&(frame, id)) {
+                    Ordering::Less => l = m + 1,
+                    Ordering::Greater => r = m - 1,
+                    Ordering::Equal => return Some(index_entry_m),
+                }
+            } else {
+                return None
             }
         }
         None
