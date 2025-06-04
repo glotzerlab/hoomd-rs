@@ -4,17 +4,18 @@
 /*! Implement [`TersoffSmooth`]
  */
 
-use super::{Chimes2b, IsotropicEnergy, IsotropicForce};
+use super::{IsotropicEnergy, IsotropicForce};
 use std::f64::consts::PI;
 
 /**
-Implement the Tersoff style smoothing `f_s` of `ChIMES`
+Implement the Tersoff style smoothing $`f_s`$ of `ChIMES`
 potential, for one plus two-body case:
 
 ```math
-U(r) = c_0 + f_s(r) \sum^{\mathcal{n-1}}}_{O=1} c_{O} T_{O}(s(r))
+U(r) = f_s(r) \sum^{n}_{O=1} c_{O} T_{O}(s(r))
 ```
 where:
+
 ```math
 f_s(r) =
 \begin{cases}
@@ -79,5 +80,57 @@ impl<F> TersoffSmooth<F> {
             let pref = PI / (self.r_out - dt);
             0.5 * pref * (pref * (r - dt) + 0.5 * PI).cos()
         }
+    }
+}
+
+impl<F: IsotropicEnergy> IsotropicEnergy for TersoffSmooth<F> {
+    #[inline]
+    fn energy(&self, r: f64) -> f64 {
+        self.fs(r) * self.f.energy(r)
+    }
+}
+
+impl<F: IsotropicForce + IsotropicEnergy> IsotropicForce for TersoffSmooth<F> {
+    #[inline]
+    fn force(&self, r: f64) -> f64 {
+        // Chain rule of -d/dr(fs(r)*U(r))
+        self.fs(r) * self.f.force(r) - self.dfs_dr(r) * self.f.energy(r)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hoomd_utility::chimes_transformation::MorseTransformation;
+    use rstest::*;
+
+    use crate::pairwise::Chimes2b;
+
+    #[rstest]
+    fn general_case() {
+        let lambda = 1.5;
+        let r_out = 3.0;
+        let r_in = 1.0;
+        let fo = 0.75;
+        let coeff_2b = vec![1.0, 2.0, 3.0];
+
+        let morse_trans: MorseTransformation = MorseTransformation {
+            lambda,
+            r_out,
+            r_in,
+        };
+
+        let chimes2b_cheby: Chimes2b<MorseTransformation> =
+            Chimes2b::new(morse_trans, coeff_2b, r_in);
+
+        let chimes2b = TersoffSmooth {
+            f: chimes2b_cheby,
+            r_out,
+            r_in,
+            fo,
+        };
+        assert_eq!(chimes2b.r_out, 3.0);
+        assert_eq!(chimes2b.r_in, 1.0);
+        assert_eq!(chimes2b.fo, 0.75);
     }
 }
