@@ -409,7 +409,7 @@ pub trait InnerProduct: Vector {
     <div class="warning">
 
     Computing the norm calls `sqrt`. Prefer
-    [`norm_squared`](Vector::norm_squared) when possible.
+    [`norm_squared`](InnerProduct::norm_squared) when possible.
 
     </div>
 
