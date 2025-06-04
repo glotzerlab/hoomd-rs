@@ -342,12 +342,10 @@ pub trait Vector:
 { 
     /** Compute the squared distance between two vectors belonging to a metric space.
     */
-    #[inline]
     fn distance_sq(&self, other:&Self) -> f64;
 
     /** Compute the distance between two vectors belonging to a metric space.
     */
-    #[inline]
     fn distance(&self, other: &Self) -> f64;
 
 }

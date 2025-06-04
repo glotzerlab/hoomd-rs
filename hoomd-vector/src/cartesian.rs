@@ -262,7 +262,7 @@ impl<const N: usize> Vector for Cartesian<N> {
     }
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
-        self.distance_sq(&other).sqrt()
+        self.distance_sq(other).sqrt()
     }
 }
 
