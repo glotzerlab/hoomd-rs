@@ -6,6 +6,8 @@
 TODO: Expand documentation.
  */
 
+#![allow(clippy::cast_possible_truncation, reason = "Casts are error checked on load and sync.")]
+
 use memmap2::Mmap;
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -17,13 +19,13 @@ use std::string::FromUtf8Error;
 use thiserror::Error;
 
 /// The name buffer is a multiple of `NAME_SIZE` bytes.
-const NAME_SIZE: usize = 64;
+const NAME_SIZE: u64 = 64;
 
 /// Number of bytes in an index entry.
-const INDEX_ENTRY_SIZE: usize = 32;
+const INDEX_ENTRY_SIZE: u64 = 32;
 
 /// Number of bytes in the header.
-const HEADER_SIZE: usize = 256;
+const HEADER_SIZE: u64 = 256;
 
 /// Magic value identifying a GSD file
 const MAGIC_ID: u64 = 0x65DF_65DF_65DF_65DF;
@@ -32,10 +34,10 @@ const MAGIC_ID: u64 = 0x65DF_65DF_65DF_65DF;
 const CURRENT_FILE_VERSION: (u16, u16) = (2, 1);
 
 /// The size of the file index in new GSD files.
-const INITIAL_INDEX_SIZE: usize = 128;
+const INITIAL_INDEX_SIZE: u64 = 128;
 
 /// Initial name list size
-const INITIAL_NAME_BUFFER_SIZE: usize = 1024;
+const INITIAL_NAME_BUFFER_SIZE: u64 = 1024;
 
 
 /// Errors that can occur during while decoding file content.
@@ -60,11 +62,11 @@ pub enum DecodeError {
 
     /// Index outside the file.
     #[error("index out of bounds (location={0}, length={1})")]
-    IndexOutOfBounds(usize, usize),
+    IndexOutOfBounds(u64, u64),
 
     /// Name list outside the file.
     #[error("name list out of bounds (location={0}, length={1})")]
-    NameListOutOfBounds(usize, usize),
+    NameListOutOfBounds(u64, u64),
 
     /// Name list outside the file.
     #[error("name list not terminated")]
@@ -295,16 +297,16 @@ pub(crate) struct GsdHeader {
     magic: u64,
 
     /// Location of the chunk index in the file.
-    index_location: usize,
+    index_location: u64,
 
     /// Number of index entries that will fit in the space allocated.
-    index_allocated_entries: usize,
+    index_allocated_entries: u64,
 
     /// Location of the name list in the file.
-    namelist_location: usize,
+    namelist_location: u64,
 
     /// Number of bytes in the namelist divided by `NAME_SIZE`.
-    namelist_allocated_entries: usize,
+    namelist_allocated_entries: u64,
 
     /// Schema version.
     schema_version: (u16, u16),
@@ -336,16 +338,16 @@ pub struct GsdFile {
     mmap: Mmap,
 
     /// Length of the file in bytes.
-    file_len: usize,
+    file_len: u64,
 
     /// Name/id mapping.
     name_id: HashMap<String, u16>,
 
     /// Number of names in the map.
-    n_names: usize,
+    n_names: u32,
 
     /// Number of index entries.
-    n_index_entries: usize,
+    n_index_entries: u64,
 
     /// Index of the current frame.
     current_frame: u64,
@@ -497,7 +499,7 @@ fn extract_null_terminated_utf8(bytes: &[u8]) -> Result<(String, &[u8]), FromUtf
 impl GsdHeader {
 
     /// Parse the header.
-    fn try_from_ne_bytes(value: [u8; HEADER_SIZE]) -> Result<Self, DecodeError> {
+    fn try_from_ne_bytes(value: [u8; HEADER_SIZE as usize]) -> Result<Self, DecodeError> {
         // Validate the magic number first to ensure that we expect the rest
         // of the header to be formatted appropriately. Otherwise, later
         // error checks in this method will be examining undefined data.
@@ -507,20 +509,17 @@ impl GsdHeader {
         }
 
         let (index_location, rest) = extract_ne_u64(rest);
-        let index_location =
-            usize::try_from(index_location).map_err(DecodeError::UnaddressableIndex)?;
-
         let (index_allocated_entries, rest) = extract_ne_u64(rest);
-        let index_allocated_entries =
-            usize::try_from(index_allocated_entries).map_err(DecodeError::UnaddressableIndex)?;
-
         let (namelist_location, rest) = extract_ne_u64(rest);
-        let namelist_location =
-            usize::try_from(namelist_location).map_err(DecodeError::UnaddressableIndex)?;
-
         let (namelist_allocated_entries, rest) = extract_ne_u64(rest);
-        let namelist_allocated_entries =
-            usize::try_from(namelist_allocated_entries).map_err(DecodeError::UnaddressableIndex)?;
+
+        // Verify that all locations are addressable in the memory map once on
+        // initialization. That way, it is safe to cast from the various byte
+        // locations to usize in the read methods.
+        usize::try_from(index_location).map_err(DecodeError::UnaddressableIndex)?;
+        usize::try_from(index_allocated_entries).map_err(DecodeError::UnaddressableIndex)?;
+        usize::try_from(namelist_location).map_err(DecodeError::UnaddressableIndex)?;
+        usize::try_from(namelist_allocated_entries).map_err(DecodeError::UnaddressableIndex)?;
 
         let (schema_version, rest) = extract_ne_u32(rest);
         let (gsd_version, rest) = extract_ne_u32(rest);
@@ -558,13 +557,13 @@ impl GsdHeader {
     }
 
     /// Encode the header into bytes following the GSD specification.
-    fn to_ne_bytes(&self) -> [u8; HEADER_SIZE] {
-        let mut result = [0u8; HEADER_SIZE];
+    fn to_ne_bytes(&self) -> [u8; HEADER_SIZE as usize] {
+        let mut result = [0u8; HEADER_SIZE as usize];
         result[0..8].copy_from_slice(&self.magic.to_ne_bytes());
-        result[8..16].copy_from_slice(&(self.index_location as u64).to_ne_bytes());
-        result[16..24].copy_from_slice(&(self.index_allocated_entries as u64).to_ne_bytes());
-        result[24..32].copy_from_slice(&(self.namelist_location as u64).to_ne_bytes());
-        result[32..40].copy_from_slice(&(self.namelist_allocated_entries as u64).to_ne_bytes());
+        result[8..16].copy_from_slice(&self.index_location.to_ne_bytes());
+        result[16..24].copy_from_slice(&self.index_allocated_entries.to_ne_bytes());
+        result[24..32].copy_from_slice(&self.namelist_location.to_ne_bytes());
+        result[32..40].copy_from_slice(&self.namelist_allocated_entries.to_ne_bytes());
         let schema_version = u32::from(self.schema_version.0) << 16 | u32::from(self.schema_version.1);
         result[40..44].copy_from_slice(&schema_version.to_ne_bytes());
         let gsd_version: u32 = u32::from(self.gsd_version.0) << 16 | u32::from(self.gsd_version.1);
@@ -729,11 +728,11 @@ impl GsdFile {
     fn initialize_file<P: AsRef<Path>>(file: &mut File, path: &P, application: &str, schema: &str, schema_version: (u16, u16)) -> Result<(), OpenError> {
 
         let application = String::from(application);
-        if application.len() > NAME_SIZE-1 {
+        if application.len() as u64 > NAME_SIZE-1 {
             return Err(OpenError::NameToLong(application));
         }
         let schema = String::from(schema);
-        if schema.len() > NAME_SIZE-1 {
+        if schema.len() as u64 > NAME_SIZE-1 {
             return Err(OpenError::NameToLong(schema));
         }
 
@@ -751,7 +750,7 @@ impl GsdFile {
 
         file.write_all(&header.to_ne_bytes()).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
 
-        file.set_len((HEADER_SIZE + INDEX_ENTRY_SIZE * INITIAL_INDEX_SIZE + INITIAL_NAME_BUFFER_SIZE) as u64).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
+        file.set_len(HEADER_SIZE + INDEX_ENTRY_SIZE * INITIAL_INDEX_SIZE + INITIAL_NAME_BUFFER_SIZE).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
 
         file.sync_all().map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
         
@@ -763,12 +762,14 @@ impl GsdFile {
         let mut file = file;
         file.rewind()?;
 
-        let mut header_bytes = [0_u8; HEADER_SIZE];
+        let mut header_bytes = [0_u8; HEADER_SIZE as usize];
         file.read_exact(&mut header_bytes)?;
         let header = GsdHeader::try_from_ne_bytes(header_bytes)?;
 
         let file_len = file.seek(SeekFrom::End(0))?;
-        let file_len = usize::try_from(file_len).map_err(DecodeError::UnaddressableContent)?;
+        // Verify that the entire file is addressable in the mmap. This makes
+        // the "as usize" conversions in mmap addressing safe.
+        usize::try_from(file_len).map_err(DecodeError::UnaddressableContent)?;
 
         // Provide the caller with helpful errors when the code would otherwise
         // access the memory map outside the contents of the file.
@@ -794,12 +795,12 @@ impl GsdFile {
         }
 
         let mmap = unsafe { Mmap::map(&file)? };
-        if mmap[namelist_range_end - 1] != 0 {
+        if mmap[(namelist_range_end - 1) as usize] != 0 {
             return Err(DecodeError::NameListNotTerminated);
         }
 
         let (name_id, n_names) =
-            GsdFile::decode_name_map(&mmap[header.namelist_location..namelist_range_end])?;
+            GsdFile::decode_name_map(&mmap[header.namelist_location as usize..namelist_range_end as usize])?;
 
         // TODO: Write buffers.
         // TODO: silently upgrade writable files to the latest minor version.
@@ -825,7 +826,7 @@ impl GsdFile {
     }
 
     /// Read the initial name map from the file.
-    fn decode_name_map(bytes: &[u8]) -> Result<(HashMap<String, u16>, usize), DecodeError> {
+    fn decode_name_map(bytes: &[u8]) -> Result<(HashMap<String, u16>, u32), DecodeError> {
         let mut name_id = HashMap::new();
         let mut bytes = bytes;
 
@@ -844,7 +845,7 @@ impl GsdFile {
                 break;
             }
         }
-        Ok((name_id, usize::from(current_id)))
+        Ok((name_id, u32::from(current_id)))
     }
 
     /// Remap the file
@@ -862,10 +863,10 @@ impl GsdFile {
     }
 
     /// Access a single index entry from the memory map.
-    fn get_index(&self, i: usize) -> IndexEntry {
+    fn get_index(&self, i: u64) -> IndexEntry {
         // get_index is an internal method, assume that any caller has already
         // called remap() if needed. Verify this in debug builds.
-        debug_assert!(self.mmap.len() == self.file_len);
+        debug_assert!(self.mmap.len() as u64 == self.file_len);
 
         let start = self.header.index_location + i * INDEX_ENTRY_SIZE;
         let end = start + INDEX_ENTRY_SIZE;
@@ -873,7 +874,7 @@ impl GsdFile {
             end < self.header.index_location
                 + self.header.index_allocated_entries * INDEX_ENTRY_SIZE
         );
-        let bytes: [u8; INDEX_ENTRY_SIZE] = self.mmap[start..end]
+        let bytes: [u8; INDEX_ENTRY_SIZE as usize] = self.mmap[start as usize..end as usize]
             .try_into()
             .expect("slice should always be the correct size");
         IndexEntry::from_ne_bytes(bytes)
@@ -902,7 +903,7 @@ impl GsdFile {
         match GsdFile::size_of(entry.data_type) {
             Some(element_size) => {
                 let total_size = entry.n * u64::from(entry.m) * element_size as u64;
-                if entry.location + total_size > self.file_len as u64 {
+                if entry.location + total_size > self.file_len {
                     return false;
                 }
             }
@@ -912,12 +913,12 @@ impl GsdFile {
         // is_entry_valid is used before the file is fully loaded and the number
         // of frames is not yet known. Check that the frame is at least within
         // the number of allocated index entries.
-        if entry.frame >= self.header.index_allocated_entries as u64 {
+        if entry.frame >= self.header.index_allocated_entries {
             return false;
         }
 
         // TODO: include buffered names
-        if usize::from(entry.id) >= self.n_names {
+        if u32::from(entry.id) >= self.n_names {
             return false;
         }
 
@@ -929,7 +930,7 @@ impl GsdFile {
     }
 
     /// Determine the number of frames in the file.
-    fn count_index_entries(&self) -> Result<usize, DecodeError> {
+    fn count_index_entries(&self) -> Result<u64, DecodeError> {
         let first_entry = self.get_index(0);
         if first_entry.location != 0 && !self.is_entry_valid(&first_entry) {
             return Err(DecodeError::CorruptIndexEntry(first_entry));
@@ -941,7 +942,7 @@ impl GsdFile {
 
         // determine the number of index entries (marked by location = 0)
         // binary search for the first index entry with location 0
-        let mut l: usize = 0;
+        let mut l: u64= 0;
         let mut r = self.header.index_allocated_entries;
 
         // progressively narrow the search window by halves
@@ -1003,7 +1004,7 @@ impl GsdFile {
         };
 
         // binary search for the index entry
-        let mut l: usize = 0;
+        let mut l: u64 = 0;
         let mut r = self.n_index_entries - 1;
 
         while l <= r {
