@@ -8,7 +8,7 @@ use crate::{
 };
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
 
-/// TODO
+/// Convex is a newtype that checks for intersections using xenocollide.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Convex<S>(pub S);
 

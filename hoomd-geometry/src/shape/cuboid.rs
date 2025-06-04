@@ -6,7 +6,7 @@ use crate::{BoundingSphereRadius, SupportMapping, Volume};
 use hoomd_vector::Cartesian;
 use itertools::multizip;
 
-/** An axis-aligned N-cuboid
+/** An axis-aligned N-cuboid.
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Cuboid<const N: usize> {

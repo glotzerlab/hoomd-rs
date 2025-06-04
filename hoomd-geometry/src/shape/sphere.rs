@@ -33,7 +33,7 @@ pub(crate) fn sphere_volume_prefactor(n: usize) -> f64 {
     }
 }
 
-/// An n-hypersphere
+/// A generalized sphere object in N dimensions.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Hypersphere<const N: usize> {
     /// Radius of the sphere

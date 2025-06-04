@@ -82,7 +82,7 @@ pub mod xenocollide;
 
 /// The N-hypervolume of a geometry. In 2D, this is area and in 3D this is Volume.
 pub trait Volume {
-    /// The N-hypervolume of a geometry
+    /// The N-hypervolume of a geometry.
     #[must_use]
     fn volume(&self) -> f64;
 }
@@ -115,7 +115,9 @@ pub trait IntersectsAt<S, V, R> {
     /// Determine whether a Particle intersects another shape at some position and orientation.
     fn intersects_at(&self, other: &S, v_ij: &V, o_ij: &R) -> bool;
 }
-/// TODO:
+/**
+Radius of an N-dimensional hypersphere that tightly bounds a shape.
+ */
 pub trait BoundingSphereRadius {
     /// A reasonably tight-fitting bounding Hypersphere radius for a shape.
     fn bounding_sphere_radius(&self) -> f64;
