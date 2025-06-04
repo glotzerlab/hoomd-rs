@@ -19,6 +19,7 @@ impl Chebyshev {
     /** The `eval_cheby` fucntion returns a vector where
     the `i`-th element is `T_i(s)`, computed using the
     recurrence relation:
+
     ```math
     \begin{cases}
     T_0(s) = 1 \\
@@ -81,6 +82,7 @@ impl Chebyshev {
     ```
 
     Then use the relation:
+
     ```math
     \frac{d T_i}{ds} = i \times U_{i-1}(s) ,
     ```
@@ -139,8 +141,9 @@ impl Chebyshev {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::*;
 
-    #[test]
+    #[rstest]
     fn test_eval_cheby() {
         let cheby = Chebyshev { n: 4 };
         let s = 0.5;
@@ -162,7 +165,7 @@ mod tests {
         assert_eq!(cheby_one.eval_cheby(&s), vec![1.0]);
     }
 
-    #[test]
+    #[rstest]
     fn test_eval_dcheby_ds() {
         let cheby = Chebyshev { n: 4 };
         let s = 0.5;

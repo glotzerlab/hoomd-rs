@@ -6,20 +6,22 @@
 
 use super::Transformation;
 /** Calculate the morse transformation style given
-    distance `r` with morse decaying factor `lambda`,
-    outer radial cutoff `r_out` , and inner radial
-    cutoff `r_in`. Finally, return a variable `s(r)`
-    falls between [-1, 1] and its derivative `dr_dr(r)`
-    with respect to r. See equation 3 to 5 in
+    distance $`r`$ with morse decaying factor $`\lambda`$,
+    outer radial cutoff $`r_\mathrm{out}`$ , and inner radial
+    cutoff $`r_\mathrm{in}`$. Finally, return a variable $`s(r)`$
+    falls between [-1, 1] and its derivative $`\frac{ds(r)}{dr}`$
+    with respect to $`r`$. See equation 3 to 5 in
     <https://doi.org/10.1038/s41524-024-01497-y>.
 
 ```math
-    s(r) = (x(r) - x_\mathrm{avg}) / x_\mathrm{diff}
-    x(r) = \exp{(-r/\lambda)}
-    x_\mathrm{avg} = 0.5(\exp{(-r_\mathrm{out}/\lambda)}
-      + \exp{(-r_\mathrm{in}/\lambda)})
-    x_\mathrm{diff} = 0.5|\exp{(-r_\mathrm{out}/\lambda)}
+    \begin{align*}
+    s(r) &= (x(r) - x_\mathrm{avg}) / x_\mathrm{diff} \\
+    x(r) &= \exp{(-r/\lambda)} \\
+    x_\mathrm{avg} &= 0.5(\exp{(-r_\mathrm{out}/\lambda)}
+      + \exp{(-r_\mathrm{in}/\lambda)}) \\
+    x_\mathrm{diff} &= 0.5|\exp{(-r_\mathrm{out}/\lambda)}
       - \exp{(-r_\mathrm{in}/\lambda)}|
+    \end{align*}
 ```
 
 # Example
@@ -38,8 +40,8 @@ pub struct MorseTransformation {
 
 impl Transformation for MorseTransformation {
     /** Construct an [`MorseTransformation`] with the given
-    Morse decaying factor `lambda`, outer cutoff `r_out`,
-    and inner cutoff `r_on`.
+    Morse decaying factor $`\lambda`$, outer cutoff $`r_\mathrm{out}`$,
+    and inner cutoff $`r_\mathrm{on}`$.
 
     # Example
 
