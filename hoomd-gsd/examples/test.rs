@@ -1,7 +1,7 @@
-use hoomd_gsd::file_layer::GsdFile;
+use hoomd_gsd::file_layer::{GsdFile, Mode};
 
 fn main() -> anyhow::Result<()> {
-    let mut gsd_file = GsdFile::open("test.gsd")?;
+    let mut gsd_file = GsdFile::open("test.gsd", Mode::Read)?;
 
     println!("{:?}", gsd_file);
     println!("{:?}", gsd_file.read_array::<f32>(0, "particles/position")?);

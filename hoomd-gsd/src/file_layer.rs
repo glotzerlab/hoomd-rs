@@ -326,6 +326,9 @@ pub struct GsdFile {
     /// The underlying file.
     file: File,
 
+    /// The file's mode.
+    mode: Mode,
+
     /// Parsed copy of the file's header.
     header: GsdHeader,
 
@@ -407,6 +410,26 @@ pub enum DataType {
     F64,
     /// [`String`]
     String,
+}
+
+/** Choose how opened files can be accessed.
+
+Pass an [`Mode`] value to [`GsdFile::open`].
+
+In the [`Mode::Read`] mode, you can call methods that read the file, such as
+[`GsdFile::find_chunk`] and [`GsdFile::read_array`]. Calling methods that write
+the file, such as [`GsdFile::write_array`] or [`GsdFile::sync_all`] will result
+in an error.
+
+In the [`Mode::Write`] mode, you can call both read and write methods.
+*/
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum Mode {
+    /// Read-only.
+    Read,
+    /// Allow both read and write operations.
+    Write,
 }
 
 /** Read the first u64 in a byte slice (native endian).
@@ -534,6 +557,7 @@ impl GsdHeader {
         })
     }
 
+    /// Encode the header into bytes following the GSD specification.
     fn to_ne_bytes(&self) -> [u8; HEADER_SIZE] {
         let mut result = [0u8; HEADER_SIZE];
         result[0..8].copy_from_slice(&self.magic.to_ne_bytes());
@@ -541,12 +565,12 @@ impl GsdHeader {
         result[16..24].copy_from_slice(&(self.index_allocated_entries as u64).to_ne_bytes());
         result[24..32].copy_from_slice(&(self.namelist_location as u64).to_ne_bytes());
         result[32..40].copy_from_slice(&(self.namelist_allocated_entries as u64).to_ne_bytes());
-        let schema_version: u32 = (self.schema_version.0 as u32) << 16 | (self.schema_version.1 as u32);
+        let schema_version = u32::from(self.schema_version.0) << 16 | u32::from(self.schema_version.1);
         result[40..44].copy_from_slice(&schema_version.to_ne_bytes());
-        let gsd_version: u32 = (self.gsd_version.0 as u32) << 16 | (self.gsd_version.1 as u32);
+        let gsd_version: u32 = u32::from(self.gsd_version.0) << 16 | u32::from(self.gsd_version.1);
         result[44..48].copy_from_slice(&gsd_version.to_ne_bytes());
-        result[48..48+self.application.len()].copy_from_slice(self.application.as_str().as_bytes());
-        result[112..112+self.schema.len()].copy_from_slice(self.schema.as_str().as_bytes());
+        result[48..48+self.application.len()].copy_from_slice(self.application.as_bytes());
+        result[112..112+self.schema.len()].copy_from_slice(self.schema.as_bytes());
 
         result
     }
@@ -662,18 +686,18 @@ impl GsdFile {
     /** Open a GSD file for reading.
 
     TODO: Full docs.
-    TODO: Open in read only vs read/write?
     */
     #[inline]
-    pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, OpenError> {
+    pub fn open<P: AsRef<Path>>(path: P, mode: Mode) -> Result<Self, OpenError> {
         let file = File::open(&path).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
-        GsdFile::from_file(file).map_err(|e| OpenError::Decode(path.as_ref().into(), e))
+        GsdFile::from_file(file, mode).map_err(|e| OpenError::Decode(path.as_ref().into(), e))
     }
 
     /** Create a GSD file.
 
     Creates a GSD file at the given path, overwriting any file that may
-    already exist.
+    already exist. When successful, return a [`GsdFile`] opened in
+    write mode.
 
     TODO: Description.
     TODO: Examples.
@@ -682,13 +706,14 @@ impl GsdFile {
     pub fn create<P: AsRef<Path>>(path: P, application: &str, schema: &str, schema_version: (u16, u16)) -> Result<Self, OpenError> {
         let mut file = File::options().read(true).write(true).create(true).truncate(true).open(&path).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
         GsdFile::initialize_file(&mut file, &path, application, schema, schema_version)?;
-        GsdFile::from_file(file).map_err(|e| OpenError::Decode(path.as_ref().into(), e))
+        GsdFile::from_file(file, Mode::Write).map_err(|e| OpenError::Decode(path.as_ref().into(), e))
     }
 
     /** Create a new GSD file.
 
     Creates a new GSD file at the given path, returning an error when the
-    path already exists.
+    path already exists. When successful, return a [`GsdFile`] opened in
+    write mode. 
 
     TODO: Description.
     TODO: Examples.
@@ -697,7 +722,7 @@ impl GsdFile {
     pub fn create_new<P: AsRef<Path>>(path: P, application: &str, schema: &str, schema_version: (u16, u16)) -> Result<Self, OpenError> {
         let mut file = File::options().read(true).write(true).create_new(true).open(&path).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
         GsdFile::initialize_file(&mut file, &path, application, schema, schema_version)?;
-        GsdFile::from_file(file).map_err(|e| OpenError::Decode(path.as_ref().into(), e))
+        GsdFile::from_file(file, Mode::Write).map_err(|e| OpenError::Decode(path.as_ref().into(), e))
     }
     
     /// Initialize an empty file.
@@ -726,7 +751,7 @@ impl GsdFile {
 
         file.write_all(&header.to_ne_bytes()).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
 
-        file.set_len((HEADER_SIZE + INDEX_ENTRY_SIZE * INITIAL_INDEX_SIZE + INITIAL_NAME_BUFFER_SIZE) as u64).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;;
+        file.set_len((HEADER_SIZE + INDEX_ENTRY_SIZE * INITIAL_INDEX_SIZE + INITIAL_NAME_BUFFER_SIZE) as u64).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
 
         file.sync_all().map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
         
@@ -734,7 +759,7 @@ impl GsdFile {
     }
 
     /// Populate the fields in `GsdFile` given an open `File`.
-    fn from_file(file: File) -> Result<GsdFile, DecodeError> {
+    fn from_file(file: File, mode: Mode) -> Result<GsdFile, DecodeError> {
         let mut file = file;
         file.rewind()?;
 
@@ -781,6 +806,7 @@ impl GsdFile {
 
         let mut gsd_file = GsdFile {
             file,
+            mode,
             header,
             mmap,
             file_len,
@@ -1013,7 +1039,7 @@ impl GsdFile {
     # }
     ```
     */
-    pub fn read_array<T: Type>(&mut self, frame: u64, name: &str) -> Result<(Vec<T>, IndexEntry), ReadError> {
+    pub fn read_array<T: Type>(&self, frame: u64, name: &str) -> Result<(Vec<T>, IndexEntry), ReadError> {
         let index_entry = match self.find_chunk(frame, name) {
             None => return Err(ReadError::ChunkNotFound),
             Some(e) => e,
@@ -1037,7 +1063,7 @@ impl GsdFile {
     } 
 
     /// Implement the details of `read_array`.
-    fn read_array_details<T: Type>(&mut self, index_entry: &IndexEntry) -> Result<Vec<T>, DecodeError> {
+    fn read_array_details<T: Type>(&self, index_entry: &IndexEntry) -> Result<Vec<T>, DecodeError> {
         let n_elements = index_entry.n * u64::from(index_entry.m);
         let n_bytes = usize::try_from(n_elements * size_of::<T>() as u64)
             .map_err(DecodeError::UnaddressableContent)?;
@@ -1046,9 +1072,6 @@ impl GsdFile {
         let location = usize::try_from(index_entry.location)
             .map_err(DecodeError::UnaddressableContent)?;
 
-        if location + n_bytes > self.mmap.len() {
-            self.remap()?;
-        }
         debug_assert!(location + n_bytes <= self.mmap.len());
             
         for offset in (location..location+n_bytes).step_by(size_of::<T>()) {
