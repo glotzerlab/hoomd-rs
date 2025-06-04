@@ -5,7 +5,7 @@
  */
 
 use super::{AnisotropicEnergy, IsotropicEnergy};
-use hoomd_vector::{Rotate, Unit, Vector};
+use hoomd_vector::{Rotate, Unit, Vector, InnerProduct};
 
 /** A single patch in the [`AngularMask`] potential.
 
@@ -144,7 +144,7 @@ assert_eq!(energy, -1.0);
 Evaluate the angular mask potential on 3D particles:
 ```
 use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch};
-use hoomd_vector::{Cartesian, Vector, Versor};
+use hoomd_vector::{Cartesian, InnerProduct, Versor};
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -233,7 +233,7 @@ where
 impl<F, V, R> AnisotropicEnergy<V, R> for AngularMask<F, V>
 where
     F: IsotropicEnergy,
-    V: Vector,
+    V: InnerProduct,
     R: Rotate<V> + Into<R::Matrix> + Copy,
 {
     #[inline]
@@ -266,7 +266,7 @@ mod tests {
     use std::f64::consts::PI;
 
     use crate::pairwise::{Boxcar, LennardJones};
-    use hoomd_vector::{Angle, Cartesian, Versor};
+    use hoomd_vector::{Angle, Cartesian, Versor, InnerProduct};
 
     #[test]
     fn single_patch_2d() {

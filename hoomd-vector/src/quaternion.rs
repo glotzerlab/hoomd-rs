@@ -8,7 +8,7 @@ use rand::distr::{Distribution, StandardUniform, Uniform};
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-use crate::{Cartesian, Cross, Error, Rotate, Rotation, RotationMatrix, Unit, Vector};
+use crate::{Cartesian, Cross, Error, Rotate, Rotation, RotationMatrix, Unit, InnerProduct};
 
 /** Extended complex number.
 

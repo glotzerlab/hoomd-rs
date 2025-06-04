@@ -12,7 +12,7 @@ use crate::property::Position;
 use crate::{Body, Error, Site, Transform};
 
 use hoomd_utility::random::Counter;
-use hoomd_vector::Vector;
+use hoomd_vector::{Vector};
 
 /** Track a unique identifier for an item in [`Microstate`].
 */
@@ -917,7 +917,7 @@ where
     pub fn iter_sites_near(&self, point: &V, r: f64) -> impl Iterator<Item = &Site<S>> {
         self.sites
             .iter()
-            .filter(move |s| (*s.properties.position() - *point).norm_squared() < r.powi(2))
+            .filter(move |s| point.distance_sq(s.properties.position()) < r.powi(2))
     }
 }
 
@@ -1202,7 +1202,7 @@ mod tests {
         boundary::{self, Square},
         property::Point,
     };
-    use hoomd_vector::Cartesian;
+    use hoomd_vector::{Cartesian};
 
     use rand::{Rng, SeedableRng, rngs::StdRng, seq::SliceRandom};
     use rstest::*;
