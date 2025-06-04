@@ -34,7 +34,6 @@ pub use harmonic_repulsion::HarmonicRepulsion;
 mod isotropic;
 pub use isotropic::Isotropic;
 
-
 /** Computes pairwise energies between point particles.
 
 An isotropic pairwise energy is function only of the distances between the
