@@ -355,7 +355,6 @@ The [`InnerProduct`] subtrait defines additional methods that can be performed o
 in an inner product space, specifically vector norms and inner products. 
 
 */
-
 pub trait InnerProduct: Vector {
     /** Compute the vector dot product between two vectors.
 
