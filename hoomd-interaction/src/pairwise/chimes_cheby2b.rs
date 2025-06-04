@@ -4,7 +4,7 @@
 /*! Implement [`Chimes2b`]
  */
 
-use super::{IsotropicEnergy, IsotropicForce, TersoffSmooth};
+use super::{IsotropicEnergy, IsotropicForce};
 use hoomd_utility::cheby::Chebyshev;
 use hoomd_utility::chimes_transformation::Transformation;
 
@@ -15,11 +15,11 @@ sum of product between `ChIMES` coefficient
 and the corresponding Chebyshev polynomials as:
 
 ```math
-U = c_{0} + \sum^{\mathcal{n-1}}}_{O=1} c_{O} T_{O}(s(r))
+U = \sum^{n}_{i=1} c_{i} T_{i}(s(r))
 ```
 
-Where `c_i` is the `ChIMES` coefficent, `T_i` is the
-Chebyshev polynomials, and `s` is the transformed
+Where $`c_i`$ is the `ChIMES` coefficent, $`T_i`$ is the
+Chebyshev polynomials, and $`s`$ is the transformed
 distance between particles, given by [`Transformation`].
 
 # Note:
@@ -65,7 +65,7 @@ impl<F: Transformation> Chimes2b<F, Chebyshev> {
     #[inline]
     #[must_use]
     pub fn new(trans_style: F, coeff: Vec<f64>, r_in: f64) -> Self {
-        let n = coeff.len(); // Store length before moving
+        let n = coeff.len() + 1; // Store length before moving
         Self {
             trans_style,
             coeff,
@@ -82,7 +82,7 @@ impl<F: Transformation> IsotropicEnergy for Chimes2b<F, Chebyshev> {
         let mut value: f64 = 0.0;
 
         let s = self.trans_style.s(&r);
-        let tn = self.cheby.eval_cheby(&s);
+        let tn = &self.cheby.eval_cheby(&s)[1..];
 
         if r > self.r_in {
             for (idx, c) in self.coeff.iter().enumerate() {
@@ -107,7 +107,7 @@ impl<F: Transformation> IsotropicForce for Chimes2b<F, Chebyshev> {
 
         let s = self.trans_style.s(&r);
         let ds_dr = self.trans_style.ds_dr(&r);
-        let tnd = self.cheby.eval_dcheby_ds(&s);
+        let tnd = &self.cheby.eval_dcheby_ds(&s)[1..];
 
         if r > self.r_in {
             for (idx, c) in self.coeff.iter().enumerate() {
@@ -128,8 +128,9 @@ impl<F: Transformation> IsotropicForce for Chimes2b<F, Chebyshev> {
 mod tests {
     use super::*;
     use hoomd_utility::chimes_transformation::MorseTransformation;
+    use rstest::*;
 
-    #[test]
+    #[rstest]
     fn test_chimes2b_new() {
         let lambda = 1.5;
         let r_out = 3.0;
@@ -139,9 +140,50 @@ mod tests {
             r_out,
             r_in,
         };
+        let coeff_2b = vec![1.0, 2.0, 3.0];
 
-        let chimes2b = Chimes2b::new(morse_trans, vec![1.0, 2.0], r_in);
-        assert_eq!(chimes2b.coeff, vec![1.0, 2.0]);
+        let chimes2b = Chimes2b::new(morse_trans, coeff_2b, r_in);
+        assert_eq!(chimes2b.coeff, vec![1.0, 2.0, 3.0]);
         assert_eq!(chimes2b.r_in, 1.0);
+    }
+
+    #[rstest]
+    fn special_points() {
+        // Test the `ChIMES` potential (without smoothing) at the
+        // special points when $`r=r_{in}`$ or $`r_{out}`$.
+        //
+        // Here, I use the maximum order of 3, resulting in the
+        // expression of potential energy as:
+        //
+        // ```math
+        // U = c_1 * s
+        //     + c_2 * (2*s^2 - 1)
+        //     + c_3 * (r*s^3 - 3s)
+        // ```
+        //
+        // At $`r=r_{in}`$ or $`r_{out}`$, the corresponding
+        // Morse transformed distance s is $`s=f(r_in)=1.0`$
+        // or $`s=f(r_out)=-1.0`$. Finally, the potential
+        // energy at these two special point is:
+        //
+        // ```math
+        // \begin{align*}
+        // U(r_in) &= c_1 + c_2 + c_3 \\
+        // U(r_out) &= -c_1 + c_2 - c_3
+        // \end{align*}
+        let lambda = 1.5;
+        let r_out = 3.0;
+        let r_in = 1.0;
+        let morse_trans: MorseTransformation = MorseTransformation {
+            lambda,
+            r_out,
+            r_in,
+        };
+        let coeff = vec![1.0, 2.0, 3.0];
+
+        let chimes2b = Chimes2b::new(morse_trans, coeff, r_in);
+        assert_eq!(chimes2b.energy(r_in), 1.0 + 2.0 + 3.0);
+        assert_eq!(chimes2b.energy(r_out), -1.0 + 2.0 - 3.0);
+        println!("{:.64}", chimes2b.force(r_in - 0.2));
     }
 }
