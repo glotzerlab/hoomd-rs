@@ -343,7 +343,7 @@ dependencies = [
  "hoomd-microstate",
  "hoomd-vector",
  "rand",
- "rstest",
+ "rstest 0.25.0",
 ]
 
 [[package]]
@@ -358,7 +358,7 @@ dependencies = [
  "hoomd-vector",
  "rand",
  "ratatui",
- "rstest",
+ "rstest 0.25.0",
 ]
 
 [[package]]
@@ -371,8 +371,16 @@ dependencies = [
  "hoomd-utility",
  "hoomd-vector",
  "rand",
- "rstest",
+ "rstest 0.25.0",
  "thiserror",
+]
+
+[[package]]
+name = "hoomd-spatial"
+version = "0.0.0"
+dependencies = [
+ "hoomd-vector",
+ "rstest 0.24.0",
 ]
 
 [[package]]
@@ -383,16 +391,8 @@ dependencies = [
  "divan",
  "rand",
  "rand_chacha",
- "rstest",
+ "rstest 0.25.0",
  "thiserror",
-]
-
-[[package]]
-name = "hoomd-spatial"
-version = "0.0.0"
-dependencies = [
- "hoomd-vector",
- "rstest",
 ]
 
 [[package]]
@@ -404,7 +404,7 @@ dependencies = [
  "hoomd-utility",
  "paste",
  "rand",
- "rstest 0.23.0",
+ "rstest 0.25.0",
  "thiserror",
 ]
 
@@ -720,8 +720,26 @@ checksum = "6fc39292f8613e913f7df8fa892b8944ceb47c247b78e1b1ae2f09e019be789d"
 dependencies = [
  "futures-timer",
  "futures-util",
- "rstest_macros",
+ "rstest_macros 0.25.0",
  "rustc_version",
+]
+
+[[package]]
+name = "rstest_macros"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef0053bbffce09062bee4bcc499b0fbe7a57b879f1efe088d6d8d4c7adcdef9b"
+dependencies = [
+ "cfg-if",
+ "glob",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "relative-path",
+ "rustc_version",
+ "syn",
+ "unicode-ident",
 ]
 
 [[package]]
