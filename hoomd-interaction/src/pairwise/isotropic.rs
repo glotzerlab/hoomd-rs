@@ -7,7 +7,7 @@
 use super::IsotropicEnergy;
 use crate::SitePairEnergy;
 use hoomd_microstate::property::Position;
-use hoomd_vector::{Vector};
+use hoomd_vector::Vector;
 
 /** Compute isotropic properties from a pair of sites
 

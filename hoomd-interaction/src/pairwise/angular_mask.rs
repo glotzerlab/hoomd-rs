@@ -5,7 +5,7 @@
  */
 
 use super::{AnisotropicEnergy, IsotropicEnergy};
-use hoomd_vector::{Rotate, Unit, Vector, InnerProduct};
+use hoomd_vector::{InnerProduct, Rotate, Unit, Vector};
 
 /** A single patch in the [`AngularMask`] potential.
 
@@ -266,7 +266,7 @@ mod tests {
     use std::f64::consts::PI;
 
     use crate::pairwise::{Boxcar, LennardJones};
-    use hoomd_vector::{Angle, Cartesian, Versor, InnerProduct};
+    use hoomd_vector::{Angle, Cartesian, InnerProduct, Versor};
 
     #[test]
     fn single_patch_2d() {

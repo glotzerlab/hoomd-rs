@@ -12,7 +12,7 @@ use crate::property::Position;
 use crate::{Body, Error, Site, Transform};
 
 use hoomd_utility::random::Counter;
-use hoomd_vector::{Vector};
+use hoomd_vector::Vector;
 
 /** Track a unique identifier for an item in [`Microstate`].
 */
@@ -1202,7 +1202,7 @@ mod tests {
         boundary::{self, Square},
         property::Point,
     };
-    use hoomd_vector::{Cartesian};
+    use hoomd_vector::Cartesian;
 
     use rand::{Rng, SeedableRng, rngs::StdRng, seq::SliceRandom};
     use rstest::*;

@@ -23,7 +23,7 @@ computation with vector arithmetic and a distance metric. Your generic code can
 then be invoked on vector types with any dimension or representation (e.g.
 spherical coordinates).
 
-The [`InnerProduct`] subtrait of [`Vector`] describes any type that is a member of 
+The [`InnerProduct`] subtrait of [`Vector`] describes any type that is a member of
 an inner product space. [`InnerProduct`] implements vector norms and dot products.
 
 ```
@@ -199,8 +199,8 @@ pub enum Error {
 /** Operate on elements of a metric vector space.
 
 Specifically, [`Vector`] defines methods that can be performed on any vector in a metric vector
-space. Note that this is not an inner product space by default, and calculations requiring an 
-inner product should use the [`InnerProduct`] subtrait. 
+space. Note that this is not an inner product space by default, and calculations requiring an
+inner product should use the [`InnerProduct`] subtrait.
 
 ## Vector Operations
 
@@ -339,20 +339,19 @@ pub trait Vector:
     + Sub<Self, Output = Self>
     + SubAssign
     + Neg<Output = Self>
-{ 
+{
     /** Compute the squared distance between two vectors belonging to a metric space.
-    */
-    fn distance_sq(&self, other:&Self) -> f64;
+     */
+    fn distance_sq(&self, other: &Self) -> f64;
 
     /** Compute the distance between two vectors belonging to a metric space.
-    */
+     */
     fn distance(&self, other: &Self) -> f64;
-
 }
-/** Operate on elements of an inner product space. 
+/** Operate on elements of an inner product space.
 
-The [`InnerProduct`] subtrait defines additional methods that can be performed on any vector 
-in an inner product space, specifically vector norms and inner products. 
+The [`InnerProduct`] subtrait defines additional methods that can be performed on any vector
+in an inner product space, specifically vector norms and inner products.
 
 */
 pub trait InnerProduct: Vector {

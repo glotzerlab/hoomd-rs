@@ -183,7 +183,7 @@ mod tests {
     use hoomd_microstate::boundary::Open;
     use hoomd_microstate::property::{Point, Position};
     use hoomd_microstate::{Body, Microstate};
-    use hoomd_vector::{Cartesian};
+    use hoomd_vector::Cartesian;
     use rstest::*;
 
     mod single {

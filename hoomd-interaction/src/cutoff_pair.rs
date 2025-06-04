@@ -7,7 +7,7 @@
 use crate::{SitePairEnergy, TotalEnergy};
 use hoomd_microstate::{Microstate, property::Position};
 
-use hoomd_vector::{Vector};
+use hoomd_vector::Vector;
 
 /** Compute system properties given a [`SitePairEnergy`].
 

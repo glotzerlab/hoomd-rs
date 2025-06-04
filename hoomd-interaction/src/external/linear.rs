@@ -6,7 +6,7 @@
 
 use super::super::SiteEnergy;
 use hoomd_microstate::property::Position;
-use hoomd_vector::{Unit, InnerProduct};
+use hoomd_vector::{InnerProduct, Unit};
 
 /** Linear potential based on position.
 

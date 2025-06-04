@@ -5,7 +5,7 @@
 
 use super::Position;
 use crate::Transform;
-use hoomd_vector::{Vector};
+use hoomd_vector::Vector;
 
 /** A position in space and nothing more.
 

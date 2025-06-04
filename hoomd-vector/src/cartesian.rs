@@ -14,7 +14,7 @@ use std::ops::{
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform, Uniform};
 
-use crate::{Cross, Error, Rotate, Unit, Vector, InnerProduct};
+use crate::{Cross, Error, InnerProduct, Rotate, Unit, Vector};
 
 /** A [`Vector`] represented by `N` `f64` coordinates.
 
@@ -242,7 +242,7 @@ impl<const N: usize> Vector for Cartesian<N> {
     d^2(\vec{x},\vec{y}) = \sum_{i=1}^{N} (x_i - y_i)^2
     ```
 
-    # Example 
+    # Example
     ```
     use hoomd_vector::{Cartesian, Vector};
 
@@ -255,10 +255,9 @@ impl<const N: usize> Vector for Cartesian<N> {
     ```
     */
     #[inline]
-    fn distance_sq(&self,  other: &Self) -> f64 {
-       zip(self.coordinates.iter(),other.coordinates.iter())
-        .fold(0.0, |product, x| product + (x.0-x.1).powi(2))
-        
+    fn distance_sq(&self, other: &Self) -> f64 {
+        zip(self.coordinates.iter(), other.coordinates.iter())
+            .fold(0.0, |product, x| product + (x.0 - x.1).powi(2))
     }
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
