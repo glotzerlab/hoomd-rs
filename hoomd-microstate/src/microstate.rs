@@ -917,7 +917,7 @@ where
     pub fn iter_sites_near(&self, point: &V, r: f64) -> impl Iterator<Item = &Site<S>> {
         self.sites
             .iter()
-            .filter(move |s| point.distance_sq(s.properties.position()) < r.powi(2))
+            .filter(move |s| point.distance_squared(s.properties.position()) < r.powi(2))
     }
 }
 

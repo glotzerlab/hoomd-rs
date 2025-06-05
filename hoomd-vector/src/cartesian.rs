@@ -255,13 +255,9 @@ impl<const N: usize> Vector for Cartesian<N> {
     ```
     */
     #[inline]
-    fn distance_sq(&self, other: &Self) -> f64 {
+    fn distance_squared(&self, other: &Self) -> f64 {
         zip(self.coordinates.iter(), other.coordinates.iter())
             .fold(0.0, |product, x| product + (x.0 - x.1).powi(2))
-    }
-    #[inline]
-    fn distance(&self, other: &Self) -> f64 {
-        self.distance_sq(other).sqrt()
     }
 }
 

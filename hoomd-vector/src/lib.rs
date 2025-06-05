@@ -22,11 +22,15 @@ space. Write code with a [`Vector`] trait bound when you can express the
 computation with vector arithmetic and a distance metric. Your generic code can
 then be invoked on vector types with any dimension or representation (e.g.
 spherical coordinates).
+
+```
 use hoomd_vector::Vector;
 
 fn some_function<V: Vector>(a: &V, b: &V, c: &V) -> f64 {
     (*a + *b).distance(&c)
 }
+```
+
 The [`InnerProduct`] subtrait of [`Vector`] describes any type that is a member of
 an inner product space. [`InnerProduct`] implements vector norms and dot products.
 
@@ -372,7 +376,7 @@ pub trait Vector:
      */
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
-        self.distance_sq(other).sqrt()
+        self.distance_squared(other).sqrt()
     }
 }
 /** Operate on elements of an inner product space.
