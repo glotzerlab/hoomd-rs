@@ -41,7 +41,7 @@ assert_eq!(
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
-use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
+use hoomd_vector::{Cartesian, Rotate, RotationMatrix, Vector};
 use std::ops::{Add, Mul};
 /// TODO: temp
 #[derive(Clone, Copy, Debug, PartialEq)]
