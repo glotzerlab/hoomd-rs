@@ -26,7 +26,14 @@ use super::Transformation;
 ```
 
 # Example
-TODO
+    ```
+    use hoomd_utility::chimes_transformation::MorseTransformation;
+
+    let lambda = 1.5;
+    let r_out = 3.0;
+    let r_in = 1.0;
+    let morse_trans: MorseTransformation = MorseTransformation{lambda, r_out, r_in};
+    ```
 */
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -43,17 +50,6 @@ impl Transformation for MorseTransformation {
     /** Construct an [`MorseTransformation`] with the given
     Morse decaying factor $`\lambda`$, outer cutoff $`r_\mathrm{out}`$,
     and inner cutoff $`r_\mathrm{on}`$.
-
-    # Example
-
-    ```
-    use hoomd_utility::chimes_transformation::MorseTransformation;
-
-    let lambda = 1.5;
-    let r_out = 3.0;
-    let r_in = 1.0;
-    let morse_trans: MorseTransformation = MorseTransformation{lambda, r_out, r_in};
-    ```
     */
     /// The morse transformation function s
     #[inline]
