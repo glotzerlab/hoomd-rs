@@ -185,7 +185,7 @@ Read a [`u64`] data chunk:
 use hoomd_gsd::file_layer::GsdFile;
 
 # fn func(gsd_file: &mut GsdFile) -> Result<(), Box<dyn std::error::Error>> {
-let (data, index_entry) = gsd_file.read_array::<u64>(0, "configuration/step")?;
+let array = gsd_file.read_array::<u64>(0, "configuration/step")?;
 # Ok(())
 # }
 ```
@@ -339,6 +339,8 @@ struct NameList {
 }       
 
 /** Interact with GSD files on the filesystem.
+
+# TODO
 */
 #[derive(Debug)]
 pub struct GsdFile {
@@ -396,6 +398,24 @@ pub struct IndexEntry {
 
     /// Flags (unused)
     flags: u8,
+}
+
+/** Two-dimensional row-major contiguous data structure.
+
+GSD stores all data in named chunks that contain two-dimensional contiguous
+arrays in row-major order. [`GsdFile::read_array`] returns an [`Array`]
+that includes both the data and the dimensions.
+*/
+#[derive(Clone, Debug, PartialEq)]
+pub struct Array<T> {
+    /// Contents.
+    data: Vec<T>,
+
+    /// Number of rows in the array.
+    rows: u64,
+
+    /// Number of columns in the array.
+    columns: u32,
 }
 
 /** Data types that can be stored in chunks.
@@ -1067,12 +1087,12 @@ impl GsdFile {
     use hoomd_gsd::file_layer::GsdFile;
 
     # fn func(gsd_file: &mut GsdFile) -> Result<(), Box<dyn std::error::Error>> {
-    let (data, index_entry) = gsd_file.read_array::<u64>(0, "configuration/step")?;
+    let array = gsd_file.read_array::<u64>(0, "configuration/step")?;
     # Ok(())
     # }
     ```
     */
-    pub fn read_array<T: Type>(&self, frame: u64, name: &str) -> Result<(Vec<T>, IndexEntry), ReadError> {
+    pub fn read_array<T: Type>(&self, frame: u64, name: &str) -> Result<Array<T>, ReadError> {
         let index_entry = match self.find_chunk(frame, name) {
             None => return Err(ReadError::ChunkNotFound),
             Some(e) => e,
@@ -1087,16 +1107,15 @@ impl GsdFile {
         }
         
         if index_entry.n == 0 {
-            return Ok((Vec::new(), index_entry));
+            return Ok(Array{ data: Vec::new(), rows: 0, columns: index_entry.m } );
         }
 
         self.read_array_details(&index_entry)
-            .map(|v| (v, index_entry))
             .map_err(|e| ReadError::Decode(name.into(), frame, e))
     } 
 
     /// Implement the details of `read_array`.
-    fn read_array_details<T: Type>(&self, index_entry: &IndexEntry) -> Result<Vec<T>, DecodeError> {
+    fn read_array_details<T: Type>(&self, index_entry: &IndexEntry) -> Result<Array<T>, DecodeError> {
         let n_elements = index_entry.n * u64::from(index_entry.m);
         let n_bytes = usize::try_from(n_elements * size_of::<T>() as u64)
             .map_err(DecodeError::UnaddressableContent)?;
@@ -1111,9 +1130,10 @@ impl GsdFile {
             data.push(T::from_ne_byte_slice(&self.mmap[offset..offset+size_of::<T>()]));
         }
 
-        Ok(data)
+        Ok(Array { data, rows: index_entry.n, columns: index_entry.m })
     }
 
     // TODO: Implement read_string. The conversion steps needed for strings
-    // cannot be rolled into a generic read_array.
+    // cannot be rolled into a generic read_array. But it can leverage
+    // `read_array_details<u8>` to reduce code duplication.
 }
