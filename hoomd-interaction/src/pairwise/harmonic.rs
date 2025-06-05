@@ -6,15 +6,14 @@
 
 use super::{IsotropicEnergy, IsotropicForce};
 
-/**
-Harmonic  potential between pair of particles.
+/** Quadratic potential well centered at a given separation distance.
 
 ```math
-U = \frac{1}{2} k (r - r0)^2
+U = \frac{1}{2} k (r - r_0)^2
 ```
 
 Compute the harmonic potential and force as a function of `r` with
-equilibrium spring length `r0`.
+equilibrium spring length `r_0`.
 
 # Examples
 
@@ -23,9 +22,9 @@ use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, Harmonic};
 use approx::{assert_abs_diff_eq, assert_relative_eq};
 
 let k = 2.0;
-let r0 = 0.0;
+let r_0 = 0.0;
 
-let harmonic = Harmonic{ k, r0 };
+let harmonic = Harmonic{ k, r_0 };
 assert_abs_diff_eq!(harmonic.energy(0.0), 0.0);
 assert_relative_eq!(harmonic.energy(1.0), 1.0);
 assert_abs_diff_eq!(harmonic.force(1.0), -2.0, epsilon=1e-12);
@@ -36,30 +35,30 @@ The parameters are public fields and may be accessed directly:
 ```
 use hoomd_interaction::pairwise::Harmonic;
 
-let mut harmonic = Harmonic{ k: 1.0, r0: 0.0};
+let mut harmonic = Harmonic{ k: 1.0, r_0: 0.0};
 harmonic.k = 5.0;
-harmonic.r0 = 1.0;
+harmonic.r_0 = 1.0;
 ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Harmonic {
-    /// Spring constant *(\[energy\] \[lenght\]^{-2})*.
+    /// Spring constant $`[\mathrm{energy}] [\mathrm{length}]^{-2}`$.
     pub k: f64,
-    /// Equilibrium spring length *(\[lenght\])*.
-    pub r0: f64,
+    /// Equilibrium spring length $`[\mathrm{length}]`$.
+    pub r_0: f64,
 }
 
 impl IsotropicEnergy for Harmonic {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
-        0.5 * self.k * (r - self.r0) * (r - self.r0)
+        0.5 * self.k * (r - self.r_0) * (r - self.r_0)
     }
 }
 
 impl IsotropicForce for Harmonic {
     #[inline]
     fn force(&self, r: f64) -> f64 {
-        -self.k * (r - self.r0)
+        -self.k * (r - self.r_0)
     }
 }
 
@@ -70,26 +69,26 @@ mod tests {
     use rstest::*;
 
     #[rstest]
-    fn zero_energy_point(#[values(1.0, 2.0, 5.0, 10.0)] k: f64, #[values(0.0, 1.0, 2.0)] r0: f64) {
-        let harmonic = Harmonic { k, r0 };
+    fn zero_energy_point(#[values(1.0, 2.0, 5.0, 10.0)] k: f64, #[values(0.0, 1.0, 2.0)] r_0: f64) {
+        let harmonic = Harmonic { k, r_0 };
 
         assert_eq!(harmonic.k, k);
-        assert_eq!(harmonic.r0, r0);
+        assert_eq!(harmonic.r_0, r_0);
 
-        assert_eq!(harmonic.energy(r0), 0.0);
-        assert_eq!(harmonic.force(r0), 0.0);
+        assert_eq!(harmonic.energy(r_0), 0.0);
+        assert_eq!(harmonic.force(r_0), 0.0);
     }
 
     #[rstest]
-    fn general_case(#[values(1.0, 2.0, 5.0, 10.0)] k: f64, #[values(0.0, 1.0, 2.0)] r0: f64) {
+    fn general_case(#[values(1.0, 2.0, 5.0, 10.0)] k: f64, #[values(0.0, 1.0, 2.0)] r_0: f64) {
         let r = 5.0;
-        let harmonic = Harmonic { k, r0 };
+        let harmonic = Harmonic { k, r_0 };
 
         assert_eq!(harmonic.k, k);
-        assert_eq!(harmonic.r0, r0);
+        assert_eq!(harmonic.r_0, r_0);
 
-        let expected_energy = 0.5 * k * (r - r0) * (r - r0);
-        let expected_force = -k * (r - r0);
+        let expected_energy = 0.5 * k * (r - r_0) * (r - r_0);
+        let expected_force = -k * (r - r_0);
 
         assert_relative_eq!(harmonic.energy(r), expected_energy);
         assert_relative_eq!(harmonic.force(r), expected_force);

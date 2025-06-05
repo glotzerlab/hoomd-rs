@@ -6,32 +6,33 @@
 
 use super::{IsotropicEnergy, IsotropicForce};
 
-/**
-Harmonic repulsive potential between pair of particles
-to penalize particle overlaps. Known as the
-dissipative particle dynamics soft potential.
+/** Repulsive half of a quadratic potential well.
 
-The potential produce the repulsive force between particles as:
+[`HarmonicRepulsion`] is the conservative part of the dissipative particle
+dynamics soft potential. The parameter `a` controls the strength of the
+potential and `r_cut` sets the distance at which the energy goes to 0.
+
+
+The potential produce the radially repulsive force between particles as:
 ```math
-w^\mathrm{C}(r) = \begin{cases}
-A \left( 1 - \frac{r}{r_\mathrm{cut}}\right)\hat{r} & r < r_\mathrm{cut} \\
+F(r) = \begin{cases}
+-\frac{A}{r_\mathrm{cut}} \left( r - r_\mathrm{cut}\right) & r < r_\mathrm{cut} \\
 
 0 & r \ge r_\mathrm{cut}
 \end{cases}
 ```
-Where `\hat{r}` is the unit vector connecting particle i to j.
 
-It results in the potential energy as:
+resulting from the potential energy:
 ```math
 U(r) = \begin{cases}
-A (r_\mathrm{cut} - r) - \frac{1}{2}\frac{A}{r_\mathrm{cut}} \left(r^2_\mathrm{cut} - r^2\right) & r \lt r_\mathrm{cut} \\
+\frac{1}{2} \frac{A}{r_\mathrm{cut}} \left(r - r_\mathrm{cut}\right)^2 & r \lt r_\mathrm{cut} \\
 
 0 & r \ge r_\mathrm{cut}
 \end{cases}
 ```
 
-Compute the harmonic repulsive potential and force as a function of `r`
-with potential strength `a` and distance cut-off `r_cut`.
+This potential forms the left half of a harmonic well centered at
+$`r = r_\mathrm{cut}`$ with a spring constant $`k = \frac{A}{r_\mathrm{cut}}`$.
 
 # Examples
 
@@ -61,9 +62,9 @@ h_repulsion.r_cut = 0.75;
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct HarmonicRepulsion {
-    /// Potential strength *(\[energy\] \[lenght\]^{-1})* .
+    /// Potential strength $`[\mathrm{energy}] [\mathrm{length}]^{-1}`$.
     pub a: f64,
-    /// Distance cut-off *(\[energy\])*.
+    /// Distance cut-off  $`[\mathrm{length}]`$.
     pub r_cut: f64,
 }
 
@@ -71,8 +72,7 @@ impl IsotropicEnergy for HarmonicRepulsion {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         if r < self.r_cut {
-            self.a * (self.r_cut - r)
-                - 0.5 * self.a / self.r_cut * (self.r_cut * self.r_cut - r * r)
+            0.5 * self.a / self.r_cut * (r - self.r_cut).powi(2)
         } else {
             0.0
         }
@@ -83,7 +83,7 @@ impl IsotropicForce for HarmonicRepulsion {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         if r < self.r_cut {
-            self.a * (1.0 - r / self.r_cut)
+            self.a / self.r_cut * (self.r_cut - r)
         } else {
             0.0
         }
