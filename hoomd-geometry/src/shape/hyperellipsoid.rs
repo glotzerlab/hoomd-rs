@@ -14,6 +14,29 @@ assert_eq!(ellipse.volume(), Ellipse {axes: [2.0, 1.0]}.volume());
 assert_eq!(Ellipsoid{ axes: [1.0, 1.0, 1.0] }.volume(), Sphere {radius: 1.0 }.volume());
 
 ```
+
+# Example
+
+Rapid ellipse-ellipse intersection testing is possible with hoomd-geometry. This check
+is based on a result from algebraic geometry, with the precise approach documented
+within the code.
+
+```rust
+use hoomd_geometry::shape::Ellipse;
+use hoomd_geometry::IntersectsAt;
+use hoomd_vector::Angle;
+
+let long_ellipse = Ellipse {axes: [0.5, 3.0]};
+let round_ellipse = Ellipse {axes: [1.0, 2.0]};
+
+let v_ij = [0.0, long_ellipse.axes[1]+round_ellipse.axes[1]-0.1].into();
+
+assert_eq!(
+    long_ellipse.intersects_at(&round_ellipse, &v_ij, &Angle::from(0.0)),
+    true
+);
+
+```
 */
 
 use super::sphere::sphere_volume_prefactor;
