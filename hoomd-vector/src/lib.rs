@@ -341,10 +341,30 @@ pub trait Vector:
     + Neg<Output = Self>
 {
     /** Compute the squared distance between two vectors belonging to a metric space.
+
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, Vector};
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let x = Cartesian::from([0.0, 1.0, 1.0]);
+    let y = Cartesian::from([1.0, 0.0, 0.0]);
+    assert_eq!(3.0, x.distance_sq(&y));
+    # Ok(())
+    # }
+    ```
      */
     fn distance_sq(&self, other: &Self) -> f64;
 
     /** Compute the distance between two vectors belonging to a metric space.
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, Vector};
+
+    let x = Cartesian::from([0.0, 0.0]);
+    let y = Cartesian::from([3.0, 4.0]);
+    assert_eq!(5.0, x.distance(&y));
+    ```
      */
     fn distance(&self, other: &Self) -> f64;
 }
