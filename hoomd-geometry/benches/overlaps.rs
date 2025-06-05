@@ -14,12 +14,12 @@ use divan::{self, Bencher, black_box};
 use hoomd_geometry::Convex;
 use hoomd_geometry::{
     IntersectsAt,
-    shape::{ConvexPolytope, Cuboid, Hypersphere, Simplex3},
+    shape::{ConvexPolytope, Cuboid, Hyperellipsoid, Hypersphere, Simplex3},
     xenocollide::{collide2d, collide3d},
 };
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
-use hoomd_vector::{Angle, Cartesian, RotationMatrix, Versor};
+use hoomd_vector::{Angle, Cartesian, Rotate, RotationMatrix, Versor};
 
 #[inline(never)]
 fn asm_collide3d() {
@@ -105,6 +105,19 @@ fn create_dipyramid_pair<const N: usize, R: Rng>(
 
 fn create_polygon_pair<const N: usize>() -> (ConvexPolytope<2>, ConvexPolytope<2>) {
     (ConvexPolytope::from(N), ConvexPolytope::from(N))
+}
+
+fn create_ellipsoid_pair<const N: usize, R: Rng>(
+    rng: &mut R,
+) -> (Hyperellipsoid<N>, Hyperellipsoid<N>) {
+    (
+        Hyperellipsoid {
+            axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates,
+        },
+        Hyperellipsoid {
+            axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates,
+        },
+    )
 }
 
 fn create_offset_2d<R: Rng>(rng: &mut R) -> (Cartesian<2>, Angle) {
@@ -246,6 +259,52 @@ fn simplex_xenocollide_3d(bencher: Bencher) {
         })
         .bench_local_values(|((t0, t1), (t, r))| black_box(collide3d(&t0, &t1, &t, &r)));
 }
+
+#[divan::bench]
+fn ellipsoid_xenocollide_2d(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| {
+            (
+                shapes_to_convex(create_ellipsoid_pair::<2, _>(&mut rng)),
+                create_offset_2d(&mut rng),
+            )
+        })
+        .bench_local_values(|((t0, t1), (t, r))| black_box(collide2d(&t0, &t1, &t, &r)));
+}
+
+#[divan::bench]
+fn ellipsoid_fast_2d(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| {
+            (
+                shapes_to_convex(create_ellipsoid_pair::<2, _>(&mut rng)),
+                create_offset_2d(&mut rng),
+            )
+        })
+        .bench_local_values(|((e0, e1), (t, r))| black_box(e0.intersects_at(&e1, &t, &r)));
+}
+
+#[divan::bench]
+fn ellipsoid_xenocollide_3d(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| {
+            (
+                shapes_to_convex(create_ellipsoid_pair::<3, _>(&mut rng)),
+                create_offset_3d(&mut rng),
+            )
+        })
+        .bench_local_values(|((t0, t1), (t, r))| black_box(collide3d(&t0, &t1, &t, &r)));
+}
+
 #[divan::bench]
 fn simplex_fast(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
