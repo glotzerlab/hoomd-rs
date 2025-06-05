@@ -34,6 +34,9 @@ U(r) = \begin{cases}
 This potential forms the left half of a harmonic well centered at
 $`r = r_\mathrm{cut}`$ with a spring constant $`k = \frac{A}{r_\mathrm{cut}}`$.
 
+Note that this potential has a maximum value of $`A`$ at $`r=0`$ and is
+therefore allows particles to completely overlap.
+
 # Examples
 
 
