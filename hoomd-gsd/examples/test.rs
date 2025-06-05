@@ -5,6 +5,7 @@ fn main() -> anyhow::Result<()> {
 
     println!("{:?}", gsd_file);
     println!("{:?}", gsd_file.read_array::<u64>(0, "configuration/step")?);
+    println!("{:?}", gsd_file.read_array::<f32>(0, "configuration/box")?);
 
     println!("");
 

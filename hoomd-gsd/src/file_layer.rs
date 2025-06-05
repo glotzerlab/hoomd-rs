@@ -139,6 +139,31 @@ pub enum ReadError {
     Decode(String, u64, #[source] DecodeError),
 }
 
+/// Errors that can occur while writing to a file.
+#[non_exhaustive]
+#[derive(Error, Debug)]
+pub enum WriteError {
+    /// Attempted to write 0 columns.
+    #[error("columns must be non-zero")]
+    InvalidColumns,
+
+    /// Attempted to write an array with an invalid length.
+    #[error("data length {0} is not a multiple of {1}")]
+    InvalidDataLength(usize, u32),
+
+    /// Encountered an I/O error.
+    #[error("I/O error while writing `{0}` at frame {1}")]
+    IO(String, u64, #[source] io::Error),
+
+    /// Cannot add any more chunk names.
+    #[error("too many chunk names")]
+    NameListOverflow,
+
+    /// File is not writeable.
+    #[error("file opened in read-only mode")]
+    NotWriteable,
+}
+
 /** Implement a sealed trait for each data type supported by GSD.
 
 This enables generic implementations that operate on these types.
@@ -332,10 +357,13 @@ struct NameList {
     name_id: HashMap<String, u16>,
 
     /// Number of names in the map.
-    n_names: u32,
+    n_names: u16,
 
     /// Insert position in the name list.
     insert_position: u64,
+
+    /// Name write buffer.
+    buffer: Vec<u8>,
 }       
 
 /** Interact with GSD files on the filesystem.
@@ -459,7 +487,7 @@ in an error.
 
 In the [`Mode::Write`] mode, you can call both read and write methods.
 */
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum Mode {
     /// Read-only.
@@ -881,12 +909,22 @@ impl GsdFile {
             }
             current_id += 1;
 
+            // TODO: Detect when there are too many names.
         }
 
         Ok(NameList { name_id,
-            n_names: u32::from(current_id),
+            n_names: current_id,
             insert_position,
+            buffer: Vec::new(),
             })
+    }
+
+    /// Add a new name to the file.
+    fn add_name(&mut self, name: &str) -> u16 {
+        self.name_list.n_names += 1;
+        self.name_list.buffer.extend(name.as_bytes());
+        self.name_list.buffer.push(0);
+        self.name_list.n_names
     }
 
     /// Remap the file
@@ -963,8 +1001,10 @@ impl GsdFile {
             return false;
         }
 
-        // TODO: include buffered names
-        if u32::from(entry.id) >= self.name_list.n_names {
+        // There is no need to include buffered names here because
+        // is_entry_valid is only called on file open, not after any write_
+        // methods.
+        if entry.id >= self.name_list.n_names {
             return false;
         }
 
@@ -1136,4 +1176,63 @@ impl GsdFile {
     // TODO: Implement read_string. The conversion steps needed for strings
     // cannot be rolled into a generic read_array. But it can leverage
     // `read_array_details<u8>` to reduce code duplication.
+    
+    // TODO: Consider implementing read_vector_array<Cartesian<N>> and a
+    // similar write method. These convenience methods will make it easier
+    // to implement the hoomd schema which stores many chunks as vectors.
+    // Because Cartesian is always f64, read will need to convert f32 to
+    // f64. The hoomd schema is always f32, so we also need a way to
+    // opt into casting on write.
+
+    /** Append data to the current frame.
+
+    `write_array` writes two-dimensional array data to a named chunk in
+    the current frame of the GSD file.
+
+    # Errors
+
+    Returns a [`WriteError`] when any of the following occur:
+    * The file is not opened in a write mode.
+    * An I/O error writing to the file.
+    * `columns` is 0.
+    * The `data` length is not an integer multiple of `columns`.
+    * TODO: Error when name has already been written this frame.
+    
+    */
+    fn write_array<T: Type>(&mut self, name: &str, columns: u32, data: &[T]) -> Result<(), WriteError> {
+        if self.mode != Mode::Write {
+            return Err(WriteError::NotWriteable);
+        }
+
+        if columns == 0 {
+            return Err(WriteError::InvalidColumns);
+        }
+
+        if data.len() % (columns as usize) != 0 {
+            return Err(WriteError::InvalidDataLength(data.len(), columns));
+        }
+
+        let id = if let Some(id) = self.name_list.name_id.get(name) { *id } else {
+            let id = self.add_name(name);
+            self.name_list.name_id.insert(String::from(name), id);
+            id
+        };
+
+        if id == u16::MAX {
+            return Err(WriteError::NameListOverflow);
+        }
+
+        let index_entry = IndexEntry {
+            frame: self.current_frame,
+            n: (data.len() / columns as usize) as u64,
+            m: columns,
+            location: self.file_len, // + TODO: current buffer size
+            id,
+            data_type: T::gsd_data_type(),
+            flags: 0,
+        }
+        
+
+    Ok(())
+    }
 }
