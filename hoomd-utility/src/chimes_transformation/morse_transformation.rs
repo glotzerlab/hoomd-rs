@@ -16,6 +16,7 @@ use super::Transformation;
 ```math
     \begin{align*}
     s(r) &= (x(r) - x_\mathrm{avg}) / x_\mathrm{diff} \\
+    &\\
     x(r) &= \exp{(-r/\lambda)} \\
     x_\mathrm{avg} &= 0.5(\exp{(-r_\mathrm{out}/\lambda)}
       + \exp{(-r_\mathrm{in}/\lambda)}) \\
@@ -30,12 +31,12 @@ TODO
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MorseTransformation {
-    /// Morse decaying factor `[length]`
+    /// Morse decaying factor $`[\mathrm{length}]`$
     pub lambda: f64,
-    /// `r` value `[length]` where the smoothed potential will be 0.
+    /// distance where the smoothed potential will be 0 $`[\mathrm{length}]`$.
     pub r_out: f64,
-    /// `r` value `[length]` where the smoothing function is enabled. Should be < `r_cut`
-    pub r_in: f64, // TODO: find alternate name?
+    /// Inner distance cutoff $`[\mathrm{length}]`$.
+    pub r_in: f64,
 }
 
 impl Transformation for MorseTransformation {

@@ -5,19 +5,19 @@
  */
 
 /** Evaluates the Chebyshev polynomials and its derivatives
-  of the first kind `T_O(s)` for orders O equals 0 to
-  `n - 1`, given coordinate `s`.
+  of the first kind $`T_i(s)`$ for orders $`i`$ equals 0 to
+  $`n - 1`$, given coordinate $`s`$.
 
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Chebyshev {
-    /// Maximum order of the Chebyshev polynomials `T_O` (O = 0 to n-1).
+    /// Maximum order of the Chebyshev polynomials $`T_i`$ (i = 0 to n-1).
     pub n: usize,
 }
 
 impl Chebyshev {
     /** The `eval_cheby` fucntion returns a vector where
-    the `i`-th element is `T_i(s)`, computed using the
+    the `i`-th element is $`T_i(s)`$, computed using the
     recurrence relation:
 
     ```math
@@ -68,9 +68,9 @@ impl Chebyshev {
     }
 
     /**
-    The `eval_dcheby_ds` fucntion returns a vector where
-    the `i`-th element is `\dfrac{T_i(s)}{ds}`, by first, computing
-    the Chebyshev polynomials of the second kind `U_i(s)` using the
+    The fucntion returns a vector where the `i`-th element is 
+    $`\frac{dT_i(s)}{ds}`$, by first, computing the Chebyshev 
+    polynomials of the second kind `U_i(s)` using the
     recurrence relation:
 
     ```math
