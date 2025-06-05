@@ -20,6 +20,7 @@ use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
 use std::ops::{Add, Mul};
+/// TODO: temp
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SquareMatrix<const N: usize> {
     /// The elements of the matrix
@@ -37,25 +38,6 @@ impl<const N: usize> From<RotationMatrix<N>> for SquareMatrix<N> {
 }
 
 impl<const N: usize> Default for SquareMatrix<N> {
-    /** Create an identity matrix.
-
-    ```math
-    \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix}
-    ```
-    ,
-    ```math
-    \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \end{bmatrix}
-    ```
-    , and so on.
-
-    # Example
-
-    ```
-    use hoomd_vector::SquareMatrix;
-
-    let identity = SquareMatrix::<3>::default();
-    ```
-    */
     #[inline]
     fn default() -> SquareMatrix<N> {
         SquareMatrix {
@@ -287,10 +269,17 @@ impl<const N: usize> Volume for Hyperellipsoid<N> {
     }
 }
 
-// TODO: https://www.iri.upc.edu/files/scidoc/1852-New-algebraic-conditions-for-the-identification-of-the-relative-position-of-two-coplanar-ellipses.pdf
+/// The inverse of the Golden ratio, used for a golden section solver
+const _INV_PHI: f64 = 0.618_033_988_749_894_9_f64;
+/** Precision within which ellipsoids are considered to be overlapping.
 
-///TODO
-const _INV_PHI: f64 = 0.618_033_988_7f64;
+This is 1000x more precise than HOOMD-Blue.
+*/
+const _ELLIPSOID_OVERLAP_PRECISION: f64 = 1e-9;
+/// Max bound of the root search for an ellipsoid characteristic polynomial.
+const _ELLIPSOID_K_MAX_BOUND: f64 = 1.0 - _ELLIPSOID_OVERLAP_PRECISION;
+/// Min bound of the root search for an ellipsoid characteristic polynomial.
+const _ELLIPSOID_K_MIN_BOUND: f64 = _ELLIPSOID_OVERLAP_PRECISION;
 
 impl<R: Copy + Rotate<Cartesian<2>>> IntersectsAt<Hyperellipsoid<2>, Cartesian<2>, R>
     for Hyperellipsoid<2>
@@ -299,6 +288,54 @@ where
 {
     #[inline]
     fn intersects_at(&self, other: &Hyperellipsoid<2>, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
+        /*
+
+        This approach is derived from "A Robust Computational Test for Overlap of Two
+        Arbitrary-dimensional Ellipsoids in Fault-Detection of Kalman Filters".
+        Rather than generalize over dimension (which results in significant performance
+        losses, even with efficient linear algebra libraries), we choose to implement
+        the special case of ellipses in 2d. This derivation is far from rigorous, but
+        aims to inform how the method actually works.
+
+        We begin with Remark 1 from the above paper. In essence, we are defininig a
+        convex, one dimensional function K(λ) that represents the intersection of our
+        two ellipsoids, which is also a conic section. If this intersection function has
+        any real roots (in the domain (0, 1)), our ellipsoids must intersect. To compute
+        this function, we represent our ellipsoids as matrixes $A$ and $B$. $K(λ)$ is...
+
+        $$
+            K(λ) = 1 - v^T @ (1/(1-λ) B^-1 + 1/λ A^-1)^-1
+        $$
+
+        The "natural" matrix form of an ellipse is $diag(1/axes_i**2)$. However, we must
+        transform one of our matrixes for the intersection calculation. We choose B, as
+        it simplifies our future calculations. With R as the rotation matrix of o_ij:
+
+        $$
+            B = (R^-1).T @ diag(1/axes_B**2) @ R^-1
+        $$
+        The inverse of a rotation matrix is its transpose, so this simplifies. However,
+        because we actually desire A_inverse and B_inverse (and A and B are diagonal),
+        we can simplify further:
+        $$
+            A^-1 = diag(axes_A**2)
+            B^-1 = R @ diag(axes_B**2) @ R^T
+        $$
+
+        Both these results can be cached and reused for evaluation of [`k_lambda`].
+        Note that our equation is really of the quadratic form $K(λ)=1 - v.T @ M @ v$,
+        with $M = (1/(1-λ) B^-1 + 1/λ A^-1)^-1$. This final inversion makes evaluating
+        K(λ) in this form undesirable in the general case, but in 2D we have a simple
+        closed form for the inverse.
+
+        Recall that our ellipsoids do not overlap if there is a real root of Κ(λ) on
+        (0, 1). Rather than searching for such a root, we can instead query for a
+        negative element in the codomain. Our function is extremely well behaved
+        (numerical instability notwithstanding), so we can use a simple golden section
+        search for such an element. In most cases, we can exit within a single iteration
+        although the method converges linearly in general. If the search does NOT find a
+        negative element in the codomain, the ellipsoids intersect (within a tolerance).
+        */
         let a_inv = other.axes.map(|x| x.powi(2));
 
         let rot = RotationMatrix::<2>::from(*o_ij);
@@ -307,27 +344,23 @@ where
         let b_inv = SquareMatrix::from(rot)
             .mul_diagonal(&self.axes.map(|x| x.powi(2)))
             .matmul(&rot_transpose.into());
-        // EVERYTHING BEFORE THIS LINE IS OK
 
         let v_ij = &v_ij.coordinates;
         let a_inv = SquareMatrix::from_diag(&a_inv);
 
-        // Compute three values for golden ratio method
-        let (mut b, mut a) = (0.999_999_999, 0.000_000_001); // TODO: cannot evaluate at bounds?
-        while (b - a) > 1e-15 {
-            // TODO: sane tolerance
+        // Golden section solver for minimizing K(λ)
+        let (mut b, mut a) = (_ELLIPSOID_K_MAX_BOUND, _ELLIPSOID_K_MIN_BOUND);
+        while (b - a) > _ELLIPSOID_OVERLAP_PRECISION {
             let c = b - (b - a) * _INV_PHI;
             let d = a + (b - a) * _INV_PHI;
 
-            // TODO: reuse computed k values between loops
+            // Could reuse computed k values between loops for better performance?
             let k_c = k_lambda(a_inv, b_inv, c, v_ij);
             if k_c <= 0.0 {
-                println!("kc < 0.0");
                 return false;
             }
             let k_d = k_lambda(a_inv, b_inv, d, v_ij);
             if k_d <= 0.0 {
-                println!("kd < 0.0");
                 return false;
             }
             if k_c < k_d {
@@ -336,12 +369,7 @@ where
                 a = c;
             }
         }
-        println!("Exited iteration");
-        true // If we did not detect a negative value, the shapes OVERLAP
-
-        // HOWEVER: we can exit early, so an existing package like argmin may be slower
-
-        // FOR NOW: simple secant method from k[0.5]
+        true // If we did not detect a negative value of K(λ), the shapes overlap
     }
 }
 
@@ -360,9 +388,13 @@ fn k_lambda(a_inv: SquareMatrix<2>, b_inv: SquareMatrix<2>, l: f64, v_ij: &[f64;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Convex, shape::Hypersphere};
+    use crate::{
+        Convex,
+        shape::{Circle, Hypersphere},
+    };
     use ::approx::assert_relative_eq;
     use hoomd_vector::{Angle, Unit, Versor};
+    use rand::{Rng, SeedableRng, rngs::StdRng};
     use rstest::*;
     use std::marker::PhantomData;
 
@@ -410,5 +442,45 @@ mod tests {
             el0.intersects_at(&el1, &v_ij.into(), &Angle::default()),
             Convex(el0).intersects_at(&Convex(el1), &v_ij.into(), &Angle::default())
         );
+    }
+    #[rstest]
+    fn test_random_sphere_ellipse_overlaps() {
+        let mut rng = StdRng::seed_from_u64(2);
+        for _ in 0..10_000 {
+            let (a, c) = StdRng::random(&mut rng);
+            let el0 = Ellipse { axes: [a, a] };
+            let el1 = Ellipse { axes: [c, c] };
+
+            let v_ij = StdRng::random::<Cartesian<2>>(&mut rng) * 10.0;
+            let angle = Angle::from(
+                rng.random_range((-2.0 * std::f64::consts::PI)..(2.0 * std::f64::consts::PI)),
+            );
+            assert_eq!(
+                el0.intersects_at(&el1, &v_ij, &angle),
+                Circle { radius: a }.intersects_at(&Circle { radius: c }, &v_ij, &angle),
+            );
+        }
+    }
+
+    #[rstest]
+    fn test_random_ellipsoids() {
+        // Xenocollide precision becomes an issue! So only a few tests are possible
+        // Inspecting failing cases in Ovito & HOOMD shows we are correct
+        let mut rng = StdRng::seed_from_u64(2);
+        for _ in 0..10 {
+            let (a, b, c, d) = StdRng::random(&mut rng);
+            let el0 = Ellipse { axes: [a, b] };
+            let el1 = Ellipse { axes: [c, d] };
+
+            let v_ij = StdRng::random::<Cartesian<2>>(&mut rng) * 10.0;
+            let angle = Angle::from(
+                rng.random_range((-2.0 * std::f64::consts::PI)..(2.0 * std::f64::consts::PI)),
+            );
+            assert_eq!(
+                el0.intersects_at(&el1, &v_ij, &angle),
+                Convex(el0).intersects_at(&Convex(el1), &v_ij, &angle),
+                "(a,b,c,d)= ({a}, {b}, {c}, {d})\nangle= {angle}\nv_ij= {v_ij}"
+            );
+        }
     }
 }
