@@ -65,7 +65,7 @@ impl<const N: usize> Default for SquareMatrix<N> {
     fn default() -> SquareMatrix<N> {
         SquareMatrix {
             rows: std::array::from_fn(|i| {
-                std::array::from_fn(|j| if i == j { 1.0 } else { 0.0 }).into()
+                std::array::from_fn(|j| if i == j { 1.0 } else { 0.0 })
             }),
         }
     }
@@ -81,7 +81,7 @@ impl<const N: usize> SquareMatrix<N> {
     fn from_diag(other: &[f64; N]) -> Self {
         SquareMatrix {
             rows: std::array::from_fn(|i| {
-                std::array::from_fn(|j| if i == j { other[i] } else { 0.0 }).into()
+                std::array::from_fn(|j| if i == j { other[i] } else { 0.0 })
             }),
         }
     }
@@ -344,7 +344,7 @@ mod tests {
         shape::{Circle, Hypersphere},
     };
     use ::approx::assert_relative_eq;
-    use hoomd_vector::{Angle, Unit, Versor};
+    use hoomd_vector::Angle;
     use rand::{Rng, SeedableRng, rngs::StdRng};
     use rstest::*;
     use std::marker::PhantomData;
