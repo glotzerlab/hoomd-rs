@@ -64,9 +64,7 @@ impl<const N: usize> Default for SquareMatrix<N> {
     #[inline]
     fn default() -> SquareMatrix<N> {
         SquareMatrix {
-            rows: std::array::from_fn(|i| {
-                std::array::from_fn(|j| if i == j { 1.0 } else { 0.0 })
-            }),
+            rows: std::array::from_fn(|i| std::array::from_fn(|j| if i == j { 1.0 } else { 0.0 })),
         }
     }
 }
@@ -121,6 +119,7 @@ impl<const N: usize> SquareMatrix<N> {
 
         result
     }
+    /// TODO
     #[inline]
     fn compute_quadratic_form(&self, other: &[f64; N]) -> f64 {
         let mut result = 0.0;
