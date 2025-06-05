@@ -68,9 +68,9 @@ impl Chebyshev {
     }
 
     /**
-    The fucntion returns a vector where the `i`-th element is 
-    $`\frac{dT_i(s)}{ds}`$, by first, computing the Chebyshev 
-    polynomials of the second kind `U_i(s)` using the
+    The fucntion returns a vector where the $`i`$-th element is
+    $`\frac{dT_i(s)}{ds}`$, by first, computing the Chebyshev
+    polynomials of the second kind $`U_i(s)`$ using the
     recurrence relation:
 
     ```math
