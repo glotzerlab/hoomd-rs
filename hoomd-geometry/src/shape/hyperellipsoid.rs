@@ -205,16 +205,6 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperellipsoid<N> {
     }
 }
 
-impl Hyperellipsoid<3> {
-    #[inline]
-    #[must_use]
-    /// Compute a matrix representation of the ellipsoid.
-    #[expect(
-        clippy::many_single_char_names,
-        dead_code,
-        reason = "Ported from HOOMD-Blue, with variable names maintained for consistency."
-    )]
-
 impl<const N: usize> BoundingSphereRadius for Hyperellipsoid<N> {
     #[inline]
     fn bounding_sphere_radius(&self) -> f64 {
