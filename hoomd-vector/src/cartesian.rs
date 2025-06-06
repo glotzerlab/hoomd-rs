@@ -14,11 +14,11 @@ use std::ops::{
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform, Uniform};
 
-use crate::{Cross, Error, Rotate, Unit, Vector};
+use crate::{Cross, Error, InnerProduct, Rotate, Unit, Vector};
 
 /** A [`Vector`] represented by `N` `f64` coordinates.
 
-[`Cartesian`] is the canonical implementation of [`Vector`].
+[`Cartesian`] is the canonical implementation of [`InnerProduct`].
 
 ## Constructing vectors
 
@@ -62,7 +62,7 @@ let v: Cartesian::<3> = rng.random();
 
 Use vector math operations when you can:
 ```
-use hoomd_vector::{Cartesian, Vector};
+use hoomd_vector::{Cartesian, InnerProduct};
 
 let a = Cartesian::from([1.0, 2.0]);
 let b = Cartesian::from([4.0, 8.0]);
@@ -228,7 +228,7 @@ impl<const N: usize> TryFrom<[f64; N]> for Unit<Cartesian<N>> {
     }
 }
 
-impl<const N: usize> Vector for Cartesian<N> {
+impl<const N: usize> InnerProduct for Cartesian<N> {
     #[inline]
     fn dot(&self, other: &Self) -> f64 {
         zip(self.coordinates.iter(), other.coordinates.iter())

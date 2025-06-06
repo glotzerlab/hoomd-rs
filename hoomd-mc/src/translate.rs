@@ -48,7 +48,7 @@ where
     ```
     use hoomd_mc::{LocalTrial, Translate};
     use hoomd_microstate::property::Point;
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, InnerProduct};
     use rand::{rngs::StdRng, Rng, SeedableRng};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -82,7 +82,7 @@ where
 mod tests {
     use super::*;
     use hoomd_microstate::property::Point;
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, InnerProduct};
     use rand::{SeedableRng, rngs::StdRng};
     use rstest::*;
 
