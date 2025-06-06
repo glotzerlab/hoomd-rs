@@ -8,7 +8,7 @@ TODO: Expand documentation.
 
 use memmap2::Mmap;
 use std::cmp::Ordering;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, SeekFrom, prelude::*};
 use std::num::TryFromIntError;
@@ -41,8 +41,10 @@ const CURRENT_FILE_VERSION: (u16, u16) = (2, 1);
 const INITIAL_INDEX_SIZE: u64 = 128;
 
 /// Initial name list size
-const INITIAL_NAME_BUFFER_SIZE: u64 = 1024;
+const INITIAL_NAME_LIST_SIZE: u64 = 1024;
 
+/// Initial buffer flush threshold.
+const INITIAL_FLUSH_THRESHOLD: usize = 1024 * 1024;
 
 /// Errors that can occur during while decoding file content.
 #[non_exhaustive]
@@ -159,9 +161,13 @@ pub enum WriteError {
     #[error("too many chunk names")]
     NameListOverflow,
 
-    /// File is not writeable.
+    /// File is not writable.
     #[error("file opened in read-only mode")]
-    NotWriteable,
+    NotWritable,
+
+    /// A chunk name was duplicated in a single frame.
+    #[error("chunk `{0}` has already been written in frame {1}")]
+    DuplicateChunkName(String, u64),
 }
 
 /** Implement a sealed trait for each data type supported by GSD.
@@ -223,9 +229,19 @@ pub trait Type: private::Sealed {
     #[doc(hidden)]
     fn gsd_data_type() -> u8;
 
-    /// Convert a native endian byte slice to this type.
+    /** Convert a native endian byte slice to this type.
+
+    This is not the proper idiomatic way to do this, but it gets the job done.
+    */
     #[doc(hidden)]
     fn from_ne_byte_slice(bytes: &[u8]) -> Self;
+
+    /** Append this type to a native endian byte array.
+
+    This is not the proper idiomatic way to do this, but it gets the job done.
+    */
+    #[doc(hidden)]
+    fn append_ne_bytes(&self, v: &mut Vec<u8>);
 }
 
 impl Type for u8 {
@@ -236,6 +252,9 @@ impl Type for u8 {
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         bytes[0]
     }
+    fn append_ne_bytes(&self, v: &mut Vec<u8>) {
+        v.extend(&self.to_ne_bytes());
+    }
 }
 impl Type for u16 {
     #[inline]
@@ -244,6 +263,9 @@ impl Type for u16 {
     }
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         u16::from_ne_bytes(bytes.try_into().expect("byte slice should contain 2 bytes")) 
+    }
+    fn append_ne_bytes(&self, v: &mut Vec<u8>) {
+        v.extend(&self.to_ne_bytes());
     }
 }
 impl Type for u32 {
@@ -254,6 +276,9 @@ impl Type for u32 {
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         u32::from_ne_bytes(bytes.try_into().expect("byte slice should contain 4 bytes")) 
     }
+    fn append_ne_bytes(&self, v: &mut Vec<u8>) {
+        v.extend(&self.to_ne_bytes());
+    }
 }
 impl Type for u64 {
     #[inline]
@@ -262,6 +287,9 @@ impl Type for u64 {
     }
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         u64::from_ne_bytes(bytes.try_into().expect("byte slice should contain 8 bytes")) 
+    }
+    fn append_ne_bytes(&self, v: &mut Vec<u8>) {
+        v.extend(&self.to_ne_bytes());
     }
 }
 impl Type for i8 {
@@ -272,6 +300,9 @@ impl Type for i8 {
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         i8::from_ne_bytes(bytes.try_into().expect("byte slice should contain 1 byte")) 
     }
+    fn append_ne_bytes(&self, v: &mut Vec<u8>) {
+        v.extend(&self.to_ne_bytes());
+    }
 }
 impl Type for i16 {
     #[inline]
@@ -280,6 +311,9 @@ impl Type for i16 {
     }
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         i16::from_ne_bytes(bytes.try_into().expect("byte slice should contain 2 bytes")) 
+    }
+    fn append_ne_bytes(&self, v: &mut Vec<u8>) {
+        v.extend(&self.to_ne_bytes());
     }
 }
 impl Type for i32 {
@@ -290,6 +324,9 @@ impl Type for i32 {
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         i32::from_ne_bytes(bytes.try_into().expect("byte slice should contain 4 bytes")) 
     }
+    fn append_ne_bytes(&self, v: &mut Vec<u8>) {
+        v.extend(&self.to_ne_bytes());
+    }
 }
 impl Type for i64 {
     #[inline]
@@ -298,6 +335,9 @@ impl Type for i64 {
     }
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         i64::from_ne_bytes(bytes.try_into().expect("byte slice should contain 8 bytes")) 
+    }
+    fn append_ne_bytes(&self, v: &mut Vec<u8>) {
+        v.extend(&self.to_ne_bytes());
     }
 }
 impl Type for f32 {
@@ -308,6 +348,9 @@ impl Type for f32 {
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         f32::from_ne_bytes(bytes.try_into().expect("byte slice should contain 8 bytes")) 
     }
+    fn append_ne_bytes(&self, v: &mut Vec<u8>) {
+        v.extend(&self.to_ne_bytes());
+    }
 }
 impl Type for f64 {
     #[inline]
@@ -316,6 +359,9 @@ impl Type for f64 {
     }
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         f64::from_ne_bytes(bytes.try_into().expect("byte slice should contain 8 bytes")) 
+    }
+    fn append_ne_bytes(&self, v: &mut Vec<u8>) {
+        v.extend(&self.to_ne_bytes());
     }
 }
 
@@ -366,6 +412,33 @@ struct NameList {
     buffer: Vec<u8>,
 }       
 
+
+/** Details about the index.
+
+* `n` counts the number of entries stored in the actual file.
+* `buffer` stores index entries in memory that have not yet been written to the
+  tile (as bytes).
+* `pending` counts the number of entries that are pending in the current frame.
+
+Pending entries are those where `write_*` has been called, but not yet
+`end_frame`. These should not be synced to the file to avoid having
+partial frames in the file.
+*/
+#[derive(Debug)]
+struct Index {
+    /// Number of index entries stored in the file.
+    n: u64,
+
+    /// Index entry write buffer.
+    buffer: Vec<u8>,
+
+    /// Pending entries.
+    pending: u64,
+
+    /// Chunk ids that have been written in this frame.
+    frame_names: HashSet<u16>,
+}
+
 /** Interact with GSD files on the filesystem.
 
 # TODO
@@ -384,17 +457,23 @@ pub struct GsdFile {
     /// Memory map of the file.
     mmap: Mmap,
 
-    /// Length of the file in bytes.
-    file_len: u64,
-
     /// The name list.
     name_list: NameList,
 
-    /// Number of index entries.
-    n_index_entries: u64,
+    /// The index buffer.
+    index: Index,
+
+    /// The array data buffer.
+    data_buffer: Vec<u8>,
+
+    /// Length of the file in bytes.
+    file_len: u64,
 
     /// Index of the current frame.
     current_frame: u64,
+
+    /// Automatically flush when more than flush_threshold bytes are buffered.
+    flush_threshold: usize,
 }
 
 /** Properties that describe a given data chunk.
@@ -741,6 +820,21 @@ impl IndexEntry {
             flags,
         }
     }
+
+    /// Encode an index entry.
+    fn to_ne_bytes(self) -> [u8; INDEX_ENTRY_USIZE] {
+        let mut result = [0u8; INDEX_ENTRY_USIZE];
+        result[0..8].copy_from_slice(&self.frame.to_ne_bytes());
+        result[8..16].copy_from_slice(&self.n.to_ne_bytes());
+        result[16..24].copy_from_slice(&self.location.to_ne_bytes());
+        result[24..28].copy_from_slice(&self.m.to_ne_bytes());
+        result[28..30].copy_from_slice(&self.id.to_ne_bytes());
+        result[30] = self.data_type;
+        result[31] = self.flags;
+
+        result
+    }
+        
 }
 
 impl GsdFile {
@@ -807,12 +901,12 @@ impl GsdFile {
             index_location: HEADER_SIZE,
             index_allocated_entries:  INITIAL_INDEX_SIZE,
             namelist_location: HEADER_SIZE + INDEX_ENTRY_SIZE * INITIAL_INDEX_SIZE,
-            namelist_allocated_entries: INITIAL_NAME_BUFFER_SIZE / NAME_SIZE,
+            namelist_allocated_entries: INITIAL_NAME_LIST_SIZE / NAME_SIZE,
         };
 
         file.write_all(&header.to_ne_bytes()).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
 
-        file.set_len(HEADER_SIZE + INDEX_ENTRY_SIZE * INITIAL_INDEX_SIZE + INITIAL_NAME_BUFFER_SIZE).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
+        file.set_len(HEADER_SIZE + INDEX_ENTRY_SIZE * INITIAL_INDEX_SIZE + INITIAL_NAME_LIST_SIZE).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
 
         file.sync_all().map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
         
@@ -864,9 +958,9 @@ impl GsdFile {
         let start = usize::try_from(header.namelist_location).map_err(DecodeError::UnaddressableIndex)?;
         let end = usize::try_from(namelist_range_end).map_err(DecodeError::UnaddressableIndex)?;
         let name_list = GsdFile::decode_name_map(&mmap[start..end])?;
+        let index = Index { n: 0, buffer: Vec::new(), pending: 0, frame_names: HashSet::new() };        
 
         // TODO: Write buffers.
-        // TODO: silently upgrade writable files to the latest minor version.
 
         let mut gsd_file = GsdFile {
             file,
@@ -875,15 +969,19 @@ impl GsdFile {
             mmap,
             file_len,
             name_list,
-            n_index_entries: 0,
+            index,
+            data_buffer: Vec::new(),
             current_frame: 0,
+            flush_threshold: INITIAL_FLUSH_THRESHOLD,
         };
 
-        gsd_file.n_index_entries = gsd_file.count_index_entries()?;
-        if gsd_file.n_index_entries > 0 {
-            let last_entry = gsd_file.get_index(gsd_file.n_index_entries - 1)?;
+        gsd_file.index.n = gsd_file.count_index_entries()?;
+        if gsd_file.index.n > 0 {
+            let last_entry = gsd_file.get_index(gsd_file.index.n - 1)?;
             gsd_file.current_frame = last_entry.frame + 1;
         }
+
+        // TODO: silently upgrade writable files to the latest minor version.
 
         Ok(gsd_file)
     }
@@ -1080,7 +1178,7 @@ impl GsdFile {
     */
     #[must_use]
     pub fn find_chunk(&self, frame: u64, name: &str) -> Option<IndexEntry> {
-        if frame >= self.current_frame {
+        if frame >= self.current_frame || self.index.n == 0 {
             return None;
         }
 
@@ -1091,7 +1189,7 @@ impl GsdFile {
 
         // binary search for the index entry
         let mut l: u64 = 0;
-        let mut r = self.n_index_entries - 1;
+        let mut r = self.index.n - 1;
 
         while l <= r {
             let m = l.midpoint(r);
@@ -1199,9 +1297,9 @@ impl GsdFile {
     * TODO: Error when name has already been written this frame.
     
     */
-    fn write_array<T: Type>(&mut self, name: &str, columns: u32, data: &[T]) -> Result<(), WriteError> {
+    pub fn write_array<T: Type>(&mut self, name: &str, columns: u32, data: &[T]) -> Result<(), WriteError> {
         if self.mode != Mode::Write {
-            return Err(WriteError::NotWriteable);
+            return Err(WriteError::NotWritable);
         }
 
         if columns == 0 {
@@ -1222,16 +1320,41 @@ impl GsdFile {
             return Err(WriteError::NameListOverflow);
         }
 
+        if !self.index.frame_names.insert(id) {
+            return Err(WriteError::DuplicateChunkName(name.into(), self.current_frame));
+        }
+
+        // write_array doesn't actually write any data to the file itself. For
+        // performance, it buffers all writes. Above, `add_name` appended any
+        // new names to `self.name_list.buffer`. Now, `write_array` needs to
+        // construct the index entry and put the bytes of the array in the data
+        // buffer. `sync_all` will write the data buffer first, so all index
+        // entries can be constructed with the known location:
+        // file_len + currently buffered bytes.
+        //
+        // This implementation is a departure from the GSD C implementation
+        // which would eagerly write large arrays directly to the file and
+        // buffer the index entries for them. That complicated the code with
+        // the need for two levels of index buffering and corrections to some
+        // entries' location fields. Due to the need to call `to_ne_bytes`, the
+        // Rust code is simpler to write when it always buffers all data.
+
         let index_entry = IndexEntry {
             frame: self.current_frame,
             n: (data.len() / columns as usize) as u64,
             m: columns,
-            location: self.file_len, // + TODO: current buffer size
+            location: self.file_len + self.data_buffer.len() as u64,
             id,
             data_type: T::gsd_data_type(),
             flags: 0,
-        }
+        };
+
+        self.index.buffer.extend(&index_entry.to_ne_bytes());
+        self.index.pending += 1;
         
+        for value in data {
+            value.append_ne_bytes(&mut self.data_buffer);
+        }
 
     Ok(())
     }
