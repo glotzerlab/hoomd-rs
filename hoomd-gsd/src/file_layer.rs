@@ -7,7 +7,7 @@ TODO: Expand documentation.
  */
 
 use memmap2::Mmap;
-use std::cmp::Ordering;
+use std::cmp::{Ordering, PartialOrd, Ord};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, SeekFrom, prelude::*};
@@ -43,8 +43,8 @@ const INITIAL_INDEX_SIZE: u64 = 128;
 /// Initial name list size
 const INITIAL_NAME_LIST_SIZE: u64 = 1024;
 
-/// Initial buffer flush threshold.
-const INITIAL_FLUSH_THRESHOLD: usize = 1024 * 1024;
+/// Initial buffer sync threshold.
+const INITIAL_SYNC_THRESHOLD: usize = 1024 * 1024;
 
 /// Errors that can occur during while decoding file content.
 #[non_exhaustive]
@@ -154,8 +154,8 @@ pub enum WriteError {
     InvalidDataLength(usize, u32),
 
     /// Encountered an I/O error.
-    #[error("I/O error while writing `{0}` at frame {1}")]
-    IO(String, u64, #[source] io::Error),
+    #[error("I/O error while writing GSD file")]
+    IO(#[from] io::Error),
 
     /// Cannot add any more chunk names.
     #[error("too many chunk names")]
@@ -231,14 +231,16 @@ pub trait Type: private::Sealed {
 
     /** Convert a native endian byte slice to this type.
 
-    This is not the proper idiomatic way to do this, but it gets the job done.
+    This is not the proper idiomatic way to do this, but it gets the job done
+    with minimal lines of code.
     */
     #[doc(hidden)]
     fn from_ne_byte_slice(bytes: &[u8]) -> Self;
 
     /** Append this type to a native endian byte array.
 
-    This is not the proper idiomatic way to do this, but it gets the job done.
+    This is not the proper idiomatic way to do this, but it gets the job done
+    with minimal lines of code.
     */
     #[doc(hidden)]
     fn append_ne_bytes(&self, v: &mut Vec<u8>);
@@ -429,11 +431,14 @@ struct Index {
     /// Number of index entries stored in the file.
     n: u64,
 
-    /// Index entry write buffer.
-    buffer: Vec<u8>,
+    /// Index entry buffer.
+    buffer: Vec<IndexEntry>,
+
+    /// Index entry byte buffer.
+    byte_buffer: Vec<u8>,
 
     /// Pending entries.
-    pending: u64,
+    pending: usize,
 
     /// Chunk ids that have been written in this frame.
     frame_names: HashSet<u16>,
@@ -472,8 +477,8 @@ pub struct GsdFile {
     /// Index of the current frame.
     current_frame: u64,
 
-    /// Automatically flush when more than flush_threshold bytes are buffered.
-    flush_threshold: usize,
+    /// Automatically sync when more than `sync_threshold` bytes are buffered.
+    sync_threshold: usize,
 }
 
 /** Properties that describe a given data chunk.
@@ -483,7 +488,7 @@ pub struct GsdFile {
     search for a matching index entry. The returned [`IndexEntry`] (if present)
     also carries information about the dimension and type of the array.    
 */
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct IndexEntry {
     /// Frame index of the chunk.
     frame: u64,
@@ -635,6 +640,17 @@ fn extract_null_terminated_utf8(bytes: &[u8]) -> Result<(String, &[u8]), FromUtf
         (_, rest) = rest.split_at(1);
     }
     Ok((s, rest))
+}
+
+impl PartialOrd for IndexEntry {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Ord for IndexEntry {
+    fn cmp(&self, other: &Self) -> Ordering {
+        (self.frame, self.id).cmp(&(other.frame, other.id))
+    }
 }
 
 impl GsdHeader {
@@ -958,9 +974,7 @@ impl GsdFile {
         let start = usize::try_from(header.namelist_location).map_err(DecodeError::UnaddressableIndex)?;
         let end = usize::try_from(namelist_range_end).map_err(DecodeError::UnaddressableIndex)?;
         let name_list = GsdFile::decode_name_map(&mmap[start..end])?;
-        let index = Index { n: 0, buffer: Vec::new(), pending: 0, frame_names: HashSet::new() };        
-
-        // TODO: Write buffers.
+        let index = Index { n: 0, buffer: Vec::new(), byte_buffer: Vec::new(), pending: 0, frame_names: HashSet::new() };        
 
         let mut gsd_file = GsdFile {
             file,
@@ -972,7 +986,7 @@ impl GsdFile {
             index,
             data_buffer: Vec::new(),
             current_frame: 0,
-            flush_threshold: INITIAL_FLUSH_THRESHOLD,
+            sync_threshold: INITIAL_SYNC_THRESHOLD,
         };
 
         gsd_file.index.n = gsd_file.count_index_entries()?;
@@ -1017,12 +1031,22 @@ impl GsdFile {
             })
     }
 
-    /// Add a new name to the file.
-    fn add_name(&mut self, name: &str) -> u16 {
+    /// Get the `id` of a name. Add a new `id` if needed.
+    fn get_id(&mut self, name: &str) -> Result<u16, WriteError> {
+        if let Some(id) = self.name_list.name_id.get(name) {
+            return Ok(*id)
+        }
+        
+        let new_id = self.name_list.n_names;
+        if new_id == u16::MAX {
+            return Err(WriteError::NameListOverflow);
+        }
+        
         self.name_list.n_names += 1;
         self.name_list.buffer.extend(name.as_bytes());
         self.name_list.buffer.push(0);
-        self.name_list.n_names
+        self.name_list.name_id.insert(String::from(name), new_id);
+        Ok(new_id)
     }
 
     /// Remap the file
@@ -1085,6 +1109,7 @@ impl GsdFile {
         match GsdFile::size_of(entry.data_type) {
             Some(element_size) => {
                 let total_size = entry.n * u64::from(entry.m) * element_size as u64;
+                assert!(entry.location + total_size <= self.file_len);
                 if entry.location + total_size > self.file_len {
                     return false;
                 }
@@ -1095,6 +1120,7 @@ impl GsdFile {
         // is_entry_valid is used before the file is fully loaded and the number
         // of frames is not yet known. Check that the frame is at least within
         // the number of allocated index entries.
+        assert!(entry.frame < self.header.index_allocated_entries);
         if entry.frame >= self.header.index_allocated_entries {
             return false;
         }
@@ -1102,6 +1128,7 @@ impl GsdFile {
         // There is no need to include buffered names here because
         // is_entry_valid is only called on file open, not after any write_
         // methods.
+        assert!(entry.id < self.name_list.n_names);
         if entry.id >= self.name_list.n_names {
             return false;
         }
@@ -1211,7 +1238,7 @@ impl GsdFile {
 
     /** Read an array chunk.
 
-    Returns [`Ok(data, index_entry)`](Result::Ok) when the data chunk is present
+    Returns [`Ok(Array<T>)`](Result::Ok) when the data chunk is present
     in the file and `Err(`[`ReadError::ChunkNotFound`]`)` when it is not.
 
     # Errors
@@ -1284,18 +1311,25 @@ impl GsdFile {
 
     /** Append data to the current frame.
 
-    `write_array` writes two-dimensional array data to a named chunk in
-    the current frame of the GSD file.
+    `write_array` writes two-dimensional array data to a named chunk in the
+    current frame of the GSD file. Call [`end_frame`](GsdFile::end_frame) to
+    complete the frame and start the next.
+
+
+    <div class="warning">
+
+    Dropping a [`GsdFile`] will also drop any pending data chunks in incomplete
+    frames.
+
+    </div>
 
     # Errors
 
     Returns a [`WriteError`] when any of the following occur:
     * The file is not opened in a write mode.
-    * An I/O error writing to the file.
     * `columns` is 0.
     * The `data` length is not an integer multiple of `columns`.
-    * TODO: Error when name has already been written this frame.
-    
+    * A chunk with the same name has already been written in this frame.
     */
     pub fn write_array<T: Type>(&mut self, name: &str, columns: u32, data: &[T]) -> Result<(), WriteError> {
         if self.mode != Mode::Write {
@@ -1310,15 +1344,7 @@ impl GsdFile {
             return Err(WriteError::InvalidDataLength(data.len(), columns));
         }
 
-        let id = if let Some(id) = self.name_list.name_id.get(name) { *id } else {
-            let id = self.add_name(name);
-            self.name_list.name_id.insert(String::from(name), id);
-            id
-        };
-
-        if id == u16::MAX {
-            return Err(WriteError::NameListOverflow);
-        }
+        let id = self.get_id(name)?;
 
         if !self.index.frame_names.insert(id) {
             return Err(WriteError::DuplicateChunkName(name.into(), self.current_frame));
@@ -1349,7 +1375,7 @@ impl GsdFile {
             flags: 0,
         };
 
-        self.index.buffer.extend(&index_entry.to_ne_bytes());
+        self.index.buffer.push(index_entry);
         self.index.pending += 1;
         
         for value in data {
@@ -1357,5 +1383,149 @@ impl GsdFile {
         }
 
     Ok(())
+    }
+
+    /** Complete the current frame.
+
+    Commits previous calls to `write_*` methods to the current frame. Calls to
+    `write_*` methods following `end_frame` will write to the next frame.
+
+    Calling `end_frame` does not ensure that all buffered data is synced to
+    the filesystem. `end_frame` will only automatically sync when the amount
+    of data buffered exceeds the current [`sync_threshold`](GsdFile::sync_threshold).
+
+    Call [`sync_all`](GsdFile::sync_all) to manually sync buffered data
+    to the filesystem.
+
+    # Errors
+
+    Returns a [`WriteError`] when any of the following occur:
+    * The file is not opened in a write mode.
+    * An I/O error writing to the file.
+    */
+    pub fn end_frame(&mut self) -> Result<(), WriteError> {
+        if self.mode != Mode::Write {
+            return Err(WriteError::NotWritable);
+        }
+
+        self.current_frame += 1;
+        self.index.pending = 0;
+        self.index.frame_names.clear();
+
+        if self.data_buffer.len() + self.index.buffer.len() > self.sync_threshold {
+            self.sync_all()?;
+        }
+
+        Ok(())
+    }
+
+
+    /** Write buffered data to the filesystem.
+
+    `sync_all` ensures that the data and indices for all complete frames is
+    written to the filesystem. For example (TODO: a proper example):
+    ```
+    file.write_array(...)?;
+    file.write_array(...)?;
+    file.end_frame()?;
+    file.write_array(...)?;
+    ```
+    In this example, the `sync_all` would write the data for the first two
+    arrays, but not the third. The reason is to ensure that all GSD files
+    have complete frame data should any errors occur.
+
+    In most cases, callers should not call `sync_all` manually.
+    [`end_frame`](GsdFile::end_frame) will automatically call `sync_all` when
+    the buffer is larger than the [`sync_threshold`](GsdFile::sync_threshold). `sync_all`
+    will also automatically run when you drop a [`GsdFile`].
+
+    # Errors
+
+    Returns a [`WriteError`] when any of the following occur:
+    * The file is not opened in a write mode.
+    * An I/O error writing to the file.
+    */
+    pub fn sync_all(&mut self) -> Result<(), WriteError> {
+        if self.mode != Mode::Write {
+            return Err(WriteError::NotWritable);
+        }
+
+        let mut need_remap = false;
+
+        // Write the data buffer to the file first. Should any error occur here,
+        // the file might have some extra bytes at the end, but the index of
+        // written data so far will be correct.
+        if !self.data_buffer.is_empty() {
+            let current_len = self.file.seek(SeekFrom::End(0))?;
+            debug_assert_eq!(current_len, self.file_len);
+            self.file.write_all(&self.data_buffer)?;
+            self.file_len += self.data_buffer.len() as u64;
+            self.data_buffer.clear();
+
+            need_remap = true;
+            self.file.sync_all()?;
+            }
+
+        // Write the new name next to ensure that the references in the index
+        // will be consistent with the names.
+        if !self.name_list.buffer.is_empty() {
+            if self.name_list.insert_position + self.name_list.buffer.len() as u64 > self.header.namelist_allocated_entries * NAME_SIZE {
+                todo!();
+                // expand the name list
+            }
+            debug_assert!(self.name_list.insert_position + self.name_list.buffer.len() as u64 <= self.header.namelist_allocated_entries * NAME_SIZE);
+            self.file.seek(SeekFrom::Start(self.header.namelist_location + self.name_list.insert_position))?;
+            self.file.write_all(&self.name_list.buffer)?;
+            self.name_list.insert_position += self.name_list.buffer.len() as u64;
+            self.name_list.buffer.clear();
+        }
+
+        // Now write all the non-pending index entries. Index entries must be
+        // sorted by (frame, id) to be valid. Given that pending index entries
+        // are guaranteed to have `frame+1`, we do not need to sort the pending
+        // entries here.
+        let index_entries_to_write = self.index.buffer.len() - self.index.pending;
+        if index_entries_to_write > 0 {
+            if self.index.n + index_entries_to_write as u64 > self.header.index_allocated_entries {
+                need_remap = true;
+                todo!();
+                // expand the index
+            }
+            debug_assert!(self.index.n + index_entries_to_write as u64 <= self.header.index_allocated_entries);
+            self.index.buffer[0..index_entries_to_write].sort_unstable();
+
+            // format the index entries to write in the file byte order and
+            // remove them from the index buffer.
+            self.index.byte_buffer.clear();           
+            for entry in self.index.buffer.drain(0..index_entries_to_write) {
+                self.index.byte_buffer.extend(&entry.to_ne_bytes());
+            }
+            self.file.seek(SeekFrom::Start(self.header.index_location + self.index.n * INDEX_ENTRY_SIZE))?;
+            self.file.write_all(&self.index.byte_buffer)?;
+            self.index.n += index_entries_to_write as u64;
+
+            self.file.sync_all()?;
+        }
+
+
+        if need_remap {
+            self.remap()?;
+        }
+
+        Ok(())
+    }
+
+    // TODO: get/set sync_threshold.
+}
+
+/** Automatically synchronize buffered data before closing the file.
+
+[`GsdFile`] automatically calls [`sync_all`](GsdFile::sync_all) when
+dropped and ignores and errors. To check for any potential errors, call
+[`sync_all`](GsdFile::sync_all) before dropping a [`GsdFile`].
+*/
+impl Drop for GsdFile {
+    fn drop(&mut self) {
+        let _ = self.sync_all();
     }
 }
