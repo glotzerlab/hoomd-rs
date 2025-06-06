@@ -249,7 +249,7 @@ impl<const N: usize> Vector for Cartesian<N> {
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let x = Cartesian::from([0.0, 1.0, 1.0]);
     let y = Cartesian::from([1.0, 0.0, 0.0]);
-    assert_eq!(3.0, x.distance_sq(&y));
+    assert_eq!(3.0, x.distance_squared(&y));
     # Ok(())
     # }
     ```
