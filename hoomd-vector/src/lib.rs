@@ -336,6 +336,65 @@ pub trait Vector:
     + SubAssign
     + Neg<Output = Self>
 {
+    /** Compute the squared distance between two vectors belonging to a metric space.
+
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, Vector};
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let x = Cartesian::from([0.0, 1.0, 1.0]);
+    let y = Cartesian::from([1.0, 0.0, 0.0]);
+    assert_eq!(3.0, x.distance_squared(&y));
+    # Ok(())
+    # }
+    ```
+     */
+    fn distance_squared(&self, other: &Self) -> f64;
+
+    /** Compute the distance between two vectors belonging to a metric space.
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, Vector};
+
+    let x = Cartesian::from([0.0, 0.0]);
+    let y = Cartesian::from([3.0, 4.0]);
+    assert_eq!(5.0, x.distance(&y));
+    ```
+     */
+    #[inline]
+    fn distance(&self, other: &Self) -> f64 {
+        self.distance_squared(other).sqrt()
+    }
+}
+/** Operate on elements of an inner product space.
+
+The [`InnerProduct`] subtrait defines additional methods that can be performed on any vector
+in an inner product space, specifically vector norms and inner products.
+
+*/
+pub trait InnerProduct: Vector {
+    /** Compute the vector dot product between two vectors.
+
+    ```math
+    c = \vec{a} \cdot \vec{b}
+    ```
+
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, InnerProduct};
+
+    # fn main() {
+    let a = Cartesian::from([1.0, 2.0]);
+    let b = Cartesian::from([3.0, 4.0]);
+    let c = a.dot(&b);
+    assert_eq!(c, 11.0);
+    # }
+    ```
+    */
+    #[must_use]
+    fn dot(&self, other: &Self) -> f64;
+
     /** Compute the squared norm of the vector.
 
     ```math

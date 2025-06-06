@@ -1,7 +1,7 @@
 [workspace]
 
 members = [
-  "hoomd-interaction",
+  "hoomd-interaction", "hoomd-manifold",
   "hoomd-mc",
   "hoomd-microstate",
   "hoomd-utility",
