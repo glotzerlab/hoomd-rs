@@ -534,6 +534,7 @@ pub struct Array<T> {
 
 Provided by [`IndexEntry::data_type`].
 */
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum DataType {
     /// [`u8`]
@@ -1753,6 +1754,28 @@ mod tests {
         assert_eq!(i64_array.data, i64_data);
         assert_eq!(f32_array.data, f32_data);
         assert_eq!(f64_array.data, f64_data);
+
+        assert_eq!(GsdFile::size_of(u8::gsd_data_type()).expect("type should be valid"), size_of::<u8>());
+        assert_eq!(GsdFile::size_of(u16::gsd_data_type()).expect("type should be valid"), size_of::<u16>());
+        assert_eq!(GsdFile::size_of(u32::gsd_data_type()).expect("type should be valid"), size_of::<u32>());
+        assert_eq!(GsdFile::size_of(u64::gsd_data_type()).expect("type should be valid"), size_of::<u64>());
+        assert_eq!(GsdFile::size_of(i8::gsd_data_type()).expect("type should be valid"), size_of::<i8>());
+        assert_eq!(GsdFile::size_of(i16::gsd_data_type()).expect("type should be valid"), size_of::<i16>());
+        assert_eq!(GsdFile::size_of(i32::gsd_data_type()).expect("type should be valid"), size_of::<i32>());
+        assert_eq!(GsdFile::size_of(i64::gsd_data_type()).expect("type should be valid"), size_of::<i64>());
+        assert_eq!(GsdFile::size_of(f32::gsd_data_type()).expect("type should be valid"), size_of::<f32>());
+        assert_eq!(GsdFile::size_of(f64::gsd_data_type()).expect("type should be valid"), size_of::<f64>());
+
+        assert_eq!(gsd_file.find_chunk(0, "u8").expect("c should be written above").data_type(), Some(DataType::U8));
+        assert_eq!(gsd_file.find_chunk(0, "u16").expect("c should be written above").data_type(), Some(DataType::U16));
+        assert_eq!(gsd_file.find_chunk(0, "u32").expect("c should be written above").data_type(), Some(DataType::U32));
+        assert_eq!(gsd_file.find_chunk(0, "u64").expect("c should be written above").data_type(), Some(DataType::U64));
+        assert_eq!(gsd_file.find_chunk(0, "i8").expect("c should be written above").data_type(), Some(DataType::I8));
+        assert_eq!(gsd_file.find_chunk(0, "i16").expect("c should be written above").data_type(), Some(DataType::I16));
+        assert_eq!(gsd_file.find_chunk(0, "i32").expect("c should be written above").data_type(), Some(DataType::I32));
+        assert_eq!(gsd_file.find_chunk(0, "i64").expect("c should be written above").data_type(), Some(DataType::I64));
+        assert_eq!(gsd_file.find_chunk(0, "f32").expect("c should be written above").data_type(), Some(DataType::F32));
+        assert_eq!(gsd_file.find_chunk(0, "f64").expect("c should be written above").data_type(), Some(DataType::F64));
     }
 
     #[test]
@@ -1792,6 +1815,18 @@ mod tests {
         assert_eq!(array_c.rows, 2);
         assert_eq!(array_c.columns, 3);
         assert_eq!(array_c.data, [1, 2, 3, 4, 5, 6]);
+
+        let entry_a = gsd_file.find_chunk(0, "a").expect("a should be written above");
+        assert_eq!(entry_a.frame(), 0);
+        assert_eq!(entry_a.rows(), 0);
+        assert_eq!(entry_a.columns(), 1);
+        assert_eq!(entry_a.data_type(), Some(DataType::U64));
+
+        let entry_c = gsd_file.find_chunk(1, "c").expect("c should be written above");
+        assert_eq!(entry_c.frame(), 1);
+        assert_eq!(entry_c.rows(), 2);
+        assert_eq!(entry_c.columns(), 3);
+        assert_eq!(entry_c.data_type(), Some(DataType::U64));
     }
 
     #[test]
