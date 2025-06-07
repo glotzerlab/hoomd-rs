@@ -7,7 +7,10 @@
 #![doc(
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
-#![allow(clippy::missing_inline_in_public_items, reason = "GSD methods are not meant to be customized")]
+#![allow(
+    clippy::missing_inline_in_public_items,
+    reason = "GSD methods are not meant to be customized"
+)]
 
 /*! Read and write GSD files.
 

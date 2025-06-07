@@ -7,7 +7,7 @@ TODO: Expand documentation.
  */
 
 use memmap2::Mmap;
-use std::cmp::{Ordering, PartialOrd, Ord};
+use std::cmp::{Ord, Ordering, PartialOrd};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, SeekFrom, prelude::*};
@@ -272,7 +272,7 @@ impl Type for u16 {
         2
     }
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
-        u16::from_ne_bytes(bytes.try_into().expect("byte slice should contain 2 bytes")) 
+        u16::from_ne_bytes(bytes.try_into().expect("byte slice should contain 2 bytes"))
     }
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
@@ -284,7 +284,7 @@ impl Type for u32 {
         3
     }
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
-        u32::from_ne_bytes(bytes.try_into().expect("byte slice should contain 4 bytes")) 
+        u32::from_ne_bytes(bytes.try_into().expect("byte slice should contain 4 bytes"))
     }
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
@@ -296,7 +296,7 @@ impl Type for u64 {
         4
     }
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
-        u64::from_ne_bytes(bytes.try_into().expect("byte slice should contain 8 bytes")) 
+        u64::from_ne_bytes(bytes.try_into().expect("byte slice should contain 8 bytes"))
     }
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
@@ -308,7 +308,7 @@ impl Type for i8 {
         5
     }
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
-        i8::from_ne_bytes(bytes.try_into().expect("byte slice should contain 1 byte")) 
+        i8::from_ne_bytes(bytes.try_into().expect("byte slice should contain 1 byte"))
     }
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
@@ -320,7 +320,7 @@ impl Type for i16 {
         6
     }
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
-        i16::from_ne_bytes(bytes.try_into().expect("byte slice should contain 2 bytes")) 
+        i16::from_ne_bytes(bytes.try_into().expect("byte slice should contain 2 bytes"))
     }
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
@@ -332,7 +332,7 @@ impl Type for i32 {
         7
     }
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
-        i32::from_ne_bytes(bytes.try_into().expect("byte slice should contain 4 bytes")) 
+        i32::from_ne_bytes(bytes.try_into().expect("byte slice should contain 4 bytes"))
     }
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
@@ -344,7 +344,7 @@ impl Type for i64 {
         8
     }
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
-        i64::from_ne_bytes(bytes.try_into().expect("byte slice should contain 8 bytes")) 
+        i64::from_ne_bytes(bytes.try_into().expect("byte slice should contain 8 bytes"))
     }
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
@@ -356,7 +356,7 @@ impl Type for f32 {
         9
     }
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
-        f32::from_ne_bytes(bytes.try_into().expect("byte slice should contain 8 bytes")) 
+        f32::from_ne_bytes(bytes.try_into().expect("byte slice should contain 8 bytes"))
     }
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
@@ -368,7 +368,7 @@ impl Type for f64 {
         10
     }
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
-        f64::from_ne_bytes(bytes.try_into().expect("byte slice should contain 8 bytes")) 
+        f64::from_ne_bytes(bytes.try_into().expect("byte slice should contain 8 bytes"))
     }
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
@@ -420,8 +420,7 @@ struct NameList {
 
     /// Name write buffer.
     buffer: Vec<u8>,
-}       
-
+}
 
 /** Details about the index.
 
@@ -494,7 +493,7 @@ pub struct GsdFile {
     GSD files store a set of arrays, uniquely identified by their *name* and
     *frame*. The [`GsdFile::find_chunk`] and [`GsdFile::read_array`] methods
     search for a matching index entry. The returned [`IndexEntry`] (if present)
-    also carries information about the dimension and type of the array.    
+    also carries information about the dimension and type of the array.
 */
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct IndexEntry {
@@ -663,7 +662,6 @@ impl Ord for IndexEntry {
 }
 
 impl GsdHeader {
-
     /// Parse the header.
     fn try_from_ne_bytes(value: [u8; HEADER_USIZE]) -> Result<Self, DecodeError> {
         // Validate the magic number first to ensure that we expect the rest
@@ -730,12 +728,13 @@ impl GsdHeader {
         result[16..24].copy_from_slice(&self.index_allocated_entries.to_ne_bytes());
         result[24..32].copy_from_slice(&self.namelist_location.to_ne_bytes());
         result[32..40].copy_from_slice(&self.namelist_allocated_entries.to_ne_bytes());
-        let schema_version = u32::from(self.schema_version.0) << 16 | u32::from(self.schema_version.1);
+        let schema_version =
+            u32::from(self.schema_version.0) << 16 | u32::from(self.schema_version.1);
         result[40..44].copy_from_slice(&schema_version.to_ne_bytes());
         let gsd_version: u32 = u32::from(self.gsd_version.0) << 16 | u32::from(self.gsd_version.1);
         result[44..48].copy_from_slice(&gsd_version.to_ne_bytes());
-        result[48..48+self.application.len()].copy_from_slice(self.application.as_bytes());
-        result[112..112+self.schema.len()].copy_from_slice(self.schema.as_bytes());
+        result[48..48 + self.application.len()].copy_from_slice(self.application.as_bytes());
+        result[112..112 + self.schema.len()].copy_from_slice(self.schema.as_bytes());
 
         result
     }
@@ -859,7 +858,6 @@ impl IndexEntry {
 
         result
     }
-        
 }
 
 impl GsdFile {
@@ -883,37 +881,65 @@ impl GsdFile {
     TODO: Examples.
     */
     #[inline]
-    pub fn create<P: AsRef<Path>>(path: P, application: &str, schema: &str, schema_version: (u16, u16)) -> Result<Self, OpenError> {
-        let mut file = File::options().read(true).write(true).create(true).truncate(true).open(&path).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
+    pub fn create<P: AsRef<Path>>(
+        path: P,
+        application: &str,
+        schema: &str,
+        schema_version: (u16, u16),
+    ) -> Result<Self, OpenError> {
+        let mut file = File::options()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(&path)
+            .map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
         GsdFile::initialize_file(&mut file, &path, application, schema, schema_version)?;
-        GsdFile::from_file(file, Mode::Write).map_err(|e| OpenError::Decode(path.as_ref().into(), e))
+        GsdFile::from_file(file, Mode::Write)
+            .map_err(|e| OpenError::Decode(path.as_ref().into(), e))
     }
 
     /** Create a new GSD file.
 
     Creates a new GSD file at the given path, returning an error when the
     path already exists. When successful, return a [`GsdFile`] opened in
-    write mode. 
+    write mode.
 
     TODO: Description.
     TODO: Examples.
     */
     #[inline]
-    pub fn create_new<P: AsRef<Path>>(path: P, application: &str, schema: &str, schema_version: (u16, u16)) -> Result<Self, OpenError> {
-        let mut file = File::options().read(true).write(true).create_new(true).open(&path).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
+    pub fn create_new<P: AsRef<Path>>(
+        path: P,
+        application: &str,
+        schema: &str,
+        schema_version: (u16, u16),
+    ) -> Result<Self, OpenError> {
+        let mut file = File::options()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .open(&path)
+            .map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
         GsdFile::initialize_file(&mut file, &path, application, schema, schema_version)?;
-        GsdFile::from_file(file, Mode::Write).map_err(|e| OpenError::Decode(path.as_ref().into(), e))
+        GsdFile::from_file(file, Mode::Write)
+            .map_err(|e| OpenError::Decode(path.as_ref().into(), e))
     }
-        
-    /// Initialize an empty file.
-    fn initialize_file<P: AsRef<Path>>(file: &mut File, path: &P, application: &str, schema: &str, schema_version: (u16, u16)) -> Result<(), OpenError> {
 
+    /// Initialize an empty file.
+    fn initialize_file<P: AsRef<Path>>(
+        file: &mut File,
+        path: &P,
+        application: &str,
+        schema: &str,
+        schema_version: (u16, u16),
+    ) -> Result<(), OpenError> {
         let application = String::from(application);
-        if application.len() as u64 > NAME_SIZE-1 {
+        if application.len() as u64 > NAME_SIZE - 1 {
             return Err(OpenError::NameTooLong(application));
         }
         let schema = String::from(schema);
-        if schema.len() as u64 > NAME_SIZE-1 {
+        if schema.len() as u64 > NAME_SIZE - 1 {
             return Err(OpenError::NameTooLong(schema));
         }
 
@@ -924,17 +950,20 @@ impl GsdFile {
             schema,
             schema_version,
             index_location: HEADER_SIZE,
-            index_allocated_entries:  INITIAL_INDEX_SIZE,
+            index_allocated_entries: INITIAL_INDEX_SIZE,
             namelist_location: HEADER_SIZE + INDEX_ENTRY_SIZE * INITIAL_INDEX_SIZE,
             namelist_allocated_entries: INITIAL_NAME_LIST_SIZE / NAME_SIZE,
         };
 
-        file.write_all(&header.to_ne_bytes()).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
+        file.write_all(&header.to_ne_bytes())
+            .map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
 
-        file.set_len(HEADER_SIZE + INDEX_ENTRY_SIZE * INITIAL_INDEX_SIZE + INITIAL_NAME_LIST_SIZE).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
+        file.set_len(HEADER_SIZE + INDEX_ENTRY_SIZE * INITIAL_INDEX_SIZE + INITIAL_NAME_LIST_SIZE)
+            .map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
 
-        file.sync_all().map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
-        
+        file.sync_all()
+            .map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
+
         Ok(())
     }
 
@@ -965,9 +994,7 @@ impl GsdFile {
         }
         let namelist_range_end =
             header.namelist_location + header.namelist_allocated_entries * NAME_SIZE;
-        if namelist_range_end > file_len
-            || header.namelist_allocated_entries == 0
-        {
+        if namelist_range_end > file_len || header.namelist_allocated_entries == 0 {
             return Err(DecodeError::NameListOutOfBounds(
                 header.namelist_location,
                 header.namelist_allocated_entries * NAME_SIZE,
@@ -975,15 +1002,23 @@ impl GsdFile {
         }
 
         let mmap = unsafe { Mmap::map(&file)? };
-        let last_namelist_offset = usize::try_from(namelist_range_end - 1).map_err(DecodeError::UnaddressableIndex)?;
+        let last_namelist_offset =
+            usize::try_from(namelist_range_end - 1).map_err(DecodeError::UnaddressableIndex)?;
         if mmap[last_namelist_offset] != 0 {
             return Err(DecodeError::NameListNotTerminated);
         }
 
-        let start = usize::try_from(header.namelist_location).map_err(DecodeError::UnaddressableIndex)?;
+        let start =
+            usize::try_from(header.namelist_location).map_err(DecodeError::UnaddressableIndex)?;
         let end = usize::try_from(namelist_range_end).map_err(DecodeError::UnaddressableIndex)?;
         let name_list = GsdFile::decode_name_map(&mmap[start..end])?;
-        let index = Index { n: 0, buffer: Vec::new(), byte_buffer: Vec::new(), pending: 0, frame_names: HashSet::new() };        
+        let index = Index {
+            n: 0,
+            buffer: Vec::new(),
+            byte_buffer: Vec::new(),
+            pending: 0,
+            frame_names: HashSet::new(),
+        };
 
         let mut gsd_file = GsdFile {
             file,
@@ -1022,8 +1057,8 @@ impl GsdFile {
             bytes = rest;
 
             // The GSD spec ensures that all names in the map are always terminated.
-            insert_position += (name.len()+1) as u64;
-            
+            insert_position += (name.len() + 1) as u64;
+
             let previous = name_id.insert(name, current_id);
             if previous.is_some() {
                 return Err(DecodeError::DuplicateChunkName);
@@ -1033,24 +1068,25 @@ impl GsdFile {
             // TODO: Detect when there are too many names.
         }
 
-        Ok(NameList { name_id,
+        Ok(NameList {
+            name_id,
             n_names: current_id,
             insert_position,
             buffer: Vec::new(),
-            })
+        })
     }
 
     /// Get the `id` of a name. Add a new `id` if needed.
     fn get_id(&mut self, name: &str) -> Result<u16, WriteError> {
         if let Some(id) = self.name_list.name_id.get(name) {
-            return Ok(*id)
+            return Ok(*id);
         }
-        
+
         let new_id = self.name_list.n_names;
         if new_id == u16::MAX {
             return Err(WriteError::NameListOverflow);
         }
-        
+
         self.name_list.n_names += 1;
         self.name_list.buffer.extend(name.as_bytes());
         self.name_list.buffer.push(0);
@@ -1085,10 +1121,8 @@ impl GsdFile {
                 + self.header.index_allocated_entries * INDEX_ENTRY_SIZE
         );
 
-        let start = usize::try_from(start)
-            .map_err(DecodeError::UnaddressableIndex)?;
-        let end = usize::try_from(end)
-            .map_err(DecodeError::UnaddressableIndex)?;
+        let start = usize::try_from(start).map_err(DecodeError::UnaddressableIndex)?;
+        let end = usize::try_from(end).map_err(DecodeError::UnaddressableIndex)?;
         let bytes: [u8; INDEX_ENTRY_USIZE] = self.mmap[start..end]
             .try_into()
             .expect("slice should always be the correct size");
@@ -1162,7 +1196,7 @@ impl GsdFile {
 
         // determine the number of index entries (marked by location = 0)
         // binary search for the first index entry with location 0
-        let mut l: u64= 0;
+        let mut l: u64 = 0;
         let mut r = self.header.index_allocated_entries;
 
         // progressively narrow the search window by halves
@@ -1239,7 +1273,7 @@ impl GsdFile {
                     Ordering::Equal => return Some(index_entry_m),
                 }
             } else {
-                return None
+                return None;
             }
         }
         None
@@ -1272,47 +1306,64 @@ impl GsdFile {
         let index_entry = match self.find_chunk(frame, name) {
             None => return Err(ReadError::ChunkNotFound),
             Some(e) => e,
-            };
+        };
 
         if index_entry.data_type != T::gsd_data_type() {
             return Err(ReadError::InvalidType(name.into(), frame));
         }
 
-        if index_entry.location == 0 {        
-            return Err(ReadError::Decode(name.into(), frame, DecodeError::CorruptIndexEntry(index_entry)));
+        if index_entry.location == 0 {
+            return Err(ReadError::Decode(
+                name.into(),
+                frame,
+                DecodeError::CorruptIndexEntry(index_entry),
+            ));
         }
-        
+
         if index_entry.n == 0 {
-            return Ok(Array{ data: Vec::new(), rows: 0, columns: index_entry.m } );
+            return Ok(Array {
+                data: Vec::new(),
+                rows: 0,
+                columns: index_entry.m,
+            });
         }
 
         self.read_array_details(&index_entry)
             .map_err(|e| ReadError::Decode(name.into(), frame, e))
-    } 
+    }
 
     /// Implement the details of `read_array`.
-    fn read_array_details<T: Type>(&self, index_entry: &IndexEntry) -> Result<Array<T>, DecodeError> {
+    fn read_array_details<T: Type>(
+        &self,
+        index_entry: &IndexEntry,
+    ) -> Result<Array<T>, DecodeError> {
         let n_elements = index_entry.n * u64::from(index_entry.m);
         let n_bytes = usize::try_from(n_elements * size_of::<T>() as u64)
             .map_err(DecodeError::UnaddressableContent)?;
         let mut data = Vec::with_capacity(n_bytes);
 
-        let location = usize::try_from(index_entry.location)
-            .map_err(DecodeError::UnaddressableContent)?;
+        let location =
+            usize::try_from(index_entry.location).map_err(DecodeError::UnaddressableContent)?;
 
         debug_assert!(location + n_bytes <= self.mmap.len());
-            
-        for offset in (location..location+n_bytes).step_by(size_of::<T>()) {
-            data.push(T::from_ne_byte_slice(&self.mmap[offset..offset+size_of::<T>()]));
+
+        for offset in (location..location + n_bytes).step_by(size_of::<T>()) {
+            data.push(T::from_ne_byte_slice(
+                &self.mmap[offset..offset + size_of::<T>()],
+            ));
         }
 
-        Ok(Array { data, rows: index_entry.n, columns: index_entry.m })
+        Ok(Array {
+            data,
+            rows: index_entry.n,
+            columns: index_entry.m,
+        })
     }
 
     // TODO: Implement read_string. The conversion steps needed for strings
     // cannot be rolled into a generic read_array. But it can leverage
     // `read_array_details<u8>` to reduce code duplication.
-    
+
     // TODO: Consider implementing read_vector_array<Cartesian<N>> and a
     // similar write method. These convenience methods will make it easier
     // to implement the hoomd schema which stores many chunks as vectors.
@@ -1342,7 +1393,12 @@ impl GsdFile {
     * The `data` length is not an integer multiple of `columns`.
     * A chunk with the same name has already been written in this frame.
     */
-    pub fn write_array<T: Type>(&mut self, name: &str, columns: u32, data: &[T]) -> Result<(), WriteError> {
+    pub fn write_array<T: Type>(
+        &mut self,
+        name: &str,
+        columns: u32,
+        data: &[T],
+    ) -> Result<(), WriteError> {
         if self.mode != Mode::Write {
             return Err(WriteError::NotWritable);
         }
@@ -1358,7 +1414,10 @@ impl GsdFile {
         let id = self.get_id(name)?;
 
         if !self.index.frame_names.insert(id) {
-            return Err(WriteError::DuplicateChunkName(name.into(), self.current_frame));
+            return Err(WriteError::DuplicateChunkName(
+                name.into(),
+                self.current_frame,
+            ));
         }
 
         // write_array doesn't actually write any data to the file itself. For
@@ -1388,12 +1447,12 @@ impl GsdFile {
 
         self.index.buffer.push(index_entry);
         self.index.pending += 1;
-        
+
         for value in data {
             value.append_ne_bytes(&mut self.data_buffer);
         }
 
-    Ok(())
+        Ok(())
     }
 
     /** Complete the current frame.
@@ -1423,7 +1482,9 @@ impl GsdFile {
         self.index.pending = 0;
         self.index.frame_names.clear();
 
-        if self.data_buffer.len() + self.index.buffer.len() * INDEX_ENTRY_USIZE >= self.sync_threshold {
+        if self.data_buffer.len() + self.index.buffer.len() * INDEX_ENTRY_USIZE
+            >= self.sync_threshold
+        {
             self.sync_all()?;
         }
 
@@ -1509,16 +1570,25 @@ impl GsdFile {
 
             need_remap = true;
             self.file.sync_all()?;
-            }
+        }
 
         // Write the new name next to ensure that the references in the index
         // will be consistent with the names.
         if !self.name_list.buffer.is_empty() {
-            if self.name_list.insert_position + self.name_list.buffer.len() as u64 > self.header.namelist_allocated_entries * NAME_SIZE {
-                self.expand_name_list_to(self.name_list.insert_position + self.name_list.buffer.len() as u64)?;
+            if self.name_list.insert_position + self.name_list.buffer.len() as u64
+                > self.header.namelist_allocated_entries * NAME_SIZE
+            {
+                self.expand_name_list_to(
+                    self.name_list.insert_position + self.name_list.buffer.len() as u64,
+                )?;
             }
-            debug_assert!(self.name_list.insert_position + self.name_list.buffer.len() as u64 <= self.header.namelist_allocated_entries * NAME_SIZE);
-            self.file.seek(SeekFrom::Start(self.header.namelist_location + self.name_list.insert_position))?;
+            debug_assert!(
+                self.name_list.insert_position + self.name_list.buffer.len() as u64
+                    <= self.header.namelist_allocated_entries * NAME_SIZE
+            );
+            self.file.seek(SeekFrom::Start(
+                self.header.namelist_location + self.name_list.insert_position,
+            ))?;
             self.file.write_all(&self.name_list.buffer)?;
             self.name_list.insert_position += self.name_list.buffer.len() as u64;
             self.name_list.buffer.clear();
@@ -1532,18 +1602,24 @@ impl GsdFile {
         if index_entries_to_write > 0 {
             if self.index.n + index_entries_to_write as u64 > self.header.index_allocated_entries {
                 need_remap = true;
-                self.expand_index_to((self.index.n + index_entries_to_write as u64) * INDEX_ENTRY_SIZE)?;
+                self.expand_index_to(
+                    (self.index.n + index_entries_to_write as u64) * INDEX_ENTRY_SIZE,
+                )?;
             }
-            debug_assert!(self.index.n + index_entries_to_write as u64 <= self.header.index_allocated_entries);
+            debug_assert!(
+                self.index.n + index_entries_to_write as u64 <= self.header.index_allocated_entries
+            );
             self.index.buffer[0..index_entries_to_write].sort_unstable();
 
             // format the index entries to write in the file byte order and
             // remove them from the index buffer.
-            self.index.byte_buffer.clear();           
+            self.index.byte_buffer.clear();
             for entry in self.index.buffer.drain(0..index_entries_to_write) {
                 self.index.byte_buffer.extend(&entry.to_ne_bytes());
             }
-            self.file.seek(SeekFrom::Start(self.header.index_location + self.index.n * INDEX_ENTRY_SIZE))?;
+            self.file.seek(SeekFrom::Start(
+                self.header.index_location + self.index.n * INDEX_ENTRY_SIZE,
+            ))?;
             self.file.write_all(&self.index.byte_buffer)?;
             self.index.n += index_entries_to_write as u64;
 
@@ -1571,11 +1647,16 @@ impl GsdFile {
         let new_size = new_allocated_entries * NAME_SIZE;
         let new_location = self.file.seek(SeekFrom::End(0))?;
 
-        usize::try_from(new_location).map_err(|_| WriteError::NameListOutOfBounds(new_location, new_size))?;
-        usize::try_from(new_location + new_size).map_err(|_| WriteError::NameListOutOfBounds(new_location, new_size))?;
-        
-        let old_start = usize::try_from(self.header.namelist_location).expect("namelist should be validated addressable previously");
-        let old_end = usize::try_from(self.header.namelist_location + self.name_list.insert_position).expect("namelist should be validated addressable previously");
+        usize::try_from(new_location)
+            .map_err(|_| WriteError::NameListOutOfBounds(new_location, new_size))?;
+        usize::try_from(new_location + new_size)
+            .map_err(|_| WriteError::NameListOutOfBounds(new_location, new_size))?;
+
+        let old_start = usize::try_from(self.header.namelist_location)
+            .expect("namelist should be validated addressable previously");
+        let old_end =
+            usize::try_from(self.header.namelist_location + self.name_list.insert_position)
+                .expect("namelist should be validated addressable previously");
         self.file.write_all(&self.mmap[old_start..old_end])?;
         self.file.set_len(new_location + new_size)?;
         self.file_len = new_location + new_size;
@@ -1591,8 +1672,8 @@ impl GsdFile {
         self.file.seek(SeekFrom::Start(0))?;
         self.file.write_all(&self.header.to_ne_bytes())?;
 
-        self.file.sync_all()?;       
-                
+        self.file.sync_all()?;
+
         Ok(())
     }
 
@@ -1610,14 +1691,21 @@ impl GsdFile {
         let new_size = new_allocated_entries * INDEX_ENTRY_SIZE;
         let new_location = self.file.seek(SeekFrom::End(0))?;
 
-        usize::try_from(new_location).map_err(|_| WriteError::IndexOutOfBounds(new_location, new_size))?;
-        usize::try_from(new_location + new_size).map_err(|_| WriteError::IndexOutOfBounds(new_location, new_size))?;
-        
-        let old_start = usize::try_from(self.header.index_location).expect("index should be validated addressable previously");
-        let old_end = usize::try_from(self.header.index_location + self.index.n * INDEX_ENTRY_SIZE).expect("index should be validated addressable previously");
+        usize::try_from(new_location)
+            .map_err(|_| WriteError::IndexOutOfBounds(new_location, new_size))?;
+        usize::try_from(new_location + new_size)
+            .map_err(|_| WriteError::IndexOutOfBounds(new_location, new_size))?;
+
+        let old_start = usize::try_from(self.header.index_location)
+            .expect("index should be validated addressable previously");
+        let old_end = usize::try_from(self.header.index_location + self.index.n * INDEX_ENTRY_SIZE)
+            .expect("index should be validated addressable previously");
         if old_end > self.mmap.len() {
-            return Err(WriteError::IndexOutOfBounds(old_start as u64, old_end as u64))
-            }
+            return Err(WriteError::IndexOutOfBounds(
+                old_start as u64,
+                old_end as u64,
+            ));
+        }
         self.file.write_all(&self.mmap[old_start..old_end])?;
         self.file.set_len(new_location + new_size)?;
         self.file_len = new_location + new_size;
@@ -1633,11 +1721,10 @@ impl GsdFile {
         self.file.seek(SeekFrom::Start(0))?;
         self.file.write_all(&self.header.to_ne_bytes())?;
 
-        self.file.sync_all()?;       
-                
+        self.file.sync_all()?;
+
         Ok(())
     }
-
 }
 
 /** Automatically synchronize buffered data before closing the file.
@@ -1661,35 +1748,46 @@ mod tests {
     fn create_new() {
         let tmp_dir = tempdir().expect("temp dir should be created");
         let path = tmp_dir.path().join("test.gsd");
-        GsdFile::create_new(path.clone(), "application", "schema", (12,42)).expect("gsd file should be created");
+        GsdFile::create_new(path.clone(), "application", "schema", (12, 42))
+            .expect("gsd file should be created");
 
-        let gsd_file = GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
+        let gsd_file =
+            GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
         assert_eq!(gsd_file.application(), "application");
         assert_eq!(gsd_file.schema(), "schema");
         assert_eq!(gsd_file.schema_version(), (12, 42));
         assert_eq!(gsd_file.n_frames(), 0);
         assert!(gsd_file.name_id().is_empty());
 
-        assert!(matches!(GsdFile::create_new(path.clone(), "application", "schema", (12,42)), Err(OpenError::IO(_, _))));
+        assert!(matches!(
+            GsdFile::create_new(path.clone(), "application", "schema", (12, 42)),
+            Err(OpenError::IO(_, _))
+        ));
     }
 
     #[test]
     fn create_errors() {
         let tmp_dir = tempdir().expect("temp dir should be created");
         let path = tmp_dir.path().join("test.gsd");
-        GsdFile::create(path.clone(), "application", "schema", (12,42)).expect("gsd file should be created");
+        GsdFile::create(path.clone(), "application", "schema", (12, 42))
+            .expect("gsd file should be created");
 
-        let long_application = "a".repeat(64); 
-        let result = GsdFile::create(path.clone(), &long_application, "schema", (1,0));
+        let long_application = "a".repeat(64);
+        let result = GsdFile::create(path.clone(), &long_application, "schema", (1, 0));
         assert!(matches!(result, Err(OpenError::NameTooLong(_))));
 
-        let long_schema = "s".repeat(64); 
-        let result = GsdFile::create(path.clone(), "a", &long_schema, (1,0));
+        let long_schema = "s".repeat(64);
+        let result = GsdFile::create(path.clone(), "a", &long_schema, (1, 0));
         assert!(matches!(result, Err(OpenError::NameTooLong(_))));
 
         let just_right_application = "a".repeat(63);
         let just_right_schema = "s".repeat(63);
-        let result = GsdFile::create(path.clone(), &just_right_application, &just_right_schema, (1,0));
+        let result = GsdFile::create(
+            path.clone(),
+            &just_right_application,
+            &just_right_schema,
+            (1, 0),
+        );
         assert!(result.is_ok());
     }
 
@@ -1697,19 +1795,30 @@ mod tests {
     fn sync_threshold() {
         let tmp_dir = tempdir().expect("temp dir should be created");
         let path = tmp_dir.path().join("test.gsd");
-        let mut gsd_file = GsdFile::create(path.clone(), "a", "s", (1,0)).expect("gsd file should be created");
+        let mut gsd_file =
+            GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
 
         *gsd_file.sync_threshold_mut() = 40;
         assert_eq!(gsd_file.sync_threshold(), 40);
 
-        let initial_size = gsd_file.file.metadata().expect("metadata should be valid").len();
+        let initial_size = gsd_file
+            .file
+            .metadata()
+            .expect("metadata should be valid")
+            .len();
         assert_eq!(initial_size, gsd_file.file_len);
-        
-        gsd_file.write_array::<u64>("a", 1, &[1]).expect("write should succeed");
+
+        gsd_file
+            .write_array::<u64>("a", 1, &[1])
+            .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
 
-        let final_size = gsd_file.file.metadata().expect("metadata should be valid").len();
-        assert_eq!(final_size, gsd_file.file_len); 
+        let final_size = gsd_file
+            .file
+            .metadata()
+            .expect("metadata should be valid")
+            .len();
+        assert_eq!(final_size, gsd_file.file_len);
         assert_eq!(final_size, initial_size + 8);
     }
 
@@ -1717,20 +1826,35 @@ mod tests {
     fn sync_all() {
         let tmp_dir = tempdir().expect("temp dir should be created");
         let path = tmp_dir.path().join("test.gsd");
-        let mut gsd_file = GsdFile::create(path.clone(), "a", "s", (1,0)).expect("gsd file should be created");
+        let mut gsd_file =
+            GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
 
-        let initial_size = gsd_file.file.metadata().expect("metadata should be valid").len();
-        
-        gsd_file.write_array::<u64>("a", 1, &[1]).expect("write should succeed");
+        let initial_size = gsd_file
+            .file
+            .metadata()
+            .expect("metadata should be valid")
+            .len();
+
+        gsd_file
+            .write_array::<u64>("a", 1, &[1])
+            .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
 
-        let final_size = gsd_file.file.metadata().expect("metadata should be valid").len();
-        assert_eq!(final_size, gsd_file.file_len); 
+        let final_size = gsd_file
+            .file
+            .metadata()
+            .expect("metadata should be valid")
+            .len();
+        assert_eq!(final_size, gsd_file.file_len);
         assert_eq!(final_size, initial_size);
 
         gsd_file.sync_all().expect("write should succeed");
-        let final_size = gsd_file.file.metadata().expect("metadata should be valid").len();
-        assert_eq!(final_size, gsd_file.file_len); 
+        let final_size = gsd_file
+            .file
+            .metadata()
+            .expect("metadata should be valid")
+            .len();
+        assert_eq!(final_size, gsd_file.file_len);
         assert_eq!(final_size, initial_size + 8);
     }
 
@@ -1738,19 +1862,38 @@ mod tests {
     fn pending_index() {
         let tmp_dir = tempdir().expect("temp dir should be created");
         let path = tmp_dir.path().join("test.gsd");
-        let mut gsd_file = GsdFile::create(path.clone(), "a", "s", (1,0)).expect("gsd file should be created");
+        let mut gsd_file =
+            GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
 
-        gsd_file.write_array::<u64>("a", 1, &[1]).expect("write should succeed");
+        gsd_file
+            .write_array::<u64>("a", 1, &[1])
+            .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
 
-        gsd_file.write_array::<u64>("a", 1, &[1]).expect("write should succeed");
-        gsd_file.write_array::<u64>("b", 1, &[2]).expect("write should succeed");
-        gsd_file.write_array::<u64>("c", 1, &[3]).expect("write should succeed");
-        gsd_file.write_array::<u64>("d", 1, &[4]).expect("write should succeed");
-        gsd_file.write_array::<u64>("e", 1, &[5]).expect("write should succeed");
-        gsd_file.write_array::<u64>("f", 1, &[6]).expect("write should succeed");
-        gsd_file.write_array::<u64>("g", 1, &[7]).expect("write should succeed");
-        gsd_file.write_array::<u64>("h", 1, &[8]).expect("write should succeed");
+        gsd_file
+            .write_array::<u64>("a", 1, &[1])
+            .expect("write should succeed");
+        gsd_file
+            .write_array::<u64>("b", 1, &[2])
+            .expect("write should succeed");
+        gsd_file
+            .write_array::<u64>("c", 1, &[3])
+            .expect("write should succeed");
+        gsd_file
+            .write_array::<u64>("d", 1, &[4])
+            .expect("write should succeed");
+        gsd_file
+            .write_array::<u64>("e", 1, &[5])
+            .expect("write should succeed");
+        gsd_file
+            .write_array::<u64>("f", 1, &[6])
+            .expect("write should succeed");
+        gsd_file
+            .write_array::<u64>("g", 1, &[7])
+            .expect("write should succeed");
+        gsd_file
+            .write_array::<u64>("h", 1, &[8])
+            .expect("write should succeed");
 
         gsd_file.sync_all().expect("write should succeed");
 
@@ -1781,13 +1924,13 @@ mod tests {
         assert!(gsd_file.find_chunk(1, "g").is_some());
         assert!(gsd_file.find_chunk(1, "h").is_some());
     }
-    
 
     #[test]
     fn all_types() {
         let tmp_dir = tempdir().expect("temp dir should be created");
         let path = tmp_dir.path().join("test.gsd");
-        let mut gsd_file = GsdFile::create(path.clone(), "a", "s", (1,0)).expect("gsd file should be created");
+        let mut gsd_file =
+            GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
 
         let u8_data = [1, 2, 3];
         let u16_data = [4, 5, 6];
@@ -1800,33 +1943,74 @@ mod tests {
         let f32_data = [13.0, 14.0, 15.0];
         let f64_data = [16.0, 17.0, 18.0];
         // TODO: String
-        
-        gsd_file.write_array::<u8>("u8", 1, &u8_data).expect("write should succeed");
-        gsd_file.write_array::<u16>("u16", 1, &u16_data).expect("write should succeed");
-        gsd_file.write_array::<u32>("u32", 1, &u32_data).expect("write should succeed");
-        gsd_file.write_array::<u64>("u64", 1, &u64_data).expect("write should succeed");
-        gsd_file.write_array::<i8>("i8", 1, &i8_data).expect("write should succeed");
-        gsd_file.write_array::<i16>("i16", 1, &i16_data).expect("write should succeed");
-        gsd_file.write_array::<i32>("i32", 1, &i32_data).expect("write should succeed");
-        gsd_file.write_array::<i64>("i64", 1, &i64_data).expect("write should succeed");
-        gsd_file.write_array::<f32>("f32", 1, &f32_data).expect("write should succeed");
-        gsd_file.write_array::<f64>("f64", 1, &f64_data).expect("write should succeed");
+
+        gsd_file
+            .write_array::<u8>("u8", 1, &u8_data)
+            .expect("write should succeed");
+        gsd_file
+            .write_array::<u16>("u16", 1, &u16_data)
+            .expect("write should succeed");
+        gsd_file
+            .write_array::<u32>("u32", 1, &u32_data)
+            .expect("write should succeed");
+        gsd_file
+            .write_array::<u64>("u64", 1, &u64_data)
+            .expect("write should succeed");
+        gsd_file
+            .write_array::<i8>("i8", 1, &i8_data)
+            .expect("write should succeed");
+        gsd_file
+            .write_array::<i16>("i16", 1, &i16_data)
+            .expect("write should succeed");
+        gsd_file
+            .write_array::<i32>("i32", 1, &i32_data)
+            .expect("write should succeed");
+        gsd_file
+            .write_array::<i64>("i64", 1, &i64_data)
+            .expect("write should succeed");
+        gsd_file
+            .write_array::<f32>("f32", 1, &f32_data)
+            .expect("write should succeed");
+        gsd_file
+            .write_array::<f64>("f64", 1, &f64_data)
+            .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
         drop(gsd_file);
 
-        let gsd_file = GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
+        let gsd_file =
+            GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
         assert_eq!(gsd_file.n_frames(), 1);
 
-        let u8_array = gsd_file.read_array::<u8>(0, "u8").expect("u8 should be written above");
-        let u16_array = gsd_file.read_array::<u16>(0, "u16").expect("u16 should be written above");
-        let u32_array = gsd_file.read_array::<u32>(0, "u32").expect("u32 should be written above");
-        let u64_array = gsd_file.read_array::<u64>(0, "u64").expect("u64 should be written above");
-        let i8_array = gsd_file.read_array::<i8>(0, "i8").expect("i8 should be written above");
-        let i16_array = gsd_file.read_array::<i16>(0, "i16").expect("i16 should be written above");
-        let i32_array = gsd_file.read_array::<i32>(0, "i32").expect("i32 should be written above");
-        let i64_array = gsd_file.read_array::<i64>(0, "i64").expect("i64 should be written above");
-        let f32_array = gsd_file.read_array::<f32>(0, "f32").expect("f32 should be written above");
-        let f64_array = gsd_file.read_array::<f64>(0, "f64").expect("f64 should be written above");
+        let u8_array = gsd_file
+            .read_array::<u8>(0, "u8")
+            .expect("u8 should be written above");
+        let u16_array = gsd_file
+            .read_array::<u16>(0, "u16")
+            .expect("u16 should be written above");
+        let u32_array = gsd_file
+            .read_array::<u32>(0, "u32")
+            .expect("u32 should be written above");
+        let u64_array = gsd_file
+            .read_array::<u64>(0, "u64")
+            .expect("u64 should be written above");
+        let i8_array = gsd_file
+            .read_array::<i8>(0, "i8")
+            .expect("i8 should be written above");
+        let i16_array = gsd_file
+            .read_array::<i16>(0, "i16")
+            .expect("i16 should be written above");
+        let i32_array = gsd_file
+            .read_array::<i32>(0, "i32")
+            .expect("i32 should be written above");
+        let i64_array = gsd_file
+            .read_array::<i64>(0, "i64")
+            .expect("i64 should be written above");
+        let f32_array = gsd_file
+            .read_array::<f32>(0, "f32")
+            .expect("f32 should be written above");
+        let f64_array = gsd_file
+            .read_array::<f64>(0, "f64")
+            .expect("f64 should be written above");
 
         assert_eq!(u8_array.data, u8_data);
         assert_eq!(u16_array.data, u16_data);
@@ -1839,74 +2023,190 @@ mod tests {
         assert_eq!(f32_array.data, f32_data);
         assert_eq!(f64_array.data, f64_data);
 
-        assert_eq!(GsdFile::size_of(u8::gsd_data_type()).expect("type should be valid"), size_of::<u8>());
-        assert_eq!(GsdFile::size_of(u16::gsd_data_type()).expect("type should be valid"), size_of::<u16>());
-        assert_eq!(GsdFile::size_of(u32::gsd_data_type()).expect("type should be valid"), size_of::<u32>());
-        assert_eq!(GsdFile::size_of(u64::gsd_data_type()).expect("type should be valid"), size_of::<u64>());
-        assert_eq!(GsdFile::size_of(i8::gsd_data_type()).expect("type should be valid"), size_of::<i8>());
-        assert_eq!(GsdFile::size_of(i16::gsd_data_type()).expect("type should be valid"), size_of::<i16>());
-        assert_eq!(GsdFile::size_of(i32::gsd_data_type()).expect("type should be valid"), size_of::<i32>());
-        assert_eq!(GsdFile::size_of(i64::gsd_data_type()).expect("type should be valid"), size_of::<i64>());
-        assert_eq!(GsdFile::size_of(f32::gsd_data_type()).expect("type should be valid"), size_of::<f32>());
-        assert_eq!(GsdFile::size_of(f64::gsd_data_type()).expect("type should be valid"), size_of::<f64>());
+        assert_eq!(
+            GsdFile::size_of(u8::gsd_data_type()).expect("type should be valid"),
+            size_of::<u8>()
+        );
+        assert_eq!(
+            GsdFile::size_of(u16::gsd_data_type()).expect("type should be valid"),
+            size_of::<u16>()
+        );
+        assert_eq!(
+            GsdFile::size_of(u32::gsd_data_type()).expect("type should be valid"),
+            size_of::<u32>()
+        );
+        assert_eq!(
+            GsdFile::size_of(u64::gsd_data_type()).expect("type should be valid"),
+            size_of::<u64>()
+        );
+        assert_eq!(
+            GsdFile::size_of(i8::gsd_data_type()).expect("type should be valid"),
+            size_of::<i8>()
+        );
+        assert_eq!(
+            GsdFile::size_of(i16::gsd_data_type()).expect("type should be valid"),
+            size_of::<i16>()
+        );
+        assert_eq!(
+            GsdFile::size_of(i32::gsd_data_type()).expect("type should be valid"),
+            size_of::<i32>()
+        );
+        assert_eq!(
+            GsdFile::size_of(i64::gsd_data_type()).expect("type should be valid"),
+            size_of::<i64>()
+        );
+        assert_eq!(
+            GsdFile::size_of(f32::gsd_data_type()).expect("type should be valid"),
+            size_of::<f32>()
+        );
+        assert_eq!(
+            GsdFile::size_of(f64::gsd_data_type()).expect("type should be valid"),
+            size_of::<f64>()
+        );
 
-        assert_eq!(gsd_file.find_chunk(0, "u8").expect("c should be written above").data_type(), Some(DataType::U8));
-        assert_eq!(gsd_file.find_chunk(0, "u16").expect("c should be written above").data_type(), Some(DataType::U16));
-        assert_eq!(gsd_file.find_chunk(0, "u32").expect("c should be written above").data_type(), Some(DataType::U32));
-        assert_eq!(gsd_file.find_chunk(0, "u64").expect("c should be written above").data_type(), Some(DataType::U64));
-        assert_eq!(gsd_file.find_chunk(0, "i8").expect("c should be written above").data_type(), Some(DataType::I8));
-        assert_eq!(gsd_file.find_chunk(0, "i16").expect("c should be written above").data_type(), Some(DataType::I16));
-        assert_eq!(gsd_file.find_chunk(0, "i32").expect("c should be written above").data_type(), Some(DataType::I32));
-        assert_eq!(gsd_file.find_chunk(0, "i64").expect("c should be written above").data_type(), Some(DataType::I64));
-        assert_eq!(gsd_file.find_chunk(0, "f32").expect("c should be written above").data_type(), Some(DataType::F32));
-        assert_eq!(gsd_file.find_chunk(0, "f64").expect("c should be written above").data_type(), Some(DataType::F64));
+        assert_eq!(
+            gsd_file
+                .find_chunk(0, "u8")
+                .expect("c should be written above")
+                .data_type(),
+            Some(DataType::U8)
+        );
+        assert_eq!(
+            gsd_file
+                .find_chunk(0, "u16")
+                .expect("c should be written above")
+                .data_type(),
+            Some(DataType::U16)
+        );
+        assert_eq!(
+            gsd_file
+                .find_chunk(0, "u32")
+                .expect("c should be written above")
+                .data_type(),
+            Some(DataType::U32)
+        );
+        assert_eq!(
+            gsd_file
+                .find_chunk(0, "u64")
+                .expect("c should be written above")
+                .data_type(),
+            Some(DataType::U64)
+        );
+        assert_eq!(
+            gsd_file
+                .find_chunk(0, "i8")
+                .expect("c should be written above")
+                .data_type(),
+            Some(DataType::I8)
+        );
+        assert_eq!(
+            gsd_file
+                .find_chunk(0, "i16")
+                .expect("c should be written above")
+                .data_type(),
+            Some(DataType::I16)
+        );
+        assert_eq!(
+            gsd_file
+                .find_chunk(0, "i32")
+                .expect("c should be written above")
+                .data_type(),
+            Some(DataType::I32)
+        );
+        assert_eq!(
+            gsd_file
+                .find_chunk(0, "i64")
+                .expect("c should be written above")
+                .data_type(),
+            Some(DataType::I64)
+        );
+        assert_eq!(
+            gsd_file
+                .find_chunk(0, "f32")
+                .expect("c should be written above")
+                .data_type(),
+            Some(DataType::F32)
+        );
+        assert_eq!(
+            gsd_file
+                .find_chunk(0, "f64")
+                .expect("c should be written above")
+                .data_type(),
+            Some(DataType::F64)
+        );
     }
 
     #[test]
     fn dimensions() {
         let tmp_dir = tempdir().expect("temp dir should be created");
         let path = tmp_dir.path().join("test.gsd");
-        let mut gsd_file = GsdFile::create(path.clone(), "a", "s", (1,0)).expect("gsd file should be created");
+        let mut gsd_file =
+            GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
 
-        let initial_size = gsd_file.file.metadata().expect("metadata should be valid").len();
-        
-        gsd_file.write_array::<u64>("a", 1, &[]).expect("write should succeed");
+        let initial_size = gsd_file
+            .file
+            .metadata()
+            .expect("metadata should be valid")
+            .len();
+
+        gsd_file
+            .write_array::<u64>("a", 1, &[])
+            .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
-        gsd_file.write_array::<u64>("b", 1, &[1, 2, 3, 4, 5, 6]).expect("write should succeed");
-        gsd_file.write_array::<u64>("c", 3, &[1, 2, 3, 4, 5, 6]).expect("write should succeed");
+        gsd_file
+            .write_array::<u64>("b", 1, &[1, 2, 3, 4, 5, 6])
+            .expect("write should succeed");
+        gsd_file
+            .write_array::<u64>("c", 3, &[1, 2, 3, 4, 5, 6])
+            .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
 
         gsd_file.sync_all().expect("write should succeed");
-        let final_size = gsd_file.file.metadata().expect("metadata should be valid").len();
-        assert_eq!(final_size, gsd_file.file_len); 
+        let final_size = gsd_file
+            .file
+            .metadata()
+            .expect("metadata should be valid")
+            .len();
+        assert_eq!(final_size, gsd_file.file_len);
         assert_eq!(final_size, initial_size + (12 * size_of::<u64>()) as u64);
 
         drop(gsd_file);
 
-        let gsd_file = GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
+        let gsd_file =
+            GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
         assert_eq!(gsd_file.n_frames(), 2);
 
-        let array_a = gsd_file.read_array::<u64>(0, "a").expect("a should be written above");
+        let array_a = gsd_file
+            .read_array::<u64>(0, "a")
+            .expect("a should be written above");
         assert_eq!(array_a.rows, 0);
         assert_eq!(array_a.columns, 1);
         assert_eq!(array_a.data.len(), 0);
 
-        let array_b = gsd_file.read_array::<u64>(1, "b").expect("a should be written above");
+        let array_b = gsd_file
+            .read_array::<u64>(1, "b")
+            .expect("a should be written above");
         assert_eq!(array_b.rows, 6);
         assert_eq!(array_b.columns, 1);
         assert_eq!(array_b.data, [1, 2, 3, 4, 5, 6]);
-        let array_c = gsd_file.read_array::<u64>(1, "c").expect("a should be written above");
+        let array_c = gsd_file
+            .read_array::<u64>(1, "c")
+            .expect("a should be written above");
         assert_eq!(array_c.rows, 2);
         assert_eq!(array_c.columns, 3);
         assert_eq!(array_c.data, [1, 2, 3, 4, 5, 6]);
 
-        let entry_a = gsd_file.find_chunk(0, "a").expect("a should be written above");
+        let entry_a = gsd_file
+            .find_chunk(0, "a")
+            .expect("a should be written above");
         assert_eq!(entry_a.frame(), 0);
         assert_eq!(entry_a.rows(), 0);
         assert_eq!(entry_a.columns(), 1);
         assert_eq!(entry_a.data_type(), Some(DataType::U64));
 
-        let entry_c = gsd_file.find_chunk(1, "c").expect("c should be written above");
+        let entry_c = gsd_file
+            .find_chunk(1, "c")
+            .expect("c should be written above");
         assert_eq!(entry_c.frame(), 1);
         assert_eq!(entry_c.rows(), 2);
         assert_eq!(entry_c.columns(), 3);
@@ -1917,7 +2217,8 @@ mod tests {
     fn invalid_writes() {
         let tmp_dir = tempdir().expect("temp dir should be created");
         let path = tmp_dir.path().join("test.gsd");
-        let mut gsd_file = GsdFile::create(path.clone(), "a", "s", (1,0)).expect("gsd file should be created");
+        let mut gsd_file =
+            GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
 
         let result = gsd_file.write_array::<u64>("a", 0, &[]);
         assert!(matches!(result, Err(WriteError::InvalidColumns)));
@@ -1926,7 +2227,8 @@ mod tests {
         assert!(matches!(result, Err(WriteError::InvalidDataLength(_, _))));
 
         drop(gsd_file);
-        let mut gsd_file = GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
+        let mut gsd_file =
+            GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
 
         let result = gsd_file.write_array::<u64>("a", 1, &[]);
         assert!(matches!(result, Err(WriteError::NotWritable)));
@@ -1935,16 +2237,19 @@ mod tests {
         assert!(matches!(result, Err(WriteError::NotWritable)));
 
         let result = gsd_file.sync_all();
-        assert!(matches!(result, Err(WriteError::NotWritable)));       
+        assert!(matches!(result, Err(WriteError::NotWritable)));
     }
 
     #[test]
     fn duplicate_chunk_name() {
         let tmp_dir = tempdir().expect("temp dir should be created");
         let path = tmp_dir.path().join("test.gsd");
-        let mut gsd_file = GsdFile::create(path.clone(), "a", "s", (1,0)).expect("gsd file should be created");
+        let mut gsd_file =
+            GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
 
-        gsd_file.write_array::<u64>("a", 1, &[1]).expect("write should succeed");
+        gsd_file
+            .write_array::<u64>("a", 1, &[1])
+            .expect("write should succeed");
         let result = gsd_file.write_array::<u64>("a", 2, &[1, 2]);
         assert!(matches!(result, Err(WriteError::DuplicateChunkName(_, _))));
     }
@@ -1953,9 +2258,12 @@ mod tests {
     fn read_invalid_reads() {
         let tmp_dir = tempdir().expect("temp dir should be created");
         let path = tmp_dir.path().join("test.gsd");
-        let mut gsd_file = GsdFile::create(path.clone(), "a", "s", (1,0)).expect("gsd file should be created");
-       
-        gsd_file.write_array::<u64>("a", 1, &[1]).expect("write should succeed");
+        let mut gsd_file =
+            GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
+
+        gsd_file
+            .write_array::<u64>("a", 1, &[1])
+            .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
         gsd_file.sync_all().expect("write should succeed");
 
@@ -1973,10 +2281,13 @@ mod tests {
     fn chunk_name_limit() {
         let tmp_dir = tempdir().expect("temp dir should be created");
         let path = tmp_dir.path().join("test.gsd");
-        let mut gsd_file = GsdFile::create(path.clone(), "a", "s", (1,0)).expect("gsd file should be created");
+        let mut gsd_file =
+            GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
 
         for i in 0..u16::MAX {
-            gsd_file.write_array::<u64>(&format!("{i:x}"), 1, &[]).expect("write should succeed");
+            gsd_file
+                .write_array::<u64>(&format!("{i:x}"), 1, &[])
+                .expect("write should succeed");
         }
 
         let i = u16::MAX;
@@ -1985,38 +2296,49 @@ mod tests {
 
         drop(gsd_file);
 
-        let gsd_file = GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
+        let gsd_file =
+            GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
 
         assert_eq!(gsd_file.name_id().len(), u16::MAX as usize);
         for i in 0..u16::MAX {
             assert!(gsd_file.name_id().contains_key(&format!("{i:x}")));
         }
 
-        let size = gsd_file.file.metadata().expect("metadata should be valid").len();
+        let size = gsd_file
+            .file
+            .metadata()
+            .expect("metadata should be valid")
+            .len();
         assert_eq!(size, gsd_file.file_len);
     }
 
     #[test]
     fn expand_index_multi() {
         const N_ENTRIES: u16 = 1024;
-    
+
         let tmp_dir = tempdir().expect("temp dir should be created");
         let path = tmp_dir.path().join("test.gsd");
-        let mut gsd_file = GsdFile::create(path.clone(), "a", "s", (1,0)).expect("gsd file should be created");
+        let mut gsd_file =
+            GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
 
         for i in 0..N_ENTRIES {
-            gsd_file.write_array::<u16>(&format!("{i:x}"), 1, &[i]).expect("write should succeed");
+            gsd_file
+                .write_array::<u16>(&format!("{i:x}"), 1, &[i])
+                .expect("write should succeed");
         }
         gsd_file.end_frame().expect("write should succeed");
         gsd_file.sync_all().expect("write should succeed");
 
         drop(gsd_file);
 
-        let gsd_file = GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
+        let gsd_file =
+            GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
 
         assert_eq!(gsd_file.index.n, u64::from(N_ENTRIES));
         for i in 0..N_ENTRIES {
-            let array = gsd_file.read_array::<u16>(0, &format!("{i:x}")).expect("read should succeed");
+            let array = gsd_file
+                .read_array::<u16>(0, &format!("{i:x}"))
+                .expect("read should succeed");
             assert_eq!(array.data, [i]);
         }
     }
