@@ -168,6 +168,14 @@ pub enum WriteError {
     /// A chunk name was duplicated in a single frame.
     #[error("chunk `{0}` has already been written in frame {1}")]
     DuplicateChunkName(String, u64),
+
+    /// Index outside the file.
+    #[error("index out of bounds (location={0}, length={1})")]
+    IndexOutOfBounds(u64, u64),
+
+    /// Name list outside the file.
+    #[error("name list out of bounds (location={0}, length={1})")]
+    NameListOutOfBounds(u64, u64),
 }
 
 /** Implement a sealed trait for each data type supported by GSD.
@@ -1507,8 +1515,7 @@ impl GsdFile {
         // will be consistent with the names.
         if !self.name_list.buffer.is_empty() {
             if self.name_list.insert_position + self.name_list.buffer.len() as u64 > self.header.namelist_allocated_entries * NAME_SIZE {
-                todo!();
-                // expand the name list
+                self.expand_name_list_to(self.name_list.insert_position + self.name_list.buffer.len() as u64)?;
             }
             debug_assert!(self.name_list.insert_position + self.name_list.buffer.len() as u64 <= self.header.namelist_allocated_entries * NAME_SIZE);
             self.file.seek(SeekFrom::Start(self.header.namelist_location + self.name_list.insert_position))?;
@@ -1552,7 +1559,45 @@ impl GsdFile {
         Ok(())
     }
 
-    // TODO: get/set sync_threshold.
+    /// Expand the name list.
+    fn expand_name_list_to(&mut self, capacity: u64) -> Result<(), WriteError> {
+        let old_size = self.header.namelist_allocated_entries * NAME_SIZE;
+        let mut new_size = old_size;
+        while new_size < capacity {
+            new_size *= 2;
+        }
+
+        // Ensure that the new buffer size is a multiple of NAME_SIZE because
+        // GSD files always allocate name lists in those multiples.
+        let new_allocated_entries = new_size.div_ceil(NAME_SIZE);
+        let new_size = new_allocated_entries * NAME_SIZE;
+        let new_location = self.file.seek(SeekFrom::End(0))?;
+
+        usize::try_from(new_location).map_err(|_| WriteError::NameListOutOfBounds(new_location, new_size))?;
+        usize::try_from(new_location + new_size).map_err(|_| WriteError::NameListOutOfBounds(new_location, new_size))?;
+        
+        let old_start = usize::try_from(self.header.namelist_location).expect("namelist should be validated addressable previously");
+        let old_end = usize::try_from(self.header.namelist_location + self.name_list.insert_position).expect("namelist should be validated addressable previously");
+        self.file.write_all(&self.mmap[old_start..old_end])?;
+        self.file.set_len(new_location + new_size)?;
+        self.file_len = new_location + new_size;
+
+        // Ensure that the new name list is in place before updating the
+        // header. If one of the writes fails, the file could otherwise
+        // be left in a state where the header points to a non-existent
+        // name list.
+        self.file.sync_all()?;
+
+        self.header.namelist_location = new_location;
+        self.header.namelist_allocated_entries = new_allocated_entries;
+        self.file.seek(SeekFrom::Start(0))?;
+        self.file.write_all(&self.header.to_ne_bytes())?;
+
+        self.file.sync_all()?;       
+                
+        Ok(())
+    }
+
 }
 
 /** Automatically synchronize buffered data before closing the file.
@@ -1887,27 +1932,30 @@ mod tests {
         assert!(matches!(result, Err(ReadError::ChunkNotFound)));
     }
 
-    // #[test]
-    // fn chunk_name_limit() {
-    //     let tmp_dir = tempdir().expect("temp dir should be created");
-    //     let path = tmp_dir.path().join("test.gsd");
-    //     let mut gsd_file = GsdFile::create(path.clone(), "a", "s", (1,0)).expect("gsd file should be created");
+    #[test]
+    fn chunk_name_limit() {
+        let tmp_dir = tempdir().expect("temp dir should be created");
+        let path = tmp_dir.path().join("test.gsd");
+        let mut gsd_file = GsdFile::create(path.clone(), "a", "s", (1,0)).expect("gsd file should be created");
 
-    //     for i in 0..u16::MAX {
-    //         gsd_file.write_array::<u64>(&format!("{i:x}"), 1, &[]).expect("write should succeed");
-    //     }
+        for i in 0..u16::MAX {
+            gsd_file.write_array::<u64>(&format!("{i:x}"), 1, &[]).expect("write should succeed");
+        }
 
-    //     let i = u16::MAX;
-    //     let result = gsd_file.write_array::<u64>(&format!("{i:x}"), 1, &[]);
-    //     assert!(matches!(result, Err(WriteError::NameListOverflow)));
+        let i = u16::MAX;
+        let result = gsd_file.write_array::<u64>(&format!("{i:x}"), 1, &[]);
+        assert!(matches!(result, Err(WriteError::NameListOverflow)));
 
-    //     drop(gsd_file);
+        drop(gsd_file);
 
-    //     let gsd_file = GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
+        let gsd_file = GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
 
-    //     assert_eq!(gsd_file.name_id().len(), (u16::MAX-1) as usize);
-    //     for i in 0..u16::MAX {
-    //         assert!(gsd_file.name_id().contains_key(&format!("{i:x}")));
-    //     }
-    // }
+        assert_eq!(gsd_file.name_id().len(), u16::MAX as usize);
+        for i in 0..u16::MAX {
+            assert!(gsd_file.name_id().contains_key(&format!("{i:x}")));
+        }
+
+        let size = gsd_file.file.metadata().expect("metadata should be valid").len();
+        assert_eq!(size, gsd_file.file_len);
+    }
 }
