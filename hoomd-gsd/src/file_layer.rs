@@ -1081,7 +1081,7 @@ impl GsdFile {
         let start = self.header.index_location + i * INDEX_ENTRY_SIZE;
         let end = start + INDEX_ENTRY_SIZE;
         debug_assert!(
-            end < self.header.index_location
+            end <= self.header.index_location
                 + self.header.index_allocated_entries * INDEX_ENTRY_SIZE
         );
 
@@ -1532,8 +1532,7 @@ impl GsdFile {
         if index_entries_to_write > 0 {
             if self.index.n + index_entries_to_write as u64 > self.header.index_allocated_entries {
                 need_remap = true;
-                todo!();
-                // expand the index
+                self.expand_index_to((self.index.n + index_entries_to_write as u64) * INDEX_ENTRY_SIZE)?;
             }
             debug_assert!(self.index.n + index_entries_to_write as u64 <= self.header.index_allocated_entries);
             self.index.buffer[0..index_entries_to_write].sort_unstable();
@@ -1550,7 +1549,6 @@ impl GsdFile {
 
             self.file.sync_all()?;
         }
-
 
         if need_remap {
             self.remap()?;
@@ -1598,6 +1596,48 @@ impl GsdFile {
         Ok(())
     }
 
+    /// Expand the index.
+    fn expand_index_to(&mut self, capacity: u64) -> Result<(), WriteError> {
+        let old_size = self.header.index_allocated_entries * INDEX_ENTRY_SIZE;
+        let mut new_size = old_size;
+        while new_size < capacity {
+            new_size *= 2;
+        }
+
+        // Ensure that the new buffer size is a multiple of INDEX_ENTRY_SIZE
+        // because GSD files always allocate indices in those multiples.
+        let new_allocated_entries = new_size.div_ceil(INDEX_ENTRY_SIZE);
+        let new_size = new_allocated_entries * INDEX_ENTRY_SIZE;
+        let new_location = self.file.seek(SeekFrom::End(0))?;
+
+        usize::try_from(new_location).map_err(|_| WriteError::IndexOutOfBounds(new_location, new_size))?;
+        usize::try_from(new_location + new_size).map_err(|_| WriteError::IndexOutOfBounds(new_location, new_size))?;
+        
+        let old_start = usize::try_from(self.header.index_location).expect("index should be validated addressable previously");
+        let old_end = usize::try_from(self.header.index_location + self.index.n * INDEX_ENTRY_SIZE).expect("index should be validated addressable previously");
+        if old_end > self.mmap.len() {
+            return Err(WriteError::IndexOutOfBounds(old_start as u64, old_end as u64))
+            }
+        self.file.write_all(&self.mmap[old_start..old_end])?;
+        self.file.set_len(new_location + new_size)?;
+        self.file_len = new_location + new_size;
+
+        // Ensure that the new index is in place before updating the
+        // header. If one of the writes fails, the file could otherwise
+        // be left in a state where the header points to a non-existent
+        // index.
+        self.file.sync_all()?;
+
+        self.header.index_location = new_location;
+        self.header.index_allocated_entries = new_allocated_entries;
+        self.file.seek(SeekFrom::Start(0))?;
+        self.file.write_all(&self.header.to_ne_bytes())?;
+
+        self.file.sync_all()?;       
+                
+        Ok(())
+    }
+
 }
 
 /** Automatically synchronize buffered data before closing the file.
@@ -1614,7 +1654,6 @@ impl Drop for GsdFile {
 
 #[cfg(test)]
 mod tests {
-    use std::iter;
     use super::*;
     use tempfile::tempdir;
 
@@ -1905,8 +1944,6 @@ mod tests {
         let path = tmp_dir.path().join("test.gsd");
         let mut gsd_file = GsdFile::create(path.clone(), "a", "s", (1,0)).expect("gsd file should be created");
 
-        let initial_size = gsd_file.file.metadata().expect("metadata should be valid").len();
-        
         gsd_file.write_array::<u64>("a", 1, &[1]).expect("write should succeed");
         let result = gsd_file.write_array::<u64>("a", 2, &[1, 2]);
         assert!(matches!(result, Err(WriteError::DuplicateChunkName(_, _))));
@@ -1957,5 +1994,30 @@ mod tests {
 
         let size = gsd_file.file.metadata().expect("metadata should be valid").len();
         assert_eq!(size, gsd_file.file_len);
+    }
+
+    #[test]
+    fn expand_index_multi() {
+        const N_ENTRIES: u16 = 1024;
+    
+        let tmp_dir = tempdir().expect("temp dir should be created");
+        let path = tmp_dir.path().join("test.gsd");
+        let mut gsd_file = GsdFile::create(path.clone(), "a", "s", (1,0)).expect("gsd file should be created");
+
+        for i in 0..N_ENTRIES {
+            gsd_file.write_array::<u16>(&format!("{i:x}"), 1, &[i]).expect("write should succeed");
+        }
+        gsd_file.end_frame().expect("write should succeed");
+        gsd_file.sync_all().expect("write should succeed");
+
+        drop(gsd_file);
+
+        let gsd_file = GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
+
+        assert_eq!(gsd_file.index.n, u64::from(N_ENTRIES));
+        for i in 0..N_ENTRIES {
+            let array = gsd_file.read_array::<u16>(0, &format!("{i:x}")).expect("read should succeed");
+            assert_eq!(array.data, [i]);
+        }
     }
 }
