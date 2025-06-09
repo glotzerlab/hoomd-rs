@@ -1,3 +1,6 @@
+/*! This is an example
+*/
+
 use hoomd_gsd::file_layer::{GsdFile, Mode};
 
 fn main() -> anyhow::Result<()> {
