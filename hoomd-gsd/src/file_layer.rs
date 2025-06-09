@@ -16,6 +16,8 @@ use std::path::{Path, PathBuf};
 use std::string::FromUtf8Error;
 use thiserror::Error;
 
+use std::os::unix::fs::FileExt;
+
 /// The name buffer is a multiple of `NAME_SIZE` bytes.
 const NAME_SIZE: u64 = 64;
 
@@ -259,9 +261,11 @@ impl Type for u8 {
     fn gsd_data_type() -> u8 {
         1
     }
+    #[inline]
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         bytes[0]
     }
+    #[inline]
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
     }
@@ -271,9 +275,11 @@ impl Type for u16 {
     fn gsd_data_type() -> u8 {
         2
     }
+    #[inline]
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         u16::from_ne_bytes(bytes.try_into().expect("byte slice should contain 2 bytes"))
     }
+    #[inline]
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
     }
@@ -283,9 +289,11 @@ impl Type for u32 {
     fn gsd_data_type() -> u8 {
         3
     }
+    #[inline]
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         u32::from_ne_bytes(bytes.try_into().expect("byte slice should contain 4 bytes"))
     }
+    #[inline]
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
     }
@@ -295,9 +303,11 @@ impl Type for u64 {
     fn gsd_data_type() -> u8 {
         4
     }
+    #[inline]
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         u64::from_ne_bytes(bytes.try_into().expect("byte slice should contain 8 bytes"))
     }
+    #[inline]
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
     }
@@ -307,9 +317,11 @@ impl Type for i8 {
     fn gsd_data_type() -> u8 {
         5
     }
+    #[inline]
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         i8::from_ne_bytes(bytes.try_into().expect("byte slice should contain 1 byte"))
     }
+    #[inline]
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
     }
@@ -319,9 +331,11 @@ impl Type for i16 {
     fn gsd_data_type() -> u8 {
         6
     }
+    #[inline]
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         i16::from_ne_bytes(bytes.try_into().expect("byte slice should contain 2 bytes"))
     }
+    #[inline]
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
     }
@@ -331,9 +345,11 @@ impl Type for i32 {
     fn gsd_data_type() -> u8 {
         7
     }
+    #[inline]
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         i32::from_ne_bytes(bytes.try_into().expect("byte slice should contain 4 bytes"))
     }
+    #[inline]
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
     }
@@ -343,9 +359,11 @@ impl Type for i64 {
     fn gsd_data_type() -> u8 {
         8
     }
+    #[inline]
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         i64::from_ne_bytes(bytes.try_into().expect("byte slice should contain 8 bytes"))
     }
+    #[inline]
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
     }
@@ -355,9 +373,11 @@ impl Type for f32 {
     fn gsd_data_type() -> u8 {
         9
     }
+    #[inline]
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         f32::from_ne_bytes(bytes.try_into().expect("byte slice should contain 8 bytes"))
     }
+    #[inline]
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
     }
@@ -367,9 +387,11 @@ impl Type for f64 {
     fn gsd_data_type() -> u8 {
         10
     }
+    #[inline]
     fn from_ne_byte_slice(bytes: &[u8]) -> Self {
         f64::from_ne_bytes(bytes.try_into().expect("byte slice should contain 8 bytes"))
     }
+    #[inline]
     fn append_ne_bytes(&self, v: &mut Vec<u8>) {
         v.extend(&self.to_ne_bytes());
     }
@@ -594,6 +616,7 @@ Returns the [`u64`] and the rest of the slice. Testing in Godbolt shows that
 repeated calls to this method can be optimized to a simple series of mov
 instructions.
 */
+#[inline]
 fn extract_ne_u64(bytes: &[u8]) -> (u64, &[u8]) {
     let (bytes, rest) = bytes.split_at(size_of::<u64>());
     (
@@ -607,6 +630,7 @@ fn extract_ne_u64(bytes: &[u8]) -> (u64, &[u8]) {
 }
 
 /// Read the first u32 in a byte slice (native endian).
+#[inline]
 fn extract_ne_u32(bytes: &[u8]) -> (u32, &[u8]) {
     let (bytes, rest) = bytes.split_at(size_of::<u32>());
     (
@@ -620,6 +644,7 @@ fn extract_ne_u32(bytes: &[u8]) -> (u32, &[u8]) {
 }
 
 /// Read the first u16 in a byte slice (native endian).
+#[inline]
 fn extract_ne_u16(bytes: &[u8]) -> (u16, &[u8]) {
     let (bytes, rest) = bytes.split_at(size_of::<u16>());
     (
@@ -637,6 +662,7 @@ fn extract_ne_u16(bytes: &[u8]) -> (u16, &[u8]) {
 Returns the [`String`] without the null terminator. Also returns the rest of the
 slice after consuming 1 null terminator.
 */
+#[inline]
 fn extract_null_terminated_utf8(bytes: &[u8]) -> Result<(String, &[u8]), FromUtf8Error> {
     let null_range_end = bytes
         .iter()
@@ -651,11 +677,13 @@ fn extract_null_terminated_utf8(bytes: &[u8]) -> Result<(String, &[u8]), FromUtf
 }
 
 impl PartialOrd for IndexEntry {
+    #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 impl Ord for IndexEntry {
+    #[inline]
     fn cmp(&self, other: &Self) -> Ordering {
         (self.frame, self.id).cmp(&(other.frame, other.id))
     }
@@ -721,6 +749,7 @@ impl GsdHeader {
     }
 
     /// Encode the header into bytes following the GSD specification.
+    #[inline]
     fn to_ne_bytes(&self) -> [u8; HEADER_USIZE] {
         let mut result = [0u8; HEADER_USIZE];
         result[0..8].copy_from_slice(&self.magic.to_ne_bytes());
@@ -753,6 +782,7 @@ impl IndexEntry {
     ```
     */
     #[must_use]
+    #[inline]
     pub fn frame(&self) -> u64 {
         self.frame
     }
@@ -769,6 +799,7 @@ impl IndexEntry {
     ```
     */
     #[must_use]
+    #[inline]
     pub fn rows(&self) -> u64 {
         self.n
     }
@@ -785,6 +816,7 @@ impl IndexEntry {
     ```
     */
     #[must_use]
+    #[inline]
     pub fn columns(&self) -> u32 {
         self.m
     }
@@ -808,6 +840,7 @@ impl IndexEntry {
     ```
     */
     #[must_use]
+    #[inline]
     pub fn data_type(&self) -> Option<DataType> {
         match self.data_type {
             1 => Some(DataType::U8),
@@ -826,6 +859,7 @@ impl IndexEntry {
     }
 
     /// Parse an index entry.
+    #[inline]
     fn from_ne_bytes(value: [u8; 32]) -> Self {
         let (frame, rest) = extract_ne_u64(&value);
         let (n, rest) = extract_ne_u64(rest);
@@ -846,6 +880,7 @@ impl IndexEntry {
     }
 
     /// Encode an index entry.
+    #[inline]
     fn to_ne_bytes(self) -> [u8; INDEX_ENTRY_USIZE] {
         let mut result = [0u8; INDEX_ENTRY_USIZE];
         result[0..8].copy_from_slice(&self.frame.to_ne_bytes());
@@ -1077,6 +1112,7 @@ impl GsdFile {
     }
 
     /// Get the `id` of a name. Add a new `id` if needed.
+    #[inline]
     fn get_id(&mut self, name: &str) -> Result<u16, WriteError> {
         if let Some(id) = self.name_list.name_id.get(name) {
             return Ok(*id);
@@ -1095,6 +1131,7 @@ impl GsdFile {
     }
 
     /// Remap the file
+    #[inline]
     #[cfg(target_os = "linux")]
     fn remap(&mut self) -> Result<(), io::Error> {
         unsafe {
@@ -1104,6 +1141,7 @@ impl GsdFile {
     }
 
     /// Remap the file
+    #[inline]
     #[cfg(not(target_os = "linux"))]
     fn remap(&mut self) -> Result<(), io::Error> {
         self.mmap = unsafe { Mmap::map(&self.file)? };
@@ -1111,6 +1149,7 @@ impl GsdFile {
     }
 
     /// Access a single index entry from the memory map.
+    #[inline]
     fn get_index(&self, i: u64) -> Result<IndexEntry, DecodeError> {
         // get_index is an internal method, assume that any caller has already
         // called remap() if needed. Verify this in debug builds.
@@ -1132,6 +1171,7 @@ impl GsdFile {
     }
 
     /// Get the size of a type given by its identifier.
+    #[inline]
     fn size_of(data_type: u8) -> Option<usize> {
         match data_type {
             1 => Some(size_of::<u8>()),
@@ -1493,36 +1533,43 @@ impl GsdFile {
         Ok(())
     }
 
+    #[inline]
     #[must_use]
     pub fn n_frames(&self) -> u64 {
         self.current_frame
     }
 
+    #[inline]
     #[must_use]
     pub fn name_id(&self) -> &HashMap<String, u16> {
         &self.name_list.name_id
     }
 
+    #[inline]
     #[must_use]
     pub fn application(&self) -> &str {
         &self.header.application
     }
 
+    #[inline]
     #[must_use]
     pub fn schema(&self) -> &str {
         &self.header.schema
     }
 
+    #[inline]
     #[must_use]
     pub fn schema_version(&self) -> (u16, u16) {
         self.header.schema_version
     }
 
+    #[inline]
     #[must_use]
     pub fn sync_threshold(&self) -> usize {
         self.sync_threshold
     }
 
+    #[inline]
     #[must_use]
     pub fn sync_threshold_mut(&mut self) -> &mut usize {
         &mut self.sync_threshold
@@ -1564,13 +1611,14 @@ impl GsdFile {
         // the file might have some extra bytes at the end, but the index of
         // written data so far will be correct.
         if !self.data_buffer.is_empty() {
-            let current_len = self.file.seek(SeekFrom::End(0))?;
-            debug_assert_eq!(current_len, self.file_len);
-            self.file.write_all(&self.data_buffer)?;
+            // let current_len = self.file.seek(SeekFrom::End(0))?;
+            // debug_assert_eq!(current_len, self.file_len);
+            // self.file.write_all(&self.data_buffer)?;
+            self.file.write_all_at(&self.data_buffer, self.file_len)?;
             self.file_len += self.data_buffer.len() as u64;
             self.data_buffer.clear();
 
-            need_remap = true;
+            // need_remap = true;
             self.file.sync_all()?;
         }
 
@@ -1619,13 +1667,15 @@ impl GsdFile {
             for entry in self.index.buffer.drain(0..index_entries_to_write) {
                 self.index.byte_buffer.extend(&entry.to_ne_bytes());
             }
-            self.file.seek(SeekFrom::Start(
-                self.header.index_location + self.index.n * INDEX_ENTRY_SIZE,
-            ))?;
-            self.file.write_all(&self.index.byte_buffer)?;
+            // self.file.seek(SeekFrom::Start(
+            //     self.header.index_location + self.index.n * INDEX_ENTRY_SIZE,
+            // ))?;
+            // self.file.write_all(&self.index.byte_buffer)?;
+            self.file.write_all_at(&self.index.byte_buffer, self.header.index_location + self.index.n * INDEX_ENTRY_SIZE)?;
             self.index.n += index_entries_to_write as u64;
 
-            self.file.sync_all()?;
+            // TODO: The C implementation does not sync here. It probably should.
+            // self.file.sync_all()?;
         }
 
         if need_remap {

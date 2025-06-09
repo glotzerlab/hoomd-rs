@@ -16,7 +16,11 @@ fn benchmark(buffer: usize) -> Result<f64, anyhow::Error> {
     let names: Vec<String> = (0..n_keys).map(|k| format!("key {k}")).collect();
 
     let mut gsd_file = GsdFile::create("test.gsd", "app", "schema", (1,0))?;
-    *gsd_file.sync_threshold_mut() = buffer;
+    // hoomd-rs and the C implementation buffer data differently.
+    // This + 2048 seems to result in a similar amount of fsync calls
+    // between the two. Without it, the hoomd-rs implementation calls
+    // fsync many more times.
+    *gsd_file.sync_threshold_mut() = buffer + 2048;
 
     let t1 = Instant::now();
     for _ in 0..n_frames {
