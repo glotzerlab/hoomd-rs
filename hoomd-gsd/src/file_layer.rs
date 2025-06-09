@@ -1097,8 +1097,10 @@ impl GsdFile {
     /// Remap the file
     #[cfg(target_os = "linux")]
     fn remap(&mut self) -> Result<(), io::Error> {
+        unsafe {
         self.mmap
-            .remap(self.file_len, memmap2::RemapOptions.new().may_move(true));
+            .remap(self.file_len.try_into().expect("file length should be validated elsewhere"), memmap2::RemapOptions::new().may_move(true))?; }
+        Ok(())
     }
 
     /// Remap the file
