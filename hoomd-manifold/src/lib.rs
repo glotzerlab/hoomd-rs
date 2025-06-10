@@ -27,19 +27,16 @@ Description of N-dimensional Minkowski space.
 */
 
 mod sphere;
-mod hyperboloid;
 mod minkowski;
 
 pub use {
-    sphere::Sphere,
-    hyperboloid::Hyperboloid,
     minkowski::Minkowski,
 };
 
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use thiserror::Error;
+use hoomd_vector::{Vector, InnerProduct};
 
-/// Enumerate possible sources of error in fallible vector math operations.
+// / Enumerate possible sources of error in fallible vector math operations.
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
@@ -52,15 +49,47 @@ pub enum Error {
     InvalidVectorLength,
 }
 
-pub trait Geodesic: {
-    /** Compute the length of a geodesic passing through two points on a metric space.
-
-    # Example 
-    ```
-    use hoomd_manifold::{Sphere, Geodesic};
-
-    ```
-    */
+/** Operations defined on the upper sheet of a two-sheeted hyperboloid embedded in some metric 
+vector space.
+ */
+pub trait Hyperboloid {
+    /** Distance of the geodesic path passing through two points on the hyperboloid.
+     */
     #[inline]
-    fn geodesic_distance(&self, other: &Self) -> f64;
+    fn hyperbolic_distance(&self, other: &Self, skirt: f64) -> f64;
+}
+
+/** Rotations in hyperbolic space
+ */
+pub trait HyperbolicRotate<V: Vector> {
+    #[must_use]
+    fn boost(&self, vector: &V) -> V;
+}
+/** Sphere
+ */
+pub trait Sphere: InnerProduct {
+    /** Distance of the geodesic path passing through two points on the sphere.
+     */
+    #[inline]
+    fn sphere_distance(&self, other: &Self, radius: f64) -> f64;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn compute_add_generic<T>(a: T, b: T) -> T
+    where
+        T: Vector,
+    {
+        a + b
+    }
+
+    #[test]
+    fn add_generic() {
+        let a = Minkowski::from([1.0, 2.0, 3.0]);
+        let b = Minkowski::from([4.0, 5.0, 6.0]);
+        let c = compute_add_generic(a, b);
+        assert_eq!(c, [5.0, 7.0, 9.0].into());
+    }
 }
