@@ -1576,6 +1576,52 @@ impl GsdFile {
         &mut self.sync_threshold
     }
 
+    /** Flush data buffer to the filesystem.
+
+    Returns true when any data was written to the file.
+    */
+    fn flush_data(&mut self) -> Result<bool, WriteError> {
+        if self.data_buffer.is_empty() {
+            Ok(false)
+        } else {
+            let current_len = self.file.seek(SeekFrom::End(0))?;
+            debug_assert_eq!(current_len, self.file_len);
+            self.file.write_all(&self.data_buffer)?;
+            self.file_len += self.data_buffer.len() as u64;
+            self.data_buffer.clear();
+            Ok(true)
+        }
+    }
+
+    /** Flush the name buffer to the filesystem.
+
+    Returns true when any data was written to the file.
+    */
+    fn flush_names(&mut self) -> Result<bool, WriteError> {
+        if self.name_list.buffer.is_empty() {
+            Ok(false)
+        } else {
+            if self.name_list.insert_position + self.name_list.buffer.len() as u64
+                > self.header.namelist_allocated_entries * NAME_SIZE
+            {
+                self.expand_name_list_to(
+                    self.name_list.insert_position + self.name_list.buffer.len() as u64,
+                )?;
+            }
+            debug_assert!(
+                self.name_list.insert_position + self.name_list.buffer.len() as u64
+                    <= self.header.namelist_allocated_entries * NAME_SIZE
+            );
+            self.file.seek(SeekFrom::Start(
+                self.header.namelist_location + self.name_list.insert_position,
+            ))?;
+            self.file.write_all(&self.name_list.buffer)?;
+            self.name_list.insert_position += self.name_list.buffer.len() as u64;
+            self.name_list.buffer.clear();
+            Ok(true)
+        }
+    }
+
     /** Write buffered data to the filesystem.
 
     `sync_all` ensures that the data and indices for all complete frames is
@@ -1611,43 +1657,19 @@ impl GsdFile {
         // Write the data buffer to the file first. Should any error occur here,
         // the file might have some extra bytes at the end, but the index of
         // written data so far will be correct.
-        if !self.data_buffer.is_empty() {
-            let current_len = self.file.seek(SeekFrom::End(0))?;
-            debug_assert_eq!(current_len, self.file_len);
-            self.file.write_all(&self.data_buffer)?;
-            self.file_len += self.data_buffer.len() as u64;
-            self.data_buffer.clear();
-
+        if self.flush_data()? {
             need_remap = true;
             self.file.sync_all()?;
         }
 
         // Write the new name next to ensure that the references in the index
         // will be consistent with the names.
-        if !self.name_list.buffer.is_empty() {
-            if self.name_list.insert_position + self.name_list.buffer.len() as u64
-                > self.header.namelist_allocated_entries * NAME_SIZE
-            {
-                self.expand_name_list_to(
-                    self.name_list.insert_position + self.name_list.buffer.len() as u64,
-                )?;
-            }
-            debug_assert!(
-                self.name_list.insert_position + self.name_list.buffer.len() as u64
-                    <= self.header.namelist_allocated_entries * NAME_SIZE
-            );
-            self.file.seek(SeekFrom::Start(
-                self.header.namelist_location + self.name_list.insert_position,
-            ))?;
-            self.file.write_all(&self.name_list.buffer)?;
-            self.name_list.insert_position += self.name_list.buffer.len() as u64;
-            self.name_list.buffer.clear();
-        }
+        self.flush_names()?;
 
-        // Now write all the non-pending index entries. Index entries must be
-        // sorted by (frame, id) to be valid. Given that pending index entries
-        // are guaranteed to have `frame+1`, we do not need to sort the pending
-        // entries here.
+        // Now write all the non-pending index entries.
+        // Index entries must be sorted by (frame, id) to be valid. Given that
+        // pending index entries are guaranteed to have `frame+1`, we do not
+        // need to sort the pending entries here.
         let index_entries_to_write = self.index.buffer.len() - self.index.pending;
         if index_entries_to_write > 0 {
             if self.index.n + index_entries_to_write as u64 > self.header.index_allocated_entries {
