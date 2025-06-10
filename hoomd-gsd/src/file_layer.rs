@@ -1673,8 +1673,7 @@ impl GsdFile {
             self.file.write_all(&self.index.byte_buffer)?;
             self.index.n += index_entries_to_write as u64;
 
-            // TODO: The C implementation does not sync here. It probably should.
-            // self.file.sync_all()?;
+            self.file.sync_all()?;
         }
 
         if need_remap {
