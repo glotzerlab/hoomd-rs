@@ -500,6 +500,9 @@ pub struct GsdFile {
     /// The array data buffer.
     data_buffer: Vec<u8>,
 
+    /// Record whether the data buffer has been flushed this frame.
+    data_buffer_flushed: bool,
+
     /// Length of the file in bytes.
     file_len: u64,
 
@@ -1065,6 +1068,7 @@ impl GsdFile {
             name_list,
             index,
             data_buffer: Vec::new(),
+            data_buffer_flushed: false,
             current_frame: 0,
             sync_threshold: INITIAL_SYNC_THRESHOLD,
         };
@@ -1470,14 +1474,6 @@ impl GsdFile {
         // buffer. `sync_all` will write the data buffer first, so all index
         // entries can be constructed with the known location:
         // file_len + currently buffered bytes.
-        //
-        // This implementation is a departure from the GSD C implementation
-        // which would eagerly write large arrays directly to the file and
-        // buffer the index entries for them. That complicated the code with
-        // the need for two levels of index buffering and corrections to some
-        // entries' location fields. Due to the need to call `to_ne_bytes`, the
-        // Rust code is simpler to write when it always buffers all data.
-
         let index_entry = IndexEntry {
             frame: self.current_frame,
             n: (data.len() / columns as usize) as u64,
@@ -1491,8 +1487,24 @@ impl GsdFile {
         self.index.buffer.push(index_entry);
         self.index.pending += 1;
 
+        // This implementation is a departure from the GSD C implementation
+        // which would eagerly write large arrays directly to the file before
+        // flushing the previous entries. That complicated the code and
+        // required two index buffers that needed to be patched up.
+        // This implementation always appends data to the write buffer
+        // (due to the append_ne_bytes call).
+        //
+        // The Rust implementation always writes full data chunks into the
+        // buffer, but flushes the buffer first in, first out. That way, no
+        // index entries need to be patched up. When the buffer is flushed here,
+        // we do need to flag to `end_frame` that `sync_all` needs to be called.
         for value in data {
             value.append_ne_bytes(&mut self.data_buffer);
+        }
+
+        if self.data_buffer.len() >= self.sync_threshold {
+            self.flush_data()?;
+            self.data_buffer_flushed = true;
         }
 
         Ok(())
@@ -1526,8 +1538,9 @@ impl GsdFile {
         self.index.frame_names.clear();
 
         if self.data_buffer.len() + self.index.buffer.len() * INDEX_ENTRY_USIZE
-            >= self.sync_threshold
+            >= self.sync_threshold || self.data_buffer_flushed
         {
+            self.data_buffer_flushed = false;
             self.sync_all()?;
         }
 
