@@ -44,7 +44,7 @@ fn benchmark(buffer: usize) -> Result<f64, anyhow::Error> {
     }
 
 fn main() -> Result<(), anyhow::Error> {
-    let mut buffer = 65536;
+    let mut buffer = 1024 * 1024;
 
     println!("[");
     while buffer <= 64 * 1024 * 1024
