@@ -1,0 +1,70 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+/*! Implement SO(N-1,1) elements
+ */
+
+use std::array;
+use std::fmt;
+use std::iter::zip;
+use std::ops::{
+    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
+};
+use libm::{sinh,cosh};
+use std::f64::consts::PI;
+use hoomd_vector::{Vector, Angle, Rotate, Rotation};
+
+use crate::{Error,Minkowski};
+
+/** Description of hyperbolic rotations
+
+## Operations using [`HyperbolicAngle`] on Minkowski space
+*/
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct HyperbolicAngle {
+    /// Rotation angle (radians).
+    pub angles: (f64,f64,f64),
+}
+
+impl HyperbolicAngle {
+    /** Reduce the rotation part of the tuple.
+    */
+    #[inline]
+    #[must_use]
+    pub fn to_reduced(self) -> Self {
+        Self {
+            angles.2: self.angles.2.rem_euclid(2.0 * PI),
+        }
+    }
+}
+
+impl From<HyperbolicAngle> for HyperbolicRotationMatrix<3> {
+    /** Description and example
+    */
+    #[inline]
+    fn from(angle: Angle) -> HyperbolicRotationMatrix<3> {
+        let sin_theta_3 = (angles.2).sin();
+        let cos_theta_3 = (angles.2).cos();
+        let sinh_theta_2 = (angles.1).sinh();
+        let cosh_theta_2 = (angles.1).cosh();
+        let sinh_theta_1 = (angles.0).sinh();
+        let cosh_theta_1 = (angles.0).cosh();
+        HyperbolicRotationMatrix: [
+                [cos_theta_3, -sin_theta_3, 0.0].into(),
+                [sin_theta_3, cos_theta_3, 0.0].into(),
+                [0.0, 0.0, 1.0].into(),
+            ] 
+            * [
+                [cosh_theta_2, 0.0, sinh_theta_2].into(),
+                [0.0, 1.0, 0.0].into(),
+                [sinh_theta_2, 0.0, cosh_theta_2].into(),
+            ] 
+            * [
+                [1.0, 0.0, 0.0].into(),
+                [0.0, cosh_theta_1, sinh_theta_1].into(),
+                [0.0, sinh_theta_1, cosh_theta_1].into(),
+            ] 
+        }
+    }
+}
+

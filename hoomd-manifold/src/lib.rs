@@ -16,21 +16,19 @@ Description of `hoomd-manifold`
 
 Description of 2-sphere embedded in three-dimensional cartesian space.
 
-## Hyperboloid
-
-Description of 1-sheeted hyperboloid embedded in three-dimensional cartesian
-space.
-
 ## Minkowski
 
-Description of N-dimensional Minkowski space. 
+Description of N-dimensional Minkowski space. [`Rotate<V>'] and ['Boost<V>']
 */
+
 
 mod sphere;
 mod minkowski;
+mod hyperbolic_rotations;
 
 pub use {
-    minkowski::Minkowski,
+    minkowski::{Minkowski, HyperbolicRotationMatrix}
+    hyperbolic_angle::HyperbolicAngle
 };
 
 use thiserror::Error;

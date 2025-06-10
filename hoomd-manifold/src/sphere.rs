@@ -23,6 +23,22 @@ impl<const N: usize> Sphere for Cartesian<N> {
     ```math
     d_S(\vec{u},\vec{v}) = R\delta\psi = R\arccos\left(\frac{\vec{u}\cdot\vec{v}}{R}\right)
     ```
+
+    # Example
+    ```
+    use libm::acos;
+    use std::f64::consts::PI;
+    use hoomd_vector::{Cartesian, InnerProduct};
+    use hoomd_manifold::Sphere;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let x = Cartesian:from([1.0, 0.0, 0.0]);
+    let y = Cartesian::from([0.0, 1.0, 1.0]);
+    let c = PI/2;
+    assert_eq!(c,x.sphere_distance(&y,1.0));
+    # Ok(())
+    # }
+    ```
     */
     #[inline]
     fn sphere_distance(&self, other: &Self, radius: f64) -> f64 {

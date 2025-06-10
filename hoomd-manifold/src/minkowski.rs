@@ -357,13 +357,10 @@ pub struct Hyperbolic<const N: usize> {
 }
 
 impl<const N: usize> Hyperboloid for Minkowski<N> {
-    /** Computes the length of the geodesic passing between two points. From the N-dimensonal Minkowski quadratic form 
+    /** Computes the length of the geodesic passing between two points. From N-dimensional Minkowski space 
+    with signature (+\cdots +-), one can obtain the corresponding Minkowski bilinear form 
     ```math
-    Q(\vec{u}))= u_1^2 + \cdots + u_{N-1}^2 - u_N^2 
-    ``` 
-    one can obtain the corresponding Minkowski bilinear form 
-    ```math
-    B(\vec{u},\vec{v}) = \frac{1}{2}\left(Q(\vec{u}+\vec{v}) - Q(\vec{u}) -Q(\vec{v})\right)
+    B(\vec{u},\vec{v}) = u_1v_1 + \cdots + u_{N-1}v_{N-1} - u_Nv_N
     ``` 
     Now the distance (according to the Minkowski metric) between two points \vec{u} and \vec{v} on the hyperboloid
     is given by 
@@ -392,6 +389,56 @@ impl<const N: usize> Hyperboloid for Minkowski<N> {
         let arg = zip(self.coordinates[0..N-1].iter(), other.coordinates[0..N-1].iter())
             .fold(last_component, |product, x| product - (x.0 * x.1));
         skirt*acosh(arg/(skirt.powi(2)))
+    }
+}
+
+
+/** Rotate Minkowski vectors.
+
+Construct a [`MinkowskiRotationMatrix`] to efficiently rotate many vectors by the same rotation.
+
+See:
+* [`RotationMatrix::from<Angle>`]
+
+[`RotationMatrix`] _intentionally_ does not implement [`Rotation`](crate::Rotation).
+[`Angle`](crate::Angle) and [`Versor`](crate::Versor) are representations of
+rotations that are often the most effective and numerically stable to
+manipulate.
+*/
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct MinkowskiRotationMatrix<const N: usize> {
+    /// Rows of the rotation matrix.
+    pub(crate) rows: [Cartesian<N>; N],
+}
+
+impl<const N: usize> Rotate<Minkowski<N>> for MinkowskiRotationMatrix<N> {
+    type Matrix = MinkowskiRotationMatrix<N>;
+
+    #[inline]
+    /** Rotate a [`Minkowski<N>`] by a [`MinkowskiRotationMatrix`]
+
+    # Examples
+    ```
+    use hoomd_vector::{Angle, Rotate};
+    use hoomd_manifold::{MinkowskiRotationMatrix, Minkowski};
+    use std::f64::consts::PI;
+
+    let v = Minkowski::from([1.0, 0.0, (2.0_f64).sqrt()]);
+    let a = Angle::from(PI/2.0);
+
+    let matrix = MinkowskiRotationMatrix::from(a);
+    let rotated = matrix.rotate(&v);
+    // rotated is approximately [0.0, 1.0, (2.0_f64).sqrt()]
+    ```
+    */
+    fn rotate(&self, vector: &Minkowski<N>) -> Minkowski<N> {
+        let mut coordinates = [0.0; N];
+
+        for (result, row) in coordinates.iter_mut().zip(self.rows.iter()) {
+            *result = row.dot(vector);
+        }
+
+        Minkowski { coordinates }
     }
 }
 
