@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 use std::string::FromUtf8Error;
 use thiserror::Error;
 
-use std::os::unix::fs::FileExt;
+
 
 /// The name buffer is a multiple of `NAME_SIZE` bytes.
 const NAME_SIZE: u64 = 64;
@@ -998,7 +998,8 @@ impl GsdFile {
 
         file.sync_all()
             .map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
-
+        
+        
         Ok(())
     }
 
@@ -1611,14 +1612,13 @@ impl GsdFile {
         // the file might have some extra bytes at the end, but the index of
         // written data so far will be correct.
         if !self.data_buffer.is_empty() {
-            // let current_len = self.file.seek(SeekFrom::End(0))?;
-            // debug_assert_eq!(current_len, self.file_len);
-            // self.file.write_all(&self.data_buffer)?;
-            self.file.write_all_at(&self.data_buffer, self.file_len)?;
+            let current_len = self.file.seek(SeekFrom::End(0))?;
+            debug_assert_eq!(current_len, self.file_len);
+            self.file.write_all(&self.data_buffer)?;
             self.file_len += self.data_buffer.len() as u64;
             self.data_buffer.clear();
 
-            // need_remap = true;
+            need_remap = true;
             self.file.sync_all()?;
         }
 
@@ -1667,11 +1667,10 @@ impl GsdFile {
             for entry in self.index.buffer.drain(0..index_entries_to_write) {
                 self.index.byte_buffer.extend(&entry.to_ne_bytes());
             }
-            // self.file.seek(SeekFrom::Start(
-            //     self.header.index_location + self.index.n * INDEX_ENTRY_SIZE,
-            // ))?;
-            // self.file.write_all(&self.index.byte_buffer)?;
-            self.file.write_all_at(&self.index.byte_buffer, self.header.index_location + self.index.n * INDEX_ENTRY_SIZE)?;
+            self.file.seek(SeekFrom::Start(
+                self.header.index_location + self.index.n * INDEX_ENTRY_SIZE,
+            ))?;
+            self.file.write_all(&self.index.byte_buffer)?;
             self.index.n += index_entries_to_write as u64;
 
             // TODO: The C implementation does not sync here. It probably should.
