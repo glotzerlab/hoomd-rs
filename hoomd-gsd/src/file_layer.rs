@@ -1537,8 +1537,7 @@ impl GsdFile {
         self.index.pending = 0;
         self.index.frame_names.clear();
 
-        if self.data_buffer.len() + self.index.buffer.len() * INDEX_ENTRY_USIZE
-            >= self.sync_threshold || self.data_buffer_flushed
+        if self.data_buffer.len() >= self.sync_threshold || self.data_buffer_flushed
         {
             self.data_buffer_flushed = false;
             self.sync_all()?;
