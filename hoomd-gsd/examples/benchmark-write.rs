@@ -6,8 +6,8 @@ use std::time::Instant;
 
 /// Measure the performance of writing a file.
 fn benchmark(buffer: usize) -> Result<f64, anyhow::Error> {
-    let n_keys: usize = 2048;
-    let key_size: usize = 2;
+    let n_keys: usize = 2;
+    let key_size: usize = 2048;
     let target_file_size: usize = 256 * 1024 * 1024;
 
     let n_frames = target_file_size / key_size / n_keys / size_of::<f64>();
