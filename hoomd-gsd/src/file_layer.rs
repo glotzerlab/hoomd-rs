@@ -553,13 +553,13 @@ that includes both the data and the dimensions.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Array<T> {
     /// Contents.
-    data: Vec<T>,
+    pub data: Vec<T>,
 
     /// Number of rows in the array.
-    rows: u64,
+    pub rows: u64,
 
     /// Number of columns in the array.
-    columns: u32,
+    pub columns: u32,
 }
 
 /** Data types that can be stored in chunks.
