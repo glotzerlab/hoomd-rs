@@ -32,9 +32,9 @@ impl<const N: usize> Sphere for Cartesian<N> {
     use hoomd_manifold::Sphere;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let x = Cartesian:from([1.0, 0.0, 0.0]);
+    let x = Cartesian::from([1.0, 0.0, 0.0]);
     let y = Cartesian::from([0.0, 1.0, 1.0]);
-    let c = PI/2;
+    let c = PI/2.0;
     assert_eq!(c,x.sphere_distance(&y,1.0));
     # Ok(())
     # }

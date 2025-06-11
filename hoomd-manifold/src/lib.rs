@@ -24,11 +24,13 @@ Description of N-dimensional Minkowski space. [`Rotate<V>'] and ['Boost<V>']
 
 mod sphere;
 mod minkowski;
-mod hyperbolic_rotations;
+mod hyperbolic_angle;
+mod biquaternion;
 
 pub use {
-    minkowski::{Minkowski, HyperbolicRotationMatrix}
-    hyperbolic_angle::HyperbolicAngle
+    minkowski::{Minkowski, HyperbolicRotationMatrix},
+    hyperbolic_angle::HyperbolicAngle,
+    biquaternion::Biquaternion,
 };
 
 use thiserror::Error;
@@ -60,8 +62,9 @@ pub trait Hyperboloid {
 /** Rotations in hyperbolic space
  */
 pub trait HyperbolicRotate<V: Vector> {
+    type Matrix: HyperbolicRotate<V>;
     #[must_use]
-    fn boost(&self, vector: &V) -> V;
+    fn hyperbolic_rotate(&self, vector: &V) -> V;
 }
 /** Sphere
  */

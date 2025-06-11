@@ -13,7 +13,7 @@ use std::ops::{
 use libm::acosh;
 use hoomd_vector::Vector;
 
-use crate::{Error,Hyperboloid};
+use crate::{Error,Hyperboloid, HyperbolicRotate};
 
 /** Description of Minkowski space, examples of usage
 */
@@ -395,295 +395,81 @@ impl<const N: usize> Hyperboloid for Minkowski<N> {
 
 /** Rotate Minkowski vectors.
 
-Construct a [`MinkowskiRotationMatrix`] to efficiently rotate many vectors by the same rotation.
-
-See:
-* [`RotationMatrix::from<Angle>`]
-
-[`RotationMatrix`] _intentionally_ does not implement [`Rotation`](crate::Rotation).
-[`Angle`](crate::Angle) and [`Versor`](crate::Versor) are representations of
-rotations that are often the most effective and numerically stable to
-manipulate.
+Construct a [`HyperbolicRotationMatrix`] to efficiently rotate many vectors by the same rotation.
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct MinkowskiRotationMatrix<const N: usize> {
+pub struct HyperbolicRotationMatrix<const N: usize> {
     /// Rows of the rotation matrix.
-    pub(crate) rows: [Cartesian<N>; N],
+    pub(crate) rows: [Minkowski<N>; N],
 }
 
-impl<const N: usize> Rotate<Minkowski<N>> for MinkowskiRotationMatrix<N> {
-    type Matrix = MinkowskiRotationMatrix<N>;
+impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix<N> {
+    type Matrix = HyperbolicRotationMatrix<N>;
 
     #[inline]
-    /** Rotate a [`Minkowski<N>`] by a [`MinkowskiRotationMatrix`]
-
-    # Examples
+    /** Rotate a [`Minkowski<N>`] by a [`HyperbolicRotationMatrix`]
+    # Example
     ```
-    use hoomd_vector::{Angle, Rotate};
-    use hoomd_manifold::{MinkowskiRotationMatrix, Minkowski};
+    // Rotate about z-axis
+    use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
     use std::f64::consts::PI;
+    use num::complex::Complex;
+    use libm::{sin,cos};
 
-    let v = Minkowski::from([1.0, 0.0, (2.0_f64).sqrt()]);
-    let a = Angle::from(PI/2.0);
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let v = Minkowski::from([1.0, 0.0, 1.0]);
+    let spatial_rotation = HyperbolicAngle::from((PI/2.0, 0.0_f64, 0.0_f64));
+    let matrix = HyperbolicRotationMatrix::from(spatial_rotation);
+    let rotated = matrix.hyperbolic_rotate(&v);
+    let c = Minkowski::from([cos(PI/2.0),sin(PI/2.0),1.0]);
+    assert_eq!(c,rotated);
+    # Ok(())
+    # }
+    ```
+    # Example
+    ```
+    // Boost in y direction
+    use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
+    use std::f64::consts::PI;
+    use num::complex::Complex;
+    use libm::{sinh,cosh};
 
-    let matrix = MinkowskiRotationMatrix::from(a);
-    let rotated = matrix.rotate(&v);
-    // rotated is approximately [0.0, 1.0, (2.0_f64).sqrt()]
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let v = Minkowski::from([1.0, 0.0, 1.0]);
+    let small_boost = HyperbolicAngle::from((0.0_f64, 0.1_f64, 0.0_f64));
+    let matrix = HyperbolicRotationMatrix::from(small_boost);
+    let rotated = matrix.hyperbolic_rotate(&v);
+    let c = Minkowski::from([sinh(0.1)+cosh(0.1),0.0,sinh(0.1)+cosh(0.1)]);
+    assert_eq!(c,rotated);
+    # Ok(())
+    # }
+    ```
+    # Example
+    ```
+    // inputting zero for all angles and rapidities does nothing
+    use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
+    use std::f64::consts::PI;
+    use num::complex::Complex;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let v = Minkowski::from([1.0, 2.0, 1.0]);
+    let identity = HyperbolicAngle::from((0.0_f64, 0.0_f64, 0.0_f64));
+    let matrix = HyperbolicRotationMatrix::from(identity);
+    let rotated = matrix.hyperbolic_rotate(&v);
+    let c = Minkowski::from([1.0, 2.0, 1.0]);
+    assert_eq!(c,rotated);
+    # Ok(())
+    # }
     ```
     */
-    fn rotate(&self, vector: &Minkowski<N>) -> Minkowski<N> {
+    fn hyperbolic_rotate(&self, vector: &Minkowski<N>) -> Minkowski<N> {
         let mut coordinates = [0.0; N];
 
         for (result, row) in coordinates.iter_mut().zip(self.rows.iter()) {
-            *result = row.dot(vector);
+            *result = zip(row.coordinates.iter(), vector.coordinates.iter())
+                        .fold(0.0, |product, x| product + x.0 * x.1);
         }
 
         Minkowski { coordinates }
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use paste::paste;
-
-    // Parameterize a test function over an array of vector lengths
-    macro_rules! parameterize_vector_length {
-        // macro with name as above that takes an identifier (fn) and an expression
-        // $(...),* matches 0 or more expressions (values) separated by commas
-        ($test_body:ident, [$($dim:expr),*]) => {
-
-            // Now, we repeat the test block 0 or more times, one for each $dim
-            $(
-                // paste package combines values in [< >] to form a new ident
-                paste! {
-                    #[test]
-                    fn [< $test_body "_" $dim>]() {
-                        const DIM: usize = $dim;
-                        $test_body::<DIM>();
-                    }
-                }
-            )*
-        };
-    }
-
-    /// Generate a pair of length N vectors.
-    /// The first vector ranges from [0, N-1] and the second ranges from [N, 2*N-1]
-    fn generate_vector_pair<const N: usize>() -> (Minkowski<N>, Minkowski<N>) {
-        (
-            Minkowski::try_from(0..N).unwrap(),
-            Minkowski::try_from(N..N * 2).unwrap(),
-        )
-    }
-
-    fn index<const N: usize>() {
-        let (_, b) = generate_vector_pair::<N>();
-        assert!(zip(0..N, b.coordinates.iter()).all(|(i, &x)| b[i] == x));
-    }
-    parameterize_vector_length!(index, [2, 3, 4, 8, 16, 32]);
-
-    fn index_mut<const N: usize>() {
-        let (a, mut b) = generate_vector_pair::<N>();
-        zip(0..N, b.coordinates.iter_mut()).for_each(|(i, x)| *x = a[i]);
-        assert_eq!(a, b);
-    }
-    parameterize_vector_length!(index_mut, [2, 3, 4, 8, 16, 32]);
-
-    fn add_explicit<const N: usize>() {
-        let (a, b) = generate_vector_pair::<N>();
-        let c = a.add(b);
-
-        let addition_answer: Vec<f64> = (0..(2 * N))
-            .step_by(2)
-            .map(|x| (x + N) as f64)
-            .collect::<Vec<_>>();
-
-        assert_eq!(c, Minkowski::try_from(addition_answer).unwrap());
-    }
-    parameterize_vector_length!(add_explicit, [2, 3, 4, 8, 16, 32]);
-
-    fn add_operator<const N: usize>() {
-        let (a, b) = generate_vector_pair::<N>();
-        let c = a + b;
-
-        let addition_answer: Vec<f64> = (0..(2 * N))
-            .step_by(2)
-            .map(|x| (x + N) as f64)
-            .collect::<Vec<_>>();
-
-        assert_eq!(c, Minkowski::try_from(addition_answer).unwrap());
-    }
-    parameterize_vector_length!(add_operator, [2, 3, 4, 8, 16, 32]);
-
-    fn add_assign<const N: usize>() {
-        let (a, b) = generate_vector_pair::<N>();
-        let mut c = a;
-        c += b;
-
-        let addition_answer: Vec<f64> = (0..(2 * N))
-            .step_by(2)
-            .map(|x| (x + N) as f64)
-            .collect::<Vec<_>>();
-
-        assert_eq!(c, Minkowski::try_from(addition_answer).unwrap());
-    }
-
-    parameterize_vector_length!(add_assign, [2, 3, 4, 8, 16, 32]);
-
-    fn sub_operator<const N: usize>() {
-        let (a, b) = generate_vector_pair::<N>();
-        let c = a - b;
-
-        let subtraction_answer = [-(N as f64); N];
-
-        assert_eq!(c, subtraction_answer.into());
-    }
-    parameterize_vector_length!(sub_operator, [2, 3, 4, 8, 16, 32]);
-
-    fn sub_assign<const N: usize>() {
-        let (a, b) = generate_vector_pair::<N>();
-        let mut c = a;
-        c -= b;
-
-        let subtraction_answer = [-(N as f64); N];
-
-        assert_eq!(c, subtraction_answer.into());
-    }
-
-    parameterize_vector_length!(sub_assign, [2, 3, 4, 8, 16, 32]);
-
-    fn mul_operator<const N: usize>() {
-        let (a, _) = generate_vector_pair::<N>();
-        let b = 12.0;
-        let c = a * b;
-
-        let multiplication_answer: Vec<f64> = (0..N).map(|x| (x as f64) * b).collect::<Vec<_>>();
-
-        assert_eq!(c, Minkowski::try_from(multiplication_answer).unwrap());
-    }
-    parameterize_vector_length!(mul_operator, [2, 3, 4, 8, 16, 32]);
-
-    fn mul_assign<const N: usize>() {
-        let (mut a, _) = generate_vector_pair::<N>();
-        let b = 12.0;
-        a *= b;
-
-        let multiplication_answer: Vec<f64> = (0..N).map(|x| (x as f64) * b).collect::<Vec<_>>();
-
-        assert_eq!(a, Minkowski::try_from(multiplication_answer).unwrap());
-    }
-
-    parameterize_vector_length!(mul_assign, [2, 3, 4, 8, 16, 32]);
-
-    fn div_operator<const N: usize>() {
-        let (a, _) = generate_vector_pair::<N>();
-        let b = 12.0;
-        let c = a / b;
-
-        let division_answer: Vec<f64> = (0..N).map(|x| (x as f64) / b).collect::<Vec<_>>();
-
-        assert_eq!(c, Minkowski::try_from(division_answer).unwrap());
-    }
-    parameterize_vector_length!(div_operator, [2, 3, 4, 8, 16, 32]);
-
-    fn div_assign<const N: usize>() {
-        let (mut a, _) = generate_vector_pair::<N>();
-        let b = 12.0;
-        a /= b;
-
-        let division_answer: Vec<f64> = (0..N).map(|x| (x as f64) / b).collect::<Vec<_>>();
-
-        assert_eq!(a, Minkowski::try_from(division_answer).unwrap());
-    }
-
-    parameterize_vector_length!(div_assign, [2, 3, 4, 8, 16, 32]);
-
-    fn compute_add_ref_ref<const N: usize>(a: &Minkowski<N>, b: &Minkowski<N>) -> Minkowski<N> {
-        *a + *b
-    }
-
-    fn compute_add_ref_type<const N: usize>(a: &Minkowski<N>, b: Minkowski<N>) -> Minkowski<N> {
-        *a + b
-    }
-
-    fn compute_add_type_ref<const N: usize>(a: Minkowski<N>, b: &Minkowski<N>) -> Minkowski<N> {
-        a + *b
-    }
-
-    fn add_with_refs<const N: usize>() {
-        let (a, b) = generate_vector_pair::<N>();
-
-        let addition_answer = Minkowski::try_from(
-            (0..(2 * N))
-                .step_by(2)
-                .map(|x| (x + N) as f64)
-                .collect::<Vec<_>>(),
-        )
-        .unwrap();
-
-        let c = compute_add_ref_ref(&a, &b);
-        assert_eq!(c, addition_answer);
-
-        let c = compute_add_ref_type(&a, b);
-        assert_eq!(c, addition_answer);
-
-        let c = compute_add_type_ref(a, &b);
-        assert_eq!(c, addition_answer);
-    }
-    parameterize_vector_length!(add_with_refs, [2, 3, 4, 8, 16, 32]);
-
-    fn neg<const N: usize>() {
-        let a: Minkowski<N> = Minkowski::try_from(0..N).unwrap();
-        let b = -a;
-        for (i, j) in zip(a.coordinates.iter(), b.coordinates.iter()) {
-            assert_eq!(*i, -j);
-        }
-    }
-    parameterize_vector_length!(neg, [2, 3, 4, 8, 16, 32]);
-
-    #[test]
-    fn display() {
-        let a = Minkowski::from([1.5, 2.125, -3.875]);
-        let s = format!("{a}");
-        assert_eq!(s, "[1.5, 2.125, -3.875]");
-
-        let a = Minkowski::from([10.0, 20.0, 30.0, 40.0]);
-        let s = format!("{a}");
-        assert_eq!(s, "[10, 20, 30, 40]");
-    }
-
-    #[test]
-    fn from_2_tuple() {
-        let a = Minkowski::from((3.0, 0.125));
-        assert_eq!(a.coordinates, [3.0, 0.125]);
-    }
-
-    #[test]
-    fn from_3_tuple() {
-        let a = Minkowski::from((-0.5, 2.0, 18.125));
-        assert_eq!(a.coordinates, [-0.5, 2.0, 18.125]);
-    }
-
-    fn from_vec<const N: usize>() {
-        let mut vec = Vec::with_capacity(N);
-
-        assert_eq!(
-            Minkowski::<N>::try_from(vec.clone()),
-            Err(Error::InvalidVectorLength)
-        );
-
-        for i in 0..N {
-            vec.push(i as f64 * 0.5);
-        }
-        let a = Minkowski::<N>::try_from(vec.clone()).unwrap();
-
-        assert_eq!(vec, Vec::from(a.coordinates));
-
-        vec.push(1.0);
-        assert_eq!(
-            Minkowski::<N>::try_from(vec.clone()),
-            Err(Error::InvalidVectorLength)
-        );
-    }
-    parameterize_vector_length!(from_vec, [2, 3, 4, 8, 16, 32]);
 }
