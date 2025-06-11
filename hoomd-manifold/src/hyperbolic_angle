@@ -5,14 +5,12 @@
  */
 
 use std::array;
+use num::complex::Complex;
 use std::fmt;
 use std::iter::zip;
-use std::ops::{
-    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
-};
 use libm::{sinh,cosh};
 use std::f64::consts::PI;
-use hoomd_vector::{Vector, Angle, Rotate, Rotation};
+use hoomd_vector::{Vector, Rotate, Rotation};
 
 use crate::{Error,Minkowski};
 
@@ -23,7 +21,7 @@ use crate::{Error,Minkowski};
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct HyperbolicAngle {
     /// Rotation angle (radians).
-    pub angles: (f64,f64,f64),
+    pub angles: (f64, f64, f64),
 }
 
 impl HyperbolicAngle {
@@ -42,29 +40,43 @@ impl From<HyperbolicAngle> for HyperbolicRotationMatrix<3> {
     /** Description and example
     */
     #[inline]
-    fn from(angle: Angle) -> HyperbolicRotationMatrix<3> {
-        let sin_theta_3 = (angles.2).sin();
-        let cos_theta_3 = (angles.2).cos();
-        let sinh_theta_2 = (angles.1).sinh();
-        let cosh_theta_2 = (angles.1).cosh();
-        let sinh_theta_1 = (angles.0).sinh();
-        let cosh_theta_1 = (angles.0).cosh();
-        HyperbolicRotationMatrix: [
-                [cos_theta_3, -sin_theta_3, 0.0].into(),
-                [sin_theta_3, cos_theta_3, 0.0].into(),
-                [0.0, 0.0, 1.0].into(),
-            ] 
-            * [
-                [cosh_theta_2, 0.0, sinh_theta_2].into(),
-                [0.0, 1.0, 0.0].into(),
-                [sinh_theta_2, 0.0, cosh_theta_2].into(),
-            ] 
-            * [
-                [1.0, 0.0, 0.0].into(),
-                [0.0, cosh_theta_1, sinh_theta_1].into(),
-                [0.0, sinh_theta_1, cosh_theta_1].into(),
+    fn from(angle_list: HyperbolicAngle) -> HyperbolicRotationMatrix<3> {
+        let (a,b,c) = angle_list;
+        let arg_sq = -a.powi(2)+b.powi(2)+c.powi(2);
+        let arg = Complex::new(arg_sq,0.0);
+        let arg_sqrt = arg.sqrt();
+        let ch = arg_sqrt.cosh();
+        let sh = arg_sqrt.sinh();
+        let sh_c = Complex::new(arg_sqrt.re*sh.re - arg_sqrt.im*sh.im, arg_sqrt.re*sh.im + arg_sqrt.im*sh.re);
+        HyperbolicRotationMatrix: { 
+            rows: [
+                [((Complex::new(c.powi(2),0.0) + ch.scale(b.powi(2) - a.powi(2))).scale(-1.0*arg_sq)).re,
+                 ((Complex::new(b*c,0.0) - ch.scale(b*c) + sh_c.scale(a)).scale(arg_sq)).re, 
+                 ((Complex::new(-1.0*a*c,0.0) + ch.scale(a*c)-sh_c.sclae(b)).scale(arg_sq)).re].into(),
+                [((Complex::new(b*c,0.0) - ch.scale(b*c) - sh_c.scale(a)).scale(arg_sq)).re,
+                 ((Complex::new(b.powi(2),0.0) + ch.scale(c.powi(2)-a.powi(2))).scale(-1.0*arg_sq)).re, 
+                 ((Complex::new(a*b,0.0) - ch.scale(a*b) - sh_c.scale(c)).scale(arg_sq)).re].into(),
+                [((Complex::new(a*c,0.0) - ch.scale(a*c) - sh_c.sclae(b)).scale(arg_sq)).re, 
+                ((Complex::new(-1.0*a*b,0.0) + ch.scale(a*b) - sh_c.sclae(c)).scale(arg_sq)).re, 
+                ((Complex::new(a.powi(2),0.0) - ch.scale(b.powi(2)+c.powi(2))).scale(arg_sq)).re].into(),
             ] 
         }
     }
 }
 
+impl From<[f64; 3]> for HyperbolicAngle {
+    /** Documentation and examples 
+    */
+    #[inline]
+    fn from(value: [f64; 3]) -> Self {
+        Self {angles: (value[0],value[1],value[2])}
+    }
+}
+
+impl fmt::Display for HyperbolicAngle {
+    /// Format a [`HyperbolicAngle`] as `[{v[0]}, {v[1]}, {v[2]}]`.
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[{}, {}, {}]", self.angles.0, self.angles.1,self.angles.2)
+    }
+}
