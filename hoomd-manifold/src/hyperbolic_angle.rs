@@ -27,7 +27,9 @@ impl HyperbolicAngle {
     #[must_use]
     pub fn to_reduced(self) -> Self {
         Self {
-            angles: (self.angles.0,self.angles.1, self.angles.2.rem_euclid(2.0 * PI)),
+            angles: (self.angles.0,
+                    self.angles.1, 
+                    self.angles.2.rem_euclid(2.0 * PI)),
         }
     }
 }
@@ -51,6 +53,7 @@ impl From<HyperbolicAngle> for HyperbolicRotationMatrix<3> {
             let ch = arg_sqrt.cosh();
             let sh = arg_sqrt.sinh();
             let sh_c = Complex::new(arg_sqrt.re*sh.re - arg_sqrt.im*sh.im, arg_sqrt.re*sh.im + arg_sqrt.im*sh.re);
+            
             HyperbolicRotationMatrix { 
                 rows: [
                     [((Complex::new(c.powi(2),0.0) + ch.scale(b.powi(2) - a.powi(2))).scale(1.0/arg_sq)).re,
@@ -76,7 +79,9 @@ impl From<(f64,f64,f64)> for HyperbolicAngle {
     */
     #[inline]
     fn from(value: (f64,f64,f64)) -> Self {
-        Self {angles: (value.0,value.1,value.2)}
+        Self {
+            angles: value.into()
+        }
     }
 }
 
@@ -84,6 +89,6 @@ impl fmt::Display for HyperbolicAngle {
     /// Format a [`HyperbolicAngle`] as `[{v[0]}, {v[1]}, {v[2]}]`.
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "[{}, {}, {}]", self.angles.0, self.angles.1,self.angles.2)
+        write!(f, "[{}, {}, {}]", self.angles.0, self.angles.1, self.angles.2)
     }
 }

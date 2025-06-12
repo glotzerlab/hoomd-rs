@@ -30,7 +30,7 @@ mod biquaternion;
 pub use {
     minkowski::{Minkowski, HyperbolicRotationMatrix},
     hyperbolic_angle::HyperbolicAngle,
-    biquaternion::Biquaternion,
+    biquaternion::{Biquaternion, HyperbolicVersor},
 };
 
 use thiserror::Error;
@@ -45,8 +45,13 @@ pub enum Error {
     InvalidSphereCoordinate,
 
     /// Attempted converting a value to a vector with a dimension not equal to the value's length.
+    #[error("Quaternion does not fit required format of [re,re,re,im] to describe a 4-vector")]
+    InvalidBiquaternion4Vector,
+
+    /// Attempted converting a value to a vector with a dimension not equal to the value's length.
     #[error("source length does not match the target dimensions")]
     InvalidVectorLength,
+
 }
 
 /** Operations defined on the upper sheet of a two-sheeted hyperboloid embedded in some metric 
