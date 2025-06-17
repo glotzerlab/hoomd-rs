@@ -10,12 +10,73 @@ use std::iter::zip;
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
+use rand::Rng;
+use rand::distr::{Distribution, StandardUniform, Uniform};
 use libm::acosh;
 use hoomd_vector::Vector;
 
 use crate::{Error,Hyperboloid, HyperbolicRotate};
 
-/** Description of Minkowski space, examples of usage
+/** 
+[`Minkowski<N>`] implements (N-1,1)-dimensional Minkowski space with the metric signature 
+$(+ \;\cdots\; +\; -)$. [`Minkowski`] supports [`Vector`] operations such as vector addition and rescaling, but 
+is not a true inner product space. 
+
+## Constructing Minkowski vectors 
+
+Similar to [`Cartesian`], N-dimensional vectors can be constructed using an array 
+of (real-valued) coordinates. Three- and four-dimensional vectors can also be 
+constructed from tuples: 
+```
+use hoomd_manifold::Minkowski;
+
+fn from_array() -> Minkowski<5> {
+    Minkowski::from([1.0, 2.0, 3.0, 4.0, 5.0])
+}
+fn from_tuples() -> Minkowski<3> {
+    Minkowski::from((6.0, 7.0, 8.0))
+}
+```
+
+## Operating on Minkowski vectors
+
+[`Minkowski`] implements everything from [`Vector`], which includes vector addition/subtraction,
+multiplication by a scalar, and a distance metric. 
+
+```
+use hoomd_manifold::Minkowski;
+
+// Vector addition
+let mut a = Minkowski::from([1.0, 1.0, 1.0, 1.0]);
+let mut b = Minkowski::from([0.0, 0.0, 0.0, 2.0]);
+a += b;
+
+// Multiplication by a scalar
+let mut c = a * 4.0;
+
+// Division by a scalar
+c /= 2.0;
+
+assert_eq!(c, [2.0, 2.0, 2.0, 6.0].into());
+```
+
+The distance metric on Minkowski space is given by the "spacetime interval"
+```math
+d_M^2(\vec{u},\vec{v}) = (\vec{u}-\vec{v})^T \eta (\vec{u}-\vec{v}) 
+= (u_1-v_1)^2 +\cdots + (u_{N-1}-v_{N-1})^2 - (u_N - v_N)^2
+``` 
+Note that because this metric is not positive-definite, [`Minkowski`] only implements a 
+squared distance metric (i.e., it does not implement a "distance" function which 
+takes the square root of "distance_squared"). 
+
+```
+use hoomd_manifold::Minkowski;
+use hoomd_vector::Vector;
+
+let x = Minkowski::from([1.0, 0.0, 5.0]);
+let y = Minkowski::from([0.0, 0.0, 3.0]);
+assert_eq!(-3.0, x.distance_squared(&y));
+```
 */
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -59,18 +120,18 @@ impl<const N: usize> From<[f64; N]> for Minkowski<N> {
     }
 }
 
-impl From<(f64, f64)> for Minkowski<2> {
+impl From<(f64, f64, f64)> for Minkowski<3> {
     #[inline]
-    fn from(coordinates: (f64, f64)) -> Self {
+    fn from(coordinates: (f64, f64, f64)) -> Self {
         Self {
             coordinates: coordinates.into(),
         }
     }
 }
 
-impl From<(f64, f64, f64)> for Minkowski<3> {
+impl From<(f64, f64, f64, f64)> for Minkowski<4> {
     #[inline]
-    fn from(coordinates: (f64, f64, f64)) -> Self {
+    fn from(coordinates: (f64, f64, f64, f64)) -> Self {
         Self {
             coordinates: coordinates.into(),
         }
@@ -142,7 +203,7 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for Minkowski<N> {
 
 impl<const N: usize> Vector for Minkowski<N> {
     /** Computes the squared distance between two points in Minkowski space with 
-    "mostly pluses" metric signature. 
+    the "mostly plusses" metric signature (+ ... + -). 
     ```math
     d^2_M(\vec{x},\vec{y}) = -(x_N-y_N)^2 + \sum_{i=1}^{N-1} (x_i - y_i)^2
     ```
@@ -337,30 +398,74 @@ where
     }
 }
 
-/** Embedding of the top sheet of a two-sheeted hyperboloid in Minkowski space. This surface has constant
- negative curvature and therefore serves as a model of hyperbolic space.
+impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
+    /** Sample a Minkowski vector from the uniform [-1, 1] hypercube.
 
-Explicitly, for three-dimensional Minkowski space with signature (+,+,-), the hyperboloid is defined by 
-```math
-x^2 + y^2 -z^2 = -1
-```
-where the z>0 solutions are taken to be the hyperbolic surface. Note that points on the hyperboloid 
-are parameterized by two coordinates (v,\theta), where v\in[0,\infty) and \theta\in[0,2\pi) via the 
-embedding 
-```math
-\vec{p} = (\sinh(v)\cos(\theta), \sinh(v)\sin(\theta), \cosh(v))
-```
-*/
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Hyperbolic<const N: usize> {
-    pub coordinates: [f64; N],
+    # Example
+    ```
+    use hoomd_manifold::Minkowski;
+    use rand::{rngs::StdRng, Rng, SeedableRng};
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut rng = StdRng::seed_from_u64(1);
+    let v: Minkowski::<3> = rng.random();
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Minkowski<N> {
+        #[expect(
+            clippy::expect_used,
+            reason = "This constants chosen for this distribution are valid"
+        )]
+        let uniform = Uniform::new_inclusive(-1.0, 1.0)
+            .expect("hard-coded range should form a valid distribution");
+        Minkowski {
+            coordinates: array::from_fn(|_| uniform.sample(rng)),
+        }
+    }
 }
+
+/** 
+## Hyperboloid Model  
+The trait [`Hyperboloid`] implements an embedding of the top sheet of an (N-1)-dimensional 
+two-sheeted hyperboloid in N-dimensional Minkowski space. This surface has constant negative curvature 
+and therefore serves as a model of (N-1)-dimensional hyperbolic space.
+
+Explicitly, for N-dimensional Minkowski space with metric $\eta = \operatorname{diag}(+,\cdots,+,-)$, 
+the hyperboloid with skirt width $R$ is defined by the set of points with components satisfying 
+```math
+x_1^2 +\cdots x_{N-1}^2 - x_{N}^2 = -R^2
+```
+Where the "top sheet" is defined by the $x_N>0$ solutions. In Minkowski space, the hyperboloid
+has a natural interpretation as the set of points with the same spacetime interval
+```math
+\Delta s^2 = \vec{x}^T \eta \vec{x} = x_1^2 +\cdots x_{N-1}^2 - x_{N}^2
+```
+
+[`Hyperboloid`] defines a distance metric [`hyperbolic_distance`] which computes the distance 
+of the geodesic passing between two points on a hyperboloid with some given skirt width. This may be 
+interpreted as the metric for the hyperboloid model of hyperbolic space. 
+```
+use libm::acosh;
+use hoomd_manifold::{Minkowski, Hyperboloid};
+use hoomd_vector::Vector;
+
+// two points on the hyperboloid with skirt width R = 1.0:
+let x = Minkowski::from([0.0, 0.0, 1.0]);
+let y = Minkowski::from([0.0, 1.0, (2.0_f64).sqrt()]);
+
+assert_eq!(acosh((2.0_f64).sqrt()), x.hyperbolic_distance(&y, 1.0));
+```
+
+*/
 
 impl<const N: usize> Hyperboloid for Minkowski<N> {
     /** Computes the length of the geodesic passing between two points. From N-dimensional Minkowski space 
     with signature (+\cdots +-), one can obtain the corresponding Minkowski bilinear form 
     ```math
-    B(\vec{u},\vec{v}) = u_1v_1 + \cdots + u_{N-1}v_{N-1} - u_Nv_N
+    B(\vec{u},\vec{v}) = \vec{u}^T \eta \vec{v}= u_1v_1 + \cdots + u_{N-1}v_{N-1} - u_Nv_N 
     ``` 
     Now the distance (according to the Minkowski metric) between two points \vec{u} and \vec{v} on the hyperboloid
     is given by 
@@ -393,9 +498,38 @@ impl<const N: usize> Hyperboloid for Minkowski<N> {
 }
 
 
-/** Rotate Minkowski vectors.
+/** 
 
-Construct a [`HyperbolicRotationMatrix`] to efficiently rotate many vectors by the same rotation.
+## Hyperbolic Rotations in Minkowski Space
+
+Construct a [`HyperbolicRotationMatrix`] to apply SO(N-1, 1) transformations to
+N-dimensional Minkowski vectors. For Minkowski 4-vectors, [`Biquaternion`] should be used 
+instead for numeric stability. See documentation in [`HyperbolicAngle`] for details on
+ SO(2,1) transformations (i.e., two-dimensional hyperbolic space), and see documentation 
+ in [`Biquaternion`] for details on SO(3,1) transformations (i.e., three-dimensional 
+ hyperbolic space).
+
+In two dimensional hyperbolic space:
+```
+use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
+use std::f64::consts::PI;
+use libm::{sinh, cosh};
+
+// rotation by pi radians about z axis
+fn rotate_about_z(minkowski_vector: &Minkowski<3>) -> Minkowski<3> {
+    let generators = HyperbolicAngle::from((PI, 0.0_f64, 0.0_f64));
+    let rotation_matrix = HyperbolicRotationMatrix::from(generators);
+    rotation_matrix.hyperbolic_rotate(&minkowski_vector)
+}
+
+// boost in x direction
+fn boost_in_x(minkowski_vector: &Minkowski<3>) -> Minkowski<3>{
+    let generators = HyperbolicAngle::from((0.0_f64, 0.2_f64, 0.0_f64));
+    let boost_matrix = HyperbolicRotationMatrix::from(generators);
+    boost_matrix.hyperbolic_rotate(&minkowski_vector)
+}
+```
+
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct HyperbolicRotationMatrix<const N: usize> {
@@ -410,11 +544,10 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     /** Rotate a [`Minkowski<N>`] by a [`HyperbolicRotationMatrix`]
     # Example
     ```
-    // Rotate about z-axis
+    // Rotate point in 2D hyperbolic space about z-axis
     use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
     use std::f64::consts::PI;
-    use num::complex::Complex;
-    use libm::{sin,cos};
+    use libm::{sin, cos};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let v = Minkowski::from([1.0, 0.0, 1.0]);
@@ -428,7 +561,7 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     ```
     # Example
     ```
-    // Boost in y direction
+    // Boost point in 2D hyperbolic space in x direction
     use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
     use std::f64::consts::PI;
     use num::complex::Complex;
@@ -458,6 +591,47 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     let rotated = matrix.hyperbolic_rotate(&v);
     let c = Minkowski::from([1.0, 2.0, 1.0]);
     assert_eq!(c,rotated);
+    # Ok(())
+    # }
+    ```
+    # Example
+
+    ```
+    // Rotate point in 3D hyperbolic space about y axis using matrix representation
+    use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate,
+                        Biquaternion, UnitBiquaternion};
+    use std::f64::consts::PI;
+    use num::complex::Complex;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let q = Biquaternion::from([Complex::new(0.0,0.0),
+                        Complex::new((PI/4.0).sin(),0.0),
+                        Complex::new(0.0, 0.0),
+                        Complex::new((PI/4.0).cos(), 0.0)]);
+    let v = q.to_unit()?;
+    let x = Minkowski::from([1.0, 0.0, 0.0, 1.0]);
+    let rotation = HyperbolicRotationMatrix::from(v);
+    let rotated = rotation.hyperbolic_rotate(&x);
+    // rotated vector is approximately [0.0, 0.0, -1.0, 1.0];
+    # Ok(())
+    # }
+    ```
+    ```
+    // Boost point in 3D hyperbolic space in x direction using biquaternion algebra.
+    use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, Biquaternion, Minkowski};
+    use std::f64::consts::PI;
+    use num::complex::Complex;
+    use libm::{sinh,cosh};
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
+    let q = Biquaternion::from([Complex::new(0.0, 0.5).sin(),
+                        Complex::new(0.0,0.0),
+                        Complex::new(0.0, 0.0),
+                        Complex::new(0.0, 0.5).cos()]);
+    let v = q.to_unit()?;
+    let boosted = v.hyperbolic_rotate(&x);
+    // boosted is approximately [(0.5).sinh(), 0.0, 0.0, (0.5).cosh()]
     # Ok(())
     # }
     ```

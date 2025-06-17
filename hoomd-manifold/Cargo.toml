@@ -25,3 +25,15 @@ rstest.workspace = true
 
 [lints]
 workspace = true
+
+[[bench]]
+name = "minkowski"
+harness = false 
+
+[[bench]]
+name = "biquaternion"
+harness = false 
+
+[[bench]]
+name = "hyperbolic_angle"
+harness = false 

@@ -6,7 +6,7 @@
 
 use libm::acos;
 use hoomd_vector::{Cartesian, InnerProduct};
-use crate::{Error, Sphere};
+use crate::{Sphere};
 
 /** Description of sphere, examples of usage
 */
