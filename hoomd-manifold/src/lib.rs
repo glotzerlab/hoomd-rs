@@ -165,6 +165,21 @@ pub trait Hyperboloid {
      */
     #[inline]
     fn hyperbolic_distance(&self, other: &Self, skirt: f64) -> f64;
+    /** Distance of the geodesic path passing through a given point and the cusp of 
+    the hyperboloid
+    */
+    #[inline]
+    fn distance_from_cusp(&self, skirt: f64) -> f64;
+}
+
+/** Operations for the fundamental domain on a hyperboloid
+*/
+pub trait FundamentalDomain: Hyperboloid {
+    /** Distance of the geodesic path passing through a given point on the hyperbola and the
+    boundary of the fundamental domain.
+    */
+    #[inline]
+    fn distance_to_boundary(&self, tile_size: f64, skirt: f64) -> f64;
 }
 
 /** Rotations in hyperbolic space

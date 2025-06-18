@@ -7,6 +7,7 @@
 
 
 use num::complex::Complex;
+use std::array;
 use std::fmt;
 use std::iter::zip;
 use std::ops::{
@@ -158,7 +159,7 @@ let q = Biquaternion::from([Complex::new(3.0,0.0),
                             Complex::new(0.0,1.0),
                             Complex::new(4.0,0.0),
                             Complex::new(0.0,2.0)]);
-assert_eq!((20.0_f64).sqrt(), q.norm());
+assert_eq!(Complex::new(20.0_f64,0.0).sqrt(), q.norm());
 ```
 
 */
@@ -234,15 +235,15 @@ impl Biquaternion {
                                 Complex::new(0.0,1.0),
                                 Complex::new(1.0,0.0),
                                 Complex::new(1.0,0.0)]);
-    assert_eq!(2.0, q.norm_squared());
+    assert_eq!(2.0, q.norm_squared().re);
     # Ok(())
     # }
     ```
     */
     #[inline]
     #[must_use]
-    pub fn norm_squared(&self) -> f64 {
-        self.scalar_product(&self).re
+    pub fn norm_squared(&self) -> Complex<f64> {
+        self.scalar_product(&self)
     }
     /** the norm of a biquaternion
 
@@ -256,14 +257,14 @@ impl Biquaternion {
                                 Complex::new(0.0,1.0),
                                 Complex::new(4.0,0.0),
                                 Complex::new(1.0,0.0)]);
-    assert_eq!(5.0, q.norm());
+    assert_eq!(Complex::new(5.0,0.0), q.norm());
     # Ok(())
     # }
     ```
     */
     #[inline]
     #[must_use]
-    pub fn norm(&self) -> f64 {
+    pub fn norm(&self) -> Complex<f64> {
         self.norm_squared().sqrt()
     }
     /** the quaternion product of two biquaternions
@@ -337,7 +338,7 @@ impl Biquaternion {
     #[inline]
     pub fn to_unit(self) -> Result<UnitBiquaternion, Error> {
         let mag = self.norm();
-        if mag == 0.0 {
+        if mag == Complex::new(0.0,0.0) {
             Err(Error::InvalidBiquaternionMagnitude)
         } else {
             Ok(UnitBiquaternion(self / mag))
@@ -358,12 +359,7 @@ impl Default for Biquaternion {
     #[inline]
     fn default() -> Self {
         Self{
-            components:[
-                Complex::new(0.0,0.0),
-                Complex::new(0.0,0.0),
-                Complex::new(0.0,0.0),
-                Complex::new(0.0,0.0),
-                ]
+            components: array::from_fn(|_| Complex::new(0.0,0.0))
         }
     }
 }
@@ -411,10 +407,7 @@ impl Add for Biquaternion {
     #[inline]
     fn add(self, rhs: Self) -> Self {
         Self {
-            components: [self.components[0] + rhs.components[0],
-                        self.components[1] + rhs.components[1],
-                        self.components[2] + rhs.components[2],
-                        self.components[3] + rhs.components[3]]
+            components: array::from_fn(|i| self.components[i] + rhs.components[i]),
         }
     }
 }
@@ -434,10 +427,7 @@ impl Sub for Biquaternion {
     #[inline]
     fn sub(self, rhs: Self) -> Self {
         Self {
-            components: [self.components[0] - rhs.components[0],
-                        self.components[1] - rhs.components[1],
-                        self.components[2] - rhs.components[2],
-                        self.components[3] - rhs.components[3]]
+            components: array::from_fn(|i| self.components[i] - rhs.components[i])
         }
     }
 }
@@ -457,10 +447,18 @@ impl Mul<f64> for Biquaternion {
     #[inline]
     fn mul(self, rhs: f64) -> Self {
         Self {
-            components: [(self.components[0]).scale(rhs),
-                        (self.components[1]).scale(rhs),
-                        (self.components[2]).scale(rhs),
-                        (self.components[3]).scale(rhs)]
+            components: array::from_fn(|i| (self.components[i]).scale(rhs))
+        }
+    }
+}
+
+impl Mul<Complex<f64>> for Biquaternion {
+    type Output = Self;
+
+    #[inline]
+    fn mul(self, rhs: Complex<f64>) -> Self {
+        Self {
+            components: array::from_fn(|i| self.components[i]*rhs)
         }
     }
 }
@@ -479,10 +477,18 @@ impl Div<f64> for Biquaternion {
     #[inline]
     fn div(self, rhs: f64) -> Self {
         Self {
-            components: [(self.components[0]).scale(1.0/rhs),
-                        (self.components[1]).scale(1.0/rhs),
-                        (self.components[2]).scale(1.0/rhs),
-                        (self.components[3]).scale(1.0/rhs)]
+            components: array::from_fn(|i| (self.components[i]).scale(1.0/rhs))
+        }
+    }
+}
+
+impl Div<Complex<f64>> for Biquaternion {
+    type Output = Self;
+
+    #[inline]
+    fn div(self, rhs: Complex<f64>) -> Self {
+        Self {
+            components: array::from_fn(|i| self.components[i]/rhs)
         }
     }
 }
@@ -569,6 +575,14 @@ impl UnitBiquaternion {
         let f = 1.0 / q.norm();
         Self(q*f)
     }
+    /** Check the square of the norm
+     */
+     #[inline]
+     #[must_use]
+     pub fn norm_squared(self) -> Complex<f64> {
+        let UnitBiquaternion(q) = self;
+        q.norm_squared()
+     }
 }
 
 impl Distribution<UnitBiquaternion> for StandardUniform {
@@ -577,12 +591,14 @@ impl Distribution<UnitBiquaternion> for StandardUniform {
     # Example
 
     ```
-    use hoomd_manifold::UnitBiquaternion;
+    use hoomd_manifold::{UnitBiquaternion,Biquaternion};
     use rand::{rngs::StdRng, Rng, SeedableRng};
+    use num::complex::Complex;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = StdRng::seed_from_u64(1);
     let v: UnitBiquaternion = rng.random();
+    // norm_squared(v) is approximately 1.0 
     # Ok(())
     # }
     ```
@@ -595,17 +611,14 @@ impl Distribution<UnitBiquaternion> for StandardUniform {
         )]
         let uniform = Uniform::new(-1.0, 1.0).expect("hard-coded distribution should be valid");
 
-        let mut vec = [Complex::new(0.0,0.0) ; 4];
-        let mut scale = Complex::new(0.0,0.0);
-        for n in 0..4 {
-            let mut a = uniform.sample(rng);
-            let mut b = uniform.sample(rng);
-            vec[n] = Complex::new(a,b);
-            scale += vec[n].powi(2);
-        }
-        
+        let array_re: [f64; 4] = array::from_fn(|_| uniform.sample(rng));
+        let array_im: [f64; 4] = array::from_fn(|_| uniform.sample(rng));
+        let mut scale = zip(array_re.iter(), array_im.iter())
+            .fold(Complex::new(0.0,0.0), |product, x| 
+            product + Complex::new((x.0).powi(2) - (x.1).powi(2), 2.0_f64*(x.1)*(x.0)));
+        scale = scale.sqrt();
         UnitBiquaternion(Biquaternion {
-            components: [vec[0]/scale,vec[1]/scale,vec[2]/scale,vec[3]/scale]
+            components: array::from_fn(|i| Complex::new(array_re[i], array_im[i])/scale)
         })
     }
 }
@@ -614,10 +627,7 @@ impl From<UnitBiquaternion> for HyperbolicRotationMatrix<4> {
     #[inline]
     fn from(q: UnitBiquaternion) -> HyperbolicRotationMatrix<4> {
         let UnitBiquaternion(biquaternion) = q;
-        let a = biquaternion.components[0];
-        let b = biquaternion.components[1];
-        let c = biquaternion.components[2];
-        let d = biquaternion.components[3];
+        let [a,b,c,d]: [Complex<f64>;4] = array::from_fn(|i| biquaternion.components[i]);
 
         HyperbolicRotationMatrix {
             rows: [

@@ -12,10 +12,11 @@ use std::ops::{
 };
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform, Uniform};
-use libm::acosh;
+use libm::{acosh, acos, tanh, atanh};
+use std::f64::consts::PI;
 use hoomd_vector::Vector;
 
-use crate::{Error,Hyperboloid, HyperbolicRotate};
+use crate::{Error, Hyperboloid, HyperbolicRotate, FundamentalDomain};
 
 /** 
 [`Minkowski<N>`] implements (N-1,1)-dimensional Minkowski space with the metric signature 
@@ -494,6 +495,60 @@ impl<const N: usize> Hyperboloid for Minkowski<N> {
         let arg = zip(self.coordinates[0..N-1].iter(), other.coordinates[0..N-1].iter())
             .fold(last_component, |product, x| product - (x.0 * x.1));
         skirt*acosh(arg/(skirt.powi(2)))
+    }
+    /** Computes the length of the geodesic passing between the cusp $(0,\cdots,0,\rho)$ and a given
+     point on the hyperboloid with a given skirt length.
+
+    # Example
+    ```
+    use libm::{sinh, cosh};
+    use hoomd_vector::Vector;
+    use hoomd_manifold::{Minkowski, Hyperboloid};
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let v : f64 = 4.2;
+    let rho : f64 = 1.0;
+    let x = Minkowski::from([rho*(v.sinh()),0.0,rho*(v.cosh())]);
+    assert_eq!(v*rho, x.distance_from_cusp(rho));
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    fn distance_from_cusp(&self, skirt: f64) -> f64 {
+        skirt*acosh((self.coordinates[N-1])/skirt)
+    }
+}
+
+impl FundamentalDomain for Minkowski<3> {
+    /** Computes the length of the geodesic passing between the cusp $(0,0,\rho)$ and the boundary 
+    of an octagon on a two-dimensional hyperboloid, as  In this case, the parameter tile_size gives the 
+    (geodesic) distance between the cusp and one of the vertices of the octagon. 
+
+    # Example
+    ```
+    use libm::acosh;
+    use hoomd_vector::Vector;
+    use hoomd_manifold::{Minkowski, Hyperboloid, FundamentalDomain};
+    use std::f64::consts::PI;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let octagon_size : f64 = 4.2;
+    let v : f64 = 4.2;
+    let rho : f64 = 1.0;
+    let theta: f64 = PI/4.0;
+    let x = Minkowski::from([rho*(v.sinh())*(theta.cos()),rho*(v.sinh())*(theta.sin()),rho*(v.cosh())]);
+    // distance between x and the boundary is approximately 0
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    fn distance_to_boundary(&self, tile_size: f64, skirt: f64) -> f64 {
+        let theta = (self.coordinates[0]/(self.coordinates[0].powi(2)+self.coordinates[1].powi(2)).sqrt()).acos();
+        let angle = theta.rem_euclid(PI/4.0);
+        let eta = (tile_size.tanh()/(angle.cos() - angle.sin()*(1.0-(2.0_f64).sqrt()))).atanh();
+        skirt*eta - self.distance_from_cusp(skirt)
     }
 }
 
