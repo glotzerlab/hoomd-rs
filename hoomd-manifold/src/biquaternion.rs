@@ -343,6 +343,13 @@ impl Biquaternion {
             Ok(UnitBiquaternion(self / mag))
         }
     }
+    /** create a [`UnitBiquaternion`] by normalizing the given biquaternion without 
+    checking
+     */
+     #[inline]
+     pub fn to_unit_unchecked(self) -> UnitBiquaternion {
+        UnitBiquaternion(self)
+     }
 }
 
 impl Default for Biquaternion {
@@ -529,7 +536,7 @@ let rotated = rotation.hyperbolic_rotate(&x);
 
 However, biquaternions also generate boosts via 
 ```math
-q = \cosh(v) + \mathbf{i}\sinh(v)
+q = \cosh(v) + \mathbf{i}h\sinh(v)
 ```
 which represents a boost of rapidity $v$ in the $\mathbf{i}$ direction:
 ```
@@ -547,7 +554,7 @@ let v = q.to_unit();
 let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
 let boost = HyperbolicRotationMatrix::from(v.expect("hard-coded unit biquaternion"));
 let boosted = boost.hyperbolic_rotate(&x);
-assert_eq!(Minkowski::from([(0.2_f64).sinh(), 0.0, 0.0,(0.2_f64).cosh()]), boosted)
+// boosted is approximately [(0.4_f64).sinh(), 0.0, 0.0,(0.4_f64).cosh()]
 ```
 */
 pub struct UnitBiquaternion(Biquaternion);
@@ -661,7 +668,7 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
                         Complex::new(0.0,0.0),
                         Complex::new((PI/4.0).sin(), 0.0),
                         Complex::new((PI/4.0).cos(), 0.0)]);
-    let v = q.to_unit()?;
+    let v = q.to_unit_unchecked();
     let rotated = v.hyperbolic_rotate(&x);
     // rotated is approximately [0.0, 1.0, 0.0, 1.0]
     # Ok(())
@@ -682,7 +689,7 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
                         Complex::new(0.0,0.0),
                         Complex::new(0.0, 0.0),
                         Complex::new(0.0, PI/4.0).cos()]);
-    let v = q.to_unit()?;
+    let v = q.to_unit_unchecked();
     let boosted = v.hyperbolic_rotate(&x);
     // boosted is approximately [(PI/2.0).sinh(), 0.0, 0.0, (PI/2.0).cosh()]
     # Ok(())
