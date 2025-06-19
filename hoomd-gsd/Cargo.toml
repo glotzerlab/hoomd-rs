@@ -21,3 +21,4 @@ memmap2 = "0.9.5"
 [dev-dependencies]
 anyhow.workspace = true
 tempfile.workspace = true
+clap.workspace = true

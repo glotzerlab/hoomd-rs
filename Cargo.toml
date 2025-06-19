@@ -41,6 +41,7 @@ divan = "0.1.17"
 rstest = "0.25.0"
 anyhow = "1.0.98"
 tempfile = "3.20.0"
+clap = {version = "4.5.40", features = ["derive"]}
 
 [workspace.lints.rust]
 missing_docs = "warn"
