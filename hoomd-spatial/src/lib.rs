@@ -36,9 +36,58 @@ pub struct CellList<const D: usize> {
     /// A map from particle indices to cell indices.
     pub cell_index: HashMap<usize, [i32; D]>,
 }
+
+pub struct CellListBuilder<const D: usize> {
+    pub cell_width: f64,
+    pub positions: Vec<Cartesian<D>>,
+    pub indices: Vec<usize>,
+}
+
+impl<const D:usize> CellListBuilder<D>{
+    pub fn new(cell_width: f64) -> Self {
+        Self {
+            cell_width,
+            positions: Vec::new(),
+            indices: Vec::new(),
+        }
+    }
+
+    /// Optionally supply positions and indices to initialize the cell list.
+    pub fn with_positions_and_indices(
+        mut self,
+        positions: &Vec<Cartesian<D>>,
+        indices: &Vec<usize>,
+    ) -> Self {
+        self.positions = positions.clone();
+        self.indices = indices.clone();
+    }
+
+    pub fn build(self) -> CellList<D> {
+        CellList::new(self.cell_width, &self.positions, &self.indices)
+    }
+}
+
+impl<const D: usize> Default for CellList<D> {
+    // TODO How to do this with D? Hashmap doesnt depend on D yet.
+    fn default() -> Self {
+        // Default cell width is 1.0, and empty particle indices and cell index maps.
+        CellList {
+            cell_width: 1.0,
+            particle_indices: HashMap::new(),
+            cell_index: HashMap::new(),
+        }
+    }
+}
+
 //TODO think about providing shrink_to_fit() method to reduce memory usage after many
 //insertions and deletions and we are left with many empty cells.
 impl<const D: usize> CellList<D> {
+    /** Builder API helper function.
+     */
+    pub fn builder() -> CellListBuilder<D>{
+        CellListBuilder::<D>::default()
+    }
+
     /** A helper function which converts given positions to cell indices.
     // To generalize this we will have to make it a Trait function
      */
@@ -377,6 +426,25 @@ impl<const D: usize> CellList<D> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+//    // test builder pattern
+//    #[test]
+//    fn test_cell_list_builder() {
+//        let cell_width = 1.0;
+//        let positions = vec![
+//            Cartesian { coordinates: [0.2, 0.3] },
+//            Cartesian { coordinates: [1.2, 1.3] },
+//        ];
+//        let indices = vec![0, 1]; // Particle indices corresponding to positions.
+//
+//        let cell_list = CellList::<2>::builder()
+//            .with_positions_and_indices(&positions, &indices)
+//            .build();
+//
+//        assert_eq!(cell_list.cell_width, cell_width);
+//        assert_eq!(cell_list.particle_indices.len(), 2);
+//        assert_eq!(cell_list.cell_index.len(), 2);
+//    }
 
     #[test]
     fn test_add_particle() {
