@@ -1742,7 +1742,7 @@ F: FnOnce(&mut Vec<u8>)
     fn expand_name_list_to(&mut self, capacity: u64) -> Result<(), WriteError> {
         let old_size = self.header.namelist_allocated_entries * NAME_SIZE;
         let mut new_size = old_size;
-        while new_size < capacity {
+        while new_size <= capacity {
             new_size *= 2;
         }
 
@@ -1786,7 +1786,7 @@ F: FnOnce(&mut Vec<u8>)
     fn expand_index_to(&mut self, capacity: u64) -> Result<(), WriteError> {
         let old_size = self.header.index_allocated_entries * INDEX_ENTRY_SIZE;
         let mut new_size = old_size;
-        while new_size < capacity {
+        while new_size <= capacity {
             new_size *= 2;
         }
 
