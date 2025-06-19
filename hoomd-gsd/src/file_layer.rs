@@ -1563,12 +1563,6 @@ F: FnOnce(&mut Vec<u8>)
         self.index.pending = 0;
         self.index.frame_names.clear();
 
-        if self.data_buffer.len() >= self.sync_threshold || self.data_buffer_flushed
-        {
-            self.sync_all()?;
-            self.data_buffer_flushed = false;
-        }
-
         Ok(())
     }
 
@@ -1697,6 +1691,7 @@ F: FnOnce(&mut Vec<u8>)
         // written data so far will be correct.
         if self.flush_data()? || self.data_buffer_flushed {
             need_remap = true;
+            self.data_buffer_flushed = false;
             self.file.sync_all()?;
         }
 
