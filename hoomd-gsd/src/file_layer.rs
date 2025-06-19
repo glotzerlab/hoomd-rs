@@ -46,7 +46,7 @@ const INITIAL_INDEX_SIZE: u64 = 128;
 const INITIAL_NAME_LIST_SIZE: u64 = 1024;
 
 /// Initial buffer sync threshold.
-const INITIAL_SYNC_THRESHOLD: usize = 1024 * 1024;
+const INITIAL_SYNC_THRESHOLD: usize = 64 * 1024 * 1024;
 
 /// Errors that can occur during while decoding file content.
 #[non_exhaustive]
@@ -1331,7 +1331,7 @@ impl GsdFile {
     Returns [`Ok(Array<T>)`](Result::Ok) when the data chunk is present
     in the file and `Err(`[`ReadError::ChunkNotFound`]`)` when it is not.
 
-    TODO: Not when read_array data is available.
+    TODO: Note when `read_array` data is available.
 
     # Errors
 
@@ -1432,6 +1432,11 @@ impl GsdFile {
 
     </div>
 
+    TODO: Take IntoIterator in write_ and provide an iterator in read_. This allows
+    the caller more flexibility in determining how to handle the data structures.
+
+    TODO: write/read_scalars, write/read_arrays instead of a 2D Array reader.
+
     # Errors
 
     Returns a [`WriteError`] when any of the following occur:
@@ -1458,17 +1463,33 @@ impl GsdFile {
             return Err(WriteError::InvalidDataLength(data.len(), columns));
         }
 
+        self.write_details(name, (data.len() / columns as usize) as u64,
+            columns,
+            T::gsd_data_type(),
+            |buffer: &mut Vec<u8>| {
+        for value in data {
+            value.append_ne_bytes(buffer);
+        }
+        })
+    }
+
+    /// Common code used in all write_ methods.
+    fn write_details<F>(
+        &mut self,
+        name: &str,
+        rows: u64,
+        columns: u32,
+        data_type: u8,
+        append: F
+    ) -> Result<(), WriteError>
+where
+F: FnOnce(&mut Vec<u8>)
+    {
+
         let id = self.get_id(name)?;
 
-        if !self.index.frame_names.insert(id) {
-            return Err(WriteError::DuplicateChunkName(
-                name.into(),
-                self.current_frame,
-            ));
-        }
-
         // write_array doesn't actually write any data to the file itself. For
-        // performance, it buffers all writes. Above, `add_name` appended any
+        // performance, it buffers all writes. Above, `get_id` appended any
         // new names to `self.name_list.buffer`. Now, `write_array` needs to
         // construct the index entry and put the bytes of the array in the data
         // buffer. `sync_all` will write the data buffer first, so all index
@@ -1476,13 +1497,20 @@ impl GsdFile {
         // file_len + currently buffered bytes.
         let index_entry = IndexEntry {
             frame: self.current_frame,
-            n: (data.len() / columns as usize) as u64,
+            n: rows,
             m: columns,
             location: self.file_len + self.data_buffer.len() as u64,
             id,
-            data_type: T::gsd_data_type(),
+            data_type,
             flags: 0,
         };
+
+        if !self.index.frame_names.insert(index_entry.id) {
+            return Err(WriteError::DuplicateChunkName(
+                name.into(),
+                self.current_frame,
+            ));
+        }
 
         self.index.buffer.push(index_entry);
         self.index.pending += 1;
@@ -1492,15 +1520,13 @@ impl GsdFile {
         // flushing the previous entries. That complicated the code and
         // required two index buffers that needed to be patched up.
         // This implementation always appends data to the write buffer
-        // (due to the append_ne_bytes call).
+        // (via the append call).
         //
         // The Rust implementation always writes full data chunks into the
         // buffer, but flushes the buffer first in, first out. That way, no
         // index entries need to be patched up. When the buffer is flushed here,
         // we do need to flag to `end_frame` that `sync_all` needs to be called.
-        for value in data {
-            value.append_ne_bytes(&mut self.data_buffer);
-        }
+        append(&mut self.data_buffer);
 
         if self.data_buffer.len() >= self.sync_threshold {
             self.flush_data()?;
@@ -1539,8 +1565,8 @@ impl GsdFile {
 
         if self.data_buffer.len() >= self.sync_threshold || self.data_buffer_flushed
         {
-            self.data_buffer_flushed = false;
             self.sync_all()?;
+            self.data_buffer_flushed = false;
         }
 
         Ok(())
@@ -1669,7 +1695,7 @@ impl GsdFile {
         // Write the data buffer to the file first. Should any error occur here,
         // the file might have some extra bytes at the end, but the index of
         // written data so far will be correct.
-        if self.flush_data()? {
+        if self.flush_data()? || self.data_buffer_flushed {
             need_remap = true;
             self.file.sync_all()?;
         }
@@ -1882,8 +1908,8 @@ mod tests {
         let mut gsd_file =
             GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
 
-        *gsd_file.sync_threshold_mut() = 40;
-        assert_eq!(gsd_file.sync_threshold(), 40);
+        *gsd_file.sync_threshold_mut() = 8;
+        assert_eq!(gsd_file.sync_threshold(), 8);
 
         let initial_size = gsd_file
             .file
@@ -2009,6 +2035,7 @@ mod tests {
         assert!(gsd_file.find_chunk(1, "h").is_some());
     }
 
+    #[expect(clippy::too_many_lines, reason = "There are many data types to test")]
     #[test]
     fn all_types() {
         let tmp_dir = tempdir().expect("temp dir should be created");
