@@ -170,6 +170,12 @@ pub trait Hyperboloid {
     */
     #[inline]
     fn distance_from_cusp(&self, skirt: f64) -> f64;
+    /** Projects points on the hyperboloid onto the Poincare disk/ball. Points on an N-dimensional
+     hyperboloid are projected through the tip of the cusp on the lower sheet onto 
+     the perpendicular plane. 
+    */
+    #[inline]
+    fn to_poincare(&self, skirt: f64) -> Vec<f64>;
 }
 
 /** Operations for the fundamental domain on a hyperboloid

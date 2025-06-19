@@ -12,7 +12,7 @@ use std::ops::{
 };
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform, Uniform};
-use libm::{acosh, acos, tanh, atanh};
+use libm::acosh;
 use std::f64::consts::PI;
 use hoomd_vector::Vector;
 
@@ -518,6 +518,31 @@ impl<const N: usize> Hyperboloid for Minkowski<N> {
     fn distance_from_cusp(&self, skirt: f64) -> f64 {
         skirt*acosh((self.coordinates[N-1])/skirt)
     }
+    /** Projects points on the hyperboloid onto the Poincare disk/ball.
+
+    # Example
+    ```
+    use libm::{sinh, cosh};
+    use hoomd_vector::Vector;
+    use hoomd_manifold::{Minkowski, Hyperboloid};
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let v : f64 = 1.098612;
+    let rho : f64 = 1.0;
+    let x = Minkowski::from([v.sinh(),0.0,v.cosh()]);
+    let projection = x.to_poincare(rho);
+    assert_eq!([(v.sinh())/(v.cosh() + 1.0), 0.0], [projection[0],projection[1]]);
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    fn to_poincare(&self, skirt: f64) -> Vec<f64> {
+        let t = 1.0/(self.coordinates[N-1]/skirt + 1.0);
+        (0..N-1).collect::<Vec<usize>>()
+        .iter().map(|i| self.coordinates[*i]*t).collect::<Vec<f64>>()
+    }
+    
 }
 
 impl FundamentalDomain for Minkowski<3> {
