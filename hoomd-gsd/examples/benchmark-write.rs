@@ -37,7 +37,7 @@ fn benchmark(buffer: usize, n_keys: usize, key_size: usize, file_size_mb: usize)
     let data: Vec<f64> = (0..key_size).map(|x| x as f64).collect();
     let names: Vec<String> = (0..n_keys).map(|k| format!("key {k}")).collect();
 
-    let mut gsd_file = GsdFile::create("test.gsd", "app", "schema", (1,0))?;
+    let mut gsd_file = GsdFile::create("test.gsd", "app", "schema", (0,0))?;
     *gsd_file.sync_threshold_mut() = buffer;
 
     let t1 = Instant::now();
