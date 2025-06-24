@@ -125,7 +125,7 @@ impl<const D: usize> CellList<D> {
     /** Create an empty cell list with the given cell width.
     This is useful for initializing a cell list
     that will be populated later.
-     
+
     # Example
     ```
     use hoomd_spatial::CellList;
@@ -262,10 +262,7 @@ impl<const D: usize> CellList<D> {
                 .entry(cell_idx)
                 .and_modify(|particle_indices| {
                     // Find the index of removed particle in the vector of particle indices.
-                    if let Some(idx) = particle_indices
-                        .iter()
-                        .position(|&x| x == particle_index)
-                    {
+                    if let Some(idx) = particle_indices.iter().position(|&x| x == particle_index) {
                         // Remove the particle index from the vector.
                         particle_indices.swap_remove(idx);
                     }
@@ -346,7 +343,7 @@ impl<const D: usize> CellList<D> {
     pub fn find_potential_neighbor_indices(
         &self,
         position: &Cartesian<D>,
-        cutoff_radius: &f64
+        cutoff_radius: &f64,
     ) -> Iter {
         // implement later
         // This function will find the potential neighbor indices for a given position
@@ -355,58 +352,58 @@ impl<const D: usize> CellList<D> {
         unimplemented!("find_potential_neighbor_indices is not yet implemented");
 
         // old code
-      //  // Plan: use logic similar to collect into
-      //  // return the result in neighbor indices -> probably first clear and then push
-      //  // Check if the neighbor_indices (output argument) goes first or last
-      //  // return potential index only - not actual neighbors.
-      //  let cell_idx = Self::cell_index_from_position(self.cell_width, position);
-      //  // clean neighbor_indices
-      //  potential_neighbor_indices.clear();
-      //  // calculate how many cell widths in ids need to be checked in each dimension,
-      //  // this is a single integer number
-      //  let max_cell_translations_to_check = (cutoff_radius / self.cell_width).ceil() as i32;
-      //  let max_offset = max_cell_translations_to_check;
+        //  // Plan: use logic similar to collect into
+        //  // return the result in neighbor indices -> probably first clear and then push
+        //  // Check if the neighbor_indices (output argument) goes first or last
+        //  // return potential index only - not actual neighbors.
+        //  let cell_idx = Self::cell_index_from_position(self.cell_width, position);
+        //  // clean neighbor_indices
+        //  potential_neighbor_indices.clear();
+        //  // calculate how many cell widths in ids need to be checked in each dimension,
+        //  // this is a single integer number
+        //  let max_cell_translations_to_check = (cutoff_radius / self.cell_width).ceil() as i32;
+        //  let max_offset = max_cell_translations_to_check;
 
-      //  let mut cells_translations_to_check: Vec<[i32; D]> = Vec::new();
+        //  let mut cells_translations_to_check: Vec<[i32; D]> = Vec::new();
 
-      //  // Define a recursive helper function to generate all translation combinations.
-      //  // For each dimension, it iterates from -max_offset to max_offset.
-      //  // TODO figure out if there is a better way to do this. Is there an itertools
-      //  // like functionality in std library? cartesian product?
-      //  fn generate_translations<const D: usize>(
-      //      dim: usize,
-      //      current: &mut Vec<i32>,
-      //      max_offset: i32,
-      //      translations: &mut Vec<[i32; D]>,
-      //  ) {
-      //      if dim == D {
-      //          // Convert the current vector to an array of length D.
-      //          let arr: [i32; D] = current.clone().try_into().expect("Incorrect length");
-      //          translations.push(arr);
-      //          return;
-      //      }
-      //      for offset in -max_offset..=max_offset {
-      //          current.push(offset);
-      //          generate_translations(dim + 1, current, max_offset, translations);
-      //          current.pop();
-      //      }
-      //  }
+        //  // Define a recursive helper function to generate all translation combinations.
+        //  // For each dimension, it iterates from -max_offset to max_offset.
+        //  // TODO figure out if there is a better way to do this. Is there an itertools
+        //  // like functionality in std library? cartesian product?
+        //  fn generate_translations<const D: usize>(
+        //      dim: usize,
+        //      current: &mut Vec<i32>,
+        //      max_offset: i32,
+        //      translations: &mut Vec<[i32; D]>,
+        //  ) {
+        //      if dim == D {
+        //          // Convert the current vector to an array of length D.
+        //          let arr: [i32; D] = current.clone().try_into().expect("Incorrect length");
+        //          translations.push(arr);
+        //          return;
+        //      }
+        //      for offset in -max_offset..=max_offset {
+        //          current.push(offset);
+        //          generate_translations(dim + 1, current, max_offset, translations);
+        //          current.pop();
+        //      }
+        //  }
 
-      //  let mut current = Vec::new();
-      //  generate_translations::<D>(
-      //      0,
-      //      &mut current,
-      //      max_offset,
-      //      &mut cells_translations_to_check,
-      //  );
+        //  let mut current = Vec::new();
+        //  generate_translations::<D>(
+        //      0,
+        //      &mut current,
+        //      max_offset,
+        //      &mut cells_translations_to_check,
+        //  );
 
-      //  // For each cell translation, compute the neighbor cell index and add any particle indices.
-      //  for cell_translation in cells_translations_to_check.iter() {
-      //      let neighbor_cell_idx = std::array::from_fn(|i| cell_idx[i] + cell_translation[i]);
-      //      if let Some(particle_indices) = self.particle_indices.get(&neighbor_cell_idx) {
-      //          potential_neighbor_indices.extend(particle_indices);
-      //      }
-      //  }
+        //  // For each cell translation, compute the neighbor cell index and add any particle indices.
+        //  for cell_translation in cells_translations_to_check.iter() {
+        //      let neighbor_cell_idx = std::array::from_fn(|i| cell_idx[i] + cell_translation[i]);
+        //      if let Some(particle_indices) = self.particle_indices.get(&neighbor_cell_idx) {
+        //          potential_neighbor_indices.extend(particle_indices);
+        //      }
+        //  }
     }
 }
 
@@ -578,8 +575,14 @@ mod tests {
             .particle_indices
             .get(cell_idx)
             .expect("The cell index should exist");
-        assert!(!particle_indices_in_cell.is_empty(), "Cell should not be empty");
-        assert!(particle_indices_in_cell.contains(&0), "Cell should contain the original particle");
+        assert!(
+            !particle_indices_in_cell.is_empty(),
+            "Cell should not be empty"
+        );
+        assert!(
+            particle_indices_in_cell.contains(&0),
+            "Cell should contain the original particle"
+        );
     }
 
     #[test]
@@ -612,10 +615,7 @@ mod tests {
         let cutoff_radius = 10.5;
 
         // Use p0 ([0.2, 0.3] falls in cell [0,0]) as the query position.
-        let it = cell_list.find_potential_neighbor_indices(
-            &p0,
-            &cutoff_radius,
-        );
+        let it = cell_list.find_potential_neighbor_indices(&p0, &cutoff_radius);
 
         // p0's index should appear.
         //assert!(potential_neighbor_indices.contains(&0));
