@@ -547,9 +547,7 @@ impl<const N: usize> Hyperboloid for Minkowski<N> {
 
 impl FundamentalDomain for Minkowski<3> {
     /** Computes the length of the geodesic passing between the cusp $(0,0,\rho)$ and the boundary 
-    of an octagon on a two-dimensional hyperboloid, as  In this case, the parameter tile_size gives the 
-    (geodesic) distance between the cusp and one of the vertices of the octagon. 
-
+    of the fundamental domain of the {8,8} tiling of hyperbolic space.
     # Example
     ```
     use libm::acosh;
@@ -558,20 +556,20 @@ impl FundamentalDomain for Minkowski<3> {
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let octagon_size : f64 = 4.2;
     let v : f64 = 4.2;
     let rho : f64 = 1.0;
     let theta: f64 = PI/4.0;
     let x = Minkowski::from([rho*(v.sinh())*(theta.cos()),rho*(v.sinh())*(theta.sin()),rho*(v.cosh())]);
-    // distance between x and the boundary is approximately 0
+    // x.distance_to_boundary(rho) is approximately 0
     # Ok(())
     # }
     ```
     */
     #[inline]
-    fn distance_to_boundary(&self, tile_size: f64, skirt: f64) -> f64 {
+    fn distance_to_boundary(&self, skirt: f64) -> f64 {
         let theta = (self.coordinates[0]/(self.coordinates[0].powi(2)+self.coordinates[1].powi(2)).sqrt()).acos();
         let angle = theta.rem_euclid(PI/4.0);
+        let tile_size = (2.0_f64).powf(-0.25);
         let eta = (tile_size.tanh()/(angle.cos() - angle.sin()*(1.0-(2.0_f64).sqrt()))).atanh();
         skirt*eta - self.distance_from_cusp(skirt)
     }

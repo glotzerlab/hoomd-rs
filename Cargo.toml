@@ -1,12 +1,12 @@
 [workspace]
 
 members = [
-  "hoomd-interaction", "hoomd-manifold",
+  "hoomd-interaction", 
+  "hoomd-manifold",
   "hoomd-mc",
   "hoomd-microstate",
   "hoomd-utility",
-  "hoomd-vector"
-]
+  "hoomd-vector",]
 
 resolver = "3"
 
@@ -23,6 +23,7 @@ categories = ["science"]
 [workspace.dependencies]
 # Subcrates
 hoomd-interaction = { path = "hoomd-interaction" }
+hoomd-manifold = { path = "hoomd-manifold" }
 hoomd-mc = { path = "hoomd-microstate" }
 hoomd-microstate = { path = "hoomd-microstate" }
 hoomd-utility = { path = "hoomd-utility" }

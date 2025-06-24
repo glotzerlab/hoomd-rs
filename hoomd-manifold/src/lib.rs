@@ -141,7 +141,7 @@ use hoomd_vector::{Vector, InnerProduct};
 
 // / Enumerate possible sources of error in fallible vector math operations.
 #[non_exhaustive]
-#[derive(Error, PartialEq, Debug)]
+#[derive(Error, PartialEq, Debug)] 
 pub enum Error {
     /// Attempted converting a biquaternion not belonging to the hyperboloid to a 4-vector
     #[error("Biquaternion does not fit required format of [re,re,re,im] to describe a 4-vector")]
@@ -185,7 +185,7 @@ pub trait FundamentalDomain: Hyperboloid {
     boundary of the fundamental domain.
     */
     #[inline]
-    fn distance_to_boundary(&self, tile_size: f64, skirt: f64) -> f64;
+    fn distance_to_boundary(&self, skirt: f64) -> f64;
 }
 
 /** Rotations in hyperbolic space
