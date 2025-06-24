@@ -414,24 +414,72 @@ impl<const D: usize> CellList<D> {
 mod tests {
     use super::*;
 
-//    // test builder pattern
-//    #[test]
-//    fn test_cell_list_builder() {
-//        let cell_width = 1.0;
-//        let positions = vec![
-//            Cartesian { coordinates: [0.2, 0.3] },
-//            Cartesian { coordinates: [1.2, 1.3] },
-//        ];
-//        let indices = vec![0, 1]; // Particle indices corresponding to positions.
-//
-//        let cell_list = CellList::<2>::builder()
-//            .with_positions_and_indices(&positions, &indices)
-//            .build();
-//
-//        assert_eq!(cell_list.cell_width, cell_width);
-//        assert_eq!(cell_list.particle_indices.len(), 2);
-//        assert_eq!(cell_list.cell_index.len(), 2);
-//    }
+    #[test]
+    fn builder_new_has_empty_state() {
+        let cell_width = 1.0;
+        let builder = CellList::<2>::builder(cell_width);
+        assert_eq!(builder.cell_width, cell_width); // from Default
+        assert!(builder.positions.is_empty());
+        assert!(builder.indices.is_empty());
+    }
+
+    #[test]
+    fn builder_with_positions_and_indices_works() {
+        let positions = vec![
+            Cartesian {
+                coordinates: [0.0, 0.0],
+            },
+            Cartesian {
+                coordinates: [1.0, 1.0],
+            },
+        ];
+        let indices = vec![0, 1];
+        let builder = CellList::<2>::builder(1.0).with_positions_and_indices(&positions, &indices);
+
+        assert_eq!(builder.positions, positions);
+        assert_eq!(builder.indices, indices);
+    }
+
+    #[test]
+    fn builder_build_creates_celllist() {
+        let positions = vec![
+            Cartesian {
+                coordinates: [0.5, 0.5],
+            },
+            Cartesian {
+                coordinates: [1.5, 1.5],
+            },
+        ];
+        let indices = vec![0, 1];
+
+        let cell_list = CellList::<2>::builder(1.0)
+            .with_positions_and_indices(&positions, &indices)
+            .build();
+
+        assert_eq!(cell_list.cell_width, 1.0);
+        assert_eq!(cell_list.cell_index.len(), 2);
+        assert_eq!(cell_list.particle_indices.len(), 2);
+    }
+
+    #[test]
+    fn builder_can_chain_methods() {
+        let cell_list = CellList::<2>::builder(1.0)
+            .with_positions_and_indices(
+                &vec![
+                    Cartesian {
+                        coordinates: [0.5, 0.5],
+                    },
+                    Cartesian {
+                        coordinates: [2.1, 2.9],
+                    },
+                ],
+                &vec![5, 9],
+            )
+            .build();
+
+        assert_eq!(cell_list.cell_index.get(&5).unwrap(), &[0, 0]);
+        assert_eq!(cell_list.cell_index.get(&9).unwrap(), &[2, 2]);
+    }
 
     #[test]
     fn test_add_particle() {
