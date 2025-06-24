@@ -131,8 +131,8 @@ mod hyperbolic_angle;
 mod biquaternion;
 
 pub use {
-    minkowski::{Minkowski, HyperbolicRotationMatrix},
-    hyperbolic_angle::{HyperbolicAngle, HyperbolicDisk},
+    minkowski::{Minkowski, HyperbolicRotationMatrix, HyperbolicDisk},
+    hyperbolic_angle::HyperbolicAngle,
     biquaternion::{Biquaternion, UnitBiquaternion},
 };
 

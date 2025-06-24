@@ -12,9 +12,10 @@ use std::ops::{
 };
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform, Uniform};
-use libm::acosh;
+use libm::{cosh, sinh, acos, acosh};
 use std::f64::consts::PI;
 use hoomd_vector::Vector;
+use hoomd_utility::valid::PositiveReal;
 
 use crate::{Error, Hyperboloid, HyperbolicRotate, FundamentalDomain};
 
@@ -496,7 +497,7 @@ impl<const N: usize> Hyperboloid for Minkowski<N> {
         let last_component = self.coordinates[N-1] * other.coordinates[N-1];
         let arg = zip(self.coordinates[0..N-1].iter(), other.coordinates[0..N-1].iter())
             .fold(last_component, |product, x| product - (x.0 * x.1));
-        skirt*acosh(arg/(skirt.powi(2)))
+        skirt * acosh(arg/(skirt.powi(2)))
     }
     /** Computes the length of the geodesic passing between the cusp $(0,\cdots,0,\rho)$ and a given
      point on the hyperboloid with a given skirt length.
@@ -518,7 +519,7 @@ impl<const N: usize> Hyperboloid for Minkowski<N> {
     */
     #[inline]
     fn distance_from_cusp(&self, skirt: f64) -> f64 {
-        skirt*acosh((self.coordinates[N-1])/skirt)
+        skirt * acosh((self.coordinates[N-1])/skirt)
     }
     /** Projects points on the hyperboloid onto the Poincare disk/ball.
 
@@ -571,9 +572,9 @@ impl FundamentalDomain for Minkowski<3> {
     fn distance_to_boundary(&self, skirt: f64) -> f64 {
         let theta = (self.coordinates[0]/(self.coordinates[0].powi(2)+self.coordinates[1].powi(2)).sqrt()).acos();
         let angle = theta.rem_euclid(PI/4.0);
-        let tile_size = (2.0_f64).powf(-0.25);
+        let tile_size = (2.0_f64).powf(-0.25) * skirt;
         let eta = (tile_size.tanh()/(angle.cos() - angle.sin()*(1.0-(2.0_f64).sqrt()))).atanh();
-        skirt*eta - self.distance_from_cusp(skirt)
+        skirt * eta - self.distance_from_cusp(skirt)
     }
 }
 
@@ -725,5 +726,69 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
         }
 
         Minkowski { coordinates }
+    }
+}
+
+/** A uniform distribution of points within distance r of a point on the 2-dimensional hyperboloid
+with a given skirt width. 
+# Example
+
+```
+use hoomd_manifold::{HyperbolicAngle, HyperbolicDisk, Minkowski, 
+                    HyperbolicRotationMatrix, HyperbolicRotate};
+use hoomd_vector::Vector;
+use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::distr::Distribution;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut rng = StdRng::seed_from_u64(12);
+
+// generate random point
+let v: HyperbolicAngle = rng.random();
+let matrix = HyperbolicRotationMatrix::from(v);
+let origin = Minkowski::from([0.0, 0.0, 1.0]);
+let random_point = matrix.hyperbolic_rotate(&origin);
+    
+// generate transformation which keeps the distance moved less than r = 0.1
+let r = 0.1;
+let mut rng_2 = StdRng::seed_from_u64(239);
+let disk = HyperbolicDisk {r: r.try_into()?, point: random_point, skirt: 1.0};
+let transformed_random_point: Minkowski<3> = disk.sample(&mut rng_2);
+
+assert!(r.powi(2) > random_point.distance_squared(&transformed_random_point));
+
+# Ok(())
+# }
+```
+*/
+pub struct HyperbolicDisk {
+    pub r: PositiveReal,
+    pub point: Minkowski<3>,
+    pub skirt: f64
+}
+
+impl Distribution<Minkowski<3>> for HyperbolicDisk {
+    /** Translates Minkowski 3-vector named "point" along the hyperboloid by maximum distance of r.
+    Note that because SO(2,1) is non-Abelian, the point must be transformed to the cusp before the 
+    trial move is applied (and then the point is transformed back). This ensures that the max distance 
+    translated by the trial move does not exceed r. 
+    */
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Minkowski<3> {
+        let rho = self.skirt;
+        let max_boost = (self.r.get())/rho;
+        let point = self.point;
+        let eta = (point.coordinates[2]/rho).acosh();
+        let phi = (point.coordinates[0]/(point.coordinates[0].powi(2)+point.coordinates[1].powi(2)).sqrt()).acos();
+        let trial_boost = Uniform::new(0.0, max_boost).expect("r is positive and real");
+        let trial_rotation = Uniform::new(0.0, 2.0 * PI).expect("hard-coded distribution should be valid");
+        let theta = trial_rotation.sample(rng);
+        let v: f64 = trial_boost.sample(rng);
+        let trial_coords = [rho * v.sinh() * theta.cos(),
+                            rho * v.sinh() * theta.sin(),
+                            rho * v.cosh()];
+        Minkowski::from([trial_coords[0]*(eta.cosh())*(phi.cos()) - trial_coords[1]*(phi.sin()) + trial_coords[2]*(eta.sinh())*(phi.cos()),
+                        trial_coords[0]*(eta.cosh())*(phi.sin()) + trial_coords[1]*(phi.cos()) + trial_coords[2]*(eta.sinh())*(phi.sin()),
+                        trial_coords[0]*(eta.sinh()) + trial_coords[2]*(eta.cosh())])
     }
 }

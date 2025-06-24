@@ -31,7 +31,7 @@ where
     */
     #[inline]
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B {
-        // temp code to avoid error message
+        //temp code
         body_properties
     }
 }
