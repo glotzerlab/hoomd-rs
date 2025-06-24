@@ -43,7 +43,7 @@ pub struct CellListBuilder<const D: usize> {
     pub indices: Vec<usize>,
 }
 
-impl<const D:usize> CellListBuilder<D>{
+impl<const D: usize> CellListBuilder<D> {
     pub fn new(cell_width: f64) -> Self {
         Self {
             cell_width,
@@ -60,22 +60,11 @@ impl<const D:usize> CellListBuilder<D>{
     ) -> Self {
         self.positions = positions.clone();
         self.indices = indices.clone();
+        self
     }
 
     pub fn build(self) -> CellList<D> {
         CellList::new(self.cell_width, &self.positions, &self.indices)
-    }
-}
-
-impl<const D: usize> Default for CellList<D> {
-    // TODO How to do this with D? Hashmap doesnt depend on D yet.
-    fn default() -> Self {
-        // Default cell width is 1.0, and empty particle indices and cell index maps.
-        CellList {
-            cell_width: 1.0,
-            particle_indices: HashMap::new(),
-            cell_index: HashMap::new(),
-        }
     }
 }
 
@@ -84,8 +73,8 @@ impl<const D: usize> Default for CellList<D> {
 impl<const D: usize> CellList<D> {
     /** Builder API helper function.
      */
-    pub fn builder() -> CellListBuilder<D>{
-        CellListBuilder::<D>::default()
+    pub fn builder(cell_width: f64) -> CellListBuilder<D> {
+        CellListBuilder::new(cell_width)
     }
 
     /** A helper function which converts given positions to cell indices.
@@ -119,8 +108,6 @@ impl<const D: usize> CellList<D> {
     */
     #[inline]
     #[must_use]
-    // TODO: Take a look into builder API and make positions optional. Keep new as is,
-    // and make a default without positions.
     pub fn new(cell_width: f64, positions: &[Cartesian<D>], indices: &[usize]) -> Self {
         let mut instance = Self {
             cell_width,
