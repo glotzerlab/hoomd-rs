@@ -8,6 +8,7 @@
 use num::complex::Complex;
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform, Uniform};
+use hoomd_utility::valid::PositiveReal;
 use std::fmt;
 use std::f64::consts::PI;
 
@@ -200,6 +201,60 @@ impl Distribution<HyperbolicAngle> for StandardUniform {
         let uniform_boost = Uniform::new(0.0, 1.0).expect("hard-coded distribution should be valid");
         let theta = uniform_angle.sample(rng);
         let v = uniform_boost.sample(rng);
+        let v_sqrt = (v as f64).sqrt();
+        HyperbolicAngle::from((theta + v*theta/12.0, 
+                            v_sqrt - theta.powi(2)*v_sqrt/12.0,
+                            theta*v_sqrt/2.0))
+    }
+}
+
+/** A uniform distribution of points inside a disk of radius r
+
+TODO: example, documentation about how this is sloppy
+# Example
+
+```
+use hoomd_manifold::{HyperbolicAngle, HyperbolicDisk, Minkowski, 
+                    HyperbolicRotationMatrix, HyperbolicRotate};
+use hoomd_vector::Vector;
+use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::distr::Distribution;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut rng = StdRng::seed_from_u64(416);
+
+// generate random point
+let v: HyperbolicAngle = rng.random();
+let matrix = HyperbolicRotationMatrix::from(v);
+let origin = Minkowski::from([0.0, 0.0, 1.0]);
+let random_point = matrix.hyperbolic_rotate(&origin);
+    
+// generate transformation which keeps the distance moved less than r = 0.05
+let r = 0.05;
+let mut rng_2 = StdRng::seed_from_u64(238);
+let disk = HyperbolicDisk {r: r.try_into()?};
+let translate_coords: HyperbolicAngle = disk.sample(&mut rng_2);
+let translation_matrix = HyperbolicRotationMatrix::from(translate_coords);
+
+let transformed_random_point = translation_matrix.hyperbolic_rotate(&random_point);
+
+// assert_eq!(0.05, random_point.distance_squared(&transformed_random_point));
+
+# Ok(())
+# }
+```
+*/
+pub struct HyperbolicDisk {
+    pub r: PositiveReal,
+}
+
+impl Distribution<HyperbolicAngle> for HyperbolicDisk {
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> HyperbolicAngle {
+        let r = self.r.get()/2.0;
+        let alpha = Uniform::new(0.0, r).expect("r is positive and real");
+        let theta = alpha.sample(rng);
+        let v = alpha.sample(rng);
         let v_sqrt = (v as f64).sqrt();
         HyperbolicAngle::from((theta + v*theta/12.0, 
                             v_sqrt - theta.powi(2)*v_sqrt/12.0,

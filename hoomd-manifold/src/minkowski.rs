@@ -82,7 +82,9 @@ assert_eq!(-3.0, x.distance_squared(&y));
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Minkowski<const N: usize> {
-    // The vector's coordinates
+    /** The vector's coordinates. The final component is the one associated with a minus sign (-)
+    in the metric
+    */
     pub coordinates: [f64; N],
 }
 

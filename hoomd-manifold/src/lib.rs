@@ -132,7 +132,7 @@ mod biquaternion;
 
 pub use {
     minkowski::{Minkowski, HyperbolicRotationMatrix},
-    hyperbolic_angle::HyperbolicAngle,
+    hyperbolic_angle::{HyperbolicAngle, HyperbolicDisk},
     biquaternion::{Biquaternion, UnitBiquaternion},
 };
 
@@ -191,7 +191,10 @@ pub trait FundamentalDomain: Hyperboloid {
 /** Rotations in hyperbolic space
  */
 pub trait HyperbolicRotate<V: Vector> {
+    /// Type of the related rotation matrix
     type Matrix: HyperbolicRotate<V>;
+    /** Apply a SO(N-1,1) transformation to an N-dimensional Minkowski vector
+    */
     #[must_use]
     fn hyperbolic_rotate(&self, vector: &V) -> V;
 }

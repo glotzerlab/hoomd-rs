@@ -369,6 +369,7 @@ dependencies = [
  "approx",
  "divan",
  "hoomd-interaction",
+ "hoomd-manifold",
  "hoomd-microstate",
  "hoomd-utility",
  "hoomd-vector",
