@@ -184,16 +184,16 @@ impl SquareMatrix<3> {
     }
 }
 
-/// An n-[`Hyperellipsoid`] defined by its semi-major axes.
+/// The geometry resulting from an N-Hypersphere that is scaled along N cartesion axes.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Hyperellipsoid<const N: usize> {
-    /// The principle semi-axes of the [`Hyperellipsoid`] along each direction.
+    /// The principle semi-axes of the [`Hyperellipsoid`] along each cartesian direction.
     pub axes: [f64; N],
 }
 
-/**An ellipse in two dimensions.*/
+/**An circle scaled along the x and y axes.*/
 pub type Ellipse = Hyperellipsoid<2>;
-/**An ellipsoid in three dimensions.*/
+/**A sphere scaled along the x, y, and z axes.*/
 pub type Ellipsoid = Hyperellipsoid<3>;
 
 impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperellipsoid<N> {
@@ -394,7 +394,7 @@ mod tests {
         );
     }
     #[rstest]
-    fn test_random_sphere_ellipse_overlaps() {
+    fn test_random_sphere_ellipse_overlap() {
         let mut rng = StdRng::seed_from_u64(2);
         for _ in 0..10_000 {
             let (a, c) = StdRng::random(&mut rng);
@@ -413,7 +413,7 @@ mod tests {
     }
 
     #[rstest]
-    fn test_random_ellipsoids() {
+    fn test_random_ellipsoids_overlap() {
         // Xenocollide precision becomes an issue! So only a few tests are possible
         // Inspecting failing cases in Ovito & HOOMD shows we are correct
         let mut rng = StdRng::seed_from_u64(2);

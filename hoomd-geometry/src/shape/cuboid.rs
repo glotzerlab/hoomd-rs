@@ -1,20 +1,22 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*!N-cuboids, which may or may not be treated as axis aligned.*/
+/*!
+asdfsadf TODO:
+
+*/
 use crate::{BoundingSphereRadius, SupportMapping, Volume};
 use hoomd_vector::Cartesian;
 use itertools::multizip;
 
-/** An axis-aligned N-cuboid.
-*/
+/// The faceted body defined by the Minkowski sum of `N` mutually perpendicular vectors.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Cuboid<const N: usize> {
     /// The lengths of each edge of the cuboid.
     pub edge_lengths: Cartesian<N>,
 }
 
-/**A rectangle defined by its two edge lengths.*/
+/// The Minkowski sum of the vectors `[0, edge_lengths[0]]` and `[edge_lengths[1], 0]`.
 pub type Rectangle = Cuboid<2>;
 
 impl Cuboid<3> {

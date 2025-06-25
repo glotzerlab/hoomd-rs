@@ -60,7 +60,7 @@ let q_id = Versor::default();
 assert_eq!(s0.intersects_at(&s1, &[1.9, 0.0, 0.0].into(), &q_id), true);
 assert_eq!(s0.intersects_at(&s1, &[2.1, 0.0, 0.0].into(), &q_id), false);
 
-// For more complex bodies, the `Convex` wrapper allows for robust overlap checks using xenocollide
+// For more complex bodies, the `Convex` wrapper uses Xenocollide to detect overlaps
 assert_eq!(Convex(s0).intersects_at(&Convex(s1), &[1.9, 0.0, 0.0].into(), &q_id), true);
 assert_eq!(Convex(s0).intersects_at(&Convex(s1), &[2.1, 0.0, 0.0].into(), &q_id), false);
 
