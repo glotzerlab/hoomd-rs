@@ -38,12 +38,12 @@ fn benchmark(buffer: usize, n_keys: usize, key_size: usize, file_size_mb: usize)
     let names: Vec<String> = (0..n_keys).map(|k| format!("key {k}")).collect();
 
     let mut gsd_file = GsdFile::create("test.gsd", "app", "schema", (0,0))?;
-    *gsd_file.sync_threshold_mut() = buffer;
+    *gsd_file.maximum_write_buffer_size_mut() = buffer;
 
     let t1 = Instant::now();
     for _ in 0..n_frames {
         for name in &names {
-            gsd_file.write_array(name, 1, &data)?;
+            gsd_file.write_scalars(name, &data)?;
             }
         gsd_file.end_frame()?;
         }

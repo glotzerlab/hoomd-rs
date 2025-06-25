@@ -147,14 +147,6 @@ pub enum ReadError {
 #[non_exhaustive]
 #[derive(Error, Debug)]
 pub enum WriteError {
-    /// Attempted to write 0 columns.
-    #[error("columns must be non-zero")]
-    InvalidColumns,
-
-    /// Attempted to write an array with an invalid length.
-    #[error("data length {0} is not a multiple of {1}")]
-    InvalidDataLength(usize, u32),
-
     /// Encountered an I/O error.
     #[error("I/O error while writing GSD file")]
     IO(#[from] io::Error),
@@ -215,7 +207,7 @@ GSD files store arrays of data of one of the following types:
 * [`f64`]
 
 The [`Type`] trait facilitates the generic methods [`GsdFile::read_array`] and
-[`GsdFile::write_array`]. When needed, pass the type explicitly to these methods
+[`GsdFile::write_scalars`]. When needed, pass the type explicitly to these methods
 to read or write data chunks of the given type. In some cases, the Rust compiler
 may be able to determine the type from context.
 
@@ -602,7 +594,7 @@ Pass an [`Mode`] value to [`GsdFile::open`].
 
 In the [`Mode::Read`] mode, you can call methods that read the file, such as
 [`GsdFile::find_chunk`] and [`GsdFile::read_array`]. Calling methods that write
-the file, such as [`GsdFile::write_array`] or [`GsdFile::sync_all`] will result
+the file, such as [`GsdFile::write_scalars`] or [`GsdFile::sync_all`] will result
 in an error.
 
 In the [`Mode::Write`] mode, you can call both read and write methods.
@@ -1425,10 +1417,9 @@ impl GsdFile {
 
     /** Append data to the current frame.
 
-    `write_array` writes two-dimensional array data to a named chunk in the
+    `write_scalars` writes one-dimensional array data to a named chunk in the
     current frame of the GSD file. Call [`end_frame`](GsdFile::end_frame) to
     complete the frame and start the next.
-
 
     <div class="warning">
 
@@ -1450,26 +1441,26 @@ impl GsdFile {
     * The `data` length is not an integer multiple of `columns`.
     * A chunk with the same name has already been written in this frame.
     */
-    pub fn write_array<T: Type>(
+    pub fn write_scalars<'a, T, I>(
         &mut self,
         name: &str,
-        columns: u32,
-        data: &[T],
-    ) -> Result<(), WriteError> {
+        data: I,
+    ) -> Result<(), WriteError>
+where
+T: Type + 'a,
+I: IntoIterator<Item = &'a T>,
+I::IntoIter: ExactSizeIterator,
+    {
         if self.mode != Mode::Write {
             return Err(WriteError::NotWritable);
         }
 
-        if columns == 0 {
-            return Err(WriteError::InvalidColumns);
-        }
+        // This is required for the function to accept arguments types such as
+        // &Vec<T>: https://github.com/rust-lang/rust/issues/77214
+        let data = data.into_iter();
 
-        if data.len() % (columns as usize) != 0 {
-            return Err(WriteError::InvalidDataLength(data.len(), columns));
-        }
-
-        self.write_details(name, (data.len() / columns as usize) as u64,
-            columns,
+        self.write_details(name, data.len() as u64,
+            1,
             T::gsd_data_type(),
             |buffer: &mut Vec<u8>| {
         for value in data {
@@ -1493,9 +1484,9 @@ F: FnOnce(&mut Vec<u8>)
 
         let id = self.get_id(name)?;
 
-        // write_array doesn't actually write any data to the file itself. For
+        // write_scalars doesn't actually write any data to the file itself. For
         // performance, it buffers all writes. Above, `get_id` appended any
-        // new names to `self.name_list.buffer`. Now, `write_array` needs to
+        // new names to `self.name_list.buffer`. Now, `write_scalars` needs to
         // construct the index entry and put the bytes of the array in the data
         // buffer. `sync_all` will write the data buffer first, so all index
         // entries can be constructed with the known location:
@@ -1660,10 +1651,10 @@ F: FnOnce(&mut Vec<u8>)
     `sync_all` ensures that the data and indices for all complete frames is
     written to the filesystem. For example (TODO: a proper example):
     ```
-    file.write_array(...)?;
-    file.write_array(...)?;
+    file.write_scalars(...)?;
+    file.write_scalars(...)?;
     file.end_frame()?;
-    file.write_array(...)?;
+    file.write_scalars(...)?;
     ```
     In this example, the `sync_all` would write the data for the first two
     arrays, but not the third. The reason is to ensure that all GSD files
@@ -1917,7 +1908,7 @@ mod tests {
         assert_eq!(initial_size, gsd_file.file_len);
 
         gsd_file
-            .write_array::<u64>("a", 1, &[1])
+            .write_scalars::<u64, _>("a", &[1])
             .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
 
@@ -1944,7 +1935,7 @@ mod tests {
             .len();
 
         gsd_file
-            .write_array::<u64>("a", 1, &[1])
+            .write_scalars::<u64, _>("a", &[1])
             .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
 
@@ -1974,33 +1965,33 @@ mod tests {
             GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
 
         gsd_file
-            .write_array::<u64>("a", 1, &[1])
+            .write_scalars("a", &[1])
             .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
 
         gsd_file
-            .write_array::<u64>("a", 1, &[1])
+            .write_scalars("a", &[1])
             .expect("write should succeed");
         gsd_file
-            .write_array::<u64>("b", 1, &[2])
+            .write_scalars("b", &[2])
             .expect("write should succeed");
         gsd_file
-            .write_array::<u64>("c", 1, &[3])
+            .write_scalars("c", &[3])
             .expect("write should succeed");
         gsd_file
-            .write_array::<u64>("d", 1, &[4])
+            .write_scalars("d", &[4])
             .expect("write should succeed");
         gsd_file
-            .write_array::<u64>("e", 1, &[5])
+            .write_scalars("e", &[5])
             .expect("write should succeed");
         gsd_file
-            .write_array::<u64>("f", 1, &[6])
+            .write_scalars("f", &[6])
             .expect("write should succeed");
         gsd_file
-            .write_array::<u64>("g", 1, &[7])
+            .write_scalars("g", &[7])
             .expect("write should succeed");
         gsd_file
-            .write_array::<u64>("h", 1, &[8])
+            .write_scalars("h", &[8])
             .expect("write should succeed");
 
         assert_eq!(gsd_file.n_frames(), 0);
@@ -2057,34 +2048,34 @@ mod tests {
         // TODO: String
 
         gsd_file
-            .write_array::<u8>("u8", 1, &u8_data)
+            .write_scalars("u8", &u8_data)
             .expect("write should succeed");
         gsd_file
-            .write_array::<u16>("u16", 1, &u16_data)
+            .write_scalars("u16", &u16_data)
             .expect("write should succeed");
         gsd_file
-            .write_array::<u32>("u32", 1, &u32_data)
+            .write_scalars("u32", &u32_data)
             .expect("write should succeed");
         gsd_file
-            .write_array::<u64>("u64", 1, &u64_data)
+            .write_scalars("u64", &u64_data)
             .expect("write should succeed");
         gsd_file
-            .write_array::<i8>("i8", 1, &i8_data)
+            .write_scalars("i8", &i8_data)
             .expect("write should succeed");
         gsd_file
-            .write_array::<i16>("i16", 1, &i16_data)
+            .write_scalars("i16", &i16_data)
             .expect("write should succeed");
         gsd_file
-            .write_array::<i32>("i32", 1, &i32_data)
+            .write_scalars("i32", &i32_data)
             .expect("write should succeed");
         gsd_file
-            .write_array::<i64>("i64", 1, &i64_data)
+            .write_scalars("i64", &i64_data)
             .expect("write should succeed");
         gsd_file
-            .write_array::<f32>("f32", 1, &f32_data)
+            .write_scalars("f32", &f32_data)
             .expect("write should succeed");
         gsd_file
-            .write_array::<f64>("f64", 1, &f64_data)
+            .write_scalars("f64", &f64_data)
             .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
         drop(gsd_file);
@@ -2262,14 +2253,16 @@ mod tests {
             .len();
 
         gsd_file
-            .write_array::<u64>("a", 1, &[])
+            .write_scalars::<u64, _>("a", [])
             .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
         gsd_file
-            .write_array::<u64>("b", 1, &[1, 2, 3, 4, 5, 6])
+            .write_scalars::<u64, _>("b", &[1, 2, 3, 4, 5, 6])
             .expect("write should succeed");
+
+        // TODO: Write_arrays 
         gsd_file
-            .write_array::<u64>("c", 3, &[1, 2, 3, 4, 5, 6])
+            .write_scalars::<u64, _>("c", &[1, 2, 3, 4, 5, 6])
             .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
 
@@ -2329,20 +2322,11 @@ mod tests {
     fn invalid_writes() {
         let tmp_dir = tempdir().expect("temp dir should be created");
         let path = tmp_dir.path().join("test.gsd");
-        let mut gsd_file =
-            GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
-
-        let result = gsd_file.write_array::<u64>("a", 0, &[]);
-        assert!(matches!(result, Err(WriteError::InvalidColumns)));
-
-        let result = gsd_file.write_array::<u64>("a", 3, &[1, 2, 3, 4]);
-        assert!(matches!(result, Err(WriteError::InvalidDataLength(_, _))));
-
-        drop(gsd_file);
+        let _ =  GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
         let mut gsd_file =
             GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
 
-        let result = gsd_file.write_array::<u64>("a", 1, &[]);
+        let result = gsd_file.write_scalars::<u64, _>("a", []);
         assert!(matches!(result, Err(WriteError::NotWritable)));
 
         let result = gsd_file.end_frame();
@@ -2360,9 +2344,9 @@ mod tests {
             GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
 
         gsd_file
-            .write_array::<u64>("a", 1, &[1])
+            .write_scalars("a", &[1])
             .expect("write should succeed");
-        let result = gsd_file.write_array::<u64>("a", 2, &[1, 2]);
+        let result = gsd_file.write_scalars("a", &[1, 2]);
         assert!(matches!(result, Err(WriteError::DuplicateChunkName(_, _))));
     }
 
@@ -2374,7 +2358,7 @@ mod tests {
             GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
 
         gsd_file
-            .write_array::<u64>("a", 1, &[1])
+            .write_scalars("a", &[1])
             .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
         gsd_file.sync_all().expect("write should succeed");
@@ -2398,12 +2382,12 @@ mod tests {
 
         for i in 0..u16::MAX {
             gsd_file
-                .write_array::<u64>(&format!("{i:x}"), 1, &[])
+                .write_scalars::<u64, _>(&format!("{i:x}"), [])
                 .expect("write should succeed");
         }
 
         let i = u16::MAX;
-        let result = gsd_file.write_array::<u64>(&format!("{i:x}"), 1, &[]);
+        let result = gsd_file.write_scalars::<u64, _>(&format!("{i:x}"), []);
         assert!(matches!(result, Err(WriteError::NameListOverflow)));
 
         drop(gsd_file);
@@ -2435,7 +2419,7 @@ mod tests {
 
         for i in 0..N_ENTRIES {
             gsd_file
-                .write_array::<u16>(&format!("{i:x}"), 1, &[i])
+                .write_scalars::<u16, _>(&format!("{i:x}"), &[i])
                 .expect("write should succeed");
         }
         gsd_file.end_frame().expect("write should succeed");

@@ -16,14 +16,14 @@ fn main() -> anyhow::Result<()> {
     let mut file2 = GsdFile::create("test2.gsd", "app", "schema", (1,0))?;
     println!("{:?}", file2);
 
-    file2.write_array::<f32>("a", 1, &[1.0, 2.0, 3.0])?;
-    file2.write_array::<f32>("b", 3, &[1.0, 2.0, 3.0])?;
+    file2.write_scalars::<f32, _>("a", &[1.0, 2.0, 3.0])?;
+    file2.write_scalars::<f32, _>("b", &[1.0, 2.0, 3.0])?;
     file2.end_frame()?;
-    file2.write_array::<f32>("b", 1, &[2.0, 4.0, 6.0])?;
-    file2.write_array::<f32>("a", 3, &[2.0, 4.0, 3.0])?;
+    file2.write_scalars::<f32, _>("b", &[2.0, 4.0, 6.0])?;
+    file2.write_scalars::<f32, _>("a", &[2.0, 4.0, 3.0])?;
     file2.end_frame()?;
-    file2.write_array::<f32>("b", 1, &[2.0, 4.0, 6.0])?;
-    file2.write_array::<f32>("a", 3, &[2.0, 4.0, 3.0])?;
+    file2.write_scalars::<f32, _>("b", &[2.0, 4.0, 6.0])?;
+    file2.write_scalars::<f32, _>("a", &[2.0, 4.0, 3.0])?;
     file2.end_frame()?;
     
     println!("{:?}", file2);
