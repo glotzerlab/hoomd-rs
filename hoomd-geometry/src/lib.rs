@@ -15,9 +15,9 @@ additional functionality to accommodate hard-particle Monte Carlo simulations.
 
 ## Geometric Primitives
 
-The [`Hypersphere`] is an excellent example of the design philosophy of `hoomd_geometry`. The
+The [`Hypersphere`][crate::shape::Hypersphere] is an excellent example of the design philosophy of `hoomd_geometry`. The
 struct is initialized from a single radius value, and immediately provides access to
-a variety of methods. [`Hypersphere`]s are well defined in arbitrary dimension, and therefore
+a variety of methods. [`Hypersphere`][crate::shape::Hypersphere]s are well defined in arbitrary dimension, and therefore
 are parameterized with a const generic `N` representing the embedding dimension.
 
 ```
@@ -29,18 +29,6 @@ const N: usize = 3;
 let s = Hypersphere::<N>::from_radius(1.0);
 assert_relative_eq!(s.volume(), (4.0/3.0 * PI));
 ```
-
-Common properties are implemented in the [`Shape`] trait, which provides the `Volume`
-compute from the previous example. [`Shape`] also implements `bounding_sphere`, which
-represents a tight-fitting (but not necessarily minimal) bounding sphere. For a sphere,
-of course, this implementation is trivial.
-
-In general, the [`Shape`] trait is designed to include commonly-used methods that are
-relatively easy to implement for arbitrary shapes. More complicated properties are
-included in additional methods, including [`IntersectsAt`], [`MinDistance`], and
-[`SupportMapping`].
-
-Traits for determining the intersection between various bodies.
 
 [`IntersectsAt`] allows for the calculation of intersections between two bodies without a built-in origin. This definition is compatible with HPMC and allows for the method's definition without requiring internal state regarding
 the position or orientation of each body.
@@ -88,11 +76,11 @@ pub trait Volume {
 }
 
 /**
-Definitions of the minimum distance between two `Shape`s. Will be zero if points are on
+Definitions of the minimum distance between two shapes. Will be zero if points are on
 a boundary (within floating-point precision) and negative if the shapes are overlapping.
 */
 pub trait MinDistance<const N: usize, V, R, S> {
-    /// Minimum distance between two `Shape`s in `N` dimensions
+    /// Minimum distance between two shapes in `N` dimensions
     fn min_distance(&self, other: &S, v_ij: &V, o_ij: R) -> f64;
 }
 
@@ -119,7 +107,7 @@ pub trait IntersectsAt<S, V, R> {
 Radius of an N-dimensional hypersphere that tightly bounds a shape.
  */
 pub trait BoundingSphereRadius {
-    /// A reasonably tight-fitting bounding Hypersphere radius for a shape.
+    /// A reasonably tight-fitting bounding [`Hypersphere`][crate::shape::Hypersphere] radius for a shape.
     fn bounding_sphere_radius(&self) -> f64;
 }
 

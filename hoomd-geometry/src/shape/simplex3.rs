@@ -11,8 +11,8 @@ use itertools::Itertools;
 
 use crate::{IntersectsAt, SupportMapping};
 
-/// The simplest faceted three-dimensional geometry. This struct has a wide range of defined
-/// functionality and is useful as a primitive in a variety of contexts.
+/** The convex hull of any 4 noncomplanar points in three dimensions.
+*/
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Simplex3 {
     /// Vertices of the simplex

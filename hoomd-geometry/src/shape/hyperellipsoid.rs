@@ -70,11 +70,7 @@ impl<const N: usize> Default for SquareMatrix<N> {
 }
 
 impl<const N: usize> SquareMatrix<N> {
-    /// Extract the diagonal elements of the matrix
-    #[inline]
-    fn diag(&self) -> [f64; N] {
-        std::array::from_fn(|i| self.rows[i][i])
-    }
+    /// Compute a full NxN matrix from N diagonal elements, setting all others to 0.
     #[inline]
     fn from_diag(other: &[f64; N]) -> Self {
         SquareMatrix {
@@ -96,13 +92,6 @@ impl<const N: usize> SquareMatrix<N> {
         Self { rows }
     }
 
-    /// Transpose the matrix
-    #[inline]
-    fn transpose(&self) -> Self {
-        Self {
-            rows: std::array::from_fn(|i| std::array::from_fn::<_, N, _>(|j| self.rows[j][i])),
-        }
-    }
     /// (Naive) Matrix multiplication of two square matrixes
     #[inline]
     fn matmul(&self, other: &Self) -> Self {
@@ -119,7 +108,7 @@ impl<const N: usize> SquareMatrix<N> {
 
         result
     }
-    /// TODO
+    /// Solve the quadratic form for a pair of 2x2 matrices.
     #[inline]
     fn compute_quadratic_form(&self, other: &[f64; N]) -> f64 {
         let mut result = 0.0;
@@ -156,12 +145,12 @@ impl<const N: usize> Add<Self> for SquareMatrix<N> {
 }
 
 impl SquareMatrix<2> {
-    /// TODO
+    /// The determinant of a 2x2 square matrix.
     #[inline]
     fn det(&self) -> f64 {
         self.rows[0][0] * self.rows[1][1] - self.rows[1][0] * self.rows[0][1]
     }
-    /// TODO
+    /// The inverse of a 2x2 square matrix.
     #[inline]
     fn inverse(&self) -> Self {
         let inv_det = self.det().recip();
@@ -171,16 +160,6 @@ impl SquareMatrix<2> {
                 [inv_det * -self.rows[1][0], inv_det * self.rows[0][0]],
             ],
         }
-    }
-}
-impl SquareMatrix<3> {
-    /// TODO
-    #[inline]
-    fn det(&self) -> f64 {
-        let m = &self.rows;
-        m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
-            - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
-            + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0])
     }
 }
 

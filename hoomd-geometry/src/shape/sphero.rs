@@ -10,7 +10,7 @@ use hoomd_vector::Vector;
 
 [`Sphero`] modifies a given shape by sweeping it with a hypersphere of the given
 radius. The resulting [`Sphero<S>`] type is a shape itself. If `S` implements
-[`SupportMapping`], then [`Sphero<S>`] can be used in [`IntersectsAt`] tests with
+[`crate::SupportMapping`], then [`Sphero<S>`] can be used in [`IntersectsAt`][crate::IntersectsAt] tests with
 other convex shapes. See the full list of implementations below to see what other
 traits [`Sphero<S>`] implements for a given `S`.
 

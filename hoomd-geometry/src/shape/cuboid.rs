@@ -3,13 +3,46 @@
 
 /*!
 asdfsadf TODO:
+asdf asdf asdf
 
 */
 use crate::{BoundingSphereRadius, SupportMapping, Volume};
 use hoomd_vector::Cartesian;
 use itertools::multizip;
 
-/// The faceted body defined by the Minkowski sum of `N` mutually perpendicular vectors.
+/** The Minkowski sum of `N` mutually perpendicular vectors `[0... edge_lengths[i] ...0]`.
+
+A Cuboid is the N-dimensional analog of a rectangle, and is defined by its edge lengths.
+
+# Example
+
+```rust
+use hoomd_geometry::shape::Cuboid;
+use hoomd_geometry::Volume;
+
+let unit_cube = Cuboid {edge_lengths: [1.0; 3].into()};
+assert_eq!(unit_cube.volume(), 1.0);
+
+// Elongated along the z axis
+let rectangular_prism = Cuboid {edge_lengths: [1.0, 1.0, 9.0].into()};
+assert_eq!(rectangular_prism.volume(), 9.0);
+
+
+// Perform a fast AABB intersection test:
+assert_eq!(unit_cube.intersects_aligned(&rectangular_prism, &[1.0; 3].into()), true);
+assert_eq!(unit_cube.intersects_aligned(&rectangular_prism, &[1.1; 3].into()), false);
+
+// For other spatial queries, Cuboids provide their maximal and minimal extents:
+let min_extents = unit_cube.minimal_extents();
+let max_extents = unit_cube.maximal_extents();
+assert_eq!(min_extents, -max_extents);
+assert_eq!(max_extents, [0.5; 3].into());
+
+// The extent along the z-axis is different for the two example cuboids
+assert_ne!(min_extents[2], rectangular_prism.minimal_extents()[2]);
+
+```
+*/
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Cuboid<const N: usize> {
     /// The lengths of each edge of the cuboid.
@@ -38,11 +71,14 @@ impl Cuboid<3> {
     pub fn c(&self) -> f64 {
         self.edge_lengths[2]
     }
-    // TODO: inherent implementation for intersects_aligned
 }
 
 impl<const N: usize> Cuboid<N> {
-    /// Compute the intersection between two *axis-aligned* cuboids.
+    /** Compute the intersection between two *axis-aligned* cuboids.
+
+    This test is much faster than a general oriented cuboid (OBB) intersection, which
+    can be achieved by wrapping with the [`crate::Convex`] newtype.
+    */
     #[must_use]
     #[inline]
     pub fn intersects_aligned(&self, other: &Cuboid<N>, v_ij: &Cartesian<N>) -> bool {
