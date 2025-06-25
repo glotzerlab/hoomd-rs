@@ -13,11 +13,11 @@ use std::ops::{
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform, Uniform};
 
-use crate::{Cross, Error, Rotate, Unit, Vector};
+use crate::{Cross, Error, InnerProduct, Rotate, Unit, Vector};
 
 /** A [`Vector`] represented by `N` `f64` coordinates.
 
-[`Cartesian`] is the canonical implementation of [`Vector`].
+[`Cartesian`] is the canonical implementation of [`InnerProduct`].
 
 ## Constructing vectors
 
@@ -61,7 +61,7 @@ let v: Cartesian::<3> = rng.random();
 
 Use vector math operations when you can:
 ```
-use hoomd_vector::{Cartesian, Vector};
+use hoomd_vector::{Cartesian, InnerProduct};
 
 let a = Cartesian::from([1.0, 2.0]);
 let b = Cartesian::from([4.0, 8.0]);
@@ -244,11 +244,36 @@ impl<const N: usize> TryFrom<[f64; N]> for Unit<Cartesian<N>> {
     }
 }
 
-impl<const N: usize> Vector for Cartesian<N> {
+impl<const N: usize> InnerProduct for Cartesian<N> {
     #[inline]
     fn dot(&self, other: &Self) -> f64 {
         zip(self.coordinates.iter(), other.coordinates.iter())
             .fold(0.0, |product, (&x, &y)| x.mul_add(y, product))
+    }
+}
+
+impl<const N: usize> Vector for Cartesian<N> {
+    /** Computes the squared distance between two points in Euclidean space.
+    ```math
+    d^2(\vec{x},\vec{y}) = \sum_{i=1}^{N} (x_i - y_i)^2
+    ```
+
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, Vector};
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let x = Cartesian::from([0.0, 1.0, 1.0]);
+    let y = Cartesian::from([1.0, 0.0, 0.0]);
+    assert_eq!(3.0, x.distance_squared(&y));
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    fn distance_squared(&self, other: &Self) -> f64 {
+        zip(self.coordinates.iter(), other.coordinates.iter())
+            .fold(0.0, |product, x| product + (x.0 - x.1).powi(2))
     }
 }
 
