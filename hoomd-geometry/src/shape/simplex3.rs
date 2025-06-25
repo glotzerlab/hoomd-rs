@@ -9,9 +9,66 @@ use std::{array, fmt};
 use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, RotationMatrix};
 use itertools::Itertools;
 
-use crate::{IntersectsAt, SupportMapping};
+use crate::{IntersectsAt, SupportMapping, Volume};
 
-/** The convex hull of any 4 noncoplanar points in three dimensions.
+/** The hull of any 4 noncoplanar points in three dimensions.
+
+# Example
+
+A [`Simplex3`], or equivalently a (nonuniform) tetrahedron, is the simplest faceted
+three-dimensional geometry. Because a simplex has an intrinsice idea of its position in
+space (defined by its barycenter), this struct provides implementations for spatial
+translation and a center of mass.
+
+```rust
+use hoomd_geometry::shape::Simplex3;
+use hoomd_geometry::{Volume, IntersectsAt};
+use hoomd_vector::{Cartesian, Rotation, Versor};
+
+// A uniform tetrahedron with edge length 2*sqrt(2), centered at the origin
+// Vertices are defined by 3-length positive-signed permutations of [1,-1]
+let tet = Simplex3::default();
+
+assert_eq!(tet.vertices()[0], [1.0; 3].into());
+assert_eq!(tet.centroid(), [0.0; 3].into());
+
+// The tetrahedron's volume can be rapidly calculated. The default tetrahedron has V=8/3
+assert_eq!(tet.volume(), 8.0/3.0);
+
+// Edge vectors are also provided, in the order [[1,0], [2,0], [3,0], [2,1], [3,1]]
+assert_eq!(tet.get_edge_vectors()[0], tet.vertices()[1]-tet.vertices()[0]);
+
+```
+
+[`Simplex3`] instances support a fast intersection detection algorithm
+
+```rust
+# use hoomd_geometry::{shape::Simplex3, IntersectsAt};
+# use hoomd_vector::{Cartesian, Rotation, Versor};
+# let tet = Simplex3::default();
+let other_tet = Simplex3::default();
+let displacement = [2.0, 2.0, 0.0].into();
+let q_ij = Versor::identity();
+
+// Exactly align the tips of two tetrahedra
+assert_eq!(tet.intersects_at(&other_tet, &displacement, &q_ij), true);
+
+// Translate the tetrahedra slightly further apart, separating them
+assert_eq!(tet.intersects_at(&other_tet, &[2.001, 2.0, 0.0].into(), &q_ij), false);
+```
+
+Although generally advised, Simplex3 tetrahedra are not required to be convex
+```rust
+# use hoomd_geometry::{shape::Simplex3, Volume};
+# use hoomd_vector::Cartesian;
+let planar_tetrahedron = Simplex3::from(
+    [[0.0;3], [0.0;3], [1.0,0.0,0.0], [0.0,1.0,0.0]].map(Cartesian::from)
+);
+
+assert_eq!(planar_tetrahedron.volume(), 0.0);
+assert_eq!(planar_tetrahedron.centroid(), [1.0, 1.0, 0.0].into()); // Lies in the xy plane
+```
+
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Simplex3 {
@@ -32,6 +89,18 @@ impl SupportMapping<Cartesian<3>> for Simplex3 {
             // position_max_by consumes ~9% of Xenocollide runtime!
             .position_max_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal))
             .expect("Took dot product with NaN!")]
+    }
+}
+
+impl Volume for Simplex3 {
+    #[inline]
+    fn volume(&self) -> f64 {
+        let (ba, ca, da) = (
+            self.b() - self.a(),
+            self.c() - self.a(),
+            self.d() - self.a(),
+        );
+        1.0 / 6.0 * da.dot(&ba.cross(&ca)).abs()
     }
 }
 
@@ -759,5 +828,11 @@ mod tests {
             result, overlaps,
             "Method `{method}` gave wrong overlap result.",
         );
+    }
+
+    #[rstest]
+    fn test_tetrahedron_volume() {
+        let p = Simplex3::default();
+        assert_eq!(p.volume(), 8.0 / 3.0);
     }
 }
