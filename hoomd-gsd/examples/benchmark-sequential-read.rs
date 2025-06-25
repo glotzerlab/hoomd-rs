@@ -5,7 +5,7 @@ use hoomd_gsd::file_layer::{GsdFile, Mode};
 use std::time::Instant;
 
 fn main() -> Result<(), anyhow::Error> {
-    let n_keys = 2048;
+    let n_keys = 2;
     let max_frames = 100;
 
     let names: Vec<String> = (0..n_keys).map(|k| format!("key {k}")).collect();
@@ -22,8 +22,9 @@ fn main() -> Result<(), anyhow::Error> {
     let mut total_bytes = 0;
     for frame in 0..n_frames_read {
         for name in &names {
-            let array = gsd_file.read_array::<f64>(frame, name)?;
-            total_bytes += array.data.len() * size_of::<f64>();
+            #[expect(clippy::needless_collect, reason = "to measure the time it takes to read the whole array")]
+            let array = gsd_file.iter_scalars::<f64>(frame, name)?.collect::<Vec<_>>();
+            total_bytes += array.len() * size_of::<f64>();
             }
         }
     let read_sec = read_time.elapsed().as_secs_f64();

@@ -206,10 +206,11 @@ GSD files store arrays of data of one of the following types:
 * [`f32`]
 * [`f64`]
 
-The [`Type`] trait facilitates the generic methods [`GsdFile::read_array`] and
-[`GsdFile::write_scalars`]. When needed, pass the type explicitly to these methods
-to read or write data chunks of the given type. In some cases, the Rust compiler
-may be able to determine the type from context.
+The [`Type`] trait facilitates the generic methods including
+[`GsdFile::iter_scalars`], [`GsdFile::write_scalars`], and others. When needed,
+pass the type explicitly to these methods to read or write data chunks of the
+given type. In some cases, the Rust compiler may be able to determine the type
+from context.
 
 # Examples
 
@@ -511,9 +512,9 @@ pub struct GsdFile {
 /** Properties that describe a given data chunk.
 
     GSD files store a set of arrays, uniquely identified by their *name* and
-    *frame*. The [`GsdFile::find_chunk`] and [`GsdFile::read_array`] methods
-    search for a matching index entry. The returned [`IndexEntry`] (if present)
-    also carries information about the dimension and type of the array.
+    *frame*. The [`GsdFile::find_chunk`] method search for a matching index
+    entry. The returned [`IndexEntry`] (if present) also carries information
+    about the dimension and type of the array.
 */
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct IndexEntry {
@@ -537,24 +538,6 @@ pub struct IndexEntry {
 
     /// Flags (unused)
     flags: u8,
-}
-
-/** Two-dimensional row-major contiguous data structure.
-
-GSD stores all data in named chunks that contain two-dimensional contiguous
-arrays in row-major order. [`GsdFile::read_array`] returns an [`Array`]
-that includes both the data and the dimensions.
-*/
-#[derive(Clone, Debug, PartialEq)]
-pub struct Array<T> {
-    /// Contents.
-    pub data: Vec<T>,
-
-    /// Number of rows in the array.
-    pub rows: u64,
-
-    /// Number of columns in the array.
-    pub columns: u32,
 }
 
 /** Data types that can be stored in chunks.
@@ -593,7 +576,7 @@ pub enum DataType {
 Pass an [`Mode`] value to [`GsdFile::open`].
 
 In the [`Mode::Read`] mode, you can call methods that read the file, such as
-[`GsdFile::find_chunk`] and [`GsdFile::read_array`]. Calling methods that write
+[`GsdFile::find_chunk`] and [`GsdFile::iter_scalars`]. Calling methods that write
 the file, such as [`GsdFile::write_scalars`] or [`GsdFile::sync_all`] will result
 in an error.
 
@@ -1323,17 +1306,17 @@ impl GsdFile {
         None
     }
 
-    /** Read an array chunk.
+    /** Iterate over an array of scalars in the given frame.
 
-    Returns [`Ok(Array<T>)`](Result::Ok) when the data chunk is present
+    Returns [`Ok(iterator)`](Result::Ok) when the data chunk is present
     in the file and `Err(`[`ReadError::ChunkNotFound`]`)` when it is not.
 
     TODO: Note when `read_array` data is available.
 
     # Errors
 
-    `read_array` may experience I/O errors or find corrupt data in the file. The
-    returned [`ReadError`] describes the cause of any error encountered.
+    `iter_scalars` may experience I/O errors or find corrupt data in the file.
+    The returned [`ReadError`] describes the cause of any error encountered.
 
     # Example
 
@@ -1346,7 +1329,7 @@ impl GsdFile {
     # }
     ```
     */
-    pub fn read_array<T: Type>(&self, frame: u64, name: &str) -> Result<Array<T>, ReadError> {
+    pub fn iter_scalars<T: Type>(&self, frame: u64, name: &str) -> Result<impl ExactSizeIterator<Item = T> + use<'_, T>, ReadError> {
         let index_entry = match self.find_chunk(frame, name) {
             None => return Err(ReadError::ChunkNotFound),
             Some(e) => e,
@@ -1364,44 +1347,25 @@ impl GsdFile {
             ));
         }
 
-        if index_entry.n == 0 {
-            return Ok(Array {
-                data: Vec::new(),
-                rows: 0,
-                columns: index_entry.m,
-            });
-        }
-
-        self.read_array_details(&index_entry)
+        self.read_details(&index_entry)
             .map_err(|e| ReadError::Decode(name.into(), frame, e))
     }
 
-    /// Implement the details of `read_array`.
-    fn read_array_details<T: Type>(
+    /// Implement the details of `iter_scalars` and `iter_arrays`.
+    fn read_details<T: Type>(
         &self,
         index_entry: &IndexEntry,
-    ) -> Result<Array<T>, DecodeError> {
+    ) -> Result<impl ExactSizeIterator<Item = T> + use<'_, T>, DecodeError> {
         let n_elements = index_entry.n * u64::from(index_entry.m);
         let n_bytes = usize::try_from(n_elements * size_of::<T>() as u64)
             .map_err(DecodeError::UnaddressableContent)?;
-        let mut data = Vec::with_capacity(n_bytes);
 
         let location =
             usize::try_from(index_entry.location).map_err(DecodeError::UnaddressableContent)?;
 
         debug_assert!(location + n_bytes <= self.mmap.len());
 
-        for offset in (location..location + n_bytes).step_by(size_of::<T>()) {
-            data.push(T::from_ne_byte_slice(
-                &self.mmap[offset..offset + size_of::<T>()],
-            ));
-        }
-
-        Ok(Array {
-            data,
-            rows: index_entry.n,
-            columns: index_entry.m,
-        })
+        Ok(self.mmap[location..location + n_bytes].chunks(size_of::<T>()).map(T::from_ne_byte_slice))
     }
 
     // TODO: Implement read_string. The conversion steps needed for strings
@@ -1415,7 +1379,7 @@ impl GsdFile {
     // f64. The hoomd schema is always f32, so we also need a way to
     // opt into casting on write.
 
-    /** Append data to the current frame.
+    /** Append an array of scalar values to the current frame.
 
     `write_scalars` writes one-dimensional array data to a named chunk in the
     current frame of the GSD file. Call [`end_frame`](GsdFile::end_frame) to
@@ -2085,46 +2049,56 @@ mod tests {
         assert_eq!(gsd_file.n_frames(), 1);
 
         let u8_array = gsd_file
-            .read_array::<u8>(0, "u8")
-            .expect("u8 should be written above");
+            .iter_scalars::<u8>(0, "u8")
+            .expect("u8 should be written above")
+            .collect::<Vec<_>>();
         let u16_array = gsd_file
-            .read_array::<u16>(0, "u16")
-            .expect("u16 should be written above");
+            .iter_scalars::<u16>(0, "u16")
+            .expect("u16 should be written above")
+            .collect::<Vec<_>>();
         let u32_array = gsd_file
-            .read_array::<u32>(0, "u32")
-            .expect("u32 should be written above");
+            .iter_scalars::<u32>(0, "u32")
+            .expect("u32 should be written above")
+            .collect::<Vec<_>>();
         let u64_array = gsd_file
-            .read_array::<u64>(0, "u64")
-            .expect("u64 should be written above");
+            .iter_scalars::<u64>(0, "u64")
+            .expect("u64 should be written above")
+            .collect::<Vec<_>>();
         let i8_array = gsd_file
-            .read_array::<i8>(0, "i8")
-            .expect("i8 should be written above");
+            .iter_scalars::<i8>(0, "i8")
+            .expect("i8 should be written above")
+            .collect::<Vec<_>>();
         let i16_array = gsd_file
-            .read_array::<i16>(0, "i16")
-            .expect("i16 should be written above");
+            .iter_scalars::<i16>(0, "i16")
+            .expect("i16 should be written above")
+            .collect::<Vec<_>>();
         let i32_array = gsd_file
-            .read_array::<i32>(0, "i32")
-            .expect("i32 should be written above");
+            .iter_scalars::<i32>(0, "i32")
+            .expect("i32 should be written above")
+            .collect::<Vec<_>>();
         let i64_array = gsd_file
-            .read_array::<i64>(0, "i64")
-            .expect("i64 should be written above");
+            .iter_scalars::<i64>(0, "i64")
+            .expect("i64 should be written above")
+            .collect::<Vec<_>>();
         let f32_array = gsd_file
-            .read_array::<f32>(0, "f32")
-            .expect("f32 should be written above");
+            .iter_scalars::<f32>(0, "f32")
+            .expect("f32 should be written above")
+            .collect::<Vec<_>>();
         let f64_array = gsd_file
-            .read_array::<f64>(0, "f64")
-            .expect("f64 should be written above");
+            .iter_scalars::<f64>(0, "f64")
+            .expect("f64 should be written above")
+            .collect::<Vec<_>>();
 
-        assert_eq!(u8_array.data, u8_data);
-        assert_eq!(u16_array.data, u16_data);
-        assert_eq!(u32_array.data, u32_data);
-        assert_eq!(u64_array.data, u64_data);
-        assert_eq!(i8_array.data, i8_data);
-        assert_eq!(i16_array.data, i16_data);
-        assert_eq!(i32_array.data, i32_data);
-        assert_eq!(i64_array.data, i64_data);
-        assert_eq!(f32_array.data, f32_data);
-        assert_eq!(f64_array.data, f64_data);
+        assert_eq!(u8_array, u8_data);
+        assert_eq!(u16_array, u16_data);
+        assert_eq!(u32_array, u32_data);
+        assert_eq!(u64_array, u64_data);
+        assert_eq!(i8_array, i8_data);
+        assert_eq!(i16_array, i16_data);
+        assert_eq!(i32_array, i32_data);
+        assert_eq!(i64_array, i64_data);
+        assert_eq!(f32_array, f32_data);
+        assert_eq!(f64_array, f64_data);
 
         assert_eq!(
             GsdFile::size_of(u8::gsd_data_type()).expect("type should be valid"),
@@ -2282,24 +2256,24 @@ mod tests {
         assert_eq!(gsd_file.n_frames(), 2);
 
         let array_a = gsd_file
-            .read_array::<u64>(0, "a")
+            .iter_scalars::<u64>(0, "a")
             .expect("a should be written above");
-        assert_eq!(array_a.rows, 0);
-        assert_eq!(array_a.columns, 1);
-        assert_eq!(array_a.data.len(), 0);
+        assert_eq!(array_a.len(), 0);
 
         let array_b = gsd_file
-            .read_array::<u64>(1, "b")
-            .expect("a should be written above");
-        assert_eq!(array_b.rows, 6);
-        assert_eq!(array_b.columns, 1);
-        assert_eq!(array_b.data, [1, 2, 3, 4, 5, 6]);
-        let array_c = gsd_file
-            .read_array::<u64>(1, "c")
-            .expect("a should be written above");
-        assert_eq!(array_c.rows, 2);
-        assert_eq!(array_c.columns, 3);
-        assert_eq!(array_c.data, [1, 2, 3, 4, 5, 6]);
+            .iter_scalars::<u64>(1, "b")
+            .expect("a should be written above")
+            .collect::<Vec<_>>();
+        assert_eq!(array_b.len(), 6);
+        assert_eq!(array_b, [1, 2, 3, 4, 5, 6]);
+
+        // TODO: iter_arrays
+        // let array_c = gsd_file
+        //     .read_array::<u64>(1, "c")
+        //     .expect("a should be written above");
+        // assert_eq!(array_c.rows, 2);
+        // assert_eq!(array_c.columns, 3);
+        // assert_eq!(array_c.data, [1, 2, 3, 4, 5, 6]);
 
         let entry_a = gsd_file
             .find_chunk(0, "a")
@@ -2363,13 +2337,13 @@ mod tests {
         gsd_file.end_frame().expect("write should succeed");
         gsd_file.sync_all().expect("write should succeed");
 
-        let result = gsd_file.read_array::<u32>(0, "a");
+        let result = gsd_file.iter_scalars::<u32>(0, "a");
         assert!(matches!(result, Err(ReadError::InvalidType(_, _))));
 
-        let result = gsd_file.read_array::<u32>(1, "a");
+        let result = gsd_file.iter_scalars::<u32>(1, "a");
         assert!(matches!(result, Err(ReadError::ChunkNotFound)));
 
-        let result = gsd_file.read_array::<u32>(0, "b");
+        let result = gsd_file.iter_scalars::<u32>(0, "b");
         assert!(matches!(result, Err(ReadError::ChunkNotFound)));
     }
 
@@ -2433,9 +2407,10 @@ mod tests {
         assert_eq!(gsd_file.index.n, u64::from(N_ENTRIES));
         for i in 0..N_ENTRIES {
             let array = gsd_file
-                .read_array::<u16>(0, &format!("{i:x}"))
-                .expect("read should succeed");
-            assert_eq!(array.data, [i]);
+                .iter_scalars::<u16>(0, &format!("{i:x}"))
+                .expect("read should succeed")
+                .collect::<Vec<_>>();
+            assert_eq!(array, [i]);
         }
     }
 }
