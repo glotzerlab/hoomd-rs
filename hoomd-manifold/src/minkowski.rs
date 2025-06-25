@@ -12,10 +12,11 @@ use std::ops::{
 };
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform, Uniform};
-use libm::{cosh, sinh, acos, acosh};
+use libm::acosh;
 use std::f64::consts::PI;
 use hoomd_vector::Vector;
 use hoomd_utility::valid::PositiveReal;
+use hoomd_microstate::{boundary::Boundary, property::Point};
 
 use crate::{Error, Hyperboloid, HyperbolicRotate, FundamentalDomain};
 
@@ -548,6 +549,9 @@ impl<const N: usize> Hyperboloid for Minkowski<N> {
     
 }
 
+// Cusp-to-vertex distance for {8,8} tiling for Gauss curvature K = -1
+const EIGHTEIGHT : f64 = 2.448452447678076;
+
 impl FundamentalDomain for Minkowski<3> {
     /** Computes the length of the geodesic passing between the cusp $(0,0,\rho)$ and the boundary 
     of the fundamental domain of the {8,8} tiling of hyperbolic space.
@@ -572,12 +576,25 @@ impl FundamentalDomain for Minkowski<3> {
     fn distance_to_boundary(&self, skirt: f64) -> f64 {
         let theta = (self.coordinates[0]/(self.coordinates[0].powi(2)+self.coordinates[1].powi(2)).sqrt()).acos();
         let angle = theta.rem_euclid(PI/4.0);
-        let tile_size = (2.0_f64).powf(-0.25) * skirt;
+        let tile_size = EIGHTEIGHT * skirt;
         let eta = (tile_size.tanh()/(angle.cos() - angle.sin()*(1.0-(2.0_f64).sqrt()))).atanh();
         skirt * eta - self.distance_from_cusp(skirt)
     }
 }
 
+/** {8,8} tile of hyperbolic space
+*/
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct EightEight {
+    pub skirt: f64
+}
+
+impl Boundary<Minkowski<3>, Point<Minkowski<3>>, Point<Minkowski<3>>> for EightEight {
+    #[inline]
+    fn is_inside(&self, point: &Minkowski<3>) -> bool {
+        point.distance_to_boundary(self.skirt) > 0.0
+    }
+}
 
 /** 
 
@@ -734,7 +751,7 @@ with a given skirt width.
 # Example
 
 ```
-use hoomd_manifold::{HyperbolicAngle, HyperbolicDisk, Minkowski, 
+use hoomd_manifold::{Hyperboloid, HyperbolicDisk, Minkowski, HyperbolicAngle,
                     HyperbolicRotationMatrix, HyperbolicRotate};
 use hoomd_vector::Vector;
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -744,18 +761,19 @@ use rand::distr::Distribution;
 let mut rng = StdRng::seed_from_u64(12);
 
 // generate random point
+let rho: f64 = 1.0;
 let v: HyperbolicAngle = rng.random();
 let matrix = HyperbolicRotationMatrix::from(v);
-let origin = Minkowski::from([0.0, 0.0, 1.0]);
+let origin = Minkowski::from([0.0, 0.0, rho]);
 let random_point = matrix.hyperbolic_rotate(&origin);
     
 // generate transformation which keeps the distance moved less than r = 0.1
 let r = 0.1;
 let mut rng_2 = StdRng::seed_from_u64(239);
-let disk = HyperbolicDisk {r: r.try_into()?, point: random_point, skirt: 1.0};
+let disk = HyperbolicDisk {r: r.try_into()?, point: random_point, skirt: rho};
 let transformed_random_point: Minkowski<3> = disk.sample(&mut rng_2);
 
-assert!(r.powi(2) > random_point.distance_squared(&transformed_random_point));
+assert!(r > random_point.hyperbolic_distance(&transformed_random_point, rho));
 
 # Ok(())
 # }

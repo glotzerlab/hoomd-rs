@@ -16,7 +16,6 @@ workspace = true
 
 [dependencies]
 hoomd-interaction.workspace = true
-hoomd-manifold.workspace = true
 hoomd-microstate.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true

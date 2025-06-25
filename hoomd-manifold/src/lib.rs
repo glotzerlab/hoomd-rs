@@ -129,11 +129,13 @@ mod sphere;
 mod minkowski;
 mod hyperbolic_angle;
 mod biquaternion;
+mod hyperbolic_translate;
 
 pub use {
-    minkowski::{Minkowski, HyperbolicRotationMatrix, HyperbolicDisk},
+    minkowski::{Minkowski, HyperbolicRotationMatrix, HyperbolicDisk, EightEight},
     hyperbolic_angle::HyperbolicAngle,
     biquaternion::{Biquaternion, UnitBiquaternion},
+    hyperbolic_translate::HyperbolicTranslate,
 };
 
 use thiserror::Error;
