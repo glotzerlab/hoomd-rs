@@ -48,9 +48,9 @@ impl<const N: usize> SquareMatrix<N> {
     #[inline]
     fn mul_diagonal(&self, diag: &[f64; N]) -> Self {
         let mut rows = [[0f64; N]; N];
-        for i in 0..N {
+        for (i, row) in rows.iter_mut().enumerate().take(N) {
             for j in 0..N {
-                rows[i][j] = self.rows[i][j] * diag[j];
+                row[j] = self.rows[i][j] * diag[j];
             }
         }
         Self { rows }
