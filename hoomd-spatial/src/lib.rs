@@ -27,7 +27,7 @@ pub enum ParticleFlag {
     Ghost = 1,
 }
 
-/** Cell list docs. */
+/** TODO */
 pub struct CellList<const D: usize> {
     /// The width of each cell.
     pub cell_width: f64,
@@ -37,6 +37,42 @@ pub struct CellList<const D: usize> {
     pub cell_index: HashMap<usize, [i32; D]>,
 }
 
+/** `CellListBuilder` is a builder for creating a `CellList`.
+
+   Each `CellList` must at least be given a cell width. Builder API allows for creation of empty `CellList` without any particles.
+   Particles can also be added by adding positions and indices to the `CellListBuilder`.
+
+   # Example constructing an empty `CellList` using the builder API.
+
+   ```
+   use hoomd_spatial::CellList;
+   use hoomd_vector::Cartesian;
+
+   // Define the cell width.
+   let cell_width = 2.0
+   // Create a cell list object from the builder
+   let cell_list = CellListBuilder::<2>::new(cell_width).build();
+   ```
+
+   # Example constructing a `CellList` with particles using the builder API.
+   ```
+   use hoomd_spatial::CellList;
+   use hoomd_vector::Cartesian;
+   // Define the cell width.
+   let cell_width = 2.0;
+   // Create some sample 2D Cartesian positions.
+   let positions = vec![
+       Cartesian { coordinates: [0.2, 0.3] },
+       Cartesian { coordinates: [0.8, 1.3] },
+       Cartesian { coordinates: [8.5, 9.5] },
+   ];
+   let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
+   // Build a cell list with particles.
+   let cell_list = CellListBuilder::<2>::new(cell_width)
+       .with_positions_and_indices(&positions, &indices)
+       .build();
+   ```
+*/
 pub struct CellListBuilder<const D: usize> {
     pub cell_width: f64,
     pub positions: Vec<Cartesian<D>>,
@@ -44,7 +80,22 @@ pub struct CellListBuilder<const D: usize> {
 }
 
 impl<const D: usize> CellListBuilder<D> {
-    pub fn new(cell_width: f64) -> Self {
+    /** Create a new cell list builder from the given cell width and positions.
+
+    This is usually used with the build command, to construct a `CellList`. Empty cell list without particles can be created as well using the builder API.
+
+    # Example
+
+    ```
+    use hoomd_spatial::CellList;
+    use hoomd_vector::Cartesian;
+    // Define the cell width.
+    let cell_width = 2.0;
+    // Create a cell list object from the builder
+    let cell_list = CellListBuilder.new(cell_width).build();
+    ```
+    */
+    #[must_use] pub fn new(cell_width: f64) -> Self {
         Self {
             cell_width,
             positions: Vec::new(),
@@ -52,8 +103,29 @@ impl<const D: usize> CellListBuilder<D> {
         }
     }
 
-    /// Optionally supply positions and indices to initialize the cell list.
-    pub fn with_positions_and_indices(
+    /** Adds particles to the newly initialized cell list builder in `CellList` builder API.
+
+    Builder API supports optional parameters which are particle positions and indices for populating the `CellList`.
+
+    # Example
+
+    ```
+    use hoomd_spatial::CellList;
+    use hoomd_vector::Cartesian;
+    // Define the cell width.
+    let cell_width = 2.0;
+    // Create some sample 2D Cartesian positions.
+    let positions = vec![
+        Cartesian { coordinates: [0.2, 0.3] },
+        Cartesian { coordinates: [0.8, 1.3] },
+        Cartesian { coordinates: [8.5, 9.5] },
+    ];
+    let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
+    // Build a cell list with particles.
+    let cell_list = CellListBuilder.new(cell_width).with_positions_and_indices(positions, indices).build();
+    ```
+    */
+    #[must_use] pub fn with_positions_and_indices(
         mut self,
         positions: &Vec<Cartesian<D>>,
         indices: &Vec<usize>,
@@ -63,7 +135,22 @@ impl<const D: usize> CellListBuilder<D> {
         self
     }
 
-    pub fn build(self) -> CellList<D> {
+    /** Create an actual `CellList` from `CellListBuilder`.
+
+    # Example
+
+    ```
+    use hoomd_spatial::CellList;
+    use hoomd_vector::Cartesian;
+    // Define the cell width.
+    let cell_width = 2.0;
+    // Create a builder object
+    let cell_list_builder = CellListBuilder.new(cell_width);
+    // Create a cell list object from the builder
+    let cell_list = cell_list_builder.build();
+    ```
+    */
+    #[must_use] pub fn build(self) -> CellList<D> {
         CellList::new(self.cell_width, &self.positions, &self.indices)
     }
 }
@@ -73,7 +160,7 @@ impl<const D: usize> CellListBuilder<D> {
 impl<const D: usize> CellList<D> {
     /** Builder API helper function.
      */
-    pub fn builder(cell_width: f64) -> CellListBuilder<D> {
+    #[must_use] pub fn builder(cell_width: f64) -> CellListBuilder<D> {
         CellListBuilder::new(cell_width)
     }
 
