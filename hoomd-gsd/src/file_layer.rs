@@ -45,8 +45,8 @@ const INITIAL_INDEX_SIZE: u64 = 128;
 /// Initial name list size
 const INITIAL_NAME_LIST_SIZE: u64 = 1024;
 
-/// Initial buffer sync threshold.
-const INITIAL_SYNC_THRESHOLD: usize = 64 * 1024 * 1024;
+/// Initial maximum write buffer size.
+const INITIAL_MAXIMUM_WRITE_BUFFER_SIZE: usize = 1024 * 1024;
 
 /// Errors that can occur during while decoding file content.
 #[non_exhaustive]
@@ -506,11 +506,14 @@ pub struct GsdFile {
     /// Length of the file in bytes.
     file_len: u64,
 
-    /// Index of the current frame.
-    current_frame: u64,
+    /// Index of the current buffered frame.
+    buffer_frame: u64,
 
-    /// Automatically sync when more than `sync_threshold` bytes are buffered.
-    sync_threshold: usize,
+    /// Index of the current frame committed to the file.
+    file_frame: u64,
+
+    /// Write buffered data when more than `maximum_write_buffer_size` bytes are buffered.
+    maximum_write_buffer_size: usize,
 }
 
 /** Properties that describe a given data chunk.
@@ -1069,14 +1072,16 @@ impl GsdFile {
             index,
             data_buffer: Vec::new(),
             data_buffer_flushed: false,
-            current_frame: 0,
-            sync_threshold: INITIAL_SYNC_THRESHOLD,
+            buffer_frame: 0,
+            file_frame: 0,
+            maximum_write_buffer_size: INITIAL_MAXIMUM_WRITE_BUFFER_SIZE,
         };
 
         gsd_file.index.n = gsd_file.count_index_entries()?;
         if gsd_file.index.n > 0 {
             let last_entry = gsd_file.get_index(gsd_file.index.n - 1)?;
-            gsd_file.current_frame = last_entry.frame + 1;
+            gsd_file.file_frame = last_entry.frame + 1;
+            gsd_file.buffer_frame = gsd_file.file_frame;
         }
 
         // TODO: silently upgrade writable files to the latest minor version.
@@ -1295,7 +1300,7 @@ impl GsdFile {
     */
     #[must_use]
     pub fn find_chunk(&self, frame: u64, name: &str) -> Option<IndexEntry> {
-        if frame >= self.current_frame || self.index.n == 0 {
+        if frame >= self.file_frame || self.index.n == 0 {
             return None;
         }
 
@@ -1496,7 +1501,7 @@ F: FnOnce(&mut Vec<u8>)
         // entries can be constructed with the known location:
         // file_len + currently buffered bytes.
         let index_entry = IndexEntry {
-            frame: self.current_frame,
+            frame: self.buffer_frame,
             n: rows,
             m: columns,
             location: self.file_len + self.data_buffer.len() as u64,
@@ -1508,7 +1513,7 @@ F: FnOnce(&mut Vec<u8>)
         if !self.index.frame_names.insert(index_entry.id) {
             return Err(WriteError::DuplicateChunkName(
                 name.into(),
-                self.current_frame,
+                self.buffer_frame,
             ));
         }
 
@@ -1528,7 +1533,7 @@ F: FnOnce(&mut Vec<u8>)
         // we do need to flag to `end_frame` that `sync_all` needs to be called.
         append(&mut self.data_buffer);
 
-        if self.data_buffer.len() >= self.sync_threshold {
+        if self.data_buffer.len() >= self.maximum_write_buffer_size {
             self.flush_data()?;
             self.data_buffer_flushed = true;
         }
@@ -1541,12 +1546,8 @@ F: FnOnce(&mut Vec<u8>)
     Commits previous calls to `write_*` methods to the current frame. Calls to
     `write_*` methods following `end_frame` will write to the next frame.
 
-    Calling `end_frame` does not ensure that all buffered data is synced to
-    the filesystem. `end_frame` will only automatically sync when the amount
-    of data buffered exceeds the current [`sync_threshold`](GsdFile::sync_threshold).
-
-    Call [`sync_all`](GsdFile::sync_all) to manually sync buffered data
-    to the filesystem.
+    Calling `end_frame` does **not** ensure that all buffered data is synced to
+    the filesystem. Call [`sync_all`](GsdFile::sync_all) to do so.
 
     # Errors
 
@@ -1559,7 +1560,7 @@ F: FnOnce(&mut Vec<u8>)
             return Err(WriteError::NotWritable);
         }
 
-        self.current_frame += 1;
+        self.buffer_frame += 1;
         self.index.pending = 0;
         self.index.frame_names.clear();
 
@@ -1569,7 +1570,7 @@ F: FnOnce(&mut Vec<u8>)
     #[inline]
     #[must_use]
     pub fn n_frames(&self) -> u64 {
-        self.current_frame
+        self.file_frame
     }
 
     #[inline]
@@ -1598,14 +1599,14 @@ F: FnOnce(&mut Vec<u8>)
 
     #[inline]
     #[must_use]
-    pub fn sync_threshold(&self) -> usize {
-        self.sync_threshold
+    pub fn maximum_write_buffer_size(&self) -> usize {
+        self.maximum_write_buffer_size
     }
 
     #[inline]
     #[must_use]
-    pub fn sync_threshold_mut(&mut self) -> &mut usize {
-        &mut self.sync_threshold
+    pub fn maximum_write_buffer_size_mut(&mut self) -> &mut usize {
+        &mut self.maximum_write_buffer_size
     }
 
     /** Flush data buffer to the filesystem.
@@ -1668,10 +1669,10 @@ F: FnOnce(&mut Vec<u8>)
     arrays, but not the third. The reason is to ensure that all GSD files
     have complete frame data should any errors occur.
 
-    In most cases, callers should not call `sync_all` manually.
-    [`end_frame`](GsdFile::end_frame) will automatically call `sync_all` when
-    the buffer is larger than the [`sync_threshold`](GsdFile::sync_threshold). `sync_all`
-    will also automatically run when you drop a [`GsdFile`].
+    In most cases, callers should not call `sync_all` manually. It will be
+    called automatically when a [`GsdFile`] is dropped. Call `sync_all` only
+    when you need to read data arrays written in previous frames or when you
+    want to ensure that all data up to a specific frame are present in the file.
 
     # Errors
 
@@ -1734,6 +1735,8 @@ F: FnOnce(&mut Vec<u8>)
         if need_remap {
             self.remap()?;
         }
+
+        self.file_frame = self.buffer_frame;
 
         Ok(())
     }
@@ -1897,14 +1900,14 @@ mod tests {
     }
 
     #[test]
-    fn sync_threshold() {
+    fn maximum_write_buffer_size() {
         let tmp_dir = tempdir().expect("temp dir should be created");
         let path = tmp_dir.path().join("test.gsd");
         let mut gsd_file =
             GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
 
-        *gsd_file.sync_threshold_mut() = 8;
-        assert_eq!(gsd_file.sync_threshold(), 8);
+        *gsd_file.maximum_write_buffer_size_mut() = 8;
+        assert_eq!(gsd_file.maximum_write_buffer_size(), 8);
 
         let initial_size = gsd_file
             .file
@@ -2000,6 +2003,8 @@ mod tests {
             .write_array::<u64>("h", 1, &[8])
             .expect("write should succeed");
 
+        assert_eq!(gsd_file.n_frames(), 0);
+
         gsd_file.sync_all().expect("write should succeed");
 
         assert!(gsd_file.find_chunk(0, "a").is_some());
@@ -2016,6 +2021,7 @@ mod tests {
         assert!(gsd_file.find_chunk(1, "h").is_none());
 
         gsd_file.end_frame().expect("write should succeed");
+        assert_eq!(gsd_file.n_frames(), 1);
         gsd_file.sync_all().expect("write should succeed");
         assert_eq!(gsd_file.n_frames(), 2);
 
