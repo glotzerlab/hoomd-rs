@@ -8,7 +8,7 @@ representations of geometry, independent of a global reference. This design make
 struct suitible for use with simulation code, and ensures shapes are constructible from
 minimal information.
 
-For shapes with a parameterizable dimension, a `const N: usize` generic parameter
+For shapes with parameterizable dimension, a `const N: usize` generic parameter
 encodes the dimensionality.
 */
 
