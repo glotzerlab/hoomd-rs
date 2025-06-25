@@ -5,7 +5,7 @@
 Methods and implementations for an N-hypersphere, where N is the dimension.
 */
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
-use hoomd_vector::{Rotate, Vector};
+use hoomd_vector::{InnerProduct, Rotate, Vector};
 use std::f64::consts::PI;
 
 /// The (single, double, ...)-factorial function
@@ -63,7 +63,7 @@ impl<const N: usize> Hypersphere<N> {
 
 // TRAITS
 
-impl<const N: usize, V: Vector> SupportMapping<V> for Hypersphere<N> {
+impl<const N: usize, V: Vector + InnerProduct> SupportMapping<V> for Hypersphere<N> {
     #[inline]
     fn support_mapping(&self, n: &V) -> V {
         *n / n.norm() * self.radius
@@ -80,7 +80,7 @@ impl<const N: usize> Volume for Hypersphere<N> {
     }
 }
 
-impl<const N: usize, V: Vector, R: Rotate<V>> IntersectsAt<Hypersphere<N>, V, R>
+impl<const N: usize, V: Vector + InnerProduct, R: Rotate<V>> IntersectsAt<Hypersphere<N>, V, R>
     for Hypersphere<N>
 {
     #[inline]

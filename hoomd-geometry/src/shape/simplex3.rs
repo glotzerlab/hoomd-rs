@@ -6,12 +6,12 @@ more complex geometries in addition to its standalone functionality.
 */
 use std::{array, fmt};
 
-use hoomd_vector::{Cartesian, Cross, Rotate, RotationMatrix, Vector};
+use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, RotationMatrix};
 use itertools::Itertools;
 
 use crate::{IntersectsAt, SupportMapping};
 
-/** The convex hull of any 4 noncomplanar points in three dimensions.
+/** The convex hull of any 4 noncoplanar points in three dimensions.
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Simplex3 {

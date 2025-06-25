@@ -3,7 +3,7 @@
 
 /*! N-Dimensional generalization of a convex polyhedron.*/
 use crate::{BoundingSphereRadius, Error, SupportMapping};
-use hoomd_vector::{Cartesian, Vector};
+use hoomd_vector::{Cartesian, InnerProduct};
 
 /**
 A convex, faceted polyhedron.

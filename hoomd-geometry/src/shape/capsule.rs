@@ -5,7 +5,7 @@
 
 use crate::{BoundingSphereRadius, SupportMapping, Volume};
 
-use hoomd_vector::{Cartesian, Vector};
+use hoomd_vector::{Cartesian, InnerProduct};
 
 use super::sphere::sphere_volume_prefactor;
 

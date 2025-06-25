@@ -1,47 +1,11 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`Hyperellipsoid`].
-
-
-```rust
-use hoomd_geometry::shape::{Hyperellipsoid, Ellipse, Ellipsoid, Sphere};
-use hoomd_geometry::Volume;
-
-let ellipse = Hyperellipsoid {axes: [1.0, 2.0]};
-
-assert_eq!(ellipse.volume(), Ellipse {axes: [2.0, 1.0]}.volume());
-assert_eq!(Ellipsoid{ axes: [1.0, 1.0, 1.0] }.volume(), Sphere {radius: 1.0 }.volume());
-
-```
-
-# Example
-
-Rapid ellipse-ellipse intersection testing is possible with hoomd-geometry. This check
-is based on a result from algebraic geometry, with the precise approach documented
-within the code.
-
-```rust
-use hoomd_geometry::shape::Ellipse;
-use hoomd_geometry::IntersectsAt;
-use hoomd_vector::Angle;
-
-let long_ellipse = Ellipse {axes: [0.5, 3.0]};
-let round_ellipse = Ellipse {axes: [1.0, 2.0]};
-
-let v_ij = [0.0, long_ellipse.axes[1]+round_ellipse.axes[1]-0.1].into();
-
-assert_eq!(
-    long_ellipse.intersects_at(&round_ellipse, &v_ij, &Angle::from(0.0)),
-    true
-);
-
-```
-*/
+/*! Implement [`Hyperellipsoid`].*/
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
-use hoomd_vector::{Cartesian, Rotate, RotationMatrix, Vector};
+use hoomd_vector::{Cartesian, InnerProduct, Rotate, RotationMatrix};
 use std::ops::{Add, Mul};
 /// TODO: temp
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -163,7 +127,41 @@ impl SquareMatrix<2> {
     }
 }
 
-/// The geometry resulting from an N-Hypersphere that is scaled along N cartesion axes.
+/** The geometry resulting from an N-Hypersphere that is scaled along N cartesion axes.
+```rust
+use hoomd_geometry::shape::{Hyperellipsoid, Ellipse, Ellipsoid, Sphere};
+use hoomd_geometry::Volume;
+
+let ellipse = Hyperellipsoid {axes: [1.0, 2.0]};
+
+assert_eq!(ellipse.volume(), Ellipse {axes: [2.0, 1.0]}.volume());
+assert_eq!(Ellipsoid{ axes: [1.0, 1.0, 1.0] }.volume(), Sphere {radius: 1.0 }.volume());
+
+```
+
+# Example
+
+Rapid ellipse-ellipse intersection testing is possible with hoomd-geometry. This check
+is based on a result from algebraic geometry, with the precise approach documented
+within the code.
+
+```rust
+use hoomd_geometry::shape::Ellipse;
+use hoomd_geometry::IntersectsAt;
+use hoomd_vector::Angle;
+
+let long_ellipse = Ellipse {axes: [0.5, 3.0]};
+let round_ellipse = Ellipse {axes: [1.0, 2.0]};
+
+let v_ij = [0.0, long_ellipse.axes[1]+round_ellipse.axes[1]-0.1].into();
+
+assert_eq!(
+    long_ellipse.intersects_at(&round_ellipse, &v_ij, &Angle::from(0.0)),
+    true
+);
+
+```
+*/
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Hyperellipsoid<const N: usize> {
     /// The principle semi-axes of the [`Hyperellipsoid`] along each cartesian direction.

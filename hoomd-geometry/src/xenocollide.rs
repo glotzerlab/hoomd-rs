@@ -24,7 +24,7 @@ assert_eq!(
 ```
 */
 use crate::SupportMapping;
-use hoomd_vector::{Cartesian, Cross, Rotate, Rotation, RotationMatrix, Vector};
+use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, Rotation, RotationMatrix};
 
 /// Maximum allowed iterations for Xenocollide in 2D
 const XENOCOLLIDE_2D_MAX_ITER: usize = 1024;
@@ -105,7 +105,7 @@ where
     RotationMatrix<2>: From<R>,
 {
     let tol_multiplier = 10000.0;
-    let tol = 1e-16 * tol_multiplier;
+    let tol: f64 = 1e-16 * tol_multiplier;
     let s = SupportFunctor::new(sa, sb, v_ij, *q_ij);
 
     // Phase 1: Portal discovery

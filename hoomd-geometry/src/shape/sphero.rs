@@ -4,7 +4,7 @@
 /*! Implement [`Sphero`] */
 
 use crate::{BoundingSphereRadius, SupportMapping};
-use hoomd_vector::Vector;
+use hoomd_vector::{InnerProduct, Vector};
 
 /** Round a shape with a given radius.
 
@@ -42,7 +42,7 @@ pub struct Sphero<S> {
 impl<S, V> SupportMapping<V> for Sphero<S>
 where
     S: SupportMapping<V>,
-    V: Vector,
+    V: Vector + InnerProduct,
 {
     #[inline]
     fn support_mapping(&self, n: &V) -> V {
