@@ -125,7 +125,6 @@ pub trait BoundingSphereRadius {
     fn bounding_sphere_radius(&self) -> f64;
 }
 
-/// TODO
 mod convex;
 pub use convex::Convex;
 

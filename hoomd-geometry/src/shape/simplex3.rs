@@ -406,7 +406,6 @@ where
 
         // If (at least) a vertex of q is inside tetrahedron p
         // (vertex bounded by all 4 halfspaces)
-        // TODO: do we need to check if masks are empty?
         if masks.iter().fold(0, |acc, &m| acc | m) != 15 {
             return true;
         }
@@ -596,53 +595,6 @@ mod tests {
         );
     }
 
-    /*
-    #[test] // TODO: is this correct? Xenocollide converges, but tetAtet does not!
-    fn test_percolation_collisions() {
-        const N_SAMPLES: usize = 500_000;
-        const VOLUME: f64 = 1.0 / 3.0;
-        const AREA: f64 = 3.464_101_615_137_755; // 2.0 * sqrt(3)
-        const CURVATURE: f64 = 0.645_065_353_795_142;
-        const BOX_L: f64 = 20.0;
-        const BOX_VOLUME: f64 = BOX_L * BOX_L * BOX_L;
-
-        let expected_value = (2.0 * (VOLUME + AREA * CURVATURE)) / BOX_VOLUME;
-
-        // Assume 1000x1000x1000 box, which has bo
-
-        let mut rng = StdRng::seed_from_u64(1);
-        let (mut t0, mut t1) = (Simplex3::default(), Simplex3::default());
-        t0 = t0.translate_by(&-t0.centroid());
-        t1 = t1.translate_by(&-t1.centroid());
-        t1 = t1.translate_by(&[1.1, 1.1, 1.1].into()); // Just barely not touching
-
-        let (mut n_acc, mut n_rej) = (0, 0);
-        for i in 0..N_SAMPLES {
-            let mut t_test = Simplex3::default();
-            t_test = t_test.translate_by(&-t_test.centroid());
-
-            let theta: Versor = rng.random();
-            let v_ij = Cartesian::from([
-                rng.random_range((-BOX_L / 2.0)..(BOX_L / 2.0)),
-                rng.random_range((-BOX_L / 2.0)..(BOX_L / 2.0)),
-                rng.random_range((-BOX_L / 2.0)..(BOX_L / 2.0)),
-            ]);
-            // if t0.intersects_at(&t_test, &v_ij, &theta) {
-            if collide3d(&t0, &t_test, &v_ij, &theta) {
-                n_rej += 1;
-            } else {
-                n_acc += 1;
-            }
-
-            // TODO: assert two methods are equal
-        }
-        println!(
-            "expected {}, got {}",
-            expected_value,
-            n_rej as f64 / (n_acc + n_rej) as f64
-        );
-    }
-    */
     #[rstest(
         v_ij, o_ij, overlaps,
         case::perfect_overlap(

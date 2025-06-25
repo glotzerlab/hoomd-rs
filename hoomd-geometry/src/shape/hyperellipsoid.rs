@@ -7,7 +7,8 @@ use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, RotationMatrix};
 use std::ops::{Add, Mul};
-/// TODO: temp
+
+/// TODO: temp, remove once we have a linalg crate
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SquareMatrix<const N: usize> {
     /// The elements of the matrix
@@ -300,7 +301,7 @@ where
     }
 }
 
-/// TODO
+/// Solve the characteristic equation of two ellipses.
 #[inline]
 fn k_lambda(a_inv: SquareMatrix<2>, b_inv: SquareMatrix<2>, l: f64, v_ij: &[f64; 2]) -> f64 {
     let m = b_inv * ((1.0 - l).recip()) + (a_inv * l.recip());
