@@ -1,11 +1,8 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*!
-asdfsadf TODO:
-asdf asdf asdf
+/*! Implement [`Cuboid`] */
 
-*/
 use crate::{BoundingSphereRadius, SupportMapping, Volume};
 use hoomd_vector::Cartesian;
 use itertools::multizip;

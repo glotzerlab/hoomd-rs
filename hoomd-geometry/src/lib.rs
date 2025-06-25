@@ -30,6 +30,11 @@ let s = Hypersphere::<N>::from_radius(1.0);
 assert_relative_eq!(s.volume(), (4.0/3.0 * PI));
 ```
 
+## Traits
+[`Volume`] provides a notion of the amount of space a primitive occupies, and indicates
+the N-hypervolume of a given struct. For a [`Rectangle`][`crate::shape::Rectangle`], for example, [`Volume`]
+returns the area in the plane, and for a [`Sphere`][`crate::shape::Sphere`] we get the three-dimenstional volume.
+
 [`IntersectsAt`] allows for the calculation of intersections between two bodies without a built-in origin. This definition is compatible with HPMC and allows for the method's definition without requiring internal state regarding
 the position or orientation of each body.
 For non-orientable shapes, or for bodies who have special intersection
@@ -51,16 +56,25 @@ assert_eq!(s0.intersects_at(&s1, &[2.1, 0.0, 0.0].into(), &q_id), false);
 // For more complex bodies, the `Convex` wrapper uses Xenocollide to detect overlaps
 assert_eq!(Convex(s0).intersects_at(&Convex(s1), &[1.9, 0.0, 0.0].into(), &q_id), true);
 assert_eq!(Convex(s0).intersects_at(&Convex(s1), &[2.1, 0.0, 0.0].into(), &q_id), false);
+```
+By implementing the [`SupportMapping`] trait for a struct, the [`Convex`] newtype can be
+used for general, robust intersection queries between pairs of geometries. The
+[`xenocollide`] algorithm, provided for 2d and 3d shapes, is used in a blanket
+implementation on [`Convex`].
 
+```rust
+# use hoomd_geometry::{ IntersectsAt, shape::{Cuboid, Sphere} , Convex };
+# use hoomd_vector::Versor;
+# let s0 = Sphere {radius: 1.0};
 // The `Convex` wrapper also allows for overlap checks between heterogeneous particles
-let cuboid = Cuboid::from([2.0, 2.0, 2.0]);
+let wrapped_cuboid = Convex(Cuboid::from([2.0, 2.0, 2.0]));
 
 assert_eq!(
-    Convex(s0).intersects_at(&Convex(cuboid), &[1.9, 0.0, 0.0].into(), &q_id),
+    Convex(s0).intersects_at(&wrapped_cuboid, &[1.9, 0.0, 0.0].into(), &Versor::default()),
     true
 );
 assert_eq!(
-    Convex(s0).intersects_at(&Convex(cuboid), &[2.1, 0.0, 0.0].into(), &q_id),
+    Convex(s0).intersects_at(&wrapped_cuboid, &[2.1, 0.0, 0.0].into(), &Versor::default()),
     false
 );
 */

@@ -3,8 +3,25 @@
 
 /*! Implementations of the Xenocollide collision detection algorithm.
 
-`collide2d` and `collide3d` allow for intersections between arbitrary geometries that
-define the `SupportMapping<Cartesian<2|3>>` trait.
+[`collide2d`] and [`collide3d`] allow for intersections between arbitrary geometries
+that define the [`SupportMapping<Cartesian<2|3>>`][`crate::SupportMapping`] trait.
+
+# Example
+
+In general, Xenocollide should be used via the [`IntersectsAt`][`crate::IntersectsAt`]
+trait. However, the raw xenocollide methods can be used where needed.
+```rust
+use hoomd_geometry::{IntersectsAt, shape::Sphere, xenocollide::collide2d};
+use hoomd_vector::Angle;
+
+let (s0, s1) = (Sphere {radius: 1.0}, Sphere {radius: 2.0});
+let displacement = [3.0; 2].into();
+assert_eq!(
+    collide2d(&s0, &s1, &displacement, &Angle::default()),
+    s0.intersects_at(&s1, &displacement, &Angle::default())
+)
+
+```
 */
 use crate::SupportMapping;
 use hoomd_vector::{Cartesian, Cross, Rotate, Rotation, RotationMatrix, Vector};
@@ -72,7 +89,7 @@ impl<'a, const N: usize, A: SupportMapping<Cartesian<N>>, B: SupportMapping<Cart
     }
 }
 
-/// Xenocollide in 2 dimensions. For now, hard coded to 2
+/// Detect collision between two convex 2D objects via Minkowski Portal Refinement.
 #[inline]
 pub fn collide2d<
     R: Copy + Rotation,
@@ -159,7 +176,7 @@ where
     }
 }
 
-/// Minkowski Portal Refinement-based collision detection in 3d
+/// Detect collision between two convex 3D objects via Minkowski Portal Refinement.
 #[inline(never)]
 pub fn collide3d<
     R: Rotation + Copy,
