@@ -125,6 +125,7 @@ pub trait BoundingSphereRadius {
     fn bounding_sphere_radius(&self) -> f64;
 }
 
+/// A newtype wrapper that allows for intersection detection via Xenocollide.
 mod convex;
 pub use convex::Convex;
 

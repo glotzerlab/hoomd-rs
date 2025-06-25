@@ -584,7 +584,7 @@ impl<const N: usize> RotationMatrix<N> {
 
     # Example
     ```
-    use hoomd_vector::{Angle, RotationMatrix, Vector};
+    use hoomd_vector::{Angle, InnerProduct, RotationMatrix, Vector};
     use std::f64::consts::PI;
 
     let a = Angle::from(PI/2.0);
