@@ -15,10 +15,11 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-thiserror.workspace = true
+itertools.workspace = true
 memmap2 = "0.9.5"
+thiserror.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
-tempfile.workspace = true
 clap.workspace = true
+tempfile.workspace = true

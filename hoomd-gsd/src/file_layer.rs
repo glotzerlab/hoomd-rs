@@ -14,6 +14,7 @@ use std::io::{self, SeekFrom, prelude::*};
 use std::num::TryFromIntError;
 use std::path::{Path, PathBuf};
 use std::string::FromUtf8Error;
+use itertools::Itertools;
 use thiserror::Error;
 
 
@@ -163,6 +164,10 @@ pub enum WriteError {
     #[error("chunk `{0}` has already been written in frame {1}")]
     DuplicateChunkName(String, u64),
 
+    /// Invalid number of columns.
+    #[error("the number of columns must be greater than zero and fit in a u32, got {0}")]
+    InvalidColumns(usize),
+
     /// Index outside the file.
     #[error("index out of bounds (location={0}, length={1})")]
     IndexOutOfBounds(u64, u64),
@@ -170,6 +175,32 @@ pub enum WriteError {
     /// Name list outside the file.
     #[error("name list out of bounds (location={0}, length={1})")]
     NameListOutOfBounds(u64, u64),
+}
+
+// TODO: Replace ArrayChunks with itertools implementation when available
+// TODO: Replace ArrayChunks with std library implementation when iter_array_chunks is stabilized
+
+/// Iterate over arrays of size M
+struct ArrayChunks<I, const M: usize> {
+    /// The iterator over scalars
+    iter: I,
+}
+
+impl<T, I, const M: usize> Iterator for ArrayChunks<I, M>
+where I: Iterator<Item = T>
+{
+    type Item = [T; M];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next_array::<M>()
+    }
+
+}
+
+impl<T, I, const M: usize> ExactSizeIterator for ArrayChunks<I, M>
+where I: ExactSizeIterator<Item = T>
+{
+    fn len(&self) -> usize { self.iter.len() / M }
 }
 
 /** Implement a sealed trait for each data type supported by GSD.
@@ -1329,7 +1360,8 @@ impl GsdFile {
     # }
     ```
     */
-    pub fn iter_scalars<T: Type>(&self, frame: u64, name: &str) -> Result<impl ExactSizeIterator<Item = T> + use<'_, T>, ReadError> {
+    pub fn iter_scalars<T: Type>(&self, frame: u64, name: &str) ->
+        Result<impl ExactSizeIterator<Item = T> + use<'_, T>, ReadError> {
         let index_entry = match self.find_chunk(frame, name) {
             None => return Err(ReadError::ChunkNotFound),
             Some(e) => e,
@@ -1349,6 +1381,53 @@ impl GsdFile {
 
         self.read_details(&index_entry)
             .map_err(|e| ReadError::Decode(name.into(), frame, e))
+    }
+
+/** Iterate over an array of arrays in the given frame.
+
+    Returns [`Ok(iterator)`](Result::Ok) when the data chunk is present
+    in the file and `Err(`[`ReadError::ChunkNotFound`]`)` when it is not.
+
+    TODO: Note when `read_array` data is available.
+
+    # Errors
+
+    `iter_arrays` may experience I/O errors or find corrupt data in the file.
+    The returned [`ReadError`] describes the cause of any error encountered.
+
+    # Example
+
+    ```
+    use hoomd_gsd::file_layer::GsdFile;
+
+    # fn func(gsd_file: &mut GsdFile) -> Result<(), Box<dyn std::error::Error>> {
+    let array = gsd_file.read_array::<u64>(0, "configuration/step")?;
+    # Ok(())
+    # }
+    ```
+    */
+    pub fn iter_arrays<T: Type, const M: usize>(&self, frame: u64, name: &str) -> Result<impl ExactSizeIterator<Item = [T; M]> + use<'_, T, M>, ReadError> {
+        let index_entry = match self.find_chunk(frame, name) {
+            None => return Err(ReadError::ChunkNotFound),
+            Some(e) => e,
+        };
+
+        if index_entry.data_type != T::gsd_data_type() {
+            return Err(ReadError::InvalidType(name.into(), frame));
+        }
+
+        if index_entry.location == 0 {
+            return Err(ReadError::Decode(
+                name.into(),
+                frame,
+                DecodeError::CorruptIndexEntry(index_entry),
+            ));
+        }
+
+        Ok(ArrayChunks { iter:
+        self.read_details::<T>(&index_entry)
+            .map_err(|e| ReadError::Decode(name.into(), frame, e))?
+        })
     }
 
     /// Implement the details of `iter_scalars` and `iter_arrays`.
@@ -1401,8 +1480,7 @@ impl GsdFile {
 
     Returns a [`WriteError`] when any of the following occur:
     * The file is not opened in a write mode.
-    * `columns` is 0.
-    * The `data` length is not an integer multiple of `columns`.
+    * There are no available chunk identifiers.
     * A chunk with the same name has already been written in this frame.
     */
     pub fn write_scalars<'a, T, I>(
@@ -1429,6 +1507,60 @@ I::IntoIter: ExactSizeIterator,
             |buffer: &mut Vec<u8>| {
         for value in data {
             value.append_ne_bytes(buffer);
+        }
+        })
+    }
+
+/** Append an array of array values to the current frame.
+
+    `write_arrays` writes two-dimensional array data to a named chunk in the
+    current frame of the GSD file. Call [`end_frame`](GsdFile::end_frame) to
+    complete the frame and start the next.
+
+    <div class="warning">
+
+    Dropping a [`GsdFile`] will also drop any pending data chunks in incomplete
+    frames.
+
+    </div>
+
+    # Errors
+
+    Returns a [`WriteError`] when any of the following occur:
+    * The file is not opened in a write mode.
+    * There are no available chunk identifiers.
+    * A chunk with the same name has already been written in this frame.
+    */
+    pub fn write_arrays<'a, T, I, const M: usize>(
+        &mut self,
+        name: &str,
+        data: I,
+    ) -> Result<(), WriteError>
+where
+T: Type + 'a,
+I: IntoIterator<Item = &'a [T; M]>,
+I::IntoIter: ExactSizeIterator,
+    {
+        if self.mode != Mode::Write {
+            return Err(WriteError::NotWritable);
+        }
+
+        if M == 0 {
+            return Err(WriteError::InvalidColumns(M));
+        }
+
+        let columns = u32::try_from(M).or(Err(WriteError::InvalidColumns(M)))?;
+
+        let data = data.into_iter();
+
+        self.write_details(name, data.len() as u64,
+            columns,
+            T::gsd_data_type(),
+            |buffer: &mut Vec<u8>| {
+        for element in data {
+            for value in element {
+                value.append_ne_bytes(buffer);
+            }
         }
         })
     }
@@ -2050,55 +2182,45 @@ mod tests {
 
         let u8_array = gsd_file
             .iter_scalars::<u8>(0, "u8")
-            .expect("u8 should be written above")
-            .collect::<Vec<_>>();
+            .expect("u8 should be written above");
         let u16_array = gsd_file
             .iter_scalars::<u16>(0, "u16")
-            .expect("u16 should be written above")
-            .collect::<Vec<_>>();
+            .expect("u16 should be written above");
         let u32_array = gsd_file
             .iter_scalars::<u32>(0, "u32")
-            .expect("u32 should be written above")
-            .collect::<Vec<_>>();
+            .expect("u32 should be written above");
         let u64_array = gsd_file
             .iter_scalars::<u64>(0, "u64")
-            .expect("u64 should be written above")
-            .collect::<Vec<_>>();
+            .expect("u64 should be written above");
         let i8_array = gsd_file
             .iter_scalars::<i8>(0, "i8")
-            .expect("i8 should be written above")
-            .collect::<Vec<_>>();
+            .expect("i8 should be written above");
         let i16_array = gsd_file
             .iter_scalars::<i16>(0, "i16")
-            .expect("i16 should be written above")
-            .collect::<Vec<_>>();
+            .expect("i16 should be written above");
         let i32_array = gsd_file
             .iter_scalars::<i32>(0, "i32")
-            .expect("i32 should be written above")
-            .collect::<Vec<_>>();
+            .expect("i32 should be written above");
         let i64_array = gsd_file
             .iter_scalars::<i64>(0, "i64")
-            .expect("i64 should be written above")
-            .collect::<Vec<_>>();
+            .expect("i64 should be written above");
         let f32_array = gsd_file
             .iter_scalars::<f32>(0, "f32")
-            .expect("f32 should be written above")
-            .collect::<Vec<_>>();
+            .expect("f32 should be written above");
         let f64_array = gsd_file
             .iter_scalars::<f64>(0, "f64")
-            .expect("f64 should be written above")
-            .collect::<Vec<_>>();
+            .expect("f64 should be written above");
 
-        assert_eq!(u8_array, u8_data);
-        assert_eq!(u16_array, u16_data);
-        assert_eq!(u32_array, u32_data);
-        assert_eq!(u64_array, u64_data);
-        assert_eq!(i8_array, i8_data);
-        assert_eq!(i16_array, i16_data);
-        assert_eq!(i32_array, i32_data);
-        assert_eq!(i64_array, i64_data);
-        assert_eq!(f32_array, f32_data);
-        assert_eq!(f64_array, f64_data);
+        itertools::assert_equal(u8_array, u8_data);
+        itertools::assert_equal(u16_array, u16_data);
+        itertools::assert_equal(u32_array, u32_data);
+        itertools::assert_equal(u64_array, u64_data);
+        itertools::assert_equal(i8_array, i8_data);
+        itertools::assert_equal(i16_array, i16_data);
+        itertools::assert_equal(i32_array, i32_data);
+        itertools::assert_equal(i64_array, i64_data);
+        itertools::assert_equal(f32_array, f32_data);
+        itertools::assert_equal(f64_array, f64_data);
 
         assert_eq!(
             GsdFile::size_of(u8::gsd_data_type()).expect("type should be valid"),
@@ -2234,9 +2356,8 @@ mod tests {
             .write_scalars::<u64, _>("b", &[1, 2, 3, 4, 5, 6])
             .expect("write should succeed");
 
-        // TODO: Write_arrays 
         gsd_file
-            .write_scalars::<u64, _>("c", &[1, 2, 3, 4, 5, 6])
+            .write_arrays("c", &[[1u64, 2, 3], [4, 5, 6]])
             .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
 
@@ -2262,18 +2383,14 @@ mod tests {
 
         let array_b = gsd_file
             .iter_scalars::<u64>(1, "b")
-            .expect("a should be written above")
-            .collect::<Vec<_>>();
+            .expect("b should be written above");
         assert_eq!(array_b.len(), 6);
-        assert_eq!(array_b, [1, 2, 3, 4, 5, 6]);
+        itertools::assert_equal(array_b, [1, 2, 3, 4, 5, 6]);
 
-        // TODO: iter_arrays
-        // let array_c = gsd_file
-        //     .read_array::<u64>(1, "c")
-        //     .expect("a should be written above");
-        // assert_eq!(array_c.rows, 2);
-        // assert_eq!(array_c.columns, 3);
-        // assert_eq!(array_c.data, [1, 2, 3, 4, 5, 6]);
+        let array_c = gsd_file
+            .iter_arrays::<u64, 3>(1, "c")
+            .expect("c should be written above");
+        itertools::assert_equal(array_c, [[1, 2, 3], [4, 5, 6]]);
 
         let entry_a = gsd_file
             .find_chunk(0, "a")
@@ -2282,6 +2399,14 @@ mod tests {
         assert_eq!(entry_a.rows(), 0);
         assert_eq!(entry_a.columns(), 1);
         assert_eq!(entry_a.data_type(), Some(DataType::U64));
+
+        let entry_b = gsd_file
+            .find_chunk(1, "b")
+            .expect("a should be written above");
+        assert_eq!(entry_b.frame(), 1);
+        assert_eq!(entry_b.rows(), 6);
+        assert_eq!(entry_b.columns(), 1);
+        assert_eq!(entry_b.data_type(), Some(DataType::U64));
 
         let entry_c = gsd_file
             .find_chunk(1, "c")
@@ -2408,9 +2533,8 @@ mod tests {
         for i in 0..N_ENTRIES {
             let array = gsd_file
                 .iter_scalars::<u16>(0, &format!("{i:x}"))
-                .expect("read should succeed")
-                .collect::<Vec<_>>();
-            assert_eq!(array, [i]);
+                .expect("read should succeed");
+            itertools::assert_equal(array, [i]);
         }
     }
 }
