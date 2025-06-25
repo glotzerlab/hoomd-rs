@@ -1,9 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*!
-Methods and implementations for an N-hypersphere, where N is the dimension.
-*/
+/*! Implement [`Hypersphere`] */
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
 use hoomd_vector::{InnerProduct, Rotate, Vector};
 use std::f64::consts::PI;
@@ -33,7 +31,34 @@ pub(crate) fn sphere_volume_prefactor(n: usize) -> f64 {
     }
 }
 
-/// A generalized sphere object in N dimensions.
+/** All points within a given `radius` from the origin.
+
+```rust
+use hoomd_geometry::shape::{Circle, Sphere, Hypersphere};
+use hoomd_geometry::{Volume, IntersectsAt, SupportMapping};
+use hoomd_vector::{InnerProduct, Cartesian};
+
+// A unit sphere with radius 1.0. The `Sphere` type alias is equivalent in 3 dimensions
+let sph = Hypersphere::<3>::default();
+
+assert_eq!(sph.radius, 1.0);
+
+// The N-hypervolume of a sphere can be calculated. The default sphere has V=4π/3
+assert_eq!(sph.volume(), 4.0 * std::f64::consts::PI / 3.0);
+
+// Circle::default provides a unit disc
+assert_eq!(Circle::default().volume(), std::f64::consts::PI);
+
+
+// The support mapping for a hypersphere along direction n is ň
+assert_eq!(
+    sph.support_mapping(&Cartesian::from([1.0; 3])),
+    [1.0 / f64::sqrt(3.0); 3].into()
+)
+
+```
+
+*/
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Hypersphere<const N: usize> {
     /// Radius of the sphere

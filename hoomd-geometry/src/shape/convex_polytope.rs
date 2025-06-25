@@ -5,9 +5,7 @@
 use crate::{BoundingSphereRadius, Error, SupportMapping};
 use hoomd_vector::{Cartesian, InnerProduct};
 
-/**
-A convex, faceted polyhedron.
-*/
+/**A faceted solid defined by the convex hull of its vertices.*/
 pub struct ConvexPolytope<const N: usize> {
     /// The vertices of the shape.
     vertices: Vec<Cartesian<N>>,
