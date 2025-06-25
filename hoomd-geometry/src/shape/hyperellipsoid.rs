@@ -34,7 +34,7 @@ impl<const N: usize> Default for SquareMatrix<N> {
 }
 
 impl<const N: usize> SquareMatrix<N> {
-    /// Compute a full NxN matrix from N diagonal elements, setting all others to 0.
+    /// Compute a full `NxN` matrix from N diagonal elements, setting all others to 0.
     #[inline]
     fn from_diag(other: &[f64; N]) -> Self {
         SquareMatrix {
