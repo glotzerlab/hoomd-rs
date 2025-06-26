@@ -592,7 +592,7 @@ pub struct EightEight {
 impl Boundary<Minkowski<3>, Point<Minkowski<3>>, Point<Minkowski<3>>> for EightEight {
     #[inline]
     fn is_inside(&self, point: &Minkowski<3>) -> bool {
-        point.distance_to_boundary(self.skirt) > 0.0
+        point.distance_to_boundary(self.skirt) <= 0.0
     }
 }
 

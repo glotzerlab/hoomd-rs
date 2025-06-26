@@ -4,7 +4,8 @@
 */
 
 use hoomd_mc::{Sweep, Translate, Trial, Zero};
-use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Square, property::Point};
+use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Square,
+    boundary::Open, property::Point};
 use hoomd_vector::Cartesian;
 
 use ratatui::{
@@ -29,9 +30,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 /// Run the simulation
 fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> {
-    let mut microstate = MicrostateBuilder::with_boundary(Square {
-        l: 10.0.try_into()?,
-    })
+    let mut microstate = MicrostateBuilder::with_boundary(Square { l: 10.0.try_into()?,})
     .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
     .try_build()?;
 

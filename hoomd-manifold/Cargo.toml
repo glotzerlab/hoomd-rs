@@ -12,6 +12,7 @@ categories.workspace = true
 [dependencies]
 thiserror.workspace = true
 rand.workspace = true
+hoomd-interaction.workspace = true
 hoomd-mc.workspace = true
 hoomd-microstate.workspace = true
 hoomd-utility.workspace = true

@@ -15,6 +15,34 @@ use rand::distr::Distribution;
 /** Move the position of a body in hyperbolic space by a small distance 
 
 TODO: documentation, examples
+
+HyperbolicTranslate used with Sweep:
+# Example
+```
+use hoomd_mc::{LocalTrial, Translate, Sweep, Trial, Zero};
+use hoomd_microstate::{property::Position, Body, Microstate};
+use hoomd_manifold::{Minkowski, Hyperboloid, HyperbolicTranslate};
+use hoomd_vector::Vector;
+use rand::{rngs::StdRng, Rng, SeedableRng};
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut microstate = Microstate::new();
+microstate.add_body(Body::point(Minkowski::from([1.0, 1.0, 3.0_f64.sqrt()])));
+let d = 0.1;
+let translate = HyperbolicTranslate { maximum_distance: d.try_into()?, skirt: 1.0,};
+let translate_sweep = Sweep { local: translate };
+
+let hamiltonian = Zero;
+let kt = 1.0;
+
+for _ in 0..1_000 {
+    translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
+    microstate.increment_step();
+    assert_eq!(Minkowski::from([1.0, 1.0, 3.0_f64.sqrt()]), microstate.bodies()[0].item.properties.position);
+}
+# Ok(())
+# }
+```
 */
 
 pub struct HyperbolicTranslate {
@@ -38,15 +66,15 @@ where
     use rand::{rngs::StdRng, Rng, SeedableRng};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut rng = StdRng::seed_from_u64(131);
+    let mut rng = StdRng::seed_from_u64(13);
     let rho : f64 = 1.0;
-    let body_properties = Point::new(Minkowski::from([0.0, 0.0, rho]));
+    let body_properties = Point::new(Minkowski::from([1.0, 0.0, 2.0_f64.sqrt()]));
     let d = 0.1;
     let hyperbolic_translate = HyperbolicTranslate {maximum_distance: d.try_into()? ,
                                                     skirt: rho};
 
     let new_body_properties = hyperbolic_translate.propose(&mut rng, body_properties);
-    assert!(d > new_body_properties.position().distance_from_cusp(rho));
+    assert!(d > new_body_properties.position().hyperbolic_distance(&Minkowski::from([1.0, 0.0, 2.0_f64.sqrt()]), rho));
     # Ok(())
     # }
     ```
