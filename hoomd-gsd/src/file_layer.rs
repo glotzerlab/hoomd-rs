@@ -144,12 +144,12 @@ pub enum ReadError {
     Decode(String, u64, #[source] DecodeError),
 }
 
-/// Errors that can occur while writing to a file.
+/// Errors that can occur while encoding data to a file.
 #[non_exhaustive]
 #[derive(Error, Debug)]
-pub enum WriteError {
+pub enum EncodeError {
     /// Encountered an I/O error.
-    #[error("I/O error while writing GSD file")]
+    #[error("I/O error")]
     IO(#[from] io::Error),
 
     /// Cannot add any more chunk names.
@@ -175,6 +175,15 @@ pub enum WriteError {
     /// Name list outside the file.
     #[error("name list out of bounds (location={0}, length={1})")]
     NameListOutOfBounds(u64, u64),
+}
+
+/// Errors that can occur while writing to a file.
+#[non_exhaustive]
+#[derive(Error, Debug)]
+pub enum WriteError {
+    /// Cannot encode a write to the file.
+    #[error("cannot encode chunk `{0}` at frame {1}")]
+    Encode(String, u64, #[source] EncodeError),
 }
 
 // TODO: Replace ArrayChunks with itertools implementation when available
@@ -1129,14 +1138,14 @@ impl GsdFile {
 
     /// Get the `id` of a name. Add a new `id` if needed.
     #[inline]
-    fn get_id(&mut self, name: &str) -> Result<u16, WriteError> {
+    fn get_id(&mut self, name: &str) -> Result<u16, EncodeError> {
         if let Some(id) = self.name_list.name_id.get(name) {
             return Ok(*id);
         }
 
         let new_id = self.name_list.n_names;
         if new_id == u16::MAX {
-            return Err(WriteError::NameListOverflow);
+            return Err(EncodeError::NameListOverflow);
         }
 
         self.name_list.n_names += 1;
@@ -1483,6 +1492,7 @@ impl GsdFile {
     * The file is not opened in a write mode.
     * There are no available chunk identifiers.
     * A chunk with the same name has already been written in this frame.
+    * There is an I/O error while writing to the file.
     */
     pub fn write_scalars<'a, T, I>(
         &mut self,
@@ -1494,10 +1504,6 @@ T: Type + 'a,
 I: IntoIterator<Item = &'a T>,
 I::IntoIter: ExactSizeIterator,
     {
-        if self.mode != Mode::Write {
-            return Err(WriteError::NotWritable);
-        }
-
         // This is required for the function to accept arguments types such as
         // &Vec<T>: https://github.com/rust-lang/rust/issues/77214
         let data = data.into_iter();
@@ -1509,7 +1515,7 @@ I::IntoIter: ExactSizeIterator,
         for value in data {
             value.append_ne_bytes(buffer);
         }
-        })
+        }).map_err(|e| WriteError::Encode(name.into(), self.buffer_frame, e))
     }
 
 /** Append an array of array values to the current frame.
@@ -1544,15 +1550,11 @@ T: Type + 'a,
 I: IntoIterator<Item = &'a [T; M]>,
 I::IntoIter: ExactSizeIterator,
     {
-        if self.mode != Mode::Write {
-            return Err(WriteError::NotWritable);
-        }
-
         if M == 0 {
-            return Err(WriteError::InvalidColumns(M));
+            return Err(WriteError::Encode(name.into(), self.buffer_frame, EncodeError::InvalidColumns(M)));
         }
 
-        let columns = u32::try_from(M).or(Err(WriteError::InvalidColumns(M)))?;
+        let columns = u32::try_from(M).or(Err(WriteError::Encode(name.into(), self.buffer_frame, EncodeError::InvalidColumns(M))))?;
 
         let data = data.into_iter();
 
@@ -1565,7 +1567,7 @@ I::IntoIter: ExactSizeIterator,
                 value.append_ne_bytes(buffer);
             }
         }
-        })
+        }).map_err(|e| WriteError::Encode(name.into(), self.buffer_frame, e))
     }
 
     /// Common code used in all write_ methods.
@@ -1576,10 +1578,13 @@ I::IntoIter: ExactSizeIterator,
         columns: u32,
         data_type: u8,
         append: F
-    ) -> Result<(), WriteError>
+    ) -> Result<(), EncodeError>
 where
 F: FnOnce(&mut Vec<u8>)
     {
+        if self.mode != Mode::Write {
+            return Err(EncodeError::NotWritable);
+        }
 
         let id = self.get_id(name)?;
 
@@ -1601,7 +1606,7 @@ F: FnOnce(&mut Vec<u8>)
         };
 
         if !self.index.frame_names.insert(index_entry.id) {
-            return Err(WriteError::DuplicateChunkName(
+            return Err(EncodeError::DuplicateChunkName(
                 name.into(),
                 self.buffer_frame,
             ));
@@ -1641,13 +1646,12 @@ F: FnOnce(&mut Vec<u8>)
 
     # Errors
 
-    Returns a [`WriteError`] when any of the following occur:
+    Returns a [`EncodeError`] when any of the following occur:
     * The file is not opened in a write mode.
-    * An I/O error writing to the file.
     */
-    pub fn end_frame(&mut self) -> Result<(), WriteError> {
+    pub fn end_frame(&mut self) -> Result<(), EncodeError> {
         if self.mode != Mode::Write {
-            return Err(WriteError::NotWritable);
+            return Err(EncodeError::NotWritable);
         }
 
         self.buffer_frame += 1;
@@ -1703,7 +1707,7 @@ F: FnOnce(&mut Vec<u8>)
 
     Returns true when any data was written to the file.
     */
-    fn flush_data(&mut self) -> Result<bool, WriteError> {
+    fn flush_data(&mut self) -> Result<bool, EncodeError> {
         if self.data_buffer.is_empty() {
             Ok(false)
         } else {
@@ -1720,7 +1724,7 @@ F: FnOnce(&mut Vec<u8>)
 
     Returns true when any data was written to the file.
     */
-    fn flush_names(&mut self) -> Result<bool, WriteError> {
+    fn flush_names(&mut self) -> Result<bool, EncodeError> {
         if self.name_list.buffer.is_empty() {
             Ok(false)
         } else {
@@ -1770,9 +1774,9 @@ F: FnOnce(&mut Vec<u8>)
     * The file is not opened in a write mode.
     * An I/O error writing to the file.
     */
-    pub fn sync_all(&mut self) -> Result<(), WriteError> {
+    pub fn sync_all(&mut self) -> Result<(), EncodeError> {
         if self.mode != Mode::Write {
-            return Err(WriteError::NotWritable);
+            return Err(EncodeError::NotWritable);
         }
 
         let mut need_remap = false;
@@ -1832,7 +1836,7 @@ F: FnOnce(&mut Vec<u8>)
     }
 
     /// Expand the name list.
-    fn expand_name_list_to(&mut self, capacity: u64) -> Result<(), WriteError> {
+    fn expand_name_list_to(&mut self, capacity: u64) -> Result<(), EncodeError> {
         let old_size = self.header.namelist_allocated_entries * NAME_SIZE;
         let mut new_size = old_size;
         while new_size <= capacity {
@@ -1846,9 +1850,9 @@ F: FnOnce(&mut Vec<u8>)
         let new_location = self.file.seek(SeekFrom::End(0))?;
 
         usize::try_from(new_location)
-            .map_err(|_| WriteError::NameListOutOfBounds(new_location, new_size))?;
+            .map_err(|_| EncodeError::NameListOutOfBounds(new_location, new_size))?;
         usize::try_from(new_location + new_size)
-            .map_err(|_| WriteError::NameListOutOfBounds(new_location, new_size))?;
+            .map_err(|_| EncodeError::NameListOutOfBounds(new_location, new_size))?;
 
         let old_start = usize::try_from(self.header.namelist_location)
             .expect("namelist should be validated addressable previously");
@@ -1876,7 +1880,7 @@ F: FnOnce(&mut Vec<u8>)
     }
 
     /// Expand the index.
-    fn expand_index_to(&mut self, capacity: u64) -> Result<(), WriteError> {
+    fn expand_index_to(&mut self, capacity: u64) -> Result<(), EncodeError> {
         let old_size = self.header.index_allocated_entries * INDEX_ENTRY_SIZE;
         let mut new_size = old_size;
         while new_size <= capacity {
@@ -1890,16 +1894,16 @@ F: FnOnce(&mut Vec<u8>)
         let new_location = self.file.seek(SeekFrom::End(0))?;
 
         usize::try_from(new_location)
-            .map_err(|_| WriteError::IndexOutOfBounds(new_location, new_size))?;
+            .map_err(|_| EncodeError::IndexOutOfBounds(new_location, new_size))?;
         usize::try_from(new_location + new_size)
-            .map_err(|_| WriteError::IndexOutOfBounds(new_location, new_size))?;
+            .map_err(|_| EncodeError::IndexOutOfBounds(new_location, new_size))?;
 
         let old_start = usize::try_from(self.header.index_location)
             .expect("index should be validated addressable previously");
         let old_end = usize::try_from(self.header.index_location + self.index.n * INDEX_ENTRY_SIZE)
             .expect("index should be validated addressable previously");
         if old_end > self.mmap.len() {
-            return Err(WriteError::IndexOutOfBounds(
+            return Err(EncodeError::IndexOutOfBounds(
                 old_start as u64,
                 old_end as u64,
             ));
@@ -2434,19 +2438,19 @@ mod tests {
         let mut gsd_file = GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
 
         let result =gsd_file.write_arrays::<u64, _, 0>("a", []);
-        assert!(matches!(result, Err(WriteError::InvalidColumns(_))));
+        assert!(matches!(result, Err(WriteError::Encode(_, _, EncodeError::InvalidColumns(_)))));
         
         let mut gsd_file =
             GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
 
         let result = gsd_file.write_scalars::<u64, _>("a", []);
-        assert!(matches!(result, Err(WriteError::NotWritable)));
+        assert!(matches!(result, Err(WriteError::Encode(_, _, EncodeError::NotWritable))));
 
         let result = gsd_file.end_frame();
-        assert!(matches!(result, Err(WriteError::NotWritable)));
+        assert!(matches!(result, Err(EncodeError::NotWritable)));
 
         let result = gsd_file.sync_all();
-        assert!(matches!(result, Err(WriteError::NotWritable)));
+        assert!(matches!(result, Err(EncodeError::NotWritable)));
     }
 
     #[test]
@@ -2460,7 +2464,7 @@ mod tests {
             .write_scalars("a", &[1])
             .expect("write should succeed");
         let result = gsd_file.write_scalars("a", &[1, 2]);
-        assert!(matches!(result, Err(WriteError::DuplicateChunkName(_, _))));
+        assert!(matches!(result, Err(WriteError::Encode(_, _, EncodeError::DuplicateChunkName(_, _)))));
     }
 
     #[test]
@@ -2471,7 +2475,10 @@ mod tests {
             GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
 
         gsd_file
-            .write_scalars("a", &[1])
+            .write_scalars("a", &[1u64])
+            .expect("write should succeed");
+        gsd_file
+            .write_arrays("b", &[[1u64, 2], [3, 4]])
             .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
         gsd_file.sync_all().expect("write should succeed");
@@ -2479,10 +2486,19 @@ mod tests {
         let result = gsd_file.iter_scalars::<u32>(0, "a");
         assert!(matches!(result, Err(ReadError::Decode(_, _, DecodeError::InvalidType(_, _)))));
 
+        let result = gsd_file.iter_scalars::<u64>(0, "b");
+        assert!(matches!(result, Err(ReadError::Decode(_, _, DecodeError::InvalidColumns(1, 2)))));
+
+        let result = gsd_file.iter_arrays::<u64, 2>(0, "a");
+        assert!(matches!(result, Err(ReadError::Decode(_, _, DecodeError::InvalidColumns(2, 1)))));
+
+        let result = gsd_file.iter_arrays::<u64, 8>(0, "b");
+        assert!(matches!(result, Err(ReadError::Decode(_, _, DecodeError::InvalidColumns(8, 2)))));
+
         let result = gsd_file.iter_scalars::<u32>(1, "a");
         assert!(matches!(result, Err(ReadError::ChunkNotFound(_, _))));
 
-        let result = gsd_file.iter_scalars::<u32>(0, "b");
+        let result = gsd_file.iter_scalars::<u32>(0, "q");
         assert!(matches!(result, Err(ReadError::ChunkNotFound(_, _))));
     }
 
@@ -2501,7 +2517,7 @@ mod tests {
 
         let i = u16::MAX;
         let result = gsd_file.write_scalars::<u64, _>(&format!("{i:x}"), []);
-        assert!(matches!(result, Err(WriteError::NameListOverflow)));
+        assert!(matches!(result, Err(WriteError::Encode(_, _, EncodeError::NameListOverflow))));
 
         drop(gsd_file);
 
