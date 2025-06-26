@@ -104,6 +104,14 @@ pub enum DecodeError {
     /// Corrupt index entry.
     #[error("corrupt index entry: `{0:?}`")]
     CorruptIndexEntry(IndexEntry),
+
+    /// Invalid type.
+    #[error("expected type {0}, found {1}")]
+    InvalidType(u8, u8),
+
+    /// Invalid number of columns.
+    #[error("expected to read read {0} columns, found {1}")]
+    InvalidColumns(usize, u32),
 }
 
 /// Errors that can occur while creating or opening a file.
@@ -127,20 +135,12 @@ pub enum OpenError {
 #[non_exhaustive]
 #[derive(Error, Debug)]
 pub enum ReadError {
-    /// Encountered an I/O error.
-    #[error("I/O error while reading `{0}` at frame {1}")]
-    IO(String, u64, #[source] io::Error),
-
     /// Chunk not found.
-    #[error("chunk not found")]
-    ChunkNotFound,
-
-    /// Invalid type.
-    #[error("invalid type for chunk `{0}` at frame {1}")]
-    InvalidType(String, u64),
+    #[error("chunk `{0}` not found in frame {1}")]
+    ChunkNotFound(String, u64),
 
     /// Cannot decode the file contents.
-    #[error("cannot decode `{0}` at frame {1}")]
+    #[error("cannot decode chunk `{0}` at frame {1}")]
     Decode(String, u64, #[source] DecodeError),
 }
 
@@ -1346,8 +1346,12 @@ impl GsdFile {
 
     # Errors
 
-    `iter_scalars` may experience I/O errors or find corrupt data in the file.
-    The returned [`ReadError`] describes the cause of any error encountered.
+    Returns a [`ReadError`] when any of the following occur:
+    * A chunk by the given `name` is not present in the given `frame`.
+    * The data type stored in the file does not match `T`.
+    * The array stored in the file does not have dimensions `N x 1`.
+    * The file is corrupt, unreadable, or there is an I/O error (see
+      [`DecodeError`]).
 
     # Example
 
@@ -1363,20 +1367,12 @@ impl GsdFile {
     pub fn iter_scalars<T: Type>(&self, frame: u64, name: &str) ->
         Result<impl ExactSizeIterator<Item = T> + use<'_, T>, ReadError> {
         let index_entry = match self.find_chunk(frame, name) {
-            None => return Err(ReadError::ChunkNotFound),
+            None => return Err(ReadError::ChunkNotFound(name.into(), frame)),
             Some(e) => e,
         };
 
-        if index_entry.data_type != T::gsd_data_type() {
-            return Err(ReadError::InvalidType(name.into(), frame));
-        }
-
-        if index_entry.location == 0 {
-            return Err(ReadError::Decode(
-                name.into(),
-                frame,
-                DecodeError::CorruptIndexEntry(index_entry),
-            ));
+        if index_entry.m as usize != 1 {
+            return Err(ReadError::Decode(name.into(), frame, DecodeError::InvalidColumns(1, index_entry.m)));
         }
 
         self.read_details(&index_entry)
@@ -1392,8 +1388,12 @@ impl GsdFile {
 
     # Errors
 
-    `iter_arrays` may experience I/O errors or find corrupt data in the file.
-    The returned [`ReadError`] describes the cause of any error encountered.
+    Returns a [`ReadError`] when any of the following occur:
+    * A chunk by the given `name` is not present in the given `frame`.
+    * The data type stored in the file does not match `T`.
+    * The array stored in the file does not have dimensions `N x M`.
+    * The file is corrupt, unreadable, or there is an I/O error (see
+      [`DecodeError`]).
 
     # Example
 
@@ -1408,20 +1408,12 @@ impl GsdFile {
     */
     pub fn iter_arrays<T: Type, const M: usize>(&self, frame: u64, name: &str) -> Result<impl ExactSizeIterator<Item = [T; M]> + use<'_, T, M>, ReadError> {
         let index_entry = match self.find_chunk(frame, name) {
-            None => return Err(ReadError::ChunkNotFound),
+            None => return Err(ReadError::ChunkNotFound(name.into(), frame)),
             Some(e) => e,
         };
 
-        if index_entry.data_type != T::gsd_data_type() {
-            return Err(ReadError::InvalidType(name.into(), frame));
-        }
-
-        if index_entry.location == 0 {
-            return Err(ReadError::Decode(
-                name.into(),
-                frame,
-                DecodeError::CorruptIndexEntry(index_entry),
-            ));
+        if index_entry.m as usize != M {
+            return Err(ReadError::Decode(name.into(), frame, DecodeError::InvalidColumns(M, index_entry.m)));
         }
 
         Ok(ArrayChunks { iter:
@@ -1441,6 +1433,15 @@ impl GsdFile {
 
         let location =
             usize::try_from(index_entry.location).map_err(DecodeError::UnaddressableContent)?;
+
+        if index_entry.data_type != T::gsd_data_type() {
+            return Err(DecodeError::InvalidType(T::gsd_data_type(), index_entry.data_type));
+        }
+
+        if index_entry.location == 0 {
+            return Err(DecodeError::CorruptIndexEntry(*index_entry),
+            );
+        }
 
         debug_assert!(location + n_bytes <= self.mmap.len());
 
@@ -1530,6 +1531,8 @@ I::IntoIter: ExactSizeIterator,
     * The file is not opened in a write mode.
     * There are no available chunk identifiers.
     * A chunk with the same name has already been written in this frame.
+    * `M` is 0.
+    * `M` cannot be represented by a `u32`.
     */
     pub fn write_arrays<'a, T, I, const M: usize>(
         &mut self,
@@ -2387,6 +2390,13 @@ mod tests {
         assert_eq!(array_b.len(), 6);
         itertools::assert_equal(array_b, [1, 2, 3, 4, 5, 6]);
 
+        // Scalar data can be read as an array with M=1.
+        let array_b = gsd_file
+            .iter_arrays::<u64, 1>(1, "b")
+            .expect("b should be written above");
+        assert_eq!(array_b.len(), 6);
+        itertools::assert_equal(array_b, [[1], [2], [3], [4], [5], [6]]);
+
         let array_c = gsd_file
             .iter_arrays::<u64, 3>(1, "c")
             .expect("c should be written above");
@@ -2421,7 +2431,11 @@ mod tests {
     fn invalid_writes() {
         let tmp_dir = tempdir().expect("temp dir should be created");
         let path = tmp_dir.path().join("test.gsd");
-        let _ =  GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
+        let mut gsd_file = GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
+
+        let result =gsd_file.write_arrays::<u64, _, 0>("a", []);
+        assert!(matches!(result, Err(WriteError::InvalidColumns(_))));
+        
         let mut gsd_file =
             GsdFile::open(path.clone(), Mode::Read).expect("test.gsd should be created above");
 
@@ -2463,13 +2477,13 @@ mod tests {
         gsd_file.sync_all().expect("write should succeed");
 
         let result = gsd_file.iter_scalars::<u32>(0, "a");
-        assert!(matches!(result, Err(ReadError::InvalidType(_, _))));
+        assert!(matches!(result, Err(ReadError::Decode(_, _, DecodeError::InvalidType(_, _)))));
 
         let result = gsd_file.iter_scalars::<u32>(1, "a");
-        assert!(matches!(result, Err(ReadError::ChunkNotFound)));
+        assert!(matches!(result, Err(ReadError::ChunkNotFound(_, _))));
 
         let result = gsd_file.iter_scalars::<u32>(0, "b");
-        assert!(matches!(result, Err(ReadError::ChunkNotFound)));
+        assert!(matches!(result, Err(ReadError::ChunkNotFound(_, _))));
     }
 
     #[test]
