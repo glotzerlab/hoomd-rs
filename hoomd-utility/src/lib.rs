@@ -13,8 +13,6 @@
 Common utility code used by many other hoomd-rs crates.
 */
 
-pub mod cheby;
-pub mod chimes_transformation;
 pub mod random;
 pub mod valid;
 

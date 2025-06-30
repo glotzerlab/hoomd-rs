@@ -1,0 +1,23 @@
+[package]
+name = "hoomd-chimes"
+categories.workspace = true
+description = "ChIMES interatomic potential related implementation"
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+readme = "hoomd-chimes/README.md"
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+
+
+[dev-dependencies]
+divan.workspace = true
+rstest.workspace = true
+approx.workspace = true

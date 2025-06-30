@@ -37,6 +37,9 @@ pub use chimes_cheby2b::Chimes2b;
 mod tersoff_smooth;
 pub use tersoff_smooth::TersoffSmooth;
 
+mod chimes_penalty;
+pub use chimes_penalty::ChimesPenalty;
+
 mod isotropic;
 pub use isotropic::Isotropic;
 

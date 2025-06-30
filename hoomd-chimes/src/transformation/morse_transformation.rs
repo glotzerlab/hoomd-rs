@@ -5,18 +5,27 @@
  */
 
 use super::Transformation;
-/** Calculate the morse transformation style given
-    distance $`r`$ with morse decaying factor $`\lambda`$,
-    outer radial cutoff $`r_\mathrm{out}`$ , and inner radial
-    cutoff $`r_\mathrm{in}`$. Finally, return a variable $`s(r)`$
-    falls between [-1, 1] and its derivative $`\frac{ds(r)}{dr}`$
-    with respect to $`r`$. See equation 3 to 5 in
-    <https://doi.org/10.1038/s41524-024-01497-y>.
+/**
+Calculate the morse transformation style.
+
+Given a distance $`r`$, the morse transformation are defined by:
+morse decaying factor $`\lambda`$, outer radial cutoff
+$`r_\mathrm{out}`$ , and inner radial cutoff $`r_\mathrm{in}`$.
+
+It calculates a coordinate $`s(r)`$ falls between [-1, 1]
+and its derivative $`\frac{ds(r)}{dr}`$ with respect to $`r`$.
+
+See equation 3 to 5 in
+<https://doi.org/10.1038/s41524-024-01497-y>.
+
+The morse transformation can be expressed as:
 
 ```math
+    s(r) = (x(r) - x_\mathrm{avg}) / x_\mathrm{diff}
+```
+Where
+```math
     \begin{align*}
-    s(r) &= (x(r) - x_\mathrm{avg}) / x_\mathrm{diff} \\
-    &\\
     x(r) &= \exp{(-r/\lambda)} \\
     x_\mathrm{avg} &= 0.5(\exp{(-r_\mathrm{out}/\lambda)}
       + \exp{(-r_\mathrm{in}/\lambda)}) \\
@@ -25,15 +34,20 @@ use super::Transformation;
     \end{align*}
 ```
 
-# Example
-    ```
-    use hoomd_utility::chimes_transformation::MorseTransformation;
+The derivative is:
+```math
+\frac{ds(r)}{dr} = -\frac{x(r)}{\lambda x_\mathrm{diff}}
+```
 
-    let lambda = 1.5;
-    let r_out = 3.0;
-    let r_in = 1.0;
-    let morse_trans: MorseTransformation = MorseTransformation{lambda, r_out, r_in};
-    ```
+# Example
+```
+use hoomd_chimes::transformation::MorseTransformation;
+
+let lambda = 1.5;
+let r_out = 3.0;
+let r_in = 1.0;
+let morse_trans: MorseTransformation = MorseTransformation{lambda, r_out, r_in};
+```
 */
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -47,10 +61,6 @@ pub struct MorseTransformation {
 }
 
 impl Transformation for MorseTransformation {
-    /** Construct an [`MorseTransformation`] with the given
-    Morse decaying factor $`\lambda`$, outer cutoff $`r_\mathrm{out}`$,
-    and inner cutoff $`r_\mathrm{on}`$.
-    */
     /// The morse transformation function s
     #[inline]
     fn s(&self, r: &f64) -> f64 {
@@ -98,7 +108,7 @@ mod tests {
     use ::approx::assert_relative_eq;
     use rstest::*;
 
-    use crate::chimes_transformation::MorseTransformation;
+    use crate::transformation::MorseTransformation;
 
     #[rstest]
     fn r_valid_range(

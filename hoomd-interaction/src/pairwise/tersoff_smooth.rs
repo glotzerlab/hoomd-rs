@@ -5,7 +5,7 @@
  */
 
 use super::{IsotropicEnergy, IsotropicForce};
-use std::f64::consts::PI;
+use std::f64::consts::PI; // Note: Becky's chimes uses hard coding value: 3.14159265359
 
 /**
 Implement the Tersoff style smoothing $`f_s`$ of `ChIMES`
@@ -38,7 +38,35 @@ defined in [`Chimes2b`], `r_out` is the outer distance cutoff
 
 # Note:
 See equation 8 in <https://doi.org/10.1038/s41524-024-01497-y>.
- */
+
+# Example:
+```
+use hoomd_chimes::transformation::MorseTransformation;
+use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, Chimes2b, TersoffSmooth};
+
+let lambda = 1.5;
+let r_out = 3.0;
+let r_in = 1.0;
+let fo = 0.75;
+let coeff_2b = vec![1.0, 2.0, 3.0];
+
+let morse_trans: MorseTransformation = MorseTransformation {
+    lambda,
+    r_out,
+    r_in,
+};
+
+let chimes2b_cheby: Chimes2b<MorseTransformation> =
+    Chimes2b::new(morse_trans, coeff_2b, r_in);
+
+let chimes2b = TersoffSmooth {
+    f: chimes2b_cheby,
+    r_out,
+    r_in,
+    fo,
+};
+```
+*/
 #[derive(Clone, Debug, PartialEq)]
 pub struct TersoffSmooth<F> {
     /// The [`Chimes2b`] fucntion.
@@ -101,13 +129,13 @@ impl<F: IsotropicForce + IsotropicEnergy> IsotropicForce for TersoffSmooth<F> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hoomd_utility::chimes_transformation::MorseTransformation;
+    use hoomd_chimes::transformation::MorseTransformation;
     use rstest::*;
 
     use crate::pairwise::Chimes2b;
 
     #[rstest]
-    fn general_case() {
+    fn test_construction() {
         let lambda = 1.5;
         let r_out = 3.0;
         let r_in = 1.0;
@@ -121,7 +149,7 @@ mod tests {
         };
 
         let chimes2b_cheby: Chimes2b<MorseTransformation> =
-            Chimes2b::new(morse_trans, coeff_2b, r_in);
+            Chimes2b::new(morse_trans, coeff_2b.clone(), r_in);
 
         let chimes2b = TersoffSmooth {
             f: chimes2b_cheby,
@@ -129,8 +157,17 @@ mod tests {
             r_in,
             fo,
         };
-        assert_eq!(chimes2b.r_out, 3.0);
-        assert_eq!(chimes2b.r_in, 1.0);
-        assert_eq!(chimes2b.fo, 0.75);
+
+        // tersoff smoothing
+        assert_eq!(chimes2b.r_out, r_out);
+        assert_eq!(chimes2b.r_in, r_in);
+        assert_eq!(chimes2b.fo, fo);
+        // chimes 2b main function
+        assert_eq!(chimes2b.f.coeff, coeff_2b);
+        assert_eq!(chimes2b.f.r_in, r_in);
+        // transformation
+        assert_eq!(chimes2b.f.trans_style.lambda, lambda);
+        assert_eq!(chimes2b.f.trans_style.r_out, r_out);
+        assert_eq!(chimes2b.f.trans_style.r_in, r_in);
     }
 }

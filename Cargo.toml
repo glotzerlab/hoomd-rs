@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+  "hoomd-chimes",
   "hoomd-interaction",
   "hoomd-mc",
   "hoomd-microstate",
@@ -22,6 +23,7 @@ categories = ["science"]
 
 [workspace.dependencies]
 # Subcrates
+hoomd-chimes = { path = "hoomd-chimes"}
 hoomd-interaction = { path = "hoomd-interaction" }
 hoomd-mc = { path = "hoomd-microstate" }
 hoomd-microstate = { path = "hoomd-microstate" }

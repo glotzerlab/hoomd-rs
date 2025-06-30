@@ -5,8 +5,8 @@
  */
 
 use super::{IsotropicEnergy, IsotropicForce};
-use hoomd_utility::cheby::Chebyshev;
-use hoomd_utility::chimes_transformation::Transformation;
+use hoomd_chimes::cheby::Chebyshev;
+use hoomd_chimes::transformation::Transformation;
 
 /**
 Implement the main body of one- plus two-body
@@ -51,7 +51,7 @@ impl<F: Transformation> Chimes2b<F, Chebyshev> {
 
     ```
     use hoomd_interaction::pairwise::Chimes2b;
-    use hoomd_utility::chimes_transformation::MorseTransformation;
+    use hoomd_chimes::transformation::MorseTransformation;
 
     let lambda = 1.5;
     let r_out = 3.0;
@@ -89,11 +89,12 @@ impl<F: Transformation> IsotropicEnergy for Chimes2b<F, Chebyshev> {
                 value += c * tn[idx];
             }
         } else {
-            let tnd = self.cheby.eval_dcheby_ds(&s);
+            let ds_dr = self.trans_style.ds_dr(&r);
+            let tnd = &self.cheby.eval_dcheby_ds(&s)[1..];
             let damp_fac = ((r - self.r_in) / self.inner_smooth_r).exp();
 
             for (idx, c) in self.coeff.iter().enumerate() {
-                value += c * (tn[idx] + self.inner_smooth_r * (damp_fac - 1.0) * tnd[idx]);
+                value += c * (tn[idx] + self.inner_smooth_r * (damp_fac - 1.0) * tnd[idx] * ds_dr);
             }
         }
         value
@@ -127,7 +128,7 @@ impl<F: Transformation> IsotropicForce for Chimes2b<F, Chebyshev> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hoomd_utility::chimes_transformation::MorseTransformation;
+    use hoomd_chimes::transformation::MorseTransformation;
     use rstest::*;
 
     #[rstest]
@@ -135,12 +136,13 @@ mod tests {
         let lambda = 1.5;
         let r_out = 3.0;
         let r_in = 1.0;
+        let coeff_2b = vec![1.0, 2.0, 3.0];
+
         let morse_trans: MorseTransformation = MorseTransformation {
             lambda,
             r_out,
             r_in,
         };
-        let coeff_2b = vec![1.0, 2.0, 3.0];
 
         let chimes2b = Chimes2b::new(morse_trans, coeff_2b, r_in);
         assert_eq!(chimes2b.coeff, vec![1.0, 2.0, 3.0]);
@@ -174,16 +176,16 @@ mod tests {
         let lambda = 1.5;
         let r_out = 3.0;
         let r_in = 1.0;
+        let coeff = vec![1.0, 2.0, 3.0];
+
         let morse_trans: MorseTransformation = MorseTransformation {
             lambda,
             r_out,
             r_in,
         };
-        let coeff = vec![1.0, 2.0, 3.0];
 
         let chimes2b = Chimes2b::new(morse_trans, coeff, r_in);
         assert_eq!(chimes2b.energy(r_in), 1.0 + 2.0 + 3.0);
         assert_eq!(chimes2b.energy(r_out), -1.0 + 2.0 - 3.0);
-        println!("{:.64}", chimes2b.force(r_in - 0.2));
     }
 }

@@ -31,7 +31,7 @@ impl Chebyshev {
     # Examples
 
     ```
-    use hoomd_utility::cheby::Chebyshev;
+    use hoomd_chimes::cheby::Chebyshev;
 
     let cheby = Chebyshev { n: 4 };
     let s = 0.5;
@@ -95,7 +95,7 @@ impl Chebyshev {
     # Examples
 
     ```
-    use hoomd_utility::cheby::Chebyshev;
+    use hoomd_chimes::cheby::Chebyshev;
 
     let cheby = Chebyshev { n: 4 };
     let s = 0.5;
