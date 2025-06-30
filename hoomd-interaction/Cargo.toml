@@ -33,7 +33,3 @@ harness = false
 [[bench]]
 name = "angular-mask"
 harness = false
-
-[[bench]]
-name = "tests"
-harness = false
