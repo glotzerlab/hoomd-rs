@@ -231,6 +231,16 @@ impl<const N: usize> Vector for Minkowski<N> {
         zip(self.coordinates[0..N-1].iter(), other.coordinates[0..N-1].iter())
             .fold(last_component, |product, x| product + (x.0 - x.1).powi(2))
     }
+    /** CHEAP SHORTCUT: distance implements the hyperboloid distance
+     * this is temporary and only works in the case where rho = 1.0
+     */
+    #[inline]
+    fn distance(&self, other: &Self) -> f64 {
+        let last_component = self.coordinates[N-1] * other.coordinates[N-1];
+        let arg = zip(self.coordinates[0..N-1].iter(), other.coordinates[0..N-1].iter())
+            .fold(last_component, |product, x| product - (x.0 * x.1));
+        acosh(arg)
+    }
 }
 
 impl<const N: usize> Add for Minkowski<N> {

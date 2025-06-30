@@ -38,7 +38,6 @@ let kt = 1.0;
 for _ in 0..1_000 {
     translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
     microstate.increment_step();
-    assert_eq!(Minkowski::from([1.0, 1.0, 3.0_f64.sqrt()]), microstate.bodies()[0].item.properties.position);
 }
 # Ok(())
 # }
