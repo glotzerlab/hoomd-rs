@@ -9,6 +9,7 @@ use num::complex::Complex;
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform, Uniform};
 use std::fmt;
+use libm::sqrt;
 use std::f64::consts::PI;
 
 use crate::HyperbolicRotationMatrix;
@@ -200,7 +201,7 @@ impl Distribution<HyperbolicAngle> for StandardUniform {
         let uniform_boost = Uniform::new(0.0, 1.0).expect("hard-coded distribution should be valid");
         let theta = uniform_angle.sample(rng);
         let v = uniform_boost.sample(rng);
-        let v_sqrt = (v as f64).sqrt();
+        let v_sqrt = sqrt(v);
         HyperbolicAngle::from((theta + v*theta/12.0, 
                             v_sqrt - theta.powi(2)*v_sqrt/12.0,
                             theta*v_sqrt/2.0))

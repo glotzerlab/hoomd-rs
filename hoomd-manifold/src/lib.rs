@@ -125,6 +125,7 @@ let boosted = v.expect("non-zero biquaternion").hyperbolic_rotate(&x);
 ```
 */
 
+mod curved_interaction;
 mod sphere;
 mod minkowski;
 mod hyperbolic_angle;
@@ -136,6 +137,7 @@ pub use {
     hyperbolic_angle::HyperbolicAngle,
     biquaternion::{Biquaternion, UnitBiquaternion},
     hyperbolic_translate::HyperbolicTranslate,
+    curved_interaction::CurvedIsotropic,
 };
 
 use thiserror::Error;
@@ -159,10 +161,18 @@ pub enum Error {
 
 }
 
+/** Implement methods on non-Euclidean spaces
+*/
+pub trait CurvedManifold {
+    /** Distance of the geodesic path passing through two points on the hyperboloid
+    */
+    fn geodesic_distance(&self, other: &Self, rho: f64) -> f64;
+}
+
 /** Operations defined on the upper sheet of a two-sheeted hyperboloid embedded in some metric 
 vector space.
  */
-pub trait Hyperboloid {
+pub trait Hyperboloid: CurvedManifold {
     /** Distance of the geodesic path passing through two points on the hyperboloid.
      */
     #[inline]
@@ -202,7 +212,7 @@ pub trait HyperbolicRotate<V: Vector> {
 }
 /** Sphere
  */
-pub trait Sphere: InnerProduct {
+pub trait Sphere: InnerProduct + CurvedManifold {
     /** Distance of the geodesic path passing through two points on the sphere.
      */
     #[inline]

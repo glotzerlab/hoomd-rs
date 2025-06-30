@@ -12,13 +12,13 @@ use std::ops::{
 };
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform, Uniform};
-use libm::acosh;
+use libm::{sin, cos, acos, acosh, sinh, cosh, sqrt, atan2};
 use std::f64::consts::PI;
 use hoomd_vector::Vector;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_microstate::{boundary::Boundary, property::Point};
 
-use crate::{Error, Hyperboloid, HyperbolicRotate, FundamentalDomain};
+use crate::{CurvedManifold, Error, Hyperboloid, HyperbolicRotate, FundamentalDomain};
 
 /** 
 [`Minkowski<N>`] implements (N-1,1)-dimensional Minkowski space with the metric signature 
@@ -186,12 +186,6 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for Minkowski<N> {
     # Ok(())
     # }
     ```
-
-    <div class="warning">
-
-    Use `Minkowski::From<[f64; N]>` in performance critical code.
-
-    </div>
     */
     #[inline]
     fn try_from(value: std::ops::Range<usize>) -> Result<Self, Self::Error> {
@@ -231,15 +225,17 @@ impl<const N: usize> Vector for Minkowski<N> {
         zip(self.coordinates[0..N-1].iter(), other.coordinates[0..N-1].iter())
             .fold(last_component, |product, x| product + (x.0 - x.1).powi(2))
     }
-    /** CHEAP SHORTCUT: distance implements the hyperboloid distance
-     * this is temporary and only works in the case where rho = 1.0
-     */
+}
+
+/** The [`CurvedManifold`] trait for Minkowski implements the negatively curved metric
+*/
+impl<const N: usize> CurvedManifold for Minkowski<N> {
     #[inline]
-    fn distance(&self, other: &Self) -> f64 {
+    fn geodesic_distance(&self, other: &Self, rho: f64) -> f64 {
         let last_component = self.coordinates[N-1] * other.coordinates[N-1];
         let arg = zip(self.coordinates[0..N-1].iter(), other.coordinates[0..N-1].iter())
             .fold(last_component, |product, x| product - (x.0 * x.1));
-        acosh(arg)
+        rho * acosh(arg/(rho.powi(2)))
     }
 }
 
@@ -552,9 +548,8 @@ impl<const N: usize> Hyperboloid for Minkowski<N> {
     */
     #[inline]
     fn to_poincare(&self, skirt: f64) -> Vec<f64> {
-        let t = 1.0/(self.coordinates[N-1]/skirt + 1.0);
         (0..N-1).collect::<Vec<usize>>()
-        .iter().map(|i| self.coordinates[*i]*t).collect::<Vec<f64>>()
+        .iter().map(|i| self.coordinates[*i] / (1.0 + self.coordinates[N-1]/skirt)).collect::<Vec<f64>>()
     }
     
 }
@@ -806,17 +801,18 @@ impl Distribution<Minkowski<3>> for HyperbolicDisk {
         let rho = self.skirt;
         let max_boost = (self.r.get())/rho;
         let point = self.point;
-        let eta = (point.coordinates[2]/rho).acosh();
-        let phi = (point.coordinates[0]/(point.coordinates[0].powi(2)+point.coordinates[1].powi(2)).sqrt()).acos();
-        let trial_boost = Uniform::new(0.0, max_boost).expect("r is positive and real");
-        let trial_rotation = Uniform::new(0.0, 2.0 * PI).expect("hard-coded distribution should be valid");
+        let eta = acosh(point.coordinates[2]/rho);
+        let phi = atan2(point.coordinates[1], point.coordinates[0]);
+        let trial_boost = Uniform::new(0.0, 1.0).expect("r is positive and real");
+        let trial_rotation = Uniform::new(-PI, PI).expect("hard-coded distribution should be valid");
         let theta = trial_rotation.sample(rng);
-        let v: f64 = trial_boost.sample(rng);
-        let trial_coords = [rho * v.sinh() * theta.cos(),
-                            rho * v.sinh() * theta.sin(),
-                            rho * v.cosh()];
-        Minkowski::from([trial_coords[0]*(eta.cosh())*(phi.cos()) - trial_coords[1]*(phi.sin()) + trial_coords[2]*(eta.sinh())*(phi.cos()),
-                        trial_coords[0]*(eta.cosh())*(phi.sin()) + trial_coords[1]*(phi.cos()) + trial_coords[2]*(eta.sinh())*(phi.sin()),
-                        trial_coords[0]*(eta.sinh()) + trial_coords[2]*(eta.cosh())])
+        let v1: f64 = trial_boost.sample(rng);
+        let v = sqrt(v1) * max_boost;
+        let trial_coords = [rho * sinh(v) * cos(theta),
+                            rho * sinh(v) * sin(theta),
+                            rho * cosh(v)];
+        Minkowski::from([trial_coords[0]*cosh(eta)*cos(phi) - trial_coords[1]* sin(phi) + trial_coords[2]*sinh(eta)*cos(phi),
+                        trial_coords[0]*cosh(eta)*sin(phi) + trial_coords[1]* cos(phi) + trial_coords[2]*sinh(eta)* sin(phi),
+                        trial_coords[0]*sinh(eta) + trial_coords[2]*cosh(eta)])
     }
 }

@@ -6,10 +6,20 @@
 
 use libm::acos;
 use hoomd_vector::{Cartesian, InnerProduct};
-use crate::{Sphere};
+use crate::{CurvedManifold, Sphere};
 
-/** Description of sphere, examples of usage
+/** TODO: Description of sphere, examples of usage
 */
+
+/** [`CurvedManifold`] for Cartesian implements the positively curved metric
+*/
+impl<const N: usize> CurvedManifold for Cartesian<N> {
+    #[inline]
+    fn geodesic_distance(&self, other: &Self, rho: f64) -> f64 {
+        let arg = Cartesian::dot(self, other) / rho;
+        rho * acos(arg)
+    }
+}
 
 impl<const N: usize> Sphere for Cartesian<N> {
     /** Computes the arc length bewtween two points on an N-sphere of radius R. The arc length 

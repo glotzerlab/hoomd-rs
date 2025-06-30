@@ -379,6 +379,7 @@ pub trait Vector:
         self.distance_squared(other).sqrt()
     }
 }
+
 /** Operate on elements of an inner product space.
 
 The [`InnerProduct`] subtrait defines additional methods that can be performed on any vector

@@ -4,14 +4,14 @@
 */
 
 use hoomd_interaction::{
-    CutoffPair, Single,
-    pairwise::{LennardJones, Isotropic, IsotropicEnergy},
-};
+    CutoffPair, pairwise::LennardJones};
 use hoomd_mc::{Sweep, Trial, Zero};
-use std::array;
-use libm::{cosh, sinh, acosh};
+use rand::{rngs::StdRng, Rng, SeedableRng};
+use rand::distr::Distribution;
+use libm::{cosh, sinh, acosh, sqrt};
 use hoomd_microstate::{Body, Microstate, MicrostateBuilder, property::Point, boundary::Open};
-use hoomd_manifold::{Minkowski, HyperbolicTranslate, EightEight, Hyperboloid};
+use hoomd_manifold::{Minkowski, HyperbolicTranslate, EightEight, Hyperboloid, CurvedIsotropic, 
+                    CurvedManifold, HyperbolicDisk};
 
 use ratatui::{
     crossterm::event::{self, Event, poll},
@@ -33,26 +33,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     result
 }
 
+const PARTICLE_NUMBER : usize = 300;
+
 /// Run the simulation
 fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> {
     let mut microstate = MicrostateBuilder::with_boundary(Open)
-    .bodies([Body::point(Minkowski::from([1.0, 1.0, 3.0_f64.sqrt()])),
-            Body::point(Minkowski::from([-1.0, 1.0, 3.0_f64.sqrt()])),
-            Body::point(Minkowski::from([1.0, -1.0, 3.0_f64.sqrt()])),
-            Body::point(Minkowski::from([-1.0, -1.0, 3.0_f64.sqrt()]))])
+    //.bodies([Body::point(Minkowski::from([1.0, -2.0, sqrt(5.0)])),
+    //    Body::point(Minkowski::from([1.0, -1.0, sqrt(3.0)])),
+    //    Body::point(Minkowski::from([-1.0, -2.0, sqrt(5.0)])),
+    //    Body::point(Minkowski::from([-1.0, -1.0, sqrt(3.0)]))])
     .try_build()?;
 
+    let initial_spacing = 0.5;
+    let mut rng = StdRng::seed_from_u64(23);
+    let sample_disk = HyperbolicDisk{
+        r: initial_spacing.try_into()?, 
+        point: Minkowski::from([0.00001,0.00001,1.0000000001]),
+        skirt: 1.0,}; 
+    for _n in 0..PARTICLE_NUMBER {
+        let new_point: Minkowski<3> = sample_disk.sample(&mut rng);
+        microstate.add_body(Body::point(new_point))?;
+    }
+    
     let lj : LennardJones = LennardJones {
         epsilon: 10.0,
         sigma: 0.5,
     };
 
-//// TODO: Isotropic looks at the distance of the metric space, which defaults to Minkowski.
-/// reconfigure to pass hyperbolic distance instead 
-
-    let evaluator = Isotropic(lj);
+    let evaluator = CurvedIsotropic(lj, 1.0);
     let cutoff_pair = CutoffPair {
-        r_cut: 1.0,
+        r_cut: 10.0,
         evaluator,
     };
 
@@ -78,7 +88,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     }
 }
 
-const RAD_SQ : f64 = 0.03;
+const RAD_SQ : f64 = 0.01;
 
 /// Project coordinates to Poincare disk 
 fn poincare(point: &Minkowski<3>, skirt: f64) -> [f64;3] {
@@ -100,7 +110,7 @@ fn render(
         .marker(Marker::Braille)
         .paint(|ctx| {
             for site in microstate.sites() {
-                let mut coords = poincare(&site.properties.position, 1.0);
+                let coords = poincare(&site.properties.position, 1.0);
                 ctx.draw(&Circle {
                 x: coords[0],
                 y: coords[1],
