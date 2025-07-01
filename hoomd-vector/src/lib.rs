@@ -17,25 +17,36 @@ other fields may find `hoomd_vector` useful outside the context of `HOOMD`.
 
 ## Vectors
 
-The [`Vector`] trait describes any type that is a member of a normed vector
+The [`Vector`] trait describes any type that is a member of a metric vector
 space. Write code with a [`Vector`] trait bound when you can express the
-computation with vector arithmetic and dot products. Your generic code can
+computation with vector arithmetic and a distance metric. Your generic code can
 then be invoked on vector types with any dimension or representation (e.g.
 spherical coordinates).
 
 ```
 use hoomd_vector::Vector;
 
-fn some_function<V: Vector>(a: &V, b: &V) -> f64 {
+fn some_function<V: Vector>(a: &V, b: &V, c: &V) -> f64 {
+    (*a + *b).distance(&c)
+}
+```
+
+The [`InnerProduct`] subtrait of [`Vector`] describes any type that is a member of
+an inner product space. [`InnerProduct`] implements vector norms and dot products.
+
+```
+use hoomd_vector::InnerProduct;
+
+fn some_other_function<V: InnerProduct>(a: &V, b: &V) -> f64 {
     a.dot(b) / (a.norm_squared())
 }
 ```
 
 Require additional trait bounds to perform more specific operations, such as [`Cross`]:
 ```
-use hoomd_vector::{Cross, Vector};
+use hoomd_vector::{Cross, InnerProduct};
 
-fn triple<V: Vector + Cross>(a: &V, b: &V, c: &V) -> f64 {
+fn triple<V: InnerProduct + Cross>(a: &V, b: &V, c: &V) -> f64 {
     a.dot(&b.cross(c))
 }
 ```
@@ -44,7 +55,7 @@ Use the provided [`Cartesian`] type to concretely represent N-dimensional
 vectors, or when your algorithm requires Cartesian coordinates:
 
 ```
-use hoomd_vector::{Cartesian, Vector};
+use hoomd_vector::{Cartesian, InnerProduct};
 
 let a = Cartesian::from([1.0, 2.0]);
 let b = Cartesian::from([-2.0, 1.0]);
@@ -193,10 +204,11 @@ pub enum Error {
     InvalidQuaternionMagnitude,
 }
 
-/** Operate on elements of a normed vector space.
+/** Operate on elements of a metric vector space.
 
-Specifically, [`Vector`] defines methods that can be performed on any vector in a normed vector
-space (an inner product space by default).
+Specifically, [`Vector`] defines methods that can be performed on any vector in a metric vector
+space. Note that this is not an inner product space by default, and calculations requiring an
+inner product should use the [`InnerProduct`] subtrait.
 
 ## Vector Operations
 
@@ -336,6 +348,65 @@ pub trait Vector:
     + SubAssign
     + Neg<Output = Self>
 {
+    /** Compute the squared distance between two vectors belonging to a metric space.
+
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, Vector};
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let x = Cartesian::from([0.0, 1.0, 1.0]);
+    let y = Cartesian::from([1.0, 0.0, 0.0]);
+    assert_eq!(3.0, x.distance_squared(&y));
+    # Ok(())
+    # }
+    ```
+     */
+    fn distance_squared(&self, other: &Self) -> f64;
+
+    /** Compute the distance between two vectors belonging to a metric space.
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, Vector};
+
+    let x = Cartesian::from([0.0, 0.0]);
+    let y = Cartesian::from([3.0, 4.0]);
+    assert_eq!(5.0, x.distance(&y));
+    ```
+     */
+    #[inline]
+    fn distance(&self, other: &Self) -> f64 {
+        self.distance_squared(other).sqrt()
+    }
+}
+/** Operate on elements of an inner product space.
+
+The [`InnerProduct`] subtrait defines additional methods that can be performed on any vector
+in an inner product space, specifically vector norms and inner products.
+
+*/
+pub trait InnerProduct: Vector {
+    /** Compute the vector dot product between two vectors.
+
+    ```math
+    c = \vec{a} \cdot \vec{b}
+    ```
+
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, InnerProduct};
+
+    # fn main() {
+    let a = Cartesian::from([1.0, 2.0]);
+    let b = Cartesian::from([3.0, 4.0]);
+    let c = a.dot(&b);
+    assert_eq!(c, 11.0);
+    # }
+    ```
+    */
+    #[must_use]
+    fn dot(&self, other: &Self) -> f64;
+
     /** Compute the squared norm of the vector.
 
     ```math
@@ -344,7 +415,7 @@ pub trait Vector:
 
     # Example
     ```
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, InnerProduct};
 
     # fn main() {
     let v = Cartesian::from([2.0, 4.0]);
@@ -368,13 +439,13 @@ pub trait Vector:
     <div class="warning">
 
     Computing the norm calls `sqrt`. Prefer
-    [`norm_squared`](Vector::norm_squared) when possible.
+    [`norm_squared`](InnerProduct::norm_squared) when possible.
 
     </div>
 
     # Example
     ```
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, InnerProduct};
 
     # fn main() {
     let v = Cartesian::from([3.0, 4.0]);
@@ -389,27 +460,6 @@ pub trait Vector:
         self.norm_squared().sqrt()
     }
 
-    /** Compute the vector dot product between two vectors.
-
-    ```math
-    c = \vec{a} \cdot \vec{b}
-    ```
-
-    # Example
-    ```
-    use hoomd_vector::{Cartesian, Vector};
-
-    # fn main() {
-    let a = Cartesian::from([1.0, 2.0]);
-    let b = Cartesian::from([3.0, 4.0]);
-    let c = a.dot(&b);
-    assert_eq!(c, 11.0);
-    # }
-    ```
-    */
-    #[must_use]
-    fn dot(&self, other: &Self) -> f64;
-
     /** Create a vector of unit length pointing in the same direction as the given vector.
 
     Returns a tuple containing unit vector along with the original vector's norm:
@@ -420,7 +470,7 @@ pub trait Vector:
     # Example
 
     ```
-    use hoomd_vector::{Cartesian, Unit, Vector};
+    use hoomd_vector::{Cartesian, Unit, InnerProduct};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([3.0, 4.0]);
@@ -455,7 +505,7 @@ pub trait Vector:
     # Example
 
     ```
-    use hoomd_vector::{Cartesian, Unit, Vector};
+    use hoomd_vector::{Cartesian, Unit, InnerProduct};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([3.0, 4.0]);
@@ -481,7 +531,7 @@ pub trait Vector:
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Unit<V>(V);
 
-impl<V: Vector> Unit<V> {
+impl<V: InnerProduct> Unit<V> {
     /// Get the unit vector.
     #[inline]
     pub fn get(&self) -> &V {
