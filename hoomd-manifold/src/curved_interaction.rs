@@ -9,7 +9,8 @@ use hoomd_microstate::property::Position;
 use hoomd_vector::Vector;
 use crate::CurvedManifold;
 
-/** Compute isotropic properties from a pair of sites on a curved manifold
+/** Compute isotropic properties from a pair of sites on a curved manifold. Function is similar to [`Isotropic`], 
+but the metric passed to the energy function is from the embedded manifold. 
 */
 pub struct CurvedIsotropic<E>(pub E, pub f64);
 

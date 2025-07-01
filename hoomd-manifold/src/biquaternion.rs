@@ -165,6 +165,7 @@ assert_eq!(Complex::new(20.0_f64,0.0).sqrt(), q.norm());
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Biquaternion {
+    /// Components of the biquaternion, in the order $[\mathbf{i},\mathbf{j},\mathbf{k},1]$
     pub components: [Complex<f64>; 4]
 }
 

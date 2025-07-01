@@ -45,8 +45,9 @@ for _ in 0..1_000 {
 */
 
 pub struct HyperbolicTranslate {
-    // The max distance a body can be translated in one trial move
+    /// The max distance a body can be translated in one trial move
     pub maximum_distance: PositiveReal,
+    /// The skirt width of the hyperboloid
     pub skirt: f64,
 }
 

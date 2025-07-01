@@ -5,13 +5,12 @@
 
 use hoomd_interaction::{
     CutoffPair, pairwise::LennardJonesGauss};
-use hoomd_mc::{Sweep, Trial, Zero};
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use hoomd_mc::{Sweep, Trial};
+use rand::{rngs::StdRng, SeedableRng};
 use rand::distr::Distribution;
 use libm::{cosh, sinh, acosh, sqrt};
 use hoomd_microstate::{Body, Microstate, MicrostateBuilder, property::Point, boundary::Open};
-use hoomd_manifold::{Minkowski, HyperbolicTranslate, EightEight, Hyperboloid, CurvedIsotropic, 
-                    CurvedManifold, HyperbolicDisk};
+use hoomd_manifold::{Minkowski, HyperbolicTranslate, Hyperboloid, CurvedIsotropic, HyperbolicDisk};
 
 use ratatui::{
     crossterm::event::{self, Event, poll},

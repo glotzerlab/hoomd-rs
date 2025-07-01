@@ -201,7 +201,7 @@ pub trait FundamentalDomain: Hyperboloid {
     /** List of points on the boundary of the fundamental domain
     */
     #[inline]
-    fn boundary_points(N: usize, skirt: f64) -> Vec::<(f64, f64)>;
+    fn boundary_points(m: usize, skirt: f64) -> Vec::<(f64, f64)>;
 }
 
 /** Rotations in hyperbolic space

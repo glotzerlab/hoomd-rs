@@ -12,7 +12,7 @@ use std::ops::{
 };
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform, Uniform};
-use libm::{sin, cos, acos, acosh, sinh, cosh, sqrt, atan2};
+use libm::{sin, cos, acosh, sinh, cosh, sqrt, atan2};
 use std::f64::consts::PI;
 use hoomd_vector::Vector;
 use hoomd_utility::valid::PositiveReal;
@@ -607,6 +607,7 @@ impl FundamentalDomain for Minkowski<3> {
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct EightEight {
+    /// Skirt width of the hyperboloid
     pub skirt: f64
 }
 
@@ -801,8 +802,11 @@ assert!(r > random_point.hyperbolic_distance(&transformed_random_point, rho));
 ```
 */
 pub struct HyperbolicDisk {
+    /// Max distance away from point
     pub r: PositiveReal,
+    /// The center of the disk
     pub point: Minkowski<3>,
+    /// The skirt width of the hyperboloid
     pub skirt: f64
 }
 
