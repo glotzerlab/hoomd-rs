@@ -579,12 +579,28 @@ impl FundamentalDomain for Minkowski<3> {
     */
     #[inline]
     fn distance_to_boundary(&self, skirt: f64) -> f64 {
-        let theta = (self.coordinates[0]/(self.coordinates[0].powi(2)+self.coordinates[1].powi(2)).sqrt()).acos();
+        let theta = atan2(self.coordinates[1], self.coordinates[0]);
         let angle = theta.rem_euclid(PI/4.0);
         let tile_size = EIGHTEIGHT * skirt;
         let eta = (tile_size.tanh()/(angle.cos() - angle.sin()*(1.0-(2.0_f64).sqrt()))).atanh();
         skirt * eta - self.distance_from_cusp(skirt)
     }
+    /** Outputs vector of points on the boundary of the fundamental domain
+    */
+    #[inline] 
+    fn boundary_points(m: usize, skirt: f64) -> Vec::<(f64, f64)> {
+        let mut coords = Vec::<(f64,f64)>::new();
+        for n in 0..m {
+            let angle = (n as f64) * 2.0 * PI / (m as f64);
+            let tile_size = EIGHTEIGHT * skirt;
+            let eta = (tile_size.tanh()/(angle.cos() - angle.sin()*(1.0-(2.0_f64).sqrt()))).atanh();
+            let x = (skirt* sinh(eta))/(1.0 + cosh(eta));
+            for k in 0..8 {
+                coords.push((x*cos(angle + (k as f64)*PI/4.0), x*sin(angle+ (k as f64)*PI/4.0)));
+            }
+        }
+        coords
+    }   
 }
 
 /** {8,8} tile of hyperbolic space
@@ -597,7 +613,7 @@ pub struct EightEight {
 impl Boundary<Minkowski<3>, Point<Minkowski<3>>, Point<Minkowski<3>>> for EightEight {
     #[inline]
     fn is_inside(&self, point: &Minkowski<3>) -> bool {
-        point.distance_to_boundary(self.skirt) <= 0.0
+        point.distance_to_boundary(self.skirt) >= 0.0
     }
 }
 

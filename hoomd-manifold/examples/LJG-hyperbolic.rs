@@ -4,7 +4,7 @@
 */
 
 use hoomd_interaction::{
-    CutoffPair, pairwise::LennardJones};
+    CutoffPair, pairwise::LennardJonesGauss};
 use hoomd_mc::{Sweep, Trial, Zero};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand::distr::Distribution;
@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 const PARTICLE_NUMBER : usize = 100;
-const RHO : f64 = 0.6;
+const RHO : f64 = 1.0;
 
 /// Run the simulation
 fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> {
@@ -56,12 +56,13 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
         microstate.add_body(Body::point(new_point))?;
     }
     
-    let lj : LennardJones = LennardJones {
-        epsilon: 10.0,
-        sigma: 0.5,
+    let ljg : LennardJonesGauss = LennardJonesGauss {
+        epsilon: 1.1,
+        sigma_squared: 0.02,
+        r_0: 1.6,
     };
 
-    let evaluator = CurvedIsotropic(lj, RHO);
+    let evaluator = CurvedIsotropic(ljg, RHO);
     let cutoff_pair = CutoffPair {
         r_cut: 10.0 * RHO,
         evaluator,
@@ -89,7 +90,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     }
 }
 
-const RAD_SQ : f64 = 0.01;
+const RAD_SQ : f64 = 0.025;
 
 /// Project coordinates to Poincare disk 
 fn poincare(point: &Minkowski<3>, skirt: f64) -> [f64;3] {
@@ -107,7 +108,7 @@ fn render(
     microstate: &Microstate<Point<Minkowski<3>>, Point<Minkowski<3>>, Open>,
 ) {
     let canvas = Canvas::default()
-        .block(Block::bordered().title("Lennard Jones Gas in Hyperbolic Space"))
+        .block(Block::bordered().title("Lennard-Jones-Gauss Gas in Hyperbolic Space"))
         .marker(Marker::Braille)
         .paint(|ctx| {
             for site in microstate.sites() {

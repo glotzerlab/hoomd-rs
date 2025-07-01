@@ -62,19 +62,21 @@ where
     use hoomd_mc::{LocalTrial, Translate};
     use hoomd_microstate::property::{Point, Position};
     use hoomd_manifold::{Minkowski, Hyperboloid, HyperbolicTranslate};
+    use hoomd_vector::Vector;
     use libm::sqrt;
     use rand::{rngs::StdRng, Rng, SeedableRng};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = StdRng::seed_from_u64(13);
-    let rho : f64 = 1.0;
-    let body_properties = Point::new(Minkowski::from([1.0, -1.0, sqrt(3.0)]));
-    let d = 0.1;
+    let rho : f64 = 0.8;
+    let body_properties = Point::new(Minkowski::from([1.0, -1.0, sqrt(2.0 + rho.powi(2))]));
+    let d = 0.1 * rho;
     let hyperbolic_translate = HyperbolicTranslate {maximum_distance: d.try_into()? ,
                                                     skirt: rho};
 
     let new_body_properties = hyperbolic_translate.propose(&mut rng, body_properties);
-    assert!(d > new_body_properties.position().hyperbolic_distance(&Minkowski::from([1.0, -1.0, sqrt(3.0)]), rho));
+    // assert_eq!(new_body_properties.position().distance_squared(&Minkowski::from([0.0,0.0,0.0])), -1.0* rho.powi(2));
+    assert!(d > new_body_properties.position().hyperbolic_distance(&Minkowski::from([1.0, -1.0, sqrt(2.0 + rho.powi(2))]), rho));
     # Ok(())
     # }
     ```
