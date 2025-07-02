@@ -49,7 +49,7 @@ pub struct LennardJonesGauss {
 }
 
 impl Default for LennardJonesGauss {
-    /** Construct a [`LennardJonesGauss`] with default parameters (epsilon=1.0, sigma_squared=1.0, r_0=0.0)
+    /** Construct a [`LennardJonesGauss`] with default parameters (epsilon=1.0, `sigma_squared=1.0`, `r_0=0.0`)
 
     # Example
 
