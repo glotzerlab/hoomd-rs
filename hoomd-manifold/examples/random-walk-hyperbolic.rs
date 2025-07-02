@@ -65,10 +65,10 @@ const BOUNDARY_NUMBER : usize = 1000;
 /// Project coordinates to Poincare disk 
 fn poincare(point: &Minkowski<3>, skirt: f64) -> [f64;3] {
     let proj = point.to_poincare(skirt);
-    let v = acosh((RAD_SQ + skirt.powi(2))/(skirt.powi(2)-RAD_SQ));
-    let eta = acosh(point.coordinates[2]/skirt);
-    let edge_proj = (skirt * sinh(eta+v))/(1.0 + cosh(eta+v));
-    let rad_proj = (skirt * sinh(eta))/(1.0 + cosh(eta)) - edge_proj;
+    let v = acosh((RAD_SQ + RHO.powi(2))/(RHO.powi(2)-RAD_SQ));
+    let eta = acosh(point.coordinates[2]/RHO);
+    let edge_proj = (RHO * sinh(eta+v))/(1.0 + cosh(eta+v));
+    let rad_proj = (RHO * sinh(eta))/(1.0 + cosh(eta)) - edge_proj;
     [proj[0], proj[1], rad_proj]
 }
 /// Render the system state.
