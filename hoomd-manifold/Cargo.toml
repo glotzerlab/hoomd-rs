@@ -26,7 +26,6 @@ divan.workspace = true
 paste = "1.0.15"
 rstest.workspace = true
 ratatui = "0.28.0"
-bevy = "0.16.1"
 
 [lints]
 workspace = true
