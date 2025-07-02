@@ -256,20 +256,24 @@ pass the type explicitly to these methods to read or write data chunks of the
 given type. In some cases, the Rust compiler may be able to determine the type
 from context.
 
-# Examples
+# Example
 
-Read a [`u64`] data chunk:
 ```
 use hoomd_gsd::file_layer::GsdFile;
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+# use tempfile::tempdir;
+# let tmp_dir = tempdir().expect("temp dir should be created");
+# let path = tmp_dir.path().join("test.gsd");
+let mut gsd_file = GsdFile::create_new(path.clone(), "example", "hoomd", (1, 4))?;
+gsd_file.write_scalars("configuration/box", &[10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0])?;
+gsd_file.end_frame()?;
+gsd_file.sync_all()?;
 
-# fn func(gsd_file: &mut GsdFile) -> Result<(), Box<dyn std::error::Error>> {
-let array = gsd_file.read_array::<u64>(0, "configuration/step")?;
+let box_iter = gsd_file.iter_scalars::<f32>(0, "configuration/box")?;
+itertools::assert_equal(box_iter, [10.0, 20.0, 15.0, 0.0, 0.0, 0.0]);
 # Ok(())
 # }
 ```
-
-Write a [`f32`] data chunk:
-TODO
 */
 pub trait Type: private::Sealed {
     /// Value denoting this type in the file layer.
