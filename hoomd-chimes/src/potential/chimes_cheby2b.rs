@@ -4,9 +4,9 @@
 /*! Implement [`Chimes2b`]
  */
 
-use super::{IsotropicEnergy, IsotropicForce};
-use hoomd_chimes::cheby::Chebyshev;
-use hoomd_chimes::transformation::Transformation;
+use crate::cheby::Chebyshev;
+use crate::transformation::Transformation;
+use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
 
 /**
 Implement the main body of one- plus two-body
@@ -50,7 +50,7 @@ impl<F: Transformation> Chimes2b<F, Chebyshev> {
     # Example
 
     ```
-    use hoomd_interaction::pairwise::Chimes2b;
+    use hoomd_chimes::potential::Chimes2b;
     use hoomd_chimes::transformation::MorseTransformation;
 
     let lambda = 1.5;
@@ -128,7 +128,7 @@ impl<F: Transformation> IsotropicForce for Chimes2b<F, Chebyshev> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hoomd_chimes::transformation::MorseTransformation;
+    use crate::transformation::MorseTransformation;
     use rstest::*;
 
     #[rstest]

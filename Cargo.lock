@@ -340,6 +340,7 @@ version = "0.0.0"
 dependencies = [
  "approx",
  "divan",
+ "hoomd-interaction",
  "rstest",
 ]
 
@@ -349,7 +350,6 @@ version = "0.0.0"
 dependencies = [
  "approx",
  "divan",
- "hoomd-chimes",
  "hoomd-microstate",
  "hoomd-utility",
  "hoomd-vector",
@@ -390,7 +390,6 @@ dependencies = [
 name = "hoomd-utility"
 version = "0.0.0"
 dependencies = [
- "approx",
  "chacha20",
  "divan",
  "rand",

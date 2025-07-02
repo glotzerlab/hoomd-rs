@@ -18,7 +18,6 @@ workspace = true
 hoomd-microstate.workspace = true
 hoomd-vector.workspace = true
 hoomd-utility.workspace = true
-hoomd-chimes.workspace = true
 
 [dev-dependencies]
 approx.workspace = true

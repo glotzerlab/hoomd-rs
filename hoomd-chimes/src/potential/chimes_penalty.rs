@@ -4,7 +4,7 @@
 /*! Implement [`ChimesPenalty`]
  */
 
-use super::{IsotropicEnergy, IsotropicForce};
+use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
 
 /**
 Implement the penalty potential $`f_\mathrm{p}`$ of `ChIMES`
@@ -32,7 +32,8 @@ See equation 9 in <https://doi.org/10.1038/s41524-024-01497-y>.
 # Example:
 ```
 use hoomd_chimes::transformation::MorseTransformation;
-use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, Chimes2b, TersoffSmooth, ChimesPenalty};
+use hoomd_chimes::potential::{Chimes2b, TersoffSmooth, ChimesPenalty};
+use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
 
 // Main body of chimes potential
 let lambda = 1.5;
@@ -115,7 +116,7 @@ mod tests {
     use super::*;
     use rstest::*;
 
-    use crate::pairwise::ChimesPenalty;
+    use crate::potential::ChimesPenalty;
 
     #[rstest]
     fn beyond_inner_cutoff(

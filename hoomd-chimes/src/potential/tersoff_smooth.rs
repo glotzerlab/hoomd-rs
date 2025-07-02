@@ -4,7 +4,7 @@
 /*! Implement [`TersoffSmooth`]
  */
 
-use super::{IsotropicEnergy, IsotropicForce};
+use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
 use std::f64::consts::PI; // Note: Becky's chimes uses hard coding value: 3.14159265359
 
 /**
@@ -42,7 +42,9 @@ See equation 8 in <https://doi.org/10.1038/s41524-024-01497-y>.
 # Example:
 ```
 use hoomd_chimes::transformation::MorseTransformation;
-use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, Chimes2b, TersoffSmooth};
+use hoomd_chimes::potential::{Chimes2b, TersoffSmooth};
+use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
+
 
 let lambda = 1.5;
 let r_out = 3.0;
@@ -129,10 +131,10 @@ impl<F: IsotropicForce + IsotropicEnergy> IsotropicForce for TersoffSmooth<F> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hoomd_chimes::transformation::MorseTransformation;
+    use crate::transformation::MorseTransformation;
     use rstest::*;
 
-    use crate::pairwise::Chimes2b;
+    use crate::potential::Chimes2b;
 
     #[rstest]
     fn test_construction() {
