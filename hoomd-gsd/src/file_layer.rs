@@ -112,6 +112,10 @@ pub enum DecodeError {
     /// Invalid number of columns.
     #[error("expected to read read {0} columns, found {1}")]
     InvalidColumns(usize, u32),
+
+    /// Invalid string in chunk.
+    #[error("invalid string")]
+    InvalidString(#[source] FromUtf8Error),
 }
 
 /// Errors that can occur while creating or opening a file.
@@ -1384,6 +1388,10 @@ impl GsdFile {
             return Err(ReadError::Decode(name.into(), frame, DecodeError::InvalidColumns(1, index_entry.m)));
         }
 
+        if index_entry.data_type != T::gsd_data_type() {
+            return Err(ReadError::Decode(name.into(), frame, DecodeError::InvalidType(T::gsd_data_type(), index_entry.data_type)));
+        }
+
         self.read_details(&index_entry)
             .map_err(|e| ReadError::Decode(name.into(), frame, e))
     }
@@ -1425,10 +1433,63 @@ impl GsdFile {
             return Err(ReadError::Decode(name.into(), frame, DecodeError::InvalidColumns(M, index_entry.m)));
         }
 
+        if index_entry.data_type != T::gsd_data_type() {
+            return Err(ReadError::Decode(name.into(), frame, DecodeError::InvalidType(T::gsd_data_type(), index_entry.data_type)));
+        }
+
         Ok(ArrayChunks { iter:
         self.read_details::<T>(&index_entry)
             .map_err(|e| ReadError::Decode(name.into(), frame, e))?
         })
+    }
+
+/** Read a string in the given frame.
+
+    Returns [`Ok(String)`](Result::Ok) when the data chunk is present
+    in the file and `Err(`[`ReadError::ChunkNotFound`]`)` when it is not.
+
+    TODO: Note when `read_array` data is available.
+
+    # Errors
+
+    Returns a [`ReadError`] when any of the following occur:
+    * A chunk by the given `name` is not present in the given `frame`.
+    * The data type stored in the file is not a string.
+    * The array stored in the file does not have dimensions `N x 1`.
+    * The file is corrupt, unreadable, or there is an I/O error (see
+      [`DecodeError`]).
+
+    # Example
+
+    ```
+    use hoomd_gsd::file_layer::GsdFile;
+
+    # fn func(gsd_file: &mut GsdFile) -> Result<(), Box<dyn std::error::Error>> {
+    let array = gsd_file.read_array::<u64>(0, "configuration/step")?;
+    # Ok(())
+    # }
+    ```
+    */
+    pub fn read_string(&self, frame: u64, name: &str) ->
+        Result<String, ReadError> {
+        let index_entry = match self.find_chunk(frame, name) {
+            None => return Err(ReadError::ChunkNotFound(name.into(), frame)),
+            Some(e) => e,
+        };
+
+        if index_entry.m as usize != 1 {
+            return Err(ReadError::Decode(name.into(), frame, DecodeError::InvalidColumns(1, index_entry.m)));
+        }
+
+        if index_entry.data_type != 11 {
+            return Err(ReadError::Decode(name.into(), frame, DecodeError::InvalidType(11, index_entry.data_type)));
+        }
+
+        let array = self.read_details::<u8>(&index_entry)
+            .map_err(|e| ReadError::Decode(name.into(), frame, e))?
+            .collect::<Vec<_>>();
+
+        String::from_utf8(array).map_err(|e| ReadError::Decode(name.into(), frame, DecodeError::InvalidString(e)))
     }
 
     /// Implement the details of `iter_scalars` and `iter_arrays`.
@@ -1442,10 +1503,6 @@ impl GsdFile {
 
         let location =
             usize::try_from(index_entry.location).map_err(DecodeError::UnaddressableContent)?;
-
-        if index_entry.data_type != T::gsd_data_type() {
-            return Err(DecodeError::InvalidType(T::gsd_data_type(), index_entry.data_type));
-        }
 
         if index_entry.location == 0 {
             return Err(DecodeError::CorruptIndexEntry(*index_entry),
@@ -1568,6 +1625,41 @@ I::IntoIter: ExactSizeIterator,
             }
         }
         }).map_err(|e| WriteError::Encode(name.into(), self.buffer_frame, e))
+    }
+
+    /** Append a string to the current frame.
+
+    `write_string` writes a UTF-8 string to a named chunk in the current frame
+    of the GSD file. Call [`end_frame`](GsdFile::end_frame) to complete the
+    frame and start the next.
+
+    <div class="warning">
+
+    Dropping a [`GsdFile`] will also drop any pending data chunks in incomplete
+    frames.
+
+    </div>
+
+    # Errors
+
+    Returns a [`WriteError`] when any of the following occur:
+    * The file is not opened in a write mode.
+    * There are no available chunk identifiers.
+    * A chunk with the same name has already been written in this frame.
+    */
+    pub fn write_string(
+        &mut self,
+        name: &str,
+        data: &str,
+    ) -> Result<(), WriteError>
+    {
+        let data = data.as_bytes();
+
+        self.write_details(name, data.len() as u64,
+            1,
+            11,
+            |buffer: &mut Vec<u8>| buffer.extend(data)
+        ).map_err(|e| WriteError::Encode(name.into(), self.buffer_frame, e))
     }
 
     /// Common code used in all write_ methods.
@@ -2567,4 +2659,28 @@ mod tests {
             itertools::assert_equal(array, [i]);
         }
     }
+
+    #[test]
+    fn string() {
+        let tmp_dir = tempdir().expect("temp dir should be created");
+        let path = tmp_dir.path().join("test.gsd");
+        let mut gsd_file =
+            GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
+
+        gsd_file
+            .write_string("a", "this is a string")
+            .expect("write should succeed");
+        gsd_file.end_frame().expect("write should succeed");
+        gsd_file
+            .write_scalars::<u8, _>("b", &[0, 159, 146, 150])
+            .expect("write should succeed");
+        gsd_file.end_frame().expect("write should succeed");
+        gsd_file.sync_all().expect("write should succeed");
+
+        let a = gsd_file.read_string(0, "a").expect("read should succeed");
+        assert_eq!(a, "this is a string");
+
+        let b = gsd_file.read_string(1, "b");
+        assert!(matches!(b, Err(ReadError::Decode(_, _, DecodeError::InvalidType(11, 1)))));
+        }
 }
