@@ -16,6 +16,9 @@ pub use boxcar::Boxcar;
 mod lennard_jones;
 pub use lennard_jones::LennardJones;
 
+mod lennard_jones_gauss;
+pub use lennard_jones_gauss::LennardJonesGauss;
+
 mod shifted;
 pub use shifted::Shifted;
 

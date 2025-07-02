@@ -25,7 +25,7 @@ let sigma_squared = 0.5;
 let r_0 = 0.5_f64.powf(1.0/6.0);
 
 let lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss { epsilon, sigma_squared, r_0 };
-// lennard_jones_gauss.energy(0.5_f64.powf(1.0/6.0)) is approximately -self.epsilon
+assert_relative_eq!(lennard_jones_gauss.energy(0.5_f64.powf(1.0/6.0)), -epsilon, epsilon=1e-12);
 ```
 
 The parameters are public fields and may be accessed directly:
@@ -40,11 +40,11 @@ lennard_jones_gauss.sigma_squared = 3.0;
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct LennardJonesGauss {
-    /// Energy scale *(\[energy\])*.
+    /// Scale of Gaussian
     pub epsilon: f64,
-    /// Interaction width *(\[length\])*.
+    /// Width of Gaussian
     pub sigma_squared: f64,
-    //// Gaussian center
+    /// Gaussian center
     pub r_0: f64,
 }
 
