@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     result
 }
 
-const RHO : f64 = 1.0;
+const RHO : f64 = 0.6;
 
 /// Run the simulation
 fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> {

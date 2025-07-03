@@ -581,7 +581,7 @@ impl FundamentalDomain for Minkowski<3> {
     fn distance_to_boundary(&self, skirt: f64) -> f64 {
         let theta = atan2(self.coordinates[1], self.coordinates[0]);
         let angle = theta.rem_euclid(PI/4.0);
-        let tile_size = EIGHTEIGHT * skirt;
+        let tile_size = EIGHTEIGHT;
         let eta = (tile_size.tanh()/(angle.cos() - angle.sin()*(1.0-(2.0_f64).sqrt()))).atanh();
         skirt * eta - self.distance_from_cusp(skirt)
     }
@@ -592,7 +592,7 @@ impl FundamentalDomain for Minkowski<3> {
         let mut coords = Vec::<(f64,f64)>::new();
         for n in 0..m {
             let angle = (n as f64) * 2.0 * PI / (m as f64);
-            let tile_size = EIGHTEIGHT * skirt;
+            let tile_size = EIGHTEIGHT;
             let eta = (tile_size.tanh()/(angle.cos() - angle.sin()*(1.0-(2.0_f64).sqrt()))).atanh();
             let x = (skirt* sinh(eta))/(1.0 + cosh(eta));
             for k in 0..8 {

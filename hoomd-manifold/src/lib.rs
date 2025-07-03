@@ -130,14 +130,15 @@ mod sphere;
 mod minkowski;
 mod hyperbolic_angle;
 mod biquaternion;
-mod hyperbolic_translate;
+mod manifold_translate;
 
 pub use {
     minkowski::{Minkowski, HyperbolicRotationMatrix, HyperbolicDisk, EightEight},
     hyperbolic_angle::HyperbolicAngle,
     biquaternion::{Biquaternion, UnitBiquaternion},
-    hyperbolic_translate::HyperbolicTranslate,
+    manifold_translate::{HyperbolicTranslate, SphericalTranslate},
     curved_interaction::CurvedIsotropic,
+    sphere::SphericalDisk,
 };
 
 use thiserror::Error;
@@ -164,7 +165,9 @@ pub enum Error {
 /** Implement methods on non-Euclidean spaces
 */
 pub trait CurvedManifold {
-    /** Distance of the geodesic path passing through two points on the hyperboloid
+    /** Distance of the geodesic path passing through two points on the hyperboloid. The length scale rho 
+    sets the curvature strength; rho is the sphere radius for positive curvature, while rho is the hyperboloid 
+    skirt width for negative curvature. 
     */
     fn geodesic_distance(&self, other: &Self, rho: f64) -> f64;
 }
@@ -221,6 +224,10 @@ pub trait Sphere: InnerProduct + CurvedManifold {
      */
     #[inline]
     fn sphere_distance(&self, other: &Self, radius: f64) -> f64;
+    /** Stereographic projection of the N-sphere to an N-dimensional plane. 
+    */
+    #[inline]
+    fn stereographic_projection(&self, radius: f64) -> Vec<f64>;
 }
 
 #[cfg(test)]
