@@ -39,6 +39,7 @@ approx = "0.5.1"
 divan = "0.1.17"
 rstest = "0.25.0"
 anyhow = "1.0.98"
+bevy = "0.16.1"
 
 [workspace.lints.rust]
 missing_docs = "warn"
@@ -86,3 +87,103 @@ default.extend-words = { ratatui = "ratatui" }
 # TODO: Check that this works after release. It may need to be in package.metadata
 # https://docs.rs/about/metadata
 rustdoc-args = [ "--html-in-header", "katex.html" ]
+
+# Bevy is extremely slow in debug builds, build it with optimizations
+# to avoid this: https://bevy.org/learn/quick-start/getting-started/setup/#compile-with-performance-optimizations
+# Explicitly list all bevy packates as we may want to be able to debug
+# other dependencies.
+[profile.dev.package.bevy]
+opt-level = 3
+[profile.dev.package.bevy_a11y]
+opt-level = 3
+[profile.dev.package.bevy_animation]
+opt-level = 3
+[profile.dev.package.bevy_app]
+opt-level = 3
+[profile.dev.package.bevy_asset]
+opt-level = 3
+[profile.dev.package.bevy_asset_macros]
+opt-level = 3
+[profile.dev.package.bevy_audio]
+opt-level = 3
+[profile.dev.package.bevy_color]
+opt-level = 3
+[profile.dev.package.bevy_core_pipeline]
+opt-level = 3
+[profile.dev.package.bevy_derive]
+opt-level = 3
+[profile.dev.package.bevy_diagnostic]
+opt-level = 3
+[profile.dev.package.bevy_ecs]
+opt-level = 3
+[profile.dev.package.bevy_ecs_macros]
+opt-level = 3
+[profile.dev.package.bevy_encase_derive]
+opt-level = 3
+[profile.dev.package.bevy_gilrs]
+opt-level = 3
+[profile.dev.package.bevy_gizmos]
+opt-level = 3
+[profile.dev.package.bevy_gizmos_macros]
+opt-level = 3
+[profile.dev.package.bevy_gltf]
+opt-level = 3
+[profile.dev.package.bevy_image]
+opt-level = 3
+[profile.dev.package.bevy_input]
+opt-level = 3
+[profile.dev.package.bevy_input_focus]
+opt-level = 3
+[profile.dev.package.bevy_internal]
+opt-level = 3
+[profile.dev.package.bevy_log]
+opt-level = 3
+[profile.dev.package.bevy_macro_utils]
+opt-level = 3
+[profile.dev.package.bevy_math]
+opt-level = 3
+[profile.dev.package.bevy_mesh]
+opt-level = 3
+[profile.dev.package.bevy_mikktspace]
+opt-level = 3
+[profile.dev.package.bevy_pbr]
+opt-level = 3
+[profile.dev.package.bevy_picking]
+opt-level = 3
+[profile.dev.package.bevy_platform]
+opt-level = 3
+[profile.dev.package.bevy_ptr]
+opt-level = 3
+[profile.dev.package.bevy_reflect]
+opt-level = 3
+[profile.dev.package.bevy_reflect_derive]
+opt-level = 3
+[profile.dev.package.bevy_render]
+opt-level = 3
+[profile.dev.package.bevy_render_macros]
+opt-level = 3
+[profile.dev.package.bevy_scene]
+opt-level = 3
+[profile.dev.package.bevy_sprite]
+opt-level = 3
+[profile.dev.package.bevy_state]
+opt-level = 3
+[profile.dev.package.bevy_state_macros]
+opt-level = 3
+[profile.dev.package.bevy_tasks]
+opt-level = 3
+[profile.dev.package.bevy_text]
+opt-level = 3
+[profile.dev.package.bevy_time]
+opt-level = 3
+[profile.dev.package.bevy_transform]
+opt-level = 3
+[profile.dev.package.bevy_ui]
+opt-level = 3
+[profile.dev.package.bevy_utils]
+opt-level = 3
+[profile.dev.package.bevy_window]
+opt-level = 3
+[profile.dev.package.bevy_winit]
+opt-level = 3
+
