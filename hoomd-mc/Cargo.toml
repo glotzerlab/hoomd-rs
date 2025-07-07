@@ -28,4 +28,5 @@ divan.workspace = true
 rstest.workspace = true
 rand.workspace = true
 bevy.workspace = true
+bevy_diagnostic.workspace = true ## TODO: move to hoomd_bevy
 ratatui = "0.28.0"

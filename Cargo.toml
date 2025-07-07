@@ -39,7 +39,8 @@ approx = "0.5.1"
 divan = "0.1.17"
 rstest = "0.25.0"
 anyhow = "1.0.98"
-bevy = "0.16.1"
+bevy = { version = "0.16.1", features = ["bevy_dev_tools"] }
+bevy_diagnostic = "0.16.1"
 
 [workspace.lints.rust]
 missing_docs = "warn"
