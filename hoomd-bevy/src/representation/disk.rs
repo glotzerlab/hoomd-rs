@@ -30,56 +30,55 @@ pub struct DiskAssets {
 }
 
 impl Disk {
-/** Create assets to render disks.
+    /** Create assets to render disks.
 
-Disks are currently fixed to a diameter of 1.0. Provide a non-unit scale in
-[`sync`] to render disks of different sizes.
+    Disks are currently fixed to a diameter of 1.0. Provide a non-unit scale in
+    [`sync`] to render disks of different sizes.
 
-[This technique](https://www.reddit.com/r/bevy/comments/1bwq9a0/plugin_system_initialization_pattern/)
-would allow for configurable setup at the cost of more boilerplate code.
-*/
-pub fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>, 
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    [This technique](https://www.reddit.com/r/bevy/comments/1bwq9a0/plugin_system_initialization_pattern/)
+    would allow for configurable setup at the cost of more boilerplate code.
+    */
+    pub fn setup(
+        mut commands: Commands,
+        mut meshes: ResMut<Assets<Mesh>>,
+        mut materials: ResMut<Assets<ColorMaterial>>,
     ) {
-    let mesh = meshes.add(Circle::new(0.5));
-    let color = materials.add(Color::oklch(0.64, 0.14, 256.71));
-    commands.insert_resource(DiskAssets { mesh, color });
+        let mesh = meshes.add(Circle::new(0.5));
+        let color = materials.add(Color::oklch(0.64, 0.14, 256.71));
+        commands.insert_resource(DiskAssets { mesh, color });
     }
 
-/// Copy the current positions of simulation particles to bevy entities.
-pub fn sync<'a, T, I, F1, F2>(
-    commands: &mut Commands,
-    disk_assets: Res<DiskAssets>,
-    query: Query<(Entity, &mut Transform), With<Self>>,
-    sites: I,
-    position: F1,
-    diameter: F2
+    /// Copy the current positions of simulation particles to bevy entities.
+    pub fn sync<'a, T, I, F1, F2>(
+        commands: &mut Commands,
+        disk_assets: Res<DiskAssets>,
+        query: Query<(Entity, &mut Transform), With<Self>>,
+        sites: I,
+        position: F1,
+        diameter: F2,
     ) where
-T: 'a,
-I: IntoIterator<Item = &'a T>,
-F1: Fn(&T) -> Vec3,
-F2: Fn(&T) -> f32,
+        T: 'a,
+        I: IntoIterator<Item = &'a T>,
+        F1: Fn(&T) -> Vec3,
+        F2: Fn(&T) -> f32,
     {
-    for item in &mut query.into_iter().zip_longest(sites) {
-        match item {
-            Both((_, mut transform), item) => {
-                transform.translation = position(item);
-                transform.scale = Vec3::splat(diameter(item));
+        for item in &mut query.into_iter().zip_longest(sites) {
+            match item {
+                Both((_, mut transform), item) => {
+                    transform.translation = position(item);
+                    transform.scale = Vec3::splat(diameter(item));
+                }
+                Left((entity, _)) => commands.entity(entity).despawn(),
+                Right(item) => {
+                    commands.spawn((
+                        Mesh2d(disk_assets.mesh.clone()),
+                        MeshMaterial2d(disk_assets.color.clone()),
+                        Transform::from_translation(position(item))
+                            .with_scale(Vec3::splat(diameter(item))),
+                        Self,
+                    ));
+                }
             }
-            Left((entity, _)) => commands.entity(entity).despawn(),
-            Right(item) => {
-            commands.spawn((
-                Mesh2d(disk_assets.mesh.clone()),
-                MeshMaterial2d(disk_assets.color.clone()),
-                Transform::from_translation(
-                    position(item)
-                ).with_scale(Vec3::splat(diameter(item))),
-                Self,
-            ));    
-            },
+        }
     }
-}
-}
 }

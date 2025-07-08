@@ -9,7 +9,7 @@ tasks.
 
 Users consume examples and tutorials in a number of ways, including reading
 the code (with descriptions) on a web page, executing the example and observing
-the output, and changing the example to see what happens. 
+the output, and changing the example to see what happens.
 
 Most production uses of `hoomd-rs` will not use Bevy. Therefore, long strings
 of code that interface with Bevy will be distracting. To the extent possible,

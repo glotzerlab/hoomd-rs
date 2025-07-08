@@ -7,10 +7,22 @@
 #![doc(
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
-#![allow(clippy::exhaustive_enums, reason = "States are intentionally non-exhaustive.")]
-#![allow(clippy::missing_inline_in_public_items, reason = "hoomd-bevy code is not intended to be inlined.")]
-#![allow(clippy::needless_pass_by_value, reason = "Bevy requires that args are passed by value.")]
-#![allow(clippy::cast_possible_truncation, reason = "Bevy operates with f32 values.")]
+#![allow(
+    clippy::exhaustive_enums,
+    reason = "States are intentionally non-exhaustive."
+)]
+#![allow(
+    clippy::missing_inline_in_public_items,
+    reason = "hoomd-bevy code is not intended to be inlined."
+)]
+#![allow(
+    clippy::needless_pass_by_value,
+    reason = "Bevy requires that args are passed by value."
+)]
+#![allow(
+    clippy::cast_possible_truncation,
+    reason = "Bevy operates with f32 values."
+)]
 
 /*! Connect *hoomd-rs* simulations with the Bevy game engine.
 
@@ -31,8 +43,15 @@ See any one of the many *hoomd-rs* examples that use [`HoomdBevyPlugin`].
 */
 
 use anyhow::Context;
-use bevy::{prelude::*, time::common_conditions::{on_timer, once_after_delay}, render::view::window::screenshot::{save_to_disk, Screenshot}};
-use bevy_diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin, Diagnostic, Diagnostics, DiagnosticPath, RegisterDiagnostic};
+use bevy::{
+    prelude::*,
+    render::view::window::screenshot::{Screenshot, save_to_disk},
+    time::common_conditions::{on_timer, once_after_delay},
+};
+use bevy_diagnostic::{
+    Diagnostic, DiagnosticPath, Diagnostics, DiagnosticsStore, FrameTimeDiagnosticsPlugin,
+    RegisterDiagnostic,
+};
 use bevy_winit::WinitWindows;
 
 use std::time::{Duration, Instant};
@@ -122,7 +141,8 @@ pub struct Settings {
 
 impl Default for Settings {
     fn default() -> Self {
-        Self { frame_budget_fraction: 0.9,
+        Self {
+            frame_budget_fraction: 0.9,
             sps_limit: 500.0,
         }
     }
@@ -177,7 +197,10 @@ after [`AdvanceSet`] to reduce the latency between input and result.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InputSet;
 
-impl<Sim> HoomdBevyPlugin<Sim> where Sim: Resource + Simulation{
+impl<Sim> HoomdBevyPlugin<Sim>
+where
+    Sim: Resource + Simulation,
+{
     /// Bevy diagnostic that counts the number of steps executed per second.
     pub const SPS: DiagnosticPath = DiagnosticPath::const_new("sps");
 
@@ -199,48 +222,50 @@ impl<Sim> HoomdBevyPlugin<Sim> where Sim: Resource + Simulation{
     /// Round the UI to this radius.
     pub const UI_ROUNDING: f32 = 12.0;
 
-/// Bevy system that advances the simulation forward one step.
-fn step_simulation(
-    mut diagnostics: Diagnostics,
-    mut exit: EventWriter<AppExit>,
-    simulation: ResMut<Sim>,
-    time: Res<Time>,
-    mut accumulated_steps: Local<f32>,
-    settings: Res<Settings>,
-    frame_budget: ResMut<FrameBudget>,) {
+    /// Bevy system that advances the simulation forward one step.
+    fn step_simulation(
+        mut diagnostics: Diagnostics,
+        mut exit: EventWriter<AppExit>,
+        simulation: ResMut<Sim>,
+        time: Res<Time>,
+        mut accumulated_steps: Local<f32>,
+        settings: Res<Settings>,
+        frame_budget: ResMut<FrameBudget>,
+    ) {
+        // Determine the maximum number of steps that we can take in this update.
+        // Accumulate fractional steps over time and remove whole steps from the
+        // accumulated amount. This allows for steps per second limits that are
+        // less than the monitor's refresh rate.
+        let max_steps = settings.sps_limit * time.delta_secs();
+        *accumulated_steps += max_steps.fract();
 
-    // Determine the maximum number of steps that we can take in this update.
-    // Accumulate fractional steps over time and remove whole steps from the
-    // accumulated amount. This allows for steps per second limits that are
-    // less than the monitor's refresh rate.
-    let max_steps = settings.sps_limit * time.delta_secs();
-    *accumulated_steps += max_steps.fract();
-
-    let mut max_steps = max_steps.floor() as i64;
-    if *accumulated_steps > 1.0 {
-        max_steps += accumulated_steps.trunc() as i64;
-        *accumulated_steps = accumulated_steps.fract();
-    }
-        
-    let simulation = simulation.into_inner();
-    let step_time = Instant::now();
-    let mut steps = 0;
-    while step_time.elapsed() < frame_budget.0 && steps < max_steps{
-        let result = simulation.advance().with_context(|| format!("failed at step: {}", simulation.step()));
-        if let Err(error) = result {
-            error!("{error:?}");
-            exit.write(AppExit::Error(1.try_into().expect("1 is non-zero")));
-            break;
-            }
-        steps += 1;
+        let mut max_steps = max_steps.floor() as i64;
+        if *accumulated_steps > 1.0 {
+            max_steps += accumulated_steps.trunc() as i64;
+            *accumulated_steps = accumulated_steps.fract();
         }
 
-    diagnostics.add_measurement(&Self::SPS, || steps as f64 / time.delta_secs_f64());
+        let simulation = simulation.into_inner();
+        let step_time = Instant::now();
+        let mut steps = 0;
+        while step_time.elapsed() < frame_budget.0 && steps < max_steps {
+            let result = simulation
+                .advance()
+                .with_context(|| format!("failed at step: {}", simulation.step()));
+            if let Err(error) = result {
+                error!("{error:?}");
+                exit.write(AppExit::Error(1.try_into().expect("1 is non-zero")));
+                break;
+            }
+            steps += 1;
+        }
+
+        diagnostics.add_measurement(&Self::SPS, || steps as f64 / time.delta_secs_f64());
     }
 
-/// Create the full screen UI text overlay node.
-fn setup_overlay(mut commands: Commands) {
-commands.spawn((
+    /// Create the full screen UI text overlay node.
+    fn setup_overlay(mut commands: Commands) {
+        commands.spawn((
             Node {
                 top: Val::Px(0.0),
                 left: Val::Px(0.0),
@@ -250,12 +275,12 @@ commands.spawn((
             },
             Visibility::Visible,
             OverlayRoot,
-            ));
-}
+        ));
+    }
 
-/// Add debug text nodes.
-fn setup_debug_text(mut commands: Commands, overlay_root: Single<Entity, With<OverlayRoot>>,) {
-    commands.spawn((
+    /// Add debug text nodes.
+    fn setup_debug_text(mut commands: Commands, overlay_root: Single<Entity, With<OverlayRoot>>) {
+        commands.spawn((
             Text::default(),
             Node {
                 position_type: PositionType::Absolute,
@@ -265,20 +290,18 @@ fn setup_debug_text(mut commands: Commands, overlay_root: Single<Entity, With<Ov
             },
             Visibility::Hidden,
             DebugText,
-        children![
-            TextSpan::new("FPS:\n"),
-            TextSpan::new("SPS:\n"),
-            TextSpan::new("Step:\n"),
+            children![
+                TextSpan::new("FPS:\n"),
+                TextSpan::new("SPS:\n"),
+                TextSpan::new("Step:\n"),
             ],
-        ChildOf(*overlay_root),
+            ChildOf(*overlay_root),
         ));
-}
+    }
 
-/// Add paused text node.
-fn add_pause_text(mut commands: Commands,
-    overlay_root: Single<Entity, With<OverlayRoot>>,
-) {
-    commands.spawn((
+    /// Add paused text node.
+    fn add_pause_text(mut commands: Commands, overlay_root: Single<Entity, With<OverlayRoot>>) {
+        commands.spawn((
             Text::new("paused..."),
             Node {
                 position_type: PositionType::Absolute,
@@ -290,24 +313,25 @@ fn add_pause_text(mut commands: Commands,
             Visibility::Hidden,
             ChildOf(*overlay_root),
         ));
-}
+    }
 
-/// Add the help text UI node.
-fn add_help_text(mut commands: Commands,
-    overlay_root: Single<Entity, With<OverlayRoot>>,
-) {
-    let text = (Text::new("q       : Quit.
+    /// Add the help text UI node.
+    fn add_help_text(mut commands: Commands, overlay_root: Single<Entity, With<OverlayRoot>>) {
+        let text = (
+            Text::new(
+                "q       : Quit.
 <space> : Pause the simulation.
 <right> : Advance one step (while paused).
 shift-F1: Show/hide the user interface.
 F5      : Show/hide debugging information.
 F12     : Take a screenshot (screenshot.png).
-?       : Show/hide this help text."),
+?       : Show/hide this help text.",
+            ),
             BackgroundColor(Color::oklch(0.2, 0.0, 0.0)),
             HelpText,
-            );
+        );
 
-    commands.spawn((
+        commands.spawn((
             Node {
                 align_items: AlignItems::Center,
                 position_type: PositionType::Absolute,
@@ -315,7 +339,7 @@ F12     : Take a screenshot (screenshot.png).
                 right: Val::Px(12.0),
                 margin: UiRect::all(Val::Px(0.0)),
                 border: UiRect::all(Val::Px(12.0)),
-                justify_content: JustifyContent::Center,                
+                justify_content: JustifyContent::Center,
                 ..default()
             },
             HelpTextContainer,
@@ -332,13 +356,11 @@ F12     : Take a screenshot (screenshot.png).
             GlobalZIndex(Self::HELP_OVERLAY_ZINDEX),
             children![text],
         ));
-}
+    }
 
-/// Add help reminder node.
-fn add_help_reminder(mut commands: Commands,
-    overlay_root: Single<Entity, With<OverlayRoot>>,
-) {
-    commands.spawn((
+    /// Add help reminder node.
+    fn add_help_reminder(mut commands: Commands, overlay_root: Single<Entity, With<OverlayRoot>>) {
+        commands.spawn((
             Text::new("Press ? to show the help screen."),
             Node {
                 position_type: PositionType::Absolute,
@@ -348,223 +370,258 @@ fn add_help_reminder(mut commands: Commands,
             },
             HelpReminder,
             ChildOf(*overlay_root),
-            GlobalZIndex(Self::HELP_OVERLAY_ZINDEX-1),
+            GlobalZIndex(Self::HELP_OVERLAY_ZINDEX - 1),
         ));
-}
-
-/// Remove paused text node.
-fn remove_help_reminder(mut commands: Commands,
-    overlay_root: Single<Entity, (With<OverlayRoot>, Without<HelpReminder>)>,
-    help_reminder: Single<Entity, (With<HelpReminder>, Without<OverlayRoot>)>,
-) {
-    commands.entity(*overlay_root).remove_children(&[*help_reminder]);
-    commands.entity(*help_reminder).despawn();
-}
-
-/// Populate values in the debug text.
-fn update_debug_text(
-    diagnostic: Res<DiagnosticsStore>,
-    debug_text: Single<(Entity, &Visibility), With<DebugText>>,
-    mut writer: TextUiWriter,
-    time: Res<Time>,
-    mut time_since_rerender: Local<Duration>,
-    simulation: Res<Sim>,
-) {
-    *time_since_rerender += time.delta();
-    let (debug_text, visibility) = *debug_text;
-
-    if visibility == Visibility::Hidden {
-        return;
     }
 
-    if *time_since_rerender >= Duration::from_millis(100) {
-        *time_since_rerender = Duration::ZERO;
+    /// Remove paused text node.
+    fn remove_help_reminder(
+        mut commands: Commands,
+        overlay_root: Single<Entity, (With<OverlayRoot>, Without<HelpReminder>)>,
+        help_reminder: Single<Entity, (With<HelpReminder>, Without<OverlayRoot>)>,
+    ) {
+        commands
+            .entity(*overlay_root)
+            .remove_children(&[*help_reminder]);
+        commands.entity(*help_reminder).despawn();
+    }
 
-        if let Some(fps) = diagnostic.get(&FrameTimeDiagnosticsPlugin::FPS) {
-            if let Some(value) = fps.smoothed() {
-                *writer.text(debug_text, 1) = format!(" FPS: {value:.2}\n");
+    /// Populate values in the debug text.
+    fn update_debug_text(
+        diagnostic: Res<DiagnosticsStore>,
+        debug_text: Single<(Entity, &Visibility), With<DebugText>>,
+        mut writer: TextUiWriter,
+        time: Res<Time>,
+        mut time_since_rerender: Local<Duration>,
+        simulation: Res<Sim>,
+    ) {
+        *time_since_rerender += time.delta();
+        let (debug_text, visibility) = *debug_text;
+
+        if visibility == Visibility::Hidden {
+            return;
+        }
+
+        if *time_since_rerender >= Duration::from_millis(100) {
+            *time_since_rerender = Duration::ZERO;
+
+            if let Some(fps) = diagnostic.get(&FrameTimeDiagnosticsPlugin::FPS) {
+                if let Some(value) = fps.smoothed() {
+                    *writer.text(debug_text, 1) = format!(" FPS: {value:.2}\n");
+                }
+            }
+            if let Some(sps) = diagnostic.get(&Self::SPS) {
+                if let Some(value) = sps.smoothed() {
+                    *writer.text(debug_text, 2) = format!(" SPS: {value:.2}\n");
+                }
+            }
+            *writer.text(debug_text, 3) = format!("Step: {}\n", simulation.step());
+        }
+    }
+
+    /// Keyboard control to pause/unpause the simulation.
+    fn keyboard_pause(
+        keys: Res<ButtonInput<KeyCode>>,
+        mut pause_text: Single<&mut Visibility, With<PauseText>>,
+        pause_state: Res<State<PauseState>>,
+        mut next_pause_state: ResMut<NextState<PauseState>>,
+    ) {
+        if keys.just_pressed(KeyCode::Space) {
+            debug!("Toggle pause state.");
+            pause_text.toggle_inherited_hidden();
+            match pause_state.get() {
+                PauseState::Paused => next_pause_state.set(PauseState::Running),
+                PauseState::Running => next_pause_state.set(PauseState::Paused),
             }
         }
-        if let Some(sps) = diagnostic.get(&Self::SPS) {
-            if let Some(value) = sps.smoothed() {
-                *writer.text(debug_text, 2) = format!(" SPS: {value:.2}\n");
+    }
+
+    /// Keyboard control to show the help screen.
+    fn keyboard_help(
+        keys: Res<ButtonInput<KeyCode>>,
+        mut help_text_container: Single<&mut Visibility, With<HelpTextContainer>>,
+    ) {
+        if keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])
+            && keys.just_pressed(KeyCode::Slash)
+        {
+            debug!("Show/hide help text.");
+            help_text_container.toggle_inherited_hidden();
+        }
+    }
+
+    /// Keyboard control to hide the whole UI.
+    fn keyboard_overlay(
+        keys: Res<ButtonInput<KeyCode>>,
+        mut overlay_root: Single<&mut Visibility, (With<OverlayRoot>, Without<DebugText>)>,
+        mut debug_text: Single<&mut Visibility, (With<DebugText>, Without<OverlayRoot>)>,
+    ) {
+        if keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])
+            && keys.just_pressed(KeyCode::F1)
+        {
+            debug!("Show/hide UI.");
+            overlay_root.toggle_visible_hidden();
+        }
+        if keys.just_pressed(KeyCode::F5) && **overlay_root == Visibility::Visible {
+            debug!("Show/hide debug overlay.");
+            debug_text.toggle_inherited_hidden();
+        }
+    }
+
+    /// Keyboard bindings to control the simulation.
+    fn keyboard_simulation(
+        mut exit: EventWriter<AppExit>,
+        keys: Res<ButtonInput<KeyCode>>,
+        pause_state: Res<State<PauseState>>,
+        simulation: ResMut<Sim>,
+    ) {
+        if keys.just_pressed(KeyCode::ArrowRight) && *pause_state.get() == PauseState::Paused {
+            let simulation = simulation.into_inner();
+            let result = simulation
+                .advance()
+                .with_context(|| format!("failed at step: {}", simulation.step()));
+            if let Err(error) = result {
+                error!("{error:?}");
+                exit.write(AppExit::Error(1.try_into().expect("1 is non-zero")));
             }
         }
-        *writer.text(debug_text, 3) = format!("Step: {}\n", simulation.step());
-    }
-}
-
-/// Keyboard control to pause/unpause the simulation.
-fn keyboard_pause(
-    keys: Res<ButtonInput<KeyCode>>,
-    mut pause_text: Single<&mut Visibility, With<PauseText>>,
-    pause_state: Res<State<PauseState>>,
-    mut next_pause_state: ResMut<NextState<PauseState>>,
-) {
-    if keys.just_pressed(KeyCode::Space) {
-        debug!("Toggle pause state.");
-        pause_text.toggle_inherited_hidden();
-        match pause_state.get() {
-            PauseState::Paused => next_pause_state.set(PauseState::Running),
-            PauseState::Running => next_pause_state.set(PauseState::Paused),
-        }    
-    }
-}
-
-/// Keyboard control to show the help screen.
-fn keyboard_help(
-    keys: Res<ButtonInput<KeyCode>>,
-    mut help_text_container: Single<&mut Visibility, With<HelpTextContainer>>,)
-    {
-    if keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]) && keys.just_pressed(KeyCode::Slash) {        
-        debug!("Show/hide help text.");
-        help_text_container.toggle_inherited_hidden();
-        }    
     }
 
-/// Keyboard control to hide the whole UI.
-fn keyboard_overlay(
-    keys: Res<ButtonInput<KeyCode>>,
-    mut overlay_root: Single<&mut Visibility, (With<OverlayRoot>, Without<DebugText>)>,
-    mut debug_text: Single<&mut Visibility, (With<DebugText>, Without<OverlayRoot>)>,)
-    {
-    if keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]) && keys.just_pressed(KeyCode::F1) {
-        debug!("Show/hide UI.");
-        overlay_root.toggle_visible_hidden();
-    }
-    if keys.just_pressed(KeyCode::F5) && **overlay_root == Visibility::Visible {
-        debug!("Show/hide debug overlay.");
-        debug_text.toggle_inherited_hidden();
-    }
+    /// Keyboard command to quit.
+    fn keyboard_quit(mut exit: EventWriter<AppExit>, keys: Res<ButtonInput<KeyCode>>) {
+        if keys.just_pressed(KeyCode::KeyQ) {
+            debug!("Quitting...");
+            exit.write(AppExit::Success);
+        }
     }
 
-/// Keyboard bindings to control the simulation.
-fn keyboard_simulation(
-    mut exit: EventWriter<AppExit>,
-    keys: Res<ButtonInput<KeyCode>>,
-    pause_state: Res<State<PauseState>>,
-    simulation: ResMut<Sim>,) {
+    /// Implement keyboard commands for common operations.
+    fn keyboard_screenshot(mut commands: Commands, keys: Res<ButtonInput<KeyCode>>) {
+        if keys.just_pressed(KeyCode::F12) {
+            commands
+                .spawn(Screenshot::primary_window())
+                .observe(save_to_disk("screenshot.png"));
+        }
+    }
 
-    if keys.just_pressed(KeyCode::ArrowRight) && *pause_state.get() == PauseState::Paused {
-        let simulation = simulation.into_inner();
-        let result = simulation.advance().with_context(|| format!("failed at step: {}", simulation.step()));
-        if let Err(error) = result {
-            error!("{error:?}");
-            exit.write(AppExit::Error(1.try_into().expect("1 is non-zero")));
+    /** Set the time budgeted to advancing the simulation each frame.
+
+    Derive this time from the current monitor refresh rate and the
+    `frame_budget_fraction` settings.
+    */
+    fn set_frame_budget(
+        winit: NonSend<WinitWindows>,
+        windows: Query<Entity, With<Window>>,
+        settings: Res<Settings>,
+        mut frame_budget: ResMut<FrameBudget>,
+    ) {
+        // adapted from: https://github.com/aevyrie/bevy_framepace/blob/main/src/lib.rs
+        let new_frame_budget = match Self::detect_frame_time(winit, windows.iter()) {
+            Some(frame_time) => {
+                Duration::from_secs_f32(frame_time.as_secs_f32() * settings.frame_budget_fraction)
             }
-    }
-}
-
-/// Keyboard command to quit.
-fn keyboard_quit(
-    mut exit: EventWriter<AppExit>,
-    keys: Res<ButtonInput<KeyCode>>,
-) {
-    if keys.just_pressed(KeyCode::KeyQ) {
-        debug!("Quitting...");
-        exit.write(AppExit::Success);
-    }
-}
-
-/// Implement keyboard commands for common operations.
-fn keyboard_screenshot(
-    mut commands: Commands,
-    keys: Res<ButtonInput<KeyCode>>,
-) {  
-    if keys.just_pressed(KeyCode::F12) {
-    commands.spawn(Screenshot::primary_window())
-      .observe(save_to_disk("screenshot.png"));
-    }
-}
-
-
-
-/** Set the time budgeted to advancing the simulation each frame.
-
-Derive this time from the current monitor refresh rate and the
-`frame_budget_fraction` settings.
-*/
-fn set_frame_budget(winit: NonSend<WinitWindows>,
-    windows: Query<Entity, With<Window>>,
-    settings: Res<Settings>,
-    mut frame_budget: ResMut<FrameBudget>,
-) {
-    // adapted from: https://github.com/aevyrie/bevy_framepace/blob/main/src/lib.rs
-    let new_frame_budget = match Self::detect_frame_time(winit, windows.iter()) {
-            Some(frame_time) => Duration::from_secs_f32(frame_time.as_secs_f32() * settings.frame_budget_fraction),
             None => return,
         };
 
-    if new_frame_budget != frame_budget.0 {
-        frame_budget.0 = new_frame_budget; 
-        debug!("New simulation frame budget: {:?}", frame_budget.0);
+        if new_frame_budget != frame_budget.0 {
+            frame_budget.0 = new_frame_budget;
+            debug!("New simulation frame budget: {:?}", frame_budget.0);
         }
     }
 
-/// Detect the minimum frame time for all windows.
-fn detect_frame_time(
-    winit: NonSend<WinitWindows>,
-    windows: impl Iterator<Item = Entity>,
-) -> Option<Duration> {
-let best_framerate = {
-        f64::from(windows
-            .filter_map(|e| winit.get_window(e))
-            .filter_map(|w| w.current_monitor())
-            .filter_map(|monitor| monitor.refresh_rate_millihertz())
-            .min()?)
-            / 1000.0
-            - 0.5
-    };
+    /// Detect the minimum frame time for all windows.
+    fn detect_frame_time(
+        winit: NonSend<WinitWindows>,
+        windows: impl Iterator<Item = Entity>,
+    ) -> Option<Duration> {
+        let best_framerate = {
+            f64::from(
+                windows
+                    .filter_map(|e| winit.get_window(e))
+                    .filter_map(|w| w.current_monitor())
+                    .filter_map(|monitor| monitor.refresh_rate_millihertz())
+                    .min()?,
+            ) / 1000.0
+                - 0.5
+        };
 
-    let best_frame_time = Duration::from_secs_f64(1.0 / best_framerate);
-    Some(best_frame_time)
-}
+        let best_frame_time = Duration::from_secs_f64(1.0 / best_framerate);
+        Some(best_frame_time)
+    }
 
-// TODO: how to set the camera height? Put it in settings?
+    // TODO: how to set the camera height? Put it in settings?
 
-/// Set up the 2D camera.
-fn setup_camera(
-    mut commands: Commands,
-) {
-    let projection = Projection::Orthographic(OrthographicProjection {
-       scaling_mode: bevy::render::camera::ScalingMode::FixedVertical { viewport_height: 10.0 },
-       ..OrthographicProjection::default_2d()
-    });
+    /// Set up the 2D camera.
+    fn setup_camera(mut commands: Commands) {
+        let projection = Projection::Orthographic(OrthographicProjection {
+            scaling_mode: bevy::render::camera::ScalingMode::FixedVertical {
+                viewport_height: 10.0,
+            },
+            ..OrthographicProjection::default_2d()
+        });
 
-    commands.spawn((Camera2d,
-                    projection)
-                );
+        commands.spawn((Camera2d, projection));
+    }
 
-}
+    /** Build the plugin.
 
-/** Build the plugin.
+    [`HoomdBevyPlugin`] does not implement [`Plugin`] and cannot be used with
+    `add_plugins` so that the `build` method can consume `self`. This allows
+    `build` to take ownership of the `simulation` field and create the appropriate
+    Bevy [`Resource`].
+    */
+    pub fn build(self, app: &mut App) {
+        app.add_plugins(FrameTimeDiagnosticsPlugin::default())
+            .insert_resource(ClearColor(Self::CLEAR))
+            .insert_resource(FrameBudget(Duration::from_millis(9)))
+            .insert_resource(self.initial_settings)
+            .register_diagnostic(Diagnostic::new(Self::SPS))
+            .insert_resource(self.simulation)
+            .insert_state(PauseState::Running)
+            .add_systems(Startup, Self::setup_camera)
+            .add_systems(
+                Startup,
+                (
+                    Self::setup_overlay,
+                    Self::setup_debug_text,
+                    Self::add_pause_text,
+                    Self::add_help_text,
+                    Self::add_help_reminder,
+                )
+                    .chain(),
+            )
+            .add_systems(
+                Update,
+                Self::remove_help_reminder.run_if(once_after_delay(Duration::from_secs(3))),
+            )
+            .add_systems(Update, Self::step_simulation.in_set(AdvanceSet))
+            .add_systems(
+                Update,
+                (Self::keyboard_overlay, Self::update_debug_text)
+                    .chain()
+                    .in_set(InputSet),
+            )
+            .add_systems(
+                Update,
+                (
+                    Self::keyboard_pause,
+                    Self::keyboard_help,
+                    Self::keyboard_simulation,
+                    Self::keyboard_screenshot,
+                    Self::keyboard_quit,
+                )
+                    .in_set(InputSet),
+            )
+            .add_systems(
+                Update,
+                Self::set_frame_budget.run_if(on_timer(Duration::from_millis(250))),
+            );
 
-[`HoomdBevyPlugin`] does not implement [`Plugin`] and cannot be used with
-`add_plugins` so that the `build` method can consume `self`. This allows
-`build` to take ownership of the `simulation` field and create the appropriate
-Bevy [`Resource`].
-*/
-pub fn build(self, app: &mut App) {
-    app
-    .add_plugins(FrameTimeDiagnosticsPlugin::default())
-    .insert_resource(ClearColor(Self::CLEAR))
-    .insert_resource(FrameBudget(Duration::from_millis(9)))
-    .insert_resource(self.initial_settings)
-    .register_diagnostic(Diagnostic::new(Self::SPS))
-    .insert_resource(self.simulation)
-    .insert_state(PauseState::Running)
-    .add_systems(Startup, Self::setup_camera)
-    .add_systems(Startup, (Self::setup_overlay, Self::setup_debug_text, Self::add_pause_text, Self::add_help_text, Self::add_help_reminder).chain())
-    .add_systems(Update, Self::remove_help_reminder.run_if(once_after_delay(Duration::from_secs(3))))
-    .add_systems(Update, Self::step_simulation.in_set(AdvanceSet))
-    .add_systems(Update, (Self::keyboard_overlay, Self::update_debug_text).chain().in_set(InputSet))
-    .add_systems(Update, (Self::keyboard_pause, Self::keyboard_help, Self::keyboard_simulation, Self::keyboard_screenshot, Self::keyboard_quit).in_set(InputSet))
-    .add_systems(Update, Self::set_frame_budget.run_if(on_timer(Duration::from_millis(250))));
-
-    app.configure_sets(Update, (AdvanceSet.run_if(in_state(PauseState::Running)),
-        InputSet.after(AdvanceSet),
-        ));
+        app.configure_sets(
+            Update,
+            (
+                AdvanceSet.run_if(in_state(PauseState::Running)),
+                InputSet.after(AdvanceSet),
+            ),
+        );
     }
 }
-
-
