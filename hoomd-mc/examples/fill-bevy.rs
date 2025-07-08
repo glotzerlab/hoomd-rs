@@ -13,12 +13,13 @@ use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Square, pr
 use hoomd_vector::Cartesian;
 
 use anyhow::Context;
-use bevy::{prelude::*, window::PresentMode, time::common_conditions::once_after_delay, render::view::window::screenshot::{save_to_disk, Screenshot}};
+use bevy::{prelude::*, window::PresentMode, time::common_conditions::{on_timer, once_after_delay}, render::view::window::screenshot::{save_to_disk, Screenshot}};
 use bevy_diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin, Diagnostic, Diagnostics, DiagnosticPath, RegisterDiagnostic};
+use bevy_winit::WinitWindows;
 use std::time::{Duration, Instant};
 
-// TODO: derive frame budget from refresh rate and value from 0 to 1.
-const FRAME_BUDGET: Duration = Duration::from_millis(30);
+// TODO: Move frame budget and SPS limit to a settings resource. Implement an interface to change them.
+const FRAME_BUDGET_FRACTION: f32 = 0.9;
 const SPS_LIMIT: f32 = 100.0;
 const SPS: DiagnosticPath = DiagnosticPath::const_new("sps");
 const HELP_OVERLAY_ZINDEX: i32 = i32::MAX - 32;
@@ -49,6 +50,7 @@ fn main() -> anyhow::Result<()> {
     ))
     // Goes in plugin
     .insert_resource(ClearColor(Color::oklch(0.3, 0.0, 0.0)))
+    .insert_resource(FrameBudget(Duration::from_millis(10)))
     .register_diagnostic(Diagnostic::new(SPS))
     .insert_resource(setup_simulation().context("failed to setup simulation")?)
     .insert_state(PauseState::Running)
@@ -59,6 +61,7 @@ fn main() -> anyhow::Result<()> {
     .add_systems(Update, step_simulation_system.run_if(in_state(PauseState::Running)))
     .add_systems(Update, (keyboard_overlay, update_debug_text).chain())
     .add_systems(Update, (keyboard_pause, keyboard_help, keyboard_simulation, keyboard_screenshot, keyboard_quit))
+    .add_systems(Update, set_frame_budget.run_if(on_timer(Duration::from_millis(250))))
     // Goes in the example code (sync_simulation is highly simulation-specific)
     // TODO: Implement helper methods to make sync_simulation easier to write.
     .add_systems(Update, sync_simulation.run_if(resource_changed::<Simulation>).after(step_simulation_system))
@@ -140,7 +143,10 @@ fn step_simulation_system(
     mut exit: EventWriter<AppExit>,
     simulation: ResMut<Simulation>,
     time: Res<Time>,
-    mut accumulated_steps: Local<f32>) {
+    mut accumulated_steps: Local<f32>,
+    winit: NonSend<WinitWindows>,
+    windows: Query<Entity, With<Window>>,
+    frame_budget: ResMut<FrameBudget>,) {
 
     // Determine the maximum number of steps that we can take in this update.
     // Accumulate fractional steps over time and remove whole steps from the
@@ -154,11 +160,11 @@ fn step_simulation_system(
         max_steps += accumulated_steps.trunc() as u64;
         *accumulated_steps = accumulated_steps.fract();
     }
-    
+        
     let simulation = simulation.into_inner();
     let step_time = Instant::now();
     let mut steps = 0;
-    while step_time.elapsed() < FRAME_BUDGET && steps < max_steps{
+    while step_time.elapsed() < frame_budget.0 && steps < max_steps{
         let result = step_simulation(simulation).with_context(|| format!("failed at step: {}", simulation.microstate.step()));
         if let Err(error) = result {
             error!("{error:?}");
@@ -423,7 +429,7 @@ fn keyboard_pause(
     mut next_pause_state: ResMut<NextState<PauseState>>,
 ) {
     if keys.just_pressed(KeyCode::Space) {
-        debug!("Toggle pause state.");
+        info!("Toggle pause state.");
         pause_text.toggle_inherited_hidden();
         match pause_state.get() {
             PauseState::Paused => next_pause_state.set(PauseState::Running),
@@ -438,7 +444,7 @@ fn keyboard_help(
     mut help_text_container: bevy::ecs::prelude::Single<&mut Visibility, With<HelpTextContainer>>,)
     {
     if keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]) && keys.just_pressed(KeyCode::Slash) {        
-        debug!("Show/hide help text.");
+        info!("Show/hide help text.");
         help_text_container.toggle_inherited_hidden();
         }    
     }
@@ -450,11 +456,11 @@ fn keyboard_overlay(
     mut debug_text: bevy::ecs::prelude::Single<&mut Visibility, (With<DebugText>, Without<OverlayRoot>)>,)
     {
     if keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]) && keys.just_pressed(KeyCode::F1) {
-        debug!("Show/hide UI.");
+        info!("Show/hide UI.");
         overlay_root.toggle_visible_hidden();
     }
     if keys.just_pressed(KeyCode::F5) && **overlay_root == Visibility::Visible {
-        debug!("Show/hide debug overlay.");
+        info!("Show/hide debug overlay.");
         debug_text.toggle_inherited_hidden();
     }
     }
@@ -482,7 +488,7 @@ fn keyboard_quit(
     keys: Res<ButtonInput<KeyCode>>,
 ) {
     if keys.just_pressed(KeyCode::KeyQ) {
-        debug!("Quitting...");
+        info!("Quitting...");
         exit.write(AppExit::Success);
     }
 }
@@ -496,4 +502,43 @@ fn keyboard_screenshot(
     commands.spawn(Screenshot::primary_window())
       .observe(save_to_disk("screenshot.png"));
     }
+}
+
+// adapted from: https://github.com/aevyrie/bevy_framepace/blob/main/src/lib.rs
+
+
+#[derive(Resource)]
+struct FrameBudget(Duration);
+
+fn set_frame_budget(winit: NonSend<WinitWindows>,
+    windows: Query<Entity, With<Window>>,
+    mut frame_budget: ResMut<FrameBudget>,
+) {
+    let new_frame_budget = match detect_frame_time(winit, windows.iter()) {
+            Some(frame_time) => Duration::from_secs_f32(frame_time.as_secs_f32() * FRAME_BUDGET_FRACTION),
+            None => return,
+        };
+
+    if new_frame_budget != frame_budget.0 {
+        frame_budget.0 = new_frame_budget; 
+        info!("New simulation frame budget: {:?}", frame_budget.0);
+        }
+    }
+
+fn detect_frame_time(
+    winit: NonSend<WinitWindows>,
+    windows: impl Iterator<Item = Entity>,
+) -> Option<Duration> {
+let best_framerate = {
+        windows
+            .filter_map(|e| winit.get_window(e))
+            .filter_map(|w| w.current_monitor())
+            .filter_map(|monitor| monitor.refresh_rate_millihertz())
+            .min()? as f64
+            / 1000.0
+            - 0.5 // Winit only provides integer refresh rate values. We need to round down to handle the worst case scenario of a rounded refresh rate.
+    };
+
+    let best_frame_time = Duration::from_secs_f64(1.0 / best_framerate);
+    Some(best_frame_time)
 }

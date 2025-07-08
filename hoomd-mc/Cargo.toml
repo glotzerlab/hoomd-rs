@@ -29,4 +29,5 @@ rstest.workspace = true
 rand.workspace = true
 bevy.workspace = true
 bevy_diagnostic.workspace = true ## TODO: move to hoomd_bevy
+bevy_winit.workspace = true ## TODO: move to hoomd_bevy
 ratatui = "0.28.0"

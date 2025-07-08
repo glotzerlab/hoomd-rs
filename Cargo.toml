@@ -41,6 +41,7 @@ rstest = "0.25.0"
 anyhow = "1.0.98"
 bevy = { version = "0.16.1", features = ["bevy_dev_tools"] }
 bevy_diagnostic = "0.16.1"
+bevy_winit = "0.16.1"
 
 [workspace.lints.rust]
 missing_docs = "warn"

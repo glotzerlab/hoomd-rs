@@ -2641,6 +2641,7 @@ dependencies = [
  "approx",
  "bevy",
  "bevy_diagnostic",
+ "bevy_winit",
  "divan",
  "hoomd-interaction",
  "hoomd-microstate",
