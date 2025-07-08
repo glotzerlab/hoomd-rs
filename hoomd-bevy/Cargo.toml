@@ -1,12 +1,12 @@
 [package]
-name = "hoomd-mc"
+name = "hoomd-bevy"
 categories.workspace = true
-description = "Perfom Monte Carlo simulations on systems of particles."
+description = "Interfrace HOOMD with the bevy game engine."
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 license.workspace = true
-readme = "hoomd-mc/README.md"
+readme = "hoomd-bevt/README.md"
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
@@ -15,17 +15,11 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-hoomd-interaction.workspace = true
 hoomd-microstate.workspace = true
-hoomd-utility.workspace = true
 hoomd-vector.workspace = true
-rand.workspace = true
+anyhow.workspace = true
+bevy.workspace = true
+bevy_diagnostic.workspace = true
+bevy_winit.workspace = true
 
 [dev-dependencies]
-anyhow.workspace = true
-approx.workspace = true
-bevy.workspace = true
-divan.workspace = true
-hoomd-bevy.workspace = true
-rstest.workspace = true
-ratatui = "0.28.0"

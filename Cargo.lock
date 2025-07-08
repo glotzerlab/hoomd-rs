@@ -2622,6 +2622,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dfa686283ad6dd069f105e5ab091b04c62850d3e4cf5d67debad1933f55023df"
 
 [[package]]
+name = "hoomd-bevy"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "bevy_diagnostic",
+ "bevy_winit",
+ "hoomd-microstate",
+ "hoomd-vector",
+]
+
+[[package]]
 name = "hoomd-interaction"
 version = "0.0.0"
 dependencies = [
@@ -2640,9 +2652,8 @@ dependencies = [
  "anyhow",
  "approx",
  "bevy",
- "bevy_diagnostic",
- "bevy_winit",
  "divan",
+ "hoomd-bevy",
  "hoomd-interaction",
  "hoomd-microstate",
  "hoomd-utility",
