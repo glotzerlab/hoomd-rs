@@ -123,7 +123,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self { frame_budget_fraction: 0.9,
-            sps_limit: 400.0,
+            sps_limit: 500.0,
         }
     }
 }

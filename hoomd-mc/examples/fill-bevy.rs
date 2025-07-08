@@ -1,4 +1,6 @@
 #![allow(clippy::print_stdout, reason = "Demonstration purposes")]
+#![allow(clippy::needless_pass_by_value, reason = "Bevy requires that args are passed by value.")]
+#![allow(clippy::cast_possible_truncation, reason = "Bevy operates with f32 values.")]
 
 /*! This is an example
 */
@@ -16,9 +18,7 @@ use hoomd_bevy::{AdvanceSet, HoomdBevyPlugin, Simulation, Settings, representati
 use anyhow::Context;
 use bevy::prelude::*;
 
-
-// TODO: const background color
-// TODO: const margin
+// TODO: Reset button?
 
 fn main() -> anyhow::Result<()> {
     let simulation = Fill::new().context("failed to setup simulation")?;
@@ -116,13 +116,13 @@ fn step(&self) -> u64 {
 fn sync_simulation(
     mut commands: Commands,
     disk_assets: Res<DiskAssets>,
-    mut query: Query<(Entity, &mut Transform), With<Disk>>,
+    query: Query<(Entity, &mut Transform), With<Disk>>,
     simulation: Res<Fill>,
     ) {
 
     let sites = simulation.microstate.sites();
     Disk::sync(&mut commands, disk_assets, query, sites,
-        |site: &&Site<Point<Cartesian<2>>>| -> Vec3 { Vec3::new(site.properties.position[0] as f32, site.properties.position[1] as f32, 0.0) },
-        |_: &&Site<Point<Cartesian<2>>>| -> f32 { 1.0f32 });
+        |site: &Site<Point<Cartesian<2>>>| -> Vec3 { Vec3::new(site.properties.position[0] as f32, site.properties.position[1] as f32, 0.0) },
+        |_: &Site<Point<Cartesian<2>>>| -> f32 { 1.0f32 });
 }
 

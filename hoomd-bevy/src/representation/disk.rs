@@ -9,6 +9,7 @@ use itertools::EitherOrBoth::{Both, Left, Right};
 use itertools::Itertools;
 
 // TODO: introduce phantom marker types to differentiate different disks.
+// TODO: Use closure to initialize disks at a given radius.
 
 /** Represent an entity with a 2D disk in the plane z=0.
 
@@ -48,7 +49,7 @@ pub fn setup(
     }
 
 /// Copy the current positions of simulation particles to bevy entities.
-pub fn sync<T, I, F1, F2>(
+pub fn sync<'a, T, I, F1, F2>(
     commands: &mut Commands,
     disk_assets: Res<DiskAssets>,
     query: Query<(Entity, &mut Transform), With<Self>>,
@@ -56,15 +57,16 @@ pub fn sync<T, I, F1, F2>(
     position: F1,
     diameter: F2
     ) where
-I: IntoIterator<Item = T>,
+T: 'a,
+I: IntoIterator<Item = &'a T>,
 F1: Fn(&T) -> Vec3,
 F2: Fn(&T) -> f32,
     {
     for item in &mut query.into_iter().zip_longest(sites) {
         match item {
             Both((_, mut transform), item) => {
-                transform.translation = position(&item);
-                transform.scale = Vec3::splat(diameter(&item));
+                transform.translation = position(item);
+                transform.scale = Vec3::splat(diameter(item));
             }
             Left((entity, _)) => commands.entity(entity).despawn(),
             Right(item) => {
@@ -72,8 +74,8 @@ F2: Fn(&T) -> f32,
                 Mesh2d(disk_assets.mesh.clone()),
                 MeshMaterial2d(disk_assets.color.clone()),
                 Transform::from_translation(
-                    position(&item)
-                ).with_scale(Vec3::splat(diameter(&item))),
+                    position(item)
+                ).with_scale(Vec3::splat(diameter(item))),
                 Self,
             ));    
             },
