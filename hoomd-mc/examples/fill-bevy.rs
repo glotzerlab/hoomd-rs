@@ -9,9 +9,9 @@ use hoomd_interaction::{
     pairwise::{Boxcar, Isotropic},
 };
 use hoomd_mc::{Sweep, Translate, Trial};
-use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Square, property::Point};
+use hoomd_microstate::{Body, Microstate, MicrostateBuilder, Site, boundary::Square, property::Point};
 use hoomd_vector::Cartesian;
-use hoomd_bevy::{AdvanceSet, HoomdBevyPlugin, Simulation, Settings};
+use hoomd_bevy::{AdvanceSet, HoomdBevyPlugin, Simulation, Settings, representation::{Disk, DiskAssets}};
 
 use anyhow::Context;
 use bevy::prelude::*;
@@ -29,7 +29,7 @@ fn main() -> anyhow::Result<()> {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins);
     hoomd_bevy_plugin.build(&mut app);
-    app.add_systems(Startup, setup_disk)
+    app.add_systems(Startup, Disk::setup)
     .add_systems(Update, sync_simulation.run_if(resource_changed::<Fill>).after(AdvanceSet))
     ;
 
@@ -112,55 +112,17 @@ fn step(&self) -> u64 {
 }
 }
     
-/// Assets that represent a Disk in the scene.
-#[derive(Resource)]
-struct Disk {
-    /// The disk's mesh.
-    mesh: Handle<Mesh>,
-    /// The disk's color.
-    color: Handle<ColorMaterial>,
-}
-
-/// Mark entities as sites.
-#[derive(Component)]
-struct Site;
-
 /// Copy the current positions of simulation particles to bevy entities.
 fn sync_simulation(
     mut commands: Commands,
-    disk: Res<Disk>,
+    disk_assets: Res<DiskAssets>,
+    mut query: Query<(Entity, &mut Transform), With<Disk>>,
     simulation: Res<Fill>,
-    mut query: Query<&mut Transform, With<Site>>) {
+    ) {
 
     let sites = simulation.microstate.sites();
-    let mut n_entities = 0;
-    
-    for (site_index, mut transform) in &mut query.into_iter().enumerate() {
-        let position = sites[site_index].properties.position;
-        transform.translation = Vec3 { x: position[0] as f32, y: position[1] as f32, z: 0.0 };
-        n_entities += 1;
-    }
-
-    for site in &sites[n_entities..] {
-    commands.spawn((
-        Mesh2d(disk.mesh.clone()),
-        MeshMaterial2d(disk.color.clone()),
-        Transform::from_xyz(
-            site.properties.position[0] as f32,
-            site.properties.position[1] as f32,
-            0.0,
-        ),
-        Site,
-    ));    
-    }
+    Disk::sync(&mut commands, disk_assets, query, sites,
+        |site: &&Site<Point<Cartesian<2>>>| -> Vec3 { Vec3::new(site.properties.position[0] as f32, site.properties.position[1] as f32, 0.0) },
+        |_: &&Site<Point<Cartesian<2>>>| -> f32 { 1.0f32 });
 }
 
-fn setup_disk(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>, 
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    ) {
-    let mesh = meshes.add(Circle::new(0.5));
-    let color = materials.add(Color::oklch(0.64, 0.14, 256.71));
-    commands.insert_resource(Disk { mesh, color });
-    }

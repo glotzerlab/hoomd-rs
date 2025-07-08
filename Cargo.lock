@@ -2631,6 +2631,7 @@ dependencies = [
  "bevy_winit",
  "hoomd-microstate",
  "hoomd-vector",
+ "itertools 0.14.0",
 ]
 
 [[package]]

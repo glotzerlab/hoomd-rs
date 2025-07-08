@@ -7,8 +7,10 @@
 #![doc(
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
-#![allow(clippy::exhaustive_enums, reason = "States are intentionally non-exhaustive")]
-#![allow(clippy::missing_inline_in_public_items, reason = "hoomd-bevy code is not intended to be inlined")]
+#![allow(clippy::exhaustive_enums, reason = "States are intentionally non-exhaustive.")]
+#![allow(clippy::missing_inline_in_public_items, reason = "hoomd-bevy code is not intended to be inlined.")]
+#![allow(clippy::needless_pass_by_value, reason = "Bevy requires that args are passed by value.")]
+#![allow(clippy::cast_possible_truncation, reason = "Bevy operates with f32 values.")]
 
 /*! Connect *hoomd-rs* simulations with the Bevy game engine.
 
@@ -35,6 +37,8 @@ use bevy_winit::WinitWindows;
 
 use std::time::{Duration, Instant};
 
+pub mod representation;
+
 /** The model, parameters, and microstate they act on.
 
 A [`Simulation`] type stores the microstate, all model actors, and any
@@ -48,9 +52,9 @@ pub trait Simulation {
 
     # Errors
 
-    Return any type that implements [`Error`] when there is an error.
-    [`HoomdBevyPlugin`] will catch the error, display it to the `error!` log
-    and exit.
+    When an error occurs, return an `Err` with any type that implements
+    [`Error`](std::error::Error) [`HoomdBevyPlugin`] will catch the error,
+    display it to the `error!` log and exit.
     */
     fn advance(&mut self) -> anyhow::Result<()>;
 
@@ -58,13 +62,13 @@ pub trait Simulation {
     fn step(&self) -> u64;
 }
 
-/** Interface hoomd-rs simulations with the Bevy game engine.
+/** Interface *hoomd-rs* simulations with the Bevy game engine.
 
 [`HoomdBevyPlugin`] is used by all the *hoomd-rs* examples that create
 interactive graphical displays of simulations. Specifically, it implements:
 
 * Camera controls (2D and 3D separately).
-* Simulation step and frame pacing, with steps per second limiter.
+* Simulation step and frame pacing, with a limited number of steps per second.
 * Pause and advance by single step controls.
 * A help screen describing common controls (examples can add lines if needed).
 * Key bindings to hide the UI and take screenshots.
@@ -119,7 +123,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self { frame_budget_fraction: 0.9,
-            sps_limit: 100.0,
+            sps_limit: 400.0,
         }
     }
 }
@@ -159,8 +163,8 @@ struct HelpReminder;
 
 /** Systems that run to advance the simulation.
 
-Callers should use this to execute the sync step after the simulation is advanced.
-TODO: Example.
+Callers should use this to execute the sync step after the simulation is advanced:
+`app.add_systems(Update, sync_simulation.run_if(resource_changed::<MySimulation>).after(AdvanceSet));`
 */
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AdvanceSet;
@@ -212,9 +216,9 @@ fn step_simulation(
     let max_steps = settings.sps_limit * time.delta_secs();
     *accumulated_steps += max_steps.fract();
 
-    let mut max_steps = max_steps.floor() as u64;
+    let mut max_steps = max_steps.floor() as i64;
     if *accumulated_steps > 1.0 {
-        max_steps += accumulated_steps.trunc() as u64;
+        max_steps += accumulated_steps.trunc() as i64;
         *accumulated_steps = accumulated_steps.fract();
     }
         
@@ -234,6 +238,7 @@ fn step_simulation(
     diagnostics.add_measurement(&Self::SPS, || steps as f64 / time.delta_secs_f64());
     }
 
+/// Create the full screen UI text overlay node.
 fn setup_overlay(mut commands: Commands) {
 commands.spawn((
             Node {
@@ -287,6 +292,7 @@ fn add_pause_text(mut commands: Commands,
         ));
 }
 
+/// Add the help text UI node.
 fn add_help_text(mut commands: Commands,
     overlay_root: Single<Entity, With<OverlayRoot>>,
 ) {
@@ -495,25 +501,26 @@ fn set_frame_budget(winit: NonSend<WinitWindows>,
         }
     }
 
+/// Detect the minimum frame time for all windows.
 fn detect_frame_time(
     winit: NonSend<WinitWindows>,
     windows: impl Iterator<Item = Entity>,
 ) -> Option<Duration> {
 let best_framerate = {
-        windows
+        f64::from(windows
             .filter_map(|e| winit.get_window(e))
             .filter_map(|w| w.current_monitor())
             .filter_map(|monitor| monitor.refresh_rate_millihertz())
-            .min()? as f64
+            .min()?)
             / 1000.0
-            - 0.5 // Winit only provides integer refresh rate values. We need to round down to handle the worst case scenario of a rounded refresh rate.
+            - 0.5
     };
 
     let best_frame_time = Duration::from_secs_f64(1.0 / best_framerate);
     Some(best_frame_time)
 }
 
-// TODO: how to set the camera height?
+// TODO: how to set the camera height? Put it in settings?
 
 /// Set up the 2D camera.
 fn setup_camera(
@@ -530,6 +537,13 @@ fn setup_camera(
 
 }
 
+/** Build the plugin.
+
+[`HoomdBevyPlugin`] does not implement [`Plugin`] and cannot be used with
+`add_plugins` so that the `build` method can consume `self`. This allows
+`build` to take ownership of the `simulation` field and create the appropriate
+Bevy [`Resource`].
+*/
 pub fn build(self, app: &mut App) {
     app
     .add_plugins(FrameTimeDiagnosticsPlugin::default())
@@ -542,7 +556,6 @@ pub fn build(self, app: &mut App) {
     .add_systems(Startup, Self::setup_camera)
     .add_systems(Startup, (Self::setup_overlay, Self::setup_debug_text, Self::add_pause_text, Self::add_help_text, Self::add_help_reminder).chain())
     .add_systems(Update, Self::remove_help_reminder.run_if(once_after_delay(Duration::from_secs(3))))
-    // TODO: expose step_simulation as a named set so that callers can use it in an after schedule
     .add_systems(Update, Self::step_simulation.in_set(AdvanceSet))
     .add_systems(Update, (Self::keyboard_overlay, Self::update_debug_text).chain().in_set(InputSet))
     .add_systems(Update, (Self::keyboard_pause, Self::keyboard_help, Self::keyboard_simulation, Self::keyboard_screenshot, Self::keyboard_quit).in_set(InputSet))

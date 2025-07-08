@@ -15,11 +15,12 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-hoomd-microstate.workspace = true
-hoomd-vector.workspace = true
 anyhow.workspace = true
 bevy.workspace = true
 bevy_diagnostic.workspace = true
 bevy_winit.workspace = true
+itertools.workspace = true
+hoomd-microstate.workspace = true
+hoomd-vector.workspace = true
 
 [dev-dependencies]
