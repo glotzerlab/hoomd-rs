@@ -13,13 +13,26 @@ use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Square, pr
 use hoomd_vector::Cartesian;
 
 use anyhow::Context;
-use bevy::{prelude::*, window::PresentMode};
+use bevy::{prelude::*, window::PresentMode, time::common_conditions::once_after_delay, render::view::window::screenshot::{save_to_disk, Screenshot}};
 use bevy_diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin, Diagnostic, Diagnostics, DiagnosticPath, RegisterDiagnostic};
 use std::time::{Duration, Instant};
 
+// TODO: derive frame budget from refresh rate and value from 0 to 1.
 const FRAME_BUDGET: Duration = Duration::from_millis(30);
 const SPS_LIMIT: f32 = 100.0;
 const SPS: DiagnosticPath = DiagnosticPath::const_new("sps");
+const HELP_OVERLAY_ZINDEX: i32 = i32::MAX - 32;
+
+// TODO: const background color
+// TODO: const margin
+
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
+enum PauseState {
+    #[default]
+    Paused,
+    Running,
+}
+
 
 fn main() -> anyhow::Result<()> {
     let mut app = App::new();
@@ -34,14 +47,23 @@ fn main() -> anyhow::Result<()> {
             }),
             FrameTimeDiagnosticsPlugin::default(),
     ))
+    // Goes in plugin
     .insert_resource(ClearColor(Color::oklch(0.3, 0.0, 0.0)))
     .register_diagnostic(Diagnostic::new(SPS))
     .insert_resource(setup_simulation().context("failed to setup simulation")?)
-    .add_systems(Startup, (setup_scene, setup_debug_text))
-    .add_systems(Update, (step_simulation_system, sync_simulation).chain())
-    .add_systems(Update, (keyboard_input, update_debug_text).chain())
+    .insert_state(PauseState::Running)
+    .add_systems(Startup, setup_scene)
+    .add_systems(Startup, (setup_overlay, setup_debug_text, add_pause_text, add_help_text, add_help_reminder).chain())
+    .add_systems(Update, remove_help_reminder.run_if(once_after_delay(Duration::from_secs(3))))
+    // TODO: expose step_simulation as a named set so that callers can use it in an after schedule
+    .add_systems(Update, step_simulation_system.run_if(in_state(PauseState::Running)))
+    .add_systems(Update, (keyboard_overlay, update_debug_text).chain())
+    .add_systems(Update, (keyboard_pause, keyboard_help, keyboard_simulation, keyboard_screenshot, keyboard_quit))
+    // Goes in the example code (sync_simulation is highly simulation-specific)
+    // TODO: Implement helper methods to make sync_simulation easier to write.
+    .add_systems(Update, sync_simulation.run_if(resource_changed::<Simulation>).after(step_simulation_system))
     ;
-    
+
     app.run();
 
     Ok(())
@@ -183,12 +205,30 @@ fn setup_scene(
     commands.insert_resource(Disk { mesh, color });
 }
 
+/// The overlay UI root node.
+#[derive(Component)]
+struct OverlayRoot;
+
+fn setup_overlay(mut commands: Commands) {
+commands.spawn((
+            Node {
+                top: Val::Px(0.0),
+                left: Val::Px(0.0),
+                width: Val::Vw(100.0),
+                height: Val::Vh(100.0),
+                ..default()
+            },
+            Visibility::Visible,
+            OverlayRoot,
+            ));
+}
+
 /// Mark debug text
 #[derive(Component)]
 struct DebugText;
 
 /// Add debug text nodes.
-fn setup_debug_text(mut commands: Commands) {
+fn setup_debug_text(mut commands: Commands, overlay_root: bevy::ecs::prelude::Single<Entity, With<OverlayRoot>>,) {
     commands.spawn((
             Text::default(),
             Node {
@@ -204,24 +244,133 @@ fn setup_debug_text(mut commands: Commands) {
             TextSpan::new("SPS:\n"),
             TextSpan::new("Step:\n"),
             ],
+        ChildOf(*overlay_root),
         ));
+}
+
+/// Mark paused text
+#[derive(Component)]
+struct PauseText;
+
+/// Add paused text node.
+fn add_pause_text(mut commands: Commands,
+    overlay_root: bevy::ecs::prelude::Single<Entity, With<OverlayRoot>>,
+) {
+    commands.spawn((
+            Text::new("paused..."),
+            Node {
+                position_type: PositionType::Absolute,
+                bottom: Val::Px(12.0),
+                left: Val::Px(12.0),
+                ..default()
+            },
+            PauseText,
+            Visibility::Hidden,
+            ChildOf(*overlay_root),
+        ));
+}
+
+/// Mark the border containing the help text.
+#[derive(Component)]
+struct HelpTextContainer;
+
+/// Mark the help text itself.
+#[derive(Component)]
+struct HelpText;
+
+// TODO: Make HelpText public so that examples can add lines to it.
+/// Add helpd text node.
+fn add_help_text(mut commands: Commands,
+    overlay_root: bevy::ecs::prelude::Single<Entity, With<OverlayRoot>>,
+) {
+    let text = (Text::new("q       : Quit.
+<space> : Pause the simulation.
+<right> : Advance one step (while paused).
+shift-F1: Show/hide the user interface.
+F5      : Show/hide debugging information.
+F12     : Take a screenshot (screenshot.png).
+?       : Show/hide this help text."),
+            BackgroundColor(Color::oklch(0.2, 0.0, 0.0)),
+            HelpText,
+            );
+
+    commands.spawn((
+            Node {
+                align_items: AlignItems::Center,
+                position_type: PositionType::Absolute,
+                bottom: Val::Px(12.0),
+                right: Val::Px(12.0),
+                margin: UiRect::all(Val::Px(0.0)),
+                border: UiRect::all(Val::Px(12.0)),
+                justify_content: JustifyContent::Center,                
+                ..default()
+            },
+            HelpTextContainer,
+            ChildOf(*overlay_root),
+            Outline {
+                width: Val::Px(6.),
+                offset: Val::Px(0.),
+                color: Color::WHITE,
+            },
+            BorderRadius::px(12.0, 12.0, 12.0, 12.0),
+            BackgroundColor(Color::oklch(0.2, 0.0, 0.0)),
+            BorderColor(Color::oklch(0.2, 0.0, 0.0)),
+            Visibility::Hidden,
+            GlobalZIndex(HELP_OVERLAY_ZINDEX),
+            children![text],
+        ));
+}
+
+/// Mark paused text
+#[derive(Component)]
+struct HelpReminder;
+
+/// Add help reminder node.
+fn add_help_reminder(mut commands: Commands,
+    overlay_root: bevy::ecs::prelude::Single<Entity, With<OverlayRoot>>,
+) {
+    commands.spawn((
+            Text::new("Press ? to show the help screen."),
+            Node {
+                position_type: PositionType::Absolute,
+                bottom: Val::Px(12.0),
+                right: Val::Px(12.0),
+                ..default()
+            },
+            HelpReminder,
+            ChildOf(*overlay_root),
+            GlobalZIndex(HELP_OVERLAY_ZINDEX-1),
+        ));
+}
+
+/// Remove paused text node.
+fn remove_help_reminder(mut commands: Commands,
+    overlay_root: bevy::ecs::prelude::Single<Entity, (With<OverlayRoot>, Without<HelpReminder>)>,
+    help_reminder: bevy::ecs::prelude::Single<Entity, (With<HelpReminder>, Without<OverlayRoot>)>,
+) {
+    commands.entity(*overlay_root).remove_children(&[*help_reminder]);
+    commands.entity(*help_reminder).despawn();
 }
 
 /// Populate values in the debug text.
 fn update_debug_text(
     diagnostic: Res<DiagnosticsStore>,
-    debug_text: bevy::ecs::prelude::Single<Entity, With<DebugText>>,
+    debug_text: bevy::ecs::prelude::Single<(Entity, &Visibility), With<DebugText>>,
     mut writer: TextUiWriter,
     time: Res<Time>,
     mut time_since_rerender: Local<Duration>,
     simulation: Res<Simulation>,
 ) {
     *time_since_rerender += time.delta();
+    let (debug_text, visibility) = *debug_text;
+
+    if visibility == Visibility::Hidden {
+        return;
+    }
 
     if *time_since_rerender >= Duration::from_millis(100) {
         *time_since_rerender = Duration::ZERO;
 
-        let debug_text = *debug_text;
         if let Some(fps) = diagnostic.get(&FrameTimeDiagnosticsPlugin::FPS) {
             if let Some(value) = fps.smoothed() {
                 *writer.text(debug_text, 1) = format!(" FPS: {value:.2}\n");
@@ -266,18 +415,85 @@ fn sync_simulation(
     }
 }
 
-/// Implement keyboard commands for common operations.
-fn keyboard_input(
+/// Keyboard control to pause/unpause the simulation.
+fn keyboard_pause(
     keys: Res<ButtonInput<KeyCode>>,
-    mut exit: EventWriter<AppExit>,
-    mut debug_text: bevy::ecs::prelude::Single<&mut Visibility, With<DebugText>>,
+    mut pause_text: bevy::ecs::prelude::Single<&mut Visibility, With<PauseText>>,
+    pause_state: Res<State<PauseState>>,
+    mut next_pause_state: ResMut<NextState<PauseState>>,
 ) {
     if keys.just_pressed(KeyCode::Space) {
+        debug!("Toggle pause state.");
+        pause_text.toggle_inherited_hidden();
+        match pause_state.get() {
+            PauseState::Paused => next_pause_state.set(PauseState::Running),
+            PauseState::Running => next_pause_state.set(PauseState::Paused),
+        }    
     }
+}
+
+/// Keyboard control to show the help screen.
+fn keyboard_help(
+    keys: Res<ButtonInput<KeyCode>>,
+    mut help_text_container: bevy::ecs::prelude::Single<&mut Visibility, With<HelpTextContainer>>,)
+    {
+    if keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]) && keys.just_pressed(KeyCode::Slash) {        
+        debug!("Show/hide help text.");
+        help_text_container.toggle_inherited_hidden();
+        }    
+    }
+
+/// Keyboard control to hide the whole UI.
+fn keyboard_overlay(
+    keys: Res<ButtonInput<KeyCode>>,
+    mut overlay_root: bevy::ecs::prelude::Single<&mut Visibility, (With<OverlayRoot>, Without<DebugText>)>,
+    mut debug_text: bevy::ecs::prelude::Single<&mut Visibility, (With<DebugText>, Without<OverlayRoot>)>,)
+    {
+    if keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]) && keys.just_pressed(KeyCode::F1) {
+        debug!("Show/hide UI.");
+        overlay_root.toggle_visible_hidden();
+    }
+    if keys.just_pressed(KeyCode::F5) && **overlay_root == Visibility::Visible {
+        debug!("Show/hide debug overlay.");
+        debug_text.toggle_inherited_hidden();
+    }
+    }
+
+/// Keyboard bindings to control the simulation.
+fn keyboard_simulation(
+    mut exit: EventWriter<AppExit>,
+    keys: Res<ButtonInput<KeyCode>>,
+    pause_state: Res<State<PauseState>>,
+    simulation: ResMut<Simulation>,) {
+
+    if keys.just_pressed(KeyCode::ArrowRight) && *pause_state.get() == PauseState::Paused {
+        let simulation = simulation.into_inner();
+        let result = step_simulation(simulation).with_context(|| format!("failed at step: {}", simulation.microstate.step()));
+        if let Err(error) = result {
+            error!("{error:?}");
+            exit.write(AppExit::Error(1.try_into().expect("1 is non-zero")));
+            }
+    }
+}
+
+/// Keyboard command to quit.
+fn keyboard_quit(
+    mut exit: EventWriter<AppExit>,
+    keys: Res<ButtonInput<KeyCode>>,
+) {
     if keys.just_pressed(KeyCode::KeyQ) {
+        debug!("Quitting...");
         exit.write(AppExit::Success);
     }
-    if keys.just_pressed(KeyCode::F5) {
-        debug_text.toggle_visible_hidden();
+}
+
+/// Implement keyboard commands for common operations.
+fn keyboard_screenshot(
+    mut commands: Commands,
+    keys: Res<ButtonInput<KeyCode>>,
+) {  
+    if keys.just_pressed(KeyCode::F12) {
+    commands.spawn(Screenshot::primary_window())
+      .observe(save_to_disk("screenshot.png"));
     }
 }
