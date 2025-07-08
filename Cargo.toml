@@ -53,6 +53,9 @@ missing_docs = "warn"
 cargo = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 
+# Bevy pulls in many duplicate dependencies and there is nothing we can do about it.
+multiple_crate_versions = "allow"
+
 # allow some pedantic rules
 cast_precision_loss = "allow"
 float_cmp = "allow"
