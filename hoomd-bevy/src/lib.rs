@@ -248,7 +248,10 @@ where
     pub const UI_OUTLINE: Color = Color::WHITE;
 
     /// Display this color on UI buttons.
-    pub const UI_BUTTON: Color = Color::oklch(0.6795, 0.1708, 144.47);
+    pub const UI_BUTTON: Color = Color::oklch(0.6795, 0.1708, 27.77);
+
+    /// Display this color when buttons are active.
+    pub const UI_BUTTON_ACTIVE: Color = Color::oklch(0.6795, 0.1708, 144.47);
 
     /// Round the UI to this radius.
     pub const UI_ROUNDING: f32 = 12.0;
@@ -485,6 +488,18 @@ F12     : Take a screenshot (screenshot.png).
         }
     }
 
+    /// Keyboard control to show the menu.
+    fn keyboard_menu(
+        keys: Res<ButtonInput<KeyCode>>,
+        mut menu_root: Single<&mut Visibility, With<MenuRoot>>,
+    ) {
+        if keys.just_pressed(KeyCode::Escape)
+        {
+            debug!("Show/hide the menu.");
+            menu_root.toggle_inherited_hidden();
+        }
+    }
+
     /// Keyboard control to hide the whole UI.
     fn keyboard_overlay(
         keys: Res<ButtonInput<KeyCode>>,
@@ -606,12 +621,12 @@ F12     : Take a screenshot (screenshot.png).
         ) {
 
         let sps = (Node::default(),
-                   children![(Self::create_button::<DecreaseSPS>("-")),
-                    (Self::create_button::<IncreaseSPS>("+")),
+                   children![Self::create_button::<DecreaseSPS>("-"),
+                    Self::create_button::<IncreaseSPS>("+"),
                     (Text("Steps per second limit:\n".into()), children![(TextSpan(format!("{}", settings.sps_limit)), SPSLimitText)])]);
         let frame_budget_fraction = (Node::default(), 
-                   children![(Self::create_button::<DecreaseFrameBudget>("-")),
-                             (Self::create_button::<IncreaseFrameBudget>("+")),
+                   children![Self::create_button::<DecreaseFrameBudget>("-"),
+                             Self::create_button::<IncreaseFrameBudget>("+"),
                     (Text("Simulation time fraction:\n".into()), children![(TextSpan(format!("{}", settings.frame_budget_fraction)), FrameBudgetText)])]);
 
         commands.spawn((Node {
@@ -631,6 +646,7 @@ F12     : Take a screenshot (screenshot.png).
         BackgroundColor(Self::UI_BACKGROUND),
         BorderColor(Self::UI_BACKGROUND),
         ChildOf(*overlay_root),
+        Visibility::Hidden,
         MenuRoot,
         children![sps, frame_budget_fraction]
         ));
@@ -638,13 +654,49 @@ F12     : Take a screenshot (screenshot.png).
 
     /// Handle the decrease SPS button.
     fn decrease_sps(interaction: Single<&Interaction, (Changed<Interaction>, With<DecreaseSPS>)>,
-        mut text: Single<&mut Text, With<SPSLimitText>>,
+        mut text: Single<&mut TextSpan, With<SPSLimitText>>,
         mut settings: ResMut<Settings>,
         ) {
-        info!("In decrease_sps");
+
         if **interaction == Interaction::Pressed {
             settings.sps_limit /= 2.0;
-            text.0 = format!("{}", settings.sps_limit); 
+            text.0 = format!("{}", settings.sps_limit);
+            }
+        }
+
+    /// Handle the increase SPS button.
+    fn increase_sps(interaction: Single<&Interaction, (Changed<Interaction>, With<IncreaseSPS>)>,
+        mut text: Single<&mut TextSpan, With<SPSLimitText>>,
+        mut settings: ResMut<Settings>,
+        ) {
+
+        if **interaction == Interaction::Pressed {
+            settings.sps_limit *= 2.0;
+            text.0 = format!("{}", settings.sps_limit);
+            }
+        }
+
+    /// Handle the decrease frame budget button.
+    fn decrease_frame_budget(interaction: Single<&Interaction, (Changed<Interaction>, With<DecreaseFrameBudget>)>,
+        mut text: Single<&mut TextSpan, With<FrameBudgetText>>,
+        mut settings: ResMut<Settings>,
+        ) {
+
+        if **interaction == Interaction::Pressed {
+            settings.frame_budget_fraction = (settings.frame_budget_fraction - 0.1).clamp(0.1, 0.9);
+            text.0 = format!("{:.1}", settings.frame_budget_fraction);
+            }
+        }
+
+    /// Handle the increase SPS button.
+    fn increase_frame_budget(interaction: Single<&Interaction, (Changed<Interaction>, With<IncreaseFrameBudget>)>,
+        mut text: Single<&mut TextSpan, With<FrameBudgetText>>,
+        mut settings: ResMut<Settings>,
+        ) {
+
+        if **interaction == Interaction::Pressed {
+            settings.frame_budget_fraction = (settings.frame_budget_fraction + 0.1).clamp(0.1, 0.9);
+            text.0 = format!("{:.1}", settings.frame_budget_fraction);
             }
         }
     
@@ -718,10 +770,14 @@ F12     : Take a screenshot (screenshot.png).
                 (
                     Self::keyboard_pause,
                     Self::keyboard_help,
+                    Self::keyboard_menu,
                     Self::keyboard_simulation,
                     Self::keyboard_screenshot,
                     Self::keyboard_quit,
                     Self::decrease_sps,
+                    Self::increase_sps,
+                    Self::decrease_frame_budget,
+                    Self::increase_frame_budget,
                 )
                     .in_set(InputSet),
             )
