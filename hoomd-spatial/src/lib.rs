@@ -74,6 +74,7 @@ pub struct CellList<const D: usize> {
    ```
 */
 pub struct CellListBuilder<const D: usize> {
+    /// The width of each cell.
     pub cell_width: f64,
     pub positions: Vec<Cartesian<D>>,
     pub indices: Vec<usize>,
@@ -95,7 +96,9 @@ impl<const D: usize> CellListBuilder<D> {
     let cell_list = CellListBuilder.new(cell_width).build();
     ```
     */
-    #[must_use] pub fn new(cell_width: f64) -> Self {
+    #[inline]
+    #[must_use]
+    pub fn new(cell_width: f64) -> Self {
         Self {
             cell_width,
             positions: Vec::new(),
@@ -125,7 +128,9 @@ impl<const D: usize> CellListBuilder<D> {
     let cell_list = CellListBuilder.new(cell_width).with_positions_and_indices(positions, indices).build();
     ```
     */
-    #[must_use] pub fn with_positions_and_indices(
+    #[inline]
+    #[must_use]
+    pub fn with_positions_and_indices(
         mut self,
         positions: &Vec<Cartesian<D>>,
         indices: &Vec<usize>,
@@ -150,17 +155,19 @@ impl<const D: usize> CellListBuilder<D> {
     let cell_list = cell_list_builder.build();
     ```
     */
-    #[must_use] pub fn build(self) -> CellList<D> {
+    #[inline]
+    #[must_use]
+    pub fn build(self) -> CellList<D> {
         CellList::new(self.cell_width, &self.positions, &self.indices)
     }
 }
 
-//TODO think about providing shrink_to_fit() method to reduce memory usage after many
-//insertions and deletions and we are left with many empty cells.
 impl<const D: usize> CellList<D> {
     /** Builder API helper function.
      */
-    #[must_use] pub fn builder(cell_width: f64) -> CellListBuilder<D> {
+    #[inline]
+    #[must_use]
+    pub fn builder(cell_width: f64) -> CellListBuilder<D> {
         CellListBuilder::new(cell_width)
     }
 
@@ -388,6 +395,44 @@ impl<const D: usize> CellList<D> {
         new_particle_position: Cartesian<D>,
     ) {
         self.insert(&new_particle_position, &particle_index);
+    }
+
+    /** Shrink both hashmaps in the cell list to fit their current capacity.
+     
+    This function cleans up (read deletes) any empty cells in the `particle_indices` hashmap
+    and shrinks the capacity of both `particle_indices` and `cell_index` hashmaps
+    to their current length. This is useful for reducing memory usage after many insertions
+    and deletions, leaving many empty cells.
+
+    # Example
+    ```    
+    use hoomd_spatial::CellList;
+    use hoomd_vector::Cartesian;
+    // Create some sample 2D Cartesian positions.
+    let positions = vec![
+        Cartesian { coordinates: [0.2, 0.3] },
+        Cartesian { coordinates: [2.8, 2.3] },
+        Cartesian { coordinates: [8.5, 9.5] },
+    ];
+    let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
+    // Define the cell width.
+    let cell_width = 1.0;
+    // Build the cell list from positions.
+    let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
+    // Remove the first particle from the cell list.
+    cell_list.remove(0);
+    // Now the cell list has an empty cell associated with cell particle 0 was in.
+    println!("Before shrink_to_fit: {:?}", cell_list.particle_indices.size());
+    // Call shrink_to_fit to clean up empty cells and reduce memory usage.
+    cell_list.shrink_to_fit();
+    println!("After shrink_to_fit: {:?}", cell_list.particle_indices.size());
+    ```    
+     */
+    #[inline]
+    pub fn shrink_to_fit(&mut self) {
+        self.particle_indices.retain(|_,v| !v.is_empty());
+        self.particle_indices.shrink_to_fit();
+        self.cell_index.shrink_to_fit();
     }
 
     /** Find potential neighbor indices.
