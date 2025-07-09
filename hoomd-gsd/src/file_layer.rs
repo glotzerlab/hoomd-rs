@@ -79,6 +79,10 @@ pub enum DecodeError {
     #[error("name list not terminated")]
     NameListNotTerminated,
 
+    /// Cannot add any more chunk names.
+    #[error("too many chunk names")]
+    NameListOverflow,
+
     /// Unsupported version.
     #[error("unsupported GSD file version ({0}, {1})")]
     UnsupportedVersion(u16, u16),
@@ -1204,9 +1208,12 @@ impl GsdFile {
             if previous.is_some() {
                 return Err(DecodeError::DuplicateChunkName);
             }
-            current_id += 1;
 
-            // TODO: Detect when there are too many names.
+            if current_id == u16::MAX {
+                return Err(DecodeError::NameListOverflow);
+            }
+
+            current_id += 1;
         }
 
         Ok(NameList {
