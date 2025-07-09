@@ -58,9 +58,10 @@ impl Disk {
         mut commands: Commands,
         mut meshes: ResMut<Assets<Mesh>>,
         mut materials: ResMut<Assets<DiskMaterial>>,
+        server: Res<AssetServer>,
     ) {
         let mesh = meshes.add(Rectangle::new(1.0, 1.0));
-        let material = materials.add(DiskMaterial::default());
+        let material = materials.add(DiskMaterial { texture: server.load("embedded://hoomd_bevy/logo.png"), ..default()});
         commands.insert_resource(DiskAssets { mesh, material });
     }
 

@@ -44,6 +44,7 @@ See any one of the many *hoomd-rs* examples that use [`HoomdBevyPlugin`].
 
 use anyhow::Context;
 use bevy::{
+    asset::embedded_asset,
     prelude::*,
     render::view::window::screenshot::{Screenshot, save_to_disk},
     time::common_conditions::{on_timer, once_after_delay},
@@ -760,7 +761,9 @@ F12     : Take a screenshot (screenshot.png).
     */
     pub fn build(self, app: &mut App) {
         representation::disk::build(app);
-    
+
+        embedded_asset!(app, "logo.png");
+        
         app.add_plugins(FrameTimeDiagnosticsPlugin::default())
             .insert_resource(ClearColor(Self::CLEAR))
             .insert_resource(FrameBudget(Duration::from_millis(9)))
