@@ -1184,7 +1184,17 @@ impl GsdFile {
             gsd_file.buffer_frame = gsd_file.file_frame;
         }
 
-        // TODO: silently upgrade writable files to the latest minor version.
+        // Silently upgrade writable files from a previous matching major version to the latest
+        // minor version.
+        if gsd_file.mode == Mode::Write
+            && gsd_file.header.gsd_version.0 == CURRENT_FILE_VERSION.0
+            && gsd_file.header.gsd_version.1 < CURRENT_FILE_VERSION.1
+        {
+            gsd_file.header.gsd_version.1 = CURRENT_FILE_VERSION.1;
+
+            gsd_file.file.seek(SeekFrom::Start(0))?;
+            gsd_file.file.write_all(&gsd_file.header.to_ne_bytes())?;
+        }
 
         Ok(gsd_file)
     }
