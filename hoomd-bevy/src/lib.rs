@@ -137,8 +137,6 @@ pub struct Settings {
     sps_limit: f32,
 }
 
-// TODO: Implement an interface to change frame_budget_fraction and sps_limit.
-
 impl Default for Settings {
     fn default() -> Self {
         Self {
@@ -364,6 +362,7 @@ where
 shift-F1: Show/hide the user interface.
 F5      : Show/hide debugging information.
 F12     : Take a screenshot (screenshot.png).
+<esc>   : Open/close the settings menu.
 ?       : Show/hide this help text.",
             ),
             BackgroundColor(Self::UI_BACKGROUND),
@@ -384,11 +383,16 @@ F12     : Take a screenshot (screenshot.png).
             HelpTextContainer,
             ChildOf(*overlay_root),
             Outline {
-                width: Val::Px(Self::UI_ROUNDING/2.0),
+                width: Val::Px(Self::UI_ROUNDING / 2.0),
                 offset: Val::Px(0.),
                 color: Self::UI_OUTLINE,
             },
-            BorderRadius::px(Self::UI_ROUNDING, Self::UI_ROUNDING, Self::UI_ROUNDING, Self::UI_ROUNDING),
+            BorderRadius::px(
+                Self::UI_ROUNDING,
+                Self::UI_ROUNDING,
+                Self::UI_ROUNDING,
+                Self::UI_ROUNDING,
+            ),
             BackgroundColor(Self::UI_BACKGROUND),
             BorderColor(Self::UI_BACKGROUND),
             Visibility::Hidden,
@@ -493,8 +497,7 @@ F12     : Take a screenshot (screenshot.png).
         keys: Res<ButtonInput<KeyCode>>,
         mut menu_root: Single<&mut Visibility, With<MenuRoot>>,
     ) {
-        if keys.just_pressed(KeyCode::Escape)
-        {
+        if keys.just_pressed(KeyCode::Escape) {
             debug!("Show/hide the menu.");
             menu_root.toggle_inherited_hidden();
         }
@@ -615,91 +618,113 @@ F12     : Take a screenshot (screenshot.png).
     }
 
     /// Set up the options menu.
-    fn setup_options(mut commands: Commands,
+    fn setup_options(
+        mut commands: Commands,
         overlay_root: Single<Entity, With<OverlayRoot>>,
         settings: Res<Settings>,
-        ) {
+    ) {
+        let sps = (
+            Node::default(),
+            children![
+                Self::create_button::<DecreaseSPS>("-"),
+                Self::create_button::<IncreaseSPS>("+"),
+                (
+                    Text("Steps per second limit:\n".into()),
+                    children![(TextSpan(format!("{}", settings.sps_limit)), SPSLimitText)]
+                )
+            ],
+        );
+        let frame_budget_fraction = (
+            Node::default(),
+            children![
+                Self::create_button::<DecreaseFrameBudget>("-"),
+                Self::create_button::<IncreaseFrameBudget>("+"),
+                (
+                    Text("Simulation time fraction:\n".into()),
+                    children![(
+                        TextSpan(format!("{}", settings.frame_budget_fraction)),
+                        FrameBudgetText
+                    )]
+                )
+            ],
+        );
 
-        let sps = (Node::default(),
-                   children![Self::create_button::<DecreaseSPS>("-"),
-                    Self::create_button::<IncreaseSPS>("+"),
-                    (Text("Steps per second limit:\n".into()), children![(TextSpan(format!("{}", settings.sps_limit)), SPSLimitText)])]);
-        let frame_budget_fraction = (Node::default(), 
-                   children![Self::create_button::<DecreaseFrameBudget>("-"),
-                             Self::create_button::<IncreaseFrameBudget>("+"),
-                    (Text("Simulation time fraction:\n".into()), children![(TextSpan(format!("{}", settings.frame_budget_fraction)), FrameBudgetText)])]);
-
-        commands.spawn((Node {
-            align_items: AlignItems::FlexStart,
-            justify_content: JustifyContent::Center,
-            margin: UiRect::all(Val::Px(0.0)),
-            border: UiRect::all(Val::Px(Self::UI_ROUNDING)),
-            flex_direction: FlexDirection::Column,
-            ..default()
-        },
-        Outline {
-            width: Val::Px(Self::UI_ROUNDING/2.0),
-            offset: Val::Px(0.),
-            color: Self::UI_OUTLINE,
-        },
-        BorderRadius::px(Self::UI_ROUNDING, Self::UI_ROUNDING, Self::UI_ROUNDING, Self::UI_ROUNDING),
-        BackgroundColor(Self::UI_BACKGROUND),
-        BorderColor(Self::UI_BACKGROUND),
-        ChildOf(*overlay_root),
-        Visibility::Hidden,
-        MenuRoot,
-        children![sps, frame_budget_fraction]
+        commands.spawn((
+            Node {
+                align_items: AlignItems::FlexStart,
+                justify_content: JustifyContent::Center,
+                margin: UiRect::all(Val::Px(0.0)),
+                border: UiRect::all(Val::Px(Self::UI_ROUNDING)),
+                flex_direction: FlexDirection::Column,
+                ..default()
+            },
+            Outline {
+                width: Val::Px(Self::UI_ROUNDING / 2.0),
+                offset: Val::Px(0.),
+                color: Self::UI_OUTLINE,
+            },
+            BorderRadius::px(
+                Self::UI_ROUNDING,
+                Self::UI_ROUNDING,
+                Self::UI_ROUNDING,
+                Self::UI_ROUNDING,
+            ),
+            BackgroundColor(Self::UI_BACKGROUND),
+            BorderColor(Self::UI_BACKGROUND),
+            ChildOf(*overlay_root),
+            Visibility::Hidden,
+            MenuRoot,
+            children![sps, frame_budget_fraction],
         ));
     }
 
     /// Handle the decrease SPS button.
-    fn decrease_sps(interaction: Single<&Interaction, (Changed<Interaction>, With<DecreaseSPS>)>,
+    fn decrease_sps(
+        interaction: Single<&Interaction, (Changed<Interaction>, With<DecreaseSPS>)>,
         mut text: Single<&mut TextSpan, With<SPSLimitText>>,
         mut settings: ResMut<Settings>,
-        ) {
-
+    ) {
         if **interaction == Interaction::Pressed {
             settings.sps_limit /= 2.0;
             text.0 = format!("{}", settings.sps_limit);
-            }
         }
+    }
 
     /// Handle the increase SPS button.
-    fn increase_sps(interaction: Single<&Interaction, (Changed<Interaction>, With<IncreaseSPS>)>,
+    fn increase_sps(
+        interaction: Single<&Interaction, (Changed<Interaction>, With<IncreaseSPS>)>,
         mut text: Single<&mut TextSpan, With<SPSLimitText>>,
         mut settings: ResMut<Settings>,
-        ) {
-
+    ) {
         if **interaction == Interaction::Pressed {
             settings.sps_limit *= 2.0;
             text.0 = format!("{}", settings.sps_limit);
-            }
         }
+    }
 
     /// Handle the decrease frame budget button.
-    fn decrease_frame_budget(interaction: Single<&Interaction, (Changed<Interaction>, With<DecreaseFrameBudget>)>,
+    fn decrease_frame_budget(
+        interaction: Single<&Interaction, (Changed<Interaction>, With<DecreaseFrameBudget>)>,
         mut text: Single<&mut TextSpan, With<FrameBudgetText>>,
         mut settings: ResMut<Settings>,
-        ) {
-
+    ) {
         if **interaction == Interaction::Pressed {
             settings.frame_budget_fraction = (settings.frame_budget_fraction - 0.1).clamp(0.1, 0.9);
             text.0 = format!("{:.1}", settings.frame_budget_fraction);
-            }
         }
+    }
 
     /// Handle the increase SPS button.
-    fn increase_frame_budget(interaction: Single<&Interaction, (Changed<Interaction>, With<IncreaseFrameBudget>)>,
+    fn increase_frame_budget(
+        interaction: Single<&Interaction, (Changed<Interaction>, With<IncreaseFrameBudget>)>,
         mut text: Single<&mut TextSpan, With<FrameBudgetText>>,
         mut settings: ResMut<Settings>,
-        ) {
-
+    ) {
         if **interaction == Interaction::Pressed {
             settings.frame_budget_fraction = (settings.frame_budget_fraction + 0.1).clamp(0.1, 0.9);
             text.0 = format!("{:.1}", settings.frame_budget_fraction);
-            }
         }
-    
+    }
 
     /// Create a button with the given label
     fn create_button<Marker: Component + Default>(label: &str) -> impl Bundle {
@@ -715,7 +740,7 @@ F12     : Take a screenshot (screenshot.png).
                 ..default()
             },
             Outline {
-                width: Val::Px(Self::UI_ROUNDING/4.0),
+                width: Val::Px(Self::UI_ROUNDING / 4.0),
                 offset: Val::Px(0.),
                 color: Self::UI_OUTLINE,
             },
@@ -795,4 +820,3 @@ F12     : Take a screenshot (screenshot.png).
         );
     }
 }
-
