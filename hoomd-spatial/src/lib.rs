@@ -76,7 +76,9 @@ pub struct CellList<const D: usize> {
 pub struct CellListBuilder<const D: usize> {
     /// The width of each cell.
     pub cell_width: f64,
+    /// The positions of the particles in the cell list.
     pub positions: Vec<Cartesian<D>>,
+    /// The indices of the particles in the cell list.
     pub indices: Vec<usize>,
 }
 
