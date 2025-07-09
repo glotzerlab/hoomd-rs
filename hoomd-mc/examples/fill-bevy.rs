@@ -41,7 +41,8 @@ fn main() -> anyhow::Result<()> {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins);
     hoomd_bevy_plugin.build(&mut app);
-    app.add_systems(Startup, Disk::setup).add_systems(
+    app.add_systems(Startup, Disk::setup);
+    app.add_systems(
         Update,
         sync_simulation
             .run_if(resource_changed::<Fill>)

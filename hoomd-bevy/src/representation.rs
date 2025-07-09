@@ -6,5 +6,5 @@
 TODO: details.
  */
 
-mod disk;
+pub(crate) mod disk;
 pub use disk::{Disk, DiskAssets};

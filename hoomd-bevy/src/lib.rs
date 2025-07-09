@@ -237,7 +237,7 @@ where
     pub const HELP_OVERLAY_ZINDEX: i32 = i32::MAX - 32;
 
     /// Clear the window to this color before rendering each frame.
-    pub const CLEAR: Color = Color::oklch(0.25, 0.0, 0.0);
+    pub const CLEAR: Color = Color::oklch(0.32, 0.0, 0.0);
 
     /// Display this color in the background of UI elements.
     pub const UI_BACKGROUND: Color = Color::oklch(0.2, 0.0, 0.0);
@@ -759,6 +759,8 @@ F12     : Take a screenshot (screenshot.png).
     Bevy [`Resource`].
     */
     pub fn build(self, app: &mut App) {
+        representation::disk::build(app);
+    
         app.add_plugins(FrameTimeDiagnosticsPlugin::default())
             .insert_resource(ClearColor(Self::CLEAR))
             .insert_resource(FrameBudget(Duration::from_millis(9)))
