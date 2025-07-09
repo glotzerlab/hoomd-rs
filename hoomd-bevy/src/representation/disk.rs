@@ -5,8 +5,8 @@
 */
 
 use bevy::{
-    prelude::*,
     asset::embedded_asset,
+    prelude::*,
     reflect::TypePath,
     render::render_resource::{AsBindGroup, ShaderRef},
     render::texture::TRANSPARENT_IMAGE_HANDLE,
@@ -61,7 +61,11 @@ impl Disk {
         server: Res<AssetServer>,
     ) {
         let mesh = meshes.add(Rectangle::new(1.0, 1.0));
-        let material = materials.add(DiskMaterial { texture: server.load("embedded://hoomd_bevy/logo.png"), ..default()});
+        let material = materials.add(DiskMaterial {
+            background_color: Color::oklch(1.0, 0.0, 0.0).into(),
+            texture: server.load("embedded://hoomd_bevy/logo.png"),
+            ..default()
+        });
         commands.insert_resource(DiskAssets { mesh, material });
     }
 
@@ -115,19 +119,25 @@ pub struct DiskMaterial {
     #[uniform(2)]
     outline_width: f32,
 
+    /// Factor to scale the texture by.
+    #[uniform(3)]
+    texture_scale: f32,
+
     /// Texture to apply. Blended with `color`.
-    #[texture(3)]
-    #[sampler(4)]
+    #[texture(4)]
+    #[sampler(5)]
     texture: Handle<Image>,
 }
 
 impl Default for DiskMaterial {
     fn default() -> Self {
         Self {
-        background_color: Color::oklch(0.6795, 0.1708, 255.71).into(),
-        outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
-        outline_width: 0.05,
-        texture: TRANSPARENT_IMAGE_HANDLE,}
+            background_color: Color::oklch(0.6795, 0.1708, 255.71).into(),
+            outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
+            outline_width: 0.05,
+            texture: TRANSPARENT_IMAGE_HANDLE,
+            texture_scale: 1.2,
+        }
     }
 }
 

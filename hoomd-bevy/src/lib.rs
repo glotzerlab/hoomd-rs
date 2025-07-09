@@ -763,7 +763,7 @@ F12     : Take a screenshot (screenshot.png).
         representation::disk::build(app);
 
         embedded_asset!(app, "logo.png");
-        
+
         app.add_plugins(FrameTimeDiagnosticsPlugin::default())
             .insert_resource(ClearColor(Self::CLEAR))
             .insert_resource(FrameBudget(Duration::from_millis(9)))
