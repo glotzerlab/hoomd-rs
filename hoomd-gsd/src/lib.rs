@@ -60,8 +60,8 @@ gsd_file.end_frame()?;
 # }
 ```
 Each array in the file in stored in a specific type. `write_scalars` and `write_arrays`
-automatically infer that type from the argument given. 
- 
+automatically infer that type from the argument given.
+
 # HOOMD schema
 
 See the [GSD Python package] documentation for a full specification of the HOOMD schema.

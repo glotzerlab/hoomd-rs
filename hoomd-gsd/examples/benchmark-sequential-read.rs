@@ -1,3 +1,5 @@
+#![allow(clippy::print_stdout, reason = "Demonstration purposes")]
+
 /*! This is an example
 */
 
@@ -22,11 +24,16 @@ fn main() -> Result<(), anyhow::Error> {
     let mut total_bytes = 0;
     for frame in 0..n_frames_read {
         for name in &names {
-            #[expect(clippy::needless_collect, reason = "to measure the time it takes to read the whole array")]
-            let array = gsd_file.iter_scalars::<f64>(frame, name)?.collect::<Vec<_>>();
+            #[expect(
+                clippy::needless_collect,
+                reason = "to measure the time it takes to read the whole array"
+            )]
+            let array = gsd_file
+                .iter_scalars::<f64>(frame, name)?
+                .collect::<Vec<_>>();
             total_bytes += array.len() * size_of::<f64>();
-            }
         }
+    }
     let read_sec = read_time.elapsed().as_secs_f64();
 
     let time_per_key = read_sec / (n_keys * n_frames_read) as f64;
@@ -36,6 +43,6 @@ fn main() -> Result<(), anyhow::Error> {
 
     let mb_sec = total_bytes as f64 / 1024.0 / 1024.0 / read_sec;
     println!("Sequential throughput: {mb_sec} MB/s");
-    
+
     Ok(())
-    }
+}
