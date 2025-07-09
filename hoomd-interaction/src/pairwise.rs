@@ -25,6 +25,12 @@ pub use xplor::Xplor;
 mod weeks_chandler_anderson;
 pub use weeks_chandler_anderson::WeeksChandlerAnderson;
 
+mod harmonic;
+pub use harmonic::Harmonic;
+
+mod harmonic_repulsion;
+pub use harmonic_repulsion::HarmonicRepulsion;
+
 mod isotropic;
 pub use isotropic::Isotropic;
 

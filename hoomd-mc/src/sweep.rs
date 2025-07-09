@@ -129,7 +129,7 @@ mod tests {
     use ::approx::assert_relative_eq;
     use hoomd_interaction::{Single, SiteEnergy, TotalEnergy};
     use hoomd_microstate::{MicrostateBuilder, boundary::Square, property::Point};
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, InnerProduct};
     use rstest::*;
 
     const K: f64 = 2.0;
