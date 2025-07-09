@@ -541,6 +541,8 @@ impl<const D: usize> CellList<D> {
 
 #[cfg(test)]
 mod tests {
+    use std::cell;
+
     use super::*;
 
     #[test]
@@ -715,6 +717,31 @@ mod tests {
             particle_indices_in_cell.contains(&0),
             "Cell should contain the original particle"
         );
+    }
+
+    #[test]
+    fn test_shrink_to_fit() {
+        let cell_width = 1.0;
+        let positions = vec![
+            Cartesian {
+                coordinates: [0.2, 0.3],
+            },
+            Cartesian {
+                coordinates: [2.2, 2.3],
+            },
+        ];
+        let indices = vec![0, 1]; // Particle indices corresponding to positions.
+        let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
+        // check the size of the particle indices before removing any particles
+        assert_eq!(cell_list.particle_indices.len(), 2);
+        // Remove the first particle.
+        cell_list.remove(0);
+        // Check the size of the particle indices after removing a particle.
+        assert_eq!(cell_list.particle_indices.len(), 2);
+        // Now shrink to fit.
+        cell_list.shrink_to_fit();
+        // After shrinking, the size should be 1, as one particle was removed.
+        assert_eq!(cell_list.particle_indices.len(), 1);
     }
 
     #[test]
