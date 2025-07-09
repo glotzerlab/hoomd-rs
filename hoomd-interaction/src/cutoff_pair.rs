@@ -97,7 +97,7 @@ where
         pairwise::{Isotropic, LennardJones}};
     use hoomd_microstate::{Microstate, Body};
     use hoomd_microstate::property::{Point, Position};
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, InnerProduct};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut microstate = Microstate::new();

@@ -49,7 +49,7 @@ where
 {
     #[inline]
     fn site_pair_energy(&self, a: &S, b: &S) -> f64 {
-        self.0.energy((*a.position() - *b.position()).norm())
+        self.0.energy((a.position()).distance(b.position()))
     }
 }
 

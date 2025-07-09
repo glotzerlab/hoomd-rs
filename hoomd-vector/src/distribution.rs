@@ -4,7 +4,7 @@
 /*! Random distributions of vectors.
  */
 
-use super::{Cartesian, Vector};
+use super::{Cartesian, InnerProduct};
 use hoomd_utility::valid::PositiveReal;
 
 use rand::Rng;

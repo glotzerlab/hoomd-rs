@@ -3,3 +3,4 @@
 tarpaulin-report.html
 perf.data
 perf.data.old
+*.DS_Store
