@@ -143,7 +143,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             frame_budget_fraction: 0.9,
-            sps_limit: 500.0,
+            sps_limit: 1024.0,
         }
     }
 }
@@ -181,6 +181,34 @@ pub struct HelpText;
 #[derive(Component)]
 struct HelpReminder;
 
+/// Mark increase SPS button.
+#[derive(Component, Default)]
+struct IncreaseSPS;
+
+/// Mark decrase SPS button.
+#[derive(Component, Default)]
+struct DecreaseSPS;
+
+/// Mark the SPS limit text.
+#[derive(Component)]
+struct SPSLimitText;
+
+/// Mark increase frame budget button.
+#[derive(Component, Default)]
+struct IncreaseFrameBudget;
+
+/// Mark decrase frame budget button.
+#[derive(Component, Default)]
+struct DecreaseFrameBudget;
+
+/// Mark the frame budget text.
+#[derive(Component)]
+struct FrameBudgetText;
+
+/// Mark the menu root.
+#[derive(Component)]
+struct MenuRoot;
+
 /** Systems that run to advance the simulation.
 
 Callers should use this to execute the sync step after the simulation is advanced:
@@ -211,7 +239,7 @@ where
     pub const HELP_OVERLAY_ZINDEX: i32 = i32::MAX - 32;
 
     /// Clear the window to this color before rendering each frame.
-    pub const CLEAR: Color = Color::oklch(0.3, 0.0, 0.0);
+    pub const CLEAR: Color = Color::oklch(0.25, 0.0, 0.0);
 
     /// Display this color in the background of UI elements.
     pub const UI_BACKGROUND: Color = Color::oklch(0.2, 0.0, 0.0);
@@ -219,8 +247,14 @@ where
     /// Display this color on UI outlines.
     pub const UI_OUTLINE: Color = Color::WHITE;
 
+    /// Display this color on UI buttons.
+    pub const UI_BUTTON: Color = Color::oklch(0.6795, 0.1708, 144.47);
+
     /// Round the UI to this radius.
     pub const UI_ROUNDING: f32 = 12.0;
+
+    /// Offset the interface from the edge of the screen.
+    pub const UI_OFFSET: f32 = 12.0;
 
     /// Bevy system that advances the simulation forward one step.
     fn step_simulation(
@@ -271,6 +305,8 @@ where
                 left: Val::Px(0.0),
                 width: Val::Vw(100.0),
                 height: Val::Vh(100.0),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
                 ..default()
             },
             Visibility::Visible,
@@ -284,8 +320,8 @@ where
             Text::default(),
             Node {
                 position_type: PositionType::Absolute,
-                top: Val::Px(12.0),
-                left: Val::Px(12.0),
+                top: Val::Px(Self::UI_OFFSET),
+                left: Val::Px(Self::UI_OFFSET),
                 ..default()
             },
             Visibility::Hidden,
@@ -305,8 +341,8 @@ where
             Text::new("paused..."),
             Node {
                 position_type: PositionType::Absolute,
-                bottom: Val::Px(12.0),
-                left: Val::Px(12.0),
+                bottom: Val::Px(Self::UI_OFFSET),
+                left: Val::Px(Self::UI_OFFSET),
                 ..default()
             },
             PauseText,
@@ -327,7 +363,7 @@ F5      : Show/hide debugging information.
 F12     : Take a screenshot (screenshot.png).
 ?       : Show/hide this help text.",
             ),
-            BackgroundColor(Color::oklch(0.2, 0.0, 0.0)),
+            BackgroundColor(Self::UI_BACKGROUND),
             HelpText,
         );
 
@@ -335,23 +371,23 @@ F12     : Take a screenshot (screenshot.png).
             Node {
                 align_items: AlignItems::Center,
                 position_type: PositionType::Absolute,
-                bottom: Val::Px(12.0),
-                right: Val::Px(12.0),
+                bottom: Val::Px(Self::UI_OFFSET),
+                right: Val::Px(Self::UI_OFFSET),
                 margin: UiRect::all(Val::Px(0.0)),
-                border: UiRect::all(Val::Px(12.0)),
+                border: UiRect::all(Val::Px(Self::UI_ROUNDING)),
                 justify_content: JustifyContent::Center,
                 ..default()
             },
             HelpTextContainer,
             ChildOf(*overlay_root),
             Outline {
-                width: Val::Px(6.),
+                width: Val::Px(Self::UI_ROUNDING/2.0),
                 offset: Val::Px(0.),
-                color: Color::WHITE,
+                color: Self::UI_OUTLINE,
             },
-            BorderRadius::px(12.0, 12.0, 12.0, 12.0),
-            BackgroundColor(Color::oklch(0.2, 0.0, 0.0)),
-            BorderColor(Color::oklch(0.2, 0.0, 0.0)),
+            BorderRadius::px(Self::UI_ROUNDING, Self::UI_ROUNDING, Self::UI_ROUNDING, Self::UI_ROUNDING),
+            BackgroundColor(Self::UI_BACKGROUND),
+            BorderColor(Self::UI_BACKGROUND),
             Visibility::Hidden,
             GlobalZIndex(Self::HELP_OVERLAY_ZINDEX),
             children![text],
@@ -549,6 +585,7 @@ F12     : Take a screenshot (screenshot.png).
     }
 
     // TODO: how to set the camera height? Put it in settings?
+    // TODO: How to set 3D cameras? Use a marker type? Or an option in the settings?
 
     /// Set up the 2D camera.
     fn setup_camera(mut commands: Commands) {
@@ -560,6 +597,81 @@ F12     : Take a screenshot (screenshot.png).
         });
 
         commands.spawn((Camera2d, projection));
+    }
+
+    /// Set up the options menu.
+    fn setup_options(mut commands: Commands,
+        overlay_root: Single<Entity, With<OverlayRoot>>,
+        settings: Res<Settings>,
+        ) {
+
+        let sps = (Node::default(),
+                   children![(Self::create_button::<DecreaseSPS>("-")),
+                    (Self::create_button::<IncreaseSPS>("+")),
+                    (Text("Steps per second limit:\n".into()), children![(TextSpan(format!("{}", settings.sps_limit)), SPSLimitText)])]);
+        let frame_budget_fraction = (Node::default(), 
+                   children![(Self::create_button::<DecreaseFrameBudget>("-")),
+                             (Self::create_button::<IncreaseFrameBudget>("+")),
+                    (Text("Simulation time fraction:\n".into()), children![(TextSpan(format!("{}", settings.frame_budget_fraction)), FrameBudgetText)])]);
+
+        commands.spawn((Node {
+            align_items: AlignItems::FlexStart,
+            justify_content: JustifyContent::Center,
+            margin: UiRect::all(Val::Px(0.0)),
+            border: UiRect::all(Val::Px(Self::UI_ROUNDING)),
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        Outline {
+            width: Val::Px(Self::UI_ROUNDING/2.0),
+            offset: Val::Px(0.),
+            color: Self::UI_OUTLINE,
+        },
+        BorderRadius::px(Self::UI_ROUNDING, Self::UI_ROUNDING, Self::UI_ROUNDING, Self::UI_ROUNDING),
+        BackgroundColor(Self::UI_BACKGROUND),
+        BorderColor(Self::UI_BACKGROUND),
+        ChildOf(*overlay_root),
+        MenuRoot,
+        children![sps, frame_budget_fraction]
+        ));
+    }
+
+    /// Handle the decrease SPS button.
+    fn decrease_sps(interaction: Single<&Interaction, (Changed<Interaction>, With<DecreaseSPS>)>,
+        mut text: Single<&mut Text, With<SPSLimitText>>,
+        mut settings: ResMut<Settings>,
+        ) {
+        info!("In decrease_sps");
+        if **interaction == Interaction::Pressed {
+            settings.sps_limit /= 2.0;
+            text.0 = format!("{}", settings.sps_limit); 
+            }
+        }
+    
+
+    /// Create a button with the given label
+    fn create_button<Marker: Component + Default>(label: &str) -> impl Bundle {
+        (
+            Button,
+            Node {
+                width: Val::Px(35.0),
+                height: Val::Px(35.0),
+                border: UiRect::all(Val::Px(Self::UI_ROUNDING)),
+                margin: UiRect::all(Val::Px(Self::UI_ROUNDING * 2.0 / 3.0)),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            Outline {
+                width: Val::Px(Self::UI_ROUNDING/4.0),
+                offset: Val::Px(0.),
+                color: Self::UI_OUTLINE,
+            },
+            BorderColor(Self::UI_BUTTON),
+            BackgroundColor(Self::UI_BUTTON),
+            Marker::default(),
+            children![Text::new(label)],
+        )
     }
 
     /** Build the plugin.
@@ -586,6 +698,7 @@ F12     : Take a screenshot (screenshot.png).
                     Self::add_pause_text,
                     Self::add_help_text,
                     Self::add_help_reminder,
+                    Self::setup_options,
                 )
                     .chain(),
             )
@@ -608,6 +721,7 @@ F12     : Take a screenshot (screenshot.png).
                     Self::keyboard_simulation,
                     Self::keyboard_screenshot,
                     Self::keyboard_quit,
+                    Self::decrease_sps,
                 )
                     .in_set(InputSet),
             )
@@ -625,3 +739,4 @@ F12     : Take a screenshot (screenshot.png).
         );
     }
 }
+

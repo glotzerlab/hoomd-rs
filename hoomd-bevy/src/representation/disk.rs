@@ -44,7 +44,7 @@ impl Disk {
         mut materials: ResMut<Assets<ColorMaterial>>,
     ) {
         let mesh = meshes.add(Circle::new(0.5));
-        let color = materials.add(Color::oklch(0.64, 0.14, 256.71));
+        let color = materials.add(Color::oklch(0.6795, 0.1708, 255.71));
         commands.insert_resource(DiskAssets { mesh, color });
     }
 
