@@ -70,7 +70,7 @@ struct Fill {
 impl Fill {
     /// Set up the hoomd simulation
     fn new() -> anyhow::Result<Fill> {
-        let box_height = 10.0;
+        let box_height = 30.0;
         let kt = 1.0;
         let d = 0.15;
 

@@ -15,6 +15,8 @@ use bevy::{
 use itertools::EitherOrBoth::{Both, Left, Right};
 use itertools::Itertools;
 
+use crate::PRIMARY_COLOR;
+
 // TODO: introduce phantom marker types to differentiate different disks.
 // TODO: Use closure to initialize disks at a given radius.
 
@@ -58,14 +60,9 @@ impl Disk {
         mut commands: Commands,
         mut meshes: ResMut<Assets<Mesh>>,
         mut materials: ResMut<Assets<DiskMaterial>>,
-        server: Res<AssetServer>,
     ) {
         let mesh = meshes.add(Rectangle::new(1.0, 1.0));
-        let material = materials.add(DiskMaterial {
-            background_color: Color::oklch(1.0, 0.0, 0.0).into(),
-            texture: server.load("embedded://hoomd_bevy/logo.png"),
-            ..default()
-        });
+        let material = materials.add(DiskMaterial::default());
         commands.insert_resource(DiskAssets { mesh, material });
     }
 
@@ -104,7 +101,14 @@ impl Disk {
     }
 }
 
-/// Control how disks are rendered.
+/** Control how disks are rendered.
+
+[`DiskMaterial`] mixes the texture (which defaults to fully transparent) with
+the background color using the texture alpha. It ignores the background alpha.
+
+Control the draw order using the z coordinate. The draw order is non-determistic
+for all disks at the same z value.
+*/
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct DiskMaterial {
     /// Color applied to the interior of the disk.
@@ -132,7 +136,7 @@ pub struct DiskMaterial {
 impl Default for DiskMaterial {
     fn default() -> Self {
         Self {
-            background_color: Color::oklch(0.6795, 0.1708, 255.71).into(),
+            background_color: PRIMARY_COLOR.into(),
             outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
             outline_width: 0.05,
             texture: TRANSPARENT_IMAGE_HANDLE,
@@ -147,6 +151,6 @@ impl Material2d for DiskMaterial {
     }
 
     fn alpha_mode(&self) -> AlphaMode2d {
-        AlphaMode2d::Blend
+        AlphaMode2d::Mask(0.5)
     }
 }

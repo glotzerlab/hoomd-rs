@@ -23,9 +23,10 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let image_color = textureSample(image_color_texture,
                                     image_color_sampler,
                                     scaled_uv);
-    // Blend the texture with the background
+    // Blend the texture with the background.
     var color = mix(background_color.rgb, image_color.rgb, image_color.a);
 
+    // Fill with the background color outside the scaled texture.
     var texture_valid = true;
     if scaled_uv.r < 0 || scaled_uv.r > 1 {
         color = background_color.rgb;
@@ -34,5 +35,5 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         color = background_color.rgb;
     }
 
-    return select(outline_color, vec4<f32>(color, background_color.a), r <= radius - outline_width);
+    return select(outline_color, vec4<f32>(color, 1.0), r <= radius - outline_width);
 }

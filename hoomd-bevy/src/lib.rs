@@ -28,6 +28,16 @@
 
 Use [`HoomdBevyPlugin`] to create visual, interactive simulations.
 
+# Examples
+
+See any one of the many *hoomd-rs* examples that use [`HoomdBevyPlugin`].
+
+# Embedded assets.
+
+`hoomd-bevy` provides the following assets:
+
+* `embedded://hoomd_bevy/logo.png` - The HOOMD logo (512 x 512).
+
 # Stability
 
 `hoomd-bevy` currently does **NOT** follow semantic versioning. First, it
@@ -36,10 +46,6 @@ is primarily intended for use to support the *hoomd-rs* examples. Second,
 breaking changes. You are welcome to use `hoomd-bevy` for your own interactive
 applications, but keep in mind that minor releases to *hoomd-rs* may make
 breaking changes in `hoomd-bevy`.
-
-# Examples
-
-See any one of the many *hoomd-rs* examples that use [`HoomdBevyPlugin`].
 */
 
 use anyhow::Context;
@@ -58,6 +64,10 @@ use bevy_winit::WinitWindows;
 use std::time::{Duration, Instant};
 
 pub mod representation;
+
+/// The default color for the primary representation.
+pub const PRIMARY_COLOR: Color = Color::srgb(80.0/255.0, 134.0/255.0, 178.0/255.0);
+// pub const PRIMARY_COLOR: Color = Color::srgb(168.0/255.0, 208.0/255.0, 222.0/255.0);
 
 /** The model, parameters, and microstate they act on.
 
@@ -142,7 +152,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             frame_budget_fraction: 0.9,
-            sps_limit: 1024.0,
+            sps_limit: 2048.0,
         }
     }
 }
@@ -179,6 +189,10 @@ pub struct HelpText;
 /// Mark help reminder text.
 #[derive(Component)]
 struct HelpReminder;
+
+/// Mark the logo.
+#[derive(Component)]
+struct Logo;
 
 /// Mark increase SPS button.
 #[derive(Component, Default)]
@@ -349,6 +363,7 @@ where
             },
             PauseText,
             Visibility::Hidden,
+            GlobalZIndex(Self::HELP_OVERLAY_ZINDEX),
             ChildOf(*overlay_root),
         ));
     }
@@ -418,7 +433,7 @@ F12     : Take a screenshot (screenshot.png).
         ));
     }
 
-    /// Remove paused text node.
+    /// Remove the help reminder text.
     fn remove_help_reminder(
         mut commands: Commands,
         overlay_root: Single<Entity, (With<OverlayRoot>, Without<HelpReminder>)>,
@@ -428,6 +443,36 @@ F12     : Take a screenshot (screenshot.png).
             .entity(*overlay_root)
             .remove_children(&[*help_reminder]);
         commands.entity(*help_reminder).despawn();
+    }
+
+    /// Add help reminder node.
+    fn add_logo(mut commands: Commands,
+        server: Res<AssetServer>,
+    ) {
+        commands.spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                bottom: Val::Px(12.0),
+                left: Val::Px(12.0),
+                width: Val::Px(64.0),
+                height: Val::Px(64.0),
+                ..default()
+            },
+            ImageNode {
+                image: server.load("embedded://hoomd_bevy/logo.png"),
+                .. default()
+            },
+            Logo,
+            GlobalZIndex(Self::HELP_OVERLAY_ZINDEX - 1),
+        ));
+    }
+
+    /// Remove the help reminder text.
+    fn remove_logo(
+        mut commands: Commands,
+        logo: Single<Entity, With<Logo>>,
+    ) {
+        commands.entity(*logo).despawn();
     }
 
     /// Populate values in the debug text.
@@ -610,7 +655,7 @@ F12     : Take a screenshot (screenshot.png).
     fn setup_camera(mut commands: Commands) {
         let projection = Projection::Orthographic(OrthographicProjection {
             scaling_mode: bevy::render::camera::ScalingMode::FixedVertical {
-                viewport_height: 10.0,
+                viewport_height: 30.0,
             },
             ..OrthographicProjection::default_2d()
         });
@@ -780,13 +825,14 @@ F12     : Take a screenshot (screenshot.png).
                     Self::add_pause_text,
                     Self::add_help_text,
                     Self::add_help_reminder,
+                    Self::add_logo,
                     Self::setup_options,
                 )
                     .chain(),
             )
             .add_systems(
                 Update,
-                Self::remove_help_reminder.run_if(once_after_delay(Duration::from_secs(3))),
+                (Self::remove_help_reminder, Self::remove_logo).run_if(once_after_delay(Duration::from_secs(3))),
             )
             .add_systems(Update, Self::step_simulation.in_set(AdvanceSet))
             .add_systems(
