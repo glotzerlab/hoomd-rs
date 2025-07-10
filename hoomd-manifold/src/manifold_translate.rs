@@ -8,14 +8,12 @@ use hoomd_mc::LocalTrial;
 use hoomd_microstate::property::Position;
 use hoomd_utility::valid::PositiveReal;
 use crate::{Minkowski, HyperbolicDisk, SphericalDisk};
-use hoomd_vector::{Cartesian, Vector, InnerProduct};
+use hoomd_vector::{Cartesian, InnerProduct};
 
 use rand::Rng;
 use rand::distr::Distribution;
 
 /** Move the position of a body on a hyperbolic surface by a small distance 
-
-TODO: documentation, examples
 
 HyperbolicTranslate used with Sweep:
 # Example
@@ -57,7 +55,7 @@ where
     B: Position<Vector = Minkowski<3>>,
     HyperbolicDisk: Distribution<Minkowski<3>>
 {
-    /** TODO: documentation, examples
+    /** Propose local trial moves for a body on a hyperbolic surface
 
     # Example 
     ```
@@ -67,6 +65,7 @@ where
     use hoomd_vector::Vector;
     use libm::sqrt;
     use rand::{rngs::StdRng, Rng, SeedableRng};
+    use approx::assert_relative_eq;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = StdRng::seed_from_u64(13);
@@ -77,7 +76,11 @@ where
                                                     skirt: rho};
 
     let new_body_properties = hyperbolic_translate.propose(&mut rng, body_properties);
-    // assert_eq!(new_body_properties.position().distance_squared(&Minkowski::from([0.0,0.0,0.0])), -1.0* rho.powi(2));
+
+    // Translation move keeps the point on the hyperboloid
+    assert_relative_eq!(new_body_properties.position().distance_squared(&Minkowski::from([0.0,0.0,0.0])), -1.0* rho.powi(2), epsilon = 1e-12);
+
+    // Translation move does not move the point more than a distance d
     assert!(d > new_body_properties.position().hyperbolic_distance(&Minkowski::from([1.0, -1.0, sqrt(2.0 + rho.powi(2))]), rho));
     # Ok(())
     # }
@@ -99,8 +102,6 @@ where
 }
 
 /** Move the position of a body on the surface of a sphere by a small distance
-
-TODO: documentation, examples
 
 SphericalTranslate used with Sweep:
 # Example
@@ -148,7 +149,7 @@ where
     B: Position<Vector = Cartesian<3>>,
     SphericalDisk: Distribution<Cartesian<3>>
 {
-    /** TODO: documentation, examples
+    /** Propose local trial moves for a body on the surface of a sphere
 
     # Example 
     ```
@@ -161,16 +162,20 @@ where
     use approx::assert_relative_eq;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut rng = StdRng::seed_from_u64(13);
+    let mut rng = StdRng::seed_from_u64(14);
     let radius : f64 = 2.0;
-    let body_properties = Point::new(Cartesian::from([0.5_f64.sqrt(), 0.5_f64.sqrt(), 0.0]));
+    let initial_point = Point::new(Cartesian::from([2.0_f64.sqrt(), 2.0_f64.sqrt(), 0.0]));
     let d = 0.1;
     let spherical_translate = SphericalTranslate {maximum_distance: d.try_into()? ,
                                                     radius: radius};
 
-    let new_body_properties = spherical_translate.propose(&mut rng, body_properties);
+    let new_body_properties = spherical_translate.propose(&mut rng, initial_point);
+
+    // Translation move keeps point on the surface of the sphere
     assert_relative_eq!(new_body_properties.position().distance_squared(&Cartesian::from([0.0,0.0,0.0])), radius.powi(2), epsilon=1e-12);
-    assert!(d > new_body_properties.position().sphere_distance(&Cartesian::from([0.5_f64.sqrt(), 0.5_f64.sqrt(), 0.0]), radius));
+
+    // Translation move does not translate the point more than a distance d away
+    assert!(d > new_body_properties.position().sphere_distance(&Cartesian::from([2.0_f64.sqrt(), 2.0_f64.sqrt(), 0.0]), radius));
     # Ok(())
     # }
     ```

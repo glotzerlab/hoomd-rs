@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement vector types on a sphere. 
+/*! Implement vector and curved manifold types on a sphere. 
  */
 
 use libm::{acos, atan2, sin, cos, sqrt};
@@ -12,18 +12,13 @@ use hoomd_utility::valid::PositiveReal;
 use rand::Rng;
 use rand::distr::{Distribution, Uniform};
 
-/** TODO: Description of sphere, examples of usage
+/** The trait [`Sphere`] for ['Cartesian'] implements types on the embedding of an N-sphere in Euclidean space. 
+Explicitly, the N-sphere is defined by the set of (N+1)-dimesnional points whose components satisfy 
+```math
+x_1^2 + x_2^2 + \cdots + x_{N+1}^1 = R^2
+```
+for some radius $R$. 
 */
-
-/** [`CurvedManifold`] for Cartesian implements the positively curved metric
-*/
-impl<const N: usize> CurvedManifold for Cartesian<N> {
-    #[inline]
-    fn geodesic_distance(&self, other: &Self, rho: f64) -> f64 {
-        let arg = Cartesian::dot(self, other) / rho.powi(2);
-        rho * acos(arg)
-    }
-}
 
 impl<const N: usize> Sphere for Cartesian<N> {
     /** Computes the arc length bewtween two points on an N-sphere of radius R. The arc length 
@@ -31,11 +26,11 @@ impl<const N: usize> Sphere for Cartesian<N> {
     the great circle which intersects both points. For two points \vec{u} and \vec{v} on an N-sphere
     embedded in cartesian space, we have 
     ```math 
-    \cos(\Delta\psi) = \frac{\vec{u}\cdot\vec{v}}{R}
+    \cos(\Delta\psi) = \frac{\vec{u}\cdot\vec{v}}{R^2}
     ```
     Therefore the arclength between \vec{u} and \vec{v} is given by 
     ```math
-    d_S(\vec{u},\vec{v}) = R\delta\psi = R\arccos\left(\frac{\vec{u}\cdot\vec{v}}{R}\right)
+    d_S(\vec{u},\vec{v}) = R\delta\psi = R\arccos\left(\frac{\vec{u}\cdot\vec{v}}{R^2}\right)
     ```
 
     # Example
@@ -46,10 +41,10 @@ impl<const N: usize> Sphere for Cartesian<N> {
     use hoomd_manifold::Sphere;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let x = Cartesian::from([1.0, 0.0, 0.0]);
-    let y = Cartesian::from([0.0, 1.0, 1.0]);
-    let c = PI/2.0;
-    assert_eq!(c,x.sphere_distance(&y,1.0));
+    let radius : f64 = 5.0;
+    let x = Cartesian::from([radius, 0.0, 0.0]);
+    let y = Cartesian::from([0.0, radius, 0.0]);
+    assert_eq!(radius* PI/2.0, x.sphere_distance(&y, radius));
     # Ok(())
     # }
     ```
@@ -82,18 +77,48 @@ impl<const N: usize> Sphere for Cartesian<N> {
     }
 }
 
+/** [`CurvedManifold`] for Cartesian implements the geodesic distance on the surface of a sphere, i.e., the 
+positively curved metric.
+*/
+impl<const N: usize> CurvedManifold for Cartesian<N> {
+    #[inline]
+    fn geodesic_distance(&self, other: &Self, rho: f64) -> f64 {
+        let arg = Cartesian::dot(self, other) / rho.powi(2);
+        rho * acos(arg)
+    }
+}
+
 /** A uniform distribution of points within distance r of a point on the 2-sphere
 with a given radius. 
+
 # Example
 
 ```
-use hoomd_manifold::Sphere;
+use hoomd_manifold::{Sphere, SphericalDisk};
 use hoomd_vector::{Vector, Cartesian};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand::distr::Distribution;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
+let radius : f64 = 1.5;
 let mut rng = StdRng::seed_from_u64(12);
+
+// generate a random point
+let sample_disk = SphericalDisk{
+        r: 0.5_f64.try_into()?, 
+        point: Cartesian::from([0.01,0.01,-1.0*(radius.powi(2)-2.0*(0.01_f64).powi(2)).sqrt()]),
+        radius: radius,}; 
+let random_point: Cartesian<3> = sample_disk.sample(&mut rng);
+
+// generate transformation which keeps the distance moved less than 0.1
+let disk = SphericalDisk {
+    r: 0.1_f64.try_into()?,
+    point: random_point,
+    radius: radius,
+};
+let transformed_random_point: Cartesian<3> = disk.sample(&mut rng);
+
+assert!(0.1 > random_point.sphere_distance(&transformed_random_point, radius));
 
 # Ok(())
 # }
