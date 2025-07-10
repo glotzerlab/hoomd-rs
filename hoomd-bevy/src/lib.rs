@@ -66,7 +66,7 @@ use std::time::{Duration, Instant};
 pub mod representation;
 
 /// The default color for the primary representation.
-pub const PRIMARY_COLOR: Color = Color::srgb(80.0/255.0, 134.0/255.0, 178.0/255.0);
+pub const PRIMARY_COLOR: Color = Color::srgb(80.0 / 255.0, 134.0 / 255.0, 178.0 / 255.0);
 // pub const PRIMARY_COLOR: Color = Color::srgb(168.0/255.0, 208.0/255.0, 222.0/255.0);
 
 /** The model, parameters, and microstate they act on.
@@ -224,13 +224,23 @@ Callers should use this to execute the sync step after the simulation is advance
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AdvanceSet;
 
-/** Systems that run to process input.
+/** Systems that always run to process input.
 
 Callers can optionally add input handling systems to this set. It is processed
 after [`AdvanceSet`] to reduce the latency between input and result.
 */
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct InputSet;
+pub struct AlwaysInputSet;
+
+/** Systems that run to process input only when there is no menu displayed.
+*/
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct NoMenuInputSet;
+
+/** Systems that run to process input in the settings menu.
+*/
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct SettingsMenuInputSet;
 
 impl<Sim> HoomdBevyPlugin<Sim>
 where
@@ -434,9 +444,7 @@ F12     : Take a screenshot (screenshot.png).
     }
 
     /// Add help reminder node.
-    fn add_logo(mut commands: Commands,
-        server: Res<AssetServer>,
-    ) {
+    fn add_logo(mut commands: Commands, server: Res<AssetServer>) {
         commands.spawn((
             Node {
                 position_type: PositionType::Absolute,
@@ -448,7 +456,7 @@ F12     : Take a screenshot (screenshot.png).
             },
             ImageNode {
                 image: server.load("embedded://hoomd_bevy/logo.png"),
-                .. default()
+                ..default()
             },
             Logo,
             GlobalZIndex(Self::HELP_OVERLAY_ZINDEX - 1),
@@ -456,10 +464,7 @@ F12     : Take a screenshot (screenshot.png).
     }
 
     /// Remove the help reminder text.
-    fn remove_logo(
-        mut commands: Commands,
-        logo: Single<Entity, With<Logo>>,
-    ) {
+    fn remove_logo(mut commands: Commands, logo: Single<Entity, With<Logo>>) {
         commands.entity(*logo).despawn();
     }
 
@@ -665,24 +670,20 @@ F12     : Take a screenshot (screenshot.png).
     ) {
         let sps = (
             Node::default(),
-            children![
-                (
-                    Text("Steps per second limit (-/=):   ".into()),
-                    children![(TextSpan(format!("{}", settings.sps_limit)), SPSLimitText)]
-                )
-            ],
+            children![(
+                Text("Steps per second limit (-/=):   ".into()),
+                children![(TextSpan(format!("{}", settings.sps_limit)), SPSLimitText)]
+            )],
         );
         let frame_budget_fraction = (
             Node::default(),
-            children![
-                (
-                    Text("Simulation time fraction ([/]): ".into()),
-                    children![(
-                        TextSpan(format!("{}", settings.frame_budget_fraction)),
-                        FrameBudgetText
-                    )]
-                )
-            ],
+            children![(
+                Text("Simulation time fraction ([/]): ".into()),
+                children![(
+                    TextSpan(format!("{}", settings.frame_budget_fraction)),
+                    FrameBudgetText
+                )]
+            )],
         );
 
         commands.spawn((
@@ -782,35 +783,32 @@ F12     : Take a screenshot (screenshot.png).
             )
             .add_systems(
                 Update,
-                (Self::remove_help_reminder, Self::remove_logo).run_if(once_after_delay(Duration::from_secs(3))),
+                (Self::remove_help_reminder, Self::remove_logo)
+                    .run_if(once_after_delay(Duration::from_secs(3))),
             )
             .add_systems(Update, Self::step_simulation.in_set(AdvanceSet))
             .add_systems(
                 Update,
-                (Self::keyboard_overlay, Self::update_debug_text)
-                    .chain()
-                    .in_set(InputSet),
+                (
+                    (Self::keyboard_overlay, Self::update_debug_text).chain(),
+                    Self::keyboard_menu,
+                    Self::keyboard_quit,
+                    Self::keyboard_screenshot,
+                )
+                    .in_set(AlwaysInputSet),
             )
             .add_systems(
                 Update,
                 (
                     Self::keyboard_pause,
                     Self::keyboard_help,
-                    Self::keyboard_menu,
                     Self::keyboard_simulation,
-                    Self::keyboard_screenshot,
-                    Self::keyboard_quit,
                 )
-                    .in_set(InputSet),
+                    .in_set(NoMenuInputSet),
             )
             .add_systems(
                 Update,
-                (
-                    Self::keyboard_sps,
-                    Self::keyboard_frame_budget,
-                )
-                    .in_set(InputSet)
-                    .run_if(in_state(MenuState::Settings)),
+                (Self::keyboard_sps, Self::keyboard_frame_budget).in_set(SettingsMenuInputSet),
             )
             .add_systems(
                 Update,
@@ -821,7 +819,13 @@ F12     : Take a screenshot (screenshot.png).
             Update,
             (
                 AdvanceSet.run_if(in_state(PauseState::Running)),
-                InputSet.after(AdvanceSet),
+                AlwaysInputSet.after(AdvanceSet),
+                NoMenuInputSet
+                    .run_if(in_state(MenuState::None))
+                    .after(AdvanceSet),
+                SettingsMenuInputSet
+                    .run_if(in_state(MenuState::Settings))
+                    .after(AdvanceSet),
             ),
         );
     }
