@@ -138,6 +138,16 @@ pub enum PauseState {
     Running,
 }
 
+/// Indicate what menu is displayed (if any)
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum MenuState {
+    /// No menu is open.
+    #[default]
+    None,
+    /// The settings menu is open.
+    Settings,
+}
+
 /// Store parameters that influence how the simulation is executed.
 #[derive(Resource)]
 pub struct Settings {
@@ -194,25 +204,9 @@ struct HelpReminder;
 #[derive(Component)]
 struct Logo;
 
-/// Mark increase SPS button.
-#[derive(Component, Default)]
-struct IncreaseSPS;
-
-/// Mark decrase SPS button.
-#[derive(Component, Default)]
-struct DecreaseSPS;
-
 /// Mark the SPS limit text.
 #[derive(Component)]
 struct SPSLimitText;
-
-/// Mark increase frame budget button.
-#[derive(Component, Default)]
-struct IncreaseFrameBudget;
-
-/// Mark decrase frame budget button.
-#[derive(Component, Default)]
-struct DecreaseFrameBudget;
 
 /// Mark the frame budget text.
 #[derive(Component)]
@@ -259,12 +253,6 @@ where
 
     /// Display this color on UI outlines.
     pub const UI_OUTLINE: Color = Color::WHITE;
-
-    /// Display this color on UI buttons.
-    pub const UI_BUTTON: Color = Color::oklch(0.6795, 0.1708, 27.77);
-
-    /// Display this color when buttons are active.
-    pub const UI_BUTTON_ACTIVE: Color = Color::oklch(0.6795, 0.1708, 144.47);
 
     /// Round the UI to this radius.
     pub const UI_ROUNDING: f32 = 12.0;
@@ -542,10 +530,16 @@ F12     : Take a screenshot (screenshot.png).
     fn keyboard_menu(
         keys: Res<ButtonInput<KeyCode>>,
         mut menu_root: Single<&mut Visibility, With<MenuRoot>>,
+        menu_state: Res<State<MenuState>>,
+        mut next_menu_state: ResMut<NextState<MenuState>>,
     ) {
         if keys.just_pressed(KeyCode::Escape) {
             debug!("Show/hide the menu.");
             menu_root.toggle_inherited_hidden();
+            match menu_state.get() {
+                MenuState::Settings => next_menu_state.set(MenuState::None),
+                MenuState::None => next_menu_state.set(MenuState::Settings),
+            }
         }
     }
 
@@ -672,10 +666,8 @@ F12     : Take a screenshot (screenshot.png).
         let sps = (
             Node::default(),
             children![
-                Self::create_button::<DecreaseSPS>("-"),
-                Self::create_button::<IncreaseSPS>("+"),
                 (
-                    Text("Steps per second limit:\n".into()),
+                    Text("Steps per second limit (-/=):   ".into()),
                     children![(TextSpan(format!("{}", settings.sps_limit)), SPSLimitText)]
                 )
             ],
@@ -683,10 +675,8 @@ F12     : Take a screenshot (screenshot.png).
         let frame_budget_fraction = (
             Node::default(),
             children![
-                Self::create_button::<DecreaseFrameBudget>("-"),
-                Self::create_button::<IncreaseFrameBudget>("+"),
                 (
-                    Text("Simulation time fraction:\n".into()),
+                    Text("Simulation time fraction ([/]): ".into()),
                     children![(
                         TextSpan(format!("{}", settings.frame_budget_fraction)),
                         FrameBudgetText
@@ -724,77 +714,36 @@ F12     : Take a screenshot (screenshot.png).
         ));
     }
 
-    /// Handle the decrease SPS button.
-    fn decrease_sps(
-        interaction: Single<&Interaction, (Changed<Interaction>, With<DecreaseSPS>)>,
+    /// Handle the increase/decrease SPS buttons.
+    fn keyboard_sps(
+        keys: Res<ButtonInput<KeyCode>>,
         mut text: Single<&mut TextSpan, With<SPSLimitText>>,
         mut settings: ResMut<Settings>,
     ) {
-        if **interaction == Interaction::Pressed {
+        if keys.just_pressed(KeyCode::Minus) {
             settings.sps_limit /= 2.0;
             text.0 = format!("{}", settings.sps_limit);
         }
-    }
-
-    /// Handle the increase SPS button.
-    fn increase_sps(
-        interaction: Single<&Interaction, (Changed<Interaction>, With<IncreaseSPS>)>,
-        mut text: Single<&mut TextSpan, With<SPSLimitText>>,
-        mut settings: ResMut<Settings>,
-    ) {
-        if **interaction == Interaction::Pressed {
+        if keys.just_pressed(KeyCode::Equal) {
             settings.sps_limit *= 2.0;
             text.0 = format!("{}", settings.sps_limit);
         }
     }
 
-    /// Handle the decrease frame budget button.
-    fn decrease_frame_budget(
-        interaction: Single<&Interaction, (Changed<Interaction>, With<DecreaseFrameBudget>)>,
+    /// Handle the increase/decrease frame budget buttons.
+    fn keyboard_frame_budget(
+        keys: Res<ButtonInput<KeyCode>>,
         mut text: Single<&mut TextSpan, With<FrameBudgetText>>,
         mut settings: ResMut<Settings>,
     ) {
-        if **interaction == Interaction::Pressed {
+        if keys.just_pressed(KeyCode::BracketLeft) {
             settings.frame_budget_fraction = (settings.frame_budget_fraction - 0.1).clamp(0.1, 0.9);
             text.0 = format!("{:.1}", settings.frame_budget_fraction);
         }
-    }
-
-    /// Handle the increase SPS button.
-    fn increase_frame_budget(
-        interaction: Single<&Interaction, (Changed<Interaction>, With<IncreaseFrameBudget>)>,
-        mut text: Single<&mut TextSpan, With<FrameBudgetText>>,
-        mut settings: ResMut<Settings>,
-    ) {
-        if **interaction == Interaction::Pressed {
+        if keys.just_pressed(KeyCode::BracketRight) {
             settings.frame_budget_fraction = (settings.frame_budget_fraction + 0.1).clamp(0.1, 0.9);
             text.0 = format!("{:.1}", settings.frame_budget_fraction);
         }
-    }
-
-    /// Create a button with the given label
-    fn create_button<Marker: Component + Default>(label: &str) -> impl Bundle {
-        (
-            Button,
-            Node {
-                width: Val::Px(35.0),
-                height: Val::Px(35.0),
-                border: UiRect::all(Val::Px(Self::UI_ROUNDING)),
-                margin: UiRect::all(Val::Px(Self::UI_ROUNDING * 2.0 / 3.0)),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                ..default()
-            },
-            Outline {
-                width: Val::Px(Self::UI_ROUNDING / 4.0),
-                offset: Val::Px(0.),
-                color: Self::UI_OUTLINE,
-            },
-            BorderColor(Self::UI_BUTTON),
-            BackgroundColor(Self::UI_BUTTON),
-            Marker::default(),
-            children![Text::new(label)],
-        )
     }
 
     /** Build the plugin.
@@ -816,6 +765,7 @@ F12     : Take a screenshot (screenshot.png).
             .register_diagnostic(Diagnostic::new(Self::SPS))
             .insert_resource(self.simulation)
             .insert_state(PauseState::Running)
+            .insert_state(MenuState::None)
             .add_systems(Startup, Self::setup_camera)
             .add_systems(
                 Startup,
@@ -850,12 +800,17 @@ F12     : Take a screenshot (screenshot.png).
                     Self::keyboard_simulation,
                     Self::keyboard_screenshot,
                     Self::keyboard_quit,
-                    Self::decrease_sps,
-                    Self::increase_sps,
-                    Self::decrease_frame_budget,
-                    Self::increase_frame_budget,
                 )
                     .in_set(InputSet),
+            )
+            .add_systems(
+                Update,
+                (
+                    Self::keyboard_sps,
+                    Self::keyboard_frame_budget,
+                )
+                    .in_set(InputSet)
+                    .run_if(in_state(MenuState::Settings)),
             )
             .add_systems(
                 Update,
