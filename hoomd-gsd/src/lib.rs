@@ -16,17 +16,17 @@
 
 # GSD files
 
-A GSD file stores 2D arrays of integer and floating point types in named
-chunks that are associated with trajectory frames. The [GSD Python package]
-can read and write these files. `hoomd-gsd` implements GSD file I/O in native
-Rust.
+A GSD file stores 2D arrays of integer and floating point types in named chunks
+that are associated with trajectory frames. The [GSD Python package] can read
+and write these files. `hoomd-gsd` implements GSD file I/O in native Rust.
 
 [GSD Python package]: https://gsd.readthedocs.io
 
 # The file layer
 
-[`GsdFile`](file_layer::GsdFile) provides direct access to read and write GSD formatted
-files. Call [`create_new`](file_layer::GsdFile::create_new) to create a new GSD file:
+[`GsdFile`](file_layer::GsdFile) provides direct access to read and write GSD
+formatted files. Call [`create_new`](file_layer::GsdFile::create_new) to create
+a new GSD file:
 
 ```
 use hoomd_gsd::file_layer::GsdFile;
@@ -40,9 +40,11 @@ let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
 # }
 ```
 
-Add new arrays to the current frame with [`write_scalars`](file_layer::GsdFile::write_scalars)
-and [`write_arrays`](file_layer::GsdFile::write_arrays). You **must** end the frame with
-[`end_frame`](file_layer::GsdFile::end_frame) or no data will be written to the file!
+Add new arrays to the current frame with
+[`write_scalars`](file_layer::GsdFile::write_scalars) and
+[`write_arrays`](file_layer::GsdFile::write_arrays). You **must** end the frame
+with [`end_frame`](file_layer::GsdFile::end_frame) or no data will be written to
+the file!
 ```
 use hoomd_gsd::file_layer::GsdFile;
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -59,17 +61,23 @@ gsd_file.end_frame()?;
 # Ok(())
 # }
 ```
-Each array in the file in stored in a specific type. `write_scalars` and `write_arrays`
-automatically infer that type from the argument given.
+Each array in the file in stored in a specific type. `write_scalars` and
+`write_arrays` automatically infer that type from the argument given.
 
 # HOOMD schema
 
-See the [GSD Python package] documentation for a full specification of the HOOMD schema.
-Files written with this schema will interoperate with [HOOMD-blue], [OVITO], and other
-applications.
+See the [GSD Python package] documentation for a full specification of the HOOMD
+schema. Files written with this schema will interoperate with [HOOMD-blue],
+[OVITO], and other applications.
 
 [HOOMD-blue]: https://hoomd-blue.readthedocs.io
 [Ovito]: https://www.ovito.org
+
+At this time, the `hoomd-gsd` crate does not provide any high level API for
+reading or writing the HOOMD schema. See the code examples throughout the
+[`file_layer`] module for minimal examples that write files with the HOOMD
+schema. Note that the HOOMD schema uses f32 data types, so convert appropriately
+when mapping vectors from `hoomd-vector`.
  */
 
 pub mod file_layer;
