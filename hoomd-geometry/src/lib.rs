@@ -10,16 +10,17 @@
 
 /*! General, performant computational geometry code.
 
-`hoomd_geometry` implements common operations for widely-used geometric primitives, with
-additional functionality to accommodate hard-particle Monte Carlo simulations.
+`hoomd_geometry` implements common operations for widely-used geometric
+primitives, with additional functionality to accommodate hard-particle Monte
+Carlo simulations.
 
 ## Geometric Primitives
 
-The [`Hypersphere`][crate::shape::Hypersphere] is an excellent example of the design philosophy of `hoomd_geometry`. The
-struct is initialized from a single radius value, and immediately provides access to
-a variety of methods. [`Hypersphere`][crate::shape::Hypersphere]s are well defined in arbitrary dimension, and therefore
-are parameterized with a const generic `N` representing the embedding dimension.
-
+The [`Hypersphere`][shape::Hypersphere] demonstrates the design philosophy of
+`hoomd_geometry`. The struct contains a single radius value, and immediately
+provides access to a variety of methods. Hypersphers are well defined in
+arbitrary dimension, and therefore the implementation is parameterized with a
+const generic `N` representing the embedding dimension:
 ```
 use hoomd_geometry::{ IntersectsAt, Volume, shape::Hypersphere };
 use approx::assert_relative_eq;
@@ -31,15 +32,20 @@ assert_relative_eq!(s.volume(), (4.0/3.0 * PI));
 ```
 
 ## Traits
-[`Volume`] provides a notion of the amount of space a primitive occupies, and indicates
-the N-hypervolume of a given struct. For a [`Rectangle`][`crate::shape::Rectangle`], for example, [`Volume`]
-returns the area in the plane, and for a [`Sphere`][`crate::shape::Sphere`] we get the three-dimenstional volume.
+[`Volume`] provides a notion of the amount of space a primitive
+occupies, and indicates the N-hypervolume of a given struct. For a
+[`Rectangle`][shape::Rectangle], for example, [`Volume`] returns the area in the
+plane, and for a [`Sphere`][shape::Sphere] returns the three-dimensional volume.
 
-[`IntersectsAt`] allows for the calculation of intersections between two bodies without a built-in origin. This definition is compatible with HPMC and allows for the method's definition without requiring internal state regarding
-the position or orientation of each body.
+[`IntersectsAt`] determines if there is an intersection between two shapes,
+where the second shape is placed in the coordinate system of the first.
+This is the most efficient way to test for intersections in Monte Carlo
+simulations as only the positions and orientations of the sites need to be
+modified.
+
 For non-orientable shapes, or for bodies who have special intersection
-tests for particular orientations, and inherent method `intersects` can be implemented
-as well.
+tests for particular orientations, and inherent method `intersects` can be
+implemented as well:
 ```
 use hoomd_geometry::{ IntersectsAt, shape::{Cuboid, Sphere} , Convex };
 use hoomd_vector::Versor;
@@ -49,24 +55,19 @@ let s1 = Sphere {radius: 1.0};
 
 let q_id = Versor::default();
 
-// Determine the intersection between two spheres, using a fast overlap check
 assert_eq!(s0.intersects_at(&s1, &[1.9, 0.0, 0.0].into(), &q_id), true);
 assert_eq!(s0.intersects_at(&s1, &[2.1, 0.0, 0.0].into(), &q_id), false);
-
-// For more complex bodies, the `Convex` wrapper uses Xenocollide to detect overlaps
-assert_eq!(Convex(s0).intersects_at(&Convex(s1), &[1.9, 0.0, 0.0].into(), &q_id), true);
-assert_eq!(Convex(s0).intersects_at(&Convex(s1), &[2.1, 0.0, 0.0].into(), &q_id), false);
 ```
-By implementing the [`SupportMapping`] trait for a struct, the [`Convex`] newtype can be
-used for general, robust intersection queries between pairs of geometries. The
-[`xenocollide`] algorithm, provided for 2d and 3d shapes, is used in a blanket
-implementation on [`Convex`].
 
-```rust
-# use hoomd_geometry::{ IntersectsAt, shape::{Cuboid, Sphere} , Convex };
-# use hoomd_vector::Versor;
-# let s0 = Sphere {radius: 1.0};
-// The `Convex` wrapper also allows for overlap checks between heterogeneous particles
+Any pair of shapes (with possibly different types) that both implement the
+[`SupportMapping`] trait can be tested for overlaps through the  [`Convex`]
+newtype. [`IntersectsAt`] uses the [`xenocollide`] algorithm, provided for
+2d and 3d shapes, to test for intersections between [`Convex`] shapes:
+```
+use hoomd_geometry::{ Convex, IntersectsAt, shape::{Cuboid, Sphere} };
+use hoomd_vector::Versor;
+let s0 = Sphere {radius: 1.0};
+
 let wrapped_cuboid = Convex(Cuboid::from([2.0, 2.0, 2.0]));
 
 assert_eq!(
@@ -77,6 +78,7 @@ assert_eq!(
     Convex(s0).intersects_at(&wrapped_cuboid, &[2.1, 0.0, 0.0].into(), &Versor::default()),
     false
 );
+```
 */
 
 pub mod shape;

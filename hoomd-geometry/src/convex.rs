@@ -6,16 +6,17 @@ use crate::{
     shape::{Circle, Sphere},
     xenocollide::{collide2d, collide3d},
 };
-use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix, Vector};
+use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix};
 
-/// A newtype that checks for intersections using xenocollide, provided [`Convex<S>`]  implements [`SupportMapping`][`crate::SupportMapping`]
+/// A newtype that checks for intersections using `xenocollide`.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Convex<S>(pub S);
 
-impl<V: Vector, S> SupportMapping<V> for Convex<S>
+impl<V, S> SupportMapping<V> for Convex<S>
 where
     S: SupportMapping<V>,
 {
+    /// Forward the call to the inner type.
     #[inline]
     fn support_mapping(&self, n: &V) -> V {
         self.0.support_mapping(n)
@@ -26,7 +27,7 @@ impl<A, B, R> IntersectsAt<Convex<A>, Cartesian<2>, R> for Convex<B>
 where
     A: SupportMapping<Cartesian<2>> + BoundingSphereRadius,
     B: SupportMapping<Cartesian<2>> + BoundingSphereRadius,
-    R: Rotate<Cartesian<2>> + Rotation + PartialEq + Copy,
+    R: Rotate<Cartesian<2>> + Rotation + Copy,
     RotationMatrix<2>: From<R>,
 {
     #[inline]

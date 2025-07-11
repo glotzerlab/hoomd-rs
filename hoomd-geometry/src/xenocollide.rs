@@ -219,7 +219,7 @@ where
     // Direction perpendicular to v0, v1 plane
     let n = v1.cross(&v0);
 
-    // Cross product is zero if v0,v1 colinear with origin, but we have already
+    // Cross product is zero if v0,v1 collinear with origin, but we have already
     // determined origin is within v1 support plane. If origin is on a line between
     // v1 and v0, particles overlap. We assume precision_tol has units l**2
     if n.into_iter().all(|x| x.abs() < precision_tol) {
