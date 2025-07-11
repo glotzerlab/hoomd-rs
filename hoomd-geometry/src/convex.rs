@@ -1,6 +1,9 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+/*! Implement `Convex`.
+*/
+
 use crate::{
     BoundingSphereRadius, IntersectsAt, SupportMapping,
     shape::{Circle, Sphere},
@@ -8,7 +11,7 @@ use crate::{
 };
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix};
 
-/// A newtype that checks for intersections using `xenocollide`.
+/// A newtype that checks for intersections using [`xenocollide`](crate::xenocollide).
 #[derive(Clone, Debug, PartialEq)]
 pub struct Convex<S>(pub S);
 
