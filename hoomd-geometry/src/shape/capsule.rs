@@ -222,4 +222,41 @@ mod tests {
         assert!(capsule_tall.intersects_at(&capsule_tall, &[3.9, 0.0, 2.0].into(), &rotate));
         assert!(!capsule_tall.intersects_at(&capsule_tall, &[4.1, 0.0, -2.0].into(), &rotate));
     }
+
+    #[test]
+    fn support_mapping_2d() {
+        let capsule = Convex(Capsule::<3> {
+            radius: 0.5,
+            height: 6.0,
+        });
+
+        // top and bottom
+        assert_relative_eq!(capsule.support_mapping(&[0.0, 0.0, 1.0].into()),
+                            [0.0, 0.0, 3.5].into());
+        assert_relative_eq!(capsule.support_mapping(&[0.0, 0.0, -1.0].into()),
+                            [0.0, 0.0, -3.5].into());
+
+        // the top ring
+        assert_relative_eq!(capsule.support_mapping(&[1.0, 0.0, 1e-12].into()),
+                            [0.5, 0.0, 3.0].into(), epsilon=1e-6);
+        assert_relative_eq!(capsule.support_mapping(&[-1.0, 0.0, 1e-12].into()),
+                            [-0.5, 0.0, 3.0].into(), epsilon=1e-6);
+        assert_relative_eq!(capsule.support_mapping(&[0.0, 1.0, 1e-12].into()),
+                            [0.0, 0.5, 3.0].into(), epsilon=1e-6);
+        assert_relative_eq!(capsule.support_mapping(&[0.0, -1.0, 1e-12].into()),
+                            [0.0, -0.5, 3.0].into(), epsilon=1e-6);
+
+        // the bottom ring
+        assert_relative_eq!(capsule.support_mapping(&[1.0, 0.0, -1e-12].into()),
+                            [0.5, 0.0, -3.0].into(), epsilon=1e-6);
+        assert_relative_eq!(capsule.support_mapping(&[-1.0, 0.0, -1e-12].into()),
+                            [-0.5, 0.0, -3.0].into(), epsilon=1e-6);
+        assert_relative_eq!(capsule.support_mapping(&[0.0, 1.0, -1e-12].into()),
+                            [0.0, 0.5, -3.0].into(), epsilon=1e-6);
+        assert_relative_eq!(capsule.support_mapping(&[0.0, -1.0, -1e-12].into()),
+                            [0.0, -0.5, -3.0].into(), epsilon=1e-6);
+
+        // on the caps is not so easy to test manually...
+        
+    }
 }
