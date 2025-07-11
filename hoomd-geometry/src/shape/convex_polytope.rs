@@ -208,7 +208,9 @@ impl<const N: usize> BoundingSphereRadius for ConvexPolytope<N> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use approx::assert_relative_eq;
     use rstest::*;
+
     #[fixture]
     fn simplex3() -> ConvexPolyhedron {
         ConvexPolyhedron::with_vertices(vec![
@@ -251,5 +253,81 @@ mod tests {
         assert_eq!(result, Err(Error::DegeneratePolytope));
     }
 
-    // TODO: Test SupportMapping
+    #[test]
+    fn support_mapping_2d() {
+        let cuboid = ConvexPolygon::with_vertices([
+            [-1.0, -2.0].into(),
+            [1.0, -2.0].into(),
+            [1.0, 2.0].into(),
+            [-1.0, 2.0].into(),
+        ])
+        .expect("hard-coded vertices form a polygon");
+
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([1.0, 0.1])),
+            [1.0, 2.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([1.0, -0.1])),
+            [1.0, -2.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([-0.1, 1.0])),
+            [-1.0, 2.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([-0.1, -1.0])),
+            [-1.0, -2.0].into()
+        );
+    }
+
+    #[test]
+    fn support_mapping_3d() {
+        let cuboid = ConvexPolyhedron::with_vertices([
+            [-1.0, -2.0, 3.0].into(),
+            [1.0, -2.0, 3.0].into(),
+            [1.0, 2.0, 3.0].into(),
+            [-1.0, 2.0, 3.0].into(),
+            [-1.0, -2.0, -3.0].into(),
+            [1.0, -2.0, -3.0].into(),
+            [1.0, 2.0, -3.0].into(),
+            [-1.0, 2.0, -3.0].into(),
+        ])
+        .expect("hard-coded vertices form a polygon");
+
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([1.0, 0.1, 0.1])),
+            [1.0, 2.0, 3.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([1.0, 0.1, -0.1])),
+            [1.0, 2.0, -3.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([1.0, -0.1, 0.1])),
+            [1.0, -2.0, 3.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([1.0, -0.1, -0.1])),
+            [1.0, -2.0, -3.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([-1.0, 0.1, 0.1])),
+            [-1.0, 2.0, 3.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([-1.0, 0.1, -0.1])),
+            [-1.0, 2.0, -3.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([-1.0, -0.1, 0.1])),
+            [-1.0, -2.0, 3.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([-1.0, -0.1, -0.1])),
+            [-1.0, -2.0, -3.0].into()
+        );
+    }
+
+    // TODO: Test intersects_at
 }

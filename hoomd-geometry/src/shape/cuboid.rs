@@ -398,7 +398,7 @@ mod tests {
     }
 
     #[test]
-    fn support_mapping_4d() {
+    fn support_mapping_3d() {
         let cuboid = Cuboid {
             edge_lengths: [2.0, 4.0, 6.0],
         };
