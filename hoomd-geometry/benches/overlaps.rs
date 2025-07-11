@@ -51,8 +51,12 @@ fn create_sphere_pair<const N: usize, R: Rng>(rng: &mut R) -> (Hypersphere<N>, H
 
 fn create_cuboid_pair<const N: usize, R: Rng>(rng: &mut R) -> (Cuboid<N>, Cuboid<N>) {
     (
-        Cuboid { edge_lengths: (rng.random::<Cartesian<N>>() * 10.0).coordinates },
-        Cuboid { edge_lengths: (rng.random::<Cartesian<N>>() * 10.0).coordinates },
+        Cuboid {
+            edge_lengths: (rng.random::<Cartesian<N>>() * 10.0).coordinates,
+        },
+        Cuboid {
+            edge_lengths: (rng.random::<Cartesian<N>>() * 10.0).coordinates,
+        },
     )
 }
 fn create_simplex_pair<R: Rng>(rng: &mut R) -> (Simplex3, Simplex3) {
@@ -85,7 +89,7 @@ fn create_dipyramid_pair<const N: usize, R: Rng>(
                 .chain([
                     [0.0, 0.0, rng.random_range(0.0..h_max)].into(),
                     [0.0, 0.0, -rng.random_range(0.0..h_max)].into(),
-                ])
+                ]),
         )
         .unwrap(),
         ConvexPolytope::<3>::with_vertices(
@@ -95,7 +99,7 @@ fn create_dipyramid_pair<const N: usize, R: Rng>(
                 .chain([
                     [0.0, 0.0, rng.random_range(0.0..h_max)].into(),
                     [0.0, 0.0, -rng.random_range(0.0..h_max)].into(),
-                ])
+                ]),
         )
         .unwrap(),
     )

@@ -112,7 +112,7 @@ pub trait Volume {
 /** Compute the shortest distance between any points on two separate shapes.
 
 By convention, the minimum distance is positive when the shapes are separated
-and 0 when overlapping. 
+and 0 when overlapping.
 
 TODO: Should this instead be defined as the minimum distance between a point
 and a shape's surface? That is traditionally negative when the point is
@@ -181,7 +181,6 @@ assert_eq!(
 ```
 */
 pub trait IntersectsAt<S, V, R> {
-
     /** Test whether the set of points in one shape intersects with the set of another.
 
     Each shape (`self` and `other`) remain unmodified in their own local
@@ -192,7 +191,7 @@ pub trait IntersectsAt<S, V, R> {
 
     TODO: An example that shows computing `v_ij` and `o_ij` from two shapes
     in world coordinates.
-    */ 
+    */
     fn intersects_at(&self, other: &S, v_ij: &V, o_ij: &R) -> bool;
 }
 
@@ -226,5 +225,5 @@ pub trait BoundingSphereRadius {
 pub enum Error {
     /// Polytopes require at least one vertex.
     #[error("a ConvexPolytope must have at least one vertex")]
-    DegeneratePolytope
+    DegeneratePolytope,
 }

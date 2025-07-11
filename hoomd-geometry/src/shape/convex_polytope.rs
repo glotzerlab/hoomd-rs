@@ -150,14 +150,15 @@ impl<const N: usize> ConvexPolytope<N> {
     */
     #[inline]
     pub fn with_vertices<I>(vertices: I) -> Result<ConvexPolytope<N>, Error>
-    where I: IntoIterator<Item = Cartesian<N>>
+    where
+        I: IntoIterator<Item = Cartesian<N>>,
     {
         let vertices = vertices.into_iter().collect::<Vec<_>>();
 
         if vertices.is_empty() {
             return Err(Error::DegeneratePolytope);
         }
-        
+
         let bounding_radius = vertices
             .iter()
             .map(Cartesian::norm_squared)
@@ -165,10 +166,10 @@ impl<const N: usize> ConvexPolytope<N> {
             .sqrt();
 
         Ok(ConvexPolytope {
-                vertices,
-                bounding_radius,
-            })
-        }
+            vertices,
+            bounding_radius,
+        })
+    }
 
     /// The vertices of the shape.
     #[inline]

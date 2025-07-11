@@ -203,7 +203,6 @@ assert_eq!(
 */
 pub type Ellipse = Hyperellipsoid<2>;
 
-
 /**A sphere scaled along the x, y, and z axes.
 
 # Examples
@@ -263,7 +262,10 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperellipsoid<N> {
 impl<const N: usize> BoundingSphereRadius for Hyperellipsoid<N> {
     #[inline]
     fn bounding_sphere_radius(&self) -> f64 {
-        self.axes.into_iter().reduce(f64::max).expect("N must be greater than or equal to 1")
+        self.axes
+            .into_iter()
+            .reduce(f64::max)
+            .expect("N must be greater than or equal to 1")
     }
 }
 impl<const N: usize> Volume for Hyperellipsoid<N> {

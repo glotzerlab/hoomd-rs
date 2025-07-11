@@ -65,7 +65,7 @@ impl<'a, const N: usize, A: SupportMapping<Cartesian<N>>, B: SupportMapping<Cart
             + *self.v_ij;
         sb_n - self.sa.support_mapping(&-n) // eq. 2.5.6 in GPG7
     }
-    
+
     /// Create a new `MinkowskiDifference` evaluator.
     #[inline]
     fn new<R: Rotation>(
@@ -302,7 +302,7 @@ where
         // Are we within an epsilon of the surface of the shape? If yes, done, one way or another.
         n = (v2 - v1).cross(&(v3 - v1));
         let mut d = (v4 - v1).dot(&n);
-        
+
         // Scale the tolerance with the size of the shapes.
         let tolerance = TOLERANCE * n.norm();
 
@@ -403,7 +403,9 @@ mod tests {
     )]
     fn test_aabrs_collide(v: [f64; 2], rect: [f64; 2]) {
         let c0 = Cuboid { edge_lengths: rect };
-        let c1 = Cuboid { edge_lengths: [1.0; 2] };
+        let c1 = Cuboid {
+            edge_lengths: [1.0; 2],
+        };
         let theta = Angle::from(0.0);
 
         let overlaps = collide2d(&c0, &c1, &v.into(), &theta);
@@ -415,7 +417,9 @@ mod tests {
     )]
     fn test_aabbs_collide(v: [f64; 3], aabb: [f64; 3]) {
         let c0 = Cuboid { edge_lengths: aabb };
-        let c1 = Cuboid { edge_lengths: [1.0; 3] };
+        let c1 = Cuboid {
+            edge_lengths: [1.0; 3],
+        };
         let theta = Versor::identity();
 
         let overlaps = collide3d(&c0, &c1, &v.into(), &theta);

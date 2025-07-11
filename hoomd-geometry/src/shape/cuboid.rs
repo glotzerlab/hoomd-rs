@@ -163,7 +163,12 @@ impl<const N: usize> Volume for Cuboid<N> {
 impl<const N: usize> BoundingSphereRadius for Cuboid<N> {
     #[inline]
     fn bounding_sphere_radius(&self) -> f64 {
-        f64::sqrt(3.0) / 2.0 * self.edge_lengths.into_iter().reduce(f64::max).expect("N must be greater than or equal to 1")
+        f64::sqrt(3.0) / 2.0
+            * self
+                .edge_lengths
+                .into_iter()
+                .reduce(f64::max)
+                .expect("N must be greater than or equal to 1")
     }
 }
 
@@ -179,7 +184,6 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Cuboid<N> {
 }
 
 impl<const N: usize> Cuboid<N> {
-
     #[inline]
     #[must_use]
     /** Determine the maximal extents of the cuboid along each Cartesian axis.
@@ -232,7 +236,14 @@ mod tests {
         edges1 => [[1.0, 1.0, 1.0]],
     )]
     fn test_box_intersections_aligned(edges0: [f64; 3], edges1: [f64; 3]) {
-        let (s0, s1) = (Cuboid {edge_lengths: edges0 }, Cuboid { edge_lengths: edges1 });
+        let (s0, s1) = (
+            Cuboid {
+                edge_lengths: edges0,
+            },
+            Cuboid {
+                edge_lengths: edges1,
+            },
+        );
         // Should all be false (no intersection), which we invert to true
         assert!(!s0.intersects_aligned(&s1, &[10.0, 10.0, 10.0].into()));
         // Boundaries are aligned
@@ -245,7 +256,14 @@ mod tests {
         edges1 => [[1.0, 1.0]],
     )]
     fn test_box_intersections_2d_aligned(edges0: [f64; 2], edges1: [f64; 2]) {
-        let (c0, c1) = (Cuboid {edge_lengths: edges0 }, Cuboid{ edge_lengths: edges1 });
+        let (c0, c1) = (
+            Cuboid {
+                edge_lengths: edges0,
+            },
+            Cuboid {
+                edge_lengths: edges1,
+            },
+        );
         // Should all be false (no intersection), which we invert to true
         assert!(!c0.intersects_aligned(&c1, &[10.0, 10.0].into()));
         // Boundaries are aligned
@@ -264,7 +282,9 @@ mod tests {
         l => [1e-6, 1.0, 3.456, 99_999_999.9],
     )]
     fn test_box_extents<const N: usize>(_n: PhantomData<Cuboid<N>>, l: f64) {
-        let c = Cuboid { edge_lengths: [l; N] };
+        let c = Cuboid {
+            edge_lengths: [l; N],
+        };
         assert_eq!(c.maximal_extents(), [l / 2.0; N]);
         assert_eq!(c.minimal_extents(), [-l / 2.0; N]);
     }
@@ -279,7 +299,9 @@ mod tests {
         l => [1e-6, 1.0, 3.456, 99_999_999.9],
     )]
     fn test_box_volume<const N: usize>(_n: PhantomData<Cuboid<N>>, l: f64) {
-        let c = Cuboid {edge_lengths: [l; N] };
+        let c = Cuboid {
+            edge_lengths: [l; N],
+        };
         assert_relative_eq!(
             c.volume(),
             if N != 0 {
@@ -294,7 +316,9 @@ mod tests {
         l => [1e-6, 1.0, 3.456, 99_999_999.9],
     )]
     fn test_box_abc(l: f64) {
-        let c = Cuboid { edge_lengths: [l; 3] };
+        let c = Cuboid {
+            edge_lengths: [l; 3],
+        };
         assert_eq!([c.a(), c.b(), c.c()], [l; 3]);
     }
 
