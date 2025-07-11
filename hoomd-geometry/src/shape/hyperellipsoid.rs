@@ -8,7 +8,7 @@ use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, RotationMatrix};
 use std::ops::{Add, Mul};
 
-/// TODO: temp, remove once we have a linalg crate
+/// FUTURE: temp, remove once we have a linalg crate
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct SquareMatrix<const N: usize> {
     /// The elements of the matrix

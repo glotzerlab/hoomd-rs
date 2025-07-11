@@ -322,6 +322,118 @@ mod tests {
         assert_eq!([c.a(), c.b(), c.c()], [l; 3]);
     }
 
-    // TODO: Test BoundingSphereRadius
-    // TODO: Test SupportMapping
+    #[test]
+    fn bounding_sphere_radius_2d() {
+        let cuboid = Cuboid {
+            edge_lengths: [0.5, 0.5],
+        };
+        assert_relative_eq!(cuboid.bounding_sphere_radius(), 2.0_f64.sqrt());
+
+        let cuboid = Cuboid {
+            edge_lengths: [1.0, 1.0],
+        };
+        assert_relative_eq!(cuboid.bounding_sphere_radius(), 2.0 * 2.0_f64.sqrt());
+
+        let cuboid = Cuboid {
+            edge_lengths: [0.0, 6.0],
+        };
+        assert_relative_eq!(cuboid.bounding_sphere_radius(), 3.0);
+
+        let cuboid = Cuboid {
+            edge_lengths: [6.0, 8.0],
+        };
+        assert_relative_eq!(cuboid.bounding_sphere_radius(), 5.0);
+    }
+
+    #[test]
+    fn bounding_sphere_radius_3d() {
+        let cuboid = Cuboid {
+            edge_lengths: [0.5, 0.5, 0.5],
+        };
+        assert_relative_eq!(cuboid.bounding_sphere_radius(), 3.0_f64.sqrt());
+
+        let cuboid = Cuboid {
+            edge_lengths: [1.0, 1.0, 1.0],
+        };
+        assert_relative_eq!(cuboid.bounding_sphere_radius(), 2.0 * 3.0_f64.sqrt());
+
+        let cuboid = Cuboid {
+            edge_lengths: [0.0, 6.0, 0.0],
+        };
+        assert_relative_eq!(cuboid.bounding_sphere_radius(), 3.0);
+
+        let cuboid = Cuboid {
+            edge_lengths: [6.0, 8.0, 0.0],
+        };
+        assert_relative_eq!(cuboid.bounding_sphere_radius(), 5.0);
+
+        let cuboid = Cuboid {
+            edge_lengths: [2.0, 4.0, 6.0],
+        };
+        assert_relative_eq!(cuboid.bounding_sphere_radius(), 14.0_f64.sqrt());
+    }
+
+    #[test]
+    fn support_mapping_2d() {
+        let cuboid = Cuboid {
+            edge_lengths: [2.0, 4.0],
+        };
+
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([1.0, 0.1])),
+            [1.0, 2.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([1.0, -0.1])),
+            [1.0, -2.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([-0.1, 1.0])),
+            [-1.0, 2.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([-0.1, -1.0])),
+            [-1.0, -2.0].into()
+        );
+    }
+
+    #[test]
+    fn support_mapping_4d() {
+        let cuboid = Cuboid {
+            edge_lengths: [2.0, 4.0, 6.0],
+        };
+
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([1.0, 0.1, 0.1])),
+            [1.0, 2.0, 3.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([1.0, 0.1, -0.1])),
+            [1.0, 2.0, -3.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([1.0, -0.1, 0.1])),
+            [1.0, -2.0, 3.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([1.0, -0.1, -0.1])),
+            [1.0, -2.0, -3.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([-1.0, 0.1, 0.1])),
+            [-1.0, 2.0, 3.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([-1.0, 0.1, -0.1])),
+            [-1.0, 2.0, -3.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([-1.0, -0.1, 0.1])),
+            [-1.0, -2.0, 3.0].into()
+        );
+        assert_relative_eq!(
+            cuboid.support_mapping(&Cartesian::from([-1.0, -0.1, -0.1])),
+            [-1.0, -2.0, -3.0].into()
+        );
+    }
 }
