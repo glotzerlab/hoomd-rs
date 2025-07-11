@@ -578,9 +578,9 @@ impl<const N: usize> RotationMatrix<N> {
 
     /** Create a matrix that performs the inverse rotation.
 
-    Matrix inversion is cheaper than [`Angle`] -> [`RotationMatrix`] and
-    [`Versor`] -> [`RotationMatrix`] conversions. When you need both rotations,
-    convert once and then invert.
+    Matrix inversion is cheaper than [`Angle`](crate::Angle) ->
+    [`RotationMatrix`] and [`Versor`](crate::Versor) -> [`RotationMatrix`]
+    conversions. When you need both rotations, convert once and then invert.
 
     # Example
     ```
