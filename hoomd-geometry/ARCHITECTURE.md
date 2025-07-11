@@ -40,8 +40,6 @@ and necessary.
   `intersects_at` tests if the set intersection of the two shape's interior
   points is not empty.
 * `IsInside`: Test if a point is inside the shape.
-* `MinDistance`: Compute the minimum distance (TODO: between two shapes?
-  Or between a point and a shape?).
 * `SupportMapping`: Find the point in the shape that is furthest in a particular
   direction.
 * `Volume`: Compute the hypervolume of the space contained within the shape.

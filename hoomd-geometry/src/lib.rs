@@ -109,20 +109,6 @@ pub trait Volume {
     fn volume(&self) -> f64;
 }
 
-/** Compute the shortest distance between any points on two separate shapes.
-
-By convention, the minimum distance is positive when the shapes are separated
-and 0 when overlapping.
-
-TODO: Should this instead be defined as the minimum distance between a point
-and a shape's surface? That is traditionally negative when the point is
-inside.
-*/
-pub trait MinDistance<const N: usize, V, R, S> {
-    /// Minimum distance between two shapes in `N` dimensions
-    fn min_distance(&self, other: &S, v_ij: &V, o_ij: R) -> f64;
-}
-
 /** Find the point on a shape that is the furthest in a given direction.
 
 # Example
