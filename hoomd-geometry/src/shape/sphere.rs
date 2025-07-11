@@ -3,7 +3,7 @@
 
 /*! Implement [`Hypersphere`] */
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
-use hoomd_vector::{InnerProduct, Rotate, Vector};
+use hoomd_vector::{InnerProduct, Rotate};
 use std::f64::consts::PI;
 
 /// The (single, double, ...)-factorial function
@@ -22,7 +22,7 @@ pub fn factorial(n: usize, ntuple: usize) -> usize {
 
 /// Compute the volume prefactor for the volume of a rounded shape
 pub(crate) fn sphere_volume_prefactor(n: usize) -> f64 {
-    // TODO: replace with std::f64::gamma when its in main
+    // FUTURE: replace with std::f64::gamma when its in main
     let dim_factor = (if n.rem_euclid(2) == 0 { n } else { n - 1 } / 2) as f64;
     if n.rem_euclid(2) == 0 {
         PI.powf(dim_factor) / (factorial(n / 2, 1) as f64)
@@ -170,7 +170,7 @@ impl<const N: usize> Hypersphere<N> {
 
 // TRAITS
 
-impl<const N: usize, V: Vector + InnerProduct> SupportMapping<V> for Hypersphere<N> {
+impl<const N: usize, V: InnerProduct> SupportMapping<V> for Hypersphere<N> {
     #[inline]
     fn support_mapping(&self, n: &V) -> V {
         *n / n.norm() * self.radius
@@ -187,7 +187,7 @@ impl<const N: usize> Volume for Hypersphere<N> {
     }
 }
 
-impl<const N: usize, V: Vector + InnerProduct, R: Rotate<V>> IntersectsAt<Hypersphere<N>, V, R>
+impl<const N: usize, V: InnerProduct, R: Rotate<V>> IntersectsAt<Hypersphere<N>, V, R>
     for Hypersphere<N>
 {
     #[inline]
@@ -208,10 +208,15 @@ impl<const N: usize> BoundingSphereRadius for Hypersphere<N> {
     clippy::used_underscore_binding,
     reason = "Used in test parameterization."
 )]
+#[expect(
+    clippy::unreadable_literal,
+    reason = "exact test results need not be readable"
+)]
 mod tests {
     use super::*;
+    use crate::Convex;
     use approx::assert_relative_eq;
-    use hoomd_vector::Cartesian;
+    use hoomd_vector::{Cartesian, Versor};
     use rstest::*;
     use std::marker::PhantomData;
 
@@ -275,5 +280,97 @@ mod tests {
         assert_eq!(v / v.norm() * radius, s.support_mapping(&v));
     }
 
-    // TODO: Test intersects_at.
+    #[test]
+    fn support_mapping() {
+        let sphere = Sphere::with_radius(2.0);
+
+        assert_relative_eq!(
+            sphere.support_mapping(&Cartesian::from([0.0, 0.0, 1.0])),
+            [0.0, 0.0, 2.0].into()
+        );
+        assert_relative_eq!(
+            sphere.support_mapping(&Cartesian::from([0.0, 0.0, 01.0])),
+            [0.0, 0.0, 2.0].into()
+        );
+        assert_relative_eq!(
+            sphere.support_mapping(&Cartesian::from([0.0, 1.0, 0.0])),
+            [0.0, 2.0, 0.0].into()
+        );
+        assert_relative_eq!(
+            sphere.support_mapping(&Cartesian::from([0.0, -1.0, 0.0])),
+            [0.0, -2.0, 0.0].into()
+        );
+        assert_relative_eq!(
+            sphere.support_mapping(&Cartesian::from([1.0, 0.0, 0.0])),
+            [2.0, 0.0, 0.0].into()
+        );
+        assert_relative_eq!(
+            sphere.support_mapping(&Cartesian::from([-1.0, 0.0, 0.0])),
+            [-2.0, 0.0, 0.0].into()
+        );
+
+        assert_relative_eq!(
+            sphere.support_mapping(&Cartesian::from([1.0, 1.0, 1.0])),
+            [1.1547005383792517, 1.1547005383792517, 1.1547005383792517].into()
+        );
+    }
+
+    #[test]
+    fn intersects_at() {
+        let sphere0 = Sphere::with_radius(2.0);
+        let sphere1 = Sphere::with_radius(4.0);
+        let identity = Versor::default();
+
+        assert!(sphere0.intersects_at(&sphere1, &[0.0, 0.0, 5.9].into(), &identity));
+        assert!(sphere0.intersects_at(&sphere1, &[0.0, 5.9, 0.0].into(), &identity));
+        assert!(sphere0.intersects_at(&sphere1, &[5.9, 0.0, 0.0].into(), &identity));
+        assert!(sphere0.intersects_at(&sphere1, &[3.4, 3.4, 3.4].into(), &identity));
+
+        assert!(!sphere0.intersects_at(&sphere1, &[0.0, 0.0, 6.1].into(), &identity));
+        assert!(!sphere0.intersects_at(&sphere1, &[0.0, 6.1, 0.0].into(), &identity));
+        assert!(!sphere0.intersects_at(&sphere1, &[6.1, 0.0, 0.0].into(), &identity));
+        assert!(!sphere0.intersects_at(&sphere1, &[3.52, 3.52, 3.52].into(), &identity));
+
+        assert!(Convex(sphere0).intersects_at(
+            &Convex(sphere1),
+            &[0.0, 0.0, 5.9].into(),
+            &identity
+        ));
+        assert!(Convex(sphere0).intersects_at(
+            &Convex(sphere1),
+            &[0.0, 5.9, 0.0].into(),
+            &identity
+        ));
+        assert!(Convex(sphere0).intersects_at(
+            &Convex(sphere1),
+            &[5.9, 0.0, 0.0].into(),
+            &identity
+        ));
+        assert!(Convex(sphere0).intersects_at(
+            &Convex(sphere1),
+            &[3.4, 3.4, 3.4].into(),
+            &identity
+        ));
+
+        assert!(!Convex(sphere0).intersects_at(
+            &Convex(sphere1),
+            &[0.0, 0.0, 6.1].into(),
+            &identity
+        ));
+        assert!(!Convex(sphere0).intersects_at(
+            &Convex(sphere1),
+            &[0.0, 6.1, 0.0].into(),
+            &identity
+        ));
+        assert!(!Convex(sphere0).intersects_at(
+            &Convex(sphere1),
+            &[6.1, 0.0, 0.0].into(),
+            &identity
+        ));
+        assert!(!Convex(sphere0).intersects_at(
+            &Convex(sphere1),
+            &[3.52, 3.52, 3.52].into(),
+            &identity
+        ));
+    }
 }

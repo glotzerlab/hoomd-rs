@@ -102,14 +102,17 @@ impl<const N: usize> Volume for Capsule<N> {
 #[cfg(test)]
 mod tests {
 
-    use crate::{Convex, IntersectsAt, shape::{Circle, Cylinder, Hypersphere}};
+    use crate::{
+        Convex, IntersectsAt,
+        shape::{Circle, Cylinder, Hypersphere},
+    };
     use hoomd_vector::{Angle, Versor};
 
     use super::*;
     use approx::assert_relative_eq;
     use rstest::*;
-    use std::marker::PhantomData;
     use std::f64::consts::PI;
+    use std::marker::PhantomData;
 
     #[rstest(
         _n => [
@@ -170,7 +173,7 @@ mod tests {
         let circle = Convex(Circle::with_radius(0.5));
 
         let identity = Angle::default();
-        let rotate = Angle::from(PI/2.0);
+        let rotate = Angle::from(PI / 2.0);
 
         assert!(!capsule_circle.intersects_at(&circle, &[0.0, 1.1].into(), &identity));
         assert!(capsule_circle.intersects_at(&circle, &[0.0, 0.9].into(), &identity));
@@ -182,7 +185,7 @@ mod tests {
         assert!(!circle.intersects_at(&capsule_tall, &[0.0, 4.1].into(), &identity));
         assert!(circle.intersects_at(&capsule_tall, &[0.0, 3.9].into(), &identity));
         assert!(!circle.intersects_at(&capsule_tall, &[4.1, 0.0].into(), &rotate));
-        assert!(circle.intersects_at(&capsule_tall, &[3.9, 0.0].into(),  &rotate));
+        assert!(circle.intersects_at(&capsule_tall, &[3.9, 0.0].into(), &rotate));
 
         assert!(capsule_tall.intersects_at(&capsule_tall, &[0.2, -0.4].into(), &rotate));
         assert!(capsule_tall.intersects_at(&capsule_tall, &[3.9, 2.0].into(), &rotate));
@@ -204,7 +207,12 @@ mod tests {
         let sphere = Convex(Circle::with_radius(0.5));
 
         let identity = Versor::default();
-        let rotate = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into().expect("hard-coded vector is non-zero"), PI/2.0);
+        let rotate = Versor::from_axis_angle(
+            [0.0, 1.0, 0.0]
+                .try_into()
+                .expect("hard-coded vector is non-zero"),
+            PI / 2.0,
+        );
 
         assert!(!capsule_sphere.intersects_at(&sphere, &[0.0, 0.0, 1.1].into(), &identity));
         assert!(capsule_sphere.intersects_at(&sphere, &[0.0, 0.0, 0.9].into(), &identity));
@@ -216,7 +224,7 @@ mod tests {
         assert!(!sphere.intersects_at(&capsule_tall, &[0.0, 0.0, 4.1].into(), &identity));
         assert!(sphere.intersects_at(&capsule_tall, &[0.0, 0.0, 3.9].into(), &identity));
         assert!(!sphere.intersects_at(&capsule_tall, &[4.1, 0.0, 0.0].into(), &rotate));
-        assert!(sphere.intersects_at(&capsule_tall, &[3.9, 0.0, 0.0].into(),  &rotate));
+        assert!(sphere.intersects_at(&capsule_tall, &[3.9, 0.0, 0.0].into(), &rotate));
 
         assert!(capsule_tall.intersects_at(&capsule_tall, &[0.2, -0.4, 0.0].into(), &rotate));
         assert!(capsule_tall.intersects_at(&capsule_tall, &[3.9, 0.0, 2.0].into(), &rotate));
@@ -231,32 +239,59 @@ mod tests {
         });
 
         // top and bottom
-        assert_relative_eq!(capsule.support_mapping(&[0.0, 0.0, 1.0].into()),
-                            [0.0, 0.0, 3.5].into());
-        assert_relative_eq!(capsule.support_mapping(&[0.0, 0.0, -1.0].into()),
-                            [0.0, 0.0, -3.5].into());
+        assert_relative_eq!(
+            capsule.support_mapping(&[0.0, 0.0, 1.0].into()),
+            [0.0, 0.0, 3.5].into()
+        );
+        assert_relative_eq!(
+            capsule.support_mapping(&[0.0, 0.0, -1.0].into()),
+            [0.0, 0.0, -3.5].into()
+        );
 
         // the top ring
-        assert_relative_eq!(capsule.support_mapping(&[1.0, 0.0, 1e-12].into()),
-                            [0.5, 0.0, 3.0].into(), epsilon=1e-6);
-        assert_relative_eq!(capsule.support_mapping(&[-1.0, 0.0, 1e-12].into()),
-                            [-0.5, 0.0, 3.0].into(), epsilon=1e-6);
-        assert_relative_eq!(capsule.support_mapping(&[0.0, 1.0, 1e-12].into()),
-                            [0.0, 0.5, 3.0].into(), epsilon=1e-6);
-        assert_relative_eq!(capsule.support_mapping(&[0.0, -1.0, 1e-12].into()),
-                            [0.0, -0.5, 3.0].into(), epsilon=1e-6);
+        assert_relative_eq!(
+            capsule.support_mapping(&[1.0, 0.0, 1e-12].into()),
+            [0.5, 0.0, 3.0].into(),
+            epsilon = 1e-6
+        );
+        assert_relative_eq!(
+            capsule.support_mapping(&[-1.0, 0.0, 1e-12].into()),
+            [-0.5, 0.0, 3.0].into(),
+            epsilon = 1e-6
+        );
+        assert_relative_eq!(
+            capsule.support_mapping(&[0.0, 1.0, 1e-12].into()),
+            [0.0, 0.5, 3.0].into(),
+            epsilon = 1e-6
+        );
+        assert_relative_eq!(
+            capsule.support_mapping(&[0.0, -1.0, 1e-12].into()),
+            [0.0, -0.5, 3.0].into(),
+            epsilon = 1e-6
+        );
 
         // the bottom ring
-        assert_relative_eq!(capsule.support_mapping(&[1.0, 0.0, -1e-12].into()),
-                            [0.5, 0.0, -3.0].into(), epsilon=1e-6);
-        assert_relative_eq!(capsule.support_mapping(&[-1.0, 0.0, -1e-12].into()),
-                            [-0.5, 0.0, -3.0].into(), epsilon=1e-6);
-        assert_relative_eq!(capsule.support_mapping(&[0.0, 1.0, -1e-12].into()),
-                            [0.0, 0.5, -3.0].into(), epsilon=1e-6);
-        assert_relative_eq!(capsule.support_mapping(&[0.0, -1.0, -1e-12].into()),
-                            [0.0, -0.5, -3.0].into(), epsilon=1e-6);
+        assert_relative_eq!(
+            capsule.support_mapping(&[1.0, 0.0, -1e-12].into()),
+            [0.5, 0.0, -3.0].into(),
+            epsilon = 1e-6
+        );
+        assert_relative_eq!(
+            capsule.support_mapping(&[-1.0, 0.0, -1e-12].into()),
+            [-0.5, 0.0, -3.0].into(),
+            epsilon = 1e-6
+        );
+        assert_relative_eq!(
+            capsule.support_mapping(&[0.0, 1.0, -1e-12].into()),
+            [0.0, 0.5, -3.0].into(),
+            epsilon = 1e-6
+        );
+        assert_relative_eq!(
+            capsule.support_mapping(&[0.0, -1.0, -1e-12].into()),
+            [0.0, -0.5, -3.0].into(),
+            epsilon = 1e-6
+        );
 
         // on the caps is not so easy to test manually...
-        
     }
 }
