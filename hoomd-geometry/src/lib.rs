@@ -27,7 +27,7 @@ use approx::assert_relative_eq;
 use std::f64::consts::PI;
 
 const N: usize = 3;
-let s = Hypersphere::<N>::from_radius(1.0);
+let s = Hypersphere::<N>::with_radius(1.0);
 let volume = s.volume();
 assert_relative_eq!(volume, (4.0/3.0 * PI));
 ```
@@ -98,7 +98,7 @@ pub mod xenocollide;
 use hoomd_geometry::{Volume, shape::Hypersphere};
 
 const N: usize = 3;
-let s = Hypersphere::<N>::from_radius(1.0);
+let s = Hypersphere::<N>::with_radius(1.0);
 let volume = s.volume();
 ```
 

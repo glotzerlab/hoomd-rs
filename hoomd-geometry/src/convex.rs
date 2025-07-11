@@ -56,16 +56,11 @@ where
 {
     #[inline]
     fn intersects_at(&self, other: &Convex<A>, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
-        if !(Circle {
-            radius: self.0.bounding_sphere_radius(),
-        })
-        .intersects_at(
-            &Circle {
-                radius: other.0.bounding_sphere_radius(),
-            },
+        if !(Circle::with_radius(self.0.bounding_sphere_radius()).intersects_at(
+            &Circle::with_radius(other.0.bounding_sphere_radius()),
             v_ij,
             o_ij,
-        ) {
+        )) {
             return false;
         }
         collide2d(self, other, v_ij, o_ij)
@@ -80,16 +75,11 @@ where
 {
     #[inline]
     fn intersects_at(&self, other: &Convex<A>, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
-        if !(Sphere {
-            radius: self.0.bounding_sphere_radius(),
-        })
-        .intersects_at(
-            &Sphere {
-                radius: other.0.bounding_sphere_radius(),
-            },
+        if !(Sphere::with_radius(self.0.bounding_sphere_radius()).intersects_at(
+            &Sphere::with_radius(other.0.bounding_sphere_radius()),
             v_ij,
             o_ij,
-        ) {
+        )) {
             return false;
         }
         collide3d(self, other, v_ij, o_ij)

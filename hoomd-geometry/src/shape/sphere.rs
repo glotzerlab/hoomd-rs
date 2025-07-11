@@ -163,7 +163,7 @@ impl<const N: usize> Hypersphere<N> {
     /// Create a sphere from a float with a given radius.
     #[must_use]
     #[inline]
-    pub fn from_radius(radius: f64) -> Self {
+    pub fn with_radius(radius: f64) -> Self {
         Hypersphere { radius }
     }
 }
