@@ -40,8 +40,8 @@ use std::f64::consts::PI;
 let capsule = Convex(Capsule::<2> { radius: 1.0, height: 8.0 });
 
 assert_eq!(capsule.intersects_at(&capsule, &[1.75, 0.0].into(), &Angle::identity()), true);
-assert_eq!(capsule.intersects_at(&capsule, &[4.0, 0.0].into(), &Angle::identity()), false);
-assert_eq!(capsule.intersects_at(&capsule, &[4.0, 0.0].into(), &Angle::from(PI/2.0)), true);
+assert_eq!(capsule.intersects_at(&capsule, &[4.0, 2.0].into(), &Angle::identity()), false);
+assert_eq!(capsule.intersects_at(&capsule, &[4.0, -2.0].into(), &Angle::from(PI/2.0)), true);
 ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -66,11 +66,11 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Capsule<N> {
 
         let (v_tip_dot_n, v_base_dot_n) = (n.dot(&v_tip), n.dot(&v_base));
 
-        let rshift = *n * self.radius * n.norm();
+        let rshift = *n / n.norm() * self.radius;
         if v_tip_dot_n > v_base_dot_n {
-            v_tip / n.norm() + rshift
+            v_tip + rshift
         } else {
-            v_base / n.norm() + rshift
+            v_base + rshift
         }
     }
 }
@@ -102,12 +102,14 @@ impl<const N: usize> Volume for Capsule<N> {
 #[cfg(test)]
 mod tests {
 
-    use crate::shape::{Cylinder, Hypersphere};
+    use crate::{Convex, IntersectsAt, shape::{Circle, Cylinder, Hypersphere}};
+    use hoomd_vector::{Angle, Versor};
 
     use super::*;
     use approx::assert_relative_eq;
     use rstest::*;
     use std::marker::PhantomData;
+    use std::f64::consts::PI;
 
     #[rstest(
         _n => [
@@ -120,30 +122,104 @@ mod tests {
         radius => [0.0, 1e-6, 1.0, 34.56],
     )]
     fn test_capsule_volume<const N: usize>(_n: PhantomData<Capsule<N>>, radius: f64) {
+        let capsule = Capsule::<N> {
+            radius,
+            height: 0.0,
+        };
+
         assert_relative_eq!(
-            Capsule::<N> {
-                radius,
-                height: 0.0
-            }
-            .volume(),
+            capsule.volume(),
             Hypersphere::<N> { radius }.volume(),
             epsilon = 1e-6
         );
+
+        assert_relative_eq!(capsule.bounding_sphere_radius(), radius);
     }
+
     #[rstest(
         radius => [0.0, 1e-6, 1.0, 34.56],
         height => [0.0, 1e-6, 1.0, 34.56],
     )]
     fn test_elongated_capsule_volume(radius: f64, height: f64) {
-        let cap = Capsule::<3> { radius, height };
+        let capsule = Capsule::<3> { radius, height };
         assert_relative_eq!(
-            cap.volume(),
+            capsule.volume(),
             Hypersphere::<3> { radius }.volume()
                 + Cylinder {
                     radius,
-                    height: cap.height
+                    height: capsule.height
                 }
                 .volume()
         );
+
+        assert_relative_eq!(capsule.bounding_sphere_radius(), radius + height / 2.0);
+    }
+
+    #[test]
+    fn intersect_xenocollide_2d() {
+        let capsule_circle = Convex(Capsule::<2> {
+            radius: 0.5,
+            height: 0.0,
+        });
+
+        let capsule_tall = Convex(Capsule::<2> {
+            radius: 0.5,
+            height: 6.0,
+        });
+
+        let circle = Convex(Circle::with_radius(0.5));
+
+        let identity = Angle::default();
+        let rotate = Angle::from(PI/2.0);
+
+        assert!(!capsule_circle.intersects_at(&circle, &[0.0, 1.1].into(), &identity));
+        assert!(capsule_circle.intersects_at(&circle, &[0.0, 0.9].into(), &identity));
+        assert!(!capsule_circle.intersects_at(&capsule_circle, &[0.0, 1.1].into(), &identity));
+        assert!(capsule_circle.intersects_at(&capsule_circle, &[0.0, 0.9].into(), &identity));
+
+        assert!(!capsule_tall.intersects_at(&circle, &[0.0, 4.1].into(), &identity));
+        assert!(capsule_tall.intersects_at(&circle, &[0.0, 3.9].into(), &identity));
+        assert!(!circle.intersects_at(&capsule_tall, &[0.0, 4.1].into(), &identity));
+        assert!(circle.intersects_at(&capsule_tall, &[0.0, 3.9].into(), &identity));
+        assert!(!circle.intersects_at(&capsule_tall, &[4.1, 0.0].into(), &rotate));
+        assert!(circle.intersects_at(&capsule_tall, &[3.9, 0.0].into(),  &rotate));
+
+        assert!(capsule_tall.intersects_at(&capsule_tall, &[0.2, -0.4].into(), &rotate));
+        assert!(capsule_tall.intersects_at(&capsule_tall, &[3.9, 2.0].into(), &rotate));
+        assert!(!capsule_tall.intersects_at(&capsule_tall, &[4.1, -2.0].into(), &rotate));
+    }
+
+    #[test]
+    fn intersect_xenocollide_3d() {
+        let capsule_sphere = Convex(Capsule::<3> {
+            radius: 0.5,
+            height: 0.0,
+        });
+
+        let capsule_tall = Convex(Capsule::<3> {
+            radius: 0.5,
+            height: 6.0,
+        });
+
+        let sphere = Convex(Circle::with_radius(0.5));
+
+        let identity = Versor::default();
+        let rotate = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into().expect("hard-coded vector is non-zero"), PI/2.0);
+
+        assert!(!capsule_sphere.intersects_at(&sphere, &[0.0, 0.0, 1.1].into(), &identity));
+        assert!(capsule_sphere.intersects_at(&sphere, &[0.0, 0.0, 0.9].into(), &identity));
+        assert!(!capsule_sphere.intersects_at(&capsule_sphere, &[0.0, 0.0, 1.1].into(), &identity));
+        assert!(capsule_sphere.intersects_at(&capsule_sphere, &[0.0, 0.0, 0.9].into(), &identity));
+
+        assert!(!capsule_tall.intersects_at(&sphere, &[0.0, 0.0, 4.1].into(), &identity));
+        assert!(capsule_tall.intersects_at(&sphere, &[0.0, 0.0, 3.9].into(), &identity));
+        assert!(!sphere.intersects_at(&capsule_tall, &[0.0, 0.0, 4.1].into(), &identity));
+        assert!(sphere.intersects_at(&capsule_tall, &[0.0, 0.0, 3.9].into(), &identity));
+        assert!(!sphere.intersects_at(&capsule_tall, &[4.1, 0.0, 0.0].into(), &rotate));
+        assert!(sphere.intersects_at(&capsule_tall, &[3.9, 0.0, 0.0].into(),  &rotate));
+
+        assert!(capsule_tall.intersects_at(&capsule_tall, &[0.2, -0.4, 0.0].into(), &rotate));
+        assert!(capsule_tall.intersects_at(&capsule_tall, &[3.9, 0.0, 2.0].into(), &rotate));
+        assert!(!capsule_tall.intersects_at(&capsule_tall, &[4.1, 0.0, -2.0].into(), &rotate));
     }
 }
