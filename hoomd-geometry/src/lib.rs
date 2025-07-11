@@ -129,12 +129,11 @@ pub trait MinDistance<const N: usize, V, R, S> {
 
 ```
 use hoomd_geometry::{shape::Cuboid, SupportMapping};
-use hoomd_vector::Cartesian;
 
 let cuboid = Cuboid::from([3.0, 2.0]);
 
-let upper_right = cuboid.support_mapping(&Cartesian::from([1.0, 1.0]));
-let lower_right = cuboid.support_mapping(&Cartesian::from([1.0, -1.0]));
+let upper_right = cuboid.support_mapping(&[1.0, 1.0].into());
+let lower_right = cuboid.support_mapping(&[1.0, -1.0].into());
 
 assert_eq!(upper_right, [1.5, 1.0].into());
 assert_eq!(lower_right, [1.5, -1.0].into());
@@ -208,7 +207,7 @@ the bounding sphere should be as tightly fitting as possible.
 # Example
 
 ```
-use hoomd_geometry::{shape::Cuboid, BoundingSphereRadius};
+use hoomd_geometry::{BoundingSphereRadius, shape::Cuboid};
 
 let cuboid = Cuboid::from([6.0, 8.0]);
 let bounding_radius = cuboid.bounding_sphere_radius();

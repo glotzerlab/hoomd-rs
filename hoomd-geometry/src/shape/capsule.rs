@@ -9,9 +9,35 @@ use hoomd_vector::{Cartesian, InnerProduct};
 
 use super::sphere::sphere_volume_prefactor;
 
-/** All points less than or equal to a distance `r` along a line of length `h`.
-This line is oriented along the `[0 0 ... 1]` direction, and has extents `+h/2`, `-h/2`
-along that axis.
+/** All points less than or equal to a distance `r` from a line segment of length `h`.
+
+This line is oriented along the `[0 0 ... 1]` direction, and has extents `+h/2`,
+`-h/2` along that axis.
+
+# Examples
+
+Construction and basic methods:
+```
+use hoomd_geometry::{BoundingSphereRadius, shape::Capsule, SupportMapping, Volume};
+use hoomd_vector::Cartesian;
+use approx::assert_relative_eq;
+use std::f64::consts::PI;
+
+let capsule = Capsule::<2> { radius: 1.0, height: 8.0 };
+let bounding_radius = capsule.bounding_sphere_radius();
+let volume = capsule.volume();
+let right = capsule.support_mapping(&[1.0, 0.0].into());
+let bottom = capsule.support_mapping(&[0.0, -1.0].into());
+
+assert_eq!(bounding_radius, 5.0);
+assert_relative_eq!(volume, 8.0 + PI);
+assert_eq!(right.coordinates[0], 1.0);
+assert_eq!(bottom, [0.0, -5.0].into());
+```
+
+Intersection test:
+
+TODO
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Capsule<const N: usize> {
@@ -60,7 +86,7 @@ impl<const N: usize> Volume for Capsule<N> {
         let r_n_minus_one = self.radius.powi(
             (N - 1)
                 .try_into()
-                .expect("Dimension {N}-1 would overflow i32!"),
+                .expect("dimension {N}-1 should fit in an i32"),
         );
         let cylinder_volume = sphere_volume_prefactor(N - 1) * r_n_minus_one * self.height;
         cylinder_volume + sphere_volume_prefactor(N) * (r_n_minus_one * self.radius)
