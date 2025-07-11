@@ -7,7 +7,7 @@ use hoomd_vector::{InnerProduct, Rotate, Vector};
 use std::f64::consts::PI;
 
 /// The (single, double, ...)-factorial function
-pub(crate) fn factorial(n: usize, ntuple: usize) -> usize {
+pub fn factorial(n: usize, ntuple: usize) -> usize {
     assert!(ntuple > 0);
     if n == 0 {
         1
@@ -16,7 +16,7 @@ pub(crate) fn factorial(n: usize, ntuple: usize) -> usize {
             .rev()
             .step_by(ntuple)
             .reduce(|acc, x| acc * x)
-            .unwrap_or_default() // inaccessible: 1..=(n!=0) is never empty
+            .expect("1..=(n!=0) is never empty")
     }
 }
 
@@ -33,31 +33,42 @@ pub(crate) fn sphere_volume_prefactor(n: usize) -> f64 {
 
 /** All points within a given `radius` from the origin.
 
-```rust
-use hoomd_geometry::shape::{Circle, Sphere, Hypersphere};
-use hoomd_geometry::{Volume, IntersectsAt, SupportMapping};
-use hoomd_vector::{InnerProduct, Cartesian};
+# Examples
 
-// A unit sphere with radius 1.0. The `Sphere` type alias is equivalent in 3 dimensions
-let sph = Hypersphere::<3>::default();
+Basic construction and methods:
+```
+use hoomd_geometry::{shape::Hypersphere, SupportMapping, Volume};
+use hoomd_vector::Cartesian;
+use std::f64::consts::PI;
 
-assert_eq!(sph.radius, 1.0);
+let unit_sphere = Hypersphere::<3>::default();
+let volume = unit_sphere.volume();
 
-// The N-hypervolume of a sphere can be calculated. The default sphere has V=4π/3
-assert_eq!(sph.volume(), 4.0 * std::f64::consts::PI / 3.0);
+assert_eq!(unit_sphere.radius, 1.0);
+assert_eq!(volume, 4.0 * PI / 3.0);
 
-// Circle::default provides a unit disc
-assert_eq!(Circle::default().volume(), std::f64::consts::PI);
-
-
-// The support mapping for a hypersphere along direction n is ň
 assert_eq!(
-    sph.support_mapping(&Cartesian::from([1.0; 3])),
+    unit_sphere.support_mapping(&Cartesian::from([1.0; 3])),
     [1.0 / f64::sqrt(3.0); 3].into()
 )
-
 ```
 
+Test for intersections:
+```
+use hoomd_geometry::{IntersectsAt, shape::Hypersphere};
+use hoomd_vector::{Cartesian, Versor};
+
+let unit_sphere = Hypersphere::<3>::default();
+
+assert_eq!(
+    unit_sphere.intersects_at(&unit_sphere, &Cartesian::from([2.1, 0.0, 0.0]), &Versor::default()),
+    false
+);
+assert_eq!(
+    unit_sphere.intersects_at(&unit_sphere, &Cartesian::from([0.0, 1.9, 0.0]), &Versor::default()),
+    true
+);
+```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Hypersphere<const N: usize> {
@@ -65,9 +76,80 @@ pub struct Hypersphere<const N: usize> {
     pub radius: f64,
 }
 
-/// A `Circle` in two dimensions.
+/** A circle in two dimensions.
+
+# Examples
+
+Basic construction and methods:
+```
+use hoomd_geometry::{shape::Circle, Volume};
+use hoomd_vector::Cartesian;
+use std::f64::consts::PI;
+
+let circle = Circle { radius: 2.0 };
+let volume = circle.volume();
+
+assert_eq!(volume, PI * 4.0);
+```
+
+Test for intersections:
+```
+use hoomd_geometry::{IntersectsAt, shape::Circle};
+use hoomd_vector::{Cartesian, Angle};
+
+let circle = Circle { radius: 1.0 };
+
+assert_eq!(
+    circle.intersects_at(&circle, &Cartesian::from([2.1, 0.0]), &Angle::default()),
+    false
+);
+assert_eq!(
+    circle.intersects_at(&circle, &Cartesian::from([0.0, 1.9]), &Angle::default()),
+    true
+);
+```
+*/
 pub type Circle = Hypersphere<2>;
-/// A `Sphere` in three dimensions.
+
+/** A sphere in three dimensions.
+
+# Examples
+
+Basic construction and methods:
+```
+use hoomd_geometry::{shape::Sphere, SupportMapping, Volume};
+use hoomd_vector::Cartesian;
+use std::f64::consts::PI;
+
+let unit_sphere = Sphere { radius: 1.0 };
+let volume = unit_sphere.volume();
+
+assert_eq!(unit_sphere.radius, 1.0);
+assert_eq!(volume, 4.0 * PI / 3.0);
+
+assert_eq!(
+    unit_sphere.support_mapping(&Cartesian::from([1.0; 3])),
+    [1.0 / f64::sqrt(3.0); 3].into()
+)
+```
+
+Test for intersections:
+```
+use hoomd_geometry::{IntersectsAt, shape::Sphere};
+use hoomd_vector::{Cartesian, Versor};
+
+let unit_sphere = Sphere::default();
+
+assert_eq!(
+    unit_sphere.intersects_at(&unit_sphere, &Cartesian::from([2.1, 0.0, 0.0]), &Versor::default()),
+    false
+);
+assert_eq!(
+    unit_sphere.intersects_at(&unit_sphere, &Cartesian::from([0.0, 1.9, 0.0]), &Versor::default()),
+    true
+);
+```
+*/
 pub type Sphere = Hypersphere<3>;
 
 impl<const N: usize> Default for Hypersphere<N> {
@@ -101,7 +183,7 @@ impl<const N: usize> Volume for Hypersphere<N> {
         sphere_volume_prefactor(N)
             * self
                 .radius
-                .powi(N.try_into().expect("Dimension would overflow i32!"))
+                .powi(N.try_into().expect("Dimension should not overflow i32!"))
     }
 }
 
@@ -192,4 +274,6 @@ mod tests {
         let v = Cartesian::<N>::from([radius.powi(2) / 1.8; N]);
         assert_eq!(v / v.norm() * radius, s.support_mapping(&v));
     }
+
+    // TODO: Test intersects_at.
 }

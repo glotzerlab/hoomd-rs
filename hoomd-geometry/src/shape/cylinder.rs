@@ -10,13 +10,14 @@ use super::Circle;
 /** A circle with normal `[0 0 1]` swept by `h/2` in the `+z` and `-z` directions.
 
 # Example
-[`Cylinder`]s implement the [`Volume`] trait, which is equivalent to $π r^2 h$
 
-```rust
+[`Cylinder`] implements the [`Volume`] trait, which is equivalent to $π r^2 h$
+```
 use hoomd_geometry::{shape::Cylinder, Volume};
+use std::f64::consts::PI;
 
 let cyl = Cylinder {radius: 2.0, height: 3.0};
-assert_eq!(cyl.volume(), std::f64::consts::PI * (2.0 * 2.0) * 3.0);
+assert_eq!(cyl.volume(), PI * (2.0 * 2.0) * 3.0);
 ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]

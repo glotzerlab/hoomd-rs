@@ -69,7 +69,7 @@ use hoomd_geometry::{Convex, IntersectsAt, shape::{Cuboid, Sphere}};
 use hoomd_vector::Versor;
 let s0 = Sphere {radius: 1.0};
 
-let wrapped_cuboid = Convex(Cuboid::from([2.0, 2.0, 2.0]));
+let wrapped_cuboid = Convex(Cuboid { edge_lengths: [2.0, 2.0, 2.0] });
 
 assert_eq!(
     Convex(s0).intersects_at(&wrapped_cuboid, &[1.9, 0.0, 0.0].into(), &Versor::default()),
@@ -130,7 +130,7 @@ pub trait MinDistance<const N: usize, V, R, S> {
 ```
 use hoomd_geometry::{shape::Cuboid, SupportMapping};
 
-let cuboid = Cuboid::from([3.0, 2.0]);
+let cuboid = Cuboid { edge_lengths: [3.0, 2.0] };
 
 let upper_right = cuboid.support_mapping(&[1.0, 1.0].into());
 let lower_right = cuboid.support_mapping(&[1.0, -1.0].into());
@@ -168,7 +168,7 @@ use hoomd_geometry::{Convex, IntersectsAt, shape::{Cuboid, Sphere}};
 use hoomd_vector::Versor;
 let s0 = Sphere {radius: 1.0};
 
-let wrapped_cuboid = Convex(Cuboid::from([2.0, 2.0, 2.0]));
+let wrapped_cuboid = Convex(Cuboid { edge_lengths: [2.0, 2.0, 2.0] });
 
 assert_eq!(
     Convex(s0).intersects_at(&wrapped_cuboid, &[1.9, 0.0, 0.0].into(), &Versor::default()),
@@ -209,7 +209,7 @@ the bounding sphere should be as tightly fitting as possible.
 ```
 use hoomd_geometry::{BoundingSphereRadius, shape::Cuboid};
 
-let cuboid = Cuboid::from([6.0, 8.0]);
+let cuboid = Cuboid { edge_lengths: [6.0, 8.0] };
 let bounding_radius = cuboid.bounding_sphere_radius();
 
 assert_eq!(bounding_radius, 5.0);
@@ -220,11 +220,11 @@ pub trait BoundingSphereRadius {
     fn bounding_sphere_radius(&self) -> f64;
 }
 
-/// Enumerate possible sources of error in fallible shape methods.
+/// Enumerate possible sources of error in fallible geometry methods.
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
-    /// A set of vertices is not convex.
-    #[error("Vertices do not define a convex body.")]
-    NotConvex(),
+    /// Polytopes require at least one vertex.
+    #[error("a ConvexPolytope must have at least one vertex")]
+    DegeneratePolytope
 }

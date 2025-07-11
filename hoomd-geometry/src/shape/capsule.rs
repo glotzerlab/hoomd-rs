@@ -18,7 +18,7 @@ This line is oriented along the `[0 0 ... 1]` direction, and has extents `+h/2`,
 
 Construction and basic methods:
 ```
-use hoomd_geometry::{BoundingSphereRadius, shape::Capsule, SupportMapping, Volume};
+use hoomd_geometry::{BoundingSphereRadius, shape::Capsule, Volume};
 use hoomd_vector::Cartesian;
 use approx::assert_relative_eq;
 use std::f64::consts::PI;
@@ -26,13 +26,9 @@ use std::f64::consts::PI;
 let capsule = Capsule::<2> { radius: 1.0, height: 8.0 };
 let bounding_radius = capsule.bounding_sphere_radius();
 let volume = capsule.volume();
-let right = capsule.support_mapping(&[1.0, 0.0].into());
-let bottom = capsule.support_mapping(&[0.0, -1.0].into());
 
 assert_eq!(bounding_radius, 5.0);
 assert_relative_eq!(volume, 16.0 + PI);
-assert_eq!(right.coordinates[0], 1.0);
-assert_eq!(bottom, [0.0, -5.0].into());
 ```
 
 Intersection test:

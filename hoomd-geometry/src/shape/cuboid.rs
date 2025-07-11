@@ -6,47 +6,94 @@
 use crate::{BoundingSphereRadius, SupportMapping, Volume};
 use hoomd_vector::Cartesian;
 use itertools::multizip;
+use std::array;
 
 /** The Minkowski sum of `N` mutually perpendicular vectors `[0... edge_lengths[i] ...0]`.
 
-A Cuboid is the N-dimensional analog of a rectangle, and is defined by its edge lengths.
+A [`Cuboid`] is the N-dimensional analog of a rectangle, and is defined by
+its edge lengths. Each perpendicular edge of the cuboid is aligned along the
+corresponding Cartesian axis. The Cuboid is placed with its centroid at the
+origin.
 
 # Example
 
-```rust
+Construction and basic methods:
+```
 use hoomd_geometry::shape::Cuboid;
 use hoomd_geometry::Volume;
 
-let unit_cube = Cuboid {edge_lengths: [1.0; 3].into()};
+let unit_cube = Cuboid {edge_lengths: [1.0; 3]};
 assert_eq!(unit_cube.volume(), 1.0);
 
-// Elongated along the z axis
-let rectangular_prism = Cuboid {edge_lengths: [1.0, 1.0, 9.0].into()};
-assert_eq!(rectangular_prism.volume(), 9.0);
-
-
-// Perform a fast AABB intersection test:
-assert_eq!(unit_cube.intersects_aligned(&rectangular_prism, &[1.0; 3].into()), true);
-assert_eq!(unit_cube.intersects_aligned(&rectangular_prism, &[1.1; 3].into()), false);
-
-// For other spatial queries, Cuboids provide their maximal and minimal extents:
 let min_extents = unit_cube.minimal_extents();
 let max_extents = unit_cube.maximal_extents();
-assert_eq!(min_extents, -max_extents);
-assert_eq!(max_extents, [0.5; 3].into());
+assert_eq!(min_extents, [-0.5; 3]);
+assert_eq!(max_extents, [0.5; 3]);
 
-// The extent along the z-axis is different for the two example cuboids
-assert_ne!(min_extents[2], rectangular_prism.minimal_extents()[2]);
+let rectangular_prism = Cuboid {edge_lengths: [1.0, 1.0, 9.0]};
 
+assert_eq!(rectangular_prism.volume(), 9.0);
+```
+
+Perform a fast AABB intersection tests:
+```
+use hoomd_geometry::shape::Cuboid;
+
+let unit_cube = Cuboid {edge_lengths: [1.0; 3]};
+let rectangular_prism = Cuboid {edge_lengths: [1.0, 1.0, 9.0]};
+
+assert_eq!(unit_cube.intersects_aligned(&rectangular_prism, &[1.0; 3].into()), true);
+assert_eq!(unit_cube.intersects_aligned(&rectangular_prism, &[1.1; 3].into()), false);
+```
+
+Wrap with [`Convex`](crate::Convex) to check intersections of oriented cuboids:
+
+```
+use hoomd_geometry::{Convex, IntersectsAt, shape::Rectangle};
+use hoomd_vector::Angle;
+use std::f64::consts::PI;
+
+let square = Convex(Rectangle {edge_lengths: [1.0; 2]});
+
+assert_eq!(square.intersects_at(&square, &[1.1, 0.0].into(), &Angle::default()), false);
+assert_eq!(square.intersects_at(&square, &[1.1, 0.0].into(), &Angle::from(PI/4.0)), true);
 ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Cuboid<const N: usize> {
     /// The lengths of each edge of the cuboid.
-    pub edge_lengths: Cartesian<N>,
+    pub edge_lengths: [f64; N],
 }
 
-/// The Minkowski sum of the vectors `[0, edge_lengths[0]]` and `[edge_lengths[1], 0]`.
+/** An axis-aligned rectangle.
+
+# Examples
+
+Basic construction and methods:
+```
+use hoomd_geometry::shape::Rectangle;
+use hoomd_geometry::Volume;
+
+let rectangle = Rectangle {edge_lengths: [2.0, 4.0]};
+assert_eq!(rectangle.volume(), 8.0);
+```
+
+Intersection tests:
+```
+use hoomd_geometry::{Convex, IntersectsAt, shape::Rectangle};
+use hoomd_vector::{Cartesian, Angle};
+use std::f64::consts::PI;
+
+# fn main() -> Result<(), hoomd_geometry::Error> {
+let rectangle = Rectangle { edge_lengths: [4.0, 2.0] };
+let rectangle = Convex(rectangle);
+
+assert_eq!(rectangle.intersects_at(&rectangle, &[0.0, 2.1].into(), &Angle::default()), false);
+assert_eq!(rectangle.intersects_at(&rectangle, &[0.0, 2.1].into(), &Angle::from(PI/2.0)), true);
+# Ok(())
+# }
+```
+*/
 pub type Rectangle = Cuboid<2>;
 
 impl Cuboid<3> {
@@ -71,16 +118,28 @@ impl Cuboid<3> {
 }
 
 impl<const N: usize> Cuboid<N> {
-    /** Compute the intersection between two *axis-aligned* cuboids.
+    /** Test for intersections between two *axis-aligned* cuboids.
 
     This test is much faster than a general oriented cuboid (OBB) intersection, which
-    can be achieved by wrapping with the [`crate::Convex`] newtype.
+    can be achieved by wrapping with the [`Convex`](crate::Convex) newtype.
+
+    # Example
+
+    ```
+    use hoomd_geometry::shape::Cuboid;
+
+    let unit_cube = Cuboid {edge_lengths: [1.0; 3]};
+    let rectangular_prism = Cuboid {edge_lengths: [1.0, 1.0, 9.0]};
+
+    assert_eq!(unit_cube.intersects_aligned(&rectangular_prism, &[1.0; 3].into()), true);
+    assert_eq!(unit_cube.intersects_aligned(&rectangular_prism, &[1.1; 3].into()), false);
+    ```
     */
     #[must_use]
     #[inline]
     pub fn intersects_aligned(&self, other: &Cuboid<N>, v_ij: &Cartesian<N>) -> bool {
-        let b_mins = other.minimal_extents() + *v_ij;
-        let b_maxs = other.maximal_extents() + *v_ij;
+        let b_mins = Cartesian::from(other.minimal_extents()) + *v_ij;
+        let b_maxs = Cartesian::from(other.maximal_extents()) + *v_ij;
         multizip((
             self.minimal_extents(),
             b_maxs,
@@ -97,18 +156,17 @@ impl<const N: usize> Volume for Cuboid<N> {
         self.edge_lengths
             .into_iter()
             .reduce(|acc, x| acc * x)
-            .unwrap_or(0.0)
+            .expect("N should be >= 1")
     }
 }
 
 impl<const N: usize> BoundingSphereRadius for Cuboid<N> {
     #[inline]
     fn bounding_sphere_radius(&self) -> f64 {
-        f64::sqrt(3.0) / 2.0 * self.edge_lengths.into_iter().fold(f64::NAN, f64::max)
+        f64::sqrt(3.0) / 2.0 * self.edge_lengths.into_iter().reduce(f64::max).expect("N must be greater than or equal to 1")
     }
 }
 
-// TODO: requires test
 impl<const N: usize> SupportMapping<Cartesian<N>> for Cuboid<N> {
     #[inline]
     fn support_mapping(&self, n: &Cartesian<N>) -> Cartesian<N> {
@@ -116,39 +174,48 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Cuboid<N> {
             .into_iter()
             .zip(self.edge_lengths)
             .map(|(n_i, l_i)| l_i / 2.0 * n_i.signum());
-        std::array::from_fn(|_| iter.next().unwrap_or_default()).into()
-    }
-}
-
-impl<const N: usize> From<[f64; N]> for Cuboid<N> {
-    /// Create a Cuboid from its extents along each cartesian axis
-    #[inline]
-    fn from(edge_lengths: [f64; N]) -> Cuboid<N> {
-        Cuboid {
-            edge_lengths: edge_lengths.into(),
-        }
-    }
-}
-impl<const N: usize> From<Cartesian<N>> for Cuboid<N> {
-    /// Create a Cuboid from its extents along each cartesian axis
-    #[inline]
-    fn from(edge_lengths: Cartesian<N>) -> Cuboid<N> {
-        Cuboid { edge_lengths }
+        array::from_fn(|_| iter.next().unwrap_or_default()).into()
     }
 }
 
 impl<const N: usize> Cuboid<N> {
+
     #[inline]
     #[must_use]
-    /// Determine the maximal extents of the cuboid along each Cartesian axis.
-    pub fn maximal_extents(&self) -> Cartesian<N> {
-        self.edge_lengths / 2.0
+    /** Determine the maximal extents of the cuboid along each Cartesian axis.
+
+    # Example
+
+    ```
+    use hoomd_geometry::shape::Cuboid;
+
+    let unit_cube = Cuboid {edge_lengths: [1.0; 3].into()};
+
+    let max_extents = unit_cube.maximal_extents();
+    assert_eq!(max_extents, [0.5; 3]);
+    ```
+    */
+    pub fn maximal_extents(&self) -> [f64; N] {
+        array::from_fn(|i| self.edge_lengths[i] / 2.0)
     }
+
     #[inline]
     #[must_use]
-    /// Determine the minimal extents of the cuboid along each Cartesian axis.
-    pub fn minimal_extents(&self) -> Cartesian<N> {
-        -self.edge_lengths / 2.0
+    /** Determine the minimal extents of the cuboid along each Cartesian axis.
+
+    # Example
+
+    ```
+    use hoomd_geometry::shape::Cuboid;
+
+    let unit_cube = Cuboid {edge_lengths: [1.0; 3].into()};
+
+    let min_extents = unit_cube.minimal_extents();
+    assert_eq!(min_extents, [-0.5; 3]);
+    ```
+    */
+    pub fn minimal_extents(&self) -> [f64; N] {
+        array::from_fn(|i| -self.edge_lengths[i] / 2.0)
     }
 }
 
@@ -165,7 +232,7 @@ mod tests {
         edges1 => [[1.0, 1.0, 1.0]],
     )]
     fn test_box_intersections_aligned(edges0: [f64; 3], edges1: [f64; 3]) {
-        let (s0, s1) = (Cuboid::<3>::from(edges0), Cuboid::<3>::from(edges1));
+        let (s0, s1) = (Cuboid {edge_lengths: edges0 }, Cuboid { edge_lengths: edges1 });
         // Should all be false (no intersection), which we invert to true
         assert!(!s0.intersects_aligned(&s1, &[10.0, 10.0, 10.0].into()));
         // Boundaries are aligned
@@ -178,7 +245,7 @@ mod tests {
         edges1 => [[1.0, 1.0]],
     )]
     fn test_box_intersections_2d_aligned(edges0: [f64; 2], edges1: [f64; 2]) {
-        let (c0, c1) = (Cuboid::<2>::from(edges0), Cuboid::<2>::from(edges1));
+        let (c0, c1) = (Cuboid {edge_lengths: edges0 }, Cuboid{ edge_lengths: edges1 });
         // Should all be false (no intersection), which we invert to true
         assert!(!c0.intersects_aligned(&c1, &[10.0, 10.0].into()));
         // Boundaries are aligned
@@ -189,7 +256,6 @@ mod tests {
 
     #[rstest(
         _n => [
-            PhantomData::<Cuboid<0>>,
             PhantomData::<Cuboid<1>>,
             PhantomData::<Cuboid<2>>,
             PhantomData::<Cuboid<3>>,
@@ -198,14 +264,13 @@ mod tests {
         l => [1e-6, 1.0, 3.456, 99_999_999.9],
     )]
     fn test_box_extents<const N: usize>(_n: PhantomData<Cuboid<N>>, l: f64) {
-        let c = Cuboid::from([l; N]);
-        assert_eq!(c.maximal_extents(), [l / 2.0; N].into());
-        assert_eq!(c.minimal_extents(), [-l / 2.0; N].into());
+        let c = Cuboid { edge_lengths: [l; N] };
+        assert_eq!(c.maximal_extents(), [l / 2.0; N]);
+        assert_eq!(c.minimal_extents(), [-l / 2.0; N]);
     }
 
     #[rstest(
         _n => [
-            PhantomData::<Cuboid<0>>,
             PhantomData::<Cuboid<1>>,
             PhantomData::<Cuboid<2>>,
             PhantomData::<Cuboid<3>>,
@@ -214,7 +279,7 @@ mod tests {
         l => [1e-6, 1.0, 3.456, 99_999_999.9],
     )]
     fn test_box_volume<const N: usize>(_n: PhantomData<Cuboid<N>>, l: f64) {
-        let c = Cuboid::from([l; N]);
+        let c = Cuboid {edge_lengths: [l; N] };
         assert_relative_eq!(
             c.volume(),
             if N != 0 {
@@ -229,7 +294,10 @@ mod tests {
         l => [1e-6, 1.0, 3.456, 99_999_999.9],
     )]
     fn test_box_abc(l: f64) {
-        let c = Cuboid::from([l; 3]);
+        let c = Cuboid { edge_lengths: [l; 3] };
         assert_eq!([c.a(), c.b(), c.c()], [l; 3]);
     }
+
+    // TODO: Test BoundingSphereRadius
+    // TODO: Test SupportMapping
 }

@@ -4,15 +4,16 @@
 /*! Implement [`Sphero`] */
 
 use crate::{BoundingSphereRadius, SupportMapping};
-use hoomd_vector::{InnerProduct, Vector};
+use hoomd_vector::InnerProduct;
 
 /** Round a shape with a given radius.
 
-[`Sphero`] modifies a given shape by sweeping it with a hypersphere of the given
-radius. The resulting [`Sphero<S>`] type is a shape itself. If `S` implements
-[`crate::SupportMapping`], then [`Sphero<S>`] can be used in [`IntersectsAt`][crate::IntersectsAt] tests with
-other convex shapes. See the full list of implementations below to see what other
-traits [`Sphero<S>`] implements for a given `S`.
+[`Sphero`] modifies a given shape by sweeping it with a hypersphere of the
+given radius. The resulting [`Sphero<S>`] type is a shape itself. If `S`
+implements [`crate::SupportMapping`], then [`Sphero<S>`] can be used in
+[`IntersectsAt`](crate::IntersectsAt) tests with other convex shapes. See
+the full list of implementations below to see what other traits [`Sphero<S>`]
+implements for a given `S`.
 
 # Example
 
@@ -33,7 +34,7 @@ assert!(circle.intersects_at(&rounded_rectangle, &[0.0, 2.4].into(), &Angle::fro
 */
 #[derive(Clone, Debug, PartialEq)]
 pub struct Sphero<S> {
-    /// The shape round.
+    /// The shape to round.
     pub shape: S,
     /// The radius of the rounding hypersphere.
     pub rounding_radius: f64,
@@ -42,7 +43,7 @@ pub struct Sphero<S> {
 impl<S, V> SupportMapping<V> for Sphero<S>
 where
     S: SupportMapping<V>,
-    V: Vector + InnerProduct,
+    V: InnerProduct,
 {
     #[inline]
     fn support_mapping(&self, n: &V) -> V {

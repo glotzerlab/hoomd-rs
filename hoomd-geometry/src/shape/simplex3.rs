@@ -78,17 +78,13 @@ pub struct Simplex3 {
 
 impl SupportMapping<Cartesian<3>> for Simplex3 {
     #[inline]
-    #[expect(
-        clippy::expect_used,
-        reason = "Support function of a vector containing NaN is undefined."
-    )]
     fn support_mapping(&self, n: &Cartesian<3>) -> Cartesian<3> {
         let dots = self.vertices.map(|v| v.dot(n));
         self.vertices[dots
             .iter()
             // position_max_by consumes ~9% of Xenocollide runtime!
             .position_max_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal))
-            .expect("Took dot product with NaN!")]
+            .expect("dot product results should always be comparable")]
     }
 }
 

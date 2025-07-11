@@ -3,24 +3,23 @@
 
 /*! Implementations of the Xenocollide collision detection algorithm.
 
-[`collide2d`] and [`collide3d`] allow for intersections between arbitrary geometries
-that define the [`SupportMapping<Cartesian<2|3>>`][`crate::SupportMapping`] trait.
+[`collide2d`] and [`collide3d`] test for intersections between arbitrary geometries
+that implement the [`SupportMapping<Cartesian<2|3>>`](`crate::SupportMapping`) trait.
 
 # Example
 
-In general, Xenocollide should be used via the [`IntersectsAt`][`crate::IntersectsAt`]
+In general, Xenocollide should be used via the [`IntersectsAt`](`crate::IntersectsAt`)
 trait. However, the raw xenocollide methods can be used where needed.
-```rust
-use hoomd_geometry::{IntersectsAt, shape::Sphere, xenocollide::collide2d};
+```
+use hoomd_geometry::{IntersectsAt, shape::Circle, xenocollide::collide2d};
 use hoomd_vector::Angle;
 
-let (s0, s1) = (Sphere {radius: 1.0}, Sphere {radius: 2.0});
+let (s0, s1) = (Circle {radius: 1.0}, Circle {radius: 2.0});
 let displacement = [3.0; 2].into();
 assert_eq!(
     collide2d(&s0, &s1, &displacement, &Angle::default()),
     s0.intersects_at(&s1, &displacement, &Angle::default())
 )
-
 ```
 */
 use crate::SupportMapping;
@@ -31,8 +30,8 @@ const XENOCOLLIDE_2D_MAX_ITER: usize = 1024;
 /// Maximum allowed iterations for Xenocollide in 3D
 const XENOCOLLIDE_3D_MAX_ITER: usize = 1024;
 
-/// Stateful function for support function calculations on Minkowski differences.
-struct SupportFunctor<
+/// Stateful type that efficiently computes repeated Minkowski differences.
+struct MinkowskiDifference<
     'a,
     const N: usize,
     A: SupportMapping<Cartesian<N>>,
@@ -51,7 +50,7 @@ struct SupportFunctor<
 }
 
 impl<'a, const N: usize, A: SupportMapping<Cartesian<N>>, B: SupportMapping<Cartesian<N>>>
-    SupportFunctor<'_, N, A, B>
+    MinkowskiDifference<'_, N, A, B>
 {
     /// Compute the support function on the Minkowski difference of two shapes.
     #[inline]
@@ -66,20 +65,21 @@ impl<'a, const N: usize, A: SupportMapping<Cartesian<N>>, B: SupportMapping<Cart
             + *self.v_ij;
         sb_n - self.sa.support_mapping(&-n) // eq. 2.5.6 in GPG7
     }
-    /// Create a new `SupportFunctor` from a Rotation that can be converted into a `RotationMatrix`
+    
+    /// Create a new `MinkowskiDifference` evaluator.
     #[inline]
-    fn new<R: Rotation + Copy>(
+    fn new<R: Rotation>(
         sa: &'a A,
         sb: &'a B,
         v_ij: &'a Cartesian<N>,
         r: R,
-    ) -> SupportFunctor<'a, N, A, B>
+    ) -> MinkowskiDifference<'a, N, A, B>
     where
         RotationMatrix<N>: From<R>,
     {
         let q_ij = RotationMatrix::<N>::from(r);
         let q_ij_inv = q_ij.inverted();
-        SupportFunctor {
+        MinkowskiDifference {
             sa,
             sb,
             v_ij,
@@ -104,13 +104,20 @@ pub fn collide2d<
 where
     RotationMatrix<2>: From<R>,
 {
-    let tol_multiplier = 10000.0;
-    let tol: f64 = 1e-16 * tol_multiplier;
-    let s = SupportFunctor::new(sa, sb, v_ij, *q_ij);
+    const TOLERANCE: f64 = 1e-16;
+    let s = MinkowskiDifference::new(sa, sb, v_ij, *q_ij);
 
     // Phase 1: Portal discovery
     // Obtain a point lying deep within B⊖A
     let v0 = *v_ij; // self.centroid()-other.centroid() in extrinsic coords
+
+    // TODO: This is unsafe for types like `ConvexPolytope`. Users can construct
+    // such types where the origin is outside the shape. Option 1: Validate
+    // the vertices when constructing `ConvexPolytope` Option 2: Implement
+    // a `SomePointInside` trait that must always return a point inside the
+    // shape. For `ConvexPolytope` this could be the mean of the vertices.
+    // `ConvexPolytope` makes vertices private, so this point could be
+    // precomputed and result in no performance impact to xenocollide.
 
     // Find the support point in the direction of the origin ray
     let mut v1 = s.composite_support_mapping(-v0); // negative, to ensure ||v1|| > 0
@@ -150,9 +157,9 @@ where
             return false;
         }
 
-        // Tolerance check. NOTE: may not always be necessary?
-        let d = (v3 - v1) - (v3 - v1).project(&(v2 - v1)) * tol_multiplier;
-        if d.norm_squared() < tol.powi(2) * v3.norm_squared() {
+        // are we within an epsilon of the surface of the shape? If yes, done (overlap)
+        let d = (v3 - v1) - (v3 - v1).project(&(v2 - v1));
+        if d.norm_squared() < TOLERANCE * v3.norm_squared() {
             return true;
         }
 
@@ -191,16 +198,14 @@ pub fn collide3d<
 where
     RotationMatrix<3>: From<R>,
 {
-    let precision_tol = 2e-12; // Set fixed tol, rather than rounding-radius based
-    let root_tol = 4e-8;
-    let tol_multiplier = 10_000.0;
+    const TOLERANCE: f64 = 2e-12;
 
-    if v_ij.into_iter().all(|x| x.abs() < root_tol) {
+    if v_ij.into_iter().all(|x| x.abs() < TOLERANCE) {
         // Interior point is at the origin => shapes overlap
         return true;
     }
 
-    let s = SupportFunctor::new(sa, sb, v_ij, *q_ij);
+    let s = MinkowskiDifference::new(sa, sb, v_ij, *q_ij);
 
     // Phase 1: Portal discovery
     // Obtain a point lying deep within B⊖A
@@ -221,8 +226,8 @@ where
 
     // Cross product is zero if v0,v1 collinear with origin, but we have already
     // determined origin is within v1 support plane. If origin is on a line between
-    // v1 and v0, particles overlap. We assume precision_tol has units l**2
-    if n.into_iter().all(|x| x.abs() < precision_tol) {
+    // v1 and v0, particles overlap.
+    if n.into_iter().all(|x| x.abs() < TOLERANCE) {
         return true;
     }
 
@@ -294,34 +299,28 @@ where
             return false;
         }
 
-        // TODO: tolerance checks?
+        // Are we within an epsilon of the surface of the shape? If yes, done, one way or another.
         n = (v2 - v1).cross(&(v3 - v1));
-        let mut d = ((v4 - v1) * tol_multiplier).dot(&n);
-        // let R = 1.0; // Average circumsphere diameter of the two shapes
-        let tol = precision_tol * tol_multiplier * n.norm();
+        let mut d = (v4 - v1).dot(&n);
+        
+        // Scale the tolerance with the size of the shapes.
+        let tolerance = TOLERANCE * n.norm();
 
         // First, check if v4 is on plane (v2, v1, v3)
-        if d.abs() < tol {
+        if d.abs() < tolerance {
             // No more refinement possible, but not intersection detected
             return false;
         }
         // Second, check if origin is on plane (v2, v1, v3) and has been missed by other checks
-        d = (v1 * tol_multiplier).dot(&n);
-        if d.abs() < tol {
+        d = v1.dot(&n);
+        if d.abs() < tolerance {
             return true;
         }
 
         // Choose a new portal. Two of its edges will be from the planes (v4,v0,v1),
         // (v4,v0,v2), (v4,v0,v3). Find which two have the origin on the same side.
 
-        /* Comment inherited from HOOMD source code:
-        "MEI: As I understand this statement, I don't believe it is correct. An _inside_
-        needs to be defined and used. The only way I can think to do this is to consider
-        all three pairs of planes to find which pair has the origin between them. Need
-        to better understand and document this. The following code was directly adapted
-        from example code."
-
-        Test origin against the three planes that separate the new portal candidates
+        /* Test origin against the three planes that separate the new portal candidates
         Note:  We're taking advantage of the triple product identities here
         as an optimization
                (v1 % v4) * v0 == v1 * (v4 % v0) > 0 if origin inside (v1, v4, v0)
@@ -403,8 +402,8 @@ mod tests {
         rect => [[1.0, 1.0], [999.0, 0.1], [1.0, 2.0*4.623]]
     )]
     fn test_aabrs_collide(v: [f64; 2], rect: [f64; 2]) {
-        let c0 = Cuboid::from(rect);
-        let c1 = Cuboid::from([1.0; 2]);
+        let c0 = Cuboid { edge_lengths: rect };
+        let c1 = Cuboid { edge_lengths: [1.0; 2] };
         let theta = Angle::from(0.0);
 
         let overlaps = collide2d(&c0, &c1, &v.into(), &theta);
@@ -415,8 +414,8 @@ mod tests {
         aabb => [[1.0, 1.0, 1.0], [999.0, 0.1, 0.5], [1.0, 2.0*4.623, 5.0]]
     )]
     fn test_aabbs_collide(v: [f64; 3], aabb: [f64; 3]) {
-        let c0 = Cuboid::from(aabb);
-        let c1 = Cuboid::from([1.0; 3]);
+        let c0 = Cuboid { edge_lengths: aabb };
+        let c1 = Cuboid { edge_lengths: [1.0; 3] };
         let theta = Versor::identity();
 
         let overlaps = collide3d(&c0, &c1, &v.into(), &theta);

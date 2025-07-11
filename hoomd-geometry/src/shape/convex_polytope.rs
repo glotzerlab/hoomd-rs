@@ -2,10 +2,57 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! N-Dimensional generalization of a convex polyhedron.*/
+
 use crate::{BoundingSphereRadius, Error, SupportMapping};
 use hoomd_vector::{Cartesian, InnerProduct};
 
-/**A faceted solid defined by the convex hull of its vertices.*/
+/** A faceted solid defined by the convex hull of its vertices.
+
+# Examples
+
+Construction and basic methods:
+```
+use hoomd_geometry::{BoundingSphereRadius, shape::{ConvexPolyhedron}};
+use approx::assert_relative_eq;
+
+# fn main() -> Result<(), hoomd_geometry::Error> {
+let tetrahedron = ConvexPolyhedron::with_vertices(
+    vec![
+        [1.0, 1.0, 1.0].into(),
+        [1.0, -1.0, -1.0].into(),
+        [-1.0, 1.0, -1.0].into(),
+        [-1.0, -1.0, 1.0].into(),
+    ]
+)?;
+
+let bounding_radius = tetrahedron.bounding_sphere_radius();
+
+assert_relative_eq!(bounding_radius, 3.0_f64.sqrt());
+# Ok(())
+# }
+```
+
+Intersection tests:
+```
+use hoomd_geometry::{Convex, IntersectsAt, shape::ConvexPolygon};
+use hoomd_vector::{Cartesian, Angle};
+use std::f64::consts::PI;
+
+# fn main() -> Result<(), hoomd_geometry::Error> {
+let rectangle = ConvexPolygon::with_vertices(
+    [[-2.0, -1.0].into(),
+     [2.0, -1.0].into(),
+     [2.0, 1.0].into(),
+     [-2.0, 1.0].into()])?;
+let rectangle = Convex(rectangle);
+
+assert_eq!(rectangle.intersects_at(&rectangle, &[0.0, 2.1].into(), &Angle::default()), false);
+assert_eq!(rectangle.intersects_at(&rectangle, &[0.0, 2.1].into(), &Angle::from(PI/2.0)), true);
+# Ok(())
+# }
+```
+*/
+#[derive(Clone, Debug, PartialEq)]
 pub struct ConvexPolytope<const N: usize> {
     /// The vertices of the shape.
     vertices: Vec<Cartesian<N>>,
@@ -18,17 +65,27 @@ pub struct ConvexPolytope<const N: usize> {
 ```rust
 
 use hoomd_geometry::shape::ConvexPolygon;
-let poly = ConvexPolygon::from(6); // A regular hexagon
+
+# fn main() -> Result<(), hoomd_geometry::Error> {
+let hexagon = ConvexPolygon::regular(6);
+let square = ConvexPolygon::with_vertices(
+    [[-1.0, -1.0].into(),
+     [1.0, -1.0].into(),
+     [1.0, 1.0].into(),
+     [-1.0, 1.0].into()])?;
+# Ok(())
+# }
 ```
 */
 pub type ConvexPolygon = ConvexPolytope<2>;
+
 /**A faceted convex body in three dimensions.
 
-```rust
+```
 use hoomd_geometry::shape::{ConvexPolyhedron, Simplex3};
 # fn main() -> Result<(), hoomd_geometry::Error> {
 // Create a regular tetrahedron from its vertices
-let poly = ConvexPolyhedron::try_from(
+let poly = ConvexPolyhedron::with_vertices(
     vec![
         [1.0, 1.0, 1.0].into(),
         [1.0, -1.0, -1.0].into(),
@@ -44,32 +101,24 @@ assert_eq!(poly.vertices(), Simplex3::default().vertices());
 */
 pub type ConvexPolyhedron = ConvexPolytope<3>;
 
-impl<const N: usize> ConvexPolytope<N> {
-    /// The vertices of the shape.
-    #[inline]
-    #[must_use]
-    pub fn vertices(&self) -> Vec<Cartesian<N>> {
-        self.vertices.clone()
-    }
-}
-
-impl From<usize> for ConvexPolytope<2> {
+impl ConvexPolytope<2> {
     /** Create a regular *n*-gon with *n* vertices and circumradius one.
 
     # Example
     ```
     use hoomd_geometry::shape::ConvexPolytope;
 
-    let equilateral_triangle = ConvexPolytope::from(3);
+    let equilateral_triangle = ConvexPolytope::regular(3);
     ```
     */
     #[inline]
-    fn from(n: usize) -> ConvexPolytope<2> {
+    #[must_use]
+    pub fn regular(n: usize) -> ConvexPolytope<2> {
         ConvexPolytope {
             vertices: (0..n)
                 .map(|x| {
                     let theta = std::f64::consts::PI * (x as f64) / (n as f64);
-                    Cartesian::from([f64::cos(theta), f64::cos(theta)])
+                    Cartesian::from([f64::cos(theta), f64::sin(theta)])
                 })
                 .collect::<Vec<_>>(),
             bounding_radius: 1.0,
@@ -77,16 +126,15 @@ impl From<usize> for ConvexPolytope<2> {
     }
 }
 
-impl<const N: usize> TryFrom<Vec<Cartesian<N>>> for ConvexPolytope<N> {
-    type Error = Error;
-    /** Create an `N`-polytope from a `Vector` of `Cartesian<N>`.
+impl<const N: usize> ConvexPolytope<N> {
+    /** Create an `N`-polytope with the given vertices.
 
     # Example
     ```
     use hoomd_geometry::shape::ConvexPolytope;
 
     # fn main() -> Result<(), hoomd_geometry::Error> {
-    let equilateral_triangle = ConvexPolytope::try_from(
+    let equilateral_triangle = ConvexPolytope::with_vertices(
         vec![
             [1.0, 0.0].into(),
             [0.5, f64::sqrt(3.0)/2.0].into(),
@@ -98,31 +146,38 @@ impl<const N: usize> TryFrom<Vec<Cartesian<N>>> for ConvexPolytope<N> {
     ```
     # Errors
 
-    * `[Error::NotConvex]` when the set of input vertices is not convex.
+    * `[Error::DegeneratePolytope]` when no vertices are provided.
     */
     #[inline]
-    fn try_from(vertices: Vec<Cartesian<N>>) -> Result<ConvexPolytope<N>, Error> {
-        // TODO: compute convex hull and assert convex!
+    pub fn with_vertices<I>(vertices: I) -> Result<ConvexPolytope<N>, Error>
+    where I: IntoIterator<Item = Cartesian<N>>
+    {
+        let vertices = vertices.into_iter().collect::<Vec<_>>();
+
+        if vertices.is_empty() {
+            return Err(Error::DegeneratePolytope);
+        }
+        
         let bounding_radius = vertices
             .iter()
             .map(Cartesian::norm_squared)
-            .fold(f64::NAN, f64::max)
+            .fold(0.0, f64::max)
             .sqrt();
-        if true {
-            Ok(ConvexPolytope {
+
+        Ok(ConvexPolytope {
                 vertices,
                 bounding_radius,
-            }) // TODO: currently no verification that vertices are convex
-        } else {
-            Err(Error::NotConvex())
+            })
         }
+
+    /// The vertices of the shape.
+    #[inline]
+    #[must_use]
+    pub fn vertices(&self) -> &[Cartesian<N>] {
+        &self.vertices
     }
 }
 
-#[expect(
-    clippy::unwrap_used,
-    reason = "Unwrap case is handled in a match statement."
-)]
 impl<const N: usize> SupportMapping<Cartesian<N>> for ConvexPolytope<N> {
     #[inline]
     fn support_mapping(&self, n: &Cartesian<N>) -> Cartesian<N> {
@@ -137,7 +192,7 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for ConvexPolytope<N> {
                         .partial_cmp(&b.dot(n))
                         .unwrap_or(std::cmp::Ordering::Equal)
                 })
-                .unwrap(),
+                .expect("the 0 match statement should handle empty vectors"),
         }
     }
 }
@@ -155,7 +210,7 @@ mod tests {
     use rstest::*;
     #[fixture]
     fn simplex3() -> ConvexPolyhedron {
-        ConvexPolyhedron::try_from(vec![
+        ConvexPolyhedron::with_vertices(vec![
             [1.0, 1.0, 1.0].into(),
             [1.0, -1.0, -1.0].into(),
             [-1.0, 1.0, -1.0].into(),
@@ -166,7 +221,7 @@ mod tests {
 
     #[fixture]
     fn equilateral_triangle() -> ConvexPolytope<2> {
-        ConvexPolytope::try_from(vec![
+        ConvexPolytope::with_vertices(vec![
             [1.0, 0.0].into(),
             [0.5, f64::sqrt(3.0) / 2.0].into(),
             [-0.5, f64::sqrt(3.0) / 2.0].into(),
@@ -185,7 +240,15 @@ mod tests {
 
     #[rstest]
     fn test_bounding_radius_regular_polygons(#[values(1, 3, 8, 64)] n: usize) {
-        assert_eq!(ConvexPolygon::from(n).bounding_radius, 1.0);
-        assert_eq!(ConvexPolytope::from(n).bounding_radius, 1.0);
+        assert_eq!(ConvexPolygon::regular(n).bounding_radius, 1.0);
+        assert_eq!(ConvexPolytope::regular(n).bounding_radius, 1.0);
     }
+
+    #[test]
+    fn degenerate_polytope() {
+        let result = ConvexPolytope::<3>::with_vertices([]);
+        assert_eq!(result, Err(Error::DegeneratePolytope));
+    }
+
+    // TODO: Test SupportMapping
 }

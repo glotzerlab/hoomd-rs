@@ -128,27 +128,66 @@ impl SquareMatrix<2> {
     }
 }
 
-/** The geometry resulting from an N-Hypersphere that is scaled along N cartesion axes.
-```rust
-use hoomd_geometry::shape::{Hyperellipsoid, Ellipse, Ellipsoid, Sphere};
-use hoomd_geometry::Volume;
+/** The geometry resulting from an Hypersphere that is scaled along the Cartesian axes.
+
+See [`Ellipse`] and [`Ellipsoid`] for special cases in 2 and 3 dimensions.
+
+# Examples
+
+Basic construction and methods:
+```
+use hoomd_geometry::{BoundingSphereRadius,
+    shape::Hyperellipsoid,
+    Volume};
+use std::f64::consts::PI;
+use approx::assert_relative_eq;
 
 let ellipse = Hyperellipsoid {axes: [1.0, 2.0]};
+let bounding_radius = ellipse.bounding_sphere_radius();
+let volume = ellipse.volume();
 
-assert_eq!(ellipse.volume(), Ellipse {axes: [2.0, 1.0]}.volume());
-assert_eq!(Ellipsoid{ axes: [1.0, 1.0, 1.0] }.volume(), Sphere {radius: 1.0 }.volume());
+assert_eq!(bounding_radius, 2.0);
+assert_relative_eq!(volume, PI * 1.0 * 2.0);
 
+let sphere = Hyperellipsoid {axes: [2.0, 2.0, 2.0]};
+let bounding_radius = sphere.bounding_sphere_radius();
+let volume = sphere.volume();
+
+assert_eq!(bounding_radius, 2.0);
+assert_eq!(volume, 4.0 / 3.0 * PI * 2.0_f64.powi(3));
 ```
+*/
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Hyperellipsoid<const N: usize> {
+    /// The principle semi-axes of the [`Hyperellipsoid`] along each cartesian direction.
+    pub axes: [f64; N],
+}
 
-# Example
+/** A circle scaled along the x and y axes.
+
+# Examples
+
+Basic construction and methods:
+```
+use hoomd_geometry::{BoundingSphereRadius,
+    shape::Ellipse,
+    Volume};
+use std::f64::consts::PI;
+use approx::assert_relative_eq;
+
+let ellipse = Ellipse {axes: [1.0, 2.0]};
+let bounding_radius = ellipse.bounding_sphere_radius();
+let volume = ellipse.volume();
+
+assert_eq!(bounding_radius, 2.0);
+assert_relative_eq!(volume, PI * 1.0 * 2.0);
+```
 
 Rapid ellipse-ellipse intersection testing is possible with hoomd-geometry. This check
 is based on a result from algebraic geometry, with the precise approach documented
-within the code.
-
-```rust
-use hoomd_geometry::shape::Ellipse;
-use hoomd_geometry::IntersectsAt;
+within the code:
+```
+use hoomd_geometry::{IntersectsAt, shape::Ellipse};
 use hoomd_vector::Angle;
 
 let long_ellipse = Ellipse {axes: [0.5, 3.0]};
@@ -160,18 +199,57 @@ assert_eq!(
     long_ellipse.intersects_at(&round_ellipse, &v_ij, &Angle::from(0.0)),
     true
 );
-
 ```
 */
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Hyperellipsoid<const N: usize> {
-    /// The principle semi-axes of the [`Hyperellipsoid`] along each cartesian direction.
-    pub axes: [f64; N],
-}
-
-/**An circle scaled along the x and y axes.*/
 pub type Ellipse = Hyperellipsoid<2>;
-/**A sphere scaled along the x, y, and z axes.*/
+
+
+/**A sphere scaled along the x, y, and z axes.
+
+# Examples
+
+Basic construction and methods:
+```
+use hoomd_geometry::{BoundingSphereRadius,
+    shape::Ellipsoid,
+    Volume};
+use std::f64::consts::PI;
+use approx::assert_relative_eq;
+
+let sphere = Ellipsoid {axes: [2.0, 2.0, 2.0]};
+let bounding_radius = sphere.bounding_sphere_radius();
+let volume = sphere.volume();
+
+assert_eq!(bounding_radius, 2.0);
+assert_eq!(volume, 4.0 / 3.0 * PI * 2.0_f64.powi(3));
+```
+
+Test for intersections using [`Convex`](crate::Convex):
+```
+use hoomd_geometry::{Convex, IntersectsAt, shape::Ellipsoid};
+use hoomd_vector::Versor;
+
+let ellipsoid = Convex(Ellipsoid { axes: [1.0, 2.0, 3.0] });
+let q = Versor::default();
+
+assert_eq!(
+    ellipsoid.intersects_at(&ellipsoid, &[0.9, 0.0, 0.0].into(), &q),
+    true
+);
+assert_eq!(
+    ellipsoid.intersects_at(&ellipsoid, &[1.1, 0.0, 0.0].into(), &q),
+    true
+);
+assert_eq!(
+    ellipsoid.intersects_at(&ellipsoid, &[0.0, 1.9, 0.0].into(), &q),
+    true
+);
+assert_eq!(
+    ellipsoid.intersects_at(&ellipsoid, &[0.0, 2.1, 0.0].into(), &q),
+    true
+);
+```
+*/
 pub type Ellipsoid = Hyperellipsoid<3>;
 
 impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperellipsoid<N> {
@@ -185,7 +263,7 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperellipsoid<N> {
 impl<const N: usize> BoundingSphereRadius for Hyperellipsoid<N> {
     #[inline]
     fn bounding_sphere_radius(&self) -> f64 {
-        self.axes.into_iter().fold(f64::NAN, f64::max)
+        self.axes.into_iter().reduce(f64::max).expect("N must be greater than or equal to 1")
     }
 }
 impl<const N: usize> Volume for Hyperellipsoid<N> {
