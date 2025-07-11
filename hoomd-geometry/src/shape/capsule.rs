@@ -30,14 +30,23 @@ let right = capsule.support_mapping(&[1.0, 0.0].into());
 let bottom = capsule.support_mapping(&[0.0, -1.0].into());
 
 assert_eq!(bounding_radius, 5.0);
-assert_relative_eq!(volume, 8.0 + PI);
+assert_relative_eq!(volume, 16.0 + PI);
 assert_eq!(right.coordinates[0], 1.0);
 assert_eq!(bottom, [0.0, -5.0].into());
 ```
 
 Intersection test:
+```
+use hoomd_geometry::{Convex, IntersectsAt, shape::Capsule};
+use hoomd_vector::{Angle, Cartesian, Rotation};
+use std::f64::consts::PI;
 
-TODO
+let capsule = Convex(Capsule::<2> { radius: 1.0, height: 8.0 });
+
+assert_eq!(capsule.intersects_at(&capsule, &[1.75, 0.0].into(), &Angle::identity()), true);
+assert_eq!(capsule.intersects_at(&capsule, &[4.0, 0.0].into(), &Angle::identity()), false);
+assert_eq!(capsule.intersects_at(&capsule, &[4.0, 0.0].into(), &Angle::from(PI/2.0)), true);
+```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Capsule<const N: usize> {
