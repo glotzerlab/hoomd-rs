@@ -537,6 +537,26 @@ pub trait InnerProduct: Vector {
         let norm = self.norm();
         (Unit(self / norm), norm)
     }
+
+    /** Project one vector onto another.
+    ```math
+    \left(\frac{\vec{a} \cdot \vec{b}}{|\vec{b}|^2}\right) \vec{b}
+    ```
+    where `self` is $`\vec{a}`$.
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, Vector};
+    let a = Cartesian::from([1.0, 2.0]);
+    let b = Cartesian::from([4.0, 0.0]);
+    let c = a.project(&b);
+    assert_eq!(c, [1.0, 0.0].into());
+    ```
+    */
+    #[inline]
+    #[must_use]
+    fn project(&self, b: &Self) -> Self {
+        *b * self.dot(b) / b.norm_squared()
+    }
 }
 
 /// A [`Vector`] with magnitude 1.0.
