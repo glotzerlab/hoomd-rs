@@ -51,8 +51,8 @@ fn create_sphere_pair<const N: usize, R: Rng>(rng: &mut R) -> (Hypersphere<N>, H
 
 fn create_cuboid_pair<const N: usize, R: Rng>(rng: &mut R) -> (Cuboid<N>, Cuboid<N>) {
     (
-        Cuboid::from(rng.random::<Cartesian<N>>() * 10.0),
-        Cuboid::from(rng.random::<Cartesian<N>>() * 10.0),
+        Cuboid { edge_lengths: (rng.random::<Cartesian<N>>() * 10.0).coordinates },
+        Cuboid { edge_lengths: (rng.random::<Cartesian<N>>() * 10.0).coordinates },
     )
 }
 fn create_simplex_pair<R: Rng>(rng: &mut R) -> (Simplex3, Simplex3) {
@@ -76,9 +76,9 @@ fn create_dipyramid_pair<const N: usize, R: Rng>(
     rng: &mut R,
     h_max: f64,
 ) -> (ConvexPolytope<3>, ConvexPolytope<3>) {
-    let base = ConvexPolytope::<2>::from(N);
+    let base = ConvexPolytope::<2>::regular(N);
     (
-        ConvexPolytope::<3>::try_from(
+        ConvexPolytope::<3>::with_vertices(
             base.vertices()
                 .iter()
                 .map(|x| Cartesian::from([x[0], x[1], 0.0]))
@@ -86,10 +86,9 @@ fn create_dipyramid_pair<const N: usize, R: Rng>(
                     [0.0, 0.0, rng.random_range(0.0..h_max)].into(),
                     [0.0, 0.0, -rng.random_range(0.0..h_max)].into(),
                 ])
-                .collect::<Vec<_>>(),
         )
         .unwrap(),
-        ConvexPolytope::<3>::try_from(
+        ConvexPolytope::<3>::with_vertices(
             base.vertices()
                 .iter()
                 .map(|x| Cartesian::from([x[0], x[1], 0.0]))
@@ -97,14 +96,13 @@ fn create_dipyramid_pair<const N: usize, R: Rng>(
                     [0.0, 0.0, rng.random_range(0.0..h_max)].into(),
                     [0.0, 0.0, -rng.random_range(0.0..h_max)].into(),
                 ])
-                .collect::<Vec<_>>(),
         )
         .unwrap(),
     )
 }
 
 fn create_polygon_pair<const N: usize>() -> (ConvexPolytope<2>, ConvexPolytope<2>) {
-    (ConvexPolytope::from(N), ConvexPolytope::from(N))
+    (ConvexPolytope::regular(N), ConvexPolytope::regular(N))
 }
 
 fn create_ellipsoid_pair<const N: usize, R: Rng>(
