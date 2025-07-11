@@ -152,10 +152,13 @@ pub enum MenuState {
 #[derive(Resource)]
 pub struct Settings {
     /// Maximum fraction (0.0 to 1.0) of the frame time to use advancing the simulation.
-    frame_budget_fraction: f32,
+    pub frame_budget_fraction: f32,
 
     /// Maximum number of steps per second to advance the simulation.
-    sps_limit: f32,
+    pub sps_limit: f32,
+
+    /// Initial viewport height.
+    pub viewport_height: f32
 }
 
 impl Default for Settings {
@@ -163,6 +166,7 @@ impl Default for Settings {
         Self {
             frame_budget_fraction: 0.9,
             sps_limit: 2048.0,
+            viewport_height: 10.0,
         }
     }
 }
@@ -651,10 +655,10 @@ F12     : Take a screenshot (screenshot.png).
     // TODO: How to set 3D cameras? Use a marker type? Or an option in the settings?
 
     /// Set up the 2D camera.
-    fn setup_camera(mut commands: Commands) {
+    fn setup_camera(mut commands: Commands, viewport_height: f32) {
         let projection = Projection::Orthographic(OrthographicProjection {
             scaling_mode: bevy::render::camera::ScalingMode::FixedVertical {
-                viewport_height: 30.0,
+                viewport_height,
             },
             ..OrthographicProjection::default_2d()
         });
@@ -759,6 +763,11 @@ F12     : Take a screenshot (screenshot.png).
 
         embedded_asset!(app, "logo.png");
 
+        let initial_viewport_height = self.initial_settings.viewport_height;
+        let setup_camera = move |commands: Commands| {
+            Self::setup_camera(commands, initial_viewport_height);
+        };
+
         app.add_plugins(FrameTimeDiagnosticsPlugin::default())
             .insert_resource(ClearColor(Self::CLEAR))
             .insert_resource(FrameBudget(Duration::from_millis(9)))
@@ -767,7 +776,7 @@ F12     : Take a screenshot (screenshot.png).
             .insert_resource(self.simulation)
             .insert_state(PauseState::Running)
             .insert_state(MenuState::None)
-            .add_systems(Startup, Self::setup_camera)
+            .add_systems(Startup, setup_camera)
             .add_systems(
                 Startup,
                 (

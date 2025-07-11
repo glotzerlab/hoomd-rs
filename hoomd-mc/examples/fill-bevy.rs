@@ -33,8 +33,9 @@ use bevy::prelude::*;
 
 fn main() -> anyhow::Result<()> {
     let simulation = Fill::new().context("failed to setup simulation")?;
+    let l = simulation.microstate.boundary().l.get() as f32;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
-        initial_settings: Settings::default(),
+        initial_settings: Settings { viewport_height: l + 1.0, ..default()},
         simulation,
     };
 
@@ -132,6 +133,17 @@ impl Simulation for Fill {
         self.microstate.step()
     }
 }
+
+/// Display the simulation box
+fn add_box(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    )
+    {
+    
+    }
+    
 
 /// Copy the current positions of simulation particles to bevy entities.
 fn sync_simulation(
