@@ -10,9 +10,9 @@ use std::ops::{Add, Mul};
 
 /// TODO: temp, remove once we have a linalg crate
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct SquareMatrix<const N: usize> {
+struct SquareMatrix<const N: usize> {
     /// The elements of the matrix
-    pub(crate) rows: [[f64; N]; N],
+    rows: [[f64; N]; N],
     // diagonal: bool,
     // symmetry: ???
 }
