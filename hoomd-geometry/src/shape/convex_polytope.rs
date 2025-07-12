@@ -209,11 +209,11 @@ impl<const N: usize> BoundingSphereRadius for ConvexPolytope<N> {
 mod tests {
     use super::*;
     use crate::{Convex, IntersectsAt};
-    use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
+    use hoomd_vector::{Angle, Cartesian, Rotate, Rotation, Versor};
 
     use approx::assert_relative_eq;
     use rstest::*;
-    use std::f64::consts::PI;
+    use std::f64::consts::{FRAC_1_SQRT_2, PI};
 
     #[fixture]
     fn simplex3() -> ConvexPolyhedron {
@@ -360,7 +360,6 @@ mod tests {
         )
     }
 
-    // TODO: Test intersects_at
     #[rstest]
     fn square_no_rot(square: Convex<ConvexPolygon>) {
         let a = Angle::identity();
@@ -420,144 +419,434 @@ mod tests {
         a.intersects_at(b, &v_ij, &o_ij)
     }
 
+    fn assert_symmetric_overlap<A, B, R, const N: usize>
+    (
+        r_ab: Cartesian<N>,
+        a: &A,
+        b: &B,
+        r_a: R,
+        r_b: R,
+        expected: bool,
+    ) 
+    where
+        R: Rotation + Rotate<Cartesian<N>> + Copy,
+        A: IntersectsAt<B, Cartesian<N>, R>,
+        B: IntersectsAt<A, Cartesian<N>, R>,
+    {
+        assert_eq!(test_overlap(
+            r_ab,
+            a,
+            b,
+            r_a,
+            r_b),
+            expected);
+        assert_eq!(test_overlap(
+            -r_ab,
+            b,
+            a,
+            r_b,
+            r_a),
+            expected);
+    }
+
+    
+
     #[rstest]
     fn square_triangle(square: Convex<ConvexPolygon>, triangle: Convex<ConvexPolygon>) {
         let r_square = Angle::from(-PI / 4.0);
         let r_triangle = Angle::from(PI);
 
-        assert!(!test_overlap(
+        assert_symmetric_overlap(
             [10.0, 0.0].into(),
             &square,
             &triangle,
             r_square,
-            r_triangle
-        ));
-        assert!(!test_overlap(
-            [-10.0, 0.0].into(),
-            &triangle,
-            &square,
             r_triangle,
-            r_square
-        ));
+            false
+        );
 
-        assert!(!test_overlap(
+        assert_symmetric_overlap(
             [1.3, 0.0].into(),
             &square,
             &triangle,
             r_square,
-            r_triangle
-        ));
-        assert!(!test_overlap(
-            [-1.3, 0.0].into(),
-            &triangle,
-            &square,
             r_triangle,
-            r_square
-        ));
+            false
+        );
 
-        assert!(!test_overlap(
+        assert_symmetric_overlap(
             [-1.3, 0.0].into(),
             &square,
             &triangle,
             r_square,
-            r_triangle
-        ));
-        assert!(!test_overlap(
-            [1.3, 0.0].into(),
-            &triangle,
-            &square,
             r_triangle,
-            r_square
-        ));
+            false
+        );
 
-        assert!(!test_overlap(
+        assert_symmetric_overlap(
             [0.0, 1.3].into(),
             &square,
             &triangle,
             r_square,
-            r_triangle
-        ));
-        assert!(!test_overlap(
-            [0.0, -1.3].into(),
-            &triangle,
-            &square,
             r_triangle,
-            r_square
-        ));
+            false
+        );
 
-        assert!(!test_overlap(
+        assert_symmetric_overlap(
             [0.0, -1.3].into(),
             &square,
             &triangle,
             r_square,
-            r_triangle
-        ));
-        assert!(!test_overlap(
-            [0.0, 1.3].into(),
-            &triangle,
-            &square,
             r_triangle,
-            r_square
-        ));
+            false
+        );
 
-        assert!(test_overlap(
+        assert_symmetric_overlap(
             [1.2, 0.2].into(),
             &square,
             &triangle,
             r_square,
-            r_triangle
-        ));
-        assert!(test_overlap(
-            [-1.2, -0.2].into(),
-            &triangle,
-            &square,
             r_triangle,
-            r_square
-        ));
+            true
+        );
 
-        assert!(test_overlap(
+        assert_symmetric_overlap(
             [-0.7, -0.2].into(),
             &square,
             &triangle,
             r_square,
-            r_triangle
-        ));
-        assert!(test_overlap(
-            [0.7, 0.2].into(),
-            &triangle,
-            &square,
             r_triangle,
-            r_square
-        ));
+            true
+        );
 
-        assert!(test_overlap(
+        assert_symmetric_overlap(
             [0.4, 1.1].into(),
             &square,
             &triangle,
             r_square,
-            r_triangle
-        ));
-        assert!(test_overlap(
-            [-0.4, -1.1].into(),
-            &triangle,
-            &square,
             r_triangle,
-            r_square
-        ));
+            true
+        );
 
-        assert!(test_overlap(
+        assert_symmetric_overlap(
             [-0.2, -1.2].into(),
             &square,
             &triangle,
             r_square,
-            r_triangle
-        ));
-        assert!(test_overlap(
-            [0.2, 1.2].into(),
-            &triangle,
-            &square,
             r_triangle,
-            r_square
-        ));
+            true
+        );
+    }
+
+    #[fixture]
+    fn octahedron() -> Convex<ConvexPolyhedron> {
+        Convex(
+            ConvexPolyhedron::with_vertices([
+                [-0.5, -0.5, 0.0].into(),
+                [0.5, -0.5, 0.0].into(),
+                [0.5, 0.5, 0.0].into(),
+                [-0.5, 0.5, 0.0].into(),
+                [0.0, 0.0, FRAC_1_SQRT_2].into(),
+                [0.0, 0.0, -FRAC_1_SQRT_2].into(),
+            ])
+            .expect("hard-coded vertices form a valid polyhedron"),
+        )
+    }
+
+    #[fixture]
+    fn cube() -> Convex<ConvexPolyhedron> {
+        Convex(
+            ConvexPolyhedron::with_vertices([
+                [-0.5, -0.5, -0.5].into(),
+                [0.5, -0.5, -0.5].into(),
+                [0.5, 0.5, -0.5].into(),
+                [-0.5, 0.5, -0.5].into(),
+                [-0.5, -0.5, 0.5].into(),
+                [0.5, -0.5, 0.5].into(),
+                [0.5, 0.5, 0.5].into(),
+                [-0.5, 0.5, 0.5].into(),
+            ])
+            .expect("hard-coded vertices form a valid polyhedron"),
+        )
+    }
+
+    #[rstest]
+    fn overlap_octahedron_no_rot(octahedron: Convex<ConvexPolyhedron>) {
+        let q = Versor::identity();
+
+        assert_symmetric_overlap(
+            [0.0, 0.0, 0.0].into(),
+            &octahedron,
+            &octahedron,
+            q,
+            q,
+            true
+        );
+
+        assert_symmetric_overlap(
+            [10.0, 0.0, 0.0].into(),
+            &octahedron,
+            &octahedron,
+            q,
+            q,
+            false
+        );
+
+        assert_symmetric_overlap(
+            [1.1, 0.0, 0.0].into(),
+            &octahedron,
+            &octahedron,
+            q,
+            q,
+            false
+        );
+
+        assert_symmetric_overlap(
+            [0.0, 1.1, 0.0].into(),
+            &octahedron,
+            &octahedron,
+            q,
+            q,
+            false
+        );
+
+        assert_symmetric_overlap(
+            [1.1, 0.2, 0.0].into(),
+            &octahedron,
+            &octahedron,
+            q,
+            q,
+            false
+        );
+
+        assert_symmetric_overlap(
+            [-1.1, 0.2, 0.0].into(),
+            &octahedron,
+            &octahedron,
+            q,
+            q,
+            false
+        );
+
+        assert_symmetric_overlap(
+            [-0.2, 1.1, 0.0].into(),
+            &octahedron,
+            &octahedron,
+            q,
+            q,
+            false
+        );
+
+        assert_symmetric_overlap(
+            [-0.2, -1.1, 0.0].into(),
+            &octahedron,
+            &octahedron,
+            q,
+            q,
+            false
+        );
+
+        assert_symmetric_overlap(
+            [0.9, 0.2, 0.0].into(),
+            &octahedron,
+            &octahedron,
+            q,
+            q,
+            true
+        );
+
+        assert_symmetric_overlap(
+            [-0.9, 0.2, 0.0].into(),
+            &octahedron,
+            &octahedron,
+            q,
+            q,
+            true
+        );
+
+        assert_symmetric_overlap(
+            [-0.2, 0.9, 0.0].into(),
+            &octahedron,
+            &octahedron,
+            q,
+            q,
+            true
+        );
+
+        assert_symmetric_overlap(
+            [-0.2, -0.9, 0.0].into(),
+            &octahedron,
+            &octahedron,
+            q,
+            q,
+            true
+        );
+
+        assert_symmetric_overlap(
+            [1.0, 0.2, 0.0].into(),
+            &octahedron,
+            &octahedron,
+            q,
+            q,
+            true
+        );
+    }
+
+    #[rstest]
+    fn overlap_cube_no_rot(cube: Convex<ConvexPolyhedron>) {
+        let q = Versor::identity();
+
+        assert_symmetric_overlap(
+            [0.0, 0.0, 0.0].into(),
+            &cube,
+            &cube,
+            q,
+            q,
+            true
+        );
+
+        assert_symmetric_overlap(
+            [10.0, 0.0, 0.0].into(),
+            &cube,
+            &cube,
+            q,
+            q,
+            false
+        );
+
+        assert_symmetric_overlap(
+            [1.1, 0.0, 0.0].into(),
+            &cube,
+            &cube,
+            q,
+            q,
+            false
+        );
+
+        assert_symmetric_overlap(
+            [0.0, 1.1, 0.0].into(),
+            &cube,
+            &cube,
+            q,
+            q,
+            false
+        );
+
+        assert_symmetric_overlap(
+            [0.0, 0.0, 1.1].into(),
+            &cube,
+            &cube,
+            q,
+            q,
+            false
+        );
+
+        assert_symmetric_overlap(
+            [1.1, 0.2, 0.0].into(),
+            &cube,
+            &cube,
+            q,
+            q,
+            false
+        );
+
+        assert_symmetric_overlap(
+            [-1.1, 0.2, 0.0].into(),
+            &cube,
+            &cube,
+            q,
+            q,
+            false
+        );
+
+        assert_symmetric_overlap(
+            [-0.2, 1.1, 0.0].into(),
+            &cube,
+            &cube,
+            q,
+            q,
+            false
+        );
+
+        assert_symmetric_overlap(
+            [-0.2, -1.1, 0.0].into(),
+            &cube,
+            &cube,
+            q,
+            q,
+            false
+        );
+
+        assert_symmetric_overlap(
+            [0.9, 0.2, 0.0].into(),
+            &cube,
+            &cube,
+            q,
+            q,
+            true
+        );
+
+        assert_symmetric_overlap(
+            [-0.9, 0.2, 0.0].into(),
+            &cube,
+            &cube,
+            q,
+            q,
+            true
+        );
+
+        assert_symmetric_overlap(
+            [-0.2, 0.9, 0.0].into(),
+            &cube,
+            &cube,
+            q,
+            q,
+            true
+        );
+
+        assert_symmetric_overlap(
+            [-0.2, -0.9, 0.0].into(),
+            &cube,
+            &cube,
+            q,
+            q,
+            true
+        );
+
+        assert_symmetric_overlap(
+            [0.2, 0.0, 0.0].into(),
+            &cube,
+            &cube,
+            q,
+            q,
+            true
+        );
+
+        assert_symmetric_overlap(
+            [0.2, 0.00001, 0.00001].into(),
+            &cube,
+            &cube,
+            q,
+            q,
+            true
+        );
+
+        assert_symmetric_overlap(
+            [0.1, 0.2, 0.1].into(),
+            &cube,
+            &cube,
+            q,
+            q,
+            true
+        );
+
+        assert_symmetric_overlap(
+            [1.0, 0.2, 0.0].into(),
+            &cube,
+            &cube,
+            q,
+            q,
+            true
+        );
     }
 }
