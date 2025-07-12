@@ -208,8 +208,12 @@ impl<const N: usize> BoundingSphereRadius for ConvexPolytope<N> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{Convex, IntersectsAt};
+    use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
+
     use approx::assert_relative_eq;
     use rstest::*;
+    use std::f64::consts::PI;
 
     #[fixture]
     fn simplex3() -> ConvexPolyhedron {
@@ -329,5 +333,231 @@ mod tests {
         );
     }
 
+    // ConvexPolygon tests from hoomd-blue's test_convex_polygon.cc
+
+    #[fixture]
+    fn square() -> Convex<ConvexPolygon> {
+        Convex(
+            ConvexPolygon::with_vertices([
+                [-0.5, -0.5].into(),
+                [0.5, -0.5].into(),
+                [0.5, 0.5].into(),
+                [-0.5, 0.5].into(),
+            ])
+            .expect("hard-coded vertices form a valid polygon"),
+        )
+    }
+
+    #[fixture]
+    fn triangle() -> Convex<ConvexPolygon> {
+        Convex(
+            ConvexPolygon::with_vertices([
+                [-0.5, -0.5].into(),
+                [0.5, -0.5].into(),
+                [0.5, 0.5].into(),
+            ])
+            .expect("hard-coded vertices form a valid polygon"),
+        )
+    }
+
     // TODO: Test intersects_at
+    #[rstest]
+    fn square_no_rot(square: Convex<ConvexPolygon>) {
+        let a = Angle::identity();
+        assert!(!square.intersects_at(&square, &[10.0, 0.0].into(), &a));
+        assert!(!square.intersects_at(&square, &[-10.0, 0.0].into(), &a));
+
+        assert!(!square.intersects_at(&square, &[1.1, 0.0].into(), &a));
+        assert!(!square.intersects_at(&square, &[-1.1, 0.0].into(), &a));
+        assert!(!square.intersects_at(&square, &[0.0, 1.1].into(), &a));
+        assert!(!square.intersects_at(&square, &[0.0, -1.1].into(), &a));
+
+        assert!(square.intersects_at(&square, &[0.9, 0.2].into(), &a));
+        assert!(square.intersects_at(&square, &[-0.9, 0.2].into(), &a));
+        assert!(square.intersects_at(&square, &[-0.2, 0.9].into(), &a));
+        assert!(square.intersects_at(&square, &[-0.2, -0.9].into(), &a));
+
+        assert!(square.intersects_at(&square, &[1.0, 0.2].into(), &a));
+    }
+
+    #[rstest]
+    fn square_rot(square: Convex<ConvexPolygon>) {
+        let a = Angle::from(PI / 4.0);
+
+        assert!(!square.intersects_at(&square, &[10.0, 0.0].into(), &a));
+        assert!(!square.intersects_at(&square, &[-10.0, 0.0].into(), &a));
+
+        assert!(!square.intersects_at(&square, &[1.3, 0.0].into(), &a));
+        assert!(!square.intersects_at(&square, &[-1.3, 0.0].into(), &a));
+        assert!(!square.intersects_at(&square, &[0.0, 1.3].into(), &a));
+        assert!(!square.intersects_at(&square, &[0.0, -1.3].into(), &a));
+
+        assert!(!square.intersects_at(&square, &[1.3, 0.2].into(), &a));
+        assert!(!square.intersects_at(&square, &[-1.3, 0.2].into(), &a));
+        assert!(!square.intersects_at(&square, &[-0.2, 1.3].into(), &a));
+        assert!(!square.intersects_at(&square, &[-0.2, -1.3].into(), &a));
+
+        assert!(square.intersects_at(&square, &[1.2, 0.2].into(), &a));
+        assert!(square.intersects_at(&square, &[-1.2, 0.2].into(), &a));
+        assert!(square.intersects_at(&square, &[-0.2, 1.2].into(), &a));
+        assert!(square.intersects_at(&square, &[-0.2, -1.2].into(), &a));
+    }
+
+    fn test_overlap<A, B, R, const N: usize>(
+        r_ab: Cartesian<N>,
+        a: &A,
+        b: &B,
+        r_a: R,
+        r_b: R,
+    ) -> bool
+    where
+        R: Rotation + Rotate<Cartesian<N>>,
+        A: IntersectsAt<B, Cartesian<N>, R>,
+    {
+        let r_a_inverted = r_a.inverted();
+        let v_ij = r_a_inverted.rotate(&r_ab);
+        let o_ij = r_b.combine(&r_a_inverted);
+        a.intersects_at(b, &v_ij, &o_ij)
+    }
+
+    #[rstest]
+    fn square_triangle(square: Convex<ConvexPolygon>, triangle: Convex<ConvexPolygon>) {
+        let r_square = Angle::from(-PI / 4.0);
+        let r_triangle = Angle::from(PI);
+
+        assert!(!test_overlap(
+            [10.0, 0.0].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle
+        ));
+        assert!(!test_overlap(
+            [-10.0, 0.0].into(),
+            &triangle,
+            &square,
+            r_triangle,
+            r_square
+        ));
+
+        assert!(!test_overlap(
+            [1.3, 0.0].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle
+        ));
+        assert!(!test_overlap(
+            [-1.3, 0.0].into(),
+            &triangle,
+            &square,
+            r_triangle,
+            r_square
+        ));
+
+        assert!(!test_overlap(
+            [-1.3, 0.0].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle
+        ));
+        assert!(!test_overlap(
+            [1.3, 0.0].into(),
+            &triangle,
+            &square,
+            r_triangle,
+            r_square
+        ));
+
+        assert!(!test_overlap(
+            [0.0, 1.3].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle
+        ));
+        assert!(!test_overlap(
+            [0.0, -1.3].into(),
+            &triangle,
+            &square,
+            r_triangle,
+            r_square
+        ));
+
+        assert!(!test_overlap(
+            [0.0, -1.3].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle
+        ));
+        assert!(!test_overlap(
+            [0.0, 1.3].into(),
+            &triangle,
+            &square,
+            r_triangle,
+            r_square
+        ));
+
+        assert!(test_overlap(
+            [1.2, 0.2].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle
+        ));
+        assert!(test_overlap(
+            [-1.2, -0.2].into(),
+            &triangle,
+            &square,
+            r_triangle,
+            r_square
+        ));
+
+        assert!(test_overlap(
+            [-0.7, -0.2].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle
+        ));
+        assert!(test_overlap(
+            [0.7, 0.2].into(),
+            &triangle,
+            &square,
+            r_triangle,
+            r_square
+        ));
+
+        assert!(test_overlap(
+            [0.4, 1.1].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle
+        ));
+        assert!(test_overlap(
+            [-0.4, -1.1].into(),
+            &triangle,
+            &square,
+            r_triangle,
+            r_square
+        ));
+
+        assert!(test_overlap(
+            [-0.2, -1.2].into(),
+            &square,
+            &triangle,
+            r_square,
+            r_triangle
+        ));
+        assert!(test_overlap(
+            [0.2, 1.2].into(),
+            &triangle,
+            &square,
+            r_triangle,
+            r_square
+        ));
+    }
 }
