@@ -237,10 +237,10 @@ mod tests {
     use std::marker::PhantomData;
 
     #[rstest(
-        edges0 => [[2.0, 2.0, 2.0]],
-        edges1 => [[1.0, 1.0, 1.0]],
+        edges0 => [[2.0.try_into().expect("test value is a positive real"), 2.0.try_into().expect("test value is a positive real"), 2.0.try_into().expect("test value is a positive real")]],
+        edges1 => [[1.0.try_into().expect("test value is a positive real"), 1.0.try_into().expect("test value is a positive real"), 1.0.try_into().expect("test value is a positive real")]],
     )]
-    fn test_box_intersections_aligned(edges0: [f64; 3], edges1: [f64; 3]) {
+    fn test_box_intersections_aligned(edges0: [PositiveReal; 3], edges1: [PositiveReal; 3]) {
         let (s0, s1) = (
             Cuboid {
                 edge_lengths: edges0,
@@ -257,10 +257,10 @@ mod tests {
         assert!(s0.intersects_aligned(&s1, &[0.0, 0.0, 0.0].into()));
     }
     #[rstest(
-        edges0 => [[2.0, 2.0]],
-        edges1 => [[1.0, 1.0]],
+        edges0 => [[2.0.try_into().expect("test value is a positive real"), 2.0.try_into().expect("test value is a positive real")]],
+        edges1 => [[1.0.try_into().expect("test value is a positive real"), 1.0.try_into().expect("test value is a positive real")]],
     )]
-    fn test_box_intersections_2d_aligned(edges0: [f64; 2], edges1: [f64; 2]) {
+    fn test_box_intersections_2d_aligned(edges0: [PositiveReal; 2], edges1: [PositiveReal; 2]) {
         let (c0, c1) = (
             Cuboid {
                 edge_lengths: edges0,
@@ -288,7 +288,7 @@ mod tests {
     )]
     fn test_box_extents<const N: usize>(_n: PhantomData<Cuboid<N>>, l: f64) {
         let c = Cuboid {
-            edge_lengths: [l; N],
+            edge_lengths: [l.try_into().expect("test value is a positive real"); N],
         };
         assert_eq!(c.maximal_extents(), [l / 2.0; N]);
         assert_eq!(c.minimal_extents(), [-l / 2.0; N]);
@@ -305,7 +305,7 @@ mod tests {
     )]
     fn test_box_volume<const N: usize>(_n: PhantomData<Cuboid<N>>, l: f64) {
         let c = Cuboid {
-            edge_lengths: [l; N],
+            edge_lengths: [l.try_into().expect("test value is a positive real"); N],
         };
         assert_relative_eq!(
             c.volume(),
@@ -322,61 +322,51 @@ mod tests {
     )]
     fn test_box_abc(l: f64) {
         let c = Cuboid {
-            edge_lengths: [l; 3],
+            edge_lengths: [l.try_into().expect("test value is a positive real"); 3],
         };
-        assert_eq!([c.a(), c.b(), c.c()], [l; 3]);
+        assert_eq!([c.a(), c.b(), c.c()], [l.try_into().expect("test value is a positive real"); 3]);
     }
 
     #[test]
     fn bounding_sphere_radius_2d() {
         let cuboid = Cuboid {
-            edge_lengths: [1.0, 1.0],
+            edge_lengths: [1.0.try_into().expect("test value is a positive real"), 1.0.try_into().expect("test value is a positive real")],
         };
-        assert_relative_eq!(cuboid.bounding_sphere_radius(), 2.0_f64.sqrt() / 2.0);
+        assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 2.0_f64.sqrt() / 2.0);
 
         let cuboid = Cuboid {
-            edge_lengths: [2.0, 2.0],
+            edge_lengths: [2.0.try_into().expect("test value is a positive real"), 2.0.try_into().expect("test value is a positive real")],
         };
-        assert_relative_eq!(cuboid.bounding_sphere_radius(), 2.0_f64.sqrt());
+        assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 2.0_f64.sqrt());
 
         let cuboid = Cuboid {
-            edge_lengths: [6.0, 8.0],
+            edge_lengths: [6.0.try_into().expect("test value is a positive real"), 8.0.try_into().expect("test value is a positive real")],
         };
-        assert_relative_eq!(cuboid.bounding_sphere_radius(), 5.0);
+        assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 5.0);
     }
 
     #[test]
     fn bounding_sphere_radius_3d() {
         let cuboid = Cuboid {
-            edge_lengths: [1.0, 1.0, 1.0],
+            edge_lengths: [1.0.try_into().expect("test value is a positive real"), 1.0.try_into().expect("test value is a positive real"), 1.0.try_into().expect("test value is a positive real")],
         };
-        assert_relative_eq!(cuboid.bounding_sphere_radius(), 3.0_f64.sqrt() / 2.0);
+        assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 3.0_f64.sqrt() / 2.0);
 
         let cuboid = Cuboid {
-            edge_lengths: [2.0, 2.0, 2.0],
+            edge_lengths: [2.0.try_into().expect("test value is a positive real"), 2.0.try_into().expect("test value is a positive real"), 2.0.try_into().expect("test value is a positive real")],
         };
-        assert_relative_eq!(cuboid.bounding_sphere_radius(), 3.0_f64.sqrt());
+        assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 3.0_f64.sqrt());
 
         let cuboid = Cuboid {
-            edge_lengths: [0.0, 6.0, 0.0],
+            edge_lengths: [2.0.try_into().expect("test value is a positive real"), 4.0.try_into().expect("test value is a positive real"), 6.0.try_into().expect("test value is a positive real")],
         };
-        assert_relative_eq!(cuboid.bounding_sphere_radius(), 3.0);
-
-        let cuboid = Cuboid {
-            edge_lengths: [6.0, 8.0, 0.0],
-        };
-        assert_relative_eq!(cuboid.bounding_sphere_radius(), 5.0);
-
-        let cuboid = Cuboid {
-            edge_lengths: [2.0, 4.0, 6.0],
-        };
-        assert_relative_eq!(cuboid.bounding_sphere_radius(), 14.0_f64.sqrt());
+        assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 14.0_f64.sqrt());
     }
 
     #[test]
     fn support_mapping_2d() {
         let cuboid = Cuboid {
-            edge_lengths: [2.0, 4.0],
+            edge_lengths: [2.0.try_into().expect("test value is a positive real"), 4.0.try_into().expect("test value is a positive real")],
         };
 
         assert_relative_eq!(
@@ -400,7 +390,7 @@ mod tests {
     #[test]
     fn support_mapping_3d() {
         let cuboid = Cuboid {
-            edge_lengths: [2.0, 4.0, 6.0],
+            edge_lengths: [2.0.try_into().expect("test value is a positive real"), 4.0.try_into().expect("test value is a positive real"), 6.0.try_into().expect("test value is a positive real")],
         };
 
         assert_relative_eq!(

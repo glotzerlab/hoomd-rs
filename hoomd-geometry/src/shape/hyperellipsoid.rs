@@ -423,8 +423,8 @@ mod tests {
         #[case] _n: PhantomData<Hypersphere<N>>,
         #[values(0.1, 1.0, 33.3)] radius: f64,
     ) {
-        let s = Hypersphere::<N> { radius };
-        let he = Hyperellipsoid { axes: [radius; N] };
+        let s = Hypersphere::<N> { radius: radius.try_into().expect("test value is a positive real") };
+        let he = Hyperellipsoid { axes: [radius.try_into().expect("test value is a positive real"); N] };
         let v = [1.0; N].into();
         assert_relative_eq!(he.support_mapping(&v), s.support_mapping(&v));
     }
@@ -439,8 +439,8 @@ mod tests {
         #[case] _n: PhantomData<Hypersphere<N>>,
         #[values(0.1, 1.0, 33.3)] radius: f64,
     ) {
-        let s = Hypersphere::<N> { radius };
-        let he = Hyperellipsoid { axes: [radius; N] };
+        let s = Hypersphere::<N> { radius: radius.try_into().expect("test value is a positive real") };
+        let he = Hyperellipsoid { axes: [radius.try_into().expect("test value is a positive real"); N] };
         assert_relative_eq!(he.volume(), s.volume());
     }
 
@@ -449,8 +449,8 @@ mod tests {
         #[values([0.0, 0.0], [1.0,0.0], [1.999_999, 0.0], [2.000_001, 0.0], [2.1, 0.0])]
         v_ij: [f64; 2],
     ) {
-        let el0 = Ellipse { axes: [1.0, 4.0] };
-        let el1 = Ellipse { axes: [1.0, 4.0] };
+        let el0 = Ellipse { axes: [1.0.try_into().expect("test value is a positive real"), 4.0.try_into().expect("test value is a positive real")] };
+        let el1 = Ellipse { axes: [1.0.try_into().expect("test value is a positive real"), 4.0.try_into().expect("test value is a positive real")] };
 
         assert_eq!(
             el0.intersects_at(&el1, &v_ij.into(), &Angle::default()),
@@ -461,7 +461,9 @@ mod tests {
     fn test_random_sphere_ellipse_overlap() {
         let mut rng = StdRng::seed_from_u64(2);
         for _ in 0..10_000 {
-            let (a, c) = StdRng::random(&mut rng);
+            let (a, c): (f64, f64) = StdRng::random(&mut rng);
+            let a = a.try_into().expect("test value is a positive real");
+            let c = c.try_into().expect("test value is a positive real");
             let el0 = Ellipse { axes: [a, a] };
             let el1 = Ellipse { axes: [c, c] };
 
@@ -482,7 +484,12 @@ mod tests {
         // Inspecting failing cases in Ovito & HOOMD shows we are correct
         let mut rng = StdRng::seed_from_u64(2);
         for _ in 0..10 {
-            let (a, b, c, d) = StdRng::random(&mut rng);
+            let (a, b, c, d): (f64, f64, f64, f64) = StdRng::random(&mut rng);
+            let a = a.try_into().expect("test value is a positive real");
+            let b = b.try_into().expect("test value is a positive real");
+            let c = c.try_into().expect("test value is a positive real");
+            let d = d.try_into().expect("test value is a positive real");
+
             let el0 = Ellipse { axes: [a, b] };
             let el1 = Ellipse { axes: [c, d] };
 
@@ -493,7 +500,8 @@ mod tests {
             assert_eq!(
                 el0.intersects_at(&el1, &v_ij, &angle),
                 Convex(el0).intersects_at(&Convex(el1), &v_ij, &angle),
-                "(a,b,c,d)= ({a}, {b}, {c}, {d})\nangle= {angle}\nv_ij= {v_ij}"
+                "(a,b,c,d)= ({}, {}, {}, {})\nangle= {angle}\nv_ij= {v_ij}",
+                a.get(), b.get(), c.get(), d.get()
             );
         }
     }

@@ -97,7 +97,6 @@ impl<const N: usize> Volume for Capsule<N> {
     }
 }
 
-#[expect(clippy::used_underscore_binding, reason = "Required for const tests.")]
 #[cfg(test)]
 mod tests {
 
@@ -111,73 +110,37 @@ mod tests {
     use approx::assert_relative_eq;
     use rstest::*;
     use std::f64::consts::PI;
-    use std::marker::PhantomData;
 
     #[rstest(
-        _n => [
-            PhantomData::<Capsule<1>>,
-            PhantomData::<Capsule<2>>,
-            PhantomData::<Capsule<3>>,
-            PhantomData::<Capsule<4>>,
-            PhantomData::<Capsule<5>>
-        ],
-        radius => [0.0, 1e-6, 1.0, 34.56],
-    )]
-    fn test_capsule_volume<const N: usize>(_n: PhantomData<Capsule<N>>, radius: f64) {
-        let capsule = Capsule::<N> {
-            radius,
-            height: 0.0,
-        };
-
-        assert_relative_eq!(
-            capsule.volume(),
-            Hypersphere::<N> { radius }.volume(),
-            epsilon = 1e-6
-        );
-
-        assert_relative_eq!(capsule.bounding_sphere_radius(), radius);
-    }
-
-    #[rstest(
-        radius => [0.0, 1e-6, 1.0, 34.56],
-        height => [0.0, 1e-6, 1.0, 34.56],
+        radius => [1e-6, 1.0, 34.56],
+        height => [1e-6, 1.0, 34.56],
     )]
     fn test_elongated_capsule_volume(radius: f64, height: f64) {
-        let capsule = Capsule::<3> { radius, height };
+        let capsule = Capsule::<3> { radius: radius.try_into().expect("test value is a positive real"), height: height.try_into().expect("test value is a positive real") };
         assert_relative_eq!(
             capsule.volume(),
-            Hypersphere::<3> { radius }.volume()
+            Hypersphere::<3> { radius: radius.try_into().expect("test value is a positive real") }.volume()
                 + Cylinder {
-                    radius,
+                    radius: radius.try_into().expect("test value is a positive real"),
                     height: capsule.height
                 }
                 .volume()
         );
 
-        assert_relative_eq!(capsule.bounding_sphere_radius(), radius + height / 2.0);
+        assert_relative_eq!(capsule.bounding_sphere_radius().get(), radius + height / 2.0);
     }
 
     #[test]
     fn intersect_xenocollide_2d() {
-        let capsule_circle = Convex(Capsule::<2> {
-            radius: 0.5,
-            height: 0.0,
-        });
-
         let capsule_tall = Convex(Capsule::<2> {
-            radius: 0.5,
-            height: 6.0,
+            radius: 0.5.try_into().expect("test value is a positive real"),
+            height: 6.0.try_into().expect("test value is a positive real"),
         });
 
-        let circle = Convex(Circle::with_radius(0.5));
+        let circle = Convex(Circle::with_radius(0.5.try_into().expect("test value is a positive real")));
 
         let identity = Angle::default();
         let rotate = Angle::from(PI / 2.0);
-
-        assert!(!capsule_circle.intersects_at(&circle, &[0.0, 1.1].into(), &identity));
-        assert!(capsule_circle.intersects_at(&circle, &[0.0, 0.9].into(), &identity));
-        assert!(!capsule_circle.intersects_at(&capsule_circle, &[0.0, 1.1].into(), &identity));
-        assert!(capsule_circle.intersects_at(&capsule_circle, &[0.0, 0.9].into(), &identity));
 
         assert!(!capsule_tall.intersects_at(&circle, &[0.0, 4.1].into(), &identity));
         assert!(capsule_tall.intersects_at(&circle, &[0.0, 3.9].into(), &identity));
@@ -193,17 +156,12 @@ mod tests {
 
     #[test]
     fn intersect_xenocollide_3d() {
-        let capsule_sphere = Convex(Capsule::<3> {
-            radius: 0.5,
-            height: 0.0,
-        });
-
         let capsule_tall = Convex(Capsule::<3> {
-            radius: 0.5,
-            height: 6.0,
+            radius: 0.5.try_into().expect("test value is a positive real"),
+            height: 6.0.try_into().expect("test value is a positive real"),
         });
 
-        let sphere = Convex(Circle::with_radius(0.5));
+        let sphere = Convex(Circle::with_radius(0.5.try_into().expect("test value is a positive real")));
 
         let identity = Versor::default();
         let rotate = Versor::from_axis_angle(
@@ -212,11 +170,6 @@ mod tests {
                 .expect("hard-coded vector is non-zero"),
             PI / 2.0,
         );
-
-        assert!(!capsule_sphere.intersects_at(&sphere, &[0.0, 0.0, 1.1].into(), &identity));
-        assert!(capsule_sphere.intersects_at(&sphere, &[0.0, 0.0, 0.9].into(), &identity));
-        assert!(!capsule_sphere.intersects_at(&capsule_sphere, &[0.0, 0.0, 1.1].into(), &identity));
-        assert!(capsule_sphere.intersects_at(&capsule_sphere, &[0.0, 0.0, 0.9].into(), &identity));
 
         assert!(!capsule_tall.intersects_at(&sphere, &[0.0, 0.0, 4.1].into(), &identity));
         assert!(capsule_tall.intersects_at(&sphere, &[0.0, 0.0, 3.9].into(), &identity));
@@ -233,8 +186,8 @@ mod tests {
     #[test]
     fn support_mapping_2d() {
         let capsule = Convex(Capsule::<3> {
-            radius: 0.5,
-            height: 6.0,
+            radius: 0.5.try_into().expect("test value is a positive real"),
+            height: 6.0.try_into().expect("test value is a positive real"),
         });
 
         // top and bottom
