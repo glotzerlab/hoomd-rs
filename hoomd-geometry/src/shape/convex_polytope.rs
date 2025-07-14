@@ -159,15 +159,9 @@ impl<const N: usize> ConvexPolytope<N> {
             return Err(Error::DegeneratePolytope);
         }
 
-        let bounding_radius = vertices
-            .iter()
-            .map(Cartesian::norm_squared)
-            .fold(0.0, f64::max)
-            .sqrt();
-
         Ok(ConvexPolytope {
+            bounding_radius: Self::bounding_radius(&vertices),
             vertices,
-            bounding_radius,
         })
     }
 
@@ -176,6 +170,15 @@ impl<const N: usize> ConvexPolytope<N> {
     #[must_use]
     pub fn vertices(&self) -> &[Cartesian<N>] {
         &self.vertices
+    }
+
+    /// Compute the bounding radius.
+    fn bounding_radius(vertices: &[Cartesian<N>]) -> f64 {
+        vertices
+            .iter()
+            .map(Cartesian::norm_squared)
+            .fold(0.0, f64::max)
+            .sqrt()
     }
 }
 
