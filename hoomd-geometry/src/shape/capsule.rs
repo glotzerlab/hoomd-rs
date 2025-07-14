@@ -3,10 +3,10 @@
 
 /*! Implement [`Capsule`] */
 
-use crate::{BoundingSphereRadius, SupportMapping, Volume};
-use hoomd_vector::{Cartesian, InnerProduct};
-use hoomd_utility::valid::PositiveReal;
 use super::sphere::sphere_volume_prefactor;
+use crate::{BoundingSphereRadius, SupportMapping, Volume};
+use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::{Cartesian, InnerProduct};
 
 /** All points less than or equal to a distance `r` from a line segment of length `h`.
 
@@ -77,7 +77,9 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Capsule<N> {
 impl<const N: usize> BoundingSphereRadius for Capsule<N> {
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
-        (self.height.get() / 2.0 + self.radius.get()).try_into().expect("this expression should evaluate to a positive real")
+        (self.height.get() / 2.0 + self.radius.get())
+            .try_into()
+            .expect("this expression should evaluate to a positive real")
     }
 }
 
@@ -116,10 +118,16 @@ mod tests {
         height => [1e-6, 1.0, 34.56],
     )]
     fn test_elongated_capsule_volume(radius: f64, height: f64) {
-        let capsule = Capsule::<3> { radius: radius.try_into().expect("test value is a positive real"), height: height.try_into().expect("test value is a positive real") };
+        let capsule = Capsule::<3> {
+            radius: radius.try_into().expect("test value is a positive real"),
+            height: height.try_into().expect("test value is a positive real"),
+        };
         assert_relative_eq!(
             capsule.volume(),
-            Hypersphere::<3> { radius: radius.try_into().expect("test value is a positive real") }.volume()
+            Hypersphere::<3> {
+                radius: radius.try_into().expect("test value is a positive real")
+            }
+            .volume()
                 + Cylinder {
                     radius: radius.try_into().expect("test value is a positive real"),
                     height: capsule.height
@@ -127,7 +135,10 @@ mod tests {
                 .volume()
         );
 
-        assert_relative_eq!(capsule.bounding_sphere_radius().get(), radius + height / 2.0);
+        assert_relative_eq!(
+            capsule.bounding_sphere_radius().get(),
+            radius + height / 2.0
+        );
     }
 
     #[test]
@@ -137,7 +148,9 @@ mod tests {
             height: 6.0.try_into().expect("test value is a positive real"),
         });
 
-        let circle = Convex(Circle::with_radius(0.5.try_into().expect("test value is a positive real")));
+        let circle = Convex(Circle::with_radius(
+            0.5.try_into().expect("test value is a positive real"),
+        ));
 
         let identity = Angle::default();
         let rotate = Angle::from(PI / 2.0);
@@ -161,7 +174,9 @@ mod tests {
             height: 6.0.try_into().expect("test value is a positive real"),
         });
 
-        let sphere = Convex(Circle::with_radius(0.5.try_into().expect("test value is a positive real")));
+        let sphere = Convex(Circle::with_radius(
+            0.5.try_into().expect("test value is a positive real"),
+        ));
 
         let identity = Versor::default();
         let rotate = Versor::from_axis_angle(

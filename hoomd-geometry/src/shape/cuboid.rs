@@ -4,8 +4,8 @@
 /*! Implement [`Cuboid`] */
 
 use crate::{BoundingSphereRadius, SupportMapping, Volume};
-use hoomd_vector::Cartesian;
 use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::Cartesian;
 
 use itertools::multizip;
 use std::array;
@@ -173,7 +173,9 @@ impl<const N: usize> BoundingSphereRadius for Cuboid<N> {
                 .map(PositiveReal::get)
                 .map(|x| (x / 2.0).powi(2))
                 .sum(),
-        ).try_into().expect("expression evaluates to a positive real")
+        )
+        .try_into()
+        .expect("expression evaluates to a positive real")
     }
 }
 
@@ -324,23 +326,35 @@ mod tests {
         let c = Cuboid {
             edge_lengths: [l.try_into().expect("test value is a positive real"); 3],
         };
-        assert_eq!([c.a(), c.b(), c.c()], [l.try_into().expect("test value is a positive real"); 3]);
+        assert_eq!(
+            [c.a(), c.b(), c.c()],
+            [l.try_into().expect("test value is a positive real"); 3]
+        );
     }
 
     #[test]
     fn bounding_sphere_radius_2d() {
         let cuboid = Cuboid {
-            edge_lengths: [1.0.try_into().expect("test value is a positive real"), 1.0.try_into().expect("test value is a positive real")],
+            edge_lengths: [
+                1.0.try_into().expect("test value is a positive real"),
+                1.0.try_into().expect("test value is a positive real"),
+            ],
         };
         assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 2.0_f64.sqrt() / 2.0);
 
         let cuboid = Cuboid {
-            edge_lengths: [2.0.try_into().expect("test value is a positive real"), 2.0.try_into().expect("test value is a positive real")],
+            edge_lengths: [
+                2.0.try_into().expect("test value is a positive real"),
+                2.0.try_into().expect("test value is a positive real"),
+            ],
         };
         assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 2.0_f64.sqrt());
 
         let cuboid = Cuboid {
-            edge_lengths: [6.0.try_into().expect("test value is a positive real"), 8.0.try_into().expect("test value is a positive real")],
+            edge_lengths: [
+                6.0.try_into().expect("test value is a positive real"),
+                8.0.try_into().expect("test value is a positive real"),
+            ],
         };
         assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 5.0);
     }
@@ -348,17 +362,29 @@ mod tests {
     #[test]
     fn bounding_sphere_radius_3d() {
         let cuboid = Cuboid {
-            edge_lengths: [1.0.try_into().expect("test value is a positive real"), 1.0.try_into().expect("test value is a positive real"), 1.0.try_into().expect("test value is a positive real")],
+            edge_lengths: [
+                1.0.try_into().expect("test value is a positive real"),
+                1.0.try_into().expect("test value is a positive real"),
+                1.0.try_into().expect("test value is a positive real"),
+            ],
         };
         assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 3.0_f64.sqrt() / 2.0);
 
         let cuboid = Cuboid {
-            edge_lengths: [2.0.try_into().expect("test value is a positive real"), 2.0.try_into().expect("test value is a positive real"), 2.0.try_into().expect("test value is a positive real")],
+            edge_lengths: [
+                2.0.try_into().expect("test value is a positive real"),
+                2.0.try_into().expect("test value is a positive real"),
+                2.0.try_into().expect("test value is a positive real"),
+            ],
         };
         assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 3.0_f64.sqrt());
 
         let cuboid = Cuboid {
-            edge_lengths: [2.0.try_into().expect("test value is a positive real"), 4.0.try_into().expect("test value is a positive real"), 6.0.try_into().expect("test value is a positive real")],
+            edge_lengths: [
+                2.0.try_into().expect("test value is a positive real"),
+                4.0.try_into().expect("test value is a positive real"),
+                6.0.try_into().expect("test value is a positive real"),
+            ],
         };
         assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 14.0_f64.sqrt());
     }
@@ -366,7 +392,10 @@ mod tests {
     #[test]
     fn support_mapping_2d() {
         let cuboid = Cuboid {
-            edge_lengths: [2.0.try_into().expect("test value is a positive real"), 4.0.try_into().expect("test value is a positive real")],
+            edge_lengths: [
+                2.0.try_into().expect("test value is a positive real"),
+                4.0.try_into().expect("test value is a positive real"),
+            ],
         };
 
         assert_relative_eq!(
@@ -390,7 +419,11 @@ mod tests {
     #[test]
     fn support_mapping_3d() {
         let cuboid = Cuboid {
-            edge_lengths: [2.0.try_into().expect("test value is a positive real"), 4.0.try_into().expect("test value is a positive real"), 6.0.try_into().expect("test value is a positive real")],
+            edge_lengths: [
+                2.0.try_into().expect("test value is a positive real"),
+                4.0.try_into().expect("test value is a positive real"),
+                6.0.try_into().expect("test value is a positive real"),
+            ],
         };
 
         assert_relative_eq!(

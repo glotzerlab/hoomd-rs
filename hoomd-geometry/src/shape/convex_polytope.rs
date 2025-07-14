@@ -4,8 +4,8 @@
 /*! N-Dimensional generalization of a convex polyhedron.*/
 
 use crate::{BoundingSphereRadius, Error, SupportMapping};
-use hoomd_vector::{Cartesian, InnerProduct};
 use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::{Cartesian, InnerProduct};
 
 /** A faceted solid defined by the convex hull of its vertices.
 
@@ -205,7 +205,9 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for ConvexPolytope<N> {
 impl<const N: usize> BoundingSphereRadius for ConvexPolytope<N> {
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
-        self.bounding_radius.try_into().expect("bounding radius expression is always a positive real.")
+        self.bounding_radius
+            .try_into()
+            .expect("bounding radius expression is always a positive real.")
     }
 }
 

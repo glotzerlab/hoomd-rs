@@ -5,8 +5,8 @@
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
-use hoomd_vector::{Cartesian, InnerProduct, Rotate, RotationMatrix};
 use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::{Cartesian, InnerProduct, Rotate, RotationMatrix};
 
 use std::ops::{Add, Mul};
 
@@ -256,7 +256,8 @@ pub type Ellipsoid = Hyperellipsoid<3>;
 impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperellipsoid<N> {
     #[inline]
     fn support_mapping(&self, n: &Cartesian<N>) -> Cartesian<N> {
-        let denominator = Cartesian::<N>::from(std::array::from_fn(|i| self.axes[i].get() * n[i])).norm();
+        let denominator =
+            Cartesian::<N>::from(std::array::from_fn(|i| self.axes[i].get() * n[i])).norm();
         std::array::from_fn(|i| n[i] * self.axes[i].get().powi(2) / denominator).into()
     }
 }
@@ -423,8 +424,12 @@ mod tests {
         #[case] _n: PhantomData<Hypersphere<N>>,
         #[values(0.1, 1.0, 33.3)] radius: f64,
     ) {
-        let s = Hypersphere::<N> { radius: radius.try_into().expect("test value is a positive real") };
-        let he = Hyperellipsoid { axes: [radius.try_into().expect("test value is a positive real"); N] };
+        let s = Hypersphere::<N> {
+            radius: radius.try_into().expect("test value is a positive real"),
+        };
+        let he = Hyperellipsoid {
+            axes: [radius.try_into().expect("test value is a positive real"); N],
+        };
         let v = [1.0; N].into();
         assert_relative_eq!(he.support_mapping(&v), s.support_mapping(&v));
     }
@@ -439,8 +444,12 @@ mod tests {
         #[case] _n: PhantomData<Hypersphere<N>>,
         #[values(0.1, 1.0, 33.3)] radius: f64,
     ) {
-        let s = Hypersphere::<N> { radius: radius.try_into().expect("test value is a positive real") };
-        let he = Hyperellipsoid { axes: [radius.try_into().expect("test value is a positive real"); N] };
+        let s = Hypersphere::<N> {
+            radius: radius.try_into().expect("test value is a positive real"),
+        };
+        let he = Hyperellipsoid {
+            axes: [radius.try_into().expect("test value is a positive real"); N],
+        };
         assert_relative_eq!(he.volume(), s.volume());
     }
 
@@ -449,8 +458,18 @@ mod tests {
         #[values([0.0, 0.0], [1.0,0.0], [1.999_999, 0.0], [2.000_001, 0.0], [2.1, 0.0])]
         v_ij: [f64; 2],
     ) {
-        let el0 = Ellipse { axes: [1.0.try_into().expect("test value is a positive real"), 4.0.try_into().expect("test value is a positive real")] };
-        let el1 = Ellipse { axes: [1.0.try_into().expect("test value is a positive real"), 4.0.try_into().expect("test value is a positive real")] };
+        let el0 = Ellipse {
+            axes: [
+                1.0.try_into().expect("test value is a positive real"),
+                4.0.try_into().expect("test value is a positive real"),
+            ],
+        };
+        let el1 = Ellipse {
+            axes: [
+                1.0.try_into().expect("test value is a positive real"),
+                4.0.try_into().expect("test value is a positive real"),
+            ],
+        };
 
         assert_eq!(
             el0.intersects_at(&el1, &v_ij.into(), &Angle::default()),
@@ -501,7 +520,10 @@ mod tests {
                 el0.intersects_at(&el1, &v_ij, &angle),
                 Convex(el0).intersects_at(&Convex(el1), &v_ij, &angle),
                 "(a,b,c,d)= ({}, {}, {}, {})\nangle= {angle}\nv_ij= {v_ij}",
-                a.get(), b.get(), c.get(), d.get()
+                a.get(),
+                b.get(),
+                c.get(),
+                d.get()
             );
         }
     }

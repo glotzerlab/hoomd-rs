@@ -3,8 +3,8 @@
 
 /*! Implement [`Cylinder`] */
 
-use crate::Volume;
 use super::Circle;
+use crate::Volume;
 use hoomd_utility::valid::PositiveReal;
 
 /** A circle with normal `[0 0 1]` swept by `h/2` in the `+z` and `-z` directions.

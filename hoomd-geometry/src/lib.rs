@@ -82,8 +82,8 @@ assert_eq!(
 ```
 */
 
-use thiserror::Error;
 use hoomd_utility::valid::PositiveReal;
+use thiserror::Error;
 
 mod convex;
 pub use convex::Convex;

@@ -4,8 +4,8 @@
 /*! Implement [`Sphero`] */
 
 use crate::{BoundingSphereRadius, SupportMapping};
-use hoomd_vector::InnerProduct;
 use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::InnerProduct;
 
 /** Round a shape with a given radius.
 
@@ -58,6 +58,8 @@ where
 {
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
-        (self.shape.bounding_sphere_radius().get() + self.rounding_radius.get()).try_into().expect("expression should evaluate to a positive real")
+        (self.shape.bounding_sphere_radius().get() + self.rounding_radius.get())
+            .try_into()
+            .expect("expression should evaluate to a positive real")
     }
 }

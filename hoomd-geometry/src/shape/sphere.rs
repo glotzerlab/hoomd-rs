@@ -3,8 +3,8 @@
 
 /*! Implement [`Hypersphere`] */
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
-use hoomd_vector::{InnerProduct, Rotate};
 use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::{InnerProduct, Rotate};
 
 use std::f64::consts::PI;
 use std::ops::Mul;
@@ -158,7 +158,9 @@ pub type Sphere = Hypersphere<3>;
 impl<const N: usize> Default for Hypersphere<N> {
     #[inline]
     fn default() -> Self {
-        Hypersphere { radius: 1.0.try_into().expect("1.0 is a positive real") }
+        Hypersphere {
+            radius: 1.0.try_into().expect("1.0 is a positive real"),
+        }
     }
 }
 
@@ -185,7 +187,8 @@ impl<const N: usize> Volume for Hypersphere<N> {
     fn volume(&self) -> f64 {
         sphere_volume_prefactor(N)
             * self
-                .radius.get()
+                .radius
+                .get()
                 .powi(N.try_into().expect("Dimension should not overflow i32!"))
     }
 }
@@ -246,7 +249,9 @@ mod tests {
         #[case] _n: PhantomData<Hypersphere<N>>,
         #[values(0.01, 1.0, 33.3, 1e6)] radius: f64,
     ) {
-        let s = Hypersphere::<N> { radius: radius.try_into().expect("test value is a positive real") };
+        let s = Hypersphere::<N> {
+            radius: radius.try_into().expect("test value is a positive real"),
+        };
 
         if radius == 1.0 {
             assert_eq!(s.radius.get(), 1.0);
@@ -278,7 +283,9 @@ mod tests {
         #[case] _n: PhantomData<Hypersphere<N>>,
         #[values(0.1, 1.0, 33.3)] radius: f64,
     ) {
-        let s = Hypersphere::<N> { radius: radius.try_into().expect("test value is a positive real") };
+        let s = Hypersphere::<N> {
+            radius: radius.try_into().expect("test value is a positive real"),
+        };
         let v = Cartesian::<N>::from([radius.powi(2) / 1.8; N]);
         assert_eq!(v / v.norm() * radius, s.support_mapping(&v));
     }

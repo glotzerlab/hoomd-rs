@@ -357,8 +357,8 @@ mod tests {
     use rstest::*;
 
     use crate::shape::{Circle, Cuboid, Hypersphere};
-    use hoomd_vector::{Angle, Versor};
     use hoomd_utility::valid::PositiveReal;
+    use hoomd_vector::{Angle, Versor};
 
     #[rstest(
         v => [[0.1, 0.1], [999.9, 0.0], [0.0, 5.123_f64.next_down()], [0.0, 5.123_000_001]],
@@ -370,7 +370,14 @@ mod tests {
         ],
     )]
     fn test_discs_collide(v: [f64; 2], radius: f64, o_ij: Angle) {
-        let (s0, s1) = (Hypersphere { radius: 1.0.try_into().expect("test value is a positive real") }, Circle { radius: radius.try_into().expect("test value is a positive real") });
+        let (s0, s1) = (
+            Hypersphere {
+                radius: 1.0.try_into().expect("test value is a positive real"),
+            },
+            Circle {
+                radius: radius.try_into().expect("test value is a positive real"),
+            },
+        );
 
         let overlaps = collide2d(&s0, &s1, &v.into(), &o_ij);
 
@@ -388,7 +395,14 @@ mod tests {
         ]
     )]
     fn test_spheres_collide(v: [f64; 3], radius: f64, o_ij: Versor) {
-        let (s0, s1) = (Hypersphere { radius: 1.0.try_into().expect("test value is a positive real") }, Hypersphere::<3> { radius: radius.try_into().expect("test value is a positive real") });
+        let (s0, s1) = (
+            Hypersphere {
+                radius: 1.0.try_into().expect("test value is a positive real"),
+            },
+            Hypersphere::<3> {
+                radius: radius.try_into().expect("test value is a positive real"),
+            },
+        );
         let overlaps = collide3d(&s0, &s1, &v.into(), &o_ij);
 
         assert_eq!(
@@ -415,7 +429,7 @@ mod tests {
     #[rstest(
         v => [[0.1, 2.1, 0.1], [999.9, 0.0, 0.05], [0.0, 5.123, 0.0], [0.0, 5.123_000_000_001, 0.0]],
         aabb => [[1.0.try_into().expect("test value is a positive real"), 1.0.try_into().expect("test value is a positive real"), 1.0.try_into().expect("test value is a positive real")], [999.0.try_into().expect("test value is a positive real"), 0.1.try_into().expect("test value is a positive real"), 0.5.try_into().expect("test value is a positive real")], [1.0.try_into().expect("test value is a positive real"), (2.0*4.623).try_into().expect("test value is a positive real"), 5.0.try_into().expect("test value is a positive real")]]
-        
+
     )]
     fn test_aabbs_collide(v: [f64; 3], aabb: [PositiveReal; 3]) {
         let c0 = Cuboid { edge_lengths: aabb };
