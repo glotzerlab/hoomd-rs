@@ -1,0 +1,25 @@
+[package]
+name = "hoomd-gsd"
+categories.workspace = true
+description = "."
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+readme = "hoomd-gsd/README.md"
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+itertools.workspace = true
+memmap2 = "0.9.5"
+thiserror.workspace = true
+
+[dev-dependencies]
+anyhow.workspace = true
+clap.workspace = true
+tempfile.workspace = true
