@@ -163,12 +163,12 @@ impl<const N: usize> Volume for Cuboid<N> {
 impl<const N: usize> BoundingSphereRadius for Cuboid<N> {
     #[inline]
     fn bounding_sphere_radius(&self) -> f64 {
-        f64::sqrt(3.0) / 2.0
-            * self
-                .edge_lengths
+        f64::sqrt(
+            self.edge_lengths
                 .into_iter()
-                .reduce(f64::max)
-                .expect("N must be greater than or equal to 1")
+                .map(|x| (x / 2.0).powi(2))
+                .sum(),
+        )
     }
 }
 
@@ -325,19 +325,14 @@ mod tests {
     #[test]
     fn bounding_sphere_radius_2d() {
         let cuboid = Cuboid {
-            edge_lengths: [0.5, 0.5],
-        };
-        assert_relative_eq!(cuboid.bounding_sphere_radius(), 2.0_f64.sqrt());
-
-        let cuboid = Cuboid {
             edge_lengths: [1.0, 1.0],
         };
-        assert_relative_eq!(cuboid.bounding_sphere_radius(), 2.0 * 2.0_f64.sqrt());
+        assert_relative_eq!(cuboid.bounding_sphere_radius(), 2.0_f64.sqrt() / 2.0);
 
         let cuboid = Cuboid {
-            edge_lengths: [0.0, 6.0],
+            edge_lengths: [2.0, 2.0],
         };
-        assert_relative_eq!(cuboid.bounding_sphere_radius(), 3.0);
+        assert_relative_eq!(cuboid.bounding_sphere_radius(), 2.0_f64.sqrt());
 
         let cuboid = Cuboid {
             edge_lengths: [6.0, 8.0],
@@ -348,14 +343,14 @@ mod tests {
     #[test]
     fn bounding_sphere_radius_3d() {
         let cuboid = Cuboid {
-            edge_lengths: [0.5, 0.5, 0.5],
-        };
-        assert_relative_eq!(cuboid.bounding_sphere_radius(), 3.0_f64.sqrt());
-
-        let cuboid = Cuboid {
             edge_lengths: [1.0, 1.0, 1.0],
         };
-        assert_relative_eq!(cuboid.bounding_sphere_radius(), 2.0 * 3.0_f64.sqrt());
+        assert_relative_eq!(cuboid.bounding_sphere_radius(), 3.0_f64.sqrt() / 2.0);
+
+        let cuboid = Cuboid {
+            edge_lengths: [2.0, 2.0, 2.0],
+        };
+        assert_relative_eq!(cuboid.bounding_sphere_radius(), 3.0_f64.sqrt());
 
         let cuboid = Cuboid {
             edge_lengths: [0.0, 6.0, 0.0],
