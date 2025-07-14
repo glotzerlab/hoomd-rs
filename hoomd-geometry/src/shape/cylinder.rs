@@ -16,8 +16,11 @@ use hoomd_utility::valid::PositiveReal;
 use hoomd_geometry::{shape::Cylinder, Volume};
 use std::f64::consts::PI;
 
-let cyl = Cylinder {radius: 2.0, height: 3.0};
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let cyl = Cylinder {radius: 2.0.try_into()?, height: 3.0.try_into()?};
 assert_eq!(cyl.volume(), PI * (2.0 * 2.0) * 3.0);
+# Ok(())
+# }
 ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]

@@ -28,7 +28,7 @@ let tetrahedron = ConvexPolyhedron::with_vertices(
 
 let bounding_radius = tetrahedron.bounding_sphere_radius();
 
-assert_relative_eq!(bounding_radius, 3.0_f64.sqrt());
+assert_relative_eq!(bounding_radius.get(), 3.0_f64.sqrt());
 # Ok(())
 # }
 ```

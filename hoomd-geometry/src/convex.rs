@@ -24,13 +24,16 @@ use hoomd_geometry::{Convex, IntersectsAt, shape::{Circle, Rectangle, Sphero}};
 use hoomd_vector::{Cartesian, Angle};
 use std::f64::consts::PI;
 
-let circle = Convex(Circle { radius:  0.5 });
-let rectangle = Rectangle { edge_lengths: [3.0, 2.0].into() };
-let rounded_rectangle = Convex(Sphero { shape: rectangle, rounding_radius: 0.5 });
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let circle = Convex(Circle { radius:  0.5.try_into()? });
+let rectangle = Rectangle { edge_lengths: [3.0.try_into()?, 2.0.try_into()?] };
+let rounded_rectangle = Convex(Sphero { shape: rectangle, rounding_radius: 0.5.try_into()? });
 
 assert!(rounded_rectangle.intersects_at(&circle, &[2.4, 0.0].into(), &Angle::default()));
 assert!(!rounded_rectangle.intersects_at(&circle, &[0.0, 2.4].into(), &Angle::default()));
 assert!(circle.intersects_at(&rounded_rectangle, &[0.0, 2.4].into(), &Angle::from(PI/2.0)));
+# Ok(())
+# }
 ```
 */
 #[derive(Clone, Debug, PartialEq)]

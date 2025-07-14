@@ -144,19 +144,22 @@ use hoomd_geometry::{BoundingSphereRadius,
 use std::f64::consts::PI;
 use approx::assert_relative_eq;
 
-let ellipse = Hyperellipsoid {axes: [1.0, 2.0]};
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let ellipse = Hyperellipsoid {axes: [1.0.try_into()?, 2.0.try_into()?]};
 let bounding_radius = ellipse.bounding_sphere_radius();
 let volume = ellipse.volume();
 
-assert_eq!(bounding_radius, 2.0);
+assert_eq!(bounding_radius.get(), 2.0);
 assert_relative_eq!(volume, PI * 1.0 * 2.0);
 
-let sphere = Hyperellipsoid {axes: [2.0, 2.0, 2.0]};
+let sphere = Hyperellipsoid {axes: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?]};
 let bounding_radius = sphere.bounding_sphere_radius();
 let volume = sphere.volume();
 
-assert_eq!(bounding_radius, 2.0);
+assert_eq!(bounding_radius.get(), 2.0);
 assert_eq!(volume, 4.0 / 3.0 * PI * 2.0_f64.powi(3));
+# Ok(())
+# }
 ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -177,12 +180,15 @@ use hoomd_geometry::{BoundingSphereRadius,
 use std::f64::consts::PI;
 use approx::assert_relative_eq;
 
-let ellipse = Ellipse {axes: [1.0, 2.0]};
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let ellipse = Ellipse {axes: [1.0.try_into()?, 2.0.try_into()?]};
 let bounding_radius = ellipse.bounding_sphere_radius();
 let volume = ellipse.volume();
 
-assert_eq!(bounding_radius, 2.0);
+assert_eq!(bounding_radius.get(), 2.0);
 assert_relative_eq!(volume, PI * 1.0 * 2.0);
+# Ok(())
+# }
 ```
 
 Rapid ellipse-ellipse intersection testing is possible with hoomd-geometry. This check
@@ -192,15 +198,18 @@ within the code:
 use hoomd_geometry::{IntersectsAt, shape::Ellipse};
 use hoomd_vector::Angle;
 
-let long_ellipse = Ellipse {axes: [0.5, 3.0]};
-let round_ellipse = Ellipse {axes: [1.0, 2.0]};
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let long_ellipse = Ellipse {axes: [0.5.try_into()?, 3.0.try_into()?]};
+let round_ellipse = Ellipse {axes: [1.0.try_into()?, 2.0.try_into()?]};
 
-let v_ij = [0.0, long_ellipse.axes[1]+round_ellipse.axes[1]-0.1].into();
+let v_ij = [0.0, long_ellipse.axes[1].get() + round_ellipse.axes[1].get() - 0.1].into();
 
 assert_eq!(
     long_ellipse.intersects_at(&round_ellipse, &v_ij, &Angle::from(0.0)),
     true
 );
+# Ok(())
+# }
 ```
 */
 pub type Ellipse = Hyperellipsoid<2>;
@@ -217,12 +226,15 @@ use hoomd_geometry::{BoundingSphereRadius,
 use std::f64::consts::PI;
 use approx::assert_relative_eq;
 
-let sphere = Ellipsoid {axes: [2.0, 2.0, 2.0]};
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let sphere = Ellipsoid {axes: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?]};
 let bounding_radius = sphere.bounding_sphere_radius();
 let volume = sphere.volume();
 
-assert_eq!(bounding_radius, 2.0);
+assert_eq!(bounding_radius.get(), 2.0);
 assert_eq!(volume, 4.0 / 3.0 * PI * 2.0_f64.powi(3));
+# Ok(())
+# }
 ```
 
 Test for intersections using [`Convex`](crate::Convex):
@@ -230,7 +242,8 @@ Test for intersections using [`Convex`](crate::Convex):
 use hoomd_geometry::{Convex, IntersectsAt, shape::Ellipsoid};
 use hoomd_vector::Versor;
 
-let ellipsoid = Convex(Ellipsoid { axes: [1.0, 2.0, 3.0] });
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let ellipsoid = Convex(Ellipsoid { axes: [1.0.try_into()?, 2.0.try_into()?, 3.0.try_into()?] });
 let q = Versor::default();
 
 assert_eq!(
@@ -249,6 +262,8 @@ assert_eq!(
     ellipsoid.intersects_at(&ellipsoid, &[0.0, 2.1, 0.0].into(), &q),
     true
 );
+# Ok(())
+# }
 ```
 */
 pub type Ellipsoid = Hyperellipsoid<3>;

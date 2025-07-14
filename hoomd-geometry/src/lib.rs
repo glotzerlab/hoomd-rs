@@ -26,10 +26,13 @@ use hoomd_geometry::{ Volume, shape::Hypersphere };
 use approx::assert_relative_eq;
 use std::f64::consts::PI;
 
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
 const N: usize = 3;
-let s = Hypersphere::<N>::with_radius(1.0);
+let s = Hypersphere::<N>::with_radius(1.0.try_into()?);
 let volume = s.volume();
 assert_relative_eq!(volume, (4.0/3.0 * PI));
+# Ok(())
+# }
 ```
 
 ## Traits
@@ -51,13 +54,16 @@ implemented as well:
 use hoomd_geometry::{Convex, IntersectsAt, shape::Sphere};
 use hoomd_vector::Versor;
 
-let s0 = Sphere {radius: 1.0};
-let s1 = Sphere {radius: 1.0};
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let s0 = Sphere {radius: 1.0.try_into()?};
+let s1 = Sphere {radius: 1.0.try_into()?};
 
 let q_id = Versor::default();
 
 assert_eq!(s0.intersects_at(&s1, &[1.9, 0.0, 0.0].into(), &q_id), true);
 assert_eq!(s0.intersects_at(&s1, &[2.1, 0.0, 0.0].into(), &q_id), false);
+# Ok(())
+# }
 ```
 
 Any pair of shapes (with possibly different types) that both implement the
@@ -67,18 +73,21 @@ newtype. [`IntersectsAt`] uses the [`xenocollide`] algorithm, provided for
 ```
 use hoomd_geometry::{Convex, IntersectsAt, shape::{Cuboid, Sphere}};
 use hoomd_vector::Versor;
-let s0 = Sphere {radius: 1.0};
 
-let wrapped_cuboid = Convex(Cuboid { edge_lengths: [2.0, 2.0, 2.0] });
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let sphere = Convex(Sphere {radius: 1.0.try_into()?});
+let cuboid = Convex(Cuboid { edge_lengths: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?] });
 
 assert_eq!(
-    Convex(s0).intersects_at(&wrapped_cuboid, &[1.9, 0.0, 0.0].into(), &Versor::default()),
+    sphere.intersects_at(&cuboid, &[1.9, 0.0, 0.0].into(), &Versor::default()),
     true
 );
 assert_eq!(
-    Convex(s0).intersects_at(&wrapped_cuboid, &[2.1, 0.0, 0.0].into(), &Versor::default()),
+    sphere.intersects_at(&cuboid, &[2.1, 0.0, 0.0].into(), &Versor::default()),
     false
 );
+# Ok(())
+# }
 ```
 */
 
@@ -98,9 +107,12 @@ pub mod xenocollide;
 ```
 use hoomd_geometry::{Volume, shape::Hypersphere};
 
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
 const N: usize = 3;
-let s = Hypersphere::<N>::with_radius(1.0);
+let s = Hypersphere::<N>::with_radius(1.0.try_into()?);
 let volume = s.volume();
+# Ok(())
+# }
 ```
 
 */
@@ -117,13 +129,16 @@ pub trait Volume {
 ```
 use hoomd_geometry::{shape::Cuboid, SupportMapping};
 
-let cuboid = Cuboid { edge_lengths: [3.0, 2.0] };
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let cuboid = Cuboid { edge_lengths: [3.0.try_into()?, 2.0.try_into()?] };
 
 let upper_right = cuboid.support_mapping(&[1.0, 1.0].into());
 let lower_right = cuboid.support_mapping(&[1.0, -1.0].into());
 
 assert_eq!(upper_right, [1.5, 1.0].into());
 assert_eq!(lower_right, [1.5, -1.0].into());
+# Ok(())
+# }
 ```
 */
 pub trait SupportMapping<V> {
@@ -140,31 +155,37 @@ Some shapes implement [`IntersectsAt`] directly:
 use hoomd_geometry::{Convex, IntersectsAt, shape::Sphere};
 use hoomd_vector::Versor;
 
-let s0 = Sphere {radius: 1.0};
-let s1 = Sphere {radius: 1.0};
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let s0 = Sphere {radius: 1.0.try_into()?};
+let s1 = Sphere {radius: 1.0.try_into()?};
 
 let q_id = Versor::default();
 
 assert_eq!(s0.intersects_at(&s1, &[1.9, 0.0, 0.0].into(), &q_id), true);
 assert_eq!(s0.intersects_at(&s1, &[2.1, 0.0, 0.0].into(), &q_id), false);
+# Ok(())
+# }
 ```
 
 Others must be wrapped in [`Convex`]:
 ```
 use hoomd_geometry::{Convex, IntersectsAt, shape::{Cuboid, Sphere}};
 use hoomd_vector::Versor;
-let s0 = Sphere {radius: 1.0};
 
-let wrapped_cuboid = Convex(Cuboid { edge_lengths: [2.0, 2.0, 2.0] });
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let sphere = Convex(Sphere {radius: 1.0.try_into()?});
+let cuboid = Convex(Cuboid { edge_lengths: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?] });
 
 assert_eq!(
-    Convex(s0).intersects_at(&wrapped_cuboid, &[1.9, 0.0, 0.0].into(), &Versor::default()),
+    sphere.intersects_at(&cuboid, &[1.9, 0.0, 0.0].into(), &Versor::default()),
     true
 );
 assert_eq!(
-    Convex(s0).intersects_at(&wrapped_cuboid, &[2.1, 0.0, 0.0].into(), &Versor::default()),
+    sphere.intersects_at(&cuboid, &[2.1, 0.0, 0.0].into(), &Versor::default()),
     false
 );
+# Ok(())
+# }
 ```
 */
 pub trait IntersectsAt<S, V, R> {
@@ -195,10 +216,13 @@ the bounding sphere should be as tightly fitting as possible.
 ```
 use hoomd_geometry::{BoundingSphereRadius, shape::Cuboid};
 
-let cuboid = Cuboid { edge_lengths: [6.0, 8.0] };
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let cuboid = Cuboid { edge_lengths: [6.0.try_into()?, 8.0.try_into()?] };
 let bounding_radius = cuboid.bounding_sphere_radius();
 
-assert_eq!(bounding_radius, 5.0);
+assert_eq!(bounding_radius.get(), 5.0);
+# Ok(())
+# }
 ```
 */
 pub trait BoundingSphereRadius {

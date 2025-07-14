@@ -47,7 +47,7 @@ use std::f64::consts::PI;
 let unit_sphere = Hypersphere::<3>::default();
 let volume = unit_sphere.volume();
 
-assert_eq!(unit_sphere.radius, 1.0);
+assert_eq!(unit_sphere.radius.get(), 1.0);
 assert_eq!(volume, 4.0 * PI / 3.0);
 
 assert_eq!(
@@ -89,10 +89,13 @@ use hoomd_geometry::{shape::Circle, Volume};
 use hoomd_vector::Cartesian;
 use std::f64::consts::PI;
 
-let circle = Circle { radius: 2.0 };
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let circle = Circle { radius: 2.0.try_into()? };
 let volume = circle.volume();
 
 assert_eq!(volume, PI * 4.0);
+# Ok(())
+# }
 ```
 
 Test for intersections:
@@ -100,7 +103,8 @@ Test for intersections:
 use hoomd_geometry::{IntersectsAt, shape::Circle};
 use hoomd_vector::{Cartesian, Angle};
 
-let circle = Circle { radius: 1.0 };
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let circle = Circle { radius: 1.0.try_into()? };
 
 assert_eq!(
     circle.intersects_at(&circle, &Cartesian::from([2.1, 0.0]), &Angle::default()),
@@ -110,6 +114,8 @@ assert_eq!(
     circle.intersects_at(&circle, &Cartesian::from([0.0, 1.9]), &Angle::default()),
     true
 );
+# Ok(())
+# }
 ```
 */
 pub type Circle = Hypersphere<2>;
@@ -124,16 +130,19 @@ use hoomd_geometry::{shape::Sphere, SupportMapping, Volume};
 use hoomd_vector::Cartesian;
 use std::f64::consts::PI;
 
-let unit_sphere = Sphere { radius: 1.0 };
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let unit_sphere = Sphere { radius: 1.0.try_into()? };
 let volume = unit_sphere.volume();
 
-assert_eq!(unit_sphere.radius, 1.0);
+assert_eq!(unit_sphere.radius.get(), 1.0);
 assert_eq!(volume, 4.0 * PI / 3.0);
 
 assert_eq!(
     unit_sphere.support_mapping(&Cartesian::from([1.0; 3])),
     [1.0 / f64::sqrt(3.0); 3].into()
-)
+);
+# Ok(())
+# }
 ```
 
 Test for intersections:

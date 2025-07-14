@@ -22,12 +22,15 @@ use hoomd_vector::Cartesian;
 use approx::assert_relative_eq;
 use std::f64::consts::PI;
 
-let capsule = Capsule::<2> { radius: 1.0, height: 8.0 };
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let capsule = Capsule::<2> { radius: 1.0.try_into()?, height: 8.0.try_into()? };
 let bounding_radius = capsule.bounding_sphere_radius();
 let volume = capsule.volume();
 
-assert_eq!(bounding_radius, 5.0);
+assert_eq!(bounding_radius.get(), 5.0);
 assert_relative_eq!(volume, 16.0 + PI);
+# Ok(())
+# }
 ```
 
 Intersection test:
@@ -36,11 +39,14 @@ use hoomd_geometry::{Convex, IntersectsAt, shape::Capsule};
 use hoomd_vector::{Angle, Cartesian, Rotation};
 use std::f64::consts::PI;
 
-let capsule = Convex(Capsule::<2> { radius: 1.0, height: 8.0 });
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let capsule = Convex(Capsule::<2> { radius: 1.0.try_into()?, height: 8.0.try_into()? });
 
 assert_eq!(capsule.intersects_at(&capsule, &[1.75, 0.0].into(), &Angle::identity()), true);
 assert_eq!(capsule.intersects_at(&capsule, &[4.0, 2.0].into(), &Angle::identity()), false);
 assert_eq!(capsule.intersects_at(&capsule, &[4.0, -2.0].into(), &Angle::from(PI/2.0)), true);
+# Ok(())
+# }
 ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]

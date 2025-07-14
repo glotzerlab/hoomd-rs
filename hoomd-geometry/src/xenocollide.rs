@@ -14,12 +14,15 @@ trait. However, the raw xenocollide methods can be used where needed.
 use hoomd_geometry::{IntersectsAt, shape::Circle, xenocollide::collide2d};
 use hoomd_vector::Angle;
 
-let (s0, s1) = (Circle {radius: 1.0}, Circle {radius: 2.0});
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let (s0, s1) = (Circle {radius: 1.0.try_into()?}, Circle {radius: 2.0.try_into()?});
 let displacement = [3.0; 2].into();
 assert_eq!(
     collide2d(&s0, &s1, &displacement, &Angle::default()),
     s0.intersects_at(&s1, &displacement, &Angle::default())
-)
+);
+# Ok(())
+# }
 ```
 */
 use crate::SupportMapping;

@@ -25,7 +25,8 @@ Construction and basic methods:
 use hoomd_geometry::shape::Cuboid;
 use hoomd_geometry::Volume;
 
-let unit_cube = Cuboid {edge_lengths: [1.0; 3]};
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let unit_cube = Cuboid {edge_lengths: [1.0.try_into()?; 3]};
 assert_eq!(unit_cube.volume(), 1.0);
 
 let min_extents = unit_cube.minimal_extents();
@@ -33,20 +34,25 @@ let max_extents = unit_cube.maximal_extents();
 assert_eq!(min_extents, [-0.5; 3]);
 assert_eq!(max_extents, [0.5; 3]);
 
-let rectangular_prism = Cuboid {edge_lengths: [1.0, 1.0, 9.0]};
+let rectangular_prism = Cuboid {edge_lengths: [1.0.try_into()?, 1.0.try_into()?, 9.0.try_into()?]};
 
 assert_eq!(rectangular_prism.volume(), 9.0);
+# Ok(())
+# }
 ```
 
 Perform a fast AABB intersection tests:
 ```
 use hoomd_geometry::shape::Cuboid;
 
-let unit_cube = Cuboid {edge_lengths: [1.0; 3]};
-let rectangular_prism = Cuboid {edge_lengths: [1.0, 1.0, 9.0]};
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let unit_cube = Cuboid {edge_lengths: [1.0.try_into()?; 3]};
+let rectangular_prism = Cuboid {edge_lengths: [1.0.try_into()?, 1.0.try_into()?, 9.0.try_into()?]};
 
 assert_eq!(unit_cube.intersects_aligned(&rectangular_prism, &[1.0; 3].into()), true);
 assert_eq!(unit_cube.intersects_aligned(&rectangular_prism, &[1.1; 3].into()), false);
+# Ok(())
+# }
 ```
 
 Wrap with [`Convex`](crate::Convex) to check intersections of oriented cuboids:
@@ -56,10 +62,13 @@ use hoomd_geometry::{Convex, IntersectsAt, shape::Rectangle};
 use hoomd_vector::Angle;
 use std::f64::consts::PI;
 
-let square = Convex(Rectangle {edge_lengths: [1.0; 2]});
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let square = Convex(Rectangle {edge_lengths: [1.0.try_into()?; 2]});
 
 assert_eq!(square.intersects_at(&square, &[1.1, 0.0].into(), &Angle::default()), false);
 assert_eq!(square.intersects_at(&square, &[1.1, 0.0].into(), &Angle::from(PI/4.0)), true);
+# Ok(())
+# }
 ```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -77,8 +86,11 @@ Basic construction and methods:
 use hoomd_geometry::shape::Rectangle;
 use hoomd_geometry::Volume;
 
-let rectangle = Rectangle {edge_lengths: [2.0, 4.0]};
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let rectangle = Rectangle {edge_lengths: [2.0.try_into()?, 4.0.try_into()?]};
 assert_eq!(rectangle.volume(), 8.0);
+# Ok(())
+# }
 ```
 
 Intersection tests:
@@ -87,8 +99,8 @@ use hoomd_geometry::{Convex, IntersectsAt, shape::Rectangle};
 use hoomd_vector::{Cartesian, Angle};
 use std::f64::consts::PI;
 
-# fn main() -> Result<(), hoomd_geometry::Error> {
-let rectangle = Rectangle { edge_lengths: [4.0, 2.0] };
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let rectangle = Rectangle { edge_lengths: [4.0.try_into()?, 2.0.try_into()?] };
 let rectangle = Convex(rectangle);
 
 assert_eq!(rectangle.intersects_at(&rectangle, &[0.0, 2.1].into(), &Angle::default()), false);
@@ -131,11 +143,14 @@ impl<const N: usize> Cuboid<N> {
     ```
     use hoomd_geometry::shape::Cuboid;
 
-    let unit_cube = Cuboid {edge_lengths: [1.0; 3]};
-    let rectangular_prism = Cuboid {edge_lengths: [1.0, 1.0, 9.0]};
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let unit_cube = Cuboid {edge_lengths: [1.0.try_into()?; 3]};
+    let rectangular_prism = Cuboid {edge_lengths: [1.0.try_into()?, 1.0.try_into()?, 9.0.try_into()?]};
 
     assert_eq!(unit_cube.intersects_aligned(&rectangular_prism, &[1.0; 3].into()), true);
     assert_eq!(unit_cube.intersects_aligned(&rectangular_prism, &[1.1; 3].into()), false);
+    # Ok(())
+    # }
     ```
     */
     #[must_use]
@@ -200,10 +215,13 @@ impl<const N: usize> Cuboid<N> {
     ```
     use hoomd_geometry::shape::Cuboid;
 
-    let unit_cube = Cuboid {edge_lengths: [1.0; 3].into()};
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let unit_cube = Cuboid {edge_lengths: [1.0.try_into()?; 3]};
 
     let max_extents = unit_cube.maximal_extents();
     assert_eq!(max_extents, [0.5; 3]);
+    # Ok(())
+    # }
     ```
     */
     pub fn maximal_extents(&self) -> [f64; N] {
@@ -219,10 +237,13 @@ impl<const N: usize> Cuboid<N> {
     ```
     use hoomd_geometry::shape::Cuboid;
 
-    let unit_cube = Cuboid {edge_lengths: [1.0; 3].into()};
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let unit_cube = Cuboid {edge_lengths: [1.0.try_into()?; 3]};
 
     let min_extents = unit_cube.minimal_extents();
     assert_eq!(min_extents, [-0.5; 3]);
+    # Ok(())
+    # }
     ```
     */
     pub fn minimal_extents(&self) -> [f64; N] {
