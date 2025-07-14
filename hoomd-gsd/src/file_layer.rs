@@ -192,8 +192,8 @@ pub enum WriteError {
     Encode(String, u64, #[source] EncodeError),
 }
 
-// TODO: Replace ArrayChunks with itertools implementation when available
-// TODO: Replace ArrayChunks with std library implementation when iter_array_chunks is stabilized
+// FUTURE: Replace ArrayChunks with itertools implementation when available
+// FUTURE: Replace ArrayChunks with std library implementation when iter_array_chunks is stabilized
 
 /// Iterate over arrays of size M
 struct ArrayChunks<I, const M: usize> {
