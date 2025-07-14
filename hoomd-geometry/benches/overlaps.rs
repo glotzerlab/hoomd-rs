@@ -41,10 +41,16 @@ fn shapes_to_convex<S>(tup: (S, S)) -> (Convex<S>, Convex<S>) {
 fn create_sphere_pair<const N: usize, R: Rng>(rng: &mut R) -> (Hypersphere<N>, Hypersphere<N>) {
     (
         Hypersphere::<N> {
-            radius: rng.random_range(0.0..10.0),
+            radius: rng
+                .random_range(0.0..10.0)
+                .try_into()
+                .expect("test value is a positive real"),
         },
         Hypersphere::<N> {
-            radius: rng.random_range(0.0..10.0),
+            radius: rng
+                .random_range(0.0..10.0)
+                .try_into()
+                .expect("test value is a positive real"),
         },
     )
 }
@@ -52,10 +58,18 @@ fn create_sphere_pair<const N: usize, R: Rng>(rng: &mut R) -> (Hypersphere<N>, H
 fn create_cuboid_pair<const N: usize, R: Rng>(rng: &mut R) -> (Cuboid<N>, Cuboid<N>) {
     (
         Cuboid {
-            edge_lengths: (rng.random::<Cartesian<N>>() * 10.0).coordinates,
+            edge_lengths: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
+                (x + 11.0)
+                    .try_into()
+                    .expect("test value is a positive real")
+            }),
         },
         Cuboid {
-            edge_lengths: (rng.random::<Cartesian<N>>() * 10.0).coordinates,
+            edge_lengths: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
+                (x + 11.0)
+                    .try_into()
+                    .expect("test value is a positive real")
+            }),
         },
     )
 }
@@ -114,10 +128,18 @@ fn create_ellipsoid_pair<const N: usize, R: Rng>(
 ) -> (Hyperellipsoid<N>, Hyperellipsoid<N>) {
     (
         Hyperellipsoid {
-            axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates,
+            axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
+                (x + 11.0)
+                    .try_into()
+                    .expect("test value is a positive real")
+            }),
         },
         Hyperellipsoid {
-            axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates,
+            axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
+                (x + 11.0)
+                    .try_into()
+                    .expect("test value is a positive real")
+            }),
         },
     )
 }
