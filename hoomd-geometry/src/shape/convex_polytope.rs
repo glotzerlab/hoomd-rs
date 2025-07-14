@@ -419,37 +419,21 @@ mod tests {
         a.intersects_at(b, &v_ij, &o_ij)
     }
 
-    fn assert_symmetric_overlap<A, B, R, const N: usize>
-    (
+    fn assert_symmetric_overlap<A, B, R, const N: usize>(
         r_ab: Cartesian<N>,
         a: &A,
         b: &B,
         r_a: R,
         r_b: R,
         expected: bool,
-    ) 
-    where
+    ) where
         R: Rotation + Rotate<Cartesian<N>> + Copy,
         A: IntersectsAt<B, Cartesian<N>, R>,
         B: IntersectsAt<A, Cartesian<N>, R>,
     {
-        assert_eq!(test_overlap(
-            r_ab,
-            a,
-            b,
-            r_a,
-            r_b),
-            expected);
-        assert_eq!(test_overlap(
-            -r_ab,
-            b,
-            a,
-            r_b,
-            r_a),
-            expected);
+        assert_eq!(test_overlap(r_ab, a, b, r_a, r_b), expected);
+        assert_eq!(test_overlap(-r_ab, b, a, r_b, r_a), expected);
     }
-
-    
 
     #[rstest]
     fn square_triangle(square: Convex<ConvexPolygon>, triangle: Convex<ConvexPolygon>) {
@@ -462,7 +446,7 @@ mod tests {
             &triangle,
             r_square,
             r_triangle,
-            false
+            false,
         );
 
         assert_symmetric_overlap(
@@ -471,7 +455,7 @@ mod tests {
             &triangle,
             r_square,
             r_triangle,
-            false
+            false,
         );
 
         assert_symmetric_overlap(
@@ -480,7 +464,7 @@ mod tests {
             &triangle,
             r_square,
             r_triangle,
-            false
+            false,
         );
 
         assert_symmetric_overlap(
@@ -489,7 +473,7 @@ mod tests {
             &triangle,
             r_square,
             r_triangle,
-            false
+            false,
         );
 
         assert_symmetric_overlap(
@@ -498,7 +482,7 @@ mod tests {
             &triangle,
             r_square,
             r_triangle,
-            false
+            false,
         );
 
         assert_symmetric_overlap(
@@ -507,7 +491,7 @@ mod tests {
             &triangle,
             r_square,
             r_triangle,
-            true
+            true,
         );
 
         assert_symmetric_overlap(
@@ -516,7 +500,7 @@ mod tests {
             &triangle,
             r_square,
             r_triangle,
-            true
+            true,
         );
 
         assert_symmetric_overlap(
@@ -525,7 +509,7 @@ mod tests {
             &triangle,
             r_square,
             r_triangle,
-            true
+            true,
         );
 
         assert_symmetric_overlap(
@@ -534,7 +518,7 @@ mod tests {
             &triangle,
             r_square,
             r_triangle,
-            true
+            true,
         );
     }
 
@@ -574,14 +558,7 @@ mod tests {
     fn overlap_octahedron_no_rot(octahedron: Convex<ConvexPolyhedron>) {
         let q = Versor::identity();
 
-        assert_symmetric_overlap(
-            [0.0, 0.0, 0.0].into(),
-            &octahedron,
-            &octahedron,
-            q,
-            q,
-            true
-        );
+        assert_symmetric_overlap([0.0, 0.0, 0.0].into(), &octahedron, &octahedron, q, q, true);
 
         assert_symmetric_overlap(
             [10.0, 0.0, 0.0].into(),
@@ -589,7 +566,7 @@ mod tests {
             &octahedron,
             q,
             q,
-            false
+            false,
         );
 
         assert_symmetric_overlap(
@@ -598,7 +575,7 @@ mod tests {
             &octahedron,
             q,
             q,
-            false
+            false,
         );
 
         assert_symmetric_overlap(
@@ -607,7 +584,7 @@ mod tests {
             &octahedron,
             q,
             q,
-            false
+            false,
         );
 
         assert_symmetric_overlap(
@@ -616,7 +593,7 @@ mod tests {
             &octahedron,
             q,
             q,
-            false
+            false,
         );
 
         assert_symmetric_overlap(
@@ -625,7 +602,7 @@ mod tests {
             &octahedron,
             q,
             q,
-            false
+            false,
         );
 
         assert_symmetric_overlap(
@@ -634,7 +611,7 @@ mod tests {
             &octahedron,
             q,
             q,
-            false
+            false,
         );
 
         assert_symmetric_overlap(
@@ -643,17 +620,10 @@ mod tests {
             &octahedron,
             q,
             q,
-            false
+            false,
         );
 
-        assert_symmetric_overlap(
-            [0.9, 0.2, 0.0].into(),
-            &octahedron,
-            &octahedron,
-            q,
-            q,
-            true
-        );
+        assert_symmetric_overlap([0.9, 0.2, 0.0].into(), &octahedron, &octahedron, q, q, true);
 
         assert_symmetric_overlap(
             [-0.9, 0.2, 0.0].into(),
@@ -661,7 +631,7 @@ mod tests {
             &octahedron,
             q,
             q,
-            true
+            true,
         );
 
         assert_symmetric_overlap(
@@ -670,7 +640,7 @@ mod tests {
             &octahedron,
             q,
             q,
-            true
+            true,
         );
 
         assert_symmetric_overlap(
@@ -679,476 +649,141 @@ mod tests {
             &octahedron,
             q,
             q,
-            true
+            true,
         );
 
-        assert_symmetric_overlap(
-            [1.0, 0.2, 0.0].into(),
-            &octahedron,
-            &octahedron,
-            q,
-            q,
-            true
-        );
+        assert_symmetric_overlap([1.0, 0.2, 0.0].into(), &octahedron, &octahedron, q, q, true);
     }
 
     #[rstest]
     fn overlap_cube_no_rot(cube: Convex<ConvexPolyhedron>) {
         let q = Versor::identity();
 
-        assert_symmetric_overlap(
-            [0.0, 0.0, 0.0].into(),
-            &cube,
-            &cube,
-            q,
-            q,
-            true
-        );
+        assert_symmetric_overlap([0.0, 0.0, 0.0].into(), &cube, &cube, q, q, true);
 
-        assert_symmetric_overlap(
-            [10.0, 0.0, 0.0].into(),
-            &cube,
-            &cube,
-            q,
-            q,
-            false
-        );
+        assert_symmetric_overlap([10.0, 0.0, 0.0].into(), &cube, &cube, q, q, false);
 
-        assert_symmetric_overlap(
-            [1.1, 0.0, 0.0].into(),
-            &cube,
-            &cube,
-            q,
-            q,
-            false
-        );
+        assert_symmetric_overlap([1.1, 0.0, 0.0].into(), &cube, &cube, q, q, false);
 
-        assert_symmetric_overlap(
-            [0.0, 1.1, 0.0].into(),
-            &cube,
-            &cube,
-            q,
-            q,
-            false
-        );
+        assert_symmetric_overlap([0.0, 1.1, 0.0].into(), &cube, &cube, q, q, false);
 
-        assert_symmetric_overlap(
-            [0.0, 0.0, 1.1].into(),
-            &cube,
-            &cube,
-            q,
-            q,
-            false
-        );
+        assert_symmetric_overlap([0.0, 0.0, 1.1].into(), &cube, &cube, q, q, false);
 
-        assert_symmetric_overlap(
-            [1.1, 0.2, 0.0].into(),
-            &cube,
-            &cube,
-            q,
-            q,
-            false
-        );
+        assert_symmetric_overlap([1.1, 0.2, 0.0].into(), &cube, &cube, q, q, false);
 
-        assert_symmetric_overlap(
-            [-1.1, 0.2, 0.0].into(),
-            &cube,
-            &cube,
-            q,
-            q,
-            false
-        );
+        assert_symmetric_overlap([-1.1, 0.2, 0.0].into(), &cube, &cube, q, q, false);
 
-        assert_symmetric_overlap(
-            [-0.2, 1.1, 0.0].into(),
-            &cube,
-            &cube,
-            q,
-            q,
-            false
-        );
+        assert_symmetric_overlap([-0.2, 1.1, 0.0].into(), &cube, &cube, q, q, false);
 
-        assert_symmetric_overlap(
-            [-0.2, -1.1, 0.0].into(),
-            &cube,
-            &cube,
-            q,
-            q,
-            false
-        );
+        assert_symmetric_overlap([-0.2, -1.1, 0.0].into(), &cube, &cube, q, q, false);
 
-        assert_symmetric_overlap(
-            [0.9, 0.2, 0.0].into(),
-            &cube,
-            &cube,
-            q,
-            q,
-            true
-        );
+        assert_symmetric_overlap([0.9, 0.2, 0.0].into(), &cube, &cube, q, q, true);
 
-        assert_symmetric_overlap(
-            [-0.9, 0.2, 0.0].into(),
-            &cube,
-            &cube,
-            q,
-            q,
-            true
-        );
+        assert_symmetric_overlap([-0.9, 0.2, 0.0].into(), &cube, &cube, q, q, true);
 
-        assert_symmetric_overlap(
-            [-0.2, 0.9, 0.0].into(),
-            &cube,
-            &cube,
-            q,
-            q,
-            true
-        );
+        assert_symmetric_overlap([-0.2, 0.9, 0.0].into(), &cube, &cube, q, q, true);
 
-        assert_symmetric_overlap(
-            [-0.2, -0.9, 0.0].into(),
-            &cube,
-            &cube,
-            q,
-            q,
-            true
-        );
+        assert_symmetric_overlap([-0.2, -0.9, 0.0].into(), &cube, &cube, q, q, true);
 
-        assert_symmetric_overlap(
-            [0.2, 0.0, 0.0].into(),
-            &cube,
-            &cube,
-            q,
-            q,
-            true
-        );
+        assert_symmetric_overlap([0.2, 0.0, 0.0].into(), &cube, &cube, q, q, true);
 
-        assert_symmetric_overlap(
-            [0.2, 0.00001, 0.00001].into(),
-            &cube,
-            &cube,
-            q,
-            q,
-            true
-        );
+        assert_symmetric_overlap([0.2, 0.00001, 0.00001].into(), &cube, &cube, q, q, true);
 
-        assert_symmetric_overlap(
-            [0.1, 0.2, 0.1].into(),
-            &cube,
-            &cube,
-            q,
-            q,
-            true
-        );
+        assert_symmetric_overlap([0.1, 0.2, 0.1].into(), &cube, &cube, q, q, true);
 
-        assert_symmetric_overlap(
-            [1.0, 0.2, 0.0].into(),
-            &cube,
-            &cube,
-            q,
-            q,
-            true
-        );
+        assert_symmetric_overlap([1.0, 0.2, 0.0].into(), &cube, &cube, q, q, true);
     }
 
     #[rstest]
     fn overlap_cube_rot1(cube: Convex<ConvexPolyhedron>) {
         let q_a = Versor::identity();
-        let q_b = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().expect("hard-coded vector is non-zero"), PI/4.0);
-
-        assert_symmetric_overlap(
-            [10.0, 0.0, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
+        let q_b = Versor::from_axis_angle(
+            [0.0, 0.0, 1.0]
+                .try_into()
+                .expect("hard-coded vector is non-zero"),
+            PI / 4.0,
         );
 
-        assert_symmetric_overlap(
-            [1.3, 0.0, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
-        );
+        assert_symmetric_overlap([10.0, 0.0, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [-1.3, 0.0, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
-        );
+        assert_symmetric_overlap([1.3, 0.0, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [0.0, 1.3, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
-        );
+        assert_symmetric_overlap([-1.3, 0.0, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [0.0, -1.3, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
-        );
+        assert_symmetric_overlap([0.0, 1.3, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [1.3, 0.2, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
-        );
+        assert_symmetric_overlap([0.0, -1.3, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [-1.3, 0.2, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
-        );
+        assert_symmetric_overlap([1.3, 0.2, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [-0.2, 1.3, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
-        );
+        assert_symmetric_overlap([-1.3, 0.2, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [-0.2, -1.3, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
-        );
+        assert_symmetric_overlap([-0.2, 1.3, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [1.2, 0.2, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            true,
-        );
+        assert_symmetric_overlap([-0.2, -1.3, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [-1.2, 0.2, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            true,
-        );
+        assert_symmetric_overlap([1.2, 0.2, 0.0].into(), &cube, &cube, q_a, q_b, true);
 
-        assert_symmetric_overlap(
-            [-0.2, 1.2, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            true,
-        );
+        assert_symmetric_overlap([-1.2, 0.2, 0.0].into(), &cube, &cube, q_a, q_b, true);
 
-        assert_symmetric_overlap(
-            [-0.2, -1.2, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            true,
-        );
+        assert_symmetric_overlap([-0.2, 1.2, 0.0].into(), &cube, &cube, q_a, q_b, true);
+
+        assert_symmetric_overlap([-0.2, -1.2, 0.0].into(), &cube, &cube, q_a, q_b, true);
     }
 
     #[rstest]
     fn overlap_cube_rot3(cube: Convex<ConvexPolyhedron>) {
         let q_a = Versor::identity();
-        let q1 = Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().expect("hard-coded vector is non-zero"), PI/4.0);
-        let q2 = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().expect("hard-coded vector is non-zero"), PI/4.0);
+        let q1 = Versor::from_axis_angle(
+            [1.0, 0.0, 0.0]
+                .try_into()
+                .expect("hard-coded vector is non-zero"),
+            PI / 4.0,
+        );
+        let q2 = Versor::from_axis_angle(
+            [0.0, 0.0, 1.0]
+                .try_into()
+                .expect("hard-coded vector is non-zero"),
+            PI / 4.0,
+        );
         let q_b = q2.combine(&q1);
 
-        assert_symmetric_overlap(
-            [10.0, 0.0, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
-        );
+        assert_symmetric_overlap([10.0, 0.0, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [1.4, 0.0, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
-        );
+        assert_symmetric_overlap([1.4, 0.0, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [-1.4, 0.0, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
-        );
+        assert_symmetric_overlap([-1.4, 0.0, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [0.0, 1.4, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
-        );
+        assert_symmetric_overlap([0.0, 1.4, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [0.0, -1.4, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
-        );
+        assert_symmetric_overlap([0.0, -1.4, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [1.4, 0.2, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
-        );
+        assert_symmetric_overlap([1.4, 0.2, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [-1.4, 0.2, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
-        );
+        assert_symmetric_overlap([-1.4, 0.2, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [-0.2, 1.4, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
-        );
+        assert_symmetric_overlap([-0.2, 1.4, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [-0.2, -1.4, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            false
-        );
+        assert_symmetric_overlap([-0.2, -1.4, 0.0].into(), &cube, &cube, q_a, q_b, false);
 
-        assert_symmetric_overlap(
-            [0.0, 1.2, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            true
-        );
+        assert_symmetric_overlap([0.0, 1.2, 0.0].into(), &cube, &cube, q_a, q_b, true);
 
-        assert_symmetric_overlap(
-            [0.0, 1.2, 0.1].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            true
-        );
+        assert_symmetric_overlap([0.0, 1.2, 0.1].into(), &cube, &cube, q_a, q_b, true);
 
-        assert_symmetric_overlap(
-            [0.1, 1.2, 0.1].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            true
-        );
+        assert_symmetric_overlap([0.1, 1.2, 0.1].into(), &cube, &cube, q_a, q_b, true);
 
-        assert_symmetric_overlap(
-            [1.2, 0.0, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            true
-        );
+        assert_symmetric_overlap([1.2, 0.0, 0.0].into(), &cube, &cube, q_a, q_b, true);
 
-        assert_symmetric_overlap(
-            [1.2, 0.1, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            true
-        );
+        assert_symmetric_overlap([1.2, 0.1, 0.0].into(), &cube, &cube, q_a, q_b, true);
 
-        assert_symmetric_overlap(
-            [1.2, 0.1, 0.1].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            true
-        );
+        assert_symmetric_overlap([1.2, 0.1, 0.1].into(), &cube, &cube, q_a, q_b, true);
 
-        assert_symmetric_overlap(
-            [-0.9, 0.9, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            true
-        );
+        assert_symmetric_overlap([-0.9, 0.9, 0.0].into(), &cube, &cube, q_a, q_b, true);
 
-        assert_symmetric_overlap(
-            [-0.9, 0.899, 0.001].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            true
-        );
+        assert_symmetric_overlap([-0.9, 0.899, 0.001].into(), &cube, &cube, q_a, q_b, true);
 
-        assert_symmetric_overlap(
-            [0.9, -0.9, 0.0].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            true
-        );
+        assert_symmetric_overlap([0.9, -0.9, 0.0].into(), &cube, &cube, q_a, q_b, true);
 
-        assert_symmetric_overlap(
-            [-0.9, 0.9, 0.1].into(),
-            &cube,
-            &cube,
-            q_a,
-            q_b,
-            true
-        );
-    }   
+        assert_symmetric_overlap([-0.9, 0.9, 0.1].into(), &cube, &cube, q_a, q_b, true);
+    }
 }

@@ -7,7 +7,6 @@
 #![doc(
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
-
 // TODO: implement methods as const where possible
 
 /*! Vector and quaternion math.
