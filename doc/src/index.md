@@ -3,6 +3,7 @@
 ## API Reference
 
 * [hoomd-gsd](api/hoomd_gsd/index.html)
+* [hoomd-geometry](api/hoomd_geometry/index.html)
 * [hoomd-interaction](api/hoomd_interaction/index.html)
 * [hoomd-mc](api/hoomd_mc/index.html)
 * [hoomd-microstate](api/hoomd_microstate/index.html)
