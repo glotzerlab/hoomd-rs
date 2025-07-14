@@ -5,8 +5,11 @@
 
 use crate::{BoundingSphereRadius, SupportMapping, Volume};
 use hoomd_vector::Cartesian;
+use hoomd_utility::valid::PositiveReal;
+
 use itertools::multizip;
 use std::array;
+use std::ops::Mul;
 
 /** A shape with with all perpendicular angles made from axis-aligned edges.
 
@@ -62,7 +65,7 @@ assert_eq!(square.intersects_at(&square, &[1.1, 0.0].into(), &Angle::from(PI/4.0
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Cuboid<const N: usize> {
     /// The lengths of each edge of the cuboid.
-    pub edge_lengths: [f64; N],
+    pub edge_lengths: [PositiveReal; N],
 }
 
 /** An axis-aligned rectangle.
@@ -100,19 +103,19 @@ impl Cuboid<3> {
     /// Length of the `Cuboid` edge along the x axis
     #[inline]
     #[must_use]
-    pub fn a(&self) -> f64 {
+    pub fn a(&self) -> PositiveReal {
         self.edge_lengths[0]
     }
     /// Length of the `Cuboid` edge along the y axis
     #[inline]
     #[must_use]
-    pub fn b(&self) -> f64 {
+    pub fn b(&self) -> PositiveReal {
         self.edge_lengths[1]
     }
     /// Length of the `Cuboid` edge along the z axis
     #[inline]
     #[must_use]
-    pub fn c(&self) -> f64 {
+    pub fn c(&self) -> PositiveReal {
         self.edge_lengths[2]
     }
 }
@@ -154,21 +157,23 @@ impl<const N: usize> Volume for Cuboid<N> {
     #[inline]
     fn volume(&self) -> f64 {
         self.edge_lengths
-            .into_iter()
-            .reduce(|acc, x| acc * x)
+            .iter()
+            .map(PositiveReal::get)
+            .reduce(f64::mul)
             .expect("N should be >= 1")
     }
 }
 
 impl<const N: usize> BoundingSphereRadius for Cuboid<N> {
     #[inline]
-    fn bounding_sphere_radius(&self) -> f64 {
+    fn bounding_sphere_radius(&self) -> PositiveReal {
         f64::sqrt(
             self.edge_lengths
-                .into_iter()
+                .iter()
+                .map(PositiveReal::get)
                 .map(|x| (x / 2.0).powi(2))
                 .sum(),
-        )
+        ).try_into().expect("expression evaluates to a positive real")
     }
 }
 
@@ -178,7 +183,7 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Cuboid<N> {
         let mut iter = n
             .into_iter()
             .zip(self.edge_lengths)
-            .map(|(n_i, l_i)| l_i / 2.0 * n_i.signum());
+            .map(|(n_i, l_i)| l_i.get() / 2.0 * n_i.signum());
         array::from_fn(|_| iter.next().unwrap_or_default()).into()
     }
 }
@@ -200,7 +205,7 @@ impl<const N: usize> Cuboid<N> {
     ```
     */
     pub fn maximal_extents(&self) -> [f64; N] {
-        array::from_fn(|i| self.edge_lengths[i] / 2.0)
+        array::from_fn(|i| self.edge_lengths[i].get() / 2.0)
     }
 
     #[inline]
@@ -219,7 +224,7 @@ impl<const N: usize> Cuboid<N> {
     ```
     */
     pub fn minimal_extents(&self) -> [f64; N] {
-        array::from_fn(|i| -self.edge_lengths[i] / 2.0)
+        array::from_fn(|i| -self.edge_lengths[i].get() / 2.0)
     }
 }
 

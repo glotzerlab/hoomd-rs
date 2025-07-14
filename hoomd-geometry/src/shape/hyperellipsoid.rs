@@ -6,6 +6,8 @@
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, RotationMatrix};
+use hoomd_utility::valid::PositiveReal;
+
 use std::ops::{Add, Mul};
 
 /// FUTURE: temp, remove once we have a linalg crate
@@ -160,7 +162,7 @@ assert_eq!(volume, 4.0 / 3.0 * PI * 2.0_f64.powi(3));
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Hyperellipsoid<const N: usize> {
     /// The principle semi-axes of the [`Hyperellipsoid`] along each cartesian direction.
-    pub axes: [f64; N],
+    pub axes: [PositiveReal; N],
 }
 
 /** A circle scaled along the x and y axes.
@@ -254,26 +256,30 @@ pub type Ellipsoid = Hyperellipsoid<3>;
 impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperellipsoid<N> {
     #[inline]
     fn support_mapping(&self, n: &Cartesian<N>) -> Cartesian<N> {
-        let denominator = Cartesian::<N>::from(std::array::from_fn(|i| self.axes[i] * n[i])).norm();
-        std::array::from_fn(|i| n[i] * self.axes[i].powi(2) / denominator).into()
+        let denominator = Cartesian::<N>::from(std::array::from_fn(|i| self.axes[i].get() * n[i])).norm();
+        std::array::from_fn(|i| n[i] * self.axes[i].get().powi(2) / denominator).into()
     }
 }
 
 impl<const N: usize> BoundingSphereRadius for Hyperellipsoid<N> {
     #[inline]
-    fn bounding_sphere_radius(&self) -> f64 {
+    fn bounding_sphere_radius(&self) -> PositiveReal {
         self.axes
-            .into_iter()
+            .iter()
+            .map(PositiveReal::get)
             .reduce(f64::max)
             .expect("N must be greater than or equal to 1")
+            .try_into()
+            .expect("expression evaluates to a positive real")
     }
 }
 impl<const N: usize> Volume for Hyperellipsoid<N> {
     #[inline]
     fn volume(&self) -> f64 {
         self.axes
-            .into_iter()
-            .fold(sphere_volume_prefactor(N), |prod, x| prod * x)
+            .iter()
+            .map(PositiveReal::get)
+            .fold(sphere_volume_prefactor(N), f64::mul)
     }
 }
 
@@ -344,13 +350,13 @@ where
         although the method converges linearly in general. If the search does NOT find a
         negative element in the codomain, the ellipsoids intersect (within a tolerance).
         */
-        let a_inv = other.axes.map(|x| x.powi(2));
+        let a_inv = other.axes.map(|x| x.get().powi(2));
 
         let rot = RotationMatrix::<2>::from(*o_ij);
         let rot_transpose = rot.inverted();
 
         let b_inv = SquareMatrix::from(rot)
-            .mul_diagonal(&self.axes.map(|x| x.powi(2)))
+            .mul_diagonal(&self.axes.map(|x| x.get().powi(2)))
             .matmul(&rot_transpose.into());
 
         let v_ij = &v_ij.coordinates;

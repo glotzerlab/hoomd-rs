@@ -5,6 +5,7 @@
 
 use crate::{BoundingSphereRadius, SupportMapping};
 use hoomd_vector::InnerProduct;
+use hoomd_utility::valid::PositiveReal;
 
 /** Round a shape with a given radius.
 
@@ -37,7 +38,7 @@ pub struct Sphero<S> {
     /// The shape to round.
     pub shape: S,
     /// The radius of the rounding hypersphere.
-    pub rounding_radius: f64,
+    pub rounding_radius: PositiveReal,
 }
 
 impl<S, V> SupportMapping<V> for Sphero<S>
@@ -47,7 +48,7 @@ where
 {
     #[inline]
     fn support_mapping(&self, n: &V) -> V {
-        self.shape.support_mapping(n) + *n / n.norm() * self.rounding_radius
+        self.shape.support_mapping(n) + *n / n.norm() * self.rounding_radius.get()
     }
 }
 
@@ -56,7 +57,7 @@ where
     S: BoundingSphereRadius,
 {
     #[inline]
-    fn bounding_sphere_radius(&self) -> f64 {
-        self.shape.bounding_sphere_radius() + self.rounding_radius
+    fn bounding_sphere_radius(&self) -> PositiveReal {
+        (self.shape.bounding_sphere_radius().get() + self.rounding_radius.get()).try_into().expect("expression should evaluate to a positive real")
     }
 }

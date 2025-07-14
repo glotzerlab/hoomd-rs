@@ -83,6 +83,7 @@ assert_eq!(
 */
 
 use thiserror::Error;
+use hoomd_utility::valid::PositiveReal;
 
 mod convex;
 pub use convex::Convex;
@@ -202,7 +203,7 @@ assert_eq!(bounding_radius, 5.0);
 */
 pub trait BoundingSphereRadius {
     /// Get the bounding radius.
-    fn bounding_sphere_radius(&self) -> f64;
+    fn bounding_sphere_radius(&self) -> PositiveReal;
 }
 
 /// Enumerate possible sources of error in fallible geometry methods.

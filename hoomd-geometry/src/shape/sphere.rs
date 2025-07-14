@@ -4,7 +4,10 @@
 /*! Implement [`Hypersphere`] */
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
 use hoomd_vector::{InnerProduct, Rotate};
+use hoomd_utility::valid::PositiveReal;
+
 use std::f64::consts::PI;
+use std::ops::Mul;
 
 /// The (single, double, ...)-factorial function
 pub fn factorial(n: usize, ntuple: usize) -> usize {
@@ -15,7 +18,7 @@ pub fn factorial(n: usize, ntuple: usize) -> usize {
         (1..=n)
             .rev()
             .step_by(ntuple)
-            .reduce(|acc, x| acc * x)
+            .reduce(usize::mul)
             .expect("1..=(n!=0) is never empty")
     }
 }
@@ -73,7 +76,7 @@ assert_eq!(
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Hypersphere<const N: usize> {
     /// Radius of the sphere
-    pub radius: f64,
+    pub radius: PositiveReal,
 }
 
 /** A circle in two dimensions.
@@ -155,15 +158,15 @@ pub type Sphere = Hypersphere<3>;
 impl<const N: usize> Default for Hypersphere<N> {
     #[inline]
     fn default() -> Self {
-        Hypersphere { radius: 1.0 }
+        Hypersphere { radius: 1.0.try_into().expect("1.0 is a positive real") }
     }
 }
 
 impl<const N: usize> Hypersphere<N> {
-    /// Create a sphere from a float with a given radius.
+    /// Create a sphere with a given positive real radius.
     #[must_use]
     #[inline]
-    pub fn with_radius(radius: f64) -> Self {
+    pub fn with_radius(radius: PositiveReal) -> Self {
         Hypersphere { radius }
     }
 }
@@ -173,7 +176,7 @@ impl<const N: usize> Hypersphere<N> {
 impl<const N: usize, V: InnerProduct> SupportMapping<V> for Hypersphere<N> {
     #[inline]
     fn support_mapping(&self, n: &V) -> V {
-        *n / n.norm() * self.radius
+        *n / n.norm() * self.radius.get()
     }
 }
 
@@ -182,7 +185,7 @@ impl<const N: usize> Volume for Hypersphere<N> {
     fn volume(&self) -> f64 {
         sphere_volume_prefactor(N)
             * self
-                .radius
+                .radius.get()
                 .powi(N.try_into().expect("Dimension should not overflow i32!"))
     }
 }
@@ -192,13 +195,13 @@ impl<const N: usize, V: InnerProduct, R: Rotate<V>> IntersectsAt<Hypersphere<N>,
 {
     #[inline]
     fn intersects_at(&self, other: &Hypersphere<N>, v_ij: &V, _o_ij: &R) -> bool {
-        (v_ij).norm_squared() <= (other.radius + self.radius).powi(2)
+        (v_ij).norm_squared() <= (other.radius.get() + self.radius.get()).powi(2)
     }
 }
 
 impl<const N: usize> BoundingSphereRadius for Hypersphere<N> {
     #[inline]
-    fn bounding_sphere_radius(&self) -> f64 {
+    fn bounding_sphere_radius(&self) -> PositiveReal {
         self.radius
     }
 }
@@ -243,13 +246,13 @@ mod tests {
         #[case] _n: PhantomData<Hypersphere<N>>,
         #[values(0.01, 1.0, 33.3, 1e6)] radius: f64,
     ) {
-        let s = Hypersphere::<N> { radius };
+        let s = Hypersphere::<N> { radius: radius.try_into().expect("test value is a positive real") };
 
         if radius == 1.0 {
-            assert_eq!(s.radius, 1.0);
+            assert_eq!(s.radius.get(), 1.0);
             assert_eq!(s, Hypersphere::<N>::default());
         } else {
-            assert_eq!(s.radius, radius);
+            assert_eq!(s.radius.get(), radius);
         }
 
         assert_relative_eq!(s.volume(), volume_map(N, radius));
@@ -275,14 +278,14 @@ mod tests {
         #[case] _n: PhantomData<Hypersphere<N>>,
         #[values(0.1, 1.0, 33.3)] radius: f64,
     ) {
-        let s = Hypersphere::<N> { radius };
+        let s = Hypersphere::<N> { radius: radius.try_into().expect("test value is a positive real") };
         let v = Cartesian::<N>::from([radius.powi(2) / 1.8; N]);
         assert_eq!(v / v.norm() * radius, s.support_mapping(&v));
     }
 
     #[test]
     fn support_mapping() {
-        let sphere = Sphere::with_radius(2.0);
+        let sphere = Sphere::with_radius(2.0.try_into().expect("test value is a positive real"));
 
         assert_relative_eq!(
             sphere.support_mapping(&Cartesian::from([0.0, 0.0, 1.0])),
@@ -317,8 +320,8 @@ mod tests {
 
     #[test]
     fn intersects_at() {
-        let sphere0 = Sphere::with_radius(2.0);
-        let sphere1 = Sphere::with_radius(4.0);
+        let sphere0 = Sphere::with_radius(2.0.try_into().expect("test value is a positive real"));
+        let sphere1 = Sphere::with_radius(4.0.try_into().expect("test value is a positive real"));
         let identity = Versor::default();
 
         assert!(sphere0.intersects_at(&sphere1, &[0.0, 0.0, 5.9].into(), &identity));

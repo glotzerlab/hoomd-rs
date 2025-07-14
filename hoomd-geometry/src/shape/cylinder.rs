@@ -4,8 +4,8 @@
 /*! Implement [`Cylinder`] */
 
 use crate::Volume;
-
 use super::Circle;
+use hoomd_utility::valid::PositiveReal;
 
 /** A circle with normal `[0 0 1]` swept by `h/2` in the `+z` and `-z` directions.
 
@@ -23,9 +23,9 @@ assert_eq!(cyl.volume(), PI * (2.0 * 2.0) * 3.0);
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Cylinder {
     /// Radius of the [`Cylinder`]
-    pub radius: f64,
+    pub radius: PositiveReal,
     /// Height of the [`Cylinder`]
-    pub height: f64,
+    pub height: PositiveReal,
 }
 
 impl Volume for Cylinder {
@@ -35,6 +35,6 @@ impl Volume for Cylinder {
             radius: self.radius,
         }
         .volume()
-            * self.height
+            * self.height.get()
     }
 }
