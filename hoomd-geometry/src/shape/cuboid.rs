@@ -8,7 +8,7 @@ use hoomd_vector::Cartesian;
 use itertools::multizip;
 use std::array;
 
-/** The Minkowski sum of `N` mutually perpendicular vectors `[0... edge_lengths[i] ...0]`.
+/** A shape with with all perpendicular angles made from axis-aligned edges.
 
 A [`Cuboid`] is the N-dimensional analog of a rectangle, and is defined by
 its edge lengths. Each perpendicular edge of the cuboid is aligned along the
