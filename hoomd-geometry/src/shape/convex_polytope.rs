@@ -210,6 +210,11 @@ impl<const N: usize> BoundingSphereRadius for ConvexPolytope<N> {
 
 #[cfg(test)]
 mod tests {
+    #![expect(
+        clippy::similar_names,
+        reason = "tests do not need to adhere to this rule"
+    )]
+
     use super::*;
     use crate::{Convex, IntersectsAt};
     use hoomd_vector::{Angle, Cartesian, Rotate, Rotation, Versor};
@@ -410,7 +415,7 @@ mod tests {
         a: &A,
         b: &B,
         r_a: R,
-        r_b: R,
+        r_b: &R,
     ) -> bool
     where
         R: Rotation + Rotate<Cartesian<N>>,
@@ -434,8 +439,8 @@ mod tests {
         A: IntersectsAt<B, Cartesian<N>, R>,
         B: IntersectsAt<A, Cartesian<N>, R>,
     {
-        assert_eq!(test_overlap(r_ab, a, b, r_a, r_b), expected);
-        assert_eq!(test_overlap(-r_ab, b, a, r_b, r_a), expected);
+        assert_eq!(test_overlap(r_ab, a, b, r_a, &r_b), expected);
+        assert_eq!(test_overlap(-r_ab, b, a, r_b, &r_a), expected);
     }
 
     #[rstest]
