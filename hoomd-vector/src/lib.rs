@@ -546,7 +546,7 @@ pub trait InnerProduct: Vector {
     where `self` is $`\vec{a}`$.
     # Example
     ```
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, InnerProduct, Vector};
     let a = Cartesian::from([1.0, 2.0]);
     let b = Cartesian::from([4.0, 0.0]);
     let c = a.project(&b);
