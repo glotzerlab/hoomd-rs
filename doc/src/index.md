@@ -2,6 +2,7 @@
 
 ## API Reference
 
+* [hoomd-bevy](api/hoomd_bevy/index.html)
 * [hoomd-gsd](api/hoomd_gsd/index.html)
 * [hoomd-geometry](api/hoomd_geometry/index.html)
 * [hoomd-interaction](api/hoomd_interaction/index.html)
