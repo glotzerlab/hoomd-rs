@@ -75,7 +75,8 @@ skips `hoomd-bevy`.
 
 ## More examples
 
-Look in the [examples] directory to find more examples. 
+The [examples] directory contains many files that demonstrate how to use
+**HOOMD-rs**.
 
 To execute an example, run:
 ```shell

@@ -158,7 +158,7 @@ pub struct Settings {
     pub sps_limit: f32,
 
     /// Initial viewport height.
-    pub viewport_height: f32
+    pub viewport_height: f32,
 }
 
 impl Default for Settings {
@@ -657,9 +657,7 @@ F12     : Take a screenshot (screenshot.png).
     /// Set up the 2D camera.
     fn setup_camera(mut commands: Commands, viewport_height: f32) {
         let projection = Projection::Orthographic(OrthographicProjection {
-            scaling_mode: bevy::render::camera::ScalingMode::FixedVertical {
-                viewport_height,
-            },
+            scaling_mode: bevy::render::camera::ScalingMode::FixedVertical { viewport_height },
             ..OrthographicProjection::default_2d()
         });
 
