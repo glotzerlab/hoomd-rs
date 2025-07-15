@@ -32,16 +32,6 @@ hoomd-microstate = { path = "hoomd-microstate" }
 hoomd-utility = { path = "hoomd-utility" }
 hoomd-vector = { path = "hoomd-vector" }
 
-# Common dependencies
-bevy = { version = "0.16.1", features = ["bevy_dev_tools"] }
-bevy_diagnostic = "0.16.1"
-bevy_winit = "0.16.1"
-itertools = "0.14.0"
-rand = "0.9.0"
-thiserror = "2.0.12"
-# Note: thiserror does not appear in the public API and therefore does not
-# impact semantic versioning.
-
 # Common dev dependencies
 approx = "0.5.1"
 divan = "0.1.17"
@@ -49,6 +39,39 @@ rstest = "0.25.0"
 anyhow = "1.0.98"
 tempfile = "3.20.0"
 clap = {version = "4.5.40", features = ["derive"]}
+
+# Common dependencies
+itertools = "0.14.0"
+rand = "0.9.0"
+thiserror = "2.0.12"
+
+[workspace.dependencies.bevy]
+version = "0.16.1"
+default-features = false
+features = ["async_executor",
+            "bevy_asset",
+            "bevy_color",
+            "bevy_log",
+            "bevy_render",
+            "bevy_sprite",
+            "bevy_state",
+            "bevy_text",
+            "bevy_ui",
+            "bevy_window",
+            "bevy_winit",
+            "default_font",
+            "multi_threaded",
+            "png",
+            "std",
+            "sysinfo_plugin",
+            "x11",
+            "bevy_dev_tools"]
+
+[workspace.dependencies.bevy_diagnostic]
+version = "0.16.1"
+
+[workspace.dependencies.bevy_winit]
+version = "0.16.1"
 
 [workspace.lints.rust]
 missing_docs = "warn"
