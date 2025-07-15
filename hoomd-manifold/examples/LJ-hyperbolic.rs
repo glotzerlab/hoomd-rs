@@ -32,8 +32,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     result
 }
 
-const PARTICLE_NUMBER : usize = 100;
-const RHO : f64 = 0.6;
+const PARTICLE_NUMBER : usize = 500;
+const RHO : f64 = 10.0;
 
 /// Run the simulation
 fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> {
@@ -57,18 +57,18 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     
     let lj : LennardJones = LennardJones {
         epsilon: 10.0,
-        sigma: 0.5,
+        sigma: 0.065507,
     };
 
     let evaluator = CurvedIsotropic(lj, RHO);
     let cutoff_pair = CutoffPair {
-        r_cut: 10.0 * RHO,
+        r_cut: 10.0,
         evaluator,
     };
 
     let kt = 1.0;
     let hamiltonian = cutoff_pair;
-    let d = 0.05 * RHO;
+    let d = 0.001;
 
     let translate = HyperbolicTranslate {
         maximum_distance: d.try_into()?,
@@ -88,7 +88,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     }
 }
 
-const RAD_SQ : f64 = 0.01;
+const RAD_SQ : f64 = 0.0001;
 
 /// Project coordinates to Poincare disk 
 fn poincare(point: &Minkowski<3>, skirt: f64) -> [f64;3] {
@@ -125,8 +125,8 @@ fn render(
                 color: Color::Blue,
             })
         })
-        .x_bounds([-RHO, RHO])
-        .y_bounds([-RHO, RHO]);
+        .x_bounds([-0.7,0.7]) //([-RHO, RHO])
+        .y_bounds([-0.7,0.7]); //([-RHO, RHO]);
 
     let horizontal = Layout::horizontal([frame.area().height * 2]).flex(Flex::Center);
     let [area] = horizontal.areas(frame.area());
