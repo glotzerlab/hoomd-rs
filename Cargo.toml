@@ -1,16 +1,6 @@
 [workspace]
 
-members = [
-  "hoomd-bevy",
-  "hoomd-gsd",
-  "hoomd-geometry",
-  "hoomd-interaction",
-  "hoomd-mc",
-  "hoomd-microstate",
-  "hoomd-utility",
-  "hoomd-vector"
-]
-
+members = ["hoomd-*"]
 resolver = "3"
 
 [workspace.package]
@@ -131,16 +121,16 @@ rustdoc-args = [ "--html-in-header", "katex.html" ]
 opt-level = 3
 [profile.dev.package.bevy_a11y]
 opt-level = 3
-[profile.dev.package.bevy_animation]
-opt-level = 3
+# [profile.dev.package.bevy_animation]
+# opt-level = 3
 [profile.dev.package.bevy_app]
 opt-level = 3
 [profile.dev.package.bevy_asset]
 opt-level = 3
 [profile.dev.package.bevy_asset_macros]
 opt-level = 3
-[profile.dev.package.bevy_audio]
-opt-level = 3
+# [profile.dev.package.bevy_audio]
+# opt-level = 3
 [profile.dev.package.bevy_color]
 opt-level = 3
 [profile.dev.package.bevy_core_pipeline]
@@ -155,14 +145,14 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.bevy_encase_derive]
 opt-level = 3
-[profile.dev.package.bevy_gilrs]
-opt-level = 3
-[profile.dev.package.bevy_gizmos]
-opt-level = 3
+# [profile.dev.package.bevy_gilrs]
+# opt-level = 3
+# [profile.dev.package.bevy_gizmos]
+# opt-level = 3
 [profile.dev.package.bevy_gizmos_macros]
 opt-level = 3
-[profile.dev.package.bevy_gltf]
-opt-level = 3
+# [profile.dev.package.bevy_gltf]
+# opt-level = 3
 [profile.dev.package.bevy_image]
 opt-level = 3
 [profile.dev.package.bevy_input]
@@ -181,8 +171,8 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.bevy_mikktspace]
 opt-level = 3
-[profile.dev.package.bevy_pbr]
-opt-level = 3
+# [profile.dev.package.bevy_pbr]
+# opt-level = 3
 [profile.dev.package.bevy_picking]
 opt-level = 3
 [profile.dev.package.bevy_platform]
