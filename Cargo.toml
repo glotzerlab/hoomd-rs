@@ -7,7 +7,8 @@ members = ["hoomd-*", "examples"]
 # `cargo test` and similar commands operate only on the core code by default.
 # The `hoomd-bevy` crate depends on `bevy` which takes a long time to download
 # and compile.
-default-members = ["hoomd-geometry",
+default-members = ["examples",
+                   "hoomd-geometry",
                    "hoomd-gsd",
                    "hoomd-interaction",
                    "hoomd-mc",
