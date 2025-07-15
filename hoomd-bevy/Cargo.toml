@@ -22,5 +22,3 @@ bevy_winit.workspace = true
 itertools.workspace = true
 hoomd-microstate.workspace = true
 hoomd-vector.workspace = true
-
-[dev-dependencies]

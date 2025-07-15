@@ -1,0 +1,46 @@
+[package]
+name = "hoomd-examples"
+categories.workspace = true
+description = "Collect examples that demonstrate how to use hoomd-rs."
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+# Do not publish examples to crates.io
+publish = false
+
+# Use more relaxed lints in the examples.
+[lints.clippy]
+print_stdout = "allow"
+
+[features]
+bevy = ["dep:bevy", "dep:hoomd-bevy"]
+
+[dependencies]
+hoomd-bevy = { workspace =  true, optional = true }
+hoomd-geometry.workspace = true
+hoomd-gsd.workspace = true
+hoomd-interaction.workspace = true
+hoomd-mc.workspace = true
+hoomd-microstate.workspace = true
+hoomd-utility.workspace = true
+hoomd-vector.workspace = true
+
+anyhow.workspace = true
+bevy = { workspace = true, optional = true }
+
+[package.metadata.docs.rs]
+all-features = true
+
+[[example]]
+name = "error"
+path = "error.rs"
+
+[[example]]
+name = "fill"
+path = "fill.rs"
+required-features = ["bevy"]

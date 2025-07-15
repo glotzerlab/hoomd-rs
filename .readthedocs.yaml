@@ -15,7 +15,7 @@ build:
     - PATH="$(pwd)/bin:$PATH" mdbook build doc --dest-dir=$READTHEDOCS_OUTPUT/html
     # Build the API reference
     - mkdir -p $READTHEDOCS_OUTPUT/html/api
-    - RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --no-deps
+    - RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --workspace --all-features --no-deps
     - mv target/doc/* $READTHEDOCS_OUTPUT/html/api
     # List the output files
     - ls -lR $READTHEDOCS_OUTPUT/html

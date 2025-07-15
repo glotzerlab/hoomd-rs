@@ -53,8 +53,10 @@ cd hoomd-rs
 
 Build the documentation and open it in your browser:
 ```shell
-RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --no-deps --open
+RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --workspace --no-deps --open
 ```
+You can omit the `--workspace` to build it more quickly, but this skips
+building documentation for `hoomd-bevy`.
 
 ## Example
 

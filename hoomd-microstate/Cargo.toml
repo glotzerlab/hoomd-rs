@@ -23,5 +23,5 @@ thiserror.workspace = true
 rand.workspace = true
 divan.workspace = true
 rstest.workspace = true
-approx.workspace = true
 anyhow.workspace = true
+approx.workspace = true

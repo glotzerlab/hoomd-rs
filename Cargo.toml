@@ -1,7 +1,20 @@
 [workspace]
 
-members = ["hoomd-*"]
 resolver = "3"
+members = ["hoomd-*", "examples"]
+
+# Include only core hoomd simulation crates by default so that `cargo build`,
+# `cargo test` and similar commands operate only on the core code by default.
+# The `hoomd-bevy` crate depends on `bevy` which takes a long time to download
+# and compile.
+default-members = ["hoomd-geometry",
+                   "hoomd-gsd",
+                   "hoomd-interaction",
+                   "hoomd-mc",
+                   "hoomd-microstate",
+                   "hoomd-utility",
+                   "hoomd-vector",
+                  ]
 
 [workspace.package]
 version = "0.0.0"
@@ -16,8 +29,10 @@ categories = ["science"]
 [workspace.dependencies]
 # Subcrates
 hoomd-bevy = { path = "hoomd-bevy" }
+hoomd-geometry = { path = "hoomd-geometry" }
+hoomd-gsd = { path = "hoomd-gsd" }
 hoomd-interaction = { path = "hoomd-interaction" }
-hoomd-mc = { path = "hoomd-microstate" }
+hoomd-mc = { path = "hoomd-mc" }
 hoomd-microstate = { path = "hoomd-microstate" }
 hoomd-utility = { path = "hoomd-utility" }
 hoomd-vector = { path = "hoomd-vector" }

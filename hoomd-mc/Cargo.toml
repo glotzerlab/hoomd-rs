@@ -22,10 +22,7 @@ hoomd-vector.workspace = true
 rand.workspace = true
 
 [dev-dependencies]
-anyhow.workspace = true
 approx.workspace = true
-bevy.workspace = true
 divan.workspace = true
-hoomd-bevy.workspace = true
 rstest.workspace = true
 ratatui = "0.28.0"

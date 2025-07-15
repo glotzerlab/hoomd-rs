@@ -5,9 +5,6 @@ ci:
   # rust does not work on pre-commit.ci
   skip: [fmt, check, clippy]
 
-default_language_version:
-  rust: 1.81.0
-
 repos:
 - repo: https://github.com/glotzerlab/fix-license-header
   rev: v0.4.1
@@ -26,6 +23,7 @@ repos:
   - id: check
   - id: clippy
     args:
+      - --workspace
       - --all-targets
       - --all-features
       - --

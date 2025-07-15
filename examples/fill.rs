@@ -1,16 +1,3 @@
-#![allow(clippy::print_stdout, reason = "Demonstration purposes")]
-#![allow(
-    clippy::needless_pass_by_value,
-    reason = "Bevy requires that args are passed by value."
-)]
-#![allow(
-    clippy::cast_possible_truncation,
-    reason = "Bevy operates with f32 values."
-)]
-
-/*! This is an example
-*/
-
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, Settings, Simulation,
     representation::{Disk, DiskAssets},

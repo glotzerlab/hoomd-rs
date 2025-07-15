@@ -2367,6 +2367,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "hoomd-examples"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "hoomd-bevy",
+ "hoomd-geometry",
+ "hoomd-gsd",
+ "hoomd-interaction",
+ "hoomd-mc",
+ "hoomd-microstate",
+ "hoomd-utility",
+ "hoomd-vector",
+]
+
+[[package]]
 name = "hoomd-geometry"
 version = "0.0.0"
 dependencies = [
@@ -2408,11 +2424,8 @@ dependencies = [
 name = "hoomd-mc"
 version = "0.0.0"
 dependencies = [
- "anyhow",
  "approx",
- "bevy",
  "divan",
- "hoomd-bevy",
  "hoomd-interaction",
  "hoomd-microstate",
  "hoomd-utility",
