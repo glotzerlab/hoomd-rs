@@ -8,8 +8,10 @@ members = [
   "hoomd-interaction",
   "hoomd-mc",
   "hoomd-microstate",
+  "hoomd-order",
   "hoomd-utility",
-  "hoomd-vector",]
+  "hoomd-vector",
+]
 
 resolver = "3"
 
