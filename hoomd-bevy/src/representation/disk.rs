@@ -14,34 +14,42 @@ use bevy::{
 };
 use itertools::EitherOrBoth::{Both, Left, Right};
 use itertools::Itertools;
+use std::marker::PhantomData;
 
 use crate::PRIMARY_COLOR;
-
-// TODO: introduce phantom marker types to differentiate different disks.
-// TODO: Use closure to initialize disks with a given material.
 
 /// Location of the shader implementation
 const SHADER_ASSET_PATH: &str = "embedded://hoomd_bevy/representation/disk.wgsl";
 
-/** Represent an entity with a 2D disk in the plane z=0.
+/** Represent an entity with a 2D disk in the xy plane.
 
-Disks are fixed to a diameter of 1.0. Provide a non-unit diameter in [`sync`]
-to render disks of different sizes.
+Disks are fixed to a diameter of 1.0. Provide a non-unit diameter in [`sync`] to
+render disks of different sizes. Nominally, the z coordinate of the disks should
+be set to 0. Choose a different value to control the back to front draw order.
+
+All disks of the same type must have the same material. To display disks with
+different colors, outline widths, or textures, `setup` and `sync` multiple types
+of disks with different marker types.
 
 To use:
 * Add [`setup`](Self::setup) to the `Startup` schedule.
 * Call [`sync`](Self::sync) in an `Update` schedule that runs after `AdvanceSet`.
 */
 #[derive(Component)]
-pub struct Disk;
+pub struct Disk<T> {
+    /// Mark the type of the disk.
+    marker: PhantomData<T>,
+}
 
 /// Assets that represent a Disk in the scene.
 #[derive(Resource)]
-pub struct DiskAssets {
+pub struct DiskAssets<T> {
     /// The disk mesh.
     mesh: Handle<Mesh>,
     /// The disk material.
     material: Handle<DiskMaterial>,
+    /// Mark the type of the disk assets.
+    marker: PhantomData<T>,
 }
 
 /// Initialize needed plugins and add assets for this representation.
@@ -50,7 +58,7 @@ pub(crate) fn build(app: &mut App) {
     embedded_asset!(app, "disk.wgsl");
 }
 
-impl Disk {
+impl<T: Send+Sync+'static> Disk<T> {
     /** Create assets to render disks.
     */
     pub fn setup(
@@ -61,13 +69,13 @@ impl Disk {
     ) {
         let mesh = meshes.add(Rectangle::new(1.0, 1.0));
         let material = materials.add(material.0);
-        commands.insert_resource(DiskAssets { mesh, material });
+        commands.insert_resource(DiskAssets::<T> { mesh, material, marker: PhantomData });
     }
 
     /// Copy the current positions of simulation particles to bevy entities.
     pub fn sync<I>(
         commands: &mut Commands,
-        disk_assets: Res<DiskAssets>,
+        disk_assets: Res<DiskAssets<T>>,
         query: Query<(Entity, &mut Transform), With<Self>>,
         disks: I,
     ) where
@@ -85,7 +93,7 @@ impl Disk {
                         Mesh2d(disk_assets.mesh.clone()),
                         MeshMaterial2d(disk_assets.material.clone()),
                         Transform::from_translation(position).with_scale(Vec3::splat(diameter)),
-                        Self,
+                        Self { marker: PhantomData },
                     ));
                 }
             }

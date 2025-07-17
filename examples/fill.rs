@@ -14,6 +14,9 @@ use hoomd_vector::Cartesian;
 use anyhow::Context;
 use bevy::prelude::*;
 
+/// Mark the disk representation type.
+struct A;
+
 fn main() -> anyhow::Result<()> {
     let simulation = Fill::new().context("failed to setup simulation")?;
     let l = simulation.microstate.boundary().l.get() as f32;
@@ -28,7 +31,7 @@ fn main() -> anyhow::Result<()> {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins);
     hoomd_bevy_plugin.build(&mut app);
-    app.add_systems(Startup, (|| DiskMaterial::default()).pipe(Disk::setup));
+    app.add_systems(Startup, (|| DiskMaterial::default()).pipe(Disk::<A>::setup));
     app.add_systems(
         Startup,
         (move || RectangularBoundary {
@@ -132,8 +135,8 @@ impl Simulation for Fill {
 /// Copy the current positions of simulation particles to bevy entities.
 fn sync_simulation(
     mut commands: Commands,
-    disk_assets: Res<DiskAssets>,
-    query: Query<(Entity, &mut Transform), With<Disk>>,
+    disk_assets: Res<DiskAssets<A>>,
+    query: Query<(Entity, &mut Transform), With<Disk<A>>>,
     simulation: Res<Fill>,
 ) {
     let sites = simulation.microstate.sites();
