@@ -493,6 +493,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "hoomd-order"
+version = "0.0.0"
+dependencies = [
+ "approx",
+ "divan",
+ "hoomd-interaction",
+ "hoomd-manifold",
+ "hoomd-mc",
+ "hoomd-microstate",
+ "hoomd-utility",
+ "hoomd-vector",
+ "libm",
+ "num",
+ "paste",
+ "rand",
+ "ratatui",
+ "rstest",
+ "thiserror",
+]
+
+[[package]]
 name = "hoomd-utility"
 version = "0.0.0"
 dependencies = [

@@ -10,6 +10,23 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
+thiserror.workspace = true
+rand.workspace = true
+hoomd-interaction.workspace = true
+hoomd-manifold.workspace = true
+hoomd-mc.workspace = true
+hoomd-microstate.workspace = true
+hoomd-utility.workspace = true
+hoomd-vector.workspace = true
+libm = "0.2.11"
+num = "0.4.3"
+
+[dev-dependencies]
+approx.workspace = true
+divan.workspace = true
+paste = "1.0.15"
+rstest.workspace = true
+ratatui = "0.28.0"
 
 [lints]
 workspace = true

@@ -15,7 +15,7 @@ use hoomd_microstate::Microstate;
 use hoomd_vector::Cartesian;
 
 pub use {
-    local::{Locality, NeighborList, PowerDiagramCenters}
+    local::{NeighborList, PowerDiagramCenters}
 };
 
 /** Computes the set of circle centers and radii whose power diagram gives the Voronoi tesselation
