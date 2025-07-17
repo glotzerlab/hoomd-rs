@@ -1,7 +1,5 @@
 use hoomd_bevy::{
-    AdvanceSet,
-    BOUNDARY_COLOR,
-    HoomdBevyPlugin, Settings, Simulation,
+    AdvanceSet, HoomdBevyPlugin, Settings, Simulation,
     representation::{Disk, DiskAssets, RectangularBoundary},
 };
 use hoomd_interaction::{
@@ -33,9 +31,15 @@ fn main() -> anyhow::Result<()> {
     app.add_plugins(DefaultPlugins);
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(Startup, Disk::setup);
-    app.add_systems(Startup, (move || RectangularBoundary { width: l, height: l, ..default() }).pipe(
-            RectangularBoundary::setup)
-        );
+    app.add_systems(
+        Startup,
+        (move || RectangularBoundary {
+            width: l,
+            height: l,
+            ..default()
+        })
+        .pipe(RectangularBoundary::setup),
+    );
     app.add_systems(
         Update,
         sync_simulation

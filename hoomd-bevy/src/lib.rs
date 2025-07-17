@@ -62,7 +62,7 @@ use std::time::{Duration, Instant};
 pub mod representation;
 
 /// The default color for the primary representation.
-pub const PRIMARY_COLOR: Color = Color::srgb(168.0/255.0, 208.0/255.0, 222.0/255.0);
+pub const PRIMARY_COLOR: Color = Color::srgb(168.0 / 255.0, 208.0 / 255.0, 222.0 / 255.0);
 
 /// The default color for the boundary representation.
 pub const BOUNDARY_COLOR: Color = Color::srgb(0.0, 0.0, 0.0);

@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Graphical elements that depict the boundary conditions.
+/*! Implement `RectangularBoundary`.
 */
 
 use bevy::prelude::*;
@@ -16,6 +16,7 @@ The lines are a fixed thickness in world coordinates. A default
 * `height`: 1.0
 * `thickness`: 0.1
 * `color`: [`BOUNDARY_COLOR`](crate::BOUNDARY_COLOR)
+* `z`: 1.0
 
 To use:
 * Add [`setup`](Self::setup) to the `Startup` schedule.
@@ -34,17 +35,26 @@ pub struct RectangularBoundary {
 
     /// Color of the rectangle.
     pub color: Color,
-    }
+
+    /// Draw the rectangle on this z plane.
+    pub z: f32,
+}
 
 impl Default for RectangularBoundary {
     fn default() -> Self {
-        Self { width: 1.0, height: 1.0, thickness: 0.1, color: BOUNDARY_COLOR, }
+        Self {
+            width: 1.0,
+            height: 1.0,
+            thickness: 0.1,
+            color: BOUNDARY_COLOR,
+            z: 1.0,
+        }
     }
 }
 
 impl RectangularBoundary {
-    /** Create assets to render rectangular boundaries.
-    */
+    /** Create entities that render rectangular boundaries.
+     */
     pub fn setup(
         rectangular_boundary: In<Self>,
         mut commands: Commands,
@@ -57,39 +67,112 @@ impl RectangularBoundary {
         let height = rectangular_boundary.height;
         let width = rectangular_boundary.width;
         let thickness = rectangular_boundary.thickness;
-        let half_thickness = thickness/2.0;
-        let double_thickness = thickness*2.0;
+        let z = rectangular_boundary.z;
+        let half_thickness = thickness / 2.0;
+        let double_thickness = thickness * 2.0;
 
-        let left = (Transform::from_xyz(-width/2.0-half_thickness, 0.0, 0.0)
-                        .with_scale(Vec3::new(thickness, height+double_thickness, 1.0)),
-                    Mesh2d(mesh.clone()),
-                    MeshMaterial2d(material.clone()));
-        let right = (Transform::from_xyz(width/2.0+half_thickness, 0.0, 0.0)
-                        .with_scale(Vec3::new(thickness, height+double_thickness, 1.0)),
-                    Mesh2d(mesh.clone()),
-                    MeshMaterial2d(material.clone()));
-        let bottom = (Transform::from_xyz(0.0, -height/2.0-half_thickness, 0.0)
-                        .with_scale(Vec3::new(width+double_thickness, thickness, 1.0)),
-                    Mesh2d(mesh.clone()),
-                    MeshMaterial2d(material.clone()));
-        let top = (Transform::from_xyz(0.0, height/2.0+half_thickness, 0.0)
-                        .with_scale(Vec3::new(width+double_thickness, thickness, 1.0)),
-                    Mesh2d(mesh.clone()),
-                    MeshMaterial2d(material.clone()));
+        let left = (
+            Transform::from_xyz(-width / 2.0 - half_thickness, 0.0, z).with_scale(Vec3::new(
+                thickness,
+                height + double_thickness,
+                1.0,
+            )),
+            Mesh2d(mesh.clone()),
+            MeshMaterial2d(material.clone()),
+        );
+        let right = (
+            Transform::from_xyz(width / 2.0 + half_thickness, 0.0, z).with_scale(Vec3::new(
+                thickness,
+                height + double_thickness,
+                1.0,
+            )),
+            Mesh2d(mesh.clone()),
+            MeshMaterial2d(material.clone()),
+        );
+        let bottom = (
+            Transform::from_xyz(0.0, -height / 2.0 - half_thickness, z).with_scale(Vec3::new(
+                width + double_thickness,
+                thickness,
+                1.0,
+            )),
+            Mesh2d(mesh.clone()),
+            MeshMaterial2d(material.clone()),
+        );
+        let top = (
+            Transform::from_xyz(0.0, height / 2.0 + half_thickness, z).with_scale(Vec3::new(
+                width + double_thickness,
+                thickness,
+                1.0,
+            )),
+            Mesh2d(mesh.clone()),
+            MeshMaterial2d(material.clone()),
+        );
 
-        commands.spawn((rectangular_boundary.0,
+        commands.spawn((
+            rectangular_boundary.0,
             Transform::default(),
             Visibility::Visible,
-            children![left, right, bottom, top]));
+            children![left, right, bottom, top],
+        ));
     }
 
-    /// Copy the current positions of simulation particles to bevy entities.
+    /// Give the rectangular boundary a new width and height.
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "Would only panic due to a bug in this module."
+    )]
     pub fn sync(
-        entity_rectangle: Single<(Entity, &Self)>,
-        width: f32,
-        height: f32,
-    )
-    {
-    let (entity, rectangle) = *entity_rectangle;
+        entity_rectangle: Single<(Entity, &RectangularBoundary)>,
+        children: Query<&Children>,
+        mut transforms: Query<&mut Transform>,
+        new_width: f32,
+        new_height: f32,
+    ) {
+        let (entity, rectangle) = *entity_rectangle;
+
+        let height = new_height;
+        let width = new_width;
+        let z = rectangle.z;
+        let thickness = rectangle.thickness;
+        let half_thickness = thickness / 2.0;
+        let double_thickness = thickness * 2.0;
+
+        let mut child_iter = children.iter_descendants(entity);
+
+        // left
+        let child_entity = child_iter
+            .next()
+            .expect("RectangularBoundary should have 4 children");
+        if let Ok(mut transform) = transforms.get_mut(child_entity) {
+            transform.translation = Vec3::new(-width / 2.0 - half_thickness, 0.0, z);
+            transform.scale = Vec3::new(thickness, height + double_thickness, 1.0);
+        }
+
+        // right
+        let child_entity = child_iter
+            .next()
+            .expect("RectangularBoundary should have 4 children");
+        if let Ok(mut transform) = transforms.get_mut(child_entity) {
+            transform.translation = Vec3::new(width / 2.0 + half_thickness, 0.0, z);
+            transform.scale = Vec3::new(thickness, height + double_thickness, 1.0);
+        }
+
+        // bottom
+        let child_entity = child_iter
+            .next()
+            .expect("RectangularBoundary should have 4 children");
+        if let Ok(mut transform) = transforms.get_mut(child_entity) {
+            transform.translation = Vec3::new(0.0, -height / 2.0 - half_thickness, z);
+            transform.scale = Vec3::new(width + double_thickness, thickness, 1.0);
+        }
+
+        // top
+        let child_entity = child_iter
+            .next()
+            .expect("RectangularBoundary should have 4 children");
+        if let Ok(mut transform) = transforms.get_mut(child_entity) {
+            transform.translation = Vec3::new(0.0, height / 2.0 + half_thickness, z);
+            transform.scale = Vec3::new(width + double_thickness, thickness, 1.0);
+        }
     }
 }
