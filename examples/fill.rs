@@ -8,9 +8,7 @@ use hoomd_interaction::{
     pairwise::{Boxcar, Isotropic},
 };
 use hoomd_mc::{Sweep, Translate, Trial};
-use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder, Site, boundary::Square, property::Point,
-};
+use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Square, property::Point};
 use hoomd_vector::Cartesian;
 
 use anyhow::Context;
@@ -143,14 +141,15 @@ fn sync_simulation(
         &mut commands,
         disk_assets,
         query,
-        sites,
-        |site: &Site<Point<Cartesian<2>>>| -> Vec3 {
-            Vec3::new(
-                site.properties.position[0] as f32,
-                site.properties.position[1] as f32,
-                0.0,
+        sites.iter().map(|site| {
+            (
+                Vec3::new(
+                    site.properties.position[0] as f32,
+                    site.properties.position[1] as f32,
+                    0.0,
+                ),
+                1.0f32,
             )
-        },
-        |_: &Site<Point<Cartesian<2>>>| -> f32 { 1.0f32 },
+        }),
     );
 }

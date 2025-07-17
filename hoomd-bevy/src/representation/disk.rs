@@ -67,32 +67,26 @@ impl Disk {
     }
 
     /// Copy the current positions of simulation particles to bevy entities.
-    pub fn sync<'a, T, I, F1, F2>(
+    pub fn sync<I>(
         commands: &mut Commands,
         disk_assets: Res<DiskAssets>,
         query: Query<(Entity, &mut Transform), With<Self>>,
-        sites: I,
-        position: F1,
-        diameter: F2,
+        disks: I,
     ) where
-        T: 'a,
-        I: IntoIterator<Item = &'a T>,
-        F1: Fn(&T) -> Vec3,
-        F2: Fn(&T) -> f32,
+        I: IntoIterator<Item = (Vec3, f32)>,
     {
-        for item in &mut query.into_iter().zip_longest(sites) {
+        for item in &mut query.into_iter().zip_longest(disks) {
             match item {
-                Both((_, mut transform), item) => {
-                    transform.translation = position(item);
-                    transform.scale = Vec3::splat(diameter(item));
+                Both((_, mut transform), (position, diameter)) => {
+                    transform.translation = position;
+                    transform.scale = Vec3::splat(diameter);
                 }
                 Left((entity, _)) => commands.entity(entity).despawn(),
-                Right(item) => {
+                Right((position, diameter)) => {
                     commands.spawn((
                         Mesh2d(disk_assets.mesh.clone()),
                         MeshMaterial2d(disk_assets.material.clone()),
-                        Transform::from_translation(position(item))
-                            .with_scale(Vec3::splat(diameter(item))),
+                        Transform::from_translation(position).with_scale(Vec3::splat(diameter)),
                         Self,
                     ));
                 }
