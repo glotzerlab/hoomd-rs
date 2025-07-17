@@ -70,6 +70,8 @@ Individual examples can use these to reduce the complexity of `sync_simulation`,
 but are also free to implement custom methods when needed (e.g. spheres with
 velocity vectors). Due to the way Bevy is structured, each of these helper methods
 is paired with a `setup` method that creates the needed geometry and material assets.
+[This technique](https://www.reddit.com/r/bevy/comments/1bwq9a0/plugin_system_initialization_pattern/)
+enables configurable setup via pipes.
 
 ## Error handling
 

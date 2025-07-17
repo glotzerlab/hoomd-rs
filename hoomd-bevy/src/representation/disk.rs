@@ -20,12 +20,12 @@ use crate::PRIMARY_COLOR;
 // TODO: introduce phantom marker types to differentiate different disks.
 // TODO: Use closure to initialize disks at a given radius.
 
-/// Location of the shader imlplementation
+/// Location of the shader implementation
 const SHADER_ASSET_PATH: &str = "embedded://hoomd_bevy/representation/disk.wgsl";
 
 /** Represent an entity with a 2D disk in the plane z=0.
 
-Disks are fixed to a diameter of 1.0. Provide a non-unit scale in [`sync`]
+Disks are fixed to a diameter of 1.0. Provide a non-unit diameter in [`sync`]
 to render disks of different sizes.
 
 To use:
@@ -106,7 +106,7 @@ impl Disk {
 [`DiskMaterial`] mixes the texture (which defaults to fully transparent) with
 the background color using the texture alpha. It ignores the background alpha.
 
-Control the draw order using the z coordinate. The draw order is non-determistic
+Control the draw order using the z coordinate. The draw order is non-deterministic
 for all disks at the same z value.
 */
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]

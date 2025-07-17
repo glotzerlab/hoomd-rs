@@ -26,7 +26,12 @@
 
 /*! Connect *hoomd-rs* simulations with the Bevy game engine.
 
-Use [`HoomdBevyPlugin`] to create visual, interactive simulations.
+Use [`HoomdBevyPlugin`] to create visual, interactive simulations. Add the
+plugin to a Bevy `App` and it will step the simulation up to a configurable
+limit number of steps per second. To display geometry on the screen, add one
+more more `setup` methods from [`representation`] to the `Startup` schedule.
+Then add a `sync` method to the `Update` schedule that synchronizes the entire
+microstate (using the helper methods from [`representation`]).
 
 # Examples
 
@@ -37,15 +42,6 @@ See any one of the many *hoomd-rs* examples that use [`HoomdBevyPlugin`].
 `hoomd-bevy` provides the following assets:
 
 * `embedded://hoomd_bevy/logo.png` - The HOOMD logo (512 x 512).
-
-# Stability
-
-`hoomd-bevy` currently does **NOT** follow semantic versioning. First, it
-is primarily intended for use to support the *hoomd-rs* examples. Second,
-*Bevy* itself is under very active development and every release makes
-breaking changes. You are welcome to use `hoomd-bevy` for your own interactive
-applications, but keep in mind that minor releases to *hoomd-rs* may make
-breaking changes in `hoomd-bevy`.
 */
 
 use anyhow::Context;
@@ -66,8 +62,10 @@ use std::time::{Duration, Instant};
 pub mod representation;
 
 /// The default color for the primary representation.
-pub const PRIMARY_COLOR: Color = Color::srgb(80.0 / 255.0, 134.0 / 255.0, 178.0 / 255.0);
-// pub const PRIMARY_COLOR: Color = Color::srgb(168.0/255.0, 208.0/255.0, 222.0/255.0);
+pub const PRIMARY_COLOR: Color = Color::srgb(168.0/255.0, 208.0/255.0, 222.0/255.0);
+
+/// The default color for the boundary representation.
+pub const BOUNDARY_COLOR: Color = Color::srgb(0.0, 0.0, 0.0);
 
 /** The model, parameters, and microstate they act on.
 
@@ -76,6 +74,8 @@ macrostate parameters in fields. [`HoomdBevyPlugin`] requires that each
 [`Simulation`] provide a method to advance forward one step and a method to
 query the current step. Beyond that, user types are free to implement any
 inherent methods necessary to manage the simulation.
+
+TODO: Simulation likely belongs in a different crate. But which one?
 */
 pub trait Simulation {
     /** Advance the simulation forward one step.
@@ -651,7 +651,6 @@ F12     : Take a screenshot (screenshot.png).
         Some(best_frame_time)
     }
 
-    // TODO: how to set the camera height? Put it in settings?
     // TODO: How to set 3D cameras? Use a marker type? Or an option in the settings?
 
     /// Set up the 2D camera.

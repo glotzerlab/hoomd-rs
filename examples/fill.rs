@@ -1,6 +1,8 @@
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, Settings, Simulation,
-    representation::{Disk, DiskAssets},
+    AdvanceSet,
+    BOUNDARY_COLOR,
+    HoomdBevyPlugin, Settings, Simulation,
+    representation::{Disk, DiskAssets, RectangularBoundary},
 };
 use hoomd_interaction::{
     CutoffPair, Single,
@@ -15,8 +17,6 @@ use hoomd_vector::Cartesian;
 
 use anyhow::Context;
 use bevy::prelude::*;
-
-// TODO: Reset button?
 
 fn main() -> anyhow::Result<()> {
     let simulation = Fill::new().context("failed to setup simulation")?;
@@ -33,6 +33,9 @@ fn main() -> anyhow::Result<()> {
     app.add_plugins(DefaultPlugins);
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(Startup, Disk::setup);
+    app.add_systems(Startup, (move || RectangularBoundary { width: l, height: l, ..default() }).pipe(
+            RectangularBoundary::setup)
+        );
     app.add_systems(
         Update,
         sync_simulation
@@ -122,14 +125,6 @@ impl Simulation for Fill {
     fn step(&self) -> u64 {
         self.microstate.step()
     }
-}
-
-/// Display the simulation box
-fn add_box(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-) {
 }
 
 /// Copy the current positions of simulation particles to bevy entities.
