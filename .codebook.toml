@@ -1,0 +1,8 @@
+words = [
+    "hoomd",
+    "macrostate",
+    "microstate",
+    "shader",
+    "sps",
+    "winit",
+]
