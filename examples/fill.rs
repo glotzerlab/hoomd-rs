@@ -1,6 +1,6 @@
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, Settings, Simulation,
-    representation::{Disk, DiskAssets, RectangularBoundary},
+    representation::{Disk, DiskMaterial, DiskAssets, RectangularBoundary},
 };
 use hoomd_interaction::{
     CutoffPair, Single,
@@ -28,7 +28,7 @@ fn main() -> anyhow::Result<()> {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins);
     hoomd_bevy_plugin.build(&mut app);
-    app.add_systems(Startup, Disk::setup);
+    app.add_systems(Startup, (|| DiskMaterial::default()).pipe(Disk::setup));
     app.add_systems(
         Startup,
         (move || RectangularBoundary {

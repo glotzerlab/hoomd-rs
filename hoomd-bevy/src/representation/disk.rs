@@ -18,7 +18,7 @@ use itertools::Itertools;
 use crate::PRIMARY_COLOR;
 
 // TODO: introduce phantom marker types to differentiate different disks.
-// TODO: Use closure to initialize disks at a given radius.
+// TODO: Use closure to initialize disks with a given material.
 
 /// Location of the shader implementation
 const SHADER_ASSET_PATH: &str = "embedded://hoomd_bevy/representation/disk.wgsl";
@@ -52,17 +52,15 @@ pub(crate) fn build(app: &mut App) {
 
 impl Disk {
     /** Create assets to render disks.
-
-    [This technique](https://www.reddit.com/r/bevy/comments/1bwq9a0/plugin_system_initialization_pattern/)
-    would allow for configurable setup at the cost of more boilerplate code.
     */
     pub fn setup(
+        material: In<DiskMaterial>,
         mut commands: Commands,
         mut meshes: ResMut<Assets<Mesh>>,
         mut materials: ResMut<Assets<DiskMaterial>>,
     ) {
         let mesh = meshes.add(Rectangle::new(1.0, 1.0));
-        let material = materials.add(DiskMaterial::default());
+        let material = materials.add(material.0);
         commands.insert_resource(DiskAssets { mesh, material });
     }
 
@@ -107,24 +105,24 @@ for all disks at the same z value.
 pub struct DiskMaterial {
     /// Color applied to the interior of the disk.
     #[uniform(0)]
-    background_color: LinearRgba,
+    pub background_color: LinearRgba,
 
     /// Color applied to the outline.
     #[uniform(1)]
-    outline_color: LinearRgba,
+    pub outline_color: LinearRgba,
 
     /// Width of the outline.
     #[uniform(2)]
-    outline_width: f32,
+    pub outline_width: f32,
 
     /// Factor to scale the texture by.
     #[uniform(3)]
-    texture_scale: f32,
+    pub texture_scale: f32,
 
     /// Texture to apply. Blended with `color`.
     #[texture(4)]
     #[sampler(5)]
-    texture: Handle<Image>,
+    pub texture: Handle<Image>,
 }
 
 impl Default for DiskMaterial {

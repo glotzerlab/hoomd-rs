@@ -15,7 +15,7 @@ outlines intended to represent the simulation boundaries.
  */
 
 pub(crate) mod disk;
-pub use disk::{Disk, DiskAssets};
+pub use disk::{Disk, DiskAssets, DiskMaterial};
 
 pub(crate) mod rectangular_boundary;
 pub use rectangular_boundary::RectangularBoundary;
