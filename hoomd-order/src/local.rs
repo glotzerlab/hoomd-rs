@@ -21,6 +21,13 @@ pub struct PowerDiagramCenters {
     pub site_tags: Vec<usize>,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct PDGenerator {
+    pub center: Cartesian<3>,
+    pub radius: f64,
+    pub site_tag: usize,
+}
+
 impl PowerDiagram for Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
     fn power_diagram(&self) -> PowerDiagramCenters {
         let mut circle_centers = Vec::new();
@@ -32,7 +39,7 @@ impl PowerDiagram for Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>
                     site.properties.position[0],
                     site.properties.position[1],
                     0.0,]));
-            circle_radii.push(0.0_f64);
+            circle_radii.push(1.0_f64);
             circle_tags.push(site.site_tag);
         }
         PowerDiagramCenters{
@@ -50,7 +57,7 @@ impl PowerDiagram for Microstate<Point<Cartesian<3>>, Point<Cartesian<3>>, Open>
         let mut circle_tags = Vec::new();
         for site in self.sites() {
             circle_centers.push(site.properties.position);
-            circle_radii.push(0.0_f64);
+            circle_radii.push(1.0_f64);
             circle_tags.push(site.site_tag);
         }
         PowerDiagramCenters{
@@ -78,7 +85,7 @@ impl PowerDiagram for Microstate<Point<Minkowski<3>>, Point<Minkowski<3>>, Open>
                     point.coordinates[0] / (2.0*(1.0-point_norm).sqrt()),
                     point.coordinates[1] / (2.0*(1.0-point_norm).sqrt()),
                     0.0,]));
-            circle_radii.push(point_norm / (4.0*(1.0-point_norm)) - 1.0/((1.0-point_norm).sqrt()));
+            circle_radii.push((point_norm / (4.0*(1.0-point_norm)) - 1.0/((1.0-point_norm).sqrt())).powi(2));
             circle_tags.push(site.site_tag);
         }
         PowerDiagramCenters{

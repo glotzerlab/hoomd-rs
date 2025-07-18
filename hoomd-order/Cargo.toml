@@ -11,7 +11,6 @@ categories.workspace = true
 
 [dependencies]
 thiserror.workspace = true
-rand.workspace = true
 hoomd-interaction.workspace = true
 hoomd-manifold.workspace = true
 hoomd-mc.workspace = true
@@ -20,6 +19,23 @@ hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 libm = "0.2.11"
 num = "0.4.3"
+ahash = "0.8"
+dashu = { version = "0.4", optional = true }
+document-features = "0.2"
+glam = "0.27"
+hdf5 = { version = "0.8", optional = true }
+ibig = {  version = "0.3", optional = true, default-features = false }
+malachite-base = { version = "0.4", optional = true }
+malachite-nz = { version = "0.4", optional = true }
+num-bigint = { version = "0.4", optional = true }
+num_enum = { version = "0.7.2", default-features = false }
+rand = "0.8"
+rayon = { version = "1", optional = true }
+rstar = "0.12"
+rug = { version = "1.24", optional = true,  default-features = false, features = ["integer"] }
+
+[features]
+default = ["ibig", "rayon"]
 
 [dev-dependencies]
 approx.workspace = true
@@ -27,6 +43,7 @@ divan.workspace = true
 paste = "1.0.15"
 rstest.workspace = true
 ratatui = "0.28.0"
+float-cmp = "0.9"
 
 [lints]
 workspace = true

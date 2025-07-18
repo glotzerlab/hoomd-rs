@@ -31,6 +31,7 @@ hoomd-interaction = { path = "hoomd-interaction" }
 hoomd-manifold = { path = "hoomd-manifold" }
 hoomd-mc = { path = "hoomd-mc" }
 hoomd-microstate = { path = "hoomd-microstate" }
+hoomd-order = { path = "hoomd-order" }
 hoomd-utility = { path = "hoomd-utility" }
 hoomd-vector = { path = "hoomd-vector" }
 

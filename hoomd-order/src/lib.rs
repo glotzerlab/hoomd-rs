@@ -10,12 +10,14 @@
 // TODO: Documentation
 
 mod local;
+pub mod meshless_voro; 
 
 use hoomd_microstate::Microstate;
 use hoomd_vector::Cartesian;
 
 pub use {
-    local::{NeighborList, PowerDiagramCenters}
+    local::{NeighborList, PowerDiagramCenters},
+    meshless_voro::{Voronoi}
 };
 
 /** Computes the set of circle centers and radii whose power diagram gives the Voronoi tesselation
