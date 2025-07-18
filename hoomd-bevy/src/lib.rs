@@ -757,6 +757,7 @@ F12     : Take a screenshot (screenshot.png).
     */
     pub fn build(self, app: &mut App) {
         representation::disk::build(app);
+        representation::hyperbolic_disk::build(app);
 
         embedded_asset!(app, "logo.png");
 

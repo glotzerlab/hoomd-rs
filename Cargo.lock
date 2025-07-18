@@ -2361,9 +2361,11 @@ dependencies = [
  "bevy",
  "bevy_diagnostic",
  "bevy_winit",
+ "hoomd-manifold",
  "hoomd-microstate",
  "hoomd-vector",
  "itertools 0.14.0",
+ "libm",
 ]
 
 [[package]]
@@ -2376,10 +2378,13 @@ dependencies = [
  "hoomd-geometry",
  "hoomd-gsd",
  "hoomd-interaction",
+ "hoomd-manifold",
  "hoomd-mc",
  "hoomd-microstate",
  "hoomd-utility",
  "hoomd-vector",
+ "libm",
+ "rand 0.9.1",
 ]
 
 [[package]]

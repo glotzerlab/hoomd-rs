@@ -20,5 +20,7 @@ bevy.workspace = true
 bevy_diagnostic.workspace = true
 bevy_winit.workspace = true
 itertools.workspace = true
+hoomd-manifold.workspace = true
 hoomd-microstate.workspace = true
 hoomd-vector.workspace = true
+libm = "0.2.11"

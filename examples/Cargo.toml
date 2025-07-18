@@ -25,10 +25,13 @@ hoomd-bevy = { workspace =  true, optional = true }
 hoomd-geometry.workspace = true
 hoomd-gsd.workspace = true
 hoomd-interaction.workspace = true
+hoomd-manifold.workspace = true
 hoomd-mc.workspace = true
 hoomd-microstate.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
+rand.workspace = true
+libm = "0.2.11"
 
 anyhow.workspace = true
 bevy = { workspace = true, optional = true }
@@ -43,4 +46,9 @@ path = "error.rs"
 [[example]]
 name = "fill"
 path = "fill.rs"
+required-features = ["bevy"]
+
+[[example]]
+name = "hyperbolic_fill"
+path = "hyperbolic_fill.rs"
 required-features = ["bevy"]
