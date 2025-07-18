@@ -1,8 +1,18 @@
 words = [
+    "dyn",
     "hoomd",
+    "hypersphere",
+    "hyperspheres",
+    "hypervolume",
     "macrostate",
     "microstate",
+    "newtype",
+    "orientable",
+    "polytope",
+    "polytopes",
     "shader",
     "sps",
+    "versor",
     "winit",
+    "xenocollide",
 ]
