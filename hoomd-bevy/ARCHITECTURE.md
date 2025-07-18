@@ -15,7 +15,7 @@ Most production uses of `hoomd-rs` will not use Bevy. Therefore, long strings
 of code that interface with Bevy will be distracting. To the extent possible,
 `hoomd_bevy` separates the simulation and interface code so that the web version
 of the tutorial can show only pure `hoomd-rs` examples. At the same time, Bevy
-forces that code to be structured so that it can execute one step at a time.
+forces that code be structured so that it can execute one step at a time.
 This is not necessarily a bad practice, but does add extra complication over
 what could be written directly in a for loop in a single `main()` function.
 
@@ -31,11 +31,11 @@ implements common functionality and interfaces:
 * Key bindings to hide the UI and take screenshots.
 * A menu to control common settings (steps per second limit, camera speed, etc.)
 
-Most examples will start up and starting running the simulation right away.
-Most users would want to see that. Some examples might work best if the user
-choose some options before starting. The plugin might be able to accommodate
-deferred starts with optional resources. This is not implemented now, but
-can be investigated when it is needed.
+Most examples will start running the simulation right away. Most users would
+want to see that. Some examples might work best if the user choose some options
+before starting. The plugin might be able to accommodate deferred starts with
+optional resources. This is not implemented now, but can be investigated when it
+is needed.
 
 `HoomdBevyPlugin` fills the full window with the simulation and adds text
 overlays when requested in the upper left, lower left, and lower right

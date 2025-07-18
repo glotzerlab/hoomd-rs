@@ -23,9 +23,10 @@ const SHADER_ASSET_PATH: &str = "embedded://hoomd_bevy/representation/disk.wgsl"
 
 /** Represent an entity with a 2D disk in the xy plane.
 
-Disks are fixed to a diameter of 1.0. Provide a non-unit diameter in [`sync`] to
-render disks of different sizes. Nominally, the z coordinate of the disks should
-be set to 0. Choose a different value to control the back to front draw order.
+The base representation has a diameter of 1.0. Provide a non-unit diameter in
+[`sync`] to render disks of different sizes. Nominally, the z coordinate of the
+disks should be set to 0. Choose a different value to control the back to front
+draw order.
 
 All disks of the same type must have the same material. To display disks with
 different colors, outline widths, or textures, `setup` and `sync` multiple types
