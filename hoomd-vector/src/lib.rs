@@ -7,6 +7,7 @@
 #![doc(
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
+// TODO: implement methods as const where possible
 
 /*! Vector and quaternion math.
 
@@ -171,12 +172,24 @@ let versor: Versor = rng.random();
 # Ok(())
 # }
 ```
+
+# Feature flags
+
+These unstable features are intended for internal use. `hoomd-vector` may make
+breaking changes to the code gated behind unstable features in any release.
+
+* `approx`: Enable `assert_relative_eq` and `assert_abs_diff_eq` from the
+  [`approx`](https://docs.rs/approx/latest/approx/) crate on [`Cartesian`],
+  [`Quaternion`] and [`Versor`].
 */
 
 mod angle;
 mod cartesian;
 pub mod distribution;
 mod quaternion;
+
+#[cfg(any(test, feature = "approx"))]
+pub mod approx;
 
 pub use {
     angle::Angle,
@@ -525,6 +538,26 @@ pub trait InnerProduct: Vector {
     fn to_unit_unchecked(self) -> (Unit<Self>, f64) {
         let norm = self.norm();
         (Unit(self / norm), norm)
+    }
+
+    /** Project one vector onto another.
+    ```math
+    \left(\frac{\vec{a} \cdot \vec{b}}{|\vec{b}|^2}\right) \vec{b}
+    ```
+    where `self` is $`\vec{a}`$.
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, InnerProduct, Vector};
+    let a = Cartesian::from([1.0, 2.0]);
+    let b = Cartesian::from([4.0, 0.0]);
+    let c = a.project(&b);
+    assert_eq!(c, [1.0, 0.0].into());
+    ```
+    */
+    #[inline]
+    #[must_use]
+    fn project(&self, b: &Self) -> Self {
+        *b * self.dot(b) / b.norm_squared()
     }
 }
 
