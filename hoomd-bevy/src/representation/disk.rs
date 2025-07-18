@@ -58,9 +58,9 @@ pub(crate) fn build(app: &mut App) {
     embedded_asset!(app, "disk.wgsl");
 }
 
-impl<T: Send+Sync+'static> Disk<T> {
+impl<T: Send + Sync + 'static> Disk<T> {
     /** Create assets to render disks.
-    */
+     */
     pub fn setup(
         material: In<DiskMaterial>,
         mut commands: Commands,
@@ -69,7 +69,11 @@ impl<T: Send+Sync+'static> Disk<T> {
     ) {
         let mesh = meshes.add(Rectangle::new(1.0, 1.0));
         let material = materials.add(material.0);
-        commands.insert_resource(DiskAssets::<T> { mesh, material, marker: PhantomData });
+        commands.insert_resource(DiskAssets::<T> {
+            mesh,
+            material,
+            marker: PhantomData,
+        });
     }
 
     /// Copy the current positions of simulation particles to bevy entities.
@@ -93,7 +97,9 @@ impl<T: Send+Sync+'static> Disk<T> {
                         Mesh2d(disk_assets.mesh.clone()),
                         MeshMaterial2d(disk_assets.material.clone()),
                         Transform::from_translation(position).with_scale(Vec3::splat(diameter)),
-                        Self { marker: PhantomData },
+                        Self {
+                            marker: PhantomData,
+                        },
                     ));
                 }
             }

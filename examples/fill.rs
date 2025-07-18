@@ -1,6 +1,6 @@
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, Settings, Simulation,
-    representation::{Disk, DiskMaterial, DiskAssets, RectangularBoundary},
+    representation::{Disk, DiskAssets, DiskMaterial, RectangularBoundary},
 };
 use hoomd_interaction::{
     CutoffPair, Single,
