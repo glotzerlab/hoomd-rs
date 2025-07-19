@@ -81,7 +81,7 @@ clearly named associated methods.
 
 HOOMD-rs's design is intentionally **simple**. For example, it does not provide
 a massive library of particle interactions, but only the few most common (e.g.
-Lennard-Jones, Sphere). Users should take advantage of **flexibility** to define
+Lennard-Jones, Hypersphere). Users should take advantage of **flexibility** to define
 custom interactions for their model. Keeping the code **simple** will reduce the time
 researchers need to spend when implementing a drastically different model or simulation
 method.

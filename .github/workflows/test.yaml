@@ -36,13 +36,14 @@ jobs:
           # Test multiple rust versions on multiple platforms in debug mode.
           - 1.86.0
           - 1.87.0
+          - 1.88.0
         mode:
          - debug
 
         include:
         # Add a release build on linux with the latest version of rust.
         - os: ubuntu-24.04
-          rust: 1.87.0
+          rust: 1.88.0
           mode: release
 
     steps:
@@ -61,11 +62,11 @@ jobs:
           target/
         key: ${{ runner.os }}-rust-${{ matrix.rust }}-cargo-unit-test-${{ matrix.mode }}-${{ hashFiles('**/Cargo.lock') }}
     - name: Build
-      run: cargo build ${{ matrix.mode == 'release' && '--release' || '' }} --all-targets --verbose
+      run: cargo build ${{ matrix.mode == 'release' && '--release' || '' }} --workspace --all-targets --all-features --verbose
     - name: Run tests
-      run: cargo test ${{ matrix.mode == 'release' && '--release' || '' }} --verbose
+      run: cargo test ${{ matrix.mode == 'release' && '--release' || '' }} --workspace --verbose
     - name: Build API documentation
-      run: cargo doc --no-deps
+      run: cargo doc --workspace --all-features --no-deps
     - name: Run benchmarks
       run: cargo bench
 
