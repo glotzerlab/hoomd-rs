@@ -57,7 +57,7 @@ impl IsotropicEnergy for LennardJonesGauss {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         let r_inv = r.recip();
-        let arg = -1.0 * (r - self.r_0).powi(2) / (2.0 * self.sigma_squared);
+        let arg = -(r - self.r_0).powi(2) / (2.0 * self.sigma_squared);
         r_inv.powi(12) - 2.0 * r_inv.powi(6) - self.epsilon * arg.exp()
     }
 }
@@ -66,7 +66,7 @@ impl IsotropicForce for LennardJonesGauss {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         let r_inv = r.recip();
-        let arg = -1.0 * (r - self.r_0).powi(2) / (2.0 * self.sigma_squared);
+        let arg = -(r - self.r_0).powi(2) / (2.0 * self.sigma_squared);
         12.0 * (r_inv.powi(13) - r_inv.powi(7))
             - (self.epsilon * (self.r_0 - r) / self.sigma_squared) * arg.exp()
     }
