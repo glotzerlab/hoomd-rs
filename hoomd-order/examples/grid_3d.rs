@@ -59,4 +59,7 @@ fn main() {
     let width = DVec3::splat(1.);
     let generators = perturbed_grid(anchor, width, count, pert);
     let _voronoi = Voronoi::build(&generators, anchor, width, 3.try_into().unwrap(), false);
+    let cells = _voronoi.cells();
+    let mut neighborlist = cells[0].neighbour_ids(&_voronoi);
+    println!("neighborlist to first guy : {:?}", neighborlist.next());
 }
