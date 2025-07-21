@@ -19,7 +19,7 @@ print_stdout = "allow"
 
 [features]
 bevy = ["dep:bevy", "dep:hoomd-bevy"]
-doc = ["bevy", "hoomd-bevy/doc"]
+doc-example = ["bevy", "hoomd-bevy/doc-example"]
 
 [dependencies]
 hoomd-bevy = { workspace =  true, optional = true }

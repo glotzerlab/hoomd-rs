@@ -1,0 +1,23 @@
+[package]
+name = "build-wasm-doc-examples"
+categories.workspace = true
+description = "Build the WASM examples and put them in doc/src/..."
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+# Internal tool, do not publish examples to crates.io.
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+toml = "0.9.2"
+

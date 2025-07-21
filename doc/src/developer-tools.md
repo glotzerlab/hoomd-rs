@@ -70,7 +70,7 @@ and open the printed `http://localhost` URL in your browser.
 
 To build all the interactive examples, run:
 ```shell
-$ TODO
+$ cargo run -p build-wasm-doc-examples
 ```
 It will build the examples listed in the package metadata in
 `examples/Cargo.toml` and place them in `doc/src`. You can view the interactive

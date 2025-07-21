@@ -319,7 +319,7 @@ where
     }
 
     /// Create the full screen UI text overlay node.
-    fn setup_overlay(mut commands: Commands) {
+    fn setup_overlay(mut commands: Commands, mut ui_scale: ResMut<UiScale>) {
         commands.spawn((
             Node {
                 top: Val::Px(0.0),
@@ -333,6 +333,8 @@ where
             Visibility::Visible,
             OverlayRoot,
         ));
+    
+        ui_scale.0 = if cfg!(feature = "doc-example") { 0.5 } else { 1.0 };
     }
 
     /// Add debug text nodes.
@@ -381,7 +383,7 @@ where
         help_text.push_str("q       : Quit.\n");
 
         help_text.push_str("<space> : Pause the simulation.
-<right> : Advance one step (while paused).
+<return>: Advance one step (while paused).
 shift-F1: Show/hide the user interface.
 F5      : Show/hide debugging information.
 ");
@@ -390,7 +392,7 @@ F5      : Show/hide debugging information.
         help_text.push_str("F12     : Take a screenshot (screenshot.png).\n");
 
         help_text.push_str("<esc>   : Open/close the settings menu.
-?       : Show/hide this help text.");
+h       : Show/hide this help text.");
 
         let text = (
             Text::new(help_text),
@@ -433,7 +435,7 @@ F5      : Show/hide debugging information.
     /// Add help reminder node.
     fn add_help_reminder(mut commands: Commands, overlay_root: Single<Entity, With<OverlayRoot>>) {
         commands.spawn((
-            Text::new("Press ? to show the help screen."),
+            Text::new("Press h to show the help screen."),
             Node {
                 position_type: PositionType::Absolute,
                 bottom: Val::Px(12.0),
@@ -538,8 +540,7 @@ F5      : Show/hide debugging information.
         keys: Res<ButtonInput<KeyCode>>,
         mut help_text_container: Single<&mut Visibility, With<HelpTextContainer>>,
     ) {
-        if keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])
-            && keys.just_pressed(KeyCode::Slash)
+        if keys.just_pressed(KeyCode::KeyH)
         {
             debug!("Show/hide help text.");
             help_text_container.toggle_inherited_hidden();
@@ -588,7 +589,7 @@ F5      : Show/hide debugging information.
         pause_state: Res<State<PauseState>>,
         simulation: ResMut<Sim>,
     ) {
-        if keys.just_pressed(KeyCode::ArrowRight) && *pause_state.get() == PauseState::Paused {
+        if keys.just_pressed(KeyCode::Enter) && *pause_state.get() == PauseState::Paused {
             let simulation = simulation.into_inner();
             let result = simulation
                 .advance()

@@ -78,7 +78,20 @@ fn main() -> anyhow::Result<()> {
     };
 
     let mut app = App::new();
-    app.add_plugins(DefaultPlugins);
+
+    if cfg!(feature = "doc-example") {
+    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+        primary_window: Some(Window {
+            canvas: Some("#hoomd-example".into()),
+            fit_canvas_to_parent: true,
+            ..default()
+        }),
+        ..default()
+    }));
+    } else {
+        app.add_plugins(DefaultPlugins);
+    }
+        
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(Startup, (|| DiskMaterial::default()).pipe(Disk::<A>::setup));
     app.add_systems(
