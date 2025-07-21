@@ -1,5 +1,7 @@
 use self::integrals::{CellIntegral, CellIntegralWithData, FaceIntegral, FaceIntegralWithData};
-use crate::meshless_voro::rtree_nn::{build_rtree, nn_iter, wrapping_nn_iter};
+use crate::meshless_voro::rtree_nn::{build_rtree, nn_iter, wrapping_nn_iter, 
+    build_rtree_from_pd, nn_iter_from_pd, wrapping_nn_iter_from_pd};
+pub use crate::local::PDGenerator;
 
 use convex_cell::{ConvexCellMarker, WithFaces, WithoutFaces};
 use glam::DVec3;
@@ -157,6 +159,17 @@ impl Voronoi {
     ) -> Self {
         Self::build_internal(generators, None, anchor, width, dimensionality, periodic)
     }
+    /// TODO: documentation
+    pub fn build_pd(
+        pd_generators: &[DVec3],
+        radii: &Vec<f64>,
+        anchor: DVec3,
+        width: DVec3,
+        dimensionality: Dimensionality,
+        periodic: bool,
+    ) -> Self {
+        Self::build_internal_pd(pd_generators, radii, None, anchor, width, dimensionality, periodic)
+    }
 
     /// Same as `build`, but now, only a subset of the Voronoi cells is fully
     /// constructed. The other Voronoi cells will have zero volume and
@@ -236,6 +249,55 @@ impl Voronoi {
         }
         .finalize()
     }
+    fn build_internal_pd(
+        generators: &[DVec3],
+        radii: &Vec<f64>,
+        mask: Option<&[bool]>,
+        mut anchor: DVec3,
+        mut width: DVec3,
+        dimensionality: Dimensionality,
+        periodic: bool,
+    ) -> Self {
+        // Normalize the unused components of the simulation volume, so that the lower
+        // dimensional volumes will be correct.
+        if let Dimensionality::OneD = dimensionality {
+            anchor.y = -0.5;
+            width.y = 1.;
+        }
+
+        if let Dimensionality::OneD | Dimensionality::TwoD = dimensionality {
+            anchor.z = -0.5;
+            width.z = 1.;
+        }
+
+        // build cells
+        let n_cells = generators.len();
+        let mut faces = vec![vec![]; n_cells];
+        let voronoi_cells = Self::build_voronoi_cells_pd(
+            generators,
+            radii,
+            &mut faces,
+            mask,
+            anchor,
+            width,
+            dimensionality,
+            periodic,
+        );
+
+        // flatten faces
+        let faces = flatten!(faces);
+
+        Voronoi {
+            anchor,
+            width,
+            voronoi_cells,
+            faces,
+            cell_face_connections: vec![],
+            dimensionality,
+            periodic,
+        }
+        .finalize()
+    }
 
     /// Link the Voronoi faces to their respective cells.
     fn finalize(mut self) -> Self {
@@ -291,6 +353,64 @@ impl Voronoi {
                     wrapping_nn_iter(&rtree, loc, width, dimensionality)
                 } else {
                     nn_iter(&rtree, loc)
+                };
+                let convex_cell = ConvexCell::build(
+                    loc,
+                    idx,
+                    &generators,
+                    nearest_neighbours,
+                    &simulation_volume,
+                );
+                VoronoiCell::from_convex_cell(&convex_cell, faces, mask)
+            } else {
+                VoronoiCell::default()
+            }
+        };
+
+        #[cfg(feature = "rayon")]
+        let voronoi_cells = faces.par_iter_mut().enumerate().map(build).collect::<Vec<_>>();
+
+        #[cfg(not(feature = "rayon"))]
+        let voronoi_cells = faces.iter_mut().enumerate().map(build).collect::<Vec<_>>();
+
+        voronoi_cells
+    }
+
+    fn build_voronoi_cells_pd(
+        pd_generators: &[DVec3],
+        radii: &Vec<f64>,
+        faces: &mut [Vec<VoronoiFace>],
+        mask: Option<&[bool]>,
+        anchor: DVec3,
+        width: DVec3,
+        dimensionality: Dimensionality,
+        periodic: bool,
+    ) -> Vec<VoronoiCell> {
+        // Some general properties
+        let pd_generators_copy = pd_generators.clone();
+        let generators: Vec<Generator> = pd_generators
+            .iter()
+            .enumerate()
+            .map(|(id, &loc)| Generator::new(id, loc, dimensionality))
+            .collect();
+        let pd_gen_vec : Vec<PDGenerator> = pd_generators_copy
+            .iter()
+            .enumerate()
+            .map(|(id, &loc)| PDGenerator::new(id, radii[id], loc, dimensionality))
+            .collect();
+        let rtree = build_rtree_from_pd(&pd_gen_vec);
+        let simulation_volume = SimulationBoundary::cuboid(anchor, width, periodic, dimensionality);
+
+        // Helper function to build a single cell
+        let build = |(idx, faces)| {
+            if mask.map_or(true, |mask| mask[idx]) {
+                let pd_generator: &PDGenerator = &pd_gen_vec[idx];
+                let loc = pd_generator.center;
+                debug_assert_eq!(pd_generator.site_tag, idx);
+                let nearest_neighbours = if periodic {
+                    wrapping_nn_iter_from_pd(&rtree, loc, width, dimensionality)
+                } else {
+                    nn_iter_from_pd(&rtree, loc)
                 };
                 let convex_cell = ConvexCell::build(
                     loc,

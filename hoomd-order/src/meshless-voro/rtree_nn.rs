@@ -237,9 +237,12 @@ impl PointDistance for PDGenerator {
         &self,
         point: &<Self::Envelope as rstar::Envelope>::Point,
     ) -> <<Self::Envelope as rstar::Envelope>::Point as rstar::Point>::Scalar {
-        let euclidean_distance_squared = zip(self.center.coordinates.iter(), point.iter())
-            .fold(0.0, |product, x| product + (x.0 - x.1).powi(2));
-        (euclidean_distance_squared - self.radius).powi(2)
+        let euclidean_distance_squared = self.center.distance_squared(DVec3 {
+            x: point[0],
+            y: point[1],
+            z: point[2],
+        });
+        euclidean_distance_squared - self.radius
     }
 }
 
@@ -281,7 +284,7 @@ impl WrappingPointDistance for PDGenerator {
             point[2] + shift[2] - self.center[2],
         ];
 
-        dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2]
+        dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2] - self.radius*self.radius
     }
 }
 
