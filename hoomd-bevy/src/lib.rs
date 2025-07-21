@@ -48,11 +48,11 @@ use anyhow::Context;
 use bevy::{
     asset::embedded_asset,
     prelude::*,
-    render::view::window::screenshot::{Screenshot, save_to_disk},
     time::common_conditions::once_after_delay,
 };
 #[cfg(not(target_arch = "wasm32"))]
-use bevy::time::common_conditions::on_timer;
+use bevy::{time::common_conditions::on_timer,
+    render::view::window::screenshot::{Screenshot, save_to_disk}};
 use bevy_diagnostic::{
     Diagnostic, DiagnosticPath, Diagnostics, DiagnosticsStore, FrameTimeDiagnosticsPlugin,
     RegisterDiagnostic,
@@ -375,17 +375,25 @@ where
 
     /// Add the help text UI node.
     fn add_help_text(mut commands: Commands, overlay_root: Single<Entity, With<OverlayRoot>>) {
-        let text = (
-            Text::new(
-                "q       : Quit.
-<space> : Pause the simulation.
+        let mut help_text = String::new();
+        
+        #[cfg(not(target_arch = "wasm32"))]
+        help_text.push_str("q       : Quit.\n");
+
+        help_text.push_str("<space> : Pause the simulation.
 <right> : Advance one step (while paused).
 shift-F1: Show/hide the user interface.
 F5      : Show/hide debugging information.
-F12     : Take a screenshot (screenshot.png).
-<esc>   : Open/close the settings menu.
-?       : Show/hide this help text.",
-            ),
+");
+
+        #[cfg(not(target_arch = "wasm32"))]
+        help_text.push_str("F12     : Take a screenshot (screenshot.png).\n");
+
+        help_text.push_str("<esc>   : Open/close the settings menu.
+?       : Show/hide this help text.");
+
+        let text = (
+            Text::new(help_text),
             BackgroundColor(Self::UI_BACKGROUND),
             HelpText,
         );
@@ -593,7 +601,9 @@ F12     : Take a screenshot (screenshot.png).
     }
 
     /// Keyboard command to quit.
+    #[cfg(not(target_arch = "wasm32"))]
     fn keyboard_quit(mut exit: EventWriter<AppExit>, keys: Res<ButtonInput<KeyCode>>) {
+        #[cfg(not(target_arch = "wasm32"))]
         if keys.just_pressed(KeyCode::KeyQ) {
             debug!("Quitting...");
             exit.write(AppExit::Success);
@@ -601,6 +611,7 @@ F12     : Take a screenshot (screenshot.png).
     }
 
     /// Implement keyboard commands for common operations.
+    #[cfg(not(target_arch = "wasm32"))]
     fn keyboard_screenshot(mut commands: Commands, keys: Res<ButtonInput<KeyCode>>) {
         if keys.just_pressed(KeyCode::F12) {
             commands
@@ -803,8 +814,6 @@ F12     : Take a screenshot (screenshot.png).
                 (
                     (Self::keyboard_overlay, Self::update_debug_text).chain(),
                     Self::keyboard_menu,
-                    Self::keyboard_quit,
-                    Self::keyboard_screenshot,
                 )
                     .in_set(AlwaysInputSet),
             )
@@ -827,6 +836,16 @@ F12     : Take a screenshot (screenshot.png).
                 Update,
                 Self::set_frame_budget.run_if(on_timer(Duration::from_millis(250))),
             );
+
+        #[cfg(not(target_arch = "wasm32"))]
+        app.add_systems(
+            Update,
+            (
+                Self::keyboard_quit,
+                Self::keyboard_screenshot,
+            )
+                .in_set(AlwaysInputSet),
+        );
 
         app.configure_sets(
             Update,

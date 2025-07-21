@@ -26,30 +26,32 @@ $ cargo install mdbook mdbook-alerts mdbook-katex
 To preview the documentation locally:
 ```shell
 $ cd doc
-$ mdbook serve
+$ mdbook serve --open
 ```
 
 ## WASM
 
-This documentation contains example scripts built with WASM. To build these,
+This documentation contains example scripts built for WASM. To build these,
 you need to install the following tools:
-* The wasm Rust target:
+* The `wasm` Rust target:
   ```shell
   $ rustup target install wasm32-unknown-unknown
   ```
-* [wasm-bindgen]
+* [wasm-bindgen] and [wasm-server-runner]
   ```shell
-  $ cargo install wasm-bindgen-cli
+  $ cargo install wasm-bindgen-cli wasm-server-runner
   ```
-* [wasm-opt]. Can be installed e.g. with `micromamba`
+* [wasm-opt]. Install with `micromamba`:
   ```
   $ micromamba install binaryen
   ```
+  or by another method of your choice.
 
 [wasm-bindgen]: https://github.com/rustwasm/wasm-bindgen
+[wasm-server-runner]: https://github.com/jakobhellermann/wasm-server-runner
 [wasm-opt]: https://github.com/WebAssembly/binaryen
 
-To build and test individual examples for WASM, see [the WASM chapter in the bevy cheat book].
+For more information, see [the WASM chapter in the bevy cheat book].
 
 To add a new web example to this documentation:
 * Add the `.rs` code in the appropriate subdirectory under `examples/`.
@@ -59,15 +61,22 @@ To add a new web example to this documentation:
 
 In all cases, see the existing examples for the needed syntax.
 
+To build and test an individual example with WASM (requires
+[wasm-server-runner]), run:
+```shell
+$ cargo run --features bevy --target wasm32-unknown-unknown --example {example}
+```
+and open the printed `http://localhost` URL in your browser.
+
 To build all the interactive examples, run:
 ```shell
 $ TODO
 ```
-
 It will build the examples listed in the package metadata in
 `examples/Cargo.toml` and place them in `doc/src`. You can view the interactive
-example scripts with `mdbook serve`. Due to browser security protocols, the
-examples will not run if you use `mdbook build` and open the file locally.
+example scripts with `mdbook serve` and navigating to the `http://localhost`
+URL. Due to browser security protocols, the examples will not run if you open
+via the `file://` URL.
 
 > [!CAUTION]
 > **DO NOT COMMIT** the generated `.wasm` or `.js` files to the repository.

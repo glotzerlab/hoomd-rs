@@ -19,6 +19,7 @@ print_stdout = "allow"
 
 [features]
 bevy = ["dep:bevy", "dep:hoomd-bevy"]
+doc = ["bevy", "hoomd-bevy/doc"]
 
 [dependencies]
 hoomd-bevy = { workspace =  true, optional = true }
@@ -58,3 +59,6 @@ required-features = ["bevy"]
 name = "random-walk"
 path = "mc-tutorial/random-walk.rs"
 required-features = ["bevy"]
+
+[package.metadata.example.random-walk]
+path = "mc-tutorial"
