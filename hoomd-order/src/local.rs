@@ -7,30 +7,27 @@
 */
 use hoomd_vector::{Vector, Cartesian, InnerProduct};
 use hoomd_microstate::{Microstate, property::Point, boundary::Open};
-use hoomd_manifold::Minkowski;
+use hoomd_manifold::{Minkowski, Hyperboloid};
 use std::array;
 use crate::{PowerDiagram, meshless_voro::Dimensionality};
 use glam::DVec3;
 
-/** Define power diagram object
+/** Define generator for Hyperbolic space
 TODO: documentation
 */
-#[derive(Clone, Debug, PartialEq)]
-pub struct PowerDiagramCenters {
-    pub centers: Vec<Cartesian<3>>,
-    pub radii: Vec<f64>,
-    pub site_tags: Vec<usize>,
-}
 
 #[derive(Clone, Copy, Debug)]
-pub struct PDGenerator {
-    pub center: DVec3,
-    pub radius: f64,
+pub struct GeneratorHyperbolic {
+    /// Coordinates of point in hyperbolic space in hyperboloid coordinates
+    pub loc: Vec<f64>,
+    /// skirt width of the hyperboloic
+    pub skirt: f64,
+    /// site tag of point
     pub site_tag: usize,
 }
 
-impl PDGenerator {
-    pub(super) fn new(id: usize, rad: f64, loc: DVec3, dimensionality: Dimensionality) -> Self {
+impl GeneratorHyperbolic {
+    pub(super) fn new(id: usize, rad: f64, loc: Vec<f64>, dimensionality: Dimensionality) -> Self {
         let mut loc = loc;
         match dimensionality {
             Dimensionality::OneD => {
@@ -42,87 +39,22 @@ impl PDGenerator {
         }
         Self { center: loc, radius: rad, site_tag: id }
     }
-    /// Get the id of this pd generator
+    /** Get the site tag number of this pd generator
+    */
     pub fn id(&self) -> usize {
         self.site_tag
     }
-
-    /// Get the position of this pd generator
+    /** Get the position of this pd generator
+    */
     pub fn loc(&self) -> DVec3 {
-        self.center
+        let mut coords: Vec<f64> = self.loc.clone();
+        coords.push(0.0);
+        DVec3::from_array([coords[0], coords[1], coords[2]])
     }
+    /** get a generator from a microstate site
+    */
+    pub fn from_microstate() -> GeneratorHyperbolic {
 
-    /// Get the radius of this pd generator 
-    pub fn rad(&self) -> f64 {
-        self.radius
-    }
-}
-
-impl PowerDiagram for Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
-    fn power_diagram(&self) -> PowerDiagramCenters {
-        let mut circle_centers = Vec::new();
-        let mut circle_radii = Vec::new();
-        let mut circle_tags = Vec::new();
-        for site in self.sites() {
-            circle_centers.push(
-                Cartesian::from([
-                    site.properties.position[0],
-                    site.properties.position[1],
-                    0.0,]));
-            circle_radii.push(1.0_f64);
-            circle_tags.push(site.site_tag);
-        }
-        PowerDiagramCenters{
-            centers : circle_centers,
-            radii : circle_radii,
-            site_tags : circle_tags,
-        }
-    }
-}
-
-impl PowerDiagram for Microstate<Point<Cartesian<3>>, Point<Cartesian<3>>, Open> {
-    fn power_diagram(&self) -> PowerDiagramCenters {
-        let mut circle_centers = Vec::new();
-        let mut circle_radii = Vec::new();
-        let mut circle_tags = Vec::new();
-        for site in self.sites() {
-            circle_centers.push(site.properties.position);
-            circle_radii.push(1.0_f64);
-            circle_tags.push(site.site_tag);
-        }
-        PowerDiagramCenters{
-            centers : circle_centers,
-            radii : circle_radii,
-            site_tags : circle_tags,
-        }
-    }
-}
-
-impl PowerDiagram for Microstate<Point<Minkowski<3>>, Point<Minkowski<3>>, Open> {
-    fn power_diagram(&self) -> PowerDiagramCenters {
-        let mut circle_centers = Vec::new();
-        let mut circle_radii = Vec::new();
-        let mut circle_tags = Vec::new();
-        let zeros = Minkowski::<3>::default();
-        for site in self.sites() {
-            let rho = (-1.0 * site.properties.position.distance_squared(&zeros)).sqrt();
-            let point = Cartesian::from([
-                site.properties.position[0] * rho / site.properties.position[2],
-                site.properties.position[1] * rho / site.properties.position[2]]);
-            let point_norm = point.norm_squared();
-            circle_centers.push(
-                Cartesian::from([
-                    point.coordinates[0] / (2.0*(1.0-point_norm).sqrt()),
-                    point.coordinates[1] / (2.0*(1.0-point_norm).sqrt()),
-                    0.0,]));
-            circle_radii.push((point_norm / (4.0*(1.0-point_norm)) - 1.0/((1.0-point_norm).sqrt())).powi(2));
-            circle_tags.push(site.site_tag);
-        }
-        PowerDiagramCenters{
-            centers : circle_centers,
-            radii : circle_radii,
-            site_tags : circle_tags,
-        }
     }
 }
 

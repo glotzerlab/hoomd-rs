@@ -17,6 +17,7 @@ hoomd-mc.workspace = true
 hoomd-microstate.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
+rand.workspace = true
 libm = "0.2.11"
 num = "0.4.3"
 ahash = "0.8"
@@ -29,7 +30,6 @@ malachite-base = { version = "0.4", optional = true }
 malachite-nz = { version = "0.4", optional = true }
 num-bigint = { version = "0.4", optional = true }
 num_enum = { version = "0.7.2", default-features = false }
-rand = "0.8"
 rayon = { version = "1", optional = true }
 rstar = "0.12"
 rug = { version = "1.24", optional = true,  default-features = false, features = ["integer"] }

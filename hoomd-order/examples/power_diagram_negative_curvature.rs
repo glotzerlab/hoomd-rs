@@ -6,8 +6,11 @@ extern crate rand;
 
 use glam::DVec3;
 use hoomd_order::meshless_voro::{Voronoi, VoronoiCell, VoronoiFace};
-use rand::{prelude::*, Rng, thread_rng, distr::StandardUniform};
+use hoomd_manifold::{Minkowski, Hyperboloid, HyperbolicDisk};
+use rand::{prelude::*, Rng};
+use rand::prelude::Distribution;
 use std::convert::TryInto;
+use libm::{cosh, sinh, acosh, sqrt};
 use std::env;
 use std::time::Duration;
 use ratatui::{
@@ -22,23 +25,40 @@ use ratatui::{
     {DefaultTerminal, Frame},
 };
 
-fn perturbed_grid(anchor: DVec3, width: DVec3, count: usize, pert: f64) -> Vec<DVec3> {
-    let mut generators = vec![];
-    let mut rng = thread_rng();
-    for n in 0..count {
-        for m in 0..count {
-            let pos = DVec3 {
-                x: n as f64 + 0.5 + pert * (rand::rng().sample::<f64, StandardUniform>(StandardUniform) as f64),
-                y: m as f64 + 0.5 + pert * (rand::rng().sample::<f64, StandardUniform>(StandardUniform) as f64),
-                z: 0.0
-            } * width
-                / count as f64
-                + anchor;
-            generators.push(pos.clamp(anchor, anchor + width));
-        }
-    }
+const RHO: f64 = 1.0; 
+const PARTICLE_NUMBER : usize = 100;
+const RAD_SQ : f64 = 0.0005;
 
-    generators
+fn initial_distribution() -> (Vec<DVec3>,Vec<[f64;3]>) {
+    let initial_spacing = 2.0;
+    let mut rng = StdRng::seed_from_u64(23);
+    let sample_disk = HyperbolicDisk{
+        r: initial_spacing.try_into().expect("hard-coded value should be valid"), 
+        point: Minkowski::from([0.00001,0.00001,sqrt(2.0*(0.00001_f64).powi(2) + RHO.powi(2))]),
+        skirt: RHO,}; 
+    let mut generators = vec![];
+    let mut poincare_coordinates = vec![];
+    for _n in 0..PARTICLE_NUMBER {
+            let new_point: Minkowski<3> = sample_disk.sample(&mut rng);
+            let new_point_poincare = poincare(&new_point, RHO);
+            let pos = DVec3 {
+                x: new_point_poincare[0],
+                y: new_point_poincare[1],
+                z: 0.0,
+            };
+            generators.push(pos);
+            poincare_coordinates.push(new_point_poincare);
+    }
+    (generators, poincare_coordinates)
+}
+
+fn poincare(point: &Minkowski<3>, skirt: f64) -> [f64;3] {
+    let proj = point.to_poincare(skirt);
+    let v = acosh((RAD_SQ + RHO.powi(2))/(RHO.powi(2)-RAD_SQ));
+    let eta = acosh(point.coordinates[2]/RHO);
+    let edge_proj = (RHO * sinh(eta+v))/(1.0 + cosh(eta+v));
+    let rad_proj = (RHO * sinh(eta))/(1.0 + cosh(eta)) - edge_proj;
+    [proj[0], proj[1], rad_proj]
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -57,25 +77,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         None => 0.8,
     };
 
-    let anchor = DVec3::splat(0.);
-    let width = DVec3::splat(1.);
-    let generators = perturbed_grid(anchor, width, count, pert);
-    let radii: Vec<f64> = vec![-1.0; 400];
-    let _voronoi = Voronoi::build_pd(&generators, &radii, anchor, width, 2.try_into().unwrap(), false);
-    let special_guy: usize = rand::thread_rng().gen_range(0..count.pow(2));
+    let anchor = DVec3::splat(-100.);
+    let width = DVec3::splat(200.);
+    let (generators, poincare_coords) = initial_distribution();
+    let radii_2: Vec<f64> = vec![RHO; PARTICLE_NUMBER];
+    let _voronoi = Voronoi::build_pd(&generators, &radii_2, anchor, width, 2.try_into().unwrap(), false);
+    let special_guy: usize = rand::thread_rng().gen_range(0..PARTICLE_NUMBER);
     let nlist = _voronoi.cells()[special_guy].neighbour_ids(&_voronoi);
     let mut nlist_vec = Vec::new();
     for n in nlist {
         nlist_vec.push(n);
     }
-    let result = draw(terminal, &_voronoi, special_guy, &nlist_vec);
+    let result = draw(terminal, &poincare_coords, special_guy, &nlist_vec);
     ratatui::restore();
     result
 }
 
 fn render(
     frame: &mut Frame,
-    voro: &Voronoi,
+    poincare_coords: &Vec<[f64;3]>,
     guy: usize,
     neighbors: &Vec<usize>,
 ) {
@@ -83,12 +103,12 @@ fn render(
         .block(Block::bordered().title("2D Voronoi"))
         .marker(Marker::Braille)
         .paint(|ctx| {
-            for n in 0..400 {
-                let coords = voro.cells()[n].loc();
+            for n in 0..PARTICLE_NUMBER {
+                let poin = poincare_coords[n];
                 ctx.draw(&Circle {
-                    x: coords[0],
-                    y: coords[1],
-                    radius: 0.005,
+                    x: poin[0],
+                    y: poin[1],
+                    radius: poin[2],
                     //coords: &[(coords[0],coords[1])],
                     color: 
                         if n==guy {
@@ -101,8 +121,8 @@ fn render(
                 });
             }
         })
-        .x_bounds([0.0, 1.0])
-        .y_bounds([0.0, 1.0]);
+        .x_bounds([-1.0, 1.0])
+        .y_bounds([-1.0, 1.0]);
 
     let horizontal = Layout::horizontal([frame.area().height * 2]).flex(Flex::Center);
     let [area] = horizontal.areas(frame.area());
@@ -112,12 +132,12 @@ fn render(
 
 fn draw(
     mut terminal: DefaultTerminal,
-    voro: &Voronoi, 
+    poincare_coords: &Vec<[f64;3]>, 
     guy: usize,
     neighbors: &Vec<usize>
 ) -> Result<(), Box<dyn std::error::Error>> {
     loop {
-        terminal.draw(|frame| render(frame, &voro, guy, &neighbors))?;
+        terminal.draw(|frame| render(frame, poincare_coords, guy, &neighbors))?;
 
         if poll(Duration::from_millis(0))? && matches!(event::read()?, Event::Key(_)) {
             break Ok(());
