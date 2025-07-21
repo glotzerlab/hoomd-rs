@@ -123,20 +123,20 @@ pub struct DiskMaterial {
     pub background_color: LinearRgba,
 
     /// Color applied to the outline.
-    #[uniform(1)]
+    #[uniform(0)]
     pub outline_color: LinearRgba,
 
     /// Width of the outline.
-    #[uniform(2)]
+    #[uniform(0)]
     pub outline_width: f32,
 
     /// Factor to scale the texture by.
-    #[uniform(3)]
+    #[uniform(0)]
     pub texture_scale: f32,
 
     /// Texture to apply. Blended with `color`.
-    #[texture(4)]
-    #[sampler(5)]
+    #[texture(1)]
+    #[sampler(2)]
     pub texture: Handle<Image>,
 }
 

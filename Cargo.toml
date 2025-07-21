@@ -70,6 +70,7 @@ features = ["async_executor",
             "png",
             "std",
             "sysinfo_plugin",
+            "webgl2",
             "x11",
             "bevy_dev_tools"]
 
@@ -128,6 +129,15 @@ default.extend-words = { ratatui = "ratatui" }
 # TODO: Check that this works after release. It may need to be in package.metadata
 # https://docs.rs/about/metadata
 rustdoc-args = [ "--html-in-header", "katex.html" ]
+
+# Optimize for size in wasm builds
+[profile.release-wasm]
+# TODO: Test achieved sizes
+opt-level = 'z'
+lto = true
+codegen-units = 1
+inherits = "release"
+
 
 # Bevy is extremely slow in debug builds, build it with optimizations
 # to avoid this: https://bevy.org/learn/quick-start/getting-started/setup/#compile-with-performance-optimizations

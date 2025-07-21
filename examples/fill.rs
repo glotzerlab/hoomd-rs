@@ -100,7 +100,7 @@ impl Fill {
         let translate = Translate {
             maximum_distance: d.try_into()?,
         };
-        let translate_sweep = Sweep { local: translate };
+        let translate_sweep = Sweep(translate);
 
         Ok(Fill {
             microstate,

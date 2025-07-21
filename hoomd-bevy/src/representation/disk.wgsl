@@ -1,15 +1,23 @@
 #import bevy_sprite::mesh2d_vertex_output::VertexOutput
 
-@group(2) @binding(0) var<uniform> background_color: vec4<f32>;
-@group(2) @binding(1) var<uniform> outline_color: vec4<f32>;
-@group(2) @binding(2) var<uniform> outline_width: f32;
-@group(2) @binding(3) var<uniform> texture_scale: f32;
+struct DiskMaterial {
+    background_color: vec4<f32>,
+    outline_color: vec4<f32>,
+    outline_width: f32,
+    texture_scale: f32,
+}
 
-@group(2) @binding(4) var image_color_texture: texture_2d<f32>;
-@group(2) @binding(5) var image_color_sampler: sampler;
+@group(2) @binding(0) var<uniform> disk_material: DiskMaterial;
+@group(2) @binding(1) var image_color_texture: texture_2d<f32>;
+@group(2) @binding(2) var image_color_sampler: sampler;
 
 @fragment
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
+    let texture_scale = disk_material.texture_scale;
+    let outline_color = disk_material.outline_color;
+    let outline_width = disk_material.outline_width;
+    let background_color = disk_material.background_color;
+
     let r = distance(in.uv, vec2<f32>(0.5));
 
     let radius = 0.5;

@@ -49,15 +49,18 @@ use bevy::{
     asset::embedded_asset,
     prelude::*,
     render::view::window::screenshot::{Screenshot, save_to_disk},
-    time::common_conditions::{on_timer, once_after_delay},
+    time::common_conditions::once_after_delay,
 };
+#[cfg(not(target_arch = "wasm32"))]
+use bevy::time::common_conditions::on_timer;
 use bevy_diagnostic::{
     Diagnostic, DiagnosticPath, Diagnostics, DiagnosticsStore, FrameTimeDiagnosticsPlugin,
     RegisterDiagnostic,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use bevy_winit::WinitWindows;
 
-use std::time::{Duration, Instant};
+use web_time::{Duration, Instant};
 
 pub mod representation;
 
@@ -611,6 +614,7 @@ F12     : Take a screenshot (screenshot.png).
     Derive this time from the current monitor refresh rate and the
     `frame_budget_fraction` settings.
     */
+    #[cfg(not(target_arch = "wasm32"))]
     fn set_frame_budget(
         winit: NonSend<WinitWindows>,
         windows: Query<Entity, With<Window>>,
@@ -632,6 +636,7 @@ F12     : Take a screenshot (screenshot.png).
     }
 
     /// Detect the minimum frame time for all windows.
+    #[cfg(not(target_arch = "wasm32"))]
     fn detect_frame_time(
         winit: NonSend<WinitWindows>,
         windows: impl Iterator<Item = Entity>,
@@ -815,8 +820,10 @@ F12     : Take a screenshot (screenshot.png).
             .add_systems(
                 Update,
                 (Self::keyboard_sps, Self::keyboard_frame_budget).in_set(SettingsMenuInputSet),
-            )
-            .add_systems(
+            );
+
+        #[cfg(not(target_arch = "wasm32"))]
+        app.add_systems(
                 Update,
                 Self::set_frame_budget.run_if(on_timer(Duration::from_millis(250))),
             );
