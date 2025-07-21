@@ -12,7 +12,7 @@ build:
     - ls bin
     # Install wasm toolchain
     - rustup target install wasm32-unknown-unknown
-    - cargo install wasm-bindgen-cli
+    - cargo install wasm-bindgen-cli@0.2.100
     - curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz" | tar -xvz --strip-components 1 --directory "bin"
     # Build the WASM examples
     - cargo run -p build-wasm-doc-examples --reduce-size
