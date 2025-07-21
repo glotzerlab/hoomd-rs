@@ -9,7 +9,8 @@ use hoomd_vector::{Vector, Cartesian, InnerProduct};
 use hoomd_microstate::{Microstate, property::Point, boundary::Open};
 use hoomd_manifold::Minkowski;
 use std::array;
-use crate::PowerDiagram;
+use crate::{PowerDiagram, meshless_voro::Dimensionality};
+use glam::DVec3;
 
 /** Define power diagram object
 TODO: documentation
@@ -23,9 +24,38 @@ pub struct PowerDiagramCenters {
 
 #[derive(Clone, Copy, Debug)]
 pub struct PDGenerator {
-    pub center: Cartesian<3>,
+    pub center: DVec3,
     pub radius: f64,
     pub site_tag: usize,
+}
+
+impl PDGenerator {
+    pub(super) fn new(id: usize, rad: f64, loc: DVec3, dimensionality: Dimensionality) -> Self {
+        let mut loc = loc;
+        match dimensionality {
+            Dimensionality::OneD => {
+                loc.y = 0.;
+                loc.z = 0.;
+            }
+            Dimensionality::TwoD => loc.z = 0.,
+            _ => (),
+        }
+        Self { center: loc, radius: rad, site_tag: id }
+    }
+    /// Get the id of this pd generator
+    pub fn id(&self) -> usize {
+        self.site_tag
+    }
+
+    /// Get the position of this pd generator
+    pub fn loc(&self) -> DVec3 {
+        self.center
+    }
+
+    /// Get the radius of this pd generator 
+    pub fn rad(&self) -> f64 {
+        self.radius
+    }
 }
 
 impl PowerDiagram for Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
