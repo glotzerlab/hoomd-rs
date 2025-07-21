@@ -29,7 +29,7 @@ fn main() -> anyhow::Result<()> {
     };
 
     let mut app = App::new();
-    app.add_plugins(DefaultPlugins);
+    hoomd_bevy::add_default_plugins(&mut app);
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(Startup, (|| DiskMaterial::default()).pipe(Disk::<A>::setup));
     app.add_systems(

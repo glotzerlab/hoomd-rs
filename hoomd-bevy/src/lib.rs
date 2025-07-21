@@ -42,6 +42,10 @@ See any one of the many *hoomd-rs* examples that use [`HoomdBevyPlugin`].
 `hoomd-bevy` provides the following assets:
 
 * `embedded://hoomd_bevy/logo.png` - The HOOMD logo (512 x 512).
+
+# Feature flags
+
+* `doc-example` Make examples suitable for display in a web browser.
 */
 
 use anyhow::Context;
@@ -861,5 +865,26 @@ h       : Show/hide this help text.");
                     .after(AdvanceSet),
             ),
         );
+    }
+}
+
+/** Construct the default plugins.
+
+This helper adds Bevy's `DefaultPlugins` by default. When the
+`doc-example` feature is enabled, it adds a modified set of plugins
+for the web.
+*/
+pub fn add_default_plugins(app: &mut App) {
+    if cfg!(feature = "doc-example") {
+    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+        primary_window: Some(Window {
+            canvas: Some("#hoomd-example".into()),
+            fit_canvas_to_parent: true,
+            ..default()
+        }),
+        ..default()
+    }));
+    } else {
+        app.add_plugins(DefaultPlugins);
     }
 }
