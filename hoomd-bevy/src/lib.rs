@@ -49,14 +49,12 @@ See any one of the many *hoomd-rs* examples that use [`HoomdBevyPlugin`].
 */
 
 use anyhow::Context;
-use bevy::{
-    asset::embedded_asset,
-    prelude::*,
-    time::common_conditions::once_after_delay,
-};
+use bevy::{asset::embedded_asset, prelude::*, time::common_conditions::once_after_delay};
 #[cfg(not(target_arch = "wasm32"))]
-use bevy::{time::common_conditions::on_timer,
-    render::view::window::screenshot::{Screenshot, save_to_disk}};
+use bevy::{
+    render::view::window::screenshot::{Screenshot, save_to_disk},
+    time::common_conditions::on_timer,
+};
 use bevy_diagnostic::{
     Diagnostic, DiagnosticPath, Diagnostics, DiagnosticsStore, FrameTimeDiagnosticsPlugin,
     RegisterDiagnostic,
@@ -337,8 +335,12 @@ where
             Visibility::Visible,
             OverlayRoot,
         ));
-    
-        ui_scale.0 = if cfg!(feature = "doc-example") { 0.5 } else { 1.0 };
+
+        ui_scale.0 = if cfg!(feature = "doc-example") {
+            0.5
+        } else {
+            1.0
+        };
     }
 
     /// Add debug text nodes.
@@ -382,21 +384,25 @@ where
     /// Add the help text UI node.
     fn add_help_text(mut commands: Commands, overlay_root: Single<Entity, With<OverlayRoot>>) {
         let mut help_text = String::new();
-        
+
         #[cfg(not(target_arch = "wasm32"))]
         help_text.push_str("q       : Quit.\n");
 
-        help_text.push_str("<space> : Pause the simulation.
+        help_text.push_str(
+            "<space> : Pause the simulation.
 <return>: Advance one step (while paused).
 shift-F1: Show/hide the user interface.
 F5      : Show/hide debugging information.
-");
+",
+        );
 
         #[cfg(not(target_arch = "wasm32"))]
         help_text.push_str("F12     : Take a screenshot (screenshot.png).\n");
 
-        help_text.push_str("<esc>   : Open/close the settings menu.
-h       : Show/hide this help text.");
+        help_text.push_str(
+            "<esc>   : Open/close the settings menu.
+h       : Show/hide this help text.",
+        );
 
         let text = (
             Text::new(help_text),
@@ -544,8 +550,7 @@ h       : Show/hide this help text.");
         keys: Res<ButtonInput<KeyCode>>,
         mut help_text_container: Single<&mut Visibility, With<HelpTextContainer>>,
     ) {
-        if keys.just_pressed(KeyCode::KeyH)
-        {
+        if keys.just_pressed(KeyCode::KeyH) {
             debug!("Show/hide help text.");
             help_text_container.toggle_inherited_hidden();
         }
@@ -838,18 +843,14 @@ h       : Show/hide this help text.");
 
         #[cfg(not(target_arch = "wasm32"))]
         app.add_systems(
-                Update,
-                Self::set_frame_budget.run_if(on_timer(Duration::from_millis(250))),
-            );
+            Update,
+            Self::set_frame_budget.run_if(on_timer(Duration::from_millis(250))),
+        );
 
         #[cfg(not(target_arch = "wasm32"))]
         app.add_systems(
             Update,
-            (
-                Self::keyboard_quit,
-                Self::keyboard_screenshot,
-            )
-                .in_set(AlwaysInputSet),
+            (Self::keyboard_quit, Self::keyboard_screenshot).in_set(AlwaysInputSet),
         );
 
         app.configure_sets(
@@ -876,14 +877,14 @@ for the web.
 */
 pub fn add_default_plugins(app: &mut App) {
     if cfg!(feature = "doc-example") {
-    app.add_plugins(DefaultPlugins.set(WindowPlugin {
-        primary_window: Some(Window {
-            canvas: Some("#hoomd-example".into()),
-            fit_canvas_to_parent: true,
+        app.add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                canvas: Some("#hoomd-example".into()),
+                fit_canvas_to_parent: true,
+                ..default()
+            }),
             ..default()
-        }),
-        ..default()
-    }));
+        }));
     } else {
         app.add_plugins(DefaultPlugins);
     }

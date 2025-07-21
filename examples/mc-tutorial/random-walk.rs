@@ -30,8 +30,8 @@ impl RandomWalk {
         let n = 100;
 
         let microstate = MicrostateBuilder::new()
-        .bodies(iter::repeat_n(Body::point(Cartesian::default()), n))
-        .try_build()?;
+            .bodies(iter::repeat_n(Body::point(Cartesian::default()), n))
+            .try_build()?;
 
         let hamiltonian = Zero;
 
