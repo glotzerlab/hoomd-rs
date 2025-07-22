@@ -16,13 +16,6 @@ use hoomd_microstate::Microstate;
 use hoomd_vector::Cartesian;
 
 pub use {
-    local::{NeighborList, PowerDiagramCenters},
+    local::{NeighborList, GeneratorHyperbolic},
     meshless_voro::{Voronoi}
 };
-
-/** Computes the set of circle centers and radii whose power diagram gives the Voronoi tesselation
-*/
-pub trait PowerDiagram {
-    /// Get the power diagram of a set of points
-    fn power_diagram(&self) -> PowerDiagramCenters;
-}

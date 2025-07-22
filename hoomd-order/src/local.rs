@@ -9,14 +9,14 @@ use hoomd_vector::{Vector, Cartesian, InnerProduct};
 use hoomd_microstate::{Microstate, property::Point, boundary::Open};
 use hoomd_manifold::{Minkowski, Hyperboloid};
 use std::array;
-use crate::{PowerDiagram, meshless_voro::Dimensionality};
+use crate::{meshless_voro::Dimensionality};
 use glam::DVec3;
 
 /** Define generator for Hyperbolic space
 TODO: documentation
 */
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct GeneratorHyperbolic {
     /// Coordinates of point in hyperbolic space in hyperboloid coordinates
     pub loc: Vec<f64>,
@@ -27,17 +27,17 @@ pub struct GeneratorHyperbolic {
 }
 
 impl GeneratorHyperbolic {
-    pub(super) fn new(id: usize, rad: f64, loc: Vec<f64>, dimensionality: Dimensionality) -> Self {
+    pub(super) fn new(id: usize, skirt: f64, loc: Vec<f64>, dimensionality: Dimensionality) -> Self {
         let mut loc = loc;
         match dimensionality {
             Dimensionality::OneD => {
-                loc.y = 0.;
-                loc.z = 0.;
+                loc[1] = 0.;
+                loc[2] = 0.;
             }
-            Dimensionality::TwoD => loc.z = 0.,
+            Dimensionality::TwoD => loc[2] = 0.,
             _ => (),
         }
-        Self { center: loc, radius: rad, site_tag: id }
+        Self { loc: loc, skirt: skirt, site_tag: id }
     }
     /** Get the site tag number of this pd generator
     */
@@ -54,23 +54,26 @@ impl GeneratorHyperbolic {
     /** get a generator from a microstate site
     */
     pub fn from_microstate() -> GeneratorHyperbolic {
-
+        GeneratorHyperbolic { 
+            loc: vec![0.0,0.0,0.0],
+            skirt: 1.0 as f64,
+            site_tag: 1,
+        }
     }
 }
 
 /** Define the neighbor list
 TODO: documentation
 */
-#[derive(Clone, Debug, PartialEq)]
-pub struct NeighborList {
+pub struct NeighborList<B> {
     /// ordered, nested vector of 2-tuples with nearest-neighbor pairs
     pub neighbors: Vec<(u32,u32)>
 }
 
-impl NeighborList {
+impl<B> NeighborList<B> {
     #[inline]
-    pub fn nearest_neighbors(power_diagram: PowerDiagramCenters) -> NeighborList {
-        NeighborList{neighbors : vec![(1,1)]}
+    pub fn nearest_neighbors(point: Microstate<B>) -> NeighborList<B> {
+        NeighborList::<B>{neighbors : vec![(1,1)]}
     }
 }
 

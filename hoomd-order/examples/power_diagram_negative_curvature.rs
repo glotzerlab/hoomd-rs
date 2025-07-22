@@ -41,12 +41,7 @@ fn initial_distribution() -> (Vec<DVec3>,Vec<[f64;3]>) {
     for _n in 0..PARTICLE_NUMBER {
             let new_point: Minkowski<3> = sample_disk.sample(&mut rng);
             let new_point_poincare = poincare(&new_point, RHO);
-            let pos = DVec3 {
-                x: new_point_poincare[0],
-                y: new_point_poincare[1],
-                z: 0.0,
-            };
-            generators.push(pos);
+            generators.push(new_point);
             poincare_coordinates.push(new_point_poincare);
     }
     (generators, poincare_coordinates)
@@ -80,8 +75,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let anchor = DVec3::splat(-100.);
     let width = DVec3::splat(200.);
     let (generators, poincare_coords) = initial_distribution();
-    let radii_2: Vec<f64> = vec![RHO; PARTICLE_NUMBER];
-    let _voronoi = Voronoi::build_pd(&generators, &radii_2, anchor, width, 2.try_into().unwrap(), false);
+    let _voronoi = Voronoi::build_hyperbolic(&generators, RHO, anchor, width, 2.try_into().unwrap(), false);
     let special_guy: usize = rand::thread_rng().gen_range(0..PARTICLE_NUMBER);
     let nlist = _voronoi.cells()[special_guy].neighbour_ids(&_voronoi);
     let mut nlist_vec = Vec::new();
