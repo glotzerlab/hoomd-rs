@@ -63,7 +63,7 @@ jobs:
       run: rustup install ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
     - name: Install target
       run: rustup target install ${{ matrix.target }}
-      if: ${{ matrix.target != '') }}
+      if: ${{ matrix.target != '' }}
     - name: Check rust installation
       run: rustc -vV
     - uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
@@ -79,7 +79,7 @@ jobs:
       run: >
         cargo build
         --profile ${{ matrix.profile }}
-        ${{ matrix.target != '' && --target || '' }}
+        ${{ matrix.target != '' && '--target' || '' }}
         ${{ matrix.target }}
         --workspace
         --all-targets
@@ -92,7 +92,7 @@ jobs:
         --profile ${{ matrix.profile }}
         --workspace
         --verbose
-      if: ${{ !contains(matrix.target, 'wasm') }}
+      if: ${{ matrix.target == '' }}
 
     - name: Build API documentation
       run: >
@@ -100,11 +100,11 @@ jobs:
         --workspace
         --all-features
         --no-deps
-      if: ${{ !contains(matrix.target, 'wasm') }}
+      if: ${{ matrix.target == '' }}
 
     - name: Run benchmarks
       run: cargo bench
-      if: ${{ !contains(matrix.target, 'wasm') }}
+      if: ${{ matrix.target == '' }}
 
   tests_complete:
     name: All tests
