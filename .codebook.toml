@@ -12,6 +12,8 @@ words = [
     "mdbook",
     "micromamba",
     "microstate",
+    "microstates",
+    "monomorphization",
     "newtype",
     "orientable",
     "polytope",

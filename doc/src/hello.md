@@ -53,7 +53,7 @@ Feel free to use another name in place of `project`.
 Then you need to add *hoomd-rs* dependencies to your project. *hoomd-rs*
 consists of many crates (see the [API documentation] for details) so that
 you only need to compile the parts that you actually use. This example uses
-`hoomd-interaction`:
+[`hoomd-interaction`]:
 ```shell
 $ cargo add --path ../hoomd-rs/hoomd-interaction hoomd-interaction
 ```
@@ -105,3 +105,4 @@ and molecular dynamics simulations using *hoomd-rs*.
 [The Rust Programming Language]: https://doc.rust-lang.org/stable/book/
 [API documentation]: api.md
 [crates.io]: https://crates.io/
+[`hoomd-interaction`]: api/hoomd_interaction/index.html
