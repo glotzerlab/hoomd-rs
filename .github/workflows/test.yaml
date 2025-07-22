@@ -20,8 +20,6 @@ env:
   CARGO_TERM_COLOR: always
   CLICOLOR: 1
 
-# TODO: test wasm builds
-
 jobs:
   unit_test:
     name: Unit test [${{ matrix.profile }}-rust-${{ matrix.rust }}-${{ matrix.os }}]
@@ -40,7 +38,7 @@ jobs:
           - 1.87.0
           - 1.88.0
         profile:
-         - debug
+         - dev
         target:
          - ''
 
@@ -53,7 +51,7 @@ jobs:
         # Add a WASM build.
         - os: ubuntu-24.04
           rust: 1.88.0
-          profile: release-wasm
+          profile: dev-wasm
           target: wasm32-unknown-unknown
 
     steps:
