@@ -32,7 +32,7 @@ simulation while maintaining a high level of performance. Through the use of
 generics, [Rust] will inline your custom code inside the innermost simulation
 loops and _compile it to machine code_. In contrast, [HOOMD-blue] offers limited
 opportunities for user customization with Python scripts that are _interpreted_
-at runtime. At the same time, configuring an environment to build **HOOMD-rs**
+at runtime. At the same time, configuring an environment to build **hoomd-rs**
 code takes far fewer steps than even installing a Python environment for
 [HOOMD-blue]!
 
@@ -43,7 +43,7 @@ on built-in functionality. When you need both large simulations and custom code,
 write a [C++ component for HOOMD-blue].
 
 TODO: some comment about how performance compares for simulations in the middle -
-is HOOMD-blue or HOOMD-rs faster on the same CPU?
+is HOOMD-blue or hoomd-rs faster on the same CPU?
 
 ## Resources
 
@@ -54,7 +54,7 @@ is HOOMD-blue or HOOMD-rs faster on the same CPU?
 TODO: A simple example code.
 
 The [examples] directory contains many files that demonstrate how to use
-**HOOMD-rs**. Many of these examples execute live in the tutorial section of the
+**hoomd-rs**. Many of these examples execute live in the tutorial section of the
 [hoomd-rs documentation].
 
 The documentation also describes [how to build examples] on your desktop,
