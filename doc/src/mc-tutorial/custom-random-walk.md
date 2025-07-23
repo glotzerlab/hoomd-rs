@@ -249,12 +249,11 @@ of the `Boundary` and `LocalTrial` traits.
 
 ## Conclusion
 
-Now you have learned how to customize the random walk simulation with circular
+Now you know how to customize the random walk simulation with circular
 boundary conditions and apply discrete trial moves to the points in it. Rust
 compiles your customizations into machine code and can inline them into the main
 simulation loop. This means that your custom simulations run *just as fast* as
-using the built-in types (which `impl Boundary` and `impl LocalTrial` just like
-the custom ones).
+using the built-in types.
 
 Now that you know how it works, scroll back to the top of the page and refresh
 to see the simulation in action again. Notice that no points leave the boundary.
