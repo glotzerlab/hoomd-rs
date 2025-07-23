@@ -393,12 +393,13 @@ impl Voronoi {
         dimensionality: Dimensionality,
         periodic: bool,
     ) -> Vec<VoronoiCell> {
-        // Some general properties
+        // Some general properties 
+        //TODO: fix this
         let generators_copy = generators.clone();
         let generators: Vec<GeneratorHyperbolic> = generators
             .iter()
             .enumerate()
-            .map(|(id, &loc)| GeneratorHyperbolic::new(id, skirt, loc.clone(), dimensionality))
+            .map(|(id, &loc)| GeneratorHyperbolic::new(id, skirt, loc, dimensionality))
             .collect();
         let gen_vec : Vec<Generator> = generators_copy
             .iter()

@@ -1,21 +1,5 @@
 [workspace]
 
-<<<<<<< HEAD
-members = [
-  "hoomd-interaction", 
-  "hoomd-manifold",
-  "hoomd-gsd",
-  "hoomd-geometry",
-  "hoomd-interaction",
-  "hoomd-mc",
-  "hoomd-microstate",
-  "hoomd-order",
-  "hoomd-utility",
-  "hoomd-vector",
-]
-
-=======
->>>>>>> LJ-Gauss
 resolver = "3"
 members = ["hoomd-*", "examples"]
 
@@ -49,10 +33,7 @@ hoomd-bevy = { path = "hoomd-bevy" }
 hoomd-geometry = { path = "hoomd-geometry" }
 hoomd-gsd = { path = "hoomd-gsd" }
 hoomd-interaction = { path = "hoomd-interaction" }
-<<<<<<< HEAD
 hoomd-manifold = { path = "hoomd-manifold" }
-=======
->>>>>>> LJ-Gauss
 hoomd-mc = { path = "hoomd-mc" }
 hoomd-microstate = { path = "hoomd-microstate" }
 hoomd-order = { path = "hoomd-order" }
