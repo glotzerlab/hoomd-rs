@@ -5,10 +5,10 @@
 # Getting started
 
 - [Hello, hoomd-rs!](hello.md)
+- [Running the Examples](examples.md)
 
 # Tutorials
 
-- [Running the Examples](examples.md)
 - [Monte Carlo Tutorial](mc-tutorial/index.md)
   - [Random Walk](mc-tutorial/random-walk.md)
 

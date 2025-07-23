@@ -21,8 +21,13 @@ you can install Rust with a single command:
 ```shell
 $ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
-For more details, and instructions for a native Windows installation, see
-the [Rust installation documentation].
+For more details, and instructions for a native Windows installation, see the
+[Rust installation documentation] (make sure you install the 64-bit build).
+
+> [!TIP]
+> *hoomd-rs* works best with *native* builds on all platforms. WSL works for
+> command line applications, but is much slower and takes significantly more
+> steps to configure. It doesn't work at all for the interactive examples.
 
 ## Using *hoomd-rs* in your application
 
@@ -51,14 +56,13 @@ $ cd project
 Feel free to use another name in place of `project`.
 
 Then you need to add *hoomd-rs* dependencies to your project. *hoomd-rs*
-consists of many crates (see the [API documentation] for details) so that
-you only need to compile the parts that you actually use. This example uses
-[`hoomd-interaction`]:
+consists of many crates (see the [API documentation] for details). This example
+uses [`hoomd-interaction`]:
 ```shell
 $ cargo add --path ../hoomd-rs/hoomd-interaction hoomd-interaction
 ```
 Repeat this command for each crate that you *directly use* in your project.
-Cargo will handle all the other dependencies for you.
+Cargo will install the dependencies of your dependencies automatically.
 
 Replace `src/main.rs` with:
 ```rust,ignore

@@ -15,7 +15,7 @@ each for details.
 
 ## Building Desktop Applications
 
-If you want to tweak an example's code and see what happens, you will need
+If you want to change an example's code and see what happens, you will need
 compile your changes.
 
 First, clone the *hoomd-rs* repository if you have not done so already:
@@ -39,11 +39,16 @@ where `{example}` is the name of the example *without* the path or extension
 The examples use the [Bevy] engine. If you get compile errors when building
 `bevy` crates, you may need to [install additional software]. MacOS is the
 simplest platform to configure, as you only need XCode. On Linux, you will need
-to install a number of system packages depending on your distribution. You will
-need Visual Studio with some additional components for native windows builds
-(TODO: test). In WSL, you can try building for Linux in WSL, but be aware that
-there are many limitations in WSL's support for graphics. One guide recommends
-that you [cross compile for native Windows] in WSL (TODO: test).
+to install a number of system packages depending on your distribution. On Windows,
+you will need the *Microsoft C++ build tools*.
+
+> [!IMPORTANT]
+> You should build the interactive examples in the *native environment* for your
+> platform. Bevy claims support for WSL. One guide recommends that you instead
+> [cross compile for native Windows] in WSL. However, the *hoomd-rs* developers
+> were unable to successfully use either method (GPU errors in WSL, and compile
+> errors when cross-compiling `getrandom`). *See the browser application method
+> below for an alternative that does work in WSL*.
 
 > [!NOTE]
 > These additional software dependencies are *only* needed to build examples
@@ -53,8 +58,8 @@ that you [cross compile for native Windows] in WSL (TODO: test).
 
 ## Building Browser Applications
 
-If you are having problems building Bevy for desktop and you would still like to
-compile modified examples, try building the examples for the web.
+If you are having problems building or running the examples on the desktop, try
+building the examples for the web.
 
 First install a few additional tools to add web support to your Rust installation:
 ```shell
@@ -66,7 +71,8 @@ To build and run an example, execute:
 ```shell
 $ cargo run --features bevy --target wasm32-unknown-unknown --example {example}
 ```
-then open the printed `http://localhost` URL in your browser.
+then open the printed `http://localhost` URL in your browser. This works in
+Linux, MacOS, Windows, and WSL.
 
 [Bevy]: https://bevy.org/
 [install additional software]: https://bevy.org/learn/quick-start/getting-started/setup/#installing-os-dependencies
