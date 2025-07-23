@@ -92,7 +92,7 @@ more detail. The `is_inside()` check doesn't use `B` or `S`, so these can be lef
 
 In other words, this `impl` allows our code to call `circle.is_inside(point)`,
 as long as `point` has the `Cartesian<2>` type. You will get a compiler error
-if `point` is `Cartesian<3>` or any other type. 
+if `point` is `Cartesian<3>` or any other type.
 
 The body of `is_inside()`
 ```rust,ignore
@@ -263,7 +263,7 @@ identify individual local trial moves. Notice that every particle moves left,
 right, down, or up on every step.
 
 The next section will explain how **bodies** and **sites** relate to each
-other in the **Microstate**. 
+other in the **Microstate**.
 
 [The Rust Programming Language]: https://doc.rust-lang.org/stable/book/
 [Random Walk]: random-walk.md

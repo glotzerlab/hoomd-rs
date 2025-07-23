@@ -25,7 +25,7 @@ struct Circle {
 // ANCHOR: boundary_all
 // ANCHOR: boundary_impl
 impl<B, S> Boundary<Cartesian<2>, B, S> for Circle {
-// ANCHOR_END: boundary_impl
+    // ANCHOR_END: boundary_impl
     fn is_inside(&self, point: &Cartesian<2>) -> bool {
         // ANCHOR: boundary_check
         point.distance(&[0.0, 0.0].into()) < self.radius
@@ -47,7 +47,7 @@ impl LocalTrial<Point<Cartesian<2>>> for Discrete {
         rng: &mut R,
         body_properties: Point<Cartesian<2>>,
     ) -> Point<Cartesian<2>> {
-    // ANCHOR_END: local_trial_fn
+        // ANCHOR_END: local_trial_fn
         // ANCHOR: local_trial_steps
         let steps = [
             [0.0, -1.0].into(),
