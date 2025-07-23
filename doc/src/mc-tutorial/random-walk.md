@@ -49,9 +49,9 @@ encounter to see how else they can be used.
 
 ## The Simulation Model
 
-In the random walk simulation, the **Microstate** contains the positions of $N$
-points, the **Sweep** applies **trial moves** to all $N$ points, the Hamiltonian
-is always 0 and temperature $kT$ is not relevant.
+In the random walk simulation, the **Microstate** contains the positions of `$N$`
+points, the **Sweep** applies **trial moves** to all `$N$` points, the Hamiltonian
+is always 0 and temperature `$kT$` is not relevant.
 
 Define a struct that collects all these:
 ```rust,ignore
@@ -86,19 +86,19 @@ Next, set the parameters of the simulation:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/random-walk.rs:params}}
 ```
-$kT$ (`kt`) is the temperature of the simulation (in units of energy), $d$ (`d`)
-is the maximum distance to move a point during a trial move, and $N$ (`n`) is
-the number of points to add to the **microstate**.
+`$kT$` (`kt`) is the temperature of the simulation (in units of energy), `$d$`
+(`d`) is the maximum distance to move a point during a trial move, and `$N$`
+(`n`) is the number of points to add to the **microstate**.
 
 ### Microstate
 
 The **microstate** describes all of the degrees of freedom in the simulation.
-It consists of $N$ **bodies** that are each a single point
+It consists of `$N$` **bodies** that are each a single point
 (a later tutorial will explain `Microstate` in more detail):
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/random-walk.rs:microstate}}
 ```
-The random walk example constructs a microstate and adds $N$ points at the
+The random walk example constructs a microstate and adds `$N$` points at the
 origin (`Cartesian::default()` constructs the 0 vector).
 
 *By default*, a **Microstate** has **Open** boundary conditions that allow
@@ -145,10 +145,10 @@ Sweep accepts or rejects trial moves based on the Metropolis criterion.
 
 ### Hamiltonian
 
-The points in a random walk do not interact, so the Hamiltonian $H = 0$,
+The points in a random walk do not interact, so the Hamiltonian `$H = 0$`,
 and `Sweep` will accept every trial move.
 
-The [`hoomd-mc`] crate provides a convenient type that expresses $H = 0$:
+The [`hoomd-mc`] crate provides a convenient type that expresses `$H = 0$`:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/random-walk.rs:hamiltonian}}
 ```
@@ -209,8 +209,13 @@ also be recorded at step 0.
 
 Now you have learned how to create a **microstate** with open boundary
 conditions and apply random translation **trial moves** to the points in it.
-Scroll back to the top of the page and refresh to see the simulation in action
-again. The next section will show you how to apply custom boundary conditions
+
+Now that you know how it works, scroll back to the top of the page and refresh
+to see the simulation in action again. Try pausing the simulation and advancing
+one step at a time. See if you can identify individual local trial moves. Notice
+that every particle moves at least a little bit on every step.
+
+The next section will show you how to apply custom boundary conditions
 and trial moves to the random walk.
 
 [The Rust Programming Language]: https://doc.rust-lang.org/stable/book/
