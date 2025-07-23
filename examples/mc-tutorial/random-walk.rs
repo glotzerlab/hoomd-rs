@@ -71,7 +71,6 @@ impl RandomWalk {
 impl Simulation for RandomWalk {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
-
         // ANCHOR: apply
         self.translate_sweep
             .apply(&mut self.microstate, &self.hamiltonian, &self.kt);

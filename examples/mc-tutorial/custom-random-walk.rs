@@ -22,38 +22,55 @@ struct Circle {
 }
 // ANCHOR_END: boundary_struct
 
+// ANCHOR: boundary_all
 // ANCHOR: boundary_impl
 impl<B, S> Boundary<Cartesian<2>, B, S> for Circle {
+// ANCHOR_END: boundary_impl
     fn is_inside(&self, point: &Cartesian<2>) -> bool {
+        // ANCHOR: boundary_check
         point.distance(&[0.0, 0.0].into()) < self.radius
+        // ANCHOR_END: boundary_check
     }
 }
-// ANCHOR_END: boundary_impl
+// ANCHOR_END: boundary_all
 
+// ANCHOR: local_trial_all
 // ANCHOR: local_trial_struct
-/// Take fixed steps left, right, up, or down.
+/// Take fixed steps left, right, down, or up.
 struct Discrete;
 // ANCHOR_END: local_trial_struct
 
-// ANCHOR: local_trial_impl
 impl LocalTrial<Point<Cartesian<2>>> for Discrete {
-    fn propose<R: Rng>(&self, rng: &mut R, body_properties: Point<Cartesian<2>>) -> Point<Cartesian<2>> {
+    // ANCHOR: local_trial_fn
+    fn propose<R: Rng>(
+        &self,
+        rng: &mut R,
+        body_properties: Point<Cartesian<2>>,
+    ) -> Point<Cartesian<2>> {
+    // ANCHOR_END: local_trial_fn
+        // ANCHOR: local_trial_steps
+        let steps = [
+            [0.0, -1.0].into(),
+            [0.0, 1.0].into(),
+            [-1.0, 0.0].into(),
+            [1.0, 0.0].into(),
+        ];
+        // ANCHOR_END: local_trial_steps
+
+        // ANCHOR: local_trial_mut
         let mut trial = body_properties;
-
-        let steps = [Cartesian::from([0.0, -1.0]),
-                     Cartesian::from([0.0, 1.0]),
-                     Cartesian::from([-1.0, 0.0]),
-                     Cartesian::from([1.0, 0.0])];
-
-        trial.position += *steps.choose(rng).expect("steps should have at least 1 element");
+        trial.position += *steps
+            .choose(rng)
+            .expect("steps should have at least 1 element");
         trial
+        // ANCHOR_END: local_trial_mut
     }
-} 
-// ANCHOR_END: local_trial_impl
+}
+// ANCHOR_END: local_trial_all
 
 #[derive(Resource)]
 // ANCHOR: simulation_struct
-struct RandomWalk {
+struct CustomRandomWalk {
     microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Circle>,
     hamiltonian: Zero,
     translate_sweep: Sweep<Discrete>,
@@ -62,15 +79,15 @@ struct RandomWalk {
 // ANCHOR_END: simulation_struct
 
 // ANCHOR: simulation_new
-impl RandomWalk {
+impl CustomRandomWalk {
     /// Construct a new random walk simulation.
-    fn new() -> anyhow::Result<RandomWalk> {
+    fn new() -> anyhow::Result<CustomRandomWalk> {
         let kt = 1.0;
         let n = 1000;
 
         // ANCHOR: microstate
         let circle = Circle { radius: 50.0 };
-        
+
         let microstate = MicrostateBuilder::with_boundary(circle)
             .bodies(iter::repeat_n(Body::point(Cartesian::default()), n))
             .try_build()?;
@@ -82,7 +99,7 @@ impl RandomWalk {
 
         let hamiltonian = Zero;
 
-        Ok(RandomWalk {
+        Ok(CustomRandomWalk {
             microstate,
             hamiltonian,
             translate_sweep,
@@ -93,10 +110,9 @@ impl RandomWalk {
 // ANCHOR_END: simulation_new
 
 // ANCHOR: impl_simulation
-impl Simulation for RandomWalk {
+impl Simulation for CustomRandomWalk {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
-
         self.translate_sweep
             .apply(&mut self.microstate, &self.hamiltonian, &self.kt);
         self.microstate.increment_step();
@@ -114,7 +130,7 @@ impl Simulation for RandomWalk {
 struct A;
 
 fn main() -> anyhow::Result<()> {
-    let simulation = RandomWalk::new().context("failed to setup simulation")?;
+    let simulation = CustomRandomWalk::new().context("failed to setup simulation")?;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
         initial_settings: Settings {
             viewport_height: 110.0,
@@ -130,7 +146,7 @@ fn main() -> anyhow::Result<()> {
     app.add_systems(
         Update,
         sync_simulation
-            .run_if(resource_changed::<RandomWalk>)
+            .run_if(resource_changed::<CustomRandomWalk>)
             .after(AdvanceSet),
     );
 
@@ -144,7 +160,7 @@ fn sync_simulation(
     mut commands: Commands,
     disk_assets: Res<DiskAssets<A>>,
     query: Query<(Entity, &mut Transform), With<Disk<A>>>,
-    simulation: Res<RandomWalk>,
+    simulation: Res<CustomRandomWalk>,
 ) {
     let sites = simulation.microstate.sites();
     Disk::sync(

@@ -11,6 +11,7 @@
 
 - [Monte Carlo Tutorial](mc-tutorial/index.md)
   - [Random Walk](mc-tutorial/random-walk.md)
+  - [Custom Random Walk](mc-tutorial/custom-random-walk.md)
 
 # Reference
 
