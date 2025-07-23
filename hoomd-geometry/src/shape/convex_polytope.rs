@@ -417,16 +417,16 @@ mod tests {
         r_ab: Cartesian<N>,
         a: &A,
         b: &B,
-        r_a: R,
-        r_b: &R,
+        o_a: R,
+        o_b: &R,
     ) -> bool
     where
         R: Rotation + Rotate<Cartesian<N>>,
         A: IntersectsAt<B, Cartesian<N>, R>,
     {
-        let r_a_inverted = r_a.inverted();
+        let r_a_inverted = o_a.inverted();
         let v_ij = r_a_inverted.rotate(&r_ab);
-        let o_ij = r_b.combine(&r_a_inverted);
+        let o_ij = o_b.combine(&r_a_inverted);
         a.intersects_at(b, &v_ij, &o_ij)
     }
 
