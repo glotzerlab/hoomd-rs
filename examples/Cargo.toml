@@ -44,3 +44,7 @@ path = "error.rs"
 name = "fill"
 path = "fill.rs"
 required-features = ["bevy"]
+
+[[example]]
+name = "LJ-hyperbolic"
+path = "LJ-hyperbolic.rs"
