@@ -4,9 +4,7 @@
 import init from './custom-random-walk.js'
 {{#include ../../scripts/init-wasm-canvas.js}}
 </script>
-
-<canvas id="hoomd-example" width="750" height="421" style="width: 100%; height: 100%; min-width: 180px; min-height: 120px;"></canvas>
-*Pres `tab` or click to focus. Refresh the page to restart the simulation.*
+{{#include ../../scripts/canvas.html}}
 
 ## Overview
 
