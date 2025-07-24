@@ -683,6 +683,40 @@ where
 
         Ok(())
     }
+
+    /** Remove all bodies from the microstate.
+
+    The step, substep, seed, and boundary are left unchanged.
+
+    # Example
+
+    ```
+    use hoomd_microstate::{Microstate, MicrostateBuilder, Body};
+    use hoomd_microstate::property::Point;
+    use hoomd_vector::Cartesian;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut microstate = MicrostateBuilder::new()
+        .bodies([Body::point(Cartesian::from([1.0, 0.0]))])
+        .try_build()?;
+
+    microstate.clear()
+    assert_eq!(microstate.bodies().len(), 0);
+    assert_eq!(microstate.sites().len(), 0);
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    pub fn clear(&mut self) {
+        self.bodies.clear();
+        self.body_indices.clear();
+        self.free_body_tags.clear();
+        self.sites.clear();
+        self.site_indices.clear();
+        self.free_site_tags.clear();
+        self.bodies_sites.clear();
+    }
 }
 
 /** Access contents of the microstate.
