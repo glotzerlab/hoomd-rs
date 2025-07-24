@@ -8,7 +8,9 @@ use hoomd_interaction::{
     pairwise::{Boxcar, Isotropic},
 };
 use hoomd_mc::{Sweep, Translate, Trial};
-use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Square, property::Point};
+use hoomd_microstate::{
+    Body, Microstate, MicrostateBuilder, boundary::Square, property::Point,
+};
 use hoomd_vector::Cartesian;
 
 use anyhow::Context;
@@ -31,7 +33,10 @@ fn main() -> anyhow::Result<()> {
     let mut app = App::new();
     hoomd_bevy::add_default_plugins(&mut app);
     hoomd_bevy_plugin.build(&mut app);
-    app.add_systems(Startup, (|| DiskMaterial::default()).pipe(Disk::<A>::setup));
+    app.add_systems(
+        Startup,
+        (|| DiskMaterial::default()).pipe(Disk::<A>::setup),
+    );
     app.add_systems(
         Startup,
         (move || RectangularBoundary {
@@ -120,8 +125,11 @@ impl Simulation for Fill {
             ))?;
         }
 
-        self.translate_sweep
-            .apply(&mut self.microstate, &self.hamiltonian, &self.kt);
+        self.translate_sweep.apply(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.kt,
+        );
         self.microstate.increment_step();
         Ok(())
     }

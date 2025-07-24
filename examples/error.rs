@@ -1,10 +1,16 @@
-use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Square, property::Point};
+use hoomd_microstate::{
+    Body, Microstate, MicrostateBuilder, boundary::Square, property::Point,
+};
 use hoomd_vector::Cartesian;
 
 use anyhow::Context;
 
 fn my_method(
-    microstate: &mut Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Square>,
+    microstate: &mut Microstate<
+        Point<Cartesian<2>>,
+        Point<Cartesian<2>>,
+        Square,
+    >,
 ) -> anyhow::Result<()> {
     microstate
         .add_body(Body::point(Cartesian::from([5.0, 0.0])))

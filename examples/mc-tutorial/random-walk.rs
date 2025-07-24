@@ -72,8 +72,11 @@ impl Simulation for RandomWalk {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
         // ANCHOR: apply
-        self.translate_sweep
-            .apply(&mut self.microstate, &self.hamiltonian, &self.kt);
+        self.translate_sweep.apply(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.kt,
+        );
         // ANCHOR_END: apply
         // ANCHOR: increment_step
         self.microstate.increment_step();
@@ -95,7 +98,7 @@ fn main() -> anyhow::Result<()> {
     let simulation = RandomWalk::new().context("failed to setup simulation")?;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
         initial_settings: Settings {
-            viewport_height: 30.0,
+            viewport_height: 110.0,
             ..default()
         },
         simulation,
@@ -104,7 +107,10 @@ fn main() -> anyhow::Result<()> {
     let mut app = App::new();
     hoomd_bevy::add_default_plugins(&mut app);
     hoomd_bevy_plugin.build(&mut app);
-    app.add_systems(Startup, (|| DiskMaterial::default()).pipe(Disk::<A>::setup));
+    app.add_systems(
+        Startup,
+        (|| DiskMaterial::default()).pipe(Disk::<A>::setup),
+    );
     app.add_systems(
         Update,
         sync_simulation

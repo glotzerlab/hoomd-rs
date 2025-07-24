@@ -3,7 +3,9 @@ use rand::{Rng, seq::IndexedRandom};
 use std::iter;
 
 use hoomd_mc::{LocalTrial, Sweep, Trial, Zero};
-use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Boundary, property::Point};
+use hoomd_microstate::{
+    Body, Microstate, MicrostateBuilder, boundary::Boundary, property::Point,
+};
 use hoomd_vector::{Cartesian, Vector};
 // ANCHOR_END: use
 
@@ -113,8 +115,11 @@ impl CustomRandomWalk {
 impl Simulation for CustomRandomWalk {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
-        self.translate_sweep
-            .apply(&mut self.microstate, &self.hamiltonian, &self.kt);
+        self.translate_sweep.apply(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.kt,
+        );
         self.microstate.increment_step();
         Ok(())
     }
@@ -130,7 +135,8 @@ impl Simulation for CustomRandomWalk {
 struct A;
 
 fn main() -> anyhow::Result<()> {
-    let simulation = CustomRandomWalk::new().context("failed to setup simulation")?;
+    let simulation =
+        CustomRandomWalk::new().context("failed to setup simulation")?;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
         initial_settings: Settings {
             viewport_height: 110.0,
@@ -142,7 +148,10 @@ fn main() -> anyhow::Result<()> {
     let mut app = App::new();
     hoomd_bevy::add_default_plugins(&mut app);
     hoomd_bevy_plugin.build(&mut app);
-    app.add_systems(Startup, (|| DiskMaterial::default()).pipe(Disk::<A>::setup));
+    app.add_systems(
+        Startup,
+        (|| DiskMaterial::default()).pipe(Disk::<A>::setup),
+    );
     app.add_systems(
         Update,
         sync_simulation

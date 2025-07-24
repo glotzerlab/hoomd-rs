@@ -1,0 +1,3 @@
+# Reduce the default line length for examples so they may be read without
+# horizontal scrolling on the web.
+max_width = 80
