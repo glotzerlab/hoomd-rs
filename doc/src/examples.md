@@ -33,8 +33,9 @@ To compile and run an example as a desktop application, execute:
 ```shell
 $ cargo run --release --features=bevy --example {example}
 ```
-where `{example}` is the name of the example *without* the path or extension
-(e.g. `random-walk`, will build and run `examples/mc-tutorial/random-walk.rs`).
+where `{example}` is the name of the example *without* the path
+or extension (e.g. `--example random-walk`, will build and run
+`examples/mc-tutorial/random-walk.rs`).
 
 The examples use the [Bevy] engine. If you get compile errors when building
 `bevy` crates, you may need to [install additional software]. MacOS is the
@@ -52,7 +53,7 @@ you will need the *Microsoft C++ build tools*.
 
 > [!NOTE]
 > These additional software dependencies are *only* needed to build examples
-> with interactive displays, or your own code that uses the `hoomd-bevy` crate.
+> with interactive displays and your own code that uses the `hoomd-bevy` crate.
 > You do not need to install additional software to build and run command line
 > applications with *hoomd-rs*, you only need Rust.
 

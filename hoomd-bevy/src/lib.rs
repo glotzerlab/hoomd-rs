@@ -551,7 +551,8 @@ F5      : Show/hide debugging information.
         mut help_text_container: Single<&mut Visibility, With<HelpTextContainer>>,
     ) {
         if keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])
-            && keys.just_pressed(KeyCode::Slash) {
+            && keys.just_pressed(KeyCode::Slash)
+        {
             debug!("Show/hide help text.");
             help_text_container.toggle_inherited_hidden();
         }

@@ -8,26 +8,24 @@ can use to implement your particular simulation model.
 
 Wait, [Rust]. What is that? If you are not familiar with Rust, it is a
 relatively new programming language that (in the opinion of the *hoomd-rs*
-developers) combines the best features of generic languages like Python with the
-best features of strongly-typed compiled languages like C++. *hoomd-rs* takes
-full advantage of these capabilities to provide a simulation framework that is
-fully customizable while still compiling down to machine code. You don't need
-to be an expert in the language to use *hoomd-rs*, but you will need to know
-the basics. If you are new to Rust, go read the first few chapters of [The Rust
-Programming Language] and come back here.
+developers) combines the best features of generic languages like Python with
+the best features of strongly-typed compiled languages like C++. *hoomd-rs*
+takes full advantage of these capabilities to provide a simulation framework
+that is fully customizable while still compiling down to machine code. [The Rust
+Programming Language] explains everything you need to know about the language.
 
 Before continuing, you will need to install [Rust]. On Linux, Mac, and WSL
 you can install Rust with a single command:
 ```shell
 $ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
-For more details, and instructions for a native Windows installation, see the
-[Rust installation documentation] (make sure you install the 64-bit build).
+For more details, including instructions for a native Windows installation, see
+the [Rust installation documentation] (make sure you install the 64-bit build).
 
 > [!TIP]
-> *hoomd-rs* works best with *native* builds on all platforms. WSL works for
-> command line applications, but is much slower and takes significantly more
-> steps to configure. It doesn't work at all for the interactive examples.
+> *hoomd-rs* works very well with *native* builds on all platforms. You can use
+> WSL for command line applications, but is much slower and takes significantly
+> more steps to configure. WSL doesn't work at all for the interactive examples.
 
 ## Using *hoomd-rs* in your application
 

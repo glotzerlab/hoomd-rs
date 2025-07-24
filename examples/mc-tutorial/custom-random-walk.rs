@@ -25,13 +25,9 @@ struct Circle {
 // ANCHOR_END: boundary_struct
 
 // ANCHOR: boundary_all
-// ANCHOR: boundary_impl
 impl<B, S> Boundary<Cartesian<2>, B, S> for Circle {
-    // ANCHOR_END: boundary_impl
     fn is_inside(&self, point: &Cartesian<2>) -> bool {
-        // ANCHOR: boundary_check
         point.distance(&[0.0, 0.0].into()) < self.radius
-        // ANCHOR_END: boundary_check
     }
 }
 // ANCHOR_END: boundary_all
