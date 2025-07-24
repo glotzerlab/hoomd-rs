@@ -12,8 +12,8 @@ execute long-running simulations in batch mode on high performance computing
 resources, and analyze the results of those simulations.
 
 **hoomd-rs** is the spiritual successor to the Python package [HOOMD-blue].
-While the two share many common features, **hoomd-rs** (by design) provides
-*many* capabilities that [HOOMD-blue] cannot, such as:
+While the two share many common features, **hoomd-rs** provides *many*
+capabilities that [HOOMD-blue] cannot, such as:
 
 * Custom per-particle attributes.
 * Custom particle interactions that can *depend on custom per-particle attributes*.

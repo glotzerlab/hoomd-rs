@@ -2,20 +2,11 @@
 
 <script type="module">
 import init from './random-walk.js'
-
-init().catch((error) => {
-  if (!error.message.startsWith("Using exceptions for control flow, don't mind me. This isn't actually an error!")) {
-    throw error;
-  }
-});
-
-document.getElementById('hoomd-example').addEventListener("keydown", function(e) {
-  e.stopPropagation();
-});
+{{#include ../../scripts/init-wasm-canvas.js}}
 </script>
 
 <canvas id="hoomd-example" width="750" height="421" style="width: 100%; height: 100%; min-width: 180px; min-height: 120px;"></canvas>
-*Refresh the page to restart the simulation.*
+*Pres `tab` or click to focus. Refresh the page to restart the simulation.*
 
 ## Overview
 
