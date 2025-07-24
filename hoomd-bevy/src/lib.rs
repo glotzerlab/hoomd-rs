@@ -390,7 +390,7 @@ where
 
         help_text.push_str(
             "<space> : Pause the simulation.
-<return>: Advance one step (while paused).
+<right>: Advance one step (while paused).
 shift-F1: Show/hide the user interface.
 F5      : Show/hide debugging information.
 ",
@@ -401,7 +401,7 @@ F5      : Show/hide debugging information.
 
         help_text.push_str(
             "<esc>   : Open/close the settings menu.
-h       : Show/hide this help text.",
+?       : Show/hide this help text.",
         );
 
         let text = (
@@ -445,7 +445,7 @@ h       : Show/hide this help text.",
     /// Add help reminder node.
     fn add_help_reminder(mut commands: Commands, overlay_root: Single<Entity, With<OverlayRoot>>) {
         commands.spawn((
-            Text::new("Press h to show the help screen."),
+            Text::new("Press ? to show the help screen."),
             Node {
                 position_type: PositionType::Absolute,
                 bottom: Val::Px(12.0),
@@ -550,7 +550,8 @@ h       : Show/hide this help text.",
         keys: Res<ButtonInput<KeyCode>>,
         mut help_text_container: Single<&mut Visibility, With<HelpTextContainer>>,
     ) {
-        if keys.just_pressed(KeyCode::KeyH) {
+        if keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])
+            && keys.just_pressed(KeyCode::Slash) {
             debug!("Show/hide help text.");
             help_text_container.toggle_inherited_hidden();
         }
@@ -598,7 +599,7 @@ h       : Show/hide this help text.",
         pause_state: Res<State<PauseState>>,
         simulation: ResMut<Sim>,
     ) {
-        if keys.just_pressed(KeyCode::Enter) && *pause_state.get() == PauseState::Paused {
+        if keys.just_pressed(KeyCode::ArrowRight) && *pause_state.get() == PauseState::Paused {
             let simulation = simulation.into_inner();
             let result = simulation
                 .advance()

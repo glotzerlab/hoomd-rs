@@ -8,16 +8,23 @@ init().catch((error) => {
     throw error;
   }
 });
+
+document.getElementById('hoomd-example').addEventListener("keydown", function(e) {
+  e.stopPropagation();
+});
 </script>
 
-<canvas id="hoomd-example" width="750" height="421"></canvas>
+<canvas id="hoomd-example" width="750" height="421" style="width: 100%; height: 100%; min-width: 180px; min-height: 120px;"></canvas>
 *Refresh the page to restart the simulation.*
 
 ## Overview
 
 A random walk describes the motion of a point over a series of steps. At each
 step, the point translates by a random vector. This tutorial shows you how to
-implement a random walk using *hoomd-rs*.
+implement a random walk using *hoomd-rs*. There are certainly easier ways to
+write a random walk code, but the purpose of this tutorial is to explain how
+you can express the components of a MC simulation using *hoomd-rs*. You will use
+these same concepts in more complex simulations.
 
 * Objective: Demonstrate a minimal MC simulation.
 * File: `hoomd-rs/examples/mc-tutorial/random-walk.rs`

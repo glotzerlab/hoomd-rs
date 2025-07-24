@@ -8,9 +8,12 @@ init().catch((error) => {
     throw error;
   }
 });
+document.getElementById('hoomd-example').addEventListener("keydown", function(e) {
+  e.stopPropagation();
+});
 </script>
 
-<canvas id="hoomd-example" width="750" height="421"></canvas>
+<canvas id="hoomd-example" width="750" height="421" style="width: 100%; height: 100%; min-width: 180px; min-height: 120px;"></canvas>
 *Refresh the page to restart the simulation.*
 
 ## Overview
@@ -114,7 +117,7 @@ Rust Programming Language] to learn more about **generic types** and **traits**.
 
 The first [Random Walk] tutorial moved points by a random distance (up to a
 maximum) and in a random direction. Look up "random walk" in a text book and the
-first example you are likely to find will only allow hops on a square lattice.
+first example you are likely to find will make random hops on a square lattice.
 Let's implement that with a custom trial move. Here is the code:
 
 ```rust,ignore
@@ -140,7 +143,7 @@ will work with any random number generator from the [rand] crate.
 
 `propose()` takes in the properties (`body_properties`) of a body in the current
 microstate of the system. It returns the **trial** body properties. In this
-tutorial, bodies are points and only have the position property. In your code,
+tutorial, bodies are points and have only the position property. In your code,
 you could give your bodies any properties and modify them with trial moves.
 
 > [!IMPORTANT]
@@ -169,10 +172,13 @@ it to the body's position:
 ```
 
 The first line creates a **mutable** variable `trial` with the current body
-properties (variables are **immutable** by default in Rust).
-`steps.choose(rng)` chooses one of the elements of the array at random
-(with uniform probability). The array gained the `choose` method from the
-`rand::seq::IndexedRandom` **trait**.
+properties (variables are **immutable** by default in Rust). `steps.choose(rng)`
+chooses one of the elements of the array at random (with uniform probability).
+Arrays in Rust do not come with the `choose` method by default. The
+`rand::seq::IndexedRandom` **trait** implements it. This is one very powerful
+capability in Rust. In an object-oriented language `ran` would have to create
+a whole class structure and invent purpose-built array types to do the same. In
+Rust, *any* trait may be implemented for *any* type, including built-in types.
 
 Now, what if the array had 0 elements? What vector should `choose()` return?
 That is a trick question, there is no vector that it can. In some languages,
