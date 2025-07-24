@@ -1,5 +1,5 @@
 use self::integrals::{CellIntegral, CellIntegralWithData, FaceIntegral, FaceIntegralWithData};
-use crate::meshless_voro::rtree_nn::{build_rtree, nn_iter, wrapping_nn_iter, 
+use crate::meshless_voronoi::rtree_nn::{build_rtree, nn_iter, wrapping_nn_iter, 
     build_rtree_hyperbolic, nn_iter_hyperbolic, wrapping_nn_iter_hyperbolic};
 pub use crate::local::GeneratorHyperbolic;
 use hoomd_manifold::{Minkowski, Hyperboloid};
@@ -161,6 +161,11 @@ impl Voronoi {
         Self::build_internal(generators, None, anchor, width, dimensionality, periodic)
     }
     /// TODO: documentation
+    pub fn poincare_from_vec(vec: &Vec<f64>, skirt: f64, dim: usize) -> Vec<f64> {
+        (0..dim).collect::<Vec<usize>>()
+        .iter().map(|i| vec[*i] / (1.0 + vec[dim]/skirt)).collect::<Vec<f64>>()
+    }
+    /// TODO: documentation
     pub fn build_hyperbolic(
         generators: &[Vec<f64>],
         skirt: f64,
@@ -170,12 +175,8 @@ impl Voronoi {
         periodic: bool,
     ) -> Self {
         // generators passed to build_internal_hyperbolic must be in poincare coordinates
-        // TODO: fix this, implement periodic boundary conditions
-        let poincare_generators: &[Vec<f64>] = generators
-            .into()
-            .map(|loc| Minkowski::try_from(loc).expect("sites from microstate").to_poincare(skirt))
-            .collect();
-        Self::build_internal_hyperbolic(poincare_generators, skirt, None, anchor, width, dimensionality, periodic)
+        // TODO: fix this
+        Self::build_internal_hyperbolic(generators, skirt, None, anchor, width, dimensionality, periodic)
     }
 
     /// Same as `build`, but now, only a subset of the Voronoi cells is fully
@@ -399,12 +400,12 @@ impl Voronoi {
         let generators: Vec<GeneratorHyperbolic> = generators
             .iter()
             .enumerate()
-            .map(|(id, &loc)| GeneratorHyperbolic::new(id, skirt, loc, dimensionality))
+            .map(|(id, loc)| GeneratorHyperbolic::new(id, skirt, loc.clone(), dimensionality))
             .collect();
         let gen_vec : Vec<Generator> = generators_copy
             .iter()
             .enumerate()
-            .map(|(id, &loc)| Generator::new(id, DVec3{x: loc[0], y: loc[1], z: loc[2]}, dimensionality))
+            .map(|(id, loc)| Generator::new(id, DVec3{x: loc[0], y: loc[1], z: loc[2]}, dimensionality))
             .collect();
         let rtree = build_rtree_hyperbolic(&generators);
         let simulation_volume = SimulationBoundary::cuboid(anchor, width, periodic, dimensionality);

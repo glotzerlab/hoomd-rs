@@ -3,9 +3,9 @@ use super::{
     half_space::HalfSpace, integrals::FaceIntegrator, Dimensionality, Generator,
 };
 use crate::{
-    meshless_voro::geometry::{in_sphere_test_exact, intersect_planes, Plane},
-    meshless_voro::voronoi::integrals::{CellIntegralWithData, FaceIntegralWithData},
-    meshless_voro::simple_cycle::SimpleCycle,
+    meshless_voronoi::geometry::{in_sphere_test_exact, intersect_planes, Plane},
+    meshless_voronoi::voronoi::integrals::{CellIntegralWithData, FaceIntegralWithData},
+    meshless_voronoi::simple_cycle::SimpleCycle,
 };
 use glam::DVec3;
 use std::any::TypeId;

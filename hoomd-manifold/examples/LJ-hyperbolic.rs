@@ -32,8 +32,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     result
 }
 
-const PARTICLE_NUMBER : usize = 500;
-const RHO : f64 = 10.0;
+const PARTICLE_NUMBER : usize = 100;
+const RHO : f64 = 1.0;
 
 /// Run the simulation
 fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> {
@@ -68,7 +68,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
 
     let kt = 1.0;
     let hamiltonian = cutoff_pair;
-    let d = 0.001;
+    let d = 0.1;
 
     let translate = HyperbolicTranslate {
         maximum_distance: d.try_into()?,
@@ -125,8 +125,8 @@ fn render(
                 color: Color::Blue,
             })
         })
-        .x_bounds([-0.7,0.7]) //([-RHO, RHO])
-        .y_bounds([-0.7,0.7]); //([-RHO, RHO]);
+        .x_bounds([-1.0,1.0]) //([-RHO, RHO])
+        .y_bounds([-1.0,1.0]); //([-RHO, RHO]);
 
     let horizontal = Layout::horizontal([frame.area().height * 2]).flex(Flex::Center);
     let [area] = horizontal.areas(frame.area());

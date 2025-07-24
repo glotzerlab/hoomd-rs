@@ -1,4 +1,4 @@
-use crate::meshless_voro::geometry::Sphere;
+use crate::meshless_voronoi::geometry::Sphere;
 use ahash::{HashSet, HashSetExt};
 use glam::DVec3;
 

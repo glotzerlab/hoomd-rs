@@ -9,7 +9,7 @@ use hoomd_vector::{Vector, Cartesian, InnerProduct};
 use hoomd_microstate::{Microstate, property::Point, boundary::Open};
 use hoomd_manifold::{Minkowski, Hyperboloid};
 use std::array;
-use crate::{meshless_voro::Dimensionality};
+use crate::{meshless_voronoi::Dimensionality};
 use glam::DVec3;
 
 /** Define generator for Hyperbolic space
@@ -18,7 +18,7 @@ TODO: documentation
 
 #[derive(Clone, Debug)]
 pub struct GeneratorHyperbolic {
-    /// Coordinates of point in hyperbolic space in hyperboloid coordinates
+    /// Coordinates of point in hyperbolic space in poincare coordinates
     pub loc: Vec<f64>,
     /// skirt width of the hyperboloic
     pub skirt: f64,
@@ -63,17 +63,17 @@ impl GeneratorHyperbolic {
 }
 
 /** Define the neighbor list
-TODO: documentation
+TODO: documentation, this is temporary code
 */
-pub struct NeighborList<B> {
+pub struct NeighborList {
     /// ordered, nested vector of 2-tuples with nearest-neighbor pairs
     pub neighbors: Vec<(u32,u32)>
 }
 
-impl<B> NeighborList<B> {
+impl NeighborList {
     #[inline]
-    pub fn nearest_neighbors(point: Microstate<B>) -> NeighborList<B> {
-        NeighborList::<B>{neighbors : vec![(1,1)]}
+    pub fn nearest_neighbors(point: Vec<f64> ) -> NeighborList {
+        NeighborList {neighbors : vec![(1,1)]}
     }
 }
 

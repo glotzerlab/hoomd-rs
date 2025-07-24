@@ -1,4 +1,4 @@
-use crate::meshless_voro::{Dimensionality, voronoi::Generator};
+use crate::meshless_voronoi::{Dimensionality, voronoi::Generator};
 use glam::DVec3;
 use rstar::{Envelope, ParentNode, Point, PointDistance, RTree, RTreeNode, RTreeObject, AABB};
 use std::collections::BinaryHeap;

@@ -1,6 +1,6 @@
 use glam::DVec3;
 
-use crate::meshless_voro::geometry::Plane;
+use crate::meshless_voronoi::geometry::Plane;
 
 use super::Generator;
 

@@ -10,12 +10,12 @@
 // TODO: Documentation
 
 mod local;
-pub mod meshless_voro; 
+pub mod meshless_voronoi; 
 
 use hoomd_microstate::Microstate;
 use hoomd_vector::Cartesian;
 
 pub use {
     local::{NeighborList, GeneratorHyperbolic},
-    meshless_voro::{Voronoi}
+    meshless_voronoi::{Voronoi}
 };

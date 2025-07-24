@@ -1,8 +1,8 @@
 use glam::DVec3;
 
 use crate::{
-    meshless_voro::geometry::{in_sphere_test, intersect_planes, Plane},
-    meshless_voro::simple_cycle::SimpleCycle,
+    meshless_voronoi::geometry::{in_sphere_test, intersect_planes, Plane},
+    meshless_voronoi::simple_cycle::SimpleCycle,
 };
 
 use super::{Dimensionality, Generator};

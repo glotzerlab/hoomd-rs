@@ -1,6 +1,6 @@
 use glam::DVec3;
 
-use crate::meshless_voro::geometry::signed_area_tri;
+use crate::meshless_voronoi::geometry::signed_area_tri;
 
 use super::{
     convex_cell::ConvexCellMarker,

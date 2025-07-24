@@ -25,13 +25,21 @@ hoomd-bevy = { workspace =  true, optional = true }
 hoomd-geometry.workspace = true
 hoomd-gsd.workspace = true
 hoomd-interaction.workspace = true
+hoomd-manifold.workspace = true
 hoomd-mc.workspace = true
 hoomd-microstate.workspace = true
+hoomd-order.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
+rand.workspace = true
+libm = "0.2.11"
+glam = "0.27"
 
 anyhow.workspace = true
 bevy = { workspace = true, optional = true }
+
+[dev-dependencies]
+ratatui = "0.28.0"
 
 [package.metadata.docs.rs]
 all-features = true
@@ -48,3 +56,15 @@ required-features = ["bevy"]
 [[example]]
 name = "LJ-hyperbolic"
 path = "LJ-hyperbolic.rs"
+
+[[example]]
+name = "voronoi_flat"
+path = "voronoi_flat.rs"
+
+[[example]]
+name = "voronoi_negative_curvature"
+path = "voronoi_negative_curvature.rs"
+
+[[example]]
+name = "voronoi_flat_grid"
+path = "voronoi_flat_grid.rs"

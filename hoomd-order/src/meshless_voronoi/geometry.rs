@@ -358,10 +358,10 @@ mod tests {
     use glam::DVec3;
     use rand::{prelude::*, Rng, thread_rng, distr::StandardUniform};
 
-    use crate::meshless_voro::geometry::{signed_area_tri, signed_volume_tet};
-    use crate::meshless_voro::HalfSpace;
-    use crate::meshless_voro::Dimensionality;
-    use crate::meshless_voro::voronoi::boundary::SimulationBoundary;
+    use crate::meshless_voronoi::geometry::{signed_area_tri, signed_volume_tet};
+    use crate::meshless_voronoi::HalfSpace;
+    use crate::meshless_voronoi::Dimensionality;
+    use crate::meshless_vornoi::voronoi::boundary::SimulationBoundary;
 
     use super::{in_sphere_test, in_sphere_test_exact, intersect_planes, Aabb, Plane, Sphere};
 

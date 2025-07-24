@@ -102,7 +102,7 @@ impl<'a> Iterator for SimpleCycle2Iterator<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::meshless_voro::simple_cycle::SimpleCycle;
+    use crate::meshless_voronoi::simple_cycle::SimpleCycle;
 
     #[test]
     fn test_extend() {

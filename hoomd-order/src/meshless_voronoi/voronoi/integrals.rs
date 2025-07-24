@@ -2,7 +2,7 @@
 
 use glam::DVec3;
 
-use crate::meshless_voro::geometry::{signed_area_tri, signed_volume_tet};
+use crate::meshless_voronoi::geometry::{signed_area_tri, signed_volume_tet};
 
 use super::convex_cell::{ConvexCell, ConvexCellMarker};
 
@@ -264,8 +264,8 @@ impl<D: Copy, I: FaceIntegralWithData<Data = D>> FaceIntegrator<I> {
 /// Use as follows:
 /// ```
 /// # use glam::DVec3;
-/// # use hoomd_order::meshless_voro::VoronoiIntegrator;
-/// # use hoomd_order::meshless_voro::integrals::AreaCentroidIntegral;
+/// # use hoomd_order::meshless_voronoi::VoronoiIntegrator;
+/// # use hoomd_order::meshless_voronoi::integrals::AreaCentroidIntegral;
 /// # let generators = vec![DVec3::splat(1.), DVec3::splat(2.)];
 /// let voronoi_integrator = VoronoiIntegrator::build(&generators, None, DVec3::ZERO, DVec3::splat(3.), 3.try_into().unwrap(), false);
 /// // Compute areas and centroids of all the voronoi faces (treating all the faces of every ConvexCell,
@@ -325,8 +325,8 @@ impl FaceIntegral for AreaCentroidIntegral {
 /// Use as follows:
 /// ```
 /// use glam::DVec3;
-/// use hoomd_order::meshless_voro::VoronoiIntegrator;
-/// use hoomd_order::meshless_voro::integrals::AreaIntegral;
+/// use hoomd_order::meshless_voronoi::VoronoiIntegrator;
+/// use hoomd_order::meshless_voronoi::integrals::AreaIntegral;
 /// # let generators = vec![DVec3::splat(1.), DVec3::splat(2.)];
 /// let voronoi_integrator = VoronoiIntegrator::build(&generators, None, DVec3::ZERO, DVec3::splat(3.), 3.try_into().unwrap(), false);
 /// // Compute areas of all the voronoi faces (twice for each face,

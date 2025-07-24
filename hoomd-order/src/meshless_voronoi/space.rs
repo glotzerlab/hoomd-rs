@@ -1,4 +1,4 @@
-use crate::meshless_voro::part::Part;
+use crate::meshless_voronoi::part::Part;
 use glam::{DVec3, UVec3};
 use std::{cmp::Ordering, collections::BinaryHeap};
 

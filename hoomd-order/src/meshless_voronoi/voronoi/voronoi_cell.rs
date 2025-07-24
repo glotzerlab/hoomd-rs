@@ -1,6 +1,6 @@
 use glam::DVec3;
 
-use crate::meshless_voro::voronoi::{half_space::HalfSpace, voronoi_face::VoronoiFace, Voronoi};
+use crate::meshless_voronoi::voronoi::{half_space::HalfSpace, voronoi_face::VoronoiFace, Voronoi};
 
 use super::{
     convex_cell::{ConvexCell, ConvexCellMarker},
