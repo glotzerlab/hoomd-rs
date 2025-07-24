@@ -3,7 +3,7 @@ use hoomd_bevy::{
     representation::{Disk, DiskAssets, DiskMaterial, RectangularBoundary},
 };
 use hoomd_interaction::{
-    CutoffPair, Single,
+    CutoffPair, Single, TotalEnergy,
     external::Linear,
     pairwise::{Boxcar, Isotropic},
 };
@@ -131,6 +131,11 @@ impl Simulation for Fill {
             &self.kt,
         );
         self.microstate.increment_step();
+
+        if self.hamiltonian.total_energy(&self.microstate) > 20_000.0 {
+            self.microstate.clear();
+        }
+        
         Ok(())
     }
 
