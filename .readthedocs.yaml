@@ -15,7 +15,7 @@ build:
     - curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz" | tar -xvz --strip-components 2 --directory "bin"
     - ls bin
     # Build the WASM examples
-    - PATH="$(pwd)/bin:$PATH" cargo run -p build-wasm-doc-examples -- --reduce-size
+    - PATH="$(pwd)/bin:$PATH" CARGO_BUILD_JOBS=1 cargo run -p build-wasm-doc-examples -- --reduce-size
     # Build the book
     - mkdir -p $READTHEDOCS_OUTPUT/html
     - echo "site-url = \"/$READTHEDOCS_LANGUAGE/$READTHEDOCS_VERSION/\"" >> doc/book.toml
