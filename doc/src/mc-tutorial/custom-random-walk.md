@@ -158,7 +158,8 @@ again. Notice that no points leave the boundary. Try pausing the simulation and
 advancing one step at a time. You should see that every particle moves left,
 right, down, or up on every step.
 
-The next section will explain ... TODO.
+The next section shows how to use the Hamiltonian to describe how the bodies
+interact with each other and with an external field.
 
 [The Rust Programming Language]: https://doc.rust-lang.org/stable/book/
 [Random Walk]: random-walk.md
