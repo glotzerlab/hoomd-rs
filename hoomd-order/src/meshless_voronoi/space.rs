@@ -306,9 +306,9 @@ mod tests {
                     for _ in 0..3 {
                         // Add 3 parts per cell
                         let rel_pos = DVec3 {
-                            x: rand::rng().sample::<f64, StandardUniform>(StandardUniform),
-                            y: rand::rng().sample::<f64, StandardUniform>(StandardUniform),
-                            z: rand::rng().sample::<f64, StandardUniform>(StandardUniform),
+                            x: rand::rng().sample::<f64, StandardUniform>(StandardUniform) * 0.5,
+                            y: rand::rng().sample::<f64, StandardUniform>(StandardUniform) * 0.5,
+                            z: rand::rng().sample::<f64, StandardUniform>(StandardUniform) * 0.5,
                         };
                         p_x.push(cell_anchor + rel_pos);
                     }

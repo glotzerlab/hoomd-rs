@@ -361,7 +361,7 @@ mod tests {
     use crate::meshless_voronoi::geometry::{signed_area_tri, signed_volume_tet};
     use crate::meshless_voronoi::HalfSpace;
     use crate::meshless_voronoi::Dimensionality;
-    use crate::meshless_vornoi::voronoi::boundary::SimulationBoundary;
+    use crate::meshless_voronoi::voronoi::boundary::SimulationBoundary;
 
     use super::{in_sphere_test, in_sphere_test_exact, intersect_planes, Aabb, Plane, Sphere};
 
@@ -509,7 +509,7 @@ mod tests {
 
     #[test]
     fn test_insphere_equivalence() {
-        let boundary = SimulationBoundary::cuboid(DVec3::ZERO, DVec3::ONE, false, crate::meshless_voro::Dimensionality::ThreeD);
+        let boundary = SimulationBoundary::cuboid(DVec3::ZERO, DVec3::ONE, false, crate::meshless_voronoi::Dimensionality::ThreeD);
         let mut rng = thread_rng();
         let rand_dvec3 = |rng: &mut ThreadRng| {DVec3::new(
             rand::rng().sample::<f64, StandardUniform>(StandardUniform),

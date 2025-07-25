@@ -56,8 +56,8 @@ impl<T: CellIntegral> CellIntegralWithData for T {
 /// Use as follows:
 /// ```
 /// # use glam::DVec3;
-/// # use hoomd_order::meshless_voro::VoronoiIntegrator;
-/// # use hoomd_order::meshless_voro::integrals::VolumeCentroidIntegral;
+/// # use hoomd_order::meshless_voronoi::VoronoiIntegrator;
+/// # use hoomd_order::meshless_voronoi::integrals::VolumeCentroidIntegral;
 /// # let generators = vec![DVec3::splat(1.), DVec3::splat(2.)];
 /// let voronoi_integrator = VoronoiIntegrator::build(&generators, None, DVec3::ZERO, DVec3::splat(3.), 3.try_into().unwrap(), false);
 /// // Compute volumes of all the voronoi cells.
@@ -111,8 +111,8 @@ impl CellIntegral for VolumeCentroidIntegral {
 ///  Use as follows:
 /// ```
 /// # use glam::DVec3;
-/// # use hoomd_order::meshless_voro::VoronoiIntegrator;
-/// # use hoomd_order::meshless_voro::integrals::VolumeIntegral;
+/// # use hoomd_order::meshless_voronoi::VoronoiIntegrator;
+/// # use hoomd_order::meshless_voronoi::integrals::VolumeIntegral;
 /// # let generators = vec![DVec3::splat(1.), DVec3::splat(2.)];
 /// let voronoi_integrator = VoronoiIntegrator::build(&generators, None, DVec3::ZERO, DVec3::splat(3.), 3.try_into().unwrap(), false);
 /// // Compute volumes of all the voronoi cells.

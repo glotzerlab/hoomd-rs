@@ -5,8 +5,8 @@ extern crate hoomd_order;
 extern crate rand;
 
 use glam::DVec3;
-use hoomd_order::meshless_voro::{Voronoi, VoronoiCell, VoronoiFace};
-use rand::{distributions::Uniform, prelude::*, Rng};
+use hoomd_order::meshless_voronoi::{Voronoi, VoronoiCell, VoronoiFace};
+use rand::{prelude::*, Rng, thread_rng, distr::StandardUniform};
 use std::convert::TryInto;
 use std::env;
 use std::time::Duration;
@@ -25,12 +25,11 @@ use ratatui::{
 fn perturbed_grid(anchor: DVec3, width: DVec3, count: usize, pert: f64) -> Vec<DVec3> {
     let mut generators = vec![];
     let mut rng = thread_rng();
-    let distr = Uniform::new(-0.5, 0.5);
     for n in 0..count {
         for m in 0..count {
             let pos = DVec3 {
-                x: n as f64 + 0.5 + pert * rng.sample(distr),
-                y: m as f64 + 0.5 + pert * rng.sample(distr),
+                x: n as f64 + 0.5 + pert * (rand::rng().sample::<f64, StandardUniform>(StandardUniform) as f64),
+                y: m as f64 + 0.5 + pert * (rand::rng().sample::<f64, StandardUniform>(StandardUniform) as f64),
                 z: 0.0
             } * width
                 / count as f64
