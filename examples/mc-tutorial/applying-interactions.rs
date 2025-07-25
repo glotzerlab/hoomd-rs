@@ -98,7 +98,7 @@ impl Simulation for Fill {
             self.microstate.clear();
         }
         // ANCHOR_END: reset
-        
+
         Ok(())
     }
 

@@ -700,7 +700,7 @@ where
         .bodies([Body::point(Cartesian::from([1.0, 0.0]))])
         .try_build()?;
 
-    microstate.clear()
+    microstate.clear();
     assert_eq!(microstate.bodies().len(), 0);
     assert_eq!(microstate.sites().len(), 0);
     # Ok(())
