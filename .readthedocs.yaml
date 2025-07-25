@@ -6,6 +6,7 @@ build:
   commands:
     # Testing
     - echo $PATH
+    - echo $CARGO_HOME
     # Install mdbook
     - mkdir -p bin
     - curl -sSL "https://github.com/rust-lang/mdBook/releases/download/v0.4.52/mdbook-v0.4.52-x86_64-unknown-linux-gnu.tar.gz" | tar -xvz --directory "bin"
