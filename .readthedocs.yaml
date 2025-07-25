@@ -4,6 +4,8 @@ build:
   tools:
     rust: "1.86"
   commands:
+    # Testing
+    - echo $PATH
     # Install mdbook
     - mkdir -p bin
     - curl -sSL "https://github.com/rust-lang/mdBook/releases/download/v0.4.52/mdbook-v0.4.52-x86_64-unknown-linux-gnu.tar.gz" | tar -xvz --directory "bin"
@@ -15,7 +17,7 @@ build:
     - curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz" | tar -xvz --strip-components 2 --directory "bin"
     - ls bin
     # Build the WASM examples
-    - PATH="$(pwd)/bin:$PATH" CARGO_BUILD_JOBS=2 cargo run -p build-wasm-doc-examples -- --reduce-size
+    - PATH="$(pwd)/bin:$PATH" cargo run -p build-wasm-doc-examples -- --reduce-size
     # Build the book
     - mkdir -p $READTHEDOCS_OUTPUT/html
     - echo "site-url = \"/$READTHEDOCS_LANGUAGE/$READTHEDOCS_VERSION/\"" >> doc/book.toml
