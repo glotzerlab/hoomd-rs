@@ -39,12 +39,12 @@ In the random walk simulation, the **Microstate** contains the positions of `$N$
 points, the **Sweep** applies a **trial move** to each point, the Hamiltonian
 is always 0 and temperature `$kT$` is not relevant.
 
-Define a struct that collects all these:
+Define a type that collects all these:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/random-walk.rs:simulation_struct}}
 ```
 
-## Constructing the Simulation
+## Constructing the Simulation Model
 
 The `new()` function constructs a `RandomWalk` simulation. Here is the
 complete function:

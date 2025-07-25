@@ -32,19 +32,6 @@ impl Fill {
         })
         .try_build()?;
 
-        // ANCHOR: pair
-        let boxcar = Boxcar {
-            epsilon: 1000.0,
-            left: 0.0,
-            right: 1.0,
-        };
-        let evaluator = Isotropic(boxcar);
-        let cutoff_pair = CutoffPair {
-            r_cut: 1.0,
-            evaluator,
-        };
-        // ANCHOR_END: pair
-
         // ANCHOR: external
         let linear = Single(Linear {
             alpha: 10.0,
@@ -53,8 +40,21 @@ impl Fill {
         });
         // ANCHOR_END: external
 
+        // ANCHOR: pair
+        let boxcar = Boxcar {
+            epsilon: 1000.0,
+            left: 0.0,
+            right: 1.0,
+        };
+        let isotropic = Isotropic(boxcar);
+        let cutoff_pair = CutoffPair {
+            r_cut: 1.0,
+            evaluator: isotropic,
+        };
+        // ANCHOR_END: pair
+
         // ANCHOR: hamiltonian
-        let hamiltonian = (cutoff_pair, linear);
+        let hamiltonian = (linear, cutoff_pair);
         // ANCHOR_END: hamiltonian
 
         let translate = Translate {
@@ -84,15 +84,17 @@ impl Simulation for Fill {
         }
         // ANCHOR_END: add
 
+        // ANCHOR: apply
         self.translate_sweep.apply(
             &mut self.microstate,
             &self.hamiltonian,
             &self.kt,
         );
         self.microstate.increment_step();
+        // ANCHOR_END: apply
 
         // ANCHOR: reset
-        if self.hamiltonian.total_energy(&self.microstate) > 20_000.0 {
+        if self.hamiltonian.1.total_energy(&self.microstate) > 20_000.0 {
             self.microstate.clear();
         }
         // ANCHOR_END: reset
@@ -108,16 +110,18 @@ impl Simulation for Fill {
 // ANCHOR_END: impl_simulation
 
 #[derive(Resource)]
+// ANCHOR: simulation_struct
 struct Fill {
     /// Positions of all the bodies in the simulation.
     microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Square>,
     /// How sites interact with other sites and fields.
-    hamiltonian: (CutoffPair<Isotropic<Boxcar>>, Single<Linear<Cartesian<2>>>),
+    hamiltonian: (Single<Linear<Cartesian<2>>>, CutoffPair<Isotropic<Boxcar>>),
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate>,
     /// Temperature set point.
     kt: f64,
 }
+// ANCHOR_END: simulation_struct
 
 /// Mark the disk representation type.
 struct A;

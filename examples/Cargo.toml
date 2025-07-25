@@ -64,9 +64,9 @@ required-features = ["bevy"]
 path = "mc-tutorial"
 
 [[example]]
-name = "interactions"
-path = "mc-tutorial/interactions.rs"
+name = "applying-interactions"
+path = "mc-tutorial/applying-interactions.rs"
 required-features = ["bevy"]
 
-[package.metadata.example.interactions]
+[package.metadata.example.applying-interactions]
 path = "mc-tutorial"

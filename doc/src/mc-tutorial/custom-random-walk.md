@@ -101,8 +101,8 @@ removed), so you can unpack the option's value with `expect()`.
 
 ## The Simulation Model
 
-Here is the `Simulation` struct, which is similar to `RandomWalk` in the [Random
-Walk] tutorial:
+Here is the type that holds the simulation model, which is similar to
+`RandomWalk` in the [Random Walk] tutorial:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/custom-random-walk.rs:simulation_struct}}
 ```
