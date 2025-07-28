@@ -106,9 +106,9 @@ assert_eq!(vec![(0 as usize, 1 as usize),
 # }
 ```
 */
-impl<const N: usize> NeighborList<Point<Cartesian<N>>,Point<Cartesian<N>>,Open> {
+impl<const N: usize, B> NeighborList<B, Point<Cartesian<N>>,Open> {
     #[inline]
-    pub fn from_microstate(microstate: Microstate<Point<Cartesian<N>>,Point<Cartesian<N>>,Open> ) -> NeighborList<Point<Cartesian<N>>,Point<Cartesian<N>>,Open> {
+    pub fn from_microstate(microstate: Microstate<B, Point<Cartesian<N>>,Open> ) -> NeighborList<B, Point<Cartesian<N>>,Open> {
         let mut nlist = vec![];
         let mut generators = vec![];
         for site in microstate.sites() {
