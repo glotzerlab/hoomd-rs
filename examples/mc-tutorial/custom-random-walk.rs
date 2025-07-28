@@ -11,7 +11,7 @@ use hoomd_vector::{Cartesian, Vector};
 
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, Settings, Simulation,
-    representation::{Disk, DiskAssets, DiskMaterial},
+    representation::disk::{self, Disk},
 };
 
 use anyhow::Context;
@@ -146,7 +146,7 @@ fn main() -> anyhow::Result<()> {
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(
         Startup,
-        (|| DiskMaterial::default()).pipe(Disk::<A>::setup),
+        (|| disk::MaterialParameters::default()).pipe(Disk::<A>::setup),
     );
     app.add_systems(
         Update,
@@ -163,7 +163,7 @@ fn main() -> anyhow::Result<()> {
 /// Copy the current positions of simulation particles to bevy entities.
 fn sync_simulation(
     mut commands: Commands,
-    disk_assets: Res<DiskAssets<A>>,
+    disk_assets: Res<disk::Representation<A>>,
     query: Query<(Entity, &mut Transform), With<Disk<A>>>,
     simulation: Res<CustomRandomWalk>,
 ) {

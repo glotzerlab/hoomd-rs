@@ -8,8 +8,7 @@ use bevy::{
     asset::embedded_asset,
     prelude::*,
     reflect::TypePath,
-    render::render_resource::{AsBindGroup, ShaderRef},
-    render::texture::TRANSPARENT_IMAGE_HANDLE,
+    render::{storage::ShaderStorageBuffer, render_resource::{AsBindGroup, ShaderRef}},
     sprite::{AlphaMode2d, Material2d, Material2dPlugin},
 };
 use itertools::EitherOrBoth::{Both, Left, Right};
@@ -23,10 +22,10 @@ const SHADER_ASSET_PATH: &str = "embedded://hoomd_bevy/representation/disk.wgsl"
 
 /** Represent an entity with a 2D disk in the xy plane.
 
-The base representation has a diameter of 1.0. Provide a non-unit diameter in
-[`sync`] to render disks of different sizes. Nominally, the z coordinate of the
-disks should be set to 0. Choose a different value to control the back to front
-draw order.
+The base representation has a diameter of 1.0. Provide a non-unit diameter
+in [`sync`](Self::sync) to render disks of different sizes. Nominally, the z
+coordinate of the disks should be set to 0. Choose a different value to control
+the back to front draw order.
 
 All disks of the same type must have the same material. To display disks with
 different colors, outline widths, or textures, `setup` and `sync` multiple types
@@ -44,18 +43,18 @@ pub struct Disk<T> {
 
 /// Assets that represent a Disk in the scene.
 #[derive(Resource)]
-pub struct DiskAssets<T> {
+pub struct Representation<T> {
     /// The disk mesh.
     mesh: Handle<Mesh>,
     /// The disk material.
-    material: Handle<DiskMaterial>,
+    material: Handle<Material>,
     /// Mark the type of the disk assets.
     marker: PhantomData<T>,
 }
 
 /// Initialize needed plugins and add assets for this representation.
 pub(crate) fn build(app: &mut App) {
-    app.add_plugins(Material2dPlugin::<DiskMaterial>::default());
+    app.add_plugins(Material2dPlugin::<Material>::default());
     embedded_asset!(app, "disk.wgsl");
 }
 
@@ -63,14 +62,24 @@ impl<T: Send + Sync + 'static> Disk<T> {
     /** Create assets to render disks.
      */
     pub fn setup(
-        material: In<DiskMaterial>,
+        material: In<MaterialParameters>,
         mut commands: Commands,
+        mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
         mut meshes: ResMut<Assets<Mesh>>,
-        mut materials: ResMut<Assets<DiskMaterial>>,
-    ) {
+        mut materials: ResMut<Assets<Material>>,
+        asset_server: Res<AssetServer>,
+    ) {    
         let mesh = meshes.add(Rectangle::new(1.0, 1.0));
-        let material = materials.add(material.0);
-        commands.insert_resource(DiskAssets::<T> {
+        let material = Material {
+            background_color: material.0.background_color,
+            outline_color: material.0.outline_color,
+            outline_width: material.0.outline_width,
+            texture_scale: material.0.texture_scale,
+            texture: material.0.texture_asset.map(|t| asset_server.load(t)),
+        };
+        let material = materials.add(material);          
+            
+        commands.insert_resource(Representation::<T> {
             mesh,
             material,
             marker: PhantomData,
@@ -80,7 +89,7 @@ impl<T: Send + Sync + 'static> Disk<T> {
     /// Copy the current positions of simulation particles to bevy entities.
     pub fn sync<I>(
         commands: &mut Commands,
-        disk_assets: Res<DiskAssets<T>>,
+        disk_assets: Res<Representation<T>>,
         query: Query<(Entity, &mut Transform), With<Self>>,
         disks: I,
     ) where
@@ -108,16 +117,49 @@ impl<T: Send + Sync + 'static> Disk<T> {
     }
 }
 
+/// Initialize [`DiskMaterial`] with these settings.
+pub struct MaterialParameters {
+    /// Color applied to the interior of the disk.
+    pub background_color: LinearRgba,
+
+    /// Color applied to the outline.
+    pub outline_color: LinearRgba,
+
+    /// Width of the outline.
+    pub outline_width: f32,
+
+    /// Factor to scale the texture by.
+    pub texture_scale: f32,
+
+    /// Name of the texture asset.
+    pub texture_asset: Option<String>,
+}
+
+impl Default for MaterialParameters {
+    fn default() -> Self {
+         Self {
+            background_color: PRIMARY_COLOR.into(),
+            outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
+            outline_width: 0.05,
+            texture_asset: None,
+            texture_scale: 1.2,
+        }
+    }
+}
+
 /** Control how disks are rendered.
 
-[`DiskMaterial`] mixes the texture (which defaults to fully transparent) with
-the background color using the texture alpha. It ignores the background alpha.
+Disks are always opaque. Set the background color appropriately in any textures:
+[`Disk`] ignores alpha. The [`background_color`] field tints the texture by
+multiplication. With a `None` texture (the default), [`background_color`] sets
+the exact color of the disk.
 
-Control the draw order using the z coordinate. The draw order is non-deterministic
-for all disks at the same z value.
+Set the initial material by piping `MaterialParameters` into [`Disk::setup`].
+After it is initialized, change the material during execution via the `material`
+field in`ResMut<disk::Representation<A>>`.
 */
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-pub struct DiskMaterial {
+pub struct Material {
     /// Color applied to the interior of the disk.
     #[uniform(0)]
     pub background_color: LinearRgba,
@@ -134,25 +176,13 @@ pub struct DiskMaterial {
     #[uniform(0)]
     pub texture_scale: f32,
 
-    /// Texture to apply. Blended with `color`.
+    /// Texture to apply. Tinted by `background_color`.
     #[texture(1)]
     #[sampler(2)]
-    pub texture: Handle<Image>,
+    pub texture: Option<Handle<Image>>,
 }
 
-impl Default for DiskMaterial {
-    fn default() -> Self {
-        Self {
-            background_color: PRIMARY_COLOR.into(),
-            outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
-            outline_width: 0.05,
-            texture: TRANSPARENT_IMAGE_HANDLE,
-            texture_scale: 1.2,
-        }
-    }
-}
-
-impl Material2d for DiskMaterial {
+impl Material2d for Material {
     fn fragment_shader() -> ShaderRef {
         SHADER_ASSET_PATH.into()
     }

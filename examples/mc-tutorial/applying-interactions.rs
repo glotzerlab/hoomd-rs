@@ -13,7 +13,8 @@ use hoomd_vector::Cartesian;
 
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, Settings, Simulation,
-    representation::{Disk, DiskAssets, DiskMaterial, RectangularBoundary},
+    representation::disk::{self, Disk},
+    representation::RectangularBoundary,
 };
 
 use anyhow::Context;
@@ -21,11 +22,12 @@ use bevy::prelude::*;
 
 // ANCHOR: simulation_new
 impl Fill {
-    /// Set up the hoomd simulation
+    /// Construct a new fill simulation.
     fn new() -> anyhow::Result<Fill> {
         let box_height = 30.0;
         let kt = 1.0;
         let d = 0.15;
+        let alpha = 10.0;
 
         let microstate = MicrostateBuilder::with_boundary(Square {
             l: box_height.try_into()?,
@@ -34,7 +36,7 @@ impl Fill {
 
         // ANCHOR: external
         let linear = Single(Linear {
-            alpha: 10.0,
+            alpha,
             plane_origin: Cartesian::default(),
             plane_normal: [0.0, 1.0].try_into()?,
         });
@@ -142,7 +144,7 @@ fn main() -> anyhow::Result<()> {
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(
         Startup,
-        (|| DiskMaterial::default()).pipe(Disk::<A>::setup),
+        (|| disk::MaterialParameters::default()).pipe(Disk::<A>::setup),
     );
     app.add_systems(
         Startup,
@@ -168,7 +170,7 @@ fn main() -> anyhow::Result<()> {
 /// Copy the current positions of simulation particles to bevy entities.
 fn sync_simulation(
     mut commands: Commands,
-    disk_assets: Res<DiskAssets<A>>,
+    disk_assets: Res<disk::Representation<A>>,
     query: Query<(Entity, &mut Transform), With<Disk<A>>>,
     simulation: Res<Fill>,
 ) {
