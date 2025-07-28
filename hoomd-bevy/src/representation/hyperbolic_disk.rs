@@ -91,17 +91,22 @@ impl<T: Send + Sync + 'static> HyperbolicDisk<T> {
         for item in &mut query.into_iter().zip_longest(disks) {
             match item {
                 Both((_, mut transform), (position, diameter)) => {
-                    let (poincare_position, projected_radius) = poincare(&position, RHO, (diameter/2.0).powi(2));
+                    let (poincare_position, max_projected_radius) = poincare(&position, RHO, diameter);
+                    let rad_arg = RHO*sinh(diameter/(2.0*RHO))/(1.0 + cosh(diameter/(2.0*RHO)));
+                    let poincare_radius = (0.25)*acosh(1.0 + 2.0*rad_arg.powi(2)/(1.0-(rad_arg.powi(2)))) as f32;
                     transform.translation = Vec3::from_array(poincare_position);
-                    transform.scale = Vec3::from_array([projected_radius,projected_radius,diameter as f32/2.0 as f32]);
+                    //transform.scale = Vec3::splat(1.0);
+                    transform.scale = Vec3::from_array([max_projected_radius, max_projected_radius,poincare_radius]);
                 }
                 Left((entity, _)) => commands.entity(entity).despawn(),
                 Right((position, diameter)) => {
-                    let (poincare_position, projected_radius) = poincare(&position, RHO, (diameter/2.0).powi(2));
+                    let (poincare_position, max_projected_radius) = poincare(&position, RHO, diameter);
+                    let rad_arg = RHO*sinh(diameter/(2.0*RHO))/(1.0 + cosh(diameter/(2.0*RHO)));
+                    let poincare_radius = (0.5)*acosh(1.0 + 2.0*rad_arg.powi(2)/(1.0-(rad_arg.powi(2)))) as f32;
                     commands.spawn((
                         Mesh2d(disk_assets.mesh.clone()),
                         MeshMaterial2d(disk_assets.material.clone()),
-                        Transform::from_translation(Vec3::from_array(poincare_position)).with_scale(Vec3::from_array([projected_radius,projected_radius,diameter as f32/2.0 as f32])),
+                        Transform::from_translation(Vec3::from_array(poincare_position)).with_scale(Vec3::from_array([max_projected_radius,max_projected_radius,poincare_radius])),
                         Self {
                             marker: PhantomData,
                         },
@@ -114,12 +119,12 @@ impl<T: Send + Sync + 'static> HyperbolicDisk<T> {
 
 /// Project coordinates to Poincare disk 
 ///TODO: fix radius
-fn poincare(point: &Minkowski<3>, skirt: f64, rad_sq: f64) -> ([f32;3], f32) {
+fn poincare(point: &Minkowski<3>, skirt: f64, diameter: f64) -> ([f32;3], f32) {
     let proj = point.to_poincare(skirt);
-    let v = acosh((rad_sq + RHO.powi(2))/(RHO.powi(2)-rad_sq));
+    let v = diameter/(skirt*2.0);
     let eta = acosh(point.coordinates[2]/RHO);
-    let edge_proj = (RHO * sinh(eta+v))/(1.0 + cosh(eta+v));
-    let rad_proj = edge_proj - (RHO * sinh(eta)*cosh(v))/(1.0 + cosh(eta)*cosh(v)) ;
+    let edge_proj = (RHO * sinh(eta-v))/(1.0 + cosh(eta-v));
+    let rad_proj = (RHO * sinh(eta))/(1.0 + cosh(eta)) - edge_proj;
     ([proj[0] as f32, proj[1] as f32, 0.0_f32], rad_proj as f32)
 }
 
