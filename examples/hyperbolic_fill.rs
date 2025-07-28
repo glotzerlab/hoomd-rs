@@ -18,7 +18,7 @@ use bevy::prelude::*;
 struct A;
 const RHO: f64 = 1.0; 
 const PARTICLE_NUMBER : usize = 100;
-const RAD_SQ : f64 = 0.03;
+const RAD_SQ : f64 = 0.1;
 
 fn main() -> anyhow::Result<()> {
     let simulation = Fill::new().context("failed to setup simulation")?;

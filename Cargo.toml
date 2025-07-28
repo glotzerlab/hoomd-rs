@@ -1,7 +1,14 @@
 [workspace]
 
 resolver = "3"
-members = ["hoomd-*", "examples"]
+members = ["examples","hoomd-bevy", "hoomd-geometry",
+                   "hoomd-gsd",
+                   "hoomd-interaction",
+                   "hoomd-manifold",
+                   "hoomd-mc",
+                   "hoomd-microstate",
+                   "hoomd-utility",
+                   "hoomd-vector"]
 
 # Include only core hoomd simulation crates by default so that `cargo build`,
 # `cargo test` and similar commands operate only on the core code by default.

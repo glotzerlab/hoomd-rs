@@ -20,7 +20,7 @@ use libm::{cosh, sinh, acosh};
 use crate::PRIMARY_COLOR;
 
 /// Location of the shader implementation
-const SHADER_ASSET_PATH: &str = "embedded://hoomd_bevy/representation/disk.wgsl";
+const SHADER_ASSET_PATH: &str = "embedded://hoomd_bevy/representation/hyperbolic_disk.wgsl";
 const RHO : f64 = 1.0;
 
 /** Represent an entity with a 2D disk in the xy plane.
@@ -91,17 +91,17 @@ impl<T: Send + Sync + 'static> HyperbolicDisk<T> {
         for item in &mut query.into_iter().zip_longest(disks) {
             match item {
                 Both((_, mut transform), (position, diameter)) => {
-                    let (poincare_position, projected_radius) = poincare(&position, RHO, diameter);
+                    let (poincare_position, projected_radius) = poincare(&position, RHO, (diameter/2.0).powi(2));
                     transform.translation = Vec3::from_array(poincare_position);
-                    transform.scale = Vec3::splat(projected_radius);
+                    transform.scale = Vec3::from_array([projected_radius,projected_radius,diameter as f32/2.0 as f32]);
                 }
                 Left((entity, _)) => commands.entity(entity).despawn(),
                 Right((position, diameter)) => {
-                    let (poincare_position, projected_radius) = poincare(&position, RHO, diameter);
+                    let (poincare_position, projected_radius) = poincare(&position, RHO, (diameter/2.0).powi(2));
                     commands.spawn((
                         Mesh2d(disk_assets.mesh.clone()),
                         MeshMaterial2d(disk_assets.material.clone()),
-                        Transform::from_translation(Vec3::from_array(poincare_position)).with_scale(Vec3::splat(projected_radius)),
+                        Transform::from_translation(Vec3::from_array(poincare_position)).with_scale(Vec3::from_array([projected_radius,projected_radius,diameter as f32/2.0 as f32])),
                         Self {
                             marker: PhantomData,
                         },
@@ -119,7 +119,7 @@ fn poincare(point: &Minkowski<3>, skirt: f64, rad_sq: f64) -> ([f32;3], f32) {
     let v = acosh((rad_sq + RHO.powi(2))/(RHO.powi(2)-rad_sq));
     let eta = acosh(point.coordinates[2]/RHO);
     let edge_proj = (RHO * sinh(eta+v))/(1.0 + cosh(eta+v));
-    let rad_proj = (RHO * sinh(eta))/(1.0 + cosh(eta)) - edge_proj;
+    let rad_proj = edge_proj - (RHO * sinh(eta)*cosh(v))/(1.0 + cosh(eta)*cosh(v)) ;
     ([proj[0] as f32, proj[1] as f32, 0.0_f32], rad_proj as f32)
 }
 
@@ -160,7 +160,7 @@ impl Default for HyperbolicDiskMaterial {
         Self {
             background_color: PRIMARY_COLOR.into(),
             outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
-            outline_width: 0.05,
+            outline_width: 0.005,
             texture: TRANSPARENT_IMAGE_HANDLE,
             texture_scale: 1.2,
         }
@@ -169,6 +169,10 @@ impl Default for HyperbolicDiskMaterial {
 
 impl Material2d for HyperbolicDiskMaterial {
     fn fragment_shader() -> ShaderRef {
+        SHADER_ASSET_PATH.into()
+    }
+
+    fn vertex_shader() -> ShaderRef {
         SHADER_ASSET_PATH.into()
     }
 
