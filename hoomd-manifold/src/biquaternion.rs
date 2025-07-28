@@ -528,6 +528,7 @@ use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate,
                     Biquaternion, UnitBiquaternion};
 use std::f64::consts::PI;
 use num::complex::Complex;
+use approx::assert_relative_eq;
 
 // biquaternion representing a rotation of pi/2 radians about x-axis
 let q = Biquaternion::from([Complex::new((PI/4.0).sin(),0.0),
@@ -538,7 +539,10 @@ let v = q.to_unit();
 let x = Minkowski::from([1.0, 1.0, 1.0, 1.0]);
 let rotation = HyperbolicRotationMatrix::from(v.expect("non-zero biquaternion"));
 let rotated = rotation.hyperbolic_rotate(&x);
-// rotated vector is approximately [1.0, -1.0, 1.0, 1.0];
+assert_relative_eq!(rotated.coordinates[0], 1.0, epsilon = 1e-12);
+assert_relative_eq!(rotated.coordinates[1], -1.0, epsilon = 1e-12);
+assert_relative_eq!(rotated.coordinates[2], 1.0, epsilon = 1e-12);
+assert_relative_eq!(rotated.coordinates[3], 1.0, epsilon = 1e-12);
 ```
 
 However, biquaternions also generate boosts via 
@@ -551,6 +555,7 @@ use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, HyperbolicRotationMatri
 use std::f64::consts::PI;
 use num::complex::Complex;
 use libm::{sinh,cosh};
+use approx::assert_relative_eq;
 
 // biquaternion representing a boost of rapidity 0.5 in x direction
 let q = Biquaternion::from([Complex::new(0.0,(0.2_f64).sinh()),
@@ -561,7 +566,10 @@ let v = q.to_unit();
 let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
 let boost = HyperbolicRotationMatrix::from(v.expect("hard-coded unit biquaternion"));
 let boosted = boost.hyperbolic_rotate(&x);
-// boosted is approximately [(0.4_f64).sinh(), 0.0, 0.0,(0.4_f64).cosh()]
+assert_relative_eq!(boosted.coordinates[0], (0.4_f64).sinh(), epsilon = 1e-12);
+assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon = 1e-12);
+assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon = 1e-12);
+assert_relative_eq!(boosted.coordinates[3], (0.4_f64).cosh(), epsilon = 1e-12);
 ```
 */
 pub struct UnitBiquaternion(Biquaternion);
@@ -595,11 +603,12 @@ impl Distribution<UnitBiquaternion> for StandardUniform {
     use hoomd_manifold::{UnitBiquaternion,Biquaternion};
     use rand::{rngs::StdRng, Rng, SeedableRng};
     use num::complex::Complex;
+    use approx::assert_relative_eq;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = StdRng::seed_from_u64(1);
     let v: UnitBiquaternion = rng.random();
-    // norm_squared(v) is approximately 1.0 
+    assert_relative_eq!(v.norm_squared().re, 1.0, epsilon=1e-12);
     # Ok(())
     # }
     ```
@@ -672,6 +681,7 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, Biquaternion, Minkowski};
     use std::f64::consts::PI;
     use num::complex::Complex;
+    use approx::assert_relative_eq;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let x = Minkowski::from([1.0, 0.0, 0.0, 1.0]);
@@ -681,7 +691,10 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
                         Complex::new((PI/4.0).cos(), 0.0)]);
     let v = q.to_unit_unchecked();
     let rotated = v.hyperbolic_rotate(&x);
-    // rotated is approximately [0.0, 1.0, 0.0, 1.0]
+    assert_relative_eq!(rotated.coordinates[0], 0.0, epsilon=1e-12);
+    assert_relative_eq!(rotated.coordinates[1], 1.0, epsilon=1e-12);
+    assert_relative_eq!(rotated.coordinates[2], 0.0, epsilon=1e-12);
+    assert_relative_eq!(rotated.coordinates[3], 1.0, epsilon=1e-12);
     # Ok(())
     # }
     ```
@@ -693,6 +706,7 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     use std::f64::consts::PI;
     use num::complex::Complex;
     use libm::{sinh,cosh};
+    use approx::assert_relative_eq;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
@@ -702,7 +716,10 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
                         Complex::new(0.0, PI/4.0).cos()]);
     let v = q.to_unit_unchecked();
     let boosted = v.hyperbolic_rotate(&x);
-    // boosted is approximately [(PI/2.0).sinh(), 0.0, 0.0, (PI/2.0).cosh()]
+    assert_relative_eq!(boosted.coordinates[0], (PI/2.0).sinh(), epsilon=1e-12);
+    assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon=1e-12);
+    assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon=1e-12);
+    assert_relative_eq!(boosted.coordinates[3], (PI/2.0).cosh(), epsilon=1e-12);
     # Ok(())
     # }
     ```

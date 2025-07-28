@@ -86,7 +86,7 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let pos1 = in.disk_center;
     let pos2 = in.world_position.xy;
     let arg = 1 + 2*dot((pos1 - pos2),(pos1 - pos2))/((1-dot(pos1,pos1))*(1-dot(pos2,pos2)));
-    let r = (0.5)*acosh(arg);
+    let r = acosh(arg);
 
     let radius = in.disk_radius;
 
@@ -111,7 +111,7 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         color = background_color.rgb;
     }
 
-    //return(vec4<f32>(0, r,r/2,1));
+    //return(vec4<f32>(0, 1-r,1-r/2,1));
     return select(outline_color, vec4<f32>(color, 1.0), r <= radius - outline_width);
 }
 

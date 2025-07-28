@@ -93,7 +93,7 @@ impl<T: Send + Sync + 'static> HyperbolicDisk<T> {
                 Both((_, mut transform), (position, diameter)) => {
                     let (poincare_position, max_projected_radius) = poincare(&position, RHO, diameter);
                     let rad_arg = RHO*sinh(diameter/(2.0*RHO))/(1.0 + cosh(diameter/(2.0*RHO)));
-                    let poincare_radius = (0.25)*acosh(1.0 + 2.0*rad_arg.powi(2)/(1.0-(rad_arg.powi(2)))) as f32;
+                    let poincare_radius = (0.5)*acosh(1.0 + 2.0*rad_arg.powi(2)/(1.0-(rad_arg.powi(2)))) as f32;
                     transform.translation = Vec3::from_array(poincare_position);
                     //transform.scale = Vec3::splat(1.0);
                     transform.scale = Vec3::from_array([max_projected_radius, max_projected_radius,poincare_radius]);

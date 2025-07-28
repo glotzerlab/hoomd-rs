@@ -17,8 +17,8 @@ use bevy::prelude::*;
 /// Mark the disk representation type.
 struct A;
 const RHO: f64 = 1.0; 
-const PARTICLE_NUMBER : usize = 200;
-const DIAMETER : f64 = 0.8; //in hyperboloid metric
+const PARTICLE_NUMBER : usize = 300;
+const DIAMETER : f64 = 0.7; //in hyperboloid metric
 
 fn main() -> anyhow::Result<()> {
     let simulation = Fill::new().context("failed to setup simulation")?;
@@ -69,7 +69,7 @@ impl Fill {
     //    Body::point(Minkowski::from([-1.0, -1.0, sqrt(3.0)]))])
     .try_build()?;
 
-    let initial_spacing = 2.0;
+    let initial_spacing = 3.0;
     let mut rng = StdRng::seed_from_u64(23);
     let sample_disk = HyperbolicDisk{
         r: initial_spacing.try_into()?, 

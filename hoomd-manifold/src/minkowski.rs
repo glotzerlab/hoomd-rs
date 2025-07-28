@@ -722,6 +722,7 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
                         Biquaternion, UnitBiquaternion};
     use std::f64::consts::PI;
     use num::complex::Complex;
+    use approx::assert_relative_eq;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let q = Biquaternion::from([Complex::new(0.0,0.0),
@@ -732,7 +733,10 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     let x = Minkowski::from([1.0, 0.0, 0.0, 1.0]);
     let rotation = HyperbolicRotationMatrix::from(v);
     let rotated = rotation.hyperbolic_rotate(&x);
-    // rotated vector is approximately [0.0, 0.0, -1.0, 1.0];
+    assert_relative_eq!(rotated.coordinates[0], 0.0, epsilon= 1e-12);
+    assert_relative_eq!(rotated.coordinates[1], 0.0, epsilon= 1e-12);
+    assert_relative_eq!(rotated.coordinates[2], -1.0, epsilon= 1e-12);
+    assert_relative_eq!(rotated.coordinates[3], 1.0, epsilon= 1e-12);
     # Ok(())
     # }
     ```
@@ -742,16 +746,20 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     use std::f64::consts::PI;
     use num::complex::Complex;
     use libm::{sinh,cosh};
+    use approx::assert_relative_eq;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
-    let q = Biquaternion::from([Complex::new(0.0, 0.5).sin(),
+    let q = Biquaternion::from([Complex::new(0.0, 0.25).sin(),
                         Complex::new(0.0,0.0),
                         Complex::new(0.0, 0.0),
-                        Complex::new(0.0, 0.5).cos()]);
+                        Complex::new(0.0, 0.25).cos()]);
     let v = q.to_unit()?;
     let boosted = v.hyperbolic_rotate(&x);
-    // boosted is approximately [(0.5).sinh(), 0.0, 0.0, (0.5).cosh()]
+    assert_relative_eq!(boosted.coordinates[0], (0.5_f64).sinh(), epsilon=1e-12);
+    assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon=1e-12);
+    assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon=1e-12);
+    assert_relative_eq!(boosted.coordinates[3], (0.5_f64).cosh(), epsilon=1e-12);
     # Ok(())
     # }
     ```

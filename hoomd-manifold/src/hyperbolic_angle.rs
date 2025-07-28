@@ -52,23 +52,28 @@ In particular,
 // Rotation about z axis
 use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
 use std::f64::consts::PI;
+use approx::assert_relative_eq;
 
 let v = Minkowski::from([1.0, 0.0, 1.0]);
 let rotation_about_z = HyperbolicAngle::from((PI/2.0, 0.0_f64, 0.0_f64));
 let matrix = HyperbolicRotationMatrix::from(rotation_about_z);
 let rotated = matrix.hyperbolic_rotate(&v);
-// rotated is approximately [0.0, 1.0, 1.0]);
+assert_relative_eq!(rotated.coordinates[0], 0.0, epsilon=1e-12);
+assert_relative_eq!(rotated.coordinates[1], 1.0, epsilon=1e-12);
+assert_relative_eq!(rotated.coordinates[2], 1.0, epsilon=1e-12);
 ```
 ```
 // Boost in the y direction
 use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
-use std::f64::consts::PI;
+use approx::assert_relative_eq;
 
 let v = Minkowski::from([1.0, 0.0, 1.0]);
 let boost_in_y = HyperbolicAngle::from((0.0_f64, 0.0_f64, 0.5_f64));
 let matrix = HyperbolicRotationMatrix::from(boost_in_y);
 let boosted = matrix.hyperbolic_rotate(&v);
-// rotated is approximately [1.0, sinh(0.5), cosh(0.5)]);
+assert_relative_eq!(boosted.coordinates[0], 1.0, epsilon=1e-12);
+assert_relative_eq!(boosted.coordinates[1], (0.5_f64).sinh(), epsilon=1e-12);
+assert_relative_eq!(boosted.coordinates[2], (0.5_f64).cosh(), epsilon=1e-12);
 ```
 
 ## Operations using [`HyperbolicAngle`] on Minkowski space
@@ -177,6 +182,7 @@ impl Distribution<HyperbolicAngle> for StandardUniform {
     use hoomd_manifold::{HyperbolicAngle, Minkowski, HyperbolicRotationMatrix, HyperbolicRotate};
     use hoomd_vector::Vector;
     use rand::{rngs::StdRng, Rng, SeedableRng};
+    use approx::assert_relative_eq;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = StdRng::seed_from_u64(1);
@@ -186,7 +192,7 @@ impl Distribution<HyperbolicAngle> for StandardUniform {
     let matrix = HyperbolicRotationMatrix::from(v);
     let origin = Minkowski::from([0.0, 0.0, 1.0]);
     let point = matrix.hyperbolic_rotate(&origin);
-    // the components of point approximately satisfy x^2 + y^2 - x^2 = -1
+    assert_relative_eq!(-1.0, point.distance_squared(&Minkowski::<3>::default()), epsilon=1e-12);
     # Ok(())
     # }
     ```
