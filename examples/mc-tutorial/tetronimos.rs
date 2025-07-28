@@ -1,5 +1,6 @@
 // ANCHOR: use
 use rand::{Rng, seq::IndexedRandom};
+use std::f64::consts::PI;
 
 use hoomd_interaction::{
     CutoffPair, Single, TotalEnergy,
@@ -24,6 +25,9 @@ use bevy::prelude::*;
 use bevy::render::storage::ShaderStorageBuffer;
 use std::iter;
 
+// TODO: fix spelling error!
+// TODO: Type alias for body and site properties
+
 // ANCHOR: simulation_new
 impl Tetronimos {
     /// Construct a new tetronimo simulation.
@@ -32,7 +36,7 @@ impl Tetronimos {
         let kt = 1.0;
         let alpha = 1.0;
 
-        let microstate = MicrostateBuilder::with_boundary(Square {
+        let microstate = MicrostateBuilder::<OrientedPoint<Cartesian<2>, Angle>, Point<Cartesian<2>>, Square>::with_boundary(Square {
             l: box_height.try_into()?,
         })
         .try_build()?;
@@ -150,28 +154,35 @@ impl Simulation for Tetronimos {
 struct Discrete;
 // ANCHOR_END: local_trial_struct
 
-impl LocalTrial<Point<Cartesian<2>>> for Discrete {
+impl LocalTrial<OrientedPoint<Cartesian<2>, Angle>> for Discrete {
     // ANCHOR: local_trial_fn
     fn propose<R: Rng>(
         &self,
         rng: &mut R,
-        body_properties: Point<Cartesian<2>>,
-    ) -> Point<Cartesian<2>> {
+        body_properties: OrientedPoint<Cartesian<2>, Angle>,
+    ) -> OrientedPoint<Cartesian<2>, Angle> {
         // ANCHOR_END: local_trial_fn
         // ANCHOR: local_trial_steps
-        let steps = [
+        let translate_steps = [
             [0.0, -1.0].into(),
             [0.0, 1.0].into(),
             [-1.0, 0.0].into(),
             [1.0, 0.0].into(),
         ];
+        let rotate_steps = [-PI/2.0, PI/2.0];
         // ANCHOR_END: local_trial_steps
 
         // ANCHOR: local_trial_mut
         let mut trial = body_properties;
-        trial.position += *steps
-            .choose(rng)
-            .expect("steps should have at least 1 element");
+        if rng.random_bool(0.9) {
+            trial.position += *translate_steps
+                .choose(rng)
+                .expect("translate_steps should have at least 1 element");
+        } else {
+            trial.orientation.theta += *rotate_steps
+                .choose(rng)
+                .expect("rotate_steps should have at least 1 element");
+        }
         trial
         // ANCHOR_END: local_trial_mut
     }
