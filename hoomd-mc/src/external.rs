@@ -38,7 +38,7 @@ where
     E: SiteEnergy<S>,
     B: Transform<S>,
     S: Position<Vector = V>,
-    C: Boundary<V>,
+    C: Boundary<V, B, S>,
 {
     #[inline]
     fn delta_energy_one(

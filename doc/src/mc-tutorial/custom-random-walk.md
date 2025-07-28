@@ -43,8 +43,9 @@ and `false` for points outside the boundary:
 {{#include ../../../examples/mc-tutorial/custom-random-walk.rs:boundary_all}}
 ```
 This implementation of `Boundary` is only for the `Cartesian<2>` vector type
-(`V` in the `Boundary` definition). You can read [The Rust Programming Language]
-to learn more about **generic types** and **traits**.
+(`V` in the `Boundary` definition), but is generic over any *body property* `B`
+and any *site property* `S`. You can read [The Rust Programming Language] to
+learn more about **generic types** and **traits**.
 
 When you implement only `is_inside()`, the boundary becomes **closed**.
 A later tutorial will demonstrate periodic boundary conditions.

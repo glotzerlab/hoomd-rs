@@ -311,13 +311,13 @@ impl<B, S, C> Microstate<B, S, C> {
     # Example
 
     ```
-    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square, property::Point};
+    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square};
     use hoomd_vector::Cartesian;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let square = Square { l: 10.0.try_into()? };
 
-    let microstate = MicrostateBuilder::<Point<Cartesian<2>>, _, _>::with_boundary(square)
+    let microstate = MicrostateBuilder::with_boundary(square)
         .try_build()?;
 
     assert_eq!(microstate.boundary().l.get(), 10.0);
@@ -335,13 +335,13 @@ impl<B, S, C> Microstate<B, S, C> {
     # Example
 
     ```
-    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square, property::Point};
+    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square};
     use hoomd_vector::Cartesian;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let square = Square { l: 10.0.try_into()? };
 
-    let mut microstate = MicrostateBuilder::<Point<Cartesian<2>>, _, _>::with_boundary(square)
+    let mut microstate = MicrostateBuilder::with_boundary(square)
         .try_build()?;
 
     microstate.boundary_mut().l = 11.0.try_into()?;
@@ -373,7 +373,7 @@ impl<V, B, S, C> Microstate<B, S, C>
 where
     B: Transform<S> + Position<Vector = V>,
     S: Position<Vector = V>,
-    C: Boundary<V>,
+    C: Boundary<V, B, S>,
 {
     /** Add a new body to the microstate.
 
@@ -648,7 +648,7 @@ where
     where
         B: Transform<S> + Position<Vector = V>,
         S: Position<Vector = V>,
-        C: Boundary<V>,
+        C: Boundary<V, B, S>,
     {
         let body = &mut self.bodies[body_index];
 
@@ -1037,13 +1037,13 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     # Example
 
     ```
-    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square, property::Point};
+    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square};
     use hoomd_vector::Cartesian;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let square = Square { l: 10.0.try_into()? };
 
-    let microstate = MicrostateBuilder::<Point<Cartesian<2>>, _, _>::with_boundary(square)
+    let microstate = MicrostateBuilder::with_boundary(square)
         .try_build()?;
 
     assert_eq!(microstate.step(), 0);
@@ -1183,7 +1183,7 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     where
         B: Transform<S> + Position<Vector = V>,
         S: Position<Vector = V>,
-        C: Boundary<V>,
+        C: Boundary<V, B, S>,
     {
         let mut microstate = Microstate {
             step: self.step,

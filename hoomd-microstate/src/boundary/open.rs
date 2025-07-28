@@ -13,7 +13,7 @@ Every point lies inside `Open` boundary conditions.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Open;
 
-impl<V> Boundary<V> for Open {
+impl<V, B, S> Boundary<V, B, S> for Open {
     #[inline]
     fn is_inside(&self, _point: &V) -> bool {
         true

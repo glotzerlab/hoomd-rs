@@ -160,7 +160,7 @@ use hoomd_vector::Cartesian;
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let square = Square { l: 10.0.try_into()? };
 
-let microstate = MicrostateBuilder::<Point<Cartesian<2>>, _, _>::with_boundary(square)
+let microstate = MicrostateBuilder::with_boundary(square)
     .seed(0x43abf1)
     .step(100_000)
     .try_build()?;
