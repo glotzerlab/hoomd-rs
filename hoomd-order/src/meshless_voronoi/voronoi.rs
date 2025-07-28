@@ -160,12 +160,15 @@ impl Voronoi {
     ) -> Self {
         Self::build_internal(generators, None, anchor, width, dimensionality, periodic)
     }
-    /// TODO: documentation
+    /// Projects a vector of points (by assumption on a hyperboloid) to the Poincare disk.
     pub fn poincare_from_vec(vec: &Vec<f64>, skirt: f64, dim: usize) -> Vec<f64> {
         (0..dim).collect::<Vec<usize>>()
         .iter().map(|i| vec[*i] / (1.0 + vec[dim]/skirt)).collect::<Vec<f64>>()
     }
-    /// TODO: documentation
+    /// Constructs the voronoi tesselation for a set of generators in hyperbolic space. The functionality
+    /// is analogous to that of ['build'] in the meshless_voro package, but it requires the generators to be given
+    /// in Poincare disk coordinates and needs the hyperboloid skirt width (equivalently, the Poincare disk radius) 
+    /// to be given as inputs. 
     pub fn build_hyperbolic(
         generators: &[Vec<f64>],
         skirt: f64,

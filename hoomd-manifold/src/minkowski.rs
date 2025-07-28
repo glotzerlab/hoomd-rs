@@ -557,13 +557,14 @@ impl<const N: usize> Hyperboloid for Minkowski<N> {
     ```
     use hoomd_vector::Vector;
     use hoomd_manifold::{Minkowski, Hyperboloid};
+    use approx::{assert_relative_eq};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let v : f64 = 5.0;
     let rho : f64 = 6.2;
     let x = Minkowski::from([v.sinh()*rho,0.0,v.cosh()*rho]);
-    let rho_calculated = x.get_skirt_width;
-    assert_eq!(rho, rho_calculated)
+    let rho_calculated = x.get_skirt_width();
+    assert_relative_eq!(rho, rho_calculated, epsilon=1e-11);
     # Ok(())
     # }
     ```

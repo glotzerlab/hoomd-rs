@@ -21,7 +21,6 @@ pub fn nn_iter<'a>(
     Box::new(rtree.nearest_neighbor_iter(&[loc.x, loc.y, loc.z]).map(|g| (g.id(), None)))
 }
 
-//TODO: documentation
 pub fn nn_iter_hyperbolic<'a>(
     rtree: &'a RTree<GeneratorHyperbolic>,
     loc: Vec<f64>,
@@ -233,7 +232,7 @@ impl PointDistance for Generator {
     }
 }
 
-//Squared power distance
+//Squared Poincare disk distance
 impl PointDistance for GeneratorHyperbolic {
     fn distance_2(
         &self,
@@ -242,16 +241,11 @@ impl PointDistance for GeneratorHyperbolic {
         let point_0 = self.loc();
         let point_1 = DVec3{x: point[0], y:point[1], z:point[2]};
         let zero = DVec3::from_array([0.0,0.0,0.0]);
+        // TODO: check that this is correct scaling for poincare metric
         let arg = (2.0*(point_1 - point_0).distance_squared(zero))
-            /((1.0-point_1.distance_squared(zero))*(1.0 - point_0.distance_squared(zero)));
-        let dist = self.skirt* acosh(1.0 + arg);
+            /((self.skirt().powi(2)-point_1.distance_squared(zero))*(self.skirt().powi(2) - point_0.distance_squared(zero)));
+        let dist = self.skirt()*acosh(1.0 + arg);
         dist*dist
-        //let euclidean_distance_squared = self.center.distance_squared(DVec3 {
-        //    x: point[0],
-        //    y: point[1],
-        //    z: point[2],
-        //});
-        //euclidean_distance_squared - self.radius
     }
 }
 

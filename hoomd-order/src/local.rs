@@ -12,15 +12,14 @@ use std::array;
 use crate::{meshless_voronoi::Dimensionality, Voronoi};
 use glam::DVec3;
 
-/** Define generator for Hyperbolic space
-TODO: documentation
+/** Define generator for making voronoi diagrams in Hyperbolic space
 */
 
 #[derive(Clone, Debug)]
 pub struct GeneratorHyperbolic {
-    /// Coordinates of point in hyperbolic space in poincare coordinates
+    /// Coordinates of point in hyperbolic space in Poincare coordinates
     pub loc: Vec<f64>,
-    /// skirt width of the hyperboloic
+    /// skirt width of the hyperboloid (equivalently, the radius of the Poincare disk)
     pub skirt: f64,
     /// site tag of point
     pub site_tag: usize,
@@ -53,17 +52,15 @@ impl GeneratorHyperbolic {
     }
     /** get a generator from a microstate site
     */
-    pub fn from_microstate() -> GeneratorHyperbolic {
-        GeneratorHyperbolic { 
-            loc: vec![0.0,0.0,0.0],
-            skirt: 1.0 as f64,
-            site_tag: 1,
-        }
+    pub fn skirt(&self) -> f64 {
+        self.skirt
     }
 }
 
 /** Define the neighbor list
-TODO: documentation
+
+The neighborlist for a given microstate is a vector of two-element tuples giving the pair of nearest neighbors. Nearest 
+neighbors are found using the voronoi diagram.
 */
 pub struct NeighborList<B, S,C> {
     /// ordered, nested vector of 2-tuples with nearest-neighbor pairs
@@ -83,15 +80,15 @@ impl<B,S,C> NeighborList<B,S,C> {
 #Example
 
 ```
-use hoomd_microstate::{Microstate, MicrostateBuilder, Body, property::Point};
+use hoomd_microstate::{Microstate, MicrostateBuilder, Body, property::Point, boundary::Open};
 use hoomd_vector::Cartesian;
 use hoomd_order::NeighborList;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let microstate = MicrostateBuilder::new()
-    .bodies([Body::point(Cartesian::from([0.5, 0.5])),
+    .bodies([Body::point(Cartesian::from([0.5, 0.25])),
              Body::point(Cartesian::from([-1.0, 1.0])),
-             Body::point(Cartesian::from([1.0, -1.0])),
+             Body::point(Cartesian::from([1.0, -0.75])),
              Body::point(Cartesian::from([-0.5, -0.5]))])
     .try_build()?;
 
@@ -113,15 +110,30 @@ where S: Position<Vector = Cartesian<N>>
     pub fn from_microstate(microstate: Microstate<B, S,Open> ) -> NeighborList<B, S, Open> {
         let mut nlist = vec![];
         let mut generators = vec![];
+        let mut coord_numbers = vec![];
         for site in microstate.sites() {
             let mut pos_vec : Vec<f64> = Vec::from(site.properties.position().coordinates);
             pos_vec.push(0.0);
             let position = DVec3{x:pos_vec[0], y:pos_vec[1], z:pos_vec[2]};
             generators.push(position);
+            for n in 0..N {
+                coord_numbers.push(site.properties.position()[n].floor() as i32);
+            }
         }
-        // TODO: find way of getting anchor and width for open boundary conditions
-        let anchor = DVec3::splat(-2.);
-        let width = DVec3::splat(4.);
+        let max_coord = coord_numbers.iter().max();
+        let min_coord = coord_numbers.iter().min();
+        let mut anchor_num : f64 = 0.0;
+        let mut width_num : f64 = 0.0;
+        match max_coord {
+            Some(max) => anchor_num = (*max) as f64 + 2.0,
+            None => panic!("microstate is empty!"),
+        }
+        match min_coord {
+            Some(min) => width_num = (*min as f64) - 1.0,
+            None => panic!("microstate is empty!"),
+        }
+        let anchor = DVec3::splat(-2.0);
+        let width = DVec3::splat(4.0);
         let _voronoi = Voronoi::build(&generators, anchor, width, N.try_into().unwrap(), false);
         let cells = _voronoi.cells();
         for site_index in microstate.site_indices().iter() {
@@ -148,16 +160,16 @@ where S: Position<Vector = Cartesian<N>>
 #Example
 
 ```
-use hoomd_microstate::{Microstate, MicrostateBuilder, Body, property::Point};
+use hoomd_microstate::{Microstate, MicrostateBuilder, Body, property::Point, boundary::Open};
 use hoomd_manifold::Minkowski;
 use hoomd_order::NeighborList;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut microstate = MicrostateBuilder::with_boundary(Open)
-    .bodies([Body::point(Minkowski::from([1.0, -2.0, sqrt(5.0)])),
-        Body::point(Minkowski::from([1.0, -1.0, sqrt(3.0)])),
-        Body::point(Minkowski::from([-1.0, -2.0, sqrt(5.0)])),
-        Body::point(Minkowski::from([-1.0, 1.0, sqrt(3.0)]))])
+    .bodies([Body::point(Minkowski::from([1.0, -2.0, 5.0_f64.sqrt()])),
+        Body::point(Minkowski::from([1.0, -1.0, 3.0_f64.sqrt()])),
+        Body::point(Minkowski::from([-1.0, -2.0, 5.0_f64.sqrt()])),
+        Body::point(Minkowski::from([-1.0, 1.0, 3.0_f64.sqrt()]))])
     .try_build()?;
 
 let nlist = NeighborList::from_hyperbolic_microstate(microstate);
