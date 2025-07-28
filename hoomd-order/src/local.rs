@@ -6,7 +6,7 @@
 /*! Implement Voronoi tesselations of a given point set 
 */
 use hoomd_vector::{Vector, Cartesian};
-use hoomd_microstate::{Microstate, property::Point, boundary::Open};
+use hoomd_microstate::{Microstate, property::Position, property::Point, boundary::Open};
 use hoomd_manifold::{Minkowski, Hyperboloid};
 use std::array;
 use crate::{meshless_voronoi::Dimensionality, Voronoi};
@@ -106,13 +106,15 @@ assert_eq!(vec![(0 as usize, 1 as usize),
 # }
 ```
 */
-impl<const N: usize, B> NeighborList<B, Point<Cartesian<N>>,Open> {
+impl<const N: usize, B, S> NeighborList<B, S, Open> 
+where S: Position<Vector = Cartesian<N>>
+{
     #[inline]
-    pub fn from_microstate(microstate: Microstate<B, Point<Cartesian<N>>,Open> ) -> NeighborList<B, Point<Cartesian<N>>,Open> {
+    pub fn from_microstate(microstate: Microstate<B, S,Open> ) -> NeighborList<B, S, Open> {
         let mut nlist = vec![];
         let mut generators = vec![];
         for site in microstate.sites() {
-            let mut pos_vec : Vec<f64> = Vec::from(site.properties.position.coordinates);
+            let mut pos_vec : Vec<f64> = Vec::from(site.properties.position().coordinates);
             pos_vec.push(0.0);
             let position = DVec3{x:pos_vec[0], y:pos_vec[1], z:pos_vec[2]};
             generators.push(position);
@@ -158,7 +160,7 @@ let mut microstate = MicrostateBuilder::with_boundary(Open)
         Body::point(Minkowski::from([-1.0, 1.0, sqrt(3.0)]))])
     .try_build()?;
 
-let nlist = NeighborList::from_microstate(microstate);
+let nlist = NeighborList::from_hyperbolic_microstate(microstate);
 assert_eq!(vec![(0 as usize, 1 as usize),
                 (0 as usize, 2 as usize),
                 (1 as usize, 2 as usize),
@@ -169,14 +171,16 @@ assert_eq!(vec![(0 as usize, 1 as usize),
 # }
 ```
 */
-impl<const N: usize> NeighborList<Point<Minkowski<N>>,Point<Minkowski<N>>,Open> {
+impl<const N: usize, B, S> NeighborList<B,S,Open>
+where S: Position<Vector = Minkowski<N>> 
+{
     #[inline]
-    pub fn from_microstate(microstate: Microstate<Point<Minkowski<N>>,Point<Minkowski<N>>,Open> ) -> NeighborList<Point<Minkowski<N>>,Point<Minkowski<N>>,Open> {
+    pub fn from_hyperbolic_microstate(microstate: Microstate<B, S,Open> ) -> NeighborList<B,S,Open> {
         let mut nlist = vec![];
         let mut generators = vec![];
-        let rho = microstate.sites()[0].properties.position.get_skirt_width();
+        let rho = microstate.sites()[0].properties.position().get_skirt_width();
         for site in microstate.sites() {
-            let mut pos_vec = site.properties.position.to_poincare(rho);
+            let mut pos_vec = site.properties.position().to_poincare(rho);
             pos_vec.push(0.0);
             generators.push(pos_vec);
         }
@@ -186,7 +190,7 @@ impl<const N: usize> NeighborList<Point<Minkowski<N>>,Point<Minkowski<N>>,Open> 
         let cells = _voronoi.cells();
         for site_index in microstate.site_indices().iter() {
             if let Some(site_tag) = site_index {
-                let mut nn_list = cells[*site_tag].neighbour_ids(&_voronoi);
+                let nn_list = cells[*site_tag].neighbour_ids(&_voronoi);
                 let mut temp_list = vec![];
                 for n in nn_list {
                     if n > *site_tag {
