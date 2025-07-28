@@ -21,6 +21,8 @@ use hoomd_bevy::{
 
 use anyhow::Context;
 use bevy::prelude::*;
+use bevy::render::storage::ShaderStorageBuffer;
+use std::iter;
 
 // ANCHOR: simulation_new
 impl Tetronimos {
@@ -28,7 +30,7 @@ impl Tetronimos {
     fn new() -> anyhow::Result<Tetronimos> {
         let box_height = 30.0;
         let kt = 1.0;
-        let alpha = 10.0;
+        let alpha = 1.0;
 
         let microstate = MicrostateBuilder::with_boundary(Square {
             l: box_height.try_into()?,
@@ -210,7 +212,7 @@ fn main() -> anyhow::Result<()> {
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(
         Startup,
-        (|| disk::MaterialParameters::default()).pipe(Disk::<A>::setup),
+        ((|| disk::MaterialParameters::default()).pipe(Disk::<A>::setup), setup_colors).chain(),
     );
     app.add_systems(
         Startup,
@@ -233,17 +235,32 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Set the tetronimo colors.
+fn setup_colors(
+    disk_representation: ResMut<disk::Representation<A>>,
+    mut materials: ResMut<Assets<disk::Material>>,
+    mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
+) {
+    let material = materials.get_mut(disk_representation.material()).expect("Disk::setup should have added the material");
+
+    let color_buffer = buffers.get_mut(&material.background_colors).expect("Disk::setup should have added the storage buffer");
+
+    let color_wheel = (0..360*4).step_by(39).map(|i| Color::oklch(0.75, 0.1246, (i % 360) as f32));
+    let linear_color_wheel = color_wheel.map(LinearRgba::from);
+    let duplicate = linear_color_wheel.flat_map(|v| iter::repeat_n(v, 4));
+    color_buffer.set_data(duplicate.collect::<Vec<_>>());
+}
 /// Copy the current positions of simulation particles to bevy entities.
 fn sync_simulation(
     mut commands: Commands,
-    disk_assets: Res<disk::Representation<A>>,
+    disk_representation: Res<disk::Representation<A>>,
     query: Query<(Entity, &mut Transform), With<Disk<A>>>,
     simulation: Res<Tetronimos>,
 ) {
     let sites = simulation.microstate.sites();
     Disk::sync(
         &mut commands,
-        disk_assets,
+        disk_representation,
         query,
         sites.iter().map(|site| {
             (

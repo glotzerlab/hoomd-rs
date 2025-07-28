@@ -170,14 +170,14 @@ fn main() -> anyhow::Result<()> {
 /// Copy the current positions of simulation particles to bevy entities.
 fn sync_simulation(
     mut commands: Commands,
-    disk_assets: Res<disk::Representation<A>>,
+    disk_representation: Res<disk::Representation<A>>,
     query: Query<(Entity, &mut Transform), With<Disk<A>>>,
     simulation: Res<Fill>,
 ) {
     let sites = simulation.microstate.sites();
     Disk::sync(
         &mut commands,
-        disk_assets,
+        disk_representation,
         query,
         sites.iter().map(|site| {
             (

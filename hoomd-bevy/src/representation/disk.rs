@@ -8,7 +8,7 @@ use bevy::{
     asset::embedded_asset,
     prelude::*,
     reflect::TypePath,
-    render::{storage::ShaderStorageBuffer, render_resource::{AsBindGroup, ShaderRef}},
+    render::{mesh::MeshTag, storage::ShaderStorageBuffer, render_resource::{AsBindGroup, ShaderRef}},
     sprite::{AlphaMode2d, Material2d, Material2dPlugin},
 };
 use itertools::EitherOrBoth::{Both, Left, Right};
@@ -52,6 +52,14 @@ pub struct Representation<T> {
     marker: PhantomData<T>,
 }
 
+impl<T> Representation<T> {
+    /// Get the material
+    #[must_use]
+    pub fn material(&self) -> &Handle<Material>{
+        &self.material
+    }
+}
+
 /// Initialize needed plugins and add assets for this representation.
 pub(crate) fn build(app: &mut App) {
     app.add_plugins(Material2dPlugin::<Material>::default());
@@ -68,10 +76,12 @@ impl<T: Send + Sync + 'static> Disk<T> {
         mut meshes: ResMut<Assets<Mesh>>,
         mut materials: ResMut<Assets<Material>>,
         asset_server: Res<AssetServer>,
-    ) {    
+    ) {
+        let background_colors = buffers.add(ShaderStorageBuffer::from([material.0.background_color]));
+        
         let mesh = meshes.add(Rectangle::new(1.0, 1.0));
         let material = Material {
-            background_color: material.0.background_color,
+            background_colors,
             outline_color: material.0.outline_color,
             outline_width: material.0.outline_width,
             texture_scale: material.0.texture_scale,
@@ -89,13 +99,13 @@ impl<T: Send + Sync + 'static> Disk<T> {
     /// Copy the current positions of simulation particles to bevy entities.
     pub fn sync<I>(
         commands: &mut Commands,
-        disk_assets: Res<Representation<T>>,
+        disk_representation: Res<Representation<T>>,
         query: Query<(Entity, &mut Transform), With<Self>>,
         disks: I,
     ) where
         I: IntoIterator<Item = (Vec3, f32)>,
     {
-        for item in &mut query.into_iter().zip_longest(disks) {
+        for (tag, item) in &mut query.into_iter().zip_longest(disks).enumerate() {
             match item {
                 Both((_, mut transform), (position, diameter)) => {
                     transform.translation = position;
@@ -104,8 +114,9 @@ impl<T: Send + Sync + 'static> Disk<T> {
                 Left((entity, _)) => commands.entity(entity).despawn(),
                 Right((position, diameter)) => {
                     commands.spawn((
-                        Mesh2d(disk_assets.mesh.clone()),
-                        MeshMaterial2d(disk_assets.material.clone()),
+                        MeshTag(tag as u32),
+                        Mesh2d(disk_representation.mesh.clone()),
+                        MeshMaterial2d(disk_representation.material.clone()),
                         Transform::from_translation(position).with_scale(Vec3::splat(diameter)),
                         Self {
                             marker: PhantomData,
@@ -160,10 +171,6 @@ field in`ResMut<disk::Representation<A>>`.
 */
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct Material {
-    /// Color applied to the interior of the disk.
-    #[uniform(0)]
-    pub background_color: LinearRgba,
-
     /// Color applied to the outline.
     #[uniform(0)]
     pub outline_color: LinearRgba,
@@ -180,10 +187,18 @@ pub struct Material {
     #[texture(1)]
     #[sampler(2)]
     pub texture: Option<Handle<Image>>,
+
+    /// Color applied to the interior of the disk (indexed by disk % array size).
+    #[storage(3, read_only)]
+    pub background_colors: Handle<ShaderStorageBuffer>,
 }
 
 impl Material2d for Material {
     fn fragment_shader() -> ShaderRef {
+        SHADER_ASSET_PATH.into()
+    }
+
+    fn vertex_shader() -> ShaderRef {
         SHADER_ASSET_PATH.into()
     }
 
