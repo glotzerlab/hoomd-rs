@@ -5,7 +5,6 @@
 */
 
 use super::Boundary;
-use crate::property::Point;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
@@ -33,7 +32,8 @@ pub struct Square {
     pub l: PositiveReal,
 }
 
-impl Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>> for Square {
+impl Boundary<Cartesian<2>> for Square
+{
     #[inline]
     fn is_inside(&self, point: &Cartesian<2>) -> bool {
         let l = self.l.get();

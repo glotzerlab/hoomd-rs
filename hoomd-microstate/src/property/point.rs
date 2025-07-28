@@ -76,6 +76,8 @@ where
     }
 }
 
+// TODO: Transform<OrientedPoint> for OrientedPoint.
+
 impl<V> Position for Point<V> {
     type Vector = V;
 

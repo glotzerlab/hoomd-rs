@@ -45,7 +45,7 @@ The generic type names are:
 * `B`: The [`Body::properties`](crate::Body) type.
 * `S`: The [`Site::properties`](crate::Site) type.
 */
-pub trait Boundary<V, B, S> {
+pub trait Boundary<V> {
     /// Test whether a given point is inside the boundary.
     fn is_inside(&self, point: &V) -> bool;
 
@@ -63,7 +63,7 @@ pub trait Boundary<V, B, S> {
     outside the radius of a cylinder that is only periodic along its axis.
     */
     #[inline]
-    fn wrap_body(&self, body_properties: B) -> Result<B, Error>
+    fn wrap_body<B>(&self, body_properties: B) -> Result<B, Error>
     where
         B: Position<Vector = V>,
     {
@@ -88,7 +88,7 @@ pub trait Boundary<V, B, S> {
     outside the radius of a cylinder that is only periodic along its axis.
     */
     #[inline]
-    fn wrap_site(&self, site_properties: S) -> Result<S, Error>
+    fn wrap_site<S>(&self, site_properties: S) -> Result<S, Error>
     where
         S: Position<Vector = V>,
     {

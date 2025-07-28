@@ -55,7 +55,7 @@ where
     S: Clone + Default + Position<Vector = V>,
     L: LocalTrial<B>,
     H: DeltaEnergyOne<B, S, C>,
-    C: Boundary<V, B, S>,
+    C: Boundary<V>,
 {
     type Count = Count;
     type Macrostate = f64;

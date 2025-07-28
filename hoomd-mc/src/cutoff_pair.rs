@@ -44,7 +44,7 @@ where
     E: SitePairEnergy<S>,
     B: Transform<S>,
     S: Position<Vector = V>,
-    C: Boundary<V, B, S>,
+    C: Boundary<V>,
     V: Vector,
 {
     #[inline]

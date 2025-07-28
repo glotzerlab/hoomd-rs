@@ -8,9 +8,9 @@ use hoomd_interaction::{
 };
 use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder, boundary::Square, property::Point,
+    Body, Microstate, MicrostateBuilder, boundary::Square, property::{OrientedPoint, Point},
 };
-use hoomd_vector::Cartesian;
+use hoomd_vector::{Angle, Cartesian};
 // ANCHOR_END: use
 
 use hoomd_bevy::{
@@ -106,7 +106,10 @@ impl Simulation for Tetronimos {
     fn advance(&mut self) -> anyhow::Result<()> {
         // ANCHOR: add
         if self.microstate.step() % 100 == 0 {
-            let properties = Point::new([0.0, self.microstate.boundary().l.get() / 2.0 - 2.0].into());
+            let properties = OrientedPoint {
+                position: [0.0, self.microstate.boundary().l.get() / 2.0 - 2.0].into(),
+                orientation: Angle::from(0.0),
+            };
             let mut rng = self.microstate.counter().make_rng();
             let sites = self.template_sites.choose(&mut rng)
                 .expect("template_sites should have at least 1 element")
@@ -179,7 +182,7 @@ impl LocalTrial<Point<Cartesian<2>>> for Discrete {
 // ANCHOR: simulation_struct
 struct Tetronimos {
     /// Positions of all the bodies in the simulation.
-    microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Square>,
+    microstate: Microstate<OrientedPoint<Cartesian<2>, Angle>, Point<Cartesian<2>>, Square>,
     /// How sites interact with other sites and fields.
     hamiltonian: (Single<Linear<Cartesian<2>>>, CutoffPair<Isotropic<Boxcar>>),
     /// Trial moves to apply.
