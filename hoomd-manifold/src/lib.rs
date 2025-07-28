@@ -191,6 +191,10 @@ pub trait Hyperboloid: CurvedManifold {
     */
     #[inline]
     fn to_poincare(&self, skirt: f64) -> Vec<f64>;
+    /** Get the skirt width of the hyperboloid]
+    */
+    #[inline]
+    fn get_skirt_width(&self) -> f64;
 }
 
 /** Operations for the fundamental domain on a hyperboloid

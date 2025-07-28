@@ -551,6 +551,27 @@ impl<const N: usize> Hyperboloid for Minkowski<N> {
         (0..N-1).collect::<Vec<usize>>()
         .iter().map(|i| self.coordinates[*i] / (1.0 + self.coordinates[N-1]/skirt)).collect::<Vec<f64>>()
     }
+    /** Get the skirt width of the hyperboloid
+
+    # Example
+    ```
+    use hoomd_vector::Vector;
+    use hoomd_manifold::{Minkowski, Hyperboloid};
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let v : f64 = 5.0;
+    let rho : f64 = 6.2;
+    let x = Minkowski::from([v.sinh()*rho,0.0,v.cosh()*rho]);
+    let rho_calculated = x.get_skirt_width;
+    assert_eq!(rho, rho_calculated)
+    # Ok(())
+    # }
+    ```
+    */
+    fn get_skirt_width(&self) -> f64 {
+        let zero = Minkowski::<N>::default();
+        (-self.distance_squared(&zero)).sqrt()
+    }
 }
 
 // Cusp-to-vertex distance for {8,8} tiling for Gauss curvature K = -1
