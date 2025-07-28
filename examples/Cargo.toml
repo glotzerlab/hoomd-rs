@@ -70,3 +70,11 @@ required-features = ["bevy"]
 
 [package.metadata.example.applying-interactions]
 path = "mc-tutorial"
+
+[[example]]
+name = "tetronimos"
+path = "mc-tutorial/tetronimos.rs"
+required-features = ["bevy"]
+
+[package.metadata.example.tetronimos]
+path = "mc-tutorial"
