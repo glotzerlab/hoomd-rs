@@ -25,18 +25,18 @@ use bevy::prelude::*;
 use bevy::render::storage::ShaderStorageBuffer;
 use std::iter;
 
-// TODO: fix spelling error!
-// TODO: Type alias for body and site properties
-
 // ANCHOR: simulation_new
-impl Tetronimos {
+type BodyProperties = OrientedPoint<Cartesian<2>, Angle>;
+type SiteProperties = Point<Cartesian<2>>;
+
+impl Tetronimoes {
     /// Construct a new tetronimo simulation.
-    fn new() -> anyhow::Result<Tetronimos> {
+    fn new() -> anyhow::Result<Tetronimoes> {
         let box_height = 30.0;
         let kt = 1.0;
         let alpha = 1.0;
 
-        let microstate = MicrostateBuilder::<OrientedPoint<Cartesian<2>, Angle>, Point<Cartesian<2>>, Square>::with_boundary(Square {
+        let microstate = MicrostateBuilder::<BodyProperties, SiteProperties, Square>::with_boundary(Square {
             l: box_height.try_into()?,
         })
         .try_build()?;
@@ -61,7 +61,7 @@ impl Tetronimos {
         let hamiltonian = (linear, cutoff_pair);
 
         // ANCHOR: trial_moves
-        let translate_sweep = Sweep(Discrete);
+        let translate_sweep = Sweep(DiscreteRotateOrTranslate);
         // ANCHOR_END: trial_moves
         
         // ANCHOR: template_sites
@@ -93,7 +93,7 @@ impl Tetronimos {
                  Point::new([0.5, -0.5].into())],
             ];
 
-        Ok(Tetronimos {
+        Ok(Tetronimoes {
             microstate,
             hamiltonian,
             translate_sweep,
@@ -105,7 +105,7 @@ impl Tetronimos {
 // ANCHOR_END: simulation_new
 
 // ANCHOR: impl_simulation
-impl Simulation for Tetronimos {
+impl Simulation for Tetronimoes {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
         // ANCHOR: add
@@ -149,19 +149,15 @@ impl Simulation for Tetronimos {
 // ANCHOR_END: impl_simulation
 
 // ANCHOR: local_trial_all
-// ANCHOR: local_trial_struct
-/// Take fixed steps left, right, down, or up.
-struct Discrete;
-// ANCHOR_END: local_trial_struct
+/// Take fixed steps left, right, down, up, rotate left, or rotate right.
+struct DiscreteRotateOrTranslate;
 
-impl LocalTrial<OrientedPoint<Cartesian<2>, Angle>> for Discrete {
-    // ANCHOR: local_trial_fn
+impl LocalTrial<BodyProperties> for DiscreteRotateOrTranslate {
     fn propose<R: Rng>(
         &self,
         rng: &mut R,
-        body_properties: OrientedPoint<Cartesian<2>, Angle>,
-    ) -> OrientedPoint<Cartesian<2>, Angle> {
-        // ANCHOR_END: local_trial_fn
+        body_properties: BodyProperties,
+    ) -> BodyProperties {
         // ANCHOR: local_trial_steps
         let translate_steps = [
             [0.0, -1.0].into(),
@@ -191,13 +187,13 @@ impl LocalTrial<OrientedPoint<Cartesian<2>, Angle>> for Discrete {
 
 #[derive(Resource)]
 // ANCHOR: simulation_struct
-struct Tetronimos {
+struct Tetronimoes {
     /// Positions of all the bodies in the simulation.
-    microstate: Microstate<OrientedPoint<Cartesian<2>, Angle>, Point<Cartesian<2>>, Square>,
+    microstate: Microstate<BodyProperties, SiteProperties, Square>,
     /// How sites interact with other sites and fields.
     hamiltonian: (Single<Linear<Cartesian<2>>>, CutoffPair<Isotropic<Boxcar>>),
     /// Trial moves to apply.
-    translate_sweep: Sweep<Discrete>,
+    translate_sweep: Sweep<DiscreteRotateOrTranslate>,
     /// Temperature set point.
     kt: f64,
     /// Tetronimo shapes.
@@ -210,7 +206,7 @@ struct Tetronimos {
 struct A;
 
 fn main() -> anyhow::Result<()> {
-    let simulation = Tetronimos::new().context("failed to setup simulation")?;
+    let simulation = Tetronimoes::new().context("failed to setup simulation")?;
     let l = simulation.microstate.boundary().l.get() as f32;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
         initial_settings: Settings {
@@ -240,7 +236,7 @@ fn main() -> anyhow::Result<()> {
     app.add_systems(
         Update,
         sync_simulation
-            .run_if(resource_changed::<Tetronimos>)
+            .run_if(resource_changed::<Tetronimoes>)
             .after(AdvanceSet),
     );
 
@@ -264,12 +260,13 @@ fn setup_colors(
     let duplicate = linear_color_wheel.flat_map(|v| iter::repeat_n(v, 4));
     color_buffer.set_data(duplicate.collect::<Vec<_>>());
 }
+
 /// Copy the current positions of simulation particles to bevy entities.
 fn sync_simulation(
     mut commands: Commands,
     disk_representation: Res<disk::Representation<A>>,
     query: Query<(Entity, &mut Transform), With<Disk<A>>>,
-    simulation: Res<Tetronimos>,
+    simulation: Res<Tetronimoes>,
 ) {
     let sites = simulation.microstate.sites();
     Disk::sync(

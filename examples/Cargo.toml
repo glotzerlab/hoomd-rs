@@ -72,8 +72,8 @@ required-features = ["bevy"]
 path = "mc-tutorial"
 
 [[example]]
-name = "tetronimos"
-path = "mc-tutorial/tetronimos.rs"
+name = "tetronimoes"
+path = "mc-tutorial/tetronimoes.rs"
 required-features = ["bevy"]
 
 [package.metadata.example.tetronimos]
