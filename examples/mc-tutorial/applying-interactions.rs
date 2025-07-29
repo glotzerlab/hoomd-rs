@@ -28,6 +28,8 @@ impl Fill {
         let kt = 1.0;
         let d = 0.15;
         let alpha = 10.0;
+        let epsilon = 1000.0;
+        let sigma = 1.0;
 
         let microstate = MicrostateBuilder::with_boundary(Square {
             l: box_height.try_into()?,
@@ -44,13 +46,13 @@ impl Fill {
 
         // ANCHOR: pair
         let boxcar = Boxcar {
-            epsilon: 1000.0,
+            epsilon,
             left: 0.0,
-            right: 1.0,
+            right: sigma,
         };
         let isotropic = Isotropic(boxcar);
         let cutoff_pair = CutoffPair {
-            r_cut: 1.0,
+            r_cut: sigma,
             evaluator: isotropic,
         };
         // ANCHOR_END: pair

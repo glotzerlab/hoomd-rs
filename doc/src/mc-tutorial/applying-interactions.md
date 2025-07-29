@@ -19,8 +19,8 @@ H = \sum_i \alpha \vec{r}_i \cdot \hat{y} +
 where
 ```math
 U_\mathrm{step}(r) = \begin{cases}
-1000 & r \lt 1.0 \\
-0 & r \ge 1.0
+\varepsilon & r \lt \sigma \\
+0 & r \ge \sigma
 \end{cases}
 ```
 
@@ -58,19 +58,19 @@ collection of **sites** that are defined in the *local reference frame* of the
 body. The **microstate** gains all of its degrees of freedom from the **bodies**
 it contains.
 
-You get to choose the type of the **body properties** and the **site
+You get to choose the types of the **body properties** and the **site
 properties** in your simulation model. At a minimum, both must have
 **position**. The **body properties** (denoted as the `B` generic) and the
 **site properties** (denoted by the `S` generic) may be the same or different.
 However, the **body properties** type must be able to transform a **site
 properties** from the *body reference frame* to the *system reference frame*.
 
-All **interactions** on bodies are applied to its **sites** and are computed
-in the *system reference frame*. Understanding this will help as you review
-the [API documentation] for the types used later in this tutorial: `Single`,
-`Linear`, `Boxcar`, `Isotropic`, and `CutoffPair`. For a complete reference on
-**bodies**, **sites**, and all their related traits, read the `hoomd-microstate`
-[API documentation].
+All **interactions** on bodies are a function only of its **sites** and are
+computed in the *system reference frame*. Understanding this will help as
+you review the [API documentation] for the types used later in this tutorial:
+`Single`, `Linear`, `Boxcar`, `Isotropic`, and `CutoffPair`. For a complete
+reference on **bodies**, **sites**, and all their related traits, read the
+`hoomd-microstate` [API documentation].
 
 In this tutorial, the bodies will be points again. Specifically, that means
 each **body** has `Point<Cartesian<2>>` for its **body properties** type (`B`),
@@ -93,13 +93,13 @@ This code implements the external potential term in the Hamiltonian:
 {{#include ../../../examples/mc-tutorial/applying-interactions.rs:external}}
 ```
 
-`Linear` computes `$ \alpha \vec{r} \cdot \hat{y} $` in its
-`energy()` method. `Linear` also implements the `SiteEnergy` trait whose method
-`site_energy` takes a single **site properties** argument: `$ U(s) $`.
-Building on that, `Single` wraps any type that implements `SiteEnergy`
-and sums over the energies of each **site** in the microstate: `$ \sum_i U(s_i) $`.
-`Single` implements the `DeltaEnergyOne` trait which `Sweep` will use to evaluate
-the change in energy `$\Delta E$` of a trial move.
+`Linear` computes `$ \alpha \vec{r} \cdot \hat{y} $` in its `energy()` method.
+`Linear` also implements the `SiteEnergy` trait whose method `site_energy` takes
+a single **site properties** argument: `$ U(s) $`. Building on that, `Single`
+wraps any type that implements `SiteEnergy` and sums over the energy contributed
+by each **site** in the microstate: `$ \sum_i U(s_i) $`. `Single` implements the
+`DeltaEnergyOne` trait which `Sweep` will use to evaluate the change in energy
+`$\Delta E$` of a trial that moves *one* body.
 
 ### Pair Potential
 
@@ -113,14 +113,23 @@ This code implements the pair potential term in the Hamiltonian:
 ```
 
 The [Boxcar function] implements `$ U_\mathrm{step}(r) $` via the
-`IsotropicEnergy` trait. `Isotropic` is a wrapper that computes
+`IsotropicEnergy` trait.
+```math
+U_\mathrm{step}(r) = \begin{cases}
+\varepsilon & r \lt \sigma \\
+0 & r \ge \sigma
+\end{cases}
+```
+`Isotropic` is a wrapper that computes
 `$ U(\left|\vec{r}_j - \vec{r}_i\right|)$` in its implementation of
 `SitePairEnergy`. The `site_pair_energy()` method is a more general form that
 depends on the full set of properties of the two interacting sites: `$ U(s_i,
 s_j) $`. The `CutoffPair` type sums over all pairs of **sites** that are within
-a distance of `$ r_\mathrm{cut} $`:
+a distance of `$ r_\mathrm{cut} $` *and do not belong to the same body*:
 ```math
-\sum_{i}\sum_{j>i} U\left(s_i, s_j\right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]
+\sum_{i}\sum_{j>i} U\left(s_i, s_j\right)
+\left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]
+\left[b_i \ne b_j\right]
 ```
 Finally, `CutoffPair` implements the `DeltaEnergyOne` trait which `Sweep` will
 use to evaluate the change in energy `$\Delta E$` of a trial move.
@@ -175,6 +184,7 @@ the next:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/applying-interactions.rs:impl_simulation}}
 ```
+Let's look at this code one part at a time.
 
 ### Adding New Bodies
 
@@ -190,11 +200,11 @@ Attempt one translation trial move for each body in the microstate:
 {{#include ../../../examples/mc-tutorial/applying-interactions.rs:apply}}
 ```
 
-The previously unused temperature `$ kT $` now has meaning in this simulation model.
-A pair of overlapping disks in this model result results in `$ U = 1000 kT $`.
-The probability of accepting a trial move that adds an overlap is `$ e^{-1000} $`
-which is identically `$ 0 $` in `f64` arithmetic. Therefore, `translate_sweep.apply()`
-will never add new overlaps.
+The previously unused temperature `$ kT $` now has meaning in this simulation
+model. A pair of overlapping disks in this model result results in `$ U = 1000
+kT $`. The probability of accepting a trial move that adds an overlap is `$
+e^{\frac{\Delta E}{kT}} = e^{-1000} $` which is identically `$ 0 $` in `f64`
+arithmetic. Therefore, `translate_sweep.apply()` will never add new overlaps.
 
 However, the unconditional `add_body()` above can place overlapping bodies.
 When a pair of overlapping disks is placed, `translate_sweep.apply()` is free to
@@ -218,12 +228,12 @@ microstate when total pairwise energy exceeds a threshold:
 Now you know how to define interactions in your simulation model via the
 Hamiltonian.
 
-Scroll back to the top of the page and refresh to see the simulation in action
-again. Notice how the disks fall to the bottom of the boundary and do not
-overlap, except when a newly added on introduces an overlap. Wait long enough
-and you will see the simulation clear the bodies.
+Scroll back to the top of the page and refresh to see the simulation in
+action again. Notice how the disks fall to the bottom of the boundary and do
+not overlap, except when newly added. Wait long enough and you will see the
+simulation clear the bodies.
 
-The next section shows ... (TODO)
+The next section shows you how to place multiple **sites** in a **body**.
 
 [Random Walk]: random-walk.md
 [Custom Random Walk]: custom-random-walk.md

@@ -16,6 +16,7 @@ use bevy::prelude::*;
 
 #[derive(Resource)]
 // ANCHOR: simulation_struct
+/// The simulation model.
 struct RandomWalk {
     microstate: Microstate<Point<Cartesian<2>>>,
     hamiltonian: Zero,

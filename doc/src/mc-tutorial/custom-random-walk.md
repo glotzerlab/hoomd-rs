@@ -8,7 +8,7 @@ import init from './custom-random-walk.js'
 
 ## Overview
 
-*hoomd-rs* allows you to customize your simulation model at **all** levels. This
+*hoomd-rs* allows you to customize your simulation model at *all* levels. This
 tutorial takes the previous random walk and shows you how to implement a custom
 **boundary condition** and a custom **trial move**. It sets a closed boundary
 condition that confines bodies inside a circle, and applies trial moves that
@@ -45,24 +45,25 @@ and `false` for points outside the boundary:
 This implementation of `Boundary` is only for the `Cartesian<2>` vector type
 (`V` in the `Boundary` definition), but is generic over any *body property* `B`
 and any *site property* `S`. You can read [The Rust Programming Language] to
-learn more about **generic types** and **traits**.
+learn more about **generic types** and **traits**. The [Applying Interactions]
+tutorial discusses **body** and **site** properties in more detail.
 
 When you implement only `is_inside()`, the boundary becomes **closed**.
-A later tutorial will demonstrate periodic boundary conditions.
+Later tutorials will demonstrate periodic boundary conditions.
 
 ## Custom Trial Move
 
 The first [Random Walk] tutorial moved points by a random distance (up to a
 maximum) and in a random direction. Look up "random walk" in a text book and the
-first example you are likely to find will make random hops on a square lattice.
+first example you are likely to find will take random hops on a square lattice.
 Let's implement that with a custom trial move. Here is the code:
 
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/custom-random-walk.rs:local_trial_all}}
 ```
 
-Similar to the custom boundary, you need to implement a **trait**
-(`LocalTrial`) for a **type**. Here is the type:
+Similar to the custom boundary, you need to implement the **trait**
+`LocalTrial` for a **type**. Here is the type:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/custom-random-walk.rs:local_trial_struct}}
 ```
@@ -82,7 +83,7 @@ tutorial, bodies are points and have only the position property.
 > as defined in [Manousiouthakis & Deem](https://doi.org/10.1063/1.477973).
 
 To implement a local trial move that can only step left, right, down, or up,
-you first need to list the possible moves:
+you can first list the possible moves:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/custom-random-walk.rs:local_trial_steps}}
 ```
@@ -96,19 +97,18 @@ it to the body's position:
 `steps.choose(rng)` chooses one of the elements of the array at random (with
 uniform probability). Arrays in Rust do not have the `choose()` method by
 default, it is provided by the `rand::seq::IndexedRandom` **trait**. `choose()`
-returns an option that will never be `None` (unless all elements of `steps` are
-removed), so you can unpack the option's value with `expect()`.
+will return `None` when the input array is empty. That can never happen in
+this code, so you can unpack the option's value with `expect()`.
 
 ## The Simulation Model
 
-Here is the type that holds the simulation model, which is similar to
-`RandomWalk` in the [Random Walk] tutorial:
+Here is the type that holds the simulation model:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/custom-random-walk.rs:simulation_struct}}
 ```
-The `Microstate` type now sets the `Circle` boundary condition as the third
-generic type. Also, `translate_sweep` now has the type `Sweep<Discrete>`
-indicating that it applies a sweep of the custom `Discrete` trial moves.
+There are a few differences compared to the [Random Walk] tutorial. The
+`Microstate` type now sets the `Circle` boundary condition in the third generic
+type and `translate_sweep` now has the type `Sweep<Discrete>`.
 
 ## Constructing the Custom Simulation
 
@@ -149,7 +149,7 @@ Now you know how to customize the random walk simulation with new
 boundary conditions and apply your own trial moves to the points in it. Rust
 compiles your customizations into machine code and can inline them into the main
 simulation loop. This means that your custom simulations run *just as fast* as
-using the built-in types.
+they do when using the built-in types.
 
 Scroll back to the top of the page and refresh to see the simulation in action
 again. Notice that no points leave the boundary. Try pausing the simulation and
@@ -160,5 +160,6 @@ The next section shows how to use the Hamiltonian to describe how the bodies
 interact with each other and with an external field.
 
 [The Rust Programming Language]: https://doc.rust-lang.org/stable/book/
+[Applying Interactions]: applying-interactions.md
 [Random Walk]: random-walk.md
 [rand]: https://docs.rs/rand

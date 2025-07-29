@@ -30,14 +30,14 @@ Language] for more information.
 
 `std` is the [standard library] included with Rust.
 [`hoomd-mc`], [`hoomd-microstate`], and [`hoomd-vector`] are *crates* that
-each implement a part of the simulation. See the [API documentation]
-for a full reference on all *hoomd-rs* crates.
+each implement a part of the simulation. The [API documentation]
+provides a for a full reference for all *hoomd-rs* crates.
 
 ## The Simulation Model
 
-In the random walk simulation, the **Microstate** contains the positions of `$N$`
-points, the **Sweep** applies a **trial move** to each point, the Hamiltonian
-is always 0 and temperature `$kT$` is not relevant.
+In the random walk simulation, the **microstate** contains the positions of `$N$`
+points, the **sweep** applies a **trial move** to each point, the Hamiltonian
+is always 0 and the temperature `$kT$` is not relevant.
 
 Define a type that collects all these:
 ```rust,ignore
@@ -70,12 +70,14 @@ Next, set the parameters of the simulation:
 `$kT$` (`kt`) is the temperature of the simulation (in units of energy), `$d$`
 (`d`) is the maximum distance to move a point during a trial move, and `$N$`
 (`n`) is the number of points to add to the **microstate**.
+It is a good idea to collect all your model parameters into one place in the
+code, especially those that are used in multiple places.
 
 ### Microstate
 
 The **microstate** describes all of the degrees of freedom in the simulation. In
 this example, it consists of `$N$` **bodies**, each of which is a single point
-(a later tutorial will show how you can create other types of bodies).
+(later tutorials will show how you can create other types of bodies).
 This code builds a microstate and adds `$N$` points at the origin:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/random-walk.rs:microstate}}
@@ -85,7 +87,7 @@ valid `Result`. Read more about `?` in [The Rust Programming Language].
 
 ### Trial moves
 
-A random walk is defined entirely by the trial moves applied to each **body**.
+A random walk is defined entirely by the **trial moves** applied to each **body**.
 The `Translate` trial move describes a displacement by a random vector
 drawn uniformly inside the sphere with radius `maximum_distance`:
 ```rust,ignore
@@ -94,20 +96,21 @@ drawn uniformly inside the sphere with radius `maximum_distance`:
 The `try_into()?` ensures that the given `f64` value is a positive
 real value.
 
-`translate` describes how trial moves should be applied to *individual
+`translate` describes how **trial moves** should be applied to *individual
 bodies*. Now you need to describe how to apply these trial moves to the *whole
 microstate* using `Sweep`:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/random-walk.rs:sweep}}
 ```
-Sweep applies trial moves to each body in sequence and accepts or rejects each
-move based on the Metropolis criterion.
+`Sweep` applies the given **trial move** to each of the **microstate's
+bodies** in sequence and accepts or rejects each move based on the Metropolis
+criterion.
 
 ### Hamiltonian
 
 The points in a random walk do not interact. Set the Hamiltonian `$H = 0$`, so
-that `Sweep` will accept every trial move. The [`hoomd-mc`] crate provides a
-convenient type that expresses `$H = 0$`:
+that `Sweep` will accept every **trial move**. The [`hoomd-mc`] crate provides the
+`Zero` type that expresses `$H = 0$`:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/random-walk.rs:hamiltonian}}
 ```
@@ -115,10 +118,11 @@ convenient type that expresses `$H = 0$`:
 ### Returning the Simulation
 
 The code has now constructed all the elements of the simulation. Construct
-a `RandomWalk` struct containing these fields for later use:
+a `RandomWalk` containing these fields for later use:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/random-walk.rs:return}}
 ```
+Read more about instantiating structs in [The Rust Programming Language].
 
 ## Advancing the Simulation
 
@@ -138,7 +142,7 @@ in the microstate:
 ```
 
 *hoomd-rs* makes no assumptions about your simulation model. One step in your
-simulation may involve many types of MC trial moves, or a mixture of MD and
+model may involve many types of MC **trial moves**, or a mixture of MD and
 MC calculations. Therefore, you *must* explicitly call `increment_step()` to
 indicate that this step is complete:
 ```rust,ignore
@@ -148,7 +152,7 @@ indicate that this step is complete:
 > [!TIP]
 > To simplify your scripts, omit the `struct` that holds the `Simulation`.
 > You can instead combine the contents of `new()` and `advance()` (wrapped in
-> a loop) directly in your `main` function. These examples use the struct to
+> a loop) directly in your `main()` function. These examples use the struct to
 > facilitate the interactive display.
 
 # Conclusion
