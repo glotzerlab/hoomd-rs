@@ -13,6 +13,7 @@
   - [Random Walk](mc-tutorial/random-walk.md)
   - [Custom Random Walk](mc-tutorial/custom-random-walk.md)
   - [Applying Interactions](mc-tutorial/applying-interactions.md)
+  - [Tetronimoes](mc-tutorial/tetronimoes.md)
 
 # Reference
 

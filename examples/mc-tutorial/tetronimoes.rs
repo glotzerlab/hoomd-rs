@@ -25,128 +25,11 @@ use bevy::prelude::*;
 use bevy::render::storage::ShaderStorageBuffer;
 use std::iter;
 
-// ANCHOR: simulation_new
-type BodyProperties = OrientedPoint<Cartesian<2>, Angle>;
-type SiteProperties = Point<Cartesian<2>>;
-
-impl Tetronimoes {
-    /// Construct a new tetronimo simulation.
-    fn new() -> anyhow::Result<Tetronimoes> {
-        let box_height = 30.0;
-        let kt = 1.0;
-        let alpha = 1.0;
-
-        let microstate = MicrostateBuilder::<BodyProperties, SiteProperties, Square>::with_boundary(Square {
-            l: box_height.try_into()?,
-        })
-        .try_build()?;
-
-        let linear = Single(Linear {
-            alpha,
-            plane_origin: Cartesian::default(),
-            plane_normal: [0.0, 1.0].try_into()?,
-        });
-
-        let boxcar = Boxcar {
-            epsilon: 1000.0,
-            left: 0.0,
-            right: 1.0,
-        };
-        let isotropic = Isotropic(boxcar);
-        let cutoff_pair = CutoffPair {
-            r_cut: 1.0,
-            evaluator: isotropic,
-        };
-
-        let hamiltonian = (linear, cutoff_pair);
-
-        // ANCHOR: trial_moves
-        let translate_sweep = Sweep(DiscreteRotateOrTranslate);
-        // ANCHOR_END: trial_moves
-        
-        // ANCHOR: template_sites
-        let template_sites = vec![
-            // square
-            vec![Point::new([-0.5, -0.5].into()),
-                 Point::new([0.5, -0.5].into()),
-                 Point::new([0.5, 0.5].into()),
-                 Point::new([-0.5, 0.5].into())],
-            // line
-            vec![Point::new([-1.5, 0.5].into()),
-                 Point::new([-0.5, 0.5].into()),
-                 Point::new([0.5, 0.5].into()),
-                 Point::new([1.5, 0.5].into())],
-            // T
-            vec![Point::new([-1.5, -0.5].into()),
-                 Point::new([-0.5, -0.5].into()),
-                 Point::new([0.5, -0.5].into()),
-                 Point::new([-0.5, 0.5].into())],
-            // L1
-            vec![Point::new([-1.5, -0.5].into()),
-                 Point::new([-0.5, -0.5].into()),
-                 Point::new([0.5, -0.5].into()),
-                 Point::new([0.5, 0.5].into())],
-            // L2
-            vec![Point::new([-1.5, 0.5].into()),
-                 Point::new([-0.5, 0.5].into()),
-                 Point::new([0.5, 0.5].into()),
-                 Point::new([0.5, -0.5].into())],
-            ];
-
-        Ok(Tetronimoes {
-            microstate,
-            hamiltonian,
-            translate_sweep,
-            kt,
-            template_sites,
-        })
-    }
-}
-// ANCHOR_END: simulation_new
-
-// ANCHOR: impl_simulation
-impl Simulation for Tetronimoes {
-    /// Advance the simulation forward one step.
-    fn advance(&mut self) -> anyhow::Result<()> {
-        // ANCHOR: add
-        if self.microstate.step() % 100 == 0 {
-            let properties = OrientedPoint {
-                position: [0.0, self.microstate.boundary().l.get() / 2.0 - 2.0].into(),
-                orientation: Angle::from(0.0),
-            };
-            let mut rng = self.microstate.counter().make_rng();
-            let sites = self.template_sites.choose(&mut rng)
-                .expect("template_sites should have at least 1 element")
-                .clone();
-            self.microstate.add_body(Body { sites, properties })?;
-            self.microstate.increment_substep();
-        }
-        // ANCHOR_END: add
-
-        // ANCHOR: apply
-        self.translate_sweep.apply(
-            &mut self.microstate,
-            &self.hamiltonian,
-            &self.kt,
-        );
-        self.microstate.increment_step();
-        // ANCHOR_END: apply
-
-        // ANCHOR: reset
-        if self.hamiltonian.1.total_energy(&self.microstate) > 20_000.0 {
-            self.microstate.clear();
-        }
-        // ANCHOR_END: reset
-
-        Ok(())
-    }
-
-    /// Get the current simulation step.
-    fn step(&self) -> u64 {
-        self.microstate.step()
-    }
-}
-// ANCHOR_END: impl_simulation
+// ANCHOR: type_aliases
+type MyVector = Cartesian<2>;
+type BodyProperties = OrientedPoint<MyVector, Angle>;
+type SiteProperties = Point<MyVector>;
+// ANCHOR_END: type_aliases
 
 // ANCHOR: local_trial_all
 /// Take fixed steps left, right, down, up, rotate left, or rotate right.
@@ -185,22 +68,143 @@ impl LocalTrial<BodyProperties> for DiscreteRotateOrTranslate {
 }
 // ANCHOR_END: local_trial_all
 
+// ANCHOR: simulation_new
+impl Tetronimoes {
+    /// Construct a new tetronimo simulation.
+    fn new() -> anyhow::Result<Tetronimoes> {
+        let box_height = 30.0;
+        let kt = 1.0;
+        let alpha = 1.0;
+        let epsilon = 1000.0;
+        let sigma = 1.0;
+
+        let microstate = MicrostateBuilder::<BodyProperties, SiteProperties, Square>::with_boundary(Square {
+            l: box_height.try_into()?,
+        })
+        .try_build()?;
+
+        let linear = Single(Linear {
+            alpha,
+            plane_origin: Cartesian::default(),
+            plane_normal: [0.0, 1.0].try_into()?,
+        });
+
+        let boxcar = Boxcar {
+            epsilon,
+            left: 0.0,
+            right: sigma,
+        };
+        let isotropic = Isotropic(boxcar);
+        let cutoff_pair = CutoffPair {
+            r_cut: sigma,
+            evaluator: isotropic,
+        };
+
+        let hamiltonian = (linear, cutoff_pair);
+
+        // ANCHOR: trial_moves
+        let sweep = Sweep(DiscreteRotateOrTranslate);
+        // ANCHOR_END: trial_moves
+        
+        // ANCHOR: template_sites
+        let template_sites = vec![
+            // square
+            vec![Point::new([-0.5, -0.5].into()),
+                 Point::new([0.5, -0.5].into()),
+                 Point::new([0.5, 0.5].into()),
+                 Point::new([-0.5, 0.5].into())],
+            // line
+            vec![Point::new([-1.5, 0.5].into()),
+                 Point::new([-0.5, 0.5].into()),
+                 Point::new([0.5, 0.5].into()),
+                 Point::new([1.5, 0.5].into())],
+            // T
+            vec![Point::new([-1.5, -0.5].into()),
+                 Point::new([-0.5, -0.5].into()),
+                 Point::new([0.5, -0.5].into()),
+                 Point::new([-0.5, 0.5].into())],
+            // L1
+            vec![Point::new([-1.5, -0.5].into()),
+                 Point::new([-0.5, -0.5].into()),
+                 Point::new([0.5, -0.5].into()),
+                 Point::new([0.5, 0.5].into())],
+            // L2
+            vec![Point::new([-1.5, 0.5].into()),
+                 Point::new([-0.5, 0.5].into()),
+                 Point::new([0.5, 0.5].into()),
+                 Point::new([0.5, -0.5].into())],
+            ];
+        // ANCHOR_END: template_sites
+
+        Ok(Tetronimoes {
+            microstate,
+            hamiltonian,
+            sweep,
+            kt,
+            template_sites,
+        })
+    }
+}
+// ANCHOR_END: simulation_new
+
 #[derive(Resource)]
 // ANCHOR: simulation_struct
 struct Tetronimoes {
     /// Positions of all the bodies in the simulation.
     microstate: Microstate<BodyProperties, SiteProperties, Square>,
     /// How sites interact with other sites and fields.
-    hamiltonian: (Single<Linear<Cartesian<2>>>, CutoffPair<Isotropic<Boxcar>>),
+    hamiltonian: (Single<Linear<MyVector>>, CutoffPair<Isotropic<Boxcar>>),
     /// Trial moves to apply.
-    translate_sweep: Sweep<DiscreteRotateOrTranslate>,
+    sweep: Sweep<DiscreteRotateOrTranslate>,
     /// Temperature set point.
     kt: f64,
     /// Tetronimo shapes.
-    template_sites: Vec<Vec<Point<Cartesian<2>>>>,
+    template_sites: Vec<Vec<Point<MyVector>>>,
     
 }
 // ANCHOR_END: simulation_struct
+
+// ANCHOR: impl_simulation
+impl Simulation for Tetronimoes {
+    /// Advance the simulation forward one step.
+    fn advance(&mut self) -> anyhow::Result<()> {
+        // ANCHOR: add
+        if self.microstate.step() % 100 == 0 {
+            let mut rng = self.microstate.counter().make_rng();
+            let sites = self.template_sites.choose(&mut rng)
+                .expect("template_sites should have at least 1 element")
+                .clone();
+                
+            let properties = OrientedPoint {
+                position: [0.0, self.microstate.boundary().l.get() / 2.0 - 2.0].into(),
+                orientation: Angle::from(0.0),
+            };
+            
+            self.microstate.add_body(Body { sites, properties })?;
+            self.microstate.increment_substep();
+        }
+        // ANCHOR_END: add
+
+        self.sweep.apply(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.kt,
+        );
+        self.microstate.increment_step();
+
+        if self.hamiltonian.1.total_energy(&self.microstate) > 20_000.0 {
+            self.microstate.clear();
+        }
+
+        Ok(())
+    }
+
+    /// Get the current simulation step.
+    fn step(&self) -> u64 {
+        self.microstate.step()
+    }
+}
+// ANCHOR_END: impl_simulation
 
 /// Mark the disk representation type.
 struct A;
