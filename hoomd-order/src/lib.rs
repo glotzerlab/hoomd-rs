@@ -9,6 +9,7 @@
 )]
 // TODO: Documentation
 
+mod density;
 mod local;
 pub mod meshless_voronoi; 
 
@@ -17,5 +18,6 @@ use hoomd_vector::Cartesian;
 
 pub use {
     local::{NeighborList, GeneratorHyperbolic},
-    meshless_voronoi::{Voronoi}
+    meshless_voronoi::{Voronoi},
+    density::SpatialHistogram,
 };

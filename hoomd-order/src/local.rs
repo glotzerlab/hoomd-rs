@@ -62,17 +62,89 @@ impl GeneratorHyperbolic {
 The neighborlist for a given microstate is a vector of two-element tuples giving the pair of nearest neighbors. Nearest 
 neighbors are found using the voronoi diagram.
 */
-pub struct NeighborList<B, S,C> {
+pub struct NeighborList<'a, B, S,C> {
     /// ordered, nested vector of 2-tuples with nearest-neighbor pairs
     pub neighbors: Vec<(usize,usize)>,
     /// Microstate 
-    pub microstate: Microstate<B, S, C>
+    pub microstate: &'a Microstate<B, S, C>
 }
 
-impl<B,S,C> NeighborList<B,S,C> {
+impl<B,S,C> NeighborList<'_,B,S,C> {
     /// Get the neighbor list
     pub fn neighbors(&self) -> &Vec<(usize,usize)> {
         &self.neighbors
+    }
+    /** Get the indices of the neighbors for a specific site
+
+    #Example
+
+    ```
+    use hoomd_microstate::{Microstate, MicrostateBuilder, Body, property::Point, boundary::Open};
+    use hoomd_vector::Cartesian;
+    use hoomd_order::NeighborList;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let microstate = MicrostateBuilder::new()
+        .bodies([Body::point(Cartesian::from([0.5, 0.25])),
+                Body::point(Cartesian::from([-1.0, 1.0])),
+                Body::point(Cartesian::from([1.0, -0.75])),
+                Body::point(Cartesian::from([-0.5, -0.5]))])
+        .try_build()?;
+
+    let nlist = NeighborList::from_microstate(&microstate);
+    let nlist_for_0 = nlist.neighbors_of_site(microstate.site_indices()[0]);
+    assert_eq!(vec![1 as usize, 2 as usize, 3 as usize], nlist_for_0);
+    # Ok(())
+    # }
+    ```
+    */
+    pub fn neighbors_of_site(&self, site_index: Option<usize>) -> Vec<usize> {
+        match site_index {
+            Some(num) => {
+                let filtered_nlist: Vec<usize> = self.neighbors.clone().into_iter()
+                    .fold(Vec::new(), |mut nlist, c| {
+                        if c.1 == num {
+                            nlist.push(c.0);
+                        } else if c.0 == num {
+                            nlist.push(c.1)
+                        }
+                        nlist
+                    });
+                filtered_nlist
+            }
+            None => panic!("given site index is invalid"),
+        }
+    }
+    /** Get the coordination numbers for each site in a microstate
+
+    #Example
+
+    ```
+    use hoomd_microstate::{Microstate, MicrostateBuilder, Body, property::Point, boundary::Open};
+    use hoomd_vector::Cartesian;
+    use hoomd_order::NeighborList;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let microstate = MicrostateBuilder::new()
+        .bodies([Body::point(Cartesian::from([0.5, 0.25])),
+                Body::point(Cartesian::from([-1.0, 1.0])),
+                Body::point(Cartesian::from([1.0, -0.75])),
+                Body::point(Cartesian::from([-0.5, -0.5]))])
+        .try_build()?;
+
+    let nlist = NeighborList::from_microstate(&microstate);
+    let coordination_numbers = nlist.coordination_numbers();
+    assert_eq!(vec![3 as usize, 2 as usize, 2 as usize, 3 as usize], coordination_numbers);
+    # Ok(())
+    # }
+    ```
+    */
+    pub fn coordination_numbers(&self) -> Vec<usize> {
+        let mut coord_number = vec![];
+        for site_index in self.microstate.site_indices().iter() {
+            coord_number.push(self.neighbors_of_site(*site_index).len());
+        }
+        coord_number
     }
 }
 /** Neighbor list from microstates in cartesian space
@@ -92,7 +164,7 @@ let microstate = MicrostateBuilder::new()
              Body::point(Cartesian::from([-0.5, -0.5]))])
     .try_build()?;
 
-let nlist = NeighborList::from_microstate(microstate);
+let nlist = NeighborList::from_microstate(&microstate);
 assert_eq!(vec![(0 as usize, 1 as usize),
                 (0 as usize, 2 as usize),
                 (0 as usize, 3 as usize),
@@ -103,11 +175,11 @@ assert_eq!(vec![(0 as usize, 1 as usize),
 # }
 ```
 */
-impl<const N: usize, B, S> NeighborList<B, S, Open> 
+impl<const N: usize, B, S> NeighborList<'_,B, S, Open> 
 where S: Position<Vector = Cartesian<N>>
 {
     #[inline]
-    pub fn from_microstate(microstate: Microstate<B, S,Open> ) -> NeighborList<B, S, Open> {
+    pub fn from_microstate(microstate: &Microstate<B, S,Open> ) -> NeighborList<B, S, Open> {
         let mut nlist = vec![];
         let mut generators = vec![];
         let mut coord_numbers = vec![];
@@ -172,7 +244,7 @@ let mut microstate = MicrostateBuilder::with_boundary(Open)
         Body::point(Minkowski::from([-1.0, 1.0, 3.0_f64.sqrt()]))])
     .try_build()?;
 
-let nlist = NeighborList::from_hyperbolic_microstate(microstate);
+let nlist = NeighborList::from_hyperbolic_microstate(&microstate);
 assert_eq!(vec![(0 as usize, 1 as usize),
                 (0 as usize, 2 as usize),
                 (1 as usize, 2 as usize),
@@ -183,11 +255,11 @@ assert_eq!(vec![(0 as usize, 1 as usize),
 # }
 ```
 */
-impl<const N: usize, B, S> NeighborList<B,S,Open>
+impl<const N: usize, B, S> NeighborList<'_,B,S,Open>
 where S: Position<Vector = Minkowski<N>> 
 {
     #[inline]
-    pub fn from_hyperbolic_microstate(microstate: Microstate<B, S,Open> ) -> NeighborList<B,S,Open> {
+    pub fn from_hyperbolic_microstate(microstate: &Microstate<B, S,Open> ) -> NeighborList<B,S,Open> {
         let mut nlist = vec![];
         let mut generators = vec![];
         let rho = microstate.sites()[0].properties.position().get_skirt_width();
@@ -196,9 +268,7 @@ where S: Position<Vector = Minkowski<N>>
             pos_vec.push(0.0);
             generators.push(pos_vec);
         }
-        let anchor = DVec3::splat(-1.);
-        let width = DVec3::splat(2.);
-        let _voronoi = Voronoi::build_hyperbolic(&generators, rho, anchor, width, (N-1 as usize).try_into().unwrap(), false);
+        let _voronoi= Voronoi::build_hyperbolic(&generators, rho, DVec3::splat(-1.), DVec3::splat(2.), (N-1 as usize).try_into().unwrap(), false);
         let cells = _voronoi.cells();
         for site_index in microstate.site_indices().iter() {
             if let Some(site_tag) = site_index {
