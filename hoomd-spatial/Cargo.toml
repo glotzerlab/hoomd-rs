@@ -1,17 +1,21 @@
 [package]
 name = "hoomd-spatial"
-version.workspace = true
-edition.workspace = true
-rust-version.workspace = true
-homepage.workspace = true
-repository.workspace = true
-license.workspace = true
-keywords.workspace = true
 categories.workspace = true
-
-[dependencies]
-hoomd-vector = {path = "../hoomd-vector"}
-rstest = "0.24.0"
+description = "Infrastructure for efficient computation of neighbors using spatial data structures."
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+readme = "hoomd-spatial/README.md"
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [lints]
 workspace = true
+
+[dependencies]
+hoomd-vector.workspace = true
+
+[dev-dependencies]
+rstest.workspace = true
