@@ -2,8 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement canonical vector types.
- */
-
+*/
 use std::array;
 use std::fmt;
 use std::iter::{Sum, zip};
@@ -125,6 +124,30 @@ impl<const N: usize> From<[f64; N]> for Cartesian<N> {
     }
 }
 
+impl<const N: usize> IntoIterator for Cartesian<N> {
+    type Item = f64;
+    type IntoIter = <[f64; N] as IntoIterator>::IntoIter;
+
+    /** Iterate over the components of the vector.
+
+    # Example
+    ```
+    use hoomd_vector::Cartesian;
+
+    let a = Cartesian::from([1.0, 2.0]);
+    let mut iter = a.into_iter();
+
+    assert_eq!(iter.next(), Some(1.0));
+    assert_eq!(iter.next(), Some(2.0));
+    assert_eq!(iter.next(), None);
+    ```
+    */
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.coordinates.into_iter()
+    }
+}
+
 impl From<(f64, f64)> for Cartesian<2> {
     #[inline]
     fn from(coordinates: (f64, f64)) -> Self {
@@ -160,6 +183,7 @@ impl<const N: usize> TryFrom<Vec<f64>> for Cartesian<N> {
     ```
     <div class="warning">
 
+    This method deallocates the Vec after copying it.
     Use `Cartesian::From<[f64; N]>` in performance critical code.
 
     </div>
@@ -186,12 +210,6 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for Cartesian<N> {
     # Ok(())
     # }
     ```
-
-    <div class="warning">
-
-    Use `Cartesian::From<[f64; N]>` in performance critical code.
-
-    </div>
     */
     #[inline]
     fn try_from(value: std::ops::Range<usize>) -> Result<Self, Self::Error> {
@@ -199,9 +217,7 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for Cartesian<N> {
             return Err(Error::InvalidVectorLength);
         }
 
-        // The default value of 0 will never be used due to the above error check.
-        let mut iter = value;
-        let coordinates = array::from_fn(|_| iter.next().unwrap_or(0) as f64);
+        let coordinates = array::from_fn(|i| (value.start + i) as f64);
         Ok(Self { coordinates })
     }
 }
@@ -232,7 +248,7 @@ impl<const N: usize> InnerProduct for Cartesian<N> {
     #[inline]
     fn dot(&self, other: &Self) -> f64 {
         zip(self.coordinates.iter(), other.coordinates.iter())
-            .fold(0.0, |product, x| product + x.0 * x.1)
+            .fold(0.0, |product, (&x, &y)| x.mul_add(y, product))
     }
 }
 
@@ -292,21 +308,16 @@ impl<const N: usize> Div<f64> for Cartesian<N> {
 
     #[inline]
     fn div(self, rhs: f64) -> Self {
-        let mut coordinates = [0.0; N];
-
-        for (result, a) in coordinates.iter_mut().zip(self.coordinates) {
-            *result = a / rhs;
+        Self {
+            coordinates: self.coordinates.map(|x| x / rhs),
         }
-        Self { coordinates }
     }
 }
 
 impl<const N: usize> DivAssign<f64> for Cartesian<N> {
     #[inline]
     fn div_assign(&mut self, rhs: f64) {
-        for result in &mut self.coordinates {
-            *result /= rhs;
-        }
+        self.coordinates = self.coordinates.map(|x| x / rhs);
     }
 }
 
@@ -315,20 +326,16 @@ impl<const N: usize> Mul<f64> for Cartesian<N> {
 
     #[inline]
     fn mul(self, rhs: f64) -> Self {
-        let mut coordinates = [0.0; N];
-        for (result, a) in coordinates.iter_mut().zip(self.coordinates) {
-            *result = a * rhs;
+        Self {
+            coordinates: self.coordinates.map(|x| x * rhs),
         }
-        Self { coordinates }
     }
 }
 
 impl<const N: usize> MulAssign<f64> for Cartesian<N> {
     #[inline]
     fn mul_assign(&mut self, rhs: f64) {
-        for result in &mut self.coordinates {
-            *result *= rhs;
-        }
+        self.coordinates = self.coordinates.map(|x| x * rhs);
     }
 }
 
@@ -376,9 +383,9 @@ impl<const N: usize> Neg for Cartesian<N> {
     type Output = Self;
     #[inline]
     fn neg(self) -> Self::Output {
-        let mut result = self;
-        result.coordinates.iter_mut().for_each(|x| *x = -*x);
-        result
+        Self {
+            coordinates: self.coordinates.map(|x| -x),
+        }
     }
 }
 
@@ -449,6 +456,30 @@ where
     }
 }
 
+impl Cartesian<2> {
+    /** Construct a 2-vector perpendicular to self.
+
+    Given a vector $`(v_x, v_y)`$ `perpendicular` returns the vector
+    rotated by $`\pi/2`$:
+    ```math
+    (-v_y, v_x)
+    ```
+
+    # Example
+    ```
+    use hoomd_vector::Cartesian;
+
+    let v = Cartesian::from([1.0, -4.5]);
+    assert_eq!(v.perpendicular(), [4.5, 1.0].into());
+    ```
+    */
+    #[inline]
+    #[must_use]
+    pub fn perpendicular(self) -> Self {
+        Cartesian::from([-self[1], self[0]])
+    }
+}
+
 impl<const N: usize, T> IndexMut<T> for Cartesian<N>
 where
     T: Into<usize> + std::slice::SliceIndex<[f64], Output = f64>,
@@ -503,6 +534,98 @@ pub struct RotationMatrix<const N: usize> {
     pub(crate) rows: [Cartesian<N>; N],
 }
 
+impl<const N: usize> RotationMatrix<N> {
+    /** Get the rows of the rotation matrix.
+
+    # Example
+    ```
+    use hoomd_vector::{Angle, InnerProduct, RotationMatrix, Vector};
+    use std::f64::consts::PI;
+
+    let a = Angle::from(PI/2.0);
+
+    let matrix = RotationMatrix::from(a);
+    assert!(matrix.rows()[0].dot(&[0.0, -1.0].into()) > 0.99);
+    assert!(matrix.rows()[1].dot(&[1.0, 0.0].into()) > 0.99);
+    ```
+    */
+    #[inline]
+    #[must_use]
+    pub fn rows(&self) -> [Cartesian<N>; N] {
+        self.rows
+    }
+
+    /** Create a matrix that performs the inverse rotation.
+
+    Matrix inversion is cheaper than [`Angle`](crate::Angle) ->
+    [`RotationMatrix`] and [`Versor`](crate::Versor) -> [`RotationMatrix`]
+    conversions. When you need both rotations, convert once and then invert.
+
+    # Example
+    ```
+    use hoomd_vector::{Angle, InnerProduct, RotationMatrix, Vector};
+    use std::f64::consts::PI;
+
+    let a = Angle::from(PI/2.0);
+
+    let matrix = RotationMatrix::from(a);
+    let inverted_matrix = matrix.inverted();
+    assert!(inverted_matrix.rows()[0].dot(&[0.0, 1.0].into()) > 0.99);
+    assert!(inverted_matrix.rows()[1].dot(&[-1.0, 0.0].into()) > 0.99);
+    ```
+    */
+    #[inline]
+    #[must_use]
+    pub fn inverted(self) -> Self {
+        Self {
+            rows: array::from_fn(|i| array::from_fn::<_, N, _>(|j| self.rows()[j][i]).into()),
+        }
+    }
+}
+
+impl<const N: usize> Default for RotationMatrix<N> {
+    /** Create an identity matrix.
+
+    ```math
+    \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix}
+    ```
+    ,
+    ```math
+    \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \end{bmatrix}
+    ```
+    , and so on.
+
+    # Example
+
+    ```
+    use hoomd_vector::RotationMatrix;
+
+    let identity = RotationMatrix::<3>::default();
+    ```
+    */
+    #[inline]
+    fn default() -> RotationMatrix<N> {
+        RotationMatrix {
+            rows: array::from_fn(|i| array::from_fn(|j| if i == j { 1.0 } else { 0.0 }).into()),
+        }
+    }
+}
+
+impl<const N: usize> fmt::Display for RotationMatrix<N> {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "[{}]",
+            self.rows
+                .iter()
+                .map(Cartesian::<N>::to_string)
+                .collect::<Vec<String>>()
+                .join("\n ")
+        )
+    }
+}
+
 impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
     type Matrix = RotationMatrix<N>;
 
@@ -549,45 +672,16 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
 }
 
 #[cfg(test)]
-mod approx {
-    use approx::{AbsDiffEq, RelativeEq};
-    use std::iter::zip;
-
-    impl<const N: usize> AbsDiffEq for super::Cartesian<N> {
-        type Epsilon = <f64 as AbsDiffEq>::Epsilon;
-
-        fn default_epsilon() -> Self::Epsilon {
-            f64::default_epsilon()
-        }
-
-        fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
-            zip(self.coordinates.iter(), other.coordinates.iter())
-                .all(|x| f64::abs_diff_eq(x.0, x.1, epsilon))
-        }
-    }
-
-    impl<const N: usize> RelativeEq for super::Cartesian<N> {
-        fn default_max_relative() -> Self::Epsilon {
-            f64::default_max_relative()
-        }
-
-        fn relative_eq(
-            &self,
-            other: &Self,
-            epsilon: Self::Epsilon,
-            max_relative: Self::Epsilon,
-        ) -> bool {
-            zip(self.coordinates.iter(), other.coordinates.iter())
-                .all(|x| f64::relative_eq(x.0, x.1, epsilon, max_relative))
-        }
-    }
-}
-
-#[cfg(test)]
 mod tests {
+    use crate::Angle;
+    use crate::Rotation;
+    use crate::Versor;
+
     use super::*;
+    use approx::assert_relative_eq;
     use paste::paste;
     use rand::{SeedableRng, rngs::StdRng};
+    use rstest::rstest;
 
     // Parameterize a test function over an array of vector lengths
     macro_rules! parameterize_vector_length {
@@ -669,7 +763,6 @@ mod tests {
 
         assert_eq!(c, Cartesian::try_from(addition_answer).unwrap());
     }
-
     parameterize_vector_length!(add_assign, [2, 3, 4, 8, 16, 32]);
 
     fn sub_operator<const N: usize>() {
@@ -923,5 +1016,61 @@ mod tests {
             .sum();
 
         assert_eq!(total, [-1.0, 1.0].into());
+    }
+
+    #[test]
+    fn perpendicular() {
+        let v = Cartesian::from([1.0, -4.5]);
+        assert_eq!(v.perpendicular(), [4.5, 1.0].into());
+    }
+
+    #[test]
+    fn test_rotationmatrix_display() {
+        let m = RotationMatrix::<3>::default();
+        let s = format!("{m}");
+        assert_eq!(
+            s,
+            "[[1, 0, 0]
+ [0, 1, 0]
+ [0, 0, 1]]"
+        );
+
+        let m = RotationMatrix::<2>::default();
+        let s = format!("{m}");
+        assert_eq!(
+            s,
+            "[[1, 0]
+ [0, 1]]"
+        );
+    }
+
+    #[rstest(
+        angle => [
+            Angle::default(),
+            Angle::from(std::f64::consts::FRAC_PI_3),
+            Angle::from(999.9 * std::f64::consts::PI / 1.234)
+        ]
+    )]
+    fn test_rotationmatrix_invert_2d(angle: Angle) {
+        let transposed = RotationMatrix::from(angle).inverted();
+        let inverted = RotationMatrix::from(angle.inverted());
+        for (a, b) in transposed.rows().iter().zip(inverted.rows().iter()) {
+            assert_relative_eq!(a, b);
+        }
+    }
+    #[rstest(
+        versor => [
+            Versor::default(),
+            Versor::from_axis_angle(
+                Unit::try_from([1.0, 0.0, 0.0]).unwrap(), std::f64::consts::PI / 1.234
+            )
+        ]
+    )]
+    fn test_rotationmatrix_invert_3d(versor: Versor) {
+        let transposed = RotationMatrix::from(versor).inverted();
+        let inverted = RotationMatrix::from(versor.inverted());
+        for (a, b) in transposed.rows().iter().zip(inverted.rows().iter()) {
+            assert_relative_eq!(a, b);
+        }
     }
 }
