@@ -28,52 +28,52 @@ pub enum ParticleFlag {
 }
 
 /** Cell list is a spatial data structure used for efficient neighbor finding based on assigning particles to cell grids.
-  
-    Use cell list in your MD simulation to speed up neighbor finding for evaluation of forces between particles.
-    The `CellList` also has a builder API associated with it (see `CellListBuilder`).
 
-    # Example
+   Use cell list in your MD simulation to speed up neighbor finding for evaluation of forces between particles.
+   The `CellList` also has a builder API associated with it (see `CellListBuilder`).
 
-    ```
-    use hoomd_spatial::CellList;
-    use hoomd_vector::Cartesian;
-    // Create some sample 2D Cartesian positions.
-    let positions = vec![
-        Cartesian { coordinates: [0.2, 0.3] },
-        Cartesian { coordinates: [0.8, 1.3] },
-        Cartesian { coordinates: [8.5, 9.5] },
-    ];
-    let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
-    // Define the cell width.
-    let cell_width = 2.0;
-    // Create a cell list object from the builder
-    let cell_list = CellListBuilder::<2>::new(cell_width).with_positions_and_indices(&positions, &indices).build();
-    // add another particle to the cell list.
-    let new_position = Cartesian { coordinates: [1.2, 1.3] };
-    let new_index: usize = 3; // New particle index.
-    // Add particles to the cell list.
-    cell_list.insert(&new_position, &new_index);
-    // Now delete the first particle from the cell list.
-    cell_list.remove(0);
-    // Shrink the cell list to fit its current capacity.
-    cell_list.shrink_to_fit();
-    // print the cell indices of particle 2
-    println!("Cell index for particle 2: {:?}", cell_list.cell_index(2));
-    // Translate particle 2 to a new position.
-    let new_particle_position = Cartesian { coordinates: [8.2, 9.3] };
-    // TODO change based on fait of translate_particle function
-    cell_list.insert(&new_particle_position, &2);
-    // Get the cell index for the second particle.
-    println!("Cell index for particle 2: {:?}", cell_list.cell_index(2));
-    // Find potential neighbor indices for particle 2.
-    let cutoff_radius = 1.5;
-    let mut potential_neighbor_indices = Vec::new();
-    // TODO change this to use the iterator instead
-    cell_list.find_potential_neighbor_indices(&new_particle_position, &cutoff_radius, &mut potential_neighbor_indices);
-    // Print the potential neighbor indices.
-    println!("Potential neighbor indices for particle 2: {:?}", potential_neighbor_indices);
-    ```
- */
+   # Example
+
+   ```
+   use hoomd_spatial::CellList;
+   use hoomd_vector::Cartesian;
+   // Create some sample 2D Cartesian positions.
+   let positions = vec![
+       Cartesian { coordinates: [0.2, 0.3] },
+       Cartesian { coordinates: [0.8, 1.3] },
+       Cartesian { coordinates: [8.5, 9.5] },
+   ];
+   let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
+   // Define the cell width.
+   let cell_width = 2.0;
+   // Create a cell list object from the builder
+   let cell_list = CellListBuilder::<2>::new(cell_width).with_positions_and_indices(&positions, &indices).build();
+   // add another particle to the cell list.
+   let new_position = Cartesian { coordinates: [1.2, 1.3] };
+   let new_index: usize = 3; // New particle index.
+   // Add particles to the cell list.
+   cell_list.insert(&new_position, &new_index);
+   // Now delete the first particle from the cell list.
+   cell_list.remove(0);
+   // Shrink the cell list to fit its current capacity.
+   cell_list.shrink_to_fit();
+   // print the cell indices of particle 2
+   println!("Cell index for particle 2: {:?}", cell_list.cell_index(2));
+   // Translate particle 2 to a new position.
+   let new_particle_position = Cartesian { coordinates: [8.2, 9.3] };
+   // TODO change based on fait of translate_particle function
+   cell_list.insert(&new_particle_position, &2);
+   // Get the cell index for the second particle.
+   println!("Cell index for particle 2: {:?}", cell_list.cell_index(2));
+   // Find potential neighbor indices for particle 2.
+   let cutoff_radius = 1.5;
+   let mut potential_neighbor_indices = Vec::new();
+   // TODO change this to use the iterator instead
+   cell_list.find_potential_neighbor_indices(&new_particle_position, &cutoff_radius, &mut potential_neighbor_indices);
+   // Print the potential neighbor indices.
+   println!("Potential neighbor indices for particle 2: {:?}", potential_neighbor_indices);
+   ```
+*/
 pub struct CellList<const D: usize> {
     /// The width of each cell.
     pub cell_width: f64,
@@ -183,8 +183,8 @@ impl<const D: usize> CellListBuilder<D> {
         positions: &Vec<Cartesian<D>>,
         indices: &Vec<usize>,
     ) -> Self {
-        self.positions = positions.clone();
-        self.indices = indices.clone();
+        self.positions.clone_from(positions);
+        self.indices.clone_from(indices);
         self
     }
 
@@ -446,14 +446,14 @@ impl<const D: usize> CellList<D> {
     }
 
     /** Shrink both hashmaps in the cell list to fit their current capacity.
-     
+
     This function cleans up (read deletes) any empty cells in the `particle_indices` hashmap
     and shrinks the capacity of both `particle_indices` and `cell_index` hashmaps
     to their current length. This is useful for reducing memory usage after many insertions
     and deletions, leaving many empty cells.
 
     # Example
-    ```    
+    ```
     use hoomd_spatial::CellList;
     use hoomd_vector::Cartesian;
     // Create some sample 2D Cartesian positions.
@@ -474,11 +474,11 @@ impl<const D: usize> CellList<D> {
     // Call shrink_to_fit to clean up empty cells and reduce memory usage.
     cell_list.shrink_to_fit();
     println!("After shrink_to_fit: {:?}", cell_list.particle_indices.size());
-    ```    
+    ```
      */
     #[inline]
     pub fn shrink_to_fit(&mut self) {
-        self.particle_indices.retain(|_,v| !v.is_empty());
+        self.particle_indices.retain(|_, v| !v.is_empty());
         self.particle_indices.shrink_to_fit();
         self.cell_index.shrink_to_fit();
     }
