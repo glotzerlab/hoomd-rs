@@ -17,9 +17,12 @@ use bevy::{
 };
 #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
 use bevy::{
-    render::{mesh::MeshVertexBufferLayoutRef, render_resource::{RenderPipelineDescriptor, SpecializedMeshPipelineError}},
+    render::{
+        mesh::MeshVertexBufferLayoutRef,
+        render_resource::{RenderPipelineDescriptor, SpecializedMeshPipelineError},
+    },
     sprite::Material2dKey,
-    };
+};
 use itertools::EitherOrBoth::{Both, Left, Right};
 use itertools::Itertools;
 use std::marker::PhantomData;
@@ -81,15 +84,16 @@ impl<T: Send + Sync + 'static> Disk<T> {
     pub fn setup(
         material: In<MaterialParameters>,
         mut commands: Commands,
-        #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
-        mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
+        #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))] mut buffers: ResMut<
+            Assets<ShaderStorageBuffer>,
+        >,
         mut meshes: ResMut<Assets<Mesh>>,
         mut materials: ResMut<Assets<Material>>,
         asset_server: Res<AssetServer>,
     ) {
         #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
         let background_colors = [material.0.background_color; 1024];
-                
+
         #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
         let background_colors =
             buffers.add(ShaderStorageBuffer::from([material.0.background_color]));
@@ -214,7 +218,7 @@ pub struct Material {
     #[uniform(3)]
     #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
     background_colors: [LinearRgba; 1024],
-       
+
     /// Color applied to the interior of the disk (indexed by disk % array size).
     #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
     #[storage(3, read_only)]
@@ -222,33 +226,33 @@ pub struct Material {
 }
 
 impl Material {
+    pub fn set_background_colors(
+        &mut self,
+        mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
+        colors: &Vec<LinearRgba>,
+    ) {
+        #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
+        {
+            if colors.len() > 1024 {
+                panic!(
+                    "webgl2 builds support up to 1024 colors, got {}",
+                    colors.len()
+                );
+            }
+            self.background_colors[..colors.len()].copy_from_slice(&colors);
+            self.n_background_colors = colors.len() as u32;
+        }
 
-pub fn set_background_colors(
-    &mut self,
-    mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
-    colors: &Vec<LinearRgba>,
-) {
-    #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
-    {
-    if colors.len() > 1024 {
-        panic!("webgl2 builds support up to 1024 colors, got {}", colors.len());
-    }
-    self.background_colors[..colors.len()].copy_from_slice(&colors);
-    self.n_background_colors = colors.len() as u32;
-    }
-    
-    #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
-    {
-    let color_buffer = buffers
-        .get_mut(&self.background_colors)
-        .expect("Disk::setup should have added the storage buffer");
+        #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
+        {
+            let color_buffer = buffers
+                .get_mut(&self.background_colors)
+                .expect("Disk::setup should have added the storage buffer");
 
-    color_buffer.set_data(&colors);
+            color_buffer.set_data(&colors);
+        }
     }
 }
-}
-
-    
 
 impl Material2d for Material {
     fn fragment_shader() -> ShaderRef {
@@ -265,13 +269,12 @@ impl Material2d for Material {
 
     #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
     fn specialize(
-    descriptor: &mut RenderPipelineDescriptor,
-    _layout: &MeshVertexBufferLayoutRef,
-    _key: Material2dKey<Self>,
+        descriptor: &mut RenderPipelineDescriptor,
+        _layout: &MeshVertexBufferLayoutRef,
+        _key: Material2dKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
+        descriptor.vertex.shader_defs.push("WEBGL2".into());
 
-    descriptor.vertex.shader_defs.push("WEBGL2".into());
-    
-    Ok(())
+        Ok(())
     }
 }
