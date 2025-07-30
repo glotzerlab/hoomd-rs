@@ -133,7 +133,7 @@ mod biquaternion;
 mod manifold_translate;
 
 pub use {
-    minkowski::{Minkowski, HyperbolicRotationMatrix, HyperbolicDisk, EightEight},
+    minkowski::{Minkowski, Hyperboloid, HyperbolicRotationMatrix, HyperbolicDisk, EightEight},
     hyperbolic_angle::HyperbolicAngle,
     biquaternion::{Biquaternion, UnitBiquaternion},
     manifold_translate::{HyperbolicTranslate, SphericalTranslate},
@@ -159,6 +159,10 @@ pub enum Error {
     /// Attempted converting a value to a vector with a dimension not equal to the value's length.
     #[error("source length does not match the target dimensions")]
     InvalidVectorLength,
+
+    /// Attempted to operate on two points belonging hyperboloids with different skirt widths.
+    #[error("specified points have different skirt widths")]
+    PointsBelongToDifferentHyperboloids,
 
 }
 
