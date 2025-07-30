@@ -133,16 +133,16 @@ mod biquaternion;
 mod manifold_translate;
 
 pub use {
-    minkowski::{Minkowski, HyperbolicRotationMatrix, HyperbolicDisk, EightEight},
+    minkowski::{Minkowski, Hyperboloid, HyperbolicRotationMatrix, HyperbolicDisk, EightEight},
     hyperbolic_angle::HyperbolicAngle,
     biquaternion::{Biquaternion, UnitBiquaternion},
     manifold_translate::{HyperbolicTranslate, SphericalTranslate},
     curved_interaction::CurvedIsotropic,
-    sphere::SphericalDisk,
+    sphere::{Sphere, SphericalDisk},
 };
 
 use thiserror::Error;
-use hoomd_vector::{Vector, InnerProduct};
+use hoomd_vector::Vector;
 
 // / Enumerate possible sources of error in fallible vector math operations.
 #[non_exhaustive]
@@ -165,49 +165,29 @@ pub enum Error {
 /** Implement methods on non-Euclidean spaces
 */
 pub trait CurvedManifold {
-    /** Distance of the geodesic path passing through two points on the hyperboloid. The length scale rho 
-    sets the curvature strength; rho is the sphere radius for positive curvature, while rho is the hyperboloid 
-    skirt width for negative curvature. 
+    /** Distance of the geodesic path passing through two points on a curved manifold.
     */
-    fn geodesic_distance(&self, other: &Self, rho: f64) -> f64;
+    fn geodesic_distance(&self, other: &Self) -> f64;
+    /** Cast points in a vector space (i.e., the embedding space) as curved manifold points
+    */
+    fn to_manifold(point: Vec<f64>) -> Self;
 }
 
-/** Operations defined on the upper sheet of a two-sheeted hyperboloid embedded in some metric 
-vector space.
- */
-pub trait Hyperboloid: CurvedManifold {
-    /** Distance of the geodesic path passing through two points on the hyperboloid.
-     */
-    #[inline]
-    fn hyperbolic_distance(&self, other: &Self, skirt: f64) -> f64;
-    /** Distance of the geodesic path passing through a given point and the cusp of 
-    the hyperboloid
-    */
-    #[inline]
-    fn distance_from_cusp(&self, skirt: f64) -> f64;
-    /** Projects points on the hyperboloid onto the Poincare disk/ball. Points on an N-dimensional
-     hyperboloid are projected through the tip of the cusp on the lower sheet onto 
-     the perpendicular plane. 
-    */
-    #[inline]
-    fn to_poincare(&self, skirt: f64) -> Vec<f64>;
-}
-
-/** Operations for the fundamental domain on a hyperboloid
+/** Operations for the fundamental domain on an arbitrary manifold
 */
-pub trait FundamentalDomain: Hyperboloid {
+pub trait FundamentalDomain {
     /** Distance of the geodesic path passing through a given point on the hyperbola and the
     boundary of the fundamental domain.
     */
     #[inline]
-    fn distance_to_boundary(&self, skirt: f64) -> f64;
+    fn distance_to_boundary(&self) -> f64;
     /** List of points on the boundary of the fundamental domain
     */
     #[inline]
     fn boundary_points(m: usize, skirt: f64) -> Vec::<(f64, f64)>;
 }
 
-/** Rotations in hyperbolic space
+/** Linear transformations preserving hyperboloids.
  */
 pub trait HyperbolicRotate<V: Vector> {
     /// Type of the related rotation matrix
@@ -216,18 +196,6 @@ pub trait HyperbolicRotate<V: Vector> {
     */
     #[must_use]
     fn hyperbolic_rotate(&self, vector: &V) -> V;
-}
-/** Sphere
- */
-pub trait Sphere: InnerProduct + CurvedManifold {
-    /** Distance of the geodesic path passing through two points on the sphere.
-     */
-    #[inline]
-    fn sphere_distance(&self, other: &Self, radius: f64) -> f64;
-    /** Stereographic projection of the N-sphere to an N-dimensional plane. 
-    */
-    #[inline]
-    fn stereographic_projection(&self, radius: f64) -> Vec<f64>;
 }
 
 #[cfg(test)]

@@ -51,7 +51,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
         point: Minkowski::from([0.00001,0.00001,sqrt(2.0*(0.00001_f64).powi(2) + RHO.powi(2))]),
         skirt: RHO,}; 
     for _n in 0..PARTICLE_NUMBER {
-        let new_point: Minkowski<3> = sample_disk.sample(&mut rng);
+        let new_point: Minkowski<3> = sample_disk.sample(&mut rng).point;
         microstate.add_body(Body::point(new_point))?;
     }
     
@@ -60,7 +60,10 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
         sigma: 0.065507,
     };
 
-    let evaluator = CurvedIsotropic(lj, RHO);
+    let evaluator = CurvedIsotropic {
+        isotropic: lj, 
+        manifold: Hyperboloid::from(&Minkowski::from([0.0,0.0,RHO])),
+    };
     let cutoff_pair = CutoffPair {
         r_cut: 10.0,
         evaluator,
@@ -91,8 +94,9 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
 const RAD_SQ : f64 = 0.0001;
 
 /// Project coordinates to Poincare disk 
-fn poincare(point: &Minkowski<3>, skirt: f64) -> [f64;3] {
-    let proj = point.to_poincare(skirt);
+fn poincare(point: &Minkowski<3>) -> [f64;3] {
+    let pt = Hyperboloid::from(point);
+    let proj = pt.to_poincare();
     let v = acosh((RAD_SQ + RHO.powi(2))/(RHO.powi(2)-RAD_SQ));
     let eta = acosh(point.coordinates[2]/RHO);
     let edge_proj = (RHO * sinh(eta+v))/(1.0 + cosh(eta+v));
@@ -110,7 +114,7 @@ fn render(
         .marker(Marker::Braille)
         .paint(|ctx| {
             for site in microstate.sites() {
-                let coords = poincare(&site.properties.position, RHO);
+                let coords = poincare(&site.properties.position);
                 ctx.draw(&Circle {
                 x: coords[0],
                 y: coords[1],

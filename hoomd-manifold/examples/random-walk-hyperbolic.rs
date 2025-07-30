@@ -64,7 +64,8 @@ const BOUNDARY_NUMBER : usize = 1000;
 
 /// Project coordinates to Poincare disk 
 fn poincare(point: &Minkowski<3>, skirt: f64) -> [f64;3] {
-    let proj = point.to_poincare(skirt);
+    let pt = Hyperboloid::from(point);
+    let proj = pt.to_poincare();
     let v = acosh((RAD_SQ + RHO.powi(2))/(RHO.powi(2)-RAD_SQ));
     let eta = acosh(point.coordinates[2]/RHO);
     let edge_proj = (RHO * sinh(eta+v))/(1.0 + cosh(eta+v));
@@ -76,7 +77,7 @@ fn render(
     frame: &mut Frame,
     microstate: &Microstate<Point<Minkowski<3>>, Point<Minkowski<3>>, EightEight>,
 ) {
-    let v = Minkowski::boundary_points(BOUNDARY_NUMBER, RHO);
+    let v = Hyperboloid::<3>::boundary_points(BOUNDARY_NUMBER, RHO);
     let (a,b): (Vec<_>, Vec<_>) = v.into_iter().unzip();
     let boundary_particles : [(f64, f64); BOUNDARY_NUMBER] = array::from_fn(|i| (a[i], b[i]));
     let properties = &microstate.bodies()[0].item.properties;

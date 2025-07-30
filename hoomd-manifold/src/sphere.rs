@@ -6,11 +6,12 @@
 
 use libm::{acos, atan2, sin, cos, sqrt};
 use std::f64::consts::PI;
-use hoomd_vector::{Cartesian, InnerProduct};
-use crate::{CurvedManifold, Sphere};
+use hoomd_vector::{Cartesian, InnerProduct, Vector};
+use crate::{CurvedManifold};
 use hoomd_utility::valid::PositiveReal;
 use rand::Rng;
 use rand::distr::{Distribution, Uniform};
+use approx::assert_relative_eq;
 
 /** The trait [`Sphere`] for ['Cartesian'] implements types on the embedding of an N-sphere in Euclidean space. 
 Explicitly, the N-sphere is defined by the set of (N+1)-dimesnional points whose components satisfy 
@@ -20,39 +21,34 @@ x_1^2 + x_2^2 + \cdots + x_{N+1}^1 = R^2
 for some radius $R$. 
 */
 
-impl<const N: usize> Sphere for Cartesian<N> {
-    /** Computes the arc length bewtween two points on an N-sphere of radius R. The arc length 
-    is generally given by R\Delta\psi, where \Delta\psi is the angle between the two points along
-    the great circle which intersects both points. For two points \vec{u} and \vec{v} on an N-sphere
-    embedded in cartesian space, we have 
-    ```math 
-    \cos(\Delta\psi) = \frac{\vec{u}\cdot\vec{v}}{R^2}
-    ```
-    Therefore the arclength between \vec{u} and \vec{v} is given by 
-    ```math
-    d_S(\vec{u},\vec{v}) = R\delta\psi = R\arccos\left(\frac{\vec{u}\cdot\vec{v}}{R^2}\right)
-    ```
-
-    # Example
-    ```
-    use libm::acos;
-    use std::f64::consts::PI;
-    use hoomd_vector::{Cartesian, InnerProduct};
-    use hoomd_manifold::Sphere;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let radius : f64 = 5.0;
-    let x = Cartesian::from([radius, 0.0, 0.0]);
-    let y = Cartesian::from([0.0, radius, 0.0]);
-    assert_eq!(radius* PI/2.0, x.sphere_distance(&y, radius));
-    # Ok(())
-    # }
-    ```
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Sphere<const N: usize> {
+    /** a cartesian point living on the surface of an N-sphere
     */
-    #[inline]
-    fn sphere_distance(&self, other: &Self, radius: f64) -> f64 {
-        let arg = Cartesian::dot(self, other) / radius.powi(2);
-        radius * acos(arg)
+    pub point: Cartesian<N>,
+    /** the radius of the sphere
+    */
+    pub radius: f64,
+}
+impl<const N: usize> Sphere<N> {
+    /** Get the coordinates of the point
+    */
+    pub fn coordinates(&self) -> &[f64; N] {
+        &self.point.coordinates
+    }
+    /** Get the radius of the sphere
+    */
+    pub fn radius(&self) -> f64 {
+        self.radius
+    }
+    /** Create a sphere point from a cartesian vector
+    */
+    pub fn from(point: &Cartesian<N>) -> Sphere<N> {
+        let radius = point.norm();
+        Sphere {
+            point: *point,
+            radius: radius,
+        }
     }
     /** Implements a stereographic projection from the N-sphere to an N-dimensional plane. 
 
@@ -71,20 +67,53 @@ impl<const N: usize> Sphere for Cartesian<N> {
     ```
     */
     #[inline]
-    fn stereographic_projection(&self, radius: f64) -> Vec<f64> {
+    pub fn stereographic_projection(&self) -> Vec<f64> {
         (0..N-1).collect::<Vec<usize>>()
-        .iter().map(|i| self.coordinates[*i] / (1.0 - self.coordinates[N-1]/radius)).collect::<Vec<f64>>()
+        .iter().map(|i| self.point.coordinates[*i] / (1.0 - self.point.coordinates[N-1]/self.radius)).collect::<Vec<f64>>()
     }
 }
 
-/** [`CurvedManifold`] for Cartesian implements the geodesic distance on the surface of a sphere, i.e., the 
-positively curved metric.
+/** [`CurvedManifold`] for [`Sphere`]
 */
-impl<const N: usize> CurvedManifold for Cartesian<N> {
+impl<const N: usize> CurvedManifold for Sphere<N> {  
+    /** Computes the arc length bewtween two points on an N-sphere of radius R. 
+    For two points $\vec{u}$ and $\vec{v}$ on an N-sphere
+    embedded in cartesian space, the arclength between \vec{u} and \vec{v} is given by 
+    ```math
+    d_S(\vec{u},\vec{v}) = R\delta\psi = R\arccos\left(\frac{\vec{u}\cdot\vec{v}}{R^2}\right)
+    ```
+
+    # Example
+    ```
+    use libm::acos;
+    use std::f64::consts::PI;
+    use hoomd_vector::{Cartesian, InnerProduct};
+    use hoomd_manifold::Sphere;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let radius : f64 = 5.0;
+    let x = Sphere::from(Cartesian::from([radius, 0.0, 0.0]));
+    let y = Sphere::from(Cartesian::from([0.0, radius, 0.0]));
+    assert_eq!(radius* PI/2.0, x.sphere_distance(&y));
+    # Ok(())
+    # }
+    ```
+    */
     #[inline]
-    fn geodesic_distance(&self, other: &Self, rho: f64) -> f64 {
-        let arg = Cartesian::dot(self, other) / rho.powi(2);
-        rho * acos(arg)
+    fn geodesic_distance(&self, other: &Self) -> f64 {
+        assert_relative_eq!(self.radius, other.radius, epsilon = 1e-12);
+        let arg = Cartesian::dot(&self.point, &other.point) / self.radius.powi(2);
+        self.radius * acos(arg)
+    }
+    /** Casts a point in (N+1)-dimensional cartesian space to N-dimensional positively-curved space
+    */
+    #[inline]
+    fn to_manifold(point: Vec<f64>) -> Sphere<N> {
+        let cartesian_point = Cartesian::<N>::try_from(point);
+        match cartesian_point {
+            Ok(pt) => Sphere::from(&pt),
+            Err(_e) => panic!("point cannot be embedded onto sphere")
+        }
     }
 }
 
@@ -133,14 +162,14 @@ pub struct SphericalDisk {
     pub radius: f64
 }
 
-impl Distribution<Cartesian<3>> for SphericalDisk {
+impl Distribution<Sphere<3>> for SphericalDisk {
     /** Translates 3-dimensional cartesian vector named "point" along the surface of a sphere by maximum distance of r.
     Note that because SO(3) is non-Abelian, the point must be transformed to the "north pole" before the 
     trial move is applied (and then the point is transformed back). This ensures that the max distance 
     translated by the trial move does not exceed r. 
     */
     #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<3> {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Sphere<3> {
         let radius = self.radius;
         let max_trans = (self.r.get())/radius;
         let point = self.point;
@@ -154,8 +183,12 @@ impl Distribution<Cartesian<3>> for SphericalDisk {
         let trial_coords = [radius * sin(zeni) * cos(azi),
                             radius * sin(zeni) * sin(azi),
                             radius * cos(zeni)];
-        Cartesian::from([trial_coords[0]*cos(theta)*cos(phi) - trial_coords[1]* sin(phi) + trial_coords[2]*sin(theta)*cos(phi),
+        let transformed_point = Cartesian::from([trial_coords[0]*cos(theta)*cos(phi) - trial_coords[1]* sin(phi) + trial_coords[2]*sin(theta)*cos(phi),
                         trial_coords[0]*cos(theta)*sin(phi) + trial_coords[1]* cos(phi) + trial_coords[2]*sin(theta)* sin(phi),
-                        -trial_coords[0]*sin(theta) + trial_coords[2]*cos(theta)])
+                        -trial_coords[0]*sin(theta) + trial_coords[2]*cos(theta)]);
+        let new_sphere = Sphere::from(&transformed_point);
+        assert_relative_eq!(radius, new_sphere.radius, epsilon=1e-12);
+        new_sphere
+        
     }
 }

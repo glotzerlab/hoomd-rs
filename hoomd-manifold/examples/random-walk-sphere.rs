@@ -63,7 +63,8 @@ const RAD_SQ : f64 = 0.1;
 
 /// stereographic projection
 fn stereographic(point: &Cartesian<3>, radius: f64) -> [f64;3] {
-    let proj = point.stereographic_projection(radius);
+    let pt = Sphere::from(point);
+    let proj = pt.stereographic_projection();
     let theta = acos(point.coordinates[2]/radius);
     let v = acos((radius.powi(2) - RAD_SQ)/(radius.powi(2)+RAD_SQ));
     let edge_proj = (RADIUS * sin(theta+v))/(1.0 - cos(theta+v));

@@ -19,9 +19,9 @@ hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 libm = "0.2.11"
 num = "0.4.3"
+approx = "0.5.1"
 
 [dev-dependencies]
-approx.workspace = true
 divan.workspace = true
 paste = "1.0.15"
 rstest.workspace = true

@@ -49,7 +49,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
         point: Cartesian::from([0.01,0.01,-sqrt(RADIUS.powi(2)-2.0*(0.01_f64).powi(2))]),
         radius: RADIUS,}; 
     for _n in 0..PARTICLE_NUMBER {
-        let new_point: Cartesian<3> = sample_disk.sample(&mut rng);
+        let new_point: Cartesian<3> = sample_disk.sample(&mut rng).point;
         microstate.add_body(Body::point(new_point))?;
     }
     
@@ -58,7 +58,10 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
         sigma: 0.5,
     };
 
-    let evaluator = CurvedIsotropic(lj, RADIUS);
+    let evaluator = CurvedIsotropic{
+        isotropic: lj, 
+        manifold: Sphere::from(&Cartesian::from([0.0,0.0,RADIUS])),
+    };
     let cutoff_pair = CutoffPair {
         r_cut: 10.0,
         evaluator,
@@ -90,7 +93,8 @@ const RAD_SQ : f64 = 0.01;
 
 /// stereographic projection
 fn stereographic(point: &Cartesian<3>, radius: f64) -> [f64;3] {
-    let proj = point.stereographic_projection(radius);
+    let pt = Sphere::from(point);
+    let proj = pt.stereographic_projection();
     let theta = acos(point.coordinates[2]/radius);
     let v = acos((radius.powi(2) - RAD_SQ)/(radius.powi(2)+RAD_SQ));
     let edge_proj = (RADIUS * sin(theta+v))/(1.0 - cos(theta+v));

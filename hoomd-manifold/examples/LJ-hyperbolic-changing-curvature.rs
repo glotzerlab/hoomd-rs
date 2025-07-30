@@ -50,7 +50,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
         point: Minkowski::from([0.00001,0.00001,sqrt(2.0*(0.00001_f64).powi(2) + 1.0)]),
         skirt: 1.0,}; 
     for _n in 0..PARTICLE_NUMBER {
-        let new_point: Minkowski<3> = sample_disk.sample(&mut rng);
+        let new_point: Minkowski<3> = sample_disk.sample(&mut rng).point;
         microstate.add_body(Body::point(new_point))?;
     }
     
@@ -66,7 +66,12 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
         if poll(Duration::from_millis(0))? && matches!(event::read()?, Event::Key(_)) {
             break Ok(());
         }
-        let evaluator = CurvedIsotropic(lj, skirt_size(time));
+
+        let evaluator = CurvedIsotropic {
+            isotropic: lj, 
+            manifold: Hyperboloid::from(&Minkowski::from([0.0,0.0,skirt_size(time)])),
+        };
+
         let cutoff_pair = CutoffPair {
             r_cut: 10.0,
             evaluator,
@@ -91,7 +96,8 @@ const RAD_SQ : f64 = 0.01;
 
 /// Project coordinates to Poincare disk 
 fn poincare(point: &Minkowski<3>, skirt: f64) -> [f64;3] {
-    let proj = point.to_poincare(skirt);
+    let pt = Hyperboloid::from(point);
+    let proj = pt.to_poincare();
     let v = acosh((RAD_SQ + skirt.powi(2))/(skirt.powi(2)-RAD_SQ));
     let eta = acosh(point.coordinates[2]/skirt);
     let edge_proj = (skirt * sinh(eta+v))/(1.0 + cosh(eta+v));

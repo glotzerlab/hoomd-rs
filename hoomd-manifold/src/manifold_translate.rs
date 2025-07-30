@@ -7,7 +7,7 @@
 use hoomd_mc::LocalTrial;
 use hoomd_microstate::property::Position;
 use hoomd_utility::valid::PositiveReal;
-use crate::{Minkowski, HyperbolicDisk, SphericalDisk};
+use crate::{Minkowski, Hyperboloid, HyperbolicDisk, Sphere, SphericalDisk};
 use hoomd_vector::{Cartesian, InnerProduct};
 
 use rand::Rng;
@@ -53,7 +53,7 @@ pub struct HyperbolicTranslate {
 impl<B> LocalTrial<B> for HyperbolicTranslate 
 where
     B: Position<Vector = Minkowski<3>>,
-    HyperbolicDisk: Distribution<Minkowski<3>>
+    HyperbolicDisk: Distribution<Hyperboloid<3>>
 {
     /** Propose local trial moves for a body on a hyperbolic surface
 
@@ -94,7 +94,7 @@ where
             point: *trial.position_mut(),
             skirt: self.skirt,
         };
-        *trial.position_mut() = disk.sample(rng);
+        *trial.position_mut() = disk.sample(rng).point;
         let z = (trial.position_mut()[0].powi(2) + trial.position_mut()[1].powi(2) + self.skirt.powi(2)).sqrt();
         trial.position_mut()[2] = z;
         trial
@@ -147,7 +147,7 @@ pub struct SphericalTranslate {
 impl<B> LocalTrial<B> for SphericalTranslate 
 where
     B: Position<Vector = Cartesian<3>>,
-    SphericalDisk: Distribution<Cartesian<3>>
+    SphericalDisk: Distribution<Sphere<3>>
 {
     /** Propose local trial moves for a body on the surface of a sphere
 
@@ -188,7 +188,7 @@ where
             point: *trial.position_mut(),
             radius: self.radius,
         };
-        *trial.position_mut() = disk.sample(rng);
+        *trial.position_mut() = disk.sample(rng).point;
         let rescale = self.radius/trial.position_mut().norm();
         *trial.position_mut() *= rescale;
         trial
