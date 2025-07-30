@@ -253,8 +253,8 @@ impl<const D: usize> CellList<D> {
     pub fn new(cell_width: f64, positions: &[Cartesian<D>], indices: &[usize]) -> Self {
         let mut instance = Self {
             cell_width,
-            particle_indices: HashMap::new(),
-            cell_index: HashMap::new(),
+            particle_indices: HashMap::with_capacity(positions.len()),
+            cell_index: HashMap::with_capacity(indices.len()),
         };
 
         for (position, index) in positions.iter().zip(indices.iter()) {
