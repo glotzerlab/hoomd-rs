@@ -520,71 +520,45 @@ impl<const D: usize> CellList<D> {
     #[inline]
     // TODO: Return an iterator instead of a mutable vector argument.
     // instead of recursion, loop over the number of iterations and use //
-    pub fn find_potential_neighbor_indices(
-        &self,
-        position: &Cartesian<D>,
+    pub fn find_potential_neighbor_indices<'a>(
+        &'a self,
+        particle_index: &usize,
         cutoff_radius: &f64,
-    ) -> Iter {
-        // implement later
-        // This function will find the potential neighbor indices for a given position
-        // and cutoff radius. It will return an iterator over the potential neighbor
-        // indices.
-        unimplemented!("find_potential_neighbor_indices is not yet implemented");
-
-        // old code
-        //  // Plan: use logic similar to collect into
-        //  // return the result in neighbor indices -> probably first clear and then push
-        //  // Check if the neighbor_indices (output argument) goes first or last
-        //  // return potential index only - not actual neighbors.
-        //  let cell_idx = Self::cell_index_from_position(self.cell_width, position);
-        //  // clean neighbor_indices
-        //  potential_neighbor_indices.clear();
-        //  // calculate how many cell widths in ids need to be checked in each dimension,
-        //  // this is a single integer number
-        //  let max_cell_translations_to_check = (cutoff_radius / self.cell_width).ceil() as i32;
-        //  let max_offset = max_cell_translations_to_check;
-
-        //  let mut cells_translations_to_check: Vec<[i32; D]> = Vec::new();
-
-        //  // Define a recursive helper function to generate all translation combinations.
-        //  // For each dimension, it iterates from -max_offset to max_offset.
-        //  // TODO figure out if there is a better way to do this. Is there an itertools
-        //  // like functionality in std library? cartesian product?
-        //  fn generate_translations<const D: usize>(
-        //      dim: usize,
-        //      current: &mut Vec<i32>,
-        //      max_offset: i32,
-        //      translations: &mut Vec<[i32; D]>,
-        //  ) {
-        //      if dim == D {
-        //          // Convert the current vector to an array of length D.
-        //          let arr: [i32; D] = current.clone().try_into().expect("Incorrect length");
-        //          translations.push(arr);
-        //          return;
-        //      }
-        //      for offset in -max_offset..=max_offset {
-        //          current.push(offset);
-        //          generate_translations(dim + 1, current, max_offset, translations);
-        //          current.pop();
-        //      }
-        //  }
-
-        //  let mut current = Vec::new();
-        //  generate_translations::<D>(
-        //      0,
-        //      &mut current,
-        //      max_offset,
-        //      &mut cells_translations_to_check,
-        //  );
-
-        //  // For each cell translation, compute the neighbor cell index and add any particle indices.
-        //  for cell_translation in cells_translations_to_check.iter() {
-        //      let neighbor_cell_idx = std::array::from_fn(|i| cell_idx[i] + cell_translation[i]);
-        //      if let Some(particle_indices) = self.particle_indices.get(&neighbor_cell_idx) {
-        //          potential_neighbor_indices.extend(particle_indices);
-        //      }
-        //  }
+    ) ->  impl Iterator<Item = usize> + 'a {
+        let particle_cell_idx = self.cell_index[particle_index];
+        let n = (cutoff_radius / self.cell_width).ceil() as i32;
+        let mut translations = Vec::new();
+        let mut current = [0;D];
+        // Generate all D‑dimensional offsets in [-n..=n]^D
+        // Define a recursive helper function to generate all translation combinations.
+        // For each dimension, it iterates from -max_offset to max_offset.
+        // TODO figure out if there is a better way to do this. Is there an itertools
+        // like functionality in std library? cartesian product?
+        fn generate_translations<const D: usize>(i: usize, n: i32, current: & mut[i32;D], &mut translations: Vec<[i32; D]>){
+            if i == D {
+                translations.push(*current);
+            } else {
+                for offset in -n..=n{
+                    current[i]= offset;
+                    generate_translations(i+1,n,current,translations);
+                }
+            }
+        }
+        generate_translations(0, n, &mut current, &mut translations);
+        translations.into_iter()
+            .flat_map(move |delta| {
+                // compute neighbor cell coords
+            let mut c = particle_cell_idx;
+            for i in 0..D { c[i] += delta[i]; }
+            // yield occupants or empty vec  
+            self.particle_indices
+                .get(&c)
+                .cloned()
+                .unwrap_or_default()
+                .into_iter()
+        })
     }
+
 }
 
 #[cfg(test)]
@@ -822,7 +796,7 @@ mod tests {
         let cutoff_radius = 10.5;
 
         // Use p0 ([0.2, 0.3] falls in cell [0,0]) as the query position.
-        let it = cell_list.find_potential_neighbor_indices(&p0, &cutoff_radius);
+        let it = cell_list.find_potential_neighbor_indices(0, &cutoff_radius);
 
         // p0's index should appear.
         //assert!(potential_neighbor_indices.contains(&0));
