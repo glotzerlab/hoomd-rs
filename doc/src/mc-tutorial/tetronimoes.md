@@ -48,11 +48,15 @@ Here is the complete code:
 {{#include ../../../examples/mc-tutorial/tetronimoes.rs:local_trial_all}}
 ```
 
+### Enumerate Possible Moves
+
 `DiscreteRotateOrTransLate` implements `LocalTrial` by first enumerating the
 possible moves:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/tetronimoes.rs:local_trial_steps}}
 ```
+
+### Choose and Propose a Move
 
 Then it chooses a random move and mutates the body properties accordingly:
 ```rust,ignore
@@ -96,11 +100,12 @@ Here is the type that `new()` constructs:
 
 ## Advancing the Simulation
 
-To advance the tetronimo simulation forward one step, follow the same procedure
-used in [Applying Interactions]:
+To advance the tetronimo simulation forward one step, follow mostly the same
+procedure used in [Applying Interactions]:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/tetronimoes.rs:impl_simulation}}
 ```
+### Adding New Tetronimoes
 
 The code that adds tetronimoes is more complex than that for disks:
 ```rust,ignore
@@ -119,9 +124,9 @@ will use a different set of random numbers.
 ## Conclusion
 
 This tutorial showed you how to add bodies with multiple sites and how they
-can be both translated and rotated.
+can be translated and rotated by trial moves.
 
-Scroll back to the top of the page and refresh to see the simulation in
+Navigate to the top of the page and refresh to see the simulation in
 action again. Notice how the randomly generated tetronimoes fall to the
 bottom while randomly rotating.
 

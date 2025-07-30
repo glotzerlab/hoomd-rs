@@ -52,6 +52,8 @@ complete function:
 {{#include ../../../examples/mc-tutorial/random-walk.rs:simulation_new}}
 ```
 
+### The new() Function
+
 The first part **implements** the associated function `new()`
 for `RandomWalk`:
 ```rust,ignore
@@ -85,7 +87,7 @@ This code builds a microstate and adds `$N$` points at the origin:
 `try_build()` may fail with an error. The `?` will return an error or unpack a
 valid `Result`. Read more about `?` in [The Rust Programming Language].
 
-### Trial moves
+### Trial Moves
 
 A random walk is defined entirely by the **trial moves** applied to each **body**.
 The `Translate` trial move describes a displacement by a random vector
@@ -135,11 +137,15 @@ Here is the full implementation of `Simulation` for `RandomWalk`:
 {{#include ../../../examples/mc-tutorial/random-walk.rs:impl_simulation}}
 ```
 
+### Apply Translation Moves
+
 The `translate_sweep.apply()` method step applies a translate move to each body
 in the microstate:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/random-walk.rs:apply}}
 ```
+
+### Increment the Step
 
 *hoomd-rs* makes no assumptions about your simulation model. One step in your
 model may involve many types of MC **trial moves**, or a mixture of MD and
@@ -160,7 +166,7 @@ indicate that this step is complete:
 Now you have learned how to create a **microstate** and apply random translation
 **trial moves** to the points in it.
 
-Scroll back to the top of the page and refresh to see the simulation in action
+Navigate to the top of the page and refresh to see the simulation in action
 again. Try pausing the simulation and advancing one step at a time. See if you
 can identify individual local trial moves. Notice that every particle moves
 at least a little bit on every step. You should also notice that the particles

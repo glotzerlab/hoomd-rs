@@ -30,11 +30,15 @@ take discrete steps left, right, down, or up.
 The [Random Walk] tutorial used the *default* **open** boundary condition. This
 tutorial shows how you can create a custom **closed** boundary condition.
 
+### Define the Circle Type
+
 First, you need to define a type that describes the boundary. In this case, the
 boundary is a `Circle` that has a radius:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/custom-random-walk.rs:boundary_struct}}
 ```
+
+### Implement the Boundary Trait
 
 Then, implement the `Boundary` trait for `Circle`. The only required method
 is `is_inside()` which should return `true` for points inside the boundary
@@ -62,6 +66,8 @@ Let's implement that with a custom trial move. Here is the code:
 {{#include ../../../examples/mc-tutorial/custom-random-walk.rs:local_trial_all}}
 ```
 
+### Define the Discrete Type
+
 Similar to the custom boundary, you need to implement the **trait**
 `LocalTrial` for a **type**. Here is the type:
 ```rust,ignore
@@ -69,6 +75,8 @@ Similar to the custom boundary, you need to implement the **trait**
 ```
 Discrete trials always take one step in one direction. In this case, there
 are no parameters and therefore the `Discrete` struct needs no fields.
+
+### Implement the LocalTrial Trait
 
 `LocalTrial` has one method, `propose()`:
 ```rust,ignore
@@ -151,7 +159,7 @@ compiles your customizations into machine code and can inline them into the main
 simulation loop. This means that your custom simulations run *just as fast* as
 they do when using the built-in types.
 
-Scroll back to the top of the page and refresh to see the simulation in action
+Navigate to the top of the page and refresh to see the simulation in action
 again. Notice that no points leave the boundary. Try pausing the simulation and
 advancing one step at a time. You should see that every particle moves left,
 right, down, or up on every step.

@@ -72,7 +72,7 @@ you review the [API documentation] for the types used later in this tutorial:
 reference on **bodies**, **sites**, and all their related traits, read the
 `hoomd-microstate` [API documentation].
 
-In this tutorial, the bodies will be points again. Specifically, that means
+In this tutorial, the bodies will still be points. Specifically, that means
 each **body** has `Point<Cartesian<2>>` for its **body properties** type (`B`),
 and a single **site** at the origin (*in the body reference frame*) which has
 `Point<Cartesian<2>>` for its **site properties** (`S`) type. The constructor
@@ -80,7 +80,7 @@ and a single **site** at the origin (*in the body reference frame*) which has
 bodies.
 
 The next tutorial will demonstrate a case where bodies and sites have different
-properties and show how to create bodies with more than 1 site.
+properties and show how to create bodies with more than one site.
 
 ### External Potential
 
@@ -201,14 +201,15 @@ Attempt one translation trial move for each body in the microstate:
 ```
 
 The previously unused temperature `$ kT $` now has meaning in this simulation
-model. A pair of overlapping disks in this model result results in `$ U = 1000
+model. A pair of overlapping disks in this model results in `$ U = 1000
 kT $`. The probability of accepting a trial move that adds an overlap is `$
 e^{\frac{\Delta E}{kT}} = e^{-1000} $` which is identically `$ 0 $` in `f64`
 arithmetic. Therefore, `translate_sweep.apply()` will never add new overlaps.
 
-However, the unconditional `add_body()` above can place overlapping bodies.
-When a pair of overlapping disks is placed, `translate_sweep.apply()` is free to
-*keep* the overlap after a trial move because `$ \Delta E = 1000 - 1000 = 0 $`.
+However, the unconditional `add_body()` above can place overlapping bodies. When
+a pair of overlapping disks is placed, `translate_sweep.apply()` will accept
+trial moves that *keep the same number of overlaps* because `$ \Delta E = 1000 -
+1000 = 0 $`.
 
 ### Resetting the Simulation
 
@@ -228,7 +229,7 @@ microstate when total pairwise energy exceeds a threshold:
 Now you know how to define interactions in your simulation model via the
 Hamiltonian.
 
-Scroll back to the top of the page and refresh to see the simulation in
+Navigate to the top of the page and refresh to see the simulation in
 action again. Notice how the disks fall to the bottom of the boundary and do
 not overlap, except when newly added. Wait long enough and you will see the
 simulation clear the bodies.

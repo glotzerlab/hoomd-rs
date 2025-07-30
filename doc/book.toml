@@ -18,3 +18,7 @@ inline-delimiter = { left = "`$", right = "$`" }
 git-repository-url = "https://github.com/glotzerlab/hoomd-rs"
 mathjax-support = false
 edit-url-template = "https://github.com/glotzerlab/hoomd-rs/edit/trunk/doc/{path}"
+
+# enable the pagtoc plugin
+additional-css = ["theme/pagetoc.css"]
+additional-js = ["theme/pagetoc.js"]
