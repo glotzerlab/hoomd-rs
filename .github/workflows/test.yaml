@@ -34,8 +34,9 @@ jobs:
           # - macos-14
         rust:
           # Test multiple rust versions on multiple platforms in the debug profile.
-          - 1.86.0
-          - 1.87.0
+          # TODO: Enable after open source release
+          # - 1.86.0
+          # - 1.87.0
           - 1.88.0
         profile:
          - dev
@@ -44,9 +45,10 @@ jobs:
 
         include:
         # Add a release build on linux with the latest version of rust.
-        - os: ubuntu-24.04
-          rust: 1.88.0
-          profile: release
+        # TODO: enable after open source release
+        # - os: ubuntu-24.04
+        #   rust: 1.88.0
+        #   profile: release
 
         # Add a WASM build.
         - os: ubuntu-24.04
