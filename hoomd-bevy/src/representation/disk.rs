@@ -1,7 +1,10 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement Disk.
+/*! An outlined circle.
+
+The [`Disk`] representation is a circle of pixels with a configurable
+outline color and an optional texture map.
 */
 
 use bevy::{
@@ -40,8 +43,8 @@ coordinate of the disks should be set to 0. Choose a different value to control
 the back to front draw order.
 
 All disks of the same type must have the same material. To display disks with
-different colors, outline widths, or textures, `setup` and `sync` multiple types
-of disks with different marker types.
+different colors, outline widths, or textures, call `setup` and `sync` multiple
+types of disks with different marker types.
 
 To use:
 * Add [`setup`](Self::setup) to the `Startup` schedule.
@@ -149,7 +152,7 @@ impl<T: Send + Sync + 'static> Disk<T> {
     }
 }
 
-/// Initialize [`DiskMaterial`] with these settings.
+/// Initialize [`Material`] with these settings.
 pub struct MaterialParameters {
     /// Color applied to the interior of the disk.
     pub background_color: LinearRgba,
@@ -181,28 +184,38 @@ impl Default for MaterialParameters {
 
 /** Control how disks are rendered.
 
-Disks are always opaque. Set the background color appropriately in any textures:
-[`Disk`] ignores alpha. The [`background_color`] field tints the texture by
-multiplication. With a `None` texture (the default), [`background_color`] sets
-the exact color of the disk.
+Disks are always opaque and alpha in any texture or background color is ignored.
+
+By default [`Material`] is initialized with only one background
+color. Color the instances differently by setting more than one color
+with [`set_background_colors`]. The color of each disk is given by
+`background_colors[tag % len(background_colors)]` so you may set fewer colors
+than there are disks. [`sync`] assigns `tag` values in increasing order to each
+primitive.
+
+The `background_color` tints the texture by multiplication. With a `None`
+texture (the default), `background_color` sets the exact color of the disk.
 
 Set the initial material by piping `MaterialParameters` into [`Disk::setup`].
 After it is initialized, change the material during execution via the `material`
 field in`ResMut<disk::Representation<A>>`.
+
+[`sync`]: Disk::sync
+[`set_background_colors`]: Material::set_background_colors
 */
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct Material {
     /// Color applied to the outline.
     #[uniform(0)]
-    pub outline_color: LinearRgba,
+    outline_color: LinearRgba,
 
     /// Width of the outline.
     #[uniform(0)]
-    pub outline_width: f32,
+    outline_width: f32,
 
     /// Factor to scale the texture by.
     #[uniform(0)]
-    pub texture_scale: f32,
+    texture_scale: f32,
 
     /// Number of background colors in fixed size array.
     #[uniform(0)]
@@ -212,7 +225,7 @@ pub struct Material {
     /// Texture to apply. Tinted by `background_color`.
     #[texture(1)]
     #[sampler(2)]
-    pub texture: Option<Handle<Image>>,
+    texture: Option<Handle<Image>>,
 
     /// Color applied to the interior of the disk (indexed by disk % array size).
     #[uniform(3)]
@@ -226,6 +239,16 @@ pub struct Material {
 }
 
 impl Material {
+    /** Set new background colors.
+
+    # Panics
+
+    WebGL2 builds (identified by the `wasm32` target without the `webgpu`
+    feature) support only 1024 background colors.
+
+    Desktop target builds or `wasm32` target builds with `webgpu` support
+    a much larger number of colors and will not panic.
+    */
     pub fn set_background_colors(
         &mut self,
         mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
@@ -249,7 +272,7 @@ impl Material {
                 .get_mut(&self.background_colors)
                 .expect("Disk::setup should have added the storage buffer");
 
-            color_buffer.set_data(&colors);
+            color_buffer.set_data(colors);
         }
     }
 }
