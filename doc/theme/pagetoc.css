@@ -17,7 +17,7 @@
 
 .previous {
     /*
-    adjust the space between the left sidebar or the left side of the screen 
+    adjust the space between the left sidebar or the left side of the screen
     and the button that leads to the previous page
     */
     margin-left: var(--page-padding);
