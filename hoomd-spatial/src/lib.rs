@@ -36,6 +36,7 @@ pub enum ParticleFlag {
 
    ```
    use hoomd_spatial::CellList;
+   use hoomd_spatial::CellListBuilder;
    use hoomd_vector::Cartesian;
    // Create some sample 2D Cartesian positions.
    let positions = vec![
@@ -47,7 +48,7 @@ pub enum ParticleFlag {
    // Define the cell width.
    let cell_width = 2.0;
    // Create a cell list object from the builder
-   let cell_list = CellListBuilder::<2>::new(cell_width).with_positions_and_indices(&positions, &indices).build();
+   let mut cell_list = CellListBuilder::<2>::new(cell_width).with_positions_and_indices(&positions, &indices).build();
    // add another particle to the cell list.
    let new_position = Cartesian { coordinates: [1.2, 1.3] };
    let new_index: usize = 3; // New particle index.
@@ -67,11 +68,10 @@ pub enum ParticleFlag {
    println!("Cell index for particle 2: {:?}", cell_list.cell_index(2));
    // Find potential neighbor indices for particle 2.
    let cutoff_radius = 1.5;
-   let mut potential_neighbor_indices = Vec::new();
-   // TODO change this to use the iterator instead
-   cell_list.find_potential_neighbor_indices(&new_particle_position, &cutoff_radius, &mut potential_neighbor_indices);
+   // Find potential neighbor indices
+   let potential_neighbors = cell_list.find_potential_neighbor_indices(&2, &cutoff_radius).collect::<Vec<_>>();
    // Print the potential neighbor indices.
-   println!("Potential neighbor indices for particle 2: {:?}", potential_neighbor_indices);
+   println!("Potential neighbor indices for particle 2: {:?}", potential_neighbors);
    ```
 */
 pub struct CellList<const D: usize> {
@@ -92,10 +92,11 @@ pub struct CellList<const D: usize> {
 
    ```
    use hoomd_spatial::CellList;
+   use hoomd_spatial::CellListBuilder;
    use hoomd_vector::Cartesian;
 
    // Define the cell width.
-   let cell_width = 2.0
+   let cell_width = 2.0;
    // Create a cell list object from the builder
    let cell_list = CellListBuilder::<2>::new(cell_width).build();
    ```
@@ -103,6 +104,7 @@ pub struct CellList<const D: usize> {
    # Example constructing a `CellList` with particles using the builder API.
    ```
    use hoomd_spatial::CellList;
+   use hoomd_spatial::CellListBuilder;
    use hoomd_vector::Cartesian;
    // Define the cell width.
    let cell_width = 2.0;
@@ -137,11 +139,12 @@ impl<const D: usize> CellListBuilder<D> {
 
     ```
     use hoomd_spatial::CellList;
+    use hoomd_spatial::CellListBuilder;
     use hoomd_vector::Cartesian;
     // Define the cell width.
     let cell_width = 2.0;
     // Create a cell list object from the builder
-    let cell_list = CellListBuilder.new(cell_width).build();
+    let cell_list = CellListBuilder::<2>::new(cell_width).build();
     ```
     */
     #[inline]
@@ -162,6 +165,7 @@ impl<const D: usize> CellListBuilder<D> {
 
     ```
     use hoomd_spatial::CellList;
+    use hoomd_spatial::CellListBuilder;
     use hoomd_vector::Cartesian;
     // Define the cell width.
     let cell_width = 2.0;
@@ -173,7 +177,7 @@ impl<const D: usize> CellListBuilder<D> {
     ];
     let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
     // Build a cell list with particles.
-    let cell_list = CellListBuilder.new(cell_width).with_positions_and_indices(positions, indices).build();
+    let cell_list = CellListBuilder::new(cell_width).with_positions_and_indices(&positions, &indices).build();
     ```
     */
     #[inline]
@@ -194,11 +198,12 @@ impl<const D: usize> CellListBuilder<D> {
 
     ```
     use hoomd_spatial::CellList;
+    use hoomd_spatial::CellListBuilder;
     use hoomd_vector::Cartesian;
     // Define the cell width.
     let cell_width = 2.0;
     // Create a builder object
-    let cell_list_builder = CellListBuilder.new(cell_width);
+    let cell_list_builder = CellListBuilder::<2>::new(cell_width);
     // Create a cell list object from the builder
     let cell_list = cell_list_builder.build();
     ```
@@ -342,7 +347,7 @@ impl<const D: usize> CellList<D> {
 
     // Add a new particle to the cell list.
     let new_position = Cartesian { coordinates: [1.2, 1.3] };
-    cell_list.insert(&new_position, 3);
+    cell_list.insert(&new_position, &3);
     ```
     */
     #[inline]
@@ -428,8 +433,10 @@ impl<const D: usize> CellList<D> {
         Cartesian { coordinates: [8.5, 9.5] },
     ];
     let cell_width = 1.0;
+    let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
     // Build the cell list from positions.
-    let mut cell_list = CellList::<2>::new(cell_width, &positions);
+    let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
+
 
     // Translate the first particle to a new position.
     let new_position = Cartesian { coordinates: [1.2, 1.3] };
@@ -471,10 +478,10 @@ impl<const D: usize> CellList<D> {
     // Remove the first particle from the cell list.
     cell_list.remove(0);
     // Now the cell list has an empty cell associated with cell particle 0 was in.
-    println!("Before shrink_to_fit: {:?}", cell_list.particle_indices.size());
+    //println!("Before shrink_to_fit: {:?}", cell_list.particle_indices.size());
     // Call shrink_to_fit to clean up empty cells and reduce memory usage.
     cell_list.shrink_to_fit();
-    println!("After shrink_to_fit: {:?}", cell_list.particle_indices.size());
+    //println!("After shrink_to_fit: {:?}", cell_list.particle_indices.size());
     ```
      */
     #[inline]
@@ -501,57 +508,61 @@ impl<const D: usize> CellList<D> {
         Cartesian { coordinates: [8.5, 9.5] },
     ];
     let cell_width = 1.0;
+    let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
     // Build the cell list from positions.
-    let cell_list = CellList::<2>::new(cell_width, &positions);
+    let cell_list = CellList::<2>::new(cell_width, &positions, &indices);
 
     // Choose a query position (for example, the first one).
     let query_position = &positions[0];
     // Define a cutoff radius.
     let cutoff_radius = 1.5;
-    // Create a mutable vector to store potential neighbor indices.
-    let mut potential_neighbor_indices = Vec::new();
 
     // Call the function to find potential neighbor indices.
-    cell_list.find_potential_neighbor_indices(query_position, &cutoff_radius, &mut potential_neighbor_indices);
+    let potential_neighbor_indices = cell_list.find_potential_neighbor_indices(&0, &cutoff_radius).collect::<Vec<_>>();
 
     // Print the resulting neighbor indices.
     println!("Potential neighbor indices: {:?}", potential_neighbor_indices);
     ```
      */
     #[inline]
-    // TODO: Return an iterator instead of a mutable vector argument.
-    // instead of recursion, loop over the number of iterations and use //
+    // TODO: instead of recursion, loop over the number of iterations and use //
     pub fn find_potential_neighbor_indices<'a>(
         &'a self,
         particle_index: &usize,
         cutoff_radius: &f64,
-    ) ->  impl Iterator<Item = usize> + 'a {
-        let particle_cell_idx = self.cell_index[particle_index];
-        let n = (cutoff_radius / self.cell_width).ceil() as i32;
-        let mut translations = Vec::new();
-        let mut current = [0;D];
+    ) -> impl Iterator<Item = usize> + 'a {
         // Generate all D‑dimensional offsets in [-n..=n]^D
         // Define a recursive helper function to generate all translation combinations.
         // For each dimension, it iterates from -max_offset to max_offset.
         // TODO figure out if there is a better way to do this. Is there an itertools
         // like functionality in std library? cartesian product?
-        fn generate_translations<const D: usize>(i: usize, n: i32, current: & mut[i32;D], &mut translations: Vec<[i32; D]>){
+        fn generate_translations<const D: usize>(
+            i: usize,
+            n: i32,
+            current: &mut [i32; D],
+            translations: &mut Vec<[i32; D]>,
+        ) {
             if i == D {
                 translations.push(*current);
             } else {
-                for offset in -n..=n{
-                    current[i]= offset;
-                    generate_translations(i+1,n,current,translations);
+                for offset in -n..=n {
+                    current[i] = offset;
+                    generate_translations(i + 1, n, current, translations);
                 }
             }
         }
+        let particle_cell_idx = self.cell_index[particle_index];
+        let n = (cutoff_radius / self.cell_width).ceil() as i32;
+        let mut translations = Vec::new();
+        let mut current = [0; D];
         generate_translations(0, n, &mut current, &mut translations);
-        translations.into_iter()
-            .flat_map(move |delta| {
-                // compute neighbor cell coords
+        translations.into_iter().flat_map(move |delta| {
+            // compute neighbor cell coords
             let mut c = particle_cell_idx;
-            for i in 0..D { c[i] += delta[i]; }
-            // yield occupants or empty vec  
+            for i in 0..D {
+                c[i] += delta[i];
+            }
+            // yield occupants or empty vec
             self.particle_indices
                 .get(&c)
                 .cloned()
@@ -559,7 +570,6 @@ impl<const D: usize> CellList<D> {
                 .into_iter()
         })
     }
-
 }
 
 #[cfg(test)]
@@ -797,12 +807,14 @@ mod tests {
         let cutoff_radius = 10.5;
 
         // Use p0 ([0.2, 0.3] falls in cell [0,0]) as the query position.
-        let it = cell_list.find_potential_neighbor_indices(0, &cutoff_radius);
+        let potential_neighbor_indices = cell_list
+            .find_potential_neighbor_indices(&0, &cutoff_radius)
+            .collect::<Vec<_>>();
 
         // p0's index should appear.
-        //assert!(potential_neighbor_indices.contains(&0));
-        //assert!(potential_neighbor_indices.contains(&1));
-        //assert!(potential_neighbor_indices.contains(&2));
-        //assert!(potential_neighbor_indices.contains(&3));
+        assert!(potential_neighbor_indices.contains(&0));
+        assert!(potential_neighbor_indices.contains(&1));
+        assert!(potential_neighbor_indices.contains(&2));
+        assert!(potential_neighbor_indices.contains(&3));
     }
 }
