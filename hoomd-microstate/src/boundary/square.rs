@@ -43,8 +43,8 @@ impl<B, S> Boundary<Cartesian<2>, B, S> for Square {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Body, Transform, boundary::Error};
     use crate::property::Point;
+    use crate::{Body, Transform, boundary::Error};
 
     use rstest::*;
 
@@ -61,13 +61,28 @@ mod tests {
         };
         let v = v.into();
 
-        assert!(<Square as Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>>>::is_inside(&square, &v));
+        assert!(<Square as Boundary<
+            Cartesian<2>,
+            Point<Cartesian<2>>,
+            Point<Cartesian<2>>,
+        >>::is_inside(&square, &v));
 
         let body = Body::point(v);
-        assert_eq!(<Square as Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>>>::wrap_body(&square, body.properties), Ok(body.properties));
+        assert_eq!(
+            <Square as Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>>>::wrap_body(
+                &square,
+                body.properties
+            ),
+            Ok(body.properties)
+        );
 
         let site = body.properties.transform(&body.sites[0]);
-        assert_eq!(<Square as Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>>>::wrap_site(&square, site), Ok(site));
+        assert_eq!(
+            <Square as Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>>>::wrap_site(
+                &square, site
+            ),
+            Ok(site)
+        );
     }
 
     #[rstest]
@@ -82,15 +97,27 @@ mod tests {
         };
         let v = v.into();
 
-        assert!(!<Square as Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>>>::is_inside(&square, &v));
+        assert!(!<Square as Boundary<
+            Cartesian<2>,
+            Point<Cartesian<2>>,
+            Point<Cartesian<2>>,
+        >>::is_inside(&square, &v));
 
         let body = Body::point(v);
         assert_eq!(
-            <Square as Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>>>::wrap_body(&square, body.properties),
+            <Square as Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>>>::wrap_body(
+                &square,
+                body.properties
+            ),
             Err(Error::CannotWrapBodyProperties)
         );
 
         let site = body.properties.transform(&body.sites[0]);
-        assert_eq!(<Square as Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>>>::wrap_site(&square, site), Err(Error::CannotWrapSiteProperties));
+        assert_eq!(
+            <Square as Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>>>::wrap_site(
+                &square, site
+            ),
+            Err(Error::CannotWrapSiteProperties)
+        );
     }
 }

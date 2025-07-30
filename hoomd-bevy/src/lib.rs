@@ -46,6 +46,7 @@ See any one of the many *hoomd-rs* examples that use [`HoomdBevyPlugin`].
 # Feature flags
 
 * `doc-example` Make examples suitable for display in a web browser.
+* `webgpu` Compile for the WebGPU platform when building for the wasm32 target.
 */
 
 use anyhow::Context;

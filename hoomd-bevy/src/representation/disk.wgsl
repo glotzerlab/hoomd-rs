@@ -3,16 +3,26 @@
     mesh2d_view_bindings::view,
 }
 
+// webgl2 does not support storage buffers. Use a uniform buffer of fixed size instead.
+
 struct DiskMaterial {
     outline_color: vec4<f32>,
     outline_width: f32,
     texture_scale: f32,
+    #ifdef WEBGL2
+    n_background_colors: u32,
+    #endif
 }
 
 @group(2) @binding(0) var<uniform> disk_material: DiskMaterial;
 @group(2) @binding(1) var image_color_texture: texture_2d<f32>;
 @group(2) @binding(2) var image_color_sampler: sampler;
+#ifdef WEBGL2
+@group(2) @binding(3) var<uniform> background_colors: array<vec4<f32>, 1024>;
+
+#else
 @group(2) @binding(3) var<storage, read> background_colors: array<vec4<f32>>;
+#endif
 
 // Modify the mesh2d vertex shader to look up a per instance background color.
 
@@ -63,7 +73,12 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 #endif
 
     let tag = mesh_functions::get_tag(vertex.instance_index);
-    out.background_color = background_colors[tag % arrayLength(&background_colors)];
+    #ifdef WEBGL2
+    let n_background_colors = disk_material.n_background_colors;
+    #else
+    let n_background_colors = arrayLength(&background_colors);
+    #endif
+    out.background_color = background_colors[tag % n_background_colors];
     return out;
 }
 

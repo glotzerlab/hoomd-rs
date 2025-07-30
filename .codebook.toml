@@ -27,6 +27,8 @@ words = [
     "tetronimo",
     "tetronimoes",
     "versor",
+    "webgl",
+    "webgpu",
     "winit",
     "wsl",
     "xenocollide",

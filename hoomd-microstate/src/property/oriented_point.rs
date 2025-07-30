@@ -3,7 +3,7 @@
 
 /*! Implement Point */
 
-use super::{Point, Orientation, Position};
+use super::{Orientation, Point, Position};
 use crate::Transform;
 use hoomd_vector::{Rotate, Vector};
 

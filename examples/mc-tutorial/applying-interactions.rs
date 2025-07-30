@@ -13,8 +13,8 @@ use hoomd_vector::Cartesian;
 
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, Settings, Simulation,
-    representation::disk::{self, Disk},
     representation::RectangularBoundary,
+    representation::disk::{self, Disk},
 };
 
 use anyhow::Context;

@@ -1,10 +1,10 @@
 # Tetronimoes
 
-<!-- <script type="module"> -->
-<!-- import init from './tetronimoes.js' -->
-<!-- {{#include ../../scripts/init-wasm-canvas.js}} -->
-<!-- </script> -->
-<!-- {{#include ../../scripts/canvas.html}} -->
+<script type="module">
+import init from './tetronimoes.js'
+{{#include ../../scripts/init-wasm-canvas.js}}
+</script>
+{{#include ../../scripts/canvas.html}}
 
 ## Overview
 
@@ -27,16 +27,16 @@ and you get something very interesting.
 
 ## Type Aliases
 
-Create type aliases for our model's *vector*, *body properties*, and *site
-properties* types so that you don't need to repeat the full nested generic types
-throughout the code:
+Create type aliases for your model's *vector*, *body properties*, and *site
+properties* types so that you don't need to repeat the full nested generic type
+names throughout the code:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/tetronimoes.rs:type_aliases}}
 ```
 The `OrientedPoint` type gives the tetronimo bodies in this tutorial both a
 position in space and an orientation that rotates about the origin of the body.
 These tetronimoes have disks at each site and therefore only need `Point`
-properties.
+site properties.
 
 ## Custom Trial Move
 
@@ -64,12 +64,12 @@ moves because the result is more visually interesting.
 
 ## The Simulation Model
 
-Construct the simulation model as in the [Applying Interactions] tutorial:
+Construct the simulation model as in the [Applying Interactions] tutorial
+with a few differences:
 
 ```rust,ignore
-{{#include ../../../examples/mc-tutorial/tetronimoes.rs:simulation_struct}}
+{{#include ../../../examples/mc-tutorial/tetronimoes.rs:simulation_new}}
 ```
-but with a few differences.
 
 ### Trial Moves
 

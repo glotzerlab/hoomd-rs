@@ -8,9 +8,18 @@ use bevy::{
     asset::embedded_asset,
     prelude::*,
     reflect::TypePath,
-    render::{mesh::MeshTag, storage::ShaderStorageBuffer, render_resource::{AsBindGroup, ShaderRef}},
+    render::{
+        mesh::MeshTag,
+        render_resource::{AsBindGroup, ShaderRef},
+        storage::ShaderStorageBuffer,
+    },
     sprite::{AlphaMode2d, Material2d, Material2dPlugin},
 };
+#[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
+use bevy::{
+    render::{mesh::MeshVertexBufferLayoutRef, render_resource::{RenderPipelineDescriptor, SpecializedMeshPipelineError}},
+    sprite::Material2dKey,
+    };
 use itertools::EitherOrBoth::{Both, Left, Right};
 use itertools::Itertools;
 use std::marker::PhantomData;
@@ -55,7 +64,7 @@ pub struct Representation<T> {
 impl<T> Representation<T> {
     /// Get the material
     #[must_use]
-    pub fn material(&self) -> &Handle<Material>{
+    pub fn material(&self) -> &Handle<Material> {
         &self.material
     }
 }
@@ -72,23 +81,31 @@ impl<T: Send + Sync + 'static> Disk<T> {
     pub fn setup(
         material: In<MaterialParameters>,
         mut commands: Commands,
+        #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
         mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
         mut meshes: ResMut<Assets<Mesh>>,
         mut materials: ResMut<Assets<Material>>,
         asset_server: Res<AssetServer>,
     ) {
-        let background_colors = buffers.add(ShaderStorageBuffer::from([material.0.background_color]));
-        
+        #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
+        let background_colors = [material.0.background_color; 1024];
+                
+        #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
+        let background_colors =
+            buffers.add(ShaderStorageBuffer::from([material.0.background_color]));
+
         let mesh = meshes.add(Rectangle::new(1.0, 1.0));
         let material = Material {
             background_colors,
+            #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
+            n_background_colors: 1,
             outline_color: material.0.outline_color,
             outline_width: material.0.outline_width,
             texture_scale: material.0.texture_scale,
             texture: material.0.texture_asset.map(|t| asset_server.load(t)),
         };
-        let material = materials.add(material);          
-            
+        let material = materials.add(material);
+
         commands.insert_resource(Representation::<T> {
             mesh,
             material,
@@ -148,7 +165,7 @@ pub struct MaterialParameters {
 
 impl Default for MaterialParameters {
     fn default() -> Self {
-         Self {
+        Self {
             background_color: PRIMARY_COLOR.into(),
             outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
             outline_width: 0.05,
@@ -183,15 +200,55 @@ pub struct Material {
     #[uniform(0)]
     pub texture_scale: f32,
 
+    /// Number of background colors in fixed size array.
+    #[uniform(0)]
+    #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
+    n_background_colors: u32,
+
     /// Texture to apply. Tinted by `background_color`.
     #[texture(1)]
     #[sampler(2)]
     pub texture: Option<Handle<Image>>,
 
     /// Color applied to the interior of the disk (indexed by disk % array size).
+    #[uniform(3)]
+    #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
+    background_colors: [LinearRgba; 1024],
+       
+    /// Color applied to the interior of the disk (indexed by disk % array size).
+    #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
     #[storage(3, read_only)]
-    pub background_colors: Handle<ShaderStorageBuffer>,
+    background_colors: Handle<ShaderStorageBuffer>,
 }
+
+impl Material {
+
+pub fn set_background_colors(
+    &mut self,
+    mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
+    colors: &Vec<LinearRgba>,
+) {
+    #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
+    {
+    if colors.len() > 1024 {
+        panic!("webgl2 builds support up to 1024 colors, got {}", colors.len());
+    }
+    self.background_colors[..colors.len()].copy_from_slice(&colors);
+    self.n_background_colors = colors.len() as u32;
+    }
+    
+    #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
+    {
+    let color_buffer = buffers
+        .get_mut(&self.background_colors)
+        .expect("Disk::setup should have added the storage buffer");
+
+    color_buffer.set_data(&colors);
+    }
+}
+}
+
+    
 
 impl Material2d for Material {
     fn fragment_shader() -> ShaderRef {
@@ -204,5 +261,17 @@ impl Material2d for Material {
 
     fn alpha_mode(&self) -> AlphaMode2d {
         AlphaMode2d::Mask(0.5)
+    }
+
+    #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
+    fn specialize(
+    descriptor: &mut RenderPipelineDescriptor,
+    _layout: &MeshVertexBufferLayoutRef,
+    _key: Material2dKey<Self>,
+    ) -> Result<(), SpecializedMeshPipelineError> {
+
+    descriptor.vertex.shader_defs.push("WEBGL2".into());
+    
+    Ok(())
     }
 }

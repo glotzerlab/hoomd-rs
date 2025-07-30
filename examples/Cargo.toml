@@ -19,6 +19,7 @@ print_stdout = "allow"
 
 [features]
 bevy = ["dep:bevy", "dep:hoomd-bevy"]
+webgpu = ["hoomd-bevy/webgpu"]
 doc-example = ["bevy", "hoomd-bevy/doc-example"]
 
 [dependencies]
@@ -76,5 +77,5 @@ name = "tetronimoes"
 path = "mc-tutorial/tetronimoes.rs"
 required-features = ["bevy"]
 
-[package.metadata.example.tetronimos]
+[package.metadata.example.tetronimoes]
 path = "mc-tutorial"

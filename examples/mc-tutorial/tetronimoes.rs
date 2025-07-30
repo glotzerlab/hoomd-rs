@@ -9,15 +9,17 @@ use hoomd_interaction::{
 };
 use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder, boundary::Square, property::{OrientedPoint, Point},
+    Body, Microstate, MicrostateBuilder,
+    boundary::Square,
+    property::{OrientedPoint, Point},
 };
 use hoomd_vector::{Angle, Cartesian};
 // ANCHOR_END: use
 
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, Settings, Simulation,
-    representation::disk::{self, Disk},
     representation::RectangularBoundary,
+    representation::disk::{self, Disk},
 };
 
 use anyhow::Context;
@@ -48,7 +50,7 @@ impl LocalTrial<BodyProperties> for DiscreteRotateOrTranslate {
             [-1.0, 0.0].into(),
             [1.0, 0.0].into(),
         ];
-        let rotate_steps = [-PI/2.0, PI/2.0];
+        let rotate_steps = [-PI / 2.0, PI / 2.0];
         // ANCHOR_END: local_trial_steps
 
         // ANCHOR: local_trial_mut
@@ -78,7 +80,11 @@ impl Tetronimoes {
         let epsilon = 1000.0;
         let sigma = 1.0;
 
-        let microstate = MicrostateBuilder::<BodyProperties, SiteProperties, Square>::with_boundary(Square {
+        let microstate = MicrostateBuilder::<
+            BodyProperties,
+            SiteProperties,
+            Square,
+        >::with_boundary(Square {
             l: box_height.try_into()?,
         })
         .try_build()?;
@@ -105,35 +111,45 @@ impl Tetronimoes {
         // ANCHOR: trial_moves
         let sweep = Sweep(DiscreteRotateOrTranslate);
         // ANCHOR_END: trial_moves
-        
+
         // ANCHOR: template_sites
         let template_sites = vec![
             // square
-            vec![Point::new([-0.5, -0.5].into()),
-                 Point::new([0.5, -0.5].into()),
-                 Point::new([0.5, 0.5].into()),
-                 Point::new([-0.5, 0.5].into())],
+            vec![
+                Point::new([-0.5, -0.5].into()),
+                Point::new([0.5, -0.5].into()),
+                Point::new([0.5, 0.5].into()),
+                Point::new([-0.5, 0.5].into()),
+            ],
             // line
-            vec![Point::new([-1.5, 0.5].into()),
-                 Point::new([-0.5, 0.5].into()),
-                 Point::new([0.5, 0.5].into()),
-                 Point::new([1.5, 0.5].into())],
+            vec![
+                Point::new([-1.5, 0.5].into()),
+                Point::new([-0.5, 0.5].into()),
+                Point::new([0.5, 0.5].into()),
+                Point::new([1.5, 0.5].into()),
+            ],
             // T
-            vec![Point::new([-1.5, -0.5].into()),
-                 Point::new([-0.5, -0.5].into()),
-                 Point::new([0.5, -0.5].into()),
-                 Point::new([-0.5, 0.5].into())],
+            vec![
+                Point::new([-1.5, -0.5].into()),
+                Point::new([-0.5, -0.5].into()),
+                Point::new([0.5, -0.5].into()),
+                Point::new([-0.5, 0.5].into()),
+            ],
             // L1
-            vec![Point::new([-1.5, -0.5].into()),
-                 Point::new([-0.5, -0.5].into()),
-                 Point::new([0.5, -0.5].into()),
-                 Point::new([0.5, 0.5].into())],
+            vec![
+                Point::new([-1.5, -0.5].into()),
+                Point::new([-0.5, -0.5].into()),
+                Point::new([0.5, -0.5].into()),
+                Point::new([0.5, 0.5].into()),
+            ],
             // L2
-            vec![Point::new([-1.5, 0.5].into()),
-                 Point::new([-0.5, 0.5].into()),
-                 Point::new([0.5, 0.5].into()),
-                 Point::new([0.5, -0.5].into())],
-            ];
+            vec![
+                Point::new([-1.5, 0.5].into()),
+                Point::new([-0.5, 0.5].into()),
+                Point::new([0.5, 0.5].into()),
+                Point::new([0.5, -0.5].into()),
+            ],
+        ];
         // ANCHOR_END: template_sites
 
         Ok(Tetronimoes {
@@ -160,7 +176,6 @@ struct Tetronimoes {
     kt: f64,
     /// Tetronimo shapes.
     template_sites: Vec<Vec<Point<MyVector>>>,
-    
 }
 // ANCHOR_END: simulation_struct
 
@@ -171,25 +186,25 @@ impl Simulation for Tetronimoes {
         // ANCHOR: add
         if self.microstate.step() % 100 == 0 {
             let mut rng = self.microstate.counter().make_rng();
-            let sites = self.template_sites.choose(&mut rng)
+            let sites = self
+                .template_sites
+                .choose(&mut rng)
                 .expect("template_sites should have at least 1 element")
                 .clone();
-                
+
             let properties = OrientedPoint {
-                position: [0.0, self.microstate.boundary().l.get() / 2.0 - 2.0].into(),
+                position: [0.0, self.microstate.boundary().l.get() / 2.0 - 2.0]
+                    .into(),
                 orientation: Angle::from(0.0),
             };
-            
+
             self.microstate.add_body(Body { sites, properties })?;
             self.microstate.increment_substep();
         }
         // ANCHOR_END: add
 
-        self.sweep.apply(
-            &mut self.microstate,
-            &self.hamiltonian,
-            &self.kt,
-        );
+        self.sweep
+            .apply(&mut self.microstate, &self.hamiltonian, &self.kt);
         self.microstate.increment_step();
 
         if self.hamiltonian.1.total_energy(&self.microstate) > 20_000.0 {
@@ -210,7 +225,8 @@ impl Simulation for Tetronimoes {
 struct A;
 
 fn main() -> anyhow::Result<()> {
-    let simulation = Tetronimoes::new().context("failed to setup simulation")?;
+    let simulation =
+        Tetronimoes::new().context("failed to setup simulation")?;
     let l = simulation.microstate.boundary().l.get() as f32;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
         initial_settings: Settings {
@@ -226,7 +242,11 @@ fn main() -> anyhow::Result<()> {
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(
         Startup,
-        ((|| disk::MaterialParameters::default()).pipe(Disk::<A>::setup), setup_colors).chain(),
+        (
+            (|| disk::MaterialParameters::default()).pipe(Disk::<A>::setup),
+            setup_colors,
+        )
+            .chain(),
     );
     app.add_systems(
         Startup,
@@ -253,16 +273,18 @@ fn main() -> anyhow::Result<()> {
 fn setup_colors(
     disk_representation: ResMut<disk::Representation<A>>,
     mut materials: ResMut<Assets<disk::Material>>,
-    mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
+    buffers: ResMut<Assets<ShaderStorageBuffer>>,
 ) {
-    let material = materials.get_mut(disk_representation.material()).expect("Disk::setup should have added the material");
+    let material = materials
+        .get_mut(disk_representation.material())
+        .expect("Disk::setup should have added the material");
 
-    let color_buffer = buffers.get_mut(&material.background_colors).expect("Disk::setup should have added the storage buffer");
-
-    let color_wheel = (0..360*4).step_by(39).map(|i| Color::oklch(0.75, 0.1246, (i % 360) as f32));
+    let color_wheel = (0..360 * 4)
+        .step_by(39)
+        .map(|i| Color::oklch(0.75, 0.1246, (i % 360) as f32));
     let linear_color_wheel = color_wheel.map(LinearRgba::from);
     let duplicate = linear_color_wheel.flat_map(|v| iter::repeat_n(v, 4));
-    color_buffer.set_data(duplicate.collect::<Vec<_>>());
+    material.set_background_colors(buffers, &duplicate.collect());
 }
 
 /// Copy the current positions of simulation particles to bevy entities.

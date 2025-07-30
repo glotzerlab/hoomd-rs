@@ -15,6 +15,7 @@ workspace = true
 
 [features]
 doc-example = []
+webgpu = ["bevy/webgpu"]
 
 [dependencies]
 anyhow.workspace = true
