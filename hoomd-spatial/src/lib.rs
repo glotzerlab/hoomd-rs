@@ -222,6 +222,7 @@ impl<const D: usize> CellList<D> {
     /** A helper function which converts given positions to cell indices.
     // To generalize this we will have to make it a Trait function
      */
+    #[expect(clippy::cast_possible_truncation, reason = "Intentional truncation.")]
     #[inline]
     fn cell_index_from_position(cell_width: f64, position: &Cartesian<D>) -> [i32; D] {
         std::array::from_fn(|j| (position.coordinates[j] / cell_width).floor() as i32) // TODO: instead We can have tryinto() here with expect. would need to test performance.
