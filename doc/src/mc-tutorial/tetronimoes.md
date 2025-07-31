@@ -8,7 +8,7 @@ import init from './tetronimoes.js'
 
 ## Overview
 
-There are many ways you can make **anisotropic bodies** in *hoomd-rs*.
+There are many ways you can model **anisotropic bodies** in *hoomd-rs*.
 This tutorial shows you how to place multiple **sites** in **bodies** that
 can translate *and rotate*. It uses the same *site-site* and *site-field*
 interactions as the [Applying Interactions] tutorial and the lattice moves of
