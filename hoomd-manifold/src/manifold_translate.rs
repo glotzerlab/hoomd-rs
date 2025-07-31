@@ -61,7 +61,7 @@ where
     ```
     use hoomd_mc::{LocalTrial, Translate};
     use hoomd_microstate::property::{Point, Position};
-    use hoomd_manifold::{Minkowski, Hyperboloid, HyperbolicTranslate};
+    use hoomd_manifold::{CurvedManifold, Minkowski, Hyperboloid, HyperbolicTranslate};
     use hoomd_vector::Vector;
     use libm::sqrt;
     use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -81,7 +81,8 @@ where
     assert_relative_eq!(new_body_properties.position().distance_squared(&Minkowski::from([0.0,0.0,0.0])), -1.0* rho.powi(2), epsilon = 1e-12);
 
     // Translation move does not move the point more than a distance d
-    assert!(d > new_body_properties.position().hyperbolic_distance(&Minkowski::from([1.0, -1.0, sqrt(2.0 + rho.powi(2))]), rho));
+    assert!(d > Hyperboloid::from(&new_body_properties.position())
+            .geodesic_distance(&Hyperboloid::from(&Minkowski::from([1.0, -1.0, sqrt(2.0 + rho.powi(2))]))));
     # Ok(())
     # }
     ```
@@ -155,7 +156,7 @@ where
     ```
     use hoomd_mc::{LocalTrial, Translate};
     use hoomd_microstate::property::{Point, Position};
-    use hoomd_manifold::{Sphere, SphericalTranslate, SphericalDisk};
+    use hoomd_manifold::{CurvedManifold, Sphere, SphericalTranslate, SphericalDisk};
     use hoomd_vector::{Vector, Cartesian};
     use libm::sqrt;
     use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -175,7 +176,8 @@ where
     assert_relative_eq!(new_body_properties.position().distance_squared(&Cartesian::from([0.0,0.0,0.0])), radius.powi(2), epsilon=1e-12);
 
     // Translation move does not translate the point more than a distance d away
-    assert!(d > new_body_properties.position().sphere_distance(&Cartesian::from([2.0_f64.sqrt(), 2.0_f64.sqrt(), 0.0]), radius));
+    assert!(d > Sphere::from(&new_body_properties.position())
+            .geodesic_distance(&Sphere::from(&Cartesian::from([2.0_f64.sqrt(), 2.0_f64.sqrt(), 0.0]))));
     # Ok(())
     # }
     ```

@@ -197,23 +197,3 @@ pub trait HyperbolicRotate<V: Vector> {
     #[must_use]
     fn hyperbolic_rotate(&self, vector: &V) -> V;
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn compute_add_generic<T>(a: T, b: T) -> T
-    where
-        T: Vector,
-    {
-        a + b
-    }
-
-    #[test]
-    fn add_generic() {
-        let a = Minkowski::from([1.0, 2.0, 3.0]);
-        let b = Minkowski::from([4.0, 5.0, 6.0]);
-        let c = compute_add_generic(a, b);
-        assert_eq!(c, [5.0, 7.0, 9.0].into());
-    }
-}

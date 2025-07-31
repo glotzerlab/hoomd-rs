@@ -275,6 +275,7 @@ impl<const N: usize> Vector for Cartesian<N> {
         zip(self.coordinates.iter(), other.coordinates.iter())
             .fold(0.0, |product, x| product + (x.0 - x.1).powi(2))
     }
+    /// Recast Cartesian vector as Vec
     #[inline]
     fn to_vec(&self) -> Vec<f64> {
         Vec::from(self.coordinates)

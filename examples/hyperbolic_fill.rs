@@ -6,7 +6,7 @@ use rand::distr::Distribution;
 use hoomd_mc::{Sweep, Translate, Trial};
 use rand::{rngs::StdRng, SeedableRng};
 use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Open, property::Point};
-use hoomd_manifold::{Minkowski, HyperbolicTranslate, Hyperboloid, CurvedIsotropic, HyperbolicDisk};
+use hoomd_manifold::{CurvedManifold, Minkowski, HyperbolicTranslate, Hyperboloid, CurvedIsotropic, HyperbolicDisk};
 use hoomd_vector::Cartesian;
 use hoomd_interaction::{
     CutoffPair, pairwise::LennardJones};
@@ -17,7 +17,7 @@ use bevy::prelude::*;
 /// Mark the disk representation type.
 struct A;
 const RHO: f64 = 1.0; 
-const PARTICLE_NUMBER : usize = 300;
+const PARTICLE_NUMBER : usize = 100;
 const DIAMETER : f64 = 0.7; //in hyperboloid metric
 
 fn main() -> anyhow::Result<()> {
@@ -52,7 +52,7 @@ struct Fill {
     /// Positions of all the bodies in the simulation.
     microstate: Microstate<Point<Minkowski<3>>, Point<Minkowski<3>>>,
     /// How sites interact with other sites and fields.
-    hamiltonian: CutoffPair<CurvedIsotropic<LennardJones>>,
+    hamiltonian: CutoffPair<CurvedIsotropic<LennardJones, Hyperboloid<3>>>,
     /// Trial moves to apply.
     translate_sweep: Sweep<HyperbolicTranslate>,
     /// Temperature set point.
@@ -76,7 +76,7 @@ impl Fill {
         point: Minkowski::from([0.00001,0.00001,f64::sqrt(2.0*(0.00001_f64).powi(2) + RHO.powi(2))]),
         skirt: RHO,}; 
     for _n in 0..PARTICLE_NUMBER {
-        let new_point: Minkowski<3> = sample_disk.sample(&mut rng);
+        let new_point: Minkowski<3> = sample_disk.sample(&mut rng).point;
         microstate.add_body(Body::point(new_point))?;
     }
     
@@ -85,7 +85,10 @@ impl Fill {
         sigma: 0.5,
     };
 
-    let evaluator = CurvedIsotropic(lj, RHO);
+    let evaluator = CurvedIsotropic {
+        isotropic: lj, 
+        manifold: Hyperboloid::from(&Minkowski::from([0.0,0.0,RHO])),
+    };
     let cutoff_pair = CutoffPair {
         r_cut: 10.0,
         evaluator,

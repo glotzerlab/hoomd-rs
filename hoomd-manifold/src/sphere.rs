@@ -50,6 +50,28 @@ impl<const N: usize> Sphere<N> {
             radius: radius,
         }
     }
+    /** Create a 2-sphere from spherical coordinates 
+    */
+    pub fn from_2_angles(r: f64, theta: f64, phi: f64) -> Sphere<3> {
+        let theta_mod = theta.rem_euclid(PI);
+        let phi_mod = phi.rem_euclid(2.0*PI);
+        let point = Cartesian::from([r*(theta_mod.sin())*(phi_mod.cos()),
+                                     r*(theta_mod.sin())*(phi_mod.sin()),
+                                     r*(theta_mod.cos())]);
+        Sphere::from(&point)
+    }
+    /** Create a 3-sphere from spherical coordinates 
+    */
+    pub fn from_3_angles(r: f64, theta: f64, phi_1: f64, phi_2: f64) -> Sphere<4> {
+        let theta_mod = theta.rem_euclid(PI);
+        let phi_1_mod = phi_1.rem_euclid(PI);
+        let phi_2_mod = phi_2.rem_euclid(2.0*PI);
+        let point = Cartesian::from([r*(theta_mod.sin())*(phi_1_mod.cos()),
+                                     r*(theta_mod.sin())*(phi_1_mod.sin())*(phi_2_mod.cos()),
+                                     r*(theta_mod.sin())*(phi_1_mod.sin())*(phi_2_mod.sin()),
+                                     r*(theta_mod.cos())]);
+        Sphere::from(&point)
+    }
     /** Implements a stereographic projection from the N-sphere to an N-dimensional plane. 
 
     # Example
@@ -60,7 +82,7 @@ impl<const N: usize> Sphere<N> {
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let radius = 1.0;
     let x = Cartesian::from([0.5_f64.sqrt(), 0.0, -(0.5_f64.sqrt())]);
-    let projection = x.stereographic_projection(radius);
+    let projection = Sphere::from(&x).stereographic_projection();
     assert_eq!([1.0/(2.0_f64.sqrt()+ 1.0), 0.0] ,[projection[0],projection[1]]);
     # Ok(())
     # }
@@ -73,7 +95,7 @@ impl<const N: usize> Sphere<N> {
     }
 }
 
-/** [`CurvedManifold`] for [`Sphere`]
+/** [`CurvedManifold`] for [`Sphere`] computes the geodesic distance between two points on the surface of the sphere. 
 */
 impl<const N: usize> CurvedManifold for Sphere<N> {  
     /** Computes the arc length bewtween two points on an N-sphere of radius R. 
@@ -88,13 +110,13 @@ impl<const N: usize> CurvedManifold for Sphere<N> {
     use libm::acos;
     use std::f64::consts::PI;
     use hoomd_vector::{Cartesian, InnerProduct};
-    use hoomd_manifold::Sphere;
+    use hoomd_manifold::{CurvedManifold, Sphere};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let radius : f64 = 5.0;
-    let x = Sphere::from(Cartesian::from([radius, 0.0, 0.0]));
-    let y = Sphere::from(Cartesian::from([0.0, radius, 0.0]));
-    assert_eq!(radius* PI/2.0, x.sphere_distance(&y));
+    let x = Sphere::from(&Cartesian::from([radius, 0.0, 0.0]));
+    let y = Sphere::from(&Cartesian::from([0.0, radius, 0.0]));
+    assert_eq!(radius* PI/2.0, x.geodesic_distance(&y));
     # Ok(())
     # }
     ```
@@ -123,7 +145,7 @@ with a given radius.
 # Example
 
 ```
-use hoomd_manifold::{Sphere, SphericalDisk};
+use hoomd_manifold::{CurvedManifold, Sphere, SphericalDisk};
 use hoomd_vector::{Vector, Cartesian};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand::distr::Distribution;
@@ -137,17 +159,17 @@ let sample_disk = SphericalDisk{
         r: 0.5_f64.try_into()?, 
         point: Cartesian::from([0.01,0.01,-1.0*(radius.powi(2)-2.0*(0.01_f64).powi(2)).sqrt()]),
         radius: radius,}; 
-let random_point: Cartesian<3> = sample_disk.sample(&mut rng);
+let random_point: Sphere<3> = sample_disk.sample(&mut rng);
 
 // generate transformation which keeps the distance moved less than 0.1
 let disk = SphericalDisk {
     r: 0.1_f64.try_into()?,
-    point: random_point,
+    point: random_point.point,
     radius: radius,
 };
-let transformed_random_point: Cartesian<3> = disk.sample(&mut rng);
+let transformed_random_point: Sphere<3> = disk.sample(&mut rng);
 
-assert!(0.1 > random_point.sphere_distance(&transformed_random_point, radius));
+assert!(0.1 > random_point.geodesic_distance(&transformed_random_point));
 
 # Ok(())
 # }
@@ -190,5 +212,89 @@ impl Distribution<Sphere<3>> for SphericalDisk {
         assert_relative_eq!(radius, new_sphere.radius, epsilon=1e-12);
         new_sphere
         
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use approx::assert_relative_eq;
+    use paste::paste;
+    use rand::{SeedableRng, rngs::StdRng};
+    use rstest::rstest;
+
+    /// Generate a pair of points on the surface of a 2-sphere
+    fn generate_S2_pair(radius: f64) -> (Sphere<3>, Sphere<3>) {
+        (
+            Sphere::<3>::from_2_angles(radius, 0.1, 0.3),
+            Sphere::<3>::from_2_angles(radius, 1.1, 0.5),
+        )
+    }
+    /// Generate a pair of points on the surface of a 3-sphere
+    fn generate_S3_pair(radius: f64) -> (Sphere<4>, Sphere<4>) {
+        (
+            Sphere::<4>::from_3_angles(radius, 0.2, 0.3, 0.5),
+            Sphere::<4>::from_3_angles(radius, 2.3, 1.1, 0.4),
+        )
+    }
+
+    #[test]
+    fn spherical_distance() {
+        let (a,b) = generate_S2_pair(1.0);
+        let ab_distance = a.geodesic_distance(&b);
+        let ab_distance_numeric = 1.002106222125083;
+        assert_relative_eq!(ab_distance, ab_distance_numeric, epsilon=1e-12);
+
+        let (c,d) = generate_S3_pair(1.0);
+        let cd_distance = c.geodesic_distance(&d);
+        let cd_distance_numeric = 2.1531289007720287;
+        assert_relative_eq!(cd_distance, cd_distance_numeric, epsilon=1e-12);
+
+        let (a,b) = generate_S2_pair(10.0);
+        let ab_distance = a.geodesic_distance(&b);
+        let ab_distance_numeric = 10.02106222125083;
+        assert_relative_eq!(ab_distance, ab_distance_numeric, epsilon=1e-12);
+
+        let (c,d) = generate_S3_pair(10.0);
+        let cd_distance = c.geodesic_distance(&d);
+        let cd_distance_numeric = 21.531289007720287;
+        assert_relative_eq!(cd_distance, cd_distance_numeric, epsilon=1e-12);
+    }
+
+    #[test]
+    fn stereographic() {
+        let a = Sphere::<3>::from_2_angles(1.0, 2.1, 1.5);
+        let a_projection = a.stereographic_projection();
+        let a_projection_numeric = vec![0.04057625219179988, 0.5721827720389171];
+        assert_relative_eq![a_projection[0], a_projection_numeric[0], epsilon=1e-12];
+        assert_relative_eq![a_projection[1], a_projection_numeric[1], epsilon=1e-12];
+
+        let b = Sphere::<4>::from_3_angles(1.0, 2.1, 1.5, 0.5);
+        let b_projection = b.stereographic_projection();
+        let b_projection_numeric = vec![0.04057625219179988, 0.5021376229554481, 0.27431903366480376];
+        assert_relative_eq![b_projection[0], b_projection_numeric[0], epsilon=1e-12];
+        assert_relative_eq![b_projection[1], b_projection_numeric[1], epsilon=1e-12];
+        assert_relative_eq![b_projection[2], b_projection_numeric[2], epsilon=1e-12];
+
+    }
+
+    #[test]
+    fn random_sphere() {
+        // Generate ten random points on the hyperboloid
+        let mut rng = StdRng::seed_from_u64(42);
+        let d = 0.1;
+        let n_pole = Cartesian::from([0.0, 0.0, 1.0]);
+        for _n in 0..10 {
+            let disk = SphericalDisk {r: d.try_into().expect("hard-coded positive number"), point: n_pole, radius: 1.0};
+            let random_point: Sphere<3> = disk.sample(&mut rng);
+
+            //check that points remain on Sphere
+            let rho = random_point.point.norm_squared();
+            assert_relative_eq!(rho, 1.0, epsilon=1e-12);
+
+            //check that points are within distance d of north pole
+            let dist = (random_point.point[2].acos())*(rho.sqrt());
+            assert!(d > dist);
+        }
     }
 }
