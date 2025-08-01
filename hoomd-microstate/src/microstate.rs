@@ -3,7 +3,8 @@
 
 /*! Implement [`Microstate`] and related types.
  */
-
+// TODO: Review doc examples. Look for extra newlines, or other opportunities
+// to add bodies and not need type annotations.
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 

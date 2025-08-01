@@ -146,25 +146,25 @@ initializes the seed and step to 0.
 use hoomd_microstate::{Microstate, property::Point};
 use hoomd_vector::Cartesian;
 
-let microstate = Microstate::<Cartesian<2>, Point<Cartesian<2>>>::new();
+# type BodyProperties = Point<Cartesian<2>>;
+# type SiteProperties = Point<Cartesian<2>>;
+let microstate = Microstate::<BodyProperties, SiteProperties>::new();
 ```
 
 When you need more control, use [`MicrostateBuilder`] to set the boundary conditions,
 use a different seed or starting step:
 
 ```
-use hoomd_microstate::{Microstate, MicrostateBuilder, property::Point};
+use hoomd_microstate::{Microstate, MicrostateBuilder, Body};
 use hoomd_microstate::boundary::Square;
-use hoomd_vector::Cartesian;
 
-# type BodyProperties = Point<Cartesian<2>>;
-# type SiteProperties = Point<Cartesian<2>>;
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let square = Square { l: 10.0.try_into()? };
 
-let microstate = MicrostateBuilder::<BodyProperties, SiteProperties, Square>::with_boundary(square)
+let microstate = MicrostateBuilder::with_boundary(square)
     .seed(0x43abf1)
     .step(100_000)
+    .bodies([Body::point([0.0, 0.0].into())])
     .try_build()?;
 # Ok(())
 # }
