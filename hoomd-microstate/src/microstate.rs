@@ -8,11 +8,11 @@ use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 
 use crate::boundary::{Boundary, Open};
-use crate::property::Position;
+use crate::property::{Point, Position};
 use crate::{Body, Error, Site, Transform};
 
 use hoomd_utility::random::Counter;
-use hoomd_vector::Vector;
+use hoomd_vector::{Cartesian, Vector};
 
 /** Track a unique identifier for an item in [`Microstate`].
 */
@@ -36,7 +36,7 @@ The generic type names are:
 * `C`: The [`boundary`](crate::boundary) condition type.
 */
 #[derive(Clone)]
-pub struct Microstate<B, S = B, C = Open> {
+pub struct Microstate<B = Point<Cartesian<3>>, S = B, C = Open> {
     /// Total number of steps that this microstate has been advanced in a simulation model.
     step: u64,
 
@@ -141,8 +141,10 @@ impl<B, S, C> Microstate<B, S, C> {
     use hoomd_microstate::{Microstate, MicrostateBuilder, property::Point};
     use hoomd_vector::Cartesian;
 
+    # type BodyProperties = Point<Cartesian<2>>;
+    # type SiteProperties = Point<Cartesian<2>>;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::new()
+    let microstate = MicrostateBuilder::<BodyProperties, SiteProperties>::new()
         .step(100_000)
         .try_build()?;
     assert_eq!(microstate.step(), 100_000);
@@ -253,8 +255,10 @@ impl<B, S, C> Microstate<B, S, C> {
     use hoomd_microstate::{Microstate, MicrostateBuilder, property::Point};
     use hoomd_vector::Cartesian;
 
+    # type BodyProperties = Point<Cartesian<2>>;
+    # type SiteProperties = Point<Cartesian<2>>;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::new()
+    let microstate = MicrostateBuilder::<BodyProperties, SiteProperties>::new()
         .seed(0x1234abcd)
         .try_build()?;
     assert_eq!(microstate.seed(), 0x1234abcd);
@@ -314,10 +318,13 @@ impl<B, S, C> Microstate<B, S, C> {
     use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square};
     use hoomd_vector::Cartesian;
 
+    # use hoomd_microstate::property::Point;
+    # type BodyProperties = Point<Cartesian<2>>;
+    # type SiteProperties = Point<Cartesian<2>>;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let square = Square { l: 10.0.try_into()? };
 
-    let microstate = MicrostateBuilder::with_boundary(square)
+    let microstate = MicrostateBuilder::<BodyProperties, SiteProperties, Square>::with_boundary(square)
         .try_build()?;
 
     assert_eq!(microstate.boundary().l.get(), 10.0);
@@ -338,10 +345,13 @@ impl<B, S, C> Microstate<B, S, C> {
     use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square};
     use hoomd_vector::Cartesian;
 
+    # use hoomd_microstate::property::Point;
+    # type BodyProperties = Point<Cartesian<2>>;
+    # type SiteProperties = Point<Cartesian<2>>;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let square = Square { l: 10.0.try_into()? };
 
-    let mut microstate = MicrostateBuilder::with_boundary(square)
+    let mut microstate = MicrostateBuilder::<BodyProperties, SiteProperties, Square>::with_boundary(square)
         .try_build()?;
 
     microstate.boundary_mut().l = 11.0.try_into()?;
@@ -1004,8 +1014,10 @@ impl<B, S> MicrostateBuilder<B, S, Open> {
     use hoomd_microstate::{Microstate, MicrostateBuilder, property::Point};
     use hoomd_vector::Cartesian;
 
+    # type BodyProperties = Point<Cartesian<2>>;
+    # type SiteProperties = Point<Cartesian<2>>;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::new().try_build()?;
+    let microstate = MicrostateBuilder::<BodyProperties, SiteProperties>::new().try_build()?;
 
     assert_eq!(microstate.step(), 0);
     assert_eq!(microstate.seed(), 0);
@@ -1040,10 +1052,13 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square};
     use hoomd_vector::Cartesian;
 
+    # use hoomd_microstate::property::Point;
+    # type BodyProperties = Point<Cartesian<2>>;
+    # type SiteProperties = Point<Cartesian<2>>;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let square = Square { l: 10.0.try_into()? };
 
-    let microstate = MicrostateBuilder::with_boundary(square)
+    let microstate = MicrostateBuilder::<BodyProperties, SiteProperties, Square>::with_boundary(square)
         .try_build()?;
 
     assert_eq!(microstate.step(), 0);
@@ -1075,8 +1090,10 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     use hoomd_microstate::boundary::Open;
     use hoomd_vector::Cartesian;
 
+    # type BodyProperties = Point<Cartesian<2>>;
+    # type SiteProperties = Point<Cartesian<2>>;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::new()
+    let microstate = MicrostateBuilder::<BodyProperties, SiteProperties>::new()
         .step(100_000)
         .try_build()?;
 
@@ -1103,8 +1120,10 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     use hoomd_microstate::boundary::Open;
     use hoomd_vector::Cartesian;
 
+    # type BodyProperties = Point<Cartesian<2>>;
+    # type SiteProperties = Point<Cartesian<2>>;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let microstate = MicrostateBuilder::<Point<Cartesian<2>>>::new()
+    let microstate = MicrostateBuilder::<BodyProperties, SiteProperties>::new()
         .seed(0x1234abcd)
         .try_build()?;
 

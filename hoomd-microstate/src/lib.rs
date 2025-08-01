@@ -157,10 +157,12 @@ use hoomd_microstate::{Microstate, MicrostateBuilder, property::Point};
 use hoomd_microstate::boundary::Square;
 use hoomd_vector::Cartesian;
 
+# type BodyProperties = Point<Cartesian<2>>;
+# type SiteProperties = Point<Cartesian<2>>;
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let square = Square { l: 10.0.try_into()? };
 
-let microstate = MicrostateBuilder::with_boundary(square)
+let microstate = MicrostateBuilder::<BodyProperties, SiteProperties, Square>::with_boundary(square)
     .seed(0x43abf1)
     .step(100_000)
     .try_build()?;
