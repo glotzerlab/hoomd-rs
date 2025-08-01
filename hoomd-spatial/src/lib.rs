@@ -11,7 +11,7 @@
  */
 
 use hoomd_vector::Cartesian;
-use std::{collections::HashMap, path::Iter};
+use std::collections::HashMap;
 
 /** This enum represents the flags for particles in the cell list.
 It is used to distinguish between real particles and ghost particles.
@@ -524,6 +524,7 @@ impl<const D: usize> CellList<D> {
     println!("Potential neighbor indices: {:?}", potential_neighbor_indices);
     ```
      */
+    #[expect(clippy::cast_possible_truncation, reason = "Intentional truncation.")]
     #[inline]
     // TODO: instead of recursion, loop over the number of iterations and use //
     pub fn find_potential_neighbor_indices<'a>(
@@ -552,7 +553,7 @@ impl<const D: usize> CellList<D> {
             }
         }
         let particle_cell_idx = self.cell_index[particle_index];
-        let n = (cutoff_radius / self.cell_width).ceil() as i32;
+        let n = (cutoff_radius / self.cell_width).ceil() as i32; // TODO try try_into but check performance
         let mut translations = Vec::new();
         let mut current = [0; D];
         generate_translations(0, n, &mut current, &mut translations);
@@ -574,8 +575,6 @@ impl<const D: usize> CellList<D> {
 
 #[cfg(test)]
 mod tests {
-    use std::cell;
-
     use super::*;
 
     #[test]
