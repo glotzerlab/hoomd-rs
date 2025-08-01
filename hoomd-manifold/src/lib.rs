@@ -88,7 +88,7 @@ let boosted = matrix.hyperbolic_rotate(&v);
 For three-dimensional hyperbolic surfaces, use [`Biquaternion`]. Biquaternions are a
 generalization of quaternions which allow for complex coefficients. Unit biquaternions give
  a representation of SO(3,1); this can either be done by converting the biquaternions
- to a [`HyperbolicRotationMatrix`] or by using the ['UnitBiquaternion'] algebra directly.
+ to a [`HyperbolicRotationMatrix`] or by using the [`UnitBiquaternion`] algebra directly.
 
  ```math
 // Rotate point in 3D hyperbolic space about z axis using matrix representation
@@ -144,7 +144,7 @@ pub use {
 use hoomd_vector::Vector;
 use thiserror::Error;
 
-// / Enumerate possible sources of error in fallible vector math operations.
+/// Enumerate possible sources of error in fallible vector math operations.
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
@@ -159,6 +159,14 @@ pub enum Error {
     /// Attempted converting a value to a vector with a dimension not equal to the value's length.
     #[error("source length does not match the target dimensions")]
     InvalidVectorLength,
+
+    /// Attempted to compare two points belonging to hyperboloids with different skirt widths
+    #[error("points do not belong to same hyperboloid")]
+    InvalidHyperboloidPointComparison,
+
+    /// Attempted to compare two points belonging to spheres with different radii
+    #[error("points do not belong to same sphere")]
+    InvalidSpherePointComparison,
 }
 
 /** Implement methods on non-Euclidean spaces
@@ -178,11 +186,9 @@ pub trait FundamentalDomain {
     /** Distance of the geodesic path passing through a given point on the hyperbola and the
     boundary of the fundamental domain.
     */
-    #[inline]
     fn distance_to_boundary(&self) -> f64;
     /** List of points on the boundary of the fundamental domain
      */
-    #[inline]
     fn boundary_points(m: usize, skirt: f64) -> Vec<(f64, f64)>;
 }
 

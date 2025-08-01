@@ -4,9 +4,7 @@
 */
 
 use hoomd_mc::{Sweep, Translate, Trial, Zero};
-use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder, boundary::Open, boundary::Square, property::Point,
-};
+use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Square, property::Point};
 use hoomd_vector::Cartesian;
 
 use ratatui::{

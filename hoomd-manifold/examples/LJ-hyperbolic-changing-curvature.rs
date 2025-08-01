@@ -33,6 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     result
 }
 
+/// number of particles
 const PARTICLE_NUMBER: usize = 100;
 
 /// Run the simulation
@@ -94,6 +95,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     }
 }
 
+/// squared radius of disk in render
 const RAD_SQ: f64 = 0.01;
 
 /// Project coordinates to Poincare disk
@@ -106,9 +108,12 @@ fn poincare(point: &Minkowski<3>, skirt: f64) -> [f64; 3] {
     let rad_proj = (skirt * sinh(eta)) / (1.0 + cosh(eta)) - edge_proj;
     [proj[0], proj[1], rad_proj]
 }
+/// time before starting to change curvature
 const WAIT_TIME: u64 = 200;
-const SLOPE: f64 = 0.000005;
+/// speed with which curvature changes
+const SLOPE: f64 = 0.000_005;
 
+/// function to tune skirt size
 fn skirt_size(time: u64) -> f64 {
     if time < WAIT_TIME {
         1.0
@@ -142,7 +147,7 @@ fn render(
                 y: 0.0,
                 radius: skirt_size(time),
                 color: Color::Blue,
-            })
+            });
         })
         .x_bounds([-skirt_size(time), skirt_size(time)])
         .y_bounds([-skirt_size(time), skirt_size(time)]);

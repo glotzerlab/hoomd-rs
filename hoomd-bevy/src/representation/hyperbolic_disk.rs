@@ -21,6 +21,7 @@ use std::marker::PhantomData;
 
 /// Location of the shader implementation
 const SHADER_ASSET_PATH: &str = "embedded://hoomd_bevy/representation/hyperbolic_disk.wgsl";
+/// skirt width of the hyperboloid
 const RHO: f64 = 1.0;
 
 /** Represent an entity with a 2D disk in the xy plane.
@@ -135,7 +136,7 @@ impl<T: Send + Sync + 'static> HyperbolicDisk<T> {
 /// Project coordinates to Poincare disk
 ///TODO: fix radius
 fn poincare(point: &Minkowski<3>, skirt: f64, diameter: f64) -> ([f32; 3], f32) {
-    let pt = Hyperboloid::from(&point);
+    let pt = Hyperboloid::from(point);
     let proj = pt.to_poincare();
     let v = diameter / (skirt * 2.0);
     let eta = acosh(point.coordinates[2] / RHO);

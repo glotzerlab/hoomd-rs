@@ -33,7 +33,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     result
 }
 
+/// number of particles
 const PARTICLE_NUMBER: usize = 500;
+/// skirt width of hyperboloid
 const RHO: f64 = 10.0;
 
 /// Run the simulation
@@ -63,7 +65,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
 
     let lj: LennardJones = LennardJones {
         epsilon: 10.0,
-        sigma: 0.065507,
+        sigma: 0.065_507,
     };
 
     let evaluator = CurvedIsotropic {
@@ -97,6 +99,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     }
 }
 
+/// squared radius of disk in render
 const RAD_SQ: f64 = 0.0001;
 
 /// Project coordinates to Poincare disk
@@ -133,7 +136,7 @@ fn render(
                 y: 0.0,
                 radius: RHO,
                 color: Color::Blue,
-            })
+            });
         })
         .x_bounds([-0.7, 0.7]) //([-RHO, RHO])
         .y_bounds([-0.7, 0.7]); //([-RHO, RHO]);

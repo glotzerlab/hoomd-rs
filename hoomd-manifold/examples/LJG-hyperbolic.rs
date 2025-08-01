@@ -33,7 +33,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     result
 }
 
+/// numer of particles
 const PARTICLE_NUMBER: usize = 100;
+/// skirt width of hyperboloid
 const RHO: f64 = 1.0;
 
 /// Run the simulation
@@ -99,6 +101,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     }
 }
 
+/// squared radius of disk in render
 const RAD_SQ: f64 = 0.025;
 
 /// Project coordinates to Poincare disk
@@ -135,7 +138,7 @@ fn render(
                 y: 0.0,
                 radius: RHO,
                 color: Color::Blue,
-            })
+            });
         })
         .x_bounds([-RHO, RHO])
         .y_bounds([-RHO, RHO]);

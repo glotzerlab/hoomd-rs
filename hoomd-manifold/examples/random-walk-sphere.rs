@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ratatui::restore();
     result
 }
-
+/// radius of sphere
 const RADIUS: f64 = 1.0;
 
 /// Run the simulation
@@ -63,6 +63,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     }
 }
 
+/// squared radius of disk in render
 const RAD_SQ: f64 = 0.1;
 
 /// stereographic projection

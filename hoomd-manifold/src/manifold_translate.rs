@@ -15,7 +15,7 @@ use rand::distr::Distribution;
 
 /** Move the position of a body on a hyperbolic surface by a small distance
 
-HyperbolicTranslate used with Sweep:
+`HyperbolicTranslate` used with Sweep:
 # Example
 ```
 use hoomd_mc::{LocalTrial, Translate, Sweep, Trial, Zero};
@@ -42,7 +42,6 @@ for _ in 0..1_000 {
 # }
 ```
 */
-
 pub struct HyperbolicTranslate {
     /// The max distance a body can be translated in one trial move
     pub maximum_distance: PositiveReal,
@@ -107,7 +106,7 @@ where
 
 /** Move the position of a body on the surface of a sphere by a small distance
 
-SphericalTranslate used with Sweep:
+`SphericalTranslate` used with Sweep:
 # Example
 ```
 use hoomd_mc::{LocalTrial, Translate, Sweep, Trial, Zero};
@@ -140,7 +139,6 @@ assert_relative_eq!(
 # }
 ```
 */
-
 pub struct SphericalTranslate {
     /// The max distance a body can be translated in one trial move
     pub maximum_distance: PositiveReal,

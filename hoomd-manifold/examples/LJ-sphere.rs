@@ -33,7 +33,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     result
 }
 
+/// number of particles
 const PARTICLE_NUMBER: usize = 12;
+/// radius of the sphere
 const RADIUS: f64 = 0.5;
 
 /// Run the simulation
@@ -88,6 +90,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     }
 }
 
+/// squared radius of disk in render
 const RAD_SQ: f64 = 0.01;
 
 /// stereographic projection

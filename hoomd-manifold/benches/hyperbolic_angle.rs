@@ -6,7 +6,7 @@
     reason = "benches don't need public documentation"
 )]
 
-/*! Benchmark HyperbolicAngle */
+/*! Benchmark `HyperbolicAngle` */
 
 use divan::counter::ItemsCount;
 use divan::{self, Bencher, black_box};

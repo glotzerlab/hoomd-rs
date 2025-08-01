@@ -6,12 +6,10 @@ use hoomd_bevy::{
 };
 use hoomd_interaction::{CutoffPair, pairwise::LennardJones};
 use hoomd_manifold::{
-    CurvedIsotropic, CurvedManifold, HyperbolicDisk, HyperbolicTranslate, Hyperboloid, Minkowski,
+    CurvedIsotropic, HyperbolicDisk, HyperbolicTranslate, Hyperboloid, Minkowski,
 };
-use hoomd_mc::{Sweep, Translate, Trial};
+use hoomd_mc::{Sweep, Trial};
 use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Open, property::Point};
-use hoomd_vector::Cartesian;
-use libm::{acosh, cosh, sinh};
 use rand::distr::Distribution;
 use rand::{SeedableRng, rngs::StdRng};
 
@@ -25,7 +23,7 @@ fn main() -> anyhow::Result<()> {
     let simulation = Fill::new().context("failed to setup simulation")?;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
         initial_settings: Settings {
-            viewport_height: 2.0 as f32,
+            viewport_height: 2.0_f32,
             ..default()
         },
         simulation,

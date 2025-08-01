@@ -249,7 +249,7 @@ impl Biquaternion {
     #[inline]
     #[must_use]
     pub fn norm_squared(&self) -> Complex<f64> {
-        self.scalar_product(&self)
+        self.scalar_product(self)
     }
     /** the norm of a biquaternion
 
@@ -350,18 +350,19 @@ impl Biquaternion {
     /** create a [`UnitBiquaternion`] by normalizing the given biquaternion
      */
     #[inline]
+    #[expect(clippy::missing_errors_doc, reason = "maps to error message")]
     pub fn to_unit(self) -> Result<UnitBiquaternion, Error> {
         let mag = self.norm();
         if mag == Complex::new(0.0, 0.0) {
-            Err(Error::InvalidBiquaternionMagnitude)
-        } else {
-            Ok(UnitBiquaternion(self / mag))
+            return Err(Error::InvalidBiquaternionMagnitude);
         }
+        Ok(UnitBiquaternion(self / mag))
     }
     /** create a [`UnitBiquaternion`] by normalizing the given biquaternion without
     checking
      */
     #[inline]
+    #[must_use]
     pub fn to_unit_unchecked(self) -> UnitBiquaternion {
         UnitBiquaternion(self)
     }
@@ -401,9 +402,7 @@ impl From<[Complex<f64>; 4]> for Biquaternion {
     */
     #[inline]
     fn from(value: [Complex<f64>; 4]) -> Self {
-        Self {
-            components: value.into(),
-        }
+        Self { components: value }
     }
 }
 
@@ -523,14 +522,29 @@ impl DivAssign<f64> for Biquaternion {
 /**
 ## Representation of SO(3,1)
 Unit-norm Biquaternions furnish a representation of SO(3,1), analogous to quaternions and SO(3).
-If $\vec{x} = (x_1,x_2,x_3,x_4)$ is a vector in Minkowski space, then $\vec{x}$ can be
-mapped to a biquaternion $\vec{x} \mapsto X = [x_1,x_2,x_3,h x_4]$ (where $h$) is the imaginary
-number) whose squared norm is $|X|^2 = x_1^2 + x_2^2 + x_3^2 - x_4^2$. It can be shown that, for
+If
+```math
+\vec{x} = (x_1, x_2, x_3, x_4)
+```
+ is a vector in Minkowski space, then $\vec{x}$ can be
+mapped to a biquaternion
+```math
+\vec{x} \mapsto X = [x_1, x_2, x_3,h x_4]
+```
+(where h is the imaginary number) whose squared norm is
+```math
+|X|^2 = x_1^2 + x_2^2 + x_3^2 - x_4^2
+```
+ It can be shown that, for
 a unit biquaternion $q$, the transformation
 ```math
 q^* X \overline{q} = X'
 ```
-preserves the norm, i.e., $|X|^2 = |X'|^2$. We therefore have that this action by unit biquaternions
+preserves the norm, i.e.,
+```math
+|X|^2 = |X'|^2
+```
+We therefore have that this action by unit biquaternions
 produces a representation of SO(3,1). The biquaternion algebra can be used directly to transform Minkowski
  4-vectors, or unit biquaternions can be represented as matrices using [`HyperbolicRotationMatrix<4>`].
 
@@ -652,6 +666,7 @@ impl Distribution<UnitBiquaternion> for StandardUniform {
 
 impl From<UnitBiquaternion> for HyperbolicRotationMatrix<4> {
     #[inline]
+    #[expect(clippy::many_single_char_names, reason = "dummy variables")]
     fn from(q: UnitBiquaternion) -> HyperbolicRotationMatrix<4> {
         let UnitBiquaternion(biquaternion) = q;
         let [a, b, c, d]: [Complex<f64>; 4] = array::from_fn(|i| biquaternion.components[i]);
@@ -749,7 +764,6 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     # }
     ```
     */
-
     #[inline]
     fn hyperbolic_rotate(&self, vector: &Minkowski<4>) -> Minkowski<4> {
         let UnitBiquaternion(biquaternion) = self;
@@ -772,9 +786,8 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::{assert_abs_diff_eq, assert_relative_eq};
+    use approx::assert_relative_eq;
     use num::complex::Complex;
-    use rand::{SeedableRng, rngs::StdRng};
     use rstest::*;
     use std::f64::consts::PI;
 

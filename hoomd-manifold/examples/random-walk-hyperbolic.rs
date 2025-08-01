@@ -29,6 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     result
 }
 
+/// skirt width of the hyperboloid
 const RHO: f64 = 0.6;
 
 /// Run the simulation
@@ -63,11 +64,13 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     }
 }
 
+/// squared radius of disk in render
 const RAD_SQ: f64 = 0.01;
+/// number of particles to draw for the boundary
 const BOUNDARY_NUMBER: usize = 1000;
 
 /// Project coordinates to Poincare disk
-fn poincare(point: &Minkowski<3>, skirt: f64) -> [f64; 3] {
+fn poincare(point: &Minkowski<3>) -> [f64; 3] {
     let pt = Hyperboloid::from(point);
     let proj = pt.to_poincare();
     let v = acosh((RAD_SQ + RHO.powi(2)) / (RHO.powi(2) - RAD_SQ));
@@ -89,7 +92,7 @@ fn render(
         .block(Block::bordered().title("Random walk in Hyperbolic Space"))
         .marker(Marker::Braille)
         .paint(|ctx| {
-            let coords = poincare(&properties.position, RHO);
+            let coords = poincare(&properties.position);
             ctx.draw(&Circle {
                 x: coords[0],
                 y: coords[1],
@@ -105,7 +108,7 @@ fn render(
             ctx.draw(&Points {
                 coords: &boundary_particles,
                 color: Color::Blue,
-            })
+            });
         })
         .x_bounds([-RHO, RHO])
         .y_bounds([-RHO, RHO]);

@@ -71,7 +71,7 @@ d_M^2(\vec{u},\vec{v}) = (\vec{u}-\vec{v})^T \eta (\vec{u}-\vec{v})
 ```
 Note that because this metric is not positive-definite, [`Minkowski`] only implements a
 squared distance metric (i.e., it does not implement a "distance" function which
-takes the square root of "distance_squared").
+takes the square root of `distance_squared`).
 
 ```
 use hoomd_manifold::Minkowski;
@@ -455,7 +455,7 @@ the hyperboloid with skirt width $R$ is defined by the set of points with compon
 ```math
 x_1^2 +\cdots x_{N-1}^2 - x_{N}^2 = -R^2
 ```
-Where the "top sheet" is defined by the $x_N>0$ solutions. In Minkowski space, the hyperboloid
+Where the "top sheet" is defined by the $`x_N>0`$ solutions. In Minkowski space, the hyperboloid
 has a natural interpretation as the set of points with the same spacetime interval
 ```math
 \Delta s^2 = \vec{x}^T \eta \vec{x} = x_1^2 +\cdots x_{N-1}^2 - x_{N}^2
@@ -497,16 +497,22 @@ pub struct Hyperboloid<const N: usize> {
 impl<const N: usize> Hyperboloid<N> {
     /** Get the coordinates of the point on the hyperboloid
      */
+    #[must_use]
+    #[inline]
     pub fn coordinates(&self) -> &[f64; N] {
         &self.point.coordinates
     }
     /** Get the skirt width of the hyperboloid
      */
+    #[must_use]
+    #[inline]
     pub fn skirt(&self) -> f64 {
         self.skirt
     }
     /** Create a hyperboloid point from a Minkowski vector
      */
+    #[must_use]
+    #[inline]
     pub fn from(point: &Minkowski<N>) -> Hyperboloid<N> {
         let skirt_squared = -point.distance_squared(&Minkowski::<N>::default());
         Hyperboloid {
@@ -516,6 +522,8 @@ impl<const N: usize> Hyperboloid<N> {
     }
     /** Create a point on the surface of a three-dimensional hyperboloid from the polar representation.
      */
+    #[must_use]
+    #[inline]
     pub fn from_polar(v: f64, theta: f64, skirt: f64) -> Hyperboloid<3> {
         let theta_mod = theta.rem_euclid(2.0 * PI);
         let point = Minkowski::from([
@@ -527,6 +535,8 @@ impl<const N: usize> Hyperboloid<N> {
     }
     /** Create a point on the surface of a four-dimensional hyperboloid from the spherical representation.
      */
+    #[must_use]
+    #[inline]
     pub fn from_spherical(v: f64, theta: f64, phi: f64, skirt: f64) -> Hyperboloid<4> {
         let theta_mod = theta.rem_euclid(2.0 * PI);
         let phi_mod = phi.rem_euclid(PI);
@@ -558,6 +568,7 @@ impl<const N: usize> Hyperboloid<N> {
     ```
     */
     #[inline]
+    #[must_use]
     pub fn distance_from_cusp(&self) -> f64 {
         self.skirt * acosh((self.point.coordinates[N - 1]) / self.skirt)
     }
@@ -582,6 +593,7 @@ impl<const N: usize> Hyperboloid<N> {
     ```
     */
     #[inline]
+    #[must_use]
     pub fn to_poincare(&self) -> Vec<f64> {
         (0..N - 1)
             .collect::<Vec<usize>>()
@@ -637,17 +649,19 @@ impl<const N: usize> CurvedManifold for Hyperboloid<N> {
     /** Casts a point in (N+1)-dimensional Minkowski space to the N-dimensional Hyperbolic space.
      */
     #[inline]
+    #[expect(clippy::panic, reason = "code should not proceed")]
+    #[expect(clippy::match_wild_err_arm, reason = "only fails if try_from does")]
     fn to_manifold(point: Vec<f64>) -> Hyperboloid<N> {
         let minkowski_point = Minkowski::<N>::try_from(point);
         match minkowski_point {
             Ok(pt) => Hyperboloid::from(&pt),
-            Err(_e) => panic!("point cannot be embedded onto sphere"),
+            Err(_e) => panic!["invalid vector length"],
         }
     }
 }
 
-// Cusp-to-vertex distance for {8,8} tiling for Gauss curvature K = -1
-const EIGHTEIGHT: f64 = 2.448452447678076;
+/// Cusp-to-vertex distance for {8,8} tiling for Gauss curvature K = -1
+const EIGHTEIGHT: f64 = 2.448_452_447_678_076;
 
 impl FundamentalDomain for Hyperboloid<3> {
     /** Computes the length of the geodesic passing between the cusp $(0,0,\rho)$ and the boundary
@@ -692,8 +706,8 @@ impl FundamentalDomain for Hyperboloid<3> {
             let x = (skirt * sinh(eta)) / (1.0 + cosh(eta));
             for k in 0..8 {
                 coords.push((
-                    x * cos(angle + (k as f64) * PI / 4.0),
-                    x * sin(angle + (k as f64) * PI / 4.0),
+                    x * cos(angle + f64::from(k) * PI / 4.0),
+                    x * sin(angle + f64::from(k) * PI / 4.0),
                 ));
             }
         }
@@ -957,15 +971,10 @@ impl Distribution<Hyperboloid<3>> for HyperbolicDisk {
 
 #[cfg(test)]
 mod tests {
-    use crate::biquaternion;
-    use crate::curved_interaction;
-    use crate::hyperbolic_angle;
-
     use super::*;
     use approx::assert_relative_eq;
     use paste::paste;
     use rand::{SeedableRng, rngs::StdRng};
-    use rstest::rstest;
 
     // Parameterize a test function over an array of vector lengths
     macro_rules! parameterize_vector_length {
@@ -1201,14 +1210,14 @@ mod tests {
     parameterize_vector_length!(random_in_range, [2, 3, 4, 8, 16, 32, 10_000]);
 
     /// Generate a pair of points in 2-dimensional hyperbolic space
-    fn generate_H2_pair(skirt: f64) -> (Hyperboloid<3>, Hyperboloid<3>) {
+    fn generate_h2_pair(skirt: f64) -> (Hyperboloid<3>, Hyperboloid<3>) {
         (
             Hyperboloid::<3>::from_polar(3.2, 0.1, skirt),
             Hyperboloid::<3>::from_polar(4.0, 3.1, skirt),
         )
     }
     /// Generate a pair of points in 3-dimensional hyperbolic space
-    fn generate_H3_pair(skirt: f64) -> (Hyperboloid<4>, Hyperboloid<4>) {
+    fn generate_h3_pair(skirt: f64) -> (Hyperboloid<4>, Hyperboloid<4>) {
         (
             Hyperboloid::<4>::from_spherical(3.5, 0.4, 0.5, skirt),
             Hyperboloid::<4>::from_spherical(4.2, 2.7, 0.1, skirt),
@@ -1216,25 +1225,26 @@ mod tests {
     }
 
     #[test]
+    #[expect(clippy::many_single_char_names, reason = "dummy variables")]
     fn hyperbolic_distance() {
-        let (a, b) = generate_H2_pair(1.0);
+        let (a, b) = generate_h2_pair(1.0);
         let ab_distance = a.geodesic_distance(&b);
-        let ab_numeric_answer = 7.194993724795472;
+        let ab_numeric_answer = 7.194_993_724_795_472;
         assert_relative_eq!(ab_distance, ab_numeric_answer, epsilon = 1e-12);
 
-        let (c, d) = generate_H3_pair(1.0);
+        let (c, d) = generate_h3_pair(1.0);
         let cd_distance = c.geodesic_distance(&d);
-        let cd_numeric_answer = 7.525514513583905;
+        let cd_numeric_answer = 7.525_514_513_583_905;
         assert_relative_eq!(cd_distance, cd_numeric_answer, epsilon = 1e-12);
 
-        let (e, f) = generate_H2_pair(10.0);
+        let (e, f) = generate_h2_pair(10.0);
         let ef_distance = e.geodesic_distance(&f);
-        let ef_numeric_answer = 71.94993724795472;
+        let ef_numeric_answer = 71.949_937_247_954_72;
         assert_relative_eq!(ef_distance, ef_numeric_answer, epsilon = 1e-11);
 
-        let (g, h) = generate_H3_pair(10.0);
+        let (g, h) = generate_h3_pair(10.0);
         let gh_distance = g.geodesic_distance(&h);
-        let gh_numeric_answer = 75.25514513583905;
+        let gh_numeric_answer = 75.255_145_135_839_05;
         assert_relative_eq!(gh_distance, gh_numeric_answer, epsilon = 1e-11);
     }
 
@@ -1242,30 +1252,31 @@ mod tests {
     fn poincare_projection() {
         let a = Hyperboloid::<3>::from_polar(1.5, 1.5, 1.0);
         let a_poincare = a.to_poincare();
-        let a_numeric_poincare = vec![0.04492865953404977, 0.6335578957531363];
+        let a_numeric_poincare = [0.044_928_659_534_049_77, 0.633_557_895_753_136_3];
         assert_relative_eq![a_poincare[0], a_numeric_poincare[0], epsilon = 1e-12];
         assert_relative_eq![a_poincare[1], a_numeric_poincare[1], epsilon = 1e-12];
 
         let b = Hyperboloid::<3>::from_polar(0.5, 4.2, 1.0);
         let b_poincare = b.to_poincare();
-        let b_numeric_poincare = vec![-0.12007402459170793, -0.21346517236301563];
+        let b_numeric_poincare = [-0.120_074_024_591_707_93, -0.213_465_172_363_015_63];
         assert_relative_eq![b_poincare[0], b_numeric_poincare[0], epsilon = 1e-12];
         assert_relative_eq![b_poincare[1], b_numeric_poincare[1], epsilon = 1e-12];
 
         let c = Hyperboloid::<3>::from_polar(1.5, 1.5, 10.0);
         let c_poincare = c.to_poincare();
-        let c_numeric_poincare = vec![0.4492865953404977, 6.335578957531363];
+        let c_numeric_poincare = [0.449_286_595_340_497_7, 6.335_578_957_531_363];
         assert_relative_eq![c_poincare[0], c_numeric_poincare[0], epsilon = 1e-12];
         assert_relative_eq![c_poincare[1], c_numeric_poincare[1], epsilon = 1e-12];
 
         let d = Hyperboloid::<3>::from_polar(0.5, 4.2, 10.0);
         let d_poincare = d.to_poincare();
-        let d_numeric_poincare = vec![-1.2007402459170793, -2.1346517236301563];
+        let d_numeric_poincare = [-1.200_740_245_917_079_3, -2.134_651_723_630_156];
         assert_relative_eq![d_poincare[0], d_numeric_poincare[0], epsilon = 1e-12];
         assert_relative_eq![d_poincare[1], d_numeric_poincare[1], epsilon = 1e-12];
     }
 
     #[test]
+    #[expect(clippy::many_single_char_names, reason = "dummy variables")]
     fn specific_distances() {
         // Distance to the cusp
         let a = Hyperboloid::<3>::from_polar(1.2, 3.2, 1.0);
@@ -1291,12 +1302,12 @@ mod tests {
         // Distance to the edge of the {8,8} fundamental domain
         let e = Hyperboloid::<3>::from_polar(1.0, 0.1, 1.0);
         let e_edge_distance = e.distance_to_boundary();
-        let e_edge_distance_numeric = 0.838080324331728;
+        let e_edge_distance_numeric = 0.838_080_324_331_728;
         assert_relative_eq!(e_edge_distance, e_edge_distance_numeric, epsilon = 1e-12);
 
         let f = Hyperboloid::<3>::from_polar(1.0, 1.1, 1.0);
         let f_edge_distance = f.distance_to_boundary();
-        let f_edge_distance_numeric = 0.5450344572784995;
+        let f_edge_distance_numeric = 0.545_034_457_278_499_5;
         assert_relative_eq!(f_edge_distance, f_edge_distance_numeric, epsilon = 1e-12);
     }
 
@@ -1321,8 +1332,8 @@ mod tests {
             assert_relative_eq!(rho, 1.0, epsilon = 1e-12);
 
             //check that points are within distance d of cusp
-            let dist = random_point.distance_from_cusp();
-            assert!(d > dist);
+            let distance = random_point.distance_from_cusp();
+            assert!(d > distance);
         }
     }
 }

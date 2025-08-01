@@ -10,19 +10,15 @@
 
 use divan::counter::ItemsCount;
 use divan::{self, Bencher, black_box};
-use rand::distr::Uniform;
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
 use hoomd_manifold::{
-    HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Hyperboloid, Minkowski,
+    CurvedManifold, HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Hyperboloid,
+    Minkowski,
 };
 
 fn main() {
     divan::main();
-}
-
-fn create_random_vector_pair<const N: usize, R: Rng>(rng: &mut R) -> (Minkowski<N>, Minkowski<N>) {
-    (rng.random::<Minkowski<N>>(), rng.random::<Minkowski<N>>())
 }
 
 fn create_random_hyperboloid<R: Rng>(rng: &mut R) -> Minkowski<3> {
@@ -48,7 +44,9 @@ fn hyperboloid_distance_vec3(bencher: Bencher) {
     bencher
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| create_random_hyperboloid_pair::<_>(&mut rng))
-        .bench_local_values(|(a, b)| black_box(a.hyperbolic_distance(&b, 1.0)));
+        .bench_local_values(|(a, b)| {
+            black_box(Hyperboloid::from(&a).geodesic_distance(&Hyperboloid::from(&b)))
+        });
 }
 
 #[divan::bench]
@@ -58,7 +56,7 @@ fn to_poincare_vec3(bencher: Bencher) {
     bencher
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| create_random_hyperboloid::<_>(&mut rng))
-        .bench_local_values(|a| black_box(a.to_poincare(1.0)));
+        .bench_local_values(|a| black_box(Hyperboloid::from(&a).to_poincare()));
 }
 
 #[divan::bench(consts = DIMENSIONS)]
