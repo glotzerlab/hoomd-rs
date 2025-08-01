@@ -4,16 +4,16 @@
 /*! Implement Translation moves on curved surfaces
 */
 
+use crate::{HyperbolicDisk, Hyperboloid, Minkowski, Sphere, SphericalDisk};
 use hoomd_mc::LocalTrial;
 use hoomd_microstate::property::Position;
 use hoomd_utility::valid::PositiveReal;
-use crate::{Minkowski, Hyperboloid, HyperbolicDisk, Sphere, SphericalDisk};
 use hoomd_vector::{Cartesian, InnerProduct};
 
 use rand::Rng;
 use rand::distr::Distribution;
 
-/** Move the position of a body on a hyperbolic surface by a small distance 
+/** Move the position of a body on a hyperbolic surface by a small distance
 
 HyperbolicTranslate used with Sweep:
 # Example
@@ -50,14 +50,14 @@ pub struct HyperbolicTranslate {
     pub skirt: f64,
 }
 
-impl<B> LocalTrial<B> for HyperbolicTranslate 
+impl<B> LocalTrial<B> for HyperbolicTranslate
 where
     B: Position<Vector = Minkowski<3>>,
-    HyperbolicDisk: Distribution<Hyperboloid<3>>
+    HyperbolicDisk: Distribution<Hyperboloid<3>>,
 {
     /** Propose local trial moves for a body on a hyperbolic surface
 
-    # Example 
+    # Example
     ```
     use hoomd_mc::{LocalTrial, Translate};
     use hoomd_microstate::property::{Point, Position};
@@ -89,14 +89,17 @@ where
     */
     #[inline]
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B {
-        let mut trial = body_properties; 
+        let mut trial = body_properties;
         let disk = HyperbolicDisk {
             r: self.maximum_distance,
             point: *trial.position_mut(),
             skirt: self.skirt,
         };
         *trial.position_mut() = disk.sample(rng).point;
-        let z = (trial.position_mut()[0].powi(2) + trial.position_mut()[1].powi(2) + self.skirt.powi(2)).sqrt();
+        let z = (trial.position_mut()[0].powi(2)
+            + trial.position_mut()[1].powi(2)
+            + self.skirt.powi(2))
+        .sqrt();
         trial.position_mut()[2] = z;
         trial
     }
@@ -130,7 +133,7 @@ for _ in 0..1_000 {
     microstate.increment_step();
 }
 assert_relative_eq!(
-    microstate.bodies()[0].item.properties.position().distance_squared(&Cartesian::from([0.0,0.0,0.0])), 
+    microstate.bodies()[0].item.properties.position().distance_squared(&Cartesian::from([0.0,0.0,0.0])),
     radius.powi(2),
     epsilon=1e-12);
 # Ok(())
@@ -145,14 +148,14 @@ pub struct SphericalTranslate {
     pub radius: f64,
 }
 
-impl<B> LocalTrial<B> for SphericalTranslate 
+impl<B> LocalTrial<B> for SphericalTranslate
 where
     B: Position<Vector = Cartesian<3>>,
-    SphericalDisk: Distribution<Sphere<3>>
+    SphericalDisk: Distribution<Sphere<3>>,
 {
     /** Propose local trial moves for a body on the surface of a sphere
 
-    # Example 
+    # Example
     ```
     use hoomd_mc::{LocalTrial, Translate};
     use hoomd_microstate::property::{Point, Position};
@@ -184,14 +187,14 @@ where
     */
     #[inline]
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B {
-        let mut trial = body_properties; 
+        let mut trial = body_properties;
         let disk = SphericalDisk {
             r: self.maximum_distance,
             point: *trial.position_mut(),
             radius: self.radius,
         };
         *trial.position_mut() = disk.sample(rng).point;
-        let rescale = self.radius/trial.position_mut().norm();
+        let rescale = self.radius / trial.position_mut().norm();
         *trial.position_mut() *= rescale;
         trial
     }

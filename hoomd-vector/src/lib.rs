@@ -392,8 +392,7 @@ pub trait Vector:
         self.distance_squared(other).sqrt()
     }
     /** Get the coordinates of the vector and cast them as a Vec
-    */
-    #[inline]
+     */
     fn to_vec(&self) -> Vec<f64>;
 }
 

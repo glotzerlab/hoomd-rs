@@ -8,12 +8,14 @@ in a normed vector space with *n* dimensions:
 
 - Vector addition & subtraction
 - Multiplication by a scalar
-- Dot product
-- Norm and norm squared
 
 This design allows the majority of HOOMD-rs code to be written _independent_ of the
 vector's representation and dimension. Some specific calculations may require
 cross products, defined in specific trait: `Cross`.
+
+## Inner Product
+
+`hoomd_vector` implements an `InnerProduct` subtrait of `Vector` which includes the dot product, norm, and norm squared methods.
 
 ### Cartesian vector
 

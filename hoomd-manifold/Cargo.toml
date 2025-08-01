@@ -1,10 +1,12 @@
 [package]
 name = "hoomd-manifold"
+description = "Manifold and Curved Geometries library."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 homepage.workspace = true
 repository.workspace = true
+readme = "hoomd-manifold/README.md"
 license.workspace = true
 keywords.workspace = true
 categories.workspace = true
@@ -32,12 +34,12 @@ workspace = true
 
 [[bench]]
 name = "minkowski"
-harness = false 
+harness = false
 
 [[bench]]
 name = "biquaternion"
-harness = false 
+harness = false
 
 [[bench]]
 name = "hyperbolic_angle"
-harness = false 
+harness = false

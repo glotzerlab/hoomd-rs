@@ -12,7 +12,7 @@ use divan::counter::ItemsCount;
 use divan::{self, Bencher, black_box};
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
-use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski};
+use hoomd_manifold::{HyperbolicRotate, HyperbolicRotationMatrix, Minkowski, UnitBiquaternion};
 
 fn main() {
     divan::main();

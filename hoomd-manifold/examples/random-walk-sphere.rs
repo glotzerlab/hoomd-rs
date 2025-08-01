@@ -3,11 +3,11 @@
 /*! This is an example
 */
 
-use hoomd_mc::{Sweep, Trial, Zero};
-use libm::{cos, sin, acos, sqrt};
-use hoomd_microstate::{Body, Microstate, MicrostateBuilder, property::Point, boundary::Open};
 use hoomd_manifold::{Sphere, SphericalTranslate};
+use hoomd_mc::{Sweep, Trial, Zero};
+use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Open, property::Point};
 use hoomd_vector::Cartesian;
+use libm::{acos, cos, sin, sqrt};
 
 use ratatui::{
     crossterm::event::{self, Event, poll},
@@ -29,13 +29,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     result
 }
 
-const RADIUS : f64 = 1.0;
+const RADIUS: f64 = 1.0;
 
 /// Run the simulation
 fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> {
     let mut microstate = MicrostateBuilder::with_boundary(Open)
-    .bodies([Body::point(Cartesian::from([0.01,0.01,-sqrt(RADIUS.powi(2)-2.0*(0.01_f64).powi(2))]))])
-    .try_build()?;
+        .bodies([Body::point(Cartesian::from([
+            0.01,
+            0.01,
+            -sqrt(RADIUS.powi(2) - 2.0 * (0.01_f64).powi(2)),
+        ]))])
+        .try_build()?;
 
     let kt = 1.0;
     let hamiltonian = Zero;
@@ -59,16 +63,16 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     }
 }
 
-const RAD_SQ : f64 = 0.1;
+const RAD_SQ: f64 = 0.1;
 
 /// stereographic projection
-fn stereographic(point: &Cartesian<3>, radius: f64) -> [f64;3] {
+fn stereographic(point: &Cartesian<3>, radius: f64) -> [f64; 3] {
     let pt = Sphere::from(point);
     let proj = pt.stereographic_projection();
-    let theta = acos(point.coordinates[2]/radius);
-    let v = acos((radius.powi(2) - RAD_SQ)/(radius.powi(2)+RAD_SQ));
-    let edge_proj = (RADIUS * sin(theta+v))/(1.0 - cos(theta+v));
-    let rad_proj =  edge_proj - (RADIUS * sin(theta))/(1.0 - cos(theta));
+    let theta = acos(point.coordinates[2] / radius);
+    let v = acos((radius.powi(2) - RAD_SQ) / (radius.powi(2) + RAD_SQ));
+    let edge_proj = (RADIUS * sin(theta + v)) / (1.0 - cos(theta + v));
+    let rad_proj = edge_proj - (RADIUS * sin(theta)) / (1.0 - cos(theta));
     [proj[0], proj[1], rad_proj]
 }
 /// Render the system state.
@@ -89,8 +93,8 @@ fn render(
                 color: Color::Yellow,
             });
         })
-        .x_bounds([-RADIUS*10.0, RADIUS*10.0])
-        .y_bounds([-RADIUS*10.0, RADIUS*10.0]);
+        .x_bounds([-RADIUS * 10.0, RADIUS * 10.0])
+        .y_bounds([-RADIUS * 10.0, RADIUS * 10.0]);
 
     let horizontal = Layout::horizontal([frame.area().height * 2]).flex(Flex::Center);
     let [area] = horizontal.areas(frame.area());

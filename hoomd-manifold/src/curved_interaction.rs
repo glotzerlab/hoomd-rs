@@ -4,16 +4,16 @@
 /*! Implement CurvedIsotropic
 */
 
-use hoomd_interaction::{pairwise::IsotropicEnergy, SitePairEnergy};
-use hoomd_microstate::property::Position;
-use hoomd_vector::Vector;
 use crate::CurvedManifold;
 use approx::assert_relative_eq;
+use hoomd_interaction::{SitePairEnergy, pairwise::IsotropicEnergy};
+use hoomd_microstate::property::Position;
+use hoomd_vector::Vector;
 use std::marker::PhantomData;
 
-/** [`CurvedManifold`] for Cartesian computes the arc length bewtween two points on an N-sphere of radius R. 
+/** [`CurvedManifold`] for Cartesian computes the arc length bewtween two points on an N-sphere of radius R.
 For two points $\vec{u}$ and $\vec{v}$ on an N-sphere
-embedded in cartesian space, the arclength between $\vec{u}$ and $\vec{v}$ is given by 
+embedded in cartesian space, the arclength between $\vec{u}$ and $\vec{v}$ is given by
 ```math
 d_S(\vec{u},\vec{v}) = R\delta\psi = R\arccos\left(\frac{\vec{u}\cdot\vec{v}}{R^2}\right)
 ```
@@ -36,16 +36,16 @@ assert_eq!(radius* PI/2.0, x.geodesic_distance(&y));
 ```
 */
 
-/** Compute isotropic properties from a pair of sites on a curved manifold, embedded 
-in some vector space. Function is similar to [`Isotropic`], 
-but the metric passed to the energy function is from the embedded manifold. 
+/** Compute isotropic properties from a pair of sites on a curved manifold, embedded
+in some vector space. Function is similar to [`Isotropic`],
+but the metric passed to the energy function is from the embedded manifold.
 */
-pub struct CurvedIsotropic<E, M> { 
+pub struct CurvedIsotropic<E, M> {
     pub isotropic: E,
     pub manifold: M,
 }
 
-impl<V, S, E, M> SitePairEnergy<S> for CurvedIsotropic<E,M>
+impl<V, S, E, M> SitePairEnergy<S> for CurvedIsotropic<E, M>
 where
     S: Position<Vector = V>,
     V: Vector,
@@ -54,16 +54,16 @@ where
 {
     #[inline]
     fn site_pair_energy(&self, a: &S, b: &S) -> f64 {
-        let site_a :M = CurvedManifold::to_manifold(a.position().to_vec());
-        let site_b :M = CurvedManifold::to_manifold(b.position().to_vec());
+        let site_a: M = CurvedManifold::to_manifold(a.position().to_vec());
+        let site_b: M = CurvedManifold::to_manifold(b.position().to_vec());
         self.isotropic.energy(site_a.geodesic_distance(&site_b))
     }
 }
 
-impl<E,M> IsotropicEnergy for CurvedIsotropic<E,M>
+impl<E, M> IsotropicEnergy for CurvedIsotropic<E, M>
 where
     E: IsotropicEnergy,
-    M: CurvedManifold
+    M: CurvedManifold,
 {
     #[inline]
     fn energy(&self, r: f64) -> f64 {

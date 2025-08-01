@@ -44,12 +44,12 @@ pub struct LennardJonesGauss {
     pub epsilon: f64,
     /// Interaction width *(\[length\])*.
     pub sigma_squared: f64,
-    //// Gaussian center
+    /// Gaussian center
     pub r_0: f64,
 }
 
 impl Default for LennardJonesGauss {
-    /** Construct a [`LennardJonesGauss`] with default parameters (epsilon=1.0, sigma_squared=1.0, r_0=0.0)
+    /** Construct a [`LennardJonesGauss`] with default parameters (epsilon=1.0, `sigma_squared=1.0`, `r_0=0.0`)
 
     # Example
 
@@ -73,7 +73,7 @@ impl IsotropicEnergy for LennardJonesGauss {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         let r_inv = r.recip();
-        let arg = -1.0 * (r-self.r_0).powi(2) / (2.0*self.sigma_squared);
+        let arg = -1.0 * (r - self.r_0).powi(2) / (2.0 * self.sigma_squared);
         r_inv.powi(12) - 2.0 * r_inv.powi(6) - self.epsilon * arg.exp()
     }
 }
@@ -82,7 +82,8 @@ impl IsotropicForce for LennardJonesGauss {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         let r_inv = r.recip();
-        let arg = -1.0 * (r-self.r_0).powi(2) / (2.0*self.sigma_squared);
-        12.0 * (r_inv.powi(13) - r_inv.powi(7)) - (self.epsilon*(r-self.r_0)/self.sigma_squared) * arg.exp()
+        let arg = -1.0 * (r - self.r_0).powi(2) / (2.0 * self.sigma_squared);
+        12.0 * (r_inv.powi(13) - r_inv.powi(7))
+            - (self.epsilon * (r - self.r_0) / self.sigma_squared) * arg.exp()
     }
 }

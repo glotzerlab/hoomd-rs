@@ -12,7 +12,7 @@
 @group(2) @binding(5) var image_color_sampler: sampler;
 
 struct VertexOutput {
-    // this is `clip position` when the struct is used as a vertex stage output 
+    // this is `clip position` when the struct is used as a vertex stage output
     // and `frag coord` when used as a fragment stage input
     @builtin(position) position: vec4<f32>,
     @location(0) world_position: vec4<f32>,
@@ -114,4 +114,3 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     //return(vec4<f32>(0, 1-r,1-r/2,1));
     return select(outline_color, vec4<f32>(color, 1.0), r <= radius - outline_width);
 }
-

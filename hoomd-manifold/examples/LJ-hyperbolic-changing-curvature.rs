@@ -3,14 +3,15 @@
 /*! This is an example
 */
 
-use hoomd_interaction::{
-    CutoffPair, pairwise::LennardJones};
+use hoomd_interaction::{CutoffPair, pairwise::LennardJones};
+use hoomd_manifold::{
+    CurvedIsotropic, HyperbolicDisk, HyperbolicTranslate, Hyperboloid, Minkowski,
+};
 use hoomd_mc::{Sweep, Trial};
-use rand::{rngs::StdRng, SeedableRng};
+use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Open, property::Point};
+use libm::{acosh, cosh, exp, sinh, sqrt};
 use rand::distr::Distribution;
-use libm::{cosh, sinh, acosh, sqrt, exp};
-use hoomd_microstate::{Body, Microstate, MicrostateBuilder, property::Point, boundary::Open};
-use hoomd_manifold::{Minkowski, HyperbolicTranslate, Hyperboloid, CurvedIsotropic, HyperbolicDisk};
+use rand::{SeedableRng, rngs::StdRng};
 
 use ratatui::{
     crossterm::event::{self, Event, poll},
@@ -32,29 +33,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     result
 }
 
-const PARTICLE_NUMBER : usize = 100;
+const PARTICLE_NUMBER: usize = 100;
 
 /// Run the simulation
 fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> {
     let mut microstate = MicrostateBuilder::with_boundary(Open)
-    //.bodies([Body::point(Minkowski::from([1.0, -2.0, sqrt(5.0)])),
-    //    Body::point(Minkowski::from([1.0, -1.0, sqrt(3.0)])),
-    //    Body::point(Minkowski::from([-1.0, -2.0, sqrt(5.0)])),
-    //    Body::point(Minkowski::from([-1.0, -1.0, sqrt(3.0)]))])
-    .try_build()?;
+        //.bodies([Body::point(Minkowski::from([1.0, -2.0, sqrt(5.0)])),
+        //    Body::point(Minkowski::from([1.0, -1.0, sqrt(3.0)])),
+        //    Body::point(Minkowski::from([-1.0, -2.0, sqrt(5.0)])),
+        //    Body::point(Minkowski::from([-1.0, -1.0, sqrt(3.0)]))])
+        .try_build()?;
 
     let initial_spacing = 1.0;
     let mut rng = StdRng::seed_from_u64(23);
-    let sample_disk = HyperbolicDisk{
-        r: initial_spacing.try_into()?, 
-        point: Minkowski::from([0.00001,0.00001,sqrt(2.0*(0.00001_f64).powi(2) + 1.0)]),
-        skirt: 1.0,}; 
+    let sample_disk = HyperbolicDisk {
+        r: initial_spacing.try_into()?,
+        point: Minkowski::from([0.00001, 0.00001, sqrt(2.0 * (0.00001_f64).powi(2) + 1.0)]),
+        skirt: 1.0,
+    };
     for _n in 0..PARTICLE_NUMBER {
         let new_point: Minkowski<3> = sample_disk.sample(&mut rng).point;
         microstate.add_body(Body::point(new_point))?;
     }
-    
-    let lj : LennardJones = LennardJones {
+
+    let lj: LennardJones = LennardJones {
         epsilon: 10.0,
         sigma: 0.5,
     };
@@ -68,8 +70,8 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
         }
 
         let evaluator = CurvedIsotropic {
-            isotropic: lj, 
-            manifold: Hyperboloid::from(&Minkowski::from([0.0,0.0,skirt_size(time)])),
+            isotropic: lj,
+            manifold: Hyperboloid::from(&Minkowski::from([0.0, 0.0, skirt_size(time)])),
         };
 
         let cutoff_pair = CutoffPair {
@@ -92,27 +94,27 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     }
 }
 
-const RAD_SQ : f64 = 0.01;
+const RAD_SQ: f64 = 0.01;
 
-/// Project coordinates to Poincare disk 
-fn poincare(point: &Minkowski<3>, skirt: f64) -> [f64;3] {
+/// Project coordinates to Poincare disk
+fn poincare(point: &Minkowski<3>, skirt: f64) -> [f64; 3] {
     let pt = Hyperboloid::from(point);
     let proj = pt.to_poincare();
-    let v = acosh((RAD_SQ + skirt.powi(2))/(skirt.powi(2)-RAD_SQ));
-    let eta = acosh(point.coordinates[2]/skirt);
-    let edge_proj = (skirt * sinh(eta+v))/(1.0 + cosh(eta+v));
-    let rad_proj = (skirt * sinh(eta))/(1.0 + cosh(eta)) - edge_proj;
+    let v = acosh((RAD_SQ + skirt.powi(2)) / (skirt.powi(2) - RAD_SQ));
+    let eta = acosh(point.coordinates[2] / skirt);
+    let edge_proj = (skirt * sinh(eta + v)) / (1.0 + cosh(eta + v));
+    let rad_proj = (skirt * sinh(eta)) / (1.0 + cosh(eta)) - edge_proj;
     [proj[0], proj[1], rad_proj]
 }
 const WAIT_TIME: u64 = 200;
-const SLOPE: f64 = 0.000005; 
+const SLOPE: f64 = 0.000005;
 
 fn skirt_size(time: u64) -> f64 {
     if time < WAIT_TIME {
         1.0
     } else {
         //SLOPE * ((time as f64) - (WAIT_TIME as f64)) + 1.0
-        exp(SLOPE * ( (WAIT_TIME as f64) - (time  as f64)))
+        exp(SLOPE * ((WAIT_TIME as f64) - (time as f64)))
     }
 }
 
@@ -129,11 +131,11 @@ fn render(
             for site in microstate.sites() {
                 let coords = poincare(&site.properties.position, skirt_size(time));
                 ctx.draw(&Circle {
-                x: coords[0],
-                y: coords[1],
-                radius: coords[2],
-                color: Color::Yellow,
-            });
+                    x: coords[0],
+                    y: coords[1],
+                    radius: coords[2],
+                    color: Color::Yellow,
+                });
             }
             ctx.draw(&Circle {
                 x: 0.0,

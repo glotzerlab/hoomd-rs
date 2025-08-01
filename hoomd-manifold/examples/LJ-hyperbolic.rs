@@ -3,14 +3,15 @@
 /*! This is an example
 */
 
-use hoomd_interaction::{
-    CutoffPair, pairwise::LennardJones};
+use hoomd_interaction::{CutoffPair, pairwise::LennardJones};
+use hoomd_manifold::{
+    CurvedIsotropic, HyperbolicDisk, HyperbolicTranslate, Hyperboloid, Minkowski,
+};
 use hoomd_mc::{Sweep, Trial};
-use rand::{rngs::StdRng, SeedableRng};
+use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Open, property::Point};
+use libm::{acosh, cosh, sinh, sqrt};
 use rand::distr::Distribution;
-use libm::{cosh, sinh, acosh, sqrt};
-use hoomd_microstate::{Body, Microstate, MicrostateBuilder, property::Point, boundary::Open};
-use hoomd_manifold::{Minkowski, HyperbolicTranslate, Hyperboloid, CurvedIsotropic, HyperbolicDisk};
+use rand::{SeedableRng, rngs::StdRng};
 
 use ratatui::{
     crossterm::event::{self, Event, poll},
@@ -32,37 +33,42 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     result
 }
 
-const PARTICLE_NUMBER : usize = 500;
-const RHO : f64 = 10.0;
+const PARTICLE_NUMBER: usize = 500;
+const RHO: f64 = 10.0;
 
 /// Run the simulation
 fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> {
     let mut microstate = MicrostateBuilder::with_boundary(Open)
-    //.bodies([Body::point(Minkowski::from([1.0, -2.0, sqrt(5.0)])),
-    //    Body::point(Minkowski::from([1.0, -1.0, sqrt(3.0)])),
-    //    Body::point(Minkowski::from([-1.0, -2.0, sqrt(5.0)])),
-    //    Body::point(Minkowski::from([-1.0, -1.0, sqrt(3.0)]))])
-    .try_build()?;
+        //.bodies([Body::point(Minkowski::from([1.0, -2.0, sqrt(5.0)])),
+        //    Body::point(Minkowski::from([1.0, -1.0, sqrt(3.0)])),
+        //    Body::point(Minkowski::from([-1.0, -2.0, sqrt(5.0)])),
+        //    Body::point(Minkowski::from([-1.0, -1.0, sqrt(3.0)]))])
+        .try_build()?;
 
     let initial_spacing = 1.0;
     let mut rng = StdRng::seed_from_u64(23);
-    let sample_disk = HyperbolicDisk{
-        r: initial_spacing.try_into()?, 
-        point: Minkowski::from([0.00001,0.00001,sqrt(2.0*(0.00001_f64).powi(2) + RHO.powi(2))]),
-        skirt: RHO,}; 
+    let sample_disk = HyperbolicDisk {
+        r: initial_spacing.try_into()?,
+        point: Minkowski::from([
+            0.00001,
+            0.00001,
+            sqrt(2.0 * (0.00001_f64).powi(2) + RHO.powi(2)),
+        ]),
+        skirt: RHO,
+    };
     for _n in 0..PARTICLE_NUMBER {
         let new_point: Minkowski<3> = sample_disk.sample(&mut rng).point;
         microstate.add_body(Body::point(new_point))?;
     }
-    
-    let lj : LennardJones = LennardJones {
+
+    let lj: LennardJones = LennardJones {
         epsilon: 10.0,
         sigma: 0.065507,
     };
 
     let evaluator = CurvedIsotropic {
-        isotropic: lj, 
-        manifold: Hyperboloid::from(&Minkowski::from([0.0,0.0,RHO])),
+        isotropic: lj,
+        manifold: Hyperboloid::from(&Minkowski::from([0.0, 0.0, RHO])),
     };
     let cutoff_pair = CutoffPair {
         r_cut: 10.0,
@@ -91,16 +97,16 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     }
 }
 
-const RAD_SQ : f64 = 0.0001;
+const RAD_SQ: f64 = 0.0001;
 
-/// Project coordinates to Poincare disk 
-fn poincare(point: &Minkowski<3>) -> [f64;3] {
+/// Project coordinates to Poincare disk
+fn poincare(point: &Minkowski<3>) -> [f64; 3] {
     let pt = Hyperboloid::from(point);
     let proj = pt.to_poincare();
-    let v = acosh((RAD_SQ + RHO.powi(2))/(RHO.powi(2)-RAD_SQ));
-    let eta = acosh(point.coordinates[2]/RHO);
-    let edge_proj = (RHO * sinh(eta+v))/(1.0 + cosh(eta+v));
-    let rad_proj = (RHO * sinh(eta))/(1.0 + cosh(eta)) - edge_proj;
+    let v = acosh((RAD_SQ + RHO.powi(2)) / (RHO.powi(2) - RAD_SQ));
+    let eta = acosh(point.coordinates[2] / RHO);
+    let edge_proj = (RHO * sinh(eta + v)) / (1.0 + cosh(eta + v));
+    let rad_proj = (RHO * sinh(eta)) / (1.0 + cosh(eta)) - edge_proj;
     [proj[0], proj[1], rad_proj]
 }
 
@@ -116,11 +122,11 @@ fn render(
             for site in microstate.sites() {
                 let coords = poincare(&site.properties.position);
                 ctx.draw(&Circle {
-                x: coords[0],
-                y: coords[1],
-                radius: coords[2],
-                color: Color::Yellow,
-            });
+                    x: coords[0],
+                    y: coords[1],
+                    radius: coords[2],
+                    color: Color::Yellow,
+                });
             }
             ctx.draw(&Circle {
                 x: 0.0,
@@ -129,8 +135,8 @@ fn render(
                 color: Color::Blue,
             })
         })
-        .x_bounds([-0.7,0.7]) //([-RHO, RHO])
-        .y_bounds([-0.7,0.7]); //([-RHO, RHO]);
+        .x_bounds([-0.7, 0.7]) //([-RHO, RHO])
+        .y_bounds([-0.7, 0.7]); //([-RHO, RHO]);
 
     let horizontal = Layout::horizontal([frame.area().height * 2]).flex(Flex::Center);
     let [area] = horizontal.areas(frame.area());
