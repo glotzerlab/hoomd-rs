@@ -2395,6 +2395,7 @@ dependencies = [
  "rand 0.9.1",
  "rstest",
  "thiserror 2.0.12",
+ "tinyvec",
 ]
 
 [[package]]

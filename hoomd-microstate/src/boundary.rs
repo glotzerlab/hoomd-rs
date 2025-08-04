@@ -10,6 +10,7 @@ interacts with [`Microstate`](crate::Microstate) and model methods.
 use crate::property::Position;
 
 use thiserror::Error;
+use tinyvec::ArrayVec;
 
 mod open;
 mod square;
@@ -29,6 +30,12 @@ pub enum Error {
     #[error("site property cannot be wrapped")]
     CannotWrapSiteProperties,
 }
+
+/// The maximum number of possible ghosts.
+const MAX_GHOSTS: usize = 8;
+
+// Ideally, MAX_GHOSTS would be associated with the boundary type, but that is
+// not currently possible in Rust.
 
 /** Define the subset of the vector space where body and site positions exist.
 
@@ -102,4 +109,32 @@ pub trait Boundary<V, B, S> {
     // NOTE: One might think to make wrap<> generic on a property type.
     // That is not possible because types that implement this trait *must*
     // use the same bounds -- preventing more generic boundary conditions.
+
+    /** The largest interaction distance between sites.
+
+    The maximum allowable interaction range is the largest distance between two
+    interacting sites. [`Microstate`](crate::Microstate) will place ghosts within
+    this range outside periodic boundaries.
+    */
+    #[inline]
+    fn maximum_allowable_interaction_range(&self) -> f64 {
+        f64::INFINITY
+    }
+
+    /** Place periodic images of sites within the interaction range.
+
+    Given `site_properties` inside the boundary, `generate_ghosts`
+    places periodic images of that site. It must place all ghosts
+    needed to compute interactions with other sites in the given
+    [`maximum_allowable_interaction_range`].
+
+    [`maximum_allowable_interaction_range`]: Self::maximum_allowable_interaction_range
+    */
+    #[inline]
+    fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]>
+    where
+        S: Default,
+    {
+        ArrayVec::new()
+    }
 }
