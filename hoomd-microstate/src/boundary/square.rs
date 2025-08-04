@@ -25,6 +25,7 @@ let square = Square { l: 10.0.try_into()? };
 assert_eq!(square.l.get(), 10.0);
 # Ok(())
 # }
+```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Square {

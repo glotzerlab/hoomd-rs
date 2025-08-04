@@ -14,9 +14,11 @@ use tinyvec::ArrayVec;
 
 mod open;
 mod square;
+mod periodic_square;
 
 pub use open::Open;
 pub use square::Square;
+pub use periodic_square::PeriodicSquare;
 
 /// Enumerate possible sources of error in fallible boundary methods.
 #[non_exhaustive]
@@ -36,6 +38,10 @@ const MAX_GHOSTS: usize = 8;
 
 // Ideally, MAX_GHOSTS would be associated with the boundary type, but that is
 // not currently possible in Rust.
+
+// TODO: Boundary is not working well with all methods in one trait.
+// Perhaps the best solution is to separate is_inside, wrap, and
+// generate_ghosts into separate traits.
 
 /** Define the subset of the vector space where body and site positions exist.
 
@@ -112,23 +118,22 @@ pub trait Boundary<V, B, S> {
 
     /** The largest interaction distance between sites.
 
-    The maximum allowable interaction range is the largest distance between two
-    interacting sites. [`Microstate`](crate::Microstate) will place ghosts within
-    this range outside periodic boundaries.
+    The maximum interaction range is the largest distance between two
+    interacting sites. [`Microstate`](crate::Microstate) will place ghosts
+    within this range outside periodic boundaries.
     */
     #[inline]
-    fn maximum_allowable_interaction_range(&self) -> f64 {
+    fn maximum_interaction_range(&self) -> f64 {
         f64::INFINITY
     }
 
     /** Place periodic images of sites within the interaction range.
 
-    Given `site_properties` inside the boundary, `generate_ghosts`
-    places periodic images of that site. It must place all ghosts
-    needed to compute interactions with other sites in the given
-    [`maximum_allowable_interaction_range`].
+    Given `site_properties` inside the boundary, `generate_ghosts` places
+    periodic images of that site. It must place all ghosts needed to compute
+    interactions with other sites in the given [`maximum_interaction_range`].
 
-    [`maximum_allowable_interaction_range`]: Self::maximum_allowable_interaction_range
+    [`maximum_interaction_range`]: Self::maximum_interaction_range
     */
     #[inline]
     fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]>

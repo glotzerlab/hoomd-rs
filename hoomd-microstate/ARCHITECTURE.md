@@ -247,22 +247,22 @@ where wrapping applies operations other than translation. For example, a twisted
 cylinder.
 
 The ghost sites facilitate pairwise interactions across periodic boundaries.
-Each boundary has a maximum allowable interaction range which is infinite for
+Each boundary has a maximum interaction range which is infinite for
 open and fully closed boundaries, and can be set up to the the minimum image for
 periodic boundaries. `generate_ghosts` must take the given site and generate all
-of the ghosts that are needed to find interactions within that maximum allowable
+of the ghosts that are needed to find interactions within that maximum 
 interaction range. In all geometries we can think of, there will be a small
 integer number of maximum ghosts per particle. To efficiently and conveniently
 express the generation of 0..MAX_GHOSTS ghosts, hoomd-rs uses the ArrayVec data
 type and each boundary must set the associated constant MAX_GHOSTS.
 
-The maximum allowable interaction range is a user parameter that can be set
+The maximum interaction range is a user parameter that can be set
 anywhere from 0 up to the minimum image for the boundary. Setting it larger
 than the minimum image should result in an error. Similarly, resizing the box to
-the point that the minimum image is less than the maximum allowable interaction
+the point that the minimum image is less than the maximum interaction
 range is also an error. As a side note, requesting the iteration over nearby
 sites with a larger r_cut is not an error - however it will only produce sites
-that are within the maximum allowable interaction range. It is the user's
+that are within the maximum interaction range. It is the user's
 responsibility to ensure that the box's interaction range and the pair potential
 r_cut are set appropriately.
 
@@ -428,9 +428,8 @@ highest bit of the integer).
 Self interactions: In small boxes, it is possible for sites to interact with
 their own images. Allowing this is very complex and not really a design goal
 for hoomd-rs. Users who need self-interactions in MC can use HOOMD-blue.
-Microstate's `iter_sites_near` method will apply a cutoff radius is that is
-the minimum of the caller requested cutoff and the box's maximum allowable
-interaction range.
+Microstate's `iter_sites_near` method will apply a cutoff radius is that is the
+minimum of the caller requested cutoff and the box's maximum interaction range.
 
 Open questions in this design:
 
