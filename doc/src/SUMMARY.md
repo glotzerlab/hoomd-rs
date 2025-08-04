@@ -1,6 +1,6 @@
 # Summary
 
-[hoomd-rs Documentation](index.md)
+[Introduction](index.md)
 
 # Getting started
 

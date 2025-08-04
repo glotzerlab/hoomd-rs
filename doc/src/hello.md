@@ -12,7 +12,7 @@ generic languages like Python with the best features of strongly-typed compiled
 languages like C++. *hoomd-rs* takes full advantage of these capabilities to
 provide a simulation framework that is fully customizable while still compiling
 down to machine code. [The Rust Programming Language] explains everything you
-need to know about the language.
+need to know about the language itself.
 
 Before continuing, you will need to install [Rust]. On Linux, Mac, and WSL
 you can install Rust with a single command:
