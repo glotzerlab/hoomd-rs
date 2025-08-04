@@ -3,8 +3,7 @@
 
 /*! Implement [`Microstate`] and related types.
  */
-// TODO: Review doc examples. Look for extra newlines, or other opportunities
-// to add bodies and not need type annotations.
+
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 
@@ -36,13 +35,12 @@ The generic type names are:
 * `S`: The [`Site::properties`](crate::Site) type.
 * `C`: The [`boundary`](crate::boundary) condition type.
 
-
 ## Constructing Microstate
 
-You will find many examples in this documentation using [`Microstate::new`].
-It is designed to be terse, and is inflexible as a consequence.
-[`Microstate::new`] always sets [`Open`](boundary::Open) boundary conditions and
-initializes the seed and step to 0.
+You will find many examples in this documentation using [`Microstate::new`]. It
+is designed to be terse, and is inflexible as a consequence. [`Microstate::new`]
+always sets [`Open`](crate::boundary::Open) boundary conditions and initializes
+the seed and step to 0.
 ```
 use hoomd_microstate::Microstate;
 # use hoomd_microstate::{Body, property::Point};
