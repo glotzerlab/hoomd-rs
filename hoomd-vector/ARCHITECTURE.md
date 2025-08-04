@@ -11,7 +11,7 @@ in a normed vector space with *n* dimensions:
 - Dot product
 - Norm and norm squared
 
-This design allows the majority of HOOMD-rs code to be written _independent_ of the
+This design allows the majority of hoomd-rs code to be written _independent_ of the
 vector's representation and dimension. Some specific calculations may require
 cross products, defined in specific trait: `Cross`.
 
@@ -24,7 +24,7 @@ vectors.
 ### User-defined vectors
 
 Users can implement custom types (e.g. spherical coordinates) that implement `Vector`
-as needed. Many internal computations inside HOOMD-rs rely on Cartesian vectors, so
+as needed. Many internal computations inside hoomd-rs rely on Cartesian vectors, so
 all user-defined vectors must implement the conversion traits:
 ```
 impl From<CustomVector> for vector::Cartesian<3> {

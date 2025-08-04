@@ -15,7 +15,8 @@ use rand::distr::Distribution;
 /** Move the position of a body by a small distance.
 
 `Translate` proposes local trial moves that translate the position of a body
-in space by a random vector up a given maximum length.
+in space by a random vector up a given maximum length, given by a
+[`PositiveReal`](hoomd_utility::valid::PositiveReal).
 
 # Example
 

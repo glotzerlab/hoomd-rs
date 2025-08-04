@@ -29,11 +29,6 @@ jobs:
       run: rustup component add rustfmt
     - name: Install clippy
       run: rustup component add clippy
-    - uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
-      with:
-        path: |
-          ~/.cache/pre-commit/
-        key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
     - uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5.2.0
       with:
         python-version: "3.12"

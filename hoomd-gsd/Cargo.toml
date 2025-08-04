@@ -1,12 +1,11 @@
 [package]
 name = "hoomd-gsd"
 categories.workspace = true
-description = "."
+description = "Read and write GSD files."
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 license.workspace = true
-readme = "hoomd-gsd/README.md"
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true

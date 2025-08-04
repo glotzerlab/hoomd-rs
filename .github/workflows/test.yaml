@@ -22,7 +22,7 @@ env:
 
 jobs:
   unit_test:
-    name: Unit test [${{ matrix.mode }}-rust-${{ matrix.rust }}-${{ matrix.os }}]
+    name: Unit test [${{ matrix.profile }}-rust-${{ matrix.rust }}-${{ matrix.os }}]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -30,45 +30,73 @@ jobs:
         os:
           - ubuntu-24.04
           # Disable macOS tests to avoid burning through free GitHub Actions minutes.
-          # TODO: Enable after the project made public.
+          # TODO: Include Mac and Windows tests after the project made public.
           # - macos-14
         rust:
-          # Test multiple rust versions on multiple platforms in debug mode.
-          - 1.86.0
-          - 1.87.0
+          # Test multiple rust versions on multiple platforms in the debug profile.
+          # TODO: Enable after open source release
+          # - 1.86.0
+          # - 1.87.0
           - 1.88.0
-        mode:
-         - debug
+        profile:
+         - dev
+        target:
+         - ''
 
         include:
         # Add a release build on linux with the latest version of rust.
+        # TODO: enable after open source release
+        # - os: ubuntu-24.04
+        #   rust: 1.88.0
+        #   profile: release
+
+        # Add a WASM build.
         - os: ubuntu-24.04
           rust: 1.88.0
-          mode: release
+          profile: dev-wasm
+          target: wasm32-unknown-unknown
 
     steps:
     - name: Checkout
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     - name: Update rust
       run: rustup install ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
+    - name: Install target
+      run: rustup target install ${{ matrix.target }}
+      if: ${{ matrix.target != '' }}
     - name: Check rust installation
       run: rustc -vV
-    - uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
-      with:
-        path: |
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: ${{ runner.os }}-rust-${{ matrix.rust }}-cargo-unit-test-${{ matrix.mode }}-${{ hashFiles('**/Cargo.lock') }}
+
     - name: Build
-      run: cargo build ${{ matrix.mode == 'release' && '--release' || '' }} --workspace --all-targets --all-features --verbose
+      run: >
+        cargo build
+        --profile ${{ matrix.profile }}
+        ${{ matrix.target != '' && '--target' || '' }}
+        ${{ matrix.target }}
+        --workspace
+        --all-targets
+        --all-features
+        --verbose
+
     - name: Run tests
-      run: cargo test ${{ matrix.mode == 'release' && '--release' || '' }} --workspace --verbose
+      run: >
+        cargo test
+        --profile ${{ matrix.profile }}
+        --workspace
+        --verbose
+      if: ${{ matrix.target == '' }}
+
     - name: Build API documentation
-      run: cargo doc --workspace --all-features --no-deps
+      run: >
+        cargo doc
+        --workspace
+        --all-features
+        --no-deps
+      if: ${{ matrix.target == '' }}
+
     - name: Run benchmarks
       run: cargo bench
+      if: ${{ matrix.target == '' }}
 
   tests_complete:
     name: All tests

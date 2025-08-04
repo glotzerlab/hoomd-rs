@@ -1,9 +1,9 @@
-# HOOMD-rs Code Architecture
+# hoomd-rs Code Architecture
 
 ## Organization
 
-HOOMD-rs is organized in many individual crates so that external code does not need to
-compile all of HOOMD-rs when using only a portion.
+hoomd-rs is organized in many individual crates so that external code does not need to
+compile all of hoomd-rs when using only a portion.
 
 ### hoomd_vector
 
@@ -45,7 +45,7 @@ are tightly interconnected, and most releases will update more than one crate at
 
 ## Design Philosophy
 
-HOOMD-rs's design prioritizes:
+hoomd-rs's design prioritizes:
 * Flexibility
 * Reusability
 * Code readability
@@ -54,7 +54,7 @@ HOOMD-rs's design prioritizes:
 * Micro-optimizations targeted at specific hardware
 _in that order._
 
-**HOOMD-rs's** big brother, [HOOMD-blue], prioritizes micro-optimizations _first_ and
+**hoomd-rs's** big brother, [HOOMD-blue], prioritizes micro-optimizations _first_ and
 makes code reusable only at the Python level.
 
 [HOOMD-blue]: https://hoomd-blue.readthedocs.io
@@ -68,18 +68,18 @@ performed.
 > Note: In this context, **customize** means that the user provides custom **code**
 > via implementing a trait or passing a Fn, not just changing parameters.
 
-HOOMD-rs implements all components of the simulation in a **reusable** manner so that
+hoomd-rs implements all components of the simulation in a **reusable** manner so that
 users can take any portion of the calculation and use it outside the context of a
-specific simulation. Everywhere that is possible, HOOMD-rs implements calculations,
+specific simulation. Everywhere that is possible, hoomd-rs implements calculations,
 data structures, and traits _without_ a reference to any centralized system object.
 
-When users inspect HOOMD-rs's implementation, they will find clearly readable and
+When users inspect hoomd-rs's implementation, they will find clearly readable and
 documented methods. Complex calculations should be split into short and understandable
 methods. Where possible, concerns are separated into well-defined traits that the
 user can override (see **flexibility**). These traits should define a minimum number of
 clearly named associated methods.
 
-HOOMD-rs's design is intentionally **simple**. For example, it does not provide
+hoomd-rs's design is intentionally **simple**. For example, it does not provide
 a massive library of particle interactions, but only the few most common (e.g.
 Lennard-Jones, Hypersphere). Users should take advantage of **flexibility** to define
 custom interactions for their model. Keeping the code **simple** will reduce the time
@@ -88,20 +88,20 @@ method.
 
 Minimizing the wall clock time needed to complete a simulation is also important,
 but is not at the top of the list. Keeping **flexibility**, **readability**, and
-**simplicity** in mind - HOOMD-rs uses appropriate algorithms and data structures
+**simplicity** in mind - hoomd-rs uses appropriate algorithms and data structures
 (e.g. spatial searches) everywhere needed so that simulations can execute quickly.
 Domain decomposition and GPU algorithms are completely off the table as they are not
 flexible, readable, or simple (use [HOOMD-blue] if you need that level of performance).
 Multithreaded CPU calculations may be achievable for some simulation algorithms within
-this framework, but certainly not for all. Therefore, HOOMD-rs does not **require**
+this framework, but certainly not for all. Therefore, hoomd-rs does not **require**
 that every method support multithreading by default. This section will be updated
 after we evaluate the performance possible by multithreading vs the cost to simplicity
 and flexibility. It may be that we need to offer a simpler serial implementation
 with more flexibility in addition to a more complex multithreaded implementation with
 restrictions.
 
-HOOMD-rs rarely implements **micro-optimizations that target specific hardware**. For
-example, HOOMD-rs uses an _array-of-structures_ for the simulation state because this is
+hoomd-rs rarely implements **micro-optimizations that target specific hardware**. For
+example, hoomd-rs uses an _array-of-structures_ for the simulation state because this is
 vastly **simpler** than a _structure-of-arrays_ and at the same time allows users to
 easily add custom per-particle attributes. The cost is slightly reduced performance
 due to cache memory inefficiencies.
@@ -109,15 +109,15 @@ due to cache memory inefficiencies.
 ### Crate-specific Design
 
 Each crate's rustdoc documentation explains its own architecture. This document focuses
-on architecture common to all HOOMD-rs crates.
+on architecture common to all hoomd-rs crates.
 
 ## Logging
 
-HOOMD-rs writes nothing to stdout/stderr by default. It instead uses the
-[Rust log crate] so that users can opt in to detailed logging when desired. HOOMD-rs
+hoomd-rs writes nothing to stdout/stderr by default. It instead uses the
+[Rust log crate] so that users can opt in to detailed logging when desired. hoomd-rs
 uses log levels in the following circumstances:
 
-* `error`: _Unused_. HOOMD-rs methods return a `Result<Error>` with a detailed
+* `error`: _Unused_. hoomd-rs methods return a `Result<Error>` with a detailed
   description provided in the error. The caller can log this description with `error()`
   when desired.
 * `warn`: Used sparingly to warn the user of technically well-defined but likely

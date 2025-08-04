@@ -158,7 +158,7 @@ let mut microstate = Microstate::new();
 microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
 let d = 0.1;
 let translate = Translate { maximum_distance: d.try_into()? };
-let translate_sweep = Sweep{ local: translate };
+let translate_sweep = Sweep(translate);
 
 let mut count = Count::default();
 

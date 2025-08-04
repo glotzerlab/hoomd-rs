@@ -136,41 +136,6 @@ TODO: Implement ghost sites, then document.
 
 TODO: Implement spatial search, then document.
 
-## Constructing Microstate
-
-You will find many examples in this documentation using [`Microstate::new`].
-It is designed to be terse, and is inflexible as a consequence.
-[`Microstate::new`] always sets [`Open`](boundary::Open) boundary conditions and
-initializes the seed and step to 0.
-```
-use hoomd_microstate::{Microstate, property::Point};
-use hoomd_vector::Cartesian;
-
-let microstate = Microstate::<Cartesian<2>, Point<Cartesian<2>>>::new();
-```
-
-When you need more control, use [`MicrostateBuilder`] to set the boundary conditions,
-use a different seed or starting step:
-
-```
-use hoomd_microstate::{Microstate, MicrostateBuilder, property::Point};
-use hoomd_microstate::boundary::Square;
-use hoomd_vector::Cartesian;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let square = Square { l: 10.0.try_into()? };
-
-let microstate = MicrostateBuilder::with_boundary(square)
-    .seed(0x43abf1)
-    .step(100_000)
-    .try_build()?;
-# Ok(())
-# }
-```
-
-TODO: Show a GSD file example when implemented.
-
-TODO: Show the use of a random particle placement recipe when implemented.
 */
 
 pub mod boundary;

@@ -42,27 +42,33 @@ See any one of the many *hoomd-rs* examples that use [`HoomdBevyPlugin`].
 `hoomd-bevy` provides the following assets:
 
 * `embedded://hoomd_bevy/logo.png` - The HOOMD logo (512 x 512).
+
+# Feature flags
+
+* `doc-example` Make examples suitable for display in a web browser.
+* `webgpu` Compile for the WebGPU platform when building for the wasm32 target.
 */
 
 use anyhow::Context;
+use bevy::{asset::embedded_asset, prelude::*, time::common_conditions::once_after_delay};
+#[cfg(not(target_arch = "wasm32"))]
 use bevy::{
-    asset::embedded_asset,
-    prelude::*,
     render::view::window::screenshot::{Screenshot, save_to_disk},
-    time::common_conditions::{on_timer, once_after_delay},
+    time::common_conditions::on_timer,
 };
 use bevy_diagnostic::{
     Diagnostic, DiagnosticPath, Diagnostics, DiagnosticsStore, FrameTimeDiagnosticsPlugin,
     RegisterDiagnostic,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use bevy_winit::WinitWindows;
 
-use std::time::{Duration, Instant};
+use web_time::{Duration, Instant};
 
 pub mod representation;
 
 /// The default color for the primary representation.
-pub const PRIMARY_COLOR: Color = Color::srgb(168.0 / 255.0, 208.0 / 255.0, 222.0 / 255.0);
+pub const PRIMARY_COLOR: Color = Color::srgb(249.0 / 255.0, 203.0 / 255.0, 136.0 / 255.0);
 
 /// The default color for the boundary representation.
 pub const BOUNDARY_COLOR: Color = Color::srgb(0.0, 0.0, 0.0);
@@ -316,7 +322,7 @@ where
     }
 
     /// Create the full screen UI text overlay node.
-    fn setup_overlay(mut commands: Commands) {
+    fn setup_overlay(mut commands: Commands, mut ui_scale: ResMut<UiScale>) {
         commands.spawn((
             Node {
                 top: Val::Px(0.0),
@@ -330,6 +336,12 @@ where
             Visibility::Visible,
             OverlayRoot,
         ));
+
+        ui_scale.0 = if cfg!(feature = "doc-example") {
+            0.5
+        } else {
+            1.0
+        };
     }
 
     /// Add debug text nodes.
@@ -372,17 +384,29 @@ where
 
     /// Add the help text UI node.
     fn add_help_text(mut commands: Commands, overlay_root: Single<Entity, With<OverlayRoot>>) {
-        let text = (
-            Text::new(
-                "q       : Quit.
-<space> : Pause the simulation.
-<right> : Advance one step (while paused).
+        let mut help_text = String::new();
+
+        #[cfg(not(target_arch = "wasm32"))]
+        help_text.push_str("q       : Quit.\n");
+
+        help_text.push_str(
+            "<space> : Pause the simulation.
+<right>: Advance one step (while paused).
 shift-F1: Show/hide the user interface.
 F5      : Show/hide debugging information.
-F12     : Take a screenshot (screenshot.png).
-<esc>   : Open/close the settings menu.
+",
+        );
+
+        #[cfg(not(target_arch = "wasm32"))]
+        help_text.push_str("F12     : Take a screenshot (screenshot.png).\n");
+
+        help_text.push_str(
+            "<esc>   : Open/close the settings menu.
 ?       : Show/hide this help text.",
-            ),
+        );
+
+        let text = (
+            Text::new(help_text),
             BackgroundColor(Self::UI_BACKGROUND),
             HelpText,
         );
@@ -590,7 +614,9 @@ F12     : Take a screenshot (screenshot.png).
     }
 
     /// Keyboard command to quit.
+    #[cfg(not(target_arch = "wasm32"))]
     fn keyboard_quit(mut exit: EventWriter<AppExit>, keys: Res<ButtonInput<KeyCode>>) {
+        #[cfg(not(target_arch = "wasm32"))]
         if keys.just_pressed(KeyCode::KeyQ) {
             debug!("Quitting...");
             exit.write(AppExit::Success);
@@ -598,6 +624,7 @@ F12     : Take a screenshot (screenshot.png).
     }
 
     /// Implement keyboard commands for common operations.
+    #[cfg(not(target_arch = "wasm32"))]
     fn keyboard_screenshot(mut commands: Commands, keys: Res<ButtonInput<KeyCode>>) {
         if keys.just_pressed(KeyCode::F12) {
             commands
@@ -611,6 +638,7 @@ F12     : Take a screenshot (screenshot.png).
     Derive this time from the current monitor refresh rate and the
     `frame_budget_fraction` settings.
     */
+    #[cfg(not(target_arch = "wasm32"))]
     fn set_frame_budget(
         winit: NonSend<WinitWindows>,
         windows: Query<Entity, With<Window>>,
@@ -632,6 +660,7 @@ F12     : Take a screenshot (screenshot.png).
     }
 
     /// Detect the minimum frame time for all windows.
+    #[cfg(not(target_arch = "wasm32"))]
     fn detect_frame_time(
         winit: NonSend<WinitWindows>,
         windows: impl Iterator<Item = Entity>,
@@ -798,8 +827,6 @@ F12     : Take a screenshot (screenshot.png).
                 (
                     (Self::keyboard_overlay, Self::update_debug_text).chain(),
                     Self::keyboard_menu,
-                    Self::keyboard_quit,
-                    Self::keyboard_screenshot,
                 )
                     .in_set(AlwaysInputSet),
             )
@@ -815,11 +842,19 @@ F12     : Take a screenshot (screenshot.png).
             .add_systems(
                 Update,
                 (Self::keyboard_sps, Self::keyboard_frame_budget).in_set(SettingsMenuInputSet),
-            )
-            .add_systems(
-                Update,
-                Self::set_frame_budget.run_if(on_timer(Duration::from_millis(250))),
             );
+
+        #[cfg(not(target_arch = "wasm32"))]
+        app.add_systems(
+            Update,
+            Self::set_frame_budget.run_if(on_timer(Duration::from_millis(250))),
+        );
+
+        #[cfg(not(target_arch = "wasm32"))]
+        app.add_systems(
+            Update,
+            (Self::keyboard_quit, Self::keyboard_screenshot).in_set(AlwaysInputSet),
+        );
 
         app.configure_sets(
             Update,
@@ -834,5 +869,26 @@ F12     : Take a screenshot (screenshot.png).
                     .after(AdvanceSet),
             ),
         );
+    }
+}
+
+/** Construct the default plugins.
+
+This helper adds Bevy's `DefaultPlugins` by default. When the
+`doc-example` feature is enabled, it adds a modified set of plugins
+for the web.
+*/
+pub fn add_default_plugins(app: &mut App) {
+    if cfg!(feature = "doc-example") {
+        app.add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                canvas: Some("#hoomd-example".into()),
+                fit_canvas_to_parent: true,
+                ..default()
+            }),
+            ..default()
+        }));
+    } else {
+        app.add_plugins(DefaultPlugins);
     }
 }
