@@ -3,16 +3,16 @@
 ## Rust
 
 The first thing you need to understand about *hoomd-rs* is that it is not an
-application or package that you install. Rather it is a **Rust crate** that you
-can use to implement your particular simulation model.
+application or package that you install. Rather it is a **[Rust] crate** that you
+can use to implement your simulation models.
 
-Wait, [Rust]. What is that? If you are not familiar with Rust, it is a
-relatively new programming language that (in the opinion of the *hoomd-rs*
-developers) combines the best features of generic languages like Python with
-the best features of strongly-typed compiled languages like C++. *hoomd-rs*
-takes full advantage of these capabilities to provide a simulation framework
-that is fully customizable while still compiling down to machine code. [The Rust
-Programming Language] explains everything you need to know about the language.
+If you are not familiar with [Rust], it is a relatively new programming language
+that (in the opinion of the *hoomd-rs* developers) combines the best features of
+generic languages like Python with the best features of strongly-typed compiled
+languages like C++. *hoomd-rs* takes full advantage of these capabilities to
+provide a simulation framework that is fully customizable while still compiling
+down to machine code. [The Rust Programming Language] explains everything you
+need to know about the language.
 
 Before continuing, you will need to install [Rust]. On Linux, Mac, and WSL
 you can install Rust with a single command:
@@ -86,7 +86,7 @@ and molecular dynamics simulations using *hoomd-rs*.
 > to troubleshoot problems with your code, but they run **very slowly**. When
 > your code is working, build in **release** mode and it will run much faster:
 > ```shell
-> cargo run --release
+> $ cargo run --release
 > ```
 
 

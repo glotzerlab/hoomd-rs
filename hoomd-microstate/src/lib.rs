@@ -171,8 +171,6 @@ let microstate = MicrostateBuilder::with_boundary(square)
 ```
 
 TODO: Show a GSD file example when implemented.
-
-TODO: Show the use of a random particle placement recipe when implemented.
 */
 
 pub mod boundary;

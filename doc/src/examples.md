@@ -5,7 +5,7 @@ on the display to focus it. Click on the rest of the page to cancel that focus.
 
 While focused, you can interact with the simulation. All the examples have a few
 common controls. For example, you can press `<space>` to pause the simulation
-and then the right arrow to advance it one step at a time. You can also press
+and then the `<right arrow>` to advance it one step at a time. You can also press
 `<esc>` to bring up the settings screen and then `-` to decrease the simulation
 speed. Press `?` to see a help screen that shows all the keyboard controls.
 
@@ -45,11 +45,11 @@ you will need the *Microsoft C++ build tools*.
 
 > [!IMPORTANT]
 > You should build the interactive examples in the *native environment* for your
-> platform. Bevy claims support for WSL. One guide recommends that you instead
-> [cross compile for native Windows] in WSL. However, the *hoomd-rs* developers
-> were unable to successfully use either method (GPU errors in WSL, and compile
-> errors when cross-compiling `getrandom`). *See the browser application method
-> below for an alternative that does work in WSL*.
+> platform. Bevy claims support for WSL. One guide suggests that there are some problems
+> with this and recommends that you instead [cross compile for native Windows] in WSL.
+> Several the *hoomd-rs* developers have encountered problems with one or both
+> methods. *See the browser application method below for an alternative that does work
+> in WSL*.
 
 > [!NOTE]
 > These additional software dependencies are *only* needed to build examples
