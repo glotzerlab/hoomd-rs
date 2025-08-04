@@ -3,8 +3,8 @@
 ## Vector
 
 The `hoomd_vector` crate defines a generic `Vector` trait that is independent of
-representation. The trait consists of methods that can _only_ be applied to all vectors
-in a normed vector space with *n* dimensions:
+representation. The trait consists of methods that can be applied to all vectors
+in a metric vector space with *n* dimensions:
 
 - Vector addition & subtraction
 - Multiplication by a scalar

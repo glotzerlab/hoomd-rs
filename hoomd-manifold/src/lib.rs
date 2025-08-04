@@ -8,9 +8,10 @@
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
 
-/*! Tools for non-Euclidean geometries. Includes trait [`Sphere`] which calculates geodesic
-distances on a the surface of an N-sphere, and trait [`Hyperboloid`] which calculates
-geodesic distances on the hyperboloid embedded in [`Minkowski`].
+/*! Tools for non-Euclidean geometries. The trait [`CurvedManifold`] implements the `geodesic_distance` method
+for calculating geodesic distances for manifolds imbedded in a metric vector space. This crate Includes the struct
+ [`Sphere`], an embedding of an N-sphere within (N+1)-dimensional cartesian space, as well as [`Hyperboloid`], the
+ surface of the upper sheet of an N-dimensional two-sheeted hyperboloid embedded in (N+1)-dimensional Minkowski space.
 
 ## Sphere
 
