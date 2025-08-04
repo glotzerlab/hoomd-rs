@@ -94,3 +94,6 @@ impl<V, R> Orientation for OrientedPoint<V, R> {
         &mut self.orientation
     }
 }
+
+// TODO: tests.
+// TODO: Transform<OrientedPoint> for OrientedPoint.

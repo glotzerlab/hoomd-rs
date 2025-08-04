@@ -76,8 +76,6 @@ where
     }
 }
 
-// TODO: Transform<OrientedPoint> for OrientedPoint.
-
 impl<V> Position for Point<V> {
     type Vector = V;
 
@@ -91,3 +89,5 @@ impl<V> Position for Point<V> {
         &mut self.position
     }
 }
+
+// TODO: tests.
