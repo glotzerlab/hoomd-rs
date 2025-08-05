@@ -1,10 +1,10 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement Single
+/*! Implement `Single`
 */
 
-use crate::{DeltaEnergyOne, SiteEnergy, TotalEnergy};
+use crate::{DeltaEnergyOne, DeltaEnergyInsert, SiteEnergy, TotalEnergy};
 use hoomd_microstate::{Body, Microstate, Transform, boundary::Boundary, property::Position};
 
 /** Compute system properties from external fields.
@@ -85,7 +85,7 @@ where
     }
 }
 
-/** Evaluate the change in energy due to functions that act on single sites.
+/** Evaluate the change in energy when a single body is updated.
 
 # Example
 
@@ -139,6 +139,58 @@ where
             .fold(0.0, |total, s| total + self.site_energy(&s.properties));
 
         energy_final - energy_initial
+    }
+}
+
+/** Evaluate the change in energy when a single body is inserted.
+
+# Example
+
+```
+use hoomd_interaction::{DeltaEnergyInsert, Single, external::Linear};
+use hoomd_microstate::{Microstate, Body, property::Point};
+use hoomd_vector::Cartesian;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut microstate = Microstate::new();
+microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
+
+let linear = Single(Linear{ alpha: 1.0,
+    plane_origin: Cartesian::default(),
+    plane_normal: [0.0, 1.0].try_into()? });
+
+let delta_energy = linear.delta_energy_insert(&microstate,
+    &Body::point([0.0, -1.0].into()));
+assert_eq!(delta_energy, -1.0);
+# Ok(())
+# }
+```
+*/
+impl<V, B, S, C, E> DeltaEnergyInsert<B, S, C> for Single<E>
+where
+    E: SiteEnergy<S>,
+    B: Transform<S>,
+    S: Position<Vector = V>,
+    C: Boundary<V, B, S>,
+{
+    #[inline]
+    fn delta_energy_insert(
+        &self,
+        initial_microstate: &Microstate<B, S, C>,
+        new_body: &Body<B, S>,
+    ) -> f64 {
+        let mut energy_final = 0.0;
+        for s in &new_body.sites {
+            match initial_microstate
+                .boundary()
+                .wrap_site(new_body.properties.transform(s))
+            {
+                Ok(wrapped_site) => energy_final += self.site_energy(&wrapped_site),
+                Err(_) => return f64::INFINITY,
+            }
+        }
+
+        energy_final
     }
 }
 
@@ -201,7 +253,7 @@ mod tests {
         assert_eq!(single.site_energy(&microstate.sites()[1].properties), 2.0);
     }
 
-    mod delta_energy {
+    mod delta_energy_one {
         use super::*;
 
         struct Zero;
@@ -239,5 +291,9 @@ mod tests {
                 f64::INFINITY
             );
         }
+
+        // TODO: Test DeltaEnergyOne delta E
     }
+
+    // TODO: Test DeltaEnergyInsert
 }

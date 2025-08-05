@@ -4,7 +4,7 @@
 /*! Implement `*Energy` for varying lengths of tuples.
 */
 
-use super::{DeltaEnergyOne, TotalEnergy};
+use super::{DeltaEnergyInsert, DeltaEnergyOne, TotalEnergy};
 use hoomd_microstate::{Body, Microstate};
 
 /** Sum two delta energy terms.
@@ -66,6 +66,8 @@ where
     }
 }
 
+// TODO: Document
+
 impl<M, E1, E2> TotalEnergy<M> for (E1, E2)
 where
     E1: TotalEnergy<M>,
@@ -76,6 +78,31 @@ where
         let mut total = self.0.total_energy(microstate);
         if total != f64::INFINITY {
             total += self.1.total_energy(microstate);
+        }
+        total
+    }
+}
+
+// TODO: Document
+
+impl<B, S, C, E1, E2> DeltaEnergyInsert<B, S, C> for (E1, E2)
+where
+    E1: DeltaEnergyInsert<B, S, C>,
+    E2: DeltaEnergyInsert<B, S, C>,
+{
+    #[inline]
+    fn delta_energy_insert(
+        &self,
+        initial_microstate: &Microstate<B, S, C>,
+        new_body: &Body<B, S>,
+    ) -> f64 {
+        let mut total = self
+            .0
+            .delta_energy_insert(initial_microstate, new_body);
+        if total != f64::INFINITY {
+            total += self
+                .1
+                .delta_energy_insert(initial_microstate, new_body);
         }
         total
     }
