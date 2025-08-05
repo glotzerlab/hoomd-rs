@@ -4,10 +4,11 @@
 /*! Implement Sweep
 */
 
-use super::{Count, DeltaEnergyOne, LocalTrial, Trial};
+use super::{Count, LocalTrial, Trial};
 use hoomd_microstate::boundary::Boundary;
 use hoomd_microstate::property::Position;
 use hoomd_microstate::{Body, Microstate, Transform};
+use hoomd_interaction::DeltaEnergyOne;
 
 use rand::Rng;
 
@@ -24,9 +25,9 @@ the change in energy computed by the given `hamiltonian` and $`kT`$ is the given
 # Example
 
 ```
-use hoomd_mc::{Sweep, Translate, Trial, Zero};
-use hoomd_microstate::property::Position;
-use hoomd_microstate::{Body, Microstate};
+use hoomd_interaction::Zero;
+use hoomd_mc::{Sweep, Translate, Trial};
+use hoomd_microstate::{Body, Microstate, property::Position};
 use hoomd_vector::Cartesian;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -113,9 +114,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Translate, Zero};
+    use crate::Translate;
     use ::approx::assert_relative_eq;
-    use hoomd_interaction::{Single, SiteEnergy, TotalEnergy};
+    use hoomd_interaction::{Single, SiteEnergy, TotalEnergy, Zero};
     use hoomd_microstate::{MicrostateBuilder, boundary::Square, property::Point};
     use hoomd_vector::{Cartesian, InnerProduct};
     use rstest::*;

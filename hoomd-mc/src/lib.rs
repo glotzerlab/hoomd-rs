@@ -13,13 +13,9 @@
 TODO: Expand documentation.
  */
 
-use hoomd_microstate::{Body, Microstate};
 use rand::Rng;
 use std::ops::AddAssign;
 
-mod cutoff_pair;
-mod external;
-mod hamiltonian;
 mod sweep;
 mod translate;
 
@@ -84,60 +80,6 @@ pub trait LocalTrial<B> {
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B;
 }
 
-/** Compute the change energy as a function of a single body.
-
-Some implementations of [`Trial`] apply to a single body at a time and use a
-Hamiltonian that implements `DeltaEnergyOne` to efficiently compute the change
-in energy.
-
-The generic type names are:
-* `B`: The [`Body::properties`](hoomd_microstate::Body) type.
-* `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-* `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
-
-See the [Implementations on Foreign Types](#foreign-impls) section below for examples.
-*/
-pub trait DeltaEnergyOne<B, S, C> {
-    /** Compute the change in energy.
-
-    `initial_microstate` describes the initial configuration and `final_body`
-    describes the new body configuration. In the final configuration, the
-    body may have changed properties and/or sites. The index `body_index`
-    identifies which body in `initial_microstate` is changing.
-
-    Returns:
-    ```math
-    \Delta E = E_\mathrm{final} - E_\mathrm{initial}
-    ```
-    */
-    #[must_use]
-    fn delta_energy_one(
-        &self,
-        initial_microstate: &Microstate<B, S, C>,
-        body_index: usize,
-        final_body: &Body<B, S>,
-    ) -> f64;
-}
-
-/** Set the energy of any system to 0.
-
-*hoomd-rs* uses [`Zero`] in minimal examples that demonstrate MC simulations.
-It returns 0 for all delta energies.
-*/
-pub struct Zero;
-
-impl<B, S, C> DeltaEnergyOne<B, S, C> for Zero {
-    #[inline]
-    fn delta_energy_one(
-        &self,
-        _initial_microstate: &Microstate<B, S, C>,
-        _body_index: usize,
-        _final_body: &Body<B, S>,
-    ) -> f64 {
-        0.0
-    }
-}
-
 /** Accepted and rejected trial moves.
 
 A [`Trial`] reports the number moves it accepts and rejects via `Count`
@@ -148,9 +90,9 @@ methods that compute often used properties, like the acceptance rate.
 
 Count the total number of trial moves performed over a number of sweeps:
 ```
-use hoomd_mc::{Count, Sweep, Translate, Trial, Zero};
-use hoomd_microstate::property::Position;
-use hoomd_microstate::{Body, Microstate};
+use hoomd_interaction::Zero;
+use hoomd_mc::{Count, Sweep, Translate, Trial};
+use hoomd_microstate::{Body, Microstate, property::Position};
 use hoomd_vector::Cartesian;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {

@@ -1,7 +1,8 @@
 // ANCHOR: use
 use std::iter;
 
-use hoomd_mc::{Sweep, Translate, Trial, Zero};
+use hoomd_mc::{Sweep, Translate, Trial};
+use hoomd_interaction::Zero;
 use hoomd_microstate::{Body, Microstate, MicrostateBuilder, property::Point};
 use hoomd_vector::Cartesian;
 // ANCHOR_END: use
