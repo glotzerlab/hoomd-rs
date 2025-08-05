@@ -36,7 +36,7 @@ may be used as generic arguments in higher level functions.
 See [`Sweep`] or any of the other implementations of `Trial` for code examples.
 
 The generic type names are:
-* `M`: The [`Microstate`] type.
+* `M`: The [`Microstate`](hoomd_microstate::Microstate) type.
 * `H`: The Hamiltonian type.
 */
 pub trait Trial<M, H> {

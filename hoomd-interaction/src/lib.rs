@@ -79,7 +79,7 @@ Combine them with [`Single`] newtype for use with MC and MD simulations or to
 compute system-wide properties.
 
 The generic type names are:
-* `S`: The `Site::properties` type.
+* `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 
 ## Examples
 
@@ -136,6 +136,9 @@ Combine them with the [`CutoffPair`] and the [`Isotropic`](pairwise::Isotropic)
 or [`Anisotropic`](pairwise::Anisotropic) newtypes for use with MC and MD
 simulations or to compute system-wide properties.
 
+The generic type names are:
+* `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+
 ## Examples
 
 Implement a custom site energy function:
@@ -180,18 +183,17 @@ pub trait SitePairEnergy<S> {
     fn site_pair_energy(&self, a: &S, b: &S) -> f64;
 }
 
-/** Compute the change energy as a function of a single body.
+/** Compute the change energy as a function of a single modified body.
 
-Some implementations of [`Trial`] apply to a single body at a time and use a
-Hamiltonian that implements `DeltaEnergyOne` to efficiently compute the change
-in energy.
+Some trial moves apply to a single body at a time and use a Hamiltonian that
+implements `DeltaEnergyOne` to efficiently compute the change in energy.
 
 The generic type names are:
 * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 
-See the [Implementations on Foreign Types](#foreign-impls) section below for examples.
+See the [Implementors](#implementors) section below for examples.
 */
 pub trait DeltaEnergyOne<B, S, C> {
     /** Compute the change in energy.
@@ -214,3 +216,5 @@ pub trait DeltaEnergyOne<B, S, C> {
         final_body: &Body<B, S>,
     ) -> f64;
 }
+
+// TODO: More doc examples for all implementors.

@@ -1,3 +1,9 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+/*! Implement `Zero`
+*/
+
 use super::DeltaEnergyOne;
 
 use hoomd_microstate::{Body, Microstate};
@@ -20,3 +26,5 @@ impl<B, S, C> DeltaEnergyOne<B, S, C> for Zero {
         0.0
     }
 }
+
+// TODO: Implement Zero for other traits in hoomd-interaction

@@ -5,10 +5,10 @@
 */
 
 use super::{Count, LocalTrial, Trial};
+use hoomd_interaction::DeltaEnergyOne;
 use hoomd_microstate::boundary::Boundary;
 use hoomd_microstate::property::Position;
 use hoomd_microstate::{Body, Microstate, Transform};
-use hoomd_interaction::DeltaEnergyOne;
 
 use rand::Rng;
 
