@@ -8,22 +8,26 @@ use crate::{DeltaEnergyInsert, DeltaEnergyOne, SitePairEnergy, TotalEnergy};
 use hoomd_microstate::{Body, Microstate, Transform, boundary::Boundary, property::Position};
 use hoomd_vector::Vector;
 
-/** Compute system properties given a [`SitePairEnergy`].
+/** Compute system properties based on short-ranged pairwise interactions between sites.
 
-[`CutoffPair`] provides a single implementation for system properties, like
-[`TotalEnergy`], for all types that implement [`SitePairEnergy`].
+Given an evaluator that implements [`SitePairEnergy`], [`CutoffPair`] represents:
 
-Use types that implement [`SitePairEnergy`], such as
-[`Isotropic`](crate::pairwise::Isotropic) or your own custom type, directly
-when you only need to call `site_pair_energy`. Combine these types with
-[`CutoffPair`] to enable MC simulations or to compute the total energy of
-a microstate.
+```math
+U_\mathrm{total} = \sum_{i=0}^{N-1}\sum_{j=i+1}^{N-1} U\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
+```
+where $`U(s_i, s_j)`$ is the potential computed by [`CutoffPair::evaluator`],
+$`s_i`$ is the full set of site properties for site i, $`\vec{r}_i`$ is
+the position of site i, $`b_i`$ is the body tag that holds site *i*, and
+$`\left| \right|`$ denotes the Iverson bracket.
+
+In other words, [`CutoffPair`] sums the energy for all pairs that are separated
+by a distance less than `r_cut` and belong to different bodies.
+
+For the evaluator, use [`Isotropic`] or your own custom type.
 
 TODO: Reword this when [`CutoffPair`] also implements `SitePairForce`.
 
-[`CutoffPair`] sums properties over pairs that meet all of these conditions:
-* separated by a distance less than `r_cut`.
-* pairs that belong to different bodies.
+[`Isotropic`]: crate::pairwise::Isotropic
 
 # Example
 
@@ -83,14 +87,6 @@ where
     V: Vector,
 {
     /** Compute the total energy of the microstate contributed by functions on pairs of sites.
-
-    ```math
-    U_\mathrm{total} = \sum_{i=0}^{N-1}\sum_{j=i+1}^{N-1} U\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
-    ```
-    where $`U(s_i, s_j)`$ is the potential computed by [`CutoffPair::evaluator`],
-    $`s_i`$ is the full set of site properties for site i, $`\vec{r}_i`$ is
-    the position of site i, $`b_i`$ is the body tag that holds site *i*, and
-    $`\left| \right|`$ denotes the Iverson bracket.
 
     # Example
     ```

@@ -4,16 +4,23 @@
 /*! Implement `Zero`
 */
 
-use super::DeltaEnergyOne;
+use super::{DeltaEnergyInsert, DeltaEnergyOne, TotalEnergy};
 
 use hoomd_microstate::{Body, Microstate};
 
 /** Set the energy of any system to 0.
 
 *hoomd-rs* uses [`Zero`] in minimal examples that demonstrate MC simulations.
-It returns 0 for all delta energies.
+It returns 0 for all energies and delta energies.
 */
 pub struct Zero;
+
+impl<M> TotalEnergy<M> for Zero {
+    #[inline]
+    fn total_energy(&self, _microstate: &M) -> f64 {
+        0.0
+    }
+}
 
 impl<B, S, C> DeltaEnergyOne<B, S, C> for Zero {
     #[inline]
@@ -26,5 +33,18 @@ impl<B, S, C> DeltaEnergyOne<B, S, C> for Zero {
         0.0
     }
 }
+
+impl<B, S, C> DeltaEnergyInsert<B, S, C> for Zero {
+    #[inline]
+    fn delta_energy_insert(
+        &self,
+        _initial_microstate: &Microstate<B, S, C>,
+        _new_body: &Body<B, S>,
+    ) -> f64 {
+        0.0
+    }
+}
+
+
 
 // TODO: Implement Zero for other traits in hoomd-interaction
