@@ -4,7 +4,7 @@
 /*! Implement `Single`
 */
 
-use crate::{DeltaEnergyOne, DeltaEnergyInsert, SiteEnergy, TotalEnergy};
+use crate::{DeltaEnergyInsert, DeltaEnergyOne, SiteEnergy, TotalEnergy};
 use hoomd_microstate::{Body, Microstate, Transform, boundary::Boundary, property::Position};
 
 /** Compute system properties from external fields.

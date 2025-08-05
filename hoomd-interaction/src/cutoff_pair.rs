@@ -656,7 +656,9 @@ mod tests {
                     - cutoff_pair.total_energy(&microstate_initial);
 
                 assert_relative_eq!(delta_energy_insert, delta_energy_total, epsilon = 1e-6);
-                microstate_final.remove_body(microstate_final.body_indices()[tag].expect("tag should be present"));
+                microstate_final.remove_body(
+                    microstate_final.body_indices()[tag].expect("tag should be present"),
+                );
             }
         }
     }

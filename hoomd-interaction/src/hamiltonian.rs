@@ -96,13 +96,9 @@ where
         initial_microstate: &Microstate<B, S, C>,
         new_body: &Body<B, S>,
     ) -> f64 {
-        let mut total = self
-            .0
-            .delta_energy_insert(initial_microstate, new_body);
+        let mut total = self.0.delta_energy_insert(initial_microstate, new_body);
         if total != f64::INFINITY {
-            total += self
-                .1
-                .delta_energy_insert(initial_microstate, new_body);
+            total += self.1.delta_energy_insert(initial_microstate, new_body);
         }
         total
     }
