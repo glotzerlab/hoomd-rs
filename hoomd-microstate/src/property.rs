@@ -19,6 +19,16 @@ use hoomd_vector::Cartesian;
 let point = Point::new(Cartesian::from([1.0, -3.0]));
 ```
 
+[`OrientedPoint`] contains both the position and orientation of an extended body:
+```
+use hoomd_microstate::property::OrientedPoint;
+use hoomd_vector::{Angle, Cartesian};
+
+let point = OrientedPoint { position: Cartesian::from([1.0, -3.0]),
+    orientation: Angle::from(1.2),
+};
+```
+
 # Custom property types
 
 When none of the provided types meets your needs, you can define a custom type.
@@ -74,6 +84,9 @@ macro to work in general.
 
 mod point;
 pub use point::Point;
+
+mod oriented_point;
+pub use oriented_point::OrientedPoint;
 
 /** Locate sites and bodies.
 

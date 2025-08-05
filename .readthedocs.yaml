@@ -4,18 +4,25 @@ build:
   tools:
     rust: "1.86"
   commands:
+    # Install cargo binstall
+    - mkdir -p "${PATH%%:*}"
+    - curl -sSL "https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-gnu.tgz" | tar -xvz --directory "${PATH%%:*}"
     # Install mdbook
-    - mkdir -p bin
-    - curl -sSL "https://github.com/rust-lang/mdBook/releases/download/v0.4.51/mdbook-v0.4.51-x86_64-unknown-linux-gnu.tar.gz" | tar -xvz --directory "bin"
-    - curl -sSL "https://github.com/lzanini/mdbook-katex/releases/download/0.9.3-binaries/mdbook-katex-v0.9.3-x86_64-unknown-linux-gnu.tar.gz" | tar -xvz --directory "bin"
-    - ls bin
+    - cargo binstall mdbook@0.4.52 mdbook-katex@0.9.3 mdbook-alerts@0.8.0 --no-confirm --install-path "${PATH%%:*}"
+    # Install wasm toolchain
+    - rustup target install wasm32-unknown-unknown
+    - cargo binstall wasm-bindgen-cli@0.2.100 --no-confirm --install-path "${PATH%%:*}"
+    - curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz" | tar -xvz --strip-components 2 --directory "${PATH%%:*}"
+    - ls "${PATH%%:*}"
+    # Build the WASM examples
+    - cargo run -p build-wasm-doc-examples -- --reduce-size
     # Build the book
     - mkdir -p $READTHEDOCS_OUTPUT/html
     - echo "site-url = \"/$READTHEDOCS_LANGUAGE/$READTHEDOCS_VERSION/\"" >> doc/book.toml
-    - PATH="$(pwd)/bin:$PATH" mdbook build doc --dest-dir=$READTHEDOCS_OUTPUT/html
+    - mdbook build doc --dest-dir=$READTHEDOCS_OUTPUT/html
     # Build the API reference
     - mkdir -p $READTHEDOCS_OUTPUT/html/api
-    - RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --no-deps
+    - RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --workspace --all-features --exclude hoomd-examples --exclude build-wasm-doc-examples --no-deps
     - mv target/doc/* $READTHEDOCS_OUTPUT/html/api
     # List the output files
     - ls -lR $READTHEDOCS_OUTPUT/html

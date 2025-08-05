@@ -86,10 +86,12 @@ where
     /** Compute the total energy of the microstate contributed by functions on pairs of sites.
 
     ```math
-    U_\mathrm{total} = \sum_{i=0}^{N-1}\sum_{j=i}^{N-1} U\left(\left|\vec{r_j} - \vec{r_i}\right|\right) \left[ \left|\vec{r_j} - \vec{r_i}\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
+    U_\mathrm{total} = \sum_{i=0}^{N-1}\sum_{j=i+1}^{N-1} U\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
     ```
-    where `U(r)` is the potential computed by [`CutoffPair::evaluator`], `b_i`
-    is the body tag that holds site *i*, and `[]` denotes the Iverson bracket.
+    where $`U(s_i, s_j)`$ is the potential computed by [`CutoffPair::evaluator`],
+    $`s_i`$ is the full set of site properties for site i, $`\vec{r}_i`$ is
+    the position of site i, $`b_i`$ is the body tag that holds site *i*, and
+    $`\left| \right|`$ denotes the Iverson bracket.
 
     # Example
     ```
@@ -143,3 +145,6 @@ where
         total
     }
 }
+
+// TODO: implement site_pair_energy for CutoffPair. It needs to apply
+// the r_cut and body exclusions first, then forward the call to the inner type.

@@ -153,7 +153,7 @@ rotation. [`RotationMatrix::rotate`] is typically several times faster than
 
 # Random distributions
 
-`hoomd_vector` interoperators with [`rand`] to generate random vectors and rotations.
+`hoomd_vector` interoperates with [`rand`] to generate random vectors and rotations.
 
 The [`StandardUniform`](rand::distr::StandardUniform) distribution
 samples rotations uniformly from the set of all rotations and vectors from the

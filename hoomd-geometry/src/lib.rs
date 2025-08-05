@@ -18,7 +18,7 @@ Carlo simulations.
 
 The [`Hypersphere`][shape::Hypersphere] demonstrates the design philosophy of
 `hoomd_geometry`. The struct contains a single radius value, and immediately
-provides access to a variety of methods. Hypersphers are well defined in
+provides access to a variety of methods. Hyperspheres are well defined in
 arbitrary dimension, and therefore the implementation is parameterized with a
 const generic `N` representing the embedding dimension:
 ```
@@ -197,8 +197,31 @@ pub trait IntersectsAt<S, V, R> {
     origin of `self` to the local origin of `other`. Similarly, `o_ij` is the
     orientation of `other` in the local coordinate system of `self`.
 
-    TODO: An example that shows computing `v_ij` and `o_ij` from two shapes
-    in world coordinates.
+    # Example
+
+    Given two shapes with a orientations relative to the world frame,
+    you can transform into the frame of the a particle like so:
+    ```
+    use hoomd_vector::{Cartesian, Rotate, Rotation};
+    use hoomd_geometry::IntersectsAt;
+
+    fn test_overlap<A, B, R, const N: usize>(
+        r_ab: Cartesian<N>,
+        a: &A,
+        b: &B,
+        o_a: R,
+        o_b: &R,
+    ) -> bool
+    where
+        R: Rotation + Rotate<Cartesian<N>>,
+        A: IntersectsAt<B, Cartesian<N>, R>,
+    {
+        let r_a_inverted = o_a.inverted();
+        let v_ij = r_a_inverted.rotate(&r_ab);
+        let o_ij = o_b.combine(&r_a_inverted);
+        a.intersects_at(b, &v_ij, &o_ij)
+    }
+    ```
     */
     fn intersects_at(&self, other: &S, v_ij: &V, o_ij: &R) -> bool;
 }

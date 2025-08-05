@@ -1,0 +1,81 @@
+[package]
+name = "hoomd-examples"
+categories.workspace = true
+description = "Collect examples that demonstrate how to use hoomd-rs."
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+# Do not publish examples to crates.io
+publish = false
+
+# Use more relaxed lints in the examples.
+[lints.clippy]
+print_stdout = "allow"
+
+[features]
+bevy = ["dep:bevy", "dep:hoomd-bevy"]
+webgpu = ["hoomd-bevy/webgpu"]
+doc-example = ["bevy", "hoomd-bevy/doc-example"]
+
+[dependencies]
+hoomd-bevy = { workspace =  true, optional = true }
+hoomd-geometry.workspace = true
+hoomd-gsd.workspace = true
+hoomd-interaction.workspace = true
+hoomd-mc.workspace = true
+hoomd-microstate.workspace = true
+hoomd-utility.workspace = true
+hoomd-vector.workspace = true
+
+anyhow.workspace = true
+bevy = { workspace = true, optional = true }
+rand.workspace = true
+
+# Work around failing build: https://github.com/bevyengine/bevy/issues/17699#issuecomment-2862717597
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.3.3", default-features = false, features = ["wasm_js"] }
+uuid = { version = "1.17.0", default-features = false, features = ["js"] }
+
+[package.metadata.docs.rs]
+all-features = true
+
+[[example]]
+name = "hello"
+path = "hello.rs"
+
+[[example]]
+name = "random-walk"
+path = "mc-tutorial/random-walk.rs"
+required-features = ["bevy"]
+
+[package.metadata.example.random-walk]
+path = "mc-tutorial"
+
+[[example]]
+name = "custom-random-walk"
+path = "mc-tutorial/custom-random-walk.rs"
+required-features = ["bevy"]
+
+[package.metadata.example.custom-random-walk]
+path = "mc-tutorial"
+
+[[example]]
+name = "applying-interactions"
+path = "mc-tutorial/applying-interactions.rs"
+required-features = ["bevy"]
+
+[package.metadata.example.applying-interactions]
+path = "mc-tutorial"
+
+[[example]]
+name = "tetronimoes"
+path = "mc-tutorial/tetronimoes.rs"
+required-features = ["bevy"]
+
+[package.metadata.example.tetronimoes]
+path = "mc-tutorial"

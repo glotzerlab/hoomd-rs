@@ -89,3 +89,5 @@ impl<V> Position for Point<V> {
         &mut self.position
     }
 }
+
+// TODO: tests.
