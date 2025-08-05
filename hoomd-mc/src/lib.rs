@@ -19,10 +19,12 @@ use std::ops::AddAssign;
 mod sweep;
 mod translate;
 mod quick_insert;
+mod uniform_in;
 
 pub use sweep::Sweep;
 pub use translate::Translate;
 pub use quick_insert::QuickInsert;
+pub use uniform_in::UniformIn;
 
 /** Propose trial moves in the microstate, evaluate the changes in energy and accept or reject accordingly.
 
