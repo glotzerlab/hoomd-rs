@@ -4,7 +4,7 @@
 /*! Implement `Zero`
 */
 
-use super::{DeltaEnergyInsert, DeltaEnergyOne, TotalEnergy};
+use super::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, TotalEnergy};
 
 use hoomd_microstate::{Body, Microstate};
 
@@ -40,6 +40,17 @@ impl<B, S, C> DeltaEnergyInsert<B, S, C> for Zero {
         &self,
         _initial_microstate: &Microstate<B, S, C>,
         _new_body: &Body<B, S>,
+    ) -> f64 {
+        0.0
+    }
+}
+
+impl<B, S, C> DeltaEnergyRemove<B, S, C> for Zero {
+    #[inline]
+    fn delta_energy_remove(
+        &self,
+        _initial_microstate: &Microstate<B, S, C>,
+        _body_index: usize,
     ) -> f64 {
         0.0
     }

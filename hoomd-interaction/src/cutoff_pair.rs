@@ -4,7 +4,7 @@
 /*! Implement `CutoffPair`
 */
 
-use crate::{DeltaEnergyInsert, DeltaEnergyOne, SitePairEnergy, TotalEnergy};
+use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairEnergy, TotalEnergy};
 use hoomd_microstate::{Body, Microstate, Transform, boundary::Boundary, property::Position};
 use hoomd_vector::Vector;
 
@@ -291,6 +291,75 @@ where
         }
 
         energy_final
+    }
+}
+
+/** Evaluate the change in energy contributed by `CutoffPair` when one body is removed.
+
+# Example
+
+```
+use hoomd_interaction::{CutoffPair, DeltaEnergyRemove, pairwise::{Boxcar, Isotropic}};
+use hoomd_microstate::{Microstate, Body, property::Point};
+use hoomd_vector::Cartesian;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut microstate = Microstate::new();
+microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
+    Body::point(Cartesian::from([1.0, 0.0])),
+])?;
+
+
+let epsilon = 2.0;
+let (left,right) = (0.0, 1.5);
+let boxcar = Boxcar { epsilon, left, right };
+let evaluator = Isotropic(boxcar);
+let cutoff_pair = CutoffPair { r_cut: 1.5, evaluator };
+
+let delta_energy = cutoff_pair.delta_energy_remove(&microstate,0);
+assert_eq!(delta_energy, -2.0);
+# Ok(())
+# }
+```
+*/
+impl<V, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPair<E>
+where
+    E: SitePairEnergy<S>,
+    B: Transform<S>,
+    S: Position<Vector = V>,
+    C: Boundary<V, B, S>,
+    V: Vector,
+{
+    #[inline]
+    fn delta_energy_remove(
+        &self,
+        initial_microstate: &Microstate<B, S, C>,
+        body_index: usize,
+    ) -> f64 {
+        let body_tag = initial_microstate.bodies()[body_index].tag;
+
+        // CutoffPair cannot implement site_energy to centrally calculate the
+        // energy of one site with the rest of the system because the resulting
+        // TotalEnergy calculation would double count interactions. Therefore,
+        // this (and other codes) that need to sum over specific pairs implement
+        // the necessary loops and call `site_pair_energy` directly.
+        let site_energy = |site_properties: &S| {
+            initial_microstate
+                .iter_sites_near(site_properties.position(), self.r_cut)
+                .filter(|s| body_tag != s.body_tag)
+                .fold(0.0, |total, site_j| {
+                    total
+                        + self
+                            .evaluator
+                            .site_pair_energy(site_properties, &site_j.properties)
+                })
+        };
+
+        let energy_initial = initial_microstate
+            .iter_body_sites(body_index)
+            .fold(0.0, |total, site_i| total + site_energy(&site_i.properties));
+
+        -energy_initial
     }
 }
 
@@ -662,4 +731,6 @@ mod tests {
             }
         }
     }
+
+    // TODO: Test delta_energy_remove
 }

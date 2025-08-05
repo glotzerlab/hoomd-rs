@@ -4,7 +4,7 @@
 /*! Implement `Single`
 */
 
-use crate::{DeltaEnergyInsert, DeltaEnergyOne, SiteEnergy, TotalEnergy};
+use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SiteEnergy, TotalEnergy};
 use hoomd_microstate::{Body, Microstate, Transform, boundary::Boundary, property::Position};
 
 /** Compute system properties from external fields.
@@ -85,7 +85,7 @@ where
     }
 }
 
-/** Evaluate the change in energy when a single body is updated.
+/** Evaluate the change in energy contributed by `Single` when a single body is updated.
 
 # Example
 
@@ -142,7 +142,7 @@ where
     }
 }
 
-/** Evaluate the change in energy when a single body is inserted.
+/** Evaluate the change in energy contributed by `Single` when a single body is inserted.
 
 # Example
 
@@ -191,6 +191,50 @@ where
         }
 
         energy_final
+    }
+}
+
+/** Evaluate the change in energy contributed by `Single` when a single body is removed.
+
+# Example
+
+```
+use hoomd_interaction::{DeltaEnergyRemove, Single, external::Linear};
+use hoomd_microstate::{Microstate, Body, property::Point};
+use hoomd_vector::Cartesian;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut microstate = Microstate::new();
+microstate.add_body(Body::point(Cartesian::from([0.0, 1.0])))?;
+
+let linear = Single(Linear{ alpha: 1.0,
+    plane_origin: Cartesian::default(),
+    plane_normal: [0.0, 1.0].try_into()? });
+
+let delta_energy = linear.delta_energy_remove(&microstate, 0);
+assert_eq!(delta_energy, -1.0);
+# Ok(())
+# }
+```
+*/
+impl<V, B, S, C, E> DeltaEnergyRemove<B, S, C> for Single<E>
+where
+    E: SiteEnergy<S>,
+    B: Transform<S>,
+    S: Position<Vector = V>,
+    C: Boundary<V, B, S>,
+{
+    #[inline]
+    fn delta_energy_remove(
+        &self,
+        initial_microstate: &Microstate<B, S, C>,
+        body_index: usize,
+    ) -> f64 {
+        let energy_initial = initial_microstate
+            .iter_body_sites(body_index)
+            .fold(0.0, |total, s| total + self.site_energy(&s.properties));
+
+        -energy_initial
     }
 }
 
@@ -296,4 +340,5 @@ mod tests {
     }
 
     // TODO: Test DeltaEnergyInsert
+    // TODO: TestDeltaEnergyRemove
 }
