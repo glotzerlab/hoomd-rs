@@ -4,7 +4,7 @@
 /*! Implement `CutoffPair`
 */
 
-use crate::{DeltaEnergyOne, SitePairEnergy, TotalEnergy};
+use crate::{DeltaEnergyInsert, DeltaEnergyOne, SitePairEnergy, TotalEnergy};
 use hoomd_microstate::{Body, Microstate, Transform, boundary::Boundary, property::Position};
 use hoomd_vector::Vector;
 
@@ -145,7 +145,7 @@ where
     }
 }
 
-/** Evaluate the change in energy due to functions that act on single sites.
+/** Evaluate the change in energy contributed by `CutoffPair` when one body is updated.
 
 # Example
 
@@ -224,6 +224,77 @@ where
             .fold(0.0, |total, site_i| total + site_energy(&site_i.properties));
 
         energy_final - energy_initial
+    }
+}
+
+/** Evaluate the change in energy contributed by `CutoffPair` when one body is inserted.
+
+# Example
+
+```
+use hoomd_interaction::{CutoffPair, DeltaEnergyInsert, pairwise::{Boxcar, Isotropic}};
+use hoomd_microstate::{Microstate, Body, property::Point};
+use hoomd_vector::Cartesian;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut microstate = Microstate::new();
+microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
+    Body::point(Cartesian::from([1.0, 0.0])),
+])?;
+
+
+let epsilon = 2.0;
+let (left,right) = (0.0, 1.5);
+let boxcar = Boxcar { epsilon, left, right };
+let evaluator = Isotropic(boxcar);
+let cutoff_pair = CutoffPair { r_cut: 1.5, evaluator };
+
+let delta_energy = cutoff_pair.delta_energy_insert(&microstate,
+    &Body::point([-1.0, 0.0].into()));
+assert_eq!(delta_energy, 2.0);
+# Ok(())
+# }
+```
+*/
+impl<V, B, S, C, E> DeltaEnergyInsert<B, S, C> for CutoffPair<E>
+where
+    E: SitePairEnergy<S>,
+    B: Transform<S>,
+    S: Position<Vector = V>,
+    C: Boundary<V, B, S>,
+    V: Vector,
+{
+    #[inline]
+    fn delta_energy_insert(
+        &self,
+        initial_microstate: &Microstate<B, S, C>,
+        new_body: &Body<B, S>,
+    ) -> f64 {
+        // The new body is not yet in the microstate, so there is no need to
+        // filter matching body tags. The new body does not yet have a tag.
+        let site_energy = |site_properties: &S| {
+            initial_microstate
+                .iter_sites_near(site_properties.position(), self.r_cut)
+                .fold(0.0, |total, site_j| {
+                    total
+                        + self
+                            .evaluator
+                            .site_pair_energy(site_properties, &site_j.properties)
+                })
+        };
+
+        let mut energy_final = 0.0;
+        for s in &new_body.sites {
+            match initial_microstate
+                .boundary()
+                .wrap_site(new_body.properties.transform(s))
+            {
+                Err(_) => return f64::INFINITY,
+                Ok(wrapped_site) => energy_final += site_energy(&wrapped_site),
+            }
+        }
+
+        energy_final
     }
 }
 
@@ -322,7 +393,7 @@ mod tests {
         }
     }
 
-    mod delta_energy {
+    mod delta_energy_one {
         use super::*;
 
         #[test]
@@ -457,6 +528,139 @@ mod tests {
                     - cutoff_pair.total_energy(&microstate_initial);
 
                 assert_relative_eq!(delta_energy_one, delta_energy_total, epsilon = 1e-10);
+            }
+        }
+    }
+
+    mod delta_energy_insert {
+        use super::*;
+
+        #[test]
+        fn site_outside() {
+            let square = Square {
+                l: 4.0
+                    .try_into()
+                    .expect("hard-coded constant should be positive"),
+            };
+
+            let body = Body {
+                properties: Point::new(Cartesian::from([0.0, 0.0])),
+                sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
+            };
+            let mut new_body = body.clone();
+            new_body.properties.position[0] = 1.0;
+
+            let microstate = MicrostateBuilder::with_boundary(square)
+                .bodies([body])
+                .try_build()
+                .expect("the hard-coded bodies should be in the boundary");
+
+            let energy = CutoffPair {
+                r_cut: 0.0,
+                evaluator: Isotropic(|_r| 0.0),
+            };
+
+            assert_eq!(
+                energy.delta_energy_insert(&microstate, &new_body),
+                f64::INFINITY
+            );
+        }
+
+        #[test]
+        fn body_exclusion() {
+            // Ensure that CutoffPair.delta_energy_insert excludes pairs in the same body.
+            let body_a_new = Body {
+                properties: Point::new(Cartesian::from([0.0, 0.0])),
+                sites: [
+                    Point::new(Cartesian::from([1.0, 1.0])),
+                    Point::new(Cartesian::from([1.0, -1.0])),
+                    Point::new(Cartesian::from([-1.0, 1.0])),
+                    Point::new(Cartesian::from([-1.0, -1.0])),
+                ]
+                .into(),
+            };
+            let body_b = Body {
+                properties: Point::new(Cartesian::from([3.0, 0.0])),
+                sites: body_a_new.sites.clone(),
+            };
+
+            let mut microstate = Microstate::new();
+            microstate
+                .extend_bodies([body_b])
+                .expect("hard-coded bodies should be in the boundary");
+
+            let cutoff_pair = CutoffPair {
+                r_cut: 1.0_f64.next_up(),
+                evaluator: Isotropic(|_r| 1.0),
+            };
+
+            // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
+            // Moving body 0 to the left results in a -2.0 energy difference.
+            assert_eq!(
+                cutoff_pair.delta_energy_insert(&microstate, &body_a_new),
+                2.0
+            );
+        }
+
+        #[test]
+        fn random_moves() {
+            // Ensure that CutoffPair.delta_energy_insert is consistent with TotalEnergy
+            let body_template = Body {
+                properties: Point::new(Cartesian::from([0.0, 0.0])),
+                sites: [
+                    Point::new(Cartesian::from([0.0, 1.0])),
+                    Point::new(Cartesian::from([-1.0, 1.0])),
+                    Point::new(Cartesian::from([-1.0, -1.0])),
+                ]
+                .into(),
+            };
+            let body_a = Body {
+                properties: Point::new(Cartesian::from([3.0, 0.0])),
+                sites: body_template.sites.clone(),
+            };
+
+            let microstate_initial = MicrostateBuilder::new()
+                .bodies([body_a])
+                .try_build()
+                .expect("hard-coded bodies should be in the boundary");
+
+            let mut microstate_final = microstate_initial.clone();
+            let lennard_jones: LennardJones = LennardJones {
+                epsilon: 1.5,
+                sigma: 1.25,
+            };
+            let cutoff_pair = CutoffPair {
+                r_cut: 5.0,
+                evaluator: Isotropic(lennard_jones),
+            };
+
+            // Use `LennardJones` for validation because it is a varies with r and
+            // will therefore show some changes for any moves (unlike `BoxCar`).
+            // However, we need to avoid numerical errors when two sites get
+            // too close. Randomly insert the 2nd body in a well-defined area
+            // to avoid this.
+            let mut rng = StdRng::seed_from_u64(0);
+            let r_distribution =
+                Uniform::new(3.0, 6.0).expect("hard-coded constants should be valid");
+            let theta_distribution =
+                Uniform::new(0.0, 2.0 * PI).expect("hard-coded constants should be valid");
+
+            for _ in 0..1024 {
+                let r = rng.sample(r_distribution);
+                let theta = rng.sample(theta_distribution);
+                let mut new_body = body_template.clone();
+                new_body.properties.position = [r * theta.cos(), r * theta.sin()].into();
+
+                let delta_energy_insert =
+                    cutoff_pair.delta_energy_insert(&microstate_initial, &new_body);
+                let tag = microstate_final
+                    .add_body(new_body)
+                    .expect("generated bodies should be inside open boundaries");
+                let delta_energy_total = cutoff_pair.total_energy(&microstate_final)
+                    - cutoff_pair.total_energy(&microstate_initial);
+
+                assert_relative_eq!(delta_energy_insert, delta_energy_total, epsilon = 1e-6);
+                microstate_final.remove_body(microstate_final.body_indices()[tag].expect("tag should be present"));
             }
         }
     }

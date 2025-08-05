@@ -217,4 +217,36 @@ pub trait DeltaEnergyOne<B, S, C> {
     ) -> f64;
 }
 
+/** Compute the change energy when a single body is inserted.
+
+Some trial moves insert a single body at a time and use a Hamiltonian that
+implements `DeltaEnergyInsert` to efficiently compute the change in energy.
+
+The generic type names are:
+* `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+* `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+* `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
+
+See the [Implementors](#implementors) section below for examples.
+*/
+pub trait DeltaEnergyInsert<B, S, C> {
+    /** Compute the change in energy.
+
+    `initial_microstate` describes the initial configuration and `new_body`
+    describes the new body configuration. The final configuration includes
+    all bodies in the initial and `new_body`.
+
+    Returns:
+    ```math
+    \Delta E = E_\mathrm{final} - E_\mathrm{initial}
+    ```
+    */
+    #[must_use]
+    fn delta_energy_insert(
+        &self,
+        initial_microstate: &Microstate<B, S, C>,
+        new_body: &Body<B, S>,
+    ) -> f64;
+}
+
 // TODO: More doc examples for all implementors.
