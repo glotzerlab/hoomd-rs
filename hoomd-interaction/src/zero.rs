@@ -44,5 +44,3 @@ impl<B, S, C> DeltaEnergyInsert<B, S, C> for Zero {
         0.0
     }
 }
-
-// TODO: Implement Zero for other traits in hoomd-interaction
