@@ -30,25 +30,31 @@ to enable correct potential calculation.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Chimes2b<F: Transformation, T = Chebyshev> {
     /// Transformation style.
-    pub trans_style: F,
-    /// one plus two-body `ChIMES` coefficient (`[energy]`).
-    pub coeff: Vec<f64>,
+    trans_style: F,
+    /// One plus two-body ChIMES coefficient (`[energy]`).
+    coeff: Vec<f64>,
     /// Inner radial cut-off (`[length]`).
-    pub r_in: f64,
-    /// Buffer distance before triggering the damping.
+    r_in: f64,
+    /// Buffer distance before triggering the damping (`[length]`).
     inner_smooth_r: f64,
-    /// Chebyshev polynomials.
+    /// Chebyshev polynomials, inferred from coeff length.
     cheby: T,
 }
 
 impl<F: Transformation> Chimes2b<F, Chebyshev> {
-    /** Construct a [`Chimes2b`] with the given a transformation
-    fucntion `trans_style`, defined in [`Transformation`], `ChIMES`
-    one- plus two-body coefficient `coeff`, and the inner
-    distance cutoff `r_in`.
+    /** Constructs a new `Chimes2b` with the given transformation function,
+    ChIMES coefficients, and inner distance cutoff.
+
+    The Chebyshev polynomial order is set to `coeff.len() + 1`.
+    The inner smoothing distance defaults to 0.01.
+
+    # Arguments
+
+    * `trans_style` - Transformation function implementing `Transformation`.
+    * `coeff` - ChIMES coefficients (`[energy]`).
+    * `r_in` - Inner radial cut-off (`[length]`).
 
     # Example
-
     ```
     use hoomd_chimes::potential::Chimes2b;
     use hoomd_chimes::transformation::MorseTransformation;
@@ -57,15 +63,19 @@ impl<F: Transformation> Chimes2b<F, Chebyshev> {
     let r_out = 3.0;
     let r_in = 1.0;
     let coeff = vec![1.0, 2.0];
-    let morse_trans: MorseTransformation = MorseTransformation{lambda, r_out, r_in};
+    let morse_trans = MorseTransformation { lambda, r_out, r_in };
 
-    let chimes2b = Chimes2b::new(morse_trans, coeff, r_in);
+    let mut chimes2b = Chimes2b::new(morse_trans, coeff.clone(), r_in);
+    assert_eq!(chimes2b.coeff(), &coeff);
+    assert_eq!(chimes2b.r_in(), 1.0);
+    chimes2b.set_inner_smooth_r(0.02);
+    assert_eq!(chimes2b.inner_smooth_r(), 0.02);
     ```
     */
     #[inline]
     #[must_use]
     pub fn new(trans_style: F, coeff: Vec<f64>, r_in: f64) -> Self {
-        let n = coeff.len() + 1; // Store length before moving
+        let n = coeff.len() + 1; // Chebyshev order
         Self {
             trans_style,
             coeff,
@@ -73,6 +83,63 @@ impl<F: Transformation> Chimes2b<F, Chebyshev> {
             inner_smooth_r: 0.01,
             cheby: Chebyshev { n },
         }
+    }
+
+    /// Returns the transformation style.
+    #[inline]
+    pub fn trans_style(&self) -> &F {
+        &self.trans_style
+    }
+
+    /// Sets the transformation style.
+    #[inline]
+    pub fn set_trans_style(&mut self, trans_style: F) {
+        self.trans_style = trans_style;
+    }
+
+    /// Returns the ChIMES coefficients.
+    #[inline]
+    pub fn coeff(&self) -> &Vec<f64> {
+        &self.coeff
+    }
+
+    /// Sets the ChIMES coefficients and updates the Chebyshev polynomial order.
+    #[inline]
+    pub fn set_coeff(&mut self, coeff: Vec<f64>) {
+        self.coeff = coeff;
+        self.cheby = Chebyshev {
+            n: self.coeff.len() + 1,
+        };
+    }
+
+    /// Returns the inner radial cut-off.
+    #[inline]
+    pub fn r_in(&self) -> &f64 {
+        &self.r_in
+    }
+
+    /// Sets the inner radial cut-off.
+    #[inline]
+    pub fn set_r_in(&mut self, r_in: f64) {
+        self.r_in = r_in;
+    }
+
+    /// Returns the inner smoothing distance.
+    #[inline]
+    pub fn inner_smooth_r(&self) -> &f64 {
+        &self.inner_smooth_r
+    }
+
+    /// Sets the inner smoothing distance.
+    #[inline]
+    pub fn set_inner_smooth_r(&mut self, inner_smooth_r: f64) {
+        self.inner_smooth_r = inner_smooth_r;
+    }
+
+    /// Returns the Chebyshev polynomial implementation (read-only).
+    #[inline]
+    pub fn cheby(&self) -> &Chebyshev {
+        &self.cheby
     }
 }
 

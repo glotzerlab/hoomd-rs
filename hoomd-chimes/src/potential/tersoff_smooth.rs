@@ -165,11 +165,11 @@ mod tests {
         assert_eq!(chimes2b.r_in, r_in);
         assert_eq!(chimes2b.fo, fo);
         // chimes 2b main function
-        assert_eq!(chimes2b.f.coeff, coeff_2b);
-        assert_eq!(chimes2b.f.r_in, r_in);
+        assert_eq!(*chimes2b.f.coeff(), coeff_2b);
+        assert_eq!(*chimes2b.f.r_in(), r_in);
         // transformation
-        assert_eq!(chimes2b.f.trans_style.lambda, lambda);
-        assert_eq!(chimes2b.f.trans_style.r_out, r_out);
-        assert_eq!(chimes2b.f.trans_style.r_in, r_in);
+        assert_eq!(chimes2b.f.trans_style().lambda, lambda);
+        assert_eq!(chimes2b.f.trans_style().r_out, r_out);
+        assert_eq!(chimes2b.f.trans_style().r_in, r_in);
     }
 }
