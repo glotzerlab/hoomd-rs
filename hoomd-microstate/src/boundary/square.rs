@@ -137,7 +137,7 @@ impl Distribution<Cartesian<2>> for Square {
     */
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<2> {
-        let uniform = Uniform::new(self.minimum_x(), self.minimum_y())
+        let uniform = Uniform::new(self.minimum_x(), self.maximum_x())
             .expect("square should always have real valued extents where the minimum is less than the maximum");
 
         array::from_fn(|_| uniform.sample(rng)).into()
