@@ -25,7 +25,7 @@ distance between particles, given by [`Transformation`].
 # Note:
 * See equation 2 in <https://doi.org/10.1038/s41524-024-01497-y>.
 * Must be used with the [`TersoffSmooth`] and [`ChimesPenalty`]
-    to enable correct potential calculation.
+to enable correct potential calculation.
  */
 #[derive(Clone, Debug, PartialEq)]
 pub struct Chimes2b<F: Transformation, const N: usize> {
@@ -101,7 +101,7 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
     pub fn new_from_vec(trans_style: F, coeff: Vec<f64>, r_in: f64) -> Self {
         assert!(N != 0, "Chimes2b requires at least one coefficient");
         assert!(
-            (coeff.len() != N),
+            (coeff.len() == N),
             "Coefficient vector length {} does not match N = {}",
             coeff.len(),
             N
