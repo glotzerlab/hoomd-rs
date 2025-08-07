@@ -15,6 +15,7 @@ use arrayvec::ArrayVec;
 pub struct Chebyshev<const N: usize> {}
 
 impl<const N: usize> Default for Chebyshev<N> {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -32,7 +33,7 @@ impl<const N: usize> Chebyshev<N> {
     #[must_use]
     #[inline]
     pub fn new() -> Self {
-        assert!(!(N == 0), "Chebyshev order must be at least 1 (N >= 1)");
+        assert!(N != 0, "Chebyshev order must be at least 1 (N >= 1)");
         Chebyshev {}
     }
 }
@@ -73,7 +74,7 @@ impl<const N: usize> Basis<N> for Chebyshev<N> {
         }
 
         // Compute T_i(s) using recurrence: T_i = 2s * T_{i-1} - T_{i-2}
-        for idx in 2..=N {
+        for idx in 2..N {
             tn[idx] = 2.0 * s * tn[idx - 1] - tn[idx - 2];
         }
         tn
@@ -120,21 +121,21 @@ impl<const N: usize> Basis<N> for Chebyshev<N> {
     #[inline]
     fn evaluate_derivative(&self, s: &f64) -> ArrayVec<f64, N> {
         let mut tnd = ArrayVec::from([0.0; N]);
-        let t0_derivative = 0.0; // U_0(s) = 1
+        let u0_fn = 1.0; // U_0(s) = 1
 
         tnd[0] = 2.0 * s; // U_1(s) = 2s
         if N > 1 {
-            tnd[1] = 2.0 * s * tnd[0] - t0_derivative;
+            tnd[1] = 2.0 * s * tnd[0] - u0_fn;
         }
 
         // Compute U_i(s) using recurrence: U_i = 2s * U_{i-1} - U_{i-2}
-        for idx in 2..=N {
+        for idx in 2..N {
             tnd[idx] = 2.0 * s * tnd[idx - 1] - tnd[idx - 2];
         }
 
         // Convert to dT_i/ds = i * U_{i-1}
-        for idx in (1..=N).rev() {
-            tnd[idx] = (idx as f64) * tnd[idx - 1];
+        for idx in (1..N).rev() {
+            tnd[idx] = ((idx as f64) + 1.0) * tnd[idx - 1];
         }
         tnd[0] = 1.0;
         tnd
@@ -166,7 +167,7 @@ mod tests {
 
     #[rstest]
     fn test_evaluate_derivative() {
-        let cheby = Chebyshev::<4>::new();
+        let cheby = Chebyshev::<3>::new();
         let s = 0.5;
         let tnd = cheby.evaluate_derivative(&s);
         // Expected: dT_0/ds = 0, dT_1/ds = 1, dT_2/ds = 4s, dT_3/ds = 3(4s^2 - 1)

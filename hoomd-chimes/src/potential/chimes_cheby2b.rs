@@ -73,12 +73,12 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
     ```
     # Panics
 
-    Will panic if coeff is empty.
+    Will panic if `coeff` is empty.
     */
     #[inline]
     #[must_use]
     pub fn new(trans_style: F, coeff: ArrayVec<f64, N>, r_in: f64) -> Self {
-        assert!(!(N == 0), "Chimes2b requires at least one coefficient");
+        assert!(N != 0, "Chimes2b requires at least one coefficient");
         Self {
             trans_style,
             coeff,
@@ -93,13 +93,13 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
     converting to `ArrayVec<f64, N>`.
     # Panics
 
-    Will panic if coeff is empty.
-    Will panic if N does not match the coeff.len().
+    Will panic if `coeff` is empty.
+    Will panic if N does not match the `coeff.len()`.
     */
     #[inline]
     #[must_use]
     pub fn new_from_vec(trans_style: F, coeff: Vec<f64>, r_in: f64) -> Self {
-        assert!(!(N == 0), "Chimes2b requires at least one coefficient");
+        assert!(N != 0, "Chimes2b requires at least one coefficient");
         assert!(
             (coeff.len() != N),
             "Coefficient vector length {} does not match N = {}",
