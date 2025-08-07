@@ -4,6 +4,7 @@
     clippy::missing_docs_in_private_items,
     reason = "benches don't need public documentation"
 )]
+use arrayvec::ArrayVec;
 use hoomd_chimes::potential::{Chimes2b, ChimesPenalty, TersoffSmooth};
 use hoomd_chimes::transformation::MorseTransformation;
 use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
@@ -29,7 +30,8 @@ fn run() -> std::io::Result<()> {
     let r_out = 4.3;
     let r_in = 2.5;
     let fo = 0.5;
-    let coeff_2b = vec![
+    const N_COEFF: usize = 12;
+    let coeff_2b: ArrayVec<f64, N_COEFF> = [
         12.18210812696601,
         -2.4736277383012033,
         8.236322683724822,
@@ -42,7 +44,9 @@ fn run() -> std::io::Result<()> {
         -0.6583907417871219,
         0.5610649662686235,
         -0.10076735150819065,
-    ];
+    ]
+    .into_iter()
+    .collect();
 
     let morse_trans: MorseTransformation = MorseTransformation {
         lambda,
@@ -50,8 +54,8 @@ fn run() -> std::io::Result<()> {
         r_in,
     };
 
-    let chimes2b_cheby: Chimes2b<MorseTransformation> =
-        Chimes2b::new(morse_trans, coeff_2b.clone(), r_in);
+    let chimes2b_cheby: Chimes2b<MorseTransformation, N_COEFF> =
+        Chimes2b::new(morse_trans, coeff_2b, r_in);
 
     let chimes2b = TersoffSmooth {
         f: chimes2b_cheby,

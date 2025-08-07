@@ -41,16 +41,17 @@ See equation 8 in <https://doi.org/10.1038/s41524-024-01497-y>.
 
 # Example:
 ```
+use arrayvec::ArrayVec;
 use hoomd_chimes::transformation::MorseTransformation;
 use hoomd_chimes::potential::{Chimes2b, TersoffSmooth};
 use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
-
 
 let lambda = 1.5;
 let r_out = 3.0;
 let r_in = 1.0;
 let fo = 0.75;
-let coeff_2b = vec![1.0, 2.0, 3.0];
+const N_COEFF: usize = 3;
+let coeff: ArrayVec<f64, N_coeff> = [1.0, 2.0, 3.0].into_iter().collect();
 
 let morse_trans: MorseTransformation = MorseTransformation {
     lambda,
@@ -58,7 +59,7 @@ let morse_trans: MorseTransformation = MorseTransformation {
     r_in,
 };
 
-let chimes2b_cheby: Chimes2b<MorseTransformation> =
+let chimes2b_cheby: Chimes2b<MorseTransformation, N_coeff> =
     Chimes2b::new(morse_trans, coeff_2b, r_in);
 
 let chimes2b = TersoffSmooth {
@@ -132,6 +133,7 @@ impl<F: IsotropicForce + IsotropicEnergy> IsotropicForce for TersoffSmooth<F> {
 mod tests {
     use super::*;
     use crate::transformation::MorseTransformation;
+    use arrayvec::ArrayVec;
     use rstest::*;
 
     use crate::potential::Chimes2b;
@@ -142,7 +144,8 @@ mod tests {
         let r_out = 3.0;
         let r_in = 1.0;
         let fo = 0.75;
-        let coeff_2b = vec![1.0, 2.0, 3.0];
+        const N_COEFF: usize = 3;
+        let coeff: ArrayVec<f64, N_COEFF> = [1.0, 2.0, 3.0].into_iter().collect();
 
         let morse_trans: MorseTransformation = MorseTransformation {
             lambda,
@@ -150,8 +153,8 @@ mod tests {
             r_in,
         };
 
-        let chimes2b_cheby: Chimes2b<MorseTransformation> =
-            Chimes2b::new(morse_trans, coeff_2b.clone(), r_in);
+        let chimes2b_cheby: Chimes2b<MorseTransformation, N_COEFF> =
+            Chimes2b::new(morse_trans, coeff, r_in);
 
         let chimes2b = TersoffSmooth {
             f: chimes2b_cheby,
@@ -165,8 +168,8 @@ mod tests {
         assert_eq!(chimes2b.r_in, r_in);
         assert_eq!(chimes2b.fo, fo);
         // chimes 2b main function
-        assert_eq!(*chimes2b.f.coeff(), coeff_2b);
-        assert_eq!(*chimes2b.f.r_in(), r_in);
+        assert_eq!(chimes2b.f.coeff().as_slice(), &[1.0, 2.0, 3.0]);
+        assert_eq!(chimes2b.f.r_in(), &r_in);
         // transformation
         assert_eq!(chimes2b.f.trans_style().lambda, lambda);
         assert_eq!(chimes2b.f.trans_style().r_out, r_out);

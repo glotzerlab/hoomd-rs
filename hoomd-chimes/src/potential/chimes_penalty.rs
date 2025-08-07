@@ -87,12 +87,6 @@ impl IsotropicEnergy for ChimesPenalty {
             0.0
         } else {
             let e_penalty = self.a * r_penalty * r_penalty * r_penalty;
-            /// println!(
-            ///    "HOOMD Warning: Adding penalty in 2B Cheby calc, r < r_in+dt {:6} < {:6}",
-            ///    r,
-            ///    self.r_in + self.dt
-            /// );
-            /// println!("HOOMD Warning: Penalty potential = {:6}", e_penalty);
             e_penalty
         }
     }
