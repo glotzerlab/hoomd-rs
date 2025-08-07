@@ -47,6 +47,10 @@ This is the most efficient way to test for intersections in Monte Carlo
 simulations as only the positions and orientations of the sites need to be
 modified.
 
+[`IsPointInside`] checks if a point is inside or outside a shape.
+
+## Intersection Tests
+
 For non-orientable shapes, or for bodies who have special intersection
 tests for particular orientations, and inherent method `intersects` can be
 implemented as well:
@@ -146,7 +150,7 @@ pub trait SupportMapping<V> {
     fn support_mapping(&self, n: &V) -> V;
 }
 
-/** Test whether two shapes share the same space.
+/** Test whether two shapes share any points in space.
 
 # Examples
 
@@ -251,6 +255,27 @@ assert_eq!(bounding_radius.get(), 5.0);
 pub trait BoundingSphereRadius {
     /// Get the bounding radius.
     fn bounding_sphere_radius(&self) -> PositiveReal;
+}
+
+/** Test whether a point is inside or outside a shape.
+
+# Example
+
+```
+use hoomd_geometry::{IsPointInside, shape::Cuboid};
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let cuboid = Cuboid { edge_lengths: [6.0.try_into()?, 8.0.try_into()?] };
+
+assert!(cuboid.is_point_inside(&[2.5, -3.5].into()));
+assert!(!cuboid.is_point_inside(&[4.0, -3.5].into()));
+# Ok(())
+# }
+```
+*/
+pub trait IsPointInside<V> {
+    /// Check if a point is inside the shape.
+    fn is_point_inside(&self, point: &V) -> bool;
 }
 
 /// Enumerate possible sources of error in fallible geometry methods.

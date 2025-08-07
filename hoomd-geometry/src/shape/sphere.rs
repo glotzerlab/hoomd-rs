@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement [`Hypersphere`] */
-use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
+use crate::{BoundingSphereRadius, IntersectsAt, IsPointInside, SupportMapping, Volume};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{InnerProduct, Rotate};
 
@@ -218,6 +218,29 @@ impl<const N: usize> BoundingSphereRadius for Hypersphere<N> {
     }
 }
 
+impl<const N: usize, V> IsPointInside<V> for Hypersphere<N> where
+V: InnerProduct {
+    /** Check if a vector is inside a hypersphere.
+
+    ```
+    use hoomd_geometry::{IsPointInside, shape::Sphere};
+    use hoomd_vector::Cartesian;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let sphere = Sphere { radius: 3.0.try_into()? };
+
+    assert!(sphere.is_point_inside(&Cartesian::from([2.5, 0.0, 0.0])));
+    assert!(!sphere.is_point_inside(&Cartesian::from([3.0, -3.0, 2.0])));
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    fn is_point_inside(&self, point: &V) -> bool {
+        point.dot(point) < self.radius.get().powi(2)
+    }
+}
+
 #[cfg(test)]
 #[expect(
     clippy::used_underscore_binding,
@@ -391,5 +414,22 @@ mod tests {
             &[3.52, 3.52, 3.52].into(),
             &identity
         ));
+    }
+
+    #[test]
+    fn is_point_inside() {
+        let circle = Circle::with_radius(2.0.try_into().expect("test value is a positive real"));
+
+        assert!(circle.is_point_inside(&Cartesian::from([0.0, 0.0])));
+        assert!(circle.is_point_inside(&Cartesian::from([0.0, 1.0])));
+        assert!(circle.is_point_inside(&Cartesian::from([0.0, -1.0])));
+        assert!(circle.is_point_inside(&Cartesian::from([1.0, 0.0])));
+        assert!(circle.is_point_inside(&Cartesian::from([-1.0, 0.0])));
+        assert!(circle.is_point_inside(&Cartesian::from([2.0f64.next_down(), 0.0])));
+        assert!(circle.is_point_inside(&Cartesian::from([0.0, 2.0f64.next_down()])));
+
+        assert!(!circle.is_point_inside(&Cartesian::from([2.0, 0.0])));
+        assert!(!circle.is_point_inside(&Cartesian::from([0.0, 2.0])));
+        assert!(!circle.is_point_inside(&Cartesian::from([1.5, 1.5])));
     }
 }

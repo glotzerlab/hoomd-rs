@@ -3,7 +3,7 @@
 
 /*! Implement [`Cuboid`] */
 
-use crate::{BoundingSphereRadius, SupportMapping, Volume};
+use crate::{BoundingSphereRadius, IsPointInside, SupportMapping, Volume};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
@@ -251,6 +251,38 @@ impl<const N: usize> Cuboid<N> {
     }
 }
 
+impl<const N: usize> IsPointInside<Cartesian<N>> for Cuboid<N> {
+    /** Check if a cartesian vector is inside a cuboid.
+
+    By conventions typically used in periodic boundary conditions, points
+    exactly at the minimal extent are inside the shape but points exactly
+    on the maximal extent are not:
+    ```math
+    -\frac{L_x}{2} \le x \lt \frac{L_x}{2}
+    ```
+    ```math
+    -\frac{L_y}{2} \le y \lt \frac{L_y}{2}
+    ```
+    ... and so on
+    
+    ```
+    use hoomd_geometry::{IsPointInside, shape::Cuboid};
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cuboid = Cuboid { edge_lengths: [6.0.try_into()?, 8.0.try_into()?] };
+
+    assert!(cuboid.is_point_inside(&[2.5, -3.5].into()));
+    assert!(!cuboid.is_point_inside(&[4.0, -3.5].into()));
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    fn is_point_inside(&self, point: &Cartesian<N>) -> bool {
+        point.into_iter().zip(&self.edge_lengths).all(|(x, l)| -l.get()/2.0 <= x && x < l.get()/2.0)
+    }
+}
+
 #[cfg(test)]
 #[expect(clippy::used_underscore_binding, reason = "Required for const tests.")]
 mod tests {
@@ -479,5 +511,26 @@ mod tests {
             cuboid.support_mapping(&Cartesian::from([-1.0, -0.1, -0.1])),
             [-1.0, -2.0, -3.0].into()
         );
+    }
+
+    #[test]
+    fn is_point_inside() {
+        let cuboid = Cuboid {
+            edge_lengths: [
+                2.0.try_into().expect("test value is a positive real"),
+                4.0.try_into().expect("test value is a positive real"),
+            ],
+        };
+
+        assert!(cuboid.is_point_inside(&Cartesian::from([0.0, 0.0])));
+        assert!(cuboid.is_point_inside(&Cartesian::from([-1.0, 0.0])));
+        assert!(cuboid.is_point_inside(&Cartesian::from([0.0, -2.0])));
+        assert!(cuboid.is_point_inside(&Cartesian::from([-1.0, -2.0])));
+        assert!(cuboid.is_point_inside(&Cartesian::from([0.5, -1.0])));
+
+        assert!(!cuboid.is_point_inside(&Cartesian::from([1.0, 0.0])));
+        assert!(!cuboid.is_point_inside(&Cartesian::from([0.0, 2.0])));
+        assert!(!cuboid.is_point_inside(&Cartesian::from([1.0, 2.0])));
+        assert!(!cuboid.is_point_inside(&Cartesian::from([10.0, -20.0])));
     }
 }
