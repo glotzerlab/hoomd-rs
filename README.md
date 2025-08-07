@@ -1,4 +1,4 @@
-# hoomd-rs
+![hoomd-rs](doc/src/images/hoomdrust-logo-horizontal.svg)
 
 **hoomd-rs** is a collection of [Rust] crates that implement particle simulations
 and related methods. It performs Monte Carlo simulations of hard shapes and

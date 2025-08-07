@@ -16,11 +16,15 @@ TODO: Expand documentation.
 use rand::Rng;
 use std::ops::AddAssign;
 
+mod quick_insert;
 mod sweep;
 mod translate;
+mod uniform_in;
 
+pub use quick_insert::QuickInsert;
 pub use sweep::Sweep;
 pub use translate::Translate;
+pub use uniform_in::UniformIn;
 
 /** Propose trial moves in the microstate, evaluate the changes in energy and accept or reject accordingly.
 
