@@ -266,7 +266,7 @@ impl<const N: usize> Distribution<Cartesian<N>> for Hypersphere<N> {
     */
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
-        let ball = Ball { r: self.radius };
+        let ball = Ball { radius: self.radius };
         ball.sample(rng)
     }
 }

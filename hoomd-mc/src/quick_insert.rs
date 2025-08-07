@@ -6,7 +6,7 @@
 
 use super::{Count, Trial};
 use hoomd_interaction::{DeltaEnergyInsert, TotalEnergy};
-use hoomd_microstate::{Body, Microstate, Transform, boundary::Boundary, property::Position};
+use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Position};
 
 use rand::distr::Distribution;
 
@@ -56,7 +56,7 @@ where
     S: Position<Vector = V>,
     D: Distribution<Body<B, S>>,
     H: DeltaEnergyInsert<B, S, C> + TotalEnergy<Microstate<B, S, C>>,
-    C: Boundary<V, B, S>,
+    C: Wrap<B> + Wrap<S>,
 {
     type Count = Count;
     type Macrostate = usize;

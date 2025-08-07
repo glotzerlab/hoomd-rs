@@ -23,7 +23,7 @@ use rand::{distr::Distribution, Rng, rngs::StdRng, SeedableRng};
 let mut rng = StdRng::seed_from_u64(1);
 
 let r = 5.0;
-let ball = Ball { r: r.try_into()? };
+let ball = Ball { radius: r.try_into()? };
 let v: Cartesian<3> = ball.sample(&mut rng);
 # Ok(())
 # }
@@ -32,13 +32,13 @@ let v: Cartesian<3> = ball.sample(&mut rng);
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Ball {
     /// The radius of the ball *(\[length\])*.
-    pub r: PositiveReal,
+    pub radius: PositiveReal,
 }
 
 impl<const N: usize> Distribution<Cartesian<N>> for Ball {
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
-        let r = self.r.get();
+        let r = self.radius.get();
 
         let uniform = Uniform::new_inclusive(-r, r).expect("r should be a positive real value");
 
@@ -68,7 +68,7 @@ mod test {
         r => [0.5, 1.0, 12.0])]
     fn ball(r: f64) {
         let ball = Ball {
-            r: r.try_into()
+            radius: r.try_into()
                 .expect("hard-coded constant should be positive"),
         };
         let mut rng = StdRng::seed_from_u64(1);

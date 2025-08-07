@@ -3,32 +3,26 @@
 
 /*! Traits that describe boundary conditions and a selection of types that implement them.
 
-See the [crate-level documentation](crate) for an overview of how [`Boundary`]
-interacts with [`Microstate`](crate::Microstate) and model methods.
+See the [crate-level documentation](crate) for an overview of how boundary
+conditions interact with [`Microstate`](crate::Microstate) and model methods.
  */
-
-use crate::property::Position;
 
 use thiserror::Error;
 use tinyvec::ArrayVec;
 
+mod closed;
 mod open;
-mod square;
 
 pub use open::Open;
-pub use square::Square;
+pub use closed::Closed;
 
 /// Enumerate possible sources of error in fallible boundary methods.
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
-    /// Failed to wrap body properties.
-    #[error("body property cannot be wrapped")]
-    CannotWrapBodyProperties,
-
-    /// Failed to wrap site properties.
-    #[error("site property cannot be wrapped")]
-    CannotWrapSiteProperties,
+    /// Failed to wrap body or site properties.
+    #[error("property cannot be wrapped")]
+    CannotWrapProperties,
 }
 
 /// The maximum number of possible ghosts.
@@ -36,10 +30,6 @@ const MAX_GHOSTS: usize = 8;
 
 // Ideally, MAX_GHOSTS would be associated with the boundary type, but that is
 // not currently possible in Rust.
-
-// TODO: Boundary is not working well with all methods in one trait.
-// Perhaps the best solution is to separate is_inside, wrap, and
-// generate_ghosts into separate traits.
 
 /** Define the subset of the vector space where body and site positions exist.
 
@@ -53,78 +43,34 @@ boundary periodic by implementing the other methods accordingly.
 
 The generic type names are:
 * `V`: The [`Vector`](hoomd_vector::Vector) space in which bodies and sites exist.
-* `B`: The [`Body::properties`](crate::Body) type.
-* `S`: The [`Site::properties`](crate::Site) type.
+* `P`: The [`Body::properties`](crate::Body) or [`Site::properties`](crate::Site) type.
 */
-pub trait Boundary<V, B, S> {
-    /// Test whether a given point is inside the boundary.
-    fn is_inside(&self, point: &V) -> bool;
+pub trait Wrap<P> {
+    /** Transform body/point properties into the boundary.
 
-    /** Transform body properties into the boundary.
-
-    `wrap_body` takes a body with a position that may be outside the boundary.
-    It attempts to wrap that body back inside following the boundary's
-    periodicity. `wrap` returns [`Ok(properties)`](Ok) when this process is
-    successful.
+    `wrap_properties` takes a body or site properties with a position that
+    may be outside the boundary. It attempts to wrap that position back inside
+    following the boundary's periodicity. `wrap` returns [`Ok(properties)`](Ok)
+    when this process is successful.
 
     # Errors
 
-    `wrap` returns [`Error::CannotWrapBodyProperties`] when it is not possible
+    `wrap` returns [`Error::CannotWrapProperties`] when it is not possible
     to wrap the body into the boundary. For example, when the position is
     outside the radius of a cylinder that is only periodic along its axis.
     */
-    #[inline]
-    fn wrap_body(&self, body_properties: B) -> Result<B, Error>
-    where
-        B: Position<Vector = V>,
-    {
-        if self.is_inside(body_properties.position()) {
-            Ok(body_properties)
-        } else {
-            Err(Error::CannotWrapBodyProperties)
-        }
-    }
+    fn wrap(&self, properties: P) -> Result<P, Error>;
+}
 
-    /** Transform site properties into the boundary.
-
-    `wrap_site` takes a site with a position that may be outside the boundary.
-    It attempts to wrap that site back inside following the boundary's
-    periodicity. `wrap` returns [`Ok(properties)`](Ok) when this process is
-    successful.
-
-    # Errors
-
-    `wrap` returns [`Error::CannotWrapSiteProperties`] when it is not possible
-    to wrap the site into the boundary. For example, when the position is
-    outside the radius of a cylinder that is only periodic along its axis.
-    */
-    #[inline]
-    fn wrap_site(&self, site_properties: S) -> Result<S, Error>
-    where
-        S: Position<Vector = V>,
-    {
-        if self.is_inside(site_properties.position()) {
-            Ok(site_properties)
-        } else {
-            Err(Error::CannotWrapSiteProperties)
-        }
-    }
-
-    // NOTE: One might think to make wrap<> generic on a property type.
-    // That is not possible because types that implement this trait *must*
-    // use the same bounds -- preventing more generic boundary conditions.
-
+pub trait GenerateGhosts<S> {
     /** The largest interaction distance between sites.
 
     The maximum interaction range is the largest distance between two
     interacting sites. [`Microstate`](crate::Microstate) will place ghosts
     within this range outside periodic boundaries.
     */
-    #[inline]
-    fn maximum_interaction_range(&self) -> f64 {
-        f64::INFINITY
-    }
-
+    fn maximum_interaction_range(&self) -> f64;
+    
     /** Place periodic images of sites within the interaction range.
 
     Given `site_properties` inside the boundary, `generate_ghosts` places
@@ -133,11 +79,5 @@ pub trait Boundary<V, B, S> {
 
     [`maximum_interaction_range`]: Self::maximum_interaction_range
     */
-    #[inline]
-    fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]>
-    where
-        S: Default,
-    {
-        ArrayVec::new()
-    }
+    fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]>;
 }

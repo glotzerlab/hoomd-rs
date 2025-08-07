@@ -14,8 +14,10 @@ version.workspace = true
 workspace = true
 
 [dependencies]
+hoomd-geometry.workspace = true
 hoomd-vector.workspace = true
 hoomd-utility.workspace = true
+rand.workspace = true
 thiserror.workspace = true
 tinyvec.workspace = true
 

@@ -137,6 +137,23 @@ impl Cuboid<3> {
 }
 
 impl<const N: usize> Cuboid<N> {
+    /** Construct a cuboid with all edge lengths equal.
+
+    # Example
+    ```
+    use hoomd_geometry::shape::Rectangle;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let square = Rectangle::with_equal_edges(10.0.try_into()?);
+    # Ok(())
+    # }
+    */
+    #[inline]
+    #[must_use]
+    pub fn with_equal_edges(l: PositiveReal) -> Self {
+        Self { edge_lengths: [l; N] }
+    }
+    
     /** Test for intersections between two *axis-aligned* cuboids.
 
     This test is much faster than a general oriented cuboid (OBB) intersection, which

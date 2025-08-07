@@ -7,7 +7,7 @@
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 
-use crate::boundary::{Boundary, Open};
+use crate::boundary::{Open, Wrap};
 use crate::property::Position;
 use crate::{Body, Error, Site, Transform};
 
@@ -54,12 +54,12 @@ When you need more control, use [`MicrostateBuilder`] to set the boundary condit
 use a different seed or starting step:
 
 ```
-use hoomd_microstate::{Microstate, MicrostateBuilder, Body};
-use hoomd_microstate::boundary::Square;
+use hoomd_geometry::shape::Rectangle;
+use hoomd_microstate::{Microstate, MicrostateBuilder, Body, boundary::Closed};
 use hoomd_vector::Cartesian;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let square = Square { l: 10.0.try_into()? };
+let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
 
 let microstate = MicrostateBuilder::with_boundary(square)
     .seed(0x43abf1)
@@ -370,17 +370,18 @@ impl<B, S, C> Microstate<B, S, C> {
     # Example
 
     ```
-    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square};
+    use hoomd_geometry::shape::Rectangle;
+    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Closed};
     # use hoomd_microstate::{Body, property::Point};
     # use hoomd_vector::Cartesian;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let square = Square { l: 10.0.try_into()? };
+    let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
     let microstate = MicrostateBuilder::with_boundary(square)
         # .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
         .try_build()?;
 
-    assert_eq!(microstate.boundary().l.get(), 10.0);
+    assert_eq!(microstate.boundary().0.edge_lengths[0].get(), 10.0);
     # Ok(())
     # }
     ```
@@ -395,18 +396,19 @@ impl<B, S, C> Microstate<B, S, C> {
     # Example
 
     ```
-    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square};
+    use hoomd_geometry::shape::Rectangle;
+    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Closed};
     # use hoomd_microstate::{Body, property::Point};
     # use hoomd_vector::Cartesian;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let square = Square { l: 10.0.try_into()? };
+    let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
     let mut microstate = MicrostateBuilder::with_boundary(square)
         # .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
         .try_build()?;
 
-    microstate.boundary_mut().l = 11.0.try_into()?;
-    assert_eq!(microstate.boundary().l.get(), 11.0);
+    microstate.boundary_mut().0.edge_lengths[0] = 11.0.try_into()?;
+    assert_eq!(microstate.boundary().0.edge_lengths[0].get(), 11.0);
     # Ok(())
     # }
     ```
@@ -434,7 +436,7 @@ impl<V, B, S, C> Microstate<B, S, C>
 where
     B: Transform<S> + Position<Vector = V>,
     S: Position<Vector = V>,
-    C: Boundary<V, B, S>,
+    C: Wrap<B> + Wrap<S>,
 {
     /** Add a new body to the microstate.
 
@@ -496,7 +498,7 @@ where
         let mut body = body;
         body.properties = self
             .boundary
-            .wrap_body(body.properties)
+            .wrap(body.properties)
             .map_err(|e| Error::AddBody(body_tag, e))?;
 
         // An unknown site in the body might not wrap into the boundary.
@@ -507,7 +509,7 @@ where
         // or a reusable scratch storage).
         for s in &body.sites {
             self.boundary
-                .wrap_site(body.properties.transform(s))
+                .wrap(body.properties.transform(s))
                 .map_err(|e| Error::AddBody(body_tag, e))?;
         }
 
@@ -529,7 +531,7 @@ where
                 site_tag,
                 properties: self
                     .boundary
-                    .wrap_site(body.properties.transform(s))
+                    .wrap(body.properties.transform(s))
                     .expect("sites should be validated as wrappable prior to this loop"),
                 body_tag,
             });
@@ -709,13 +711,13 @@ where
     where
         B: Transform<S> + Position<Vector = V>,
         S: Position<Vector = V>,
-        C: Boundary<V, B, S>,
+        C: Wrap<B> + Wrap<S>,
     {
         let body = &mut self.bodies[body_index];
 
         let new_body_properties = self
             .boundary
-            .wrap_body(properties)
+            .wrap(properties)
             .map_err(|e| Error::UpdateBody(body.tag, e))?;
 
         // An unknown site in the body might not wrap into the boundary.
@@ -726,7 +728,7 @@ where
         // reusable scratch storage).
         for s in &body.item.sites {
             self.boundary
-                .wrap_site(new_body_properties.transform(s))
+                .wrap(new_body_properties.transform(s))
                 .map_err(|e| Error::UpdateBody(body.tag, e))?;
         }
 
@@ -738,7 +740,7 @@ where
                 .expect("bodies_sites and site_indices should be consistent");
             self.sites[site_index].properties = self
                 .boundary
-                .wrap_site(body.item.properties.transform(&body.item.sites[i]))
+                .wrap(body.item.properties.transform(&body.item.sites[i]))
                 .expect("sites should be validated as wrappable prior to this loop");
         }
 
@@ -1100,22 +1102,23 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     # Example
 
     ```
-    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square};
+    use hoomd_geometry::shape::Rectangle;
+    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Closed};
     use hoomd_vector::Cartesian;
 
     # use hoomd_microstate::property::Point;
     # type BodyProperties = Point<Cartesian<2>>;
     # type SiteProperties = Point<Cartesian<2>>;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let square = Square { l: 10.0.try_into()? };
+    let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
 
-    let microstate = MicrostateBuilder::<BodyProperties, SiteProperties, Square>::with_boundary(square)
+    let microstate = MicrostateBuilder::<BodyProperties, SiteProperties, Closed<Rectangle>>::with_boundary(square)
         .try_build()?;
 
     assert_eq!(microstate.step(), 0);
     assert_eq!(microstate.seed(), 0);
     assert_eq!(microstate.bodies().len(), 0);
-    assert_eq!(microstate.boundary().l.get(), 10.0);
+    assert_eq!(microstate.boundary().0.edge_lengths[0].get(), 10.0);
     # Ok(())
     # }
     ```
@@ -1253,7 +1256,7 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     where
         B: Transform<S> + Position<Vector = V>,
         S: Position<Vector = V>,
-        C: Boundary<V, B, S>,
+        C: Wrap<B> + Wrap<S>,
     {
         let mut microstate = Microstate {
             step: self.step,
@@ -1303,9 +1306,10 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
 mod tests {
     use super::*;
     use crate::{
-        boundary::{self, Square},
+        boundary::{self, Closed},
         property::Point,
     };
+    use hoomd_geometry::shape::Cuboid;
     use hoomd_vector::Cartesian;
 
     use rand::{Rng, SeedableRng, rngs::StdRng, seq::SliceRandom};
@@ -1461,28 +1465,32 @@ mod tests {
     }
 
     #[fixture]
-    fn square() -> Square {
-        Square {
-            l: 4.0
+    fn square() -> Closed<Cuboid<2>> {
+        let cuboid = Cuboid {
+            edge_lengths: [4.0
                 .try_into()
                 .expect("hard-coded constant should be positive"),
-        }
+                4.0
+                .try_into()
+                .expect("hard-coded constant should be positive")]
+        };
+        Closed(cuboid)
     }
 
     #[rstest]
-    fn add_body_outside(square: Square) {
+    fn add_body_outside(square: Closed<Cuboid<2>>) {
         let mut microstate = MicrostateBuilder::with_boundary(square)
             .try_build()
             .expect("the hard-coded bodies should be in the boundary");
 
         assert_eq!(
             microstate.add_body(Body::point(Cartesian::from([2.0, 0.0]))),
-            Err(Error::AddBody(0, boundary::Error::CannotWrapBodyProperties))
+            Err(Error::AddBody(0, boundary::Error::CannotWrapProperties))
         );
     }
 
     #[rstest]
-    fn update_body_outside(square: Square) {
+    fn update_body_outside(square: Closed<Cuboid<2>>) {
         let mut microstate = MicrostateBuilder::with_boundary(square)
             .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
             .try_build()
@@ -1497,13 +1505,13 @@ mod tests {
             ),
             Err(Error::UpdateBody(
                 0,
-                boundary::Error::CannotWrapBodyProperties
+                boundary::Error::CannotWrapProperties
             ))
         );
     }
 
     #[rstest]
-    fn add_site_outside(square: Square) {
+    fn add_site_outside(square: Closed<Cuboid<2>>) {
         let body = Body {
             properties: Point::new(Cartesian::from([1.0, 0.0])),
             sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -1515,12 +1523,12 @@ mod tests {
 
         assert_eq!(
             microstate.add_body(body),
-            Err(Error::AddBody(0, boundary::Error::CannotWrapSiteProperties))
+            Err(Error::AddBody(0, boundary::Error::CannotWrapProperties))
         );
     }
 
     #[rstest]
-    fn update_site_outside(square: Square) {
+    fn update_site_outside(square: Closed<Cuboid<2>>) {
         let body = Body {
             properties: Point::new(Cartesian::from([0.0, 0.0])),
             sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -1540,7 +1548,7 @@ mod tests {
             ),
             Err(Error::UpdateBody(
                 0,
-                boundary::Error::CannotWrapSiteProperties
+                boundary::Error::CannotWrapProperties
             ))
         );
     }
