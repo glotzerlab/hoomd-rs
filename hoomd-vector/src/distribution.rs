@@ -68,7 +68,8 @@ mod test {
         r => [0.5, 1.0, 12.0])]
     fn ball(r: f64) {
         let ball = Ball {
-            radius: r.try_into()
+            radius: r
+                .try_into()
                 .expect("hard-coded constant should be positive"),
         };
         let mut rng = StdRng::seed_from_u64(1);

@@ -6,12 +6,9 @@ use crate::{BoundingSphereRadius, IntersectsAt, IsPointInside, SupportMapping, V
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, distribution::Ball};
 
+use rand::{Rng, distr::Distribution};
 use std::f64::consts::PI;
 use std::ops::Mul;
-use rand::{
-    Rng,
-    distr::Distribution,
-};
 
 /// The (single, double, ...)-factorial function
 pub fn factorial(n: usize, ntuple: usize) -> usize {
@@ -222,8 +219,10 @@ impl<const N: usize> BoundingSphereRadius for Hypersphere<N> {
     }
 }
 
-impl<const N: usize, V> IsPointInside<V> for Hypersphere<N> where
-V: InnerProduct {
+impl<const N: usize, V> IsPointInside<V> for Hypersphere<N>
+where
+    V: InnerProduct,
+{
     /** Check if a vector is inside a hypersphere.
 
     ```
@@ -266,7 +265,9 @@ impl<const N: usize> Distribution<Cartesian<N>> for Hypersphere<N> {
     */
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
-        let ball = Ball { radius: self.radius };
+        let ball = Ball {
+            radius: self.radius,
+        };
         ball.sample(rng)
     }
 }
@@ -285,9 +286,9 @@ mod tests {
     use crate::Convex;
     use approx::assert_relative_eq;
     use hoomd_vector::{Cartesian, Versor};
+    use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
     use rstest::*;
     use std::marker::PhantomData;
-    use rand::{SeedableRng, rngs::StdRng, distr::Distribution};
 
     /// Number of random samples to test.
     const N: usize = 1024;
@@ -471,9 +472,9 @@ mod tests {
     fn distribution() {
         let circle = Circle::with_radius(4.0.try_into().expect("test value is a positive real"));
         let mut rng = StdRng::seed_from_u64(4);
-        
+
         let points: Vec<_> = circle.sample_iter(&mut rng).take(N).collect();
         assert!(&points.iter().all(|p| circle.is_point_inside(p)));
-        assert!(&points.iter().any(|p| p.dot(&p) > 3.9));
+        assert!(&points.iter().any(|p| p.dot(p) > 3.9));
     }
 }

@@ -71,7 +71,8 @@ impl LocalTrial<Point<Cartesian<2>>> for Discrete {
 #[derive(Resource)]
 // ANCHOR: simulation_struct
 struct CustomRandomWalk {
-    microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Circle>>,
+    microstate:
+        Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Circle>>,
     hamiltonian: Zero,
     translate_sweep: Sweep<Discrete>,
     kt: f64,

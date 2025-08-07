@@ -13,8 +13,8 @@ use tinyvec::ArrayVec;
 mod closed;
 mod open;
 
-pub use open::Open;
 pub use closed::Closed;
+pub use open::Open;
 
 /// Enumerate possible sources of error in fallible boundary methods.
 #[non_exhaustive]
@@ -70,7 +70,7 @@ pub trait GenerateGhosts<S> {
     within this range outside periodic boundaries.
     */
     fn maximum_interaction_range(&self) -> f64;
-    
+
     /** Place periodic images of sites within the interaction range.
 
     Given `site_properties` inside the boundary, `generate_ghosts` places

@@ -4,11 +4,8 @@
 /*! Implement Closed
 */
 
+use rand::{Rng, distr::Distribution};
 use tinyvec::ArrayVec;
-use rand::{
-    Rng,
-    distr::Distribution,
-};
 
 use super::{Error, GenerateGhosts, MAX_GHOSTS, Wrap};
 use crate::property::Position;
@@ -23,9 +20,10 @@ ghost sites.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Closed<T>(pub T);
 
-impl<P, T, V> Wrap<P> for Closed<T> where
-P: Position<Vector = V>,
-T: IsPointInside<V>
+impl<P, T, V> Wrap<P> for Closed<T>
+where
+    P: Position<Vector = V>,
+    T: IsPointInside<V>,
 {
     #[inline]
     fn wrap(&self, properties: P) -> Result<P, Error> {
@@ -37,21 +35,24 @@ T: IsPointInside<V>
     }
 }
 
-impl<S, T> GenerateGhosts<S> for Closed<T> where S: Default {
+impl<S, T> GenerateGhosts<S> for Closed<T>
+where
+    S: Default,
+{
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {
         f64::INFINITY
     }
 
     #[inline]
-    fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]>
-        {
+    fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
         ArrayVec::new()
-        }
+    }
 }
 
-impl<T, V> Distribution<V> for Closed<T> where
-T: Distribution<V>
+impl<T, V> Distribution<V> for Closed<T>
+where
+    T: Distribution<V>,
 {
     /** Generate points uniformly distributed in the wrapped shape.
 

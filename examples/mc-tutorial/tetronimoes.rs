@@ -193,8 +193,12 @@ impl Simulation for Tetronimoes {
                 .clone();
 
             let properties = OrientedPoint {
-                position: [0.0, self.microstate.boundary().0.edge_lengths[1].get() / 2.0 - 2.0]
-                    .into(),
+                position: [
+                    0.0,
+                    self.microstate.boundary().0.edge_lengths[1].get() / 2.0
+                        - 2.0,
+                ]
+                .into(),
                 orientation: Angle::from(0.0),
             };
 

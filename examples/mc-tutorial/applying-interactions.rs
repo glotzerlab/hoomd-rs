@@ -33,7 +33,8 @@ impl Fill {
         let sigma = 1.0;
 
         let square = Rectangle::with_equal_edges(box_height.try_into()?);
-        let microstate = MicrostateBuilder::with_boundary(Closed(square)).try_build()?;
+        let microstate =
+            MicrostateBuilder::with_boundary(Closed(square)).try_build()?;
 
         // ANCHOR: external
         let linear = Single(Linear {
@@ -82,7 +83,12 @@ impl Simulation for Fill {
         // ANCHOR: add
         if self.microstate.step() % 100 == 0 {
             self.microstate.add_body(Body::point(
-                [0.0, self.microstate.boundary().0.edge_lengths[1].get() / 2.0 - 0.5].into(),
+                [
+                    0.0,
+                    self.microstate.boundary().0.edge_lengths[1].get() / 2.0
+                        - 0.5,
+                ]
+                .into(),
             ))?;
         }
         // ANCHOR_END: add
@@ -116,7 +122,8 @@ impl Simulation for Fill {
 // ANCHOR: simulation_struct
 struct Fill {
     /// Positions of all the bodies in the simulation.
-    microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Rectangle>>,
+    microstate:
+        Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Rectangle>>,
     /// How sites interact with other sites and fields.
     hamiltonian: (Single<Linear<Cartesian<2>>>, CutoffPair<Isotropic<Boxcar>>),
     /// Trial moves to apply.

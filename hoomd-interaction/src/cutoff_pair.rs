@@ -372,7 +372,11 @@ mod tests {
         pairwise::{Isotropic, LennardJones},
     };
     use hoomd_geometry::shape::Cuboid;
-    use hoomd_microstate::{MicrostateBuilder, boundary::{Closed, Open}, property::Point};
+    use hoomd_microstate::{
+        MicrostateBuilder,
+        boundary::{Closed, Open},
+        property::Point,
+    };
     use hoomd_vector::Cartesian;
 
     use ::approx::assert_relative_eq;
@@ -383,12 +387,12 @@ mod tests {
     #[fixture]
     fn square() -> Closed<Cuboid<2>> {
         let cuboid = Cuboid {
-            edge_lengths: [4.0
-                .try_into()
-                .expect("hard-coded constant should be positive"),
-                4.0
-                .try_into()
-                .expect("hard-coded constant should be positive")]
+            edge_lengths: [
+                4.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+                4.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+            ],
         };
         Closed(cuboid)
     }

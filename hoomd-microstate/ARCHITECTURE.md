@@ -250,7 +250,7 @@ The ghost sites facilitate pairwise interactions across periodic boundaries.
 Each boundary has a maximum interaction range which is infinite for
 open and fully closed boundaries, and can be set up to the the minimum image for
 periodic boundaries. `generate_ghosts` must take the given site and generate all
-of the ghosts that are needed to find interactions within that maximum 
+of the ghosts that are needed to find interactions within that maximum
 interaction range. In all geometries we can think of, there will be a small
 integer number of maximum ghosts per particle. To efficiently and conveniently
 express the generation of 0..MAX_GHOSTS ghosts, hoomd-rs uses the ArrayVec data

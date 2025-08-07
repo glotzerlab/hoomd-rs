@@ -190,12 +190,12 @@ mod tests {
     #[test]
     fn reject_boundary_body() {
         let cuboid = Cuboid {
-            edge_lengths: [4.0
-                .try_into()
-                .expect("hard-coded constant should be positive"),
-                4.0
-                .try_into()
-                .expect("hard-coded constant should be positive")]
+            edge_lengths: [
+                4.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+                4.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+            ],
         };
         let square = Closed(cuboid);
 
@@ -227,12 +227,12 @@ mod tests {
         };
 
         let cuboid = Cuboid {
-            edge_lengths: [6.0
-                .try_into()
-                .expect("hard-coded constant should be positive"),
-                6.0
-                .try_into()
-                .expect("hard-coded constant should be positive")]
+            edge_lengths: [
+                6.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+                6.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+            ],
         };
         let square = Closed(cuboid);
         let mut microstate = MicrostateBuilder::with_boundary(square)

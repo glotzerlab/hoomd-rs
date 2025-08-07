@@ -8,12 +8,12 @@ use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
 use itertools::multizip;
-use std::array;
-use std::ops::Mul;
 use rand::{
     Rng,
     distr::{Distribution, Uniform},
 };
+use std::array;
+use std::ops::Mul;
 
 /** A shape with with all perpendicular angles made from axis-aligned edges.
 
@@ -151,9 +151,11 @@ impl<const N: usize> Cuboid<N> {
     #[inline]
     #[must_use]
     pub fn with_equal_edges(l: PositiveReal) -> Self {
-        Self { edge_lengths: [l; N] }
+        Self {
+            edge_lengths: [l; N],
+        }
     }
-    
+
     /** Test for intersections between two *axis-aligned* cuboids.
 
     This test is much faster than a general oriented cuboid (OBB) intersection, which
@@ -285,7 +287,7 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Cuboid<N> {
     -\frac{L_y}{2} \le y \lt \frac{L_y}{2}
     ```
     ... and so on
-    
+
     ```
     use hoomd_geometry::{IsPointInside, shape::Cuboid};
 
@@ -300,7 +302,10 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Cuboid<N> {
     */
     #[inline]
     fn is_point_inside(&self, point: &Cartesian<N>) -> bool {
-        point.into_iter().zip(&self.edge_lengths).all(|(x, l)| -l.get()/2.0 <= x && x < l.get()/2.0)
+        point
+            .into_iter()
+            .zip(&self.edge_lengths)
+            .all(|(x, l)| -l.get() / 2.0 <= x && x < l.get() / 2.0)
     }
 }
 
@@ -327,9 +332,9 @@ impl<const N: usize> Distribution<Cartesian<N>> for Cuboid<N> {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
         let minimal_extents = self.minimal_extents();
         let maximal_extents = self.maximal_extents();
-        
+
         array::from_fn(|i| {
-        
+
             let uniform = Uniform::new(minimal_extents[i], maximal_extents[i])
                 .expect("cuboid should always have real valued extents where the minimum is less than the maximum");
             uniform.sample(rng)}).into()
@@ -341,9 +346,9 @@ impl<const N: usize> Distribution<Cartesian<N>> for Cuboid<N> {
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
+    use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
     use rstest::*;
     use std::marker::PhantomData;
-    use rand::{SeedableRng, rngs::StdRng, distr::Distribution};
 
     /// Number of random samples to test.
     const N: usize = 1024;
@@ -600,7 +605,7 @@ mod tests {
             ],
         };
         let mut rng = StdRng::seed_from_u64(3);
-        
+
         let points: Vec<_> = cuboid.sample_iter(&mut rng).take(N).collect();
         assert!(&points.iter().all(|p| cuboid.is_point_inside(p)));
         assert!(&points.iter().any(|p| p[0] < -2.8));

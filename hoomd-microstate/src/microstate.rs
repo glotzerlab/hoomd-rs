@@ -1467,12 +1467,12 @@ mod tests {
     #[fixture]
     fn square() -> Closed<Cuboid<2>> {
         let cuboid = Cuboid {
-            edge_lengths: [4.0
-                .try_into()
-                .expect("hard-coded constant should be positive"),
-                4.0
-                .try_into()
-                .expect("hard-coded constant should be positive")]
+            edge_lengths: [
+                4.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+                4.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+            ],
         };
         Closed(cuboid)
     }
@@ -1503,10 +1503,7 @@ mod tests {
                     position: [2.0, 0.0].into()
                 }
             ),
-            Err(Error::UpdateBody(
-                0,
-                boundary::Error::CannotWrapProperties
-            ))
+            Err(Error::UpdateBody(0, boundary::Error::CannotWrapProperties))
         );
     }
 
@@ -1546,10 +1543,7 @@ mod tests {
                     position: [1.0, 0.0].into()
                 }
             ),
-            Err(Error::UpdateBody(
-                0,
-                boundary::Error::CannotWrapProperties
-            ))
+            Err(Error::UpdateBody(0, boundary::Error::CannotWrapProperties))
         );
     }
 

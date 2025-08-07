@@ -309,12 +309,12 @@ mod tests {
         #[test]
         fn site_outside() {
             let cuboid = Cuboid {
-                edge_lengths: [4.0
-                    .try_into()
-                    .expect("hard-coded constant should be positive"),
-                    4.0
-                    .try_into()
-                    .expect("hard-coded constant should be positive")]
+                edge_lengths: [
+                    4.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    4.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                ],
             };
             let square = Closed(cuboid);
 
