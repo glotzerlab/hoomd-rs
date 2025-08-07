@@ -4,10 +4,14 @@
 /*! Implement [`Hypersphere`] */
 use crate::{BoundingSphereRadius, IntersectsAt, IsPointInside, SupportMapping, Volume};
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{InnerProduct, Rotate};
+use hoomd_vector::{Cartesian, InnerProduct, Rotate, distribution::Ball};
 
 use std::f64::consts::PI;
 use std::ops::Mul;
+use rand::{
+    Rng,
+    distr::Distribution,
+};
 
 /// The (single, double, ...)-factorial function
 pub fn factorial(n: usize, ntuple: usize) -> usize {
@@ -241,6 +245,32 @@ V: InnerProduct {
     }
 }
 
+impl<const N: usize> Distribution<Cartesian<N>> for Hypersphere<N> {
+    /** Generate points uniformly distributed in the hypersphere.
+
+    # Example
+
+    ```
+    use hoomd_geometry::{IsPointInside, shape::Sphere};
+    use rand::{SeedableRng, rngs::StdRng, distr::Distribution};
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let sphere = Sphere { radius: 5.0.try_into()? };
+    let mut rng = StdRng::seed_from_u64(1);
+
+    let point = sphere.sample(&mut rng);
+    assert!(sphere.is_point_inside(&point));
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
+        let ball = Ball { r: self.radius };
+        ball.sample(rng)
+    }
+}
+
 #[cfg(test)]
 #[expect(
     clippy::used_underscore_binding,
@@ -257,6 +287,10 @@ mod tests {
     use hoomd_vector::{Cartesian, Versor};
     use rstest::*;
     use std::marker::PhantomData;
+    use rand::{SeedableRng, rngs::StdRng, distr::Distribution};
+
+    /// Number of random samples to test.
+    const N: usize = 1024;
 
     fn volume_map(n: usize, r: f64) -> f64 {
         match n {
@@ -431,5 +465,15 @@ mod tests {
         assert!(!circle.is_point_inside(&Cartesian::from([2.0, 0.0])));
         assert!(!circle.is_point_inside(&Cartesian::from([0.0, 2.0])));
         assert!(!circle.is_point_inside(&Cartesian::from([1.5, 1.5])));
+    }
+
+    #[test]
+    fn distribution() {
+        let circle = Circle::with_radius(4.0.try_into().expect("test value is a positive real"));
+        let mut rng = StdRng::seed_from_u64(4);
+        
+        let points: Vec<_> = circle.sample_iter(&mut rng).take(N).collect();
+        assert!(&points.iter().all(|p| circle.is_point_inside(p)));
+        assert!(&points.iter().any(|p| p.dot(&p) > 3.9));
     }
 }

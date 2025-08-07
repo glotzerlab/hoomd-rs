@@ -49,6 +49,9 @@ modified.
 
 [`IsPointInside`] checks if a point is inside or outside a shape.
 
+Many shapes implement the `Distribution` trait from **rand** to randomly sample
+interior points.
+
 ## Intersection Tests
 
 For non-orientable shapes, or for bodies who have special intersection

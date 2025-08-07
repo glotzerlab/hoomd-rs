@@ -8,12 +8,6 @@ use super::Boundary;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
-use rand::{
-    Rng,
-    distr::{Distribution, Uniform},
-};
-use std::array;
-
 /** Restrict bodies and sites to the inside of a square.
 
 The square covers the points:
@@ -130,20 +124,6 @@ impl<B, S> Boundary<Cartesian<2>, B, S> for Square {
     fn is_inside(&self, point: &Cartesian<2>) -> bool {
         let l = self.l.get();
         point[0] >= -l / 2.0 && point[1] >= -l / 2.0 && point[0] < l / 2.0 && point[1] < l / 2.0
-    }
-}
-
-impl Distribution<Cartesian<2>> for Square {
-    /** Generate points uniformly distributed in the square.
-
-    TODO: Example
-    */
-    #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<2> {
-        let uniform = Uniform::new(self.minimum_x(), self.maximum_x())
-            .expect("square should always have real valued extents where the minimum is less than the maximum");
-
-        array::from_fn(|_| uniform.sample(rng)).into()
     }
 }
 

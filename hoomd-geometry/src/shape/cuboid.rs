@@ -10,6 +10,10 @@ use hoomd_vector::Cartesian;
 use itertools::multizip;
 use std::array;
 use std::ops::Mul;
+use rand::{
+    Rng,
+    distr::{Distribution, Uniform},
+};
 
 /** A shape with with all perpendicular angles made from axis-aligned edges.
 
@@ -283,6 +287,38 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Cuboid<N> {
     }
 }
 
+impl<const N: usize> Distribution<Cartesian<N>> for Cuboid<N> {
+    /** Generate points uniformly distributed in the cuboid.
+
+    # Example
+
+    ```
+    use hoomd_geometry::{IsPointInside, shape::Cuboid};
+    use rand::{SeedableRng, rngs::StdRng, distr::Distribution};
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cuboid = Cuboid { edge_lengths: [6.0.try_into()?, 8.0.try_into()?] };
+    let mut rng = StdRng::seed_from_u64(1);
+
+    let point = cuboid.sample(&mut rng);
+    assert!(cuboid.is_point_inside(&point));
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
+        let minimal_extents = self.minimal_extents();
+        let maximal_extents = self.maximal_extents();
+        
+        array::from_fn(|i| {
+        
+            let uniform = Uniform::new(minimal_extents[i], maximal_extents[i])
+                .expect("cuboid should always have real valued extents where the minimum is less than the maximum");
+            uniform.sample(rng)}).into()
+    }
+}
+
 #[cfg(test)]
 #[expect(clippy::used_underscore_binding, reason = "Required for const tests.")]
 mod tests {
@@ -290,6 +326,10 @@ mod tests {
     use approx::assert_relative_eq;
     use rstest::*;
     use std::marker::PhantomData;
+    use rand::{SeedableRng, rngs::StdRng, distr::Distribution};
+
+    /// Number of random samples to test.
+    const N: usize = 1024;
 
     #[rstest(
         edges0 => [[2.0.try_into().expect("test value is a positive real"), 2.0.try_into().expect("test value is a positive real"), 2.0.try_into().expect("test value is a positive real")]],
@@ -532,5 +572,23 @@ mod tests {
         assert!(!cuboid.is_point_inside(&Cartesian::from([0.0, 2.0])));
         assert!(!cuboid.is_point_inside(&Cartesian::from([1.0, 2.0])));
         assert!(!cuboid.is_point_inside(&Cartesian::from([10.0, -20.0])));
+    }
+
+    #[test]
+    fn distribution() {
+        let cuboid = Cuboid {
+            edge_lengths: [
+                6.0.try_into().expect("test value is a positive real"),
+                10.0.try_into().expect("test value is a positive real"),
+            ],
+        };
+        let mut rng = StdRng::seed_from_u64(3);
+        
+        let points: Vec<_> = cuboid.sample_iter(&mut rng).take(N).collect();
+        assert!(&points.iter().all(|p| cuboid.is_point_inside(p)));
+        assert!(&points.iter().any(|p| p[0] < -2.8));
+        assert!(&points.iter().any(|p| p[0] > 2.8));
+        assert!(&points.iter().any(|p| p[1] < -4.8));
+        assert!(&points.iter().any(|p| p[1] > 4.8));
     }
 }
