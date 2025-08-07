@@ -56,6 +56,7 @@ use a different seed or starting step:
 ```
 use hoomd_microstate::{Microstate, MicrostateBuilder, Body};
 use hoomd_microstate::boundary::Square;
+use hoomd_vector::Cartesian;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let square = Square { l: 10.0.try_into()? };
@@ -63,7 +64,7 @@ let square = Square { l: 10.0.try_into()? };
 let microstate = MicrostateBuilder::with_boundary(square)
     .seed(0x43abf1)
     .step(100_000)
-    .bodies([Body::point([0.0, 0.0].into())])
+    .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
     .try_build()?;
 # Ok(())
 # }
@@ -1475,7 +1476,7 @@ mod tests {
             .expect("the hard-coded bodies should be in the boundary");
 
         assert_eq!(
-            microstate.add_body(Body::point([2.0, 0.0].into())),
+            microstate.add_body(Body::point(Cartesian::from([2.0, 0.0]))),
             Err(Error::AddBody(0, boundary::Error::CannotWrapBodyProperties))
         );
     }

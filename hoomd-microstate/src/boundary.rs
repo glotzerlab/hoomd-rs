@@ -14,11 +14,9 @@ use tinyvec::ArrayVec;
 
 mod open;
 mod square;
-mod periodic_square;
 
 pub use open::Open;
 pub use square::Square;
-pub use periodic_square::PeriodicSquare;
 
 /// Enumerate possible sources of error in fallible boundary methods.
 #[non_exhaustive]
