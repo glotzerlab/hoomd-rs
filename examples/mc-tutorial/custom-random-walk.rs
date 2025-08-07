@@ -2,7 +2,8 @@
 use rand::{Rng, seq::IndexedRandom};
 use std::iter;
 
-use hoomd_mc::{LocalTrial, Sweep, Trial, Zero};
+use hoomd_interaction::Zero;
+use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder, boundary::Boundary, property::Point,
 };
