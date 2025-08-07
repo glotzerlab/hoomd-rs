@@ -8,7 +8,10 @@ use super::Boundary;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
-use rand::{Rng, distr::{Distribution, Uniform}};
+use rand::{
+    Rng,
+    distr::{Distribution, Uniform},
+};
 use std::array;
 
 /** Restrict bodies and sites to the inside of a square.
@@ -55,7 +58,7 @@ impl Square {
     #[inline]
     #[must_use]
     pub fn maximum_x(&self) -> f64 {
-        self.l.get()/2.0
+        self.l.get() / 2.0
     }
 
     /** Get the maximum y coordinate in the square (exclusive).
@@ -76,9 +79,9 @@ impl Square {
     #[inline]
     #[must_use]
     pub fn maximum_y(&self) -> f64 {
-        self.l.get()/2.0
+        self.l.get() / 2.0
     }
-    
+
     /** Get the minimum x coordinate in the square (inclusive).
 
     # Example
@@ -97,7 +100,7 @@ impl Square {
     #[inline]
     #[must_use]
     pub fn minimum_x(&self) -> f64 {
-        -self.l.get()/2.0
+        -self.l.get() / 2.0
     }
 
     /** Get the minimum y coordinate in the square (inclusive).
@@ -118,7 +121,7 @@ impl Square {
     #[inline]
     #[must_use]
     pub fn minimum_y(&self) -> f64 {
-        -self.l.get()/2.0
+        -self.l.get() / 2.0
     }
 }
 
