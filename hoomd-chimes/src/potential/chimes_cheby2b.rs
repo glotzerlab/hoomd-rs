@@ -31,7 +31,7 @@ to enable correct potential calculation.
 pub struct Chimes2b<F: Transformation, const N: usize> {
     /// Transformation style.
     trans_style: F,
-    /// One plus two-body ChIMES coefficient (`[energy]`).
+    /// Two-body ChIMES coefficient (`[energy]`).
     coeff: ArrayVec<f64, N>,
     /// Inner radial cut-off (`[length]`).
     r_in: f64,
@@ -62,15 +62,18 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
     let lambda = 1.5;
     let r_out = 3.0;
     let r_in = 1.0;
-    let coeff = vec![1.0, 2.0];
+    let coeff: ArrayVec<f64, 3> = [1.0, 2.0, 3.0].into_iter().collect();
     let morse_trans = MorseTransformation { lambda, r_out, r_in };
 
-    let mut chimes2b = Chimes2b::new(morse_trans, coeff.clone(), r_in);
-    assert_eq!(chimes2b.coeff(), &coeff);
+    let mut chimes2b = Chimes2b::new(morse_trans, coeff, r_in);
+    assert_eq!(chimes2b.coeff().as_slice(), &[1.0, 2.0, 3.0]);
     assert_eq!(chimes2b.r_in(), 1.0);
     chimes2b.set_inner_smooth_r(0.02);
     assert_eq!(chimes2b.inner_smooth_r(), 0.02);
     ```
+    # Panics
+
+    Will panic if coeff is empty.
     */
     #[inline]
     #[must_use]
@@ -90,7 +93,10 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
     /**
     Construct a new `Chimes2b` from a `Vec<f64>` for coefficients,
     converting to `ArrayVec<f64, N>`.
-     */
+    # Panics
+
+    Will panic if coeff is empty.
+    */
     #[inline]
     #[must_use]
     pub fn new_from_vec(trans_style: F, coeff: Vec<f64>, r_in: f64) -> Self {
@@ -253,7 +259,7 @@ mod tests {
         let coeff = vec![1.0, 2.0, 3.0];
         let chimes2b = Chimes2b::<_, 3>::new_from_vec(trans, coeff, 1.0);
 
-        assert_eq!(chimes2b.coeff().as_slice(), &[1.0, 2.0]);
+        assert_eq!(chimes2b.coeff().as_slice(), &[1.0, 2.0, 3.0]);
         assert_eq!(chimes2b.r_in(), &1.0);
     }
 
