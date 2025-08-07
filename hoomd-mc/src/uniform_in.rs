@@ -5,7 +5,6 @@
 */
 
 use hoomd_microstate::{Body, property::Point};
-use hoomd_vector::Cartesian;
 
 use rand::{Rng, distr::Distribution};
 
