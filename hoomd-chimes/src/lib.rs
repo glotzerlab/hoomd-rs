@@ -6,6 +6,6 @@
 Common utility code used by chimes interatomic potential.
 */
 
-pub mod cheby;
 pub mod potential;
 pub mod transformation;
+pub mod polynomial_basis;
