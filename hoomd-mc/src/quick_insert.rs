@@ -71,7 +71,6 @@ where
         let mut count = Self::Count::default();
 
         if hamiltonian.total_energy(microstate) <= 0.0 {
-
             let mut rng = microstate.counter().make_rng();
 
             for _ in 0..self.attempts_per_apply {
@@ -88,7 +87,7 @@ where
                 }
             }
         }
-            
+
         microstate.increment_substep();
         count
     }

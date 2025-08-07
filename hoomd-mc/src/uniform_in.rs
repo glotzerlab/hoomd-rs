@@ -15,7 +15,7 @@ Use [`UniformIn`] to randomly generate bodies inside the simulation boundary.
 
 # Example
 
-TODO: Write example. 
+TODO: Write example.
 
 */
 pub struct UniformIn<S, C> {
@@ -24,15 +24,18 @@ pub struct UniformIn<S, C> {
 
     /// Give each generated body these sites.
     pub template_sites: Vec<S>,
-    }
+}
 
-impl<V, S, C> Distribution<Body<Point<V>, S>> for UniformIn<S, C> where
-S: Clone,
-C: Distribution<V>
- {
+impl<V, S, C> Distribution<Body<Point<V>, S>> for UniformIn<S, C>
+where
+    S: Clone,
+    C: Distribution<V>,
+{
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Body<Point<V>, S> {
-        let properties = Point { position: self.boundary.sample(rng) };
+        let properties = Point {
+            position: self.boundary.sample(rng),
+        };
         let sites = self.template_sites.clone();
         Body { properties, sites }
     }
