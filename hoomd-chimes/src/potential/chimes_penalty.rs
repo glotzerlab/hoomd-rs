@@ -86,8 +86,7 @@ impl IsotropicEnergy for ChimesPenalty {
         if r_penalty <= 0.0 {
             0.0
         } else {
-            let e_penalty = self.a * r_penalty * r_penalty * r_penalty;
-            e_penalty
+            self.a * r_penalty * r_penalty * r_penalty
         }
     }
 }

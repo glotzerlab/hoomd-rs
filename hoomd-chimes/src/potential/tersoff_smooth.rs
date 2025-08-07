@@ -103,9 +103,7 @@ impl<F> TersoffSmooth<F> {
     fn dfs_dr(&self, r: f64) -> f64 {
         let dt = self.r_out * (1.0 - self.fo);
 
-        if r < dt {
-            0.0
-        } else if r > self.r_out {
+        if r < dt || r > self.r_out {
             0.0
         } else {
             let pref = PI / (self.r_out - dt);

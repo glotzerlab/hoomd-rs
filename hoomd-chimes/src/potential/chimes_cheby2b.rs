@@ -25,13 +25,13 @@ distance between particles, given by [`Transformation`].
 # Note:
 * See equation 2 in <https://doi.org/10.1038/s41524-024-01497-y>.
 * Must be used with the [`TersoffSmooth`] and [`ChimesPenalty`]
-to enable correct potential calculation.
+    to enable correct potential calculation.
  */
 #[derive(Clone, Debug, PartialEq)]
 pub struct Chimes2b<F: Transformation, const N: usize> {
     /// Transformation style.
     trans_style: F,
-    /// Two-body ChIMES coefficient (`[energy]`).
+    /// Two-body `ChIMES` coefficient (`[energy]`).
     coeff: ArrayVec<f64, N>,
     /// Inner radial cut-off (`[length]`).
     r_in: f64,
@@ -43,7 +43,7 @@ pub struct Chimes2b<F: Transformation, const N: usize> {
 
 impl<F: Transformation, const N: usize> Chimes2b<F, N> {
     /** Constructs a new `Chimes2b` with the given transformation function,
-    ChIMES coefficients, and inner distance cutoff.
+    `ChIMES` coefficients, and inner distance cutoff.
 
     The Chebyshev polynomial order is set to `coeff.len() + 1`.
     The inner smoothing distance defaults to 0.01.
@@ -51,7 +51,7 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
     # Arguments
 
     * `trans_style` - Transformation function implementing `Transformation`.
-    * `coeff` - ChIMES coefficients (`[energy]`).
+    * `coeff` - `ChIMES` coefficients (`[energy]`).
     * `r_in` - Inner radial cut-off (`[length]`).
 
     # Example
@@ -78,9 +78,7 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
     #[inline]
     #[must_use]
     pub fn new(trans_style: F, coeff: ArrayVec<f64, N>, r_in: f64) -> Self {
-        if N == 0 {
-            panic!("Chimes2b requires at least one coefficient");
-        };
+        assert!(!(N == 0), "Chimes2b requires at least one coefficient");
         Self {
             trans_style,
             coeff,
@@ -96,20 +94,19 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
     # Panics
 
     Will panic if coeff is empty.
+    Will panic if N does not match the coeff.len().
     */
     #[inline]
     #[must_use]
     pub fn new_from_vec(trans_style: F, coeff: Vec<f64>, r_in: f64) -> Self {
-        if N == 0 {
-            panic!("ChIMES requires at least one coefficient (N >= 1)");
-        }
-        if coeff.len() != N {
-            panic!(
-                "Coefficient vector length {} does not match N = {}",
-                coeff.len(),
-                N
-            );
-        }
+        assert!(!(N == 0), "Chimes2b requires at least one coefficient");
+        assert!(
+            (coeff.len() != N),
+            "Coefficient vector length {} does not match N = {}",
+            coeff.len(),
+            N
+        );
+
         let coeff: ArrayVec<f64, N> = coeff.into_iter().collect();
         Self {
             trans_style,
@@ -132,13 +129,13 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
         self.trans_style = trans_style;
     }
 
-    /// Returns the ChIMES coefficients.
+    /// Returns the `ChIMES` coefficients.
     #[inline]
     pub fn coeff(&self) -> &ArrayVec<f64, N> {
         &self.coeff
     }
 
-    /// Sets the ChIMES coefficients and updates the Chebyshev polynomial order.
+    /// Sets the `ChIMES` coefficients and updates the Chebyshev polynomial order.
     #[inline]
     pub fn set_coeff(&mut self, coeff: ArrayVec<f64, N>) {
         self.coeff = coeff;

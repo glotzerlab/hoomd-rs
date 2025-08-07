@@ -20,14 +20,11 @@ pub trait Basis<const N: usize> {
     Implement the basis function `f(s)`
      */
     #[must_use]
-    fn evaluate(&self, r: &f64) -> ArrayVec<f64, N>;
+    fn evaluate(&self, s: &f64) -> ArrayVec<f64, N>;
 
     /**
     Implement the derivative of the basis fucntion
-     $`\frac{df}{dr}`$.
-
-    Follows the same behaviour as the fucntion
-    `Transformation.s`.
+     $`\frac{df}{ds}`$.
      */
-    fn evaluate_derivative(&self, r: &f64) -> ArrayVec<f64, N>;
+    fn evaluate_derivative(&self, s: &f64) -> ArrayVec<f64, N>;
 }
