@@ -17,6 +17,7 @@ workspace = true
 hoomd-vector.workspace = true
 hoomd-utility.workspace = true
 thiserror.workspace = true
+rand.workspace = true
 
 [dev-dependencies]
 hoomd-vector = { features = ["approx"], workspace = true }

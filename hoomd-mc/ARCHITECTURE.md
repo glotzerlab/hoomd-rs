@@ -6,11 +6,11 @@ energy of the system and the trial moves that evolve the microstate.
 
 ## DeltaEnergy
 
-The **Energy** of the system defines how the bodies interact. The `Energy` trait
-itself is more general and therefore lives in another crate (`hoomd_model`)
-so that it can be used by MD simulations or for offline analysis. What MC
+The **Energy** of the system defines how the bodies interact. What MC
 simulations need is a way to evaluate the change in the Energy between two
-states: the `DeltaEnergy`.
+states: the `DeltaEnergy`. These concepts are more general than just MC, so
+they live in another crate: `hoomd_interaction` so that it can be used by MD
+simulations or for offline analysis.
 
 There are many types of `DeltaEnergy` to facilitate efficient evaluation of
 different types of trial moves. The most general type is `DeltaEnergy` which
