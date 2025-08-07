@@ -26,12 +26,12 @@ pub struct UniformIn<S, C> {
     pub template_sites: Vec<S>,
     }
 
-impl<S, C> Distribution<Body<Point<Cartesian<2>>, S>> for UniformIn<S, C> where
+impl<V, S, C> Distribution<Body<Point<V>, S>> for UniformIn<S, C> where
 S: Clone,
-C: Distribution<Cartesian<2>>
+C: Distribution<V>
  {
     #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Body<Point<Cartesian<2>>, S> {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Body<Point<V>, S> {
         let properties = Point { position: self.boundary.sample(rng) };
         let sites = self.template_sites.clone();
         Body { properties, sites }

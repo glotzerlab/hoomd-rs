@@ -47,7 +47,7 @@ pub struct QuickInsert<D> {
     /// Sample random bodies to insert.
     pub distribution: D,
     /// Number of insertion attempts per call to `apply`.
-    pub attempts_per_apply: u64,
+    pub attempts_per_apply: usize,
 }
 
 impl<V, B, S, C, D, H> Trial<Microstate<B, S, C>, H> for QuickInsert<D>
@@ -59,7 +59,7 @@ where
     C: Boundary<V, B, S>,
 {
     type Count = Count;
-    type Macrostate = u64;
+    type Macrostate = usize;
 
     #[inline]
     fn apply(
@@ -80,7 +80,7 @@ where
                 let delta_energy = hamiltonian.delta_energy_insert(microstate, &new_body);
                 if delta_energy.is_finite() && microstate.add_body(new_body).is_ok() {
                     count.accepted += 1;
-                    if count.accepted >= *state {
+                    if count.accepted >= *state as u64 {
                         break;
                     }
                 } else {
