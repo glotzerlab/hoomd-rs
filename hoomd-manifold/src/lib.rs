@@ -133,7 +133,7 @@ mod biquaternion;
 mod manifold_translate;
 
 pub use {
-    minkowski::{Minkowski, Hyperboloid, HyperbolicRotationMatrix, HyperbolicDisk, EightEight},
+    minkowski::{Minkowski, HyperbolicRotationMatrix, HyperbolicDisk, EightEight},
     hyperbolic_angle::HyperbolicAngle,
     biquaternion::{Biquaternion, UnitBiquaternion},
     manifold_translate::{HyperbolicTranslate, SphericalTranslate},

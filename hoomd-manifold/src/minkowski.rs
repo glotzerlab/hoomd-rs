@@ -452,49 +452,14 @@ use hoomd_manifold::{Minkowski, Hyperboloid};
 use hoomd_vector::Vector;
 
 // two points on the hyperboloid with skirt width R = 1.0:
-let x: Hyperboloid = Hyperboloid {
-    point: Minkowski::from([0.0, 0.0, 1.0]),
-    skirt: 1.0,
-};
-let y: Hyperboloid = Hyperboloid {
-    point: Minkowski::from([0.0, 1.0, (2.0_f64).sqrt()]),
-    skirt: 1.0
-};
+let x = Minkowski::from([0.0, 0.0, 1.0]);
+let y = Minkowski::from([0.0, 1.0, (2.0_f64).sqrt()]);
 
-assert_eq!(acosh((2.0_f64).sqrt()), x.hyperbolic_distance(&y));
+assert_eq!(acosh((2.0_f64).sqrt()), x.hyperbolic_distance(&y, 1.0));
 ```
 
 */
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Hyperboloid<const N: usize> {
-    /** A point on the surface of the hyperboloid. 
-    */
-    pub point: Minkowski<N>,
-    /** The skirt width of the hyperboloid
-    */
-    pub skirt: f64,
-}
-
-impl<const N: usize> Hyperboloid<N> {
-    /** Get the coordinates of the point
-    */
-    pub fn coordinates(&self) -> &[f64; N] {
-        &self.point.coordinates
-    }
-    /** Get the skirt width of the hyperboloid
-    */
-    pub fn skirt(&self) -> f64 {
-        &self.skirt
-    }
-    /** Create a hyperboloid point from a Minkowski vector
-    */
-    pub fn From(point: Minkowski<N>) -> Hyperboloid<N> {
-        let rho_squared: f64 = -point.distance_squared(&Minkowski::<N>::default());
-        Hyperboloid {
-            point : point,
-            skirt : rho_squared.sqrt(),
-        }
-    }
+impl<const N:usize> Hyperboloid for Minkowski<N> {
     /** Computes the length of the geodesic passing between two points. From N-dimensional Minkowski space 
     with signature (+\cdots +-), one can obtain the corresponding Minkowski bilinear form 
     ```math
@@ -522,11 +487,11 @@ impl<const N: usize> Hyperboloid<N> {
     ```
      */
     #[inline]
-    fn hyperbolic_distance(&self, other: &Self) -> f64 {
-        let last_component = self.point.coordinates[N-1] * other.point.coordinates[N-1];
+    fn hyperbolic_distance(&self, other: &Self, skirt: f64) -> f64 {
+        let last_component = self.coordinates[N-1] * other.coordinates[N-1];
         let arg = zip(self.coordinates[0..N-1].iter(), other.coordinates[0..N-1].iter())
             .fold(last_component, |product, x| product - (x.0 * x.1));
-        self.skirt * acosh(arg/(self.skirt.powi(2)))
+        skirt * acosh(arg/(skirt.powi(2)))
     }
     /** Computes the length of the geodesic passing between the cusp $(0,\cdots,0,\rho)$ and a given
      point on the hyperboloid with a given skirt length.
@@ -599,7 +564,7 @@ impl<const N: usize> Hyperboloid<N> {
 
 /** The [`CurvedManifold`] trait for Hyperboloid implements the negatively curved metric
 */
-impl<const N: usize> CurvedManifold for Hyperboloid<N> {
+impl<const N: usize> CurvedManifold for Minkowski<N> {
     #[inline]
     fn geodesic_distance(&self, other: &Self, rho: f64) -> f64 {
         let last_component = self.coordinates[N-1] * other.coordinates[N-1];
