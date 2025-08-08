@@ -59,7 +59,7 @@ let morse_trans: MorseTransformation = MorseTransformation {
 };
 
 let chimes2b_cheby: Chimes2b<MorseTransformation, 3> =
-    Chimes2b::new(morse_trans, coeff_2b, r_in);
+    Chimes2b::new(morse_trans, coeff, r_in);
 
 let chimes2b = TersoffSmooth {
     f: chimes2b_cheby,

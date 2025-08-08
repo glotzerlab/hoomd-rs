@@ -1,18 +1,17 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Helpers that enable consistent use of `ChIMES` potential
-transformation style.
- */
+/*! Helpers that enable consistent use of Chebyshev
+   polynomials of `ChIMES` potential.
+*/
 mod cheby;
 pub use cheby::Chebyshev;
 
 use arrayvec::ArrayVec;
-/** Implement the `ChIMES` transformation styles.
+/** Implement the `Basis` trait for `ChIMES`.
 
-Implement [`Transformation`] on a custom type or use one of the provided
-transformations in [`transformation`](crate::transformation) for
-`ChIMES` potential.
+Implement [`Basis`] for constructing [`Chebyshev`]
+polynomials.
 
 */
 pub trait Basis<const N: usize> {

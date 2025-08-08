@@ -26,24 +26,25 @@ fn run() -> std::io::Result<()> {
         current_value += step;
     }
 
+    const N_COEFF: usize = 12;
+
     let lambda = 3.0;
     let r_out = 4.3;
     let r_in = 2.5;
     let fo = 0.5;
-    const N_COEFF: usize = 12;
     let coeff_2b: ArrayVec<f64, N_COEFF> = [
-        12.18210812696601,
-        -2.4736277383012033,
-        8.236322683724822,
-        -5.857960598882468,
-        7.09430467818287,
-        -3.228348403842029,
-        4.459762350244618,
-        -1.7428518526761505,
-        1.8351757021581792,
-        -0.6583907417871219,
-        0.5610649662686235,
-        -0.10076735150819065,
+        12.182_108_126_966_01,
+        -2.473_627_738_301_203_3,
+        8.236_322_683_724_822,
+        -5.857_960_598_882_468,
+        7.094_304_678_182_87,
+        -3.228_348_403_842_029,
+        4.459_762_350_244_618,
+        -1.742_851_852_676_150_5,
+        1.835_175_702_158_179_2,
+        -0.658_390_741_787_121_9,
+        0.561_064_966_268_623_5,
+        -0.100_767_351_508_190_65,
     ]
     .into_iter()
     .collect();
@@ -77,10 +78,10 @@ fn run() -> std::io::Result<()> {
     writeln!(writer, "r\tenergy\tforce")?;
 
     // Write results
-    for r in r_test.iter() {
+    for r in &r_test {
         let energy = chimes_penalty.energy(*r) + chimes2b.energy(*r);
         let force = chimes_penalty.force(*r) + chimes2b.force(*r);
-        writeln!(writer, "{:.18}\t{:.18}\t{:.18}", r, energy, force)?;
+        writeln!(writer, "{r:.18}\t{energy:.18}\t{force:.18}")?;
     }
 
     // Ensure all data is written

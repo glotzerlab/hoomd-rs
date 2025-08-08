@@ -54,7 +54,7 @@ impl<const N: usize> Basis<N> for Chebyshev<N> {
     # Examples
 
     ```
-    use hoomd_chimes::polynomial_basis::Chebyshev;
+    use hoomd_chimes::polynomial_basis::{Basis, Chebyshev};
 
     let cheby = Chebyshev::<3>::new();
     let s = 0.5;
@@ -108,7 +108,7 @@ impl<const N: usize> Basis<N> for Chebyshev<N> {
     # Examples
 
     ```
-    use hoomd_chimes::polynomial_basis::Chebyshev;
+    use hoomd_chimes::polynomial_basis::{Basis, Chebyshev};
 
     let cheby = Chebyshev::<3>::new();
     let s = 0.5;

@@ -40,5 +40,6 @@ pub trait Transformation {
     Follows the same behaviour as the fucntion
     `Transformation.s`.
      */
+    #[must_use]
     fn ds_dr(&self, r: &f64) -> f64;
 }
