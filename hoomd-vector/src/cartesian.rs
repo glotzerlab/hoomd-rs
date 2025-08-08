@@ -13,7 +13,7 @@ use std::ops::{
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform, Uniform};
 
-use crate::{Cross, Error, InnerProduct, Rotate, Unit, Vector};
+use crate::{Cross, Error, InnerProduct, Metric, Rotate, Unit, Vector};
 
 /** A [`Vector`] represented by `N` `f64` coordinates.
 
@@ -244,6 +244,8 @@ impl<const N: usize> TryFrom<[f64; N]> for Unit<Cartesian<N>> {
     }
 }
 
+impl<const N: usize> Vector for Cartesian<N> {}
+
 impl<const N: usize> InnerProduct for Cartesian<N> {
     #[inline]
     fn dot(&self, other: &Self) -> f64 {
@@ -252,7 +254,7 @@ impl<const N: usize> InnerProduct for Cartesian<N> {
     }
 }
 
-impl<const N: usize> Vector for Cartesian<N> {
+impl<const N: usize> Metric for Cartesian<N> {
     /** Computes the squared distance between two points in Euclidean space.
     ```math
     d^2(\vec{x},\vec{y}) = \sum_{i=1}^{N} (x_i - y_i)^2
@@ -260,7 +262,7 @@ impl<const N: usize> Vector for Cartesian<N> {
 
     # Example
     ```
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, Vector, Metric};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let x = Cartesian::from([0.0, 1.0, 1.0]);
@@ -275,10 +277,13 @@ impl<const N: usize> Vector for Cartesian<N> {
         zip(self.coordinates.iter(), other.coordinates.iter())
             .fold(0.0, |product, x| product + (x.0 - x.1).powi(2))
     }
-    /// Recast Cartesian vector as Vec
     #[inline]
-    fn to_vec(&self) -> Vec<f64> {
-        Vec::from(self.coordinates)
+    fn distance(&self, other: &Self) -> f64 {
+        (self.distance_squared(other)).sqrt()
+    }
+    #[inline]
+    fn site_to_system(body: &Self, site: &Self) -> Self {
+        *body + *site
     }
 }
 

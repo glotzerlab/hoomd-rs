@@ -3,10 +3,11 @@
 /*! This is an example
 */
 
-use hoomd_interaction::{CutoffPair, pairwise::LennardJones};
-use hoomd_manifold::{
-    CurvedIsotropic, HyperbolicDisk, HyperbolicTranslate, Hyperboloid, Minkowski,
+use hoomd_interaction::{
+    CutoffPair,
+    pairwise::{Isotropic, LennardJones},
 };
+use hoomd_manifold::{HyperbolicDisk, HyperbolicTranslate, Hyperboloid, Minkowski};
 use hoomd_mc::{Sweep, Trial};
 use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Open, property::Point};
 use libm::{acosh, cosh, sinh, sqrt};
@@ -34,9 +35,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// number of particles
-const PARTICLE_NUMBER: usize = 500;
+const PARTICLE_NUMBER: usize = 5;
 /// skirt width of hyperboloid
-const RHO: f64 = 10.0;
+const RHO: f64 = 1.0;
 
 /// Run the simulation
 fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> {
@@ -60,18 +61,17 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     };
     for _n in 0..PARTICLE_NUMBER {
         let new_point: Minkowski<3> = sample_disk.sample(&mut rng).point;
-        microstate.add_body(Body::point(new_point))?;
+        let hyp_point = Hyperboloid::from(&new_point);
+        microstate.add_body(Body::point(hyp_point))?;
     }
 
     let lj: LennardJones = LennardJones {
         epsilon: 10.0,
-        sigma: 0.065_507,
+        sigma: 0.5,
     };
 
-    let evaluator = CurvedIsotropic {
-        isotropic: lj,
-        manifold: Hyperboloid::from(&Minkowski::from([0.0, 0.0, RHO])),
-    };
+    let evaluator = Isotropic(lj);
+
     let cutoff_pair = CutoffPair {
         r_cut: 10.0,
         evaluator,
@@ -79,7 +79,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
 
     let kt = 1.0;
     let hamiltonian = cutoff_pair;
-    let d = 0.001;
+    let d = 0.1;
 
     let translate = HyperbolicTranslate {
         maximum_distance: d.try_into()?,
@@ -100,7 +100,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
 }
 
 /// squared radius of disk in render
-const RAD_SQ: f64 = 0.0001;
+const RAD_SQ: f64 = 0.01;
 
 /// Project coordinates to Poincare disk
 fn poincare(point: &Minkowski<3>) -> [f64; 3] {
@@ -116,14 +116,14 @@ fn poincare(point: &Minkowski<3>) -> [f64; 3] {
 /// Render the system state.
 fn render(
     frame: &mut Frame,
-    microstate: &Microstate<Point<Minkowski<3>>, Point<Minkowski<3>>, Open>,
+    microstate: &Microstate<Point<Hyperboloid<3>>, Point<Hyperboloid<3>>, Open>,
 ) {
     let canvas = Canvas::default()
         .block(Block::bordered().title("Lennard Jones Gas in Hyperbolic Space"))
         .marker(Marker::Braille)
         .paint(|ctx| {
             for site in microstate.sites() {
-                let coords = poincare(&site.properties.position);
+                let coords = poincare(&site.properties.position.point);
                 ctx.draw(&Circle {
                     x: coords[0],
                     y: coords[1],

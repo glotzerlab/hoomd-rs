@@ -213,7 +213,7 @@ impl Distribution<HyperbolicAngle> for StandardUniform {
 
     ```
     use hoomd_manifold::{HyperbolicAngle, Minkowski, HyperbolicRotationMatrix, HyperbolicRotate};
-    use hoomd_vector::Vector;
+    use hoomd_vector::{Metric, Vector};
     use rand::{rngs::StdRng, Rng, SeedableRng};
     use approx::assert_relative_eq;
 

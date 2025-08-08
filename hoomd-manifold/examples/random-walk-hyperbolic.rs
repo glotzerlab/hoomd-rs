@@ -30,16 +30,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// skirt width of the hyperboloid
-const RHO: f64 = 0.6;
+const RHO: f64 = 1.0;
 
 /// Run the simulation
 fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> {
     let mut microstate = MicrostateBuilder::with_boundary(EightEight { skirt: RHO })
-        .bodies([Body::point(Minkowski::from([
+        .bodies([Body::point(Hyperboloid::from(&Minkowski::from([
             0.00001,
             0.00001,
             sqrt(2.0 * (0.00001_f64).powi(2) + RHO.powi(2)),
-        ]))])
+        ])))])
         .try_build()?;
 
     let kt = 1.0;
@@ -82,7 +82,7 @@ fn poincare(point: &Minkowski<3>) -> [f64; 3] {
 /// Render the system state.
 fn render(
     frame: &mut Frame,
-    microstate: &Microstate<Point<Minkowski<3>>, Point<Minkowski<3>>, EightEight>,
+    microstate: &Microstate<Point<Hyperboloid<3>>, Point<Hyperboloid<3>>, EightEight>,
 ) {
     let v = Hyperboloid::<3>::boundary_points(BOUNDARY_NUMBER, RHO);
     let (a, b): (Vec<_>, Vec<_>) = v.into_iter().unzip();
@@ -92,7 +92,7 @@ fn render(
         .block(Block::bordered().title("Random walk in Hyperbolic Space"))
         .marker(Marker::Braille)
         .paint(|ctx| {
-            let coords = poincare(&properties.position);
+            let coords = poincare(&properties.position.point);
             ctx.draw(&Circle {
                 x: coords[0],
                 y: coords[1],

@@ -2,7 +2,7 @@
 
 ## Curved Manifold
 
-The `hoomd_manifold` crate defines a generic `CurvedManifold` trait which implements methods for non-Euclidean manifolds embedded in metric vector spaces. `CurvedManifold` specifically defines the method `geodesic_distance` which accomodates non-Euclidean metrics by calculating the geodesic distance between two points along a manifold.
+The `hoomd_manifold` crate defines and implements methods for non-Euclidean manifolds embedded in metric vector spaces. The manifolds themselves must have trait `Metric`.
 
 ## Sphere
 

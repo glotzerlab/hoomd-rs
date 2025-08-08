@@ -33,12 +33,12 @@ assert_eq!(delta_energy, -1.0);
 # }
 ```
 */
-impl<V, B, S, C, E> DeltaEnergyOne<B, S, C> for Single<E>
+impl<M, B, S, C, E> DeltaEnergyOne<B, S, C> for Single<E>
 where
     E: SiteEnergy<S>,
     B: Transform<S>,
-    S: Position<Vector = V>,
-    C: Boundary<V, B, S>,
+    S: Position<Metric = M>,
+    C: Boundary<M, B, S>,
 {
     #[inline]
     fn delta_energy_one(

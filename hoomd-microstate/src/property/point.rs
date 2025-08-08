@@ -5,7 +5,7 @@
 
 use super::Position;
 use crate::Transform;
-use hoomd_vector::Vector;
+use hoomd_vector::Metric;
 
 /** A position in space and nothing more.
 
@@ -21,12 +21,12 @@ let point = Point::new(Cartesian::from([1.0, -2.0, 3.0]));
 ```
 */
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct Point<V> {
+pub struct Point<M> {
     /// The location of the point in space.
-    pub position: V,
+    pub position: M,
 }
 
-impl<V> Point<V> {
+impl<M> Point<M> {
     /** Construct a new point at the given position.
 
     # Example
@@ -40,16 +40,16 @@ impl<V> Point<V> {
     */
     #[inline]
     #[must_use]
-    pub fn new(position: V) -> Self {
+    pub fn new(position: M) -> Self {
         Self { position }
     }
 }
 
 /** Move [`Point`] properties from the local body frame to the system frame.
 */
-impl<V> Transform<Point<V>> for Point<V>
+impl<M> Transform<Point<M>> for Point<M>
 where
-    V: Vector,
+    M: Metric,
 {
     /** Points transform by vector addition.
 
@@ -69,23 +69,23 @@ where
     ```
     */
     #[inline]
-    fn transform(&self, site_properties: &Point<V>) -> Point<V> {
+    fn transform(&self, site_properties: &Point<M>) -> Point<M> {
         Point {
-            position: self.position + site_properties.position,
+            position: Metric::site_to_system(&self.position, &site_properties.position),
         }
     }
 }
 
-impl<V> Position for Point<V> {
-    type Vector = V;
+impl<M> Position for Point<M> {
+    type Metric = M;
 
     #[inline]
-    fn position(&self) -> &V {
+    fn position(&self) -> &M {
         &self.position
     }
 
     #[inline]
-    fn position_mut(&mut self) -> &mut V {
+    fn position_mut(&mut self) -> &mut M {
         &mut self.position
     }
 }

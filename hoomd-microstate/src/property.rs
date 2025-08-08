@@ -53,7 +53,7 @@ impl Orientation for Custom {
 }
 
 impl Position for Custom {
-    type Vector = Cartesian<3>;
+    type Metric = Cartesian<3>;
 
     fn position(&self) -> &Cartesian<3> {
         &self.position
@@ -91,13 +91,13 @@ Position vectors have units of *\[length\]*.
 */
 pub trait Position {
     /// Every position is located in this vector space.
-    type Vector;
+    type Metric;
 
     /// The position of this body or site *\[length\]*.
-    fn position(&self) -> &Self::Vector;
+    fn position(&self) -> &Self::Metric;
 
     /// The mutable position of this body or site *\[length\]*.
-    fn position_mut(&mut self) -> &mut Self::Vector;
+    fn position_mut(&mut self) -> &mut Self::Metric;
 }
 
 /** Rotate sites and bodies.

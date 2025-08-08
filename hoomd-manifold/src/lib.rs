@@ -46,12 +46,12 @@ d_M^2(\vec{u},\vec{v}) = (\vec{u}-\vec{v})^T \eta (\vec{u}-\vec{v})
 
 ```
 use hoomd_manifold::Minkowski;
-use hoomd_vector::Vector;
+use hoomd_vector::{Metric,Vector};
 
 let u = Minkowski::from([1.0,0.0,0.0,-1.0]);
 let v = Minkowski::from([2.0,0.0,1.0,1.0]);
 let w = Minkowski::from([0.0,0.0,0.0,3.0]);
-let del = (u+w).distance_squared(&v);
+let del = (u+w).distance(&v);
 assert_eq!(1.0, del);
 
 ```
@@ -127,7 +127,6 @@ let boosted = v.expect("non-zero biquaternion").hyperbolic_rotate(&x);
 */
 
 mod biquaternion;
-mod curved_interaction;
 mod hyperbolic_angle;
 mod manifold_translate;
 mod minkowski;
@@ -135,7 +134,6 @@ mod sphere;
 
 pub use {
     biquaternion::{Biquaternion, UnitBiquaternion},
-    curved_interaction::CurvedIsotropic,
     hyperbolic_angle::HyperbolicAngle,
     manifold_translate::{HyperbolicTranslate, SphericalTranslate},
     minkowski::{EightEight, HyperbolicDisk, HyperbolicRotationMatrix, Hyperboloid, Minkowski},

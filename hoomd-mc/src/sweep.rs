@@ -61,13 +61,13 @@ impl<L> Sweep<L> {
     }
 }
 
-impl<V, B, S, C, L, H> Trial<Microstate<B, S, C>, H> for Sweep<L>
+impl<M, B, S, C, L, H> Trial<Microstate<B, S, C>, H> for Sweep<L>
 where
-    B: Copy + Clone + Default + Transform<S> + Position<Vector = V>,
-    S: Clone + Default + Position<Vector = V>,
+    B: Copy + Clone + Default + Transform<S> + Position<Metric = M>,
+    S: Clone + Default + Position<Metric = M>,
     L: LocalTrial<B>,
     H: DeltaEnergyOne<B, S, C>,
-    C: Boundary<V, B, S>,
+    C: Boundary<M, B, S>,
 {
     type Count = Count;
     type Macrostate = f64;

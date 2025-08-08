@@ -3,8 +3,11 @@
 /*! This is an example
 */
 
-use hoomd_interaction::{CutoffPair, pairwise::LennardJones};
-use hoomd_manifold::{CurvedIsotropic, Sphere, SphericalDisk, SphericalTranslate};
+use hoomd_interaction::{
+    CutoffPair,
+    pairwise::{Isotropic, LennardJones},
+};
+use hoomd_manifold::{Sphere, SphericalDisk, SphericalTranslate};
 use hoomd_mc::{Sweep, Trial};
 use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Open, property::Point};
 use hoomd_vector::Cartesian;
@@ -59,10 +62,8 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
         sigma: 0.5,
     };
 
-    let evaluator = CurvedIsotropic {
-        isotropic: lj,
-        manifold: Sphere::from(&Cartesian::from([0.0, 0.0, RADIUS])),
-    };
+    let evaluator = Isotropic(lj);
+
     let cutoff_pair = CutoffPair {
         r_cut: 10.0,
         evaluator,

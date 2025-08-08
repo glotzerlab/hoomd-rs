@@ -4,10 +4,9 @@
 /*! Implement vector and curved manifold types on a sphere.
  */
 
-use crate::CurvedManifold;
 use approx::assert_relative_eq;
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, InnerProduct};
+use hoomd_vector::{Cartesian, InnerProduct, Metric};
 use libm::{acos, atan2, cos, sin, sqrt};
 use rand::Rng;
 use rand::distr::{Distribution, Uniform};
@@ -115,49 +114,84 @@ impl<const N: usize> Sphere<N> {
     }
 }
 
-/** [`CurvedManifold`] for [`Sphere`] computes the geodesic distance between two points on the surface of the sphere.
-*/
-impl<const N: usize> CurvedManifold for Sphere<N> {
-    /** Computes the arc length bewtween two points on an N-sphere of radius R.
-    For two points $\vec{u}$ and $\vec{v}$ on an N-sphere
-    embedded in cartesian space, the arclength between \vec{u} and \vec{v} is given by
-    ```math
-    d_S(\vec{u},\vec{v}) = R\delta\psi = R\arccos\left(\frac{\vec{u}\cdot\vec{v}}{R^2}\right)
-    ```
-
-    # Example
-    ```
-    use libm::acos;
-    use std::f64::consts::PI;
-    use hoomd_vector::{Cartesian, InnerProduct};
-    use hoomd_manifold::{CurvedManifold, Sphere};
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let radius : f64 = 5.0;
-    let x = Sphere::from(&Cartesian::from([radius, 0.0, 0.0]));
-    let y = Sphere::from(&Cartesian::from([0.0, radius, 0.0]));
-    assert_eq!(radius* PI/2.0, x.geodesic_distance(&y));
-    # Ok(())
-    # }
-    ```
-    */
+/** [`Metric`] implements the positivvely curved metric on the surface of a sphere
+ */
+impl Metric for Sphere<3> {
     #[inline]
-    fn geodesic_distance(&self, other: &Self) -> f64 {
+    fn distance(&self, other: &Self) -> f64 {
         assert_relative_eq!(self.radius, other.radius, epsilon = 1e-12);
         let arg = Cartesian::dot(&self.point, &other.point) / self.radius.powi(2);
         self.radius * acos(arg)
     }
-    /** Casts a point in (N+1)-dimensional cartesian space to N-dimensional positively-curved space
-     */
     #[inline]
-    #[expect(clippy::panic, reason = "code should not proceed")]
-    #[expect(clippy::match_wild_err_arm, reason = "only fails if try_from does")]
-    fn to_manifold(point: Vec<f64>) -> Sphere<N> {
-        let cartesian_point = Cartesian::<N>::try_from(point);
-        match cartesian_point {
-            Ok(pt) => Sphere::from(&pt),
-            Err(_e) => panic!["invalid vector length"],
-        }
+    fn distance_squared(&self, other: &Self) -> f64 {
+        (self.distance(other)).powi(2)
+    }
+    #[inline]
+    fn site_to_system(body: &Self, site: &Self) -> Self {
+        let radius = body.radius;
+        let body_point = body.point;
+        let body_phi = atan2(body_point.coordinates[1], body_point.coordinates[0]);
+        let body_theta = acos(body_point.coordinates[2] / radius);
+        let trial_coords = site.point.coordinates;
+        let transformed_point = Cartesian::from([
+            trial_coords[0] * cos(body_theta) * cos(body_phi) - trial_coords[1] * sin(body_phi)
+                + trial_coords[2] * sin(body_theta) * cos(body_phi),
+            trial_coords[0] * cos(body_theta) * sin(body_phi)
+                + trial_coords[1] * cos(body_phi)
+                + trial_coords[2] * sin(body_theta) * sin(body_phi),
+            -trial_coords[0] * sin(body_theta) + trial_coords[2] * cos(body_theta),
+        ]);
+        let new_sphere = Sphere::from(&transformed_point);
+        assert_relative_eq!(radius, new_sphere.radius, epsilon = 1e-12);
+        new_sphere
+    }
+}
+
+impl Metric for Sphere<4> {
+    #[inline]
+    fn distance(&self, other: &Self) -> f64 {
+        assert_relative_eq!(self.radius, other.radius, epsilon = 1e-12);
+        let arg = Cartesian::dot(&self.point, &other.point) / self.radius.powi(2);
+        self.radius * acos(arg)
+    }
+    #[inline]
+    fn distance_squared(&self, other: &Self) -> f64 {
+        (self.distance(other)).powi(2)
+    }
+    #[inline]
+    fn site_to_system(body: &Self, site: &Self) -> Self {
+        let radius = body.radius;
+        let body_point = body.point;
+        let body_phi_1 = atan2(
+            (body_point.coordinates[2].powi(2) + body_point.coordinates[1].powi(2)).sqrt(),
+            body_point.coordinates[0],
+        );
+        let body_theta = atan2(
+            (body_point.coordinates[0].powi(2)
+                + body_point.coordinates[1].powi(2)
+                + body_point.coordinates[2].powi(2))
+            .sqrt(),
+            body_point.coordinates[3],
+        );
+        let body_phi_2 = atan2(body_point.coordinates[2], body_point.coordinates[1]);
+        let trial_coords = site.point.coordinates;
+        let transformed_point = Cartesian::from([
+            trial_coords[0] * cos(body_theta) * cos(body_phi_1) - trial_coords[1] * sin(body_phi_1)
+                + trial_coords[3] * sin(body_theta) * cos(body_phi_1),
+            trial_coords[0] * cos(body_theta) * sin(body_phi_1) * cos(body_phi_2)
+                + trial_coords[1] * cos(body_phi_1) * cos(body_phi_2)
+                - trial_coords[2] * sin(body_phi_2)
+                + trial_coords[3] * sin(body_theta) * sin(body_phi_1) * cos(body_phi_2),
+            trial_coords[0] * cos(body_theta) * sin(body_phi_1) * sin(body_phi_2)
+                + trial_coords[1] * cos(body_phi_1) * sin(body_phi_2)
+                + trial_coords[2] * cos(body_phi_2)
+                + trial_coords[3] * sin(body_theta) * sin(body_phi_1) * sin(body_phi_2),
+            -trial_coords[0] * sin(body_theta) + trial_coords[3] * cos(body_theta),
+        ]);
+        let new_sphere = Sphere::from(&transformed_point);
+        assert_relative_eq!(radius, new_sphere.radius, epsilon = 1e-12);
+        new_sphere
     }
 }
 
@@ -167,8 +201,8 @@ with a given radius.
 # Example
 
 ```
-use hoomd_manifold::{CurvedManifold, Sphere, SphericalDisk};
-use hoomd_vector::{Vector, Cartesian};
+use hoomd_manifold::{Sphere, SphericalDisk};
+use hoomd_vector::{Metric, Cartesian};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand::distr::Distribution;
 
@@ -191,7 +225,7 @@ let disk = SphericalDisk {
 };
 let transformed_random_point: Sphere<3> = disk.sample(&mut rng);
 
-assert!(0.1 > random_point.geodesic_distance(&transformed_random_point));
+assert!(0.1 > random_point.distance(&transformed_random_point));
 
 # Ok(())
 # }
@@ -267,22 +301,22 @@ mod tests {
     #[test]
     fn spherical_distance() {
         let (a, b) = generate_s2_pair(1.0);
-        let ab_distance = a.geodesic_distance(&b);
+        let ab_distance = a.distance(&b);
         let ab_distance_numeric = 1.002_106_222_125_083;
         assert_relative_eq!(ab_distance, ab_distance_numeric, epsilon = 1e-12);
 
         let (c, d) = generate_s3_pair(1.0);
-        let cd_distance = c.geodesic_distance(&d);
+        let cd_distance = c.distance(&d);
         let cd_distance_numeric = 2.153_128_900_772_028;
         assert_relative_eq!(cd_distance, cd_distance_numeric, epsilon = 1e-12);
 
         let (a, b) = generate_s2_pair(10.0);
-        let ab_distance = a.geodesic_distance(&b);
+        let ab_distance = a.distance(&b);
         let ab_distance_numeric = 10.021_062_221_250_83;
         assert_relative_eq!(ab_distance, ab_distance_numeric, epsilon = 1e-12);
 
         let (c, d) = generate_s3_pair(10.0);
-        let cd_distance = c.geodesic_distance(&d);
+        let cd_distance = c.distance(&d);
         let cd_distance_numeric = 21.531_289_007_720_287;
         assert_relative_eq!(cd_distance, cd_distance_numeric, epsilon = 1e-12);
     }

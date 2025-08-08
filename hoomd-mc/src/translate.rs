@@ -7,7 +7,7 @@
 use super::LocalTrial;
 use hoomd_microstate::property::Position;
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Vector, distribution::Ball};
+use hoomd_vector::{Metric, Vector, distribution::Ball};
 
 use rand::Rng;
 use rand::distr::Distribution;
@@ -35,11 +35,11 @@ pub struct Translate {
     pub maximum_distance: PositiveReal,
 }
 
-impl<V, B> LocalTrial<B> for Translate
+impl<M, B> LocalTrial<B> for Translate
 where
-    B: Position<Vector = V>,
-    V: Vector,
-    Ball: Distribution<V>,
+    B: Position<Metric = M>,
+    M: Metric + Vector,
+    Ball: Distribution<M>,
 {
     /** Randomly translate a body's position.
 

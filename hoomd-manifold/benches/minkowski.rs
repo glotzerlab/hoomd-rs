@@ -13,9 +13,9 @@ use divan::{self, Bencher, black_box};
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
 use hoomd_manifold::{
-    CurvedManifold, HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Hyperboloid,
-    Minkowski,
+    HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Hyperboloid, Minkowski,
 };
+use hoomd_vector::Metric;
 
 fn main() {
     divan::main();
@@ -45,7 +45,7 @@ fn hyperboloid_distance_vec3(bencher: Bencher) {
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| create_random_hyperboloid_pair::<_>(&mut rng))
         .bench_local_values(|(a, b)| {
-            black_box(Hyperboloid::from(&a).geodesic_distance(&Hyperboloid::from(&b)))
+            black_box(Hyperboloid::from(&a).distance(&Hyperboloid::from(&b)))
         });
 }
 

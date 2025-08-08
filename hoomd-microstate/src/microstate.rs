@@ -12,7 +12,7 @@ use crate::property::Position;
 use crate::{Body, Error, Site, Transform};
 
 use hoomd_utility::random::Counter;
-use hoomd_vector::Vector;
+use hoomd_vector::Metric;
 
 /** Track a unique identifier for an item in [`Microstate`].
 */
@@ -369,11 +369,11 @@ impl<B, S, C> Microstate<B, S, C> {
 
 /** Manage bodies in the microstate.
 */
-impl<V, B, S, C> Microstate<B, S, C>
+impl<M, B, S, C> Microstate<B, S, C>
 where
-    B: Transform<S> + Position<Vector = V>,
-    S: Position<Vector = V>,
-    C: Boundary<V, B, S>,
+    B: Transform<S> + Position<Metric = M>,
+    S: Position<Metric = M>,
+    C: Boundary<M, B, S>,
 {
     /** Add a new body to the microstate.
 
@@ -646,9 +646,9 @@ where
     )]
     pub fn update_body_properties(&mut self, body_index: usize, properties: B) -> Result<(), Error>
     where
-        B: Transform<S> + Position<Vector = V>,
-        S: Position<Vector = V>,
-        C: Boundary<V, B, S>,
+        B: Transform<S> + Position<Metric = M>,
+        S: Position<Metric = M>,
+        C: Boundary<M, B, S>,
     {
         let body = &mut self.bodies[body_index];
 
@@ -901,10 +901,10 @@ impl<B, S, C> Microstate<B, S, C> {
     }
 }
 
-impl<V, B, S, C> Microstate<B, S, C>
+impl<M, B, S, C> Microstate<B, S, C>
 where
-    S: Position<Vector = V>,
-    V: Vector,
+    S: Position<Metric = M>,
+    M: Metric,
 {
     /** Find sites near a point in space.
 
@@ -914,7 +914,7 @@ where
     TODO: Revise the API and description after implementing periodic boundary conditions.
     */
     #[inline]
-    pub fn iter_sites_near(&self, point: &V, r: f64) -> impl Iterator<Item = &Site<S>> {
+    pub fn iter_sites_near(&self, point: &M, r: f64) -> impl Iterator<Item = &Site<S>> {
         self.sites
             .iter()
             .filter(move |s| point.distance_squared(s.properties.position()) < r.powi(2))
@@ -1145,11 +1145,11 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     ```
     */
     #[inline]
-    pub fn try_build<V>(self) -> Result<Microstate<B, S, C>, Error>
+    pub fn try_build<M>(self) -> Result<Microstate<B, S, C>, Error>
     where
-        B: Transform<S> + Position<Vector = V>,
-        S: Position<Vector = V>,
-        C: Boundary<V, B, S>,
+        B: Transform<S> + Position<Metric = M>,
+        S: Position<Metric = M>,
+        C: Boundary<M, B, S>,
     {
         let mut microstate = Microstate {
             step: self.step,

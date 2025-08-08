@@ -7,7 +7,7 @@
 use crate::{SitePairEnergy, TotalEnergy};
 use hoomd_microstate::{Microstate, property::Position};
 
-use hoomd_vector::Vector;
+use hoomd_vector::Metric;
 
 /** Compute system properties given a [`SitePairEnergy`].
 
@@ -77,11 +77,11 @@ pub struct CutoffPair<E> {
     pub evaluator: E,
 }
 
-impl<V, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPair<E>
+impl<M, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
-    S: Position<Vector = V>,
-    V: Vector,
+    S: Position<Metric = M>,
+    M: Metric,
 {
     /** Compute the total energy of the microstate contributed by functions on pairs of sites.
 

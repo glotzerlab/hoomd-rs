@@ -95,7 +95,7 @@ struct Custom {
 
 impl<S> SiteEnergy<S> for Custom
 where
-    S: Position<Vector = Cartesian<2>>
+    S: Position<Metric = Cartesian<2>>
 {
     fn site_energy(&self, site_properties: &S) -> f64 {
         self.a * (site_properties.position()[0] / self.b).cos()
@@ -149,7 +149,7 @@ struct Custom {
 
 impl<S> SitePairEnergy<S> for Custom
 where
-    S: Position<Vector = Cartesian<2>>
+    S: Position<Metric = Cartesian<2>>
 {
     fn site_pair_energy(&self, a: &S, b: &S) -> f64 {
         self.epsilon * a.position().dot(&b.position())
@@ -193,7 +193,7 @@ mod tests {
 
         impl<S> SiteEnergy<S> for TestSE
         where
-            S: Position<Vector = Cartesian<2>>,
+            S: Position<Metric = Cartesian<2>>,
         {
             fn site_energy(&self, site_properties: &S) -> f64 {
                 site_properties.position()[0] + site_properties.position()[1]

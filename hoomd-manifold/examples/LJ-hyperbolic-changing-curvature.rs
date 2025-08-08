@@ -3,10 +3,11 @@
 /*! This is an example
 */
 
-use hoomd_interaction::{CutoffPair, pairwise::LennardJones};
-use hoomd_manifold::{
-    CurvedIsotropic, HyperbolicDisk, HyperbolicTranslate, Hyperboloid, Minkowski,
+use hoomd_interaction::{
+    CutoffPair,
+    pairwise::{Isotropic, LennardJones},
 };
+use hoomd_manifold::{HyperbolicDisk, HyperbolicTranslate, Hyperboloid, Minkowski};
 use hoomd_mc::{Sweep, Trial};
 use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Open, property::Point};
 use libm::{acosh, cosh, exp, sinh, sqrt};
@@ -54,7 +55,8 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
     };
     for _n in 0..PARTICLE_NUMBER {
         let new_point: Minkowski<3> = sample_disk.sample(&mut rng).point;
-        microstate.add_body(Body::point(new_point))?;
+        let hyp_point = Hyperboloid::from(&new_point);
+        microstate.add_body(Body::point(hyp_point))?;
     }
 
     let lj: LennardJones = LennardJones {
@@ -70,10 +72,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
             break Ok(());
         }
 
-        let evaluator = CurvedIsotropic {
-            isotropic: lj,
-            manifold: Hyperboloid::from(&Minkowski::from([0.0, 0.0, skirt_size(time)])),
-        };
+        let evaluator = Isotropic(lj);
 
         let cutoff_pair = CutoffPair {
             r_cut: 10.0,
@@ -84,11 +83,13 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
 
         let hamiltonian = cutoff_pair;
 
-        let translate = HyperbolicTranslate {
+        let hyp_translate = HyperbolicTranslate {
             maximum_distance: d.try_into()?,
             skirt: skirt_size(time),
         };
-        let translate_sweep = Sweep { local: translate };
+        let translate_sweep = Sweep {
+            local: hyp_translate,
+        };
 
         translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
         microstate.increment_step();
@@ -126,7 +127,7 @@ fn skirt_size(time: u64) -> f64 {
 /// Render the system state.
 fn render(
     frame: &mut Frame,
-    microstate: &Microstate<Point<Minkowski<3>>, Point<Minkowski<3>>, Open>,
+    microstate: &Microstate<Point<Hyperboloid<3>>, Point<Hyperboloid<3>>, Open>,
     time: u64,
 ) {
     let canvas = Canvas::default()
@@ -134,7 +135,7 @@ fn render(
         .marker(Marker::Braille)
         .paint(|ctx| {
             for site in microstate.sites() {
-                let coords = poincare(&site.properties.position, skirt_size(time));
+                let coords = poincare(&site.properties.position.point, skirt_size(time));
                 ctx.draw(&Circle {
                     x: coords[0],
                     y: coords[1],

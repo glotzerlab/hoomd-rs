@@ -4,10 +4,11 @@ use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, Settings, Simulation,
     representation::{self, HyperbolicDiskAssets, HyperbolicDiskMaterial},
 };
-use hoomd_interaction::{CutoffPair, pairwise::LennardJones};
-use hoomd_manifold::{
-    CurvedIsotropic, HyperbolicDisk, HyperbolicTranslate, Hyperboloid, Minkowski,
+use hoomd_interaction::{
+    CutoffPair,
+    pairwise::{Isotropic, LennardJones},
 };
+use hoomd_manifold::{HyperbolicDisk, HyperbolicTranslate, Hyperboloid, Minkowski};
 use hoomd_mc::{Sweep, Trial};
 use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Open, property::Point};
 use rand::distr::Distribution;
@@ -52,9 +53,9 @@ fn main() -> anyhow::Result<()> {
 #[derive(Resource)]
 struct Fill {
     /// Positions of all the bodies in the simulation.
-    microstate: Microstate<Point<Minkowski<3>>, Point<Minkowski<3>>>,
+    microstate: Microstate<Point<Hyperboloid<3>>, Point<Hyperboloid<3>>>,
     /// How sites interact with other sites and fields.
-    hamiltonian: CutoffPair<CurvedIsotropic<LennardJones, Hyperboloid<3>>>,
+    hamiltonian: CutoffPair<Isotropic<LennardJones>>,
     /// Trial moves to apply.
     translate_sweep: Sweep<HyperbolicTranslate>,
     /// Temperature set point.
@@ -83,7 +84,7 @@ impl Fill {
             skirt: RHO,
         };
         for _n in 0..PARTICLE_NUMBER {
-            let new_point: Minkowski<3> = sample_disk.sample(&mut rng).point;
+            let new_point: Hyperboloid<3> = Hyperboloid::from(&sample_disk.sample(&mut rng).point);
             microstate.add_body(Body::point(new_point))?;
         }
 
@@ -92,10 +93,7 @@ impl Fill {
             sigma: 0.5,
         };
 
-        let evaluator = CurvedIsotropic {
-            isotropic: lj,
-            manifold: Hyperboloid::from(&Minkowski::from([0.0, 0.0, RHO])),
-        };
+        let evaluator = Isotropic(lj);
         let cutoff_pair = CutoffPair {
             r_cut: 10.0,
             evaluator,
@@ -149,6 +147,6 @@ fn sync_simulation(
         query,
         sites
             .iter()
-            .map(|site| (site.properties.position, DIAMETER)),
+            .map(|site| (site.properties.position.point, DIAMETER)),
     );
 }

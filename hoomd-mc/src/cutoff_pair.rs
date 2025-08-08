@@ -7,7 +7,7 @@
 use super::DeltaEnergyOne;
 use hoomd_interaction::{CutoffPair, SitePairEnergy};
 use hoomd_microstate::{Body, Microstate, Transform, boundary::Boundary, property::Position};
-use hoomd_vector::Vector;
+use hoomd_vector::Metric;
 
 /** Evaluate the change in energy due to functions that act on single sites.
 
@@ -39,13 +39,13 @@ assert_eq!(delta_energy, -2.0);
 # }
 ```
 */
-impl<V, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPair<E>
+impl<M, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
     B: Transform<S>,
-    S: Position<Vector = V>,
-    C: Boundary<V, B, S>,
-    V: Vector,
+    S: Position<Metric = M>,
+    C: Boundary<M, B, S>,
+    M: Metric,
 {
     #[inline]
     fn delta_energy_one(

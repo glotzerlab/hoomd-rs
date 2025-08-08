@@ -355,17 +355,23 @@ pub trait Vector:
     + Div<f64, Output = Self>
     + DivAssign<f64>
     + PartialEq
+    + Metric
     + Mul<f64, Output = Self>
     + MulAssign<f64>
     + Sub<Self, Output = Self>
     + SubAssign
     + Neg<Output = Self>
 {
-    /** Compute the squared distance between two vectors belonging to a metric space.
+}
+
+/** Operates on elements on a metric space. [`Metric`] implements a distance metric.
+*/
+pub trait Metric {
+    /** Compute the squared distance between two points belonging to a metric space.
 
     # Example
     ```
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, Metric};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let x = Cartesian::from([0.0, 1.0, 1.0]);
@@ -377,23 +383,20 @@ pub trait Vector:
      */
     fn distance_squared(&self, other: &Self) -> f64;
 
-    /** Compute the distance between two vectors belonging to a metric space.
+    /** Compute the distance between two points belonging to a metric space.
     # Example
     ```
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, Metric};
 
     let x = Cartesian::from([0.0, 0.0]);
     let y = Cartesian::from([3.0, 4.0]);
     assert_eq!(5.0, x.distance(&y));
     ```
      */
-    #[inline]
-    fn distance(&self, other: &Self) -> f64 {
-        self.distance_squared(other).sqrt()
-    }
-    /** Get the coordinates of the vector and cast them as a Vec
+    fn distance(&self, other: &Self) -> f64;
+    /** Transforms the location of a site (in the body frame) to the system frame.
      */
-    fn to_vec(&self) -> Vec<f64>;
+    fn site_to_system(body: &Self, site: &Self) -> Self;
 }
 
 /** Operate on elements of an inner product space.
