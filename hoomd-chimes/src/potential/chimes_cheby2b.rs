@@ -25,7 +25,7 @@ distance between particles, given by [`Transformation`].
 # Note:
 * See equation 2 in <https://doi.org/10.1038/s41524-024-01497-y>.
 * Must be used with the [`TersoffSmooth`] and [`ChimesPenalty`]
-to enable correct potential calculation.
+  to enable correct potential calculation.
  */
 #[derive(Clone, Debug, PartialEq)]
 pub struct Chimes2b<F: Transformation, const N: usize> {
@@ -56,6 +56,7 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
 
     # Example
     ```
+    use arrayvec::ArrayVec;
     use hoomd_chimes::potential::Chimes2b;
     use hoomd_chimes::transformation::MorseTransformation;
 
@@ -67,9 +68,9 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
 
     let mut chimes2b = Chimes2b::new(morse_trans, coeff, r_in);
     assert_eq!(chimes2b.coeff().as_slice(), &[1.0, 2.0, 3.0]);
-    assert_eq!(chimes2b.r_in(), 1.0);
+    assert_eq!(chimes2b.r_in(), &1.0);
     chimes2b.set_inner_smooth_r(0.02);
-    assert_eq!(chimes2b.inner_smooth_r(), 0.02);
+    assert_eq!(chimes2b.inner_smooth_r(), &0.02);
     ```
     # Panics
 
@@ -226,6 +227,7 @@ impl<F: Transformation, const N: usize> IsotropicForce for Chimes2b<F, N> {
 mod tests {
     use super::*;
     use crate::transformation::MorseTransformation;
+    use arrayvec::ArrayVec;
     use rstest::*;
 
     #[rstest]

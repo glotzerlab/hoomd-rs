@@ -31,6 +31,7 @@ See equation 9 in <https://doi.org/10.1038/s41524-024-01497-y>.
 
 # Example:
 ```
+use arrayvec::ArrayVec;
 use hoomd_chimes::transformation::MorseTransformation;
 use hoomd_chimes::potential::{Chimes2b, TersoffSmooth, ChimesPenalty};
 use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
@@ -40,7 +41,7 @@ let lambda = 1.5;
 let r_out = 3.0;
 let r_in = 1.0;
 let fo = 0.75;
-let coeff_2b = vec![1.0, 2.0, 3.0];
+let coeff: ArrayVec<f64, 3> = [1.0, 2.0, 3.0].into_iter().collect();
 
 let morse_trans: MorseTransformation = MorseTransformation {
     lambda,
@@ -48,7 +49,7 @@ let morse_trans: MorseTransformation = MorseTransformation {
     r_in,
 };
 
-let chimes2b_cheby: Chimes2b<MorseTransformation> =
+let chimes2b_cheby: Chimes2b<MorseTransformation, 3> =
     Chimes2b::new(morse_trans, coeff_2b, r_in);
 
 let chimes2b = TersoffSmooth {

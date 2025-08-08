@@ -25,6 +25,7 @@ pub trait Basis<const N: usize> {
     /**
     Implement the derivative of the basis fucntion
      $`\frac{df}{ds}`$.
-     */
+    */
+    #[must_use]
     fn evaluate_derivative(&self, s: &f64) -> ArrayVec<f64, N>;
 }
