@@ -5,9 +5,14 @@
 */
 
 use super::Boundary;
-use crate::property::Point;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
+
+use rand::{
+    Rng,
+    distr::{Distribution, Uniform},
+};
+use std::array;
 
 /** Restrict bodies and sites to the inside of a square.
 
@@ -26,6 +31,7 @@ let square = Square { l: 10.0.try_into()? };
 assert_eq!(square.l.get(), 10.0);
 # Ok(())
 # }
+```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Square {
@@ -33,7 +39,93 @@ pub struct Square {
     pub l: PositiveReal,
 }
 
-impl Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>> for Square {
+impl Square {
+    /** Get the maximum x coordinate in the square (exclusive).
+
+    # Example
+
+    ```
+    use hoomd_microstate::boundary::Square;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let square = Square { l: 10.0.try_into()? };
+
+    assert_eq!(square.maximum_x(), 5.0);
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    #[must_use]
+    pub fn maximum_x(&self) -> f64 {
+        self.l.get() / 2.0
+    }
+
+    /** Get the maximum y coordinate in the square (exclusive).
+
+    # Example
+
+    ```
+    use hoomd_microstate::boundary::Square;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let square = Square { l: 10.0.try_into()? };
+
+    assert_eq!(square.maximum_y(), 5.0);
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    #[must_use]
+    pub fn maximum_y(&self) -> f64 {
+        self.l.get() / 2.0
+    }
+
+    /** Get the minimum x coordinate in the square (inclusive).
+
+    # Example
+
+    ```
+    use hoomd_microstate::boundary::Square;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let square = Square { l: 10.0.try_into()? };
+
+    assert_eq!(square.minimum_x(), -5.0);
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    #[must_use]
+    pub fn minimum_x(&self) -> f64 {
+        -self.l.get() / 2.0
+    }
+
+    /** Get the minimum y coordinate in the square (inclusive).
+
+    # Example
+
+    ```
+    use hoomd_microstate::boundary::Square;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let square = Square { l: 10.0.try_into()? };
+
+    assert_eq!(square.minimum_y(), -5.0);
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    #[must_use]
+    pub fn minimum_y(&self) -> f64 {
+        -self.l.get() / 2.0
+    }
+}
+
+impl<B, S> Boundary<Cartesian<2>, B, S> for Square {
     #[inline]
     fn is_inside(&self, point: &Cartesian<2>) -> bool {
         let l = self.l.get();
@@ -41,9 +133,24 @@ impl Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>> for Square
     }
 }
 
+impl Distribution<Cartesian<2>> for Square {
+    /** Generate points uniformly distributed in the square.
+
+    TODO: Example
+    */
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<2> {
+        let uniform = Uniform::new(self.minimum_x(), self.maximum_x())
+            .expect("square should always have real valued extents where the minimum is less than the maximum");
+
+        array::from_fn(|_| uniform.sample(rng)).into()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::property::Point;
     use crate::{Body, Transform, boundary::Error};
 
     use rstest::*;
@@ -61,13 +168,28 @@ mod tests {
         };
         let v = v.into();
 
-        assert!(square.is_inside(&v));
+        assert!(<Square as Boundary<
+            Cartesian<2>,
+            Point<Cartesian<2>>,
+            Point<Cartesian<2>>,
+        >>::is_inside(&square, &v));
 
         let body = Body::point(v);
-        assert_eq!(square.wrap_body(body.properties), Ok(body.properties));
+        assert_eq!(
+            <Square as Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>>>::wrap_body(
+                &square,
+                body.properties
+            ),
+            Ok(body.properties)
+        );
 
         let site = body.properties.transform(&body.sites[0]);
-        assert_eq!(square.wrap_site(site), Ok(site));
+        assert_eq!(
+            <Square as Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>>>::wrap_site(
+                &square, site
+            ),
+            Ok(site)
+        );
     }
 
     #[rstest]
@@ -82,15 +204,27 @@ mod tests {
         };
         let v = v.into();
 
-        assert!(!square.is_inside(&v));
+        assert!(!<Square as Boundary<
+            Cartesian<2>,
+            Point<Cartesian<2>>,
+            Point<Cartesian<2>>,
+        >>::is_inside(&square, &v));
 
         let body = Body::point(v);
         assert_eq!(
-            square.wrap_body(body.properties),
+            <Square as Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>>>::wrap_body(
+                &square,
+                body.properties
+            ),
             Err(Error::CannotWrapBodyProperties)
         );
 
         let site = body.properties.transform(&body.sites[0]);
-        assert_eq!(square.wrap_site(site), Err(Error::CannotWrapSiteProperties));
+        assert_eq!(
+            <Square as Boundary<Cartesian<2>, Point<Cartesian<2>>, Point<Cartesian<2>>>>::wrap_site(
+                &square, site
+            ),
+            Err(Error::CannotWrapSiteProperties)
+        );
     }
 }

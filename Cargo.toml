@@ -1,14 +1,18 @@
 [workspace]
 
 resolver = "3"
-members = ["examples","hoomd-bevy", "hoomd-geometry",
-                   "hoomd-gsd",
-                   "hoomd-interaction",
-                   "hoomd-manifold",
-                   "hoomd-mc",
-                   "hoomd-microstate",
-                   "hoomd-utility",
-                   "hoomd-vector"]
+members = ["examples",
+           "hoomd-bevy",
+           "hoomd-geometry",
+           "hoomd-gsd",
+           "hoomd-interaction",
+           "hoomd-manifold",
+           "hoomd-mc",
+           "hoomd-microstate",
+           "hoomd-utility",
+           "hoomd-vector",
+           "tools/build-wasm-doc-examples",
+          ]
 
 # Include only core hoomd simulation crates by default so that `cargo build`,
 # `cargo test` and similar commands operate only on the core code by default.
@@ -30,7 +34,7 @@ version = "0.0.0"
 edition = "2024"
 rust-version = "1.86"
 homepage = "https://glotzerlab.engin.umich.edu"
-repository = "https://github.com/glotzerlab/hoomd"
+repository = "https://github.com/glotzerlab/hoomd-rs"
 license = "BSD-3-Clause"
 keywords = ["molecular-dynamics", "monte-carlo", "simulation"]
 categories = ["science"]
@@ -79,6 +83,7 @@ features = ["async_executor",
             "png",
             "std",
             "sysinfo_plugin",
+            "webgl2",
             "x11",
             "bevy_dev_tools"]
 
@@ -137,6 +142,16 @@ default.extend-words = { ratatui = "ratatui" }
 # TODO: Check that this works after release. It may need to be in package.metadata
 # https://docs.rs/about/metadata
 rustdoc-args = [ "--html-in-header", "katex.html" ]
+
+# Optimize for size in wasm builds
+[profile.release-wasm]
+opt-level = 'z'
+lto = 'thin'  # TODO: Switch back to true after migrating to GitHub Pages for docs.
+codegen-units = 1
+inherits = "release"
+
+[profile.dev-wasm]
+inherits = "dev"
 
 # Bevy is extremely slow in debug builds, build it with optimizations
 # to avoid this: https://bevy.org/learn/quick-start/getting-started/setup/#compile-with-performance-optimizations

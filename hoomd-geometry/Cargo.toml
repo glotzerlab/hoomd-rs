@@ -9,7 +9,6 @@ license.workspace = true
 keywords.workspace = true
 categories.workspace = true
 description = "Performant, general computational geometry methods in Rust."
-readme = "hoomd-geometry/README.md"
 
 [dependencies]
 hoomd-vector.workspace = true

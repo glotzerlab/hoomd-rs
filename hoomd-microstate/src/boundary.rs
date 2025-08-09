@@ -98,4 +98,8 @@ pub trait Boundary<M, B, S> {
             Err(Error::CannotWrapSiteProperties)
         }
     }
+
+    // NOTE: One might think to make wrap<> generic on a property type.
+    // That is not possible because types that implement this trait *must*
+    // use the same bounds -- preventing more generic boundary conditions.
 }

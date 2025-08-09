@@ -19,6 +19,8 @@ print_stdout = "allow"
 
 [features]
 bevy = ["dep:bevy", "dep:hoomd-bevy"]
+webgpu = ["hoomd-bevy/webgpu"]
+doc-example = ["bevy", "hoomd-bevy/doc-example"]
 
 [dependencies]
 hoomd-bevy = { workspace =  true, optional = true }
@@ -35,20 +37,53 @@ libm = "0.2.11"
 
 anyhow.workspace = true
 bevy = { workspace = true, optional = true }
+rand.workspace = true
+
+# Work around failing build: https://github.com/bevyengine/bevy/issues/17699#issuecomment-2862717597
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.3.3", default-features = false, features = ["wasm_js"] }
+uuid = { version = "1.17.0", default-features = false, features = ["js"] }
 
 [package.metadata.docs.rs]
 all-features = true
 
 [[example]]
-name = "error"
-path = "error.rs"
+name = "hello"
+path = "hello.rs"
 
 [[example]]
-name = "fill"
-path = "fill.rs"
+name = "random-walk"
+path = "mc-tutorial/random-walk.rs"
 required-features = ["bevy"]
+
+[package.metadata.example.random-walk]
+path = "mc-tutorial"
 
 [[example]]
 name = "hyperbolic_fill"
 path = "hyperbolic_fill.rs"
 required-features = ["bevy"]
+
+[[example]]
+name = "custom-random-walk"
+path = "mc-tutorial/custom-random-walk.rs"
+required-features = ["bevy"]
+
+[package.metadata.example.custom-random-walk]
+path = "mc-tutorial"
+
+[[example]]
+name = "applying-interactions"
+path = "mc-tutorial/applying-interactions.rs"
+required-features = ["bevy"]
+
+[package.metadata.example.applying-interactions]
+path = "mc-tutorial"
+
+[[example]]
+name = "tetronimoes"
+path = "mc-tutorial/tetronimoes.rs"
+required-features = ["bevy"]
+
+[package.metadata.example.tetronimoes]
+path = "mc-tutorial"
