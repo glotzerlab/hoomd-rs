@@ -50,13 +50,13 @@ pub struct QuickInsert<D> {
     pub attempts_per_apply: usize,
 }
 
-impl<V, B, S, C, D, H> Trial<Microstate<B, S, C>, H> for QuickInsert<D>
+impl<M, B, S, C, D, H> Trial<Microstate<B, S, C>, H> for QuickInsert<D>
 where
-    B: Position<Vector = V> + Transform<S>,
-    S: Position<Vector = V>,
+    B: Position<Metric = M> + Transform<S>,
+    S: Position<Metric = M>,
     D: Distribution<Body<B, S>>,
     H: DeltaEnergyInsert<B, S, C> + TotalEnergy<Microstate<B, S, C>>,
-    C: Boundary<V, B, S>,
+    C: Boundary<M, B, S>,
 {
     type Count = Count;
     type Macrostate = usize;

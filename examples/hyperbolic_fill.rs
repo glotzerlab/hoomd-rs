@@ -8,9 +8,13 @@ use hoomd_interaction::{
     CutoffPair,
     pairwise::{Isotropic, LennardJones},
 };
-use hoomd_manifold::{HyperbolicDisk, HyperbolicTranslate, Hyperboloid, Minkowski};
+use hoomd_manifold::{
+    HyperbolicDisk, HyperbolicTranslate, Hyperboloid, Minkowski,
+};
 use hoomd_mc::{Sweep, Trial};
-use hoomd_microstate::{Body, Microstate, MicrostateBuilder, boundary::Open, property::Point};
+use hoomd_microstate::{
+    Body, Microstate, MicrostateBuilder, boundary::Open, property::Point,
+};
 use rand::distr::Distribution;
 use rand::{SeedableRng, rngs::StdRng};
 
@@ -35,7 +39,8 @@ fn main() -> anyhow::Result<()> {
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(
         Startup,
-        (|| HyperbolicDiskMaterial::default()).pipe(representation::HyperbolicDisk::<A>::setup),
+        (|| HyperbolicDiskMaterial::default())
+            .pipe(representation::HyperbolicDisk::<A>::setup),
     );
     app.add_systems(
         Update,
@@ -84,7 +89,8 @@ impl Fill {
             skirt: RHO,
         };
         for _n in 0..PARTICLE_NUMBER {
-            let new_point: Hyperboloid<3> = Hyperboloid::from(&sample_disk.sample(&mut rng).point);
+            let new_point: Hyperboloid<3> =
+                Hyperboloid::from(&sample_disk.sample(&mut rng).point);
             microstate.add_body(Body::point(new_point))?;
         }
 
@@ -103,11 +109,11 @@ impl Fill {
         let hamiltonian = cutoff_pair;
         let d = 0.1;
 
-        let translate = HyperbolicTranslate {
+        let hyp_translate = HyperbolicTranslate {
             maximum_distance: d.try_into()?,
             skirt: RHO,
         };
-        let translate_sweep = Sweep { local: translate };
+        let translate_sweep = Sweep(hyp_translate);
 
         Ok(Fill {
             microstate,
@@ -121,8 +127,11 @@ impl Fill {
 impl Simulation for Fill {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
-        self.translate_sweep
-            .apply(&mut self.microstate, &self.hamiltonian, &self.kt);
+        self.translate_sweep.apply(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.kt,
+        );
         self.microstate.increment_step();
         Ok(())
     }
@@ -137,7 +146,10 @@ impl Simulation for Fill {
 fn sync_simulation(
     mut commands: Commands,
     disk_assets: Res<HyperbolicDiskAssets<A>>,
-    query: Query<(Entity, &mut Transform), With<representation::HyperbolicDisk<A>>>,
+    query: Query<
+        (Entity, &mut Transform),
+        With<representation::HyperbolicDisk<A>>,
+    >,
     simulation: Res<Fill>,
 ) {
     let sites = simulation.microstate.sites();

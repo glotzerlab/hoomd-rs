@@ -35,9 +35,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// number of particles
-const PARTICLE_NUMBER: usize = 5;
+const PARTICLE_NUMBER: usize = 50;
 /// skirt width of hyperboloid
-const RHO: f64 = 1.0;
+const RHO: f64 = 2.0;
 
 /// Run the simulation
 fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> {
@@ -85,7 +85,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
         maximum_distance: d.try_into()?,
         skirt: RHO,
     };
-    let translate_sweep = Sweep { local: translate };
+    let translate_sweep = Sweep(translate);
 
     loop {
         terminal.draw(|frame| render(frame, &microstate))?;
@@ -138,8 +138,8 @@ fn render(
                 color: Color::Blue,
             });
         })
-        .x_bounds([-0.7, 0.7]) //([-RHO, RHO])
-        .y_bounds([-0.7, 0.7]); //([-RHO, RHO]);
+        .x_bounds([-1.0, 1.0]) //([-RHO, RHO])
+        .y_bounds([-1.0, 1.0]); //([-RHO, RHO]);
 
     let horizontal = Layout::horizontal([frame.area().height * 2]).flex(Flex::Center);
     let [area] = horizontal.areas(frame.area());

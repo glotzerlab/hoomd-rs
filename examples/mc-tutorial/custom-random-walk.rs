@@ -7,7 +7,7 @@ use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder, boundary::Boundary, property::Point,
 };
-use hoomd_vector::{Cartesian, Vector};
+use hoomd_vector::{Cartesian, Metric};
 // ANCHOR_END: use
 
 use hoomd_bevy::{

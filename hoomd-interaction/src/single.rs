@@ -109,12 +109,12 @@ assert_eq!(delta_energy, -1.0);
 # }
 ```
 */
-impl<V, B, S, C, E> DeltaEnergyOne<B, S, C> for Single<E>
+impl<M, B, S, C, E> DeltaEnergyOne<B, S, C> for Single<E>
 where
     E: SiteEnergy<S>,
     B: Transform<S>,
-    S: Position<Vector = V>,
-    C: Boundary<V, B, S>,
+    S: Position<Metric = M>,
+    C: Boundary<M, B, S>,
 {
     #[inline]
     fn delta_energy_one(
@@ -166,12 +166,12 @@ assert_eq!(delta_energy, -1.0);
 # }
 ```
 */
-impl<V, B, S, C, E> DeltaEnergyInsert<B, S, C> for Single<E>
+impl<M, B, S, C, E> DeltaEnergyInsert<B, S, C> for Single<E>
 where
     E: SiteEnergy<S>,
     B: Transform<S>,
-    S: Position<Vector = V>,
-    C: Boundary<V, B, S>,
+    S: Position<Metric = M>,
+    C: Boundary<M, B, S>,
 {
     #[inline]
     fn delta_energy_insert(
@@ -217,12 +217,12 @@ assert_eq!(delta_energy, -1.0);
 # }
 ```
 */
-impl<V, B, S, C, E> DeltaEnergyRemove<B, S, C> for Single<E>
+impl<M, B, S, C, E> DeltaEnergyRemove<B, S, C> for Single<E>
 where
     E: SiteEnergy<S>,
     B: Transform<S>,
-    S: Position<Vector = V>,
-    C: Boundary<V, B, S>,
+    S: Position<Metric = M>,
+    C: Boundary<M, B, S>,
 {
     #[inline]
     fn delta_energy_remove(
@@ -261,7 +261,7 @@ mod tests {
 
     impl<S> SiteEnergy<S> for TestSE
     where
-        S: Position<Vector = Cartesian<2>>,
+        S: Position<Metric = Cartesian<2>>,
     {
         fn site_energy(&self, site_properties: &S) -> f64 {
             site_properties.position()[0] + site_properties.position()[1]

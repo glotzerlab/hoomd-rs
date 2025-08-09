@@ -87,9 +87,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
             maximum_distance: d.try_into()?,
             skirt: skirt_size(time),
         };
-        let translate_sweep = Sweep {
-            local: hyp_translate,
-        };
+        let translate_sweep = Sweep(hyp_translate);
 
         translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
         microstate.increment_step();

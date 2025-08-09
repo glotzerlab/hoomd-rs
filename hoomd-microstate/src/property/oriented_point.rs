@@ -68,7 +68,7 @@ where
 }
 
 impl<V, R> Position for OrientedPoint<V, R> {
-    type Vector = V;
+    type Metric = V;
 
     #[inline]
     fn position(&self) -> &V {

@@ -77,7 +77,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
         maximum_distance: d.try_into()?,
         radius: RADIUS,
     };
-    let translate_sweep = Sweep { local: translate };
+    let translate_sweep = Sweep(translate);
 
     loop {
         terminal.draw(|frame| render(frame, &microstate))?;

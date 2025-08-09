@@ -18,7 +18,8 @@ use rand::distr::Distribution;
 `HyperbolicTranslate` used with Sweep:
 # Example
 ```
-use hoomd_mc::{LocalTrial, Sweep, Trial, Zero};
+use hoomd_interaction::Zero;
+use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{property::{Point, Position}, Body, Microstate};
 use hoomd_manifold::{Minkowski, Hyperboloid, HyperbolicTranslate};
 use hoomd_vector::Vector;
@@ -29,7 +30,7 @@ let mut microstate = Microstate::new();
 microstate.add_body(Body::point(Hyperboloid::from(&Minkowski::from([1.0, 1.0, 3.0_f64.sqrt()]))));
 let d = 0.1;
 let translate = HyperbolicTranslate { maximum_distance: d.try_into()?, skirt: 1.0,};
-let translate_sweep = Sweep { local: translate };
+let translate_sweep = Sweep(translate);
 
 let hamiltonian = Zero;
 let kt = 1.0;
@@ -110,7 +111,8 @@ where
 `SphericalTranslate` used with Sweep:
 # Example
 ```
-use hoomd_mc::{LocalTrial, Sweep, Trial, Zero};
+use hoomd_interaction::Zero;
+use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{property::Position, Body, Microstate};
 use hoomd_manifold::{Sphere, SphericalDisk, SphericalTranslate};
 use hoomd_vector::{Cartesian, Metric, Vector};
@@ -123,7 +125,7 @@ microstate.add_body(Body::point(Cartesian::from([0.5_f64.sqrt(), 0.5_f64.sqrt(),
 let d = 0.1;
 let radius: f64 = 0.6;
 let translate = SphericalTranslate { maximum_distance: d.try_into()?, radius: radius,};
-let translate_sweep = Sweep { local: translate };
+let translate_sweep = Sweep(translate);
 
 let hamiltonian = Zero;
 let kt = 1.0;

@@ -3,8 +3,9 @@
 /*! This is an example
 */
 
+use hoomd_interaction::Zero;
 use hoomd_manifold::{EightEight, FundamentalDomain, HyperbolicTranslate, Hyperboloid, Minkowski};
-use hoomd_mc::{Sweep, Trial, Zero};
+use hoomd_mc::{Sweep, Trial};
 use hoomd_microstate::{Body, Microstate, MicrostateBuilder, property::Point};
 use libm::{acosh, cosh, sinh, sqrt};
 use std::array;
@@ -50,7 +51,7 @@ fn run(mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> 
         maximum_distance: d.try_into()?,
         skirt: RHO,
     };
-    let translate_sweep = Sweep { local: translate };
+    let translate_sweep = Sweep(translate);
 
     loop {
         terminal.draw(|frame| render(frame, &microstate))?;
