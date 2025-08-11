@@ -160,7 +160,7 @@ let mut rng = StdRng::seed_from_u64(12);
 // generate a random point
 let sample_disk = SphericalDisk{
         r: 0.5_f64.try_into()?,
-        point: Cartesian::from([0.01,0.01,-1.0*(radius.powi(2)-2.0*(0.01_f64).powi(2)).sqrt()]),
+        point: Cartesian::from([0.01,0.01,-(radius.powi(2)-2.0*(0.01_f64).powi(2)).sqrt()]),
         radius: radius,};
 let random_point: Sphere<3> = sample_disk.sample(&mut rng);
 

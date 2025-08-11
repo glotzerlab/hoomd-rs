@@ -677,21 +677,21 @@ impl From<UnitBiquaternion> for HyperbolicRotationMatrix<4> {
                     (d * d.conj() + a * a.conj() - b * b.conj() - c * c.conj()).re,
                     (a * b.conj() + b * a.conj() - c * d.conj() - d * c.conj()).re,
                     (a * c.conj() + c * a.conj() + b * d.conj() + d * b.conj()).re,
-                    -1.0 * (d * a.conj() - a * d.conj() + b * c.conj() - c * b.conj()).im,
+                    -(d * a.conj() - a * d.conj() + b * c.conj() - c * b.conj()).im,
                 ]
                 .into(),
                 [
                     (b * a.conj() + a * b.conj() + c * d.conj() + d * c.conj()).re,
                     (d * d.conj() - a * a.conj() + b * b.conj() - c * c.conj()).re,
                     (b * c.conj() + c * b.conj() - a * d.conj() - d * a.conj()).re,
-                    -1.0 * (d * b.conj() - b * d.conj() + c * a.conj() - a * c.conj()).im,
+                    -(d * b.conj() - b * d.conj() + c * a.conj() - a * c.conj()).im,
                 ]
                 .into(),
                 [
                     (c * a.conj() + a * c.conj() - b * d.conj() - d * b.conj()).re,
                     (c * b.conj() + b * c.conj() + a * d.conj() + d * a.conj()).re,
                     (d * d.conj() - a * a.conj() - b * b.conj() + c * c.conj()).re,
-                    -1.0 * (d * c.conj() - c * d.conj() + a * b.conj() - b * a.conj()).im,
+                    -(d * c.conj() - c * d.conj() + a * b.conj() - b * a.conj()).im,
                 ]
                 .into(),
                 [

@@ -78,7 +78,7 @@ where
     let new_body_properties = hyperbolic_translate.propose(&mut rng, body_properties);
 
     // Translation move keeps the point on the hyperboloid
-    assert_relative_eq!(new_body_properties.position().point.distance_squared(&Minkowski::from([0.0,0.0,0.0])), -1.0* rho.powi(2), epsilon = 1e-12);
+    assert_relative_eq!(new_body_properties.position().point.distance_squared(&Minkowski::from([0.0,0.0,0.0])), -(rho.powi(2)), epsilon = 1e-12);
 
     // Translation move does not move the point more than a distance d
     assert!(d > new_body_properties.position()

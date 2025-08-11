@@ -230,7 +230,7 @@ impl<const N: usize> Metric for Minkowski<N> {
     */
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
-        let last_component = -1.0 * (self.coordinates[N - 1] - other.coordinates[N - 1]).powi(2);
+        let last_component = -(self.coordinates[N - 1] - other.coordinates[N - 1]).powi(2);
         zip(
             self.coordinates[0..N - 1].iter(),
             other.coordinates[0..N - 1].iter(),

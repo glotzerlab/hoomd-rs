@@ -134,7 +134,7 @@ impl From<HyperbolicAngle> for HyperbolicRotationMatrix<3> {
                         ((Complex::new(b * c, 0.0) - ch.scale(b * c) + sh_c.scale(a))
                             .scale(-1.0 / arg_sq))
                         .re,
-                        ((Complex::new(-1.0 * a * c, 0.0) + ch.scale(a * c) - sh_c.scale(b))
+                        ((Complex::new(-a * c, 0.0) + ch.scale(a * c) - sh_c.scale(b))
                             .scale(-1.0 / arg_sq))
                         .re,
                     ]
@@ -155,7 +155,7 @@ impl From<HyperbolicAngle> for HyperbolicRotationMatrix<3> {
                         ((Complex::new(a * c, 0.0) - ch.scale(a * c) - sh_c.scale(b))
                             .scale(-1.0 / arg_sq))
                         .re,
-                        ((Complex::new(-1.0 * a * b, 0.0) + ch.scale(a * b) - sh_c.scale(c))
+                        ((Complex::new(-a * b, 0.0) + ch.scale(a * b) - sh_c.scale(c))
                             .scale(-1.0 / arg_sq))
                         .re,
                         ((Complex::new(a.powi(2), 0.0) - ch.scale(b.powi(2) + c.powi(2)))
