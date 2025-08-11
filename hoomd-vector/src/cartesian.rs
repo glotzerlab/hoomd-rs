@@ -281,10 +281,6 @@ impl<const N: usize> Metric for Cartesian<N> {
     fn distance(&self, other: &Self) -> f64 {
         (self.distance_squared(other)).sqrt()
     }
-    #[inline]
-    fn site_to_system(body: &Self, site: &Self) -> Self {
-        *body + *site
-    }
 }
 
 impl<const N: usize> Add for Cartesian<N> {

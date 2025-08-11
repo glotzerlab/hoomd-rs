@@ -5,10 +5,6 @@
  */
 
 use approx::assert_relative_eq;
-use hoomd_microstate::{
-    boundary::Boundary,
-    property::{Point, Position},
-};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Metric, Vector};
 use libm::{acosh, atan2, cos, cosh, sin, sinh, sqrt};
@@ -245,10 +241,6 @@ impl<const N: usize> Metric for Minkowski<N> {
     fn distance(&self, other: &Self) -> f64 {
         ((self.distance_squared(other)).abs()).sqrt()
     }
-    #[inline]
-    fn site_to_system(body: &Self, site: &Self) -> Self {
-        *body + *site
-    }
 }
 
 impl<const N: usize> Vector for Minkowski<N> {}
@@ -474,7 +466,7 @@ of the geodesic passing between two points on a hyperboloid with some given skir
 interpreted as the metric for the hyperboloid model of hyperbolic space.
 ```
 use libm::acosh;
-use hoomd_manifold::{Minkowski, Hyperboloid, CurvedManifold};
+use hoomd_manifold::{Minkowski, Hyperboloid};
 use hoomd_vector::Metric;
 
 // two points on the hyperboloid with skirt width R = 1.0:
@@ -643,24 +635,6 @@ impl Metric for Hyperboloid<3> {
     fn distance_squared(&self, other: &Self) -> f64 {
         self.distance(other).powi(2)
     }
-    #[inline]
-    fn site_to_system(body: &Self, site: &Self) -> Self {
-        let body_pos = body.point;
-        let body_theta = atan2(body_pos.coordinates[1], body_pos.coordinates[0]);
-        let body_boost = acosh(body_pos.coordinates[2] / body.skirt);
-        let site_pos = site.point;
-        let transformed_point = Minkowski::from([
-            site_pos[0] * cosh(body_boost) * cos(body_theta) - site_pos[1] * sin(body_theta)
-                + site_pos[2] * sinh(body_boost) * cos(body_theta),
-            site_pos[0] * cosh(body_boost) * sin(body_theta)
-                + site_pos[1] * cos(body_theta)
-                + site_pos[2] * sinh(body_boost) * sin(body_theta),
-            site_pos[0] * sinh(body_boost) + site_pos[2] * cosh(body_boost),
-        ]);
-        let new_hyperboloid = Hyperboloid::from(&transformed_point);
-        assert_relative_eq!(body.skirt, new_hyperboloid.skirt(), epsilon = 1e-12);
-        new_hyperboloid
-    }
 }
 
 impl Metric for Hyperboloid<4> {
@@ -678,45 +652,6 @@ impl Metric for Hyperboloid<4> {
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
         self.distance(other).powi(2)
-    }
-    #[inline]
-    fn site_to_system(body: &Self, site: &Self) -> Self {
-        let body_point = body.point;
-        let body_theta = atan2(
-            (body_point.coordinates[2].powi(2) + body_point.coordinates[1].powi(2)).sqrt(),
-            body_point.coordinates[0],
-        );
-        let body_phi = atan2(body_point.coordinates[2], body_point.coordinates[1]);
-        let body_boost = acosh(body_point.coordinates[2] / body.skirt);
-        let site_pos = site.point;
-        let transformed_point = Minkowski::from([
-            site_pos[0] * cosh(body_boost) * cos(body_theta) - site_pos[1] * sin(body_theta)
-                + site_pos[3] * sinh(body_boost) * cos(body_theta),
-            site_pos[0] * cosh(body_boost) * sin(body_theta) * cos(body_phi)
-                + site_pos[1] * cos(body_theta) * cos(body_phi)
-                - site_pos[2] * sin(body_phi)
-                + site_pos[3] * sinh(body_boost) * sin(body_theta) * cos(body_phi),
-            site_pos[0] * cosh(body_boost) * sin(body_theta) * sin(body_phi)
-                + site_pos[1] * cos(body_theta) * sin(body_phi)
-                + site_pos[2] * cos(body_phi)
-                + site_pos[3] * sinh(body_boost) * sin(body_theta) * sin(body_phi),
-            site_pos[0] * sinh(body_boost) + site_pos[3] * cosh(body_boost),
-        ]);
-        let new_hyperboloid = Hyperboloid::from(&transformed_point);
-        assert_relative_eq!(body.skirt, new_hyperboloid.skirt(), epsilon = 1e-12);
-        new_hyperboloid
-    }
-}
-
-impl<const N: usize> Position for Hyperboloid<N> {
-    type Metric = Hyperboloid<N>;
-    #[inline]
-    fn position(&self) -> &Hyperboloid<N> {
-        self
-    }
-    #[inline]
-    fn position_mut(&mut self) -> &mut Hyperboloid<N> {
-        self
     }
 }
 
@@ -772,21 +707,6 @@ impl FundamentalDomain for Hyperboloid<3> {
             }
         }
         coords
-    }
-}
-
-/** {8,8} tile of hyperbolic space
-*/
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct EightEight {
-    /// Skirt width of the hyperboloid
-    pub skirt: f64,
-}
-
-impl Boundary<Hyperboloid<3>, Point<Hyperboloid<3>>, Point<Hyperboloid<3>>> for EightEight {
-    #[inline]
-    fn is_inside(&self, point: &Hyperboloid<3>) -> bool {
-        point.distance_to_boundary() >= 0.0
     }
 }
 
@@ -953,7 +873,7 @@ with a given skirt width.
 # Example
 
 ```
-use hoomd_manifold::{CurvedManifold, Hyperboloid, HyperbolicDisk, Minkowski, HyperbolicAngle,
+use hoomd_manifold::{Hyperboloid, HyperbolicDisk, Minkowski, HyperbolicAngle,
                     HyperbolicRotationMatrix, HyperbolicRotate};
 use hoomd_vector::Metric;
 use rand::{rngs::StdRng, Rng, SeedableRng};

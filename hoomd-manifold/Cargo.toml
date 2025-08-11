@@ -14,9 +14,6 @@ categories.workspace = true
 [dependencies]
 thiserror.workspace = true
 rand.workspace = true
-hoomd-interaction.workspace = true
-hoomd-mc.workspace = true
-hoomd-microstate.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 libm = "0.2.11"
@@ -27,6 +24,7 @@ approx = "0.5.1"
 divan.workspace = true
 paste = "1.0.15"
 rstest.workspace = true
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ratatui = "0.28.0"
 
 [lints]

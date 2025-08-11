@@ -4,8 +4,8 @@
 /*! Implement Translation moves on curved surfaces
 */
 
-use crate::{HyperbolicDisk, Hyperboloid, Sphere, SphericalDisk};
-use hoomd_mc::LocalTrial;
+use crate::LocalTrial;
+use hoomd_manifold::{HyperbolicDisk, Hyperboloid, Sphere, SphericalDisk};
 use hoomd_microstate::property::Position;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
@@ -19,9 +19,9 @@ use rand::distr::Distribution;
 # Example
 ```
 use hoomd_interaction::Zero;
-use hoomd_mc::{LocalTrial, Sweep, Trial};
+use hoomd_mc::{LocalTrial, Sweep, Trial, HyperbolicTranslate};
 use hoomd_microstate::{property::{Point, Position}, Body, Microstate};
-use hoomd_manifold::{Minkowski, Hyperboloid, HyperbolicTranslate};
+use hoomd_manifold::{Minkowski, Hyperboloid};
 use hoomd_vector::Vector;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
@@ -59,9 +59,9 @@ where
 
     # Example
     ```
-    use hoomd_mc::{LocalTrial};
+    use hoomd_mc::{LocalTrial, HyperbolicTranslate};
     use hoomd_microstate::property::{Point, Position};
-    use hoomd_manifold::{CurvedManifold, Minkowski, Hyperboloid, HyperbolicTranslate};
+    use hoomd_manifold::{Minkowski, Hyperboloid};
     use hoomd_vector::{Metric, Vector};
     use libm::sqrt;
     use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -112,9 +112,9 @@ where
 # Example
 ```
 use hoomd_interaction::Zero;
-use hoomd_mc::{LocalTrial, Sweep, Trial};
+use hoomd_mc::{LocalTrial, Sweep, Trial, SphericalTranslate};
 use hoomd_microstate::{property::Position, Body, Microstate};
-use hoomd_manifold::{Sphere, SphericalDisk, SphericalTranslate};
+use hoomd_manifold::{Sphere, SphericalDisk};
 use hoomd_vector::{Cartesian, Metric, Vector};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use approx::assert_relative_eq;
@@ -158,9 +158,9 @@ where
 
     # Example
     ```
-    use hoomd_mc::{LocalTrial, Translate};
+    use hoomd_mc::{LocalTrial, SphericalTranslate};
     use hoomd_microstate::property::{Point, Position};
-    use hoomd_manifold::{CurvedManifold, Sphere, SphericalTranslate, SphericalDisk};
+    use hoomd_manifold::{Sphere, SphericalDisk};
     use hoomd_vector::{Vector, Metric, Cartesian};
     use libm::sqrt;
     use rand::{rngs::StdRng, Rng, SeedableRng};

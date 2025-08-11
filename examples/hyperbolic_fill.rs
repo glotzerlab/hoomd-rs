@@ -8,10 +8,8 @@ use hoomd_interaction::{
     CutoffPair,
     pairwise::{Isotropic, LennardJones},
 };
-use hoomd_manifold::{
-    HyperbolicDisk, HyperbolicTranslate, Hyperboloid, Minkowski,
-};
-use hoomd_mc::{Sweep, Trial};
+use hoomd_manifold::{HyperbolicDisk, Hyperboloid, Minkowski};
+use hoomd_mc::{HyperbolicTranslate, Sweep, Trial};
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder, boundary::Open, property::Point,
 };

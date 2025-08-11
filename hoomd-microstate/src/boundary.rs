@@ -11,9 +11,11 @@ use crate::property::Position;
 
 use thiserror::Error;
 
+mod eighteight;
 mod open;
 mod square;
 
+pub use eighteight::EightEight;
 pub use open::Open;
 pub use square::Square;
 

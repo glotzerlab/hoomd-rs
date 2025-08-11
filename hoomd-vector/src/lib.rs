@@ -394,9 +394,6 @@ pub trait Metric {
     ```
      */
     fn distance(&self, other: &Self) -> f64;
-    /** Transforms the location of a site (in the body frame) to the system frame.
-     */
-    fn site_to_system(body: &Self, site: &Self) -> Self;
 }
 
 /** Operate on elements of an inner product space.

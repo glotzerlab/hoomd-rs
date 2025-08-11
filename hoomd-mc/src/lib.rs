@@ -16,11 +16,13 @@ TODO: Expand documentation.
 use rand::Rng;
 use std::ops::AddAssign;
 
+mod manifold_translate;
 mod quick_insert;
 mod sweep;
 mod translate;
 mod uniform_in;
 
+pub use manifold_translate::{HyperbolicTranslate, SphericalTranslate};
 pub use quick_insert::QuickInsert;
 pub use sweep::Sweep;
 pub use translate::Translate;

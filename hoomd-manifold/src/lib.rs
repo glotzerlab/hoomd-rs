@@ -128,15 +128,13 @@ let boosted = v.expect("non-zero biquaternion").hyperbolic_rotate(&x);
 
 mod biquaternion;
 mod hyperbolic_angle;
-mod manifold_translate;
 mod minkowski;
 mod sphere;
 
 pub use {
     biquaternion::{Biquaternion, UnitBiquaternion},
     hyperbolic_angle::HyperbolicAngle,
-    manifold_translate::{HyperbolicTranslate, SphericalTranslate},
-    minkowski::{EightEight, HyperbolicDisk, HyperbolicRotationMatrix, Hyperboloid, Minkowski},
+    minkowski::{HyperbolicDisk, HyperbolicRotationMatrix, Hyperboloid, Minkowski},
     sphere::{Sphere, SphericalDisk},
 };
 
@@ -166,17 +164,6 @@ pub enum Error {
     /// Attempted to compare two points belonging to spheres with different radii
     #[error("points do not belong to same sphere")]
     InvalidSpherePointComparison,
-}
-
-/** Implement methods on non-Euclidean spaces
-*/
-pub trait CurvedManifold {
-    /** Distance of the geodesic path passing through two points on a curved manifold.
-     */
-    fn geodesic_distance(&self, other: &Self) -> f64;
-    /** Cast points in a vector space (i.e., the embedding space) as curved manifold points
-     */
-    fn to_manifold(point: Vec<f64>) -> Self;
 }
 
 /** Operations for the fundamental domain on an arbitrary manifold

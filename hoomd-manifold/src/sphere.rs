@@ -127,25 +127,6 @@ impl Metric for Sphere<3> {
     fn distance_squared(&self, other: &Self) -> f64 {
         (self.distance(other)).powi(2)
     }
-    #[inline]
-    fn site_to_system(body: &Self, site: &Self) -> Self {
-        let radius = body.radius;
-        let body_point = body.point;
-        let body_phi = atan2(body_point.coordinates[1], body_point.coordinates[0]);
-        let body_theta = acos(body_point.coordinates[2] / radius);
-        let trial_coords = site.point.coordinates;
-        let transformed_point = Cartesian::from([
-            trial_coords[0] * cos(body_theta) * cos(body_phi) - trial_coords[1] * sin(body_phi)
-                + trial_coords[2] * sin(body_theta) * cos(body_phi),
-            trial_coords[0] * cos(body_theta) * sin(body_phi)
-                + trial_coords[1] * cos(body_phi)
-                + trial_coords[2] * sin(body_theta) * sin(body_phi),
-            -trial_coords[0] * sin(body_theta) + trial_coords[2] * cos(body_theta),
-        ]);
-        let new_sphere = Sphere::from(&transformed_point);
-        assert_relative_eq!(radius, new_sphere.radius, epsilon = 1e-12);
-        new_sphere
-    }
 }
 
 impl Metric for Sphere<4> {
@@ -158,40 +139,6 @@ impl Metric for Sphere<4> {
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
         (self.distance(other)).powi(2)
-    }
-    #[inline]
-    fn site_to_system(body: &Self, site: &Self) -> Self {
-        let radius = body.radius;
-        let body_point = body.point;
-        let body_phi_1 = atan2(
-            (body_point.coordinates[2].powi(2) + body_point.coordinates[1].powi(2)).sqrt(),
-            body_point.coordinates[0],
-        );
-        let body_theta = atan2(
-            (body_point.coordinates[0].powi(2)
-                + body_point.coordinates[1].powi(2)
-                + body_point.coordinates[2].powi(2))
-            .sqrt(),
-            body_point.coordinates[3],
-        );
-        let body_phi_2 = atan2(body_point.coordinates[2], body_point.coordinates[1]);
-        let trial_coords = site.point.coordinates;
-        let transformed_point = Cartesian::from([
-            trial_coords[0] * cos(body_theta) * cos(body_phi_1) - trial_coords[1] * sin(body_phi_1)
-                + trial_coords[3] * sin(body_theta) * cos(body_phi_1),
-            trial_coords[0] * cos(body_theta) * sin(body_phi_1) * cos(body_phi_2)
-                + trial_coords[1] * cos(body_phi_1) * cos(body_phi_2)
-                - trial_coords[2] * sin(body_phi_2)
-                + trial_coords[3] * sin(body_theta) * sin(body_phi_1) * cos(body_phi_2),
-            trial_coords[0] * cos(body_theta) * sin(body_phi_1) * sin(body_phi_2)
-                + trial_coords[1] * cos(body_phi_1) * sin(body_phi_2)
-                + trial_coords[2] * cos(body_phi_2)
-                + trial_coords[3] * sin(body_theta) * sin(body_phi_1) * sin(body_phi_2),
-            -trial_coords[0] * sin(body_theta) + trial_coords[3] * cos(body_theta),
-        ]);
-        let new_sphere = Sphere::from(&transformed_point);
-        assert_relative_eq!(radius, new_sphere.radius, epsilon = 1e-12);
-        new_sphere
     }
 }
 

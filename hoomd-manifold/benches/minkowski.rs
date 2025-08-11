@@ -18,6 +18,7 @@ use hoomd_manifold::{
 use hoomd_vector::Metric;
 
 fn main() {
+    #[cfg(not(target_arch = "wasm32"))]
     divan::main();
 }
 
@@ -37,6 +38,7 @@ fn create_random_hyperboloid_pair<R: Rng>(rng: &mut R) -> (Minkowski<3>, Minkows
 
 const DIMENSIONS: &[usize] = &[2, 3, 8, 16, 32, 128];
 
+#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn hyperboloid_distance_vec3(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -49,6 +51,7 @@ fn hyperboloid_distance_vec3(bencher: Bencher) {
         });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn to_poincare_vec3(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -59,6 +62,7 @@ fn to_poincare_vec3(bencher: Bencher) {
         .bench_local_values(|a| black_box(Hyperboloid::from(&a).to_poincare()));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = DIMENSIONS)]
 fn gen_random_minkowski<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -68,6 +72,7 @@ fn gen_random_minkowski<const N: usize>(bencher: Bencher) {
         .bench_local(|| black_box(rng.random::<Minkowski<N>>()));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn gen_random_hyperboloid(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);

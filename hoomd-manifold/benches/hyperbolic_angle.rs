@@ -15,9 +15,11 @@ use rand::{Rng, SeedableRng, rngs::StdRng};
 use hoomd_manifold::{HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski};
 
 fn main() {
+    #[cfg(not(target_arch = "wasm32"))]
     divan::main();
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn hyperbolic_rotate_matrix(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -31,6 +33,7 @@ fn hyperbolic_rotate_matrix(bencher: Bencher) {
         .bench_local_values(|angles| black_box(matrix.hyperbolic_rotate(&angles)));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn gen_random(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
