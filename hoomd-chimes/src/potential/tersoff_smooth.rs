@@ -141,8 +141,7 @@ mod tests {
         let r_out = 3.0;
         let r_in = 1.0;
         let fo = 0.75;
-        const N_COEFF: usize = 3;
-        let coeff: ArrayVec<f64, N_COEFF> = [1.0, 2.0, 3.0].into_iter().collect();
+        let coeff: ArrayVec<f64, 3> = [1.0, 2.0, 3.0].into_iter().collect();
 
         let morse_trans: MorseTransformation = MorseTransformation {
             lambda,
@@ -150,7 +149,7 @@ mod tests {
             r_in,
         };
 
-        let chimes2b_cheby: Chimes2b<MorseTransformation, N_COEFF> =
+        let chimes2b_cheby: Chimes2b<MorseTransformation, 3> =
             Chimes2b::new(morse_trans, coeff, r_in);
 
         let chimes2b = TersoffSmooth {
