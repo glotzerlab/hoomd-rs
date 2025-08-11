@@ -26,13 +26,11 @@ fn run() -> std::io::Result<()> {
         current_value += step;
     }
 
-    const N_COEFF: usize = 12;
-
     let lambda = 3.0;
     let r_out = 4.3;
     let r_in = 2.5;
     let fo = 0.5;
-    let coeff_2b: ArrayVec<f64, N_COEFF> = [
+    let coeff_2b: ArrayVec<f64, 12> = [
         12.182_108_126_966_01,
         -2.473_627_738_301_203_3,
         8.236_322_683_724_822,
@@ -55,7 +53,7 @@ fn run() -> std::io::Result<()> {
         r_in,
     };
 
-    let chimes2b_cheby: Chimes2b<MorseTransformation, N_COEFF> =
+    let chimes2b_cheby: Chimes2b<MorseTransformation, 12> =
         Chimes2b::new(morse_trans, coeff_2b, r_in);
 
     let chimes2b = TersoffSmooth {
