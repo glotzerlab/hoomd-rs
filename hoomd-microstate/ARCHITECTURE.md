@@ -236,7 +236,6 @@ all body and site positions. This boundary *may* be periodic, but does not
 necessarily need to tile space. A `Boundary` type expresses this interface via
 these methods:
 
-* `is_inside` - test if a point is inside the boundary.
 * `wrap` - wrap any site/body properties into the boundary.
 * `generate_ghosts` - given the properties of a site in the boundary, generate
   the ghost sites outside the boundary.

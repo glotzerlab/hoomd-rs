@@ -12,9 +12,11 @@ use tinyvec::ArrayVec;
 
 mod closed;
 mod open;
+mod periodic;
 
 pub use closed::Closed;
 pub use open::Open;
+pub use periodic::Periodic;
 
 /// Enumerate possible sources of error in fallible boundary methods.
 #[non_exhaustive]
@@ -23,6 +25,9 @@ pub enum Error {
     /// Failed to wrap body or site properties.
     #[error("property cannot be wrapped")]
     CannotWrapProperties,
+    /// The maximum interaction range is larger than the periodic boundary condition will allow.
+    #[error("the requested interaction range ({0}) is larger than the boundary will allow ({1})")]
+    InteractionRangeTooLarge(f64, f64),
 }
 
 /// The maximum number of possible ghosts.
@@ -48,10 +53,10 @@ The generic type names are:
 pub trait Wrap<P> {
     /** Transform body/point properties into the boundary.
 
-    `wrap_properties` takes a body or site properties with a position that
-    may be outside the boundary. It attempts to wrap that position back inside
-    following the boundary's periodicity. `wrap` returns [`Ok(properties)`](Ok)
-    when this process is successful.
+    `wrap` takes a body or site properties with a position that may be outside
+    the boundary. It attempts to wrap that position back inside following the
+    boundary's periodicity. `wrap` returns [`Ok(properties)`](Ok) when this
+    process is successful.
 
     # Errors
 
@@ -68,6 +73,8 @@ pub trait GenerateGhosts<S> {
     The maximum interaction range is the largest distance between two
     interacting sites. [`Microstate`](crate::Microstate) will place ghosts
     within this range outside periodic boundaries.
+
+    TODO: Example
     */
     fn maximum_interaction_range(&self) -> f64;
 
@@ -80,4 +87,9 @@ pub trait GenerateGhosts<S> {
     [`maximum_interaction_range`]: Self::maximum_interaction_range
     */
     fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]>;
+}
+
+pub trait MaximumAllowableInteractionRange {
+    /// The largest value that the maximum interaction range can take.
+    fn maximum_allowable_interaction_range(&self) -> f64;
 }
