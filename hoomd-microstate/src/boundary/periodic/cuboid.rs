@@ -5,7 +5,10 @@
 
 use tinyvec::ArrayVec;
 
-use crate::{boundary::{Error, GenerateGhosts, MaximumAllowableInteractionRange, MAX_GHOSTS, Periodic, Wrap},
+use crate::{
+    boundary::{
+        Error, GenerateGhosts, MAX_GHOSTS, MaximumAllowableInteractionRange, Periodic, Wrap,
+    },
     property::Position,
 };
 use hoomd_geometry::shape::Cuboid;
@@ -37,14 +40,19 @@ impl<const N: usize> MaximumAllowableInteractionRange for Cuboid<N> {
     */
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
-        let minimum_l = self.edge_lengths.iter().map(PositiveReal::get).reduce(f64::min)
+        let minimum_l = self
+            .edge_lengths
+            .iter()
+            .map(PositiveReal::get)
+            .reduce(f64::min)
             .expect("cuboid should have dimension 1 or greater");
         minimum_l / 2.0
     }
 }
 
-impl<const N: usize, P> Wrap<P> for Periodic<Cuboid<N>> where
-P: Position<Vector = Cartesian<N>>
+impl<const N: usize, P> Wrap<P> for Periodic<Cuboid<N>>
+where
+    P: Position<Vector = Cartesian<N>>,
 {
     /** Wrap any cartesian vector to the inside of the given cuboid.
 
@@ -74,15 +82,17 @@ P: Position<Vector = Cartesian<N>>
             let edge_length = edge_length.get();
             let lambda = *coordinate / edge_length;
             let lambda = lambda - lambda.round();
-            let lambda = if lambda == 0.5 {-0.5} else {lambda};
+            let lambda = if lambda == 0.5 { -0.5 } else { lambda };
             *coordinate = lambda * edge_length;
         }
         Ok(properties)
     }
 }
 
-impl<S> GenerateGhosts<S> for Periodic<Cuboid<2>> where
-S: Position<Vector = Cartesian<2>> + Copy + Default {
+impl<S> GenerateGhosts<S> for Periodic<Cuboid<2>>
+where
+    S: Position<Vector = Cartesian<2>> + Copy + Default,
+{
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {
         self.maximum_interaction_range
@@ -92,7 +102,7 @@ S: Position<Vector = Cartesian<2>> + Copy + Default {
 
     For 2D cuboids, `generate_ghosts` places ghosts near the 4 edges and 4
     vertices.
-    
+
     TODO: Example
     */
     #[inline]
@@ -114,7 +124,7 @@ S: Position<Vector = Cartesian<2>> + Copy + Default {
         let near_right = r[0] > max[0] - self.maximum_interaction_range;
         let near_top = r[1] > max[1] - self.maximum_interaction_range;
         let near_bottom = r[1] < min[1] + self.maximum_interaction_range;
-        
+
         if near_right {
             result.push(new_site(-1.0, 0.0));
         }
@@ -140,12 +150,14 @@ S: Position<Vector = Cartesian<2>> + Copy + Default {
             result.push(new_site(1.0, 1.0));
         }
 
-        result   
+        result
     }
 }
 
-impl<S> GenerateGhosts<S> for Periodic<Cuboid<3>> where
-S: Position<Vector = Cartesian<3>> + Copy + Default {
+impl<S> GenerateGhosts<S> for Periodic<Cuboid<3>>
+where
+    S: Position<Vector = Cartesian<3>> + Copy + Default,
+{
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {
         self.maximum_interaction_range
@@ -263,7 +275,7 @@ S: Position<Vector = Cartesian<3>> + Copy + Default {
             result.push(new_site(1.0, 1.0, 1.0));
         }
 
-        result   
+        result
     }
 }
 

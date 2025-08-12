@@ -69,9 +69,7 @@ impl<T> VecWithTags<T> {
 
     /// The tag that will be assigned to the next item added.
     fn next_tag(&self) -> usize {
-        self.free_tags
-            .peek()
-            .map_or(self.indices.len(), |t| t.0)
+        self.free_tags.peek().map_or(self.indices.len(), |t| t.0)
     }
 
     /// Add a new item and return the tag added.
@@ -81,7 +79,7 @@ impl<T> VecWithTags<T> {
 
         self.items.push(item);
         self.tags.push(tag);
-        
+
         if tag == self.indices.len() {
             self.indices.push(Some(index));
         } else {
@@ -95,7 +93,7 @@ impl<T> VecWithTags<T> {
     /// Remove an item identified *by index*
     fn remove(&mut self, index: usize) {
         let removed_tag = self.tags[index];
-    
+
         self.items.swap_remove(index);
         self.tags.swap_remove(index);
 
@@ -1051,7 +1049,8 @@ where
     */
     #[inline]
     pub fn iter_sites_near(&self, point: &V, r: f64) -> impl Iterator<Item = &Site<S>> {
-        self.sites.items
+        self.sites
+            .items
             .iter()
             .filter(move |s| point.distance_squared(s.properties.position()) < r.powi(2))
     }

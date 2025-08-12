@@ -5,7 +5,7 @@
 
 use rand::{Rng, distr::Distribution};
 
-use super::{Error, MaximumAllowableInteractionRange}; 
+use super::{Error, MaximumAllowableInteractionRange};
 
 mod cuboid;
 
@@ -32,9 +32,10 @@ pub struct Periodic<T> {
     shape: T,
 }
 
-impl<T> Periodic<T> where
-    T: MaximumAllowableInteractionRange {
-
+impl<T> Periodic<T>
+where
+    T: MaximumAllowableInteractionRange,
+{
     /** Construct a new periodic boundary condition.
 
     # Errors
@@ -58,13 +59,18 @@ impl<T> Periodic<T> where
     #[inline]
     pub fn new(maximum_interaction_range: f64, shape: T) -> Result<Self, Error> {
         if maximum_interaction_range > shape.maximum_allowable_interaction_range() {
-            return Err(Error::InteractionRangeTooLarge(maximum_interaction_range,
-                shape.maximum_allowable_interaction_range()));
+            return Err(Error::InteractionRangeTooLarge(
+                maximum_interaction_range,
+                shape.maximum_allowable_interaction_range(),
+            ));
         }
 
-        Ok(Self { maximum_interaction_range, shape, })
+        Ok(Self {
+            maximum_interaction_range,
+            shape,
+        })
     }
-} 
+}
 
 impl<T> Periodic<T> {
     #[inline]
