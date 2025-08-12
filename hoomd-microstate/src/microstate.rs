@@ -24,6 +24,100 @@ pub struct Tagged<T> {
     pub item: T,
 }
 
+/** A dense vector with O(1) remove complexity.
+
+Each item pushed to the vector is given a tag (in monotonically increasing
+order). Access items by tag when identity matters and by index order when it
+doesn't.
+
+Items are removed using `swap_remove`. Removed tags are reused when adding new
+items.
+*/
+#[derive(Clone)]
+struct VecWithTags<T> {
+    /// Items in index order.
+    items: Vec<T>,
+
+    /// Tags of the items, in index order.
+    tags: Vec<usize>,
+
+    /// Indices of the items, in tag order.
+    indices: Vec<Option<usize>>,
+
+    /// Tags that can be reused.
+    free_tags: BinaryHeap<Reverse<usize>>,
+}
+
+impl<T> VecWithTags<T> {
+    /// Construct an empty vector with tagged items.
+    fn new() -> Self {
+        Self {
+            items: Vec::new(),
+            tags: Vec::new(),
+            indices: Vec::new(),
+            free_tags: BinaryHeap::new(),
+        }
+    }
+
+    /// Remove all items from the vector.
+    fn clear(&mut self) {
+        self.items.clear();
+        self.tags.clear();
+        self.indices.clear();
+        self.free_tags.clear();
+    }
+
+    /// The tag that will be assigned to the next item added.
+    fn next_tag(&self) -> usize {
+        self.free_tags
+            .peek()
+            .map_or(self.indices.len(), |t| t.0)
+    }
+
+    /// Add a new item and return the tag added.
+    fn push(&mut self, item: T) -> usize {
+        let tag = self.free_tags.pop().map_or(self.indices.len(), |t| t.0);
+        let index = self.items.len();
+
+        self.items.push(item);
+        self.tags.push(tag);
+        
+        if tag == self.indices.len() {
+            self.indices.push(Some(index));
+        } else {
+            debug_assert_eq!(self.indices[tag], None);
+            self.indices[tag] = Some(index);
+        }
+
+        tag
+    }
+
+    /// Remove an item identified *by index*
+    fn remove(&mut self, index: usize) {
+        let removed_tag = self.tags[index];
+    
+        self.items.swap_remove(index);
+        self.tags.swap_remove(index);
+
+        if index < self.items.len() {
+            let replaced_tag = self.tags[index];
+            self.indices[replaced_tag] = Some(index);
+        }
+        self.indices[removed_tag] = None;
+        self.free_tags.push(Reverse(removed_tag));
+    }
+
+    /// Number of items stored.
+    fn len(&self) -> usize {
+        self.items.len()
+    }
+
+    /// True when any items are stored.
+    fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+}
+
 /** Store and manage all the degrees of freedom of a single microstate in phase space.
 
 [`Microstate`] implements the main logic of the crate. See the [crate-level
@@ -82,22 +176,10 @@ pub struct Microstate<B, S = B, C = Open> {
     seed: u32,
 
     /// Bodies in the microstate, stored in index order.
-    bodies: Vec<Tagged<Body<B, S>>>,
-
-    /// Indices of the bodies, in tag order.
-    body_indices: Vec<Option<usize>>,
-
-    /// Body tags that can be reused.
-    free_body_tags: BinaryHeap<Reverse<usize>>,
+    bodies: VecWithTags<Tagged<Body<B, S>>>,
 
     /// Sites in the system reference frame.
-    sites: Vec<Site<S>>,
-
-    /// Indices of the sites, in tag order.
-    site_indices: Vec<Option<usize>>,
-
-    /// Body tags that can be reused.
-    free_site_tags: BinaryHeap<Reverse<usize>>,
+    sites: VecWithTags<Site<S>>,
 
     /// Tags of the sites associated with the bodies (in body index order).
     bodies_sites: Vec<Vec<usize>>,
@@ -146,12 +228,8 @@ impl<B, S> Microstate<B, S, Open> {
             step: 0,
             substep: 0,
             seed: 0,
-            bodies: Vec::new(),
-            body_indices: Vec::new(),
-            free_body_tags: BinaryHeap::new(),
-            sites: Vec::new(),
-            site_indices: Vec::new(),
-            free_site_tags: BinaryHeap::new(),
+            bodies: VecWithTags::new(),
+            sites: VecWithTags::new(),
             bodies_sites: Vec::new(),
             boundary: Open,
         }
@@ -490,10 +568,7 @@ where
     )]
     pub fn add_body(&mut self, body: Body<B, S>) -> Result<usize, Error> {
         // Find the tag of the new body.
-        let body_tag = self
-            .free_body_tags
-            .peek()
-            .map_or(self.body_indices.len(), |t| t.0);
+        let body_tag = self.bodies.next_tag();
 
         let mut body = body;
         body.properties = self
@@ -513,19 +588,15 @@ where
                 .map_err(|e| Error::AddBody(body_tag, e))?;
         }
 
-        // Now that all errors have been checked, it is safe to mark the tag as
-        // used.
-        self.free_body_tags.pop();
+        // Now that all errors have been checked, it is safe to start mutating the
+        // microstate.
 
-        // Add sites.
+        // Add the body's sites first.
         // Should the Vec allocation prove a bottleneck, we could recycle the body_sites
         // vecs along with the tags.
         let mut body_sites = Vec::with_capacity(body.sites.len());
         for s in &body.sites {
-            let site_tag = self
-                .free_site_tags
-                .pop()
-                .map_or(self.site_indices.len(), |t| t.0);
+            let site_tag = self.sites.next_tag();
 
             self.sites.push(Site {
                 site_tag,
@@ -536,15 +607,6 @@ where
                 body_tag,
             });
 
-            let index = self.sites.len() - 1;
-
-            if site_tag == self.site_indices.len() {
-                self.site_indices.push(Some(index));
-            } else {
-                debug_assert_eq!(self.site_indices[site_tag], None);
-                self.site_indices[site_tag] = Some(index);
-            }
-
             body_sites.push(site_tag);
         }
 
@@ -554,15 +616,6 @@ where
             item: body,
         });
         self.bodies_sites.push(body_sites);
-
-        let index = Some(self.bodies.len() - 1);
-
-        if body_tag == self.body_indices.len() {
-            self.body_indices.push(index);
-        } else {
-            debug_assert_eq!(self.body_indices[body_tag], None);
-            self.body_indices[body_tag] = index;
-        }
 
         Ok(body_tag)
     }
@@ -645,31 +698,21 @@ where
     */
     #[inline]
     pub fn remove_body(&mut self, body_index: usize) {
-        let body_tag = self.bodies[body_index].tag;
-        debug_assert_eq!(self.body_indices[body_tag], Some(body_index));
+        let body_tag = self.bodies.items[body_index].tag;
+        debug_assert_eq!(self.bodies.indices[body_tag], Some(body_index));
 
         // Remove sites. `add_body` adds sites in increasing index order, so
         // remove them in reverse order to avoid keep the other bodies' sites
         // in increasing order.
         let body_sites = self.bodies_sites.swap_remove(body_index);
         for site_tag in body_sites.iter().rev() {
-            let site_index = self.site_indices[*site_tag]
+            let site_index = self.sites.indices[*site_tag]
                 .expect("bodies_sites and site_indices should be consistent");
-            let removed_site = self.sites.swap_remove(site_index);
-            if site_index < self.sites.len() {
-                self.site_indices[self.sites[site_index].site_tag] = Some(site_index);
-            }
-            self.site_indices[removed_site.site_tag] = None;
-            self.free_site_tags.push(Reverse(removed_site.site_tag));
+            self.sites.remove(site_index);
         }
 
         // Remove body
-        self.bodies.swap_remove(body_index);
-        if body_index < self.bodies.len() {
-            self.body_indices[self.bodies[body_index].tag] = Some(body_index);
-        }
-        self.body_indices[body_tag] = None;
-        self.free_body_tags.push(Reverse(body_tag));
+        self.bodies.remove(body_index);
     }
 
     /** Sets the properties of the given body.
@@ -713,7 +756,7 @@ where
         S: Position<Vector = V>,
         C: Wrap<B> + Wrap<S>,
     {
-        let body = &mut self.bodies[body_index];
+        let body = &mut self.bodies.items[body_index];
 
         let new_body_properties = self
             .boundary
@@ -736,9 +779,9 @@ where
 
         // Update site properties
         for (i, site_tag) in self.bodies_sites[body_index].iter().enumerate() {
-            let site_index = self.site_indices[*site_tag]
+            let site_index = self.sites.indices[*site_tag]
                 .expect("bodies_sites and site_indices should be consistent");
-            self.sites[site_index].properties = self
+            self.sites.items[site_index].properties = self
                 .boundary
                 .wrap(body.item.properties.transform(&body.item.sites[i]))
                 .expect("sites should be validated as wrappable prior to this loop");
@@ -773,11 +816,7 @@ where
     #[inline]
     pub fn clear(&mut self) {
         self.bodies.clear();
-        self.body_indices.clear();
-        self.free_body_tags.clear();
         self.sites.clear();
-        self.site_indices.clear();
-        self.free_site_tags.clear();
         self.bodies_sites.clear();
     }
 }
@@ -837,7 +876,7 @@ impl<B, S, C> Microstate<B, S, C> {
     */
     #[inline]
     pub fn bodies(&self) -> &[Tagged<Body<B, S>>] {
-        &self.bodies
+        &self.bodies.items
     }
 
     /** Identify the index of a body given a tag.
@@ -882,7 +921,7 @@ impl<B, S, C> Microstate<B, S, C> {
     */
     #[inline]
     pub fn body_indices(&self) -> &[Option<usize>] {
-        &self.body_indices
+        &self.bodies.indices
     }
 
     /** Access the microstate's sites (in the system frame) in index order.
@@ -944,7 +983,7 @@ impl<B, S, C> Microstate<B, S, C> {
     */
     #[inline]
     pub fn sites(&self) -> &[Site<S>] {
-        &self.sites
+        &self.sites.items
     }
 
     /** Identify the index of a site given a tag.
@@ -956,7 +995,7 @@ impl<B, S, C> Microstate<B, S, C> {
     */
     #[inline]
     pub fn site_indices(&self) -> &[Option<usize>] {
-        &self.site_indices
+        &self.sites.indices
     }
 
     /** Iterate over all the sites (in the system reference frame) associated with a body.
@@ -992,7 +1031,7 @@ impl<B, S, C> Microstate<B, S, C> {
     )]
     pub fn iter_body_sites(&self, body_index: usize) -> impl Iterator<Item = &Site<S>> {
         self.bodies_sites[body_index].iter().map(|site_tag| {
-            &self.sites[self.site_indices[*site_tag]
+            &self.sites.items[self.sites.indices[*site_tag]
                 .expect("bodies_sites and site_indices should be consistent")]
         })
     }
@@ -1012,7 +1051,7 @@ where
     */
     #[inline]
     pub fn iter_sites_near(&self, point: &V, r: f64) -> impl Iterator<Item = &Site<S>> {
-        self.sites
+        self.sites.items
             .iter()
             .filter(move |s| point.distance_squared(s.properties.position()) < r.powi(2))
     }
@@ -1263,12 +1302,8 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
             substep: 0,
             seed: self.seed,
             boundary: self.boundary,
-            bodies: Vec::new(),
-            body_indices: Vec::new(),
-            free_body_tags: BinaryHeap::new(),
-            sites: Vec::new(),
-            site_indices: Vec::new(),
-            free_site_tags: BinaryHeap::new(),
+            bodies: VecWithTags::new(),
+            sites: VecWithTags::new(),
             bodies_sites: Vec::new(),
         };
 
@@ -1383,7 +1418,7 @@ mod tests {
             reference_bodies.values().map(|body| body.sites.len()).sum()
         );
 
-        for (tag, optional_index) in microstate.body_indices.iter().enumerate() {
+        for (tag, optional_index) in microstate.bodies.indices.iter().enumerate() {
             if let Some(index) = optional_index {
                 assert_eq!(microstate.bodies()[*index].tag, tag);
                 assert!(reference_bodies.contains_key(&tag));
@@ -1398,7 +1433,7 @@ mod tests {
             assert_eq!(microstate.bodies()[body_index].item, *body);
         }
 
-        for (tag, optional_index) in microstate.site_indices.iter().enumerate() {
+        for (tag, optional_index) in microstate.sites.indices.iter().enumerate() {
             if let Some(index) = optional_index {
                 assert_eq!(microstate.sites()[*index].site_tag, tag);
             }
