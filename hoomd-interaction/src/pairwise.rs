@@ -16,6 +16,9 @@ pub use boxcar::Boxcar;
 mod lennard_jones;
 pub use lennard_jones::LennardJones;
 
+mod lennard_jones_gauss;
+pub use lennard_jones_gauss::LennardJonesGauss;
+
 mod shifted;
 pub use shifted::Shifted;
 
@@ -25,26 +28,79 @@ pub use xplor::Xplor;
 mod weeks_chandler_anderson;
 pub use weeks_chandler_anderson::WeeksChandlerAnderson;
 
+mod harmonic;
+pub use harmonic::Harmonic;
+
+mod harmonic_repulsion;
+pub use harmonic_repulsion::HarmonicRepulsion;
+
 mod isotropic;
 pub use isotropic::Isotropic;
 
 /** Computes pairwise energies between point particles.
 
 An isotropic pairwise energy is function only of the distances between the
-particles.
-<!-- U(r) -->
-<math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo></mrow></math>
+particles: $`U(r)`$
 
 Implement [`IsotropicEnergy`] on a custom type or use one of the provided
 potentials in [`pairwise`](crate::pairwise) in MD or MC simulations.
+Use an [`IsotropicEnergy`] in combination with [`Isotropic`] and
+[`CutoffPair`](crate::CutoffPair).
+
+# Examples
+
+Set a custom potential using a closure:
+```
+use hoomd_interaction::pairwise::IsotropicEnergy;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let a = 2.0;
+let custom = |r: f64| a / (r.powi(12));
+
+let energy = custom.energy(1.0);
+assert_eq!(energy, 2.0);
+# Ok(())
+# }
+```
+
+Implement a custom potential via a type:
+```
+use hoomd_interaction::pairwise::IsotropicEnergy;
+
+struct Custom {
+    a: f64,
+}
+
+impl IsotropicEnergy for Custom {
+    fn energy(&self, r: f64) -> f64 {
+        self.a / r.powi(12)
+    }
+}
+
+let custom = Custom { a: 2.0 };
+
+let energy = custom.energy(1.0);
+assert_eq!(energy, 2.0);
+```
 */
 pub trait IsotropicEnergy {
     /** Compute the pairwise energy between two point particles.
-    <!-- U(r) -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><mi>r</mi><mo form="postfix" stretchy="false">)</mo></mrow></math>
+    ```math
+    U(r)
+    ```
     */
     #[must_use]
     fn energy(&self, r: f64) -> f64;
+}
+
+impl<F> IsotropicEnergy for F
+where
+    F: Fn(f64) -> f64,
+{
+    #[inline]
+    fn energy(&self, r: f64) -> f64 {
+        self(r)
+    }
 }
 
 /** Computes pairwise forces between point particles.
@@ -64,8 +120,9 @@ pub trait IsotropicForce {
 
     When the force is associated with a potential energy [`IsotropicEnergy`],
     it must follow:
-    <!-- -\frac{\mathrm{d} U}{\mathrm{d} r} -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mo>−</mo><mfrac><mrow><mrow><mi mathvariant="normal">d</mi></mrow><mi>U</mi></mrow><mrow><mrow><mi mathvariant="normal">d</mi></mrow><mi>r</mi></mrow></mfrac></mrow></math>
+    ```math
+    -\frac{\mathrm{d} U}{\mathrm{d} r}
+    ```
     */
     #[must_use]
     fn force(&self, r: f64) -> f64;
@@ -75,16 +132,19 @@ pub trait IsotropicForce {
 
 An anisotropic pairwise energy is function of the relative position and
 orientation of the *j* particle in *i's* reference frame:
-<!-- U(\vec{r}_{ij}, \mathbf{o}_{ij}) -->
-<math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><msub><mover><mi>r</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo separator="true">,</mo><msub><mi>𝐨</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo form="postfix" stretchy="false">)</mo></mrow></math>
+```math
+U(\vec{r}_{ij}, \mathbf{o}_{ij})
+```
 
 Implement [`AnisotropicEnergy`] on a custom type or use one of the provided
 potentials in [`pairwise`](crate::pairwise) in MD or MC simulations.
 */
 pub trait AnisotropicEnergy<V: Vector, R: Rotate<V>> {
     /** Compute the pairwise energy between two oriented particles.
-    <!-- U(\vec{r}_{ij}, \mathbf{o}_{ij}) -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo form="prefix" stretchy="false">(</mo><msub><mover><mi>r</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo separator="true">,</mo><msub><mi>𝐨</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo form="postfix" stretchy="false">)</mo></mrow></math>    */
+    ```math
+    U(\vec{r}_{ij}, \mathbf{o}_{ij})
+    ```
+    */
     #[must_use]
     fn energy(&self, r_ij: &V, o_ij: &R) -> f64;
 }
@@ -99,19 +159,5 @@ pub trait AnisotropicEnergy<V: Vector, R: Rotate<V>> {
 //     fn energy(&self, r_ij: &V, o_ij: &R) -> f64;
 // }
 
-// TODO: Implement Xplor smoothing
 // TODO: Implement Harmonic and HarmonicRepulsion based on that (Harmonic cut off at r_0)
 // TODO: Implement Expanded as an adapter (like shifted)
-// TODO: Consider implementing IsotropicEnergy for Fn(f64) -> f64 to allow the user to directly
-//       use a closure in place of an IsotropicEnergy. It isn't clear how to do the same for
-//       both energy and force.
-// TODO: Implement Default for types where it is appropriate (e.g. LennardJones with epsilon=1
-//       and sigma=1, and Shifted with r_shift=0 (for potential types that implement default).
-// TODO: Consider Removing redundant new methods for types with all public fields.
-//       Rust provides a language mechanic that allows the caller to initialize these types.
-//       Compare:
-//       `LennardJones { epsilon: 1.0, sigma: 2.0 }`
-//       `LennardJones::new(1.0, 2.0)`
-//       The second is shorter, but there is confusion over which parameter is which.
-//       Some, like AngularMask::new, can remain because they provide some level of
-//       convenience.

@@ -1,1 +1,8 @@
 /target
+*.gsd
+tarpaulin-report.html
+perf.data
+perf.data.old
+*.DS_Store
+screenshot.png
+*.wasm

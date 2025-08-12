@@ -4,7 +4,7 @@
 /*! Implement Single
 */
 
-use crate::{TotalEnergy, SiteEnergy};
+use crate::{SiteEnergy, TotalEnergy};
 use hoomd_microstate::Microstate;
 
 /** Compute system properties given a [`SiteEnergy`]
@@ -12,24 +12,24 @@ use hoomd_microstate::Microstate;
 [`Single`] is a newtype that provides a single implementation for system
 properties, like [`TotalEnergy`], for all types that implement [`SiteEnergy`].
 
-Use types that implement [`SiteEnergy`], such as one from [`external`] or your
-own custom type, directly when you only need to call `site_energy`. Wrap the
-type in `Single` to use it with MC simulations or to compute the total energy.
+Use types that implement [`SiteEnergy`], such as one from
+[`external`](crate::external) or your own custom type, directly when you
+only need to call `site_energy`. Wrap the type in `Single` to use it with MC
+simulations or to compute the total energy.
 
-TODO: Reword this when Single also implements `SiteForce`.
+TODO: Reword this when `Single` also implements `SiteForce`.
 
 # Example
 
 ```
 use hoomd_interaction::{Single, TotalEnergy, external::Linear};
-use hoomd_microstate::{Microstate, Body};
-use hoomd_microstate::property::{Point, Position};
+use hoomd_microstate::{Microstate, Body, property::Point};
 use hoomd_vector::Cartesian;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut microstate = Microstate::new();
 microstate.extend_bodies([Body::point(Cartesian::from([1.0, 0.0])),
-                              Body::point(Cartesian::from([-1.0, 2.0]))])?;
+                          Body::point(Cartesian::from([-1.0, 2.0]))])?;
 
 let linear = Single(Linear{ alpha: 1.0,
     plane_origin: Cartesian::default(),

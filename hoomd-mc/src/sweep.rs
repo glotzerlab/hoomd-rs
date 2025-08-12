@@ -14,10 +14,11 @@ use rand::Rng;
 /** Apply a local trial move to each body in the microstate.
 
 Each trial move is accepted when:
-<!-- r < \exp\left(\frac{-\Delta H}{kT}\right) -->
-<math display="block" class="tml-display" style="display:block math;"><mrow><mi>r</mi><mo>&lt;</mo><mrow><mi>exp</mi><mo>⁡</mo></mrow><mrow><mo fence="true" form="prefix">(</mo><mfrac><mrow><mo lspace="0em" rspace="0em">−</mo><mpadded lspace="0"><mi mathvariant="normal">Δ</mi></mpadded><mi>H</mi></mrow><mrow><mi>k</mi><mi>T</mi></mrow></mfrac><mo fence="true" form="postfix">)</mo></mrow></mrow></math>
-where `r` is a random value uniformly distributed in `[0,1)`, `\Delta H` is
-the change in energy computed by the given `hamiltonian` and `kT` is the given
+```math
+r < \exp\left(\frac{-\Delta H}{kT}\right)
+```
+where `r` is a random value uniformly distributed in `[0,1)`, $`\Delta H`$ is
+the change in energy computed by the given `hamiltonian` and $`kT`$ is the given
 `state` value (the last argument to `apply`).
 
 # Example
@@ -33,7 +34,7 @@ let mut microstate = Microstate::new();
 microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
 let d = 0.1;
 let translate = Translate { maximum_distance: d.try_into()? };
-let translate_sweep = Sweep { local: translate };
+let translate_sweep = Sweep(translate);
 
 let hamiltonian = Zero;
 let kt = 1.0;
@@ -46,19 +47,7 @@ for _ in 0..1_000 {
 # }
 ```
 */
-pub struct Sweep<L> {
-    /// The local trial to apply.
-    pub local: L,
-}
-
-impl<L> Sweep<L> {
-    /// Construct a new `Sweep` with the given local trial.
-    #[inline]
-    #[must_use]
-    pub fn new(local: L) -> Self {
-        Self { local }
-    }
-}
+pub struct Sweep<L>(pub L);
 
 impl<V, B, S, C, L, H> Trial<Microstate<B, S, C>, H> for Sweep<L>
 where
@@ -77,7 +66,7 @@ where
         microstate: &mut Microstate<B, S, C>,
         hamiltonian: &H,
         state: &Self::Macrostate,
-    ) -> Self::Count where {
+    ) -> Self::Count {
         let kt = state;
         let mut rng = microstate.counter().make_rng();
         let mut count = Self::Count::default();
@@ -96,7 +85,7 @@ where
             // energy and update methods.
             match microstate
                 .boundary()
-                .wrap_body(self.local.propose(&mut rng, trial.properties))
+                .wrap_body(self.0.propose(&mut rng, trial.properties))
             {
                 Ok(new_properties) => {
                     trial.properties = new_properties;
@@ -128,7 +117,7 @@ mod tests {
     use ::approx::assert_relative_eq;
     use hoomd_interaction::{Single, SiteEnergy, TotalEnergy};
     use hoomd_microstate::{MicrostateBuilder, boundary::Square, property::Point};
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, InnerProduct};
     use rstest::*;
 
     const K: f64 = 2.0;
@@ -172,10 +161,11 @@ mod tests {
 
         let d = 0.1;
         let translate = Translate {
-            maximum_distance: d.try_into()
+            maximum_distance: d
+                .try_into()
                 .expect("hard-coded constant should be positive"),
         };
-        let translate_sweep = Sweep { local: translate };
+        let translate_sweep = Sweep(translate);
 
         let mut position_accumulator = Cartesian::default();
         let mut energy_accumulator = 0.0;
@@ -210,7 +200,7 @@ mod tests {
             .expect("the hard-coded bodies should be in the boundary");
         let hamiltonian = Zero;
         let translate = Right;
-        let translate_sweep = Sweep { local: translate };
+        let translate_sweep = Sweep(translate);
 
         // The first move to the right ends in the boundary and should be accepted.
         let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);
@@ -242,7 +232,7 @@ mod tests {
             .expect("the hard-coded bodies should be in the boundary");
         let hamiltonian = Zero;
         let translate = Right;
-        let translate_sweep = Sweep { local: translate };
+        let translate_sweep = Sweep(translate);
 
         // The first move to the right ends in the boundary and should be accepted.
         let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);

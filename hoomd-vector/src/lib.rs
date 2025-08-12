@@ -7,6 +7,7 @@
 #![doc(
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
+// TODO: implement methods as const where possible
 
 /*! Vector and quaternion math.
 
@@ -17,25 +18,36 @@ other fields may find `hoomd_vector` useful outside the context of `HOOMD`.
 
 ## Vectors
 
-The [`Vector`] trait describes any type that is a member of a normed vector
+The [`Vector`] trait describes any type that is a member of a metric vector
 space. Write code with a [`Vector`] trait bound when you can express the
-computation with vector arithmetic and dot products. Your generic code can
+computation with vector arithmetic and a distance metric. Your generic code can
 then be invoked on vector types with any dimension or representation (e.g.
 spherical coordinates).
 
 ```
 use hoomd_vector::Vector;
 
-fn some_function<V: Vector>(a: &V, b: &V) -> f64 {
+fn some_function<V: Vector>(a: &V, b: &V, c: &V) -> f64 {
+    (*a + *b).distance(&c)
+}
+```
+
+The [`InnerProduct`] subtrait of [`Vector`] describes any type that is a member of
+an inner product space. [`InnerProduct`] implements vector norms and dot products.
+
+```
+use hoomd_vector::InnerProduct;
+
+fn some_other_function<V: InnerProduct>(a: &V, b: &V) -> f64 {
     a.dot(b) / (a.norm_squared())
 }
 ```
 
 Require additional trait bounds to perform more specific operations, such as [`Cross`]:
 ```
-use hoomd_vector::{Cross, Vector};
+use hoomd_vector::{Cross, InnerProduct};
 
-fn triple<V: Vector + Cross>(a: &V, b: &V, c: &V) -> f64 {
+fn triple<V: InnerProduct + Cross>(a: &V, b: &V, c: &V) -> f64 {
     a.dot(&b.cross(c))
 }
 ```
@@ -44,7 +56,7 @@ Use the provided [`Cartesian`] type to concretely represent N-dimensional
 vectors, or when your algorithm requires Cartesian coordinates:
 
 ```
-use hoomd_vector::{Cartesian, Vector};
+use hoomd_vector::{Cartesian, InnerProduct};
 
 let a = Cartesian::from([1.0, 2.0]);
 let b = Cartesian::from([-2.0, 1.0]);
@@ -141,7 +153,7 @@ rotation. [`RotationMatrix::rotate`] is typically several times faster than
 
 # Random distributions
 
-`hoomd_vector` interoperators with [`rand`] to generate random vectors and rotations.
+`hoomd_vector` interoperates with [`rand`] to generate random vectors and rotations.
 
 The [`StandardUniform`](rand::distr::StandardUniform) distribution
 samples rotations uniformly from the set of all rotations and vectors from the
@@ -160,12 +172,24 @@ let versor: Versor = rng.random();
 # Ok(())
 # }
 ```
+
+# Feature flags
+
+These unstable features are intended for internal use. `hoomd-vector` may make
+breaking changes to the code gated behind unstable features in any release.
+
+* `approx`: Enable `assert_relative_eq` and `assert_abs_diff_eq` from the
+  [`approx`](https://docs.rs/approx/latest/approx/) crate on [`Cartesian`],
+  [`Quaternion`] and [`Versor`].
 */
 
 mod angle;
 mod cartesian;
 pub mod distribution;
 mod quaternion;
+
+#[cfg(any(test, feature = "approx"))]
+pub mod approx;
 
 pub use {
     angle::Angle,
@@ -193,10 +217,11 @@ pub enum Error {
     InvalidQuaternionMagnitude,
 }
 
-/** Operate on elements of a normed vector space.
+/** Operate on elements of a metric vector space.
 
-Specifically, [`Vector`] defines methods that can be performed on any vector in a normed vector
-space (an inner product space by default).
+Specifically, [`Vector`] defines methods that can be performed on any vector in a metric vector
+space. Note that this is not an inner product space by default, and calculations requiring an
+inner product should use the [`InnerProduct`] subtrait.
 
 ## Vector Operations
 
@@ -336,14 +361,74 @@ pub trait Vector:
     + SubAssign
     + Neg<Output = Self>
 {
-    /** Compute the squared norm of the vector.
-
-    <!-- \left| \vec{v} \right|^2 -->
-    <math display="block" class="tml-display" style="display:block math;"><msup><mrow><mo fence="true" form="prefix">|</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo fence="true" form="postfix">|</mo></mrow><mn>2</mn></msup></math>
+    /** Compute the squared distance between two vectors belonging to a metric space.
 
     # Example
     ```
     use hoomd_vector::{Cartesian, Vector};
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let x = Cartesian::from([0.0, 1.0, 1.0]);
+    let y = Cartesian::from([1.0, 0.0, 0.0]);
+    assert_eq!(3.0, x.distance_squared(&y));
+    # Ok(())
+    # }
+    ```
+     */
+    fn distance_squared(&self, other: &Self) -> f64;
+
+    /** Compute the distance between two vectors belonging to a metric space.
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, Vector};
+
+    let x = Cartesian::from([0.0, 0.0]);
+    let y = Cartesian::from([3.0, 4.0]);
+    assert_eq!(5.0, x.distance(&y));
+    ```
+     */
+    #[inline]
+    fn distance(&self, other: &Self) -> f64 {
+        self.distance_squared(other).sqrt()
+    }
+}
+/** Operate on elements of an inner product space.
+
+The [`InnerProduct`] subtrait defines additional methods that can be performed on any vector
+in an inner product space, specifically vector norms and inner products.
+
+*/
+pub trait InnerProduct: Vector {
+    /** Compute the vector dot product between two vectors.
+
+    ```math
+    c = \vec{a} \cdot \vec{b}
+    ```
+
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, InnerProduct};
+
+    # fn main() {
+    let a = Cartesian::from([1.0, 2.0]);
+    let b = Cartesian::from([3.0, 4.0]);
+    let c = a.dot(&b);
+    assert_eq!(c, 11.0);
+    # }
+    ```
+    */
+    #[must_use]
+    fn dot(&self, other: &Self) -> f64;
+
+    /** Compute the squared norm of the vector.
+
+    ```math
+    \left| \vec{v} \right|^2
+    ```
+
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, InnerProduct};
 
     # fn main() {
     let v = Cartesian::from([2.0, 4.0]);
@@ -360,19 +445,20 @@ pub trait Vector:
 
     /** Compute the norm of the vector.
 
-    <!-- \left| \vec{v} \right| -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mo fence="true" form="prefix">|</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo fence="true" form="postfix">|</mo></mrow></math>
+    ```math
+    \left| \vec{v} \right|
+    ```
 
     <div class="warning">
 
     Computing the norm calls `sqrt`. Prefer
-    [`norm_squared`](Vector::norm_squared) when possible.
+    [`norm_squared`](InnerProduct::norm_squared) when possible.
 
     </div>
 
     # Example
     ```
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, InnerProduct};
 
     # fn main() {
     let v = Cartesian::from([3.0, 4.0]);
@@ -387,37 +473,17 @@ pub trait Vector:
         self.norm_squared().sqrt()
     }
 
-    /** Compute the vector dot product between two vectors.
-
-    <!-- c = \vec{a} \cdot \vec{b} -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mi>c</mi><mo>=</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>⋅</mo><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover></mrow></math>
-
-    # Example
-    ```
-    use hoomd_vector::{Cartesian, Vector};
-
-    # fn main() {
-    let a = Cartesian::from([1.0, 2.0]);
-    let b = Cartesian::from([3.0, 4.0]);
-    let c = a.dot(&b);
-    assert_eq!(c, 11.0);
-    # }
-    ```
-    */
-    #[must_use]
-    fn dot(&self, other: &Self) -> f64;
-
     /** Create a vector of unit length pointing in the same direction as the given vector.
 
-    Returns a tuple containing unit vector along with the original vector's norm.
-
-    <!--\frac{\vec{v}}{|\vec{v}|} -->
-    <math display="block" class="tml-display" style="display:block math;"><mfrac><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>|</mi><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mi>|</mi></mrow></mfrac></math>
+    Returns a tuple containing unit vector along with the original vector's norm:
+    ```math
+    \frac{\vec{v}}{|\vec{v}|}
+    ```
 
     # Example
 
     ```
-    use hoomd_vector::{Cartesian, Unit, Vector};
+    use hoomd_vector::{Cartesian, Unit, InnerProduct};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([3.0, 4.0]);
@@ -444,15 +510,15 @@ pub trait Vector:
 
     /** Create a vector of unit length pointing in the same direction as the given vector.
 
-    Returns a tuple containing unit vector along with the original vector's norm.
-
-    <!--\frac{\vec{v}}{|\vec{v}|} -->
-    <math display="block" class="tml-display" style="display:block math;"><mfrac><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mi>|</mi><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mi>|</mi></mrow></mfrac></math>
+    Returns a tuple containing unit vector along with the original vector's norm:
+    ```math
+    \frac{\vec{v}}{|\vec{v}|}
+    ```
 
     # Example
 
     ```
-    use hoomd_vector::{Cartesian, Unit, Vector};
+    use hoomd_vector::{Cartesian, Unit, InnerProduct};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([3.0, 4.0]);
@@ -472,13 +538,33 @@ pub trait Vector:
         let norm = self.norm();
         (Unit(self / norm), norm)
     }
+
+    /** Project one vector onto another.
+    ```math
+    \left(\frac{\vec{a} \cdot \vec{b}}{|\vec{b}|^2}\right) \vec{b}
+    ```
+    where `self` is $`\vec{a}`$.
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, InnerProduct, Vector};
+    let a = Cartesian::from([1.0, 2.0]);
+    let b = Cartesian::from([4.0, 0.0]);
+    let c = a.project(&b);
+    assert_eq!(c, [1.0, 0.0].into());
+    ```
+    */
+    #[inline]
+    #[must_use]
+    fn project(&self, b: &Self) -> Self {
+        *b * self.dot(b) / b.norm_squared()
+    }
 }
 
 /// A [`Vector`] with magnitude 1.0.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Unit<V>(V);
 
-impl<V: Vector> Unit<V> {
+impl<V: InnerProduct> Unit<V> {
     /// Get the unit vector.
     #[inline]
     pub fn get(&self) -> &V {
@@ -492,8 +578,9 @@ pub trait Cross {
     /** Perform the cross product.
     Compute the cross product (right-handed) of two vectors:
 
-    <!-- \vec{c} = \vec{a} \cross \vec{b} -->
-    <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>c</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mrow><mspace width="0.2222em"></mspace><mo lspace="0em" rspace="0em" style="font-weight:bold;">×</mo><mspace width="0.2222em"></mspace></mrow><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover></mrow><annotation encoding="application/x-tex">\vec{c} = \vec{a} \cross \vec{b}</annotation></semantics></math>
+    ```math
+    \vec{c} = \vec{a} × \vec{b}
+    ```
 
     # Example
     ```
@@ -524,8 +611,9 @@ pub trait Rotate<V: Vector> {
 
     /** Rotate a vector.
 
-    <!-- \vec{b} = R(\vec{a}) -->
-    <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><mi>R</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\vec{b} = R(\vec{a})</annotation></semantics></math>
+    ```math
+    \vec{b} = R(\vec{a})
+    ```
 
     # Example
     ```
@@ -546,22 +634,25 @@ pub trait Rotate<V: Vector> {
 A [`Rotation`] represents a single rotation operation. Rotations change the direction of a vector
 while keeping its magnitude constant. To maintain generality, this documentation shows rotations
 mathematically as _functions_:
-<!-- \vec{b} = R(\vec{a}) -->
-<math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>b</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><mi>R</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\vec{b} = R(\vec{a})</annotation></semantics></math>
+```math
+\vec{b} = R(\vec{a})
+```
 
 All types that implement [`Rotation`] _should_ implement [`Rotate`] for at least one vector type.
 */
 pub trait Rotation {
     /** The identity rotation.
-    <!-- \vec{a} = I(\vec{a}) -->
-    <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><mi>I</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\vec{a} = I(\vec{a})</annotation></semantics></math>
+    ```math
+    \vec{a} = I(\vec{a})
+    ```
     */
     #[must_use]
     fn identity() -> Self;
 
     /** Inverse the rotation.
-    <!-- \vec{a} = R^{-1}(R(\vec{a})) -->
-    <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>=</mo><msup><mi>R</mi><mrow><mo lspace="0em" rspace="0em">−</mo><mn>1</mn></mrow></msup><mo form="prefix" stretchy="false">(</mo><mi>R</mi><mo form="prefix" stretchy="false">(</mo><mover><mi>a</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\vec{a} = R^{-1}(R(\vec{a}))</annotation></semantics></math>
+    ```math
+    \vec{a} = R^{-1}(R(\vec{a}))
+    ```
 
     # Example
     ```
@@ -574,14 +665,14 @@ pub trait Rotation {
     #[must_use]
     fn inverted(self) -> Self;
 
-    #[expect(clippy::doc_markdown, reason = "False positive error")]
     /** Combine two rotations.
 
     The resulting rotation `R_ab` will rotate by **first** `R_b` _followed by_ a
     rotation of `R_a`.
 
-    <!-- R_{ab}(\vec{v})= R_a(R_b(\vec{v})) -->
-    <math display="block" class="tml-display" style="display:block math;"><semantics><mrow><msub><mi>R</mi><mrow><mi>a</mi><mi>b</mi></mrow></msub><mo form="prefix" stretchy="false">(</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo><mo>=</mo><msub><mi>R</mi><mi>a</mi></msub><mo form="prefix" stretchy="false">(</mo><msub><mi>R</mi><mi>b</mi></msub><mo form="prefix" stretchy="false">(</mo><mover><mi>v</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo><mo form="postfix" stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">R_{ab}(\vec{v})= R_a(R_b(\vec{v}))</annotation></semantics></math>
+    ```math
+    R_{ab}(\vec{v})= R_a(R_b(\vec{v}))
+    ```
 
     # Example
     ```

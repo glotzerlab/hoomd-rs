@@ -15,7 +15,8 @@ use rand::distr::Distribution;
 /** Move the position of a body by a small distance.
 
 `Translate` proposes local trial moves that translate the position of a body
-in space by a random vector up a given maximum length.
+in space by a random vector up a given maximum length, given by a
+[`PositiveReal`](hoomd_utility::valid::PositiveReal).
 
 # Example
 
@@ -35,7 +36,7 @@ pub struct Translate {
     pub maximum_distance: PositiveReal,
 }
 
-impl<B, V> LocalTrial<B> for Translate
+impl<V, B> LocalTrial<B> for Translate
 where
     B: Position<Vector = V>,
     V: Vector,
@@ -48,7 +49,7 @@ where
     ```
     use hoomd_mc::{LocalTrial, Translate};
     use hoomd_microstate::property::Point;
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, InnerProduct};
     use rand::{rngs::StdRng, Rng, SeedableRng};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -82,7 +83,7 @@ where
 mod tests {
     use super::*;
     use hoomd_microstate::property::Point;
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, InnerProduct};
     use rand::{SeedableRng, rngs::StdRng};
     use rstest::*;
 
@@ -101,7 +102,8 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(1);
         let a = Point::new(Cartesian::from([1.0, -5.0, 2.5]));
         let translate = Translate {
-            maximum_distance: d.try_into()
+            maximum_distance: d
+                .try_into()
                 .expect("hard-coded constant should be a positive real"),
         };
 

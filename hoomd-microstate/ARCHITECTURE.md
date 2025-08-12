@@ -110,8 +110,8 @@ potential epsilon/sigma, particle shape, etc...) from the state of the system.
 In many types of simulations (e.g. alchemy), this is a problem as some of these
 parameters formally become part of the microstate.
 
-HOOMD-rs maintains the separation of the `Microstate` from the simulation
-_model_, but through custom body/site properties and custom state data, HOOMD-rs
+hoomd-rs maintains the separation of the `Microstate` from the simulation
+_model_, but through custom body/site properties and custom state data, hoomd-rs
 allows users to include any appropriate data in a `Microstate` instance that
 custom model implementations can access. The _model_ is the collections of
 methods or algorithms that advance a microstate from one **step** to the next.
@@ -134,7 +134,7 @@ header file. Cases where the user could use the same algorithms multiple times
 on a single step required an additional instance variable to ensure that they
 produced uncorrelated random numbers.
 
-HOOMD-rs will solve these problems by including both the simulation _step_ and a
+hoomd-rs will solve these problems by including both the simulation _step_ and a
 _substep_ as members of `Microstate`. While this choice does not follow a formal
 statistical mechanics definition, it does fit in to a more practical definition.
 _Model_ implementations DO modify the step (e.g. an integrator increases the
@@ -222,7 +222,7 @@ decision. The box wrap method is _expensive_ to compute O(N * N_neighbors)
 times. For data structures like the AABB tree, that have no internal notion of
 periodicity, it required 27 image offset queries on the tree (in 3D).
 
-HOOMD-rs will solve this problem by storing ghost particles explicitly. Spatial
+hoomd-rs will solve this problem by storing ghost particles explicitly. Spatial
 data structures will not need to be aware of the periodic boundary conditions,
 nor will they need to be aligned with the boundaries in any way. This also
 opens up the ability for very complex user-provided boundary conditions.

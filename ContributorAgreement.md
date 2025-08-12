@@ -1,6 +1,6 @@
-# HOOMD-rs Contributor Agreement
+# hoomd-rs Contributor Agreement
 
-These terms apply to your contribution to the HOOMD-rs Open Source Project ("Project") owned or managed by the Regents of the University of Michigan ("Michigan"), and set out the intellectual property rights you grant to Michigan in the contributed materials. If this contribution is on behalf of a company, the term "you" will also mean the company you identify below. If you agree to be bound by these terms, fill in the information requested below and provide your signature.
+These terms apply to your contribution to the hoomd-rs Open Source Project ("Project") owned or managed by the Regents of the University of Michigan ("Michigan"), and set out the intellectual property rights you grant to Michigan in the contributed materials. If this contribution is on behalf of a company, the term "you" will also mean the company you identify below. If you agree to be bound by these terms, fill in the information requested below and provide your signature.
 
 1. The term "contribution" means any source code, object code, patch, tool, sample, graphic, specification, manual, documentation, or any other material posted or submitted by you to a project.
 2. With respect to any worldwide copyrights, or copyright applications and registrations, in your contribution:

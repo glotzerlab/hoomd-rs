@@ -17,7 +17,9 @@ use hoomd_microstate::{Body, Microstate};
 use rand::Rng;
 use std::ops::AddAssign;
 
+mod cutoff_pair;
 mod external;
+mod hamiltonian;
 mod sweep;
 mod translate;
 
@@ -92,6 +94,8 @@ The generic type names are:
 * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
+
+See the [Implementations on Foreign Types](#foreign-impls) section below for examples.
 */
 pub trait DeltaEnergyOne<B, S, C> {
     /** Compute the change in energy.
@@ -102,8 +106,9 @@ pub trait DeltaEnergyOne<B, S, C> {
     identifies which body in `initial_microstate` is changing.
 
     Returns:
-    <!-- \Delta E = E_\mathrm{final} - E_\mathrm{initial} -->
-    <math display="block" class="tml-display" style="display:block math;"><mrow><mpadded lspace="0"><mi mathvariant="normal">Δ</mi></mpadded><mi>E</mi><mo>=</mo><msub><mi>E</mi><mpadded lspace="0"><mi>final</mi></mpadded></msub><mo>−</mo><msub><mi>E</mi><mpadded lspace="0"><mi>initial</mi></mpadded></msub></mrow></math>
+    ```math
+    \Delta E = E_\mathrm{final} - E_\mathrm{initial}
+    ```
     */
     #[must_use]
     fn delta_energy_one(
@@ -153,7 +158,7 @@ let mut microstate = Microstate::new();
 microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
 let d = 0.1;
 let translate = Translate { maximum_distance: d.try_into()? };
-let translate_sweep = Sweep{ local: translate };
+let translate_sweep = Sweep(translate);
 
 let mut count = Count::default();
 

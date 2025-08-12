@@ -1,46 +1,94 @@
 [workspace]
 
-members = [
-  "hoomd-interaction",
-  "hoomd-mc",
-  "hoomd-md",
-  "hoomd-microstate",
-  "hoomd-utility",
-  "hoomd-vector"
-]
-
 resolver = "3"
+members = ["examples",
+           "hoomd-bevy",
+           "hoomd-geometry",
+           "hoomd-gsd",
+           "hoomd-interaction",
+           "hoomd-mc",
+           "hoomd-microstate",
+           "hoomd-utility",
+           "hoomd-vector",
+           "tools/build-wasm-doc-examples",
+          ]
+
+# Include only core hoomd simulation crates by default so that `cargo build`,
+# `cargo test` and similar commands operate only on the core code by default.
+# The `hoomd-bevy` crate depends on `bevy` which takes a long time to download
+# and compile.
+default-members = ["examples",
+                   "hoomd-geometry",
+                   "hoomd-gsd",
+                   "hoomd-interaction",
+                   "hoomd-mc",
+                   "hoomd-microstate",
+                   "hoomd-utility",
+                   "hoomd-vector",
+                  ]
 
 [workspace.package]
 version = "0.0.0"
 edition = "2024"
 rust-version = "1.86"
 homepage = "https://glotzerlab.engin.umich.edu"
-repository = "https://github.com/glotzerlab/hoomd"
+repository = "https://github.com/glotzerlab/hoomd-rs"
 license = "BSD-3-Clause"
 keywords = ["molecular-dynamics", "monte-carlo", "simulation"]
 categories = ["science"]
 
 [workspace.dependencies]
 # Subcrates
+hoomd-bevy = { path = "hoomd-bevy" }
+hoomd-geometry = { path = "hoomd-geometry" }
+hoomd-gsd = { path = "hoomd-gsd" }
 hoomd-interaction = { path = "hoomd-interaction" }
 hoomd-mc = { path = "hoomd-mc" }
-hoomd-md = { path = "hoomd-md" }
 hoomd-microstate = { path = "hoomd-microstate" }
 hoomd-utility = { path = "hoomd-utility" }
 hoomd-vector = { path = "hoomd-vector" }
-
-# Common dependencies
-rand = "0.9.0"
-thiserror = "2.0.12"
-# Note: thiserror does not appear in the public API and therefore does not
-# impact semantic versioning.
 
 # Common dev dependencies
 approx = "0.5.1"
 divan = "0.1.17"
 rstest = "0.25.0"
 anyhow = "1.0.98"
+tempfile = "3.20.0"
+clap = {version = "4.5.40", features = ["derive"]}
+
+# Common dependencies
+itertools = "0.14.0"
+rand = "0.9.0"
+thiserror = "2.0.12"
+
+[workspace.dependencies.bevy]
+version = "0.16.1"
+default-features = false
+features = ["async_executor",
+            "bevy_asset",
+            "bevy_color",
+            "bevy_log",
+            "bevy_render",
+            "bevy_sprite",
+            "bevy_state",
+            "bevy_text",
+            "bevy_ui",
+            "bevy_window",
+            "bevy_winit",
+            "default_font",
+            "multi_threaded",
+            "png",
+            "std",
+            "sysinfo_plugin",
+            "webgl2",
+            "x11",
+            "bevy_dev_tools"]
+
+[workspace.dependencies.bevy_diagnostic]
+version = "0.16.1"
+
+[workspace.dependencies.bevy_winit]
+version = "0.16.1"
 
 [workspace.lints.rust]
 missing_docs = "warn"
@@ -48,6 +96,9 @@ missing_docs = "warn"
 [workspace.lints.clippy]
 cargo = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
+
+# Bevy pulls in many duplicate dependencies and there is nothing we can do about it.
+multiple_crate_versions = "allow"
 
 # allow some pedantic rules
 cast_precision_loss = "allow"
@@ -83,3 +134,117 @@ needless_pass_by_ref_mut = "warn"
 
 [workspace.metadata.typos]
 default.extend-words = { ratatui = "ratatui" }
+
+[workspace.metadata.docs.rs]
+# TODO: Check that this works after release. It may need to be in package.metadata
+# https://docs.rs/about/metadata
+rustdoc-args = [ "--html-in-header", "katex.html" ]
+
+# Optimize for size in wasm builds
+[profile.release-wasm]
+opt-level = 'z'
+lto = 'thin'  # TODO: Switch back to true after migrating to GitHub Pages for docs.
+codegen-units = 1
+inherits = "release"
+
+[profile.dev-wasm]
+inherits = "dev"
+
+# Bevy is extremely slow in debug builds, build it with optimizations
+# to avoid this: https://bevy.org/learn/quick-start/getting-started/setup/#compile-with-performance-optimizations
+# Explicitly list all bevy packates as we may want to be able to debug
+# other dependencies.
+[profile.dev.package.bevy]
+opt-level = 3
+[profile.dev.package.bevy_a11y]
+opt-level = 3
+# [profile.dev.package.bevy_animation]
+# opt-level = 3
+[profile.dev.package.bevy_app]
+opt-level = 3
+[profile.dev.package.bevy_asset]
+opt-level = 3
+[profile.dev.package.bevy_asset_macros]
+opt-level = 3
+# [profile.dev.package.bevy_audio]
+# opt-level = 3
+[profile.dev.package.bevy_color]
+opt-level = 3
+[profile.dev.package.bevy_core_pipeline]
+opt-level = 3
+[profile.dev.package.bevy_derive]
+opt-level = 3
+[profile.dev.package.bevy_diagnostic]
+opt-level = 3
+[profile.dev.package.bevy_ecs]
+opt-level = 3
+[profile.dev.package.bevy_ecs_macros]
+opt-level = 3
+[profile.dev.package.bevy_encase_derive]
+opt-level = 3
+# [profile.dev.package.bevy_gilrs]
+# opt-level = 3
+# [profile.dev.package.bevy_gizmos]
+# opt-level = 3
+[profile.dev.package.bevy_gizmos_macros]
+opt-level = 3
+# [profile.dev.package.bevy_gltf]
+# opt-level = 3
+[profile.dev.package.bevy_image]
+opt-level = 3
+[profile.dev.package.bevy_input]
+opt-level = 3
+[profile.dev.package.bevy_input_focus]
+opt-level = 3
+[profile.dev.package.bevy_internal]
+opt-level = 3
+[profile.dev.package.bevy_log]
+opt-level = 3
+[profile.dev.package.bevy_macro_utils]
+opt-level = 3
+[profile.dev.package.bevy_math]
+opt-level = 3
+[profile.dev.package.bevy_mesh]
+opt-level = 3
+[profile.dev.package.bevy_mikktspace]
+opt-level = 3
+# [profile.dev.package.bevy_pbr]
+# opt-level = 3
+[profile.dev.package.bevy_picking]
+opt-level = 3
+[profile.dev.package.bevy_platform]
+opt-level = 3
+[profile.dev.package.bevy_ptr]
+opt-level = 3
+[profile.dev.package.bevy_reflect]
+opt-level = 3
+[profile.dev.package.bevy_reflect_derive]
+opt-level = 3
+[profile.dev.package.bevy_render]
+opt-level = 3
+[profile.dev.package.bevy_render_macros]
+opt-level = 3
+[profile.dev.package.bevy_scene]
+opt-level = 3
+[profile.dev.package.bevy_sprite]
+opt-level = 3
+[profile.dev.package.bevy_state]
+opt-level = 3
+[profile.dev.package.bevy_state_macros]
+opt-level = 3
+[profile.dev.package.bevy_tasks]
+opt-level = 3
+[profile.dev.package.bevy_text]
+opt-level = 3
+[profile.dev.package.bevy_time]
+opt-level = 3
+[profile.dev.package.bevy_transform]
+opt-level = 3
+[profile.dev.package.bevy_ui]
+opt-level = 3
+[profile.dev.package.bevy_utils]
+opt-level = 3
+[profile.dev.package.bevy_window]
+opt-level = 3
+[profile.dev.package.bevy_winit]
+opt-level = 3

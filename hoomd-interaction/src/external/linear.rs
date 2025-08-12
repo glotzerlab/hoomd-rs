@@ -6,12 +6,13 @@
 
 use super::super::SiteEnergy;
 use hoomd_microstate::property::Position;
-use hoomd_vector::{Unit, Vector};
+use hoomd_vector::{InnerProduct, Unit};
 
 /** Linear potential based on position.
 
-<!-- U = \alpha \cdot \vec{n} \cdot ( \vec{r} - \vec{p} ) -->
-<math display="block" class="tml-display" style="display:block math;"><mrow><mi>U</mi><mo>=</mo><mi>α</mi><mo>⋅</mo><mover><mi>n</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>⋅</mo><mo form="prefix" stretchy="false">(</mo><mover><mi>r</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo>−</mo><mover><mi>p</mi><mo stretchy="false" style="transform:scale(0.75) translate(10%, 30%);">→</mo></mover><mo form="postfix" stretchy="false">)</mo></mrow></math>
+```math
+U = \alpha \cdot \vec{n} \cdot ( \vec{r} - \vec{p} )
+```
 
 Computes a linear external potential at a point in space relative to the plane
 origin `p`, plane normal `n`, and the interaction strength `alpha`.
@@ -35,17 +36,17 @@ let linear = Linear { alpha: 2.0,
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Linear<V> {
-    /// Interaction strength (`[energy] [length]^(-1)`).
+    /// Interaction strength *(\[energy\] \[length\]^(-1))*.
     pub alpha: f64,
-    /// Point on the plane where U=0 (`[length]`).
+    /// Point on the plane where U=0 *(\[length\])*.
     pub plane_origin: V,
-    /// Vector normal to the plane (unitless).
+    /// Vector normal to the plane *(unitless)*.
     pub plane_normal: Unit<V>,
 }
 
 impl<V> Linear<V>
 where
-    V: Vector,
+    V: InnerProduct,
 {
     /** Compute the energy of a point in the linear field.
 
@@ -77,7 +78,7 @@ where
 impl<S, V> SiteEnergy<S> for Linear<V>
 where
     S: Position<Vector = V>,
-    V: Vector,
+    V: InnerProduct,
 {
     #[inline]
     fn site_energy(&self, site_properties: &S) -> f64 where {

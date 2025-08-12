@@ -15,6 +15,7 @@ use rand::{Rng, SeedableRng, rngs::StdRng};
 use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, LennardJones};
 
 fn main() {
+    #[cfg(not(target_arch = "wasm32"))]
     divan::main();
 }
 
@@ -24,7 +25,7 @@ fn energy(bencher: Bencher) {
 
     let epsilon: f64 = rng.random();
     let sigma: f64 = rng.random();
-    let lj: LennardJones = LennardJones::new(epsilon, sigma);
+    let lj: LennardJones = LennardJones { epsilon, sigma };
 
     bencher
         .counter(ItemsCount::from(1_u32))
@@ -38,7 +39,7 @@ fn force(bencher: Bencher) {
 
     let epsilon: f64 = rng.random();
     let sigma: f64 = rng.random();
-    let lj: LennardJones = LennardJones::new(epsilon, sigma);
+    let lj: LennardJones = LennardJones { epsilon, sigma };
 
     bencher
         .counter(ItemsCount::from(1_u32))
