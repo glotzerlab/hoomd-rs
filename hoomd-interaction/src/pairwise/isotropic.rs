@@ -7,7 +7,7 @@
 use super::IsotropicEnergy;
 use crate::SitePairEnergy;
 use hoomd_microstate::property::Position;
-use hoomd_vector::Vector;
+use hoomd_vector::Metric;
 
 /** Compute isotropic properties from a pair of sites
 
@@ -41,10 +41,10 @@ assert_eq!(energy, -1.5);
 */
 pub struct Isotropic<E>(pub E);
 
-impl<V, S, E> SitePairEnergy<S> for Isotropic<E>
+impl<M, S, E> SitePairEnergy<S> for Isotropic<E>
 where
-    S: Position<Vector = V>,
-    V: Vector,
+    S: Position<Metric = M>,
+    M: Metric,
     E: IsotropicEnergy,
 {
     #[inline]

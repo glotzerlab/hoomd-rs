@@ -15,11 +15,13 @@ use rand::{Rng, SeedableRng};
 use hoomd_utility::random::Counter;
 
 fn main() {
+    #[cfg(not(target_arch = "wasm32"))]
     divan::main();
 }
 
 const N: &[usize] = &[1, 4, 8, 16, 32];
 
+#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = N)]
 fn bench_rand_chacha<const N: usize>(bencher: Bencher) {
     bencher.counter(ItemsCount::from(N)).bench_local(|| {
@@ -28,6 +30,7 @@ fn bench_rand_chacha<const N: usize>(bencher: Bencher) {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = N)]
 fn bench_chacha20<const N: usize>(bencher: Bencher) {
     bencher.counter(ItemsCount::from(N)).bench_local(|| {
@@ -36,6 +39,7 @@ fn bench_chacha20<const N: usize>(bencher: Bencher) {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = N)]
 fn bench_counter<const N: usize>(bencher: Bencher) {
     bencher.counter(ItemsCount::from(N)).bench_local(|| {

@@ -8,60 +8,61 @@
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
 
-/*! Tools for non-Euclidean geometries. Includes trait [`Sphere`] which calculates geodesic
-distances on a the surface of an N-sphere, and trait [`Hyperboloid`] which calculates
-geodesic distances on the hyperboloid embedded in [`Minkowski`]. 
+/*! Tools for non-Euclidean geometries. The trait [`CurvedManifold`] implements the `geodesic_distance` method
+for calculating geodesic distances for manifolds imbedded in a metric vector space. This crate Includes the struct
+ [`Sphere`], an embedding of an N-sphere within (N+1)-dimensional cartesian space, as well as [`Hyperboloid`], the
+ surface of the upper sheet of an N-dimensional two-sheeted hyperboloid embedded in (N+1)-dimensional Minkowski space.
 
 ## Sphere
 
 [`Sphere`] describes an N-sphere of radius R embedded in [`Cartesian<N+1>`]. By definition,
-the components of a point on an N-sphere satisfy 
+the components of a point on an N-sphere satisfy
 ```math
 \sum_{i=1}^{N+1}x_i^2 = R^2
 ```
-[`Sphere`] implements a distance metric which calculates the geodesic distance on the 
-surface of an N-sphere. Use [`Sphere`] to describe spaces with constant postive curvature. 
+[`Sphere`] implements a distance metric which calculates the geodesic distance on the
+surface of an N-sphere. Use [`Sphere`] to describe spaces with constant postive curvature.
 
 ## Hyperboloid
-[`Hyperboloid`] describes the upper sheet of an N-dimensional two-sheeted hyperboloid with 
-skirt R. The components of a point on the hyperboloid satisfy 
+[`Hyperboloid`] describes the upper sheet of an N-dimensional two-sheeted hyperboloid with
+skirt R. The components of a point on the hyperboloid satisfy
 ```math
 x_1^2 + \cdots + x_{N-1}^2 - x_{N}^2 = -R^2
 ```
-[`Hyperboloid`] implements a distance metric which calculates the geodesic distance on 
+[`Hyperboloid`] implements a distance metric which calculates the geodesic distance on
 the surface of a hyperboloid. Use [`Hyperboloid`] embdedded in [`Minkowski`] to describe
-hyperbolic space. 
+hyperbolic space.
 
 ## Minkowski
 
-[`Minkowski<N>`] implements (N-1,1)-dimensional Minkowski space with the metric signature 
-$(+ \;\cdots\; +\; -)$. [`Minkowski`] supports [`Vector`] operations such as vector addition and rescaling, but 
-is not a true inner product space. The distance metric on Minkowski space is given by the 
+[`Minkowski<N>`] implements (N-1,1)-dimensional Minkowski space with the metric signature
+$(+ \;\cdots\; +\; -)$. [`Minkowski`] supports [`Vector`] operations such as vector addition and rescaling, but
+is not a true inner product space. The distance metric on Minkowski space is given by the
 "spacetime interval"
 ```math
-d_M^2(\vec{u},\vec{v}) = (\vec{u}-\vec{v})^T \eta (\vec{u}-\vec{v}) 
+d_M^2(\vec{u},\vec{v}) = (\vec{u}-\vec{v})^T \eta (\vec{u}-\vec{v})
 = (u_1-v_1)^2 +\cdots + (u_{N-1}-v_{N-1})^2 - (u_N - v_N)^2
-``` 
+```
 
 ```
 use hoomd_manifold::Minkowski;
-use hoomd_vector::Vector;
+use hoomd_vector::{Metric,Vector};
 
 let u = Minkowski::from([1.0,0.0,0.0,-1.0]);
 let v = Minkowski::from([2.0,0.0,1.0,1.0]);
 let w = Minkowski::from([0.0,0.0,0.0,3.0]);
-let del = (u+w).distance_squared(&v);
+let del = (u+w).distance(&v);
 assert_eq!(1.0, del);
 
 ```
 ## Hyperbolic Rotations
-"Hyperbolic rotations" describe elements of the group SO(N,1), which preserve hyperboloids 
-embedded in [`Minkowski<N+1>`]. Transformations include pure spatial rotations as well as 
-"boosts". 
+"Hyperbolic rotations" describe elements of the group SO(N,1), which preserve hyperboloids
+embedded in [`Minkowski<N+1>`]. Transformations include pure spatial rotations as well as
+"boosts".
 
-For two-dimensional hyperbolic surfaces, use [`HyperbolicAngle`] to implement 
+For two-dimensional hyperbolic surfaces, use [`HyperbolicAngle`] to implement
 elements of SO(2,1) which rotate points about the z-axis or boost points along the x- and y-axes.
-Use [`HyperbolicRotationMatrix`] to generate the matrix from the values defined by [`HyperbolicAngle`]. 
+Use [`HyperbolicRotationMatrix`] to generate the matrix from the values defined by [`HyperbolicAngle`].
 ```
 // Rotation about z axis
 use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
@@ -85,10 +86,10 @@ let boosted = matrix.hyperbolic_rotate(&v);
 // rotated is approximately [1.0,sinh(0.5),cosh(0.5)]);
 ```
 
-For three-dimensional hyperbolic surfaces, use [`Biquaternion`]. Biquaternions are a 
+For three-dimensional hyperbolic surfaces, use [`Biquaternion`]. Biquaternions are a
 generalization of quaternions which allow for complex coefficients. Unit biquaternions give
  a representation of SO(3,1); this can either be done by converting the biquaternions
- to a [`HyperbolicRotationMatrix`] or by using the ['UnitBiquaternion'] algebra directly. 
+ to a [`HyperbolicRotationMatrix`] or by using the [`UnitBiquaternion`] algebra directly.
 
  ```math
 // Rotate point in 3D hyperbolic space about z axis using matrix representation
@@ -106,7 +107,7 @@ let x = Minkowski::from([0.0, 1.0, 0.0, 1.0]);
 let rotation_about_x = HyperbolicRotationMatrix::from(v);
 let rotated = rotation_about_x.hyperbolic_rotate(&x);
 // rotated vector is approximately [0.0, 0.0, 1.0, 1.0];
-``` 
+```
 ```
 // Boost point in 3D hyperbolic space in x direction using biquaternion algebra
 use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, Biquaternion, Minkowski};
@@ -125,33 +126,29 @@ let boosted = v.expect("non-zero biquaternion").hyperbolic_rotate(&x);
 ```
 */
 
-mod curved_interaction;
-mod sphere;
-mod minkowski;
-mod hyperbolic_angle;
 mod biquaternion;
-mod manifold_translate;
+mod hyperbolic_angle;
+mod minkowski;
+mod sphere;
 
 pub use {
-    minkowski::{Minkowski, HyperbolicRotationMatrix, HyperbolicDisk, EightEight},
-    hyperbolic_angle::HyperbolicAngle,
     biquaternion::{Biquaternion, UnitBiquaternion},
-    manifold_translate::{HyperbolicTranslate, SphericalTranslate},
-    curved_interaction::CurvedIsotropic,
-    sphere::SphericalDisk,
+    hyperbolic_angle::HyperbolicAngle,
+    minkowski::{HyperbolicDisk, HyperbolicRotationMatrix, Hyperboloid, Minkowski},
+    sphere::{Sphere, SphericalDisk},
 };
 
+use hoomd_vector::Vector;
 use thiserror::Error;
-use hoomd_vector::{Vector, InnerProduct};
 
-// / Enumerate possible sources of error in fallible vector math operations.
+/// Enumerate possible sources of error in fallible vector math operations.
 #[non_exhaustive]
-#[derive(Error, PartialEq, Debug)] 
+#[derive(Error, PartialEq, Debug)]
 pub enum Error {
     /// Attempted converting a biquaternion not belonging to the hyperboloid to a 4-vector
     #[error("Biquaternion does not fit required format of [re,re,re,im] to describe a 4-vector")]
     InvalidBiquaternion4Vector,
-    
+
     /// Attempted to normalize a norm zero biquaternion
     #[error("Biquaternion with norm zero cannot be normalized")]
     InvalidBiquaternionMagnitude,
@@ -164,96 +161,34 @@ pub enum Error {
     #[error("specified points have different skirt widths")]
     PointsBelongToDifferentHyperboloids,
 
+    /// Attempted to compare two points belonging to hyperboloids with different skirt widths
+    #[error("points do not belong to same hyperboloid")]
+    InvalidHyperboloidPointComparison,
+
+    /// Attempted to compare two points belonging to spheres with different radii
+    #[error("points do not belong to same sphere")]
+    InvalidSpherePointComparison,
 }
 
-/** Implement methods on non-Euclidean spaces
+/** Operations for the fundamental domain on an arbitrary manifold
 */
-pub trait CurvedManifold {
-    /** Distance of the geodesic path passing through two points on the hyperboloid. The length scale rho 
-    sets the curvature strength; rho is the sphere radius for positive curvature, while rho is the hyperboloid 
-    skirt width for negative curvature. 
-    */
-    fn geodesic_distance(&self, other: &Self, rho: f64) -> f64;
-}
-
-/** Operations defined on the upper sheet of a two-sheeted hyperboloid embedded in some metric 
-vector space.
- */
-pub trait Hyperboloid: CurvedManifold {
-    /** Distance of the geodesic path passing through two points on the hyperboloid.
-     */
-    #[inline]
-    fn hyperbolic_distance(&self, other: &Self, skirt: f64) -> f64;
-    /** Distance of the geodesic path passing through a given point and the cusp of 
-    the hyperboloid
-    */
-    #[inline]
-    fn distance_from_cusp(&self, skirt: f64) -> f64;
-    /** Projects points on the hyperboloid onto the Poincare disk/ball. Points on an N-dimensional
-     hyperboloid are projected through the tip of the cusp on the lower sheet onto 
-     the perpendicular plane. 
-    */
-    #[inline]
-    fn to_poincare(&self, skirt: f64) -> Vec<f64>;
-    /** Get the skirt width of the hyperboloid]
-    */
-    #[inline]
-    fn get_skirt_width(&self) -> f64;
-}
-
-/** Operations for the fundamental domain on a hyperboloid
-*/
-pub trait FundamentalDomain: Hyperboloid {
+pub trait FundamentalDomain {
     /** Distance of the geodesic path passing through a given point on the hyperbola and the
     boundary of the fundamental domain.
     */
-    #[inline]
-    fn distance_to_boundary(&self, skirt: f64) -> f64;
+    fn distance_to_boundary(&self) -> f64;
     /** List of points on the boundary of the fundamental domain
-    */
-    #[inline]
-    fn boundary_points(m: usize, skirt: f64) -> Vec::<(f64, f64)>;
+     */
+    fn boundary_points(m: usize, skirt: f64) -> Vec<(f64, f64)>;
 }
 
-/** Rotations in hyperbolic space
+/** Linear transformations preserving hyperboloids.
  */
 pub trait HyperbolicRotate<V: Vector> {
     /// Type of the related rotation matrix
     type Matrix: HyperbolicRotate<V>;
     /** Apply a SO(N-1,1) transformation to an N-dimensional Minkowski vector
-    */
+     */
     #[must_use]
     fn hyperbolic_rotate(&self, vector: &V) -> V;
-}
-/** Sphere
- */
-pub trait Sphere: InnerProduct + CurvedManifold {
-    /** Distance of the geodesic path passing through two points on the sphere.
-     */
-    #[inline]
-    fn sphere_distance(&self, other: &Self, radius: f64) -> f64;
-    /** Stereographic projection of the N-sphere to an N-dimensional plane. 
-    */
-    #[inline]
-    fn stereographic_projection(&self, radius: f64) -> Vec<f64>;
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn compute_add_generic<T>(a: T, b: T) -> T
-    where
-        T: Vector,
-    {
-        a + b
-    }
-
-    #[test]
-    fn add_generic() {
-        let a = Minkowski::from([1.0, 2.0, 3.0]);
-        let b = Minkowski::from([4.0, 5.0, 6.0]);
-        let c = compute_add_generic(a, b);
-        assert_eq!(c, [5.0, 7.0, 9.0].into());
-    }
 }

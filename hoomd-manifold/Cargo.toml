@@ -1,10 +1,12 @@
 [package]
 name = "hoomd-manifold"
+description = "Manifold and Curved Geometries library."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 homepage.workspace = true
 repository.workspace = true
+readme = "hoomd-manifold/README.md"
 license.workspace = true
 keywords.workspace = true
 categories.workspace = true
@@ -12,19 +14,17 @@ categories.workspace = true
 [dependencies]
 thiserror.workspace = true
 rand.workspace = true
-hoomd-interaction.workspace = true
-hoomd-mc.workspace = true
-hoomd-microstate.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 libm = "0.2.11"
 num = "0.4.3"
+approx = "0.5.1"
 
 [dev-dependencies]
-approx.workspace = true
 divan.workspace = true
 paste = "1.0.15"
 rstest.workspace = true
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ratatui = "0.28.0"
 
 [lints]
@@ -32,12 +32,12 @@ workspace = true
 
 [[bench]]
 name = "minkowski"
-harness = false 
+harness = false
 
 [[bench]]
 name = "biquaternion"
-harness = false 
+harness = false
 
 [[bench]]
 name = "hyperbolic_angle"
-harness = false 
+harness = false

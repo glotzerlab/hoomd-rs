@@ -3,17 +3,19 @@
 ## Vector
 
 The `hoomd_vector` crate defines a generic `Vector` trait that is independent of
-representation. The trait consists of methods that can _only_ be applied to all vectors
-in a normed vector space with *n* dimensions:
+representation. The trait consists of methods that can be applied to all vectors
+in a metric vector space with *n* dimensions:
 
 - Vector addition & subtraction
 - Multiplication by a scalar
-- Dot product
-- Norm and norm squared
 
-This design allows the majority of HOOMD-rs code to be written _independent_ of the
+This design allows the majority of hoomd-rs code to be written _independent_ of the
 vector's representation and dimension. Some specific calculations may require
 cross products, defined in specific trait: `Cross`.
+
+## Inner Product
+
+`hoomd_vector` implements an `InnerProduct` subtrait of `Vector` which includes the dot product, norm, and norm squared methods.
 
 ### Cartesian vector
 
@@ -24,7 +26,7 @@ vectors.
 ### User-defined vectors
 
 Users can implement custom types (e.g. spherical coordinates) that implement `Vector`
-as needed. Many internal computations inside HOOMD-rs rely on Cartesian vectors, so
+as needed. Many internal computations inside hoomd-rs rely on Cartesian vectors, so
 all user-defined vectors must implement the conversion traits:
 ```
 impl From<CustomVector> for vector::Cartesian<3> {

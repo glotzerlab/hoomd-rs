@@ -153,7 +153,7 @@ rotation. [`RotationMatrix::rotate`] is typically several times faster than
 
 # Random distributions
 
-`hoomd_vector` interoperators with [`rand`] to generate random vectors and rotations.
+`hoomd_vector` interoperates with [`rand`] to generate random vectors and rotations.
 
 The [`StandardUniform`](rand::distr::StandardUniform) distribution
 samples rotations uniformly from the set of all rotations and vectors from the
@@ -355,17 +355,23 @@ pub trait Vector:
     + Div<f64, Output = Self>
     + DivAssign<f64>
     + PartialEq
+    + Metric
     + Mul<f64, Output = Self>
     + MulAssign<f64>
     + Sub<Self, Output = Self>
     + SubAssign
     + Neg<Output = Self>
 {
-    /** Compute the squared distance between two vectors belonging to a metric space.
+}
+
+/** Operates on elements on a metric space. [`Metric`] implements a distance metric.
+*/
+pub trait Metric {
+    /** Compute the squared distance between two points belonging to a metric space.
 
     # Example
     ```
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, Metric};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let x = Cartesian::from([0.0, 1.0, 1.0]);
@@ -377,20 +383,17 @@ pub trait Vector:
      */
     fn distance_squared(&self, other: &Self) -> f64;
 
-    /** Compute the distance between two vectors belonging to a metric space.
+    /** Compute the distance between two points belonging to a metric space.
     # Example
     ```
-    use hoomd_vector::{Cartesian, Vector};
+    use hoomd_vector::{Cartesian, Metric};
 
     let x = Cartesian::from([0.0, 0.0]);
     let y = Cartesian::from([3.0, 4.0]);
     assert_eq!(5.0, x.distance(&y));
     ```
      */
-    #[inline]
-    fn distance(&self, other: &Self) -> f64 {
-        self.distance_squared(other).sqrt()
-    }
+    fn distance(&self, other: &Self) -> f64;
 }
 
 /** Operate on elements of an inner product space.

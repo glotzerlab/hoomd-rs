@@ -13,16 +13,19 @@
 TODO: Expand documentation.
  */
 
+use hoomd_microstate::{Body, Microstate};
+
 pub mod external;
 pub mod pairwise;
 
-mod single;
-pub use single::Single;
-
 mod cutoff_pair;
-pub use cutoff_pair::CutoffPair;
-
 mod hamiltonian;
+mod single;
+mod zero;
+
+pub use cutoff_pair::CutoffPair;
+pub use single::Single;
+pub use zero::Zero;
 
 /** Compute the total energy of a potential applied to the microstate.
 
@@ -76,7 +79,7 @@ Combine them with [`Single`] newtype for use with MC and MD simulations or to
 compute system-wide properties.
 
 The generic type names are:
-* `S`: The `Site::properties` type.
+* `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 
 ## Examples
 
@@ -95,7 +98,7 @@ struct Custom {
 
 impl<S> SiteEnergy<S> for Custom
 where
-    S: Position<Vector = Cartesian<2>>
+    S: Position<Metric = Cartesian<2>>
 {
     fn site_energy(&self, site_properties: &S) -> f64 {
         self.a * (site_properties.position()[0] / self.b).cos()
@@ -133,6 +136,9 @@ Combine them with the [`CutoffPair`] and the [`Isotropic`](pairwise::Isotropic)
 or [`Anisotropic`](pairwise::Anisotropic) newtypes for use with MC and MD
 simulations or to compute system-wide properties.
 
+The generic type names are:
+* `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+
 ## Examples
 
 Implement a custom site energy function:
@@ -149,7 +155,7 @@ struct Custom {
 
 impl<S> SitePairEnergy<S> for Custom
 where
-    S: Position<Vector = Cartesian<2>>
+    S: Position<Metric = Cartesian<2>>
 {
     fn site_pair_energy(&self, a: &S, b: &S) -> f64 {
         self.epsilon * a.position().dot(&b.position())
@@ -177,132 +183,102 @@ pub trait SitePairEnergy<S> {
     fn site_pair_energy(&self, a: &S, b: &S) -> f64;
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use hoomd_microstate::boundary::Open;
-    use hoomd_microstate::property::{Point, Position};
-    use hoomd_microstate::{Body, Microstate};
-    use hoomd_vector::Cartesian;
-    use rstest::*;
+/** Compute the change energy as a function of a single modified body.
 
-    mod single {
-        use super::*;
+Some trial moves apply to a single body at a time and use a Hamiltonian that
+implements `DeltaEnergyOne` to efficiently compute the change in energy.
 
-        struct TestSE;
+The generic type names are:
+* `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+* `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+* `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 
-        impl<S> SiteEnergy<S> for TestSE
-        where
-            S: Position<Vector = Cartesian<2>>,
-        {
-            fn site_energy(&self, site_properties: &S) -> f64 {
-                site_properties.position()[0] + site_properties.position()[1]
-            }
-        }
+See the [Implementors](#implementors) section below for examples.
+*/
+pub trait DeltaEnergyOne<B, S, C> {
+    /** Compute the change in energy.
 
-        #[fixture]
-        fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
-            let mut microstate = Microstate::new();
-            microstate
-                .extend_bodies([
-                    Body::point(Cartesian::from([1.0, 0.0])),
-                    Body::point(Cartesian::from([-1.0, 3.0])),
-                ])
-                .expect("hard-coded bodies should be in the boundary");
-            microstate
-        }
+    `initial_microstate` describes the initial configuration and `final_body`
+    describes the new body configuration. In the final configuration, the
+    body may have changed properties and/or sites. The index `body_index`
+    identifies which body in `initial_microstate` is changing.
 
-        #[rstest]
-        fn single_total(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
-            let test_se = TestSE;
-            let single = Single(test_se);
-
-            assert_eq!(single.total_energy(&microstate), 3.0);
-        }
-
-        #[rstest]
-        fn single_site(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
-            let test_se = TestSE;
-            let single = Single(test_se);
-
-            assert_eq!(single.site_energy(&microstate.sites()[0].properties), 1.0);
-            assert_eq!(single.site_energy(&microstate.sites()[1].properties), 2.0);
-        }
-    }
-
-    mod cutoff_pair {
-        use super::*;
-        use crate::pairwise::Isotropic;
-
-        #[fixture]
-        fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
-            let mut microstate = Microstate::new();
-            microstate
-                .extend_bodies([
-                    Body::point(Cartesian::from([0.0, 0.0])),
-                    Body::point(Cartesian::from([1.0, 0.0])),
-                    Body::point(Cartesian::from([0.0, 5.0])),
-                    Body::point(Cartesian::from([1.0, 5.0])),
-                ])
-                .expect("hard-coded bodies should be in the boundary");
-            microstate
-        }
-
-        #[rstest]
-        fn blanket_fn(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
-            // Ensure that closures can be used as IsotropicEnergy
-            let cutoff_pair = CutoffPair {
-                r_cut: 2.0,
-                evaluator: Isotropic(|r| 1.0 / (r * 2.0)),
-            };
-
-            // Two pairs at a distance of 1.0 each with energy 1/2.
-            assert_eq!(cutoff_pair.total_energy(&microstate), 1.0);
-        }
-
-        #[rstest]
-        fn large_r_cut(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
-            // Ensure that CutoffPair respects the r_cut value set.
-            let cutoff_pair = CutoffPair {
-                r_cut: 5.0_f64.next_up(),
-                evaluator: Isotropic(|r| 1.0 / (r * 2.0)),
-            };
-
-            // Two pairs at a distance of 1.0 each with energy 1/2.
-            // Plus two pairs at a distance of 5.0 with energy 1/10
-            assert_eq!(cutoff_pair.total_energy(&microstate), 1.2);
-        }
-
-        #[test]
-        fn body_exclusion() {
-            // Ensure that CutoffPair excludes pairs in the same body.
-            let body_a = Body {
-                properties: Point::new(Cartesian::from([0.0, 0.0])),
-                sites: [
-                    Point::new(Cartesian::from([1.0, 1.0])),
-                    Point::new(Cartesian::from([1.0, -1.0])),
-                    Point::new(Cartesian::from([-1.0, 1.0])),
-                    Point::new(Cartesian::from([-1.0, -1.0])),
-                ]
-                .into(),
-            };
-            let body_b = Body {
-                properties: Point::new(Cartesian::from([3.0, 0.0])),
-                sites: body_a.sites.clone(),
-            };
-
-            let mut microstate = Microstate::new();
-            microstate
-                .extend_bodies([body_a, body_b])
-                .expect("hard-coded bodies should be in the boundary");
-
-            let cutoff_pair = CutoffPair {
-                r_cut: 1.0_f64.next_up(),
-                evaluator: Isotropic(|_r| 1.0),
-            };
-
-            // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
-            assert_eq!(cutoff_pair.total_energy(&microstate), 2.0);
-        }
-    }
+    Returns:
+    ```math
+    \Delta E = E_\mathrm{final} - E_\mathrm{initial}
+    ```
+    */
+    #[must_use]
+    fn delta_energy_one(
+        &self,
+        initial_microstate: &Microstate<B, S, C>,
+        body_index: usize,
+        final_body: &Body<B, S>,
+    ) -> f64;
 }
+
+/** Compute the change energy when a single body is inserted.
+
+Some trial moves insert a single body at a time and use a Hamiltonian that
+implements `DeltaEnergyInsert` to efficiently compute the change in energy.
+
+The generic type names are:
+* `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+* `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+* `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
+
+See the [Implementors](#implementors) section below for examples.
+*/
+pub trait DeltaEnergyInsert<B, S, C> {
+    /** Compute the change in energy.
+
+    `initial_microstate` describes the initial configuration and `new_body`
+    describes the new body configuration. The final configuration includes
+    all bodies in the initial microstate and `new_body`.
+
+    Returns:
+    ```math
+    \Delta E = E_\mathrm{final} - E_\mathrm{initial}
+    ```
+    */
+    #[must_use]
+    fn delta_energy_insert(
+        &self,
+        initial_microstate: &Microstate<B, S, C>,
+        new_body: &Body<B, S>,
+    ) -> f64;
+}
+
+/** Compute the change energy when a single body is removed.
+
+Some trial moves remove a single body at a time and use a Hamiltonian that
+implements `DeltaEnergyRemove` to efficiently compute the change in energy.
+
+The generic type names are:
+* `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+* `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+* `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
+
+See the [Implementors](#implementors) section below for examples.
+*/
+pub trait DeltaEnergyRemove<B, S, C> {
+    /** Compute the change in energy.
+
+    `initial_microstate` describes the initial configuration and `body_index` is
+    the index of the body to remove. The final configuration includes all bodies
+    in the initial microstate except the body previously at `body_index`.
+
+    Returns:
+    ```math
+    \Delta E = E_\mathrm{final} - E_\mathrm{initial}
+    ```
+    */
+    #[must_use]
+    fn delta_energy_remove(
+        &self,
+        initial_microstate: &Microstate<B, S, C>,
+        body_index: usize,
+    ) -> f64;
+}
+
+// TODO: More doc examples for all implementors.

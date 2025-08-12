@@ -4,7 +4,8 @@
 /*! Implement Sweep
 */
 
-use super::{Count, DeltaEnergyOne, LocalTrial, Trial};
+use super::{Count, LocalTrial, Trial};
+use hoomd_interaction::DeltaEnergyOne;
 use hoomd_microstate::boundary::Boundary;
 use hoomd_microstate::property::Position;
 use hoomd_microstate::{Body, Microstate, Transform};
@@ -24,9 +25,9 @@ the change in energy computed by the given `hamiltonian` and $`kT`$ is the given
 # Example
 
 ```
-use hoomd_mc::{Sweep, Translate, Trial, Zero};
-use hoomd_microstate::property::Position;
-use hoomd_microstate::{Body, Microstate};
+use hoomd_interaction::Zero;
+use hoomd_mc::{Sweep, Translate, Trial};
+use hoomd_microstate::{Body, Microstate, property::Position};
 use hoomd_vector::Cartesian;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -34,7 +35,7 @@ let mut microstate = Microstate::new();
 microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
 let d = 0.1;
 let translate = Translate { maximum_distance: d.try_into()? };
-let translate_sweep = Sweep { local: translate };
+let translate_sweep = Sweep(translate);
 
 let hamiltonian = Zero;
 let kt = 1.0;
@@ -47,27 +48,15 @@ for _ in 0..1_000 {
 # }
 ```
 */
-pub struct Sweep<L> {
-    /// The local trial to apply.
-    pub local: L,
-}
+pub struct Sweep<L>(pub L);
 
-impl<L> Sweep<L> {
-    /// Construct a new `Sweep` with the given local trial.
-    #[inline]
-    #[must_use]
-    pub fn new(local: L) -> Self {
-        Self { local }
-    }
-}
-
-impl<V, B, S, C, L, H> Trial<Microstate<B, S, C>, H> for Sweep<L>
+impl<M, B, S, C, L, H> Trial<Microstate<B, S, C>, H> for Sweep<L>
 where
-    B: Copy + Clone + Default + Transform<S> + Position<Vector = V>,
-    S: Clone + Default + Position<Vector = V>,
+    B: Copy + Clone + Default + Transform<S> + Position<Metric = M>,
+    S: Clone + Default + Position<Metric = M>,
     L: LocalTrial<B>,
     H: DeltaEnergyOne<B, S, C>,
-    C: Boundary<V, B, S>,
+    C: Boundary<M, B, S>,
 {
     type Count = Count;
     type Macrostate = f64;
@@ -97,7 +86,7 @@ where
             // energy and update methods.
             match microstate
                 .boundary()
-                .wrap_body(self.local.propose(&mut rng, trial.properties))
+                .wrap_body(self.0.propose(&mut rng, trial.properties))
             {
                 Ok(new_properties) => {
                     trial.properties = new_properties;
@@ -125,9 +114,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Translate, Zero};
+    use crate::Translate;
     use ::approx::assert_relative_eq;
-    use hoomd_interaction::{Single, SiteEnergy, TotalEnergy};
+    use hoomd_interaction::{Single, SiteEnergy, TotalEnergy, Zero};
     use hoomd_microstate::{MicrostateBuilder, boundary::Square, property::Point};
     use hoomd_vector::{Cartesian, InnerProduct};
     use rstest::*;
@@ -177,7 +166,7 @@ mod tests {
                 .try_into()
                 .expect("hard-coded constant should be positive"),
         };
-        let translate_sweep = Sweep { local: translate };
+        let translate_sweep = Sweep(translate);
 
         let mut position_accumulator = Cartesian::default();
         let mut energy_accumulator = 0.0;
@@ -212,7 +201,7 @@ mod tests {
             .expect("the hard-coded bodies should be in the boundary");
         let hamiltonian = Zero;
         let translate = Right;
-        let translate_sweep = Sweep { local: translate };
+        let translate_sweep = Sweep(translate);
 
         // The first move to the right ends in the boundary and should be accepted.
         let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);
@@ -244,7 +233,7 @@ mod tests {
             .expect("the hard-coded bodies should be in the boundary");
         let hamiltonian = Zero;
         let translate = Right;
-        let translate_sweep = Sweep { local: translate };
+        let translate_sweep = Sweep(translate);
 
         // The first move to the right ends in the boundary and should be accepted.
         let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);

@@ -77,7 +77,7 @@ where
 
 impl<S, V> SiteEnergy<S> for Linear<V>
 where
-    S: Position<Vector = V>,
+    S: Position<Metric = V>,
     V: InnerProduct,
 {
     #[inline]

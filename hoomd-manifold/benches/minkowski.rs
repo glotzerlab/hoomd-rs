@@ -10,32 +10,35 @@
 
 use divan::counter::ItemsCount;
 use divan::{self, Bencher, black_box};
-use rand::distr::Uniform;
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
-use hoomd_manifold::{Minkowski, Hyperboloid, HyperbolicAngle, HyperbolicRotationMatrix, HyperbolicRotate};
+use hoomd_manifold::{
+    HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Hyperboloid, Minkowski,
+};
+use hoomd_vector::Metric;
 
 fn main() {
+    #[cfg(not(target_arch = "wasm32"))]
     divan::main();
-}
-
-fn create_random_vector_pair<const N: usize, R: Rng>(rng: &mut R) -> (Minkowski<N>, Minkowski<N>) {
-    (rng.random::<Minkowski<N>>(), rng.random::<Minkowski<N>>())
 }
 
 fn create_random_hyperboloid<R: Rng>(rng: &mut R) -> Minkowski<3> {
     let v = rng.random::<HyperbolicAngle>();
     let matrix = HyperbolicRotationMatrix::from(v);
-    let origin = Minkowski::from([0.0,0.0,1.0]);
+    let origin = Minkowski::from([0.0, 0.0, 1.0]);
     matrix.hyperbolic_rotate(&origin)
 }
 
 fn create_random_hyperboloid_pair<R: Rng>(rng: &mut R) -> (Minkowski<3>, Minkowski<3>) {
-    (create_random_hyperboloid::<_>(rng), create_random_hyperboloid::<_>(rng))
+    (
+        create_random_hyperboloid::<_>(rng),
+        create_random_hyperboloid::<_>(rng),
+    )
 }
 
 const DIMENSIONS: &[usize] = &[2, 3, 8, 16, 32, 128];
 
+#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn hyperboloid_distance_vec3(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -43,19 +46,23 @@ fn hyperboloid_distance_vec3(bencher: Bencher) {
     bencher
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| create_random_hyperboloid_pair::<_>(&mut rng))
-        .bench_local_values(|(a, b)| black_box(a.hyperbolic_distance(&b, 1.0)));
+        .bench_local_values(|(a, b)| {
+            black_box(Hyperboloid::from(&a).distance(&Hyperboloid::from(&b)))
+        });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn to_poincare_vec3(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| create_random_hyperboloid::<_>(& mut rng))
-        .bench_local_values(|a| black_box(a.to_poincare(1.0)));
+        .with_inputs(|| create_random_hyperboloid::<_>(&mut rng))
+        .bench_local_values(|a| black_box(Hyperboloid::from(&a).to_poincare()));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = DIMENSIONS)]
 fn gen_random_minkowski<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -65,11 +72,12 @@ fn gen_random_minkowski<const N: usize>(bencher: Bencher) {
         .bench_local(|| black_box(rng.random::<Minkowski<N>>()));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn gen_random_hyperboloid(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
     bencher
         .counter(ItemsCount::from(1_u32))
-        .bench_local(|| black_box(create_random_hyperboloid::<_>(& mut rng)));
+        .bench_local(|| black_box(create_random_hyperboloid::<_>(&mut rng)));
 }

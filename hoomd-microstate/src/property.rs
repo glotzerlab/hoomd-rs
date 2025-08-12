@@ -19,6 +19,16 @@ use hoomd_vector::Cartesian;
 let point = Point::new(Cartesian::from([1.0, -3.0]));
 ```
 
+[`OrientedPoint`] contains both the position and orientation of an extended body:
+```
+use hoomd_microstate::property::OrientedPoint;
+use hoomd_vector::{Angle, Cartesian};
+
+let point = OrientedPoint { position: Cartesian::from([1.0, -3.0]),
+    orientation: Angle::from(1.2),
+};
+```
+
 # Custom property types
 
 When none of the provided types meets your needs, you can define a custom type.
@@ -53,7 +63,7 @@ impl Orientation for Custom {
 }
 
 impl Position for Custom {
-    type Vector = Cartesian<3>;
+    type Metric = Cartesian<3>;
 
     fn position(&self) -> &Cartesian<3> {
         &self.position
@@ -75,6 +85,9 @@ macro to work in general.
 mod point;
 pub use point::Point;
 
+mod oriented_point;
+pub use oriented_point::OrientedPoint;
+
 /** Locate sites and bodies.
 
 When applied to site properties, [`Position`] describes the location of the site
@@ -91,13 +104,13 @@ Position vectors have units of *\[length\]*.
 */
 pub trait Position {
     /// Every position is located in this vector space.
-    type Vector;
+    type Metric;
 
     /// The position of this body or site *\[length\]*.
-    fn position(&self) -> &Self::Vector;
+    fn position(&self) -> &Self::Metric;
 
     /// The mutable position of this body or site *\[length\]*.
-    fn position_mut(&mut self) -> &mut Self::Vector;
+    fn position_mut(&mut self) -> &mut Self::Metric;
 }
 
 /** Rotate sites and bodies.

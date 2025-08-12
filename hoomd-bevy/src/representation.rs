@@ -14,8 +14,10 @@ represent sites or bodies. Some, such as those ending in `Boundary` are thin
 outlines intended to represent the simulation boundaries.
  */
 
-pub(crate) mod disk;
-pub use disk::{Disk, DiskAssets, DiskMaterial};
+pub mod disk;
 
 pub(crate) mod rectangular_boundary;
 pub use rectangular_boundary::RectangularBoundary;
+
+pub(crate) mod hyperbolic_disk;
+pub use hyperbolic_disk::{HyperbolicDisk, HyperbolicDiskAssets, HyperbolicDiskMaterial};

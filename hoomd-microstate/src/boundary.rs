@@ -11,9 +11,11 @@ use crate::property::Position;
 
 use thiserror::Error;
 
+mod eighteight;
 mod open;
 mod square;
 
+pub use eighteight::EightEight;
 pub use open::Open;
 pub use square::Square;
 
@@ -41,13 +43,13 @@ methods describe fully non-periodic boundary conditions. You can make your
 boundary periodic by implementing the other methods accordingly.
 
 The generic type names are:
-* `V`: The [`Vector`](hoomd_vector::Vector) space in which bodies and sites exist.
+* `M`: The [`Metric`](hoomd_vector::Metriic) space in which bodies and sites exist.
 * `B`: The [`Body::properties`](crate::Body) type.
 * `S`: The [`Site::properties`](crate::Site) type.
 */
-pub trait Boundary<V, B, S> {
+pub trait Boundary<M, B, S> {
     /// Test whether a given point is inside the boundary.
-    fn is_inside(&self, point: &V) -> bool;
+    fn is_inside(&self, point: &M) -> bool;
 
     /** Transform body properties into the boundary.
 
@@ -65,7 +67,7 @@ pub trait Boundary<V, B, S> {
     #[inline]
     fn wrap_body(&self, body_properties: B) -> Result<B, Error>
     where
-        B: Position<Vector = V>,
+        B: Position<Metric = M>,
     {
         if self.is_inside(body_properties.position()) {
             Ok(body_properties)
@@ -90,7 +92,7 @@ pub trait Boundary<V, B, S> {
     #[inline]
     fn wrap_site(&self, site_properties: S) -> Result<S, Error>
     where
-        S: Position<Vector = V>,
+        S: Position<Metric = M>,
     {
         if self.is_inside(site_properties.position()) {
             Ok(site_properties)
@@ -98,4 +100,8 @@ pub trait Boundary<V, B, S> {
             Err(Error::CannotWrapSiteProperties)
         }
     }
+
+    // NOTE: One might think to make wrap<> generic on a property type.
+    // That is not possible because types that implement this trait *must*
+    // use the same bounds -- preventing more generic boundary conditions.
 }
