@@ -111,6 +111,24 @@ pub trait SitePairEnergy<S> {
     fn site_pair_energy(&self, a: &S, b: &S) -> f64;
 }
 
+/** TODO: Add Force documentation */
+pub trait Force {
+    /// Compute the net force on a single site.
+    fn net_force_on_site();
+    
+    /// Compute the net force on a body.
+    fn net_force_on_body();
+}
+
+/** TODO: Add Torque documentation */
+pub trait Torque {
+    /// Compute the net torque on a single site.
+    fn net_torque_on_site();
+    
+    /// Compute the net torque on a body.
+    fn net_torque_on_body();
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
