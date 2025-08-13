@@ -6,7 +6,7 @@
 
 use super::{Count, LocalTrial, Trial};
 use hoomd_interaction::DeltaEnergyOne;
-use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Position};
+use hoomd_microstate::{Body, Microstate, Transform, boundary::{GenerateGhosts, Wrap}, property::Position};
 
 use rand::Rng;
 
@@ -54,7 +54,7 @@ where
     S: Clone + Default + Position<Vector = V>,
     L: LocalTrial<B>,
     H: DeltaEnergyOne<B, S, C>,
-    C: Wrap<B> + Wrap<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     type Count = Count;
     type Macrostate = f64;

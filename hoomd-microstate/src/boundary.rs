@@ -31,7 +31,7 @@ pub enum Error {
 }
 
 /// The maximum number of possible ghosts.
-const MAX_GHOSTS: usize = 8;
+pub(crate) const MAX_GHOSTS: usize = 8;
 
 // Ideally, MAX_GHOSTS would be associated with the boundary type, but that is
 // not currently possible in Rust.

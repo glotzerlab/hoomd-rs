@@ -197,7 +197,7 @@ where
             result.push(new_site(-1.0, 0.0, 0.0));
         }
         if near_left {
-            result.push(new_site(-1.0, 0.0, 0.0));
+            result.push(new_site(1.0, 0.0, 0.0));
         }
         if near_top {
             result.push(new_site(0.0, -1.0, 0.0));

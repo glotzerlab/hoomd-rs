@@ -6,7 +6,7 @@
 
 use super::{Count, Trial};
 use hoomd_interaction::{DeltaEnergyInsert, TotalEnergy};
-use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Position};
+use hoomd_microstate::{Body, Microstate, Transform, boundary::{GenerateGhosts, Wrap}, property::Position};
 
 use rand::distr::Distribution;
 
@@ -53,10 +53,10 @@ pub struct QuickInsert<D> {
 impl<V, B, S, C, D, H> Trial<Microstate<B, S, C>, H> for QuickInsert<D>
 where
     B: Position<Vector = V> + Transform<S>,
-    S: Position<Vector = V>,
+    S: Position<Vector = V> + Default,
     D: Distribution<Body<B, S>>,
     H: DeltaEnergyInsert<B, S, C> + TotalEnergy<Microstate<B, S, C>>,
-    C: Wrap<B> + Wrap<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     type Count = Count;
     type Macrostate = usize;

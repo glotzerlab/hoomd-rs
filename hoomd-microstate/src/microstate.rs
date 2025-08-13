@@ -6,8 +6,9 @@
 
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
+use tinyvec::ArrayVec;
 
-use crate::boundary::{Open, Wrap};
+use crate::boundary::{GenerateGhosts, Open, Wrap, MAX_GHOSTS};
 use crate::property::Position;
 use crate::{Body, Error, Site, Transform};
 
@@ -182,6 +183,12 @@ pub struct Microstate<B, S = B, C = Open> {
     /// Tags of the sites associated with the bodies (in body index order).
     bodies_sites: Vec<Vec<usize>>,
 
+    /// Ghost sites in the system reference frame.
+    ghosts: VecWithTags<Site<S>>,
+
+    /// Tags of the ghosts associated with a given site (in site index order).
+    sites_ghosts: Vec<ArrayVec<[usize; MAX_GHOSTS]>>,
+
     /// The range of allowed particle positions and a description of any periodicity.
     boundary: C,
 }
@@ -229,6 +236,8 @@ impl<B, S> Microstate<B, S, Open> {
             bodies: VecWithTags::new(),
             sites: VecWithTags::new(),
             bodies_sites: Vec::new(),
+            ghosts: VecWithTags::new(),
+            sites_ghosts: Vec::new(),
             boundary: Open,
         }
     }
@@ -511,9 +520,61 @@ impl<B, S, C> Microstate<B, S, C> {
 impl<V, B, S, C> Microstate<B, S, C>
 where
     B: Transform<S> + Position<Vector = V>,
-    S: Position<Vector = V>,
-    C: Wrap<B> + Wrap<S>,
+    S: Position<Vector = V> + Default,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
+    /** Update the ghosts of a site.
+
+    Given a site in the boundary, update that site's ghosts to be consistent
+    with that site's properties. This may require adding or removing ghosts.
+    */
+    fn update_site_ghosts(sites: &VecWithTags<Site<S>>, site_index: usize,
+        boundary: &C, sites_ghosts: &mut Vec<ArrayVec<[usize; MAX_GHOSTS]>>,
+        ghosts: &mut VecWithTags<Site<S>>) {
+        let site = &sites.items[site_index];
+        let new_ghosts = boundary.generate_ghosts(&site.properties);
+        let ghost_tags = &mut sites_ghosts[site_index];
+
+        if ghost_tags.len() < new_ghosts.len() {
+            let ghosts_to_add = new_ghosts.len() - ghost_tags.len();
+            for _ in 0..ghosts_to_add {
+                let ghost_tag = ghosts.push(Site {
+                    site_tag: site.site_tag,
+                    body_tag: site.body_tag,
+                    properties: S::default()});
+                ghost_tags.push(ghost_tag);
+            }            
+        } else if ghost_tags.len() > new_ghosts.len() {
+            let ghosts_to_remove = ghost_tags.len() - new_ghosts.len();
+            for ghost_tag in ghost_tags.iter().rev().take(ghosts_to_remove) {
+                let ghost_index = ghosts.indices[*ghost_tag]
+                    .expect("sites_ghosts and ghost.indices should be consistent");
+                ghosts.remove(ghost_index);
+            }
+
+            ghost_tags.truncate(new_ghosts.len());
+        }
+
+        debug_assert_eq!(ghost_tags.len(), new_ghosts.len());
+        
+        for (new_ghost, ghost_tag) in new_ghosts.into_iter().zip(ghost_tags) {
+            let ghost_index = ghosts.indices[*ghost_tag]
+                .expect("sites_ghosts and ghost.indices should be consistent");
+            ghosts.items[ghost_index].properties = new_ghost;
+        }
+    }
+    
+    fn update_body_site_ghosts(&mut self, body_index: usize) {
+        
+    
+        for site_tag in &self.bodies_sites[body_index] {
+            let site_index = self.sites.indices[*site_tag]
+                .expect("bodies_sites and site_indices should be consistent");
+            Self::update_site_ghosts(&self.sites, site_index, &self.boundary,
+                &mut self.sites_ghosts, &mut self.ghosts);
+        }
+    }
+
     /** Add a new body to the microstate.
 
     Each body is assigned a unique tag. The first body is given tag 0,
@@ -604,6 +665,7 @@ where
                     .expect("sites should be validated as wrappable prior to this loop"),
                 body_tag,
             });
+            self.sites_ghosts.push(ArrayVec::new());
 
             body_sites.push(site_tag);
         }
@@ -614,6 +676,8 @@ where
             item: body,
         });
         self.bodies_sites.push(body_sites);
+
+        self.update_body_site_ghosts(self.bodies().len() - 1);
 
         Ok(body_tag)
     }
@@ -699,13 +763,21 @@ where
         let body_tag = self.bodies.items[body_index].tag;
         debug_assert_eq!(self.bodies.indices[body_tag], Some(body_index));
 
-        // Remove sites. `add_body` adds sites in increasing index order, so
-        // remove them in reverse order to avoid keep the other bodies' sites
-        // in increasing order.
+        // Remove sites and their associated ghosts. `add_body` adds sites in
+        // increasing index order, so remove them in reverse order to avoid keep
+        // the other bodies' sites in increasing order.
         let body_sites = self.bodies_sites.swap_remove(body_index);
         for site_tag in body_sites.iter().rev() {
             let site_index = self.sites.indices[*site_tag]
-                .expect("bodies_sites and site_indices should be consistent");
+                .expect("bodies_sites and sites.indices should be consistent");
+
+            let site_ghosts = self.sites_ghosts.swap_remove(site_index);
+            for ghost_tag in site_ghosts.iter().rev() {
+                let ghost_index = self.ghosts.indices[*ghost_tag]
+                    .expect("sites_ghosts and ghosts.indices should be consistent");
+                self.ghosts.remove(ghost_index);
+            }
+            
             self.sites.remove(site_index);
         }
 
@@ -785,6 +857,8 @@ where
                 .expect("sites should be validated as wrappable prior to this loop");
         }
 
+        self.update_body_site_ghosts(body_index);
+
         Ok(())
     }
 
@@ -816,6 +890,8 @@ where
         self.bodies.clear();
         self.sites.clear();
         self.bodies_sites.clear();
+        self.ghosts.clear();
+        self.sites_ghosts.clear();
     }
 }
 
@@ -984,6 +1060,11 @@ impl<B, S, C> Microstate<B, S, C> {
         &self.sites.items
     }
 
+    #[inline]
+    pub fn ghosts(&self) -> &[Site<S>] {
+        &self.ghosts.items
+    }
+
     /** Identify the index of a site given a tag.
 
     Use [`site_indices`](Microstate::site_indices) to locate a specific site in
@@ -1052,6 +1133,7 @@ where
         self.sites
             .items
             .iter()
+            .chain(self.ghosts.items.iter())
             .filter(move |s| point.distance_squared(s.properties.position()) < r.powi(2))
     }
 }
@@ -1293,8 +1375,8 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     pub fn try_build<V>(self) -> Result<Microstate<B, S, C>, Error>
     where
         B: Transform<S> + Position<Vector = V>,
-        S: Position<Vector = V>,
-        C: Wrap<B> + Wrap<S>,
+        S: Position<Vector = V> + Default,
+        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     {
         let mut microstate = Microstate {
             step: self.step,
@@ -1304,6 +1386,8 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
             bodies: VecWithTags::new(),
             sites: VecWithTags::new(),
             bodies_sites: Vec::new(),
+            ghosts: VecWithTags::new(),
+            sites_ghosts: Vec::new(),
         };
 
         microstate.extend_bodies(self.bodies)?;
