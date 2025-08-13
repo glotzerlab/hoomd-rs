@@ -113,6 +113,50 @@ pub trait Position {
     fn position_mut(&mut self) -> &mut Self::Vector;
 }
 
+/** Locate velocities of the bodies.
+
+When applied to body properties [`Velocity`] describes the velocity of body 
+relative to the origin of the system coordinate system. In other words, it is
+the velocity of the body's center of mass in the system reference frame.
+
+# Units
+
+Velocity vectors have units of *\[length/time\]*.
+*/
+
+pub trait Velocity {
+    /// Every velocity is located in this vector space.
+    type Vector;
+
+    /// The velocity of this body *\[length/time\]*.
+    fn velocity(&self) -> &Self::Vector;
+
+    /// The mutable velocity of this body *\[length/time\]*.
+    fn velocity_mut(&mut self) -> &mut Self::Vector;
+}
+
+/** Locate acceleration of the bodies.
+
+When applied to body properties [`Acceleration`] describes the velocity of body 
+relative to the origin of the system coordinate system. In other words, it is
+the velocity of the body's center of mass in the system reference frame.
+
+# Units
+
+Velocity vectors have units of *\[length^2/time\]*.
+*/
+
+pub trait Acceleration {
+    /// Every position is located in this vector space.
+    type Vector;
+
+    /// The position of this body or site *\[length^2/time\].
+    fn acceleration(&self) -> &Self::Vector;
+
+    /// The mutable position of this body or site *\[length^2/time\].
+    fn acceleration_mut(&mut self) -> &mut Self::Vector;
+}
+
 /** Rotate sites and bodies.
 
 When applied to site properties, [`Orientation`] describes the rotation from the
