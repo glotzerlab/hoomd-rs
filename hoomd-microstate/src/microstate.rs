@@ -8,7 +8,7 @@ use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use tinyvec::ArrayVec;
 
-use crate::boundary::{GenerateGhosts, Open, Wrap, MAX_GHOSTS};
+use crate::boundary::{GenerateGhosts, MAX_GHOSTS, Open, Wrap};
 use crate::property::Position;
 use crate::{Body, Error, Site, Transform};
 
@@ -528,9 +528,13 @@ where
     Given a site in the boundary, update that site's ghosts to be consistent
     with that site's properties. This may require adding or removing ghosts.
     */
-    fn update_site_ghosts(sites: &VecWithTags<Site<S>>, site_index: usize,
-        boundary: &C, sites_ghosts: &mut Vec<ArrayVec<[usize; MAX_GHOSTS]>>,
-        ghosts: &mut VecWithTags<Site<S>>) {
+    fn update_site_ghosts(
+        sites: &VecWithTags<Site<S>>,
+        site_index: usize,
+        boundary: &C,
+        sites_ghosts: &mut Vec<ArrayVec<[usize; MAX_GHOSTS]>>,
+        ghosts: &mut VecWithTags<Site<S>>,
+    ) {
         let site = &sites.items[site_index];
         let new_ghosts = boundary.generate_ghosts(&site.properties);
         let ghost_tags = &mut sites_ghosts[site_index];
@@ -541,9 +545,10 @@ where
                 let ghost_tag = ghosts.push(Site {
                     site_tag: site.site_tag,
                     body_tag: site.body_tag,
-                    properties: S::default()});
+                    properties: S::default(),
+                });
                 ghost_tags.push(ghost_tag);
-            }            
+            }
         } else if ghost_tags.len() > new_ghosts.len() {
             let ghosts_to_remove = ghost_tags.len() - new_ghosts.len();
             for ghost_tag in ghost_tags.iter().rev().take(ghosts_to_remove) {
@@ -556,22 +561,25 @@ where
         }
 
         debug_assert_eq!(ghost_tags.len(), new_ghosts.len());
-        
+
         for (new_ghost, ghost_tag) in new_ghosts.into_iter().zip(ghost_tags) {
             let ghost_index = ghosts.indices[*ghost_tag]
                 .expect("sites_ghosts and ghost.indices should be consistent");
             ghosts.items[ghost_index].properties = new_ghost;
         }
     }
-    
+
     fn update_body_site_ghosts(&mut self, body_index: usize) {
-        
-    
         for site_tag in &self.bodies_sites[body_index] {
             let site_index = self.sites.indices[*site_tag]
                 .expect("bodies_sites and site_indices should be consistent");
-            Self::update_site_ghosts(&self.sites, site_index, &self.boundary,
-                &mut self.sites_ghosts, &mut self.ghosts);
+            Self::update_site_ghosts(
+                &self.sites,
+                site_index,
+                &self.boundary,
+                &mut self.sites_ghosts,
+                &mut self.ghosts,
+            );
         }
     }
 
@@ -777,7 +785,7 @@ where
                     .expect("sites_ghosts and ghosts.indices should be consistent");
                 self.ghosts.remove(ghost_index);
             }
-            
+
             self.sites.remove(site_index);
         }
 

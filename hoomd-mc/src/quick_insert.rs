@@ -6,7 +6,11 @@
 
 use super::{Count, Trial};
 use hoomd_interaction::{DeltaEnergyInsert, TotalEnergy};
-use hoomd_microstate::{Body, Microstate, Transform, boundary::{GenerateGhosts, Wrap}, property::Position};
+use hoomd_microstate::{
+    Body, Microstate, Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::Position,
+};
 
 use rand::distr::Distribution;
 

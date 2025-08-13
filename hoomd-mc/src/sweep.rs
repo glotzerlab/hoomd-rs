@@ -6,7 +6,11 @@
 
 use super::{Count, LocalTrial, Trial};
 use hoomd_interaction::DeltaEnergyOne;
-use hoomd_microstate::{Body, Microstate, Transform, boundary::{GenerateGhosts, Wrap}, property::Position};
+use hoomd_microstate::{
+    Body, Microstate, Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::Position,
+};
 
 use rand::Rng;
 
