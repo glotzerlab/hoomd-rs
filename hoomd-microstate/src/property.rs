@@ -200,7 +200,7 @@ The units of [`mass`] are *\[mass\]*.
 */
 pub trait Mass {
     /// The mass of this body or site *\[mass\]*.
-    fn mass(&self) -> f64;
+    fn mass(&self) -> &f64;
 
     // TODO: do we want to provide a mutable getter?
 }
