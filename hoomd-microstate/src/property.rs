@@ -188,3 +188,19 @@ pub trait Orientation {
     /// The orientation of this body or site (mutable).
     fn orientation_mut(&mut self) -> &mut Self::Rotation;
 }
+
+/** Get the mass of sites and bodies.
+
+[`Mass`] is the quantity which determines a site or body's inertia, and which
+together with velocity determines a site or body's momentum.
+
+# Units
+
+The units of [`mass`] are *\[mass\]*.
+*/
+pub trait Mass {
+    /// The mass of this body or site *\[mass\]*.
+    fn mass(&self) -> f64;
+
+    // TODO: do we want to provide a mutable getter?
+}
