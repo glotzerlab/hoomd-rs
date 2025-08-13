@@ -29,6 +29,20 @@ let point = OrientedPoint { position: Cartesian::from([1.0, -3.0]),
 };
 ```
 
+[`DynamicsPoint`] contains the position, mass, velocity, and acceleration of an
+extended body, such as is useful for Molecular Dynamics simulations:
+```
+use hoomd_microstate::property::DynamicsPoint;
+use hoomd_vector::Cartesian;
+
+let dynamics_point = DynamicsPoint {
+    position: Cartesian::from([1.0, -3.0]),
+    mass: 1.0,
+    velocity: Cartesian::from([0.0, 1.0]),
+    acceleration: Cartesian::from([1.0, 0.0])
+};
+```
+
 # Custom property types
 
 When none of the provided types meets your needs, you can define a custom type.
@@ -87,6 +101,9 @@ pub use point::Point;
 
 mod oriented_point;
 pub use oriented_point::OrientedPoint;
+
+mod dynamics_point;
+pub use dynamics_point::DynamicsPoint;
 
 /** Locate sites and bodies.
 
