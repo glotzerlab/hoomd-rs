@@ -62,7 +62,7 @@ struct Custom {
     position: Cartesian<3>,
     orientation: Versor,
     custom: f64,
-    }
+}
 
 impl Orientation for Custom {
     type Rotation = Versor;
