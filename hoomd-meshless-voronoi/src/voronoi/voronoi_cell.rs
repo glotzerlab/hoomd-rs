@@ -1,6 +1,12 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+#![allow(clippy::all)]
+#![allow(clippy::pedantic)]
+
 use glam::DVec3;
 
-use crate::meshless_voronoi::voronoi::{half_space::HalfSpace, voronoi_face::VoronoiFace, Voronoi};
+use crate::voronoi::{Voronoi, half_space::HalfSpace, voronoi_face::VoronoiFace};
 
 use super::{
     convex_cell::{ConvexCell, ConvexCellMarker},
@@ -46,27 +52,29 @@ impl VoronoiCell {
         let loc = convex_cell.loc;
         let mut volume_centroid_integral = VolumeCentroidIntegral::init();
 
-        let mut maybe_faces: Vec<Option<VoronoiFace>> =
-            (0..convex_cell.clipping_planes.len()).map(|_| None).collect();
+        let mut maybe_faces: Vec<Option<VoronoiFace>> = (0..convex_cell.clipping_planes.len())
+            .map(|_| None)
+            .collect();
 
         // Helper function to decide which faces should be constucted.
         let maybe_init_face = |maybe_face: &mut Option<VoronoiFace>, clipping_plane_idx: usize| {
             // Only construct faces for clipping planes of valid dimensionality.
             let half_space = &convex_cell.clipping_planes[clipping_plane_idx];
-            let should_construct_face =
-                convex_cell.dimensionality.vector_is_valid(half_space.normal())
-                    && match half_space {
-                        // Don't construct internal (non-boundary) faces twice.
-                        HalfSpace {
-                            right_idx: Some(right_idx),
-                            shift: None,
-                            ..
-                        } => {
-                            // Only construct face if: neighbour has not been treated yet or is inactive
-                            *right_idx > idx || mask.map_or(false, |mask| !mask[*right_idx])
-                        }
-                        _ => true,
-                    };
+            let should_construct_face = convex_cell
+                .dimensionality
+                .vector_is_valid(half_space.normal())
+                && match half_space {
+                    // Don't construct internal (non-boundary) faces twice.
+                    HalfSpace {
+                        right_idx: Some(right_idx),
+                        shift: None,
+                        ..
+                    } => {
+                        // Only construct face if: neighbour has not been treated yet or is inactive
+                        *right_idx > idx || mask.map_or(false, |mask| !mask[*right_idx])
+                    }
+                    _ => true,
+                };
             if should_construct_face {
                 maybe_face.get_or_insert(VoronoiFace::init(convex_cell, clipping_plane_idx));
             }
@@ -92,11 +100,22 @@ impl VoronoiCell {
             }
         }
         // Filter out uninitialized faces and finalize the rest
-        faces.extend(maybe_faces.into_iter().flatten().map(|face| face.finalize()));
+        faces.extend(
+            maybe_faces
+                .into_iter()
+                .flatten()
+                .map(|face| face.finalize()),
+        );
 
         let VolumeCentroidIntegral { volume, centroid } = volume_centroid_integral.finalize();
 
-        VoronoiCell::init(loc, centroid, volume, convex_cell.safety_radius, convex_cell.idx)
+        VoronoiCell::init(
+            loc,
+            centroid,
+            volume,
+            convex_cell.safety_radius,
+            convex_cell.idx,
+        )
     }
 
     pub(super) fn finalize(&mut self, face_connections_offset: usize, face_count: usize) {
@@ -126,15 +145,19 @@ impl VoronoiCell {
 
     /// Get the indices of the faces that have this cell as its left or right
     /// neighbour.
-    pub fn face_indices<'a>(&'a self, voronoi: &'a Voronoi) -> &[usize] {
+    // TODO: i put lifetime marker on [usize]. Not sure if this is okay
+    pub fn face_indices<'a>(&'a self, voronoi: &'a Voronoi) -> &'a [usize] {
         &voronoi.cell_face_connections
             [self.face_connections_offset..(self.face_connections_offset + self.face_count)]
     }
 
     /// Get an `Iterator` over the Voronoi faces that have this cell as their
     /// left _or_ right generator.
-    pub fn faces<'a>(&'a self, voronoi: &'a Voronoi) -> impl Iterator<Item = &VoronoiFace> + 'a {
-        self.face_indices(voronoi).iter().map(|&i| &voronoi.faces[i])
+    // TODO: i put lifetime marker on VoronoiFace. Not sure if this is okay
+    pub fn faces<'a>(&'a self, voronoi: &'a Voronoi) -> impl Iterator<Item = &'a VoronoiFace> + 'a {
+        self.face_indices(voronoi)
+            .iter()
+            .map(|&i| &voronoi.faces[i])
     }
 
     /// Get an `Iterator` over the indices of the neighbouring generators of this Voronoi cell.
@@ -145,7 +168,8 @@ impl VoronoiCell {
                 return None;
             }
             Some(if face.left() == self.idx {
-                face.right().expect("Face is guaranteed to not be a boundary face by now")
+                face.right()
+                    .expect("Face is guaranteed to not be a boundary face by now")
             } else {
                 face.left()
             })

@@ -1,3 +1,9 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+#![allow(clippy::all)]
+#![allow(clippy::pedantic)]
+
 pub trait GetMutMultiple {
     type Output;
 
@@ -38,8 +44,7 @@ impl<T> GetMutMultiple for Vec<T> {
         let v_i = &mut self[i] as *mut T;
         let v_j = &mut self[j] as *mut T;
         let v_k = &mut self[k] as *mut T;
-
-        (&mut (*v_i), &mut (*v_j), &mut (*v_k))
+        unsafe { (&mut (*v_i), &mut (*v_j), &mut (*v_k)) }
     }
 }
 

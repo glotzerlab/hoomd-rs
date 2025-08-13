@@ -7,17 +7,12 @@
 #![doc(
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
-// TODO: Documentation
+
+/*! Implements methods for analyzing microstate data. The basis for much of the analyses is
+the `SpatialHistogram` struct, which allows the user to construct histograms from any data type
+which implements `Add`.
+*/
 
 mod density;
-mod local;
-pub mod meshless_voronoi; 
 
-use hoomd_microstate::Microstate;
-use hoomd_vector::Cartesian;
-
-pub use {
-    local::{NeighborList, GeneratorHyperbolic},
-    meshless_voronoi::{Voronoi},
-    density::SpatialHistogram,
-};
+pub use density::SpatialHistogram;

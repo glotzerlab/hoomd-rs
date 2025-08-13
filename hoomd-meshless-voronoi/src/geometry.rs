@@ -1,21 +1,15 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 //! A few general-purpose geometry functions and structs,
 //! which might also be useful for users of this library.
 
-#[cfg(feature = "dashu")]
-use dashu::Integer;
+#![allow(clippy::all)]
+#![allow(clippy::pedantic)]
+
 use glam::{DMat3, DMat4, DVec3, DVec4};
 #[cfg(feature = "ibig")]
 use ibig::IBig as Integer;
-#[cfg(feature = "malachite")]
-use malachite_base::num::arithmetic::traits::Sign;
-#[cfg(feature = "malachite")]
-use malachite_nz::integer::Integer;
-#[cfg(feature = "num_bigint")]
-use num_bigint::{BigInt as Integer, Sign};
-#[cfg(feature = "rug")]
-use rug::Integer;
-#[cfg(feature = "malachite")]
-use std::cmp::Ordering;
 
 /// A simple plane struct.
 #[derive(Clone, Debug)]
@@ -106,6 +100,7 @@ pub struct Sphere {
     pub radius: f64,
 }
 
+#[allow(clippy::all)]
 impl Sphere {
     /// Zero sized sphere at the origin.
     pub const EMPTY: Sphere = Sphere {
@@ -161,6 +156,8 @@ impl Sphere {
     /// Circumscribed sphere through four points.
     ///
     /// See <https://mathworld.wolfram.com/Circumsphere.html>.
+    #[allow(clippy::all)]
+    #[allow(clippy::pedantic)]
     pub fn from_four_points(a: DVec3, b: DVec3, c: DVec3, d: DVec3) -> Sphere {
         let x = DVec4 {
             x: a.x,
@@ -220,6 +217,7 @@ impl Sphere {
 /// The result is negative when `v` lies inside and positive when `v` lies
 /// outside the circumsphere. We work in relative coordinates to simplify the
 /// determinant to a 4×4 determinant.
+#[allow(clippy::all)]
 pub(crate) fn in_sphere_test(a: DVec3, b: DVec3, c: DVec3, d: DVec3, v: DVec3) -> f64 {
     let b = (b - a).extend((b - a).length_squared());
     let c = (c - a).extend((c - a).length_squared());
@@ -268,6 +266,7 @@ macro_rules! big_int_det3x3 {
 
 /// Test whether `v` lies inside or outside the circumsphere around `a`, `b`,
 /// `c` and `d` using exact integer arithmetic.
+#[allow(clippy::all)]
 pub(crate) fn in_sphere_test_exact(a: &[i64], b: &[i64], c: &[i64], d: &[i64], v: &[i64]) -> f64 {
     let b = big_int!(b, a);
     let c = big_int!(c, a);
@@ -281,35 +280,28 @@ pub(crate) fn in_sphere_test_exact(a: &[i64], b: &[i64], c: &[i64], d: &[i64], v
     // Step 1 :
     let mut tmp1: Integer;
     let mut det: Integer;
-    big_int_det3x3!(b[1], c[1], d[1], b[2], c[2], d[2], b[3], c[3], d[3], tmp1, det);
+    big_int_det3x3!(
+        b[1], c[1], d[1], b[2], c[2], d[2], b[3], c[3], d[3], tmp1, det
+    );
     determinant -= &v[0] * &det;
-    // Step 2 
-    big_int_det3x3!(b[0], c[0], d[0], b[2], c[2], d[2], b[3], c[3], d[3], tmp1, det);
+    // Step 2
+    big_int_det3x3!(
+        b[0], c[0], d[0], b[2], c[2], d[2], b[3], c[3], d[3], tmp1, det
+    );
     determinant += &v[1] * &det;
-    // Step 3 
-    big_int_det3x3!(b[0], c[0], d[0], b[1], c[1], d[1], b[3], c[3], d[3], tmp1, det);
+    // Step 3
+    big_int_det3x3!(
+        b[0], c[0], d[0], b[1], c[1], d[1], b[3], c[3], d[3], tmp1, det
+    );
     determinant -= &v[2] * &det;
-    // Step 4 
-    big_int_det3x3!(b[0], c[0], d[0], b[1], c[1], d[1], b[2], c[2], d[2], tmp1, det);
+    // Step 4
+    big_int_det3x3!(
+        b[0], c[0], d[0], b[1], c[1], d[1], b[2], c[2], d[2], tmp1, det
+    );
     determinant += &v[3] * &det;
 
-    #[cfg(any(feature = "dashu", feature = "ibig", feature = "rug"))]
+    #[cfg(feature = "ibig")]
     let result = determinant.signum().to_f64();
-    #[cfg(feature = "dashu")]
-    let result = result.value();
-    #[cfg(feature = "malachite")]
-    let result = match determinant.sign() {
-        Ordering::Less => -1.0,
-        Ordering::Equal => 0.0,
-        Ordering::Greater => 1.0,
-    };
-    #[cfg(feature = "num_bigint")]
-    let result = match determinant.sign() {
-        Sign::Minus => -1.0,
-        Sign::NoSign => 0.0,
-        Sign::Plus => 1.0,
-    };
-
     result
 }
 
@@ -356,14 +348,13 @@ impl Aabb {
 #[cfg(test)]
 mod tests {
     use glam::DVec3;
-    use rand::{prelude::*, Rng, thread_rng, distr::StandardUniform};
+    use rand::{Rng, distr::StandardUniform, prelude::*};
 
-    use crate::meshless_voronoi::geometry::{signed_area_tri, signed_volume_tet};
-    use crate::meshless_voronoi::HalfSpace;
-    use crate::meshless_voronoi::Dimensionality;
-    use crate::meshless_voronoi::voronoi::boundary::SimulationBoundary;
+    use crate::HalfSpace;
+    use crate::geometry::{signed_area_tri, signed_volume_tet};
+    use crate::voronoi::boundary::SimulationBoundary;
 
-    use super::{in_sphere_test, in_sphere_test_exact, intersect_planes, Aabb, Plane, Sphere};
+    use super::{Aabb, Plane, Sphere, in_sphere_test, in_sphere_test_exact, intersect_planes};
 
     #[test]
     fn test_signed_volume() {
@@ -509,14 +500,27 @@ mod tests {
 
     #[test]
     fn test_insphere_equivalence() {
-        let boundary = SimulationBoundary::cuboid(DVec3::ZERO, DVec3::ONE, false, crate::meshless_voronoi::Dimensionality::ThreeD);
-        let mut rng = thread_rng();
-        let rand_dvec3 = |rng: &mut ThreadRng| {DVec3::new(
-            rand::rng().sample::<f64, StandardUniform>(StandardUniform),
-            rand::rng().sample::<f64, StandardUniform>(StandardUniform),
-            rand::rng().sample::<f64, StandardUniform>(StandardUniform))};
+        let boundary = SimulationBoundary::cuboid(
+            DVec3::ZERO,
+            DVec3::ONE,
+            false,
+            crate::Dimensionality::ThreeD,
+        );
+        let mut rng = rand::rng();
+        let rand_dvec3 = |_rng: &mut ThreadRng| {
+            DVec3::new(
+                rand::rng().sample::<f64, StandardUniform>(StandardUniform),
+                rand::rng().sample::<f64, StandardUniform>(StandardUniform),
+                rand::rng().sample::<f64, StandardUniform>(StandardUniform),
+            )
+        };
         for _ in 0..10000 {
-            let tet = vec![rand_dvec3(&mut rng), rand_dvec3(&mut rng), rand_dvec3(&mut rng), rand_dvec3(&mut rng)];
+            let tet = vec![
+                rand_dvec3(&mut rng),
+                rand_dvec3(&mut rng),
+                rand_dvec3(&mut rng),
+                rand_dvec3(&mut rng),
+            ];
             let v1 = tet[0] - tet[1];
             let v2 = tet[0] - tet[2];
             let v3 = tet[0] - tet[3];

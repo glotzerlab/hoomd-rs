@@ -1,8 +1,14 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+#![allow(clippy::all)]
+#![allow(clippy::pedantic)]
+
 use glam::DVec3;
 
 use crate::{
-    meshless_voronoi::geometry::{in_sphere_test, intersect_planes, Plane},
-    meshless_voronoi::simple_cycle::SimpleCycle,
+    geometry::{Plane, in_sphere_test, intersect_planes},
+    simple_cycle::SimpleCycle,
 };
 
 use super::{Dimensionality, Generator};
@@ -108,12 +114,42 @@ impl ConvexCell {
         let opposite = anchor + width;
 
         let neighbours = vec![
-            Neighbour::new(DVec3::new(2. * anchor.x - loc.x, loc.y, loc.z), None, None, loc),
-            Neighbour::new(DVec3::new(2. * opposite.x - loc.x, loc.y, loc.z), None, None, loc),
-            Neighbour::new(DVec3::new(loc.x, 2. * anchor.y - loc.y, loc.z), None, None, loc),
-            Neighbour::new(DVec3::new(loc.x, 2. * opposite.y - loc.y, loc.z), None, None, loc),
-            Neighbour::new(DVec3::new(loc.x, loc.y, 2. * anchor.z - loc.z), None, None, loc),
-            Neighbour::new(DVec3::new(loc.x, loc.y, 2. * opposite.z - loc.z), None, None, loc),
+            Neighbour::new(
+                DVec3::new(2. * anchor.x - loc.x, loc.y, loc.z),
+                None,
+                None,
+                loc,
+            ),
+            Neighbour::new(
+                DVec3::new(2. * opposite.x - loc.x, loc.y, loc.z),
+                None,
+                None,
+                loc,
+            ),
+            Neighbour::new(
+                DVec3::new(loc.x, 2. * anchor.y - loc.y, loc.z),
+                None,
+                None,
+                loc,
+            ),
+            Neighbour::new(
+                DVec3::new(loc.x, 2. * opposite.y - loc.y, loc.z),
+                None,
+                None,
+                loc,
+            ),
+            Neighbour::new(
+                DVec3::new(loc.x, loc.y, 2. * anchor.z - loc.z),
+                None,
+                None,
+                loc,
+            ),
+            Neighbour::new(
+                DVec3::new(loc.x, loc.y, 2. * opposite.z - loc.z),
+                None,
+                None,
+                loc,
+            ),
         ];
         let vertices = vec![
             DualVertex::new(2, 5, 0, loc, &neighbours, dimensionality),
@@ -148,7 +184,10 @@ impl ConvexCell {
     ) {
         // skip the first nearest neighbour (will be this cell)
         assert_eq!(
-            nearest_neighbours.next().expect("Nearest neighbours cannot be empty!").0,
+            nearest_neighbours
+                .next()
+                .expect("Nearest neighbours cannot be empty!")
+                .0,
             self.idx,
             "First nearest neighbour should be the generator itself!"
         );
@@ -196,7 +235,8 @@ impl ConvexCell {
         // Were any vertices clipped?
         if num_r > 0 {
             let new_idx = self.neighbours.len();
-            self.neighbours.push(Neighbour::new(ngb_loc, Some(ngb_idx), shift, self.loc));
+            self.neighbours
+                .push(Neighbour::new(ngb_loc, Some(ngb_idx), shift, self.loc));
             self.boundary.grow();
             // Compute the boundary of the (dual) topological triangulated disk around the
             // vertices to be removed.
@@ -205,7 +245,9 @@ impl ConvexCell {
             // finally we can *realy* remove the vertices.
             self.vertices.truncate(num_v);
             // Add new vertices constructed from the new clipping plane and the boundary
-            let mut cur = boundary.next().expect("Boundary contains at least 3 elements");
+            let mut cur = boundary
+                .next()
+                .expect("Boundary contains at least 3 elements");
             for next in boundary {
                 self.vertices.push(DualVertex::new(
                     cur,
@@ -236,7 +278,10 @@ impl ConvexCell {
             // Look for a suitable next vertex to extend the boundary
             let mut idx = i;
             loop {
-                assert!(idx < vertices.len(), "No suitable vertex found to extend boundary!");
+                assert!(
+                    idx < vertices.len(),
+                    "No suitable vertex found to extend boundary!"
+                );
                 let vertex = &vertices[idx];
                 match boundary.try_extend(vertex.repr.0, vertex.repr.1, vertex.repr.2) {
                     Ok(()) => {

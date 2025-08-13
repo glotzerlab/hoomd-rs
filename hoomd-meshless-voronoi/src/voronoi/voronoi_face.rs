@@ -1,11 +1,17 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+#![allow(clippy::all)]
+#![allow(clippy::pedantic)]
+
 use glam::DVec3;
 
-use crate::meshless_voronoi::geometry::signed_area_tri;
+use crate::geometry::signed_area_tri;
 
 use super::{
+    ConvexCell,
     convex_cell::ConvexCellMarker,
     integrals::{FaceIntegral, FaceIntegrator},
-    ConvexCell,
 };
 
 #[derive(Clone)]

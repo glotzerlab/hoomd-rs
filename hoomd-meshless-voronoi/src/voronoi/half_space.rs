@@ -1,6 +1,12 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+#![allow(clippy::all)]
+#![allow(clippy::pedantic)]
+
 use glam::DVec3;
 
-use crate::meshless_voronoi::geometry::Plane;
+use crate::geometry::Plane;
 
 use super::Generator;
 
@@ -20,10 +26,13 @@ pub struct HalfSpace {
 
 impl HalfSpace {
     const EPSILON: f64 = 1e-13;
-
+    /// create half space
     pub fn new(n: DVec3, p: DVec3, right_idx: Option<usize>, shift: Option<DVec3>) -> Self {
         let errb = Self::EPSILON * (1. + n.abs().dot(p.abs()));
-        debug_assert!(errb > 0., "Trying to construct halfspace with errorbound 0!");
+        debug_assert!(
+            errb > 0.,
+            "Trying to construct halfspace with errorbound 0!"
+        );
         HalfSpace {
             plane: Plane::new(n, p),
             d: n.dot(p),
@@ -46,10 +55,12 @@ impl HalfSpace {
         }
     }
 
+    /// return normal vector of the plane
     pub fn normal(&self) -> DVec3 {
         self.plane.n
     }
 
+    /// location of the generator outside of this halfspace
     pub fn right_loc(&self, left_idx: usize, generators: &[Generator]) -> DVec3 {
         if let Some(right_idx) = self.right_idx {
             let mut loc = generators[right_idx].loc();

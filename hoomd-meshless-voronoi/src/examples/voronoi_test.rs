@@ -1,15 +1,13 @@
-// testing ground
+/*! Test code for voronoi from hoomd microstates
+*/
 
 extern crate glam;
 extern crate hoomd_order;
 extern crate rand;
 
 use glam::DVec3;
-use hoomd_order::meshless_voronoi::{Voronoi, VoronoiCell, VoronoiFace};
-use rand::{prelude::*, Rng, thread_rng, distr::StandardUniform};
-use std::convert::TryInto;
-use std::env;
-use std::time::Duration;
+use hoomd_order::meshless_voronoi::Voronoi;
+use rand::{Rng, distr::StandardUniform};
 use ratatui::{
     crossterm::event::{self, Event, poll},
     layout::{Flex, Layout},
@@ -17,20 +15,26 @@ use ratatui::{
     symbols::Marker,
     widgets::{
         Block,
-        canvas::{Canvas, Circle, Points},
+        canvas::{Canvas, Points},
     },
     {DefaultTerminal, Frame},
 };
+use std::convert::TryInto;
+use std::env;
+use std::time::Duration;
 
 fn perturbed_grid(anchor: DVec3, width: DVec3, count: usize, pert: f64) -> Vec<DVec3> {
     let mut generators = vec![];
-    let mut rng = thread_rng();
     for n in 0..count {
         for m in 0..count {
             let pos = DVec3 {
-                x: n as f64 + 0.5 + pert * (rand::rng().sample::<f64, StandardUniform>(StandardUniform) as f64),
-                y: m as f64 + 0.5 + pert * (rand::rng().sample::<f64, StandardUniform>(StandardUniform) as f64),
-                z: 0.0
+                x: n as f64
+                    + 0.5
+                    + pert * (rand::rng().sample::<f64, StandardUniform>(StandardUniform) as f64),
+                y: m as f64
+                    + 0.5
+                    + pert * (rand::rng().sample::<f64, StandardUniform>(StandardUniform) as f64),
+                z: 0.0,
             } * width
                 / count as f64
                 + anchor;
@@ -61,7 +65,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let width = DVec3::splat(1.);
     let generators = perturbed_grid(anchor, width, count, pert);
     let _voronoi = Voronoi::build(&generators, anchor, width, 2.try_into().unwrap(), false);
-    let special_guy: usize = rand::thread_rng().gen_range(0..count.pow(2));
+    let special_guy: usize = rand::rng().random_range(0..count.pow(2));
     let nlist = _voronoi.cells()[special_guy].neighbour_ids(&_voronoi);
     let mut nlist_vec = Vec::new();
     for n in nlist {
@@ -72,12 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     result
 }
 
-fn render(
-    frame: &mut Frame,
-    voro: &Voronoi,
-    guy: usize,
-    neighbors: &Vec<usize>,
-) {
+fn render(frame: &mut Frame, voro: &Voronoi, guy: usize, neighbors: &Vec<usize>) {
     let canvas = Canvas::default()
         .block(Block::bordered().title("2D Voronoi"))
         .marker(Marker::Braille)
@@ -85,15 +84,14 @@ fn render(
             for n in 0..400 {
                 let coords = voro.cells()[n].loc();
                 ctx.draw(&Points {
-                    coords: &[(coords[0],coords[1])],
-                    color: 
-                        if n==guy {
-                            Color::Red
-                        } else if neighbors.contains(&n) {
-                            Color::Yellow
-                        } else {
-                            Color::Blue
-                        },
+                    coords: &[(coords[0], coords[1])],
+                    color: if n == guy {
+                        Color::Red
+                    } else if neighbors.contains(&n) {
+                        Color::Yellow
+                    } else {
+                        Color::Blue
+                    },
                 });
             }
         })
@@ -108,9 +106,9 @@ fn render(
 
 fn draw(
     mut terminal: DefaultTerminal,
-    voro: &Voronoi, 
+    voro: &Voronoi,
     guy: usize,
-    neighbors: &Vec<usize>
+    neighbors: &Vec<usize>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         terminal.draw(|frame| render(frame, &voro, guy, &neighbors))?;

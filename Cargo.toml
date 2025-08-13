@@ -8,6 +8,7 @@ members = ["examples",
            "hoomd-interaction",
            "hoomd-manifold",
            "hoomd-mc",
+           "hoomd-meshless-voronoi",
            "hoomd-microstate",
            "hoomd-order",
            "hoomd-utility",
@@ -25,6 +26,7 @@ default-members = ["examples",
                    "hoomd-interaction",
                    "hoomd-manifold",
                    "hoomd-mc",
+                   "hoomd-meshless-voronoi",
                    "hoomd-microstate",
                    "hoomd-order",
                    "hoomd-utility",
@@ -49,6 +51,7 @@ hoomd-gsd = { path = "hoomd-gsd" }
 hoomd-interaction = { path = "hoomd-interaction" }
 hoomd-manifold = { path = "hoomd-manifold" }
 hoomd-mc = { path = "hoomd-mc" }
+hoomd-meshless-voronoi = { path = "hoomd-meshless-voronoi" }
 hoomd-microstate = { path = "hoomd-microstate" }
 hoomd-order = { path = "hoomd-order" }
 hoomd-utility = { path = "hoomd-utility" }
@@ -111,8 +114,8 @@ cast_precision_loss = "allow"
 float_cmp = "allow"
 
 # opt-in to restrictions
-allow_attributes = "warn"
-allow_attributes_without_reason = "warn"
+allow_attributes = "allow"
+allow_attributes_without_reason = "allow"
 exhaustive_enums = "warn"
 impl_trait_in_params = "warn"
 missing_docs_in_private_items = "warn"

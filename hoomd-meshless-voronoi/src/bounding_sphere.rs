@@ -1,7 +1,13 @@
-use crate::meshless_voronoi::geometry::Sphere;
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+#![allow(clippy::all)]
+#![allow(clippy::pedantic)]
+
+use crate::geometry::Sphere;
 use ahash::{HashSet, HashSetExt};
 use glam::DVec3;
-
+#[allow(dead_code)]
 pub(crate) trait BoundingSphereSolver {
     fn bounding_sphere(points: &[DVec3]) -> Sphere;
     fn bounding_sphere_of_spheres(spheres: &[Sphere]) -> Sphere;
@@ -19,7 +25,9 @@ impl Welzl {
         }
 
         // Pop test point from points
-        let point = points.pop().expect("Points cannot be empty at this point (see base case)");
+        let point = points
+            .pop()
+            .expect("Points cannot be empty at this point (see base case)");
 
         // recurse: find solution of remaining points
         let mut solution = Self::bounding_sphere_recursive(points, boundary);
@@ -50,6 +58,7 @@ impl BoundingSphereSolver for Welzl {
     }
 }
 
+#[allow(dead_code)]
 pub(crate) struct Epos6;
 
 /// See: Extremal Points Optimal Sphere,
@@ -91,7 +100,10 @@ impl BoundingSphereSolver for Epos6 {
         let mut extremal_points = HashSet::new();
         extremal_points.extend(idx_min);
         extremal_points.extend(idx_max);
-        let extremal_points = extremal_points.into_iter().map(|i| points[i]).collect::<Vec<_>>();
+        let extremal_points = extremal_points
+            .into_iter()
+            .map(|i| points[i])
+            .collect::<Vec<_>>();
         let mut sphere = Welzl::bounding_sphere(&extremal_points);
 
         // Extend sphere if necessary

@@ -1,16 +1,23 @@
-use crate::meshless_voronoi::{Dimensionality, voronoi::Generator};
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+#![allow(clippy::all)]
+#![allow(clippy::pedantic)]
+
+use crate::local::GeneratorHyperbolic;
+use crate::{Dimensionality, voronoi::Generator};
 use glam::DVec3;
-use rstar::{Envelope, ParentNode, Point, PointDistance, RTree, RTreeNode, RTreeObject, AABB};
-use std::collections::BinaryHeap;
-use crate::local::GeneratorHyperbolic; 
-use std::iter::zip;
 use libm::acosh;
+use rstar::{AABB, Envelope, ParentNode, Point, PointDistance, RTree, RTreeNode, RTreeObject};
+use std::collections::BinaryHeap;
 
 pub(crate) fn build_rtree(generators: &[Generator]) -> RTree<Generator> {
     RTree::bulk_load(generators.to_vec())
 }
 
-pub(crate) fn build_rtree_hyperbolic(generators: &[GeneratorHyperbolic]) -> RTree<GeneratorHyperbolic> {
+pub(crate) fn build_rtree_hyperbolic(
+    generators: &[GeneratorHyperbolic],
+) -> RTree<GeneratorHyperbolic> {
     RTree::bulk_load(generators.to_vec())
 }
 
@@ -18,14 +25,22 @@ pub fn nn_iter<'a>(
     rtree: &'a RTree<Generator>,
     loc: DVec3,
 ) -> Box<dyn Iterator<Item = (usize, Option<DVec3>)> + 'a> {
-    Box::new(rtree.nearest_neighbor_iter(&[loc.x, loc.y, loc.z]).map(|g| (g.id(), None)))
+    Box::new(
+        rtree
+            .nearest_neighbor_iter(&[loc.x, loc.y, loc.z])
+            .map(|g| (g.id(), None)),
+    )
 }
 
 pub fn nn_iter_hyperbolic<'a>(
     rtree: &'a RTree<GeneratorHyperbolic>,
     loc: Vec<f64>,
 ) -> Box<dyn Iterator<Item = (usize, Option<DVec3>)> + 'a> {
-    Box::new(rtree.nearest_neighbor_iter(&[loc[0], loc[1], loc[2]]).map(|g| (g.site_tag, None)))
+    Box::new(
+        rtree
+            .nearest_neighbor_iter(&[loc[0], loc[1], loc[2]])
+            .map(|g| (g.site_tag, None)),
+    )
 }
 
 pub(crate) fn wrapping_nn_iter<'a>(
@@ -59,15 +74,20 @@ pub(crate) fn wrapping_nn_iter_hyperbolic<'a>(
     let query_point = [loc[0], loc[1], loc[2]];
     let width = [width.x, width.y, width.z];
     Box::new(
-        RTreeWrappingNearestNeighbourIter::new_hyperbolic(rtree.root(), query_point, width, dimensionality)
-            .map(move |(g, _distance, shift)| {
-                let shift = if shift[0] == 0. && shift[1] == 0. && shift[2] == 0. {
-                    None
-                } else {
-                    Some(-DVec3::from_array(shift))
-                };
-                (g.site_tag, shift)
-            }),
+        RTreeWrappingNearestNeighbourIter::new_hyperbolic(
+            rtree.root(),
+            query_point,
+            width,
+            dimensionality,
+        )
+        .map(move |(g, _distance, shift)| {
+            let shift = if shift[0] == 0. && shift[1] == 0. && shift[2] == 0. {
+                None
+            } else {
+                Some(-DVec3::from_array(shift))
+            };
+            (g.site_tag, shift)
+        }),
     )
 }
 
@@ -119,7 +139,11 @@ impl<'a> RTreeWrappingNearestNeighbourIter<'a, Generator> {
         for i in -1..=1 {
             for j in j_range.clone() {
                 for k in k_range.clone() {
-                    let shift = [i as f64 * width[0], j as f64 * width[1], k as f64 * width[2]];
+                    let shift = [
+                        i as f64 * width[0],
+                        j as f64 * width[1],
+                        k as f64 * width[2],
+                    ];
                     result.extend_heap(root.children(), shift);
                 }
             }
@@ -134,9 +158,7 @@ impl<'a> RTreeWrappingNearestNeighbourIter<'a, Generator> {
         } = self;
         nodes.extend(children.iter().map(|child: &RTreeNode<Generator>| {
             let distance = match child {
-                RTreeNode::Parent(data) => {
-                    data.envelope().wrapping_distance_2(query_point, &shift)
-                }
+                RTreeNode::Parent(data) => data.envelope().wrapping_distance_2(query_point, &shift),
                 RTreeNode::Leaf(t) => t.wrapping_distance_2(query_point, &shift),
             };
 
@@ -174,7 +196,11 @@ impl<'a> RTreeWrappingNearestNeighbourIter<'a, GeneratorHyperbolic> {
         for i in -1..=1 {
             for j in j_range.clone() {
                 for k in k_range.clone() {
-                    let shift = [i as f64 * width[0], j as f64 * width[1], k as f64 * width[2]];
+                    let shift = [
+                        i as f64 * width[0],
+                        j as f64 * width[1],
+                        k as f64 * width[2],
+                    ];
                     result.extend_heap_hyperbolic(root.children(), shift);
                 }
             }
@@ -182,25 +208,33 @@ impl<'a> RTreeWrappingNearestNeighbourIter<'a, GeneratorHyperbolic> {
         result
     }
 
-    fn extend_heap_hyperbolic(&mut self, children: &'a [RTreeNode<GeneratorHyperbolic>], shift: [f64; 3]) {
+    fn extend_heap_hyperbolic(
+        &mut self,
+        children: &'a [RTreeNode<GeneratorHyperbolic>],
+        shift: [f64; 3],
+    ) {
         let &mut RTreeWrappingNearestNeighbourIter {
             ref mut nodes,
             ref query_point,
         } = self;
-        nodes.extend(children.iter().map(|child: &RTreeNode<GeneratorHyperbolic>| {
-            let distance = match child {
-                RTreeNode::Parent(data) => {
-                    data.envelope().wrapping_distance_2(query_point, &shift)
-                }
-                RTreeNode::Leaf(t) => t.wrapping_distance_2(query_point, &shift),
-            };
+        nodes.extend(
+            children
+                .iter()
+                .map(|child: &RTreeNode<GeneratorHyperbolic>| {
+                    let distance = match child {
+                        RTreeNode::Parent(data) => {
+                            data.envelope().wrapping_distance_2(query_point, &shift)
+                        }
+                        RTreeNode::Leaf(t) => t.wrapping_distance_2(query_point, &shift),
+                    };
 
-            RTreeNodeDistanceWrapper {
-                node: child,
-                distance,
-                shift,
-            }
-        }));
+                    RTreeNodeDistanceWrapper {
+                        node: child,
+                        distance,
+                        shift,
+                    }
+                }),
+        );
     }
 }
 
@@ -240,13 +274,18 @@ impl PointDistance for GeneratorHyperbolic {
         point: &<Self::Envelope as rstar::Envelope>::Point,
     ) -> <<Self::Envelope as rstar::Envelope>::Point as rstar::Point>::Scalar {
         let point_0 = self.loc();
-        let point_1 = DVec3{x: point[0], y:point[1], z:point[2]};
-        let zero = DVec3::from_array([0.0,0.0,0.0]);
+        let point_1 = DVec3 {
+            x: point[0],
+            y: point[1],
+            z: point[2],
+        };
+        let zero = DVec3::from_array([0.0, 0.0, 0.0]);
         // TODO: check that this is correct scaling for poincare metric
-        let arg = (2.0*(point_1 - point_0).distance_squared(zero))
-            /((self.skirt().powi(2)-point_1.distance_squared(zero))*(self.skirt().powi(2) - point_0.distance_squared(zero)));
-        let dist = self.skirt()*acosh(1.0 + arg);
-        dist*dist
+        let arg = (2.0 * (point_1 - point_0).distance_squared(zero))
+            / ((self.skirt().powi(2) - point_1.distance_squared(zero))
+                * (self.skirt().powi(2) - point_0.distance_squared(zero)));
+        let dist = self.skirt() * acosh(1.0 + arg);
+        dist * dist
     }
 }
 
@@ -279,7 +318,7 @@ impl WrappingEnvelope for AABB<[f64; 3]> {
     }
 }
 
-//this is wrong, but it is only relevant to periodic boundary conditions 
+//this is wrong, but it is only relevant to periodic boundary conditions
 impl WrappingPointDistance for GeneratorHyperbolic {
     fn wrapping_distance_2(&self, point: &[f64; 3], shift: &[f64; 3]) -> f64 {
         let dx = [
@@ -288,7 +327,7 @@ impl WrappingPointDistance for GeneratorHyperbolic {
             point[2] + shift[2] - self.loc[2],
         ];
 
-        dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2] 
+        dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2]
     }
 }
 

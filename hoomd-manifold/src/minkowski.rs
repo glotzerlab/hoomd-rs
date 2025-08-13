@@ -484,7 +484,6 @@ assert_eq!(acosh((2.0_f64).sqrt()), x.distance(&y));
 
 */
 
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Hyperboloid<const N: usize> {
     /** A point living on the surface of the upper sheet of a two-sheeted hyperboloid

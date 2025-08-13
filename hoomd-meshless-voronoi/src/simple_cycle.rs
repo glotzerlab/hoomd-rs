@@ -1,4 +1,10 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+#![allow(clippy::all)]
+#![allow(clippy::pedantic)]
 #[derive(Clone, Debug)]
+#[allow(clippy::partial_pub_fields)]
 pub struct SimpleCycle {
     ptrs: Vec<usize>,
     start: usize,
@@ -102,11 +108,18 @@ impl<'a> Iterator for SimpleCycle2Iterator<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::meshless_voronoi::simple_cycle::SimpleCycle;
+    use crate::simple_cycle::SimpleCycle;
 
     #[test]
     fn test_extend() {
-        let mut tris = [(2, 4, 1), (1, 5, 2), (5, 1, 3), (5, 3, 6), (3, 4, 6), (4, 3, 1)];
+        let mut tris = [
+            (2, 4, 1),
+            (1, 5, 2),
+            (5, 1, 3),
+            (5, 3, 6),
+            (3, 4, 6),
+            (4, 3, 1),
+        ];
 
         let mut boundary = SimpleCycle::new(7);
         boundary.init(tris[0].0, tris[0].1, tris[0].2);

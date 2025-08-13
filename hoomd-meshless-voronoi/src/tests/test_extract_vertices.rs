@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 use float_cmp::assert_approx_eq;
 use glam::DVec3 as Vec3;
 use meshless_voronoi::{

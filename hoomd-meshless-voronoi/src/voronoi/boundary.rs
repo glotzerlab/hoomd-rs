@@ -1,8 +1,15 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+#![allow(clippy::all)]
+#![allow(clippy::pedantic)]
+
 use glam::DVec3;
 
-use super::{half_space::HalfSpace, Dimensionality};
+use super::{Dimensionality, half_space::HalfSpace};
 
 #[derive(Clone)]
+#[allow(clippy::partial_pub_fields)]
 pub(crate) struct SimulationBoundary {
     anchor: DVec3,
     inverse_width: DVec3,
@@ -57,9 +64,15 @@ impl SimulationBoundary {
         // so these numbers can be interpreted as rescaled u64 integer coordinates
         let mantissa_mask = 0xFFFFFFFFFFFFFu64;
         [
-            ((loc.x.to_bits() & mantissa_mask) as u64).try_into().expect("Cannot overflow"), 
-            ((loc.y.to_bits() & mantissa_mask) as u64).try_into().expect("Cannot overflow"), 
-            ((loc.z.to_bits() & mantissa_mask) as u64).try_into().expect("Cannot overflow"),
+            ((loc.x.to_bits() & mantissa_mask) as u64)
+                .try_into()
+                .expect("Cannot overflow"),
+            ((loc.y.to_bits() & mantissa_mask) as u64)
+                .try_into()
+                .expect("Cannot overflow"),
+            ((loc.z.to_bits() & mantissa_mask) as u64)
+                .try_into()
+                .expect("Cannot overflow"),
         ]
     }
 }

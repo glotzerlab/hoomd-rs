@@ -1,11 +1,18 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+#![allow(clippy::all)]
+#![allow(clippy::pedantic)]
+
 use super::{
-    boundary::SimulationBoundary, convex_cell_alternative::ConvexCell as ConvexCellAlternative,
-    half_space::HalfSpace, integrals::FaceIntegrator, Dimensionality, Generator,
+    Dimensionality, Generator, boundary::SimulationBoundary,
+    convex_cell_alternative::ConvexCell as ConvexCellAlternative, half_space::HalfSpace,
+    integrals::FaceIntegrator,
 };
 use crate::{
-    meshless_voronoi::geometry::{in_sphere_test_exact, intersect_planes, Plane},
-    meshless_voronoi::voronoi::integrals::{CellIntegralWithData, FaceIntegralWithData},
-    meshless_voronoi::simple_cycle::SimpleCycle,
+    geometry::{Plane, in_sphere_test_exact, intersect_planes},
+    simple_cycle::SimpleCycle,
+    voronoi::integrals::{CellIntegralWithData, FaceIntegralWithData},
 };
 use glam::DVec3;
 use std::any::TypeId;
@@ -33,8 +40,11 @@ impl Vertex {
         gen_loc: DVec3,
         dimensionality: Dimensionality,
     ) -> Self {
-        let loc =
-            intersect_planes(&half_spaces[i].plane, &half_spaces[j].plane, &half_spaces[k].plane);
+        let loc = intersect_planes(
+            &half_spaces[i].plane,
+            &half_spaces[j].plane,
+            &half_spaces[k].plane,
+        );
         let d_loc = match dimensionality {
             Dimensionality::OneD => DVec3::new(loc.x, 0., 0.),
             Dimensionality::TwoD => DVec3::new(loc.x, loc.y, 0.),
@@ -323,7 +333,10 @@ impl ConvexCell<WithoutFaces> {
         let mut cell = ConvexCell::init(loc, idx, simulation_boundary);
         // skip the first nearest neighbour (will be this cell)
         assert_eq!(
-            nearest_neighbours.next().expect("Nearest neighbours cannot be empty!").0,
+            nearest_neighbours
+                .next()
+                .expect("Nearest neighbours cannot be empty!")
+                .0,
             cell.idx,
             "First nearest neighbour should be the generator itself!"
         );
@@ -402,7 +415,9 @@ impl ConvexCell<WithoutFaces> {
             // finally we can *realy* remove the vertices.
             self.vertices.truncate(num_v);
             // Add new vertices constructed from the new clipping plane and the boundary
-            let mut cur = boundary.next().expect("Boundary contains at least 3 elements");
+            let mut cur = boundary
+                .next()
+                .expect("Boundary contains at least 3 elements");
             for next in boundary {
                 self.vertices.push(Vertex::from_dual(
                     cur,
@@ -419,13 +434,20 @@ impl ConvexCell<WithoutFaces> {
     }
 
     fn compute_boundary(boundary: &mut SimpleCycle, vertices: &mut [Vertex]) {
-        boundary.init(vertices[0].dual[0], vertices[0].dual[1], vertices[0].dual[2]);
+        boundary.init(
+            vertices[0].dual[0],
+            vertices[0].dual[1],
+            vertices[0].dual[2],
+        );
 
         for i in 1..vertices.len() {
             // Look for a suitable next vertex to extend the boundary
             let mut idx = i;
             loop {
-                assert!(idx < vertices.len(), "No suitable vertex found to extend boundary!");
+                assert!(
+                    idx < vertices.len(),
+                    "No suitable vertex found to extend boundary!"
+                );
                 let vertex = &vertices[idx].dual;
                 match boundary.try_extend(vertex[0], vertex[1], vertex[2]) {
                     Ok(()) => {
@@ -593,7 +615,8 @@ impl<M: ConvexCellMarker + 'static> ConvexCell<M> {
     }
 
     fn clipping_plane_has_valid_dimensionality(&self, plane_idx: usize) -> bool {
-        self.dimensionality.vector_is_valid(self.clipping_planes[plane_idx].normal())
+        self.dimensionality
+            .vector_is_valid(self.clipping_planes[plane_idx].normal())
     }
 
     /// Compute a custom integrated quantity for the faces of this cell
@@ -618,7 +641,11 @@ impl<M: ConvexCellMarker + 'static> ConvexCell<M> {
             integral.collect(tet.vertices[0], tet.vertices[1], tet.vertices[2], self.loc);
         }
 
-        integrals.into_iter().flatten().map(|integral| integral.finalize()).collect()
+        integrals
+            .into_iter()
+            .flatten()
+            .map(|integral| integral.finalize())
+            .collect()
     }
 
     /// Compute a custom integrated quantity for the faces of this cell.
@@ -660,7 +687,11 @@ impl<M: ConvexCellMarker + 'static> ConvexCell<M> {
             integral.collect(tet.vertices[0], tet.vertices[1], tet.vertices[2], self.loc);
         }
 
-        integrals.into_iter().flatten().map(|integral| integral.finalize()).collect()
+        integrals
+            .into_iter()
+            .flatten()
+            .map(|integral| integral.finalize())
+            .collect()
     }
 }
 
@@ -793,7 +824,11 @@ mod tests {
         let dist = dx.length();
         let n = dx / dist;
         let p = 0.5 * (cell.loc + ngb);
-        cell.clip_by_plane(HalfSpace::new(n, p, Some(1), Some(DVec3::ZERO)), &generators, &volume);
+        cell.clip_by_plane(
+            HalfSpace::new(n, p, Some(1), Some(DVec3::ZERO)),
+            &generators,
+            &volume,
+        );
 
         assert_eq!(cell.clipping_planes.len(), 7)
     }

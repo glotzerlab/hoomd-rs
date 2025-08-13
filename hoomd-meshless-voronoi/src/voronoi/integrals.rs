@@ -1,8 +1,14 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 //! Contains traits used to define custom integrals over cells and faces.
+
+#![allow(clippy::all)]
+#![allow(clippy::pedantic)]
 
 use glam::DVec3;
 
-use crate::meshless_voronoi::geometry::{signed_area_tri, signed_volume_tet};
+use crate::geometry::{signed_area_tri, signed_volume_tet};
 
 use super::convex_cell::{ConvexCell, ConvexCellMarker};
 
@@ -36,6 +42,7 @@ pub trait CellIntegral: Sized + Send {
 /// Trait to implement new integrators that use external data in their
 /// calculation.
 pub trait CellIntegralWithData: CellIntegral {
+    /// external data
     type Data: Copy;
 
     /// Initialize a [`CellIntegral`] with some extra data.
@@ -56,8 +63,8 @@ impl<T: CellIntegral> CellIntegralWithData for T {
 /// Use as follows:
 /// ```
 /// # use glam::DVec3;
-/// # use hoomd_order::meshless_voronoi::VoronoiIntegrator;
-/// # use hoomd_order::meshless_voronoi::integrals::VolumeCentroidIntegral;
+/// # use hoomd_meshless_voronoi::VoronoiIntegrator;
+/// # use hoomd_meshless_voronoi::integrals::VolumeCentroidIntegral;
 /// # let generators = vec![DVec3::splat(1.), DVec3::splat(2.)];
 /// let voronoi_integrator = VoronoiIntegrator::build(&generators, None, DVec3::ZERO, DVec3::splat(3.), 3.try_into().unwrap(), false);
 /// // Compute volumes of all the voronoi cells.
@@ -75,6 +82,7 @@ pub struct VolumeCentroidIntegral {
 }
 
 impl VolumeCentroidIntegral {
+    /// initialize a volume centroid integral
     pub fn init() -> Self {
         Self {
             centroid: DVec3::ZERO,
@@ -111,8 +119,8 @@ impl CellIntegral for VolumeCentroidIntegral {
 ///  Use as follows:
 /// ```
 /// # use glam::DVec3;
-/// # use hoomd_order::meshless_voronoi::VoronoiIntegrator;
-/// # use hoomd_order::meshless_voronoi::integrals::VolumeIntegral;
+/// # use hoomd_meshless_voronoi::VoronoiIntegrator;
+/// # use hoomd_meshless_voronoi::integrals::VolumeIntegral;
 /// # let generators = vec![DVec3::splat(1.), DVec3::splat(2.)];
 /// let voronoi_integrator = VoronoiIntegrator::build(&generators, None, DVec3::ZERO, DVec3::splat(3.), 3.try_into().unwrap(), false);
 /// // Compute volumes of all the voronoi cells.
@@ -174,6 +182,7 @@ pub trait FaceIntegral: Clone + Send {
 /// calculation.
 /// The data is the cloned for all faces of a [`ConvexCell`].
 pub trait FaceIntegralWithData: FaceIntegral {
+    /// external data
     type Data: Copy;
 
     /// Initialize a [`CellIntegral`] with some extra data.
@@ -264,8 +273,8 @@ impl<D: Copy, I: FaceIntegralWithData<Data = D>> FaceIntegrator<I> {
 /// Use as follows:
 /// ```
 /// # use glam::DVec3;
-/// # use hoomd_order::meshless_voronoi::VoronoiIntegrator;
-/// # use hoomd_order::meshless_voronoi::integrals::AreaCentroidIntegral;
+/// # use hoomd_meshless_voronoi::VoronoiIntegrator;
+/// # use hoomd_meshless_voronoi::integrals::AreaCentroidIntegral;
 /// # let generators = vec![DVec3::splat(1.), DVec3::splat(2.)];
 /// let voronoi_integrator = VoronoiIntegrator::build(&generators, None, DVec3::ZERO, DVec3::splat(3.), 3.try_into().unwrap(), false);
 /// // Compute areas and centroids of all the voronoi faces (treating all the faces of every ConvexCell,
@@ -289,6 +298,7 @@ pub struct AreaCentroidIntegral {
 }
 
 impl AreaCentroidIntegral {
+    /// initialize an area centroid integral
     pub fn init() -> Self {
         Self {
             centroid: DVec3::ZERO,
@@ -325,8 +335,8 @@ impl FaceIntegral for AreaCentroidIntegral {
 /// Use as follows:
 /// ```
 /// use glam::DVec3;
-/// use hoomd_order::meshless_voronoi::VoronoiIntegrator;
-/// use hoomd_order::meshless_voronoi::integrals::AreaIntegral;
+/// use hoomd_meshless_voronoi::VoronoiIntegrator;
+/// use hoomd_meshless_voronoi::integrals::AreaIntegral;
 /// # let generators = vec![DVec3::splat(1.), DVec3::splat(2.)];
 /// let voronoi_integrator = VoronoiIntegrator::build(&generators, None, DVec3::ZERO, DVec3::splat(3.), 3.try_into().unwrap(), false);
 /// // Compute areas of all the voronoi faces (twice for each face,

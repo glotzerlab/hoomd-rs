@@ -1,4 +1,10 @@
-use crate::meshless_voronoi::part::Part;
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+#![allow(clippy::all)]
+#![allow(clippy::pedantic)]
+
+use crate::part::Part;
 use glam::{DVec3, UVec3};
 use std::{cmp::Ordering, collections::BinaryHeap};
 
@@ -105,7 +111,9 @@ impl Space {
                 let i = (rel_pos.x / self.width.x * self.cdim.x as f64).floor() as i32;
                 let j = (rel_pos.y / self.width.y * self.cdim.y as f64).floor() as i32;
                 let k = (rel_pos.z / self.width.z * self.cdim.z as f64).floor() as i32;
-                let cid = self.get_cid(i, j, k).expect("Index out of bounds during construction!");
+                let cid = self
+                    .get_cid(i, j, k)
+                    .expect("Index out of bounds during construction!");
                 Part::new(*p_x, cid, pid)
             })
             .collect();
@@ -232,8 +240,9 @@ impl Space {
             // distance
             debug_assert_eq!(h.len(), k);
             for i in (0..k).rev() {
-                let entry =
-                    h.pop().expect("We should be able to pop k entries from a Heap of length k");
+                let entry = h
+                    .pop()
+                    .expect("We should be able to pop k entries from a Heap of length k");
                 nn[part.id()][i] = entry.idx;
             }
         }
@@ -286,14 +295,13 @@ impl Space {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::{prelude::*, Rng, thread_rng, distr::StandardUniform};
+    use rand::{Rng, distr::StandardUniform};
 
     fn example_space() -> Space {
         let anchor = DVec3::splat(1.);
         let width = DVec3::splat(2.);
         let mut space = Space::new(anchor, width, 0.5);
         let mut p_x = vec![];
-        let mut rng = thread_rng();
         for i in 0..4 {
             for j in 0..4 {
                 for k in 0..4 {

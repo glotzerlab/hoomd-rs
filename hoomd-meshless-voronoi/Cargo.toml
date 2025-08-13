@@ -1,6 +1,6 @@
 [package]
-name = "hoomd-order"
-description = "Order parameter and analysis library."
+name = "hoomd-meshless-voronoi"
+description = "Meshless Voronoi package from meshless-voro"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -16,7 +16,6 @@ hoomd-interaction.workspace = true
 hoomd-manifold.workspace = true
 hoomd-mc.workspace = true
 hoomd-microstate.workspace = true
-hoomd-meshless-voronoi.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 rand.workspace = true
@@ -42,6 +41,3 @@ paste = "1.0.15"
 rstest.workspace = true
 ratatui = "0.28.0"
 float-cmp = "0.9"
-
-[lints]
-workspace = true
