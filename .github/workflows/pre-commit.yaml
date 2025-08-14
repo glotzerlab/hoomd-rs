@@ -36,15 +36,13 @@ jobs:
     # - name: Install clippy
     #   run: rustup component add clippy --toolchain "${RUST_VERSION}"
 
-    # The self-hosted runners have pre-commit installed in the system. Uncomment
-    # when we switch back to GitHub hosted runners.
-    # - uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5.2.0
-    #   with:
-    #     python-version: "3.12"
-    # - name: Set up Python environment
-    #   uses: glotzerlab/workflows/setup-uv@ae7e7c6931098a313ef8069ef04b88a55c3a40f6 # 0.3.0
-    #   with:
-    #     lockfile: ".github/workflows/pre-commit-requirements.txt"
+    - uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5.2.0
+      with:
+        python-version: "3.12"
+    - name: Set up Python environment
+      uses: glotzerlab/workflows/setup-uv@ae7e7c6931098a313ef8069ef04b88a55c3a40f6 # 0.3.0
+      with:
+        lockfile: ".github/workflows/pre-commit-requirements.txt"
     - name: Set default Rust version
       run: rustup default "${RUST_VERSION}"
     - name: Run pre-commit
