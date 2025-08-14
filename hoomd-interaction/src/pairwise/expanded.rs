@@ -12,7 +12,21 @@ use super::{IsotropicEnergy, IsotropicForce};
 U(r) = f(r - \delta)
 ```
 
-TODO: Example
+# Example
+
+Expanded Lennard-Jones:
+```
+use hoomd_interaction::pairwise::{LennardJones, IsotropicEnergy, Expanded};
+use approx::{assert_abs_diff_eq, assert_relative_eq};
+
+let epsilon = 1.5;
+let sigma = 1.0;
+let delta = 0.75;
+let lj: LennardJones = LennardJones { epsilon, sigma };
+let expanded_lj = Expanded { f: lj, delta };
+
+assert_abs_diff_eq!(expanded_lj.energy(1.0), expanded_lj.f.energy(1.0 - 0.75));
+```
 */
 #[derive(Clone, Debug, PartialEq)]
 pub struct Expanded<F> {
@@ -55,4 +69,36 @@ impl<F: IsotropicForce> IsotropicForce for Expanded<F> {
     }
 }
 
-// TODO: Test
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pairwise::LennardJones;    
+    use ::approx::{assert_abs_diff_eq, assert_relative_eq};
+    use rstest::*;
+
+    #[rstest]
+    fn special_points_12_6(
+        #[values(1.0, 2.0, 12.125, 0.25)] epsilon: f64,
+        #[values(1.0, 2.0, 0.5)] sigma: f64,
+        #[values(0.125, 0.5, 2.0)] delta: f64,
+    ) {
+        let lj: LennardJones = LennardJones { epsilon, sigma };
+        let expanded_lj = Expanded { f: lj, delta };
+
+        // Zero crossing
+        assert_abs_diff_eq!(expanded_lj.energy(sigma + delta), 0.0);
+        assert_relative_eq!(expanded_lj.force(sigma + delta), 24.0 * epsilon / sigma);
+
+        // Bottom of the well
+        assert_relative_eq!(expanded_lj.energy(2.0_f64.powf(1.0 / 6.0) * sigma + delta), -epsilon);
+        assert_abs_diff_eq!(
+            expanded_lj.force(2.0_f64.powf(1.0 / 6.0) * sigma + delta),
+            0.0,
+            epsilon = 1e-12
+        );
+
+        // r = 2 sigma
+        assert_relative_eq!(expanded_lj.energy(2.0 * sigma + delta), -63.0 / 1024.0 * epsilon);
+        assert_relative_eq!(expanded_lj.force(2.0 * sigma + delta), -93.0 / 512.0 * epsilon / sigma);
+    }
+}
