@@ -23,7 +23,7 @@ env:
 jobs:
   unit_test:
     name: Unit test [${{ matrix.profile }}-rust-${{ matrix.rust }}-${{ matrix.os }}]
-    runs-on: ["self-hosted","jetstream2","CPU"]
+    runs-on: [self-hosted, jetstream2, CPU]
     strategy:
       fail-fast: false
       matrix:
