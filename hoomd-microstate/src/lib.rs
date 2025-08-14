@@ -268,6 +268,8 @@ impl<V> Body<Point<V>, Point<V>> {
     }
 }
 
+// TODO: Consider adding a shortcut here for dynamics point.
+
 /** Take [`Site`] properties in the body frame into the system frame.
 
 See the [`property`] module-level documentation for an example
