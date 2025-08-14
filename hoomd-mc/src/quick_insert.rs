@@ -14,6 +14,12 @@ use hoomd_microstate::{
 
 use rand::distr::Distribution;
 
+#[derive(PartialEq)]
+enum State {
+    Running,
+    Complete,
+}
+
 /** Add bodies to the microstate with random configurations.
 
 [`QuickInsert`] allows you to *quickly* insert many particles into the
@@ -49,52 +55,108 @@ TODO: Example
 */
 pub struct QuickInsert<D> {
     /// Sample random bodies to insert.
-    pub distribution: D,
-    /// Number of insertion attempts per call to `apply`.
-    pub attempts_per_apply: usize,
+    distribution: D,
+
+    /// Total number of particles to insert.
+    target: usize,
+
+    /// Maximum number of overlapping inserts allowed.
+    allowed_overlaps: usize,
+
+    /// Count of insertions completed
+    inserted: usize,
+
+    /// Current stage of the method.
+    state: State
 }
 
-impl<V, B, S, C, D, H> Trial<Microstate<B, S, C>, H> for QuickInsert<D>
+impl<D> QuickInsert<D>
+{
+    pub fn new(distribution: D, target: usize) -> Self {
+        Self {
+            distribution,
+            target,
+            allowed_overlaps: (target / 8).max(1),
+            inserted: 0,
+            state: State::Running,
+        }
+    }
+    
+    pub fn is_complete(&self) -> bool {
+        self.state == State::Complete
+    }
+
+    #[inline]
+    pub fn apply<V, B, S, C, H, T>(
+        &mut self,
+        microstate: &mut Microstate<B, S, C>,
+        hamiltonian: &H,
+        local_trial: &T,
+        state: &T::Macrostate,
+    ) -> Count
 where
     B: Position<Vector = V> + Transform<S>,
     S: Position<Vector = V> + Default,
     D: Distribution<Body<B, S>>,
     H: DeltaEnergyInsert<B, S, C> + TotalEnergy<Microstate<B, S, C>>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-{
-    type Count = Count;
-    type Macrostate = usize;
+    T: Trial<Microstate<B, S, C>, H>,
+     {
+    let mut count = Count::default();
 
-    #[inline]
-    fn apply(
-        &self,
-        microstate: &mut Microstate<B, S, C>,
-        hamiltonian: &H,
-        state: &Self::Macrostate,
-    ) -> Self::Count {
-        let mut count = Self::Count::default();
+    // Perform no work at all if already complete.
+    if self.is_complete() {
+        return count;
+    }
 
-        if hamiltonian.total_energy(microstate) <= 0.0 {
-            let mut rng = microstate.counter().make_rng();
+    let energy = hamiltonian.total_energy(microstate);
 
-            for _ in 0..self.attempts_per_apply {
-                let new_body = self.distribution.sample(&mut rng);
+    // The quick insert protocol is not complete until the energy has reached 0.
+    if energy <= 0.0 && self.inserted >= self.target {
+        self.state = State::Complete;
+        return count;
+    }
 
-                let delta_energy = hamiltonian.delta_energy_insert(microstate, &new_body);
-                if delta_energy.is_finite() && microstate.add_body(new_body).is_ok() {
-                    count.accepted += 1;
-                    if count.accepted >= *state as u64 {
-                        break;
-                    }
-                } else {
-                    count.rejected += 1;
+    // Scaling the number of insertion attempts with the target number of insertions
+    // is a good way to ensure that there are sufficient attempts on each call to
+    // apply. Larger boxes will naturally get more insertion attempts. At the same
+    // time, we need to limit the total strain caused by the insertions. Count
+    // the number of insertions that cause overlaps and exit early when there
+    // are too many.
+    if energy <= 0.0 {
+        let mut rng = microstate.counter().make_rng();
+        let mut insertions_with_overlaps = 0;
+
+        for _ in 0..self.target{
+            let new_body = self.distribution.sample(&mut rng);
+
+            let delta_energy = hamiltonian.delta_energy_insert(microstate, &new_body);
+            if delta_energy.is_finite() && microstate.add_body(new_body).is_ok() {
+                count.accepted += 1;
+                self.inserted += 1;
+
+                if delta_energy > 0.0 {
+                    insertions_with_overlaps += 1;
                 }
+                
+                if self.inserted == self.target || insertions_with_overlaps >= self.allowed_overlaps {
+                    break;
+                }
+            } else {
+                count.rejected += 1;
             }
         }
-
-        microstate.increment_substep();
-        count
     }
+
+    microstate.increment_substep();
+
+    // Applying local trial moves is critical to the success of the quick
+    // insert protocol. Require that users pass in a local trial type and
+    // apply it at the appropriate time.
+    local_trial.apply(microstate, hamiltonian, state);
+    
+    count
+}
 }
 
 // TODO: test
