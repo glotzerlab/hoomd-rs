@@ -54,8 +54,12 @@ jobs:
           target: wasm32-unknown-unknown
 
     steps:
+    # These steps are needed on self-hosted runners and can be removed on GitHub runners
     - name: Clean workspace
       run: ( shopt -s dotglob nullglob; rm -rf ./* )
+    - name: Add cargo PATH
+      run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
     - name: Checkout
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     # This code is needed on GitHub Hosted runners, disable for now while we use private runners.
