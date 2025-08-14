@@ -178,21 +178,15 @@ pub trait SitePairEnergy<S> {
 }
 
 /** TODO: Add Force documentation */
-pub trait Force {
-    /// Compute the net force on a single site.
-    fn net_force_on_site();
-    
-    /// Compute the net force on a body.
-    fn net_force_on_body();
+pub trait SitePairForce<V, S> {
+    /// Evaluate the force on site a from site b.
+    fn site_pair_force(&self, a: &S, b: &S) -> V;
 }
 
 /** TODO: Add Torque documentation */
-pub trait Torque {
-    /// Compute the net torque on a single site.
-    fn net_torque_on_site();
-    
-    /// Compute the net torque on a body.
-    fn net_torque_on_body();
+pub trait SitePairTorque<S> {
+    /// Evaluate the torque contribution from a pair of sites.
+    fn site_pair_force();
 }
 
 #[cfg(test)]
