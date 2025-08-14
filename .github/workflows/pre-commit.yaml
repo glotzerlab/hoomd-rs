@@ -13,28 +13,39 @@ on:
   workflow_dispatch:
 
 env:
-  RUST_VERSION: 1.88.0
+  RUST_VERSION: 1.89.0
 
 jobs:
   pre-commit:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, jetstream2, CPU]
     steps:
+    # These steps are needed on self-hosted runners and can be removed on GitHub runners
+    - name: Clean workspace
+      run: ( shopt -s dotglob nullglob; rm -rf ./* )
+    - name: Add cargo PATH
+      run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
     - name: Checkout
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     # For unknown reasons, pre-commit fails with error: component download failed for cargo-x86_64-unknown-linux-gnu: could not rename downloaded file ...
     # unless we install with rustup first manually.
-    - name: Update rust
-      run: rustup install "$RUST_VERSION" --no-self-update && rustup default "${RUST_VERSION}"
-    - name: Install rustfmt
-      run: rustup component add rustfmt
-    - name: Install clippy
-      run: rustup component add clippy
-    - uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5.2.0
-      with:
-        python-version: "3.12"
-    - name: Set up Python environment
-      uses: glotzerlab/workflows/setup-uv@ae7e7c6931098a313ef8069ef04b88a55c3a40f6 # 0.3.0
-      with:
-        lockfile: ".github/workflows/pre-commit-requirements.txt"
+    # - name: Update rust
+    #   run: rustup install "$RUST_VERSION" --no-self-update
+    # - name: Install rustfmt
+    #   run: rustup component add rustfmt --toolchain "${RUST_VERSION}" 
+    # - name: Install clippy
+    #   run: rustup component add clippy --toolchain "${RUST_VERSION}"
+
+    # The self-hosted runners have pre-commit installed in the system. Uncomment
+    # when we switch back to GitHub hosted runners.
+    # - uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5.2.0
+    #   with:
+    #     python-version: "3.12"
+    # - name: Set up Python environment
+    #   uses: glotzerlab/workflows/setup-uv@ae7e7c6931098a313ef8069ef04b88a55c3a40f6 # 0.3.0
+    #   with:
+    #     lockfile: ".github/workflows/pre-commit-requirements.txt"
+    - name: Set default Rust version
+      run: rustup default "${RUST_VERSION}"
     - name: Run pre-commit
       run: pre-commit run --all-files
