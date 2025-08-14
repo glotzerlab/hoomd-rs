@@ -107,11 +107,13 @@ impl<T> VecWithTags<T> {
     }
 
     /// Number of items stored.
+    #[cfg(test)]
     fn len(&self) -> usize {
         self.items.len()
     }
 
     /// True when any items are stored.
+    #[cfg(test)]
     fn is_empty(&self) -> bool {
         self.items.is_empty()
     }
@@ -532,7 +534,7 @@ where
         sites: &VecWithTags<Site<S>>,
         site_index: usize,
         boundary: &C,
-        sites_ghosts: &mut Vec<ArrayVec<[usize; MAX_GHOSTS]>>,
+        sites_ghosts: &mut [ArrayVec<[usize; MAX_GHOSTS]>],
         ghosts: &mut VecWithTags<Site<S>>,
     ) {
         let site = &sites.items[site_index];

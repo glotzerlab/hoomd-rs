@@ -1506,9 +1506,8 @@ impl GsdFile {
         frame: u64,
         name: &str,
     ) -> Result<impl ExactSizeIterator<Item = T> + use<'_, T>, ReadError> {
-        let index_entry = match self.find_chunk(frame, name) {
-            None => return Err(ReadError::ChunkNotFound(name.into(), frame)),
-            Some(e) => e,
+        let Some(index_entry) = self.find_chunk(frame, name) else {
+            return Err(ReadError::ChunkNotFound(name.into(), frame));
         };
 
         if index_entry.m as usize != 1 {
@@ -1577,9 +1576,8 @@ impl GsdFile {
         frame: u64,
         name: &str,
     ) -> Result<impl ExactSizeIterator<Item = [T; M]> + use<'_, T, M>, ReadError> {
-        let index_entry = match self.find_chunk(frame, name) {
-            None => return Err(ReadError::ChunkNotFound(name.into(), frame)),
-            Some(e) => e,
+        let Some(index_entry) = self.find_chunk(frame, name) else {
+            return Err(ReadError::ChunkNotFound(name.into(), frame));
         };
 
         if index_entry.m as usize != M {
@@ -1642,9 +1640,8 @@ impl GsdFile {
       [`DecodeError`]).
     */
     pub fn read_string(&self, frame: u64, name: &str) -> Result<String, ReadError> {
-        let index_entry = match self.find_chunk(frame, name) {
-            None => return Err(ReadError::ChunkNotFound(name.into(), frame)),
-            Some(e) => e,
+        let Some(index_entry) = self.find_chunk(frame, name) else {
+            return Err(ReadError::ChunkNotFound(name.into(), frame));
         };
 
         if index_entry.m as usize != 1 {
