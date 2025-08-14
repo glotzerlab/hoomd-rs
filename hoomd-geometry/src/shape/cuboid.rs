@@ -315,8 +315,9 @@ impl<const N: usize> Distribution<Cartesian<N>> for Cuboid<N> {
     # Example
 
     ```
-    use hoomd_geometry::{IsPointInside, shape::Cuboid};
     use rand::{SeedableRng, rngs::StdRng, distr::Distribution};
+
+    use hoomd_geometry::{IsPointInside, shape::Cuboid};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cuboid = Cuboid { edge_lengths: [6.0.try_into()?, 8.0.try_into()?] };

@@ -102,8 +102,6 @@ where
 
     For 2D cuboids, `generate_ghosts` places ghosts near the 4 edges and 4
     vertices.
-
-    TODO: Example
     */
     #[inline]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
@@ -167,8 +165,6 @@ where
 
     For 3D cuboids, `generate_ghosts` places ghosts near the 6 faces, 12 edges,
     and 8 vertices.
-
-    TODO: Example
     */
     #[inline]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {

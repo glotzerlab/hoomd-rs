@@ -11,17 +11,36 @@ mod cuboid;
 
 /** Describe a simulation space that repeats in one or more directions.
 
-[`Periodic`] is a newtype that wraps a shape. When bodies or sites exit the
-shape through one of the periodic sides of the shape, they are wrapped to the
-other side. Similarly, sites that are within the interaction range of one of
-the periodic sides appear as ghost sites just outside the opposite side.
+[`Periodic`] is a newtype that wraps a shape. Use it to set the `boundary`
+for a [`Microstate`].
 
-Depending on the shape type `T`, `Periodic<T>` might implement fully periodic
-boundaries or ones that are periodic in some directions and closed in others.
-The `GenerateGhosts` and `Wrap` implementations for `Periodic<T>` will clearly
-define how a given shape is made periodic (or not).
+When bodies or sites exit the shape through one of the periodic sides of the
+shape, they are wrapped to the other side. Similarly, sites that are within
+the interaction range of one of the periodic sides appear as ghost sites just
+outside the opposite side. Depending on the shape type `T`, `Periodic<T>` might
+implement fully periodic boundaries or ones that are periodic in some directions
+and closed in others.
+
+[`Periodic`] is implemented for the following shapes:
+* [`Cuboid<2>`] also known as [`Rectangle`]
+* [`Cuboid<3>`]
+
+[`Cuboid<2>`]: hoomd_geometry::shape::Cuboid
+[`Cuboid<3>`]: hoomd_geometry::shape::Cuboid
+[`Rectangle`]: hoomd_geometry::shape::Rectangle
+[`Microstate`]: crate::Microstate
 
 # Example
+
+```
+use hoomd_geometry::shape::Rectangle;
+use hoomd_microstate::boundary::Periodic;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let periodic = Periodic::new(2.5, Rectangle::with_equal_edges(10.0.try_into()?))?;
+# Ok(())
+# }
+```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Periodic<T> {
@@ -54,7 +73,6 @@ where
     # Ok(())
     # }
     ```
-
     */
     #[inline]
     pub fn new(maximum_interaction_range: f64, shape: T) -> Result<Self, Error> {
@@ -73,6 +91,23 @@ where
 }
 
 impl<T> Periodic<T> {
+
+    /** Access the boundary's shape.
+    
+    # Example
+
+    ```
+    use hoomd_geometry::shape::Rectangle;
+    use hoomd_microstate::boundary::Periodic;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let periodic = Periodic::new(2.5, Rectangle::with_equal_edges(10.0.try_into()?))?;
+
+    assert_eq!(periodic.shape().edge_lengths[0].get(), 10.0);
+    # Ok(())
+    # }
+    ```
+    */
     #[inline]
     pub fn shape(&self) -> &T {
         &self.shape
@@ -85,7 +120,24 @@ where
 {
     /** Generate points uniformly distributed in the wrapped shape.
 
-    TODO: Example.
+    # Example
+
+    ```
+    use rand::{SeedableRng, rngs::StdRng, distr::Distribution};
+    
+    use hoomd_geometry::{IsPointInside, shape::Cuboid};
+    use hoomd_microstate::boundary::Periodic;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cuboid = Cuboid { edge_lengths: [6.0.try_into()?, 8.0.try_into()?] };
+    let periodic = Periodic::new(2.5, cuboid)?;
+    let mut rng = StdRng::seed_from_u64(1);
+
+    let point = periodic.sample(&mut rng);
+    assert!(periodic.shape().is_point_inside(&point));
+    # Ok(())
+    # }
+    ```
     */
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> V {

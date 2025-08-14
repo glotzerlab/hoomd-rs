@@ -596,7 +596,9 @@ where
     [`sites`](Microstate::sites) (in system coordinates) and assigns unique
     tags to the sites similarly. It wraps the body's position (and the
     positions of its sites in system coordinates) into the boundary (see
-    [`Boundary`]).
+    [`boundary`]).
+
+    [`boundary`]: crate::boundary
 
     # Cost
 
@@ -738,7 +740,8 @@ where
 
     Removing a body will change the index order of the
     [`bodies`](Microstate::bodies) and [`sites`](Microstate::sites) arrays.
-    [`Microstate`] does not guarantee any specific ordering in these arrays.
+    [`Microstate`] does not guarantee any specific ordering in these arrays
+    after calling `remove_body`.
 
     # Cost
 
@@ -1070,6 +1073,14 @@ impl<B, S, C> Microstate<B, S, C> {
         &self.sites.items
     }
 
+    /** Access the ghost sites in the system frame.
+
+    Each ghost site shares a `site_tag` and `body_tag` with a primary site
+    (in [`sites`]). Ghost sites are only placed when using periodic boundary
+    conditions and are outside the edges of the boundary.
+
+    [`sites`]: Self::sites
+    */
     #[inline]
     pub fn ghosts(&self) -> &[Site<S>] {
         &self.ghosts.items
@@ -1093,6 +1104,10 @@ impl<B, S, C> Microstate<B, S, C> {
     in the system reference frame on all sites that are associated with a given
     body *index*. The borrowed sites are immutable. Call
     [`Microstate::update_body_properties()`] to mutate a body.
+
+    `iter_body_sites` always iterates over *primary sites*. In periodic boundary
+    conditions, these sites may be split across one or more parts of the
+    boundary.
 
     # Example
 
@@ -1133,10 +1148,20 @@ where
 {
     /** Find sites near a point in space.
 
-    Iterate over all sites (and later, ghost sites) within a distance `r` of
-    the given `point`.
+    Iterate over all sites and ghost sites within a distance `r` of the given
+    `point`. All sites produced by this iterator will be in the system reference
+    frame and within the given distance metric. No wrapping is required for
+    ghost sites, which will be slightly outside the boundary condition. When a
+    ghost site is provided by the iterator, its `site_tag` and `body_tag` will
+    match that of the actual site.
 
-    TODO: Revise the API and description after implementing periodic boundary conditions.
+    The caller *may* provide a value for `r` that is larger than the maximum
+    interaction range. In the current implementation, this is not an error.
+    However, in such cases `iter_sites_near` will only iterate over the placed
+    ghosts which are within the boundary's `maximum_interaction_range`.
+
+    In other words, `iter_sites_near` is meant for use with pairwise functions
+    that follow the minimum image convention.
     */
     #[inline]
     pub fn iter_sites_near(&self, point: &V, r: f64) -> impl Iterator<Item = &Site<S>> {
