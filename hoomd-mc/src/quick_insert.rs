@@ -67,11 +67,10 @@ pub struct QuickInsert<D> {
     inserted: usize,
 
     /// Current stage of the method.
-    state: State
+    state: State,
 }
 
-impl<D> QuickInsert<D>
-{
+impl<D> QuickInsert<D> {
     pub fn new(distribution: D, target: usize) -> Self {
         Self {
             distribution,
@@ -81,7 +80,7 @@ impl<D> QuickInsert<D>
             state: State::Running,
         }
     }
-    
+
     pub fn is_complete(&self) -> bool {
         self.state == State::Complete
     }
@@ -94,69 +93,71 @@ impl<D> QuickInsert<D>
         local_trial: &T,
         state: &T::Macrostate,
     ) -> Count
-where
-    B: Position<Vector = V> + Transform<S>,
-    S: Position<Vector = V> + Default,
-    D: Distribution<Body<B, S>>,
-    H: DeltaEnergyInsert<B, S, C> + TotalEnergy<Microstate<B, S, C>>,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    T: Trial<Microstate<B, S, C>, H>,
-     {
-    let mut count = Count::default();
+    where
+        B: Position<Vector = V> + Transform<S>,
+        S: Position<Vector = V> + Default,
+        D: Distribution<Body<B, S>>,
+        H: DeltaEnergyInsert<B, S, C> + TotalEnergy<Microstate<B, S, C>>,
+        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+        T: Trial<Microstate<B, S, C>, H>,
+    {
+        let mut count = Count::default();
 
-    // Perform no work at all if already complete.
-    if self.is_complete() {
-        return count;
-    }
+        // Perform no work at all if already complete.
+        if self.is_complete() {
+            return count;
+        }
 
-    let energy = hamiltonian.total_energy(microstate);
+        let energy = hamiltonian.total_energy(microstate);
 
-    // The quick insert protocol is not complete until the energy has reached 0.
-    if energy <= 0.0 && self.inserted >= self.target {
-        self.state = State::Complete;
-        return count;
-    }
+        // The quick insert protocol is not complete until the energy has reached 0.
+        if energy <= 0.0 && self.inserted >= self.target {
+            self.state = State::Complete;
+            return count;
+        }
 
-    // Scaling the number of insertion attempts with the target number of insertions
-    // is a good way to ensure that there are sufficient attempts on each call to
-    // apply. Larger boxes will naturally get more insertion attempts. At the same
-    // time, we need to limit the total strain caused by the insertions. Count
-    // the number of insertions that cause overlaps and exit early when there
-    // are too many.
-    if energy <= 0.0 {
-        let mut rng = microstate.counter().make_rng();
-        let mut insertions_with_overlaps = 0;
+        // Scaling the number of insertion attempts with the target number of insertions
+        // is a good way to ensure that there are sufficient attempts on each call to
+        // apply. Larger boxes will naturally get more insertion attempts. At the same
+        // time, we need to limit the total strain caused by the insertions. Count
+        // the number of insertions that cause overlaps and exit early when there
+        // are too many.
+        if energy <= 0.0 {
+            let mut rng = microstate.counter().make_rng();
+            let mut insertions_with_overlaps = 0;
 
-        for _ in 0..self.target{
-            let new_body = self.distribution.sample(&mut rng);
+            for _ in 0..self.target {
+                let new_body = self.distribution.sample(&mut rng);
 
-            let delta_energy = hamiltonian.delta_energy_insert(microstate, &new_body);
-            if delta_energy.is_finite() && microstate.add_body(new_body).is_ok() {
-                count.accepted += 1;
-                self.inserted += 1;
+                let delta_energy = hamiltonian.delta_energy_insert(microstate, &new_body);
+                if delta_energy.is_finite() && microstate.add_body(new_body).is_ok() {
+                    count.accepted += 1;
+                    self.inserted += 1;
 
-                if delta_energy > 0.0 {
-                    insertions_with_overlaps += 1;
+                    if delta_energy > 0.0 {
+                        insertions_with_overlaps += 1;
+                    }
+
+                    if self.inserted == self.target
+                        || insertions_with_overlaps >= self.allowed_overlaps
+                    {
+                        break;
+                    }
+                } else {
+                    count.rejected += 1;
                 }
-                
-                if self.inserted == self.target || insertions_with_overlaps >= self.allowed_overlaps {
-                    break;
-                }
-            } else {
-                count.rejected += 1;
             }
         }
+
+        microstate.increment_substep();
+
+        // Applying local trial moves is critical to the success of the quick
+        // insert protocol. Require that users pass in a local trial type and
+        // apply it at the appropriate time.
+        local_trial.apply(microstate, hamiltonian, state);
+
+        count
     }
-
-    microstate.increment_substep();
-
-    // Applying local trial moves is critical to the success of the quick
-    // insert protocol. Require that users pass in a local trial type and
-    // apply it at the appropriate time.
-    local_trial.apply(microstate, hamiltonian, state);
-    
-    count
-}
 }
 
 // TODO: test

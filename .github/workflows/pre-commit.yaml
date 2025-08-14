@@ -32,7 +32,7 @@ jobs:
     # - name: Update rust
     #   run: rustup install "$RUST_VERSION" --no-self-update
     # - name: Install rustfmt
-    #   run: rustup component add rustfmt --toolchain "${RUST_VERSION}" 
+    #   run: rustup component add rustfmt --toolchain "${RUST_VERSION}"
     # - name: Install clippy
     #   run: rustup component add clippy --toolchain "${RUST_VERSION}"
 

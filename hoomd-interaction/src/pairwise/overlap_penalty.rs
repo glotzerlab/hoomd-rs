@@ -34,7 +34,7 @@ TODO: Example
 pub struct OverlapPenalty {
     /// Spring stiffness $`[\mathrm{energy}] [\mathrm{length}]^{-2}`$.
     pub k: f64,
-   
+
     /// The largest overlap distance to allow  $`[\mathrm{length}]`$.
     pub maximum_allowed_overlap: f64,
 
@@ -55,11 +55,11 @@ impl Default for OverlapPenalty {
     #[inline]
     fn default() -> Self {
         Self {
-        k: 1000.0,
-        maximum_allowed_overlap: 0.2,
-        epsilon_shoulder: 100.0,
+            k: 1000.0,
+            maximum_allowed_overlap: 0.2,
+            epsilon_shoulder: 100.0,
         }
-    }    
+    }
 }
 
 impl IsotropicEnergy for OverlapPenalty {
