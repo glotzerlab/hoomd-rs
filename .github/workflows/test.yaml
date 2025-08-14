@@ -23,7 +23,7 @@ env:
 jobs:
   unit_test:
     name: Unit test [${{ matrix.profile }}-rust-${{ matrix.rust }}-${{ matrix.os }}]
-    runs-on: ${{ matrix.os }}
+    runs-on: ["self-hosted","jetstream2","CPU"]
     strategy:
       fail-fast: false
       matrix:
@@ -34,10 +34,8 @@ jobs:
           # - macos-14
         rust:
           # Test multiple rust versions on multiple platforms in the debug profile.
-          # TODO: Enable after open source release
-          # - 1.86.0
-          # - 1.87.0
           - 1.88.0
+          - 1.89.0
         profile:
          - dev
         target:
@@ -45,25 +43,29 @@ jobs:
 
         include:
         # Add a release build on linux with the latest version of rust.
-        # TODO: enable after open source release
-        # - os: ubuntu-24.04
-        #   rust: 1.88.0
-        #   profile: release
+        - os: ubuntu-24.04
+          rust: 1.89.0
+          profile: release
 
         # Add a WASM build.
         - os: ubuntu-24.04
-          rust: 1.88.0
+          rust: 1.89.0
           profile: dev-wasm
           target: wasm32-unknown-unknown
 
     steps:
+    - name: Clean workspace
+      run: ( shopt -s dotglob nullglob; rm -rf ./* )
     - name: Checkout
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-    - name: Update rust
-      run: rustup install ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
-    - name: Install target
-      run: rustup target install ${{ matrix.target }}
-      if: ${{ matrix.target != '' }}
+    # This code is needed on GitHub Hosted runners, disable for now while we use private runners.
+    # - name: Update rust
+    #   run: rustup install ${{ matrix.rust }} --no-self-update
+    # - name: Install target
+    #   run: rustup target install ${{ matrix.target }} --toolchain ${{ matrix.rust }}
+    #   if: ${{ matrix.target != '' }}
+    - name: Set default target
+      run: rustup default ${{ matrix.rust }}
     - name: Check rust installation
       run: rustc -vV
 
@@ -98,13 +100,13 @@ jobs:
       run: cargo bench
       if: ${{ matrix.target == '' }}
 
-  tests_complete:
-    name: All tests
-    if: always()
-    needs: [unit_test]
-    runs-on: ubuntu-latest
+  # tests_complete:
+  #   name: All tests
+  #   if: always()
+  #   needs: [unit_test]
+  #   runs-on: ubuntu-latest
 
-    steps:
-    - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
-    - name: Done
-      run: exit 0
+  #   steps:
+  #   - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
+  #   - name: Done
+  #     run: exit 0
