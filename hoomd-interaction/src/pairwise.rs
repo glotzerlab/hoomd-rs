@@ -148,13 +148,3 @@ pub trait AnisotropicEnergy<V: Vector, R: Rotate<V>> {
 
 // TODO: determine how to express the torque return type in a general way. Possibly use
 // an associated type of Rotation.
-// pub trait AnisotropicForce<V: Vector, R: Rotation+Rotate<V>> {
-//     /** Compute the pairwise force and torque between two oriented particles.
-//     TODO: math expression.
-//     */
-//     #[must_use]
-//     fn energy(&self, r_ij: &V, o_ij: &R) -> f64;
-// }
-
-// TODO: Implement Harmonic and HarmonicRepulsion based on that (Harmonic cut off at r_0)
-// TODO: Implement Expanded as an adapter (like shifted)
