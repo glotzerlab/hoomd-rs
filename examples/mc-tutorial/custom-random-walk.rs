@@ -2,10 +2,11 @@
 use rand::{Rng, seq::IndexedRandom};
 use std::iter;
 
+use hoomd_geometry::IsPointInside;
 use hoomd_interaction::Zero;
 use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder, boundary::Boundary, property::Point,
+    Body, Microstate, MicrostateBuilder, boundary::Closed, property::Point,
 };
 use hoomd_vector::{Cartesian, Vector};
 // ANCHOR_END: use
@@ -26,8 +27,8 @@ struct Circle {
 // ANCHOR_END: boundary_struct
 
 // ANCHOR: boundary_all
-impl<B, S> Boundary<Cartesian<2>, B, S> for Circle {
-    fn is_inside(&self, point: &Cartesian<2>) -> bool {
+impl IsPointInside<Cartesian<2>> for Circle {
+    fn is_point_inside(&self, point: &Cartesian<2>) -> bool {
         point.distance(&[0.0, 0.0].into()) < self.radius
     }
 }
@@ -70,7 +71,8 @@ impl LocalTrial<Point<Cartesian<2>>> for Discrete {
 #[derive(Resource)]
 // ANCHOR: simulation_struct
 struct CustomRandomWalk {
-    microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Circle>,
+    microstate:
+        Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Circle>>,
     hamiltonian: Zero,
     translate_sweep: Sweep<Discrete>,
     kt: f64,
@@ -87,7 +89,7 @@ impl CustomRandomWalk {
         // ANCHOR: microstate
         let circle = Circle { radius: 50.0 };
 
-        let microstate = MicrostateBuilder::with_boundary(circle)
+        let microstate = MicrostateBuilder::with_boundary(Closed(circle))
             .bodies(iter::repeat_n(Body::point(Cartesian::default()), n))
             .try_build()?;
         // ANCHOR_END: microstate

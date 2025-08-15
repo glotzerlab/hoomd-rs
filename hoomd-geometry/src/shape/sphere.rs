@@ -2,10 +2,11 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement [`Hypersphere`] */
-use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
+use crate::{BoundingSphereRadius, IntersectsAt, IsPointInside, SupportMapping, Volume};
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{InnerProduct, Rotate};
+use hoomd_vector::{Cartesian, InnerProduct, Rotate, distribution::Ball};
 
+use rand::{Rng, distr::Distribution};
 use std::f64::consts::PI;
 use std::ops::Mul;
 
@@ -218,6 +219,59 @@ impl<const N: usize> BoundingSphereRadius for Hypersphere<N> {
     }
 }
 
+impl<const N: usize, V> IsPointInside<V> for Hypersphere<N>
+where
+    V: InnerProduct,
+{
+    /** Check if a vector is inside a hypersphere.
+
+    ```
+    use hoomd_geometry::{IsPointInside, shape::Sphere};
+    use hoomd_vector::Cartesian;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let sphere = Sphere { radius: 3.0.try_into()? };
+
+    assert!(sphere.is_point_inside(&Cartesian::from([2.5, 0.0, 0.0])));
+    assert!(!sphere.is_point_inside(&Cartesian::from([3.0, -3.0, 2.0])));
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    fn is_point_inside(&self, point: &V) -> bool {
+        point.dot(point) < self.radius.get().powi(2)
+    }
+}
+
+impl<const N: usize> Distribution<Cartesian<N>> for Hypersphere<N> {
+    /** Generate points uniformly distributed in the hypersphere.
+
+    # Example
+
+    ```
+    use hoomd_geometry::{IsPointInside, shape::Sphere};
+    use rand::{SeedableRng, rngs::StdRng, distr::Distribution};
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let sphere = Sphere { radius: 5.0.try_into()? };
+    let mut rng = StdRng::seed_from_u64(1);
+
+    let point = sphere.sample(&mut rng);
+    assert!(sphere.is_point_inside(&point));
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
+        let ball = Ball {
+            radius: self.radius,
+        };
+        ball.sample(rng)
+    }
+}
+
 #[cfg(test)]
 #[expect(
     clippy::used_underscore_binding,
@@ -232,8 +286,12 @@ mod tests {
     use crate::Convex;
     use approx::assert_relative_eq;
     use hoomd_vector::{Cartesian, Versor};
+    use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
     use rstest::*;
     use std::marker::PhantomData;
+
+    /// Number of random samples to test.
+    const N: usize = 1024;
 
     fn volume_map(n: usize, r: f64) -> f64 {
         match n {
@@ -391,5 +449,32 @@ mod tests {
             &[3.52, 3.52, 3.52].into(),
             &identity
         ));
+    }
+
+    #[test]
+    fn is_point_inside() {
+        let circle = Circle::with_radius(2.0.try_into().expect("test value is a positive real"));
+
+        assert!(circle.is_point_inside(&Cartesian::from([0.0, 0.0])));
+        assert!(circle.is_point_inside(&Cartesian::from([0.0, 1.0])));
+        assert!(circle.is_point_inside(&Cartesian::from([0.0, -1.0])));
+        assert!(circle.is_point_inside(&Cartesian::from([1.0, 0.0])));
+        assert!(circle.is_point_inside(&Cartesian::from([-1.0, 0.0])));
+        assert!(circle.is_point_inside(&Cartesian::from([2.0f64.next_down(), 0.0])));
+        assert!(circle.is_point_inside(&Cartesian::from([0.0, 2.0f64.next_down()])));
+
+        assert!(!circle.is_point_inside(&Cartesian::from([2.0, 0.0])));
+        assert!(!circle.is_point_inside(&Cartesian::from([0.0, 2.0])));
+        assert!(!circle.is_point_inside(&Cartesian::from([1.5, 1.5])));
+    }
+
+    #[test]
+    fn distribution() {
+        let circle = Circle::with_radius(4.0.try_into().expect("test value is a positive real"));
+        let mut rng = StdRng::seed_from_u64(4);
+
+        let points: Vec<_> = circle.sample_iter(&mut rng).take(N).collect();
+        assert!(&points.iter().all(|p| circle.is_point_inside(p)));
+        assert!(&points.iter().any(|p| p.dot(p) > 3.9));
     }
 }

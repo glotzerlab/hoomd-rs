@@ -18,6 +18,7 @@ hoomd-microstate.workspace = true
 hoomd-vector.workspace = true
 
 [dev-dependencies]
+hoomd-geometry.workspace = true
 approx.workspace = true
 divan.workspace = true
 rstest.workspace = true
