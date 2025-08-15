@@ -28,7 +28,13 @@ to gradually resolve overlaps. In the third region, sites are allowed to move
 freely when not overlapping. The shoulder potential prevents trial moves from
 creating new overlaps.
 
-TODO: Example
+# Example
+
+```
+use hoomd_interaction::pairwise::OverlapPenalty;
+
+let overlap_penalty = OverlapPenalty::default();
+```
 */
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct OverlapPenalty {
@@ -51,6 +57,14 @@ impl Default for OverlapPenalty {
     * $`k = 1000`$
     * $`d_\mathrm{max} = 0.2`$
     * $`\varepsilon_\mathrm{shoulder} = 100`$
+
+    # Example
+
+    ```
+    use hoomd_interaction::pairwise::OverlapPenalty;
+
+    let overlap_penalty = OverlapPenalty::default();
+    ```
     */
     #[inline]
     fn default() -> Self {
@@ -73,4 +87,50 @@ impl IsotropicEnergy for OverlapPenalty {
     }
 }
 
-// TODO: Test
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn shoulder() {
+        let k = 0.0;
+        let epsilon_shoulder = 15.0;
+        let maximum_allowed_overlap =  1.0;
+    
+        let overlap_penalty = OverlapPenalty { k, maximum_allowed_overlap, epsilon_shoulder };
+
+        assert_eq!(overlap_penalty.energy(1.0), 0.0);
+        assert_eq!(overlap_penalty.energy(0.0), 0.0);
+        assert_eq!(overlap_penalty.energy(0.0f64.next_down()), epsilon_shoulder);
+        assert_eq!(overlap_penalty.energy(-0.5), epsilon_shoulder);
+    }
+
+    #[test]
+    fn core() {
+        let k = 0.0;
+        let epsilon_shoulder = 0.0;
+        let maximum_allowed_overlap =  0.5;
+    
+        let overlap_penalty = OverlapPenalty { k, maximum_allowed_overlap, epsilon_shoulder };
+
+        assert_eq!(overlap_penalty.energy(1.0), 0.0);
+        assert_eq!(overlap_penalty.energy(0.0), 0.0);
+        assert_eq!(overlap_penalty.energy(0.0f64.next_down()), 0.0);
+        assert_eq!(overlap_penalty.energy(-0.5), 0.0);
+        assert_eq!(overlap_penalty.energy((-0.5f64).next_down()), f64::INFINITY);
+        assert_eq!(overlap_penalty.energy(-1.0), f64::INFINITY);
+    }
+
+    #[test]
+    fn harmonic() {
+        let k = 6.0;
+        let epsilon_shoulder = 0.0;
+        let maximum_allowed_overlap =  10.0;
+    
+        let overlap_penalty = OverlapPenalty { k, maximum_allowed_overlap, epsilon_shoulder };
+
+        assert_eq!(overlap_penalty.energy(1.0), 0.0);
+        assert_eq!(overlap_penalty.energy(0.0), 0.0);
+        assert_eq!(overlap_penalty.energy(-0.125), 0.5 * k * 0.125f64.powi(2));
+    }
+}
