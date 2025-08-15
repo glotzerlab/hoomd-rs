@@ -5,7 +5,7 @@
 */
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairEnergy, TotalEnergy};
-use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Position};
+use hoomd_microstate::{Body, Microstate, Site, Transform, boundary::Wrap, property::Position};
 use hoomd_vector::Vector;
 
 /** Compute system properties based on short-ranged pairwise interactions between sites.
@@ -38,7 +38,7 @@ use hoomd_interaction::{CutoffPair,
 
 let lennard_jones: LennardJones = LennardJones { epsilon: 1.5, sigma: 2.0 };
 let evaluator = Isotropic(lennard_jones);
-let cutoff_pair = CutoffPair { r_cut: 2.5, evaluator };
+let cutoff_pair = CutoffPair { r_cut: 5.0, evaluator };
 ```
 
 Set a custom potential using a closure:
@@ -78,6 +78,68 @@ pub struct CutoffPair<E> {
 
     /// Computes the pairwise energies and forces.
     pub evaluator: E,
+}
+
+impl<E> CutoffPair<E> {
+    /** Compute the pair energy between two sites.
+
+    Use this method to compute an individual term in the total pair energy,
+    subject to the `r_cut` and inter-body checks:
+
+    ```math
+    U\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
+    ```
+
+    # Example
+    ```
+    use ::approx::assert_relative_eq;
+
+    use hoomd_interaction::{CutoffPair,
+        pairwise::{Isotropic, LennardJones}};
+    use hoomd_microstate::{Body, MicrostateBuilder, Site};
+    use hoomd_vector::Cartesian;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let lennard_jones: LennardJones = LennardJones { epsilon: 1.0, sigma: 1.0 };
+    let evaluator = Isotropic(lennard_jones);
+    let cutoff_pair = CutoffPair { r_cut: 2.5, evaluator };
+
+    let body_a = Body::point(Cartesian::from([0.0, 0.0]));
+    let body_b = Body::point(Cartesian::from([0.0, 3.0]));
+    let body_c = Body::point(Cartesian::from([0.0, -2.0f64.powf(1.0/6.0)]));
+
+    let microstate = MicrostateBuilder::new()
+        .bodies([body_a, body_b, body_c])
+        .try_build()?;
+
+    let energy_ab = cutoff_pair.site_pair_energy(
+        &microstate.sites()[0],
+        &microstate.sites()[1]);
+    let energy_ac = cutoff_pair.site_pair_energy(
+        &microstate.sites()[0],
+        &microstate.sites()[2]);
+
+    assert_eq!(energy_ab, 0.0);
+    assert_relative_eq!(energy_ac, -1.0);
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    pub fn site_pair_energy<V, S>(&self, a: &Site<S>, b: &Site<S>) -> f64
+    where
+        E: SitePairEnergy<S>,
+        S: Position<Vector = V>,
+        V: Vector,
+    {
+        let r = (a.properties.position()).distance(b.properties.position());
+        if r < self.r_cut && a.body_tag != b.body_tag {
+            self.evaluator
+                .site_pair_energy(&a.properties, &b.properties)
+        } else {
+            0.0
+        }
+    }
 }
 
 impl<V, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPair<E>
@@ -360,9 +422,6 @@ where
         -energy_initial
     }
 }
-
-// TODO: implement site_pair_energy for CutoffPair. It needs to apply
-// the r_cut and body exclusions first, then forward the call to the inner type.
 
 #[cfg(test)]
 mod tests {
