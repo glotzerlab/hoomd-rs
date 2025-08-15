@@ -688,7 +688,7 @@ mod tests {
         }
     }
 
-    mod delta_energy_insert {
+    mod delta_energy_insert_remove {
         use super::*;
 
         #[rstest]
@@ -750,6 +750,11 @@ mod tests {
                 cutoff_pair.delta_energy_insert(&microstate, &body_a_new),
                 2.0
             );
+
+            microstate
+                .add_body(body_a_new)
+                .expect("hard-coded bodies should be in the boundary");
+            assert_eq!(cutoff_pair.delta_energy_remove(&microstate, 1), -2.0);
         }
 
         #[test]
@@ -810,12 +815,14 @@ mod tests {
                     - cutoff_pair.total_energy(&microstate_initial);
 
                 assert_relative_eq!(delta_energy_insert, delta_energy_total, epsilon = 1e-6);
+
+                let delta_energy_remove = cutoff_pair.delta_energy_remove(&microstate_final, 1);
+                assert_relative_eq!(delta_energy_remove, -delta_energy_total, epsilon = 1e-6);
+
                 microstate_final.remove_body(
                     microstate_final.body_indices()[tag].expect("tag should be present"),
                 );
             }
         }
     }
-
-    // TODO: Test delta_energy_remove
 }
