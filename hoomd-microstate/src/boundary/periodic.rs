@@ -91,9 +91,8 @@ where
 }
 
 impl<T> Periodic<T> {
-
     /** Access the boundary's shape.
-    
+
     # Example
 
     ```
@@ -124,7 +123,7 @@ where
 
     ```
     use rand::{SeedableRng, rngs::StdRng, distr::Distribution};
-    
+
     use hoomd_geometry::{IsPointInside, shape::Cuboid};
     use hoomd_microstate::boundary::Periodic;
 

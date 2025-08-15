@@ -72,7 +72,7 @@ impl<F: IsotropicForce> IsotropicForce for Expanded<F> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pairwise::LennardJones;    
+    use crate::pairwise::LennardJones;
     use ::approx::{assert_abs_diff_eq, assert_relative_eq};
     use rstest::*;
 
@@ -90,7 +90,10 @@ mod tests {
         assert_relative_eq!(expanded_lj.force(sigma + delta), 24.0 * epsilon / sigma);
 
         // Bottom of the well
-        assert_relative_eq!(expanded_lj.energy(2.0_f64.powf(1.0 / 6.0) * sigma + delta), -epsilon);
+        assert_relative_eq!(
+            expanded_lj.energy(2.0_f64.powf(1.0 / 6.0) * sigma + delta),
+            -epsilon
+        );
         assert_abs_diff_eq!(
             expanded_lj.force(2.0_f64.powf(1.0 / 6.0) * sigma + delta),
             0.0,
@@ -98,7 +101,13 @@ mod tests {
         );
 
         // r = 2 sigma
-        assert_relative_eq!(expanded_lj.energy(2.0 * sigma + delta), -63.0 / 1024.0 * epsilon);
-        assert_relative_eq!(expanded_lj.force(2.0 * sigma + delta), -93.0 / 512.0 * epsilon / sigma);
+        assert_relative_eq!(
+            expanded_lj.energy(2.0 * sigma + delta),
+            -63.0 / 1024.0 * epsilon
+        );
+        assert_relative_eq!(
+            expanded_lj.force(2.0 * sigma + delta),
+            -93.0 / 512.0 * epsilon / sigma
+        );
     }
 }

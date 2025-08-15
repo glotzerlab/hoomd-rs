@@ -95,9 +95,13 @@ mod tests {
     fn shoulder() {
         let k = 0.0;
         let epsilon_shoulder = 15.0;
-        let maximum_allowed_overlap =  1.0;
-    
-        let overlap_penalty = OverlapPenalty { k, maximum_allowed_overlap, epsilon_shoulder };
+        let maximum_allowed_overlap = 1.0;
+
+        let overlap_penalty = OverlapPenalty {
+            k,
+            maximum_allowed_overlap,
+            epsilon_shoulder,
+        };
 
         assert_eq!(overlap_penalty.energy(1.0), 0.0);
         assert_eq!(overlap_penalty.energy(0.0), 0.0);
@@ -109,9 +113,13 @@ mod tests {
     fn core() {
         let k = 0.0;
         let epsilon_shoulder = 0.0;
-        let maximum_allowed_overlap =  0.5;
-    
-        let overlap_penalty = OverlapPenalty { k, maximum_allowed_overlap, epsilon_shoulder };
+        let maximum_allowed_overlap = 0.5;
+
+        let overlap_penalty = OverlapPenalty {
+            k,
+            maximum_allowed_overlap,
+            epsilon_shoulder,
+        };
 
         assert_eq!(overlap_penalty.energy(1.0), 0.0);
         assert_eq!(overlap_penalty.energy(0.0), 0.0);
@@ -125,9 +133,13 @@ mod tests {
     fn harmonic() {
         let k = 6.0;
         let epsilon_shoulder = 0.0;
-        let maximum_allowed_overlap =  10.0;
-    
-        let overlap_penalty = OverlapPenalty { k, maximum_allowed_overlap, epsilon_shoulder };
+        let maximum_allowed_overlap = 10.0;
+
+        let overlap_penalty = OverlapPenalty {
+            k,
+            maximum_allowed_overlap,
+            epsilon_shoulder,
+        };
 
         assert_eq!(overlap_penalty.energy(1.0), 0.0);
         assert_eq!(overlap_penalty.energy(0.0), 0.0);

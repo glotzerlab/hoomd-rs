@@ -571,6 +571,7 @@ where
         }
     }
 
+    /// Update ghosts for all the sites of a given body (by index).
     fn update_body_site_ghosts(&mut self, body_index: usize) {
         for site_tag in &self.bodies_sites[body_index] {
             let site_index = self.sites.indices[*site_tag]

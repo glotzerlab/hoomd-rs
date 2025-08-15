@@ -168,7 +168,7 @@ impl<D> QuickInsert<D> {
     passes `state` to `local_trial.apply`.
 
     FUTURE: Should `QuickInsert` tune the trial moves? Or ask the caller to?
-    
+
     # Example
 
     ```
@@ -186,7 +186,7 @@ impl<D> QuickInsert<D> {
         template_sites: vec![Point::default()],
     };
     let mut quick_insert = QuickInsert::new(distribution, 256);
-   
+
     let translate = Translate {
         maximum_distance: 0.1.try_into()?,
     };
@@ -212,7 +212,7 @@ impl<D> QuickInsert<D> {
         &1.0,
     );
 
-    assert!(microstate.bodies().len() > 1);    
+    assert!(microstate.bodies().len() > 1);
     # Ok(())
     # }
     ```
