@@ -7,6 +7,12 @@ transformation style.
 mod morse_transformation;
 pub use morse_transformation::MorseTransformation;
 
+mod direct_transformation;
+pub use direct_transformation::DirectTransformation;
+
+mod inverse_transformation;
+pub use inverse_transformation::InverseTransformation;
+
 /** Implement the `ChIMES` transformation styles.
 
 Implement [`Transformation`] on a custom type or use one of the provided
