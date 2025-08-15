@@ -3,12 +3,12 @@
 
 /*! Implement [`Microstate`] and related types.
  */
-// TODO: Review doc examples. Look for extra newlines, or other opportunities
-// to add bodies and not need type annotations.
+
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
+use tinyvec::ArrayVec;
 
-use crate::boundary::{Boundary, Open};
+use crate::boundary::{GenerateGhosts, MAX_GHOSTS, Open, Wrap};
 use crate::property::Position;
 use crate::{Body, Error, Site, Transform};
 
@@ -25,6 +25,100 @@ pub struct Tagged<T> {
     pub item: T,
 }
 
+/** A dense vector with O(1) remove complexity.
+
+Each item pushed to the vector is given a tag (in monotonically increasing
+order). Access items by tag when identity matters and by index order when it
+doesn't.
+
+Items are removed using `swap_remove`. Removed tags are reused when adding new
+items.
+*/
+#[derive(Clone)]
+struct VecWithTags<T> {
+    /// Items in index order.
+    items: Vec<T>,
+
+    /// Tags of the items, in index order.
+    tags: Vec<usize>,
+
+    /// Indices of the items, in tag order.
+    indices: Vec<Option<usize>>,
+
+    /// Tags that can be reused.
+    free_tags: BinaryHeap<Reverse<usize>>,
+}
+
+impl<T> VecWithTags<T> {
+    /// Construct an empty vector with tagged items.
+    fn new() -> Self {
+        Self {
+            items: Vec::new(),
+            tags: Vec::new(),
+            indices: Vec::new(),
+            free_tags: BinaryHeap::new(),
+        }
+    }
+
+    /// Remove all items from the vector.
+    fn clear(&mut self) {
+        self.items.clear();
+        self.tags.clear();
+        self.indices.clear();
+        self.free_tags.clear();
+    }
+
+    /// The tag that will be assigned to the next item added.
+    fn next_tag(&self) -> usize {
+        self.free_tags.peek().map_or(self.indices.len(), |t| t.0)
+    }
+
+    /// Add a new item and return the tag added.
+    fn push(&mut self, item: T) -> usize {
+        let tag = self.free_tags.pop().map_or(self.indices.len(), |t| t.0);
+        let index = self.items.len();
+
+        self.items.push(item);
+        self.tags.push(tag);
+
+        if tag == self.indices.len() {
+            self.indices.push(Some(index));
+        } else {
+            debug_assert_eq!(self.indices[tag], None);
+            self.indices[tag] = Some(index);
+        }
+
+        tag
+    }
+
+    /// Remove an item identified *by index*
+    fn remove(&mut self, index: usize) {
+        let removed_tag = self.tags[index];
+
+        self.items.swap_remove(index);
+        self.tags.swap_remove(index);
+
+        if index < self.items.len() {
+            let replaced_tag = self.tags[index];
+            self.indices[replaced_tag] = Some(index);
+        }
+        self.indices[removed_tag] = None;
+        self.free_tags.push(Reverse(removed_tag));
+    }
+
+    /// Number of items stored.
+    #[cfg(test)]
+    fn len(&self) -> usize {
+        self.items.len()
+    }
+
+    /// True when any items are stored.
+    #[cfg(test)]
+    fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+}
+
 /** Store and manage all the degrees of freedom of a single microstate in phase space.
 
 [`Microstate`] implements the main logic of the crate. See the [crate-level
@@ -36,13 +130,12 @@ The generic type names are:
 * `S`: The [`Site::properties`](crate::Site) type.
 * `C`: The [`boundary`](crate::boundary) condition type.
 
-
 ## Constructing Microstate
 
-You will find many examples in this documentation using [`Microstate::new`].
-It is designed to be terse, and is inflexible as a consequence.
-[`Microstate::new`] always sets [`Open`](boundary::Open) boundary conditions and
-initializes the seed and step to 0.
+You will find many examples in this documentation using [`Microstate::new`]. It
+is designed to be terse, and is inflexible as a consequence. [`Microstate::new`]
+always sets [`Open`](crate::boundary::Open) boundary conditions and initializes
+the seed and step to 0.
 ```
 use hoomd_microstate::Microstate;
 # use hoomd_microstate::{Body, property::Point};
@@ -56,16 +149,17 @@ When you need more control, use [`MicrostateBuilder`] to set the boundary condit
 use a different seed or starting step:
 
 ```
-use hoomd_microstate::{Microstate, MicrostateBuilder, Body};
-use hoomd_microstate::boundary::Square;
+use hoomd_geometry::shape::Rectangle;
+use hoomd_microstate::{Microstate, MicrostateBuilder, Body, boundary::Closed};
+use hoomd_vector::Cartesian;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let square = Square { l: 10.0.try_into()? };
+let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
 
 let microstate = MicrostateBuilder::with_boundary(square)
     .seed(0x43abf1)
     .step(100_000)
-    .bodies([Body::point([0.0, 0.0].into())])
+    .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
     .try_build()?;
 # Ok(())
 # }
@@ -83,25 +177,19 @@ pub struct Microstate<B, S = B, C = Open> {
     seed: u32,
 
     /// Bodies in the microstate, stored in index order.
-    bodies: Vec<Tagged<Body<B, S>>>,
-
-    /// Indices of the bodies, in tag order.
-    body_indices: Vec<Option<usize>>,
-
-    /// Body tags that can be reused.
-    free_body_tags: BinaryHeap<Reverse<usize>>,
+    bodies: VecWithTags<Tagged<Body<B, S>>>,
 
     /// Sites in the system reference frame.
-    sites: Vec<Site<S>>,
-
-    /// Indices of the sites, in tag order.
-    site_indices: Vec<Option<usize>>,
-
-    /// Body tags that can be reused.
-    free_site_tags: BinaryHeap<Reverse<usize>>,
+    sites: VecWithTags<Site<S>>,
 
     /// Tags of the sites associated with the bodies (in body index order).
     bodies_sites: Vec<Vec<usize>>,
+
+    /// Ghost sites in the system reference frame.
+    ghosts: VecWithTags<Site<S>>,
+
+    /// Tags of the ghosts associated with a given site (in site index order).
+    sites_ghosts: Vec<ArrayVec<[usize; MAX_GHOSTS]>>,
 
     /// The range of allowed particle positions and a description of any periodicity.
     boundary: C,
@@ -147,13 +235,11 @@ impl<B, S> Microstate<B, S, Open> {
             step: 0,
             substep: 0,
             seed: 0,
-            bodies: Vec::new(),
-            body_indices: Vec::new(),
-            free_body_tags: BinaryHeap::new(),
-            sites: Vec::new(),
-            site_indices: Vec::new(),
-            free_site_tags: BinaryHeap::new(),
+            bodies: VecWithTags::new(),
+            sites: VecWithTags::new(),
             bodies_sites: Vec::new(),
+            ghosts: VecWithTags::new(),
+            sites_ghosts: Vec::new(),
             boundary: Open,
         }
     }
@@ -371,17 +457,18 @@ impl<B, S, C> Microstate<B, S, C> {
     # Example
 
     ```
-    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square};
+    use hoomd_geometry::shape::Rectangle;
+    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Closed};
     # use hoomd_microstate::{Body, property::Point};
     # use hoomd_vector::Cartesian;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let square = Square { l: 10.0.try_into()? };
+    let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
     let microstate = MicrostateBuilder::with_boundary(square)
         # .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
         .try_build()?;
 
-    assert_eq!(microstate.boundary().l.get(), 10.0);
+    assert_eq!(microstate.boundary().0.edge_lengths[0].get(), 10.0);
     # Ok(())
     # }
     ```
@@ -396,18 +483,19 @@ impl<B, S, C> Microstate<B, S, C> {
     # Example
 
     ```
-    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square};
+    use hoomd_geometry::shape::Rectangle;
+    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Closed};
     # use hoomd_microstate::{Body, property::Point};
     # use hoomd_vector::Cartesian;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let square = Square { l: 10.0.try_into()? };
+    let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
     let mut microstate = MicrostateBuilder::with_boundary(square)
         # .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
         .try_build()?;
 
-    microstate.boundary_mut().l = 11.0.try_into()?;
-    assert_eq!(microstate.boundary().l.get(), 11.0);
+    microstate.boundary_mut().0.edge_lengths[0] = 11.0.try_into()?;
+    assert_eq!(microstate.boundary().0.edge_lengths[0].get(), 11.0);
     # Ok(())
     # }
     ```
@@ -434,9 +522,70 @@ impl<B, S, C> Microstate<B, S, C> {
 impl<M, B, S, C> Microstate<B, S, C>
 where
     B: Transform<S> + Position<Metric = M>,
-    S: Position<Metric = M>,
-    C: Boundary<M, B, S>,
+    S: Position<Metric = M> + Default,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
+    /** Update the ghosts of a site.
+
+    Given a site in the boundary, update that site's ghosts to be consistent
+    with that site's properties. This may require adding or removing ghosts.
+    */
+    fn update_site_ghosts(
+        sites: &VecWithTags<Site<S>>,
+        site_index: usize,
+        boundary: &C,
+        sites_ghosts: &mut [ArrayVec<[usize; MAX_GHOSTS]>],
+        ghosts: &mut VecWithTags<Site<S>>,
+    ) {
+        let site = &sites.items[site_index];
+        let new_ghosts = boundary.generate_ghosts(&site.properties);
+        let ghost_tags = &mut sites_ghosts[site_index];
+
+        if ghost_tags.len() < new_ghosts.len() {
+            let ghosts_to_add = new_ghosts.len() - ghost_tags.len();
+            for _ in 0..ghosts_to_add {
+                let ghost_tag = ghosts.push(Site {
+                    site_tag: site.site_tag,
+                    body_tag: site.body_tag,
+                    properties: S::default(),
+                });
+                ghost_tags.push(ghost_tag);
+            }
+        } else if ghost_tags.len() > new_ghosts.len() {
+            let ghosts_to_remove = ghost_tags.len() - new_ghosts.len();
+            for ghost_tag in ghost_tags.iter().rev().take(ghosts_to_remove) {
+                let ghost_index = ghosts.indices[*ghost_tag]
+                    .expect("sites_ghosts and ghost.indices should be consistent");
+                ghosts.remove(ghost_index);
+            }
+
+            ghost_tags.truncate(new_ghosts.len());
+        }
+
+        debug_assert_eq!(ghost_tags.len(), new_ghosts.len());
+
+        for (new_ghost, ghost_tag) in new_ghosts.into_iter().zip(ghost_tags) {
+            let ghost_index = ghosts.indices[*ghost_tag]
+                .expect("sites_ghosts and ghost.indices should be consistent");
+            ghosts.items[ghost_index].properties = new_ghost;
+        }
+    }
+
+    /// Update ghosts for all the sites of a given body (by index).
+    fn update_body_site_ghosts(&mut self, body_index: usize) {
+        for site_tag in &self.bodies_sites[body_index] {
+            let site_index = self.sites.indices[*site_tag]
+                .expect("bodies_sites and site_indices should be consistent");
+            Self::update_site_ghosts(
+                &self.sites,
+                site_index,
+                &self.boundary,
+                &mut self.sites_ghosts,
+                &mut self.ghosts,
+            );
+        }
+    }
+
     /** Add a new body to the microstate.
 
     Each body is assigned a unique tag. The first body is given tag 0,
@@ -448,7 +597,9 @@ where
     [`sites`](Microstate::sites) (in system coordinates) and assigns unique
     tags to the sites similarly. It wraps the body's position (and the
     positions of its sites in system coordinates) into the boundary (see
-    [`Boundary`]).
+    [`boundary`]).
+
+    [`boundary`]: crate::boundary
 
     # Cost
 
@@ -489,15 +640,12 @@ where
     )]
     pub fn add_body(&mut self, body: Body<B, S>) -> Result<usize, Error> {
         // Find the tag of the new body.
-        let body_tag = self
-            .free_body_tags
-            .peek()
-            .map_or(self.body_indices.len(), |t| t.0);
+        let body_tag = self.bodies.next_tag();
 
         let mut body = body;
         body.properties = self
             .boundary
-            .wrap_body(body.properties)
+            .wrap(body.properties)
             .map_err(|e| Error::AddBody(body_tag, e))?;
 
         // An unknown site in the body might not wrap into the boundary.
@@ -508,41 +656,29 @@ where
         // or a reusable scratch storage).
         for s in &body.sites {
             self.boundary
-                .wrap_site(body.properties.transform(s))
+                .wrap(body.properties.transform(s))
                 .map_err(|e| Error::AddBody(body_tag, e))?;
         }
 
-        // Now that all errors have been checked, it is safe to mark the tag as
-        // used.
-        self.free_body_tags.pop();
+        // Now that all errors have been checked, it is safe to start mutating the
+        // microstate.
 
-        // Add sites.
+        // Add the body's sites first.
         // Should the Vec allocation prove a bottleneck, we could recycle the body_sites
         // vecs along with the tags.
         let mut body_sites = Vec::with_capacity(body.sites.len());
         for s in &body.sites {
-            let site_tag = self
-                .free_site_tags
-                .pop()
-                .map_or(self.site_indices.len(), |t| t.0);
+            let site_tag = self.sites.next_tag();
 
             self.sites.push(Site {
                 site_tag,
                 properties: self
                     .boundary
-                    .wrap_site(body.properties.transform(s))
+                    .wrap(body.properties.transform(s))
                     .expect("sites should be validated as wrappable prior to this loop"),
                 body_tag,
             });
-
-            let index = self.sites.len() - 1;
-
-            if site_tag == self.site_indices.len() {
-                self.site_indices.push(Some(index));
-            } else {
-                debug_assert_eq!(self.site_indices[site_tag], None);
-                self.site_indices[site_tag] = Some(index);
-            }
+            self.sites_ghosts.push(ArrayVec::new());
 
             body_sites.push(site_tag);
         }
@@ -554,14 +690,7 @@ where
         });
         self.bodies_sites.push(body_sites);
 
-        let index = Some(self.bodies.len() - 1);
-
-        if body_tag == self.body_indices.len() {
-            self.body_indices.push(index);
-        } else {
-            debug_assert_eq!(self.body_indices[body_tag], None);
-            self.body_indices[body_tag] = index;
-        }
+        self.update_body_site_ghosts(self.bodies().len() - 1);
 
         Ok(body_tag)
     }
@@ -612,7 +741,8 @@ where
 
     Removing a body will change the index order of the
     [`bodies`](Microstate::bodies) and [`sites`](Microstate::sites) arrays.
-    [`Microstate`] does not guarantee any specific ordering in these arrays.
+    [`Microstate`] does not guarantee any specific ordering in these arrays
+    after calling `remove_body`.
 
     # Cost
 
@@ -644,31 +774,29 @@ where
     */
     #[inline]
     pub fn remove_body(&mut self, body_index: usize) {
-        let body_tag = self.bodies[body_index].tag;
-        debug_assert_eq!(self.body_indices[body_tag], Some(body_index));
+        let body_tag = self.bodies.items[body_index].tag;
+        debug_assert_eq!(self.bodies.indices[body_tag], Some(body_index));
 
-        // Remove sites. `add_body` adds sites in increasing index order, so
-        // remove them in reverse order to avoid keep the other bodies' sites
-        // in increasing order.
+        // Remove sites and their associated ghosts. `add_body` adds sites in
+        // increasing index order, so remove them in reverse order to avoid keep
+        // the other bodies' sites in increasing order.
         let body_sites = self.bodies_sites.swap_remove(body_index);
         for site_tag in body_sites.iter().rev() {
-            let site_index = self.site_indices[*site_tag]
-                .expect("bodies_sites and site_indices should be consistent");
-            let removed_site = self.sites.swap_remove(site_index);
-            if site_index < self.sites.len() {
-                self.site_indices[self.sites[site_index].site_tag] = Some(site_index);
+            let site_index = self.sites.indices[*site_tag]
+                .expect("bodies_sites and sites.indices should be consistent");
+
+            let site_ghosts = self.sites_ghosts.swap_remove(site_index);
+            for ghost_tag in site_ghosts.iter().rev() {
+                let ghost_index = self.ghosts.indices[*ghost_tag]
+                    .expect("sites_ghosts and ghosts.indices should be consistent");
+                self.ghosts.remove(ghost_index);
             }
-            self.site_indices[removed_site.site_tag] = None;
-            self.free_site_tags.push(Reverse(removed_site.site_tag));
+
+            self.sites.remove(site_index);
         }
 
         // Remove body
-        self.bodies.swap_remove(body_index);
-        if body_index < self.bodies.len() {
-            self.body_indices[self.bodies[body_index].tag] = Some(body_index);
-        }
-        self.body_indices[body_tag] = None;
-        self.free_body_tags.push(Reverse(body_tag));
+        self.bodies.remove(body_index);
     }
 
     /** Sets the properties of the given body.
@@ -710,13 +838,13 @@ where
     where
         B: Transform<S> + Position<Metric = M>,
         S: Position<Metric = M>,
-        C: Boundary<M, B, S>,
+        C: Wrap<B> + Wrap<S>,
     {
-        let body = &mut self.bodies[body_index];
+        let body = &mut self.bodies.items[body_index];
 
         let new_body_properties = self
             .boundary
-            .wrap_body(properties)
+            .wrap(properties)
             .map_err(|e| Error::UpdateBody(body.tag, e))?;
 
         // An unknown site in the body might not wrap into the boundary.
@@ -727,7 +855,7 @@ where
         // reusable scratch storage).
         for s in &body.item.sites {
             self.boundary
-                .wrap_site(new_body_properties.transform(s))
+                .wrap(new_body_properties.transform(s))
                 .map_err(|e| Error::UpdateBody(body.tag, e))?;
         }
 
@@ -735,13 +863,15 @@ where
 
         // Update site properties
         for (i, site_tag) in self.bodies_sites[body_index].iter().enumerate() {
-            let site_index = self.site_indices[*site_tag]
+            let site_index = self.sites.indices[*site_tag]
                 .expect("bodies_sites and site_indices should be consistent");
-            self.sites[site_index].properties = self
+            self.sites.items[site_index].properties = self
                 .boundary
-                .wrap_site(body.item.properties.transform(&body.item.sites[i]))
+                .wrap(body.item.properties.transform(&body.item.sites[i]))
                 .expect("sites should be validated as wrappable prior to this loop");
         }
+
+        self.update_body_site_ghosts(body_index);
 
         Ok(())
     }
@@ -772,12 +902,10 @@ where
     #[inline]
     pub fn clear(&mut self) {
         self.bodies.clear();
-        self.body_indices.clear();
-        self.free_body_tags.clear();
         self.sites.clear();
-        self.site_indices.clear();
-        self.free_site_tags.clear();
         self.bodies_sites.clear();
+        self.ghosts.clear();
+        self.sites_ghosts.clear();
     }
 }
 
@@ -836,7 +964,7 @@ impl<B, S, C> Microstate<B, S, C> {
     */
     #[inline]
     pub fn bodies(&self) -> &[Tagged<Body<B, S>>] {
-        &self.bodies
+        &self.bodies.items
     }
 
     /** Identify the index of a body given a tag.
@@ -881,7 +1009,7 @@ impl<B, S, C> Microstate<B, S, C> {
     */
     #[inline]
     pub fn body_indices(&self) -> &[Option<usize>] {
-        &self.body_indices
+        &self.bodies.indices
     }
 
     /** Access the microstate's sites (in the system frame) in index order.
@@ -943,7 +1071,20 @@ impl<B, S, C> Microstate<B, S, C> {
     */
     #[inline]
     pub fn sites(&self) -> &[Site<S>] {
-        &self.sites
+        &self.sites.items
+    }
+
+    /** Access the ghost sites in the system frame.
+
+    Each ghost site shares a `site_tag` and `body_tag` with a primary site
+    (in [`sites`]). Ghost sites are only placed when using periodic boundary
+    conditions and are outside the edges of the boundary.
+
+    [`sites`]: Self::sites
+    */
+    #[inline]
+    pub fn ghosts(&self) -> &[Site<S>] {
+        &self.ghosts.items
     }
 
     /** Identify the index of a site given a tag.
@@ -955,7 +1096,7 @@ impl<B, S, C> Microstate<B, S, C> {
     */
     #[inline]
     pub fn site_indices(&self) -> &[Option<usize>] {
-        &self.site_indices
+        &self.sites.indices
     }
 
     /** Iterate over all the sites (in the system reference frame) associated with a body.
@@ -964,6 +1105,10 @@ impl<B, S, C> Microstate<B, S, C> {
     in the system reference frame on all sites that are associated with a given
     body *index*. The borrowed sites are immutable. Call
     [`Microstate::update_body_properties()`] to mutate a body.
+
+    `iter_body_sites` always iterates over *primary sites*. In periodic boundary
+    conditions, these sites may be split across one or more parts of the
+    boundary.
 
     # Example
 
@@ -991,7 +1136,7 @@ impl<B, S, C> Microstate<B, S, C> {
     )]
     pub fn iter_body_sites(&self, body_index: usize) -> impl Iterator<Item = &Site<S>> {
         self.bodies_sites[body_index].iter().map(|site_tag| {
-            &self.sites[self.site_indices[*site_tag]
+            &self.sites.items[self.sites.indices[*site_tag]
                 .expect("bodies_sites and site_indices should be consistent")]
         })
     }
@@ -1004,15 +1149,27 @@ where
 {
     /** Find sites near a point in space.
 
-    Iterate over all sites (and later, ghost sites) within a distance `r` of
-    the given `point`.
+    Iterate over all sites and ghost sites within a distance `r` of the given
+    `point`. All sites produced by this iterator will be in the system reference
+    frame and within the given distance metric. No wrapping is required for
+    ghost sites, which will be slightly outside the boundary condition. When a
+    ghost site is provided by the iterator, its `site_tag` and `body_tag` will
+    match that of the actual site.
 
-    TODO: Revise the API and description after implementing periodic boundary conditions.
+    The caller *may* provide a value for `r` that is larger than the maximum
+    interaction range. In the current implementation, this is not an error.
+    However, in such cases `iter_sites_near` will only iterate over the placed
+    ghosts which are within the boundary's `maximum_interaction_range`.
+
+    In other words, `iter_sites_near` is meant for use with pairwise functions
+    that follow the minimum image convention.
     */
     #[inline]
     pub fn iter_sites_near(&self, point: &M, r: f64) -> impl Iterator<Item = &Site<S>> {
         self.sites
+            .items
             .iter()
+            .chain(self.ghosts.items.iter())
             .filter(move |s| point.distance_squared(s.properties.position()) < r.powi(2))
     }
 }
@@ -1101,22 +1258,23 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     # Example
 
     ```
-    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Square};
+    use hoomd_geometry::shape::Rectangle;
+    use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Closed};
     use hoomd_vector::Cartesian;
 
     # use hoomd_microstate::property::Point;
     # type BodyProperties = Point<Cartesian<2>>;
     # type SiteProperties = Point<Cartesian<2>>;
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let square = Square { l: 10.0.try_into()? };
+    let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
 
-    let microstate = MicrostateBuilder::<BodyProperties, SiteProperties, Square>::with_boundary(square)
+    let microstate = MicrostateBuilder::<BodyProperties, SiteProperties, Closed<Rectangle>>::with_boundary(square)
         .try_build()?;
 
     assert_eq!(microstate.step(), 0);
     assert_eq!(microstate.seed(), 0);
     assert_eq!(microstate.bodies().len(), 0);
-    assert_eq!(microstate.boundary().l.get(), 10.0);
+    assert_eq!(microstate.boundary().0.edge_lengths[0].get(), 10.0);
     # Ok(())
     # }
     ```
@@ -1253,21 +1411,19 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     pub fn try_build<M>(self) -> Result<Microstate<B, S, C>, Error>
     where
         B: Transform<S> + Position<Metric = M>,
-        S: Position<Metric = M>,
-        C: Boundary<M, B, S>,
+        S: Position<Metric = M> + Default,
+        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     {
         let mut microstate = Microstate {
             step: self.step,
             substep: 0,
             seed: self.seed,
             boundary: self.boundary,
-            bodies: Vec::new(),
-            body_indices: Vec::new(),
-            free_body_tags: BinaryHeap::new(),
-            sites: Vec::new(),
-            site_indices: Vec::new(),
-            free_site_tags: BinaryHeap::new(),
+            bodies: VecWithTags::new(),
+            sites: VecWithTags::new(),
             bodies_sites: Vec::new(),
+            ghosts: VecWithTags::new(),
+            sites_ghosts: Vec::new(),
         };
 
         microstate.extend_bodies(self.bodies)?;
@@ -1304,9 +1460,10 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
 mod tests {
     use super::*;
     use crate::{
-        boundary::{self, Square},
+        boundary::{self, Closed},
         property::Point,
     };
+    use hoomd_geometry::shape::Cuboid;
     use hoomd_vector::Cartesian;
 
     use rand::{Rng, SeedableRng, rngs::StdRng, seq::SliceRandom};
@@ -1380,7 +1537,7 @@ mod tests {
             reference_bodies.values().map(|body| body.sites.len()).sum()
         );
 
-        for (tag, optional_index) in microstate.body_indices.iter().enumerate() {
+        for (tag, optional_index) in microstate.bodies.indices.iter().enumerate() {
             if let Some(index) = optional_index {
                 assert_eq!(microstate.bodies()[*index].tag, tag);
                 assert!(reference_bodies.contains_key(&tag));
@@ -1395,7 +1552,7 @@ mod tests {
             assert_eq!(microstate.bodies()[body_index].item, *body);
         }
 
-        for (tag, optional_index) in microstate.site_indices.iter().enumerate() {
+        for (tag, optional_index) in microstate.sites.indices.iter().enumerate() {
             if let Some(index) = optional_index {
                 assert_eq!(microstate.sites()[*index].site_tag, tag);
             }
@@ -1462,28 +1619,32 @@ mod tests {
     }
 
     #[fixture]
-    fn square() -> Square {
-        Square {
-            l: 4.0
-                .try_into()
-                .expect("hard-coded constant should be positive"),
-        }
+    fn square() -> Closed<Cuboid<2>> {
+        let cuboid = Cuboid {
+            edge_lengths: [
+                4.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+                4.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+            ],
+        };
+        Closed(cuboid)
     }
 
     #[rstest]
-    fn add_body_outside(square: Square) {
+    fn add_body_outside(square: Closed<Cuboid<2>>) {
         let mut microstate = MicrostateBuilder::with_boundary(square)
             .try_build()
             .expect("the hard-coded bodies should be in the boundary");
 
         assert_eq!(
-            microstate.add_body(Body::point([2.0, 0.0].into())),
-            Err(Error::AddBody(0, boundary::Error::CannotWrapBodyProperties))
+            microstate.add_body(Body::point(Cartesian::from([2.0, 0.0]))),
+            Err(Error::AddBody(0, boundary::Error::CannotWrapProperties))
         );
     }
 
     #[rstest]
-    fn update_body_outside(square: Square) {
+    fn update_body_outside(square: Closed<Cuboid<2>>) {
         let mut microstate = MicrostateBuilder::with_boundary(square)
             .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
             .try_build()
@@ -1496,15 +1657,12 @@ mod tests {
                     position: [2.0, 0.0].into()
                 }
             ),
-            Err(Error::UpdateBody(
-                0,
-                boundary::Error::CannotWrapBodyProperties
-            ))
+            Err(Error::UpdateBody(0, boundary::Error::CannotWrapProperties))
         );
     }
 
     #[rstest]
-    fn add_site_outside(square: Square) {
+    fn add_site_outside(square: Closed<Cuboid<2>>) {
         let body = Body {
             properties: Point::new(Cartesian::from([1.0, 0.0])),
             sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -1516,12 +1674,12 @@ mod tests {
 
         assert_eq!(
             microstate.add_body(body),
-            Err(Error::AddBody(0, boundary::Error::CannotWrapSiteProperties))
+            Err(Error::AddBody(0, boundary::Error::CannotWrapProperties))
         );
     }
 
     #[rstest]
-    fn update_site_outside(square: Square) {
+    fn update_site_outside(square: Closed<Cuboid<2>>) {
         let body = Body {
             properties: Point::new(Cartesian::from([0.0, 0.0])),
             sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -1539,10 +1697,7 @@ mod tests {
                     position: [1.0, 0.0].into()
                 }
             ),
-            Err(Error::UpdateBody(
-                0,
-                boundary::Error::CannotWrapSiteProperties
-            ))
+            Err(Error::UpdateBody(0, boundary::Error::CannotWrapProperties))
         );
     }
 

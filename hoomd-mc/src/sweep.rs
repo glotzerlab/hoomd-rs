@@ -6,9 +6,11 @@
 
 use super::{Count, LocalTrial, Trial};
 use hoomd_interaction::DeltaEnergyOne;
-use hoomd_microstate::boundary::Boundary;
-use hoomd_microstate::property::Position;
-use hoomd_microstate::{Body, Microstate, Transform};
+use hoomd_microstate::{
+    Body, Microstate, Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::Position,
+};
 
 use rand::Rng;
 
@@ -56,7 +58,7 @@ where
     S: Clone + Default + Position<Metric = M>,
     L: LocalTrial<B>,
     H: DeltaEnergyOne<B, S, C>,
-    C: Boundary<M, B, S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     type Count = Count;
     type Macrostate = f64;
@@ -86,7 +88,7 @@ where
             // energy and update methods.
             match microstate
                 .boundary()
-                .wrap_body(self.0.propose(&mut rng, trial.properties))
+                .wrap(self.0.propose(&mut rng, trial.properties))
             {
                 Ok(new_properties) => {
                     trial.properties = new_properties;
@@ -116,8 +118,9 @@ mod tests {
     use super::*;
     use crate::Translate;
     use ::approx::assert_relative_eq;
+    use hoomd_geometry::shape::Cuboid;
     use hoomd_interaction::{Single, SiteEnergy, TotalEnergy, Zero};
-    use hoomd_microstate::{MicrostateBuilder, boundary::Square, property::Point};
+    use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};
     use hoomd_vector::{Cartesian, InnerProduct};
     use rstest::*;
 
@@ -190,11 +193,16 @@ mod tests {
 
     #[test]
     fn reject_boundary_body() {
-        let square = Square {
-            l: 4.0
-                .try_into()
-                .expect("hard-coded constant should be positive"),
+        let cuboid = Cuboid {
+            edge_lengths: [
+                4.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+                4.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+            ],
         };
+        let square = Closed(cuboid);
+
         let mut microstate = MicrostateBuilder::with_boundary(square)
             .bodies([Body::point([0.0, 0.0].into())])
             .try_build()
@@ -222,11 +230,15 @@ mod tests {
             sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
         };
 
-        let square = Square {
-            l: 6.0
-                .try_into()
-                .expect("hard-coded constant should be positive"),
+        let cuboid = Cuboid {
+            edge_lengths: [
+                6.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+                6.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+            ],
         };
+        let square = Closed(cuboid);
         let mut microstate = MicrostateBuilder::with_boundary(square)
             .bodies([body])
             .try_build()

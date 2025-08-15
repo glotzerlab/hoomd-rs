@@ -2469,6 +2469,7 @@ version = "0.0.0"
 dependencies = [
  "approx",
  "divan",
+ "hoomd-geometry",
  "hoomd-microstate",
  "hoomd-vector",
  "rand 0.9.1",
@@ -2498,6 +2499,7 @@ version = "0.0.0"
 dependencies = [
  "approx",
  "divan",
+ "hoomd-geometry",
  "hoomd-interaction",
  "hoomd-manifold",
  "hoomd-microstate",
@@ -2515,6 +2517,7 @@ dependencies = [
  "anyhow",
  "approx",
  "divan",
+ "hoomd-geometry",
  "hoomd-manifold",
  "hoomd-utility",
  "hoomd-vector",
@@ -2522,6 +2525,7 @@ dependencies = [
  "rand 0.9.1",
  "rstest",
  "thiserror 2.0.12",
+ "tinyvec",
 ]
 
 [[package]]

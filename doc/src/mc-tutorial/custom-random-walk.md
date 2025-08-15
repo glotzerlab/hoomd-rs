@@ -30,7 +30,7 @@ take discrete steps left, right, down, or up.
 The [Random Walk] tutorial used the *default* **open** boundary condition. This
 tutorial shows how you can create a custom **closed** boundary condition.
 
-### Define the Circle Type
+### Define the `Circle` Type
 
 First, you need to define a type that describes the boundary. In this case, the
 boundary is a `Circle` that has a radius:
@@ -38,22 +38,27 @@ boundary is a `Circle` that has a radius:
 {{#include ../../../examples/mc-tutorial/custom-random-walk.rs:boundary_struct}}
 ```
 
-### Implement the Boundary Trait
+### Implement the `IsPointInside` Trait
 
-Then, implement the `Boundary` trait for `Circle`. The only required method
-is `is_inside()` which should return `true` for points inside the boundary
+Then, implement the `IsPointInside` trait for `Circle`. The only required method
+is `is_point_inside()` which should return `true` for points inside the boundary
 and `false` for points outside the boundary:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/custom-random-walk.rs:boundary_all}}
 ```
-This implementation of `Boundary` is only for the `Cartesian<2>` vector type
-(`V` in the `Boundary` definition), but is generic over any *body property* `B`
-and any *site property* `S`. You can read [The Rust Programming Language] to
-learn more about **generic types** and **traits**. The [Applying Interactions]
-tutorial discusses **body** and **site** properties in more detail.
+This implementation of `IsPointInside` is only for the `Cartesian<2>` vector
+type (`V` in the `IsPointInside` definition). You can read [The Rust Programming
+Language] to learn more about **generic types** and **traits**.
 
-When you implement only `is_inside()`, the boundary becomes **closed**.
-Later tutorials will demonstrate periodic boundary conditions.
+`Circle` itself is not a valid boundary condition. To make the closed boundary,
+it needs to be wrapped in `Closed`. This tutorial takes that step later when it
+builds the simulation model: Look for `with_boundary(Closed(circle))`.
+
+> [!TIP]
+> Many shapes in `hoomd_geometry` implement `IsPointInside` and can be used for
+> closed boundary conditions. This tutorial creates a new `Circle` type to teach
+> you about customization, but `hoomd_geometry::shape::Circle` would work just
+> as well.
 
 ## Custom Trial Move
 
@@ -76,7 +81,7 @@ Similar to the custom boundary, you need to implement the **trait**
 Discrete trials always take one step in one direction. In this case, there
 are no parameters and therefore the `Discrete` struct needs no fields.
 
-### Implement the LocalTrial Trait
+### Implement the `LocalTrial` Trait
 
 `LocalTrial` has one method, `propose()`:
 ```rust,ignore
@@ -115,8 +120,8 @@ Here is the type that holds the simulation model:
 {{#include ../../../examples/mc-tutorial/custom-random-walk.rs:simulation_struct}}
 ```
 There are a few differences compared to the [Random Walk] tutorial. The
-`Microstate` type now sets the `Circle` boundary condition in the third generic
-type and `translate_sweep` now has the type `Sweep<Discrete>`.
+`Microstate` type now sets the `Closed<Circle>` boundary condition in the third
+generic type and `translate_sweep` now has the type `Sweep<Discrete>`.
 
 ## Constructing the Custom Simulation
 
@@ -129,7 +134,7 @@ that in the [Random Walk] example:
 There are two differences.
 
 First, the `Microstate` is constructed with the custom
-`Circle` boundary condition using `with_boundary()` instead of `new()`:
+`Closed<Circle>` boundary condition type using `with_boundary()` instead of `new()`:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/custom-random-walk.rs:microstate}}
 ```
@@ -168,6 +173,5 @@ The next section shows how to use the Hamiltonian to describe how the bodies
 interact with each other and with an external field.
 
 [The Rust Programming Language]: https://doc.rust-lang.org/stable/book/
-[Applying Interactions]: applying-interactions.md
 [Random Walk]: random-walk.md
 [rand]: https://docs.rs/rand

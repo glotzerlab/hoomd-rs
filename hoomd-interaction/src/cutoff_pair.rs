@@ -5,7 +5,7 @@
 */
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairEnergy, TotalEnergy};
-use hoomd_microstate::{Body, Microstate, Transform, boundary::Boundary, property::Position};
+use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Position};
 use hoomd_vector::Metric;
 
 /** Compute system properties based on short-ranged pairwise interactions between sites.
@@ -175,7 +175,7 @@ where
     E: SitePairEnergy<S>,
     B: Transform<S>,
     S: Position<Metric = M>,
-    C: Boundary<M, B, S>,
+    C: Wrap<B> + Wrap<S>,
     M: Metric,
 {
     #[inline]
@@ -208,7 +208,7 @@ where
         for s in &final_body.sites {
             match initial_microstate
                 .boundary()
-                .wrap_site(final_body.properties.transform(s))
+                .wrap(final_body.properties.transform(s))
             {
                 Err(_) => return f64::INFINITY,
                 Ok(wrapped_site) => energy_final += site_energy(&wrapped_site),
@@ -257,7 +257,7 @@ where
     E: SitePairEnergy<S>,
     B: Transform<S>,
     S: Position<Metric = M>,
-    C: Boundary<M, B, S>,
+    C: Wrap<B> + Wrap<S>,
     M: Metric,
 {
     #[inline]
@@ -283,7 +283,7 @@ where
         for s in &new_body.sites {
             match initial_microstate
                 .boundary()
-                .wrap_site(new_body.properties.transform(s))
+                .wrap(new_body.properties.transform(s))
             {
                 Err(_) => return f64::INFINITY,
                 Ok(wrapped_site) => energy_final += site_energy(&wrapped_site),
@@ -325,9 +325,7 @@ assert_eq!(delta_energy, -2.0);
 impl<M, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
-    B: Transform<S>,
     S: Position<Metric = M>,
-    C: Boundary<M, B, S>,
     M: Metric,
 {
     #[inline]
@@ -373,14 +371,31 @@ mod tests {
         TotalEnergy,
         pairwise::{Isotropic, LennardJones},
     };
-    use hoomd_microstate::boundary::Open;
-    use hoomd_microstate::{MicrostateBuilder, boundary::Square, property::Point};
+    use hoomd_geometry::shape::Cuboid;
+    use hoomd_microstate::{
+        MicrostateBuilder,
+        boundary::{Closed, Open},
+        property::Point,
+    };
     use hoomd_vector::Cartesian;
 
     use ::approx::assert_relative_eq;
     use rand::{Rng, SeedableRng, distr::Uniform, rngs::StdRng};
     use rstest::*;
     use std::f64::consts::PI;
+
+    #[fixture]
+    fn square() -> Closed<Cuboid<2>> {
+        let cuboid = Cuboid {
+            edge_lengths: [
+                4.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+                4.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+            ],
+        };
+        Closed(cuboid)
+    }
 
     mod cutoff_pair {
         use super::*;
@@ -461,14 +476,8 @@ mod tests {
     mod delta_energy_one {
         use super::*;
 
-        #[test]
-        fn site_outside() {
-            let square = Square {
-                l: 4.0
-                    .try_into()
-                    .expect("hard-coded constant should be positive"),
-            };
-
+        #[rstest]
+        fn site_outside(square: Closed<Cuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -600,14 +609,8 @@ mod tests {
     mod delta_energy_insert {
         use super::*;
 
-        #[test]
-        fn site_outside() {
-            let square = Square {
-                l: 4.0
-                    .try_into()
-                    .expect("hard-coded constant should be positive"),
-            };
-
+        #[rstest]
+        fn site_outside(square: Closed<Cuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
