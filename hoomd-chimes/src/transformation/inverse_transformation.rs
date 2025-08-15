@@ -9,7 +9,7 @@ use super::Transformation;
 Calculate the inverse transformation style.
 
 Given a distance $`r`$, the inverse transformation is defined by:
-outer radial cutoff $`r_\mathrm{out}`$ 
+outer radial cutoff $`r_\mathrm{out}`$
 and inner radial cutoff $`r_\mathrm{in}`$.
 
 It calculates a coordinate $`s(r)`$ falls between [-1, 1]
@@ -69,11 +69,7 @@ impl Transformation for InverseTransformation {
         // where it assume the smoothing
         // function should set potential
         // to zero.
-        let invrlen = if *r < self.r_in {
-            x_in
-        } else {
-            1.0 / *r
-        };
+        let invrlen = if *r < self.r_in { x_in } else { 1.0 / *r };
         (invrlen - x_avg) / x_diff
     }
     /// Partial derivative of the s function with respect to r
@@ -96,15 +92,9 @@ mod tests {
     use crate::transformation::InverseTransformation;
 
     #[rstest]
-    fn r_valid_range(
-        #[values(4.0, 5.0, 6.0)] r_out: f64,
-        #[values(1.0, 2.0, 3.0)] r_in: f64,
-    ) {
+    fn r_valid_range(#[values(4.0, 5.0, 6.0)] r_out: f64, #[values(1.0, 2.0, 3.0)] r_in: f64) {
         let r: f64 = 3.5;
-        let inverse_trans = InverseTransformation {
-            r_out,
-            r_in,
-        };
+        let inverse_trans = InverseTransformation { r_out, r_in };
 
         assert_eq!(inverse_trans.r_out, r_out);
         assert_eq!(inverse_trans.r_in, r_in);
@@ -123,15 +113,9 @@ mod tests {
     }
 
     #[rstest]
-    fn r_inner(
-        #[values(4.0, 5.0, 6.0)] r_out: f64,
-        #[values(1.0, 2.0, 3.0)] r_in: f64,
-    ) {
-        let r:f64 = 0.5;
-        let inverse_trans = InverseTransformation {
-            r_out,
-            r_in,
-        };
+    fn r_inner(#[values(4.0, 5.0, 6.0)] r_out: f64, #[values(1.0, 2.0, 3.0)] r_in: f64) {
+        let r: f64 = 0.5;
+        let inverse_trans = InverseTransformation { r_out, r_in };
 
         assert_eq!(inverse_trans.r_out, r_out);
         assert_eq!(inverse_trans.r_in, r_in);
