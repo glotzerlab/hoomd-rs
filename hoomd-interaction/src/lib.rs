@@ -132,12 +132,17 @@ contribution from a pair of sites to the system's total energy, *as a function
 only of those site's properties*.
 
 The [`pairwise`] module provides a number of commonly used implementations.
-Combine them with the [`CutoffPair`] and the [`Isotropic`](pairwise::Isotropic)
-or [`Anisotropic`](pairwise::Anisotropic) newtypes for use with MC and MD
-simulations or to compute system-wide properties.
+Combine them with the [`CutoffPair`] and the [`Isotropic`] or [`Anisotropic`]
+newtypes for use with MC and MD simulations or to compute system-wide
+properties.
 
 The generic type names are:
 * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+
+TODO: Fix anisotropic link when implemented.
+
+[`Isotropic`]: pairwise::Isotropic
+[`Anisotropic`]: pairwise::Isotropic
 
 ## Examples
 
