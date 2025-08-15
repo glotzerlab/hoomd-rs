@@ -112,12 +112,9 @@ impl<E> CutoffPair<E> {
         .bodies([body_a, body_b, body_c])
         .try_build()?;
 
-    let energy_ab = cutoff_pair.site_pair_energy(
-        &microstate.sites()[0],
-        &microstate.sites()[1]);
-    let energy_ac = cutoff_pair.site_pair_energy(
-        &microstate.sites()[0],
-        &microstate.sites()[2]);
+    let sites = microstate.sites();
+    let energy_ab = cutoff_pair.site_pair_energy(&sites[0], &sites[1]);
+    let energy_ac = cutoff_pair.site_pair_energy(&sites[0], &sites[2]);
 
     assert_eq!(energy_ab, 0.0);
     assert_relative_eq!(energy_ac, -1.0);
@@ -484,6 +481,18 @@ mod tests {
 
             // Two pairs at a distance of 1.0 each with energy 1/2.
             assert_eq!(cutoff_pair.total_energy(&microstate), 1.0);
+
+            let sites = microstate.sites();
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[0]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[1]), 0.5);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[2]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[3]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[1], &sites[1]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[1], &sites[2]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[1], &sites[3]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[2], &sites[2]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[2], &sites[3]), 0.5);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[3], &sites[3]), 0.0);
         }
 
         #[rstest]
@@ -529,6 +538,20 @@ mod tests {
 
             // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
             assert_eq!(cutoff_pair.total_energy(&microstate), 2.0);
+
+            let sites = microstate.sites();
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[0]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[1]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[2]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[3]), 0.0);
+
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[4], &sites[4]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[4], &sites[5]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[4], &sites[6]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[4], &sites[7]), 0.0);
+
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[6]), 1.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[1], &sites[7]), 1.0);
         }
     }
 
