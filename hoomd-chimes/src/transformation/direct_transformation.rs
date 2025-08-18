@@ -74,7 +74,7 @@ impl Transformation for DirectTransformation {
     }
     /// Partial derivative of the s function with respect to r
     #[inline]
-    fn ds_dr(&self, r: &f64) -> f64 {
+    fn ds_dr(&self, _r: &f64) -> f64 {
         let x_diff = 0.5 * (self.r_out - self.r_in);
 
         1.0 / x_diff
