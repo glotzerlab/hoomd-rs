@@ -16,15 +16,13 @@ Since Chebyshev polynomials' domain is conventioanlly defined within `[-1, 1]`. 
 A trait `hoomd_chimes::transformtation::Transformation` is placed to ensure the consistent implementation and to provide a way for user to custom their transformation style.
 
 So far, the most popular Morse style transformation is implemented as `hoomd_chimes::transformation::MorseTransformation`. It is also served as an example of how to do it in hoomd-rs.
-
-`TODO`:
-
-1. Direct transformation.
-2. Inverse transformation.
+In addition, direct and inverse style transformations are implemented as
+`hoomd_chimes::transformation::DirectTransformation` and `hoomd_chimes::transformation::InverseTransformation`,
+accordingly.
 
 ### Parameter text file parser
 `TODO`:
-The ChIMES IAP models (hyperparameters) are stored as a text file. A parser would enable a more convenient use of ChIMES model.
+The ChIMES IAP models (hyperparameters) are stored as a text file. A parser would enable a more convenient use of ChIMES model. In addition, tabluated ChIMES can be implemented for models with large polynomial orders for computational efficiency.
 
 ### Wrapper
 `TODO`:
@@ -36,11 +34,7 @@ Due to a higher complexity of ChIMES IAP, many struct and fucntions are construc
 A struct `hoomd_interaction::pairwise::Chimes2b` is implemented for such purpose.
 
 ### Smoothing fucntion
-ChIMES IAP use a smoothing fucntion multiply on the potential to ensure the potential smoothly decrease to 0 at sufficient long distance to make sure the stability of simulation. Similar to the `hoomd_interaction::pairwise::Shifted` and `hoomd_interaction::pairwise::Xplor` of hoomd-rs. The tersoff style smoothing `hoomd_interaction::pairwise::TersoffSmooth` is implemented.
-
-`TODO`:
-
-1. Cubic smooth
+ChIMES IAP use a smoothing fucntion multiply on the potential to ensure the potential smoothly decrease to 0 at sufficient long distance to make sure the stability of simulation. Similar to the `hoomd_interaction::pairwise::Shifted` and `hoomd_interaction::pairwise::Xplor` of hoomd-rs. The tersoff style smoothing `hoomd_interaction::pairwise::TersoffSmooth` is implemented. In addition, cubic style smoothing `hoomd_interaction::pairwise::CubicSmooth` is implemented.
 
 ### Penalty fucntion
 ChIMES IAP is essentially a bounded potential defined only in a interval between inner and outter distance cutoffs. When particle fall within inner cutoff, a penalty function is used to add energy penalty to the interaction and push particles away from each other and to prevent erroneous results. The `hoomd_interaction::pairwise::ChimesPenalty` is implemented for such purpose.

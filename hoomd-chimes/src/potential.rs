@@ -9,5 +9,8 @@ pub use chimes_cheby2b::Chimes2b;
 mod tersoff_smooth;
 pub use tersoff_smooth::TersoffSmooth;
 
+mod cubic_smooth;
+pub use cubic_smooth::CubicSmooth;
+
 mod chimes_penalty;
 pub use chimes_penalty::ChimesPenalty;
