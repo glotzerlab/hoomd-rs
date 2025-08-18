@@ -4,9 +4,15 @@
 /*! Implement `UniformIn`
 */
 
-use hoomd_microstate::{Body, property::{OrientedPoint, Point}};
+use hoomd_microstate::{
+    Body,
+    property::{OrientedPoint, Point},
+};
 
-use rand::{Rng, distr::{Distribution, StandardUniform}};
+use rand::{
+    Rng,
+    distr::{Distribution, StandardUniform},
+};
 
 /** Generate bodies uniformly in the given boundary condition.
 

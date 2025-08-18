@@ -317,9 +317,12 @@ impl<D> QuickInsert<D> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{QuickInsert, Sweep, Translate, UniformIn};
     use hoomd_geometry::shape::Rectangle;
-    use hoomd_interaction::{CutoffPair, pairwise::{Boxcar, Isotropic}};
-    use crate::{Sweep, Translate, UniformIn, QuickInsert};
+    use hoomd_interaction::{
+        CutoffPair,
+        pairwise::{Boxcar, Isotropic},
+    };
     use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};
     use hoomd_vector::Cartesian;
 
@@ -331,13 +334,21 @@ mod tests {
 
         let hamiltonian = CutoffPair {
             r_cut: sigma,
-            evaluator: Isotropic(Boxcar { left: 0.0, right: sigma, epsilon, }),
+            evaluator: Isotropic(Boxcar {
+                left: 0.0,
+                right: sigma,
+                epsilon,
+            }),
         };
 
-        let translate = Translate { maximum_distance: 0.1.try_into().expect("hard-coded value is non-zero"), };
+        let translate = Translate {
+            maximum_distance: 0.1.try_into().expect("hard-coded value is non-zero"),
+        };
         let translate_sweep = Sweep(translate);
 
-        let rectangle = Closed(Rectangle::with_equal_edges(6.0.try_into().expect("hard-coded value is non-zero")));
+        let rectangle = Closed(Rectangle::with_equal_edges(
+            6.0.try_into().expect("hard-coded value is non-zero"),
+        ));
 
         let mut microstate = MicrostateBuilder::with_boundary(rectangle)
             .bodies(vec![Body::point(Cartesian::from([0.0, 0.0]))])
@@ -360,10 +371,10 @@ mod tests {
             }
         }
 
-    assert_eq!(quick_insert.inserted, 10);
-    assert_eq!(quick_insert.state, State::Complete);
-    assert!(quick_insert.is_complete());
-    assert_eq!(microstate.bodies().len(), 11);
-    assert_eq!(hamiltonian.total_energy(&microstate), 0.0);
+        assert_eq!(quick_insert.inserted, 10);
+        assert_eq!(quick_insert.state, State::Complete);
+        assert!(quick_insert.is_complete());
+        assert_eq!(microstate.bodies().len(), 11);
+        assert_eq!(hamiltonian.total_energy(&microstate), 0.0);
     }
 }
