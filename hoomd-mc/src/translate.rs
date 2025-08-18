@@ -69,7 +69,7 @@ where
         let mut trial = body_properties;
 
         let ball = Ball {
-            r: self.maximum_distance,
+            radius: self.maximum_distance,
         };
 
         let delta_r = ball.sample(rng);
