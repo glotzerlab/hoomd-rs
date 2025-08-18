@@ -90,4 +90,17 @@ impl<V> Position for Point<V> {
     }
 }
 
-// TODO: tests.
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use hoomd_vector::Cartesian;
+
+    #[test]
+    fn transform_point() {
+        let body = Point::new(Cartesian::from([3.0, -4.0, 5.0]));
+        let site = Point::new(Cartesian::from([-1.0, 2.0, -3.0]));
+        let transformed_site = body.transform(&site);
+        assert_eq!(transformed_site.position, [2.0, -2.0, 2.0].into());
+    }
+}
