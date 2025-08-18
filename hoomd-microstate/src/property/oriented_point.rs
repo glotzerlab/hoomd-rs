@@ -51,7 +51,7 @@ where
 
     let body_properties = OrientedPoint {
         position: Cartesian::from([1.0, -2.0]),
-        orientation: Angle::from(PI/2.0),
+        orientation: Angle::from(PI / 2.0),
     };
     let site_properties = Point::new(Cartesian::from([-1.0, 0.0]));
 

@@ -128,7 +128,7 @@ use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
 use std::f64::consts::PI;
 
 let v = Cartesian::from([-1.0, 0.0]);
-let a = Angle::from(PI/2.0);
+let a = Angle::from(PI / 2.0);
 let rotated = a.rotate(&v);
 // rotated is approximately [0.0, -1.0]
 ```
@@ -140,7 +140,7 @@ use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let a = Cartesian::from([-1.0, 0.0, 0.0]);
-let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
+let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI / 2.0);
 let b = v.rotate(&a);
 // b is approximately [0.0, -1.0, 0.0]
 # Ok(())
@@ -620,7 +620,7 @@ pub trait Rotate<V: Vector> {
     use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
 
     let v = Cartesian::from([-1.0, 0.0]);
-    let a = Angle::from(std::f64::consts::PI/2.0);
+    let a = Angle::from(std::f64::consts::PI / 2.0);
     let rotated = a.rotate(&v);
     // rotated is approximately [0.0, -1.0]
     ```
