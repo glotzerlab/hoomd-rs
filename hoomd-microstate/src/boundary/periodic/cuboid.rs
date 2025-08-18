@@ -289,7 +289,7 @@ mod tests {
     use crate::property::Point;
 
     use approx::assert_relative_eq;
-    use rand::{SeedableRng, rngs::StdRng, distr::Distribution};
+    use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
 
     const N_SAMPLES: usize = 1024;
 
@@ -298,30 +298,51 @@ mod tests {
 
         #[test]
         fn maximum_allowable() {
-            let cuboid = Cuboid { edge_lengths: [
-                10.0.try_into().expect("hard-coded constant should be positive"),
-                6.0.try_into().expect("hard-coded constant should be positive")], };
+            let cuboid = Cuboid {
+                edge_lengths: [
+                    10.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    6.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                ],
+            };
 
             assert_eq!(cuboid.maximum_allowable_interaction_range(), 3.0);
 
-            let cuboid = Cuboid { edge_lengths: [
-                4.0.try_into().expect("hard-coded constant should be positive"),
-                6.0.try_into().expect("hard-coded constant should be positive")], };
+            let cuboid = Cuboid {
+                edge_lengths: [
+                    4.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    6.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                ],
+            };
 
             assert_eq!(cuboid.maximum_allowable_interaction_range(), 2.0);
 
-            let cuboid = Cuboid { edge_lengths: [
-                100.0.try_into().expect("hard-coded constant should be positive"),
-                18.0.try_into().expect("hard-coded constant should be positive")], };
+            let cuboid = Cuboid {
+                edge_lengths: [
+                    100.0
+                        .try_into()
+                        .expect("hard-coded constant should be positive"),
+                    18.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                ],
+            };
 
             assert_eq!(cuboid.maximum_allowable_interaction_range(), 9.0);
         }
 
         #[test]
         fn wrap() {
-            let cuboid = Cuboid { edge_lengths: [
-                20.0.try_into().expect("hard-coded constant should be positive"),
-                20.0.try_into().expect("hard-coded constant should be positive")], };
+            let cuboid = Cuboid {
+                edge_lengths: [
+                    20.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    20.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                ],
+            };
 
             let periodic = Periodic::new(0.0, cuboid).expect("hard-coded range should be valid");
 
@@ -349,15 +370,25 @@ mod tests {
 
         #[test]
         fn no_ghosts() {
-            let cuboid = Cuboid { edge_lengths: [
-                20.0.try_into().expect("hard-coded constant should be positive"),
-                10.0.try_into().expect("hard-coded constant should be positive")], };
+            let cuboid = Cuboid {
+                edge_lengths: [
+                    20.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    10.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                ],
+            };
 
             let periodic = Periodic::new(1.0, cuboid).expect("hard-coded range should be valid");
 
-            let inner = Cuboid { edge_lengths: [
-                18.0.try_into().expect("hard-coded constant should be positive"),
-                8.0.try_into().expect("hard-coded constant should be positive")], };
+            let inner = Cuboid {
+                edge_lengths: [
+                    18.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    8.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                ],
+            };
 
             let mut rng = StdRng::seed_from_u64(1);
             for _ in 0..N_SAMPLES {
@@ -369,9 +400,14 @@ mod tests {
 
         #[test]
         fn ghosts() {
-            let cuboid = Cuboid { edge_lengths: [
-                20.0.try_into().expect("hard-coded constant should be positive"),
-                10.0.try_into().expect("hard-coded constant should be positive")], };
+            let cuboid = Cuboid {
+                edge_lengths: [
+                    20.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    10.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                ],
+            };
 
             let periodic = Periodic::new(1.0, cuboid).expect("hard-coded range should be valid");
 
@@ -423,7 +459,6 @@ mod tests {
             assert_relative_eq!(ghosts[1].position, [-9.5, 5.5].into());
             assert_relative_eq!(ghosts[2].position, [10.5, 5.5].into());
         }
-    
     }
 
     mod cuboid_3 {
@@ -431,37 +466,58 @@ mod tests {
 
         #[test]
         fn maximum_allowable() {
-            let cuboid = Cuboid { edge_lengths: [
-                10.0.try_into().expect("hard-coded constant should be positive"),
-                6.0.try_into().expect("hard-coded constant should be positive"),
-                4.0.try_into().expect("hard-coded constant should be positive")], };
+            let cuboid = Cuboid {
+                edge_lengths: [
+                    10.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    6.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    4.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                ],
+            };
 
             assert_eq!(cuboid.maximum_allowable_interaction_range(), 2.0);
 
-            let cuboid = Cuboid { edge_lengths: [
-                6.0.try_into().expect("hard-coded constant should be positive"),
-                8.0.try_into().expect("hard-coded constant should be positive"),
-                10.0.try_into().expect("hard-coded constant should be positive"),
-                ], };
+            let cuboid = Cuboid {
+                edge_lengths: [
+                    6.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    8.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    10.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                ],
+            };
 
             assert_eq!(cuboid.maximum_allowable_interaction_range(), 3.0);
 
-            let cuboid = Cuboid { edge_lengths: [
-                18.0.try_into().expect("hard-coded constant should be positive"),
-                8.0.try_into().expect("hard-coded constant should be positive"),
-                10.0.try_into().expect("hard-coded constant should be positive"),
-                ], };
+            let cuboid = Cuboid {
+                edge_lengths: [
+                    18.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    8.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    10.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                ],
+            };
 
             assert_eq!(cuboid.maximum_allowable_interaction_range(), 4.0);
         }
 
         #[test]
         fn wrap() {
-            let cuboid = Cuboid { edge_lengths: [
-                20.0.try_into().expect("hard-coded constant should be positive"),
-                20.0.try_into().expect("hard-coded constant should be positive"),
-                20.0.try_into().expect("hard-coded constant should be positive"),
-                ], };
+            let cuboid = Cuboid {
+                edge_lengths: [
+                    20.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    20.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    20.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                ],
+            };
 
             let periodic = Periodic::new(0.0, cuboid).expect("hard-coded range should be valid");
 
@@ -471,35 +527,63 @@ mod tests {
             let point = Point::new([-10.0, -10.0, -10.0].into());
             assert_eq!(periodic.wrap(point), Ok(point));
 
-            let point = Point::new([10.0f64.next_down(), 10.0f64.next_down(), 10.0f64.next_down()].into());
+            let point = Point::new(
+                [
+                    10.0f64.next_down(),
+                    10.0f64.next_down(),
+                    10.0f64.next_down(),
+                ]
+                .into(),
+            );
             assert_eq!(periodic.wrap(point), Ok(point));
 
             let point = Point::new([10.0, 10.0, 10.0].into());
-            assert_eq!(periodic.wrap(point), Ok(Point::new([-10.0, -10.0, -10.0].into())));
+            assert_eq!(
+                periodic.wrap(point),
+                Ok(Point::new([-10.0, -10.0, -10.0].into()))
+            );
 
             let point = Point::new([20.0, 20.0, 20.0].into());
             assert_eq!(periodic.wrap(point), Ok(Point::new([0.0, 0.0, 0.0].into())));
 
             let point = Point::new([30.0, 30.0, 30.0].into());
-            assert_eq!(periodic.wrap(point), Ok(Point::new([-10.0, -10.0, -10.0].into())));
+            assert_eq!(
+                periodic.wrap(point),
+                Ok(Point::new([-10.0, -10.0, -10.0].into()))
+            );
 
             let point = Point::new([25.0, -35.0, 55.0].into());
-            assert_eq!(periodic.wrap(point), Ok(Point::new([5.0, 5.0, -5.0].into())));
+            assert_eq!(
+                periodic.wrap(point),
+                Ok(Point::new([5.0, 5.0, -5.0].into()))
+            );
         }
 
         #[test]
         fn no_ghosts() {
-            let cuboid = Cuboid { edge_lengths: [
-                40.0.try_into().expect("hard-coded constant should be positive"),
-                20.0.try_into().expect("hard-coded constant should be positive"),
-                10.0.try_into().expect("hard-coded constant should be positive")], };
+            let cuboid = Cuboid {
+                edge_lengths: [
+                    40.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    20.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    10.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                ],
+            };
 
             let periodic = Periodic::new(1.0, cuboid).expect("hard-coded range should be valid");
 
-            let inner = Cuboid { edge_lengths: [
-                38.0.try_into().expect("hard-coded constant should be positive"),
-                18.0.try_into().expect("hard-coded constant should be positive"),
-                8.0.try_into().expect("hard-coded constant should be positive")], };
+            let inner = Cuboid {
+                edge_lengths: [
+                    38.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    18.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    8.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                ],
+            };
 
             let mut rng = StdRng::seed_from_u64(1);
             for _ in 0..N_SAMPLES {
@@ -512,10 +596,16 @@ mod tests {
         #[expect(clippy::too_many_lines, reason = "There are many cases to test.")]
         #[test]
         fn ghosts() {
-            let cuboid = Cuboid { edge_lengths: [
-                20.0.try_into().expect("hard-coded constant should be positive"),
-                10.0.try_into().expect("hard-coded constant should be positive"),
-                40.0.try_into().expect("hard-coded constant should be positive")], };
+            let cuboid = Cuboid {
+                edge_lengths: [
+                    20.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    10.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    40.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                ],
+            };
 
             let periodic = Periodic::new(1.0, cuboid).expect("hard-coded range should be valid");
 
@@ -622,7 +712,7 @@ mod tests {
             assert_relative_eq!(ghosts[0].position, [0.0, 5.5, -19.5].into());
             assert_relative_eq!(ghosts[1].position, [0.0, -4.5, 20.5].into());
             assert_relative_eq!(ghosts[2].position, [0.0, 5.5, 20.5].into());
-            
+
             // vertices
             let ghosts = periodic.generate_ghosts(&Point::new([9.5, 4.5, 19.5].into()));
             assert_eq!(ghosts.len(), 7);
