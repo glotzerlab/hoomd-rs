@@ -26,7 +26,7 @@ let lj: LennardJones = LennardJones { epsilon, sigma };
 let shifted_lj = Shifted { f: lj, r_shift };
 
 assert_abs_diff_eq!(shifted_lj.energy(r_shift), 0.0);
-assert_relative_eq!(shifted_lj.energy(2.0_f64.powf(1.0/6.0) * sigma), -epsilon - lj.energy(r_shift));
+assert_relative_eq!(shifted_lj.energy(2.0_f64.powf(1.0 / 6.0) * sigma), -epsilon - lj.energy(r_shift));
 ```
 
 Fields can be accessed directly, including those of the original potential `f`:

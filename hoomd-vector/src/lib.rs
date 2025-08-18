@@ -98,7 +98,7 @@ use hoomd_vector::{Quaternion, Versor};
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let q = Quaternion::from([3.0, 0.0, 0.0, 4.0]);
 let v = q.to_versor()?;
-assert_eq!(*v.get(), [3.0/5.0, 0.0, 0.0, 4.0/5.0].into());
+assert_eq!(*v.get(), [3.0 / 5.0, 0.0, 0.0, 4.0 / 5.0].into());
 # Ok(())
 # }
 ```
@@ -488,7 +488,7 @@ pub trait InnerProduct: Vector {
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([3.0, 4.0]);
     let (unit, norm) = a.to_unit()?;
-    assert_eq!(*unit.get(), [3.0/5.0, 4.0/5.0].into());
+    assert_eq!(*unit.get(), [3.0 / 5.0, 4.0 / 5.0].into());
     assert_eq!(norm, 5.0);
     # Ok(())
     # }
@@ -523,7 +523,7 @@ pub trait InnerProduct: Vector {
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([3.0, 4.0]);
     let (unit, norm) = a.to_unit_unchecked();
-    assert_eq!(*unit.get(), [3.0/5.0, 4.0/5.0].into());
+    assert_eq!(*unit.get(), [3.0 / 5.0, 4.0 / 5.0].into());
     assert_eq!(norm, 5.0);
     # Ok(())
     # }

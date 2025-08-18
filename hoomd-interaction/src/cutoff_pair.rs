@@ -106,7 +106,7 @@ impl<E> CutoffPair<E> {
 
     let body_a = Body::point(Cartesian::from([0.0, 0.0]));
     let body_b = Body::point(Cartesian::from([0.0, 3.0]));
-    let body_c = Body::point(Cartesian::from([0.0, -2.0f64.powf(1.0/6.0)]));
+    let body_c = Body::point(Cartesian::from([0.0, -2.0f64.powf(1.0 / 6.0)]));
 
     let microstate = MicrostateBuilder::new()
         .bodies([body_a, body_b, body_c])
@@ -165,7 +165,7 @@ where
                             ])?;
 
     let lennard_jones: LennardJones = LennardJones { epsilon: 1.5,
-        sigma: 1.0 / 2.0_f64.powf(1.0/6.0) };
+        sigma: 1.0 / 2.0_f64.powf(1.0 / 6.0) };
     let evaluator = Isotropic(lennard_jones);
     let cutoff_pair = CutoffPair { r_cut: 2.5, evaluator };
 
