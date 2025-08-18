@@ -40,7 +40,7 @@ where
     /** Move [`Point`] properties from the local body frame to the system frame. 
 
     ```math
-    \vec{r} = \vec{r}_\mathrm{body} + R(\vec{r}_\mathrm{site})
+    \vec{r} = \vec{r}_\mathrm{body} + R_\mathrm{body}(\vec{r}_\mathrm{site})
     ```
 
     ```
@@ -80,7 +80,7 @@ where
     \vec{r} = \vec{r}_\mathrm{body} + R_\mathrm{body}(\vec{r}_\mathrm{site})
     ```
     ```math
-    \vec{R} = R_\mathrm{body}(R_\mathrm{site})
+    R = R_\mathrm{body}(R_\mathrm{site})
     ```
 
     ```
@@ -141,4 +141,37 @@ impl<V, R> Orientation for OrientedPoint<V, R> {
     }
 }
 
-// TODO: tests.
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ::approx::assert_relative_eq;
+    use std::f64::consts::PI;
+
+    use hoomd_vector::{Cartesian, Versor};
+
+    #[test]
+    fn transform_point() {
+        let body = OrientedPoint { position: Cartesian::from([3.0, -4.0, 5.0]),
+            orientation: Versor::from_axis_angle([0.0, 1.0, 0.0].try_into().expect("hard-coded vector should be non-zero"), -PI / 2.0),
+        };
+
+        let site = Point::new(Cartesian::from([-1.0, 2.0, -3.0]));
+        let transformed_site = body.transform(&site);
+        assert_relative_eq!(transformed_site.position, [6.0, -2.0, 4.0].into());
+    }
+
+    #[test]
+    fn transform_oriented_point() {
+        let body = OrientedPoint { position: Cartesian::from([3.0, -4.0, 5.0]),
+            orientation: Versor::from_axis_angle([0.0, 1.0, 0.0].try_into().expect("hard-coded vector should be non-zero"), -PI / 2.0),
+        };
+
+        let site = OrientedPoint { position: Cartesian::from([-1.0, 2.0, -3.0]),
+            orientation: Versor::from_axis_angle([1.0, 0.0, 0.0].try_into().expect("hard-coded vector should be non-zero"), PI / 2.0),
+        };
+        let transformed_site = body.transform(&site);
+        assert_relative_eq!(transformed_site.position, [6.0, -2.0, 4.0].into());
+        assert_relative_eq!(transformed_site.orientation.get(),
+            &[0.5, 0.5, -0.5, 0.5].into());
+    }
+}
