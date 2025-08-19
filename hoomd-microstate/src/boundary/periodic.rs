@@ -144,4 +144,30 @@ where
     }
 }
 
-// TODO: Test that Periodic::new errors correctly
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use hoomd_geometry::shape::Rectangle;
+
+    #[test]
+    fn interaction_range_validation() {
+        let rectangle = Rectangle {
+            edge_lengths: [
+                10.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+                6.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+            ],
+        };
+
+        let result = Periodic::new(1.0, rectangle);
+        assert!(result.is_ok());
+
+        let result = Periodic::new(3.0, rectangle);
+        assert!(result.is_ok());
+
+        let result = Periodic::new(3.0f64.next_up(), rectangle);
+        assert!(matches!(result, Err(Error::InteractionRangeTooLarge(_, _))));
+    }
+}

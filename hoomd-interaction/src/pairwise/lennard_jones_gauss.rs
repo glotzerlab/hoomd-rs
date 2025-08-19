@@ -22,10 +22,10 @@ use approx::{assert_abs_diff_eq, assert_relative_eq};
 
 let epsilon = 0.5;
 let sigma_squared = 0.5;
-let r_0 = 0.5_f64.powf(1.0/6.0);
+let r_0 = 0.5_f64.powf(1.0 / 6.0);
 
 let lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss { epsilon, sigma_squared, r_0 };
-assert_relative_eq!(lennard_jones_gauss.energy(0.5_f64.powf(1.0/6.0)), -epsilon, epsilon=1e-12);
+assert_relative_eq!(lennard_jones_gauss.energy(0.5_f64.powf(1.0 / 6.0)), -epsilon, epsilon=1e-12);
 ```
 
 The parameters are public fields and may be accessed directly:

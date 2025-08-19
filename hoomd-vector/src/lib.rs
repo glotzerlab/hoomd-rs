@@ -7,7 +7,6 @@
 #![doc(
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
-// TODO: implement methods as const where possible
 
 /*! Vector and quaternion math.
 
@@ -98,7 +97,7 @@ use hoomd_vector::{Quaternion, Versor};
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let q = Quaternion::from([3.0, 0.0, 0.0, 4.0]);
 let v = q.to_versor()?;
-assert_eq!(*v.get(), [3.0/5.0, 0.0, 0.0, 4.0/5.0].into());
+assert_eq!(*v.get(), [3.0 / 5.0, 0.0, 0.0, 4.0 / 5.0].into());
 # Ok(())
 # }
 ```
@@ -128,7 +127,7 @@ use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
 use std::f64::consts::PI;
 
 let v = Cartesian::from([-1.0, 0.0]);
-let a = Angle::from(PI/2.0);
+let a = Angle::from(PI / 2.0);
 let rotated = a.rotate(&v);
 // rotated is approximately [0.0, -1.0]
 ```
@@ -140,7 +139,7 @@ use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let a = Cartesian::from([-1.0, 0.0, 0.0]);
-let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
+let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI / 2.0);
 let b = v.rotate(&a);
 // b is approximately [0.0, -1.0, 0.0]
 # Ok(())
@@ -488,7 +487,7 @@ pub trait InnerProduct: Vector {
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([3.0, 4.0]);
     let (unit, norm) = a.to_unit()?;
-    assert_eq!(*unit.get(), [3.0/5.0, 4.0/5.0].into());
+    assert_eq!(*unit.get(), [3.0 / 5.0, 4.0 / 5.0].into());
     assert_eq!(norm, 5.0);
     # Ok(())
     # }
@@ -523,7 +522,7 @@ pub trait InnerProduct: Vector {
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([3.0, 4.0]);
     let (unit, norm) = a.to_unit_unchecked();
-    assert_eq!(*unit.get(), [3.0/5.0, 4.0/5.0].into());
+    assert_eq!(*unit.get(), [3.0 / 5.0, 4.0 / 5.0].into());
     assert_eq!(norm, 5.0);
     # Ok(())
     # }
@@ -620,7 +619,7 @@ pub trait Rotate<V: Vector> {
     use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
 
     let v = Cartesian::from([-1.0, 0.0]);
-    let a = Angle::from(std::f64::consts::PI/2.0);
+    let a = Angle::from(std::f64::consts::PI / 2.0);
     let rotated = a.rotate(&v);
     // rotated is approximately [0.0, -1.0]
     ```

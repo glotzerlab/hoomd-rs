@@ -32,8 +32,8 @@ Create an [`Angle`] with a given value:
 use hoomd_vector::Angle;
 use std::f64::consts::PI;
 
-let a = Angle::from(PI/2.0);
-assert_eq!(a.theta, PI/2.0);
+let a = Angle::from(PI / 2.0);
+assert_eq!(a.theta, PI / 2.0);
 ```
 
 Create a random [`Angle`] from the uniform distribution over all rotations:
@@ -56,7 +56,7 @@ use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
 use std::f64::consts::PI;
 
 let v = Cartesian::from([-1.0, 0.0]);
-let a = Angle::from(PI/2.0);
+let a = Angle::from(PI / 2.0);
 let rotated = a.rotate(&v);
 // rotated is approximately [0.0, -1.0]
 ```
@@ -66,10 +66,10 @@ Combine two rotations together:
 use hoomd_vector::{Angle, Rotation};
 use std::f64::consts::PI;
 
-let a = Angle::from(PI/2.0);
-let b = Angle::from(-PI/4.0);
+let a = Angle::from(PI / 2.0);
+let b = Angle::from(-PI / 4.0);
 let c = a.combine(&b);
-assert_eq!(c.theta, PI/4.0);
+assert_eq!(c.theta, PI / 4.0);
 ```
 */
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -117,7 +117,7 @@ impl From<Angle> for RotationMatrix<2> {
     use std::f64::consts::PI;
 
     let v = Cartesian::from([-1.0, 0.0]);
-    let a = Angle::from(PI/2.0);
+    let a = Angle::from(PI / 2.0);
 
     let matrix = RotationMatrix::from(a);
     let rotated = matrix.rotate(&v);
@@ -166,7 +166,7 @@ impl Rotate<Cartesian<2>> for Angle {
     use std::f64::consts::PI;
 
     let v = Cartesian::from([-1.0, 0.0]);
-    let a = Angle::from(PI/2.0);
+    let a = Angle::from(PI / 2.0);
     let rotated = a.rotate(&v);
     // rotated is approximately [0.0, -1.0]
     ```
@@ -205,9 +205,9 @@ impl Rotation for Angle {
     use hoomd_vector::{Angle, Rotation};
     use std::f64::consts::PI;
 
-    let a = Angle::from(PI/3.0);
+    let a = Angle::from(PI / 3.0);
     let b = a.inverted();
-    assert_eq!(b.theta, -PI/3.0);
+    assert_eq!(b.theta, -PI / 3.0);
     ```
     */
     fn inverted(self) -> Self {
@@ -222,10 +222,10 @@ impl Rotation for Angle {
     use hoomd_vector::{Angle, Rotation};
     use std::f64::consts::PI;
 
-    let a = Angle::from(PI/2.0);
-    let b = Angle::from(-PI/4.0);
+    let a = Angle::from(PI / 2.0);
+    let b = Angle::from(-PI / 4.0);
     let c = a.combine(&b);
-    assert_eq!(c.theta, PI/4.0);
+    assert_eq!(c.theta, PI / 4.0);
     ```
     */
     fn combine(&self, other: &Self) -> Self {
@@ -310,8 +310,8 @@ mod tests {
 
     // Test named cases of the three input values (angle, vector input, and answer)
     #[rstest]
-    #[case::pi_halves(PI/2.0, (1.0, -0.5), (0.5, 1.0))]
-    #[case::negative_pi_thirds(-PI/3.0, (1.0, 0.0), (0.5, -f64::sqrt(3.0) / 2.0))]
+    #[case::pi_halves(PI / 2.0, (1.0, -0.5), (0.5, 1.0))]
+    #[case::negative_pi_thirds(-PI / 3.0, (1.0, 0.0), (0.5, -f64::sqrt(3.0) / 2.0))]
     #[case::negative_pi(-PI, (3.1, -0.2), (-3.1, 0.2))]
     #[case::two_pi(PI*2.0, (3.1, -0.2), (3.1, -0.2))]
     #[case::zero(0.0, (3.1, -0.2), (3.1, -0.2))]
@@ -331,8 +331,8 @@ mod tests {
 
     // Test with Cartesian product of the input arrays
     #[rstest(
-        ang1 => [0.0, PI/2.0, 1e-12 * PI, -3.0, 12345.6],
-        ang2 => [-0.0, -PI/3.0, PI, 2.0 * PI]
+        ang1 => [0.0, PI / 2.0, 1e-12 * PI, -3.0, 12345.6],
+        ang2 => [-0.0, -PI / 3.0, PI, 2.0 * PI]
     )]
     fn combine_2d(ang1: f64, ang2: f64) {
         let (angle1, angle2) = (Angle::from(ang1), Angle::from(ang2));

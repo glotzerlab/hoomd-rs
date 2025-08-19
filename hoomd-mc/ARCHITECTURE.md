@@ -83,10 +83,6 @@ pressure simulation could easily collapse all particles onto a single point.
 
 ## Overlap counts and early exit conditions
 
-The hard potential types themselves can exit early after finding the first overlap
-when producing a value for `DeltaEnergy`. However, some algorithms (like `QuickCompress`
-need to know the full count. TODO: Determine how to opt-out of early exit conditions.
-
 When using `DeltaEnergy` for trial moves, there is no need to evaluate the soft
 potentials if the hard potential has already found an overlap. An opt-out
 of this early exit should also be implemented in a composite hamiltonian.

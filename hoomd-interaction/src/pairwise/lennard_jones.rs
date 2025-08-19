@@ -27,8 +27,8 @@ let sigma = 2.5;
 
 let lennard_jones: LennardJones = LennardJones { epsilon, sigma };
 assert_abs_diff_eq!(lennard_jones.energy(sigma), 0.0);
-assert_relative_eq!(lennard_jones.energy(2.0_f64.powf(1.0/6.0) * sigma), -epsilon);
-assert_abs_diff_eq!(lennard_jones.force(2.0_f64.powf(1.0/6.0) * sigma), 0.0, epsilon=1e-12);
+assert_relative_eq!(lennard_jones.energy(2.0_f64.powf(1.0 / 6.0) * sigma), -epsilon);
+assert_abs_diff_eq!(lennard_jones.force(2.0_f64.powf(1.0 / 6.0) * sigma), 0.0, epsilon=1e-12);
 ```
 
 You can choose any values for `N` and `M` _at compile time_:
@@ -42,8 +42,8 @@ let sigma = 2.5;
 
 let lennard_jones: LennardJones<8,4> = LennardJones { epsilon, sigma };
 assert_abs_diff_eq!(lennard_jones.energy(sigma), 0.0);
-assert_relative_eq!(lennard_jones.energy(2.0_f64.powf(1.0/4.0) * sigma), -epsilon);
-assert_abs_diff_eq!(lennard_jones.force(2.0_f64.powf(1.0/4.0) * sigma), 0.0, epsilon=1e-12);
+assert_relative_eq!(lennard_jones.energy(2.0_f64.powf(1.0 / 4.0) * sigma), -epsilon);
+assert_abs_diff_eq!(lennard_jones.force(2.0_f64.powf(1.0 / 4.0) * sigma), 0.0, epsilon=1e-12);
 ```
 
 The parameters are public fields and may be accessed directly:
