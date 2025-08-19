@@ -20,10 +20,10 @@ ghost sites.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Closed<T>(pub T);
 
-impl<P, T, V> Wrap<P> for Closed<T>
+impl<P, T, M> Wrap<P> for Closed<T>
 where
-    P: Position<Vector = V>,
-    T: IsPointInside<V>,
+    P: Position<Metric = M>,
+    T: IsPointInside<M>,
 {
     #[inline]
     fn wrap(&self, properties: P) -> Result<P, Error> {

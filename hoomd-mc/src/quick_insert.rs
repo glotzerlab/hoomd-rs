@@ -218,7 +218,7 @@ impl<D> QuickInsert<D> {
     ```
     */
     #[inline]
-    pub fn apply<V, B, S, C, H, T>(
+    pub fn apply<M, B, S, C, H, T>(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
         hamiltonian: &H,
@@ -226,8 +226,8 @@ impl<D> QuickInsert<D> {
         state: &T::Macrostate,
     ) -> Count
     where
-        B: Position<Vector = V> + Transform<S>,
-        S: Position<Vector = V> + Default,
+        B: Position<Metric = M> + Transform<S>,
+        S: Position<Metric = M> + Default,
         D: Distribution<Body<B, S>>,
         H: DeltaEnergyInsert<B, S, C> + TotalEnergy<Microstate<B, S, C>>,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,

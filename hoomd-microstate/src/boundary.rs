@@ -24,12 +24,10 @@ type and implement both [`Wrap`] and [`GenerateGhosts`] for it.
 use thiserror::Error;
 use tinyvec::ArrayVec;
 
-mod eighteight;
 mod closed;
 mod open;
 mod periodic;
 
-pub use eighteight::EightEight;
 pub use closed::Closed;
 pub use open::Open;
 pub use periodic::Periodic;

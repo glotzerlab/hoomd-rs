@@ -670,7 +670,7 @@ impl FundamentalDomain for Hyperboloid<3> {
     use approx::assert_relative_eq;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let v : f64 = 2.448452447678076;
+    let v : f64 = 2.448_452_447_678_076;
     let rho : f64 = 1.0;
     let theta: f64 = PI/4.0;
     let x = Hyperboloid::from(&Minkowski::from([rho*(v.sinh())*(theta.cos()),rho*(v.sinh())*(theta.sin()),rho*(v.cosh())]));
@@ -683,10 +683,11 @@ impl FundamentalDomain for Hyperboloid<3> {
     fn distance_to_boundary(&self) -> f64 {
         let theta = atan2(self.point.coordinates[1], self.point.coordinates[0]);
         let angle = theta.rem_euclid(PI / 4.0);
+        let boost = acosh(self.point.coordinates[2]/self.skirt);
         let tile_size = EIGHTEIGHT;
         let eta =
             (tile_size.tanh() / (angle.cos() - angle.sin() * (1.0 - (2.0_f64).sqrt()))).atanh();
-        self.skirt * eta - self.distance_from_cusp()
+        self.skirt * (eta - boost)
     }
     /** Outputs vector of points on the boundary of the fundamental domain
      */
