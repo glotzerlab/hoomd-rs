@@ -130,7 +130,9 @@ impl<F: IsotropicForce + IsotropicEnergy> IsotropicForce for TersoffSmooth<F> {
 mod tests {
     use super::*;
     use crate::transformation::MorseTransformation;
+    use ::approx::assert_abs_diff_eq;
     use arrayvec::ArrayVec;
+    use hoomd_interaction::pairwise::LennardJones;
     use rstest::*;
 
     use crate::potential::Chimes2b;
@@ -170,5 +172,70 @@ mod tests {
         assert_eq!(chimes2b.f.trans_style().lambda, lambda);
         assert_eq!(chimes2b.f.trans_style().r_out, r_out);
         assert_eq!(chimes2b.f.trans_style().r_in, r_in);
+    }
+
+    #[rstest]
+    fn fit_to_lennard_jones(#[values(0.9, 1.0, 1.5, 2.0, 2.5, 3.0)] r_test: f64) {
+        const NCOEFF: usize = 30;
+        let r_out = 3.0;
+        let r_in = 0.9;
+        let morse_lambda: f64 = 2.0_f64.powf(1.0 / 6.0);
+        let fo = 0.5;
+        let coeff_2b: ArrayVec<f64, NCOEFF> = [
+            2.37007683e+00,
+            5.58152519e-01,
+            2.39330527e+00,
+            2.77645704e-02,
+            1.41970895e+00,
+            -5.75537759e-01,
+            8.80860284e-01,
+            -6.64623998e-01,
+            6.64355478e-01,
+            -5.80203508e-01,
+            5.24990360e-01,
+            -4.69166136e-01,
+            4.03325316e-01,
+            -3.64175018e-01,
+            2.96417062e-01,
+            -2.70841228e-01,
+            2.06173397e-01,
+            -1.91948654e-01,
+            1.34507773e-01,
+            -1.27983094e-01,
+            8.08984128e-02,
+            -7.90303536e-02,
+            4.38741521e-02,
+            -4.39083227e-02,
+            2.05167015e-02,
+            -2.10197258e-02,
+            7.63739223e-03,
+            -7.89835306e-03,
+            1.76984674e-03,
+            -1.88015113e-03,
+        ]
+        .into();
+
+        let morse_trans = MorseTransformation {
+            lambda: morse_lambda,
+            r_out: r_out,
+            r_in: r_in,
+        };
+
+        let chimes2b_cheby: Chimes2b<MorseTransformation, NCOEFF> =
+            Chimes2b::new(morse_trans, coeff_2b, r_in);
+
+        let chimes2b = TersoffSmooth {
+            f: chimes2b_cheby,
+            r_out,
+            r_in,
+            fo,
+        };
+
+        let lj: LennardJones<12, 6> = LennardJones {
+            epsilon: 1.0,
+            sigma: 1.0,
+        };
+
+        assert_abs_diff_eq!(chimes2b.energy(r_test), lj.energy(r_test), epsilon = 6e-3);
     }
 }
