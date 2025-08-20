@@ -17,6 +17,7 @@ pub mod external;
 pub mod pairwise;
 
 mod single;
+use hoomd_microstate::{Microstate, Site};
 pub use single::Single;
 
 mod cutoff_pair;
@@ -175,6 +176,17 @@ let total_energy = custom.total_energy(&microstate);
 pub trait SitePairEnergy<S> {
     /// Evaluate the energy contribution from a pair of sites.
     fn site_pair_energy(&self, a: &S, b: &S) -> f64;
+}
+
+/** TODO: kind of modelled after DeltaEnergyOne */
+pub trait NetBodyForce<V, B, S, C> {
+    #[must_use]
+    fn net_force_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V;
+}
+
+pub trait NetSiteForce<V, B, S, C> {
+    #[must_use]
+    fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V;
 }
 
 /** Compute the force on a single site.
