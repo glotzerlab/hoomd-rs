@@ -3,11 +3,15 @@
 
 /*! Implement [`Cuboid`] */
 
-use crate::{BoundingSphereRadius, SupportMapping, Volume};
+use crate::{BoundingSphereRadius, IsPointInside, SupportMapping, Volume};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
 use itertools::multizip;
+use rand::{
+    Rng,
+    distr::{Distribution, Uniform},
+};
 use std::array;
 use std::ops::Mul;
 
@@ -66,7 +70,7 @@ use std::f64::consts::PI;
 let square = Convex(Rectangle {edge_lengths: [1.0.try_into()?; 2]});
 
 assert_eq!(square.intersects_at(&square, &[1.1, 0.0].into(), &Angle::default()), false);
-assert_eq!(square.intersects_at(&square, &[1.1, 0.0].into(), &Angle::from(PI/4.0)), true);
+assert_eq!(square.intersects_at(&square, &[1.1, 0.0].into(), &Angle::from(PI / 4.0)), true);
 # Ok(())
 # }
 ```
@@ -104,7 +108,7 @@ let rectangle = Rectangle { edge_lengths: [4.0.try_into()?, 2.0.try_into()?] };
 let rectangle = Convex(rectangle);
 
 assert_eq!(rectangle.intersects_at(&rectangle, &[0.0, 2.1].into(), &Angle::default()), false);
-assert_eq!(rectangle.intersects_at(&rectangle, &[0.0, 2.1].into(), &Angle::from(PI/2.0)), true);
+assert_eq!(rectangle.intersects_at(&rectangle, &[0.0, 2.1].into(), &Angle::from(PI / 2.0)), true);
 # Ok(())
 # }
 ```
@@ -133,6 +137,25 @@ impl Cuboid<3> {
 }
 
 impl<const N: usize> Cuboid<N> {
+    /** Construct a cuboid with all edge lengths equal.
+
+    # Example
+    ```
+    use hoomd_geometry::shape::Rectangle;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let square = Rectangle::with_equal_edges(10.0.try_into()?);
+    # Ok(())
+    # }
+    */
+    #[inline]
+    #[must_use]
+    pub fn with_equal_edges(l: PositiveReal) -> Self {
+        Self {
+            edge_lengths: [l; N],
+        }
+    }
+
     /** Test for intersections between two *axis-aligned* cuboids.
 
     This test is much faster than a general oriented cuboid (OBB) intersection, which
@@ -251,13 +274,85 @@ impl<const N: usize> Cuboid<N> {
     }
 }
 
+impl<const N: usize> IsPointInside<Cartesian<N>> for Cuboid<N> {
+    /** Check if a cartesian vector is inside a cuboid.
+
+    By conventions typically used in periodic boundary conditions, points
+    exactly at the minimal extent are inside the shape but points exactly
+    on the maximal extent are not:
+    ```math
+    -\frac{L_x}{2} \le x \lt \frac{L_x}{2}
+    ```
+    ```math
+    -\frac{L_y}{2} \le y \lt \frac{L_y}{2}
+    ```
+    ... and so on
+
+    ```
+    use hoomd_geometry::{IsPointInside, shape::Cuboid};
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cuboid = Cuboid { edge_lengths: [6.0.try_into()?, 8.0.try_into()?] };
+
+    assert!(cuboid.is_point_inside(&[2.5, -3.5].into()));
+    assert!(!cuboid.is_point_inside(&[4.0, -3.5].into()));
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    fn is_point_inside(&self, point: &Cartesian<N>) -> bool {
+        point
+            .into_iter()
+            .zip(&self.edge_lengths)
+            .all(|(x, l)| -l.get() / 2.0 <= x && x < l.get() / 2.0)
+    }
+}
+
+impl<const N: usize> Distribution<Cartesian<N>> for Cuboid<N> {
+    /** Generate points uniformly distributed in the cuboid.
+
+    # Example
+
+    ```
+    use rand::{SeedableRng, rngs::StdRng, distr::Distribution};
+
+    use hoomd_geometry::{IsPointInside, shape::Cuboid};
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cuboid = Cuboid { edge_lengths: [6.0.try_into()?, 8.0.try_into()?] };
+    let mut rng = StdRng::seed_from_u64(1);
+
+    let point = cuboid.sample(&mut rng);
+    assert!(cuboid.is_point_inside(&point));
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
+        let minimal_extents = self.minimal_extents();
+        let maximal_extents = self.maximal_extents();
+
+        array::from_fn(|i| {
+
+            let uniform = Uniform::new(minimal_extents[i], maximal_extents[i])
+                .expect("cuboid should always have real valued extents where the minimum is less than the maximum");
+            uniform.sample(rng)}).into()
+    }
+}
+
 #[cfg(test)]
 #[expect(clippy::used_underscore_binding, reason = "Required for const tests.")]
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
+    use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
     use rstest::*;
     use std::marker::PhantomData;
+
+    /// Number of random samples to test.
+    const N: usize = 1024;
 
     #[rstest(
         edges0 => [[2.0.try_into().expect("test value is a positive real"), 2.0.try_into().expect("test value is a positive real"), 2.0.try_into().expect("test value is a positive real")]],
@@ -479,5 +574,44 @@ mod tests {
             cuboid.support_mapping(&Cartesian::from([-1.0, -0.1, -0.1])),
             [-1.0, -2.0, -3.0].into()
         );
+    }
+
+    #[test]
+    fn is_point_inside() {
+        let cuboid = Cuboid {
+            edge_lengths: [
+                2.0.try_into().expect("test value is a positive real"),
+                4.0.try_into().expect("test value is a positive real"),
+            ],
+        };
+
+        assert!(cuboid.is_point_inside(&Cartesian::from([0.0, 0.0])));
+        assert!(cuboid.is_point_inside(&Cartesian::from([-1.0, 0.0])));
+        assert!(cuboid.is_point_inside(&Cartesian::from([0.0, -2.0])));
+        assert!(cuboid.is_point_inside(&Cartesian::from([-1.0, -2.0])));
+        assert!(cuboid.is_point_inside(&Cartesian::from([0.5, -1.0])));
+
+        assert!(!cuboid.is_point_inside(&Cartesian::from([1.0, 0.0])));
+        assert!(!cuboid.is_point_inside(&Cartesian::from([0.0, 2.0])));
+        assert!(!cuboid.is_point_inside(&Cartesian::from([1.0, 2.0])));
+        assert!(!cuboid.is_point_inside(&Cartesian::from([10.0, -20.0])));
+    }
+
+    #[test]
+    fn distribution() {
+        let cuboid = Cuboid {
+            edge_lengths: [
+                6.0.try_into().expect("test value is a positive real"),
+                10.0.try_into().expect("test value is a positive real"),
+            ],
+        };
+        let mut rng = StdRng::seed_from_u64(3);
+
+        let points: Vec<_> = cuboid.sample_iter(&mut rng).take(N).collect();
+        assert!(&points.iter().all(|p| cuboid.is_point_inside(p)));
+        assert!(&points.iter().any(|p| p[0] < -2.8));
+        assert!(&points.iter().any(|p| p[0] > 2.8));
+        assert!(&points.iter().any(|p| p[1] < -4.8));
+        assert!(&points.iter().any(|p| p[1] > 4.8));
     }
 }

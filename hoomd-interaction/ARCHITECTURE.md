@@ -149,7 +149,7 @@ spend time computing values that will not change the total.
 
 ### Layers of abstraction
 
-`hoomd_model` breaks each energy/force computation up into multiple layers.
+`hoomd_interaction` breaks each energy/force computation up into multiple layers.
 For example, the external potential module defines the `SiteEnergy` trait
 that computes the energy of a single site. The `Single` type wraps a
 generic `SiteEnergy` type, implements `TotalEnergy` over the microstate, and

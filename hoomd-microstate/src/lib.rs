@@ -67,8 +67,8 @@ position and type.
 The `property` module provides a number of property types. It also defines
 traits that you can use to implement custom property types. At a minimum, *both
 `B` and `S` MUST implement [`property::Position`]* so that [`Microstate`] can
-place your bodys and sites inside the boundary conditions and maintain spatial
-data structures. Some model methods (such as shap overlap energies) will
+place your body's and sites inside the boundary conditions and maintain spatial
+data structures. Some model methods (such as shape overlap energies) will
 require other traits (such as [`property::Orientation`]). The `property` module
 documentation provides more details on using the types it provides and how to
 define custom types.
@@ -108,7 +108,7 @@ with a given tag.
 
 Elements in [`Microstate::sites`] have the type [`Site<S>`]. As with bodies,
 each site has a unique [`site_tag`](Site::site_tag) that remains the same even
-when sites are reodered. Each site also has a [`body_tag`](Site::body_tag) that
+when sites are reordered. Each site also has a [`body_tag`](Site::body_tag) that
 identifies which body the site is part of. Use [`Microstate::site_indices`]
 to find the current index of a site with a given site tag and
 [`Microstate::iter_body_sites`] to find all the sites associated with a given
@@ -116,7 +116,7 @@ body *index*.
 
 ## Boundary conditions
 
-The positions of all bodies and all sites **must** be insite the microstate's
+The positions of all bodies and all sites **must** be inside the microstate's
 boundary at all times. Periodic boundaries can wrap positions outside to a
 corresponding point on the inside. When a boundary is aperiodic (or partially
 aperiodic), the wrapping process may fail. MC models reject trial moves that
@@ -124,13 +124,24 @@ cannot be wrapped. MD models fail with an error should bodies or sites move in a
 way that cannot be wrapped.
 
 [`Microstate`] is generic on the type of boundary condition. The [`boundary`]
-module implements standard types and documents how you can provide custom
-implementations. For example [`Square`](boundary::Square) restricts 2D
-particles inside a square.
+module implements standard types and explains how you can provide custom
+implementations.
 
 ## Ghost sites
 
-TODO: Implement ghost sites, then document.
+Periodic boundary conditions place **ghost sites** within a given **maximum
+interaction range** outside the boundary. These ghost sites are images of real
+sites that are inside the boundary. Access all of the ghosts with the
+[`ghosts`] method. [`iter_sites_near`] will find both primary and ghost sites
+as it searches for sites near the requested point.
+
+When using [`Open`] or [`Closed`] boundary conditions, [`ghosts`] will always
+be empty.
+
+[`ghosts`]: Microstate::ghosts
+[`iter_sites_near`]: Microstate::iter_sites_near
+[`Open`]: crate::boundary::Open
+[`Closed`]: crate::boundary::Closed
 
 ## Spatial searches
 

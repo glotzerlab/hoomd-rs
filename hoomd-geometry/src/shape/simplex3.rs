@@ -33,7 +33,7 @@ assert_eq!(tet.vertices()[0], [1.0; 3].into());
 assert_eq!(tet.centroid(), [0.0; 3].into());
 
 // The tetrahedron's volume can be rapidly calculated. The default tetrahedron has V=8/3
-assert_eq!(tet.volume(), 8.0/3.0);
+assert_eq!(tet.volume(), 8.0 / 3.0);
 
 // Edge vectors are also provided, in the order [[1,0], [2,0], [3,0], [2,1], [3,1]]
 assert_eq!(tet.get_edge_vectors()[0], tet.vertices()[1]-tet.vertices()[0]);

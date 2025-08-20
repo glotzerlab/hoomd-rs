@@ -44,7 +44,7 @@ let capsule = Convex(Capsule::<2> { radius: 1.0.try_into()?, height: 8.0.try_int
 
 assert_eq!(capsule.intersects_at(&capsule, &[1.75, 0.0].into(), &Angle::identity()), true);
 assert_eq!(capsule.intersects_at(&capsule, &[4.0, 2.0].into(), &Angle::identity()), false);
-assert_eq!(capsule.intersects_at(&capsule, &[4.0, -2.0].into(), &Angle::from(PI/2.0)), true);
+assert_eq!(capsule.intersects_at(&capsule, &[4.0, -2.0].into(), &Angle::from(PI / 2.0)), true);
 # Ok(())
 # }
 ```

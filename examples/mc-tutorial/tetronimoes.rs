@@ -2,6 +2,7 @@
 use rand::{Rng, seq::IndexedRandom};
 use std::f64::consts::PI;
 
+use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
     CutoffPair, Single, TotalEnergy,
     external::Linear,
@@ -10,7 +11,7 @@ use hoomd_interaction::{
 use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder,
-    boundary::Square,
+    boundary::Closed,
     property::{OrientedPoint, Point},
 };
 use hoomd_vector::{Angle, Cartesian};
@@ -80,13 +81,12 @@ impl Tetronimoes {
         let epsilon = 1000.0;
         let sigma = 1.0;
 
+        let square = Rectangle::with_equal_edges(box_height.try_into()?);
         let microstate = MicrostateBuilder::<
             BodyProperties,
             SiteProperties,
-            Square,
-        >::with_boundary(Square {
-            l: box_height.try_into()?,
-        })
+            Closed<Rectangle>,
+        >::with_boundary(Closed(square))
         .try_build()?;
 
         let linear = Single(Linear {
@@ -167,7 +167,7 @@ impl Tetronimoes {
 // ANCHOR: simulation_struct
 struct Tetronimoes {
     /// Positions of all the bodies in the simulation.
-    microstate: Microstate<BodyProperties, SiteProperties, Square>,
+    microstate: Microstate<BodyProperties, SiteProperties, Closed<Rectangle>>,
     /// How sites interact with other sites and fields.
     hamiltonian: (Single<Linear<MyVector>>, CutoffPair<Isotropic<Boxcar>>),
     /// Trial moves to apply.
@@ -193,8 +193,12 @@ impl Simulation for Tetronimoes {
                 .clone();
 
             let properties = OrientedPoint {
-                position: [0.0, self.microstate.boundary().l.get() / 2.0 - 2.0]
-                    .into(),
+                position: [
+                    0.0,
+                    self.microstate.boundary().0.edge_lengths[1].get() / 2.0
+                        - 2.0,
+                ]
+                .into(),
                 orientation: Angle::from(0.0),
             };
 
@@ -227,7 +231,7 @@ struct A;
 fn main() -> anyhow::Result<()> {
     let simulation =
         Tetronimoes::new().context("failed to setup simulation")?;
-    let l = simulation.microstate.boundary().l.get() as f32;
+    let l = simulation.microstate.boundary().0.edge_lengths[1].get() as f32;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
         initial_settings: Settings {
             sps_limit: 64.0,

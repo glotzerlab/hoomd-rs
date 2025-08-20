@@ -111,8 +111,8 @@ criterion.
 ### Hamiltonian
 
 The points in a random walk do not interact. Set the Hamiltonian `$H = 0$`, so
-that `Sweep` will accept every **trial move**. The [`hoomd-mc`] crate provides the
-`Zero` type that expresses `$H = 0$`:
+that `Sweep` will accept every **trial move**. The [`hoomd-interaction`] crate
+provides the `Zero` type that expresses `$H = 0$`:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/random-walk.rs:hamiltonian}}
 ```
