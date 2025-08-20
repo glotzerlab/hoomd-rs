@@ -6,14 +6,20 @@
 TODO: Expand documentation.
  */
 
-pub trait Thermostat {
-    fn temperature_factor() -> f64;
+/** Adjust the temperature of a system.
+TODO: Add Thermostat documentation.
+*/
+ pub trait Thermostat {
+    /// TODO: documentation.
+    fn temperature_factor(&self) -> f64;
 }
 
+/** TODO: documentation */
 pub struct NoThermostat;
 
 impl Thermostat for NoThermostat {
-    fn temperature_factor() -> f64 {
+    #[inline]
+    fn temperature_factor(&self) -> f64 {
         1.0
     }
 }
