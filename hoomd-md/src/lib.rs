@@ -19,7 +19,7 @@ use std::ops::AddAssign;
 use hoomd_interaction::NetBodyForce;
 use hoomd_vector::{Vector, Cartesian};
 use thermostat::{Thermostat, NoThermostat};
-use hoomd_microstate::{boundary::Boundary, property::{Acceleration, Mass, Position, Velocity}, Microstate, Transform};
+use hoomd_microstate::{boundary::{GenerateGhosts, Wrap}, property::{Acceleration, Mass, Position, Velocity}, Microstate, Transform};
 
 /** Integrate over translational degrees of freedom. 
  */
@@ -56,8 +56,8 @@ where
     // B: Position<Vector = Cartesian<N>>
     V: Default + Vector,
     B: Position<Vector = V> + Velocity<Vector = V> + Acceleration<Vector = V> + Mass + Transform<S> + Clone,
-    S: Position<Vector = V>,
-    C: Boundary<V, B, S>,
+    S: Position<Vector = V> + Default,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     T: Thermostat,
     F: NetBodyForce<V, B, S, C>
 {
