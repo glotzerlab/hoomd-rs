@@ -188,50 +188,6 @@ pub trait SitePairEnergy<S> {
     fn site_pair_energy(&self, a: &S, b: &S) -> f64;
 }
 
-/** TODO: kind of modelled after DeltaEnergyOne */
-pub trait NetBodyForce<V, B, S, C> {
-    #[must_use]
-    fn net_force_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V;
-}
-
-pub trait NetSiteForce<V, B, S, C> {
-    #[must_use]
-    fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V;
-}
-
-/** Compute the force on a single site.
-TODO: Add SiteForce documentation
-*/
-pub trait SiteForce<V, S> {
-    /// Evaluate the force on a single site.
-    fn site_force(&self, site_properties: &S) -> V;
-}
-
-/** Compute the Force on one site from another site.
-TODO: Add SitePairForce documentation
-*/
-pub trait SitePairForce<V, S> {
-    /// Evaluate the force on site a from site b.
-    fn site_pair_force(&self, a: &S, b: &S) -> V;
-}
-
-/** Compute the torque on a single site.
-TODO: Add SiteTorque documentation
-*/
-pub trait SiteTorque<V, S> {
-    /// Evaluate the torque on a single site.
-    fn site_torque(&self, site_properties: &S) -> V;
-}
-
-
-/** Compute the torque on one site from another site.
-TODO: Add SitePairTorque documentation
-*/
-pub trait SitePairTorque<V, S> {
-    /// Evaluate the torque contribution from a pair of sites.
-    fn site_pair_torque(&self, a: &S, b: &S) -> V;
-}
-
 /** Compute the change energy as a function of a single modified body.
 
 Some trial moves apply to a single body at a time and use a Hamiltonian that
@@ -329,5 +285,50 @@ pub trait DeltaEnergyRemove<B, S, C> {
         body_index: usize,
     ) -> f64;
 }
+
+/** TODO: kind of modelled after DeltaEnergyOne */
+pub trait NetBodyForce<V, B, S, C> {
+    #[must_use]
+    fn net_force_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V;
+}
+
+pub trait NetSiteForce<V, B, S, C> {
+    #[must_use]
+    fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V;
+}
+
+/** Compute the force on a single site.
+TODO: Add SiteForce documentation
+*/
+pub trait SiteForce<V, S> {
+    /// Evaluate the force on a single site.
+    fn site_force(&self, site_properties: &S) -> V;
+}
+
+/** Compute the Force on one site from another site.
+TODO: Add SitePairForce documentation
+*/
+pub trait SitePairForce<V, S> {
+    /// Evaluate the force on site a from site b.
+    fn site_pair_force(&self, a: &S, b: &S) -> V;
+}
+
+/** Compute the torque on a single site.
+TODO: Add SiteTorque documentation
+*/
+pub trait SiteTorque<V, S> {
+    /// Evaluate the torque on a single site.
+    fn site_torque(&self, site_properties: &S) -> V;
+}
+
+
+/** Compute the torque on one site from another site.
+TODO: Add SitePairTorque documentation
+*/
+pub trait SitePairTorque<V, S> {
+    /// Evaluate the torque contribution from a pair of sites.
+    fn site_pair_torque(&self, a: &S, b: &S) -> V;
+}
+
 
 // TODO: More doc examples for all implementors.
