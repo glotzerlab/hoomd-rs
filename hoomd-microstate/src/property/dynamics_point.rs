@@ -49,7 +49,7 @@ impl<V> Transform<Point<V>> for DynamicsPoint<V>
 where
     V: Vector,
 {
-    /** [`MobilePoint`] transforms [`Point`] by vector addition.
+    /** [`DynamicsPoint`] transforms [`Point`] by vector addition.
 
     ```math
     \vec{r} = \vec{r}_\mathrm{body} + \vec{r}_\mathrm{site}
@@ -82,7 +82,7 @@ where
     V: Vector,
     R: Copy
 {
-    /** [`MobilePoint`] transforms [`OrientedPoint`] by vector addition.
+    /** [`DynamicsPoint`] transforms [`OrientedPoint`] by vector addition.
 
     ```math
     \vec{r} = \vec{r}_\mathrm{body} + \vec{r}_\mathrm{site}
