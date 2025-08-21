@@ -7,14 +7,16 @@ TODO: Expand documentation.
  */
 
 /** Adjust the temperature of a system.
-TODO: Add Thermostat documentation.
+TODO: Add example.
 */
  pub trait Thermostat {
-    /// TODO: documentation.
+    /// The scaling factor for velocities.
     fn temperature_factor(&self) -> f64;
 }
 
-/** TODO: documentation */
+/** Constant temperature.
+TODO: Add example.
+*/
 pub struct NoThermostat;
 
 impl Thermostat for NoThermostat {
