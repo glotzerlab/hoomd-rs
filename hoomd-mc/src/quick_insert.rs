@@ -6,80 +6,273 @@
 
 use super::{Count, Trial};
 use hoomd_interaction::{DeltaEnergyInsert, TotalEnergy};
-use hoomd_microstate::{Body, Microstate, Transform, boundary::Boundary, property::Position};
+use hoomd_microstate::{
+    Body, Microstate, Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::Position,
+};
 
 use rand::distr::Distribution;
 
-/** Add bodies to the microstate with random configurations.
+/// Track the state of a given `QuickInsert` instance.
+#[derive(PartialEq)]
+enum State {
+    /// Inserting bodies or performing trial moves to separate them.
+    Running,
+    /// All bodies have been inserted and all overlaps removed.
+    Complete,
+}
 
-[`QuickInsert`] allows you to *quickly* insert many particles into the
-microstate. It does so by *breaking detailed balance*, so you should use it
-only during the initialization phase of your simulation where you prepare a
-microstate for later equilibration. The [`QuickInsert`] protocol is a refinement
-of the `QuickCompress` protocol implemented in HOOMD-blue with the advantage
-that you can keep the boundary and any of your barriers fixed while randomly
-inserting particles.
+/** Quickly add bodies to the microstate with random configurations.
+
+[`QuickInsert`] allows you to *quickly* insert many bodies into the microstate.
+It does so by *breaking detailed balance*, so you should use it only during
+the initialization phase of your simulation where you prepare a microstate
+for later equilibration. The [`QuickInsert`] protocol is an alternate to the
+`QuickCompress` protocol with the advantage that you can keep the boundary and
+any of your barriers fixed while randomly inserting particles. The disadvantage
+is that [`QuickInsert`] cannot achieve densities as high as `QuickCompress`.
 
 [`QuickInsert`] works only with hard particle potentials that go to infinity
-when overlapping. It works best with potentials that always evaluate to
-non-negative values. If your model uses soft and/or attractive interactions, you
-can use an alternate Hamiltonian during the initialization phase.
+when overlapping. It works best with the [`OverlapPenalty`] potential that
+allows sites to overlap a small amount and for trial moves to partially reduce
+that overlap.
 
-When you `apply` [`QuickInsert`] to a microstate, it:
-1. Checks the total energy of the given hamiltonian. If greater than zero, return
-   immediately.
-2. Generate a random body and attempt to insert it into the microstate. Reject
-   any insertion that would result in an infinite energy. Accept in all other cases.
-3. Repeat step 2 up to `attempts_per_apply` times or when `state` particles have
-   been inserted, whichever comes first.
+As a **protocol**, [`QuickInsert`] is more than just a trial move. A
+[`QuickInsert`] instance stores internal state that it manages as it completes
+the requested task. Therefore, you should only use one [`QuickInsert`] on one
+[`Microstate`]. After initialization, a [`QuickInsert`] knows the *target*
+number of bodies it should add, what sites those bodies should have, and
+a distribution that places those bodies in the simulation boundary. New
+[`QuickInsert`] instances start in the running state.
 
-You **must** combine [`QuickInsert`] with local trial moves that relieve the
-stress produced by random insertions to make room for more insertions.
+When you [`apply`] a running [`QuickInsert`] to a microstate, it:
+1. Checks the total energy of the given Hamiltonian.
+2. If the total energy is zero *and there are still bodies to insert*, generate
+   a random body and attempt to insert it into the microstate. Reject any
+   insertion that would result in an infinite energy. Accept in all other cases.
+3. Repeat step 2 until inserted bodies overlap with others `allowed_overlaps`
+   times, the target number of bodies have been inserted, or a total of `target`
+   attempts have been made during this call, whichever comes first.
+4. Apply the given local trial move to relax the strain introduced by the
+   overlapping bodies.
 
-TODO: Document effectiveness of basic vs advanced configurations.
+When `target` bodies have been inserted *and* the energy is 0, [`QuickInsert`]
+transitions to the complete state. When complete, [`is_complete`] returns `true`
+and [`apply`] does nothing.
+
+In testing with spherical particles. [`QuickInsert`] combined with
+[`OverlapPenalty`] can achieve a packing fraction of 56% in 3D and 72% in 2D.
+You might achieve slightly higher densities if you are willing to run many
+timesteps, though `QuickCompress` is a better solution.
 
 The generic type names are:
 * `D`: The body distribution.
 
-TODO: Example
+[`apply`]: Self::apply
+[`is_complete`]: Self::is_complete
+[`OverlapPenalty`]: hoomd_interaction::pairwise::OverlapPenalty
+
+# Example
+
+```
+use hoomd_geometry::shape::Rectangle;
+use hoomd_mc::{QuickInsert, UniformIn};
+use hoomd_microstate::property::Point;
+use hoomd_vector::Cartesian;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let cube = Rectangle::with_equal_edges(10.0.try_into()?);
+
+let distribution = UniformIn {
+    boundary: cube,
+    template_sites: vec![Point::<Cartesian<2>>::default()],
+};
+let mut quick_insert = QuickInsert::new(distribution, 256);
+# Ok(())
+# }
+```
 */
 pub struct QuickInsert<D> {
     /// Sample random bodies to insert.
-    pub distribution: D,
-    /// Number of insertion attempts per call to `apply`.
-    pub attempts_per_apply: usize,
+    distribution: D,
+
+    /// Total number of particles to insert.
+    target: usize,
+
+    /// Maximum number of overlapping inserts allowed.
+    allowed_overlaps: usize,
+
+    /// Count of insertions completed
+    inserted: usize,
+
+    /// Current stage of the method.
+    state: State,
 }
 
-impl<M, B, S, C, D, H> Trial<Microstate<B, S, C>, H> for QuickInsert<D>
-where
-    B: Position<Metric = M> + Transform<S>,
-    S: Position<Metric = M>,
-    D: Distribution<Body<B, S>>,
-    H: DeltaEnergyInsert<B, S, C> + TotalEnergy<Microstate<B, S, C>>,
-    C: Boundary<M, B, S>,
-{
-    type Count = Count;
-    type Macrostate = usize;
+impl<D> QuickInsert<D> {
+    /** Build a new quick insert protocol.
 
+    After construction, the `QuickInsert` starts in a running state. On
+    successive calls to `apply`, it will attempt to insert `target` bodies into
+    the microstate randomly sampled from the given `distribution`. The default
+    number of `allowed_overlaps` is `target/8`.
+
+    # Example
+
+    ```
+    use hoomd_geometry::shape::Rectangle;
+    use hoomd_mc::{QuickInsert, UniformIn};
+    use hoomd_microstate::property::Point;
+    use hoomd_vector::Cartesian;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cube = Rectangle::with_equal_edges(10.0.try_into()?);
+
+    let distribution = UniformIn {
+        boundary: cube,
+        template_sites: vec![Point::<Cartesian<2>>::default()],
+    };
+    let mut quick_insert = QuickInsert::new(distribution, 256);
+    # Ok(())
+    # }
+    ```
+    */
     #[inline]
-    fn apply(
-        &self,
+    pub fn new(distribution: D, target: usize) -> Self {
+        Self {
+            distribution,
+            target,
+            allowed_overlaps: (target / 8).max(1),
+            inserted: 0,
+            state: State::Running,
+        }
+    }
+
+    /** Check if the quick insert protocol is complete.
+
+    `QuickInsert` completes after it has inserted all `target` bodies **and**
+    the total energy of the system is less than or equal to 0. When using the
+    recommended `OverlapPenalty` potential, this means that that there are no
+    overlaps between any particles.
+    */
+    #[inline]
+    pub fn is_complete(&self) -> bool {
+        self.state == State::Complete
+    }
+
+    /** Apply the quick insert protocol to a microstate.
+
+    The `local_trial` should translate and/or rotate bodies by small amounts
+    to relieve the stress caused by inserting overlapping sites. `QuickInsert`
+    passes `state` to `local_trial.apply`.
+
+    FUTURE: Should `QuickInsert` tune the trial moves? Or ask the caller to?
+
+    # Example
+
+    ```
+    use hoomd_geometry::shape::Rectangle;
+    use hoomd_interaction::{CutoffPair, pairwise::{Expanded, Isotropic, OverlapPenalty}};
+    use hoomd_mc::{QuickInsert, Translate, Sweep, UniformIn};
+    use hoomd_microstate::{Body, MicrostateBuilder, boundary::Periodic, property::Point};
+    use hoomd_vector::Cartesian;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cube = Rectangle::with_equal_edges(10.0.try_into()?);
+
+    let distribution = UniformIn {
+        boundary: cube,
+        template_sites: vec![Point::default()],
+    };
+    let mut quick_insert = QuickInsert::new(distribution, 256);
+
+    let translate = Translate {
+        maximum_distance: 0.1.try_into()?,
+    };
+    let translate_sweep = Sweep(translate);
+
+    let cutoff_pair = CutoffPair {
+        r_cut: 1.0,
+        evaluator: Isotropic(Expanded {
+            delta: 1.0,
+            f: OverlapPenalty::default(),
+        }),
+    };
+
+    let mut microstate =
+        MicrostateBuilder::with_boundary(Periodic::new(1.0, cube)?)
+            .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
+            .try_build()?;
+
+    quick_insert.apply(
+        &mut microstate,
+        &cutoff_pair,
+        &translate_sweep,
+        &1.0,
+    );
+
+    assert!(microstate.bodies().len() > 1);
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    pub fn apply<M, B, S, C, H, T>(
+        &mut self,
         microstate: &mut Microstate<B, S, C>,
         hamiltonian: &H,
-        state: &Self::Macrostate,
-    ) -> Self::Count {
-        let mut count = Self::Count::default();
+        local_trial: &T,
+        state: &T::Macrostate,
+    ) -> Count
+    where
+        B: Position<Metric = M> + Transform<S>,
+        S: Position<Metric = M> + Default,
+        D: Distribution<Body<B, S>>,
+        H: DeltaEnergyInsert<B, S, C> + TotalEnergy<Microstate<B, S, C>>,
+        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+        T: Trial<Microstate<B, S, C>, H>,
+    {
+        let mut count = Count::default();
 
-        if hamiltonian.total_energy(microstate) <= 0.0 {
+        // Perform no work at all if already complete.
+        if self.is_complete() {
+            return count;
+        }
+
+        let energy = hamiltonian.total_energy(microstate);
+
+        // The quick insert protocol is not complete until the energy has reached 0.
+        if energy <= 0.0 && self.inserted >= self.target {
+            self.state = State::Complete;
+            return count;
+        }
+
+        // Scaling the number of insertion attempts with the target number of insertions
+        // is a good way to ensure that there are sufficient attempts on each call to
+        // apply. Larger boxes will naturally get more insertion attempts. At the same
+        // time, we need to limit the total strain caused by the insertions. Count
+        // the number of insertions that cause overlaps and exit early when there
+        // are too many.
+        if energy <= 0.0 {
             let mut rng = microstate.counter().make_rng();
+            let mut insertions_with_overlaps = 0;
 
-            for _ in 0..self.attempts_per_apply {
+            for _ in 0..self.target {
                 let new_body = self.distribution.sample(&mut rng);
 
                 let delta_energy = hamiltonian.delta_energy_insert(microstate, &new_body);
                 if delta_energy.is_finite() && microstate.add_body(new_body).is_ok() {
                     count.accepted += 1;
-                    if count.accepted >= *state as u64 {
+                    self.inserted += 1;
+
+                    if delta_energy > 0.0 {
+                        insertions_with_overlaps += 1;
+                    }
+
+                    if self.inserted == self.target
+                        || insertions_with_overlaps >= self.allowed_overlaps
+                    {
                         break;
                     }
                 } else {
@@ -89,6 +282,12 @@ where
         }
 
         microstate.increment_substep();
+
+        // Applying local trial moves is critical to the success of the quick
+        // insert protocol. Require that users pass in a local trial type and
+        // apply it at the appropriate time.
+        local_trial.apply(microstate, hamiltonian, state);
+
         count
     }
 }

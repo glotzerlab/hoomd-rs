@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement Disk.
+/*! Implement Hyperbolic disks in Bevy.
 */
 
 use crate::PRIMARY_COLOR;
@@ -147,7 +147,7 @@ fn poincare(point: &Minkowski<3>, skirt: f64, diameter: f64) -> ([f32; 3], f32) 
 
 /** Control how disks are rendered.
 
-[`DiskMaterial`] mixes the texture (which defaults to fully transparent) with
+[`HyperbolicDiskMaterial`] mixes the texture (which defaults to fully transparent) with
 the background color using the texture alpha. It ignores the background alpha.
 
 Control the draw order using the z coordinate. The draw order is non-deterministic

@@ -77,11 +77,6 @@ path = "voronoi_flat_grid.rs"
 path = "mc-tutorial"
 
 [[example]]
-name = "hyperbolic_fill"
-path = "hyperbolic_fill.rs"
-required-features = ["bevy"]
-
-[[example]]
 name = "custom-random-walk"
 path = "mc-tutorial/custom-random-walk.rs"
 required-features = ["bevy"]

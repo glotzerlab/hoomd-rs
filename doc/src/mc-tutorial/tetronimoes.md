@@ -68,12 +68,12 @@ moves because the result is more visually interesting.
 
 ## The Simulation Model
 
-Construct the simulation model as in the [Applying Interactions] tutorial
-with a few differences:
-
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/tetronimoes.rs:simulation_new}}
 ```
+
+Construct the simulation model as in the [Applying Interactions] tutorial
+with a few differences:
 
 ### Trial Moves
 
@@ -117,9 +117,12 @@ and clone of the chosen sites.
 
 *hoomd-rs* uses a *counter based random number generator*. Whenever you need to
 use random numbers in your code, you can get a `Rng` to generate them by calling
-`microstate.counter().make_rng()`. You *MUST* indicate that your substep is
-complete by calling `microstate.increment_substep()` so that the next substep
-will use a different set of random numbers.
+`microstate.counter().make_rng()`.
+
+> [!IMPORTANT]
+> Whenever you use `counter.make_rng`, You *MUST* indicate that your substep is
+> complete by calling `microstate.increment_substep()` so that the next substep
+> will use a different set of random numbers.
 
 ## Conclusion
 

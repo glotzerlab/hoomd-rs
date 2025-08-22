@@ -7,7 +7,6 @@
 use approx::assert_relative_eq;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Metric, Vector};
-use libm::{acosh, atan2, cos, cosh, sin, sinh, sqrt};
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform, Uniform};
 use std::array;
@@ -18,7 +17,7 @@ use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
 
-use crate::{Error, FundamentalDomain, HyperbolicRotate};
+use crate::{Error, HyperbolicRotate};
 
 /**
 [`Minkowski<N>`] implements (N-1,1)-dimensional Minkowski space with the metric signature
@@ -465,7 +464,6 @@ has a natural interpretation as the set of points with the same spacetime interv
 of the geodesic passing between two points on a hyperboloid with some given skirt width. This may be
 interpreted as the metric for the hyperboloid model of hyperbolic space.
 ```
-use libm::acosh;
 use hoomd_manifold::{Minkowski, Hyperboloid};
 use hoomd_vector::Metric;
 
@@ -479,7 +477,7 @@ let y = Hyperboloid {
     skirt: 1.0 as f64,
 };
 
-assert_eq!(acosh((2.0_f64).sqrt()), x.distance(&y));
+assert_eq!(((2.0_f64).sqrt()).acosh(), x.distance(&y));
 ```
 
 */
@@ -553,7 +551,6 @@ impl<const N: usize> Hyperboloid<N> {
 
     # Example
     ```
-    use libm::{sinh, cosh};
     use hoomd_vector::Vector;
     use hoomd_manifold::{Minkowski, Hyperboloid};
     use approx::assert_relative_eq;
@@ -570,13 +567,12 @@ impl<const N: usize> Hyperboloid<N> {
     #[inline]
     #[must_use]
     pub fn distance_from_cusp(&self) -> f64 {
-        self.skirt * acosh((self.point.coordinates[N - 1]) / self.skirt)
+        self.skirt * ((self.point.coordinates[N - 1]) / self.skirt).acosh()
     }
     /** Projects points on the hyperboloid onto the Poincare disk/ball.
 
     # Example
     ```
-    use libm::{sinh, cosh};
     use hoomd_vector::Vector;
     use hoomd_manifold::{Minkowski, Hyperboloid};
     use approx::assert_relative_eq;
@@ -622,14 +618,17 @@ impl<const N: usize> Default for Hyperboloid<N> {
 impl Metric for Hyperboloid<3> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
-        assert_relative_eq!(self.skirt, other.skirt, epsilon = 1e-12);
+        #[cfg(debug_assertions)]
+        {
+            assert_relative_eq!(self.skirt, other.skirt, epsilon = 1e-12);
+        }
         let last_component = self.point.coordinates[2] * other.point.coordinates[2];
         let arg = zip(
             self.point.coordinates[0..2].iter(),
             other.point.coordinates[0..2].iter(),
         )
         .fold(last_component, |product, x| product - (x.0 * x.1));
-        self.skirt * acosh(arg / (self.skirt.powi(2)))
+        self.skirt * (arg / (self.skirt.powi(2))).acosh()
     }
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
@@ -640,73 +639,21 @@ impl Metric for Hyperboloid<3> {
 impl Metric for Hyperboloid<4> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
-        assert_relative_eq!(self.skirt, other.skirt, epsilon = 1e-12);
+        #[cfg(debug_assertions)]
+        {
+            assert_relative_eq!(self.skirt, other.skirt, epsilon = 1e-12);
+        }
         let last_component = self.point.coordinates[3] * other.point.coordinates[3];
         let arg = zip(
             self.point.coordinates[0..3].iter(),
             other.point.coordinates[0..3].iter(),
         )
         .fold(last_component, |product, x| product - (x.0 * x.1));
-        self.skirt * acosh(arg / (self.skirt.powi(2)))
+        self.skirt * (arg / (self.skirt.powi(2))).acosh()
     }
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
         self.distance(other).powi(2)
-    }
-}
-
-/// Cusp-to-vertex distance for {8,8} tiling for Gauss curvature K = -1
-const EIGHTEIGHT: f64 = 2.448_452_447_678_076;
-
-impl FundamentalDomain for Hyperboloid<3> {
-    /** Computes the length of the geodesic passing between the cusp $(0,0,\rho)$ and the boundary
-    of the fundamental domain of the {8,8} tiling of hyperbolic space.
-    # Example
-    ```
-    use libm::acosh;
-    use hoomd_vector::Vector;
-    use hoomd_manifold::{Minkowski, Hyperboloid, FundamentalDomain};
-    use std::f64::consts::PI;
-    use approx::assert_relative_eq;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let v : f64 = 2.448452447678076;
-    let rho : f64 = 1.0;
-    let theta: f64 = PI/4.0;
-    let x = Hyperboloid::from(&Minkowski::from([rho*(v.sinh())*(theta.cos()),rho*(v.sinh())*(theta.sin()),rho*(v.cosh())]));
-    assert_relative_eq!(x.distance_to_boundary(),0.0, epsilon=1e-12);
-    # Ok(())
-    # }
-    ```
-    */
-    #[inline]
-    fn distance_to_boundary(&self) -> f64 {
-        let theta = atan2(self.point.coordinates[1], self.point.coordinates[0]);
-        let angle = theta.rem_euclid(PI / 4.0);
-        let tile_size = EIGHTEIGHT;
-        let eta =
-            (tile_size.tanh() / (angle.cos() - angle.sin() * (1.0 - (2.0_f64).sqrt()))).atanh();
-        self.skirt * eta - self.distance_from_cusp()
-    }
-    /** Outputs vector of points on the boundary of the fundamental domain
-     */
-    #[inline]
-    fn boundary_points(m: usize, skirt: f64) -> Vec<(f64, f64)> {
-        let mut coords = Vec::<(f64, f64)>::new();
-        for n in 0..m {
-            let angle = (n as f64) * 2.0 * PI / (m as f64);
-            let tile_size = EIGHTEIGHT;
-            let eta =
-                (tile_size.tanh() / (angle.cos() - angle.sin() * (1.0 - (2.0_f64).sqrt()))).atanh();
-            let x = (skirt * sinh(eta)) / (1.0 + cosh(eta));
-            for k in 0..8 {
-                coords.push((
-                    x * cos(angle + f64::from(k) * PI / 4.0),
-                    x * sin(angle + f64::from(k) * PI / 4.0),
-                ));
-            }
-        }
-        coords
     }
 }
 
@@ -725,7 +672,6 @@ In two dimensional hyperbolic space:
 ```
 use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
 use std::f64::consts::PI;
-use libm::{sinh, cosh};
 
 // rotation by pi radians about z axis
 fn rotate_about_z(minkowski_vector: &Minkowski<3>) -> Minkowski<3> {
@@ -759,14 +705,13 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     // Rotate point in 2D hyperbolic space about z-axis
     use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
     use std::f64::consts::PI;
-    use libm::{sin, cos};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let v = Minkowski::from([1.0, 0.0, 1.0]);
     let spatial_rotation = HyperbolicAngle::from((PI/2.0, 0.0_f64, 0.0_f64));
     let matrix = HyperbolicRotationMatrix::from(spatial_rotation);
     let rotated = matrix.hyperbolic_rotate(&v);
-    let c = Minkowski::from([cos(PI/2.0),sin(PI/2.0),1.0]);
+    let c = Minkowski::from([(PI/2.0).cos(),(PI/2.0).sin(),1.0]);
     assert_eq!(c,rotated);
     # Ok(())
     # }
@@ -777,14 +722,13 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
     use std::f64::consts::PI;
     use num::complex::Complex;
-    use libm::{sinh,cosh};
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let v = Minkowski::from([1.0, 0.0, 1.0]);
     let small_boost = HyperbolicAngle::from((0.0_f64, 0.1_f64, 0.0_f64));
     let matrix = HyperbolicRotationMatrix::from(small_boost);
     let rotated = matrix.hyperbolic_rotate(&v);
-    let c = Minkowski::from([sinh(0.1)+cosh(0.1),0.0,sinh(0.1)+cosh(0.1)]);
+    let c = Minkowski::from([(0.1_f64).sinh()+(0.1_f64).cosh(),0.0,(0.1_f64).sinh()+(0.1_f64).cosh()]);
     assert_eq!(c,rotated);
     # Ok(())
     # }
@@ -837,7 +781,6 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, Biquaternion, Minkowski};
     use std::f64::consts::PI;
     use num::complex::Complex;
-    use libm::{sinh,cosh};
     use approx::assert_relative_eq;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -921,29 +864,32 @@ impl Distribution<Hyperboloid<3>> for HyperbolicDisk {
         let rho = self.skirt;
         let max_boost = (self.r.get()) / rho;
         let point = self.point;
-        let eta = acosh(point.coordinates[2] / rho);
-        let phi = atan2(point.coordinates[1], point.coordinates[0]);
+        let eta = (point.coordinates[2] / rho).acosh();
+        let phi = point.coordinates[1].atan2(point.coordinates[0]);
         let trial_boost = Uniform::new(0.0, 1.0).expect("r is positive and real");
         let trial_rotation =
             Uniform::new(-PI, PI).expect("hard-coded distribution should be valid");
         let theta = trial_rotation.sample(rng);
         let v1: f64 = trial_boost.sample(rng);
-        let v = sqrt(v1) * max_boost;
+        let v = v1.sqrt() * max_boost;
         let trial_coords = [
-            rho * sinh(v) * cos(theta),
-            rho * sinh(v) * sin(theta),
-            rho * cosh(v),
+            rho * v.sinh() * theta.cos(),
+            rho * v.sinh() * theta.sin(),
+            rho * v.cosh(),
         ];
         let transformed_point = Minkowski::from([
-            trial_coords[0] * cosh(eta) * cos(phi) - trial_coords[1] * sin(phi)
-                + trial_coords[2] * sinh(eta) * cos(phi),
-            trial_coords[0] * cosh(eta) * sin(phi)
-                + trial_coords[1] * cos(phi)
-                + trial_coords[2] * sinh(eta) * sin(phi),
-            trial_coords[0] * sinh(eta) + trial_coords[2] * cosh(eta),
+            trial_coords[0] * (eta.cosh()) * (phi.cos()) - trial_coords[1] * (phi.sin())
+                + trial_coords[2] * (eta.sinh()) * (phi.cos()),
+            trial_coords[0] * (eta.cosh()) * (phi.sin())
+                + trial_coords[1] * (phi.cos())
+                + trial_coords[2] * (eta.sinh()) * (phi.sin()),
+            trial_coords[0] * (eta.sinh()) + trial_coords[2] * (eta.cosh()),
         ]);
         let new_hyperboloid = Hyperboloid::from(&transformed_point);
-        assert_relative_eq!(rho, new_hyperboloid.skirt(), epsilon = 1e-12);
+        #[cfg(debug_assertions)]
+        {
+            assert_relative_eq!(rho, new_hyperboloid.skirt(), epsilon = 1e-12);
+        }
         new_hyperboloid
     }
 }
@@ -1255,7 +1201,6 @@ mod tests {
     }
 
     #[test]
-    #[expect(clippy::many_single_char_names, reason = "dummy variables")]
     fn specific_distances() {
         // Distance to the cusp
         let a = Hyperboloid::<3>::from_polar(1.2, 3.2, 1.0);
@@ -1273,21 +1218,10 @@ mod tests {
         let c_cusp_distance_numeric = 1.2;
         assert_relative_eq!(c_cusp_distance, c_cusp_distance_numeric, epsilon = 1e-12);
 
-        let b = Hyperboloid::<4>::from_spherical(2.0, 1.6, 0.8, 5.0);
-        let b_cusp_distance = b.distance_from_cusp();
-        let b_cusp_distance_numeric = 10.0;
-        assert_relative_eq!(b_cusp_distance, b_cusp_distance_numeric, epsilon = 1e-12);
-
-        // Distance to the edge of the {8,8} fundamental domain
-        let e = Hyperboloid::<3>::from_polar(1.0, 0.1, 1.0);
-        let e_edge_distance = e.distance_to_boundary();
-        let e_edge_distance_numeric = 0.838_080_324_331_728;
-        assert_relative_eq!(e_edge_distance, e_edge_distance_numeric, epsilon = 1e-12);
-
-        let f = Hyperboloid::<3>::from_polar(1.0, 1.1, 1.0);
-        let f_edge_distance = f.distance_to_boundary();
-        let f_edge_distance_numeric = 0.545_034_457_278_499_5;
-        assert_relative_eq!(f_edge_distance, f_edge_distance_numeric, epsilon = 1e-12);
+        let d = Hyperboloid::<4>::from_spherical(2.0, 1.6, 0.8, 5.0);
+        let d_cusp_distance = d.distance_from_cusp();
+        let d_cusp_distance_numeric = 10.0;
+        assert_relative_eq!(d_cusp_distance, d_cusp_distance_numeric, epsilon = 1e-12);
     }
 
     #[test]

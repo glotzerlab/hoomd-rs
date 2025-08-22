@@ -1,4 +1,5 @@
 // ANCHOR: use
+use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
     CutoffPair, Single, TotalEnergy,
     external::Linear,
@@ -6,7 +7,7 @@ use hoomd_interaction::{
 };
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder, boundary::Square, property::Point,
+    Body, Microstate, MicrostateBuilder, boundary::Closed, property::Point,
 };
 use hoomd_vector::Cartesian;
 // ANCHOR_END: use
@@ -31,10 +32,9 @@ impl Fill {
         let epsilon = 1000.0;
         let sigma = 1.0;
 
-        let microstate = MicrostateBuilder::with_boundary(Square {
-            l: box_height.try_into()?,
-        })
-        .try_build()?;
+        let square = Rectangle::with_equal_edges(box_height.try_into()?);
+        let microstate =
+            MicrostateBuilder::with_boundary(Closed(square)).try_build()?;
 
         // ANCHOR: external
         let linear = Single(Linear {
@@ -83,7 +83,12 @@ impl Simulation for Fill {
         // ANCHOR: add
         if self.microstate.step() % 100 == 0 {
             self.microstate.add_body(Body::point(
-                [0.0, self.microstate.boundary().l.get() / 2.0 - 0.5].into(),
+                [
+                    0.0,
+                    self.microstate.boundary().0.edge_lengths[1].get() / 2.0
+                        - 0.5,
+                ]
+                .into(),
             ))?;
         }
         // ANCHOR_END: add
@@ -117,7 +122,8 @@ impl Simulation for Fill {
 // ANCHOR: simulation_struct
 struct Fill {
     /// Positions of all the bodies in the simulation.
-    microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Square>,
+    microstate:
+        Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Rectangle>>,
     /// How sites interact with other sites and fields.
     hamiltonian: (Single<Linear<Cartesian<2>>>, CutoffPair<Isotropic<Boxcar>>),
     /// Trial moves to apply.
@@ -132,7 +138,7 @@ struct A;
 
 fn main() -> anyhow::Result<()> {
     let simulation = Fill::new().context("failed to setup simulation")?;
-    let l = simulation.microstate.boundary().l.get() as f32;
+    let l = simulation.microstate.boundary().0.edge_lengths[1].get() as f32;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
         initial_settings: Settings {
             viewport_height: l + 1.0,

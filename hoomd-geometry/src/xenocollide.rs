@@ -149,6 +149,7 @@ where
 
         // Check if origin is inside or overlapping the initial portal
         if v1.dot(&v_perp_v2v1) >= 0.0 {
+            // FUTURE: `v1.dot(&v_perp_v2v1) / v_perp_v2v1.norm()` is the approximate overlap distance
             return true;
         }
 
@@ -163,6 +164,7 @@ where
         // are we within an epsilon of the surface of the shape? If yes, done (overlap)
         let d = (v3 - v1) - (v3 - v1).project(&(v2 - v1));
         if d.norm_squared() < TOLERANCE * v3.norm_squared() {
+            // FUTURE: `d.norm()` is the approximate overlap distance
             return true;
         }
 
@@ -181,6 +183,7 @@ where
         }
 
         if count >= XENOCOLLIDE_2D_MAX_ITER {
+            // FUTURE: `TOLERANCE` is the approximate overlap distance
             return true;
         }
     }

@@ -11,31 +11,28 @@ pub mod angular_mask;
 pub use angular_mask::AngularMask;
 
 mod boxcar;
-pub use boxcar::Boxcar;
-
-mod lennard_jones;
-pub use lennard_jones::LennardJones;
-
-mod lennard_jones_gauss;
-pub use lennard_jones_gauss::LennardJonesGauss;
-
-mod shifted;
-pub use shifted::Shifted;
-
-mod xplor;
-pub use xplor::Xplor;
-
-mod weeks_chandler_anderson;
-pub use weeks_chandler_anderson::WeeksChandlerAnderson;
-
+mod expanded;
 mod harmonic;
-pub use harmonic::Harmonic;
-
 mod harmonic_repulsion;
-pub use harmonic_repulsion::HarmonicRepulsion;
-
 mod isotropic;
+mod lennard_jones;
+mod lennard_jones_gauss;
+mod overlap_penalty;
+mod shifted;
+mod weeks_chandler_anderson;
+mod xplor;
+
+pub use boxcar::Boxcar;
+pub use expanded::Expanded;
+pub use harmonic::Harmonic;
+pub use harmonic_repulsion::HarmonicRepulsion;
 pub use isotropic::Isotropic;
+pub use lennard_jones::LennardJones;
+pub use lennard_jones_gauss::LennardJonesGauss;
+pub use overlap_penalty::OverlapPenalty;
+pub use shifted::Shifted;
+pub use weeks_chandler_anderson::WeeksChandlerAnderson;
+pub use xplor::Xplor;
 
 /** Computes pairwise energies between point particles.
 
