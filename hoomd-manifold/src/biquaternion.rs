@@ -584,7 +584,6 @@ which represents a boost of rapidity $v$ in the $\mathbf{i}$ direction:
 use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Biquaternion, Minkowski};
 use std::f64::consts::PI;
 use num::complex::Complex;
-use libm::{sinh,cosh};
 use approx::assert_relative_eq;
 
 // biquaternion representing a boost of rapidity 0.5 in x direction
@@ -745,7 +744,6 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, Biquaternion, Minkowski};
     use std::f64::consts::PI;
     use num::complex::Complex;
-    use libm::{sinh,cosh};
     use approx::assert_relative_eq;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {

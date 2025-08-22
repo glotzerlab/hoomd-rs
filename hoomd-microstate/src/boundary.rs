@@ -51,7 +51,7 @@ pub(crate) const MAX_GHOSTS: usize = 8;
 // not currently possible in Rust.
 
 /** Attempt to move any body/site properties back into the simulation boundary.
- * 
+
 [`Wrap`] and [`GenerateGhosts`] together define the behavior of simulation
 boundary conditions.
 

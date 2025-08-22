@@ -2443,6 +2443,7 @@ version = "0.0.0"
 dependencies = [
  "approx",
  "divan",
+ "hoomd-manifold",
  "hoomd-utility",
  "hoomd-vector",
  "itertools 0.14.0",
@@ -2484,7 +2485,6 @@ dependencies = [
  "divan",
  "hoomd-utility",
  "hoomd-vector",
- "libm",
  "num",
  "paste",
  "rand 0.9.1",
@@ -2505,7 +2505,6 @@ dependencies = [
  "hoomd-microstate",
  "hoomd-utility",
  "hoomd-vector",
- "libm",
  "rand 0.9.1",
  "rstest",
 ]
@@ -2521,7 +2520,6 @@ dependencies = [
  "hoomd-manifold",
  "hoomd-utility",
  "hoomd-vector",
- "libm",
  "rand 0.9.1",
  "rstest",
  "thiserror 2.0.12",

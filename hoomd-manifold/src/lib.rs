@@ -113,7 +113,6 @@ let rotated = rotation_about_x.hyperbolic_rotate(&x);
 use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, Biquaternion, Minkowski};
 use std::f64::consts::PI;
 use num::complex::Complex;
-use libm::{sinh,cosh};
 
 let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
 let q = Biquaternion::from([Complex::new(0.0, PI/4.0).sinh(),
@@ -164,18 +163,6 @@ pub enum Error {
     /// Attempted to compare two points belonging to spheres with different radii
     #[error("points do not belong to same sphere")]
     InvalidSpherePointComparison,
-}
-
-/** Operations for the fundamental domain on an arbitrary manifold
-*/
-pub trait FundamentalDomain {
-    /** Distance of the geodesic path passing through a given point on the hyperbola and the
-    boundary of the fundamental domain.
-    */
-    fn distance_to_boundary(&self) -> f64;
-    /** List of points on the boundary of the fundamental domain
-     */
-    fn boundary_points(m: usize, skirt: f64) -> Vec<(f64, f64)>;
 }
 
 /** Linear transformations preserving hyperboloids.

@@ -20,7 +20,6 @@ hoomd-microstate.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 rand.workspace = true
-libm = "0.2.11"
 
 [dev-dependencies]
 hoomd-geometry.workspace = true

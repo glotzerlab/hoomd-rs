@@ -63,14 +63,13 @@ where
     use hoomd_microstate::property::{Point, Position};
     use hoomd_manifold::{Minkowski, Hyperboloid};
     use hoomd_vector::{Metric, Vector};
-    use libm::sqrt;
     use rand::{rngs::StdRng, Rng, SeedableRng};
     use approx::assert_relative_eq;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = StdRng::seed_from_u64(13);
     let rho : f64 = 0.8;
-    let body_properties = Point::new(Hyperboloid::from(&Minkowski::from([1.0, -1.0, sqrt(2.0 + rho.powi(2))])));
+    let body_properties = Point::new(Hyperboloid::from(&Minkowski::from([1.0, -1.0, (2.0 + rho.powi(2)).sqrt()])));
     let d = 0.1 * rho;
     let hyperbolic_translate = HyperbolicTranslate {maximum_distance: d.try_into()? ,
                                                     skirt: rho};
@@ -82,7 +81,7 @@ where
 
     // Translation move does not move the point more than a distance d
     assert!(d > new_body_properties.position()
-            .distance(&Hyperboloid::from(&Minkowski::from([1.0, -1.0, sqrt(2.0 + rho.powi(2))]))));
+            .distance(&Hyperboloid::from(&Minkowski::from([1.0, -1.0, (2.0 + rho.powi(2)).sqrt()]))));
     # Ok(())
     # }
     ```
@@ -162,7 +161,6 @@ where
     use hoomd_microstate::property::{Point, Position};
     use hoomd_manifold::{Sphere, SphericalDisk};
     use hoomd_vector::{Vector, Metric, Cartesian};
-    use libm::sqrt;
     use rand::{rngs::StdRng, Rng, SeedableRng};
     use approx::assert_relative_eq;
 

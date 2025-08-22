@@ -16,7 +16,6 @@ thiserror.workspace = true
 rand.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
-libm = "0.2.11"
 num = "0.4.3"
 approx = "0.5.1"
 

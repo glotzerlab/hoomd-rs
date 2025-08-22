@@ -11,6 +11,7 @@ categories.workspace = true
 description = "Performant, general computational geometry methods in Rust."
 
 [dependencies]
+hoomd-manifold.workspace = true
 hoomd-vector.workspace = true
 hoomd-utility.workspace = true
 rand.workspace = true

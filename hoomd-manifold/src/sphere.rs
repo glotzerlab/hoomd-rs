@@ -7,7 +7,6 @@
 use approx::assert_relative_eq;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric};
-use libm::{acos, atan2, cos, sin, sqrt};
 use rand::Rng;
 use rand::distr::{Distribution, Uniform};
 use std::f64::consts::PI;
@@ -119,9 +118,12 @@ impl<const N: usize> Sphere<N> {
 impl Metric for Sphere<3> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
-        assert_relative_eq!(self.radius, other.radius, epsilon = 1e-12);
+        #[cfg(debug_assertions)]
+        {
+            assert_relative_eq!(self.radius, other.radius, epsilon = 1e-12);
+        }
         let arg = Cartesian::dot(&self.point, &other.point) / self.radius.powi(2);
-        self.radius * acos(arg)
+        self.radius * (arg.acos())
     }
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
@@ -132,9 +134,12 @@ impl Metric for Sphere<3> {
 impl Metric for Sphere<4> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
-        assert_relative_eq!(self.radius, other.radius, epsilon = 1e-12);
+        #[cfg(debug_assertions)]
+        {
+            assert_relative_eq!(self.radius, other.radius, epsilon = 1e-12);
+        }
         let arg = Cartesian::dot(&self.point, &other.point) / self.radius.powi(2);
-        self.radius * acos(arg)
+        self.radius * (arg.acos())
     }
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
@@ -198,28 +203,31 @@ impl Distribution<Sphere<3>> for SphericalDisk {
         let radius = self.radius;
         let max_trans = (self.r.get()) / radius;
         let point = self.point;
-        let phi = atan2(point.coordinates[1], point.coordinates[0]);
-        let theta = acos(point.coordinates[2] / radius);
+        let phi = point.coordinates[1].atan2(point.coordinates[0]);
+        let theta = (point.coordinates[2] / radius).acos();
         let trial_zenith = Uniform::new(0.0, 1.0).expect("r is positive and real");
         let trial_azimuth = Uniform::new(-PI, PI).expect("hard-coded distribution should be valid");
         let azi = trial_azimuth.sample(rng);
         let zeni_sample: f64 = trial_zenith.sample(rng);
-        let zeni = sqrt(zeni_sample) * max_trans;
+        let zeni = (zeni_sample).sqrt() * max_trans;
         let trial_coords = [
-            radius * sin(zeni) * cos(azi),
-            radius * sin(zeni) * sin(azi),
-            radius * cos(zeni),
+            radius * (zeni.sin()) * (azi.cos()),
+            radius * (zeni.sin()) * (azi.sin()),
+            radius * (zeni.cos()),
         ];
         let transformed_point = Cartesian::from([
-            trial_coords[0] * cos(theta) * cos(phi) - trial_coords[1] * sin(phi)
-                + trial_coords[2] * sin(theta) * cos(phi),
-            trial_coords[0] * cos(theta) * sin(phi)
-                + trial_coords[1] * cos(phi)
-                + trial_coords[2] * sin(theta) * sin(phi),
-            -trial_coords[0] * sin(theta) + trial_coords[2] * cos(theta),
+            trial_coords[0] * (theta.cos()) * (phi.cos()) - trial_coords[1] * (phi.sin())
+                + trial_coords[2] * (theta.sin()) * (phi.cos()),
+            trial_coords[0] * (theta.cos()) * (phi.sin())
+                + trial_coords[1] * (phi.cos())
+                + trial_coords[2] * (theta.sin()) * (phi.sin()),
+            -trial_coords[0] * (theta.sin()) + trial_coords[2] * (theta.cos()),
         ]);
         let new_sphere = Sphere::from(&transformed_point);
-        assert_relative_eq!(radius, new_sphere.radius, epsilon = 1e-12);
+        #[cfg(debug_assertions)]
+        {
+            assert_relative_eq!(radius, new_sphere.radius, epsilon = 1e-12);
+        }
         new_sphere
     }
 }
