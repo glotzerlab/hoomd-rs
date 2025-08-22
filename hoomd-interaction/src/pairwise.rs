@@ -10,6 +10,7 @@ pub mod angular_mask;
 #[doc(inline)]
 pub use angular_mask::AngularMask;
 
+mod always_true;
 mod boxcar;
 mod expanded;
 mod harmonic;
@@ -22,6 +23,7 @@ mod shifted;
 mod weeks_chandler_anderson;
 mod xplor;
 
+pub use always_true::AlwaysTrue;
 pub use boxcar::Boxcar;
 pub use expanded::Expanded;
 pub use harmonic::Harmonic;

@@ -19,12 +19,14 @@ pub mod external;
 pub mod pairwise;
 
 mod cutoff_pair;
+mod cutoff_pair_overlap;
 mod hamiltonian;
 mod single;
 mod single_overlap;
 mod zero;
 
 pub use cutoff_pair::CutoffPair;
+pub use cutoff_pair_overlap::CutoffPairOverlap;
 pub use single::Single;
 pub use single_overlap::SingleOverlap;
 pub use zero::Zero;
@@ -206,7 +208,7 @@ TODO: Document
 */
 pub trait SitePairOverlap<S> {
     /// Determine if two sites overlap.
-    fn site_pair_energy(&self, a: &S, b: &S) -> bool;
+    fn site_pair_overlap(&self, a: &S, b: &S) -> bool;
 }
 
 /** Compute the change energy as a function of a single modified body.
