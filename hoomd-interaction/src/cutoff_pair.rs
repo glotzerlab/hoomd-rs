@@ -8,7 +8,7 @@ use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairEnergy
 use hoomd_microstate::{Body, Microstate, Site, Transform, boundary::Wrap, property::Position};
 use hoomd_vector::Vector;
 
-/** Compute system properties based on short-ranged pairwise interactions between sites.
+/** Short-ranged pairwise interactions between sites.
 
 Given an evaluator that implements [`SitePairEnergy`], [`CutoffPair`] represents:
 
