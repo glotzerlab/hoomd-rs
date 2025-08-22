@@ -9,9 +9,8 @@
 )]
 
 /*! Simulate molecular dynamics in systems of particles.
-
-TODO: Expand documentation.
- */
+TODO: Add documentation.
+*/
 
 pub mod thermostat;
 use std::ops::AddAssign;
@@ -22,17 +21,29 @@ use thermostat::{Thermostat, NoThermostat};
 use hoomd_microstate::{boundary::{GenerateGhosts, Wrap}, property::{Acceleration, Mass, Position, Velocity}, Microstate, Transform};
 
 /** Integrate over translational degrees of freedom. 
- */
+TODO: Add example.
+*/
 pub trait TranslationalMotion<B, S, C, F> {
-    /// Integrate over translational degrees of freedom. 
+    /** Perform integration, mutating the system configuration.
+    
+    `microstate` holds the system configuration that will be changed, and
+    `force` is the evaluator that is used to calculate forces used in the
+    integration.
+    */
     fn integrate_translation(&self, microstate: &mut Microstate<B, S, C>, force: &F);
 }
 
 /** Integrate over rotational degrees of freedom. 
- */
-pub trait RotationalMotion<B, S, C> {
-    /// Integrate over rotational degrees of freedom.
-    fn integrate_rotation(&self, microstate: &mut Microstate<B, S, C>);
+TODO: Add example.
+*/
+pub trait RotationalMotion<B, S, C, T> {
+    /** Perform integration, mutating the system configuration.
+
+    `microstate` holds the system configuration that will be changed, and
+    `torque` is the evaluator that is used to calculate torques used in the
+    integration.
+    */
+    fn integrate_rotation(&self, microstate: &mut Microstate<B, S, C>, torque: &T);
 }
 
 /// TODO: add documentation
@@ -50,10 +61,8 @@ pub struct ConstantVolume<T: Thermostat> {
 /// TODO: add documentation
 pub struct ConstantPressure;
 
-/// TODO: add documentation
 impl<V, B, S, C, T, F> TranslationalMotion<B, S, C, F> for ConstantVolume<T>
-where 
-    // B: Position<Vector = Cartesian<N>>
+where
     V: Default + Vector,
     B: Position<Vector = V> + Velocity<Vector = V> + Acceleration<Vector = V> + Mass + Transform<S> + Clone,
     S: Position<Vector = V> + Default,
@@ -61,7 +70,9 @@ where
     T: Thermostat,
     F: NetBodyForce<V, B, S, C>
 {
-    // TODO: Do we need to allow users to set a displacement limit?
+    /** Perform two-step Verlet algorithm following Kamberaj 2005.
+    TODO: Do we want to allow users to set a displacement limit?
+    */
     #[inline]
     fn integrate_translation(
         &self,
@@ -109,12 +120,12 @@ where
     }
 }
 
-impl<B, S, C, T> RotationalMotion<B, S, C> for ConstantVolume<T>
+impl<B, S, C, T> RotationalMotion<B, S, C, T> for ConstantVolume<T>
 where 
     T: Thermostat
 {
     #[inline]
-    fn integrate_rotation(&self, microstate: &mut Microstate<B, S, C>) {
+    fn integrate_rotation(&self, microstate: &mut Microstate<B, S, C>, torque: &T) {
         // TODO
     }
 }
