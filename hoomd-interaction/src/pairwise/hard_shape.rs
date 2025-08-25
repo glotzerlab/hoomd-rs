@@ -6,8 +6,8 @@
 
 use crate::SitePairOverlap;
 use hoomd_geometry::IntersectsAt;
-use hoomd_microstate::property::{Position, Orientation};
-use hoomd_vector::{self, Vector, Rotation, Rotate};
+use hoomd_microstate::property::{Orientation, Position};
+use hoomd_vector::{self, Rotate, Rotation, Vector};
 
 /** Infinite energy when sites overlap, 0 when they don't (*not differentiable*).
 
@@ -31,11 +31,12 @@ let hard_shape = HardShape(Convex(square));
 */
 pub struct HardShape<G>(pub G);
 
-impl<S, G, V, R> SitePairOverlap<S> for HardShape<G> where
-S: Position<Vector=V> + Orientation<Rotation = R>,
-V: Vector,
-R: Rotation + Rotate<V>,
-G: IntersectsAt<G, V, R>,
+impl<S, G, V, R> SitePairOverlap<S> for HardShape<G>
+where
+    S: Position<Vector = V> + Orientation<Rotation = R>,
+    V: Vector,
+    R: Rotation + Rotate<V>,
+    G: IntersectsAt<G, V, R>,
 {
     /** Test whether two sites overlap.
 
@@ -59,21 +60,25 @@ G: IntersectsAt<G, V, R>,
         orientation: Angle::from(PI / 4.0),
     };
 
-    assert!(!hard_shape.site_pair_overlap(&a, &b));    
+    assert!(!hard_shape.site_pair_overlap(&a, &b));
 
     let c = OrientedPoint { position: Cartesian::from([1.5, -0.5]),
         orientation: Angle::from(PI / 4.0),
     };
 
-    assert!(hard_shape.site_pair_overlap(&a, &c));    
+    assert!(hard_shape.site_pair_overlap(&a, &c));
     # Ok(())
     # }
     ```
     */
     #[inline]
     fn site_pair_overlap(&self, a: &S, b: &S) -> bool {
-        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(a.position(), a.orientation(),
-            b.position(), b.orientation());
+        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(
+            a.position(),
+            a.orientation(),
+            b.position(),
+            b.orientation(),
+        );
         self.0.intersects_at(&self.0, &v_ij, &o_ij)
     }
 }

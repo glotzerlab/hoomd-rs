@@ -99,7 +99,7 @@ where
         for site in microstate.sites() {
             if self.0.site_overlap(&site.properties) {
                 return f64::INFINITY;
-        }
+            }
         }
 
         0.0
@@ -344,7 +344,9 @@ mod tests {
         }
 
         #[rstest]
-        fn single_total_inf(overlapping_microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+        fn single_total_inf(
+            overlapping_microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>,
+        ) {
             let single = SingleOverlap(TestSO);
 
             assert_eq!(single.total_energy(&overlapping_microstate), f64::INFINITY);
@@ -359,7 +361,9 @@ mod tests {
         }
 
         #[rstest]
-        fn single_site_inf(overlapping_microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+        fn single_site_inf(
+            overlapping_microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>,
+        ) {
             let single = SingleOverlap(TestSO);
 
             assert!(single.site_overlap(&overlapping_microstate.sites()[0].properties));
@@ -435,9 +439,15 @@ mod tests {
             let energy = SingleOverlap(TestSO);
 
             assert_eq!(energy.delta_energy_one(&microstate, 0, &final_body_0), 0.0);
-            assert_eq!(energy.delta_energy_one(&microstate, 0, &final_body_inf), f64::INFINITY);
+            assert_eq!(
+                energy.delta_energy_one(&microstate, 0, &final_body_inf),
+                f64::INFINITY
+            );
             assert_eq!(energy.delta_energy_insert(&microstate, &final_body_0), 0.0);
-            assert_eq!(energy.delta_energy_insert(&microstate, &final_body_inf), f64::INFINITY);
+            assert_eq!(
+                energy.delta_energy_insert(&microstate, &final_body_inf),
+                f64::INFINITY
+            );
             assert_eq!(energy.delta_energy_remove(&microstate, 0), 0.0);
         }
     }

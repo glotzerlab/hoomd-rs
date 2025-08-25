@@ -710,15 +710,15 @@ assert_relative_eq!(o_ab.theta, PI / 2.0);
 #[expect(clippy::similar_names, reason = "standard math notation")]
 pub fn pair_system_to_local<V, R>(r_a: &V, o_a: &R, r_b: &V, o_b: &R) -> (V, R)
 where
-V: Vector,
-R: Rotation + Rotate<V>,
-    {
-        let r_ab = *r_b - *r_a;
-        let r_a_inverted = o_a.inverted();
-        let v_ij = r_a_inverted.rotate(&r_ab);
-        let o_ij = o_b.combine(&r_a_inverted);
-        (v_ij, o_ij)
-    }
+    V: Vector,
+    R: Rotation + Rotate<V>,
+{
+    let r_ab = *r_b - *r_a;
+    let r_a_inverted = o_a.inverted();
+    let v_ij = r_a_inverted.rotate(&r_ab);
+    let o_ij = o_b.combine(&r_a_inverted);
+    (v_ij, o_ij)
+}
 
 #[cfg(test)]
 mod tests {

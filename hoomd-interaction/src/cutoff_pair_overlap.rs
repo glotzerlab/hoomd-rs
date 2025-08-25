@@ -100,7 +100,10 @@ where
                 .iter_sites_near(site_i.properties.position(), self.r_cut)
                 .filter(|s| site_i.site_tag < s.site_tag && site_i.body_tag != s.body_tag)
             {
-                if self.evaluator.site_pair_overlap(&site_i.properties, &site_j.properties) {
+                if self
+                    .evaluator
+                    .site_pair_overlap(&site_i.properties, &site_j.properties)
+                {
                     return f64::INFINITY;
                 }
             }
@@ -160,15 +163,16 @@ where
             for site_j in initial_microstate
                 .iter_sites_near(site_properties.position(), self.r_cut)
                 .filter(|s| body_tag != s.body_tag)
+            {
+                if self
+                    .evaluator
+                    .site_pair_overlap(site_properties, &site_j.properties)
                 {
-                    if self
-                            .evaluator
-                            .site_pair_overlap(site_properties, &site_j.properties) {
-                                return true;
-                            }
+                    return true;
                 }
+            }
 
-                false
+            false
         };
 
         for s in &final_body.sites {
@@ -177,8 +181,10 @@ where
                 .wrap(final_body.properties.transform(s))
             {
                 Err(_) => return f64::INFINITY,
-                Ok(wrapped_site) => if site_overlap(&wrapped_site) {
-                    return f64::INFINITY;
+                Ok(wrapped_site) => {
+                    if site_overlap(&wrapped_site) {
+                        return f64::INFINITY;
+                    }
                 }
             }
         }
@@ -232,17 +238,17 @@ where
         // The new body is not yet in the microstate, so there is no need to
         // filter matching body tags. The new body does not yet have a tag.
         let site_overlap = |site_properties: &S| {
-            for site_j in initial_microstate
-                .iter_sites_near(site_properties.position(), self.r_cut)
+            for site_j in initial_microstate.iter_sites_near(site_properties.position(), self.r_cut)
+            {
+                if self
+                    .evaluator
+                    .site_pair_overlap(site_properties, &site_j.properties)
                 {
-                    if self
-                            .evaluator
-                            .site_pair_overlap(site_properties, &site_j.properties) {
-                                return true;
-                            }
+                    return true;
                 }
+            }
 
-                false
+            false
         };
 
         for s in &new_body.sites {
@@ -306,16 +312,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        TotalEnergy,
-        pairwise::AlwaysTrue,
-    };
+    use crate::{TotalEnergy, pairwise::AlwaysTrue};
     use hoomd_geometry::shape::Cuboid;
-    use hoomd_microstate::{
-        MicrostateBuilder,
-        boundary::Closed,
-        property::Point,
-    };
+    use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};
     use hoomd_vector::Cartesian;
 
     use rstest::*;
