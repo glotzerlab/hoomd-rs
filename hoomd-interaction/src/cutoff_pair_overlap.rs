@@ -308,20 +308,17 @@ mod tests {
     use super::*;
     use crate::{
         TotalEnergy,
-        pairwise::{Isotropic, LennardJones},
+        pairwise::AlwaysTrue,
     };
     use hoomd_geometry::shape::Cuboid;
     use hoomd_microstate::{
         MicrostateBuilder,
-        boundary::{Closed, Open},
+        boundary::Closed,
         property::Point,
     };
     use hoomd_vector::Cartesian;
 
-    use ::approx::assert_relative_eq;
-    use rand::{Rng, SeedableRng, distr::Uniform, rngs::StdRng};
     use rstest::*;
-    use std::f64::consts::PI;
 
     #[fixture]
     fn square() -> Closed<Cuboid<2>> {
@@ -338,62 +335,36 @@ mod tests {
 
     mod cutoff_pair {
         use super::*;
-        use crate::pairwise::Isotropic;
 
-        #[fixture]
-        fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
+        #[test]
+        fn large_r_cut() {
             let mut microstate = Microstate::new();
             microstate
                 .extend_bodies([
                     Body::point(Cartesian::from([0.0, 0.0])),
-                    Body::point(Cartesian::from([1.0, 0.0])),
                     Body::point(Cartesian::from([0.0, 5.0])),
-                    Body::point(Cartesian::from([1.0, 5.0])),
                 ])
                 .expect("hard-coded bodies should be in the boundary");
-            microstate
-        }
 
-        #[rstest]
-        fn blanket_fn(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
-            // Ensure that closures can be used as IsotropicEnergy
-            let cutoff_pair = CutoffPair {
-                r_cut: 2.0,
-                evaluator: Isotropic(|r| 1.0 / (r * 2.0)),
-            };
-
-            // Two pairs at a distance of 1.0 each with energy 1/2.
-            assert_eq!(cutoff_pair.total_energy(&microstate), 1.0);
-
-            let sites = microstate.sites();
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[0]), 0.0);
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[1]), 0.5);
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[2]), 0.0);
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[3]), 0.0);
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[1], &sites[1]), 0.0);
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[1], &sites[2]), 0.0);
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[1], &sites[3]), 0.0);
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[2], &sites[2]), 0.0);
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[2], &sites[3]), 0.5);
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[3], &sites[3]), 0.0);
-        }
-
-        #[rstest]
-        fn large_r_cut(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
-            // Ensure that CutoffPair respects the r_cut value set.
-            let cutoff_pair = CutoffPair {
+            // Ensure that CutoffPairOverlap respects the r_cut value set.
+            let cutoff_pair = CutoffPairOverlap {
                 r_cut: 5.0_f64.next_up(),
-                evaluator: Isotropic(|r| 1.0 / (r * 2.0)),
+                evaluator: AlwaysTrue,
             };
 
-            // Two pairs at a distance of 1.0 each with energy 1/2.
-            // Plus two pairs at a distance of 5.0 with energy 1/10
-            assert_eq!(cutoff_pair.total_energy(&microstate), 1.2);
+            assert_eq!(cutoff_pair.total_energy(&microstate), f64::INFINITY);
+
+            let cutoff_pair = CutoffPairOverlap {
+                r_cut: 5.0,
+                evaluator: AlwaysTrue,
+            };
+
+            assert_eq!(cutoff_pair.total_energy(&microstate), 0.0);
         }
 
         #[test]
         fn body_exclusion() {
-            // Ensure that CutoffPair excludes pairs in the same body.
+            // Ensure that CutoffPairOverlap excludes pairs in the same body.
             let body_a = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [
@@ -405,7 +376,7 @@ mod tests {
                 .into(),
             };
             let body_b = Body {
-                properties: Point::new(Cartesian::from([3.0, 0.0])),
+                properties: Point::new(Cartesian::from([4.0, 0.0])),
                 sites: body_a.sites.clone(),
             };
 
@@ -414,27 +385,19 @@ mod tests {
                 .extend_bodies([body_a, body_b])
                 .expect("hard-coded bodies should be in the boundary");
 
-            let cutoff_pair = CutoffPair {
+            let cutoff_pair = CutoffPairOverlap {
                 r_cut: 1.0_f64.next_up(),
-                evaluator: Isotropic(|_r| 1.0),
+                evaluator: AlwaysTrue,
             };
 
-            // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
-            assert_eq!(cutoff_pair.total_energy(&microstate), 2.0);
+            assert_eq!(cutoff_pair.total_energy(&microstate), 0.0);
 
-            let sites = microstate.sites();
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[0]), 0.0);
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[1]), 0.0);
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[2]), 0.0);
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[3]), 0.0);
+            let cutoff_pair = CutoffPairOverlap {
+                r_cut: 2.0_f64.next_up(),
+                evaluator: AlwaysTrue,
+            };
 
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[4], &sites[4]), 0.0);
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[4], &sites[5]), 0.0);
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[4], &sites[6]), 0.0);
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[4], &sites[7]), 0.0);
-
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[6]), 1.0);
-            assert_eq!(cutoff_pair.site_pair_energy(&sites[1], &sites[7]), 1.0);
+            assert_eq!(cutoff_pair.total_energy(&microstate), f64::INFINITY);
         }
     }
 
@@ -455,9 +418,9 @@ mod tests {
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
-            let energy = CutoffPair {
+            let energy = CutoffPairOverlap {
                 r_cut: 0.0,
-                evaluator: Isotropic(|_r| 0.0),
+                evaluator: AlwaysTrue,
             };
 
             assert_eq!(
@@ -468,9 +431,9 @@ mod tests {
 
         #[test]
         fn body_exclusion() {
-            // Ensure that CutoffPair.delta_energy_one excludes pairs in the same body.
+            // Ensure that CutoffPairOverlap.delta_energy_one excludes pairs in the same body.
             let body_a = Body {
-                properties: Point::new(Cartesian::from([0.0, 0.0])),
+                properties: Point::new(Cartesian::from([-1.0, 0.0])),
                 sites: [
                     Point::new(Cartesian::from([1.0, 1.0])),
                     Point::new(Cartesian::from([1.0, -1.0])),
@@ -483,8 +446,12 @@ mod tests {
                 properties: Point::new(Cartesian::from([3.0, 0.0])),
                 sites: body_a.sites.clone(),
             };
-            let body_a_final = Body {
-                properties: Point::new(Cartesian::from([-1.0, 0.0])),
+            let body_a_overlap = Body {
+                properties: Point::new(Cartesian::from([0.0, 0.0])),
+                sites: body_a.sites.clone(),
+            };
+            let body_a_no_overlap = Body {
+                properties: Point::new(Cartesian::from([-1.0, -1.0])),
                 sites: body_a.sites.clone(),
             };
 
@@ -493,81 +460,22 @@ mod tests {
                 .extend_bodies([body_a, body_b])
                 .expect("hard-coded bodies should be in the boundary");
 
-            let cutoff_pair = CutoffPair {
+            let cutoff_pair = CutoffPairOverlap {
                 r_cut: 1.0_f64.next_up(),
-                evaluator: Isotropic(|_r| 1.0),
+                evaluator: AlwaysTrue,
             };
 
-            // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
-            // Moving body 0 to the left results in a -2.0 energy difference.
+            // moving body a to the right generates overlaps
             assert_eq!(
-                cutoff_pair.delta_energy_one(&microstate, 0, &body_a_final),
-                -2.0
+                cutoff_pair.delta_energy_one(&microstate, 0, &body_a_overlap),
+                f64::INFINITY
             );
-        }
 
-        #[test]
-        fn random_moves() {
-            // Ensure that CutoffPair.delta_energy_one is consistent with TotalEnergy
-            let body_template = Body {
-                properties: Point::new(Cartesian::from([0.0, 0.0])),
-                sites: [
-                    Point::new(Cartesian::from([0.0, 1.0])),
-                    Point::new(Cartesian::from([-1.0, 1.0])),
-                    Point::new(Cartesian::from([-1.0, -1.0])),
-                ]
-                .into(),
-            };
-            let body_a = Body {
-                properties: Point::new(Cartesian::from([3.0, 0.0])),
-                sites: body_template.sites.clone(),
-            };
-            let body_b = body_template.clone();
-
-            let microstate_initial = MicrostateBuilder::new()
-                .bodies([body_a, body_b])
-                .try_build()
-                .expect("hard-coded bodies should be in the boundary");
-
-            let mut microstate_final = microstate_initial.clone();
-            let lennard_jones: LennardJones = LennardJones {
-                epsilon: 1.5,
-                sigma: 1.25,
-            };
-            let cutoff_pair = CutoffPair {
-                r_cut: 5.0,
-                evaluator: Isotropic(lennard_jones),
-            };
-
-            assert!(cutoff_pair.total_energy(&microstate_initial) != 0.0);
-
-            // Use `LennardJones` for validation because it is a varies with r and
-            // will therefore show some changes for any moves (unlike `BoxCar`).
-            // However, we need to avoid numerical errors when two sites get
-            // too close. Randomly move the 2nd particle around within a
-            // well-defined space where there will be no such overlaps.
-            let mut rng = StdRng::seed_from_u64(0);
-            let r_distribution =
-                Uniform::new(3.0, 6.0).expect("hard-coded constants should be valid");
-            let theta_distribution =
-                Uniform::new(0.0, 2.0 * PI).expect("hard-coded constants should be valid");
-
-            let mut new_body = body_template.clone();
-            for _ in 0..1024 {
-                let r = rng.sample(r_distribution);
-                let theta = rng.sample(theta_distribution);
-                new_body.properties.position = [r * theta.cos(), r * theta.sin()].into();
-
-                let delta_energy_one =
-                    cutoff_pair.delta_energy_one(&microstate_initial, 0, &new_body);
-                microstate_final
-                    .update_body_properties(0, new_body.properties)
-                    .expect("generated bodies should be inside open boundaries");
-                let delta_energy_total = cutoff_pair.total_energy(&microstate_final)
-                    - cutoff_pair.total_energy(&microstate_initial);
-
-                assert_relative_eq!(delta_energy_one, delta_energy_total, epsilon = 1e-10);
-            }
+            // moving body away results in no overlaps
+            assert_eq!(
+                cutoff_pair.delta_energy_one(&microstate, 0, &body_a_no_overlap),
+                0.0
+            );
         }
     }
 
@@ -588,9 +496,9 @@ mod tests {
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
-            let energy = CutoffPair {
+            let energy = CutoffPairOverlap {
                 r_cut: 0.0,
-                evaluator: Isotropic(|_r| 0.0),
+                evaluator: AlwaysTrue,
             };
 
             assert_eq!(
@@ -601,7 +509,7 @@ mod tests {
 
         #[test]
         fn body_exclusion() {
-            // Ensure that CutoffPair.delta_energy_insert excludes pairs in the same body.
+            // Ensure that CutoffPairOverlap.delta_energy_insert excludes pairs in the same body.
             let body_a_new = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [
@@ -622,90 +530,20 @@ mod tests {
                 .extend_bodies([body_b])
                 .expect("hard-coded bodies should be in the boundary");
 
-            let cutoff_pair = CutoffPair {
+            let cutoff_pair = CutoffPairOverlap {
                 r_cut: 1.0_f64.next_up(),
-                evaluator: Isotropic(|_r| 1.0),
+                evaluator: AlwaysTrue,
             };
 
-            // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
-            // Moving body 0 to the left results in a -2.0 energy difference.
             assert_eq!(
                 cutoff_pair.delta_energy_insert(&microstate, &body_a_new),
-                2.0
+                f64::INFINITY
             );
 
             microstate
                 .add_body(body_a_new)
                 .expect("hard-coded bodies should be in the boundary");
-            assert_eq!(cutoff_pair.delta_energy_remove(&microstate, 1), -2.0);
-        }
-
-        #[test]
-        fn random_moves() {
-            // Ensure that CutoffPair.delta_energy_insert is consistent with TotalEnergy
-            let body_template = Body {
-                properties: Point::new(Cartesian::from([0.0, 0.0])),
-                sites: [
-                    Point::new(Cartesian::from([0.0, 1.0])),
-                    Point::new(Cartesian::from([-1.0, 1.0])),
-                    Point::new(Cartesian::from([-1.0, -1.0])),
-                ]
-                .into(),
-            };
-            let body_a = Body {
-                properties: Point::new(Cartesian::from([3.0, 0.0])),
-                sites: body_template.sites.clone(),
-            };
-
-            let microstate_initial = MicrostateBuilder::new()
-                .bodies([body_a])
-                .try_build()
-                .expect("hard-coded bodies should be in the boundary");
-
-            let mut microstate_final = microstate_initial.clone();
-            let lennard_jones: LennardJones = LennardJones {
-                epsilon: 1.5,
-                sigma: 1.25,
-            };
-            let cutoff_pair = CutoffPair {
-                r_cut: 5.0,
-                evaluator: Isotropic(lennard_jones),
-            };
-
-            // Use `LennardJones` for validation because it is a varies with r and
-            // will therefore show some changes for any moves (unlike `BoxCar`).
-            // However, we need to avoid numerical errors when two sites get
-            // too close. Randomly insert the 2nd body in a well-defined area
-            // to avoid this.
-            let mut rng = StdRng::seed_from_u64(0);
-            let r_distribution =
-                Uniform::new(3.0, 6.0).expect("hard-coded constants should be valid");
-            let theta_distribution =
-                Uniform::new(0.0, 2.0 * PI).expect("hard-coded constants should be valid");
-
-            for _ in 0..1024 {
-                let r = rng.sample(r_distribution);
-                let theta = rng.sample(theta_distribution);
-                let mut new_body = body_template.clone();
-                new_body.properties.position = [r * theta.cos(), r * theta.sin()].into();
-
-                let delta_energy_insert =
-                    cutoff_pair.delta_energy_insert(&microstate_initial, &new_body);
-                let tag = microstate_final
-                    .add_body(new_body)
-                    .expect("generated bodies should be inside open boundaries");
-                let delta_energy_total = cutoff_pair.total_energy(&microstate_final)
-                    - cutoff_pair.total_energy(&microstate_initial);
-
-                assert_relative_eq!(delta_energy_insert, delta_energy_total, epsilon = 1e-6);
-
-                let delta_energy_remove = cutoff_pair.delta_energy_remove(&microstate_final, 1);
-                assert_relative_eq!(delta_energy_remove, -delta_energy_total, epsilon = 1e-6);
-
-                microstate_final.remove_body(
-                    microstate_final.body_indices()[tag].expect("tag should be present"),
-                );
-            }
+            assert_eq!(cutoff_pair.delta_energy_remove(&microstate, 1), 0.0);
         }
     }
 }
