@@ -102,8 +102,9 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(1);
         let body = OrientedPoint {
             position: Cartesian::from([0.0, 0.0]),
-            orientation: Angle::default() };
-        let rotate= Rotate{
+            orientation: Angle::default(),
+        };
+        let rotate = Rotate {
             maximum_rotation: a
                 .try_into()
                 .expect("hard-coded constant should be a positive real"),

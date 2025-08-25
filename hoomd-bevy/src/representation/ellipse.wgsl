@@ -113,7 +113,7 @@ fn signed_distance_from_ellipse( p: vec2<f32>, e: vec2<f32> ) -> f32
     let ei: vec2<f32> = 1.0 / e;
     let e2: vec2<f32> = e*e;
     let ve: vec2<f32> = ei * vec2<f32>(e2.x - e2.y, e2.y - e2.x);
-    
+
     var t = vec2<f32>(0.70710678118654752, 0.70710678118654752);
     for (var i = 0; i < 3; i++) {
         let v: vec2<f32> = ve*t*t*t;
@@ -121,10 +121,10 @@ fn signed_distance_from_ellipse( p: vec2<f32>, e: vec2<f32> ) -> f32
         let w: vec2<f32> = ei * (v + u);
         t = normalize(saturate(w));
     }
-    
+
     let nearestAbs: vec2<f32> = t * e;
     let dist: f32 = length(pAbs - nearestAbs);
-    
+
     if dot(pAbs, pAbs) < dot(nearestAbs, nearestAbs) {
         return -dist;
     }

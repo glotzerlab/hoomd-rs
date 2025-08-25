@@ -2,25 +2,18 @@
 use hoomd_geometry::shape::{Cuboid, Ellipse};
 use hoomd_interaction::{
     CutoffPair, CutoffPairOverlap,
-    pairwise::{
-        OverlapPenalty,
-        HardShape,
-    },
+    pairwise::{HardShape, OverlapPenalty},
 };
 use hoomd_mc::{QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn};
 use hoomd_microstate::{
-    Microstate, MicrostateBuilder,
-    boundary::Periodic,
-    property::OrientedPoint,
+    Microstate, MicrostateBuilder, boundary::Periodic, property::OrientedPoint,
 };
 use hoomd_vector::{Angle, Cartesian};
 // ANCHOR_END: use
 
 use hoomd_bevy::{
-    MUTED_COLOR,
-    AdvanceSet, HoomdBevyPlugin, Settings, Simulation,
-    representation::RectangularBoundary,
-    representation::ellipse,
+    AdvanceSet, HoomdBevyPlugin, MUTED_COLOR, Settings, Simulation,
+    representation::RectangularBoundary, representation::ellipse,
 };
 
 use anyhow::Context;
@@ -47,7 +40,9 @@ impl HardEllipseSelfAssembly {
                 .try_build()?;
 
         // ANCHOR: pair
-        let ellipse = Ellipse {axes: [0.5.try_into()?, (0.5 / 6.0).try_into()?]};
+        let ellipse = Ellipse {
+            axes: [0.5.try_into()?, (0.5 / 6.0).try_into()?],
+        };
         let cutoff_pair = CutoffPairOverlap {
             r_cut: sigma,
             evaluator: HardShape(ellipse),
@@ -159,7 +154,7 @@ struct HardEllipseSelfAssembly {
         OrientedPoint<Cartesian<2>, Angle>,
         Periodic<Cuboid<2>>,
     >,
-    /// How sites interact when inserted.   
+    /// How sites interact when inserted.
     // insert_hamiltonian: CutoffPair<Isotropic<Expanded<OverlapPenalty>>>,
     /// How sites interact with other sites and fields.
     hamiltonian: CutoffPairOverlap<HardShape<Ellipse>>,
@@ -168,8 +163,9 @@ struct HardEllipseSelfAssembly {
     /// Trial moves to apply.
     rotate_sweep: Sweep<Rotate>,
     /// Quick insert
-    quick_insert:
-        QuickInsert<UniformIn<OrientedPoint<Cartesian<2>, Angle>, Periodic<Cuboid<2>>>>,
+    quick_insert: QuickInsert<
+        UniformIn<OrientedPoint<Cartesian<2>, Angle>, Periodic<Cuboid<2>>>,
+    >,
     /// Temperature set point.
     kt: f64,
     phase: Phase,
@@ -201,11 +197,20 @@ fn main() -> anyhow::Result<()> {
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(
         Startup,
-        (|| ellipse::MaterialParameters { outline_width: 0.025, ..default() }).pipe(ellipse::Ellipse::<A>::setup),
+        (|| ellipse::MaterialParameters {
+            outline_width: 0.025,
+            ..default()
+        })
+        .pipe(ellipse::Ellipse::<A>::setup),
     );
     app.add_systems(
         Startup,
-        (|| ellipse::MaterialParameters { outline_width: 0.025, background_color: MUTED_COLOR.into(), ..default() }).pipe(ellipse::Ellipse::<Ghost>::setup),
+        (|| ellipse::MaterialParameters {
+            outline_width: 0.025,
+            background_color: MUTED_COLOR.into(),
+            ..default()
+        })
+        .pipe(ellipse::Ellipse::<Ghost>::setup),
     );
     app.add_systems(
         Startup,
@@ -248,10 +253,11 @@ fn sync_sites(
                     0.0,
                 ),
                 site.properties.orientation.theta as f32,
-                1.0, 1.0 / 6.0
+                1.0,
+                1.0 / 6.0,
             )
         }),
-    );  
+    );
 }
 
 /// Copy the current positions of simulation ghosts to bevy entities.
@@ -274,8 +280,9 @@ fn sync_ghosts(
                     0.0,
                 ),
                 site.properties.orientation.theta as f32,
-                1.0, 1.0 / 6.0
+                1.0,
+                1.0 / 6.0,
             )
         }),
-    );  
+    );
 }

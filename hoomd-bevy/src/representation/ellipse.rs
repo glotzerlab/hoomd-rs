@@ -139,7 +139,8 @@ impl<T: Send + Sync + 'static> Ellipse<T> {
                         MeshTag(tag as u32),
                         Mesh2d(ellipse_representation.mesh.clone()),
                         MeshMaterial2d(ellipse_representation.material.clone()),
-                        Transform::from_translation(position).with_scale(Vec3::new(a, b, 1.0))
+                        Transform::from_translation(position)
+                            .with_scale(Vec3::new(a, b, 1.0))
                             .with_rotation(Quat::from_rotation_z(theta)),
                         Self {
                             marker: PhantomData,
