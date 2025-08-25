@@ -204,31 +204,12 @@ pub trait IntersectsAt<S, V, R> {
     origin of `self` to the local origin of `other`. Similarly, `o_ij` is the
     orientation of `other` in the local coordinate system of `self`.
 
-    # Example
+    # See Also
 
-    Given two shapes with a orientations relative to the world frame,
-    you can transform into the frame of the a particle like so:
-    ```
-    use hoomd_vector::{Cartesian, Rotate, Rotation};
-    use hoomd_geometry::IntersectsAt;
+    Call [`pair_system_to_local`] to compute `v_ij` and `o_ij` from the
+    system frame positions and orientations of two shapes.
 
-    fn test_overlap<A, B, R, const N: usize>(
-        r_ab: Cartesian<N>,
-        a: &A,
-        b: &B,
-        o_a: R,
-        o_b: &R,
-    ) -> bool
-    where
-        R: Rotation + Rotate<Cartesian<N>>,
-        A: IntersectsAt<B, Cartesian<N>, R>,
-    {
-        let r_a_inverted = o_a.inverted();
-        let v_ij = r_a_inverted.rotate(&r_ab);
-        let o_ij = o_b.combine(&r_a_inverted);
-        a.intersects_at(b, &v_ij, &o_ij)
-    }
-    ```
+    [`pair_system_to_local`]: hoomd_vector::pair_system_to_local
     */
     fn intersects_at(&self, other: &S, v_ij: &V, o_ij: &R) -> bool;
 }

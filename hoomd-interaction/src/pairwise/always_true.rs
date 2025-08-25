@@ -6,7 +6,7 @@
 
 use crate::SitePairOverlap;
 
-/** All site pairs overlap.
+/** All site pairs overlap (*not differentiable*).
 
 Use [`AlwaysTrue`] with [`CutoffPairOverlap`] to implement hard sphere overlap
 checks. See [`CutoffPairOverlap`] for examples.

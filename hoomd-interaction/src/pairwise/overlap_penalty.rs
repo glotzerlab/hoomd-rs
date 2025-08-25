@@ -6,7 +6,7 @@
 
 use super::IsotropicEnergy;
 
-/** Monotonically non-decreasing potential to move particles apart.
+/** Monotonically non-decreasing potential to push sites apart (*not differentiable*).
 
 [`OverlapPenalty`] is specifically designed to work with the `QuickInsert`
 and `QuickCompress` protocols to quickly prepare states with non-overlapping
