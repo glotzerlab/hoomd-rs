@@ -15,6 +15,7 @@ outlines intended to represent the simulation boundaries.
  */
 
 pub mod disk;
+pub mod ellipse;
 
 pub(crate) mod rectangular_boundary;
 pub use rectangular_boundary::RectangularBoundary;

@@ -70,6 +70,9 @@ pub mod representation;
 /// The default color for the primary representation.
 pub const PRIMARY_COLOR: Color = Color::srgb(249.0 / 255.0, 203.0 / 255.0, 136.0 / 255.0);
 
+/// The default color for a muted representation.
+pub const MUTED_COLOR: Color = Color::srgb(0.75, 0.75, 0.75);
+
 /// The default color for the boundary representation.
 pub const BOUNDARY_COLOR: Color = Color::srgb(0.0, 0.0, 0.0);
 
@@ -786,6 +789,7 @@ F5      : Show/hide debugging information.
     */
     pub fn build(self, app: &mut App) {
         representation::disk::build(app);
+        representation::ellipse::build(app);
 
         embedded_asset!(app, "logo.png");
 
