@@ -12,6 +12,7 @@ categories.workspace = true
 
 [dependencies]
 thiserror.workspace = true
+hoomd-geometry.workspace = true
 hoomd-interaction.workspace = true
 hoomd-manifold.workspace = true
 hoomd-mc.workspace = true
@@ -19,7 +20,6 @@ hoomd-microstate.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 rand.workspace = true
-libm = "0.2.11"
 num = "0.4.3"
 ndarray = "0.16.1"
 ahash = "0.8"

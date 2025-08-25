@@ -38,9 +38,9 @@ impl MaximumAllowableInteractionRange for EightEight {
     }
 }
 
-impl<P> Wrap<P> for Periodic<EightEight> 
+impl<P> Wrap<P> for Periodic<EightEight>
 where
-    P: Position<Metric = Hyperboloid<3>> 
+    P: Position<Metric = Hyperboloid<3>>
 {
     #[inline]
     fn wrap(&self, properties: P) -> Result<P, Error> {
@@ -50,7 +50,7 @@ where
     }
 }
 
-impl<S> GenerateGhosts<S> for Periodic<EightEight> 
+impl<S> GenerateGhosts<S> for Periodic<EightEight>
 where
     S: Position<Metric = Hyperboloid<3>> + Copy + Default,
 {
@@ -60,6 +60,6 @@ where
     }
     #[inline]
     fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
-        
+
     }
 }

@@ -99,7 +99,3 @@ required-features = ["bevy"]
 
 [package.metadata.example.tetronimoes]
 path = "mc-tutorial"
-
-[[example]]
-name = "LJ-hyperbolic-ratatui"
-path = "LJ-hyperbolic-ratatui.rs"

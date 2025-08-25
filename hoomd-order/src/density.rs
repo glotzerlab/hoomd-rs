@@ -158,51 +158,51 @@ impl SpatialHistogram<1, Open, f64> {
             nbins,
         )
     }
-//     Computes the pairwise correlation function between two sets of points p_1 and p_2 with associated values s_1 and s_2, respectively.
-//    math
-//    C(r) = \langle s_1(0)\cdot s_2(r)\rangle
-//    
-//    
-//    #[must_use]
-//    #[inline]
-//    pub fn correlation_function<B, S, M>(
-//        points: &Microstate<B, S, Open>,
-//        query_points: &Microstate<B, S, Open>,
-//        body_trait: B,
-//        r_min: f64,
-//        r_max: f64,
-//        nbins: usize,
-//    ) -> Self 
-//    where
-//        S: Position<Metric = M>,
-//        M: Metric,
-//    {
-//        let bin_size: f64 = (r_max - r_min) / (nbins as f64);
-//        let bin_edges_arr = Array::from_vec(
-//            (0..=nbins)
-//                .collect::<Vec<usize>>()
-//                .iter()
-//                .map(|i| (*i as f64) * bin_size + r_min)
-//                .collect::<Vec<f64>>(),
-//        );
-//        let dummy_row = Array::from_vec(
-//            (0..=nbins)
-//                .collect::<Vec<usize>>()
-//                .iter()
-//                .map(|i| *i as f64)
-//                .collect::<Vec<f64>>(),
-//        );
-//        let bin_edges: Array<f64, Dim<[usize; 2]>> =
-//            ndarray::stack![Axis(0), bin_edges_arr, dummy_row];
-//        let mut correlations: Vec<f64> = vec![];
-//
-//        SpatialHistogram::<1, Open, f64>::histogram_1d(
-//            &correlations,
-//            bin_edges,
-//            [[r_min, r_max]; 1],
-//            nbins,
-//        )
-//    }
+    //     Computes the pairwise correlation function between two sets of points p_1 and p_2 with associated values s_1 and s_2, respectively.
+    //    math
+    //    C(r) = \langle s_1(0)\cdot s_2(r)\rangle
+    //
+    //
+    //    #[must_use]
+    //    #[inline]
+    //    pub fn correlation_function<B, S, M>(
+    //        points: &Microstate<B, S, Open>,
+    //        query_points: &Microstate<B, S, Open>,
+    //        body_trait: B,
+    //        r_min: f64,
+    //        r_max: f64,
+    //        nbins: usize,
+    //    ) -> Self
+    //    where
+    //        S: Position<Metric = M>,
+    //        M: Metric,
+    //    {
+    //        let bin_size: f64 = (r_max - r_min) / (nbins as f64);
+    //        let bin_edges_arr = Array::from_vec(
+    //            (0..=nbins)
+    //                .collect::<Vec<usize>>()
+    //                .iter()
+    //                .map(|i| (*i as f64) * bin_size + r_min)
+    //                .collect::<Vec<f64>>(),
+    //        );
+    //        let dummy_row = Array::from_vec(
+    //            (0..=nbins)
+    //                .collect::<Vec<usize>>()
+    //                .iter()
+    //                .map(|i| *i as f64)
+    //                .collect::<Vec<f64>>(),
+    //        );
+    //        let bin_edges: Array<f64, Dim<[usize; 2]>> =
+    //            ndarray::stack![Axis(0), bin_edges_arr, dummy_row];
+    //        let mut correlations: Vec<f64> = vec![];
+    //
+    //        SpatialHistogram::<1, Open, f64>::histogram_1d(
+    //            &correlations,
+    //            bin_edges,
+    //            [[r_min, r_max]; 1],
+    //            nbins,
+    //        )
+    //    }
 }
 
 impl<A> SpatialHistogram<2, Open, A>

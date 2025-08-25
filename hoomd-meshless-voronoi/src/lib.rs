@@ -19,7 +19,7 @@ mod voronoi;
 
 mod local;
 
-pub use local::{GeneratorHyperbolic, NeighborList};
+pub use local::{GenerateNeighborList, GeneratorHyperbolic, NeighborList};
 
 pub use voronoi::{
     ConvexCell, Dimensionality, Voronoi, VoronoiCell, VoronoiFace, VoronoiIntegrator,

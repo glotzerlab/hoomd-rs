@@ -44,6 +44,7 @@ where
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    const EIGHTEIGHT: f64 = 2.448_452_447_678_076;
     let offset = PI / 16.0;
         let boost = 2.0;
         let point = Hyperboloid::<3>::from_polar(boost, offset + PI / 4.0, 1.0);
@@ -52,7 +53,11 @@ where
 
     let wrapped_point = periodic.wrap(point)?;
 
-    let ans = Hyperboloid::<3>::from_polar(boost, 6.0 * PI / 4.0 - offset, 1.0);
+    let new_boost = 2.0
+            * (EIGHTEIGHT.tanh() / (offset.cos() - offset.sin() * (1.0 - (2.0_f64).sqrt())))
+                .atanh()
+            - boost;
+    let ans = Hyperboloid::<3>::from_polar(new_boost, 6.0 * PI / 4.0 - offset, 1.0);
     assert_relative_eq!(
         ans.point.coordinates[0],
         wrapped_point.point.coordinates[0],

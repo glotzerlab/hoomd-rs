@@ -7,10 +7,10 @@ extern crate glam;
 extern crate hoomd_order;
 extern crate rand;
 
-use glam::DVec3;
+use hoomd_geometry::shape::EightEight;
 use hoomd_manifold::{HyperbolicDisk, Hyperboloid, Minkowski};
-use hoomd_meshless_voronoi::Voronoi;
-use libm::{acosh, cosh, sinh, sqrt};
+use hoomd_meshless_voronoi::{GenerateNeighborList, NeighborList};
+use hoomd_microstate::{Body, MicrostateBuilder, boundary::Periodic};
 use rand::prelude::Distribution;
 use rand::{Rng, prelude::*};
 #[cfg(not(target_arch = "wasm32"))]
@@ -26,7 +26,6 @@ use ratatui::{
     {DefaultTerminal, Frame},
 };
 use std::convert::TryInto;
-use std::env;
 use std::time::Duration;
 
 const RHO: f64 = 1.0;
@@ -34,42 +33,12 @@ const PARTICLE_NUMBER: usize = 100;
 const RAD_SQ: f64 = 0.0005;
 
 #[cfg(not(target_arch = "wasm32"))]
-fn initial_distribution() -> (Vec<Vec<f64>>, Vec<[f64; 3]>) {
-    let initial_spacing = 2.0;
-    let mut rng = StdRng::seed_from_u64(23);
-    let sample_disk = HyperbolicDisk {
-        r: initial_spacing
-            .try_into()
-            .expect("hard-coded value should be valid"),
-        point: Minkowski::from([
-            0.00001,
-            0.00001,
-            sqrt(2.0 * (0.00001_f64).powi(2) + RHO.powi(2)),
-        ]),
-        skirt: RHO,
-    };
-    let mut poincare_coordinates = vec![];
-    let mut generators = vec![];
-    for _n in 0..PARTICLE_NUMBER {
-        let new_point: Hyperboloid<3> = sample_disk.sample(&mut rng);
-        let new_point_poincare = poincare(&new_point);
-        generators.push(vec![
-            new_point_poincare[0],
-            new_point_poincare[1],
-            0.0,
-        ]);
-        poincare_coordinates.push(new_point_poincare);
-    }
-    (generators, poincare_coordinates)
-}
-
-#[cfg(not(target_arch = "wasm32"))]
 fn poincare(point: &Hyperboloid<3>) -> [f64; 3] {
     let proj = point.to_poincare();
-    let v = acosh((RAD_SQ + RHO.powi(2)) / (RHO.powi(2) - RAD_SQ));
-    let eta = acosh(point.point.coordinates[2] / RHO);
-    let edge_proj = (RHO * sinh(eta + v)) / (1.0 + cosh(eta + v));
-    let rad_proj = (RHO * sinh(eta)) / (1.0 + cosh(eta)) - edge_proj;
+    let v = ((RAD_SQ + RHO.powi(2)) / (RHO.powi(2) - RAD_SQ)).acosh();
+    let eta = (point.point.coordinates[2] / RHO).acosh();
+    let edge_proj = (RHO * (eta + v).sinh()) / (1.0 + (eta + v).cosh());
+    let rad_proj = (RHO * (eta.sinh())) / (1.0 + eta.cosh()) - edge_proj;
     [proj[0], proj[1], rad_proj]
 }
 
@@ -77,36 +46,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(not(target_arch = "wasm32"))]
     {
         let terminal = ratatui::init();
-        let mut args = env::args().skip(1);
-        let _count = match args.next() {
-            Some(n) => n.parse::<usize>().expect(
-                "The first argument should be an integer denoting the grid size along one dimension!",
-            ),
-            None => 20,
-        };
-        let _pert = match args.next() {
-            Some(p) => p.parse::<f64>().expect(
-                "The second argument should be a number between 0 and 1 denoting the size of the grid perturbations!"
-            ),
-            None => 0.8,
-        };
+        let boundary = Periodic::new(0.5, EightEight { skirt: 1.0_f64 })?;
+        let mut microstate =
+            MicrostateBuilder::with_boundary(boundary).try_build()?;
 
-        let anchor = DVec3::splat(-100.);
-        let width = DVec3::splat(200.);
-        let (generators, poincare_coords) = initial_distribution();
-        let _voronoi = Voronoi::build_hyperbolic(
-            &generators,
-            RHO,
-            anchor,
-            width,
-            2.try_into().unwrap(),
-            false,
-        );
-        let special_guy: usize = rand::rng().random_range(0..PARTICLE_NUMBER);
-        let nlist = _voronoi.cells()[special_guy].neighbour_ids(&_voronoi);
+        let initial_spacing = 1.3;
+        let mut rng = rand::rng();
+        let special_guy = rng.random_range(0..PARTICLE_NUMBER);
+
+        let mut rng_2 = StdRng::seed_from_u64(23);
+        let sample_disk = HyperbolicDisk {
+            r: initial_spacing.try_into()?,
+            point: Minkowski::from([
+                0.00001,
+                0.00001,
+                (2.0 * (0.00001_f64).powi(2) + RHO.powi(2)).sqrt(),
+            ]),
+            skirt: RHO,
+        };
+        let mut poincare_coords = vec![];
+        for _n in 0..PARTICLE_NUMBER {
+            let new_point: Minkowski<3> = sample_disk.sample(&mut rng_2).point;
+            let hyp_point = Hyperboloid::from(&new_point);
+            microstate.add_body(Body::point(hyp_point))?;
+            poincare_coords.push(poincare(&hyp_point));
+        }
+
+        let nlist = NeighborList::from_microstate(&microstate);
         let mut nlist_vec = Vec::new();
-        for n in nlist {
-            nlist_vec.push(n);
+        for (a, b) in nlist.neighbors {
+            if a == special_guy {
+                nlist_vec.push(b);
+            } else if b == special_guy {
+                nlist_vec.push(a);
+            }
         }
         let result = draw(terminal, &poincare_coords, special_guy, &nlist_vec);
         ratatui::restore();

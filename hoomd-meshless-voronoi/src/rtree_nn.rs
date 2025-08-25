@@ -7,7 +7,6 @@
 use crate::local::GeneratorHyperbolic;
 use crate::{Dimensionality, voronoi::Generator};
 use glam::DVec3;
-use libm::acosh;
 use rstar::{AABB, Envelope, ParentNode, Point, PointDistance, RTree, RTreeNode, RTreeObject};
 use std::collections::BinaryHeap;
 
@@ -284,7 +283,7 @@ impl PointDistance for GeneratorHyperbolic {
         let arg = (2.0 * (point_1 - point_0).distance_squared(zero))
             / ((self.skirt().powi(2) - point_1.distance_squared(zero))
                 * (self.skirt().powi(2) - point_0.distance_squared(zero)));
-        let dist = self.skirt() * acosh(1.0 + arg);
+        let dist = self.skirt() * (1.0 + arg).acosh();
         dist * dist
     }
 }
