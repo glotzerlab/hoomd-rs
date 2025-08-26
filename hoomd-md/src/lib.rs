@@ -89,9 +89,10 @@ where
 
             // Perform the integration step
             let acceleration = *body_properties.acceleration();
+            let velocity = *body_properties.velocity();
             *body_properties.velocity_mut() += (acceleration * 0.5 * self.dt) 
                 * rescaling_factor;
-            *body_properties.position_mut() = *body_properties.velocity() * self.dt;
+            *body_properties.position_mut() += velocity * self.dt;
 
             // Update body properties accordingly, wrapping automatically
             microstate.update_body_properties(body_index, body_properties)
