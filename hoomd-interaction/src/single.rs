@@ -4,8 +4,9 @@
 /*! Implement `Single`
 */
 
-use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SiteEnergy, TotalEnergy};
-use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Position};
+use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, NetBodyForce, NetSiteForce, SiteEnergy, SiteSingleForce, TotalEnergy};
+use hoomd_microstate::{boundary::Wrap, property::Position, Body, Microstate, Site, Transform};
+use hoomd_vector::Vector;
 
 /** Compute system properties from external fields.
 
@@ -242,6 +243,34 @@ where
     #[inline]
     fn site_energy(&self, site_properties: &S) -> f64 {
         self.0.site_energy(site_properties)
+    }
+}
+
+impl<V, B, S, C, E> NetBodyForce<V, B, S, C> for Single<E>
+where
+    V: Vector + Default,
+    S: Position<Vector = V>,
+    E: SiteSingleForce<V, S>,
+{
+    #[inline]
+    fn net_force_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V {
+        let mut total = V::default();
+        for site in microstate.iter_body_sites(body_index) {
+            total += self.net_force_on_site(microstate, site);
+        }
+        total
+    }
+}
+
+impl<V, B, S, C, E> NetSiteForce<V, B, S, C> for Single<E>
+where
+    V: Vector + Default,
+    S: Position<Vector = V>,
+    E: SiteSingleForce<V, S>,
+{
+    #[inline]
+    fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V {
+        self.0.site_single_force(&site.properties)
     }
 }
 
