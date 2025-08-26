@@ -428,9 +428,10 @@ TODO: Add example.
 */
 impl<V, B, S, C, E> NetBodyForce<V, B, S, C> for CutoffPair<E>
 where
-    E: SitePairForce<V, S>,
+    V: Vector + Default + InnerProduct,
+    B: Transform<S>,
     S: Position<Vector = V>,
-    V: Vector + Default
+    E: IsotropicForce,
 {
     #[inline]
     fn net_force_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V {
@@ -450,9 +451,10 @@ TODO: Add example.
 */
 impl<V, B, S, C, E> NetSiteForce<V, B, S, C> for CutoffPair<E>
 where
-    E: SitePairForce<V, S>,
+    V: Vector + Default + InnerProduct,
+    B: Transform<S>,
     S: Position<Vector = V>,
-    V: Vector + Default
+    E: IsotropicForce,
 {
     #[inline]
     fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V {
@@ -462,7 +464,6 @@ where
             .filter(|s| site.body_tag != s.body_tag)
         {
             total += self
-                .evaluator
                 .site_pair_force(&site.properties, &other_site.properties);
         }
         total
