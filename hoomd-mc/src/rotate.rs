@@ -19,6 +19,8 @@ by a small amount. The [`maximum_rotation`] parameter sets the largest possible
 rotation. For the 2D [`Angle`], [`maximum_rotation`] is measured in radians.
 TODO: document 3d maximum.
 
+[`maximum_rotation`]: Self::maximum_rotation
+
 # Example
 
 ```

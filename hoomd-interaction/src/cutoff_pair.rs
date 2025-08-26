@@ -23,10 +23,11 @@ $`\left[ \  \right]`$ denotes the Iverson bracket.
 In other words, [`CutoffPair`] sums the energy for all pairs that are separated
 by a distance less than `r_cut` and belong to different bodies.
 
-For the evaluator, use [`Isotropic`] or your own custom type.
+For the evaluator, use [`Anisotropic`], [`Isotropic`] or your own custom type.
 
 TODO: Reword this when [`CutoffPair`] also implements `SitePairForce`.
 
+[`Anisotropic`]: crate::pairwise::Anisotropic
 [`Isotropic`]: crate::pairwise::Isotropic
 
 # Example

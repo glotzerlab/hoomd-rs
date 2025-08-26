@@ -1,14 +1,14 @@
 // ANCHOR: use
-use hoomd_geometry::shape::{Cuboid, Ellipse};
+use hoomd_geometry::{IntersectsAt, shape::{Cuboid, Ellipse}};
 use hoomd_interaction::{
-    CutoffPair, CutoffPairOverlap,
-    pairwise::{HardShape, OverlapPenalty},
+    CutoffPair, CutoffPairOverlap, SitePairEnergy,
+    pairwise::{HardShape, IsotropicEnergy, OverlapPenalty},
 };
 use hoomd_mc::{QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn};
 use hoomd_microstate::{
     Microstate, MicrostateBuilder, boundary::Periodic, property::OrientedPoint,
 };
-use hoomd_vector::{Angle, Cartesian};
+use hoomd_vector::{self, Angle, Cartesian, InnerProduct};
 // ANCHOR_END: use
 
 use hoomd_bevy::{
@@ -24,11 +24,35 @@ enum Phase {
     Equilibration,
 }
 
+struct Test(Ellipse);
+type SP = OrientedPoint<Cartesian<2>, Angle>;
+
+impl SitePairEnergy<SP> for Test {
+    fn site_pair_energy(&self, a: &SP, b: &SP) -> f64 {
+        let overlap_penalty = OverlapPenalty::default();
+
+        let (delta_r, o_ij) = hoomd_vector::pair_system_to_local(&a.position, &a.orientation, &b.position, &b.orientation);
+        let r_hat = match delta_r.to_unit() {
+            Ok((unit, _)) => *unit.get(),
+            Err(_) => Cartesian::from([1.0, 0.0]),
+        };
+
+        let mut r = 0.0;
+        
+        while self.0.intersects_at(&self.0, &(delta_r + r_hat * r), &o_ij) {
+            r += 0.01
+        }
+
+        overlap_penalty.energy(-r)
+    } 
+}
+
+
 // ANCHOR: simulation_new
 impl HardEllipseSelfAssembly {
     /// Construct a new fill simulation.
     fn new() -> anyhow::Result<HardEllipseSelfAssembly> {
-        let box_height = 13.0;
+        let box_height = 14.0;
         let kt = 1.0;
         let d = 0.05;
         let a = 0.1;
@@ -41,7 +65,7 @@ impl HardEllipseSelfAssembly {
 
         // ANCHOR: pair
         let ellipse = Ellipse {
-            axes: [0.5.try_into()?, (0.5 / 6.0).try_into()?],
+            axes: [0.5.try_into()?, (0.5 / 5.0).try_into()?],
         };
         let cutoff_pair = CutoffPairOverlap {
             r_cut: sigma,
@@ -77,7 +101,7 @@ impl HardEllipseSelfAssembly {
             boundary: *microstate.boundary(),
             template_sites: vec![OrientedPoint::default()],
         };
-        let quick_insert = QuickInsert::new(distribution, 825);
+        let quick_insert = QuickInsert::new(distribution, 820);
 
         Ok(HardEllipseSelfAssembly {
             microstate,
@@ -99,11 +123,13 @@ impl Simulation for HardEllipseSelfAssembly {
     fn advance(&mut self) -> anyhow::Result<()> {
         let n = self.microstate.sites().len();
 
+        let insert_hamiltonian = CutoffPair { r_cut: 1.0, evaluator: Test(self.hamiltonian.evaluator.0) };
+
         match self.phase {
             Phase::Initialization => {
                 self.quick_insert.apply(
                     &mut self.microstate,
-                    &self.hamiltonian,
+                    &insert_hamiltonian,
                     &self.translate_sweep,
                     &1.0,
                 );
@@ -185,8 +211,7 @@ fn main() -> anyhow::Result<()> {
         simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
         initial_settings: Settings {
-            viewport_height: l + 4.0,
-            sps_limit: 100.0,
+            viewport_height: l + 2.0,
             ..default()
         },
         simulation,
@@ -254,7 +279,7 @@ fn sync_sites(
                 ),
                 site.properties.orientation.theta as f32,
                 1.0,
-                1.0 / 6.0,
+                1.0 / 5.0,
             )
         }),
     );
@@ -281,7 +306,7 @@ fn sync_ghosts(
                 ),
                 site.properties.orientation.theta as f32,
                 1.0,
-                1.0 / 6.0,
+                1.0 / 5.0,
             )
         }),
     );

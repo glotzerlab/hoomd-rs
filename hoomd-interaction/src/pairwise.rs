@@ -11,6 +11,7 @@ pub mod angular_mask;
 pub use angular_mask::AngularMask;
 
 mod always_true;
+mod anisotropic;
 mod boxcar;
 mod expanded;
 mod hard_shape;
@@ -25,6 +26,7 @@ mod weeks_chandler_anderson;
 mod xplor;
 
 pub use always_true::AlwaysTrue;
+pub use anisotropic::Anisotropic;
 pub use boxcar::Boxcar;
 pub use expanded::Expanded;
 pub use hard_shape::HardShape;
