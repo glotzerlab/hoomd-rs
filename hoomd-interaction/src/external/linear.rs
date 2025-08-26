@@ -4,6 +4,8 @@
 /*! Implement [`Linear`]
  */
 
+use crate::SiteSingleForce;
+
 use super::super::SiteEnergy;
 use hoomd_microstate::property::Position;
 use hoomd_vector::{InnerProduct, Unit};
@@ -73,6 +75,19 @@ where
     pub fn energy(&self, r: &V) -> f64 {
         self.alpha * self.plane_normal.get().dot(&(*r - self.plane_origin))
     }
+
+    /** Compute the force on a point in the linear field.
+
+    TODO: Add example.
+    TODO: consider refactoring so that energy and force functionality are
+    defined in the top file of the external module, like how things are done
+    in the pairwise module.
+    */
+    #[inline]
+    #[must_use]
+    pub fn force(&self) -> V {
+        *self.plane_normal.get() * self.alpha
+    }
 }
 
 impl<S, V> SiteEnergy<S> for Linear<V>
@@ -83,6 +98,17 @@ where
     #[inline]
     fn site_energy(&self, site_properties: &S) -> f64 where {
         self.energy(site_properties.position())
+    }
+}
+
+impl<V, S> SiteSingleForce<V, S> for Linear<V>
+where
+    V: InnerProduct,
+    S: Position<Vector = V>,
+{
+    #[inline]
+    fn site_single_force(&self, site_properties: &S) -> V {
+        self.force()
     }
 }
 
