@@ -294,9 +294,9 @@ The generic type names are:
 
 TODO: Add intra-doc links.
 */
-pub trait SiteForce<V, S> {
+pub trait SiteSingleForce<V, S> {
     /// Evaluate the force on a single site.
-    fn site_force(&self, site_properties: &S) -> V;
+    fn site_single_force(&self, site_properties: &S) -> V;
 }
 
 /** Compute the pairwise force on one site from another site.
@@ -360,9 +360,9 @@ The generic type names are:
 
 TODO: Add intra-doc links.
 */
-pub trait SiteTorque<V, S> {
+pub trait SiteSingleTorque<V, S> {
     /// Evaluate the torque on a single site.
-    fn site_torque(&self, site_properties: &S) -> V;
+    fn site_single_torque(&self, site_properties: &S) -> V;
 }
 
 /** Compute the pairwise torque on one site from another site.
