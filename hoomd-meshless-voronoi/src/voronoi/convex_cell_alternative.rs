@@ -96,21 +96,8 @@ impl ConvexCell {
         idx: usize,
         mut anchor: DVec3,
         mut width: DVec3,
-        periodic: bool,
         dimensionality: Dimensionality,
     ) -> Self {
-        if periodic {
-            anchor.x -= width.x;
-            width.x *= 3.;
-            if let Dimensionality::TwoD | Dimensionality::ThreeD = dimensionality {
-                anchor.y -= width.y;
-                width.y *= 3.;
-            };
-            if let Dimensionality::ThreeD = dimensionality {
-                anchor.z -= width.z;
-                width.z *= 3.;
-            }
-        }
         let opposite = anchor + width;
 
         let neighbours = vec![

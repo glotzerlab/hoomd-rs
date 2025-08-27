@@ -66,7 +66,7 @@ impl<T: CellIntegral> CellIntegralWithData for T {
 /// # use hoomd_meshless_voronoi::VoronoiIntegrator;
 /// # use hoomd_meshless_voronoi::integrals::VolumeCentroidIntegral;
 /// # let generators = vec![DVec3::splat(1.), DVec3::splat(2.)];
-/// let voronoi_integrator = VoronoiIntegrator::build(&generators, None, DVec3::ZERO, DVec3::splat(3.), 3.try_into().unwrap(), false);
+/// let voronoi_integrator = VoronoiIntegrator::build(&generators, None, DVec3::ZERO, DVec3::splat(3.), 3.try_into().unwrap());
 /// // Compute volumes of all the voronoi cells.
 /// let all_centroid_volumes = voronoi_integrator.compute_cell_integrals::<VolumeCentroidIntegral>();
 /// // Compute the volume of a specific ConvexCell:
@@ -122,7 +122,7 @@ impl CellIntegral for VolumeCentroidIntegral {
 /// # use hoomd_meshless_voronoi::VoronoiIntegrator;
 /// # use hoomd_meshless_voronoi::integrals::VolumeIntegral;
 /// # let generators = vec![DVec3::splat(1.), DVec3::splat(2.)];
-/// let voronoi_integrator = VoronoiIntegrator::build(&generators, None, DVec3::ZERO, DVec3::splat(3.), 3.try_into().unwrap(), false);
+/// let voronoi_integrator = VoronoiIntegrator::build(&generators, None, DVec3::ZERO, DVec3::splat(3.), 3.try_into().unwrap());
 /// // Compute volumes of all the voronoi cells.
 /// let all_centroid_volumes = voronoi_integrator.compute_cell_integrals::<VolumeIntegral>();
 /// // Compute the volume and centroid of a specific ConvexCell:
@@ -276,7 +276,7 @@ impl<D: Copy, I: FaceIntegralWithData<Data = D>> FaceIntegrator<I> {
 /// # use hoomd_meshless_voronoi::VoronoiIntegrator;
 /// # use hoomd_meshless_voronoi::integrals::AreaCentroidIntegral;
 /// # let generators = vec![DVec3::splat(1.), DVec3::splat(2.)];
-/// let voronoi_integrator = VoronoiIntegrator::build(&generators, None, DVec3::ZERO, DVec3::splat(3.), 3.try_into().unwrap(), false);
+/// let voronoi_integrator = VoronoiIntegrator::build(&generators, None, DVec3::ZERO, DVec3::splat(3.), 3.try_into().unwrap());
 /// // Compute areas and centroids of all the voronoi faces (treating all the faces of every ConvexCell,
 /// // i.e. twice for each face shared between two ConvexCells, assuming they might differ
 /// // from both sides of the face).
@@ -338,7 +338,7 @@ impl FaceIntegral for AreaCentroidIntegral {
 /// use hoomd_meshless_voronoi::VoronoiIntegrator;
 /// use hoomd_meshless_voronoi::integrals::AreaIntegral;
 /// # let generators = vec![DVec3::splat(1.), DVec3::splat(2.)];
-/// let voronoi_integrator = VoronoiIntegrator::build(&generators, None, DVec3::ZERO, DVec3::splat(3.), 3.try_into().unwrap(), false);
+/// let voronoi_integrator = VoronoiIntegrator::build(&generators, None, DVec3::ZERO, DVec3::splat(3.), 3.try_into().unwrap());
 /// // Compute areas of all the voronoi faces (twice for each face,
 /// // assuming they might differ from both sides of the face)
 /// let all_face_areas = voronoi_integrator.compute_face_integrals::<AreaIntegral>();

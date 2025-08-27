@@ -503,7 +503,6 @@ mod tests {
         let boundary = SimulationBoundary::cuboid(
             DVec3::ZERO,
             DVec3::ONE,
-            false,
             crate::Dimensionality::ThreeD,
         );
         let mut rng = rand::rng();

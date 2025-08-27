@@ -87,7 +87,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             anchor,
             width,
             2.try_into().unwrap(),
-            false,
         );
         let special_guy: usize = rand::rng().random_range(0..count.pow(2));
         let nlist = _voronoi.cells()[special_guy].neighbour_ids(&_voronoi);

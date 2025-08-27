@@ -232,7 +232,7 @@ where
         };
         let anchor = DVec3::splat(anchor_num);
         let width = DVec3::splat(width_num - anchor_num);
-        let _voronoi = Voronoi::build(&generators, anchor, width, N.try_into().unwrap(), false);
+        let _voronoi = Voronoi::build(&generators, anchor, width, N.try_into().unwrap());
         let cells = _voronoi.cells();
         for site_tag in microstate.site_indices().iter().flatten() {
             let nn_list = cells[*site_tag].neighbour_ids(&_voronoi);
@@ -315,7 +315,6 @@ where
             anchor,
             width,
             3.try_into().unwrap(),
-            false,
         );
         let cells = _voronoi.cells();
         for site_tag in microstate.site_indices().iter().flatten() {
@@ -406,7 +405,6 @@ where
             anchor,
             width,
             2.try_into().unwrap(),
-            false,
         );
         let cells = _voronoi.cells();
         for site_tag in microstate.site_indices().iter().flatten() {
@@ -486,7 +484,6 @@ where
             DVec3::splat(-1.),
             DVec3::splat(2.),
             (N - 1_usize).try_into().unwrap(),
-            false,
         );
         let cells = _voronoi.cells();
         for site_tag in microstate.site_indices().iter().flatten() {
@@ -548,7 +545,6 @@ where
             DVec3::splat(-1.),
             DVec3::splat(2.),
             2.try_into().unwrap(),
-            false,
         );
         let cells = _voronoi.cells();
         for site_tag in microstate.site_indices().iter().flatten() {

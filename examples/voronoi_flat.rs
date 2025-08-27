@@ -84,7 +84,6 @@ fn main() {
         anchor,
         width,
         3.try_into().unwrap(),
-        false,
     );
     let cells = _voronoi.cells();
     let mut neighborlist = cells[0].neighbour_ids(&_voronoi);
