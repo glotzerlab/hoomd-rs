@@ -10,8 +10,8 @@ use super::IsotropicEnergy;
 
 [`OverlapPenalty`] is specifically designed to work with the `QuickInsert`
 and `QuickCompress` protocols to quickly prepare states with non-overlapping
-particles. Combine it with (TODO: Implement) to compute an energy that penalizes
-hard particle overlaps.
+particles. Combine it with [`ApproximateShapeOverlap`] to compute an energy that
+penalizes hard particle overlaps.
 
 The potential has three regions:
 ```math
@@ -58,6 +58,9 @@ impl Default for OverlapPenalty {
     * $`d_\mathrm{max} = 0.2`$
     * $`\varepsilon_\mathrm{shoulder} = 100`$
 
+    Call [`OverlapPenalty::scaled_default`] to initialize with values scaled
+    for use with non-unit diameter sites.
+
     # Example
 
     ```
@@ -73,6 +76,31 @@ impl Default for OverlapPenalty {
             maximum_allowed_overlap: 0.2,
             epsilon_shoulder: 100.0,
         }
+    }
+}
+
+impl OverlapPenalty {
+    /** Default overlap penalty parameters for a given diameter.
+
+    Construct an [`OverlapPenalty`] with default parameters scaled to suit
+    a site with the given diameter.
+
+    # Example
+
+    ```
+    use hoomd_interaction::pairwise::OverlapPenalty;
+
+    let overlap_penalty = OverlapPenalty::scaled_default(2.0);
+
+    assert_eq!(overlap_penalty.maximum_allowed_overlap, 0.4);
+    ```
+    */
+    #[must_use]
+    #[inline]
+    pub fn scaled_default(diameter: f64) -> Self {
+        let mut overlap_penalty = Self::default();
+        overlap_penalty.maximum_allowed_overlap *= diameter;
+        overlap_penalty
     }
 }
 
