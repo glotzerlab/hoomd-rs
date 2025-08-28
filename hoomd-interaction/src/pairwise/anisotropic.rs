@@ -30,7 +30,7 @@ use std::f64::consts::PI;
 let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
 let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
 
-let angular_mask = Anisotropic(AngularMask::new(boxcar, masks, masks));
+let angular_mask = Anisotropic(AngularMask::new(boxcar, masks));
 # Ok(())
 # }
 ```
@@ -60,7 +60,7 @@ where
     let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
     let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
 
-    let angular_mask = Anisotropic(AngularMask::new(boxcar, masks, masks));
+    let angular_mask = Anisotropic(AngularMask::new(boxcar, masks));
 
     let a = OrientedPoint { position: Cartesian::from([0.0, 0.0]),
         orientation: Angle::from(0.0), };
