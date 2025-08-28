@@ -121,7 +121,10 @@ fn main() -> anyhow::Result<()> {
             .after(AdvanceSet),
     );
 
-    app.insert_resource(CameraSettings2D::default());
+    app.insert_resource(CameraSettings2D {
+        zoom_speed: 0.02,
+        ..default()
+    });
     app.add_systems(Update, camera_control_2d);
 
     app.run();
