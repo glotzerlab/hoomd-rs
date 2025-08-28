@@ -87,7 +87,7 @@ let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos
 let mut angular_mask = AngularMask::new(boxcar, masks);
 
 angular_mask.masks_i[0].cos_delta = (PI / 4.0).cos();
-angular_mask.f.epsilon = -2.0;
+angular_mask.isotropic.epsilon = -2.0;
 # Ok(())
 # }
 ```
@@ -127,7 +127,7 @@ let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
 let masks_i = vec![Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() },
     Patch { director: [-1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
 let masks_j = vec![Patch { director: [0.0, 1.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
-let angular_mask = AngularMask { f: boxcar, masks_i, masks_j, };
+let angular_mask = AngularMask { isotropic: boxcar, masks_i, masks_j, };
 
 // With the same relative orientation, the patches do not overlap and the
 // energy is 0.
@@ -178,9 +178,9 @@ assert_eq!(
 ```
 */
 #[derive(Clone, Debug, PartialEq)]
-pub struct AngularMask<F, V> {
+pub struct AngularMask<E, V> {
     /// The original potential.
-    pub f: F,
+    pub isotropic: E,
 
     /// Masks on the i particle.
     pub masks_i: Vec<Patch<V>>,
@@ -189,7 +189,7 @@ pub struct AngularMask<F, V> {
     pub masks_j: Vec<Patch<V>>,
 }
 
-impl<F, V> AngularMask<F, V>
+impl<E, V> AngularMask<E, V>
 where
     V: Vector,
 {
@@ -220,22 +220,22 @@ where
     */
     #[inline]
     #[must_use]
-    pub fn new<I>(f: F, masks: I) -> Self
+    pub fn new<I>(isotropic: E, masks: I) -> Self
     where
         I: IntoIterator<Item = Patch<V>>,
     {
         let masks = Vec::from_iter(masks);
         Self {
-            f,
+            isotropic,
             masks_i: masks.clone(),
             masks_j: masks,
         }
     }
 }
 
-impl<F, V, R> AnisotropicEnergy<V, R> for AngularMask<F, V>
+impl<E, V, R> AnisotropicEnergy<V, R> for AngularMask<E, V>
 where
-    F: IsotropicEnergy,
+    E: IsotropicEnergy,
     V: InnerProduct,
     R: Rotate<V> + Into<R::Matrix> + Copy,
 {
@@ -252,7 +252,7 @@ where
                 if mask_i.director.get().dot(unit_r_ij.get()) >= mask_i.cos_delta
                     && d_j.dot(&unit_r_ji) >= mask_j.cos_delta
                 {
-                    return self.f.energy(r_ij_norm);
+                    return self.isotropic.energy(r_ij_norm);
                 }
             }
         }
@@ -451,7 +451,7 @@ mod tests {
             },
         ];
         let angular_mask = AngularMask {
-            f: boxcar,
+            isotropic: boxcar,
             masks_i,
             masks_j,
         };
