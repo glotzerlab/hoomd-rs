@@ -44,7 +44,7 @@ let approximate_shape_overlap = ApproximateShapeOverlap::new(
 # }
 ```
 */
-pub struct ApproximateShapeOverlap<A, B, E> {
+pub struct ApproximateShapeOverlap<E, A, B=A> {
     /// The site i's shape.
     pub shape_i: A,
     /// The site j's shape.
@@ -55,7 +55,7 @@ pub struct ApproximateShapeOverlap<A, B, E> {
     pub resolution: PositiveReal,
 }
 
-impl<A, B, E, V, R> AnisotropicEnergy<V, R> for ApproximateShapeOverlap<A, B, E>
+impl<E, A, B, V, R> AnisotropicEnergy<V, R> for ApproximateShapeOverlap<E, A, B>
 where
     E: IsotropicEnergy,
     V: InnerProduct,
@@ -113,7 +113,7 @@ where
     }
 }
 
-impl<G, E> ApproximateShapeOverlap<G, G, E> {
+impl<E, G> ApproximateShapeOverlap<E, G> {
     /** Construct a new approximate shape overlap potential.
 
     `new()` sets both `shape_i` and `shape_j` to `shape`. Use struct

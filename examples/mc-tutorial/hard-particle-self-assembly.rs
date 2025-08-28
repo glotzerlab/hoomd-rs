@@ -1,17 +1,16 @@
 // ANCHOR: use
 use hoomd_geometry::{
-    IntersectsAt,
     shape::{Cuboid, Ellipse},
 };
 use hoomd_interaction::{
-    CutoffPair, CutoffPairOverlap, SitePairEnergy,
-    pairwise::{HardShape, IsotropicEnergy, OverlapPenalty},
+    CutoffPair, CutoffPairOverlap,
+    pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape, OverlapPenalty},
 };
 use hoomd_mc::{QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn};
 use hoomd_microstate::{
     Microstate, MicrostateBuilder, boundary::Periodic, property::OrientedPoint,
 };
-use hoomd_vector::{self, Angle, Cartesian, InnerProduct};
+use hoomd_vector::{self, Angle, Cartesian};
 // ANCHOR_END: use
 
 use hoomd_bevy::{
@@ -25,34 +24,6 @@ use bevy::prelude::*;
 enum Phase {
     Initialization,
     Equilibration,
-}
-
-struct Test(Ellipse);
-type SP = OrientedPoint<Cartesian<2>, Angle>;
-
-impl SitePairEnergy<SP> for Test {
-    fn site_pair_energy(&self, a: &SP, b: &SP) -> f64 {
-        let overlap_penalty = OverlapPenalty::default();
-
-        let (delta_r, o_ij) = hoomd_vector::pair_system_to_local(
-            &a.position,
-            &a.orientation,
-            &b.position,
-            &b.orientation,
-        );
-        let r_hat = match delta_r.to_unit() {
-            Ok((unit, _)) => *unit.get(),
-            Err(_) => Cartesian::from([1.0, 0.0]),
-        };
-
-        let mut r = 0.0;
-
-        while self.0.intersects_at(&self.0, &(delta_r + r_hat * r), &o_ij) {
-            r += 0.01
-        }
-
-        overlap_penalty.energy(-r)
-    }
 }
 
 // ANCHOR: simulation_new
@@ -76,7 +47,7 @@ impl HardEllipseSelfAssembly {
         };
         let cutoff_pair = CutoffPairOverlap {
             r_cut: sigma,
-            evaluator: HardShape(ellipse),
+            evaluator: HardShape(ellipse.clone()),
         };
         // ANCHOR_END: pair
 
@@ -84,15 +55,15 @@ impl HardEllipseSelfAssembly {
         let hamiltonian = cutoff_pair;
         // ANCHOR_END: hamiltonian
 
-        // let isotropic = Isotropic(Expanded {
-        //     delta: sigma,
-        //     f: OverlapPenalty::default(),
-        // });
-        // let cutoff_pair = CutoffPair {
-        //     r_cut: sigma,
-        //     evaluator: isotropic,
-        // };
-        // let insert_hamiltonian = cutoff_pair;
+        let approximate_shape_overlap = Anisotropic(ApproximateShapeOverlap::new(
+            ellipse,
+            OverlapPenalty::default(),
+            0.01.try_into()?));
+            
+        let insert_hamiltonian = CutoffPair {
+            r_cut: sigma,
+            evaluator: approximate_shape_overlap,
+        };
 
         let translate = Translate {
             maximum_distance: d.try_into()?,
@@ -112,7 +83,7 @@ impl HardEllipseSelfAssembly {
 
         Ok(HardEllipseSelfAssembly {
             microstate,
-            // insert_hamiltonian,
+            insert_hamiltonian,
             hamiltonian,
             translate_sweep,
             rotate_sweep,
@@ -130,16 +101,11 @@ impl Simulation for HardEllipseSelfAssembly {
     fn advance(&mut self) -> anyhow::Result<()> {
         let n = self.microstate.sites().len();
 
-        let insert_hamiltonian = CutoffPair {
-            r_cut: 1.0,
-            evaluator: Test(self.hamiltonian.evaluator.0),
-        };
-
         match self.phase {
             Phase::Initialization => {
                 self.quick_insert.apply(
                     &mut self.microstate,
-                    &insert_hamiltonian,
+                    &self.insert_hamiltonian,
                     &self.translate_sweep,
                     &1.0,
                 );
@@ -191,7 +157,7 @@ struct HardEllipseSelfAssembly {
         Periodic<Cuboid<2>>,
     >,
     /// How sites interact when inserted.
-    // insert_hamiltonian: CutoffPair<Isotropic<Expanded<OverlapPenalty>>>,
+    insert_hamiltonian: CutoffPair<Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Ellipse>>>,
     /// How sites interact with other sites and fields.
     hamiltonian: CutoffPairOverlap<HardShape<Ellipse>>,
     /// Trial moves to apply.
