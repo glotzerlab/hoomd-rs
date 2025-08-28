@@ -11,8 +11,8 @@ pub mod angular_mask;
 pub use angular_mask::AngularMask;
 
 mod always_true;
-mod approximate_shape_overlap;
 mod anisotropic;
+mod approximate_shape_overlap;
 mod boxcar;
 mod expanded;
 mod hard_shape;
@@ -27,8 +27,8 @@ mod weeks_chandler_anderson;
 mod xplor;
 
 pub use always_true::AlwaysTrue;
-pub use approximate_shape_overlap::ApproximateShapeOverlap;
 pub use anisotropic::Anisotropic;
+pub use approximate_shape_overlap::ApproximateShapeOverlap;
 pub use boxcar::Boxcar;
 pub use expanded::Expanded;
 pub use hard_shape::HardShape;

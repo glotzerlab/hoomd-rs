@@ -5,11 +5,11 @@ digraph hoomd_rs {
     // neato options
     overlap = prism
     start = 4
-    
-    
+
+
     node [ fontname="Andale Mono" ]
     node [ style="filled,rounded" ]
-    
+
     subgraph hoomd_interaction {
         label = "hoomd-interaction"
         style = rounded
@@ -44,7 +44,7 @@ digraph hoomd_rs {
         Shifted -> IsotropicEnergy [ dir=both ]
         Xplor -> IsotropicEnergy [ dir=both ]
         Anisotropic -> SitePairEnergy
-        
+
         Hamiltonian [ label="TotalEnergy\nDeltaEnergyRemove\nDeltaEnergyOne\nDeltaEnergyInsert"]
 
         Single -> Hamiltonian
@@ -86,7 +86,7 @@ digraph hoomd_rs {
         Position
         Orientation
         Boundary [ label="GenerateGhosts\nWrap"]
-        
+
         // Types and their relations to traits
         node [ shape=rectangle, fillcolor=lightgoldenrod3 ]
 
@@ -106,7 +106,7 @@ digraph hoomd_rs {
         Transform -> Body [ style=dashed, arrowhead=empty ]
         Boundary -> Site [ style=dashed, arrowhead=empty ]
         Boundary -> Body [ style=dashed, arrowhead=empty ]
-        
+
     }
 
     subgraph hoomd_geometry {
@@ -136,7 +136,7 @@ digraph hoomd_rs {
         Sphero -> SupportMapping [ dir = both ]
 
         }
-    
+
     Hamiltonian -> {QuickInsert, Sweep}
     Trial -> Microstate [ style=dashed, arrowhead=empty ]
     QuickInsert -> Microstate [ style=dashed, arrowhead=empty ]

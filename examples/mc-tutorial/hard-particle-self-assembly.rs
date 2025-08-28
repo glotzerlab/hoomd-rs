@@ -1,5 +1,8 @@
 // ANCHOR: use
-use hoomd_geometry::{IntersectsAt, shape::{Cuboid, Ellipse}};
+use hoomd_geometry::{
+    IntersectsAt,
+    shape::{Cuboid, Ellipse},
+};
 use hoomd_interaction::{
     CutoffPair, CutoffPairOverlap, SitePairEnergy,
     pairwise::{HardShape, IsotropicEnergy, OverlapPenalty},
@@ -31,22 +34,26 @@ impl SitePairEnergy<SP> for Test {
     fn site_pair_energy(&self, a: &SP, b: &SP) -> f64 {
         let overlap_penalty = OverlapPenalty::default();
 
-        let (delta_r, o_ij) = hoomd_vector::pair_system_to_local(&a.position, &a.orientation, &b.position, &b.orientation);
+        let (delta_r, o_ij) = hoomd_vector::pair_system_to_local(
+            &a.position,
+            &a.orientation,
+            &b.position,
+            &b.orientation,
+        );
         let r_hat = match delta_r.to_unit() {
             Ok((unit, _)) => *unit.get(),
             Err(_) => Cartesian::from([1.0, 0.0]),
         };
 
         let mut r = 0.0;
-        
+
         while self.0.intersects_at(&self.0, &(delta_r + r_hat * r), &o_ij) {
             r += 0.01
         }
 
         overlap_penalty.energy(-r)
-    } 
+    }
 }
-
 
 // ANCHOR: simulation_new
 impl HardEllipseSelfAssembly {
@@ -123,7 +130,10 @@ impl Simulation for HardEllipseSelfAssembly {
     fn advance(&mut self) -> anyhow::Result<()> {
         let n = self.microstate.sites().len();
 
-        let insert_hamiltonian = CutoffPair { r_cut: 1.0, evaluator: Test(self.hamiltonian.evaluator.0) };
+        let insert_hamiltonian = CutoffPair {
+            r_cut: 1.0,
+            evaluator: Test(self.hamiltonian.evaluator.0),
+        };
 
         match self.phase {
             Phase::Initialization => {

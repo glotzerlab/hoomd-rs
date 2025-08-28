@@ -79,7 +79,12 @@ where
     */
     #[inline]
     fn site_pair_energy(&self, a: &S, b: &S) -> f64 {
-        let (r_ab, o_ab) = hoomd_vector::pair_system_to_local(a.position(), a.orientation(), b.position(), b.orientation());
+        let (r_ab, o_ab) = hoomd_vector::pair_system_to_local(
+            a.position(),
+            a.orientation(),
+            b.position(),
+            b.orientation(),
+        );
         self.0.energy(&r_ab, &o_ab)
     }
 }

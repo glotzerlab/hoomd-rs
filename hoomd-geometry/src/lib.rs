@@ -244,19 +244,26 @@ pub trait IntersectsAt<S, V, R> {
     ```
     */
     #[inline]
-    fn approximate_separation_distance(&self, other: &S, v_ij: &V, o_ij: &R, resolution: PositiveReal) -> f64
-        where V: InnerProduct
-     {
+    fn approximate_separation_distance(
+        &self,
+        other: &S,
+        v_ij: &V,
+        o_ij: &R,
+        resolution: PositiveReal,
+    ) -> f64
+    where
+        V: InnerProduct,
+    {
         let mut d = 0.0;
 
         let direction = v_ij.to_unit().unwrap_or((V::default_unit(), 1.0)).0;
-        
+
         while self.intersects_at(other, &(*v_ij + *direction.get() * d), o_ij) {
             d += resolution.get();
         }
 
         d
-        }
+    }
 }
 
 /** Radius of an N-dimensional hypersphere that bounds a shape.

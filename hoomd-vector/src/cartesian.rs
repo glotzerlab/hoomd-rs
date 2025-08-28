@@ -270,7 +270,7 @@ impl<const N: usize> InnerProduct for Cartesian<N> {
     fn default_unit() -> Unit<Self> {
         assert!(N >= 1);
         let mut coordinates = [0.0; N];
-        coordinates[N-1] = 1.0;
+        coordinates[N - 1] = 1.0;
         Unit(Self { coordinates })
     }
 }

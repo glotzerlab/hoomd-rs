@@ -450,7 +450,11 @@ mod tests {
                 cos_delta: (PI / 8.0).cos(),
             },
         ];
-        let angular_mask = AngularMask { f: boxcar, masks_i, masks_j };
+        let angular_mask = AngularMask {
+            f: boxcar,
+            masks_i,
+            masks_j,
+        };
 
         assert_eq!(angular_mask.energy(&r_ij, &Angle::from(theta)), expected);
     }

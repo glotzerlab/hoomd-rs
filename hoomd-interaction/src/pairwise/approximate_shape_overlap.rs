@@ -6,8 +6,8 @@
 
 use super::{AnisotropicEnergy, IsotropicEnergy};
 use hoomd_geometry::IntersectsAt;
-use hoomd_vector::{InnerProduct, Rotation, Rotate};
 use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::{InnerProduct, Rotate, Rotation};
 
 /** Apply an isotropic potential evaluated at the approximate signed overlap distance.
 
@@ -63,7 +63,7 @@ where
     A: IntersectsAt<B, V, R>,
 {
     /** Evaluate the energy contribution from a pair of sites.
-    
+
     ```
     use hoomd_interaction::{SitePairEnergy, pairwise::{Anisotropic, ApproximateShapeOverlap, OverlapPenalty}};
     use hoomd_geometry::{Convex, shape::ConvexPolygon};
@@ -102,18 +102,18 @@ where
     */
     #[inline]
     fn energy(&self, r_ij: &V, o_ij: &R) -> f64 {
-        let r = self.shape_i.approximate_separation_distance(&self.shape_j,
+        let r = self.shape_i.approximate_separation_distance(
+            &self.shape_j,
             r_ij,
             o_ij,
-            self.resolution);
+            self.resolution,
+        );
 
         self.isotropic.energy(-r)
     }
-
 }
 
 impl<G, E> ApproximateShapeOverlap<G, G, E> {
-
     /** Construct a new approximate shape overlap potential.
 
     `new()` sets both `shape_i` and `shape_j` to `shape`. Use struct
@@ -135,12 +135,15 @@ impl<G, E> ApproximateShapeOverlap<G, G, E> {
     ```
     */
     #[inline]
-    pub fn new(shape: G, isotropic: E, resolution: PositiveReal) -> Self where G: Clone{
+    pub fn new(shape: G, isotropic: E, resolution: PositiveReal) -> Self
+    where
+        G: Clone,
+    {
         Self {
             shape_i: shape.clone(),
             shape_j: shape,
             isotropic,
-            resolution
-            }
+            resolution,
+        }
     }
 }
