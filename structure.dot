@@ -1,0 +1,148 @@
+digraph hoomd_rs {
+    // dot options
+    // rankdir = "LR"
+
+    // neato options
+    overlap = prism
+    start = 4
+    
+    
+    node [ fontname="Andale Mono" ]
+    node [ style="filled,rounded" ]
+    
+    subgraph hoomd_interaction {
+        label = "hoomd-interaction"
+        style = rounded
+
+        // Traits
+        node [ shape=ellipse, fillcolor=lightskyblue ]
+        SitePairOverlap
+        SitePairEnergy
+        SiteOverlap
+        SiteEnergy
+        // pairwise
+        AnisotropicEnergy
+        IsotropicEnergy
+
+        // Types and their relations to traits
+        node [ shape=rectangle, fillcolor=cornflowerblue ]
+        isotropic_potentials [ label = "BoxCar\nHarmonic\nHarmonicRepulsion\nLennardJones\nLennardJonesGuass\nOverlapPenalty\nWeeksChandlerAnderson" ]
+        SitePairEnergy -> CutoffPair
+        SitePairOverlap -> CutoffPairOverlap
+        SiteOverlap -> SingleOverlap
+        SiteEnergy -> Single
+        Linear -> SiteEnergy
+        AlwaysTrue -> SitePairOverlap
+        AngularMask -> AnisotropicEnergy
+        AnisotropicEnergy -> Anisotropic
+        Boxcar -> IsotropicEnergy
+        Expanded -> IsotropicEnergy [ dir=both ]
+        HardShape -> SitePairOverlap
+        isotropic_potentials -> IsotropicEnergy
+        IsotropicEnergy -> Isotropic
+        Isotropic -> SitePairEnergy
+        Shifted -> IsotropicEnergy [ dir=both ]
+        Xplor -> IsotropicEnergy [ dir=both ]
+        Anisotropic -> SitePairEnergy
+        
+        Hamiltonian [ label="TotalEnergy\nDeltaEnergyRemove\nDeltaEnergyOne\nDeltaEnergyInsert"]
+
+        Single -> Hamiltonian
+        SingleOverlap -> Hamiltonian
+        CutoffPair -> Hamiltonian
+        CutoffPairOverlap -> Hamiltonian
+        Zero -> Hamiltonian
+    }
+
+    subgraph hoomd_mc {
+        label = "hoomd-mc"
+        style = rounded
+
+        // Traits
+        node [ shape=ellipse, fillcolor=darkolivegreen2 ]
+
+        LocalTrial
+        Trial
+        "Distribution<Body>"
+
+        // Types and their relations to traits
+        node [ shape=rectangle, fillcolor=darkolivegreen4 ]
+
+        QuickInsert
+        Rotate -> LocalTrial
+        Translate -> LocalTrial
+        UniformIn -> "Distribution<Body>"
+        "Distribution<Body>" -> QuickInsert
+        LocalTrial -> Sweep
+        Sweep -> Trial
+    }
+
+    subgraph hoomd_microstate {
+        label = "hoomd-microstate"
+        style = rounded
+        node [ shape=ellipse, fillcolor=lightgoldenrod1 ]
+
+        Transform
+        Position
+        Orientation
+        Boundary [ label="GenerateGhosts\nWrap"]
+        
+        // Types and their relations to traits
+        node [ shape=rectangle, fillcolor=lightgoldenrod3 ]
+
+        Open -> Boundary
+        Closed -> Boundary
+        Periodic -> Boundary
+        Boundary -> Microstate
+        MicrostateBuilder -> Microstate
+        Point -> Position
+        OrientedPoint -> {Position, Orientation}
+
+        Position -> Site
+        Orientation -> Site
+        Site -> Body
+        Body -> Microstate
+        Transform -> Site [ style=dashed, arrowhead=empty ]
+        Transform -> Body [ style=dashed, arrowhead=empty ]
+        Boundary -> Site [ style=dashed, arrowhead=empty ]
+        Boundary -> Body [ style=dashed, arrowhead=empty ]
+        
+    }
+
+    subgraph hoomd_geometry {
+        label = "hoomd-geometry"
+        style = rounded
+
+        // Traits
+        node [ shape=ellipse, fillcolor=orange3 ]
+
+        BoundingSphereRadius
+        IntersectsAt
+        IsPointInside
+        SupportMapping
+        Volume
+
+        // Types and their relation to traits
+        node [ shape=rectangle, fillcolor=orange1 ]
+
+        shapes [ label="Capsule\nConvexPolytope\nCuboid\nCylinder\nHyperellipsoid\nHypersphere" ]
+
+        shapes -> SupportMapping
+        shapes -> Volume
+        shapes -> IsPointInside
+        shapes -> IntersectsAt
+        shapes -> BoundingSphereRadius
+        SupportMapping -> Convex -> IntersectsAt
+        Sphero -> SupportMapping [ dir = both ]
+
+        }
+    
+    Hamiltonian -> {QuickInsert, Sweep}
+    Trial -> Microstate [ style=dashed, arrowhead=empty ]
+    QuickInsert -> Microstate [ style=dashed, arrowhead=empty ]
+    Hamiltonian -> Microstate [ style=dashed, arrowhead=empty ]
+    IntersectsAt -> HardShape
+    IsPointInside -> Closed
+    shapes -> Periodic
+    shapes -> "UniformIn"
+}
