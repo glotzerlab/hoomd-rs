@@ -190,8 +190,6 @@ pub struct CameraSettings2D {
     pub zoom_range: Range<f32>,
     /// Multiply mouse wheel inputs by this factor when using the orthographic camera
     pub zoom_speed: f32,
-    /// Multiply mouse motion inputs by this factor when translating the camera
-    pub translation_scale_factor: f32,
 }
 
 impl Default for CameraSettings2D {
@@ -202,8 +200,6 @@ impl Default for CameraSettings2D {
             zoom_range: 0.1..10.0,
             // This value was hand-tuned to ensure that zooming in and out feels smooth but not slow.
             zoom_speed: 0.2,
-            // Determined empirically (could be improved)
-            translation_scale_factor: 0.1,
         }
     }
 }
@@ -923,14 +919,19 @@ pub fn add_default_plugins(app: &mut App) {
 
 /// 2D camera controls (adapted from https://bevy.org/examples/camera/projection-zoom/)
 pub fn camera_control_2d(
-    mut query: Query<(&mut Transform, &mut Projection), With<Camera2d>>,
+    camera: Single<(&Camera, &mut Transform, &mut Projection), With<Camera2d>>,
     camera_settings: Res<CameraSettings2D>,
     mouse_wheel_input: Res<AccumulatedMouseScroll>,
     mouse_motion_input: Res<AccumulatedMouseMotion>,
     mouse_button_input: Res<ButtonInput<MouseButton>>,
 ) {
-    let (mut transform, projection) = query.single_mut().unwrap();
+    let (camera, mut transform, projection) = camera.into_inner();
+
+    let viewport_size = camera.logical_viewport_size().unwrap_or(Vec2::new(1280.0, 720.0));
+
     if let Projection::Orthographic(ref mut orthographic) = *projection.into_inner() {
+        let pixel_scale = orthographic.area.size() / viewport_size;
+
         // Zoom
         // We want scrolling up to zoom in, decreasing the scale, so we negate the delta.
         let delta_zoom = -mouse_wheel_input.delta.y * camera_settings.zoom_speed;
@@ -944,12 +945,8 @@ pub fn camera_control_2d(
 
         // Pan
         if mouse_button_input.pressed(MouseButton::Left) {
-            transform.translation.x -= mouse_motion_input.delta.x
-                * orthographic.scale
-                * camera_settings.translation_scale_factor;
-            transform.translation.y += mouse_motion_input.delta.y
-                * orthographic.scale
-                * camera_settings.translation_scale_factor;
+            transform.translation.x -= mouse_motion_input.delta.x * pixel_scale.x;
+            transform.translation.y += mouse_motion_input.delta.y * pixel_scale.y;
         }
     }
 }
