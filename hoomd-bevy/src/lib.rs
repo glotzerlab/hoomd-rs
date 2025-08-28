@@ -49,6 +49,8 @@ See any one of the many *hoomd-rs* examples that use [`HoomdBevyPlugin`].
 * `webgpu` Compile for the WebGPU platform when building for the wasm32 target.
 */
 
+use std::ops::Range;
+
 use anyhow::Context;
 use bevy::{asset::embedded_asset, prelude::*, time::common_conditions::once_after_delay};
 #[cfg(not(target_arch = "wasm32"))]
@@ -180,6 +182,31 @@ impl Default for Settings {
 /// Total time allow to advance simulation per frame.
 #[derive(Resource)]
 struct FrameBudget(Duration);
+
+/// Settings used by the camera controls.
+#[derive(Debug, Resource)]
+pub struct CameraSettings2D {
+    /// Clamp the orthographic camera's scale to this range
+    pub zoom_range: Range<f32>,
+    /// Multiply mouse wheel inputs by this factor when using the orthographic camera
+    pub zoom_speed: f32,
+    /// Multiply mouse motion inputs by this factor when translating the camera
+    pub translation_scale_factor: f32,
+}
+
+impl Default for CameraSettings2D {
+    fn default() -> Self {
+        CameraSettings2D {
+            // In orthographic projections, we specify camera scale relative to a default value of 1,
+            // in which one unit in world space corresponds to one pixel.
+            zoom_range: 0.1..10.0,
+            // This value was hand-tuned to ensure that zooming in and out feels smooth but not slow.
+            zoom_speed: 0.2,
+            // Determined empirically (could be improved)
+            translation_scale_factor: 0.1,
+        }
+    }
+}
 
 /// The overlay UI root node.
 #[derive(Component)]
