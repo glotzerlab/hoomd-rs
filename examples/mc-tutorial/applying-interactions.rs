@@ -16,6 +16,7 @@ use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, Settings, Simulation,
     representation::RectangularBoundary,
     representation::disk::{self, Disk},
+    CameraSettings2D, camera_control_2d,
 };
 
 use anyhow::Context;
@@ -169,6 +170,9 @@ fn main() -> anyhow::Result<()> {
             .run_if(resource_changed::<Fill>)
             .after(AdvanceSet),
     );
+
+    app.insert_resource(CameraSettings2D::default());
+    app.add_systems(Update, camera_control_2d);
 
     app.run();
 
