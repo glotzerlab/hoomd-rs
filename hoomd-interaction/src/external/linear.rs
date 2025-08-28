@@ -75,10 +75,10 @@ where
     }
 }
 
-impl<S, V> SiteEnergy<S> for Linear<V>
+impl<S, P> SiteEnergy<S> for Linear<P>
 where
-    S: Position<Metric = V>,
-    V: InnerProduct,
+    S: Position<Position = P>,
+    P: InnerProduct,
 {
     #[inline]
     fn site_energy(&self, site_properties: &S) -> f64 where {

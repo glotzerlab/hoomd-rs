@@ -205,22 +205,22 @@ impl Transform<Point<Sphere<4>>> for Point<Sphere<4>> {
     }
 }
 
-impl<M> Position for Point<M> {
-    type Metric = M;
+impl<P> Position for Point<P> {
+    type Position = P;
 
     #[inline]
-    fn position(&self) -> &M {
+    fn position(&self) -> &P {
         &self.position
     }
 
     #[inline]
-    fn position_mut(&mut self) -> &mut M {
+    fn position_mut(&mut self) -> &mut P {
         &mut self.position
     }
 }
 
 impl<const N: usize> Position for Hyperboloid<N> {
-    type Metric = Hyperboloid<N>;
+    type Position = Hyperboloid<N>;
     #[inline]
     fn position(&self) -> &Hyperboloid<N> {
         self

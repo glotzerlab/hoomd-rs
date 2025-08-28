@@ -52,7 +52,7 @@ impl<const N: usize> MaximumAllowableInteractionRange for Cuboid<N> {
 
 impl<const N: usize, P> Wrap<P> for Periodic<Cuboid<N>>
 where
-    P: Position<Metric = Cartesian<N>>,
+    P: Position<Position = Cartesian<N>>,
 {
     /** Wrap any cartesian vector to the inside of the given cuboid.
 
@@ -91,7 +91,7 @@ where
 
 impl<S> GenerateGhosts<S> for Periodic<Cuboid<2>>
 where
-    S: Position<Metric = Cartesian<2>> + Copy + Default,
+    S: Position<Position = Cartesian<2>> + Copy + Default,
 {
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {
@@ -154,7 +154,7 @@ where
 
 impl<S> GenerateGhosts<S> for Periodic<Cuboid<3>>
 where
-    S: Position<Metric = Cartesian<3>> + Copy + Default,
+    S: Position<Position = Cartesian<3>> + Copy + Default,
 {
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {

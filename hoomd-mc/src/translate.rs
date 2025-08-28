@@ -36,11 +36,11 @@ pub struct Translate {
     pub maximum_distance: PositiveReal,
 }
 
-impl<M, B> LocalTrial<B> for Translate
+impl<P, B> LocalTrial<B> for Translate
 where
-    B: Position<Metric = M>,
-    M: Metric + Vector,
-    Ball: Distribution<M>,
+    B: Position<Position = P>,
+    P: Metric + Vector,
+    Ball: Distribution<P>,
 {
     /** Randomly translate a body's position.
 

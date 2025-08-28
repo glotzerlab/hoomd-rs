@@ -80,11 +80,11 @@ pub struct CutoffPair<E> {
     pub evaluator: E,
 }
 
-impl<M, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPair<E>
+impl<P, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
-    S: Position<Metric = M>,
-    M: Metric,
+    S: Position<Position = P>,
+    P: Metric,
 {
     /** Compute the total energy of the microstate contributed by functions on pairs of sites.
 
@@ -170,13 +170,13 @@ assert_eq!(delta_energy, -2.0);
 # }
 ```
 */
-impl<M, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPair<E>
+impl<P, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
     B: Transform<S>,
-    S: Position<Metric = M>,
+    S: Position<Position = P>,
     C: Wrap<B> + Wrap<S>,
-    M: Metric,
+    P: Metric,
 {
     #[inline]
     fn delta_energy_one(
@@ -252,13 +252,13 @@ assert_eq!(delta_energy, 2.0);
 # }
 ```
 */
-impl<M, B, S, C, E> DeltaEnergyInsert<B, S, C> for CutoffPair<E>
+impl<P, B, S, C, E> DeltaEnergyInsert<B, S, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
     B: Transform<S>,
-    S: Position<Metric = M>,
+    S: Position<Position = P>,
     C: Wrap<B> + Wrap<S>,
-    M: Metric,
+    P: Metric,
 {
     #[inline]
     fn delta_energy_insert(
@@ -322,11 +322,11 @@ assert_eq!(delta_energy, -2.0);
 # }
 ```
 */
-impl<M, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPair<E>
+impl<P, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
-    S: Position<Metric = M>,
-    M: Metric,
+    S: Position<Position = P>,
+    P: Metric,
 {
     #[inline]
     fn delta_energy_remove(

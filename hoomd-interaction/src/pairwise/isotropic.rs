@@ -41,10 +41,10 @@ assert_eq!(energy, -1.5);
 */
 pub struct Isotropic<E>(pub E);
 
-impl<M, S, E> SitePairEnergy<S> for Isotropic<E>
+impl<P, S, E> SitePairEnergy<S> for Isotropic<E>
 where
-    S: Position<Metric = M>,
-    M: Metric,
+    S: Position<Position = P>,
+    P: Metric,
     E: IsotropicEnergy,
 {
     #[inline]

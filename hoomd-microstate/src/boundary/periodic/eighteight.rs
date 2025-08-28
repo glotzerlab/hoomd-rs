@@ -31,7 +31,7 @@ const EIGHTEIGHT: f64 = 2.448_452_447_678_076;
 
 impl<P> Wrap<P> for Periodic<EightEight>
 where
-    P: Position<Metric = Hyperboloid<3>>,
+    P: Position<Position = Hyperboloid<3>>,
 {
     /** Wrap a point on the hyperboloid to the inside of the {8,8} tile. Note that the function fails to wrap points that are further than 0.5 + `EIGHTEIGHT` from the cusp.
 
@@ -44,6 +44,7 @@ where
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    const EIGHTEIGHT: f64 = 2.448_452_447_678_076;
     let offset = PI / 16.0;
         let boost = 2.0;
         let point = Hyperboloid::<3>::from_polar(boost, offset + PI / 4.0, 1.0);
@@ -52,7 +53,11 @@ where
 
     let wrapped_point = periodic.wrap(point)?;
 
-    let ans = Hyperboloid::<3>::from_polar(boost, 6.0 * PI / 4.0 - offset, 1.0);
+    let new_boost = 2.0
+            * (EIGHTEIGHT.tanh() / (offset.cos() - offset.sin() * (1.0 - (2.0_f64).sqrt())))
+                .atanh()
+            - boost;
+    let ans = Hyperboloid::<3>::from_polar(new_boost, 6.0 * PI / 4.0 - offset, 1.0);
     assert_relative_eq!(
         ans.point.coordinates[0],
         wrapped_point.point.coordinates[0],
@@ -172,7 +177,7 @@ where
 
 impl<S> GenerateGhosts<S> for Periodic<EightEight>
 where
-    S: Position<Metric = Hyperboloid<3>> + Copy + Default,
+    S: Position<Position = Hyperboloid<3>> + Copy + Default,
 {
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {

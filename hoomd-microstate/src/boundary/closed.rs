@@ -22,7 +22,7 @@ pub struct Closed<T>(pub T);
 
 impl<P, T, M> Wrap<P> for Closed<T>
 where
-    P: Position<Metric = M>,
+    P: Position<Position = M>,
     T: IsPointInside<M>,
 {
     #[inline]

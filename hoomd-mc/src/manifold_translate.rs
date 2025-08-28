@@ -52,7 +52,7 @@ pub struct HyperbolicTranslate {
 
 impl<B> LocalTrial<B> for HyperbolicTranslate
 where
-    B: Position<Metric = Hyperboloid<3>>,
+    B: Position<Position = Hyperboloid<3>>,
     HyperbolicDisk: Distribution<Hyperboloid<3>>,
 {
     /** Propose local trial moves for a body on a hyperbolic surface
@@ -150,7 +150,7 @@ pub struct SphericalTranslate {
 
 impl<B> LocalTrial<B> for SphericalTranslate
 where
-    B: Position<Metric = Cartesian<3>>,
+    B: Position<Position = Cartesian<3>>,
     SphericalDisk: Distribution<Sphere<3>>,
 {
     /** Propose local trial moves for a body on the surface of a sphere
