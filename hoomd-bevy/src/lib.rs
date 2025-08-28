@@ -52,7 +52,7 @@ See any one of the many *hoomd-rs* examples that use [`HoomdBevyPlugin`].
 use std::ops::Range;
 
 use anyhow::Context;
-use bevy::{asset::embedded_asset, prelude::*, time::common_conditions::once_after_delay};
+use bevy::{asset::embedded_asset, input::mouse::{AccumulatedMouseMotion, AccumulatedMouseScroll}, prelude::*, time::common_conditions::once_after_delay};
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::{
     render::view::window::screenshot::{Screenshot, save_to_disk},
@@ -917,5 +917,39 @@ pub fn add_default_plugins(app: &mut App) {
         }));
     } else {
         app.add_plugins(DefaultPlugins);
+    }
+}
+
+
+/// 2D camera controls (adapted from https://bevy.org/examples/camera/projection-zoom/)
+pub fn camera_control_2d(
+    mut query: Query<(&mut Transform, &mut Projection), With<Camera2d>>,
+    camera_settings: Res<CameraSettings2D>,
+    mouse_wheel_input: Res<AccumulatedMouseScroll>,
+    mouse_motion_input: Res<AccumulatedMouseMotion>,
+    mouse_button_input: Res<ButtonInput<MouseButton>>,
+) {
+    let (mut transform, projection) = query.single_mut().unwrap();
+    if let Projection::Orthographic(ref mut orthographic) = *projection.into_inner() {
+        // Zoom
+        // We want scrolling up to zoom in, decreasing the scale, so we negate the delta.
+        let delta_zoom = -mouse_wheel_input.delta.y * camera_settings.zoom_speed;
+        // When changing scales, logarithmic changes are more intuitive.
+        let multiplicative_zoom = 1. + delta_zoom;
+
+        orthographic.scale = (orthographic.scale * multiplicative_zoom).clamp(
+            camera_settings.zoom_range.start,
+            camera_settings.zoom_range.end,
+        );
+
+        // Pan
+        if mouse_button_input.pressed(MouseButton::Left) {
+            transform.translation.x -= mouse_motion_input.delta.x
+                * orthographic.scale
+                * camera_settings.translation_scale_factor;
+            transform.translation.y += mouse_motion_input.delta.y
+                * orthographic.scale
+                * camera_settings.translation_scale_factor;
+        }
     }
 }
