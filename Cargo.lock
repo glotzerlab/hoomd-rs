@@ -2365,6 +2365,7 @@ dependencies = [
  "divan",
  "hoomd-geometry",
  "hoomd-microstate",
+ "hoomd-utility",
  "hoomd-vector",
  "rand 0.9.1",
  "rstest",

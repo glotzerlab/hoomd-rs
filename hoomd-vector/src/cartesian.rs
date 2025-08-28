@@ -250,6 +250,29 @@ impl<const N: usize> InnerProduct for Cartesian<N> {
         zip(self.coordinates.iter(), other.coordinates.iter())
             .fold(0.0, |product, (&x, &y)| x.mul_add(y, product))
     }
+
+    /** Create a unit vector in the space.
+
+    The default unit vector in Cartesian space is `[0.0, 0.0, ...., 1.0]`.
+
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, InnerProduct};
+
+    let u = Cartesian::<2>::default_unit();
+    assert_eq!(*u.get(), [0.0, 1.0].into());
+
+    let u = Cartesian::<3>::default_unit();
+    assert_eq!(*u.get(), [0.0, 0.0, 1.0].into());
+    ```
+    */
+    #[inline]
+    fn default_unit() -> Unit<Self> {
+        assert!(N >= 1);
+        let mut coordinates = [0.0; N];
+        coordinates[N-1] = 1.0;
+        Unit(Self { coordinates })
+    }
 }
 
 impl<const N: usize> Vector for Cartesian<N> {

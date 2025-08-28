@@ -153,8 +153,6 @@ properties.
 The generic type names are:
 * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 
-TODO: Fix anisotropic link when implemented.
-
 [`Isotropic`]: pairwise::Isotropic
 [`Anisotropic`]: pairwise::Isotropic
 

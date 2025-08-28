@@ -99,6 +99,7 @@ assert_eq!(
 */
 
 use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::InnerProduct;
 use thiserror::Error;
 
 mod convex;
@@ -212,6 +213,50 @@ pub trait IntersectsAt<S, V, R> {
     [`pair_system_to_local`]: hoomd_vector::pair_system_to_local
     */
     fn intersects_at(&self, other: &S, v_ij: &V, o_ij: &R) -> bool;
+
+    /** Approximate the amount of overlap between two shapes.
+
+    Move `other` in along `v_ij` until the shapes no longer overlap. Return the
+    *approximate* distance needed to move `other` (which is 0 if the shapes are
+    already separated). This is *not* the exact minimum separation distance and
+    the method does *not* solve for an optimal direction.
+
+    `resolution` sets the size of the steps between distances in the
+    approximation.
+
+    If `v_ij` has 0 norm, move `other` along the `V::default_unit()`.
+
+    ```
+    use hoomd_geometry::{Convex, IntersectsAt, shape::Cuboid};
+    use hoomd_vector::Versor;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cuboid = Convex(Cuboid::with_equal_edges(2.0.try_into()?));
+
+    let d = cuboid.approximate_separation_distance(&cuboid,
+        &[1.8, 0.0, 0.0].into(),
+        &Versor::default(),
+        0.01.try_into()?);
+
+    assert!(d >= 0.2);
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    fn approximate_separation_distance(&self, other: &S, v_ij: &V, o_ij: &R, resolution: PositiveReal) -> f64
+        where V: InnerProduct
+     {
+        let mut d = 0.0;
+
+        let direction = v_ij.to_unit().unwrap_or((V::default_unit(), 1.0)).0;
+        
+        while self.intersects_at(other, &(*v_ij + *direction.get() * d), o_ij) {
+            d += resolution.get();
+        }
+
+        d
+        }
 }
 
 /** Radius of an N-dimensional hypersphere that bounds a shape.

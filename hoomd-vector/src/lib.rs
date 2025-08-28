@@ -557,13 +557,27 @@ pub trait InnerProduct: Vector {
     fn project(&self, b: &Self) -> Self {
         *b * self.dot(b) / b.norm_squared()
     }
+
+    /** Create a unit vector in the space.
+
+    Each vector space defines its own default unit vector.
+
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, InnerProduct};
+
+    let u = Cartesian::<2>::default_unit();
+    assert_eq!(*u.get(), [0.0, 1.0].into());
+    ```
+    */
+    fn default_unit() -> Unit<Self>;
 }
 
 /// A [`Vector`] with magnitude 1.0.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Unit<V>(V);
 
-impl<V: InnerProduct> Unit<V> {
+impl<V> Unit<V> {
     /// Get the unit vector.
     #[inline]
     pub fn get(&self) -> &V {
