@@ -54,7 +54,7 @@ impl Thermostat for BussiThermostat{
         kinetic_energy: &f64, 
         dt: &f64, 
         dof: &i64) -> f64 {
-        assert!((*kinetic_energy == 0.0 && *dof != 0), "Bussi thermostat requires non-zero initial momenta.");
+        assert!(!(*kinetic_energy == 0.0 && *dof != 0), "Bussi thermostat requires non-zero initial momenta.");
         
         // trivial case when no particles present.
         if *dof == 0 {
