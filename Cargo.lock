@@ -2498,6 +2498,7 @@ dependencies = [
  "hoomd-utility",
  "hoomd-vector",
  "rand 0.9.1",
+ "rand_distr",
  "ratatui",
  "rstest",
 ]
