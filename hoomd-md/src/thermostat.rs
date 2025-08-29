@@ -72,7 +72,7 @@ impl Thermostat for BussiThermostat{
         // special case when dof is 1.
         let mut random_gamma: f64 = 0.0;
         // sample random numnber from gamma distribution for the rest of dof
-        if *dof >= 1 {
+        if *dof > 1 {
             random_gamma = 2.0 * Gamma::new((*dof as f64 - 1.0) / 2.0, 1.0).unwrap().sample(&mut rng);
         }
         // assemble everything
