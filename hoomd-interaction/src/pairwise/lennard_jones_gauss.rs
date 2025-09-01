@@ -23,8 +23,9 @@ use approx::{assert_abs_diff_eq, assert_relative_eq};
 let epsilon = 0.5;
 let sigma_squared = 0.5;
 let r_0 = 0.5_f64.powf(1.0/6.0);
+let scale = 1.0_f64;
 
-let lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss { epsilon, sigma_squared, r_0 };
+let lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss { epsilon, sigma_squared, r_0, scale};
 assert_relative_eq!(lennard_jones_gauss.energy(0.5_f64.powf(1.0/6.0)), -epsilon, epsilon=1e-12);
 ```
 
@@ -36,7 +37,8 @@ use hoomd_interaction::pairwise::{LennardJonesGauss};
 let mut lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss{
     epsilon: 1.5,
     sigma_squared: 0.02,
-    r_0:  3.2
+    r_0:  3.2,
+    scale: 1.0,
 };
 lennard_jones_gauss.epsilon = 1.5;
 lennard_jones_gauss.sigma_squared = 0.02;
@@ -47,17 +49,19 @@ lennard_jones_gauss.r_0 = 3.2;
 pub struct LennardJonesGauss {
     /// Scale of Gaussian, in units of energy
     pub epsilon: f64,
-    /// Width of Gaussian, sigma^2 is in units of length squared
+    /// Width of Gaussian, sigma^2, unitless
     pub sigma_squared: f64,
-    /// Gaussian center, in units of length
+    /// Gaussian center, unitless
     pub r_0: f64,
+    /// unit of the length scale
+    pub scale: f64,
 }
 
 impl IsotropicEnergy for LennardJonesGauss {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
-        let r_inv = r.recip();
-        let arg = -(r - self.r_0).powi(2) / (2.0 * self.sigma_squared);
+        let r_inv = self.scale/r;
+        let arg = -((r/self.scale) - self.r_0).powi(2) / (2.0 * self.sigma_squared);
         r_inv.powi(12) - 2.0 * r_inv.powi(6) - self.epsilon * arg.exp()
     }
 }
@@ -65,8 +69,8 @@ impl IsotropicEnergy for LennardJonesGauss {
 impl IsotropicForce for LennardJonesGauss {
     #[inline]
     fn force(&self, r: f64) -> f64 {
-        let r_inv = r.recip();
-        let arg = -(r - self.r_0).powi(2) / (2.0 * self.sigma_squared);
+        let r_inv = self.scale/r;
+        let arg = -((r/self.scale) - self.r_0).powi(2) / (2.0 * self.sigma_squared);
         12.0 * (r_inv.powi(13) - r_inv.powi(7))
             - (self.epsilon * (self.r_0 - r) / self.sigma_squared) * arg.exp()
     }
@@ -84,6 +88,7 @@ mod tests {
             epsilon: 2.0,
             sigma_squared: 0.5,
             r_0: 3.0,
+            scale: 1.0,
         };
 
         assert_eq!(lj_gauss.epsilon, 2.0);
@@ -118,6 +123,7 @@ mod tests {
             epsilon: 10.0,
             sigma_squared: 0.1,
             r_0: 5.0,
+            scale: 1.0,
         };
 
         assert_eq!(lj_gauss.epsilon, 10.0);
