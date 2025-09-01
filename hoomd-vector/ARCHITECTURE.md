@@ -23,26 +23,6 @@ cross products, defined in specific trait: `Cross`.
 which includes methods for element access, and other operations specific to Cartesian
 vectors.
 
-### User-defined vectors
-
-Users can implement custom types (e.g. spherical coordinates) that implement `Vector`
-as needed. Many internal computations inside hoomd-rs rely on Cartesian vectors, so
-all user-defined vectors must implement the conversion traits:
-```
-impl From<CustomVector> for vector::Cartesian<3> {
-...
-}
-```
-and
-```
-impl From<vector::Cartesian<3>> for CustomVector {
-...
-}
-```
-TODO: Determine whether this conversion is needed and/or useful.
-
-## Quaternion
-
 ## Rotations
 
 The `Rotation` trait describes types that represent a given rotation operation.

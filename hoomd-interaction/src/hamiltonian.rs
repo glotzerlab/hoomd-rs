@@ -27,11 +27,11 @@ let epsilon = 2.0;
 let (left,right) = (0.0, 1.5);
 let boxcar = Boxcar { epsilon, left, right };
 let evaluator = Isotropic(boxcar);
-let cutoff_pair = CutoffPair { r_cut: 1.5, evaluator };
+let cutoff_pair = CutoffPair { r_cut: right, evaluator };
 
 let linear = Single(Linear{ alpha: 10.0,
-plane_origin: Cartesian::default(),
-plane_normal: [0.0, 1.0].try_into()? });
+    plane_origin: Cartesian::default(),
+    plane_normal: [0.0, 1.0].try_into()? });
 
 let hamiltonian = (cutoff_pair, linear);
 
@@ -66,8 +66,43 @@ where
     }
 }
 
-// TODO: Document
+/** Sum two total energy terms.
 
+# Example
+
+```
+use hoomd_interaction::{CutoffPair, Single, TotalEnergy,
+    external::Linear,
+    pairwise::{Boxcar, Isotropic}};
+use hoomd_microstate::{Microstate, Body, property::Point};
+use hoomd_vector::Cartesian;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut microstate = Microstate::new();
+microstate.extend_bodies([
+    Body::point(Cartesian::from([0.0, 4.0])),
+    Body::point(Cartesian::from([1.0, 4.0])),
+])?;
+
+
+let epsilon = 2.0;
+let (left,right) = (0.0, 1.5);
+let boxcar = Boxcar { epsilon, left, right };
+let evaluator = Isotropic(boxcar);
+let cutoff_pair = CutoffPair { r_cut: right, evaluator };
+
+let linear = Single(Linear{ alpha: 1.0,
+    plane_origin: Cartesian::default(),
+    plane_normal: [0.0, 1.0].try_into()? });
+
+let hamiltonian = (cutoff_pair, linear);
+
+let total_energy = hamiltonian.total_energy(&microstate);
+assert_eq!(total_energy, 10.0);
+# Ok(())
+# }
+```
+*/
 impl<M, E1, E2> TotalEnergy<M> for (E1, E2)
 where
     E1: TotalEnergy<M>,
@@ -83,8 +118,42 @@ where
     }
 }
 
-// TODO: Document
+/** Sum two delta energy insert.
 
+# Example
+
+```
+use hoomd_interaction::{CutoffPair, Single, DeltaEnergyInsert,
+    external::Linear,
+    pairwise::{Boxcar, Isotropic}};
+use hoomd_microstate::{Microstate, Body, property::Point};
+use hoomd_vector::Cartesian;
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut microstate = Microstate::new();
+microstate.extend_bodies([
+    Body::point(Cartesian::from([0.0, 4.0])),
+])?;
+
+let epsilon = 2.0;
+let (left,right) = (0.0, 1.5);
+let boxcar = Boxcar { epsilon, left, right };
+let evaluator = Isotropic(boxcar);
+let cutoff_pair = CutoffPair { r_cut: right, evaluator };
+
+let linear = Single(Linear{ alpha: 1.0,
+    plane_origin: Cartesian::default(),
+    plane_normal: [0.0, 1.0].try_into()? });
+
+let hamiltonian = (cutoff_pair, linear);
+
+let new_body = Body::point(Cartesian::from([1.0, 4.0]));
+let delta_energy = hamiltonian.delta_energy_insert(&microstate, &new_body);
+assert_eq!(delta_energy, 6.0);
+# Ok(())
+# }
+```
+*/
 impl<B, S, C, E1, E2> DeltaEnergyInsert<B, S, C> for (E1, E2)
 where
     E1: DeltaEnergyInsert<B, S, C>,
@@ -104,4 +173,4 @@ where
     }
 }
 
-// TODO: Test
+// FUTURE: Expand macros for 1,2,3,4,... types using macros. Add more unit tests at that time.

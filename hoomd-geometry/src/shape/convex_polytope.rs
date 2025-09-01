@@ -48,7 +48,7 @@ let rectangle = ConvexPolygon::with_vertices(
 let rectangle = Convex(rectangle);
 
 assert_eq!(rectangle.intersects_at(&rectangle, &[0.0, 2.1].into(), &Angle::default()), false);
-assert_eq!(rectangle.intersects_at(&rectangle, &[0.0, 2.1].into(), &Angle::from(PI/2.0)), true);
+assert_eq!(rectangle.intersects_at(&rectangle, &[0.0, 2.1].into(), &Angle::from(PI / 2.0)), true);
 # Ok(())
 # }
 ```

@@ -548,7 +548,7 @@ impl<const N: usize> RotationMatrix<N> {
     use hoomd_vector::{Angle, InnerProduct, RotationMatrix, Vector};
     use std::f64::consts::PI;
 
-    let a = Angle::from(PI/2.0);
+    let a = Angle::from(PI / 2.0);
 
     let matrix = RotationMatrix::from(a);
     assert!(matrix.rows()[0].dot(&[0.0, -1.0].into()) > 0.99);
@@ -572,7 +572,7 @@ impl<const N: usize> RotationMatrix<N> {
     use hoomd_vector::{Angle, InnerProduct, RotationMatrix, Vector};
     use std::f64::consts::PI;
 
-    let a = Angle::from(PI/2.0);
+    let a = Angle::from(PI / 2.0);
 
     let matrix = RotationMatrix::from(a);
     let inverted_matrix = matrix.inverted();
@@ -644,7 +644,7 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
     use std::f64::consts::PI;
 
     let v = Cartesian::from([-1.0, 0.0]);
-    let a = Angle::from(PI/2.0);
+    let a = Angle::from(PI / 2.0);
 
     let matrix = RotationMatrix::from(a);
     let rotated = matrix.rotate(&v);
@@ -657,7 +657,7 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
-    let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
+    let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI / 2.0);
 
     let matrix = RotationMatrix::from(v);
     let b = matrix.rotate(&a);

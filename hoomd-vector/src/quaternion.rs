@@ -442,8 +442,8 @@ use hoomd_vector::Versor;
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let v = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI/2.0);
-assert_eq!(*v.get(), [(PI/4.0).cos(), 0.0, (PI/4.0).sin(), 0.0].into());
+let v = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI / 2.0);
+assert_eq!(*v.get(), [(PI / 4.0).cos(), 0.0, (PI / 4.0).sin(), 0.0].into());
 # Ok(())
 # }
 ```
@@ -481,7 +481,7 @@ use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let a = Cartesian::from([-1.0, 0.0, 0.0]);
-let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
+let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI / 2.0);
 let b = v.rotate(&a);
 // b is approximately [0.0, -1.0, 0.0]
 # Ok(())
@@ -494,8 +494,8 @@ use hoomd_vector::{Versor, Rotation};
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let a = Versor::from_axis_angle([1.0, 0.0, 1.0].try_into()?, PI/2.0);
-let b = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/4.0);
+let a = Versor::from_axis_angle([1.0, 0.0, 1.0].try_into()?, PI / 2.0);
+let b = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI / 4.0);
 let c = a.combine(&b);
 # Ok(())
 # }
@@ -515,8 +515,8 @@ impl Versor {
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let v = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI/2.0);
-    assert_eq!(*v.get(), [(PI/4.0).cos(), 0.0, (PI/4.0).sin(), 0.0].into());
+    let v = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI / 2.0);
+    assert_eq!(*v.get(), [(PI / 4.0).cos(), 0.0, (PI / 4.0).sin(), 0.0].into());
     # Ok(())
     # }
     ```
@@ -545,7 +545,7 @@ impl Versor {
     use std::f64::consts::PI;
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let a = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI/2.0);
+    let a = Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, PI / 2.0);
     let b = a.normalized();
     # Ok(())
     # }
@@ -583,7 +583,7 @@ impl From<Versor> for RotationMatrix<3> {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
-    let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
+    let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI / 2.0);
 
     let matrix = RotationMatrix::from(v);
     let b = matrix.rotate(&a);
@@ -661,7 +661,7 @@ impl Rotate<Cartesian<3>> for Versor {
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Cartesian::from([-1.0, 0.0, 0.0]);
-    let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI/2.0);
+    let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI / 2.0);
     let b = v.rotate(&a);
     // b is approximately [0.0, -1.0, 0.0]
     # Ok(())
@@ -928,7 +928,7 @@ mod tests {
         }
 
         #[rstest(
-        theta => [0.0, PI/2.0, 1e-12 * PI, -3.0, 12345.6],
+        theta => [0.0, PI / 2.0, 1e-12 * PI, -3.0, 12345.6],
         axis => [[1.0, 0.0, 0.0].try_into().expect("hard-coded vector should have non-zero length"), [1.0, -1.0, 1.0].try_into().expect("hard-coded vector should have non-zero length")],
     )]
         fn from_axis_angle(theta: f64, axis: Unit<Cartesian<3>>) {
@@ -940,8 +940,8 @@ mod tests {
         }
 
         #[rstest(
-        theta_1 => [0.0, PI/2.0, -3.0],
-        theta_2 => [-0.0, -PI/3.0, PI, 2.0 * PI]
+        theta_1 => [0.0, PI / 2.0, -3.0],
+        theta_2 => [-0.0, -PI / 3.0, PI, 2.0 * PI]
     )]
         fn combine_same_axis(theta_1: f64, theta_2: f64) {
             let axis = [1.0, 0.0, 0.0]
