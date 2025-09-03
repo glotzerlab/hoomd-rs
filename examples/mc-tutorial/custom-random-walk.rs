@@ -12,9 +12,8 @@ use hoomd_vector::{Cartesian, Vector};
 // ANCHOR_END: use
 
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, Settings, Simulation,
+    AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings, Simulation,
     representation::disk::{self, Disk},
-    CameraSettings2D, camera_control_2d,
 };
 
 use anyhow::Context;
@@ -139,7 +138,7 @@ fn main() -> anyhow::Result<()> {
         CustomRandomWalk::new().context("failed to setup simulation")?;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
         initial_settings: Settings {
-            viewport_height: 110.0,
+            camera: InitialCamera::Orthographic2d(110.0),
             ..default()
         },
         simulation,
@@ -158,9 +157,6 @@ fn main() -> anyhow::Result<()> {
             .run_if(resource_changed::<CustomRandomWalk>)
             .after(AdvanceSet),
     );
-
-    app.insert_resource(CameraSettings2D::default());
-    app.add_systems(Update, camera_control_2d);
 
     app.run();
 
