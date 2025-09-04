@@ -2,8 +2,11 @@ version: 2
 build:
   os: "ubuntu-24.04"
   tools:
-    rust: "1.89"
+    rust: "1.86"
   commands:
+    # Rust 1.89.0 is needed to build hoomd-rs
+    - rustup install 1.89.0
+    - rustup default 1.89.0
     # Install cargo binstall
     - mkdir -p "${PATH%%:*}"
     - curl -sSL "https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-gnu.tgz" | tar -xvz --directory "${PATH%%:*}"
