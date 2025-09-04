@@ -1003,7 +1003,7 @@ F5      : Show/hide debugging information.
                 )
                 .insert_resource(CameraControl2d::default())
                 .add_systems(Startup, move |commands: Commands| {
-                    Self::setup_camera_2d(commands, initial_viewport_height)
+                    Self::setup_camera_2d(commands, initial_viewport_height);
                 });
             }
         }
