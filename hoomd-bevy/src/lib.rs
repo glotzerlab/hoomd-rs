@@ -204,7 +204,7 @@ impl Default for Settings {
             sps_limit: 2048.0,
             camera: InitialCamera::Orthographic2d(10.0),
             zoom_range: 0.1..10.0,
-            zoom_speed: 0.25,
+            zoom_speed: 25.0,
         }
     }
 }
@@ -878,6 +878,7 @@ F5      : Show/hide debugging information.
 
     /// Zoom the 2d camera using the mouse wheel or trackpad scroll gesture.
     pub fn camera_zoom_control_2d(
+        time: Res<Time>,
         camera: Single<
             (&Camera, &GlobalTransform, &mut Transform, &mut Projection),
             With<Camera2d>,
@@ -900,7 +901,8 @@ F5      : Show/hide debugging information.
             // the largest). Therefore, the best we can do is check the sign of the
             // scroll event and act scale the camera in the appropriate direction.
 
-            let delta_zoom = -settings.zoom_speed.copysign(scroll);
+            let zoom_speed = settings.zoom_speed * time.delta_secs();
+            let delta_zoom = -zoom_speed.copysign(scroll);
             let new_scale = (orthographic.scale * (1.0 + delta_zoom))
                 .clamp(settings.zoom_range.start, settings.zoom_range.end);
             let scale_ratio = new_scale / orthographic.scale;
