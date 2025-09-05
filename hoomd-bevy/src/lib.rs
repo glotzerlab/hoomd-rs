@@ -82,6 +82,9 @@ pub const PRIMARY_COLOR: Color = Color::srgb(249.0 / 255.0, 203.0 / 255.0, 136.0
 /// The default color for the boundary representation.
 pub const BOUNDARY_COLOR: Color = Color::srgb(0.0, 0.0, 0.0);
 
+/// Camera zoom speed multiplier
+const CAMERA_ZOOM_SPEED: f32 = 50.0;
+
 /** The model, parameters, and microstate they act on.
 
 A [`Simulation`] type stores the microstate, all model actors, and any
@@ -193,8 +196,8 @@ pub struct Settings {
     /// Clamp the orthographic camera's scale to this range.
     pub zoom_range: Range<f32>,
 
-    /// Multiply mouse wheel inputs by this factor when using the orthographic camera.
-    pub zoom_speed: f32,
+    /// Camera sensitivity.
+    pub camera_sensitivity: f32,
 }
 
 impl Default for Settings {
@@ -204,7 +207,7 @@ impl Default for Settings {
             sps_limit: 2048.0,
             camera: InitialCamera::Orthographic2d(10.0),
             zoom_range: 0.1..10.0,
-            zoom_speed: 25.0,
+            camera_sensitivity: 0.5,
         }
     }
 }
@@ -432,7 +435,8 @@ where
         help_text.push_str("q       : Quit.\n");
 
         help_text.push_str(
-            "<space> : Pause the simulation.
+            "=       : Reset the camera.
+<space> : Pause the simulation.
 <right>: Advance one step (while paused).
 shift-F1: Show/hide the user interface.
 F5      : Show/hide debugging information.
@@ -817,13 +821,33 @@ F5      : Show/hide debugging information.
         commands.spawn((Camera2d, projection));
     }
 
+    /** Keyboard controls for the 2d camera.
+
+    * `=` resets the camera to the default.
+    */
+    fn camera_keyboard_control_2d(
+        keys: Res<ButtonInput<KeyCode>>,
+        camera: Single<(&mut Transform, &mut Projection), With<Camera2d>>,
+        mut control: ResMut<CameraControl2d>,
+    ) {
+        let (mut transform, projection) = camera.into_inner();
+
+        if keys.just_pressed(KeyCode::Equal) {
+            if let Projection::Orthographic(ref mut orthographic) = *projection.into_inner() {
+                orthographic.scale = 1.0;
+            }
+            control.dragging = false;
+            transform.translation = Vec3::default();
+        }
+    }
+
     /** Left click and drag to pan the 2D camera.
 
     # Panics
 
     Panics when the 2D camera viewport is invalid.
     */
-    pub fn camera_pan_control_2d(
+    fn camera_mouse_pan_control_2d(
         camera: Single<
             (&Camera, &GlobalTransform, &mut Transform, &mut Projection),
             With<Camera2d>,
@@ -877,7 +901,7 @@ F5      : Show/hide debugging information.
     }
 
     /// Zoom the 2d camera using the mouse wheel or trackpad scroll gesture.
-    pub fn camera_zoom_control_2d(
+    fn camera_mouse_zoom_control_2d(
         time: Res<Time>,
         camera: Single<
             (&Camera, &GlobalTransform, &mut Transform, &mut Projection),
@@ -901,7 +925,7 @@ F5      : Show/hide debugging information.
             // the largest). Therefore, the best we can do is check the sign of the
             // scroll event and act scale the camera in the appropriate direction.
 
-            let zoom_speed = settings.zoom_speed * time.delta_secs();
+            let zoom_speed = settings.camera_sensitivity * CAMERA_ZOOM_SPEED * time.delta_secs();
             let delta_zoom = -zoom_speed.copysign(scroll);
             let new_scale = (orthographic.scale * (1.0 + delta_zoom))
                 .clamp(settings.zoom_range.start, settings.zoom_range.end);
@@ -930,6 +954,7 @@ F5      : Show/hide debugging information.
     `build` to take ownership of the `simulation` field and create the appropriate
     Bevy [`Resource`].
     */
+    #[expect(clippy::too_many_lines, reason = "Bevy functions are very verbose.")]
     pub fn build(self, app: &mut App) {
         representation::disk::build(app);
 
@@ -990,7 +1015,7 @@ F5      : Show/hide debugging information.
             InitialCamera::Orthographic2d(initial_viewport_height) => {
                 app.add_systems(
                     Update,
-                    Self::camera_pan_control_2d
+                    Self::camera_mouse_pan_control_2d
                         .run_if(
                             input_pressed(MouseButton::Left)
                                 .or(input_just_released(MouseButton::Left)),
@@ -999,9 +1024,13 @@ F5      : Show/hide debugging information.
                 )
                 .add_systems(
                     Update,
-                    Self::camera_zoom_control_2d
+                    Self::camera_mouse_zoom_control_2d
                         .run_if(on_event::<MouseWheel>)
                         .in_set(NoMenuInputSet),
+                )
+                .add_systems(
+                    Update,
+                    Self::camera_keyboard_control_2d.in_set(NoMenuInputSet),
                 )
                 .insert_resource(CameraControl2d::default())
                 .add_systems(Startup, move |commands: Commands| {
