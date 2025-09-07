@@ -19,6 +19,9 @@ use rand::{SeedableRng, rngs::StdRng};
 
 /// Mark the disk representation type.
 struct A;
+/// Mark the ghost representation type
+struct Ghost;
+
 const RHO: f64 = 1.0;
 const PARTICLE_NUMBER: usize = 1118;
 const DIAMETER: f64 = 0.15; //in hyperboloid metric
@@ -42,8 +45,13 @@ fn main() -> anyhow::Result<()> {
             .pipe(representation::HyperbolicDisk::<A>::setup),
     );
     app.add_systems(
+        Startup,
+        (|| HyperbolicDiskMaterial::ghost())
+            .pipe(representation::HyperbolicDisk::<Ghost>::setup),
+    );
+    app.add_systems(
         Update,
-        sync_simulation
+        (sync_simulation, sync_ghosts)
             .run_if(resource_changed::<Fill>)
             .after(AdvanceSet),
     );
@@ -73,13 +81,9 @@ struct Fill {
 impl Fill {
     /// Set up the hoomd simulation
     fn new() -> anyhow::Result<Fill> {
-        let boundary = Periodic::new(0.5, EightEight { skirt: 1.0_f64 })?;
-        let mut microstate = MicrostateBuilder::with_boundary(boundary)
-            //.bodies([Body::point(Minkowski::from([1.0, -2.0, sqrt(5.0)])),
-            //    Body::point(Minkowski::from([1.0, -1.0, sqrt(3.0)])),
-            //    Body::point(Minkowski::from([-1.0, -2.0, sqrt(5.0)])),
-            //    Body::point(Minkowski::from([-1.0, -1.0, sqrt(3.0)]))])
-            .try_build()?;
+        let boundary = Periodic::new(0.6, EightEight { skirt: 1.0_f64 })?;
+        let mut microstate =
+            MicrostateBuilder::with_boundary(boundary).try_build()?;
 
         let initial_spacing = 2.0;
         let mut rng = StdRng::seed_from_u64(23);
@@ -111,7 +115,15 @@ impl Fill {
             evaluator,
         };
 
-        let kt = 1.0;
+        let mut kt = 0.6;
+
+        if microstate.step() < 20_000_u64 {
+            kt = 0.6;
+        } else if microstate.step() < 2_020_000_u64 {
+            kt = 0.6 - (0.5 / 2_000_000.0) * (microstate.step() as f64);
+        } else {
+            kt = 0.1;
+        }
         let hamiltonian = cutoff_pair;
         let d = 0.01;
 
@@ -164,6 +176,26 @@ fn sync_simulation(
         disk_assets,
         query,
         sites
+            .iter()
+            .map(|site| (site.properties.position.point, DIAMETER)),
+    );
+}
+
+fn sync_ghosts(
+    mut commands: Commands,
+    ghost_assets: Res<HyperbolicDiskAssets<Ghost>>,
+    ghost_query: Query<
+        (Entity, &mut Transform),
+        With<representation::HyperbolicDisk<Ghost>>,
+    >,
+    simulation: Res<Fill>,
+) {
+    let ghosts = simulation.microstate.ghosts();
+    representation::HyperbolicDisk::sync(
+        &mut commands,
+        ghost_assets,
+        ghost_query,
+        ghosts
             .iter()
             .map(|site| (site.properties.position.point, DIAMETER)),
     );

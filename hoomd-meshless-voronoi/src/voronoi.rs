@@ -1,10 +1,12 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+#![allow(clippy::all)]
+#![allow(clippy::pedantic)]
+
 use self::integrals::{CellIntegral, CellIntegralWithData, FaceIntegral, FaceIntegralWithData};
 pub use crate::local::GeneratorHyperbolic;
-use crate::rtree_nn::{
-    build_rtree, build_rtree_hyperbolic, nn_iter, nn_iter_hyperbolic};
+use crate::rtree_nn::{build_rtree, build_rtree_hyperbolic, nn_iter, nn_iter_hyperbolic};
 
 use convex_cell::{ConvexCellMarker, WithFaces, WithoutFaces};
 use glam::DVec3;
@@ -180,14 +182,7 @@ impl Voronoi {
     ) -> Self {
         // generators passed to build_internal_hyperbolic must be in poincare coordinates
         // TODO: fix this
-        Self::build_internal_hyperbolic(
-            generators,
-            skirt,
-            None,
-            anchor,
-            width,
-            dimensionality,
-        )
+        Self::build_internal_hyperbolic(generators, skirt, None, anchor, width, dimensionality)
     }
 
     /// Same as `build`, but now, only a subset of the Voronoi cells is fully
@@ -214,13 +209,7 @@ impl Voronoi {
         width: DVec3,
         dimensionality: Dimensionality,
     ) -> Self {
-        Self::build_internal(
-            generators,
-            Some(mask),
-            anchor,
-            width,
-            dimensionality,
-        )
+        Self::build_internal(generators, Some(mask), anchor, width, dimensionality)
     }
 
     fn build_internal(
@@ -245,14 +234,8 @@ impl Voronoi {
         // build cells
         let n_cells = generators.len();
         let mut faces = vec![vec![]; n_cells];
-        let voronoi_cells = Self::build_voronoi_cells(
-            generators,
-            &mut faces,
-            mask,
-            anchor,
-            width,
-            dimensionality,
-        );
+        let voronoi_cells =
+            Self::build_voronoi_cells(generators, &mut faces, mask, anchor, width, dimensionality);
 
         // flatten faces
         let faces = flatten!(faces);
@@ -1072,13 +1055,8 @@ mod tests {
         for i in 0..27 {
             let mut mask = vec![false; 27];
             mask[i] = true;
-            let voronoi_partial = Voronoi::build_partial(
-                &generators,
-                &mask,
-                anchor,
-                width,
-                Dimensionality::ThreeD,
-            );
+            let voronoi_partial =
+                Voronoi::build_partial(&generators, &mask, anchor, width, Dimensionality::ThreeD);
             for j in 0..27 {
                 if j == i {
                     assert_approx_eq!(
@@ -1127,13 +1105,8 @@ mod tests {
         generators[4] = 1e14 * DVec3::new(1.00007490802, 9.00019014286, 5.00014639879);
         let mut mask = [false; 27];
         mask[3] = true;
-        let voronoi = Voronoi::build_partial(
-            &generators,
-            &mask,
-            anchor,
-            width,
-            Dimensionality::ThreeD,
-        );
+        let voronoi =
+            Voronoi::build_partial(&generators, &mask, anchor, width, Dimensionality::ThreeD);
         voronoi.consistency_check();
     }
 }

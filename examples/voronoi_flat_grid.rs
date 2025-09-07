@@ -82,12 +82,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let anchor = DVec3::splat(0.);
         let width = DVec3::splat(1.);
         let generators = perturbed_grid(anchor, width, count, pert);
-        let _voronoi = Voronoi::build(
-            &generators,
-            anchor,
-            width,
-            2.try_into().unwrap(),
-        );
+        let _voronoi =
+            Voronoi::build(&generators, anchor, width, 2.try_into().unwrap());
         let special_guy: usize = rand::rng().random_range(0..count.pow(2));
         let nlist = _voronoi.cells()[special_guy].neighbour_ids(&_voronoi);
         let mut nlist_vec = Vec::new();

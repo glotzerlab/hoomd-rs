@@ -189,6 +189,20 @@ impl Default for HyperbolicDiskMaterial {
     }
 }
 
+impl HyperbolicDiskMaterial {
+    /// Color for ghost particles
+    #[must_use]
+    pub fn ghost() -> Self {
+        Self {
+            background_color: Color::linear_rgb(0.5, 0.5, 0.5).into(),
+            outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
+            outline_width: 0.005,
+            texture: TRANSPARENT_IMAGE_HANDLE,
+            texture_scale: 1.2,
+        }
+    }
+}
+
 impl Material2d for HyperbolicDiskMaterial {
     fn fragment_shader() -> ShaderRef {
         SHADER_ASSET_PATH.into()

@@ -801,7 +801,7 @@ mod tests {
     fn test_init_cuboid() {
         let anchor = DVec3::splat(1.);
         let width = DVec3::splat(4.);
-        let cell = SimulationBoundary::cuboid(anchor, width,  Dimensionality::ThreeD.into());
+        let cell = SimulationBoundary::cuboid(anchor, width, Dimensionality::ThreeD.into());
 
         assert_eq!(cell.clipping_planes.len(), 6);
     }
@@ -811,8 +811,7 @@ mod tests {
         let anchor = DVec3::splat(1.);
         let width = DVec3::splat(2.);
         let loc = DVec3::splat(2.);
-        let volume =
-            SimulationBoundary::cuboid(anchor, width, Dimensionality::ThreeD.into());
+        let volume = SimulationBoundary::cuboid(anchor, width, Dimensionality::ThreeD.into());
         let mut cell = ConvexCell::init(loc, 0, &volume);
 
         let ngb = DVec3::splat(2.5);
@@ -838,8 +837,7 @@ mod tests {
         let anchor = DVec3::splat(1.);
         let width = DVec3::splat(2.);
         let loc = DVec3::splat(2.);
-        let volume =
-            SimulationBoundary::cuboid(anchor, width, Dimensionality::ThreeD.into());
+        let volume = SimulationBoundary::cuboid(anchor, width, Dimensionality::ThreeD.into());
         let cell = ConvexCell::init(loc, 0, &volume).with_faces();
 
         assert_eq!(cell.face_count(), 6);

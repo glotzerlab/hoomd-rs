@@ -18,11 +18,7 @@ pub(crate) struct SimulationBoundary {
 }
 
 impl SimulationBoundary {
-    pub fn cuboid(
-        anchor: DVec3,
-        width: DVec3,
-        dimensionality: Dimensionality,
-    ) -> Self {
+    pub fn cuboid(anchor: DVec3, width: DVec3, dimensionality: Dimensionality) -> Self {
         let clipping_planes = vec![
             HalfSpace::new(DVec3::X, anchor, None, None),
             HalfSpace::new(DVec3::NEG_X, anchor + width, None, None),

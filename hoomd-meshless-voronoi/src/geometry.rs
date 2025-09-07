@@ -500,11 +500,8 @@ mod tests {
 
     #[test]
     fn test_insphere_equivalence() {
-        let boundary = SimulationBoundary::cuboid(
-            DVec3::ZERO,
-            DVec3::ONE,
-            crate::Dimensionality::ThreeD,
-        );
+        let boundary =
+            SimulationBoundary::cuboid(DVec3::ZERO, DVec3::ONE, crate::Dimensionality::ThreeD);
         let mut rng = rand::rng();
         let rand_dvec3 = |_rng: &mut ThreadRng| {
             DVec3::new(

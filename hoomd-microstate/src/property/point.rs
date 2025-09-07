@@ -245,4 +245,3 @@ mod tests {
         assert_eq!(transformed_site.position, [2.0, -2.0, 2.0].into());
     }
 }
-
