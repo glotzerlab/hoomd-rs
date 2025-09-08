@@ -48,5 +48,5 @@ jobs:
     - name: Run pre-commit
       run: pre-commit run --all-files
     - name: Show file differences
-      run: git diff
+      run: git diff --color=always
       if: always()
