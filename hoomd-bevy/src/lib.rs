@@ -71,8 +71,9 @@ use bevy_diagnostic::{
 };
 #[cfg(not(target_arch = "wasm32"))]
 use bevy_winit::WinitWindows;
-
 use web_time::{Duration, Instant};
+
+use hoomd_simulation::Simulation;
 
 pub mod representation;
 
@@ -88,31 +89,6 @@ pub const BOUNDARY_COLOR: Color = Color::srgb(0.0, 0.0, 0.0);
 /// Camera zoom speed multiplier
 const CAMERA_ZOOM_SPEED: f32 = 50.0;
 
-/** The model, parameters, and microstate they act on.
-
-A [`Simulation`] type stores the microstate, all model actors, and any
-macrostate parameters in fields. [`HoomdBevyPlugin`] requires that each
-[`Simulation`] provide a method to advance forward one step and a method to
-query the current step. Beyond that, user types are free to implement any
-inherent methods necessary to manage the simulation.
-
-TODO: Simulation likely belongs in a different crate. But which one?
-*/
-pub trait Simulation {
-    /** Advance the simulation forward one step.
-
-    # Errors
-
-    When an error occurs, return an `Err` with any type that implements
-    [`Error`](std::error::Error) [`HoomdBevyPlugin`] will catch the error,
-    display it to the `error!` log and exit.
-    */
-    fn advance(&mut self) -> anyhow::Result<()>;
-
-    /// Get the simulation step.
-    fn step(&self) -> u64;
-}
-
 /** Interface *hoomd-rs* simulations with the Bevy game engine.
 
 [`HoomdBevyPlugin`] is used by all the *hoomd-rs* examples that create
@@ -126,7 +102,7 @@ interactive graphical displays of simulations. Specifically, it implements:
 * A menu to control common settings (steps per second limit, camera speed, etc.)
 
 The caller must:
-* Provide type that implements [`Simulation`] (`Sim`).
+* Provide type that implements [`Simulation`].
 * Add a `sync` `Update` system that populates (and removes) entities for
   rendering. See [`representation`] for helper code.
 
@@ -141,6 +117,8 @@ implement as much common code as possible.
 # Examples
 
 See any one of the many *hoomd-rs* examples that use [`HoomdBevyPlugin`].
+
+[`Simulation`]: hoomd_simulation::Simulation
 */
 pub struct HoomdBevyPlugin<S> {
     /// Configuration to use at application start (may be changed later).

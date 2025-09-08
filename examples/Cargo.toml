@@ -29,6 +29,7 @@ hoomd-gsd.workspace = true
 hoomd-interaction.workspace = true
 hoomd-mc.workspace = true
 hoomd-microstate.workspace = true
+hoomd-simulation.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 

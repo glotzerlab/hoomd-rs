@@ -1,5 +1,4 @@
 // ANCHOR: use
-use hoomd_bevy::Simulation;
 use hoomd_geometry::shape::{Cuboid, Ellipse};
 use hoomd_interaction::{
     CutoffPair, CutoffPairOverlap,
@@ -11,6 +10,7 @@ use hoomd_mc::{QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn};
 use hoomd_microstate::{
     Microstate, MicrostateBuilder, boundary::Periodic, property::OrientedPoint,
 };
+use hoomd_simulation::Simulation;
 use hoomd_vector::{self, Angle, Cartesian};
 // ANCHOR_END: use
 

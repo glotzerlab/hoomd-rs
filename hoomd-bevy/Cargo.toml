@@ -24,6 +24,7 @@ bevy_diagnostic.workspace = true
 bevy_winit.workspace = true
 itertools.workspace = true
 hoomd-microstate.workspace = true
+hoomd-simulation.workspace = true
 hoomd-vector.workspace = true
 web-time = "1.1.0"
 
