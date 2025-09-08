@@ -47,3 +47,6 @@ jobs:
       run: rustup default "${RUST_VERSION}"
     - name: Run pre-commit
       run: pre-commit run --all-files
+    - name: Show file differences
+      run: git diff
+      if: always()
