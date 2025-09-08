@@ -86,5 +86,5 @@ name = "hard_particle_self_assembly"
 path = "mc-tutorial/hard_particle_self_assembly.rs"
 required-features = ["bevy"]
 
-[package.metadata.example.hard-particle-self-assembly]
+[package.metadata.example.hard_particle_self_assembly]
 path = "mc-tutorial"
