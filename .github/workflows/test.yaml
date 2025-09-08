@@ -75,7 +75,6 @@ jobs:
     # - name: Install target
     #   run: rustup target install ${{ matrix.target }} --toolchain ${{ matrix.rust }}
     #   if: ${{ matrix.target != '' }}
-    - run: echo ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
     - name: Set default target
       run: rustup default ${{ matrix.rust }}
     - name: Check rust installation
