@@ -26,7 +26,7 @@ jobs:
     uses: glotzerlab/jetstream2-admin/.github/workflows/start.yaml@9ef0cf7995c9209bfa77d45baa124f15df669393 # v1.4.0
     secrets: inherit
     with:
-      number: 4
+      number: 8
 
   unit_test:
     name: Unit test [${{ matrix.profile }}-rust-${{ matrix.rust }}-${{ matrix.os }}]
