@@ -4,8 +4,8 @@ use std::iter;
 use hoomd_interaction::Zero;
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{Body, Microstate, MicrostateBuilder, property::Point};
-use hoomd_vector::Cartesian;
 use hoomd_simulation::Simulation;
+use hoomd_vector::Cartesian;
 // ANCHOR_END: use
 
 use hoomd_bevy::{
