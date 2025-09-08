@@ -1,5 +1,5 @@
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, MUTED_COLOR, Settings,
+    AdvanceSet, HoomdBevyPlugin, InitialCamera, MUTED_COLOR, Settings,
     representation::RectangularBoundary, representation::ellipse,
 };
 
@@ -21,7 +21,7 @@ pub(crate) fn main() -> anyhow::Result<()> {
         simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
         initial_settings: Settings {
-            viewport_height: l + 2.0,
+            camera: InitialCamera::Orthographic2d(l + 2.0),
             ..default()
         },
         simulation,
