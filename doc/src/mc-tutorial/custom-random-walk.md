@@ -32,8 +32,8 @@ tutorial shows how you can create a custom **closed** boundary condition.
 
 ### Define the `Circle` Type
 
-First, you need to define a type that describes the boundary. In this case, the
-boundary is a `Circle` that has a radius:
+First,define a type that describes the boundary. In this case, the boundary is a
+`Circle` that has a radius:
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/custom-random-walk.rs:boundary_struct}}
 ```
@@ -65,7 +65,7 @@ builds the simulation model: Look for `with_boundary(Closed(circle))`.
 The first [Random Walk] tutorial moved points by a random distance (up to a
 maximum) and in a random direction. Look up "random walk" in a text book and the
 first example you are likely to find will take random hops on a square lattice.
-Let's implement that with a custom trial move. Here is the code:
+You can implement that with a custom trial move. Here is the code:
 
 ```rust,ignore
 {{#include ../../../examples/mc-tutorial/custom-random-walk.rs:local_trial_all}}

@@ -29,9 +29,9 @@ use bevy::render::storage::ShaderStorageBuffer;
 use std::iter;
 
 // ANCHOR: type_aliases
-type MyVector = Cartesian<2>;
-type BodyProperties = OrientedPoint<MyVector, Angle>;
-type SiteProperties = Point<MyVector>;
+type PositionVector = Cartesian<2>;
+type BodyProperties = OrientedPoint<PositionVector, Angle>;
+type SiteProperties = Point<PositionVector>;
 // ANCHOR_END: type_aliases
 
 // ANCHOR: local_trial_all
@@ -169,13 +169,13 @@ struct Tetronimoes {
     /// Positions of all the bodies in the simulation.
     microstate: Microstate<BodyProperties, SiteProperties, Closed<Rectangle>>,
     /// How sites interact with other sites and fields.
-    hamiltonian: (Single<Linear<MyVector>>, CutoffPair<Isotropic<Boxcar>>),
+    hamiltonian: (Single<Linear<PositionVector>>, CutoffPair<Isotropic<Boxcar>>),
     /// Trial moves to apply.
     sweep: Sweep<DiscreteRotateOrTranslate>,
     /// Temperature set point.
     kt: f64,
     /// Tetronimo shapes.
-    template_sites: Vec<Vec<Point<MyVector>>>,
+    template_sites: Vec<Vec<Point<PositionVector>>>,
 }
 // ANCHOR_END: simulation_struct
 

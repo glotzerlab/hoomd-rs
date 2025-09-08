@@ -25,16 +25,20 @@ use bevy::prelude::*;
 impl Fill {
     /// Construct a new fill simulation.
     fn new() -> anyhow::Result<Fill> {
-        let box_height = 30.0;
+        // ANCHOR: parameters
+        let box_length = 30.0;
         let kt = 1.0;
         let d = 0.15;
         let alpha = 10.0;
         let epsilon = 1000.0;
         let sigma = 1.0;
+        // ANCHOR_END: parameters
 
-        let square = Rectangle::with_equal_edges(box_height.try_into()?);
+        // ANCHOR: microstate
+        let square = Rectangle::with_equal_edges(box_length.try_into()?);
         let microstate =
             MicrostateBuilder::with_boundary(Closed(square)).try_build()?;
+        // ANCHOR_END: microstate
 
         // ANCHOR: external
         let linear = Single(Linear {

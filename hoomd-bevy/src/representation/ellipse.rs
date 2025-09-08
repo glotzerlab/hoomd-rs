@@ -210,6 +210,11 @@ pub struct Material {
     #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
     n_background_colors: u32,
 
+    /// Color applied to the interior of the disk (indexed by disk % array size).
+    #[uniform(3)]
+    #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
+    background_colors: [LinearRgba; 1024],
+
     /// Color applied to the interior of the ellipse (indexed by ellipse % array size).
     #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
     #[storage(1, read_only)]

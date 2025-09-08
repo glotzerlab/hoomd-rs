@@ -24,7 +24,7 @@ U_\mathrm{step}(r) = \begin{cases}
 \end{cases}
 ```
 
-* Objective: Show how to use external and pairwise potentials in MC simulations.
+* Objective: Demonstrate the use of external and pairwise potentials in MC simulations.
 * File: `hoomd-rs/examples/mc-tutorial/applying-interactions.rs`
 * To build and run: `cargo run --release --features "bevy" --example applying-interactions`
 
@@ -70,7 +70,7 @@ computed in the *system reference frame*. Understanding this will help as
 you review the [API documentation] for the types used later in this tutorial:
 `Single`, `Linear`, `Boxcar`, `Isotropic`, and `CutoffPair`. For a complete
 reference on **bodies**, **sites**, and all their related traits, read the
-`hoomd-microstate` [API documentation].
+[`hoomd-microstate`] API documentation.
 
 In this tutorial, the bodies will still be points. Specifically, that means
 each **body** has `Point<Cartesian<2>>` for its **body properties** type (`B`),
@@ -81,6 +81,26 @@ bodies.
 
 The next tutorial will demonstrate a case where bodies and sites have different
 properties and show how to create bodies with more than one site.
+
+### Parameters
+
+First, `new()` stores the parameters of the simulation in variables:
+
+```rust,ignore
+{{#include ../../../examples/mc-tutorial/applying-interactions.rs:parameters}}
+```
+
+`box_length` is the side length of the square simulation box, TODO.
+
+### Microstate
+
+Confine the bodies and sites inside of a closed square. While the previous
+tutorial showed how you could implement custom boundary conditions, this one
+uses the built in `Rectangle` type:
+
+```rust,ignore
+{{#include ../../../examples/mc-tutorial/applying-interactions.rs:microstate}}
+```
 
 ### External Potential
 
@@ -239,5 +259,6 @@ The next section shows you how to place multiple **sites** in a **body**.
 [Random Walk]: random-walk.md
 [Custom Random Walk]: custom-random-walk.md
 [API documentation]: ../api.md
+[`hoomd-microstate`]: ../api/hoomd_microstate/index.html
 [Boxcar function]: https://mathworld.wolfram.com/BoxcarFunction.html
 [The Rust Programming Language]: https://doc.rust-lang.org/stable/book/

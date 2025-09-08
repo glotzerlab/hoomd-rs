@@ -11,60 +11,52 @@ use hoomd_microstate::{
     Microstate, MicrostateBuilder, boundary::Periodic, property::OrientedPoint,
 };
 use hoomd_vector::{self, Angle, Cartesian};
+use hoomd_bevy::Simulation;
 // ANCHOR_END: use
 
-use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, MUTED_COLOR, Settings, Simulation,
-    representation::RectangularBoundary, representation::ellipse,
-};
+// ANCHOR: type_aliases
+type PositionVector = Cartesian<2>;
+type BodyProperties = OrientedPoint<PositionVector, Angle>;
+type SiteProperties = OrientedPoint<PositionVector, Angle>;
+// ANCHOR_END: type_aliases
 
-use anyhow::Context;
-use bevy::prelude::*;
-
+// ANCHOR: phase
 enum Phase {
     Initialization,
     Equilibration,
 }
+// ANCHOR_END: phase
 
 // ANCHOR: simulation_new
 impl HardEllipseSelfAssembly {
     /// Construct a new fill simulation.
     fn new() -> anyhow::Result<HardEllipseSelfAssembly> {
+        // ANCHOR: parameters
         let box_height = 14.0;
         let kt = 1.0;
         let d = 0.05;
         let a = 0.1;
         let sigma = 1.0;
+        // ANCHOR_END: parameters
 
+        // ANCHOR: microstate
         let square = Cuboid::with_equal_edges(box_height.try_into()?);
         let microstate =
             MicrostateBuilder::with_boundary(Periodic::new(sigma, square)?)
                 .try_build()?;
+        // ANCHOR_END: microstate
 
-        // ANCHOR: pair
+        // ANCHOR: hamiltonian
         let ellipse = Ellipse {
             axes: [0.5.try_into()?, (0.5 / 5.0).try_into()?],
         };
-        let cutoff_pair = CutoffPairOverlap {
+        let hamiltonian = CutoffPairOverlap {
             r_cut: sigma,
             evaluator: HardShape(ellipse.clone()),
         };
-        // ANCHOR_END: pair
-
-        // ANCHOR: hamiltonian
-        let hamiltonian = cutoff_pair;
         // ANCHOR_END: hamiltonian
 
-        let approximate_shape_overlap = Anisotropic(ApproximateShapeOverlap::new(
-            ellipse,
-            OverlapPenalty::default(),
-            0.01.try_into()?));
-            
-        let insert_hamiltonian = CutoffPair {
-            r_cut: sigma,
-            evaluator: approximate_shape_overlap,
-        };
-
+        // ANCHOR: trial_moves
         let translate = Translate {
             maximum_distance: d.try_into()?,
         };
@@ -74,13 +66,29 @@ impl HardEllipseSelfAssembly {
             maximum_rotation: a.try_into()?,
         };
         let rotate_sweep = Sweep(rotate);
+        // ANCHOR_END: trial_moves
 
+        // ANCHOR: quick_insert
         let distribution = UniformIn {
             boundary: *microstate.boundary(),
-            template_sites: vec![OrientedPoint::default()],
+            template_sites: vec![SiteProperties::default()],
         };
         let quick_insert = QuickInsert::new(distribution, 820);
+        // ANCHOR_END: quick_insert
 
+        // ANCHOR: insert_hamiltonian
+        let approximate_shape_overlap = Anisotropic(ApproximateShapeOverlap::new(
+            ellipse,
+            OverlapPenalty::default(),
+            0.01.try_into()?));
+            
+        let insert_hamiltonian = CutoffPair {
+            r_cut: sigma,
+            evaluator: approximate_shape_overlap,
+        };
+        // ANCHOR_END: insert_hamiltonian
+
+        // ANCHOR: struct_initialize
         Ok(HardEllipseSelfAssembly {
             microstate,
             insert_hamiltonian,
@@ -91,6 +99,7 @@ impl HardEllipseSelfAssembly {
             kt,
             phase: Phase::Initialization,
         })
+        // ANCHOR_END: struct_initialize
     }
 }
 // ANCHOR_END: simulation_new
@@ -147,13 +156,14 @@ impl Simulation for HardEllipseSelfAssembly {
 }
 // ANCHOR_END: impl_simulation
 
-#[derive(Resource)]
+
+#[cfg_attr(feature = "bevy", derive(Resource))]
 // ANCHOR: simulation_struct
 struct HardEllipseSelfAssembly {
     /// Positions of all the bodies in the simulation.
     microstate: Microstate<
-        OrientedPoint<Cartesian<2>, Angle>,
-        OrientedPoint<Cartesian<2>, Angle>,
+        BodyProperties,
+        SiteProperties,
         Periodic<Cuboid<2>>,
     >,
     /// How sites interact when inserted.
@@ -166,7 +176,7 @@ struct HardEllipseSelfAssembly {
     rotate_sweep: Sweep<Rotate>,
     /// Quick insert
     quick_insert: QuickInsert<
-        UniformIn<OrientedPoint<Cartesian<2>, Angle>, Periodic<Cuboid<2>>>,
+        UniformIn<BodyProperties, Periodic<Cuboid<2>>>,
     >,
     /// Temperature set point.
     kt: f64,
@@ -174,116 +184,9 @@ struct HardEllipseSelfAssembly {
 }
 // ANCHOR_END: simulation_struct
 
-/// Mark the ellipse representation type.
-struct A;
-
-/// Mark the ghost representation type.
-struct Ghost;
-
-fn main() -> anyhow::Result<()> {
-    let simulation =
-        HardEllipseSelfAssembly::new().context("failed to setup simulation")?;
-    let l =
-        simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
-    let hoomd_bevy_plugin = HoomdBevyPlugin {
-        initial_settings: Settings {
-            viewport_height: l + 2.0,
-            ..default()
-        },
-        simulation,
-    };
-
-    let mut app = App::new();
-    hoomd_bevy::add_default_plugins(&mut app);
-    hoomd_bevy_plugin.build(&mut app);
-    app.add_systems(
-        Startup,
-        (|| ellipse::MaterialParameters {
-            outline_width: 0.025,
-            ..default()
-        })
-        .pipe(ellipse::Ellipse::<A>::setup),
-    );
-    app.add_systems(
-        Startup,
-        (|| ellipse::MaterialParameters {
-            outline_width: 0.025,
-            background_color: MUTED_COLOR.into(),
-            ..default()
-        })
-        .pipe(ellipse::Ellipse::<Ghost>::setup),
-    );
-    app.add_systems(
-        Startup,
-        (move || RectangularBoundary {
-            width: l,
-            height: l,
-            ..default()
-        })
-        .pipe(RectangularBoundary::setup),
-    );
-    app.add_systems(
-        Update,
-        (sync_sites, sync_ghosts)
-            .run_if(resource_changed::<HardEllipseSelfAssembly>)
-            .after(AdvanceSet),
-    );
-
-    app.run();
-
-    Ok(())
-}
-
-/// Copy the current positions of simulation sites to bevy entities.
-fn sync_sites(
-    mut commands: Commands,
-    site_representation: Res<ellipse::Representation<A>>,
-    site_query: Query<(Entity, &mut Transform), With<ellipse::Ellipse<A>>>,
-    simulation: Res<HardEllipseSelfAssembly>,
-) {
-    let sites = simulation.microstate.sites();
-    ellipse::Ellipse::sync(
-        &mut commands,
-        site_representation,
-        site_query,
-        sites.iter().map(|site| {
-            (
-                Vec3::new(
-                    site.properties.position[0] as f32,
-                    site.properties.position[1] as f32,
-                    0.0,
-                ),
-                site.properties.orientation.theta as f32,
-                1.0,
-                1.0 / 5.0,
-            )
-        }),
-    );
-}
-
-/// Copy the current positions of simulation ghosts to bevy entities.
-fn sync_ghosts(
-    mut commands: Commands,
-    ghost_representation: Res<ellipse::Representation<Ghost>>,
-    ghost_query: Query<(Entity, &mut Transform), With<ellipse::Ellipse<Ghost>>>,
-    simulation: Res<HardEllipseSelfAssembly>,
-) {
-    let ghosts = simulation.microstate.ghosts();
-    ellipse::Ellipse::sync(
-        &mut commands,
-        ghost_representation,
-        ghost_query,
-        ghosts.iter().map(|site| {
-            (
-                Vec3::new(
-                    site.properties.position[0] as f32,
-                    site.properties.position[1] as f32,
-                    0.0,
-                ),
-                site.properties.orientation.theta as f32,
-                1.0,
-                1.0 / 5.0,
-            )
-        }),
-    );
-}
+#[cfg(feature = "bevy")]
+mod hard_particle_self_assembly_interactive;
+#[cfg(feature = "bevy")]
+use bevy::prelude::Resource;
+#[cfg(feature = "bevy")]
+use hard_particle_self_assembly_interactive::main;

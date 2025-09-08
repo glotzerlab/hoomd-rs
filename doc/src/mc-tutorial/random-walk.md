@@ -28,10 +28,10 @@ The first lines of any Rust code typically bring all the used names into scope:
 Rust's `use` is similar to Python's `import`. See [The Rust Programming
 Language] for more information.
 
-`std` is the [standard library] included with Rust.
-[`hoomd-mc`], [`hoomd-microstate`], and [`hoomd-vector`] are *crates* that
-each implement a part of the simulation. The [API documentation]
-provides a for a full reference for all *hoomd-rs* crates.
+`std` is the [standard library] included with Rust. [`hoomd-interaction`],
+[`hoomd-mc`], [`hoomd-microstate`], and [`hoomd-vector`] are *crates* that each
+implement a part of the simulation. The [API documentation] provides a for a
+full reference for all *hoomd-rs* crates.
 
 ## The Simulation Model
 
@@ -178,6 +178,7 @@ and custom trial moves to the random walk.
 
 [The Rust Programming Language]: https://doc.rust-lang.org/stable/book/
 [standard library]: https://doc.rust-lang.org/std/
+[`hoomd-interaction`]: ../api/hoomd_interaction/index.html
 [`hoomd-mc`]: ../api/hoomd_mc/index.html
 [`hoomd-microstate`]: ../api/hoomd_microstate/index.html
 [`hoomd-vector`]: ../api/hoomd_vector/index.html
