@@ -169,7 +169,10 @@ struct Tetronimoes {
     /// Positions of all the bodies in the simulation.
     microstate: Microstate<BodyProperties, SiteProperties, Closed<Rectangle>>,
     /// How sites interact with other sites and fields.
-    hamiltonian: (Single<Linear<PositionVector>>, CutoffPair<Isotropic<Boxcar>>),
+    hamiltonian: (
+        Single<Linear<PositionVector>>,
+        CutoffPair<Isotropic<Boxcar>>,
+    ),
     /// Trial moves to apply.
     sweep: Sweep<DiscreteRotateOrTranslate>,
     /// Temperature set point.

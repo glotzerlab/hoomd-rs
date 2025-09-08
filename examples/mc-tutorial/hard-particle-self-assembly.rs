@@ -1,17 +1,17 @@
 // ANCHOR: use
-use hoomd_geometry::{
-    shape::{Cuboid, Ellipse},
-};
+use hoomd_bevy::Simulation;
+use hoomd_geometry::shape::{Cuboid, Ellipse};
 use hoomd_interaction::{
     CutoffPair, CutoffPairOverlap,
-    pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape, OverlapPenalty},
+    pairwise::{
+        Anisotropic, ApproximateShapeOverlap, HardShape, OverlapPenalty,
+    },
 };
 use hoomd_mc::{QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn};
 use hoomd_microstate::{
     Microstate, MicrostateBuilder, boundary::Periodic, property::OrientedPoint,
 };
 use hoomd_vector::{self, Angle, Cartesian};
-use hoomd_bevy::Simulation;
 // ANCHOR_END: use
 
 // ANCHOR: type_aliases
@@ -77,11 +77,13 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: quick_insert
 
         // ANCHOR: insert_hamiltonian
-        let approximate_shape_overlap = Anisotropic(ApproximateShapeOverlap::new(
-            ellipse,
-            OverlapPenalty::default(),
-            0.01.try_into()?));
-            
+        let approximate_shape_overlap =
+            Anisotropic(ApproximateShapeOverlap::new(
+                ellipse,
+                OverlapPenalty::default(),
+                0.01.try_into()?,
+            ));
+
         let insert_hamiltonian = CutoffPair {
             r_cut: sigma,
             evaluator: approximate_shape_overlap,
@@ -156,18 +158,15 @@ impl Simulation for HardEllipseSelfAssembly {
 }
 // ANCHOR_END: impl_simulation
 
-
 #[cfg_attr(feature = "bevy", derive(Resource))]
 // ANCHOR: simulation_struct
 struct HardEllipseSelfAssembly {
     /// Positions of all the bodies in the simulation.
-    microstate: Microstate<
-        BodyProperties,
-        SiteProperties,
-        Periodic<Cuboid<2>>,
-    >,
+    microstate: Microstate<BodyProperties, SiteProperties, Periodic<Cuboid<2>>>,
     /// How sites interact when inserted.
-    insert_hamiltonian: CutoffPair<Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Ellipse>>>,
+    insert_hamiltonian: CutoffPair<
+        Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Ellipse>>,
+    >,
     /// How sites interact with other sites and fields.
     hamiltonian: CutoffPairOverlap<HardShape<Ellipse>>,
     /// Trial moves to apply.
@@ -175,9 +174,7 @@ struct HardEllipseSelfAssembly {
     /// Trial moves to apply.
     rotate_sweep: Sweep<Rotate>,
     /// Quick insert
-    quick_insert: QuickInsert<
-        UniformIn<BodyProperties, Periodic<Cuboid<2>>>,
-    >,
+    quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Cuboid<2>>>>,
     /// Temperature set point.
     kt: f64,
     phase: Phase,

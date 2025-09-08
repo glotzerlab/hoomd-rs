@@ -44,7 +44,7 @@ let approximate_shape_overlap = ApproximateShapeOverlap::new(
 # }
 ```
 */
-pub struct ApproximateShapeOverlap<E, A, B=A> {
+pub struct ApproximateShapeOverlap<E, A, B = A> {
     /// The site i's shape.
     pub shape_i: A,
     /// The site j's shape.
