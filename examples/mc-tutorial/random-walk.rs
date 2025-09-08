@@ -5,10 +5,11 @@ use hoomd_interaction::Zero;
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{Body, Microstate, MicrostateBuilder, property::Point};
 use hoomd_vector::Cartesian;
+use hoomd_simulation::Simulation;
 // ANCHOR_END: use
 
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings, Simulation,
+    AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
     representation::disk::{self, Disk},
 };
 

@@ -8,11 +8,12 @@ use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder, boundary::Closed, property::Point,
 };
+use hoomd_simulation::Simulation;
 use hoomd_vector::{Cartesian, Vector};
 // ANCHOR_END: use
 
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings, Simulation,
+    AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
     representation::disk::{self, Disk},
 };
 

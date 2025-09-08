@@ -14,11 +14,12 @@ use hoomd_microstate::{
     boundary::Closed,
     property::{OrientedPoint, Point},
 };
+use hoomd_simulation::Simulation;
 use hoomd_vector::{Angle, Cartesian};
 // ANCHOR_END: use
 
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings, Simulation,
+    AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
     representation::RectangularBoundary,
     representation::disk::{self, Disk},
 };
