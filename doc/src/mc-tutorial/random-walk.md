@@ -164,8 +164,8 @@ walk.
 
 ## Complete Code
 
-Click the eye icon on any of the above code examples to see where it is in the
-complete tutorial code:
+Click the eye icon in any code example to see its location in the file. The
+complete example code is also available here:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/random_walk.rs:all}}
 ```

@@ -2,9 +2,9 @@
 
 <script type="module">
 import init from './custom_random_walk.js'
-{{#rustdoc_include ../../scripts/init-wasm-canvas.js}}
+{{#include ../../scripts/init-wasm-canvas.js}}
 </script>
-{{#rustdoc_include ../../scripts/canvas.html}}
+{{#include ../../scripts/canvas.html}}
 
 ## Overview
 
@@ -192,7 +192,7 @@ package them in a `CustomRandomWalk` struct:
 The struct is wrapped in `Ok` to indicate that the `Result` of this function is
 not an error.
 
-## Implement `Simulation`
+### Implement `Simulation`
 
 The `Simulation` **trait** provides a common interface that all simulation
 models can follow:
@@ -200,7 +200,7 @@ models can follow:
 {{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:impl_simulation}}
 ```
 
-### Advance the Simulation
+#### Advance the Simulation
 
 The first method that all simulation models must have is an `advance()` method
 that moves the model forward one step. The implementation is identical to that
@@ -211,7 +211,7 @@ in the [Random Walk] tutorial:
 All the complexity of the customizations is contained in the implementation
 of `IsPointInside` for `Circle` and `LocalTrial` for `Discrete`.
 
-### Get the Simulation Step
+#### Get the Simulation Step
 
 All simulation models must also implement a method that provides the current
 simulation step:

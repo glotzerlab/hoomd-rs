@@ -1,7 +1,7 @@
 # Applying Interactions
 
 <script type="module">
-import init from './applying-interactions.js'
+import init from './applying_interactions.js'
 {{#include ../../scripts/init-wasm-canvas.js}}
 </script>
 {{#include ../../scripts/canvas.html}}
@@ -25,34 +25,19 @@ U_\mathrm{step}(r) = \begin{cases}
 ```
 
 * Objective: Demonstrate the use of external and pairwise potentials in MC simulations.
-* File: `hoomd-rs/examples/mc-tutorial/applying-interactions.rs`
-* To build and run: `cargo run --release --features "bevy" --example applying-interactions`
+* File: `hoomd-rs/examples/mc-tutorial/applying_interactions.rs`
+* Run (interactively):
+  ```shell
+  cargo run --release --features "bevy" --example applying_interactions
+  ```
+* Run (in batch mode):
+  ```shell
+  cargo run --release --example applying_interactions
+  ```
 
-## Use Declarations
+## Bodies and Sites
 
-```rust,ignore
-{{#include ../../../examples/mc-tutorial/applying-interactions.rs:use}}
-```
-
-## The Simulation Model
-
-Here is the type that holds the simulation model:
-```rust,ignore
-{{#include ../../../examples/mc-tutorial/applying-interactions.rs:simulation_struct}}
-```
-
-The `new()` method constructs a new simulation model:
-```rust,ignore
-{{#include ../../../examples/mc-tutorial/applying-interactions.rs:simulation_new}}
-```
-
-You should be familiar with much of this code from the [Random Walk] and [Custom
-Random Walk] tutorials. The new sections apply a Hamiltonian that contains the
-external and pair potential terms.
-
-### Bodies and Sites
-
-The random walk tutorials introduced the microstate as a collection of point
+The previous tutorials introduced the **microstate** as a collection of point
 bodies. That was an oversimplification. In *hoomd-rs*, a **body** is an ordered
 collection of **sites** that are defined in the *local reference frame* of the
 body. The **microstate** gains all of its degrees of freedom from the **bodies**
@@ -82,27 +67,53 @@ bodies.
 The next tutorial will demonstrate a case where bodies and sites have different
 properties and show how to create bodies with more than one site.
 
-### Parameters
-
-First, `new()` stores the parameters of the simulation in variables:
+## Use Declarations
 
 ```rust,ignore
-{{#include ../../../examples/mc-tutorial/applying-interactions.rs:parameters}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:use}}
 ```
 
-`box_length` is the side length of the square simulation box, TODO.
+## The Simulation Model
 
-### Microstate
+Here is the type that holds the simulation model:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:simulation_struct}}
+```
+
+In order, `Microstate`'s generic types are the **body properties**, the
+**site properties**, and the **boundary condition**.
+
+### Construct the Simulation Model
+
+The `new()` method constructs a new simulation model:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:simulation_new}}
+```
+
+#### Parameters
+
+Assign all the model parameters in one code block so that they are easy to modify:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:parameters}}
+```
+
+`box_length` is the side length of the square simulation box, `maximum_distance`
+is the largest distance a translational trial move can take, `alpha` is the
+strength of the gravitational potential, `epsilon` is the strength of the
+pairwise potential, `sigma` is the range of the pairwise potential, and `kt` is
+the temperature set point (in units of energy).
+
+#### Microstate
 
 Confine the bodies and sites inside of a closed square. While the previous
 tutorial showed how you could implement custom boundary conditions, this one
 uses the built in `Rectangle` type:
 
 ```rust,ignore
-{{#include ../../../examples/mc-tutorial/applying-interactions.rs:microstate}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:microstate}}
 ```
 
-### External Potential
+#### External Potential
 
 This code implements the external potential term in the Hamiltonian:
 ```math
@@ -110,7 +121,7 @@ This code implements the external potential term in the Hamiltonian:
 ```
 
 ```rust,ignore
-{{#include ../../../examples/mc-tutorial/applying-interactions.rs:external}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:external}}
 ```
 
 `Linear` computes `$ \alpha \vec{r} \cdot \hat{y} $` in its `energy()` method.
@@ -121,15 +132,15 @@ by each **site** in the microstate: `$ \sum_i U(s_i) $`. `Single` implements the
 `DeltaEnergyOne` trait which `Sweep` will use to evaluate the change in energy
 `$\Delta E$` of a trial that moves *one* body.
 
-### Pair Potential
+#### Pairwise Potential
 
-This code implements the pair potential term in the Hamiltonian:
+This code implements the pairwise potential term in the Hamiltonian:
 ```math
 \sum_i \sum_{j > i} U_\mathrm{step}\left(\left|\vec{r}_j - \vec{r}_i\right|\right)
 ```
 
 ```rust,ignore
-{{#include ../../../examples/mc-tutorial/applying-interactions.rs:pair}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:pair}}
 ```
 
 The [Boxcar function] implements `$ U_\mathrm{step}(r) $` via the
@@ -162,14 +173,14 @@ use to evaluate the change in energy `$\Delta E$` of a trial move.
 > That is not possible in *hoomd-rs* as your `site_pair_energy` could be *any
 > arbitrary code*.
 
-### The Hamiltonian
+#### The Hamiltonian
 
 To sum the external and pair energies, place them in a tuple:
 ```math
 H = U_\mathrm{external} + U_\mathrm{pair}
 ```
 ```rust,ignore
-{{#include ../../../examples/mc-tutorial/applying-interactions.rs:hamiltonian}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:hamiltonian}}
 ```
 
 In *hoomd-rs*, tuples of types that each implement traits like `DeltaEnergyOne`
@@ -197,27 +208,44 @@ Due to Rust's ownership model, you *cannot* use names like `boxcar.epsilon`
 to refer to parameters after constructing `hamiltonian`. You can read
 more about ownership in [The Rust Programming Language].
 
-## Advancing the Simulation
+#### Trial Moves
 
-Here is the complete code that that advances the simulation from one step to
-the next:
+Apply translation trial moves to the bodies:
 ```rust,ignore
-{{#include ../../../examples/mc-tutorial/applying-interactions.rs:impl_simulation}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:sweep}}
 ```
-Let's look at this code one part at a time.
 
-### Adding New Bodies
+#### Initialize the Struct
+
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:initialize_struct}}
+```
+
+### Implement `Simulation`
+
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:impl_simulation}}
+```
+
+#### Advance the Simulation
+
+The `advance()` method moves the simulation forward one step:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:advance}}
+```
+
+#### Add New Bodies
 
 Every 100 steps, add a new body near the top of the simulation box:
 ```rust,ignore
-{{#include ../../../examples/mc-tutorial/applying-interactions.rs:add}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:add}}
 ```
 
-### Applying Trial Moves
+#### Apply Trial Moves
 
 Attempt one translation trial move for each body in the microstate:
 ```rust,ignore
-{{#include ../../../examples/mc-tutorial/applying-interactions.rs:apply}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:apply}}
 ```
 
 The previously unused temperature `$ kT $` now has meaning in this simulation
@@ -231,7 +259,7 @@ a pair of overlapping disks is placed, `translate_sweep.apply()` will accept
 trial moves that *keep the same number of overlaps* because `$ \Delta E = 1000 -
 1000 = 0 $`.
 
-### Resetting the Simulation
+#### Reset the Simulation
 
 Eventually, the boundary will completely fill with particles. The overlapping
 disks are visually disconcerting in the interactive example, so let's reset
@@ -241,8 +269,23 @@ The pair potential in this example adds 1000 for every pair of disks that
 overlap. Remove all bodies from the
 microstate when total pairwise energy exceeds a threshold:
 ```rust,ignore
-{{#include ../../../examples/mc-tutorial/applying-interactions.rs:reset}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:reset}}
 ```
+
+## Implement `main()`
+
+To run the simulation, construct the `Fill` simulation model
+then call `advance()` many times:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:main}}
+```
+
+Write the sites to a GSD file periodically so that you can inspect the results
+of the simulation.
+
+> [!NOTE]
+> This `main()` function runs in batch mode. There is a different `main()` (not
+> shown here) used in the interactive example.
 
 ## Conclusion
 
@@ -254,11 +297,23 @@ action again. Notice how the disks fall to the bottom of the boundary and do
 not overlap, except when newly added. Wait long enough and you will see the
 simulation clear the bodies.
 
+Alternately, you can run the example in batch mode and then open
+the generated `trajectory.gsd` in [Ovito] or another visualization tool:
+```shell
+cargo run --release --example applying_interactions
+```
+
 The next section shows you how to place multiple **sites** in a **body**.
 
-[Random Walk]: random-walk.md
-[Custom Random Walk]: custom-random-walk.md
 [API documentation]: ../api.md
 [`hoomd-microstate`]: ../api/hoomd_microstate/index.html
 [Boxcar function]: https://mathworld.wolfram.com/BoxcarFunction.html
 [The Rust Programming Language]: https://doc.rust-lang.org/stable/book/
+[Ovito]: https://www.ovito.org/
+
+## Complete Code
+
+Click the eye icon in any code example to see its location in the file. The
+complete example code is also available here:
+```rust,ignore
+{{#rustdoc_rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:all}}

@@ -57,21 +57,19 @@ path = "mc-tutorial/random_walk.rs"
 name = "custom_random_walk"
 path = "mc-tutorial/custom_random_walk.rs"
 
-[package.metadata.example.custom-random-walk]
+[package.metadata.example.custom_random_walk]
 path = "mc-tutorial"
 
 [[example]]
-name = "applying-interactions"
-path = "mc-tutorial/applying-interactions.rs"
-required-features = ["bevy"]
+name = "applying_interactions"
+path = "mc-tutorial/applying_interactions.rs"
 
-[package.metadata.example.applying-interactions]
+[package.metadata.example.applying_interactions]
 path = "mc-tutorial"
 
 [[example]]
 name = "tetronimoes"
 path = "mc-tutorial/tetronimoes.rs"
-required-features = ["bevy"]
 
 [package.metadata.example.tetronimoes]
 path = "mc-tutorial"
@@ -79,7 +77,6 @@ path = "mc-tutorial"
 [[example]]
 name = "hard_particle_self_assembly"
 path = "mc-tutorial/hard_particle_self_assembly.rs"
-required-features = ["bevy"]
 
 [package.metadata.example.hard_particle_self_assembly]
 path = "mc-tutorial"

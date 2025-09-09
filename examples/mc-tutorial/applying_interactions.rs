@@ -1,3 +1,4 @@
+// ANCHOR: all
 // ANCHOR: use
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
@@ -13,26 +14,34 @@ use hoomd_simulation::Simulation;
 use hoomd_vector::Cartesian;
 // ANCHOR_END: use
 
-use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
-    representation::RectangularBoundary,
-    representation::disk::{self, Disk},
-};
-
-use anyhow::Context;
-use bevy::prelude::*;
+// Remove the cfg_attr(...) line when using this code outside the hoomd-rs/examples directory.
+#[cfg_attr(feature = "bevy", derive(Resource))]
+// ANCHOR: simulation_struct
+struct Fill {
+    /// Positions of all the bodies in the simulation.
+    microstate:
+        Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Rectangle>>,
+    /// How sites interact with other sites and fields.
+    hamiltonian: (Single<Linear<Cartesian<2>>>, CutoffPair<Isotropic<Boxcar>>),
+    /// Trial moves to apply.
+    translate_sweep: Sweep<Translate>,
+    /// Temperature set point.
+    kt: f64,
+}
+// ANCHOR_END: simulation_struct
 
 // ANCHOR: simulation_new
 impl Fill {
     /// Construct a new fill simulation.
     fn new() -> anyhow::Result<Fill> {
+        // ANCHOR_END: simulation_new
         // ANCHOR: parameters
         let box_length = 30.0;
-        let kt = 1.0;
-        let d = 0.15;
+        let maximum_distance = 0.15;
         let alpha = 10.0;
         let epsilon = 1000.0;
         let sigma = 1.0;
+        let kt = 1.0;
         // ANCHOR_END: parameters
 
         // ANCHOR: microstate
@@ -66,11 +75,14 @@ impl Fill {
         let hamiltonian = (linear, cutoff_pair);
         // ANCHOR_END: hamiltonian
 
+        // ANCHOR: sweep
         let translate = Translate {
-            maximum_distance: d.try_into()?,
+            maximum_distance: maximum_distance.try_into()?,
         };
         let translate_sweep = Sweep(translate);
+        // ANCHOR_END: sweep
 
+        // ANCHOR: initialize_struct
         Ok(Fill {
             microstate,
             hamiltonian,
@@ -79,22 +91,20 @@ impl Fill {
         })
     }
 }
-// ANCHOR_END: simulation_new
+// ANCHOR_END: initialize_struct
 
 // ANCHOR: impl_simulation
 impl Simulation for Fill {
+    // ANCHOR_END: impl_simulation
+    // ANCHOR: advance
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
+        // ANCHOR_END: advance
         // ANCHOR: add
+        let boundary = self.microstate.boundary();
+        let y = boundary.0.edge_lengths[1].get() / 2.0 - 0.5;
         if self.microstate.step() % 100 == 0 {
-            self.microstate.add_body(Body::point(
-                [
-                    0.0,
-                    self.microstate.boundary().0.edge_lengths[1].get() / 2.0
-                        - 0.5,
-                ]
-                .into(),
-            ))?;
+            self.microstate.add_body(Body::point([0.0, y].into()))?;
         }
         // ANCHOR_END: add
 
@@ -111,96 +121,38 @@ impl Simulation for Fill {
         if self.hamiltonian.1.total_energy(&self.microstate) > 20_000.0 {
             self.microstate.clear();
         }
-        // ANCHOR_END: reset
 
         Ok(())
     }
+    // ANCHOR_END: reset
 
+    // ANCHOR: step
     /// Get the current simulation step.
     fn step(&self) -> u64 {
         self.microstate.step()
     }
 }
-// ANCHOR_END: impl_simulation
+// ANCHOR_END: step
 
-#[derive(Resource)]
-// ANCHOR: simulation_struct
-struct Fill {
-    /// Positions of all the bodies in the simulation.
-    microstate:
-        Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Rectangle>>,
-    /// How sites interact with other sites and fields.
-    hamiltonian: (Single<Linear<Cartesian<2>>>, CutoffPair<Isotropic<Boxcar>>),
-    /// Trial moves to apply.
-    translate_sweep: Sweep<Translate>,
-    /// Temperature set point.
-    kt: f64,
-}
-// ANCHOR_END: simulation_struct
-
-/// Mark the disk representation type.
-struct A;
-
+// Remove the cfg(not(...)) line when using this code outside the hoomd-rs/examples directory.
+#[cfg(not(feature = "bevy"))]
+// ANCHOR: main
 fn main() -> anyhow::Result<()> {
-    let simulation = Fill::new().context("failed to setup simulation")?;
-    let l = simulation.microstate.boundary().0.edge_lengths[1].get() as f32;
-    let hoomd_bevy_plugin = HoomdBevyPlugin {
-        initial_settings: Settings {
-            camera: InitialCamera::Orthographic2d(l + 1.0),
-            ..default()
-        },
-        simulation,
-    };
+    let mut simulation = Fill::new()?;
+    // TODO: Write GSD file.
 
-    let mut app = App::new();
-    hoomd_bevy::add_default_plugins(&mut app);
-    hoomd_bevy_plugin.build(&mut app);
-    app.add_systems(
-        Startup,
-        (|| disk::MaterialParameters::default()).pipe(Disk::<A>::setup),
-    );
-    app.add_systems(
-        Startup,
-        (move || RectangularBoundary {
-            width: l,
-            height: l,
-            ..default()
-        })
-        .pipe(RectangularBoundary::setup),
-    );
-    app.add_systems(
-        Update,
-        sync_simulation
-            .run_if(resource_changed::<Fill>)
-            .after(AdvanceSet),
-    );
-
-    app.run();
+    for _ in 0..100_000 {
+        simulation.advance()?;
+    }
 
     Ok(())
 }
+// ANCHOR_END: main
+// ANCHOR_END: all
 
-/// Copy the current positions of simulation particles to bevy entities.
-fn sync_simulation(
-    mut commands: Commands,
-    disk_representation: Res<disk::Representation<A>>,
-    query: Query<(Entity, &mut Transform), With<Disk<A>>>,
-    simulation: Res<Fill>,
-) {
-    let sites = simulation.microstate.sites();
-    Disk::sync(
-        &mut commands,
-        disk_representation,
-        query,
-        sites.iter().map(|site| {
-            (
-                Vec3::new(
-                    site.properties.position[0] as f32,
-                    site.properties.position[1] as f32,
-                    0.0,
-                ),
-                1.0f32,
-            )
-        }),
-    );
-}
+#[cfg(feature = "bevy")]
+mod applying_interactions_interactive;
+#[cfg(feature = "bevy")]
+use applying_interactions_interactive::main;
+#[cfg(feature = "bevy")]
+use bevy::prelude::Resource;
