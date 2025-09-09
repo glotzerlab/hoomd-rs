@@ -31,13 +31,9 @@ fn main() -> anyhow::Result<()> {
 
     // ANCHOR: steps
     for _ in 0..100 {
-    // ANCHOR_END: steps
+        // ANCHOR_END: steps
         // ANCHOR: apply
-        translate_sweep.apply(
-            &mut microstate,
-            &hamiltonian,
-            &1.0,
-        );
+        translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);
         // ANCHOR_END: apply
         // ANCHOR: increment
         microstate.increment_step();

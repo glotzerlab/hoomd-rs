@@ -15,7 +15,8 @@ pub(crate) fn main() -> anyhow::Result<()> {
     let simulation =
         CustomRandomWalk::new().context("failed to setup simulation")?;
 
-    let viewport_height = (simulation.microstate.boundary().0.radius * 2.0 + 10.0) as f32;
+    let viewport_height =
+        (simulation.microstate.boundary().0.radius * 2.0 + 10.0) as f32;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
         initial_settings: Settings {
             camera: InitialCamera::Orthographic2d(viewport_height),
