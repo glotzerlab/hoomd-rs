@@ -12,6 +12,7 @@ categories.workspace = true
 
 [dependencies]
 thiserror.workspace = true
+hoomd-geometry.workspace = true
 hoomd-interaction.workspace = true
 hoomd-manifold.workspace = true
 hoomd-mc.workspace = true

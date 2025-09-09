@@ -15,4 +15,4 @@ which implements `Add`.
 
 mod density;
 
-pub use density::SpatialHistogram;
+pub use density::{CorrelationFunction, GenerateHistogram, SpatialHistogram};
