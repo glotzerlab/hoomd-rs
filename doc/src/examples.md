@@ -34,22 +34,14 @@ To compile and run an example as a desktop application, execute:
 $ cargo run --release --features=bevy --example {example}
 ```
 where `{example}` is the name of the example *without* the path
-or extension (e.g. `--example random-walk`, will build and run
-`examples/mc-tutorial/random-walk.rs`).
+or extension (e.g. `--example random_walk`, will build and run
+`examples/mc-tutorial/random_walk.rs`).
 
 The examples use the [Bevy] engine. If you get compile errors when building
 `bevy` crates, you may need to [install additional software]. MacOS is the
 simplest platform to configure, as you only need XCode. On Linux, you will need
 to install a number of system packages depending on your distribution. On Windows,
 you will need the *Microsoft C++ build tools*.
-
-> [!IMPORTANT]
-> You should build the interactive examples in the *native environment* for your
-> platform. Bevy claims support for WSL. One guide suggests that there are some problems
-> with this and recommends that you instead [cross compile for native Windows] in WSL.
-> Several the *hoomd-rs* developers have encountered problems with one or both
-> methods. *See the browser application method below for an alternative that does work
-> in WSL*.
 
 > [!NOTE]
 > These additional software dependencies are *only* needed to build examples
