@@ -264,7 +264,5 @@ interact with each other and with an external field.
 
 ## Complete Code
 
-Click the eye icon in any code example to see its location in the file. The
-complete example code is also available here:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:all}}

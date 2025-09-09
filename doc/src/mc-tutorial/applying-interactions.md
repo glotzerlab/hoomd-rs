@@ -313,7 +313,5 @@ The next section shows you how to place multiple **sites** in a **body**.
 
 ## Complete Code
 
-Click the eye icon in any code example to see its location in the file. The
-complete example code is also available here:
 ```rust,ignore
-{{#rustdoc_rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:all}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:all}}
