@@ -54,9 +54,8 @@ name = "random_walk"
 path = "mc-tutorial/random_walk.rs"
 
 [[example]]
-name = "custom-random-walk"
-path = "mc-tutorial/custom-random-walk.rs"
-required-features = ["bevy"]
+name = "custom_random_walk"
+path = "mc-tutorial/custom_random_walk.rs"
 
 [package.metadata.example.custom-random-walk]
 path = "mc-tutorial"

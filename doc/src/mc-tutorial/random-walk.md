@@ -10,7 +10,10 @@ you can express the components of a MC simulation using *hoomd-rs*.
 
 * Objective: Demonstrate a minimal MC simulation.
 * File: `hoomd-rs/examples/mc-tutorial/random_walk.rs`
-* To build and run: `cargo run --release --example random_walk`
+* To build and run:
+  ```shell
+  cargo run --release --example random_walk
+  ```
 
 ## Bring Used Names Into Scope
 
@@ -164,5 +167,5 @@ walk.
 Click the eye icon on any of the above code examples to see where it is in the
 complete tutorial code:
 ```rust,ignore
-{{#include ../../../examples/mc-tutorial/random_walk.rs:all}}
+{{#rustdoc_include ../../../examples/mc-tutorial/random_walk.rs:all}}
 ```
