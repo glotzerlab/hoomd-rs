@@ -64,6 +64,7 @@ impl LocalTrial<Point<Cartesian<2>>> for Discrete {
 #[cfg_attr(feature = "bevy", derive(Resource))]
 // ANCHOR: simulation_struct
 struct CustomRandomWalk {
+    /// TODO: Document
     microstate:
         Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Circle>>,
     hamiltonian: Zero,

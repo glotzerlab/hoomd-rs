@@ -83,14 +83,14 @@ Here is the type that holds the simulation model:
 In order, `Microstate`'s generic types are the **body properties**, the
 **site properties**, and the **boundary condition**.
 
-### Construct the Simulation Model
+## Construct the Simulation Model
 
 The `new()` method constructs a new simulation model:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:simulation_new}}
 ```
 
-#### Parameters
+### Parameters
 
 Assign all the model parameters in one code block so that they are easy to modify:
 ```rust,ignore
@@ -103,7 +103,7 @@ strength of the gravitational potential, `epsilon` is the strength of the
 pairwise potential, `sigma` is the range of the pairwise potential, and `kt` is
 the temperature set point (in units of energy).
 
-#### Microstate
+### Microstate
 
 Confine the bodies and sites inside of a closed square. While the previous
 tutorial showed how you could implement custom boundary conditions, this one
@@ -113,7 +113,7 @@ uses the built in `Rectangle` type:
 {{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:microstate}}
 ```
 
-#### External Potential
+### External Potential
 
 This code implements the external potential term in the Hamiltonian:
 ```math
@@ -132,7 +132,7 @@ by each **site** in the microstate: `$ \sum_i U(s_i) $`. `Single` implements the
 `DeltaEnergyOne` trait which `Sweep` will use to evaluate the change in energy
 `$\Delta E$` of a trial that moves *one* body.
 
-#### Pairwise Potential
+### Pairwise Potential
 
 This code implements the pairwise potential term in the Hamiltonian:
 ```math
@@ -173,7 +173,7 @@ use to evaluate the change in energy `$\Delta E$` of a trial move.
 > That is not possible in *hoomd-rs* as your `site_pair_energy` could be *any
 > arbitrary code*.
 
-#### The Hamiltonian
+### The Hamiltonian
 
 To sum the external and pair energies, place them in a tuple:
 ```math
@@ -208,26 +208,26 @@ Due to Rust's ownership model, you *cannot* use names like `boxcar.epsilon`
 to refer to parameters after constructing `hamiltonian`. You can read
 more about ownership in [The Rust Programming Language].
 
-#### Trial Moves
+### Trial Moves
 
 Apply translation trial moves to the bodies:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:sweep}}
 ```
 
-#### Initialize the Struct
+### Initialize the Struct
 
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:initialize_struct}}
 ```
 
-### Implement `Simulation`
+## Implement `Simulation`
 
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:impl_simulation}}
 ```
 
-#### Advance the Simulation
+### Advance the Simulation
 
 The `advance()` method moves the simulation forward one step:
 ```rust,ignore
@@ -270,6 +270,12 @@ overlap. Remove all bodies from the
 microstate when total pairwise energy exceeds a threshold:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:reset}}
+```
+
+### Get the Simulation Step
+
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:step}}
 ```
 
 ## Implement `main()`
