@@ -530,7 +530,6 @@ where
     Given a site in the boundary, update that site's ghosts to be consistent
     with that site's properties. This may require adding or removing ghosts.
     */
-    #[expect(clippy::comparison_chain, reason = "match statement unnecessary")]
     fn update_site_ghosts(
         sites: &VecWithTags<Site<S>>,
         site_index: usize,
