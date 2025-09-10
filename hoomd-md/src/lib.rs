@@ -30,7 +30,12 @@ pub trait TranslationalMotion<B, S, C, F> {
     `force` is the evaluator that is used to calculate forces used in the
     integration.
     */
-    fn integrate_translation(&self, microstate: &mut Microstate<B, S, C>, force: &F);
+    fn integrate_translation(
+        &self,
+        microstate: &mut Microstate<B, S, C>,
+        force: &F,
+        kT_setpoint: Option<&f64>,
+    );
 }
 
 /** Integrate over rotational degrees of freedom. 
@@ -50,9 +55,6 @@ pub trait RotationalMotion<B, S, C, T> {
 pub struct ConstantVolume<T: Thermostat> {
     /// The size of a timestep.
     pub dt: f64,
-
-    /// The temperature in units of kT.
-    pub kT: f64,
 
     /// The thermostat.
     pub thermostat: T,
@@ -78,8 +80,9 @@ where
         &self,
         microstate: &mut Microstate<B, S, C>,
         force: &F,
+        kT_setpoint: Option<&f64>
     ) {
-        let rescaling_factor = self.thermostat.temperature_factor();
+        let rescaling_factor = self.thermostat.temperature_factor(kT_setpoint);
 
         // Integration Step One
         // For loop over a range instead of bodies().iter() since the latter holds an immutable borrow.
