@@ -378,5 +378,44 @@ pub trait SitePairTorque<V, S> {
     fn site_pair_torque(&self, a: &S, b: &S) -> V;
 }
 
+/** Compute the net torque on a single body.
+
+The generic type names are:
+* `V`: The Vector type.
+* `B`: The Body properties type.
+* `S`: The Site properties type.
+* `C`: The boundary conditions type.
+
+TODO: Add intra-doc links.
+*/
+pub trait NetBodyTorque<V, B, S, C> {
+    /** Compute the net torque.
+    
+    `microstate` describes the system configuration and `body_index` specifies
+    the body within the system for which the net torque is calculated.
+    */
+    #[must_use]
+    fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V;
+}
+
+/** Compute the net torque on a single site.
+
+The generic type names are:
+* `V`: The Vector type.
+* `B`: The Body properties type.
+* `S`: The Site properties type.
+* `C`: The boundary conditions type.
+
+TODO: Add intra-doc links.
+*/
+pub trait NetSiteTorque<V, B, S, C> {
+    /** Compute the net torque.
+    
+    `microstate` describes the system configuration and `site` describes
+    a site for which the net torque is calculated.
+    */
+    #[must_use]
+    fn net_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V;
+}
 
 // TODO: More doc examples for all implementors.
