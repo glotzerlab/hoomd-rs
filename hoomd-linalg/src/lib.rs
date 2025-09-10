@@ -265,17 +265,9 @@ impl<const N: usize, const M: usize> Add<Self> for Matrix<N, M> {
     }
 }
 
-impl Matrix<2, 2> {
-    /// The determinant of a 2x2 square matrix.
-    // #[must_use]
-    // #[inline]
-    // pub fn det(&self) -> f64 {
-    //     self.rows[0][0] * self.rows[1][1] - self.rows[1][0] * self.rows[0][1]
-    // }
-    /// The inverse of a 2x2 square matrix.
-    #[must_use]
+impl Invertible for Matrix<2, 2> {
     #[inline]
-    pub fn inverse(&self) -> Self {
+    fn inverse(&self) -> Self {
         let inv_det = self.det().recip();
         Self {
             rows: [
