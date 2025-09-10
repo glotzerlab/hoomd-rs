@@ -1741,7 +1741,7 @@ version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "829d955a0bb380ef178a640b91779e3987da38c9aea133b20614cfed8cdea9c6"
 dependencies = [
- "bitflags 2.9.1",
+ "bitflags 2.9.4",
  "crossterm_winapi",
  "mio",
  "parking_lot",
@@ -2442,6 +2442,7 @@ dependencies = [
  "hoomd-microstate",
  "hoomd-utility",
  "hoomd-vector",
+ "libm",
  "rand 0.9.2",
  "uuid",
 ]
@@ -2496,10 +2497,10 @@ dependencies = [
  "hoomd-vector",
  "num",
  "paste",
- "rand 0.9.1",
+ "rand 0.9.2",
  "ratatui",
  "rstest",
- "thiserror 2.0.12",
+ "thiserror 2.0.16",
 ]
 
 [[package]]
@@ -3647,7 +3648,7 @@ version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fdef7f9be5c0122f890d58bdf4d964349ba6a6161f705907526d891efabba57d"
 dependencies = [
- "bitflags 2.9.1",
+ "bitflags 2.9.4",
  "cassowary",
  "compact_str",
  "crossterm",

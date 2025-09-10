@@ -5,8 +5,8 @@
 */
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairEnergy, TotalEnergy};
-use hoomd_vector::Metric;
 use hoomd_microstate::{Body, Microstate, Site, Transform, boundary::Wrap, property::Position};
+use hoomd_vector::Metric;
 
 /** Compute system properties based on short-ranged pairwise interactions between sites.
 
@@ -123,11 +123,11 @@ impl<E> CutoffPair<E> {
     ```
     */
     #[inline]
-    pub fn site_pair_energy<V, S>(&self, a: &Site<S>, b: &Site<S>) -> f64
+    pub fn site_pair_energy<P, S>(&self, a: &Site<S>, b: &Site<S>) -> f64
     where
         E: SitePairEnergy<S>,
-        S: Position<Vector = V>,
-        V: Vector,
+        S: Position<Position = P>,
+        P: Metric,
     {
         let r = (a.properties.position()).distance(b.properties.position());
         if r < self.r_cut && a.body_tag != b.body_tag {
@@ -139,7 +139,7 @@ impl<E> CutoffPair<E> {
     }
 }
 
-impl<V, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPair<E>
+impl<P, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
     S: Position<Position = P>,
