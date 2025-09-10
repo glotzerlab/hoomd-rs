@@ -1,6 +1,7 @@
 [package]
 name = "hoomd-linalg"
 version.workspace = true
+description = "Linear algebra library optimized for small matrixes."
 edition.workspace = true
 rust-version.workspace = true
 homepage.workspace = true

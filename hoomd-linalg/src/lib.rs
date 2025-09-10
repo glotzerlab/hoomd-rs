@@ -46,13 +46,16 @@ where
     #[must_use]
     fn diag(&self) -> Self;
 
-    /** Compute the determinant of a matrix.*/
-    #[must_use]
-    fn det(&self) -> f64;
-
     /// Create an identity matrix of dimension N.
     #[must_use]
     fn eye() -> Self;
+}
+
+/// TODO
+pub trait Determinant: SquareMatrix {
+    /** Compute the determinant of a matrix.*/
+    #[must_use]
+    fn det(&self) -> f64;
 }
 
 /// A matrix with N rows and M columns, allocated on the stack.
@@ -106,7 +109,9 @@ impl<const N: usize> SquareMatrix for Matrix<N, N> {
             rows: std::array::from_fn(|i| std::array::from_fn(|j| if i == j { 1.0 } else { 0.0 })),
         }
     }
+}
 
+impl<const N: usize> Determinant for Matrix<N, N> {
     /**Compute the determinant of a matrix via a Laplace expansion.
     Note that, while this implementation is optimal for small matrixes, it has O(N!)
     time complexity and will be extremely slow for large matrixes.
@@ -115,7 +120,7 @@ impl<const N: usize> SquareMatrix for Matrix<N, N> {
     fn det(&self) -> f64 {
         /*
         Because math with const generics is not allowed in rust, we compute the indices
-        of each submatrix and recur on those segments of the input.
+        of each submatrix and recur on those noncontiguous segments of the input.
         */
         #[inline]
         fn det_recursive_noslice<const N: usize>(
@@ -285,13 +290,6 @@ impl Copy for Matrix<2, 2> {}
 impl Copy for Matrix<3, 3> {}
 impl Copy for Matrix<4, 4> {}
 
-/*I think it makes the most sense to keep this general in terms of dimension. Rather than worry about specialization, we can just implement specific approaches for single size matrices like 3 x 3, rather than general methods. Obviously specialization would be nice, but people probably should defer to more robust libraries for complicated linear algebra problems anyway so it makes sense to focus on small specific cases. We can give a little bit more specialization by implementing types of various levels of restriction, for example, symmetric, diagonal and square matrixes.
-
-If it turns out we really want a large matrix SVD or something, we can have a MatrixLike
-wrapper class that implements that subroutine. This also allows us to have separate
-dynamically allocated classes.
-*/
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -310,7 +308,8 @@ mod tests {
     }
     #[rstest(
         rows,
-        case([[1.0, 2.0], [3.0, 4.0]]),
+        case([[-9.0]]),
+        case([[1.0, -2.0], [3.0, 4.0]]),
         case([[1.0, 2.0, 3.0], [0.0, 1.0, 4.0], [5.0, 6.0, 0.0]]),
         case([[2.0, 0.0, 1.0], [3.0, 0.0, 0.0], [5.0, 1.0, 1.0]]),
         case(Matrix::<4, 4>::eye().rows),
