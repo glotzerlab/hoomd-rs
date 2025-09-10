@@ -127,6 +127,9 @@ pub use oriented_point::OrientedPoint;
 mod dynamics_point;
 pub use dynamics_point::DynamicsPoint;
 
+mod oriented_dynamics_point;
+pub use oriented_dynamics_point::OrientedDynamicsPoint;
+
 /** Locate sites and bodies.
 
 When applied to site properties, [`Position`] describes the location of the site
@@ -230,8 +233,8 @@ pub trait Orientation {
 
 /** Get the mass of sites and bodies.
 
-[`Mass`] is the quantity which determines a site or body's inertia, and which
-together with velocity determines a site or body's momentum.
+[`Mass`] is the quantity which determines a site or body's linear inertia, and
+which together with velocity determines a site or body's momentum.
 
 # Units
 
@@ -242,4 +245,48 @@ pub trait Mass {
     fn mass(&self) -> &f64;
 
     // TODO: do we want to provide a mutable getter?
+}
+
+/** Get the moment of inertia of sites and bodies.
+
+[`MomentOfInertia`] is the quantity which determines a site or body's angular
+inertia, and which together with angular velocity determines a site or body's
+angular momentum.
+
+TODO: make this be a square matrix instead of a vector
+
+# Units
+
+The units of `[MomentOfInertia`] are *\[mass * \length^2\]*.
+*/
+pub trait MomentOfInertia {
+    /// Every moment of inertia is within this vector space.
+    type Vector;
+
+    /// The moment of inertia of this body or site *\[mass * \length^2\]*.
+    fn moment_of_inertia(&self) -> &Self::Vector;
+
+    /// The mutable moment of inertia of this body or site *\[mass * \length^2\]*.
+    fn moment_of_inertia_mut(&mut self) -> &mut Self::Vector;
+}
+
+/** Get the angular velocity of sites and bodies.
+
+[`AngularVelocity`] is the quantity which determines a site or body's angular
+velocity, and which together with moment of inertia determines a site or body's
+angular momentum. [TODO: re-phrase to be more clear]
+
+# Units
+
+The units of `[AngularVelocity`] are *\[radian/time\]*.
+*/
+pub trait AngularVelocity {
+    /// Every angular velocity is within this vector space.
+    type Vector;
+    
+    /// The angular velocity of this body or site *\[radian/time\]*.
+    fn angular_velocity(&self) -> &Self::Vector;
+
+    /// The mutable angular velocity of this body or site *\[radian/time\]*.
+    fn angular_velocity_mut(&mut self) -> &mut Self::Vector;
 }
