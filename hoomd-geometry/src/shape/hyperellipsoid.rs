@@ -5,130 +5,11 @@
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
+use hoomd_linalg::Matrix22;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, RotationMatrix};
 
 use std::ops::{Add, Mul};
-
-/// FUTURE: temp, remove once we have a linalg crate
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct SquareMatrix<const N: usize> {
-    /// The elements of the matrix
-    rows: [[f64; N]; N],
-    // diagonal: bool,
-    // symmetry: ???
-}
-
-impl<const N: usize> From<RotationMatrix<N>> for SquareMatrix<N> {
-    fn from(value: RotationMatrix<N>) -> Self {
-        Self {
-            rows: value.rows().map(|arr| arr.coordinates),
-        }
-    }
-}
-
-impl<const N: usize> Default for SquareMatrix<N> {
-    #[inline]
-    fn default() -> SquareMatrix<N> {
-        SquareMatrix {
-            rows: std::array::from_fn(|i| std::array::from_fn(|j| if i == j { 1.0 } else { 0.0 })),
-        }
-    }
-}
-
-impl<const N: usize> SquareMatrix<N> {
-    /// Compute a full `NxN` matrix from N diagonal elements, setting all others to 0.
-    #[inline]
-    fn from_diag(other: &[f64; N]) -> Self {
-        SquareMatrix {
-            rows: std::array::from_fn(|i| {
-                std::array::from_fn(|j| if i == j { other[i] } else { 0.0 })
-            }),
-        }
-    }
-
-    /// Multiply a [`SquareMatrix`] by a diagonal matrix on the right hand side
-    #[inline]
-    fn mul_diagonal(&self, diag: &[f64; N]) -> Self {
-        let mut rows = [[0f64; N]; N];
-        for (i, row) in rows.iter_mut().enumerate().take(N) {
-            for j in 0..N {
-                row[j] = self.rows[i][j] * diag[j];
-            }
-        }
-        Self { rows }
-    }
-
-    /// (Naive) Matrix multiplication of two square matrixes
-    #[inline]
-    fn matmul(&self, other: &Self) -> Self {
-        let mut result = Self {
-            rows: [[0.0; N]; N],
-        };
-        for i in 0..N {
-            for j in 0..N {
-                for k in 0..N {
-                    result.rows[i][j] += self.rows[i][k] * other.rows[k][j];
-                }
-            }
-        }
-
-        result
-    }
-    /// Solve the quadratic form for a pair of 2x2 matrices.
-    #[inline]
-    fn compute_quadratic_form(&self, other: &[f64; N]) -> f64 {
-        let mut result = 0.0;
-
-        for i in 0..N {
-            for j in 0..N {
-                result += other[i] * self.rows[i][j] * other[j];
-            }
-        }
-        result
-    }
-}
-impl<const N: usize> Mul<f64> for SquareMatrix<N> {
-    type Output = Self;
-
-    #[inline]
-    fn mul(self, rhs: f64) -> Self {
-        Self {
-            rows: self.rows.map(|r| r.map(|x| x * rhs)),
-        }
-    }
-}
-impl<const N: usize> Add<Self> for SquareMatrix<N> {
-    type Output = Self;
-
-    #[inline]
-    fn add(self, rhs: Self) -> Self {
-        Self {
-            rows: std::array::from_fn(|i| {
-                std::array::from_fn(|j| self.rows[i][j] + rhs.rows[i][j])
-            }),
-        }
-    }
-}
-
-impl SquareMatrix<2> {
-    /// The determinant of a 2x2 square matrix.
-    #[inline]
-    fn det(&self) -> f64 {
-        self.rows[0][0] * self.rows[1][1] - self.rows[1][0] * self.rows[0][1]
-    }
-    /// The inverse of a 2x2 square matrix.
-    #[inline]
-    fn inverse(&self) -> Self {
-        let inv_det = self.det().recip();
-        Self {
-            rows: [
-                [inv_det * self.rows[1][1], inv_det * -self.rows[0][1]],
-                [inv_det * -self.rows[1][0], inv_det * self.rows[0][0]],
-            ],
-        }
-    }
-}
 
 /** The geometry resulting from an Hypersphere that is scaled along the Cartesian axes.
 
@@ -371,12 +252,12 @@ where
         let rot = RotationMatrix::<2>::from(*o_ij);
         let rot_transpose = rot.inverted();
 
-        let b_inv = SquareMatrix::from(rot)
+        let b_inv = Matrix22::from(rot)
             .mul_diagonal(&self.axes.map(|x| x.get().powi(2)))
             .matmul(&rot_transpose.into());
 
         let v_ij = &v_ij.coordinates;
-        let a_inv = SquareMatrix::from_diag(&a_inv);
+        let a_inv = Matrix22::from_diag(&a_inv);
 
         // Golden section solver for minimizing K(λ)
         let (mut b, mut a) = (_ELLIPSOID_K_MAX_BOUND, _ELLIPSOID_K_MIN_BOUND);
@@ -385,11 +266,11 @@ where
             let d = a + (b - a) * _INV_PHI;
 
             // Could reuse computed k values between loops for better performance?
-            let k_c = k_lambda(a_inv, b_inv, c, v_ij);
+            let k_c = k_lambda(&a_inv, &b_inv, c, v_ij);
             if k_c <= 0.0 {
                 return false;
             }
-            let k_d = k_lambda(a_inv, b_inv, d, v_ij);
+            let k_d = k_lambda(&a_inv, &b_inv, d, v_ij);
             if k_d <= 0.0 {
                 return false;
             }
@@ -405,8 +286,8 @@ where
 
 /// Solve the characteristic equation of two ellipses.
 #[inline]
-fn k_lambda(a_inv: SquareMatrix<2>, b_inv: SquareMatrix<2>, l: f64, v_ij: &[f64; 2]) -> f64 {
-    let m = b_inv * ((1.0 - l).recip()) + (a_inv * l.recip());
+fn k_lambda(a_inv: &Matrix22, b_inv: &Matrix22, l: f64, v_ij: &[f64; 2]) -> f64 {
+    let m = b_inv.clone() * ((1.0 - l).recip()) + (a_inv.clone() * l.recip());
 
     1.0 - m.inverse().compute_quadratic_form(v_ij)
 }

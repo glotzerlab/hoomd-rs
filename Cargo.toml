@@ -6,6 +6,7 @@ members = ["examples",
            "hoomd-geometry",
            "hoomd-gsd",
            "hoomd-interaction",
+           "hoomd-linalg",
            "hoomd-mc",
            "hoomd-microstate",
            "hoomd-utility",
@@ -21,6 +22,7 @@ default-members = ["examples",
                    "hoomd-geometry",
                    "hoomd-gsd",
                    "hoomd-interaction",
+                   "hoomd-linalg",
                    "hoomd-mc",
                    "hoomd-microstate",
                    "hoomd-utility",
@@ -43,6 +45,7 @@ hoomd-bevy = { path = "hoomd-bevy" }
 hoomd-geometry = { path = "hoomd-geometry" }
 hoomd-gsd = { path = "hoomd-gsd" }
 hoomd-interaction = { path = "hoomd-interaction" }
+hoomd-linalg = { path = "hoomd-linalg" }
 hoomd-mc = { path = "hoomd-mc" }
 hoomd-microstate = { path = "hoomd-microstate" }
 hoomd-utility = { path = "hoomd-utility" }
