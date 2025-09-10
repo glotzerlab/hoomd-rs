@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`Biquaternion`] anda four-dimensional matrix representation
+/*! Implement [`Biquaternion`] and a four-dimensional matrix representation
 of SO(3,1).
 */
 
@@ -14,6 +14,8 @@ use std::iter::zip;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 use crate::{Error, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski};
+#[expect(unused_imports, reason = "Needed for doc link")]
+use hoomd_vector::Quaternion;
 
 /**
 ## Biquaternions
@@ -21,7 +23,8 @@ use crate::{Error, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski};
 Biquaternions are the set of numbers $a + b\mathbf{i} + c\mathbf{j} + d\mathbf{k}$
 where $a,b,c,d$ are complex numbers and ${1,\mathbf{i},\mathbf{j},\mathbf{k}}$ are
 the quaternion algebra. Biquaternions can be thought of as a generalization of quaternions
- which allow for complex coefficients.
+ which allow for complex coefficients. Analogous to quaternions and SO(3), biquaternions
+furnish a representation of SO(3,1)
 
 ## Construction of Biquaternions
 
