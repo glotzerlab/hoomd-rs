@@ -42,7 +42,7 @@ pub trait SquareMatrix: GeneralMatrix
 where
     Self: Sized,
 {
-    /// TODO
+    /// Extract the diagonal elements from a matrix.
     #[must_use]
     fn diag(&self) -> Self;
 
@@ -147,6 +147,7 @@ impl<const N: usize> SquareMatrix for Matrix<N, N> {
         }
         // This would be handled by the iteration, but this simplifies the code
         match N {
+            0 => return 0.0,
             1 => return self.rows[0][0],
             2 => return self.rows[0][0] * self.rows[1][1] - self.rows[1][0] * self.rows[0][1],
             _ => (),
@@ -156,15 +157,6 @@ impl<const N: usize> SquareMatrix for Matrix<N, N> {
         det_recursive_noslice(self, 0, &col_indices, N)
     }
 }
-// impl<const N: usize> GeneralMatrix for DiagonalMatrix<N> {
-//     // type MatrixType = DiagonalMatrix<N>;
-//     #[inline]
-//     fn zeros() -> Self {
-//         Self {
-//             rows: std::array::from_fn(|_| 0.0),
-//         }
-//     }
-// }
 
 impl<const N: usize> From<RotationMatrix<N>> for Matrix<N, N> {
     #[inline]
