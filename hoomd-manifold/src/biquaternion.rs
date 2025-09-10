@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`Biquaternion`] anda four-dimensional matrix representation
+/*! Implement [`Biquaternion`] and a four-dimensional matrix representation
 of SO(3,1).
 */
 
