@@ -43,6 +43,10 @@ pub trait GeneralMatrix: Mul<f64, Output = Self> {
     /// Iterate over the rows of a matrix.
     #[must_use]
     fn iter_rows(&self) -> impl Iterator<Item = impl IntoIterator<Item = &f64>>;
+
+    /// Return a matrix where every element is equal to val
+    #[must_use]
+    fn full(val: f64) -> Self;
 }
 
 /// TODO
@@ -52,15 +56,19 @@ where
 {
     /// TODO
     #[must_use]
-    fn diag() -> Self;
+    fn diag(&self) -> Self;
 
     /** Compute the determinant of a matrix using the Laplace expansion.
 
-    Note that, while this implementation is optimal for small matrixes, it has O(n!)
+    Note that, while this implementation is optimal for small matrixes, it has O(N!)
     time complexity and will be extremely slow for large matrixes.
     */
     #[must_use]
     fn det(&self) -> f64;
+
+    /// Create an identity matrix of dimension N.
+    #[must_use]
+    fn eye() -> Self;
 }
 
 /// A matrix with N rows and M columns, allocated on the stack.
@@ -88,6 +96,12 @@ impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
         }
     }
     #[inline]
+    fn full(val: f64) -> Self {
+        Self {
+            rows: std::array::from_fn(|_| std::array::from_fn(|_| val)),
+        }
+    }
+    #[inline]
     fn iter_rows(&self) -> impl Iterator<Item = impl IntoIterator<Item = &f64>> {
         self.rows.iter()
     }
@@ -95,7 +109,15 @@ impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
 
 impl<const N: usize> SquareMatrix for Matrix<N, N> {
     #[inline]
-    fn diag() -> Self {
+    fn diag(&self) -> Self {
+        Self {
+            rows: std::array::from_fn(|i| {
+                std::array::from_fn(|j| if i == j { self.rows[i][j] } else { 0.0 })
+            }),
+        }
+    }
+    #[inline]
+    fn eye() -> Self {
         Self {
             rows: std::array::from_fn(|i| std::array::from_fn(|j| if i == j { 1.0 } else { 0.0 })),
         }
@@ -103,40 +125,37 @@ impl<const N: usize> SquareMatrix for Matrix<N, N> {
 
     #[inline]
     fn det(&self) -> f64 {
+        /** Recursively evaluate the determinant of a matrix via a Laplace expansion.
+        Because math with const generics is not allowed in rust, we compute the indices
+        of each submatrix and recur on those segments of the input.
+        */
         #[inline]
-        fn det_recursive<const N: usize>(
+        fn det_recursive_noslice<const N: usize>(
             matrix: &Matrix<N, N>,
             row: usize,
             col_indices: &[usize; N],
-            size: usize,
+            minor_size: usize,
         ) -> f64 {
-            if size == 2 {
+            if minor_size == 2 {
                 let j0 = col_indices[0];
                 let j1 = col_indices[1];
                 return matrix.rows[row][j0] * matrix.rows[row + 1][j1]
                     - matrix.rows[row][j1] * matrix.rows[row + 1][j0];
             }
 
-            let mut det_sum = 0.0;
-
-            for idx in 0..size {
-                // Build minor column indices without dynamic allocation
-                let mut minor_cols: [usize; N] = [0; N];
-                let mut minor_size = 0;
-                for j in 0..size {
-                    if j != idx {
-                        minor_cols[minor_size] = col_indices[j];
-                        minor_size += 1;
-                    }
+            (0..minor_size).fold(0.0, |acc, idx| {
+                let minor_size = minor_size - 1;
+                let mut minor_cols = [0; N];
+                for j in 0..minor_size {
+                    // Store the indices for the next recursion, skipping col idx
+                    minor_cols[j] = col_indices[j + usize::from(j >= idx)];
                 }
 
                 let sign = if idx % 2 == 0 { 1.0 } else { -1.0 };
-                det_sum += sign
+                acc + sign
                     * matrix.rows[row][col_indices[idx]]
-                    * det_recursive(matrix, row + 1, &minor_cols, minor_size);
-            }
-
-            det_sum
+                    * det_recursive_noslice(matrix, row + 1, &minor_cols, minor_size)
+            })
         }
         // This would be handled by the iteration, but this simplifies the code
         match N {
@@ -145,12 +164,8 @@ impl<const N: usize> SquareMatrix for Matrix<N, N> {
             _ => (),
         }
 
-        let mut col_indices: [usize; N] = [0; N];
-        for i in 0..N {
-            col_indices[i] = i;
-        }
-
-        det_recursive(self, 0, &col_indices, N)
+        let col_indices = std::array::from_fn(|i| i);
+        det_recursive_noslice(self, 0, &col_indices, N)
     }
 }
 // impl<const N: usize> GeneralMatrix for DiagonalMatrix<N> {
@@ -317,8 +332,10 @@ mod tests {
         rows,
         case([[1.0, 2.0], [3.0, 4.0]]),
         case([[1.0, 2.0, 3.0], [0.0, 1.0, 4.0], [5.0, 6.0, 0.0]]),
-        case([[1.0, 0.0, 0.0], [0.0, 1.0, 4.0], [0.0, 1.0, 0.0]]),
-        case([[2.0, 0.0, 1.0], [3.0, 0.0, 0.0], [5.0, 1.0, 1.0]])
+        case([[2.0, 0.0, 1.0], [3.0, 0.0, 0.0], [5.0, 1.0, 1.0]]),
+        case(Matrix::<4, 4>::eye().rows),
+        case(Matrix::<5, 5>::full(3.6).diag().rows),
+        case(Matrix::<8, 8>::eye().rows),
     )]
     fn test_determinant_parametrized<const N: usize>(rows: [[f64; N]; N]) {
         let matrix = Matrix { rows };
