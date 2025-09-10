@@ -287,7 +287,7 @@ where
 /// Solve the characteristic equation of two ellipses.
 #[inline]
 fn k_lambda(a_inv: &Matrix22, b_inv: &Matrix22, l: f64, v_ij: &[f64; 2]) -> f64 {
-    let m = b_inv.clone() * ((1.0 - l).recip()) + (a_inv.clone() * l.recip());
+    let m = *b_inv * ((1.0 - l).recip()) + (*a_inv * l.recip());
 
     1.0 - m.inverse().compute_quadratic_form(v_ij)
 }
