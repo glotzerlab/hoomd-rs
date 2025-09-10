@@ -18,18 +18,6 @@ pub trait Invertible {
     fn inverse(&self) -> Self;
 }
 
-// /** Compute the determinant of a matrix.
-// */
-// pub trait Determinant: Sized
-// where
-//     Self: SquareMatrix,
-// {
-
-// }
-// a few options: Leibniz, SVD Decompose, laplace
-// Key difficulty: specialization. it would be nice to have this for general N, but this
-// is obviously nontrivial. BUT: for 2x2 and 3x3, Laplace is optimal
-
 /** General implementation for size and container-agnostic matrixes.
 
 This trait is designed to function with row-major ordering, but this is not strictly
@@ -58,11 +46,7 @@ where
     #[must_use]
     fn diag(&self) -> Self;
 
-    /** Compute the determinant of a matrix using the Laplace expansion.
-
-    Note that, while this implementation is optimal for small matrixes, it has O(N!)
-    time complexity and will be extremely slow for large matrixes.
-    */
+    /** Compute the determinant of a matrix.*/
     #[must_use]
     fn det(&self) -> f64;
 
@@ -123,9 +107,13 @@ impl<const N: usize> SquareMatrix for Matrix<N, N> {
         }
     }
 
+    /**Compute the determinant of a matrix via a Laplace expansion.
+    Note that, while this implementation is optimal for small matrixes, it has O(N!)
+    time complexity and will be extremely slow for large matrixes.
+    */
     #[inline]
     fn det(&self) -> f64 {
-        /** Recursively evaluate the determinant of a matrix via a Laplace expansion.
+        /*
         Because math with const generics is not allowed in rust, we compute the indices
         of each submatrix and recur on those segments of the input.
         */
@@ -316,7 +304,7 @@ dynamically allocated classes.
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
-    use faer::{Mat, mat};
+    use faer::Mat;
     use rstest::rstest;
 
     fn fill_faer<const N: usize, const M: usize>(m: [[f64; M]; N]) -> Mat<f64> {
