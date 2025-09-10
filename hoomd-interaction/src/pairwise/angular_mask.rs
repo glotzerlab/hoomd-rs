@@ -18,7 +18,7 @@ use hoomd_interaction::pairwise::angular_mask::Patch;
 use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-let patch = Patch { director: [0.0, 1.0, 0.0].try_into()?, cos_delta: (PI/4.0).cos() };
+let patch = Patch { director: [0.0, 1.0, 0.0].try_into()?, cos_delta: (PI / 4.0).cos() };
 # Ok(())
 # }
 ```
@@ -69,7 +69,7 @@ use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
-let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() }];
+let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
 let angular_mask = AngularMask::new(boxcar, masks, masks);
 # Ok(())
 # }
@@ -83,10 +83,10 @@ use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
-let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() }];
+let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
 let mut angular_mask = AngularMask::new(boxcar, masks, masks);
 
-angular_mask.masks_i[0].cos_delta = (PI/4.0).cos();
+angular_mask.masks_i[0].cos_delta = (PI / 4.0).cos();
 angular_mask.f.epsilon = -2.0;
 # Ok(())
 # }
@@ -101,7 +101,7 @@ use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
-let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() }];
+let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
 let angular_mask = AngularMask::new(boxcar, masks, masks);
 
 // With the same relative orientation, the patches do not overlap and the
@@ -124,9 +124,9 @@ use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
-let masks_i = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() },
-    Patch { director: [-1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() }];
-let masks_j = [Patch { director: [0.0, 1.0].try_into()?, cos_delta: (PI/8.0).cos() }];
+let masks_i = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() },
+    Patch { director: [-1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
+let masks_j = [Patch { director: [0.0, 1.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
 let angular_mask = AngularMask::new(boxcar, masks_i, masks_j);
 
 // With the same relative orientation, the patches do not overlap and the
@@ -135,7 +135,7 @@ let energy = angular_mask.energy(&[-1.0, 0.0].into(), &Angle::from(0.0));
 assert_eq!(energy, 0.0);
 
 // Rotate the j particle to point at the i particle so the patches overlap.
-let energy = angular_mask.energy(&[-1.0, 0.0].into(), &Angle::from(-PI/2.0));
+let energy = angular_mask.energy(&[-1.0, 0.0].into(), &Angle::from(-PI / 2.0));
 assert_eq!(energy, -1.0);
 # Ok(())
 # }
@@ -209,7 +209,7 @@ where
 
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
-    let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI/8.0).cos() }];
+    let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
     let angular_mask = AngularMask::new(boxcar, masks, masks);
     # Ok(())
     # }
@@ -374,7 +374,7 @@ mod tests {
             0.0
         );
 
-        // With the large PI/3.0 patch, a PI/4 offset r_ij can interact.
+        // With the large PI / 3.0 patch, a PI / 4 offset r_ij can interact.
         assert_eq!(
             angular_mask.energy(&Cartesian::from([0.0, 1.0]), &Angle::from(0.0)),
             0.0
@@ -387,16 +387,16 @@ mod tests {
 
     #[rstest]
     #[case([0.0, 1.0].into(), 0.0, 1.0)]
-    #[case([0.0, 1.0].into(), PI/2.0, 0.0)]
+    #[case([0.0, 1.0].into(), PI / 2.0, 0.0)]
     #[case([0.0, 1.0].into(), PI, 1.0)]
     #[case([0.0, -1.0].into(), 0.0, 1.0)]
-    #[case([0.0, -1.0].into(), PI/2.0, 0.0)]
+    #[case([0.0, -1.0].into(), PI / 2.0, 0.0)]
     #[case([0.0, -1.0].into(), PI, 1.0)]
     #[case([1.0, 0.0].into(), 0.0, 0.0)]
-    #[case([1.0, 0.0].into(), PI/2.0, 1.0)]
+    #[case([1.0, 0.0].into(), PI / 2.0, 1.0)]
     #[case([1.0, 0.0].into(), PI, 0.0)]
     #[case([-1.0, 0.0].into(), 0.0, 0.0)]
-    #[case([-1.0, 0.0].into(), PI/2.0, 1.0)]
+    #[case([-1.0, 0.0].into(), PI / 2.0, 1.0)]
     #[case([-1.0, 0.0].into(), PI, 0.0)]
     fn multiple_patches_2d(#[case] r_ij: Cartesian<2>, #[case] theta: f64, #[case] expected: f64) {
         let epsilon = 1.0;

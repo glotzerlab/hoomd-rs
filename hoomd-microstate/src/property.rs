@@ -77,9 +77,31 @@ impl Position for Custom {
 
 ## Transformations
 
-TODO: Demonstrate transform for a custom type. Need the `OrientedPoint` type to
-use as a body property first. Transformations may not be formulaic enough for a
-macro to work in general.
+
+Implement `Transform` to take sites from the body frame to the system frame.
+Typically, this involves transforming position and orientation while leaving
+all other fields unchanged:
+
+```
+use hoomd_vector::{Cartesian, Rotate, Rotation, Versor};
+use hoomd_microstate::{Transform, property::{Orientation, OrientedPoint, Position}};
+
+struct Custom {
+    position: Cartesian<3>,
+    orientation: Versor,
+    custom: f64,
+    }
+
+impl Transform<Custom> for OrientedPoint<Cartesian<3>, Versor> {
+    fn transform(&self, site_properties: &Custom) -> Custom {
+        Custom {
+            position: self.position + self.orientation.rotate(&site_properties.position),
+            orientation: self.orientation.combine(&site_properties.orientation),
+            .. *site_properties
+        }
+    }
+}
+```
 */
 
 mod point;

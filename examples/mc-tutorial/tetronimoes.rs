@@ -18,7 +18,7 @@ use hoomd_vector::{Angle, Cartesian};
 // ANCHOR_END: use
 
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, Settings, Simulation,
+    AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings, Simulation,
     representation::RectangularBoundary,
     representation::disk::{self, Disk},
 };
@@ -235,7 +235,7 @@ fn main() -> anyhow::Result<()> {
     let hoomd_bevy_plugin = HoomdBevyPlugin {
         initial_settings: Settings {
             sps_limit: 64.0,
-            viewport_height: l + 1.0,
+            camera: InitialCamera::Orthographic2d(l + 1.0),
             ..default()
         },
         simulation,

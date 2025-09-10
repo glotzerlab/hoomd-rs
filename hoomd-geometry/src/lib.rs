@@ -30,7 +30,7 @@ use std::f64::consts::PI;
 const N: usize = 3;
 let s = Hypersphere::<N>::with_radius(1.0.try_into()?);
 let volume = s.volume();
-assert_relative_eq!(volume, (4.0/3.0 * PI));
+assert_relative_eq!(volume, (4.0 / 3.0 * PI));
 # Ok(())
 # }
 ```

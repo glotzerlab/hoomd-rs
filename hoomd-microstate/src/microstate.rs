@@ -1433,43 +1433,20 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     }
 }
 
-// This might be useful in future tests. I'm not sure if it would be interesting for users...
-
-// impl<B, S, C> PartialEq<Microstate<B, S, C>> for Microstate<B, S, C>
-// where
-//     B: PartialEq,
-//     S: PartialEq,
-//     C: PartialEq,
-// {
-//     #[inline]
-//     fn eq(&self, other: &Microstate<B, S, C>) -> bool {
-//         // `PartialEq` cannot be derived for Microstate, so implement it manually.
-//         //
-//         // Not all fields matter for equality. Check only those that do.
-//         self.step == other.step
-//             && self.substep == other.substep
-//             && self.seed == other.seed
-//             && self.bodies == other.bodies
-//             && self.body_indices == other.body_indices
-//             && self.sites == other.sites
-//             && self.site_indices == other.site_indices
-//             && self.boundary == other.boundary
-//     }
-// }
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
-        boundary::{self, Closed},
+        boundary::{self, Closed, Periodic},
         property::Point,
     };
     use hoomd_geometry::shape::Cuboid;
     use hoomd_vector::Cartesian;
 
-    use rand::{Rng, SeedableRng, rngs::StdRng, seq::SliceRandom};
+    use ::approx::assert_relative_eq;
+    use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng, seq::SliceRandom};
     use rstest::*;
-    use std::collections::HashMap;
+    use std::collections::{HashMap, HashSet};
 
     // The doc tests above cover all the trivial cases for every method which
     // are not repeated here. The following tests perform self-consistency
@@ -1481,227 +1458,475 @@ mod tests {
     const MAX_SITE_COORDINATE: f64 = 5.0;
     const MAX_BODY_TRANSLATE: f64 = 0.125;
 
-    fn create_body<R: Rng>(rng: &mut R) -> Body<Point<Cartesian<2>>> {
-        let mut body = Body::point(rng.random::<Cartesian<2>>() * MAX_INITIAL_BODY_COORDINATE);
+    mod open {
+        use super::*;
 
-        let n = rng.random_range(1..MAX_BODY_SIZE);
-        body.sites = (0..n)
-            .map(|_| Point::new(rng.random::<Cartesian<2>>() * MAX_SITE_COORDINATE))
-            .collect();
+        fn create_body<R: Rng>(rng: &mut R) -> Body<Point<Cartesian<2>>> {
+            let mut body = Body::point(rng.random::<Cartesian<2>>() * MAX_INITIAL_BODY_COORDINATE);
 
-        body
-    }
+            let n = rng.random_range(1..MAX_BODY_SIZE);
+            body.sites = (0..n)
+                .map(|_| Point::new(rng.random::<Cartesian<2>>() * MAX_SITE_COORDINATE))
+                .collect();
 
-    #[rstest]
-    fn consistency_open(#[values(1, 2, 3, 4)] seed: u64) {
-        // Rather than crafting many corner cases by hand, generate many
-        // microstates randomly by adding, removing, and updating bodies.
-        // Validate the internal consistency of the microstate when compared
-        // to an alternate reference.
+            body
+        }
 
-        let mut rng = StdRng::seed_from_u64(seed);
-        let mut reference_bodies = HashMap::new();
-        let mut microstate = Microstate::new();
+        #[rstest]
+        fn consistency(#[values(1, 2, 3, 4)] seed: u64) {
+            // Rather than crafting many corner cases by hand, generate many
+            // microstates randomly by adding, removing, and updating bodies.
+            // Validate the internal consistency of the microstate when compared
+            // to an alternate reference.
 
-        for _ in 0..N_STEPS {
-            let move_type_r: f64 = rng.random();
-            if move_type_r > 0.7 {
-                // Add bodies more often than removing bodies so that typical
-                // test executions will result in a non-empty microstate.
-                let body = create_body(&mut rng);
-                let tag = microstate
-                    .add_body(body.clone())
-                    .expect("all bodies should be allowed with open boundary conditions");
-                reference_bodies.insert(tag, body);
-            } else if move_type_r > 0.5 && !microstate.bodies.is_empty() {
-                let index = rng.random_range(..microstate.bodies.len());
-                let tag = microstate.bodies()[index].tag;
-                microstate.remove_body(index);
-                reference_bodies.remove(&tag);
-            } else if !microstate.bodies.is_empty() {
-                let index = rng.random_range(..microstate.bodies.len());
-                let tag = microstate.bodies()[index].tag;
-                let body = reference_bodies
-                    .get_mut(&tag)
-                    .expect("tags in the microstate should also be present in the reference");
+            let mut rng = StdRng::seed_from_u64(seed);
+            let mut reference_bodies = HashMap::new();
+            let mut microstate = Microstate::new();
 
-                body.properties.position += rng.random::<Cartesian<2>>() * MAX_BODY_TRANSLATE;
-                microstate
-                    .update_body_properties(index, body.properties)
-                    .expect("all bodies should be allowed with open boundary conditions");
+            for _ in 0..N_STEPS {
+                let move_type_r: f64 = rng.random();
+                if move_type_r > 0.7 {
+                    // Add bodies more often than removing bodies so that typical
+                    // test executions will result in a non-empty microstate.
+                    let body = create_body(&mut rng);
+                    let tag = microstate
+                        .add_body(body.clone())
+                        .expect("all bodies should be allowed with open boundary conditions");
+                    reference_bodies.insert(tag, body);
+                } else if move_type_r > 0.5 && !microstate.bodies.is_empty() {
+                    let index = rng.random_range(..microstate.bodies.len());
+                    let tag = microstate.bodies()[index].tag;
+                    microstate.remove_body(index);
+                    reference_bodies.remove(&tag);
+                } else if !microstate.bodies.is_empty() {
+                    let index = rng.random_range(..microstate.bodies.len());
+                    let tag = microstate.bodies()[index].tag;
+                    let body = reference_bodies
+                        .get_mut(&tag)
+                        .expect("tags in the microstate should also be present in the reference");
+
+                    body.properties.position += rng.random::<Cartesian<2>>() * MAX_BODY_TRANSLATE;
+                    microstate
+                        .update_body_properties(index, body.properties)
+                        .expect("all bodies should be allowed with open boundary conditions");
+                }
             }
-        }
 
-        assert_eq!(microstate.bodies.len(), reference_bodies.len());
-        assert_eq!(
-            microstate.sites.len(),
-            reference_bodies.values().map(|body| body.sites.len()).sum()
-        );
+            assert_eq!(microstate.bodies.len(), reference_bodies.len());
+            assert_eq!(
+                microstate.sites.len(),
+                reference_bodies.values().map(|body| body.sites.len()).sum()
+            );
 
-        for (tag, optional_index) in microstate.bodies.indices.iter().enumerate() {
-            if let Some(index) = optional_index {
-                assert_eq!(microstate.bodies()[*index].tag, tag);
-                assert!(reference_bodies.contains_key(&tag));
-            } else {
-                assert!(!reference_bodies.contains_key(&tag));
+            for (tag, optional_index) in microstate.bodies.indices.iter().enumerate() {
+                if let Some(index) = optional_index {
+                    assert_eq!(microstate.bodies()[*index].tag, tag);
+                    assert!(reference_bodies.contains_key(&tag));
+                } else {
+                    assert!(!reference_bodies.contains_key(&tag));
+                }
             }
-        }
 
-        for (tag, body) in &reference_bodies {
-            let body_index = microstate.body_indices()[*tag]
-                .expect("tags in the reference should also be present in the microstate");
-            assert_eq!(microstate.bodies()[body_index].item, *body);
-        }
-
-        for (tag, optional_index) in microstate.sites.indices.iter().enumerate() {
-            if let Some(index) = optional_index {
-                assert_eq!(microstate.sites()[*index].site_tag, tag);
+            for (tag, body) in &reference_bodies {
+                let body_index = microstate.body_indices()[*tag]
+                    .expect("tags in the reference should also be present in the microstate");
+                assert_eq!(microstate.bodies()[body_index].item, *body);
             }
-        }
 
-        for site in microstate.sites() {
-            let body_index = microstate.body_indices()[site.body_tag]
-                .expect("tags in the microstate should also be in the reference");
-            assert!(microstate.bodies_sites[body_index].contains(&site.site_tag));
-        }
-
-        assert_eq!(microstate.bodies().len(), microstate.bodies_sites.len());
-        for (body, body_sites) in microstate
-            .bodies()
-            .iter()
-            .zip(microstate.bodies_sites.iter())
-        {
-            assert_eq!(body.item.sites.len(), body_sites.len());
-            for site_tag in body_sites {
-                let site_index = microstate.site_indices()[*site_tag]
-                    .expect("body_sites should be consistent with site_indices");
-                assert_eq!(microstate.sites()[site_index].body_tag, body.tag);
+            for (tag, optional_index) in microstate.sites.indices.iter().enumerate() {
+                if let Some(index) = optional_index {
+                    assert_eq!(microstate.sites()[*index].site_tag, tag);
+                }
             }
-        }
 
-        for (body_index, body) in microstate.bodies().iter().enumerate() {
-            for (system_site, local_site) in microstate
-                .iter_body_sites(body_index)
-                .zip(body.item.sites.iter())
+            for site in microstate.sites() {
+                let body_index = microstate.body_indices()[site.body_tag]
+                    .expect("tags in the microstate should also be in the reference");
+                assert!(microstate.bodies_sites[body_index].contains(&site.site_tag));
+            }
+
+            assert_eq!(microstate.bodies().len(), microstate.bodies_sites.len());
+            for (body, body_sites) in microstate
+                .bodies()
+                .iter()
+                .zip(microstate.bodies_sites.iter())
             {
-                assert_eq!(system_site.body_tag, microstate.bodies()[body_index].tag);
-                assert_eq!(
-                    system_site.properties,
-                    body.item.properties.transform(local_site)
-                );
+                assert_eq!(body.item.sites.len(), body_sites.len());
+                for site_tag in body_sites {
+                    let site_index = microstate.site_indices()[*site_tag]
+                        .expect("body_sites should be consistent with site_indices");
+                    assert_eq!(microstate.sites()[site_index].body_tag, body.tag);
+                }
+            }
+
+            for (body_index, body) in microstate.bodies().iter().enumerate() {
+                for (system_site, local_site) in microstate
+                    .iter_body_sites(body_index)
+                    .zip(body.item.sites.iter())
+                {
+                    assert_eq!(system_site.body_tag, microstate.bodies()[body_index].tag);
+                    assert_eq!(
+                        system_site.properties,
+                        body.item.properties.transform(local_site)
+                    );
+                }
             }
         }
+
+        #[rstest]
+        fn remove_all(#[values(1, 2, 3, 4)] seed: u64) {
+            let mut microstate = Microstate::new();
+            let mut rng = StdRng::seed_from_u64(seed);
+
+            for _ in 0..N_STEPS {
+                let body = create_body(&mut rng);
+                microstate
+                    .add_body(body)
+                    .expect("all bodies should be allowed in open boundary conditions");
+            }
+
+            let mut removal_order = (0..N_STEPS).collect::<Vec<_>>();
+            removal_order.shuffle(&mut rng);
+
+            for body_tag in removal_order {
+                let body_index = microstate.body_indices()[body_tag]
+                    .expect("body tags should be assigned in order");
+                microstate.remove_body(body_index);
+            }
+
+            assert!(microstate.bodies().is_empty());
+            assert!(microstate.bodies_sites.is_empty());
+            assert!(microstate.sites().is_empty());
+        }
     }
 
-    #[rstest]
-    fn remove_all(#[values(1, 2, 3, 4)] seed: u64) {
-        let mut microstate = Microstate::new();
-        let mut rng = StdRng::seed_from_u64(seed);
+    mod closed {
+        use super::*;
 
-        for _ in 0..N_STEPS {
-            let body = create_body(&mut rng);
-            microstate
-                .add_body(body)
-                .expect("all bodies should be allowed in open boundary conditions");
+        #[fixture]
+        fn square() -> Closed<Cuboid<2>> {
+            let cuboid = Cuboid {
+                edge_lengths: [
+                    4.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    4.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                ],
+            };
+            Closed(cuboid)
         }
 
-        let mut removal_order = (0..N_STEPS).collect::<Vec<_>>();
-        removal_order.shuffle(&mut rng);
+        #[rstest]
+        fn add_body_outside(square: Closed<Cuboid<2>>) {
+            let mut microstate = MicrostateBuilder::with_boundary(square)
+                .try_build()
+                .expect("the hard-coded bodies should be in the boundary");
 
-        for body_tag in removal_order {
-            let body_index =
-                microstate.body_indices()[body_tag].expect("body tags should be assigned in order");
-            microstate.remove_body(body_index);
+            assert_eq!(
+                microstate.add_body(Body::point(Cartesian::from([2.0, 0.0]))),
+                Err(Error::AddBody(0, boundary::Error::CannotWrapProperties))
+            );
         }
 
-        assert!(microstate.bodies().is_empty());
-        assert!(microstate.bodies_sites.is_empty());
-        assert!(microstate.sites().is_empty());
+        #[rstest]
+        fn update_body_outside(square: Closed<Cuboid<2>>) {
+            let mut microstate = MicrostateBuilder::with_boundary(square)
+                .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
+                .try_build()
+                .expect("the hard-coded bodies should be in the boundary");
+
+            assert_eq!(
+                microstate.update_body_properties(
+                    0,
+                    Point {
+                        position: [2.0, 0.0].into()
+                    }
+                ),
+                Err(Error::UpdateBody(0, boundary::Error::CannotWrapProperties))
+            );
+        }
+
+        #[rstest]
+        fn add_site_outside(square: Closed<Cuboid<2>>) {
+            let body = Body {
+                properties: Point::new(Cartesian::from([1.0, 0.0])),
+                sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
+            };
+
+            let mut microstate = MicrostateBuilder::with_boundary(square)
+                .try_build()
+                .expect("the hard-coded bodies should be in the boundary");
+
+            assert_eq!(
+                microstate.add_body(body),
+                Err(Error::AddBody(0, boundary::Error::CannotWrapProperties))
+            );
+        }
+
+        #[rstest]
+        fn update_site_outside(square: Closed<Cuboid<2>>) {
+            let body = Body {
+                properties: Point::new(Cartesian::from([0.0, 0.0])),
+                sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
+            };
+
+            let mut microstate = MicrostateBuilder::with_boundary(square)
+                .bodies([body])
+                .try_build()
+                .expect("the hard-coded bodies should be in the boundary");
+
+            assert_eq!(
+                microstate.update_body_properties(
+                    0,
+                    Point {
+                        position: [1.0, 0.0].into()
+                    }
+                ),
+                Err(Error::UpdateBody(0, boundary::Error::CannotWrapProperties))
+            );
+        }
     }
 
-    #[fixture]
-    fn square() -> Closed<Cuboid<2>> {
-        let cuboid = Cuboid {
-            edge_lengths: [
-                4.0.try_into()
-                    .expect("hard-coded constant should be positive"),
-                4.0.try_into()
-                    .expect("hard-coded constant should be positive"),
-            ],
-        };
-        Closed(cuboid)
-    }
+    mod periodic {
+        use super::*;
 
-    #[rstest]
-    fn add_body_outside(square: Closed<Cuboid<2>>) {
-        let mut microstate = MicrostateBuilder::with_boundary(square)
-            .try_build()
-            .expect("the hard-coded bodies should be in the boundary");
+        fn create_body<R: Rng>(
+            rng: &mut R,
+            boundary: &Periodic<Cuboid<2>>,
+        ) -> Body<Point<Cartesian<2>>> {
+            let mut body = Body::point(boundary.sample(rng));
 
-        assert_eq!(
-            microstate.add_body(Body::point(Cartesian::from([2.0, 0.0]))),
-            Err(Error::AddBody(0, boundary::Error::CannotWrapProperties))
-        );
-    }
+            let n = rng.random_range(1..MAX_BODY_SIZE);
+            body.sites = (0..n)
+                .map(|_| Point::new(rng.random::<Cartesian<2>>() * MAX_SITE_COORDINATE))
+                .collect();
 
-    #[rstest]
-    fn update_body_outside(square: Closed<Cuboid<2>>) {
-        let mut microstate = MicrostateBuilder::with_boundary(square)
-            .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
-            .try_build()
-            .expect("the hard-coded bodies should be in the boundary");
+            body
+        }
 
-        assert_eq!(
-            microstate.update_body_properties(
-                0,
-                Point {
-                    position: [2.0, 0.0].into()
+        #[fixture]
+        fn rectangle() -> Periodic<Cuboid<2>> {
+            let cuboid = Cuboid {
+                edge_lengths: [
+                    10.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                    20.0.try_into()
+                        .expect("hard-coded constant should be positive"),
+                ],
+            };
+            Periodic::new(1.0, cuboid)
+                .expect("hard-coded interaction range is less than the box plane distance")
+        }
+
+        #[rstest]
+        fn add_body_outside(rectangle: Periodic<Cuboid<2>>) {
+            let mut microstate = MicrostateBuilder::with_boundary(rectangle)
+                .try_build()
+                .expect("the hard-coded bodies should be in the boundary");
+
+            assert_eq!(
+                microstate.add_body(Body::point(Cartesian::from([11.0, -21.0]))),
+                Ok(0)
+            );
+
+            let body = &microstate.bodies()[0].item;
+            assert_relative_eq!(body.properties.position, [1.0, -1.0].into(), epsilon = 1e-6);
+            assert_eq!(microstate.ghosts().len(), 0);
+        }
+
+        #[rstest]
+        fn update_body_outside(rectangle: Periodic<Cuboid<2>>) {
+            let mut microstate = MicrostateBuilder::with_boundary(rectangle)
+                .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
+                .try_build()
+                .expect("the hard-coded bodies should be in the boundary");
+
+            assert_eq!(
+                microstate.update_body_properties(
+                    0,
+                    Point {
+                        position: [11.0, -21.0].into()
+                    }
+                ),
+                Ok(())
+            );
+
+            let body = &microstate.bodies()[0].item;
+            assert_relative_eq!(body.properties.position, [1.0, -1.0].into(), epsilon = 1e-6);
+            assert_eq!(microstate.ghosts().len(), 0);
+        }
+
+        #[rstest]
+        fn add_site_outside(rectangle: Periodic<Cuboid<2>>) {
+            let body = Body {
+                properties: Point::new(Cartesian::from([4.5, 1.0])),
+                sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
+            };
+
+            let mut microstate = MicrostateBuilder::with_boundary(rectangle)
+                .try_build()
+                .expect("the hard-coded bodies should be in the boundary");
+
+            assert_eq!(microstate.add_body(body), Ok(0));
+
+            let body = &microstate.bodies()[0].item;
+            assert_relative_eq!(body.properties.position, [4.5, 1.0].into(), epsilon = 1e-6);
+
+            let site = &microstate.sites()[0];
+            assert_relative_eq!(site.properties.position, [-4.5, 1.0].into(), epsilon = 1e-6);
+
+            assert_eq!(microstate.ghosts().len(), 1);
+            let ghost = &microstate.ghosts()[0];
+            assert_relative_eq!(ghost.properties.position, [5.5, 1.0].into(), epsilon = 1e-6);
+
+            assert!(ghost.site_tag == site.site_tag);
+            assert!(ghost.body_tag == site.body_tag);
+        }
+
+        #[rstest]
+        fn update_site_outside(rectangle: Periodic<Cuboid<2>>) {
+            let body = Body {
+                properties: Point::new(Cartesian::from([0.0, 0.0])),
+                sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
+            };
+
+            let mut microstate = MicrostateBuilder::with_boundary(rectangle)
+                .bodies([body])
+                .try_build()
+                .expect("the hard-coded bodies should be in the boundary");
+
+            assert_eq!(
+                microstate.update_body_properties(
+                    0,
+                    Point {
+                        position: [4.5, 1.0].into()
+                    }
+                ),
+                Ok(())
+            );
+
+            let body = &microstate.bodies()[0].item;
+            assert_relative_eq!(body.properties.position, [4.5, 1.0].into(), epsilon = 1e-6);
+
+            let site = &microstate.sites()[0];
+            assert_relative_eq!(site.properties.position, [-4.5, 1.0].into(), epsilon = 1e-6);
+
+            assert_eq!(microstate.ghosts().len(), 1);
+            let ghost = &microstate.ghosts()[0];
+            assert_relative_eq!(ghost.properties.position, [5.5, 1.0].into(), epsilon = 1e-6);
+
+            assert!(ghost.site_tag == site.site_tag);
+            assert!(ghost.body_tag == site.body_tag);
+
+            assert_eq!(
+                microstate.update_body_properties(
+                    0,
+                    Point {
+                        position: [0.0, 0.0].into()
+                    }
+                ),
+                Ok(())
+            );
+
+            assert_eq!(microstate.ghosts().len(), 0);
+        }
+
+        #[rstest]
+        fn consistency(#[values(1, 2, 3, 4)] seed: u64, rectangle: Periodic<Cuboid<2>>) {
+            // The boundary-specific unit tests validate that the *right*
+            // ghosts are created. This test throws random body insertions,
+            // updates, and removals and ensures that the internal ghost/site
+            // data structures remain consistent.
+
+            let mut rng = StdRng::seed_from_u64(seed);
+            let mut microstate = MicrostateBuilder::with_boundary(rectangle)
+                .try_build()
+                .expect("the hard-coded bodies should be in the boundary");
+
+            for _ in 0..N_STEPS {
+                let move_type_r: f64 = rng.random();
+                if move_type_r > 0.7 {
+                    // Add bodies more often than removing bodies so that typical
+                    // test executions will result in a non-empty microstate.
+                    let body = create_body(&mut rng, &rectangle);
+                    microstate
+                        .add_body(body.clone())
+                        .expect("all bodies should be wrapped into the boundary");
+                } else if move_type_r > 0.5 && !microstate.bodies.is_empty() {
+                    let index = rng.random_range(..microstate.bodies.len());
+                    microstate.remove_body(index);
+                } else if !microstate.bodies.is_empty() {
+                    let index = rng.random_range(..microstate.bodies.len());
+                    let mut body_properties = microstate.bodies()[index].item.properties;
+
+                    body_properties.position += rng.random::<Cartesian<2>>() * MAX_BODY_TRANSLATE;
+                    microstate
+                        .update_body_properties(index, body_properties)
+                        .expect("all bodies should be wrapped into the boundary");
                 }
-            ),
-            Err(Error::UpdateBody(0, boundary::Error::CannotWrapProperties))
-        );
-    }
+            }
 
-    #[rstest]
-    fn add_site_outside(square: Closed<Cuboid<2>>) {
-        let body = Body {
-            properties: Point::new(Cartesian::from([1.0, 0.0])),
-            sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
-        };
+            // open::consistency validates most of the internal data structures
+            // in Microstate. periodic::consistency only needs to validate
+            // the consistency of the ghosts.
+            let mut sites_with_ghosts = HashSet::new();
 
-        let mut microstate = MicrostateBuilder::with_boundary(square)
-            .try_build()
-            .expect("the hard-coded bodies should be in the boundary");
+            assert!(!microstate.ghosts().is_empty());
+            for ghost in microstate.ghosts() {
+                let parent_site_index = microstate.site_indices()[ghost.site_tag]
+                    .expect("every ghost should have a parent site");
+                sites_with_ghosts.insert(parent_site_index);
+                let parent = &microstate.sites()[parent_site_index];
 
-        assert_eq!(
-            microstate.add_body(body),
-            Err(Error::AddBody(0, boundary::Error::CannotWrapProperties))
-        );
-    }
+                assert_eq!(parent.site_tag, ghost.site_tag);
+                assert_eq!(parent.body_tag, ghost.body_tag);
+            }
 
-    #[rstest]
-    fn update_site_outside(square: Closed<Cuboid<2>>) {
-        let body = Body {
-            properties: Point::new(Cartesian::from([0.0, 0.0])),
-            sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
-        };
-
-        let mut microstate = MicrostateBuilder::with_boundary(square)
-            .bodies([body])
-            .try_build()
-            .expect("the hard-coded bodies should be in the boundary");
-
-        assert_eq!(
-            microstate.update_body_properties(
-                0,
-                Point {
-                    position: [1.0, 0.0].into()
+            for (site_index, site_ghosts) in microstate.sites_ghosts.iter().enumerate() {
+                if sites_with_ghosts.contains(&site_index) {
+                    for ghost_tag in site_ghosts {
+                        let ghost_index = microstate.ghosts.indices[*ghost_tag]
+                            .expect("ghost tag in sites_ghosts should be present");
+                        let ghost = &microstate.ghosts()[ghost_index];
+                        let site = &microstate.sites()[site_index];
+                        assert_eq!(site.site_tag, ghost.site_tag);
+                        assert_eq!(site.body_tag, ghost.body_tag);
+                    }
+                } else {
+                    assert!(site_ghosts.is_empty());
                 }
-            ),
-            Err(Error::UpdateBody(0, boundary::Error::CannotWrapProperties))
-        );
+            }
+        }
+
+        #[rstest]
+        fn remove_all(#[values(1, 2, 3, 4)] seed: u64, rectangle: Periodic<Cuboid<2>>) {
+            let mut microstate = MicrostateBuilder::with_boundary(rectangle)
+                .try_build()
+                .expect("the hard-coded bodies should be in the boundary");
+            let mut rng = StdRng::seed_from_u64(seed);
+
+            for _ in 0..N_STEPS {
+                let body = create_body(&mut rng, &rectangle);
+                microstate
+                    .add_body(body)
+                    .expect("all bodies should be allowed in open boundary conditions");
+            }
+
+            let mut removal_order = (0..N_STEPS).collect::<Vec<_>>();
+            removal_order.shuffle(&mut rng);
+
+            for body_tag in removal_order {
+                let body_index = microstate.body_indices()[body_tag]
+                    .expect("body tags should be assigned in order");
+                microstate.remove_body(body_index);
+            }
+
+            assert!(microstate.bodies().is_empty());
+            assert!(microstate.bodies_sites.is_empty());
+            assert!(microstate.sites().is_empty());
+            assert!(microstate.ghosts().is_empty());
+        }
     }
 
-    // TODO: Test iter_sites_near
-    // TODO: Test add_bodies, update_body_properties, and iter_sites_near with periodic boundaries that result in wrapping.
+    // TODO: Test iter_sites_near: with and without periodic boundaries
 }

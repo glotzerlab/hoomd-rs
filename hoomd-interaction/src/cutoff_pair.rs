@@ -5,8 +5,8 @@
 */
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairEnergy, TotalEnergy};
-use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Position};
 use hoomd_vector::Metric;
+use hoomd_microstate::{Body, Microstate, Site, Transform, boundary::Wrap, property::Position};
 
 /** Compute system properties based on short-ranged pairwise interactions between sites.
 
@@ -38,7 +38,7 @@ use hoomd_interaction::{CutoffPair,
 
 let lennard_jones: LennardJones = LennardJones { epsilon: 1.5, sigma: 2.0 };
 let evaluator = Isotropic(lennard_jones);
-let cutoff_pair = CutoffPair { r_cut: 2.5, evaluator };
+let cutoff_pair = CutoffPair { r_cut: 5.0, evaluator };
 ```
 
 Set a custom potential using a closure:
@@ -80,7 +80,66 @@ pub struct CutoffPair<E> {
     pub evaluator: E,
 }
 
-impl<P, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPair<E>
+impl<E> CutoffPair<E> {
+    /** Compute the pair energy between two sites.
+
+    Use this method to compute an individual term in the total pair energy,
+    subject to the `r_cut` and inter-body checks:
+
+    ```math
+    U\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
+    ```
+
+    # Example
+    ```
+    use ::approx::assert_relative_eq;
+
+    use hoomd_interaction::{CutoffPair,
+        pairwise::{Isotropic, LennardJones}};
+    use hoomd_microstate::{Body, MicrostateBuilder, Site};
+    use hoomd_vector::Cartesian;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let lennard_jones: LennardJones = LennardJones { epsilon: 1.0, sigma: 1.0 };
+    let evaluator = Isotropic(lennard_jones);
+    let cutoff_pair = CutoffPair { r_cut: 2.5, evaluator };
+
+    let body_a = Body::point(Cartesian::from([0.0, 0.0]));
+    let body_b = Body::point(Cartesian::from([0.0, 3.0]));
+    let body_c = Body::point(Cartesian::from([0.0, -2.0f64.powf(1.0 / 6.0)]));
+
+    let microstate = MicrostateBuilder::new()
+        .bodies([body_a, body_b, body_c])
+        .try_build()?;
+
+    let sites = microstate.sites();
+    let energy_ab = cutoff_pair.site_pair_energy(&sites[0], &sites[1]);
+    let energy_ac = cutoff_pair.site_pair_energy(&sites[0], &sites[2]);
+
+    assert_eq!(energy_ab, 0.0);
+    assert_relative_eq!(energy_ac, -1.0);
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    pub fn site_pair_energy<V, S>(&self, a: &Site<S>, b: &Site<S>) -> f64
+    where
+        E: SitePairEnergy<S>,
+        S: Position<Vector = V>,
+        V: Vector,
+    {
+        let r = (a.properties.position()).distance(b.properties.position());
+        if r < self.r_cut && a.body_tag != b.body_tag {
+            self.evaluator
+                .site_pair_energy(&a.properties, &b.properties)
+        } else {
+            0.0
+        }
+    }
+}
+
+impl<V, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
     S: Position<Position = P>,
@@ -106,7 +165,7 @@ where
                             ])?;
 
     let lennard_jones: LennardJones = LennardJones { epsilon: 1.5,
-        sigma: 1.0 / 2.0_f64.powf(1.0/6.0) };
+        sigma: 1.0 / 2.0_f64.powf(1.0 / 6.0) };
     let evaluator = Isotropic(lennard_jones);
     let cutoff_pair = CutoffPair { r_cut: 2.5, evaluator };
 
@@ -361,9 +420,6 @@ where
     }
 }
 
-// TODO: implement site_pair_energy for CutoffPair. It needs to apply
-// the r_cut and body exclusions first, then forward the call to the inner type.
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -425,6 +481,18 @@ mod tests {
 
             // Two pairs at a distance of 1.0 each with energy 1/2.
             assert_eq!(cutoff_pair.total_energy(&microstate), 1.0);
+
+            let sites = microstate.sites();
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[0]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[1]), 0.5);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[2]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[3]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[1], &sites[1]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[1], &sites[2]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[1], &sites[3]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[2], &sites[2]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[2], &sites[3]), 0.5);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[3], &sites[3]), 0.0);
         }
 
         #[rstest]
@@ -470,6 +538,20 @@ mod tests {
 
             // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
             assert_eq!(cutoff_pair.total_energy(&microstate), 2.0);
+
+            let sites = microstate.sites();
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[0]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[1]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[2]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[3]), 0.0);
+
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[4], &sites[4]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[4], &sites[5]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[4], &sites[6]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[4], &sites[7]), 0.0);
+
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[6]), 1.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[1], &sites[7]), 1.0);
         }
     }
 
@@ -606,7 +688,7 @@ mod tests {
         }
     }
 
-    mod delta_energy_insert {
+    mod delta_energy_insert_remove {
         use super::*;
 
         #[rstest]
@@ -668,6 +750,11 @@ mod tests {
                 cutoff_pair.delta_energy_insert(&microstate, &body_a_new),
                 2.0
             );
+
+            microstate
+                .add_body(body_a_new)
+                .expect("hard-coded bodies should be in the boundary");
+            assert_eq!(cutoff_pair.delta_energy_remove(&microstate, 1), -2.0);
         }
 
         #[test]
@@ -728,12 +815,14 @@ mod tests {
                     - cutoff_pair.total_energy(&microstate_initial);
 
                 assert_relative_eq!(delta_energy_insert, delta_energy_total, epsilon = 1e-6);
+
+                let delta_energy_remove = cutoff_pair.delta_energy_remove(&microstate_final, 1);
+                assert_relative_eq!(delta_energy_remove, -delta_energy_total, epsilon = 1e-6);
+
                 microstate_final.remove_body(
                     microstate_final.body_indices()[tag].expect("tag should be present"),
                 );
             }
         }
     }
-
-    // TODO: Test delta_energy_remove
 }

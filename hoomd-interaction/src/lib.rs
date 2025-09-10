@@ -52,7 +52,7 @@ microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
                           Body::point(Cartesian::from([-1.0, 5.0])),
                         ])?;
 
-let lennard_jones: LennardJones = LennardJones { epsilon: 1.5, sigma: 1.0 / 2.0_f64.powf(1.0/6.0) };
+let lennard_jones: LennardJones = LennardJones { epsilon: 1.5, sigma: 1.0 / 2.0_f64.powf(1.0 / 6.0) };
 let lennard_jones = Isotropic(lennard_jones);
 let cutoff_pair = CutoffPair { r_cut: 2.5, evaluator: lennard_jones, };
 

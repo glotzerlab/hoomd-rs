@@ -31,7 +31,7 @@ let rounded_rectangle = Convex(Sphero { shape: rectangle, rounding_radius: 0.5.t
 
 assert!(rounded_rectangle.intersects_at(&circle, &[2.4, 0.0].into(), &Angle::default()));
 assert!(!rounded_rectangle.intersects_at(&circle, &[0.0, 2.4].into(), &Angle::default()));
-assert!(circle.intersects_at(&rounded_rectangle, &[0.0, 2.4].into(), &Angle::from(PI/2.0)));
+assert!(circle.intersects_at(&rounded_rectangle, &[0.0, 2.4].into(), &Angle::from(PI / 2.0)));
 # Ok(())
 # }
 ```

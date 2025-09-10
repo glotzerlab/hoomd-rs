@@ -70,7 +70,7 @@ use std::f64::consts::PI;
 let square = Convex(Rectangle {edge_lengths: [1.0.try_into()?; 2]});
 
 assert_eq!(square.intersects_at(&square, &[1.1, 0.0].into(), &Angle::default()), false);
-assert_eq!(square.intersects_at(&square, &[1.1, 0.0].into(), &Angle::from(PI/4.0)), true);
+assert_eq!(square.intersects_at(&square, &[1.1, 0.0].into(), &Angle::from(PI / 4.0)), true);
 # Ok(())
 # }
 ```
@@ -108,7 +108,7 @@ let rectangle = Rectangle { edge_lengths: [4.0.try_into()?, 2.0.try_into()?] };
 let rectangle = Convex(rectangle);
 
 assert_eq!(rectangle.intersects_at(&rectangle, &[0.0, 2.1].into(), &Angle::default()), false);
-assert_eq!(rectangle.intersects_at(&rectangle, &[0.0, 2.1].into(), &Angle::from(PI/2.0)), true);
+assert_eq!(rectangle.intersects_at(&rectangle, &[0.0, 2.1].into(), &Angle::from(PI / 2.0)), true);
 # Ok(())
 # }
 ```
