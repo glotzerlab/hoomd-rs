@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 /*! asdf
 
 TODO: Expand documentation.
@@ -39,7 +42,7 @@ pub trait GeneralMatrix: Mul<f64, Output = Self> {
 
     /// Iterate over the rows of a matrix.
     #[must_use]
-    fn iter_rows(&self) -> impl IntoIterator<Item = impl IntoIterator<Item = f64>>;
+    fn iter_rows(&self) -> impl Iterator<Item = impl IntoIterator<Item = &f64>>;
 }
 
 /// TODO
@@ -85,8 +88,8 @@ impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
         }
     }
     #[inline]
-    fn iter_rows(&self) -> impl IntoIterator<Item = impl IntoIterator<Item = f64>> {
-        self.rows.into_iter()
+    fn iter_rows(&self) -> impl Iterator<Item = impl IntoIterator<Item = &f64>> {
+        self.rows.iter()
     }
 }
 
@@ -100,18 +103,54 @@ impl<const N: usize> SquareMatrix for Matrix<N, N> {
 
     #[inline]
     fn det(&self) -> f64 {
-        if N == 1 {
-            return self.rows[0][0]
-        }
-        else if N == 2{ return self.rows[0][0] * self.rows[1][1] - self.rows[1][0] * self.rows[0][1];}
+        #[inline]
+        fn det_recursive<const N: usize>(
+            matrix: &Matrix<N, N>,
+            row: usize,
+            col_indices: &[usize; N],
+            size: usize,
+        ) -> f64 {
+            if size == 2 {
+                let j0 = col_indices[0];
+                let j1 = col_indices[1];
+                return matrix.rows[row][j0] * matrix.rows[row + 1][j1]
+                    - matrix.rows[row][j1] * matrix.rows[row + 1][j0];
+            }
 
-        let mut result = 0.0;
+            let mut det_sum = 0.0;
+
+            for idx in 0..size {
+                // Build minor column indices without dynamic allocation
+                let mut minor_cols: [usize; N] = [0; N];
+                let mut minor_size = 0;
+                for j in 0..size {
+                    if j != idx {
+                        minor_cols[minor_size] = col_indices[j];
+                        minor_size += 1;
+                    }
+                }
+
+                let sign = if idx % 2 == 0 { 1.0 } else { -1.0 };
+                det_sum += sign
+                    * matrix.rows[row][col_indices[idx]]
+                    * det_recursive(matrix, row + 1, &minor_cols, minor_size);
+            }
+
+            det_sum
+        }
+        // This would be handled by the iteration, but this simplifies the code
+        match N {
+            1 => return self.rows[0][0],
+            2 => return self.rows[0][0] * self.rows[1][1] - self.rows[1][0] * self.rows[0][1],
+            _ => (),
+        }
+
+        let mut col_indices: [usize; N] = [0; N];
         for i in 0..N {
-            let sign = if 
-            result += 
+            col_indices[i] = i;
         }
 
-        result
+        det_recursive(self, 0, &col_indices, N)
     }
 }
 // impl<const N: usize> GeneralMatrix for DiagonalMatrix<N> {
@@ -228,11 +267,11 @@ impl<const N: usize, const M: usize> Add<Self> for Matrix<N, M> {
 
 impl Matrix<2, 2> {
     /// The determinant of a 2x2 square matrix.
-    #[must_use]
-    #[inline]
-    pub fn det(&self) -> f64 {
-        self.rows[0][0] * self.rows[1][1] - self.rows[1][0] * self.rows[0][1]
-    }
+    // #[must_use]
+    // #[inline]
+    // pub fn det(&self) -> f64 {
+    //     self.rows[0][0] * self.rows[1][1] - self.rows[1][0] * self.rows[0][1]
+    // }
     /// The inverse of a 2x2 square matrix.
     #[must_use]
     #[inline]
@@ -257,3 +296,37 @@ If it turns out we really want a large matrix SVD or something, we can have a Ma
 wrapper class that implements that subroutine. This also allows us to have separate
 dynamically allocated classes.
 */
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use approx::assert_relative_eq;
+    use faer::{Mat, mat};
+    use rstest::rstest;
+
+    fn fill_faer<const N: usize, const M: usize>(m: [[f64; M]; N]) -> Mat<f64> {
+        let mut faer_matrix = Mat::<f64>::zeros(N, N);
+        for (i, row) in m.iter().enumerate() {
+            for (j, el) in row.iter().enumerate() {
+                *faer_matrix.get_mut(i, j) = *el;
+            }
+        }
+        faer_matrix
+    }
+    #[rstest(
+        rows,
+        case([[1.0, 2.0], [3.0, 4.0]]),
+        case([[1.0, 2.0, 3.0], [0.0, 1.0, 4.0], [5.0, 6.0, 0.0]]),
+        case([[1.0, 0.0, 0.0], [0.0, 1.0, 4.0], [0.0, 1.0, 0.0]]),
+        case([[2.0, 0.0, 1.0], [3.0, 0.0, 0.0], [5.0, 1.0, 1.0]])
+    )]
+    fn test_determinant_parametrized<const N: usize>(rows: [[f64; N]; N]) {
+        let matrix = Matrix { rows };
+        let faer_matrix = fill_faer(rows);
+
+        let custom_det = matrix.det();
+        let faer_det = faer_matrix.determinant();
+
+        assert_relative_eq!(custom_det, faer_det, max_relative = 1e-14);
+    }
+}
