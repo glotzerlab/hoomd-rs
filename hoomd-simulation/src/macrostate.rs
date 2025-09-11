@@ -4,7 +4,7 @@
 /*! Store global system parameters for use in thermostats, integrators, etc.*/
 
 /// Store the kinetic temperature of the system.
-trait Temperature {
+pub trait Temperature {
     /// The kinetic temperature of the system.
     fn temperature(&self) -> &f64;
 
@@ -13,7 +13,7 @@ trait Temperature {
 }
 
 /// Store the pressure of the system.
-trait Pressure {
+pub trait Pressure {
     /// The pressure of the system.
     fn pressure(&self) -> &f64;
 
@@ -51,10 +51,12 @@ pub struct IsothermalMacrostate {
     pub kT: f64
 }
 impl Temperature for IsothermalMacrostate {
+    #[inline]
     fn temperature(&self) -> &f64 {
         &self.kT
     }
 
+    #[inline]
     fn temperature_mut(&mut self) -> &mut f64 {
         &mut self.kT
     }
@@ -67,10 +69,12 @@ pub struct IsobaricMacrostate {
     pub pressure: f64
 }
 impl Pressure for IsobaricMacrostate {
+    #[inline]
     fn pressure(&self) -> &f64 {
         &self.pressure
     }
 
+    #[inline]
     fn pressure_mut(&mut self) -> &mut f64 {
         &mut self.pressure
     }
@@ -84,19 +88,23 @@ pub struct IsothermalIsobaricMacrostate {
     pub pressure: f64
 }
 impl Temperature for IsothermalIsobaricMacrostate {
+    #[inline]
     fn temperature(&self) -> &f64 {
         &self.kT
     }
 
+    #[inline]
     fn temperature_mut(&mut self) -> &mut f64 {
         &mut self.kT
     }
 }
 impl Pressure for IsothermalIsobaricMacrostate {
+    #[inline]
     fn pressure(&self) -> &f64 {
         &self.pressure
     }
 
+    #[inline]
     fn pressure_mut(&mut self) -> &mut f64 {
         &mut self.pressure
     }
