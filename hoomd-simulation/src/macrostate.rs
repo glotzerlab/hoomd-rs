@@ -28,6 +28,12 @@ Must be manually added for macrostates that do not implement [`Pressure`].
 */
 pub trait Isochoric {}
 
+/** Mark an ensemble as having constant entropy.
+
+Must be manually added for macrostates that do not implement [`Temperature`].
+*/
+pub trait Isoentropic {}
+
 /** Mark an ensemble as having constant temperature. 
 
 This trait is automatically implemented for every macrostate that implements
@@ -79,6 +85,7 @@ impl Pressure for IsobaricMacrostate {
         &mut self.pressure
     }
 }
+impl Isoentropic for IsobaricMacrostate {}
 
 /// Macrostate for an isothermal and isobaric ensemble.
 pub struct IsothermalIsobaricMacrostate {
