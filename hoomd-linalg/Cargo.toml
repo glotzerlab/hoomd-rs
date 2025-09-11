@@ -1,14 +1,14 @@
 [package]
 name = "hoomd-linalg"
-version.workspace = true
+categories.workspace = true
 description = "Linear algebra library optimized for small matrixes."
 edition.workspace = true
-rust-version.workspace = true
 homepage.workspace = true
-repository.workspace = true
-license.workspace = true
 keywords.workspace = true
-categories.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
 
 [dependencies]
 hoomd-vector.workspace = true
@@ -19,7 +19,6 @@ workspace = true
 
 [features]
 default = []
-portable_simd = []
 
 [dev-dependencies]
 faer = "0.22.6"
