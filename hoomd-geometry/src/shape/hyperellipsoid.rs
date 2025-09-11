@@ -5,11 +5,11 @@
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
-use hoomd_linalg::{Diagonal, Invertible, Matrix, Matrix22, SquareMatrix};
+use hoomd_linalg::{Diagonal, Invertible, SquareMatrix, matrix::Matrix22};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, RotationMatrix};
 
-use std::ops::{Add, Mul};
+use std::ops::Mul;
 
 /** The geometry resulting from an Hypersphere that is scaled along the Cartesian axes.
 
