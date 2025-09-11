@@ -23,24 +23,17 @@ use hoomd_simulation::macrostate::Isochoric;
 
 
 /// TODO: add documentation
-pub struct ConstantVolume<T, M, B, S, C>
-where
-    T: Thermostat<M, B, S, C>,
+pub struct ConstantVolume
 {
     /// The size of a timestep.
     pub dt: f64,
-
-    /// The thermostat.
-    pub thermostat: T,
-
-    _marker: PhantomData<(M, B, S, C)>
 }
 
 /// TODO: add documentation
 pub struct ConstantPressure;
 
 /// Integrate translational degrees of freedom in N-dimensional Cartesian space.
-impl<V, T, M, B, S, C, F> ConstantVolume<T, M, B, S, C>
+impl<V, T, M, B, S, C, F> ConstantVolume
 where
     V: Default + Vector,
     T: Thermostat<M, B, S, C>,
@@ -61,10 +54,11 @@ where
         force: &F,
         dof: f64,
         kinetic_energy: f64,
+        thermostat: T,
     ) {
         // Calculate temperature scaling factor
         let mut rng = microstate.counter().make_rng();
-        let rescaling_factor = self.thermostat.rescaling_factor_step_one(
+        let rescaling_factor = thermostat.rescaling_factor_step_one(
             macrostate,
             microstate,
             self.dt,
@@ -89,7 +83,7 @@ where
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
 
-        self.thermostat.advance();
+        thermostat.advance(self.dt);
 
         microstate.increment_substep();
     }
@@ -139,7 +133,7 @@ where
 }
 
 /// Integrate rotational degrees of freedom in 3-D Cartesian space.
-impl<T, M, B, S, C, F> ConstantVolume<T, M, B, S, C>
+impl<T, M, B, S, C, F> ConstantVolume
 where
     T: Thermostat<M, B, S, C>,
     M: Isochoric,
@@ -165,10 +159,11 @@ where
         torque: &F,
         dof: f64,
         kinetic_energy: f64,
+        thermostat: T,
     ) {
         // Calculate temperature scaling factor
         let mut rng = microstate.counter().make_rng();
-        let rescaling_factor = self.thermostat.rescaling_factor_step_one(
+        let rescaling_factor = thermostat.rescaling_factor_step_one(
             macrostate,
             microstate,
             self.dt,
@@ -289,8 +284,8 @@ where
             *body_properties.angular_velocity_mut() =  new_angular_velocity;
         }
 
-        self.thermostat.advance();
-        
+        thermostat.advance(self.dt);
+
         microstate.increment_substep();
     }
 
