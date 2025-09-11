@@ -89,6 +89,9 @@ mod tests {
     use approx::assert_relative_eq;
     use faer::Mat;
     use rstest::rstest;
+    use std::marker::PhantomData;
+
+    type RectSize<const M: usize, const N: usize> = PhantomData<([f64; M], [f64; N])>;
 
     fn fill_faer<const N: usize, const M: usize>(m: [[f64; M]; N]) -> Mat<f64> {
         let mut faer_matrix = Mat::<f64>::zeros(N, N);
@@ -98,6 +101,16 @@ mod tests {
             }
         }
         faer_matrix
+    }
+    fn assert_matrixes_relative_eq<const N: usize, const M: usize>(
+        m0: Matrix<N, M>,
+        m1: faer::Mat<f64>,
+    ) {
+        for i in 0..N {
+            for j in 0..M {
+                assert_relative_eq!(m0[(i, j)], m1[(i, j)], max_relative = 1e-14);
+            }
+        }
     }
     #[rstest(
         rows,
@@ -109,7 +122,7 @@ mod tests {
         case(Matrix::<5, 5>::full(3.6).diag().as_dense().rows),
         case(Matrix::<8, 8>::eye().rows),
     )]
-    fn test_determinant_parametrized<const N: usize>(rows: [[f64; N]; N]) {
+    fn test_determinant<const N: usize>(rows: [[f64; N]; N]) {
         let matrix = Matrix { rows };
         let faer_matrix = fill_faer(rows);
 
@@ -118,4 +131,70 @@ mod tests {
 
         assert_relative_eq!(custom_det, faer_det, max_relative = 1e-14);
     }
+    #[rstest(
+        a_rows, b_rows,
+        case([[-9.0]], [[-9.0]]),
+        case(
+            [[1.0, -2.0], [3.0, 4.0]], [[0.0, 1.0], [1.0, 0.0]]
+        ),
+        case(
+            [[1.0, 2.0, 3.0], [0.0, 1.0, 4.0], [5.0, 6.0, 0.0]],
+            [[-2.0, 1.0, 0.0], [3.0, 0.0, 1.0], [1.0, 4.0, -1.0]]
+        ),
+        case(
+            [[2.0, 0.0, 1.0], [3.0, 0.0, 0.0], [5.0, 1.0, 1.0]],
+            [[1.0, 0.0, 2.0], [0.0, 1.0, 1.0], [4.0, 0.0, 0.0]]
+        ),
+        case(Matrix::<4, 4>::eye().rows, Matrix::<4, 4>::full(2.0).rows),
+        case(Matrix::<5, 5>::full(3.6).diag().as_dense().rows, Matrix::<5, 5>::eye().rows),
+        case(Matrix::<8, 8>::eye().rows, Matrix::<8, 8>::full(1.5).rows),
+    )]
+    fn test_matrix_multiply_square<const N: usize>(a_rows: [[f64; N]; N], b_rows: [[f64; N]; N]) {
+        let a = Matrix { rows: a_rows };
+        let b = Matrix { rows: b_rows };
+
+        let faer_a = fill_faer(a_rows);
+        let faer_b = fill_faer(b_rows);
+
+        let custom_prod = a.matmul(&b);
+        let faer_prod = faer_a * faer_b;
+        assert_matrixes_relative_eq(custom_prod, faer_prod);
+    }
+
+
+    #[rstest]
+    #[case(
+        [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], 
+        [[7.0, 8.0], [9.0, 10.0], [11.0, 12.0]], 
+    )]
+    #[case(
+        [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], 
+        [[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]], 
+    )]
+    #[case(
+        [[1.0, 2.0]], 
+        [[3.0], [4.0]], 
+    )]
+    #[case(
+        [[2.0, 0.0, 1.0]], 
+        [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], 
+    )]
+    fn test_rectangular_matrix_multiply<
+        const M: usize, const K: usize, const N: usize
+    >(
+        #[case] a_rows: [[f64; K]; M],
+        #[case] b_rows: [[f64; N]; K],
+    ) {
+        let a = Matrix { rows: a_rows };
+        let b = Matrix { rows: b_rows };
+
+        let faer_a = fill_faer(a_rows);
+        let faer_b = fill_faer(b_rows);
+
+        let custom_prod = a.matmul(&b);
+        let faer_prod = faer_a * faer_b;
+        assert_matrixes_relative_eq(custom_prod, faer_prod);
+    }
+
+
 }
