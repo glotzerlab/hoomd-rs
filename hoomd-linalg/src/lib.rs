@@ -9,7 +9,7 @@ only be implemented for certain shapes, and generally consist of specialized alg
 optimal for those inputs.
 */
 
-use std::ops::{Add, Index, Mul};
+use std::ops::{Add, Index, Mul, Neg};
 
 /** Define whether a matrix $ A $ has an inverse $ A^-1 $ such that $ AA^-1 = A^-1A = I $
 */
@@ -20,9 +20,13 @@ pub trait Invertible {
 }
 /// Define an algorithm for the singular value decomposition of a matrix.
 pub trait SVD {
+    /// The type of the output matrix that will store singular values.
+    type SingularValues;
     /// Decompose a [`GeneralMatrix`]into a rotation, a scaling, and a second rotation.
     #[must_use]
-    fn svd(&self) -> Self;
+    fn svd(&self) -> (Self, Self::SingularValues, Self)
+    where
+        Self: Sized;
 }
 
 /** Define the general matrix multiplication (GEMM) subroutine.
@@ -66,7 +70,11 @@ This trait is designed to function with row-major ordering, but this is not stri
 required for correct functionality.
 */
 pub trait GeneralMatrix:
-    Sized + Mul<f64, Output = Self> + Add<Self, Output = Self> + Index<(usize, usize), Output = f64>
+    Sized
+    + Mul<f64, Output = Self>
+    + Add<Self, Output = Self>
+    + Index<(usize, usize), Output = f64>
+    + Neg
 {
     /// Fill a matrix with zeros.
     #[must_use]
@@ -121,7 +129,7 @@ pub mod matrix;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::matrix::Matrix;
+    use crate::matrix::{Matrix, Matrix22};
     use approx::assert_relative_eq;
     use faer::Mat;
     use rstest::rstest;
@@ -139,10 +147,17 @@ mod tests {
         m0: &Matrix<N, M>,
         m1: &faer::Mat<f64>,
     ) {
+        // println!("{m0:?}");
+        println!("faer:\n{m1:?}");
         for i in 0..N {
             for j in 0..M {
                 assert_relative_eq!(m0[(i, j)], m1[(i, j)], max_relative = 1e-14);
             }
+        }
+    }
+    fn assert_diags_relative_eq<const N: usize, T: Diagonal>(m0: &T, m1: &faer::diag::Diag<f64>) {
+        for i in 0..N {
+            assert_relative_eq!(m0[i], m1[i], max_relative = 1e-14);
         }
     }
     #[rstest(
@@ -224,5 +239,21 @@ mod tests {
         let custom_prod = a.matmul(&b);
         let faer_prod = faer_a * faer_b;
         assert_matrixes_relative_eq(&custom_prod, &faer_prod);
+    }
+    #[rstest(
+        rows,
+        case(Matrix22::eye().rows),
+        case([[1.0, -2.0], [3.0, 4.0]])
+    )]
+    fn test_svd_2x2(rows: [[f64; 2]; 2]) {
+        let matrix = Matrix { rows };
+        let faer_matrix = fill_faer(rows);
+
+        let (u, s, vt) = matrix.svd();
+        let faer_svd = faer_matrix.svd().unwrap();
+
+        assert_matrixes_relative_eq(&u, &faer_svd.U().to_owned());
+        (0..2).for_each(|i| assert_relative_eq!(s[i], &faer_svd.S()[i]));
+        assert_matrixes_relative_eq(&vt, &faer_svd.V().to_owned());
     }
 }

@@ -1,10 +1,11 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use std::ops::{Add, Index, Mul};
+use std::fmt;
+use std::ops::{Add, Index, Mul, Neg};
 
-use crate::{Determinant, Diagonal, GeneralMatrix, Invertible, MatMul, SquareMatrix};
-use hoomd_vector::{Cartesian, RotationMatrix};
+use crate::{Determinant, Diagonal, GeneralMatrix, Invertible, MatMul, SVD, SquareMatrix};
+use hoomd_vector::{Angle, Cartesian, RotationMatrix};
 
 /// A matrix with N rows and M columns, allocated on the stack.
 #[derive(Clone, Debug, PartialEq)]
@@ -248,6 +249,18 @@ impl<const N: usize, const M: usize> Mul<f64> for Matrix<N, M> {
         }
     }
 }
+/**Compute the elementwise negation of a [`Matrix`]*/
+impl<const N: usize, const M: usize> Neg for Matrix<N, M> {
+    type Output = Self;
+
+    #[inline]
+    fn neg(self) -> Self {
+        Self {
+            rows: self.rows.map(|r| r.map(|x| -x)),
+        }
+    }
+}
+
 /**Compute the elementwise scalar multiplication of a [`DiagonalMatrix`]*/
 impl<const N: usize> Mul<f64> for DiagonalMatrix<N> {
     type Output = Self;
@@ -256,6 +269,17 @@ impl<const N: usize> Mul<f64> for DiagonalMatrix<N> {
     fn mul(self, rhs: f64) -> Self {
         Self {
             rows: self.rows.map(|r| r * rhs),
+        }
+    }
+}
+/**Compute the elementwise negation of a [`DiagonalMatrix`]*/
+impl<const N: usize> Neg for DiagonalMatrix<N> {
+    type Output = Self;
+
+    #[inline]
+    fn neg(self) -> Self {
+        Self {
+            rows: self.rows.map(|r| -r),
         }
     }
 }
@@ -283,6 +307,64 @@ impl Invertible for Matrix<2, 2> {
                 [inv_det * -self.rows[1][0], inv_det * self.rows[0][0]],
             ],
         }
+    }
+}
+
+impl SVD for Matrix<2, 2> {
+    type SingularValues = DiagonalMatrix<2>;
+    /** Decompose a [`Matrix22`]into a rotation, a scaling, and a second rotation.
+
+    This implementation is based on the math in 10.1109/38.486688, and ensures good
+    numerical stability.
+    */
+    #[inline]
+    fn svd(&self) -> (Self, Self::SingularValues, Self) {
+        let a_plus_d = f64::midpoint(self[(0, 0)], self[(1, 1)]);
+        let a_minus_d = (self[(0, 0)] - self[(1, 1)]) / 2.0;
+        let b_plus_c = f64::midpoint(self[(0, 1)], self[(1, 0)]);
+        let b_minus_c = (self[(0, 1)] - self[(1, 0)]) / 2.0;
+
+        let (q, r) = (
+            (a_plus_d.powi(2) + b_minus_c.powi(2)).sqrt(),
+            (a_minus_d.powi(2) + b_plus_c.powi(2)).sqrt(),
+        );
+
+        #[expect(non_snake_case, reason = "convention")]
+        let Σ = Self::SingularValues {
+            rows: [q + r, q - r],
+        };
+
+        let (a1, a2) = (
+            f64::atan2(b_plus_c, a_minus_d),
+            f64::atan2(b_minus_c, a_plus_d),
+        );
+
+        let β = f64::midpoint(a1, a2);
+        let γ = (a2 - a1) / 2.0;
+        println!(
+            "U: \n{}",
+            Matrix22::from(RotationMatrix::from(Angle::from(γ)))
+        );
+        (
+            RotationMatrix::from(Angle::from(γ)).into(),
+            Σ,
+            RotationMatrix::from(Angle::from(β)).into(),
+        )
+    }
+}
+
+impl<const N: usize, const M: usize> fmt::Display for Matrix<N, M> {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "[{}]",
+            self.rows
+                .map(|row| Cartesian::<M>::from(row).to_string())
+                .into_iter()
+                .collect::<Vec<String>>()
+                .join("\n ")
+        )
     }
 }
 
