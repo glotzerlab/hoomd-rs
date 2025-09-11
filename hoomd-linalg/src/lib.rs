@@ -125,7 +125,6 @@ mod tests {
     use approx::assert_relative_eq;
     use faer::Mat;
     use rstest::rstest;
-    use std::marker::PhantomData;
 
     fn fill_faer<const N: usize, const M: usize>(m: [[f64; M]; N]) -> Mat<f64> {
         let mut faer_matrix = Mat::<f64>::zeros(N, M);
