@@ -9,17 +9,17 @@ write a random walk code, but the purpose of this tutorial is to explain how
 you can express the components of a MC simulation using *hoomd-rs*.
 
 * Objective: Demonstrate a minimal MC simulation.
-* File: `hoomd-rs/examples/mc-tutorial/random_walk.rs`
+* File: `hoomd-rs/examples/mc-tutorial/random-walk.rs`
 * To build and run:
   ```shell
-  cargo run --release --example random_walk
+  cargo run --release --example random-walk
   ```
 
 ## Bring Used Names Into Scope
 
 The first lines of any Rust code typically bring all the used names into scope:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/random_walk.rs:use}}
+{{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:use}}
 ```
 
 Rust's `use` is similar to Python's `import`. See [The Rust Programming
@@ -33,7 +33,7 @@ documentation] provides a for a full reference for all *hoomd-rs* crates.
 
 When executed, every Rust application starts in the `main()` function:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/random_walk.rs:main}}
+{{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:main}}
 ```
 
 An error might occur while running the simulation, so `main()` returns a
@@ -53,7 +53,7 @@ The **microstate** describes all of the degrees of freedom in the simulation. In
 this example, it consists of one **body** represented by a single point.
 This code builds a microstate and adds one point at the origin:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/random_walk.rs:microstate}}
+{{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:microstate}}
 ```
 `try_build()` may fail with an error. The `?` will return an error or unpack a
 valid `Result`. Read more about `?` in [The Rust Programming Language].
@@ -64,7 +64,7 @@ A random walk is defined entirely by the **trial moves** applied to each **body*
 The `Translate` trial move describes a displacement by a random vector
 drawn uniformly inside the sphere with radius `maximum_distance`:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/random_walk.rs:local_trial}}
+{{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:local_trial}}
 ```
 The `try_into()?` ensures that the given `f64` value is a positive
 real value.
@@ -73,7 +73,7 @@ real value.
 bodies*. Now you need to describe how to apply these trial moves to the *whole
 microstate* using `Sweep`:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/random_walk.rs:sweep}}
+{{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:sweep}}
 ```
 `Sweep` applies the given **trial move** to each of the **microstate's
 bodies** in sequence and accepts or rejects each move based on the Metropolis
@@ -85,14 +85,14 @@ Set the Hamiltonian `$H = 0$`, so that `Sweep` will accept every random walk
 move **trial move**. The [`hoomd-interaction`] crate provides the `Zero` type
 that expresses `$H = 0$`:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/random_walk.rs:hamiltonian}}
+{{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:hamiltonian}}
 ```
 
 ## Advancing the Simulation
 
 Use a `for` loop to execute the simulation a given number of steps:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/random_walk.rs:steps}}
+{{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:steps}}
 ```
 
 ### Apply Translation Moves
@@ -100,7 +100,7 @@ Use a `for` loop to execute the simulation a given number of steps:
 The `translate_sweep.apply()` method step applies a translate move to each body
 in the microstate:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/random_walk.rs:apply}}
+{{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:apply}}
 ```
 
 ### Increment the Step
@@ -110,14 +110,14 @@ model may involve many types of MC **trial moves**, or a mixture of MD and
 MC calculations. Therefore, you *must* explicitly call `microstate.increment_step()` to
 indicate that this step is complete:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/random_walk.rs:increment}}
+{{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:increment}}
 ```
 
 ### Produce Output
 
 To see some output, print the coordinates of the point at each step:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/random_walk.rs:print}}
+{{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:print}}
 ```
 
 Future tutorials will show interactive graphical representations of the
@@ -127,14 +127,14 @@ simulations and/or write simulation trajectory files.
 
 Return `Ok(())` to exit the application with no errors:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/random_walk.rs:end_main}}
+{{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:end_main}}
 ```
 
 ## Conclusion
 
 Now you have learned how to create a **microstate** and apply random translation
 **trial moves** to the points in it. Change to the `hoomd-rs` directory and
-execute `cargo run --release --example random_walk` to run this tutorial. You
+execute `cargo run --release --example random-walk` to run this tutorial. You
 should  see output similar to:
 ```
 [0.10107592706479421, 0.03942734821995694]
@@ -165,5 +165,5 @@ walk.
 ## Complete Code
 
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/random_walk.rs:all}}
+{{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:all}}
 ```

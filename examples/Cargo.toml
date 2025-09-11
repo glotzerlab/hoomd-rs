@@ -50,8 +50,8 @@ name = "hello"
 path = "hello.rs"
 
 [[example]]
-name = "random_walk"
-path = "mc-tutorial/random_walk.rs"
+name = "random-walk"
+path = "mc-tutorial/random-walk.rs"
 
 [[example]]
 name = "custom-random-walk"

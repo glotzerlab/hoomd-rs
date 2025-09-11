@@ -152,8 +152,8 @@ fn main() -> anyhow::Result<()> {
 // ANCHOR_END: all
 
 #[cfg(feature = "bevy")]
-mod custom_random_walk_interactive;
+mod custom_random-walk_interactive;
 #[cfg(feature = "bevy")]
 use bevy::prelude::Resource;
 #[cfg(feature = "bevy")]
-use custom_random_walk_interactive::main;
+use custom_random-walk_interactive::main;
