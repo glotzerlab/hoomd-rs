@@ -26,14 +26,14 @@ trait Pressure {
 
 Must be manually added for macrostates that do not implement [`Pressure`].
 */
-trait Isochoric {}
+pub trait Isochoric {}
 
 /** Mark an ensemble as having constant temperature. 
 
 This trait is automatically implemented for every macrostate that implements
 [`Temperature`].
 */
-trait Isothermal {}
+pub trait Isothermal {}
 impl<T> Isothermal for T where T: Temperature {}
 
 /** Mark an ensemble as having constant pressure.
@@ -41,14 +41,14 @@ impl<T> Isothermal for T where T: Temperature {}
 This trait is automatically implemented for every macrostate that implements
 [`Pressure`].
 */
-trait Isobaric {}
+pub trait Isobaric {}
 impl<T> Isobaric for T where T: Pressure {}
 
 
 /// Macrostate for an isothermal ensemble.
 pub struct IsothermalMacrostate {
     /// Kinetic temperature of the system.
-    kT: f64
+    pub kT: f64
 }
 impl Temperature for IsothermalMacrostate {
     fn temperature(&self) -> &f64 {
@@ -64,7 +64,7 @@ impl Isochoric for IsothermalMacrostate {}
 /// Macrostate for an isobaric ensemble.
 pub struct IsobaricMacrostate {
     /// Pressure of the system.
-    pressure: f64
+    pub pressure: f64
 }
 impl Pressure for IsobaricMacrostate {
     fn pressure(&self) -> &f64 {
@@ -79,9 +79,9 @@ impl Pressure for IsobaricMacrostate {
 /// Macrostate for an isothermal and isobaric ensemble.
 pub struct IsothermalIsobaricMacrostate {
     /// Kinetic temperature of the system.
-    kT: f64,
+    pub kT: f64,
     /// Pressure of the system.
-    pressure: f64
+    pub pressure: f64
 }
 impl Temperature for IsothermalIsobaricMacrostate {
     fn temperature(&self) -> &f64 {
