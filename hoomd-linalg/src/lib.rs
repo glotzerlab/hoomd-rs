@@ -8,6 +8,8 @@ TODO: Expand documentation.
 
 use std::ops::{Add, Index, Mul};
 
+use hoomd_vector::Vector;
+
 /** Define whether a matrix $ A $ has an inverse $ A^-1 $ such that $ AA^-1 = A^-1A = I $
 */
 pub trait Invertible {
@@ -18,18 +20,21 @@ pub trait Invertible {
 
 /** Define operations for matrix multiplication.
 */
-pub trait MatMul {
-    /// The type of the righthand side of the multiplication.
-    type RHS;
+pub trait MatMul<RHS>
+where
+    RHS: GeneralMatrix,
+{
     /// The type of the output matrix. May or may not be Self.
     type Output;
-    /// Multiply a matrix by a general RHS
+
+    /// Multiply a matrix by a general matrix RHS (gemm).
     #[must_use]
-    fn matmul(&self, rhs: &Self::RHS) -> Self::Output;
-    /// Multiply a matrix by a diagonal RHS.
-    #[must_use]
-    fn matmul_diagonal(&self, rhs: &Self::RHS) -> Self::Output;
+    fn matmul(&self, rhs: &RHS) -> Self::Output;
 }
+
+// /// Multiply a matrix by a vector. (gemm)
+// #[must_use]
+// fn matmul_vec(&self, rhs: &impl Vector) -> Self::OutputMatrix;
 
 /** General implementation for size and container-agnostic matrixes.
 
@@ -39,15 +44,11 @@ required for correct functionality.
 pub trait GeneralMatrix:
     Sized + Mul<f64, Output = Self> + Add<Self, Output = Self> + Index<(usize, usize), Output = f64>
 {
-    /// TODO
+    /// Fill a matrix with zeros.
     #[must_use]
     fn zeros() -> Self;
 
-    /// Iterate over the rows of a matrix.
-    #[must_use]
-    fn iter_rows(&self) -> impl Iterator<Item = impl IntoIterator<Item = &f64>>;
-
-    /// Return a matrix where every element is equal to val
+    /// Return a matrix where every element is equal to val.
     #[must_use]
     fn full(val: f64) -> Self;
 }

@@ -1,6 +1,6 @@
 use std::ops::{Add, Index, Mul};
 
-use crate::{Determinant, Diagonal, GeneralMatrix, Invertible, SquareMatrix};
+use crate::{Determinant, Diagonal, GeneralMatrix, Invertible, MatMul, SquareMatrix};
 use hoomd_vector::{Cartesian, RotationMatrix};
 
 /// A matrix with N rows and M columns, allocated on the stack.
@@ -52,10 +52,6 @@ impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
         Self {
             rows: std::array::from_fn(|_| std::array::from_fn(|_| val)),
         }
-    }
-    #[inline]
-    fn iter_rows(&self) -> impl Iterator<Item = impl IntoIterator<Item = &f64>> {
-        self.rows.iter()
     }
 }
 
@@ -149,6 +145,23 @@ impl<const N: usize> DiagonalMatrix<N> {
     }
 }
 
+impl<const N: usize, const M: usize, const K: usize> MatMul<Matrix<M, K>> for Matrix<N, M> {
+    type Output = Matrix<N, K>;
+    #[inline]
+    fn matmul(&self, rhs: &Matrix<M, K>) -> Self::Output {
+        let mut result = Self::Output::zeros();
+        for i in 0..N {
+            for j in 0..K {
+                for k in 0..M {
+                    result.rows[i][j] += self.rows[i][k] * rhs.rows[k][j];
+                }
+            }
+        }
+
+        result
+    }
+}
+
 impl<const N: usize> Matrix<N, N> {
     /// Extract the diagonal elements from a matrix
     #[must_use]
@@ -180,24 +193,6 @@ impl<const N: usize> Matrix<N, N> {
             }
         }
         Self { rows }
-    }
-
-    /// (Naive) Matrix multiplication of two square matrixes
-    #[must_use]
-    #[inline]
-    pub fn matmul(&self, other: &Self) -> Self {
-        let mut result = Self {
-            rows: [[0.0; N]; N],
-        };
-        for i in 0..N {
-            for j in 0..N {
-                for k in 0..N {
-                    result.rows[i][j] += self.rows[i][k] * other.rows[k][j];
-                }
-            }
-        }
-
-        result
     }
 }
 

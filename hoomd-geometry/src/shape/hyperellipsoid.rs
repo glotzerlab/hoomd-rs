@@ -5,7 +5,7 @@
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
-use hoomd_linalg::{Diagonal, Invertible, SquareMatrix, matrix::Matrix22};
+use hoomd_linalg::{Diagonal, Invertible, MatMul, SquareMatrix, matrix::Matrix22};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, RotationMatrix};
 
