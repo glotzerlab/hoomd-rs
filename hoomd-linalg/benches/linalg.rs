@@ -5,10 +5,6 @@
     clippy::missing_docs_in_private_items,
     reason = "benches don't need public documentation"
 )]
-#![expect(
-    clippy::expect_used,
-    reason = "benches can use expect without individual reasons"
-)]
 
 /*! Benchmark Matrix */
 
@@ -23,13 +19,13 @@ fn main() {
     divan::main();
 }
 
-/// Creates a matrix of size NxM with random f64 elements.
+/// Creates a matrix of size N x M with random f64 elements.
 fn create_random_matrix<const N: usize, const M: usize, R: Rng>(rng: &mut R) -> Matrix<N, M> {
     let rows = std::array::from_fn(|_| std::array::from_fn(|_| rng.random::<f64>()));
     Matrix { rows }
 }
 
-/// Creates a pair of random square matrices of size NxN.
+/// Creates a pair of random square matrices of size N x N.
 fn create_random_matrix_pair<const N: usize, R: Rng>(rng: &mut R) -> (Matrix<N, N>, Matrix<N, N>) {
     (create_random_matrix(rng), create_random_matrix(rng))
 }
