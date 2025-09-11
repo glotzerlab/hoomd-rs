@@ -46,7 +46,8 @@ impl<T> Isobaric for T where T: Pressure {}
 
 
 /// Macrostate for an isothermal ensemble.
-struct IsothermalMacrostate {
+pub struct IsothermalMacrostate {
+    /// Kinetic temperature of the system.
     kT: f64
 }
 impl Temperature for IsothermalMacrostate {
@@ -61,7 +62,8 @@ impl Temperature for IsothermalMacrostate {
 impl Isochoric for IsothermalMacrostate {}
 
 /// Macrostate for an isobaric ensemble.
-struct IsobaricMacrostate {
+pub struct IsobaricMacrostate {
+    /// Pressure of the system.
     pressure: f64
 }
 impl Pressure for IsobaricMacrostate {
@@ -75,8 +77,10 @@ impl Pressure for IsobaricMacrostate {
 }
 
 /// Macrostate for an isothermal and isobaric ensemble.
-struct IsothermalIsobaricMacrostate {
+pub struct IsothermalIsobaricMacrostate {
+    /// Kinetic temperature of the system.
     kT: f64,
+    /// Pressure of the system.
     pressure: f64
 }
 impl Temperature for IsothermalIsobaricMacrostate {
