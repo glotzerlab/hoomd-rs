@@ -127,8 +127,6 @@ mod tests {
     use rstest::rstest;
     use std::marker::PhantomData;
 
-    type RectSize<const M: usize, const N: usize> = PhantomData<([f64; M], [f64; N])>;
-
     fn fill_faer<const N: usize, const M: usize>(m: [[f64; M]; N]) -> Mat<f64> {
         let mut faer_matrix = Mat::<f64>::zeros(N, M);
         for (i, row) in m.iter().enumerate() {
