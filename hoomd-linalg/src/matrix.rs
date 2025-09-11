@@ -174,7 +174,7 @@ impl<const N: usize> Matrix<N, N> {
     /// Compute a full `NxN` matrix from N diagonal elements, setting all others to 0.
     #[must_use]
     #[inline]
-    pub fn from_diag(other: &[f64; N]) -> Self {
+    pub fn from_diag<T: Diagonal>(other: &T) -> Self {
         Matrix {
             rows: std::array::from_fn(|i| {
                 std::array::from_fn(|j| if i == j { other[i] } else { 0.0 })
@@ -185,7 +185,7 @@ impl<const N: usize> Matrix<N, N> {
     /// Multiply a [`Matrix`] by a diagonal matrix on the right hand side
     #[must_use]
     #[inline]
-    pub fn matmul_diagonal(&self, diag: &[f64; N]) -> Self {
+    pub fn matmul_diagonal<T: Diagonal>(&self, diag: &T) -> Self {
         let mut rows = [[0f64; N]; N];
         for (i, row) in rows.iter_mut().enumerate().take(N) {
             for j in 0..N {
