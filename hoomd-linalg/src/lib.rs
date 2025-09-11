@@ -36,7 +36,9 @@ pub trait MatMul {
 This trait is designed to function with row-major ordering, but this is not strictly
 required for correct functionality.
 */
-pub trait GeneralMatrix: Sized + Mul<f64, Output = Self> + Add<Self, Output = Self> {
+pub trait GeneralMatrix:
+    Sized + Mul<f64, Output = Self> + Add<Self, Output = Self> + Index<(usize, usize), Output = f64>
+{
     /// TODO
     #[must_use]
     fn zeros() -> Self;
@@ -48,8 +50,6 @@ pub trait GeneralMatrix: Sized + Mul<f64, Output = Self> + Add<Self, Output = Se
     /// Return a matrix where every element is equal to val
     #[must_use]
     fn full(val: f64) -> Self;
-
-    // TODO: Index<(usize, usize)>
 }
 
 /// Marker trait to indicate a sequence of values can be read as a diagonal matrix.
@@ -105,7 +105,7 @@ mod tests {
         case([[1.0, 2.0, 3.0], [0.0, 1.0, 4.0], [5.0, 6.0, 0.0]]),
         case([[2.0, 0.0, 1.0], [3.0, 0.0, 0.0], [5.0, 1.0, 1.0]]),
         case(Matrix::<4, 4>::eye().rows),
-        case(Matrix::<5, 5>::full(3.6).diag().rows),
+        case(Matrix::<5, 5>::full(3.6).diag().as_dense().rows),
         case(Matrix::<8, 8>::eye().rows),
     )]
     fn test_determinant_parametrized<const N: usize>(rows: [[f64; N]; N]) {

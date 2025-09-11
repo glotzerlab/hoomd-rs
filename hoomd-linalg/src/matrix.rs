@@ -7,13 +7,13 @@ use hoomd_vector::{Cartesian, RotationMatrix};
 #[derive(Clone, Debug, PartialEq)]
 pub struct Matrix<const N: usize, const M: usize> {
     /// The elements of the matrix
-    rows: [[f64; M]; N],
+    pub rows: [[f64; M]; N],
 }
 /// A square, diagonal matrix with N rows and N columns.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct DiagonalMatrix<const N: usize> {
     /// The elements of the diagonal of the matrix
-    rows: [f64; N],
+    pub rows: [f64; N],
 }
 
 impl<const N: usize> Index<usize> for DiagonalMatrix<N> {
@@ -30,6 +30,15 @@ pub type Matrix22 = Matrix<2, 2>;
 pub type Matrix33 = Matrix<3, 3>;
 /// A 4x4 matrix, allocated on the stack.
 pub type Matrix44 = Matrix<4, 4>;
+
+impl<const N: usize, const M: usize> Index<(usize, usize)> for Matrix<N, M> {
+    type Output = f64;
+    #[inline]
+    fn index(&self, index: (usize, usize)) -> &f64 {
+        let (i, j) = index;
+        &self.rows[i][j]
+    }
+}
 
 impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
     #[inline]
@@ -128,6 +137,15 @@ impl<const N: usize> From<RotationMatrix<N>> for Matrix<N, N> {
         Self {
             rows: value.rows().map(|arr| arr.coordinates),
         }
+    }
+}
+
+impl<const N: usize> DiagonalMatrix<N> {
+    /// Return a dense view of the diagonal matrix, with zeros on the off-diagonals.
+    #[must_use]
+    #[inline]
+    pub fn as_dense(&self) -> Matrix<N, N> {
+        Matrix::<N, N>::from_diag(&self.rows)
     }
 }
 
