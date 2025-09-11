@@ -94,7 +94,7 @@ mod tests {
     type RectSize<const M: usize, const N: usize> = PhantomData<([f64; M], [f64; N])>;
 
     fn fill_faer<const N: usize, const M: usize>(m: [[f64; M]; N]) -> Mat<f64> {
-        let mut faer_matrix = Mat::<f64>::zeros(N, N);
+        let mut faer_matrix = Mat::<f64>::zeros(N, M);
         for (i, row) in m.iter().enumerate() {
             for (j, el) in row.iter().enumerate() {
                 *faer_matrix.get_mut(i, j) = *el;
@@ -103,8 +103,8 @@ mod tests {
         faer_matrix
     }
     fn assert_matrixes_relative_eq<const N: usize, const M: usize>(
-        m0: Matrix<N, M>,
-        m1: faer::Mat<f64>,
+        m0: &Matrix<N, M>,
+        m1: &faer::Mat<f64>,
     ) {
         for i in 0..N {
             for j in 0..M {
@@ -158,7 +158,7 @@ mod tests {
 
         let custom_prod = a.matmul(&b);
         let faer_prod = faer_a * faer_b;
-        assert_matrixes_relative_eq(custom_prod, faer_prod);
+        assert_matrixes_relative_eq(&custom_prod, &faer_prod);
     }
 
 
@@ -182,8 +182,8 @@ mod tests {
     fn test_rectangular_matrix_multiply<
         const M: usize, const K: usize, const N: usize
     >(
-        #[case] a_rows: [[f64; K]; M],
-        #[case] b_rows: [[f64; N]; K],
+        #[case] a_rows: [[f64; M]; N],
+        #[case] b_rows: [[f64; K]; M],
     ) {
         let a = Matrix { rows: a_rows };
         let b = Matrix { rows: b_rows };
@@ -193,7 +193,7 @@ mod tests {
 
         let custom_prod = a.matmul(&b);
         let faer_prod = faer_a * faer_b;
-        assert_matrixes_relative_eq(custom_prod, faer_prod);
+        assert_matrixes_relative_eq(&custom_prod, &faer_prod);
     }
 
 

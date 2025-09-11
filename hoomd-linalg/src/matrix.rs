@@ -150,10 +150,10 @@ impl<const N: usize, const M: usize, const K: usize> MatMul<Matrix<M, K>> for Ma
     #[inline]
     fn matmul(&self, rhs: &Matrix<M, K>) -> Self::Output {
         let mut result = Self::Output::zeros();
-        for i in 0..N {
-            for j in 0..K {
-                for k in 0..M {
-                    result.rows[i][j] += self.rows[i][k] * rhs.rows[k][j];
+        for n in 0..N {
+            for k in 0..K {
+                for m in 0..M {
+                    result.rows[n][k] += self.rows[n][m] * rhs.rows[m][k];
                 }
             }
         }
