@@ -280,8 +280,8 @@ microstate when total pairwise energy exceeds a threshold:
 
 ## Implement `main()`
 
-To run the simulation, construct the `Fill` simulation model
-then call `advance()` many times:
+To run the simulation, construct the `Fill` simulation model.
+Then call `advance()` many times:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:main}}
 ```

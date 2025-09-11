@@ -221,8 +221,8 @@ simulation step:
 
 ## Implement `main()`
 
-To run the simulation, construct the `CustomRandomWalk` simulation model
-then call `advance()` many times:
+To run the simulation, construct the `CustomRandomWalk` simulation model.
+Then call `advance()` many times:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:main}}
 ```

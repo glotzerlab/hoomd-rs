@@ -26,6 +26,7 @@ words = [
     "ovito",
     "polytope",
     "polytopes",
+    "rustdoc",
     "rustup",
     "shader",
     "sps",

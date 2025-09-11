@@ -108,6 +108,8 @@ Use the same Hamiltonian as the [Applying Interactions] tutorial:
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:hamiltonian}}
 ```
 
+These interactions are applied to the *sites* in the microstate.
+
 #### Trial Moves
 
 Apply sweeps of the custom `DiscreteRotateOrTranslate` trial move:
@@ -145,7 +147,7 @@ The code that adds tetronimoes is more complex than that for disks:
 ```
 It first chooses a random tetronimo from the `template_sites`, then it adds the
 body near the top of the boundary with a default orientation of `$ \theta = 0 $`
-and clone of the chosen sites.
+and clone of the chosen sites. Each body has four sites in this example.
 
 *hoomd-rs* uses a *counter based random number generator*. Whenever you need to
 use random numbers in your code, you can get a `Rng` to generate them by calling
@@ -175,6 +177,21 @@ Apply the custom trial move to each body in the microstate:
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:step}}
 ```
 
+## Implement `main()`
+
+To run the simulation, construct the `Tetronimoes` simulation model.
+Then call `advance()` many times:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:main}}
+```
+
+Write the sites to a GSD file periodically so that you can inspect the results
+of the simulation.
+
+> [!NOTE]
+> This `main()` function runs in batch mode. There is a different `main()` (not
+> shown here) used in the interactive example.
+
 ## Conclusion
 
 This tutorial showed you how to add bodies with multiple sites and how they
@@ -184,8 +201,20 @@ Navigate to the top of the page and refresh to see the simulation in
 action again. Notice how the randomly generated tetronimoes fall to the
 bottom while randomly rotating.
 
+Alternately, you can run the example in batch mode and then open
+the generated `trajectory.gsd` in [Ovito] or another visualization tool:
+```shell
+cargo run --release --example tetronimoes
+```
+
 The next section will explain how to run self-assembly simulations of hard
 particles.
 
 [Applying Interactions]: applying-interactions.md
 [Custom Random Walk]: custom-random-walk.md
+[Ovito]: https://www.ovito.org/
+
+## Complete Code
+
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:all}}
