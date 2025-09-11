@@ -39,7 +39,7 @@ pub trait SVD {
 
     assert_eq!(
       mat.matmul(&diag),
-      mat.matmul_diagonal(&[3.0, 2.0])  
+      mat.matmul_diagonal(&[3.0, 2.0])
     );
     ```
 */
@@ -55,7 +55,7 @@ where
     type Output;
 
     /** Multiply a matrix by a general matrix RHS.
-    */
+     */
     #[must_use]
     fn matmul(&self, rhs: &RHS) -> Self::Output;
 }
@@ -114,7 +114,7 @@ pub trait Determinant: SquareMatrix {
     fn det(&self) -> f64;
 }
 
-/**
+/** Structs implementing a large subset of Matrix traits.
 */
 pub mod matrix;
 
@@ -194,27 +194,24 @@ mod tests {
         assert_matrixes_relative_eq(&custom_prod, &faer_prod);
     }
 
-
     #[rstest]
     #[case(
-        [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], 
-        [[7.0, 8.0], [9.0, 10.0], [11.0, 12.0]], 
+        [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
+        [[7.0, 8.0], [9.0, 10.0], [11.0, 12.0]],
     )]
     #[case(
-        [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], 
-        [[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]], 
+        [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]],
+        [[2.0, 3.0, 4.0], [5.0, 6.0, 7.0]],
     )]
     #[case(
-        [[1.0, 2.0]], 
-        [[3.0], [4.0]], 
+        [[1.0, 2.0]],
+        [[3.0], [4.0]],
     )]
     #[case(
-        [[2.0, 0.0, 1.0]], 
-        [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], 
+        [[2.0, 0.0, 1.0]],
+        [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]],
     )]
-    fn test_rectangular_matrix_multiply<
-        const M: usize, const K: usize, const N: usize
-    >(
+    fn test_rectangular_matrix_multiply<const M: usize, const K: usize, const N: usize>(
         #[case] a_rows: [[f64; M]; N],
         #[case] b_rows: [[f64; K]; M],
     ) {
@@ -228,6 +225,4 @@ mod tests {
         let faer_prod = faer_a * faer_b;
         assert_matrixes_relative_eq(&custom_prod, &faer_prod);
     }
-
-
 }
