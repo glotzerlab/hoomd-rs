@@ -54,10 +54,10 @@ name = "random_walk"
 path = "mc-tutorial/random_walk.rs"
 
 [[example]]
-name = "custom_random_walk"
-path = "mc-tutorial/custom_random_walk.rs"
+name = "custom-random-walk"
+path = "mc-tutorial/custom-random-walk.rs"
 
-[package.metadata.example.custom_random_walk]
+[package.metadata.example.custom-random-walk]
 path = "mc-tutorial"
 
 [[example]]

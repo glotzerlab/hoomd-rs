@@ -182,7 +182,7 @@ Apply the custom trial move to each body in the microstate:
 To run the simulation, construct the `Tetronimoes` simulation model.
 Then call `advance()` many times:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:main}}
+{{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:main}}
 ```
 
 Write the sites to a GSD file periodically so that you can inspect the results
