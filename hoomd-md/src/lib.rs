@@ -13,76 +13,41 @@ TODO: Add documentation.
 */
 
 pub mod thermostat;
-use std::{array, ops::{AddAssign, Index}};
+use std::{array, marker::PhantomData, ops::{AddAssign, Index}};
 
 use hoomd_interaction::{NetBodyForce, NetBodyTorque};
 use hoomd_vector::{Cartesian, InnerProduct, Quaternion, Rotate, Vector};
 use thermostat::{Thermostat, NoThermostat};
 use hoomd_microstate::{boundary::{GenerateGhosts, Wrap}, property::{Acceleration, AngularVelocity, Mass, MomentOfInertia, Orientation, Position, Velocity}, Microstate, Transform};
+use hoomd_simulation::macrostate::Isochoric;
 
-/** Integrate over translational degrees of freedom. 
-TODO: Add example.
-*/
-pub trait TranslationalMotion<B, S, C, F> {
-    /** Perform the first integration half-step, mutating the system configuration.
-    
-    `microstate` holds the system configuration that will be changed, and
-    `force` is the evaluator that is used to calculate forces used in the
-    integration.
-    */
-    fn integrate_translation_step_one(
-        &self,
-        microstate: &mut Microstate<B, S, C>,
-        force: &F,
-        kT_setpoint: Option<&f64>
-    );
-
-    /** Perform the second integration half-step, mutating the system configuration.
-    
-    `microstate` holds the system configuration that will be changed, and
-    `force` is the evaluator that is used to calculate forces used in the
-    integration.
-    */
-    fn integrate_translation_step_two(
-        &self,
-        microstate: &mut Microstate<B, S, C>,
-        force: &F,
-        kT_setpoint: Option<&f64>
-    );
-}
-
-/** Integrate over rotational degrees of freedom. 
-TODO: Add example.
-*/
-pub trait RotationalMotion<B, S, C, T> {
-    /** Perform integration, mutating the system configuration.
-
-    `microstate` holds the system configuration that will be changed, and
-    `torque` is the evaluator that is used to calculate torques used in the
-    integration.
-    */
-    fn integrate_rotation(&self, microstate: &mut Microstate<B, S, C>, torque: &T);
-}
 
 /// TODO: add documentation
-pub struct ConstantVolume<T: Thermostat> {
+pub struct ConstantVolume<T, M, B, S, C>
+where
+    T: Thermostat<M, B, S, C>,
+{
     /// The size of a timestep.
     pub dt: f64,
 
     /// The thermostat.
     pub thermostat: T,
+
+    _marker: PhantomData<(M, B, S, C)>
 }
 
 /// TODO: add documentation
 pub struct ConstantPressure;
 
-impl<V, B, S, C, T, F> TranslationalMotion<B, S, C, F> for ConstantVolume<T>
+/// Integrate translational degrees of freedom in N-dimensional Cartesian space.
+impl<V, T, M, B, S, C, F> ConstantVolume<T, M, B, S, C>
 where
     V: Default + Vector,
+    T: Thermostat<M, B, S, C>,
+    M: Isochoric,
     B: Position<Vector = V> + Velocity<Vector = V> + Acceleration<Vector = V> + Mass + Transform<S> + Clone,
     S: Position<Vector = V> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    T: Thermostat,
     F: NetBodyForce<V, B, S, C>
 {
     /** Perform first half-step of the Verlet algorithm following Kamberaj 2005.
@@ -91,19 +56,19 @@ where
     #[inline]
     fn integrate_translation_step_one(
         &self,
+        macrostate: M,
         microstate: &mut Microstate<B, S, C>,
         force: &F,
-        kT_setpoint: &T::Macrostate,
+        dof: f64,
+        kinetic_energy: f64,
     ) {
+        // Calculate temperature scaling factor
         let mut rng = microstate.counter().make_rng();
-        let degrees_of_freedom = 2;
-        let kinetic_energy = 3.0;
-
         let rescaling_factor = self.thermostat.rescaling_factor_step_one(
-            kT_setpoint,
-            &rng,
+            macrostate,
+            microstate,
             self.dt,
-            degrees_of_freedom,
+            dof,
             kinetic_energy
         );
 
@@ -133,10 +98,21 @@ where
     #[inline]
     fn integrate_translation_step_two(
         &self,
+        macrostate: M,
         microstate: &mut Microstate<B, S, C>,
         force: &F,
+        dof: f64,
+        kinetic_energy: f64,
     ) {
-        let rescaling_factor = self.thermostat.rescaling_factor_step_one();
+        // Calculate temperature scaling factor
+        let mut rng = microstate.counter().make_rng();
+        let rescaling_factor = self.thermostat.rescaling_factor_step_two(
+            macrostate,
+            microstate,
+            self.dt,
+            dof,
+            kinetic_energy
+        );
 
         // For loop over a range instead of bodies().iter() since the latter holds an immutable borrow.
         for body_index in 0..microstate.bodies().len() {
