@@ -23,4 +23,11 @@ default = []
 [dev-dependencies]
 faer = "0.22.6"
 approx.workspace = true
+divan.workspace = true
+rand.workspace = true
 rstest.workspace = true
+
+
+[[bench]]
+name = "linalg"
+harness = false
