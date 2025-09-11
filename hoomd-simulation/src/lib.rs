@@ -17,6 +17,8 @@ model, and the microstate (or microstates) that it operates on.
 See the tutorials in the documentation for numerous examples.
 */
 
+pub mod macrostate;
+
 /** Store parameters, the model and the microstate(s) it acts on.
 
 A [`Simulation`] type stores the microstate, all model actors, and any
