@@ -8,7 +8,7 @@ TODO: Expand documentation.
 
 use hoomd_vector::RotationMatrix;
 
-use std::ops::{Add, Mul};
+use std::ops::{Add, Index, Mul};
 
 /** Define whether a matrix $ A $ has an inverse $ A^-1 $ such that $ AA^-1 = A^-1A = I $
 */
@@ -18,12 +18,27 @@ pub trait Invertible {
     fn inverse(&self) -> Self;
 }
 
+/** Define operations for matrix multiplication.
+*/
+pub trait MatMul {
+    /// The type of the righthand side of the multiplication.
+    type RHS;
+    /// The type of the output matrix. May or may not be Self.
+    type Output;
+    /// Multiply a matrix by a general RHS
+    #[must_use]
+    fn matmul(&self, rhs: &Self::RHS) -> Self::Output;
+    /// Multiply a matrix by a diagonal RHS.
+    #[must_use]
+    fn matmul_diagonal(&self, rhs: &Self::RHS) -> Self::Output;
+}
+
 /** General implementation for size and container-agnostic matrixes.
 
 This trait is designed to function with row-major ordering, but this is not strictly
 required for correct functionality.
 */
-pub trait GeneralMatrix: Mul<f64, Output = Self> {
+pub trait GeneralMatrix: Sized + Mul<f64, Output = Self> + Add<Self, Output = Self> {
     /// TODO
     #[must_use]
     fn zeros() -> Self;
@@ -37,18 +52,20 @@ pub trait GeneralMatrix: Mul<f64, Output = Self> {
     fn full(val: f64) -> Self;
 }
 
+pub trait Diagonal: Index<usize, Output = f64> {}
+
 /// TODO
 pub trait SquareMatrix: GeneralMatrix
 where
     Self: Sized,
 {
-    /// Extract the diagonal elements from a matrix.
-    #[must_use]
-    fn diag(&self) -> Self;
-
     /// Create an identity matrix of dimension N.
     #[must_use]
     fn eye() -> Self;
+
+    /// QuadraticForm
+    #[must_use]
+    fn compute_quadratic_form(&self, center: &impl Diagonal) -> f64;
 }
 
 /// TODO
@@ -69,6 +86,13 @@ pub struct Matrix<const N: usize, const M: usize> {
 pub struct DiagonalMatrix<const N: usize> {
     /// The elements of the diagonal of the matrix
     rows: [f64; N],
+}
+
+impl<const N: usize> Index<usize> for DiagonalMatrix<N> {
+    type Output = f64;
+    fn index(&self, index: usize) -> &f64 {
+        &self.rows[index]
+    }
 }
 
 /// A 2x2 matrix, allocated on the stack.
@@ -96,18 +120,22 @@ impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
 
 impl<const N: usize> SquareMatrix for Matrix<N, N> {
     #[inline]
-    fn diag(&self) -> Self {
-        Self {
-            rows: std::array::from_fn(|i| {
-                std::array::from_fn(|j| if i == j { self.rows[i][j] } else { 0.0 })
-            }),
-        }
-    }
-    #[inline]
     fn eye() -> Self {
         Self {
             rows: std::array::from_fn(|i| std::array::from_fn(|j| if i == j { 1.0 } else { 0.0 })),
         }
+    }
+    /// Solve the quadratic form for a pair of matrices.
+    #[inline]
+    fn compute_quadratic_form(&self, center: &impl Diagonal) -> f64 {
+        let mut result = 0.0;
+
+        for i in 0..N {
+            for j in 0..N {
+                result += center[i] * self.rows[i][j] * center[j];
+            }
+        }
+        result
     }
 }
 
@@ -173,6 +201,13 @@ impl<const N: usize> From<RotationMatrix<N>> for Matrix<N, N> {
 }
 
 impl<const N: usize> Matrix<N, N> {
+    /// Extract the diagonal elements from a matrix
+    #[inline]
+    fn diag(&self) -> DiagonalMatrix<N> {
+        DiagonalMatrix {
+            rows: std::array::from_fn(|i| self.rows[i][i]),
+        }
+    }
     /// Compute a full `NxN` matrix from N diagonal elements, setting all others to 0.
     #[must_use]
     #[inline]
@@ -187,7 +222,7 @@ impl<const N: usize> Matrix<N, N> {
     /// Multiply a [`Matrix`] by a diagonal matrix on the right hand side
     #[must_use]
     #[inline]
-    pub fn mul_diagonal(&self, diag: &[f64; N]) -> Self {
+    pub fn matmul_diagonal(&self, diag: &[f64; N]) -> Self {
         let mut rows = [[0f64; N]; N];
         for (i, row) in rows.iter_mut().enumerate().take(N) {
             for j in 0..N {
@@ -212,19 +247,6 @@ impl<const N: usize> Matrix<N, N> {
             }
         }
 
-        result
-    }
-    /// Solve the quadratic form for a pair of matrices.
-    #[must_use]
-    #[inline]
-    pub fn compute_quadratic_form(&self, other: &[f64; N]) -> f64 {
-        let mut result = 0.0;
-
-        for i in 0..N {
-            for j in 0..N {
-                result += other[i] * self.rows[i][j] * other[j];
-            }
-        }
         result
     }
 }
@@ -281,6 +303,8 @@ impl Invertible for Matrix<2, 2> {
 impl Copy for Matrix<2, 2> {}
 impl Copy for Matrix<3, 3> {}
 impl Copy for Matrix<4, 4> {}
+impl<const N: usize> Diagonal for DiagonalMatrix<N> {}
+impl<const N: usize> Diagonal for [f64; N] {}
 
 #[cfg(test)]
 mod tests {

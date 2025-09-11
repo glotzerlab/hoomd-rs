@@ -5,7 +5,7 @@
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
-use hoomd_linalg::{Invertible, Matrix22};
+use hoomd_linalg::{Diagonal, Invertible, Matrix, Matrix22, SquareMatrix};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, RotationMatrix};
 
@@ -253,7 +253,7 @@ where
         let rot_transpose = rot.inverted();
 
         let b_inv = Matrix22::from(rot)
-            .mul_diagonal(&self.axes.map(|x| x.get().powi(2)))
+            .matmul_diagonal(&self.axes.map(|x| x.get().powi(2)))
             .matmul(&rot_transpose.into());
 
         let v_ij = &v_ij.coordinates;
@@ -266,11 +266,11 @@ where
             let d = a + (b - a) * _INV_PHI;
 
             // Could reuse computed k values between loops for better performance?
-            let k_c = k_lambda(&a_inv, &b_inv, c, v_ij);
+            let k_c = k_lambda::<2, Matrix22>(&a_inv, &b_inv, c, v_ij);
             if k_c <= 0.0 {
                 return false;
             }
-            let k_d = k_lambda(&a_inv, &b_inv, d, v_ij);
+            let k_d = k_lambda::<2, Matrix22>(&a_inv, &b_inv, d, v_ij);
             if k_d <= 0.0 {
                 return false;
             }
@@ -286,7 +286,10 @@ where
 
 /// Solve the characteristic equation of two ellipses.
 #[inline]
-fn k_lambda(a_inv: &Matrix22, b_inv: &Matrix22, l: f64, v_ij: &[f64; 2]) -> f64 {
+fn k_lambda<const N: usize, M>(a_inv: &M, b_inv: &M, l: f64, v_ij: &impl Diagonal) -> f64
+where
+    M: SquareMatrix + Invertible + Copy,
+{
     let m = *b_inv * ((1.0 - l).recip()) + (*a_inv * l.recip());
 
     1.0 - m.inverse().compute_quadratic_form(v_ij)
