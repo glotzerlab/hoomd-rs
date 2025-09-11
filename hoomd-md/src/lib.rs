@@ -17,7 +17,7 @@ use std::{array, marker::PhantomData, ops::{AddAssign, Index}};
 
 use hoomd_interaction::{NetBodyForce, NetBodyTorque};
 use hoomd_vector::{Cartesian, InnerProduct, Quaternion, Rotate, Vector};
-use thermostat::{Thermostat, NoThermostat};
+use thermostat::Thermostat;
 use hoomd_microstate::{boundary::{GenerateGhosts, Wrap}, property::{Acceleration, AngularVelocity, Mass, MomentOfInertia, Orientation, Position, Velocity}, Microstate, Transform};
 use hoomd_simulation::macrostate::Isochoric;
 
@@ -88,6 +88,8 @@ where
             microstate.update_body_properties(body_index, body_properties)
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
+
+        self.thermostat.advance();
 
         microstate.increment_substep();
     }
@@ -287,6 +289,8 @@ where
             *body_properties.angular_velocity_mut() =  new_angular_velocity;
         }
 
+        self.thermostat.advance();
+        
         microstate.increment_substep();
     }
 

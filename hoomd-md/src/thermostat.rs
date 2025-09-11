@@ -41,6 +41,8 @@ TODO: Add example.
         degrees_of_freedom: u32,
         kinetic_energy: f64,
     ) -> f64;
+
+    fn advance(&mut self, dt: f64);
 }
 
 /** Constant temperature.
@@ -75,6 +77,9 @@ where
     ) -> f64 {
         1.0
     }
+
+    #[inline]
+    fn advance(&mut self, dt: f64) {}
 }
 
 /** Bussi thermostat.
@@ -82,7 +87,6 @@ TODO: Add documentation.
 TODO: Add example.
 */
 pub struct  BussiThermostat {
-    
     /// Thermostat time constant (`[time]`).
     pub tau: f64,
 }
@@ -105,7 +109,6 @@ where
         dt: &f64,
         dof: &i64
     ) -> f64 {
-        // panic if there is no kT setpoint
         let kT = macrostate.temperature();
 
         // panic if momenta was not initialized
@@ -140,4 +143,63 @@ where
         (time_decay_factor + term1 + term2).sqrt()
     }
 
+    #[inline]
+    fn rescaling_factor_step_two(
+        &self,
+        macrostate: &M,
+        microstate: &Microstate<B, S, C>,
+        kinetic_energy: &f64,
+        dt: &f64,
+        dof: &i64
+    ) -> f64 {
+        1.0
+    }
+
+    #[inline]
+    fn advance(&mut self, dt: f64) {}
+}
+
+
+/** MTTK thermostat.
+TODO: Add documentation.
+TODO: Add example.
+*/
+pub struct  MTTKThermostat {
+    /// Thermostat time constant (`[time]`).
+    pub tau: f64,
+
+    pub xi: f64, // TODO: add thermalize method?
+
+    pub eta: f64,
+}
+
+impl<M, B, S, C> Thermostat<M, B, S, C> for MTTKThermostat {
+    #[inline]
+    fn rescaling_factor_step_one(
+        &self,
+        macrostate: &M,
+        microstate: &Microstate<B, S, C>,
+        kinetic_energy: &f64,
+        dt: &f64,
+        dof: &i64
+    ) -> f64 {
+        // TODO
+    }
+
+    #[inline]
+    fn rescaling_factor_step_two(
+        &self,
+        macrostate: &M,
+        microstate: &Microstate<B, S, C>,
+        kinetic_energy: &f64,
+        dt: &f64,
+        dof: &i64
+    ) -> f64 {
+        // TODO
+    }
+
+    #[inline]
+    fn advance(&mut self, dt: f64) {
+        // TODO
+    }
 }
