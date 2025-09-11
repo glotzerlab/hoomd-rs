@@ -52,23 +52,25 @@ pub trait GeneralMatrix: Sized + Mul<f64, Output = Self> + Add<Self, Output = Se
     fn full(val: f64) -> Self;
 }
 
+/// Marker trait to indicate a sequence of values can be read as a diagonal matrix.
 pub trait Diagonal: Index<usize, Output = f64> {}
 
-/// TODO
+/** Define properties and implementations that are well-defined for all square matrixes.
+*/
 pub trait SquareMatrix: GeneralMatrix
 where
     Self: Sized,
 {
-    /// Create an identity matrix of dimension N.
+    /// Return an N x N identity matrix, with ones on the diagonal and zeros elsewhere.
     #[must_use]
     fn eye() -> Self;
 
-    /// QuadraticForm
+    /** Solve the quadratic form $ A^T @ x @ A $ for a matrix .*/
     #[must_use]
-    fn compute_quadratic_form(&self, center: &impl Diagonal) -> f64;
+    fn compute_quadratic_form(&self, vars: &impl Diagonal) -> f64;
 }
 
-/// TODO
+///
 pub trait Determinant: SquareMatrix {
     /** Compute the determinant of a matrix.*/
     #[must_use]
@@ -97,6 +99,10 @@ impl<const N: usize> Index<usize> for DiagonalMatrix<N> {
 
 /// A 2x2 matrix, allocated on the stack.
 pub type Matrix22 = Matrix<2, 2>;
+/// A 3x3 matrix, allocated on the stack.
+pub type Matrix33 = Matrix<3, 3>;
+/// A 4x4 matrix, allocated on the stack.
+pub type Matrix44 = Matrix<4, 4>;
 
 impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
     // type MatrixType = Matrix<N, M>;
@@ -125,14 +131,13 @@ impl<const N: usize> SquareMatrix for Matrix<N, N> {
             rows: std::array::from_fn(|i| std::array::from_fn(|j| if i == j { 1.0 } else { 0.0 })),
         }
     }
-    /// Solve the quadratic form for a pair of matrices.
     #[inline]
-    fn compute_quadratic_form(&self, center: &impl Diagonal) -> f64 {
+    fn compute_quadratic_form(&self, vars: &impl Diagonal) -> f64 {
         let mut result = 0.0;
 
         for i in 0..N {
             for j in 0..N {
-                result += center[i] * self.rows[i][j] * center[j];
+                result += vars[i] * self.rows[i][j] * vars[j];
             }
         }
         result
