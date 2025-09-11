@@ -9,7 +9,7 @@ use hoomd_microstate::{Body, Transform, boundary::Wrap, property::{Acceleration,
 
 use hoomd_vector::{InnerProduct, Vector};
 
-/** Compute system properties based on short-ranged pairwise interactions between sites.
+/** Short-ranged pairwise interactions between sites.
 
 Given an evaluator that implements [`SitePairEnergy`], [`CutoffPair`] represents:
 
@@ -19,15 +19,16 @@ U_\mathrm{total} = \sum_{i=0}^{N-1}\sum_{j=i+1}^{N-1} U\left(s_i, s_j \right) \l
 where $`U(s_i, s_j)`$ is the potential computed by [`CutoffPair::evaluator`],
 $`s_i`$ is the full set of site properties for site i, $`\vec{r}_i`$ is
 the position of site i, $`b_i`$ is the body tag that holds site *i*, and
-$`\left| \right|`$ denotes the Iverson bracket.
+$`\left[ \  \right]`$ denotes the Iverson bracket.
 
 In other words, [`CutoffPair`] sums the energy for all pairs that are separated
 by a distance less than `r_cut` and belong to different bodies.
 
-For the evaluator, use [`Isotropic`] or your own custom type.
+For the evaluator, use [`Anisotropic`], [`Isotropic`] or your own custom type.
 
 TODO: Reword this when [`CutoffPair`] also implements `SitePairForce`.
 
+[`Anisotropic`]: crate::pairwise::Anisotropic
 [`Isotropic`]: crate::pairwise::Isotropic
 
 # Example

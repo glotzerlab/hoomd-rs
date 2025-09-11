@@ -24,8 +24,12 @@ bevy_diagnostic.workspace = true
 bevy_winit.workspace = true
 itertools.workspace = true
 hoomd-microstate.workspace = true
+hoomd-simulation.workspace = true
 hoomd-vector.workspace = true
 web-time = "1.1.0"
+
+# web-sys = "0.3.77"
+# `web_sys::console::log_1(&msg.into());` is useful for println! type debugging in wasm
 
 # Work around failing build: https://github.com/bevyengine/bevy/issues/17699#issuecomment-2862717597
 [target.'cfg(target_arch = "wasm32")'.dependencies]

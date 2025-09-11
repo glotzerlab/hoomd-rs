@@ -191,11 +191,7 @@ where
 
 /// Detect collision between two convex 3D objects via Minkowski Portal Refinement.
 #[inline(never)]
-pub fn collide3d<
-    R: Rotation + Copy,
-    A: SupportMapping<Cartesian<3>>,
-    B: SupportMapping<Cartesian<3>>,
->(
+pub fn collide3d<R: Rotation, A: SupportMapping<Cartesian<3>>, B: SupportMapping<Cartesian<3>>>(
     sa: &A,
     sb: &B,
     v_ij: &Cartesian<3>, // Probably ok to take ownership?

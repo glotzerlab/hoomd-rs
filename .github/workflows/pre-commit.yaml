@@ -1,7 +1,7 @@
 name: pre-commit
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 on:
@@ -47,3 +47,6 @@ jobs:
       run: rustup default "${RUST_VERSION}"
     - name: Run pre-commit
       run: pre-commit run --all-files
+    - name: Show file differences
+      run: git diff --color=always
+      if: always()

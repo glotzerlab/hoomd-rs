@@ -8,7 +8,7 @@ use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, NetBodyForce, 
 use hoomd_microstate::{boundary::Wrap, property::Position, Body, Microstate, Site, Transform};
 use hoomd_vector::Vector;
 
-/** Compute system properties from external fields.
+/** Interactions between sites and external fields.
 
 Given an inner type that implements [`SiteEnergy`], [`Single`] represents:
 
@@ -20,6 +20,10 @@ where $`s_i`$ is the full set of site properties for site i.
 For the inner type, use one from [`external`] or your own custom type.
 
 [`external`]: crate::external
+
+Use [`SingleOverlap`] instead of [`Single`] for purely hard interactions.
+
+[`SingleOverlap`]: crate::SingleOverlap
 
 # Example
 

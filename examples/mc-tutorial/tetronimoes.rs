@@ -1,3 +1,4 @@
+// ANCHOR: all
 // ANCHOR: use
 use rand::{Rng, seq::IndexedRandom};
 use std::f64::consts::PI;
@@ -14,27 +15,17 @@ use hoomd_microstate::{
     boundary::Closed,
     property::{OrientedPoint, Point},
 };
+use hoomd_simulation::Simulation;
 use hoomd_vector::{Angle, Cartesian};
 // ANCHOR_END: use
 
-use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, Settings, Simulation,
-    representation::RectangularBoundary,
-    representation::disk::{self, Disk},
-};
-
-use anyhow::Context;
-use bevy::prelude::*;
-use bevy::render::storage::ShaderStorageBuffer;
-use std::iter;
-
 // ANCHOR: type_aliases
-type MyVector = Cartesian<2>;
-type BodyProperties = OrientedPoint<MyVector, Angle>;
-type SiteProperties = Point<MyVector>;
+type PositionVector = Cartesian<2>;
+type BodyProperties = OrientedPoint<PositionVector, Angle>;
+type SiteProperties = Point<PositionVector>;
 // ANCHOR_END: type_aliases
 
-// ANCHOR: local_trial_all
+// ANCHOR: local_trial
 /// Take fixed steps left, right, down, up, rotate left, or rotate right.
 struct DiscreteRotateOrTranslate;
 
@@ -44,6 +35,7 @@ impl LocalTrial<BodyProperties> for DiscreteRotateOrTranslate {
         rng: &mut R,
         body_properties: BodyProperties,
     ) -> BodyProperties {
+        // ANCHOR_END: local_trial
         // ANCHOR: local_trial_steps
         let translate_steps = [
             [0.0, -1.0].into(),
@@ -66,21 +58,44 @@ impl LocalTrial<BodyProperties> for DiscreteRotateOrTranslate {
                 .expect("rotate_steps should have at least 1 element");
         }
         trial
-        // ANCHOR_END: local_trial_mut
     }
 }
-// ANCHOR_END: local_trial_all
+// ANCHOR_END: local_trial_mut
+
+// Remove the cfg_attr(...) line when using this code outside the hoomd-rs/examples directory.
+#[cfg_attr(feature = "bevy", derive(Resource))]
+// ANCHOR: simulation_struct
+struct Tetronimoes {
+    /// Positions and orientations of all the bodies in the simulation.
+    microstate: Microstate<BodyProperties, SiteProperties, Closed<Rectangle>>,
+    /// How sites interact with other sites and fields.
+    hamiltonian: (
+        Single<Linear<PositionVector>>,
+        CutoffPair<Isotropic<Boxcar>>,
+    ),
+    /// Trial moves to apply.
+    sweep: Sweep<DiscreteRotateOrTranslate>,
+    /// Temperature set point.
+    kt: f64,
+    /// Tetronimo shapes.
+    template_sites: Vec<Vec<Point<PositionVector>>>,
+}
+// ANCHOR_END: simulation_struct
 
 // ANCHOR: simulation_new
 impl Tetronimoes {
     /// Construct a new tetronimo simulation.
     fn new() -> anyhow::Result<Tetronimoes> {
+        // ANCHOR_END: simulation_new
+        // ANCHOR: parameters
         let box_height = 30.0;
         let kt = 1.0;
         let alpha = 1.0;
         let epsilon = 1000.0;
         let sigma = 1.0;
+        // ANCHOR_END: parameters
 
+        // ANCHOR: microstate
         let square = Rectangle::with_equal_edges(box_height.try_into()?);
         let microstate = MicrostateBuilder::<
             BodyProperties,
@@ -88,7 +103,9 @@ impl Tetronimoes {
             Closed<Rectangle>,
         >::with_boundary(Closed(square))
         .try_build()?;
+        // ANCHOR_END: microstate
 
+        // ANCHOR: hamiltonian
         let linear = Single(Linear {
             alpha,
             plane_origin: Cartesian::default(),
@@ -107,6 +124,7 @@ impl Tetronimoes {
         };
 
         let hamiltonian = (linear, cutoff_pair);
+        // ANCHOR_END: hamiltonian
 
         // ANCHOR: trial_moves
         let sweep = Sweep(DiscreteRotateOrTranslate);
@@ -152,6 +170,7 @@ impl Tetronimoes {
         ];
         // ANCHOR_END: template_sites
 
+        // ANCHOR: initialize_struct
         Ok(Tetronimoes {
             microstate,
             hamiltonian,
@@ -161,28 +180,15 @@ impl Tetronimoes {
         })
     }
 }
-// ANCHOR_END: simulation_new
-
-#[derive(Resource)]
-// ANCHOR: simulation_struct
-struct Tetronimoes {
-    /// Positions of all the bodies in the simulation.
-    microstate: Microstate<BodyProperties, SiteProperties, Closed<Rectangle>>,
-    /// How sites interact with other sites and fields.
-    hamiltonian: (Single<Linear<MyVector>>, CutoffPair<Isotropic<Boxcar>>),
-    /// Trial moves to apply.
-    sweep: Sweep<DiscreteRotateOrTranslate>,
-    /// Temperature set point.
-    kt: f64,
-    /// Tetronimo shapes.
-    template_sites: Vec<Vec<Point<MyVector>>>,
-}
-// ANCHOR_END: simulation_struct
+// ANCHOR_END: initialize_struct
 
 // ANCHOR: impl_simulation
 impl Simulation for Tetronimoes {
+    // ANCHOR_END: impl_simulation
+    // ANCHOR: advance
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
+        // ANCHOR_END: advance
         // ANCHOR: add
         if self.microstate.step() % 100 == 0 {
             let mut rng = self.microstate.counter().make_rng();
@@ -207,111 +213,48 @@ impl Simulation for Tetronimoes {
         }
         // ANCHOR_END: add
 
+        // ANCHOR: apply
         self.sweep
             .apply(&mut self.microstate, &self.hamiltonian, &self.kt);
         self.microstate.increment_step();
+        // ANCHOR_END: apply
 
+        // ANCHOR: reset
         if self.hamiltonian.1.total_energy(&self.microstate) > 20_000.0 {
             self.microstate.clear();
         }
 
         Ok(())
     }
+    // ANCHOR_END: reset
 
+    // ANCHOR: step
     /// Get the current simulation step.
     fn step(&self) -> u64 {
         self.microstate.step()
     }
 }
-// ANCHOR_END: impl_simulation
+// ANCHOR_END: step
 
-/// Mark the disk representation type.
-struct A;
-
+// Remove the cfg(not(...)) line when using this code outside the hoomd-rs/examples directory.
+#[cfg(not(feature = "bevy"))]
+// ANCHOR: main
 fn main() -> anyhow::Result<()> {
-    let simulation =
-        Tetronimoes::new().context("failed to setup simulation")?;
-    let l = simulation.microstate.boundary().0.edge_lengths[1].get() as f32;
-    let hoomd_bevy_plugin = HoomdBevyPlugin {
-        initial_settings: Settings {
-            sps_limit: 64.0,
-            viewport_height: l + 1.0,
-            ..default()
-        },
-        simulation,
-    };
+    let mut simulation = Tetronimoes::new()?;
+    // TODO: Write GSD file.
 
-    let mut app = App::new();
-    hoomd_bevy::add_default_plugins(&mut app);
-    hoomd_bevy_plugin.build(&mut app);
-    app.add_systems(
-        Startup,
-        (
-            (|| disk::MaterialParameters::default()).pipe(Disk::<A>::setup),
-            setup_colors,
-        )
-            .chain(),
-    );
-    app.add_systems(
-        Startup,
-        (move || RectangularBoundary {
-            width: l,
-            height: l,
-            ..default()
-        })
-        .pipe(RectangularBoundary::setup),
-    );
-    app.add_systems(
-        Update,
-        sync_simulation
-            .run_if(resource_changed::<Tetronimoes>)
-            .after(AdvanceSet),
-    );
-
-    app.run();
+    for _ in 0..20_000 {
+        simulation.advance()?;
+    }
 
     Ok(())
 }
+// ANCHOR_END: main
+// ANCHOR_END: all
 
-/// Set the tetronimo colors.
-fn setup_colors(
-    disk_representation: ResMut<disk::Representation<A>>,
-    mut materials: ResMut<Assets<disk::Material>>,
-    buffers: ResMut<Assets<ShaderStorageBuffer>>,
-) {
-    let material = materials
-        .get_mut(disk_representation.material())
-        .expect("Disk::setup should have added the material");
-
-    let color_wheel = (0..360 * 4)
-        .step_by(39)
-        .map(|i| Color::oklch(0.75, 0.1246, (i % 360) as f32));
-    let linear_color_wheel = color_wheel.map(LinearRgba::from);
-    let duplicate = linear_color_wheel.flat_map(|v| iter::repeat_n(v, 4));
-    material.set_background_colors(buffers, &duplicate.collect());
-}
-
-/// Copy the current positions of simulation particles to bevy entities.
-fn sync_simulation(
-    mut commands: Commands,
-    disk_representation: Res<disk::Representation<A>>,
-    query: Query<(Entity, &mut Transform), With<Disk<A>>>,
-    simulation: Res<Tetronimoes>,
-) {
-    let sites = simulation.microstate.sites();
-    Disk::sync(
-        &mut commands,
-        disk_representation,
-        query,
-        sites.iter().map(|site| {
-            (
-                Vec3::new(
-                    site.properties.position[0] as f32,
-                    site.properties.position[1] as f32,
-                    0.0,
-                ),
-                1.0f32,
-            )
-        }),
-    );
-}
+#[cfg(feature = "bevy")]
+mod tetronimoes_interactive;
+#[cfg(feature = "bevy")]
+use bevy::prelude::Resource;
+#[cfg(feature = "bevy")]
+use tetronimoes_interactive::main;

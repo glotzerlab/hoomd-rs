@@ -9,6 +9,7 @@ members = ["examples",
            "hoomd-mc",
            "hoomd-md",
            "hoomd-microstate",
+           "hoomd-simulation",
            "hoomd-utility",
            "hoomd-vector",
            "tools/build-wasm-doc-examples",
@@ -25,6 +26,7 @@ default-members = ["examples",
                    "hoomd-mc",
                    "hoomd-md",
                    "hoomd-microstate",
+                   "hoomd-simulation",
                    "hoomd-utility",
                    "hoomd-vector",
                   ]
@@ -47,6 +49,7 @@ hoomd-gsd = { path = "hoomd-gsd" }
 hoomd-interaction = { path = "hoomd-interaction" }
 hoomd-mc = { path = "hoomd-mc" }
 hoomd-microstate = { path = "hoomd-microstate" }
+hoomd-simulation = { path = "hoomd-simulation" }
 hoomd-utility = { path = "hoomd-utility" }
 hoomd-vector = { path = "hoomd-vector" }
 

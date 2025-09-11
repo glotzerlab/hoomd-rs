@@ -62,7 +62,7 @@ fn energy_2d(bencher: Bencher) {
         },
     ];
 
-    let angular_mask = AngularMask::new(lj, masks, masks);
+    let angular_mask = AngularMask::new(lj, masks);
 
     bencher
         .counter(ItemsCount::from(1_u32))
@@ -108,7 +108,7 @@ fn energy_3d(bencher: Bencher) {
         },
     ];
 
-    let angular_mask = AngularMask::new(lj, masks, masks);
+    let angular_mask = AngularMask::new(lj, masks);
 
     bencher
         .counter(ItemsCount::from(1_u32))

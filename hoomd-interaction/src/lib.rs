@@ -19,12 +19,16 @@ pub mod external;
 pub mod pairwise;
 
 mod cutoff_pair;
+mod cutoff_pair_overlap;
 mod hamiltonian;
 mod single;
+mod single_overlap;
 mod zero;
 
 pub use cutoff_pair::CutoffPair;
+pub use cutoff_pair_overlap::CutoffPairOverlap;
 pub use single::Single;
+pub use single_overlap::SingleOverlap;
 pub use zero::Zero;
 
 /** Compute the total energy of a potential applied to the microstate.
@@ -125,6 +129,16 @@ pub trait SiteEnergy<S> {
     fn site_energy(&self, site_properties: &S) -> f64;
 }
 
+/** Check if a site overlaps with an object external to the microstate.
+
+TODO: Document
+*/
+pub trait SiteOverlap<S> {
+    /// Determine if a site overlaps with an object external to the microstate.
+    #[must_use]
+    fn site_overlap(&self, site_properties: &S) -> bool;
+}
+
 /** Compute the energy contribution from a pair of sites.
 
 The `SitePairEnergy` trait describes a type that can compute the energy
@@ -138,8 +152,6 @@ properties.
 
 The generic type names are:
 * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-
-TODO: Fix anisotropic link when implemented.
 
 [`Isotropic`]: pairwise::Isotropic
 [`Anisotropic`]: pairwise::Isotropic
@@ -186,6 +198,15 @@ let total_energy = custom.total_energy(&microstate);
 pub trait SitePairEnergy<S> {
     /// Evaluate the energy contribution from a pair of sites.
     fn site_pair_energy(&self, a: &S, b: &S) -> f64;
+}
+
+/** Check if two sites overlap.
+
+TODO: Document
+*/
+pub trait SitePairOverlap<S> {
+    /// Determine if two sites overlap.
+    fn site_pair_overlap(&self, a: &S, b: &S) -> bool;
 }
 
 /** Compute the change energy as a function of a single modified body.
