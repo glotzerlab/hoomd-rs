@@ -13,28 +13,41 @@ TODO: Add documentation.
 */
 
 pub mod thermostat;
-use std::ops::AddAssign;
+use std::{array, ops::{AddAssign, Index}};
 
-use hoomd_interaction::NetBodyForce;
-use hoomd_vector::{Vector, Cartesian};
+use hoomd_interaction::{NetBodyForce, NetBodyTorque};
+use hoomd_vector::{Cartesian, InnerProduct, Quaternion, Rotate, Vector};
 use thermostat::{Thermostat, NoThermostat};
-use hoomd_microstate::{boundary::{GenerateGhosts, Wrap}, property::{Acceleration, Mass, Position, Velocity}, Microstate, Transform};
+use hoomd_microstate::{boundary::{GenerateGhosts, Wrap}, property::{Acceleration, AngularVelocity, Mass, MomentOfInertia, Orientation, Position, Velocity}, Microstate, Transform};
 
 /** Integrate over translational degrees of freedom. 
 TODO: Add example.
 */
 pub trait TranslationalMotion<B, S, C, F> {
-    /** Perform integration, mutating the system configuration.
+    /** Perform the first integration half-step, mutating the system configuration.
     
     `microstate` holds the system configuration that will be changed, and
     `force` is the evaluator that is used to calculate forces used in the
     integration.
     */
-    fn integrate_translation(
+    fn integrate_translation_step_one(
         &self,
         microstate: &mut Microstate<B, S, C>,
         force: &F,
-        kT_setpoint: Option<&f64>,
+        kT_setpoint: Option<&f64>
+    );
+
+    /** Perform the second integration half-step, mutating the system configuration.
+    
+    `microstate` holds the system configuration that will be changed, and
+    `force` is the evaluator that is used to calculate forces used in the
+    integration.
+    */
+    fn integrate_translation_step_two(
+        &self,
+        microstate: &mut Microstate<B, S, C>,
+        force: &F,
+        kT_setpoint: Option<&f64>
     );
 }
 
@@ -72,19 +85,28 @@ where
     T: Thermostat,
     F: NetBodyForce<V, B, S, C>
 {
-    /** Perform two-step Verlet algorithm following Kamberaj 2005.
+    /** Perform first half-step of the Verlet algorithm following Kamberaj 2005.
     TODO: Do we want to allow users to set a displacement limit?
     */
     #[inline]
-    fn integrate_translation(
+    fn integrate_translation_step_one(
         &self,
         microstate: &mut Microstate<B, S, C>,
         force: &F,
-        kT_setpoint: Option<&f64>
+        kT_setpoint: &T::Macrostate,
     ) {
-        let rescaling_factor = self.thermostat.temperature_factor(kT_setpoint);
+        let mut rng = microstate.counter().make_rng();
+        let degrees_of_freedom = 2;
+        let kinetic_energy = 3.0;
 
-        // Integration Step One
+        let rescaling_factor = self.thermostat.rescaling_factor_step_one(
+            kT_setpoint,
+            &rng,
+            self.dt,
+            degrees_of_freedom,
+            kinetic_energy
+        );
+
         // For loop over a range instead of bodies().iter() since the latter holds an immutable borrow.
         for body_index in 0..microstate.bodies().len() {
             // Get the important information from the body
@@ -102,7 +124,21 @@ where
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
 
-        // Integration Step Two
+        microstate.increment_substep();
+    }
+
+    /** Perform second half-step of the Verlet algorithm following Kamberaj 2005.
+    TODO: Do we want to allow users to set a displacement limit?
+    */
+    #[inline]
+    fn integrate_translation_step_two(
+        &self,
+        microstate: &mut Microstate<B, S, C>,
+        force: &F,
+    ) {
+        let rescaling_factor = self.thermostat.rescaling_factor_step_one();
+
+        // For loop over a range instead of bodies().iter() since the latter holds an immutable borrow.
         for body_index in 0..microstate.bodies().len() {
             // Get the important information from the body
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
