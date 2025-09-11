@@ -163,7 +163,25 @@ impl<const N: usize, const M: usize, const K: usize> MatMul<Matrix<M, K>> for Ma
 }
 
 impl<const N: usize> Matrix<N, N> {
-    /// Extract the diagonal elements from a matrix
+    /** Extract the diagonal elements from a square matrix.
+
+    This method returns a `DiagonalMatrix<N>` containing the diagonal elements
+    of the input matrix, where the element at position `(i, i)` is taken from
+    the input matrix. All off-diagonal elements are ignored.
+
+    # Examples
+    ```
+    use hoomd_linalg::matrix::Matrix33;
+    let mat = Matrix33 {
+        rows: [
+            [1.0, 2.0, 3.0],
+            [4.0, 5.0, 6.0],
+            [7.0, 8.0, 9.0],
+    ]};
+    let diag = mat.diag();
+    assert_eq!(diag.rows, [1.0, 5.0, 9.0]);
+    ```
+    */
     #[must_use]
     #[inline]
     pub fn diag(&self) -> DiagonalMatrix<N> {
@@ -171,7 +189,16 @@ impl<const N: usize> Matrix<N, N> {
             rows: std::array::from_fn(|i| self.rows[i][i]),
         }
     }
-    /// Compute a full `NxN` matrix from N diagonal elements, setting all others to 0.
+
+    /** Compute a full `NxN` matrix from N diagonal elements, setting all others to 0.
+    # Examples
+    ```
+    use hoomd_linalg::matrix::Matrix33;
+    let mat = Matrix33::from_diag(&[1.0, 5.0, 9.0]);
+    assert_eq!(mat.diag().rows, [1.0, 5.0, 9.0]);
+    assert_eq!(mat[(1, 2)], 0.0);
+    ```
+    */
     #[must_use]
     #[inline]
     pub fn from_diag<T: Diagonal>(other: &T) -> Self {
@@ -182,7 +209,18 @@ impl<const N: usize> Matrix<N, N> {
         }
     }
 
-    /// Multiply a [`Matrix`] by a diagonal matrix on the right hand side
+    /** Scale each column of a [`Matrix`] by the corresponding element in a [`Diagonal`].
+
+    # Example
+    ```
+    use hoomd_linalg::matrix::{Matrix22, DiagonalMatrix};
+    use hoomd_linalg::GeneralMatrix;
+    let diag = DiagonalMatrix { rows: [3.0, 4.0] };
+    let mat = Matrix22::full(1.0).matmul_diagonal(&diag);
+    assert_eq!(mat[(0, 1)], 4.0);
+    assert_eq!(mat[(1, 0)], 3.0);
+    ```
+    */
     #[must_use]
     #[inline]
     pub fn matmul_diagonal<T: Diagonal>(&self, diag: &T) -> Self {

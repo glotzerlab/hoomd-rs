@@ -1,14 +1,15 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! asdf
+/*! Traits and subroutines for common linear algebra operations.
 
-TODO: Expand documentation.
+This crate places an emphasis on generality and simplicity, with optimization efforts
+targeted at small matrixes. Some complex routines (SVD, matrix inversion, etc.) will
+only be implemented for certain shapes, and generally consist of specialized algorithms
+optimal for those inputs.
 */
 
 use std::ops::{Add, Index, Mul};
-
-use hoomd_vector::Vector;
 
 /** Define whether a matrix $ A $ has an inverse $ A^-1 $ such that $ AA^-1 = A^-1A = I $
 */
@@ -17,24 +18,47 @@ pub trait Invertible {
     #[must_use]
     fn inverse(&self) -> Self;
 }
+/// Define an algorithm for the singular value decomposition of a matrix.
+pub trait SVD {
+    /// Decompose a [`GeneralMatrix`]into a rotation, a scaling, and a second rotation.
+    #[must_use]
+    fn svd(&self) -> Self;
+}
 
-/** Define operations for matrix multiplication.
+/** Define the general matrix multiplication (GEMM) subroutine.
+
+    # Example
+    ```
+    use hoomd_linalg::{matrix::Matrix22, MatMul, SquareMatrix, GeneralMatrix};
+
+    let mat = Matrix22::full(5.0);
+    assert_eq!(mat.matmul(&Matrix22::eye()), mat);
+
+
+    let diag = Matrix22::from_diag(&[3.0, 2.0]);
+
+    assert_eq!(
+      mat.matmul(&diag),
+      mat.matmul_diagonal(&[3.0, 2.0])  
+    );
+    ```
 */
 pub trait MatMul<RHS>
 where
     RHS: GeneralMatrix,
 {
-    /// The type of the output matrix. May or may not be Self.
+    /** The type of the output matrix.
+
+    This type is likely to be Self for dynamically sized [`GeneralMatrix`] types, but
+    will necessarily be different for statically allocated rectangular matrixes.
+    */
     type Output;
 
-    /// Multiply a matrix by a general matrix RHS (gemm).
+    /** Multiply a matrix by a general matrix RHS.
+    */
     #[must_use]
     fn matmul(&self, rhs: &RHS) -> Self::Output;
 }
-
-// /// Multiply a matrix by a vector. (gemm)
-// #[must_use]
-// fn matmul_vec(&self, rhs: &impl Vector) -> Self::OutputMatrix;
 
 /** General implementation for size and container-agnostic matrixes.
 
@@ -71,9 +95,21 @@ where
     fn compute_quadratic_form(&self, vars: &impl Diagonal) -> f64;
 }
 
-/// Compute the signed hypervolume of the hyperparallelepiped defined by a matrix.
+/** Compute the signed hypervolume of the hyperparallelepiped defined by a matrix.
+
+    # Example
+    ```
+    use hoomd_linalg::{matrix::Matrix22, Determinant, SquareMatrix};
+
+    let eye = Matrix22::eye();
+    assert_eq!(eye.det(), 1.0);
+
+    let scaled = eye * 2.0;
+    assert_eq!(scaled.det(), 2.0 * 2.0);
+    ```
+*/
 pub trait Determinant: SquareMatrix {
-    /** Compute the determinant of a matrix.*/
+    /// Compute the determinant of a matrix.
     #[must_use]
     fn det(&self) -> f64;
 }
