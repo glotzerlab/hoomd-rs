@@ -1,7 +1,7 @@
 # Applying Interactions
 
 <script type="module">
-import init from './applying_interactions.js'
+import init from './applying-interactions.js'
 {{#include ../../scripts/init-wasm-canvas.js}}
 </script>
 {{#include ../../scripts/canvas.html}}
@@ -25,14 +25,14 @@ U_\mathrm{step}(r) = \begin{cases}
 ```
 
 * Objective: Demonstrate the use of external and pairwise potentials in MC simulations.
-* File: `hoomd-rs/examples/mc-tutorial/applying_interactions.rs`
+* File: `hoomd-rs/examples/mc-tutorial/applying-interactions.rs`
 * Run (interactively):
   ```shell
-  cargo run --release --features "bevy" --example applying_interactions
+  cargo run --release --features "bevy" --example applying-interactions
   ```
 * Run (in batch mode):
   ```shell
-  cargo run --release --example applying_interactions
+  cargo run --release --example applying-interactions
   ```
 
 ## Bodies and Sites
@@ -70,14 +70,14 @@ properties and show how to create bodies with more than one site.
 ## Use Declarations
 
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:use}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:use}}
 ```
 
 ## The Simulation Model
 
 Here is the type that holds the simulation model:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:simulation_struct}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:simulation_struct}}
 ```
 
 In order, `Microstate`'s generic types are the **body properties**, the
@@ -87,14 +87,14 @@ In order, `Microstate`'s generic types are the **body properties**, the
 
 The `new()` method constructs a new simulation model:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:simulation_new}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:simulation_new}}
 ```
 
 ### Parameters
 
 Assign all the model parameters in one code block so that they are easy to modify:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:parameters}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:parameters}}
 ```
 
 `box_length` is the side length of the square simulation box, `maximum_distance`
@@ -110,7 +110,7 @@ tutorial showed how you could implement custom boundary conditions, this one
 uses the built in `Rectangle` type:
 
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:microstate}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:microstate}}
 ```
 
 ### External Potential
@@ -121,7 +121,7 @@ This code implements the external potential term in the Hamiltonian:
 ```
 
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:external}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:external}}
 ```
 
 `Linear` computes `$ \alpha \vec{r} \cdot \hat{y} $` in its `energy()` method.
@@ -140,7 +140,7 @@ This code implements the pairwise potential term in the Hamiltonian:
 ```
 
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:pair}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:pair}}
 ```
 
 The [Boxcar function] implements `$ U_\mathrm{step}(r) $` via the
@@ -180,7 +180,7 @@ To sum the external and pair energies, place them in a tuple:
 H = U_\mathrm{external} + U_\mathrm{pair}
 ```
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:hamiltonian}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:hamiltonian}}
 ```
 
 In *hoomd-rs*, tuples of types that each implement traits like `DeltaEnergyOne`
@@ -212,40 +212,40 @@ more about ownership in [The Rust Programming Language].
 
 Apply translation trial moves to the bodies:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:sweep}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:sweep}}
 ```
 
 ### Initialize the Struct
 
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:initialize_struct}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:initialize_struct}}
 ```
 
 ## Implement `Simulation`
 
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:impl_simulation}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:impl_simulation}}
 ```
 
 ### Advance the Simulation
 
 The `advance()` method moves the simulation forward one step:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:advance}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:advance}}
 ```
 
 #### Add New Bodies
 
 Every 100 steps, add a new body near the top of the simulation box:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:add}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:add}}
 ```
 
 #### Apply Trial Moves
 
 Attempt one translation trial move for each body in the microstate:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:apply}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:apply}}
 ```
 
 The previously unused temperature `$ kT $` now has meaning in this simulation
@@ -269,13 +269,13 @@ The pair potential in this example adds 1000 for every pair of disks that
 overlap. Remove all bodies from the
 microstate when total pairwise energy exceeds a threshold:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:reset}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:reset}}
 ```
 
 ### Get the Simulation Step
 
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:step}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:step}}
 ```
 
 ## Implement `main()`
@@ -283,7 +283,7 @@ microstate when total pairwise energy exceeds a threshold:
 To run the simulation, construct the `Fill` simulation model.
 Then call `advance()` many times:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:main}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:main}}
 ```
 
 Write the sites to a GSD file periodically so that you can inspect the results
@@ -306,7 +306,7 @@ simulation clear the bodies.
 Alternately, you can run the example in batch mode and then open
 the generated `trajectory.gsd` in [Ovito] or another visualization tool:
 ```shell
-cargo run --release --example applying_interactions
+cargo run --release --example applying-interactions
 ```
 
 The next section shows you how to place multiple **sites** in a **body**.
@@ -320,4 +320,4 @@ The next section shows you how to place multiple **sites** in a **body**.
 ## Complete Code
 
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying_interactions.rs:all}}
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:all}}

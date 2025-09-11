@@ -61,10 +61,10 @@ path = "mc-tutorial/custom_random_walk.rs"
 path = "mc-tutorial"
 
 [[example]]
-name = "applying_interactions"
-path = "mc-tutorial/applying_interactions.rs"
+name = "applying-interactions"
+path = "mc-tutorial/applying-interactions.rs"
 
-[package.metadata.example.applying_interactions]
+[package.metadata.example.applying-interactions]
 path = "mc-tutorial"
 
 [[example]]
