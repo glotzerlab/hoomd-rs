@@ -132,7 +132,7 @@ mod tests {
 
     use super::*;
     use crate::matrix::{Matrix, Matrix22};
-    use approx::{assert_relative_eq, relative_eq};
+    use approx::{assert_relative_eq, assert_ulps_eq, relative_eq, ulps_eq};
     use faer::Mat;
     use nalgebra;
     use nalgebra::Matrix2;
@@ -147,7 +147,7 @@ mod tests {
         }
         faer_matrix
     }
-    fn assert_matrixes_relative_eq<
+    fn assert_matrixes_ulps_eq<
         const N: usize,
         const M: usize,
         T0: Index<(usize, usize), Output = f64> + Debug,
@@ -158,9 +158,9 @@ mod tests {
     ) {
         for i in 0..N {
             for j in 0..M {
-                if !relative_eq!(m0[(i, j)], m1[(i, j)], max_relative = 1e-14) {
+                if !ulps_eq!(m0[(i, j)], m1[(i, j)], epsilon = 1e-14) {
                     println!("got:\n{m0:?}\nexpected:\n{m1:?}");
-                    assert_relative_eq!(m0[(i, j)], m1[(i, j)], max_relative = 1e-14);
+                    assert_ulps_eq!(m0[(i, j)], m1[(i, j)], epsilon = 1e-14);
                 }
             }
         }
@@ -219,7 +219,7 @@ mod tests {
 
         let custom_prod = a.matmul(&b);
         let faer_prod = faer_a * faer_b;
-        assert_matrixes_relative_eq::<N, N, _, _>(&custom_prod, &faer_prod);
+        assert_matrixes_ulps_eq::<N, N, _, _>(&custom_prod, &faer_prod);
     }
 
     #[rstest]
@@ -251,28 +251,55 @@ mod tests {
 
         let custom_prod = a.matmul(&b);
         let faer_prod = faer_a * faer_b;
-        assert_matrixes_relative_eq::<N, K, _, _>(&custom_prod, &faer_prod);
+        assert_matrixes_ulps_eq::<N, K, _, _>(&custom_prod, &faer_prod);
     }
     #[rstest(
         rows,
         case(Matrix22::eye().rows),
         case([[1.0, -2.0], [3.0, 4.0]]),
-        // case([[12.0, 2.0], [4.0, 0.0]])
+        case([[12.0, 2.0], [4.0, 0.0]]),
+        // case([[1000.0, 0.0], [0.0, 1e-4]])
     )]
     fn test_svd_2x2(rows: [[f64; 2]; 2]) {
         let matrix = Matrix22 { rows };
-        // let na = Matrix2::from(rows).transpose();
+
+        // Test against nalgebra, who uses this same algorithm
+        let na = nalgebra::Matrix2::from(rows).transpose();
+        let (u, s, vt) = matrix.svd();
+        let nasvd = na.svd(true, true);
+        let (nau, nas, navt) = (nasvd.u.unwrap(), nasvd.singular_values, nasvd.v_t.unwrap());
+        println!("U na:");
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&u, &nau);
+        println!("S na:");
+        assert_diags_relative_eq::<2, _>(&s, &nas);
+
+        println!("V na:");
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&vt, &navt);
+
+        println!("recombine");
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&u.matmul(&s).matmul(&vt), &matrix);
+
+        // Test against faer, who uses a more standard technique
         let faer = fill_faer(rows);
 
-        let (u, s, vt) = matrix.svd();
-
         let faersvd = faer.svd().unwrap();
-        let (faeru, faers, faervt) = (faersvd.U(), faersvd.S(), faersvd.V());
+        let (mut faeru, faers, mut faervt) =
+            (faersvd.U().to_owned(), faersvd.S(), faersvd.V().to_owned());
 
-        assert_matrixes_relative_eq::<2, 2, _, _>(&u, &faeru);
+        if faeru.determinant().signum() != u.det().signum() {
+            faeru[(0, 1)] *= -1.0;
+            faeru[(1, 1)] *= -1.0;
+        }
+        if faervt.determinant().signum() != vt.det().signum() {
+            faervt[(1, 0)] *= -1.0;
+            faervt[(1, 1)] *= -1.0;
+        }
+
+        println!("U faer:");
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&u, &faeru);
+        println!("S faer:");
         assert_diags_relative_eq::<2, _>(&s, &faers);
-        assert_matrixes_relative_eq::<2, 2, _, _>(&vt, &faervt);
-
-        assert_matrixes_relative_eq::<2, 2, _, _>(&u.matmul(&s).matmul(&vt), &matrix);
+        println!("V faer:");
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&navt, &faervt);
     }
 }

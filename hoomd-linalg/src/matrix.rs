@@ -391,6 +391,7 @@ impl SVD for Matrix<2, 2> {
 
         let sy = q - r;
         let sign_sy = sy.signum();
+        println!("sign sy {sign_sy}");
 
         let (a1, a2) = (f64::atan2(g, f), f64::atan2(h, e));
 
@@ -403,8 +404,8 @@ impl SVD for Matrix<2, 2> {
         let u = Matrix22 {
             rows: [[cl, -sl], [sl, cl]],
         };
+        println!("u.det(), {}", u.det());
         let vt = Matrix22 {
-            rows: [[cr, -sr * sign_sy], [sr, cr * sign_sy]],
             rows: [[cr, -sr * sign_sy], [sr, cr * sign_sy]],
         };
 
