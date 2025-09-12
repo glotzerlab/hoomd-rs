@@ -502,3 +502,74 @@ where
         microstate.increment_substep();
     }
 }
+
+/** Integrate rotational degrees of freedom in 2-dimensional Cartesian space.
+
+The generic type names are:
+* `B`: The [`Body::properties`](crate::Body) type.
+* `S`: The [`Site::properties`](crate::Site) type.
+* `C`: The [`boundary`](crate::boundary) condition type.
+* `E`: The interaction [`evaluator`]() type.
+* `T`: The [`Thermostat`]() type.
+* `M`: The [`macrostate`](crate::macrostate) type.
+*/
+impl<B, S, C, E, T, M> RotationalMotion<2, B, S, C, E, T, M> for ConstantVolume
+where
+    B: Orientation<Rotation = Angle>
+        + AngularVelocity<Vector = Cartesian<2>>
+        + MomentOfInertia<Vector = Cartesian<2>>
+        + Transform<S>
+        + Position<Vector = Cartesian<2>>   // TODO: should this be required?
+        + Clone,
+    S: Position<Vector = Cartesian<2>> + Default,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    E: NetBodyTorque<Cartesian<2>, B, S, C>,
+    T: Thermostat<B, S, C, M>,
+    M: Isochoric,
+{
+    /** Perform the first integration half-step, mutating the microstate and
+    possibly the thermostat.
+    
+    `microstate` holds the system configuration that will be changed,
+    `torque` is the evaluator that is used to calculate the net torque on every body,
+    `thermostat` is the thermostat,
+    `macrostate` holds the temperature setpoint (used by the thermostat),
+    `dof` is the number of degrees of degrees of freedom (used by the thermostat),
+    `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
+    */
+    #[inline]
+    fn integrate_rotation_step_one(
+        &self,
+        microstate: &mut Microstate<B, S, C>,
+        torque: &E,
+        thermostat: &mut T,
+        macrostate: &M,
+        dof: u32,
+        kinetic_energy: f64,
+    ) {
+        // TODO
+    }
+
+    /** Perform the first integration half-step, mutating the microstate and
+    possibly the thermostat.
+    
+    `microstate` holds the system configuration that will be changed,
+    `torque` is the evaluator that is used to calculate the net torque on every body,
+    `thermostat` is the thermostat,
+    `macrostate` holds the temperature setpoint (used by the thermostat),
+    `dof` is the number of degrees of degrees of freedom (used by the thermostat),
+    `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
+    */
+    #[inline]
+    fn integrate_rotation_step_two(
+        &self,
+        microstate: &mut Microstate<B, S, C>,
+        torque: &E,
+        thermostat: &mut T,
+        macrostate: &M,
+        dof: u32,
+        kinetic_energy: f64,
+    ) {
+        // TODO
+    }
+}
