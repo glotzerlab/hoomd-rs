@@ -31,7 +31,7 @@ fn create_random_matrix_pair<const N: usize, R: Rng>(rng: &mut R) -> (Matrix<N, 
 }
 
 /// Dimensions for general square matrix benchmarks.
-const SQUARE_DIMENSIONS: &[usize] = &[2, 3, 4, 8, 16];
+const SQUARE_DIMENSIONS: &[usize] = &[2, 3, 4, 8, 16, 64];
 /// Dimensions for determinant benchmarks, which are O(n!)
 const DETERMINANT_DIMENSIONS: &[usize] = &[2, 3, 4, 5, 6, 7, 8];
 
