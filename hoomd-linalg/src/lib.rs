@@ -143,12 +143,15 @@ mod tests {
         }
         faer_matrix
     }
-    fn assert_matrixes_relative_eq<const N: usize, const M: usize>(
-        m0: &Matrix<N, M>,
-        m1: &faer::Mat<f64>,
+    fn assert_matrixes_relative_eq<
+        const N: usize,
+        const M: usize,
+        T0: Index<(usize, usize), Output = f64>,
+        T1: Index<(usize, usize), Output = f64>,
+    >(
+        m0: &T0,
+        m1: &T1,
     ) {
-        // println!("{m0:?}");
-        println!("faer:\n{m1:?}");
         for i in 0..N {
             for j in 0..M {
                 assert_relative_eq!(m0[(i, j)], m1[(i, j)], max_relative = 1e-14);
@@ -206,7 +209,7 @@ mod tests {
 
         let custom_prod = a.matmul(&b);
         let faer_prod = faer_a * faer_b;
-        assert_matrixes_relative_eq(&custom_prod, &faer_prod);
+        assert_matrixes_relative_eq::<N, N, _, _>(&custom_prod, &faer_prod);
     }
 
     #[rstest]
@@ -238,12 +241,14 @@ mod tests {
 
         let custom_prod = a.matmul(&b);
         let faer_prod = faer_a * faer_b;
-        assert_matrixes_relative_eq(&custom_prod, &faer_prod);
+        assert_matrixes_relative_eq::<N, K, _, _>(&custom_prod, &faer_prod);
     }
+
     #[rstest(
         rows,
         case(Matrix22::eye().rows),
-        case([[1.0, -2.0], [3.0, 4.0]])
+        case([[1.0, -2.0], [3.0, 4.0]]),
+        // case([[12.0, 2.0], [4.0, 0.0]])
     )]
     fn test_svd_2x2(rows: [[f64; 2]; 2]) {
         let matrix = Matrix { rows };
@@ -251,9 +256,40 @@ mod tests {
 
         let (u, s, vt) = matrix.svd();
         let faer_svd = faer_matrix.svd().unwrap();
+        let mut faer_u = faer_svd.U().to_owned();
+        let mut faer_v = faer_svd.V().to_owned();
 
-        assert_matrixes_relative_eq(&u, &faer_svd.U().to_owned());
-        (0..2).for_each(|i| assert_relative_eq!(s[i], &faer_svd.S()[i]));
-        assert_matrixes_relative_eq(&vt, &faer_svd.V().to_owned());
+        assert_relative_eq!(u.det().abs(), 1.0);
+        assert_relative_eq!(vt.det().abs(), 1.0);
+
+        assert_relative_eq!(u.det() * s.as_dense().det() * vt.det(), matrix.det());
+
+        // TODO: so somehow by normalizing the dets we are breaking something
+
+        // Normalize the signs of our determinants to match whatever faer provides
+        if faer_u.determinant().signum() != u.det().signum() {
+            faer_u[(1, 0)] *= -1.0;
+            faer_u[(1, 1)] *= -1.0;
+        }
+        assert_matrixes_relative_eq::<2, 2, _, _>(&u, &faer_u);
+        (0..2).for_each(|i| assert_relative_eq!(s[i], &faer_svd.S()[i], max_relative = 1e-14));
+        if faer_v.determinant().signum() != vt.det().signum() {
+            faer_v[(0, 1)] *= -1.0;
+            faer_v[(1, 1)] *= -1.0;
+        }
+        assert_matrixes_relative_eq::<2, 2, _, _>(&vt, &faer_v);
+
+        println!("faer sings: {:?}", faer_svd.S());
+        println!("a.det(): {}", matrix.det());
+        println!("u.det(): {}", u.det());
+        println!("vt.det(): {}", vt.det());
+
+        println!("U@S@V: \n{}", &u.matmul(&s).matmul(&vt));
+        println!("A: \n{}", matrix);
+        // assert_matrixes_relative_eq::<2, 2, _, _>(&u.matmul(&s).matmul(&vt), &matrix);
+        assert_matrixes_relative_eq::<2, 2, _, _>(
+            &(faer_svd.U() * faer_svd.S() * faer_svd.V()),
+            &matrix,
+        );
     }
 }

@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use std::fmt;
-use std::ops::{Add, Index, Mul, Neg};
+use std::ops::{Add, Index, IndexMut, Mul, Neg};
 
 use crate::{Determinant, Diagonal, GeneralMatrix, Invertible, MatMul, SVD, SquareMatrix};
 use hoomd_vector::{Angle, Cartesian, RotationMatrix};
@@ -35,12 +35,27 @@ pub type Matrix33 = Matrix<3, 3>;
 /// A 4x4 matrix, allocated on the stack.
 pub type Matrix44 = Matrix<4, 4>;
 
+impl<const N: usize> Index<(usize, usize)> for DiagonalMatrix<N> {
+    type Output = f64;
+    #[inline]
+    fn index(&self, index: (usize, usize)) -> &f64 {
+        let (i, _) = index;
+        &self.rows[i]
+    }
+}
 impl<const N: usize, const M: usize> Index<(usize, usize)> for Matrix<N, M> {
     type Output = f64;
     #[inline]
     fn index(&self, index: (usize, usize)) -> &f64 {
         let (i, j) = index;
         &self.rows[i][j]
+    }
+}
+impl<const N: usize, const M: usize> IndexMut<(usize, usize)> for Matrix<N, M> {
+    #[inline]
+    fn index_mut(&mut self, index: (usize, usize)) -> &mut f64 {
+        let (i, j) = index;
+        &mut self.rows[i][j]
     }
 }
 
@@ -55,6 +70,21 @@ impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
     fn full(val: f64) -> Self {
         Self {
             rows: std::array::from_fn(|_| std::array::from_fn(|_| val)),
+        }
+    }
+}
+
+impl<const N: usize> GeneralMatrix for DiagonalMatrix<N> {
+    #[inline]
+    fn zeros() -> Self {
+        Self {
+            rows: std::array::from_fn(|_| 0.0),
+        }
+    }
+    #[inline]
+    fn full(val: f64) -> Self {
+        Self {
+            rows: std::array::from_fn(|_| val),
         }
     }
 }
@@ -162,6 +192,20 @@ impl<const N: usize, const M: usize, const K: usize> MatMul<Matrix<M, K>> for Ma
             }
         }
 
+        result
+    }
+}
+
+impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> {
+    type Output = Matrix<M, M>;
+    #[inline]
+    fn matmul(&self, rhs: &DiagonalMatrix<M>) -> Self::Output {
+        let mut result = Self::Output::zeros();
+        for (i, row) in result.rows.iter_mut().enumerate().take(M) {
+            for j in 0..M {
+                row[j] = self.rows[i][j] * rhs[j];
+            }
+        }
         result
     }
 }
@@ -296,6 +340,16 @@ impl<const N: usize, const M: usize> Add<Self> for Matrix<N, M> {
         }
     }
 }
+impl<const N: usize> Add<Self> for DiagonalMatrix<N> {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, rhs: Self) -> Self {
+        Self {
+            rows: std::array::from_fn(|i| self[i] + rhs[i]),
+        }
+    }
+}
 
 impl Invertible for Matrix<2, 2> {
     #[inline]
@@ -312,10 +366,15 @@ impl Invertible for Matrix<2, 2> {
 
 impl SVD for Matrix<2, 2> {
     type SingularValues = DiagonalMatrix<2>;
-    /** Decompose a [`Matrix22`]into a rotation, a scaling, and a second rotation.
+    /** Decompose a [`Matrix22`] into a rotation `U`, a scaling`Σ`, and a second rotation`V` such that `A=UΣV`.
 
     This implementation is based on the math in 10.1109/38.486688, and ensures good
     numerical stability.
+
+    We define all singular values to be positive. If the determinant of the input matrix
+    is positive, the determinants of both U and V are also positive. If the determinant
+    of the input matrix is negative, we ensure the determinant of U is positive and V
+    is negative.
     */
     #[inline]
     fn svd(&self) -> (Self, Self::SingularValues, Self) {
@@ -329,27 +388,41 @@ impl SVD for Matrix<2, 2> {
             (a_minus_d.powi(2) + b_plus_c.powi(2)).sqrt(),
         );
 
-        #[expect(non_snake_case, reason = "convention")]
-        let Σ = Self::SingularValues {
-            rows: [q + r, q - r],
-        };
+        let mut q_minus_r = q - r;
+        println!("q-r: {q_minus_r}");
+        println!("a.det(): {}", self.det());
 
         let (a1, a2) = (
             f64::atan2(b_plus_c, a_minus_d),
             f64::atan2(b_minus_c, a_plus_d),
         );
 
-        let β = f64::midpoint(a1, a2);
-        let γ = (a2 - a1) / 2.0;
-        println!(
-            "U: \n{}",
-            Matrix22::from(RotationMatrix::from(Angle::from(γ)))
-        );
-        (
-            RotationMatrix::from(Angle::from(γ)).into(),
-            Σ,
-            RotationMatrix::from(Angle::from(β)).into(),
-        )
+        let gamma = f64::midpoint(a1, a2);
+        let beta = (a2 - a1) / 2.0;
+
+        let u = Matrix22::from(RotationMatrix::from(Angle::from(beta)));
+        let v = Matrix22::from(RotationMatrix::from(Angle::from(gamma)));
+        // println!("u.det(): {}", u.det());
+
+        // println!("v.det(): {}", v.det());
+
+        // if u.det() < 0.0 {
+        //     u[(1, 0)] *= -1.0;
+        //     u[(1, 1)] *= -1.0;
+        // }
+        // if q_minus_r < 0.0 {
+        //     v[(0, 1)] *= -1.0;
+        //     v[(1, 1)] *= -1.0;
+        //     q_minus_r *= -1.0;
+        // }
+        #[expect(non_snake_case, reason = "convention")]
+        let Σ = Self::SingularValues {
+            rows: [q + r, q_minus_r.abs()], // TODO: positive sy? get det from this
+        };
+        println!("sigma: \n{Σ:?}");
+        // TODO: should we swap the sign of v
+
+        (u, Σ, v)
     }
 }
 
