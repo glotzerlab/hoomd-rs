@@ -128,10 +128,14 @@ pub mod matrix;
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::{Debug, Display};
+
     use super::*;
     use crate::matrix::{Matrix, Matrix22};
-    use approx::assert_relative_eq;
+    use approx::{assert_relative_eq, relative_eq};
     use faer::Mat;
+    use nalgebra;
+    use nalgebra::Matrix2;
     use rstest::rstest;
 
     fn fill_faer<const N: usize, const M: usize>(m: [[f64; M]; N]) -> Mat<f64> {
@@ -146,19 +150,25 @@ mod tests {
     fn assert_matrixes_relative_eq<
         const N: usize,
         const M: usize,
-        T0: Index<(usize, usize), Output = f64>,
-        T1: Index<(usize, usize), Output = f64>,
+        T0: Index<(usize, usize), Output = f64> + Debug,
+        T1: Index<(usize, usize), Output = f64> + Debug,
     >(
         m0: &T0,
         m1: &T1,
     ) {
         for i in 0..N {
             for j in 0..M {
-                assert_relative_eq!(m0[(i, j)], m1[(i, j)], max_relative = 1e-14);
+                if !relative_eq!(m0[(i, j)], m1[(i, j)], max_relative = 1e-14) {
+                    println!("got:\n{m0:?}\nexpected:\n{m1:?}");
+                    assert_relative_eq!(m0[(i, j)], m1[(i, j)], max_relative = 1e-14);
+                }
             }
         }
     }
-    fn assert_diags_relative_eq<const N: usize, T: Diagonal>(m0: &T, m1: &faer::diag::Diag<f64>) {
+    fn assert_diags_relative_eq<const N: usize, T: Diagonal>(
+        m0: &T,
+        m1: &impl Index<usize, Output = f64>,
+    ) {
         for i in 0..N {
             assert_relative_eq!(m0[i], m1[i], max_relative = 1e-14);
         }
@@ -243,7 +253,6 @@ mod tests {
         let faer_prod = faer_a * faer_b;
         assert_matrixes_relative_eq::<N, K, _, _>(&custom_prod, &faer_prod);
     }
-
     #[rstest(
         rows,
         case(Matrix22::eye().rows),
@@ -251,45 +260,19 @@ mod tests {
         // case([[12.0, 2.0], [4.0, 0.0]])
     )]
     fn test_svd_2x2(rows: [[f64; 2]; 2]) {
-        let matrix = Matrix { rows };
-        let faer_matrix = fill_faer(rows);
+        let matrix = Matrix22 { rows };
+        // let na = Matrix2::from(rows).transpose();
+        let faer = fill_faer(rows);
 
         let (u, s, vt) = matrix.svd();
-        let faer_svd = faer_matrix.svd().unwrap();
-        let mut faer_u = faer_svd.U().to_owned();
-        let mut faer_v = faer_svd.V().to_owned();
 
-        assert_relative_eq!(u.det().abs(), 1.0);
-        assert_relative_eq!(vt.det().abs(), 1.0);
+        let faersvd = faer.svd().unwrap();
+        let (faeru, faers, faervt) = (faersvd.U(), faersvd.S(), faersvd.V());
 
-        assert_relative_eq!(u.det() * s.as_dense().det() * vt.det(), matrix.det());
+        assert_matrixes_relative_eq::<2, 2, _, _>(&u, &faeru);
+        assert_diags_relative_eq::<2, _>(&s, &faers);
+        assert_matrixes_relative_eq::<2, 2, _, _>(&vt, &faervt);
 
-        // TODO: so somehow by normalizing the dets we are breaking something
-
-        // Normalize the signs of our determinants to match whatever faer provides
-        if faer_u.determinant().signum() != u.det().signum() {
-            faer_u[(1, 0)] *= -1.0;
-            faer_u[(1, 1)] *= -1.0;
-        }
-        assert_matrixes_relative_eq::<2, 2, _, _>(&u, &faer_u);
-        (0..2).for_each(|i| assert_relative_eq!(s[i], &faer_svd.S()[i], max_relative = 1e-14));
-        if faer_v.determinant().signum() != vt.det().signum() {
-            faer_v[(0, 1)] *= -1.0;
-            faer_v[(1, 1)] *= -1.0;
-        }
-        assert_matrixes_relative_eq::<2, 2, _, _>(&vt, &faer_v);
-
-        println!("faer sings: {:?}", faer_svd.S());
-        println!("a.det(): {}", matrix.det());
-        println!("u.det(): {}", u.det());
-        println!("vt.det(): {}", vt.det());
-
-        println!("U@S@V: \n{}", &u.matmul(&s).matmul(&vt));
-        println!("A: \n{}", matrix);
-        // assert_matrixes_relative_eq::<2, 2, _, _>(&u.matmul(&s).matmul(&vt), &matrix);
-        assert_matrixes_relative_eq::<2, 2, _, _>(
-            &(faer_svd.U() * faer_svd.S() * faer_svd.V()),
-            &matrix,
-        );
+        assert_matrixes_relative_eq::<2, 2, _, _>(&u.matmul(&s).matmul(&vt), &matrix);
     }
 }

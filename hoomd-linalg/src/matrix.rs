@@ -6,6 +6,7 @@ use std::ops::{Add, Index, IndexMut, Mul, Neg};
 
 use crate::{Determinant, Diagonal, GeneralMatrix, Invertible, MatMul, SVD, SquareMatrix};
 use hoomd_vector::{Angle, Cartesian, RotationMatrix};
+use nalgebra;
 
 /// A matrix with N rows and M columns, allocated on the stack.
 #[derive(Clone, Debug, PartialEq)]
@@ -378,51 +379,40 @@ impl SVD for Matrix<2, 2> {
     */
     #[inline]
     fn svd(&self) -> (Self, Self::SingularValues, Self) {
-        let a_plus_d = f64::midpoint(self[(0, 0)], self[(1, 1)]);
-        let a_minus_d = (self[(0, 0)] - self[(1, 1)]) / 2.0;
-        let b_plus_c = f64::midpoint(self[(0, 1)], self[(1, 0)]);
-        let b_minus_c = (self[(0, 1)] - self[(1, 0)]) / 2.0;
+        let e = f64::midpoint(self[(0, 0)], self[(1, 1)]);
 
+        let f = (self[(0, 0)] - self[(1, 1)]) / 2.0;
+        let g = f64::midpoint(self[(0, 1)], self[(1, 0)]); // TODO sign
+        let h = (self[(1, 0)] - self[(0, 1)]) / 2.0;
         let (q, r) = (
-            (a_plus_d.powi(2) + b_minus_c.powi(2)).sqrt(),
-            (a_minus_d.powi(2) + b_plus_c.powi(2)).sqrt(),
+            (e.powi(2) + h.powi(2)).sqrt(),
+            (f.powi(2) + g.powi(2)).sqrt(),
         );
 
-        let mut q_minus_r = q - r;
-        println!("q-r: {q_minus_r}");
-        println!("a.det(): {}", self.det());
+        let sy = q - r;
+        let sign_sy = sy.signum();
 
-        let (a1, a2) = (
-            f64::atan2(b_plus_c, a_minus_d),
-            f64::atan2(b_minus_c, a_plus_d),
-        );
+        let (a1, a2) = (f64::atan2(g, f), f64::atan2(h, e));
 
-        let gamma = f64::midpoint(a1, a2);
-        let beta = (a2 - a1) / 2.0;
+        let phi = f64::midpoint(a1, a2);
+        let theta = (a2 - a1) / 2.0;
 
-        let u = Matrix22::from(RotationMatrix::from(Angle::from(beta)));
-        let v = Matrix22::from(RotationMatrix::from(Angle::from(gamma)));
-        // println!("u.det(): {}", u.det());
+        let (sr, cr) = theta.sin_cos();
+        let (sl, cl) = phi.sin_cos();
 
-        // println!("v.det(): {}", v.det());
-
-        // if u.det() < 0.0 {
-        //     u[(1, 0)] *= -1.0;
-        //     u[(1, 1)] *= -1.0;
-        // }
-        // if q_minus_r < 0.0 {
-        //     v[(0, 1)] *= -1.0;
-        //     v[(1, 1)] *= -1.0;
-        //     q_minus_r *= -1.0;
-        // }
-        #[expect(non_snake_case, reason = "convention")]
-        let Σ = Self::SingularValues {
-            rows: [q + r, q_minus_r.abs()], // TODO: positive sy? get det from this
+        let u = Matrix22 {
+            rows: [[cl, -sl], [sl, cl]],
         };
-        println!("sigma: \n{Σ:?}");
-        // TODO: should we swap the sign of v
+        let vt = Matrix22 {
+            rows: [[cr, -sr * sign_sy], [sr, cr * sign_sy]],
+            rows: [[cr, -sr * sign_sy], [sr, cr * sign_sy]],
+        };
 
-        (u, Σ, v)
+        let singular_values = Self::SingularValues {
+            rows: [q + r, sy.abs()],
+        };
+
+        (u, singular_values, vt)
     }
 }
 
