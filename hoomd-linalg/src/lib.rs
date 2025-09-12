@@ -93,25 +93,6 @@ where
     fn compute_quadratic_form(&self, vars: &impl Diagonal) -> f64;
 }
 
-/** Compute the signed hypervolume of the hyperparallelepiped defined by a matrix.
-
-    # Example
-    ```
-    use hoomd_linalg::{matrix::Matrix22, Determinant, SquareMatrix};
-
-    let eye = Matrix22::eye();
-    assert_eq!(eye.det(), 1.0);
-
-    let scaled = eye * 2.0;
-    assert_eq!(scaled.det(), 2.0 * 2.0);
-    ```
-*/
-pub trait Determinant: SquareMatrix {
-    /// Compute the determinant of a matrix.
-    #[must_use]
-    fn det(&self) -> f64;
-}
-
 /** Structs implementing a large subset of Matrix traits.
 */
 pub mod matrix;

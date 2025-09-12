@@ -4,7 +4,7 @@
 use std::fmt;
 use std::ops::{Add, Index, IndexMut, Mul, Neg};
 
-use crate::{Determinant, Diagonal, GeneralMatrix, Invertible, MatMul, SquareMatrix};
+use crate::{Diagonal, GeneralMatrix, Invertible, MatMul, SquareMatrix};
 use hoomd_vector::{Cartesian, RotationMatrix};
 
 /// A matrix with N rows and M columns, allocated on the stack.
@@ -109,58 +109,6 @@ impl<const N: usize> SquareMatrix for Matrix<N, N> {
     }
 }
 
-impl<const N: usize> Determinant for Matrix<N, N> {
-    /**Compute the determinant of a matrix via a Laplace expansion.
-    Note that, while this implementation is optimal for small matrixes, it has O(N!)
-    time complexity and will be extremely slow for large matrixes.
-    */
-    #[inline]
-    fn det(&self) -> f64 {
-        /*
-        Because math with const generics is not allowed in rust, we compute the indices
-        of each submatrix and recur on those noncontiguous segments of the input.
-        */
-        #[inline]
-        fn det_recursive_noslice<const N: usize>(
-            matrix: &Matrix<N, N>,
-            row: usize,
-            col_indices: &[usize; N],
-            minor_size: usize,
-        ) -> f64 {
-            if minor_size == 2 {
-                let j0 = col_indices[0];
-                let j1 = col_indices[1];
-                return matrix.rows[row][j0] * matrix.rows[row + 1][j1]
-                    - matrix.rows[row][j1] * matrix.rows[row + 1][j0];
-            }
-
-            (0..minor_size).fold(0.0, |acc, idx| {
-                let minor_size = minor_size - 1;
-                let mut minor_cols = [0; N];
-                for j in 0..minor_size {
-                    // Store the indices for the next recursion, skipping col idx
-                    minor_cols[j] = col_indices[j + usize::from(j >= idx)];
-                }
-
-                let sign = if idx % 2 == 0 { 1.0 } else { -1.0 };
-                acc + sign
-                    * matrix.rows[row][col_indices[idx]]
-                    * det_recursive_noslice(matrix, row + 1, &minor_cols, minor_size)
-            })
-        }
-        // This would be handled by the iteration, but this simplifies the code
-        match N {
-            0 => return 0.0,
-            1 => return self.rows[0][0],
-            2 => return self.rows[0][0] * self.rows[1][1] - self.rows[1][0] * self.rows[0][1],
-            _ => (),
-        }
-
-        let col_indices = std::array::from_fn(|i| i);
-        det_recursive_noslice(self, 0, &col_indices, N)
-    }
-}
-
 impl<const N: usize> From<RotationMatrix<N>> for Matrix<N, N> {
     #[inline]
     fn from(value: RotationMatrix<N>) -> Self {
@@ -211,6 +159,70 @@ impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> 
 }
 
 impl<const N: usize> Matrix<N, N> {
+    /** Compute the signed hypervolume of the hyperparallelepiped defined by a matrix.
+
+        # Note
+        This implementation uses the Laplace expansion, which is optimal for small
+        matrices but will be extremely slow for large matrixes due to its O(N!)
+        complexity.
+
+        # Example
+        ```
+        use hoomd_linalg::{matrix::Matrix22, SquareMatrix};
+
+        let eye = Matrix22::eye();
+        assert_eq!(eye.det(), 1.0);
+
+        let scaled = eye * 2.0;
+        assert_eq!(scaled.det(), 2.0 * 2.0);
+        ```
+    */
+    #[must_use]
+    #[inline]
+    pub fn det(&self) -> f64 {
+        /*
+        Because math with const generics is not allowed in rust, we compute the indices
+        of each submatrix and recur on those noncontiguous segments of the input.
+        */
+        #[inline]
+        fn det_recursive_noslice<const N: usize>(
+            matrix: &Matrix<N, N>,
+            row: usize,
+            col_indices: &[usize; N],
+            minor_size: usize,
+        ) -> f64 {
+            if minor_size == 2 {
+                let j0 = col_indices[0];
+                let j1 = col_indices[1];
+                return matrix.rows[row][j0] * matrix.rows[row + 1][j1]
+                    - matrix.rows[row][j1] * matrix.rows[row + 1][j0];
+            }
+
+            (0..minor_size).fold(0.0, |acc, idx| {
+                let minor_size = minor_size - 1;
+                let mut minor_cols = [0; N];
+                for j in 0..minor_size {
+                    // Store the indices for the next recursion, skipping col idx
+                    minor_cols[j] = col_indices[j + usize::from(j >= idx)];
+                }
+
+                let sign = if idx % 2 == 0 { 1.0 } else { -1.0 };
+                acc + sign
+                    * matrix.rows[row][col_indices[idx]]
+                    * det_recursive_noslice(matrix, row + 1, &minor_cols, minor_size)
+            })
+        }
+        // This would be handled by the iteration, but this simplifies the code
+        match N {
+            0 => return 0.0,
+            1 => return self.rows[0][0],
+            2 => return self.rows[0][0] * self.rows[1][1] - self.rows[1][0] * self.rows[0][1],
+            _ => (),
+        }
+
+        let col_indices = std::array::from_fn(|i| i);
+        det_recursive_noslice(self, 0, &col_indices, N)
+    }
     /** Extract the diagonal elements from a square matrix.
 
     This method returns a `DiagonalMatrix<N>` containing the diagonal elements

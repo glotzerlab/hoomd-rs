@@ -12,7 +12,7 @@ use divan::counter::ItemsCount;
 use divan::{self, Bencher, black_box};
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
-use hoomd_linalg::{Determinant, Invertible, MatMul, matrix::Matrix};
+use hoomd_linalg::{Invertible, MatMul, matrix::Matrix};
 
 fn main() {
     #[cfg(not(target_arch = "wasm32"))]
@@ -82,4 +82,15 @@ fn inverse_mat2(bencher: Bencher) {
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| create_random_matrix::<2, 2, _>(&mut rng))
         .bench_local_values(|a| black_box(a.inverse()));
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[divan::bench]
+fn svd_mat2(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(42);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| create_random_matrix::<2, 2, _>(&mut rng))
+        .bench_local_values(|a| black_box(a.svd()));
 }
