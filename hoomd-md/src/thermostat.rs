@@ -17,14 +17,14 @@ use hoomd_simulation::macrostate::{Isoentropic, Isothermal};
 TODO: ensure that docs indicate two-step integration is baked into the thermostat trait
 TODO: Add example.
 */
- pub trait Thermostat<M, B, S, C> {
+ pub trait Thermostat<B, S, C, M> {
     /// The scaling factor for velocities in the first half-step.
     /// Note that translation and rotation are assumed to have identical math
     /// behind their scaling factors.
     fn rescaling_factor_step_one(
         &self,
-        macrostate: &M,
         microstate: &Microstate<B, S, C>,
+        macrostate: &M,
         dt: f64,
         degrees_of_freedom: u32,
         kinetic_energy: f64,
@@ -35,8 +35,8 @@ TODO: Add example.
     /// behind their scaling factors.
     fn rescaling_factor_step_two(
         &self,
-        macrostate: &M,
         microstate: &Microstate<B, S, C>,
+        macrostate: &M,
         dt: f64,
         degrees_of_freedom: u32,
         kinetic_energy: f64,
@@ -50,15 +50,15 @@ TODO: Add example.
 */
 pub struct NoThermostat;
 
-impl<M, B, S, C> Thermostat<M, B, S, C> for NoThermostat
+impl<B, S, C, M> Thermostat<B, S, C, M> for NoThermostat
 where
     M: Isoentropic
 {
     #[inline]
     fn rescaling_factor_step_one(
         &self,
-        macrostate: &M,
         microstate: &Microstate<B, S, C>,
+        macrostate: &M,
         dt: f64,
         degrees_of_freedom: u32,
         kinetic_energy: f64,
@@ -69,8 +69,8 @@ where
     #[inline]
     fn rescaling_factor_step_two(
         &self,
-        macrostate: &M,
         microstate: &Microstate<B, S, C>,
+        macrostate: &M,
         dt: f64,
         degrees_of_freedom: u32,
         kinetic_energy: f64,
@@ -92,7 +92,7 @@ pub struct  BussiThermostat {
 }
 
 /// TODO: add documentation
-impl<M, B, S, C> Thermostat<M, B, S, C> for BussiThermostat
+impl<B, S, C, M> Thermostat<B, S, C, M> for BussiThermostat
 where
     M: Isothermal
 {
@@ -103,8 +103,8 @@ where
     #[inline]
     fn rescaling_factor_step_one(
         &self,
-        macrostate: &M,
         microstate: &Microstate<B, S, C>,
+        macrostate: &M,
         kinetic_energy: &f64,
         dt: &f64,
         dof: &i64
@@ -146,8 +146,8 @@ where
     #[inline]
     fn rescaling_factor_step_two(
         &self,
-        macrostate: &M,
         microstate: &Microstate<B, S, C>,
+        macrostate: &M,
         kinetic_energy: &f64,
         dt: &f64,
         dof: &i64
