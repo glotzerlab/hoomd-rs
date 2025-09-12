@@ -12,8 +12,6 @@ version.workspace = true
 
 [dependencies]
 hoomd-vector.workspace = true
-nalgebra = "0.33.2"
-num-traits = "0.2.19"
 
 [lints]
 workspace = true
