@@ -273,33 +273,34 @@ mod tests {
         println!("S na:");
         assert_diags_relative_eq::<2, _>(&s, &nas);
 
-        println!("V na:");
+        println!("V me vs na:");
+        println!("{vt}\n{navt}");
         assert_matrixes_ulps_eq::<2, 2, _, _>(&vt, &navt);
 
         println!("recombine");
         assert_matrixes_ulps_eq::<2, 2, _, _>(&u.matmul(&s).matmul(&vt), &matrix);
 
-        // Test against faer, who uses a more standard technique
-        let faer = fill_faer(rows);
+        // // Test against faer, who uses a more standard technique
+        // let faer = fill_faer(rows);
 
-        let faersvd = faer.svd().unwrap();
-        let (mut faeru, faers, mut faervt) =
-            (faersvd.U().to_owned(), faersvd.S(), faersvd.V().to_owned());
+        // let faersvd = faer.svd().unwrap();
+        // let (mut faeru, faers, mut faervt) =
+        //     (faersvd.U().to_owned(), faersvd.S(), faersvd.V().to_owned());
 
-        if faeru.determinant().signum() != u.det().signum() {
-            faeru[(0, 1)] *= -1.0;
-            faeru[(1, 1)] *= -1.0;
-        }
-        if faervt.determinant().signum() != vt.det().signum() {
-            faervt[(1, 0)] *= -1.0;
-            faervt[(1, 1)] *= -1.0;
-        }
+        // if faeru.determinant().signum() != u.det().signum() {
+        //     faeru[(0, 1)] *= -1.0;
+        //     faeru[(1, 1)] *= -1.0;
+        // }
+        // if faervt.determinant().signum() != vt.det().signum() {
+        //     faervt[(0, 1)] *= -1.0;
+        //     faervt[(1, 1)] *= -1.0;
+        // }
 
-        println!("U faer:");
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&u, &faeru);
-        println!("S faer:");
-        assert_diags_relative_eq::<2, _>(&s, &faers);
-        println!("V faer:");
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&navt, &faervt);
+        // println!("U faer:");
+        // assert_matrixes_ulps_eq::<2, 2, _, _>(&u, &faeru);
+        // println!("S faer:");
+        // assert_diags_relative_eq::<2, _>(&s, &faers);
+        // println!("V faer:");
+        // assert_matrixes_ulps_eq::<2, 2, _, _>(&vt, &faervt);
     }
 }

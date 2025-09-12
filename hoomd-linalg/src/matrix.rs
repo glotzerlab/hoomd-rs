@@ -379,34 +379,35 @@ impl SVD for Matrix<2, 2> {
     */
     #[inline]
     fn svd(&self) -> (Self, Self::SingularValues, Self) {
-        let e = f64::midpoint(self[(0, 0)], self[(1, 1)]);
+        let a_plus_d = f64::midpoint(self[(0, 0)], self[(1, 1)]);
 
-        let f = (self[(0, 0)] - self[(1, 1)]) / 2.0;
-        let g = f64::midpoint(self[(0, 1)], self[(1, 0)]); // TODO sign
-        let h = (self[(1, 0)] - self[(0, 1)]) / 2.0;
+        let a_minus_d = (self[(0, 0)] - self[(1, 1)]) / 2.0;
+        let b_plus_c = f64::midpoint(self[(0, 1)], self[(1, 0)]); // TODO sign
+        let b_minus_c = (self[(1, 0)] - self[(0, 1)]) / 2.0;
         let (q, r) = (
-            (e.powi(2) + h.powi(2)).sqrt(),
-            (f.powi(2) + g.powi(2)).sqrt(),
+            (a_plus_d.powi(2) + b_minus_c.powi(2)).sqrt(),
+            (a_minus_d.powi(2) + b_plus_c.powi(2)).sqrt(),
         );
 
         let sy = q - r;
         let sign_sy = sy.signum();
-        println!("sign sy {sign_sy}");
 
-        let (a1, a2) = (f64::atan2(g, f), f64::atan2(h, e));
+        let (a1, a2) = (
+            f64::atan2(b_plus_c, a_minus_d),
+            f64::atan2(b_minus_c, a_plus_d),
+        );
 
-        let phi = f64::midpoint(a1, a2);
-        let theta = (a2 - a1) / 2.0;
+        let gamma = f64::midpoint(a1, a2);
+        let beta = (a2 - a1) / 2.0;
 
-        let (sr, cr) = theta.sin_cos();
-        let (sl, cl) = phi.sin_cos();
+        let (sr, cr) = beta.sin_cos();
+        let (sl, cl) = gamma.sin_cos();
 
         let u = Matrix22 {
             rows: [[cl, -sl], [sl, cl]],
         };
-        println!("u.det(), {}", u.det());
         let vt = Matrix22 {
-            rows: [[cr, -sr * sign_sy], [sr, cr * sign_sy]],
+            rows: [[cr, -sr], [sr * sign_sy, cr * sign_sy]],
         };
 
         let singular_values = Self::SingularValues {
