@@ -8,12 +8,11 @@
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
 
-/*! Simulate molecular dynamics in systems of particles.
-TODO: Add documentation.
-*/
+/*! Simulate molecular dynamics in systems of particles. */
 
 pub mod thermostat;
-use std::{array, marker::PhantomData, ops::{AddAssign, Index}};
+
+use std::array;
 
 use hoomd_interaction::{NetBodyForce, NetBodyTorque};
 use hoomd_vector::{Cartesian, InnerProduct, Quaternion, Rotate, Vector};
@@ -22,7 +21,7 @@ use hoomd_microstate::{boundary::{GenerateGhosts, Wrap}, property::{Acceleration
 use hoomd_simulation::macrostate::Isochoric;
 
 
-/// TODO: add documentation
+/** Evolve a system that is constrained to a constant volume. */
 pub struct ConstantVolume
 {
     /// The size of a timestep.
@@ -32,35 +31,76 @@ pub struct ConstantVolume
 /// TODO: add documentation
 pub struct ConstantPressure;
 
-/// Integrate translational degrees of freedom in N-dimensional Cartesian space.
-impl<V, T, M, B, S, C, F> ConstantVolume
-where
-    V: Default + Vector,
-    T: Thermostat<M, B, S, C>,
-    M: Isochoric,
-    B: Position<Vector = V> + Velocity<Vector = V> + Acceleration<Vector = V> + Mass + Transform<S> + Clone,
-    S: Position<Vector = V> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    F: NetBodyForce<V, B, S, C>
+/** Integrate translational degrees of freedom in any vector space.
+
+Conceptually, integration changes a system's [`Microstate`] according to
+equations of motion that are determined by the system's metric-space and
+degrees of freedom.
+
+In translational integration, the equations of motion allow a body's
+[`Position`], [`Velocity`], and [`Acceleration`] to evolve over time.
+`Acceleration` only changes if the interaction model includes force, and
+particle properties and interactions may be additionally modulated by a
+[`Thermostat`] that maintains system temperature according to the setpoint
+stored in a `macrostate`. [`ConstantVolume`] integration is only defined for
+[`Isochoric`] macrostates.
+
+Mathematically, integration is accomplished using an adaptation of the
+symplectic and time-reversible two-step Verlet integration schemes published
+in Miller et al. (2002) and Kamberaj et al. (2005). Jens Glaser adapted
+these derivations to also accommodate constant pressure integration.
+
+The generic type names are:
+* `V`: The [`Vector`]() type.
+* `B`: The [`Body::properties`](crate::Body) type.
+* `S`: The [`Site::properties`](crate::Site) type.
+* `C`: The [`boundary`](crate::boundary) condition type.
+* `E`: The interaction [`evaluator`]() type. 
+* `T`: The [`Thermostat`]() type. 
+* `M`: The [`macrostate`](crate::macrostate) type.
+*/
+impl ConstantVolume
 {
-    /** Perform first half-step of the Verlet algorithm following Kamberaj 2005.
+    /** Perform the first integration half-step, mutating the microstate and
+    possibly the thermostat.
+    
+    `microstate` holds the system configuration that will be changed,
+    `torque` is the evaluator that is used to calculate the net torque on every body,
+    `thermostat` is the thermostat,
+    `macrostate` holds the temperature setpoint (used by the thermostat),
+    `dof` is the number of degrees of degrees of freedom (used by the thermostat),
+    `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
+
     TODO: Do we want to allow users to set a displacement limit?
     */
     #[inline]
-    fn integrate_translation_step_one(
+    fn integrate_translation_step_one<V, B, S, C, E, T, M>(
         &self,
-        macrostate: M,
         microstate: &mut Microstate<B, S, C>,
-        force: &F,
-        dof: f64,
+        force: &E,
+        thermostat: &mut T,
+        macrostate: &M,
+        dof: u32,
         kinetic_energy: f64,
-        thermostat: T,
-    ) {
+    )
+    where
+        V: Default + Vector,
+        B: Position<Vector = V>
+            + Velocity<Vector = V>
+            + Acceleration<Vector = V>
+            + Mass
+            + Transform<S>
+            + Clone,
+        S: Position<Vector = V> + Default,
+        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+        E: NetBodyForce<V, B, S, C>,
+        T: Thermostat<B, S, C, M>,
+        M: Isochoric,
+    {
         // Calculate temperature scaling factor
-        let mut rng = microstate.counter().make_rng();
         let rescaling_factor = thermostat.rescaling_factor_step_one(
-            macrostate,
             microstate,
+            macrostate,
             self.dt,
             dof,
             kinetic_energy
@@ -78,7 +118,7 @@ where
                 * rescaling_factor;
             *body_properties.position_mut() += velocity * self.dt;
 
-            // Update body properties accordingly, wrapping automatically
+            // Update the microstate with new body properties, wrapping automatically
             microstate.update_body_properties(body_index, body_properties)
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
@@ -88,23 +128,46 @@ where
         microstate.increment_substep();
     }
 
-    /** Perform second half-step of the Verlet algorithm following Kamberaj 2005.
+    /** Perform the second integration half-step, mutating the microstate and
+    possibly the thermostat.
+    
+    `microstate` holds the system configuration that will be changed,
+    `torque` is the evaluator that is used to calculate the net torque on every body,
+    `thermostat` is the thermostat,
+    `macrostate` holds the temperature setpoint (used by the thermostat),
+    `dof` is the number of degrees of degrees of freedom (used by the thermostat),
+    `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
+
     TODO: Do we want to allow users to set a displacement limit?
     */
     #[inline]
-    fn integrate_translation_step_two(
+    fn integrate_translation_step_two<V, B, S, C, E, T, M>(
         &self,
-        macrostate: M,
         microstate: &mut Microstate<B, S, C>,
-        force: &F,
-        dof: f64,
+        force: &E,
+        thermostat: &mut T,
+        macrostate: &M,
+        dof: u32,
         kinetic_energy: f64,
-    ) {
+    )
+    where
+        V: Default + Vector,
+        B: Position<Vector = V>
+            + Velocity<Vector = V>
+            + Acceleration<Vector = V>
+            + Mass
+            + Transform<S>
+            + Clone,
+        S: Position<Vector = V> + Default,
+        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+        E: NetBodyForce<V, B, S, C>,
+        T: Thermostat<B, S, C, M>,
+        M: Isochoric,
+    {
         // Calculate temperature scaling factor
-        let mut rng = microstate.counter().make_rng();
-        let rescaling_factor = self.thermostat.rescaling_factor_step_two(
-            macrostate,
+        let rescaling_factor = thermostat.rescaling_factor_step_two(
             microstate,
+            macrostate,
             self.dt,
             dof,
             kinetic_energy
@@ -116,17 +179,19 @@ where
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
         
             // Calculate the net force on the body
-            let net_force = force.net_force_on_body(microstate, body_index);    // should bundle both pairwise and non-pairwise
+            let net_force = force.net_force_on_body(microstate, body_index);
             
             // Perform the integration step
             *body_properties.acceleration_mut() = net_force / *body_properties.mass();
             let acceleration = *body_properties.acceleration();
             *body_properties.velocity_mut() += (acceleration * 0.5 * self.dt) * rescaling_factor;
 
-            // Update body properties accordingly
+            // Update the microstate with new body properties, wrapping automatically
             microstate.update_body_properties(body_index, body_properties)
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
+
+        thermostat.advance(self.dt);
 
         microstate.increment_substep();
     }
