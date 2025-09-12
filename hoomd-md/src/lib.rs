@@ -15,23 +15,12 @@ pub mod thermostat;
 use std::array;
 
 use hoomd_interaction::{NetBodyForce, NetBodyTorque};
-use hoomd_vector::{Cartesian, InnerProduct, Quaternion, Rotate, Vector};
+use hoomd_vector::{Angle, Cartesian, InnerProduct, Quaternion, Rotate, Vector};
 use thermostat::Thermostat;
 use hoomd_microstate::{boundary::{GenerateGhosts, Wrap}, property::{Acceleration, AngularVelocity, Mass, MomentOfInertia, Orientation, Position, Velocity}, Microstate, Transform};
 use hoomd_simulation::macrostate::Isochoric;
 
-
-/** Evolve a system that is constrained to a constant volume. */
-pub struct ConstantVolume
-{
-    /// The size of a timestep.
-    pub dt: f64,
-}
-
-/// TODO: add documentation
-pub struct ConstantPressure;
-
-/** Integrate translational degrees of freedom in any vector space.
+/** Integrate over translational degrees of freedom.
 
 Conceptually, integration changes a system's [`Microstate`] according to
 equations of motion that are determined by the system's metric-space and
@@ -49,6 +38,86 @@ Mathematically, integration is accomplished using an adaptation of the
 symplectic and time-reversible two-step Verlet integration schemes published
 in Miller et al. (2002) and Kamberaj et al. (2005). Jens Glaser adapted
 these derivations to also accommodate constant pressure integration.
+*/
+trait TranslationalMotion<B, S, C, E, T, M> {
+    /// Perform the first integration half-step, mutating the microstate and possibly the thermostat.
+    fn integrate_translation_step_one(
+        &self,
+        microstate: &mut Microstate<B, S, C>,
+        force: &E,
+        thermostat: &mut T,
+        macrostate: &M,
+        dof: u32,
+        kinetic_energy: f64,
+    );
+
+    /// Perform the second integration half-step, mutating the microstate and possibly the thermostat.
+    fn integrate_translation_step_two(
+        &self,
+        microstate: &mut Microstate<B, S, C>,
+        force: &E,
+        thermostat: &mut T,
+        macrostate: &M,
+        dof: u32,
+        kinetic_energy: f64,
+    );
+}
+
+/** Integrate over rotational degrees of freedom.
+
+Conceptually, integration changes a system's [`Microstate`] according to
+equations of motion that are determined by the system's metric-space and
+degrees of freedom.
+
+In rotational integration, the equations of motion allow a body's
+[`Orientation`] and [`AngularVelocity`] to evolve over time. `AngularVelocity`
+only changes if the interaction model includes torque, and particle properties
+and interactions may be additionally modulated by a [`Thermostat`] that
+maintains system temperature according to the setpoint stored in a `macrostate`.
+[`ConstantVolume`] integration is only defined for [`Isochoric`] macrostates.
+
+Mathematically, integration is accomplished using an adaptation of the
+symplectic and time-reversible two-step Verlet integration schemes published
+in Miller et al. (2002) and Kamberaj et al. (2005). Jens Glaser adapted
+these derivations to also accommodate constant pressure integration.
+*/
+trait RotationalMotion<const N: usize, B, S, C, E, T, M> {
+    /// Perform the first integration half-step, mutating the microstate and possibly the thermostat.
+    fn integrate_rotation_step_one(
+        &self,
+        microstate: &mut Microstate<B, S, C>,
+        torque: &E,
+        thermostat: &mut T,
+        macrostate: &M,
+        dof: u32,
+        kinetic_energy: f64,
+    );
+
+    /// Perform the second integration half-step, mutating the microstate and possibly the thermostat.
+    fn integrate_rotation_step_two(
+        &self,
+        microstate: &mut Microstate<B, S, C>,
+        torque: &E,
+        thermostat: &mut T,
+        macrostate: &M,
+        dof: u32,
+        kinetic_energy: f64,
+    );
+}
+
+
+/** Evolve a system that is constrained to a constant volume. */
+pub struct ConstantVolume
+{
+    /// The size of a timestep.
+    pub dt: f64,
+}
+
+/// TODO: add documentation
+pub struct ConstantPressure;
+
+/** Integrate over translational degrees of freedom for a system with constant
+volume in any vector space.
 
 The generic type names are:
 * `V`: The [`Vector`]() type.
@@ -59,10 +128,22 @@ The generic type names are:
 * `T`: The [`Thermostat`]() type. 
 * `M`: The [`macrostate`](crate::macrostate) type.
 */
-impl ConstantVolume
+impl<V, B, S, C, E, T, M> TranslationalMotion<B, S, C, E, T, M> for ConstantVolume
+where
+    V: Default + Vector,
+    B: Position<Vector = V>
+        + Velocity<Vector = V>
+        + Acceleration<Vector = V>
+        + Mass
+        + Transform<S>
+        + Clone,
+    S: Position<Vector = V> + Default,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    E: NetBodyForce<V, B, S, C>,
+    T: Thermostat<B, S, C, M>,
+    M: Isochoric,
 {
-    /** Perform the first integration half-step, mutating the microstate and
-    possibly the thermostat.
+    /** Perform the first integration half-step, mutating the microstate and possibly the thermostat.
     
     `microstate` holds the system configuration that will be changed,
     `torque` is the evaluator that is used to calculate the net torque on every body,
@@ -74,7 +155,7 @@ impl ConstantVolume
     TODO: Do we want to allow users to set a displacement limit?
     */
     #[inline]
-    fn integrate_translation_step_one<V, B, S, C, E, T, M>(
+    fn integrate_translation_step_one(
         &self,
         microstate: &mut Microstate<B, S, C>,
         force: &E,
@@ -82,21 +163,7 @@ impl ConstantVolume
         macrostate: &M,
         dof: u32,
         kinetic_energy: f64,
-    )
-    where
-        V: Default + Vector,
-        B: Position<Vector = V>
-            + Velocity<Vector = V>
-            + Acceleration<Vector = V>
-            + Mass
-            + Transform<S>
-            + Clone,
-        S: Position<Vector = V> + Default,
-        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-        E: NetBodyForce<V, B, S, C>,
-        T: Thermostat<B, S, C, M>,
-        M: Isochoric,
-    {
+    ) {
         // Calculate temperature scaling factor
         let rescaling_factor = thermostat.rescaling_factor_step_one(
             microstate,
@@ -128,8 +195,7 @@ impl ConstantVolume
         microstate.increment_substep();
     }
 
-    /** Perform the second integration half-step, mutating the microstate and
-    possibly the thermostat.
+    /** Perform the second integration half-step, mutating the microstate and possibly the thermostat.
     
     `microstate` holds the system configuration that will be changed,
     `torque` is the evaluator that is used to calculate the net torque on every body,
@@ -141,7 +207,7 @@ impl ConstantVolume
     TODO: Do we want to allow users to set a displacement limit?
     */
     #[inline]
-    fn integrate_translation_step_two<V, B, S, C, E, T, M>(
+    fn integrate_translation_step_two(
         &self,
         microstate: &mut Microstate<B, S, C>,
         force: &E,
@@ -149,21 +215,7 @@ impl ConstantVolume
         macrostate: &M,
         dof: u32,
         kinetic_energy: f64,
-    )
-    where
-        V: Default + Vector,
-        B: Position<Vector = V>
-            + Velocity<Vector = V>
-            + Acceleration<Vector = V>
-            + Mass
-            + Transform<S>
-            + Clone,
-        S: Position<Vector = V> + Default,
-        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-        E: NetBodyForce<V, B, S, C>,
-        T: Thermostat<B, S, C, M>,
-        M: Isochoric,
-    {
+    ) {
         // Calculate temperature scaling factor
         let rescaling_factor = thermostat.rescaling_factor_step_two(
             microstate,
@@ -197,23 +249,8 @@ impl ConstantVolume
     }
 }
 
-/** Integrate rotational degrees of freedom in 3-dimensional Cartesian space.
-
-Conceptually, integration changes a system's [`Microstate`] according to
-equations of motion that are determined by the system's metric-space and
-degrees of freedom.
-
-In rotational integration, the equations of motion allow a body's
-[`Orientation`] and [`AngularVelocity`] to evolve over time. `AngularVelocity`
-only changes if the interaction model includes torque, and particle properties
-and interactions may be additionally modulated by a [`Thermostat`] that
-maintains system temperature according to the setpoint stored in a `macrostate`.
-[`ConstantVolume`] integration is only defined for [`Isochoric`] macrostates.
-
-Mathematically, integration is accomplished using an adaptation of the
-symplectic and time-reversible two-step Verlet integration schemes published
-in Miller et al. (2002) and Kamberaj et al. (2005). Jens Glaser adapted
-these derivations to also accommodate constant pressure integration.
+/** Integrate over rotational degrees of freedom for a system with constant
+volume in 3-dimensional Cartesian space.
 
 The generic type names are:
 * `B`: The [`Body::properties`](crate::Body) type.
@@ -223,7 +260,19 @@ The generic type names are:
 * `T`: The [`Thermostat`]() type.
 * `M`: The [`macrostate`](crate::macrostate) type.
 */
-impl ConstantVolume
+impl<B, S, C, E, T, M> RotationalMotion<3, B, S, C, E, T, M> for ConstantVolume
+where
+    B: Orientation<Rotation = Quaternion>
+        + AngularVelocity<Vector = Cartesian<3>>
+        + MomentOfInertia<Vector = Cartesian<3>>
+        + Transform<S>
+        + Position<Vector = Cartesian<3>>   // TODO: should this be required?
+        + Clone,
+    S: Position<Vector = Cartesian<3>> + Default,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    E: NetBodyTorque<Cartesian<3>, B, S, C>,
+    T: Thermostat<B, S, C, M>,
+    M: Isochoric,
 {
     /** Perform the first integration half-step, mutating the microstate and
     possibly the thermostat.
@@ -236,7 +285,7 @@ impl ConstantVolume
     `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
     */
     #[inline]
-    fn integrate_rotation_step_one<B, S, C, E, T, M>(
+    fn integrate_rotation_step_one(
         &self,
         microstate: &mut Microstate<B, S, C>,
         torque: &E,
@@ -244,20 +293,7 @@ impl ConstantVolume
         macrostate: &M,
         dof: u32,
         kinetic_energy: f64,
-    )
-    where
-        B: Orientation<Rotation = Quaternion>
-            + AngularVelocity<Vector = Cartesian<3>>
-            + MomentOfInertia<Vector = Cartesian<3>>
-            + Transform<S>
-            + Position<Vector = Cartesian<3>>   // TODO: should this be required?
-            + Clone,
-        S: Position<Vector = Cartesian<3>> + Default,
-        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-        E: NetBodyTorque<Cartesian<3>, B, S, C>,
-        T: Thermostat<B, S, C, M>,
-        M: Isochoric,
-    {
+    ) {
         // Calculate temperature scaling factor
         let mut rng = microstate.counter().make_rng();
         let rescaling_factor = thermostat.rescaling_factor_step_one(
@@ -393,7 +429,7 @@ impl ConstantVolume
     `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
     */
     #[inline]
-    fn integrate_rotation_step_two<B, S, C, E, T, M>(
+    fn integrate_rotation_step_two(
         &self,
         microstate: &mut Microstate<B, S, C>,
         torque: &E,
@@ -401,20 +437,7 @@ impl ConstantVolume
         macrostate: &M,
         dof: u32,
         kinetic_energy: f64,
-    )
-    where
-        B: Orientation<Rotation = Quaternion>
-            + AngularVelocity<Vector = Cartesian<3>>
-            + MomentOfInertia<Vector = Cartesian<3>>
-            + Transform<S>
-            + Position<Vector = Cartesian<3>>   // TODO: should this be required?
-            + Clone,
-        S: Position<Vector = Cartesian<3>> + Default,
-        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-        E: NetBodyTorque<Cartesian<3>, B, S, C>,
-        T: Thermostat<B, S, C, M>,
-        M: Isochoric,
-    {
+    ) {
         // Calculate temperature scaling factor
         let rescaling_factor = thermostat.rescaling_factor_step_one(
             microstate,
