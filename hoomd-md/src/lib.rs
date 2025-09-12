@@ -31,8 +31,7 @@ In translational integration, the equations of motion allow a body's
 `Acceleration` only changes if the interaction model includes force, and
 particle properties and interactions may be additionally modulated by a
 [`Thermostat`] that maintains system temperature according to the setpoint
-stored in a `macrostate`. [`ConstantVolume`] integration is only defined for
-[`Isochoric`] macrostates.
+stored in a `macrostate`.
 
 Mathematically, integration is accomplished using an adaptation of the
 symplectic and time-reversible two-step Verlet integration schemes published
@@ -74,7 +73,6 @@ In rotational integration, the equations of motion allow a body's
 only changes if the interaction model includes torque, and particle properties
 and interactions may be additionally modulated by a [`Thermostat`] that
 maintains system temperature according to the setpoint stored in a `macrostate`.
-[`ConstantVolume`] integration is only defined for [`Isochoric`] macrostates.
 
 Mathematically, integration is accomplished using an adaptation of the
 symplectic and time-reversible two-step Verlet integration schemes published
@@ -118,6 +116,8 @@ pub struct ConstantPressure;
 
 /** Integrate over translational degrees of freedom for a system with constant
 volume in any vector space.
+
+[`ConstantVolume`] integration is only defined for [`Isochoric`] macrostates.
 
 The generic type names are:
 * `V`: The [`Vector`]() type.
@@ -251,6 +251,8 @@ where
 
 /** Integrate over rotational degrees of freedom for a system with constant
 volume in 3-dimensional Cartesian space.
+
+[`ConstantVolume`] integration is only defined for [`Isochoric`] macrostates.
 
 The generic type names are:
 * `B`: The [`Body::properties`](crate::Body) type.
@@ -504,6 +506,8 @@ where
 }
 
 /** Integrate rotational degrees of freedom in 2-dimensional Cartesian space.
+ * 
+[`ConstantVolume`] integration is only defined for [`Isochoric`] macrostates.
 
 The generic type names are:
 * `B`: The [`Body::properties`](crate::Body) type.
