@@ -18,16 +18,6 @@ pub trait Invertible {
     #[must_use]
     fn inverse(&self) -> Self;
 }
-/// Define an algorithm for the singular value decomposition of a matrix.
-pub trait SVD {
-    /// The type of the output matrix that will store singular values.
-    type SingularValues;
-    /// Decompose a [`GeneralMatrix`]into a rotation, a scaling, and a second rotation.
-    #[must_use]
-    fn svd(&self) -> (Self, Self::SingularValues, Self)
-    where
-        Self: Sized;
-}
 
 /** Define the general matrix multiplication (GEMM) subroutine.
 
@@ -252,32 +242,33 @@ mod tests {
         let faer_prod = faer_a * faer_b;
         assert_matrixes_ulps_eq::<N, K, _, _>(&custom_prod, &faer_prod);
     }
+
     #[rstest(
         rows,
-        case(Matrix22::eye().rows),
-        case([[1.0, -2.0], [3.0, 4.0]]),
-        case([[12.0, 2.0], [4.0, 0.0]]),
-        case([[1000.0, 0.0], [0.0, 1e-4]])
+        case::identity(Matrix22::eye().rows),
+        case::mixed_sign([[1.0, -2.0], [3.0, 4.0]]),
+        case::det_zero([[12.0, 2.0], [4.0, 0.0]]),
+        case::large_range([[1000.0, 0.0], [0.0, 1e-4]]),
+        case::jordan_block([[1.0, 1.0], [0.0, 1.0]]),
+        case::full_ones(Matrix22::full(1.0).rows),
+        case::shear([[1.0, 2.0], [0.0, 1.0]]),
+        case::nilpotent([[0.0, 1.0], [0.0, 0.0]]),
+        case::scaling([[2.0, 0.0], [0.0, 3.0]]),
+        /* None of these examples work using the fast algorithm.*/
+        // case::reflect([[0.0, -1.0], [1.0, 0.0]]),
+        // case::negative_identity((Matrix22::eye()*-1.0).rows),
+        // case::anti_diagonal([[0.0, 1.0], [1.0, 0.0]]),
+        // case::singular([[1.0, 2.0], [2.0, 4.0]]),
     )]
-    fn test_svd_2x2(rows: [[f64; 2]; 2]) {
+    fn test_svd_2x2_faer(rows: [[f64; 2]; 2]) {
         let matrix = Matrix22 { rows };
-
-        // Test against nalgebra, who uses the same algorithm as us
-        let na = nalgebra::Matrix2::from(rows).transpose();
         let (u, s, vt) = matrix.svd();
-        let nasvd = na.svd(true, true);
-        let (nau, nas, navt) = (nasvd.u.unwrap(), nasvd.singular_values, nasvd.v_t.unwrap());
-
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&u, &nau);
-        assert_diags_ulps_eq::<2, _>(&s, &nas);
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&vt, &navt);
 
         // Verify we can rebuild A from UΣVt
         assert_matrixes_ulps_eq::<2, 2, _, _>(&u.matmul(&s).matmul(&vt), &matrix);
 
-        // Test against faer, who uses a more standard technique
+        // Test against faer
         let faer = fill_faer(rows);
-
         let faersvd = faer.svd().unwrap();
         let (mut faeru, faers, mut faerv) =
             (faersvd.U().to_owned(), faersvd.S(), faersvd.V().to_owned());
@@ -295,5 +286,38 @@ mod tests {
         assert_diags_ulps_eq::<2, _>(&s, &faers);
         // Note that faer returns V, not Vt
         assert_matrixes_ulps_eq::<2, 2, _, _>(&vt, &faerv.transpose());
+    }
+
+    #[rstest(
+        rows,
+        case::identity(Matrix22::eye().rows),
+        case::mixed_sign([[1.0, -2.0], [3.0, 4.0]]),
+        case::det_zero([[12.0, 2.0], [4.0, 0.0]]),
+        case::large_range([[1000.0, 0.0], [0.0, 1e-4]]),
+        case::jordan_block([[1.0, 1.0], [0.0, 1.0]]),
+        case::full_ones(Matrix22::full(1.0).rows),
+        case::shear([[1.0, 2.0], [0.0, 1.0]]),
+        case::nilpotent([[0.0, 1.0], [0.0, 0.0]]),
+        case::scaling([[2.0, 0.0], [0.0, 3.0]]),
+        case::reflect([[0.0, -1.0], [1.0, 0.0]]), // Numerical stability
+        case::negative_identity((Matrix22::eye()*-1.0).rows),
+        case::anti_diagonal([[0.0, 1.0], [1.0, 0.0]]),
+        case::singular([[1.0, 2.0], [2.0, 4.0]]),
+    )]
+    fn test_svd_2x2_nalgebra(rows: [[f64; 2]; 2]) {
+        let matrix = Matrix22 { rows };
+        let (u, s, vt) = matrix.svd();
+
+        // Verify we can rebuild A from UΣVt
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&u.matmul(&s).matmul(&vt), &matrix);
+
+        // Test against nalgebra
+        let na = nalgebra::Matrix2::from(rows).transpose();
+        let nasvd = na.svd(true, true);
+        let (nau, nas, navt) = (nasvd.u.unwrap(), nasvd.singular_values, nasvd.v_t.unwrap());
+
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&u, &nau);
+        assert_diags_ulps_eq::<2, _>(&s, &nas);
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&vt, &navt);
     }
 }

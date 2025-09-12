@@ -4,7 +4,7 @@
 use std::fmt;
 use std::ops::{Add, Index, IndexMut, Mul, Neg};
 
-use crate::{Determinant, Diagonal, GeneralMatrix, Invertible, MatMul, SVD, SquareMatrix};
+use crate::{Determinant, Diagonal, GeneralMatrix, Invertible, MatMul, SquareMatrix};
 use hoomd_vector::{Cartesian, RotationMatrix};
 
 /// A matrix with N rows and M columns, allocated on the stack.
@@ -364,20 +364,33 @@ impl Invertible for Matrix<2, 2> {
     }
 }
 
-impl SVD for Matrix<2, 2> {
-    type SingularValues = DiagonalMatrix<2>;
-    /** Decompose a [`Matrix22`] into a rotation `U`, a scaling`Σ`, and a second rotation`V` such that `A=UΣV`.
+impl<const N: usize, const M: usize> fmt::Display for Matrix<N, M> {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "[{}]",
+            self.rows
+                .map(|row| Cartesian::<M>::from(row).to_string())
+                .into_iter()
+                .collect::<Vec<String>>()
+                .join("\n ")
+        )
+    }
+}
+
+impl Matrix<2, 2> {
+    /** Decompose a [`Matrix22`] into a rotation `U`, a scaling`Σ`, and a second rotation`Vt` such that `A=UΣVt`.
 
     This implementation is based on the math in 10.1109/38.486688, and ensures good
-    numerical stability.
+    (but not optimal) numerical stability. For certain pathological inputs,
+    preconditioning the inputs could provide a benefit.
 
-    We define all singular values to be positive. If the determinant of the input matrix
-    is positive, the determinants of both U and V are also positive. If the determinant
-    of the input matrix is negative, we ensure the determinant of U is positive and V
-    is negative.
+    We define all singular values to be positive.
     */
+    #[must_use]
     #[inline]
-    fn svd(&self) -> (Self, Self::SingularValues, Self) {
+    pub fn svd(&self) -> (Self, DiagonalMatrix<2>, Self) {
         let a_plus_d = f64::midpoint(self[(0, 0)], self[(1, 1)]);
 
         let a_minus_d = (self[(0, 0)] - self[(1, 1)]) / 2.0;
@@ -409,26 +422,11 @@ impl SVD for Matrix<2, 2> {
             rows: [[cr, -sr], [sr * sign_sy, cr * sign_sy]],
         };
 
-        let singular_values = Self::SingularValues {
+        let singular_values = DiagonalMatrix::<2> {
             rows: [q + r, sy.abs()],
         };
 
         (u, singular_values, vt)
-    }
-}
-
-impl<const N: usize, const M: usize> fmt::Display for Matrix<N, M> {
-    #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "[{}]",
-            self.rows
-                .map(|row| Cartesian::<M>::from(row).to_string())
-                .into_iter()
-                .collect::<Vec<String>>()
-                .join("\n ")
-        )
     }
 }
 
