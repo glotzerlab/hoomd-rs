@@ -5,8 +5,7 @@ use std::fmt;
 use std::ops::{Add, Index, IndexMut, Mul, Neg};
 
 use crate::{Determinant, Diagonal, GeneralMatrix, Invertible, MatMul, SVD, SquareMatrix};
-use hoomd_vector::{Angle, Cartesian, RotationMatrix};
-use nalgebra;
+use hoomd_vector::{Cartesian, RotationMatrix};
 
 /// A matrix with N rows and M columns, allocated on the stack.
 #[derive(Clone, Debug, PartialEq)]

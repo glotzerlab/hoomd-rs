@@ -254,7 +254,7 @@ where
 
         let b_inv = Matrix22::from(rot)
             .matmul_diagonal(&self.axes.map(|x| x.get().powi(2)))
-            .matmul(&rot_transpose.into());
+            .matmul(&Matrix22::from(rot_transpose));
 
         let v_ij = &v_ij.coordinates;
         let a_inv = Matrix22::from_diag(&a_inv);

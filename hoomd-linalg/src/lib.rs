@@ -128,13 +128,12 @@ pub mod matrix;
 
 #[cfg(test)]
 mod tests {
-    use std::fmt::{Debug, Display};
+    use std::fmt::Debug;
 
     use super::*;
     use crate::matrix::{Matrix, Matrix22};
     use approx::{assert_relative_eq, assert_ulps_eq, ulps_eq};
     use faer::Mat;
-    use nalgebra;
     use rstest::rstest;
 
     const EPS: f64 = 1e-13;
