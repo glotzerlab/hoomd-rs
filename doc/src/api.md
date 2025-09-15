@@ -1,5 +1,11 @@
 # API Reference
 
+## Structure Overview
+
+<a href="images/structure.svg"><img alt="hoomd-rs types, traits, and their relations" src="images/structure.svg" /></a>
+
+## Modules
+
 * [hoomd-bevy](api/hoomd_bevy/index.html)
 * [hoomd-gsd](api/hoomd_gsd/index.html)
 * [hoomd-geometry](api/hoomd_geometry/index.html)
