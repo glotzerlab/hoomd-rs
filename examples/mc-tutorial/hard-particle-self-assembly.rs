@@ -68,7 +68,7 @@ impl HardEllipseSelfAssembly {
 
         // ANCHOR: hamiltonian
         let ellipse = Ellipse {
-            axes: [(sigma/2.0).try_into()?, (sigma / aspect / 2.0).try_into()?],
+            semi_axes: [(sigma/2.0).try_into()?, (sigma / aspect / 2.0).try_into()?],
         };
         let hamiltonian = CutoffPairOverlap {
             r_cut: sigma,
