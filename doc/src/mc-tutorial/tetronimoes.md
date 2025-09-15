@@ -126,6 +126,12 @@ four points:
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:template_sites}}
 ```
 
+#### Initialize the Struct
+
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:struct_initialize}}
+```
+
 ## Implement `Simulation`
 
 The `Simulation` implementation closely follows that in [Applying Interactions].

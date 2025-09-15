@@ -170,7 +170,7 @@ impl Tetronimoes {
         ];
         // ANCHOR_END: template_sites
 
-        // ANCHOR: initialize_struct
+        // ANCHOR: struct_initialize
         Ok(Tetronimoes {
             microstate,
             hamiltonian,
@@ -180,7 +180,7 @@ impl Tetronimoes {
         })
     }
 }
-// ANCHOR_END: initialize_struct
+// ANCHOR_END: struct_initialize
 
 // ANCHOR: impl_simulation
 impl Simulation for Tetronimoes {

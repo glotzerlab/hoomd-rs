@@ -4,7 +4,7 @@
 /*! Implement `QuickInsert`
 */
 
-use super::{Count, Trial};
+use super::Count;
 use hoomd_interaction::{DeltaEnergyInsert, TotalEnergy};
 use hoomd_microstate::{
     Body, Microstate, Transform,
@@ -53,8 +53,6 @@ When you [`apply`] a running [`QuickInsert`] to a microstate, it:
 3. Repeat step 2 until inserted bodies overlap with others `allowed_overlaps`
    times, the target number of bodies have been inserted, or a total of `target`
    attempts have been made during this call, whichever comes first.
-4. Apply the given local trial move to relax the strain introduced by the
-   overlapping bodies.
 
 When *both* `target` bodies have been inserted *and* the energy is
 0, [`QuickInsert`] transitions to the complete state. When complete,
@@ -62,7 +60,7 @@ When *both* `target` bodies have been inserted *and* the energy is
 
 For spherical particles, [`QuickInsert`] combined with [`OverlapPenalty`]
 can achieve a packing fraction of 56% in 3D and 72% in 2D. You might achieve
-slightly higher densities if you are willing to run many timesteps, though
+slightly higher densities if you are willing to run many steps, though
 `QuickCompress` is a better solution.
 
 The generic type names are:
@@ -183,20 +181,48 @@ impl<D> QuickInsert<D> {
         self.state == State::Complete
     }
 
+    /** The target number of bodies to insert.
+
+    # Example
+
+    ```
+    use hoomd_geometry::shape::Rectangle;
+    use hoomd_mc::{QuickInsert, UniformIn};
+    use hoomd_microstate::property::Point;
+    use hoomd_vector::Cartesian;
+
+    # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let rectangle = Rectangle::with_equal_edges(10.0.try_into()?);
+
+    let distribution = UniformIn {
+        boundary: rectangle,
+        template_sites: vec![Point::<Cartesian<2>>::default()],
+    };
+    let quick_insert = QuickInsert::new(distribution, 256);
+
+    let target = quick_insert.target();
+    assert_eq!(target, 256);
+    # Ok(())
+    # }
+    ```
+    */
+    #[inline]
+    pub fn target(&self) -> usize {
+        self.target
+    }
+
     /** Apply the quick insert protocol to a microstate.
 
-    The `local_trial` should translate and/or rotate bodies by small amounts
-    to relieve the stress caused by inserting overlapping sites. `QuickInsert`
-    passes `state` to `local_trial.apply`.
-
-    FUTURE: Should `QuickInsert` tune the trial moves? Or ask the caller to?
+    Combine [`QuickInsert::apply`] with local trial moves that translate and/or
+    rotate bodies by small amounts to relieve the stress caused by inserting
+    overlapping sites.
 
     # Example
 
     ```
     use hoomd_geometry::shape::Rectangle;
     use hoomd_interaction::{CutoffPair, pairwise::{Expanded, Isotropic, OverlapPenalty}};
-    use hoomd_mc::{QuickInsert, Translate, Sweep, UniformIn};
+    use hoomd_mc::{QuickInsert, Translate, Sweep, Trial, UniformIn};
     use hoomd_microstate::{Body, MicrostateBuilder, boundary::Periodic, property::Point};
     use hoomd_vector::Cartesian;
 
@@ -230,9 +256,9 @@ impl<D> QuickInsert<D> {
     quick_insert.apply(
         &mut microstate,
         &cutoff_pair,
-        &translate_sweep,
-        &1.0,
     );
+
+    translate_sweep.apply(&mut microstate, &cutoff_pair, &1.0);
 
     assert!(microstate.bodies().len() > 1);
     # Ok(())
@@ -240,12 +266,10 @@ impl<D> QuickInsert<D> {
     ```
     */
     #[inline]
-    pub fn apply<V, B, S, C, H, T>(
+    pub fn apply<V, B, S, C, H>(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
         hamiltonian: &H,
-        local_trial: &T,
-        state: &T::Macrostate,
     ) -> Count
     where
         B: Position<Vector = V> + Transform<S>,
@@ -253,7 +277,6 @@ impl<D> QuickInsert<D> {
         D: Distribution<Body<B, S>>,
         H: DeltaEnergyInsert<B, S, C> + TotalEnergy<Microstate<B, S, C>>,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-        T: Trial<Microstate<B, S, C>, H>,
     {
         let mut count = Count::default();
 
@@ -305,11 +328,6 @@ impl<D> QuickInsert<D> {
 
         microstate.increment_substep();
 
-        // Applying local trial moves is critical to the success of the quick
-        // insert protocol. Require that users pass in a local trial type and
-        // apply it at the appropriate time.
-        local_trial.apply(microstate, hamiltonian, state);
-
         count
     }
 }
@@ -317,7 +335,7 @@ impl<D> QuickInsert<D> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{QuickInsert, Sweep, Translate, UniformIn};
+    use crate::{QuickInsert, Sweep, Translate, Trial, UniformIn};
     use hoomd_geometry::shape::Rectangle;
     use hoomd_interaction::{
         CutoffPair,
@@ -365,11 +383,13 @@ mod tests {
         assert_eq!(quick_insert.state, State::Running);
 
         for _ in 0..100 {
-            quick_insert.apply(&mut microstate, &hamiltonian, &translate_sweep, &kt);
+            quick_insert.apply(&mut microstate, &hamiltonian);
             if quick_insert.is_complete() {
                 break;
             }
         }
+
+        translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
 
         assert_eq!(quick_insert.inserted, 10);
         assert_eq!(quick_insert.state, State::Complete);
