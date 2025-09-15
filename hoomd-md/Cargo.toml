@@ -21,12 +21,11 @@ hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 hoomd-simulation.workspace = true
 rand.workspace = true
-rand_distr = "0.4.3"
+rand_distr.workspace = true
 
 [dev-dependencies]
 approx.workspace = true
 divan.workspace = true
 rstest.workspace = true
 rand.workspace = true
-rand_distr = "0.4.2"
 ratatui = "0.28.0"
