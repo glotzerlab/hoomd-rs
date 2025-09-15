@@ -60,7 +60,7 @@ impl HardEllipseSelfAssembly {
     fn new() -> anyhow::Result<HardEllipseSelfAssembly> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
-        let box_height = 4.0;
+        let box_height = 14.0;
         let n_bodies = 820;
         let maximum_distance = 0.05;
         let maximum_rotation = 0.1;

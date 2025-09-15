@@ -184,7 +184,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            frame_budget_fraction: 0.9,
+            frame_budget_fraction: 0.8,
             sps_limit: 2048.0,
             camera: InitialCamera::Orthographic2d(10.0),
             zoom_range: 0.1..10.0,

@@ -211,7 +211,7 @@ pub struct Material {
     n_background_colors: u32,
 
     /// Color applied to the interior of the disk (indexed by disk % array size).
-    #[uniform(3)]
+    #[uniform(1)]
     #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
     background_colors: [LinearRgba; 1024],
 
