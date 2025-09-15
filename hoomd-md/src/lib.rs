@@ -19,7 +19,7 @@ use hoomd_microstate::{
     Microstate, Transform,
     boundary::{GenerateGhosts, Wrap},
     property::{
-        Acceleration, AngularVelocity, AngularVelocity2d, Mass, MomentOfInertia, MomentOfInertia2d,
+        Acceleration, AngularVelocity, Mass, MomentOfInertia,
         Orientation, Position, Velocity,
     },
 };
@@ -324,7 +324,6 @@ where
                 let y_nonzero = I[1] > 0.0;
                 let z_nonzero = I[2] > 0.0;
 
-                // s is the quaternion representation of angular velocity
                 let s = (q.conjugate() * p) * 0.5;
                 if x_nonzero {
                     ke += s.vector[0].powi(2) / I[0];
