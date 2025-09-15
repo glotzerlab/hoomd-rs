@@ -302,7 +302,7 @@ Caused by:
     83 of 820 bodies inserted after 10000 steps
 ```
 
-### Equilibrate 
+### Equilibrate
 
 The equilibration phase of the simulation applies the translate and rotate
 trial moves with the hard overlap Hamiltonian (`hamiltonian`):

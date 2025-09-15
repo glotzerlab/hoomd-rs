@@ -1,6 +1,6 @@
 // ANCHOR: all
 // ANCHOR: use
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 
 use hoomd_geometry::shape::{Cuboid, Ellipse};
 use hoomd_interaction::{
@@ -72,7 +72,10 @@ impl HardEllipseSelfAssembly {
 
         // ANCHOR: hamiltonian
         let ellipse = Ellipse {
-            semi_axes: [(sigma/2.0).try_into()?, (sigma / aspect / 2.0).try_into()?],
+            semi_axes: [
+                (sigma / 2.0).try_into()?,
+                (sigma / aspect / 2.0).try_into()?,
+            ],
         };
         let hamiltonian = CutoffPairOverlap {
             r_cut: sigma,
@@ -87,8 +90,7 @@ impl HardEllipseSelfAssembly {
 
         // ANCHOR: microstate
         let microstate =
-            MicrostateBuilder::with_boundary(periodic_square)
-                .try_build()?;
+            MicrostateBuilder::with_boundary(periodic_square).try_build()?;
         // ANCHOR_END: microstate
 
         // ANCHOR: trial_moves
@@ -146,12 +148,13 @@ impl Simulation for HardEllipseSelfAssembly {
     // ANCHOR: advance
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
-
         match self.phase {
-            Phase::Initialize => self.initialize().context("failed to initialize")?,
-            Phase::Equilibrate => self.equilibrate(),
+            Phase::Initialize => {
+                self.initialize().context("failed to initialize")?
             }
-        
+            Phase::Equilibrate => self.equilibrate(),
+        }
+
         self.microstate.increment_step();
 
         Ok(())
@@ -168,15 +171,13 @@ impl Simulation for HardEllipseSelfAssembly {
 
 // ANCHOR: inherent_simulation
 impl HardEllipseSelfAssembly {
-// ANCHOR_END: inherent_simulation
+    // ANCHOR_END: inherent_simulation
     // ANCHOR: initialize
     fn initialize(&mut self) -> anyhow::Result<()> {
         // ANCHOR_END: initialize
         // ANCHOR: apply_quick_insert
-        self.quick_insert.apply(
-            &mut self.microstate,
-            &self.insert_hamiltonian,
-        );
+        self.quick_insert
+            .apply(&mut self.microstate, &self.insert_hamiltonian);
         // ANCHOR_END: apply_quick_insert
 
         // ANCHOR: initialize_trial_moves
@@ -185,7 +186,7 @@ impl HardEllipseSelfAssembly {
             &self.insert_hamiltonian,
             &1.0,
         );
-        
+
         self.rotate_sweep.apply(
             &mut self.microstate,
             &self.insert_hamiltonian,
@@ -196,16 +197,21 @@ impl HardEllipseSelfAssembly {
         // ANCHOR: state_transition
         if self.quick_insert.is_complete() {
             self.phase = Phase::Equilibrate;
-            println!("Initialization complete at step {}.", self.microstate.step());
+            println!(
+                "Initialization complete at step {}.",
+                self.microstate.step()
+            );
         }
         // ANCHOR_END: state_transition
-        
+
         // ANCHOR: failed
         if self.step() >= 10_000 {
             let n = self.microstate.bodies().len();
             let target = self.quick_insert.target();
             let step = self.microstate.step();
-            return Err(anyhow!("{n} of {target} bodies inserted after {step} steps"));
+            return Err(anyhow!(
+                "{n} of {target} bodies inserted after {step} steps"
+            ));
         }
 
         Ok(())
@@ -220,11 +226,8 @@ impl HardEllipseSelfAssembly {
             &self.kt,
         );
 
-        self.rotate_sweep.apply(
-            &mut self.microstate,
-            &self.hamiltonian,
-            &1.0,
-        );
+        self.rotate_sweep
+            .apply(&mut self.microstate, &self.hamiltonian, &1.0);
     }
 }
 // ANCHOR_END: equilibrate
