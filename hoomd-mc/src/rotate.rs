@@ -16,7 +16,11 @@ use rand::distr::{Distribution, Uniform};
 
 [`Rotate`] proposes local trial moves that rotate the orientation of a body
 by a small amount. The [`maximum_rotation`] parameter sets the largest possible
-rotation. For the 2D [`Angle`], [`maximum_rotation`] is measured in radians.
+rotation.
+
+For the 2D [`Angle`], [`maximum_rotation`] is measured in radians and the
+rotation is uniformly chosen between `-maximum_rotation` and `maximum_rotation`.
+
 TODO: document 3d maximum.
 
 [`maximum_rotation`]: Self::maximum_rotation

@@ -22,48 +22,79 @@ type SiteProperties = OrientedPoint<PositionVector, Angle>;
 
 // ANCHOR: phase
 enum Phase {
-    Initialization,
-    Equilibration,
+    Initialize,
+    Equilibrate,
 }
 // ANCHOR_END: phase
+
+#[cfg_attr(feature = "bevy", derive(Resource))]
+// ANCHOR: simulation_struct
+struct HardEllipseSelfAssembly {
+    /// Positions of all the bodies in the simulation.
+    microstate: Microstate<BodyProperties, SiteProperties, Periodic<Cuboid<2>>>,
+    /// How sites interact when inserted.
+    insert_hamiltonian: CutoffPair<
+        Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Ellipse>>,
+    >,
+    /// How sites interact with other sites and fields.
+    hamiltonian: CutoffPairOverlap<HardShape<Ellipse>>,
+    /// Trial moves to apply.
+    translate_sweep: Sweep<Translate>,
+    /// Trial moves to apply.
+    rotate_sweep: Sweep<Rotate>,
+    /// Quick insert
+    quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Cuboid<2>>>>,
+    /// Temperature set point.
+    kt: f64,
+    phase: Phase,
+}
+// ANCHOR_END: simulation_struct
 
 // ANCHOR: simulation_new
 impl HardEllipseSelfAssembly {
     /// Construct a new fill simulation.
     fn new() -> anyhow::Result<HardEllipseSelfAssembly> {
+        // ANCHOR_END: simulation_new
         // ANCHOR: parameters
         let box_height = 14.0;
-        let kt = 1.0;
-        let d = 0.05;
-        let a = 0.1;
+        let n_bodies = 820;
+        let maximum_distance = 0.05;
+        let maximum_rotation = 0.1;
         let sigma = 1.0;
+        let aspect = 5.0;
+        let kt = 1.0;
+        assert!(aspect >= 1.0);
         // ANCHOR_END: parameters
-
-        // ANCHOR: microstate
-        let square = Cuboid::with_equal_edges(box_height.try_into()?);
-        let microstate =
-            MicrostateBuilder::with_boundary(Periodic::new(sigma, square)?)
-                .try_build()?;
-        // ANCHOR_END: microstate
 
         // ANCHOR: hamiltonian
         let ellipse = Ellipse {
-            axes: [0.5.try_into()?, (0.5 / 5.0).try_into()?],
+            axes: [(sigma/2.0).try_into()?, (sigma / aspect / 2.0).try_into()?],
         };
         let hamiltonian = CutoffPairOverlap {
             r_cut: sigma,
-            evaluator: HardShape(ellipse.clone()),
+            evaluator: HardShape(ellipse),
         };
         // ANCHOR_END: hamiltonian
 
+        // ANCHOR: periodic
+        let square = Cuboid::with_equal_edges(box_height.try_into()?);
+        let periodic_square = Periodic::new(sigma, square)?;
+        // ANCHOR_END: periodic
+
+        // ANCHOR: microstate
+        let microstate =
+            MicrostateBuilder::with_boundary(periodic_square)
+                .try_build()?;
+        // ANCHOR_END: microstate
+
         // ANCHOR: trial_moves
         let translate = Translate {
-            maximum_distance: d.try_into()?,
+            maximum_distance: maximum_distance.try_into()?,
         };
         let translate_sweep = Sweep(translate);
 
         let rotate = Rotate {
-            maximum_rotation: a.try_into()?,
+            maximum_rotation: maximum_rotation.try_into()?,
         };
         let rotate_sweep = Sweep(rotate);
         // ANCHOR_END: trial_moves
@@ -73,7 +104,7 @@ impl HardEllipseSelfAssembly {
             boundary: *microstate.boundary(),
             template_sites: vec![SiteProperties::default()],
         };
-        let quick_insert = QuickInsert::new(distribution, 820);
+        let quick_insert = QuickInsert::new(distribution, n_bodies);
         // ANCHOR_END: quick_insert
 
         // ANCHOR: insert_hamiltonian
@@ -99,57 +130,29 @@ impl HardEllipseSelfAssembly {
             rotate_sweep,
             quick_insert,
             kt,
-            phase: Phase::Initialization,
+            phase: Phase::Initialize,
         })
-        // ANCHOR_END: struct_initialize
     }
 }
-// ANCHOR_END: simulation_new
+// ANCHOR_END: struct_initialize
 
 // ANCHOR: impl_simulation
 impl Simulation for HardEllipseSelfAssembly {
+    // ANCHOR_END: impl_simulation
+    // ANCHOR: advance
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
-        let n = self.microstate.sites().len();
 
         match self.phase {
-            Phase::Initialization => {
-                self.quick_insert.apply(
-                    &mut self.microstate,
-                    &self.insert_hamiltonian,
-                    &self.translate_sweep,
-                    &1.0,
-                );
-
-                if self.quick_insert.is_complete() {
-                    self.phase = Phase::Equilibration;
-                    println!("{}: Complete", self.microstate.step());
-                }
+            Phase::Initialize => self.initialize(),
+            Phase::Equilibrate => self.equilibrate(),
             }
-            Phase::Equilibration => {
-                self.translate_sweep.apply(
-                    &mut self.microstate,
-                    &self.hamiltonian,
-                    &self.kt,
-                );
-            }
-        }
-
-        let n_new = self.microstate.sites().len();
-        if n_new != n {
-            println!("{}: {n_new}", self.microstate.step());
-        }
-
-        self.rotate_sweep.apply(
-            &mut self.microstate,
-            &self.hamiltonian,
-            &self.kt,
-        );
-
+        
         self.microstate.increment_step();
 
         Ok(())
     }
+    // ANCHOR_END: advance
 
     /// Get the current simulation step.
     fn step(&self) -> u64 {
@@ -158,28 +161,63 @@ impl Simulation for HardEllipseSelfAssembly {
 }
 // ANCHOR_END: impl_simulation
 
-#[cfg_attr(feature = "bevy", derive(Resource))]
-// ANCHOR: simulation_struct
-struct HardEllipseSelfAssembly {
-    /// Positions of all the bodies in the simulation.
-    microstate: Microstate<BodyProperties, SiteProperties, Periodic<Cuboid<2>>>,
-    /// How sites interact when inserted.
-    insert_hamiltonian: CutoffPair<
-        Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Ellipse>>,
-    >,
-    /// How sites interact with other sites and fields.
-    hamiltonian: CutoffPairOverlap<HardShape<Ellipse>>,
-    /// Trial moves to apply.
-    translate_sweep: Sweep<Translate>,
-    /// Trial moves to apply.
-    rotate_sweep: Sweep<Rotate>,
-    /// Quick insert
-    quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Cuboid<2>>>>,
-    /// Temperature set point.
-    kt: f64,
-    phase: Phase,
+// ANCHOR: inherent_simulation
+impl HardEllipseSelfAssembly {
+// ANCHOR_END: inherent_simulation
+    // ANCHOR: initialize
+    fn initialize(&mut self) {
+        self.quick_insert.apply(
+            &mut self.microstate,
+            &self.insert_hamiltonian,
+            &self.translate_sweep,
+            &1.0,
+        );
+
+        self.rotate_sweep.apply(
+            &mut self.microstate,
+            &self.insert_hamiltonian,
+            &1.0,
+        );
+
+        if self.quick_insert.is_complete() {
+            self.phase = Phase::Equilibrate;
+            println!("Initialization complete at step {}.", self.microstate.step());
+        }
+    }
+    // ANCHOR_END: initialize
+
+    // ANCHOR: equilibrate
+    fn equilibrate(&mut self) {
+        self.translate_sweep.apply(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.kt,
+        );
+
+        self.rotate_sweep.apply(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &1.0,
+        );
+    }
 }
-// ANCHOR_END: simulation_struct
+// ANCHOR_END: equilibrate
+
+// Remove the cfg(not(...)) line when using this code outside the hoomd-rs/examples directory.
+#[cfg(not(feature = "bevy"))]
+// ANCHOR: main
+fn main() -> anyhow::Result<()> {
+    let mut simulation = HardEllipseSelfAssembly::new()?;
+    // TODO: Write GSD file.
+
+    for _ in 0..20_000 {
+        simulation.advance()?;
+    }
+
+    Ok(())
+}
+// ANCHOR_END: main
+// ANCHOR_END: all
 
 #[cfg(feature = "bevy")]
 mod hard_particle_self_assembly_interactive;

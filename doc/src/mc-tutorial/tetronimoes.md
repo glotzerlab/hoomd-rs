@@ -15,7 +15,7 @@ interactions as the [Applying Interactions] tutorial and the lattice moves of
 the [Custom Random Walk] tutorial. Combine those with tetronimo-shaped bodies,
 and you get something very interesting.
 
-* Objective: Show how to add multiple sites to a body.
+* Objective: Explain how to execute simulations with multi-site bodies.
 * File: `hoomd-rs/examples/mc-tutorial/tetronimoes.rs`
 * Run (interactively):
   ```shell

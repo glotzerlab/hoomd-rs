@@ -98,7 +98,7 @@ Assign all the model parameters in one code block so that they are easy to modif
 ```
 
 `box_length` is the side length of the square simulation box, `maximum_distance`
-is the largest distance a translational trial move can take, `alpha` is the
+is the largest distance a translation trial move can take, `alpha` is the
 strength of the gravitational potential, `epsilon` is the strength of the
 pairwise potential, `sigma` is the range of the pairwise potential, and `kt` is
 the temperature set point (in units of energy).
