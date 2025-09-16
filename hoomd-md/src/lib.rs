@@ -47,7 +47,6 @@ these derivations to also accommodate constant pressure integration.
 */
 pub trait TranslationalMotion<B, S, C, E, T, M> {
     /// Perform the first integration half-step, mutating the microstate and possibly the thermostat.
-    #[must_use]
     fn integrate_translation_step_one(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
@@ -57,7 +56,6 @@ pub trait TranslationalMotion<B, S, C, E, T, M> {
     );
 
     /// Perform the second integration half-step, mutating the microstate and possibly the thermostat.
-    #[must_use]
     fn integrate_translation_step_two(
         &self,
         microstate: &mut Microstate<B, S, C>,
@@ -88,7 +86,7 @@ pub trait RotationalMotion<const N: usize, B, S, C, E, T, M> {
     /// Perform the first integration half-step, mutating the microstate and possibly the thermostat.
     #[must_use]
     fn integrate_rotation_step_one(
-        &self,
+        &mut self,
         microstate: &mut Microstate<B, S, C>,
         torque: &E,
         thermostat: &mut T,
@@ -120,6 +118,10 @@ pub struct ConstantVolume {
 impl ConstantVolume {
     pub fn new(dt: f64) -> Self {
         Self { dt: dt, kinetic_energy: 0.0, dof: 0.0 }
+    }
+
+    pub fn get_kinetic_energy(&self) -> &f64 {
+        &self.kinetic_energy
     }
 }
 
@@ -171,7 +173,7 @@ where
     fn integrate_translation_step_one(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
-        force: &E,
+        _force: &E,
         thermostat: &mut T,
         macrostate: &M,
     ) {
@@ -221,7 +223,12 @@ where
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
 
-        thermostat.advance(&self.dt, &mut compute_properties);
+        thermostat.advance(
+            microstate,
+            macrostate,
+            &self.dt,
+            &mut compute_properties,
+        );
 
         microstate.increment_substep();
     }
@@ -311,13 +318,15 @@ where
     */
     #[inline]
     fn integrate_rotation_step_one(
-        &self,
+        &mut self,
         microstate: &mut Microstate<B, S, C>,
         torque: &E,
         thermostat: &mut T,
         macrostate: &M,
     ) {
-        let compute_properties = |microstate: &Microstate<B, S, C>| -> (f64, f64) {
+        let mut compute_properties = |microstate: &Microstate<B, S, C>| -> (f64, f64) {
+            let integrator_ke = &mut self.kinetic_energy;
+            let integrator_dof = &mut self.dof;
             let mut ke = 0.0;
             let mut dof = 0.0;
             for body_index in 0..microstate.bodies().len() {
@@ -354,15 +363,18 @@ where
                     dof += 1.0
                 };
             }
-            (0.5 * ke, dof)
+            ke *= 0.5;
+            *integrator_ke = ke.clone();
+            *integrator_dof = dof.clone();
+
+            (ke, dof)
         };
         // Calculate temperature scaling factor
-        let mut rng = microstate.counter().make_rng();
         let rescaling_factor = thermostat.rescaling_factor_step_one(
             microstate,
             macrostate,
             &self.dt,
-            compute_properties,
+            &mut compute_properties,
         );
 
         for body_index in 0..microstate.bodies().len() {
@@ -488,7 +500,12 @@ where
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
 
-        thermostat.advance(&self.dt, compute_properties);
+        thermostat.advance(
+            microstate,
+            macrostate,
+            &self.dt,
+            &mut compute_properties,
+        );
 
         microstate.increment_substep();
     }
@@ -512,7 +529,7 @@ where
         macrostate: &M,
     ) {
         // Calculate temperature scaling factor
-        let rescaling_factor =
+        let rescaling_factor = 
             thermostat.rescaling_factor_step_two(microstate, macrostate, &self.dt);
 
         // Integration Step One
@@ -616,7 +633,7 @@ where
     */
     #[inline]
     fn integrate_rotation_step_one(
-        &self,
+        &mut self,
         microstate: &mut Microstate<B, S, C>,
         torque: &E,
         thermostat: &mut T,

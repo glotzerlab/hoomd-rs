@@ -44,6 +44,7 @@ pub trait Thermostat<B, S, C, M> {
         dt: &f64,
     ) -> f64;
 
+    // TODO: add docs
     fn advance<P>(        
         &mut self,
         microstate: &Microstate<B, S, C>,
@@ -67,14 +68,15 @@ where
     #[inline]
     fn rescaling_factor_step_one<P>(
         &self,
-        _microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, C>,
         _macrostate: &M,
         _dt: &f64,
-        _compute_properties: P,
+        mut compute_properties: P,
     ) -> f64
     where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
+        let (_, _) = compute_properties(&microstate);
         1.0
     }
 
