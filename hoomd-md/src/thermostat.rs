@@ -44,7 +44,13 @@ pub trait Thermostat<B, S, C, M> {
         dt: &f64,
     ) -> f64;
 
-    fn advance<P>(&mut self, dt: &f64, compute_properties: P)
+    fn advance<P>(        
+        &mut self,
+        microstate: &Microstate<B, S, C>,
+        macrostate: &M,
+        dt: &f64,
+        compute_properties: P
+    )
     where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64);
 }
@@ -61,10 +67,10 @@ where
     #[inline]
     fn rescaling_factor_step_one<P>(
         &self,
-        microstate: &Microstate<B, S, C>,
-        macrostate: &M,
-        dt: &f64,
-        compute_properties: P,
+        _microstate: &Microstate<B, S, C>,
+        _macrostate: &M,
+        _dt: &f64,
+        _compute_properties: P,
     ) -> f64
     where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
@@ -75,15 +81,21 @@ where
     #[inline]
     fn rescaling_factor_step_two(
         &self,
-        microstate: &Microstate<B, S, C>,
-        macrostate: &M,
-        dt: &f64,
+        _microstate: &Microstate<B, S, C>,
+        _macrostate: &M,
+        _dt: &f64,
     ) -> f64 {
         1.0
     }
 
     #[inline]
-    fn advance<P>(&mut self, dt: &f64, compute_properties: P)
+    fn advance<P>(
+        &mut self,
+        _microstate: &Microstate<B, S, C>,
+        _macrostate: &M,
+        _dt: &f64,
+        _compute_properties: P
+    )
     where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
@@ -119,7 +131,7 @@ where
     where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
-        let kT = macrostate.temperature();
+        let kT_setpoint = macrostate.temperature();
 
         let (ke, dof) = compute_properties(&microstate);
 
@@ -152,7 +164,7 @@ where
             random_gamma = 2.0 * Gamma::new((dof - 1.0) / 2.0, 1.0).unwrap().sample(&mut rng);
         }
         // assemble everything
-        let v = kT / 2.0 / ke;
+        let v = kT_setpoint / 2.0 / ke;
         let term1 = v * (1.0 - time_decay_factor) * (random_gamma + random_normal_one.powi(2));
         let term2 =
             2.0 * random_normal_one * (v * (1.0 - time_decay_factor) * time_decay_factor).sqrt();
@@ -170,7 +182,13 @@ where
     }
 
     #[inline]
-    fn advance<P>(&mut self, dt: &f64, _compute_properties: P)
+    fn advance<P>(
+        &mut self,
+        microstate: &Microstate<B, S, C>,
+        macrostate: &M,
+        dt: &f64,
+        compute_properties: P
+    )
     where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
@@ -184,27 +202,49 @@ TODO: Add example.
 pub struct MTTKThermostat {
     /// Thermostat time constant (`[time]`).
     tau: f64,
-
-    xi: f64, // TODO: add thermalize method?
-
+    /// Thermostat momentum.
+    xi: f64,
+    /// Thermostat position.
     eta: f64,
+    /// Energy the thermostat contributes to the Hamiltonian.
+    energy: f64
 }
 
 impl MTTKThermostat {
+    /// Constrcut MTTKThermostat.
     pub fn new(tau: f64) -> Self {
         assert!(tau > 0.0, "MTTKThermostat requires tau >= 0");
         Self {
             tau: tau,
             xi: 0.0,
             eta: 0.0,
+            energy: 0.0,
         }
     }
-
-    pub fn thermalize<B, S, C>(&mut self, microstate: &Microstate<B, S, C>, dof: &i64) {
+    /// Choose random initial values for the thermostat momentum.
+    pub fn thermalize<B, S, C, M>(
+        &mut self, 
+        microstate: &Microstate<B, S, C>, 
+        macrostate: &M,
+        dof: &f64,
+    )
+    where
+        M: Isothermal + Temperature,
+    {
+        let kT_setpoint = macrostate.temperature();
         let mut rng = microstate.counter().make_rng();
-        let sigma = 1.0 / (*dof as f64) / self.tau.powi(2);
+        let sigma = 1.0 / *dof / self.tau.powi(2);
 
-        self.xi = Normal::new(0.0, sigma).unwrap().sample(&mut rng);
+        self.xi = Normal::new(0.0, sigma.sqrt()).unwrap().sample(&mut rng);
+        self.energy = self.thermstat_energy(kT_setpoint, dof)
+    }
+    /// Calculate thermostat energy.
+    pub fn thermstat_energy(
+        &self,
+        kT_setpoint: &f64,
+        dof: &f64
+    ) -> f64 {
+        dof * kT_setpoint * (0.5 * (self.xi / self.tau).powi(2) + self.eta)
     }
 }
 
@@ -215,34 +255,48 @@ where
     #[inline]
     fn rescaling_factor_step_one<P>(
         &self,
-        microstate: &Microstate<B, S, C>,
-        macrostate: &M,
+        _microstate: &Microstate<B, S, C>,
+        _macrostate: &M,
         dt: &f64,
         _compute_properties: P,
     ) -> f64
     where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
-        // TODO
-        1.0
+        (-0.5 * self.xi * dt).exp()
     }
 
     #[inline]
     fn rescaling_factor_step_two(
         &self,
-        microstate: &Microstate<B, S, C>,
-        macrostate: &M,
+        _microstate: &Microstate<B, S, C>,
+        _macrostate: &M,
         dt: &f64,
     ) -> f64 {
-        // TODO
-        1.0
+        (-0.5 * self.xi * dt).exp()
     }
 
     #[inline]
-    fn advance<P>(&mut self, dt: &f64, compute_properties: P)
+    fn advance<P>(        
+        &mut self,
+        microstate: &Microstate<B, S, C>,
+        macrostate: &M,
+        dt: &f64,
+        mut compute_properties: P
+    )
     where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
-        // TODO
+        let kT_setpoint = macrostate.temperature();
+
+        let (ke, dof) = compute_properties(&microstate);
+
+        let kT_instantaneous = 2.0 / dof * ke;
+
+        let xi_prime = self.xi + 0.5 * (kT_instantaneous / kT_setpoint - 1.0) * dt / self.tau.powi(2);
+        self.xi = xi_prime + 0.5 * (kT_instantaneous / kT_setpoint - 1.0) * dt / self.tau.powi(2);
+        self.eta += xi_prime * dt;
+        self.energy = self.thermstat_energy(kT_setpoint, &dof)
+
     }
 }
