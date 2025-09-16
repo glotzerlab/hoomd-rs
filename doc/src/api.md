@@ -2,7 +2,16 @@
 
 ## Structure Overview
 
-<a href="images/structure.svg"><img alt="hoomd-rs types, traits, and their relations" src="images/structure.svg" /></a>
+<style>
+.ayu .hoomd-rs-structure{ content:url("images/structure-dark.svg"); }
+.navy .hoomd-rs-structure{ content:url("images/structure-dark.svg"); }
+.coal .hoomd-rs-structure{ content:url("images/structure-dark.svg"); }
+</style>
+<a href="images/structure.svg">
+<img class="hoomd-rs-structure" alt="hoomd-rs types, traits, and their relations" src="images/structure.svg" />
+</a>
+
+[*Full-size structure with links to the documentation.*](images/structure.svg)
 
 ## Modules
 

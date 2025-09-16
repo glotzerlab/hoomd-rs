@@ -3,8 +3,8 @@ digraph hoomd_rs {
     // rankdir = "LR"
     bgcolor = "#00000000"
 
-    node [ color = "#181825", fontcolor = "#181825"]
-    edge [ color = "#181825" ]
+    node [ color = "#cdd6f4", fontcolor = "#181825"]
+    edge [ color = "#cdd6f4" ]
 
     // neato options
     overlap = prism
