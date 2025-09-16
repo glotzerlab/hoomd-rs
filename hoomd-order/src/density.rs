@@ -52,6 +52,42 @@ pub struct SpatialHistogram<const N: usize, A> {
     pub n_bins: [usize; N],
 }
 
+pub struct NormalizedHistogram {
+    /// a vector containing the bin edges of the histogram
+    pub bin_edges: Array<f64, Dim<[usize; 1]>>,
+    /// an array containing the upper and lower bounds of the histogram
+    pub bounds: [f64; 2],
+    /// the bin counts in the histogram
+    pub bin_counts: Array<f64, Dim<[usize; 1]>>,
+    /// number of bins in each dimension
+    pub n_bins: usize,
+}
+
+impl NormalizedHistogram {
+    /// normalize the 1D histogram
+    #[inline]
+    fn normalize(histogram: &SpatialHistogram<1, f64>) -> NormalizedHistogram {
+        let sum = histogram
+            .bin_counts
+            .iter()
+            .fold(0.0_f64, |sum, x| sum + *x as f64);
+        let normed_counts: Vec<f64> = histogram
+            .bin_counts
+            .iter()
+            .map(|c| (*c as f64) / sum)
+            .collect();
+        let n_bins = histogram.n_bins[0];
+        let bounds = histogram.bounds[0];
+        let bin_edges: Array<f64, Dim<[usize; 1]>> = histogram.bin_edges.row(0).to_owned();
+        NormalizedHistogram {
+            bin_edges,
+            bounds,
+            bin_counts: Array::from_vec(normed_counts),
+            n_bins,
+        }
+    }
+}
+
 /** Compute a histogram with `N` dimensional data of type `A` which implements `Add` and `PartialOrd`
  */
 pub trait GenerateHistogram<const N: usize, A> {
@@ -66,21 +102,32 @@ pub trait GenerateHistogram<const N: usize, A> {
 
 /** Various correlation functions from microstate data.
  */
-pub trait CorrelationFunction<B, S, C, M, A> {
+pub trait CorrelationFunction<B, S, C, M> {
     /// computes the radial distribution function g(r) from a given microstate
+    /// TODO: describe better
     fn rdf(
         microstate: &Microstate<B, S, C>,
-        r_min: A,
-        r_max: A,
+        r_min: f64,
+        r_max: f64,
         nbins: usize,
-    ) -> Result<SpatialHistogram<1, A>, Error>;
+    ) -> Result<SpatialHistogram<1, f64>, Error>;
+    /// get the normalized rdf
+    fn normed_rdf(
+        microstate: &Microstate<B, S, C>,
+        r_min: f64,
+        r_max: f64,
+        nbins: usize,
+    ) -> Result<NormalizedHistogram, Error> {
+        let rdf = Self::rdf(microstate, r_min, r_max, nbins)?;
+        Ok(NormalizedHistogram::normalize(&rdf))
+    }
 }
 
-/// Enumerate possible sources of error in fallible boundary methods.
+/// Enumerate possible sources of error in fallible density methods.
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
-    /// Failed to wrap body or site properties.
+    /// Given microstate has no valid indices
     #[error("given microstate is empty")]
     EmptyMicrostate,
     /// The maximum interaction range is larger than the periodic boundary condition will allow.
@@ -134,7 +181,7 @@ where
     }
 }
 
-impl<B, S, M> CorrelationFunction<B, S, Open, M, f64> for SpatialHistogram<1, f64>
+impl<B, S, M> CorrelationFunction<B, S, Open, M> for SpatialHistogram<1, f64>
 where
     S: Position<Metric = M>,
     M: Metric,
@@ -155,15 +202,8 @@ where
                 .map(|i| (*i as f64) * bin_size + r_min)
                 .collect::<Vec<f64>>(),
         );
-        let dummy_row = Array::from_vec(
-            (0..=nbins)
-                .collect::<Vec<usize>>()
-                .iter()
-                .map(|i| *i as f64)
-                .collect::<Vec<f64>>(),
-        );
         let bin_edges: Array<f64, Dim<[usize; 2]>> =
-            ndarray::stack![Axis(0), bin_edges_arr, dummy_row];
+            ndarray::stack![Axis(0), bin_edges_arr, bin_edges_arr];
         let mut distances: Vec<[f64; 1]> = vec![];
         for site_1 in microstate.site_indices() {
             for site_2 in microstate.site_indices() {
@@ -192,55 +232,10 @@ where
             [[r_min, r_max]; 1],
             [nbins],
         ))
-    }
-    //     Computes the pairwise correlation function between two sets of points p_1 and p_2 with associated values s_1 and s_2, respectively.
-    //    math
-    //    C(r) = \langle s_1(0)\cdot s_2(r)\rangle
-    //
-    //
-    //    #[must_use]
-    //    #[inline]
-    //    pub fn correlation_function<B, S, M>(
-    //        points: &Microstate<B, S, Open>,
-    //        query_points: &Microstate<B, S, Open>,
-    //        body_trait: B,
-    //        r_min: f64,
-    //        r_max: f64,
-    //        nbins: usize,
-    //    ) -> Self
-    //    where
-    //        S: Position<Metric = M>,
-    //        M: Metric,
-    //    {
-    //        let bin_size: f64 = (r_max - r_min) / (nbins as f64);
-    //        let bin_edges_arr = Array::from_vec(
-    //            (0..=nbins)
-    //                .collect::<Vec<usize>>()
-    //                .iter()
-    //                .map(|i| (*i as f64) * bin_size + r_min)
-    //                .collect::<Vec<f64>>(),
-    //        );
-    //        let dummy_row = Array::from_vec(
-    //            (0..=nbins)
-    //                .collect::<Vec<usize>>()
-    //                .iter()
-    //                .map(|i| *i as f64)
-    //                .collect::<Vec<f64>>(),
-    //        );
-    //        let bin_edges: Array<f64, Dim<[usize; 2]>> =
-    //            ndarray::stack![Axis(0), bin_edges_arr, dummy_row];
-    //        let mut correlations: Vec<f64> = vec![];
-    //
-    //        SpatialHistogram::<1, Open, f64>::histogram_1d(
-    //            &correlations,
-    //            bin_edges,
-    //            [[r_min, r_max]; 1],
-    //            nbins,
-    //        )
-    //    }
+    } 
 }
 
-impl<B, S> CorrelationFunction<B, S, Periodic<Cuboid<2>>, Cartesian<2>, f64>
+impl<B, S> CorrelationFunction<B, S, Periodic<Cuboid<2>>, Cartesian<2>>
     for SpatialHistogram<1, f64>
 where
     S: Position<Metric = Cartesian<2>> + Copy + Default,
@@ -269,15 +264,8 @@ where
                 .map(|i| (*i as f64) * bin_size + r_min)
                 .collect::<Vec<f64>>(),
         );
-        let dummy_row = Array::from_vec(
-            (0..=nbins)
-                .collect::<Vec<usize>>()
-                .iter()
-                .map(|i| *i as f64)
-                .collect::<Vec<f64>>(),
-        );
         let bin_edges: Array<f64, Dim<[usize; 2]>> =
-            ndarray::stack![Axis(0), bin_edges_arr, dummy_row];
+            ndarray::stack![Axis(0), bin_edges_arr, bin_edges_arr];
         let mut distances: Vec<[f64; 1]> = vec![];
 
         let max_boundary = Periodic::new(boundary_max, *microstate.boundary().shape())
@@ -324,7 +312,7 @@ where
     }
 }
 
-impl<B, S> CorrelationFunction<B, S, Periodic<Cuboid<3>>, Cartesian<3>, f64>
+impl<B, S> CorrelationFunction<B, S, Periodic<Cuboid<3>>, Cartesian<3>>
     for SpatialHistogram<1, f64>
 where
     S: Position<Metric = Cartesian<3>> + Copy + Default,
@@ -353,15 +341,8 @@ where
                 .map(|i| (*i as f64) * bin_size + r_min)
                 .collect::<Vec<f64>>(),
         );
-        let dummy_row = Array::from_vec(
-            (0..=nbins)
-                .collect::<Vec<usize>>()
-                .iter()
-                .map(|i| *i as f64)
-                .collect::<Vec<f64>>(),
-        );
         let bin_edges: Array<f64, Dim<[usize; 2]>> =
-            ndarray::stack![Axis(0), bin_edges_arr, dummy_row];
+            ndarray::stack![Axis(0), bin_edges_arr, bin_edges_arr];
         let mut distances: Vec<[f64; 1]> = vec![];
 
         let max_boundary = Periodic::new(boundary_max, *microstate.boundary().shape())
@@ -408,7 +389,7 @@ where
     }
 }
 
-impl<B, S> CorrelationFunction<B, S, Periodic<EightEight>, Hyperboloid<3>, f64>
+impl<B, S> CorrelationFunction<B, S, Periodic<EightEight>, Hyperboloid<3>>
     for SpatialHistogram<1, f64>
 where
     S: Position<Metric = Hyperboloid<3>> + Copy + Default,
@@ -437,15 +418,8 @@ where
                 .map(|i| (*i as f64) * bin_size + r_min)
                 .collect::<Vec<f64>>(),
         );
-        let dummy_row = Array::from_vec(
-            (0..=nbins)
-                .collect::<Vec<usize>>()
-                .iter()
-                .map(|i| *i as f64)
-                .collect::<Vec<f64>>(),
-        );
         let bin_edges: Array<f64, Dim<[usize; 2]>> =
-            ndarray::stack![Axis(0), bin_edges_arr, dummy_row];
+            ndarray::stack![Axis(0), bin_edges_arr, bin_edges_arr];
         let mut distances: Vec<[f64; 1]> = vec![];
 
         let max_boundary = Periodic::new(
@@ -696,6 +670,10 @@ mod tests {
         let ans = array![4_usize, 2_usize];
         assert_eq!(ans, rdf_hist.bin_counts);
         assert_eq!(rdf_hist.bin_edges.slice(s![0, ..]), array![0.0, 1.0, 2.0]);
+
+        let rdf_hist_normalized = NormalizedHistogram::normalize(&rdf_hist);
+        let ans_normed = array![2.0 / 3.0, 1.0 / 3.0];
+        assert_eq!(ans_normed, rdf_hist_normalized.bin_counts);
         Ok(())
     }
 
@@ -720,6 +698,10 @@ mod tests {
         let ans = array![2_usize, 4_usize];
         assert_eq!(ans, rdf_hist.bin_counts);
         assert_eq!(rdf_hist.bin_edges.slice(s![0, ..]), array![0.0, 0.5, 1.0]);
+
+        let rdf_hist_normalized = NormalizedHistogram::normalize(&rdf_hist);
+        let ans_normed = array![1.0 / 3.0, 2.0 / 3.0];
+        assert_eq!(ans_normed, rdf_hist_normalized.bin_counts);
         Ok(())
     }
 
@@ -757,6 +739,10 @@ mod tests {
             rdf_hist.bin_edges.slice(s![0, ..]),
             array![0.0, 0.5, 1.0, 1.5, 2.0]
         );
+
+        let rdf_hist_normalized = NormalizedHistogram::normalize(&rdf_hist);
+        let ans_normed = array![0.0, 5.0 / 6.0, 1.0 / 6.0, 0.0];
+        assert_eq!(ans_normed, rdf_hist_normalized.bin_counts);
         Ok(())
     }
 
@@ -780,6 +766,10 @@ mod tests {
         let ans = array![4_usize, 2_usize];
         assert_eq!(ans, rdf_hist.bin_counts);
         assert_eq!(rdf_hist.bin_edges.slice(s![0, ..]), array![0.0, 0.5, 1.0]);
+
+        let rdf_hist_normalized = NormalizedHistogram::normalize(&rdf_hist);
+        let ans_normed = array![2.0 / 3.0, 1.0 / 3.0];
+        assert_eq!(ans_normed, rdf_hist_normalized.bin_counts);
         Ok(())
     }
 }

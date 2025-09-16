@@ -13,7 +13,10 @@ use hoomd_microstate::{
     boundary::{GenerateGhosts, Open, Periodic},
     property::Position,
 };
-use hoomd_vector::Cartesian;
+use hoomd_vector::{Cartesian, Metric};
+use num::complex::Complex;
+use thiserror::Error;
+use ndarray::prelude::*;
 
 /** Define generator for making voronoi diagrams in Hyperbolic space
 */
@@ -132,7 +135,7 @@ impl<B, S, C> NeighborList<'_, B, S, C> {
                         });
                 filtered_nlist
             }
-            None => panic!("given site index is invalid"),
+            None => vec![0_usize],
         }
     }
     /** Get the coordination numbers for each site in a microstate
@@ -167,6 +170,235 @@ impl<B, S, C> NeighborList<'_, B, S, C> {
         coord_number
     }
 }
+
+pub trait DirectorField<B, S, C, M> {
+    fn hexatic(
+        &self,
+        microstate: &Microstate<B, S, C>,
+        site_index: Option<usize>,
+    ) -> Result<Complex<f64>, Error>;
+    /// TODO: add description
+    fn orientational_order(
+        &self,
+        microstate: &Microstate<B, S, C>,
+        r_min: f64,
+        r_max: f64,
+        nbins: usize,
+    ) -> Result<ComplexField, Error>;
+}
+
+/** TODO: documentation
+ */
+pub struct ComplexField {
+    pub bin_edges: Array<f64, Dim<[usize; 1]>>,
+    pub bounds: [f64; 2],
+    pub field_value: Array<Complex<f64>, Dim<[usize; 1]>>,
+    pub n_bins: usize,
+}
+
+impl<B, S, C> DirectorField<B, S, C, Cartesian<2>> for NeighborList<'_, B, S, C>
+where
+    S: Position<Metric = Cartesian<2>>,
+{
+    /// compute the hexatic director field at a point from the microstate
+    fn hexatic(
+        &self,
+        microstate: &Microstate<B, S, C>,
+        site_index: Option<usize>,
+    ) -> Result<Complex<f64>, Error> {
+        match site_index {
+            Some(num) => {
+                let site_neighbors = self.neighbors_of_site(site_index);
+                if site_neighbors == vec![0_usize] {
+                    return Err(Error::NoNearestNeighbors);
+                }
+                let point = microstate.sites()[num].properties.position();
+                let neighbors_translated: Vec<Cartesian<2>> = site_neighbors
+                    .iter()
+                    .map(|s| *microstate.sites()[*s].properties.position() - *point)
+                    .collect();
+                let angles: Vec<f64> = neighbors_translated
+                    .iter()
+                    .map(|site| (site[1]).atan2(site[0]))
+                    .collect();
+                let hex: Complex<f64> = angles.iter().fold(Complex::new(0.0, 0.0), |sum, theta| {
+                    sum + Complex::new(0.0, 6.0 * theta).exp()
+                });
+                Ok(hex.scale(1.0 / (site_neighbors.len() as f64)))
+            }
+            None => return Err(Error::InvalidSiteIndex),
+        }
+    }
+    /// TODO: description
+    #[inline]
+    fn orientational_order(
+        &self,
+        microstate: &Microstate<B, S, C>,
+        r_min: f64,
+        r_max: f64,
+        nbins: usize,
+    ) -> Result<ComplexField, Error> {
+        let bin_size: f64 = (r_max - r_min) / (nbins as f64);
+        let bin_edges = Array::from_vec(
+            (0..=nbins)
+                .collect::<Vec<usize>>()
+                .iter()
+                .map(|i| (*i as f64) * bin_size + r_min)
+                .collect::<Vec<f64>>(),
+        );
+        // iterate through all pairs of sites and place director into correct spot
+        // all directors are stored with an index marking where they belong
+        let mut directors_tagged: Vec<(Complex<f64>, usize)> = vec![];
+        for site_1 in microstate.site_indices() {
+            for site_2 in microstate.site_indices() {
+                match site_1 {
+                    Some(site_1_index) => match site_2 {
+                        Some(site_2_index) => {
+                            let distance = microstate.sites()[*site_1_index]
+                                .properties
+                                .position()
+                                .distance(
+                                    microstate.sites()[*site_2_index].properties.position()
+                                );
+                            let index = bin_edges.iter()
+                                .filter(|edge| **edge <= distance)
+                                .count() - 1_usize;
+                            let dir1 = self.hexatic(microstate, *site_1)?;
+                            let dir2 = self.hexatic(microstate, *site_2)?;
+                            directors_tagged.push((dir1.conj() * dir2, index));
+                        }
+                        // return error if microstate is empty
+                        None => return Err(Error::InvalidSiteIndex),
+                    },
+                    None => return Err(Error::InvalidSiteIndex),
+                }
+            }
+        }
+        let mut directors: Vec<Complex<f64>> = vec![];
+        for index in 0..=nbins {
+            let dirs: Vec<&(Complex<f64>, usize)> = directors_tagged.iter().filter(|(_val, bin)| *bin == index).collect();
+            let num = dirs.len();
+            let avg_dirs = dirs.iter().fold(Complex::new(0.0,0.0), |sum, (val, _bin)| sum + val);
+            directors.push(avg_dirs.scale(1.0/(num as f64)));
+        };
+        Ok (ComplexField { bin_edges, bounds: [r_min, r_max], field_value: Array::from_vec(directors), n_bins: nbins})
+    }
+}
+
+impl<B, S, C> DirectorField<B, S, C, Hyperboloid<3>> for NeighborList<'_, B, S, C>
+where
+    S: Position<Metric = Hyperboloid<3>>,
+{
+    /// compute the hexatic director field at a point from the microstate
+    fn hexatic(
+        &self,
+        microstate: &Microstate<B, S, C>,
+        site_index: Option<usize>,
+    ) -> Result<Complex<f64>, Error> {
+        match site_index {
+            Some(num) => {
+                let site_neighbors = self.neighbors_of_site(site_index);
+                if site_neighbors == vec![0_usize] {
+                    return Err(Error::NoNearestNeighbors);
+                }
+                let point = microstate.sites()[num].properties.position();
+                let boost = -(point.point.coordinates[2] / point.skirt()).acosh();
+                let rot = -point.point.coordinates[1].atan2(point.point.coordinates[0]);
+                let neighbors_translated: Vec<[f64; 2]> = site_neighbors
+                    .iter()
+                    .map(|s| {
+                        let nn = microstate.sites()[*s]
+                            .properties
+                            .position()
+                            .point
+                            .coordinates;
+                        [
+                            nn[0] * (boost.cosh()) * (rot.cos())
+                                - nn[1] * (boost.cosh()) * (rot.sin())
+                                + nn[2] * (boost.sinh()),
+                            nn[0] * (rot.sin()) + nn[1] * (rot.cos()),
+                        ]
+                    })
+                    .collect();
+                let angles: Vec<f64> = neighbors_translated
+                    .iter()
+                    .map(|site| (site[1]).atan2(site[0]))
+                    .collect();
+                let hex: Complex<f64> = angles.iter().fold(Complex::new(0.0, 0.0), |sum, theta| {
+                    sum + Complex::new(0.0, 6.0 * theta).exp()
+                });
+                Ok(hex.scale(1.0 / (site_neighbors.len() as f64)))
+            }
+            None => return Err(Error::InvalidSiteIndex),
+        }
+    }
+    #[inline]
+    fn orientational_order(
+        &self,
+        microstate: &Microstate<B, S, C>,
+        r_min: f64,
+        r_max: f64,
+        nbins: usize,
+    ) -> Result<ComplexField, Error> {
+        let bin_size: f64 = (r_max - r_min) / (nbins as f64);
+        let bin_edges = Array::from_vec(
+            (0..=nbins)
+                .collect::<Vec<usize>>()
+                .iter()
+                .map(|i| (*i as f64) * bin_size + r_min)
+                .collect::<Vec<f64>>(),
+        );
+        // iterate through all pairs of sites and place director into correct spot
+        // all directors are stored with an index marking where they belong
+        let mut directors_tagged: Vec<(Complex<f64>, usize)> = vec![];
+        for site_1 in microstate.site_indices() {
+            for site_2 in microstate.site_indices() {
+                match site_1 {
+                    Some(site_1_index) => match site_2 {
+                        Some(site_2_index) => {
+                            let distance = microstate.sites()[*site_1_index]
+                                .properties
+                                .position()
+                                .distance(
+                                    microstate.sites()[*site_2_index].properties.position()
+                                );
+                            let index = bin_edges.iter()
+                                .filter(|edge| **edge <= distance)
+                                .count() - 1_usize;
+                            let dir1 = self.hexatic(microstate, *site_1)?;
+                            let dir2 = self.hexatic(microstate, *site_2)?;
+                            directors_tagged.push((dir1.conj() * dir2, index));
+                        }
+                        // return error if microstate is empty
+                        None => return Err(Error::InvalidSiteIndex),
+                    },
+                    None => return Err(Error::InvalidSiteIndex),
+                }
+            }
+        }
+        let mut directors: Vec<Complex<f64>> = vec![];
+        for index in 0..=nbins {
+            let dirs: Vec<&(Complex<f64>, usize)> = directors_tagged.iter().filter(|(_val, bin)| *bin == index).collect();
+            let num = dirs.len();
+            let avg_dirs = dirs.iter().fold(Complex::new(0.0,0.0), |sum, (val, _bin)| sum + val);
+            directors.push(avg_dirs.scale(1.0/(num as f64)));
+        };
+        Ok (ComplexField { bin_edges, bounds: [r_min, r_max], field_value: Array::from_vec(directors), n_bins: nbins})
+    }
+}
+
+/// Enumerate possible sources of error in fallible boundary methods.
+#[non_exhaustive]
+#[derive(Error, PartialEq, Debug)]
+pub enum Error {
+    /// Given microstate has no valid indices
+    #[error("invalid site index")]
+    InvalidSiteIndex,
+    /// No nearest neighbors
+    #[error("No nearest neighbors (likely an invalid site index)")]
+    NoNearestNeighbors,
+}
+
 /** Neighbor list from microstates in cartesian space
 
 #Example
@@ -575,6 +807,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use approx::assert_relative_eq;
     use hoomd_geometry::shape::Cuboid;
     use hoomd_manifold::{Hyperboloid, Minkowski};
     use hoomd_microstate::{Body, MicrostateBuilder, boundary::Open, boundary::Periodic};
@@ -710,5 +943,27 @@ mod tests {
             vec![3_usize, 2_usize, 2_usize, 3_usize],
             coordination_numbers
         );
+    }
+
+    #[test]
+    fn hexatic_order_cartesian() -> Result<(), Box<dyn std::error::Error>> {
+        let microstate = MicrostateBuilder::with_boundary(Open)
+            .bodies([
+                Body::point(Cartesian::from([1.0, 1.0])),
+                Body::point(Cartesian::from([2.0, 1.0])),
+                Body::point(Cartesian::from([0.0, 1.0])),
+                Body::point(Cartesian::from([1.5, 1.0 + (3.0_f64).sqrt() / 2.0])),
+                Body::point(Cartesian::from([1.5, 1.0 - (3.0_f64).sqrt() / 2.0])),
+                Body::point(Cartesian::from([0.5, 1.0 + (3.0_f64).sqrt() / 2.0])),
+                Body::point(Cartesian::from([0.5, 1.0 - (3.0_f64).sqrt() / 2.0])),
+            ])
+            .try_build()
+            .expect("hard-coded distributions should be valid");
+
+        let nlist = NeighborList::from_microstate(&microstate);
+        let hexatic_0 = nlist.hexatic(&microstate, microstate.site_indices()[0])?;
+        assert_relative_eq!(1.0, hexatic_0.re, epsilon = 1e-12);
+        assert_relative_eq!(0.0, hexatic_0.im, epsilon = 1e-12);
+        Ok(())
     }
 }

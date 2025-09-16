@@ -17,11 +17,15 @@ mod util;
 #[allow(private_bounds)]
 mod voronoi;
 
+//mod voronoi_neighborlist;
+
 mod local;
 
-pub use local::{GenerateNeighborList, GeneratorHyperbolic, NeighborList};
+pub use local::{DirectorField, GenerateNeighborList, GeneratorHyperbolic, NeighborList};
 
 pub use voronoi::{
     ConvexCell, Dimensionality, Voronoi, VoronoiCell, VoronoiFace, VoronoiIntegrator,
     convex_cell::Vertex, half_space::HalfSpace, integrals,
 };
+
+//pub use voronoi_neighborlist::Voronoi_nlist;
