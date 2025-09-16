@@ -13,7 +13,6 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::macrostate::{Isochoric, Isoentropic, Isothermal, Temperature};
 use hoomd_vector::{Cartesian, Vector};
-use rand::Rng;
 use rand_distr::{Distribution, Gamma, Normal};
 
 /** Adjust the temperature of a system.
@@ -33,7 +32,7 @@ pub trait Thermostat<B, S, C, M> {
         compute_properties: P,
     ) -> f64
     where
-        P: Fn(&Microstate<B, S, C>) -> (f64, f64);
+        P: FnMut(&Microstate<B, S, C>) -> (f64, f64);
 
     /// The scaling factor for velocities in the second half-step.
     /// Note that translation and rotation are assumed to have identical math
@@ -47,7 +46,7 @@ pub trait Thermostat<B, S, C, M> {
 
     fn advance<P>(&mut self, dt: &f64, compute_properties: P)
     where
-        P: Fn(&Microstate<B, S, C>) -> (f64, f64);
+        P: FnMut(&Microstate<B, S, C>) -> (f64, f64);
 }
 
 /** Constant temperature.
@@ -68,7 +67,7 @@ where
         compute_properties: P,
     ) -> f64
     where
-        P: Fn(&Microstate<B, S, C>) -> (f64, f64),
+        P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
         1.0
     }
@@ -86,7 +85,7 @@ where
     #[inline]
     fn advance<P>(&mut self, dt: &f64, compute_properties: P)
     where
-        P: Fn(&Microstate<B, S, C>) -> (f64, f64),
+        P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
     }
 }
@@ -115,10 +114,10 @@ where
         microstate: &Microstate<B, S, C>,
         macrostate: &M,
         dt: &f64,
-        compute_properties: P,
+        mut compute_properties: P,
     ) -> f64
     where
-        P: Fn(&Microstate<B, S, C>) -> (f64, f64),
+        P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
         let kT = macrostate.temperature();
 
@@ -173,7 +172,7 @@ where
     #[inline]
     fn advance<P>(&mut self, dt: &f64, _compute_properties: P)
     where
-        P: Fn(&Microstate<B, S, C>) -> (f64, f64),
+        P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
     }
 }
@@ -222,7 +221,7 @@ where
         _compute_properties: P,
     ) -> f64
     where
-        P: Fn(&Microstate<B, S, C>) -> (f64, f64),
+        P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
         // TODO
         1.0
@@ -242,7 +241,7 @@ where
     #[inline]
     fn advance<P>(&mut self, dt: &f64, compute_properties: P)
     where
-        P: Fn(&Microstate<B, S, C>) -> (f64, f64),
+        P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
         // TODO
     }

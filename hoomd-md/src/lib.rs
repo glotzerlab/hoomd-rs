@@ -45,10 +45,11 @@ symplectic and time-reversible two-step Verlet integration schemes published
 in Miller et al. (2002) and Kamberaj et al. (2005). Jens Glaser adapted
 these derivations to also accommodate constant pressure integration.
 */
-trait TranslationalMotion<B, S, C, E, T, M> {
+pub trait TranslationalMotion<B, S, C, E, T, M> {
     /// Perform the first integration half-step, mutating the microstate and possibly the thermostat.
+    #[must_use]
     fn integrate_translation_step_one(
-        &self,
+        &mut self,
         microstate: &mut Microstate<B, S, C>,
         force: &E,
         thermostat: &mut T,
@@ -56,6 +57,7 @@ trait TranslationalMotion<B, S, C, E, T, M> {
     );
 
     /// Perform the second integration half-step, mutating the microstate and possibly the thermostat.
+    #[must_use]
     fn integrate_translation_step_two(
         &self,
         microstate: &mut Microstate<B, S, C>,
@@ -82,8 +84,9 @@ symplectic and time-reversible two-step Verlet integration schemes published
 in Miller et al. (2002) and Kamberaj et al. (2005). Jens Glaser adapted
 these derivations to also accommodate constant pressure integration.
 */
-trait RotationalMotion<const N: usize, B, S, C, E, T, M> {
+pub trait RotationalMotion<const N: usize, B, S, C, E, T, M> {
     /// Perform the first integration half-step, mutating the microstate and possibly the thermostat.
+    #[must_use]
     fn integrate_rotation_step_one(
         &self,
         microstate: &mut Microstate<B, S, C>,
@@ -93,6 +96,7 @@ trait RotationalMotion<const N: usize, B, S, C, E, T, M> {
     );
 
     /// Perform the second integration half-step, mutating the microstate and possibly the thermostat.
+    #[must_use]
     fn integrate_rotation_step_two(
         &self,
         microstate: &mut Microstate<B, S, C>,
@@ -103,14 +107,19 @@ trait RotationalMotion<const N: usize, B, S, C, E, T, M> {
 }
 
 /** Evolve a system that is constrained to a constant volume. */
+#[derive(Clone, Debug, PartialEq)]
 pub struct ConstantVolume {
     /// The size of a timestep.
     dt: f64,
+
+    kinetic_energy: f64,
+
+    dof: f64,
 }
 
 impl ConstantVolume {
     pub fn new(dt: f64) -> Self {
-        Self { dt: dt }
+        Self { dt: dt, kinetic_energy: 0.0, dof: 0.0 }
     }
 }
 
@@ -160,14 +169,17 @@ where
     */
     #[inline]
     fn integrate_translation_step_one(
-        &self,
+        &mut self,
         microstate: &mut Microstate<B, S, C>,
         force: &E,
         thermostat: &mut T,
         macrostate: &M,
     ) {
-        let compute_properties = |microstate: &Microstate<B, S, C>| -> (f64, f64) {
+        let mut compute_properties = |microstate: &Microstate<B, S, C>| -> (f64, f64) {
+            let integrator_ke = &mut self.kinetic_energy;
+            let integrator_dof = &mut self.dof;
             let mut ke = 0.0;
+            let dof = 3.0 * microstate.bodies().len() as f64;
 
             for body_index in 0..microstate.bodies().len() {
                 // Get the the body information
@@ -177,7 +189,11 @@ where
                 let velocity = *body_properties.velocity();
                 ke += velocity.norm_squared() * body_properties.mass();
             }
-            (0.5 * ke, 3.0 * microstate.bodies().len() as f64)
+            ke *= 0.5;
+            *integrator_ke = ke.clone();
+            *integrator_dof = dof.clone();
+
+            (ke, dof)
         };
 
         // Calculate temperature scaling factor
@@ -185,7 +201,7 @@ where
             microstate,
             macrostate,
             &self.dt,
-            compute_properties,
+            &mut compute_properties,
         );
 
         // For loop over a range instead of bodies().iter() since the latter holds an immutable borrow.
@@ -205,7 +221,7 @@ where
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
 
-        thermostat.advance(&self.dt, compute_properties);
+        thermostat.advance(&self.dt, &mut compute_properties);
 
         microstate.increment_substep();
     }
@@ -272,8 +288,8 @@ The generic type names are:
 impl<B, S, C, E, T, M> RotationalMotion<3, B, S, C, E, T, M> for ConstantVolume
 where
     B: Orientation<Rotation = Quaternion>
-        + AngularVelocity<RotationDerivative = Cartesian<3>>
-        + MomentOfInertia<RotationDerivative = Cartesian<3>>
+        + AngularVelocity<Vector = Cartesian<3>>
+        + MomentOfInertia<Vector = Cartesian<3>>
         + Transform<S>
         + Position<Vector = Cartesian<3>> // TODO: should this be required?
         + Clone,
@@ -577,8 +593,8 @@ The generic type names are:
 impl<B, S, C, E, T, M> RotationalMotion<2, B, S, C, E, T, M> for ConstantVolume
 where
     B: Orientation<Rotation = Angle>
-        + AngularVelocity<RotationDerivative = f64>
-        + MomentOfInertia2d<RotationDerivative = f64>
+        + AngularVelocity<Vector = f64>
+        + MomentOfInertia<Vector = f64>
         + Transform<S>
         + Position<Vector = Cartesian<2>> // TODO: should this be required?
         + Clone,
