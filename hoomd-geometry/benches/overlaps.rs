@@ -130,14 +130,14 @@ fn create_ellipsoid_pair<const N: usize, R: Rng>(
 ) -> (Hyperellipsoid<N>, Hyperellipsoid<N>) {
     (
         Hyperellipsoid {
-            axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
+            semi_axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
                 (x + 11.0)
                     .try_into()
                     .expect("test value is a positive real")
             }),
         },
         Hyperellipsoid {
-            axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
+            semi_axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
                 (x + 11.0)
                     .try_into()
                     .expect("test value is a positive real")

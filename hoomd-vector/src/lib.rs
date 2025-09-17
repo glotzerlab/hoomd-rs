@@ -557,13 +557,27 @@ pub trait InnerProduct: Vector {
     fn project(&self, b: &Self) -> Self {
         *b * self.dot(b) / b.norm_squared()
     }
+
+    /** Create a unit vector in the space.
+
+    Each vector space defines its own default unit vector.
+
+    # Example
+    ```
+    use hoomd_vector::{Cartesian, InnerProduct};
+
+    let u = Cartesian::<2>::default_unit();
+    assert_eq!(*u.get(), [0.0, 1.0].into());
+    ```
+    */
+    fn default_unit() -> Unit<Self>;
 }
 
 /// A [`Vector`] with magnitude 1.0.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Unit<V>(V);
 
-impl<V: InnerProduct> Unit<V> {
+impl<V> Unit<V> {
     /// Get the unit vector.
     #[inline]
     pub fn get(&self) -> &V {
@@ -639,7 +653,7 @@ mathematically as _functions_:
 
 All types that implement [`Rotation`] _should_ implement [`Rotate`] for at least one vector type.
 */
-pub trait Rotation {
+pub trait Rotation: Copy {
     /** The identity rotation.
     ```math
     \vec{a} = I(\vec{a})
@@ -683,6 +697,41 @@ pub trait Rotation {
     */
     #[must_use]
     fn combine(&self, other: &Self) -> Self;
+}
+
+/** Get the relative position and orientation given pairs of positions and orientations.
+
+# Example
+
+```
+use hoomd_vector::{self, Angle, Cartesian};
+use std::f64::consts::PI;
+use ::approx::assert_relative_eq;
+
+let r_a = Cartesian::from([1.0, -2.0]);
+let o_a = Angle::from(PI / 2.0);
+
+let r_b = Cartesian::from([2.0, -1.0]);
+let o_b = Angle::from(PI);
+
+let (v_ab, o_ab) = hoomd_vector::pair_system_to_local(&r_a, &o_a, &r_b, &o_b);
+assert_relative_eq!(v_ab[0], 1.0);
+assert_relative_eq!(v_ab[1], -1.0);
+assert_relative_eq!(o_ab.theta, PI / 2.0);
+```
+*/
+#[inline]
+#[expect(clippy::similar_names, reason = "standard math notation")]
+pub fn pair_system_to_local<V, R>(r_a: &V, o_a: &R, r_b: &V, o_b: &R) -> (V, R)
+where
+    V: Vector,
+    R: Rotation + Rotate<V>,
+{
+    let r_ab = *r_b - *r_a;
+    let r_a_inverted = o_a.inverted();
+    let v_ij = r_a_inverted.rotate(&r_ab);
+    let o_ij = o_b.combine(&r_a_inverted);
+    (v_ij, o_ij)
 }
 
 #[cfg(test)]

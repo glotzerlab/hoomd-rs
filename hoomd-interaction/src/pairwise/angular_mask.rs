@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`AngularMask`] and related data structures.
+/*! [`AngularMask`] and related data structures.
  */
 
 use super::{AnisotropicEnergy, IsotropicEnergy};
@@ -70,12 +70,12 @@ use std::f64::consts::PI;
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
 let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
-let angular_mask = AngularMask::new(boxcar, masks, masks);
+let angular_mask = AngularMask::new(boxcar, masks);
 # Ok(())
 # }
 ```
 
-All fields are public and can be directly manupipated:
+All fields are public and can be directly manipulated:
 ```
 use hoomd_interaction::pairwise::{AngularMask, Boxcar, angular_mask::Patch};
 use hoomd_vector::Angle;
@@ -84,10 +84,10 @@ use std::f64::consts::PI;
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
 let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
-let mut angular_mask = AngularMask::new(boxcar, masks, masks);
+let mut angular_mask = AngularMask::new(boxcar, masks);
 
 angular_mask.masks_i[0].cos_delta = (PI / 4.0).cos();
-angular_mask.f.epsilon = -2.0;
+angular_mask.isotropic.epsilon = -2.0;
 # Ok(())
 # }
 ```
@@ -102,7 +102,7 @@ use std::f64::consts::PI;
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
 let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
-let angular_mask = AngularMask::new(boxcar, masks, masks);
+let angular_mask = AngularMask::new(boxcar, masks);
 
 // With the same relative orientation, the patches do not overlap and the
 // energy is 0.
@@ -124,10 +124,10 @@ use std::f64::consts::PI;
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
-let masks_i = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() },
+let masks_i = vec![Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() },
     Patch { director: [-1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
-let masks_j = [Patch { director: [0.0, 1.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
-let angular_mask = AngularMask::new(boxcar, masks_i, masks_j);
+let masks_j = vec![Patch { director: [0.0, 1.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
+let angular_mask = AngularMask { isotropic: boxcar, masks_i, masks_j, };
 
 // With the same relative orientation, the patches do not overlap and the
 // energy is 0.
@@ -156,7 +156,7 @@ let mask = [Patch {
 }];
 let (x_axis, _) = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
 
-let angular_mask = AngularMask::new(boxcar, mask, mask);
+let angular_mask = AngularMask::new(boxcar, mask);
 
 assert_eq!(
     angular_mask.energy(
@@ -178,9 +178,9 @@ assert_eq!(
 ```
 */
 #[derive(Clone, Debug, PartialEq)]
-pub struct AngularMask<F, V> {
+pub struct AngularMask<E, V> {
     /// The original potential.
-    pub f: F,
+    pub isotropic: E,
 
     /// Masks on the i particle.
     pub masks_i: Vec<Patch<V>>,
@@ -189,7 +189,7 @@ pub struct AngularMask<F, V> {
     pub masks_j: Vec<Patch<V>>,
 }
 
-impl<F, V> AngularMask<F, V>
+impl<E, V> AngularMask<E, V>
 where
     V: Vector,
 {
@@ -201,6 +201,9 @@ where
     unlike other potentials such as [`LennardJones`](super::LennardJones)
     or [`Boxcar`](super::Boxcar).
 
+    `new` sets both `masks_i` and `masks_j` to `masks`. Use struct initialization
+    syntax to set these separately.
+
     # Example
 
     ```
@@ -210,29 +213,29 @@ where
     # fn main() -> Result<(), Box<dyn std::error::Error>> {
     let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
     let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
-    let angular_mask = AngularMask::new(boxcar, masks, masks);
+    let angular_mask = AngularMask::new(boxcar, masks);
     # Ok(())
     # }
     ```
     */
     #[inline]
     #[must_use]
-    pub fn new<I1, I2>(f: F, masks_i: I1, masks_j: I2) -> Self
+    pub fn new<I>(isotropic: E, masks: I) -> Self
     where
-        I1: IntoIterator<Item = Patch<V>>,
-        I2: IntoIterator<Item = Patch<V>>,
+        I: IntoIterator<Item = Patch<V>>,
     {
+        let masks = Vec::from_iter(masks);
         Self {
-            f,
-            masks_i: Vec::from_iter(masks_i),
-            masks_j: Vec::from_iter(masks_j),
+            isotropic,
+            masks_i: masks.clone(),
+            masks_j: masks,
         }
     }
 }
 
-impl<F, V, R> AnisotropicEnergy<V, R> for AngularMask<F, V>
+impl<E, V, R> AnisotropicEnergy<V, R> for AngularMask<E, V>
 where
-    F: IsotropicEnergy,
+    E: IsotropicEnergy,
     V: InnerProduct,
     R: Rotate<V> + Into<R::Matrix> + Copy,
 {
@@ -249,7 +252,7 @@ where
                 if mask_i.director.get().dot(unit_r_ij.get()) >= mask_i.cos_delta
                     && d_j.dot(&unit_r_ji) >= mask_j.cos_delta
                 {
-                    return self.f.energy(r_ij_norm);
+                    return self.isotropic.energy(r_ij_norm);
                 }
             }
         }
@@ -286,7 +289,7 @@ mod tests {
                 .expect("hard-coded vector should have non-zero length"),
             cos_delta: (PI / 8.0).cos(),
         }];
-        let angular_mask = AngularMask::new(boxcar, mask, mask);
+        let angular_mask = AngularMask::new(boxcar, mask);
 
         // Check corner cases when the j particle is along the patch direction.
         assert_eq!(
@@ -334,7 +337,7 @@ mod tests {
                 .expect("hard-coded vector should have non-zero length"),
             cos_delta: (PI / 3.0).cos(),
         }];
-        let angular_mask = AngularMask::new(boxcar, mask, mask);
+        let angular_mask = AngularMask::new(boxcar, mask);
 
         // Check corner cases when the j particle is along the patch direction
         assert_eq!(
@@ -407,7 +410,7 @@ mod tests {
         };
 
         // Third case: multiple patches and different i,j masks.
-        let mask_i = [
+        let masks_i = vec![
             Patch {
                 director: [0.0, 1.0]
                     .try_into()
@@ -433,7 +436,7 @@ mod tests {
                 cos_delta: (PI / 8.0).cos(),
             },
         ];
-        let mask_j = [
+        let masks_j = vec![
             Patch {
                 director: [0.0, 1.0]
                     .try_into()
@@ -447,7 +450,11 @@ mod tests {
                 cos_delta: (PI / 8.0).cos(),
             },
         ];
-        let angular_mask = AngularMask::new(boxcar, mask_i, mask_j);
+        let angular_mask = AngularMask {
+            isotropic: boxcar,
+            masks_i,
+            masks_j,
+        };
 
         assert_eq!(angular_mask.energy(&r_ij, &Angle::from(theta)), expected);
     }
@@ -464,7 +471,7 @@ mod tests {
                 .expect("hard-coded vector should have non-zero length"),
             cos_delta: (PI).cos(),
         }];
-        let angular_mask = AngularMask::new(lj, mask, mask);
+        let angular_mask = AngularMask::new(lj, mask);
 
         // The patch covers the full surface. angular_mask.energy() should evaluate to the same
         // as lj.energy() for all orientations.
@@ -496,7 +503,7 @@ mod tests {
                 .expect("hard-coded vector should have non-zero length"),
             cos_delta: (PI / 8.0).cos(),
         }];
-        let angular_mask = AngularMask::new(boxcar, mask, mask);
+        let angular_mask = AngularMask::new(boxcar, mask);
 
         let (x_axis, _) = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
         let (y_axis, _) = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();

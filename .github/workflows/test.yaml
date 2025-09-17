@@ -1,7 +1,7 @@
 name: test
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 on:
@@ -21,6 +21,13 @@ env:
   CLICOLOR: 1
 
 jobs:
+  start_action_runners:
+    name: Start
+    uses: glotzerlab/jetstream2-admin/.github/workflows/start.yaml@9ef0cf7995c9209bfa77d45baa124f15df669393 # v1.4.0
+    secrets: inherit
+    with:
+      number: 8
+
   unit_test:
     name: Unit test [${{ matrix.profile }}-rust-${{ matrix.rust }}-${{ matrix.os }}]
     runs-on: [self-hosted, jetstream2, CPU]
