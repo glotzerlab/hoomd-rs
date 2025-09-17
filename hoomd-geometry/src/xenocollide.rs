@@ -1,30 +1,36 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implementations of the Xenocollide collision detection algorithm.
-
-[`collide2d`] and [`collide3d`] test for intersections between arbitrary geometries
-that implement the [`SupportMapping<Cartesian<2|3>>`](`crate::SupportMapping`) trait.
-
-# Example
-
-In general, Xenocollide should be used via the [`IntersectsAt`](`crate::IntersectsAt`)
-trait. However, the raw xenocollide methods can be used where needed.
-```
-use hoomd_geometry::{IntersectsAt, shape::Circle, xenocollide::collide2d};
-use hoomd_vector::Angle;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let (s0, s1) = (Circle {radius: 1.0.try_into()?}, Circle {radius: 2.0.try_into()?});
-let displacement = [3.0; 2].into();
-assert_eq!(
-    collide2d(&s0, &s1, &displacement, &Angle::default()),
-    s0.intersects_at(&s1, &displacement, &Angle::default())
-);
-# Ok(())
-# }
-```
-*/
+//! Implementations of the Xenocollide collision detection algorithm.
+//!
+//! [`collide2d`] and [`collide3d`] test for intersections between arbitrary geometries
+//! that implement the [`SupportMapping<Cartesian<2|3>>`](`crate::SupportMapping`) trait.
+//!
+//! # Example
+//!
+//! In general, Xenocollide should be used via the [`IntersectsAt`](`crate::IntersectsAt`)
+//! trait. However, the raw xenocollide methods can be used where needed.
+//! ```
+//! use hoomd_geometry::{IntersectsAt, shape::Circle, xenocollide::collide2d};
+//! use hoomd_vector::Angle;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let (s0, s1) = (
+//!     Circle {
+//!         radius: 1.0.try_into()?,
+//!     },
+//!     Circle {
+//!         radius: 2.0.try_into()?,
+//!     },
+//! );
+//! let displacement = [3.0; 2].into();
+//! assert_eq!(
+//!     collide2d(&s0, &s1, &displacement, &Angle::default()),
+//!     s0.intersects_at(&s1, &displacement, &Angle::default())
+//! );
+//! # Ok(())
+//! # }
+//! ```
 use crate::SupportMapping;
 use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, Rotation, RotationMatrix};
 

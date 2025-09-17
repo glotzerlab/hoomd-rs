@@ -1,7 +1,6 @@
 #![allow(clippy::print_stdout, reason = "Demonstration purposes")]
 
-/*! This is an example
- */
+//! This is an example
 
 use hoomd_gsd::file_layer::{GsdFile, Mode};
 use std::time::Instant;

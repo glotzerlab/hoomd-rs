@@ -1,10 +1,9 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Read and write data chunks in GSD files.
-
-Use [`GsdFile`] to interact with GSD files on the filesystem.
- */
+//! Read and write data chunks in GSD files.
+//!
+//! Use [`GsdFile`] to interact with GSD files on the filesystem.
 
 use itertools::Itertools;
 use memmap2::Mmap;
@@ -223,10 +222,9 @@ where
     }
 }
 
-/** Implement a sealed trait for each data type supported by GSD.
-
-This enables generic implementations that operate on these types.
-*/
+/// Implement a sealed trait for each data type supported by GSD.
+///
+/// This enables generic implementations that operate on these types.
 mod private {
     /// Seal the data type traits so that users cannot add new types.
     pub trait Sealed {}
@@ -243,63 +241,63 @@ mod private {
     impl Sealed for f64 {}
 }
 
-/** Data types that can be stored in chunk arrays.
-
-GSD files store arrays of data of one of the following types:
-* [`u8`]
-* [`u16`]
-* [`u32`]
-* [`u64`]
-* [`i8`]
-* [`i16`]
-* [`i32`]
-* [`i64`]
-* [`f32`]
-* [`f64`]
-
-The [`Type`] trait facilitates the generic methods including
-[`GsdFile::iter_scalars`], [`GsdFile::write_scalars`], and others. When needed,
-pass the type explicitly to these methods to read or write data chunks of the
-given type. In some cases, the Rust compiler may be able to determine the type
-from context.
-
-# Example
-
-```
-use hoomd_gsd::file_layer::GsdFile;
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-# use tempfile::tempdir;
-# let tmp_dir = tempdir().expect("temp dir should be created");
-# let path = tmp_dir.path().join("test.gsd");
-let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-gsd_file.write_scalars("configuration/box", &[10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0])?;
-gsd_file.end_frame()?;
-gsd_file.sync_all()?;
-
-let box_iter = gsd_file.iter_scalars::<f32>(0, "configuration/box")?;
-itertools::assert_equal(box_iter, [10.0, 20.0, 15.0, 0.0, 0.0, 0.0]);
-# Ok(())
-# }
-```
-*/
+/// Data types that can be stored in chunk arrays.
+///
+/// GSD files store arrays of data of one of the following types:
+/// [`u8`]
+/// [`u16`]
+/// [`u32`]
+/// [`u64`]
+/// [`i8`]
+/// [`i16`]
+/// [`i32`]
+/// [`i64`]
+/// [`f32`]
+/// [`f64`]
+///
+/// The [`Type`] trait facilitates the generic methods including
+/// [`GsdFile::iter_scalars`], [`GsdFile::write_scalars`], and others. When needed,
+/// pass the type explicitly to these methods to read or write data chunks of the
+/// given type. In some cases, the Rust compiler may be able to determine the type
+/// from context.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_gsd::file_layer::GsdFile;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # use tempfile::tempdir;
+/// # let tmp_dir = tempdir().expect("temp dir should be created");
+/// # let path = tmp_dir.path().join("test.gsd");
+/// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
+/// gsd_file.write_scalars(
+///     "configuration/box",
+///     &[10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0],
+/// )?;
+/// gsd_file.end_frame()?;
+/// gsd_file.sync_all()?;
+///
+/// let box_iter = gsd_file.iter_scalars::<f32>(0, "configuration/box")?;
+/// itertools::assert_equal(box_iter, [10.0, 20.0, 15.0, 0.0, 0.0, 0.0]);
+/// # Ok(())
+/// # }
+/// ```
 pub trait Type: private::Sealed {
     /// Value denoting this type in the file layer.
     #[doc(hidden)]
     fn gsd_data_type() -> u8;
 
-    /** Convert a native endian byte slice to this type.
-
-    This is not the proper idiomatic way to do this, but it gets the job done
-    with minimal lines of code.
-    */
+    /// Convert a native endian byte slice to this type.
+    ///
+    /// This is not the proper idiomatic way to do this, but it gets the job done
+    /// with minimal lines of code.
     #[doc(hidden)]
     fn from_ne_byte_slice(bytes: &[u8]) -> Self;
 
-    /** Append this type to a native endian byte array.
-
-    This is not the proper idiomatic way to do this, but it gets the job done
-    with minimal lines of code.
-    */
+    /// Append this type to a native endian byte array.
+    ///
+    /// This is not the proper idiomatic way to do this, but it gets the job done
+    /// with minimal lines of code.
     #[doc(hidden)]
     fn append_ne_bytes(&self, v: &mut Vec<u8>);
 }
@@ -492,17 +490,16 @@ struct NameList {
     buffer: Vec<u8>,
 }
 
-/** Details about the index.
-
-* `n` counts the number of entries stored in the actual file.
-* `buffer` stores index entries in memory that have not yet been written to the
-  tile (as bytes).
-* `pending` counts the number of entries that are pending in the current frame.
-
-Pending entries are those where `write_*` has been called, but not yet
-`end_frame`. These should not be synced to the file to avoid having
-partial frames in the file.
-*/
+/// Details about the index.
+///
+/// `n` counts the number of entries stored in the actual file.
+/// `buffer` stores index entries in memory that have not yet been written to the
+/// tile (as bytes).
+/// `pending` counts the number of entries that are pending in the current frame.
+///
+/// Pending entries are those where `write_*` has been called, but not yet
+/// `end_frame`. These should not be synced to the file to avoid having
+/// partial frames in the file.
 #[derive(Debug)]
 struct Index {
     /// Number of index entries stored in the file.
@@ -521,34 +518,33 @@ struct Index {
     frame_names: HashSet<u16>,
 }
 
-/** Interact with GSD files on the filesystem.
-
-# Overview
-
-Open files with:
-* [`open`](GsdFile::open)
-* [`create`](GsdFile::create)
-* [`create_new`](GsdFile::create_new)
-
-Access file metadata with:
-* [`n_frames`](GsdFile::n_frames)
-* [`schema`](GsdFile::schema)
-* [`schema_version`](GsdFile::schema_version)
-* [`name_id`](GsdFile::name_id)
-* [`find_chunk`](GsdFile::find_chunk)
-
-Write data with:
-* [`write_scalars`](GsdFile::write_scalars)
-* [`write_arrays`](GsdFile::write_arrays)
-* [`write_string`](GsdFile::write_string)
-* [`end_frame`](GsdFile::end_frame)
-* [`sync_all`](GsdFile::sync_all)
-
-Read data with:
-* [`iter_scalars`](GsdFile::iter_scalars)
-* [`iter_arrays`](GsdFile::iter_arrays)
-* [`read_string`](GsdFile::read_string)
-*/
+/// Interact with GSD files on the filesystem.
+///
+/// # Overview
+///
+/// Open files with:
+/// [`open`](GsdFile::open)
+/// [`create`](GsdFile::create)
+/// [`create_new`](GsdFile::create_new)
+///
+/// Access file metadata with:
+/// [`n_frames`](GsdFile::n_frames)
+/// [`schema`](GsdFile::schema)
+/// [`schema_version`](GsdFile::schema_version)
+/// [`name_id`](GsdFile::name_id)
+/// [`find_chunk`](GsdFile::find_chunk)
+///
+/// Write data with:
+/// [`write_scalars`](GsdFile::write_scalars)
+/// [`write_arrays`](GsdFile::write_arrays)
+/// [`write_string`](GsdFile::write_string)
+/// [`end_frame`](GsdFile::end_frame)
+/// [`sync_all`](GsdFile::sync_all)
+///
+/// Read data with:
+/// [`iter_scalars`](GsdFile::iter_scalars)
+/// [`iter_arrays`](GsdFile::iter_arrays)
+/// [`read_string`](GsdFile::read_string)
 #[derive(Debug)]
 pub struct GsdFile {
     /// The underlying file.
@@ -588,13 +584,12 @@ pub struct GsdFile {
     maximum_write_buffer_size: usize,
 }
 
-/** Properties that describe a given data chunk.
-
-    GSD files store a set of arrays, uniquely identified by their *name* and
-    *frame*. The [`GsdFile::find_chunk`] method search for a matching index
-    entry. The returned [`IndexEntry`] (if present) also carries information
-    about the dimension and type of the array.
-*/
+/// Properties that describe a given data chunk.
+///
+/// GSD files store a set of arrays, uniquely identified by their *name* and
+/// frame*. The [`GsdFile::find_chunk`] method search for a matching index
+/// entry. The returned [`IndexEntry`] (if present) also carries information
+/// about the dimension and type of the array.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct IndexEntry {
     /// Frame index of the chunk.
@@ -619,10 +614,9 @@ pub struct IndexEntry {
     flags: u8,
 }
 
-/** Data types that can be stored in chunks.
-
-Provided by [`IndexEntry::data_type`].
-*/
+/// Data types that can be stored in chunks.
+///
+/// Provided by [`IndexEntry::data_type`].
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum DataType {
@@ -650,17 +644,16 @@ pub enum DataType {
     String,
 }
 
-/** Choose how opened files can be accessed.
-
-Pass a [`Mode`] value to [`GsdFile::open`].
-
-In the [`Mode::Read`] mode, you can call methods that read the file, such as
-[`GsdFile::find_chunk`] and [`GsdFile::iter_scalars`]. Calling methods that
-write the file, such as [`GsdFile::write_scalars`] or [`GsdFile::sync_all`] will
-result in an error.
-
-In the [`Mode::Write`] mode, you can call both read and write methods.
-*/
+/// Choose how opened files can be accessed.
+///
+/// Pass a [`Mode`] value to [`GsdFile::open`].
+///
+/// In the [`Mode::Read`] mode, you can call methods that read the file, such as
+/// [`GsdFile::find_chunk`] and [`GsdFile::iter_scalars`]. Calling methods that
+/// write the file, such as [`GsdFile::write_scalars`] or [`GsdFile::sync_all`] will
+/// result in an error.
+///
+/// In the [`Mode::Write`] mode, you can call both read and write methods.
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum Mode {
@@ -670,12 +663,11 @@ pub enum Mode {
     Write,
 }
 
-/** Read the first u64 in a byte slice (native endian).
-
-Returns the [`u64`] and the rest of the slice. Testing in Godbolt shows that
-repeated calls to this method can be optimized to a simple series of mov
-instructions.
-*/
+/// Read the first u64 in a byte slice (native endian).
+///
+/// Returns the [`u64`] and the rest of the slice. Testing in Godbolt shows that
+/// repeated calls to this method can be optimized to a simple series of mov
+/// instructions.
 #[inline]
 fn extract_ne_u64(bytes: &[u8]) -> (u64, &[u8]) {
     let (bytes, rest) = bytes.split_at(size_of::<u64>());
@@ -717,11 +709,10 @@ fn extract_ne_u16(bytes: &[u8]) -> (u16, &[u8]) {
     )
 }
 
-/** Read the first null terminated string in a byte slice.
-
-Returns the [`String`] without the null terminator. Also returns the rest of the
-slice after consuming 1 null terminator.
-*/
+/// Read the first null terminated string in a byte slice.
+///
+/// Returns the [`String`] without the null terminator. Also returns the rest of the
+/// slice after consuming 1 null terminator.
 #[inline]
 fn extract_null_terminated_utf8(bytes: &[u8]) -> Result<(String, &[u8]), FromUtf8Error> {
     let null_range_end = bytes
@@ -851,24 +842,23 @@ impl IndexEntry {
         self.m
     }
 
-    /** The array's data type.
-
-    Returns [`Some(data_type)`](Option::Some) when the type is known and
-    [`None`] when it is not.
-
-    # Example
-    ```
-    use hoomd_gsd::file_layer::{DataType, IndexEntry};
-
-    # fn do_something() { }
-    # fn func(index_entry: &IndexEntry) {
-    match index_entry.data_type() {
-        Some(DataType::F32) => do_something(),
-        _ => (),
-    }
-    # }
-    ```
-    */
+    /// The array's data type.
+    ///
+    /// Returns [`Some(data_type)`](Option::Some) when the type is known and
+    /// [`None`] when it is not.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_gsd::file_layer::{DataType, IndexEntry};
+    ///
+    /// # fn do_something() { }
+    /// # fn func(index_entry: &IndexEntry) {
+    /// match index_entry.data_type() {
+    ///     Some(DataType::F32) => do_something(),
+    ///     _ => (),
+    /// }
+    /// # }
+    /// ```
     #[must_use]
     #[inline]
     pub fn data_type(&self) -> Option<DataType> {
@@ -926,80 +916,78 @@ impl IndexEntry {
 }
 
 impl GsdFile {
-    /** Open a GSD file with the given mode.
-
-    # Examples
-
-    Open a file for reading:
-    ```
-    use hoomd_gsd::file_layer::{GsdFile, Mode};
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    # use tempfile::tempdir;
-    # let tmp_dir = tempdir().expect("temp dir should be created");
-    # let path = tmp_dir.path().join("test.gsd");
-    # GsdFile::create_new(path.clone(), "example", "hoomd", (1, 4))?;
-    let gsd_file = GsdFile::open(path, Mode::Read);
-    # Ok(())
-    # }
-    ```
-
-    Open a file for both reading and writing:
-    ```
-    use hoomd_gsd::file_layer::{GsdFile, Mode};
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    # use tempfile::tempdir;
-    # let tmp_dir = tempdir().expect("temp dir should be created");
-    # let path = tmp_dir.path().join("test.gsd");
-    # GsdFile::create_new(path.clone(), "example", "hoomd", (1, 4))?;
-    let gsd_file = GsdFile::open(path, Mode::Write);
-    # Ok(())
-    # }
-    ```
-
-    # Errors
-
-    Returns a [`OpenError`] when any of the following occur:
-    * The file does not exist.
-    * The file is corrupt, unreadable, or there is an I/O error (see
-      [`DecodeError`]).
-    */
+    /// Open a GSD file with the given mode.
+    ///
+    /// # Examples
+    ///
+    /// Open a file for reading:
+    /// ```
+    /// use hoomd_gsd::file_layer::{GsdFile, Mode};
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// # GsdFile::create_new(path.clone(), "example", "hoomd", (1, 4))?;
+    /// let gsd_file = GsdFile::open(path, Mode::Read);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Open a file for both reading and writing:
+    /// ```
+    /// use hoomd_gsd::file_layer::{GsdFile, Mode};
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// # GsdFile::create_new(path.clone(), "example", "hoomd", (1, 4))?;
+    /// let gsd_file = GsdFile::open(path, Mode::Write);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`OpenError`] when any of the following occur:
+    /// The file does not exist.
+    /// The file is corrupt, unreadable, or there is an I/O error (see
+    /// [`DecodeError`]).
     #[inline]
     pub fn open<P: AsRef<Path>>(path: P, mode: Mode) -> Result<Self, OpenError> {
         let file = File::open(&path).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
         GsdFile::from_file(file, mode).map_err(|e| OpenError::Decode(path.as_ref().into(), e))
     }
 
-    /** Overwrite an existing GSD file (or create a new file).
-
-    Creates a GSD file at the given path, overwriting any file that may already
-    exist. When successful, return a [`GsdFile`] opened in write mode.
-
-    Each GSD file contains metadata describing which application created the
-    file, the data chunk schema, and the schema's version. `application` and
-    `schema` are strings (and must each be less than 80 bytes). `schema_version`
-    is a tuple listing the major and minor version numbers. In your code,
-    replace `"example"` with the name of your application.
-
-    # Example
-
-    ```
-    use hoomd_gsd::file_layer::{GsdFile, Mode};
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    # use tempfile::tempdir;
-    # let tmp_dir = tempdir().expect("temp dir should be created");
-    # let path = tmp_dir.path().join("test.gsd");
-    let gsd_file = GsdFile::create(path, "example", "hoomd", (1, 4))?;
-    # Ok(())
-    # }
-    ```
-
-    # Errors
-
-    Returns a [`OpenError`] when any of the following occur:
-    * The file cannot be created.
-    * The file is corrupt, unreadable, or there is an I/O error (see
-      [`DecodeError`]).
-    */
+    /// Overwrite an existing GSD file (or create a new file).
+    ///
+    /// Creates a GSD file at the given path, overwriting any file that may already
+    /// exist. When successful, return a [`GsdFile`] opened in write mode.
+    ///
+    /// Each GSD file contains metadata describing which application created the
+    /// file, the data chunk schema, and the schema's version. `application` and
+    /// `schema` are strings (and must each be less than 80 bytes). `schema_version`
+    /// is a tuple listing the major and minor version numbers. In your code,
+    /// replace `"example"` with the name of your application.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_gsd::file_layer::{GsdFile, Mode};
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// let gsd_file = GsdFile::create(path, "example", "hoomd", (1, 4))?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`OpenError`] when any of the following occur:
+    /// The file cannot be created.
+    /// The file is corrupt, unreadable, or there is an I/O error (see
+    /// [`DecodeError`]).
     #[inline]
     pub fn create<P: AsRef<Path>>(
         path: P,
@@ -1019,39 +1007,38 @@ impl GsdFile {
             .map_err(|e| OpenError::Decode(path.as_ref().into(), e))
     }
 
-    /** Create a new GSD file.
-
-    Creates a new GSD file at the given path, returning an error when the
-    path already exists. When successful, return a [`GsdFile`] opened in
-    write mode.
-
-    Each GSD file contains metadata describing which application created the
-    file, the data chunk schema, and the schema's version. `application` and
-    `schema` are strings (and must each be less than 80 bytes). `schema_version`
-    is a tuple listing the major and minor version numbers. In your code,
-    replace `"example"` with the name of your application.
-
-    # Example
-
-    ```
-    use hoomd_gsd::file_layer::{GsdFile, Mode};
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    # use tempfile::tempdir;
-    # let tmp_dir = tempdir().expect("temp dir should be created");
-    # let path = tmp_dir.path().join("test.gsd");
-    let gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-    # Ok(())
-    # }
-    ```
-
-    # Errors
-
-    Returns a [`OpenError`] when any of the following occur:
-    * The file cannot be created.
-    * The file already exists.
-    * The file is corrupt, unreadable, or there is an I/O error (see
-      [`DecodeError`]).
-    */
+    /// Create a new GSD file.
+    ///
+    /// Creates a new GSD file at the given path, returning an error when the
+    /// path already exists. When successful, return a [`GsdFile`] opened in
+    /// write mode.
+    ///
+    /// Each GSD file contains metadata describing which application created the
+    /// file, the data chunk schema, and the schema's version. `application` and
+    /// `schema` are strings (and must each be less than 80 bytes). `schema_version`
+    /// is a tuple listing the major and minor version numbers. In your code,
+    /// replace `"example"` with the name of your application.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_gsd::file_layer::{GsdFile, Mode};
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// let gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`OpenError`] when any of the following occur:
+    /// The file cannot be created.
+    /// The file already exists.
+    /// The file is corrupt, unreadable, or there is an I/O error (see
+    /// [`DecodeError`]).
     #[inline]
     pub fn create_new<P: AsRef<Path>>(
         path: P,
@@ -1398,39 +1385,38 @@ impl GsdFile {
         Ok(r)
     }
 
-    /** Find a chunk in the index.
-
-    Returns [`Some(index_entry)`](Option::Some) when the data chunk is present
-    in the file and [`None`] when it is not.
-
-    # Example
-
-    ```
-    use hoomd_gsd::file_layer::{DataType, GsdFile};
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    # use tempfile::tempdir;
-    # let tmp_dir = tempdir().expect("temp dir should be created");
-    # let path = tmp_dir.path().join("test.gsd");
-    let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-    gsd_file.write_scalars("configuration/step", &[100_000u64])?;
-    gsd_file.end_frame()?;
-    gsd_file.sync_all()?;
-
-    let configuration_box = gsd_file.find_chunk(0, "configuration/box");
-    assert_eq!(configuration_box, None);
-
-    let step = gsd_file.find_chunk(0, "configuration/step");
-    assert!(step.is_some());
-    if let Some(index) = step {
-        assert_eq!(index.frame(), 0);
-        assert_eq!(index.rows(), 1);
-        assert_eq!(index.columns(), 1);
-        assert_eq!(index.data_type(), Some(DataType::U64));
-    }
-    # Ok(())
-    # }
-    ```
-    */
+    /// Find a chunk in the index.
+    ///
+    /// Returns [`Some(index_entry)`](Option::Some) when the data chunk is present
+    /// in the file and [`None`] when it is not.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_gsd::file_layer::{DataType, GsdFile};
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
+    /// gsd_file.write_scalars("configuration/step", &[100_000u64])?;
+    /// gsd_file.end_frame()?;
+    /// gsd_file.sync_all()?;
+    ///
+    /// let configuration_box = gsd_file.find_chunk(0, "configuration/box");
+    /// assert_eq!(configuration_box, None);
+    ///
+    /// let step = gsd_file.find_chunk(0, "configuration/step");
+    /// assert!(step.is_some());
+    /// if let Some(index) = step {
+    ///     assert_eq!(index.frame(), 0);
+    ///     assert_eq!(index.rows(), 1);
+    ///     assert_eq!(index.columns(), 1);
+    ///     assert_eq!(index.data_type(), Some(DataType::U64));
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub fn find_chunk(&self, frame: u64, name: &str) -> Option<IndexEntry> {
         if frame >= self.file_frame || self.index.n == 0 {
@@ -1464,45 +1450,47 @@ impl GsdFile {
         None
     }
 
-    /** Iterate over an array of scalars in the given frame.
-
-    Returns [`Ok(iterator)`](Result::Ok) when the data chunk is present in the
-    file and `Err(`[`ReadError::ChunkNotFound`]`)` when it is not. Collect the
-    iterator into a [`Vec`] to make a copy of the data, or process the data in
-    place while iterating.
-
-    Data written to a file is not available for reading until the file
-    is closed or after a call to [`sync_all`](GsdFile::sync_all).
-
-    # Example
-
-    ```
-    use hoomd_gsd::file_layer::{DataType, GsdFile};
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    # use tempfile::tempdir;
-    # let tmp_dir = tempdir().expect("temp dir should be created");
-    # let path = tmp_dir.path().join("test.gsd");
-    let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-    gsd_file.write_scalars("configuration/box", &[10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0])?;
-    gsd_file.end_frame()?;
-    gsd_file.sync_all()?;
-
-    let box_iter = gsd_file.iter_scalars::<f32>(0, "configuration/box")?;
-    let box_vec = box_iter.collect::<Vec<_>>();
-    assert_eq!(box_vec, vec![10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0]);
-    # Ok(())
-    # }
-    ```
-
-    # Errors
-
-    Returns a [`ReadError`] when any of the following occur:
-    * A chunk by the given `name` is not present in the given `frame`.
-    * The data type stored in the file does not match `T`.
-    * The array stored in the file does not have dimensions `N x 1`.
-    * The file is corrupt, unreadable, or there is an I/O error (see
-      [`DecodeError`]).
-    */
+    /// Iterate over an array of scalars in the given frame.
+    ///
+    /// Returns [`Ok(iterator)`](Result::Ok) when the data chunk is present in the
+    /// file and `Err(`[`ReadError::ChunkNotFound`]`)` when it is not. Collect the
+    /// iterator into a [`Vec`] to make a copy of the data, or process the data in
+    /// place while iterating.
+    ///
+    /// Data written to a file is not available for reading until the file
+    /// is closed or after a call to [`sync_all`](GsdFile::sync_all).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_gsd::file_layer::{DataType, GsdFile};
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
+    /// gsd_file.write_scalars(
+    ///     "configuration/box",
+    ///     &[10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0],
+    /// )?;
+    /// gsd_file.end_frame()?;
+    /// gsd_file.sync_all()?;
+    ///
+    /// let box_iter = gsd_file.iter_scalars::<f32>(0, "configuration/box")?;
+    /// let box_vec = box_iter.collect::<Vec<_>>();
+    /// assert_eq!(box_vec, vec![10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0]);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ReadError`] when any of the following occur:
+    /// A chunk by the given `name` is not present in the given `frame`.
+    /// The data type stored in the file does not match `T`.
+    /// The array stored in the file does not have dimensions `N x 1`.
+    /// The file is corrupt, unreadable, or there is an I/O error (see
+    /// [`DecodeError`]).
     pub fn iter_scalars<T: Type>(
         &self,
         frame: u64,
@@ -1532,47 +1520,47 @@ impl GsdFile {
             .map_err(|e| ReadError::Decode(name.into(), frame, e))
     }
 
-    /** Iterate over an array of arrays in the given frame.
-
-    Returns [`Ok(iterator)`](Result::Ok) when the data chunk is present in the
-    file and `Err(`[`ReadError::ChunkNotFound`]`)` when it is not. Collect the
-    iterator into a [`Vec`] to make a copy of the data, or process the data in
-    place while iterating.
-
-    Data written to a file is not available for reading until the file
-    is closed or after a call to [`sync_all`](GsdFile::sync_all).
-
-    # Example
-
-    ```
-    use hoomd_gsd::file_layer::{DataType, GsdFile};
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    # use tempfile::tempdir;
-    # let tmp_dir = tempdir().expect("temp dir should be created");
-    # let path = tmp_dir.path().join("test.gsd");
-    let position = vec![[5.0f32, 3.0, -4.0], [-2.0, 3.0, -6.0]];
-
-    let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-    gsd_file.write_arrays("particles/position", &position)?;
-    gsd_file.end_frame()?;
-    gsd_file.sync_all()?;
-
-    let position_iter = gsd_file.iter_arrays::<f32, 3>(0, "particles/position")?;
-    let position_vec = position_iter.collect::<Vec<_>>();
-    assert_eq!(position_vec, position);
-    # Ok(())
-    # }
-    ```
-
-    # Errors
-
-    Returns a [`ReadError`] when any of the following occur:
-    * A chunk by the given `name` is not present in the given `frame`.
-    * The data type stored in the file does not match `T`.
-    * The array stored in the file does not have dimensions `N x M`.
-    * The file is corrupt, unreadable, or there is an I/O error (see
-      [`DecodeError`]).
-    */
+    /// Iterate over an array of arrays in the given frame.
+    ///
+    /// Returns [`Ok(iterator)`](Result::Ok) when the data chunk is present in the
+    /// file and `Err(`[`ReadError::ChunkNotFound`]`)` when it is not. Collect the
+    /// iterator into a [`Vec`] to make a copy of the data, or process the data in
+    /// place while iterating.
+    ///
+    /// Data written to a file is not available for reading until the file
+    /// is closed or after a call to [`sync_all`](GsdFile::sync_all).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_gsd::file_layer::{DataType, GsdFile};
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// let position = vec![[5.0f32, 3.0, -4.0], [-2.0, 3.0, -6.0]];
+    ///
+    /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
+    /// gsd_file.write_arrays("particles/position", &position)?;
+    /// gsd_file.end_frame()?;
+    /// gsd_file.sync_all()?;
+    ///
+    /// let position_iter =
+    ///     gsd_file.iter_arrays::<f32, 3>(0, "particles/position")?;
+    /// let position_vec = position_iter.collect::<Vec<_>>();
+    /// assert_eq!(position_vec, position);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ReadError`] when any of the following occur:
+    /// A chunk by the given `name` is not present in the given `frame`.
+    /// The data type stored in the file does not match `T`.
+    /// The array stored in the file does not have dimensions `N x M`.
+    /// The file is corrupt, unreadable, or there is an I/O error (see
+    /// [`DecodeError`]).
     pub fn iter_arrays<T: Type, const M: usize>(
         &self,
         frame: u64,
@@ -1605,42 +1593,41 @@ impl GsdFile {
         })
     }
 
-    /** Read a string in the given frame.
-
-    Returns [`Ok(String)`](Result::Ok) when the data chunk is present
-    in the file and `Err(`[`ReadError::ChunkNotFound`]`)` when it is not.
-
-    Data written to a file is not available for reading until the file
-    is closed or after a call to [`sync_all`](GsdFile::sync_all).
-
-    # Example
-
-    ```
-    use hoomd_gsd::file_layer::{DataType, GsdFile};
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    # use tempfile::tempdir;
-    # let tmp_dir = tempdir().expect("temp dir should be created");
-    # let path = tmp_dir.path().join("test.gsd");
-    let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-    gsd_file.write_string("log/my_string", "Hello, GSD.")?;
-    gsd_file.end_frame()?;
-    gsd_file.sync_all()?;
-
-    let string = gsd_file.read_string(0, "log/my_string")?;
-    assert_eq!(string, "Hello, GSD.");
-    # Ok(())
-    # }
-    ```
-
-    # Errors
-
-    Returns a [`ReadError`] when any of the following occur:
-    * A chunk by the given `name` is not present in the given `frame`.
-    * The data type stored in the file is not a UTF-8 string.
-    * The array stored in the file does not have dimensions `N x 1`.
-    * The file is corrupt, unreadable, or there is an I/O error (see
-      [`DecodeError`]).
-    */
+    /// Read a string in the given frame.
+    ///
+    /// Returns [`Ok(String)`](Result::Ok) when the data chunk is present
+    /// in the file and `Err(`[`ReadError::ChunkNotFound`]`)` when it is not.
+    ///
+    /// Data written to a file is not available for reading until the file
+    /// is closed or after a call to [`sync_all`](GsdFile::sync_all).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_gsd::file_layer::{DataType, GsdFile};
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
+    /// gsd_file.write_string("log/my_string", "Hello, GSD.")?;
+    /// gsd_file.end_frame()?;
+    /// gsd_file.sync_all()?;
+    ///
+    /// let string = gsd_file.read_string(0, "log/my_string")?;
+    /// assert_eq!(string, "Hello, GSD.");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ReadError`] when any of the following occur:
+    /// A chunk by the given `name` is not present in the given `frame`.
+    /// The data type stored in the file is not a UTF-8 string.
+    /// The array stored in the file does not have dimensions `N x 1`.
+    /// The file is corrupt, unreadable, or there is an I/O error (see
+    /// [`DecodeError`]).
     pub fn read_string(&self, frame: u64, name: &str) -> Result<String, ReadError> {
         let Some(index_entry) = self.find_chunk(frame, name) else {
             return Err(ReadError::ChunkNotFound(name.into(), frame));
@@ -1694,42 +1681,44 @@ impl GsdFile {
             .map(T::from_ne_byte_slice))
     }
 
-    /** Append an array of scalar values to the current frame.
-
-    `write_scalars` writes one-dimensional array data to a named chunk in the
-    current frame of the GSD file. Call [`end_frame`](GsdFile::end_frame) to
-    complete the frame and start the next.
-
-    <div class="warning">
-
-    Dropping a [`GsdFile`] will also drop any pending data chunks in incomplete
-    frames.
-
-    </div>
-
-    # Example
-
-    ```
-    use hoomd_gsd::file_layer::{DataType, GsdFile};
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    # use tempfile::tempdir;
-    # let tmp_dir = tempdir().expect("temp dir should be created");
-    # let path = tmp_dir.path().join("test.gsd");
-    let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-    gsd_file.write_scalars("configuration/box", &[10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0])?;
-    gsd_file.end_frame()?;
-    # Ok(())
-    # }
-    ```
-
-    # Errors
-
-    Returns a [`WriteError`] when any of the following occur:
-    * The file is not opened in a write mode.
-    * There are no available chunk identifiers.
-    * A chunk with the same name has already been written in this frame.
-    * There is an I/O error while writing to the file.
-    */
+    /// Append an array of scalar values to the current frame.
+    ///
+    /// `write_scalars` writes one-dimensional array data to a named chunk in the
+    /// current frame of the GSD file. Call [`end_frame`](GsdFile::end_frame) to
+    /// complete the frame and start the next.
+    ///
+    /// <div class="warning">
+    ///
+    /// Dropping a [`GsdFile`] will also drop any pending data chunks in incomplete
+    /// frames.
+    ///
+    /// </div>
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_gsd::file_layer::{DataType, GsdFile};
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
+    /// gsd_file.write_scalars(
+    ///     "configuration/box",
+    ///     &[10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0],
+    /// )?;
+    /// gsd_file.end_frame()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`WriteError`] when any of the following occur:
+    /// The file is not opened in a write mode.
+    /// There are no available chunk identifiers.
+    /// A chunk with the same name has already been written in this frame.
+    /// There is an I/O error while writing to the file.
     pub fn write_scalars<'a, T, I>(&mut self, name: &str, data: I) -> Result<(), WriteError>
     where
         T: Type + 'a,
@@ -1754,45 +1743,44 @@ impl GsdFile {
         .map_err(|e| WriteError::Encode(name.into(), self.buffer_frame, e))
     }
 
-    /** Append an array of array values to the current frame.
-
-    `write_arrays` writes two-dimensional array data to a named chunk in the
-    current frame of the GSD file. Call [`end_frame`](GsdFile::end_frame) to
-    complete the frame and start the next.
-
-    <div class="warning">
-
-    Dropping a [`GsdFile`] will also drop any pending data chunks in incomplete
-    frames.
-
-    </div>
-
-    # Example
-
-    ```
-    use hoomd_gsd::file_layer::{DataType, GsdFile};
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    # use tempfile::tempdir;
-    # let tmp_dir = tempdir().expect("temp dir should be created");
-    # let path = tmp_dir.path().join("test.gsd");
-    let position = vec![[5.0f32, 3.0, -4.0], [-2.0, 3.0, -6.0]];
-
-    let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-    gsd_file.write_arrays("particles/position", &position)?;
-    gsd_file.end_frame()?;
-    # Ok(())
-    # }
-    ```
-
-    # Errors
-
-    Returns a [`WriteError`] when any of the following occur:
-    * The file is not opened in a write mode.
-    * There are no available chunk identifiers.
-    * A chunk with the same name has already been written in this frame.
-    * `M` is 0.
-    * `M` cannot be represented by a `u32`.
-    */
+    /// Append an array of array values to the current frame.
+    ///
+    /// `write_arrays` writes two-dimensional array data to a named chunk in the
+    /// current frame of the GSD file. Call [`end_frame`](GsdFile::end_frame) to
+    /// complete the frame and start the next.
+    ///
+    /// <div class="warning">
+    ///
+    /// Dropping a [`GsdFile`] will also drop any pending data chunks in incomplete
+    /// frames.
+    ///
+    /// </div>
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_gsd::file_layer::{DataType, GsdFile};
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// let position = vec![[5.0f32, 3.0, -4.0], [-2.0, 3.0, -6.0]];
+    ///
+    /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
+    /// gsd_file.write_arrays("particles/position", &position)?;
+    /// gsd_file.end_frame()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`WriteError`] when any of the following occur:
+    /// The file is not opened in a write mode.
+    /// There are no available chunk identifiers.
+    /// A chunk with the same name has already been written in this frame.
+    /// `M` is 0.
+    /// `M` cannot be represented by a `u32`.
     pub fn write_arrays<'a, T, I, const M: usize>(
         &mut self,
         name: &str,
@@ -1835,41 +1823,40 @@ impl GsdFile {
         .map_err(|e| WriteError::Encode(name.into(), self.buffer_frame, e))
     }
 
-    /** Append a string to the current frame.
-
-    `write_string` writes a UTF-8 string to a named chunk in the current frame
-    of the GSD file. Call [`end_frame`](GsdFile::end_frame) to complete the
-    frame and start the next.
-
-    <div class="warning">
-
-    Dropping a [`GsdFile`] will also drop any pending data chunks in incomplete
-    frames.
-
-    </div>
-
-    # Example
-
-    ```
-    use hoomd_gsd::file_layer::{DataType, GsdFile};
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    # use tempfile::tempdir;
-    # let tmp_dir = tempdir().expect("temp dir should be created");
-    # let path = tmp_dir.path().join("test.gsd");
-    let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-    gsd_file.write_string("log/my_string", "Hello, GSD.")?;
-    gsd_file.end_frame()?;
-    # Ok(())
-    # }
-    ```
-
-    # Errors
-
-    Returns a [`WriteError`] when any of the following occur:
-    * The file is not opened in a write mode.
-    * There are no available chunk identifiers.
-    * A chunk with the same name has already been written in this frame.
-    */
+    /// Append a string to the current frame.
+    ///
+    /// `write_string` writes a UTF-8 string to a named chunk in the current frame
+    /// of the GSD file. Call [`end_frame`](GsdFile::end_frame) to complete the
+    /// frame and start the next.
+    ///
+    /// <div class="warning">
+    ///
+    /// Dropping a [`GsdFile`] will also drop any pending data chunks in incomplete
+    /// frames.
+    ///
+    /// </div>
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_gsd::file_layer::{DataType, GsdFile};
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
+    /// gsd_file.write_string("log/my_string", "Hello, GSD.")?;
+    /// gsd_file.end_frame()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`WriteError`] when any of the following occur:
+    /// The file is not opened in a write mode.
+    /// There are no available chunk identifiers.
+    /// A chunk with the same name has already been written in this frame.
     pub fn write_string(&mut self, name: &str, data: &str) -> Result<(), WriteError> {
         let data = data.as_bytes();
 
@@ -1945,40 +1932,39 @@ impl GsdFile {
         Ok(())
     }
 
-    /** Complete the current frame.
-
-    Commits previous calls to `write_*` methods to the current frame. Calls to
-    `write_*` methods following `end_frame` will write to the next frame.
-
-    Calling `end_frame` does **not** ensure that all buffered data is synced to
-    the filesystem. Call [`sync_all`](GsdFile::sync_all) to do so.
-
-    # Example
-
-    ```
-    use hoomd_gsd::file_layer::{DataType, GsdFile};
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    # use tempfile::tempdir;
-    # let tmp_dir = tempdir().expect("temp dir should be created");
-    # let path = tmp_dir.path().join("test.gsd");
-    let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-    gsd_file.write_scalars("configuration/step", &[100_000u64])?;
-    gsd_file.end_frame()?;
-
-    gsd_file.write_scalars("configuration/step", &[200_000u64])?;
-    gsd_file.end_frame()?;
-
-    gsd_file.write_scalars("configuration/step", &[300_000u64])?;
-    gsd_file.end_frame()?;
-    # Ok(())
-    # }
-    ```
-
-    # Errors
-
-    Returns a [`EncodeError`] when any of the following occur:
-    * The file is not opened in a write mode.
-    */
+    /// Complete the current frame.
+    ///
+    /// Commits previous calls to `write_*` methods to the current frame. Calls to
+    /// `write_*` methods following `end_frame` will write to the next frame.
+    ///
+    /// Calling `end_frame` does **not** ensure that all buffered data is synced to
+    /// the filesystem. Call [`sync_all`](GsdFile::sync_all) to do so.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_gsd::file_layer::{DataType, GsdFile};
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
+    /// gsd_file.write_scalars("configuration/step", &[100_000u64])?;
+    /// gsd_file.end_frame()?;
+    ///
+    /// gsd_file.write_scalars("configuration/step", &[200_000u64])?;
+    /// gsd_file.end_frame()?;
+    ///
+    /// gsd_file.write_scalars("configuration/step", &[300_000u64])?;
+    /// gsd_file.end_frame()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`EncodeError`] when any of the following occur:
+    /// The file is not opened in a write mode.
     pub fn end_frame(&mut self) -> Result<(), EncodeError> {
         if self.mode != Mode::Write {
             return Err(EncodeError::NotWritable);
@@ -1993,141 +1979,139 @@ impl GsdFile {
 
     #[inline]
     #[must_use]
-    /** The number of frames *written to the file*.
-
-    `n_frames` returns the number of frames *available to read* from the file.
-    Each call to [`end_frame`](GsdFile::end_frame) increments the number of
-    frames, but they are not written to the file until it is closed or by a call
-    to [`sync_all`](GsdFile::sync_all).
-
-    ```
-    use hoomd_gsd::file_layer::{DataType, GsdFile};
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    # use tempfile::tempdir;
-    # let tmp_dir = tempdir().expect("temp dir should be created");
-    # let path = tmp_dir.path().join("test.gsd");
-    let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-    gsd_file.write_scalars("configuration/step", &[100_000u64])?;
-    gsd_file.end_frame()?;
-
-    gsd_file.write_scalars("configuration/step", &[200_000u64])?;
-    gsd_file.end_frame()?;
-
-    gsd_file.write_scalars("configuration/step", &[300_000u64])?;
-    gsd_file.end_frame()?;
-    gsd_file.sync_all()?;
-
-    let n_frames = gsd_file.n_frames();
-    assert_eq!(n_frames, 3);
-    # Ok(())
-    # }
-    ```
-    */
+    /// The number of frames *written to the file*.
+    ///
+    /// `n_frames` returns the number of frames *available to read* from the file.
+    /// Each call to [`end_frame`](GsdFile::end_frame) increments the number of
+    /// frames, but they are not written to the file until it is closed or by a call
+    /// to [`sync_all`](GsdFile::sync_all).
+    ///
+    /// ```
+    /// use hoomd_gsd::file_layer::{DataType, GsdFile};
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
+    /// gsd_file.write_scalars("configuration/step", &[100_000u64])?;
+    /// gsd_file.end_frame()?;
+    ///
+    /// gsd_file.write_scalars("configuration/step", &[200_000u64])?;
+    /// gsd_file.end_frame()?;
+    ///
+    /// gsd_file.write_scalars("configuration/step", &[300_000u64])?;
+    /// gsd_file.end_frame()?;
+    /// gsd_file.sync_all()?;
+    ///
+    /// let n_frames = gsd_file.n_frames();
+    /// assert_eq!(n_frames, 3);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn n_frames(&self) -> u64 {
         self.file_frame
     }
 
     #[inline]
     #[must_use]
-    /** Provide the mapping from data chunk names to ids.
-
-    The mapping includes keys for all data chunk names in the file.
-
-    # Example
-
-    ```
-    use hoomd_gsd::file_layer::GsdFile;
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    # use tempfile::tempdir;
-    # let tmp_dir = tempdir().expect("temp dir should be created");
-    # let path = tmp_dir.path().join("test.gsd");
-    let position = vec![[5.0f32, 3.0, -4.0], [-2.0, 3.0, -6.0]];
-
-    let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-    gsd_file.write_scalars("configuration/step", &[100_000u64])?;
-    gsd_file.write_scalars("configuration/box", &[10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0])?;
-    gsd_file.write_arrays("particles/position", &position)?;
-    gsd_file.end_frame()?;
-
-    let name_id = gsd_file.name_id();
-    assert!(name_id.contains_key("configuration/step"));
-    assert!(name_id.contains_key("configuration/box"));
-    assert!(name_id.contains_key("particles/position"));
-    assert!(!name_id.contains_key("particles/orientation"));
-    # Ok(())
-    # }
-    ```
-    */
+    /// Provide the mapping from data chunk names to ids.
+    ///
+    /// The mapping includes keys for all data chunk names in the file.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_gsd::file_layer::GsdFile;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// let position = vec![[5.0f32, 3.0, -4.0], [-2.0, 3.0, -6.0]];
+    ///
+    /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
+    /// gsd_file.write_scalars("configuration/step", &[100_000u64])?;
+    /// gsd_file.write_scalars(
+    ///     "configuration/box",
+    ///     &[10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0],
+    /// )?;
+    /// gsd_file.write_arrays("particles/position", &position)?;
+    /// gsd_file.end_frame()?;
+    ///
+    /// let name_id = gsd_file.name_id();
+    /// assert!(name_id.contains_key("configuration/step"));
+    /// assert!(name_id.contains_key("configuration/box"));
+    /// assert!(name_id.contains_key("particles/position"));
+    /// assert!(!name_id.contains_key("particles/orientation"));
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn name_id(&self) -> &HashMap<String, u16> {
         &self.name_list.name_id
     }
 
-    /** The name of the application used to write the file.
-
-    # Example
-
-    ```
-    use hoomd_gsd::file_layer::GsdFile;
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    # use tempfile::tempdir;
-    # let tmp_dir = tempdir().expect("temp dir should be created");
-    # let path = tmp_dir.path().join("test.gsd");
-    let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-
-    let application = gsd_file.application();
-    assert_eq!(application, "example");
-    # Ok(())
-    # }
-    ```
-    */
+    /// The name of the application used to write the file.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_gsd::file_layer::GsdFile;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
+    ///
+    /// let application = gsd_file.application();
+    /// assert_eq!(application, "example");
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[must_use]
     pub fn application(&self) -> &str {
         &self.header.application
     }
 
-    /** The schema that describes the expected data chunks.
-
-    # Example
-
-    ```
-    use hoomd_gsd::file_layer::GsdFile;
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    # use tempfile::tempdir;
-    # let tmp_dir = tempdir().expect("temp dir should be created");
-    # let path = tmp_dir.path().join("test.gsd");
-    let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-
-    let schema = gsd_file.schema();
-    assert_eq!(schema, "hoomd");
-    # Ok(())
-    # }
-    ```
-    */
+    /// The schema that describes the expected data chunks.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_gsd::file_layer::GsdFile;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
+    ///
+    /// let schema = gsd_file.schema();
+    /// assert_eq!(schema, "hoomd");
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[must_use]
     pub fn schema(&self) -> &str {
         &self.header.schema
     }
 
-    /** The schema version (major, minor).
-
-    # Example
-
-    ```
-    use hoomd_gsd::file_layer::GsdFile;
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    # use tempfile::tempdir;
-    # let tmp_dir = tempdir().expect("temp dir should be created");
-    # let path = tmp_dir.path().join("test.gsd");
-    let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-
-    let schema_version = gsd_file.schema_version();
-    assert_eq!(schema_version, (1,4));
-    # Ok(())
-    # }
-    ```
-    */
+    /// The schema version (major, minor).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_gsd::file_layer::GsdFile;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
+    ///
+    /// let schema_version = gsd_file.schema_version();
+    /// assert_eq!(schema_version, (1, 4));
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[must_use]
     pub fn schema_version(&self) -> (u16, u16) {
@@ -2148,10 +2132,9 @@ impl GsdFile {
         &mut self.maximum_write_buffer_size
     }
 
-    /** Flush data buffer to the filesystem.
-
-    Returns true when any data was written to the file.
-    */
+    /// Flush data buffer to the filesystem.
+    ///
+    /// Returns true when any data was written to the file.
     fn flush_data(&mut self) -> Result<bool, EncodeError> {
         if self.data_buffer.is_empty() {
             Ok(false)
@@ -2165,10 +2148,9 @@ impl GsdFile {
         }
     }
 
-    /** Flush the name buffer to the filesystem.
-
-    Returns true when any data was written to the file.
-    */
+    /// Flush the name buffer to the filesystem.
+    ///
+    /// Returns true when any data was written to the file.
     fn flush_names(&mut self) -> Result<bool, EncodeError> {
         if self.name_list.buffer.is_empty() {
             Ok(false)
@@ -2194,22 +2176,21 @@ impl GsdFile {
         }
     }
 
-    /** Write buffered data to the filesystem.
-
-    `sync_all` ensures that the data and indices for all complete frames is
-    written to the filesystem.
-
-    In most cases, callers should not call `sync_all` manually. It will be
-    called automatically when a [`GsdFile`] is dropped. Call `sync_all` only
-    when you need to read data arrays written in previous frames or when you
-    want to ensure that all data up to a specific frame are present in the file.
-
-    # Errors
-
-    Returns a [`WriteError`] when any of the following occur:
-    * The file is not opened in a write mode.
-    * An I/O error writing to the file.
-    */
+    /// Write buffered data to the filesystem.
+    ///
+    /// `sync_all` ensures that the data and indices for all complete frames is
+    /// written to the filesystem.
+    ///
+    /// In most cases, callers should not call `sync_all` manually. It will be
+    /// called automatically when a [`GsdFile`] is dropped. Call `sync_all` only
+    /// when you need to read data arrays written in previous frames or when you
+    /// want to ensure that all data up to a specific frame are present in the file.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`WriteError`] when any of the following occur:
+    /// The file is not opened in a write mode.
+    /// An I/O error writing to the file.
     pub fn sync_all(&mut self) -> Result<(), EncodeError> {
         if self.mode != Mode::Write {
             return Err(EncodeError::NotWritable);
@@ -2365,12 +2346,11 @@ impl GsdFile {
     }
 }
 
-/** Automatically synchronize buffered data before closing the file.
-
-[`GsdFile`] automatically calls [`sync_all`](GsdFile::sync_all) when
-dropped and ignores and errors. To check for any potential errors, call
-[`sync_all`](GsdFile::sync_all) before dropping a [`GsdFile`].
-*/
+/// Automatically synchronize buffered data before closing the file.
+///
+/// [`GsdFile`] automatically calls [`sync_all`](GsdFile::sync_all) when
+/// dropped and ignores and errors. To check for any potential errors, call
+/// [`sync_all`](GsdFile::sync_all) before dropping a [`GsdFile`].
 impl Drop for GsdFile {
     fn drop(&mut self) {
         let _ = self.sync_all();

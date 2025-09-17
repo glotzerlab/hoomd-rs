@@ -1,42 +1,39 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Ensure that values are in well-defined ranges.
- */
+//! Ensure that values are in well-defined ranges.
 
 use crate::Error;
 
-/** A f64 value that is not +/- inf, nan, or a value <= 0.
-
-# Example
-
-```
-use hoomd_utility::valid::PositiveReal;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let positive = PositiveReal::try_from(1.0)?;
-# Ok(())
-# }
-```
-*/
+/// A f64 value that is not +/- inf, nan, or a value <= 0.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_utility::valid::PositiveReal;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let positive = PositiveReal::try_from(1.0)?;
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PositiveReal(f64);
 
 impl PositiveReal {
-    /** Access the value.
-
-    # Example
-
-    ```
-    use hoomd_utility::valid::PositiveReal;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let positive = PositiveReal::try_from(1.0)?;
-
-    assert_eq!(positive.get(), 1.0);
-    # Ok(())
-    # }
-    */
+    /// Access the value.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_utility::valid::PositiveReal;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let positive = PositiveReal::try_from(1.0)?;
+    ///
+    /// assert_eq!(positive.get(), 1.0);
+    /// # Ok(())
+    /// # }
     #[must_use]
     #[inline]
     pub fn get(&self) -> f64 {
@@ -47,33 +44,32 @@ impl PositiveReal {
 impl TryFrom<f64> for PositiveReal {
     type Error = Error;
 
-    /** Convert [`f64`] to [`PositiveReal`].
-
-    # Example
-
-    Valid conversion:
-    ```
-    use hoomd_utility::valid::PositiveReal;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let positive = PositiveReal::try_from(1.0)?;
-    # Ok(())
-    # }
-    ```
-
-    Invalid conversion
-    ```
-    use hoomd_utility::valid::PositiveReal;
-
-    let result = PositiveReal::try_from(-1.0);
-    assert!(matches!(result, Err(hoomd_utility::Error::NotPositive(_))));
-    ```
-
-    # Errors
-
-    * `[Error::NotFinite]` when `v` is not finite.
-    * `[Error::NotPositive]` when `v` is not a positive value
-    */
+    /// Convert [`f64`] to [`PositiveReal`].
+    ///
+    /// # Example
+    ///
+    /// Valid conversion:
+    /// ```
+    /// use hoomd_utility::valid::PositiveReal;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let positive = PositiveReal::try_from(1.0)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Invalid conversion
+    /// ```
+    /// use hoomd_utility::valid::PositiveReal;
+    ///
+    /// let result = PositiveReal::try_from(-1.0);
+    /// assert!(matches!(result, Err(hoomd_utility::Error::NotPositive(_))));
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// `[Error::NotFinite]` when `v` is not finite.
+    /// `[Error::NotPositive]` when `v` is not a positive value
     #[inline]
     fn try_from(v: f64) -> Result<PositiveReal, Error> {
         if !v.is_finite() {

@@ -7,7 +7,7 @@
 )]
 #![expect(clippy::unwrap_used, reason = "benches can use unwrap where needed")]
 
-/*! Benchmark overlaps */
+//! Benchmark overlaps
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_geometry::{

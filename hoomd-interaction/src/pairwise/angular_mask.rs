@@ -1,28 +1,29 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! [`AngularMask`] and related data structures.
- */
+//! [`AngularMask`] and related data structures.
 
 use super::{AnisotropicEnergy, IsotropicEnergy};
 use hoomd_vector::{InnerProduct, Rotate, Unit, Vector};
 
-/** A single patch in the [`AngularMask`] potential.
-
-The width of the patch is given as the cosine of its half-angle.
-
-# Example
-
-```
-use hoomd_interaction::pairwise::angular_mask::Patch;
-use std::f64::consts::PI;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let patch = Patch { director: [0.0, 1.0, 0.0].try_into()?, cos_delta: (PI / 4.0).cos() };
-# Ok(())
-# }
-```
- */
+/// A single patch in the [`AngularMask`] potential.
+///
+/// The width of the patch is given as the cosine of its half-angle.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_interaction::pairwise::angular_mask::Patch;
+/// use std::f64::consts::PI;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let patch = Patch {
+///     director: [0.0, 1.0, 0.0].try_into()?,
+///     cos_delta: (PI / 4.0).cos(),
+/// };
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Patch<V> {
     /// Vector pointing from the center of the particle to the center of the mask `[unitless]`.
@@ -31,152 +32,174 @@ pub struct Patch<V> {
     pub cos_delta: f64,
 }
 
-/** Evaluate an isotropic pairwise energy masked by angular patches (_not differentiable_).
-
-```math
-U(\vec{r}_{ij}, \mathbf{o}_{ij}) = f(|\vec{r}_{ij}|) \cdot \max
-    \left(1,
-    \sum_{m=1}^{N_{\mathrm{masks},i}}
-    \sum_{n=1}^{N_{\mathrm{masks},j}}
-    s(\vec{d}_{m,i},
-      \mathbf{o}_{ij} \vec{d}_{n,j} \mathbf{o}_{ij}^*,
-      \delta_{m,i},
-      \delta_{n,j}) \right)
-```
-where
-```math
-s(\vec{a}, \vec{b}, \delta_a, \delta_b) =
- \begin{cases}
- 1 & \hat{a} \cdot \hat{r}_{ij} \ge \cos \delta_{a} \land
- \hat{b} \cdot \hat{r}_{ji} \ge \cos \delta_{b} \\
- 0 & \text{otherwise} \\
-\end{cases}
-```
-
-Implement the [Kern-Frenkel] potential with the [`Boxcar`](super::Boxcar) isotropic potential
-and single patch in both `masks_i` and `masks_j`.
-
-[Kern-Frenkel]: http://dx.doi.org/10.1063/1.1569473
-
-# Examples
-
-Construction:
-
-```
-use hoomd_interaction::pairwise::{AngularMask, Boxcar, angular_mask::Patch};
-use hoomd_vector::Angle;
-use std::f64::consts::PI;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
-let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
-let angular_mask = AngularMask::new(boxcar, masks);
-# Ok(())
-# }
-```
-
-All fields are public and can be directly manipulated:
-```
-use hoomd_interaction::pairwise::{AngularMask, Boxcar, angular_mask::Patch};
-use hoomd_vector::Angle;
-use std::f64::consts::PI;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
-let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
-let mut angular_mask = AngularMask::new(boxcar, masks);
-
-angular_mask.masks_i[0].cos_delta = (PI / 4.0).cos();
-angular_mask.isotropic.epsilon = -2.0;
-# Ok(())
-# }
-```
-
-Evaluate energy between particles:
-
-```
-use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch};
-use hoomd_vector::Angle;
-use std::f64::consts::PI;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
-let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
-let angular_mask = AngularMask::new(boxcar, masks);
-
-// With the same relative orientation, the patches do not overlap and the
-// energy is 0.
-let energy = angular_mask.energy(&[1.0, 0.0].into(), &Angle::from(0.0));
-assert_eq!(energy, 0.0);
-
-// Rotate the j particle to point at the i particle so the patches overlap.
-let energy = angular_mask.energy(&[1.0, 0.0].into(), &Angle::from(PI));
-assert_eq!(energy, -1.0);
-# Ok(())
-# }
-```
-
-Apply different patches to the _i_ and _j_ particles:
-```
-use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch};
-use hoomd_vector::Angle;
-use std::f64::consts::PI;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
-let masks_i = vec![Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() },
-    Patch { director: [-1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
-let masks_j = vec![Patch { director: [0.0, 1.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
-let angular_mask = AngularMask { isotropic: boxcar, masks_i, masks_j, };
-
-// With the same relative orientation, the patches do not overlap and the
-// energy is 0.
-let energy = angular_mask.energy(&[-1.0, 0.0].into(), &Angle::from(0.0));
-assert_eq!(energy, 0.0);
-
-// Rotate the j particle to point at the i particle so the patches overlap.
-let energy = angular_mask.energy(&[-1.0, 0.0].into(), &Angle::from(-PI / 2.0));
-assert_eq!(energy, -1.0);
-# Ok(())
-# }
-```
-
-Evaluate the angular mask potential on 3D particles:
-```
-use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch};
-use hoomd_vector::{Cartesian, InnerProduct, Versor};
-use std::f64::consts::PI;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
-
-let mask = [Patch {
-    director: [0.0, 0.0, 1.0].try_into()?,
-    cos_delta: (PI / 8.0).cos(),
-}];
-let (x_axis, _) = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
-
-let angular_mask = AngularMask::new(boxcar, mask);
-
-assert_eq!(
-    angular_mask.energy(
-        &Cartesian::from([0.0, 0.0, 1.0]),
-        &Versor::from_axis_angle(x_axis, 0.0)
-    ),
-    0.0
-);
-assert_eq!(
-    angular_mask.energy(
-        &Cartesian::from([0.0, 0.0, 1.0]),
-        &Versor::from_axis_angle(x_axis, PI)
-    ),
-    -1.0
-);
-# Ok(())
-# }
-
-```
-*/
+/// Evaluate an isotropic pairwise energy masked by angular patches (_not differentiable_).
+///
+/// ```math
+/// U(\vec{r}_{ij}, \mathbf{o}_{ij}) = f(|\vec{r}_{ij}|) \cdot \max
+/// \left(1,
+/// \sum_{m=1}^{N_{\mathrm{masks},i}}
+/// \sum_{n=1}^{N_{\mathrm{masks},j}}
+/// s(\vec{d}_{m,i},
+/// \mathbf{o}_{ij} \vec{d}_{n,j} \mathbf{o}_{ij}^*,
+/// \delta_{m,i},
+/// \delta_{n,j}) \right)
+/// ```
+/// where
+/// ```math
+/// s(\vec{a}, \vec{b}, \delta_a, \delta_b) =
+/// \begin{cases}
+/// 1 & \hat{a} \cdot \hat{r}_{ij} \ge \cos \delta_{a} \land
+/// \hat{b} \cdot \hat{r}_{ji} \ge \cos \delta_{b} \\
+/// 0 & \text{otherwise} \\
+/// \end{cases}
+/// ```
+///
+/// Implement the [Kern-Frenkel] potential with the [`Boxcar`](super::Boxcar) isotropic potential
+/// and single patch in both `masks_i` and `masks_j`.
+///
+/// [Kern-Frenkel]: http://dx.doi.org/10.1063/1.1569473
+///
+/// # Examples
+///
+/// Construction:
+///
+/// ```
+/// use hoomd_interaction::pairwise::{
+///     AngularMask, Boxcar, angular_mask::Patch,
+/// };
+/// use hoomd_vector::Angle;
+/// use std::f64::consts::PI;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let boxcar = Boxcar {
+///     epsilon: -1.0,
+///     left: 1.0,
+///     right: 1.5,
+/// };
+/// let masks = [Patch {
+///     director: [1.0, 0.0].try_into()?,
+///     cos_delta: (PI / 8.0).cos(),
+/// }];
+/// let angular_mask = AngularMask::new(boxcar, masks);
+/// # Ok(())
+/// # }
+/// ```
+///
+/// All fields are public and can be directly manipulated:
+/// ```
+/// use hoomd_interaction::pairwise::{
+///     AngularMask, Boxcar, angular_mask::Patch,
+/// };
+/// use hoomd_vector::Angle;
+/// use std::f64::consts::PI;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let boxcar = Boxcar {
+///     epsilon: -1.0,
+///     left: 1.0,
+///     right: 1.5,
+/// };
+/// let masks = [Patch {
+///     director: [1.0, 0.0].try_into()?,
+///     cos_delta: (PI / 8.0).cos(),
+/// }];
+/// let mut angular_mask = AngularMask::new(boxcar, masks);
+///
+/// angular_mask.masks_i[0].cos_delta = (PI / 4.0).cos();
+/// angular_mask.isotropic.epsilon = -2.0;
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Evaluate energy between particles:
+///
+/// ```
+/// use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch};
+/// use hoomd_vector::Angle;
+/// use std::f64::consts::PI;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
+/// let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
+/// let angular_mask = AngularMask::new(boxcar, masks);
+///
+/// With the same relative orientation, the patches do not overlap and the
+/// energy is 0.
+/// let energy = angular_mask.energy(&[1.0, 0.0].into(), &Angle::from(0.0));
+/// assert_eq!(energy, 0.0);
+///
+/// Rotate the j particle to point at the i particle so the patches overlap.
+/// let energy = angular_mask.energy(&[1.0, 0.0].into(), &Angle::from(PI));
+/// assert_eq!(energy, -1.0);
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Apply different patches to the _i_ and _j_ particles:
+/// ```
+/// use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch};
+/// use hoomd_vector::Angle;
+/// use std::f64::consts::PI;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
+/// let masks_i = vec![Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() },
+/// Patch { director: [-1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
+/// let masks_j = vec![Patch { director: [0.0, 1.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
+/// let angular_mask = AngularMask { isotropic: boxcar, masks_i, masks_j, };
+///
+/// With the same relative orientation, the patches do not overlap and the
+/// energy is 0.
+/// let energy = angular_mask.energy(&[-1.0, 0.0].into(), &Angle::from(0.0));
+/// assert_eq!(energy, 0.0);
+///
+/// Rotate the j particle to point at the i particle so the patches overlap.
+/// let energy = angular_mask.energy(&[-1.0, 0.0].into(), &Angle::from(-PI / 2.0));
+/// assert_eq!(energy, -1.0);
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Evaluate the angular mask potential on 3D particles:
+/// ```
+/// use hoomd_interaction::pairwise::{
+///     AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch,
+/// };
+/// use hoomd_vector::{Cartesian, InnerProduct, Versor};
+/// use std::f64::consts::PI;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let boxcar = Boxcar {
+///     epsilon: -1.0,
+///     left: 1.0,
+///     right: 1.5,
+/// };
+///
+/// let mask = [Patch {
+///     director: [0.0, 0.0, 1.0].try_into()?,
+///     cos_delta: (PI / 8.0).cos(),
+/// }];
+/// let (x_axis, _) = Cartesian::from([1.0, 0.0, 0.0]).to_unit_unchecked();
+///
+/// let angular_mask = AngularMask::new(boxcar, mask);
+///
+/// assert_eq!(
+///     angular_mask.energy(
+///         &Cartesian::from([0.0, 0.0, 1.0]),
+///         &Versor::from_axis_angle(x_axis, 0.0)
+///     ),
+///     0.0
+/// );
+/// assert_eq!(
+///     angular_mask.energy(
+///         &Cartesian::from([0.0, 0.0, 1.0]),
+///         &Versor::from_axis_angle(x_axis, PI)
+///     ),
+///     -1.0
+/// );
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct AngularMask<E, V> {
     /// The original potential.
@@ -193,31 +216,39 @@ impl<E, V> AngularMask<E, V>
 where
     V: Vector,
 {
-    /** Construct a [`AngularMask`] with the given function and masks.
-
-    To obtain the best performance, construct [`AngularMask`] once and
-    call use it many times. `new` dynamically allocates `Vec` types
-    and is therefore not suitable to be called per particle,
-    unlike other potentials such as [`LennardJones`](super::LennardJones)
-    or [`Boxcar`](super::Boxcar).
-
-    `new` sets both `masks_i` and `masks_j` to `masks`. Use struct initialization
-    syntax to set these separately.
-
-    # Example
-
-    ```
-    use hoomd_interaction::pairwise::{AngularMask, Boxcar, angular_mask::Patch};
-    use std::f64::consts::PI;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
-    let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
-    let angular_mask = AngularMask::new(boxcar, masks);
-    # Ok(())
-    # }
-    ```
-    */
+    /// Construct a [`AngularMask`] with the given function and masks.
+    ///
+    /// To obtain the best performance, construct [`AngularMask`] once and
+    /// call use it many times. `new` dynamically allocates `Vec` types
+    /// and is therefore not suitable to be called per particle,
+    /// unlike other potentials such as [`LennardJones`](super::LennardJones)
+    /// or [`Boxcar`](super::Boxcar).
+    ///
+    /// `new` sets both `masks_i` and `masks_j` to `masks`. Use struct initialization
+    /// syntax to set these separately.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_interaction::pairwise::{
+    ///     AngularMask, Boxcar, angular_mask::Patch,
+    /// };
+    /// use std::f64::consts::PI;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let boxcar = Boxcar {
+    ///     epsilon: -1.0,
+    ///     left: 1.0,
+    ///     right: 1.5,
+    /// };
+    /// let masks = [Patch {
+    ///     director: [1.0, 0.0].try_into()?,
+    ///     cos_delta: (PI / 8.0).cos(),
+    /// }];
+    /// let angular_mask = AngularMask::new(boxcar, masks);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[must_use]
     pub fn new<I>(isotropic: E, masks: I) -> Self
