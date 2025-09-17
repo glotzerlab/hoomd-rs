@@ -75,7 +75,7 @@ pub trait TotalEnergy<M> {
 /** Compute the energy contribution of a single site.
 
 The `SiteEnergy` trait describes a type that can compute the energy contribution
-of a site to the system's total energy, *as a function only of that site's
+of a site to the system's total energy *as a function only of that site's
 properties*.
 
 The [`external`] module provides a number of commonly used implementations.
@@ -87,7 +87,7 @@ The generic type names are:
 
 ## Examples
 
-Implement a custom site energy function:
+Implement a custom site energy method:
 
 ```
 use hoomd_interaction::{Single, TotalEnergy, SiteEnergy};
@@ -131,7 +131,55 @@ pub trait SiteEnergy<S> {
 
 /** Check if a site overlaps with an object external to the microstate.
 
-TODO: Document
+The `SiteOverlap` trait describes a type that can determine whether or not
+a site overlaps with another object *as a function only of that site's
+properties*.
+
+The [`external`] module provides a number of commonly used implementations.
+Combine them with [`SingleOverlap`] newtype for use with MC simulations or to
+compute system-wide properties.
+
+The generic type names are:
+* `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+
+## Examples
+
+Implement a custom site overlap method:
+
+```
+use hoomd_interaction::{SingleOverlap, TotalEnergy, SiteOverlap};
+use hoomd_microstate::{Microstate, Body};
+use hoomd_microstate::property::{Point, Position};
+use hoomd_vector::{Cartesian, Vector};
+
+struct Custom {
+    r: f64,
+}
+
+impl<S> SiteOverlap<S> for Custom
+where
+    S: Position<Vector = Cartesian<2>>
+{
+    fn site_overlap(&self, site_properties: &S) -> bool {
+        // Check for overlaps of a disk with a circular boundary.
+        site_properties.position().distance(&Cartesian::default()) > self.r - 0.5
+    }
+}
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut microstate = Microstate::new();
+microstate.extend_bodies([Body::point(Cartesian::from([9.6, 0.0]))])?;
+
+let custom_evaluator = Custom { r: 10.0 };
+let site_overlap = custom_evaluator.site_overlap(&microstate.sites()[0].properties);
+assert!(site_overlap);
+
+let custom = SingleOverlap(custom_evaluator);
+let total_energy = custom.total_energy(&microstate);
+assert_eq!(total_energy, f64::INFINITY);
+# Ok(())
+# }
+```
 */
 pub trait SiteOverlap<S> {
     /// Determine if a site overlaps with an object external to the microstate.
@@ -142,12 +190,12 @@ pub trait SiteOverlap<S> {
 /** Compute the energy contribution from a pair of sites.
 
 The `SitePairEnergy` trait describes a type that can compute the energy
-contribution from a pair of sites to the system's total energy, *as a function
+contribution from a pair of sites to the system's total energy *as a function
 only of those site's properties*.
 
-The [`pairwise`] module provides a number of commonly used implementations.
-Combine them with the [`CutoffPair`] and the [`Isotropic`] or [`Anisotropic`]
-newtypes for use with MC and MD simulations or to compute system-wide
+The [`pairwise`] module provides a number of commonly used implementations,
+such as [`Isotropic`] and [`Anisotropic`]. Combine any of them with the
+[`CutoffPair`] for use with MC and MD simulations or to compute system-wide
 properties.
 
 The generic type names are:
@@ -158,7 +206,7 @@ The generic type names are:
 
 ## Examples
 
-Implement a custom site energy function:
+Implement a custom site energy method:
 
 ```
 use hoomd_interaction::{CutoffPair, TotalEnergy, SitePairEnergy};
@@ -202,7 +250,100 @@ pub trait SitePairEnergy<S> {
 
 /** Check if two sites overlap.
 
-TODO: Document
+The `SitePairOverlap` trait describes a type that can determine if a pair of
+sites overlap *as a function only of those site's properties*.
+
+The [`pairwise`] module provides a number of commonly used implementations, such
+as [`HardShape`]. Combine any of these the [`CutoffPairOverlap`] for use with MC
+simulations or to compute system-wide properties.
+
+The generic type names are:
+* `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+
+[`HardShape`]: pairwise::HardShape
+
+## Examples
+
+Implement a custom site overlap method:
+
+```
+use hoomd_interaction::{CutoffPairOverlap, TotalEnergy, SitePairOverlap};
+use hoomd_microstate::{Microstate, Body};
+use hoomd_microstate::{Transform, property::{Point, Position}};
+use hoomd_vector::{self, Cartesian, Angle};
+use hoomd_utility::valid::PositiveReal;
+use hoomd_geometry::{IntersectsAt, shape::Circle};
+
+#[derive(Default)]
+struct CircleSiteProperties {
+    position: Cartesian<2>,
+    radius: PositiveReal,
+}
+
+impl Position for CircleSiteProperties {
+    type Vector = Cartesian<2>;
+
+    fn position(&self) -> &Cartesian<2> {
+        &self.position
+    }
+
+    fn position_mut(&mut self) -> &mut Cartesian<2> {
+        &mut self.position
+    }
+}
+
+impl Transform<CircleSiteProperties> for Point<Cartesian<2>> {
+    fn transform(&self, site_properties: &CircleSiteProperties) -> CircleSiteProperties {
+        CircleSiteProperties {
+            position: self.position + site_properties.position,
+            radius: site_properties.radius,
+        }
+    }
+}
+
+struct PolydisperseCircleOverlap;
+
+impl SitePairOverlap<CircleSiteProperties> for PolydisperseCircleOverlap
+{
+    fn site_pair_overlap(&self, a: &CircleSiteProperties, b: &CircleSiteProperties) -> bool {
+        let circle_a = Circle { radius: a.radius, };
+        let circle_b = Circle { radius: b.radius, };
+        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(
+            a.position(),
+            &Angle::default(),
+            b.position(),
+            &Angle::default(),
+        );
+        circle_a.intersects_at(&circle_b, &v_ij, &o_ij)
+    }
+}
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let mut microstate = Microstate::new();
+microstate.extend_bodies([
+    Body { properties: Point::new(Cartesian::from([0.0, 0.0])),
+           sites: vec![ CircleSiteProperties { position: Cartesian::from([0.0, 0.0]),
+            radius: 0.5.try_into()?,
+            }], },
+    Body { properties: Point::new(Cartesian::from([1.4, 0.0])),
+           sites: vec![ CircleSiteProperties { position: Cartesian::from([0.0, 0.0]),
+            radius: 1.0.try_into()?,
+            }], },
+    ]
+)?;
+
+let evaluator = PolydisperseCircleOverlap;
+let site_pair_overlap = evaluator.site_pair_overlap(
+    &microstate.sites()[0].properties,
+    &microstate.sites()[1].properties);
+assert!(site_pair_overlap);
+
+let cutoff_pair_overlap = CutoffPairOverlap { r_cut: 1.5, evaluator };
+let total_energy = cutoff_pair_overlap.total_energy(&microstate);
+assert_eq!(total_energy, f64::INFINITY);
+# Ok(())
+# }
+```
 */
 pub trait SitePairOverlap<S> {
     /// Determine if two sites overlap.

@@ -28,6 +28,8 @@ to gradually resolve overlaps. In the third region, sites are allowed to move
 freely when not overlapping. The shoulder potential prevents trial moves from
 creating new overlaps.
 
+[`ApproximateShapeOverlap`]: crate::pairwise::ApproximateShapeOverlap
+
 # Example
 
 ```
