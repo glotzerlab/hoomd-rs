@@ -3,7 +3,7 @@
 
 /*! Implement OrientedDynamicsPoint */
 
-use super::{Position, Velocity, Acceleration, Mass, MomentOfInertia, AngularVelocity};
+use super::{Position, Velocity, Acceleration, Mass, MomentOfInertia, AngularMomentum, Torque};
 use super::point::Point;
 use super::oriented_point::OrientedPoint;
 use crate::Transform;
@@ -53,7 +53,10 @@ pub struct OrientedDynamicsPoint<V, R> {
     pub moment_of_inertia: V,
 
     /// The angular velocity of the extended body.
-    pub angular_velocity: V,
+    pub angular_momentum: R,
+
+    /// The torque velocity of the extended body. 
+    pub torque: V
 }
 
 /** Treat [`Point`] sites as constituents of oriented rigid bodies.
@@ -170,17 +173,31 @@ impl<V, R> MomentOfInertia for OrientedDynamicsPoint<V, R> {
     }
 }
 
-impl<V, R> AngularVelocity for OrientedDynamicsPoint<V, R> {
-    type Vector = V;
+impl<V, R> AngularMomentum for OrientedDynamicsPoint<V, R> {
+    type Rotation = R;
 
     #[inline]
-    fn angular_velocity(&self) -> &V {
-        &self.angular_velocity
+    fn angular_momentum(&self) -> &R {
+        &self.angular_momentum
     }
 
     #[inline]
-    fn angular_velocity_mut(&mut self) -> &mut V {
-        &mut self.angular_velocity
+    fn angular_momentum_mut(&mut self) -> &mut R {
+        &mut self.angular_momentum
+    }
+}
+
+impl<V, R> Torque for OrientedDynamicsPoint<V, R> {
+    type Vector = V;
+
+    #[inline]
+    fn torque(&self) -> &V {
+        &self.torque
+    }
+
+    #[inline]
+    fn torque_mut(&mut self) -> &mut V {
+        &mut self.torque
     }
 }
 
