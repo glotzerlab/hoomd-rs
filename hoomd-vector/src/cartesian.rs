@@ -10,6 +10,7 @@ use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
 
+use hoomd_utility::valid::PositiveReal;
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform, Uniform};
 
@@ -332,10 +333,28 @@ impl<const N: usize> Mul<f64> for Cartesian<N> {
     }
 }
 
+impl<const N: usize> Mul<PositiveReal> for Cartesian<N> {
+    type Output = Self;
+
+    #[inline]
+    fn mul(self, rhs: PositiveReal) -> Self {
+        Self {
+            coordinates: self.coordinates.map(|x| x * rhs.get()),
+        }
+    }
+}
+
 impl<const N: usize> MulAssign<f64> for Cartesian<N> {
     #[inline]
     fn mul_assign(&mut self, rhs: f64) {
         self.coordinates = self.coordinates.map(|x| x * rhs);
+    }
+}
+
+impl<const N: usize> MulAssign<PositiveReal> for Cartesian<N> {
+    #[inline]
+    fn mul_assign(&mut self, rhs: PositiveReal) {
+        self.coordinates = self.coordinates.map(|x| x * rhs.get());
     }
 }
 

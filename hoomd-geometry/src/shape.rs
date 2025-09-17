@@ -24,6 +24,9 @@ mod cuboid;
 pub use cuboid::Cuboid;
 pub use cuboid::Rectangle;
 
+mod parallelepiped;
+pub use parallelepiped::Hyperparallelepiped;
+
 mod cylinder;
 pub use cylinder::Cylinder;
 
