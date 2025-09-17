@@ -25,7 +25,7 @@ pub trait Thermostat<B, S, C, M> {
     /// Note that translation and rotation are assumed to have identical math
     /// behind their scaling factors.
     fn rescaling_factor_step_one<P>(
-        &self,
+        &mut self,
         microstate: &Microstate<B, S, C>,
         macrostate: &M,
         dt: &f64,
@@ -67,7 +67,7 @@ where
 {
     #[inline]
     fn rescaling_factor_step_one<P>(
-        &self,
+        &mut self,
         microstate: &Microstate<B, S, C>,
         _macrostate: &M,
         _dt: &f64,
@@ -110,9 +110,24 @@ TODO: Add example.
 */
 pub struct BussiThermostat {
     /// Thermostat time constant (`[time]`).
-    pub tau: f64,
+    tau: f64,
+    /// Cumulative energy drift due to the thermostat. Useful for checking energy conservation.
+    cumu_energy_drift: f64
 }
-
+impl BussiThermostat {
+    /// Constrcut MTTKThermostat.
+    pub fn new(tau: f64) -> Self {
+        assert!(tau >= 0.0, "MTTKThermostat requires tau >= 0");
+        Self {
+            tau: tau,
+            cumu_energy_drift: 0.0
+        }
+    }
+    /// Calculate the energy drift due to the thermostat.
+    pub fn energy_drift(&self, kinetic_energy_old: &f64, rescaling_factor: &f64) -> f64 {
+        kinetic_energy_old * (1.0 - rescaling_factor.powi(2))
+    }
+}
 /// TODO: add documentation
 impl<B, S, C, M> Thermostat<B, S, C, M> for BussiThermostat
 where
@@ -124,7 +139,7 @@ where
     */
     #[inline]
     fn rescaling_factor_step_one<P>(
-        &self,
+        &mut self,
         microstate: &Microstate<B, S, C>,
         macrostate: &M,
         dt: &f64,
@@ -170,7 +185,10 @@ where
         let term1 = v * (1.0 - time_decay_factor) * (random_gamma + random_normal_one.powi(2));
         let term2 =
             2.0 * random_normal_one * (v * (1.0 - time_decay_factor) * time_decay_factor).sqrt();
-        (time_decay_factor + term1 + term2).sqrt()
+        let alpha = (time_decay_factor + term1 + term2).sqrt();
+
+        self.cumu_energy_drift += self.energy_drift(&ke, &alpha);
+        alpha
     }
 
     #[inline]
@@ -186,10 +204,10 @@ where
     #[inline]
     fn advance<P>(
         &mut self,
-        microstate: &Microstate<B, S, C>,
-        macrostate: &M,
-        dt: &f64,
-        compute_properties: P
+        _microstate: &Microstate<B, S, C>,
+        _macrostate: &M,
+        _dt: &f64,
+        _compute_properties: P
     )
     where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
@@ -215,7 +233,7 @@ pub struct MTTKThermostat {
 impl MTTKThermostat {
     /// Constrcut MTTKThermostat.
     pub fn new(tau: f64) -> Self {
-        assert!(tau > 0.0, "MTTKThermostat requires tau >= 0");
+        assert!(tau > 0.0, "MTTKThermostat requires tau > 0");
         Self {
             tau: tau,
             xi: 0.0,
@@ -238,10 +256,10 @@ impl MTTKThermostat {
         let sigma = 1.0 / *dof / self.tau.powi(2);
 
         self.xi = Normal::new(0.0, sigma.sqrt()).unwrap().sample(&mut rng);
-        self.energy = self.thermstat_energy(kT_setpoint, dof)
+        self.energy = self.thermostat_energy(kT_setpoint, dof)
     }
     /// Calculate thermostat energy.
-    pub fn thermstat_energy(
+    pub fn thermostat_energy(
         &self,
         kT_setpoint: &f64,
         dof: &f64
@@ -256,7 +274,7 @@ where
 {
     #[inline]
     fn rescaling_factor_step_one<P>(
-        &self,
+        &mut self,
         _microstate: &Microstate<B, S, C>,
         _macrostate: &M,
         dt: &f64,
@@ -298,7 +316,7 @@ where
         let xi_prime = self.xi + 0.5 * (kT_instantaneous / kT_setpoint - 1.0) * dt / self.tau.powi(2);
         self.xi = xi_prime + 0.5 * (kT_instantaneous / kT_setpoint - 1.0) * dt / self.tau.powi(2);
         self.eta += xi_prime * dt;
-        self.energy = self.thermstat_energy(kT_setpoint, &dof)
+        self.energy = self.thermostat_energy(kT_setpoint, &dof)
 
     }
 }
