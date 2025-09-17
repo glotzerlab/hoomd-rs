@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement `CutoffPair`
-*/
+ */
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairEnergy, TotalEnergy};
 use hoomd_microstate::{Body, Microstate, Site, Transform, boundary::Wrap, property::Position};

@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Helpers that enable consistent use of random numbers througought hoomd-rs.
-*/
+ */
 
 use chacha20::ChaCha8Rng;
 use rand::{Rng, SeedableRng};

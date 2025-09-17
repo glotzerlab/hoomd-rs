@@ -8,13 +8,15 @@ Use [`GsdFile`] to interact with GSD files on the filesystem.
 
 use itertools::Itertools;
 use memmap2::Mmap;
-use std::cmp::{Ord, Ordering, PartialOrd};
-use std::collections::{HashMap, HashSet};
-use std::fs::File;
-use std::io::{self, SeekFrom, prelude::*};
-use std::num::TryFromIntError;
-use std::path::{Path, PathBuf};
-use std::string::FromUtf8Error;
+use std::{
+    cmp::{Ord, Ordering, PartialOrd},
+    collections::{HashMap, HashSet},
+    fs::File,
+    io::{self, SeekFrom, prelude::*},
+    num::TryFromIntError,
+    path::{Path, PathBuf},
+    string::FromUtf8Error,
+};
 use thiserror::Error;
 
 /// The name buffer is a multiple of `NAME_SIZE` bytes.
@@ -33,7 +35,7 @@ const HEADER_SIZE: u64 = 256;
 const HEADER_USIZE: usize = 256;
 
 /// Magic value identifying a GSD file
-const MAGIC_ID: u64 = 0x65DF_65DF_65DF_65DF;
+const MAGIC_ID: u64 = 0x65df_65df_65df_65df;
 
 /// Current GSD file version
 const CURRENT_FILE_VERSION: (u16, u16) = (2, 1);

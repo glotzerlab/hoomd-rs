@@ -4,8 +4,7 @@
 /*! Implement [`WeeksChandlerAnderson`]
  */
 
-use super::LennardJones;
-use super::{IsotropicEnergy, IsotropicForce};
+use super::{IsotropicEnergy, IsotropicForce, LennardJones};
 
 /** Potential with a steep repulsive core.
 

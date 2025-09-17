@@ -16,13 +16,10 @@ mod capsule;
 pub use capsule::Capsule;
 
 mod convex_polytope;
-pub use convex_polytope::ConvexPolygon;
-pub use convex_polytope::ConvexPolyhedron;
-pub use convex_polytope::ConvexPolytope;
+pub use convex_polytope::{ConvexPolygon, ConvexPolyhedron, ConvexPolytope};
 
 mod cuboid;
-pub use cuboid::Cuboid;
-pub use cuboid::Rectangle;
+pub use cuboid::{Cuboid, Rectangle};
 
 mod cylinder;
 pub use cylinder::Cylinder;
@@ -34,9 +31,7 @@ mod simplex3;
 pub use simplex3::Simplex3;
 
 mod sphere;
-pub use sphere::Circle;
-pub use sphere::Hypersphere;
-pub use sphere::Sphere;
+pub use sphere::{Circle, Hypersphere, Sphere};
 
 mod sphero;
 pub use sphero::Sphero;

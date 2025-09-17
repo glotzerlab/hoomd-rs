@@ -7,13 +7,11 @@
 )]
 #![expect(clippy::unwrap_used, reason = "benches can use unwrap where needed")]
 
-/*! Benchmark overlaps*/
+/*! Benchmark overlaps */
 
-use divan::counter::ItemsCount;
-use divan::{self, Bencher, black_box};
-use hoomd_geometry::Convex;
+use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_geometry::{
-    IntersectsAt,
+    Convex, IntersectsAt,
     shape::{ConvexPolytope, Cuboid, Hyperellipsoid, Hypersphere, Simplex3},
     xenocollide::{collide2d, collide3d},
 };

@@ -2,16 +2,17 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement canonical vector types.
-*/
-use std::array;
-use std::fmt;
-use std::iter::{Sum, zip};
-use std::ops::{
-    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
+ */
+use std::{
+    array, fmt,
+    iter::{Sum, zip},
+    ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
-use rand::Rng;
-use rand::distr::{Distribution, StandardUniform, Uniform};
+use rand::{
+    Rng,
+    distr::{Distribution, StandardUniform, Uniform},
+};
 
 use crate::{Cross, Error, InnerProduct, Rotate, Unit, Vector};
 
@@ -696,9 +697,7 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::Angle;
-    use crate::Rotation;
-    use crate::Versor;
+    use crate::{Angle, Rotation, Versor};
 
     use super::*;
     use approx::assert_relative_eq;

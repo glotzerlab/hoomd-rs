@@ -12,10 +12,8 @@
 
 /*! Benchmark Cartesian */
 
-use divan::counter::ItemsCount;
-use divan::{self, Bencher, black_box};
-use rand::distr::Uniform;
-use rand::{Rng, SeedableRng, rngs::StdRng};
+use divan::{self, Bencher, black_box, counter::ItemsCount};
+use rand::{Rng, SeedableRng, distr::Uniform, rngs::StdRng};
 
 use hoomd_vector::{Cartesian, Cross, InnerProduct};
 

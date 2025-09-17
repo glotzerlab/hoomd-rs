@@ -8,8 +8,7 @@
 
 /*! Benchmark Quaternion */
 
-use divan::counter::ItemsCount;
-use divan::{self, Bencher, black_box};
+use divan::{self, Bencher, black_box, counter::ItemsCount};
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
 use hoomd_vector::{Cartesian, Rotate, RotationMatrix, Versor};

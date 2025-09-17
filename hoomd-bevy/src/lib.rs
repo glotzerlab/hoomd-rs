@@ -54,8 +54,10 @@ use std::ops::Range;
 use anyhow::Context;
 use bevy::{
     asset::embedded_asset,
-    input::common_conditions::{input_just_released, input_pressed},
-    input::mouse::MouseWheel,
+    input::{
+        common_conditions::{input_just_released, input_pressed},
+        mouse::MouseWheel,
+    },
     prelude::*,
     time::common_conditions::once_after_delay,
     window::PrimaryWindow,
@@ -269,12 +271,12 @@ after [`AdvanceSet`] to reduce the latency between input and result.
 pub struct AlwaysInputSet;
 
 /** Systems that run to process input only when there is no menu displayed.
-*/
+ */
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NoMenuInputSet;
 
 /** Systems that run to process input in the settings menu.
-*/
+ */
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SettingsMenuInputSet;
 

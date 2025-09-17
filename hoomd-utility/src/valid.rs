@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Ensure that values are in well-defined ranges.
-*/
+ */
 
 use crate::Error;
 

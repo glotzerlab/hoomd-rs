@@ -31,7 +31,7 @@ pub struct OrientedPoint<V, R> {
 }
 
 /** Treat [`Point`] sites as constituents of oriented rigid bodies.
-*/
+ */
 impl<V, R> Transform<Point<V>> for OrientedPoint<V, R>
 where
     V: Vector,
@@ -68,7 +68,7 @@ where
 }
 
 /** Treat [`OrientedPoint`] sites as constituents of oriented rigid bodies.
-*/
+ */
 impl<V, R> Transform<OrientedPoint<V, R>> for OrientedPoint<V, R>
 where
     V: Vector,

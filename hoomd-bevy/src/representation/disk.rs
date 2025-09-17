@@ -26,8 +26,10 @@ use bevy::{
     },
     sprite::Material2dKey,
 };
-use itertools::EitherOrBoth::{Both, Left, Right};
-use itertools::Itertools;
+use itertools::{
+    EitherOrBoth::{Both, Left, Right},
+    Itertools,
+};
 use std::marker::PhantomData;
 
 use crate::PRIMARY_COLOR;

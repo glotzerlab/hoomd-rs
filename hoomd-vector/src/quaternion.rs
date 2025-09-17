@@ -3,10 +3,14 @@
 
 /*! Implement [`Quaternion`] and related types.
  */
-use rand::Rng;
-use rand::distr::{Distribution, StandardUniform, Uniform};
-use std::fmt;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use rand::{
+    Rng,
+    distr::{Distribution, StandardUniform, Uniform},
+};
+use std::{
+    fmt,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
+};
 
 use crate::{Cartesian, Cross, Error, InnerProduct, Rotate, Rotation, RotationMatrix, Unit};
 
@@ -467,7 +471,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut rng = StdRng::seed_from_u64(1);
-let v: Versor = rng.random();
+let v: Versor = rng.random( );
 # Ok(())
 # }
 ```

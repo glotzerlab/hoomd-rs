@@ -4,13 +4,14 @@
 /*! Implement [`Microstate`] and related types.
  */
 
-use std::cmp::Reverse;
-use std::collections::BinaryHeap;
+use std::{cmp::Reverse, collections::BinaryHeap};
 use tinyvec::ArrayVec;
 
-use crate::boundary::{GenerateGhosts, MAX_GHOSTS, Open, Wrap};
-use crate::property::Position;
-use crate::{Body, Error, Site, Transform};
+use crate::{
+    Body, Error, Site, Transform,
+    boundary::{GenerateGhosts, MAX_GHOSTS, Open, Wrap},
+    property::Position,
+};
 
 use hoomd_utility::random::Counter;
 use hoomd_vector::Vector;
@@ -208,26 +209,26 @@ impl<B, S> Default for Microstate<B, S, Open> {
 
 impl<B, S> Microstate<B, S, Open> {
     /** Construct an empty microstate with open boundary conditions.
-
-    The microstate starts at step 0, substep 0, random number seed 0,
-    and has no bodies.
-
-    # Example
-
-    ```
-    use hoomd_microstate::Microstate;
-    # use hoomd_microstate::{Body, property::Point};
-    # use hoomd_vector::Cartesian;
-
-    let mut microstate = Microstate::new();
-    assert_eq!(microstate.step(), 0);
-    assert_eq!(microstate.substep(), 0);
-    assert_eq!(microstate.seed(), 0);
-    assert_eq!(microstate.bodies().len(), 0);
-    assert_eq!(microstate.sites().len(), 0);
-    # microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
-    ```
-    */
+     *
+     * The microstate starts at step 0, substep 0, random number seed 0,
+     * and has no bodies.
+     *
+     * # Example
+     *
+     * ```
+     * use hoomd_microstate::Microstate;
+     * # use hoomd_microstate::{Body, property::Point};
+     * # use hoomd_vector::Cartesian;
+     *
+     * let mut microstate = Microstate::new();
+     * assert_eq!(microstate.step(), 0);
+     * assert_eq!(microstate.substep(), 0);
+     * assert_eq!(microstate.seed(), 0);
+     * assert_eq!(microstate.bodies().len(), 0);
+     * assert_eq!(microstate.sites().len(),0);
+     * # microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
+     * ```
+     **/
     #[inline]
     #[must_use]
     pub fn new() -> Self {
