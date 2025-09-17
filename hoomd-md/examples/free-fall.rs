@@ -28,11 +28,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     microstate.add_body(body)?;
 
     // Define my set macrostat.
-    struct IsoentropicMacrostat {}
-    impl Isoentropic for IsoentropicMacrostat {}
-    impl Isochoric for IsoentropicMacrostat{}
+    struct NVEMacrostate {}
+    impl Isoentropic for NVEMacrostate {}
+    impl Isochoric for NVEMacrostate {}
 
-    let macrostate = IsoentropicMacrostat{};
+    let macrostate = NVEMacrostate{};
 
     // Add gravity
     let force = Single(Linear {
@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         plane_normal: [0.0, 1.0].try_into()?,
     });
 
-    let (kT, dt) = (1.0, 0.1);
+    let dt = 0.1;
     let mut thermostat = NoThermostat;
 
     let mut integrator = ConstantVolume::new(dt);
