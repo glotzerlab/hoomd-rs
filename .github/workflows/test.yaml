@@ -68,7 +68,7 @@ jobs:
       run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
     - name: Checkout
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
     # This code is needed on GitHub Hosted runners, disable for now while we use private runners.
     # - name: Update rust
     #   run: rustup install ${{ matrix.rust }} --no-self-update
