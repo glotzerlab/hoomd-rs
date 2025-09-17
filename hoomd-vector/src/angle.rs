@@ -4,10 +4,11 @@
 /*! Implement [`Angle`]
  */
 
-use rand::Rng;
-use rand::distr::{Distribution, StandardUniform, Uniform};
-use std::f64::consts::PI;
-use std::fmt;
+use rand::{
+    Rng,
+    distr::{Distribution, StandardUniform, Uniform},
+};
+use std::{f64::consts::PI, fmt};
 
 use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
 

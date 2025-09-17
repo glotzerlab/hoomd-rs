@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement `Anisotropic`
-*/
+ */
 
 use super::AnisotropicEnergy;
 use crate::SitePairEnergy;

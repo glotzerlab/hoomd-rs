@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement `*Energy` for varying lengths of tuples.
-*/
+ */
 
 use super::{DeltaEnergyInsert, DeltaEnergyOne, TotalEnergy};
 use hoomd_microstate::{Body, Microstate};

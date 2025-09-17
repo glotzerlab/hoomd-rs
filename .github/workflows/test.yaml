@@ -111,13 +111,13 @@ jobs:
       run: cargo bench
       if: ${{ matrix.target == '' }}
 
-  # tests_complete:
-  #   name: All tests
-  #   if: always()
-  #   needs: [unit_test]
-  #   runs-on: ubuntu-latest
+  tests_complete:
+    name: All tests
+    if: always()
+    needs: [unit_test]
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #   - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
-  #   - name: Done
-  #     run: exit 0
+    steps:
+    - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
+    - name: Done
+      run: exit 0

@@ -7,8 +7,7 @@ use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, distribution::Ball};
 
 use rand::{Rng, distr::Distribution};
-use std::f64::consts::PI;
-use std::ops::Mul;
+use std::{f64::consts::PI, ops::Mul};
 
 /// The (single, double, ...)-factorial function
 pub fn factorial(n: usize, ntuple: usize) -> usize {

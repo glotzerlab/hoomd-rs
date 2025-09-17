@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement approximate comparisons for vector and rotation types
-*/
+ */
 
 use crate::{Cartesian, Quaternion, Versor};
 

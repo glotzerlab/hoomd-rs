@@ -46,7 +46,7 @@ impl<V> Point<V> {
 }
 
 /** Move [`Point`] properties from the local body frame to the system frame.
-*/
+ */
 impl<V> Transform<Point<V>> for Point<V>
 where
     V: Vector,

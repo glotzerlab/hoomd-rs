@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement `Single`
-*/
+ */
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SiteEnergy, TotalEnergy};
 use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Position};
@@ -254,9 +254,11 @@ mod tests {
     use super::*;
     use crate::external::Linear;
     use hoomd_geometry::shape::Rectangle;
-    use hoomd_microstate::boundary::{Closed, Open};
-    use hoomd_microstate::property::{Point, Position};
-    use hoomd_microstate::{Body, Microstate, MicrostateBuilder};
+    use hoomd_microstate::{
+        Body, Microstate, MicrostateBuilder,
+        boundary::{Closed, Open},
+        property::{Point, Position},
+    };
     use hoomd_vector::{Cartesian, Unit};
     use rstest::*;
 

@@ -190,11 +190,9 @@ mod quaternion;
 #[cfg(any(test, feature = "approx"))]
 pub mod approx;
 
-pub use {
-    angle::Angle,
-    cartesian::{Cartesian, RotationMatrix},
-    quaternion::{Quaternion, Versor},
-};
+pub use angle::Angle;
+pub use cartesian::{Cartesian, RotationMatrix};
+pub use quaternion::{Quaternion, Versor};
 
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use thiserror::Error;

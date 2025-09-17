@@ -2,15 +2,17 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement Rotate
-*/
+ */
 
 use super::LocalTrial;
 use hoomd_microstate::property::Orientation;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Angle;
 
-use rand::Rng;
-use rand::distr::{Distribution, Uniform};
+use rand::{
+    Rng,
+    distr::{Distribution, Uniform},
+};
 
 /** Change the orientation of a body by a small amount.
 

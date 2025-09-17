@@ -12,8 +12,7 @@ use rand::{
     Rng,
     distr::{Distribution, Uniform},
 };
-use std::array;
-use std::ops::Mul;
+use std::{array, ops::Mul};
 
 /** A shape with with all perpendicular angles made from axis-aligned edges.
 

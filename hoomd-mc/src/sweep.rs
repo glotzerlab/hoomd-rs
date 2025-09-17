@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement Sweep
-*/
+ */
 
 use super::{Count, LocalTrial, Trial};
 use hoomd_interaction::DeltaEnergyOne;

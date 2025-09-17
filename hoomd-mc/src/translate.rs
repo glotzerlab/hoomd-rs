@@ -2,15 +2,14 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement Translate
-*/
+ */
 
 use super::LocalTrial;
 use hoomd_microstate::property::Position;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Vector, distribution::Ball};
 
-use rand::Rng;
-use rand::distr::Distribution;
+use rand::{Rng, distr::Distribution};
 
 /** Move the position of a body by a small distance.
 

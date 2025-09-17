@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement `QuickInsert`
-*/
+ */
 
 use super::Count;
 use hoomd_interaction::{DeltaEnergyInsert, TotalEnergy};

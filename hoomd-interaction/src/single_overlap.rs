@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implement `SingleOverlap`
-*/
+ */
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SiteOverlap, TotalEnergy};
 use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Position};
@@ -292,9 +292,11 @@ where
 mod tests {
     use super::*;
     use hoomd_geometry::shape::Rectangle;
-    use hoomd_microstate::boundary::{Closed, Open};
-    use hoomd_microstate::property::{Point, Position};
-    use hoomd_microstate::{Body, Microstate, MicrostateBuilder};
+    use hoomd_microstate::{
+        Body, Microstate, MicrostateBuilder,
+        boundary::{Closed, Open},
+        property::{Point, Position},
+    };
     use hoomd_vector::Cartesian;
     use rstest::*;
 
