@@ -1,5 +1,5 @@
 use hoomd_utility::valid::PositiveReal;
-use crate::shape::{Capsule, Cuboid, Cylinder, Hyperellipsoid, Hyperparallelepiped, Hypersphere};
+use crate::shape::{Capsule, ConvexPolyhedron, ConvexPolytope, Cuboid, Cylinder, Hyperellipsoid, Hyperparallelepiped, Hypersphere};
 
 pub trait Scale{
     fn scale(&mut self, scale_factor: PositiveReal);
@@ -43,11 +43,12 @@ impl<const N: usize> Scale for Hyperellipsoid<N>{
     }
 }
 
-impl<const N: usize> Scale for Cylinder<N>{
-    fn scale(&mut self, scale_factor: PositiveReal){
-        
-    }
-}
+// impl<const N: usize> Scale for ConvexPolytope<N>{
+//     fn scale(&mut self, scale_factor: PositiveReal){
+//         self.vertices.iter_mut().map(|mut vertex)| *vertex *= scale_factor;);
+//     }
+// }
+
 
 #[cfg(test)]
 #[expect(clippy::used_underscore_binding, reason = "Required for const tests.")]

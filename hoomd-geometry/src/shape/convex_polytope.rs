@@ -56,7 +56,7 @@ assert_eq!(rectangle.intersects_at(&rectangle, &[0.0, 2.1].into(), &Angle::from(
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConvexPolytope<const N: usize> {
     /// The vertices of the shape.
-    vertices: Vec<Cartesian<N>>,
+    pub(crate) vertices: Vec<Cartesian<N>>,
     /// The radius of a bounding sphere of the geometry.
     pub(crate) bounding_radius: f64,
 }
