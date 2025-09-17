@@ -87,6 +87,13 @@ impl TryFrom<f64> for PositiveReal {
         }
     }
 }
+impl Default for PositiveReal {
+    /// The default value is 1.0.
+    #[inline]
+    fn default() -> Self {
+        PositiveReal(1.0)
+    }
+}
 
 impl Mul for PositiveReal{
     type Output = Self;

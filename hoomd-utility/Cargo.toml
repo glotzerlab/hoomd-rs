@@ -1,7 +1,7 @@
 [package]
 name = "hoomd-utility"
 categories.workspace = true
-description = "."
+description = "Commonly used utility types and methods."
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true

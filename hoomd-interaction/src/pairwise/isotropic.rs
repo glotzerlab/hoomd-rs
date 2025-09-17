@@ -52,13 +52,3 @@ where
         self.0.energy((a.position()).distance(b.position()))
     }
 }
-
-impl<E> IsotropicEnergy for Isotropic<E>
-where
-    E: IsotropicEnergy,
-{
-    #[inline]
-    fn energy(&self, r: f64) -> f64 {
-        self.0.energy(r)
-    }
-}

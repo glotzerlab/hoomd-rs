@@ -438,7 +438,7 @@ mod tests {
         r_b: R,
         expected: bool,
     ) where
-        R: Rotation + Rotate<Cartesian<N>> + Copy,
+        R: Rotation + Rotate<Cartesian<N>>,
         A: IntersectsAt<B, Cartesian<N>, R>,
         B: IntersectsAt<A, Cartesian<N>, R>,
     {

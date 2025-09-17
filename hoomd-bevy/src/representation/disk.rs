@@ -43,8 +43,8 @@ coordinate of the disks should be set to 0. Choose a different value to control
 the back to front draw order.
 
 All disks of the same type must have the same material. To display disks with
-different colors, outline widths, or textures, call `setup` and `sync` multiple
-types of disks with different marker types.
+different color pallets, outline widths, or textures, call `setup` and `sync`
+multiple types of disks with different marker types.
 
 To use:
 * Add [`setup`](Self::setup) to the `Startup` schedule.

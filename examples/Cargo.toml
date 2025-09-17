@@ -29,6 +29,7 @@ hoomd-gsd.workspace = true
 hoomd-interaction.workspace = true
 hoomd-mc.workspace = true
 hoomd-microstate.workspace = true
+hoomd-simulation.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 
@@ -51,15 +52,10 @@ path = "hello.rs"
 [[example]]
 name = "random-walk"
 path = "mc-tutorial/random-walk.rs"
-required-features = ["bevy"]
-
-[package.metadata.example.random-walk]
-path = "mc-tutorial"
 
 [[example]]
 name = "custom-random-walk"
 path = "mc-tutorial/custom-random-walk.rs"
-required-features = ["bevy"]
 
 [package.metadata.example.custom-random-walk]
 path = "mc-tutorial"
@@ -67,7 +63,6 @@ path = "mc-tutorial"
 [[example]]
 name = "applying-interactions"
 path = "mc-tutorial/applying-interactions.rs"
-required-features = ["bevy"]
 
 [package.metadata.example.applying-interactions]
 path = "mc-tutorial"
@@ -75,7 +70,13 @@ path = "mc-tutorial"
 [[example]]
 name = "tetronimoes"
 path = "mc-tutorial/tetronimoes.rs"
-required-features = ["bevy"]
 
 [package.metadata.example.tetronimoes]
+path = "mc-tutorial"
+
+[[example]]
+name = "hard-particle-self-assembly"
+path = "mc-tutorial/hard-particle-self-assembly.rs"
+
+[package.metadata.example.hard-particle-self-assembly]
 path = "mc-tutorial"

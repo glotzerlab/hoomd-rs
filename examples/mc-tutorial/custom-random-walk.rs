@@ -1,3 +1,4 @@
+// ANCHOR: all
 // ANCHOR: use
 use rand::{Rng, seq::IndexedRandom};
 use std::iter;
@@ -8,16 +9,9 @@ use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder, boundary::Closed, property::Point,
 };
+use hoomd_simulation::Simulation;
 use hoomd_vector::{Cartesian, Vector};
 // ANCHOR_END: use
-
-use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings, Simulation,
-    representation::disk::{self, Disk},
-};
-
-use anyhow::Context;
-use bevy::prelude::*;
 
 // ANCHOR: boundary_struct
 /// Closed circular boundary condition.
@@ -26,28 +20,27 @@ struct Circle {
 }
 // ANCHOR_END: boundary_struct
 
-// ANCHOR: boundary_all
+// ANCHOR: boundary_impl
 impl IsPointInside<Cartesian<2>> for Circle {
     fn is_point_inside(&self, point: &Cartesian<2>) -> bool {
         point.distance(&[0.0, 0.0].into()) < self.radius
     }
 }
-// ANCHOR_END: boundary_all
+// ANCHOR_END: boundary_impl
 
-// ANCHOR: local_trial_all
 // ANCHOR: local_trial_struct
 /// Take fixed steps left, right, down, or up.
 struct Discrete;
 // ANCHOR_END: local_trial_struct
 
+// ANCHOR: local_trial_impl
 impl LocalTrial<Point<Cartesian<2>>> for Discrete {
-    // ANCHOR: local_trial_fn
     fn propose<R: Rng>(
         &self,
         rng: &mut R,
         body_properties: Point<Cartesian<2>>,
     ) -> Point<Cartesian<2>> {
-        // ANCHOR_END: local_trial_fn
+        // ANCHOR_END: local_trial_impl
         // ANCHOR: local_trial_steps
         let steps = [
             [0.0, -1.0].into(),
@@ -63,14 +56,15 @@ impl LocalTrial<Point<Cartesian<2>>> for Discrete {
             .choose(rng)
             .expect("steps should have at least 1 element");
         trial
-        // ANCHOR_END: local_trial_mut
     }
 }
-// ANCHOR_END: local_trial_all
+// ANCHOR_END: local_trial_mut
 
-#[derive(Resource)]
+// Remove the cfg_attr(...) line when using this code outside the hoomd-rs/examples directory.
+#[cfg_attr(feature = "bevy", derive(Resource))]
 // ANCHOR: simulation_struct
 struct CustomRandomWalk {
+    /// TODO: Document
     microstate:
         Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Circle>>,
     hamiltonian: Zero,
@@ -83,11 +77,15 @@ struct CustomRandomWalk {
 impl CustomRandomWalk {
     /// Construct a new random walk simulation.
     fn new() -> anyhow::Result<CustomRandomWalk> {
+        // ANCHOR_END: simulation_new
+        // ANCHOR: parameters
         let kt = 1.0;
         let n = 1000;
+        let radius = 50.0;
+        // ANCHOR_END: parameters
 
         // ANCHOR: microstate
-        let circle = Circle { radius: 50.0 };
+        let circle = Circle { radius };
 
         let microstate = MicrostateBuilder::with_boundary(Closed(circle))
             .bodies(iter::repeat_n(Body::point(Cartesian::default()), n))
@@ -98,8 +96,11 @@ impl CustomRandomWalk {
         let translate_sweep = Sweep(Discrete);
         // ANCHOR_END: sweep
 
+        // ANCHOR: hamiltonian
         let hamiltonian = Zero;
+        // ANCHOR_END: hamiltonian
 
+        // ANCHOR: initialize_struct
         Ok(CustomRandomWalk {
             microstate,
             hamiltonian,
@@ -108,10 +109,12 @@ impl CustomRandomWalk {
         })
     }
 }
-// ANCHOR_END: simulation_new
+// ANCHOR_END: initialize_struct
 
 // ANCHOR: impl_simulation
 impl Simulation for CustomRandomWalk {
+    // ANCHOR_END: impl_simulation
+    // ANCHOR: advance
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
         self.translate_sweep.apply(
@@ -122,68 +125,35 @@ impl Simulation for CustomRandomWalk {
         self.microstate.increment_step();
         Ok(())
     }
+    // ANCHOR_END: advance
 
+    // ANCHOR: step
     /// Get the current simulation step.
     fn step(&self) -> u64 {
         self.microstate.step()
     }
 }
-// ANCHOR_END: impl_simulation
+// ANCHOR_END: step
 
-/// Mark the disk representation type.
-struct A;
-
+// Remove the cfg(not(...)) line when using this code outside the hoomd-rs/examples directory.
+#[cfg(not(feature = "bevy"))]
+// ANCHOR: main
 fn main() -> anyhow::Result<()> {
-    let simulation =
-        CustomRandomWalk::new().context("failed to setup simulation")?;
-    let hoomd_bevy_plugin = HoomdBevyPlugin {
-        initial_settings: Settings {
-            camera: InitialCamera::Orthographic2d(110.0),
-            ..default()
-        },
-        simulation,
-    };
+    let mut simulation = CustomRandomWalk::new()?;
+    // TODO: Write GSD file.
 
-    let mut app = App::new();
-    hoomd_bevy::add_default_plugins(&mut app);
-    hoomd_bevy_plugin.build(&mut app);
-    app.add_systems(
-        Startup,
-        (|| disk::MaterialParameters::default()).pipe(Disk::<A>::setup),
-    );
-    app.add_systems(
-        Update,
-        sync_simulation
-            .run_if(resource_changed::<CustomRandomWalk>)
-            .after(AdvanceSet),
-    );
-
-    app.run();
+    for _ in 0..100_000 {
+        simulation.advance()?;
+    }
 
     Ok(())
 }
+// ANCHOR_END: main
+// ANCHOR_END: all
 
-/// Copy the current positions of simulation particles to bevy entities.
-fn sync_simulation(
-    mut commands: Commands,
-    disk_representation: Res<disk::Representation<A>>,
-    query: Query<(Entity, &mut Transform), With<Disk<A>>>,
-    simulation: Res<CustomRandomWalk>,
-) {
-    let sites = simulation.microstate.sites();
-    Disk::sync(
-        &mut commands,
-        disk_representation,
-        query,
-        sites.iter().map(|site| {
-            (
-                Vec3::new(
-                    site.properties.position[0] as f32,
-                    site.properties.position[1] as f32,
-                    0.0,
-                ),
-                1.0f32,
-            )
-        }),
-    );
-}
+#[cfg(feature = "bevy")]
+mod custom_random_walk_interactive;
+#[cfg(feature = "bevy")]
+use bevy::prelude::Resource;
+#[cfg(feature = "bevy")]
+use custom_random_walk_interactive::main;
