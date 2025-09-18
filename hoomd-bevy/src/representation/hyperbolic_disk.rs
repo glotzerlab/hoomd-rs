@@ -39,8 +39,8 @@ const RHO: f64 = 1.0;
 /// of disks with different marker types.
 ///
 /// To use:
-/// Add [`setup`](Self::setup) to the `Startup` schedule.
-/// Call [`sync`](Self::sync) in an `Update` schedule that runs after `AdvanceSet`.
+/// * Add [`setup`](Self::setup) to the `Startup` schedule.
+/// * Call [`sync`](Self::sync) in an `Update` schedule that runs after `AdvanceSet`.
 #[derive(Component)]
 pub struct HyperbolicDisk<T> {
     /// Mark the type of the disk.

@@ -65,11 +65,13 @@
 //!
 //! Rotation about the z axis:
 //! ```
-//! use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
+//! use hoomd_manifold::{
+//!     HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
+//! };
 //! use std::f64::consts::PI;
 //!
 //! let v = Minkowski::from([1.0, 0.0, 1.0]);
-//! let rotation_about_z = HyperbolicAngle::from((PI/2.0, 0.0_f64, 0.0_f64));
+//! let rotation_about_z = HyperbolicAngle::from((PI / 2.0, 0.0_f64, 0.0_f64));
 //! let matrix = HyperbolicRotationMatrix::from(rotation_about_z);
 //! let rotated = matrix.hyperbolic_rotate(&v);
 //! // rotated is approximately [0.0,1.0,1.0]);
@@ -77,7 +79,9 @@
 //!
 //! Boost in the y direction:
 //! ```
-//! use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
+//! use hoomd_manifold::{
+//!     HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
+//! };
 //! use std::f64::consts::PI;
 //!
 //! let v = Minkowski::from([1.0, 0.0, 1.0]);
@@ -112,15 +116,19 @@
 //!
 //! Boost point in 3D hyperbolic space in x direction using biquaternion algebra:
 //! ```
-//! use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, Biquaternion, Minkowski};
-//! use std::f64::consts::PI;
+//! use hoomd_manifold::{
+//!     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
+//! };
 //! use num::complex::Complex;
+//! use std::f64::consts::PI;
 //!
 //! let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
-//! let q = Biquaternion::from([Complex::new(0.0, PI/4.0).sinh(),
-//! Complex::new(0.0,0.0),
-//! Complex::new(0.0, 0.0),
-//! Complex::new(0.0, PI/4.0).cosh()]);
+//! let q = Biquaternion::from([
+//!     Complex::new(0.0, PI / 4.0).sinh(),
+//!     Complex::new(0.0, 0.0),
+//!     Complex::new(0.0, 0.0),
+//!     Complex::new(0.0, PI / 4.0).cosh(),
+//! ]);
 //! let v = q.to_unit();
 //! let boosted = v.expect("non-zero biquaternion").hyperbolic_rotate(&x);
 //! // boosted is approximately [(PI/2.0).sinh(), 0.0, 0.0, (PI/2.0).cosh()]

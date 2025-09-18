@@ -455,16 +455,16 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
 ///
 /// Two points on the hyperboloid with skirt width R = 1.0:
 /// ```
-/// use hoomd_manifold::{Minkowski, Hyperboloid};
+/// use hoomd_manifold::{Hyperboloid, Minkowski};
 /// use hoomd_vector::Metric;
 ///
-/// let x = Hyperboloid{
-/// point: Minkowski::from([0.0, 0.0, 1.0]),
-/// skirt: 1.0 as f64,
+/// let x = Hyperboloid {
+///     point: Minkowski::from([0.0, 0.0, 1.0]),
+///     skirt: 1.0 as f64,
 /// };
 /// let y = Hyperboloid {
-/// point: Minkowski::from([0.0, 1.0, (2.0_f64).sqrt()]),
-/// skirt: 1.0 as f64,
+///     point: Minkowski::from([0.0, 1.0, (2.0_f64).sqrt()]),
+///     skirt: 1.0 as f64,
 /// };
 ///
 /// assert_eq!(((2.0_f64).sqrt()).acosh(), x.distance(&y));
@@ -653,22 +653,23 @@ impl Metric for Hyperboloid<4> {
 ///
 /// In two dimensional hyperbolic space:
 /// ```
-/// use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
+/// use hoomd_manifold::{
+///     HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
+/// };
 /// use std::f64::consts::PI;
 ///
 /// fn rotate_about_z(minkowski_vector: &Minkowski<3>) -> Minkowski<3> {
-/// let generators = HyperbolicAngle::from((PI, 0.0_f64, 0.0_f64));
-/// let rotation_matrix = HyperbolicRotationMatrix::from(generators);
-/// rotation_matrix.hyperbolic_rotate(&minkowski_vector)
+///     let generators = HyperbolicAngle::from((PI, 0.0_f64, 0.0_f64));
+///     let rotation_matrix = HyperbolicRotationMatrix::from(generators);
+///     rotation_matrix.hyperbolic_rotate(&minkowski_vector)
 /// }
 ///
-/// fn boost_in_x(minkowski_vector: &Minkowski<3>) -> Minkowski<3>{
-/// let generators = HyperbolicAngle::from((0.0_f64, 0.2_f64, 0.0_f64));
-/// let boost_matrix = HyperbolicRotationMatrix::from(generators);
-/// boost_matrix.hyperbolic_rotate(&minkowski_vector)
+/// fn boost_in_x(minkowski_vector: &Minkowski<3>) -> Minkowski<3> {
+///     let generators = HyperbolicAngle::from((0.0_f64, 0.2_f64, 0.0_f64));
+///     let boost_matrix = HyperbolicRotationMatrix::from(generators);
+///     boost_matrix.hyperbolic_rotate(&minkowski_vector)
 /// }
 /// ```
-///
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct HyperbolicRotationMatrix<const N: usize> {
     /// Rows of the rotation matrix.
@@ -684,42 +685,52 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     ///
     /// Rotate point in 2D hyperbolic space about z-axis:
     /// ```
-    /// use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
+    /// use hoomd_manifold::{
+    ///     HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
+    /// };
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let v = Minkowski::from([1.0, 0.0, 1.0]);
-    /// let spatial_rotation = HyperbolicAngle::from((PI/2.0, 0.0_f64, 0.0_f64));
+    /// let spatial_rotation = HyperbolicAngle::from((PI / 2.0, 0.0_f64, 0.0_f64));
     /// let matrix = HyperbolicRotationMatrix::from(spatial_rotation);
     /// let rotated = matrix.hyperbolic_rotate(&v);
-    /// let c = Minkowski::from([(PI/2.0).cos(),(PI/2.0).sin(),1.0]);
-    /// assert_eq!(c,rotated);
+    /// let c = Minkowski::from([(PI / 2.0).cos(), (PI / 2.0).sin(), 1.0]);
+    /// assert_eq!(c, rotated);
     /// # Ok(())
     /// # }
     /// ```
     ///
     /// Boost point in 2D hyperbolic space in x direction:
     /// ```
-    /// use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
-    /// use std::f64::consts::PI;
+    /// use hoomd_manifold::{
+    ///     HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
+    /// };
     /// use num::complex::Complex;
+    /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let v = Minkowski::from([1.0, 0.0, 1.0]);
     /// let small_boost = HyperbolicAngle::from((0.0_f64, 0.1_f64, 0.0_f64));
     /// let matrix = HyperbolicRotationMatrix::from(small_boost);
     /// let rotated = matrix.hyperbolic_rotate(&v);
-    /// let c = Minkowski::from([(0.1_f64).sinh()+(0.1_f64).cosh(),0.0,(0.1_f64).sinh()+(0.1_f64).cosh()]);
-    /// assert_eq!(c,rotated);
+    /// let c = Minkowski::from([
+    ///     (0.1_f64).sinh() + (0.1_f64).cosh(),
+    ///     0.0,
+    ///     (0.1_f64).sinh() + (0.1_f64).cosh(),
+    /// ]);
+    /// assert_eq!(c, rotated);
     /// # Ok(())
     /// # }
     /// ```
     ///
     /// Zero angles and rapidities does nothing:
     /// ```
-    /// use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
-    /// use std::f64::consts::PI;
+    /// use hoomd_manifold::{
+    ///     HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
+    /// };
     /// use num::complex::Complex;
+    /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let v = Minkowski::from([1.0, 2.0, 1.0]);
@@ -727,55 +738,71 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     /// let matrix = HyperbolicRotationMatrix::from(identity);
     /// let rotated = matrix.hyperbolic_rotate(&v);
     /// let c = Minkowski::from([1.0, 2.0, 1.0]);
-    /// assert_eq!(c,rotated);
+    /// assert_eq!(c, rotated);
     /// # Ok(())
     /// # }
     /// ```
     ///
     /// Rotate point in 3D hyperbolic space about y axis using matrix representation:
     /// ```
-    /// use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate,
-    /// Biquaternion, UnitBiquaternion};
-    /// use std::f64::consts::PI;
-    /// use num::complex::Complex;
     /// use approx::assert_relative_eq;
+    /// use hoomd_manifold::{
+    ///     Biquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
+    ///     UnitBiquaternion,
+    /// };
+    /// use num::complex::Complex;
+    /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let q = Biquaternion::from([Complex::new(0.0,0.0),
-    /// Complex::new((PI/4.0).sin(),0.0),
-    /// Complex::new(0.0, 0.0),
-    /// Complex::new((PI/4.0).cos(), 0.0)]);
+    /// let q = Biquaternion::from([
+    ///     Complex::new(0.0, 0.0),
+    ///     Complex::new((PI / 4.0).sin(), 0.0),
+    ///     Complex::new(0.0, 0.0),
+    ///     Complex::new((PI / 4.0).cos(), 0.0),
+    /// ]);
     /// let v = q.to_unit()?;
     /// let x = Minkowski::from([1.0, 0.0, 0.0, 1.0]);
     /// let rotation = HyperbolicRotationMatrix::from(v);
     /// let rotated = rotation.hyperbolic_rotate(&x);
-    /// assert_relative_eq!(rotated.coordinates[0], 0.0, epsilon= 1e-12);
-    /// assert_relative_eq!(rotated.coordinates[1], 0.0, epsilon= 1e-12);
-    /// assert_relative_eq!(rotated.coordinates[2], -1.0, epsilon= 1e-12);
-    /// assert_relative_eq!(rotated.coordinates[3], 1.0, epsilon= 1e-12);
+    /// assert_relative_eq!(rotated.coordinates[0], 0.0, epsilon = 1e-12);
+    /// assert_relative_eq!(rotated.coordinates[1], 0.0, epsilon = 1e-12);
+    /// assert_relative_eq!(rotated.coordinates[2], -1.0, epsilon = 1e-12);
+    /// assert_relative_eq!(rotated.coordinates[3], 1.0, epsilon = 1e-12);
     /// # Ok(())
     /// # }
     /// ```
     ///
     /// Boost point in 3D hyperbolic space in x direction using biquaternion algebra:
     /// ```
-    /// use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, Biquaternion, Minkowski};
-    /// use std::f64::consts::PI;
-    /// use num::complex::Complex;
     /// use approx::assert_relative_eq;
+    /// use hoomd_manifold::{
+    ///     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
+    /// };
+    /// use num::complex::Complex;
+    /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
-    /// let q = Biquaternion::from([Complex::new(0.0, 0.25).sin(),
-    /// Complex::new(0.0,0.0),
-    /// Complex::new(0.0, 0.0),
-    /// Complex::new(0.0, 0.25).cos()]);
+    /// let q = Biquaternion::from([
+    ///     Complex::new(0.0, 0.25).sin(),
+    ///     Complex::new(0.0, 0.0),
+    ///     Complex::new(0.0, 0.0),
+    ///     Complex::new(0.0, 0.25).cos(),
+    /// ]);
     /// let v = q.to_unit()?;
     /// let boosted = v.hyperbolic_rotate(&x);
-    /// assert_relative_eq!(boosted.coordinates[0], (0.5_f64).sinh(), epsilon=1e-12);
-    /// assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon=1e-12);
-    /// assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon=1e-12);
-    /// assert_relative_eq!(boosted.coordinates[3], (0.5_f64).cosh(), epsilon=1e-12);
+    /// assert_relative_eq!(
+    ///     boosted.coordinates[0],
+    ///     (0.5_f64).sinh(),
+    ///     epsilon = 1e-12
+    /// );
+    /// assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon = 1e-12);
+    /// assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon = 1e-12);
+    /// assert_relative_eq!(
+    ///     boosted.coordinates[3],
+    ///     (0.5_f64).cosh(),
+    ///     epsilon = 1e-12
+    /// );
     /// # Ok(())
     /// # }
     /// ```
@@ -797,11 +824,12 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
 /// # Example
 ///
 /// ```
-/// use hoomd_manifold::{Hyperboloid, HyperbolicDisk, Minkowski, HyperbolicAngle,
-/// HyperbolicRotationMatrix, HyperbolicRotate};
+/// use hoomd_manifold::{
+///     HyperbolicAngle, HyperbolicDisk, HyperbolicRotate,
+///     HyperbolicRotationMatrix, Hyperboloid, Minkowski,
+/// };
 /// use hoomd_vector::Metric;
-/// use rand::{rngs::StdRng, Rng, SeedableRng};
-/// use rand::distr::Distribution;
+/// use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut rng = StdRng::seed_from_u64(12);
@@ -814,7 +842,11 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
 ///
 /// let r = 0.1;
 /// let mut rng_2 = StdRng::seed_from_u64(239);
-/// let disk = HyperbolicDisk {r: r.try_into()?, point: random_point.point, skirt: rho};
+/// let disk = HyperbolicDisk {
+///     r: r.try_into()?,
+///     point: random_point.point,
+///     skirt: rho,
+/// };
 /// let transformed_random_point: Hyperboloid<3> = disk.sample(&mut rng_2);
 ///
 /// assert!(r > random_point.distance(&transformed_random_point));

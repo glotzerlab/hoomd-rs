@@ -36,10 +36,12 @@ use hoomd_vector::Quaternion;
 /// use hoomd_manifold::Biquaternion;
 /// use num::complex::Complex;
 ///
-/// let q = Biquaternion::from([Complex::new(1.0,4.0),
-/// Complex::new(2.0,3.0),
-/// Complex::new(3.0,2.0),
-/// Complex::new(4.0,1.0)]);
+/// let q = Biquaternion::from([
+///     Complex::new(1.0, 4.0),
+///     Complex::new(2.0, 3.0),
+///     Complex::new(3.0, 2.0),
+///     Complex::new(4.0, 1.0),
+/// ]);
 /// assert_eq!(4.0, q.components[0].im);
 /// ```
 ///
@@ -51,17 +53,21 @@ use hoomd_vector::Quaternion;
 /// use hoomd_manifold::Biquaternion;
 /// use num::complex::Complex;
 ///
-/// let mut a = Biquaternion::from([Complex::new(1.0,0.0),
-/// Complex::new(2.0,0.0),
-/// Complex::new(3.0,0.0),
-/// Complex::new(0.0,1.0)]);
-/// let mut b = Biquaternion::from([Complex::new(0.0,4.0),
-/// Complex::new(0.0,3.0),
-/// Complex::new(0.0,2.0),
-/// Complex::new(1.0,0.0)]);
+/// let mut a = Biquaternion::from([
+///     Complex::new(1.0, 0.0),
+///     Complex::new(2.0, 0.0),
+///     Complex::new(3.0, 0.0),
+///     Complex::new(0.0, 1.0),
+/// ]);
+/// let mut b = Biquaternion::from([
+///     Complex::new(0.0, 4.0),
+///     Complex::new(0.0, 3.0),
+///     Complex::new(0.0, 2.0),
+///     Complex::new(1.0, 0.0),
+/// ]);
 /// b /= 2.0;
 /// let mut c = a + b;
-/// assert_eq!(Complex::new(1.0,2.0), c.components[0]);
+/// assert_eq!(Complex::new(1.0, 2.0), c.components[0]);
 /// ```
 ///
 /// Biquaternions also support the following operations:
@@ -73,14 +79,18 @@ use hoomd_vector::Quaternion;
 /// use hoomd_manifold::Biquaternion;
 /// use num::complex::Complex;
 ///
-/// let q = Biquaternion::from([Complex::new(-1.0,0.0),
-/// Complex::new(-1.0,2.0),
-/// Complex::new(1.0,0.0),
-/// Complex::new(1.0,0.0)]);
-/// let p = Biquaternion::from([Complex::new(1.0,0.0),
-/// Complex::new(1.0,-2.0),
-/// Complex::new(-1.0,0.0),
-/// Complex::new(1.0,0.0)]);
+/// let q = Biquaternion::from([
+///     Complex::new(-1.0, 0.0),
+///     Complex::new(-1.0, 2.0),
+///     Complex::new(1.0, 0.0),
+///     Complex::new(1.0, 0.0),
+/// ]);
+/// let p = Biquaternion::from([
+///     Complex::new(1.0, 0.0),
+///     Complex::new(1.0, -2.0),
+///     Complex::new(-1.0, 0.0),
+///     Complex::new(1.0, 0.0),
+/// ]);
 ///
 /// assert_eq!(p, q.bar());
 /// ```
@@ -92,14 +102,18 @@ use hoomd_vector::Quaternion;
 /// use hoomd_manifold::Biquaternion;
 /// use num::complex::Complex;
 ///
-/// let q = Biquaternion::from([Complex::new(1.0,8.0),
-/// Complex::new(2.0,7.0),
-/// Complex::new(3.0,6.0),
-/// Complex::new(4.0,5.0)]);
-/// let p = Biquaternion::from([Complex::new(1.0,-8.0),
-/// Complex::new(2.0,-7.0),
-/// Complex::new(3.0,-6.0),
-/// Complex::new(4.0,-5.0)]);
+/// let q = Biquaternion::from([
+///     Complex::new(1.0, 8.0),
+///     Complex::new(2.0, 7.0),
+///     Complex::new(3.0, 6.0),
+///     Complex::new(4.0, 5.0),
+/// ]);
+/// let p = Biquaternion::from([
+///     Complex::new(1.0, -8.0),
+///     Complex::new(2.0, -7.0),
+///     Complex::new(3.0, -6.0),
+///     Complex::new(4.0, -5.0),
+/// ]);
 ///
 /// assert_eq!(p, q.conj());
 /// ```
@@ -169,7 +183,6 @@ use hoomd_vector::Quaternion;
 /// ]);
 /// assert_eq!(Complex::new(20.0_f64, 0.0).sqrt(), q.norm());
 /// ```
-///
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Biquaternion {
     /// Components of the biquaternion, in the order $[\mathbf{i},\mathbf{j},\mathbf{k},1]$
@@ -582,19 +595,24 @@ impl DivAssign<f64> for Biquaternion {
 /// ```
 /// generates a rotation about the $\mathbf{i}$ axis by angle $\theta$:
 /// ```
-/// use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate,
-/// Biquaternion, UnitBiquaternion};
-/// use std::f64::consts::PI;
-/// use num::complex::Complex;
 /// use approx::assert_relative_eq;
+/// use hoomd_manifold::{
+///     Biquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
+///     UnitBiquaternion,
+/// };
+/// use num::complex::Complex;
+/// use std::f64::consts::PI;
 ///
-/// let q = Biquaternion::from([Complex::new((PI/4.0).sin(),0.0),
-/// Complex::new(0.0,0.0),
-/// Complex::new(0.0, 0.0),
-/// Complex::new((PI/4.0).cos(), 0.0)]);
+/// let q = Biquaternion::from([
+///     Complex::new((PI / 4.0).sin(), 0.0),
+///     Complex::new(0.0, 0.0),
+///     Complex::new(0.0, 0.0),
+///     Complex::new((PI / 4.0).cos(), 0.0),
+/// ]);
 /// let v = q.to_unit();
 /// let x = Minkowski::from([1.0, 1.0, 1.0, 1.0]);
-/// let rotation = HyperbolicRotationMatrix::from(v.expect("non-zero biquaternion"));
+/// let rotation =
+///     HyperbolicRotationMatrix::from(v.expect("non-zero biquaternion"));
 /// let rotated = rotation.hyperbolic_rotate(&x);
 /// assert_relative_eq!(rotated.coordinates[0], 1.0, epsilon = 1e-12);
 /// assert_relative_eq!(rotated.coordinates[1], -1.0, epsilon = 1e-12);
@@ -608,23 +626,38 @@ impl DivAssign<f64> for Biquaternion {
 /// ```
 /// which represents a boost of rapidity $v$ in the $\mathbf{i}$ direction:
 /// ```
-/// use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Biquaternion, Minkowski};
-/// use std::f64::consts::PI;
-/// use num::complex::Complex;
 /// use approx::assert_relative_eq;
+/// use hoomd_manifold::{
+///     Biquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
+///     UnitBiquaternion,
+/// };
+/// use num::complex::Complex;
+/// use std::f64::consts::PI;
 ///
-/// let q = Biquaternion::from([Complex::new(0.0,(0.2_f64).sinh()),
-/// Complex::new(0.0,0.0),
-/// Complex::new(0.0,0.0),
-/// Complex::new((0.2_f64).cosh(),0.0)]);
+/// let q = Biquaternion::from([
+///     Complex::new(0.0, (0.2_f64).sinh()),
+///     Complex::new(0.0, 0.0),
+///     Complex::new(0.0, 0.0),
+///     Complex::new((0.2_f64).cosh(), 0.0),
+/// ]);
 /// let v = q.to_unit();
 /// let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
-/// let boost = HyperbolicRotationMatrix::from(v.expect("hard-coded unit biquaternion"));
+/// let boost = HyperbolicRotationMatrix::from(
+///     v.expect("hard-coded unit biquaternion"),
+/// );
 /// let boosted = boost.hyperbolic_rotate(&x);
-/// assert_relative_eq!(boosted.coordinates[0], (0.4_f64).sinh(), epsilon = 1e-12);
+/// assert_relative_eq!(
+///     boosted.coordinates[0],
+///     (0.4_f64).sinh(),
+///     epsilon = 1e-12
+/// );
 /// assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon = 1e-12);
 /// assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon = 1e-12);
-/// assert_relative_eq!(boosted.coordinates[3], (0.4_f64).cosh(), epsilon = 1e-12);
+/// assert_relative_eq!(
+///     boosted.coordinates[3],
+///     (0.4_f64).cosh(),
+///     epsilon = 1e-12
+/// );
 /// ```
 pub struct UnitBiquaternion(Biquaternion);
 
@@ -739,46 +772,62 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     /// # Examples
     /// Rotation about z axis:
     /// ```
-    /// use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, Biquaternion, Minkowski};
-    /// use std::f64::consts::PI;
-    /// use num::complex::Complex;
     /// use approx::assert_relative_eq;
+    /// use hoomd_manifold::{
+    ///     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
+    /// };
+    /// use num::complex::Complex;
+    /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let x = Minkowski::from([1.0, 0.0, 0.0, 1.0]);
-    /// let q = Biquaternion::from([Complex::new(0.0,0.0),
-    /// Complex::new(0.0,0.0),
-    /// Complex::new((PI/4.0).sin(), 0.0),
-    /// Complex::new((PI/4.0).cos(), 0.0)]);
+    /// let q = Biquaternion::from([
+    ///     Complex::new(0.0, 0.0),
+    ///     Complex::new(0.0, 0.0),
+    ///     Complex::new((PI / 4.0).sin(), 0.0),
+    ///     Complex::new((PI / 4.0).cos(), 0.0),
+    /// ]);
     /// let v = q.to_unit_unchecked();
     /// let rotated = v.hyperbolic_rotate(&x);
-    /// assert_relative_eq!(rotated.coordinates[0], 0.0, epsilon=1e-12);
-    /// assert_relative_eq!(rotated.coordinates[1], 1.0, epsilon=1e-12);
-    /// assert_relative_eq!(rotated.coordinates[2], 0.0, epsilon=1e-12);
-    /// assert_relative_eq!(rotated.coordinates[3], 1.0, epsilon=1e-12);
+    /// assert_relative_eq!(rotated.coordinates[0], 0.0, epsilon = 1e-12);
+    /// assert_relative_eq!(rotated.coordinates[1], 1.0, epsilon = 1e-12);
+    /// assert_relative_eq!(rotated.coordinates[2], 0.0, epsilon = 1e-12);
+    /// assert_relative_eq!(rotated.coordinates[3], 1.0, epsilon = 1e-12);
     /// # Ok(())
     /// # }
     /// ```
     ///
     /// Boost in x direction.
     /// ```
-    /// use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, Biquaternion, Minkowski};
-    /// use std::f64::consts::PI;
-    /// use num::complex::Complex;
     /// use approx::assert_relative_eq;
+    /// use hoomd_manifold::{
+    ///     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
+    /// };
+    /// use num::complex::Complex;
+    /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
-    /// let q = Biquaternion::from([Complex::new(0.0, PI/4.0).sin(),
-    /// Complex::new(0.0,0.0),
-    /// Complex::new(0.0, 0.0),
-    /// Complex::new(0.0, PI/4.0).cos()]);
+    /// let q = Biquaternion::from([
+    ///     Complex::new(0.0, PI / 4.0).sin(),
+    ///     Complex::new(0.0, 0.0),
+    ///     Complex::new(0.0, 0.0),
+    ///     Complex::new(0.0, PI / 4.0).cos(),
+    /// ]);
     /// let v = q.to_unit_unchecked();
     /// let boosted = v.hyperbolic_rotate(&x);
-    /// assert_relative_eq!(boosted.coordinates[0], (PI/2.0).sinh(), epsilon=1e-12);
-    /// assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon=1e-12);
-    /// assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon=1e-12);
-    /// assert_relative_eq!(boosted.coordinates[3], (PI/2.0).cosh(), epsilon=1e-12);
+    /// assert_relative_eq!(
+    ///     boosted.coordinates[0],
+    ///     (PI / 2.0).sinh(),
+    ///     epsilon = 1e-12
+    /// );
+    /// assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon = 1e-12);
+    /// assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon = 1e-12);
+    /// assert_relative_eq!(
+    ///     boosted.coordinates[3],
+    ///     (PI / 2.0).cosh(),
+    ///     epsilon = 1e-12
+    /// );
     /// # Ok(())
     /// # }
     /// ```

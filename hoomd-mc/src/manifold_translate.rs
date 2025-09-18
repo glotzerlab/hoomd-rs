@@ -66,29 +66,46 @@ where
     ///
     /// # Example
     /// ```
-    /// use hoomd_mc::{LocalTrial, HyperbolicTranslate};
-    /// use hoomd_microstate::property::{Point, Position};
-    /// use hoomd_manifold::{Minkowski, Hyperboloid};
-    /// use hoomd_vector::{Metric, Vector};
-    /// use rand::{rngs::StdRng, Rng, SeedableRng};
     /// use approx::assert_relative_eq;
+    /// use hoomd_manifold::{Hyperboloid, Minkowski};
+    /// use hoomd_mc::{HyperbolicTranslate, LocalTrial};
+    /// use hoomd_microstate::property::{Point, Position};
+    /// use hoomd_vector::{Metric, Vector};
+    /// use rand::{Rng, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(13);
-    /// let rho : f64 = 0.8;
-    /// let body_properties = Point::new(Hyperboloid::from(&Minkowski::from([1.0, -1.0, (2.0 + rho.powi(2)).sqrt()])));
+    /// let rho: f64 = 0.8;
+    /// let body_properties = Point::new(Hyperboloid::from(&Minkowski::from([
+    ///     1.0,
+    ///     -1.0,
+    ///     (2.0 + rho.powi(2)).sqrt(),
+    /// ])));
     /// let d = 0.1 * rho;
-    /// let hyperbolic_translate = HyperbolicTranslate {maximum_distance: d.try_into()? ,
-    /// skirt: rho};
+    /// let hyperbolic_translate = HyperbolicTranslate {
+    ///     maximum_distance: d.try_into()?,
+    ///     skirt: rho,
+    /// };
     ///
-    /// let new_body_properties = hyperbolic_translate.propose(&mut rng, body_properties);
+    /// let new_body_properties =
+    ///     hyperbolic_translate.propose(&mut rng, body_properties);
     ///
     /// // Translation move keeps the point on the hyperboloid
-    /// assert_relative_eq!(new_body_properties.position().point.distance_squared(&Minkowski::from([0.0,0.0,0.0])), -(rho.powi(2)), epsilon = 1e-12);
+    /// assert_relative_eq!(
+    ///     new_body_properties
+    ///         .position()
+    ///         .point
+    ///         .distance_squared(&Minkowski::from([0.0, 0.0, 0.0])),
+    ///     -(rho.powi(2)),
+    ///     epsilon = 1e-12
+    /// );
     ///
     /// // Translation move does not move the point more than a distance d
-    /// assert!(d > new_body_properties.position()
-    /// .distance(&Hyperboloid::from(&Minkowski::from([1.0, -1.0, (2.0 + rho.powi(2)).sqrt()]))));
+    /// assert!(
+    ///     d > new_body_properties.position().distance(&Hyperboloid::from(
+    ///         &Minkowski::from([1.0, -1.0, (2.0 + rho.powi(2)).sqrt()])
+    ///     ))
+    /// );
     /// # Ok(())
     /// # }
     /// ```
@@ -174,29 +191,46 @@ where
     ///
     /// # Example
     /// ```
+    /// use approx::assert_relative_eq;
+    /// use hoomd_manifold::{Sphere, SphericalDisk};
     /// use hoomd_mc::{LocalTrial, SphericalTranslate};
     /// use hoomd_microstate::property::{Point, Position};
-    /// use hoomd_manifold::{Sphere, SphericalDisk};
-    /// use hoomd_vector::{Vector, Metric, Cartesian};
-    /// use rand::{rngs::StdRng, Rng, SeedableRng};
-    /// use approx::assert_relative_eq;
+    /// use hoomd_vector::{Cartesian, Metric, Vector};
+    /// use rand::{Rng, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(14);
-    /// let radius : f64 = 2.0;
-    /// let initial_point = Point::new(Cartesian::from([2.0_f64.sqrt(), 2.0_f64.sqrt(), 0.0]));
+    /// let radius: f64 = 2.0;
+    /// let initial_point =
+    ///     Point::new(Cartesian::from([2.0_f64.sqrt(), 2.0_f64.sqrt(), 0.0]));
     /// let d = 0.1;
-    /// let spherical_translate = SphericalTranslate {maximum_distance: d.try_into()? ,
-    /// radius: radius};
+    /// let spherical_translate = SphericalTranslate {
+    ///     maximum_distance: d.try_into()?,
+    ///     radius: radius,
+    /// };
     ///
-    /// let new_body_properties = spherical_translate.propose(&mut rng, initial_point);
+    /// let new_body_properties =
+    ///     spherical_translate.propose(&mut rng, initial_point);
     ///
     /// // Translation move keeps point on the surface of the sphere
-    /// assert_relative_eq!(new_body_properties.position().distance(&Cartesian::from([0.0,0.0,0.0])), radius, epsilon=1e-12);
+    /// assert_relative_eq!(
+    ///     new_body_properties
+    ///         .position()
+    ///         .distance(&Cartesian::from([0.0, 0.0, 0.0])),
+    ///     radius,
+    ///     epsilon = 1e-12
+    /// );
     ///
     /// // Translation move does not translate the point more than a distance d away
-    /// assert!(d > Sphere::from(&new_body_properties.position())
-    /// .distance(&Sphere::from(&Cartesian::from([2.0_f64.sqrt(), 2.0_f64.sqrt(), 0.0]))));
+    /// assert!(
+    ///     d > Sphere::from(&new_body_properties.position()).distance(
+    ///         &Sphere::from(&Cartesian::from([
+    ///             2.0_f64.sqrt(),
+    ///             2.0_f64.sqrt(),
+    ///             0.0
+    ///         ]))
+    ///     )
+    /// );
     /// # Ok(())
     /// # }
     /// ```

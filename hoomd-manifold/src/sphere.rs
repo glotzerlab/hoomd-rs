@@ -148,24 +148,28 @@ impl Metric for Sphere<4> {
 ///
 /// ```
 /// use hoomd_manifold::{Sphere, SphericalDisk};
-/// use hoomd_vector::{Metric, Cartesian};
-/// use rand::{rngs::StdRng, Rng, SeedableRng};
-/// use rand::distr::Distribution;
+/// use hoomd_vector::{Cartesian, Metric};
+/// use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let radius : f64 = 1.5;
+/// let radius: f64 = 1.5;
 /// let mut rng = StdRng::seed_from_u64(12);
 ///
-/// let sample_disk = SphericalDisk{
-/// r: 0.5_f64.try_into()?,
-/// point: Cartesian::from([0.01,0.01,-(radius.powi(2)-2.0*(0.01_f64).powi(2)).sqrt()]),
-/// radius: radius,};
+/// let sample_disk = SphericalDisk {
+///     r: 0.5_f64.try_into()?,
+///     point: Cartesian::from([
+///         0.01,
+///         0.01,
+///         -(radius.powi(2) - 2.0 * (0.01_f64).powi(2)).sqrt(),
+///     ]),
+///     radius: radius,
+/// };
 /// let random_point: Sphere<3> = sample_disk.sample(&mut rng);
 ///
 /// let disk = SphericalDisk {
-/// r: 0.1_f64.try_into()?,
-/// point: random_point.point,
-/// radius: radius,
+///     r: 0.1_f64.try_into()?,
+///     point: random_point.point,
+///     radius: radius,
 /// };
 /// let transformed_random_point: Sphere<3> = disk.sample(&mut rng);
 ///

@@ -55,9 +55,10 @@ where
     ///
     /// let wrapped_point = periodic.wrap(point)?;
     ///
-    /// let new_boost = 2.0(EIGHTEIGHT.tanh()
-    ///     / (offset.cos() - offset.sin() * (1.0 - (2.0_f64).sqrt())))
-    /// .atanh()
+    /// let new_boost = 2.0
+    ///     * (EIGHTEIGHT.tanh()
+    ///         / (offset.cos() - offset.sin() * (1.0 - (2.0_f64).sqrt())))
+    ///     .atanh()
     ///     - boost;
     /// let ans =
     ///     Hyperboloid::<3>::from_polar(new_boost, 6.0 * PI / 4.0 - offset, 1.0);
