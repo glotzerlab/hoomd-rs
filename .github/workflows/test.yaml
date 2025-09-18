@@ -1,7 +1,7 @@
 name: test
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 on:
@@ -21,6 +21,13 @@ env:
   CLICOLOR: 1
 
 jobs:
+  start_action_runners:
+    name: Start
+    uses: glotzerlab/jetstream2-admin/.github/workflows/start.yaml@9ef0cf7995c9209bfa77d45baa124f15df669393 # v1.4.0
+    secrets: inherit
+    with:
+      number: 8
+
   unit_test:
     name: Unit test [${{ matrix.profile }}-rust-${{ matrix.rust }}-${{ matrix.os }}]
     runs-on: [self-hosted, jetstream2, CPU]
@@ -61,7 +68,7 @@ jobs:
       run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
     - name: Checkout
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
     # This code is needed on GitHub Hosted runners, disable for now while we use private runners.
     # - name: Update rust
     #   run: rustup install ${{ matrix.rust }} --no-self-update
@@ -104,13 +111,13 @@ jobs:
       run: cargo bench
       if: ${{ matrix.target == '' }}
 
-  # tests_complete:
-  #   name: All tests
-  #   if: always()
-  #   needs: [unit_test]
-  #   runs-on: ubuntu-latest
+  tests_complete:
+    name: All tests
+    if: always()
+    needs: [unit_test]
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #   - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
-  #   - name: Done
-  #     run: exit 0
+    steps:
+    - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
+    - name: Done
+      run: exit 0

@@ -9,6 +9,7 @@ members = ["examples",
            "hoomd-manifold",
            "hoomd-mc",
            "hoomd-microstate",
+           "hoomd-simulation",
            "hoomd-utility",
            "hoomd-vector",
            "tools/build-wasm-doc-examples",
@@ -25,6 +26,7 @@ default-members = ["examples",
                    "hoomd-manifold",
                    "hoomd-mc",
                    "hoomd-microstate",
+                   "hoomd-simulation",
                    "hoomd-utility",
                    "hoomd-vector",
                   ]
@@ -48,13 +50,14 @@ hoomd-interaction = { path = "hoomd-interaction" }
 hoomd-manifold = { path = "hoomd-manifold" }
 hoomd-mc = { path = "hoomd-mc" }
 hoomd-microstate = { path = "hoomd-microstate" }
+hoomd-simulation = { path = "hoomd-simulation" }
 hoomd-utility = { path = "hoomd-utility" }
 hoomd-vector = { path = "hoomd-vector" }
 
 # Common dev dependencies
 approx = "0.5.1"
 divan = "0.1.17"
-rstest = "0.25.0"
+rstest = "0.26.0"
 anyhow = "1.0.98"
 tempfile = "3.20.0"
 clap = {version = "4.5.40", features = ["derive"]}

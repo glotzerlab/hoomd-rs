@@ -1,33 +1,36 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`Expanded`]
- */
+//! Implement [`Expanded`]
 
 use super::{IsotropicEnergy, IsotropicForce};
 
-/** Expand another potential.
-
-```math
-U(r) = f(r - \delta)
-```
-
-# Example
-
-Expanded Lennard-Jones:
-```
-use hoomd_interaction::pairwise::{LennardJones, IsotropicEnergy, Expanded};
-use approx::{assert_abs_diff_eq, assert_relative_eq};
-
-let epsilon = 1.5;
-let sigma = 1.0;
-let delta = 0.75;
-let lj: LennardJones = LennardJones { epsilon, sigma };
-let expanded_lj = Expanded { f: lj, delta };
-
-assert_abs_diff_eq!(expanded_lj.energy(1.0), expanded_lj.f.energy(1.0 - 0.75));
-```
-*/
+/// Expand another potential.
+///
+/// ```math
+/// U(r) = f(r - \delta)
+/// ```
+///
+/// # Example
+///
+/// Expanded Lennard-Jones:
+/// ```
+/// use approx::{assert_abs_diff_eq, assert_relative_eq};
+/// use hoomd_interaction::pairwise::{
+///     Expanded, IsotropicEnergy, LennardJones,
+/// };
+///
+/// let epsilon = 1.5;
+/// let sigma = 1.0;
+/// let delta = 0.75;
+/// let lj: LennardJones = LennardJones { epsilon, sigma };
+/// let expanded_lj = Expanded { f: lj, delta };
+///
+/// assert_abs_diff_eq!(
+///     expanded_lj.energy(1.0),
+///     expanded_lj.f.energy(1.0 - 0.75)
+/// );
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Expanded<F> {
     /// The original potential.
@@ -40,12 +43,11 @@ impl<F> Default for Expanded<F>
 where
     F: Default,
 {
-    /** Construct a shifted potential with default parameters
-
-    The defaults are:
-    * `f = F::default()`
-    * `delta = 0.0`
-    */
+    /// Construct a shifted potential with default parameters
+    ///
+    /// The defaults are:
+    /// `f = F::default()`
+    /// `delta = 0.0`
     #[inline]
     fn default() -> Self {
         Self {
