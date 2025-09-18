@@ -164,7 +164,7 @@ pub trait SiteEnergy<S> {
 ///     Body, Microstate,
 ///     property::{Point, Position},
 /// };
-/// use hoomd_vector::{Cartesian, Vector};
+/// use hoomd_vector::{Cartesian, Metric};
 ///
 /// struct Custom {
 ///     r: f64,
@@ -172,7 +172,7 @@ pub trait SiteEnergy<S> {
 ///
 /// impl<S> SiteOverlap<S> for Custom
 /// where
-///     S: Position<Vector = Cartesian<2>>,
+///     S: Position<Position = Cartesian<2>>,
 /// {
 ///     /// Check for overlaps of a disk with a circular boundary.
 ///     fn site_overlap(&self, site_properties: &S) -> bool {
@@ -305,7 +305,7 @@ pub trait SitePairEnergy<S> {
 /// }
 ///
 /// impl Position for CircleSiteProperties {
-///     type Vector = Cartesian<2>;
+///     type Position = Cartesian<2>;
 ///
 ///     fn position(&self) -> &Cartesian<2> {
 ///         &self.position

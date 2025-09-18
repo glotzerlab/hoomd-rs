@@ -5,9 +5,11 @@
 
 use super::Position;
 use crate::Transform;
-use approx::assert_relative_eq;
 use hoomd_manifold::{Hyperboloid, Minkowski, Sphere};
 use hoomd_vector::Cartesian;
+
+#[cfg(debug_assertions)]
+use approx::assert_relative_eq;
 
 /// A position in space and nothing more.
 ///

@@ -10,7 +10,7 @@ use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder, boundary::Closed, property::Point,
 };
 use hoomd_simulation::Simulation;
-use hoomd_vector::Cartesian;
+use hoomd_vector::{Cartesian, Metric};
 // ANCHOR_END: use
 
 // ANCHOR: boundary_struct
