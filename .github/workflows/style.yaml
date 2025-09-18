@@ -27,6 +27,7 @@ jobs:
       with:
         toolchain: 1.89.0
     - run: cargo check --all-targets --all-features
+    - run: cargo check --all-targets --all-features --release
 
   cargo-clippy:
     runs-on: ubuntu-24.04
@@ -39,6 +40,7 @@ jobs:
         toolchain: 1.89.0
         components: clippy
     - run: cargo clippy --all-targets --all-features -- -Dwarnings
+    - run: cargo clippy --all-targets --all-features --release -- -Dwarnings
 
   cargo-fmt:
     runs-on: ubuntu-24.04
