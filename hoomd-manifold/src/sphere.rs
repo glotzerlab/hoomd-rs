@@ -3,14 +3,18 @@
 
 //! Implement vector and curved manifold types on a sphere.
 
-use approx::assert_relative_eq;
-use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, InnerProduct, Metric};
+use std::f64::consts::PI;
+
 use rand::{
     Rng,
     distr::{Distribution, Uniform},
 };
-use std::f64::consts::PI;
+
+use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::{Cartesian, InnerProduct, Metric};
+
+#[cfg(debug_assertions)]
+use approx::assert_relative_eq;
 
 /// The trait [`Sphere`] for [`Cartesian`] implements types on the embedding of an N-sphere in Euclidean space.
 /// Explicitly, the N-sphere is defined by the set of (N+1)-dimesnional points whose components satisfy
@@ -113,9 +117,7 @@ impl Metric for Sphere<3> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
         #[cfg(debug_assertions)]
-        {
-            assert_relative_eq!(self.radius, other.radius, epsilon = 1e-12);
-        }
+        assert_relative_eq!(self.radius, other.radius, epsilon = 1e-12);
         let arg = Cartesian::dot(&self.point, &other.point) / self.radius.powi(2);
         self.radius * (arg.acos())
     }
@@ -129,9 +131,7 @@ impl Metric for Sphere<4> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
         #[cfg(debug_assertions)]
-        {
-            assert_relative_eq!(self.radius, other.radius, epsilon = 1e-12);
-        }
+        assert_relative_eq!(self.radius, other.radius, epsilon = 1e-12);
         let arg = Cartesian::dot(&self.point, &other.point) / self.radius.powi(2);
         self.radius * (arg.acos())
     }
@@ -219,9 +219,7 @@ impl Distribution<Sphere<3>> for SphericalDisk {
         ]);
         let new_sphere = Sphere::from(&transformed_point);
         #[cfg(debug_assertions)]
-        {
-            assert_relative_eq!(radius, new_sphere.radius, epsilon = 1e-12);
-        }
+        assert_relative_eq!(radius, new_sphere.radius, epsilon = 1e-12);
         new_sphere
     }
 }

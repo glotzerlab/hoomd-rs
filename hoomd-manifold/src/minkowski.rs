@@ -3,13 +3,6 @@
 
 //! Implement vector types in Minkowski space.
 
-use approx::assert_relative_eq;
-use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Metric, Vector};
-use rand::{
-    Rng,
-    distr::{Distribution, StandardUniform, Uniform},
-};
 use std::{
     array,
     f64::consts::PI,
@@ -17,8 +10,16 @@ use std::{
     iter::zip,
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-
+use rand::{
+    Rng,
+    distr::{Distribution, StandardUniform, Uniform},
+};
+use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::{Metric, Vector};
 use crate::{Error, HyperbolicRotate};
+
+#[cfg(debug_assertions)]
+use approx::assert_relative_eq;
 
 /// [`Minkowski<N>`] implements (N-1,1)-dimensional Minkowski space with the metric signature
 /// $(+ \;\cdots\; +\; -)$. [`Minkowski`] supports [`Vector`] operations such as vector addition and rescaling, but
@@ -604,9 +605,7 @@ impl Metric for Hyperboloid<3> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
         #[cfg(debug_assertions)]
-        {
-            assert_relative_eq!(self.skirt, other.skirt, epsilon = 1e-12);
-        }
+        assert_relative_eq!(self.skirt, other.skirt, epsilon = 1e-12);
         let last_component = self.point.coordinates[2] * other.point.coordinates[2];
         let arg = zip(
             self.point.coordinates[0..2].iter(),
@@ -625,9 +624,7 @@ impl Metric for Hyperboloid<4> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
         #[cfg(debug_assertions)]
-        {
-            assert_relative_eq!(self.skirt, other.skirt, epsilon = 1e-12);
-        }
+        assert_relative_eq!(self.skirt, other.skirt, epsilon = 1e-12);
         let last_component = self.point.coordinates[3] * other.point.coordinates[3];
         let arg = zip(
             self.point.coordinates[0..3].iter(),
@@ -896,9 +893,7 @@ impl Distribution<Hyperboloid<3>> for HyperbolicDisk {
         ]);
         let new_hyperboloid = Hyperboloid::from(&transformed_point);
         #[cfg(debug_assertions)]
-        {
-            assert_relative_eq!(rho, new_hyperboloid.skirt(), epsilon = 1e-12);
-        }
+        assert_relative_eq!(rho, new_hyperboloid.skirt(), epsilon = 1e-12);
         new_hyperboloid
     }
 }

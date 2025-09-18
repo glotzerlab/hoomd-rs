@@ -91,13 +91,11 @@ impl Transform<Point<Hyperboloid<3>>> for Point<Hyperboloid<3>> {
         ]);
         let new_hyperboloid = Hyperboloid::from(&transformed_point);
         #[cfg(debug_assertions)]
-        {
-            assert_relative_eq!(
-                self.position.skirt,
-                new_hyperboloid.skirt(),
-                epsilon = 1e-12
-            );
-        }
+        assert_relative_eq!(
+            self.position.skirt,
+            new_hyperboloid.skirt(),
+            epsilon = 1e-12
+        );
         Point::new(new_hyperboloid)
     }
 }
@@ -128,13 +126,11 @@ impl Transform<Point<Hyperboloid<4>>> for Point<Hyperboloid<4>> {
         ]);
         let new_hyperboloid = Hyperboloid::from(&transformed_point);
         #[cfg(debug_assertions)]
-        {
-            assert_relative_eq!(
-                self.position.skirt,
-                new_hyperboloid.skirt(),
-                epsilon = 1e-12
-            );
-        }
+        assert_relative_eq!(
+            self.position.skirt,
+            new_hyperboloid.skirt(),
+            epsilon = 1e-12
+        );
         Point::new(new_hyperboloid)
     }
 }
@@ -158,9 +154,7 @@ impl Transform<Point<Sphere<3>>> for Point<Sphere<3>> {
         ]);
         let new_sphere = Sphere::from(&transformed_point);
         #[cfg(debug_assertions)]
-        {
-            assert_relative_eq!(radius, new_sphere.radius, epsilon = 1e-12);
-        }
+        assert_relative_eq!(radius, new_sphere.radius, epsilon = 1e-12);
         Point::new(new_sphere)
     }
 }
@@ -168,6 +162,7 @@ impl Transform<Point<Sphere<3>>> for Point<Sphere<3>> {
 impl Transform<Point<Sphere<4>>> for Point<Sphere<4>> {
     #[inline]
     fn transform(&self, site_properties: &Point<Sphere<4>>) -> Point<Sphere<4>> {
+        #[cfg(debug_assertions)]
         let radius = self.position.radius;
         let body_point = self.position.point;
         let body_phi_1 = (body_point.coordinates[2].powi(2) + body_point.coordinates[1].powi(2))
@@ -196,9 +191,7 @@ impl Transform<Point<Sphere<4>>> for Point<Sphere<4>> {
         ]);
         let new_sphere = Sphere::from(&transformed_point);
         #[cfg(debug_assertions)]
-        {
-            assert_relative_eq!(radius, new_sphere.radius, epsilon = 1e-12);
-        }
+        assert_relative_eq!(radius, new_sphere.radius, epsilon = 1e-12);
         Point::new(new_sphere)
     }
 }
