@@ -153,7 +153,6 @@ pub trait Position {
 /// The units of [`Orientation`] depend on the representation chosen for `R`.
 /// For example, [`hoomd_vector::Angle`] has units of radians while
 /// [`hoomd_vector::Versor`] is unitless.
-///
 pub trait Orientation {
     /// Type that can express the orientation of a body or site.
     type Rotation;

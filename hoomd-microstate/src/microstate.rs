@@ -923,14 +923,16 @@ impl<B, S, C> Microstate<B, S, C> {
     /// Identify the tag of a body at a given index:
     ///
     /// ```
-    /// use hoomd_microstate::{Microstate, MicrostateBuilder, Body};
+    /// use hoomd_microstate::{Body, Microstate, MicrostateBuilder};
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let microstate = MicrostateBuilder::new()
-    /// .bodies([Body::point(Cartesian::from([1.0, 0.0])),
-    /// Body::point(Cartesian::from([-1.0, 2.0]))])
-    /// .try_build()?;
+    ///     .bodies([
+    ///         Body::point(Cartesian::from([1.0, 0.0])),
+    ///         Body::point(Cartesian::from([-1.0, 2.0])),
+    ///     ])
+    ///     .try_build()?;
     ///
     /// assert_eq!(microstate.bodies()[0].tag, 0);
     /// assert_eq!(microstate.bodies()[1].tag, 1);
@@ -1032,14 +1034,16 @@ impl<B, S, C> Microstate<B, S, C> {
     /// Identify the site and body tags of a site at a given index:
     ///
     /// ```
-    /// use hoomd_microstate::{Microstate, MicrostateBuilder, Body};
+    /// use hoomd_microstate::{Body, Microstate, MicrostateBuilder};
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let microstate = MicrostateBuilder::new()
-    /// .bodies([Body::point(Cartesian::from([1.0, 0.0])),
-    /// Body::point(Cartesian::from([-1.0, 2.0]))])
-    /// .try_build()?;
+    ///     .bodies([
+    ///         Body::point(Cartesian::from([1.0, 0.0])),
+    ///         Body::point(Cartesian::from([-1.0, 2.0])),
+    ///     ])
+    ///     .try_build()?;
     ///
     /// assert_eq!(microstate.sites()[0].site_tag, 0);
     /// assert_eq!(microstate.sites()[0].body_tag, 0);

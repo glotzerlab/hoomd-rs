@@ -641,9 +641,9 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
     ///
     /// # Examples
     /// ```
-    /// use hoomd_vector::{Angle, Rotate, RotationMatrix, Cartesian};
-    /// use std::f64::consts::PI;
     /// use ::approx::assert_relative_eq;
+    /// use hoomd_vector::{Angle, Cartesian, Rotate, RotationMatrix};
+    /// use std::f64::consts::PI;
     ///
     /// let v = Cartesian::from([-1.0, 0.0]);
     /// let a = Angle::from(PI / 2.0);
@@ -654,9 +654,9 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
     /// ```
     ///
     /// ```
-    /// use hoomd_vector::{Versor, Rotate, RotationMatrix, Cartesian};
-    /// use std::f64::consts::PI;
     /// use ::approx::assert_relative_eq;
+    /// use hoomd_vector::{Cartesian, Rotate, RotationMatrix, Versor};
+    /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let a = Cartesian::from([-1.0, 0.0, 0.0]);

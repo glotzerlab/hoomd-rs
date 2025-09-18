@@ -222,7 +222,6 @@ impl Counter {
     ///
     /// let r: f64 = rng.random();
     /// ```
-    ///
     #[must_use]
     #[inline]
     pub fn make_rng(&self) -> impl Rng + use<> {

@@ -59,9 +59,7 @@ use std::{array, ops::Mul};
 ///     edge_lengths: [1.0.try_into()?, 1.0.try_into()?, 9.0.try_into()?],
 /// };
 ///
-/// assert!(
-///     unit_cube.intersects_aligned(&rectangular_prism, &[1.0; 3].into())
-/// );
+/// assert!(unit_cube.intersects_aligned(&rectangular_prism, &[1.0; 3].into()));
 /// assert!(
 ///     !unit_cube.intersects_aligned(&rectangular_prism, &[1.1; 3].into())
 /// );
@@ -81,16 +79,16 @@ use std::{array, ops::Mul};
 ///     edge_lengths: [1.0.try_into()?; 2],
 /// });
 ///
-/// assert!(
-///     !square.intersects_at(&square, &[1.1, 0.0].into(), &Angle::default())
-/// );
-/// assert!(
-///     square.intersects_at(
-///         &square,
-///         &[1.1, 0.0].into(),
-///         &Angle::from(PI / 4.0)
-///     )
-/// );
+/// assert!(!square.intersects_at(
+///     &square,
+///     &[1.1, 0.0].into(),
+///     &Angle::default()
+/// ));
+/// assert!(square.intersects_at(
+///     &square,
+///     &[1.1, 0.0].into(),
+///     &Angle::from(PI / 4.0)
+/// ));
 /// # Ok(())
 /// # }
 /// ```
@@ -129,20 +127,16 @@ pub struct Cuboid<const N: usize> {
 /// };
 /// let rectangle = Convex(rectangle);
 ///
-/// assert!(
-///     !rectangle.intersects_at(
-///         &rectangle,
-///         &[0.0, 2.1].into(),
-///         &Angle::default()
-///     )
-/// );
-/// assert!(
-///     rectangle.intersects_at(
-///         &rectangle,
-///         &[0.0, 2.1].into(),
-///         &Angle::from(PI / 2.0)
-///     )
-/// );
+/// assert!(!rectangle.intersects_at(
+///     &rectangle,
+///     &[0.0, 2.1].into(),
+///     &Angle::default()
+/// ));
+/// assert!(rectangle.intersects_at(
+///     &rectangle,
+///     &[0.0, 2.1].into(),
+///     &Angle::from(PI / 2.0)
+/// ));
 /// # Ok(())
 /// # }
 /// ```
@@ -206,9 +200,7 @@ impl<const N: usize> Cuboid<N> {
     ///     edge_lengths: [1.0.try_into()?, 1.0.try_into()?, 9.0.try_into()?],
     /// };
     ///
-    /// assert!(
-    ///     unit_cube.intersects_aligned(&rectangular_prism, &[1.0; 3].into())
-    /// );
+    /// assert!(unit_cube.intersects_aligned(&rectangular_prism, &[1.0; 3].into()));
     /// assert!(
     ///     !unit_cube.intersects_aligned(&rectangular_prism, &[1.1; 3].into())
     /// );

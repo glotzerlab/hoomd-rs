@@ -96,20 +96,16 @@
 //!     edge_lengths: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?],
 //! });
 //!
-//! assert!(
-//!     sphere.intersects_at(
-//!         &cuboid,
-//!         &[1.9, 0.0, 0.0].into(),
-//!         &Versor::default()
-//!     )
-//! );
-//! assert!(
-//!     !sphere.intersects_at(
-//!         &cuboid,
-//!         &[2.1, 0.0, 0.0].into(),
-//!         &Versor::default()
-//!     )
-//! );
+//! assert!(sphere.intersects_at(
+//!     &cuboid,
+//!     &[1.9, 0.0, 0.0].into(),
+//!     &Versor::default()
+//! ));
+//! assert!(!sphere.intersects_at(
+//!     &cuboid,
+//!     &[2.1, 0.0, 0.0].into(),
+//!     &Versor::default()
+//! ));
 //! # Ok(())
 //! # }
 //! ```
@@ -210,20 +206,16 @@ pub trait SupportMapping<V> {
 ///     edge_lengths: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?],
 /// });
 ///
-/// assert!(
-///     sphere.intersects_at(
-///         &cuboid,
-///         &[1.9, 0.0, 0.0].into(),
-///         &Versor::default()
-///     )
-/// );
-/// assert!(
-///     !sphere.intersects_at(
-///         &cuboid,
-///         &[2.1, 0.0, 0.0].into(),
-///         &Versor::default()
-///     )
-/// );
+/// assert!(sphere.intersects_at(
+///     &cuboid,
+///     &[1.9, 0.0, 0.0].into(),
+///     &Versor::default()
+/// ));
+/// assert!(!sphere.intersects_at(
+///     &cuboid,
+///     &[2.1, 0.0, 0.0].into(),
+///     &Versor::default()
+/// ));
 /// # Ok(())
 /// # }
 /// ```

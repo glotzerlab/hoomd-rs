@@ -114,13 +114,22 @@ pub struct Patch<V> {
 /// Evaluate energy between particles:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch};
+/// use hoomd_interaction::pairwise::{
+///     AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch,
+/// };
 /// use hoomd_vector::Angle;
 /// use std::f64::consts::PI;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
-/// let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
+/// let boxcar = Boxcar {
+///     epsilon: -1.0,
+///     left: 1.0,
+///     right: 1.5,
+/// };
+/// let masks = [Patch {
+///     director: [1.0, 0.0].try_into()?,
+///     cos_delta: (PI / 8.0).cos(),
+/// }];
 /// let angular_mask = AngularMask::new(boxcar, masks);
 ///
 /// let energy = angular_mask.energy(&[1.0, 0.0].into(), &Angle::from(0.0));
@@ -134,21 +143,43 @@ pub struct Patch<V> {
 ///
 /// Apply different patches to the _i_ and _j_ particles:
 /// ```
-/// use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch};
+/// use hoomd_interaction::pairwise::{
+///     AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch,
+/// };
 /// use hoomd_vector::Angle;
 /// use std::f64::consts::PI;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let boxcar = Boxcar { epsilon: -1.0, left: 1.0, right: 1.5 };
-/// let masks_i = vec![Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() },
-/// Patch { director: [-1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
-/// let masks_j = vec![Patch { director: [0.0, 1.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
-/// let angular_mask = AngularMask { isotropic: boxcar, masks_i, masks_j, };
+/// let boxcar = Boxcar {
+///     epsilon: -1.0,
+///     left: 1.0,
+///     right: 1.5,
+/// };
+/// let masks_i = vec![
+///     Patch {
+///         director: [1.0, 0.0].try_into()?,
+///         cos_delta: (PI / 8.0).cos(),
+///     },
+///     Patch {
+///         director: [-1.0, 0.0].try_into()?,
+///         cos_delta: (PI / 8.0).cos(),
+///     },
+/// ];
+/// let masks_j = vec![Patch {
+///     director: [0.0, 1.0].try_into()?,
+///     cos_delta: (PI / 8.0).cos(),
+/// }];
+/// let angular_mask = AngularMask {
+///     isotropic: boxcar,
+///     masks_i,
+///     masks_j,
+/// };
 ///
 /// let energy = angular_mask.energy(&[-1.0, 0.0].into(), &Angle::from(0.0));
 /// assert_eq!(energy, 0.0);
 ///
-/// let energy = angular_mask.energy(&[-1.0, 0.0].into(), &Angle::from(-PI / 2.0));
+/// let energy =
+///     angular_mask.energy(&[-1.0, 0.0].into(), &Angle::from(-PI / 2.0));
 /// assert_eq!(energy, -1.0);
 /// # Ok(())
 /// # }

@@ -52,9 +52,9 @@ use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
 ///
 /// Rotate a [`Cartesian<2>`] vector by an [`Angle`]:
 /// ```
-/// use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
-/// use std::f64::consts::PI;
 /// use ::approx::assert_relative_eq;
+/// use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
+/// use std::f64::consts::PI;
 ///
 /// let v = Cartesian::from([-1.0, 0.0]);
 /// let a = Angle::from(PI / 2.0);
@@ -112,9 +112,9 @@ impl From<Angle> for RotationMatrix<2> {
     ///
     /// # Example
     /// ```
-    /// use hoomd_vector::{Angle, Rotate, RotationMatrix, Cartesian};
-    /// use std::f64::consts::PI;
     /// use ::approx::assert_relative_eq;
+    /// use hoomd_vector::{Angle, Cartesian, Rotate, RotationMatrix};
+    /// use std::f64::consts::PI;
     ///
     /// let v = Cartesian::from([-1.0, 0.0]);
     /// let a = Angle::from(PI / 2.0);
@@ -160,9 +160,9 @@ impl Rotate<Cartesian<2>> for Angle {
     ///
     /// # Example
     /// ```
-    /// use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
-    /// use std::f64::consts::PI;
     /// use ::approx::assert_relative_eq;
+    /// use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
+    /// use std::f64::consts::PI;
     ///
     /// let v = Cartesian::from([-1.0, 0.0]);
     /// let a = Angle::from(PI / 2.0);

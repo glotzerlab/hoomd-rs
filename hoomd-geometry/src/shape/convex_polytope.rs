@@ -46,20 +46,16 @@ use hoomd_vector::{Cartesian, InnerProduct};
 /// ])?;
 /// let rectangle = Convex(rectangle);
 ///
-/// assert!(
-///     !rectangle.intersects_at(
-///         &rectangle,
-///         &[0.0, 2.1].into(),
-///         &Angle::default()
-///     )
-/// );
-/// assert!(
-///     rectangle.intersects_at(
-///         &rectangle,
-///         &[0.0, 2.1].into(),
-///         &Angle::from(PI / 2.0)
-///     )
-/// );
+/// assert!(!rectangle.intersects_at(
+///     &rectangle,
+///     &[0.0, 2.1].into(),
+///     &Angle::default()
+/// ));
+/// assert!(rectangle.intersects_at(
+///     &rectangle,
+///     &[0.0, 2.1].into(),
+///     &Angle::from(PI / 2.0)
+/// ));
 /// # Ok(())
 /// # }
 /// ```
@@ -92,18 +88,16 @@ pub type ConvexPolygon = ConvexPolytope<2>;
 /// A faceted convex body in three dimensions.
 ///
 /// # Example
-/// 
+///
 /// ```
 /// use hoomd_geometry::shape::{ConvexPolyhedron, Simplex3};
 /// # fn main() -> Result<(), hoomd_geometry::Error> {
-/// let poly = ConvexPolyhedron::with_vertices(
-/// vec![
-/// [1.0, 1.0, 1.0].into(),
-/// [1.0, -1.0, -1.0].into(),
-/// [-1.0, 1.0, -1.0].into(),
-/// [-1.0, -1.0, 1.0].into(),
-/// ]
-/// )?;
+/// let poly = ConvexPolyhedron::with_vertices(vec![
+///     [1.0, 1.0, 1.0].into(),
+///     [1.0, -1.0, -1.0].into(),
+///     [-1.0, 1.0, -1.0].into(),
+///     [-1.0, -1.0, 1.0].into(),
+/// ])?;
 ///
 /// assert_eq!(poly.vertices(), Simplex3::default().vertices());
 /// # Ok(())

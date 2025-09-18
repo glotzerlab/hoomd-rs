@@ -146,7 +146,6 @@
 //! ## Spatial searches
 //!
 //! TODO: Implement spatial search, then document.
-//!
 
 pub mod boundary;
 mod microstate;

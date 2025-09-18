@@ -48,23 +48,21 @@ use hoomd_vector::{Cartesian, InnerProduct};
 ///     height: 8.0.try_into()?,
 /// });
 ///
-/// assert!(
-///     capsule.intersects_at(
-///         &capsule,
-///         &[1.75, 0.0].into(),
-///         &Angle::identity()
-///     )
-/// );
-/// assert!(
-///     !capsule.intersects_at(&capsule, &[4.0, 2.0].into(), &Angle::identity()),
-/// );
-/// assert!(
-///     capsule.intersects_at(
-///         &capsule,
-///         &[4.0, -2.0].into(),
-///         &Angle::from(PI / 2.0)
-///     )
-/// );
+/// assert!(capsule.intersects_at(
+///     &capsule,
+///     &[1.75, 0.0].into(),
+///     &Angle::identity()
+/// ));
+/// assert!(!capsule.intersects_at(
+///     &capsule,
+///     &[4.0, 2.0].into(),
+///     &Angle::identity()
+/// ),);
+/// assert!(capsule.intersects_at(
+///     &capsule,
+///     &[4.0, -2.0].into(),
+///     &Angle::from(PI / 2.0)
+/// ));
 /// # Ok(())
 /// # }
 /// ```

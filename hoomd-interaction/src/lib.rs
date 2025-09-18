@@ -40,23 +40,34 @@ pub use zero::Zero;
 /// # Example
 ///
 /// ```
-/// use hoomd_interaction::{CutoffPair, SitePairEnergy, TotalEnergy,
-/// pairwise::{Isotropic, LennardJones}};
-/// use hoomd_microstate::{Microstate, Body};
-/// use hoomd_microstate::property::{Point, Position};
+/// use hoomd_interaction::{
+///     CutoffPair, SitePairEnergy, TotalEnergy,
+///     pairwise::{Isotropic, LennardJones},
+/// };
+/// use hoomd_microstate::{
+///     Body, Microstate,
+///     property::{Point, Position},
+/// };
 /// use hoomd_vector::{Cartesian, Vector};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut microstate = Microstate::new();
-/// microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
-/// Body::point(Cartesian::from([1.0, 0.0])),
-/// Body::point(Cartesian::from([0.0, 5.0])),
-/// Body::point(Cartesian::from([-1.0, 5.0])),
+/// microstate.extend_bodies([
+///     Body::point(Cartesian::from([0.0, 0.0])),
+///     Body::point(Cartesian::from([1.0, 0.0])),
+///     Body::point(Cartesian::from([0.0, 5.0])),
+///     Body::point(Cartesian::from([-1.0, 5.0])),
 /// ])?;
 ///
-/// let lennard_jones: LennardJones = LennardJones { epsilon: 1.5, sigma: 1.0 / 2.0_f64.powf(1.0 / 6.0) };
+/// let lennard_jones: LennardJones = LennardJones {
+///     epsilon: 1.5,
+///     sigma: 1.0 / 2.0_f64.powf(1.0 / 6.0),
+/// };
 /// let lennard_jones = Isotropic(lennard_jones);
-/// let cutoff_pair = CutoffPair { r_cut: 2.5, evaluator: lennard_jones, };
+/// let cutoff_pair = CutoffPair {
+///     r_cut: 2.5,
+///     evaluator: lennard_jones,
+/// };
 ///
 /// let total_energy = cutoff_pair.total_energy(&microstate);
 /// assert_eq!(total_energy, -3.0);
@@ -148,23 +159,26 @@ pub trait SiteEnergy<S> {
 /// Implement a custom site overlap method:
 ///
 /// ```
-/// use hoomd_interaction::{SingleOverlap, TotalEnergy, SiteOverlap};
-/// use hoomd_microstate::{Microstate, Body};
-/// use hoomd_microstate::property::{Point, Position};
+/// use hoomd_interaction::{SingleOverlap, SiteOverlap, TotalEnergy};
+/// use hoomd_microstate::{
+///     Body, Microstate,
+///     property::{Point, Position},
+/// };
 /// use hoomd_vector::{Cartesian, Vector};
 ///
 /// struct Custom {
-/// r: f64,
+///     r: f64,
 /// }
 ///
 /// impl<S> SiteOverlap<S> for Custom
 /// where
-/// S: Position<Vector = Cartesian<2>>
+///     S: Position<Vector = Cartesian<2>>,
 /// {
-/// /// Check for overlaps of a disk with a circular boundary.
-/// fn site_overlap(&self, site_properties: &S) -> bool {
-/// site_properties.position().distance(&Cartesian::default()) > self.r - 0.5
-/// }
+///     /// Check for overlaps of a disk with a circular boundary.
+///     fn site_overlap(&self, site_properties: &S) -> bool {
+///         site_properties.position().distance(&Cartesian::default())
+///             > self.r - 0.5
+///     }
 /// }
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -172,7 +186,8 @@ pub trait SiteEnergy<S> {
 /// microstate.extend_bodies([Body::point(Cartesian::from([9.6, 0.0]))])?;
 ///
 /// let custom_evaluator = Custom { r: 10.0 };
-/// let site_overlap = custom_evaluator.site_overlap(&microstate.sites()[0].properties);
+/// let site_overlap =
+///     custom_evaluator.site_overlap(&microstate.sites()[0].properties);
 /// assert!(site_overlap);
 ///
 /// let custom = SingleOverlap(custom_evaluator);

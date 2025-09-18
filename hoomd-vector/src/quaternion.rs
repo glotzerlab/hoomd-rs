@@ -475,9 +475,9 @@ impl SubAssign for Quaternion {
 ///
 /// Rotate a [`Cartesian<3>`] by a [`Versor`]:
 /// ```
-/// use hoomd_vector::{Versor, Rotate, Rotation, Cartesian};
-/// use std::f64::consts::PI;
 /// use ::approx::assert_relative_eq;
+/// use hoomd_vector::{Cartesian, Rotate, Rotation, Versor};
+/// use std::f64::consts::PI;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let a = Cartesian::from([-1.0, 0.0, 0.0]);
@@ -578,9 +578,9 @@ impl From<Versor> for RotationMatrix<3> {
     ///
     /// # Example
     /// ```
-    /// use hoomd_vector::{Versor, Rotate, RotationMatrix, Cartesian};
-    /// use std::f64::consts::PI;
     /// use ::approx::assert_relative_eq;
+    /// use hoomd_vector::{Cartesian, Rotate, RotationMatrix, Versor};
+    /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let a = Cartesian::from([-1.0, 0.0, 0.0]);
@@ -655,9 +655,9 @@ impl Rotate<Cartesian<3>> for Versor {
     /// # Example
     ///
     /// ```
-    /// use hoomd_vector::{Versor, Rotate, Rotation, Cartesian};
-    /// use std::f64::consts::PI;
     /// use ::approx::assert_relative_eq;
+    /// use hoomd_vector::{Cartesian, Rotate, Rotation, Versor};
+    /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let a = Cartesian::from([-1.0, 0.0, 0.0]);

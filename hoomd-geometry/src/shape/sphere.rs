@@ -63,20 +63,16 @@ pub(crate) fn sphere_volume_prefactor(n: usize) -> f64 {
 ///
 /// let unit_sphere = Hypersphere::<3>::default();
 ///
-/// assert!(
-///     !unit_sphere.intersects_at(
-///         &unit_sphere,
-///         &Cartesian::from([2.1, 0.0, 0.0]),
-///         &Versor::default()
-///     )
-/// );
-/// assert!(
-///     unit_sphere.intersects_at(
-///         &unit_sphere,
-///         &Cartesian::from([0.0, 1.9, 0.0]),
-///         &Versor::default()
-///     )
-/// );
+/// assert!(!unit_sphere.intersects_at(
+///     &unit_sphere,
+///     &Cartesian::from([2.1, 0.0, 0.0]),
+///     &Versor::default()
+/// ));
+/// assert!(unit_sphere.intersects_at(
+///     &unit_sphere,
+///     &Cartesian::from([0.0, 1.9, 0.0]),
+///     &Versor::default()
+/// ));
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Hypersphere<const N: usize> {
@@ -170,20 +166,16 @@ pub type Circle = Hypersphere<2>;
 ///
 /// let unit_sphere = Sphere::default();
 ///
-/// assert!(
-///     !unit_sphere.intersects_at(
-///         &unit_sphere,
-///         &Cartesian::from([2.1, 0.0, 0.0]),
-///         &Versor::default()
-///     )
-/// );
-/// assert!(
-///     unit_sphere.intersects_at(
-///         &unit_sphere,
-///         &Cartesian::from([0.0, 1.9, 0.0]),
-///         &Versor::default()
-///     )
-/// );
+/// assert!(!unit_sphere.intersects_at(
+///     &unit_sphere,
+///     &Cartesian::from([2.1, 0.0, 0.0]),
+///     &Versor::default()
+/// ));
+/// assert!(unit_sphere.intersects_at(
+///     &unit_sphere,
+///     &Cartesian::from([0.0, 1.9, 0.0]),
+///     &Versor::default()
+/// ));
 /// ```
 pub type Sphere = Hypersphere<3>;
 

@@ -23,8 +23,7 @@ use crate::{IntersectsAt, SupportMapping, Volume};
 /// Vertices are defined by 3-length positive-signed permutations of [1,-1]
 ///
 /// ```rust
-/// use hoomd_geometry::shape::Simplex3;
-/// use hoomd_geometry::{Volume, IntersectsAt};
+/// use hoomd_geometry::{IntersectsAt, Volume, shape::Simplex3};
 /// use hoomd_vector::{Cartesian, Rotation, Versor};
 ///
 /// let tet = Simplex3::default();
@@ -34,7 +33,10 @@ use crate::{IntersectsAt, SupportMapping, Volume};
 ///
 /// assert_eq!(tet.volume(), 8.0 / 3.0);
 ///
-/// assert_eq!(tet.get_edge_vectors()[0], tet.vertices()[1]-tet.vertices()[0]);
+/// assert_eq!(
+///     tet.get_edge_vectors()[0],
+///     tet.vertices()[1] - tet.vertices()[0]
+/// );
 /// ```
 ///
 /// [`Simplex3`] instances support a fast intersection detection algorithm:
@@ -57,7 +59,8 @@ use crate::{IntersectsAt, SupportMapping, Volume};
 /// # use hoomd_geometry::{shape::Simplex3, Volume};
 /// # use hoomd_vector::Cartesian;
 /// let planar_tetrahedron = Simplex3::from(
-/// [[0.0;3], [0.0;3], [1.0,0.0,0.0], [0.0,1.0,0.0]].map(Cartesian::from)
+///     [[0.0; 3], [0.0; 3], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]
+///         .map(Cartesian::from),
 /// );
 ///
 /// assert_eq!(planar_tetrahedron.volume(), 0.0);

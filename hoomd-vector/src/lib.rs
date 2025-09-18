@@ -123,9 +123,9 @@
 //!
 //! [`Angle`] implements rotations on [`Cartesian<2>`] vectors.
 //! ```
-//! use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
-//! use std::f64::consts::PI;
 //! use ::approx::assert_relative_eq;
+//! use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
+//! use std::f64::consts::PI;
 //!
 //! let v = Cartesian::from([-1.0, 0.0]);
 //! let a = Angle::from(PI / 2.0);
@@ -135,9 +135,9 @@
 //!
 //! [`Versor`] implements rotations on [`Cartesian<3>`] vectors.
 //! ```
-//! use hoomd_vector::{Versor, Rotate, Rotation, Cartesian};
-//! use std::f64::consts::PI;
 //! use ::approx::assert_relative_eq;
+//! use hoomd_vector::{Cartesian, Rotate, Rotation, Versor};
+//! use std::f64::consts::PI;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let a = Cartesian::from([-1.0, 0.0, 0.0]);
@@ -391,7 +391,6 @@ pub trait Vector:
 ///
 /// The [`InnerProduct`] subtrait defines additional methods that can be performed on any vector
 /// in an inner product space, specifically vector norms and inner products.
-///
 pub trait InnerProduct: Vector {
     /// Compute the vector dot product between two vectors.
     ///
@@ -615,8 +614,8 @@ pub trait Rotate<V: Vector> {
     ///
     /// # Example
     /// ```
-    /// use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
     /// use ::approx::assert_relative_eq;
+    /// use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
     ///
     /// let v = Cartesian::from([-1.0, 0.0]);
     /// let a = Angle::from(std::f64::consts::PI / 2.0);
