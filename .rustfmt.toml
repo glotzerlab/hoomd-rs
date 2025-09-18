@@ -3,8 +3,6 @@ edition = "2024"
 style_edition = "2024"
 hex_literal_case = "Lower"
 imports_granularity = "Crate"
-
-# Will implement on a separate PR
-# format_code_in_doc_comments = true
-# doc_comment_code_block_width = 80
-# normalize_comments = true
+format_code_in_doc_comments = true
+doc_comment_code_block_width = 80
+normalize_comments = true

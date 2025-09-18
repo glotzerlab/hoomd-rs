@@ -6,7 +6,7 @@
     reason = "benches don't need public documentation"
 )]
 
-/*! Benchmark `LennardJones` */
+//! Benchmark `LennardJones`
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use rand::{Rng, SeedableRng, rngs::StdRng};

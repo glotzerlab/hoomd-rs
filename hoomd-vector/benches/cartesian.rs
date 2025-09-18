@@ -10,7 +10,7 @@
     reason = "benches can use expect without individual reasons"
 )]
 
-/*! Benchmark Cartesian */
+//! Benchmark Cartesian
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use rand::{Rng, SeedableRng, distr::Uniform, rngs::StdRng};

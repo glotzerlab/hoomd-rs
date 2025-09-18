@@ -1,8 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement Sweep
- */
+//! Implement Sweep
 
 use super::{Count, LocalTrial, Trial};
 use hoomd_interaction::DeltaEnergyOne;
@@ -14,42 +13,43 @@ use hoomd_microstate::{
 
 use rand::Rng;
 
-/** Apply a local trial move to each body in the microstate.
-
-Each trial move is accepted when:
-```math
-r < \exp\left(\frac{-\Delta H}{kT}\right)
-```
-where `r` is a random value uniformly distributed in `[0,1)`, $`\Delta H`$ is
-the change in energy computed by the given `hamiltonian` and $`kT`$ is the given
-`state` value (the last argument to `apply`).
-
-# Example
-
-```
-use hoomd_interaction::Zero;
-use hoomd_mc::{Sweep, Translate, Trial};
-use hoomd_microstate::{Body, Microstate, property::Position};
-use hoomd_vector::Cartesian;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let mut microstate = Microstate::new();
-microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
-let d = 0.1;
-let translate = Translate { maximum_distance: d.try_into()? };
-let translate_sweep = Sweep(translate);
-
-let hamiltonian = Zero;
-let kt = 1.0;
-
-for _ in 0..1_000 {
-    translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
-    microstate.increment_step();
-}
-# Ok(())
-# }
-```
-*/
+/// Apply a local trial move to each body in the microstate.
+///
+/// Each trial move is accepted when:
+/// ```math
+/// r < \exp\left(\frac{-\Delta H}{kT}\right)
+/// ```
+/// where `r` is a random value uniformly distributed in `[0,1)`, $`\Delta H`$ is
+/// the change in energy computed by the given `hamiltonian` and $`kT`$ is the given
+/// `state` value (the last argument to `apply`).
+///
+/// # Example
+///
+/// ```
+/// use hoomd_interaction::Zero;
+/// use hoomd_mc::{Sweep, Translate, Trial};
+/// use hoomd_microstate::{Body, Microstate, property::Position};
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut microstate = Microstate::new();
+/// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
+/// let d = 0.1;
+/// let translate = Translate {
+///     maximum_distance: d.try_into()?,
+/// };
+/// let translate_sweep = Sweep(translate);
+///
+/// let hamiltonian = Zero;
+/// let kt = 1.0;
+///
+/// for _ in 0..1_000 {
+///     translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
+///     microstate.increment_step();
+/// }
+/// # Ok(())
+/// # }
+/// ```
 pub struct Sweep<L>(pub L);
 
 impl<V, B, S, C, L, H> Trial<Microstate<B, S, C>, H> for Sweep<L>

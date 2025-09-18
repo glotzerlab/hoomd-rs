@@ -1,18 +1,16 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement Open
- */
+//! Implement Open
 
 use tinyvec::ArrayVec;
 
 use super::{Error, GenerateGhosts, MAX_GHOSTS, Wrap};
 
-/** Allow bodies and sites to exist anywhere in space.
-
-Every point lies inside `Open` boundary conditions, bodies and sites
-are never wrapped, and there are no ghost sites.
-*/
+/// Allow bodies and sites to exist anywhere in space.
+///
+/// Every point lies inside `Open` boundary conditions, bodies and sites
+/// are never wrapped, and there are no ghost sites.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Open;
 

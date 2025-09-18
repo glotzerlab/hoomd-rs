@@ -1,18 +1,16 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement `Zero`
- */
+//! Implement `Zero`
 
 use super::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, TotalEnergy};
 
 use hoomd_microstate::{Body, Microstate};
 
-/** Set the energy of any system to 0.
-
-*hoomd-rs* uses [`Zero`] in minimal examples that demonstrate MC simulations.
-It returns 0 for all energies and delta energies.
-*/
+/// Set the energy of any system to 0.
+///
+/// *hoomd-rs* uses [`Zero`] in minimal examples that demonstrate MC simulations.
+/// It returns 0 for all energies and delta energies.
 pub struct Zero;
 
 impl<M> TotalEnergy<M> for Zero {

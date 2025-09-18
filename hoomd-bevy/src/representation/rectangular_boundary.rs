@@ -1,27 +1,25 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement `RectangularBoundary`.
- */
+//! Implement `RectangularBoundary`.
 
 use bevy::prelude::*;
 
 use crate::BOUNDARY_COLOR;
 
-/** Represent an simulation boundary with a thin lined rectangle.
-
-The lines are a fixed thickness in world coordinates. A default
-[`RectangularBoundary`] has:
-* `width`: 1.0
-* `height`: 1.0
-* `thickness`: 0.1
-* `color`: [`BOUNDARY_COLOR`](crate::BOUNDARY_COLOR)
-* `z`: 1.0
-
-To use:
-* Add [`setup`](Self::setup) to the `Startup` schedule.
-* (if needed) Call [`sync`](Self::sync) in an `Update` schedule that runs after `AdvanceSet`.
-*/
+/// Represent an simulation boundary with a thin lined rectangle.
+///
+/// The lines are a fixed thickness in world coordinates. A default
+/// [`RectangularBoundary`] has:
+/// `width`: 1.0
+/// `height`: 1.0
+/// `thickness`: 0.1
+/// `color`: [`BOUNDARY_COLOR`](crate::BOUNDARY_COLOR)
+/// `z`: 1.0
+///
+/// To use:
+/// * Add [`setup`](Self::setup) to the `Startup` schedule.
+/// * (if needed) Call [`sync`](Self::sync) in an `Update` schedule that runs after `AdvanceSet`.
 #[derive(Component)]
 pub struct RectangularBoundary {
     /// Extent of the rectangle's open space in the x direction.
@@ -53,8 +51,7 @@ impl Default for RectangularBoundary {
 }
 
 impl RectangularBoundary {
-    /** Create entities that render rectangular boundaries.
-     */
+    /// Create entities that render rectangular boundaries.
     pub fn setup(
         rectangular_boundary: In<Self>,
         mut commands: Commands,
