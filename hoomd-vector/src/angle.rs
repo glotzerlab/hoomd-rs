@@ -1,77 +1,77 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`Angle`]
- */
+//! Implement [`Angle`]
 
-use rand::Rng;
-use rand::distr::{Distribution, StandardUniform, Uniform};
-use std::f64::consts::PI;
-use std::fmt;
+use rand::{
+    Rng,
+    distr::{Distribution, StandardUniform, Uniform},
+};
+use std::{f64::consts::PI, fmt};
 
 use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
 
-/** Rotation in the plane.
-
-The rotation is represented by an angle `theta` in radians. Positive values rotate
-counter-clockwise.
-
-## Constructing [`Angle`]
-
-The default Angle rotates by 0 radians:
-
-```
-use hoomd_vector::Angle;
-
-let a = Angle::default();
-assert_eq!(a.theta, 0.0)
-```
-
-Create an [`Angle`] with a given value:
-```
-use hoomd_vector::Angle;
-use std::f64::consts::PI;
-
-let a = Angle::from(PI/2.0);
-assert_eq!(a.theta, PI/2.0);
-```
-
-Create a random [`Angle`] from the uniform distribution over all rotations:
-```
-use hoomd_vector::Angle;
-use rand::{rngs::StdRng, Rng, SeedableRng};
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let mut rng = StdRng::seed_from_u64(1);
-let a: Angle = rng.random();
-# Ok(())
-# }
-```
-
-## Operations using [`Angle`]
-
-Rotate a [`Cartesian<2>`] vector by an [`Angle`]:
-```
-use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
-use std::f64::consts::PI;
-
-let v = Cartesian::from([-1.0, 0.0]);
-let a = Angle::from(PI/2.0);
-let rotated = a.rotate(&v);
-// rotated is approximately [0.0, -1.0]
-```
-
-Combine two rotations together:
-```
-use hoomd_vector::{Angle, Rotation};
-use std::f64::consts::PI;
-
-let a = Angle::from(PI/2.0);
-let b = Angle::from(-PI/4.0);
-let c = a.combine(&b);
-assert_eq!(c.theta, PI/4.0);
-```
-*/
+/// Rotation in the plane.
+///
+/// The rotation is represented by an angle `theta` in radians. Positive values rotate
+/// counter-clockwise.
+///
+/// ## Constructing [`Angle`]
+///
+/// The default Angle rotates by 0 radians:
+///
+/// ```
+/// use hoomd_vector::Angle;
+///
+/// let a = Angle::default();
+/// assert_eq!(a.theta, 0.0)
+/// ```
+///
+/// Create an [`Angle`] with a given value:
+/// ```
+/// use hoomd_vector::Angle;
+/// use std::f64::consts::PI;
+///
+/// let a = Angle::from(PI / 2.0);
+/// assert_eq!(a.theta, PI / 2.0);
+/// ```
+///
+/// Create a random [`Angle`] from the uniform distribution over all rotations:
+/// ```
+/// use hoomd_vector::Angle;
+/// use rand::{Rng, SeedableRng, rngs::StdRng};
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut rng = StdRng::seed_from_u64(1);
+/// let a: Angle = rng.random();
+/// # Ok(())
+/// # }
+/// ```
+///
+/// ## Operations using [`Angle`]
+///
+/// Rotate a [`Cartesian<2>`] vector by an [`Angle`]:
+/// ```
+/// use ::approx::assert_relative_eq;
+/// use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
+/// use std::f64::consts::PI;
+///
+/// let v = Cartesian::from([-1.0, 0.0]);
+/// let a = Angle::from(PI / 2.0);
+/// let rotated = a.rotate(&v);
+/// assert_relative_eq!(rotated, [0.0, -1.0].into())
+/// ```
+///
+/// Combine two rotations together:
+/// ```
+/// use hoomd_vector::{Angle, Rotation};
+/// use std::f64::consts::PI;
+///
+/// let a = Angle::from(PI / 2.0);
+/// let b = Angle::from(-PI / 4.0);
+/// let c = a.combine(&b);
+/// assert_eq!(c.theta, PI / 4.0);
+/// ```
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Angle {
     /// Rotation angle (radians).
@@ -79,23 +79,22 @@ pub struct Angle {
 }
 
 impl Angle {
-    /** Reduce the rotation.
-
-    [`Angle`] rotations are well-defined for any value of `theta`. However, combining small
-    rotations with large ones will introduce floating point round-off error. Reducing an [`Angle`]
-    creates an equivalent rotation with `theta` in the range from 0 to 2 pi.
-
-    # Example
-
-    ```
-    use hoomd_vector::Angle;
-    use std::f64::consts::PI;
-
-    let a = Angle::from(20.0 * PI);
-    let b = a.to_reduced();
-    assert_eq!(b.theta, 0.0)
-    ```
-    */
+    /// Reduce the rotation.
+    ///
+    /// [`Angle`] rotations are well-defined for any value of `theta`. However, combining small
+    /// rotations with large ones will introduce floating point round-off error. Reducing an [`Angle`]
+    /// creates an equivalent rotation with `theta` in the range from 0 to 2 pi.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::Angle;
+    /// use std::f64::consts::PI;
+    ///
+    /// let a = Angle::from(20.0 * PI);
+    /// let b = a.to_reduced();
+    /// assert_eq!(b.theta, 0.0)
+    /// ```
     #[inline]
     #[must_use]
     pub fn to_reduced(self) -> Self {
@@ -106,24 +105,24 @@ impl Angle {
 }
 
 impl From<Angle> for RotationMatrix<2> {
-    /** Construct a rotation matrix equivalent to this angle's rotation.
-
-    When rotating many vectors by the same [`Angle`], improve performance
-    by converting to a matrix first and applying that matrix to the vectors.
-
-    # Example
-    ```
-    use hoomd_vector::{Angle, Rotate, RotationMatrix, Cartesian};
-    use std::f64::consts::PI;
-
-    let v = Cartesian::from([-1.0, 0.0]);
-    let a = Angle::from(PI/2.0);
-
-    let matrix = RotationMatrix::from(a);
-    let rotated = matrix.rotate(&v);
-    // rotated is approximately [0.0, -1.0]
-    ```
-    */
+    /// Construct a rotation matrix equivalent to this angle's rotation.
+    ///
+    /// When rotating many vectors by the same [`Angle`], improve performance
+    /// by converting to a matrix first and applying that matrix to the vectors.
+    ///
+    /// # Example
+    /// ```
+    /// use ::approx::assert_relative_eq;
+    /// use hoomd_vector::{Angle, Cartesian, Rotate, RotationMatrix};
+    /// use std::f64::consts::PI;
+    ///
+    /// let v = Cartesian::from([-1.0, 0.0]);
+    /// let a = Angle::from(PI / 2.0);
+    ///
+    /// let matrix = RotationMatrix::from(a);
+    /// let rotated = matrix.rotate(&v);
+    /// assert_relative_eq!(rotated, [0.0, -1.0].into());
+    /// ```
     #[inline]
     fn from(angle: Angle) -> RotationMatrix<2> {
         let sin_theta = angle.theta.sin();
@@ -138,16 +137,15 @@ impl From<Angle> for RotationMatrix<2> {
 }
 
 impl From<f64> for Angle {
-    /** Create a rotation by `theta` radians.
-
-    # Example
-    ```
-    use hoomd_vector::Angle;
-
-    let a = Angle::from(1.5);
-    assert_eq!(a.theta, 1.5);
-    ```
-    */
+    /// Create a rotation by `theta` radians.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::Angle;
+    ///
+    /// let a = Angle::from(1.5);
+    /// assert_eq!(a.theta, 1.5);
+    /// ```
     #[inline]
     fn from(theta: f64) -> Self {
         Self { theta }
@@ -158,19 +156,19 @@ impl Rotate<Cartesian<2>> for Angle {
     type Matrix = RotationMatrix<2>;
 
     #[inline]
-    /** Rotate a [`Cartesian<2>`] in the plane by an [`Angle`]
-
-    # Example
-    ```
-    use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
-    use std::f64::consts::PI;
-
-    let v = Cartesian::from([-1.0, 0.0]);
-    let a = Angle::from(PI/2.0);
-    let rotated = a.rotate(&v);
-    // rotated is approximately [0.0, -1.0]
-    ```
-    */
+    /// Rotate a [`Cartesian<2>`] in the plane by an [`Angle`]
+    ///
+    /// # Example
+    /// ```
+    /// use ::approx::assert_relative_eq;
+    /// use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
+    /// use std::f64::consts::PI;
+    ///
+    /// let v = Cartesian::from([-1.0, 0.0]);
+    /// let a = Angle::from(PI / 2.0);
+    /// let rotated = a.rotate(&v);
+    /// assert_relative_eq!(rotated, [0.0, -1.0].into());
+    /// ```
     fn rotate(&self, vector: &Cartesian<2>) -> Cartesian<2> {
         let sin_theta = self.theta.sin();
         let cos_theta = self.theta.cos();
@@ -183,51 +181,48 @@ impl Rotate<Cartesian<2>> for Angle {
 
 impl Rotation for Angle {
     #[inline]
-    /** Create an [`Angle`] that rotates by 0 radians.
-
-    # Example
-    ```
-    use hoomd_vector::{Angle, Rotation};
-
-    let a = Angle::default();
-    assert_eq!(a.theta, 0.0);
-    ```
-    */
+    /// Create an [`Angle`] that rotates by 0 radians.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::{Angle, Rotation};
+    ///
+    /// let a = Angle::default();
+    /// assert_eq!(a.theta, 0.0);
+    /// ```
     fn identity() -> Self {
         Self::default()
     }
 
     #[inline]
-    /** Create an [`Angle`] that rotates by the same amount in the opposite direction.
-
-    # Example
-    ```
-    use hoomd_vector::{Angle, Rotation};
-    use std::f64::consts::PI;
-
-    let a = Angle::from(PI/3.0);
-    let b = a.inverted();
-    assert_eq!(b.theta, -PI/3.0);
-    ```
-    */
+    /// Create an [`Angle`] that rotates by the same amount in the opposite direction.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::{Angle, Rotation};
+    /// use std::f64::consts::PI;
+    ///
+    /// let a = Angle::from(PI / 3.0);
+    /// let b = a.inverted();
+    /// assert_eq!(b.theta, -PI / 3.0);
+    /// ```
     fn inverted(self) -> Self {
         Self::from(-self.theta)
     }
 
     #[inline]
-    /** Create an [`Angle`] that rotates by the sum of the two angles.
-
-    # Example
-    ```
-    use hoomd_vector::{Angle, Rotation};
-    use std::f64::consts::PI;
-
-    let a = Angle::from(PI/2.0);
-    let b = Angle::from(-PI/4.0);
-    let c = a.combine(&b);
-    assert_eq!(c.theta, PI/4.0);
-    ```
-    */
+    /// Create an [`Angle`] that rotates by the sum of the two angles.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::{Angle, Rotation};
+    /// use std::f64::consts::PI;
+    ///
+    /// let a = Angle::from(PI / 2.0);
+    /// let b = Angle::from(-PI / 4.0);
+    /// let c = a.combine(&b);
+    /// assert_eq!(c.theta, PI / 4.0);
+    /// ```
     fn combine(&self, other: &Self) -> Self {
         Self::from(self.theta + other.theta)
     }
@@ -242,21 +237,20 @@ impl fmt::Display for Angle {
 }
 
 impl Distribution<Angle> for StandardUniform {
-    /** Sample a random angle from the uniform distribution over all rotations.
-
-    # Example
-
-    ```
-    use hoomd_vector::Angle;
-    use rand::{rngs::StdRng, Rng, SeedableRng};
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut rng = StdRng::seed_from_u64(1);
-    let v: Angle = rng.random();
-    # Ok(())
-    # }
-    ```
-    */
+    /// Sample a random angle from the uniform distribution over all rotations.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::Angle;
+    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut rng = StdRng::seed_from_u64(1);
+    /// let v: Angle = rng.random();
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Angle {
         #[expect(
@@ -310,8 +304,8 @@ mod tests {
 
     // Test named cases of the three input values (angle, vector input, and answer)
     #[rstest]
-    #[case::pi_halves(PI/2.0, (1.0, -0.5), (0.5, 1.0))]
-    #[case::negative_pi_thirds(-PI/3.0, (1.0, 0.0), (0.5, -f64::sqrt(3.0) / 2.0))]
+    #[case::pi_halves(PI / 2.0, (1.0, -0.5), (0.5, 1.0))]
+    #[case::negative_pi_thirds(-PI / 3.0, (1.0, 0.0), (0.5, -f64::sqrt(3.0) / 2.0))]
     #[case::negative_pi(-PI, (3.1, -0.2), (-3.1, 0.2))]
     #[case::two_pi(PI*2.0, (3.1, -0.2), (3.1, -0.2))]
     #[case::zero(0.0, (3.1, -0.2), (3.1, -0.2))]
@@ -331,8 +325,8 @@ mod tests {
 
     // Test with Cartesian product of the input arrays
     #[rstest(
-        ang1 => [0.0, PI/2.0, 1e-12 * PI, -3.0, 12345.6],
-        ang2 => [-0.0, -PI/3.0, PI, 2.0 * PI]
+        ang1 => [0.0, PI / 2.0, 1e-12 * PI, -3.0, 12345.6],
+        ang2 => [-0.0, -PI / 3.0, PI, 2.0 * PI]
     )]
     fn combine_2d(ang1: f64, ang2: f64) {
         let (angle1, angle2) = (Angle::from(ang1), Angle::from(ang2));

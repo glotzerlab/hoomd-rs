@@ -4,7 +4,6 @@
     clippy::missing_docs_in_private_items,
     reason = "benches don't need public documentation"
 )]
-use arrayvec::ArrayVec;
 use hoomd_chimes::potential::{Chimes2b, ChimesPenalty, TersoffSmooth};
 use hoomd_chimes::transformation::MorseTransformation;
 use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
@@ -30,7 +29,7 @@ fn run() -> std::io::Result<()> {
     let r_out = 4.3;
     let r_in = 2.5;
     let fo = 0.5;
-    let coeff_2b: ArrayVec<f64, 12> = [
+    let coeff_2b = vec![
         12.182_108_126_966_01,
         -2.473_627_738_301_203_3,
         8.236_322_683_724_822,
@@ -43,9 +42,7 @@ fn run() -> std::io::Result<()> {
         -0.658_390_741_787_121_9,
         0.561_064_966_268_623_5,
         -0.100_767_351_508_190_65,
-    ]
-    .into_iter()
-    .collect();
+    ];
 
     let morse_trans: MorseTransformation = MorseTransformation {
         lambda,

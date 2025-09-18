@@ -1,8 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Pairwise interactions.
- */
+//! Pairwise interactions.
 
 use hoomd_vector::{Rotate, Vector};
 
@@ -10,8 +9,12 @@ pub mod angular_mask;
 #[doc(inline)]
 pub use angular_mask::AngularMask;
 
+mod always_true;
+mod anisotropic;
+mod approximate_shape_overlap;
 mod boxcar;
 mod expanded;
+mod hard_shape;
 mod harmonic;
 mod harmonic_repulsion;
 mod isotropic;
@@ -22,8 +25,12 @@ mod shifted;
 mod weeks_chandler_anderson;
 mod xplor;
 
+pub use always_true::AlwaysTrue;
+pub use anisotropic::Anisotropic;
+pub use approximate_shape_overlap::ApproximateShapeOverlap;
 pub use boxcar::Boxcar;
 pub use expanded::Expanded;
+pub use hard_shape::HardShape;
 pub use harmonic::Harmonic;
 pub use harmonic_repulsion::HarmonicRepulsion;
 pub use isotropic::Isotropic;
@@ -34,58 +41,56 @@ pub use shifted::Shifted;
 pub use weeks_chandler_anderson::WeeksChandlerAnderson;
 pub use xplor::Xplor;
 
-/** Computes pairwise energies between point particles.
-
-An isotropic pairwise energy is function only of the distances between the
-particles: $`U(r)`$
-
-Implement [`IsotropicEnergy`] on a custom type or use one of the provided
-potentials in [`pairwise`](crate::pairwise) in MD or MC simulations.
-Use an [`IsotropicEnergy`] in combination with [`Isotropic`] and
-[`CutoffPair`](crate::CutoffPair).
-
-# Examples
-
-Set a custom potential using a closure:
-```
-use hoomd_interaction::pairwise::IsotropicEnergy;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let a = 2.0;
-let custom = |r: f64| a / (r.powi(12));
-
-let energy = custom.energy(1.0);
-assert_eq!(energy, 2.0);
-# Ok(())
-# }
-```
-
-Implement a custom potential via a type:
-```
-use hoomd_interaction::pairwise::IsotropicEnergy;
-
-struct Custom {
-    a: f64,
-}
-
-impl IsotropicEnergy for Custom {
-    fn energy(&self, r: f64) -> f64 {
-        self.a / r.powi(12)
-    }
-}
-
-let custom = Custom { a: 2.0 };
-
-let energy = custom.energy(1.0);
-assert_eq!(energy, 2.0);
-```
-*/
+/// Computes pairwise energies between point particles.
+///
+/// An isotropic pairwise energy is function only of the distances between the
+/// particles: $`U(r)`$
+///
+/// Implement [`IsotropicEnergy`] on a custom type or use one of the provided
+/// potentials in [`pairwise`](crate::pairwise) in MD or MC simulations.
+/// Use an [`IsotropicEnergy`] in combination with [`Isotropic`] and
+/// [`CutoffPair`](crate::CutoffPair).
+///
+/// # Examples
+///
+/// Set a custom potential using a closure:
+/// ```
+/// use hoomd_interaction::pairwise::IsotropicEnergy;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let a = 2.0;
+/// let custom = |r: f64| a / (r.powi(12));
+///
+/// let energy = custom.energy(1.0);
+/// assert_eq!(energy, 2.0);
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Implement a custom potential via a type:
+/// ```
+/// use hoomd_interaction::pairwise::IsotropicEnergy;
+///
+/// struct Custom {
+///     a: f64,
+/// }
+///
+/// impl IsotropicEnergy for Custom {
+///     fn energy(&self, r: f64) -> f64 {
+///         self.a / r.powi(12)
+///     }
+/// }
+///
+/// let custom = Custom { a: 2.0 };
+///
+/// let energy = custom.energy(1.0);
+/// assert_eq!(energy, 2.0);
+/// ```
 pub trait IsotropicEnergy {
-    /** Compute the pairwise energy between two point particles.
-    ```math
-    U(r)
-    ```
-    */
+    /// Compute the pairwise energy between two point particles.
+    /// ```math
+    /// U(r)
+    /// ```
     #[must_use]
     fn energy(&self, r: f64) -> f64;
 }
@@ -100,61 +105,47 @@ where
     }
 }
 
-/** Computes pairwise forces between point particles.
-
-An isotropic pairwise force is function only of the distances between the
-particles and acts along the vector separating the particles.
-
-Implement [`IsotropicForce`] on a custom type or use one of the provided
-forces in [`pairwise`](crate::pairwise) in MD simulations.
-*/
+/// Computes pairwise forces between point particles.
+///
+/// An isotropic pairwise force is function only of the distances between the
+/// particles and acts along the vector separating the particles.
+///
+/// Implement [`IsotropicForce`] on a custom type or use one of the provided
+/// forces in [`pairwise`](crate::pairwise) in MD simulations.
 pub trait IsotropicForce {
-    /** Compute the radial component of the pairwise force between two point
-    particles.
-
-    The direction of the force is along the unit vector between the two
-    particles.
-
-    When the force is associated with a potential energy [`IsotropicEnergy`],
-    it must follow:
-    ```math
-    -\frac{\mathrm{d} U}{\mathrm{d} r}
-    ```
-    */
+    /// Compute the radial component of the pairwise force between two point
+    /// particles.
+    ///
+    /// The direction of the force is along the unit vector between the two
+    /// particles.
+    ///
+    /// When the force is associated with a potential energy [`IsotropicEnergy`],
+    /// it must follow:
+    /// ```math
+    /// -\frac{\mathrm{d} U}{\mathrm{d} r}
+    /// ```
     #[must_use]
     fn force(&self, r: f64) -> f64;
 }
 
-/** Computes pairwise energies between oriented particles.
-
-An anisotropic pairwise energy is function of the relative position and
-orientation of the *j* particle in *i's* reference frame:
-```math
-U(\vec{r}_{ij}, \mathbf{o}_{ij})
-```
-
-Implement [`AnisotropicEnergy`] on a custom type or use one of the provided
-potentials in [`pairwise`](crate::pairwise) in MD or MC simulations.
-*/
+/// Computes pairwise energies between oriented particles.
+///
+/// An anisotropic pairwise energy is function of the relative position and
+/// orientation of the *j* particle in *i's* reference frame:
+/// ```math
+/// U(\vec{r}_{ij}, \mathbf{o}_{ij})
+/// ```
+///
+/// Implement [`AnisotropicEnergy`] on a custom type or use one of the provided
+/// potentials in [`pairwise`](crate::pairwise) in MD or MC simulations.
 pub trait AnisotropicEnergy<V: Vector, R: Rotate<V>> {
-    /** Compute the pairwise energy between two oriented particles.
-    ```math
-    U(\vec{r}_{ij}, \mathbf{o}_{ij})
-    ```
-    */
+    /// Compute the pairwise energy between two oriented particles.
+    /// ```math
+    /// U(\vec{r}_{ij}, \mathbf{o}_{ij})
+    /// ```
     #[must_use]
     fn energy(&self, r_ij: &V, o_ij: &R) -> f64;
 }
 
 // TODO: determine how to express the torque return type in a general way. Possibly use
 // an associated type of Rotation.
-// pub trait AnisotropicForce<V: Vector, R: Rotation+Rotate<V>> {
-//     /** Compute the pairwise force and torque between two oriented particles.
-//     TODO: math expression.
-//     */
-//     #[must_use]
-//     fn energy(&self, r_ij: &V, o_ij: &R) -> f64;
-// }
-
-// TODO: Implement Harmonic and HarmonicRepulsion based on that (Harmonic cut off at r_0)
-// TODO: Implement Expanded as an adapter (like shifted)

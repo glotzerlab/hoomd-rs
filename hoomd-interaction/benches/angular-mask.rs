@@ -10,15 +10,15 @@
     reason = "benches can use expect without individual reasons"
 )]
 
-/*! Benchmark `LennardJones` */
+//! Benchmark `AngularMask`
 
-use divan::counter::ItemsCount;
-use divan::{self, Bencher, black_box};
+use divan::{self, Bencher, black_box, counter::ItemsCount};
 use rand::{Rng, SeedableRng, rngs::StdRng};
 use std::f64::consts::PI;
 
-use hoomd_interaction::pairwise::angular_mask::Patch;
-use hoomd_interaction::pairwise::{AngularMask, AnisotropicEnergy, LennardJones};
+use hoomd_interaction::pairwise::{
+    AngularMask, AnisotropicEnergy, LennardJones, angular_mask::Patch,
+};
 use hoomd_vector::{Angle, Cartesian, Versor};
 
 fn main() {
@@ -62,7 +62,7 @@ fn energy_2d(bencher: Bencher) {
         },
     ];
 
-    let angular_mask = AngularMask::new(lj, masks, masks);
+    let angular_mask = AngularMask::new(lj, masks);
 
     bencher
         .counter(ItemsCount::from(1_u32))
@@ -108,7 +108,7 @@ fn energy_3d(bencher: Bencher) {
         },
     ];
 
-    let angular_mask = AngularMask::new(lj, masks, masks);
+    let angular_mask = AngularMask::new(lj, masks);
 
     bencher
         .counter(ItemsCount::from(1_u32))

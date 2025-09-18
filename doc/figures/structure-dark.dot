@@ -1,0 +1,213 @@
+digraph hoomd_rs {
+    // dot options
+    // rankdir = "LR"
+    bgcolor = "#00000000"
+
+    node [ color = "#cdd6f4", fontcolor = "#181825"]
+    edge [ color = "#cdd6f4" ]
+
+    // neato options
+    overlap = prism
+    start = 4
+
+
+    node [ fontname="Monaco", fontsize=12 ]
+    node [ style="filled,rounded" ]
+
+    subgraph hoomd_interaction {
+        label = "hoomd-interaction"
+        style = rounded
+
+        // Traits
+        node [ shape=ellipse, fillcolor="#89b4fa", style="bold,filled,rounded"]
+        SitePairOverlap
+        SitePairEnergy
+        SiteOverlap
+        SiteEnergy
+        // pairwise
+        AnisotropicEnergy
+        IsotropicEnergy
+
+        // Types and their relations to traits
+        node [ shape=rectangle, fillcolor="#89b4fa", style="filled"]
+
+        isotropic_potentials [ label = "BoxCar\nHarmonic\nHarmonicRepulsion\nLennardJones\nLennardJonesGuass\nOverlapPenalty\nWeeksChandlerAnderson" ]
+        SitePairEnergy -> CutoffPair
+        SitePairOverlap -> CutoffPairOverlap
+        SiteOverlap -> SingleOverlap
+        SiteEnergy -> Single
+        Linear -> SiteEnergy
+        AlwaysTrue -> SitePairOverlap
+        AngularMask -> AnisotropicEnergy
+        AnisotropicEnergy -> Anisotropic
+        Expanded -> IsotropicEnergy [ dir=both ]
+        HardShape -> SitePairOverlap
+        isotropic_potentials -> IsotropicEnergy
+        IsotropicEnergy -> Isotropic
+        Isotropic -> SitePairEnergy
+        Shifted -> IsotropicEnergy [ dir=both ]
+        Xplor -> IsotropicEnergy [ dir=both ]
+        Anisotropic -> SitePairEnergy
+
+        Hamiltonian [ label="TotalEnergy\nDeltaEnergyRemove\nDeltaEnergyOne\nDeltaEnergyInsert"]
+
+        Single -> Hamiltonian
+        SingleOverlap -> Hamiltonian
+        CutoffPair -> Hamiltonian
+        CutoffPairOverlap -> Hamiltonian
+        Zero -> Hamiltonian
+
+        // URLs to the documentation
+        AngularMask [ URL="../api/hoomd_interaction/pairwise/struct.AngularMask.html" ]
+        AnisotropicEnergy [ URL="../api/hoomd_interaction/pairwise/trait.AnisotropicEnergy.html" ]
+        Anisotropic [ URL="../api/hoomd_interaction/pairwise/struct.Anisotropic.html" ]
+        isotropic_potentials [ URL="../api/hoomd_interaction/pairwise/index.html" ]
+        Shifted [ URL="../api/hoomd_interaction/pairwise/struct.Shifted.html" ]
+        Expanded [ URL="../api/hoomd_interaction/pairwise/struct.Expanded.html" ]
+        Xplor [ URL="../api/hoomd_interaction/pairwise/struct.Xplor.html" ]
+        Isotropic [ URL="../api/hoomd_interaction/pairwise/struct.Isotropic.html" ]
+        IsotropicEnergy [ URL="../api/hoomd_interaction/pairwise/struct.IsotropicEnergy.html" ]
+        SitePairEnergy [ URL="../api/hoomd_interaction/trait.SitePairEnergy.html" ]
+        CutoffPair [ URL="../api/hoomd_interaction/struct.CutoffPair.html" ]
+        Linear [ URL="../api/hoomd_interaction/external/struct.Linear.html" ]
+        SiteEnergy [ URL="../api/hoomd_interaction/trait.SiteEnergy.html" ]
+        Single [ URL="../api/hoomd_interaction/struct.Single.html" ]
+        HardShape [ URL="../api/hoomd_interaction/pairwise/struct.HardShape.html" ]
+        SitePairOverlap [ URL="../api/hoomd_interaction/trait.SitePairOverlap.html" ]
+        CutoffPairOverlap [ URL="../api/hoomd_interaction/struct.CutoffPairOverlap.html" ]
+        AlwaysTrue [ URL="../api/hoomd_interaction/pairwise/struct.AlwaysTrue.html" ]
+        SiteOverlap [ URL="../api/hoomd_interaction/trait.SiteOverlap.html" ]
+        SingleOverlap [ URL="../api/hoomd_interaction/struct.SingleOverlap.html" ]
+        Zero [ URL="../api/hoomd_interaction/struct.Zero.html" ]
+        Hamiltonian [ URL="../api/hoomd_interaction/index.html" ]
+    }
+
+    subgraph hoomd_mc {
+        label = "hoomd-mc"
+        style = rounded
+
+        // Traits
+        node [ shape=ellipse, fillcolor="#a6e3a1", style="bold,filled,rounded"]
+
+        LocalTrial
+        Trial
+        "Distribution<Body>"
+
+        // Types and their relations to traits
+        node [ shape=rectangle, fillcolor="#a6e3a1", style="filled"]
+
+        QuickInsert
+        Rotate -> LocalTrial
+        Translate -> LocalTrial
+        UniformIn -> "Distribution<Body>"
+        "Distribution<Body>" -> QuickInsert
+        LocalTrial -> Sweep
+        Sweep -> Trial
+
+        // URLs to the documentation
+        UniformIn [ URL="../api/hoomd_mc/struct.UniformIn.html" ]
+        "Distribution<Body>" [ URL="https://docs.rs/rand/latest/rand/distr/trait.Distribution.html" ]
+        QuickInsert [ URL="../api/hoomd_mc/struct.QuickInsert.html" ]
+        Rotate [ URL="../api/hoomd_mc/struct.Rotate.html" ]
+        Translate [ URL="../api/hoomd_mc/struct.Translate.html" ]
+        LocalTrial [ URL="../api/hoomd_mc/trait.LocalTrial.html" ]
+        Sweep [ URL="../api/hoomd_mc/struct.Sweep.html" ]
+        Trial [ URL="../api/hoomd_mc/trait.Trial.html" ]
+        }
+
+    subgraph hoomd_microstate {
+        label = "hoomd-microstate"
+        style = rounded
+        node [ shape=ellipse, fillcolor="#f9e2af", style="bold,filled,rounded"]
+
+        Transform
+        Position
+        Orientation
+        Boundary [ label="GenerateGhosts\nWrap"]
+
+        // Types and their relations to traits
+        node [ shape=rectangle, fillcolor="#f9e2af", style="filled"]
+
+        Open -> Boundary
+        Closed -> Boundary
+        Periodic -> Boundary
+        Boundary -> Microstate
+        MicrostateBuilder -> Microstate
+        Point -> Position
+        OrientedPoint -> {Position, Orientation}
+
+        Position -> Site
+        Orientation -> Site
+        Site -> Body
+        Body -> Microstate
+        Transform -> Site [ style=dashed, arrowhead=empty ]
+        Transform -> Body [ style=dashed, arrowhead=empty ]
+        Boundary -> Site [ style=dashed, arrowhead=empty ]
+        Boundary -> Body [ style=dashed, arrowhead=empty ]
+
+        // URLs to the documentation
+        Point [ URL="../api/hoomd_microstate/property/struct.Point.html" ]
+        OrientedPoint [ URL="../api/hoomd_microstate/property/struct.OrientedPoint.html" ]
+        Open [ URL="../api/hoomd_microstate/boundary/struct.Open.html" ]
+        Closed [ URL="../api/hoomd_microstate/boundary/struct.Closed.html" ]
+        Periodic [ URL="../api/hoomd_microstate/boundary/struct.Periodic.html" ]
+        Transform [ URL="../api/hoomd_microstate/trait.Transform.html" ]
+        Position [ URL="../api/hoomd_microstate/property/trait.Position.html" ]
+        Orientation [ URL="../api/hoomd_microstate/property/trait.Orientation.html" ]
+        Boundary [ URL="../api/hoomd_microstate/boundary/index.html" ]
+        Site [ URL="../api/hoomd_microstate/struct.Site.html" ]
+        Body [ URL="../api/hoomd_microstate/struct.Body.html" ]
+        MicrostateBuilder [ URL="../api/hoomd_microstate/struct.MicrostateBuilder.html" ]
+        Microstate [ URL="../api/hoomd_microstate/struct.Microstate.html" ]
+    }
+
+    subgraph hoomd_geometry {
+        label = "hoomd-geometry"
+        style = rounded
+
+        // Traits
+        node [ shape=ellipse, fillcolor="#f38ba8", style="bold,filled,rounded"]
+
+        BoundingSphereRadius
+        IntersectsAt
+        IsPointInside
+        SupportMapping
+        Volume
+
+        // Types and their relation to traits
+        node [ shape=rectangle, fillcolor="#f38ba8", style="filled"]
+
+        shapes [ label="Capsule\nConvexPolytope\nCuboid\nCylinder\nHyperellipsoid\nHypersphere" ]
+
+        shapes -> SupportMapping
+        shapes -> Volume
+        shapes -> IsPointInside
+        shapes -> IntersectsAt
+        shapes -> BoundingSphereRadius
+        SupportMapping -> Convex -> IntersectsAt
+        Sphero -> SupportMapping [ dir = both ]
+
+        // URLs to the documentation
+        Sphero [ URL="../api/hoomd_geometry/shape/struct.Sphero.html" ]
+        SupportMapping [ URL="../api/hoomd_geometry/trait.SupportMapping.html" ]
+        Convex [ URL="../api/hoomd_geometry/struct.Convex.html" ]
+        IntersectsAt [ URL="../api/hoomd_geometry/trait.IntersectsAt.html" ]
+        shapes [ URL="../api/hoomd_geometry/shape/index.html" ]
+        BoundingSphereRadius [ URL="../api/hoomd_geometry/trait.BoundingSphereRadius.html" ]
+        Volume [ URL="../api/hoomd_geometry/trait.Volume.html" ]
+        IsPointInside [ URL="../api/hoomd_geometry/trait.IsPointInside.html" ]
+        }
+
+    Hamiltonian -> {QuickInsert, Sweep}
+    Trial -> Microstate [ style=dashed, arrowhead=empty ]
+    QuickInsert -> Microstate [ style=dashed, arrowhead=empty ]
+    Hamiltonian -> Microstate [ style=dashed, arrowhead=empty ]
+    IntersectsAt -> HardShape
+    IsPointInside -> Closed
+    shapes -> Periodic
+    shapes -> "UniformIn"
+
+    // layout help
+    { rank=same; Open; Closed; Periodic }
+    { rank=same; UniformIn; Rotate; Translate }
+}

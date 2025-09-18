@@ -2,31 +2,33 @@
 
 resolver = "3"
 members = ["examples",
-    "hoomd-bevy",
-    "hoomd-geometry",
-    "hoomd-gsd",
-    "hoomd-interaction",
-    "hoomd-mc",
-    "hoomd-microstate",
-    "hoomd-utility",
-    "hoomd-vector",
-    "tools/build-wasm-doc-examples",
-    "hoomd-chimes",
-    ]
+           "hoomd-bevy",
+           "hoomd-geometry",
+           "hoomd-gsd",
+           "hoomd-interaction",
+           "hoomd-mc",
+           "hoomd-microstate",
+           "hoomd-simulation",
+           "hoomd-utility",
+           "hoomd-vector",
+           "hoomd-chimes",
+           "tools/build-wasm-doc-examples",
+          ]
 
 # Include only core hoomd simulation crates by default so that `cargo build`,
 # `cargo test` and similar commands operate only on the core code by default.
 # The `hoomd-bevy` crate depends on `bevy` which takes a long time to download
 # and compile.
 default-members = ["examples",
-          "hoomd-geometry",
-          "hoomd-gsd",
-          "hoomd-interaction",
-          "hoomd-mc",
-          "hoomd-microstate",
-          "hoomd-utility",
-          "hoomd-vector",
-          ]
+                   "hoomd-geometry",
+                   "hoomd-gsd",
+                   "hoomd-interaction",
+                   "hoomd-mc",
+                   "hoomd-microstate",
+                   "hoomd-simulation",
+                   "hoomd-utility",
+                   "hoomd-vector",
+                  ]
 
 [workspace.package]
 version = "0.0.0"
@@ -46,6 +48,7 @@ hoomd-gsd = { path = "hoomd-gsd" }
 hoomd-interaction = { path = "hoomd-interaction" }
 hoomd-mc = { path = "hoomd-mc" }
 hoomd-microstate = { path = "hoomd-microstate" }
+hoomd-simulation = { path = "hoomd-simulation" }
 hoomd-utility = { path = "hoomd-utility" }
 hoomd-vector = { path = "hoomd-vector" }
 hoomd-chimes = { path = "hoomd-chimes"}
@@ -53,7 +56,7 @@ hoomd-chimes = { path = "hoomd-chimes"}
 # Common dev dependencies
 approx = "0.5.1"
 divan = "0.1.17"
-rstest = "0.25.0"
+rstest = "0.26.0"
 anyhow = "1.0.98"
 tempfile = "3.20.0"
 clap = {version = "4.5.40", features = ["derive"]}

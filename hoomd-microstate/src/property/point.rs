@@ -1,25 +1,24 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement Point */
+//! Implement Point
 
 use super::Position;
 use crate::Transform;
 use hoomd_vector::Vector;
 
-/** A position in space and nothing more.
-
-Use [`Point`] as a [`Body`](crate::Body) or [`Site`](crate::Site) property type.
-
-# Example
-
-```
-use hoomd_vector::Cartesian;
-use hoomd_microstate::property::Point;
-
-let point = Point::new(Cartesian::from([1.0, -2.0, 3.0]));
-```
-*/
+/// A position in space and nothing more.
+///
+/// Use [`Point`] as a [`Body`](crate::Body) or [`Site`](crate::Site) property type.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_microstate::property::Point;
+/// use hoomd_vector::Cartesian;
+///
+/// let point = Point::new(Cartesian::from([1.0, -2.0, 3.0]));
+/// ```
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Point<V> {
     /// The location of the point in space.
@@ -27,17 +26,16 @@ pub struct Point<V> {
 }
 
 impl<V> Point<V> {
-    /** Construct a new point at the given position.
-
-    # Example
-
-    ```
-    use hoomd_vector::Cartesian;
-    use hoomd_microstate::property::Point;
-
-    let point = Point::new(Cartesian::from([1.0, -2.0, 3.0]));
-    ```
-    */
+    /// Construct a new point at the given position.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_microstate::property::Point;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let point = Point::new(Cartesian::from([1.0, -2.0, 3.0]));
+    /// ```
     #[inline]
     #[must_use]
     pub fn new(position: V) -> Self {
@@ -45,29 +43,27 @@ impl<V> Point<V> {
     }
 }
 
-/** Move [`Point`] properties from the local body frame to the system frame.
-*/
+/// Move [`Point`] properties from the local body frame to the system frame.
 impl<V> Transform<Point<V>> for Point<V>
 where
     V: Vector,
 {
-    /** Points transform by vector addition.
-
-    ```math
-    \vec{r} = \vec{r}_\mathrm{body} + \vec{r}_\mathrm{site}
-    ```
-
-    ```
-    use hoomd_vector::Cartesian;
-    use hoomd_microstate::{property::Point, Transform};
-
-    let body_properties = Point::new(Cartesian::from([1.0, -2.0, 3.0]));
-    let site_properties = Point::new(Cartesian::from([-3.0, 2.0, 1.0]));
-
-    let system_site = body_properties.transform(&site_properties);
-    assert_eq!(system_site.position, [-2.0, 0.0, 4.0].into());
-    ```
-    */
+    /// Points transform by vector addition.
+    ///
+    /// ```math
+    /// \vec{r} = \vec{r}_\mathrm{body} + \vec{r}_\mathrm{site}
+    /// ```
+    ///
+    /// ```
+    /// use hoomd_microstate::{Transform, property::Point};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let body_properties = Point::new(Cartesian::from([1.0, -2.0, 3.0]));
+    /// let site_properties = Point::new(Cartesian::from([-3.0, 2.0, 1.0]));
+    ///
+    /// let system_site = body_properties.transform(&site_properties);
+    /// assert_eq!(system_site.position, [-2.0, 0.0, 4.0].into());
+    /// ```
     #[inline]
     fn transform(&self, site_properties: &Point<V>) -> Point<V> {
         Point {
@@ -90,4 +86,17 @@ impl<V> Position for Point<V> {
     }
 }
 
-// TODO: tests.
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use hoomd_vector::Cartesian;
+
+    #[test]
+    fn transform_point() {
+        let body = Point::new(Cartesian::from([3.0, -4.0, 5.0]));
+        let site = Point::new(Cartesian::from([-1.0, 2.0, -3.0]));
+        let transformed_site = body.transform(&site);
+        assert_eq!(transformed_site.position, [2.0, -2.0, 2.0].into());
+    }
+}

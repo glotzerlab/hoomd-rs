@@ -41,7 +41,6 @@ See equation 8 in <https://doi.org/10.1038/s41524-024-01497-y>.
 
 # Example:
 ```
-use arrayvec::ArrayVec;
 use hoomd_chimes::transformation::MorseTransformation;
 use hoomd_chimes::potential::{Chimes2b, TersoffSmooth};
 use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
@@ -50,7 +49,7 @@ let lambda = 1.5;
 let r_out = 3.0;
 let r_in = 1.0;
 let fo = 0.75;
-let coeff: ArrayVec<f64, 3> = [1.0, 2.0, 3.0].into_iter().collect();
+let coeff = vec![1.0, 2.0, 3.0];
 
 let morse_trans: MorseTransformation = MorseTransformation {
     lambda,
@@ -131,7 +130,6 @@ mod tests {
     use super::*;
     use crate::transformation::MorseTransformation;
     use ::approx::assert_abs_diff_eq;
-    use arrayvec::ArrayVec;
     use hoomd_interaction::pairwise::LennardJones;
     use rstest::*;
 

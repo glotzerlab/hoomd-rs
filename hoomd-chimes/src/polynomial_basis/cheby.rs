@@ -33,7 +33,7 @@ impl<const N: usize> Chebyshev<N> {
     #[must_use]
     #[inline]
     pub fn new() -> Self {
-        assert!(N != 0, "Chebyshev order must be at least 1 (N >= 1)");
+        assert!(N > 0, "Chebyshev order must be at least 1 (N >= 1)");
         Chebyshev {}
     }
 }
@@ -119,13 +119,13 @@ impl<const N: usize> Basis<N> for Chebyshev<N> {
     ```
     */
     #[inline]
-    fn evaluate_derivative(&self, s: &f64) -> ArrayVec<f64, N> {
+    fn evaluate_derivative(&self, s: &f64) -> ArrayVec<[f64; N]> {
         let mut tnd = ArrayVec::<[f64; N]>::new();
         let u0_fn = 1.0; // U_0(s) = 1
 
         tnd.push(2.0 * s); // U_1(s) = 2s
         if N > 1 {
-            tnd.psuh(2.0 * s * tnd[0] - u0_fn);
+            tnd.push(2.0 * s * tnd[0] - u0_fn);
         }
 
         // Compute U_i(s) using recurrence: U_i = 2s * U_{i-1} - U_{i-2}

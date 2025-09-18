@@ -7,13 +7,11 @@
 )]
 #![expect(clippy::unwrap_used, reason = "benches can use unwrap where needed")]
 
-/*! Benchmark overlaps*/
+//! Benchmark overlaps
 
-use divan::counter::ItemsCount;
-use divan::{self, Bencher, black_box};
-use hoomd_geometry::Convex;
+use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_geometry::{
-    IntersectsAt,
+    Convex, IntersectsAt,
     shape::{ConvexPolytope, Cuboid, Hyperellipsoid, Hypersphere, Simplex3},
     xenocollide::{collide2d, collide3d},
 };
@@ -130,14 +128,14 @@ fn create_ellipsoid_pair<const N: usize, R: Rng>(
 ) -> (Hyperellipsoid<N>, Hyperellipsoid<N>) {
     (
         Hyperellipsoid {
-            axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
+            semi_axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
                 (x + 11.0)
                     .try_into()
                     .expect("test value is a positive real")
             }),
         },
         Hyperellipsoid {
-            axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
+            semi_axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
                 (x + 11.0)
                     .try_into()
                     .expect("test value is a positive real")

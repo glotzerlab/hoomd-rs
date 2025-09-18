@@ -1,77 +1,87 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement `CutoffPair`
-*/
+//! Implement `CutoffPair`
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairEnergy, TotalEnergy};
-use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Position};
+use hoomd_microstate::{Body, Microstate, Site, Transform, boundary::Wrap, property::Position};
 use hoomd_vector::Vector;
 
-/** Compute system properties based on short-ranged pairwise interactions between sites.
-
-Given an evaluator that implements [`SitePairEnergy`], [`CutoffPair`] represents:
-
-```math
-U_\mathrm{total} = \sum_{i=0}^{N-1}\sum_{j=i+1}^{N-1} U\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
-```
-where $`U(s_i, s_j)`$ is the potential computed by [`CutoffPair::evaluator`],
-$`s_i`$ is the full set of site properties for site i, $`\vec{r}_i`$ is
-the position of site i, $`b_i`$ is the body tag that holds site *i*, and
-$`\left| \right|`$ denotes the Iverson bracket.
-
-In other words, [`CutoffPair`] sums the energy for all pairs that are separated
-by a distance less than `r_cut` and belong to different bodies.
-
-For the evaluator, use [`Isotropic`] or your own custom type.
-
-TODO: Reword this when [`CutoffPair`] also implements `SitePairForce`.
-
-[`Isotropic`]: crate::pairwise::Isotropic
-
-# Example
-
-Basic usage:
-```
-use hoomd_interaction::{CutoffPair,
-    pairwise::{Isotropic, LennardJones}};
-
-let lennard_jones: LennardJones = LennardJones { epsilon: 1.5, sigma: 2.0 };
-let evaluator = Isotropic(lennard_jones);
-let cutoff_pair = CutoffPair { r_cut: 2.5, evaluator };
-```
-
-Set a custom potential using a closure:
-```
-use hoomd_interaction::{CutoffPair, pairwise::Isotropic};
-
-let cutoff_pair = CutoffPair {
-    r_cut: 3.0,
-    evaluator: Isotropic(|r: f64| 1.0 / (r.powi(12))),
-};
-```
-
-Implement a custom potential via a type:
-```
-use hoomd_interaction::{CutoffPair, pairwise::{Isotropic, IsotropicEnergy}};
-
-struct Custom {
-    a: f64,
-}
-
-impl IsotropicEnergy for Custom {
-    fn energy(&self, r: f64) -> f64 {
-        self.a / r.powi(12)
-    }
-}
-
-let custom = Custom { a: 2.0 };
-let cutoff_pair = CutoffPair {
-    r_cut: 2.0,
-    evaluator: Isotropic(custom),
-};
-```
-*/
+/// Short-ranged pairwise interactions between sites.
+///
+/// Given an evaluator that implements [`SitePairEnergy`], [`CutoffPair`] represents:
+///
+/// ```math
+/// U_\mathrm{total} = \sum_{i=0}^{N-1}\sum_{j=i+1}^{N-1} U\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
+/// ```
+/// where $`U(s_i, s_j)`$ is the potential computed by [`CutoffPair::evaluator`],
+/// $`s_i`$ is the full set of site properties for site i, $`\vec{r}_i`$ is
+/// the position of site i, $`b_i`$ is the body tag that holds site *i*, and
+/// $`\left[ \  \right]`$ denotes the Iverson bracket.
+///
+/// In other words, [`CutoffPair`] sums the energy for all pairs that are separated
+/// by a distance less than `r_cut` and belong to different bodies.
+///
+/// For the evaluator, use [`Anisotropic`], [`Isotropic`] or your own custom type.
+///
+/// TODO: Reword this when [`CutoffPair`] also implements `SitePairForce`.
+///
+/// [`Anisotropic`]: crate::pairwise::Anisotropic
+/// [`Isotropic`]: crate::pairwise::Isotropic
+///
+/// # Example
+///
+/// Basic usage:
+/// ```
+/// use hoomd_interaction::{
+///     CutoffPair,
+///     pairwise::{Isotropic, LennardJones},
+/// };
+///
+/// let lennard_jones: LennardJones = LennardJones {
+///     epsilon: 1.5,
+///     sigma: 2.0,
+/// };
+/// let evaluator = Isotropic(lennard_jones);
+/// let cutoff_pair = CutoffPair {
+///     r_cut: 5.0,
+///     evaluator,
+/// };
+/// ```
+///
+/// Set a custom potential using a closure:
+/// ```
+/// use hoomd_interaction::{CutoffPair, pairwise::Isotropic};
+///
+/// let cutoff_pair = CutoffPair {
+///     r_cut: 3.0,
+///     evaluator: Isotropic(|r: f64| 1.0 / (r.powi(12))),
+/// };
+/// ```
+///
+/// Implement a custom potential via a type:
+/// ```
+/// use hoomd_interaction::{
+///     CutoffPair,
+///     pairwise::{Isotropic, IsotropicEnergy},
+/// };
+///
+/// struct Custom {
+///     a: f64,
+/// }
+///
+/// impl IsotropicEnergy for Custom {
+///     fn energy(&self, r: f64) -> f64 {
+///         self.a / r.powi(12)
+///     }
+/// }
+///
+/// let custom = Custom { a: 2.0 };
+/// let cutoff_pair = CutoffPair {
+///     r_cut: 2.0,
+///     evaluator: Isotropic(custom),
+/// };
+/// ```
 pub struct CutoffPair<E> {
     /// The distance beyond which all pairwise interactions evaluate to 0.
     pub r_cut: f64,
@@ -80,49 +90,113 @@ pub struct CutoffPair<E> {
     pub evaluator: E,
 }
 
+impl<E> CutoffPair<E> {
+    /// Compute the pair energy between two sites.
+    ///
+    /// Use this method to compute an individual term in the total pair energy,
+    /// subject to the `r_cut` and inter-body checks:
+    ///
+    /// ```math
+    /// U\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
+    /// ```
+    ///
+    /// # Example
+    /// ```
+    /// use ::approx::assert_relative_eq;
+    ///
+    /// use hoomd_interaction::{
+    ///     CutoffPair,
+    ///     pairwise::{Isotropic, LennardJones},
+    /// };
+    /// use hoomd_microstate::{Body, MicrostateBuilder, Site};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let lennard_jones: LennardJones = LennardJones {
+    ///     epsilon: 1.0,
+    ///     sigma: 1.0,
+    /// };
+    /// let evaluator = Isotropic(lennard_jones);
+    /// let cutoff_pair = CutoffPair {
+    ///     r_cut: 2.5,
+    ///     evaluator,
+    /// };
+    ///
+    /// let body_a = Body::point(Cartesian::from([0.0, 0.0]));
+    /// let body_b = Body::point(Cartesian::from([0.0, 3.0]));
+    /// let body_c = Body::point(Cartesian::from([0.0, -2.0f64.powf(1.0 / 6.0)]));
+    ///
+    /// let microstate = MicrostateBuilder::new()
+    ///     .bodies([body_a, body_b, body_c])
+    ///     .try_build()?;
+    ///
+    /// let sites = microstate.sites();
+    /// let energy_ab = cutoff_pair.site_pair_energy(&sites[0], &sites[1]);
+    /// let energy_ac = cutoff_pair.site_pair_energy(&sites[0], &sites[2]);
+    ///
+    /// assert_eq!(energy_ab, 0.0);
+    /// assert_relative_eq!(energy_ac, -1.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    pub fn site_pair_energy<V, S>(&self, a: &Site<S>, b: &Site<S>) -> f64
+    where
+        E: SitePairEnergy<S>,
+        S: Position<Vector = V>,
+        V: Vector,
+    {
+        let r = (a.properties.position()).distance(b.properties.position());
+        if r < self.r_cut && a.body_tag != b.body_tag {
+            self.evaluator
+                .site_pair_energy(&a.properties, &b.properties)
+        } else {
+            0.0
+        }
+    }
+}
+
 impl<V, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
     S: Position<Vector = V>,
     V: Vector,
 {
-    /** Compute the total energy of the microstate contributed by functions on pairs of sites.
-
-    # Example
-    ```
-    use hoomd_interaction::{CutoffPair, SitePairEnergy, TotalEnergy,
-        pairwise::{Isotropic, LennardJones}};
-    use hoomd_microstate::{Microstate, Body};
-    use hoomd_microstate::property::{Point, Position};
-    use hoomd_vector::{Cartesian, InnerProduct};
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut microstate = Microstate::new();
-    // Place two pairs of particles separated by a large distance.
-    microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
-                              Body::point(Cartesian::from([1.0, 0.0])),
-                              Body::point(Cartesian::from([0.0, 5.0])),
-                              Body::point(Cartesian::from([-1.0, 5.0])),
-                            ])?;
-
-    let lennard_jones: LennardJones = LennardJones { epsilon: 1.5,
-        sigma: 1.0 / 2.0_f64.powf(1.0/6.0) };
-    let evaluator = Isotropic(lennard_jones);
-    let cutoff_pair = CutoffPair { r_cut: 2.5, evaluator };
-
-    // The potential energy is set to 0 beyond r_cut when computed by `CutoffPair`.
-    let total_energy = cutoff_pair.total_energy(&microstate);
-    assert_eq!(total_energy, -3.0);
-
-    // However, individual pairwise `site_pair_energy` evaluations are always computed.
-    let a = &microstate.sites()[0].properties;
-    let b = &microstate.sites()[2].properties;
-    assert_eq!((*a.position() - *b.position()).norm(), 5.0);
-    assert!(cutoff_pair.evaluator.site_pair_energy(a, b) < 0.0);
-    # Ok(())
-    # }
-    ```
-    */
+    /// Compute the total energy of the microstate contributed by functions on pairs of sites.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_interaction::{CutoffPair, SitePairEnergy, TotalEnergy,
+    /// pairwise::{Isotropic, LennardJones}};
+    /// use hoomd_microstate::{Microstate, Body};
+    /// use hoomd_microstate::property::{Point, Position};
+    /// use hoomd_vector::{Cartesian, InnerProduct};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate = Microstate::new();
+    /// microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
+    /// Body::point(Cartesian::from([1.0, 0.0])),
+    /// Body::point(Cartesian::from([0.0, 5.0])),
+    /// Body::point(Cartesian::from([-1.0, 5.0])),
+    /// ])?;
+    ///
+    /// let lennard_jones: LennardJones = LennardJones { epsilon: 1.5,
+    /// sigma: 1.0 / 2.0_f64.powf(1.0 / 6.0) };
+    /// let evaluator = Isotropic(lennard_jones);
+    /// let cutoff_pair = CutoffPair { r_cut: 2.5, evaluator };
+    ///
+    /// // The potential energy is set to 0 beyond r_cut when computed by `CutoffPair`.
+    /// let total_energy = cutoff_pair.total_energy(&microstate);
+    /// assert_eq!(total_energy, -3.0);
+    ///
+    /// // However, individual pairwise `site_pair_energy` evaluations are always computed.
+    /// let a = &microstate.sites()[0].properties;
+    /// let b = &microstate.sites()[2].properties;
+    /// assert_eq!((*a.position() - *b.position()).norm(), 5.0);
+    /// assert!(cutoff_pair.evaluator.site_pair_energy(a, b) < 0.0);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn total_energy(&self, microstate: &Microstate<B, S, C>) -> f64 {
         let mut total = 0.0;
@@ -141,35 +215,47 @@ where
     }
 }
 
-/** Evaluate the change in energy contributed by `CutoffPair` when one body is updated.
-
-# Example
-
-```
-use hoomd_interaction::{CutoffPair, DeltaEnergyOne, pairwise::{Boxcar, Isotropic}};
-use hoomd_microstate::{Microstate, Body, property::Point};
-use hoomd_vector::Cartesian;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let mut microstate = Microstate::new();
-microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
-    Body::point(Cartesian::from([1.0, 0.0])),
-])?;
-
-
-let epsilon = 2.0;
-let (left,right) = (0.0, 1.5);
-let boxcar = Boxcar { epsilon, left, right };
-let evaluator = Isotropic(boxcar);
-let cutoff_pair = CutoffPair { r_cut: 1.5, evaluator };
-
-let delta_energy = cutoff_pair.delta_energy_one(&microstate, 0,
-    &Body::point([-1.0, 0.0].into()));
-assert_eq!(delta_energy, -2.0);
-# Ok(())
-# }
-```
-*/
+/// Evaluate the change in energy contributed by `CutoffPair` when one body is updated.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_interaction::{
+///     CutoffPair, DeltaEnergyOne,
+///     pairwise::{Boxcar, Isotropic},
+/// };
+/// use hoomd_microstate::{Body, Microstate, property::Point};
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut microstate = Microstate::new();
+/// microstate.extend_bodies([
+///     Body::point(Cartesian::from([0.0, 0.0])),
+///     Body::point(Cartesian::from([1.0, 0.0])),
+/// ])?;
+///
+/// let epsilon = 2.0;
+/// let (left, right) = (0.0, 1.5);
+/// let boxcar = Boxcar {
+///     epsilon,
+///     left,
+///     right,
+/// };
+/// let evaluator = Isotropic(boxcar);
+/// let cutoff_pair = CutoffPair {
+///     r_cut: 1.5,
+///     evaluator,
+/// };
+///
+/// let delta_energy = cutoff_pair.delta_energy_one(
+///     &microstate,
+///     0,
+///     &Body::point([-1.0, 0.0].into()),
+/// );
+/// assert_eq!(delta_energy, -2.0);
+/// # Ok(())
+/// # }
+/// ```
 impl<V, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
@@ -223,35 +309,44 @@ where
     }
 }
 
-/** Evaluate the change in energy contributed by `CutoffPair` when one body is inserted.
-
-# Example
-
-```
-use hoomd_interaction::{CutoffPair, DeltaEnergyInsert, pairwise::{Boxcar, Isotropic}};
-use hoomd_microstate::{Microstate, Body, property::Point};
-use hoomd_vector::Cartesian;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let mut microstate = Microstate::new();
-microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
-    Body::point(Cartesian::from([1.0, 0.0])),
-])?;
-
-
-let epsilon = 2.0;
-let (left,right) = (0.0, 1.5);
-let boxcar = Boxcar { epsilon, left, right };
-let evaluator = Isotropic(boxcar);
-let cutoff_pair = CutoffPair { r_cut: 1.5, evaluator };
-
-let delta_energy = cutoff_pair.delta_energy_insert(&microstate,
-    &Body::point([-1.0, 0.0].into()));
-assert_eq!(delta_energy, 2.0);
-# Ok(())
-# }
-```
-*/
+/// Evaluate the change in energy contributed by `CutoffPair` when one body is inserted.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_interaction::{
+///     CutoffPair, DeltaEnergyInsert,
+///     pairwise::{Boxcar, Isotropic},
+/// };
+/// use hoomd_microstate::{Body, Microstate, property::Point};
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut microstate = Microstate::new();
+/// microstate.extend_bodies([
+///     Body::point(Cartesian::from([0.0, 0.0])),
+///     Body::point(Cartesian::from([1.0, 0.0])),
+/// ])?;
+///
+/// let epsilon = 2.0;
+/// let (left, right) = (0.0, 1.5);
+/// let boxcar = Boxcar {
+///     epsilon,
+///     left,
+///     right,
+/// };
+/// let evaluator = Isotropic(boxcar);
+/// let cutoff_pair = CutoffPair {
+///     r_cut: 1.5,
+///     evaluator,
+/// };
+///
+/// let delta_energy = cutoff_pair
+///     .delta_energy_insert(&microstate, &Body::point([-1.0, 0.0].into()));
+/// assert_eq!(delta_energy, 2.0);
+/// # Ok(())
+/// # }
+/// ```
 impl<V, B, S, C, E> DeltaEnergyInsert<B, S, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
@@ -294,34 +389,43 @@ where
     }
 }
 
-/** Evaluate the change in energy contributed by `CutoffPair` when one body is removed.
-
-# Example
-
-```
-use hoomd_interaction::{CutoffPair, DeltaEnergyRemove, pairwise::{Boxcar, Isotropic}};
-use hoomd_microstate::{Microstate, Body, property::Point};
-use hoomd_vector::Cartesian;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let mut microstate = Microstate::new();
-microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
-    Body::point(Cartesian::from([1.0, 0.0])),
-])?;
-
-
-let epsilon = 2.0;
-let (left,right) = (0.0, 1.5);
-let boxcar = Boxcar { epsilon, left, right };
-let evaluator = Isotropic(boxcar);
-let cutoff_pair = CutoffPair { r_cut: 1.5, evaluator };
-
-let delta_energy = cutoff_pair.delta_energy_remove(&microstate,0);
-assert_eq!(delta_energy, -2.0);
-# Ok(())
-# }
-```
-*/
+/// Evaluate the change in energy contributed by `CutoffPair` when one body is removed.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_interaction::{
+///     CutoffPair, DeltaEnergyRemove,
+///     pairwise::{Boxcar, Isotropic},
+/// };
+/// use hoomd_microstate::{Body, Microstate, property::Point};
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut microstate = Microstate::new();
+/// microstate.extend_bodies([
+///     Body::point(Cartesian::from([0.0, 0.0])),
+///     Body::point(Cartesian::from([1.0, 0.0])),
+/// ])?;
+///
+/// let epsilon = 2.0;
+/// let (left, right) = (0.0, 1.5);
+/// let boxcar = Boxcar {
+///     epsilon,
+///     left,
+///     right,
+/// };
+/// let evaluator = Isotropic(boxcar);
+/// let cutoff_pair = CutoffPair {
+///     r_cut: 1.5,
+///     evaluator,
+/// };
+///
+/// let delta_energy = cutoff_pair.delta_energy_remove(&microstate, 0);
+/// assert_eq!(delta_energy, -2.0);
+/// # Ok(())
+/// # }
+/// ```
 impl<V, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
@@ -360,9 +464,6 @@ where
         -energy_initial
     }
 }
-
-// TODO: implement site_pair_energy for CutoffPair. It needs to apply
-// the r_cut and body exclusions first, then forward the call to the inner type.
 
 #[cfg(test)]
 mod tests {
@@ -425,6 +526,18 @@ mod tests {
 
             // Two pairs at a distance of 1.0 each with energy 1/2.
             assert_eq!(cutoff_pair.total_energy(&microstate), 1.0);
+
+            let sites = microstate.sites();
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[0]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[1]), 0.5);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[2]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[3]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[1], &sites[1]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[1], &sites[2]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[1], &sites[3]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[2], &sites[2]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[2], &sites[3]), 0.5);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[3], &sites[3]), 0.0);
         }
 
         #[rstest]
@@ -470,6 +583,20 @@ mod tests {
 
             // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
             assert_eq!(cutoff_pair.total_energy(&microstate), 2.0);
+
+            let sites = microstate.sites();
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[0]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[1]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[2]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[3]), 0.0);
+
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[4], &sites[4]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[4], &sites[5]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[4], &sites[6]), 0.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[4], &sites[7]), 0.0);
+
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[0], &sites[6]), 1.0);
+            assert_eq!(cutoff_pair.site_pair_energy(&sites[1], &sites[7]), 1.0);
         }
     }
 
@@ -606,7 +733,7 @@ mod tests {
         }
     }
 
-    mod delta_energy_insert {
+    mod delta_energy_insert_remove {
         use super::*;
 
         #[rstest]
@@ -668,6 +795,11 @@ mod tests {
                 cutoff_pair.delta_energy_insert(&microstate, &body_a_new),
                 2.0
             );
+
+            microstate
+                .add_body(body_a_new)
+                .expect("hard-coded bodies should be in the boundary");
+            assert_eq!(cutoff_pair.delta_energy_remove(&microstate, 1), -2.0);
         }
 
         #[test]
@@ -728,12 +860,14 @@ mod tests {
                     - cutoff_pair.total_energy(&microstate_initial);
 
                 assert_relative_eq!(delta_energy_insert, delta_energy_total, epsilon = 1e-6);
+
+                let delta_energy_remove = cutoff_pair.delta_energy_remove(&microstate_final, 1);
+                assert_relative_eq!(delta_energy_remove, -delta_energy_total, epsilon = 1e-6);
+
                 microstate_final.remove_body(
                     microstate_final.body_indices()[tag].expect("tag should be present"),
                 );
             }
         }
     }
-
-    // TODO: Test delta_energy_remove
 }

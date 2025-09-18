@@ -26,7 +26,6 @@ See equation 7 in <https://doi.org/10.1038/s41524-024-01497-y>.
 
 # Example:
 ```
-use arrayvec::ArrayVec;
 use hoomd_chimes::transformation::MorseTransformation;
 use hoomd_chimes::potential::{Chimes2b, CubicSmooth};
 use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
@@ -95,7 +94,6 @@ mod tests {
     use super::*;
     use crate::transformation::MorseTransformation;
     use ::approx::assert_abs_diff_eq;
-    use arrayvec::ArrayVec;
     use hoomd_interaction::pairwise::LennardJones;
     use rstest::*;
 

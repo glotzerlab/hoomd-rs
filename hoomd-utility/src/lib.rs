@@ -8,10 +8,9 @@
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
 
-/*! Utilities
-
-Common utility code used by many other hoomd-rs crates.
-*/
+//! Utilities
+//!
+//! Common utility code used by many other hoomd-rs crates.
 
 pub mod random;
 pub mod valid;
