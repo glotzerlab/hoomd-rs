@@ -3,6 +3,13 @@
 
 //! Implement vector types in Minkowski space.
 
+use crate::{Error, HyperbolicRotate};
+use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::{Metric, Vector};
+use rand::{
+    Rng,
+    distr::{Distribution, StandardUniform, Uniform},
+};
 use std::{
     array,
     f64::consts::PI,
@@ -10,13 +17,6 @@ use std::{
     iter::zip,
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-use rand::{
-    Rng,
-    distr::{Distribution, StandardUniform, Uniform},
-};
-use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Metric, Vector};
-use crate::{Error, HyperbolicRotate};
 
 #[cfg(debug_assertions)]
 use approx::assert_relative_eq;
