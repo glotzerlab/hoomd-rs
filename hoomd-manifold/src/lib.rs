@@ -8,134 +8,133 @@
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
 
-/*! Tools for non-Euclidean geometries. The trait [`CurvedManifold`] implements the `geodesic_distance` method
-for calculating geodesic distances for manifolds imbedded in a metric vector space. This crate Includes the struct
- [`Sphere`], an embedding of an N-sphere within (N+1)-dimensional cartesian space, as well as [`Hyperboloid`], the
- surface of the upper sheet of an N-dimensional two-sheeted hyperboloid embedded in (N+1)-dimensional Minkowski space.
-
-## Sphere
-
-[`Sphere`] describes an N-sphere of radius R embedded in [`Cartesian<N+1>`]. By definition,
-the components of a point on an N-sphere satisfy
-```math
-\sum_{i=1}^{N+1}x_i^2 = R^2
-```
-[`Sphere`] implements a distance metric which calculates the geodesic distance on the
-surface of an N-sphere. Use [`Sphere`] to describe spaces with constant postive curvature.
-
-## Hyperboloid
-[`Hyperboloid`] describes the upper sheet of an N-dimensional two-sheeted hyperboloid with
-skirt R. The components of a point on the hyperboloid satisfy
-```math
-x_1^2 + \cdots + x_{N-1}^2 - x_{N}^2 = -R^2
-```
-[`Hyperboloid`] implements a distance metric which calculates the geodesic distance on
-the surface of a hyperboloid. Use [`Hyperboloid`] embdedded in [`Minkowski`] to describe
-hyperbolic space.
-
-## Minkowski
-
-[`Minkowski<N>`] implements (N-1,1)-dimensional Minkowski space with the metric signature
-$(+ \;\cdots\; +\; -)$. [`Minkowski`] supports [`Vector`] operations such as vector addition and rescaling, but
-is not a true inner product space. The distance metric on Minkowski space is given by the
-"spacetime interval"
-```math
-d_M^2(\vec{u},\vec{v}) = (\vec{u}-\vec{v})^T \eta (\vec{u}-\vec{v})
-= (u_1-v_1)^2 +\cdots + (u_{N-1}-v_{N-1})^2 - (u_N - v_N)^2
-```
-
-```
-use hoomd_manifold::Minkowski;
-use hoomd_vector::{Metric,Vector};
-
-let u = Minkowski::from([1.0,0.0,0.0,-1.0]);
-let v = Minkowski::from([2.0,0.0,1.0,1.0]);
-let w = Minkowski::from([0.0,0.0,0.0,3.0]);
-let del = (u+w).distance(&v);
-assert_eq!(1.0, del);
-
-```
-## Hyperbolic Rotations
-"Hyperbolic rotations" describe elements of the group SO(N,1), which preserve hyperboloids
-embedded in [`Minkowski<N+1>`]. Transformations include pure spatial rotations as well as
-"boosts".
-
-For two-dimensional hyperbolic surfaces, use [`HyperbolicAngle`] to implement
-elements of SO(2,1) which rotate points about the z-axis or boost points along the x- and y-axes.
-Use [`HyperbolicRotationMatrix`] to generate the matrix from the values defined by [`HyperbolicAngle`].
-```
-// Rotation about z axis
-use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
-use std::f64::consts::PI;
-
-let v = Minkowski::from([1.0, 0.0, 1.0]);
-let rotation_about_z = HyperbolicAngle::from((PI/2.0, 0.0_f64, 0.0_f64));
-let matrix = HyperbolicRotationMatrix::from(rotation_about_z);
-let rotated = matrix.hyperbolic_rotate(&v);
-// rotated is approximately [0.0,1.0,1.0]);
-```
-```
-// Boost in the y direction
-use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
-use std::f64::consts::PI;
-
-let v = Minkowski::from([1.0, 0.0, 1.0]);
-let boost_in_y = HyperbolicAngle::from((0.0_f64, 0.0_f64, 0.5_f64));
-let matrix = HyperbolicRotationMatrix::from(boost_in_y);
-let boosted = matrix.hyperbolic_rotate(&v);
-// rotated is approximately [1.0,sinh(0.5),cosh(0.5)]);
-```
-
-For three-dimensional hyperbolic surfaces, use [`Biquaternion`]. Biquaternions are a
-generalization of quaternions which allow for complex coefficients. Unit biquaternions give
- a representation of SO(3,1); this can either be done by converting the biquaternions
- to a [`HyperbolicRotationMatrix`] or by using the [`UnitBiquaternion`] algebra directly.
-
- ```math
-// Rotate point in 3D hyperbolic space about z axis using matrix representation
-use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate,
-                    Biquaternion, UnitBiquaternion};
-use std::f64::consts::PI;
-use num::complex::Complex;
-
-let q = Biquaternion::from([Complex::new((PI/4.0).sin(),0.0),
-                    Complex::new(0.0,0.0),
-                    Complex::new(0.0, 0.0),
-                    Complex::new((PI/4.0).cos(), 0.0)]);
-let v = q.to_unit();
-let x = Minkowski::from([0.0, 1.0, 0.0, 1.0]);
-let rotation_about_x = HyperbolicRotationMatrix::from(v);
-let rotated = rotation_about_x.hyperbolic_rotate(&x);
-// rotated vector is approximately [0.0, 0.0, 1.0, 1.0];
-```
-```
-// Boost point in 3D hyperbolic space in x direction using biquaternion algebra
-use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, Biquaternion, Minkowski};
-use std::f64::consts::PI;
-use num::complex::Complex;
-
-let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
-let q = Biquaternion::from([Complex::new(0.0, PI/4.0).sinh(),
-                    Complex::new(0.0,0.0),
-                    Complex::new(0.0, 0.0),
-                    Complex::new(0.0, PI/4.0).cosh()]);
-let v = q.to_unit();
-let boosted = v.expect("non-zero biquaternion").hyperbolic_rotate(&x);
-// boosted is approximately [(PI/2.0).sinh(), 0.0, 0.0, (PI/2.0).cosh()]
-```
-*/
+//! Tools for non-Euclidean geometries. The trait [`CurvedManifold`] implements the `geodesic_distance` method
+//! for calculating geodesic distances for manifolds imbedded in a metric vector space. This crate Includes the struct
+//! [`Sphere`], an embedding of an N-sphere within (N+1)-dimensional cartesian space, as well as [`Hyperboloid`], the
+//! surface of the upper sheet of an N-dimensional two-sheeted hyperboloid embedded in (N+1)-dimensional Minkowski space.
+//!
+//! ## Sphere
+//!
+//! [`Sphere`] describes an N-sphere of radius R embedded in [`Cartesian<N+1>`]. By definition,
+//! the components of a point on an N-sphere satisfy
+//! ```math
+//! \sum_{i=1}^{N+1}x_i^2 = R^2
+//! ```
+//! [`Sphere`] implements a distance metric which calculates the geodesic distance on the
+//! surface of an N-sphere. Use [`Sphere`] to describe spaces with constant postive curvature.
+//!
+//! ## Hyperboloid
+//! [`Hyperboloid`] describes the upper sheet of an N-dimensional two-sheeted hyperboloid with
+//! skirt R. The components of a point on the hyperboloid satisfy
+//! ```math
+//! x_1^2 + \cdots + x_{N-1}^2 - x_{N}^2 = -R^2
+//! ```
+//! [`Hyperboloid`] implements a distance metric which calculates the geodesic distance on
+//! the surface of a hyperboloid. Use [`Hyperboloid`] embdedded in [`Minkowski`] to describe
+//! hyperbolic space.
+//!
+//! ## Minkowski
+//!
+//! [`Minkowski<N>`] implements (N-1,1)-dimensional Minkowski space with the metric signature
+//! $(+ \;\cdots\; +\; -)$. [`Minkowski`] supports [`Vector`] operations such as vector addition and rescaling, but
+//! is not a true inner product space. The distance metric on Minkowski space is given by the
+//! "spacetime interval"
+//! ```math
+//! d_M^2(\vec{u},\vec{v}) = (\vec{u}-\vec{v})^T \eta (\vec{u}-\vec{v})
+//! = (u_1-v_1)^2 +\cdots + (u_{N-1}-v_{N-1})^2 - (u_N - v_N)^2
+//! ```
+//!
+//! ```
+//! use hoomd_manifold::Minkowski;
+//! use hoomd_vector::{Metric, Vector};
+//!
+//! let u = Minkowski::from([1.0, 0.0, 0.0, -1.0]);
+//! let v = Minkowski::from([2.0, 0.0, 1.0, 1.0]);
+//! let w = Minkowski::from([0.0, 0.0, 0.0, 3.0]);
+//! let del = (u + w).distance(&v);
+//! assert_eq!(1.0, del);
+//! ```
+//! ## Hyperbolic Rotations
+//! "Hyperbolic rotations" describe elements of the group SO(N,1), which preserve hyperboloids
+//! embedded in [`Minkowski<N+1>`]. Transformations include pure spatial rotations as well as
+//! "boosts".
+//!
+//! For two-dimensional hyperbolic surfaces, use [`HyperbolicAngle`] to implement
+//! elements of SO(2,1) which rotate points about the z-axis or boost points along the x- and y-axes.
+//! Use [`HyperbolicRotationMatrix`] to generate the matrix from the values defined by [`HyperbolicAngle`].
+//!
+//! Rotation about the z axis:
+//! ```
+//! use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
+//! use std::f64::consts::PI;
+//!
+//! let v = Minkowski::from([1.0, 0.0, 1.0]);
+//! let rotation_about_z = HyperbolicAngle::from((PI/2.0, 0.0_f64, 0.0_f64));
+//! let matrix = HyperbolicRotationMatrix::from(rotation_about_z);
+//! let rotated = matrix.hyperbolic_rotate(&v);
+//! // rotated is approximately [0.0,1.0,1.0]);
+//! ```
+//!
+//! Boost in the y direction:
+//! ```
+//! use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate, HyperbolicAngle};
+//! use std::f64::consts::PI;
+//!
+//! let v = Minkowski::from([1.0, 0.0, 1.0]);
+//! let boost_in_y = HyperbolicAngle::from((0.0_f64, 0.0_f64, 0.5_f64));
+//! let matrix = HyperbolicRotationMatrix::from(boost_in_y);
+//! let boosted = matrix.hyperbolic_rotate(&v);
+//! // rotated is approximately [1.0,sinh(0.5),cosh(0.5)]);
+//! ```
+//!
+//! For three-dimensional hyperbolic surfaces, use [`Biquaternion`]. Biquaternions are a
+//! generalization of quaternions which allow for complex coefficients. Unit biquaternions give
+//! a representation of SO(3,1); this can either be done by converting the biquaternions
+//! to a [`HyperbolicRotationMatrix`] or by using the [`UnitBiquaternion`] algebra directly.
+//!
+//! ```math
+//! Rotate point in 3D hyperbolic space about z axis using matrix representation
+//! use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate,
+//! Biquaternion, UnitBiquaternion};
+//! use std::f64::consts::PI;
+//! use num::complex::Complex;
+//!
+//! let q = Biquaternion::from([Complex::new((PI/4.0).sin(),0.0),
+//! Complex::new(0.0,0.0),
+//! Complex::new(0.0, 0.0),
+//! Complex::new((PI/4.0).cos(), 0.0)]);
+//! let v = q.to_unit();
+//! let x = Minkowski::from([0.0, 1.0, 0.0, 1.0]);
+//! let rotation_about_x = HyperbolicRotationMatrix::from(v);
+//! let rotated = rotation_about_x.hyperbolic_rotate(&x);
+//! rotated vector is approximately [0.0, 0.0, 1.0, 1.0];
+//! ```
+//!
+//! Boost point in 3D hyperbolic space in x direction using biquaternion algebra:
+//! ```
+//! use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, Biquaternion, Minkowski};
+//! use std::f64::consts::PI;
+//! use num::complex::Complex;
+//!
+//! let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
+//! let q = Biquaternion::from([Complex::new(0.0, PI/4.0).sinh(),
+//! Complex::new(0.0,0.0),
+//! Complex::new(0.0, 0.0),
+//! Complex::new(0.0, PI/4.0).cosh()]);
+//! let v = q.to_unit();
+//! let boosted = v.expect("non-zero biquaternion").hyperbolic_rotate(&x);
+//! // boosted is approximately [(PI/2.0).sinh(), 0.0, 0.0, (PI/2.0).cosh()]
+//! ```
 
 mod biquaternion;
 mod hyperbolic_angle;
 mod minkowski;
 mod sphere;
 
-pub use {
-    biquaternion::{Biquaternion, UnitBiquaternion},
-    hyperbolic_angle::HyperbolicAngle,
-    minkowski::{HyperbolicDisk, HyperbolicRotationMatrix, Hyperboloid, Minkowski},
-    sphere::{Sphere, SphericalDisk},
-};
+pub use biquaternion::{Biquaternion, UnitBiquaternion};
+pub use hyperbolic_angle::HyperbolicAngle;
+pub use minkowski::{HyperbolicDisk, HyperbolicRotationMatrix, Hyperboloid, Minkowski};
+pub use sphere::{Sphere, SphericalDisk};
 
 use hoomd_vector::Vector;
 use thiserror::Error;
@@ -165,13 +164,11 @@ pub enum Error {
     InvalidSpherePointComparison,
 }
 
-/** Linear transformations preserving hyperboloids.
- */
+/// Linear transformations preserving hyperboloids.
 pub trait HyperbolicRotate<V: Vector> {
     /// Type of the related rotation matrix
     type Matrix: HyperbolicRotate<V>;
-    /** Apply a SO(N-1,1) transformation to an N-dimensional Minkowski vector
-     */
+    /// Apply a SO(N-1,1) transformation to an N-dimensional Minkowski vector
     #[must_use]
     fn hyperbolic_rotate(&self, vector: &V) -> V;
 }

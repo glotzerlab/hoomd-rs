@@ -1,8 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement periodic boundary conditions for the {8,8} tiling of hyperbolic space. Specifically, `Periodic<EightEight>` identifies opposite edges of the octagon to implement the Bolza surface.
-*/
+//! Implement periodic boundary conditions for the {8,8} tiling of hyperbolic space. Specifically, `Periodic<EightEight>` identifies opposite edges of the octagon to implement the Bolza surface.
 
 use std::f64::consts::PI;
 use tinyvec::ArrayVec;
@@ -18,8 +17,7 @@ use hoomd_manifold::{Hyperboloid, Minkowski};
 use hoomd_vector::Metric;
 
 impl MaximumAllowableInteractionRange for EightEight {
-    /** The largest value that the maximum interaction range can take. This bound is smaller than the one strictly imposed by the geometry by about a factor of 3.
-     */
+    /// The largest value that the maximum interaction range can take. This bound is smaller than the one strictly imposed by the geometry by about a factor of 3.
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
         self.skirt * 1.0
@@ -35,50 +33,52 @@ impl<P> Wrap<P> for Periodic<EightEight>
 where
     P: Position<Position = Hyperboloid<3>>,
 {
-    /** Wrap a point on the hyperboloid to the inside of the {8,8} tile. Note that the function fails to wrap points that are further than 0.5 + `EIGHTEIGHT` from the cusp.
-
-    # Example
-    ```
-    use hoomd_geometry::shape::EightEight;
-    use hoomd_microstate::{boundary::{Periodic, Wrap}, property::Point};
-    use hoomd_manifold::Hyperboloid;
-    use approx::assert_relative_eq;
-    use std::f64::consts::PI;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    const EIGHTEIGHT: f64 = 2.448_452_447_678_076;
-    let offset = PI / 8.0;
-        let boost = 2.0;
-        let point = Hyperboloid::<3>::from_polar(boost, offset + PI / 4.0, 1.0);
-    let periodic =
-            Periodic::new(0.5, EightEight { skirt: 1.0_f64 })?;
-
-    let wrapped_point = periodic.wrap(point)?;
-
-    let new_boost = 2.0
-            * (EIGHTEIGHT.tanh() / (offset.cos() - offset.sin() * (1.0 - (2.0_f64).sqrt())))
-                .atanh()
-            - boost;
-    let ans = Hyperboloid::<3>::from_polar(new_boost, 6.0 * PI / 4.0 - offset, 1.0);
-    assert_relative_eq!(
-        ans.point.coordinates[0],
-        wrapped_point.point.coordinates[0],
-        epsilon = 1e-12
-    );
-    assert_relative_eq!(
-        ans.point.coordinates[1],
-        wrapped_point.point.coordinates[1],
-        epsilon = 1e-12
-    );
-    assert_relative_eq!(
-        ans.point.coordinates[2],
-        wrapped_point.point.coordinates[2],
-        epsilon = 1e-12
-    );
-    # Ok(())
-    # }
-    ```
-     */
+    /// Wrap a point on the hyperboloid to the inside of the {8,8} tile. Note that the function fails to wrap points that are further than 0.5 + `EIGHTEIGHT` from the cusp.
+    ///
+    /// # Example
+    /// ```
+    /// use approx::assert_relative_eq;
+    /// use hoomd_geometry::shape::EightEight;
+    /// use hoomd_manifold::Hyperboloid;
+    /// use hoomd_microstate::{
+    ///     boundary::{Periodic, Wrap},
+    ///     property::Point,
+    /// };
+    /// use std::f64::consts::PI;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// const EIGHTEIGHT: f64 = 2.448_452_447_678_076;
+    /// let offset = PI / 8.0;
+    /// let boost = 2.0;
+    /// let point = Hyperboloid::<3>::from_polar(boost, offset + PI / 4.0, 1.0);
+    /// let periodic = Periodic::new(0.5, EightEight { skirt: 1.0_f64 })?;
+    ///
+    /// let wrapped_point = periodic.wrap(point)?;
+    ///
+    /// let new_boost = 2.0(EIGHTEIGHT.tanh()
+    ///     / (offset.cos() - offset.sin() * (1.0 - (2.0_f64).sqrt())))
+    /// .atanh()
+    ///     - boost;
+    /// let ans =
+    ///     Hyperboloid::<3>::from_polar(new_boost, 6.0 * PI / 4.0 - offset, 1.0);
+    /// assert_relative_eq!(
+    ///     ans.point.coordinates[0],
+    ///     wrapped_point.point.coordinates[0],
+    ///     epsilon = 1e-12
+    /// );
+    /// assert_relative_eq!(
+    ///     ans.point.coordinates[1],
+    ///     wrapped_point.point.coordinates[1],
+    ///     epsilon = 1e-12
+    /// );
+    /// assert_relative_eq!(
+    ///     ans.point.coordinates[2],
+    ///     wrapped_point.point.coordinates[2],
+    ///     epsilon = 1e-12
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[expect(clippy::cast_possible_truncation, reason = "truncating float to usize")]
     #[expect(clippy::cast_sign_loss, reason = "hard-coded positive numbers")]
@@ -173,8 +173,7 @@ where
     fn maximum_interaction_range(&self) -> f64 {
         self.maximum_interaction_range
     }
-    /** Place periodic images of sites near the edge of the periodic boundary
-     */
+    /// Place periodic images of sites near the edge of the periodic boundary
     #[inline]
     #[expect(clippy::too_many_lines, reason = "complicated function")]
     #[expect(clippy::cast_possible_truncation, reason = "truncating float to usize")]
@@ -221,7 +220,7 @@ where
                     + in_vertex_frame.coordinates[1] * (rot.cos()),
                 in_vertex_frame.coordinates[2],
             ]);
-            //boost and rotate to correct position in global frame
+            // boost and rotate to correct position in global frame
             let (new_vertex_boost, new_vertex_angle) = (
                 EIGHTEIGHT,
                 ((f64::from(next) + loc_num).rem_euclid(8.0) * (PI / 4.0)),
