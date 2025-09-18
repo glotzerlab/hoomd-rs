@@ -51,7 +51,23 @@ use hoomd_vector::Vector;
 ///
 /// Hard shape:
 ///
-/// TODO: Example
+/// ```
+/// use hoomd_geometry::shape::Ellipse;
+/// use hoomd_interaction::{CutoffPairOverlap, pairwise::HardShape};
+/// use hoomd_microstate::property::Point;
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let ellipse = Ellipse {
+///     semi_axes: [4.0.try_into()?, 1.0.try_into()?],
+/// };
+/// let hard_ellipse = CutoffPairOverlap {
+///     r_cut: 8.0,
+///     evaluator: HardShape(ellipse),
+/// };
+/// # Ok(())
+/// # }
+/// ```
 pub struct CutoffPairOverlap<E> {
     /// The distance beyond which all pairwise interactions evaluate to 0.
     pub r_cut: f64,
