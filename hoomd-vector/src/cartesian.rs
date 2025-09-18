@@ -531,8 +531,8 @@ impl<const N: usize> Sum for Cartesian<N> {
 /// Construct a [`RotationMatrix`] to efficiently rotate many vectors by the same rotation.
 ///
 /// See:
-/// [`RotationMatrix::from<Angle>`]
-/// [`RotationMatrix::from<Versor>`]
+/// * [`RotationMatrix::from<Angle>`]
+/// * [`RotationMatrix::from<Versor>`]
 ///
 /// [`RotationMatrix`] _intentionally_ does not implement [`Rotation`](crate::Rotation).
 /// [`Angle`](crate::Angle) and [`Versor`](crate::Versor) are representations of
@@ -643,18 +643,20 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
     /// ```
     /// use hoomd_vector::{Angle, Rotate, RotationMatrix, Cartesian};
     /// use std::f64::consts::PI;
+    /// use ::approx::assert_relative_eq;
     ///
     /// let v = Cartesian::from([-1.0, 0.0]);
     /// let a = Angle::from(PI / 2.0);
     ///
     /// let matrix = RotationMatrix::from(a);
     /// let rotated = matrix.rotate(&v);
-    /// rotated is approximately [0.0, -1.0]
+    /// assert_relative_eq!(rotated, [0.0, -1.0].into());
     /// ```
     ///
     /// ```
     /// use hoomd_vector::{Versor, Rotate, RotationMatrix, Cartesian};
     /// use std::f64::consts::PI;
+    /// use ::approx::assert_relative_eq;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let a = Cartesian::from([-1.0, 0.0, 0.0]);
@@ -662,7 +664,7 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
     ///
     /// let matrix = RotationMatrix::from(v);
     /// let b = matrix.rotate(&a);
-    /// b is approximately [0.0, -1.0, 0.0]
+    /// assert_relative_eq!(b, [0.0, -1.0, 0.0].into());
     /// # Ok(())
     /// # }
     /// ```

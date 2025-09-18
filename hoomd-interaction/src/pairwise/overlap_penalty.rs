@@ -54,9 +54,9 @@ impl Default for OverlapPenalty {
     /// The default values are tuned for use with `QuickInsert` and `QuickCompress`
     /// applied to systems of spherical particles with diameter approximately 1.
     ///
-    /// $`k = 1000`$
-    /// $`d_\mathrm{max} = 0.2`$
-    /// $`\varepsilon_\mathrm{shoulder} = 100`$
+    /// * $`k = 1000`$
+    /// * $`d_\mathrm{max} = 0.2`$
+    /// * $`\varepsilon_\mathrm{shoulder} = 100`$
     ///
     /// Call [`OverlapPenalty::scaled_default`] to initialize with values scaled
     /// for use with non-unit diameter sites.

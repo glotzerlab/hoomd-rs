@@ -48,7 +48,6 @@ pub use zero::Zero;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut microstate = Microstate::new();
-/// Place two pairs of particles separated by a large distance.
 /// microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
 /// Body::point(Cartesian::from([1.0, 0.0])),
 /// Body::point(Cartesian::from([0.0, 5.0])),
@@ -81,7 +80,7 @@ pub trait TotalEnergy<M> {
 /// compute system-wide properties.
 ///
 /// The generic type names are:
-/// `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 ///
 /// ## Examples
 ///
@@ -142,7 +141,7 @@ pub trait SiteEnergy<S> {
 /// compute system-wide properties.
 ///
 /// The generic type names are:
-/// `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 ///
 /// ## Examples
 ///
@@ -162,8 +161,8 @@ pub trait SiteEnergy<S> {
 /// where
 /// S: Position<Vector = Cartesian<2>>
 /// {
+/// /// Check for overlaps of a disk with a circular boundary.
 /// fn site_overlap(&self, site_properties: &S) -> bool {
-/// Check for overlaps of a disk with a circular boundary.
 /// site_properties.position().distance(&Cartesian::default()) > self.r - 0.5
 /// }
 /// }
@@ -200,7 +199,7 @@ pub trait SiteOverlap<S> {
 /// properties.
 ///
 /// The generic type names are:
-/// `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 ///
 /// [`Isotropic`]: pairwise::Isotropic
 /// [`Anisotropic`]: pairwise::Isotropic
@@ -266,7 +265,7 @@ pub trait SitePairEnergy<S> {
 /// simulations or to compute system-wide properties.
 ///
 /// The generic type names are:
-/// `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 ///
 /// [`HardShape`]: pairwise::HardShape
 ///
@@ -380,9 +379,9 @@ pub trait SitePairOverlap<S> {
 /// implements `DeltaEnergyOne` to efficiently compute the change in energy.
 ///
 /// The generic type names are:
-/// `B`: The [`Body::properties`](hoomd_microstate::Body) type.
-/// `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-/// `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
+/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 ///
 /// See the [Implementors](#implementors) section below for examples.
 pub trait DeltaEnergyOne<B, S, C> {
@@ -412,9 +411,9 @@ pub trait DeltaEnergyOne<B, S, C> {
 /// implements `DeltaEnergyInsert` to efficiently compute the change in energy.
 ///
 /// The generic type names are:
-/// `B`: The [`Body::properties`](hoomd_microstate::Body) type.
-/// `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-/// `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
+/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 ///
 /// See the [Implementors](#implementors) section below for examples.
 pub trait DeltaEnergyInsert<B, S, C> {
@@ -442,9 +441,9 @@ pub trait DeltaEnergyInsert<B, S, C> {
 /// implements `DeltaEnergyRemove` to efficiently compute the change in energy.
 ///
 /// The generic type names are:
-/// `B`: The [`Body::properties`](hoomd_microstate::Body) type.
-/// `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-/// `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
+/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 ///
 /// See the [Implementors](#implementors) section below for examples.
 pub trait DeltaEnergyRemove<B, S, C> {

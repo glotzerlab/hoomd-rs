@@ -15,12 +15,12 @@ use rand::{Rng, SeedableRng};
 /// as ones that produce identical values.
 ///
 /// There are 3 required elements of each counter.
-/// `step` is the current simulation step and ensures that random number
-/// streams are not correlated from one simulation step to the next.
-/// `substep` similarly ensures that different parts of the algorithm that
-/// advance the simulation are not correlated within a single step.
-/// `seed` is a value that allows users to execute replicate simulations that
-/// are identical except for the random numbers applied.
+/// * `step` is the current simulation step and ensures that random number
+///   streams are not correlated from one simulation step to the next.
+/// * `substep` similarly ensures that different parts of the algorithm that
+///   advance the simulation are not correlated within a single step.
+/// * `seed` is a value that allows users to execute replicate simulations that
+///   are identical except for the random numbers applied.
 ///
 /// There are two optional indices. Generally, many simulation algorithms will
 /// set these to particle indices so that RNG streams are independent from one

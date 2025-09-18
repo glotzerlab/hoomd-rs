@@ -103,14 +103,14 @@ const CAMERA_ZOOM_SPEED: f32 = 50.0;
 /// A menu to control common settings (steps per second limit, camera speed, etc.)
 ///
 /// The caller must:
-/// Provide type that implements [`Simulation`].
-/// Add a `sync` `Update` system that populates (and removes) entities for
-/// rendering. See [`representation`] for helper code.
+/// * Provide type that implements [`Simulation`].
+/// * Add a `sync` `Update` system that populates (and removes) entities for
+///   rendering. See [`representation`] for helper code.
 ///
 /// The caller may optionally:
-/// Add UI to the upper right corner of the screen.
-/// Implement custom controls.
-/// Add lines to the [`HelpText`] entity.
+/// * Add UI to the upper right corner of the screen.
+/// * Implement custom controls.
+/// * Add lines to the [`HelpText`] entity.
 ///
 /// To keep individual example scripts short and understandable, `hoomd-bevy` should
 /// implement as much common code as possible.
@@ -156,8 +156,8 @@ pub enum InitialCamera {
     /// automatically based on the window dimensions.
     ///
     /// Controls:
-    /// Left click and drag to pan.
-    /// Scroll to zoom.
+    /// * Left click and drag to pan.
+    /// * Scroll to zoom.
     Orthographic2d(f32),
 }
 

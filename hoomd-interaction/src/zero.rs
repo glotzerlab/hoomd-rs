@@ -9,7 +9,7 @@ use hoomd_microstate::{Body, Microstate};
 
 /// Set the energy of any system to 0.
 ///
-/// hoomd-rs* uses [`Zero`] in minimal examples that demonstrate MC simulations.
+/// *hoomd-rs* uses [`Zero`] in minimal examples that demonstrate MC simulations.
 /// It returns 0 for all energies and delta energies.
 pub struct Zero;
 

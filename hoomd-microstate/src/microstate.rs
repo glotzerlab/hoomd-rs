@@ -124,9 +124,9 @@ impl<T> VecWithTags<T> {
 /// for additional details.
 ///
 /// The generic type names are:
-/// `B`: The [`Body::properties`](crate::Body) type.
-/// `S`: The [`Site::properties`](crate::Site) type.
-/// `C`: The [`boundary`](crate::boundary) condition type.
+/// * `B`: The [`Body::properties`](crate::Body) type.
+/// * `S`: The [`Site::properties`](crate::Site) type.
+/// * `C`: The [`boundary`](crate::boundary) condition type.
 ///
 /// ## Constructing Microstate
 ///
@@ -932,7 +932,6 @@ impl<B, S, C> Microstate<B, S, C> {
     /// Body::point(Cartesian::from([-1.0, 2.0]))])
     /// .try_build()?;
     ///
-    /// The initial index order is equivalent to the tag order.
     /// assert_eq!(microstate.bodies()[0].tag, 0);
     /// assert_eq!(microstate.bodies()[1].tag, 1);
     /// # Ok(())
@@ -972,9 +971,9 @@ impl<B, S, C> Microstate<B, S, C> {
     /// [`Microstate::bodies`].
     ///
     /// `body_indices()[tag]` is:
-    /// [`None`] when there is no body with the given tag in the microstate.
-    /// [`Some(index)`](Option::Some) when the body with the given tag is in the
-    /// microstate. `index` is the index of the body in [`Microstate::bodies`].
+    /// * [`None`] when there is no body with the given tag in the microstate.
+    /// * [`Some(index)`](Option::Some) when the body with the given tag is in the
+    ///   microstate. `index` is the index of the body in [`Microstate::bodies`].
     ///
     /// # Example
     ///
@@ -1042,7 +1041,6 @@ impl<B, S, C> Microstate<B, S, C> {
     /// Body::point(Cartesian::from([-1.0, 2.0]))])
     /// .try_build()?;
     ///
-    /// The initial index order is equivalent to the tag order.
     /// assert_eq!(microstate.sites()[0].site_tag, 0);
     /// assert_eq!(microstate.sites()[0].body_tag, 0);
     ///

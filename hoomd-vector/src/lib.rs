@@ -125,23 +125,25 @@
 //! ```
 //! use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
 //! use std::f64::consts::PI;
+//! use ::approx::assert_relative_eq;
 //!
 //! let v = Cartesian::from([-1.0, 0.0]);
 //! let a = Angle::from(PI / 2.0);
 //! let rotated = a.rotate(&v);
-//! rotated is approximately [0.0, -1.0]
+//! assert_relative_eq!(rotated, [0.0, -1.0].into());
 //! ```
 //!
 //! [`Versor`] implements rotations on [`Cartesian<3>`] vectors.
 //! ```
 //! use hoomd_vector::{Versor, Rotate, Rotation, Cartesian};
 //! use std::f64::consts::PI;
+//! use ::approx::assert_relative_eq;
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let a = Cartesian::from([-1.0, 0.0, 0.0]);
 //! let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI / 2.0);
 //! let b = v.rotate(&a);
-//! b is approximately [0.0, -1.0, 0.0]
+//! assert_relative_eq!(b, [0.0, -1.0, 0.0].into());
 //! # Ok(())
 //! # }
 //! ```
@@ -177,9 +179,9 @@
 //! These unstable features are intended for internal use. `hoomd-vector` may make
 //! breaking changes to the code gated behind unstable features in any release.
 //!
-//! `approx`: Enable `assert_relative_eq` and `assert_abs_diff_eq` from the
-//! [`approx`](https://docs.rs/approx/latest/approx/) crate on [`Cartesian`],
-//! [`Quaternion`] and [`Versor`].
+//! * `approx`: Enable `assert_relative_eq` and `assert_abs_diff_eq` from the
+//!   [`approx`](https://docs.rs/approx/latest/approx/) crate on [`Cartesian`],
+//!   [`Quaternion`] and [`Versor`].
 
 mod angle;
 mod cartesian;
@@ -614,11 +616,12 @@ pub trait Rotate<V: Vector> {
     /// # Example
     /// ```
     /// use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
+    /// use ::approx::assert_relative_eq;
     ///
     /// let v = Cartesian::from([-1.0, 0.0]);
     /// let a = Angle::from(std::f64::consts::PI / 2.0);
     /// let rotated = a.rotate(&v);
-    /// rotated is approximately [0.0, -1.0]
+    /// assert_relative_eq!(rotated, [0.0, -1.0].into());
     /// ```
     #[must_use]
     fn rotate(&self, vector: &V) -> V;

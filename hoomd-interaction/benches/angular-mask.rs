@@ -10,7 +10,7 @@
     reason = "benches can use expect without individual reasons"
 )]
 
-//! Benchmark `LennardJones`
+//! Benchmark `AngularMask`
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use rand::{Rng, SeedableRng, rngs::StdRng};

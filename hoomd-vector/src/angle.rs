@@ -54,11 +54,12 @@ use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
 /// ```
 /// use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
 /// use std::f64::consts::PI;
+/// use ::approx::assert_relative_eq;
 ///
 /// let v = Cartesian::from([-1.0, 0.0]);
 /// let a = Angle::from(PI / 2.0);
 /// let rotated = a.rotate(&v);
-/// rotated is approximately [0.0, -1.0]
+/// assert_relative_eq!(rotated, [0.0, -1.0].into())
 /// ```
 ///
 /// Combine two rotations together:
@@ -113,13 +114,14 @@ impl From<Angle> for RotationMatrix<2> {
     /// ```
     /// use hoomd_vector::{Angle, Rotate, RotationMatrix, Cartesian};
     /// use std::f64::consts::PI;
+    /// use ::approx::assert_relative_eq;
     ///
     /// let v = Cartesian::from([-1.0, 0.0]);
     /// let a = Angle::from(PI / 2.0);
     ///
     /// let matrix = RotationMatrix::from(a);
     /// let rotated = matrix.rotate(&v);
-    /// rotated is approximately [0.0, -1.0]
+    /// assert_relative_eq!(rotated, [0.0, -1.0].into());
     /// ```
     #[inline]
     fn from(angle: Angle) -> RotationMatrix<2> {
@@ -160,11 +162,12 @@ impl Rotate<Cartesian<2>> for Angle {
     /// ```
     /// use hoomd_vector::{Angle, Rotate, Rotation, Cartesian};
     /// use std::f64::consts::PI;
+    /// use ::approx::assert_relative_eq;
     ///
     /// let v = Cartesian::from([-1.0, 0.0]);
     /// let a = Angle::from(PI / 2.0);
     /// let rotated = a.rotate(&v);
-    /// rotated is approximately [0.0, -1.0]
+    /// assert_relative_eq!(rotated, [0.0, -1.0].into());
     /// ```
     fn rotate(&self, vector: &Cartesian<2>) -> Cartesian<2> {
         let sin_theta = self.theta.sin();

@@ -130,7 +130,7 @@ impl SquareMatrix<2> {
     }
 }
 
-/// The geometry resulting from an Hypersphere that is scaled along the Cartesian axes.
+/// The geometry resulting from an Hypersphere that is scaled along each Cartesian axes.
 ///
 /// See [`Ellipse`] and [`Ellipsoid`] for special cases in 2 and 3 dimensions.
 ///

@@ -477,12 +477,13 @@ impl SubAssign for Quaternion {
 /// ```
 /// use hoomd_vector::{Versor, Rotate, Rotation, Cartesian};
 /// use std::f64::consts::PI;
+/// use ::approx::assert_relative_eq;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let a = Cartesian::from([-1.0, 0.0, 0.0]);
 /// let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI / 2.0);
 /// let b = v.rotate(&a);
-/// b is approximately [0.0, -1.0, 0.0]
+/// assert_relative_eq!(b, [0.0, -1.0, 0.0].into());
 /// # Ok(())
 /// # }
 /// ```
@@ -579,6 +580,7 @@ impl From<Versor> for RotationMatrix<3> {
     /// ```
     /// use hoomd_vector::{Versor, Rotate, RotationMatrix, Cartesian};
     /// use std::f64::consts::PI;
+    /// use ::approx::assert_relative_eq;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let a = Cartesian::from([-1.0, 0.0, 0.0]);
@@ -586,7 +588,7 @@ impl From<Versor> for RotationMatrix<3> {
     ///
     /// let matrix = RotationMatrix::from(v);
     /// let b = matrix.rotate(&a);
-    /// b is approximately [0.0, -1.0, 0.0]
+    /// assert_relative_eq!(b, [0.0, -1.0, 0.0].into());
     /// # Ok(())
     /// # }
     /// ```
@@ -655,12 +657,13 @@ impl Rotate<Cartesian<3>> for Versor {
     /// ```
     /// use hoomd_vector::{Versor, Rotate, Rotation, Cartesian};
     /// use std::f64::consts::PI;
+    /// use ::approx::assert_relative_eq;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let a = Cartesian::from([-1.0, 0.0, 0.0]);
     /// let v = Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, PI / 2.0);
     /// let b = v.rotate(&a);
-    /// b is approximately [0.0, -1.0, 0.0]
+    /// assert_relative_eq!(b, [0.0, -1.0, 0.0].into());
     /// # Ok(())
     /// # }
     /// ```

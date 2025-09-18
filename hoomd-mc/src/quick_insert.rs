@@ -47,11 +47,11 @@ enum State {
 /// When you [`apply`] a running [`QuickInsert`] to a microstate, it:
 /// 1. Checks the total energy of the given Hamiltonian.
 /// 2. If the total energy is zero *and there are still bodies to insert*, generate
-/// a random body and attempt to insert it into the microstate. Reject any
-/// insertion that would result in an infinite energy. Accept in all other cases.
+///    a random body and attempt to insert it into the microstate. Reject any
+///    insertion that would result in an infinite energy. Accept in all other cases.
 /// 3. Repeat step 2 until inserted bodies overlap with others `allowed_overlaps`
-/// times, the target number of bodies have been inserted, or a total of `target`
-/// attempts have been made during this call, whichever comes first.
+///    times, the target number of bodies have been inserted, or a total of `target`
+///    attempts have been made during this call, whichever comes first.
 ///
 /// When *both* `target` bodies have been inserted *and* the energy is
 /// 0, [`QuickInsert`] transitions to the complete state. When complete,
@@ -63,7 +63,7 @@ enum State {
 /// `QuickCompress` is a better solution.
 ///
 /// The generic type names are:
-/// `D`: The body distribution.
+/// * `D`: The body distribution.
 ///
 /// [`apply`]: Self::apply
 /// [`is_complete`]: Self::is_complete

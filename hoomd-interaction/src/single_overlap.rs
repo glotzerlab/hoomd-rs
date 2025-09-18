@@ -22,7 +22,7 @@ use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Po
 /// $`U\left( s_i \right)`$ is $`\infty`$ when the site overlaps with an external
 /// object and 0 when it does not.
 ///
-/// hoomd-rs** currently does not provide any types that implement
+/// **hoomd-rs** currently does not provide any types that implement
 /// [`SiteOverlap`]. Provide your own custom type.
 ///
 /// [`Single`]: crate::Single

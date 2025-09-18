@@ -71,8 +71,8 @@
 //!
 //! let q_id = Versor::default();
 //!
-//! assert_eq!(s0.intersects_at(&s1, &[1.9, 0.0, 0.0].into(), &q_id), true);
-//! assert_eq!(s0.intersects_at(&s1, &[2.1, 0.0, 0.0].into(), &q_id), false);
+//! assert!(s0.intersects_at(&s1, &[1.9, 0.0, 0.0].into(), &q_id));
+//! assert!(!s0.intersects_at(&s1, &[2.1, 0.0, 0.0].into(), &q_id));
 //! # Ok(())
 //! # }
 //! ```
@@ -96,21 +96,19 @@
 //!     edge_lengths: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?],
 //! });
 //!
-//! assert_eq!(
+//! assert!(
 //!     sphere.intersects_at(
 //!         &cuboid,
 //!         &[1.9, 0.0, 0.0].into(),
 //!         &Versor::default()
-//!     ),
-//!     true
+//!     )
 //! );
-//! assert_eq!(
-//!     sphere.intersects_at(
+//! assert!(
+//!     !sphere.intersects_at(
 //!         &cuboid,
 //!         &[2.1, 0.0, 0.0].into(),
 //!         &Versor::default()
-//!     ),
-//!     false
+//!     )
 //! );
 //! # Ok(())
 //! # }
@@ -140,7 +138,6 @@ pub mod xenocollide;
 /// # Ok(())
 /// # }
 /// ```
-///
 pub trait Volume {
     /// The N-hypervolume of a geometry.
     #[must_use]
@@ -191,8 +188,8 @@ pub trait SupportMapping<V> {
 ///
 /// let q_id = Versor::default();
 ///
-/// assert_eq!(s0.intersects_at(&s1, &[1.9, 0.0, 0.0].into(), &q_id), true);
-/// assert_eq!(s0.intersects_at(&s1, &[2.1, 0.0, 0.0].into(), &q_id), false);
+/// assert!(s0.intersects_at(&s1, &[1.9, 0.0, 0.0].into(), &q_id));
+/// assert!(!s0.intersects_at(&s1, &[2.1, 0.0, 0.0].into(), &q_id));
 /// # Ok(())
 /// # }
 /// ```
@@ -213,21 +210,19 @@ pub trait SupportMapping<V> {
 ///     edge_lengths: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?],
 /// });
 ///
-/// assert_eq!(
+/// assert!(
 ///     sphere.intersects_at(
 ///         &cuboid,
 ///         &[1.9, 0.0, 0.0].into(),
 ///         &Versor::default()
-///     ),
-///     true
+///     )
 /// );
-/// assert_eq!(
-///     sphere.intersects_at(
+/// assert!(
+///     !sphere.intersects_at(
 ///         &cuboid,
 ///         &[2.1, 0.0, 0.0].into(),
 ///         &Versor::default()
-///     ),
-///     false
+///     )
 /// );
 /// # Ok(())
 /// # }

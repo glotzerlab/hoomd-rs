@@ -22,8 +22,8 @@ mod cuboid;
 /// and closed in others.
 ///
 /// [`Periodic`] is implemented for the following shapes:
-/// [`Cuboid<2>`] also known as [`Rectangle`]
-/// [`Cuboid<3>`]
+/// * [`Cuboid<2>`] (also known as [`Rectangle`])
+/// * [`Cuboid<3>`]
 ///
 /// [`Cuboid<2>`]: hoomd_geometry::shape::Cuboid
 /// [`Cuboid<3>`]: hoomd_geometry::shape::Cuboid

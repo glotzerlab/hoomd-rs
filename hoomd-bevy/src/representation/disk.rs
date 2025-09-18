@@ -48,8 +48,8 @@ const SHADER_ASSET_PATH: &str = "embedded://hoomd_bevy/representation/disk.wgsl"
 /// multiple types of disks with different marker types.
 ///
 /// To use:
-/// Add [`setup`](Self::setup) to the `Startup` schedule.
-/// Call [`sync`](Self::sync) in an `Update` schedule that runs after `AdvanceSet`.
+/// * Add [`setup`](Self::setup) to the `Startup` schedule.
+/// * Call [`sync`](Self::sync) in an `Update` schedule that runs after `AdvanceSet`.
 #[derive(Component)]
 pub struct Disk<T> {
     /// Mark the type of the disk.

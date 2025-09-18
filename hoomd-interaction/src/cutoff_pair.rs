@@ -174,7 +174,6 @@ where
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::new();
-    /// Place two pairs of particles separated by a large distance.
     /// microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
     /// Body::point(Cartesian::from([1.0, 0.0])),
     /// Body::point(Cartesian::from([0.0, 5.0])),
@@ -186,11 +185,11 @@ where
     /// let evaluator = Isotropic(lennard_jones);
     /// let cutoff_pair = CutoffPair { r_cut: 2.5, evaluator };
     ///
-    /// The potential energy is set to 0 beyond r_cut when computed by `CutoffPair`.
+    /// // The potential energy is set to 0 beyond r_cut when computed by `CutoffPair`.
     /// let total_energy = cutoff_pair.total_energy(&microstate);
     /// assert_eq!(total_energy, -3.0);
     ///
-    /// However, individual pairwise `site_pair_energy` evaluations are always computed.
+    /// // However, individual pairwise `site_pair_energy` evaluations are always computed.
     /// let a = &microstate.sites()[0].properties;
     /// let b = &microstate.sites()[2].properties;
     /// assert_eq!((*a.position() - *b.position()).norm(), 5.0);

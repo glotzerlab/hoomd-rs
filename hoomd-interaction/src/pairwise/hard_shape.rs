@@ -13,7 +13,7 @@ use hoomd_vector::{self, Rotate, Rotation, Vector};
 /// [`HardShape`] represents each site with a hard shape.
 ///
 /// The generic type names are:
-/// `G`: The [`shape`](hoomd_geometry::shape) type.
+/// * `G`: The [`shape`](hoomd_geometry::shape) type.
 ///
 /// # Example
 ///

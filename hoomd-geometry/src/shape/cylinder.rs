@@ -11,7 +11,8 @@ use hoomd_utility::valid::PositiveReal;
 ///
 /// # Example
 ///
-/// [`Cylinder`] implements the [`Volume`] trait, which is equivalent to $π r^2 h$
+/// [`Cylinder`] implements the [`Volume`] trait, which is equivalent to
+/// $` \pi r^2 h `$.
 /// ```
 /// use hoomd_geometry::{Volume, shape::Cylinder};
 /// use std::f64::consts::PI;

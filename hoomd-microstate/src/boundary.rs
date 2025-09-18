@@ -7,12 +7,12 @@
 //! conditions interact with [`Microstate`](crate::Microstate) and model methods.
 //!
 //! hoomd-rs* provides the boundary types [`Open`], [`Closed`], and [`Periodic`].
-//! [`Open`] boundaries allow bodies and sites to exist anywhere in space.
-//! [`Closed`] boundaries limit bodies and sites to the inside of a shape and
-//! are not periodic in any direction.
-//! [`Periodic`] boundaries limit bodies and sites to the inside of a shape,
-//! wrap particles anywhere outside that shape back inside, and place ghosts
-//! following the periodic tiling of the shape.
+//! * [`Open`] boundaries allow bodies and sites to exist anywhere in space.
+//! * [`Closed`] boundaries limit bodies and sites to the inside of a shape and
+//!   are not periodic in any direction.
+//! * [`Periodic`] boundaries limit bodies and sites to the inside of a shape,
+//!   wrap particles anywhere outside that shape back inside, and place ghosts
+//!   following the periodic tiling of the shape.
 //!
 //! The documentation of [`Closed`] and [`Periodic`] describes the shapes that
 //! they each implement. If the shape you want is not supported, you can write
@@ -61,7 +61,7 @@ pub(crate) const MAX_GHOSTS: usize = 8;
 /// (some boundaries may be periodic in some directions and not in others).
 ///
 /// The generic type name is:
-/// `P`: The [`Body::properties`](crate::Body) or [`Site::properties`](crate::Site) type.
+/// * `P`: The [`Body::properties`](crate::Body) or [`Site::properties`](crate::Site) type.
 ///
 /// [`wrap`]: Self::wrap
 pub trait Wrap<P> {

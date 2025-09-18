@@ -18,8 +18,8 @@ use crate::BOUNDARY_COLOR;
 /// `z`: 1.0
 ///
 /// To use:
-/// Add [`setup`](Self::setup) to the `Startup` schedule.
-/// (if needed) Call [`sync`](Self::sync) in an `Update` schedule that runs after `AdvanceSet`.
+/// * Add [`setup`](Self::setup) to the `Startup` schedule.
+/// * (if needed) Call [`sync`](Self::sync) in an `Update` schedule that runs after `AdvanceSet`.
 #[derive(Component)]
 pub struct RectangularBoundary {
     /// Extent of the rectangle's open space in the x direction.

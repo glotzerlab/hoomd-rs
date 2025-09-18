@@ -244,16 +244,16 @@ mod private {
 /// Data types that can be stored in chunk arrays.
 ///
 /// GSD files store arrays of data of one of the following types:
-/// [`u8`]
-/// [`u16`]
-/// [`u32`]
-/// [`u64`]
-/// [`i8`]
-/// [`i16`]
-/// [`i32`]
-/// [`i64`]
-/// [`f32`]
-/// [`f64`]
+/// * [`u8`]
+/// * [`u16`]
+/// * [`u32`]
+/// * [`u64`]
+/// * [`i8`]
+/// * [`i16`]
+/// * [`i32`]
+/// * [`i64`]
+/// * [`f32`]
+/// * [`f64`]
 ///
 /// The [`Type`] trait facilitates the generic methods including
 /// [`GsdFile::iter_scalars`], [`GsdFile::write_scalars`], and others. When needed,
@@ -523,28 +523,28 @@ struct Index {
 /// # Overview
 ///
 /// Open files with:
-/// [`open`](GsdFile::open)
-/// [`create`](GsdFile::create)
-/// [`create_new`](GsdFile::create_new)
+/// * [`open`](GsdFile::open)
+/// * [`create`](GsdFile::create)
+/// * [`create_new`](GsdFile::create_new)
 ///
 /// Access file metadata with:
-/// [`n_frames`](GsdFile::n_frames)
-/// [`schema`](GsdFile::schema)
-/// [`schema_version`](GsdFile::schema_version)
-/// [`name_id`](GsdFile::name_id)
-/// [`find_chunk`](GsdFile::find_chunk)
+/// * [`n_frames`](GsdFile::n_frames)
+/// * [`schema`](GsdFile::schema)
+/// * [`schema_version`](GsdFile::schema_version)
+/// * [`name_id`](GsdFile::name_id)
+/// * [`find_chunk`](GsdFile::find_chunk)
 ///
 /// Write data with:
-/// [`write_scalars`](GsdFile::write_scalars)
-/// [`write_arrays`](GsdFile::write_arrays)
-/// [`write_string`](GsdFile::write_string)
-/// [`end_frame`](GsdFile::end_frame)
-/// [`sync_all`](GsdFile::sync_all)
+/// * [`write_scalars`](GsdFile::write_scalars)
+/// * [`write_arrays`](GsdFile::write_arrays)
+/// * [`write_string`](GsdFile::write_string)
+/// * [`end_frame`](GsdFile::end_frame)
+/// * [`sync_all`](GsdFile::sync_all)
 ///
 /// Read data with:
-/// [`iter_scalars`](GsdFile::iter_scalars)
-/// [`iter_arrays`](GsdFile::iter_arrays)
-/// [`read_string`](GsdFile::read_string)
+/// * [`iter_scalars`](GsdFile::iter_scalars)
+/// * [`iter_arrays`](GsdFile::iter_arrays)
+/// * [`read_string`](GsdFile::read_string)
 #[derive(Debug)]
 pub struct GsdFile {
     /// The underlying file.
@@ -949,9 +949,9 @@ impl GsdFile {
     /// # Errors
     ///
     /// Returns a [`OpenError`] when any of the following occur:
-    /// The file does not exist.
-    /// The file is corrupt, unreadable, or there is an I/O error (see
-    /// [`DecodeError`]).
+    /// * The file does not exist.
+    /// * The file is corrupt, unreadable, or there is an I/O error (see
+    ///   [`DecodeError`]).
     #[inline]
     pub fn open<P: AsRef<Path>>(path: P, mode: Mode) -> Result<Self, OpenError> {
         let file = File::open(&path).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
@@ -985,9 +985,9 @@ impl GsdFile {
     /// # Errors
     ///
     /// Returns a [`OpenError`] when any of the following occur:
-    /// The file cannot be created.
-    /// The file is corrupt, unreadable, or there is an I/O error (see
-    /// [`DecodeError`]).
+    /// * The file cannot be created.
+    /// * The file is corrupt, unreadable, or there is an I/O error (see
+    ///   [`DecodeError`]).
     #[inline]
     pub fn create<P: AsRef<Path>>(
         path: P,
@@ -1035,10 +1035,10 @@ impl GsdFile {
     /// # Errors
     ///
     /// Returns a [`OpenError`] when any of the following occur:
-    /// The file cannot be created.
-    /// The file already exists.
-    /// The file is corrupt, unreadable, or there is an I/O error (see
-    /// [`DecodeError`]).
+    /// * The file cannot be created.
+    /// * The file already exists.
+    /// * The file is corrupt, unreadable, or there is an I/O error (see
+    ///   [`DecodeError`]).
     #[inline]
     pub fn create_new<P: AsRef<Path>>(
         path: P,
@@ -1486,11 +1486,11 @@ impl GsdFile {
     /// # Errors
     ///
     /// Returns a [`ReadError`] when any of the following occur:
-    /// A chunk by the given `name` is not present in the given `frame`.
-    /// The data type stored in the file does not match `T`.
-    /// The array stored in the file does not have dimensions `N x 1`.
-    /// The file is corrupt, unreadable, or there is an I/O error (see
-    /// [`DecodeError`]).
+    /// * A chunk by the given `name` is not present in the given `frame`.
+    /// * The data type stored in the file does not match `T`.
+    /// * The array stored in the file does not have dimensions `N x 1`.
+    /// * The file is corrupt, unreadable, or there is an I/O error (see
+    ///   [`DecodeError`]).
     pub fn iter_scalars<T: Type>(
         &self,
         frame: u64,
@@ -1556,11 +1556,11 @@ impl GsdFile {
     /// # Errors
     ///
     /// Returns a [`ReadError`] when any of the following occur:
-    /// A chunk by the given `name` is not present in the given `frame`.
-    /// The data type stored in the file does not match `T`.
-    /// The array stored in the file does not have dimensions `N x M`.
-    /// The file is corrupt, unreadable, or there is an I/O error (see
-    /// [`DecodeError`]).
+    /// * A chunk by the given `name` is not present in the given `frame`.
+    /// * The data type stored in the file does not match `T`.
+    /// * The array stored in the file does not have dimensions `N x M`.
+    /// * The file is corrupt, unreadable, or there is an I/O error (see
+    ///   [`DecodeError`]).
     pub fn iter_arrays<T: Type, const M: usize>(
         &self,
         frame: u64,
@@ -1623,11 +1623,11 @@ impl GsdFile {
     /// # Errors
     ///
     /// Returns a [`ReadError`] when any of the following occur:
-    /// A chunk by the given `name` is not present in the given `frame`.
-    /// The data type stored in the file is not a UTF-8 string.
-    /// The array stored in the file does not have dimensions `N x 1`.
-    /// The file is corrupt, unreadable, or there is an I/O error (see
-    /// [`DecodeError`]).
+    /// * A chunk by the given `name` is not present in the given `frame`.
+    /// * The data type stored in the file is not a UTF-8 string.
+    /// * The array stored in the file does not have dimensions `N x 1`.
+    /// * The file is corrupt, unreadable, or there is an I/O error (see
+    ///   [`DecodeError`]).
     pub fn read_string(&self, frame: u64, name: &str) -> Result<String, ReadError> {
         let Some(index_entry) = self.find_chunk(frame, name) else {
             return Err(ReadError::ChunkNotFound(name.into(), frame));
@@ -1715,10 +1715,10 @@ impl GsdFile {
     /// # Errors
     ///
     /// Returns a [`WriteError`] when any of the following occur:
-    /// The file is not opened in a write mode.
-    /// There are no available chunk identifiers.
-    /// A chunk with the same name has already been written in this frame.
-    /// There is an I/O error while writing to the file.
+    /// * The file is not opened in a write mode.
+    /// * There are no available chunk identifiers.
+    /// * A chunk with the same name has already been written in this frame.
+    /// * There is an I/O error while writing to the file.
     pub fn write_scalars<'a, T, I>(&mut self, name: &str, data: I) -> Result<(), WriteError>
     where
         T: Type + 'a,
@@ -1776,11 +1776,11 @@ impl GsdFile {
     /// # Errors
     ///
     /// Returns a [`WriteError`] when any of the following occur:
-    /// The file is not opened in a write mode.
-    /// There are no available chunk identifiers.
-    /// A chunk with the same name has already been written in this frame.
-    /// `M` is 0.
-    /// `M` cannot be represented by a `u32`.
+    /// * The file is not opened i* n a write mode.
+    /// * There are no available chunk identifiers.
+    /// * A chunk with the same name has already been written in this frame.
+    /// * `M` is 0.
+    /// * `M` cannot be represented by a `u32`.
     pub fn write_arrays<'a, T, I, const M: usize>(
         &mut self,
         name: &str,
@@ -1825,13 +1825,13 @@ impl GsdFile {
 
     /// Append a string to the current frame.
     ///
-    /// `write_string` writes a UTF-8 string to a named chunk in the current frame
+    /// `write_string` writes a UTF-8 string to a named chunk in the*  current frame
     /// of the GSD file. Call [`end_frame`](GsdFile::end_frame) to complete the
     /// frame and start the next.
     ///
     /// <div class="warning">
     ///
-    /// Dropping a [`GsdFile`] will also drop any pending data chunks in incomplete
+    /// Dropping a [`GsdFile`] will also drop any pending data chunks in inc* omplete
     /// frames.
     ///
     /// </div>
@@ -1854,9 +1854,9 @@ impl GsdFile {
     /// # Errors
     ///
     /// Returns a [`WriteError`] when any of the following occur:
-    /// The file is not opened in a write mode.
-    /// There are no available chunk identifiers.
-    /// A chunk with the same name has already been written in this frame.
+    /// * The file is not opened in a write mode.
+    /// * There are no available chunk identifiers.
+    /// * A chunk with the same name has already been written in this frame.
     pub fn write_string(&mut self, name: &str, data: &str) -> Result<(), WriteError> {
         let data = data.as_bytes();
 
@@ -1964,7 +1964,7 @@ impl GsdFile {
     /// # Errors
     ///
     /// Returns a [`EncodeError`] when any of the following occur:
-    /// The file is not opened in a write mode.
+    /// * The file is not opened in a write mode.
     pub fn end_frame(&mut self) -> Result<(), EncodeError> {
         if self.mode != Mode::Write {
             return Err(EncodeError::NotWritable);
@@ -2189,8 +2189,8 @@ impl GsdFile {
     /// # Errors
     ///
     /// Returns a [`WriteError`] when any of the following occur:
-    /// The file is not opened in a write mode.
-    /// An I/O error writing to the file.
+    /// * The file is not opened in a write mode.
+    /// * An I/O error writing to the file.
     pub fn sync_all(&mut self) -> Result<(), EncodeError> {
         if self.mode != Mode::Write {
             return Err(EncodeError::NotWritable);

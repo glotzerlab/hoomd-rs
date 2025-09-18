@@ -34,7 +34,7 @@
 //! # use tempfile::tempdir;
 //! # let tmp_dir = tempdir().expect("temp dir should be created");
 //! # let path = tmp_dir.path().join("test.gsd");
-//! let path = "file.gsd";
+//! // let path = "file.gsd";
 //! let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
 //! # Ok(())
 //! # }

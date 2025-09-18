@@ -123,12 +123,9 @@ pub struct Patch<V> {
 /// let masks = [Patch { director: [1.0, 0.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
 /// let angular_mask = AngularMask::new(boxcar, masks);
 ///
-/// With the same relative orientation, the patches do not overlap and the
-/// energy is 0.
 /// let energy = angular_mask.energy(&[1.0, 0.0].into(), &Angle::from(0.0));
 /// assert_eq!(energy, 0.0);
 ///
-/// Rotate the j particle to point at the i particle so the patches overlap.
 /// let energy = angular_mask.energy(&[1.0, 0.0].into(), &Angle::from(PI));
 /// assert_eq!(energy, -1.0);
 /// # Ok(())
@@ -148,12 +145,9 @@ pub struct Patch<V> {
 /// let masks_j = vec![Patch { director: [0.0, 1.0].try_into()?, cos_delta: (PI / 8.0).cos() }];
 /// let angular_mask = AngularMask { isotropic: boxcar, masks_i, masks_j, };
 ///
-/// With the same relative orientation, the patches do not overlap and the
-/// energy is 0.
 /// let energy = angular_mask.energy(&[-1.0, 0.0].into(), &Angle::from(0.0));
 /// assert_eq!(energy, 0.0);
 ///
-/// Rotate the j particle to point at the i particle so the patches overlap.
 /// let energy = angular_mask.energy(&[-1.0, 0.0].into(), &Angle::from(-PI / 2.0));
 /// assert_eq!(energy, -1.0);
 /// # Ok(())

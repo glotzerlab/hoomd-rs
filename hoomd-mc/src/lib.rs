@@ -41,8 +41,8 @@ pub use uniform_in::UniformIn;
 /// See [`Sweep`] or any of the other implementations of `Trial` for code examples.
 ///
 /// The generic type names are:
-/// `M`: The [`Microstate`](hoomd_microstate::Microstate) type.
-/// `H`: The Hamiltonian type.
+/// * `M`: The [`Microstate`](hoomd_microstate::Microstate) type.
+/// * `H`: The Hamiltonian type.
 pub trait Trial<M, H> {
     /// Represent the number of accepted and rejected individual trial moves.
     ///
@@ -74,7 +74,7 @@ pub trait Trial<M, H> {
 /// as defined in [Manousiouthakis & Deem](https://doi.org/10.1063/1.477973).
 ///
 /// The generic type names are:
-/// `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 pub trait LocalTrial<B> {
     /// Propose a new configuration for the given body properties.
     #[must_use]

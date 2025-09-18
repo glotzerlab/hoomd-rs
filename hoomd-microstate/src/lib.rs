@@ -92,7 +92,7 @@
 //! ## Tags
 //!
 //! The elements of [`Microstate::bodies`] and [`Microstate::sites`] are stored in
-//! no particular order** to allow efficient addition and removal of bodies and
+//! **no particular order** to allow efficient addition and removal of bodies and
 //! for the possibility sorting to improve cache coherency. Callers are welcome
 //! to iterate over these data structures when computing order-independent overall
 //! properties. However, a caller should never maintain indices into these vectors.
