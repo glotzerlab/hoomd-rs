@@ -4,7 +4,7 @@
 /*! Implement [`Chebyshev`]
  */
 use super::Basis;
-use arrayvec::ArrayVec;
+use tinyvec::ArrayVec;
 
 /** Evaluates the Chebyshev polynomials and its derivatives
   of the first kind $`T_i(s)`$ for orders $`i`$ equals 1 to
@@ -64,18 +64,18 @@ impl<const N: usize> Basis<N> for Chebyshev<N> {
     ```
     */
     #[inline]
-    fn evaluate(&self, s: &f64) -> ArrayVec<f64, N> {
-        let mut tn = ArrayVec::from([0.0; N]);
+    fn evaluate(&self, s: &f64) -> ArrayVec<[f64; N]> {
+        let mut tn = ArrayVec::<[f64; N]>::new();
         let t0_fn = 1.0; // T_0(s) = 1
 
-        tn[0] = *s; // T_1(s) = s
+        tn.push(*s); // T_1(s) = s
         if N > 1 {
-            tn[1] = 2.0 * s * tn[0] - t0_fn; // T_1(s) = s
+            tn.push(2.0 * s * tn[0] - t0_fn); // T_1(s) = s
         }
 
         // Compute T_i(s) using recurrence: T_i = 2s * T_{i-1} - T_{i-2}
         for idx in 2..N {
-            tn[idx] = 2.0 * s * tn[idx - 1] - tn[idx - 2];
+            tn.push(2.0 * s * tn[idx - 1] - tn[idx - 2]);
         }
         tn
     }
@@ -120,17 +120,17 @@ impl<const N: usize> Basis<N> for Chebyshev<N> {
     */
     #[inline]
     fn evaluate_derivative(&self, s: &f64) -> ArrayVec<f64, N> {
-        let mut tnd = ArrayVec::from([0.0; N]);
+        let mut tnd = ArrayVec::<[f64; N]>::new();
         let u0_fn = 1.0; // U_0(s) = 1
 
-        tnd[0] = 2.0 * s; // U_1(s) = 2s
+        tnd.push(2.0 * s); // U_1(s) = 2s
         if N > 1 {
-            tnd[1] = 2.0 * s * tnd[0] - u0_fn;
+            tnd.psuh(2.0 * s * tnd[0] - u0_fn);
         }
 
         // Compute U_i(s) using recurrence: U_i = 2s * U_{i-1} - U_{i-2}
         for idx in 2..N {
-            tnd[idx] = 2.0 * s * tnd[idx - 1] - tnd[idx - 2];
+            tnd.push(2.0 * s * tnd[idx - 1] - tnd[idx - 2]);
         }
 
         // Convert to dT_i/ds = i * U_{i-1}

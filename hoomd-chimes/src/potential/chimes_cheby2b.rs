@@ -5,7 +5,6 @@
  */
 use crate::polynomial_basis::{Basis, Chebyshev};
 use crate::transformation::Transformation;
-use arrayvec::ArrayVec;
 use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
 
 /**
@@ -32,7 +31,7 @@ pub struct Chimes2b<F: Transformation, const N: usize> {
     /// Transformation style.
     trans_style: F,
     /// Two-body `ChIMES` coefficient (`[energy]`).
-    coeff: ArrayVec<f64, N>,
+    coeff: Vec<f64>,
     /// Inner radial cut-off (`[length]`).
     r_in: f64,
     /// Buffer distance before triggering the damping (`[length]`).
@@ -63,11 +62,11 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
     let lambda = 1.5;
     let r_out = 3.0;
     let r_in = 1.0;
-    let coeff: ArrayVec<f64, 3> = [1.0, 2.0, 3.0].into_iter().collect();
+    let coeff = vec![1.0, 2.0, 3.0];
     let morse_trans = MorseTransformation { lambda, r_out, r_in };
 
-    let mut chimes2b = Chimes2b::new(morse_trans, coeff, r_in);
-    assert_eq!(chimes2b.coeff().as_slice(), &[1.0, 2.0, 3.0]);
+    let mut chimes2b = Chimes2b::new(morse_trans, coeff.clone(), r_in);
+    assert_eq!(chimes2b.coeff(), &coeff);
     assert_eq!(chimes2b.r_in(), &1.0);
     chimes2b.set_inner_smooth_r(0.02);
     assert_eq!(chimes2b.inner_smooth_r(), &0.02);
@@ -76,18 +75,6 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
 
     Will panic if `coeff` is empty.
     */
-    #[inline]
-    #[must_use]
-    pub fn new(trans_style: F, coeff: ArrayVec<f64, N>, r_in: f64) -> Self {
-        assert!(N != 0, "Chimes2b requires at least one coefficient");
-        Self {
-            trans_style,
-            coeff,
-            r_in,
-            inner_smooth_r: 0.01,
-            cheby: Chebyshev::<N>::new(),
-        }
-    }
 
     /**
     Construct a new `Chimes2b` from a `Vec<f64>` for coefficients,
@@ -99,7 +86,7 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
     */
     #[inline]
     #[must_use]
-    pub fn new_from_vec(trans_style: F, coeff: Vec<f64>, r_in: f64) -> Self {
+    pub fn new(trans_style: F, coeff: Vec<f64>, r_in: f64) -> Self {
         assert!(N != 0, "Chimes2b requires at least one coefficient");
         assert!(
             (coeff.len() == N),
@@ -108,7 +95,6 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
             N
         );
 
-        let coeff: ArrayVec<f64, N> = coeff.into_iter().collect();
         Self {
             trans_style,
             coeff,
@@ -132,15 +118,20 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
 
     /// Returns the `ChIMES` coefficients.
     #[inline]
-    pub fn coeff(&self) -> &ArrayVec<f64, N> {
+    pub fn coeff(&self) -> &Vec<f64> {
         &self.coeff
     }
 
     /// Sets the `ChIMES` coefficients and updates the Chebyshev polynomial order.
     #[inline]
-    pub fn set_coeff(&mut self, coeff: ArrayVec<f64, N>) {
+    pub fn set_coeff(&mut self, coeff: Vec<f64>) {
+        assert!(
+            (coeff.len() == N),
+            "Coefficient vector length {} must be the same as during initialization N = {}",
+            coeff.len(),
+            N
+        );
         self.coeff = coeff;
-        self.cheby = Chebyshev::<N>::new();
     }
 
     /// Returns the inner radial cut-off.
@@ -227,7 +218,6 @@ impl<F: Transformation, const N: usize> IsotropicForce for Chimes2b<F, N> {
 mod tests {
     use super::*;
     use crate::transformation::MorseTransformation;
-    use arrayvec::ArrayVec;
     use rstest::*;
 
     #[rstest]
@@ -235,7 +225,7 @@ mod tests {
         let lambda = 1.5;
         let r_out = 3.0;
         let r_in = 1.0;
-        let coeff: ArrayVec<f64, 3> = [1.0, 2.0, 3.0].into_iter().collect();
+        let coeff = vec![1.0, 2.0, 3.0];
 
         let morse_trans: MorseTransformation = MorseTransformation {
             lambda,
@@ -243,23 +233,52 @@ mod tests {
             r_in,
         };
 
-        let chimes2b = Chimes2b::new(morse_trans, coeff, r_in);
-        assert_eq!(chimes2b.coeff().as_slice(), &[1.0, 2.0, 3.0]);
+        let chimes2b: Chimes2b<MorseTransformation, 3> =
+            Chimes2b::new(morse_trans, coeff.clone(), r_in);
+        assert_eq!(chimes2b.coeff(), &coeff);
         assert_eq!(chimes2b.r_in(), &1.0);
     }
 
     #[rstest]
-    fn test_chimes2b_new_from_vec() {
-        let trans = MorseTransformation {
-            lambda: 1.5,
-            r_out: 3.0,
-            r_in: 1.0,
-        };
+    fn test_chimes2b_change_coefficient() {
+        let lambda = 1.5;
+        let r_out = 3.0;
+        let r_in = 1.0;
         let coeff = vec![1.0, 2.0, 3.0];
-        let chimes2b = Chimes2b::<_, 3>::new_from_vec(trans, coeff, 1.0);
 
-        assert_eq!(chimes2b.coeff().as_slice(), &[1.0, 2.0, 3.0]);
+        let morse_trans: MorseTransformation = MorseTransformation {
+            lambda,
+            r_out,
+            r_in,
+        };
+        let mut chimes2b: Chimes2b<MorseTransformation, 3> =
+            Chimes2b::new(morse_trans, coeff, r_in);
+        let new_coeff = vec![1.0, 2.0, 3.0];
+        chimes2b.set_coeff(new_coeff.clone());
+
+        assert_eq!(chimes2b.coeff(), &new_coeff);
         assert_eq!(chimes2b.r_in(), &1.0);
+    }
+
+    #[rstest]
+    #[should_panic(
+        expected = "Coefficient vector length 4 must be the same as during initialization N = 3"
+    )]
+    fn test_panic_chimes2b_inconsistent_coeff_length() {
+        let lambda = 1.5;
+        let r_out = 3.0;
+        let r_in = 1.0;
+        let coeff = vec![1.0, 2.0, 3.0];
+
+        let morse_trans: MorseTransformation = MorseTransformation {
+            lambda,
+            r_out,
+            r_in,
+        };
+        let mut chimes2b: Chimes2b<MorseTransformation, 3> =
+            Chimes2b::new(morse_trans, coeff, r_in);
+        let new_coeff = vec![1.0, 2.0, 3.0, 4.0];
+        chimes2b.set_coeff(new_coeff.clone());
     }
 
     #[rstest]
@@ -289,7 +308,7 @@ mod tests {
         let lambda = 1.5;
         let r_out = 3.0;
         let r_in = 1.0;
-        let coeff: ArrayVec<f64, 3> = [1.0, 2.0, 3.0].into_iter().collect();
+        let coeff = vec![1.0, 2.0, 3.0];
 
         let morse_trans: MorseTransformation = MorseTransformation {
             lambda,
@@ -297,7 +316,7 @@ mod tests {
             r_in,
         };
 
-        let chimes2b = Chimes2b::new(morse_trans, coeff, r_in);
+        let chimes2b: Chimes2b<MorseTransformation, 3> = Chimes2b::new(morse_trans, coeff, r_in);
         assert_eq!(chimes2b.energy(r_in), 1.0 + 2.0 + 3.0);
         assert_eq!(chimes2b.energy(r_out), -1.0 + 2.0 - 3.0);
     }

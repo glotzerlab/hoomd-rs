@@ -35,7 +35,7 @@ let lambda = 1.5;
 let r_out = 3.0;
 let r_in = 1.0;
 let fo = 0.75;
-let coeff: ArrayVec<f64, 3> = [1.0, 2.0, 3.0].into_iter().collect();
+let coeff = vec![1.0, 2.0, 3.0];
 
 let morse_trans: MorseTransformation = MorseTransformation {
     lambda,
@@ -106,7 +106,7 @@ mod tests {
         let lambda = 1.5;
         let r_out = 3.0;
         let r_in = 1.0;
-        let coeff: ArrayVec<f64, 3> = [1.0, 2.0, 3.0].into_iter().collect();
+        let coeff = vec![1.0, 2.0, 3.0];
 
         let morse_trans: MorseTransformation = MorseTransformation {
             lambda,
@@ -139,7 +139,7 @@ mod tests {
         let r_out = 3.0;
         let r_in = 0.9;
         let morse_lambda: f64 = 2.0_f64.powf(1.0 / 6.0);
-        let coeff_2b: ArrayVec<f64, NCOEFF> = [
+        let coeff_2b = vec![
             4.34880025e+00,
             6.74743542e+00,
             -6.00543791e-01,
@@ -170,8 +170,7 @@ mod tests {
             3.10395085e-01,
             -1.01646248e-01,
             4.31317586e-02,
-        ]
-        .into();
+        ];
 
         let morse_trans = MorseTransformation {
             lambda: morse_lambda,
