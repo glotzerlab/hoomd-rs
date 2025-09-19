@@ -55,7 +55,6 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
 
     # Example
     ```
-    use arrayvec::ArrayVec;
     use hoomd_chimes::potential::Chimes2b;
     use hoomd_chimes::transformation::MorseTransformation;
 
@@ -65,7 +64,7 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
     let coeff = vec![1.0, 2.0, 3.0];
     let morse_trans = MorseTransformation { lambda, r_out, r_in };
 
-    let mut chimes2b = Chimes2b::new(morse_trans, coeff.clone(), r_in);
+    let mut chimes2b: Chimes2b<MorseTransformation, 3> = Chimes2b::new(morse_trans, coeff.clone(), r_in);
     assert_eq!(chimes2b.coeff(), &coeff);
     assert_eq!(chimes2b.r_in(), &1.0);
     chimes2b.set_inner_smooth_r(0.02);

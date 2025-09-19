@@ -28,6 +28,7 @@ default-members = ["examples",
                    "hoomd-simulation",
                    "hoomd-utility",
                    "hoomd-vector",
+                   "hoomd-chimes",
                   ]
 
 [workspace.package]
