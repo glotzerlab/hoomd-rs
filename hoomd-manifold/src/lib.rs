@@ -36,7 +36,7 @@
 //! ## Minkowski
 //!
 //! [`Minkowski<N>`] implements (N-1,1)-dimensional Minkowski space with the metric signature
-//! $(+ \;\cdots\; +\; -)$. [`Minkowski`] supports [`Vector`] operations such as vector addition and rescaling, but
+//! $`(+ \;\cdots\; +\; -)`$. [`Minkowski`] supports [`Vector`] operations such as vector addition and rescaling, but
 //! is not a true inner product space. The distance metric on Minkowski space is given by the
 //! "spacetime interval"
 //! ```math
@@ -96,8 +96,8 @@
 //! a representation of SO(3,1); this can either be done by converting the biquaternions
 //! to a [`HyperbolicRotationMatrix`] or by using the [`UnitBiquaternion`] algebra directly.
 //!
-//! ```math
-//! Rotate point in 3D hyperbolic space about z axis using matrix representation
+//! Rotate point in 3D hyperbolic space about z axis using matrix representation:
+//! ```
 //! use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate,
 //! Biquaternion, UnitBiquaternion};
 //! use std::f64::consts::PI;
@@ -111,7 +111,7 @@
 //! let x = Minkowski::from([0.0, 1.0, 0.0, 1.0]);
 //! let rotation_about_x = HyperbolicRotationMatrix::from(v);
 //! let rotated = rotation_about_x.hyperbolic_rotate(&x);
-//! rotated vector is approximately [0.0, 0.0, 1.0, 1.0];
+//! // rotated vector is approximately [0.0, 0.0, 1.0, 1.0];
 //! ```
 //!
 //! Boost point in 3D hyperbolic space in x direction using biquaternion algebra:
