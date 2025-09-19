@@ -1,0 +1,472 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+use std::error::Error;
+use std::{fmt, fs};
+
+use crate::polynomial_basis::Chebyshev;
+
+// Custom error for invalid format or data
+#[derive(Debug)]
+struct InvalidFormatError(String);
+
+impl fmt::Display for InvalidFormatError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Error for InvalidFormatError {}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Params {
+    /// Chebyshev polynomial orders and related parameters from PAIRTYP (line 18).
+    pub poly_order: Vec<usize>,
+    /// Number of atom types (line 20).
+    pub atom_types: usize,
+    /// Combined numeric values from atom types and atom pairs (lines 23 and 28).
+    pub type_data: (Vec<String>, Vec<f64>),
+    /// Number of pair types (line 20).
+    pub atom_pair_types: usize,
+    /// Distance transformation style (assume the same for all pair types).
+    pub xform_style: String,
+    /// Combined numeric values of pair types.
+    pub pair_data: (
+        Vec<String>,
+        Vec<String>,
+        Vec<f64>,
+        Vec<f64>,
+        Vec<Option<f64>>,
+    ),
+    /// FCUT type and value (line 11).
+    pub fcut: (String, Option<f64>),
+
+    pub pair_type_index: Vec<usize>,
+    /// Chebyshev coefficients (lines 39–50).
+    pub cheby_2b_coeffs: Vec<Vec<f64>>,
+
+    pub pair_idx_slow_map: Vec<usize>,
+
+    pub pair_type_slow_map: Vec<String>,
+
+    pub pair_idx_fast_map: Vec<usize>,
+
+    pub pair_type_fast_map: Vec<String>,
+    /// Energy offset (line 57).
+    pub energy_offset: Vec<f64>,
+
+    pub penalty_dist: f64,
+
+    pub penalty_scaling: f64,
+}
+
+impl Params {
+    pub fn parse(file_path: &str) -> Result<Self, Box<dyn Error>> {
+        let content = fs::read_to_string(file_path)?;
+        let lines: Vec<&str> = content
+            .lines()
+            .map(|line| line.trim())
+            .filter(|line| !line.is_empty() && !line.starts_with("!") && !line.starts_with("##"))
+            .collect();
+
+        // Extract PAIRTYP by iterate through each line, break the loop when it's found
+        let mut poly_order: Vec<usize> = Vec::new();
+        for line in lines.iter() {
+            if line.starts_with("PAIRTYP:") {
+                let pairtyp = Self::parse_i32_vec(line.trim_start_matches("PAIRTYP: CHEBYSHEV "))?;
+
+                if pairtyp.len() < 3 {
+                    return Err(Box::new(InvalidFormatError(
+                        "PAIRTYP: CHEBYSHEV must contain at least  contain the 2-body order".into(),
+                    )));
+                }
+
+                poly_order.push(pairtyp[0] as usize);
+
+                if pairtyp.len() >= 4 {
+                    poly_order.push(pairtyp[1] as usize);
+                }
+
+                if pairtyp.len() >= 5 {
+                    poly_order.push(pairtyp[2] as usize);
+                }
+                break;
+            }
+        }
+        if poly_order.is_empty() {
+            return Err(Box::new(InvalidFormatError(
+                "Missing PAIRTYP: CHEBYSHEV line".into(),
+            )));
+        }
+
+        // Extract the particle types and particle pair types related chimes parameters
+        let mut atom_types: usize = 0;
+        let mut type_data: (Vec<String>, Vec<f64>) = (Vec::new(), Vec::new()); // Atom type, mass
+        let mut pair_data: (
+            Vec<String>,
+            Vec<String>,
+            Vec<f64>,
+            Vec<f64>,
+            Vec<Option<f64>>,
+        ) = (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()); // type_1, type_2, inner, outer, morse lambda
+        let mut xform_style = String::new();
+        let mut atom_pair_types: usize = 0;
+        let mut fcut = (String::new(), None);
+        let mut energy_offset: Vec<f64> = Vec::new();
+        let mut penalty_dist = 0.01;
+        let mut penalty_scaling = 1e+4;
+        for (idx, line) in lines.iter().enumerate() {
+            if line.starts_with("ATOM TYPES: ") {
+                atom_types = line
+                    .trim_start_matches("ATOM TYPES: ")
+                    .parse::<usize>()
+                    .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                energy_offset = vec![0.0; atom_types];
+            }
+
+            if line.starts_with("# TYPEIDX #") {
+                let start = idx + 1;
+                let end = start + atom_types;
+
+                for line_after_start in &lines[start..end] {
+                    let total_type_data: Vec<&str> = line_after_start.split_whitespace().collect();
+                    type_data.0.push(total_type_data[1].to_string());
+                    type_data.1.push(
+                        total_type_data[3]
+                            .parse::<f64>()
+                            .map_err(|e| Box::new(e) as Box<dyn Error>)?,
+                    );
+                }
+            }
+
+            if line.starts_with("ATOM PAIRS: ") {
+                atom_pair_types = line
+                    .trim_start_matches("ATOM PAIRS: ")
+                    .parse::<usize>()
+                    .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+            }
+
+            if line.starts_with("# PAIRIDX #") {
+                if line.contains("# USEPOVR #") {
+                    continue;
+                }
+                let start = idx + 1;
+                let end = start + atom_pair_types;
+
+                let mut xform_style_idx: Option<usize> = None;
+                let mut morse_idx: Option<usize> = None;
+                let mut tmp_xform_style = String::new();
+                for (i, line_after_start) in lines[start..end].iter().enumerate() {
+                    let total_pair_type_data: Vec<&str> =
+                        line_after_start.split_whitespace().collect();
+
+                    if total_pair_type_data.len() == 8 {
+                        // With S_DELTA
+                        xform_style_idx = Some(6);
+                        morse_idx = Some(7);
+                    } else if total_pair_type_data.len() == 7 {
+                        // No S_DELTA
+                        xform_style_idx = Some(5);
+                        morse_idx = Some(6);
+                    } else {
+                        return Err(Box::new(InvalidFormatError(
+                            "Incorrect input in line after # PAIRIDX # \nExpect 7 or 8 entries\n"
+                                .into(),
+                        )));
+                    }
+
+                    pair_data.0.push(total_pair_type_data[1].to_string());
+                    pair_data.1.push(total_pair_type_data[2].to_string());
+                    pair_data.2.push(
+                        total_pair_type_data[3]
+                            .parse::<f64>()
+                            .map_err(|e| Box::new(e) as Box<dyn Error>)?,
+                    );
+                    pair_data.3.push(
+                        total_pair_type_data[4]
+                            .parse::<f64>()
+                            .map_err(|e| Box::new(e) as Box<dyn Error>)?,
+                    );
+
+                    if i == 0 {
+                        tmp_xform_style =
+                            total_pair_type_data[xform_style_idx.unwrap()].to_string();
+                    } else if total_pair_type_data[xform_style_idx.unwrap()] != tmp_xform_style {
+                        return Err(Box::new(InvalidFormatError(
+                            "Distance transformation style must be the same for all pair types"
+                                .into(),
+                        )));
+                    }
+
+                    xform_style = tmp_xform_style.clone();
+
+                    if tmp_xform_style == "MORSE" && total_pair_type_data.len() > morse_idx.unwrap()
+                    {
+                        pair_data.4.push(Some(
+                            total_pair_type_data[morse_idx.unwrap()]
+                                .parse::<f64>()
+                                .map_err(|e| Box::new(e) as Box<dyn Error>)?,
+                        ))
+                    } else {
+                        return Err(Box::new(InvalidFormatError(
+                            "Missing morse lambda value in line after # PAIRIDX #".into(),
+                        )));
+                    }
+                }
+            }
+
+            if line.starts_with("FCUT TYPE: ") {
+                let fcut_line: Vec<&str> = line
+                    .trim_start_matches("FCUT TYPE: ")
+                    .split_whitespace()
+                    .collect();
+
+                let fcut_style = fcut_line[0].to_string();
+                if fcut_style != "CUBIC" && fcut_style != "TERSOFF" {
+                    return Err(Box::new(InvalidFormatError(
+                        "Error: unknown FCUT TYPE".into(),
+                    )));
+                }
+                fcut.0 = fcut_style;
+                if fcut_line.len() > 1 {
+                    fcut.1 = Some(
+                        fcut_line[1]
+                            .parse::<f64>()
+                            .map_err(|e| Box::new(e) as Box<dyn Error>)?,
+                    );
+                }
+            }
+
+            if line.starts_with("PAIR CHEBYSHEV PENALTY DIST: ") {
+                let panelty_dist_line: Vec<&str> = line
+                    .trim_start_matches("PAIR CHEBYSHEV PENALTY DIST: ")
+                    .split_whitespace()
+                    .collect();
+
+                penalty_dist = panelty_dist_line[0]
+                    .parse::<f64>()
+                    .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+            }
+
+            if line.starts_with("PAIR CHEBYSHEV PENALTY SCALING: ") {
+                let panelty_scaling_line: Vec<&str> = line
+                    .trim_start_matches("PAIR CHEBYSHEV PENALTY SCALING: ")
+                    .split_whitespace()
+                    .collect();
+                penalty_scaling = panelty_scaling_line[0]
+                    .parse::<f64>()
+                    .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+            }
+
+            if line.starts_with("NO ENERGY OFFSETS: ") {
+                let n_energy_offset_line: Vec<&str> = line
+                    .trim_start_matches("NO ENERGY OFFSETS: ")
+                    .split_whitespace()
+                    .collect();
+
+                let n_offset = n_energy_offset_line[0]
+                    .parse::<usize>()
+                    .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+
+                if n_offset != atom_types {
+                    return Err(Box::new(InvalidFormatError(
+                        "ERROR: Number of energy offsets do not match number of atom types".into(),
+                    )));
+                }
+
+                let start = idx + 1;
+                let end = start + atom_types;
+
+                for (i, line_after_start) in lines[start..end].iter().enumerate() {
+                    let energy_offset_data: Vec<&str> =
+                        line_after_start.split_whitespace().collect();
+                    energy_offset[i] = energy_offset_data[3]
+                        .parse::<f64>()
+                        .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                }
+
+                break;
+            }
+        }
+
+        if atom_types == 0 {
+            return Err(Box::new(InvalidFormatError(
+                "Missing ATOM TYPES line".into(),
+            )));
+        }
+
+        let mut pair_type_index: Vec<usize> = Vec::new();
+        let mut cheby_2b_coeffs: Vec<Vec<f64>> = Vec::new();
+        let mut pair_idx_slow_map: Vec<usize> = Vec::new();
+        let mut pair_type_slow_map: Vec<String> = Vec::new();
+        let mut pair_idx_fast_map: Vec<usize> = Vec::new();
+        let mut pair_type_fast_map: Vec<String> = Vec::new();
+        for (idx, line) in lines.iter().enumerate() {
+            if line.starts_with("PAIRTYPE PARAMS: ") {
+                let pair_params_head_line: Vec<&str> = line
+                    .trim_start_matches("PAIRTYPE PARAMS: ")
+                    .split_whitespace()
+                    .collect();
+                let tmp_pair_type_index = pair_params_head_line[0].parse::<usize>().map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                pair_type_index.push(tmp_pair_type_index);
+
+                let start = idx + 1;
+                let end = start + poly_order[0];
+
+                let mut tmp_2b_coeff: Vec<f64> = Vec::new();
+                for (i, line_after_start) in lines[start..end].iter().enumerate() {
+                    let order_coeff = Self::parse_f64_vec(line_after_start)?;
+                    tmp_2b_coeff.push(order_coeff[1]);
+                }
+                cheby_2b_coeffs.push(tmp_2b_coeff)
+            }
+
+            if line.starts_with("PAIRMAPS: ") {
+                let pair_map_header: Vec<&str> = line
+                    .trim_start_matches("PAIRMAPS: ")
+                    .split_whitespace()
+                    .collect();
+                let n_pair_maps = pair_map_header[0].parse::<usize>().map_err(|e| Box::new(e) as Box<dyn Error>)?;
+
+                let start = idx + 1;
+                let end = start + n_pair_maps;
+                for (i, line_after_start) in lines[start..end].iter().enumerate() {
+                    let pair_idx_type: Vec<&str> = line_after_start.split_whitespace().collect();
+                    let tmp_pair_idx = pair_idx_type[0].parse::<usize>().map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                    pair_idx_slow_map.push(tmp_pair_idx);
+                    pair_type_slow_map.push(pair_idx_type[1].to_string());
+                }
+
+                for ii in 0..atom_types {
+                    for jj in 0..atom_types {
+                        let typei = type_data.0[ii].clone();
+                        let typej = type_data.0[jj].clone();
+                        let typeij = typei + &typej;
+
+                        let index_of_pair_match = pair_type_slow_map.iter().position(|s| s.contains(&typeij)).unwrap();
+                        pair_idx_fast_map.push(pair_idx_slow_map[index_of_pair_match]);
+
+                        for iii in 0..pair_data.0.len() {
+                            if (type_data.0[ii] == pair_data.0[iii] && type_data.0[jj] == pair_data.1[iii]) ||
+                                (type_data.0[jj] == pair_data.0[iii] && type_data.0[ii] == pair_data.1[iii]) {
+                                pair_type_fast_map.push(pair_data.0[iii].clone() + &pair_data.1[iii]);
+                                break;
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+        }
+
+        Ok(Params {
+            poly_order,
+            atom_types,
+            type_data,
+            atom_pair_types,
+            xform_style,
+            pair_data,
+            fcut,
+            pair_type_index,
+            cheby_2b_coeffs,
+            pair_idx_slow_map,
+            pair_type_slow_map,
+            pair_idx_fast_map,
+            pair_type_fast_map,
+            energy_offset,
+            penalty_dist,
+            penalty_scaling,
+        })
+    }
+
+    /// Parses a space-separated line into a vector of i32.
+    fn parse_i32_vec(line: &str) -> Result<Vec<i32>, Box<dyn Error>> {
+        let values = line
+            .split_whitespace()
+            .map(|s| s.parse::<i32>().map_err(|e| Box::new(e) as Box<dyn Error>))
+            .collect::<Result<Vec<i32>, _>>()?;
+        Ok(values)
+    }
+
+    /// Parses a space-separated line into a vector of f64.
+    fn parse_f64_vec(line: &str) -> Result<Vec<f64>, Box<dyn Error>> {
+        let values = line
+            .split_whitespace()
+            .map(|s| s.parse::<f64>().map_err(|e| Box::new(e) as Box<dyn Error>))
+            .collect::<Result<Vec<f64>, _>>()?;
+        Ok(values)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::*;
+
+    #[rstest]
+    fn parse_carbon_two_body() {
+        let file_path = "./test-data/C-two-body.txt";
+
+        // Read the entire file content into a String
+        // This returns a Result, so we use `?` to propagate any errors
+        let params = Params::parse(file_path).expect("Failed to parse parameter file");
+
+        let expected_poly_order = vec![12, 0, 0];
+        let expected_type_data = (vec![String::from("C")], vec![12.011]);
+        let expected_xform_style = String::from("MORSE");
+        let expected_pair_data = (
+            vec![String::from("C")], vec![String::from("C")], vec![1.0], vec![3.15], vec![Some(1.25)]
+        );
+        let expected_fcut: (String, Option<f64>) = (String::from("CUBIC"), None);
+        let expected_energy_offset = vec![0.0];
+        let expected_penalty_dist = 0.01;
+        let expected_pair_type_index = [0];
+        let expected_cheby_2b_coeffs = vec![vec![
+                285.73883308072,
+                -213.71388752372,
+                358.53331099031,
+                -172.12400486549,
+                44.77502350315,
+                -34.154784921509,
+                30.632345544482,
+                -33.336059893072,
+                11.483163813684,
+                -0.9908672079118,
+                -3.3830138904188,
+                1.2480108628453
+        ]];
+        let expected_pair_idx_slow_map = vec![0];
+        let expected_pair_type_slow_map = vec!["CC"];
+        let expected_pair_idx_fast_map = vec![0];
+        let expected_pair_type_fast_map = vec!["CC"];
+
+        assert_eq!(params.poly_order, expected_poly_order);
+        assert_eq!(params.type_data, expected_type_data);
+        assert_eq!(params.xform_style, expected_xform_style);
+        assert_eq!(params.pair_data, expected_pair_data);
+        assert_eq!(params.fcut, expected_fcut);
+        assert_eq!(params.energy_offset, expected_energy_offset);
+        assert_eq!(params.penalty_dist, expected_penalty_dist);
+        assert_eq!(params.pair_type_index, expected_pair_type_index);
+        assert_eq!(params.cheby_2b_coeffs, expected_cheby_2b_coeffs);
+        assert_eq!(params.pair_idx_slow_map, expected_pair_idx_slow_map);
+        assert_eq!(params.pair_type_slow_map, expected_pair_type_slow_map);
+        assert_eq!(params.pair_idx_fast_map, expected_pair_idx_fast_map);
+        assert_eq!(params.pair_type_fast_map, expected_pair_type_fast_map);
+        // println!("Polynomial order: {:?}\n", params.poly_order);
+        // println!("Atom data: {:?}\n", params.type_data);
+        // println!("Transformation style: {:?}\n", params.xform_style);
+        // println!("Pair data: {:?}\n", params.pair_data);
+        // println!("Fcut data: {:?}\n", params.fcut);
+        // println!("Energy offset: {:?}\n", params.energy_offset);
+        // println!("Penalty distance: {:?}\n", params.penalty_dist);
+        // println!("Pair type index: {:?}\n", params.pair_type_index);
+        //println!("Two-body coefficients: {:?}\n", params.cheby_2b_coeffs);
+        //println!("Pair index slow map: {:?}\n", params.pair_idx_slow_map);
+        //println!("Pair type slow map: {:?}\n", params.pair_type_slow_map);
+        //println!("Pair index fast map: {:?}\n", params.pair_idx_fast_map);
+        //println!("Pair type fast map: {:?}\n", params.pair_type_fast_map);
+
+        // Ok(())
+    }
+}
