@@ -405,7 +405,7 @@ mod tests {
 
     #[rstest]
     fn parse_carbon_two_body() {
-        let file_path = "./test-data/C-two-body.txt";
+        let file_path = "./test-data/C-twobody.txt";
 
         // Read the entire file content into a String
         // This returns a Result, so we use `?` to propagate any errors

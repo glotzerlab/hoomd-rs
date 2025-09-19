@@ -21,7 +21,7 @@ ATOM TYPES: 1
 
 ATOM PAIRS: 1
 
-!# PAIRIDX #	# ATM_TY1 #	# ATM_TY1 #	# S_MINIM #	# S_MAXIM #	# S_DELTA #	# CHBDIST #	# MORSE_LAMBDA #
+# PAIRIDX #	# ATM_TY1 #	# ATM_TY1 #	# S_MINIM #	# S_MAXIM #	# S_DELTA #	# CHBDIST #	# MORSE_LAMBDA #
 	0               C               C               1.0         3.15               0.01            MORSE           1.25                
 
 FCUT TYPE: CUBIC
