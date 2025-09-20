@@ -29,10 +29,10 @@ jobs:
         toolchain: 1.89.0
     # Check all targets in debug and release modes
     - run: cargo check --all-targets --all-features --profile release
-    - run: cargo check --all-targets --all-features --profile debug
+    - run: cargo check --all-targets --all-features --profile dev
     # Check the examples in wasm builds with and without webgpu
-    - run: cargo check --examples --features "bevy" --profile debug --target wasm32-unknown-unknown
-    - run: cargo check --examples --features "bevy,webgpu" --profile debug --target wasm32-unknown-unknown
+    - run: cargo check --examples --features "bevy" --profile dev --target wasm32-unknown-unknown
+    - run: cargo check --examples --features "bevy,webgpu" --profile dev --target wasm32-unknown-unknown
 
   cargo-clippy:
     runs-on: ubuntu-24.04
@@ -46,10 +46,10 @@ jobs:
         components: clippy
     # Check all targets in debug and release modes
     - run: cargo clippy --all-targets --all-features --profile release -- -Dwarnings
-    - run: cargo clippy --all-targets --all-features --profile debug -- -Dwarnings
+    - run: cargo clippy --all-targets --all-features --profile dev -- -Dwarnings
     # Check the examples in wasm builds with and without webgpu
-    - run: cargo clippy --examples --features="bevy" --profile debug --target wasm32-unknown-unknown -- -Dwarnings
-    - run: cargo clippy --examples --features="bevy,webgpu" --profile debug --target wasm32-unknown-unknown -- -Dwarnings
+    - run: cargo clippy --examples --features="bevy" --profile dev --target wasm32-unknown-unknown -- -Dwarnings
+    - run: cargo clippy --examples --features="bevy,webgpu" --profile dev --target wasm32-unknown-unknown -- -Dwarnings
 
   cargo-fmt:
     runs-on: ubuntu-24.04
