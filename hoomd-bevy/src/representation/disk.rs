@@ -248,7 +248,11 @@ impl Material {
     /// a much larger number of colors and will not panic.
     pub fn set_background_colors(
         &mut self,
-        #[allow(unused_variables, unused_mut, reason="Not used in all build configurations.")]
+        #[allow(
+            unused_variables,
+            unused_mut,
+            reason = "Not used in all build configurations."
+        )]
         mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
         colors: &Vec<LinearRgba>,
     ) {

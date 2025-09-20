@@ -48,8 +48,8 @@ jobs:
     - run: cargo clippy --all-targets --all-features --profile release -- -Dwarnings
     - run: cargo clippy --all-targets --all-features --profile debug -- -Dwarnings
     # Check the examples in wasm builds with and without webgpu
-    - run: cargo clippy --examples --features="bevy" --profile debug --target wasm32-unknown-unknown -- -Dwarnings 
-    - run: cargo clippy --examples --features="bevy,webgpu" --profile debug --target wasm32-unknown-unknown -- -Dwarnings 
+    - run: cargo clippy --examples --features="bevy" --profile debug --target wasm32-unknown-unknown -- -Dwarnings
+    - run: cargo clippy --examples --features="bevy,webgpu" --profile debug --target wasm32-unknown-unknown -- -Dwarnings
 
   cargo-fmt:
     runs-on: ubuntu-24.04
