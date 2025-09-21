@@ -45,14 +45,13 @@ pub trait Thermostat<B, S, C, M> {
     ) -> f64;
 
     // TODO: add docs
-    fn advance<P>(        
+    fn advance<P>(
         &mut self,
         microstate: &Microstate<B, S, C>,
         macrostate: &M,
         dt: &f64,
-        compute_properties: P
-    )
-    where
+        compute_properties: P,
+    ) where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64);
 }
 
@@ -96,9 +95,8 @@ where
         _microstate: &Microstate<B, S, C>,
         _macrostate: &M,
         _dt: &f64,
-        _compute_properties: P
-    )
-    where
+        _compute_properties: P,
+    ) where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
     }
@@ -112,7 +110,7 @@ pub struct BussiThermostat {
     /// Thermostat time constant (`[time]`).
     tau: f64,
     /// Cumulative energy drift due to the thermostat. Useful for checking energy conservation.
-    cumu_energy_drift: f64
+    cumu_energy_drift: f64,
 }
 impl BussiThermostat {
     /// Constrcut MTTKThermostat.
@@ -120,7 +118,7 @@ impl BussiThermostat {
         assert!(tau >= 0.0, "MTTKThermostat requires tau >= 0");
         Self {
             tau: tau,
-            cumu_energy_drift: 0.0
+            cumu_energy_drift: 0.0,
         }
     }
     /// Calculate the energy drift due to the thermostat.
@@ -207,9 +205,8 @@ where
         _microstate: &Microstate<B, S, C>,
         _macrostate: &M,
         _dt: &f64,
-        _compute_properties: P
-    )
-    where
+        _compute_properties: P,
+    ) where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
     }
@@ -222,12 +219,12 @@ TODO: Add example.
 pub struct MTTKThermostat {
     /// Thermostat time constant (`[time]`).
     tau: f64,
-    /// Thermostat momentum.
+    /// Thermostat velocity.
     xi: f64,
-    /// Thermostat position.
+    /// Thermostat position. Refer to the log(s) in Nose-Hoover's EOS.
     eta: f64,
-    /// Energy the thermostat contributes to the Hamiltonian.
-    energy: f64
+    /// Energy the thermostat contributes to the Hamiltonian. Useful for checking energy conservation.
+    energy: f64,
 }
 
 impl MTTKThermostat {
@@ -243,12 +240,11 @@ impl MTTKThermostat {
     }
     /// Choose random initial values for the thermostat momentum.
     pub fn thermalize<B, S, C, M>(
-        &mut self, 
-        microstate: &Microstate<B, S, C>, 
+        &mut self,
+        microstate: &Microstate<B, S, C>,
         macrostate: &M,
         dof: &f64,
-    )
-    where
+    ) where
         M: Isothermal + Temperature,
     {
         let kT_setpoint = macrostate.temperature();
@@ -259,12 +255,8 @@ impl MTTKThermostat {
         self.energy = self.thermostat_energy(kT_setpoint, dof)
     }
     /// Calculate thermostat energy.
-    pub fn thermostat_energy(
-        &self,
-        kT_setpoint: &f64,
-        dof: &f64
-    ) -> f64 {
-        dof * kT_setpoint * (0.5 * (self.xi / self.tau).powi(2) + self.eta)
+    pub fn thermostat_energy(&self, kT_setpoint: &f64, dof: &f64) -> f64 {
+        dof * kT_setpoint * (self.eta + 0.5 * (self.xi * self.tau).powi(2))
     }
 }
 
@@ -297,14 +289,13 @@ where
     }
 
     #[inline]
-    fn advance<P>(        
+    fn advance<P>(
         &mut self,
         microstate: &Microstate<B, S, C>,
         macrostate: &M,
         dt: &f64,
-        mut compute_properties: P
-    )
-    where
+        mut compute_properties: P,
+    ) where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
         let kT_setpoint = macrostate.temperature();
@@ -313,10 +304,12 @@ where
 
         let kT_instantaneous = 2.0 / dof * ke;
 
-        let xi_prime = self.xi + 0.5 * (kT_instantaneous / kT_setpoint - 1.0) * dt / self.tau.powi(2);
-        self.xi = xi_prime + 0.5 * (kT_instantaneous / kT_setpoint - 1.0) * dt / self.tau.powi(2);
-        self.eta += xi_prime * dt;
-        self.energy = self.thermostat_energy(kT_setpoint, &dof)
+        // Thermostat acceleration
+        let G = (kT_instantaneous / kT_setpoint - 1.0) / self.tau.powi(2);
 
+        let xi_dt_half = self.xi + 0.5 * G * dt;
+        self.eta += xi_dt_half * dt;
+        self.xi = xi_dt_half + 0.5 * G * dt;
+        self.energy = self.thermostat_energy(kT_setpoint, &dof);
     }
 }
