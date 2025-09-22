@@ -14,7 +14,7 @@ use rand::{
 };
 
 use crate::{Cross, Error, InnerProduct, Rotate, Unit, Vector};
-use hoomd_linalg::{Diagonal, matrix::Matrix};
+use hoomd_linalg::{Diagonal, MatMul, matrix::Matrix};
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
 ///
@@ -689,6 +689,7 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
     }
 }
 impl<const N: usize> Diagonal for Cartesian<N> {}
+
 impl<const N: usize> Cartesian<N> {
     /// Convert a [`Cartesian<N>`] into a row matrix [`Matrix<1, N>`].
     #[inline]
@@ -705,6 +706,13 @@ impl<const N: usize> Cartesian<N> {
         Matrix {
             rows: std::array::from_fn(|i| [self[i]]),
         }
+    }
+}
+
+impl<const N: usize> From<Matrix<1, N>> for Cartesian<N> {
+    #[inline]
+    fn from(value: Matrix<1, N>) -> Self {
+        value.rows[0].into()
     }
 }
 
