@@ -166,6 +166,22 @@ impl<const N: usize, const M: usize, const K: usize> MatMul<Matrix<M, K>> for Ma
         result
     }
 }
+// impl<const N: usize> MatMul<Cartesian<M, K>> for Matrix<N, M> {
+//     type Output = Matrix<N, K>;
+//     #[inline]
+//     fn matmul(&self, rhs: &Matrix<M, K>) -> Self::Output {
+//         let mut result = Self::Output::zeros();
+//         for n in 0..N {
+//             for k in 0..K {
+//                 for m in 0..M {
+//                     result.rows[n][k] += self.rows[n][m] * rhs.rows[m][k];
+//                 }
+//             }
+//         }
+
+//         result
+//     }
+// }
 
 impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> {
     type Output = Matrix<M, M>;
@@ -193,6 +209,16 @@ impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> 
     }
 }
 
+impl<const N: usize, const M: usize> Matrix<N, M> {
+    /// Interchange the rows and columns of matrix `A` such that `A.transpose()[(j, i)] = A[(i, j)]`
+    #[inline]
+    #[must_use]
+    fn transpose(&self) -> Matrix<M, N> {
+        Matrix {
+            rows: std::array::from_fn(|j| std::array::from_fn(|i| self[(i, j)])),
+        }
+    }
+}
 impl<const N: usize> Matrix<N, N> {
     /** Compute the signed hypervolume of the hyperparallelepiped defined by a matrix.
 

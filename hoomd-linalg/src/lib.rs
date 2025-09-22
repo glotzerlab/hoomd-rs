@@ -17,7 +17,7 @@ analysis.
 
 use std::ops::{Add, Index, Mul, Neg};
 
-/** Define whether a matrix $ A $ has an inverse $ A^-1 $ such that $ AA^-1 = A^-1A = I $
+/** Define whether a matrix $`A`$ has an inverse $`A^{-1}`$ such that $`AA^{-1} = A^{-1}A = I`$
 */
 pub trait Invertible {
     /// Compute the inverse of a matrix.
@@ -95,7 +95,7 @@ where
     fn identity() -> Self;
 }
 
-/// Solve the quadratic form $` A.transpose().matmul(x).matmul(A) `$.
+/// Solve the quadratic form `A.transpose().matmul(x).matmul(A)`.
 pub trait QuadraticForm: SquareMatrix {
     /// Evaluate the quadratic form for a matrix `A` and a vector `x`.
     #[must_use]
