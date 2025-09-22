@@ -88,7 +88,10 @@ jobs:
         ${{ matrix.target }}
         --locked
         --workspace
-        --all-targets
+        --lib
+        --bins
+        --tests
+        --examples
         --all-features
         --verbose
 
