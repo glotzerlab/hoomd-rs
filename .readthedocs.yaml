@@ -13,20 +13,21 @@ build:
     # Install mdbook
     - cargo binstall mdbook@0.4.52 mdbook-alerts@0.8.0 --no-confirm --disable-strategies=compile --disable-telemetry --install-path "${PATH%%:*}"
     - curl -sSL "https://github.com/lzanini/mdbook-katex/releases/download/0.9.3-binaries/mdbook-katex-v0.9.3-x86_64-unknown-linux-gnu.tar.gz" | tar -xvz --directory "${PATH%%:*}"
-    # Install wasm toolchain
+    # Install wasm toolchain with bindgen matching the version in the lockfile
     - rustup target install wasm32-unknown-unknown
-    - cargo binstall wasm-bindgen-cli@0.2.100 --no-confirm --disable-strategies=compile --disable-telemetry --install-path "${PATH%%:*}"
+    - cargo info wasm-bindgen -q
+    - cargo binstall wasm-bindgen-cli@`cargo info wasm-bindgen -q | grep "^version:" | cut -f 2 -d " "` --no-confirm --disable-strategies=compile --disable-telemetry --install-path "${PATH%%:*}"
     - curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz" | tar -xvz --strip-components 2 --directory "${PATH%%:*}"
     - ls "${PATH%%:*}"
     # Build the WASM examples
-    - cargo run -p build-wasm-doc-examples -- --reduce-size
+    - cargo run --locked -p build-wasm-doc-examples -- --reduce-size
     # Build the book
     - mkdir -p $READTHEDOCS_OUTPUT/html
     - echo "site-url = \"/$READTHEDOCS_LANGUAGE/$READTHEDOCS_VERSION/\"" >> doc/book.toml
     - mdbook build doc --dest-dir=$READTHEDOCS_OUTPUT/html
     # Build the API reference
     - mkdir -p $READTHEDOCS_OUTPUT/html/api
-    - RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --workspace --all-features --exclude hoomd-examples --exclude build-wasm-doc-examples --no-deps
+    - RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --locked --workspace --all-features --exclude hoomd-examples --exclude build-wasm-doc-examples --no-deps
     - mv target/doc/* $READTHEDOCS_OUTPUT/html/api
     # List the output files
     - ls -lR $READTHEDOCS_OUTPUT/html

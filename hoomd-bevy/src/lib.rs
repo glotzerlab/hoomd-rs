@@ -24,38 +24,39 @@
     reason = "Bevy operates with f32 values."
 )]
 
-/*! Connect *hoomd-rs* simulations with the Bevy game engine.
-
-Use [`HoomdBevyPlugin`] to create visual, interactive simulations. Add the
-plugin to a Bevy `App` and it will step the simulation up to a configurable
-limit number of steps per second. To display geometry on the screen, add one
-more more `setup` methods from [`representation`] to the `Startup` schedule.
-Then add a `sync` method to the `Update` schedule that synchronizes the entire
-microstate (using the helper methods from [`representation`]).
-
-# Examples
-
-See any one of the many *hoomd-rs* examples that use [`HoomdBevyPlugin`].
-
-# Embedded assets.
-
-`hoomd-bevy` provides the following assets:
-
-* `embedded://hoomd_bevy/logo.png` - The HOOMD logo (512 x 512).
-
-# Feature flags
-
-* `doc-example` Make examples suitable for display in a web browser.
-* `webgpu` Compile for the WebGPU platform when building for the wasm32 target.
-*/
+//! Connect *hoomd-rs* simulations with the Bevy game engine.
+//!
+//! Use [`HoomdBevyPlugin`] to create visual, interactive simulations. Add the
+//! plugin to a Bevy `App` and it will step the simulation up to a configurable
+//! limit number of steps per second. To display geometry on the screen, add one
+//! more more `setup` methods from [`representation`] to the `Startup` schedule.
+//! Then add a `sync` method to the `Update` schedule that synchronizes the entire
+//! microstate (using the helper methods from [`representation`]).
+//!
+//! # Examples
+//!
+//! See any one of the many *hoomd-rs* examples that use [`HoomdBevyPlugin`].
+//!
+//! # Embedded assets.
+//!
+//! `hoomd-bevy` provides the following assets:
+//!
+//! `embedded://hoomd_bevy/logo.png` - The HOOMD logo (512 x 512).
+//!
+//! # Feature flags
+//!
+//! `doc-example` Make examples suitable for display in a web browser.
+//! `webgpu` Compile for the WebGPU platform when building for the wasm32 target.
 
 use std::ops::Range;
 
 use anyhow::Context;
 use bevy::{
     asset::embedded_asset,
-    input::common_conditions::{input_just_released, input_pressed},
-    input::mouse::MouseWheel,
+    input::{
+        common_conditions::{input_just_released, input_pressed},
+        mouse::MouseWheel,
+    },
     prelude::*,
     time::common_conditions::once_after_delay,
     window::PrimaryWindow,
@@ -89,37 +90,36 @@ pub const BOUNDARY_COLOR: Color = Color::srgb(0.0, 0.0, 0.0);
 /// Camera zoom speed multiplier
 const CAMERA_ZOOM_SPEED: f32 = 50.0;
 
-/** Interface *hoomd-rs* simulations with the Bevy game engine.
-
-[`HoomdBevyPlugin`] is used by all the *hoomd-rs* examples that create
-interactive graphical displays of simulations. Specifically, it implements:
-
-* Camera controls (2D and 3D separately).
-* Simulation step and frame pacing, with a limited number of steps per second.
-* Pause and advance by single step controls.
-* A help screen describing common controls (examples can add lines if needed).
-* Key bindings to hide the UI and take screenshots.
-* A menu to control common settings (steps per second limit, camera speed, etc.)
-
-The caller must:
-* Provide type that implements [`Simulation`].
-* Add a `sync` `Update` system that populates (and removes) entities for
-  rendering. See [`representation`] for helper code.
-
-The caller may optionally:
-* Add UI to the upper right corner of the screen.
-* Implement custom controls.
-* Add lines to the [`HelpText`] entity.
-
-To keep individual example scripts short and understandable, `hoomd-bevy` should
-implement as much common code as possible.
-
-# Examples
-
-See any one of the many *hoomd-rs* examples that use [`HoomdBevyPlugin`].
-
-[`Simulation`]: hoomd_simulation::Simulation
-*/
+/// Interface *hoomd-rs* simulations with the Bevy game engine.
+///
+/// [`HoomdBevyPlugin`] is used by all the *hoomd-rs* examples that create
+/// interactive graphical displays of simulations. Specifically, it implements:
+///
+/// Camera controls (2D and 3D separately).
+/// Simulation step and frame pacing, with a limited number of steps per second.
+/// Pause and advance by single step controls.
+/// A help screen describing common controls (examples can add lines if needed).
+/// Key bindings to hide the UI and take screenshots.
+/// A menu to control common settings (steps per second limit, camera speed, etc.)
+///
+/// The caller must:
+/// * Provide type that implements [`Simulation`].
+/// * Add a `sync` `Update` system that populates (and removes) entities for
+///   rendering. See [`representation`] for helper code.
+///
+/// The caller may optionally:
+/// * Add UI to the upper right corner of the screen.
+/// * Implement custom controls.
+/// * Add lines to the [`HelpText`] entity.
+///
+/// To keep individual example scripts short and understandable, `hoomd-bevy` should
+/// implement as much common code as possible.
+///
+/// # Examples
+///
+/// See any one of the many *hoomd-rs* examples that use [`HoomdBevyPlugin`].
+///
+/// [`Simulation`]: hoomd_simulation::Simulation
 pub struct HoomdBevyPlugin<S> {
     /// Configuration to use at application start (may be changed later).
     pub initial_settings: Settings,
@@ -150,15 +150,14 @@ pub enum MenuState {
 /// Configure the initial camera view and set how the camera will be controlled.
 #[derive(Clone)]
 pub enum InitialCamera {
-    /** Two dimensional top down camera showing the xy plane.
-
-    The single field sets the height of the visible area. The width is set
-    automatically based on the window dimensions.
-
-    Controls:
-    * Left click and drag to pan.
-    * Scroll to zoom.
-    */
+    /// Two dimensional top down camera showing the xy plane.
+    ///
+    /// The single field sets the height of the visible area. The width is set
+    /// automatically based on the window dimensions.
+    ///
+    /// Controls:
+    /// * Left click and drag to pan.
+    /// * Scroll to zoom.
     Orthographic2d(f32),
 }
 
@@ -184,7 +183,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            frame_budget_fraction: 0.9,
+            frame_budget_fraction: 0.8,
             sps_limit: 2048.0,
             camera: InitialCamera::Orthographic2d(10.0),
             zoom_range: 0.1..10.0,
@@ -223,12 +222,11 @@ struct PauseText;
 #[derive(Component)]
 struct HelpTextContainer;
 
-/** Mark the help text entity.
-
-[`HoomdBevyPlugin`] populates the help text with instructions for common
-controls. Callers may add lines to the text node to show example-specific
-information when ? is pressed.
-*/
+/// Mark the help text entity.
+///
+/// [`HoomdBevyPlugin`] populates the help text with instructions for common
+/// controls. Callers may add lines to the text node to show example-specific
+/// information when ? is pressed.
 #[derive(Component)]
 pub struct HelpText;
 
@@ -252,29 +250,25 @@ struct FrameBudgetText;
 #[derive(Component)]
 struct MenuRoot;
 
-/** Systems that run to advance the simulation.
-
-Callers should use this to execute the sync step after the simulation is advanced:
-`app.add_systems(Update, sync_simulation.run_if(resource_changed::<MySimulation>).after(AdvanceSet));`
-*/
+/// Systems that run to advance the simulation.
+///
+/// Callers should use this to execute the sync step after the simulation is advanced:
+/// `app.add_systems(Update, sync_simulation.run_if(resource_changed::<MySimulation>).after(AdvanceSet));`
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AdvanceSet;
 
-/** Systems that always run to process input.
-
-Callers can optionally add input handling systems to this set. It is processed
-after [`AdvanceSet`] to reduce the latency between input and result.
-*/
+/// Systems that always run to process input.
+///
+/// Callers can optionally add input handling systems to this set. It is processed
+/// after [`AdvanceSet`] to reduce the latency between input and result.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AlwaysInputSet;
 
-/** Systems that run to process input only when there is no menu displayed.
-*/
+/// Systems that run to process input only when there is no menu displayed.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NoMenuInputSet;
 
-/** Systems that run to process input in the settings menu.
-*/
+/// Systems that run to process input in the settings menu.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SettingsMenuInputSet;
 
@@ -285,10 +279,9 @@ where
     /// Bevy diagnostic that counts the number of steps executed per second.
     pub const SPS: DiagnosticPath = DiagnosticPath::const_new("sps");
 
-    /** Z index at which the help text is displayed.
-
-    Use this should you ever need to display an overlay above the help screen.
-    */
+    /// Z index at which the help text is displayed.
+    ///
+    /// Use this should you ever need to display an overlay above the help screen.
     pub const HELP_OVERLAY_ZINDEX: i32 = i32::MAX - 32;
 
     /// Clear the window to this color before rendering each frame.
@@ -660,11 +653,10 @@ F5      : Show/hide debugging information.
         }
     }
 
-    /** Set the time budgeted to advancing the simulation each frame.
-
-    Derive this time from the current monitor refresh rate and the
-    `frame_budget_fraction` settings.
-    */
+    /// Set the time budgeted to advancing the simulation each frame.
+    ///
+    /// Derive this time from the current monitor refresh rate and the
+    /// `frame_budget_fraction` settings.
     #[cfg(not(target_arch = "wasm32"))]
     fn set_frame_budget(
         winit: NonSend<WinitWindows>,
@@ -802,10 +794,9 @@ F5      : Show/hide debugging information.
         commands.spawn((Camera2d, projection));
     }
 
-    /** Keyboard controls for the 2d camera.
-
-    * `=` resets the camera to the default.
-    */
+    /// Keyboard controls for the 2d camera.
+    ///
+    /// `=` resets the camera to the default.
     fn camera_keyboard_control_2d(
         keys: Res<ButtonInput<KeyCode>>,
         camera: Single<(&mut Transform, &mut Projection), With<Camera2d>>,
@@ -822,12 +813,11 @@ F5      : Show/hide debugging information.
         }
     }
 
-    /** Left click and drag to pan the 2D camera.
-
-    # Panics
-
-    Panics when the 2D camera viewport is invalid.
-    */
+    /// Left click and drag to pan the 2D camera.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the 2D camera viewport is invalid.
     fn camera_mouse_pan_control_2d(
         camera: Single<
             (&Camera, &GlobalTransform, &mut Transform, &mut Projection),
@@ -928,13 +918,12 @@ F5      : Show/hide debugging information.
         }
     }
 
-    /** Build the plugin.
-
-    [`HoomdBevyPlugin`] does not implement [`Plugin`] and cannot be used with
-    `add_plugins` so that the `build` method can consume `self`. This allows
-    `build` to take ownership of the `simulation` field and create the appropriate
-    Bevy [`Resource`].
-    */
+    /// Build the plugin.
+    ///
+    /// [`HoomdBevyPlugin`] does not implement [`Plugin`] and cannot be used with
+    /// `add_plugins` so that the `build` method can consume `self`. This allows
+    /// `build` to take ownership of the `simulation` field and create the appropriate
+    /// Bevy [`Resource`].
     #[expect(clippy::too_many_lines, reason = "Bevy functions are very verbose.")]
     pub fn build(self, app: &mut App) {
         representation::disk::build(app);
@@ -1049,12 +1038,11 @@ F5      : Show/hide debugging information.
     }
 }
 
-/** Construct the default plugins.
-
-This helper adds Bevy's `DefaultPlugins` by default. When the
-`doc-example` feature is enabled, it adds a modified set of plugins
-for the web.
-*/
+/// Construct the default plugins.
+///
+/// This helper adds Bevy's `DefaultPlugins` by default. When the
+/// `doc-example` feature is enabled, it adds a modified set of plugins
+/// for the web.
 pub fn add_default_plugins(app: &mut App) {
     if cfg!(feature = "doc-example") {
         app.add_plugins(DefaultPlugins.set(WindowPlugin {

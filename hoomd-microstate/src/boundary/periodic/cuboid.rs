@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement periodic boundary conditions for cuboids in cartesian space. */
+//! Implement periodic boundary conditions for cuboids in cartesian space.
 
 use tinyvec::ArrayVec;
 
@@ -16,28 +16,29 @@ use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
 impl<const N: usize> MaximumAllowableInteractionRange for Cuboid<N> {
-    /** The largest value that the maximum interaction range can take.
-
-    For a cuboid, the maximum is
-    ```math
-    \frac{L_\mathrm{min}}{2}
-    ```
-    where $`L_\mathrm{min}`$ is the smallest edge length.
-
-    # Example
-
-    ```
-    use hoomd_geometry::shape::Cuboid;
-    use hoomd_microstate::boundary::MaximumAllowableInteractionRange;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let rectangular_prism = Cuboid {edge_lengths: [2.0.try_into()?, 3.0.try_into()?, 9.0.try_into()?]};
-
-    assert_eq!(rectangular_prism.maximum_allowable_interaction_range(), 1.0);
-    # Ok(())
-    # }
-    ```
-    */
+    /// The largest value that the maximum interaction range can take.
+    ///
+    /// For a cuboid, the maximum is
+    /// ```math
+    /// \frac{L_\mathrm{min}}{2}
+    /// ```
+    /// where $`L_\mathrm{min}`$ is the smallest edge length.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Cuboid;
+    /// use hoomd_microstate::boundary::MaximumAllowableInteractionRange;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let rectangular_prism = Cuboid {
+    ///     edge_lengths: [2.0.try_into()?, 3.0.try_into()?, 9.0.try_into()?],
+    /// };
+    ///
+    /// assert_eq!(rectangular_prism.maximum_allowable_interaction_range(), 1.0);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
         let minimum_l = self
@@ -54,25 +55,28 @@ impl<const N: usize, P> Wrap<P> for Periodic<Cuboid<N>>
 where
     P: Position<Vector = Cartesian<N>>,
 {
-    /** Wrap any cartesian vector to the inside of the given cuboid.
-
-    # Example
-
-    ```
-    use hoomd_geometry::shape::Rectangle;
-    use hoomd_microstate::{boundary::{Periodic, Wrap}, property::Point};
-    use hoomd_vector::Cartesian;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let periodic = Periodic::new(2.5, Rectangle::with_equal_edges(10.0.try_into()?))?;
-    let point = Point::new(Cartesian::from([6.0, -15.0]));
-
-    let wrapped_point = periodic.wrap(point)?;
-    assert_eq!(wrapped_point.position, [-4.0, -5.0].into());
-    # Ok(())
-    # }
-    ```
-    */
+    /// Wrap any cartesian vector to the inside of the given cuboid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_microstate::{
+    ///     boundary::{Periodic, Wrap},
+    ///     property::Point,
+    /// };
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let periodic =
+    ///     Periodic::new(2.5, Rectangle::with_equal_edges(10.0.try_into()?))?;
+    /// let point = Point::new(Cartesian::from([6.0, -15.0]));
+    ///
+    /// let wrapped_point = periodic.wrap(point)?;
+    /// assert_eq!(wrapped_point.position, [-4.0, -5.0].into());
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn wrap(&self, properties: P) -> Result<P, Error> {
         let mut properties = properties;
@@ -98,11 +102,10 @@ where
         self.maximum_interaction_range
     }
 
-    /** Place periodic images of sites near the edge of the periodic boundary.
-
-    For 2D cuboids, `generate_ghosts` places ghosts near the 4 edges and 4
-    vertices.
-    */
+    /// Place periodic images of sites near the edge of the periodic boundary.
+    ///
+    /// For 2D cuboids, `generate_ghosts` places ghosts near the 4 edges and 4
+    /// vertices.
     #[inline]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
         let mut result = ArrayVec::new();
@@ -165,11 +168,10 @@ where
         self.maximum_interaction_range
     }
 
-    /** Place periodic images of sites near the edge of the periodic boundary.
-
-    For 3D cuboids, `generate_ghosts` places ghosts near the 6 faces, 12 edges,
-    and 8 vertices.
-    */
+    /// Place periodic images of sites near the edge of the periodic boundary.
+    ///
+    /// For 3D cuboids, `generate_ghosts` places ghosts near the 6 faces, 12 edges,
+    /// and 8 vertices.
     #[inline]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
         let mut result = ArrayVec::new();

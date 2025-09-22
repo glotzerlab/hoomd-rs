@@ -1,7 +1,7 @@
 # Custom Random Walk
 
 <script type="module">
-import init from './custom_random_walk.js'
+import init from './custom-random-walk.js'
 {{#include ../../scripts/init-wasm-canvas.js}}
 </script>
 {{#include ../../scripts/canvas.html}}
@@ -15,20 +15,20 @@ a circle, and applies trial moves that take discrete steps left, right, down,
 or up.
 
 * Objective: Demonstrate the customization of a MC simulation.
-* File: `hoomd-rs/examples/mc-tutorial/custom_random_walk.rs`
+* File: `hoomd-rs/examples/mc-tutorial/custom-random-walk.rs`
 * Run (interactively):
   ```shell
-  cargo run --release --features "bevy" --example custom_random_walk
+  cargo run --release --features "bevy" --example custom-random-walk
   ```
 * Run (in batch mode):
   ```shell
-  cargo run --release --example custom_random_walk
+  cargo run --release --example custom-random-walk
   ```
 
 ## Use Declarations
 
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:use}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:use}}
 ```
 *hoomd-rs* uses [`rand`] crate to generate pseudorandom numbers.
 
@@ -42,7 +42,7 @@ tutorial shows how you can create a custom **closed** boundary condition.
 First, define a type that describes the boundary. In this case, the boundary is a
 `Circle` that has a radius:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:boundary_struct}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:boundary_struct}}
 ```
 
 ### Implement `IsPointInside`
@@ -51,7 +51,7 @@ Then, implement the `IsPointInside` trait for `Circle`. The only required method
 is `is_point_inside()` which should return `true` for points inside the boundary
 and `false` for points outside the boundary:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:boundary_impl}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:boundary_impl}}
 ```
 This implementation of `IsPointInside` is only for the `Cartesian<2>` vector
 type (`V` in the `IsPointInside` definition). You can read [The Rust Programming
@@ -75,7 +75,7 @@ You can implement that in *hoomd-rs* with a custom trial move.
 Similar to the custom boundary, you need to implement the **trait**
 `LocalTrial` for a **type**. Here is the type:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:local_trial_struct}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:local_trial_struct}}
 ```
 `Discrete` trials always take one step in one direction. Therefore, the
 `Discrete` struct needs no fields.
@@ -84,7 +84,7 @@ Similar to the custom boundary, you need to implement the **trait**
 
 `LocalTrial` has one method, `propose()`:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:local_trial_impl}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:local_trial_impl}}
 ```
 `propose()` takes in the properties (`body_properties`) of a body in the current
 microstate of the system. It returns the **trial** body properties randomly
@@ -95,14 +95,14 @@ generated using the given `rng`. In this tutorial, the only body property is
 
 First, place the possible moves (down, up, left, right) in an array:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:local_trial_steps}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:local_trial_steps}}
 ```
 
 #### Randomly Select a Step
 
 Then choose one of the steps randomly and add it to the body's position:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:local_trial_mut}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:local_trial_mut}}
 ```
 
 `steps.choose(rng)` chooses one of the elements of the array at random (with
@@ -127,7 +127,7 @@ can be accessed in different modules.
 The custom random walk model consists of the **microstate**, the **Hamiltonian**,
 the translation **trial moves**, and the temperature set point `$kT$`:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:simulation_struct}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:simulation_struct}}
 ```
 
 Notice that this definition explicitly names the generic types of each of these fields. The
@@ -140,7 +140,7 @@ Language] to learn more.
 
 The `new()` method that constructs the `CustomRandomWalk` simulation model:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:simulation_new}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:simulation_new}}
 ```
 
 One or more steps might fail, so return a `Result<CustomRandomWalk>`.
@@ -150,7 +150,7 @@ One or more steps might fail, so return a `Result<CustomRandomWalk>`.
 Assign all the model parameters in one code block so that they are easy to
 modify:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:parameters}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:parameters}}
 ```
 
 #### Microstate
@@ -158,7 +158,7 @@ modify:
 Construct the `Microstate` with the `circle` boundary condition and place `n`
 bodies at the origin:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:microstate}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:microstate}}
 ```
 
 The newtype `Closed` can wrap *any* type that implements `IsPointInside`
@@ -170,7 +170,7 @@ The newtype `Closed` can wrap *any* type that implements `IsPointInside`
 
 Apply the custom `Discrete` trial move to all bodies in the microstate:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:sweep}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:sweep}}
 ```
 `Sweep` can wrap any type that implements `LocalTrial`.
 
@@ -178,7 +178,7 @@ Apply the custom `Discrete` trial move to all bodies in the microstate:
 
 As in the [Random Walk] tutorial, set `$H = 0$` so that bodies do not interact:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:sweep}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:sweep}}
 ```
 
 #### Initialize the Struct
@@ -186,7 +186,7 @@ As in the [Random Walk] tutorial, set `$H = 0$` so that bodies do not interact:
 Now that all of the elements of the simulation model have been constructed,
 package them in a `CustomRandomWalk` struct:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:initialize_struct}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:initialize_struct}}
 ```
 
 The struct is wrapped in `Ok` to indicate that the `Result` of this function is
@@ -197,7 +197,7 @@ not an error.
 The `Simulation` **trait** provides a common interface that all simulation
 models can follow:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:impl_simulation}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:impl_simulation}}
 ```
 
 #### Advance the Simulation
@@ -206,7 +206,7 @@ The first method that all simulation models must have is an `advance()` method
 that moves the model forward one step. The implementation is identical to that
 in the [Random Walk] tutorial:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:advance}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:advance}}
 ```
 All the complexity of the customizations is contained in the implementation
 of `IsPointInside` for `Circle` and `LocalTrial` for `Discrete`.
@@ -216,15 +216,15 @@ of `IsPointInside` for `Circle` and `LocalTrial` for `Discrete`.
 All simulation models must also implement a method that provides the current
 simulation step:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:step}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:step}}
 ```
 
 ## Implement `main()`
 
-To run the simulation, construct the `CustomRandomWalk` simulation model
-then call `advance()` many times:
+To run the simulation, construct the `CustomRandomWalk` simulation model.
+Then call `advance()` many times:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:main}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:main}}
 ```
 
 Write the sites to a GSD file periodically so that you can inspect the results
@@ -250,7 +250,7 @@ right, down, or up on every step.
 Alternately, you can run the example in batch mode and then open
 the generated `trajectory.gsd` in [Ovito] or another visualization tool:
 ```shell
-cargo run --release --example custom_random_walk
+cargo run --release --example custom-random-walk
 ```
 
 The next section shows how to use the Hamiltonian to describe how the bodies
@@ -265,4 +265,4 @@ interact with each other and with an external field.
 ## Complete Code
 
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom_random_walk.rs:all}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:all}}

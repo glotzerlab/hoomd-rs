@@ -1,11 +1,10 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! An outlined ellipse.
-
-The [`Ellipse`] representation is a ellipse of pixels with a configurable
-outline color. Each ellipse can have a different aspect ratio.
-*/
+//! An outlined ellipse.
+//!
+//! The [`Ellipse`] representation is a ellipse of pixels with a configurable
+//! outline color. Each ellipse can have a different aspect ratio.
 
 use bevy::{
     asset::embedded_asset,
@@ -26,8 +25,10 @@ use bevy::{
     },
     sprite::Material2dKey,
 };
-use itertools::EitherOrBoth::{Both, Left, Right};
-use itertools::Itertools;
+use itertools::{
+    EitherOrBoth::{Both, Left, Right},
+    Itertools,
+};
 use std::marker::PhantomData;
 
 use crate::PRIMARY_COLOR;
@@ -35,21 +36,20 @@ use crate::PRIMARY_COLOR;
 /// Location of the shader implementation
 const SHADER_ASSET_PATH: &str = "embedded://hoomd_bevy/representation/ellipse.wgsl";
 
-/** Represent an entity with a 2D ellipse in the xy plane.
-
-The base representation has semi-axes (0.5, 0.5). Provide per-item axes
-in [`sync`](Self::sync) to render ellipses of different sizes and aspect ratios.
-Nominally, the z coordinate of the ellipses should be set to 0. Choose a different
-value to control the back to front draw order.
-
-All ellipses of the same type must have the same material. To display disks with
-different color pallets or outline widths, call `setup` and `sync` multiple
-types of ellipses with different marker types.
-
-To use:
-* Add [`setup`](Self::setup) to the `Startup` schedule.
-* Call [`sync`](Self::sync) in an `Update` schedule that runs after `AdvanceSet`.
-*/
+/// Represent an entity with a 2D ellipse in the xy plane.
+///
+/// The base representation has semi-axes (0.5, 0.5). Provide per-item axes
+/// in [`sync`](Self::sync) to render ellipses of different sizes and aspect ratios.
+/// Nominally, the z coordinate of the ellipses should be set to 0. Choose a different
+/// value to control the back to front draw order.
+///
+/// All ellipses of the same type must have the same material. To display disks with
+/// different color pallets or outline widths, call `setup` and `sync` multiple
+/// types of ellipses with different marker types.
+///
+/// To use:
+/// * Add [`setup`](Self::setup) to the `Startup` schedule.
+/// * Call [`sync`](Self::sync) in an `Update` schedule that runs after `AdvanceSet`.
 #[derive(Component)]
 pub struct Ellipse<T> {
     /// Mark the type of the disk.
@@ -82,8 +82,7 @@ pub(crate) fn build(app: &mut App) {
 }
 
 impl<T: Send + Sync + 'static> Ellipse<T> {
-    /** Create assets to render disks.
-     */
+    /// Create assets to render disks.
     pub fn setup(
         material: In<MaterialParameters>,
         mut commands: Commands,
@@ -174,27 +173,26 @@ impl Default for MaterialParameters {
     }
 }
 
-/** Control how ellipses are rendered.
-
-Ellipses are always opaque and alpha in any background color is ignored.
-
-By default [`Material`] is initialized with only one background
-color. Color the instances differently by setting more than one color
-with [`set_background_colors`]. The color of each disk is given by
-`background_colors[tag % len(background_colors)]` so you may set fewer colors
-than there are disks. [`sync`] assigns `tag` values in increasing order to each
-primitive.
-
-The `background_color` tints the texture by multiplication. With a `None`
-texture (the default), `background_color` sets the exact color of the disk.
-
-Set the initial material by piping `MaterialParameters` into [`Ellipse::setup`].
-After it is initialized, change the material during execution via the `material`
-field in`ResMut<ellipse::Representation<A>>`.
-
-[`sync`]: Ellipse::sync
-[`set_background_colors`]: Material::set_background_colors
-*/
+/// Control how ellipses are rendered.
+///
+/// Ellipses are always opaque and alpha in any background color is ignored.
+///
+/// By default [`Material`] is initialized with only one background
+/// color. Color the instances differently by setting more than one color
+/// with [`set_background_colors`]. The color of each disk is given by
+/// `background_colors[tag % len(background_colors)]` so you may set fewer colors
+/// than there are disks. [`sync`] assigns `tag` values in increasing order to each
+/// primitive.
+///
+/// The `background_color` tints the texture by multiplication. With a `None`
+/// texture (the default), `background_color` sets the exact color of the disk.
+///
+/// Set the initial material by piping `MaterialParameters` into [`Ellipse::setup`].
+/// After it is initialized, change the material during execution via the `material`
+/// field in`ResMut<ellipse::Representation<A>>`.
+///
+/// [`sync`]: Ellipse::sync
+/// [`set_background_colors`]: Material::set_background_colors
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct Material {
     /// Color applied to the outline.
@@ -211,7 +209,7 @@ pub struct Material {
     n_background_colors: u32,
 
     /// Color applied to the interior of the disk (indexed by disk % array size).
-    #[uniform(3)]
+    #[uniform(1)]
     #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
     background_colors: [LinearRgba; 1024],
 
@@ -222,30 +220,33 @@ pub struct Material {
 }
 
 impl Material {
-    /** Set new background colors.
-
-    # Panics
-
-    WebGL2 builds (identified by the `wasm32` target without the `webgpu`
-    feature) support only 1024 background colors.
-
-    Desktop target builds or `wasm32` target builds with `webgpu` support
-    a much larger number of colors and will not panic.
-    */
+    /// Set new background colors.
+    ///
+    /// # Panics
+    ///
+    /// WebGL2 builds (identified by the `wasm32` target without the `webgpu`
+    /// feature) support only 1024 background colors.
+    ///
+    /// Desktop target builds or `wasm32` target builds with `webgpu` support
+    /// a much larger number of colors and will not panic.
     pub fn set_background_colors(
         &mut self,
+        #[allow(
+            unused_variables,
+            unused_mut,
+            reason = "Not used in all build configurations."
+        )]
         mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
-        colors: &Vec<LinearRgba>,
+        colors: &[LinearRgba],
     ) {
         #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
         {
-            if colors.len() > 1024 {
-                panic!(
-                    "webgl2 builds support up to 1024 colors, got {}",
-                    colors.len()
-                );
-            }
-            self.background_colors[..colors.len()].copy_from_slice(&colors);
+            assert!(
+                colors.len() <= 1024,
+                "webgl2 builds support up to 1024 colors, got {}",
+                colors.len()
+            );
+            self.background_colors[..colors.len()].copy_from_slice(colors);
             self.n_background_colors = colors.len() as u32;
         }
 

@@ -7,13 +7,11 @@
 )]
 #![expect(clippy::unwrap_used, reason = "benches can use unwrap where needed")]
 
-/*! Benchmark overlaps*/
+//! Benchmark overlaps
 
-use divan::counter::ItemsCount;
-use divan::{self, Bencher, black_box};
-use hoomd_geometry::Convex;
+use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_geometry::{
-    IntersectsAt,
+    Convex, IntersectsAt,
     shape::{ConvexPolytope, Cuboid, Hyperellipsoid, Hypersphere, Simplex3},
     xenocollide::{collide2d, collide3d},
 };
@@ -32,7 +30,6 @@ fn asm_collide3d() {
 fn main() {
     asm_collide3d();
 
-    #[cfg(not(target_arch = "wasm32"))]
     divan::main();
 }
 
@@ -130,14 +127,14 @@ fn create_ellipsoid_pair<const N: usize, R: Rng>(
 ) -> (Hyperellipsoid<N>, Hyperellipsoid<N>) {
     (
         Hyperellipsoid {
-            axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
+            semi_axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
                 (x + 11.0)
                     .try_into()
                     .expect("test value is a positive real")
             }),
         },
         Hyperellipsoid {
-            axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
+            semi_axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
                 (x + 11.0)
                     .try_into()
                     .expect("test value is a positive real")
@@ -166,7 +163,6 @@ fn create_offset_3d<R: Rng>(rng: &mut R) -> (Cartesian<3>, Versor) {
 const DIMENSIONS: &[usize] = &[2, 3, 4];
 const NUM_VERTICES: &[usize] = &[3, 4, 8, 16, 64, 256];
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = DIMENSIONS)]
 fn sphere_fast_nd<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -182,7 +178,6 @@ fn sphere_fast_nd<const N: usize>(bencher: Bencher) {
         .bench_local_values(|((s0, s1), (t, r))| black_box(s0.intersects_at(&s1, &t, &r)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn sphere_xenocollide_2d(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -198,7 +193,6 @@ fn sphere_xenocollide_2d(bencher: Bencher) {
         .bench_local_values(|((s0, s1), (t, r))| black_box(collide2d(&s0, &s1, &t, &r)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(sample_size = 10_000)]
 fn sphere_xenocollide_3d(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -215,7 +209,6 @@ fn sphere_xenocollide_3d(bencher: Bencher) {
 }
 
 /// Note this is not 1:1 with the naive test, as this uses oriented cuboids!
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn cuboid_xenocollide_2d(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -231,7 +224,6 @@ fn cuboid_xenocollide_2d(bencher: Bencher) {
         .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &r)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn cuboid_xenocollide_3d(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -247,7 +239,6 @@ fn cuboid_xenocollide_3d(bencher: Bencher) {
         .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &r)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = NUM_VERTICES, )]
 fn polygon_xenocollide_2d<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -263,7 +254,6 @@ fn polygon_xenocollide_2d<const N: usize>(bencher: Bencher) {
         .bench_local_values(|((p0, p1), (t, r))| black_box(collide2d(&p0, &p1, &t, &r)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = NUM_VERTICES, )]
 fn dipyramid_xenocollide_3d<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -279,7 +269,6 @@ fn dipyramid_xenocollide_3d<const N: usize>(bencher: Bencher) {
         .bench_local_values(|((p0, p1), (t, r))| black_box(collide3d(&p0, &p1, &t, &r)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn simplex_xenocollide_3d(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -295,7 +284,6 @@ fn simplex_xenocollide_3d(bencher: Bencher) {
         .bench_local_values(|((t0, t1), (t, r))| black_box(collide3d(&t0, &t1, &t, &r)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn ellipsoid_xenocollide_2d(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -311,7 +299,6 @@ fn ellipsoid_xenocollide_2d(bencher: Bencher) {
         .bench_local_values(|((t0, t1), (t, r))| black_box(collide2d(&t0, &t1, &t, &r)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn ellipsoid_fast_2d(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -327,7 +314,6 @@ fn ellipsoid_fast_2d(bencher: Bencher) {
         .bench_local_values(|((e0, e1), (t, r))| black_box(e0.intersects_at(&e1, &t, &r)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn ellipsoid_xenocollide_3d(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -343,7 +329,6 @@ fn ellipsoid_xenocollide_3d(bencher: Bencher) {
         .bench_local_values(|((t0, t1), (t, r))| black_box(collide3d(&t0, &t1, &t, &r)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn simplex_fast(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);

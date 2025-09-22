@@ -1,8 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`Linear`]
- */
+//! Implement [`Linear`]
 
 use crate::SiteSingleForce;
 
@@ -10,32 +9,32 @@ use super::super::SiteEnergy;
 use hoomd_microstate::property::Position;
 use hoomd_vector::{InnerProduct, Unit};
 
-/** Linear potential based on position.
-
-```math
-U = \alpha \cdot \vec{n} \cdot ( \vec{r} - \vec{p} )
-```
-
-Computes a linear external potential at a point in space relative to the plane
-origin `p`, plane normal `n`, and the interaction strength `alpha`.
-
-# Example
-
-Basic usage:
-
-```
-use hoomd_interaction::external::Linear;
-use hoomd_vector::{Cartesian, Unit};
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let linear = Linear { alpha: 2.0,
-    plane_origin: [0.0, -10.0].into(),
-    plane_normal: [0.0, 1.0].try_into()?,
-};
-# Ok(())
-# }
-```
-*/
+/// Linear potential based on position.
+///
+/// ```math
+/// U = \alpha \cdot \vec{n} \cdot ( \vec{r} - \vec{p} )
+/// ```
+///
+/// Computes a linear external potential at a point in space relative to the plane
+/// origin `p`, plane normal `n`, and the interaction strength `alpha`.
+///
+/// # Example
+///
+/// Basic usage:
+///
+/// ```
+/// use hoomd_interaction::external::Linear;
+/// use hoomd_vector::{Cartesian, Unit};
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let linear = Linear {
+///     alpha: 2.0,
+///     plane_origin: [0.0, -10.0].into(),
+///     plane_normal: [0.0, 1.0].try_into()?,
+/// };
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Linear<V> {
     /// Interaction strength *(\[energy\] \[length\]^(-1))*.
@@ -50,26 +49,26 @@ impl<V> Linear<V>
 where
     V: InnerProduct,
 {
-    /** Compute the energy of a point in the linear field.
-
-    # Example
-
-    ```
-    use hoomd_interaction::external::Linear;
-    use hoomd_vector::{Cartesian, Unit};
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let linear = Linear { alpha: 2.0,
-        plane_origin: [0.0, -10.0].into(),
-        plane_normal: [0.0, 1.0].try_into()?,
-    };
-
-    let energy = linear.energy(&[0.0, 0.0].into());
-    assert_eq!(energy, 20.0);
-    # Ok(())
-    # }
-    ```
-    */
+    /// Compute the energy of a point in the linear field.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_interaction::external::Linear;
+    /// use hoomd_vector::{Cartesian, Unit};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let linear = Linear {
+    ///     alpha: 2.0,
+    ///     plane_origin: [0.0, -10.0].into(),
+    ///     plane_normal: [0.0, 1.0].try_into()?,
+    /// };
+    ///
+    /// let energy = linear.energy(&[0.0, 0.0].into());
+    /// assert_eq!(energy, 20.0);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[must_use]
     pub fn energy(&self, r: &V) -> f64 {

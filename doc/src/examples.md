@@ -34,8 +34,8 @@ To compile and run an example as a desktop application, execute:
 $ cargo run --release --features=bevy --example {example}
 ```
 where `{example}` is the name of the example *without* the path
-or extension (e.g. `--example random_walk`, will build and run
-`examples/mc-tutorial/random_walk.rs`).
+or extension (e.g. `--example random-walk`, will build and run
+`examples/mc-tutorial/random-walk.rs`).
 
 The examples use the [Bevy] engine. If you get compile errors when building
 `bevy` crates, you may need to [install additional software]. MacOS is the

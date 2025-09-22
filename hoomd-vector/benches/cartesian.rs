@@ -10,17 +10,14 @@
     reason = "benches can use expect without individual reasons"
 )]
 
-/*! Benchmark Cartesian */
+//! Benchmark Cartesian
 
-use divan::counter::ItemsCount;
-use divan::{self, Bencher, black_box};
-use rand::distr::Uniform;
-use rand::{Rng, SeedableRng, rngs::StdRng};
+use divan::{self, Bencher, black_box, counter::ItemsCount};
+use rand::{Rng, SeedableRng, distr::Uniform, rngs::StdRng};
 
 use hoomd_vector::{Cartesian, Cross, InnerProduct};
 
 fn main() {
-    #[cfg(not(target_arch = "wasm32"))]
     divan::main();
 }
 
@@ -30,7 +27,6 @@ fn create_random_vector_pair<const N: usize, R: Rng>(rng: &mut R) -> (Cartesian<
 
 const DIMENSIONS: &[usize] = &[2, 3, 8, 16, 32, 128];
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = DIMENSIONS)]
 fn create_vecn_tryfrom_vec<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -42,7 +38,6 @@ fn create_vecn_tryfrom_vec<const N: usize>(bencher: Bencher) {
         .bench_local_values(|vec| black_box(Cartesian::<N>::try_from(vec)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = DIMENSIONS)]
 fn add_vecn<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -53,7 +48,6 @@ fn add_vecn<const N: usize>(bencher: Bencher) {
         .bench_local_values(|(a, b)| black_box(a + b));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = DIMENSIONS)]
 fn sub_vecn<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -64,7 +58,6 @@ fn sub_vecn<const N: usize>(bencher: Bencher) {
         .bench_local_values(|(a, b)| black_box(a - b));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = DIMENSIONS)]
 fn mul_vecn<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -77,7 +70,6 @@ fn mul_vecn<const N: usize>(bencher: Bencher) {
         });
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = DIMENSIONS)]
 fn div_vecn<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -88,7 +80,6 @@ fn div_vecn<const N: usize>(bencher: Bencher) {
         .bench_local_values(|(a, b)| black_box(a / b.coordinates[0]));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = DIMENSIONS)]
 fn dot_vecn<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -99,7 +90,6 @@ fn dot_vecn<const N: usize>(bencher: Bencher) {
         .bench_local_values(|(a, b)| black_box(a.dot(&b)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn cross_vec3(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -110,7 +100,6 @@ fn cross_vec3(bencher: Bencher) {
         .bench_local_values(|(a, b)| black_box(a.cross(&b)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = DIMENSIONS)]
 fn gen_random<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
