@@ -17,6 +17,7 @@ workspace = true
 approx = ["dep:approx"]
 
 [dependencies]
+hoomd-linalg.workspace = true
 thiserror.workspace = true
 rand.workspace = true
 hoomd-utility.workspace = true

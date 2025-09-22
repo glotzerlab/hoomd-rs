@@ -14,6 +14,7 @@ use rand::{
 };
 
 use crate::{Cross, Error, InnerProduct, Rotate, Unit, Vector};
+use hoomd_linalg::matrix::Matrix;
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
 ///
@@ -89,6 +90,19 @@ use crate::{Cross, Error, InnerProduct, Rotate, Unit, Vector};
 pub struct Cartesian<const N: usize> {
     /// The vector's coordinates.
     pub coordinates: [f64; N],
+}
+
+impl<const N: usize> Cartesian<N> {
+    fn to_row_matrix(&self) -> Matrix<1, N> {
+        Matrix {
+            rows: [self.coordinates],
+        }
+    }
+    fn to_column_matrix(&self) -> Matrix<N, 1> {
+        Matrix {
+            rows: std::array::from_fn(|i| [self[i]]),
+        }
+    }
 }
 
 impl<const N: usize> Default for Cartesian<N> {

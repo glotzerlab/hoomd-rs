@@ -93,7 +93,8 @@ pub struct Hyperellipsoid<const N: usize> {
 ///
 /// let v_ij = [
 ///     0.0,
-///     long_ellipse.semi_axes[1].get() + round_ellipse.semi_axes[1].get() - 0.1,
+///     long_ellipse.semi_axes[1].get() + round_ellipse.semi_axes[1].get()
+///         - 0.1,
 /// ]
 /// .into();
 ///
