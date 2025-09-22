@@ -237,17 +237,15 @@ impl Material {
             reason = "Not used in all build configurations."
         )]
         mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
-        colors: &Vec<LinearRgba>,
+        colors: &[LinearRgba],
     ) {
         #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
         {
-            if colors.len() > 1024 {
-                panic!(
+            assert!(colors.len() <= 1024,
                     "webgl2 builds support up to 1024 colors, got {}",
                     colors.len()
                 );
-            }
-            self.background_colors[..colors.len()].copy_from_slice(&colors);
+            self.background_colors[..colors.len()].copy_from_slice(colors);
             self.n_background_colors = colors.len() as u32;
         }
 
