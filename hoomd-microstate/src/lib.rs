@@ -230,8 +230,48 @@ pub struct Site<S> {
 /// let body = Body::point(Cartesian::from([-3.0, 5.0]));
 /// ```
 ///
-/// TODO: Construct a body with an oriented point.
-/// TODO: Construct an oriented body with several point interaction sites.
+/// Construct an oriented body:
+/// ```
+/// use hoomd_microstate::{Body, property::OrientedPoint};
+/// use hoomd_vector::{Angle, Cartesian};
+///
+/// let body_properties = OrientedPoint {
+///     position: Cartesian::from([1.0, -3.0]),
+///     orientation: Angle::from(1.2),
+/// };
+/// let site_properties = OrientedPoint {
+///     position: Cartesian::<2>::default(),
+///     orientation: Angle::default(),
+/// };
+///
+/// let body = Body {
+///     properties: body_properties,
+///     sites: vec![site_properties],
+/// };
+/// ```
+//
+/// Construct a rigid body with several point sites:
+/// ```
+/// use hoomd_microstate::{
+///     Body,
+///     property::{OrientedPoint, Point},
+/// };
+/// use hoomd_vector::{Angle, Cartesian};
+///
+/// let body_properties = OrientedPoint {
+///     position: Cartesian::from([1.0, -3.0]),
+///     orientation: Angle::from(1.2),
+/// };
+///
+/// let body = Body {
+///     properties: body_properties,
+///     sites: vec![
+///         Point::new(Cartesian::from([0.0, -1.0])),
+///         Point::new(Cartesian::from([0.0, 0.0])),
+///         Point::new(Cartesian::from([0.0, 1.0])),
+///     ],
+/// };
+/// ```
 ///
 /// # Custom body and site properties
 ///
