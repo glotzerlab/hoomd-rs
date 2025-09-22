@@ -122,7 +122,7 @@ pub use dynamics_point::DynamicsPoint;
 mod oriented_dynamics_point;
 pub use oriented_dynamics_point::OrientedDynamicsPoint;
 
-/// Locate sites and bodies.
+/// The location of a site or body.
 ///
 /// When applied to site properties, [`Position`] describes the location of the site
 /// relative to the origin of the body. In other words, it is the position of the
@@ -139,68 +139,76 @@ pub trait Position {
     /// Every position is located in this vector space.
     type Vector;
 
-    /// The position of this body or site *\[length\]*.
+    /// The position of this site or body *\[length\]*.
     fn position(&self) -> &Self::Vector;
 
-    /// The mutable position of this body or site *\[length\]*.
+    /// The mutable position of this site or body *\[length\]*.
     fn position_mut(&mut self) -> &mut Self::Vector;
 }
 
-/// Move sites and bodies.
+/// The momentum of a site or body
 /// 
-/// When applied to site properties, [`Velocity`] describes the velocity of the site
-/// relative to the origin of the body. In other words, it is the velocity of the
-/// site in the body reference frame.
+/// When applied to site properties, [`Momentum`] describes the momentum of the
+/// site relative to the origin of the body. In other words, it is the momentum
+/// of the site in the body reference frame.
 /// 
-/// When applied to body properties [`Velocity`] describes the velocity of the body 
-/// relative to the origin of the system coordinate system. In other words, it is
-/// the velocity of the body's center of mass in the system reference frame.
+/// When applied to body properties [`Momentum`] describes the momentum of the 
+/// body relative to the origin of the system coordinate system. In other words,
+/// it is the momentum of the body's center of mass in the system reference
+/// frame.
 /// 
 /// # Units
 /// 
-/// Velocity vectors have units of *\[length/time\]*.
-pub trait Velocity {
-    /// Every velocity is within this vector space.
+/// Momentum vectors have units of *\[length * mass / time\]*.
+pub trait Momentum {
+    /// Every momentum is within this vector space.
     type Vector;
 
-    /// The velocity of this body or site *\[length/time\]*.
-    fn velocity(&self) -> &Self::Vector;
+    /// The momentum of this site or body *\[length * mass / time\]*.
+    fn momentum(&self) -> &Self::Vector;
 
-    /// The mutable velocity of this body or site *\[length/time\]*.
-    fn velocity_mut(&mut self) -> &mut Self::Vector;
+    /// The mutable momentum of this site or body *\[length * mass / time\]*.
+    fn momentum_mut(&mut self) -> &mut Self::Vector;
+
+    /// The velocity of this site or body *\[length / time\]*.
+    fn velocity(&self) -> Self::Vector;
+
+    /// Change the velocity of this site or body.
+    fn set_velocity(&mut self, velocity: Self::Vector);
 }
 
-/// Accelerate sites and bodies.
+/// The net force on a site or body.
 ///
-/// When applied to site properties, [`Acceleration`] describes the acceleration of
+/// When applied to site properties, [`NetForce`] describes the net force on
 /// the site relative to the origin of the body. In other words, it is the
-/// acceleration of the site in the body reference frame.
+/// net force on the site in the body reference frame.
 /// 
-/// When applied to body properties [`Acceleration`] describes the acceleration of
-/// the body relative to the origin of the system coordinate system. In other words,
-/// it is the acceleration of the body's center of mass in the system reference frame.
+/// When applied to body properties [`NetForce`] describes the net force on
+/// the body relative to the origin of the system coordinate system. In other
+/// words, it is the net force on the body's center of mass in the system
+/// reference frame.
 /// 
 /// # Units
 /// 
-/// Acceleration vectors have units of *\[length^2/time\]*.
-pub trait Acceleration {
-    /// Every acceleration is within this vector space.
+/// Net force vectors have units of *\[mass * length / time^2\]*.
+pub trait NetForce {
+    /// Every net force is within this vector space.
     type Vector;
 
-    /// The acceleration of this body or site *\[length^2/time\]*.
-    fn acceleration(&self) -> &Self::Vector;
+    /// The net force on this site or body *\[length^2/time\]*.
+    fn net_force(&self) -> &Self::Vector;
 
-    /// The mutable acceleration of this body or site *\[length^2/time\]*.
-    fn acceleration_mut(&mut self) -> &mut Self::Vector;
+    /// The mutable net force on this site or body *\[length^2/time\]*.
+    fn net_force_mut(&mut self) -> &mut Self::Vector;
 }
 
-/// Rotate sites and bodies.
+/// The orientation of a site or body.
 /// 
-/// When applied to site properties, [`Orientation`] describes the rotation from the
-/// site's local coordinates to the body frame.
+/// When applied to site properties, [`Orientation`] describes the rotation from
+/// the site's local coordinates to the body frame.
 /// 
-/// When applied to body properties, [`Orientation`] describes the rotation from the
-/// body frame to the system.
+/// When applied to body properties, [`Orientation`] describes the rotation from
+/// the body frame to the system.
 /// 
 /// # Units
 /// 
@@ -208,17 +216,17 @@ pub trait Acceleration {
 /// For example, [`hoomd_vector::Angle`] has units of radians while
 /// [`hoomd_vector::Versor`] is unitless.
 pub trait Orientation {
-    /// Type that can express the orientation of a body or site.
+    /// Type that can express the orientation of a site or body.
     type Rotation;
 
-    /// The orientation of this body or site.
+    /// The orientation of this site or body.
     fn orientation(&self) -> &Self::Rotation;
 
-    /// The orientation of this body or site (mutable).
+    /// The orientation of this site or body (mutable).
     fn orientation_mut(&mut self) -> &mut Self::Rotation;
 }
 
-/// Get the mass of sites and bodies.
+/// The mass of a site or body.
 /// 
 /// [`Mass`] is the quantity which determines a site or body's linear inertia, and
 /// which together with velocity determines a site or body's momentum.
@@ -227,13 +235,13 @@ pub trait Orientation {
 /// 
 /// The units of [`mass`] are *\[mass\]*.
 pub trait Mass {
-    /// The mass of this body or site *\[mass\]*.
+    /// The mass of this site or body *\[mass\]*.
     fn mass(&self) -> &f64;
 
     // TODO: do we want to provide a mutable getter?
 }
 
-/// Get the moment of inertia of sites and bodies.
+/// The moment of inertia of a site or body.
 /// 
 /// [`MomentOfInertia`] is the quantity which determines a site or body's angular
 /// inertia, and which together with angular velocity determines a site or body's
@@ -248,14 +256,14 @@ pub trait MomentOfInertia {
     /// Every moment of inertia is within this vector space.
     type Vector;
 
-    /// The moment of inertia of this body or site *\[mass * \length^2\]*.
+    /// The moment of inertia of this site or body *\[mass * \length^2\]*.
     fn moment_of_inertia(&self) -> &Self::Vector;
 
-    /// The mutable moment of inertia of this body or site *\[mass * \length^2\]*.
+    /// The mutable moment of inertia of this site or body *\[mass * \length^2\]*.
     fn moment_of_inertia_mut(&mut self) -> &mut Self::Vector;
 }
 
-/// Get the angular momentum of sites and bodies.
+/// The angular momentum of a site or body.
 /// 
 /// [`AngularMomentum`] is the quantity which determines a site or body's angular
 /// momentum
@@ -264,30 +272,30 @@ pub trait MomentOfInertia {
 /// 
 /// The units of `[AngularMomentum`] are *\[radian/time\ * mass * \length^2\]*.
 pub trait AngularMomentum {
-    /// Type that can express the angular momentum of a body or site.
+    /// Type that can express the angular momentum of a site or body.
     type Rotation;
     
-    /// The angular momentum of this body or site *\[radian/time\ * mass * \length^2\]*.
+    /// The angular momentum of this site or body *\[radian/time\ * mass * \length^2\]*.
     fn angular_momentum(&self) -> &Self::Rotation;
 
-    /// The mutable angular momentum of this body or site *\[radian/time\ * mass * \length^2\]*.
+    /// The mutable angular momentum of this site or body *\[radian/time\ * mass * \length^2\]*.
     fn angular_momentum_mut(&mut self) -> &mut Self::Rotation;
 }
 
-/// Get the torque of sites and bodies.
+/// Get the net torque on a site or body.
 /// 
-/// [`Torque`] is the quantity which determines a site or body's torque.
+/// [`NetTorque`] is the quantity which determines a site or body's net torque.
 /// 
 /// # Units
 /// 
-/// The units of `[Torque`] are *\[radian/time^2\ * mass * \length^2\]*.
-pub trait Torque {
-    /// Type that can express the torque of a body or site.
+/// The units of [`NetTorque`] are *\[radian/time^2\ * mass * \length^2\]*.
+pub trait NetTorque {
+    /// Type that can express the net torque on a site or body.
     type Vector;
     
-    /// The torque of this body or site *\[radian/time^2\ * mass * \length^2\]*.
-    fn torque(&self) -> &Self::Vector;
+    /// The net torque on this site or body *\[radian/time^2\ * mass * \length^2\]*.
+    fn net_torque(&self) -> &Self::Vector;
 
-    /// The mutable torque of this body or site *\[radian/time^2\ * mass * \length^2\]*.
-    fn torque_mut(&mut self) -> &mut Self::Vector;
+    /// The mutable net torque on this site or body *\[radian/time^2\ * mass * \length^2\]*.
+    fn net_torque_mut(&mut self) -> &mut Self::Vector;
 }

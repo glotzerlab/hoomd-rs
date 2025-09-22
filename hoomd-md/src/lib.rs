@@ -19,8 +19,7 @@ use hoomd_microstate::{
     Microstate, Transform,
     boundary::{GenerateGhosts, Wrap},
     property::{
-        Acceleration, AngularMomentum, Torque, Mass, MomentOfInertia,
-        Orientation, Position, Velocity, 
+        Position, Mass, Momentum, NetForce, Orientation, MomentOfInertia, AngularMomentum, NetTorque
     },
 };
 use hoomd_vector::{Angle, Cartesian, InnerProduct, Quaternion, Rotate, Rotation, Vector};
@@ -143,8 +142,8 @@ impl<V, B, S, C, E, T, M> TranslationalMotion<B, S, C, E, T, M> for ConstantVolu
 where
     V: Default + Vector + InnerProduct,
     B: Position<Vector = V>
-        + Velocity<Vector = V>
-        + Acceleration<Vector = V>
+        + Momentum<Vector = V>
+        + NetForce<Vector = V>
         + Mass
         + Transform<S>
         + Clone,
@@ -183,7 +182,7 @@ where
                 let body_properties = microstate.bodies()[body_index].item.properties.clone();
 
                 // calculate m * v^2 part
-                let velocity = *body_properties.velocity();
+                let velocity = body_properties.velocity();
                 ke += velocity.norm_squared() * body_properties.mass();
             }
             ke *= 0.5;
@@ -207,10 +206,12 @@ where
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
 
             // Perform the integration step
-            let acceleration = *body_properties.acceleration();
-            let velocity = *body_properties.velocity();
-            *body_properties.velocity_mut() += acceleration * 0.5 * self.dt;
-            *body_properties.velocity_mut() *= rescaling_factor;
+            // TODO: should we use the momentum methods here?
+            let acceleration = *body_properties.net_force() / *body_properties.mass();
+            let velocity = body_properties.velocity();
+            body_properties.set_velocity(
+                velocity + ((acceleration * 0.5 * self.dt) * rescaling_factor)
+            );
             *body_properties.position_mut() += velocity * self.dt;
 
             // Update the microstate with new body properties, wrapping automatically
@@ -261,9 +262,12 @@ where
             let acceleration_new = net_force_new / *body_properties.mass();
 
             // Perform the integration step
-            *body_properties.acceleration_mut() = acceleration_new;
-            *body_properties.velocity_mut() *= rescaling_factor;
-            *body_properties.velocity_mut() += acceleration_new * 0.5 * self.dt;
+            // TODO: should we use the momentum methods here?
+            let velocity = body_properties.velocity();
+            *body_properties.net_force_mut() = net_force_new;
+            body_properties.set_velocity(
+                velocity + ((acceleration_new * 0.5 * self.dt) * rescaling_factor)
+            );
 
             // Update the microstate with new body properties, wrapping automatically
             microstate
@@ -291,7 +295,7 @@ impl<B, S, C, E, T, M> RotationalMotion<3, B, S, C, E, T, M> for ConstantVolume
 where
     B: Orientation<Rotation = Quaternion>
         + AngularMomentum<Rotation = Quaternion>
-        + Torque<Vector=Cartesian<3>>
+        + NetTorque<Vector=Cartesian<3>>
         + MomentOfInertia<Vector = Cartesian<3>>
         + Transform<S>
         + Position<Vector = Cartesian<3>> // TODO: should this be required?
@@ -382,7 +386,7 @@ where
             // I is the 3-vector diagonal values of the moment of inertia
             let mut q = *body_properties.orientation_mut();
             let mut p = *body_properties.angular_momentum_mut();
-            let t = *body_properties.torque();
+            let t = *body_properties.net_torque();
             let I = *body_properties.moment_of_inertia();
 
             // Rotate torque into principal frame
@@ -536,7 +540,7 @@ where
             // calculate the net torque since position has been updated at integrate_rotation_step_one
             let net_t_new = torque.net_torque_on_body(microstate, body_index);
             // Update the torque in particle data
-            *body_properties.torque_mut() = net_t_new;
+            *body_properties.net_torque_mut() = net_t_new;
 
             // Rotate torque into principal frame
             // TODO: check that this is correct
@@ -597,7 +601,7 @@ impl<B, S, C, E, T, M> RotationalMotion<2, B, S, C, E, T, M> for ConstantVolume
 where
     B: Orientation<Rotation = Angle>
         + AngularMomentum<Rotation = f64>
-        + Torque<Vector = f64>
+        + NetTorque<Vector = f64>
         + MomentOfInertia<Vector = f64>
         + Transform<S>
         + Position<Vector = Cartesian<2>> // TODO: should this be required?
@@ -671,7 +675,7 @@ where
             // t is the z-compoenet of net torque
             // I is the z-compoenet of the moment of inertia
             let p = *body_properties.angular_momentum();
-            let t = *body_properties.torque();
+            let t = *body_properties.net_torque();
             let I = *body_properties.moment_of_inertia();
             
             // Advance p by half a timestep and q by a full timestep following Trotter
@@ -730,7 +734,7 @@ where
             // calculate the net torque since position has been updated at integrate_rotation_step_one
             let net_t_new = torque.net_torque_on_body(microstate, body_index);
             // Update the torque in particle data
-            *body_properties.torque_mut() = net_t_new;
+            *body_properties.net_torque_mut() = net_t_new;
             
             // Advance p by half a timestep following Trotter
             // factorization of Liouvillian rotation

@@ -3,7 +3,7 @@
 
 //! Implement OrientedDynamicsPoint
 
-use super::{Position, Velocity, Acceleration, Mass, MomentOfInertia, AngularMomentum, Torque};
+use super::{Position, Mass, Momentum, NetForce, MomentOfInertia, AngularMomentum, NetTorque};
 use super::point::Point;
 use super::oriented_point::OrientedPoint;
 use crate::Transform;
@@ -39,14 +39,14 @@ pub struct OrientedDynamicsPoint<V, R> {
     ///Rotate from the body's reference frame into another frame.
     pub orientation: R,
 
-    /// The velocity of the extended body in space.
-    pub velocity: V,
-
-    /// The acceleration of the extended body in space.
-    pub acceleration: V,
-
     /// The mass of the extended body.
     pub mass: f64,
+
+    /// The momentum of the extended body in space.
+    pub momentum: V,
+
+    /// The net force of the extended body in space.
+    pub net_force: V,
 
     /// The moment of inertia of the extended body.
     pub moment_of_inertia: V,
@@ -55,7 +55,7 @@ pub struct OrientedDynamicsPoint<V, R> {
     pub angular_momentum: R,
 
     /// The torque velocity of the extended body. 
-    pub torque: V
+    pub net_torque: V
 }
 
 /// Treat [`Point`] sites as constituents of oriented rigid bodies.
@@ -118,31 +118,32 @@ impl<V, R> Position for OrientedDynamicsPoint<V, R> {
     }
 }
 
-impl<V, R> Velocity for OrientedDynamicsPoint<V, R> {
+impl<V, R> Momentum for OrientedDynamicsPoint<V, R>
+where
+    V: std::ops::Mul<f64, Output = V>
+        + std::ops::Div<f64, Output = V>
+        + Copy
+{
     type Vector = V;
 
     #[inline]
-    fn velocity(&self) -> &V {
-        &self.velocity
+    fn momentum(&self) -> &V {
+        &self.momentum
     }
 
     #[inline]
-    fn velocity_mut(&mut self) -> &mut V {
-        &mut self.velocity
-    }
-}
-
-impl<V, R> Acceleration for OrientedDynamicsPoint<V, R> {
-    type Vector = V;
-
-    #[inline]
-    fn acceleration(&self) -> &V {
-        &self.acceleration
+    fn momentum_mut(&mut self) -> &mut V {
+        &mut self.momentum
     }
 
     #[inline]
-    fn acceleration_mut(&mut self) -> &mut V {
-        &mut self.acceleration
+    fn velocity(&self) -> Self::Vector {
+        self.momentum / *self.mass()
+    }
+
+    #[inline]
+    fn set_velocity(&mut self, velocity: Self::Vector) {
+        *self.momentum_mut() = velocity * *self.mass();
     }
 }
 
@@ -151,6 +152,20 @@ impl<V, R> Mass for OrientedDynamicsPoint<V, R> {
     #[inline]
     fn mass(&self) -> &f64 {
         &self.mass
+    }
+}
+
+impl<V, R> NetForce for OrientedDynamicsPoint<V, R> {
+    type Vector = V;
+
+    #[inline]
+    fn net_force(&self) -> &Self::Vector {
+        &self.net_force
+    }
+
+    #[inline]
+    fn net_force_mut(&mut self) -> &mut Self::Vector {
+        &mut self.net_force
     }
 }
 
@@ -182,17 +197,17 @@ impl<V, R> AngularMomentum for OrientedDynamicsPoint<V, R> {
     }
 }
 
-impl<V, R> Torque for OrientedDynamicsPoint<V, R> {
+impl<V, R> NetTorque for OrientedDynamicsPoint<V, R> {
     type Vector = V;
 
     #[inline]
-    fn torque(&self) -> &V {
-        &self.torque
+    fn net_torque(&self) -> &V {
+        &self.net_torque
     }
 
     #[inline]
-    fn torque_mut(&mut self) -> &mut V {
-        &mut self.torque
+    fn net_torque_mut(&mut self) -> &mut V {
+        &mut self.net_torque
     }
 }
 
