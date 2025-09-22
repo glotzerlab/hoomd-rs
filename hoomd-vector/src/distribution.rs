@@ -31,7 +31,7 @@ use std::array;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Ball {
     /// The radius of the ball *(\[length\])*.
     pub radius: PositiveReal,

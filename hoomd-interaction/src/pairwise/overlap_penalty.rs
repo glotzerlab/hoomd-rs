@@ -36,7 +36,7 @@ use super::IsotropicEnergy;
 ///
 /// let overlap_penalty = OverlapPenalty::default();
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct OverlapPenalty {
     /// Spring stiffness $`[\mathrm{energy}] [\mathrm{length}]^{-2}`$.
     pub k: f64,

@@ -63,7 +63,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// h_repulsion.a = 5.0;
 /// h_repulsion.r_cut = 0.75;
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct HarmonicRepulsion {
     /// Potential strength $`[\mathrm{energy}] [\mathrm{length}]^{-1}`$.
     pub a: f64,
