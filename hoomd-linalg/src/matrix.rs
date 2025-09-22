@@ -180,6 +180,18 @@ impl<const N: usize, const M: usize, const K: usize> MatMul<Matrix<M, K>> for Ma
 
 impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> {
     type Output = Matrix<M, M>;
+    /** Scale each column of a [`Matrix`] by the corresponding element in a [`DiagonalMatrix`].
+
+    # Example
+    ```
+    use hoomd_linalg::matrix::{Matrix22, DiagonalMatrix};
+    use hoomd_linalg::{GeneralMatrix, MatMul};
+    let diag = DiagonalMatrix { rows: [3.0, 4.0] };
+    let mat = Matrix22::full(1.0).matmul(&diag);
+    assert_eq!(mat[(0, 1)], 4.0);
+    assert_eq!(mat[(1, 0)], 3.0);
+    ```
+    */
     #[inline]
     fn matmul(&self, rhs: &DiagonalMatrix<M>) -> Self::Output {
         let mut result = Self::Output::zeros();
@@ -301,30 +313,6 @@ impl<const N: usize> Matrix<N, N> {
                 std::array::from_fn(|j| if i == j { other[i] } else { 0.0 })
             }),
         }
-    }
-
-    /** Scale each column of a [`Matrix`] by the corresponding element in a [`Diagonal`].
-
-    # Example
-    ```
-    use hoomd_linalg::matrix::{Matrix22, DiagonalMatrix};
-    use hoomd_linalg::GeneralMatrix;
-    let diag = DiagonalMatrix { rows: [3.0, 4.0] };
-    let mat = Matrix22::full(1.0).matmul_diagonal(&diag);
-    assert_eq!(mat[(0, 1)], 4.0);
-    assert_eq!(mat[(1, 0)], 3.0);
-    ```
-    */
-    #[must_use]
-    #[inline]
-    pub fn matmul_diagonal<T: Diagonal>(&self, diag: &T) -> Self {
-        let mut rows = [[0f64; N]; N];
-        for (i, row) in rows.iter_mut().enumerate().take(N) {
-            for j in 0..N {
-                row[j] = self.rows[i][j] * diag[j];
-            }
-        }
-        Self { rows }
     }
 }
 

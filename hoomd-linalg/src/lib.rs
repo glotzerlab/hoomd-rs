@@ -23,7 +23,7 @@ pub trait Invertible {
 
     # Example
     ```
-    use hoomd_linalg::{matrix::Matrix22, MatMul, SquareMatrix, GeneralMatrix};
+    use hoomd_linalg::{matrix::{DiagonalMatrix, Matrix22}, MatMul, SquareMatrix, GeneralMatrix};
 
     let mat = Matrix22::full(5.0);
     assert_eq!(mat.matmul(&Matrix22::eye()), mat);
@@ -33,7 +33,7 @@ pub trait Invertible {
 
     assert_eq!(
       mat.matmul(&diag),
-      mat.matmul_diagonal(&[3.0, 2.0])
+      mat.matmul(&DiagonalMatrix {rows:[3.0, 2.0]})
     );
     ```
 */

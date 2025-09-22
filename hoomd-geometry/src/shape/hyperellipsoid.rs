@@ -5,7 +5,10 @@
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
-use hoomd_linalg::{Diagonal, Invertible, MatMul, SquareMatrix, matrix::Matrix22};
+use hoomd_linalg::{
+    Diagonal, Invertible, MatMul, SquareMatrix,
+    matrix::{DiagonalMatrix, Matrix22},
+};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, RotationMatrix};
 
@@ -253,7 +256,9 @@ where
         let rot_transpose = rot.inverted();
 
         let b_inv = Matrix22::from(rot)
-            .matmul_diagonal(&self.axes.map(|x| x.get().powi(2)))
+            .matmul(&DiagonalMatrix {
+                rows: self.axes.map(|x| x.get().powi(2)),
+            })
             .matmul(&Matrix22::from(rot_transpose));
 
         let v_ij = &v_ij.coordinates;
