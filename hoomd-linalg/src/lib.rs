@@ -33,7 +33,7 @@ pub trait Invertible {
 /// };
 ///
 /// let mat = Matrix22::full(5.0);
-/// assert_eq!(mat.matmul(&Matrix22::eye()), mat);
+/// assert_eq!(mat.matmul(&Matrix22::identity()), mat);
 ///
 /// let diag = Matrix22::from_diag(&[3.0, 2.0]);
 ///
