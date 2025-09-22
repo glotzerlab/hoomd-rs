@@ -5,8 +5,8 @@ pub trait Scale{
     fn scale(&mut self, scale_factor: PositiveReal);
 }
 
-pub trait Shear{
-    fn shear(&mut self, angle: f64 , parallel_axis: usize, perpendicular_axis: usize);
+pub<const N: usize> trait Shear{
+    fn shear(&mut self, angle: f64 , parallel_axis: Cartesian<N>, perpendicular_axis: Cartesian<N>);
 }
 
 // pub trait Elongate{
@@ -69,10 +69,11 @@ impl Scale for Simplex3{
 }
 
 impl<const N: usize> Shear for Hyperparallelepiped<N>{
-    
+    fn shear(&mut self, angle: f64 , parallel_axis: &Cartesian<N>, perpendicular_axis: &Cartesian<N>){
+        shear_matrix = eye() + perpendicular_axis.to_column().matmul(parallel_axis.to_row());
+        self.edge_vectors = self.edge_vectors.map(|v| shear_matrix.matmul(v.to_column()).into());
+    }
 }
-
-
 
 #[cfg(test)]
 #[expect(clippy::used_underscore_binding, reason = "Required for const tests.")]

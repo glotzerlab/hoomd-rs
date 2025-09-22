@@ -8,10 +8,10 @@ use std::{
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
-use rand::{
-    Rng,
-    distr::{Distribution, StandardUniform, Uniform},
-};
+use hoomd_utility::valid::PositiveReal;
+use hoomd_linalg::matrix::Matrix;
+use rand::Rng;
+use rand::distr::{Distribution, StandardUniform, Uniform};
 
 use crate::{Cross, Error, InnerProduct, Rotate, Unit, Vector};
 use hoomd_linalg::{Diagonal, GeneralMatrix, MatMul, matrix::Matrix};
@@ -707,48 +707,17 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
     }
 }
 
-impl<const N: usize, const K: usize> MatMul<Matrix<N, K>> for RotationMatrix<N> {
-    type Output = Matrix<N, K>;
-    #[inline]
-    fn matmul(&self, rhs: &Matrix<N, K>) -> Self::Output {
-        let mut result = Self::Output::zeros();
-        for n in 0..N {
-            for k in 0..K {
-                for m in 0..N {
-                    result[(n, k)] += self.rows()[n][m] * rhs[(m, k)];
-                }
-            }
-        }
-
-        result
-    }
-}
-
-impl<const N: usize> Diagonal for Cartesian<N> {}
-
-impl<const N: usize> Cartesian<N> {
-    /// Convert a [`Cartesian<N>`] into a row matrix [`Matrix<1, N>`].
-    #[inline]
-    #[must_use]
-    fn to_row_matrix(self) -> Matrix<1, N> {
-        Matrix {
-            rows: [self.coordinates],
-        }
-    }
-    /// Convert a [`Cartesian<N>`] into a column matrix [`Matrix<N, 1>`].
-    #[inline]
-    #[must_use]
-    fn to_column_matrix(self) -> Matrix<N, 1> {
-        Matrix {
-            rows: std::array::from_fn(|i| [self[i]]),
-        }
-    }
-}
-
 impl<const N: usize> From<Matrix<1, N>> for Cartesian<N> {
     #[inline]
     fn from(value: Matrix<1, N>) -> Self {
         value.rows[0].into()
+    }
+}
+
+impl<const N: usize> From<Matrix<N, 1>> for Cartesian<N> {
+    #[inline]
+    fn from(value: Matrix<N, 1>) -> Self {
+        std::array::from_fn(|i| value[(i,0)]).into()
     }
 }
 
