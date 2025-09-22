@@ -1,9 +1,8 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! A tetrahedron in three dimensions. This struct should be viewed as a prototype for
-more complex geometries in addition to its standalone functionality.
-*/
+//! A tetrahedron in three dimensions. This struct should be viewed as a prototype for
+//! more complex geometries in addition to its standalone functionality.
 use std::{array, fmt};
 
 use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, RotationMatrix};
@@ -311,14 +310,11 @@ impl<R: Rotate<Cartesian<3>> + Copy> IntersectsAt<Simplex3, Cartesian<3>, R> for
 where
     RotationMatrix<3>: From<R>,
 {
-    /**
-
-    Original C code of algorithm:
-    <https://web.archive.org/web/20030907000716/http://www.acm.org/jgt/papers/GanovelliPonchioRocchini02/tet_a_tet.html>
-
-    Recent Clojure reimplementation that orients shapes:
-    <https://gist.github.com/postspectacular/9021724>
-    */
+    /// Original C code of algorithm:
+    /// <https://web.archive.org/web/20030907000716/http://www.acm.org/jgt/papers/GanovelliPonchioRocchini02/tet_a_tet.html>
+    ///
+    /// Recent Clojure reimplementation that orients shapes:
+    /// <https://gist.github.com/postspectacular/9021724>
     #[inline]
     fn intersects_at(&self, other: &Simplex3, v_ij: &Cartesian<3>, o_ij: &R) -> bool {
         let r = RotationMatrix::from(*o_ij);

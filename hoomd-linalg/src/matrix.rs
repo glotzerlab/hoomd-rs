@@ -1,11 +1,13 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use std::fmt;
-use std::ops::{Add, Index, IndexMut, Mul, Neg, Sub};
+use std::{
+    fmt,
+    ops::{Add, Index, IndexMut, Mul, Neg, Sub},
+};
 
-use crate::{Diagonal, GeneralMatrix, Invertible, MatMul, SquareMatrix};
-use hoomd_vector::{Cartesian, RotationMatrix};
+use crate::{Diagonal, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
+// use hoomd_vector::{Cartesian, RotationMatrix};
 
 /// A matrix with N rows and M columns, allocated on the stack.
 #[derive(Clone, Debug, PartialEq)]
@@ -22,8 +24,10 @@ pub struct DiagonalMatrix<const N: usize> {
 /// Index the on-diagonal components of a diagonal matrix
 /// # Examples
 /// ```
-/// use hoomd_linalg::{matrix::DiagonalMatrix, SquareMatrix};
-/// let mat = DiagonalMatrix {rows: [1.0, 2.0, 3.0]};
+/// use hoomd_linalg::{SquareMatrix, matrix::DiagonalMatrix};
+/// let mat = DiagonalMatrix {
+///     rows: [1.0, 2.0, 3.0],
+/// };
 /// assert_eq!(mat[0], 1.0);
 /// assert_eq!(mat[1], 2.0);
 /// assert_eq!(mat[2], 3.0);
@@ -46,8 +50,10 @@ pub type Matrix44 = Matrix<4, 4>;
 /// Index the dense view of a diagonal matrix. Off-diagonal elements will be `0.0`.
 /// # Examples
 /// ```
-/// use hoomd_linalg::{matrix::DiagonalMatrix, SquareMatrix};
-/// let mat = DiagonalMatrix {rows: [1.0, 2.0, 3.0]};
+/// use hoomd_linalg::{SquareMatrix, matrix::DiagonalMatrix};
+/// let mat = DiagonalMatrix {
+///     rows: [1.0, 2.0, 3.0],
+/// };
 /// assert_eq!(mat[(0, 0)], 1.0);
 /// assert_eq!(mat[(1, 1)], 2.0);
 /// assert_eq!(mat[(0, 2)], 0.0);
@@ -68,9 +74,9 @@ impl<const N: usize> Index<(usize, usize)> for DiagonalMatrix<N> {
 ///
 /// # Examples
 /// ```
-/// use hoomd_linalg::{matrix::Matrix};
+/// use hoomd_linalg::matrix::Matrix;
 /// let rows = [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
-/// let mat = Matrix {rows};
+/// let mat = Matrix { rows };
 /// assert_eq!(mat[(0, 1)], rows[0][1]);
 /// assert_eq!(mat[(2, 1)], 6.0);
 /// assert_eq!(mat[(1, 1)], 4.0);
@@ -125,29 +131,9 @@ impl<const N: usize> GeneralMatrix for DiagonalMatrix<N> {
 
 impl<const N: usize> SquareMatrix for Matrix<N, N> {
     #[inline]
-    fn eye() -> Self {
+    fn identity() -> Self {
         Self {
             rows: std::array::from_fn(|i| std::array::from_fn(|j| if i == j { 1.0 } else { 0.0 })),
-        }
-    }
-    #[inline]
-    fn compute_quadratic_form(&self, vars: &impl Diagonal) -> f64 {
-        let mut result = 0.0;
-
-        for i in 0..N {
-            for j in 0..N {
-                result += vars[i] * self.rows[i][j] * vars[j];
-            }
-        }
-        result
-    }
-}
-
-impl<const N: usize> From<RotationMatrix<N>> for Matrix<N, N> {
-    #[inline]
-    fn from(value: RotationMatrix<N>) -> Self {
-        Self {
-            rows: value.rows().map(|arr| arr.coordinates),
         }
     }
 }
@@ -177,21 +163,38 @@ impl<const N: usize, const M: usize, const K: usize> MatMul<Matrix<M, K>> for Ma
         result
     }
 }
+// impl<const N: usize> MatMul<Cartesian<M, K>> for Matrix<N, M> {
+//     type Output = Matrix<N, K>;
+//     #[inline]
+//     fn matmul(&self, rhs: &Matrix<M, K>) -> Self::Output {
+//         let mut result = Self::Output::zeros();
+//         for n in 0..N {
+//             for k in 0..K {
+//                 for m in 0..M {
+//                     result.rows[n][k] += self.rows[n][m] * rhs.rows[m][k];
+//                 }
+//             }
+//         }
+
+//         result
+//     }
+// }
 
 impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> {
     type Output = Matrix<M, M>;
-    /** Scale each column of a [`Matrix`] by the corresponding element in a [`DiagonalMatrix`].
-
-    # Example
-    ```
-    use hoomd_linalg::matrix::{Matrix22, DiagonalMatrix};
-    use hoomd_linalg::{GeneralMatrix, MatMul};
-    let diag = DiagonalMatrix { rows: [3.0, 4.0] };
-    let mat = Matrix22::full(1.0).matmul(&diag);
-    assert_eq!(mat[(0, 1)], 4.0);
-    assert_eq!(mat[(1, 0)], 3.0);
-    ```
-    */
+    /// Scale each column of a [`Matrix`] by the corresponding element in a [`DiagonalMatrix`].
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linalg::{
+    ///     GeneralMatrix, MatMul,
+    ///     matrix::{DiagonalMatrix, Matrix22},
+    /// };
+    /// let diag = DiagonalMatrix { rows: [3.0, 4.0] };
+    /// let mat = Matrix22::full(1.0).matmul(&diag);
+    /// assert_eq!(mat[(0, 1)], 4.0);
+    /// assert_eq!(mat[(1, 0)], 3.0);
+    /// ```
     #[inline]
     fn matmul(&self, rhs: &DiagonalMatrix<M>) -> Self::Output {
         let mut result = Self::Output::zeros();
@@ -204,32 +207,39 @@ impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> 
     }
 }
 
+impl<const N: usize, const M: usize> Matrix<N, M> {
+    /// Interchange the rows and columns of matrix `A` such that `A.transpose()[(j, i)] = A[(i, j)]`
+    #[inline]
+    #[must_use]
+    fn transpose(&self) -> Matrix<M, N> {
+        Matrix {
+            rows: std::array::from_fn(|j| std::array::from_fn(|i| self[(i, j)])),
+        }
+    }
+}
 impl<const N: usize> Matrix<N, N> {
-    /** Compute the signed hypervolume of the hyperparallelepiped defined by a matrix.
-
-    This implementation uses the Laplace expansion, which is optimal for small
-    matrices but will be extremely slow for large matrixes due to its O(N!)
-    complexity.
-
-    # Examples
-
-    ```
-    use hoomd_linalg::{matrix::Matrix22, SquareMatrix};
-
-    let eye = Matrix22::eye();
-    assert_eq!(eye.det(), 1.0);
-
-    let scaled = eye * 2.0;
-    assert_eq!(scaled.det(), 2.0 * 2.0);
-    ```
-    */
+    /// Compute the signed hypervolume of the hyperparallelepiped defined by a matrix.
+    ///
+    /// This implementation uses the Laplace expansion, which is optimal for small
+    /// matrices but will be extremely slow for large matrixes due to its O(N!)
+    /// complexity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hoomd_linalg::{SquareMatrix, matrix::Matrix22};
+    ///
+    /// let identity = Matrix22::identity();
+    /// assert_eq!(identity.det(), 1.0);
+    ///
+    /// let scaled = identity * 2.0;
+    /// assert_eq!(scaled.det(), 2.0 * 2.0);
+    /// ```
     #[must_use]
     #[inline]
     pub fn det(&self) -> f64 {
-        /*
-        Because math with const generics is not allowed in rust, we compute the indices
-        of each submatrix and recur on those noncontiguous segments of the input.
-        */
+        // Because math with const generics is not allowed in rust, we compute the indices
+        // of each submatrix and recur on those noncontiguous segments of the input.
         #[inline]
         fn det_recursive_noslice<const N: usize>(
             matrix: &Matrix<N, N>,
@@ -269,25 +279,21 @@ impl<const N: usize> Matrix<N, N> {
         let col_indices = std::array::from_fn(|i| i);
         det_recursive_noslice(self, 0, &col_indices, N)
     }
-    /** Extract the diagonal elements from a square matrix.
-
-    This method returns a `DiagonalMatrix<N>` containing the diagonal elements
-    of the input matrix, where the element at position `(i, i)` is taken from
-    the input matrix. All off-diagonal elements are ignored.
-
-    # Examples
-    ```
-    use hoomd_linalg::matrix::Matrix33;
-    let mat = Matrix33 {
-        rows: [
-            [1.0, 2.0, 3.0],
-            [4.0, 5.0, 6.0],
-            [7.0, 8.0, 9.0],
-    ]};
-    let diag = mat.diag();
-    assert_eq!(diag.rows, [1.0, 5.0, 9.0]);
-    ```
-    */
+    /// Extract the diagonal elements from a square matrix.
+    ///
+    /// This method returns a `DiagonalMatrix<N>` containing the diagonal elements
+    /// of the input matrix, where the element at position `(i, i)` is taken from
+    /// the input matrix. All off-diagonal elements are ignored.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linalg::matrix::Matrix33;
+    /// let mat = Matrix33 {
+    ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
+    /// };
+    /// let diag = mat.diag();
+    /// assert_eq!(diag.rows, [1.0, 5.0, 9.0]);
+    /// ```
     #[must_use]
     #[inline]
     pub fn diag(&self) -> DiagonalMatrix<N> {
@@ -296,15 +302,14 @@ impl<const N: usize> Matrix<N, N> {
         }
     }
 
-    /** Compute a full `NxN` matrix from N diagonal elements, setting all others to 0.
-    # Examples
-    ```
-    use hoomd_linalg::matrix::Matrix33;
-    let mat = Matrix33::from_diag(&[1.0, 5.0, 9.0]);
-    assert_eq!(mat.diag().rows, [1.0, 5.0, 9.0]);
-    assert_eq!(mat[(1, 2)], 0.0);
-    ```
-    */
+    /// Compute a full `NxN` matrix from N diagonal elements, setting all others to 0.
+    /// # Examples
+    /// ```
+    /// use hoomd_linalg::matrix::Matrix33;
+    /// let mat = Matrix33::from_diag(&[1.0, 5.0, 9.0]);
+    /// assert_eq!(mat.diag().rows, [1.0, 5.0, 9.0]);
+    /// assert_eq!(mat[(1, 2)], 0.0);
+    /// ```
     #[must_use]
     #[inline]
     pub fn from_diag<T: Diagonal>(other: &T) -> Self {
@@ -314,9 +319,35 @@ impl<const N: usize> Matrix<N, N> {
             }),
         }
     }
+    // #[must_use]
+    // #[inline]
+    // /// Solve the quadratic form $` A.transpose().matmul(x).matmul(A) `$ for a matrix A and vector x.
+    // pub fn compute_quadratic_form<T: Diagonal>(&self, vars: &T) -> f64 {
+    //     let mut result = 0.0;
+
+    //     for i in 0..N {
+    //         for j in 0..N {
+    //             result += vars[i] * self.rows[i][j] * vars[j];
+    //         }
+    //     }
+    //     result
+    // }
+}
+impl<const N: usize> QuadraticForm for Matrix<N, N> {
+    #[inline]
+    fn compute_quadratic_form<T: Diagonal>(&self, vars: &T) -> f64 {
+        let mut result = 0.0;
+
+        for i in 0..N {
+            for j in 0..N {
+                result += vars[i] * self[(i, j)] * vars[j];
+            }
+        }
+        result
+    }
 }
 
-/**Compute the elementwise scalar multiplication of a [`Matrix`]*/
+/// Compute the elementwise scalar multiplication of a [`Matrix`]
 impl<const N: usize, const M: usize> Mul<f64> for Matrix<N, M> {
     type Output = Self;
 
@@ -327,7 +358,7 @@ impl<const N: usize, const M: usize> Mul<f64> for Matrix<N, M> {
         }
     }
 }
-/**Compute the elementwise negation of a [`Matrix`]*/
+/// Compute the elementwise negation of a [`Matrix`]
 impl<const N: usize, const M: usize> Neg for Matrix<N, M> {
     type Output = Self;
 
@@ -339,7 +370,7 @@ impl<const N: usize, const M: usize> Neg for Matrix<N, M> {
     }
 }
 
-/**Compute the elementwise scalar multiplication of a [`DiagonalMatrix`]*/
+/// Compute the elementwise scalar multiplication of a [`DiagonalMatrix`]
 impl<const N: usize> Mul<f64> for DiagonalMatrix<N> {
     type Output = Self;
 
@@ -350,7 +381,7 @@ impl<const N: usize> Mul<f64> for DiagonalMatrix<N> {
         }
     }
 }
-/**Compute the elementwise negation of a [`DiagonalMatrix`]*/
+/// Compute the elementwise negation of a [`DiagonalMatrix`]
 impl<const N: usize> Neg for DiagonalMatrix<N> {
     type Output = Self;
 
@@ -420,30 +451,29 @@ impl Invertible for Matrix<2, 2> {
     }
 }
 
-impl<const N: usize, const M: usize> fmt::Display for Matrix<N, M> {
-    #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "[{}]",
-            self.rows
-                .map(|row| Cartesian::<M>::from(row).to_string())
-                .into_iter()
-                .collect::<Vec<String>>()
-                .join("\n ")
-        )
-    }
-}
+// impl<const N: usize, const M: usize> fmt::Display for Matrix<N, M> {
+//     #[inline]
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         write!(
+//             f,
+//             "[{}]",
+//             self.rows
+//                 .map(|row| Cartesian::<M>::from(row).to_string())
+//                 .into_iter()
+//                 .collect::<Vec<String>>()
+//                 .join("\n ")
+//         )
+//     }
+// }
 
 impl Matrix<2, 2> {
-    /** Decompose a [`Matrix22`] into a rotation `U`, a scaling`Σ`, and a second rotation`Vt` such that `A=UΣVt`.
-
-    This implementation is based on the math in 10.1109/38.486688, and ensures good
-    (but not optimal) numerical stability. For certain pathological inputs,
-    preconditioning the inputs could provide a benefit.
-
-    We define all singular values to be positive.
-    */
+    /// Decompose a [`Matrix22`] into a rotation `U`, a scaling`Σ`, and a second rotation`Vt` such that `A=UΣVt`.
+    ///
+    /// This implementation is based on the math in 10.1109/38.486688, and ensures good
+    /// (but not optimal) numerical stability. For certain pathological inputs,
+    /// preconditioning the inputs could provide a benefit.
+    ///
+    /// We define all singular values to be positive.
     #[must_use]
     #[inline]
     pub fn svd(&self) -> (Self, DiagonalMatrix<2>, Self) {
@@ -491,7 +521,6 @@ impl Copy for Matrix<3, 3> {}
 impl Copy for Matrix<4, 4> {}
 impl<const N: usize> Diagonal for DiagonalMatrix<N> {}
 impl<const N: usize> Diagonal for [f64; N] {}
-impl<const N: usize> Diagonal for Cartesian<N> {}
 
 #[cfg(test)]
 mod tests {
@@ -545,9 +574,9 @@ mod tests {
         case([[1.0, -2.0], [3.0, 4.0]]),
         case([[1.0, 2.0, 3.0], [0.0, 1.0, 4.0], [5.0, 6.0, 0.0]]),
         case([[2.0, 0.0, 1.0], [3.0, 0.0, 0.0], [5.0, 1.0, 1.0]]),
-        case(Matrix::<4, 4>::eye().rows),
+        case(Matrix::<4, 4>::identity().rows),
         case(Matrix::<5, 5>::full(3.6).diag().as_dense().rows),
-        case(Matrix::<8, 8>::eye().rows),
+        case(Matrix::<8, 8>::identity().rows),
     )]
     fn test_determinant<const N: usize>(rows: [[f64; N]; N]) {
         let matrix = Matrix { rows };
@@ -572,9 +601,9 @@ mod tests {
             [[2.0, 0.0, 1.0], [3.0, 0.0, 0.0], [5.0, 1.0, 1.0]],
             [[1.0, 0.0, 2.0], [0.0, 1.0, 1.0], [4.0, 0.0, 0.0]]
         ),
-        case(Matrix::<4, 4>::eye().rows, Matrix::<4, 4>::full(2.0).rows),
-        case(Matrix::<5, 5>::full(3.6).diag().as_dense().rows, Matrix::<5, 5>::eye().rows),
-        case(Matrix::<8, 8>::eye().rows, Matrix::<8, 8>::full(1.5).rows),
+        case(Matrix::<4, 4>::identity().rows, Matrix::<4, 4>::full(2.0).rows),
+        case(Matrix::<5, 5>::full(3.6).diag().as_dense().rows, Matrix::<5, 5>::identity().rows),
+        case(Matrix::<8, 8>::identity().rows, Matrix::<8, 8>::full(1.5).rows),
     )]
     fn test_matrix_multiply_square<const N: usize>(a_rows: [[f64; N]; N], b_rows: [[f64; N]; N]) {
         let a = Matrix { rows: a_rows };
@@ -622,7 +651,7 @@ mod tests {
 
     #[rstest(
         rows,
-        case::identity(Matrix22::eye().rows),
+        case::identity(Matrix22::identity().rows),
         case::mixed_sign([[1.0, -2.0], [3.0, 4.0]]),
         case::det_zero([[12.0, 2.0], [4.0, 0.0]]),
         case::large_range([[1000.0, 0.0], [0.0, 1e-4]]),
@@ -633,7 +662,7 @@ mod tests {
         case::scaling([[2.0, 0.0], [0.0, 3.0]]),
         /* None of these examples work using the fast algorithm.*/
         // case::reflect([[0.0, -1.0], [1.0, 0.0]]),
-        // case::negative_identity((Matrix22::eye()*-1.0).rows),
+        // case::negative_identity((Matrix22::identity()*-1.0).rows),
         // case::anti_diagonal([[0.0, 1.0], [1.0, 0.0]]),
         // case::singular([[1.0, 2.0], [2.0, 4.0]]),
     )]
@@ -667,7 +696,7 @@ mod tests {
 
     #[rstest(
         rows,
-        case::identity(Matrix22::eye().rows),
+        case::identity(Matrix22::identity().rows),
         case::mixed_sign([[1.0, -2.0], [3.0, 4.0]]),
         case::det_zero([[12.0, 2.0], [4.0, 0.0]]),
         case::large_range([[1000.0, 0.0], [0.0, 1e-4]]),
@@ -677,7 +706,7 @@ mod tests {
         case::nilpotent([[0.0, 1.0], [0.0, 0.0]]),
         case::scaling([[2.0, 0.0], [0.0, 3.0]]),
         case::reflect([[0.0, -1.0], [1.0, 0.0]]), // Numerical stability
-        case::negative_identity((Matrix22::eye()*-1.0).rows),
+        case::negative_identity((Matrix22::identity()*-1.0).rows),
         case::anti_diagonal([[0.0, 1.0], [1.0, 0.0]]),
         case::singular([[1.0, 2.0], [2.0, 4.0]]),
     )]

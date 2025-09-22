@@ -68,7 +68,7 @@ jobs:
       run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
     - name: Checkout
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
     # This code is needed on GitHub Hosted runners, disable for now while we use private runners.
     # - name: Update rust
     #   run: rustup install ${{ matrix.rust }} --no-self-update
@@ -86,8 +86,12 @@ jobs:
         --profile ${{ matrix.profile }}
         ${{ matrix.target != '' && '--target' || '' }}
         ${{ matrix.target }}
+        --locked
         --workspace
-        --all-targets
+        --lib
+        --bins
+        --tests
+        --examples
         --all-features
         --verbose
 
@@ -95,6 +99,7 @@ jobs:
       run: >
         cargo test
         --profile ${{ matrix.profile }}
+        --locked
         --workspace
         --verbose
       if: ${{ matrix.target == '' }}
@@ -102,22 +107,23 @@ jobs:
     - name: Build API documentation
       run: >
         cargo doc
+        --locked
         --workspace
         --all-features
         --no-deps
       if: ${{ matrix.target == '' }}
 
     - name: Run benchmarks
-      run: cargo bench
+      run: cargo bench --locked
       if: ${{ matrix.target == '' }}
 
-  # tests_complete:
-  #   name: All tests
-  #   if: always()
-  #   needs: [unit_test]
-  #   runs-on: ubuntu-latest
+  tests_complete:
+    name: All tests
+    if: always()
+    needs: [unit_test]
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #   - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
-  #   - name: Done
-  #     run: exit 0
+    steps:
+    - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
+    - name: Done
+      run: exit 0

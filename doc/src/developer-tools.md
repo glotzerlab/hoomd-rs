@@ -1,6 +1,31 @@
 # Developer Tools
 
-## Spell checking
+## prek
+
+Run
+```shell
+prek run --all-files
+```
+to perform a number of style checks and fixes.
+
+## Code formatting
+
+Run
+```shell
+cargo +nightly-2025-09-17 fmt --check
+```
+to automatically format the code. Use the shown Rust nightly version to obtain
+the same results as the CI checks.
+
+## Code Linting
+
+Run
+```shell
+cargo clippy --all-targets --all-features
+```
+to ensure that the code follows established best practices.
+
+## Spell Checking
 
 Use [codebook] to check for spelling errors in arguments, variable names,
 comments, etc... *hoomd-rs* includes a codebook dictionary file exempting
@@ -8,7 +33,9 @@ words commonly used throughout the repository.
 
 [codebook]: https://github.com/blopker/codebook
 
-## mdBook
+## Build the documentation
+
+### mdBook
 
 This documentation is built with [mdBook] using the following plugins:
 * [mdbook-alerts]
@@ -29,7 +56,7 @@ $ cd doc
 $ mdbook serve --open
 ```
 
-## rustdoc
+### rustdoc
 
 To build the API documentation from source and open it in your browser, execute:
 ```shell

@@ -1,43 +1,45 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement Rotate
-*/
+//! Implement Rotate
 
 use super::LocalTrial;
 use hoomd_microstate::property::Orientation;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Angle;
 
-use rand::Rng;
-use rand::distr::{Distribution, Uniform};
+use rand::{
+    Rng,
+    distr::{Distribution, Uniform},
+};
 
-/** Change the orientation of a body by a small amount.
-
-[`Rotate`] proposes local trial moves that rotate the orientation of a body
-by a small amount. The [`maximum_rotation`] parameter sets the largest possible
-rotation.
-
-For the 2D [`Angle`], [`maximum_rotation`] is measured in radians and the
-rotation is uniformly chosen between `-maximum_rotation` and `maximum_rotation`.
-
-TODO: document 3d maximum.
-
-[`maximum_rotation`]: Self::maximum_rotation
-
-# Example
-
-```
-use hoomd_mc::Rotate;
-use hoomd_vector::Angle;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let a = 0.1;
-let rotate = Rotate { maximum_rotation: a.try_into()? };
-# Ok(())
-# }
-```
-*/
+/// Change the orientation of a body by a small amount.
+///
+/// [`Rotate`] proposes local trial moves that rotate the orientation of a body
+/// by a small amount. The [`maximum_rotation`] parameter sets the largest possible
+/// rotation.
+///
+/// For the 2D [`Angle`], [`maximum_rotation`] is measured in radians and the
+/// rotation is uniformly chosen between `-maximum_rotation` and `maximum_rotation`.
+///
+/// TODO: document 3d maximum.
+///
+/// [`maximum_rotation`]: Self::maximum_rotation
+///
+/// # Example
+///
+/// ```
+/// use hoomd_mc::Rotate;
+/// use hoomd_vector::Angle;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let a = 0.1;
+/// let rotate = Rotate {
+///     maximum_rotation: a.try_into()?,
+/// };
+/// # Ok(())
+/// # }
+/// ```
 pub struct Rotate {
     /// Limit the maximum rotation applied during a single trial move.
     pub maximum_rotation: PositiveReal,
@@ -47,30 +49,31 @@ impl<B> LocalTrial<B> for Rotate
 where
     B: Orientation<Rotation = Angle>,
 {
-    /** Randomly translate a body's orientation.
-
-    # Example
-
-    ```
-    use hoomd_mc::{LocalTrial, Rotate};
-    use hoomd_microstate::property::OrientedPoint;
-    use hoomd_vector::{Angle, Cartesian};
-    use rand::{rngs::StdRng, Rng, SeedableRng};
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut rng = StdRng::seed_from_u64(1);
-    let body_properties = OrientedPoint {
-        position: Cartesian::from([0.0, 0.0]),
-        orientation: Angle::from(0.0),
-    };
-    let rotate = Rotate { maximum_rotation: 0.1.try_into()? };
-
-    let new_body_properties = rotate.propose(&mut rng, body_properties);
-    assert!(new_body_properties.orientation.theta.abs() < 0.1);
-    # Ok(())
-    # }
-    ```
-    */
+    /// Randomly translate a body's orientation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_mc::{LocalTrial, Rotate};
+    /// use hoomd_microstate::property::OrientedPoint;
+    /// use hoomd_vector::{Angle, Cartesian};
+    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut rng = StdRng::seed_from_u64(1);
+    /// let body_properties = OrientedPoint {
+    ///     position: Cartesian::from([0.0, 0.0]),
+    ///     orientation: Angle::from(0.0),
+    /// };
+    /// let rotate = Rotate {
+    ///     maximum_rotation: 0.1.try_into()?,
+    /// };
+    ///
+    /// let new_body_properties = rotate.propose(&mut rng, body_properties);
+    /// assert!(new_body_properties.orientation.theta.abs() < 0.1);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B {
         let mut trial = body_properties;
