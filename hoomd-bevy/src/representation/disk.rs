@@ -258,10 +258,11 @@ impl Material {
     ) {
         #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
         {
-            assert!(colors.len() <= 1024,
-                    "webgl2 builds support up to 1024 colors, got {}",
-                    colors.len()
-                );
+            assert!(
+                colors.len() <= 1024,
+                "webgl2 builds support up to 1024 colors, got {}",
+                colors.len()
+            );
             self.background_colors[..colors.len()].copy_from_slice(colors);
             self.n_background_colors = colors.len() as u32;
         }
