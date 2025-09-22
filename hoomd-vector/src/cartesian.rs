@@ -14,7 +14,7 @@ use rand::{
 };
 
 use crate::{Cross, Error, InnerProduct, Rotate, Unit, Vector};
-use hoomd_linalg::matrix::Matrix;
+use hoomd_linalg::{Diagonal, matrix::Matrix};
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
 ///
@@ -90,19 +90,6 @@ use hoomd_linalg::matrix::Matrix;
 pub struct Cartesian<const N: usize> {
     /// The vector's coordinates.
     pub coordinates: [f64; N],
-}
-
-impl<const N: usize> Cartesian<N> {
-    fn to_row_matrix(&self) -> Matrix<1, N> {
-        Matrix {
-            rows: [self.coordinates],
-        }
-    }
-    fn to_column_matrix(&self) -> Matrix<N, 1> {
-        Matrix {
-            rows: std::array::from_fn(|i| [self[i]]),
-        }
-    }
 }
 
 impl<const N: usize> Default for Cartesian<N> {
@@ -558,6 +545,15 @@ pub struct RotationMatrix<const N: usize> {
     pub(crate) rows: [Cartesian<N>; N],
 }
 
+impl<const N: usize> From<RotationMatrix<N>> for Matrix<N, N> {
+    #[inline]
+    fn from(value: RotationMatrix<N>) -> Self {
+        Self {
+            rows: value.rows().map(|arr| arr.coordinates),
+        }
+    }
+}
+
 impl<const N: usize> RotationMatrix<N> {
     /// Get the rows of the rotation matrix.
     ///
@@ -690,6 +686,25 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
         }
 
         Cartesian { coordinates }
+    }
+}
+impl<const N: usize> Diagonal for Cartesian<N> {}
+impl<const N: usize> Cartesian<N> {
+    /// Convert a [`Cartesian<N>`] into a row matrix [`Matrix<1, N>`].
+    #[inline]
+    #[must_use]
+    fn to_row_matrix(self) -> Matrix<1, N> {
+        Matrix {
+            rows: [self.coordinates],
+        }
+    }
+    /// Convert a [`Cartesian<N>`] into a column matrix [`Matrix<N, 1>`].
+    #[inline]
+    #[must_use]
+    fn to_column_matrix(self) -> Matrix<N, 1> {
+        Matrix {
+            rows: std::array::from_fn(|i| [self[i]]),
+        }
     }
 }
 

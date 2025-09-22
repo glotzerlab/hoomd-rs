@@ -7,7 +7,7 @@ use std::{
 };
 
 use crate::{Diagonal, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
-use hoomd_vector::{Cartesian, RotationMatrix};
+// use hoomd_vector::{Cartesian, RotationMatrix};
 
 /// A matrix with N rows and M columns, allocated on the stack.
 #[derive(Clone, Debug, PartialEq)]
@@ -134,15 +134,6 @@ impl<const N: usize> SquareMatrix for Matrix<N, N> {
     fn identity() -> Self {
         Self {
             rows: std::array::from_fn(|i| std::array::from_fn(|j| if i == j { 1.0 } else { 0.0 })),
-        }
-    }
-}
-
-impl<const N: usize> From<RotationMatrix<N>> for Matrix<N, N> {
-    #[inline]
-    fn from(value: RotationMatrix<N>) -> Self {
-        Self {
-            rows: value.rows().map(|arr| arr.coordinates),
         }
     }
 }
@@ -460,20 +451,20 @@ impl Invertible for Matrix<2, 2> {
     }
 }
 
-impl<const N: usize, const M: usize> fmt::Display for Matrix<N, M> {
-    #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "[{}]",
-            self.rows
-                .map(|row| Cartesian::<M>::from(row).to_string())
-                .into_iter()
-                .collect::<Vec<String>>()
-                .join("\n ")
-        )
-    }
-}
+// impl<const N: usize, const M: usize> fmt::Display for Matrix<N, M> {
+//     #[inline]
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         write!(
+//             f,
+//             "[{}]",
+//             self.rows
+//                 .map(|row| Cartesian::<M>::from(row).to_string())
+//                 .into_iter()
+//                 .collect::<Vec<String>>()
+//                 .join("\n ")
+//         )
+//     }
+// }
 
 impl Matrix<2, 2> {
     /// Decompose a [`Matrix22`] into a rotation `U`, a scaling`Σ`, and a second rotation`Vt` such that `A=UΣVt`.
@@ -530,7 +521,6 @@ impl Copy for Matrix<3, 3> {}
 impl Copy for Matrix<4, 4> {}
 impl<const N: usize> Diagonal for DiagonalMatrix<N> {}
 impl<const N: usize> Diagonal for [f64; N] {}
-impl<const N: usize> Diagonal for Cartesian<N> {}
 
 #[cfg(test)]
 mod tests {
