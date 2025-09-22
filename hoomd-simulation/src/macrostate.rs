@@ -21,6 +21,36 @@ pub trait Pressure {
     fn pressure_mut(&mut self) -> &mut f64;
 }
 
+/// Macrostate for an iso-energy ensemble.
+/// 
+/// This is a convenience type which implements [`Temperature`] without storing
+/// a temperature setpoint. Use it for simulating NVE ensembles, for example
+/// with the [`ConstantVolume`] integrator.
+/// 
+/// This type should only be instantiated with `::default()`
+pub struct Isoenergy {
+    /// The faux temperature for the system
+    _temperature: f64,
+}
+impl Default for Isoenergy {
+    #[inline]
+    fn default() -> Self {
+        Isoenergy {
+            _temperature: 1.0
+        }
+    }
+}
+impl Temperature for Isoenergy {
+    #[inline]
+    fn temperature(&self) -> &f64 {
+        &self._temperature
+    }
+
+    #[inline]
+    fn temperature_mut(&mut self) -> &mut f64 {
+        &mut self._temperature
+    }
+}
 
 /// Macrostate for an isothermal ensemble.
 pub struct Isothermal {
