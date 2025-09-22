@@ -178,7 +178,7 @@ Apply the custom `Discrete` trial move to all bodies in the microstate:
 
 As in the [Random Walk] tutorial, set `$H = 0$` so that bodies do not interact:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:sweep}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:hamiltonian}}
 ```
 
 #### Initialize the Struct
