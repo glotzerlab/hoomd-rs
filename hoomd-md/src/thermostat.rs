@@ -1,10 +1,9 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Control system temperature.
-
-TODO: Expand documentation.
- */
+//! Control system temperature.
+//! 
+//! TODO: Expand documentation.
 
 use hoomd_microstate::{
     Microstate, Transform,
@@ -15,11 +14,10 @@ use hoomd_simulation::macrostate::{Isochoric, Isoentropic, Isothermal, Temperatu
 use hoomd_vector::{Cartesian, Vector};
 use rand_distr::{Distribution, Gamma, Normal};
 
-/** Adjust the temperature of a system.
-
-TODO: ensure that docs indicate two-step integration is baked into the thermostat trait
-TODO: Add example.
-*/
+/// Adjust the temperature of a system.
+/// 
+/// TODO: ensure that docs indicate two-step integration is baked into the thermostat trait
+/// TODO: Add example.
 pub trait Thermostat<B, S, C, M> {
     /// The scaling factor for velocities in the first half-step.
     /// Note that translation and rotation are assumed to have identical math
@@ -55,9 +53,8 @@ pub trait Thermostat<B, S, C, M> {
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64);
 }
 
-/** Constant temperature.
-TODO: Add example.
-*/
+/// Constant temperature.
+/// TODO: Add example.
 pub struct NoThermostat;
 
 impl<B, S, C, M> Thermostat<B, S, C, M> for NoThermostat
@@ -102,10 +99,9 @@ where
     }
 }
 
-/** Bussi thermostat.
-TODO: Add documentation.
-TODO: Add example.
-*/
+/// Bussi thermostat.
+/// TODO: Add documentation.
+/// TODO: Add example.
 pub struct BussiThermostat {
     /// Thermostat time constant (`[time]`).
     tau: f64,
@@ -131,10 +127,9 @@ impl<B, S, C, M> Thermostat<B, S, C, M> for BussiThermostat
 where
     M: Isothermal + Temperature,
 {
-    /** Calculate velocity rescaling factor following the Appendix in https://doi.org/10.1063/1.2408420.
-        Bussi requires the rng, instataneous kinetic_energy, timestep and degrees-of-freedom,
-        change the trait function definition accordingly?
-    */
+    /// Calculate velocity rescaling factor following the Appendix in https://doi.org/10.1063/1.2408420.
+    /// Bussi requires the rng, instataneous kinetic_energy, timestep and degrees-of-freedom,
+    /// change the trait function definition accordingly?
     #[inline]
     fn rescaling_factor_step_one<P>(
         &mut self,
@@ -212,10 +207,9 @@ where
     }
 }
 
-/** MTTK thermostat.
-TODO: Add documentation.
-TODO: Add example.
-*/
+/// MTTK thermostat.
+/// TODO: Add documentation.
+/// TODO: Add example.
 pub struct MTTKThermostat {
     /// Thermostat time constant (`[time]`).
     tau: f64,

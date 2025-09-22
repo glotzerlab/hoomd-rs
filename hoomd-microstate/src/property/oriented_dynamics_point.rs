@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement OrientedDynamicsPoint */
+//! Implement OrientedDynamicsPoint
 
 use super::{Position, Velocity, Acceleration, Mass, MomentOfInertia, AngularMomentum, Torque};
 use super::point::Point;
@@ -9,29 +9,28 @@ use super::oriented_point::OrientedPoint;
 use crate::Transform;
 use hoomd_vector::{Rotate, Rotation, Vector};
 
-/** The position, orientation, mass, velocity, acceleration, moment of inertia,
-and angular velocity of an extended body, such as  is useful for Molecular
-Dynamics simulations.
-
-Use [`OrientedDynamicsPoint`] as a [`Body`](crate::Body) or [`Site`](crate::Site) property type.
-
-# Example
-
-```
-use hoomd_microstate::property::OrientedDynamicsPoint;
-use hoomd_vector::Cartesian;
-
-let oriented_dynamics_point = OrientedDynamicsPoint {
-    position: Cartesian::from([1.0, -3.0]),
-    orientation: 
-    mass: 1.0,
-    velocity: Cartesian::from([0.0, 1.0]),
-    acceleration: Cartesian::from([1.0, 0.0]),
-    moment_of_inertia: Cartesian::from([1.0, 1.0]),
-    angular_velocity: Cartesian::from([1.0, 1.0])
-};
-```
-*/
+/// The position, orientation, mass, velocity, acceleration, moment of inertia,
+/// and angular velocity of an extended body, such as  is useful for Molecular
+/// Dynamics simulations.
+/// 
+/// Use [`OrientedDynamicsPoint`] as a [`Body`](crate::Body) or [`Site`](crate::Site) property type.
+/// 
+/// # Example
+/// 
+/// ```
+/// use hoomd_microstate::property::OrientedDynamicsPoint;
+/// use hoomd_vector::Cartesian;
+/// 
+/// let oriented_dynamics_point = OrientedDynamicsPoint {
+///     position: Cartesian::from([1.0, -3.0]),
+///     orientation: 
+///     mass: 1.0,
+///     velocity: Cartesian::from([0.0, 1.0]),
+///     acceleration: Cartesian::from([1.0, 0.0]),
+///     moment_of_inertia: Cartesian::from([1.0, 1.0]),
+///     angular_velocity: Cartesian::from([1.0, 1.0])
+/// };
+/// ```
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct OrientedDynamicsPoint<V, R> {
     /// The location of the extended body in space.
@@ -59,21 +58,19 @@ pub struct OrientedDynamicsPoint<V, R> {
     pub torque: V
 }
 
-/** Treat [`Point`] sites as constituents of oriented rigid bodies.
-*/
+/// Treat [`Point`] sites as constituents of oriented rigid bodies.
 impl<V, R> Transform<Point<V>> for OrientedDynamicsPoint<V, R>
 where
     V: Vector,
     R: Rotate<V>,
 {
-    /** Move [`Point`] properties from the local body frame to the system frame.
-
-    ```math
-    \vec{r} = \vec{r}_\mathrm{body} + R_\mathrm{body}(\vec{r}_\mathrm{site})
-    ```
-
-    TODO: Add example.
-    */
+    /// Move [`Point`] properties from the local body frame to the system frame.
+    /// 
+    /// ```math
+    /// \vec{r} = \vec{r}_\mathrm{body} + R_\mathrm{body}(\vec{r}_\mathrm{site})
+    /// ```
+    /// 
+    /// TODO: Add example.
     #[inline]
     fn transform(&self, site_properties: &Point<V>) -> Point<V> {
         Point {
@@ -82,24 +79,22 @@ where
     }
 }
 
-/** Treat [`OrientedPoint`] sites as constituents of oriented rigid bodies.
-*/
+/// Treat [`OrientedPoint`] sites as constituents of oriented rigid bodies.
 impl<V, R> Transform<OrientedPoint<V, R>> for OrientedDynamicsPoint<V, R>
 where
     V: Vector,
     R: Rotate<V> + Rotation,
 {
-    /** Move [`Point`] properties from the local body frame to the system frame.
-
-    ```math
-    \vec{r} = \vec{r}_\mathrm{body} + R_\mathrm{body}(\vec{r}_\mathrm{site})
-    ```
-    ```math
-    R = R_\mathrm{body}(R_\mathrm{site})
-    ```
-
-    TODO: add example.
-    */
+    /// Move [`Point`] properties from the local body frame to the system frame.
+    /// 
+    /// ```math
+    /// \vec{r} = \vec{r}_\mathrm{body} + R_\mathrm{body}(\vec{r}_\mathrm{site})
+    /// ```
+    /// ```math
+    /// R = R_\mathrm{body}(R_\mathrm{site})
+    /// ```
+    /// 
+    /// TODO: add example.
     #[inline]
     fn transform(&self, site_properties: &OrientedPoint<V, R>) -> OrientedPoint<V, R> {
         OrientedPoint {

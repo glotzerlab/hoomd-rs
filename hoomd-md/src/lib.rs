@@ -8,7 +8,7 @@
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
 
-/*! Simulate molecular dynamics in systems of particles. */
+//! Simulate molecular dynamics in systems of particles.
 
 pub mod thermostat;
 
@@ -27,24 +27,23 @@ use hoomd_simulation::macrostate::Isochoric;
 use hoomd_vector::{Angle, Cartesian, InnerProduct, Quaternion, Rotate, Rotation, Vector};
 use thermostat::Thermostat;
 
-/** Integrate over translational degrees of freedom.
-
-Conceptually, integration changes a system's [`Microstate`] according to
-equations of motion that are determined by the system's metric-space and
-degrees of freedom.
-
-In translational integration, the equations of motion allow a body's
-[`Position`], [`Velocity`], and [`Acceleration`] to evolve over time.
-`Acceleration` only changes if the interaction model includes force, and
-particle properties and interactions may be additionally modulated by a
-[`Thermostat`] that maintains system temperature according to the setpoint
-stored in a `macrostate`.
-
-Mathematically, integration is accomplished using an adaptation of the
-symplectic and time-reversible two-step Verlet integration schemes published
-in Miller et al. (2002) and Kamberaj et al. (2005). Jens Glaser adapted
-these derivations to also accommodate constant pressure integration.
-*/
+/// Integrate over translational degrees of freedom.
+/// 
+/// Conceptually, integration changes a system's [`Microstate`] according to
+/// equations of motion that are determined by the system's metric-space and
+/// degrees of freedom.
+/// 
+/// In translational integration, the equations of motion allow a body's
+/// [`Position`], [`Velocity`], and [`Acceleration`] to evolve over time.
+/// `Acceleration` only changes if the interaction model includes force, and
+/// particle properties and interactions may be additionally modulated by a
+/// [`Thermostat`] that maintains system temperature according to the setpoint
+/// stored in a `macrostate`.
+/// 
+/// Mathematically, integration is accomplished using an adaptation of the
+/// symplectic and time-reversible two-step Verlet integration schemes published
+/// in Miller et al. (2002) and Kamberaj et al. (2005). Jens Glaser adapted
+/// these derivations to also accommodate constant pressure integration.
 pub trait TranslationalMotion<B, S, C, E, T, M> {
     /// Perform the first integration half-step, mutating the microstate and possibly the thermostat.
     fn integrate_translation_step_one(
@@ -65,23 +64,22 @@ pub trait TranslationalMotion<B, S, C, E, T, M> {
     );
 }
 
-/** Integrate over rotational degrees of freedom.
-
-Conceptually, integration changes a system's [`Microstate`] according to
-equations of motion that are determined by the system's metric-space and
-degrees of freedom.
-
-In rotational integration, the equations of motion allow a body's
-[`Orientation`] and [`AngularVelocity`] to evolve over time. `AngularVelocity`
-only changes if the interaction model includes torque, and particle properties
-and interactions may be additionally modulated by a [`Thermostat`] that
-maintains system temperature according to the setpoint stored in a `macrostate`.
-
-Mathematically, integration is accomplished using an adaptation of the
-symplectic and time-reversible two-step Verlet integration schemes published
-in Miller et al. (2002) and Kamberaj et al. (2005). Jens Glaser adapted
-these derivations to also accommodate constant pressure integration.
-*/
+/// Integrate over rotational degrees of freedom.
+/// 
+/// Conceptually, integration changes a system's [`Microstate`] according to
+/// equations of motion that are determined by the system's metric-space and
+/// degrees of freedom.
+/// 
+/// In rotational integration, the equations of motion allow a body's
+/// [`Orientation`] and [`AngularVelocity`] to evolve over time. `AngularVelocity`
+/// only changes if the interaction model includes torque, and particle properties
+/// and interactions may be additionally modulated by a [`Thermostat`] that
+/// maintains system temperature according to the setpoint stored in a `macrostate`.
+/// 
+/// Mathematically, integration is accomplished using an adaptation of the
+/// symplectic and time-reversible two-step Verlet integration schemes published
+/// in Miller et al. (2002) and Kamberaj et al. (2005). Jens Glaser adapted
+/// these derivations to also accommodate constant pressure integration.
 pub trait RotationalMotion<const N: usize, B, S, C, E, T, M> {
     /// Perform the first integration half-step, mutating the microstate and possibly the thermostat.
     #[must_use]
@@ -104,7 +102,7 @@ pub trait RotationalMotion<const N: usize, B, S, C, E, T, M> {
     );
 }
 
-/** Evolve a system that is constrained to a constant volume. */
+/// Evolve a system that is constrained to a constant volume.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConstantVolume {
     /// The size of a timestep.
@@ -128,21 +126,19 @@ impl ConstantVolume {
 /// TODO: add documentation
 pub struct ConstantPressure;
 
-/** Integrate over translational degrees of freedom for a system with constant
-volume in any vector space.
-
-[`ConstantVolume`] integration is only defined for [`Isochoric`] macrostates.
-
-The generic type names are:
-* `V`: The [`Vector`]() type.
-* `B`: The [`Body::properties`](crate::Body) type.
-* `S`: The [`Site::properties`](crate::Site) type.
-* `C`: The [`boundary`](crate::boundary) condition type.
-* `E`: The interaction [`evaluator`]() type.
-* `T`: The [`Thermostat`]() type.
-* `M`: The [`macrostate`](crate::macrostate) type.
-*/
-
+/// Integrate over translational degrees of freedom for a system with constant
+/// volume in any vector space.
+/// 
+/// [`ConstantVolume`] integration is only defined for [`Isochoric`] macrostates.
+/// 
+/// The generic type names are:
+/// * `V`: The [`Vector`]() type.
+/// * `B`: The [`Body::properties`](crate::Body) type.
+/// * `S`: The [`Site::properties`](crate::Site) type.
+/// * `C`: The [`boundary`](crate::boundary) condition type.
+/// * `E`: The interaction [`evaluator`]() type.
+/// * `T`: The [`Thermostat`]() type.
+/// * `M`: The [`macrostate`](crate::macrostate) type.
 impl<V, B, S, C, E, T, M> TranslationalMotion<B, S, C, E, T, M> for ConstantVolume
 where
     V: Default + Vector + InnerProduct,
@@ -158,17 +154,16 @@ where
     T: Thermostat<B, S, C, M>,
     M: Isochoric,
 {
-    /** Perform the first integration half-step, mutating the microstate and possibly the thermostat.
-
-    `microstate` holds the system configuration that will be changed,
-    `torque` is the evaluator that is used to calculate the net torque on every body,
-    `thermostat` is the thermostat,
-    `macrostate` holds the temperature setpoint (used by the thermostat),
-    `dof` is the number of degrees of degrees of freedom (used by the thermostat),
-    `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
-
-    TODO: Do we want to allow users to set a displacement limit?
-    */
+    /// Perform the first integration half-step, mutating the microstate and possibly the thermostat.
+    /// 
+    /// `microstate` holds the system configuration that will be changed,
+    /// `torque` is the evaluator that is used to calculate the net torque on every body,
+    /// `thermostat` is the thermostat,
+    /// `macrostate` holds the temperature setpoint (used by the thermostat),
+    /// `dof` is the number of degrees of degrees of freedom (used by the thermostat),
+    /// `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
+    /// 
+    /// TODO: Do we want to allow users to set a displacement limit?
     #[inline]
     fn integrate_translation_step_one(
         &mut self,
@@ -234,17 +229,16 @@ where
         microstate.increment_substep();
     }
 
-    /** Perform the second integration half-step, mutating the microstate and possibly the thermostat.
-
-    `microstate` holds the system configuration that will be changed,
-    `torque` is the evaluator that is used to calculate the net torque on every body,
-    `thermostat` is the thermostat,
-    `macrostate` holds the temperature setpoint (used by the thermostat),
-    `dof` is the number of degrees of degrees of freedom (used by the thermostat),
-    `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
-
-    TODO: Do we want to allow users to set a displacement limit?
-    */
+    /// Perform the second integration half-step, mutating the microstate and possibly the thermostat.
+    /// 
+    /// `microstate` holds the system configuration that will be changed,
+    /// `torque` is the evaluator that is used to calculate the net torque on every body,
+    /// `thermostat` is the thermostat,
+    /// `macrostate` holds the temperature setpoint (used by the thermostat),
+    /// `dof` is the number of degrees of degrees of freedom (used by the thermostat),
+    /// `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
+    /// 
+    /// TODO: Do we want to allow users to set a displacement limit?
     #[inline]
     fn integrate_translation_step_two(
         &self,
@@ -281,19 +275,18 @@ where
     }
 }
 
-/** Integrate over rotational degrees of freedom for a system with constant
-volume in 3-dimensional Cartesian space.
-
-[`ConstantVolume`] integration is only defined for [`Isochoric`] macrostates.
-
-The generic type names are:
-* `B`: The [`Body::properties`](crate::Body) type.
-* `S`: The [`Site::properties`](crate::Site) type.
-* `C`: The [`boundary`](crate::boundary) condition type.
-* `E`: The interaction [`evaluator`]() type.
-* `T`: The [`Thermostat`]() type.
-* `M`: The [`macrostate`](crate::macrostate) type.
-*/
+/// Integrate over rotational degrees of freedom for a system with constant
+/// volume in 3-dimensional Cartesian space.
+/// 
+/// [`ConstantVolume`] integration is only defined for [`Isochoric`] macrostates.
+/// 
+/// The generic type names are:
+/// * `B`: The [`Body::properties`](crate::Body) type.
+/// * `S`: The [`Site::properties`](crate::Site) type.
+/// * `C`: The [`boundary`](crate::boundary) condition type.
+/// * `E`: The interaction [`evaluator`]() type.
+/// * `T`: The [`Thermostat`]() type.
+/// * `M`: The [`macrostate`](crate::macrostate) type.
 impl<B, S, C, E, T, M> RotationalMotion<3, B, S, C, E, T, M> for ConstantVolume
 where
     B: Orientation<Rotation = Quaternion>
@@ -309,16 +302,15 @@ where
     T: Thermostat<B, S, C, M>,
     M: Isochoric,
 {
-    /** Perform the first integration half-step, mutating the microstate and
-    possibly the thermostat.
-
-    `microstate` holds the system configuration that will be changed,
-    `torque` is the evaluator that is used to calculate the net torque on every body,
-    `thermostat` is the thermostat,
-    `macrostate` holds the temperature setpoint (used by the thermostat),
-    `dof` is the number of degrees of degrees of freedom (used by the thermostat),
-    `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
-    */
+    /// Perform the first integration half-step, mutating the microstate and
+    /// possibly the thermostat.
+    /// 
+    /// `microstate` holds the system configuration that will be changed,
+    /// `torque` is the evaluator that is used to calculate the net torque on every body,
+    /// `thermostat` is the thermostat,
+    /// `macrostate` holds the temperature setpoint (used by the thermostat),
+    /// `dof` is the number of degrees of degrees of freedom (used by the thermostat),
+    /// `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
     #[inline]
     fn integrate_rotation_step_one(
         &mut self,
@@ -506,16 +498,15 @@ where
         microstate.increment_substep();
     }
 
-    /** Perform the second integration half-step, mutating the microstate and
-    possibly the thermostat.
-
-    `microstate` holds the system configuration that will be changed,
-    `torque` is the evaluator that is used to calculate the net torque on every body,
-    `thermostat` is the thermostat,
-    `macrostate` holds the temperature setpoint (used by the thermostat),
-    `dof` is the number of degrees of degrees of freedom (used by the thermostat),
-    `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
-    */
+    /// Perform the second integration half-step, mutating the microstate and
+    /// possibly the thermostat.
+    /// 
+    /// `microstate` holds the system configuration that will be changed,
+    /// `torque` is the evaluator that is used to calculate the net torque on every body,
+    /// `thermostat` is the thermostat,
+    /// `macrostate` holds the temperature setpoint (used by the thermostat),
+    /// `dof` is the number of degrees of degrees of freedom (used by the thermostat),
+    /// `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
     #[inline]
     fn integrate_rotation_step_two(
         &self,
@@ -590,18 +581,17 @@ where
     }
 }
 
-/** Integrate rotational degrees of freedom in 2-dimensional Cartesian space.
- *
-[`ConstantVolume`] integration is only defined for [`Isochoric`] macrostates.
-
-The generic type names are:
-* `B`: The [`Body::properties`](crate::Body) type.
-* `S`: The [`Site::properties`](crate::Site) type.
-* `C`: The [`boundary`](crate::boundary) condition type.
-* `E`: The interaction [`evaluator`]() type.
-* `T`: The [`Thermostat`]() type.
-* `M`: The [`macrostate`](crate::macrostate) type.
-*/
+/// Integrate rotational degrees of freedom in 2-dimensional Cartesian space.
+/// 
+/// [`ConstantVolume`] integration is only defined for [`Isochoric`] macrostates.
+/// 
+/// The generic type names are:
+/// * `B`: The [`Body::properties`](crate::Body) type.
+/// * `S`: The [`Site::properties`](crate::Site) type.
+/// * `C`: The [`boundary`](crate::boundary) condition type.
+/// * `E`: The interaction [`evaluator`]() type.
+/// * `T`: The [`Thermostat`]() type.
+/// * `M`: The [`macrostate`](crate::macrostate) type.
 impl<B, S, C, E, T, M> RotationalMotion<2, B, S, C, E, T, M> for ConstantVolume
 where
     B: Orientation<Rotation = Angle>
@@ -617,16 +607,15 @@ where
     T: Thermostat<B, S, C, M>,
     M: Isochoric,
 {
-    /** Perform the first integration half-step, mutating the microstate and
-    possibly the thermostat.
-
-    `microstate` holds the system configuration that will be changed,
-    `torque` is the evaluator that is used to calculate the net torque on every body,
-    `thermostat` is the thermostat,
-    `macrostate` holds the temperature setpoint (used by the thermostat),
-    `dof` is the number of degrees of degrees of freedom (used by the thermostat),
-    `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
-    */
+    /// Perform the first integration half-step, mutating the microstate and
+    /// possibly the thermostat.
+    /// 
+    /// `microstate` holds the system configuration that will be changed,
+    /// `torque` is the evaluator that is used to calculate the net torque on every body,
+    /// `thermostat` is the thermostat,
+    /// `macrostate` holds the temperature setpoint (used by the thermostat),
+    /// `dof` is the number of degrees of degrees of freedom (used by the thermostat),
+    /// `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
     #[inline]
     fn integrate_rotation_step_one(
         &mut self,
@@ -709,16 +698,15 @@ where
         microstate.increment_substep();
     }
 
-    /** Perform the first integration half-step, mutating the microstate and
-    possibly the thermostat.
-
-    `microstate` holds the system configuration that will be changed,
-    `torque` is the evaluator that is used to calculate the net torque on every body,
-    `thermostat` is the thermostat,
-    `macrostate` holds the temperature setpoint (used by the thermostat),
-    `dof` is the number of degrees of degrees of freedom (used by the thermostat),
-    `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
-    */
+    /// Perform the first integration half-step, mutating the microstate and
+    /// possibly the thermostat.
+    /// 
+    /// `microstate` holds the system configuration that will be changed,
+    /// `torque` is the evaluator that is used to calculate the net torque on every body,
+    /// `thermostat` is the thermostat,
+    /// `macrostate` holds the temperature setpoint (used by the thermostat),
+    /// `dof` is the number of degrees of degrees of freedom (used by the thermostat),
+    /// `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
     #[inline]
     fn integrate_rotation_step_two(
         &self,

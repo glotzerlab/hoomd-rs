@@ -218,15 +218,14 @@ pub trait Orientation {
     fn orientation_mut(&mut self) -> &mut Self::Rotation;
 }
 
-/** Get the mass of sites and bodies.
-
-[`Mass`] is the quantity which determines a site or body's linear inertia, and
-which together with velocity determines a site or body's momentum.
-
-# Units
-
-The units of [`mass`] are *\[mass\]*.
-*/
+/// Get the mass of sites and bodies.
+/// 
+/// [`Mass`] is the quantity which determines a site or body's linear inertia, and
+/// which together with velocity determines a site or body's momentum.
+/// 
+/// # Units
+/// 
+/// The units of [`mass`] are *\[mass\]*.
 pub trait Mass {
     /// The mass of this body or site *\[mass\]*.
     fn mass(&self) -> &f64;
@@ -234,18 +233,17 @@ pub trait Mass {
     // TODO: do we want to provide a mutable getter?
 }
 
-/** Get the moment of inertia of sites and bodies.
-
-[`MomentOfInertia`] is the quantity which determines a site or body's angular
-inertia, and which together with angular velocity determines a site or body's
-angular momentum.
-
-TODO: make this be a square matrix instead of a vector
-
-# Units
-
-The units of `[MomentOfInertia`] are *\[mass * \length^2\]*.
-*/
+/// Get the moment of inertia of sites and bodies.
+/// 
+/// [`MomentOfInertia`] is the quantity which determines a site or body's angular
+/// inertia, and which together with angular velocity determines a site or body's
+/// angular momentum.
+/// 
+/// TODO: make this be a square matrix instead of a vector
+/// 
+/// # Units
+/// 
+/// The units of `[MomentOfInertia`] are *\[mass * \length^2\]*.
 pub trait MomentOfInertia {
     /// Every moment of inertia is within this vector space.
     type Vector;
@@ -257,15 +255,14 @@ pub trait MomentOfInertia {
     fn moment_of_inertia_mut(&mut self) -> &mut Self::Vector;
 }
 
-/** Get the angular momentum of sites and bodies.
-
-[`AngularMomentum`] is the quantity which determines a site or body's angular
-momentum
-
-# Units
-
-The units of `[AngularMomentum`] are *\[radian/time\ * mass * \length^2\]*.
-*/
+/// Get the angular momentum of sites and bodies.
+/// 
+/// [`AngularMomentum`] is the quantity which determines a site or body's angular
+/// momentum
+/// 
+/// # Units
+/// 
+/// The units of `[AngularMomentum`] are *\[radian/time\ * mass * \length^2\]*.
 pub trait AngularMomentum {
     /// Type that can express the angular momentum of a body or site.
     type Rotation;
@@ -277,14 +274,13 @@ pub trait AngularMomentum {
     fn angular_momentum_mut(&mut self) -> &mut Self::Rotation;
 }
 
-/** Get the torque of sites and bodies.
-
-[`Torque`] is the quantity which determines a site or body's torque.
-
-# Units
-
-The units of `[Torque`] are *\[radian/time^2\ * mass * \length^2\]*.
-*/
+/// Get the torque of sites and bodies.
+/// 
+/// [`Torque`] is the quantity which determines a site or body's torque.
+/// 
+/// # Units
+/// 
+/// The units of `[Torque`] are *\[radian/time^2\ * mass * \length^2\]*.
 pub trait Torque {
     /// Type that can express the torque of a body or site.
     type Vector;
