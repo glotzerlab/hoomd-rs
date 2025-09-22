@@ -2,7 +2,7 @@
 // ANCHOR: use
 use anyhow::{Context, anyhow};
 
-use hoomd_geometry::shape::{Cuboid, Ellipse};
+use hoomd_geometry::shape::{Rectangle, Ellipse};
 use hoomd_interaction::{
     CutoffPair, CutoffPairOverlap,
     pairwise::{
@@ -27,7 +27,7 @@ type SiteProperties = OrientedPoint<PositionVector, Angle>;
 // ANCHOR: simulation_struct
 struct HardEllipseSelfAssembly {
     /// Positions of all the bodies in the simulation.
-    microstate: Microstate<BodyProperties, SiteProperties, Periodic<Cuboid<2>>>,
+    microstate: Microstate<BodyProperties, SiteProperties, Periodic<Rectangle>>,
     /// How sites interact with other sites and fields.
     hamiltonian: CutoffPairOverlap<HardShape<Ellipse>>,
     /// Trial moves to apply.
@@ -37,7 +37,7 @@ struct HardEllipseSelfAssembly {
     /// Temperature set point.
     kt: f64,
     /// Quick insert
-    quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Cuboid<2>>>>,
+    quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Rectangle>>>,
     /// How sites interact when inserted.
     insert_hamiltonian: CutoffPair<
         Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Ellipse>>,
@@ -84,7 +84,7 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: periodic
-        let square = Cuboid::with_equal_edges(box_height.try_into()?);
+        let square = Rectangle::with_equal_edges(box_height.try_into()?);
         let periodic_square = Periodic::new(sigma, square)?;
         // ANCHOR_END: periodic
 

@@ -472,7 +472,7 @@ mod tests {
         TotalEnergy,
         pairwise::{Isotropic, LennardJones},
     };
-    use hoomd_geometry::shape::Cuboid;
+    use hoomd_geometry::shape::Hypercuboid;
     use hoomd_microstate::{
         MicrostateBuilder,
         boundary::{Closed, Open},
@@ -486,8 +486,8 @@ mod tests {
     use std::f64::consts::PI;
 
     #[fixture]
-    fn square() -> Closed<Cuboid<2>> {
-        let cuboid = Cuboid {
+    fn square() -> Closed<Hypercuboid<2>> {
+        let cuboid = Hypercuboid {
             edge_lengths: [
                 4.0.try_into()
                     .expect("hard-coded constant should be positive"),
@@ -604,7 +604,7 @@ mod tests {
         use super::*;
 
         #[rstest]
-        fn site_outside(square: Closed<Cuboid<2>>) {
+        fn site_outside(square: Closed<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -737,7 +737,7 @@ mod tests {
         use super::*;
 
         #[rstest]
-        fn site_outside(square: Closed<Cuboid<2>>) {
+        fn site_outside(square: Closed<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),

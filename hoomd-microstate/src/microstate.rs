@@ -1452,7 +1452,7 @@ mod tests {
         boundary::{self, Closed, Periodic},
         property::Point,
     };
-    use hoomd_geometry::shape::Cuboid;
+    use hoomd_geometry::shape::Hypercuboid;
     use hoomd_vector::Cartesian;
 
     use ::approx::assert_relative_eq;
@@ -1616,8 +1616,8 @@ mod tests {
         use super::*;
 
         #[fixture]
-        fn square() -> Closed<Cuboid<2>> {
-            let cuboid = Cuboid {
+        fn square() -> Closed<Hypercuboid<2>> {
+            let cuboid = Hypercuboid {
                 edge_lengths: [
                     4.0.try_into()
                         .expect("hard-coded constant should be positive"),
@@ -1629,7 +1629,7 @@ mod tests {
         }
 
         #[rstest]
-        fn add_body_outside(square: Closed<Cuboid<2>>) {
+        fn add_body_outside(square: Closed<Hypercuboid<2>>) {
             let mut microstate = MicrostateBuilder::with_boundary(square)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -1641,7 +1641,7 @@ mod tests {
         }
 
         #[rstest]
-        fn update_body_outside(square: Closed<Cuboid<2>>) {
+        fn update_body_outside(square: Closed<Hypercuboid<2>>) {
             let mut microstate = MicrostateBuilder::with_boundary(square)
                 .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
                 .try_build()
@@ -1659,7 +1659,7 @@ mod tests {
         }
 
         #[rstest]
-        fn add_site_outside(square: Closed<Cuboid<2>>) {
+        fn add_site_outside(square: Closed<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([1.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -1676,7 +1676,7 @@ mod tests {
         }
 
         #[rstest]
-        fn update_site_outside(square: Closed<Cuboid<2>>) {
+        fn update_site_outside(square: Closed<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -1704,7 +1704,7 @@ mod tests {
 
         fn create_body<R: Rng>(
             rng: &mut R,
-            boundary: &Periodic<Cuboid<2>>,
+            boundary: &Periodic<Hypercuboid<2>>,
         ) -> Body<Point<Cartesian<2>>> {
             let mut body = Body::point(boundary.sample(rng));
 
@@ -1717,8 +1717,8 @@ mod tests {
         }
 
         #[fixture]
-        fn rectangle() -> Periodic<Cuboid<2>> {
-            let cuboid = Cuboid {
+        fn rectangle() -> Periodic<Hypercuboid<2>> {
+            let cuboid = Hypercuboid {
                 edge_lengths: [
                     10.0.try_into()
                         .expect("hard-coded constant should be positive"),
@@ -1731,7 +1731,7 @@ mod tests {
         }
 
         #[rstest]
-        fn add_body_outside(rectangle: Periodic<Cuboid<2>>) {
+        fn add_body_outside(rectangle: Periodic<Hypercuboid<2>>) {
             let mut microstate = MicrostateBuilder::with_boundary(rectangle)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -1747,7 +1747,7 @@ mod tests {
         }
 
         #[rstest]
-        fn update_body_outside(rectangle: Periodic<Cuboid<2>>) {
+        fn update_body_outside(rectangle: Periodic<Hypercuboid<2>>) {
             let mut microstate = MicrostateBuilder::with_boundary(rectangle)
                 .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
                 .try_build()
@@ -1769,7 +1769,7 @@ mod tests {
         }
 
         #[rstest]
-        fn add_site_outside(rectangle: Periodic<Cuboid<2>>) {
+        fn add_site_outside(rectangle: Periodic<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([4.5, 1.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -1796,7 +1796,7 @@ mod tests {
         }
 
         #[rstest]
-        fn update_site_outside(rectangle: Periodic<Cuboid<2>>) {
+        fn update_site_outside(rectangle: Periodic<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -1844,7 +1844,7 @@ mod tests {
         }
 
         #[rstest]
-        fn consistency(#[values(1, 2, 3, 4)] seed: u64, rectangle: Periodic<Cuboid<2>>) {
+        fn consistency(#[values(1, 2, 3, 4)] seed: u64, rectangle: Periodic<Hypercuboid<2>>) {
             // The boundary-specific unit tests validate that the *right*
             // ghosts are created. This test throws random body insertions,
             // updates, and removals and ensures that the internal ghost/site
@@ -1911,7 +1911,7 @@ mod tests {
         }
 
         #[rstest]
-        fn remove_all(#[values(1, 2, 3, 4)] seed: u64, rectangle: Periodic<Cuboid<2>>) {
+        fn remove_all(#[values(1, 2, 3, 4)] seed: u64, rectangle: Periodic<Hypercuboid<2>>) {
             let mut microstate = MicrostateBuilder::with_boundary(rectangle)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");

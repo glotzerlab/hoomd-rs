@@ -772,11 +772,11 @@
 <!-- shapes -->
 <g id="node49" class="node">
 <title>shapes</title>
-<g id="a_node49"><a xlink:href="../api/hoomd_geometry/shape/index.html" xlink:title="Capsule\nConvexPolytope\nCuboid\nCylinder\nHyperellipsoid\nHypersphere">
+<g id="a_node49"><a xlink:href="../api/hoomd_geometry/shape/index.html" xlink:title="Capsule\nConvexPolytope\nHypercuboid\nCylinder\nHyperellipsoid\nHypersphere">
 <polygon fill="#f38ba8" stroke="#181825" points="1018.77,-944.74 897.77,-944.74 897.77,-846.74 1018.77,-846.74 1018.77,-944.74"/>
 <text xml:space="preserve" text-anchor="middle" x="958.27" y="-929.34" font-family="Monaco" font-size="12.00" fill="#181825">Capsule</text>
 <text xml:space="preserve" text-anchor="middle" x="958.27" y="-914.34" font-family="Monaco" font-size="12.00" fill="#181825">ConvexPolytope</text>
-<text xml:space="preserve" text-anchor="middle" x="958.27" y="-899.34" font-family="Monaco" font-size="12.00" fill="#181825">Cuboid</text>
+<text xml:space="preserve" text-anchor="middle" x="958.27" y="-899.34" font-family="Monaco" font-size="12.00" fill="#181825">Hypercuboid</text>
 <text xml:space="preserve" text-anchor="middle" x="958.27" y="-884.34" font-family="Monaco" font-size="12.00" fill="#181825">Cylinder</text>
 <text xml:space="preserve" text-anchor="middle" x="958.27" y="-869.34" font-family="Monaco" font-size="12.00" fill="#181825">Hyperellipsoid</text>
 <text xml:space="preserve" text-anchor="middle" x="958.27" y="-854.34" font-family="Monaco" font-size="12.00" fill="#181825">Hypersphere</text>

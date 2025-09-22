@@ -177,7 +177,7 @@ digraph hoomd_rs {
         // Types and their relation to traits
         node [ shape=rectangle, fillcolor="#f38ba8", style="filled"]
 
-        shapes [ label="Capsule\nConvexPolytope\nCuboid\nCylinder\nHyperellipsoid\nHypersphere" ]
+        shapes [ label="Capsule\nConvexPolytope\nHypercuboid\nCylinder\nHyperellipsoid\nHypersphere" ]
 
         shapes -> SupportMapping
         shapes -> Volume
