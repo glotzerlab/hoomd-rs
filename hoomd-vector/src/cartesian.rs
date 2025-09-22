@@ -291,21 +291,20 @@ impl<const N: usize> Vector for Cartesian<N> {
             .fold(0.0, |product, x| product + (x.0 - x.1).powi(2))
     }
 
-    /** Return the number of dimensions in this Cartesian vector-space.
-    
-    # Example
-    ```
-    use hoomd_vector::{Cartesian, Vector};
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let vec2 = Cartesian::<2>::default();
-    let vec3 = Cartesian::<3>::default();
-    assert_eq!(2, vec2.n_dimensions());
-    assert_eq!(3, vec3.n_dimensions());
-    # Ok(())
-    # }
-    ```
-    */
+    /// Return the number of dimensions in this Cartesian vector space.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::{Cartesian, Vector};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let vec2 = Cartesian::<2>::default();
+    /// let vec3 = Cartesian::<3>::default();
+    /// assert_eq!(2, vec2.n_dimensions());
+    /// assert_eq!(3, vec3.n_dimensions());
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn n_dimensions(&self) -> usize {
         N
