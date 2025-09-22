@@ -1,9 +1,17 @@
 use hoomd_utility::valid::PositiveReal;
-use crate::shape::{Capsule, ConvexPolyhedron, ConvexPolytope, Cuboid, Cylinder, Hyperellipsoid, Hyperparallelepiped, Hypersphere};
+use crate::shape::{Capsule, ConvexPolytope, Cuboid, Cylinder, Hyperellipsoid, Hyperparallelepiped, Hypersphere, Simplex3};
 
 pub trait Scale{
     fn scale(&mut self, scale_factor: PositiveReal);
 }
+
+pub trait Shear{
+    fn shear(&mut self, angle: f64 , parallel_axis: usize, perpendicular_axis: usize);
+}
+
+// pub trait Elongate{
+//     fn scale(&mut self, ,scale_factor: PositiveReal);
+// }
 
 impl<const N: usize> Scale for Capsule<N>{
     fn scale(&mut self, scale_factor: PositiveReal){
@@ -27,7 +35,7 @@ impl<const N: usize> Scale for Cuboid<N>{
 
 impl<const N: usize> Scale for Hyperparallelepiped<N>{
     fn scale(&mut self, scale_factor: PositiveReal){
-        self.edge_vectors = self.edge_vectors.map(|v| v *scale_factor.get() );
+        self.edge_vectors = self.edge_vectors.map(|v| v *scale_factor );
     }
 }
 
@@ -43,11 +51,25 @@ impl<const N: usize> Scale for Hyperellipsoid<N>{
     }
 }
 
-// impl<const N: usize> Scale for ConvexPolytope<N>{
-//     fn scale(&mut self, scale_factor: PositiveReal){
-//         self.vertices.iter_mut().map(|mut vertex)| *vertex *= scale_factor;);
-//     }
-// }
+impl<const N: usize> Scale for ConvexPolytope<N>{
+    fn scale(&mut self, scale_factor: PositiveReal){
+        for vertex in &mut self.vertices{
+            *vertex *= scale_factor;
+        }
+    }
+}
+
+impl Scale for Simplex3{
+    fn scale(&mut self, scale_factor: PositiveReal){
+        for vertex in &mut self.vertices{
+            *vertex *= scale_factor;
+        }
+        self.bounding_radius *= scale_factor;
+    }
+}
+
+impl<const N: usize> Shear for Hyperparallelepiped<N> 
+
 
 
 #[cfg(test)]

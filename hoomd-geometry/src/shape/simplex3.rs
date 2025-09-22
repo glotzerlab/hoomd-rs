@@ -16,7 +16,7 @@ use crate::{IntersectsAt, SupportMapping, Volume};
 # Example
 
 A [`Simplex3`], or equivalently a (nonuniform) tetrahedron, is the simplest faceted
-three-dimensional geometry. Because a simplex has an intrinsice idea of its position in
+three-dimensional geometry. Because a simplex has an intrinsic idea of its position in
 space (defined by its barycenter), this struct provides implementations for spatial
 translation and a center of mass.
 
@@ -73,7 +73,7 @@ assert_eq!(planar_tetrahedron.centroid(), [1.0, 1.0, 0.0].into()); // Lies in th
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Simplex3 {
     /// Vertices of the simplex
-    vertices: [Cartesian<3>; 4], // NOT public, to force orientation on construction
+    pub(crate) vertices: [Cartesian<3>; 4], // NOT public, to force orientation on construction
 }
 
 impl SupportMapping<Cartesian<3>> for Simplex3 {
