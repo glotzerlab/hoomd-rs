@@ -22,7 +22,10 @@ struct Fill {
     microstate:
         Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Rectangle>>,
     /// How sites interact with other sites and fields.
-    hamiltonian: (External<Linear<Cartesian<2>>>, CutoffPair<Isotropic<Boxcar>>),
+    hamiltonian: (
+        External<Linear<Cartesian<2>>>,
+        CutoffPair<Isotropic<Boxcar>>,
+    ),
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate>,
     /// Temperature set point.

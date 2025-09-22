@@ -2,7 +2,7 @@
 // ANCHOR: use
 use anyhow::{Context, anyhow};
 
-use hoomd_geometry::shape::{Rectangle, Ellipse};
+use hoomd_geometry::shape::{Ellipse, Rectangle};
 use hoomd_interaction::{
     CutoffPair, CutoffPairOverlap,
     pairwise::{

@@ -19,15 +19,15 @@ pub mod pairwise;
 
 mod cutoff_pair;
 mod cutoff_pair_overlap;
-mod hamiltonian;
-mod external_type;
 mod external_overlap;
+mod external_type;
+mod hamiltonian;
 mod zero;
 
 pub use cutoff_pair::CutoffPair;
 pub use cutoff_pair_overlap::CutoffPairOverlap;
-pub use external_type::External;
 pub use external_overlap::ExternalOverlap;
+pub use external_type::External;
 pub use zero::Zero;
 
 /// Compute the total energy of a potential applied to the microstate.
@@ -239,8 +239,15 @@ pub trait SiteOverlap<S> {
 /// where
 ///     S: Position<Vector = Cartesian<2>>,
 /// {
-///     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
-///         self.epsilon * site_properties_i.position().dot(&site_properties_j.position())
+///     fn site_pair_energy(
+///         &self,
+///         site_properties_i: &S,
+///         site_properties_j: &S,
+///     ) -> f64 {
+///         self.epsilon
+///             * site_properties_i
+///                 .position()
+///                 .dot(&site_properties_j.position())
 ///     }
 /// }
 ///

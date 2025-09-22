@@ -42,7 +42,12 @@ use rand::{
 ///
 /// let body: Body<Point<Cartesian<2>>, Point<Cartesian<2>>> =
 ///     uniform_in.sample(&mut rng);
-/// assert!(uniform_in.boundary.0.is_point_inside(&body.properties.position));
+/// assert!(
+///     uniform_in
+///         .boundary
+///         .0
+///         .is_point_inside(&body.properties.position)
+/// );
 /// # Ok(())
 /// # }
 /// ```
@@ -76,7 +81,12 @@ use rand::{
 ///
 /// let body: Body<OrientedPoint<Cartesian<2>, Angle>, Point<Cartesian<2>>> =
 ///     uniform_in.sample(&mut rng);
-/// assert!(uniform_in.boundary.0.is_point_inside(&body.properties.position));
+/// assert!(
+///     uniform_in
+///         .boundary
+///         .0
+///         .is_point_inside(&body.properties.position)
+/// );
 /// assert!(body.properties.orientation.theta < 2.0 * PI);
 /// # Ok(())
 /// # }

@@ -57,6 +57,7 @@ where
 {
     #[inline]
     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
-        self.0.energy((site_properties_i.position()).distance(site_properties_j.position()))
+        self.0
+            .energy((site_properties_i.position()).distance(site_properties_j.position()))
     }
 }

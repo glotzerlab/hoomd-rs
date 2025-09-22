@@ -162,7 +162,7 @@ pub type Rectangle = Hypercuboid<2>;
 /// Intersection tests:
 /// ```
 /// use hoomd_geometry::{Convex, IntersectsAt, shape::Cuboid};
-/// use hoomd_vector::{Versor, Cartesian};
+/// use hoomd_vector::{Cartesian, Versor};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let cuboid = Cuboid {

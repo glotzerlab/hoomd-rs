@@ -427,47 +427,15 @@ mod tests {
         let sphere0 = Convex(sphere0);
         let sphere1 = Convex(sphere1);
 
-        assert!(sphere0.intersects_at(
-            &sphere1,
-            &[0.0, 0.0, 5.9].into(),
-            &identity
-        ));
-        assert!(sphere0.intersects_at(
-            &sphere1,
-            &[0.0, 5.9, 0.0].into(),
-            &identity
-        ));
-        assert!(sphere0.intersects_at(
-            &sphere1,
-            &[5.9, 0.0, 0.0].into(),
-            &identity
-        ));
-        assert!(sphere0.intersects_at(
-            &sphere1,
-            &[3.4, 3.4, 3.4].into(),
-            &identity
-        ));
+        assert!(sphere0.intersects_at(&sphere1, &[0.0, 0.0, 5.9].into(), &identity));
+        assert!(sphere0.intersects_at(&sphere1, &[0.0, 5.9, 0.0].into(), &identity));
+        assert!(sphere0.intersects_at(&sphere1, &[5.9, 0.0, 0.0].into(), &identity));
+        assert!(sphere0.intersects_at(&sphere1, &[3.4, 3.4, 3.4].into(), &identity));
 
-        assert!(!sphere0.intersects_at(
-            &sphere1,
-            &[0.0, 0.0, 6.1].into(),
-            &identity
-        ));
-        assert!(!sphere0.intersects_at(
-            &sphere1,
-            &[0.0, 6.1, 0.0].into(),
-            &identity
-        ));
-        assert!(!sphere0.intersects_at(
-            &sphere1,
-            &[6.1, 0.0, 0.0].into(),
-            &identity
-        ));
-        assert!(!sphere0.intersects_at(
-            &sphere1,
-            &[3.52, 3.52, 3.52].into(),
-            &identity
-        ));
+        assert!(!sphere0.intersects_at(&sphere1, &[0.0, 0.0, 6.1].into(), &identity));
+        assert!(!sphere0.intersects_at(&sphere1, &[0.0, 6.1, 0.0].into(), &identity));
+        assert!(!sphere0.intersects_at(&sphere1, &[6.1, 0.0, 0.0].into(), &identity));
+        assert!(!sphere0.intersects_at(&sphere1, &[3.52, 3.52, 3.52].into(), &identity));
     }
 
     #[test]
