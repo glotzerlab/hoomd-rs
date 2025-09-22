@@ -72,7 +72,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// lennard_jones.epsilon = 1.5;
 /// lennard_jones.sigma = 3.0;
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct LennardJones<const N: i32 = 12, const M: i32 = 6> {
     /// Energy scale *(\[energy\])*.
     pub epsilon: f64,

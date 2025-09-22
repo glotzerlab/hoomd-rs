@@ -42,7 +42,7 @@ mod cuboid;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Periodic<T> {
     /// The largest interaction distance between two sites.
     maximum_interaction_range: f64,
@@ -162,10 +162,10 @@ mod tests {
             ],
         };
 
-        let result = Periodic::new(1.0, rectangle);
+        let result = Periodic::new(1.0, rectangle.clone());
         assert!(result.is_ok());
 
-        let result = Periodic::new(3.0, rectangle);
+        let result = Periodic::new(3.0, rectangle.clone());
         assert!(result.is_ok());
 
         let result = Periodic::new(3.0f64.next_up(), rectangle);

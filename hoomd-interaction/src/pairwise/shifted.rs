@@ -22,7 +22,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// let sigma = 1.0;
 /// let r_shift = 2.5;
 /// let lj: LennardJones = LennardJones { epsilon, sigma };
-/// let shifted_lj = Shifted { f: lj, r_shift };
+/// let shifted_lj = Shifted { f: lj.clone(), r_shift };
 ///
 /// assert_abs_diff_eq!(shifted_lj.energy(r_shift), 0.0);
 /// assert_relative_eq!(
@@ -109,7 +109,7 @@ mod tests {
     ) {
         let lj: LennardJones = LennardJones { epsilon, sigma };
         let r_shift = 2.5 * sigma;
-        let shifted_lj = Shifted { f: lj, r_shift };
+        let shifted_lj = Shifted { f: lj.clone(), r_shift };
 
         assert_eq!(shifted_lj.f.epsilon, epsilon);
         assert_eq!(shifted_lj.f.sigma, sigma);

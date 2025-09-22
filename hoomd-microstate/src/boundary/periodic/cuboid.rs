@@ -349,25 +349,25 @@ mod tests {
             let periodic = Periodic::new(0.0, cuboid).expect("hard-coded range should be valid");
 
             let point = Point::new([5.0, 3.0].into());
-            assert_eq!(periodic.wrap(point), Ok(point));
+            assert_eq!(periodic.wrap(point.clone()), Ok(point));
 
             let point = Point::new([-10.0, -10.0].into());
-            assert_eq!(periodic.wrap(point), Ok(point));
+            assert_eq!(periodic.wrap(point.clone()), Ok(point));
 
             let point = Point::new([10.0f64.next_down(), 10.0f64.next_down()].into());
-            assert_eq!(periodic.wrap(point), Ok(point));
+            assert_eq!(periodic.wrap(point.clone()), Ok(point));
 
             let point = Point::new([10.0, 10.0].into());
-            assert_eq!(periodic.wrap(point), Ok(Point::new([-10.0, -10.0].into())));
+            assert_eq!(periodic.wrap(point.clone()), Ok(Point::new([-10.0, -10.0].into())));
 
             let point = Point::new([20.0, 20.0].into());
-            assert_eq!(periodic.wrap(point), Ok(Point::new([0.0, 0.0].into())));
+            assert_eq!(periodic.wrap(point.clone()), Ok(Point::new([0.0, 0.0].into())));
 
             let point = Point::new([30.0, 30.0].into());
-            assert_eq!(periodic.wrap(point), Ok(Point::new([-10.0, -10.0].into())));
+            assert_eq!(periodic.wrap(point.clone()), Ok(Point::new([-10.0, -10.0].into())));
 
             let point = Point::new([25.0, -35.0].into());
-            assert_eq!(periodic.wrap(point), Ok(Point::new([5.0, 5.0].into())));
+            assert_eq!(periodic.wrap(point.clone()), Ok(Point::new([5.0, 5.0].into())));
         }
 
         #[test]
@@ -524,10 +524,10 @@ mod tests {
             let periodic = Periodic::new(0.0, cuboid).expect("hard-coded range should be valid");
 
             let point = Point::new([5.0, 3.0, 8.0].into());
-            assert_eq!(periodic.wrap(point), Ok(point));
+            assert_eq!(periodic.wrap(point.clone()), Ok(point));
 
             let point = Point::new([-10.0, -10.0, -10.0].into());
-            assert_eq!(periodic.wrap(point), Ok(point));
+            assert_eq!(periodic.wrap(point.clone()), Ok(point));
 
             let point = Point::new(
                 [
@@ -537,7 +537,7 @@ mod tests {
                 ]
                 .into(),
             );
-            assert_eq!(periodic.wrap(point), Ok(point));
+            assert_eq!(periodic.wrap(point.clone()), Ok(point));
 
             let point = Point::new([10.0, 10.0, 10.0].into());
             assert_eq!(

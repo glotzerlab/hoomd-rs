@@ -1860,7 +1860,7 @@ mod tests {
                 if move_type_r > 0.7 {
                     // Add bodies more often than removing bodies so that typical
                     // test executions will result in a non-empty microstate.
-                    let body = create_body(&mut rng, &rectangle);
+                    let body = create_body(&mut rng, microstate.boundary());
                     microstate
                         .add_body(body.clone())
                         .expect("all bodies should be wrapped into the boundary");
@@ -1918,7 +1918,7 @@ mod tests {
             let mut rng = StdRng::seed_from_u64(seed);
 
             for _ in 0..N_STEPS {
-                let body = create_body(&mut rng, &rectangle);
+                let body = create_body(&mut rng, microstate.boundary());
                 microstate
                     .add_body(body)
                     .expect("all bodies should be allowed in open boundary conditions");

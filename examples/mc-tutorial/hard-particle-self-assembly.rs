@@ -79,7 +79,7 @@ impl HardEllipseSelfAssembly {
         };
         let hamiltonian = CutoffPairOverlap {
             r_cut: sigma,
-            evaluator: HardShape(ellipse),
+            evaluator: HardShape(ellipse.clone()),
         };
         // ANCHOR_END: hamiltonian
 
@@ -107,7 +107,7 @@ impl HardEllipseSelfAssembly {
 
         // ANCHOR: quick_insert
         let distribution = UniformIn {
-            boundary: *microstate.boundary(),
+            boundary: microstate.boundary().clone(),
             template_sites: vec![SiteProperties::default()],
         };
         let quick_insert = QuickInsert::new(distribution, n_bodies);

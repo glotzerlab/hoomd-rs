@@ -74,7 +74,7 @@ pub(crate) fn sphere_volume_prefactor(n: usize) -> f64 {
 ///     &Versor::default()
 /// ));
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Hypersphere<const N: usize> {
     /// Radius of the sphere
     pub radius: PositiveReal,
@@ -424,44 +424,47 @@ mod tests {
         assert!(!sphere0.intersects_at(&sphere1, &[6.1, 0.0, 0.0].into(), &identity));
         assert!(!sphere0.intersects_at(&sphere1, &[3.52, 3.52, 3.52].into(), &identity));
 
-        assert!(Convex(sphere0).intersects_at(
-            &Convex(sphere1),
+        let sphere0 = Convex(sphere0);
+        let sphere1 = Convex(sphere1);
+
+        assert!(sphere0.intersects_at(
+            &sphere1,
             &[0.0, 0.0, 5.9].into(),
             &identity
         ));
-        assert!(Convex(sphere0).intersects_at(
-            &Convex(sphere1),
+        assert!(sphere0.intersects_at(
+            &sphere1,
             &[0.0, 5.9, 0.0].into(),
             &identity
         ));
-        assert!(Convex(sphere0).intersects_at(
-            &Convex(sphere1),
+        assert!(sphere0.intersects_at(
+            &sphere1,
             &[5.9, 0.0, 0.0].into(),
             &identity
         ));
-        assert!(Convex(sphere0).intersects_at(
-            &Convex(sphere1),
+        assert!(sphere0.intersects_at(
+            &sphere1,
             &[3.4, 3.4, 3.4].into(),
             &identity
         ));
 
-        assert!(!Convex(sphere0).intersects_at(
-            &Convex(sphere1),
+        assert!(!sphere0.intersects_at(
+            &sphere1,
             &[0.0, 0.0, 6.1].into(),
             &identity
         ));
-        assert!(!Convex(sphere0).intersects_at(
-            &Convex(sphere1),
+        assert!(!sphere0.intersects_at(
+            &sphere1,
             &[0.0, 6.1, 0.0].into(),
             &identity
         ));
-        assert!(!Convex(sphere0).intersects_at(
-            &Convex(sphere1),
+        assert!(!sphere0.intersects_at(
+            &sphere1,
             &[6.1, 0.0, 0.0].into(),
             &identity
         ));
-        assert!(!Convex(sphere0).intersects_at(
-            &Convex(sphere1),
+        assert!(!sphere0.intersects_at(
+            &sphere1,
             &[3.52, 3.52, 3.52].into(),
             &identity
         ));
@@ -489,7 +492,7 @@ mod tests {
         let circle = Circle::with_radius(4.0.try_into().expect("test value is a positive real"));
         let mut rng = StdRng::seed_from_u64(4);
 
-        let points: Vec<_> = circle.sample_iter(&mut rng).take(N).collect();
+        let points: Vec<_> = (&circle).sample_iter(&mut rng).take(N).collect();
         assert!(&points.iter().all(|p| circle.is_point_inside(p)));
         assert!(&points.iter().any(|p| p.dot(p) > 3.9));
     }

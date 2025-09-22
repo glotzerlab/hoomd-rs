@@ -193,7 +193,7 @@ use thiserror::Error;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Site<S> {
     /// Every site in a [`Microstate`] has a unique value in `site_tag`.
     pub site_tag: usize,

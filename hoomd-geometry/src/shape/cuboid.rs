@@ -92,7 +92,7 @@ use std::{array, ops::Mul};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Cuboid<const N: usize> {
     /// The lengths of each edge of the cuboid.
     pub edge_lengths: [PositiveReal; N],
@@ -642,7 +642,7 @@ mod tests {
         };
         let mut rng = StdRng::seed_from_u64(3);
 
-        let points: Vec<_> = cuboid.sample_iter(&mut rng).take(N).collect();
+        let points: Vec<_> = (&cuboid).sample_iter(&mut rng).take(N).collect();
         assert!(&points.iter().all(|p| cuboid.is_point_inside(p)));
         assert!(&points.iter().any(|p| p[0] < -2.8));
         assert!(&points.iter().any(|p| p[0] > 2.8));

@@ -54,8 +54,8 @@ pub struct Sweep<L>(pub L);
 
 impl<V, B, S, C, L, H> Trial<Microstate<B, S, C>, H> for Sweep<L>
 where
-    B: Copy + Clone + Default + Transform<S> + Position<Vector = V>,
-    S: Clone + Default + Position<Vector = V>,
+    B: Copy + Default + Transform<S> + Position<Vector = V>,
+    S: Copy + Default + Position<Vector = V>,
     L: LocalTrial<B>,
     H: DeltaEnergyOne<B, S, C>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,

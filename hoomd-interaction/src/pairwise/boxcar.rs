@@ -54,7 +54,7 @@ use super::IsotropicEnergy;
 /// boxcar.left = 0.0;
 /// boxcar.right = 1.0;
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Boxcar {
     /// Energy scale *(\[energy\])*.
     pub epsilon: f64,
