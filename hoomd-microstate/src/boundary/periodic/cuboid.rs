@@ -524,10 +524,10 @@ mod tests {
             let periodic = Periodic::new(0.0, cuboid).expect("hard-coded range should be valid");
 
             let point = Point::new([5.0, 3.0, 8.0].into());
-            assert_eq!(periodic.wrap(point.clone()), Ok(point));
+            assert_eq!(periodic.wrap(point), Ok(point));
 
             let point = Point::new([-10.0, -10.0, -10.0].into());
-            assert_eq!(periodic.wrap(point.clone()), Ok(point));
+            assert_eq!(periodic.wrap(point), Ok(point));
 
             let point = Point::new(
                 [
@@ -537,7 +537,7 @@ mod tests {
                 ]
                 .into(),
             );
-            assert_eq!(periodic.wrap(point.clone()), Ok(point));
+            assert_eq!(periodic.wrap(point), Ok(point));
 
             let point = Point::new([10.0, 10.0, 10.0].into());
             assert_eq!(
