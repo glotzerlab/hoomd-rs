@@ -239,8 +239,8 @@ pub trait SiteOverlap<S> {
 /// where
 ///     S: Position<Vector = Cartesian<2>>,
 /// {
-///     fn site_pair_energy(&self, a: &S, b: &S) -> f64 {
-///         self.epsilon * a.position().dot(&b.position())
+///     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
+///         self.epsilon * site_properties_i.position().dot(&site_properties_j.position())
 ///     }
 /// }
 ///
@@ -267,7 +267,7 @@ pub trait SiteOverlap<S> {
 /// ```
 pub trait SitePairEnergy<S> {
     /// Evaluate the energy contribution from a pair of sites.
-    fn site_pair_energy(&self, a: &S, b: &S) -> f64;
+    fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64;
 }
 
 /// Check if two sites overlap.
@@ -385,7 +385,7 @@ pub trait SitePairEnergy<S> {
 /// ```
 pub trait SitePairOverlap<S> {
     /// Determine if two sites overlap.
-    fn site_pair_overlap(&self, a: &S, b: &S) -> bool;
+    fn site_pair_overlap(&self, site_properties_i: &S, site_properties_j: &S) -> bool;
 }
 
 /// Compute the change energy as a function of a single modified body.

@@ -140,16 +140,16 @@ impl<E> CutoffPair<E> {
     /// # }
     /// ```
     #[inline]
-    pub fn site_pair_energy<V, S>(&self, a: &Site<S>, b: &Site<S>) -> f64
+    pub fn site_pair_energy<V, S>(&self, site_properties_i: &Site<S>, site_properties_j: &Site<S>) -> f64
     where
         E: SitePairEnergy<S>,
         S: Position<Vector = V>,
         V: Vector,
     {
-        let r = (a.properties.position()).distance(b.properties.position());
-        if r < self.r_cut && a.body_tag != b.body_tag {
+        let r = (site_properties_i.properties.position()).distance(site_properties_j.properties.position());
+        if r < self.r_cut && site_properties_i.body_tag != site_properties_j.body_tag {
             self.evaluator
-                .site_pair_energy(&a.properties, &b.properties)
+                .site_pair_energy(&site_properties_i.properties, &site_properties_j.properties)
         } else {
             0.0
         }
