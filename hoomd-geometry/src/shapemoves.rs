@@ -68,7 +68,9 @@ impl Scale for Simplex3{
     }
 }
 
-impl<const N: usize> Shear for Hyperparallelepiped<N> 
+impl<const N: usize> Shear for Hyperparallelepiped<N>{
+    
+}
 
 
 
