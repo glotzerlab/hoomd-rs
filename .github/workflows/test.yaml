@@ -86,8 +86,12 @@ jobs:
         --profile ${{ matrix.profile }}
         ${{ matrix.target != '' && '--target' || '' }}
         ${{ matrix.target }}
+        --locked
         --workspace
-        --all-targets
+        --lib
+        --bins
+        --tests
+        --examples
         --all-features
         --verbose
 
@@ -95,6 +99,7 @@ jobs:
       run: >
         cargo test
         --profile ${{ matrix.profile }}
+        --locked
         --workspace
         --verbose
       if: ${{ matrix.target == '' }}
@@ -102,13 +107,14 @@ jobs:
     - name: Build API documentation
       run: >
         cargo doc
+        --locked
         --workspace
         --all-features
         --no-deps
       if: ${{ matrix.target == '' }}
 
     - name: Run benchmarks
-      run: cargo bench
+      run: cargo bench --locked
       if: ${{ matrix.target == '' }}
 
   tests_complete:

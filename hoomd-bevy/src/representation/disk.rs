@@ -248,18 +248,22 @@ impl Material {
     /// a much larger number of colors and will not panic.
     pub fn set_background_colors(
         &mut self,
+        #[allow(
+            unused_variables,
+            unused_mut,
+            reason = "Not used in all build configurations."
+        )]
         mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
-        colors: &Vec<LinearRgba>,
+        colors: &[LinearRgba],
     ) {
         #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
         {
-            if colors.len() > 1024 {
-                panic!(
-                    "webgl2 builds support up to 1024 colors, got {}",
-                    colors.len()
-                );
-            }
-            self.background_colors[..colors.len()].copy_from_slice(&colors);
+            assert!(
+                colors.len() <= 1024,
+                "webgl2 builds support up to 1024 colors, got {}",
+                colors.len()
+            );
+            self.background_colors[..colors.len()].copy_from_slice(colors);
             self.n_background_colors = colors.len() as u32;
         }
 

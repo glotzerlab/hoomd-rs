@@ -14,7 +14,6 @@ use rand::{Rng, SeedableRng, rngs::StdRng};
 use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, LennardJones};
 
 fn main() {
-    #[cfg(not(target_arch = "wasm32"))]
     divan::main();
 }
 

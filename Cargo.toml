@@ -109,7 +109,6 @@ cast_precision_loss = "allow"
 float_cmp = "allow"
 
 # opt-in to restrictions
-allow_attributes = "warn"
 allow_attributes_without_reason = "warn"
 exhaustive_enums = "warn"
 impl_trait_in_params = "warn"

@@ -74,7 +74,8 @@ fn setup_colors(
         .map(|i| Color::oklch(0.75, 0.1246, (i % 360) as f32));
     let linear_color_wheel = color_wheel.map(LinearRgba::from);
     let duplicate = linear_color_wheel.flat_map(|v| iter::repeat_n(v, 4));
-    material.set_background_colors(buffers, &duplicate.collect());
+    let duplicate: Vec<_> = duplicate.collect();
+    material.set_background_colors(buffers, &duplicate);
 }
 
 /// Copy the current positions of simulation particles to bevy entities.
