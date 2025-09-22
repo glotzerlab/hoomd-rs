@@ -22,90 +22,48 @@ pub trait Pressure {
 }
 
 
-/** Mark an ensemble as having constant volume.
-
-Must be manually added for macrostates that do not implement [`Pressure`].
-*/
-pub trait Isochoric {}
-
-/** Mark an ensemble as having constant entropy.
-
-Must be manually added for macrostates that do not implement [`Temperature`].
-*/
-pub trait Isoentropic {}
-
-/** Mark an ensemble as having constant temperature. 
-
-This trait is automatically implemented for every macrostate that implements
-[`Temperature`].
-*/
-pub trait Isothermal {}
-impl<T> Isothermal for T where T: Temperature {}
-
-/** Mark an ensemble as having constant pressure.
-
-This trait is automatically implemented for every macrostate that implements
-[`Pressure`].
-*/
-pub trait Isobaric {}
-impl<T> Isobaric for T where T: Pressure {}
-
-
 /// Macrostate for an isothermal ensemble.
-pub struct IsothermalMacrostate {
+pub struct Isothermal {
     /// Kinetic temperature of the system.
-    pub kT: f64
+    pub temperature: f64
 }
-impl Temperature for IsothermalMacrostate {
+impl Temperature for Isothermal {
     #[inline]
     fn temperature(&self) -> &f64 {
-        &self.kT
+        &self.temperature
     }
 
     #[inline]
     fn temperature_mut(&mut self) -> &mut f64 {
-        &mut self.kT
+        &mut self.temperature
     }
 }
-impl Isochoric for IsothermalMacrostate {}
 
 /// Macrostate for an isobaric ensemble.
-pub struct IsobaricMacrostate {
+pub struct Isobaric {
     /// Pressure of the system.
     pub pressure: f64
 }
-impl Pressure for IsobaricMacrostate {
-    #[inline]
-    fn pressure(&self) -> &f64 {
-        &self.pressure
-    }
-
-    #[inline]
-    fn pressure_mut(&mut self) -> &mut f64 {
-        &mut self.pressure
-    }
-}
-impl Isoentropic for IsobaricMacrostate {}
 
 /// Macrostate for an isothermal and isobaric ensemble.
-pub struct IsothermalIsobaricMacrostate {
+pub struct IsothermalIsobaric {
     /// Kinetic temperature of the system.
-    pub kT: f64,
+    pub temperature: f64,
     /// Pressure of the system.
     pub pressure: f64
 }
-impl Temperature for IsothermalIsobaricMacrostate {
+impl Temperature for IsothermalIsobaric {
     #[inline]
     fn temperature(&self) -> &f64 {
-        &self.kT
+        &self.temperature
     }
 
     #[inline]
     fn temperature_mut(&mut self) -> &mut f64 {
-        &mut self.kT
+        &mut self.temperature
     }
 }
-impl Pressure for IsothermalIsobaricMacrostate {
+impl Pressure for IsothermalIsobaric {
     #[inline]
     fn pressure(&self) -> &f64 {
         &self.pressure
