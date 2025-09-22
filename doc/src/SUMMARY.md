@@ -14,7 +14,7 @@
   - [Custom Random Walk](mc-tutorial/custom-random-walk.md)
   - [Applying Interactions](mc-tutorial/applying-interactions.md)
   - [Tetronimoes](mc-tutorial/tetronimoes.md)
-  - [Hard Particle Self-Assembly]()
+  - [Hard Particle Self-Assembly](mc-tutorial/hard-particle-self-assembly.md)
   - [Patchy Particle Self-Assembly]()
   - [Modeling Binary Systems]()
   - [Modeling Polydisperse Systems]()
