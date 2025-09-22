@@ -16,9 +16,9 @@ build:
     # Install wasm toolchain with bindgen matching the version in the lockfile
     - rustup target install wasm32-unknown-unknown
     - 'cargo info wasm-bindgen -q'
-    - 'cargo info wasm-bindgen -q | grep -o ''^version: \d*\.\d*\.\d*'''
-    - 'cargo info wasm-bindgen -q | grep -Eo ''^version: (\d*\.\d*\.\d*)'''
-    - 'cargo info wasm-bindgen -q | grep -Po ''(?<=^version: )\d*\.\d*\.\d*'''
+    - 'cargo info wasm-bindgen -q | grep -o ''^version: \\d*\\.\\d*\\.\\d*'''
+    - 'cargo info wasm-bindgen -q | grep -Eo ''^version: (\\d*\\.\\d*\\.\\d*)'''
+    - 'cargo info wasm-bindgen -q | grep -Po ''(?<=^version: )\\d*\\.\\d*\\.\\d*'''
     - 'cargo binstall wasm-bindgen-cli@`cargo info wasm-bindgen -q | grep -o ''^version: \d*\.\d*\.\d*'' | cut -b 10-` --no-confirm --disable-strategies=compile --disable-telemetry --install-path "${PATH%%:*}"'
     - curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz" | tar -xvz --strip-components 2 --directory "${PATH%%:*}"
     - ls "${PATH%%:*}"
