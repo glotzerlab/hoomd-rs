@@ -19,7 +19,15 @@ pub struct DiagonalMatrix<const N: usize> {
     /// The elements of the diagonal of the matrix
     pub rows: [f64; N],
 }
-
+/// Index the on-diaginal components of a diagonal matrix
+/// # Examples
+/// ```
+/// use hoomd_linalg::{matrix::DiagonalMatrix, SquareMatrix};
+/// let mat = DiagonalMatrix {rows: [1.0, 2.0, 3.0]};
+/// assert_eq!(mat[0], 1.0);
+/// assert_eq!(mat[1], 2.0);
+/// assert_eq!(mat[2], 3.0);
+/// ```
 impl<const N: usize> Index<usize> for DiagonalMatrix<N> {
     type Output = f64;
     #[inline]
@@ -35,14 +43,40 @@ pub type Matrix33 = Matrix<3, 3>;
 /// A 4x4 matrix, allocated on the stack.
 pub type Matrix44 = Matrix<4, 4>;
 
+/// Index the dense view of a diagonal matrix. Off-diagonal elements will be `0.0`.
+/// # Examples
+/// ```
+/// use hoomd_linalg::{matrix::DiagonalMatrix, SquareMatrix};
+/// let mat = DiagonalMatrix {rows: [1.0, 2.0, 3.0]};
+/// assert_eq!(mat[(0, 0)], 1.0);
+/// assert_eq!(mat[(1, 1)], 2.0);
+/// assert_eq!(mat[(0, 2)], 0.0);
+/// ```
 impl<const N: usize> Index<(usize, usize)> for DiagonalMatrix<N> {
     type Output = f64;
     #[inline]
     fn index(&self, index: (usize, usize)) -> &f64 {
-        let (i, _) = index;
-        &self.rows[i]
+        let (i, j) = index;
+        if i == j { &self.rows[i] } else { &0.0 }
     }
 }
+/// Index the rows and columns of a [`Matrix`]
+///
+/// Indices for [`Matrix`] types are zero-indexed and reflect the indexing pattern of
+/// the underlying data. This results in the pattern `(row, column)`, which mirrors the
+/// behavior of Numpy and similar array languages.
+///
+/// # Examples
+/// ```
+/// use hoomd_linalg::{matrix::Matrix};
+/// let rows = [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
+/// let mat = Matrix {rows};
+/// assert_eq!(mat[(0, 1)], rows[0][1]);
+/// assert_eq!(mat[(2, 1)], 6.0);
+/// assert_eq!(mat[(1, 1)], 4.0);
+/// // Out-of-bounds: would panic!
+/// // mat[(3, 0)];
+/// ```
 impl<const N: usize, const M: usize> Index<(usize, usize)> for Matrix<N, M> {
     type Output = f64;
     #[inline]
@@ -165,7 +199,7 @@ impl<const N: usize> Matrix<N, N> {
     matrices but will be extremely slow for large matrixes due to its O(N!)
     complexity.
 
-    # Example
+    # Examples
 
     ```
     use hoomd_linalg::{matrix::Matrix22, SquareMatrix};
