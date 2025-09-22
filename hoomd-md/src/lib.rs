@@ -312,6 +312,7 @@ where
     /// `dof` is the number of degrees of degrees of freedom (used by the thermostat),
     /// `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
     #[inline]
+    #[allow(clippy::too_many_lines)]
     fn integrate_rotation_step_one(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
