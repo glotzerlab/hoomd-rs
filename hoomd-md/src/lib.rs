@@ -23,9 +23,9 @@ use hoomd_microstate::{
         Orientation, Position, Velocity, 
     },
 };
-use hoomd_simulation::macrostate::Isochoric;
 use hoomd_vector::{Angle, Cartesian, InnerProduct, Quaternion, Rotate, Rotation, Vector};
 use thermostat::Thermostat;
+use hoomd_simulation::macrostate::Temperature;
 
 /// Integrate over translational degrees of freedom.
 /// 
@@ -129,7 +129,7 @@ pub struct ConstantPressure;
 /// Integrate over translational degrees of freedom for a system with constant
 /// volume in any vector space.
 /// 
-/// [`ConstantVolume`] integration is only defined for [`Isochoric`] macrostates.
+/// [`ConstantVolume`] integration is only defined for macrostates with [`Temperature`].
 /// 
 /// The generic type names are:
 /// * `V`: The [`Vector`]() type.
@@ -152,7 +152,7 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     E: NetBodyForce<V, B, S, C>,
     T: Thermostat<B, S, C, M>,
-    M: Isochoric,
+    M: Temperature,
 {
     /// Perform the first integration half-step, mutating the microstate and possibly the thermostat.
     /// 
@@ -278,7 +278,7 @@ where
 /// Integrate over rotational degrees of freedom for a system with constant
 /// volume in 3-dimensional Cartesian space.
 /// 
-/// [`ConstantVolume`] integration is only defined for [`Isochoric`] macrostates.
+/// [`ConstantVolume`] integration is only defined for macrostates with [`Temperature`].
 /// 
 /// The generic type names are:
 /// * `B`: The [`Body::properties`](crate::Body) type.
@@ -300,7 +300,7 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     E: NetBodyTorque<Cartesian<3>, B, S, C>,
     T: Thermostat<B, S, C, M>,
-    M: Isochoric,
+    M: Temperature,
 {
     /// Perform the first integration half-step, mutating the microstate and
     /// possibly the thermostat.
@@ -583,7 +583,7 @@ where
 
 /// Integrate rotational degrees of freedom in 2-dimensional Cartesian space.
 /// 
-/// [`ConstantVolume`] integration is only defined for [`Isochoric`] macrostates.
+/// [`ConstantVolume`] integration is only defined for macrostates with [`Temperature`].
 /// 
 /// The generic type names are:
 /// * `B`: The [`Body::properties`](crate::Body) type.
@@ -605,7 +605,7 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     E: NetBodyTorque<f64, B, S, C>,
     T: Thermostat<B, S, C, M>,
-    M: Isochoric,
+    M: Temperature,
 {
     /// Perform the first integration half-step, mutating the microstate and
     /// possibly the thermostat.

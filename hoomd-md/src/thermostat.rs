@@ -10,7 +10,7 @@ use hoomd_microstate::{
     boundary::{GenerateGhosts, Wrap},
     property::{Acceleration, Mass, Position, Velocity},
 };
-use hoomd_simulation::macrostate::{Isochoric, Isoentropic, Isothermal, Temperature};
+use hoomd_simulation::macrostate::{Isothermal, Temperature};
 use hoomd_vector::{Cartesian, Vector};
 use rand_distr::{Distribution, Gamma, Normal};
 
@@ -58,8 +58,6 @@ pub trait Thermostat<B, S, C, M> {
 pub struct NoThermostat;
 
 impl<B, S, C, M> Thermostat<B, S, C, M> for NoThermostat
-where
-    M: Isoentropic,
 {
     #[inline]
     fn rescaling_factor_step_one<P>(
@@ -125,7 +123,7 @@ impl BussiThermostat {
 /// TODO: add documentation
 impl<B, S, C, M> Thermostat<B, S, C, M> for BussiThermostat
 where
-    M: Isothermal + Temperature,
+    M: Temperature,
 {
     /// Calculate velocity rescaling factor following the Appendix in https://doi.org/10.1063/1.2408420.
     /// Bussi requires the rng, instataneous kinetic_energy, timestep and degrees-of-freedom,
@@ -239,7 +237,7 @@ impl MTTKThermostat {
         macrostate: &M,
         dof: &f64,
     ) where
-        M: Isothermal + Temperature,
+        M: Temperature,
     {
         let kT_setpoint = macrostate.temperature();
         let mut rng = microstate.counter().make_rng();
@@ -256,7 +254,7 @@ impl MTTKThermostat {
 
 impl<B, S, C, M> Thermostat<B, S, C, M> for MTTKThermostat
 where
-    M: Isothermal + Temperature,
+    M: Temperature,
 {
     #[inline]
     fn rescaling_factor_step_one<P>(
