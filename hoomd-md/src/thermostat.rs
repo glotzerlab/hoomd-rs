@@ -42,7 +42,7 @@ pub trait Thermostat<B, S, C, M> {
         dt: &f64,
     ) -> f64;
 
-    // TODO: add docs
+    /// TODO: add docs
     fn advance<P>(
         &mut self,
         microstate: &Microstate<B, S, C>,
