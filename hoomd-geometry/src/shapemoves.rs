@@ -1,3 +1,5 @@
+use hoomd_linalg::{matrix::Matrix, SquareMatrix, MatMul, GeneralMatrix};
+use hoomd_vector::Cartesian;
 use hoomd_utility::valid::PositiveReal;
 use crate::shape::{Capsule, ConvexPolytope, Cuboid, Cylinder, Hyperellipsoid, Hyperparallelepiped, Hypersphere, Simplex3};
 
@@ -5,8 +7,8 @@ pub trait Scale{
     fn scale(&mut self, scale_factor: PositiveReal);
 }
 
-pub<const N: usize> trait Shear{
-    fn shear(&mut self, angle: f64 , parallel_axis: Cartesian<N>, perpendicular_axis: Cartesian<N>);
+pub trait Shear<const N: usize>{
+    fn shear(&mut self, angle: f64 , parallel_axis: &Cartesian<N>, perpendicular_axis: &Cartesian<N>);
 }
 
 // pub trait Elongate{
@@ -64,14 +66,13 @@ impl Scale for Simplex3{
         for vertex in &mut self.vertices{
             *vertex *= scale_factor;
         }
-        self.bounding_radius *= scale_factor;
     }
 }
 
-impl<const N: usize> Shear for Hyperparallelepiped<N>{
+impl<const N: usize> Shear<N> for Hyperparallelepiped<N>{
     fn shear(&mut self, angle: f64 , parallel_axis: &Cartesian<N>, perpendicular_axis: &Cartesian<N>){
-        shear_matrix = eye() + perpendicular_axis.to_column().matmul(parallel_axis.to_row());
-        self.edge_vectors = self.edge_vectors.map(|v| shear_matrix.matmul(v.to_column()).into());
+        let shear_matrix = Matrix::<N,N>::identity() + perpendicular_axis.to_column_matrix().matmul(&parallel_axis.to_row_matrix()) * angle.tan();
+        self.edge_vectors = self.edge_vectors.map(|v| Cartesian{coordinates: v.to_row_matrix().matmul(&shear_matrix).rows[0]});
     }
 }
 
@@ -86,5 +87,17 @@ mod tests {
         my_cuboid.scale(scale_factor);
 
         assert_eq!(my_cuboid.edge_lengths, [5.,10.,5.].map(|x| x.try_into().unwrap()));
+    }
+
+    #[test]
+    fn test_parallelepiped_shear(){
+        let mut my_box = Hyperparallelepiped::<3>::default();
+        let parallel_axis = Cartesian{coordinates:[1.,0.,0.]};
+        let perpendicular_axis = Cartesian{coordinates:[0.,0.,1.]};
+        let angle = std::f64::consts::PI / 6.0;
+        my_box.shear(angle, &parallel_axis, &perpendicular_axis);
+        assert_eq!(my_box.edge_vectors[0], [1.,0.,0.].into());
+        assert_eq!(my_box.edge_vectors[1], [0.,1.,0.].into());
+        assert_eq!(my_box.edge_vectors[2], [f64::sqrt(3.)/3.,0.,1.].into());
     }
 }

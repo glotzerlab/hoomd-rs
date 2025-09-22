@@ -10,3 +10,8 @@ pub struct Hyperparallelepiped<const N: usize> {
     pub edge_vectors: [Cartesian<N>; N],
 }
 
+impl<const N: usize> Default for Hyperparallelepiped<N>{
+    fn default() -> Self{
+        Self{edge_vectors: std::array::from_fn(|i| std::array::from_fn(|j| if i==j {1.} else {0.}).into())}
+    }
+}
