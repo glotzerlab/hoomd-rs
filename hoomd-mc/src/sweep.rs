@@ -119,7 +119,7 @@ mod tests {
     use crate::Translate;
     use ::approx::assert_relative_eq;
     use hoomd_geometry::shape::Cuboid;
-    use hoomd_interaction::{Single, SiteEnergy, TotalEnergy, Zero};
+    use hoomd_interaction::{External, SiteEnergy, TotalEnergy, Zero};
     use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};
     use hoomd_vector::{Cartesian, InnerProduct};
     use rstest::*;
@@ -161,7 +161,7 @@ mod tests {
         microstate
             .add_body(Body::point(origin))
             .expect("the hard-coded body should be inside the boundary");
-        let hamiltonian = Single(Harmonic(origin));
+        let hamiltonian = External(Harmonic(origin));
 
         let d = 0.1;
         let translate = Translate {

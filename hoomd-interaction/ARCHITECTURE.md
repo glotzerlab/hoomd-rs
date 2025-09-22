@@ -150,7 +150,7 @@ spend time computing values that will not change the total.
 
 `hoomd_interaction` breaks each energy/force computation up into multiple layers.
 For example, the external potential module defines the `SiteEnergy` trait
-that computes the energy of a single site. The `Single` type wraps a
+that computes the energy of a single site. The `External` type wraps a
 generic `SiteEnergy` type, implements `TotalEnergy` over the microstate, and
 reimplements `SiteEnergy`. This way, one variable (e.g. `linear`) implements
 multiple methods that both the MD and MC engines can use.

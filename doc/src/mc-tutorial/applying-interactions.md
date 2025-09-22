@@ -53,7 +53,7 @@ properties** from the *body reference frame* to the *system reference frame*.
 All **interactions** on bodies are a function only of its **sites** and are
 computed in the *system reference frame*. Understanding this will help as
 you review the [API documentation] for the types used later in this tutorial:
-`Single`, `Linear`, `Boxcar`, `Isotropic`, and `CutoffPair`. For a complete
+`External`, `Linear`, `Boxcar`, `Isotropic`, and `CutoffPair`. For a complete
 reference on **bodies**, **sites**, and all their related traits, read the
 [`hoomd-microstate`] API documentation.
 
@@ -126,9 +126,9 @@ This code implements the external potential term in the Hamiltonian:
 
 `Linear` computes $` \alpha \vec{r} \cdot \hat{y} `$ in its `energy()` method.
 `Linear` also implements the `SiteEnergy` trait whose method `site_energy` takes
-a single **site properties** argument: $` U(s) `$. Building on that, `Single`
+a single **site properties** argument: $` U(s) `$. Building on that, `External`
 wraps any type that implements `SiteEnergy` and sums over the energy contributed
-by each **site** in the microstate: $` \sum_i U(s_i) `$. `Single` implements the
+by each **site** in the microstate: $` \sum_i U(s_i) `$. `External` implements the
 `DeltaEnergyOne` trait which `Sweep` will use to evaluate the change in energy
 $`\Delta E`$ of a trial that moves *one* body.
 
@@ -197,7 +197,7 @@ You can use `hamiltonian` to compute properties of the system:
 * `hamiltonian.1.site_pair_energy(&site_i, &site_j)` - The contribution of a
   pair of sites to the pair energy.
 
-The types `Single` and `Isotropic` are single element tuples.
+The types `External` and `Isotropic` are single element tuples.
 To access the parameters of the inner types, you need access the elements of
 these tuples:
 * `hamiltonian.0.0.alpha` - Strength of the linear external potential.

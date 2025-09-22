@@ -34,8 +34,8 @@ digraph hoomd_rs {
         isotropic_potentials [ label = "BoxCar\nHarmonic\nHarmonicRepulsion\nLennardJones\nLennardJonesGuass\nOverlapPenalty\nWeeksChandlerAnderson" ]
         SitePairEnergy -> CutoffPair
         SitePairOverlap -> CutoffPairOverlap
-        SiteOverlap -> SingleOverlap
-        SiteEnergy -> Single
+        SiteOverlap -> ExternalOverlap
+        SiteEnergy -> External
         Linear -> SiteEnergy
         AlwaysTrue -> SitePairOverlap
         AngularMask -> AnisotropicEnergy
@@ -51,8 +51,8 @@ digraph hoomd_rs {
 
         Hamiltonian [ label="TotalEnergy\nDeltaEnergyRemove\nDeltaEnergyOne\nDeltaEnergyInsert"]
 
-        Single -> Hamiltonian
-        SingleOverlap -> Hamiltonian
+        External -> Hamiltonian
+        ExternalOverlap -> Hamiltonian
         CutoffPair -> Hamiltonian
         CutoffPairOverlap -> Hamiltonian
         Zero -> Hamiltonian
@@ -71,13 +71,13 @@ digraph hoomd_rs {
         CutoffPair [ URL="../api/hoomd_interaction/struct.CutoffPair.html" ]
         Linear [ URL="../api/hoomd_interaction/external/struct.Linear.html" ]
         SiteEnergy [ URL="../api/hoomd_interaction/trait.SiteEnergy.html" ]
-        Single [ URL="../api/hoomd_interaction/struct.Single.html" ]
+        External [ URL="../api/hoomd_interaction/struct.External.html" ]
         HardShape [ URL="../api/hoomd_interaction/pairwise/struct.HardShape.html" ]
         SitePairOverlap [ URL="../api/hoomd_interaction/trait.SitePairOverlap.html" ]
         CutoffPairOverlap [ URL="../api/hoomd_interaction/struct.CutoffPairOverlap.html" ]
         AlwaysTrue [ URL="../api/hoomd_interaction/pairwise/struct.AlwaysTrue.html" ]
         SiteOverlap [ URL="../api/hoomd_interaction/trait.SiteOverlap.html" ]
-        SingleOverlap [ URL="../api/hoomd_interaction/struct.SingleOverlap.html" ]
+        ExternalOverlap [ URL="../api/hoomd_interaction/struct.ExternalOverlap.html" ]
         Zero [ URL="../api/hoomd_interaction/struct.Zero.html" ]
         Hamiltonian [ URL="../api/hoomd_interaction/index.html" ]
     }
