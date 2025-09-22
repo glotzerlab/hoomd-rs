@@ -8,7 +8,6 @@
 use hoomd_microstate::{
     Microstate, Transform,
     boundary::{GenerateGhosts, Wrap},
-    property::{Acceleration, Mass, Position, Velocity},
 };
 use hoomd_simulation::macrostate::{Isothermal, Temperature};
 use hoomd_vector::{Cartesian, Vector};
