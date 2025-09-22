@@ -4,7 +4,7 @@
 //! Implement `CutoffPair`
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, pairwise::IsotropicForce, NetBodyForce, NetSiteForce, SitePairEnergy, SitePairForce, TotalEnergy};
-use hoomd_microstate::{Body, Transform, boundary::Wrap, property::{Acceleration, Mass, Position}, Microstate, Site};
+use hoomd_microstate::{Body, Transform, boundary::Wrap, property::Position, Microstate, Site};
 
 use hoomd_vector::{InnerProduct, Vector};
 
