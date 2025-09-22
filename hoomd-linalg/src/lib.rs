@@ -7,6 +7,12 @@ This crate places an emphasis on generality and simplicity, with optimization ef
 targeted at small matrixes. Some complex routines (SVD, matrix inversion, etc.) will
 only be implemented for certain shapes, and generally consist of specialized algorithms
 optimal for those inputs.
+
+This crate should not be considered a replacement for a dedicated linear algebra library
+like [faer-rs](https://github.com/sarah-quinones/faer-rs.git) or
+[nalgebra](https://github.com/dimforge/nalgebra). Instead, it can be used as a simple
+and lightweight dependency for matrix methods common to molecular simulation and
+analysis.
 */
 
 use std::ops::{Add, Index, Mul, Neg};
