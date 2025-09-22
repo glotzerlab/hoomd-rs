@@ -6,7 +6,7 @@
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
 use hoomd_linalg::{
-    Diagonal, Invertible, MatMul, SquareMatrix,
+    Diagonal, Invertible, MatMul, QuadraticForm,
     matrix::{DiagonalMatrix, Matrix22},
 };
 use hoomd_utility::valid::PositiveReal;
@@ -293,7 +293,7 @@ where
 #[inline]
 fn k_lambda<const N: usize, M>(a_inv: &M, b_inv: &M, l: f64, v_ij: &impl Diagonal) -> f64
 where
-    M: SquareMatrix + Invertible + Copy,
+    M: Invertible + Copy + QuadraticForm,
 {
     let m = *b_inv * ((1.0 - l).recip()) + (*a_inv * l.recip());
 

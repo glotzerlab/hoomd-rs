@@ -86,11 +86,14 @@ where
 {
     /// Return an N x N identity matrix, with ones on the diagonal and zeros elsewhere.
     #[must_use]
-    fn eye() -> Self;
+    fn identity() -> Self;
+}
 
-    /** Solve the quadratic form $ A^T @ x @ A $ for a matrix .*/
+/// Solve the quadratic form $` A.transpose().matmul(x).matmul(A) `$.
+pub trait QuadraticForm: SquareMatrix {
+    /// Evaluate the quadratic form for a matrix `A` and a vector `x`.
     #[must_use]
-    fn compute_quadratic_form(&self, vars: &impl Diagonal) -> f64;
+    fn compute_quadratic_form<T: Diagonal>(&self, vars: &T) -> f64;
 }
 
 /** Structs implementing a large subset of Matrix traits.

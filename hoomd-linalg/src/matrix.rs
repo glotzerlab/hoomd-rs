@@ -4,7 +4,7 @@
 use std::fmt;
 use std::ops::{Add, Index, IndexMut, Mul, Neg, Sub};
 
-use crate::{Diagonal, GeneralMatrix, Invertible, MatMul, SquareMatrix};
+use crate::{Diagonal, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
 use hoomd_vector::{Cartesian, RotationMatrix};
 
 /// A matrix with N rows and M columns, allocated on the stack.
@@ -125,21 +125,10 @@ impl<const N: usize> GeneralMatrix for DiagonalMatrix<N> {
 
 impl<const N: usize> SquareMatrix for Matrix<N, N> {
     #[inline]
-    fn eye() -> Self {
+    fn identity() -> Self {
         Self {
             rows: std::array::from_fn(|i| std::array::from_fn(|j| if i == j { 1.0 } else { 0.0 })),
         }
-    }
-    #[inline]
-    fn compute_quadratic_form(&self, vars: &impl Diagonal) -> f64 {
-        let mut result = 0.0;
-
-        for i in 0..N {
-            for j in 0..N {
-                result += vars[i] * self.rows[i][j] * vars[j];
-            }
-        }
-        result
     }
 }
 
@@ -216,10 +205,10 @@ impl<const N: usize> Matrix<N, N> {
     ```
     use hoomd_linalg::{matrix::Matrix22, SquareMatrix};
 
-    let eye = Matrix22::eye();
-    assert_eq!(eye.det(), 1.0);
+    let identity = Matrix22::identity();
+    assert_eq!(identity.det(), 1.0);
 
-    let scaled = eye * 2.0;
+    let scaled = identity * 2.0;
     assert_eq!(scaled.det(), 2.0 * 2.0);
     ```
     */
@@ -313,6 +302,32 @@ impl<const N: usize> Matrix<N, N> {
                 std::array::from_fn(|j| if i == j { other[i] } else { 0.0 })
             }),
         }
+    }
+    // #[must_use]
+    // #[inline]
+    // /// Solve the quadratic form $` A.transpose().matmul(x).matmul(A) `$ for a matrix A and vector x.
+    // pub fn compute_quadratic_form<T: Diagonal>(&self, vars: &T) -> f64 {
+    //     let mut result = 0.0;
+
+    //     for i in 0..N {
+    //         for j in 0..N {
+    //             result += vars[i] * self.rows[i][j] * vars[j];
+    //         }
+    //     }
+    //     result
+    // }
+}
+impl<const N: usize> QuadraticForm for Matrix<N, N> {
+    #[inline]
+    fn compute_quadratic_form<T: Diagonal>(&self, vars: &T) -> f64 {
+        let mut result = 0.0;
+
+        for i in 0..N {
+            for j in 0..N {
+                result += vars[i] * self[(i, j)] * vars[j];
+            }
+        }
+        result
     }
 }
 
@@ -545,9 +560,9 @@ mod tests {
         case([[1.0, -2.0], [3.0, 4.0]]),
         case([[1.0, 2.0, 3.0], [0.0, 1.0, 4.0], [5.0, 6.0, 0.0]]),
         case([[2.0, 0.0, 1.0], [3.0, 0.0, 0.0], [5.0, 1.0, 1.0]]),
-        case(Matrix::<4, 4>::eye().rows),
+        case(Matrix::<4, 4>::identity().rows),
         case(Matrix::<5, 5>::full(3.6).diag().as_dense().rows),
-        case(Matrix::<8, 8>::eye().rows),
+        case(Matrix::<8, 8>::identity().rows),
     )]
     fn test_determinant<const N: usize>(rows: [[f64; N]; N]) {
         let matrix = Matrix { rows };
@@ -572,9 +587,9 @@ mod tests {
             [[2.0, 0.0, 1.0], [3.0, 0.0, 0.0], [5.0, 1.0, 1.0]],
             [[1.0, 0.0, 2.0], [0.0, 1.0, 1.0], [4.0, 0.0, 0.0]]
         ),
-        case(Matrix::<4, 4>::eye().rows, Matrix::<4, 4>::full(2.0).rows),
-        case(Matrix::<5, 5>::full(3.6).diag().as_dense().rows, Matrix::<5, 5>::eye().rows),
-        case(Matrix::<8, 8>::eye().rows, Matrix::<8, 8>::full(1.5).rows),
+        case(Matrix::<4, 4>::identity().rows, Matrix::<4, 4>::full(2.0).rows),
+        case(Matrix::<5, 5>::full(3.6).diag().as_dense().rows, Matrix::<5, 5>::identity().rows),
+        case(Matrix::<8, 8>::identity().rows, Matrix::<8, 8>::full(1.5).rows),
     )]
     fn test_matrix_multiply_square<const N: usize>(a_rows: [[f64; N]; N], b_rows: [[f64; N]; N]) {
         let a = Matrix { rows: a_rows };
@@ -622,7 +637,7 @@ mod tests {
 
     #[rstest(
         rows,
-        case::identity(Matrix22::eye().rows),
+        case::identity(Matrix22::identity().rows),
         case::mixed_sign([[1.0, -2.0], [3.0, 4.0]]),
         case::det_zero([[12.0, 2.0], [4.0, 0.0]]),
         case::large_range([[1000.0, 0.0], [0.0, 1e-4]]),
@@ -633,7 +648,7 @@ mod tests {
         case::scaling([[2.0, 0.0], [0.0, 3.0]]),
         /* None of these examples work using the fast algorithm.*/
         // case::reflect([[0.0, -1.0], [1.0, 0.0]]),
-        // case::negative_identity((Matrix22::eye()*-1.0).rows),
+        // case::negative_identity((Matrix22::identity()*-1.0).rows),
         // case::anti_diagonal([[0.0, 1.0], [1.0, 0.0]]),
         // case::singular([[1.0, 2.0], [2.0, 4.0]]),
     )]
@@ -667,7 +682,7 @@ mod tests {
 
     #[rstest(
         rows,
-        case::identity(Matrix22::eye().rows),
+        case::identity(Matrix22::identity().rows),
         case::mixed_sign([[1.0, -2.0], [3.0, 4.0]]),
         case::det_zero([[12.0, 2.0], [4.0, 0.0]]),
         case::large_range([[1000.0, 0.0], [0.0, 1e-4]]),
@@ -677,7 +692,7 @@ mod tests {
         case::nilpotent([[0.0, 1.0], [0.0, 0.0]]),
         case::scaling([[2.0, 0.0], [0.0, 3.0]]),
         case::reflect([[0.0, -1.0], [1.0, 0.0]]), // Numerical stability
-        case::negative_identity((Matrix22::eye()*-1.0).rows),
+        case::negative_identity((Matrix22::identity()*-1.0).rows),
         case::anti_diagonal([[0.0, 1.0], [1.0, 0.0]]),
         case::singular([[1.0, 2.0], [2.0, 4.0]]),
     )]
