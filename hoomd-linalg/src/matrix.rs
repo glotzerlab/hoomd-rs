@@ -19,7 +19,7 @@ pub struct DiagonalMatrix<const N: usize> {
     /// The elements of the diagonal of the matrix
     pub rows: [f64; N],
 }
-/// Index the on-diaginal components of a diagonal matrix
+/// Index the on-diagonal components of a diagonal matrix
 /// # Examples
 /// ```
 /// use hoomd_linalg::{matrix::DiagonalMatrix, SquareMatrix};
