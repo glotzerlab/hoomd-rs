@@ -81,7 +81,6 @@ pub trait TranslationalMotion<B, S, C, E, T, M> {
 /// these derivations to also accommodate constant pressure integration.
 pub trait RotationalMotion<const N: usize, B, S, C, E, T, M> {
     /// Perform the first integration half-step, mutating the microstate and possibly the thermostat.
-    #[must_use]
     fn integrate_rotation_step_one(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
@@ -91,7 +90,6 @@ pub trait RotationalMotion<const N: usize, B, S, C, E, T, M> {
     );
 
     /// Perform the second integration half-step, mutating the microstate and possibly the thermostat.
-    #[must_use]
     fn integrate_rotation_step_two(
         &self,
         microstate: &mut Microstate<B, S, C>,
@@ -105,18 +103,24 @@ pub trait RotationalMotion<const N: usize, B, S, C, E, T, M> {
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConstantVolume {
     /// The size of a timestep.
-    dt: f64,
+    pub dt: f64,
 
-    kinetic_energy: f64,
+    /// The instantaneous kinetic energy.
+    pub kinetic_energy: f64,
 
-    dof: f64,
+    /// The number of degrees of freedom.
+    pub dof: f64,
 }
 
 impl ConstantVolume {
+    /// Instantiate with no initial kinetic energy or degrees of freedom.
+    #[inline]
     pub fn new(dt: f64) -> Self {
-        Self { dt: dt, kinetic_energy: 0.0, dof: 0.0 }
+        Self { dt, kinetic_energy: 0.0, dof: 0.0 }
     }
 
+    /// The current kinetic energy.
+    #[inline]
     pub fn get_kinetic_energy(&self) -> &f64 {
         &self.kinetic_energy
     }
@@ -158,9 +162,7 @@ where
     /// `microstate` holds the system configuration that will be changed,
     /// `torque` is the evaluator that is used to calculate the net torque on every body,
     /// `thermostat` is the thermostat,
-    /// `macrostate` holds the temperature setpoint (used by the thermostat),
-    /// `dof` is the number of degrees of degrees of freedom (used by the thermostat),
-    /// `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
+    /// `macrostate` holds the temperature setpoint (used by the thermostat)
     /// 
     /// TODO: Do we want to allow users to set a displacement limit?
     #[inline]
@@ -235,9 +237,7 @@ where
     /// `microstate` holds the system configuration that will be changed,
     /// `torque` is the evaluator that is used to calculate the net torque on every body,
     /// `thermostat` is the thermostat,
-    /// `macrostate` holds the temperature setpoint (used by the thermostat),
-    /// `dof` is the number of degrees of degrees of freedom (used by the thermostat),
-    /// `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
+    /// `macrostate` holds the temperature setpoint (used by the thermostat)
     /// 
     /// TODO: Do we want to allow users to set a displacement limit?
     #[inline]
@@ -312,9 +312,7 @@ where
     /// `microstate` holds the system configuration that will be changed,
     /// `torque` is the evaluator that is used to calculate the net torque on every body,
     /// `thermostat` is the thermostat,
-    /// `macrostate` holds the temperature setpoint (used by the thermostat),
-    /// `dof` is the number of degrees of degrees of freedom (used by the thermostat),
-    /// `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
+    /// `macrostate` holds the temperature setpoint (used by the thermostat)
     #[inline]
     #[allow(clippy::too_many_lines)]
     fn integrate_rotation_step_one(
@@ -509,9 +507,7 @@ where
     /// `microstate` holds the system configuration that will be changed,
     /// `torque` is the evaluator that is used to calculate the net torque on every body,
     /// `thermostat` is the thermostat,
-    /// `macrostate` holds the temperature setpoint (used by the thermostat),
-    /// `dof` is the number of degrees of degrees of freedom (used by the thermostat),
-    /// `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
+    /// `macrostate` holds the temperature setpoint (used by the thermostat)
     #[inline]
     fn integrate_rotation_step_two(
         &self,
@@ -618,9 +614,7 @@ where
     /// `microstate` holds the system configuration that will be changed,
     /// `torque` is the evaluator that is used to calculate the net torque on every body,
     /// `thermostat` is the thermostat,
-    /// `macrostate` holds the temperature setpoint (used by the thermostat),
-    /// `dof` is the number of degrees of degrees of freedom (used by the thermostat),
-    /// `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
+    /// `macrostate` holds the temperature setpoint (used by the thermostat)
     #[inline]
     fn integrate_rotation_step_one(
         &mut self,
@@ -709,9 +703,7 @@ where
     /// `microstate` holds the system configuration that will be changed,
     /// `torque` is the evaluator that is used to calculate the net torque on every body,
     /// `thermostat` is the thermostat,
-    /// `macrostate` holds the temperature setpoint (used by the thermostat),
-    /// `dof` is the number of degrees of degrees of freedom (used by the thermostat),
-    /// `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
+    /// `macrostate` holds the temperature setpoint (used by the thermostat)
     #[inline]
     fn integrate_rotation_step_two(
         &self,
