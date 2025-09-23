@@ -2512,8 +2512,12 @@ dependencies = [
 name = "hoomd-md"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "approx",
+ "bevy",
  "divan",
+ "hoomd-bevy",
+ "hoomd-geometry",
  "hoomd-interaction",
  "hoomd-microstate",
  "hoomd-simulation",
