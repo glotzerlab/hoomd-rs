@@ -458,7 +458,7 @@ impl Invertible for Matrix<2, 2> {
 //             f,
 //             "[{}]",
 //             self.rows
-//                 .map(|row| Cartesian::<M>::from(row).to_string())
+//                 .map(|row| format!("[{}]", row.map(f64::to_string)))
 //                 .into_iter()
 //                 .collect::<Vec<String>>()
 //                 .join("\n ")
@@ -725,5 +725,252 @@ mod tests {
         assert_matrixes_ulps_eq::<2, 2, _, _>(&u, &nau);
         assert_diags_ulps_eq::<2, _>(&s, &nas);
         assert_matrixes_ulps_eq::<2, 2, _, _>(&vt, &navt);
+    }
+
+    #[test]
+    fn test_matrix_multiply_diagonal_2x2() {
+        let a_rows = [[1.0, 2.0], [3.0, 4.0]];
+        let b_diag = [5.0, 6.0];
+        let a = Matrix::<2, 2> { rows: a_rows };
+        let b = DiagonalMatrix::<2> { rows: b_diag };
+
+        let faer_a = fill_faer(a_rows);
+        let faer_b_dense = fill_faer(Matrix::<2, 2>::from_diag(&b).rows);
+
+        let custom_prod = a.matmul(&b);
+        let faer_prod = faer_a * faer_b_dense;
+
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&custom_prod, &faer_prod);
+    }
+
+    #[test]
+    fn test_matrix_multiply_diagonal_3x2() {
+        let a_rows = [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
+        let b_diag = [2.0, 3.0];
+        let a = Matrix::<3, 2> { rows: a_rows };
+        let b = DiagonalMatrix::<2> { rows: b_diag };
+
+        let faer_a = fill_faer(a_rows);
+        let faer_b_dense = fill_faer(Matrix::<2, 2>::from_diag(&b).rows);
+
+        let custom_prod = a.matmul(&b);
+        let faer_prod = faer_a * faer_b_dense;
+
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&custom_prod, &faer_prod);
+    }
+
+    #[test]
+    fn test_transpose_2x2() {
+        let rows = [[1.0, -2.0], [3.0, 4.0]];
+        let matrix = Matrix::<2, 2> { rows };
+        let faer_matrix = fill_faer(rows);
+        let custom_transpose = matrix.transpose();
+        let faer_transpose = faer_matrix.transpose();
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&custom_transpose, &faer_transpose);
+    }
+
+    #[test]
+    fn test_transpose_2x3() {
+        let rows = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]];
+        let matrix = Matrix::<2, 3> { rows };
+        let faer_matrix = fill_faer(rows);
+        let custom_transpose = matrix.transpose();
+        let faer_transpose = faer_matrix.transpose();
+        assert_matrixes_ulps_eq::<3, 2, _, _>(&custom_transpose, &faer_transpose);
+    }
+
+    #[test]
+    fn test_transpose_3x2() {
+        let rows = [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
+        let matrix = Matrix::<3, 2> { rows };
+        let faer_matrix = fill_faer(rows);
+        let custom_transpose = matrix.transpose();
+        let faer_transpose = faer_matrix.transpose();
+        assert_matrixes_ulps_eq::<2, 3, _, _>(&custom_transpose, &faer_transpose);
+    }
+
+    #[test]
+    fn test_transpose_1x1() {
+        let rows = [[-9.0]];
+        let matrix = Matrix::<1, 1> { rows };
+        assert_matrixes_ulps_eq::<1, 1, _, _>(&matrix.transpose(), &matrix);
+    }
+
+    #[test]
+    fn test_matrix_add_2x2() {
+        let a_rows = [[1.0, 2.0], [3.0, 4.0]];
+        let b_rows = [[5.0, 6.0], [7.0, 8.0]];
+        let a = Matrix::<2, 2> { rows: a_rows };
+        let b = Matrix::<2, 2> { rows: b_rows };
+        let faer_a = fill_faer(a_rows);
+        let faer_b = fill_faer(b_rows);
+
+        let custom_sum = a + b;
+        let faer_sum = faer_a + faer_b;
+
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&custom_sum, &faer_sum);
+    }
+
+    #[test]
+    fn test_matrix_add_2x3() {
+        let a_rows = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]];
+        let b_rows = [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]];
+        let a = Matrix::<2, 3> { rows: a_rows };
+        let b = Matrix::<2, 3> { rows: b_rows };
+        let faer_a = fill_faer(a_rows);
+        let faer_b = fill_faer(b_rows);
+
+        let custom_sum = a + b;
+        let faer_sum = faer_a + faer_b;
+
+        assert_matrixes_ulps_eq::<2, 3, _, _>(&custom_sum, &faer_sum);
+    }
+
+    #[test]
+    fn test_matrix_sub_2x2() {
+        let a_rows = [[1.0, 2.0], [3.0, 4.0]];
+        let b_rows = [[5.0, 6.0], [7.0, 8.0]];
+        let a = Matrix::<2, 2> { rows: a_rows };
+        let b = Matrix::<2, 2> { rows: b_rows };
+        let faer_a = fill_faer(a_rows);
+        let faer_b = fill_faer(b_rows);
+
+        let custom_diff = a - b;
+        let faer_diff = faer_a - faer_b;
+
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&custom_diff, &faer_diff);
+    }
+
+    #[test]
+    fn test_matrix_sub_2x3() {
+        let a_rows = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]];
+        let b_rows = [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]];
+        let a = Matrix::<2, 3> { rows: a_rows };
+        let b = Matrix::<2, 3> { rows: b_rows };
+        let faer_a = fill_faer(a_rows);
+        let faer_b = fill_faer(b_rows);
+
+        let custom_diff = a - b;
+        let faer_diff = faer_a - faer_b;
+
+        assert_matrixes_ulps_eq::<2, 3, _, _>(&custom_diff, &faer_diff);
+    }
+
+    #[rstest(
+        rows,
+        case([[1.0, -2.0], [3.0, 4.0]]),
+        case([[0.0, 0.0], [0.0, 0.0]])
+    )]
+    fn test_matrix_neg_2x2(rows: [[f64; 2]; 2]) {
+        let matrix = Matrix::<2, 2> { rows };
+        let faer_matrix = fill_faer(rows);
+
+        let custom_neg = -matrix;
+        let faer_neg = -faer_matrix;
+
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&custom_neg, &faer_neg);
+    }
+
+    #[rstest]
+    #[case([[1.0, 2.0], [3.0, 4.0]], 5.0)]
+    #[case([[1.0, 2.0], [3.0, 4.0]], -1.0)]
+    #[case([[1.0, 2.0], [3.0, 4.0]], 0.0)]
+    fn test_matrix_scalar_mul_2x2(#[case] rows: [[f64; 2]; 2], #[case] scalar: f64) {
+        let matrix = Matrix::<2, 2> { rows };
+        let faer_matrix = fill_faer(rows);
+
+        let custom_prod = matrix * scalar;
+        let faer_prod = faer_matrix * scalar;
+
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&custom_prod, &faer_prod);
+    }
+
+    #[test]
+    fn test_diagonal_matrix_add_n2() {
+        let a_diag = [1.0, 2.0];
+        let b_diag = [3.0, 4.0];
+        let a = DiagonalMatrix::<2> { rows: a_diag };
+        let b = DiagonalMatrix::<2> { rows: b_diag };
+        let expected: Vec<f64> = a_diag
+            .iter()
+            .zip(b_diag.iter())
+            .map(|(x, y)| x + y)
+            .collect();
+        let custom_sum = a + b;
+        assert_diags_ulps_eq::<2, _>(&custom_sum, &expected);
+    }
+
+    #[test]
+    fn test_diagonal_matrix_add_n3() {
+        let a_diag = [1.0, 2.0, 3.0];
+        let b_diag = [4.0, 5.0, 6.0];
+        let a = DiagonalMatrix::<3> { rows: a_diag };
+        let b = DiagonalMatrix::<3> { rows: b_diag };
+        let expected: Vec<f64> = a_diag
+            .iter()
+            .zip(b_diag.iter())
+            .map(|(x, y)| x + y)
+            .collect();
+        let custom_sum = a + b;
+        assert_diags_ulps_eq::<3, _>(&custom_sum, &expected);
+    }
+
+    #[test]
+    fn test_diagonal_matrix_sub_n2() {
+        let a_diag = [1.0, 2.0];
+        let b_diag = [3.0, 4.0];
+        let a = DiagonalMatrix::<2> { rows: a_diag };
+        let b = DiagonalMatrix::<2> { rows: b_diag };
+        let expected: Vec<f64> = a_diag
+            .iter()
+            .zip(b_diag.iter())
+            .map(|(x, y)| x - y)
+            .collect();
+        let custom_sub = a - b;
+        assert_diags_ulps_eq::<2, _>(&custom_sub, &expected);
+    }
+
+    #[test]
+    fn test_diagonal_matrix_sub_n3() {
+        let a_diag = [1.0, 2.0, 3.0];
+        let b_diag = [4.0, 5.0, 6.0];
+        let a = DiagonalMatrix::<3> { rows: a_diag };
+        let b = DiagonalMatrix::<3> { rows: b_diag };
+        let expected: Vec<f64> = a_diag
+            .iter()
+            .zip(b_diag.iter())
+            .map(|(x, y)| x - y)
+            .collect();
+        let custom_sub = a - b;
+        assert_diags_ulps_eq::<3, _>(&custom_sub, &expected);
+    }
+
+    #[test]
+    fn test_diagonal_matrix_neg_n2() {
+        let diag = [1.0, -2.0];
+        let matrix = DiagonalMatrix::<2> { rows: diag };
+        let expected: Vec<f64> = diag.iter().map(|x| -x).collect();
+        let custom_neg = -matrix;
+        assert_diags_ulps_eq::<2, _>(&custom_neg, &expected);
+    }
+
+    #[test]
+    fn test_diagonal_matrix_neg_n3() {
+        let diag = [1.0, -2.0, 0.0];
+        let matrix = DiagonalMatrix::<3> { rows: diag };
+        let expected: Vec<f64> = diag.iter().map(|x| -x).collect();
+        let custom_neg = -matrix;
+        assert_diags_ulps_eq::<3, _>(&custom_neg, &expected);
+    }
+
+    #[rstest]
+    #[case([1.0, 2.0], 5.0)]
+    #[case([1.0, 2.0], -1.0)]
+    #[case([1.0, 2.0], 0.0)]
+    fn test_diagonal_matrix_scalar_mul_n2(#[case] diag: [f64; 2], #[case] scalar: f64) {
+        let matrix = DiagonalMatrix::<2> { rows: diag };
+        let expected: Vec<f64> = diag.iter().map(|x| x * scalar).collect();
+        let custom_mul = matrix * scalar;
+        assert_diags_ulps_eq::<2, _>(&custom_mul, &expected);
     }
 }
