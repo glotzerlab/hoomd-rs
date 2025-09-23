@@ -541,6 +541,13 @@ mod tests {
         }
         faer_matrix
     }
+    fn fill_faer_column<const N: usize>(c: [f64; N]) -> Mat<f64> {
+        let mut faer_matrix = Mat::<f64>::zeros(N, 1);
+            for (i, el) in c.iter().enumerate() {
+                *faer_matrix.get_mut(i, 0) = *el;
+            }
+        faer_matrix
+    }
     fn assert_matrixes_ulps_eq<
         const N: usize,
         const M: usize,
@@ -970,5 +977,128 @@ mod tests {
         let expected: Vec<f64> = diag.iter().map(|x| x * scalar).collect();
         let custom_mul = matrix * scalar;
         assert_diags_ulps_eq::<2, _>(&custom_mul, &expected);
+    }
+
+    #[test]
+    fn test_indexing() {
+        // Matrix
+        let mat = Matrix::<2, 3> {
+            rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
+        };
+        assert_eq!(mat[(0, 2)], 3.0);
+        assert_eq!(mat[(1, 1)], 5.0);
+
+        // DiagonalMatrix
+        let diag_mat = DiagonalMatrix::<3> {
+            rows: [1.0, 2.0, 3.0],
+        };
+        assert_eq!(diag_mat[1], 2.0); // 1D indexing
+        assert_eq!(diag_mat[(2, 2)], 3.0); // 2D on-diagonal
+        assert_eq!(diag_mat[(0, 1)], 0.0); // 2D off-diagonal
+    }
+
+    #[test]
+    fn test_mut_indexing() {
+        let mut mat = Matrix::<2, 2>::zeros();
+        mat[(0, 1)] = 99.0;
+        mat[(1, 0)] = -5.5;
+        assert_eq!(mat[(0, 1)], 99.0);
+        assert_eq!(mat[(1, 0)], -5.5);
+        assert_eq!(mat[(1, 1)], 0.0);
+    }
+
+    #[test]
+    fn test_general_matrix_methods() {
+        // Matrix
+        let zeros = Matrix::<2, 3>::zeros();
+        let full = Matrix::<2, 3>::full(7.5);
+        for i in 0..2 {
+            for j in 0..3 {
+                assert_eq!(zeros[(i, j)], 0.0);
+                assert_eq!(full[(i, j)], 7.5);
+            }
+        }
+
+        // DiagonalMatrix
+        let diag_zeros = DiagonalMatrix::<4>::zeros();
+        let diag_full = DiagonalMatrix::<4>::full(-3.0);
+        for i in 0..4 {
+            assert_eq!(diag_zeros[i], 0.0);
+            assert_eq!(diag_full[i], -3.0);
+        }
+    }
+
+    #[test]
+    fn test_square_matrix_methods() {
+        let identity = Matrix::<3, 3>::identity();
+        let expected = Matrix::<3, 3> {
+            rows: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+        };
+        assert_matrixes_ulps_eq::<3, 3, _, _>(&identity, &expected);
+
+        let diag_mat = DiagonalMatrix::<3> {
+            rows: [10.0, 20.0, 30.0],
+        };
+        let dense = diag_mat.as_dense();
+        let expected_dense = Matrix::<3, 3>::from_diag(&[10.0, 20.0, 30.0]);
+        assert_matrixes_ulps_eq::<3, 3, _, _>(&dense, &expected_dense);
+    }
+
+    #[test]
+    fn test_diag_conversions() {
+        let mat = Matrix::<3, 3> {
+            rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
+        };
+        let diag = mat.diag();
+        let expected_diag = DiagonalMatrix {
+            rows: [1.0, 5.0, 9.0],
+        };
+        assert_diags_ulps_eq::<3, _>(&diag, &expected_diag.rows);
+
+        let from_diag = Matrix::<3, 3>::from_diag(&diag.rows);
+        let expected_from_diag = Matrix {
+            rows: [[1.0, 0.0, 0.0], [0.0, 5.0, 0.0], [0.0, 0.0, 9.0]],
+        };
+        assert_matrixes_ulps_eq::<3, 3, _, _>(&from_diag, &expected_from_diag);
+    }
+
+    #[rstest(
+        rows, vars,
+        case(
+            [[1.0, 2.0], [3.0, 4.0]],
+            [0.5, 1.5]
+        ),
+        case(
+            [[2.0, 0.0, 1.0], [3.0, 0.0, 0.0], [5.0, 1.0, 1.0]],
+            [1.0, 2.0, 3.0]
+        ),
+        case(
+            [[-33.0, 2.0, 0.0, 1.0], [3.0, -45.0, 0.0, 0.0], [5.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]],
+            [1.0, 2.0, 3.0, 4.0]
+        ),
+    )]
+    fn test_quadratic_form<const N: usize>(rows: [[f64; N]; N], vars: [f64; N]) {
+        let matrix = Matrix { rows };
+        let result = matrix.compute_quadratic_form(&vars);
+        assert_relative_eq!(
+            result,
+            (fill_faer_column(vars).transpose() * fill_faer(rows) * fill_faer_column(vars))[(0, 0)],
+            max_relative = 1e-14
+        );
+    }
+
+    #[rstest(
+        rows,
+        case([[1.0, -2.0], [3.0, 4.0]]),
+        case([[10.0, 0.0], [0.0, 0.1]]),
+        case([[1.0, 1.0], [0.0, 1.0]]),
+    )]
+    fn test_inverse_2x2(rows: [[f64; 2]; 2]) {
+        let matrix = Matrix22 { rows };
+        let inv_matrix = matrix.inverse();
+        let product = matrix.matmul(&inv_matrix);
+        let identity = Matrix22::identity();
+
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&product, &identity);
     }
 }
