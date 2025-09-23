@@ -708,6 +708,7 @@ impl<const N: usize, const K: usize> MatMul<Matrix<N, K>> for RotationMatrix<N> 
 
 impl<const N: usize> Diagonal for Cartesian<N> {}
 
+#[allow(dead_code, reason = "TODO: Used in other branch.")]
 impl<const N: usize> Cartesian<N> {
     /// Convert a [`Cartesian<N>`] into a row matrix [`Matrix<1, N>`].
     #[inline]
