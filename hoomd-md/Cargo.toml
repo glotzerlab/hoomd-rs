@@ -24,8 +24,12 @@ rand.workspace = true
 rand_distr.workspace = true
 
 [dev-dependencies]
+hoomd-geometry.workspace = true
+hoomd-bevy.workspace = true
+bevy = { workspace = true }
 approx.workspace = true
 divan.workspace = true
 rstest.workspace = true
 rand.workspace = true
 ratatui = "0.28.0"
+anyhow = "1.0.98"
