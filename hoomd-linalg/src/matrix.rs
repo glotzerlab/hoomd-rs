@@ -206,6 +206,7 @@ impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> 
 
 impl<const N: usize, const M: usize> Matrix<N, M> {
     /// Interchange the rows and columns of matrix `A` such that `A.transpose()[(j, i)] = A[(i, j)]`
+    #[allow(dead_code, reason = "No use case yet.")]
     #[inline]
     #[must_use]
     fn transpose(&self) -> Matrix<M, N> {
