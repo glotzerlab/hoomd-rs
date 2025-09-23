@@ -543,9 +543,9 @@ mod tests {
     }
     fn fill_faer_column<const N: usize>(c: [f64; N]) -> Mat<f64> {
         let mut faer_matrix = Mat::<f64>::zeros(N, 1);
-            for (i, el) in c.iter().enumerate() {
-                *faer_matrix.get_mut(i, 0) = *el;
-            }
+        for (i, el) in c.iter().enumerate() {
+            *faer_matrix.get_mut(i, 0) = *el;
+        }
         faer_matrix
     }
     fn assert_matrixes_ulps_eq<
