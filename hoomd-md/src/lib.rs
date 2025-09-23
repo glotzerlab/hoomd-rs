@@ -27,18 +27,18 @@ use thermostat::Thermostat;
 use hoomd_simulation::macrostate::Temperature;
 
 /// Integrate over translational degrees of freedom.
-/// 
+///
 /// Conceptually, integration changes a system's [`Microstate`] according to
 /// equations of motion that are determined by the system's metric-space and
 /// degrees of freedom.
-/// 
+///
 /// In translational integration, the equations of motion allow a body's
 /// [`Position`], [`Velocity`], and [`Acceleration`] to evolve over time.
 /// `Acceleration` only changes if the interaction model includes force, and
 /// particle properties and interactions may be additionally modulated by a
 /// [`Thermostat`] that maintains system temperature according to the setpoint
 /// stored in a `macrostate`.
-/// 
+///
 /// Mathematically, integration is accomplished using an adaptation of the
 /// symplectic and time-reversible two-step Verlet integration schemes published
 /// in Miller et al. (2002) and Kamberaj et al. (2005). Jens Glaser adapted
@@ -55,7 +55,7 @@ pub trait TranslationalMotion<B, S, C, E, T, M> {
 
     /// Perform the second integration half-step, mutating the microstate and possibly the thermostat.
     fn integrate_translation_step_two(
-        &self,
+        &mut self,
         microstate: &mut Microstate<B, S, C>,
         force: &E,
         thermostat: &mut T,
@@ -64,17 +64,17 @@ pub trait TranslationalMotion<B, S, C, E, T, M> {
 }
 
 /// Integrate over rotational degrees of freedom.
-/// 
+///
 /// Conceptually, integration changes a system's [`Microstate`] according to
 /// equations of motion that are determined by the system's metric-space and
 /// degrees of freedom.
-/// 
+///
 /// In rotational integration, the equations of motion allow a body's
 /// [`Orientation`] and [`AngularVelocity`] to evolve over time. `AngularVelocity`
 /// only changes if the interaction model includes torque, and particle properties
 /// and interactions may be additionally modulated by a [`Thermostat`] that
 /// maintains system temperature according to the setpoint stored in a `macrostate`.
-/// 
+///
 /// Mathematically, integration is accomplished using an adaptation of the
 /// symplectic and time-reversible two-step Verlet integration schemes published
 /// in Miller et al. (2002) and Kamberaj et al. (2005). Jens Glaser adapted
@@ -93,7 +93,7 @@ pub trait RotationalMotion<const N: usize, B, S, C, E, T, M> {
     /// Perform the second integration half-step, mutating the microstate and possibly the thermostat.
     #[must_use]
     fn integrate_rotation_step_two(
-        &self,
+        &mut self,
         microstate: &mut Microstate<B, S, C>,
         torque: &E,
         thermostat: &mut T,
@@ -127,9 +127,9 @@ pub struct ConstantPressure;
 
 /// Integrate over translational degrees of freedom for a system with constant
 /// volume in any vector space.
-/// 
+///
 /// [`ConstantVolume`] integration is only defined for macrostates with [`Temperature`].
-/// 
+///
 /// The generic type names are:
 /// * `V`: The [`Vector`]() type.
 /// * `B`: The [`Body::properties`](crate::Body) type.
@@ -154,14 +154,14 @@ where
     M: Temperature,
 {
     /// Perform the first integration half-step, mutating the microstate and possibly the thermostat.
-    /// 
+    ///
     /// `microstate` holds the system configuration that will be changed,
     /// `torque` is the evaluator that is used to calculate the net torque on every body,
     /// `thermostat` is the thermostat,
     /// `macrostate` holds the temperature setpoint (used by the thermostat),
     /// `dof` is the number of degrees of degrees of freedom (used by the thermostat),
     /// `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
-    /// 
+    ///
     /// TODO: Do we want to allow users to set a displacement limit?
     #[inline]
     fn integrate_translation_step_one(
@@ -171,11 +171,14 @@ where
         thermostat: &mut T,
         macrostate: &M,
     ) {
+        // Closure for calculating (ke, dof) in the Thermostat
         let mut compute_properties = |microstate: &Microstate<B, S, C>| -> (f64, f64) {
             let integrator_ke = &mut self.kinetic_energy;
             let integrator_dof = &mut self.dof;
             let mut ke = 0.0;
-            let dof = 3.0 * microstate.bodies().len() as f64;
+            // use the first body to determine the dimension
+            let nd = microstate.bodies()[0].item.properties.position().n_dimensions() as f64;
+            let dof = nd * microstate.bodies().len() as f64;
 
             for body_index in 0..microstate.bodies().len() {
                 // Get the the body information
@@ -192,27 +195,29 @@ where
             (ke, dof)
         };
 
-        // Calculate temperature scaling factor
-        let rescaling_factor = thermostat.rescaling_factor_step_one(
+        // Advance thermostat and get rescaling factor
+        let rescaling_factor = thermostat.integrate_step_one(
             microstate,
             macrostate,
             &self.dt,
             &mut compute_properties,
         );
 
-        // For loop over a range instead of bodies().iter() since the latter holds an immutable borrow.
+        // Integrate position and momentum forward
         for body_index in 0..microstate.bodies().len() {
             // Get the important information from the body
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
 
             // Perform the integration step
             // TODO: should we use the momentum methods here?
-            let acceleration = *body_properties.net_force() / *body_properties.mass();
-            let velocity = body_properties.velocity();
-            body_properties.set_velocity(
-                velocity + ((acceleration * 0.5 * self.dt) * rescaling_factor)
-            );
-            *body_properties.position_mut() += velocity * self.dt;
+            let net_force = body_properties.net_force().clone();
+            let mass = body_properties.mass().clone();
+            let mut momentum = body_properties.momentum().clone();
+
+            // Apply thermostat
+            momentum *= rescaling_factor;
+            momentum += net_force * 0.5 * self.dt;
+            *body_properties.position_mut() += momentum * (1.0/mass) * self.dt;
 
             // Update the microstate with new body properties, wrapping automatically
             microstate
@@ -220,54 +225,85 @@ where
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
 
-        thermostat.advance(
-            microstate,
-            macrostate,
-            &self.dt,
-            &mut compute_properties,
-        );
-
         microstate.increment_substep();
     }
 
     /// Perform the second integration half-step, mutating the microstate and possibly the thermostat.
-    /// 
+    ///
     /// `microstate` holds the system configuration that will be changed,
     /// `torque` is the evaluator that is used to calculate the net torque on every body,
     /// `thermostat` is the thermostat,
     /// `macrostate` holds the temperature setpoint (used by the thermostat),
     /// `dof` is the number of degrees of degrees of freedom (used by the thermostat),
     /// `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
-    /// 
+    ///
     /// TODO: Do we want to allow users to set a displacement limit?
     #[inline]
     fn integrate_translation_step_two(
-        &self,
+        &mut self,
         microstate: &mut Microstate<B, S, C>,
         force: &E,
         thermostat: &mut T,
         macrostate: &M,
     ) {
-        // Calculate temperature scaling factor
-        let rescaling_factor =
-            thermostat.rescaling_factor_step_two(microstate, macrostate, &self.dt);
+        // Closure for calculating (ke, dof) in the Thermostat
+        let mut compute_properties = |microstate: &Microstate<B, S, C>| -> (f64, f64) {
+            let integrator_ke = &mut self.kinetic_energy;
+            let integrator_dof = &mut self.dof;
+            let mut ke = 0.0;
+            // use the first body to determine the dimension
+            let nd = microstate.bodies()[0].item.properties.position().n_dimensions() as f64;
+            let dof = nd * microstate.bodies().len() as f64;
 
-        // For loop over a range instead of bodies().iter() since the latter holds an immutable borrow.
+            for body_index in 0..microstate.bodies().len() {
+                // Get the the body information
+                let body_properties = microstate.bodies()[body_index].item.properties.clone();
+
+                // calculate m * v^2 part
+                let velocity = body_properties.velocity();
+                ke += velocity.norm_squared() * body_properties.mass();
+            }
+            ke *= 0.5;
+            *integrator_ke = ke.clone();
+            *integrator_dof = dof.clone();
+
+            (ke, dof)
+        };
+
+        // Integrate momentum forward
         for body_index in 0..microstate.bodies().len() {
             // Get the important information from the body
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
 
             // Calculate the net force on the body
             let net_force_new = force.net_force_on_body(microstate, body_index);
-            let acceleration_new = net_force_new / *body_properties.mass();
 
             // Perform the integration step
             // TODO: should we use the momentum methods here?
-            let velocity = body_properties.velocity();
             *body_properties.net_force_mut() = net_force_new;
-            body_properties.set_velocity(
-                velocity + ((acceleration_new * 0.5 * self.dt) * rescaling_factor)
-            );
+            *body_properties.momentum_mut() += net_force_new * self.dt * 0.5;
+
+            // Update the microstate with new body properties, wrapping automatically
+            microstate
+                .update_body_properties(body_index, body_properties)
+                .expect("Bodies and sites should remain in simulation boundary.");
+        }
+
+        // Advance thermostat and get rescaling factor
+        let rescaling_factor = thermostat.integrate_step_two(
+            microstate,
+            macrostate,
+            &self.dt,
+            &mut compute_properties,
+        );
+
+        // Apply thermostat
+        for body_index in 0..microstate.bodies().len() {
+            // Get the important information from the body
+            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+
+            // Rescale velocity
+            *body_properties.momentum_mut() *= rescaling_factor;
 
             // Update the microstate with new body properties, wrapping automatically
             microstate
@@ -281,9 +317,9 @@ where
 
 /// Integrate over rotational degrees of freedom for a system with constant
 /// volume in 3-dimensional Cartesian space.
-/// 
+///
 /// [`ConstantVolume`] integration is only defined for macrostates with [`Temperature`].
-/// 
+///
 /// The generic type names are:
 /// * `B`: The [`Body::properties`](crate::Body) type.
 /// * `S`: The [`Site::properties`](crate::Site) type.
@@ -308,7 +344,7 @@ where
 {
     /// Perform the first integration half-step, mutating the microstate and
     /// possibly the thermostat.
-    /// 
+    ///
     /// `microstate` holds the system configuration that will be changed,
     /// `torque` is the evaluator that is used to calculate the net torque on every body,
     /// `thermostat` is the thermostat,
@@ -324,6 +360,7 @@ where
         thermostat: &mut T,
         macrostate: &M,
     ) {
+        // Closure for calculating (ke, dof) in the Thermostat
         let mut compute_properties = |microstate: &Microstate<B, S, C>| -> (f64, f64) {
             let integrator_ke = &mut self.kinetic_energy;
             let integrator_dof = &mut self.dof;
@@ -366,14 +403,15 @@ where
 
             (ke, dof)
         };
-        // Calculate temperature scaling factor
-        let rescaling_factor = thermostat.rescaling_factor_step_one(
+        // Advance thermostat and get rescaling factor
+        let rescaling_factor = thermostat.integrate_step_one(
             microstate,
             macrostate,
             &self.dt,
             &mut compute_properties,
         );
 
+        // Integrate orientation and angular momentum forward
         for body_index in 0..microstate.bodies().len() {
             // Get the important information from the body
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
@@ -408,6 +446,8 @@ where
                 t_inframe[2] = 0.0
             };
 
+            // Apply thermostat
+            p = p * rescaling_factor;
             // Advance p and q by half a timestep following Trotter
             // factorization of Liouvillian rotation
             p +=
@@ -415,9 +455,6 @@ where
                     scalar: 0.0,
                     vector: t_inframe.coordinates.into(),
                 } * self.dt;
-
-            // Apply thermostat
-            p = p * rescaling_factor;
 
             // TODO: what do we call these steps?
             if !z_zero {
@@ -493,19 +530,12 @@ where
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
 
-        thermostat.advance(
-            microstate,
-            macrostate,
-            &self.dt,
-            &mut compute_properties,
-        );
-
         microstate.increment_substep();
     }
 
     /// Perform the second integration half-step, mutating the microstate and
     /// possibly the thermostat.
-    /// 
+    ///
     /// `microstate` holds the system configuration that will be changed,
     /// `torque` is the evaluator that is used to calculate the net torque on every body,
     /// `thermostat` is the thermostat,
@@ -514,17 +544,57 @@ where
     /// `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
     #[inline]
     fn integrate_rotation_step_two(
-        &self,
+        &mut self,
         microstate: &mut Microstate<B, S, C>,
         torque: &E,
         thermostat: &mut T,
         macrostate: &M,
     ) {
-        // Calculate temperature scaling factor
-        let rescaling_factor = 
-            thermostat.rescaling_factor_step_two(microstate, macrostate, &self.dt);
+        // Closure for calculating (ke, dof) in the Thermostat
+        let mut compute_properties = |microstate: &Microstate<B, S, C>| -> (f64, f64) {
+            let integrator_ke = &mut self.kinetic_energy;
+            let integrator_dof = &mut self.dof;
+            let mut ke = 0.0;
+            let mut dof = 0.0;
+            for body_index in 0..microstate.bodies().len() {
+                // Get the important information from the body
+                let body_properties = microstate.bodies()[body_index].item.properties.clone();
 
-        // Integration Step One
+                // Shorthand variables
+                // q is the quaternion representation of orientation
+                // p is the quaternion representation of angular momentum
+                // I is the 3-vector diagonal values of the moment of inertia
+                let q = body_properties.orientation();
+                let p = body_properties.angular_momentum();
+                let I = body_properties.moment_of_inertia();
+
+                // Ignore the ke which have zero contribution to inertia
+                let x_nonzero = I[0] > 0.0;
+                let y_nonzero = I[1] > 0.0;
+                let z_nonzero = I[2] > 0.0;
+
+                let s = (q.conjugate() * *p) * 0.5;
+                if x_nonzero {
+                    ke += s.vector[0].powi(2) / I[0];
+                    dof += 1.0
+                };
+                if y_nonzero {
+                    ke += s.vector[1].powi(2) / I[1];
+                    dof += 1.0
+                };
+                if z_nonzero {
+                    ke += s.vector[2].powi(2) / I[2];
+                    dof += 1.0
+                };
+            }
+            ke *= 0.5;
+            *integrator_ke = ke.clone();
+            *integrator_dof = dof.clone();
+
+            (ke, dof)
+        };
+
+        // Integrate angular momentum forward
         for body_index in 0..microstate.bodies().len() {
             // Get the important information from the body
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
@@ -536,7 +606,7 @@ where
             let q = *body_properties.orientation_mut();
             let mut p = *body_properties.angular_momentum_mut();
             let I = *body_properties.moment_of_inertia();
-            
+
             // calculate the net torque since position has been updated at integrate_rotation_step_one
             let net_t_new = torque.net_torque_on_body(microstate, body_index);
             // Update the torque in particle data
@@ -561,10 +631,6 @@ where
                 t_new_inframe[2] = 0.0
             };
 
-
-            // Apply thermostat
-            p = p * rescaling_factor;
-
             // Advance p by half a timestep following Trotter
             // factorization of Liouvillian rotation
             p +=
@@ -582,14 +648,41 @@ where
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
 
+        // Advance thermostat and get rescaling factor
+        let rescaling_factor = thermostat.integrate_step_two(
+            microstate,
+            macrostate,
+            &self.dt,
+            &mut compute_properties,
+        );
+
+        // Apply thermostat
+        for body_index in 0..microstate.bodies().len() {
+            // Get the important information from the body
+            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+
+            let mut p = *body_properties.angular_momentum_mut();
+
+            // Apply thermostat
+            p = p * rescaling_factor;
+
+            // Update the angular momentum in particle data
+            *body_properties.angular_momentum_mut() = p;
+
+            // Update the microstate with new body properties, wrapping automatically
+            microstate
+                .update_body_properties(body_index, body_properties)
+                .expect("Bodies and sites should remain in simulation boundary.");
+        }
+
         microstate.increment_substep();
     }
 }
 
 /// Integrate rotational degrees of freedom in 2-dimensional Cartesian space.
-/// 
+///
 /// [`ConstantVolume`] integration is only defined for macrostates with [`Temperature`].
-/// 
+///
 /// The generic type names are:
 /// * `B`: The [`Body::properties`](crate::Body) type.
 /// * `S`: The [`Site::properties`](crate::Site) type.
@@ -614,7 +707,7 @@ where
 {
     /// Perform the first integration half-step, mutating the microstate and
     /// possibly the thermostat.
-    /// 
+    ///
     /// `microstate` holds the system configuration that will be changed,
     /// `torque` is the evaluator that is used to calculate the net torque on every body,
     /// `thermostat` is the thermostat,
@@ -625,10 +718,11 @@ where
     fn integrate_rotation_step_one(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
-        torque: &E,
+        _torque: &E,
         thermostat: &mut T,
         macrostate: &M,
     ) {
+        // Closure for calculating (ke, dof) in the Thermostat
         let mut compute_properties = |microstate: &Microstate<B, S, C>| -> (f64, f64) {
             let integrator_ke = &mut self.kinetic_energy;
             let integrator_dof = &mut self.dof;
@@ -658,14 +752,16 @@ where
 
             (ke, dof)
         };
-        // Calculate temperature scaling factor
-        let rescaling_factor = thermostat.rescaling_factor_step_one(
+
+        // Advance thermostat and get rescaling factor
+        let rescaling_factor = thermostat.integrate_step_one(
             microstate,
             macrostate,
             &self.dt,
             &mut compute_properties,
         );
-        // 
+
+        // Integrate orientation and angular momentum forward
         for body_index in 0..microstate.bodies().len() {
             // Get the important information from the body
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
@@ -677,11 +773,12 @@ where
             let p = *body_properties.angular_momentum();
             let t = *body_properties.net_torque();
             let I = *body_properties.moment_of_inertia();
-            
+
+            // Apply thermostat
             // Advance p by half a timestep and q by a full timestep following Trotter
             // factorization of Liouvillian rotation
-            *body_properties.angular_momentum_mut() += t * 0.5 * self.dt;
             *body_properties.angular_momentum_mut() *= rescaling_factor;
+            *body_properties.angular_momentum_mut() += t * 0.5 * self.dt;
             body_properties.orientation_mut().theta += p/I * self.dt;
 
             // wrap angle back into [0, 2pi] to improve stability
@@ -693,19 +790,12 @@ where
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
 
-        thermostat.advance(
-            microstate,
-            macrostate,
-            &self.dt,
-            &mut compute_properties,
-        );
-
         microstate.increment_substep();
     }
 
     /// Perform the first integration half-step, mutating the microstate and
     /// possibly the thermostat.
-    /// 
+    ///
     /// `microstate` holds the system configuration that will be changed,
     /// `torque` is the evaluator that is used to calculate the net torque on every body,
     /// `thermostat` is the thermostat,
@@ -714,19 +804,44 @@ where
     /// `kinetic_energy` is the kinetic energy of the system (used by the thermostat)
     #[inline]
     fn integrate_rotation_step_two(
-        &self,
+        &mut self,
         microstate: &mut Microstate<B, S, C>,
         torque: &E,
         thermostat: &mut T,
         macrostate: &M,
     ) {
-        // Calculate temperature scaling factor
-        let rescaling_factor = thermostat.rescaling_factor_step_two(
-            microstate,
-            macrostate,
-            &self.dt,
-        );
-        // 
+        // Closure for calculating (ke, dof) in the Thermostat
+        let mut compute_properties = |microstate: &Microstate<B, S, C>| -> (f64, f64) {
+            let integrator_ke = &mut self.kinetic_energy;
+            let integrator_dof = &mut self.dof;
+            let mut ke = 0.0;
+            let mut dof = 0.0;
+            for body_index in 0..microstate.bodies().len() {
+                // Get the important information from the body
+                let body_properties = microstate.bodies()[body_index].item.properties.clone();
+
+                // Shorthand variables
+                // p is the z-component of angular momentum
+                // I is the z-compoenet of the moment of inertia
+                let p = body_properties.angular_momentum();
+                let I = body_properties.moment_of_inertia();
+
+                // Ignore the ke which have zero contribution to inertia
+                let z_nonzero = *I > 0.0;
+
+                if z_nonzero {
+                    ke += p.powi(2) / I;
+                    dof += 1.0
+                };
+            }
+            ke *= 0.5;
+            *integrator_ke = ke.clone();
+            *integrator_dof = dof.clone();
+
+            (ke, dof)
+        };
+
+        // Integrate angular momentum forward
         for body_index in 0..microstate.bodies().len() {
             // Get the important information from the body
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
@@ -735,10 +850,9 @@ where
             let net_t_new = torque.net_torque_on_body(microstate, body_index);
             // Update the torque in particle data
             *body_properties.net_torque_mut() = net_t_new;
-            
+
             // Advance p by half a timestep following Trotter
             // factorization of Liouvillian rotation
-            *body_properties.angular_momentum_mut() *= rescaling_factor;
             *body_properties.angular_momentum_mut() += net_t_new * 0.5 * self.dt;
 
             // Update the microstate with new body properties, wrapping automatically
@@ -746,6 +860,29 @@ where
                 .update_body_properties(body_index, body_properties)
                 .expect("Bodies and sites should remain in simulation boundary.");
         }
-        // TODO
+
+        // Advance thermostat and get rescaling factor
+        let rescaling_factor = thermostat.integrate_step_two(
+            microstate,
+            macrostate,
+            &self.dt,
+            &mut compute_properties,
+        );
+
+        // Update velocity
+        for body_index in 0..microstate.bodies().len() {
+            // Get the important information from the body
+            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+
+            // Apply thermostat
+            *body_properties.angular_momentum_mut() *= rescaling_factor;
+
+            // Update the microstate with new body properties, wrapping automatically
+            microstate
+                .update_body_properties(body_index, body_properties)
+                .expect("Bodies and sites should remain in simulation boundary.");
+        }
+
+        microstate.increment_substep();
     }
 }

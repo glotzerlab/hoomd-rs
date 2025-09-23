@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Control system temperature.
-//! 
+//!
 //! TODO: Expand documentation.
 
 use hoomd_microstate::{
@@ -14,14 +14,14 @@ use hoomd_vector::{Cartesian, Vector};
 use rand_distr::{Distribution, Gamma, Normal};
 
 /// Adjust the temperature of a system.
-/// 
+///
 /// TODO: ensure that docs indicate two-step integration is baked into the thermostat trait
 /// TODO: Add example.
 pub trait Thermostat<B, S, C, M> {
-    /// The scaling factor for velocities in the first half-step.
+    /// Integrate the thermostat dof foward, and return
     /// Note that translation and rotation are assumed to have identical math
     /// behind their scaling factors.
-    fn rescaling_factor_step_one<P>(
+    fn integrate_step_one<P>(
         &mut self,
         microstate: &Microstate<B, S, C>,
         macrostate: &M,
@@ -34,21 +34,14 @@ pub trait Thermostat<B, S, C, M> {
     /// The scaling factor for velocities in the second half-step.
     /// Note that translation and rotation are assumed to have identical math
     /// behind their scaling factors.
-    fn rescaling_factor_step_two(
-        &self,
-        microstate: &Microstate<B, S, C>,
-        macrostate: &M,
-        dt: &f64,
-    ) -> f64;
-
-    /// TODO: add docs
-    fn advance<P>(
+    fn integrate_step_two<P>(
         &mut self,
         microstate: &Microstate<B, S, C>,
         macrostate: &M,
         dt: &f64,
         compute_properties: P,
-    ) where
+    ) -> f64
+    where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64);
 }
 
@@ -59,7 +52,7 @@ pub struct NoThermostat;
 impl<B, S, C, M> Thermostat<B, S, C, M> for NoThermostat
 {
     #[inline]
-    fn rescaling_factor_step_one<P>(
+    fn integrate_step_one<P>(
         &mut self,
         microstate: &Microstate<B, S, C>,
         _macrostate: &M,
@@ -74,25 +67,18 @@ impl<B, S, C, M> Thermostat<B, S, C, M> for NoThermostat
     }
 
     #[inline]
-    fn rescaling_factor_step_two(
-        &self,
-        _microstate: &Microstate<B, S, C>,
-        _macrostate: &M,
-        _dt: &f64,
-    ) -> f64 {
-        1.0
-    }
-
-    #[inline]
-    fn advance<P>(
+    fn integrate_step_two<P>(
         &mut self,
-        _microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, C>,
         _macrostate: &M,
         _dt: &f64,
-        _compute_properties: P,
-    ) where
+        mut compute_properties: P,
+    ) -> f64
+    where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
+        let (_, _) = compute_properties(&microstate);
+        1.0
     }
 }
 
@@ -108,7 +94,7 @@ pub struct BussiThermostat {
 impl BussiThermostat {
     /// Constrcut MTTKThermostat.
     pub fn new(tau: f64) -> Self {
-        assert!(tau >= 0.0, "MTTKThermostat requires tau >= 0");
+        assert!(tau >= 0.0, "BussiThermostat requires tau >= 0");
         Self {
             tau: tau,
             cumu_energy_drift: 0.0,
@@ -122,13 +108,14 @@ impl BussiThermostat {
 /// TODO: add documentation
 impl<B, S, C, M> Thermostat<B, S, C, M> for BussiThermostat
 where
+    B: Clone,
     M: Temperature,
 {
     /// Calculate velocity rescaling factor following the Appendix in https://doi.org/10.1063/1.2408420.
     /// Bussi requires the rng, instataneous kinetic_energy, timestep and degrees-of-freedom,
     /// change the trait function definition accordingly?
     #[inline]
-    fn rescaling_factor_step_one<P>(
+    fn integrate_step_one<P>(
         &mut self,
         microstate: &Microstate<B, S, C>,
         macrostate: &M,
@@ -158,49 +145,48 @@ where
 
         // special case when tau is set to 0.
         let mut time_decay_factor = 0.0;
+
         // normal case time decay factor.
         if self.tau != 0.0 {
             time_decay_factor = (-dt / self.tau).exp();
         }
+
         // sample random number form standard normal distribution for the first dof.
         let random_normal_one: f64 = Normal::new(0.0, 1.0).unwrap().sample(&mut rng);
+
         // special case when dof is 1.
         let mut random_gamma: f64 = 0.0;
+
         // sample random numnber from gamma distribution for the rest of dof
         if dof > 0.0 {
             random_gamma = 2.0 * Gamma::new((dof - 1.0) / 2.0, 1.0).unwrap().sample(&mut rng);
         }
+
         // assemble everything
         let v = kT_setpoint / 2.0 / ke;
         let term1 = v * (1.0 - time_decay_factor) * (random_gamma + random_normal_one.powi(2));
         let term2 =
             2.0 * random_normal_one * (v * (1.0 - time_decay_factor) * time_decay_factor).sqrt();
-        let alpha = (time_decay_factor + term1 + term2).sqrt();
+        let rescaling_factor = (time_decay_factor + term1 + term2).sqrt();
 
-        self.cumu_energy_drift += self.energy_drift(&ke, &alpha);
-        alpha
+        // accumulate energy drift
+        self.cumu_energy_drift += self.energy_drift(&ke, &rescaling_factor);
+        rescaling_factor
     }
 
     #[inline]
-    fn rescaling_factor_step_two(
-        &self,
-        _microstate: &Microstate<B, S, C>,
-        _macrostate: &M,
-        _dt: &f64,
-    ) -> f64 {
-        1.0
-    }
-
-    #[inline]
-    fn advance<P>(
+    fn integrate_step_two<P>(
         &mut self,
-        _microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, C>,
         _macrostate: &M,
         _dt: &f64,
-        _compute_properties: P,
-    ) where
+        mut compute_properties: P,
+    ) -> f64
+    where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
+        let (_, _) = compute_properties(&microstate);
+        1.0
     }
 }
 
@@ -229,6 +215,7 @@ impl MTTKThermostat {
             energy: 0.0,
         }
     }
+
     /// Choose random initial values for the thermostat momentum.
     pub fn thermalize<B, S, C, M>(
         &mut self,
@@ -245,6 +232,7 @@ impl MTTKThermostat {
         self.xi = Normal::new(0.0, sigma.sqrt()).unwrap().sample(&mut rng);
         self.energy = self.thermostat_energy(kT_setpoint, dof)
     }
+
     /// Calculate thermostat energy.
     pub fn thermostat_energy(&self, kT_setpoint: &f64, dof: &f64) -> f64 {
         dof * kT_setpoint * (self.eta + 0.5 * (self.xi * self.tau).powi(2))
@@ -253,54 +241,68 @@ impl MTTKThermostat {
 
 impl<B, S, C, M> Thermostat<B, S, C, M> for MTTKThermostat
 where
+    B: Clone,
     M: Temperature,
 {
     #[inline]
-    fn rescaling_factor_step_one<P>(
-        &mut self,
-        _microstate: &Microstate<B, S, C>,
-        _macrostate: &M,
-        dt: &f64,
-        _compute_properties: P,
-    ) -> f64
-    where
-        P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
-    {
-        (-0.5 * self.xi * dt).exp()
-    }
-
-    #[inline]
-    fn rescaling_factor_step_two(
-        &self,
-        _microstate: &Microstate<B, S, C>,
-        _macrostate: &M,
-        dt: &f64,
-    ) -> f64 {
-        (-0.5 * self.xi * dt).exp()
-    }
-
-    #[inline]
-    fn advance<P>(
+    fn integrate_step_one<P>(
         &mut self,
         microstate: &Microstate<B, S, C>,
         macrostate: &M,
         dt: &f64,
         mut compute_properties: P,
-    ) where
+    ) -> f64
+    where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
         let kT_setpoint = macrostate.temperature();
 
+        // Calculate current temperature
         let (ke, dof) = compute_properties(&microstate);
-
         let kT_instantaneous = 2.0 / dof * ke;
 
         // Thermostat acceleration
         let G = (kT_instantaneous / kT_setpoint - 1.0) / self.tau.powi(2);
 
-        let xi_dt_half = self.xi + 0.5 * G * dt;
-        self.eta += xi_dt_half * dt;
-        self.xi = xi_dt_half + 0.5 * G * dt;
+        // Update thermostat velocity
+        let xi_quater = self.xi + 0.25 * G * dt;
+
+        // Calculate rescaling factor at 0.25*dt
+        let rescaling_factor = (-0.5 * xi_quater * dt).exp();
+
+        // Expected update
+        let kT_instantaneous_new = kT_instantaneous * (rescaling_factor).powi(2);
+
+        // Update thermostat position
+        self.eta += 0.5 * xi_quater * dt;
+
+        // New thermostat acceleration
+        let G_new = (kT_instantaneous_new / kT_setpoint - 1.0) / self.tau.powi(2);
+
+        // Update thermostat velocity
+        self.xi = xi_quater + 0.25 * G_new * dt;
+
+        // Update thermostat energy
         self.energy = self.thermostat_energy(kT_setpoint, &dof);
+        rescaling_factor
+    }
+
+    #[inline]
+    fn integrate_step_two<P>(
+        &mut self,
+        microstate: &Microstate<B, S, C>,
+        macrostate: &M,
+        dt: &f64,
+        mut compute_properties: P,
+    ) -> f64
+    where
+        P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
+    {
+        self.integrate_step_one(
+            microstate,
+            macrostate,
+            &dt,
+            &mut compute_properties
+        )
     }
 }
