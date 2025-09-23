@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Helpers that enable consistent use of random numbers througought hoomd-rs.
+//! Helpers that enable consistent use of random numbers throughout hoomd-rs.
 
 use chacha20::ChaCha8Rng;
 use rand::{Rng, SeedableRng};
@@ -58,7 +58,7 @@ use rand::{Rng, SeedableRng};
 ///
 /// let r: f64 = rng.random();
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 #[expect(
     clippy::struct_field_names,
     reason = "The counters must be distinguishable from the indices."
@@ -131,7 +131,7 @@ impl Counter {
     /// ```
     #[must_use]
     #[inline]
-    pub fn indices(&mut self, a: u64, b: u64) -> &mut Self {
+    pub fn indices(mut self, a: u64, b: u64) -> Self {
         self.index_a = a;
         self.index_b = b;
         self
@@ -154,7 +154,7 @@ impl Counter {
     /// ```
     #[must_use]
     #[inline]
-    pub fn index(&mut self, a: u64) -> &mut Self {
+    pub fn index(mut self, a: u64) -> Self {
         self.index_a = a;
         self
     }
@@ -179,7 +179,7 @@ impl Counter {
     /// ```
     #[must_use]
     #[inline]
-    pub fn counters(&mut self, a: u32, b: u32, c: u32) -> &mut Self {
+    pub fn counters(mut self, a: u32, b: u32, c: u32) -> Self {
         self.counter_a = a;
         self.counter_b = b;
         self.counter_c = c;
@@ -202,7 +202,7 @@ impl Counter {
     /// ```
     #[must_use]
     #[inline]
-    pub fn counter(&mut self, a: u32) -> &mut Self {
+    pub fn counter(mut self, a: u32) -> Self {
         self.counter_a = a;
         self
     }
@@ -224,7 +224,7 @@ impl Counter {
     /// ```
     #[must_use]
     #[inline]
-    pub fn make_rng(&self) -> impl Rng + use<> {
+    pub fn make_rng(self) -> impl Rng + use<> {
         // ChaCha separates the input into a seed and a stream id. As a hash,
         // it shouldn't matter where different parts of the counter are placed.
         // However, best practice in the encryption community is to put the
@@ -268,21 +268,21 @@ mod tests {
             Counter::new(1, 0, 0),
             Counter::new(0, 1, 0),
             Counter::new(0, 0, 1),
-            *Counter::new(0, 0, 0).indices(1, 0),
-            *Counter::new(0, 0, 0).indices(0, 1),
-            *Counter::new(0, 0, 0).index(2),
-            *Counter::new(0, 0, 0).counters(1, 0, 0),
-            *Counter::new(0, 0, 0).counters(0, 1, 0),
-            *Counter::new(0, 0, 0).counters(0, 0, 1),
-            *Counter::new(0, 0, 0).counter(2),
+            Counter::new(0, 0, 0).indices(1, 0),
+            Counter::new(0, 0, 0).indices(0, 1),
+            Counter::new(0, 0, 0).index(2),
+            Counter::new(0, 0, 0).counters(1, 0, 0),
+            Counter::new(0, 0, 0).counters(0, 1, 0),
+            Counter::new(0, 0, 0).counters(0, 0, 1),
+            Counter::new(0, 0, 0).counter(2),
         ];
 
         for (i, counter_i) in counters.iter().enumerate() {
             for (j, counter_j) in counters.iter().enumerate() {
-                let mut rng_i = counter_i.make_rng();
+                let mut rng_i = counter_i.clone().make_rng();
                 let values_i = core::array::from_fn::<_, N, _>(|_| rng_i.random::<f64>());
 
-                let mut rng_j = counter_j.make_rng();
+                let mut rng_j = counter_j.clone().make_rng();
                 let values_j = core::array::from_fn::<_, N, _>(|_| rng_j.random::<f64>());
 
                 assert_eq!(values_i == values_j, i == j);

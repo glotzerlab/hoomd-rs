@@ -19,15 +19,15 @@ pub mod pairwise;
 
 mod cutoff_pair;
 mod cutoff_pair_overlap;
+mod external_overlap;
+mod external_type;
 mod hamiltonian;
-mod single;
-mod single_overlap;
 mod zero;
 
 pub use cutoff_pair::CutoffPair;
 pub use cutoff_pair_overlap::CutoffPairOverlap;
-pub use single::Single;
-pub use single_overlap::SingleOverlap;
+pub use external_overlap::ExternalOverlap;
+pub use external_type::External;
 pub use zero::Zero;
 
 /// Compute the total energy of a potential applied to the microstate.
@@ -87,7 +87,7 @@ pub trait TotalEnergy<M> {
 /// properties*.
 ///
 /// The [`external`] module provides a number of commonly used implementations.
-/// Combine them with [`Single`] newtype for use with MC and MD simulations or to
+/// Combine them with [`External`] newtype for use with MC and MD simulations or to
 /// compute system-wide properties.
 ///
 /// The generic type names are:
@@ -98,7 +98,7 @@ pub trait TotalEnergy<M> {
 /// Implement a custom site energy method:
 ///
 /// ```
-/// use hoomd_interaction::{Single, SiteEnergy, TotalEnergy};
+/// use hoomd_interaction::{External, SiteEnergy, TotalEnergy};
 /// use hoomd_microstate::{
 ///     Body, Microstate,
 ///     property::{Point, Position},
@@ -130,7 +130,7 @@ pub trait TotalEnergy<M> {
 /// let site_energy =
 ///     custom_evaluator.site_energy(&microstate.sites()[0].properties);
 ///
-/// let custom = Single(custom_evaluator);
+/// let custom = External(custom_evaluator);
 /// let total_energy = custom.total_energy(&microstate);
 /// # Ok(())
 /// # }
@@ -148,7 +148,7 @@ pub trait SiteEnergy<S> {
 /// properties*.
 ///
 /// The [`external`] module provides a number of commonly used implementations.
-/// Combine them with [`SingleOverlap`] newtype for use with MC simulations or to
+/// Combine them with [`ExternalOverlap`] newtype for use with MC simulations or to
 /// compute system-wide properties.
 ///
 /// The generic type names are:
@@ -159,7 +159,7 @@ pub trait SiteEnergy<S> {
 /// Implement a custom site overlap method:
 ///
 /// ```
-/// use hoomd_interaction::{SingleOverlap, SiteOverlap, TotalEnergy};
+/// use hoomd_interaction::{ExternalOverlap, SiteOverlap, TotalEnergy};
 /// use hoomd_microstate::{
 ///     Body, Microstate,
 ///     property::{Point, Position},
@@ -190,7 +190,7 @@ pub trait SiteEnergy<S> {
 ///     custom_evaluator.site_overlap(&microstate.sites()[0].properties);
 /// assert!(site_overlap);
 ///
-/// let custom = SingleOverlap(custom_evaluator);
+/// let custom = ExternalOverlap(custom_evaluator);
 /// let total_energy = custom.total_energy(&microstate);
 /// assert_eq!(total_energy, f64::INFINITY);
 /// # Ok(())
@@ -239,8 +239,15 @@ pub trait SiteOverlap<S> {
 /// where
 ///     S: Position<Vector = Cartesian<2>>,
 /// {
-///     fn site_pair_energy(&self, a: &S, b: &S) -> f64 {
-///         self.epsilon * a.position().dot(&b.position())
+///     fn site_pair_energy(
+///         &self,
+///         site_properties_i: &S,
+///         site_properties_j: &S,
+///     ) -> f64 {
+///         self.epsilon
+///             * site_properties_i
+///                 .position()
+///                 .dot(&site_properties_j.position())
 ///     }
 /// }
 ///
@@ -267,7 +274,7 @@ pub trait SiteOverlap<S> {
 /// ```
 pub trait SitePairEnergy<S> {
     /// Evaluate the energy contribution from a pair of sites.
-    fn site_pair_energy(&self, a: &S, b: &S) -> f64;
+    fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64;
 }
 
 /// Check if two sites overlap.
@@ -385,7 +392,7 @@ pub trait SitePairEnergy<S> {
 /// ```
 pub trait SitePairOverlap<S> {
     /// Determine if two sites overlap.
-    fn site_pair_overlap(&self, a: &S, b: &S) -> bool;
+    fn site_pair_overlap(&self, site_properties_i: &S, site_properties_j: &S) -> bool;
 }
 
 /// Compute the change energy as a function of a single modified body.

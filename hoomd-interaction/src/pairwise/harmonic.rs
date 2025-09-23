@@ -40,7 +40,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// harmonic.k = 5.0;
 /// harmonic.r_0 = 1.0;
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Harmonic {
     /// Spring constant $`[\mathrm{energy}] [\mathrm{length}]^{-2}`$.
     pub k: f64,

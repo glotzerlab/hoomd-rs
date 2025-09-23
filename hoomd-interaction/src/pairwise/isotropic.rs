@@ -56,7 +56,8 @@ where
     E: IsotropicEnergy,
 {
     #[inline]
-    fn site_pair_energy(&self, a: &S, b: &S) -> f64 {
-        self.0.energy((a.position()).distance(b.position()))
+    fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
+        self.0
+            .energy((site_properties_i.position()).distance(site_properties_j.position()))
     }
 }

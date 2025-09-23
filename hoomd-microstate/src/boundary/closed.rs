@@ -15,7 +15,7 @@ use hoomd_geometry::IsPointInside;
 /// [`Closed`] is a newtype that wraps a shape. It prevents bodies and sites from
 /// existing outside the shape. Bodies and sites are never wrapped, and there are no
 /// ghost sites.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Closed<T>(pub T);
 
 impl<P, T, V> Wrap<P> for Closed<T>

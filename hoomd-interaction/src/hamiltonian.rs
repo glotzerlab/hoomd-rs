@@ -12,7 +12,7 @@ use hoomd_microstate::{Body, Microstate};
 ///
 /// ```
 /// use hoomd_interaction::{
-///     CutoffPair, DeltaEnergyOne, Single,
+///     CutoffPair, DeltaEnergyOne, External,
 ///     external::Linear,
 ///     pairwise::{Boxcar, Isotropic},
 /// };
@@ -39,7 +39,7 @@ use hoomd_microstate::{Body, Microstate};
 ///     evaluator,
 /// };
 ///
-/// let linear = Single(Linear {
+/// let linear = External(Linear {
 ///     alpha: 10.0,
 ///     plane_origin: Cartesian::default(),
 ///     plane_normal: [0.0, 1.0].try_into()?,
@@ -86,7 +86,7 @@ where
 ///
 /// ```
 /// use hoomd_interaction::{
-///     CutoffPair, Single, TotalEnergy,
+///     CutoffPair, External, TotalEnergy,
 ///     external::Linear,
 ///     pairwise::{Boxcar, Isotropic},
 /// };
@@ -113,7 +113,7 @@ where
 ///     evaluator,
 /// };
 ///
-/// let linear = Single(Linear {
+/// let linear = External(Linear {
 ///     alpha: 1.0,
 ///     plane_origin: Cartesian::default(),
 ///     plane_normal: [0.0, 1.0].try_into()?,
@@ -147,7 +147,7 @@ where
 ///
 /// ```
 /// use hoomd_interaction::{
-///     CutoffPair, DeltaEnergyInsert, Single,
+///     CutoffPair, DeltaEnergyInsert, External,
 ///     external::Linear,
 ///     pairwise::{Boxcar, Isotropic},
 /// };
@@ -171,7 +171,7 @@ where
 ///     evaluator,
 /// };
 ///
-/// let linear = Single(Linear {
+/// let linear = External(Linear {
 ///     alpha: 1.0,
 ///     plane_origin: Cartesian::default(),
 ///     plane_normal: [0.0, 1.0].try_into()?,

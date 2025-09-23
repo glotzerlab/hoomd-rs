@@ -66,7 +66,7 @@ use crate::{IntersectsAt, SupportMapping, Volume};
 /// assert_eq!(planar_tetrahedron.volume(), 0.0);
 /// assert_eq!(planar_tetrahedron.centroid(), [1.0, 1.0, 0.0].into());
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Simplex3 {
     /// Vertices of the simplex
     vertices: [Cartesian<3>; 4], // NOT public, to force orientation on construction
