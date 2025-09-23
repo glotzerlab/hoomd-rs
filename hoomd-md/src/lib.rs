@@ -219,7 +219,7 @@ where
             // Apply thermostat
             momentum *= rescaling_factor;
             momentum += net_force * 0.5 * self.dt;
-            *body_properties.position_mut() += momentum * (1.0/mass) * self.dt;
+            *body_properties.position_mut() += momentum / mass * self.dt;
 
             // Update the microstate with new body properties, wrapping automatically
             microstate
@@ -761,10 +761,8 @@ where
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
 
             // Shorthand variables
-            // p is the z-component of angular momentum
             // t is the z-compoenet of net torque
             // I is the z-compoenet of the moment of inertia
-            let p = *body_properties.angular_momentum();
             let t = *body_properties.net_torque();
             let I = *body_properties.moment_of_inertia();
 
@@ -773,7 +771,7 @@ where
             // factorization of Liouvillian rotation
             *body_properties.angular_momentum_mut() *= rescaling_factor;
             *body_properties.angular_momentum_mut() += t * 0.5 * self.dt;
-            body_properties.orientation_mut().theta += p/I * self.dt;
+            body_properties.orientation_mut().theta += *body_properties.angular_momentum()/I * self.dt;
 
             // wrap angle back into [0, 2pi] to improve stability
             *body_properties.orientation_mut() = body_properties.orientation_mut().to_reduced();
