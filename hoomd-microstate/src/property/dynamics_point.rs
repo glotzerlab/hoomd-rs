@@ -13,8 +13,7 @@ use hoomd_vector::Vector;
 /// The position, mass, momentum, and net force of an extended body, such as is
 /// useful for Molecular Dynamics simulations.
 /// 
-/// Use [`DynamicsPoint`] as a [`Body`](crate::Body) or [`Site`](crate::Site)
-/// property type.
+/// Use [`DynamicsPoint`] as a [`Body`](crate::Body) property type.
 /// 
 /// # Example
 /// 
