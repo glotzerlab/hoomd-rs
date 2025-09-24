@@ -214,6 +214,26 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
             rows: std::array::from_fn(|j| std::array::from_fn(|i| self[(i, j)])),
         }
     }
+
+    /// Apply a function to an array elementwise, returning a new array with the same shape.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linalg::{matrix::Matrix33, GeneralMatrix};
+    /// let m = Matrix33::full(3.0);
+    /// // Verify that elementwise multiplication by a scalar is the same as scalar multiply
+    /// assert_eq!(m.map_elementwise(|x| x * 2.0), m * 2.0);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn map_elementwise<F>(self, f: F) -> Self
+    where
+        F: Fn(f64) -> f64,
+    {
+        Self {
+            rows: self.rows.map(|v| v.map(&f)),
+        }
+    }
 }
 impl<const N: usize> Matrix<N, N> {
     /// Compute the signed hypervolume of the hyperparallelepiped defined by a matrix.
@@ -351,9 +371,7 @@ impl<const N: usize, const M: usize> Mul<f64> for Matrix<N, M> {
 
     #[inline]
     fn mul(self, rhs: f64) -> Self {
-        Self {
-            rows: self.rows.map(|r| r.map(|x| x * rhs)),
-        }
+        self.map_elementwise(|x| x * rhs)
     }
 }
 /// Compute the elementwise negation of a [`Matrix`]
@@ -362,9 +380,7 @@ impl<const N: usize, const M: usize> Neg for Matrix<N, M> {
 
     #[inline]
     fn neg(self) -> Self {
-        Self {
-            rows: self.rows.map(|r| r.map(|x| -x)),
-        }
+        self.map_elementwise(f64::neg)
     }
 }
 
