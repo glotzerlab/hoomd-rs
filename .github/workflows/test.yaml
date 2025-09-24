@@ -42,14 +42,14 @@ jobs:
         rust:
           # Test multiple rust versions on multiple platforms in the debug profile.
           - 1.88.0
-          - 1.89.0
+          - 1.90.0
         target:
          - ''
 
         include:
         # Add a WASM build.
         - os: ubuntu-24.04
-          rust: 1.89.0
+          rust: 1.90.0
           target: wasm32-unknown-unknown
 
     steps:
