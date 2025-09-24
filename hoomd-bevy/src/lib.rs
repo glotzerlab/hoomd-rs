@@ -857,6 +857,7 @@ F5      : Show/hide debugging information.
         mut advance_simulation: EventWriter<AdvanceSimulation>,
     ) -> Result {
         let advance_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::N);
+        let menu_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::M);
         let pause_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Space);
         let quit_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Q);
         let reset_camera_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Equals);
@@ -914,18 +915,22 @@ F5      : Show/hide debugging information.
                     .text("Maximum zoom")
                     .update_while_editing(false));
 
+                ui.horizontal(|ui| {
                 if ui.button("↺ Reset camera (=)").clicked()
                 {
                     reset_camera.write(ResetCamera);
                 }
 
                 #[cfg(not(target_arch = "wasm32"))]
-                if ui.button("📷 Take screenshot (F12)").clicked()
+                if ui.button("📷 Take screenshot (F12)")
+                .on_hover_text("Write screenshot.png to the current working directory")
+                .clicked()
                 {
                     commands
                         .spawn(Screenshot::primary_window())
                         .observe(save_to_disk("screenshot.png"));
                 }
+                });
                 });
                 
                 ui.collapsing("Advanced settings", |ui| {
@@ -937,11 +942,16 @@ F5      : Show/hide debugging information.
                         .on_hover_text("Decrease this when FPS is limited by rendering");
                 });
 
+                ui.horizontal(|ui| {
+
+                ui.label("Press m to show/hide this menu");
+
                 #[cfg(not(target_arch = "wasm32"))]
                 if ui.button("⊗ Quit (q)").clicked()
                 {
                     exit.write(AppExit::Success);
                 }
+                });
         });
 
         {
@@ -950,6 +960,10 @@ F5      : Show/hide debugging information.
             if context.input_mut(|i| i.consume_shortcut(&advance_shortcut))
                 {
                 advance_simulation.write(AdvanceSimulation);
+                }
+            if context.input_mut(|i| i.consume_shortcut(&menu_shortcut))
+                {
+                menu_state.0 = !menu_state.0;
                 }
             if context.input_mut(|i| i.consume_shortcut(&pause_shortcut)) {
                 ui_state.pause = !ui_state.pause;
