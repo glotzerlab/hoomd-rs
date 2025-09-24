@@ -69,11 +69,13 @@ use bevy::{
     render::view::window::screenshot::{Screenshot, save_to_disk},
     time::common_conditions::on_timer,
 };
-use bevy_egui::{egui, EguiContexts, EguiPlugin, EguiPrimaryContextPass,
-input::{egui_wants_any_keyboard_input, egui_wants_any_pointer_input}};
 use bevy_diagnostic::{
     Diagnostic, DiagnosticPath, Diagnostics, DiagnosticsStore, FrameTimeDiagnosticsPlugin,
     RegisterDiagnostic,
+};
+use bevy_egui::{
+    EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui,
+    input::{egui_wants_any_keyboard_input, egui_wants_any_pointer_input},
 };
 #[cfg(not(target_arch = "wasm32"))]
 use bevy_winit::WinitWindows;
@@ -351,10 +353,9 @@ where
         diagnostics.add_measurement(&Self::SPS, || steps as f64 / time.delta_secs_f64());
     }
 
-    fn is_paused(state: Res<UiState>,
-        ) -> bool {
-            state.pause
-        }
+    fn is_paused(state: Res<UiState>) -> bool {
+        state.pause
+    }
 
     /// Create the full screen UI text overlay node.
     fn setup_overlay(mut commands: Commands, mut ui_scale: ResMut<UiScale>) {
@@ -944,27 +945,14 @@ F5      : Show/hide debugging information.
             .add_systems(Update, Self::step_simulation.in_set(AdvanceSet))
             .add_systems(
                 Update,
-                (
-                    Self::keyboard_overlay,
-                    Self::keyboard_menu,
-                )
-                    .in_set(KeyboardInputSet),
+                (Self::keyboard_overlay, Self::keyboard_menu).in_set(KeyboardInputSet),
             )
-            .add_systems(
-                Update,
-                (
-                    Self::keyboard_help,
-                )
-                    .in_set(KeyboardInputSet),
-            )
+            .add_systems(Update, (Self::keyboard_help,).in_set(KeyboardInputSet))
             .add_systems(
                 Update,
                 (Self::keyboard_sps, Self::keyboard_frame_budget).in_set(SettingsMenuInputSet),
             )
-            .add_systems(
-                Update,
-                Self::update_debug_text.after(KeyboardInputSet),
-            )
+            .add_systems(Update, Self::update_debug_text.after(KeyboardInputSet))
             .add_systems(EguiPrimaryContextPass, Self::ui_system);
 
         match initial_camera {
@@ -1011,8 +999,12 @@ F5      : Show/hide debugging information.
             Update,
             (
                 AdvanceSet.run_if(not(Self::is_paused)),
-                KeyboardInputSet.after(AdvanceSet).run_if(not(egui_wants_any_keyboard_input)),
-                MouseInputSet.after(AdvanceSet).run_if(not(egui_wants_any_pointer_input)),
+                KeyboardInputSet
+                    .after(AdvanceSet)
+                    .run_if(not(egui_wants_any_keyboard_input)),
+                MouseInputSet
+                    .after(AdvanceSet)
+                    .run_if(not(egui_wants_any_pointer_input)),
                 SettingsMenuInputSet
                     .run_if(in_state(MenuState::Settings))
                     .after(AdvanceSet),
@@ -1021,31 +1013,35 @@ F5      : Show/hide debugging information.
     }
 
     /// GUI
-    fn ui_system(mut contexts: EguiContexts,
-    mut ui_state: ResMut<UiState>,
-    mut exit: EventWriter<AppExit>,
-    window: Single<&Window, With<PrimaryWindow>>,
+    fn ui_system(
+        mut contexts: EguiContexts,
+        mut ui_state: ResMut<UiState>,
+        mut exit: EventWriter<AppExit>,
+        window: Single<&Window, With<PrimaryWindow>>,
     ) -> Result {
-        let pause_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE,
-            egui::Key::Space);
-        let quit_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE,
-            egui::Key::Q);
+        let pause_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Space);
+        let quit_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Q);
 
         let window = egui::Window::new("🔧 Settings")
             .resizable([false, false])
             .pivot(egui::Align2::RIGHT_BOTTOM)
-            .default_pos([window.resolution.width()-10.0, window.resolution.height()-10.0])
+            .default_pos([
+                window.resolution.width() - 10.0,
+                window.resolution.height() - 10.0,
+            ])
             .collapsible(false);
 
         window.show(contexts.ctx_mut()?, |ui| {
             ui.text_edit_singleline(&mut ui_state.test);
-        
+
             if ui.toggle_value(&mut ui_state.pause, "⏸ Pause").clicked() {
                 info!("Toggle paused...");
             }
-            
+
             #[cfg(not(target_arch = "wasm32"))]
-            if ui.button("⊗ Quit").clicked() || ui.ctx().input_mut(|i| i.consume_shortcut(&quit_shortcut)) {
+            if ui.button("⊗ Quit").clicked()
+                || ui.ctx().input_mut(|i| i.consume_shortcut(&quit_shortcut))
+            {
                 info!("Quitting...");
                 exit.write(AppExit::Success);
             }
