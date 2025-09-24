@@ -29,7 +29,7 @@ jobs:
       number: 8
 
   unit_test:
-    name: Unit test [rust-${{ matrix.rust }}-${{ matrix.os }}-${{ matrix.target }}]
+    name: Unit test [rust-${{ matrix.rust }}-${{ matrix.os }}-${{ matrix.target || 'native' }}]
     runs-on: [self-hosted, jetstream2, CPU]
     strategy:
       fail-fast: false
