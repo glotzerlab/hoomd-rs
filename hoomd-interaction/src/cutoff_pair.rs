@@ -6,7 +6,7 @@
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, pairwise::IsotropicForce, NetBodyForce, NetSiteForce, SitePairEnergy, SitePairForce, TotalEnergy};
 use hoomd_microstate::{Body, Transform, boundary::Wrap, property::Position, Microstate, Site};
 
-use hoomd_vector::{InnerProduct, Vector};
+use hoomd_vector::{Cartesian, InnerProduct, Vector};
 
 /// Short-ranged pairwise interactions between sites.
 ///
@@ -155,7 +155,29 @@ impl<E> CutoffPair<E> {
             0.0
         }
     }
+
+
+    /// Compute the cutoff pairwise force on one site from another site.
+    /// TODO: Add example.
+    ///
+    #[inline]
+    pub fn site_pair_force<V, S>(&self, a: &Site<S>, b: &Site<S>) -> V
+    where
+        E: SitePairForce<V, S>,
+        S: Position<Vector = V>,
+        V: Vector + Default + InnerProduct,
+    {
+        let r = (a.properties.position()).distance(b.properties.position());
+        if r < self.r_cut && a.body_tag != b.body_tag {
+            self.evaluator
+                .site_pair_force(&a.properties, &b.properties)
+        } else {
+            V::default()
+        }
+
+    }
 }
+
 
 impl<V, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPair<E>
 where
@@ -474,7 +496,7 @@ where
     V: Vector + Default + InnerProduct,
     B: Transform<S>,
     S: Position<Vector = V>,
-    E: IsotropicForce,
+    E: SitePairForce<V, S>,
 {
     #[inline]
     fn net_force_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V {
@@ -497,7 +519,7 @@ where
     V: Vector + Default + InnerProduct,
     B: Transform<S>,
     S: Position<Vector = V>,
-    E: IsotropicForce,
+    E: SitePairForce<V, S>,
 {
     #[inline]
     fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V {
@@ -507,28 +529,15 @@ where
             .filter(|s| site.body_tag != s.body_tag)
         {
             total += self
+                .evaluator
                 .site_pair_force(&site.properties, &other_site.properties);
         }
         total
+
     }
 }
 
-/** Compute the cutoff pairwise force on one site from another site.
-TODO: Add example.
-*/
-impl<V, S, E> SitePairForce<V, S> for CutoffPair<E>
-where
-    E: IsotropicForce,
-    V: Vector + InnerProduct,
-    S: Position<Vector=V>
-{
-    #[inline]
-    fn site_pair_force(&self, a: &S, b: &S) -> V {
-        let r = *a.position() - *b.position();
-        let distance = r.norm();
-        r * self.evaluator.force(distance)
-    }
-}
+
 
 #[cfg(test)]
 mod tests {

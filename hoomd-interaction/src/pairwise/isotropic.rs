@@ -3,10 +3,10 @@
 
 //! Implement Isotropic
 
-use super::IsotropicEnergy;
-use crate::SitePairEnergy;
+use super::{IsotropicEnergy, IsotropicForce};
+use crate::{SitePairEnergy, SitePairForce};
 use hoomd_microstate::property::Position;
-use hoomd_vector::Vector;
+use hoomd_vector::{InnerProduct, Vector};
 
 /// Compute isotropic properties from a pair of sites
 ///
@@ -58,5 +58,19 @@ where
     #[inline]
     fn site_pair_energy(&self, a: &S, b: &S) -> f64 {
         self.0.energy((a.position()).distance(b.position()))
+    }
+}
+
+impl<V, S, E> SitePairForce<V, S> for Isotropic<E>
+where
+    E: IsotropicForce,
+    V: Vector + InnerProduct,
+    S: Position<Vector=V>
+{
+    #[inline]
+    fn site_pair_force(&self, a: &S, b: &S) -> V {
+        let r = *a.position() - *b.position();
+        let distance = r.norm();
+        r * self.0.force(distance)
     }
 }
