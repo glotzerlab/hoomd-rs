@@ -588,10 +588,10 @@ impl Matrix<3, 3> {
     #[must_use]
     #[inline]
     pub fn quaternion_decomposition(&self) -> (f64, [f64; 4]) {
-        let [[sxx, sxy, sxz], [syx, syy, syz], [szx, szy, szz]] = self.rows;
+        // let [[sxx, sxy, sxz], [syx, syy, syz], [szx, szy, szz]] = self.rows;
 
-        let m_sq = self.map_elementwise(|x| x * x);
-        let syz_szy_m_syy_szz_2 = 2.0 * (syz * szy - syy * szz);
+        // let m_sq = self.map_elementwise(|x| x * x);
+        // let syz_szy_m_syy_szz_2 = 2.0 * (syz * szy - syy * szz);
         // let syysq_p_szzsq_m_sxxsq_syzsq_p_szy_sq = syy_sq + szz_sq - sxx_sq + syz_sq + szy_sq;
 
         // let sum_m_squared =
