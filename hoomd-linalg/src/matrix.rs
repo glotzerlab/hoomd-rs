@@ -337,19 +337,6 @@ impl<const N: usize> Matrix<N, N> {
             }),
         }
     }
-    // #[must_use]
-    // #[inline]
-    // /// Solve the quadratic form $` A.transpose().matmul(x).matmul(A) `$ for a matrix A and vector x.
-    // pub fn compute_quadratic_form<T: Diagonal>(&self, vars: &T) -> f64 {
-    //     let mut result = 0.0;
-
-    //     for i in 0..N {
-    //         for j in 0..N {
-    //             result += vars[i] * self.rows[i][j] * vars[j];
-    //         }
-    //     }
-    //     result
-    // }
 }
 impl<const N: usize> QuadraticForm for Matrix<N, N> {
     #[inline]
@@ -485,7 +472,7 @@ impl Matrix<2, 2> {
     ///
     /// This implementation is based on the math in 10.1109/38.486688, and ensures good
     /// (but not optimal) numerical stability. For certain pathological inputs,
-    /// preconditioning the inputs could provide a benefit.
+    /// preconditioning the matrix could provide a benefit in numerical stability.
     ///
     /// We define all singular values to be positive.
     #[must_use]
@@ -527,6 +514,46 @@ impl Matrix<2, 2> {
         };
 
         (u, singular_values, vt)
+    }
+}
+
+impl Matrix<3, 3> {
+    /// Compute the decomposition of a [`Matrix33`] into a quaternion rotation and a an associated eigenvalue.
+    ///
+    /// This method is an implementation of the Quaternion Characteristic Polynomial
+    /// (QCP) algorithm proposed by [Douglas Theobald et. al.](). It allows for for
+    /// extremely rapid alignment of coordinates, and is commonly used for molecular
+    /// superposition and point-set registration.
+    ///
+    /// # Theory
+    /// The singular value decomposition of a matrix $`M`$ is defined as
+    /// $`M=U Σ V^\top`$, where U and V are rotoreflection matrices and Σ is a diagonal
+    /// matrix consisting of the singular values of $`M`$. If $`M`$ is an inner product
+    /// between two sets of coordinates $`M=A^\topB`$, $`U V^\top`$ is the rotation
+    /// that optimally aligns the two sets of points $`A`$ and $`B`$, and $`\tr(Σ)`$ is
+    /// the root mean-squared deviation between those sets of points.
+    ///
+    /// This decomposition of $`M`$ into 3D rotation matrices can be reinterpreted as
+    /// a decomposition of a symmetric 4 x 4 matrix $`K`$. Under this construction, the
+    /// largest eigenvalue of $`K`$ is $`\tr(Σ)`$ (the point-set RMSD) and the largest
+    /// eigenvector of $`K`$ is a quaternion equivalent to the rotation $`U V^\top`$.
+    /// As one only needs to compute a single eigenvector and eigenvalue, this approach
+    /// is much faster than computing a full 3x3 singular value decomposition.
+    #[must_use]
+    #[inline]
+    pub fn quaternion_decomposition(&self) -> (f64, [f64; 4]) {
+        // let [[sxx, sxy, syz], [syx, syy, syz], [szx, szy, szz]] = self.rows;
+        // // let [
+        // //     [sxx_sq, sxy_sq, sxz_sq],
+        // //     [syx_sq, syy_sq, syz_sq],
+        // //     [szx_sq, szy_sq, szz_sq],
+        // // ] = self.rows.map(|v| v.map(|x| x * x));
+        // let syz_szy_m_syy_szz_2 = 2.0 * (syz * szy - syy * szz);
+        // let syysq_p_szzsq_m_sxxsq_syzsq_p_szy_sq = syy_sq + szz_sq - sxx_sq + syz_sq + szy_sq;
+
+        // let sum_m_squared =
+
+        (0.0, [0.0; 4])
     }
 }
 
