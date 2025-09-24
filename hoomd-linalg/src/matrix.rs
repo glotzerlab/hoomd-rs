@@ -234,7 +234,24 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         }
     }
 
-    fn iter_flat(&self) -> impl Iterator<Item = f64> + '_ {
+    /// Returns an iterator over every element in the [`Matrix`]
+    /// The iterator yields all items from start to end.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linalg::{SquareMatrix, matrix::Matrix22};
+    /// let x = Matrix22 {
+    ///     rows: [[1.0, 2.0], [3.0, 4.0]],
+    /// };
+    /// let mut iterator = x.iter_flat();
+    /// assert_eq!(iterator.next(), Some(1.0));
+    /// assert_eq!(iterator.next(), Some(2.0));
+    /// assert_eq!(iterator.next(), Some(3.0));
+    /// assert_eq!(iterator.next(), Some(4.0));
+    /// assert_eq!(iterator.next(), None);
+    /// ```
+    #[inline]
+    pub fn iter_flat(&self) -> impl Iterator<Item = f64> + '_ {
         self.rows.iter().flat_map(|row| row.iter().copied())
     }
     /// Folds every element into an accumulator by applying an operation, returning the final result.
