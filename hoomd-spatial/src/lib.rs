@@ -36,39 +36,39 @@ pub enum ParticleFlag {
 /// use hoomd_spatial::CellList;
 /// use hoomd_spatial::CellListBuilder;
 /// use hoomd_vector::Cartesian;
-/// Create some sample 2D Cartesian positions.
+/// // Create some sample 2D Cartesian positions.
 /// let positions = vec![
 /// Cartesian { coordinates: [0.2, 0.3] },
 /// Cartesian { coordinates: [0.8, 1.3] },
 /// Cartesian { coordinates: [8.5, 9.5] },
 /// ];
 /// let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
-/// Define the cell width.
+/// // Define the cell width.
 /// let cell_width = 2.0;
-/// Create a cell list object from the builder
+/// // Create a cell list object from the builder
 /// let mut cell_list = CellListBuilder::<2>::new(cell_width).with_positions_and_indices(&positions, &indices).build();
 /// add another particle to the cell list.
 /// let new_position = Cartesian { coordinates: [1.2, 1.3] };
 /// let new_index: usize = 3; // New particle index.
-/// Add particles to the cell list.
+/// // Add particles to the cell list.
 /// cell_list.insert(&new_position, &new_index);
-/// Now delete the first particle from the cell list.
+/// // Now delete the first particle from the cell list.
 /// cell_list.remove(0);
-/// Shrink the cell list to fit its current capacity.
+/// // Shrink the cell list to fit its current capacity.
 /// cell_list.shrink_to_fit();
 /// print the cell indices of particle 2
 /// println!("Cell index for particle 2: {:?}", cell_list.cell_index(2));
-/// Translate particle 2 to a new position.
+/// // Translate particle 2 to a new position.
 /// let new_particle_position = Cartesian { coordinates: [8.2, 9.3] };
-/// TODO change based on fait of translate_particle function
+/// // TODO change based on fait of translate_particle function
 /// cell_list.insert(&new_particle_position, &2);
-/// Get the cell index for the second particle.
+/// // Get the cell index for the second particle.
 /// println!("Cell index for particle 2: {:?}", cell_list.cell_index(2));
-/// Find potential neighbor indices for particle 2.
+/// // Find potential neighbor indices for particle 2.
 /// let cutoff_radius = 1.5;
-/// Find potential neighbor indices
+/// // Find potential neighbor indices
 /// let potential_neighbors = cell_list.find_potential_neighbor_indices(&2, &cutoff_radius).collect::<Vec<_>>();
-/// Print the potential neighbor indices.
+/// // Print the potential neighbor indices.
 /// println!("Potential neighbor indices for particle 2: {:?}", potential_neighbors);
 /// ```
 pub struct CellList<const D: usize> {
@@ -92,9 +92,9 @@ pub struct CellList<const D: usize> {
 /// use hoomd_spatial::CellListBuilder;
 /// use hoomd_vector::Cartesian;
 ///
-/// Define the cell width.
+/// // Define the cell width.
 /// let cell_width = 2.0;
-/// Create a cell list object from the builder
+/// // Create a cell list object from the builder
 /// let cell_list = CellListBuilder::<2>::new(cell_width).build();
 /// ```
 ///
@@ -103,16 +103,16 @@ pub struct CellList<const D: usize> {
 /// use hoomd_spatial::CellList;
 /// use hoomd_spatial::CellListBuilder;
 /// use hoomd_vector::Cartesian;
-/// Define the cell width.
+/// // Define the cell width.
 /// let cell_width = 2.0;
-/// Create some sample 2D Cartesian positions.
+/// // Create some sample 2D Cartesian positions.
 /// let positions = vec![
 /// Cartesian { coordinates: [0.2, 0.3] },
 /// Cartesian { coordinates: [0.8, 1.3] },
 /// Cartesian { coordinates: [8.5, 9.5] },
 /// ];
 /// let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
-/// Build a cell list with particles.
+/// // Build a cell list with particles.
 /// let cell_list = CellListBuilder::<2>::new(cell_width)
 /// .with_positions_and_indices(&positions, &indices)
 /// .build();
@@ -137,9 +137,9 @@ impl<const D: usize> CellListBuilder<D> {
     /// use hoomd_spatial::CellList;
     /// use hoomd_spatial::CellListBuilder;
     /// use hoomd_vector::Cartesian;
-    /// Define the cell width.
+    /// // Define the cell width.
     /// let cell_width = 2.0;
-    /// Create a cell list object from the builder
+    /// // Create a cell list object from the builder
     /// let cell_list = CellListBuilder::<2>::new(cell_width).build();
     /// ```
     #[inline]
@@ -162,16 +162,16 @@ impl<const D: usize> CellListBuilder<D> {
     /// use hoomd_spatial::CellList;
     /// use hoomd_spatial::CellListBuilder;
     /// use hoomd_vector::Cartesian;
-    /// Define the cell width.
+    /// // Define the cell width.
     /// let cell_width = 2.0;
-    /// Create some sample 2D Cartesian positions.
+    /// // Create some sample 2D Cartesian positions.
     /// let positions = vec![
     /// Cartesian { coordinates: [0.2, 0.3] },
     /// Cartesian { coordinates: [0.8, 1.3] },
     /// Cartesian { coordinates: [8.5, 9.5] },
     /// ];
     /// let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
-    /// Build a cell list with particles.
+    /// // Build a cell list with particles.
     /// let cell_list = CellListBuilder::new(cell_width).with_positions_and_indices(&positions, &indices).build();
     /// ```
     #[inline]
@@ -194,11 +194,11 @@ impl<const D: usize> CellListBuilder<D> {
     /// use hoomd_spatial::CellList;
     /// use hoomd_spatial::CellListBuilder;
     /// use hoomd_vector::Cartesian;
-    /// Define the cell width.
+    /// // Define the cell width.
     /// let cell_width = 2.0;
-    /// Create a builder object
+    /// // Create a builder object
     /// let cell_list_builder = CellListBuilder::<2>::new(cell_width);
-    /// Create a cell list object from the builder
+    /// // Create a cell list object from the builder
     /// let cell_list = cell_list_builder.build();
     /// ```
     #[inline]
@@ -232,16 +232,16 @@ impl<const D: usize> CellList<D> {
     /// use hoomd_spatial::CellList;
     /// use hoomd_vector::Cartesian;
     ///
-    /// Create some sample 2D Cartesian positions.
+    /// // Create some sample 2D Cartesian positions.
     /// let positions = vec![
     /// Cartesian { coordinates: [0.2, 0.3] },
     /// Cartesian { coordinates: [0.8, 1.3] },
     /// Cartesian { coordinates: [8.5, 9.5] },
     /// ];
     /// let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
-    /// Define the cell width.
+    /// // Define the cell width.
     /// let cell_width = 1.0;
-    /// Build the cell list from positions.
+    /// // Build the cell list from positions.
     /// let cell_list = CellList::<2>::new(cell_width, &positions, &indices);
     /// ```
     #[inline]
@@ -267,7 +267,7 @@ impl<const D: usize> CellList<D> {
     /// # Example
     /// ```
     /// use hoomd_spatial::CellList;
-    /// Create an empty 2D cell list with a cell width of 1.0.
+    /// // Create an empty 2D cell list with a cell width of 1.0.
     /// let cell_width = 1.0;
     /// let cell_list = CellList::<2>::empty(cell_width);
     /// ```
@@ -289,20 +289,20 @@ impl<const D: usize> CellList<D> {
     /// use hoomd_spatial::CellList;
     /// use hoomd_vector::Cartesian;
     ///
-    /// Create some sample 2D Cartesian positions.
+    /// // Create some sample 2D Cartesian positions.
     /// let positions = vec![
     /// Cartesian { coordinates: [0.2, 0.3] },
     /// Cartesian { coordinates: [0.8, 1.3] },
     /// Cartesian { coordinates: [8.5, 9.5] },
     /// ];
-    /// Indices of particles corresponding to positions.
+    /// // Indices of particles corresponding to positions.
     /// let indices = vec![0, 1, 2];
-    /// Define the cell width.
+    /// // Define the cell width.
     /// let cell_width = 1.0;
-    /// Build the cell list from positions.
+    /// // Build the cell list from positions.
     /// let cell_list = CellList::<2>::new(cell_width, &positions, &indices);
     ///
-    /// Get the cell index for the first particle.
+    /// // Get the cell index for the first particle.
     /// let cell_index = cell_list.cell_index(0).unwrap();
     /// ```
     #[inline]
@@ -320,20 +320,20 @@ impl<const D: usize> CellList<D> {
     /// use hoomd_spatial::CellList;
     /// use hoomd_vector::Cartesian;
     ///
-    /// Create some sample 2D Cartesian positions.
+    /// // Create some sample 2D Cartesian positions.
     /// let positions = vec![
     /// Cartesian { coordinates: [0.2, 0.3] },
     /// Cartesian { coordinates: [0.8, 1.3] },
     /// Cartesian { coordinates: [8.5, 9.5] },
     /// ];
-    /// Particle indices corresponding to positions.
+    /// // Particle indices corresponding to positions.
     /// let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
-    /// Define the cell width.
+    /// // Define the cell width.
     /// let cell_width = 1.0;
-    /// Build the cell list from positions.
+    /// // Build the cell list from positions.
     /// let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
     ///
-    /// Add a new particle to the cell list.
+    /// // Add a new particle to the cell list.
     /// let new_position = Cartesian { coordinates: [1.2, 1.3] };
     /// cell_list.insert(&new_position, &3);
     /// ```
@@ -371,20 +371,20 @@ impl<const D: usize> CellList<D> {
     /// use hoomd_spatial::CellList;
     /// use hoomd_vector::Cartesian;
     ///
-    /// Create some sample 2D Cartesian positions.
+    /// // Create some sample 2D Cartesian positions.
     /// let positions = vec![
     /// Cartesian { coordinates: [0.2, 0.3] },
     /// Cartesian { coordinates: [0.8, 1.3] },
     /// Cartesian { coordinates: [8.5, 9.5] },
     /// ];
-    /// Particle indices corresponding to positions.
+    /// // Particle indices corresponding to positions.
     /// let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
-    /// Define the cell width.
+    /// // Define the cell width.
     /// let cell_width = 1.0;
-    /// Build the cell list from positions.
+    /// // Build the cell list from positions.
     /// let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
     ///
-    /// Remove the first particle from the cell list.
+    /// // Remove the first particle from the cell list.
     /// cell_list.remove(0);
     /// ```
     #[inline]
@@ -412,7 +412,7 @@ impl<const D: usize> CellList<D> {
     /// use hoomd_spatial::CellList;
     /// use hoomd_vector::Cartesian;
     ///
-    /// Create some sample 2D Cartesian positions.
+    /// // Create some sample 2D Cartesian positions.
     /// let positions = vec![
     /// Cartesian { coordinates: [0.2, 0.3] },
     /// Cartesian { coordinates: [0.8, 1.3] },
@@ -420,11 +420,11 @@ impl<const D: usize> CellList<D> {
     /// ];
     /// let cell_width = 1.0;
     /// let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
-    /// Build the cell list from positions.
-    /// let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
+    /// // Build the cell list from positions.
+    /// let//  mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
     ///
     ///
-    /// Translate the first particle to a new position.
+    /// // Translate the first particle to a new position.
     /// let new_position = Cartesian { coordinates: [1.2, 1.3] };
     /// cell_list.translate_particle(0, new_position);
     /// ```
@@ -449,22 +449,22 @@ impl<const D: usize> CellList<D> {
     /// ```
     /// use hoomd_spatial::CellList;
     /// use hoomd_vector::Cartesian;
-    /// Create some sample 2D Cartesian positions.
+    /// // Create some sample 2D Cartesian positions.
     /// let positions = vec![
     /// Cartesian { coordinates: [0.2, 0.3] },
     /// Cartesian { coordinates: [2.8, 2.3] },
     /// Cartesian { coordinates: [8.5, 9.5] },
     /// ];
     /// let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
-    /// Define the cell width.
+    /// // Define the cell width.
     /// let cell_width = 1.0;
-    /// Build the cell list from positions.
+    /// // Build the cell list from positions.
     /// let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
-    /// Remove the first particle from the cell list.
+    /// // Remove the first particle from the cell list.
     /// cell_list.remove(0);
-    /// Now the cell list has an empty cell associated with cell particle 0 was in.
+    /// // Now the cell list has an empty cell associated with cell particle 0 was in.
     /// println!("Before shrink_to_fit: {:?}", cell_list.particle_indices.size());
-    /// Call shrink_to_fit to clean up empty cells and reduce memory usage.
+    /// // Call shrink_to_fit to clean up empty cells and reduce memory usage.
     /// cell_list.shrink_to_fit();
     /// println!("After shrink_to_fit: {:?}", cell_list.particle_indices.size());
     /// ```
@@ -485,7 +485,7 @@ impl<const D: usize> CellList<D> {
     /// use hoomd_spatial::CellList;
     /// use hoomd_vector::Cartesian;
     ///
-    /// Create some sample 2D Cartesian positions.
+    /// // Create some sample 2D Cartesian positions.
     /// let positions = vec![
     /// Cartesian { coordinates: [0.2, 0.3] },
     /// Cartesian { coordinates: [0.8, 1.3] },
@@ -493,18 +493,18 @@ impl<const D: usize> CellList<D> {
     /// ];
     /// let cell_width = 1.0;
     /// let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
-    /// Build the cell list from positions.
+    /// // Build the cell list from positions.
     /// let cell_list = CellList::<2>::new(cell_width, &positions, &indices);
     ///
-    /// Choose a query position (for example, the first one).
+    /// // Choose a query position (for example, the first one).
     /// let query_position = &positions[0];
-    /// Define a cutoff radius.
+    /// // Define a cutoff radius.
     /// let cutoff_radius = 1.5;
     ///
-    /// Call the function to find potential neighbor indices.
+    /// // Call the function to find potential neighbor indices.
     /// let potential_neighbor_indices = cell_list.find_potential_neighbor_indices(&0, &cutoff_radius).collect::<Vec<_>>();
     ///
-    /// Print the resulting neighbor indices.
+    /// // Print the resulting neighbor indices.
     /// println!("Potential neighbor indices: {:?}", potential_neighbor_indices);
     /// ```
     #[expect(clippy::cast_possible_truncation, reason = "Intentional truncation.")]
