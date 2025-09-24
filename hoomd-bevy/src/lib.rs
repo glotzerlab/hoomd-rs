@@ -23,6 +23,14 @@
     clippy::cast_possible_truncation,
     reason = "Bevy operates with f32 values."
 )]
+#![allow(
+    clippy::too_many_arguments,
+    reason = "Bevy requires many arguments."
+)]
+#![allow(
+    clippy::too_many_lines,
+    reason = "Bevy requires long functions."
+)]
 
 //! Connect *hoomd-rs* simulations with the Bevy game engine.
 //!
@@ -136,22 +144,29 @@ pub struct HoomdBevyPlugin<S> {
 
 /// State of the UI
 #[derive(Default, Resource)]
-pub struct UiState {
+struct UiState {
     /// Prevent the simulation from running when true.
     pause: bool,
-    /// Test string
-    test: String,
+    /// Show the debug overlay.
+    show_debug: bool,
 }
 
-/// Indicate what menu is displayed (if any)
-#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum MenuState {
-    /// No menu is open.
-    #[default]
-    None,
-    /// The settings menu is open.
-    Settings,
+/// State of the menu
+#[derive(Resource)]
+struct MenuState(bool);
+
+impl Default for MenuState {
+    fn default() -> Self {
+        Self(true)
+    }
 }
+
+/// Reset the camera to the default.
+#[derive(Event)]
+struct ResetCamera;
+/// Advance the simulation one step.
+#[derive(Event)]
+struct AdvanceSimulation;
 
 /// Configure the initial camera view and set how the camera will be controlled.
 #[derive(Clone)]
@@ -192,7 +207,7 @@ impl Default for Settings {
             frame_budget_fraction: 0.8,
             sps_limit: 2048.0,
             camera: InitialCamera::Orthographic2d(10.0),
-            zoom_range: 0.1..10.0,
+            zoom_range: 0.25..10.0,
             camera_sensitivity: 0.5,
         }
     }
@@ -219,10 +234,6 @@ pub struct OverlayRoot;
 /// Mark debug text.
 #[derive(Component)]
 struct DebugText;
-
-/// Mark paused text.
-#[derive(Component)]
-struct PauseText;
 
 /// Mark the border containing the help text.
 #[derive(Component)]
@@ -353,6 +364,24 @@ where
         diagnostics.add_measurement(&Self::SPS, || steps as f64 / time.delta_secs_f64());
     }
 
+    /// Advance the simulation one step
+    fn advance_simulation(    
+        simulation: ResMut<Sim>,
+        mut exit: EventWriter<AppExit>,
+        mut event: EventReader<AdvanceSimulation>,
+    ) {
+        let simulation = simulation.into_inner();
+        for _ in event.read() {
+        let result = simulation
+            .advance()
+            .with_context(|| format!("failed at step: {}", simulation.step()));
+        if let Err(error) = result {
+            error!("{error:?}");
+            exit.write(AppExit::Error(1.try_into().expect("1 is non-zero")));
+        }
+        }
+    }
+
     fn is_paused(state: Res<UiState>) -> bool {
         state.pause
     }
@@ -464,34 +493,6 @@ F5      : Show/hide debugging information.
     }
 
     /// Add help reminder node.
-    fn add_help_reminder(mut commands: Commands, overlay_root: Single<Entity, With<OverlayRoot>>) {
-        commands.spawn((
-            Text::new("Press ? to show the help screen."),
-            Node {
-                position_type: PositionType::Absolute,
-                bottom: Val::Px(12.0),
-                right: Val::Px(12.0),
-                ..default()
-            },
-            HelpReminder,
-            ChildOf(*overlay_root),
-            GlobalZIndex(Self::HELP_OVERLAY_ZINDEX - 1),
-        ));
-    }
-
-    /// Remove the help reminder text.
-    fn remove_help_reminder(
-        mut commands: Commands,
-        overlay_root: Single<Entity, (With<OverlayRoot>, Without<HelpReminder>)>,
-        help_reminder: Single<Entity, (With<HelpReminder>, Without<OverlayRoot>)>,
-    ) {
-        commands
-            .entity(*overlay_root)
-            .remove_children(&[*help_reminder]);
-        commands.entity(*help_reminder).despawn();
-    }
-
-    /// Add help reminder node.
     fn add_logo(mut commands: Commands, server: Res<AssetServer>) {
         commands.spawn((
             Node {
@@ -562,79 +563,6 @@ F5      : Show/hide debugging information.
         }
     }
 
-    /// Keyboard control to show the menu.
-    fn keyboard_menu(
-        keys: Res<ButtonInput<KeyCode>>,
-        mut menu_root: Single<&mut Visibility, With<MenuRoot>>,
-        menu_state: Res<State<MenuState>>,
-        mut next_menu_state: ResMut<NextState<MenuState>>,
-    ) {
-        if keys.just_pressed(KeyCode::Escape) {
-            debug!("Show/hide the menu.");
-            menu_root.toggle_inherited_hidden();
-            match menu_state.get() {
-                MenuState::Settings => next_menu_state.set(MenuState::None),
-                MenuState::None => next_menu_state.set(MenuState::Settings),
-            }
-        }
-    }
-
-    /// Keyboard control to hide the whole UI.
-    fn keyboard_overlay(
-        keys: Res<ButtonInput<KeyCode>>,
-        mut overlay_root: Single<&mut Visibility, (With<OverlayRoot>, Without<DebugText>)>,
-        mut debug_text: Single<&mut Visibility, (With<DebugText>, Without<OverlayRoot>)>,
-    ) {
-        if keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])
-            && keys.just_pressed(KeyCode::F1)
-        {
-            debug!("Show/hide UI.");
-            overlay_root.toggle_visible_hidden();
-        }
-        if keys.just_pressed(KeyCode::F5) && **overlay_root == Visibility::Visible {
-            debug!("Show/hide debug overlay.");
-            debug_text.toggle_inherited_hidden();
-        }
-    }
-
-    /// Keyboard bindings to control the simulation.
-    // fn keyboard_simulation(
-    //     mut exit: EventWriter<AppExit>,
-    //     keys: Res<ButtonInput<KeyCode>>,
-    //     pause_state: Res<State<PauseState>>,
-    //     simulation: ResMut<Sim>,
-    // ) {
-    //     if keys.just_pressed(KeyCode::ArrowRight) && *pause_state.get() == PauseState::Paused {
-    //         let simulation = simulation.into_inner();
-    //         let result = simulation
-    //             .advance()
-    //             .with_context(|| format!("failed at step: {}", simulation.step()));
-    //         if let Err(error) = result {
-    //             error!("{error:?}");
-    //             exit.write(AppExit::Error(1.try_into().expect("1 is non-zero")));
-    //         }
-    //     }
-    // }
-
-    /// Keyboard command to quit.
-    #[cfg(not(target_arch = "wasm32"))]
-    fn keyboard_quit(mut exit: EventWriter<AppExit>, keys: Res<ButtonInput<KeyCode>>) {
-        if keys.just_pressed(KeyCode::KeyQ) {
-            debug!("Quitting...");
-            exit.write(AppExit::Success);
-        }
-    }
-
-    /// Implement keyboard commands for common operations.
-    #[cfg(not(target_arch = "wasm32"))]
-    fn keyboard_screenshot(mut commands: Commands, keys: Res<ButtonInput<KeyCode>>) {
-        if keys.just_pressed(KeyCode::F12) {
-            commands
-                .spawn(Screenshot::primary_window())
-                .observe(save_to_disk("screenshot.png"));
-        }
-    }
-
     /// Set the time budgeted to advancing the simulation each frame.
     ///
     /// Derive this time from the current monitor refresh rate and the
@@ -681,91 +609,6 @@ F5      : Show/hide debugging information.
         Some(best_frame_time)
     }
 
-    /// Set up the options menu.
-    fn setup_options(
-        mut commands: Commands,
-        overlay_root: Single<Entity, With<OverlayRoot>>,
-        settings: Res<Settings>,
-    ) {
-        let sps = (
-            Node::default(),
-            children![(
-                Text("Steps per second limit (-/=):   ".into()),
-                children![(TextSpan(format!("{}", settings.sps_limit)), SPSLimitText)]
-            )],
-        );
-        let frame_budget_fraction = (
-            Node::default(),
-            children![(
-                Text("Simulation time fraction ([/]): ".into()),
-                children![(
-                    TextSpan(format!("{}", settings.frame_budget_fraction)),
-                    FrameBudgetText
-                )]
-            )],
-        );
-
-        commands.spawn((
-            Node {
-                align_items: AlignItems::FlexStart,
-                justify_content: JustifyContent::Center,
-                margin: UiRect::all(Val::Px(0.0)),
-                border: UiRect::all(Val::Px(Self::UI_ROUNDING)),
-                flex_direction: FlexDirection::Column,
-                ..default()
-            },
-            Outline {
-                width: Val::Px(Self::UI_ROUNDING / 2.0),
-                offset: Val::Px(0.),
-                color: Self::UI_OUTLINE,
-            },
-            BorderRadius::px(
-                Self::UI_ROUNDING,
-                Self::UI_ROUNDING,
-                Self::UI_ROUNDING,
-                Self::UI_ROUNDING,
-            ),
-            BackgroundColor(Self::UI_BACKGROUND),
-            BorderColor(Self::UI_BACKGROUND),
-            ChildOf(*overlay_root),
-            Visibility::Hidden,
-            MenuRoot,
-            children![sps, frame_budget_fraction],
-        ));
-    }
-
-    /// Handle the increase/decrease SPS buttons.
-    fn keyboard_sps(
-        keys: Res<ButtonInput<KeyCode>>,
-        mut text: Single<&mut TextSpan, With<SPSLimitText>>,
-        mut settings: ResMut<Settings>,
-    ) {
-        if keys.just_pressed(KeyCode::Minus) {
-            settings.sps_limit /= 2.0;
-            text.0 = format!("{}", settings.sps_limit);
-        }
-        if keys.just_pressed(KeyCode::Equal) {
-            settings.sps_limit *= 2.0;
-            text.0 = format!("{}", settings.sps_limit);
-        }
-    }
-
-    /// Handle the increase/decrease frame budget buttons.
-    fn keyboard_frame_budget(
-        keys: Res<ButtonInput<KeyCode>>,
-        mut text: Single<&mut TextSpan, With<FrameBudgetText>>,
-        mut settings: ResMut<Settings>,
-    ) {
-        if keys.just_pressed(KeyCode::BracketLeft) {
-            settings.frame_budget_fraction = (settings.frame_budget_fraction - 0.1).clamp(0.1, 0.9);
-            text.0 = format!("{:.1}", settings.frame_budget_fraction);
-        }
-        if keys.just_pressed(KeyCode::BracketRight) {
-            settings.frame_budget_fraction = (settings.frame_budget_fraction + 0.1).clamp(0.1, 0.9);
-            text.0 = format!("{:.1}", settings.frame_budget_fraction);
-        }
-    }
-
     /// Set up the 2D camera.
     fn setup_camera_2d(mut commands: Commands, viewport_height: f32) {
         let projection = Projection::Orthographic(OrthographicProjection {
@@ -779,20 +622,22 @@ F5      : Show/hide debugging information.
     /// Keyboard controls for the 2d camera.
     ///
     /// `=` resets the camera to the default.
-    fn camera_keyboard_control_2d(
-        keys: Res<ButtonInput<KeyCode>>,
+    fn camera_reset_2d(
+        mut reset_camera: EventReader<ResetCamera>,
         camera: Single<(&mut Transform, &mut Projection), With<Camera2d>>,
         mut control: ResMut<CameraControl2d>,
     ) {
         let (mut transform, projection) = camera.into_inner();
 
-        if keys.just_pressed(KeyCode::Equal) {
+        if !reset_camera.is_empty() {
             if let Projection::Orthographic(ref mut orthographic) = *projection.into_inner() {
                 orthographic.scale = 1.0;
             }
             control.dragging = false;
             transform.translation = Vec3::default();
         }
+
+        reset_camera.clear();
     }
 
     /// Left click and drag to pan the 2D camera.
@@ -877,11 +722,10 @@ F5      : Show/hide debugging information.
             // and from browser to browser (a factor of 100 from the smallest to
             // the largest). Therefore, the best we can do is check the sign of the
             // scroll event and act scale the camera in the appropriate direction.
-
             let zoom_speed = settings.camera_sensitivity * CAMERA_ZOOM_SPEED * time.delta_secs();
             let delta_zoom = -zoom_speed.copysign(scroll);
             let new_scale = (orthographic.scale * (1.0 + delta_zoom))
-                .clamp(settings.zoom_range.start, settings.zoom_range.end);
+                .clamp(1.0 / settings.zoom_range.end, 1.0 / settings.zoom_range.start);
             let scale_ratio = new_scale / orthographic.scale;
 
             let world_position_result = window
@@ -924,37 +768,33 @@ F5      : Show/hide debugging information.
             .register_diagnostic(Diagnostic::new(Self::SPS))
             .insert_resource(self.simulation)
             .insert_resource(UiState::default())
-            .insert_state(MenuState::None)
+            .insert_resource(MenuState::default())
             .add_systems(
                 Startup,
                 (
                     Self::setup_overlay,
                     Self::setup_debug_text,
                     Self::add_help_text,
-                    Self::add_help_reminder,
                     Self::add_logo,
-                    Self::setup_options,
                 )
                     .chain(),
             )
             .add_systems(
                 Update,
-                (Self::remove_help_reminder, Self::remove_logo)
+                Self::remove_logo
                     .run_if(once_after_delay(Duration::from_secs(3))),
             )
             .add_systems(Update, Self::step_simulation.in_set(AdvanceSet))
             .add_systems(
                 Update,
-                (Self::keyboard_overlay, Self::keyboard_menu).in_set(KeyboardInputSet),
+                Self::advance_simulation.run_if(on_event::<AdvanceSimulation>),
             )
             .add_systems(Update, (Self::keyboard_help,).in_set(KeyboardInputSet))
-            .add_systems(
-                Update,
-                (Self::keyboard_sps, Self::keyboard_frame_budget).in_set(SettingsMenuInputSet),
-            )
-            .add_systems(Update, Self::update_debug_text.after(KeyboardInputSet))
-            .add_systems(EguiPrimaryContextPass, Self::ui_system);
-
+            .add_systems(Update, Self::update_debug_text.after(AdvanceSet))
+            .add_systems(EguiPrimaryContextPass, Self::ui_system)
+            .add_event::<ResetCamera>()
+            .add_event::<AdvanceSimulation>();
+            
         match initial_camera {
             InitialCamera::Orthographic2d(initial_viewport_height) => {
                 app.add_systems(
@@ -974,7 +814,7 @@ F5      : Show/hide debugging information.
                 )
                 .add_systems(
                     Update,
-                    Self::camera_keyboard_control_2d.in_set(KeyboardInputSet),
+                    Self::camera_reset_2d.run_if(on_event::<ResetCamera>),
                 )
                 .insert_resource(CameraControl2d::default())
                 .add_systems(Startup, move |commands: Commands| {
@@ -989,12 +829,6 @@ F5      : Show/hide debugging information.
             Self::set_frame_budget.run_if(on_timer(Duration::from_millis(250))),
         );
 
-        #[cfg(not(target_arch = "wasm32"))]
-        app.add_systems(
-            Update,
-            (Self::keyboard_quit, Self::keyboard_screenshot).in_set(KeyboardInputSet),
-        );
-
         app.configure_sets(
             Update,
             (
@@ -1005,24 +839,32 @@ F5      : Show/hide debugging information.
                 MouseInputSet
                     .after(AdvanceSet)
                     .run_if(not(egui_wants_any_pointer_input)),
-                SettingsMenuInputSet
-                    .run_if(in_state(MenuState::Settings))
-                    .after(AdvanceSet),
             ),
         );
     }
 
     /// GUI
     fn ui_system(
+        mut commands: Commands,
         mut contexts: EguiContexts,
         mut ui_state: ResMut<UiState>,
-        mut exit: EventWriter<AppExit>,
+        mut menu_state: ResMut<MenuState>,
+        mut settings: ResMut<Settings>,
         window: Single<&Window, With<PrimaryWindow>>,
+        mut debug_text: Single<&mut Visibility, (With<DebugText>, Without<OverlayRoot>)>,
+        mut exit: EventWriter<AppExit>,
+        mut reset_camera: EventWriter<ResetCamera>,
+        mut advance_simulation: EventWriter<AdvanceSimulation>,
     ) -> Result {
+        let advance_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::N);
         let pause_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Space);
         let quit_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Q);
+        let reset_camera_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Equals);
+        let show_debug_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::F5);
+        let screenshot_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::F12);
 
-        let window = egui::Window::new("🔧 Settings")
+        let window = egui::Window::new("🔧 Menu")
+            .open(&mut menu_state.0)
             .resizable([false, false])
             .pivot(egui::Align2::RIGHT_BOTTOM)
             .default_pos([
@@ -1032,23 +874,120 @@ F5      : Show/hide debugging information.
             .collapsible(false);
 
         window.show(contexts.ctx_mut()?, |ui| {
-            ui.text_edit_singleline(&mut ui_state.test);
+            // ui.text_edit_singleline(&mut ui_state.test);
 
-            if ui.toggle_value(&mut ui_state.pause, "⏸ Pause").clicked() {
-                info!("Toggle paused...");
-            }
+            // ui.horizontal(|ui| {
+            //     ui.label("a long name here");
+            //     ui.label("short");
+            //     });
+
+            ui.collapsing("Simulation controls", |ui| {
+
+            ui.horizontal(|ui| {
+                ui.toggle_value(&mut ui_state.pause, "⏸ Pause (space)");
+                if ui.button("▶ Advance simulation (n)").clicked()
+                {
+                advance_simulation.write(AdvanceSimulation);
+                }
+            });
+            ui.add(egui::Slider::new(&mut settings.sps_limit, 0.25..=32_768.0)
+                .text("Limit step rate")
+                .update_while_editing(false)
+                .logarithmic(true)
+                .suffix(" Hz"));
+
+            });
+
+                ui.collapsing("Camera controls", |ui| {
+    
+                match settings.camera {
+                    InitialCamera::Orthographic2d(_) => {
+                        ui.label("Click and drag to move the camera. Scroll to zoom.")
+                    }
+                };
+
+                ui.add(egui::Slider::new(&mut settings.camera_sensitivity, 0.1..= 1.0)
+                    .text("Camera sensitivity")
+                    .update_while_editing(false));
+
+                ui.add(egui::Slider::new(&mut settings.zoom_range.end, 2.0..= 100.0)
+                    .text("Maximum zoom")
+                    .update_while_editing(false));
+
+                if ui.button("↺ Reset camera (=)").clicked()
+                {
+                    reset_camera.write(ResetCamera);
+                }
+
+                #[cfg(not(target_arch = "wasm32"))]
+                if ui.button("📷 Take screenshot (F12)").clicked()
+                {
+                    commands
+                        .spawn(Screenshot::primary_window())
+                        .observe(save_to_disk("screenshot.png"));
+                }
+                });
+                
+                ui.collapsing("Advanced settings", |ui| {
+                    ui.checkbox(&mut ui_state.show_debug, "Show debug overlay (F5)");
+
+                    ui.add(egui::Slider::new(&mut settings.frame_budget_fraction, 0.1..=0.9)
+                        .text("Simulation fraction")
+                        .update_while_editing(false))
+                        .on_hover_text("Decrease this when FPS is limited by rendering");
+                });
+
+                #[cfg(not(target_arch = "wasm32"))]
+                if ui.button("⊗ Quit (q)").clicked()
+                {
+                    exit.write(AppExit::Success);
+                }
+        });
+
+        {
+            let context = contexts.ctx_mut()?;
+            if !context.wants_keyboard_input() {
+            if context.input_mut(|i| i.consume_shortcut(&advance_shortcut))
+                {
+                advance_simulation.write(AdvanceSimulation);
+                }
+            if context.input_mut(|i| i.consume_shortcut(&pause_shortcut)) {
+                ui_state.pause = !ui_state.pause;
+                }
+            if context.input_mut(|i| i.consume_shortcut(&show_debug_shortcut)) {
+                ui_state.show_debug = !ui_state.show_debug;
+                }
+            if context.input_mut(|i| i.consume_shortcut(&reset_camera_shortcut))
+                {
+                reset_camera.write(ResetCamera);
+                }
 
             #[cfg(not(target_arch = "wasm32"))]
-            if ui.button("⊗ Quit").clicked()
-                || ui.ctx().input_mut(|i| i.consume_shortcut(&quit_shortcut))
-            {
-                info!("Quitting...");
+            if context.input_mut(|i| i.consume_shortcut(&quit_shortcut))
+                {
                 exit.write(AppExit::Success);
+                }
+            #[cfg(not(target_arch = "wasm32"))]
+            if context.input_mut(|i| i.consume_shortcut(&screenshot_shortcut))
+                {
+                commands
+                        .spawn(Screenshot::primary_window())
+                        .observe(save_to_disk("screenshot.png"));
+                }
             }
-        });
-        Ok(())
+        }
+
+        if **debug_text == Visibility::Hidden && ui_state.show_debug {
+            debug_text.toggle_inherited_hidden();
+        }
+        if **debug_text != Visibility::Hidden && !ui_state.show_debug {
+            debug_text.toggle_inherited_hidden();
+        }
+    
+    Ok(())
     }
 }
+
 
 /// Construct the default plugins.
 ///
