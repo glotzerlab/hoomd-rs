@@ -11,6 +11,7 @@
 //! Simulate molecular dynamics in systems of particles.
 
 pub mod thermostat;
+pub mod thermalize;
 
 use std::array;
 
