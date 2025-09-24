@@ -77,7 +77,20 @@ jobs:
         key: ${{ matrix.target || 'native' }}
         cache-bin: false
 
-    - name: Build
+    - name: Build [default features]
+      run: >
+        cargo build
+        --profile=ci
+        --locked
+        --workspace
+        --lib
+        --bins
+        --tests
+        --examples
+        ${{ matrix.target != '' && '--target' || '' }} ${{ matrix.target }}
+        --verbose
+
+    - name: Build [all features]
       run: >
         cargo build
         --profile=ci
