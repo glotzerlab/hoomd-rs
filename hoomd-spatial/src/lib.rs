@@ -33,22 +33,32 @@ pub enum ParticleFlag {
 /// # Example
 ///
 /// ```
-/// use hoomd_spatial::CellList;
-/// use hoomd_spatial::CellListBuilder;
+/// use hoomd_spatial::{CellList, CellListBuilder};
 /// use hoomd_vector::Cartesian;
 /// // Create some sample 2D Cartesian positions.
+/// # fn main() {
 /// let positions = vec![
-/// Cartesian { coordinates: [0.2, 0.3] },
-/// Cartesian { coordinates: [0.8, 1.3] },
-/// Cartesian { coordinates: [8.5, 9.5] },
+///     Cartesian {
+///         coordinates: [0.2, 0.3],
+///     },
+///     Cartesian {
+///         coordinates: [0.8, 1.3],
+///     },
+///     Cartesian {
+///         coordinates: [8.5, 9.5],
+///     },
 /// ];
 /// let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
 /// // Define the cell width.
 /// let cell_width = 2.0;
 /// // Create a cell list object from the builder
-/// let mut cell_list = CellListBuilder::<2>::new(cell_width).with_positions_and_indices(&positions, &indices).build();
-/// add another particle to the cell list.
-/// let new_position = Cartesian { coordinates: [1.2, 1.3] };
+/// let mut cell_list = CellListBuilder::<2>::new(cell_width)
+///     .with_positions_and_indices(&positions, &indices)
+///     .build();
+/// // Add another particle to the cell list.
+/// let new_position = Cartesian {
+///     coordinates: [1.2, 1.3],
+/// };
 /// let new_index: usize = 3; // New particle index.
 /// // Add particles to the cell list.
 /// cell_list.insert(&new_position, &new_index);
@@ -56,10 +66,12 @@ pub enum ParticleFlag {
 /// cell_list.remove(0);
 /// // Shrink the cell list to fit its current capacity.
 /// cell_list.shrink_to_fit();
-/// print the cell indices of particle 2
+/// // Print the cell indices of particle 2
 /// println!("Cell index for particle 2: {:?}", cell_list.cell_index(2));
 /// // Translate particle 2 to a new position.
-/// let new_particle_position = Cartesian { coordinates: [8.2, 9.3] };
+/// let new_particle_position = Cartesian {
+///     coordinates: [8.2, 9.3],
+/// };
 /// // TODO change based on fait of translate_particle function
 /// cell_list.insert(&new_particle_position, &2);
 /// // Get the cell index for the second particle.
@@ -67,9 +79,15 @@ pub enum ParticleFlag {
 /// // Find potential neighbor indices for particle 2.
 /// let cutoff_radius = 1.5;
 /// // Find potential neighbor indices
-/// let potential_neighbors = cell_list.find_potential_neighbor_indices(&2, &cutoff_radius).collect::<Vec<_>>();
+/// let potential_neighbors = cell_list
+///     .find_potential_neighbor_indices(&2, &cutoff_radius)
+///     .collect::<Vec<_>>();
 /// // Print the potential neighbor indices.
-/// println!("Potential neighbor indices for particle 2: {:?}", potential_neighbors);
+/// println!(
+///     "Potential neighbor indices for particle 2: {:?}",
+///     potential_neighbors
+/// );
+/// # }
 /// ```
 pub struct CellList<const D: usize> {
     /// The width of each cell.
@@ -449,18 +467,25 @@ impl<const D: usize> CellList<D> {
     ///
     /// // Create some sample 2D Cartesian positions.
     /// let positions = vec![
-    /// Cartesian { coordinates: [0.2, 0.3] },
-    /// Cartesian { coordinates: [0.8, 1.3] },
-    /// Cartesian { coordinates: [8.5, 9.5] },
+    ///     Cartesian {
+    ///         coordinates: [0.2, 0.3],
+    ///     },
+    ///     Cartesian {
+    ///         coordinates: [0.8, 1.3],
+    ///     },
+    ///     Cartesian {
+    ///         coordinates: [8.5, 9.5],
+    ///     },
     /// ];
     /// let cell_width = 1.0;
     /// let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
     /// // Build the cell list from positions.
-    /// let//  mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
-    ///
+    /// let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
     ///
     /// // Translate the first particle to a new position.
-    /// let new_position = Cartesian { coordinates: [1.2, 1.3] };
+    /// let new_position = Cartesian {
+    ///     coordinates: [1.2, 1.3],
+    /// };
     /// cell_list.translate_particle(0, new_position);
     /// ```
     #[inline]
