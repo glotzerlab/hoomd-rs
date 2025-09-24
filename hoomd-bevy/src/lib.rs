@@ -69,6 +69,8 @@ use bevy::{
     render::view::window::screenshot::{Screenshot, save_to_disk},
     time::common_conditions::on_timer,
 };
+use bevy_egui::{egui, EguiContexts, EguiPlugin, EguiPrimaryContextPass,
+input::{egui_wants_any_keyboard_input, egui_wants_any_pointer_input}};
 use bevy_diagnostic::{
     Diagnostic, DiagnosticPath, Diagnostics, DiagnosticsStore, FrameTimeDiagnosticsPlugin,
     RegisterDiagnostic,
@@ -260,16 +262,23 @@ struct MenuRoot;
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AdvanceSet;
 
-/// Systems that always run to process input.
+/// Systems that run to process non-GUI keyboard input.
 ///
-/// Callers can optionally add input handling systems to this set. It is processed
-/// after [`AdvanceSet`] to reduce the latency between input and result.
+/// Callers must add any keyboard input handling systems to this set.
+/// It is processed after [`AdvanceSet`] to reduce the latency between
+/// input and result and it is skipped when the GUI is capturing
+/// keyboard input.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AlwaysInputSet;
+pub struct KeyboardInputSet;
 
-/// Systems that run to process input only when there is no menu displayed.
+/// Systems that run to process non-GUI mouse input.
+///
+/// Callers must add any mouse input handling systems to this set.
+/// It is processed after [`AdvanceSet`] to reduce the latency between
+/// input and result and it is skipped when the GUI is capturing
+/// mouse input.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct NoMenuInputSet;
+pub struct MouseInputSet;
 
 /// Systems that run to process input in the settings menu.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
@@ -639,7 +648,6 @@ F5      : Show/hide debugging information.
     /// Keyboard command to quit.
     #[cfg(not(target_arch = "wasm32"))]
     fn keyboard_quit(mut exit: EventWriter<AppExit>, keys: Res<ButtonInput<KeyCode>>) {
-        #[cfg(not(target_arch = "wasm32"))]
         if keys.just_pressed(KeyCode::KeyQ) {
             debug!("Quitting...");
             exit.write(AppExit::Success);
@@ -936,6 +944,8 @@ F5      : Show/hide debugging information.
 
         let initial_camera = self.initial_settings.camera.clone();
 
+        assert!(app.is_plugin_added::<EguiPlugin>());
+
         app.add_plugins(FrameTimeDiagnosticsPlugin::default())
             .insert_resource(ClearColor(Self::CLEAR))
             .insert_resource(FrameBudget(Duration::from_millis(9)))
@@ -966,10 +976,10 @@ F5      : Show/hide debugging information.
             .add_systems(
                 Update,
                 (
-                    (Self::keyboard_overlay, Self::update_debug_text).chain(),
+                    Self::keyboard_overlay,
                     Self::keyboard_menu,
                 )
-                    .in_set(AlwaysInputSet),
+                    .in_set(KeyboardInputSet),
             )
             .add_systems(
                 Update,
@@ -978,12 +988,17 @@ F5      : Show/hide debugging information.
                     Self::keyboard_help,
                     Self::keyboard_simulation,
                 )
-                    .in_set(NoMenuInputSet),
+                    .in_set(KeyboardInputSet),
             )
             .add_systems(
                 Update,
                 (Self::keyboard_sps, Self::keyboard_frame_budget).in_set(SettingsMenuInputSet),
-            );
+            )
+            .add_systems(
+                Update,
+                Self::update_debug_text.after(KeyboardInputSet),
+            )
+            .add_systems(EguiPrimaryContextPass, Self::ui_system);
 
         match initial_camera {
             InitialCamera::Orthographic2d(initial_viewport_height) => {
@@ -994,17 +1009,17 @@ F5      : Show/hide debugging information.
                             input_pressed(MouseButton::Left)
                                 .or(input_just_released(MouseButton::Left)),
                         )
-                        .in_set(NoMenuInputSet),
+                        .in_set(MouseInputSet),
                 )
                 .add_systems(
                     Update,
                     Self::camera_mouse_zoom_control_2d
                         .run_if(on_event::<MouseWheel>)
-                        .in_set(NoMenuInputSet),
+                        .in_set(MouseInputSet),
                 )
                 .add_systems(
                     Update,
-                    Self::camera_keyboard_control_2d.in_set(NoMenuInputSet),
+                    Self::camera_keyboard_control_2d.in_set(KeyboardInputSet),
                 )
                 .insert_resource(CameraControl2d::default())
                 .add_systems(Startup, move |commands: Commands| {
@@ -1022,22 +1037,55 @@ F5      : Show/hide debugging information.
         #[cfg(not(target_arch = "wasm32"))]
         app.add_systems(
             Update,
-            (Self::keyboard_quit, Self::keyboard_screenshot).in_set(AlwaysInputSet),
+            (Self::keyboard_quit, Self::keyboard_screenshot).in_set(KeyboardInputSet),
         );
 
         app.configure_sets(
             Update,
             (
                 AdvanceSet.run_if(in_state(PauseState::Running)),
-                AlwaysInputSet.after(AdvanceSet),
-                NoMenuInputSet
-                    .run_if(in_state(MenuState::None))
-                    .after(AdvanceSet),
+                KeyboardInputSet.after(AdvanceSet).run_if(not(egui_wants_any_keyboard_input)),
+                MouseInputSet.after(AdvanceSet).run_if(not(egui_wants_any_pointer_input)),
                 SettingsMenuInputSet
                     .run_if(in_state(MenuState::Settings))
                     .after(AdvanceSet),
             ),
         );
+    }
+
+    /// GUI
+    fn ui_system(mut contexts: EguiContexts,
+    mut exit: EventWriter<AppExit>,
+    window: Single<&Window, With<PrimaryWindow>>,
+    ) -> Result {
+        let pause_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE,
+            egui::Key::Space);
+        let quit_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE,
+            egui::Key::Q);
+
+        let mut text = String::new();
+    
+        let window = egui::Window::new("🔧 Settings")
+            .resizable([false, false])
+            .pivot(egui::Align2::RIGHT_BOTTOM)
+            .default_pos([window.resolution.width()-10.0, window.resolution.height()-10.0])
+            .collapsible(false);
+
+        window.show(contexts.ctx_mut()?, |ui| {
+            ui.text_edit_singleline(&mut text);
+        
+            let pause = egui::Button::selectable(true, "⏸ Pause");
+            if ui.add(pause).clicked() {
+                info!("Paused...");
+            }
+            
+            #[cfg(not(target_arch = "wasm32"))]
+            if ui.button("⊗ Quit").clicked() || ui.ctx().input_mut(|i| i.consume_shortcut(&quit_shortcut)) {
+                debug!("Quitting...");
+                exit.write(AppExit::Success);
+            }
+        });
+        Ok(())
     }
 }
 
