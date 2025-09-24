@@ -9,7 +9,7 @@ The methods are based on the struct `SpatialHistogram`.
 use hoomd_geometry::shape::{Cuboid, EightEight};
 use hoomd_manifold::Hyperboloid;
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder, Transform,
+    Microstate, MicrostateBuilder, Transform,
     boundary::{GenerateGhosts, MaximumAllowableInteractionRange, Open, Periodic},
     property::Position,
 };
@@ -52,6 +52,7 @@ pub struct SpatialHistogram<const N: usize, A> {
     pub n_bins: [usize; N],
 }
 
+/// TODO: documentation
 pub struct NormalizedHistogram {
     /// a vector containing the bin edges of the histogram
     pub bin_edges: Array<f64, Dim<[usize; 1]>>,
@@ -104,7 +105,8 @@ pub trait GenerateHistogram<const N: usize, A> {
  */
 pub trait CorrelationFunction<B, S, C, M> {
     /// computes the radial distribution function g(r) from a given microstate
-    /// TODO: describe better
+    /// TODO:
+    /// # Errors
     fn rdf(
         microstate: &Microstate<B, S, C>,
         r_min: f64,
@@ -112,6 +114,8 @@ pub trait CorrelationFunction<B, S, C, M> {
         nbins: usize,
     ) -> Result<SpatialHistogram<1, f64>, Error>;
     /// get the normalized rdf
+    /// # Errors
+    #[inline]
     fn normed_rdf(
         microstate: &Microstate<B, S, C>,
         r_min: f64,
@@ -232,11 +236,10 @@ where
             [[r_min, r_max]; 1],
             [nbins],
         ))
-    } 
+    }
 }
 
-impl<B, S> CorrelationFunction<B, S, Periodic<Cuboid<2>>, Cartesian<2>>
-    for SpatialHistogram<1, f64>
+impl<B, S> CorrelationFunction<B, S, Periodic<Cuboid<2>>, Cartesian<2>> for SpatialHistogram<1, f64>
 where
     S: Position<Metric = Cartesian<2>> + Copy + Default,
     B: Transform<S> + Position<Metric = Cartesian<2>> + Copy,
@@ -272,13 +275,7 @@ where
             .expect("copy of valid boundary");
         let new_microstate: Microstate<B, S, Periodic<Cuboid<2>>> =
             MicrostateBuilder::with_boundary(max_boundary)
-                .bodies(
-                    microstate
-                        .bodies()
-                        .iter()
-                        .map(|b| b.clone().item)
-                        .collect::<Vec<Body<_, _>>>(),
-                )
+                .bodies(microstate.bodies().iter().map(|b| b.clone().item))
                 .try_build()
                 .expect("copy of existing valid microstate");
         let mut all_ghosts: Vec<Cartesian<2>> = vec![];
@@ -286,19 +283,19 @@ where
             let ghosts =
                 GenerateGhosts::generate_ghosts(new_microstate.boundary(), &site_b.properties);
             for ghost in ghosts {
-                all_ghosts.push(ghost.position().clone());
+                all_ghosts.push(*ghost.position());
             }
         }
         let mut everyone_else: Vec<Cartesian<2>> = microstate
             .sites()
             .iter()
-            .map(|s| s.properties.position().clone())
+            .map(|s| *s.properties.position())
             .collect();
         everyone_else.append(&mut all_ghosts);
         for site_1 in microstate.sites() {
-            for site_2 in everyone_else.iter() {
+            for site_2 in &everyone_else {
                 let loc = site_1.properties.position();
-                let distance = loc.distance(&site_2);
+                let distance = loc.distance(site_2);
                 distances.push([distance]);
             }
         }
@@ -312,8 +309,7 @@ where
     }
 }
 
-impl<B, S> CorrelationFunction<B, S, Periodic<Cuboid<3>>, Cartesian<3>>
-    for SpatialHistogram<1, f64>
+impl<B, S> CorrelationFunction<B, S, Periodic<Cuboid<3>>, Cartesian<3>> for SpatialHistogram<1, f64>
 where
     S: Position<Metric = Cartesian<3>> + Copy + Default,
     B: Transform<S> + Position<Metric = Cartesian<3>> + Copy,
@@ -349,13 +345,7 @@ where
             .expect("copy of valid boundary");
         let new_microstate: Microstate<B, S, Periodic<Cuboid<3>>> =
             MicrostateBuilder::with_boundary(max_boundary)
-                .bodies(
-                    microstate
-                        .bodies()
-                        .iter()
-                        .map(|b| b.clone().item)
-                        .collect::<Vec<Body<_, _>>>(),
-                )
+                .bodies(microstate.bodies().iter().map(|b| b.clone().item))
                 .try_build()
                 .expect("copy of existing valid microstate");
         let mut all_ghosts: Vec<Cartesian<3>> = vec![];
@@ -363,19 +353,19 @@ where
             let ghosts =
                 GenerateGhosts::generate_ghosts(new_microstate.boundary(), &site_b.properties);
             for ghost in ghosts {
-                all_ghosts.push(ghost.position().clone());
+                all_ghosts.push(*ghost.position());
             }
         }
         let mut everyone_else: Vec<Cartesian<3>> = microstate
             .sites()
             .iter()
-            .map(|s| s.properties.position().clone())
+            .map(|s| *s.properties.position())
             .collect();
         everyone_else.append(&mut all_ghosts);
         for site_1 in microstate.sites() {
-            for site_2 in everyone_else.iter() {
+            for site_2 in &everyone_else {
                 let loc = site_1.properties.position();
-                let distance = loc.distance(&site_2);
+                let distance = loc.distance(site_2);
                 distances.push([distance]);
             }
         }
@@ -431,13 +421,7 @@ where
         .expect("hard coded");
         let new_microstate: Microstate<B, S, Periodic<EightEight>> =
             MicrostateBuilder::with_boundary(max_boundary)
-                .bodies(
-                    microstate
-                        .bodies()
-                        .iter()
-                        .map(|b| b.clone().item)
-                        .collect::<Vec<Body<_, _>>>(),
-                )
+                .bodies(microstate.bodies().iter().map(|b| b.clone().item))
                 .try_build()
                 .expect("copy of existing valid microstate");
         let mut all_ghosts: Vec<Hyperboloid<3>> = vec![];
@@ -445,18 +429,18 @@ where
             let ghosts =
                 GenerateGhosts::generate_ghosts(new_microstate.boundary(), &site_b.properties);
             for ghost in ghosts {
-                all_ghosts.push(ghost.position().clone());
+                all_ghosts.push(*ghost.position());
                 //println!("{:?}", ghost.position())
             }
         }
         let mut everyone_else: Vec<Hyperboloid<3>> = microstate
             .sites()
             .iter()
-            .map(|s| s.properties.position().clone())
+            .map(|s| *s.properties.position())
             .collect();
         everyone_else.append(&mut all_ghosts);
         for site_1 in microstate.sites() {
-            for site_2 in everyone_else.iter() {
+            for site_2 in &everyone_else {
                 let loc = site_1.properties.position();
                 let distance = loc.distance(site_2);
                 distances.push([distance]);
@@ -482,11 +466,11 @@ where
         data: &[[A; 2]],
         bin_edges: Array<A, Dim<[usize; 2]>>,
         bounds: [[A; 2]; 2],
-        n_bins: [usize; 2],
+        nbins: [usize; 2],
     ) -> Self {
-        let mut counts = Array::zeros((n_bins[0], n_bins[1]));
-        for i in 0..n_bins[0] {
-            for j in 0..n_bins[1] {
+        let mut counts = Array::zeros((nbins[0], nbins[1]));
+        for i in 0..nbins[0] {
+            for j in 0..nbins[1] {
                 counts[[i, j]] = data
                     .iter()
                     .filter(|[a, b]| {
@@ -502,7 +486,7 @@ where
             bin_edges,
             bounds,
             bin_counts: counts,
-            n_bins,
+            n_bins: nbins,
         }
     }
 }
@@ -517,12 +501,12 @@ where
         data: &[[A; 3]],
         bin_edges: Array<A, Dim<[usize; 2]>>,
         bounds: [[A; 2]; 3],
-        n_bins: [usize; 3],
+        nbins: [usize; 3],
     ) -> Self {
-        let mut counts = Array::zeros((n_bins[0], n_bins[1], n_bins[2]));
-        for i in 0..n_bins[0] {
-            for j in 0..n_bins[1] {
-                for k in 0..n_bins[2] {
+        let mut counts = Array::zeros((nbins[0], nbins[1], nbins[2]));
+        for i in 0..nbins[0] {
+            for j in 0..nbins[1] {
+                for k in 0..nbins[2] {
                     counts[[i, j, k]] = data
                         .iter()
                         .filter(|[a, b, c]| {
@@ -541,7 +525,7 @@ where
             bin_edges,
             bounds,
             bin_counts: counts,
-            n_bins,
+            n_bins: nbins,
         }
     }
 }
@@ -679,12 +663,12 @@ mod tests {
 
     #[test]
     fn rdf_cartesian_square_periodic() -> Result<(), Box<dyn std::error::Error>> {
+        const SIZE: usize = 2;
         let boundary = Periodic::new(
             1.0,
             Cuboid::<2>::with_equal_edges(2.0.try_into().expect("hard-coded positive number")),
         )
         .expect("no interactions");
-        const SIZE: usize = 2;
         let microstate = MicrostateBuilder::with_boundary(boundary)
             .bodies([
                 Body::point(Cartesian::from([-0.5, 0.8])),

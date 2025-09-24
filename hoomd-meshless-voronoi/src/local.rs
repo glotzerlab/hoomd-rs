@@ -4,8 +4,7 @@
 /*! Implement Voronoi tesselations of a given point set
 */
 #![allow(dead_code)]
-use crate::{Dimensionality, Voronoi};
-use glam::DVec3;
+use crate::{GeneratePowerDiagram, PDSeed, PowerDiagram, voronoi_neighborlist};
 use hoomd_geometry::shape::{Cuboid, EightEight};
 use hoomd_manifold::Hyperboloid;
 use hoomd_microstate::{
@@ -14,62 +13,9 @@ use hoomd_microstate::{
     property::Position,
 };
 use hoomd_vector::{Cartesian, Metric};
+use ndarray::prelude::*;
 use num::complex::Complex;
 use thiserror::Error;
-use ndarray::prelude::*;
-
-/** Define generator for making voronoi diagrams in Hyperbolic space
-*/
-#[derive(Clone, Debug)]
-pub struct GeneratorHyperbolic {
-    /// Coordinates of point in hyperbolic space in Poincare coordinates
-    pub loc: Vec<f64>,
-    /// skirt width of the hyperboloid (equivalently, the radius of the Poincare disk)
-    pub skirt: f64,
-    /// site tag of point
-    pub site_tag: usize,
-}
-
-impl GeneratorHyperbolic {
-    pub(super) fn new(
-        id: usize,
-        skirt: f64,
-        loc: Vec<f64>,
-        dimensionality: Dimensionality,
-    ) -> Self {
-        let mut loc = loc;
-        match dimensionality {
-            Dimensionality::OneD => {
-                loc[1] = 0.;
-                loc[2] = 0.;
-            }
-            Dimensionality::TwoD => loc[2] = 0.,
-            _ => (),
-        }
-        Self {
-            loc,
-            skirt,
-            site_tag: id,
-        }
-    }
-    /** Get the site tag number of this pd generator
-     */
-    pub fn id(&self) -> usize {
-        self.site_tag
-    }
-    /** Get the position of this pd generator
-     */
-    pub fn loc(&self) -> DVec3 {
-        let mut coords: Vec<f64> = self.loc.clone();
-        coords.push(0.0);
-        DVec3::from_array([coords[0], coords[1], coords[2]])
-    }
-    /** get a generator from a microstate site
-     */
-    pub fn skirt(&self) -> f64 {
-        self.skirt
-    }
-}
 
 /** Define the neighbor list
 
@@ -86,7 +32,7 @@ pub struct NeighborList<'a, B, S, C> {
 pub trait GenerateNeighborList<B, S, C, M> {
     /** Generate the neighbor list from a given microstate
      */
-    fn from_microstate(microstate: &Microstate<B, S, C>) -> NeighborList<B, S, C>;
+    fn from_microstate(microstate: &Microstate<B, S, C>) -> Result<NeighborList<B, S, C>, Error>;
 }
 
 impl<B, S, C> NeighborList<'_, B, S, C> {
@@ -226,7 +172,7 @@ where
                 });
                 Ok(hex.scale(1.0 / (site_neighbors.len() as f64)))
             }
-            None => return Err(Error::InvalidSiteIndex),
+            None => Err(Error::InvalidSiteIndex),
         }
     }
     /// TODO: description
@@ -257,12 +203,9 @@ where
                             let distance = microstate.sites()[*site_1_index]
                                 .properties
                                 .position()
-                                .distance(
-                                    microstate.sites()[*site_2_index].properties.position()
-                                );
-                            let index = bin_edges.iter()
-                                .filter(|edge| **edge <= distance)
-                                .count() - 1_usize;
+                                .distance(microstate.sites()[*site_2_index].properties.position());
+                            let index = bin_edges.iter().filter(|edge| **edge <= distance).count()
+                                - 1_usize;
                             let dir1 = self.hexatic(microstate, *site_1)?;
                             let dir2 = self.hexatic(microstate, *site_2)?;
                             directors_tagged.push((dir1.conj() * dir2, index));
@@ -276,12 +219,22 @@ where
         }
         let mut directors: Vec<Complex<f64>> = vec![];
         for index in 0..=nbins {
-            let dirs: Vec<&(Complex<f64>, usize)> = directors_tagged.iter().filter(|(_val, bin)| *bin == index).collect();
+            let dirs: Vec<&(Complex<f64>, usize)> = directors_tagged
+                .iter()
+                .filter(|(_val, bin)| *bin == index)
+                .collect();
             let num = dirs.len();
-            let avg_dirs = dirs.iter().fold(Complex::new(0.0,0.0), |sum, (val, _bin)| sum + val);
-            directors.push(avg_dirs.scale(1.0/(num as f64)));
-        };
-        Ok (ComplexField { bin_edges, bounds: [r_min, r_max], field_value: Array::from_vec(directors), n_bins: nbins})
+            let avg_dirs = dirs
+                .iter()
+                .fold(Complex::new(0.0, 0.0), |sum, (val, _bin)| sum + val);
+            directors.push(avg_dirs.scale(1.0 / (num as f64)));
+        }
+        Ok(ComplexField {
+            bin_edges,
+            bounds: [r_min, r_max],
+            field_value: Array::from_vec(directors),
+            n_bins: nbins,
+        })
     }
 }
 
@@ -329,7 +282,7 @@ where
                 });
                 Ok(hex.scale(1.0 / (site_neighbors.len() as f64)))
             }
-            None => return Err(Error::InvalidSiteIndex),
+            None => Err(Error::InvalidSiteIndex),
         }
     }
     #[inline]
@@ -359,12 +312,9 @@ where
                             let distance = microstate.sites()[*site_1_index]
                                 .properties
                                 .position()
-                                .distance(
-                                    microstate.sites()[*site_2_index].properties.position()
-                                );
-                            let index = bin_edges.iter()
-                                .filter(|edge| **edge <= distance)
-                                .count() - 1_usize;
+                                .distance(microstate.sites()[*site_2_index].properties.position());
+                            let index = bin_edges.iter().filter(|edge| **edge <= distance).count()
+                                - 1_usize;
                             let dir1 = self.hexatic(microstate, *site_1)?;
                             let dir2 = self.hexatic(microstate, *site_2)?;
                             directors_tagged.push((dir1.conj() * dir2, index));
@@ -378,18 +328,29 @@ where
         }
         let mut directors: Vec<Complex<f64>> = vec![];
         for index in 0..=nbins {
-            let dirs: Vec<&(Complex<f64>, usize)> = directors_tagged.iter().filter(|(_val, bin)| *bin == index).collect();
+            let dirs: Vec<&(Complex<f64>, usize)> = directors_tagged
+                .iter()
+                .filter(|(_val, bin)| *bin == index)
+                .collect();
             let num = dirs.len();
-            let avg_dirs = dirs.iter().fold(Complex::new(0.0,0.0), |sum, (val, _bin)| sum + val);
-            directors.push(avg_dirs.scale(1.0/(num as f64)));
-        };
-        Ok (ComplexField { bin_edges, bounds: [r_min, r_max], field_value: Array::from_vec(directors), n_bins: nbins})
+            let avg_dirs = dirs
+                .iter()
+                .fold(Complex::new(0.0, 0.0), |sum, (val, _bin)| sum + val);
+            directors.push(avg_dirs.scale(1.0 / (num as f64)));
+        }
+        Ok(ComplexField {
+            bin_edges,
+            bounds: [r_min, r_max],
+            field_value: Array::from_vec(directors),
+            n_bins: nbins,
+        })
     }
 }
 
-/// Enumerate possible sources of error in fallible boundary methods.
+/// Enumerate possible sources of error.
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
+#[allow(clippy::enum_variant_names)]
 pub enum Error {
     /// Given microstate has no valid indices
     #[error("invalid site index")]
@@ -397,6 +358,15 @@ pub enum Error {
     /// No nearest neighbors
     #[error("No nearest neighbors (likely an invalid site index)")]
     NoNearestNeighbors,
+    /// Error from power diagram construction
+    #[error("Error while constructing power diagram")]
+    PowerDiagramError(voronoi_neighborlist::Error),
+}
+
+impl From<voronoi_neighborlist::Error> for Error {
+    fn from(err: voronoi_neighborlist::Error) -> Self {
+        Error::PowerDiagramError(err)
+    }
 }
 
 /** Neighbor list from microstates in cartesian space
@@ -427,62 +397,132 @@ assert_eq!(vec![(0 as usize, 1 as usize),
 # }
 ```
 */
-impl<const N: usize, B, S> GenerateNeighborList<B, S, Open, Cartesian<N>>
-    for NeighborList<'_, B, S, Open>
+impl<B, S> GenerateNeighborList<B, S, Open, Cartesian<2>> for NeighborList<'_, B, S, Open>
 where
-    S: Position<Metric = Cartesian<N>>,
+    S: Position<Metric = Cartesian<2>>,
 {
     /** Compute the neighbor list from a microstate embedded in Cartesian space
      */
     #[inline]
-    fn from_microstate(microstate: &Microstate<B, S, Open>) -> NeighborList<B, S, Open> {
+    fn from_microstate(
+        microstate: &Microstate<B, S, Open>,
+    ) -> Result<NeighborList<B, S, Open>, Error> {
         let mut nlist = vec![];
-        let mut generators = vec![];
-        let mut coord_numbers = vec![];
-        for site in microstate.sites() {
-            let mut pos_vec: Vec<f64> = Vec::from(site.properties.position().coordinates);
-            pos_vec.push(0.0);
-            let position = DVec3 {
-                x: pos_vec[0],
-                y: pos_vec[1],
-                z: pos_vec[2],
-            };
-            generators.push(position);
-            for n in 0..N {
-                coord_numbers.push(site.properties.position()[n].floor() as i32);
+        let mut seeds: Vec<PDSeed<2>> = vec![];
+        let mut coordinate_numbers = vec![];
+        for site_index in microstate.site_indices().iter().flatten() {
+            seeds.push(PDSeed {
+                coordinate: microstate.sites()[*site_index]
+                    .properties
+                    .position()
+                    .coordinates,
+                weight: 0.01,
+                index: *site_index,
+            });
+            for n in 0..2 {
+                coordinate_numbers
+                    .push(microstate.sites()[*site_index].properties.position()[n].floor() as i32);
             }
         }
-        let max_coord = coord_numbers.iter().max();
-        let min_coord = coord_numbers.iter().min();
-        let anchor_num: f64 = match max_coord {
-            Some(max) => (*max) as f64 + 2.0,
-            None => panic!("microstate is empty!"),
-        };
-        let width_num: f64 = match min_coord {
-            Some(min) => (*min as f64) - 1.0,
-            None => panic!("microstate is empty!"),
-        };
-        let anchor = DVec3::splat(anchor_num);
-        let width = DVec3::splat(width_num - anchor_num);
-        let _voronoi = Voronoi::build(&generators, anchor, width, N.try_into().unwrap());
-        let cells = _voronoi.cells();
-        for site_tag in microstate.site_indices().iter().flatten() {
-            let nn_list = cells[*site_tag].neighbour_ids(&_voronoi);
-            let mut temp_list = vec![];
-            for n in nn_list {
-                if n > *site_tag {
-                    temp_list.push(n)
-                }
-            }
-            temp_list.sort();
-            for n in temp_list {
-                nlist.push((*site_tag, n));
+        let max_coord = coordinate_numbers
+            .iter()
+            .max()
+            .expect("non empty microstate");
+        let min_coord = coordinate_numbers
+            .iter()
+            .min()
+            .expect("non empty microstate");
+        let simulation_box_vertices = vec![
+            [*max_coord as f64, *max_coord as f64],
+            [*min_coord as f64, *max_coord as f64],
+            [*min_coord as f64, *min_coord as f64],
+            [*max_coord as f64, *min_coord as f64],
+        ];
+
+        let power_diagram = PowerDiagram::<2>::build(&seeds, simulation_box_vertices, 14_usize)?;
+        let nnlist = power_diagram.neighborlist();
+        for elt in nnlist {
+            let mut elt_nlist: Vec<(usize, usize)> = elt
+                .1
+                .iter()
+                .filter(|nghbr| **nghbr > elt.0)
+                .map(|gr_nghbr| (elt.0, *gr_nghbr))
+                .collect();
+            elt_nlist.sort();
+            for edge in elt_nlist {
+                nlist.push(edge);
             }
         }
-        NeighborList {
+        Ok(NeighborList {
             neighbors: nlist,
             microstate,
+        })
+    }
+}
+impl<B, S> GenerateNeighborList<B, S, Open, Cartesian<3>> for NeighborList<'_, B, S, Open>
+where
+    S: Position<Metric = Cartesian<3>>,
+{
+    /** Compute the neighbor list from a microstate embedded in Cartesian space
+     */
+    #[inline]
+    fn from_microstate(
+        microstate: &Microstate<B, S, Open>,
+    ) -> Result<NeighborList<B, S, Open>, Error> {
+        let mut nlist = vec![];
+        let mut seeds: Vec<PDSeed<3>> = vec![];
+        let mut coordinate_numbers = vec![];
+        for site_index in microstate.site_indices().iter().flatten() {
+            seeds.push(PDSeed {
+                coordinate: microstate.sites()[*site_index]
+                    .properties
+                    .position()
+                    .coordinates,
+                weight: 0.01,
+                index: *site_index,
+            });
+            for n in 0..2 {
+                coordinate_numbers
+                    .push(microstate.sites()[*site_index].properties.position()[n].floor() as i32);
+            }
         }
+        let max_coord = coordinate_numbers
+            .iter()
+            .max()
+            .expect("non empty microstate");
+        let min_coord = coordinate_numbers
+            .iter()
+            .min()
+            .expect("non empty microstate");
+        let simulation_box_vertices = vec![
+            [*max_coord as f64, *max_coord as f64, *max_coord as f64],
+            [*min_coord as f64, *max_coord as f64, *max_coord as f64],
+            [*min_coord as f64, *min_coord as f64, *max_coord as f64],
+            [*max_coord as f64, *min_coord as f64, *max_coord as f64],
+            [*max_coord as f64, *max_coord as f64, *min_coord as f64],
+            [*min_coord as f64, *max_coord as f64, *min_coord as f64],
+            [*min_coord as f64, *min_coord as f64, *min_coord as f64],
+            [*max_coord as f64, *min_coord as f64, *min_coord as f64],
+        ];
+
+        let power_diagram = PowerDiagram::<3>::build(&seeds, simulation_box_vertices, 14_usize)?;
+        let nnlist = power_diagram.neighborlist();
+        for elt in nnlist {
+            let mut elt_nlist: Vec<(usize, usize)> = elt
+                .1
+                .iter()
+                .filter(|nghbr| **nghbr > elt.0)
+                .map(|gr_nghbr| (elt.0, *gr_nghbr))
+                .collect();
+            elt_nlist.sort();
+            for edge in elt_nlist {
+                nlist.push(edge);
+            }
+        }
+        Ok(NeighborList {
+            neighbors: nlist,
+            microstate,
+        })
     }
 }
 
@@ -496,83 +536,102 @@ where
     #[inline]
     fn from_microstate(
         microstate: &Microstate<B, S, Periodic<Cuboid<3>>>,
-    ) -> NeighborList<B, S, Periodic<Cuboid<3>>> {
-        // the periodic = true feature of voronoi build does not work.
-        // Attempt: make the voronoi diagram for the microstate + ghosts
+    ) -> Result<NeighborList<B, S, Periodic<Cuboid<3>>>, Error> {
         let mut nlist = vec![];
-        let mut generators_with_ghosts = vec![];
+        let mut seeds_with_ghosts = vec![];
         let n_particles = microstate.sites().len();
         let boundary = microstate.boundary().shape();
         let (min_extent, max_extent) = (boundary.minimal_extents(), boundary.maximal_extents());
-        let anchor_vec: Vec<f64> = Vec::from(min_extent);
-        let max_vec = Vec::from(max_extent);
-        let anchor = DVec3 {
-            x: anchor_vec[0] - 2.0 * max_vec[0],
-            y: anchor_vec[1] - 2.0 * max_vec[0],
-            z: anchor_vec[2] - 2.0 * max_vec[0],
-        };
-        let width = DVec3 {
-            x: max_vec[0] * 6.0,
-            y: max_vec[1] * 6.0,
-            z: max_vec[2] * 6.0,
-        };
+        let simulation_box = vec![
+            [
+                max_extent[0] * 1.5,
+                max_extent[1] * 1.5,
+                max_extent[2] * 1.5,
+            ],
+            [
+                min_extent[0] * 1.5,
+                max_extent[1] * 1.5,
+                max_extent[2] * 1.5,
+            ],
+            [
+                min_extent[0] * 1.5,
+                min_extent[1] * 1.5,
+                max_extent[2] * 1.5,
+            ],
+            [
+                max_extent[0] * 1.5,
+                min_extent[1] * 1.5,
+                max_extent[2] * 1.5,
+            ],
+            [
+                max_extent[0] * 1.5,
+                max_extent[1] * 1.5,
+                min_extent[2] * 1.5,
+            ],
+            [
+                min_extent[0] * 1.5,
+                max_extent[1] * 1.5,
+                min_extent[2] * 1.5,
+            ],
+            [
+                min_extent[0] * 1.5,
+                min_extent[1] * 1.5,
+                min_extent[2] * 1.5,
+            ],
+            [
+                max_extent[0] * 1.5,
+                min_extent[1] * 1.5,
+                min_extent[2] * 1.5,
+            ],
+        ];
         // first n_particles elements in generators_with_ghosts are true particles
-        for site in microstate.sites() {
-            let pos_vec: Vec<f64> = Vec::from(site.properties.position().coordinates);
-            let position = DVec3 {
-                x: pos_vec[0],
-                y: pos_vec[1],
-                z: pos_vec[2],
-            };
-            generators_with_ghosts.push(position);
+        for site_index in microstate.site_indices().iter().flatten() {
+            seeds_with_ghosts.push(PDSeed {
+                coordinate: microstate.sites()[*site_index]
+                    .properties
+                    .position()
+                    .coordinates,
+                weight: 0.01,
+                index: *site_index,
+            });
         }
         // all subsequent additions are ghost particles
         let mut ghost_list: Vec<usize> = vec![]; // vector of ghost particle indices
+        let mut count = n_particles;
         for site in microstate.sites() {
             let ghosts = GenerateGhosts::generate_ghosts(microstate.boundary(), &site.properties);
             for ghost in ghosts {
-                let ghost_pos_vec: Vec<f64> = Vec::from(ghost.position().coordinates);
-                let ghost_position = DVec3 {
-                    x: ghost_pos_vec[0],
-                    y: ghost_pos_vec[1],
-                    z: ghost_pos_vec[2],
-                };
-                generators_with_ghosts.push(ghost_position);
+                seeds_with_ghosts.push(PDSeed {
+                    coordinate: ghost.position().coordinates,
+                    weight: 0.01,
+                    index: count,
+                });
                 ghost_list.push(site.site_tag);
+                count += 1;
             }
         }
+        let power_diagram = PowerDiagram::<3>::build(&seeds_with_ghosts, simulation_box, 14_usize)?; //.expect("TODO");
+        let nnlist = power_diagram.neighborlist();
 
-        let _voronoi = Voronoi::build(
-            &generators_with_ghosts,
-            anchor,
-            width,
-            3.try_into().unwrap(),
-        );
-        let cells = _voronoi.cells();
-        for site_tag in microstate.site_indices().iter().flatten() {
-            let nn_list = cells[*site_tag].neighbour_ids(&_voronoi);
-            let mut temp_list = vec![];
-            for n in nn_list {
-                if n > *site_tag && n < n_particles {
-                    // case where n is tag for real site
-                    temp_list.push(n);
-                } else if n > *site_tag && n >= n_particles {
-                    // case where n is tag for ghost site
-                    let real_n = ghost_list[n - n_particles];
-                    if real_n > *site_tag {
-                        temp_list.push(real_n);
-                    }
+        for elt in nnlist {
+            let mut elt_nlist = vec![];
+            for n in elt.1.iter() {
+                if *n > elt.0 && *n < n_particles {
+                    elt_nlist.push(n)
+                } else if *n > elt.0 && *n >= n_particles && ghost_list[n - n_particles] > elt.0 {
+                    elt_nlist.push(&ghost_list[n - n_particles]);
                 }
             }
-            temp_list.sort();
-            for n in temp_list {
-                nlist.push((*site_tag, n));
+            elt_nlist.sort();
+            elt_nlist.dedup();
+            for n in elt_nlist {
+                nlist.push((elt.0, *n));
             }
         }
-        NeighborList {
+        Ok(NeighborList {
             neighbors: nlist,
             microstate,
-        }
+        })
     }
 }
 
@@ -586,85 +645,69 @@ where
     #[inline]
     fn from_microstate(
         microstate: &Microstate<B, S, Periodic<Cuboid<2>>>,
-    ) -> NeighborList<B, S, Periodic<Cuboid<2>>> {
-        // the periodic = true feature of voronoi build does not work.
-        // Attempt: make the voronoi diagram for the microstate + ghosts
+    ) -> Result<NeighborList<B, S, Periodic<Cuboid<2>>>, Error> {
         let mut nlist = vec![];
-        let mut generators_with_ghosts = vec![];
+        let mut seeds_with_ghosts = vec![];
         let n_particles = microstate.sites().len();
         let boundary = microstate.boundary().shape();
         let (min_extent, max_extent) = (boundary.minimal_extents(), boundary.maximal_extents());
-        let anchor_vec: Vec<f64> = Vec::from(min_extent);
-        let max_vec = Vec::from(max_extent);
-        let anchor = DVec3 {
-            x: anchor_vec[0] - 2.0 * max_vec[0],
-            y: anchor_vec[1] - 2.0 * max_vec[0],
-            z: 0.0,
-        };
-        let width = DVec3 {
-            x: max_vec[0] * 6.0,
-            y: max_vec[1] * 6.0,
-            z: 0.0,
-        };
+        let simulation_box = vec![
+            [max_extent[0] * 1.5, max_extent[1] * 1.5],
+            [min_extent[0] * 1.5, max_extent[1] * 1.5],
+            [min_extent[0] * 1.5, min_extent[1] * 1.5],
+            [max_extent[0] * 1.5, min_extent[1] * 1.5],
+        ];
         // first n_particles elements in generators_with_ghosts are true particles
-        for site in microstate.sites() {
-            let pos_vec: Vec<f64> = Vec::from(site.properties.position().coordinates);
-            let position = DVec3 {
-                x: pos_vec[0],
-                y: pos_vec[1],
-                z: 0.0,
-            };
-            generators_with_ghosts.push(position);
+        for site_index in microstate.site_indices().iter().flatten() {
+            seeds_with_ghosts.push(PDSeed {
+                coordinate: microstate.sites()[*site_index]
+                    .properties
+                    .position()
+                    .coordinates,
+                weight: 0.01,
+                index: *site_index,
+            });
         }
         // all subsequent additions are ghost particles
         let mut ghost_list: Vec<usize> = vec![]; // vector of ghost particle indices
+        let mut count = n_particles;
         for site in microstate.sites() {
             let ghosts = GenerateGhosts::generate_ghosts(microstate.boundary(), &site.properties);
             for ghost in ghosts {
-                let ghost_pos_vec: Vec<f64> = Vec::from(ghost.position().coordinates);
-                let ghost_position = DVec3 {
-                    x: ghost_pos_vec[0],
-                    y: ghost_pos_vec[1],
-                    z: 0.0,
-                };
-                generators_with_ghosts.push(ghost_position);
+                seeds_with_ghosts.push(PDSeed {
+                    coordinate: ghost.position().coordinates,
+                    weight: 0.01,
+                    index: count,
+                });
                 ghost_list.push(site.site_tag);
+                count += 1;
             }
         }
+        let power_diagram = PowerDiagram::<2>::build(&seeds_with_ghosts, simulation_box, 14_usize)?; //.expect("TODO");
+        let nnlist = power_diagram.neighborlist();
 
-        let _voronoi = Voronoi::build(
-            &generators_with_ghosts,
-            anchor,
-            width,
-            2.try_into().unwrap(),
-        );
-        let cells = _voronoi.cells();
-        for site_tag in microstate.site_indices().iter().flatten() {
-            let nn_list = cells[*site_tag].neighbour_ids(&_voronoi);
-            let mut temp_list = vec![];
-            for n in nn_list {
-                if n > *site_tag && n < n_particles {
-                    // case where n is tag for real site
-                    temp_list.push(n);
-                } else if n > *site_tag && n >= n_particles {
-                    // case where n is tag for ghost site
-                    let real_n = ghost_list[n - n_particles];
-                    if real_n > *site_tag {
-                        temp_list.push(real_n);
-                    }
+        for elt in nnlist {
+            let mut elt_nlist = vec![];
+            for n in elt.1.iter() {
+                if *n > elt.0 && *n < n_particles {
+                    elt_nlist.push(n)
+                } else if *n > elt.0 && *n >= n_particles && ghost_list[n - n_particles] > elt.0 {
+                    elt_nlist.push(&ghost_list[n - n_particles]);
                 }
             }
-            temp_list.sort();
-            for n in temp_list {
-                nlist.push((*site_tag, n));
+            elt_nlist.sort();
+            elt_nlist.dedup();
+            for n in elt_nlist {
+                nlist.push((elt.0, *n));
             }
         }
-        NeighborList {
+        Ok(NeighborList {
             neighbors: nlist,
             microstate,
-        }
+        })
     }
 }
+
 /** Neighbor list from microstates in hyperbolic space
 
 #Example
@@ -693,48 +736,69 @@ assert_eq!(vec![(0 as usize, 1 as usize),
 # }
 ```
 */
-impl<const N: usize, B, S> GenerateNeighborList<B, S, Open, Hyperboloid<N>>
-    for NeighborList<'_, B, S, Open>
+impl<B, S> GenerateNeighborList<B, S, Open, Hyperboloid<3>> for NeighborList<'_, B, S, Open>
 where
-    S: Position<Metric = Hyperboloid<N>>,
+    S: Position<Metric = Hyperboloid<3>>,
 {
     /** Compute the neighbor list from a microstate in hyperbolic space
      */
     #[inline]
-    fn from_microstate(microstate: &Microstate<B, S, Open>) -> NeighborList<B, S, Open> {
+    fn from_microstate(
+        microstate: &Microstate<B, S, Open>,
+    ) -> Result<NeighborList<B, S, Open>, Error> {
         let mut nlist = vec![];
-        let mut generators = vec![];
-        let rho = microstate.sites()[0].properties.position().skirt();
-        for site in microstate.sites() {
-            let mut pos_vec = site.properties.position().to_poincare();
-            pos_vec.push(0.0);
-            generators.push(pos_vec);
-        }
-        let _voronoi = Voronoi::build_hyperbolic(
-            &generators,
-            rho,
-            DVec3::splat(-1.),
-            DVec3::splat(2.),
-            (N - 1_usize).try_into().unwrap(),
-        );
-        let cells = _voronoi.cells();
-        for site_tag in microstate.site_indices().iter().flatten() {
-            let nn_list = cells[*site_tag].neighbour_ids(&_voronoi);
-            let mut temp_list = vec![];
-            for n in nn_list {
-                if n > *site_tag {
-                    temp_list.push(n)
-                }
+        let to_seed = |id: &usize| {
+            let coords = microstate.sites()[*id].properties.position().coordinates();
+            let klein: [f64; 2] = [coords[0] / coords[2], coords[1] / coords[2]];
+            let prefactor = 1.0 / (2.0 * (1.0 - klein[0].powi(2) - klein[1].powi(2)).sqrt());
+            let seed_coords = [prefactor * klein[0], prefactor * klein[1]];
+            let radius = (klein[0].powi(2) + klein[1].powi(2))
+                / (4.0 * (1.0 - klein[0].powi(2) - klein[1].powi(2)))
+                - 1.0 / (1.0 - klein[0].powi(2) - klein[1].powi(2)).sqrt();
+            PDSeed {
+                coordinate: seed_coords,
+                weight: radius.powi(2),
+                index: *id,
             }
-            temp_list.sort();
-            for n in temp_list {
-                nlist.push((*site_tag, n));
+        };
+        let seeds: Vec<PDSeed<2>> = microstate
+            .site_indices()
+            .iter()
+            .flatten()
+            .map(to_seed)
+            .collect();
+        let max_abs = microstate
+            .sites()
+            .iter()
+            .map(|s| Vec::from(s.properties.position().coordinates()))
+            .fold(-1.0, |x: f64, y| {
+                let y_abs_max: f64 = y.iter().map(|val: &f64| val.abs()).fold(0.0, f64::max);
+                f64::max(x, y_abs_max)
+            });
+        let simulation_box_vertices = vec![
+            [max_abs + 1.0, max_abs + 1.0],
+            [-max_abs - 1.0, max_abs + 1.0],
+            [-max_abs - 1.0, -max_abs - 1.0],
+            [max_abs + 1.0, -max_abs - 1.0],
+        ];
+        let power_diagram = PowerDiagram::<2>::build(&seeds, simulation_box_vertices, 14_usize)?;
+        let nnlist = power_diagram.neighborlist();
+        for elt in nnlist {
+            let mut elt_nlist: Vec<(usize, usize)> = elt
+                .1
+                .iter()
+                .filter(|nghbr| **nghbr > elt.0)
+                .map(|gr_nghbr| (elt.0, *gr_nghbr))
+                .collect();
+            elt_nlist.sort();
+            for edge in elt_nlist {
+                nlist.push(edge);
             }
         }
-        NeighborList {
+        Ok(NeighborList {
             neighbors: nlist,
             microstate,
-        }
+        })
     }
 }
 
@@ -748,59 +812,92 @@ where
     #[inline]
     fn from_microstate(
         microstate: &Microstate<B, S, Periodic<EightEight>>,
-    ) -> NeighborList<B, S, Periodic<EightEight>> {
+    ) -> Result<NeighborList<B, S, Periodic<EightEight>>, Error> {
         let mut nlist = vec![];
-        let mut generators_with_ghosts = vec![];
+        let to_seed = |id: &usize| {
+            let coords = microstate.sites()[*id].properties.position().coordinates();
+            let klein: [f64; 2] = [coords[0] / coords[2], coords[1] / coords[2]];
+            let prefactor = 1.0 / (2.0 * (1.0 - klein[0].powi(2) - klein[1].powi(2)).sqrt());
+            let seed_coords = [prefactor * klein[0], prefactor * klein[1]];
+            let radius = (klein[0].powi(2) + klein[1].powi(2))
+                / (4.0 * (1.0 - klein[0].powi(2) - klein[1].powi(2)))
+                - 1.0 / (1.0 - klein[0].powi(2) - klein[1].powi(2)).sqrt();
+            PDSeed {
+                coordinate: seed_coords,
+                weight: radius.powi(2),
+                index: *id,
+            }
+        };
+        let mut seeds_with_ghosts: Vec<PDSeed<2>> = microstate
+            .site_indices()
+            .iter()
+            .flatten()
+            .map(to_seed)
+            .collect();
         let n_particles = microstate.sites().len();
-        let rho = microstate.sites()[0].properties.position().skirt();
-        // first n_particles elements in generators_with_ghosts are true particles
-        for site in microstate.sites() {
-            let mut pos_vec = site.properties.position().to_poincare();
-            pos_vec.push(0.0);
-            generators_with_ghosts.push(pos_vec);
-        }
         //all subsequent additions are ghosts
         let mut ghost_list: Vec<usize> = vec![];
+        let mut count = n_particles;
         for site in microstate.sites() {
             let ghosts = GenerateGhosts::generate_ghosts(microstate.boundary(), &site.properties);
             for ghost in ghosts {
-                let mut ghost_vec = ghost.position().to_poincare();
-                ghost_vec.push(0.0);
-                generators_with_ghosts.push(ghost_vec);
+                let ghost_coord = ghost.position().coordinates();
+                let ghost_klein = [
+                    ghost_coord[0] / ghost_coord[2],
+                    ghost_coord[1] / ghost_coord[2],
+                ];
+                let prefactor =
+                    1.0 / (2.0 * (1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2)).sqrt());
+                let ghost_seed_coords = [prefactor * ghost_klein[0], prefactor * ghost_klein[1]];
+                let ghost_radius = (ghost_klein[0].powi(2) + ghost_klein[1].powi(2))
+                    / (4.0 * (1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2)))
+                    - 1.0 / (1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2)).sqrt();
+                seeds_with_ghosts.push(PDSeed {
+                    coordinate: ghost_seed_coords,
+                    weight: ghost_radius,
+                    index: count,
+                });
                 ghost_list.push(site.site_tag);
+                count += 1;
             }
         }
+        let max_abs = seeds_with_ghosts
+            .iter()
+            .map(|s: &PDSeed<2>| Vec::from(s.coordinate()))
+            .fold(-1.0, |x: f64, y| {
+                let y_abs_max: f64 = y.iter().map(|val: &f64| val.abs()).fold(0.0, f64::max);
+                f64::max(x, y_abs_max)
+            });
+        let simulation_box_vertices = vec![
+            [max_abs + 1.0, max_abs + 1.0],
+            [-max_abs - 1.0, max_abs + 1.0],
+            [-max_abs - 1.0, -max_abs - 1.0],
+            [max_abs + 1.0, -max_abs - 1.0],
+        ];
 
-        let _voronoi = Voronoi::build_hyperbolic(
-            &generators_with_ghosts,
-            rho,
-            DVec3::splat(-1.),
-            DVec3::splat(2.),
-            2.try_into().unwrap(),
-        );
-        let cells = _voronoi.cells();
-        for site_tag in microstate.site_indices().iter().flatten() {
-            let nn_list = cells[*site_tag].neighbour_ids(&_voronoi);
-            let mut temp_list = vec![];
-            for n in nn_list {
-                if n > *site_tag && n < n_particles {
-                    temp_list.push(n)
-                } else if n > *site_tag && n >= n_particles {
-                    let real_n = ghost_list[n - n_particles];
-                    if real_n > *site_tag {
-                        temp_list.push(real_n)
-                    }
+        let power_diagram =
+            PowerDiagram::<2>::build(&seeds_with_ghosts, simulation_box_vertices, 14_usize)?; //.expect("TODO");
+        let nnlist = power_diagram.neighborlist();
+
+        for elt in nnlist {
+            let mut elt_nlist = vec![];
+            for n in elt.1.iter() {
+                if *n > elt.0 && *n < n_particles {
+                    elt_nlist.push(n)
+                } else if *n > elt.0 && *n >= n_particles && ghost_list[n - n_particles] > elt.0 {
+                    elt_nlist.push(&ghost_list[n - n_particles]);
                 }
             }
-            temp_list.sort();
-            for n in temp_list {
-                nlist.push((*site_tag, n));
+            elt_nlist.sort();
+            elt_nlist.dedup();
+            for n in elt_nlist {
+                nlist.push((elt.0, *n));
             }
         }
-        NeighborList {
+        Ok(NeighborList {
             neighbors: nlist,
             microstate,
-        }
+        })
     }
 }
 
@@ -814,18 +911,18 @@ mod tests {
     use hoomd_vector::Cartesian;
 
     #[test]
-    fn nlist_cartesian() {
+    fn nlist_2d_cartesian_open() -> Result<(), Box<dyn std::error::Error>> {
         let microstate = MicrostateBuilder::new()
             .bodies([
                 Body::point(Cartesian::from([0.5, 0.25])),
-                Body::point(Cartesian::from([-1.0, 1.0])),
-                Body::point(Cartesian::from([1.0, -0.75])),
-                Body::point(Cartesian::from([-0.5, -0.5])),
+                Body::point(Cartesian::from([-1.01, 1.01])),
+                Body::point(Cartesian::from([1.03, -0.75])),
+                Body::point(Cartesian::from([-0.52, -0.52])),
             ])
             .try_build()
             .expect("hard-coded distributions should be valid");
 
-        let nlist = NeighborList::from_microstate(&microstate);
+        let nlist = NeighborList::from_microstate(&microstate)?;
         assert_eq!(
             vec![
                 (0_usize, 1_usize),
@@ -836,10 +933,11 @@ mod tests {
             ],
             *nlist.neighbors()
         );
+        Ok(())
     }
 
     #[test]
-    fn nlist_cartesian_periodic_3d() {
+    fn nlist_cartesian_periodic_3d() -> Result<(), Box<dyn std::error::Error>> {
         let boundary = Periodic::new(
             1.0,
             Cuboid::<3>::with_equal_edges(2.0.try_into().expect("hard-coded positive number")),
@@ -854,15 +952,16 @@ mod tests {
             .try_build()
             .expect("hard-coded distributions should be valid");
 
-        let nlist = NeighborList::from_microstate(&microstate);
+        let nlist = NeighborList::from_microstate(&microstate)?;
         assert_eq!(
             vec![(0_usize, 1_usize), (0_usize, 2_usize), (1_usize, 2_usize),],
             *nlist.neighbors()
         );
+        Ok(())
     }
 
     #[test]
-    fn nlist_cartesian_periodic_2d() {
+    fn nlist_cartesian_periodic_2d() -> Result<(), Box<dyn std::error::Error>> {
         let boundary = Periodic::new(
             1.0,
             Cuboid::<2>::with_equal_edges(2.0.try_into().expect("hard-coded positive number")),
@@ -877,15 +976,16 @@ mod tests {
             .try_build()
             .expect("hard-coded distributions should be valid");
 
-        let nlist = NeighborList::from_microstate(&microstate);
+        let nlist = NeighborList::from_microstate(&microstate)?;
         assert_eq!(
             vec![(0_usize, 1_usize), (0_usize, 2_usize), (1_usize, 2_usize),],
             *nlist.neighbors()
         );
+        Ok(())
     }
 
     #[test]
-    fn nlist_hyperboloid() {
+    fn nlist_hyperboloid() -> Result<(), Box<dyn std::error::Error>> {
         let microstate = MicrostateBuilder::with_boundary(Open)
             .bodies([
                 Body::point(Hyperboloid::from(&Minkowski::from([
@@ -912,7 +1012,7 @@ mod tests {
             .try_build()
             .expect("hard-coded distributions should be valid");
 
-        let nlist = NeighborList::from_microstate(&microstate);
+        let nlist = NeighborList::from_microstate(&microstate)?;
         assert_eq!(
             vec![
                 (0_usize, 1_usize),
@@ -923,10 +1023,11 @@ mod tests {
             ],
             *nlist.neighbors()
         );
+        Ok(())
     }
 
     #[test]
-    fn coordination_numbers_cartesian() {
+    fn coordination_numbers_cartesian() -> Result<(), Box<dyn std::error::Error>> {
         let microstate = MicrostateBuilder::with_boundary(Open)
             .bodies([
                 Body::point(Cartesian::from([0.5, 0.25])),
@@ -937,12 +1038,13 @@ mod tests {
             .try_build()
             .expect("hard-coded distributions should be valid");
 
-        let nlist = NeighborList::from_microstate(&microstate);
+        let nlist = NeighborList::from_microstate(&microstate)?;
         let coordination_numbers = nlist.coordination_numbers();
         assert_eq!(
             vec![3_usize, 2_usize, 2_usize, 3_usize],
             coordination_numbers
         );
+        Ok(())
     }
 
     #[test]
@@ -960,7 +1062,7 @@ mod tests {
             .try_build()
             .expect("hard-coded distributions should be valid");
 
-        let nlist = NeighborList::from_microstate(&microstate);
+        let nlist = NeighborList::from_microstate(&microstate)?;
         let hexatic_0 = nlist.hexatic(&microstate, microstate.site_indices()[0])?;
         assert_relative_eq!(1.0, hexatic_0.re, epsilon = 1e-12);
         assert_relative_eq!(0.0, hexatic_0.im, epsilon = 1e-12);
