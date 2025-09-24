@@ -6,13 +6,16 @@ edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 license.workspace = true
-readme = "hoomd-bevt/README.md"
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
 
 [lints]
 workspace = true
+
+[features]
+doc-example = []
+webgpu = ["bevy/webgpu"]
 
 [dependencies]
 anyhow.workspace = true
@@ -21,4 +24,13 @@ bevy_diagnostic.workspace = true
 bevy_winit.workspace = true
 itertools.workspace = true
 hoomd-microstate.workspace = true
+hoomd-simulation.workspace = true
 hoomd-vector.workspace = true
+web-time = "1.1.0"
+
+# web-sys = "0.3.77"
+# `web_sys::console::log_1(&msg.into());` is useful for println! type debugging in wasm
+
+# Work around failing build: https://github.com/bevyengine/bevy/issues/17699#issuecomment-2862717597
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.3.3", default-features = false, features = ["wasm_js"] }

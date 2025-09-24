@@ -1,7 +1,7 @@
 name: test
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 on:
@@ -21,54 +21,101 @@ env:
   CLICOLOR: 1
 
 jobs:
+  start_action_runners:
+    name: Start
+    uses: glotzerlab/jetstream2-admin/.github/workflows/start.yaml@9ef0cf7995c9209bfa77d45baa124f15df669393 # v1.4.0
+    secrets: inherit
+    with:
+      number: 8
+
   unit_test:
-    name: Unit test [${{ matrix.mode }}-rust-${{ matrix.rust }}-${{ matrix.os }}]
-    runs-on: ${{ matrix.os }}
+    name: Unit test [${{ matrix.profile }}-rust-${{ matrix.rust }}-${{ matrix.os }}]
+    runs-on: [self-hosted, jetstream2, CPU]
     strategy:
       fail-fast: false
       matrix:
         os:
           - ubuntu-24.04
           # Disable macOS tests to avoid burning through free GitHub Actions minutes.
-          # TODO: Enable after the project made public.
+          # TODO: Include Mac and Windows tests after the project made public.
           # - macos-14
         rust:
-          # Test multiple rust versions on multiple platforms in debug mode.
-          - 1.86.0
-          - 1.87.0
+          # Test multiple rust versions on multiple platforms in the debug profile.
           - 1.88.0
-        mode:
-         - debug
+          - 1.89.0
+        profile:
+         - dev
+        target:
+         - ''
 
         include:
         # Add a release build on linux with the latest version of rust.
         - os: ubuntu-24.04
-          rust: 1.88.0
-          mode: release
+          rust: 1.89.0
+          profile: release
+
+        # Add a WASM build.
+        - os: ubuntu-24.04
+          rust: 1.89.0
+          profile: dev-wasm
+          target: wasm32-unknown-unknown
 
     steps:
+    # These steps are needed on self-hosted runners and can be removed on GitHub runners
+    - name: Clean workspace
+      run: ( shopt -s dotglob nullglob; rm -rf ./* )
+    - name: Add cargo PATH
+      run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
     - name: Checkout
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-    - name: Update rust
-      run: rustup install ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+    # This code is needed on GitHub Hosted runners, disable for now while we use private runners.
+    # - name: Update rust
+    #   run: rustup install ${{ matrix.rust }} --no-self-update
+    # - name: Install target
+    #   run: rustup target install ${{ matrix.target }} --toolchain ${{ matrix.rust }}
+    #   if: ${{ matrix.target != '' }}
+    - name: Set default target
+      run: rustup default ${{ matrix.rust }}
     - name: Check rust installation
       run: rustc -vV
-    - uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
-      with:
-        path: |
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: ${{ runner.os }}-rust-${{ matrix.rust }}-cargo-unit-test-${{ matrix.mode }}-${{ hashFiles('**/Cargo.lock') }}
+
     - name: Build
-      run: cargo build ${{ matrix.mode == 'release' && '--release' || '' }} --workspace --all-targets --all-features --verbose
+      run: >
+        cargo build
+        --profile ${{ matrix.profile }}
+        ${{ matrix.target != '' && '--target' || '' }}
+        ${{ matrix.target }}
+        --locked
+        --workspace
+        --lib
+        --bins
+        --tests
+        --examples
+        --all-features
+        --verbose
+
     - name: Run tests
-      run: cargo test ${{ matrix.mode == 'release' && '--release' || '' }} --workspace --verbose
+      run: >
+        cargo test
+        --profile ${{ matrix.profile }}
+        --locked
+        --workspace
+        --verbose
+      if: ${{ matrix.target == '' }}
+
     - name: Build API documentation
-      run: cargo doc --workspace --all-features --no-deps
+      run: >
+        cargo doc
+        --locked
+        --workspace
+        --all-features
+        --no-deps
+      if: ${{ matrix.target == '' }}
+
     - name: Run benchmarks
-      run: cargo bench
+      run: cargo bench --locked
+      if: ${{ matrix.target == '' }}
 
   tests_complete:
     name: All tests

@@ -1,0 +1,88 @@
+name: Style
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+  push:
+    branches:
+    - trunk
+
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  CLICOLOR: 1
+
+jobs:
+  cargo-check:
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+    - name: Configure Rust
+      uses: dtolnay/rust-toolchain@6d653acede28d24f02e3cd41383119e8b1b35921
+      with:
+        toolchain: 1.89.0
+        targets: wasm32-unknown-unknown
+    # Unfortunately, it is not currently possible to mark warnings as errors: https://github.com/rust-lang/cargo/issues/8424#issuecomment-1915265827
+    # The workaround does not work for hoomd-rs because we set rust configuration options.
+    #
+    # Check all targets in debug and release modes
+    - run: cargo check --locked --all-targets --all-features --profile release
+    - run: cargo check --locked --all-targets --all-features --profile dev
+    # Check the examples in wasm builds with and without webgpu
+    - run: cargo check --locked --examples --features "bevy" --profile dev --target wasm32-unknown-unknown
+    - run: cargo check --locked --examples --features "bevy,webgpu" --profile dev --target wasm32-unknown-unknown
+
+  cargo-clippy:
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+    - name: Configure Rust
+      uses: dtolnay/rust-toolchain@6d653acede28d24f02e3cd41383119e8b1b35921
+      with:
+        toolchain: 1.89.0
+        components: clippy
+        targets: wasm32-unknown-unknown
+    # Check all targets in debug and release modes
+    - run: cargo clippy --locked --all-targets --all-features --profile release -- -Dwarnings
+    - run: cargo clippy --locked --all-targets --all-features --profile dev -- -Dwarnings
+    # Check the examples in wasm builds with and without webgpu
+    - run: cargo clippy --locked --examples --features="bevy" --profile dev --target wasm32-unknown-unknown -- -Dwarnings
+    - run: cargo clippy --locked --examples --features="bevy,webgpu" --profile dev --target wasm32-unknown-unknown -- -Dwarnings
+
+  cargo-fmt:
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+    - name: Configure Rust
+      uses: dtolnay/rust-toolchain@6d653acede28d24f02e3cd41383119e8b1b35921
+      with:
+        toolchain: nightly-2025-09-17
+        components: rustfmt
+    - run: cargo +nightly-2025-09-17 fmt --all --check
+
+  prek:
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+    - name: prek
+      uses: glotzerlab/workflows/prek@894d9678188a02b06560fdeb2b9ba98d016cd371 # 0.10.0
+
+  # This job is used to provide a single requirement for branch merge conditions.
+  tests_complete:
+    name: All style checks
+    if: always()
+    needs: [cargo-check, cargo-clippy, cargo-fmt, prek]
+    runs-on: ubuntu-24.04
+
+    steps:
+    - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
+    - name: Done
+      run: exit 0

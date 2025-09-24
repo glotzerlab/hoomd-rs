@@ -1,73 +1,64 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement Sweep
-*/
+//! Implement Sweep
 
-use super::{Count, DeltaEnergyOne, LocalTrial, Trial};
-use hoomd_microstate::boundary::Boundary;
-use hoomd_microstate::property::Position;
-use hoomd_microstate::{Body, Microstate, Transform};
+use super::{Count, LocalTrial, Trial};
+use hoomd_interaction::DeltaEnergyOne;
+use hoomd_microstate::{
+    Body, Microstate, Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::Position,
+};
 
 use rand::Rng;
 
-/** Apply a local trial move to each body in the microstate.
-
-Each trial move is accepted when:
-```math
-r < \exp\left(\frac{-\Delta H}{kT}\right)
-```
-where `r` is a random value uniformly distributed in `[0,1)`, $`\Delta H`$ is
-the change in energy computed by the given `hamiltonian` and $`kT`$ is the given
-`state` value (the last argument to `apply`).
-
-# Example
-
-```
-use hoomd_mc::{Sweep, Translate, Trial, Zero};
-use hoomd_microstate::property::Position;
-use hoomd_microstate::{Body, Microstate};
-use hoomd_vector::Cartesian;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let mut microstate = Microstate::new();
-microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
-let d = 0.1;
-let translate = Translate { maximum_distance: d.try_into()? };
-let translate_sweep = Sweep { local: translate };
-
-let hamiltonian = Zero;
-let kt = 1.0;
-
-for _ in 0..1_000 {
-    translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
-    microstate.increment_step();
-}
-# Ok(())
-# }
-```
-*/
-pub struct Sweep<L> {
-    /// The local trial to apply.
-    pub local: L,
-}
-
-impl<L> Sweep<L> {
-    /// Construct a new `Sweep` with the given local trial.
-    #[inline]
-    #[must_use]
-    pub fn new(local: L) -> Self {
-        Self { local }
-    }
-}
+/// Apply a local trial move to each body in the microstate.
+///
+/// Each trial move is accepted when:
+/// ```math
+/// r < \exp\left(\frac{-\Delta H}{kT}\right)
+/// ```
+/// where `r` is a random value uniformly distributed in `[0,1)`, $`\Delta H`$ is
+/// the change in energy computed by the given `hamiltonian` and $`kT`$ is the given
+/// `state` value (the last argument to `apply`).
+///
+/// # Example
+///
+/// ```
+/// use hoomd_interaction::Zero;
+/// use hoomd_mc::{Sweep, Translate, Trial};
+/// use hoomd_microstate::{Body, Microstate, property::Position};
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut microstate = Microstate::new();
+/// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
+/// let d = 0.1;
+/// let translate = Translate {
+///     maximum_distance: d.try_into()?,
+/// };
+/// let translate_sweep = Sweep(translate);
+///
+/// let hamiltonian = Zero;
+/// let kt = 1.0;
+///
+/// for _ in 0..1_000 {
+///     translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
+///     microstate.increment_step();
+/// }
+/// # Ok(())
+/// # }
+/// ```
+pub struct Sweep<L>(pub L);
 
 impl<V, B, S, C, L, H> Trial<Microstate<B, S, C>, H> for Sweep<L>
 where
-    B: Copy + Clone + Default + Transform<S> + Position<Vector = V>,
-    S: Clone + Default + Position<Vector = V>,
+    B: Copy + Default + Transform<S> + Position<Vector = V>,
+    S: Copy + Default + Position<Vector = V>,
     L: LocalTrial<B>,
     H: DeltaEnergyOne<B, S, C>,
-    C: Boundary<V, B, S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     type Count = Count;
     type Macrostate = f64;
@@ -97,7 +88,7 @@ where
             // energy and update methods.
             match microstate
                 .boundary()
-                .wrap_body(self.local.propose(&mut rng, trial.properties))
+                .wrap(self.0.propose(&mut rng, trial.properties))
             {
                 Ok(new_properties) => {
                     trial.properties = new_properties;
@@ -125,10 +116,11 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Translate, Zero};
+    use crate::Translate;
     use ::approx::assert_relative_eq;
-    use hoomd_interaction::{Single, SiteEnergy, TotalEnergy};
-    use hoomd_microstate::{MicrostateBuilder, boundary::Square, property::Point};
+    use hoomd_geometry::shape::Hypercuboid;
+    use hoomd_interaction::{External, SiteEnergy, TotalEnergy, Zero};
+    use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};
     use hoomd_vector::{Cartesian, InnerProduct};
     use rstest::*;
 
@@ -169,7 +161,7 @@ mod tests {
         microstate
             .add_body(Body::point(origin))
             .expect("the hard-coded body should be inside the boundary");
-        let hamiltonian = Single(Harmonic(origin));
+        let hamiltonian = External(Harmonic(origin));
 
         let d = 0.1;
         let translate = Translate {
@@ -177,7 +169,7 @@ mod tests {
                 .try_into()
                 .expect("hard-coded constant should be positive"),
         };
-        let translate_sweep = Sweep { local: translate };
+        let translate_sweep = Sweep(translate);
 
         let mut position_accumulator = Cartesian::default();
         let mut energy_accumulator = 0.0;
@@ -201,18 +193,23 @@ mod tests {
 
     #[test]
     fn reject_boundary_body() {
-        let square = Square {
-            l: 4.0
-                .try_into()
-                .expect("hard-coded constant should be positive"),
+        let cuboid = Hypercuboid {
+            edge_lengths: [
+                4.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+                4.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+            ],
         };
+        let square = Closed(cuboid);
+
         let mut microstate = MicrostateBuilder::with_boundary(square)
             .bodies([Body::point([0.0, 0.0].into())])
             .try_build()
             .expect("the hard-coded bodies should be in the boundary");
         let hamiltonian = Zero;
         let translate = Right;
-        let translate_sweep = Sweep { local: translate };
+        let translate_sweep = Sweep(translate);
 
         // The first move to the right ends in the boundary and should be accepted.
         let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);
@@ -233,18 +230,22 @@ mod tests {
             sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
         };
 
-        let square = Square {
-            l: 6.0
-                .try_into()
-                .expect("hard-coded constant should be positive"),
+        let cuboid = Hypercuboid {
+            edge_lengths: [
+                6.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+                6.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+            ],
         };
+        let square = Closed(cuboid);
         let mut microstate = MicrostateBuilder::with_boundary(square)
             .bodies([body])
             .try_build()
             .expect("the hard-coded bodies should be in the boundary");
         let hamiltonian = Zero;
         let translate = Right;
-        let translate_sweep = Sweep { local: translate };
+        let translate_sweep = Sweep(translate);
 
         // The first move to the right ends in the boundary and should be accepted.
         let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);

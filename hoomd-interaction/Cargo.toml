@@ -6,7 +6,6 @@ edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 license.workspace = true
-readme = "hoomd-interaction/README.md"
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
@@ -17,6 +16,8 @@ workspace = true
 [dependencies]
 hoomd-microstate.workspace = true
 hoomd-vector.workspace = true
+hoomd-geometry.workspace = true
+hoomd-utility.workspace = true
 
 [dev-dependencies]
 approx.workspace = true

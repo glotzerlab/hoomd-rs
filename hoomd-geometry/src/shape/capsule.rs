@@ -1,55 +1,72 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`Capsule`] */
+//! Implement [`Capsule`]
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, SupportMapping, Volume};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
 
-/** All points less than or equal to a distance `r` from a line segment of length `h`.
-
-This line is oriented along the `[0 0 ... 1]` direction, and has extents `+h/2`,
-`-h/2` along that axis.
-
-# Examples
-
-Construction and basic methods:
-```
-use hoomd_geometry::{BoundingSphereRadius, shape::Capsule, Volume};
-use hoomd_vector::Cartesian;
-use approx::assert_relative_eq;
-use std::f64::consts::PI;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let capsule = Capsule::<2> { radius: 1.0.try_into()?, height: 8.0.try_into()? };
-let bounding_radius = capsule.bounding_sphere_radius();
-let volume = capsule.volume();
-
-assert_eq!(bounding_radius.get(), 5.0);
-assert_relative_eq!(volume, 16.0 + PI);
-# Ok(())
-# }
-```
-
-Intersection test:
-```
-use hoomd_geometry::{Convex, IntersectsAt, shape::Capsule};
-use hoomd_vector::{Angle, Cartesian, Rotation};
-use std::f64::consts::PI;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let capsule = Convex(Capsule::<2> { radius: 1.0.try_into()?, height: 8.0.try_into()? });
-
-assert_eq!(capsule.intersects_at(&capsule, &[1.75, 0.0].into(), &Angle::identity()), true);
-assert_eq!(capsule.intersects_at(&capsule, &[4.0, 2.0].into(), &Angle::identity()), false);
-assert_eq!(capsule.intersects_at(&capsule, &[4.0, -2.0].into(), &Angle::from(PI/2.0)), true);
-# Ok(())
-# }
-```
-*/
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// All points less than or equal to a distance `r` from a line segment of length `h`.
+///
+/// This line is oriented along the `[0 0 ... 1]` direction, and has extents `+h/2`,
+/// `-h/2` along that axis.
+///
+/// # Examples
+///
+/// Construction and basic methods:
+/// ```
+/// use approx::assert_relative_eq;
+/// use hoomd_geometry::{BoundingSphereRadius, Volume, shape::Capsule};
+/// use hoomd_vector::Cartesian;
+/// use std::f64::consts::PI;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let capsule = Capsule::<2> {
+///     radius: 1.0.try_into()?,
+///     height: 8.0.try_into()?,
+/// };
+/// let bounding_radius = capsule.bounding_sphere_radius();
+/// let volume = capsule.volume();
+///
+/// assert_eq!(bounding_radius.get(), 5.0);
+/// assert_relative_eq!(volume, 16.0 + PI);
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Intersection test:
+/// ```
+/// use hoomd_geometry::{Convex, IntersectsAt, shape::Capsule};
+/// use hoomd_vector::{Angle, Cartesian, Rotation};
+/// use std::f64::consts::PI;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let capsule = Convex(Capsule::<2> {
+///     radius: 1.0.try_into()?,
+///     height: 8.0.try_into()?,
+/// });
+///
+/// assert!(capsule.intersects_at(
+///     &capsule,
+///     &[1.75, 0.0].into(),
+///     &Angle::identity()
+/// ));
+/// assert!(!capsule.intersects_at(
+///     &capsule,
+///     &[4.0, 2.0].into(),
+///     &Angle::identity()
+/// ),);
+/// assert!(capsule.intersects_at(
+///     &capsule,
+///     &[4.0, -2.0].into(),
+///     &Angle::from(PI / 2.0)
+/// ));
+/// # Ok(())
+/// # }
+/// ```
+#[derive(Clone, Debug, PartialEq)]
 pub struct Capsule<const N: usize> {
     /// Radius of of points that are considered enclosed in the shape.
     pub radius: PositiveReal,

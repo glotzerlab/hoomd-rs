@@ -6,7 +6,6 @@ edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 license.workspace = true
-readme = "hoomd-mc/README.md"
 repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
@@ -22,7 +21,7 @@ hoomd-vector.workspace = true
 rand.workspace = true
 
 [dev-dependencies]
+hoomd-geometry.workspace = true
 approx.workspace = true
 divan.workspace = true
 rstest.workspace = true
-ratatui = "0.28.0"

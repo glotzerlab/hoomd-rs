@@ -1,47 +1,54 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`WeeksChandlerAnderson`]
- */
+//! Implement [`Shifted`]
 
 use super::{IsotropicEnergy, IsotropicForce};
 
-/** Shift another potential to 0 at a given `r`.
-
-```math
-U(r) = f(r) - f(r_\mathrm{shift})
-```
-
-# Example
-
-Shifted Lennard-Jones:
-```
-use hoomd_interaction::pairwise::{LennardJones, IsotropicEnergy, Shifted};
-use approx::{assert_abs_diff_eq, assert_relative_eq};
-
-let epsilon = 1.5;
-let sigma = 1.0;
-let r_shift = 2.5;
-let lj: LennardJones = LennardJones { epsilon, sigma };
-let shifted_lj = Shifted { f: lj, r_shift };
-
-assert_abs_diff_eq!(shifted_lj.energy(r_shift), 0.0);
-assert_relative_eq!(shifted_lj.energy(2.0_f64.powf(1.0/6.0) * sigma), -epsilon - lj.energy(r_shift));
-```
-
-Fields can be accessed directly, including those of the original potential `f`:
-```
-use hoomd_interaction::pairwise::{LennardJones, Shifted};
-
-let epsilon = 1.5;
-let sigma = 1.0;
-let r_shift = 2.5;
-let mut shifted_lj = Shifted{ f: LennardJones::<12,6> { epsilon, sigma }, r_shift };
-
-shifted_lj.r_shift = 3.0;
-shifted_lj.f.sigma = 1.2;
-```
-*/
+/// Shift another potential to 0 at a given `r`.
+///
+/// ```math
+/// U(r) = f(r) - f(r_\mathrm{shift})
+/// ```
+///
+/// # Example
+///
+/// Shifted Lennard-Jones:
+/// ```
+/// use approx::{assert_abs_diff_eq, assert_relative_eq};
+/// use hoomd_interaction::pairwise::{IsotropicEnergy, LennardJones, Shifted};
+///
+/// let epsilon = 1.5;
+/// let sigma = 1.0;
+/// let r_shift = 2.5;
+/// let lj: LennardJones = LennardJones { epsilon, sigma };
+/// let shifted_lj = Shifted {
+///     f: lj.clone(),
+///     r_shift,
+/// };
+///
+/// assert_abs_diff_eq!(shifted_lj.energy(r_shift), 0.0);
+/// assert_relative_eq!(
+///     shifted_lj.energy(2.0_f64.powf(1.0 / 6.0) * sigma),
+///     -epsilon - lj.energy(r_shift)
+/// );
+/// ```
+///
+/// Fields can be accessed directly, including those of the original potential `f`:
+/// ```
+/// use hoomd_interaction::pairwise::{LennardJones, Shifted};
+///
+/// let epsilon = 1.5;
+/// let sigma = 1.0;
+/// let r_shift = 2.5;
+/// let mut shifted_lj = Shifted {
+///     f: LennardJones::<12, 6> { epsilon, sigma },
+///     r_shift,
+/// };
+///
+/// shifted_lj.r_shift = 3.0;
+/// shifted_lj.f.sigma = 1.2;
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Shifted<F> {
     /// The original potential.
@@ -54,20 +61,19 @@ impl<F> Default for Shifted<F>
 where
     F: Default,
 {
-    /** Construct a shifted potential with default parameters
-
-    The defaults are:
-    * `f = F::default()`
-    * `r_shift = 0.0`
-
-    # Example
-
-    ```
-    use hoomd_interaction::pairwise::{LennardJones, Shifted};
-
-    let shifted_lj = Shifted::<LennardJones>::default();
-    ```
-    */
+    /// Construct a shifted potential with default parameters
+    ///
+    /// The defaults are:
+    /// `f = F::default()`
+    /// `r_shift = 0.0`
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_interaction::pairwise::{LennardJones, Shifted};
+    ///
+    /// let shifted_lj = Shifted::<LennardJones>::default();
+    /// ```
     #[inline]
     fn default() -> Self {
         Self {
@@ -106,7 +112,10 @@ mod tests {
     ) {
         let lj: LennardJones = LennardJones { epsilon, sigma };
         let r_shift = 2.5 * sigma;
-        let shifted_lj = Shifted { f: lj, r_shift };
+        let shifted_lj = Shifted {
+            f: lj.clone(),
+            r_shift,
+        };
 
         assert_eq!(shifted_lj.f.epsilon, epsilon);
         assert_eq!(shifted_lj.f.sigma, sigma);

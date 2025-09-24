@@ -110,8 +110,8 @@ potential epsilon/sigma, particle shape, etc...) from the state of the system.
 In many types of simulations (e.g. alchemy), this is a problem as some of these
 parameters formally become part of the microstate.
 
-HOOMD-rs maintains the separation of the `Microstate` from the simulation
-_model_, but through custom body/site properties and custom state data, HOOMD-rs
+hoomd-rs maintains the separation of the `Microstate` from the simulation
+_model_, but through custom body/site properties and custom state data, hoomd-rs
 allows users to include any appropriate data in a `Microstate` instance that
 custom model implementations can access. The _model_ is the collections of
 methods or algorithms that advance a microstate from one **step** to the next.
@@ -134,7 +134,7 @@ header file. Cases where the user could use the same algorithms multiple times
 on a single step required an additional instance variable to ensure that they
 produced uncorrelated random numbers.
 
-HOOMD-rs will solve these problems by including both the simulation _step_ and a
+hoomd-rs will solve these problems by including both the simulation _step_ and a
 _substep_ as members of `Microstate`. While this choice does not follow a formal
 statistical mechanics definition, it does fit in to a more practical definition.
 _Model_ implementations DO modify the step (e.g. an integrator increases the
@@ -157,18 +157,13 @@ constant temperature). At the time of this writing, it is not clear whether a
 instances.
 
 However, MD integration methods DO effectively add new degrees of freedom to
-the microstate through the thermostat and barostat variables. TODO: Consider how
-to account for this? Store them in Microstate? Or keep the HOOMD-blue approach
-of maintaining them in the struct that applies the thermostat? A third idea is
-to introduce "Auxiliary state" structs for these methods. They don't belong in
-the method, because the method is just that and will be used immutably - yet
-it needs somewhere to store its state. It is not convenient to add an arbitrary
-number of arbitrarily typed structs into `Microstate`, so these types nominally
-should exist on their own. There is no concept of "attaching" in hoomd-rs,
-so one method instance could easily be applied to any number of different
-microstates. Therefore, it should not be used in a mutable way and cannot store
-internal state. This will show up in MC simulations as well for the trial move
-counters.
+the microstate through the thermostat and barostat variables. The types that
+implement the thermostat (i.e. `MTTK`) will internally store their microstate.
+This introduces an implicit "attachment" between an instance of the type and the
+microstate, but all other options are messy and/or annoying. One alternate we
+considered was to require the user to track an auxilliary microstate variable.
+Not all thermostats have microstates though, so the user would need to pass in
+`&()` for those.
 
 The user-chosen RNG seed, required to ensure that replicate simulations do not
 use the same RNG stream, will also be part of the microstate. It does not fit
@@ -222,7 +217,7 @@ decision. The box wrap method is _expensive_ to compute O(N * N_neighbors)
 times. For data structures like the AABB tree, that have no internal notion of
 periodicity, it required 27 image offset queries on the tree (in 3D).
 
-HOOMD-rs will solve this problem by storing ghost particles explicitly. Spatial
+hoomd-rs will solve this problem by storing ghost particles explicitly. Spatial
 data structures will not need to be aware of the periodic boundary conditions,
 nor will they need to be aligned with the boundaries in any way. This also
 opens up the ability for very complex user-provided boundary conditions.
@@ -236,19 +231,34 @@ all body and site positions. This boundary *may* be periodic, but does not
 necessarily need to tile space. A `Boundary` type expresses this interface via
 these methods:
 
-* `is_inside` - test if a point is inside the boundary.
 * `wrap` - wrap any site/body properties into the boundary.
-* TODO: Additional methods to generate ghost particles (possibly including
-  a `distance_to` - but what would that return for open boundaries?).
+* `generate_ghosts` - given the properties of a site in the boundary, generate
+  the ghost sites outside the boundary.
 
 `wrap` is fallible. It returns `Err` when it is not possible to wrap the given
 properties into the boundary. It takes a properties type to enable use-cases
 where wrapping applies operations other than translation. For example, a twisted
 cylinder.
 
-The TBD methods allow callers to generate ghost sites outside, but within a
-defined distance range, to the edge of the boundary. The ghost sites facilitate
-pairwise interactions across periodic boundaries.
+The ghost sites facilitate pairwise interactions across periodic boundaries.
+Each boundary has a maximum interaction range which is infinite for
+open and fully closed boundaries, and can be set up to the the minimum image for
+periodic boundaries. `generate_ghosts` must take the given site and generate all
+of the ghosts that are needed to find interactions within that maximum
+interaction range. In all geometries we can think of, there will be a small
+integer number of maximum ghosts per particle. To efficiently and conveniently
+express the generation of 0..MAX_GHOSTS ghosts, hoomd-rs uses the ArrayVec data
+type and each boundary must set the associated constant MAX_GHOSTS.
+
+The maximum interaction range is a user parameter that can be set
+anywhere from 0 up to the minimum image for the boundary. Setting it larger
+than the minimum image should result in an error. Similarly, resizing the box to
+the point that the minimum image is less than the maximum interaction
+range is also an error. As a side note, requesting the iteration over nearby
+sites with a larger r_cut is not an error - however it will only produce sites
+that are within the maximum interaction range. It is the user's
+responsibility to ensure that the box's interaction range and the pair potential
+r_cut are set appropriately.
 
 ## Body storage
 
@@ -409,27 +419,15 @@ keep the same idea by using a new type for the index with helper methods
 to decode the index separately from the real/ghost flag (stashed in the
 highest bit of the integer).
 
-Note: The above design needs to be revised. There are several problems
-with it.
+Self interactions: In small boxes, it is possible for sites to interact with
+their own images. Allowing this is very complex and not really a design goal
+for hoomd-rs. Users who need self-interactions in MC can use HOOMD-blue.
+Microstate's `iter_sites_near` method will apply a cutoff radius is that is the
+minimum of the caller requested cutoff and the box's maximum interaction range.
 
-1) Self interactions: In small boxes, it is possible for sites to interact
-   with their own images. To implement this, the boundary condition would need
-   to properly generate many ghost images for each site. When computing
-   interactions of a primary image site with another site, all need to be
-   considered except the primary image with the primary image. That could
-   be handled with a == check on position. However, the situation is more
-   complicated with bodies.
+Open questions in this design:
 
-   A body's sites do not interact with other sites in the same body. When a
-   body is near the box edge, some of its sites will be wrapped to the other
-   side of the box. A simple (`body_i != body_j`) check would prevent the body
-   from interacting with its own images. The solution to this is not obvious.
-   Some ideas include a) Require the minimum image convention and disallow small
-   boxes? b) Store an image flag along with the ghost site that the boundary
-   condition sets when creating multiple images? c) Store and manage ghost
-   bodies? I lean toward option b, but need to think on this further -JAA.
-
-2) Amortized pair list builds: In the solution mentioned above, the number
+1) Amortized pair list builds: In the solution mentioned above, the number
    of ghosts for a given site can change as it moves. Assume that a neighbor
    list stores indices of sites (and indices of ghosts). For such a neighbor
    list to be valid over multiple steps, the identities of those sites must
@@ -465,7 +463,7 @@ with it.
    pairs of tags). TODO: update the above documentation to reflect the actual
    design after thinking more on this and prototyping the solution.
 
-3) Applying forces and torques across boundaries: In MD, the *i, j* force
+2) Applying forces and torques across boundaries: In MD, the *i, j* force
    typically needs to be computed only once for *i < j*. The force is applied
    to *i* and the negative of the force to *j*. Site *i* will always be in the
    primary image, but *j* might be a ghost. In a similar situation, site *i*
@@ -475,7 +473,7 @@ with it.
    impose a twist (more generally, anything other than a translation), then
    the force will also need to be transformed. Somehow, the boundary condition
    implementation will need to be able to compute that. It is unclear how
-   at this time, JAA. The easy solution is to not use the Newton's third law
+   at this time - JAA. The easy solution is to not use the Newton's third law
    optimization and compute both the *i, j* and *j, i* force in the primary
    image. But that would halve performance and still require some way to handle
    body centers that are across the box.
@@ -484,7 +482,9 @@ with it.
 
 ## Update API methods
 
-TODO: Single body updates
+`Microstate::update_body_properties` allows callers to change the properties of
+a single body without changing its sites. A future API call will allow changing
+the site properties as well, but not the number of sites.
 
 Full system updates will occur via a method that takes a Fn that operates on a
 mutable slice of particles. In this way, the update function can take steps such

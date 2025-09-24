@@ -6,10 +6,9 @@
     reason = "benches don't need public documentation"
 )]
 
-/*! Benchmark `ChaCha` implementations */
+//! Benchmark `ChaCha` implementations
 
-use divan::counter::ItemsCount;
-use divan::{self, Bencher, black_box};
+use divan::{self, Bencher, black_box, counter::ItemsCount};
 use rand::{Rng, SeedableRng};
 
 use hoomd_utility::random::Counter;

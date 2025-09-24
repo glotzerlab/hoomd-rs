@@ -1,0 +1,360 @@
+# Hard Particle Self-Assembly
+
+<script type="module">
+import init from './hard-particle-self-assembly.js'
+{{#include ../../scripts/init-wasm-canvas.js}}
+</script>
+{{#include ../../scripts/canvas.html}}
+
+## Overview
+
+There are many ways you can model **anisotropic bodies** in *hoomd-rs*. This
+tutorial shows you how to represents **sites** with hard ellipses. You can apply
+the same techniques to any hard shape. When compressed to a sufficiently high
+packing fraction, systems of hard particles **self-assemble** into ordered
+structures.
+
+* Objectives:
+  * Explain how to execute simulations with **periodic boundary conditions**.
+  * Show how to quickly insert bodies into the microstate.
+  * Demonstrate the self-assembly of hard ellipses into the nematic phase.
+* File: `hoomd-rs/examples/mc-tutorial/hard-particle-self-assembly.rs`
+* Run (interactively):
+  ```shell
+  cargo run --release --features "bevy" --example hard-particle-self-assembly
+  ```
+* Run (in batch mode):
+  ```shell
+  cargo run --release --example hard-particle-self-assembly
+  ```
+
+## Use Declarations
+
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:use}}
+```
+
+## Type Aliases
+
+Create type aliases for your model's *vector*, *body properties*, and *site
+properties* types so that you don't need to repeat the full nested generic type
+names throughout the code:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:type_aliases}}
+```
+
+The **sites** are in this tutorial are represented by ellipses with both
+position and orientation. Therefore, use `OrientedPoint` for both the **body**
+and **site** properties.
+
+## The Simulation Model
+
+Here is the type that holds the simulation model:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:simulation_struct}}
+```
+
+The simulation will consist of two phases:
+* Initialization: Add new ellipses to the microstate.
+* Equilibration: Perform hard particle Monte Carlo to self-assembly the nematic phase.
+
+The `phase` field tracks the current phase of the simulation. It stores an enum:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:phase}}
+```
+
+### Construct the Simulation Model
+
+The `new()` method constructs a new simulation model:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:simulation_new}}
+```
+
+#### Parameters
+
+Assign all the model parameters in one code block so that they are easy to modify:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:parameters}}
+```
+
+`box_length` is the side length of the square simulation box, `n_bodies` is
+the number of ellipses to add, `maximum_distance` is the largest distance
+a translation trial move can take, `maximum_rotation` is the largest angle
+possible in a rotation trial move, `sigma` is the major axis of the ellipse,
+`aspect` is the ellipse aspect ratio and `kt` is the temperature set point (in
+units of energy).
+
+To ensure that `sigma` is the major axis, `aspect` must be greater than or equal
+to 1.0.
+
+#### Hamiltonian
+
+`CutoffPairOverlap` represents each site with the given shape. The site pair
+energy $` U_{ij} `$ is infinite when the two sites overlap and 0 when they do
+not. Use `CutoffPairOverlap` as the Hamiltonian:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:hamiltonian}}
+```
+
+As with `CutoffPair`, you must provide $` r_\mathrm{cut} `$. All pairs
+separated by a distance larger than $` r_\mathrm{cut} `$ are assumed to be
+non-overlapping. You must choose $` r_\mathrm{cut} `$ appropriately for your
+shape(s). For the case of hard ellipses, the largest distance between the
+centers of two potentially overlapping ellipses is `sigma` &mdash; when two ellipses
+a distance `sigma` apart rotated so their their long axes just touch.
+
+#### Periodic Boundary Conditions
+
+Use **periodic boundary conditions** via the `Periodic` type to represent an
+infinitely repeating system. Provide the underlying shape and the **maximum
+interaction range** between sites to construct `Periodic`:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:periodic}}
+```
+
+`Periodic` uses this distance to generate **ghost sites** *outside* the
+boundary that are periodic images of **sites** *inside*. Methods like
+`CutoffPairOverlap` will compute interactions between **sites** inside the
+boundary and *all* other sites (whether they are ghosts or not). When using
+`CutoffPairOverlap`, `CutoffPair`, or any method that utilizes `$ r_\mathrm{cut}
+$`, the `maximum_interaction_range` should be set to the maximum of all the  `$
+r_\mathrm{cut} $` values.
+
+> [!IMPORTANT]
+> In *hoomd-rs*, it is *YOUR responsibility* to determine the appropriate
+> `maximum_interaction_range`. You might be used to other simulation codes,
+> HOOMD-blue for example, that *automatically* determine this maximum for
+> you. That is not possible in *hoomd-rs* as your model's interactions
+> and/or any analysis methods could be *any arbitrary code*.
+
+> [!WARNING]
+> If you set `maximum_interaction_range` too small, `CutoffPair` (and similar
+> methods) will *miss interactions that be computed*.
+
+#### Microstate
+
+Construct a microstate with the periodic boundary conditions:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:microstate}}
+```
+Start with no bodies in the microstate.
+
+#### Trial Moves
+
+Apply both `Translate` and `Rotate` trial moves to the bodies:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:trial_moves}}
+```
+
+In 2D simulations, `Rotate` uniformly selects a random angle between
+`-maximum_rotation` and `maximum_rotation` and rotates the body by that angle.
+
+#### `QuickInsert`
+
+`QuickInsert` will add *up to* `n_bodies` new bodies to the microstate
+drawn randomly from the given distribution. `UniformIn` generates bodies
+with positions uniformly distributed in the given `boundary` and orientations
+uniformly distributed among all possible orientations:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:quick_insert}}
+```
+
+`UniformIn` clones `template_sites` for each new body. In this case, the ellipse
+body is represented by a single site at the body's origin and has a default
+orientation.
+
+#### Insert Hamiltonian
+
+`QuickInsert` will only add a body when the change in energy due to the addition
+is finite. You *could* use the hard particle `hamiltonian` with `QuickInsert`
+and ensure that no ellipses in the microstate overlap. However, random body
+insertions do not pack densely. Used this way, `QuickInsert` is typically not
+able to achieve densities high enough to drive self-assembly.
+
+One way around this problem is to allow bodies to overlap *a little* when
+inserted and allow later translate and rotate trial moves to remove that
+overlap. The `OverlapPenalty` potential consists of an infinite energy core
+followed by a harmonic potential added to a step function. The infinite core
+prevents inserted bodies from overlapping too much, the harmonic potential
+encourages the trial moves to separate bodies, and the step function prevents
+the trial moves from moving non-overlapping sites into overlapping configurations.
+
+Express this Hamiltonian using `CutoffPair` with an `Anisotropic` evaluator:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:insert_hamiltonian}}
+```
+
+`ApproximateShapeOverlap` computes the *approximate* amount of overlap between
+a pair of shapes, `OverlapPenalty` applies the potential described above,
+and the `Anisotropic` `CutoffPair` computes this potential on pairs of
+sites.
+
+> [!IMPORTANT]
+> Use `ApproximateShapeOverlap` *only* to remove overlaps during initialization.
+> It does not compute the *exact* amount of overlap and is therefore not
+> appropriate for use in production sampling.
+
+#### Initialize the Struct
+
+Package all these values into a struct to represent the simulation:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:struct_initialize}}
+```
+
+Begin the simulation in the `Initialize` phase.
+
+## Implement `Simulation`
+
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:impl_simulation}}
+```
+
+### Advance the Simulation
+
+`advance` calls `self.initialize()` to advance the simulation when in the
+initialization phase and `self.equilibrate()` when in the equilibration phase:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:advance}}
+```
+
+Each method advances the simulation one step and potentially changes the
+`phase`. The `initialize` method might return an error (see below). The `anyhow`
+method `context` adds additional information to the error message.
+
+### Get the simulation step
+
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:step}}
+```
+
+## Implement `HardEllipseSelfAssembly`
+
+Place the model-specific methods in the **inherent implementation** for
+`HardEllipseSelfAssembly`:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:inherent_simulation}}
+```
+
+### Initialize
+
+Implement the `initialize` phase:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:initialize}}
+```
+
+#### Add New Bodies
+
+The `quick_insert.apply` method adds new randomly placed bodies to the microstate:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:apply_quick_insert}}
+```
+
+To avoid jamming the system, `QuickInsert` waits until the total energy of the
+given Hamiltonian (`insert_hamiltonian` in this case) is 0 before adding new
+bodies.
+
+#### Separate Overlapping Bodies
+
+`QuickInsert` is quick because it only inserts bodies (it never removes them)
+that may overlap with others (as determined by the `insert_hamiltonian`). Apply
+translation and rotation trial moves to separate overlapping pairs and make free
+space available for more body insertions:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:initialize_trial_moves}}
+```
+
+Use `insert_hamiltonian` for trial moves during the `initialize` step. The
+harmonic part of `OverlapPenalty` allows overlaps to be removed over many
+simulation steps. Pass a fixed `kt=1.0` because the energy scale in
+`OverlapPenalty` has no relation to that in `hamiltonian`.
+
+> [!WARNING]
+> If you use `hamiltonian` here, then a trial move would need to remove an
+> overlap in one step. That might not be possible depending on the amount of
+> overlap, the trial move size, and the density of the system.
+
+#### Transition to the Equilibrate State
+
+After many steps, `QuickInsert` should add all the requested bodies *and* all
+overlaps will be removed (the total energy of `insert_hamiltonian` is 0).
+When both those are true `quick_insert.is_complete()` will return `true` and the
+simulation can proceed to the equilibrate phase:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:state_transition}}
+```
+
+#### Detect Failures
+
+It might happen that after a long time, `QuickInsert` fails to add the target
+number of bodies. Instead of running the simulation for an infinitely long time,
+detect this condition and report an error:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:failed}}
+```
+
+This tutorial shows how you can use the `anyhow` crate to report errors with
+context. Set `box_height` to `4.0`, run the example, and you should get an error
+similar to:
+```text
+Error: failed to initialize
+
+Caused by:
+    83 of 820 bodies inserted after 10000 steps
+```
+
+### Equilibrate
+
+The equilibration phase of the simulation applies the translate and rotate
+trial moves with the hard overlap Hamiltonian (`hamiltonian`):
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:equilibrate}}
+```
+
+Equilibration never ends in this tutorial. In your own simulations, you might
+transition to a production phase after a certain number of steps.
+
+## Implement `main()`
+
+To run the simulation, construct the `HardParticleSelfAssembly` simulation model.
+Then call `advance()` many times:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:main}}
+```
+
+Write the sites to a GSD file periodically so that you can inspect the results
+of the simulation.
+
+> [!NOTE]
+> This `main()` function runs in batch mode. There is a different `main()` (not
+> shown here) used in the interactive example.
+
+## Conclusion
+
+This tutorial showed you how to perform hard-particle self-assembly simulations
+using a shape overlap potential, periodic boundary conditions, and `QuickInsert`
+to add bodies.
+
+Navigate to the top of the page and refresh to see the simulation in
+action again. Notice that ellipses are first added in a large batch. Once all the
+overlaps are removed, another batch appears. After all 820 ellipses are
+in the microstate and not overlapping, the simulation speeds up as it begins
+using the more efficient hard particle overlap Hamiltonian. Watch the simulation
+long enough and you should see domains form where all the ellipses point in roughly
+the same direction while at the same time there is no translational order.
+This is the nematic phase.
+
+Alternately, you can run the example in batch mode and then open
+the generated `trajectory.gsd` in [Ovito] or another visualization tool:
+```shell
+cargo run --release --example hard-particle-self-assembly
+```
+
+The next section will explain how to run self-assembly simulations of patchy
+particles.
+
+[Ovito]: https://www.ovito.org/
+
+## Complete Code
+
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:all}}

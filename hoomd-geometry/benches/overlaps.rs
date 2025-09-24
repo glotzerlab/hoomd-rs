@@ -7,14 +7,12 @@
 )]
 #![expect(clippy::unwrap_used, reason = "benches can use unwrap where needed")]
 
-/*! Benchmark overlaps*/
+//! Benchmark overlaps
 
-use divan::counter::ItemsCount;
-use divan::{self, Bencher, black_box};
-use hoomd_geometry::Convex;
+use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_geometry::{
-    IntersectsAt,
-    shape::{ConvexPolytope, Cuboid, Hyperellipsoid, Hypersphere, Simplex3},
+    Convex, IntersectsAt,
+    shape::{ConvexPolytope, Hypercuboid, Hyperellipsoid, Hypersphere, Simplex3},
     xenocollide::{collide2d, collide3d},
 };
 use rand::{Rng, SeedableRng, rngs::StdRng};
@@ -31,6 +29,7 @@ fn asm_collide3d() {
 
 fn main() {
     asm_collide3d();
+
     divan::main();
 }
 
@@ -55,16 +54,16 @@ fn create_sphere_pair<const N: usize, R: Rng>(rng: &mut R) -> (Hypersphere<N>, H
     )
 }
 
-fn create_cuboid_pair<const N: usize, R: Rng>(rng: &mut R) -> (Cuboid<N>, Cuboid<N>) {
+fn create_cuboid_pair<const N: usize, R: Rng>(rng: &mut R) -> (Hypercuboid<N>, Hypercuboid<N>) {
     (
-        Cuboid {
+        Hypercuboid {
             edge_lengths: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
                 (x + 11.0)
                     .try_into()
                     .expect("test value is a positive real")
             }),
         },
-        Cuboid {
+        Hypercuboid {
             edge_lengths: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
                 (x + 11.0)
                     .try_into()
@@ -128,14 +127,14 @@ fn create_ellipsoid_pair<const N: usize, R: Rng>(
 ) -> (Hyperellipsoid<N>, Hyperellipsoid<N>) {
     (
         Hyperellipsoid {
-            axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
+            semi_axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
                 (x + 11.0)
                     .try_into()
                     .expect("test value is a positive real")
             }),
         },
         Hyperellipsoid {
-            axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
+            semi_axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
                 (x + 11.0)
                     .try_into()
                     .expect("test value is a positive real")
@@ -224,6 +223,7 @@ fn cuboid_xenocollide_2d(bencher: Bencher) {
         })
         .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &r)));
 }
+
 #[divan::bench]
 fn cuboid_xenocollide_3d(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);

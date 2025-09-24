@@ -9,11 +9,11 @@ license.workspace = true
 keywords.workspace = true
 categories.workspace = true
 description = "Performant, general computational geometry methods in Rust."
-readme = "hoomd-geometry/README.md"
 
 [dependencies]
 hoomd-vector.workspace = true
 hoomd-utility.workspace = true
+rand.workspace = true
 itertools.workspace = true
 thiserror.workspace = true
 
@@ -24,7 +24,6 @@ workspace = true
 hoomd-vector = { features = ["approx"], workspace = true }
 approx.workspace = true
 divan.workspace = true
-rand.workspace = true
 rstest.workspace = true
 
 [[bench]]

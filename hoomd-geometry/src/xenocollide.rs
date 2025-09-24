@@ -1,30 +1,36 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implementations of the Xenocollide collision detection algorithm.
-
-[`collide2d`] and [`collide3d`] test for intersections between arbitrary geometries
-that implement the [`SupportMapping<Cartesian<2|3>>`](`crate::SupportMapping`) trait.
-
-# Example
-
-In general, Xenocollide should be used via the [`IntersectsAt`](`crate::IntersectsAt`)
-trait. However, the raw xenocollide methods can be used where needed.
-```
-use hoomd_geometry::{IntersectsAt, shape::Circle, xenocollide::collide2d};
-use hoomd_vector::Angle;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let (s0, s1) = (Circle {radius: 1.0.try_into()?}, Circle {radius: 2.0.try_into()?});
-let displacement = [3.0; 2].into();
-assert_eq!(
-    collide2d(&s0, &s1, &displacement, &Angle::default()),
-    s0.intersects_at(&s1, &displacement, &Angle::default())
-);
-# Ok(())
-# }
-```
-*/
+//! Implementations of the Xenocollide collision detection algorithm.
+//!
+//! [`collide2d`] and [`collide3d`] test for intersections between arbitrary geometries
+//! that implement the [`SupportMapping<Cartesian<2|3>>`](`crate::SupportMapping`) trait.
+//!
+//! # Example
+//!
+//! In general, Xenocollide should be used via the [`IntersectsAt`](`crate::IntersectsAt`)
+//! trait. However, the raw xenocollide methods can be used where needed.
+//! ```
+//! use hoomd_geometry::{IntersectsAt, shape::Circle, xenocollide::collide2d};
+//! use hoomd_vector::Angle;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let (s0, s1) = (
+//!     Circle {
+//!         radius: 1.0.try_into()?,
+//!     },
+//!     Circle {
+//!         radius: 2.0.try_into()?,
+//!     },
+//! );
+//! let displacement = [3.0; 2].into();
+//! assert_eq!(
+//!     collide2d(&s0, &s1, &displacement, &Angle::default()),
+//!     s0.intersects_at(&s1, &displacement, &Angle::default())
+//! );
+//! # Ok(())
+//! # }
+//! ```
 use crate::SupportMapping;
 use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, Rotation, RotationMatrix};
 
@@ -149,6 +155,7 @@ where
 
         // Check if origin is inside or overlapping the initial portal
         if v1.dot(&v_perp_v2v1) >= 0.0 {
+            // FUTURE: `v1.dot(&v_perp_v2v1) / v_perp_v2v1.norm()` is the approximate overlap distance
             return true;
         }
 
@@ -163,6 +170,7 @@ where
         // are we within an epsilon of the surface of the shape? If yes, done (overlap)
         let d = (v3 - v1) - (v3 - v1).project(&(v2 - v1));
         if d.norm_squared() < TOLERANCE * v3.norm_squared() {
+            // FUTURE: `d.norm()` is the approximate overlap distance
             return true;
         }
 
@@ -181,6 +189,7 @@ where
         }
 
         if count >= XENOCOLLIDE_2D_MAX_ITER {
+            // FUTURE: `TOLERANCE` is the approximate overlap distance
             return true;
         }
     }
@@ -188,11 +197,7 @@ where
 
 /// Detect collision between two convex 3D objects via Minkowski Portal Refinement.
 #[inline(never)]
-pub fn collide3d<
-    R: Rotation + Copy,
-    A: SupportMapping<Cartesian<3>>,
-    B: SupportMapping<Cartesian<3>>,
->(
+pub fn collide3d<R: Rotation, A: SupportMapping<Cartesian<3>>, B: SupportMapping<Cartesian<3>>>(
     sa: &A,
     sb: &B,
     v_ij: &Cartesian<3>, // Probably ok to take ownership?
@@ -359,7 +364,7 @@ mod tests {
     use crate::IntersectsAt;
     use rstest::*;
 
-    use crate::shape::{Circle, Cuboid, Hypersphere};
+    use crate::shape::{Circle, Hypercuboid, Hypersphere};
     use hoomd_utility::valid::PositiveReal;
     use hoomd_vector::{Angle, Versor};
 
@@ -420,8 +425,8 @@ mod tests {
         rect => [[1.0.try_into().expect("test value is a positive real"), 1.0.try_into().expect("test value is a positive real")], [999.0.try_into().expect("test value is a positive real"), 0.1.try_into().expect("test value is a positive real")], [1.0.try_into().expect("test value is a positive real"), (2.0*4.623).try_into().expect("test value is a positive real")]]
     )]
     fn test_aabrs_collide(v: [f64; 2], rect: [PositiveReal; 2]) {
-        let c0 = Cuboid { edge_lengths: rect };
-        let c1 = Cuboid {
+        let c0 = Hypercuboid { edge_lengths: rect };
+        let c1 = Hypercuboid {
             edge_lengths: [1.0.try_into().expect("test value is a positive real"); 2],
         };
         let theta = Angle::from(0.0);
@@ -435,8 +440,8 @@ mod tests {
 
     )]
     fn test_aabbs_collide(v: [f64; 3], aabb: [PositiveReal; 3]) {
-        let c0 = Cuboid { edge_lengths: aabb };
-        let c1 = Cuboid {
+        let c0 = Hypercuboid { edge_lengths: aabb };
+        let c1 = Hypercuboid {
             edge_lengths: [1.0.try_into().expect("test value is a positive real"); 3],
         };
         let theta = Versor::identity();

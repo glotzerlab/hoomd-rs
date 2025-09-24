@@ -1,44 +1,46 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Random distributions of vectors.
- */
+//! Random distributions of vectors.
 
 use super::{Cartesian, InnerProduct};
 use hoomd_utility::valid::PositiveReal;
 
-use rand::Rng;
-use rand::distr::{Distribution, Uniform};
+use rand::{
+    Rng,
+    distr::{Distribution, Uniform},
+};
 use std::array;
 
-/** A uniform distribution of all points inside or on a sphere with radius `r`.
-
-# Example
-
-```
-use hoomd_vector::{Cartesian, distribution::Ball};
-use rand::{distr::Distribution, Rng, rngs::StdRng, SeedableRng};
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let mut rng = StdRng::seed_from_u64(1);
-
-let r = 5.0;
-let ball = Ball { r: r.try_into()? };
-let v: Cartesian<3> = ball.sample(&mut rng);
-# Ok(())
-# }
-```
-*/
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// A uniform distribution of all points inside or on a sphere with radius `r`.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_vector::{Cartesian, distribution::Ball};
+/// use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut rng = StdRng::seed_from_u64(1);
+///
+/// let r = 5.0;
+/// let ball = Ball {
+///     radius: r.try_into()?,
+/// };
+/// let v: Cartesian<3> = ball.sample(&mut rng);
+/// # Ok(())
+/// # }
+/// ```
+#[derive(Clone, Debug, PartialEq)]
 pub struct Ball {
     /// The radius of the ball *(\[length\])*.
-    pub r: PositiveReal,
+    pub radius: PositiveReal,
 }
 
 impl<const N: usize> Distribution<Cartesian<N>> for Ball {
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
-        let r = self.r.get();
+        let r = self.radius.get();
 
         let uniform = Uniform::new_inclusive(-r, r).expect("r should be a positive real value");
 
@@ -68,7 +70,8 @@ mod test {
         r => [0.5, 1.0, 12.0])]
     fn ball(r: f64) {
         let ball = Ball {
-            r: r.try_into()
+            radius: r
+                .try_into()
                 .expect("hard-coded constant should be positive"),
         };
         let mut rng = StdRng::seed_from_u64(1);
