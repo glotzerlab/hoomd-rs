@@ -27,13 +27,16 @@ jobs:
       with:
         toolchain: 1.89.0
         targets: wasm32-unknown-unknown
+        components: clippy
     - name: Cache
       uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
-    # Unfortunately, it is not currently possible to mark warnings as errors: https://github.com/rust-lang/cargo/issues/8424#issuecomment-1915265827
+    # Unfortunately, it is not currently possible to mark warnings as errors with cargo check:
+    # https://github.com/rust-lang/cargo/issues/8424#issuecomment-1915265827
     # The workaround does not work for hoomd-rs because we set rust configuration options.
     #
     # Check all targets in debug and release modes
-    - run: >
+    - name: cargo check [native]
+      run: >
         cargo check
         --profile ci
         --locked
@@ -41,7 +44,8 @@ jobs:
         --all-targets
         --all-features
 
-    - run: >
+    - name: cargo clippy [native]
+      run: >
         cargo clippy
         --profile ci
         --locked
@@ -51,7 +55,8 @@ jobs:
         -- -Dwarnings
 
     # Check the examples in wasm builds with and without webgpu
-    - run: >
+    - name: cargo check [wasm32, features="bevy"]
+      run: >
         cargo check
         --profile ci
         --features "bevy"
@@ -60,7 +65,8 @@ jobs:
         --lib
         --examples
         --target wasm32-unknown-unknown
-    - run: >
+    - name: cargo check [wasm32, features="bevy"]
+      run: >
         cargo check
         --profile ci
         --features "bevy,webgpu"
@@ -70,7 +76,8 @@ jobs:
         --examples
         --target wasm32-unknown-unknown
 
-    - run: >
+    - name: cargo clippy [wasm32, features="bevy"]
+      run: >
         cargo clippy
         --profile ci
         --features "bevy"
@@ -80,7 +87,8 @@ jobs:
         --examples
         --target wasm32-unknown-unknown
         -- -Dwarnings
-    - run: >
+    - name: cargo clippy [wasm32, features="bevy,webgpu"]
+      run: >
         cargo clippy
         --profile ci
         --features "bevy,webgpu"
