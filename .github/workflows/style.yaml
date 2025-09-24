@@ -30,6 +30,9 @@ jobs:
         components: clippy
     - name: Cache
       uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+      with:
+        cache-bin: false
+
     # Unfortunately, it is not currently possible to mark warnings as errors with cargo check:
     # https://github.com/rust-lang/cargo/issues/8424#issuecomment-1915265827
     # The workaround does not work for hoomd-rs because we set rust configuration options.
@@ -65,7 +68,7 @@ jobs:
         --lib
         --examples
         --target wasm32-unknown-unknown
-    - name: cargo check [wasm32, features="bevy"]
+    - name: cargo check [wasm32, features="bevy,webgpu"]
       run: >
         cargo check
         --profile ci
