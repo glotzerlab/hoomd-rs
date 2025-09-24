@@ -17,7 +17,7 @@ env:
   CLICOLOR: 1
 
 jobs:
-  cargo-check:
+  cargo-check-clippy:
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout
@@ -25,35 +25,82 @@ jobs:
     - name: Configure Rust
       uses: dtolnay/rust-toolchain@6d653acede28d24f02e3cd41383119e8b1b35921
       with:
-        toolchain: 1.89.0
+        toolchain: 1.90.0
         targets: wasm32-unknown-unknown
-    # Unfortunately, it is not currently possible to mark warnings as errors: https://github.com/rust-lang/cargo/issues/8424#issuecomment-1915265827
+        components: clippy
+    - name: Cache
+      uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+      with:
+        cache-bin: false
+
+    # Unfortunately, it is not currently possible to mark warnings as errors with cargo check:
+    # https://github.com/rust-lang/cargo/issues/8424#issuecomment-1915265827
     # The workaround does not work for hoomd-rs because we set rust configuration options.
     #
     # Check all targets in debug and release modes
-    - run: cargo check --locked --all-targets --all-features --profile release
-    - run: cargo check --locked --all-targets --all-features --profile dev
-    # Check the examples in wasm builds with and without webgpu
-    - run: cargo check --locked --examples --features "bevy" --profile dev --target wasm32-unknown-unknown
-    - run: cargo check --locked --examples --features "bevy,webgpu" --profile dev --target wasm32-unknown-unknown
+    - name: cargo check [native]
+      run: >
+        cargo check
+        --profile ci
+        --locked
+        --workspace
+        --all-targets
+        --all-features
 
-  cargo-clippy:
-    runs-on: ubuntu-24.04
-    steps:
-    - name: Checkout
-      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-    - name: Configure Rust
-      uses: dtolnay/rust-toolchain@6d653acede28d24f02e3cd41383119e8b1b35921
-      with:
-        toolchain: 1.89.0
-        components: clippy
-        targets: wasm32-unknown-unknown
-    # Check all targets in debug and release modes
-    - run: cargo clippy --locked --all-targets --all-features --profile release -- -Dwarnings
-    - run: cargo clippy --locked --all-targets --all-features --profile dev -- -Dwarnings
+    - name: cargo clippy [native]
+      run: >
+        cargo clippy
+        --profile ci
+        --locked
+        --workspace
+        --all-targets
+        --all-features
+        -- -Dwarnings
+
     # Check the examples in wasm builds with and without webgpu
-    - run: cargo clippy --locked --examples --features="bevy" --profile dev --target wasm32-unknown-unknown -- -Dwarnings
-    - run: cargo clippy --locked --examples --features="bevy,webgpu" --profile dev --target wasm32-unknown-unknown -- -Dwarnings
+    - name: cargo check [wasm32, features="bevy"]
+      run: >
+        cargo check
+        --profile ci
+        --features "bevy"
+        --locked
+        --workspace
+        --lib
+        --examples
+        --target wasm32-unknown-unknown
+    - name: cargo check [wasm32, features="bevy,webgpu"]
+      run: >
+        cargo check
+        --profile ci
+        --features "bevy,webgpu"
+        --locked
+        --workspace
+        --lib
+        --examples
+        --target wasm32-unknown-unknown
+
+    - name: cargo clippy [wasm32, features="bevy"]
+      run: >
+        cargo clippy
+        --profile ci
+        --features "bevy"
+        --locked
+        --workspace
+        --lib
+        --examples
+        --target wasm32-unknown-unknown
+        -- -Dwarnings
+    - name: cargo clippy [wasm32, features="bevy,webgpu"]
+      run: >
+        cargo clippy
+        --profile ci
+        --features "bevy,webgpu"
+        --locked
+        --workspace
+        --lib
+        --examples
+        --target wasm32-unknown-unknown
+        -- -Dwarnings
 
   cargo-fmt:
     runs-on: ubuntu-24.04
@@ -79,7 +126,7 @@ jobs:
   tests_complete:
     name: All style checks
     if: always()
-    needs: [cargo-check, cargo-clippy, cargo-fmt, prek]
+    needs: [cargo-check-clippy, cargo-fmt, prek]
     runs-on: ubuntu-24.04
 
     steps:

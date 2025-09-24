@@ -150,8 +150,12 @@ lto = 'thin'  # TODO: Switch back to true after migrating to GitHub Pages for do
 codegen-units = 1
 inherits = "release"
 
-[profile.dev-wasm]
-inherits = "dev"
+# Reduce the size of binaries generated in CI builds.
+[profile.ci]
+inherits = "release"
+opt-level = 'z'
+strip = true
+codegen-units = 256
 
 # Bevy is extremely slow in debug builds, build it with optimizations
 # to avoid this: https://bevy.org/learn/quick-start/getting-started/setup/#compile-with-performance-optimizations
