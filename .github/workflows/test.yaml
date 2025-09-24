@@ -89,6 +89,7 @@ jobs:
         --examples
         ${{ matrix.target != '' && '--target' || '' }} ${{ matrix.target }}
         --verbose
+      if: ${{ matrix.target == '' }}
 
     - name: Build [all features]
       run: >
