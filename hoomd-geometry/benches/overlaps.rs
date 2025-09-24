@@ -12,7 +12,7 @@
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_geometry::{
     Convex, IntersectsAt,
-    shape::{ConvexPolytope, Cuboid, Hyperellipsoid, Hypersphere, Simplex3},
+    shape::{ConvexPolytope, Hypercuboid, Hyperellipsoid, Hypersphere, Simplex3},
     xenocollide::{collide2d, collide3d},
 };
 use rand::{Rng, SeedableRng, rngs::StdRng};
@@ -54,16 +54,16 @@ fn create_sphere_pair<const N: usize, R: Rng>(rng: &mut R) -> (Hypersphere<N>, H
     )
 }
 
-fn create_cuboid_pair<const N: usize, R: Rng>(rng: &mut R) -> (Cuboid<N>, Cuboid<N>) {
+fn create_cuboid_pair<const N: usize, R: Rng>(rng: &mut R) -> (Hypercuboid<N>, Hypercuboid<N>) {
     (
-        Cuboid {
+        Hypercuboid {
             edge_lengths: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
                 (x + 11.0)
                     .try_into()
                     .expect("test value is a positive real")
             }),
         },
-        Cuboid {
+        Hypercuboid {
             edge_lengths: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
                 (x + 11.0)
                     .try_into()

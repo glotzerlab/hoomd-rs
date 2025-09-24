@@ -51,7 +51,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// lennard_jones_gauss.sigma_squared = 0.02;
 /// lennard_jones_gauss.r_0 = 3.2;
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct LennardJonesGauss {
     /// Scale of Gaussian, in units of energy
     pub epsilon: f64,
