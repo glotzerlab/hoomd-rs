@@ -498,10 +498,10 @@ impl<const D: usize> CellList<D> {
     /// // Remove the first particle from the cell list.
     /// cell_list.remove(0);
     /// // Now the cell list has an empty cell associated with cell particle 0 was in.
-    /// println!("Before shrink_to_fit: {:?}", cell_list.particle_indices.size());
+    /// println!("Before shrink_to_fit: {:?}", cell_list.particle_indices.capacity());
     /// // Call shrink_to_fit to clean up empty cells and reduce memory usage.
     /// cell_list.shrink_to_fit();
-    /// println!("After shrink_to_fit: {:?}", cell_list.particle_indices.size());
+    /// println!("After shrink_to_fit: {:?}", cell_list.particle_indices.capacity());
     /// ```
     #[inline]
     pub fn shrink_to_fit(&mut self) {
