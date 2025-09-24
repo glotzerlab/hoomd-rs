@@ -188,8 +188,8 @@ where
                 let body_properties = microstate.bodies()[body_index].item.properties.clone();
 
                 // calculate m * v^2 part
-                let velocity = body_properties.velocity();
-                ke += velocity.norm_squared() * body_properties.mass();
+                let momentum = body_properties.momentum();
+                ke += momentum.norm_squared() / body_properties.mass();
             }
             ke *= 0.5;
             *integrator_ke = ke.clone();
@@ -222,6 +222,7 @@ where
             momentum += net_force * 0.5 * self.dt;
             *body_properties.position_mut() += momentum / mass * self.dt;
 
+            *body_properties.momentum_mut() = momentum;
             // Update the microstate with new body properties, wrapping automatically
             microstate
                 .update_body_properties(body_index, body_properties)
@@ -261,8 +262,8 @@ where
                 let body_properties = microstate.bodies()[body_index].item.properties.clone();
 
                 // calculate m * v^2 part
-                let velocity = body_properties.velocity();
-                ke += velocity.norm_squared() * body_properties.mass();
+                let momentum = body_properties.momentum();
+                ke += momentum.norm_squared() / body_properties.mass();
             }
             ke *= 0.5;
             *integrator_ke = ke.clone();
