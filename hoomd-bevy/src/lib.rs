@@ -132,14 +132,13 @@ pub struct HoomdBevyPlugin<S> {
     pub simulation: S,
 }
 
-/// Indicate if the simulation should update in real time.
-#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum PauseState {
-    /// Prevent automatic simulation advance.
-    #[default]
-    Paused,
-    /// Automatically advance the simulation.
-    Running,
+/// State of the UI
+#[derive(Default, Resource)]
+pub struct UiState {
+    /// Prevent the simulation from running when true.
+    pause: bool,
+    /// Test string
+    test: String,
 }
 
 /// Indicate what menu is displayed (if any)
@@ -352,6 +351,11 @@ where
         diagnostics.add_measurement(&Self::SPS, || steps as f64 / time.delta_secs_f64());
     }
 
+    fn is_paused(state: Res<UiState>,
+        ) -> bool {
+            state.pause
+        }
+
     /// Create the full screen UI text overlay node.
     fn setup_overlay(mut commands: Commands, mut ui_scale: ResMut<UiScale>) {
         commands.spawn((
@@ -392,23 +396,6 @@ where
                 TextSpan::new("SPS:\n"),
                 TextSpan::new("Step:\n"),
             ],
-            ChildOf(*overlay_root),
-        ));
-    }
-
-    /// Add paused text node.
-    fn add_pause_text(mut commands: Commands, overlay_root: Single<Entity, With<OverlayRoot>>) {
-        commands.spawn((
-            Text::new("paused..."),
-            Node {
-                position_type: PositionType::Absolute,
-                bottom: Val::Px(Self::UI_OFFSET),
-                left: Val::Px(Self::UI_OFFSET),
-                ..default()
-            },
-            PauseText,
-            Visibility::Hidden,
-            GlobalZIndex(Self::HELP_OVERLAY_ZINDEX),
             ChildOf(*overlay_root),
         ));
     }
@@ -561,23 +548,6 @@ F5      : Show/hide debugging information.
         }
     }
 
-    /// Keyboard control to pause/unpause the simulation.
-    fn keyboard_pause(
-        keys: Res<ButtonInput<KeyCode>>,
-        mut pause_text: Single<&mut Visibility, With<PauseText>>,
-        pause_state: Res<State<PauseState>>,
-        mut next_pause_state: ResMut<NextState<PauseState>>,
-    ) {
-        if keys.just_pressed(KeyCode::Space) {
-            debug!("Toggle pause state.");
-            pause_text.toggle_inherited_hidden();
-            match pause_state.get() {
-                PauseState::Paused => next_pause_state.set(PauseState::Running),
-                PauseState::Running => next_pause_state.set(PauseState::Paused),
-            }
-        }
-    }
-
     /// Keyboard control to show the help screen.
     fn keyboard_help(
         keys: Res<ButtonInput<KeyCode>>,
@@ -627,23 +597,23 @@ F5      : Show/hide debugging information.
     }
 
     /// Keyboard bindings to control the simulation.
-    fn keyboard_simulation(
-        mut exit: EventWriter<AppExit>,
-        keys: Res<ButtonInput<KeyCode>>,
-        pause_state: Res<State<PauseState>>,
-        simulation: ResMut<Sim>,
-    ) {
-        if keys.just_pressed(KeyCode::ArrowRight) && *pause_state.get() == PauseState::Paused {
-            let simulation = simulation.into_inner();
-            let result = simulation
-                .advance()
-                .with_context(|| format!("failed at step: {}", simulation.step()));
-            if let Err(error) = result {
-                error!("{error:?}");
-                exit.write(AppExit::Error(1.try_into().expect("1 is non-zero")));
-            }
-        }
-    }
+    // fn keyboard_simulation(
+    //     mut exit: EventWriter<AppExit>,
+    //     keys: Res<ButtonInput<KeyCode>>,
+    //     pause_state: Res<State<PauseState>>,
+    //     simulation: ResMut<Sim>,
+    // ) {
+    //     if keys.just_pressed(KeyCode::ArrowRight) && *pause_state.get() == PauseState::Paused {
+    //         let simulation = simulation.into_inner();
+    //         let result = simulation
+    //             .advance()
+    //             .with_context(|| format!("failed at step: {}", simulation.step()));
+    //         if let Err(error) = result {
+    //             error!("{error:?}");
+    //             exit.write(AppExit::Error(1.try_into().expect("1 is non-zero")));
+    //         }
+    //     }
+    // }
 
     /// Keyboard command to quit.
     #[cfg(not(target_arch = "wasm32"))]
@@ -952,14 +922,13 @@ F5      : Show/hide debugging information.
             .insert_resource(self.initial_settings)
             .register_diagnostic(Diagnostic::new(Self::SPS))
             .insert_resource(self.simulation)
-            .insert_state(PauseState::Running)
+            .insert_resource(UiState::default())
             .insert_state(MenuState::None)
             .add_systems(
                 Startup,
                 (
                     Self::setup_overlay,
                     Self::setup_debug_text,
-                    Self::add_pause_text,
                     Self::add_help_text,
                     Self::add_help_reminder,
                     Self::add_logo,
@@ -984,9 +953,7 @@ F5      : Show/hide debugging information.
             .add_systems(
                 Update,
                 (
-                    Self::keyboard_pause,
                     Self::keyboard_help,
-                    Self::keyboard_simulation,
                 )
                     .in_set(KeyboardInputSet),
             )
@@ -1043,7 +1010,7 @@ F5      : Show/hide debugging information.
         app.configure_sets(
             Update,
             (
-                AdvanceSet.run_if(in_state(PauseState::Running)),
+                AdvanceSet.run_if(not(Self::is_paused)),
                 KeyboardInputSet.after(AdvanceSet).run_if(not(egui_wants_any_keyboard_input)),
                 MouseInputSet.after(AdvanceSet).run_if(not(egui_wants_any_pointer_input)),
                 SettingsMenuInputSet
@@ -1055,6 +1022,7 @@ F5      : Show/hide debugging information.
 
     /// GUI
     fn ui_system(mut contexts: EguiContexts,
+    mut ui_state: ResMut<UiState>,
     mut exit: EventWriter<AppExit>,
     window: Single<&Window, With<PrimaryWindow>>,
     ) -> Result {
@@ -1063,8 +1031,6 @@ F5      : Show/hide debugging information.
         let quit_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE,
             egui::Key::Q);
 
-        let mut text = String::new();
-    
         let window = egui::Window::new("🔧 Settings")
             .resizable([false, false])
             .pivot(egui::Align2::RIGHT_BOTTOM)
@@ -1072,16 +1038,15 @@ F5      : Show/hide debugging information.
             .collapsible(false);
 
         window.show(contexts.ctx_mut()?, |ui| {
-            ui.text_edit_singleline(&mut text);
+            ui.text_edit_singleline(&mut ui_state.test);
         
-            let pause = egui::Button::selectable(true, "⏸ Pause");
-            if ui.add(pause).clicked() {
-                info!("Paused...");
+            if ui.toggle_value(&mut ui_state.pause, "⏸ Pause").clicked() {
+                info!("Toggle paused...");
             }
             
             #[cfg(not(target_arch = "wasm32"))]
             if ui.button("⊗ Quit").clicked() || ui.ctx().input_mut(|i| i.consume_shortcut(&quit_shortcut)) {
-                debug!("Quitting...");
+                info!("Quitting...");
                 exit.write(AppExit::Success);
             }
         });
