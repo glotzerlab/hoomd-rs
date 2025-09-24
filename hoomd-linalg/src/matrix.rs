@@ -219,7 +219,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     ///
     /// # Example
     /// ```
-    /// use hoomd_linalg::{matrix::Matrix33, GeneralMatrix};
+    /// use hoomd_linalg::{GeneralMatrix, matrix::Matrix33};
     /// let m = Matrix33::full(3.0);
     /// assert_eq!(m.map_elementwise(|x| x + 2.0), m + Matrix33::full(2.0));
     /// ```
@@ -232,6 +232,36 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         Self {
             rows: self.rows.map(|v| v.map(&f)),
         }
+    }
+
+    fn iter_flat(&self) -> impl Iterator<Item = f64> + '_ {
+        self.rows.iter().flat_map(|row| row.iter().copied())
+    }
+    /// Folds every element into an accumulator by applying an operation, returning the final result.
+    ///
+    /// [`fold_elementwise`] takes two arguments: an initial value, and a closure with two arguments: an ‘accumulator’, and an element. The closure returns the value that the accumulator should have for the next iteration.
+    ///
+    /// The initial value is the value the accumulator will have on the first call.
+    /// After applying this closure to every element of the flattened iterator, [`fold_elementwise`] returns the accumulator.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linalg::{GeneralMatrix, matrix::Matrix22};
+    /// let m = Matrix22::full(3.0);
+    /// // Sum the elements of a matrix
+    /// assert_eq!(m.fold_elementwise(0.0, |acc, x| acc + x), 3.0 * 4.0);
+    /// ```
+    #[inline]
+    pub fn fold_elementwise<B, F>(self, init: B, mut f: F) -> B
+    where
+        Self: Sized,
+        F: FnMut(B, f64) -> B,
+    {
+        let mut accum = init;
+        for x in self.iter_flat() {
+            accum = f(accum, x);
+        }
+        accum
     }
 }
 impl<const N: usize> Matrix<N, N> {
@@ -541,13 +571,10 @@ impl Matrix<3, 3> {
     #[must_use]
     #[inline]
     pub fn quaternion_decomposition(&self) -> (f64, [f64; 4]) {
-        // let [[sxx, sxy, syz], [syx, syy, syz], [szx, szy, szz]] = self.rows;
-        // // let [
-        // //     [sxx_sq, sxy_sq, sxz_sq],
-        // //     [syx_sq, syy_sq, syz_sq],
-        // //     [szx_sq, szy_sq, szz_sq],
-        // // ] = self.rows.map(|v| v.map(|x| x * x));
-        // let syz_szy_m_syy_szz_2 = 2.0 * (syz * szy - syy * szz);
+        let [[sxx, sxy, sxz], [syx, syy, syz], [szx, szy, szz]] = self.rows;
+
+        let m_sq = self.map_elementwise(|x| x * x);
+        let syz_szy_m_syy_szz_2 = 2.0 * (syz * szy - syy * szz);
         // let syysq_p_szzsq_m_sxxsq_syzsq_p_szy_sq = syy_sq + szz_sq - sxx_sq + syz_sq + szy_sq;
 
         // let sum_m_squared =
