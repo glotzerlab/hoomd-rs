@@ -1,12 +1,12 @@
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
+    AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings, ParametersWindowState,
     representation::RectangularBoundary,
     representation::disk::{self, Disk},
 };
 
 use anyhow::Context;
 use bevy::prelude::*;
-use bevy_egui::EguiPlugin;
+use bevy_egui::{egui, EguiContexts, EguiPlugin, EguiPrimaryContextPass};
 
 use super::Fill;
 
@@ -47,8 +47,33 @@ pub(crate) fn main() -> anyhow::Result<()> {
             .run_if(resource_changed::<Fill>)
             .after(AdvanceSet),
     );
+    app.add_systems(EguiPrimaryContextPass, ui_system);
 
     app.run();
+
+    Ok(())
+}
+
+fn ui_system(mut simulation: ResMut<Fill>,
+        mut contexts: EguiContexts,
+        mut parameters_window_state: ResMut<ParametersWindowState>,
+    ) -> Result {
+        let window = egui::Window::new("🛠 Parameters")
+            .resizable([false, false])
+            .open(&mut parameters_window_state.0)
+            .title_bar(false);
+
+        window.show(contexts.ctx_mut()?, |ui| {
+            ui.horizontal(|ui| {
+        
+            ui.add(
+                egui::Slider::new(&mut simulation.hamiltonian.0.0.alpha, 0.0..=20.0)
+                    .text("alpha")
+                    .vertical()
+                    .update_while_editing(false),
+            );
+            });
+        });
 
     Ok(())
 }

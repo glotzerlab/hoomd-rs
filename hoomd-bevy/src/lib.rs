@@ -145,12 +145,17 @@ pub struct UiState {
     show_debug: bool,
 }
 
-/// State of the menu
+/// State of the options window
 ///
-/// Menus are hidden by default. Callers can monitor this resource to show/hide
-/// all GUI windows (if desired).
+/// The options window is hidden by default.
 #[derive(Default, Resource)]
-pub struct MenuState(bool);
+struct OptionsWindowState(bool);
+
+/// State of the parameters window
+///
+/// The parameters window is shown by default.
+#[derive(Resource)]
+pub struct ParametersWindowState(pub bool);
 
 /// Reset the camera to the default.
 #[derive(Event)]
@@ -642,7 +647,8 @@ where
             .register_diagnostic(Diagnostic::new(Self::SPS))
             .insert_resource(self.simulation)
             .insert_resource(UiState::default())
-            .insert_resource(MenuState::default())
+            .insert_resource(OptionsWindowState::default())
+            .insert_resource(ParametersWindowState(true))
             .add_systems(
                 Startup,
                 (Self::setup_overlay, Self::setup_debug_text, Self::add_logo).chain(),
@@ -731,7 +737,8 @@ where
         mut contexts: EguiContexts,
         mut context_settings: Single<&mut EguiContextSettings>,
         mut ui_state: ResMut<UiState>,
-        mut menu_state: ResMut<MenuState>,
+        mut options_window_state: ResMut<OptionsWindowState>,
+        mut parameters_window_state: ResMut<ParametersWindowState>,
         mut settings: ResMut<Settings>,
         window: Single<&Window, With<PrimaryWindow>>,
         mut debug_text: Single<&mut Visibility, (With<DebugText>, Without<OverlayRoot>)>,
@@ -741,7 +748,8 @@ where
         mut advance_simulation: EventWriter<AdvanceSimulation>,
     ) -> Result {
         let advance_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::N);
-        let menu_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::M);
+        let options_shortcut= egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::M);
+        let parameters_shortcut= egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::P);
         let pause_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Space);
         #[cfg(not(target_arch = "wasm32"))]
         let quit_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Q);
@@ -755,7 +763,7 @@ where
         let default_width = 280.0;
 
         let window = egui::Window::new("⛭ Options")
-            .open(&mut menu_state.0)
+            .open(&mut options_window_state.0)
             .resizable([true, false])
             .pivot(egui::Align2::LEFT_BOTTOM)
             .default_pos([
@@ -767,7 +775,6 @@ where
 
         window.show(contexts.ctx_mut()?, |ui| {
             ui.allocate_space(ui.available_width() * egui::vec2(1.0, 0.0));
-            ui.label("Press m to show/hide menus");
 
             egui::CollapsingHeader::new("Simulation controls")
                 .default_open(true)
@@ -825,6 +832,13 @@ where
                 });
             });
 
+            ui.collapsing("More keyboard shortcuts", |ui| {
+                ui.label("m: show/hide the options window");
+                ui.label("p: show/hide the parameters window");
+                ui.label("Cmd/Ctrl-+/-: zoom the UI in/out");
+                ui.label("Cmd/Ctrl-0: set the default zoom")
+            });
+
             ui.collapsing("Advanced settings", |ui| {
                 ui.checkbox(&mut ui_state.show_debug, "Show debug overlay (F5)");
 
@@ -835,8 +849,6 @@ where
                 )
                 .on_hover_text("Decrease this when FPS is limited by rendering");
 
-                ui.label("Pres Cmd/Ctrl-+/- to zoom the UI in/out.");
-                ui.label("Cmd/Ctrl-0 sets the default zoom.")
             });
 
             #[cfg(not(target_arch = "wasm32"))]
@@ -851,8 +863,11 @@ where
                 if context.input_mut(|i| i.consume_shortcut(&advance_shortcut)) {
                     advance_simulation.write(AdvanceSimulation);
                 }
-                if context.input_mut(|i| i.consume_shortcut(&menu_shortcut)) {
-                    menu_state.0 = !menu_state.0;
+                if context.input_mut(|i| i.consume_shortcut(&options_shortcut)) {
+                    options_window_state.0 = !options_window_state.0;
+                }
+                if context.input_mut(|i| i.consume_shortcut(&parameters_shortcut)) {
+                    parameters_window_state.0 = !parameters_window_state.0;
                 }
                 if context.input_mut(|i| i.consume_shortcut(&pause_shortcut)) {
                     ui_state.pause = !ui_state.pause;
