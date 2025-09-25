@@ -3,10 +3,9 @@
 
 #![allow(clippy::print_stdout, reason = "Provide status updates in tool output")]
 
-/*! Tool that builds all examples with WASM for use in the web docs */
+//! Tool that builds all examples with WASM for use in the web docs
 
-use std::fs;
-use std::process::Command;
+use std::{fs, process::Command};
 
 use anyhow::{Context, anyhow};
 use clap::Parser;

@@ -1,54 +1,60 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`Boxcar`]
- */
+//! Implement [`Boxcar`]
 
 use super::IsotropicEnergy;
 
-/** Constant valued potential in a given range of `r` (_not differentiable_).
-
-```math
-U(r) = \begin{cases}
-0 & r \lt a \\
-\varepsilon & a \le r \lt b \\
-0 & r \ge b
-\end{cases}
-```
-
-Compute boxcar potential function. Some uses of this in the literature call it
-the "square well" potential.
-
-# Examples
-
-Basic usage:
-
-```
-use hoomd_interaction::pairwise::{IsotropicEnergy, Boxcar};
-
-let epsilon = 1.5;
-let (left,right) = (1.0, 2.5);
-
-let boxcar = Boxcar { epsilon, left, right };
-assert_eq!(boxcar.energy(0.0), 0.0);
-assert_eq!(boxcar.energy(1.0), 1.5);
-assert_eq!(boxcar.energy(2.0), 1.5);
-assert_eq!(boxcar.energy(2.5), 0.0);
-assert_eq!(boxcar.energy(1000.0), 0.0);
-```
-
-The parameters are public fields and may be accessed directly:
-
-```
-use hoomd_interaction::pairwise::{IsotropicEnergy, Boxcar};
-
-let mut boxcar = Boxcar { epsilon: 1.5, left: 1.0, right: 2.5 };
-boxcar.epsilon = -2.0;
-boxcar.left = 0.0;
-boxcar.right = 1.0;
-```
-*/
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// Constant valued potential in a given range of `r` (_not differentiable_).
+///
+/// ```math
+/// U(r) = \begin{cases}
+/// 0 & r \lt a \\
+/// \varepsilon & a \le r \lt b \\
+/// 0 & r \ge b
+/// \end{cases}
+/// ```
+///
+/// Compute boxcar potential function. Some uses of this in the literature call it
+/// the "square well" potential.
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```
+/// use hoomd_interaction::pairwise::{Boxcar, IsotropicEnergy};
+///
+/// let epsilon = 1.5;
+/// let (left, right) = (1.0, 2.5);
+///
+/// let boxcar = Boxcar {
+///     epsilon,
+///     left,
+///     right,
+/// };
+/// assert_eq!(boxcar.energy(0.0), 0.0);
+/// assert_eq!(boxcar.energy(1.0), 1.5);
+/// assert_eq!(boxcar.energy(2.0), 1.5);
+/// assert_eq!(boxcar.energy(2.5), 0.0);
+/// assert_eq!(boxcar.energy(1000.0), 0.0);
+/// ```
+///
+/// The parameters are public fields and may be accessed directly:
+///
+/// ```
+/// use hoomd_interaction::pairwise::{Boxcar, IsotropicEnergy};
+///
+/// let mut boxcar = Boxcar {
+///     epsilon: 1.5,
+///     left: 1.0,
+///     right: 2.5,
+/// };
+/// boxcar.epsilon = -2.0;
+/// boxcar.left = 0.0;
+/// boxcar.right = 1.0;
+/// ```
+#[derive(Clone, Debug, PartialEq)]
 pub struct Boxcar {
     /// Energy scale *(\[energy\])*.
     pub epsilon: f64,

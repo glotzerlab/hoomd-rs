@@ -11,7 +11,7 @@ create-missing = false
 [preprocessor.katex]
 after = ["links"]
 block-delimiter = { left = "```math", right = "```" }
-inline-delimiter = { left = "`$", right = "$`" }
+inline-delimiter = { left = "$`", right = "`$" }
 
 # [output.html] must be the last table so that .readthedocs.yaml can easily add a key to it
 [output.html]

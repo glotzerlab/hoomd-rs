@@ -1,36 +1,35 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement Translate
-*/
+//! Implement Translate
 
 use super::LocalTrial;
 use hoomd_microstate::property::Position;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Metric, Vector, distribution::Ball};
 
-use rand::Rng;
-use rand::distr::Distribution;
+use rand::{Rng, distr::Distribution};
 
-/** Move the position of a body by a small distance.
-
-`Translate` proposes local trial moves that translate the position of a body
-in space by a random vector up a given maximum length, given by a
-[`PositiveReal`](hoomd_utility::valid::PositiveReal).
-
-# Example
-
-```
-use hoomd_mc::Translate;
-use hoomd_vector::Cartesian;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let d = 0.1;
-let translate = Translate { maximum_distance: d.try_into()? };
-# Ok(())
-# }
-```
-*/
+/// Move the position of a body by a small distance.
+///
+/// `Translate` proposes local trial moves that translate the position of a body
+/// in space by a random vector up a given maximum length, given by a
+/// [`PositiveReal`](hoomd_utility::valid::PositiveReal).
+///
+/// # Example
+///
+/// ```
+/// use hoomd_mc::Translate;
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let d = 0.1;
+/// let translate = Translate {
+///     maximum_distance: d.try_into()?,
+/// };
+/// # Ok(())
+/// # }
+/// ```
 pub struct Translate {
     /// The maximum distance a body can be translated in one trial move.
     pub maximum_distance: PositiveReal,
@@ -42,28 +41,29 @@ where
     M: Metric + Vector,
     Ball: Distribution<M>,
 {
-    /** Randomly translate a body's position.
-
-    # Example
-
-    ```
-    use hoomd_mc::{LocalTrial, Translate};
-    use hoomd_microstate::property::Point;
-    use hoomd_vector::{Cartesian, InnerProduct};
-    use rand::{rngs::StdRng, Rng, SeedableRng};
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut rng = StdRng::seed_from_u64(1);
-    let body_properties = Point::new(Cartesian::from([0.0, 0.0]));
-    let d = 1.0;
-    let translate = Translate { maximum_distance: d.try_into()? };
-
-    let new_body_properties = translate.propose(&mut rng, body_properties);
-    assert!(new_body_properties.position.norm() < 1.0);
-    # Ok(())
-    # }
-    ```
-    */
+    /// Randomly translate a body's position.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_mc::{LocalTrial, Translate};
+    /// use hoomd_microstate::property::Point;
+    /// use hoomd_vector::{Cartesian, InnerProduct};
+    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut rng = StdRng::seed_from_u64(1);
+    /// let body_properties = Point::new(Cartesian::from([0.0, 0.0]));
+    /// let d = 1.0;
+    /// let translate = Translate {
+    ///     maximum_distance: d.try_into()?,
+    /// };
+    ///
+    /// let new_body_properties = translate.propose(&mut rng, body_properties);
+    /// assert!(new_body_properties.position.norm() < 1.0);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B {
         let mut trial = body_properties;

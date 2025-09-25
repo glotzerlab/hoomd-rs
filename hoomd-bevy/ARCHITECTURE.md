@@ -52,16 +52,8 @@ Individual examples must provide their own implementations of:
   for display.
 * Any example-specific UI or controls.
 
-At this point, it is not clear where the `Simulation` trait should live. On
-one hand, it is currently only needed for `hoomd_bevy` (users can write simple
-scripts that store all simulation fields in locals and implement the step in the
-body of a for loop). On the other hand, users will see `impl Simulation for ...`
-in the web page form of the examples and will copy that format. If `Simulation`
-lived in `hoomd_bevy`, users may accidentally introduce a bevy dependency
-that takes a long time to build (or may not even build on HPC platforms). If
-`Simulation` lived in a different crate (which one?), they may feel obligated to
-use it. This design question will be resolved in time as `hoomd-rs` develops.
-For now, `Simulation` will be defined in `hoomd_bevy`. That is likely to change.
+This `Simulation` trait is general useful and is not specific to interactive
+simulation using Bevy. It lives in the `hoomd_simulation` crate.
 
 `hoomd_bevy` will provide a number of convenience methods that synchronize
 subsets of the simulation state (body and/or site properties) to the Bevy

@@ -1,14 +1,13 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`Hypersphere`] */
+//! Implement [`Hypersphere`]
 use crate::{BoundingSphereRadius, IntersectsAt, IsPointInside, SupportMapping, Volume};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, distribution::Ball};
 
 use rand::{Rng, distr::Distribution};
-use std::f64::consts::PI;
-use std::ops::Mul;
+use std::{f64::consts::PI, ops::Mul};
 
 /// The (single, double, ...)-factorial function
 pub fn factorial(n: usize, ntuple: usize) -> usize {
@@ -35,134 +34,149 @@ pub(crate) fn sphere_volume_prefactor(n: usize) -> f64 {
     }
 }
 
-/** All points within a given `radius` from the origin.
-
-# Examples
-
-Basic construction and methods:
-```
-use hoomd_geometry::{shape::Hypersphere, SupportMapping, Volume};
-use hoomd_vector::Cartesian;
-use std::f64::consts::PI;
-
-let unit_sphere = Hypersphere::<3>::default();
-let volume = unit_sphere.volume();
-
-assert_eq!(unit_sphere.radius.get(), 1.0);
-assert_eq!(volume, 4.0 * PI / 3.0);
-
-assert_eq!(
-    unit_sphere.support_mapping(&Cartesian::from([1.0; 3])),
-    [1.0 / f64::sqrt(3.0); 3].into()
-)
-```
-
-Test for intersections:
-```
-use hoomd_geometry::{IntersectsAt, shape::Hypersphere};
-use hoomd_vector::{Cartesian, Versor};
-
-let unit_sphere = Hypersphere::<3>::default();
-
-assert_eq!(
-    unit_sphere.intersects_at(&unit_sphere, &Cartesian::from([2.1, 0.0, 0.0]), &Versor::default()),
-    false
-);
-assert_eq!(
-    unit_sphere.intersects_at(&unit_sphere, &Cartesian::from([0.0, 1.9, 0.0]), &Versor::default()),
-    true
-);
-```
-*/
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// All points within a given `radius` from the origin.
+///
+/// # Examples
+///
+/// Basic construction and methods:
+/// ```
+/// use hoomd_geometry::{SupportMapping, Volume, shape::Hypersphere};
+/// use hoomd_vector::Cartesian;
+/// use std::f64::consts::PI;
+///
+/// let unit_sphere = Hypersphere::<3>::default();
+/// let volume = unit_sphere.volume();
+///
+/// assert_eq!(unit_sphere.radius.get(), 1.0);
+/// assert_eq!(volume, 4.0 * PI / 3.0);
+///
+/// assert_eq!(
+///     unit_sphere.support_mapping(&Cartesian::from([1.0; 3])),
+///     [1.0 / f64::sqrt(3.0); 3].into()
+/// )
+/// ```
+///
+/// Test for intersections:
+/// ```
+/// use hoomd_geometry::{IntersectsAt, shape::Hypersphere};
+/// use hoomd_vector::{Cartesian, Versor};
+///
+/// let unit_sphere = Hypersphere::<3>::default();
+///
+/// assert!(!unit_sphere.intersects_at(
+///     &unit_sphere,
+///     &Cartesian::from([2.1, 0.0, 0.0]),
+///     &Versor::default()
+/// ));
+/// assert!(unit_sphere.intersects_at(
+///     &unit_sphere,
+///     &Cartesian::from([0.0, 1.9, 0.0]),
+///     &Versor::default()
+/// ));
+/// ```
+#[derive(Clone, Debug, PartialEq)]
 pub struct Hypersphere<const N: usize> {
     /// Radius of the sphere
     pub radius: PositiveReal,
 }
 
-/** A circle in two dimensions.
-
-# Examples
-
-Basic construction and methods:
-```
-use hoomd_geometry::{shape::Circle, Volume};
-use hoomd_vector::Cartesian;
-use std::f64::consts::PI;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let circle = Circle { radius: 2.0.try_into()? };
-let volume = circle.volume();
-
-assert_eq!(volume, PI * 4.0);
-# Ok(())
-# }
-```
-
-Test for intersections:
-```
-use hoomd_geometry::{IntersectsAt, shape::Circle};
-use hoomd_vector::{Cartesian, Angle};
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let circle = Circle { radius: 1.0.try_into()? };
-
-assert_eq!(
-    circle.intersects_at(&circle, &Cartesian::from([2.1, 0.0]), &Angle::default()),
-    false
-);
-assert_eq!(
-    circle.intersects_at(&circle, &Cartesian::from([0.0, 1.9]), &Angle::default()),
-    true
-);
-# Ok(())
-# }
-```
-*/
+/// A circle in two dimensions.
+///
+/// # Examples
+///
+/// Basic construction and methods:
+/// ```
+/// use hoomd_geometry::{Volume, shape::Circle};
+/// use hoomd_vector::Cartesian;
+/// use std::f64::consts::PI;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let circle = Circle {
+///     radius: 2.0.try_into()?,
+/// };
+/// let volume = circle.volume();
+///
+/// assert_eq!(volume, PI * 4.0);
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Test for intersections:
+/// ```
+/// use hoomd_geometry::{IntersectsAt, shape::Circle};
+/// use hoomd_vector::{Angle, Cartesian};
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let circle = Circle {
+///     radius: 1.0.try_into()?,
+/// };
+///
+/// assert_eq!(
+///     circle.intersects_at(
+///         &circle,
+///         &Cartesian::from([2.1, 0.0]),
+///         &Angle::default()
+///     ),
+///     false
+/// );
+/// assert_eq!(
+///     circle.intersects_at(
+///         &circle,
+///         &Cartesian::from([0.0, 1.9]),
+///         &Angle::default()
+///     ),
+///     true
+/// );
+/// # Ok(())
+/// # }
+/// ```
 pub type Circle = Hypersphere<2>;
 
-/** A sphere in three dimensions.
-
-# Examples
-
-Basic construction and methods:
-```
-use hoomd_geometry::{shape::Sphere, SupportMapping, Volume};
-use hoomd_vector::Cartesian;
-use std::f64::consts::PI;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let unit_sphere = Sphere { radius: 1.0.try_into()? };
-let volume = unit_sphere.volume();
-
-assert_eq!(unit_sphere.radius.get(), 1.0);
-assert_eq!(volume, 4.0 * PI / 3.0);
-
-assert_eq!(
-    unit_sphere.support_mapping(&Cartesian::from([1.0; 3])),
-    [1.0 / f64::sqrt(3.0); 3].into()
-);
-# Ok(())
-# }
-```
-
-Test for intersections:
-```
-use hoomd_geometry::{IntersectsAt, shape::Sphere};
-use hoomd_vector::{Cartesian, Versor};
-
-let unit_sphere = Sphere::default();
-
-assert_eq!(
-    unit_sphere.intersects_at(&unit_sphere, &Cartesian::from([2.1, 0.0, 0.0]), &Versor::default()),
-    false
-);
-assert_eq!(
-    unit_sphere.intersects_at(&unit_sphere, &Cartesian::from([0.0, 1.9, 0.0]), &Versor::default()),
-    true
-);
-```
-*/
+/// A sphere in three dimensions.
+///
+/// # Examples
+///
+/// Basic construction and methods:
+/// ```
+/// use hoomd_geometry::{SupportMapping, Volume, shape::Sphere};
+/// use hoomd_vector::Cartesian;
+/// use std::f64::consts::PI;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let unit_sphere = Sphere {
+///     radius: 1.0.try_into()?,
+/// };
+/// let volume = unit_sphere.volume();
+///
+/// assert_eq!(unit_sphere.radius.get(), 1.0);
+/// assert_eq!(volume, 4.0 * PI / 3.0);
+///
+/// assert_eq!(
+///     unit_sphere.support_mapping(&Cartesian::from([1.0; 3])),
+///     [1.0 / f64::sqrt(3.0); 3].into()
+/// );
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Test for intersections:
+/// ```
+/// use hoomd_geometry::{IntersectsAt, shape::Sphere};
+/// use hoomd_vector::{Cartesian, Versor};
+///
+/// let unit_sphere = Sphere::default();
+///
+/// assert!(!unit_sphere.intersects_at(
+///     &unit_sphere,
+///     &Cartesian::from([2.1, 0.0, 0.0]),
+///     &Versor::default()
+/// ));
+/// assert!(unit_sphere.intersects_at(
+///     &unit_sphere,
+///     &Cartesian::from([0.0, 1.9, 0.0]),
+///     &Versor::default()
+/// ));
+/// ```
 pub type Sphere = Hypersphere<3>;
 
 impl<const N: usize> Default for Hypersphere<N> {
@@ -223,21 +237,22 @@ impl<const N: usize, V> IsPointInside<V> for Hypersphere<N>
 where
     V: InnerProduct,
 {
-    /** Check if a vector is inside a hypersphere.
-
-    ```
-    use hoomd_geometry::{IsPointInside, shape::Sphere};
-    use hoomd_vector::Cartesian;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let sphere = Sphere { radius: 3.0.try_into()? };
-
-    assert!(sphere.is_point_inside(&Cartesian::from([2.5, 0.0, 0.0])));
-    assert!(!sphere.is_point_inside(&Cartesian::from([3.0, -3.0, 2.0])));
-    # Ok(())
-    # }
-    ```
-    */
+    /// Check if a vector is inside a hypersphere.
+    ///
+    /// ```
+    /// use hoomd_geometry::{IsPointInside, shape::Sphere};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let sphere = Sphere {
+    ///     radius: 3.0.try_into()?,
+    /// };
+    ///
+    /// assert!(sphere.is_point_inside(&Cartesian::from([2.5, 0.0, 0.0])));
+    /// assert!(!sphere.is_point_inside(&Cartesian::from([3.0, -3.0, 2.0])));
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn is_point_inside(&self, point: &V) -> bool {
         point.dot(point) < self.radius.get().powi(2)
@@ -245,24 +260,25 @@ where
 }
 
 impl<const N: usize> Distribution<Cartesian<N>> for Hypersphere<N> {
-    /** Generate points uniformly distributed in the hypersphere.
-
-    # Example
-
-    ```
-    use hoomd_geometry::{IsPointInside, shape::Sphere};
-    use rand::{SeedableRng, rngs::StdRng, distr::Distribution};
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let sphere = Sphere { radius: 5.0.try_into()? };
-    let mut rng = StdRng::seed_from_u64(1);
-
-    let point = sphere.sample(&mut rng);
-    assert!(sphere.is_point_inside(&point));
-    # Ok(())
-    # }
-    ```
-    */
+    /// Generate points uniformly distributed in the hypersphere.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{IsPointInside, shape::Sphere};
+    /// use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let sphere = Sphere {
+    ///     radius: 5.0.try_into()?,
+    /// };
+    /// let mut rng = StdRng::seed_from_u64(1);
+    ///
+    /// let point = sphere.sample(&mut rng);
+    /// assert!(sphere.is_point_inside(&point));
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
         let ball = Ball {
@@ -408,47 +424,18 @@ mod tests {
         assert!(!sphere0.intersects_at(&sphere1, &[6.1, 0.0, 0.0].into(), &identity));
         assert!(!sphere0.intersects_at(&sphere1, &[3.52, 3.52, 3.52].into(), &identity));
 
-        assert!(Convex(sphere0).intersects_at(
-            &Convex(sphere1),
-            &[0.0, 0.0, 5.9].into(),
-            &identity
-        ));
-        assert!(Convex(sphere0).intersects_at(
-            &Convex(sphere1),
-            &[0.0, 5.9, 0.0].into(),
-            &identity
-        ));
-        assert!(Convex(sphere0).intersects_at(
-            &Convex(sphere1),
-            &[5.9, 0.0, 0.0].into(),
-            &identity
-        ));
-        assert!(Convex(sphere0).intersects_at(
-            &Convex(sphere1),
-            &[3.4, 3.4, 3.4].into(),
-            &identity
-        ));
+        let sphere0 = Convex(sphere0);
+        let sphere1 = Convex(sphere1);
 
-        assert!(!Convex(sphere0).intersects_at(
-            &Convex(sphere1),
-            &[0.0, 0.0, 6.1].into(),
-            &identity
-        ));
-        assert!(!Convex(sphere0).intersects_at(
-            &Convex(sphere1),
-            &[0.0, 6.1, 0.0].into(),
-            &identity
-        ));
-        assert!(!Convex(sphere0).intersects_at(
-            &Convex(sphere1),
-            &[6.1, 0.0, 0.0].into(),
-            &identity
-        ));
-        assert!(!Convex(sphere0).intersects_at(
-            &Convex(sphere1),
-            &[3.52, 3.52, 3.52].into(),
-            &identity
-        ));
+        assert!(sphere0.intersects_at(&sphere1, &[0.0, 0.0, 5.9].into(), &identity));
+        assert!(sphere0.intersects_at(&sphere1, &[0.0, 5.9, 0.0].into(), &identity));
+        assert!(sphere0.intersects_at(&sphere1, &[5.9, 0.0, 0.0].into(), &identity));
+        assert!(sphere0.intersects_at(&sphere1, &[3.4, 3.4, 3.4].into(), &identity));
+
+        assert!(!sphere0.intersects_at(&sphere1, &[0.0, 0.0, 6.1].into(), &identity));
+        assert!(!sphere0.intersects_at(&sphere1, &[0.0, 6.1, 0.0].into(), &identity));
+        assert!(!sphere0.intersects_at(&sphere1, &[6.1, 0.0, 0.0].into(), &identity));
+        assert!(!sphere0.intersects_at(&sphere1, &[3.52, 3.52, 3.52].into(), &identity));
     }
 
     #[test]
@@ -473,7 +460,7 @@ mod tests {
         let circle = Circle::with_radius(4.0.try_into().expect("test value is a positive real"));
         let mut rng = StdRng::seed_from_u64(4);
 
-        let points: Vec<_> = circle.sample_iter(&mut rng).take(N).collect();
+        let points: Vec<_> = (&circle).sample_iter(&mut rng).take(N).collect();
         assert!(&points.iter().all(|p| circle.is_point_inside(p)));
         assert!(&points.iter().any(|p| p.dot(p) > 3.9));
     }

@@ -6,16 +6,14 @@
     reason = "benches don't need public documentation"
 )]
 
-/*! Benchmark `LennardJones` */
+//! Benchmark `LennardJones`
 
-use divan::counter::ItemsCount;
-use divan::{self, Bencher, black_box};
+use divan::{self, Bencher, black_box, counter::ItemsCount};
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
 use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, LennardJones};
 
 fn main() {
-    #[cfg(not(target_arch = "wasm32"))]
     divan::main();
 }
 

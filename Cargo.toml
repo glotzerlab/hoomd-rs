@@ -11,6 +11,7 @@ members = ["examples",
            "hoomd-meshless-voronoi",
            "hoomd-microstate",
            "hoomd-order",
+           "hoomd-simulation",
            "hoomd-utility",
            "hoomd-vector",
            "tools/build-wasm-doc-examples",
@@ -29,6 +30,7 @@ default-members = ["examples",
                    "hoomd-meshless-voronoi",
                    "hoomd-microstate",
                    "hoomd-order",
+                   "hoomd-simulation",
                    "hoomd-utility",
                    "hoomd-vector",
                   ]
@@ -54,13 +56,14 @@ hoomd-mc = { path = "hoomd-mc" }
 hoomd-meshless-voronoi = { path = "hoomd-meshless-voronoi" }
 hoomd-microstate = { path = "hoomd-microstate" }
 hoomd-order = { path = "hoomd-order" }
+hoomd-simulation = { path = "hoomd-simulation" }
 hoomd-utility = { path = "hoomd-utility" }
 hoomd-vector = { path = "hoomd-vector" }
 
 # Common dev dependencies
 approx = "0.5.1"
 divan = "0.1.17"
-rstest = "0.25.0"
+rstest = "0.26.0"
 anyhow = "1.0.98"
 tempfile = "3.20.0"
 clap = {version = "4.5.40", features = ["derive"]}
@@ -115,8 +118,7 @@ cast_precision_loss = "allow"
 float_cmp = "allow"
 
 # opt-in to restrictions
-allow_attributes = "allow"
-allow_attributes_without_reason = "allow"
+allow_attributes_without_reason = "warn"
 exhaustive_enums = "warn"
 impl_trait_in_params = "warn"
 missing_docs_in_private_items = "warn"
@@ -157,8 +159,12 @@ lto = 'thin'  # TODO: Switch back to true after migrating to GitHub Pages for do
 codegen-units = 1
 inherits = "release"
 
-[profile.dev-wasm]
-inherits = "dev"
+# Reduce the size of binaries generated in CI builds.
+[profile.ci]
+inherits = "release"
+opt-level = 'z'
+strip = true
+codegen-units = 256
 
 # Bevy is extremely slow in debug builds, build it with optimizations
 # to avoid this: https://bevy.org/learn/quick-start/getting-started/setup/#compile-with-performance-optimizations

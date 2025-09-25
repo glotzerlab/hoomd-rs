@@ -127,9 +127,8 @@ microstate. The crate also implements commonly used energies, such as external
 potentials and cutoff pair potentials. Users can write custom types that
 implement the `TotalEnergy` trait.
 
-TODO: Provide a convenient mechanism to add multiple energies together.
-One solution would be to implement `Energy` for a heterogeneous tuple
-where each element implements `Energy`.
+Tuples of types that implement `TotalEnergy` (and similar traits) sum the
+contributions from all elements of the tuple.
 
 ### Forces and torques
 
@@ -151,7 +150,7 @@ spend time computing values that will not change the total.
 
 `hoomd_interaction` breaks each energy/force computation up into multiple layers.
 For example, the external potential module defines the `SiteEnergy` trait
-that computes the energy of a single site. The `Single` type wraps a
+that computes the energy of a single site. The `External` type wraps a
 generic `SiteEnergy` type, implements `TotalEnergy` over the microstate, and
 reimplements `SiteEnergy`. This way, one variable (e.g. `linear`) implements
 multiple methods that both the MD and MC engines can use.
