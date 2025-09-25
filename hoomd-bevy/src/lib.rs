@@ -23,14 +23,8 @@
     clippy::cast_possible_truncation,
     reason = "Bevy operates with f32 values."
 )]
-#![allow(
-    clippy::too_many_arguments,
-    reason = "Bevy requires many arguments."
-)]
-#![allow(
-    clippy::too_many_lines,
-    reason = "Bevy requires long functions."
-)]
+#![allow(clippy::too_many_arguments, reason = "Bevy requires many arguments.")]
+#![allow(clippy::too_many_lines, reason = "Bevy requires long functions.")]
 
 //! Connect *hoomd-rs* simulations with the Bevy game engine.
 //!
@@ -322,20 +316,20 @@ where
     }
 
     /// Advance the simulation one step
-    fn advance_simulation(    
+    fn advance_simulation(
         simulation: ResMut<Sim>,
         mut exit: EventWriter<AppExit>,
         mut event: EventReader<AdvanceSimulation>,
     ) {
         let simulation = simulation.into_inner();
         for _ in event.read() {
-        let result = simulation
-            .advance()
-            .with_context(|| format!("failed at step: {}", simulation.step()));
-        if let Err(error) = result {
-            error!("{error:?}");
-            exit.write(AppExit::Error(1.try_into().expect("1 is non-zero")));
-        }
+            let result = simulation
+                .advance()
+                .with_context(|| format!("failed at step: {}", simulation.step()));
+            if let Err(error) = result {
+                error!("{error:?}");
+                exit.write(AppExit::Error(1.try_into().expect("1 is non-zero")));
+            }
         }
     }
 
@@ -607,8 +601,10 @@ where
             // scroll event and act scale the camera in the appropriate direction.
             let zoom_speed = settings.camera_sensitivity * CAMERA_ZOOM_SPEED * time.delta_secs();
             let delta_zoom = -zoom_speed.copysign(scroll);
-            let new_scale = (orthographic.scale * (1.0 + delta_zoom))
-                .clamp(1.0 / settings.zoom_range.end, 1.0 / settings.zoom_range.start);
+            let new_scale = (orthographic.scale * (1.0 + delta_zoom)).clamp(
+                1.0 / settings.zoom_range.end,
+                1.0 / settings.zoom_range.start,
+            );
             let scale_ratio = new_scale / orthographic.scale;
 
             let world_position_result = window
@@ -657,17 +653,11 @@ where
             .insert_resource(MenuState::default())
             .add_systems(
                 Startup,
-                (
-                    Self::setup_overlay,
-                    Self::setup_debug_text,
-                    Self::add_logo,
-                )
-                    .chain(),
+                (Self::setup_overlay, Self::setup_debug_text, Self::add_logo).chain(),
             )
             .add_systems(
                 Update,
-                Self::remove_logo
-                    .run_if(once_after_delay(Duration::from_secs(3))),
+                Self::remove_logo.run_if(once_after_delay(Duration::from_secs(3))),
             )
             .add_systems(Update, Self::step_simulation.in_set(AdvanceSet))
             .add_systems(
@@ -678,7 +668,7 @@ where
             .add_systems(EguiPrimaryContextPass, Self::ui_system)
             .add_event::<ResetCamera>()
             .add_event::<AdvanceSimulation>();
-            
+
         match initial_camera {
             InitialCamera::Orthographic2d(initial_viewport_height) => {
                 app.add_systems(
@@ -744,9 +734,11 @@ where
         let menu_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::M);
         let pause_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Space);
         let quit_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Q);
-        let reset_camera_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Equals);
+        let reset_camera_shortcut =
+            egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Equals);
         let show_debug_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::F5);
-        let screenshot_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::F12);
+        let screenshot_shortcut =
+            egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::F12);
 
         let default_width = 280.0;
 
@@ -768,24 +760,22 @@ where
             egui::CollapsingHeader::new("Simulation controls")
                 .default_open(true)
                 .show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.toggle_value(&mut ui_state.pause, "⏸ Pause (space)");
+                        if ui.button("▶ Advance (n)").clicked() {
+                            advance_simulation.write(AdvanceSimulation);
+                        }
+                    });
+                    ui.add(
+                        egui::Slider::new(&mut settings.sps_limit, 0.25..=32_768.0)
+                            .text("Limit step rate")
+                            .update_while_editing(false)
+                            .logarithmic(true)
+                            .suffix(" Hz"),
+                    );
+                });
 
-            ui.horizontal(|ui| {
-                ui.toggle_value(&mut ui_state.pause, "⏸ Pause (space)");
-                if ui.button("▶ Advance (n)").clicked()
-                {
-                advance_simulation.write(AdvanceSimulation);
-                }
-            });
-            ui.add(egui::Slider::new(&mut settings.sps_limit, 0.25..=32_768.0)
-                .text("Limit step rate")
-                .update_while_editing(false)
-                .logarithmic(true)
-                .suffix(" Hz"));
-
-            });
-
-                ui.collapsing("Camera controls", |ui| {
-    
+            ui.collapsing("Camera controls", |ui| {
                 match settings.camera {
                     InitialCamera::Orthographic2d(_) => {
                         ui.label("Click and drag to move the camera.");
@@ -793,79 +783,79 @@ where
                     }
                 }
 
-                ui.add(egui::Slider::new(&mut settings.camera_sensitivity, 0.1..= 1.0)
-                    .text("Camera sensitivity")
-                    .update_while_editing(false));
+                ui.add(
+                    egui::Slider::new(&mut settings.camera_sensitivity, 0.1..=1.0)
+                        .text("Camera sensitivity")
+                        .update_while_editing(false),
+                );
 
-                ui.add(egui::Slider::new(&mut settings.zoom_range.end, 2.0..= 100.0)
-                    .text("Maximum zoom")
-                    .update_while_editing(false));
+                ui.add(
+                    egui::Slider::new(&mut settings.zoom_range.end, 2.0..=100.0)
+                        .text("Maximum zoom")
+                        .update_while_editing(false),
+                );
 
                 ui.horizontal(|ui| {
-                if ui.button("↺ Reset (=)").clicked()
-                {
-                    reset_camera.write(ResetCamera);
-                }
+                    if ui.button("↺ Reset (=)").clicked() {
+                        reset_camera.write(ResetCamera);
+                    }
 
-                #[cfg(not(target_arch = "wasm32"))]
-                if ui.button("📷 Screenshot (F12)")
-                .on_hover_text("Write screenshot.png to the current working directory")
-                .clicked()
-                {
-                    commands
-                        .spawn(Screenshot::primary_window())
-                        .observe(save_to_disk("screenshot.png"));
-                }
+                    #[cfg(not(target_arch = "wasm32"))]
+                    if ui
+                        .button("📷 Screenshot (F12)")
+                        .on_hover_text("Write screenshot.png to the current working directory")
+                        .clicked()
+                    {
+                        commands
+                            .spawn(Screenshot::primary_window())
+                            .observe(save_to_disk("screenshot.png"));
+                    }
                 });
-                });
-                
-                ui.collapsing("Advanced settings", |ui| {
-                    ui.checkbox(&mut ui_state.show_debug, "Show debug overlay (F5)");
+            });
 
-                    ui.add(egui::Slider::new(&mut settings.frame_budget_fraction, 0.1..=0.9)
+            ui.collapsing("Advanced settings", |ui| {
+                ui.checkbox(&mut ui_state.show_debug, "Show debug overlay (F5)");
+
+                ui.add(
+                    egui::Slider::new(&mut settings.frame_budget_fraction, 0.1..=0.9)
                         .text("Simulation fraction")
-                        .update_while_editing(false))
-                        .on_hover_text("Decrease this when FPS is limited by rendering");
-                });
+                        .update_while_editing(false),
+                )
+                .on_hover_text("Decrease this when FPS is limited by rendering");
+            });
 
-                #[cfg(not(target_arch = "wasm32"))]
-                if ui.button("⊗ Quit (q)").clicked()
-                {
-                    exit.write(AppExit::Success);
-                }
+            #[cfg(not(target_arch = "wasm32"))]
+            if ui.button("⊗ Quit (q)").clicked() {
+                exit.write(AppExit::Success);
+            }
         });
 
         {
             let context = contexts.ctx_mut()?;
             if !context.wants_keyboard_input() {
-            if context.input_mut(|i| i.consume_shortcut(&advance_shortcut))
-                {
-                advance_simulation.write(AdvanceSimulation);
+                if context.input_mut(|i| i.consume_shortcut(&advance_shortcut)) {
+                    advance_simulation.write(AdvanceSimulation);
                 }
-            if context.input_mut(|i| i.consume_shortcut(&menu_shortcut))
-                {
-                menu_state.0 = !menu_state.0;
+                if context.input_mut(|i| i.consume_shortcut(&menu_shortcut)) {
+                    menu_state.0 = !menu_state.0;
                 }
-            if context.input_mut(|i| i.consume_shortcut(&pause_shortcut)) {
-                ui_state.pause = !ui_state.pause;
+                if context.input_mut(|i| i.consume_shortcut(&pause_shortcut)) {
+                    ui_state.pause = !ui_state.pause;
                 }
-            if context.input_mut(|i| i.consume_shortcut(&show_debug_shortcut)) {
-                ui_state.show_debug = !ui_state.show_debug;
+                if context.input_mut(|i| i.consume_shortcut(&show_debug_shortcut)) {
+                    ui_state.show_debug = !ui_state.show_debug;
                 }
-            if context.input_mut(|i| i.consume_shortcut(&reset_camera_shortcut))
-                {
-                reset_camera.write(ResetCamera);
+                if context.input_mut(|i| i.consume_shortcut(&reset_camera_shortcut)) {
+                    reset_camera.write(ResetCamera);
                 }
 
-            #[cfg(not(target_arch = "wasm32"))]
-            if context.input_mut(|i| i.consume_shortcut(&quit_shortcut))
-                {
-                exit.write(AppExit::Success);
+                #[cfg(not(target_arch = "wasm32"))]
+                if context.input_mut(|i| i.consume_shortcut(&quit_shortcut)) {
+                    exit.write(AppExit::Success);
                 }
-            #[cfg(not(target_arch = "wasm32"))]
-            if context.input_mut(|i| i.consume_shortcut(&screenshot_shortcut))
-                {
-                commands
+                #[cfg(not(target_arch = "wasm32"))]
+                if context.input_mut(|i| i.consume_shortcut(&screenshot_shortcut)) {
+                    commands
                         .spawn(Screenshot::primary_window())
                         .observe(save_to_disk("screenshot.png"));
                 }
@@ -878,11 +868,10 @@ where
         if **debug_text != Visibility::Hidden && !ui_state.show_debug {
             debug_text.toggle_inherited_hidden();
         }
-    
-    Ok(())
+
+        Ok(())
     }
 }
-
 
 /// Construct the default plugins.
 ///
