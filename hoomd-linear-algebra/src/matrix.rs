@@ -163,26 +163,13 @@ impl<const N: usize, const M: usize, const K: usize> MatMul<Matrix<M, K>> for Ma
         result
     }
 }
-// impl<const N: usize> MatMul<Cartesian<M, K>> for Matrix<N, M> {
-//     type Output = Matrix<N, K>;
-//     #[inline]
-//     fn matmul(&self, rhs: &Matrix<M, K>) -> Self::Output {
-//         let mut result = Self::Output::zeros();
-//         for n in 0..N {
-//             for k in 0..K {
-//                 for m in 0..M {
-//                     result.rows[n][k] += self.rows[n][m] * rhs.rows[m][k];
-//                 }
-//             }
-//         }
-
-//         result
-//     }
-// }
 
 impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> {
     type Output = Matrix<M, M>;
-    /// Scale each column of a [`Matrix`] by the corresponding element in a [`DiagonalMatrix`].
+    /// Multiply a matrix by a diagonal matrix RHS.
+    ///
+    /// This is equivalent to scaling each column of a [`Matrix`] by the corresponding
+    /// element in a [`DiagonalMatrix`].
     ///
     /// # Example
     /// ```
@@ -618,29 +605,38 @@ impl Invertible for Matrix<2, 2> {
     }
 }
 
-// impl<const N: usize, const M: usize> fmt::Display for Matrix<N, M> {
-//     #[inline]
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         write!(
-//             f,
-//             "[{}]",
-//             self.rows
-//                 .map(|row| format!("[{}]", row.map(f64::to_string)))
-//                 .into_iter()
-//                 .collect::<Vec<String>>()
-//                 .join("\n ")
-//         )
-//     }
-// }
-
+impl<const N: usize, const M: usize> fmt::Display for Matrix<N, M> {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(&format!(
+            "[{}]",
+            self.iter()
+                .map(|row| {
+                    format!(
+                        "[{}]",
+                        row.iter()
+                            .map(ToString::to_string)
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join(",\n ")
+        ))
+    }
+}
 impl Matrix<2, 2> {
-    /// Decompose a [`Matrix22`] into a rotation `U`, a scaling`Σ`, and a second rotation`Vt` such that `A=UΣVt`.
+    /// Decompose a [`Matrix22`] into a rotation, a scaling, and a second rotation.
     ///
-    /// This implementation is based on the math in 10.1109/38.486688, and ensures good
-    /// (but not optimal) numerical stability. For certain pathological inputs,
-    /// preconditioning the matrix could provide a benefit in numerical stability.
+    /// ```math
+    /// A = U Σ V^\top;
+    /// ```
+    /// This implementation is based on the math in doi:10.1109/38.486688, and
+    /// ensures good (but not optimal) numerical stability. For certain
+    /// pathological inputs, preconditioning the matrix could provide a benefit
+    /// in numerical stability.
     ///
-    /// We define all singular values to be positive.
+    /// `svd` sets all singular values to be positive.
     #[must_use]
     #[inline]
     pub fn svd(&self) -> (Self, DiagonalMatrix<2>, Self) {
@@ -873,7 +869,9 @@ mod tests {
         case::shear([[1.0, 2.0], [0.0, 1.0]]),
         case::nilpotent([[0.0, 1.0], [0.0, 0.0]]),
         case::scaling([[2.0, 0.0], [0.0, 3.0]]),
-        /* None of these examples work using the fast algorithm.*/
+        // The fast algorithm does not compute the correct result for these degenerate
+        // cases. test_svd_2x2_nalgebra verifies we reproduce the result expected for
+        // this algorithm.
         // case::reflect([[0.0, -1.0], [1.0, 0.0]]),
         // case::negative_identity((Matrix22::identity()*-1.0).rows),
         // case::anti_diagonal([[0.0, 1.0], [1.0, 0.0]]),
