@@ -52,8 +52,8 @@ pub struct SpatialHistogram<const N: usize, A> {
     pub n_bins: [usize; N],
 }
 
-/// TODO: documentation
-pub struct NormalizedHistogram {
+/// A one-dimensional histogram storing data of type `f64`. 
+pub struct FloatHistogram {
     /// a vector containing the bin edges of the histogram
     pub bin_edges: Array<f64, Dim<[usize; 1]>>,
     /// an array containing the upper and lower bounds of the histogram
@@ -64,10 +64,10 @@ pub struct NormalizedHistogram {
     pub n_bins: usize,
 }
 
-impl NormalizedHistogram {
+impl FloatHistogram {
     /// normalize the 1D histogram
     #[inline]
-    fn normalize(histogram: &SpatialHistogram<1, f64>) -> NormalizedHistogram {
+    fn normalize(histogram: &SpatialHistogram<1, f64>) -> FloatHistogram {
         let sum = histogram
             .bin_counts
             .iter()
@@ -80,7 +80,7 @@ impl NormalizedHistogram {
         let n_bins = histogram.n_bins[0];
         let bounds = histogram.bounds[0];
         let bin_edges: Array<f64, Dim<[usize; 1]>> = histogram.bin_edges.row(0).to_owned();
-        NormalizedHistogram {
+        FloatHistogram {
             bin_edges,
             bounds,
             bin_counts: Array::from_vec(normed_counts),
@@ -121,9 +121,9 @@ pub trait CorrelationFunction<B, S, C, M> {
         r_min: f64,
         r_max: f64,
         nbins: usize,
-    ) -> Result<NormalizedHistogram, Error> {
+    ) -> Result<FloatHistogram, Error> {
         let rdf = Self::rdf(microstate, r_min, r_max, nbins)?;
-        Ok(NormalizedHistogram::normalize(&rdf))
+        Ok(FloatHistogram::normalize(&rdf))
     }
 }
 
@@ -655,7 +655,7 @@ mod tests {
         assert_eq!(ans, rdf_hist.bin_counts);
         assert_eq!(rdf_hist.bin_edges.slice(s![0, ..]), array![0.0, 1.0, 2.0]);
 
-        let rdf_hist_normalized = NormalizedHistogram::normalize(&rdf_hist);
+        let rdf_hist_normalized = FloatHistogram::normalize(&rdf_hist);
         let ans_normed = array![2.0 / 3.0, 1.0 / 3.0];
         assert_eq!(ans_normed, rdf_hist_normalized.bin_counts);
         Ok(())
@@ -683,7 +683,7 @@ mod tests {
         assert_eq!(ans, rdf_hist.bin_counts);
         assert_eq!(rdf_hist.bin_edges.slice(s![0, ..]), array![0.0, 0.5, 1.0]);
 
-        let rdf_hist_normalized = NormalizedHistogram::normalize(&rdf_hist);
+        let rdf_hist_normalized = FloatHistogram::normalize(&rdf_hist);
         let ans_normed = array![1.0 / 3.0, 2.0 / 3.0];
         assert_eq!(ans_normed, rdf_hist_normalized.bin_counts);
         Ok(())
@@ -724,7 +724,7 @@ mod tests {
             array![0.0, 0.5, 1.0, 1.5, 2.0]
         );
 
-        let rdf_hist_normalized = NormalizedHistogram::normalize(&rdf_hist);
+        let rdf_hist_normalized = FloatHistogram::normalize(&rdf_hist);
         let ans_normed = array![0.0, 5.0 / 6.0, 1.0 / 6.0, 0.0];
         assert_eq!(ans_normed, rdf_hist_normalized.bin_counts);
         Ok(())
@@ -751,7 +751,7 @@ mod tests {
         assert_eq!(ans, rdf_hist.bin_counts);
         assert_eq!(rdf_hist.bin_edges.slice(s![0, ..]), array![0.0, 0.5, 1.0]);
 
-        let rdf_hist_normalized = NormalizedHistogram::normalize(&rdf_hist);
+        let rdf_hist_normalized = FloatHistogram::normalize(&rdf_hist);
         let ans_normed = array![2.0 / 3.0, 1.0 / 3.0];
         assert_eq!(ans_normed, rdf_hist_normalized.bin_counts);
         Ok(())
