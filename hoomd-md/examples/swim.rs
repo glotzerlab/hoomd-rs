@@ -3,7 +3,7 @@
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
     CutoffPair,
-    pairwise::{LennardJones},
+    pairwise::{LennardJones, Isotropic},
 };
 use hoomd_md::{thermostat::NoThermostat, ConstantVolume, TranslationalMotion};
 use hoomd_microstate::{
@@ -34,7 +34,7 @@ struct Swim {
     
     thermostat: NoThermostat,
 
-    force: CutoffPair<LennardJones<12, 6>>,
+    force: CutoffPair<Isotropic<LennardJones<12, 6>>>,
 
     integrator: ConstantVolume,
 }
@@ -89,18 +89,18 @@ impl Swim {
      
         // Model interactions (in this case, a pairwise Lennard-Jones)
         let force = CutoffPair {
-            r_cut: 3.0,
-            evaluator: LennardJones::<12,6> {
-                epsilon: 0.0001,
-                sigma: 2.0
-            }
+            r_cut: 6.0,
+            evaluator: Isotropic(LennardJones::<12,6> {
+                epsilon: 0.01,
+                sigma: 1.0
+            })
         };
     
         // Create an NVE macrostate
         let macrostate = Isoenergy::default();
 
         // Create a constant-volume integrator
-        let dt = 0.1;
+        let dt = 0.01;
         let integrator = ConstantVolume::new(dt);
 
         // Constant V integration requires a thermostat, even if it does nothing
@@ -218,8 +218,8 @@ fn move_swimmer(
     kb_input: Res<ButtonInput<KeyCode>>,
 ) {
     // Configure the movement speed
-    let dp_x = 0.001;
-    let dp_y = 0.001;
+    let dp_x = 0.005;
+    let dp_y = 0.005;
 
     // Clone the swimmer
     let swimmer_index = simulation.microstate.bodies().len() - 1;
