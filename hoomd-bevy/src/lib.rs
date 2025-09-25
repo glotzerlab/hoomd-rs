@@ -147,16 +147,10 @@ pub struct UiState {
 
 /// State of the menu
 ///
-/// Menus are shown by default, then hidden after a time. Callers can
-/// monitor this resource to show/hide all GUI windows (if desired).
-#[derive(Resource)]
+/// Menus are hidden by default. Callers can monitor this resource to show/hide
+/// all GUI windows (if desired).
+#[derive(Default, Resource)]
 pub struct MenuState(bool);
-
-impl Default for MenuState {
-    fn default() -> Self {
-        Self(true)
-    }
-}
 
 /// Reset the camera to the default.
 #[derive(Event)]
@@ -341,7 +335,7 @@ where
     }
 
     /// Create the full screen UI text overlay node.
-    fn setup_overlay(mut commands: Commands, mut ui_scale: ResMut<UiScale>,settings: Res<Settings>, ) {
+    fn setup_overlay(mut commands: Commands, mut ui_scale: ResMut<UiScale>) {
         commands.spawn((
             Node {
                 top: Val::Px(0.0),
@@ -840,6 +834,9 @@ where
                         .update_while_editing(false),
                 )
                 .on_hover_text("Decrease this when FPS is limited by rendering");
+
+                ui.label("Pres Cmd/Ctrl-+/- to zoom the UI in/out.");
+                ui.label("Cmd/Ctrl-0 sets the default zoom.")
             });
 
             #[cfg(not(target_arch = "wasm32"))]

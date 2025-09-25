@@ -6,8 +6,8 @@ on the display to focus it. Click on the rest of the page to cancel that focus.
 While focused, you can interact with the simulation. All the examples have a few
 common controls. For example, you can press `<space>` to pause the simulation
 and then the `n` to advance it one step at a time. Press `m` to show/hide the
-GUI. Use the GUI panel to control the simulation speed, camera sensitivity, and
-other options. The GUI also shows the keyboard shortcuts on many controls.
+options menu. Use the GUI to control the simulation speed, camera sensitivity,
+and other options. The GUI also shows the keyboard shortcuts on many controls.
 
 Some examples provide a relatively static view while others give you more
 opportunity to interact with the simulation. See the on-screen help messages of
