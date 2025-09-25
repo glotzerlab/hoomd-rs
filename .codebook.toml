@@ -2,6 +2,7 @@ words = [
     "binaryen",
     "bindgen",
     "dyn",
+    "egui",
     "frenkel",
     "gsd",
     "hoomd",

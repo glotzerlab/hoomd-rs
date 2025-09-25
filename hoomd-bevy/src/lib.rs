@@ -76,7 +76,8 @@ use bevy_diagnostic::{
     RegisterDiagnostic,
 };
 use bevy_egui::{
-    EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui,
+    EguiContexts, EguiContextSettings, EguiPlugin, EguiPrimaryContextPass,
+    egui::{self, gui_zoom::kb_shortcuts::{ZOOM_IN, ZOOM_IN_SECONDARY, ZOOM_OUT, ZOOM_RESET}},
     input::{egui_wants_any_keyboard_input, egui_wants_any_pointer_input},
 };
 #[cfg(not(target_arch = "wasm32"))]
@@ -340,7 +341,7 @@ where
     }
 
     /// Create the full screen UI text overlay node.
-    fn setup_overlay(mut commands: Commands, mut ui_scale: ResMut<UiScale>) {
+    fn setup_overlay(mut commands: Commands, mut ui_scale: ResMut<UiScale>,settings: Res<Settings>, ) {
         commands.spawn((
             Node {
                 top: Val::Px(0.0),
@@ -355,12 +356,9 @@ where
             OverlayRoot,
         ));
 
-        ui_scale.0 = if cfg!(feature = "doc-example") {
-            0.3
-        } else {
-            0.6
-        };
-    }
+        ui_scale.0 = 0.6;
+        }
+    
 
     /// Add debug text nodes.
     fn setup_debug_text(mut commands: Commands, overlay_root: Single<Entity, With<OverlayRoot>>) {
@@ -718,14 +716,32 @@ where
     }
 
     /// GUI and keyboard controls
+    fn configure_ui(
+        mut contexts: EguiContexts,
+    ) -> Result {
+        let context = contexts.ctx_mut()?;
+        context.memory_mut(|m| {
+            m.options.theme_preference = egui::ThemePreference::Dark;
+
+            // bevy_egui overrides the egui built-in zoom. Disable it to avoid conflicts.
+            m.options.zoom_with_keyboard = false;
+        });
+
+        Ok(())
+    }
+
+    /// GUI and keyboard controls
     fn ui_system(
+        #[cfg(not(target_arch = "wasm32"))]
         mut commands: Commands,
         mut contexts: EguiContexts,
+        mut context_settings: Single<&mut EguiContextSettings>,
         mut ui_state: ResMut<UiState>,
         mut menu_state: ResMut<MenuState>,
         mut settings: ResMut<Settings>,
         window: Single<&Window, With<PrimaryWindow>>,
         mut debug_text: Single<&mut Visibility, (With<DebugText>, Without<OverlayRoot>)>,
+        #[cfg(not(target_arch = "wasm32"))]
         mut exit: EventWriter<AppExit>,
         mut reset_camera: EventWriter<ResetCamera>,
         mut advance_simulation: EventWriter<AdvanceSimulation>,
@@ -733,16 +749,18 @@ where
         let advance_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::N);
         let menu_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::M);
         let pause_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Space);
+        #[cfg(not(target_arch = "wasm32"))]
         let quit_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Q);
         let reset_camera_shortcut =
             egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Equals);
         let show_debug_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::F5);
+        #[cfg(not(target_arch = "wasm32"))]
         let screenshot_shortcut =
             egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::F12);
 
         let default_width = 280.0;
 
-        let window = egui::Window::new("🔧 Menu")
+        let window = egui::Window::new("⛭ Options")
             .open(&mut menu_state.0)
             .resizable([true, false])
             .pivot(egui::Align2::LEFT_BOTTOM)
@@ -859,6 +877,19 @@ where
                         .spawn(Screenshot::primary_window())
                         .observe(save_to_disk("screenshot.png"));
                 }
+
+                if context.input_mut(|i| i.consume_shortcut(&ZOOM_IN)) {
+                    context_settings.scale_factor *= 1.125;
+                }
+                if context.input_mut(|i| i.consume_shortcut(&ZOOM_IN_SECONDARY)) {
+                    context_settings.scale_factor *= 1.125;
+                }
+                if context.input_mut(|i| i.consume_shortcut(&ZOOM_OUT)) {
+                    context_settings.scale_factor /= 1.125;
+                }
+                if context.input_mut(|i| i.consume_shortcut(&ZOOM_RESET)) {
+                    context_settings.scale_factor = 1.0;
+                }
             }
         }
 
@@ -869,6 +900,9 @@ where
             debug_text.toggle_inherited_hidden();
         }
 
+        // Ideally this would be called in a Startup schedule, but the egui context
+        // doesn't exist at that point.
+        Self::configure_ui(contexts)?;
         Ok(())
     }
 }
