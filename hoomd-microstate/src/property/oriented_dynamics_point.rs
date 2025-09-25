@@ -224,10 +224,10 @@ impl OrientedDynamicsPoint<Cartesian<3>, Quaternion>
     }
 }
 
-impl OrientedDynamicsPoint<f64, Angle> 
+impl OrientedDynamicsPoint<f64, f64> 
 {
     fn angular_velocity(&mut self) -> f64 {
-        self.angular_momentum.theta / self.moment_of_inertia
+        self.angular_momentum / self.moment_of_inertia
     }
 }
 
