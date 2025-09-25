@@ -229,7 +229,7 @@ pub struct CameraControl2d {
 
 /// The overlay UI root node.
 #[derive(Component)]
-pub struct OverlayRoot;
+struct OverlayRoot;
 
 /// Mark debug text.
 #[derive(Component)]
