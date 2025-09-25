@@ -10,14 +10,8 @@ repository.workspace = true
 rust-version.workspace = true
 version.workspace = true
 
-# [dependencies]
-# hoomd-vector.workspace = true
-
 [lints]
 workspace = true
-
-[features]
-default = []
 
 [dev-dependencies]
 faer = "0.22.6"
