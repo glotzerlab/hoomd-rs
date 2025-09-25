@@ -1,7 +1,10 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use std::ops::{Add, Index, IndexMut, Mul, Neg, Sub};
+use std::{
+    fmt,
+    ops::{Add, Index, IndexMut, Mul, Neg, Sub},
+};
 
 use crate::{Diagonal, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
 // use hoomd_vector::{Cartesian, RotationMatrix};
