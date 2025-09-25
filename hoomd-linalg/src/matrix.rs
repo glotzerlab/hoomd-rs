@@ -271,7 +271,6 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     #[inline]
     pub fn fold_elementwise<B, F>(self, init: B, mut f: F) -> B
     where
-        Self: Sized,
         F: FnMut(B, f64) -> B,
     {
         let mut accum = init;
@@ -343,6 +342,7 @@ impl<const N: usize> Matrix<N, N> {
         let col_indices = std::array::from_fn(|i| i);
         det_recursive_noslice(self, 0, &col_indices, N)
     }
+
     /// Extract the diagonal elements from a square matrix.
     ///
     /// This method returns a `DiagonalMatrix<N>` containing the diagonal elements
@@ -588,15 +588,69 @@ impl Matrix<3, 3> {
     #[must_use]
     #[inline]
     pub fn quaternion_decomposition(&self) -> (f64, [f64; 4]) {
-        // let [[sxx, sxy, sxz], [syx, syy, syz], [szx, szy, szz]] = self.rows;
+        // Coefficients of the characteristic polynomial, in ascending order of degree
+        let mut coeffs = [0.0; 5];
 
-        // let m_sq = self.map_elementwise(|x| x * x);
-        // let syz_szy_m_syy_szz_2 = 2.0 * (syz * szy - syy * szz);
-        // let syysq_p_szzsq_m_sxxsq_syzsq_p_szy_sq = syy_sq + szz_sq - sxx_sq + syz_sq + szy_sq;
+        // Although this implementation of QCP does not guarantee the minimal 66 flop
+        // solution, it makes use of reasonably transparent abstractions that improve
+        // readability. The compiler is likely to infer the correct solution regardless.
+        let [[sxx, sxy, sxz], [syx, syy, syz], [szx, szy, szz]] = self.rows;
 
-        // let sum_m_squared =
+        let m_sq = self.map_elementwise(|x| x * x);
+
+        coeffs[4] = 1.0;
+        coeffs[3] = 0.0; // -trace(K)
+
+        // -2 * trace(M.T M) = -2 * sum_ij(M_ij*M_ij)
+        coeffs[2] = -2.0 * m_sq.fold_elementwise(0.0, |acc, x| acc + x);
+
+        // Products of pairs of on-diagonal components
+        let (sxxyy, sxxzz, syyzz) = (sxx * syy, sxx * szz, syy * szz);
+
+        // Products of symmetric pairs of off-diagonal components
+        let (syzzy, szxxz, sxyyx) = (syz * szy, szx * sxz, sxy * syx);
+
+        // -8 * det(M)
+        coeffs[1] = 8.0 * (sxx * syzzy + syy * szxxz + szz * sxyyx);
+
+        let sxxyy_m_sxyyx = sxxyy - sxyyx;
+        let sxx_m_syy = sxx - syy;
+        let sxx_m_syy_m_szz = sxx_m_syy - szz;
+        let sxx_m_syy_p_szz = sxx_m_syy + szz;
+        let syyzz_m_syzzy = syyzz - syzzy;
+
+        let sxy_m_syx = sxy - syx;
+        let syz_p_szy = syz + szy;
+        let syz_m_szy = syz - szy;
+
+        let [
+            [sxx_sq, sxy_sq, sxz_sq],
+            [syx_sq, syy_sq, syz_sq],
+            [szx_sq, szy_sq, szz_sq],
+        ] = m_sq.rows;
+
+        // Assemble the coefficients for C0 = det(K) = D+E+F+G+H+I
+        let d = (sxy_sq + sxz_sq - syx_sq - szx_sq).powi(2);
+        let e_partial = -sxx_sq + syy_sq + szz_sq + syz_sq + szy_sq;
+        let e = (e_partial - 2.0 * syyzz_m_syzzy) * (e_partial + 2.0 * syyzz_m_syzzy);
+        let f_part_l = (-(sxz + szx) * syz_m_szy) + (sxy_m_syx * sxx_m_syy_m_szz);
+        let f_part_r = (-(sxz - szx) * syz_p_szy) + (sxy_m_syx * sxx_m_syy_p_szz);
+        let f = f_part_l * f_part_r;
 
         (0.0, [0.0; 4])
+    }
+}
+
+impl Matrix<4, 4> {
+    /// Compute the determinant of a 4x4 symmetric matrix
+    #[expect(clippy::many_single_char_names, reason = "clarity")]
+    pub(crate) fn det44_symmetric(&self) -> f64 {
+        let [[a, b, c, d], [_, f, g, h], [_, _, k, l], [_, _, _, p]] = self.rows;
+
+        a * (f * (k * p - l * l) - g * (g * p - l * h) + h * (g * l - k * h))
+            - b * (b * (k * p - l * l) - g * (c * p - l * d) + h * (c * l - k * d))
+            + c * (b * (g * p - l * h) - f * (c * p - l * d) + h * (c * h - g * d))
+            - d * (b * (g * l - k * h) - f * (c * l - k * d) + g * (c * h - g * d))
     }
 }
 
@@ -674,6 +728,31 @@ mod tests {
         let faer_matrix = fill_faer(rows);
 
         let custom_det = matrix.det();
+        let faer_det = faer_matrix.determinant();
+
+        assert_relative_eq!(custom_det, faer_det, max_relative = 1e-14);
+    }
+    #[rstest(
+        rows,
+        case(Matrix::<4, 4>::identity().rows),
+        case([
+            [1.0, 2.0, 3.0, 4.0],
+            [2.0, 5.0, 6.0, 7.0],
+            [3.0, 6.0, 8.0, 9.0],
+            [4.0, 7.0, 9.0, 10.0]
+        ]),
+        case([
+            [-10.0, 4.0, 3.0, 4.0],
+            [4.0, 5.0, 6.0, 7.0],
+            [3.0, 6.0, 8.0, 9.0],
+            [4.0, 7.0, 9.0, 10.0]
+        ])
+    )]
+    fn test_det44symmetric(rows: [[f64; 4]; 4]) {
+        let matrix = Matrix { rows };
+        let faer_matrix = fill_faer(rows);
+
+        let custom_det = matrix.det44_symmetric();
         let faer_det = faer_matrix.determinant();
 
         assert_relative_eq!(custom_det, faer_det, max_relative = 1e-14);

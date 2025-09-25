@@ -74,6 +74,26 @@ fn det_mat3_fast(bencher: Bencher) {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
+fn det_mat4_fast(bencher: Bencher) {
+    #[expect(clippy::many_single_char_names, reason = "clarity")]
+    fn det44(mat: &Matrix<4, 4>) -> f64 {
+        let [[a, b, c, d], [e, f, g, h], [i, j, k, l], [m, n, o, p]] = mat.rows;
+
+        a * (f * (k * p - l * o) - g * (j * p - l * n) + h * (j * o - k * n))
+            - b * (e * (k * p - l * o) - g * (i * p - l * m) + h * (i * o - k * m))
+            + c * (e * (j * p - l * n) - f * (i * p - l * m) + h * (i * n - j * m))
+            - d * (e * (j * o - k * n) - f * (i * o - k * m) + g * (i * n - j * m))
+    }
+    let mut rng = StdRng::seed_from_u64(42);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| create_random_matrix::<4, 4, _>(&mut rng))
+        .bench_local_values(|a| black_box(det44(&a)));
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[divan::bench]
 fn inverse_mat2(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(42);
 
