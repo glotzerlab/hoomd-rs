@@ -7,7 +7,7 @@ use super::{Position, Mass, Momentum, NetForce, MomentOfInertia, AngularMomentum
 use super::point::Point;
 use super::oriented_point::OrientedPoint;
 use crate::Transform;
-use hoomd_vector::{Rotate, Rotation, Vector};
+use hoomd_vector::{Rotate, Rotation, Vector, Cartesian, Quaternion, Angle};
 
 /// The position, orientation, mass, velocity, acceleration, moment of inertia,
 /// and angular velocity of an extended body, such as  is useful for Molecular
@@ -211,5 +211,24 @@ impl<V, R> NetTorque for OrientedDynamicsPoint<V, R> {
     }
 }
 
+impl OrientedDynamicsPoint<Cartesian<3>, Quaternion> 
+{
+    fn angular_velocity(&mut self) -> Cartesian<3> {
+        // transform angmom to vector form (angmom_vec.scalar should be 0.0)
+        let angmom_vec = (self.orientation.conjugate() * self.angular_momentum) * 0.5;
+        Cartesian::from([
+            angmom_vec.vector[0] / self.moment_of_inertia[0], 
+            angmom_vec.vector[1] / self.moment_of_inertia[1], 
+            angmom_vec.vector[2] / self.moment_of_inertia[2]
+        ])
+    }
+}
+
+impl OrientedDynamicsPoint<f64, Angle> 
+{
+    fn angular_velocity(&mut self) -> f64 {
+        self.angular_momentum.theta / self.moment_of_inertia
+    }
+}
 
 // TODO: tests.
