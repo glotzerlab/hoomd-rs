@@ -215,7 +215,25 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         }
     }
 
-    /// Apply a function to an array elementwise, returning a new array with the same shape.
+    /// Apply a function to an [`Matrix`] by rows, returning a new matrix with the same shape.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linalg::{GeneralMatrix, matrix::Matrix22};
+    /// let m = Matrix22::full(3.0);
+    /// assert_eq!(m.map(|v| [v[0] + 2.0, v[1]]), Matrix22 {rows: [[5.0, 3.0], [5.0, 3.0]]});
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn map<F>(self, f: F) -> Self
+    where
+        F: FnMut([f64; M]) -> [f64; M],
+    {
+        Self {
+            rows: self.rows.map(f),
+        }
+    }
+    /// Apply a function to a [`Matrix`] elementwise, returning a new matrix with the same shape.
     ///
     /// # Example
     /// ```
@@ -563,8 +581,8 @@ impl Matrix<2, 2> {
     }
 }
 
-impl Matrix<3, 3> {
-    /// Compute the decomposition of a [`Matrix33`] into a quaternion rotation and a an associated eigenvalue.
+impl<const N: usize> Matrix<N, 3> {
+    /// Compute the quaternion that optimally aligns the points in a matrix $`A`$ to points in $`B`.
     ///
     /// This method is an implementation of the Quaternion Characteristic Polynomial
     /// (QCP) algorithm proposed by [Douglas Theobald et. al.](). It allows for for
@@ -572,31 +590,59 @@ impl Matrix<3, 3> {
     /// superposition and point-set registration.
     ///
     /// # Theory
-    /// The singular value decomposition of a matrix $`M`$ is defined as
-    /// $`M=U Σ V^\top`$, where U and V are rotoreflection matrices and Σ is a diagonal
-    /// matrix consisting of the singular values of $`M`$. If $`M`$ is an inner product
-    /// between two sets of coordinates $`M=A^\topB`$, $`U V^\top`$ is the rotation
-    /// that optimally aligns the two sets of points $`A`$ and $`B`$, and $`\tr(Σ)`$ is
-    /// the root mean-squared deviation between those sets of points.
+    /// Determining the similarity of two sets of coordinates in space is a
+    /// well-studied problem, often referred to as the Orthogonal Procrustes problem or
+    /// Wahba's problem. In molecular simulation, it functions as a robust and
+    /// interpretable order parameter for comparing structures, local environments, and
+    /// protein conformations.
     ///
-    /// This decomposition of $`M`$ into 3D rotation matrices can be reinterpreted as
-    /// a decomposition of a symmetric 4 x 4 matrix $`K`$. Under this construction, the
-    /// largest eigenvalue of $`K`$ is $`\tr(Σ)`$ (the point-set RMSD) and the largest
-    /// eigenvector of $`K`$ is a quaternion equivalent to the rotation $`U V^\top`$.
+    /// Provided two sets of points $`A`$ and $`B`$, we wish to find the isometries
+    /// of the space they lie within that results in the least root mean-squared error
+    /// (RMSE) between the sets, resulting in an "optimal alignment" $`A_{align}`$ and
+    /// $`B_{align}`$. In $`\mathbb{R}^3`$, these isometries are translation and
+    /// rotation: while mirror symmetries
+    /// are valid and could provide better alignment in some cases, solving for such
+    /// solutions can result in unphysical results when applied to chiral molecules or
+    /// structures.
+    ///
+    /// The optimal translation $`t`$ is easily computed from the centers of mass of
+    /// the point sets $`t_{A|B}`$ as $`t=t_{B} - t_{A_{align}}`$. The optimal rotation
+    /// $`R`$ can be calculated from the singular value decomposition of the inner
+    /// product matrix of the two point sets:
+    /// ```math
+    /// M = A^\top B;
+    /// M = U Σ V^\top;
+    ///
+    /// R = U V^\top
+    /// ```
+    ///
+    /// While this works in Cartesian spaces of any dimension, it requires a full SVD
+    /// and can be computationally costly. In $`\mathbb{R}^3`$, there is an alternative
+    /// formulation that makes use of the alternative representation of rotations as
+    /// quaternions. Under this framework, a symmetric 4x4 matrix $`K`$ can be
+    /// constructed from the elements of $`M`$ such that the largest eigenvector of of
+    /// $`K`$ is the quaternion representation of the rotation matrix R.
     /// As one only needs to compute a single eigenvector and eigenvalue, this approach
     /// is much faster than computing a full 3x3 singular value decomposition.
     #[must_use]
     #[inline]
-    pub fn quaternion_decomposition(&self) -> (f64, [f64; 4]) {
+    pub fn align_to_points(&self, other: &Matrix<N, 3>) -> (f64, [f64; 4]) {
+        // TODO: move to order module
+        // TODO: implement for Iterator<Cartesian<3>>
         // Coefficients of the characteristic polynomial, in ascending order of degree
         let mut coeffs = [0.0; 5];
 
-        // Although this implementation of QCP does not guarantee the minimal 66 flop
+        // Center the points
+        //
+
+        let m = self.transpose().matmul(other);
+
+        // Although this implementation of QCP does not guarantee the minimal 66 FLOP
         // solution, it makes use of reasonably transparent abstractions that improve
         // readability. The compiler is likely to infer the correct solution regardless.
-        let [[sxx, sxy, sxz], [syx, syy, syz], [szx, szy, szz]] = self.rows;
+        let [[sxx, sxy, sxz], [syx, syy, syz], [szx, szy, szz]] = m.rows;
 
-        let m_sq = self.map_elementwise(|x| x * x);
+        let m_sq = self.clone().map_elementwise(|x| x * x);
 
         coeffs[4] = 1.0;
         coeffs[3] = 0.0; // -trace(K)
@@ -604,38 +650,50 @@ impl Matrix<3, 3> {
         // -2 * trace(M.T M) = -2 * sum_ij(M_ij*M_ij)
         coeffs[2] = -2.0 * m_sq.fold_elementwise(0.0, |acc, x| acc + x);
 
-        // Products of pairs of on-diagonal components
-        let (sxxyy, sxxzz, syyzz) = (sxx * syy, sxx * szz, syy * szz);
-
         // Products of symmetric pairs of off-diagonal components
         let (syzzy, szxxz, sxyyx) = (syz * szy, szx * sxz, sxy * syx);
 
         // -8 * det(M)
         coeffs[1] = 8.0 * (sxx * syzzy + syy * szxxz + szz * sxyyx);
 
-        let sxxyy_m_sxyyx = sxxyy - sxyyx;
-        let sxx_m_syy = sxx - syy;
-        let sxx_m_syy_m_szz = sxx_m_syy - szz;
-        let sxx_m_syy_p_szz = sxx_m_syy + szz;
-        let syyzz_m_syzzy = syyzz - syzzy;
+        // det(K), where K is initialized as upper triangular rather than symmetric
+        let k = Matrix {
+            rows: [
+                [(sxx + syy + szz), (syz - szy), (szx - sxz), (sxy - syx)],
+                [0.0, (sxx - syy - szz), (sxy + syx), (szx + sxz)],
+                [0.0, 0.0, (-sxx + syy - szz), (syz + szy)],
+                [0.0, 0.0, 0.0, (-sxx - syy + szz)],
+            ],
+        };
 
-        let sxy_m_syx = sxy - syx;
-        let syz_p_szy = syz + szy;
-        let syz_m_szy = syz - szy;
+        coeffs[0] = k.det44_symmetric();
 
-        let [
-            [sxx_sq, sxy_sq, sxz_sq],
-            [syx_sq, syy_sq, syz_sq],
-            [szx_sq, szy_sq, szz_sq],
-        ] = m_sq.rows;
+        // Newton-raphson iteration to find the largest Eigenvalue
+        // let mut largest_eig =
 
-        // Assemble the coefficients for C0 = det(K) = D+E+F+G+H+I
-        let d = (sxy_sq + sxz_sq - syx_sq - szx_sq).powi(2);
-        let e_partial = -sxx_sq + syy_sq + szz_sq + syz_sq + szy_sq;
-        let e = (e_partial - 2.0 * syyzz_m_syzzy) * (e_partial + 2.0 * syyzz_m_syzzy);
-        let f_part_l = (-(sxz + szx) * syz_m_szy) + (sxy_m_syx * sxx_m_syy_m_szz);
-        let f_part_r = (-(sxz - szx) * syz_p_szy) + (sxy_m_syx * sxx_m_syy_p_szz);
-        let f = f_part_l * f_part_r;
+        // /* Newton-Raphson */
+        // mxEigenV = E0;
+        // for (i = 0; i < 50; ++i) {
+        //   oldg = mxEigenV;
+        //   x2 = mxEigenV * mxEigenV;
+        //   b = (x2 + C[2]) * mxEigenV;
+        //   a = b + C[1];
+        //   delta = ((a * mxEigenV + C[0]) / (2.0 * x2 * mxEigenV + b + a));
+        //   mxEigenV -= delta;
+        //   /* printf("\n diff[%3d]: %16g %16g %16g", i, mxEigenV - oldg,
+        //    * evalprec*mxEigenV, mxEigenV); */
+        //   if (fabs(mxEigenV - oldg) < fabs(evalprec * mxEigenV)) break;
+        // }
+
+        // if (i == 50) fprintf(stderr, "\nMore than %d iterations needed!\n", i);
+
+        // /* the fabs() is to guard against extremely small, but *negative* numbers due
+        //  * to floating point error */
+        // rms = sqrt(fabs(2.0 * (E0 - mxEigenV) / len));
+        // (*rmsd) = rms;
+        // /* printf("\n\n %16g %16g %16g \n", rms, E0, 2.0 * (E0 - mxEigenV)/len); */
+        // if (minScore > 0)
+        //   if (rms < minScore) return (-1); // Don't bother with rotation.
 
         (0.0, [0.0; 4])
     }
