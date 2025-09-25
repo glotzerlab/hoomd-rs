@@ -11,7 +11,7 @@
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
-use hoomd_linalg::{Invertible, MatMul, matrix::Matrix};
+use hoomd_linear_algebra::{Invertible, MatMul, matrix::Matrix};
 
 fn main() {
     #[cfg(not(target_arch = "wasm32"))]

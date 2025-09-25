@@ -12,7 +12,7 @@ description = "Performant, general computational geometry methods in Rust."
 
 [dependencies]
 hoomd-vector.workspace = true
-hoomd-linalg.workspace = true
+hoomd-linear-algebra.workspace = true
 hoomd-utility.workspace = true
 rand.workspace = true
 itertools.workspace = true

@@ -14,7 +14,7 @@ use rand::{
 };
 
 use crate::{Cross, Error, InnerProduct, Rotate, Unit, Vector};
-use hoomd_linalg::{Diagonal, GeneralMatrix, MatMul, matrix::Matrix};
+use hoomd_linear_algebra::{Diagonal, GeneralMatrix, MatMul, matrix::Matrix};
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
 ///

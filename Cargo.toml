@@ -6,7 +6,7 @@ members = ["examples",
            "hoomd-geometry",
            "hoomd-gsd",
            "hoomd-interaction",
-           "hoomd-linalg",
+           "hoomd-linear-algebra",
            "hoomd-mc",
            "hoomd-microstate",
            "hoomd-simulation",
@@ -23,7 +23,7 @@ default-members = ["examples",
                    "hoomd-geometry",
                    "hoomd-gsd",
                    "hoomd-interaction",
-                   "hoomd-linalg",
+                   "hoomd-linear-algebra",
                    "hoomd-mc",
                    "hoomd-microstate",
                    "hoomd-simulation",
@@ -47,7 +47,7 @@ hoomd-bevy = { path = "hoomd-bevy" }
 hoomd-geometry = { path = "hoomd-geometry" }
 hoomd-gsd = { path = "hoomd-gsd" }
 hoomd-interaction = { path = "hoomd-interaction" }
-hoomd-linalg = { path = "hoomd-linalg" }
+hoomd-linear-algebra = { path = "hoomd-linear-algebra" }
 hoomd-mc = { path = "hoomd-mc" }
 hoomd-microstate = { path = "hoomd-microstate" }
 hoomd-simulation = { path = "hoomd-simulation" }

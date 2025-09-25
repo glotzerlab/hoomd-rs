@@ -27,7 +27,7 @@ pub trait Invertible {
 ///
 /// # Example
 /// ```
-/// use hoomd_linalg::{
+/// use hoomd_linear_algebra::{
 ///     GeneralMatrix, MatMul, SquareMatrix,
 ///     matrix::{DiagonalMatrix, Matrix22},
 /// };

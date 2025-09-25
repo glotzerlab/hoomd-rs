@@ -5,7 +5,7 @@
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
-use hoomd_linalg::{
+use hoomd_linear_algebra::{
     Diagonal, Invertible, MatMul, QuadraticForm,
     matrix::{DiagonalMatrix, Matrix22},
 };

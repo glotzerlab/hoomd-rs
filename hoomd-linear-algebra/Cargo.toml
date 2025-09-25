@@ -1,5 +1,5 @@
 [package]
-name = "hoomd-linalg"
+name = "hoomd-linear-algebra"
 categories.workspace = true
 description = "Linear algebra library optimized for small matrixes."
 edition.workspace = true
