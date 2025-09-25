@@ -60,10 +60,11 @@ fn ui_system(
     mut contexts: EguiContexts,
     mut parameters_window_state: ResMut<ParametersWindowState>,
 ) -> Result {
-    let window = egui::Window::new("🛠 Parameters")
+    let window = egui::Window::new("")
+        .id(egui::Id::new("Parameters"))
         .resizable([false, false])
         .open(&mut parameters_window_state.0)
-        .title_bar(false);
+        .collapsible(false);
 
     window.show(contexts.ctx_mut()?, |ui| {
         ui.horizontal(|ui| {
