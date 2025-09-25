@@ -832,21 +832,21 @@ where
 
             ui.collapsing("More keyboard shortcuts", |ui| {
                 egui::Grid::new("some_unique_id").show(ui, |ui| {
-                ui.label("m");
-                ui.label("Show/hide options");
-                ui.end_row();
+                    ui.label("m");
+                    ui.label("Show/hide options");
+                    ui.end_row();
 
-                ui.label(ui.ctx().format_shortcut(&ZOOM_IN));
-                ui.label("Zoom UI in");
-                ui.end_row();
+                    ui.label(ui.ctx().format_shortcut(&ZOOM_IN));
+                    ui.label("Zoom UI in");
+                    ui.end_row();
 
-                ui.label(ui.ctx().format_shortcut(&ZOOM_OUT));
-                ui.label("Zoom UI out");
-                ui.end_row();
-                
-                ui.label(ui.ctx().format_shortcut(&ZOOM_RESET));
-                ui.label("Reset UI zoom");
-                ui.end_row();
+                    ui.label(ui.ctx().format_shortcut(&ZOOM_OUT));
+                    ui.label("Zoom UI out");
+                    ui.end_row();
+
+                    ui.label(ui.ctx().format_shortcut(&ZOOM_RESET));
+                    ui.label("Reset UI zoom");
+                    ui.end_row();
                 });
             });
 
