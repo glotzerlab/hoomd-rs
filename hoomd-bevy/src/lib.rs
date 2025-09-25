@@ -403,9 +403,9 @@ where
         ));
 
         ui_scale.0 = if cfg!(feature = "doc-example") {
-            0.5
+            0.3
         } else {
-            1.0
+            0.6
         };
     }
 
@@ -415,8 +415,8 @@ where
             Text::default(),
             Node {
                 position_type: PositionType::Absolute,
-                top: Val::Px(Self::UI_OFFSET),
-                left: Val::Px(Self::UI_OFFSET),
+                bottom: Val::Px(Self::UI_OFFSET),
+                right: Val::Px(Self::UI_OFFSET),
                 ..default()
             },
             Visibility::Hidden,
@@ -497,8 +497,8 @@ F5      : Show/hide debugging information.
         commands.spawn((
             Node {
                 position_type: PositionType::Absolute,
-                bottom: Val::Px(12.0),
-                left: Val::Px(12.0),
+                bottom: Val::Px(Self::UI_OFFSET),
+                right: Val::Px(Self::UI_OFFSET),
                 width: Val::Px(64.0),
                 height: Val::Px(64.0),
                 ..default()
@@ -864,17 +864,22 @@ F5      : Show/hide debugging information.
         let show_debug_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::F5);
         let screenshot_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::F12);
 
+        let default_width = 280.0;
+
         let window = egui::Window::new("🔧 Menu")
             .open(&mut menu_state.0)
-            .resizable([false, false])
-            .pivot(egui::Align2::RIGHT_BOTTOM)
+            .resizable([true, false])
+            .pivot(egui::Align2::LEFT_BOTTOM)
             .default_pos([
-                window.resolution.width() - 10.0,
-                window.resolution.height() - 10.0,
+                Self::UI_OFFSET,
+                window.resolution.height() - Self::UI_OFFSET,
             ])
-            .collapsible(false);
+            .collapsible(false)
+            .default_width(default_width);
 
         window.show(contexts.ctx_mut()?, |ui| {
+            ui.allocate_space(ui.available_width() * egui::vec2(1.0, 0.0));
+            ui.label("Press m to show/hide menus");
             // ui.text_edit_singleline(&mut ui_state.test);
 
             // ui.horizontal(|ui| {
@@ -882,11 +887,13 @@ F5      : Show/hide debugging information.
             //     ui.label("short");
             //     });
 
-            ui.collapsing("Simulation controls", |ui| {
+            egui::CollapsingHeader::new("Simulation controls")
+                .default_open(true)
+                .show(ui, |ui| {
 
             ui.horizontal(|ui| {
                 ui.toggle_value(&mut ui_state.pause, "⏸ Pause (space)");
-                if ui.button("▶ Advance simulation (n)").clicked()
+                if ui.button("▶ Advance (n)").clicked()
                 {
                 advance_simulation.write(AdvanceSimulation);
                 }
@@ -903,9 +910,10 @@ F5      : Show/hide debugging information.
     
                 match settings.camera {
                     InitialCamera::Orthographic2d(_) => {
-                        ui.label("Click and drag to move the camera. Scroll to zoom.")
+                        ui.label("Click and drag to move the camera.");
+                        ui.label("Scroll to zoom.");
                     }
-                };
+                }
 
                 ui.add(egui::Slider::new(&mut settings.camera_sensitivity, 0.1..= 1.0)
                     .text("Camera sensitivity")
@@ -916,13 +924,13 @@ F5      : Show/hide debugging information.
                     .update_while_editing(false));
 
                 ui.horizontal(|ui| {
-                if ui.button("↺ Reset camera (=)").clicked()
+                if ui.button("↺ Reset (=)").clicked()
                 {
                     reset_camera.write(ResetCamera);
                 }
 
                 #[cfg(not(target_arch = "wasm32"))]
-                if ui.button("📷 Take screenshot (F12)")
+                if ui.button("📷 Screenshot (F12)")
                 .on_hover_text("Write screenshot.png to the current working directory")
                 .clicked()
                 {
@@ -942,16 +950,11 @@ F5      : Show/hide debugging information.
                         .on_hover_text("Decrease this when FPS is limited by rendering");
                 });
 
-                ui.horizontal(|ui| {
-
-                ui.label("Press m to show/hide this menu");
-
                 #[cfg(not(target_arch = "wasm32"))]
                 if ui.button("⊗ Quit (q)").clicked()
                 {
                     exit.write(AppExit::Success);
                 }
-                });
         });
 
         {
