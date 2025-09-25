@@ -299,6 +299,25 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     pub fn iter_flat(&self) -> impl Iterator<Item = f64> + '_ {
         self.rows.iter().flat_map(|row| row.iter().copied())
     }
+
+    /// Returns an iterator over every element in the [`Matrix`]
+    /// The iterator yields all items from start to end.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linalg::{SquareMatrix, matrix::Matrix22};
+    /// let x = Matrix22 {
+    ///     rows: [[1.0, 2.0], [3.0, 4.0]],
+    /// };
+    /// let mut iterator = x.iter();
+    /// assert_eq!(iterator.next(), Some([1.0, 2.0]));
+    /// assert_eq!(iterator.next(), Some([3.0, 4.0]));
+    /// assert_eq!(iterator.next(), None);
+    /// ```
+    #[inline]
+    pub fn iter(&self) -> impl Iterator<Item = [f64; M]> + '_ {
+        self.rows.iter().copied()
+    }
     /// Folds every element into an accumulator by applying an operation, returning the final result.
     ///
     /// [`fold_elementwise`] takes two arguments: an initial value, and a closure with two arguments: an ‘accumulator’, and an element. The closure returns the value that the accumulator should have for the next iteration.
@@ -320,6 +339,39 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     {
         let mut accum = init;
         for x in self.iter_flat() {
+            accum = f(accum, x);
+        }
+        accum
+    }
+
+    /// Folds every row into an accumulator by applying an operation, returning the final result.
+    ///
+    /// [`fold`] takes two arguments: an initial value, and a closure with two arguments: an ‘accumulator’, and an element. The closure returns the value that the accumulator should have for the next iteration.
+    ///
+    /// The initial value is the value the accumulator will have on the first call.
+    /// After applying this closure to every element of the flattened iterator, [`fold`] returns the accumulator.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linalg::{GeneralMatrix, matrix::Matrix22};
+    /// let m = Matrix22 {
+    ///     rows: [[1.0, 2.0], [3.0, 4.0]],
+    /// };
+    /// // Average the columns of a matrix
+    /// let n_rows = m.n_rows() as f64;
+    /// assert_eq!(
+    ///     m.fold([0.0; 2], |acc, x| [acc[0] + x[0], acc[1] + x[1]])
+    ///         .map(|x| x / n_rows),
+    ///     [(1.0 + 3.0) / 2.0, (2.0 + 4.0) / 2.0]
+    /// );
+    /// ```
+    #[inline]
+    pub fn fold<B, F>(self, init: B, mut f: F) -> B
+    where
+        F: FnMut(B, [f64; M]) -> B,
+    {
+        let mut accum = init;
+        for x in self.iter() {
             accum = f(accum, x);
         }
         accum
