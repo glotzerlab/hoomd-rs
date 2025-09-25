@@ -806,7 +806,7 @@ impl Matrix<2, 2> {
 impl Matrix<4, 4> {
     /// Compute the determinant of a 4x4 symmetric matrix
     #[expect(clippy::many_single_char_names, reason = "clarity")]
-    #[expect(dead_code, reason = "TODO: will be used elsewhere.")]
+    #[allow(dead_code, reason = "TODO: will be used elsewhere.")]
     pub(crate) fn det44_symmetric(&self) -> f64 {
         let [[a, b, c, d], [_, f, g, h], [_, _, k, l], [_, _, _, p]] = self.rows;
 
