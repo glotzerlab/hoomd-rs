@@ -76,8 +76,11 @@ use bevy_diagnostic::{
     RegisterDiagnostic,
 };
 use bevy_egui::{
-    EguiContexts, EguiContextSettings, EguiPlugin, EguiPrimaryContextPass,
-    egui::{self, gui_zoom::kb_shortcuts::{ZOOM_IN, ZOOM_IN_SECONDARY, ZOOM_OUT, ZOOM_RESET}},
+    EguiContextSettings, EguiContexts, EguiPlugin, EguiPrimaryContextPass,
+    egui::{
+        self,
+        gui_zoom::kb_shortcuts::{ZOOM_IN, ZOOM_IN_SECONDARY, ZOOM_OUT, ZOOM_RESET},
+    },
     input::{egui_wants_any_keyboard_input, egui_wants_any_pointer_input},
 };
 #[cfg(not(target_arch = "wasm32"))]
@@ -356,8 +359,7 @@ where
         ));
 
         ui_scale.0 = 0.6;
-        }
-    
+    }
 
     /// Add debug text nodes.
     fn setup_debug_text(mut commands: Commands, overlay_root: Single<Entity, With<OverlayRoot>>) {
@@ -716,9 +718,7 @@ where
     }
 
     /// GUI and keyboard controls
-    fn configure_ui(
-        mut contexts: EguiContexts,
-    ) -> Result {
+    fn configure_ui(mut contexts: EguiContexts) -> Result {
         let context = contexts.ctx_mut()?;
         context.memory_mut(|m| {
             m.options.theme_preference = egui::ThemePreference::Dark;
@@ -732,8 +732,7 @@ where
 
     /// GUI and keyboard controls
     fn ui_system(
-        #[cfg(not(target_arch = "wasm32"))]
-        mut commands: Commands,
+        #[cfg(not(target_arch = "wasm32"))] mut commands: Commands,
         mut contexts: EguiContexts,
         mut context_settings: Single<&mut EguiContextSettings>,
         mut ui_state: ResMut<UiState>,
@@ -742,14 +741,13 @@ where
         mut settings: ResMut<Settings>,
         window: Single<&Window, With<PrimaryWindow>>,
         mut debug_text: Single<&mut Visibility, (With<DebugText>, Without<OverlayRoot>)>,
-        #[cfg(not(target_arch = "wasm32"))]
-        mut exit: EventWriter<AppExit>,
+        #[cfg(not(target_arch = "wasm32"))] mut exit: EventWriter<AppExit>,
         mut reset_camera: EventWriter<ResetCamera>,
         mut advance_simulation: EventWriter<AdvanceSimulation>,
     ) -> Result {
         let advance_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::N);
-        let options_shortcut= egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::M);
-        let parameters_shortcut= egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::P);
+        let options_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::M);
+        let parameters_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::P);
         let pause_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Space);
         #[cfg(not(target_arch = "wasm32"))]
         let quit_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::Q);
@@ -833,13 +831,27 @@ where
             });
 
             ui.collapsing("More keyboard shortcuts", |ui| {
-                ui.label("m: show/hide the options window");
-                ui.label("p: show/hide the parameters window");
-                ui.label("Cmd/Ctrl-+/-: zoom the UI in/out");
-                ui.label("Cmd/Ctrl-0: set the default zoom")
+                egui::Grid::new("some_unique_id").show(ui, |ui| {
+                ui.label("m");
+                ui.label("Show/hide options");
+                ui.end_row();
+
+                ui.label(ui.ctx().format_shortcut(&ZOOM_IN));
+                ui.label("Zoom UI in");
+                ui.end_row();
+
+                ui.label(ui.ctx().format_shortcut(&ZOOM_OUT));
+                ui.label("Zoom UI out");
+                ui.end_row();
+                
+                ui.label(ui.ctx().format_shortcut(&ZOOM_RESET));
+                ui.label("Reset UI zoom");
+                ui.end_row();
+                });
             });
 
             ui.collapsing("Advanced settings", |ui| {
+                ui.checkbox(&mut parameters_window_state.0, "Show parameters (p)");
                 ui.checkbox(&mut ui_state.show_debug, "Show debug overlay (F5)");
 
                 ui.add(
@@ -848,7 +860,6 @@ where
                         .update_while_editing(false),
                 )
                 .on_hover_text("Decrease this when FPS is limited by rendering");
-
             });
 
             #[cfg(not(target_arch = "wasm32"))]
