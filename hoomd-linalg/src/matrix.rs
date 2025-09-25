@@ -221,7 +221,12 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// ```
     /// use hoomd_linalg::{GeneralMatrix, matrix::Matrix22};
     /// let m = Matrix22::full(3.0);
-    /// assert_eq!(m.map(|v| [v[0] + 2.0, v[1]]), Matrix22 {rows: [[5.0, 3.0], [5.0, 3.0]]});
+    /// assert_eq!(
+    ///     m.map(|v| [v[0] + 2.0, v[1]]),
+    ///     Matrix22 {
+    ///         rows: [[5.0, 3.0], [5.0, 3.0]]
+    ///     }
+    /// );
     /// ```
     #[inline]
     #[must_use]
