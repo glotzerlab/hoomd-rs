@@ -42,5 +42,4 @@ approx.workspace = true
 divan.workspace = true
 paste = "1.0.15"
 rstest.workspace = true
-ratatui = "0.28.0"
 float-cmp = "0.9"
