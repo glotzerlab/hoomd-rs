@@ -14,7 +14,6 @@ use rand::{Rng, SeedableRng, rngs::StdRng};
 use hoomd_linear_algebra::{Invertible, MatMul, matrix::Matrix};
 
 fn main() {
-    #[cfg(not(target_arch = "wasm32"))]
     divan::main();
 }
 
@@ -34,7 +33,6 @@ const SQUARE_DIMENSIONS: &[usize] = &[2, 3, 4, 8, 16, 64];
 /// Dimensions for determinant benchmarks, which are O(n!)
 const DETERMINANT_DIMENSIONS: &[usize] = &[2, 3, 4, 5, 6, 7, 8];
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = SQUARE_DIMENSIONS)]
 fn matmul_matn<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(42);
@@ -45,7 +43,6 @@ fn matmul_matn<const N: usize>(bencher: Bencher) {
         .bench_local_values(|(a, b)| black_box(a.matmul(&b)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = DETERMINANT_DIMENSIONS)]
 fn det_matn<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(42);
@@ -56,7 +53,6 @@ fn det_matn<const N: usize>(bencher: Bencher) {
         .bench_local_values(|a| black_box(a.det()));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn det_mat3_fast(bencher: Bencher) {
     #[expect(clippy::many_single_char_names, reason = "clarity")]
@@ -72,7 +68,6 @@ fn det_mat3_fast(bencher: Bencher) {
         .bench_local_values(|a| black_box(det33(&a)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn det_mat4_fast(bencher: Bencher) {
     #[expect(clippy::many_single_char_names, reason = "clarity")]
@@ -92,7 +87,6 @@ fn det_mat4_fast(bencher: Bencher) {
         .bench_local_values(|a| black_box(det44(&a)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn inverse_mat2(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(42);
@@ -103,7 +97,6 @@ fn inverse_mat2(bencher: Bencher) {
         .bench_local_values(|a| black_box(a.inverse()));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn svd_mat2(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(42);
