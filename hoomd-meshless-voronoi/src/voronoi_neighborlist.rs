@@ -1,16 +1,14 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/** TODO: documentation
-
-nearest neighbors from rtree
-*/
+/// TODO: documentation
+/// Contructs power diagrams using TODO: link algorithm. This algorithm works by lifting spheres in N-dimensional space (stored as `PDSeed<N>`) to points in (N+1)-dimensional space, and then constructing the voronoi diagram. 
+///
 use kd_tree::KdTree;
 use robust::{Coord, Coord3D, orient2d, orient3d};
 use thiserror::Error;
 
-/** Seed weight
- */
+/// A point in a power diagram. `coordinate` stores the coordinates of the sphere center, `weight` stores the squared radius of the sphere, and `index` labels the point.
 pub struct PDSeed<const N: usize> {
     pub coordinate: [f64; N],
     pub weight: f64,
@@ -18,17 +16,21 @@ pub struct PDSeed<const N: usize> {
 }
 
 impl<const N: usize> PDSeed<N> {
+    /// get the coordinate of the sphere center
     pub fn coordinate(&self) -> [f64; N] {
         self.coordinate
     }
+    /// get the squared radius of the sphere
     pub fn weight(&self) -> f64 {
         self.weight
     }
+    /// get the index of the point
     pub fn index(&self) -> usize {
         self.index
     }
 }
 
+/// The "lifted" points which are used to construct the voronoi tesselation.
 #[derive(Clone, Debug)]
 pub struct LiftedSeed<const N: usize> {
     coordinate: [f64; N],
@@ -36,14 +38,17 @@ pub struct LiftedSeed<const N: usize> {
 }
 
 impl<const N: usize> LiftedSeed<N> {
+    /// get the coordinate of the lifted seed
     pub fn coordinate(&self) -> [f64; N] {
         self.coordinate
     }
+    /// get the index of the lifted seed
     pub fn index(&self) -> usize {
         self.index
     }
 }
 
+/// The voronoi cells constructed from the lifted seeds.
 pub struct LiftedCells<const N: usize> {
     center_point_index: usize,
     neighbor_indices: Vec<usize>,
@@ -52,21 +57,27 @@ pub struct LiftedCells<const N: usize> {
 
 #[allow(dead_code)]
 impl<const N: usize> LiftedCells<N> {
+    /// get the seed of the voronoi cell
     pub fn center_point(&self) -> usize {
         self.center_point_index
     }
+    /// get the indices of neighboring voronoi cells
     pub fn neighbor_indices(&self) -> Vec<usize> {
         self.neighbor_indices.clone()
     }
+    /// get the vertices of the voronoi cell
     pub fn vertices(&self) -> Vec<[f64; N]> {
         self.vertices.clone()
     }
 }
+
+/// A power diagram in N-dimensional space, i.e., the seeds are N-dimensional
 pub struct PowerDiagram<const N: usize> {
     cells: Vec<LiftedCells<N>>,
 }
 
 impl<const N: usize> PowerDiagram<N> {
+    /// get a vector of nearest neighbors. Output is a vector of tuples containing the seed index and a vector of that seed's nearest neighbors.
     pub fn neighborlist(&self) -> Vec<(usize, Vec<usize>)> {
         self.cells
             .iter()
@@ -75,6 +86,7 @@ impl<const N: usize> PowerDiagram<N> {
     }
 }
 
+/// Defines methods to build power diagrams
 pub trait GeneratePowerDiagram<const N: usize> {
     fn build(
         seeds: &[PDSeed<N>],

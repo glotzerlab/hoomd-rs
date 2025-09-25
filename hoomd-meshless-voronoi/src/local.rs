@@ -57,7 +57,7 @@ impl<B, S, C> NeighborList<'_, B, S, C> {
                 Body::point(Cartesian::from([-0.5, -0.5]))])
         .try_build()?;
 
-    let nlist = NeighborList::from_microstate(&microstate);
+    let nlist = NeighborList::from_microstate(&microstate)?;
     let nlist_for_0 = nlist.neighbors_of_site(microstate.site_indices()[0]);
     assert_eq!(vec![1 as usize, 2 as usize, 3 as usize], nlist_for_0);
     # Ok(())
@@ -101,7 +101,7 @@ impl<B, S, C> NeighborList<'_, B, S, C> {
                 Body::point(Cartesian::from([-0.5, -0.5]))])
         .try_build()?;
 
-    let nlist = NeighborList::from_microstate(&microstate);
+    let nlist = NeighborList::from_microstate(&microstate)?;
     let coordination_numbers = nlist.coordination_numbers();
     assert_eq!(vec![3 as usize, 2 as usize, 2 as usize, 3 as usize], coordination_numbers);
     # Ok(())
@@ -386,7 +386,7 @@ let microstate = MicrostateBuilder::new()
              Body::point(Cartesian::from([-0.5, -0.5]))])
     .try_build()?;
 
-let nlist = NeighborList::from_microstate(&microstate);
+let nlist = NeighborList::from_microstate(&microstate)?;
 assert_eq!(vec![(0 as usize, 1 as usize),
                 (0 as usize, 2 as usize),
                 (0 as usize, 3 as usize),
@@ -725,7 +725,7 @@ let microstate = MicrostateBuilder::with_boundary(Open)
         Body::point(Hyperboloid::from(&Minkowski::from([-1.0, 1.0, 3.0_f64.sqrt()])))])
     .try_build()?;
 
-let nlist = NeighborList::from_microstate(&microstate);
+let nlist = NeighborList::from_microstate(&microstate)?;
 assert_eq!(vec![(0 as usize, 1 as usize),
                 (0 as usize, 2 as usize),
                 (1 as usize, 2 as usize),
