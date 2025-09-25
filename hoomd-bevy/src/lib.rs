@@ -110,22 +110,21 @@ const CAMERA_ZOOM_SPEED: f32 = 50.0;
 /// [`HoomdBevyPlugin`] is used by all the *hoomd-rs* examples that create
 /// interactive graphical displays of simulations. Specifically, it implements:
 ///
-/// Camera controls (2D and 3D separately).
-/// Simulation step and frame pacing, with a limited number of steps per second.
-/// Pause and advance by single step controls.
-/// A help screen describing common controls (examples can add lines if needed).
-/// Key bindings to hide the UI and take screenshots.
-/// A menu to control common settings (steps per second limit, camera speed, etc.)
+/// * Camera controls (2D and 3D separately).
+/// * Simulation step and frame pacing, with a limited number of steps per second.
+/// * Pause and advance by single step controls.
+/// * Screenshots.
+/// * A GUI that provides usage instructions, settings, and controls.
 ///
 /// The caller must:
+/// * Add the `EguiPlugin`.
 /// * Provide type that implements [`Simulation`].
 /// * Add a `sync` `Update` system that populates (and removes) entities for
 ///   rendering. See [`representation`] for helper code.
 ///
 /// The caller may optionally:
-/// * Add UI to the upper right corner of the screen.
-/// * Implement custom controls.
-/// * Add lines to the [`HelpText`] entity.
+/// * Add UI to the upper left and/or right corners of the screen.
+/// * Implement custom keyboard and/or GUI controls.
 ///
 /// To keep individual example scripts short and understandable, `hoomd-bevy` should
 /// implement as much common code as possible.
@@ -144,7 +143,7 @@ pub struct HoomdBevyPlugin<S> {
 
 /// State of the UI
 #[derive(Default, Resource)]
-struct UiState {
+pub struct UiState {
     /// Prevent the simulation from running when true.
     pause: bool,
     /// Show the debug overlay.
@@ -152,8 +151,11 @@ struct UiState {
 }
 
 /// State of the menu
+///
+/// Menus are shown by default, then hidden after a time. Callers can
+/// monitor this resource to show/hide all GUI windows (if desired).
 #[derive(Resource)]
-struct MenuState(bool);
+pub struct MenuState(bool);
 
 impl Default for MenuState {
     fn default() -> Self {
@@ -164,6 +166,7 @@ impl Default for MenuState {
 /// Reset the camera to the default.
 #[derive(Event)]
 struct ResetCamera;
+
 /// Advance the simulation one step.
 #[derive(Event)]
 struct AdvanceSimulation;
@@ -217,7 +220,7 @@ impl Default for Settings {
 #[derive(Resource)]
 struct FrameBudget(Duration);
 
-/// Settings used by the camera controls.
+/// Settings used by the 2d camera controls.
 #[derive(Debug, Default, Resource)]
 pub struct CameraControl2d {
     /// Coordinates clicked in the world frame.
@@ -235,37 +238,9 @@ pub struct OverlayRoot;
 #[derive(Component)]
 struct DebugText;
 
-/// Mark the border containing the help text.
-#[derive(Component)]
-struct HelpTextContainer;
-
-/// Mark the help text entity.
-///
-/// [`HoomdBevyPlugin`] populates the help text with instructions for common
-/// controls. Callers may add lines to the text node to show example-specific
-/// information when ? is pressed.
-#[derive(Component)]
-pub struct HelpText;
-
-/// Mark help reminder text.
-#[derive(Component)]
-struct HelpReminder;
-
 /// Mark the logo.
 #[derive(Component)]
 struct Logo;
-
-/// Mark the SPS limit text.
-#[derive(Component)]
-struct SPSLimitText;
-
-/// Mark the frame budget text.
-#[derive(Component)]
-struct FrameBudgetText;
-
-/// Mark the menu root.
-#[derive(Component)]
-struct MenuRoot;
 
 /// Systems that run to advance the simulation.
 ///
@@ -292,10 +267,6 @@ pub struct KeyboardInputSet;
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MouseInputSet;
 
-/// Systems that run to process input in the settings menu.
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct SettingsMenuInputSet;
-
 impl<Sim> HoomdBevyPlugin<Sim>
 where
     Sim: Resource + Simulation,
@@ -303,22 +274,8 @@ where
     /// Bevy diagnostic that counts the number of steps executed per second.
     pub const SPS: DiagnosticPath = DiagnosticPath::const_new("sps");
 
-    /// Z index at which the help text is displayed.
-    ///
-    /// Use this should you ever need to display an overlay above the help screen.
-    pub const HELP_OVERLAY_ZINDEX: i32 = i32::MAX - 32;
-
     /// Clear the window to this color before rendering each frame.
     pub const CLEAR: Color = Color::oklch(0.32, 0.0, 0.0);
-
-    /// Display this color in the background of UI elements.
-    pub const UI_BACKGROUND: Color = Color::oklch(0.2, 0.0, 0.0);
-
-    /// Display this color on UI outlines.
-    pub const UI_OUTLINE: Color = Color::WHITE;
-
-    /// Round the UI to this radius.
-    pub const UI_ROUNDING: f32 = 12.0;
 
     /// Offset the interface from the edge of the screen.
     pub const UI_OFFSET: f32 = 12.0;
@@ -382,7 +339,9 @@ where
         }
     }
 
-    fn is_paused(state: Res<UiState>) -> bool {
+    /// Test if the simulation is paused in `run_if`.
+    #[must_use]
+    pub fn is_paused(state: Res<UiState>) -> bool {
         state.pause
     }
 
@@ -430,69 +389,7 @@ where
         ));
     }
 
-    /// Add the help text UI node.
-    fn add_help_text(mut commands: Commands, overlay_root: Single<Entity, With<OverlayRoot>>) {
-        let mut help_text = String::new();
-
-        #[cfg(not(target_arch = "wasm32"))]
-        help_text.push_str("q       : Quit.\n");
-
-        help_text.push_str(
-            "=       : Reset the camera.
-<space> : Pause the simulation.
-<right>: Advance one step (while paused).
-shift-F1: Show/hide the user interface.
-F5      : Show/hide debugging information.
-",
-        );
-
-        #[cfg(not(target_arch = "wasm32"))]
-        help_text.push_str("F12     : Take a screenshot (screenshot.png).\n");
-
-        help_text.push_str(
-            "<esc>   : Open/close the settings menu.
-?       : Show/hide this help text.",
-        );
-
-        let text = (
-            Text::new(help_text),
-            BackgroundColor(Self::UI_BACKGROUND),
-            HelpText,
-        );
-
-        commands.spawn((
-            Node {
-                align_items: AlignItems::Center,
-                position_type: PositionType::Absolute,
-                bottom: Val::Px(Self::UI_OFFSET),
-                right: Val::Px(Self::UI_OFFSET),
-                margin: UiRect::all(Val::Px(0.0)),
-                border: UiRect::all(Val::Px(Self::UI_ROUNDING)),
-                justify_content: JustifyContent::Center,
-                ..default()
-            },
-            HelpTextContainer,
-            ChildOf(*overlay_root),
-            Outline {
-                width: Val::Px(Self::UI_ROUNDING / 2.0),
-                offset: Val::Px(0.),
-                color: Self::UI_OUTLINE,
-            },
-            BorderRadius::px(
-                Self::UI_ROUNDING,
-                Self::UI_ROUNDING,
-                Self::UI_ROUNDING,
-                Self::UI_ROUNDING,
-            ),
-            BackgroundColor(Self::UI_BACKGROUND),
-            BorderColor(Self::UI_BACKGROUND),
-            Visibility::Hidden,
-            GlobalZIndex(Self::HELP_OVERLAY_ZINDEX),
-            children![text],
-        ));
-    }
-
-    /// Add help reminder node.
+    /// Add the logo.
     fn add_logo(mut commands: Commands, server: Res<AssetServer>) {
         commands.spawn((
             Node {
@@ -508,7 +405,6 @@ F5      : Show/hide debugging information.
                 ..default()
             },
             Logo,
-            GlobalZIndex(Self::HELP_OVERLAY_ZINDEX - 1),
         ));
     }
 
@@ -547,19 +443,6 @@ F5      : Show/hide debugging information.
                 }
             }
             *writer.text(debug_text, 3) = format!("Step: {}\n", simulation.step());
-        }
-    }
-
-    /// Keyboard control to show the help screen.
-    fn keyboard_help(
-        keys: Res<ButtonInput<KeyCode>>,
-        mut help_text_container: Single<&mut Visibility, With<HelpTextContainer>>,
-    ) {
-        if keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])
-            && keys.just_pressed(KeyCode::Slash)
-        {
-            debug!("Show/hide help text.");
-            help_text_container.toggle_inherited_hidden();
         }
     }
 
@@ -750,7 +633,10 @@ F5      : Show/hide debugging information.
     /// `add_plugins` so that the `build` method can consume `self`. This allows
     /// `build` to take ownership of the `simulation` field and create the appropriate
     /// Bevy [`Resource`].
-    #[expect(clippy::too_many_lines, reason = "Bevy functions are very verbose.")]
+    ///
+    /// # Panics
+    ///
+    /// * When `EguiPlugin` is not added before calling `build`.
     pub fn build(self, app: &mut App) {
         representation::disk::build(app);
         representation::ellipse::build(app);
@@ -774,7 +660,6 @@ F5      : Show/hide debugging information.
                 (
                     Self::setup_overlay,
                     Self::setup_debug_text,
-                    Self::add_help_text,
                     Self::add_logo,
                 )
                     .chain(),
@@ -789,7 +674,6 @@ F5      : Show/hide debugging information.
                 Update,
                 Self::advance_simulation.run_if(on_event::<AdvanceSimulation>),
             )
-            .add_systems(Update, (Self::keyboard_help,).in_set(KeyboardInputSet))
             .add_systems(Update, Self::update_debug_text.after(AdvanceSet))
             .add_systems(EguiPrimaryContextPass, Self::ui_system)
             .add_event::<ResetCamera>()
@@ -843,7 +727,7 @@ F5      : Show/hide debugging information.
         );
     }
 
-    /// GUI
+    /// GUI and keyboard controls
     fn ui_system(
         mut commands: Commands,
         mut contexts: EguiContexts,
@@ -880,12 +764,6 @@ F5      : Show/hide debugging information.
         window.show(contexts.ctx_mut()?, |ui| {
             ui.allocate_space(ui.available_width() * egui::vec2(1.0, 0.0));
             ui.label("Press m to show/hide menus");
-            // ui.text_edit_singleline(&mut ui_state.test);
-
-            // ui.horizontal(|ui| {
-            //     ui.label("a long name here");
-            //     ui.label("short");
-            //     });
 
             egui::CollapsingHeader::new("Simulation controls")
                 .default_open(true)
