@@ -408,20 +408,42 @@ impl<const N: usize> Matrix<N, N> {
     #[must_use]
     #[inline]
     pub fn det(&self) -> f64 {
+        // Compute the determinant of a 2x2 minor.
+        #[inline]
+        fn det2(a: f64, b: f64, c: f64, d: f64) -> f64 {
+            a * d - b * c
+        }
         // Because math with const generics is not allowed in rust, we compute the indices
         // of each submatrix and recur on those noncontiguous segments of the input.
         #[inline]
         fn det_recursive_noslice<const N: usize>(
             matrix: &Matrix<N, N>,
             row: usize,
-            col_indices: &[usize; N],
+            col_indices: [usize; N],
             minor_size: usize,
         ) -> f64 {
-            if minor_size == 2 {
-                let j0 = col_indices[0];
-                let j1 = col_indices[1];
-                return matrix.rows[row][j0] * matrix.rows[row + 1][j1]
-                    - matrix.rows[row][j1] * matrix.rows[row + 1][j0];
+            // If we recurr any lower than 4x4 minors, performance drops dramatically
+            if minor_size == 4 {
+                let r = matrix.rows;
+                let c = col_indices;
+
+                // Map recursive indices to direct matrix indices
+                let (i0, i1, i2, i3) = (row, row + 1, row + 2, row + 3);
+                let [j0, j1, j2, j3] = c[..4] else {
+                    unreachable!() // N >= 4 if we reach this point
+                };
+
+                let m0 = det2(r[i2][j2], r[i2][j3], r[i3][j2], r[i3][j3]);
+                let m1 = det2(r[i2][j1], r[i2][j3], r[i3][j1], r[i3][j3]);
+                let m2 = det2(r[i2][j1], r[i2][j2], r[i3][j1], r[i3][j2]);
+                let m3 = det2(r[i2][j0], r[i2][j3], r[i3][j0], r[i3][j3]);
+                let m4 = det2(r[i2][j0], r[i2][j2], r[i3][j0], r[i3][j2]);
+                let m5 = det2(r[i2][j0], r[i2][j1], r[i3][j0], r[i3][j1]);
+
+                return r[i0][j0] * (r[i1][j1] * m0 - r[i1][j2] * m1 + r[i1][j3] * m2)
+                    - r[i0][j1] * (r[i1][j0] * m0 - r[i1][j2] * m3 + r[i1][j3] * m4)
+                    + r[i0][j2] * (r[i1][j0] * m1 - r[i1][j1] * m3 + r[i1][j3] * m5)
+                    - r[i0][j3] * (r[i1][j0] * m2 - r[i1][j1] * m4 + r[i1][j2] * m5);
             }
 
             (0..minor_size).fold(0.0, |acc, idx| {
@@ -435,19 +457,24 @@ impl<const N: usize> Matrix<N, N> {
                 let sign = if idx % 2 == 0 { 1.0 } else { -1.0 };
                 acc + sign
                     * matrix.rows[row][col_indices[idx]]
-                    * det_recursive_noslice(matrix, row + 1, &minor_cols, minor_size)
+                    * det_recursive_noslice(matrix, row + 1, minor_cols, minor_size)
             })
         }
-        // This would be handled by the iteration, but this simplifies the code
+        // Early exit for small matrices to ensure we get the optimal code.
         match N {
             0 => return 0.0,
-            1 => return self.rows[0][0],
-            2 => return self.rows[0][0] * self.rows[1][1] - self.rows[1][0] * self.rows[0][1],
+            1 => return self[(0, 0)],
+            2 => return det2(self[(0, 0)], self[(1, 0)], self[(0, 1)], self[(1, 1)]),
+            3 => {
+                return self[(0, 0)] * det2(self[(1, 1)], self[(1, 2)], self[(2, 1)], self[(2, 2)])
+                    - self[(0, 1)] * det2(self[(1, 0)], self[(1, 2)], self[(2, 0)], self[(2, 2)])
+                    + self[(0, 2)] * det2(self[(1, 0)], self[(1, 1)], self[(2, 0)], self[(2, 1)]);
+            }
             _ => (),
         }
 
         let col_indices = std::array::from_fn(|i| i);
-        det_recursive_noslice(self, 0, &col_indices, N)
+        det_recursive_noslice(self, 0, col_indices, N)
     }
 
     /// Extract the diagonal elements from a square matrix.
@@ -679,20 +706,6 @@ impl Matrix<2, 2> {
     }
 }
 
-impl Matrix<4, 4> {
-    /// Compute the determinant of a 4x4 symmetric matrix
-    #[expect(clippy::many_single_char_names, reason = "clarity")]
-    #[allow(dead_code, reason = "TODO: will be used elsewhere.")]
-    pub(crate) fn det44_symmetric(&self) -> f64 {
-        let [[a, b, c, d], [_, f, g, h], [_, _, k, l], [_, _, _, p]] = self.rows;
-
-        a * (f * (k * p - l * l) - g * (g * p - l * h) + h * (g * l - k * h))
-            - b * (b * (k * p - l * l) - g * (c * p - l * d) + h * (c * l - k * d))
-            + c * (b * (g * p - l * h) - f * (c * p - l * d) + h * (c * h - g * d))
-            - d * (b * (g * l - k * h) - f * (c * l - k * d) + g * (c * h - g * d))
-    }
-}
-
 impl Copy for Matrix<2, 2> {}
 impl Copy for Matrix<3, 3> {}
 impl Copy for Matrix<4, 4> {}
@@ -759,6 +772,12 @@ mod tests {
         case([[1.0, 2.0, 3.0], [0.0, 1.0, 4.0], [5.0, 6.0, 0.0]]),
         case([[2.0, 0.0, 1.0], [3.0, 0.0, 0.0], [5.0, 1.0, 1.0]]),
         case(Matrix::<4, 4>::identity().rows),
+        case([
+            [-10.0, 4.0, 3.0, 4.0],
+            [300.0, 5.0, 6.0, 7.0],
+            [3.0, 6.0, 8.0, 9.0],
+            [4.0, 7.0, 9.0, 10.0]
+        ]),
         case(Matrix::<5, 5>::full(3.6).diag().as_dense().rows),
         case(Matrix::<8, 8>::identity().rows),
     )]
@@ -767,31 +786,6 @@ mod tests {
         let faer_matrix = fill_faer(rows);
 
         let custom_det = matrix.det();
-        let faer_det = faer_matrix.determinant();
-
-        assert_relative_eq!(custom_det, faer_det, max_relative = 1e-14);
-    }
-    #[rstest(
-        rows,
-        case(Matrix::<4, 4>::identity().rows),
-        case([
-            [1.0, 2.0, 3.0, 4.0],
-            [2.0, 5.0, 6.0, 7.0],
-            [3.0, 6.0, 8.0, 9.0],
-            [4.0, 7.0, 9.0, 10.0]
-        ]),
-        case([
-            [-10.0, 4.0, 3.0, 4.0],
-            [4.0, 5.0, 6.0, 7.0],
-            [3.0, 6.0, 8.0, 9.0],
-            [4.0, 7.0, 9.0, 10.0]
-        ])
-    )]
-    fn test_det44symmetric(rows: [[f64; 4]; 4]) {
-        let matrix = Matrix { rows };
-        let faer_matrix = fill_faer(rows);
-
-        let custom_det = matrix.det44_symmetric();
         let faer_det = faer_matrix.determinant();
 
         assert_relative_eq!(custom_det, faer_det, max_relative = 1e-14);
