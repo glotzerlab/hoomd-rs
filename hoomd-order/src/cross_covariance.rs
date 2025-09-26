@@ -14,11 +14,7 @@ use hoomd_vector::Cartesian;
 /// ```
 ///
 /// This is equivalent to a Gram matrix computed between two different vectors.
-pub trait CrossCovariance<M>
-where
-    // TODO: should Other be not self?
-    Self: ExactSizeIterator,
-{
+pub trait CrossCovariance<M> {
     /// Compute the cross-covariance between two sets of vectors.
     ///
     /// The result will be `None` if the two sets of points have differing numbers of
