@@ -199,7 +199,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     #[allow(dead_code, reason = "No use case yet.")]
     #[inline]
     #[must_use]
-    fn transpose(&self) -> Matrix<M, N> {
+    pub fn transpose(&self) -> Matrix<M, N> {
         Matrix {
             rows: std::array::from_fn(|j| std::array::from_fn(|i| self[(i, j)])),
         }

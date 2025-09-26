@@ -2780,6 +2780,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "hoomd-order"
+version = "0.0.0"
+dependencies = [
+ "hoomd-linear-algebra",
+ "hoomd-vector",
+ "rstest",
+]
+
+[[package]]
 name = "hoomd-simulation"
 version = "0.0.0"
 dependencies = [

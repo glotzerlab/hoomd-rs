@@ -753,6 +753,45 @@ impl<const N: usize> From<Matrix<1, N>> for Cartesian<N> {
         value.rows[0].into()
     }
 }
+/// Compute the matrix whose elements are the covariance between the `i`'th and `j`th elements of two vectors of data.
+///
+/// ```math
+/// M_{ij} = A^\top B;
+/// M_{ij} = \sum_{k=1}^N A_{ki} B_{kj};
+/// ```
+///
+/// This is equivalent to a Gram matrix computed between two different vectors.
+#[allow(dead_code, reason = "Will be used in future. TODO")]
+pub trait CrossCovariance<M>
+where
+    Self: ExactSizeIterator,
+{
+    /// Compute the cross-covariance between two sets of vectors.
+    ///
+    /// The result will be `None` if the two sets of points have differing numbers of
+    /// points.
+    fn cross_covariance(self, other: Self) -> Option<M>;
+}
+
+impl<const N: usize> CrossCovariance<Matrix<N, N>> for std::slice::Iter<'_, Cartesian<N>> {
+    fn cross_covariance(self, other: Self) -> Option<Matrix<N, N>> {
+        // TODO: better error?
+        if self.len() != other.len() {
+            return None;
+        }
+        Some(
+            self.zip(other)
+                .fold(Matrix::<N, N>::zeros(), |mut acc, (l, r)| {
+                    for i in 0..N {
+                        for j in 0..N {
+                            acc[(i, j)] += l[i] * r[j];
+                        }
+                    }
+                    acc
+                }),
+        )
+    }
+}
 
 #[cfg(test)]
 mod tests {

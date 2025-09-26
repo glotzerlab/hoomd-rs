@@ -1,0 +1,21 @@
+[package]
+name = "hoomd-order"
+description = "Order parameters."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+hoomd-linear-algebra.workspace = true
+hoomd-vector.workspace = true
+
+[dev-dependencies]
+rstest.workspace = true
+
+[lints]
+workspace = true
