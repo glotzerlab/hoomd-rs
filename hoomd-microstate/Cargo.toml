@@ -15,6 +15,7 @@ workspace = true
 
 [dependencies]
 hoomd-geometry.workspace = true
+hoomd-linalg.workspace = true
 hoomd-vector.workspace = true
 hoomd-utility.workspace = true
 rand.workspace = true

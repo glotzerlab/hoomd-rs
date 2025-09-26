@@ -122,6 +122,21 @@ impl<const N: usize> From<[f64; N]> for Cartesian<N> {
     }
 }
 
+impl<const N: usize> From<Cartesian<N>> for [f64; N] {
+    /// Create a Cartesian vector with the given coordinates.
+    ///
+    /// # Example
+    ///
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let v: [f64; N] = Cartesian::from([4.0, 3.0]).into();
+    ///
+    #[inline]
+    fn from(coordinates: Cartesian<N>) -> Self {
+        coordinates.coordinates
+    }
+}
+
 impl<const N: usize> IntoIterator for Cartesian<N> {
     type Item = f64;
     type IntoIter = <[f64; N] as IntoIterator>::IntoIter;
@@ -709,7 +724,7 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
 impl<const N: usize> From<Matrix<N, 1>> for Cartesian<N> {
     #[inline]
     fn from(value: Matrix<N, 1>) -> Self {
-        std::array::from_fn(|i| value[(i,0)]).into()
+        std::array::from_fn(|i| value[(i, 0)]).into()
     }
 }
 

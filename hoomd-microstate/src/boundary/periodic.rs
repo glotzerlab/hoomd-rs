@@ -8,6 +8,7 @@ use rand::{Rng, distr::Distribution};
 use super::{Error, MaximumAllowableInteractionRange};
 
 mod cuboid;
+mod hyperparallelepiped;
 
 /// Describe a simulation space that repeats in one or more directions.
 ///

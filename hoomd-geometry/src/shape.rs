@@ -21,7 +21,7 @@ mod cuboid;
 pub use cuboid::{Cuboid, Rectangle};
 
 mod parallelepiped;
-pub use parallelepiped::Hyperparallelepiped;
+pub use parallelepiped::{Hyperparallelepiped, Parallelepiped, Parallelogram};
 
 mod cylinder;
 pub use cylinder::Cylinder;
