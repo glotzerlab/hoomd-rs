@@ -14,15 +14,17 @@ use hoomd_vector::Cartesian;
 /// ```
 ///
 /// This is equivalent to a Gram matrix computed between two different vectors.
-pub trait CrossCovariance<M> {
+pub trait CrossCovariance<I, M> {
     /// Compute the cross-covariance between two sets of vectors.
     ///
     /// The result will be `None` if the two sets of points have differing numbers of
     /// points.
-    fn cross_covariance(self, other: Self) -> Option<M>;
+    fn cross_covariance(self, other: I) -> Option<M>;
 }
 
-impl<const N: usize> CrossCovariance<Matrix<N, N>> for std::slice::Iter<'_, Cartesian<N>> {
+impl<'a, const N: usize> CrossCovariance<std::slice::Iter<'a, Cartesian<N>>, Matrix<N, N>>
+    for std::slice::Iter<'_, Cartesian<N>>
+{
     /// Compute the cross-covariance between two sets of vectors.
     ///
     /// The result will be `None` if the two sets of points have differing numbers of
@@ -47,7 +49,7 @@ impl<const N: usize> CrossCovariance<Matrix<N, N>> for std::slice::Iter<'_, Cart
     /// # }
     /// ```
     #[inline]
-    fn cross_covariance(self, other: Self) -> Option<Matrix<N, N>> {
+    fn cross_covariance(self, other: std::slice::Iter<'a, Cartesian<N>>) -> Option<Matrix<N, N>> {
         // TODO: better error?
         if self.len() != other.len() {
             return None;

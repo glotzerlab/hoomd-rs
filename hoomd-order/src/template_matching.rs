@@ -16,13 +16,15 @@ pub struct Template<'a, P> {
     pub(crate) center: P,
 }
 
-impl<const N: usize> CrossCovariance<Matrix<N, N>> for Template<'_, Cartesian<N>> {
+impl<'a, const N: usize> CrossCovariance<Template<'a, Cartesian<N>>, Matrix<N, N>>
+    for Template<'_, Cartesian<N>>
+{
     /// Compute the cross-covariance between two sets of vectors.
     ///
     /// The result will be `None` if the two sets of points have differing numbers of
     /// points.
     #[inline]
-    fn cross_covariance(self, other: Self) -> Option<Matrix<N, N>> {
+    fn cross_covariance(self, other: Template<'a, Cartesian<N>>) -> Option<Matrix<N, N>> {
         // TODO: better error?
         if self.coordinates.len() != other.coordinates.len() {
             return None;
