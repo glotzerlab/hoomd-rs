@@ -25,12 +25,28 @@ pub type Matrix33 = Matrix<3, 3>;
 pub type Matrix44 = Matrix<4, 4>;
 
 impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
+    /// Fill a matrix with zeros.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+    /// let m = Matrix22::zeros();
+    /// assert_eq!(m.rows, [[0.0, 0.0], [0.0, 0.0]]);
+    /// ```
     #[inline]
     fn zeros() -> Self {
         Self {
             rows: std::array::from_fn(|_| std::array::from_fn(|_| 0.0)),
         }
     }
+    /// Fill a matrix with some scalar value.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+    /// let m = Matrix22::full(5.0);
+    /// assert_eq!(m.rows, [[5.0, 5.0], [5.0, 5.0]]);
+    /// ```
     #[inline]
     fn full(val: f64) -> Self {
         Self {
@@ -40,6 +56,12 @@ impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
 }
 
 impl<const N: usize> SquareMatrix for Matrix<N, N> {
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
+    /// let m = Matrix22::identity();
+    /// assert_eq!(m.rows, [[1.0, 0.0], [0.0, 1.0]]);
+    /// ```
     #[inline]
     fn identity() -> Self {
         Self {
@@ -50,6 +72,21 @@ impl<const N: usize> SquareMatrix for Matrix<N, N> {
 
 impl<const N: usize, const M: usize, const K: usize> MatMul<Matrix<M, K>> for Matrix<N, M> {
     type Output = Matrix<N, K>;
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::{
+    ///     MatMul,
+    ///     matrix::{Matrix, Matrix22},
+    /// };
+    /// let a = Matrix22 {
+    ///     rows: [[1.0, 2.0], [3.0, 4.0]],
+    /// };
+    /// let b = Matrix22 {
+    ///     rows: [[5.0, 6.0], [7.0, 8.0]],
+    /// };
+    /// let c = a.matmul(&b);
+    /// assert_eq!(c.rows, [[19.0, 22.0], [43.0, 50.0]]);
+    /// ```
     #[inline]
     fn matmul(&self, rhs: &Matrix<M, K>) -> Self::Output {
         let mut result = Self::Output::zeros();
@@ -72,7 +109,7 @@ impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> 
     /// This is equivalent to scaling each column of a [`Matrix`] by the corresponding
     /// element in a [`DiagonalMatrix`].
     ///
-    /// # Example
+    /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{
     ///     GeneralMatrix, MatMul,
@@ -97,6 +134,17 @@ impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> 
 
 impl<const N: usize, const M: usize> Matrix<N, M> {
     /// Interchange the rows and columns of matrix `A` such that `A.transpose()[(j, i)] = A[(i, j)]`
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    ///
+    /// let m: Matrix<2, 3> = Matrix {
+    ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
+    /// };
+    /// let m_t = m.transpose();
+    /// assert_eq!(m_t.rows, [[1.0, 4.0], [2.0, 5.0], [3.0, 6.0]]);
+    /// ```
     #[allow(dead_code, reason = "No use case yet.")]
     #[inline]
     #[must_use]
@@ -108,7 +156,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
 
     /// Apply a function to an [`Matrix`] by rows, returning a new matrix with the same shape.
     ///
-    /// # Example
+    /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
     /// let m = Matrix22::full(3.0);
@@ -132,7 +180,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
 
     /// Apply a function to an [`Matrix`] by columns, returning a new matrix with the same shape.
     ///
-    /// # Example
+    /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
     /// let m = Matrix22::full(3.0);
@@ -153,7 +201,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     }
     /// Apply a function to a [`Matrix`] elementwise, returning a new matrix with the same shape.
     ///
-    /// # Example
+    /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix33};
     /// let m = Matrix33::full(3.0);
@@ -173,7 +221,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// Returns an iterator over every element in the [`Matrix`]
     /// The iterator yields all items from start to end.
     ///
-    /// # Example
+    /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
     /// let x = Matrix22 {
@@ -194,7 +242,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// Returns an iterator over mutable references to every element in the [`Matrix`]
     /// The iterator yields all items from start to end.
     ///
-    /// # Example
+    /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
     /// let mut x = Matrix22 {
@@ -213,7 +261,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// Returns an iterator over every element in the [`Matrix`]
     /// The iterator yields all items from start to end.
     ///
-    /// # Example
+    /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
     /// let x = Matrix22 {
@@ -235,7 +283,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// The initial value is the value the accumulator will have on the first call.
     /// After applying this closure to every element of the flattened iterator, `fold_elementwise` returns the accumulator.
     ///
-    /// # Example
+    /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
     /// let m = Matrix22::full(3.0);
@@ -261,7 +309,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// The initial value is the value the accumulator will have on the first call.
     /// After applying this closure to every element of the flattened iterator, `fold` returns the accumulator.
     ///
-    /// # Example
+    /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
     /// let m = Matrix22 {
@@ -288,12 +336,32 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     }
 
     /// Get the number of rows in the [`Matrix`].
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    ///
+    /// let m: Matrix<2, 3> = Matrix {
+    ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
+    /// };
+    /// assert_eq!(m.n_rows(), 2);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn n_rows(&self) -> usize {
         N
     }
     /// Get the number of columns in the [`Matrix`].
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    ///
+    /// let m: Matrix<2, 3> = Matrix {
+    ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
+    /// };
+    /// assert_eq!(m.n_cols(), 3);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn n_cols(&self) -> usize {
@@ -301,6 +369,16 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     }
 
     /// Get the shape of the [`Matrix`] `(n_rows, n_cols)`.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    ///
+    /// let m: Matrix<2, 3> = Matrix {
+    ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
+    /// };
+    /// assert_eq!(m.shape(), (2, 3));
+    /// ```
     #[must_use]
     #[inline]
     pub const fn shape(&self) -> (usize, usize) {
@@ -497,6 +575,16 @@ impl Invertible for Matrix<2, 2> {
     /// Compute the inverse of a matrix. Will be `None` if the matrix is not invertible.
     ///
     /// This implementation uses a closed form solution for the matrix inverse.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::{Invertible, matrix::Matrix22};
+    /// let m = Matrix22 {
+    ///     rows: [[1.0, 2.0], [3.0, 4.0]],
+    /// };
+    /// let m_inv = m.inverse().unwrap();
+    /// assert_eq!(m_inv.rows, [[-2.0, 1.0], [1.5, -0.5]]);
+    /// ```
     #[inline]
     fn inverse(&self) -> Option<Self> {
         let det = self.determinant();
@@ -519,6 +607,15 @@ impl Invertible for Matrix<3, 3> {
     ///
     /// This implementation uses a closed form solution for the matrix inverse based on
     /// the cross product of rows.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::{Invertible, SquareMatrix, matrix::Matrix33};
+    /// let m = Matrix33::identity() * 5.0;
+    /// let m_inv = m.inverse().unwrap();
+    /// // The inverse of a diagonal matrix is the reciprocal of each element.
+    /// assert_eq!(m_inv, Matrix33::from_diag(&[1.0 / 5.0; 3]));
+    /// ```
     #[inline]
     fn inverse(&self) -> Option<Self> {
         #[inline]
@@ -543,6 +640,16 @@ impl Invertible for Matrix<4, 4> {
     ///
     /// This implementation uses a closed form solution for the matrix inverse based on
     /// the Cayley–Hamilton method.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::{
+    ///     Invertible, MatMul, SquareMatrix, matrix::Matrix44,
+    /// };
+    /// let m = Matrix44::identity();
+    /// let m_inv = m.inverse().unwrap();
+    /// assert_eq!(m_inv.rows, m.rows);
+    /// ```
     #[inline]
     fn inverse(&self) -> Option<Self> {
         let det = self.determinant();
@@ -594,6 +701,24 @@ impl Matrix<2, 2> {
     /// in numerical stability.
     ///
     /// `svd` sets all singular values to be positive.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::{
+    ///     MatMul,
+    ///     matrix::{DiagonalMatrix, Matrix22},
+    /// };
+    /// let m = Matrix22 {
+    ///     rows: [[1.0, 2.0], [3.0, 4.0]],
+    /// };
+    /// let (u, s, vt) = m.svd();
+    /// let m_recon = u.matmul(&s.as_dense()).matmul(&vt);
+    /// for i in 0..2 {
+    ///     for j in 0..2 {
+    ///         assert!((m.rows[i][j] - m_recon.rows[i][j]).abs() < 1e-9);
+    ///     }
+    /// }
+    /// ```
     #[must_use]
     #[inline]
     pub fn svd(&self) -> (Self, DiagonalMatrix<2>, Self) {
