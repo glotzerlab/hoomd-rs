@@ -50,7 +50,7 @@ fn det_matn<const N: usize>(bencher: Bencher) {
     bencher
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| create_random_matrix::<N, N, _>(&mut rng))
-        .bench_local_values(|a| black_box(a.det()));
+        .bench_local_values(|a| black_box(a.determinant()));
 }
 
 #[divan::bench]
