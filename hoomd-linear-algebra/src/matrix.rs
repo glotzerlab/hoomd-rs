@@ -290,7 +290,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         self.rows.iter().flat_map(|row| row.iter().copied())
     }
 
-    /// Returns an iterator over every element in the [`Matrix`]
+    /// Returns an iterator over mutable references to every element in the [`Matrix`]
     /// The iterator yields all items from start to end.
     ///
     /// # Example
@@ -299,14 +299,10 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// let mut x = Matrix22 {
     ///     rows: [[1.0, 2.0], [3.0, 4.0]],
     /// };
+    /// let x_copy = x.clone();
     /// let mut iterator = x.iter_flat_mut();
     /// iterator.for_each(|x| *x *= 2.0);
-    /// assert_eq!(
-    ///     x,
-    ///     Matrix22 {
-    ///         rows: [[1.0, 2.0], [3.0, 4.0]]
-    ///     } * 2.0
-    /// );
+    /// assert_eq!(x, x_copy * 2.0);
     /// ```
     #[inline]
     pub fn iter_flat_mut(&mut self) -> impl Iterator<Item = &mut f64> + '_ {
@@ -333,10 +329,10 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     }
     /// Folds every element into an accumulator by applying an operation, returning the final result.
     ///
-    /// [`fold_elementwise`] takes two arguments: an initial value, and a closure with two arguments: an ‘accumulator’, and an element. The closure returns the value that the accumulator should have for the next iteration.
+    /// `fold_elementwise` takes two arguments: an initial value, and a closure with two arguments: an ‘accumulator’, and an element. The closure returns the value that the accumulator should have for the next iteration.
     ///
     /// The initial value is the value the accumulator will have on the first call.
-    /// After applying this closure to every element of the flattened iterator, [`fold_elementwise`] returns the accumulator.
+    /// After applying this closure to every element of the flattened iterator, `fold_elementwise` returns the accumulator.
     ///
     /// # Example
     /// ```
@@ -359,10 +355,10 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
 
     /// Folds every row into an accumulator by applying an operation, returning the final result.
     ///
-    /// [`fold`] takes two arguments: an initial value, and a closure with two arguments: an ‘accumulator’, and an element. The closure returns the value that the accumulator should have for the next iteration.
+    /// `fold` takes two arguments: an initial value, and a closure with two arguments: an ‘accumulator’, and an element. The closure returns the value that the accumulator should have for the next iteration.
     ///
     /// The initial value is the value the accumulator will have on the first call.
-    /// After applying this closure to every element of the flattened iterator, [`fold`] returns the accumulator.
+    /// After applying this closure to every element of the flattened iterator, `fold` returns the accumulator.
     ///
     /// # Example
     /// ```
