@@ -6,7 +6,10 @@ use std::{
     ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
-use crate::{Diagonal, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
+use crate::{
+    Diagonal, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix,
+    diagonal::DiagonalMatrix,
+};
 // use hoomd_vector::{Cartesian, RotationMatrix};
 
 /// A matrix with N rows and M columns, allocated on the stack.
@@ -15,57 +18,12 @@ pub struct Matrix<const N: usize, const M: usize> {
     /// The elements of the matrix
     pub rows: [[f64; M]; N],
 }
-/// A square, diagonal matrix with N rows and N columns.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct DiagonalMatrix<const N: usize> {
-    /// The elements of the diagonal of the matrix
-    pub rows: [f64; N],
-}
-/// Index the on-diagonal components of a diagonal matrix
-/// # Examples
-/// ```
-/// use hoomd_linear_algebra::{SquareMatrix, matrix::DiagonalMatrix};
-/// let mat = DiagonalMatrix {
-///     rows: [1.0, 2.0, 3.0],
-/// };
-/// assert_eq!(mat[0], 1.0);
-/// assert_eq!(mat[1], 2.0);
-/// assert_eq!(mat[2], 3.0);
-/// ```
-impl<const N: usize> Index<usize> for DiagonalMatrix<N> {
-    type Output = f64;
-    #[inline]
-    fn index(&self, index: usize) -> &f64 {
-        &self.rows[index]
-    }
-}
-
 /// A 2x2 matrix, allocated on the stack.
 pub type Matrix22 = Matrix<2, 2>;
 /// A 3x3 matrix, allocated on the stack.
 pub type Matrix33 = Matrix<3, 3>;
 /// A 4x4 matrix, allocated on the stack.
 pub type Matrix44 = Matrix<4, 4>;
-
-/// Index the dense view of a diagonal matrix. Off-diagonal elements will be `0.0`.
-/// # Examples
-/// ```
-/// use hoomd_linear_algebra::{SquareMatrix, matrix::DiagonalMatrix};
-/// let mat = DiagonalMatrix {
-///     rows: [1.0, 2.0, 3.0],
-/// };
-/// assert_eq!(mat[(0, 0)], 1.0);
-/// assert_eq!(mat[(1, 1)], 2.0);
-/// assert_eq!(mat[(0, 2)], 0.0);
-/// ```
-impl<const N: usize> Index<(usize, usize)> for DiagonalMatrix<N> {
-    type Output = f64;
-    #[inline]
-    fn index(&self, index: (usize, usize)) -> &f64 {
-        let (i, j) = index;
-        if i == j { &self.rows[i] } else { &0.0 }
-    }
-}
 /// Index the rows and columns of a [`Matrix`]
 ///
 /// Indices for [`Matrix`] types are zero-indexed and reflect the indexing pattern of
@@ -114,36 +72,12 @@ impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
     }
 }
 
-impl<const N: usize> GeneralMatrix for DiagonalMatrix<N> {
-    #[inline]
-    fn zeros() -> Self {
-        Self {
-            rows: std::array::from_fn(|_| 0.0),
-        }
-    }
-    #[inline]
-    fn full(val: f64) -> Self {
-        Self {
-            rows: std::array::from_fn(|_| val),
-        }
-    }
-}
-
 impl<const N: usize> SquareMatrix for Matrix<N, N> {
     #[inline]
     fn identity() -> Self {
         Self {
             rows: std::array::from_fn(|i| std::array::from_fn(|j| if i == j { 1.0 } else { 0.0 })),
         }
-    }
-}
-
-impl<const N: usize> DiagonalMatrix<N> {
-    /// Return a dense view of the diagonal matrix, with zeros on the off-diagonals.
-    #[must_use]
-    #[inline]
-    pub fn as_dense(&self) -> Matrix<N, N> {
-        Matrix::<N, N>::from_diag(&self.rows)
     }
 }
 
@@ -165,7 +99,7 @@ impl<const N: usize, const M: usize, const K: usize> MatMul<Matrix<M, K>> for Ma
 }
 
 impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> {
-    type Output = Matrix<M, M>;
+    type Output = Matrix<N, M>;
     /// Multiply a matrix by a diagonal matrix RHS.
     ///
     /// This is equivalent to scaling each column of a [`Matrix`] by the corresponding
@@ -174,8 +108,7 @@ impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> 
     /// # Example
     /// ```
     /// use hoomd_linear_algebra::{
-    ///     GeneralMatrix, MatMul,
-    ///     matrix::{DiagonalMatrix, Matrix22},
+    ///     GeneralMatrix, MatMul, diagonal::DiagonalMatrix, matrix::Matrix22,
     /// };
     /// let diag = DiagonalMatrix { rows: [3.0, 4.0] };
     /// let mat = Matrix22::full(1.0).matmul(&diag);
@@ -185,7 +118,7 @@ impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> 
     #[inline]
     fn matmul(&self, rhs: &DiagonalMatrix<M>) -> Self::Output {
         let mut result = Self::Output::zeros();
-        for (i, row) in result.rows.iter_mut().enumerate().take(M) {
+        for (i, row) in result.rows.iter_mut().enumerate().take(N) {
             for j in 0..M {
                 row[j] = self.rows[i][j] * rhs[j];
             }
@@ -661,29 +594,6 @@ impl<const N: usize, const M: usize> Neg for Matrix<N, M> {
     }
 }
 
-/// Compute the elementwise scalar multiplication of a [`DiagonalMatrix`]
-impl<const N: usize> Mul<f64> for DiagonalMatrix<N> {
-    type Output = Self;
-
-    #[inline]
-    fn mul(self, rhs: f64) -> Self {
-        Self {
-            rows: self.rows.map(|r| r * rhs),
-        }
-    }
-}
-/// Compute the elementwise negation of a [`DiagonalMatrix`]
-impl<const N: usize> Neg for DiagonalMatrix<N> {
-    type Output = Self;
-
-    #[inline]
-    fn neg(self) -> Self {
-        Self {
-            rows: self.rows.map(|r| -r),
-        }
-    }
-}
-
 impl<const N: usize, const M: usize> Add<Self> for Matrix<N, M> {
     type Output = Self;
 
@@ -722,26 +632,6 @@ impl<const N: usize, const M: usize> SubAssign for Matrix<N, M> {
         self.iter_flat_mut()
             .zip(rhs.iter_flat())
             .for_each(|(x, r)| *x -= r);
-    }
-}
-impl<const N: usize> Add<Self> for DiagonalMatrix<N> {
-    type Output = Self;
-
-    #[inline]
-    fn add(self, rhs: Self) -> Self {
-        Self {
-            rows: std::array::from_fn(|i| self[i] + rhs[i]),
-        }
-    }
-}
-impl<const N: usize> Sub<Self> for DiagonalMatrix<N> {
-    type Output = Self;
-
-    #[inline]
-    fn sub(self, rhs: Self) -> Self {
-        Self {
-            rows: std::array::from_fn(|i| self[i] - rhs[i]),
-        }
     }
 }
 
@@ -900,7 +790,7 @@ macro_rules! impl_copy_for_n_m {
 }
 
 impl_copy_for_n_m!(1, 2, 3, 4);
-impl<const N: usize> Diagonal for DiagonalMatrix<N> {}
+
 impl<const N: usize> Diagonal for [f64; N] {}
 
 #[cfg(test)]
@@ -1124,38 +1014,6 @@ mod tests {
     }
 
     #[test]
-    fn test_matrix_multiply_diagonal_2x2() {
-        let a_rows = [[1.0, 2.0], [3.0, 4.0]];
-        let b_diag = [5.0, 6.0];
-        let a = Matrix::<2, 2> { rows: a_rows };
-        let b = DiagonalMatrix::<2> { rows: b_diag };
-
-        let faer_a = fill_faer(a_rows);
-        let faer_b_dense = fill_faer(Matrix::<2, 2>::from_diag(&b).rows);
-
-        let custom_prod = a.matmul(&b);
-        let faer_prod = faer_a * faer_b_dense;
-
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&custom_prod, &faer_prod);
-    }
-
-    #[test]
-    fn test_matrix_multiply_diagonal_3x2() {
-        let a_rows = [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
-        let b_diag = [2.0, 3.0];
-        let a = Matrix::<3, 2> { rows: a_rows };
-        let b = DiagonalMatrix::<2> { rows: b_diag };
-
-        let faer_a = fill_faer(a_rows);
-        let faer_b_dense = fill_faer(Matrix::<2, 2>::from_diag(&b).rows);
-
-        let custom_prod = a.matmul(&b);
-        let faer_prod = faer_a * faer_b_dense;
-
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&custom_prod, &faer_prod);
-    }
-
-    #[test]
     fn test_transpose_2x2() {
         let rows = [[1.0, -2.0], [3.0, 4.0]];
         let matrix = Matrix::<2, 2> { rows };
@@ -1284,95 +1142,6 @@ mod tests {
     }
 
     #[test]
-    fn test_diagonal_matrix_add_n2() {
-        let a_diag = [1.0, 2.0];
-        let b_diag = [3.0, 4.0];
-        let a = DiagonalMatrix::<2> { rows: a_diag };
-        let b = DiagonalMatrix::<2> { rows: b_diag };
-        let expected: Vec<f64> = a_diag
-            .iter()
-            .zip(b_diag.iter())
-            .map(|(x, y)| x + y)
-            .collect();
-        let custom_sum = a + b;
-        assert_diags_ulps_eq::<2, _>(&custom_sum, &expected);
-    }
-
-    #[test]
-    fn test_diagonal_matrix_add_n3() {
-        let a_diag = [1.0, 2.0, 3.0];
-        let b_diag = [4.0, 5.0, 6.0];
-        let a = DiagonalMatrix::<3> { rows: a_diag };
-        let b = DiagonalMatrix::<3> { rows: b_diag };
-        let expected: Vec<f64> = a_diag
-            .iter()
-            .zip(b_diag.iter())
-            .map(|(x, y)| x + y)
-            .collect();
-        let custom_sum = a + b;
-        assert_diags_ulps_eq::<3, _>(&custom_sum, &expected);
-    }
-
-    #[test]
-    fn test_diagonal_matrix_sub_n2() {
-        let a_diag = [1.0, 2.0];
-        let b_diag = [3.0, 4.0];
-        let a = DiagonalMatrix::<2> { rows: a_diag };
-        let b = DiagonalMatrix::<2> { rows: b_diag };
-        let expected: Vec<f64> = a_diag
-            .iter()
-            .zip(b_diag.iter())
-            .map(|(x, y)| x - y)
-            .collect();
-        let custom_sub = a - b;
-        assert_diags_ulps_eq::<2, _>(&custom_sub, &expected);
-    }
-
-    #[test]
-    fn test_diagonal_matrix_sub_n3() {
-        let a_diag = [1.0, 2.0, 3.0];
-        let b_diag = [4.0, 5.0, 6.0];
-        let a = DiagonalMatrix::<3> { rows: a_diag };
-        let b = DiagonalMatrix::<3> { rows: b_diag };
-        let expected: Vec<f64> = a_diag
-            .iter()
-            .zip(b_diag.iter())
-            .map(|(x, y)| x - y)
-            .collect();
-        let custom_sub = a - b;
-        assert_diags_ulps_eq::<3, _>(&custom_sub, &expected);
-    }
-
-    #[test]
-    fn test_diagonal_matrix_neg_n2() {
-        let diag = [1.0, -2.0];
-        let matrix = DiagonalMatrix::<2> { rows: diag };
-        let expected: Vec<f64> = diag.iter().map(|x| -x).collect();
-        let custom_neg = -matrix;
-        assert_diags_ulps_eq::<2, _>(&custom_neg, &expected);
-    }
-
-    #[test]
-    fn test_diagonal_matrix_neg_n3() {
-        let diag = [1.0, -2.0, 0.0];
-        let matrix = DiagonalMatrix::<3> { rows: diag };
-        let expected: Vec<f64> = diag.iter().map(|x| -x).collect();
-        let custom_neg = -matrix;
-        assert_diags_ulps_eq::<3, _>(&custom_neg, &expected);
-    }
-
-    #[rstest]
-    #[case([1.0, 2.0], 5.0)]
-    #[case([1.0, 2.0], -1.0)]
-    #[case([1.0, 2.0], 0.0)]
-    fn test_diagonal_matrix_scalar_mul_n2(#[case] diag: [f64; 2], #[case] scalar: f64) {
-        let matrix = DiagonalMatrix::<2> { rows: diag };
-        let expected: Vec<f64> = diag.iter().map(|x| x * scalar).collect();
-        let custom_mul = matrix * scalar;
-        assert_diags_ulps_eq::<2, _>(&custom_mul, &expected);
-    }
-
-    #[test]
     fn test_indexing() {
         // Matrix
         let mat = Matrix::<2, 3> {
@@ -1380,14 +1149,6 @@ mod tests {
         };
         assert_eq!(mat[(0, 2)], 3.0);
         assert_eq!(mat[(1, 1)], 5.0);
-
-        // DiagonalMatrix
-        let diag_mat = DiagonalMatrix::<3> {
-            rows: [1.0, 2.0, 3.0],
-        };
-        assert_eq!(diag_mat[1], 2.0); // 1D indexing
-        assert_eq!(diag_mat[(2, 2)], 3.0); // 2D on-diagonal
-        assert_eq!(diag_mat[(0, 1)], 0.0); // 2D off-diagonal
     }
 
     #[test]
@@ -1411,14 +1172,6 @@ mod tests {
                 assert_eq!(full[(i, j)], 7.5);
             }
         }
-
-        // DiagonalMatrix
-        let diag_zeros = DiagonalMatrix::<4>::zeros();
-        let diag_full = DiagonalMatrix::<4>::full(-3.0);
-        for i in 0..4 {
-            assert_eq!(diag_zeros[i], 0.0);
-            assert_eq!(diag_full[i], -3.0);
-        }
     }
 
     #[test]
@@ -1428,13 +1181,6 @@ mod tests {
             rows: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
         };
         assert_matrixes_ulps_eq::<3, 3, _, _>(&identity, &expected);
-
-        let diag_mat = DiagonalMatrix::<3> {
-            rows: [10.0, 20.0, 30.0],
-        };
-        let dense = diag_mat.as_dense();
-        let expected_dense = Matrix::<3, 3>::from_diag(&[10.0, 20.0, 30.0]);
-        assert_matrixes_ulps_eq::<3, 3, _, _>(&dense, &expected_dense);
     }
 
     #[test]
@@ -1446,9 +1192,9 @@ mod tests {
         let expected_diag = DiagonalMatrix {
             rows: [1.0, 5.0, 9.0],
         };
-        assert_diags_ulps_eq::<3, _>(&diag, &expected_diag.rows);
+        assert_diags_ulps_eq::<3, _>(&diag, &expected_diag);
 
-        let from_diag = Matrix::<3, 3>::from_diag(&diag.rows);
+        let from_diag = Matrix::<3, 3>::from_diag(&diag);
         let expected_from_diag = Matrix {
             rows: [[1.0, 0.0, 0.0], [0.0, 5.0, 0.0], [0.0, 0.0, 9.0]],
         };
