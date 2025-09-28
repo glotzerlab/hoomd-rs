@@ -22,7 +22,6 @@ mod sweep;
 mod translate;
 mod uniform_in;
 
-pub use manifold_translate::{HyperbolicTranslate, SphericalTranslate};
 pub use quick_insert::QuickInsert;
 pub use rotate::Rotate;
 pub use sweep::Sweep;
@@ -77,7 +76,7 @@ pub trait Trial<M, H> {
 ///
 /// The generic type names are:
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
-pub trait LocalTrial<B> {
+pub trait LocalTrial<P, B> {
     /// Propose a new configuration for the given body properties.
     #[must_use]
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B;

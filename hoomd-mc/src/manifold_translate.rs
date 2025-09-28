@@ -3,22 +3,20 @@
 
 //! Implement Translation moves on curved surfaces
 
-use crate::LocalTrial;
-use hoomd_manifold::{HyperbolicDisk, Hyperboloid, Sphere, SphericalDisk};
+use crate::{LocalTrial, Translate};
+use hoomd_manifold::{HyperbolicDisk, Hyperboloid, Minkowski, Sphere, SphericalDisk};
 use hoomd_microstate::property::Position;
-use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
 
 use rand::{Rng, distr::Distribution};
 
-/// Move the position of a body on a hyperbolic surface by a small distance
+/// Move the position of a body on a hyperbolic surface by a small distance.
 ///
-/// `HyperbolicTranslate` used with Sweep:
 /// # Example
 /// ```
 /// use hoomd_interaction::Zero;
 /// use hoomd_manifold::{Hyperboloid, Minkowski};
-/// use hoomd_mc::{HyperbolicTranslate, LocalTrial, Sweep, Trial};
+/// use hoomd_mc::{LocalTrial, Sweep, Translate, Trial};
 /// use hoomd_microstate::{
 ///     Body, Microstate,
 ///     property::{Point, Position},
@@ -28,47 +26,35 @@ use rand::{Rng, distr::Distribution};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut microstate = Microstate::new();
-/// microstate.add_body(Body::point(Hyperboloid::from(&Minkowski::from([
-///     1.0,
-///     1.0,
-///     3.0_f64.sqrt(),
-/// ]))));
+/// microstate.add_body(Body::point(Hyperboloid::<3>::default()));
 /// let d = 0.1;
-/// let translate = HyperbolicTranslate {
-///     maximum_distance: d.try_into()?,
-///     skirt: 1.0,
+/// let translate = Translate {
+///     maximum_distance: d.try_into()?
 /// };
 /// let translate_sweep = Sweep(translate);
 ///
 /// let hamiltonian = Zero;
 /// let kt = 1.0;
 ///
-/// for _ in 0..1_000 {
+/// for _ in 0..1000 {
 ///     translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
 ///     microstate.increment_step();
 /// }
 /// # Ok(())
 /// # }
 /// ```
-pub struct HyperbolicTranslate {
-    /// The max distance a body can be translated in one trial move
-    pub maximum_distance: PositiveReal,
-    /// The skirt width of the hyperboloid
-    pub skirt: f64,
-}
 
-impl<B> LocalTrial<B> for HyperbolicTranslate
+impl<B> LocalTrial<Hyperboloid<3>, B> for Translate
 where
-    B: Position<Position = Hyperboloid<3>>,
-    HyperbolicDisk: Distribution<Hyperboloid<3>>,
+    B: Position<Position=Hyperboloid<3>>,
 {
-    /// Propose local trial moves for a body on a hyperbolic surface
+    /// Propose local trial moves for a body on a hyperbolic surface.
     ///
     /// # Example
     /// ```
     /// use approx::assert_relative_eq;
     /// use hoomd_manifold::{Hyperboloid, Minkowski};
-    /// use hoomd_mc::{HyperbolicTranslate, LocalTrial};
+    /// use hoomd_mc::{Translate, LocalTrial};
     /// use hoomd_microstate::property::{Point, Position};
     /// use hoomd_vector::{Metric, Vector};
     /// use rand::{Rng, SeedableRng, rngs::StdRng};
@@ -76,15 +62,14 @@ where
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(13);
     /// let rho: f64 = 0.8;
-    /// let body_properties = Point::new(Hyperboloid::from(&Minkowski::from([
+    /// let body_properties = Point::new(Hyperboloid::from(Minkowski::from([
     ///     1.0,
     ///     -1.0,
     ///     (2.0 + rho.powi(2)).sqrt(),
-    /// ])));
+    /// ]), rho));
     /// let d = 0.1 * rho;
-    /// let hyperbolic_translate = HyperbolicTranslate {
+    /// let hyperbolic_translate = Translate {
     ///     maximum_distance: d.try_into()?,
-    ///     skirt: rho,
     /// };
     ///
     /// let new_body_properties =
@@ -94,7 +79,7 @@ where
     /// assert_relative_eq!(
     ///     new_body_properties
     ///         .position()
-    ///         .point
+    ///         .point()
     ///         .distance_squared(&Minkowski::from([0.0, 0.0, 0.0])),
     ///     -(rho.powi(2)),
     ///     epsilon = 1e-12
@@ -103,8 +88,8 @@ where
     /// // Translation move does not move the point more than a distance d
     /// assert!(
     ///     d > new_body_properties.position().distance(&Hyperboloid::from(
-    ///         &Minkowski::from([1.0, -1.0, (2.0 + rho.powi(2)).sqrt()])
-    ///     ))
+    ///         Minkowski::from([1.0, -1.0, (2.0 + rho.powi(2)).sqrt()]), rho)
+    ///     )
     /// );
     /// # Ok(())
     /// # }
@@ -112,23 +97,29 @@ where
     #[inline]
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B {
         let mut trial = body_properties;
+        let rho = trial.position().skirt();
         let disk = HyperbolicDisk {
             r: self.maximum_distance,
-            point: trial.position_mut().point,
-            skirt: self.skirt,
+            point: *trial.position_mut().point(),
+            skirt: rho,
         };
         *trial.position_mut() = disk.sample(rng);
         // push point back onto hyperboloid
-        let z = (trial.position_mut().point[0].powi(2)
-            + trial.position_mut().point[1].powi(2)
-            + self.skirt.powi(2))
-        .sqrt();
-        trial.position_mut().point[2] = z;
+        *trial.position_mut() = Hyperboloid::from(
+            Minkowski::from([
+                trial.position_mut().coordinates()[0],
+                trial.position_mut().coordinates()[1],
+                (trial.position_mut().point()[0].powi(2)
+                    + trial.position_mut().point()[1].powi(2)
+                    + trial.position().skirt().powi(2))
+                .sqrt()]),
+            rho
+        );
         trial
     }
 }
 
-/// Move the position of a body on the surface of a sphere by a small distance
+/// Move the position of a body on the surface of a sphere by a small distance.
 ///
 /// `SphericalTranslate` used with Sweep:
 /// # Example
@@ -136,23 +127,27 @@ where
 /// use approx::assert_relative_eq;
 /// use hoomd_interaction::Zero;
 /// use hoomd_manifold::{Sphere, SphericalDisk};
-/// use hoomd_mc::{LocalTrial, SphericalTranslate, Sweep, Trial};
+/// use hoomd_mc::{LocalTrial, Translate, Sweep, Trial};
 /// use hoomd_microstate::{Body, Microstate, property::Position};
 /// use hoomd_vector::{Cartesian, Metric, Vector};
 /// use rand::{Rng, SeedableRng, rngs::StdRng};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut microstate = Microstate::new();
-/// microstate.add_body(Body::point(Cartesian::from([
-///     0.5_f64.sqrt(),
-///     0.5_f64.sqrt(),
-///     0.0,
-/// ])));
+/// microstate.add_body(Body::point(
+///     Sphere::from(
+///         Cartesian::from([
+///             0.5_f64.sqrt(),
+///             0.5_f64.sqrt(),
+///             0.0,
+///         ]),
+///         1.0
+///     ))
+/// );
 /// let d = 0.1;
-/// let radius: f64 = 0.6;
-/// let translate = SphericalTranslate {
+/// let radius: f64 = 1.0;
+/// let translate = Translate {
 ///     maximum_distance: d.try_into()?,
-///     radius: radius,
 /// };
 /// let translate_sweep = Sweep(translate);
 ///
@@ -168,24 +163,17 @@ where
 ///         .item
 ///         .properties
 ///         .position()
-///         .distance(&Cartesian::from([0.0, 0.0, 0.0])),
+///         .radius(),
 ///     radius,
 ///     epsilon = 1e-12
 /// );
 /// # Ok(())
 /// # }
 /// ```
-pub struct SphericalTranslate {
-    /// The max distance a body can be translated in one trial move
-    pub maximum_distance: PositiveReal,
-    /// The radius of the sphere
-    pub radius: f64,
-}
 
-impl<B> LocalTrial<B> for SphericalTranslate
+impl<B> LocalTrial<Sphere<3>, B> for Translate
 where
-    B: Position<Position = Cartesian<3>>,
-    SphericalDisk: Distribution<Sphere<3>>,
+    B: Position<Position = Sphere<3>>,
 {
     /// Propose local trial moves for a body on the surface of a sphere
     ///
@@ -193,7 +181,7 @@ where
     /// ```
     /// use approx::assert_relative_eq;
     /// use hoomd_manifold::{Sphere, SphericalDisk};
-    /// use hoomd_mc::{LocalTrial, SphericalTranslate};
+    /// use hoomd_mc::{LocalTrial, Translate};
     /// use hoomd_microstate::property::{Point, Position};
     /// use hoomd_vector::{Cartesian, Metric, Vector};
     /// use rand::{Rng, SeedableRng, rngs::StdRng};
@@ -202,11 +190,19 @@ where
     /// let mut rng = StdRng::seed_from_u64(14);
     /// let radius: f64 = 2.0;
     /// let initial_point =
-    ///     Point::new(Cartesian::from([2.0_f64.sqrt(), 2.0_f64.sqrt(), 0.0]));
+    ///     Point::new(
+    ///         Sphere::from(
+    ///             Cartesian::from(
+    ///                 [2.0_f64.sqrt(),
+    ///                 2.0_f64.sqrt(),
+    ///                 0.0]
+    ///             ),
+    ///             2.0_f64
+    ///         )
+    ///     );
     /// let d = 0.1;
-    /// let spherical_translate = SphericalTranslate {
+    /// let spherical_translate = Translate {
     ///     maximum_distance: d.try_into()?,
-    ///     radius: radius,
     /// };
     ///
     /// let new_body_properties =
@@ -214,22 +210,14 @@ where
     ///
     /// // Translation move keeps point on the surface of the sphere
     /// assert_relative_eq!(
-    ///     new_body_properties
-    ///         .position()
-    ///         .distance(&Cartesian::from([0.0, 0.0, 0.0])),
+    ///     new_body_properties.position().radius(),
     ///     radius,
     ///     epsilon = 1e-12
     /// );
     ///
     /// // Translation move does not translate the point more than a distance d away
     /// assert!(
-    ///     d > Sphere::from(&new_body_properties.position()).distance(
-    ///         &Sphere::from(&Cartesian::from([
-    ///             2.0_f64.sqrt(),
-    ///             2.0_f64.sqrt(),
-    ///             0.0
-    ///         ]))
-    ///     )
+    ///     d > new_body_properties.position().distance(&initial_point.position())
     /// );
     /// # Ok(())
     /// # }
@@ -239,12 +227,18 @@ where
         let mut trial = body_properties;
         let disk = SphericalDisk {
             r: self.maximum_distance,
-            point: *trial.position_mut(),
-            radius: self.radius,
+            point: *trial.position_mut().point(),
+            radius: trial.position().radius(),
         };
-        *trial.position_mut() = disk.sample(rng).point;
-        let rescale = self.radius / trial.position_mut().norm();
-        *trial.position_mut() *= rescale;
+        *trial.position_mut() = disk.sample(rng);
+        let rescale = trial.position().radius() / trial.position().point().norm();
+        *trial.position_mut() = Sphere::from(
+            Cartesian::from([
+                rescale*trial.position().coordinates()[0],
+                rescale*trial.position().coordinates()[1],
+                rescale*trial.position().coordinates()[2],
+            ]),
+            trial.position().radius());
         trial
     }
 }

@@ -19,19 +19,20 @@ use crate::{Error, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski};
 #[expect(unused_imports, reason = "Needed for doc link")]
 use hoomd_vector::Quaternion;
 
-/// ## Biquaternions
+/// ## A quaternion with complex coefficients.
 ///
-/// Biquaternions are the set of numbers $a + b\mathbf{i} + c\mathbf{j} + d\mathbf{k}$
-/// where $a,b,c,d$ are complex numbers and ${1,\mathbf{i},\mathbf{j},\mathbf{k}}$ are
-/// the quaternion algebra. Biquaternions can be thought of as a generalization of quaternions
-/// which allow for complex coefficients. Analogous to quaternions and SO(3), biquaternions
-/// furnish a representation of SO(3,1)
+/// Biquaternions are the set of numbers $`a + b\mathbf{i} + c\mathbf{j} + d\mathbf{k}`$
+/// where $`a,b,c,d`$ are complex numbers and $`\{1,\mathbf{i},\mathbf{j},\mathbf{k}\}`$
+/// are the quaternion algebra. Biquaternions can be thought of as a
+/// generalization of quaternions which allow for complex coefficients.
+/// Analogous to quaternions and SO(3), biquaternions furnish a representation
+/// of SO(3,1)
 ///
 /// ## Construction of Biquaternions
 ///
-/// Create a biquaternion from an array of four complex numbers. Note that components are
-/// in the order $[\mathbf{i},\mathbf{j},\mathbf{k},1]$ (i.e., the scalar component is at
-/// the end)
+/// Create a biquaternion from an array of four complex numbers. Note that
+/// components are in the order $`[\mathbf{i},\mathbf{j},\mathbf{k},1``]$
+/// (i.e., the scalar component is at the end)
 /// ```
 /// use hoomd_manifold::Biquaternion;
 /// use num::complex::Complex;
@@ -45,10 +46,10 @@ use hoomd_vector::Quaternion;
 /// assert_eq!(4.0, q.components[0].im);
 /// ```
 ///
-/// ## Operations with biquaternions
+/// ## Operations with Boquaternions.
 ///
-/// Similar to [`Quaternion`], biquaternions support vector operations (addition, multiplication
-/// by a scalar, etc.):
+/// Similar to [`Quaternion`], biquaternions support vector operations
+/// (addition, multiplication by a scalar, etc.):
 /// ```
 /// use hoomd_manifold::Biquaternion;
 /// use num::complex::Complex;
@@ -73,8 +74,8 @@ use hoomd_vector::Quaternion;
 /// Biquaternions also support the following operations:
 ///
 /// Hamiltonian conjugate/ biconjugate:
-/// Denoted by the method "bar", the Hamiltonian conjugate multiplies the vector part
-/// of the biquaternion by -1.0.
+/// Denoted by the method "bar", the Hamiltonian conjugate multiplies the
+/// vector part of the biquaternion by -1.0.
 /// ```
 /// use hoomd_manifold::Biquaternion;
 /// use num::complex::Complex;
@@ -96,8 +97,8 @@ use hoomd_vector::Quaternion;
 /// ```
 ///
 /// Complex conjugation:
-/// Deonted by method "conj", takes the complex conjugate of all components of the
-/// biquaternion
+/// Deonted by method "conj", takes the complex conjugate of all components of
+/// the biquaternion
 /// ```
 /// use hoomd_manifold::Biquaternion;
 /// use num::complex::Complex;
@@ -119,7 +120,8 @@ use hoomd_vector::Quaternion;
 /// ```
 ///
 /// Biquaternion Product:
-/// The biquaternion product takes two biquaternions and outputs another biquaternion.
+/// The biquaternion product takes two biquaternions and outputs another
+/// biquaternion.
 /// ```
 /// use hoomd_manifold::Biquaternion;
 /// use num::complex::Complex;
@@ -146,7 +148,8 @@ use hoomd_vector::Quaternion;
 /// ```
 ///
 /// Scalar Product:
-/// The scalar product takes two biquaternions and outputs a complex number according to
+/// The scalar product takes two biquaternions and outputs a complex number
+/// according to
 /// ```math
 /// \frac{1}{2}(a\overline{b} + b\overline{a})
 /// ```
@@ -185,12 +188,12 @@ use hoomd_vector::Quaternion;
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Biquaternion {
-    /// Components of the biquaternion, in the order $[\mathbf{i},\mathbf{j},\mathbf{k},1]$
+    /// Components of the biquaternion, in the order [i,j,k,1].
     pub components: [Complex<f64>; 4],
 }
 
 impl Biquaternion {
-    /// the Hamiltonian conjugate or biconjugate of a biquaternion
+    /// Compute the Hamiltonian conjugate or biconjugate of a biquaternion.
     ///
     /// # Example
     /// ```
@@ -224,7 +227,7 @@ impl Biquaternion {
             (self.components[3]),
         ])
     }
-    /// the complex conjugate of a biquaternion
+    /// Compute the complex conjugate of a biquaternion.
     ///
     /// # Example
     /// ```
@@ -258,7 +261,7 @@ impl Biquaternion {
             (self.components[3]).conj(),
         ])
     }
-    /// the squared norm of a biquaternion
+    /// Compute the squared norm of a biquaternion.
     ///
     /// # Example
     /// ```
@@ -304,7 +307,7 @@ impl Biquaternion {
     pub fn norm(&self) -> Complex<f64> {
         self.norm_squared().sqrt()
     }
-    /// the quaternion product of two biquaternions
+    /// Compute the quaternion product of two biquaternions.
     ///
     /// # Example
     /// ```
@@ -356,7 +359,7 @@ impl Biquaternion {
                 - self.components[2] * other.components[2],
         ])
     }
-    /// the scalar product of two biquaternions
+    /// Compute the scalar product of two biquaternions.
     ///
     /// # Example
     /// ```
@@ -386,7 +389,7 @@ impl Biquaternion {
         zip(self.components.iter(), other.components.iter())
             .fold(Complex::new(0.0, 0.0), |product, x| product + x.0 * x.1)
     }
-    /// create a [`UnitBiquaternion`] by normalizing the given biquaternion
+    /// Create a [`UnitBiquaternion`] by normalizing the given biquaternion.
     #[inline]
     #[expect(clippy::missing_errors_doc, reason = "maps to error message")]
     pub fn to_unit(self) -> Result<UnitBiquaternion, Error> {
@@ -396,8 +399,8 @@ impl Biquaternion {
         }
         Ok(UnitBiquaternion(self / mag))
     }
-    /// create a [`UnitBiquaternion`] by normalizing the given biquaternion without
-    /// checking
+    /// Create a [`UnitBiquaternion`] by normalizing the given biquaternion
+    /// without returning an Option type.
     #[inline]
     #[must_use]
     pub fn to_unit_unchecked(self) -> UnitBiquaternion {
@@ -406,7 +409,7 @@ impl Biquaternion {
 }
 
 impl Default for Biquaternion {
-    /// Create a biquaternion with all zeros
+    /// Create a biquaternion with all zeros.
     #[inline]
     fn default() -> Self {
         Self {
@@ -561,14 +564,11 @@ impl DivAssign<f64> for Biquaternion {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-/// ## Representation of SO(3,1)
-/// Unit-norm Biquaternions furnish a representation of SO(3,1), analogous to quaternions and SO(3).
-/// If
-/// ```math
-/// \vec{x} = (x_1, x_2, x_3, x_4)
-/// ```
-/// is a vector in Minkowski space, then $\vec{x}$ can be
-/// mapped to a biquaternion
+/// ## Represent SO(3,1) with a normalized biquaternion.
+///
+/// Unit-norm Biquaternions furnish a representation of SO(3,1), analogous to
+/// quaternions and SO(3). If $`\vec{x} = (x_1, x_2, x_3, x_4)`$ is a vector
+/// in Minkowski space, then $\vec{x}$ can be mapped to a biquaternion
 /// ```math
 /// \vec{x} \mapsto X = [x_1, x_2, x_3,h x_4]
 /// ```
@@ -577,7 +577,7 @@ impl DivAssign<f64> for Biquaternion {
 /// |X|^2 = x_1^2 + x_2^2 + x_3^2 - x_4^2
 /// ```
 /// It can be shown that, for
-/// a unit biquaternion $q$, the transformation
+/// a unit biquaternion $`q`$, the transformation
 /// ```math
 /// q^* X \overline{q} = X'
 /// ```
@@ -586,14 +586,15 @@ impl DivAssign<f64> for Biquaternion {
 /// |X|^2 = |X'|^2
 /// ```
 /// We therefore have that this action by unit biquaternions
-/// produces a representation of SO(3,1). The biquaternion algebra can be used directly to transform Minkowski
-/// 4-vectors, or unit biquaternions can be represented as matrices using [`HyperbolicRotationMatrix<4>`].
+/// produces a representation of SO(3,1). The biquaternion algebra can be used
+/// directly to transform Minkowski 4-vectors, or unit biquaternions can be
+/// represented as matrices using [`HyperbolicRotationMatrix<4>`].
 ///
 /// Like quaternions, the unit biquaternion
 /// ```math
 /// q = \cos(\theta/2) + \bf{i}\sin(\theta/2)
 /// ```
-/// generates a rotation about the $\mathbf{i}$ axis by angle $\theta$:
+/// generates a rotation about the $\mathbf{i}$ axis by angle $`\theta`$:
 /// ```
 /// use approx::assert_relative_eq;
 /// use hoomd_manifold::{
@@ -624,7 +625,7 @@ impl DivAssign<f64> for Biquaternion {
 /// ```math
 /// q = \cosh(v) + \mathbf{i}h\sinh(v)
 /// ```
-/// which represents a boost of rapidity $v$ in the $\mathbf{i}$ direction:
+/// which represents a boost of rapidity $`v`$ in the $`\mathbf{i}`$ direction:
 /// ```
 /// use approx::assert_relative_eq;
 /// use hoomd_manifold::{
@@ -662,7 +663,7 @@ impl DivAssign<f64> for Biquaternion {
 pub struct UnitBiquaternion(Biquaternion);
 
 impl UnitBiquaternion {
-    /// Normalize a biquaternion
+    /// Normalize a biquaternion.
     #[inline]
     #[must_use]
     pub fn normalized(self) -> Self {
@@ -670,7 +671,7 @@ impl UnitBiquaternion {
         let f = 1.0 / q.norm();
         Self(q * f)
     }
-    /// Check the square of the norm
+    /// Compute the square of the norm of a biquaternion.
     #[inline]
     #[must_use]
     pub fn norm_squared(self) -> Complex<f64> {
@@ -763,7 +764,7 @@ impl From<UnitBiquaternion> for HyperbolicRotationMatrix<4> {
 impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     type Matrix = HyperbolicRotationMatrix<4>;
 
-    /// Transform a [`Minkowski<4>`] by a [`UnitBiquaternion`]
+    /// Transform a [`Minkowski<4>`] by a [`UnitBiquaternion`].
     ///
     /// ```math
     /// \overline{\mathbf{q}} \vec{a} \mathbf{q}^*
@@ -797,7 +798,7 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     /// # }
     /// ```
     ///
-    /// Boost in x direction.
+    /// Boost in x direction:
     /// ```
     /// use approx::assert_relative_eq;
     /// use hoomd_manifold::{
