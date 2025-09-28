@@ -3,7 +3,7 @@
 
 use std::{
     fmt,
-    ops::{Add, Index, IndexMut, Mul, Neg, Sub},
+    ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
 use crate::{Diagonal, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
@@ -199,7 +199,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     #[allow(dead_code, reason = "No use case yet.")]
     #[inline]
     #[must_use]
-    fn transpose(&self) -> Matrix<M, N> {
+    pub fn transpose(&self) -> Matrix<M, N> {
         Matrix {
             rows: std::array::from_fn(|j| std::array::from_fn(|i| self[(i, j)])),
         }
@@ -296,6 +296,29 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// # Example
     /// ```
     /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
+    /// let mut x = Matrix22 {
+    ///     rows: [[1.0, 2.0], [3.0, 4.0]],
+    /// };
+    /// let mut iterator = x.iter_flat_mut();
+    /// iterator.for_each(|x| *x *= 2.0);
+    /// assert_eq!(
+    ///     x,
+    ///     Matrix22 {
+    ///         rows: [[1.0, 2.0], [3.0, 4.0]]
+    ///     } * 2.0
+    /// );
+    /// ```
+    #[inline]
+    pub fn iter_flat_mut(&mut self) -> impl Iterator<Item = &mut f64> + '_ {
+        self.rows.iter_mut().flat_map(|row| row.iter_mut())
+    }
+
+    /// Returns an iterator over every element in the [`Matrix`]
+    /// The iterator yields all items from start to end.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
     /// let x = Matrix22 {
     ///     rows: [[1.0, 2.0], [3.0, 4.0]],
     /// };
@@ -367,13 +390,13 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         accum
     }
 
-    /// Get the number of rows in the [`Matrix`]
+    /// Get the number of rows in the [`Matrix`].
     #[must_use]
     #[inline]
     pub const fn n_rows(&self) -> usize {
         N
     }
-    /// Get the number of columns in the [`Matrix`]
+    /// Get the number of columns in the [`Matrix`].
     #[must_use]
     #[inline]
     pub const fn n_cols(&self) -> usize {
@@ -400,14 +423,14 @@ impl<const N: usize> Matrix<N, N> {
     /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
     ///
     /// let identity = Matrix22::identity();
-    /// assert_eq!(identity.det(), 1.0);
+    /// assert_eq!(identity.determinant(), 1.0);
     ///
     /// let scaled = identity * 2.0;
-    /// assert_eq!(scaled.det(), 2.0 * 2.0);
+    /// assert_eq!(scaled.determinant(), 2.0 * 2.0);
     /// ```
     #[must_use]
     #[inline]
-    pub fn det(&self) -> f64 {
+    pub fn determinant(&self) -> f64 {
         // Compute the determinant of a 2x2 minor.
         #[inline]
         fn det2(a: f64, b: f64, c: f64, d: f64) -> f64 {
@@ -533,6 +556,14 @@ impl<const N: usize> QuadraticForm for Matrix<N, N> {
 }
 
 /// Compute the elementwise scalar multiplication of a [`Matrix`]
+///
+/// # Examples
+/// ```
+/// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+/// let matrix = Matrix22::full(2.0);
+/// let scalar = 2.0;
+/// assert_eq!(matrix * scalar, matrix + matrix);
+/// ```
 impl<const N: usize, const M: usize> Mul<f64> for Matrix<N, M> {
     type Output = Self;
 
@@ -541,7 +572,49 @@ impl<const N: usize, const M: usize> Mul<f64> for Matrix<N, M> {
         self.map_elementwise(|x| x * rhs)
     }
 }
-/// Compute the elementwise negation of a [`Matrix`]
+/// Multiply an `f64` scalar by a [`Matrix`] rhs.
+///
+/// # Examples
+/// ```
+/// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+/// let matrix = Matrix22::full(2.0);
+/// let scalar = 3.0;
+/// assert_eq!(scalar * matrix, matrix * scalar);
+/// ```
+impl<const N: usize, const M: usize> Mul<Matrix<N, M>> for f64 {
+    type Output = Matrix<N, M>;
+
+    #[inline]
+    fn mul(self, rhs: Self::Output) -> Self::Output {
+        rhs.map_elementwise(|x| x * self)
+    }
+}
+
+/// Compute the elementwise, in-place scalar multiplication of a [`Matrix`]
+///
+/// # Examples
+/// ```
+/// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+/// let mut matrix = Matrix22::full(2.0);
+/// let matrix_copy = matrix.clone();
+/// matrix *= 3.0;
+/// assert_eq!(matrix, matrix_copy * 3.0);
+/// ```
+impl<const N: usize, const M: usize> MulAssign<f64> for Matrix<N, M> {
+    #[inline]
+    fn mul_assign(&mut self, rhs: f64) {
+        self.iter_flat_mut().for_each(|x| *x *= rhs);
+    }
+}
+
+/// Compute the elementwise negation of a [`Matrix`].
+///
+/// # Examples
+/// ```
+/// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+/// let matrix = Matrix22::full(5.0);
+/// assert_eq!(-matrix, Matrix22::zeros() - matrix);
+/// ```
 impl<const N: usize, const M: usize> Neg for Matrix<N, M> {
     type Output = Self;
 
@@ -586,6 +659,14 @@ impl<const N: usize, const M: usize> Add<Self> for Matrix<N, M> {
         }
     }
 }
+impl<const N: usize, const M: usize> AddAssign for Matrix<N, M> {
+    #[inline]
+    fn add_assign(&mut self, rhs: Self) {
+        self.iter_flat_mut()
+            .zip(rhs.iter_flat())
+            .for_each(|(x, r)| *x += r);
+    }
+}
 impl<const N: usize, const M: usize> Sub<Self> for Matrix<N, M> {
     type Output = Self;
 
@@ -596,6 +677,14 @@ impl<const N: usize, const M: usize> Sub<Self> for Matrix<N, M> {
                 std::array::from_fn(|j| self.rows[i][j] - rhs.rows[i][j])
             }),
         }
+    }
+}
+impl<const N: usize, const M: usize> SubAssign for Matrix<N, M> {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Self) {
+        self.iter_flat_mut()
+            .zip(rhs.iter_flat())
+            .for_each(|(x, r)| *x -= r);
     }
 }
 impl<const N: usize> Add<Self> for DiagonalMatrix<N> {
@@ -622,7 +711,7 @@ impl<const N: usize> Sub<Self> for DiagonalMatrix<N> {
 impl Invertible for Matrix<2, 2> {
     #[inline]
     fn inverse(&self) -> Self {
-        let inv_det = self.det().recip();
+        let inv_det = self.determinant().recip();
         Self {
             rows: [
                 [inv_det * self.rows[1][1], inv_det * -self.rows[0][1]],
@@ -706,9 +795,18 @@ impl Matrix<2, 2> {
     }
 }
 
-impl Copy for Matrix<2, 2> {}
-impl Copy for Matrix<3, 3> {}
-impl Copy for Matrix<4, 4> {}
+/// Macro to generate impls for a given row size `N` and multiple column sizes `M`.
+macro_rules! impl_copy_for_m {
+    ($N:literal, $($M:literal),+) => {
+        $(#[doc(hidden)]impl Copy for Matrix<$N, $M> {})+
+    };
+}
+/// Implement Copy for matrices of an input size `N`, `M`
+macro_rules! impl_copy_for_n_m {
+    ($($N:literal),+) => { $(impl_copy_for_m!($N, 1, 2, 3, 4);)+ };
+}
+
+impl_copy_for_n_m!(1, 2, 3, 4);
 impl<const N: usize> Diagonal for DiagonalMatrix<N> {}
 impl<const N: usize> Diagonal for [f64; N] {}
 
@@ -785,7 +883,7 @@ mod tests {
         let matrix = Matrix { rows };
         let faer_matrix = fill_faer(rows);
 
-        let custom_det = matrix.det();
+        let custom_det = matrix.determinant();
         let faer_det = faer_matrix.determinant();
 
         assert_relative_eq!(custom_det, faer_det, max_relative = 1e-14);
@@ -884,11 +982,11 @@ mod tests {
         let (mut faeru, faers, mut faerv) =
             (faersvd.U().to_owned(), faersvd.S(), faersvd.V().to_owned());
 
-        if faeru.determinant().signum() != u.det().signum() {
+        if faeru.determinant().signum() != u.determinant().signum() {
             faeru[(0, 1)] *= -1.0;
             faeru[(1, 1)] *= -1.0;
         }
-        if faerv.determinant().signum() != vt.det().signum() {
+        if faerv.determinant().signum() != vt.determinant().signum() {
             faerv[(0, 1)] *= -1.0;
             faerv[(1, 1)] *= -1.0;
         }
@@ -1005,6 +1103,7 @@ mod tests {
     fn test_matrix_add_2x2() {
         let a_rows = [[1.0, 2.0], [3.0, 4.0]];
         let b_rows = [[5.0, 6.0], [7.0, 8.0]];
+
         let a = Matrix::<2, 2> { rows: a_rows };
         let b = Matrix::<2, 2> { rows: b_rows };
         let faer_a = fill_faer(a_rows);
@@ -1013,6 +1112,7 @@ mod tests {
         let custom_sum = a + b;
         let faer_sum = faer_a + faer_b;
 
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&custom_sum, &faer_sum);
         assert_matrixes_ulps_eq::<2, 2, _, _>(&custom_sum, &faer_sum);
     }
 
@@ -1300,5 +1400,77 @@ mod tests {
         let identity = Matrix22::identity();
 
         assert_matrixes_ulps_eq::<2, 2, _, _>(&product, &identity);
+    }
+    #[rstest]
+    #[case(
+        [[1.0, 2.0], [ 3.0, 4.0], [5.0, 6.0]],
+        [[7.0, 8.0], [9.0, 10.0], [11.0, 12.0]],
+    )]
+    #[case(
+        [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]],
+        [[2.0, 3.0], [ 4.0, 5.0], [6.0, 7.0]],
+    )]
+    #[case(
+        [[1.0],[ 2.0]],
+        [[3.0], [4.0]],
+    )]
+    #[case(
+        [[1.0, 2.0], [3.0, 4.0], [1.0, 1.0]],
+        [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]],
+    )]
+    fn test_add_assign<const M: usize, const N: usize>(
+        #[case] a_rows: [[f64; M]; N],
+        #[case] b_rows: [[f64; M]; N],
+    ) {
+        let mut a = Matrix { rows: a_rows };
+        let b = Matrix { rows: b_rows };
+        let c = a.clone() + b.clone();
+
+        a += b;
+        assert_eq!(a, c);
+    }
+    #[rstest]
+    #[case(
+        [[1.0, 2.0], [ 3.0, 4.0], [5.0, 6.0]], 0.0
+    )]
+    #[case(
+        [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], -91.0
+    )]
+    #[case(
+        [[1.0],[ 2.0]], 33.3
+    )]
+    #[case(
+        [[1.0, 2.0], [3.0, 4.0], [1.0, 1.0]], 84.0
+    )]
+    fn test_mul_assign<const M: usize, const N: usize>(
+        #[case] a_rows: [[f64; M]; N],
+        #[case] x: f64,
+    ) {
+        let mut a = Matrix { rows: a_rows };
+        let c = a.clone() * x;
+
+        a *= x;
+        assert_eq!(a, c);
+    }
+
+    #[rstest]
+    #[case(
+        [[1.0, 2.0], [ 3.0, 4.0], [5.0, 6.0]], 0.0
+    )]
+    #[case(
+        [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], -91.0
+    )]
+    #[case(
+        [[1.0],[ 2.0]], 33.3
+    )]
+    #[case(
+        [[1.0, 2.0], [3.0, 4.0], [1.0, 1.0]], 84.0
+    )]
+    fn test_mul_left<const M: usize, const N: usize>(
+        #[case] a_rows: [[f64; M]; N],
+        #[case] x: f64,
+    ) {
+        let a = Matrix { rows: a_rows };
+        assert_eq!(a.clone() * x, x * a);
     }
 }
