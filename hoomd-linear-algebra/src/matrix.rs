@@ -1,16 +1,15 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+pub use crate::diagonal::DiagonalMatrix;
+
 use std::{
     fmt,
     ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
-use crate::{
-    Diagonal, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix,
-    diagonal::DiagonalMatrix,
-};
-// use hoomd_vector::{Cartesian, RotationMatrix};
+/// A lightweight representation of a diagonal matrix.
+use crate::{Diagonal, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
 
 /// A matrix with N rows and M columns, allocated on the stack.
 #[derive(Clone, Debug, PartialEq)]
@@ -108,7 +107,8 @@ impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> 
     /// # Example
     /// ```
     /// use hoomd_linear_algebra::{
-    ///     GeneralMatrix, MatMul, diagonal::DiagonalMatrix, matrix::Matrix22,
+    ///     GeneralMatrix, MatMul,
+    ///     matrix::{DiagonalMatrix, Matrix22},
     /// };
     /// let diag = DiagonalMatrix { rows: [3.0, 4.0] };
     /// let mat = Matrix22::full(1.0).matmul(&diag);

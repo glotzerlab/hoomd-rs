@@ -14,7 +14,7 @@ pub struct DiagonalMatrix<const N: usize> {
 /// Index the on-diagonal components of a diagonal matrix
 /// # Examples
 /// ```
-/// use hoomd_linear_algebra::{SquareMatrix, diagonal::DiagonalMatrix};
+/// use hoomd_linear_algebra::{SquareMatrix, matrix::DiagonalMatrix};
 /// let mat = DiagonalMatrix {
 ///     rows: [1.0, 2.0, 3.0],
 /// };
@@ -33,7 +33,7 @@ impl<const N: usize> Index<usize> for DiagonalMatrix<N> {
 /// Index the dense view of a diagonal matrix. Off-diagonal elements will be `0.0`.
 /// # Examples
 /// ```
-/// use hoomd_linear_algebra::{SquareMatrix, diagonal::DiagonalMatrix};
+/// use hoomd_linear_algebra::{SquareMatrix, matrix::DiagonalMatrix};
 /// let mat = DiagonalMatrix {
 ///     rows: [1.0, 2.0, 3.0],
 /// };

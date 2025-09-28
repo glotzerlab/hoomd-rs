@@ -31,8 +31,8 @@ where
 /// # Example
 /// ```
 /// use hoomd_linear_algebra::{
-///     GeneralMatrix, MatMul, SquareMatrix, diagonal::DiagonalMatrix,
-///     matrix::Matrix22,
+///     GeneralMatrix, MatMul, SquareMatrix,
+///     matrix::{DiagonalMatrix, Matrix22},
 /// };
 ///
 /// let mat = Matrix22::full(5.0);
@@ -104,4 +104,4 @@ pub trait QuadraticForm: SquareMatrix {
 pub mod matrix;
 
 /// A lightweight representation of a diagonal matrix.
-pub mod diagonal;
+mod diagonal;
