@@ -2323,7 +2323,6 @@ dependencies = [
  "hoomd-simulation",
  "hoomd-vector",
  "itertools 0.14.0",
- "libm",
  "web-time",
 ]
 
@@ -2344,7 +2343,6 @@ dependencies = [
  "hoomd-simulation",
  "hoomd-utility",
  "hoomd-vector",
- "libm",
  "rand 0.9.2",
  "uuid",
 ]
