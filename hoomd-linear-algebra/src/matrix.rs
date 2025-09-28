@@ -499,6 +499,47 @@ impl<const N: usize> Matrix<N, N> {
         let col_indices = std::array::from_fn(|i| i);
         det_recursive_noslice(self, 0, col_indices, N)
     }
+    /// Compute the sum of diagonal elements of a square matrix.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
+    ///
+    /// let identity = Matrix22::identity();
+    /// assert_eq!(identity.trace(), 2.0);
+    ///
+    /// let scaled = identity * 3.0;
+    /// assert_eq!(scaled.trace(), 3.0 + 3.0);
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn trace(&self) -> f64 {
+        std::array::from_fn::<_, N, _>(|i| self[(i, i)])
+            .iter()
+            .sum()
+    }
+
+    /// Compute a matrix to an integer power, equivalent to $`\prod_{i=1}^n A`$.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hoomd_linear_algebra::{GeneralMatrix, MatMul, matrix::Matrix22};
+    ///
+    /// let matrix = Matrix22::full(2.0);
+    ///
+    /// // powi(2) is equivalent to x.matmul(&x)
+    /// assert_eq!(matrix.powi(2), matrix.matmul(&matrix));
+    ///
+    /// // Standard power rules are respected.
+    /// assert_eq!(matrix.powi(2).powi(2), matrix.powi(4));
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn powi(&self, n: i32) -> Self {
+        (0..n).fold(Self::identity(), |acc, _| acc.matmul(self))
+    }
 
     /// Extract the diagonal elements from a square matrix.
     ///
@@ -709,15 +750,71 @@ impl<const N: usize> Sub<Self> for DiagonalMatrix<N> {
 }
 
 impl Invertible for Matrix<2, 2> {
+    /// Compute the inverse of a matrix. Will be `None` if the matrix is not invertible.
+    ///
+    /// This implementation uses a closed form solution for the matrix inverse.
     #[inline]
-    fn inverse(&self) -> Self {
-        let inv_det = self.determinant().recip();
-        Self {
-            rows: [
-                [inv_det * self.rows[1][1], inv_det * -self.rows[0][1]],
-                [inv_det * -self.rows[1][0], inv_det * self.rows[0][0]],
-            ],
+    fn inverse(&self) -> Option<Self> {
+        let det = self.determinant();
+        if det == 0.0 {
+            None
+        } else {
+            let inv_det = det.recip();
+            Some(Self {
+                rows: [
+                    [inv_det * self.rows[1][1], inv_det * -self.rows[0][1]],
+                    [inv_det * -self.rows[1][0], inv_det * self.rows[0][0]],
+                ],
+            })
         }
+    }
+}
+
+impl Invertible for Matrix<3, 3> {
+    /// Compute the inverse of a matrix. Will be `None` if the matrix is not invertible.
+    ///
+    /// This implementation uses a closed form solution for the matrix inverse based on
+    /// the cross product of rows.
+    #[inline]
+    fn inverse(&self) -> Option<Self> {
+        #[inline]
+        fn cross(u: [f64; 3], v: [f64; 3]) -> [f64; 3] {
+            [
+                u[1] * v[2] - u[2] * v[1],
+                u[2] * v[0] - u[0] * v[2],
+                u[0] * v[1] - u[1] * v[0],
+            ]
+        }
+        let [x0, x1, x2] = self.rows;
+        let det = self.determinant();
+        if det == 0.0 {
+            return None;
+        }
+        let rows = [cross(x1, x2), cross(x2, x0), cross(x0, x1)];
+        Some(det.recip() * Self { rows }.transpose())
+    }
+}
+impl Invertible for Matrix<4, 4> {
+    /// Compute the inverse of a matrix. Will be `None` if the matrix is not invertible.
+    ///
+    /// This implementation uses a closed form solution for the matrix inverse based on
+    /// the Cayley–Hamilton method.
+    #[inline]
+    fn inverse(&self) -> Option<Self> {
+        let det = self.determinant();
+        if det == 0.0 {
+            return None;
+        }
+        // Compute components of Cayley–Hamilton factorization
+        let tr_a = self.trace();
+        let a_sq = self.powi(2);
+        let tr_a_sq = a_sq.trace();
+        let a_cb = a_sq.matmul(self);
+        let tr_a_cb = a_cb.trace();
+        let left =
+            (1.0 / 6.0) * (tr_a.powi(3) - 3.0 * tr_a * tr_a_sq + 2.0 * tr_a_cb) * Self::identity();
+        let center = (1.0 / 2.0) * *self * (tr_a.powi(2) - tr_a_sq);
+        Some(det.recip() * (left - center + a_sq * tr_a - a_cb))
     }
 }
 
@@ -868,7 +965,7 @@ mod tests {
         case([[-9.0]]),
         case([[1.0, -2.0], [3.0, 4.0]]),
         case([[1.0, 2.0, 3.0], [0.0, 1.0, 4.0], [5.0, 6.0, 0.0]]),
-        case([[2.0, 0.0, 1.0], [3.0, 0.0, 0.0], [5.0, 1.0, 1.0]]),
+        case([[2.0, 0.0, 1.0], [3.0, 9.0, 9.0], [5.0, 1.0, 1.0]]),
         case(Matrix::<4, 4>::identity().rows),
         case([
             [-10.0, 4.0, 3.0, 4.0],
@@ -1395,11 +1492,39 @@ mod tests {
     )]
     fn test_inverse_2x2(rows: [[f64; 2]; 2]) {
         let matrix = Matrix22 { rows };
-        let inv_matrix = matrix.inverse();
+        let inv_matrix = matrix.inverse().expect("invertible");
         let product = matrix.matmul(&inv_matrix);
         let identity = Matrix22::identity();
 
         assert_matrixes_ulps_eq::<2, 2, _, _>(&product, &identity);
+    }
+    #[rstest(
+        rows,
+        case(Matrix33::identity().rows),
+        case([[1.0, -3.0, 4.5], [3.0, 4.0,5.0], [8.0, -9.3, 10.0]]),
+        case([[2.0, 1.0, 0.0], [0.0, 1.0, 2.0], [1.0, 0.0, 1.0]]),
+        case([[5.0, -2.0, 3.0], [1.0, 0.0, 4.0], [-1.0, 2.0, 1.0]])
+    )]
+    fn test_inverse_3x3(rows: [[f64; 3]; 3]) {
+        let matrix = Matrix33 { rows };
+        let inv_matrix = matrix.inverse().expect("invertible");
+        let product = matrix.matmul(&inv_matrix);
+        let identity = Matrix33::identity();
+
+        assert_matrixes_ulps_eq::<3, 3, _, _>(&product, &identity);
+    }
+    #[rstest(
+        rows,
+        case(Matrix44::identity().rows),
+        case([[1.0, -4.0, 4.5,1.0], [4.0, 4.0,5.0,0.0], [8.0, -9.4, 10.0,9.0], [-1.0,-1.0,1.0,1.0]]),
+    )]
+    fn test_inverse_4x4(rows: [[f64; 4]; 4]) {
+        let matrix = Matrix44 { rows };
+        let inv_matrix = matrix.inverse().expect("invertible");
+        let product = matrix.matmul(&inv_matrix);
+        let identity = Matrix44::identity();
+
+        assert_matrixes_ulps_eq::<4, 4, _, _>(&product, &identity);
     }
     #[rstest]
     #[case(
