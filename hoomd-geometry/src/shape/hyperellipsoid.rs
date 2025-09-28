@@ -303,7 +303,10 @@ where
 {
     let m = *b_inv * ((1.0 - l).recip()) + (*a_inv * l.recip());
 
-    1.0 - m.inverse().compute_quadratic_form(v_ij)
+    1.0 - m
+        .inverse()
+        .expect("Matrix is not invertible - overlap check would return NaN.")
+        .compute_quadratic_form(v_ij)
 }
 
 #[expect(
