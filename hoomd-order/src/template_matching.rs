@@ -1,10 +1,13 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 //!
 
 #![allow(dead_code, reason = "wip")]
 
 use crate::CrossCovariance;
-use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix};
-use hoomd_vector::{Cartesian, Versor};
+use hoomd_linear_algebra::{GeneralMatrix, MatMul, matrix::Matrix};
+use hoomd_vector::{Cartesian, RotationMatrix};
 
 /// TODO
 #[derive(Clone, Debug, PartialEq)]
@@ -48,11 +51,28 @@ impl Template<'_, Cartesian<3>> {
     ///
     ///
     // fn template_match<I: ExactSizeIterator<Item = Cartesian<3>>>(
-    fn template_match(&self, other: Self) -> (Versor, Cartesian<3>, f64) {
+    fn template_match<I: ExactSizeIterator<Item = Cartesian<3>>>(
+        &self,
+        other: I,
+    ) -> (RotationMatrix<3>, Cartesian<3>, f64) {
+        // TODO: pre-center self
+        // self.center = self
+        //     .coordinates
+        //     .iter()
+        //     .fold(Cartesian::default(), |acc, &x| acc + x);
+        // / Cartesian::from([self.coordinates.len() as f64; 3]);
         let m = self
             .clone()
             .cross_covariance(other)
             .expect("Point set sizes did not match!");
-        (Versor::default(), Cartesian::default(), 0.0)
+
+        let (u, s, vt) = m.svd();
+        let r = u.matmul(&vt).transpose();
+
+        (
+            r.try_into().expect("Should be unitary by construction."),
+            Cartesian::default(),
+            0.0,
+        )
     }
 }
