@@ -10,7 +10,7 @@ use crate::{
     property::Position,
 };
 use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
-use hoomd_linalg::{MatMul, matrix::Matrix33};
+use hoomd_linear_algebra::{MatMul, matrix::Matrix33};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::InnerProduct;
 use hoomd_vector::{Cartesian, Cross};
@@ -58,10 +58,9 @@ where
     /// let box_ = Parallelepiped{edge_vectors: [[1.0,0.0,0.0].into(),[0.5,f64::sqrt(3.0)/2.0,0.0].into(), [0.0,0.0,1.0].into()]};
     /// let periodic =
     ///     Periodic::new(0.25, box_)?;
-    /// let point = Point::new(Cartesian::from([6.0, -15.0, 2.5]));
-    /// println!("{}",point.position);
+    /// let point = Point::new(Cartesian::from([1.0, f64::sqrt(3.0), 2.5]));
     /// let wrapped_point = periodic.wrap(point)?;
-    /// assert_eq!(wrapped_point.position, [0.0, 0.67949192, 0.0].into());
+    /// assert_eq!(wrapped_point.position, [0.0, 0.0, -0.5].into());
     /// # Ok(())
     /// # }
     /// ```
@@ -87,11 +86,12 @@ where
                     .cross(&self.shape.edge_vectors[1])
                     .coordinates,
             ],
-        } * from_fractional.det().recip();
+        } * from_fractional.determinant().recip(); //Todo: Switch to using inverse when available
 
-        let box_offset = to_fractional.matmul(&r.to_column_matrix()).map(f64::round);
-
-        *r -= from_fractional.matmul(&box_offset).into();
+        let box_offset = to_fractional
+            .matmul(&r.to_column_matrix())
+            .map_elementwise(f64::round);
+        *r -= from_fractional.matmul(&box_offset).transpose().into();
 
         Ok(properties)
     }

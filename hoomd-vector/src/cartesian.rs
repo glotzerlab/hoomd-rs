@@ -178,6 +178,26 @@ impl From<(f64, f64, f64)> for Cartesian<3> {
     }
 }
 
+impl<const N: usize> From<Matrix<1, N>> for Cartesian<N> {
+    /// Create a Cartesian vector from a row matrix.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::Cartesian;
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    ///
+    /// let m: Matrix<1,3> = Matrix { rows: [[1.0, 2.0, 3.0]] };
+    /// let v: Cartesian<3> = m.into();
+    /// assert_eq!(v, [1.0, 2.0, 3.0].into());
+    /// ```
+    #[inline]
+    fn from(value: Matrix<1, N>) -> Self {
+        Self {
+            coordinates: value.rows[0],
+        }
+    }
+}
+
 impl<const N: usize> TryFrom<Vec<f64>> for Cartesian<N> {
     type Error = Error;
 
@@ -737,22 +757,6 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
         }
 
         Cartesian { coordinates }
-    }
-}
-
-impl<const N: usize> From<Matrix<N, 1>> for Cartesian<N> {
-    #[inline]
-    fn matmul(&self, rhs: &Matrix<N, K>) -> Self::Output {
-        let mut result = Self::Output::zeros();
-        for n in 0..N {
-            for k in 0..K {
-                for m in 0..N {
-                    result[(n, k)] += self.rows()[n][m] * rhs[(m, k)];
-                }
-            }
-        }
-
-        result
     }
 }
 
