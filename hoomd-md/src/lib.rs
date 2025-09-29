@@ -181,7 +181,7 @@ where
             let mut ke = 0.0;
             // use the first body to determine the dimension
             let nd = microstate.bodies()[0].item.properties.position().n_dimensions() as f64;
-            let dof = nd * microstate.bodies().len() as f64;
+            let dof = nd * (microstate.bodies().len() as f64 - 1.0);
 
             for body_index in 0..microstate.bodies().len() {
                 // Get the the body information
@@ -205,6 +205,7 @@ where
             &self.dt,
             &mut compute_properties,
         );
+        self.kinetic_energy *= rescaling_factor.powi(2);
 
         // Integrate position and momentum forward
         for body_index in 0..microstate.bodies().len() {
@@ -255,7 +256,7 @@ where
             let mut ke = 0.0;
             // use the first body to determine the dimension
             let nd = microstate.bodies()[0].item.properties.position().n_dimensions() as f64;
-            let dof = nd * microstate.bodies().len() as f64;
+            let dof = nd * (microstate.bodies().len() as f64 - 1.0);
 
             for body_index in 0..microstate.bodies().len() {
                 // Get the the body information
@@ -298,6 +299,7 @@ where
             &self.dt,
             &mut compute_properties,
         );
+        self.kinetic_energy *= rescaling_factor.powi(2);
 
         // Apply thermostat
         for body_index in 0..microstate.bodies().len() {
@@ -382,7 +384,8 @@ where
                 let x_nonzero = I[0] > 0.0;
                 let y_nonzero = I[1] > 0.0;
                 let z_nonzero = I[2] > 0.0;
-
+                
+                // angular momentum vector in global frame, s.scalar should be zero.
                 let s = (q.conjugate() * *p) * 0.5;
                 if x_nonzero {
                     ke += s.vector[0].powi(2) / I[0];
