@@ -725,7 +725,7 @@ impl Matrix<2, 2> {
         let a_plus_d = f64::midpoint(self[(0, 0)], self[(1, 1)]);
 
         let a_minus_d = (self[(0, 0)] - self[(1, 1)]) / 2.0;
-        let b_plus_c = f64::midpoint(self[(0, 1)], self[(1, 0)]); // TODO sign
+        let b_plus_c = f64::midpoint(self[(0, 1)], self[(1, 0)]);
         let b_minus_c = (self[(1, 0)] - self[(0, 1)]) / 2.0;
         let (q, r) = (
             (a_plus_d.powi(2) + b_minus_c.powi(2)).sqrt(),
