@@ -1,22 +1,24 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement Hyperbolic disks in Bevy.
-*/
+//! Implement Hyperbolic disks in Bevy.
 
 use crate::PRIMARY_COLOR;
 use bevy::{
     asset::embedded_asset,
     prelude::*,
     reflect::TypePath,
-    render::render_resource::{AsBindGroup, ShaderRef},
-    render::texture::TRANSPARENT_IMAGE_HANDLE,
+    render::{
+        render_resource::{AsBindGroup, ShaderRef},
+        texture::TRANSPARENT_IMAGE_HANDLE,
+    },
     sprite::{AlphaMode2d, Material2d, Material2dPlugin},
 };
 use hoomd_manifold::{Hyperboloid, Minkowski};
-use itertools::EitherOrBoth::{Both, Left, Right};
-use itertools::Itertools;
-use libm::{acosh, cosh, sinh};
+use itertools::{
+    EitherOrBoth::{Both, Left, Right},
+    Itertools,
+};
 use std::marker::PhantomData;
 
 /// Location of the shader implementation
@@ -24,21 +26,20 @@ const SHADER_ASSET_PATH: &str = "embedded://hoomd_bevy/representation/hyperbolic
 /// skirt width of the hyperboloid
 const RHO: f64 = 1.0;
 
-/** Represent an entity with a 2D disk in the xy plane.
-
-The base representation has a diameter of 1.0. Provide a non-unit diameter in
-[`sync`] to render disks of different sizes. Nominally, the z coordinate of the
-disks should be set to 0. Choose a different value to control the back to front
-draw order.
-
-All disks of the same type must have the same material. To display disks with
-different colors, outline widths, or textures, `setup` and `sync` multiple types
-of disks with different marker types.
-
-To use:
-* Add [`setup`](Self::setup) to the `Startup` schedule.
-* Call [`sync`](Self::sync) in an `Update` schedule that runs after `AdvanceSet`.
-*/
+/// Represent an entity with a 2D disk in the xy plane.
+///
+/// The base representation has a diameter of 1.0. Provide a non-unit diameter in
+/// [`sync`] to render disks of different sizes. Nominally, the z coordinate of the
+/// disks should be set to 0. Choose a different value to control the back to front
+/// draw order.
+///
+/// All disks of the same type must have the same material. To display disks with
+/// different colors, outline widths, or textures, `setup` and `sync` multiple types
+/// of disks with different marker types.
+///
+/// To use:
+/// * Add [`setup`](Self::setup) to the `Startup` schedule.
+/// * Call [`sync`](Self::sync) in an `Update` schedule that runs after `AdvanceSet`.
 #[derive(Component)]
 pub struct HyperbolicDisk<T> {
     /// Mark the type of the disk.
@@ -63,8 +64,7 @@ pub(crate) fn build(app: &mut App) {
 }
 
 impl<T: Send + Sync + 'static> HyperbolicDisk<T> {
-    /** Create assets to render disks.
-     */
+    /// Create assets to render disks.
     pub fn setup(
         material: In<HyperbolicDiskMaterial>,
         mut commands: Commands,
@@ -95,11 +95,11 @@ impl<T: Send + Sync + 'static> HyperbolicDisk<T> {
                     let (poincare_position, max_projected_radius) =
                         poincare(&position, RHO, diameter);
                     let rad_arg =
-                        RHO * sinh(diameter / (2.0 * RHO)) / (1.0 + cosh(diameter / (2.0 * RHO)));
+                        RHO * (diameter / (2.0 * RHO)).sinh()  / (1.0 + (diameter / (2.0 * RHO)).cosh());
                     let poincare_radius = (0.5)
-                        * acosh(1.0 + 2.0 * rad_arg.powi(2) / (1.0 - (rad_arg.powi(2)))) as f32;
+                        * (1.0 + 2.0 * rad_arg.powi(2) / (1.0 - (rad_arg.powi(2)))).acosh() as f32;
                     transform.translation = Vec3::from_array(poincare_position);
-                    //transform.scale = Vec3::splat(1.0);
+                    // transform.scale = Vec3::splat(1.0);
                     transform.scale = Vec3::from_array([
                         max_projected_radius,
                         max_projected_radius,
@@ -111,9 +111,9 @@ impl<T: Send + Sync + 'static> HyperbolicDisk<T> {
                     let (poincare_position, max_projected_radius) =
                         poincare(&position, RHO, diameter);
                     let rad_arg =
-                        RHO * sinh(diameter / (2.0 * RHO)) / (1.0 + cosh(diameter / (2.0 * RHO)));
+                        RHO * (diameter / (2.0 * RHO)).sinh() / (1.0 + (diameter / (2.0 * RHO)).cosh());
                     let poincare_radius = (0.5)
-                        * acosh(1.0 + 2.0 * rad_arg.powi(2) / (1.0 - (rad_arg.powi(2)))) as f32;
+                        * (1.0 + 2.0 * rad_arg.powi(2) / (1.0 - (rad_arg.powi(2)))).acosh() as f32;
                     commands.spawn((
                         Mesh2d(disk_assets.mesh.clone()),
                         MeshMaterial2d(disk_assets.material.clone()),
@@ -134,25 +134,23 @@ impl<T: Send + Sync + 'static> HyperbolicDisk<T> {
 }
 
 /// Project coordinates to Poincare disk
-///TODO: fix radius
 fn poincare(point: &Minkowski<3>, skirt: f64, diameter: f64) -> ([f32; 3], f32) {
-    let pt = Hyperboloid::from(point);
+    let pt = Hyperboloid::from(*point, skirt);
     let proj = pt.to_poincare();
     let v = diameter / (skirt * 2.0);
-    let eta = acosh(point.coordinates[2] / RHO);
-    let edge_proj = (RHO * sinh(eta - v)) / (1.0 + cosh(eta - v));
-    let rad_proj = (RHO * sinh(eta)) / (1.0 + cosh(eta)) - edge_proj;
+    let eta = (point.coordinates[2] / RHO).acosh();
+    let edge_proj = (RHO * (eta - v).sinh()) / (1.0 + (eta - v).cosh());
+    let rad_proj = (RHO * (eta).sinh()) / (1.0 + (eta).cosh()) - edge_proj;
     ([proj[0] as f32, proj[1] as f32, 0.0_f32], rad_proj as f32)
 }
 
-/** Control how disks are rendered.
-
-[`HyperbolicDiskMaterial`] mixes the texture (which defaults to fully transparent) with
-the background color using the texture alpha. It ignores the background alpha.
-
-Control the draw order using the z coordinate. The draw order is non-deterministic
-for all disks at the same z value.
-*/
+/// Control how disks are rendered.
+///
+/// [`HyperbolicDiskMaterial`] mixes the texture (which defaults to fully transparent) with
+/// the background color using the texture alpha. It ignores the background alpha.
+///
+/// Control the draw order using the z coordinate. The draw order is non-deterministic
+/// for all disks at the same z value.
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct HyperbolicDiskMaterial {
     /// Color applied to the interior of the disk.
@@ -190,7 +188,7 @@ impl Default for HyperbolicDiskMaterial {
 }
 
 impl HyperbolicDiskMaterial {
-    /// Color for ghost particles
+    /// color for ghost particles
     #[must_use]
     pub fn ghost() -> Self {
         Self {

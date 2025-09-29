@@ -52,11 +52,11 @@ use rand::Rng;
 /// ```
 pub struct Sweep<L>(pub L);
 
-impl<M, B, S, C, L, H> Trial<Microstate<B, S, C>, H> for Sweep<L>
+impl<P, B, S, C, L, H> Trial<Microstate<B, S, C>, H> for Sweep<L>
 where
-    B: Copy + Clone + Default + Transform<S> + Position<Metric = M>,
-    S: Clone + Default + Position<Metric = M>,
-    L: LocalTrial<B>,
+    B: Copy + Clone + Default + Transform<S> + Position<Position = P>,
+    S: Clone + Default + Position<Position = P>,
+    L: LocalTrial<P, B>,
     H: DeltaEnergyOne<B, S, C>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
@@ -136,7 +136,7 @@ mod tests {
     }
 
     struct Right;
-    impl LocalTrial<Point<Cartesian<2>>> for Right {
+    impl LocalTrial<Cartesian<2>, Point<Cartesian<2>>> for Right {
         fn propose<R: Rng>(
             &self,
             _rng: &mut R,

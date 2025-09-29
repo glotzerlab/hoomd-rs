@@ -76,11 +76,11 @@ pub struct CutoffPairOverlap<E> {
     pub evaluator: E,
 }
 
-impl<M, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPairOverlap<E>
+impl<P, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
-    S: Position<Metric = M>,
-    M: Metric,
+    S: Position<Metric = P>,
+    P: Metric,
 {
     /// Compute the total energy of the microstate contributed by functions on pairs of sites.
     ///
@@ -173,13 +173,13 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<M, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPairOverlap<E>
+impl<P, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
     B: Transform<S>,
-    S: Position<Metric = M>,
+    S: Position<Metric = P>,
     C: Wrap<B> + Wrap<S>,
-    M: Metric,
+    P: Metric,
 {
     #[inline]
     fn delta_energy_one(

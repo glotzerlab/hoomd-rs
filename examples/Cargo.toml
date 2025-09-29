@@ -35,8 +35,6 @@ hoomd-order.workspace = true
 hoomd-simulation.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
-libm = "0.2.11"
-glam = "0.27"
 
 anyhow.workspace = true
 bevy = { workspace = true, optional = true }
@@ -56,6 +54,11 @@ all-features = true
 [[example]]
 name = "hello"
 path = "hello.rs"
+
+[[example]]
+name = "hyperbolic-lennard-jones"
+path = "hyperbolic-lennard-jones.rs"
+required-features = ["bevy"]
 
 [[example]]
 name = "random-walk"

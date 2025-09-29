@@ -1,193 +1,222 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`Biquaternion`] anda four-dimensional matrix representation
-of SO(3,1).
-*/
+//! Implement [`Biquaternion`] and a four-dimensional matrix representation
+//! of SO(3,1).
 
 use num::complex::Complex;
-use rand::Rng;
-use rand::distr::{Distribution, StandardUniform, Uniform};
-use std::array;
-use std::fmt;
-use std::iter::zip;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use rand::{
+    Rng,
+    distr::{Distribution, StandardUniform, Uniform},
+};
+use std::{
+    array, fmt,
+    iter::zip,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
+};
 
 use crate::{Error, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski};
+#[expect(unused_imports, reason = "Needed for doc link")]
+use hoomd_vector::Quaternion;
 
-/**
-## Biquaternions
-
-Biquaternions are the set of numbers $a + b\mathbf{i} + c\mathbf{j} + d\mathbf{k}$
-where $a,b,c,d$ are complex numbers and ${1,\mathbf{i},\mathbf{j},\mathbf{k}}$ are
-the quaternion algebra. Biquaternions can be thought of as a generalization of quaternions
- which allow for complex coefficients.
-
-## Construction of Biquaternions
-
-Create a biquaternion from an array of four complex numbers. Note that components are
-in the order $[\mathbf{i},\mathbf{j},\mathbf{k},1]$ (i.e., the scalar component is at
-the end)
-```
-use hoomd_manifold::Biquaternion;
-use num::complex::Complex;
-
-// create biquaternion q = (4+h) + (1+4h)i + (2+3h)j + (3+2h)k
-let q = Biquaternion::from([Complex::new(1.0,4.0),
-                        Complex::new(2.0,3.0),
-                        Complex::new(3.0,2.0),
-                        Complex::new(4.0,1.0)]);
-assert_eq!(4.0, q.components[0].im);
-
-```
-
-## Operations with biquaternions
-
-Similar to [`Quaternion`], biquaternions support vector operations (addition, multiplication
-by a scalar, etc.):
-```
-use hoomd_manifold::Biquaternion;
-use num::complex::Complex;
-
-// create biquaternion q = (4+h) + (1+4h)i + (2+3h)j + (3+2h)k
-let mut a = Biquaternion::from([Complex::new(1.0,0.0),
-                        Complex::new(2.0,0.0),
-                        Complex::new(3.0,0.0),
-                        Complex::new(0.0,1.0)]);
-let mut b = Biquaternion::from([Complex::new(0.0,4.0),
-                        Complex::new(0.0,3.0),
-                        Complex::new(0.0,2.0),
-                        Complex::new(1.0,0.0)]);
-b /= 2.0;
-let mut c = a + b;
-assert_eq!(Complex::new(1.0,2.0), c.components[0]);
-
-```
-Biquaternions also support the following operations:
-
-Hamiltonian conjugate/ biconjugate:
-Denoted by the method "bar", the Hamiltonian conjugate multiplies the vector part
-of the biquaternion by -1.0.
-```
-use hoomd_manifold::Biquaternion;
-use num::complex::Complex;
-
-let q = Biquaternion::from([Complex::new(-1.0,0.0),
-                            Complex::new(-1.0,2.0),
-                            Complex::new(1.0,0.0),
-                            Complex::new(1.0,0.0)]);
-let p = Biquaternion::from([Complex::new(1.0,0.0),
-                            Complex::new(1.0,-2.0),
-                            Complex::new(-1.0,0.0),
-                            Complex::new(1.0,0.0)]);
-
-// Hamiltonian conjugate denoted by "bar"
-assert_eq!(p, q.bar());
-```
-
-Complex conjugation:
-Deonted by method "conj", takes the complex conjugate of all components of the
-biquaternion
-```
-use hoomd_manifold::Biquaternion;
-use num::complex::Complex;
-
-let q = Biquaternion::from([Complex::new(1.0,8.0),
-                            Complex::new(2.0,7.0),
-                            Complex::new(3.0,6.0),
-                            Complex::new(4.0,5.0)]);
-let p = Biquaternion::from([Complex::new(1.0,-8.0),
-                            Complex::new(2.0,-7.0),
-                            Complex::new(3.0,-6.0),
-                            Complex::new(4.0,-5.0)]);
-
-// Complex conjugate denoted by "conj"
-assert_eq!(p, q.conj());
-```
-
-Biquaternion Product:
-The biquaternion product takes two biquaternions and outputs another biquaternion.
-```
-use hoomd_manifold::Biquaternion;
-use num::complex::Complex;
-
-let q = Biquaternion::from([Complex::new(2.0,0.0),
-                            Complex::new(0.0,1.0),
-                            Complex::new(1.0,0.0),
-                            Complex::new(1.0,0.0)]);
-let p = Biquaternion::from([Complex::new(3.0,0.0),
-                            Complex::new(2.0,0.0),
-                            Complex::new(1.0,0.0),
-                            Complex::new(0.0,1.0)]);
-let c = Biquaternion::from([Complex::new(1.0,3.0),
-                            Complex::new(2.0,0.0),
-                            Complex::new(5.0,-2.0),
-                            Complex::new(-7.0,-1.0)]);
-assert_eq!(c, q.dot(&p));
-```
-
-Scalar Product:
-The scalar product takes two biquaternions and outputs a complex number according to
-```math
-\frac{1}{2}(a\overline{b} + b\overline{a})
-```
-```
-use hoomd_manifold::Biquaternion;
-use num::complex::Complex;
-
-let q = Biquaternion::from([Complex::new(2.0,0.0),
-                            Complex::new(0.0,1.0),
-                            Complex::new(1.0,0.0),
-                            Complex::new(1.0,0.0)]);
-let p = Biquaternion::from([Complex::new(3.0,0.0),
-                            Complex::new(2.0,0.0),
-                            Complex::new(1.0,0.0),
-                            Complex::new(0.0,1.0)]);
-assert_eq!(Complex::new(7.0,3.0), q.scalar_product(&p));
-```
-
-Biquaternion Norm:
-The scalar product furnishes a "norm" for the biquaternion.
-```
-use hoomd_manifold::Biquaternion;
-use num::complex::Complex;
-
-let q = Biquaternion::from([Complex::new(3.0,0.0),
-                            Complex::new(0.0,1.0),
-                            Complex::new(4.0,0.0),
-                            Complex::new(0.0,2.0)]);
-assert_eq!(Complex::new(20.0_f64,0.0).sqrt(), q.norm());
-```
-
-*/
+/// ## A quaternion with complex coefficients.
+///
+/// Biquaternions are the set of numbers $`a + b\mathbf{i} + c\mathbf{j} + d\mathbf{k}`$
+/// where $`a,b,c,d`$ are complex numbers and $`\{1,\mathbf{i},\mathbf{j},\mathbf{k}\}`$
+/// are the quaternion algebra. Biquaternions can be thought of as a
+/// generalization of quaternions which allow for complex coefficients.
+/// Analogous to quaternions and SO(3), biquaternions furnish a representation
+/// of SO(3,1)
+///
+/// ## Construction of Biquaternions
+///
+/// Create a biquaternion from an array of four complex numbers. Note that
+/// components are in the order $`[\mathbf{i},\mathbf{j},\mathbf{k},1]`$
+/// (i.e., the scalar component is at the end)
+/// ```
+/// use hoomd_manifold::Biquaternion;
+/// use num::complex::Complex;
+///
+/// let q = Biquaternion::from([
+///     Complex::new(1.0, 4.0),
+///     Complex::new(2.0, 3.0),
+///     Complex::new(3.0, 2.0),
+///     Complex::new(4.0, 1.0),
+/// ]);
+/// assert_eq!(4.0, q.components[0].im);
+/// ```
+///
+/// ## Operations with Boquaternions.
+///
+/// Similar to [`Quaternion`], biquaternions support vector operations
+/// (addition, multiplication by a scalar, etc.):
+/// ```
+/// use hoomd_manifold::Biquaternion;
+/// use num::complex::Complex;
+///
+/// let mut a = Biquaternion::from([
+///     Complex::new(1.0, 0.0),
+///     Complex::new(2.0, 0.0),
+///     Complex::new(3.0, 0.0),
+///     Complex::new(0.0, 1.0),
+/// ]);
+/// let mut b = Biquaternion::from([
+///     Complex::new(0.0, 4.0),
+///     Complex::new(0.0, 3.0),
+///     Complex::new(0.0, 2.0),
+///     Complex::new(1.0, 0.0),
+/// ]);
+/// b /= 2.0;
+/// let mut c = a + b;
+/// assert_eq!(Complex::new(1.0, 2.0), c.components[0]);
+/// ```
+///
+/// Biquaternions also support the following operations:
+///
+/// Hamiltonian conjugate/ biconjugate:
+/// Denoted by the method "bar", the Hamiltonian conjugate multiplies the
+/// vector part of the biquaternion by -1.0.
+/// ```
+/// use hoomd_manifold::Biquaternion;
+/// use num::complex::Complex;
+///
+/// let q = Biquaternion::from([
+///     Complex::new(-1.0, 0.0),
+///     Complex::new(-1.0, 2.0),
+///     Complex::new(1.0, 0.0),
+///     Complex::new(1.0, 0.0),
+/// ]);
+/// let p = Biquaternion::from([
+///     Complex::new(1.0, 0.0),
+///     Complex::new(1.0, -2.0),
+///     Complex::new(-1.0, 0.0),
+///     Complex::new(1.0, 0.0),
+/// ]);
+///
+/// assert_eq!(p, q.bar());
+/// ```
+///
+/// Complex conjugation:
+/// Deonted by method "conj", takes the complex conjugate of all components of
+/// the biquaternion
+/// ```
+/// use hoomd_manifold::Biquaternion;
+/// use num::complex::Complex;
+///
+/// let q = Biquaternion::from([
+///     Complex::new(1.0, 8.0),
+///     Complex::new(2.0, 7.0),
+///     Complex::new(3.0, 6.0),
+///     Complex::new(4.0, 5.0),
+/// ]);
+/// let p = Biquaternion::from([
+///     Complex::new(1.0, -8.0),
+///     Complex::new(2.0, -7.0),
+///     Complex::new(3.0, -6.0),
+///     Complex::new(4.0, -5.0),
+/// ]);
+///
+/// assert_eq!(p, q.conj());
+/// ```
+///
+/// Biquaternion Product:
+/// The biquaternion product takes two biquaternions and outputs another
+/// biquaternion.
+/// ```
+/// use hoomd_manifold::Biquaternion;
+/// use num::complex::Complex;
+///
+/// let q = Biquaternion::from([
+///     Complex::new(2.0, 0.0),
+///     Complex::new(0.0, 1.0),
+///     Complex::new(1.0, 0.0),
+///     Complex::new(1.0, 0.0),
+/// ]);
+/// let p = Biquaternion::from([
+///     Complex::new(3.0, 0.0),
+///     Complex::new(2.0, 0.0),
+///     Complex::new(1.0, 0.0),
+///     Complex::new(0.0, 1.0),
+/// ]);
+/// let c = Biquaternion::from([
+///     Complex::new(1.0, 3.0),
+///     Complex::new(2.0, 0.0),
+///     Complex::new(5.0, -2.0),
+///     Complex::new(-7.0, -1.0),
+/// ]);
+/// assert_eq!(c, q.dot(&p));
+/// ```
+///
+/// Scalar Product:
+/// The scalar product takes two biquaternions and outputs a complex number
+/// according to
+/// ```math
+/// \frac{1}{2}(a\overline{b} + b\overline{a})
+/// ```
+/// ```
+/// use hoomd_manifold::Biquaternion;
+/// use num::complex::Complex;
+///
+/// let q = Biquaternion::from([
+///     Complex::new(2.0, 0.0),
+///     Complex::new(0.0, 1.0),
+///     Complex::new(1.0, 0.0),
+///     Complex::new(1.0, 0.0),
+/// ]);
+/// let p = Biquaternion::from([
+///     Complex::new(3.0, 0.0),
+///     Complex::new(2.0, 0.0),
+///     Complex::new(1.0, 0.0),
+///     Complex::new(0.0, 1.0),
+/// ]);
+/// assert_eq!(Complex::new(7.0, 3.0), q.scalar_product(&p));
+/// ```
+///
+/// Biquaternion Norm:
+/// The scalar product furnishes a "norm" for the biquaternion.
+/// ```
+/// use hoomd_manifold::Biquaternion;
+/// use num::complex::Complex;
+///
+/// let q = Biquaternion::from([
+///     Complex::new(3.0, 0.0),
+///     Complex::new(0.0, 1.0),
+///     Complex::new(4.0, 0.0),
+///     Complex::new(0.0, 2.0),
+/// ]);
+/// assert_eq!(Complex::new(20.0_f64, 0.0).sqrt(), q.norm());
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Biquaternion {
-    /// Components of the biquaternion, in the order $[\mathbf{i},\mathbf{j},\mathbf{k},1]$
+    /// Components of the biquaternion, in the order [i,j,k,1].
     pub components: [Complex<f64>; 4],
 }
 
 impl Biquaternion {
-    /** the Hamiltonian conjugate or biconjugate of a biquaternion
-
-    # Example
-    ```
-    use hoomd_manifold::Biquaternion;
-    use num::complex::Complex;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let q = Biquaternion::from([Complex::new(-1.0,0.0),
-                                Complex::new(0.0,1.0),
-                                Complex::new(1.0,0.0),
-                                Complex::new(1.0,0.0)]);
-    let p = Biquaternion::from([Complex::new(1.0,0.0),
-                                Complex::new(0.0,-1.0),
-                                Complex::new(-1.0,0.0),
-                                Complex::new(1.0,0.0)]);
-    assert_eq!(p, q.bar());
-    # Ok(())
-    # }
-    ```
-    */
+    /// Compute the Hamiltonian conjugate or biconjugate of a biquaternion.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_manifold::Biquaternion;
+    /// use num::complex::Complex;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let q = Biquaternion::from([
+    ///     Complex::new(-1.0, 0.0),
+    ///     Complex::new(0.0, 1.0),
+    ///     Complex::new(1.0, 0.0),
+    ///     Complex::new(1.0, 0.0),
+    /// ]);
+    /// let p = Biquaternion::from([
+    ///     Complex::new(1.0, 0.0),
+    ///     Complex::new(0.0, -1.0),
+    ///     Complex::new(-1.0, 0.0),
+    ///     Complex::new(1.0, 0.0),
+    /// ]);
+    /// assert_eq!(p, q.bar());
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[must_use]
     pub fn bar(&self) -> Self {
@@ -198,27 +227,30 @@ impl Biquaternion {
             (self.components[3]),
         ])
     }
-    /** the complex conjugate of a biquaternion
-
-    # Example
-    ```
-    use hoomd_manifold::Biquaternion;
-    use num::complex::Complex;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let q = Biquaternion::from([Complex::new(1.0,0.0),
-                                Complex::new(0.0,1.0),
-                                Complex::new(1.0,0.0),
-                                Complex::new(1.0,2.0)]);
-    let p = Biquaternion::from([Complex::new(1.0,0.0),
-                                Complex::new(0.0,-1.0),
-                                Complex::new(1.0,0.0),
-                                Complex::new(1.0,-2.0)]);
-    assert_eq!(p, q.conj());
-    # Ok(())
-    # }
-    ```
-    */
+    /// Compute the complex conjugate of a biquaternion.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_manifold::Biquaternion;
+    /// use num::complex::Complex;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let q = Biquaternion::from([
+    ///     Complex::new(1.0, 0.0),
+    ///     Complex::new(0.0, 1.0),
+    ///     Complex::new(1.0, 0.0),
+    ///     Complex::new(1.0, 2.0),
+    /// ]);
+    /// let p = Biquaternion::from([
+    ///     Complex::new(1.0, 0.0),
+    ///     Complex::new(0.0, -1.0),
+    ///     Complex::new(1.0, 0.0),
+    ///     Complex::new(1.0, -2.0),
+    /// ]);
+    /// assert_eq!(p, q.conj());
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[must_use]
     pub fn conj(&self) -> Self {
@@ -229,75 +261,82 @@ impl Biquaternion {
             (self.components[3]).conj(),
         ])
     }
-    /** the squared norm of a biquaternion
-
-    # Example
-    ```
-    use hoomd_manifold::Biquaternion;
-    use num::complex::Complex;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let q = Biquaternion::from([Complex::new(1.0,0.0),
-                                Complex::new(0.0,1.0),
-                                Complex::new(1.0,0.0),
-                                Complex::new(1.0,0.0)]);
-    assert_eq!(2.0, q.norm_squared().re);
-    # Ok(())
-    # }
-    ```
-    */
+    /// Compute the squared norm of a biquaternion.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_manifold::Biquaternion;
+    /// use num::complex::Complex;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let q = Biquaternion::from([
+    ///     Complex::new(1.0, 0.0),
+    ///     Complex::new(0.0, 1.0),
+    ///     Complex::new(1.0, 0.0),
+    ///     Complex::new(1.0, 0.0),
+    /// ]);
+    /// assert_eq!(2.0, q.norm_squared().re);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[must_use]
     pub fn norm_squared(&self) -> Complex<f64> {
         self.scalar_product(self)
     }
-    /** the norm of a biquaternion
-
-    # Example
-    ```
-    use hoomd_manifold::Biquaternion;
-    use num::complex::Complex;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let q = Biquaternion::from([Complex::new(3.0,0.0),
-                                Complex::new(0.0,1.0),
-                                Complex::new(4.0,0.0),
-                                Complex::new(1.0,0.0)]);
-    assert_eq!(Complex::new(5.0,0.0), q.norm());
-    # Ok(())
-    # }
-    ```
-    */
+    /// the norm of a biquaternion
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_manifold::Biquaternion;
+    /// use num::complex::Complex;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let q = Biquaternion::from([
+    ///     Complex::new(3.0, 0.0),
+    ///     Complex::new(0.0, 1.0),
+    ///     Complex::new(4.0, 0.0),
+    ///     Complex::new(1.0, 0.0),
+    /// ]);
+    /// assert_eq!(Complex::new(5.0, 0.0), q.norm());
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[must_use]
     pub fn norm(&self) -> Complex<f64> {
         self.norm_squared().sqrt()
     }
-    /** the quaternion product of two biquaternions
-
-    # Example
-    ```
-    use hoomd_manifold::Biquaternion;
-    use num::complex::Complex;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let q = Biquaternion::from([Complex::new(2.0,0.0),
-                                Complex::new(0.0,1.0),
-                                Complex::new(1.0,0.0),
-                                Complex::new(1.0,0.0)]);
-    let p = Biquaternion::from([Complex::new(3.0,0.0),
-                                Complex::new(2.0,0.0),
-                                Complex::new(1.0,0.0),
-                                Complex::new(0.0,1.0)]);
-    let c = Biquaternion::from([Complex::new(1.0,3.0),
-                                Complex::new(2.0,0.0),
-                                Complex::new(5.0,-2.0),
-                                Complex::new(-7.0,-1.0)]);
-    assert_eq!(c, q.dot(&p));
-    # Ok(())
-    # }
-    ```
-    */
+    /// Compute the quaternion product of two biquaternions.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_manifold::Biquaternion;
+    /// use num::complex::Complex;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let q = Biquaternion::from([
+    ///     Complex::new(2.0, 0.0),
+    ///     Complex::new(0.0, 1.0),
+    ///     Complex::new(1.0, 0.0),
+    ///     Complex::new(1.0, 0.0),
+    /// ]);
+    /// let p = Biquaternion::from([
+    ///     Complex::new(3.0, 0.0),
+    ///     Complex::new(2.0, 0.0),
+    ///     Complex::new(1.0, 0.0),
+    ///     Complex::new(0.0, 1.0),
+    /// ]);
+    /// let c = Biquaternion::from([
+    ///     Complex::new(1.0, 3.0),
+    ///     Complex::new(2.0, 0.0),
+    ///     Complex::new(5.0, -2.0),
+    ///     Complex::new(-7.0, -1.0),
+    /// ]);
+    /// assert_eq!(c, q.dot(&p));
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[must_use]
     pub fn dot(&self, other: &Self) -> Self {
@@ -320,35 +359,37 @@ impl Biquaternion {
                 - self.components[2] * other.components[2],
         ])
     }
-    /** the scalar product of two biquaternions
-
-    # Example
-    ```
-    use hoomd_manifold::Biquaternion;
-    use num::complex::Complex;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let q = Biquaternion::from([Complex::new(2.0,0.0),
-                                Complex::new(0.0,1.0),
-                                Complex::new(1.0,0.0),
-                                Complex::new(1.0,0.0)]);
-    let p = Biquaternion::from([Complex::new(3.0,0.0),
-                                Complex::new(2.0,0.0),
-                                Complex::new(1.0,0.0),
-                                Complex::new(0.0,1.0)]);
-    assert_eq!(Complex::new(7.0,3.0), q.scalar_product(&p));
-    # Ok(())
-    # }
-    ```
-    */
+    /// Compute the scalar product of two biquaternions.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_manifold::Biquaternion;
+    /// use num::complex::Complex;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let q = Biquaternion::from([
+    ///     Complex::new(2.0, 0.0),
+    ///     Complex::new(0.0, 1.0),
+    ///     Complex::new(1.0, 0.0),
+    ///     Complex::new(1.0, 0.0),
+    /// ]);
+    /// let p = Biquaternion::from([
+    ///     Complex::new(3.0, 0.0),
+    ///     Complex::new(2.0, 0.0),
+    ///     Complex::new(1.0, 0.0),
+    ///     Complex::new(0.0, 1.0),
+    /// ]);
+    /// assert_eq!(Complex::new(7.0, 3.0), q.scalar_product(&p));
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[must_use]
     pub fn scalar_product(&self, other: &Self) -> Complex<f64> {
         zip(self.components.iter(), other.components.iter())
             .fold(Complex::new(0.0, 0.0), |product, x| product + x.0 * x.1)
     }
-    /** create a [`UnitBiquaternion`] by normalizing the given biquaternion
-     */
+    /// Create a [`UnitBiquaternion`] by normalizing the given biquaternion.
     #[inline]
     #[expect(clippy::missing_errors_doc, reason = "maps to error message")]
     pub fn to_unit(self) -> Result<UnitBiquaternion, Error> {
@@ -358,9 +399,8 @@ impl Biquaternion {
         }
         Ok(UnitBiquaternion(self / mag))
     }
-    /** create a [`UnitBiquaternion`] by normalizing the given biquaternion without
-    checking
-     */
+    /// Create a [`UnitBiquaternion`] by normalizing the given biquaternion
+    /// without returning an Option type.
     #[inline]
     #[must_use]
     pub fn to_unit_unchecked(self) -> UnitBiquaternion {
@@ -369,8 +409,7 @@ impl Biquaternion {
 }
 
 impl Default for Biquaternion {
-    /** Create a biquaternion with all zeros
-     */
+    /// Create a biquaternion with all zeros.
     #[inline]
     fn default() -> Self {
         Self {
@@ -380,26 +419,32 @@ impl Default for Biquaternion {
 }
 
 impl From<[Complex<f64>; 4]> for Biquaternion {
-    /** Construct a [`Biquaternion`] from 4 complex values.
-
-    # Example
-    ```
-    use hoomd_manifold::Biquaternion;
-    use num::complex::Complex;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let q = Biquaternion::from([Complex::new(1.0,0.0),
-                                Complex::new(0.0,0.1),
-                                Complex::new(1.0,0.0),
-                                Complex::new(1.0,1.0)]);
-    assert_eq!(q.components, [Complex::new(1.0,0.0),
-                                Complex::new(0.0,0.1),
-                                Complex::new(1.0,0.0),
-                                Complex::new(1.0,1.0)]);
-    # Ok(())
-    # }
-    ```
-    */
+    /// Construct a [`Biquaternion`] from 4 complex values.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_manifold::Biquaternion;
+    /// use num::complex::Complex;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let q = Biquaternion::from([
+    ///     Complex::new(1.0, 0.0),
+    ///     Complex::new(0.0, 0.1),
+    ///     Complex::new(1.0, 0.0),
+    ///     Complex::new(1.0, 1.0),
+    /// ]);
+    /// assert_eq!(
+    ///     q.components,
+    ///     [
+    ///         Complex::new(1.0, 0.0),
+    ///         Complex::new(0.0, 0.1),
+    ///         Complex::new(1.0, 0.0),
+    ///         Complex::new(1.0, 1.0)
+    ///     ]
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn from(value: [Complex<f64>; 4]) -> Self {
         Self { components: value }
@@ -519,93 +564,106 @@ impl DivAssign<f64> for Biquaternion {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-/**
-## Representation of SO(3,1)
-Unit-norm Biquaternions furnish a representation of SO(3,1), analogous to quaternions and SO(3).
-If
-```math
-\vec{x} = (x_1, x_2, x_3, x_4)
-```
- is a vector in Minkowski space, then $\vec{x}$ can be
-mapped to a biquaternion
-```math
-\vec{x} \mapsto X = [x_1, x_2, x_3,h x_4]
-```
-(where h is the imaginary number) whose squared norm is
-```math
-|X|^2 = x_1^2 + x_2^2 + x_3^2 - x_4^2
-```
- It can be shown that, for
-a unit biquaternion $q$, the transformation
-```math
-q^* X \overline{q} = X'
-```
-preserves the norm, i.e.,
-```math
-|X|^2 = |X'|^2
-```
-We therefore have that this action by unit biquaternions
-produces a representation of SO(3,1). The biquaternion algebra can be used directly to transform Minkowski
- 4-vectors, or unit biquaternions can be represented as matrices using [`HyperbolicRotationMatrix<4>`].
-
-Like quaternions, the unit biquaternion
-```math
-q = \cos(\theta/2) + \bf{i}\sin(\theta/2)
-```
-generates a rotation about the $\mathbf{i}$ axis by angle $\theta$:
-```
-use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate,
-                    Biquaternion, UnitBiquaternion};
-use std::f64::consts::PI;
-use num::complex::Complex;
-use approx::assert_relative_eq;
-
-// biquaternion representing a rotation of pi/2 radians about x-axis
-let q = Biquaternion::from([Complex::new((PI/4.0).sin(),0.0),
-                    Complex::new(0.0,0.0),
-                    Complex::new(0.0, 0.0),
-                    Complex::new((PI/4.0).cos(), 0.0)]);
-let v = q.to_unit();
-let x = Minkowski::from([1.0, 1.0, 1.0, 1.0]);
-let rotation = HyperbolicRotationMatrix::from(v.expect("non-zero biquaternion"));
-let rotated = rotation.hyperbolic_rotate(&x);
-assert_relative_eq!(rotated.coordinates[0], 1.0, epsilon = 1e-12);
-assert_relative_eq!(rotated.coordinates[1], -1.0, epsilon = 1e-12);
-assert_relative_eq!(rotated.coordinates[2], 1.0, epsilon = 1e-12);
-assert_relative_eq!(rotated.coordinates[3], 1.0, epsilon = 1e-12);
-```
-
-However, biquaternions also generate boosts via
-```math
-q = \cosh(v) + \mathbf{i}h\sinh(v)
-```
-which represents a boost of rapidity $v$ in the $\mathbf{i}$ direction:
-```
-use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Biquaternion, Minkowski};
-use std::f64::consts::PI;
-use num::complex::Complex;
-use approx::assert_relative_eq;
-
-// biquaternion representing a boost of rapidity 0.5 in x direction
-let q = Biquaternion::from([Complex::new(0.0,(0.2_f64).sinh()),
-                    Complex::new(0.0,0.0),
-                    Complex::new(0.0,0.0),
-                    Complex::new((0.2_f64).cosh(),0.0)]);
-let v = q.to_unit();
-let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
-let boost = HyperbolicRotationMatrix::from(v.expect("hard-coded unit biquaternion"));
-let boosted = boost.hyperbolic_rotate(&x);
-assert_relative_eq!(boosted.coordinates[0], (0.4_f64).sinh(), epsilon = 1e-12);
-assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon = 1e-12);
-assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon = 1e-12);
-assert_relative_eq!(boosted.coordinates[3], (0.4_f64).cosh(), epsilon = 1e-12);
-```
-*/
+/// ## Represent SO(3,1) with a normalized biquaternion.
+///
+/// Unit-norm Biquaternions furnish a representation of SO(3,1), analogous to
+/// quaternions and SO(3). If $`\vec{x} = (x_1, x_2, x_3, x_4)`$ is a vector
+/// in Minkowski space, then $\vec{x}$ can be mapped to a biquaternion
+/// ```math
+/// \vec{x} \mapsto X = [x_1, x_2, x_3,h x_4]
+/// ```
+/// (where h is the imaginary number) whose squared norm is
+/// ```math
+/// |X|^2 = x_1^2 + x_2^2 + x_3^2 - x_4^2
+/// ```
+/// It can be shown that, for
+/// a unit biquaternion $`q`$, the transformation
+/// ```math
+/// q^* X \overline{q} = X'
+/// ```
+/// preserves the norm, i.e.,
+/// ```math
+/// |X|^2 = |X'|^2
+/// ```
+/// We therefore have that this action by unit biquaternions
+/// produces a representation of SO(3,1). The biquaternion algebra can be used
+/// directly to transform Minkowski 4-vectors, or unit biquaternions can be
+/// represented as matrices using [`HyperbolicRotationMatrix<4>`].
+///
+/// Like quaternions, the unit biquaternion
+/// ```math
+/// q = \cos(\theta/2) + \bf{i}\sin(\theta/2)
+/// ```
+/// generates a rotation about the $\mathbf{i}$ axis by angle $`\theta`$:
+/// ```
+/// use approx::assert_relative_eq;
+/// use hoomd_manifold::{
+///     Biquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
+///     UnitBiquaternion,
+/// };
+/// use num::complex::Complex;
+/// use std::f64::consts::PI;
+///
+/// let q = Biquaternion::from([
+///     Complex::new((PI / 4.0).sin(), 0.0),
+///     Complex::new(0.0, 0.0),
+///     Complex::new(0.0, 0.0),
+///     Complex::new((PI / 4.0).cos(), 0.0),
+/// ]);
+/// let v = q.to_unit();
+/// let x = Minkowski::from([1.0, 1.0, 1.0, 1.0]);
+/// let rotation =
+///     HyperbolicRotationMatrix::from(v.expect("non-zero biquaternion"));
+/// let rotated = rotation.hyperbolic_rotate(&x);
+/// assert_relative_eq!(rotated.coordinates[0], 1.0, epsilon = 1e-12);
+/// assert_relative_eq!(rotated.coordinates[1], -1.0, epsilon = 1e-12);
+/// assert_relative_eq!(rotated.coordinates[2], 1.0, epsilon = 1e-12);
+/// assert_relative_eq!(rotated.coordinates[3], 1.0, epsilon = 1e-12);
+/// ```
+///
+/// However, biquaternions also generate boosts via
+/// ```math
+/// q = \cosh(v) + \mathbf{i}h\sinh(v)
+/// ```
+/// which represents a boost of rapidity $`v`$ in the $`\mathbf{i}`$ direction:
+/// ```
+/// use approx::assert_relative_eq;
+/// use hoomd_manifold::{
+///     Biquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
+///     UnitBiquaternion,
+/// };
+/// use num::complex::Complex;
+/// use std::f64::consts::PI;
+///
+/// let q = Biquaternion::from([
+///     Complex::new(0.0, (0.2_f64).sinh()),
+///     Complex::new(0.0, 0.0),
+///     Complex::new(0.0, 0.0),
+///     Complex::new((0.2_f64).cosh(), 0.0),
+/// ]);
+/// let v = q.to_unit();
+/// let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
+/// let boost = HyperbolicRotationMatrix::from(
+///     v.expect("hard-coded unit biquaternion"),
+/// );
+/// let boosted = boost.hyperbolic_rotate(&x);
+/// assert_relative_eq!(
+///     boosted.coordinates[0],
+///     (0.4_f64).sinh(),
+///     epsilon = 1e-12
+/// );
+/// assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon = 1e-12);
+/// assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon = 1e-12);
+/// assert_relative_eq!(
+///     boosted.coordinates[3],
+///     (0.4_f64).cosh(),
+///     epsilon = 1e-12
+/// );
+/// ```
 pub struct UnitBiquaternion(Biquaternion);
 
 impl UnitBiquaternion {
-    /** Normalize a biquaternion
-     */
+    /// Normalize a biquaternion.
     #[inline]
     #[must_use]
     pub fn normalized(self) -> Self {
@@ -613,8 +671,7 @@ impl UnitBiquaternion {
         let f = 1.0 / q.norm();
         Self(q * f)
     }
-    /** Check the square of the norm
-     */
+    /// Compute the square of the norm of a biquaternion.
     #[inline]
     #[must_use]
     pub fn norm_squared(self) -> Complex<f64> {
@@ -624,24 +681,23 @@ impl UnitBiquaternion {
 }
 
 impl Distribution<UnitBiquaternion> for StandardUniform {
-    /** Sample a random [`UnitBiquaternion`]
-
-    # Example
-
-    ```
-    use hoomd_manifold::{UnitBiquaternion,Biquaternion};
-    use rand::{rngs::StdRng, Rng, SeedableRng};
-    use num::complex::Complex;
-    use approx::assert_relative_eq;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut rng = StdRng::seed_from_u64(1);
-    let v: UnitBiquaternion = rng.random();
-    assert_relative_eq!(v.norm_squared().re, 1.0, epsilon=1e-12);
-    # Ok(())
-    # }
-    ```
-    */
+    /// Sample a random [`UnitBiquaternion`]
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use approx::assert_relative_eq;
+    /// use hoomd_manifold::{Biquaternion, UnitBiquaternion};
+    /// use num::complex::Complex;
+    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut rng = StdRng::seed_from_u64(1);
+    /// let v: UnitBiquaternion = rng.random();
+    /// assert_relative_eq!(v.norm_squared().re, 1.0, epsilon = 1e-12);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> UnitBiquaternion {
         #[expect(
@@ -708,60 +764,74 @@ impl From<UnitBiquaternion> for HyperbolicRotationMatrix<4> {
 impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     type Matrix = HyperbolicRotationMatrix<4>;
 
-    /** Transform a [`Minkowski<4>`] by a [`UnitBiquaternion`]
-
-    ```math
-    \overline{\mathbf{q}} \vec{a} \mathbf{q}^*
-    ```
-
-    # Example
-    ```
-    // rotation about z axis using biquaternion algebra
-    use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, Biquaternion, Minkowski};
-    use std::f64::consts::PI;
-    use num::complex::Complex;
-    use approx::assert_relative_eq;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let x = Minkowski::from([1.0, 0.0, 0.0, 1.0]);
-    let q = Biquaternion::from([Complex::new(0.0,0.0),
-                        Complex::new(0.0,0.0),
-                        Complex::new((PI/4.0).sin(), 0.0),
-                        Complex::new((PI/4.0).cos(), 0.0)]);
-    let v = q.to_unit_unchecked();
-    let rotated = v.hyperbolic_rotate(&x);
-    assert_relative_eq!(rotated.coordinates[0], 0.0, epsilon=1e-12);
-    assert_relative_eq!(rotated.coordinates[1], 1.0, epsilon=1e-12);
-    assert_relative_eq!(rotated.coordinates[2], 0.0, epsilon=1e-12);
-    assert_relative_eq!(rotated.coordinates[3], 1.0, epsilon=1e-12);
-    # Ok(())
-    # }
-    ```
-
-    # Example
-    ```
-    // boost in x direction using biquaternion algebra.
-    use hoomd_manifold::{UnitBiquaternion, HyperbolicRotate, Biquaternion, Minkowski};
-    use std::f64::consts::PI;
-    use num::complex::Complex;
-    use approx::assert_relative_eq;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
-    let q = Biquaternion::from([Complex::new(0.0, PI/4.0).sin(),
-                        Complex::new(0.0,0.0),
-                        Complex::new(0.0, 0.0),
-                        Complex::new(0.0, PI/4.0).cos()]);
-    let v = q.to_unit_unchecked();
-    let boosted = v.hyperbolic_rotate(&x);
-    assert_relative_eq!(boosted.coordinates[0], (PI/2.0).sinh(), epsilon=1e-12);
-    assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon=1e-12);
-    assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon=1e-12);
-    assert_relative_eq!(boosted.coordinates[3], (PI/2.0).cosh(), epsilon=1e-12);
-    # Ok(())
-    # }
-    ```
-    */
+    /// Transform a [`Minkowski<4>`] by a [`UnitBiquaternion`].
+    ///
+    /// ```math
+    /// \overline{\mathbf{q}} \vec{a} \mathbf{q}^*
+    /// ```
+    ///
+    /// # Examples
+    /// Rotation about z axis:
+    /// ```
+    /// use approx::assert_relative_eq;
+    /// use hoomd_manifold::{
+    ///     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
+    /// };
+    /// use num::complex::Complex;
+    /// use std::f64::consts::PI;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let x = Minkowski::from([1.0, 0.0, 0.0, 1.0]);
+    /// let q = Biquaternion::from([
+    ///     Complex::new(0.0, 0.0),
+    ///     Complex::new(0.0, 0.0),
+    ///     Complex::new((PI / 4.0).sin(), 0.0),
+    ///     Complex::new((PI / 4.0).cos(), 0.0),
+    /// ]);
+    /// let v = q.to_unit_unchecked();
+    /// let rotated = v.hyperbolic_rotate(&x);
+    /// assert_relative_eq!(rotated.coordinates[0], 0.0, epsilon = 1e-12);
+    /// assert_relative_eq!(rotated.coordinates[1], 1.0, epsilon = 1e-12);
+    /// assert_relative_eq!(rotated.coordinates[2], 0.0, epsilon = 1e-12);
+    /// assert_relative_eq!(rotated.coordinates[3], 1.0, epsilon = 1e-12);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Boost in x direction:
+    /// ```
+    /// use approx::assert_relative_eq;
+    /// use hoomd_manifold::{
+    ///     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
+    /// };
+    /// use num::complex::Complex;
+    /// use std::f64::consts::PI;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
+    /// let q = Biquaternion::from([
+    ///     Complex::new(0.0, PI / 4.0).sin(),
+    ///     Complex::new(0.0, 0.0),
+    ///     Complex::new(0.0, 0.0),
+    ///     Complex::new(0.0, PI / 4.0).cos(),
+    /// ]);
+    /// let v = q.to_unit_unchecked();
+    /// let boosted = v.hyperbolic_rotate(&x);
+    /// assert_relative_eq!(
+    ///     boosted.coordinates[0],
+    ///     (PI / 2.0).sinh(),
+    ///     epsilon = 1e-12
+    /// );
+    /// assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon = 1e-12);
+    /// assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon = 1e-12);
+    /// assert_relative_eq!(
+    ///     boosted.coordinates[3],
+    ///     (PI / 2.0).cosh(),
+    ///     epsilon = 1e-12
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn hyperbolic_rotate(&self, vector: &Minkowski<4>) -> Minkowski<4> {
         let UnitBiquaternion(biquaternion) = self;
@@ -1046,7 +1116,7 @@ mod tests {
         let v = q.to_unit().expect("hard-coded to be nonzero");
         let x = Minkowski::from(vec);
 
-        //using matrix representation
+        // using matrix representation
         let matrix = HyperbolicRotationMatrix::from(v);
         let from_matrix = matrix.hyperbolic_rotate(&x);
         assert_relative_eq!(from_matrix.coordinates[0], ans[0], epsilon = 1e-12);
@@ -1054,7 +1124,7 @@ mod tests {
         assert_relative_eq!(from_matrix.coordinates[2], ans[2], epsilon = 1e-12);
         assert_relative_eq!(from_matrix.coordinates[3], ans[3], epsilon = 1e-12);
 
-        //using biquaternion algebra
+        // using biquaternion algebra
         let from_algebra = v.hyperbolic_rotate(&x);
         assert_relative_eq!(from_algebra.coordinates[0], ans[0], epsilon = 1e-12);
         assert_relative_eq!(from_algebra.coordinates[1], ans[1], epsilon = 1e-12);

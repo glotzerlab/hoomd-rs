@@ -140,15 +140,11 @@ impl<E> CutoffPair<E> {
     /// # }
     /// ```
     #[inline]
-    pub fn site_pair_energy<M, S>(
-        &self,
-        site_properties_i: &Site<S>,
-        site_properties_j: &Site<S>,
-    ) -> f64
+    pub fn site_pair_energy<P, S>(&self, site_properties_i: &Site<S>, site_properties_j: &Site<S>) -> f64
     where
         E: SitePairEnergy<S>,
-        S: Position<Metric = M>,
-        M: Metric,
+        S: Position<Position = P>,
+        P: Metric,
     {
         let r = (site_properties_i.properties.position())
             .distance(site_properties_j.properties.position());
@@ -161,11 +157,11 @@ impl<E> CutoffPair<E> {
     }
 }
 
-impl<M, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPair<E>
+impl<P, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
-    S: Position<Metric = M>,
-    M: Metric,
+    S: Position<Position = P>,
+    P: Metric,
 {
     /// Compute the total energy of the microstate contributed by functions on pairs of sites.
     ///
@@ -261,13 +257,13 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<M, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPair<E>
+impl<P, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
     B: Transform<S>,
-    S: Position<Metric = M>,
+    S: Position<Position = P>,
     C: Wrap<B> + Wrap<S>,
-    M: Metric,
+    P: Metric,
 {
     #[inline]
     fn delta_energy_one(
@@ -352,13 +348,13 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<M, B, S, C, E> DeltaEnergyInsert<B, S, C> for CutoffPair<E>
+impl<P, B, S, C, E> DeltaEnergyInsert<B, S, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
     B: Transform<S>,
-    S: Position<Metric = M>,
+    S: Position<Position = P>,
     C: Wrap<B> + Wrap<S>,
-    M: Metric,
+    P: Metric,
 {
     #[inline]
     fn delta_energy_insert(
@@ -431,11 +427,11 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<M, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPair<E>
+impl<P, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
-    S: Position<Metric = M>,
-    M: Metric,
+    S: Position<Position = P>,
+    P: Metric,
 {
     #[inline]
     fn delta_energy_remove(

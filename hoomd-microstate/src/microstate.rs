@@ -507,10 +507,10 @@ impl<B, S, C> Microstate<B, S, C> {
 }
 
 /// Manage bodies in the microstate.
-impl<M, B, S, C> Microstate<B, S, C>
+impl<P, B, S, C> Microstate<B, S, C>
 where
-    B: Transform<S> + Position<Metric = M>,
-    S: Position<Metric = M> + Default,
+    B: Transform<S> + Position<Position = P>,
+    S: Position<Position = P> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Update the ghosts of a site.
@@ -528,8 +528,8 @@ where
         let new_ghosts = boundary.generate_ghosts(&site.properties);
         let ghost_tags = &mut sites_ghosts[site_index];
 
-        if ghost_tags.len() < new_ghosts.len() {
-            let ghosts_to_add = new_ghosts.len() - ghost_tags.len();
+        match ghost_tags.len().cmp(&new_ghosts.len()) {
+            std::cmp::Ordering::Less => {let ghosts_to_add = new_ghosts.len() - ghost_tags.len();
             for _ in 0..ghosts_to_add {
                 let ghost_tag = ghosts.push(Site {
                     site_tag: site.site_tag,
@@ -537,8 +537,8 @@ where
                     properties: S::default(),
                 });
                 ghost_tags.push(ghost_tag);
-            }
-        } else if ghost_tags.len() > new_ghosts.len() {
+            }}
+            std::cmp::Ordering::Greater => {
             let ghosts_to_remove = ghost_tags.len() - new_ghosts.len();
             for ghost_tag in ghost_tags.iter().rev().take(ghosts_to_remove) {
                 let ghost_index = ghosts.indices[*ghost_tag]
@@ -547,6 +547,8 @@ where
             }
 
             ghost_tags.truncate(new_ghosts.len());
+            }
+            std::cmp::Ordering::Equal => {}
         }
 
         debug_assert_eq!(ghost_tags.len(), new_ghosts.len());
@@ -833,8 +835,8 @@ where
     )]
     pub fn update_body_properties(&mut self, body_index: usize, properties: B) -> Result<(), Error>
     where
-        B: Transform<S> + Position<Metric = M>,
-        S: Position<Metric = M>,
+        B: Transform<S> + Position<Position = P>,
+        S: Position<Position = P>,
         C: Wrap<B> + Wrap<S>,
     {
         let body = &mut self.bodies.items[body_index];
@@ -1150,10 +1152,10 @@ impl<B, S, C> Microstate<B, S, C> {
     }
 }
 
-impl<M, B, S, C> Microstate<B, S, C>
+impl<P, B, S, C> Microstate<B, S, C>
 where
-    S: Position<Metric = M>,
-    M: Metric,
+    S: Position<Position = P>,
+    P: Metric,
 {
     /// Find sites near a point in space.
     ///
@@ -1172,7 +1174,7 @@ where
     /// In other words, `iter_sites_near` is meant for use with pairwise functions
     /// that follow the minimum image convention.
     #[inline]
-    pub fn iter_sites_near(&self, point: &M, r: f64) -> impl Iterator<Item = &Site<S>> {
+    pub fn iter_sites_near(&self, point: &P, r: f64) -> impl Iterator<Item = &Site<S>> {
         self.sites
             .items
             .iter()
@@ -1421,10 +1423,10 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     /// # }
     /// ```
     #[inline]
-    pub fn try_build<M>(self) -> Result<Microstate<B, S, C>, Error>
+    pub fn try_build<P>(self) -> Result<Microstate<B, S, C>, Error>
     where
-        B: Transform<S> + Position<Metric = M>,
-        S: Position<Metric = M> + Default,
+        B: Transform<S> + Position<Position = P>,
+        S: Position<Position = P> + Default,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     {
         let mut microstate = Microstate {

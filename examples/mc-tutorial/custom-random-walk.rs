@@ -9,8 +9,8 @@ use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder, boundary::Closed, property::Point,
 };
-use hoomd_vector::{Cartesian, Metric};
 use hoomd_simulation::Simulation;
+use hoomd_vector::{Cartesian, Metric};
 // ANCHOR_END: use
 
 // ANCHOR: boundary_struct
@@ -34,7 +34,7 @@ struct Discrete;
 // ANCHOR_END: local_trial_struct
 
 // ANCHOR: local_trial_impl
-impl LocalTrial<Point<Cartesian<2>>> for Discrete {
+impl LocalTrial<Cartesian<2>, Point<Cartesian<2>>> for Discrete {
     fn propose<R: Rng>(
         &self,
         rng: &mut R,

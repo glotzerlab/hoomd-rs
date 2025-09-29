@@ -1,6 +1,9 @@
 words = [
+    "abelian",
     "binaryen",
     "bindgen",
+    "biquaternion",
+    "cdots",
     "dyn",
     "frenkel",
     "gsd",
@@ -19,6 +22,7 @@ words = [
     "microstate",
     "microstate's",
     "microstates",
+    "minkowski",
     "monodisperse",
     "monomorphization",
     "natively",

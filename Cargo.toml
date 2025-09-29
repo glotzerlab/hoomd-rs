@@ -61,15 +61,19 @@ hoomd-utility = { path = "hoomd-utility" }
 hoomd-vector = { path = "hoomd-vector" }
 
 # Common dev dependencies
-approx = "0.5.1"
-divan = "0.1.17"
-rstest = "0.26.0"
-anyhow = "1.0.98"
-tempfile = "3.20.0"
-clap = {version = "4.5.40", features = ["derive"]}
+divan = "=0.1.21"
+rstest = "=0.26.1"
+anyhow = "=1.0.99"
+tempfile = "=3.22.0"
+paste = "=1.0.15"
+clap = {version = "=4.5.47", features = ["derive"]}
 
-# Common dependencies
+# Dependencies used internally
+approx = "0.5.1"
 itertools = "0.14.0"
+
+# Dependencies exposed via Public APIs.
+num = "0.4.3"
 rand = "0.9.0"
 thiserror = "2.0.12"
 tinyvec = "1.9.0"

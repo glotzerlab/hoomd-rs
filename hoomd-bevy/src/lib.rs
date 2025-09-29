@@ -930,8 +930,8 @@ F5      : Show/hide debugging information.
     #[expect(clippy::too_many_lines, reason = "Bevy functions are very verbose.")]
     pub fn build(self, app: &mut App) {
         representation::disk::build(app);
-        representation::hyperbolic_disk::build(app);
         representation::ellipse::build(app);
+        representation::hyperbolic_disk::build(app);
 
         embedded_asset!(app, "logo.png");
 

@@ -16,12 +16,12 @@ thiserror.workspace = true
 rand.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
-num = "0.4.3"
-approx = "0.5.1"
+num.workspace = true
+approx.workspace = true
 
 [dev-dependencies]
 divan.workspace = true
-paste = "1.0.15"
+paste.workspace = true
 rstest.workspace = true
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 

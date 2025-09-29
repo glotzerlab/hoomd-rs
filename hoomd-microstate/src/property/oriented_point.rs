@@ -111,16 +111,16 @@ where
     }
 }
 
-impl<V, R> Position for OrientedPoint<V, R> {
-    type Metric = V;
+impl<P, R> Position for OrientedPoint<P, R> {
+    type Position = P;
 
     #[inline]
-    fn position(&self) -> &V {
+    fn position(&self) -> &P {
         &self.position
     }
 
     #[inline]
-    fn position_mut(&mut self) -> &mut V {
+    fn position_mut(&mut self) -> &mut P {
         &mut self.position
     }
 }

@@ -361,8 +361,9 @@ pub trait Vector:
 {
 }
 
-/** Operates on elements on a metric space. [`Metric`] implements a distance metric.
-*/
+/// Operates on elements on a metric space.
+///
+/// [`Metric`] implements a distance metric between points.
 pub trait Metric {
     /// Compute the squared distance between two points belonging to a metric space.
     ///
@@ -404,11 +405,9 @@ pub trait Metric {
     /// let y = Cartesian::from([3.0, 4.0]);
     /// assert_eq!(5.0, x.distance(&y));
     /// ```
-    #[inline]
-    fn distance(&self, other: &Self) -> f64 {
-        self.distance_squared(other).sqrt()
-    }
+    fn distance(&self, other: &Self) -> f64;
 }
+
 /// Operate on elements of an inner product space.
 ///
 /// The [`InnerProduct`] subtrait defines additional methods that can be performed on any vector

@@ -6,10 +6,9 @@
     reason = "benches don't need public documentation"
 )]
 
-/*! Benchmark Minkowski Vector */
+//! Benchmark Minkowski Vector
 
-use divan::counter::ItemsCount;
-use divan::{self, Bencher, black_box};
+use divan::{self, Bencher, black_box, counter::ItemsCount};
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
 use hoomd_manifold::{
@@ -47,7 +46,7 @@ fn hyperboloid_distance_vec3(bencher: Bencher) {
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| create_random_hyperboloid_pair::<_>(&mut rng))
         .bench_local_values(|(a, b)| {
-            black_box(Hyperboloid::from(&a).distance(&Hyperboloid::from(&b)))
+            black_box(Hyperboloid::from(a, 1.0).distance(&Hyperboloid::from(b, 1.0)))
         });
 }
 
@@ -59,7 +58,7 @@ fn to_poincare_vec3(bencher: Bencher) {
     bencher
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| create_random_hyperboloid::<_>(&mut rng))
-        .bench_local_values(|a| black_box(Hyperboloid::from(&a).to_poincare()));
+        .bench_local_values(|a| black_box(Hyperboloid::from(a, 1.0).to_poincare()));
 }
 
 #[cfg(not(target_arch = "wasm32"))]
