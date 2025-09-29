@@ -17,10 +17,13 @@
 use std::ops::{Add, Index, Mul, Neg};
 
 /// Define whether a matrix $`A`$ has an inverse $`A^{-1}`$ such that $`AA^{-1} = A^{-1}A = I`$
-pub trait Invertible {
-    /// Compute the inverse of a matrix.
+pub trait Invertible
+where
+    Self: Sized,
+{
+    /// Compute the inverse of a matrix. Will be `None` if the matrix is not invertible.
     #[must_use]
-    fn inverse(&self) -> Self;
+    fn inverse(&self) -> Option<Self>;
 }
 
 /// Define the general matrix multiplication (GEMM) subroutine.
@@ -99,3 +102,6 @@ pub trait QuadraticForm: SquareMatrix {
 
 /// Structs implementing a large subset of Matrix traits.
 pub mod matrix;
+
+/// A lightweight representation of a diagonal matrix.
+mod diagonal;
