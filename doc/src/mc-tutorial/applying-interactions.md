@@ -8,7 +8,7 @@ import init from './applying-interactions.js'
 
 ## Overview
 
-The previous tutorials set the Hamiltonian `$H = 0$`. In this one, let's
+The previous tutorials set the Hamiltonian $`H = 0`$. In this one, let's
 place particles in an external gravitational field and add a pairwise
 interaction that penalizes particle overlaps:
 
@@ -53,7 +53,7 @@ properties** from the *body reference frame* to the *system reference frame*.
 All **interactions** on bodies are a function only of its **sites** and are
 computed in the *system reference frame*. Understanding this will help as
 you review the [API documentation] for the types used later in this tutorial:
-`Single`, `Linear`, `Boxcar`, `Isotropic`, and `CutoffPair`. For a complete
+`External`, `Linear`, `Boxcar`, `Isotropic`, and `CutoffPair`. For a complete
 reference on **bodies**, **sites**, and all their related traits, read the
 [`hoomd-microstate`] API documentation.
 
@@ -124,13 +124,13 @@ This code implements the external potential term in the Hamiltonian:
 {{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:external}}
 ```
 
-`Linear` computes `$ \alpha \vec{r} \cdot \hat{y} $` in its `energy()` method.
+`Linear` computes $` \alpha \vec{r} \cdot \hat{y} `$ in its `energy()` method.
 `Linear` also implements the `SiteEnergy` trait whose method `site_energy` takes
-a single **site properties** argument: `$ U(s) $`. Building on that, `Single`
+a single **site properties** argument: $` U(s) `$. Building on that, `External`
 wraps any type that implements `SiteEnergy` and sums over the energy contributed
-by each **site** in the microstate: `$ \sum_i U(s_i) $`. `Single` implements the
+by each **site** in the microstate: $` \sum_i U(s_i) `$. `External` implements the
 `DeltaEnergyOne` trait which `Sweep` will use to evaluate the change in energy
-`$\Delta E$` of a trial that moves *one* body.
+$`\Delta E`$ of a trial that moves *one* body.
 
 ### Pairwise Potential
 
@@ -143,7 +143,7 @@ This code implements the pairwise potential term in the Hamiltonian:
 {{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:pair}}
 ```
 
-The [Boxcar function] implements `$ U_\mathrm{step}(r) $` via the
+The [Boxcar function] implements $` U_\mathrm{step}(r) `$ via the
 `IsotropicEnergy` trait.
 ```math
 U_\mathrm{step}(r) = \begin{cases}
@@ -152,22 +152,22 @@ U_\mathrm{step}(r) = \begin{cases}
 \end{cases}
 ```
 `Isotropic` is a wrapper that computes
-`$ U(\left|\vec{r}_j - \vec{r}_i\right|)$` in its implementation of
+$` U(\left|\vec{r}_j - \vec{r}_i\right|)`$ in its implementation of
 `SitePairEnergy`. The `site_pair_energy()` method is a more general form that
 depends on the full set of properties of the two interacting sites: `$ U(s_i,
 s_j) $`. The `CutoffPair` type sums over all pairs of **sites** that are within
-a distance of `$ r_\mathrm{cut} $` *and do not belong to the same body*:
+a distance of $` r_\mathrm{cut} `$ *and do not belong to the same body*:
 ```math
 \sum_{i}\sum_{j>i} U\left(s_i, s_j\right)
 \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]
 \left[b_i \ne b_j\right]
 ```
 Finally, `CutoffPair` implements the `DeltaEnergyOne` trait which `Sweep` will
-use to evaluate the change in energy `$\Delta E$` of a trial move.
+use to evaluate the change in energy $`\Delta E`$ of a trial move.
 
 > [!IMPORTANT]
 > In *hoomd-rs*, it is *YOUR responsibility* to determine the appropriate
-> maximum `$ r_\mathrm{cut} $` for your choice of `SitePairEnergy`. You might be
+> maximum $` r_\mathrm{cut} `$ for your choice of `SitePairEnergy`. You might be
 > used to other simulation codes, HOOMD-blue for example, that *automatically*
 > determine this maximum for you based on the parameters of the inner types.
 > That is not possible in *hoomd-rs* as your `site_pair_energy` could be *any
@@ -186,7 +186,7 @@ H = U_\mathrm{external} + U_\mathrm{pair}
 In *hoomd-rs*, tuples of types that each implement traits like `DeltaEnergyOne`
 also implement `DeltaEnergyOne` by summing over the elements. In this example,
 `translate_sweep.apply()` calls `hamiltonian.delta_energy_one()` to evaluate
-`$ \Delta E $` when needed.
+$` \Delta E `$ when needed.
 
 You can use `hamiltonian` to compute properties of the system:
 * `hamiltonian.total_energy(&microstate)` - The total energy of the system.
@@ -197,7 +197,7 @@ You can use `hamiltonian` to compute properties of the system:
 * `hamiltonian.1.site_pair_energy(&site_i, &site_j)` - The contribution of a
   pair of sites to the pair energy.
 
-The types `Single` and `Isotropic` are single element tuples.
+The types `External` and `Isotropic` are single element tuples.
 To access the parameters of the inner types, you need access the elements of
 these tuples:
 * `hamiltonian.0.0.alpha` - Strength of the linear external potential.
@@ -248,10 +248,10 @@ Attempt one translation trial move for each body in the microstate:
 {{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:apply}}
 ```
 
-The previously unused temperature `$ kT $` now has meaning in this simulation
+The previously unused temperature $` kT `$ now has meaning in this simulation
 model. A pair of overlapping disks in this model results in `$ U = 1000
 kT $`. The probability of accepting a trial move that adds an overlap is `$
-e^{\frac{\Delta E}{kT}} = e^{-1000} $` which is identically `$ 0 $` in `f64`
+e^{\frac{\Delta E}{kT}} = e^{-1000} $` which is identically $` 0 `$ in `f64`
 arithmetic. Therefore, `translate_sweep.apply()` will never add new overlaps.
 
 However, the unconditional `add_body()` above can place overlapping bodies. When

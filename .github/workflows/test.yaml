@@ -29,7 +29,7 @@ jobs:
       number: 8
 
   unit_test:
-    name: Unit test [${{ matrix.profile }}-rust-${{ matrix.rust }}-${{ matrix.os }}]
+    name: Unit test [rust-${{ matrix.rust }}-${{ matrix.os }}-${{ matrix.target || 'native' }}]
     runs-on: [self-hosted, jetstream2, CPU]
     strategy:
       fail-fast: false
@@ -42,22 +42,14 @@ jobs:
         rust:
           # Test multiple rust versions on multiple platforms in the debug profile.
           - 1.88.0
-          - 1.89.0
-        profile:
-         - dev
+          - 1.90.0
         target:
          - ''
 
         include:
-        # Add a release build on linux with the latest version of rust.
-        - os: ubuntu-24.04
-          rust: 1.89.0
-          profile: release
-
         # Add a WASM build.
         - os: ubuntu-24.04
-          rust: 1.89.0
-          profile: dev-wasm
+          rust: 1.90.0
           target: wasm32-unknown-unknown
 
     steps:
@@ -79,26 +71,45 @@ jobs:
       run: rustup default ${{ matrix.rust }}
     - name: Check rust installation
       run: rustc -vV
+    - name: Cache
+      uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+      with:
+        key: ${{ matrix.target || 'native' }}
+        cache-bin: false
 
-    - name: Build
+    - name: Build [default features]
       run: >
         cargo build
-        --profile ${{ matrix.profile }}
-        ${{ matrix.target != '' && '--target' || '' }}
-        ${{ matrix.target }}
+        --profile=ci
         --locked
         --workspace
         --lib
         --bins
         --tests
         --examples
+        ${{ matrix.target != '' && '--target' || '' }} ${{ matrix.target }}
+        --verbose
+      if: ${{ matrix.target == '' }}
+
+    - name: Build [all features]
+      run: >
+        cargo build
+        --profile=ci
         --all-features
+        --locked
+        --workspace
+        --lib
+        --bins
+        --tests
+        --examples
+        ${{ matrix.target != '' && '--target' || '' }} ${{ matrix.target }}
         --verbose
 
     - name: Run tests
       run: >
         cargo test
-        --profile ${{ matrix.profile }}
+        --profile=ci
+        --all-features
         --locked
         --workspace
         --verbose
@@ -107,14 +118,20 @@ jobs:
     - name: Build API documentation
       run: >
         cargo doc
+        --profile=ci
+        --all-features
         --locked
         --workspace
-        --all-features
         --no-deps
       if: ${{ matrix.target == '' }}
 
     - name: Run benchmarks
-      run: cargo bench --locked
+      run: >
+        cargo bench
+        --profile=ci
+        --all-features
+        --locked
+        --workspace
       if: ${{ matrix.target == '' }}
 
   tests_complete:

@@ -90,15 +90,15 @@ to 1.0.
 #### Hamiltonian
 
 `CutoffPairOverlap` represents each site with the given shape. The site pair
-energy `$ U_{ij} $` is infinite when the two sites overlap and 0 when they do
+energy $` U_{ij} `$ is infinite when the two sites overlap and 0 when they do
 not. Use `CutoffPairOverlap` as the Hamiltonian:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:hamiltonian}}
 ```
 
-As with `CutoffPair`, you must provide `$ r_\mathrm{cut} $`. All pairs
-separated by a distance larger than `$ r_\mathrm{cut} $` are assumed to be
-non-overlapping. You must choose `$ r_\mathrm{cut} $` appropriately for your
+As with `CutoffPair`, you must provide $` r_\mathrm{cut} `$. All pairs
+separated by a distance larger than $` r_\mathrm{cut} `$ are assumed to be
+non-overlapping. You must choose $` r_\mathrm{cut} `$ appropriately for your
 shape(s). For the case of hard ellipses, the largest distance between the
 centers of two potentially overlapping ellipses is `sigma` &mdash; when two ellipses
 a distance `sigma` apart rotated so their their long axes just touch.

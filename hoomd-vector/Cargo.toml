@@ -19,7 +19,7 @@ approx = ["dep:approx"]
 [dependencies]
 rand.workspace = true
 thiserror.workspace = true
-hoomd-linalg.workspace = true
+hoomd-linear-algebra.workspace = true
 hoomd-utility.workspace = true
 approx = { optional = true, workspace = true }
 

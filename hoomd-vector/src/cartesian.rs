@@ -13,7 +13,7 @@ use rand::Rng;
 use rand::distr::{Distribution, StandardUniform, Uniform};
 
 use crate::{Cross, Error, InnerProduct, Rotate, Unit, Vector};
-use hoomd_linalg::{Diagonal, GeneralMatrix, MatMul, matrix::Matrix};
+use hoomd_linear_algebra::{Diagonal, GeneralMatrix, MatMul, matrix::Matrix};
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
 ///
@@ -304,6 +304,25 @@ impl<const N: usize> Vector for Cartesian<N> {
     fn distance_squared(&self, other: &Self) -> f64 {
         zip(self.coordinates.iter(), other.coordinates.iter())
             .fold(0.0, |product, x| product + (x.0 - x.1).powi(2))
+    }
+
+    /// Return the number of dimensions in this Cartesian vector space.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::{Cartesian, Vector};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let vec2 = Cartesian::<2>::default();
+    /// let vec3 = Cartesian::<3>::default();
+    /// assert_eq!(2, vec2.n_dimensions());
+    /// assert_eq!(3, vec3.n_dimensions());
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn n_dimensions(&self) -> usize {
+        N
     }
 }
 
@@ -723,11 +742,23 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
 
 impl<const N: usize> From<Matrix<N, 1>> for Cartesian<N> {
     #[inline]
-    fn from(value: Matrix<N, 1>) -> Self {
-        std::array::from_fn(|i| value[(i, 0)]).into()
+    fn matmul(&self, rhs: &Matrix<N, K>) -> Self::Output {
+        let mut result = Self::Output::zeros();
+        for n in 0..N {
+            for k in 0..K {
+                for m in 0..N {
+                    result[(n, k)] += self.rows()[n][m] * rhs[(m, k)];
+                }
+            }
+        }
+
+        result
     }
 }
 
+impl<const N: usize> Diagonal for Cartesian<N> {}
+
+#[allow(dead_code, reason = "TODO: Used in other branch.")]
 impl<const N: usize> Cartesian<N> {
     /// Convert a [Cartesian<N>] into a row matrix [Matrix<1, N>].
     #[inline]

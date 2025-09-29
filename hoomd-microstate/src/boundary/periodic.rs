@@ -23,11 +23,12 @@ mod hyperparallelepiped;
 /// and closed in others.
 ///
 /// [`Periodic`] is implemented for the following shapes:
-/// * [`Cuboid<2>`] (also known as [`Rectangle`])
-/// * [`Cuboid<3>`]
+/// * [`Hypercuboid<2>`] (also known as [`Rectangle`])
+/// * [`Hypercuboid<3>`] (also known as [`Cuboid`])
 ///
-/// [`Cuboid<2>`]: hoomd_geometry::shape::Cuboid
-/// [`Cuboid<3>`]: hoomd_geometry::shape::Cuboid
+/// [`Hypercuboid<2>`]: hoomd_geometry::shape::Hypercuboid
+/// [`Hypercuboid<3>`]: hoomd_geometry::shape::Hypercuboid
+/// [`Cuboid`]: hoomd_geometry::shape::Cuboid
 /// [`Rectangle`]: hoomd_geometry::shape::Rectangle
 /// [`Microstate`]: crate::Microstate
 ///
@@ -43,7 +44,7 @@ mod hyperparallelepiped;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Periodic<T> {
     /// The largest interaction distance between two sites.
     maximum_interaction_range: f64,
@@ -125,11 +126,11 @@ where
     /// ```
     /// use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
     ///
-    /// use hoomd_geometry::{IsPointInside, shape::Cuboid};
+    /// use hoomd_geometry::{IsPointInside, shape::Hypercuboid};
     /// use hoomd_microstate::boundary::Periodic;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let cuboid = Cuboid {
+    /// let cuboid = Hypercuboid {
     ///     edge_lengths: [6.0.try_into()?, 8.0.try_into()?],
     /// };
     /// let periodic = Periodic::new(2.5, cuboid)?;
@@ -163,10 +164,10 @@ mod tests {
             ],
         };
 
-        let result = Periodic::new(1.0, rectangle);
+        let result = Periodic::new(1.0, rectangle.clone());
         assert!(result.is_ok());
 
-        let result = Periodic::new(3.0, rectangle);
+        let result = Periodic::new(3.0, rectangle.clone());
         assert!(result.is_ok());
 
         let result = Periodic::new(3.0f64.next_up(), rectangle);

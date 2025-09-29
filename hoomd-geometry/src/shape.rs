@@ -18,7 +18,7 @@ mod convex_polytope;
 pub use convex_polytope::{ConvexPolygon, ConvexPolyhedron, ConvexPolytope};
 
 mod cuboid;
-pub use cuboid::{Cuboid, Rectangle};
+pub use cuboid::{Cuboid, Hypercuboid, Rectangle};
 
 mod parallelepiped;
 pub use parallelepiped::{Hyperparallelepiped, Parallelepiped, Parallelogram};

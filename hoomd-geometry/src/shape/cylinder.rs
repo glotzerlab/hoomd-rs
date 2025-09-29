@@ -26,7 +26,7 @@ use hoomd_utility::valid::PositiveReal;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Cylinder {
     /// Radius of the [`Cylinder`]
     pub radius: PositiveReal,

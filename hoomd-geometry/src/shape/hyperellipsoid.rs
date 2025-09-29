@@ -5,7 +5,7 @@
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
-use hoomd_linalg::{
+use hoomd_linear_algebra::{
     Diagonal, Invertible, MatMul, QuadraticForm,
     matrix::{DiagonalMatrix, Matrix22},
 };
@@ -47,7 +47,7 @@ use std::ops::Mul;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Hyperellipsoid<const N: usize> {
     /// The principle semi-axes of the [`Hyperellipsoid`] along each cartesian direction.
     pub semi_axes: [PositiveReal; N],
@@ -303,7 +303,10 @@ where
 {
     let m = *b_inv * ((1.0 - l).recip()) + (*a_inv * l.recip());
 
-    1.0 - m.inverse().compute_quadratic_form(v_ij)
+    1.0 - m
+        .inverse()
+        .expect("Matrix is not invertible - overlap check would return NaN.")
+        .compute_quadratic_form(v_ij)
 }
 
 #[expect(

@@ -11,10 +11,9 @@
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
-use hoomd_linalg::{Invertible, MatMul, matrix::Matrix};
+use hoomd_linear_algebra::{Invertible, MatMul, matrix::Matrix};
 
 fn main() {
-    #[cfg(not(target_arch = "wasm32"))]
     divan::main();
 }
 
@@ -34,7 +33,6 @@ const SQUARE_DIMENSIONS: &[usize] = &[2, 3, 4, 8, 16, 64];
 /// Dimensions for determinant benchmarks, which are O(n!)
 const DETERMINANT_DIMENSIONS: &[usize] = &[2, 3, 4, 5, 6, 7, 8];
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = SQUARE_DIMENSIONS)]
 fn matmul_matn<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(42);
@@ -45,7 +43,6 @@ fn matmul_matn<const N: usize>(bencher: Bencher) {
         .bench_local_values(|(a, b)| black_box(a.matmul(&b)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench(consts = DETERMINANT_DIMENSIONS)]
 fn det_matn<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(42);
@@ -53,10 +50,9 @@ fn det_matn<const N: usize>(bencher: Bencher) {
     bencher
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| create_random_matrix::<N, N, _>(&mut rng))
-        .bench_local_values(|a| black_box(a.det()));
+        .bench_local_values(|a| black_box(a.determinant()));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn det_mat3_fast(bencher: Bencher) {
     #[expect(clippy::many_single_char_names, reason = "clarity")]
@@ -72,7 +68,25 @@ fn det_mat3_fast(bencher: Bencher) {
         .bench_local_values(|a| black_box(det33(&a)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[divan::bench]
+fn det_mat4_fast(bencher: Bencher) {
+    #[expect(clippy::many_single_char_names, reason = "clarity")]
+    fn det44(mat: &Matrix<4, 4>) -> f64 {
+        let [[a, b, c, d], [e, f, g, h], [i, j, k, l], [m, n, o, p]] = mat.rows;
+
+        a * (f * (k * p - l * o) - g * (j * p - l * n) + h * (j * o - k * n))
+            - b * (e * (k * p - l * o) - g * (i * p - l * m) + h * (i * o - k * m))
+            + c * (e * (j * p - l * n) - f * (i * p - l * m) + h * (i * n - j * m))
+            - d * (e * (j * o - k * n) - f * (i * o - k * m) + g * (i * n - j * m))
+    }
+    let mut rng = StdRng::seed_from_u64(42);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| create_random_matrix::<4, 4, _>(&mut rng))
+        .bench_local_values(|a| black_box(det44(&a)));
+}
+
 #[divan::bench]
 fn inverse_mat2(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(42);
@@ -83,7 +97,6 @@ fn inverse_mat2(bencher: Bencher) {
         .bench_local_values(|a| black_box(a.inverse()));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn svd_mat2(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(42);
@@ -91,5 +104,14 @@ fn svd_mat2(bencher: Bencher) {
     bencher
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| create_random_matrix::<2, 2, _>(&mut rng))
+        .bench_local_values(|a| black_box(a.svd()));
+}
+#[divan::bench]
+fn svd_mat3(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(42);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| create_random_matrix::<3, 3, _>(&mut rng))
         .bench_local_values(|a| black_box(a.svd()));
 }

@@ -6,7 +6,7 @@ members = ["examples",
            "hoomd-geometry",
            "hoomd-gsd",
            "hoomd-interaction",
-           "hoomd-linalg",
+           "hoomd-linear-algebra",
            "hoomd-mc",
            "hoomd-microstate",
            "hoomd-simulation",
@@ -23,7 +23,7 @@ default-members = ["examples",
                    "hoomd-geometry",
                    "hoomd-gsd",
                    "hoomd-interaction",
-                   "hoomd-linalg",
+                   "hoomd-linear-algebra",
                    "hoomd-mc",
                    "hoomd-microstate",
                    "hoomd-simulation",
@@ -47,7 +47,7 @@ hoomd-bevy = { path = "hoomd-bevy" }
 hoomd-geometry = { path = "hoomd-geometry" }
 hoomd-gsd = { path = "hoomd-gsd" }
 hoomd-interaction = { path = "hoomd-interaction" }
-hoomd-linalg = { path = "hoomd-linalg" }
+hoomd-linear-algebra = { path = "hoomd-linear-algebra" }
 hoomd-mc = { path = "hoomd-mc" }
 hoomd-microstate = { path = "hoomd-microstate" }
 hoomd-simulation = { path = "hoomd-simulation" }
@@ -153,8 +153,12 @@ lto = 'thin'  # TODO: Switch back to true after migrating to GitHub Pages for do
 codegen-units = 1
 inherits = "release"
 
-[profile.dev-wasm]
-inherits = "dev"
+# Reduce the size of binaries generated in CI builds.
+[profile.ci]
+inherits = "release"
+opt-level = 'z'
+strip = true
+codegen-units = 256
 
 # Bevy is extremely slow in debug builds, build it with optimizations
 # to avoid this: https://bevy.org/learn/quick-start/getting-started/setup/#compile-with-performance-optimizations
