@@ -1157,7 +1157,7 @@ mod tests {
         case::identity(Matrix33::identity().rows),
         case::general([[1.0, 2.0, 3.0], [0.0, 1.0, 4.0], [5.0, 6.0, 0.0]]),
         case::symmetric([[1.0, 2.0, 3.0], [2.0, 5.0, 6.0], [3.0, 6.0, 9.0]]),
-        case::near_singular([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0000001]]),
+        case::near_singular([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.000_000_1]]),
         case::scaled((Matrix33::identity() * 10.0).rows),
         case::from_paper_repo([[0.433_807, 0.269_185, 0.543_034], [0.440_339, 0.443_024, 0.166_492], [0.793_913, 0.125_443, 0.730_333]]), // See https://github.com/ericjang/svd3
     )]
