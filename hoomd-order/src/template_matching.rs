@@ -52,22 +52,17 @@ where
 impl Template<'_, Cartesian<3>> {
     /// Compute the rotation and translation that optimally align two point sets in $`\mathbb{R}^3`$
     ///
-    ///
-    // fn template_match<I: ExactSizeIterator<Item = Cartesian<3>>>(
-    fn template_match<I: ExactSizeIterator<Item = Cartesian<3>>>(
-        &self,
-        other: I,
-    ) -> (RotationMatrix<3>, Cartesian<3>, f64) {
+    fn template_match(&self, other: &[Cartesian<3>]) -> (RotationMatrix<3>, Cartesian<3>, f64) {
         // TODO: pre-center self
         // self.center = self
         //     .coordinates
         //     .iter()
         //     .fold(Cartesian::default(), |acc, &x| acc + x) /n;
-        let other_centroid =
-            other.fold(Cartesian::default(), |acc, v| acc + v) / self.coordinates.len() as f64;
+        let other_centroid = other.iter().fold(Cartesian::default(), |acc, &v| acc + v)
+            / self.coordinates.len() as f64;
         let m = self
             .clone()
-            .cross_covariance(other)
+            .cross_covariance(other.iter().copied())
             .expect("Point set sizes did not match!");
 
         let (u, _, vt) = m.svd();
