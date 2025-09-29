@@ -111,11 +111,8 @@ impl Template<Cartesian<3>> {
 }
 #[cfg(test)]
 mod tests {
-    use std::{fmt::Debug, ops::Index};
-
     use super::*;
-    use hoomd_linear_algebra::matrix::{Matrix, Matrix22, Matrix33, Matrix44};
-    // use approx::{assert_relative_eq, assert_ulps_eq, ulps_eq};
+    use approx::assert_relative_eq;
 
     use hoomd_vector::InnerProduct;
     use rstest::rstest;
@@ -144,7 +141,7 @@ mod tests {
     )]
     fn test_rmsd_scaled<const N: usize>(
         test_set: Vec<Cartesian<N>>,
-        #[values(0.0, 1.0, 3.5, 98.9)] scale: f64,
+        #[values(0.0, 0.003, 1.0, 3.5, 98.9)] scale: f64,
     ) {
         // Closed form for points varying solely by a scale factor
         let rmsd = (1.0 - scale).powi(2)
@@ -152,9 +149,36 @@ mod tests {
                 .clone()
                 .into_iter()
                 .fold(0.0, |acc, v| acc + v.norm_squared());
-        assert_eq!(
+        assert_relative_eq!(
             compute_rmsd(test_set.iter().map(|&v| v * scale), &test_set),
-            rmsd
+            rmsd,
+            epsilon = 1e-14
         );
+    }
+
+    #[rstest(
+        test_set,
+        translation,
+        case(
+            vec![[-99.0, -1.0, 1.0].into(), [9.3, 4.5, 8.1].into()],
+            [1.0, -2.0, 3.0].into()
+        ),
+        case(
+            vec![[0.0, 0.0].into(), [99.3, 0.0].into(), [0.0, 99.3].into(), [99.3, 99.3].into()],
+            [10.0, -20.0].into()
+        ),
+        case(
+            vec![[-99.0, -1.0, 1.0].into(), [9.3, 4.5, 8.1].into()],
+            [0.0, 3.0, -9.1].into()
+        )
+    )]
+    fn test_rmsd_translated<const N: usize>(
+        test_set: Vec<Cartesian<N>>,
+        translation: Cartesian<N>,
+    ) {
+        // Closed form for points varying solely by a translation
+        let rmsd = test_set.len() as f64 * translation.norm_squared();
+        let translated_set: Vec<Cartesian<N>> = test_set.iter().map(|&v| v + translation).collect();
+        assert_eq!(compute_rmsd(translated_set, &test_set), rmsd);
     }
 }
