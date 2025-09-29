@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//!
+//! TODO
 
 #![allow(dead_code, reason = "wip")]
 
@@ -61,7 +61,7 @@ where
 }
 
 /// Compute the root-mean squared deviation between two sets of points.
-fn compute_rmsd<const N: usize, I>(test_set: I, reference_set: &Vec<Cartesian<N>>) -> f64
+fn compute_rmsd<const N: usize, I>(test_set: I, reference_set: &[Cartesian<N>]) -> f64
 where
     I: IntoIterator<Item = Cartesian<N>>,
 {
@@ -83,7 +83,6 @@ impl Template<Cartesian<3>> {
     /// ```
     /// ```
     fn template_match(&self, test_set: &[Cartesian<3>]) -> (RotationMatrix<3>, Cartesian<3>, f64) {
-        // TODO: pre-center self
         let test_set_centroid = test_set
             .iter()
             .fold(Cartesian::default(), |acc, &v| acc + v)
@@ -96,7 +95,6 @@ impl Template<Cartesian<3>> {
             .expect("Point set sizes did not match!");
 
         let (u, _, vt) = m.svd();
-        // let r = u.matmul(&vt).try_into().expect("Proper by convention.");
         let r: RotationMatrix<3> = u
             .matmul(&vt)
             .try_into()
