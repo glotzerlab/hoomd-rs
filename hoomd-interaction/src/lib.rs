@@ -112,7 +112,7 @@ pub trait TotalEnergy<M> {
 ///
 /// impl<S> SiteEnergy<S> for Custom
 /// where
-///     S: Position<Metric = Cartesian<2>>,
+///     S: Position<Position = Cartesian<2>>,
 /// {
 ///     fn site_energy(&self, site_properties: &S) -> f64 {
 ///         self.a * (site_properties.position()[0] / self.b).cos()
@@ -172,7 +172,7 @@ pub trait SiteEnergy<S> {
 ///
 /// impl<S> SiteOverlap<S> for Custom
 /// where
-///     S: Position<Metric = Cartesian<2>>,
+///     S: Position<Position = Cartesian<2>>,
 /// {
 ///     /// Check for overlaps of a disk with a circular boundary.
 ///     fn site_overlap(&self, site_properties: &S) -> bool {
@@ -237,7 +237,7 @@ pub trait SiteOverlap<S> {
 ///
 /// impl<S> SitePairEnergy<S> for Custom
 /// where
-///     S: Position<Metric = Cartesian<2>>,
+///     S: Position<Position = Cartesian<2>>,
 /// {
 ///     fn site_pair_energy(
 ///         &self,
@@ -312,7 +312,7 @@ pub trait SitePairEnergy<S> {
 /// }
 ///
 /// impl Position for CircleSiteProperties {
-///     type Metric = Cartesian<2>;
+///     type Position = Cartesian<2>;
 ///
 ///     fn position(&self) -> &Cartesian<2> {
 ///         &self.position

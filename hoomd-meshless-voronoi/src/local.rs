@@ -3,7 +3,6 @@
 
 /*! Implement Voronoi tesselations of a given point set
 */
-#![allow(dead_code)]
 use crate::{GeneratePowerDiagram, PDSeed, PowerDiagram, voronoi_neighborlist};
 use hoomd_geometry::shape::{Hypercuboid, EightEight};
 use hoomd_manifold::Hyperboloid;
@@ -32,7 +31,7 @@ pub struct NeighborList<'a, B, S, C> {
 pub trait GenerateNeighborList<B, S, C, M> {
     /** Generate the neighbor list from a given microstate
      */
-    fn from_microstate(microstate: &Microstate<B, S, C>) -> Result<NeighborList<B, S, C>, Error>;
+    fn from_microstate(microstate: &Microstate<B, S, C>) -> Result<NeighborList<'_, B, S, C>, Error>;
 }
 
 impl<B, S, C> NeighborList<'_, B, S, C> {
@@ -144,7 +143,7 @@ pub struct ComplexField {
 
 impl<B, S, C> DirectorField<B, S, C, Cartesian<2>> for NeighborList<'_, B, S, C>
 where
-    S: Position<Metric = Cartesian<2>>,
+    S: Position<Position = Cartesian<2>>,
 {
     /// compute the hexatic director field at a point from the microstate
     fn hexatic(
@@ -240,7 +239,7 @@ where
 
 impl<B, S, C> DirectorField<B, S, C, Hyperboloid<3>> for NeighborList<'_, B, S, C>
 where
-    S: Position<Metric = Hyperboloid<3>>,
+    S: Position<Position = Hyperboloid<3>>,
 {
     /// compute the hexatic director field at a point from the microstate
     fn hexatic(
@@ -255,16 +254,15 @@ where
                     return Err(Error::NoNearestNeighbors);
                 }
                 let point = microstate.sites()[num].properties.position();
-                let boost = -(point.point.coordinates[2] / point.skirt()).acosh();
-                let rot = -point.point.coordinates[1].atan2(point.point.coordinates[0]);
+                let boost = -(point.coordinates()[2] / point.skirt()).acosh();
+                let rot = -point.coordinates()[1].atan2(point.coordinates()[0]);
                 let neighbors_translated: Vec<[f64; 2]> = site_neighbors
                     .iter()
                     .map(|s| {
                         let nn = microstate.sites()[*s]
                             .properties
                             .position()
-                            .point
-                            .coordinates;
+                            .coordinates();
                         [
                             nn[0] * (boost.cosh()) * (rot.cos())
                                 - nn[1] * (boost.cosh()) * (rot.sin())
@@ -399,14 +397,14 @@ assert_eq!(vec![(0 as usize, 1 as usize),
 */
 impl<B, S> GenerateNeighborList<B, S, Open, Cartesian<2>> for NeighborList<'_, B, S, Open>
 where
-    S: Position<Metric = Cartesian<2>>,
+    S: Position<Position = Cartesian<2>>,
 {
     /** Compute the neighbor list from a microstate embedded in Cartesian space
      */
     #[inline]
     fn from_microstate(
         microstate: &Microstate<B, S, Open>,
-    ) -> Result<NeighborList<B, S, Open>, Error> {
+    ) -> Result<NeighborList<'_, B, S, Open>, Error> {
         let mut nlist = vec![];
         let mut seeds: Vec<PDSeed<2>> = vec![];
         let mut coordinate_numbers = vec![];
@@ -461,14 +459,14 @@ where
 }
 impl<B, S> GenerateNeighborList<B, S, Open, Cartesian<3>> for NeighborList<'_, B, S, Open>
 where
-    S: Position<Metric = Cartesian<3>>,
+    S: Position<Position = Cartesian<3>>,
 {
     /** Compute the neighbor list from a microstate embedded in Cartesian space
      */
     #[inline]
     fn from_microstate(
         microstate: &Microstate<B, S, Open>,
-    ) -> Result<NeighborList<B, S, Open>, Error> {
+    ) -> Result<NeighborList<'_, B, S, Open>, Error> {
         let mut nlist = vec![];
         let mut seeds: Vec<PDSeed<3>> = vec![];
         let mut coordinate_numbers = vec![];
@@ -529,14 +527,14 @@ where
 impl<B, S> GenerateNeighborList<B, S, Periodic<Hypercuboid<3>>, Cartesian<3>>
     for NeighborList<'_, B, S, Periodic<Hypercuboid<3>>>
 where
-    S: Position<Metric = Cartesian<3>> + Copy + Default,
+    S: Position<Position = Cartesian<3>> + Copy + Default,
 {
     /** Compute the neighbor list from a microstate embedded in three-dimensional cartesian space with periodic cuboid boundary conditions
      */
     #[inline]
     fn from_microstate(
         microstate: &Microstate<B, S, Periodic<Hypercuboid<3>>>,
-    ) -> Result<NeighborList<B, S, Periodic<Hypercuboid<3>>>, Error> {
+    ) -> Result<NeighborList<'_, B, S, Periodic<Hypercuboid<3>>>, Error> {
         let mut nlist = vec![];
         let mut seeds_with_ghosts = vec![];
         let n_particles = microstate.sites().len();
@@ -638,14 +636,14 @@ where
 impl<B, S> GenerateNeighborList<B, S, Periodic<Hypercuboid<2>>, Cartesian<2>>
     for NeighborList<'_, B, S, Periodic<Hypercuboid<2>>>
 where
-    S: Position<Metric = Cartesian<2>> + Copy + Default,
+    S: Position<Position = Cartesian<2>> + Copy + Default,
 {
     /** Compute the neighbor list from a microstate embedded in two-dimensional Cartesian space with periodic cuboid boundary conditions
      */
     #[inline]
     fn from_microstate(
         microstate: &Microstate<B, S, Periodic<Hypercuboid<2>>>,
-    ) -> Result<NeighborList<B, S, Periodic<Hypercuboid<2>>>, Error> {
+    ) -> Result<NeighborList<'_, B, S, Periodic<Hypercuboid<2>>>, Error> {
         let mut nlist = vec![];
         let mut seeds_with_ghosts = vec![];
         let n_particles = microstate.sites().len();
@@ -719,10 +717,10 @@ use hoomd_meshless_voronoi::{GenerateNeighborList, NeighborList};
 
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 let microstate = MicrostateBuilder::with_boundary(Open)
-    .bodies([Body::point(Hyperboloid::from(&Minkowski::from([1.0, -2.0, 6.0_f64.sqrt()]))),
-        Body::point(Hyperboloid::from(&Minkowski::from([1.0, -1.0, 3.0_f64.sqrt()]))),
-        Body::point(Hyperboloid::from(&Minkowski::from([-1.0, -2.0, 6.0_f64.sqrt()]))),
-        Body::point(Hyperboloid::from(&Minkowski::from([-1.0, 1.0, 3.0_f64.sqrt()])))])
+    .bodies([Body::point(Hyperboloid::from(Minkowski::from([1.0, -2.0, 6.0_f64.sqrt()]),1.0)),
+        Body::point(Hyperboloid::from(Minkowski::from([1.0, -1.0, 3.0_f64.sqrt()]),1.0)),
+        Body::point(Hyperboloid::from(Minkowski::from([-1.0, -2.0, 6.0_f64.sqrt()]),1.0)),
+        Body::point(Hyperboloid::from(Minkowski::from([-1.0, 1.0, 3.0_f64.sqrt()]),1.0))])
     .try_build()?;
 
 let nlist = NeighborList::from_microstate(&microstate)?;
@@ -738,14 +736,14 @@ assert_eq!(vec![(0 as usize, 1 as usize),
 */
 impl<B, S> GenerateNeighborList<B, S, Open, Hyperboloid<3>> for NeighborList<'_, B, S, Open>
 where
-    S: Position<Metric = Hyperboloid<3>>,
+    S: Position<Position = Hyperboloid<3>>,
 {
     /** Compute the neighbor list from a microstate in hyperbolic space
      */
     #[inline]
     fn from_microstate(
         microstate: &Microstate<B, S, Open>,
-    ) -> Result<NeighborList<B, S, Open>, Error> {
+    ) -> Result<NeighborList<'_, B, S, Open>, Error> {
         let mut nlist = vec![];
         let to_seed = |id: &usize| {
             let coords = microstate.sites()[*id].properties.position().coordinates();
@@ -805,14 +803,14 @@ where
 impl<B, S> GenerateNeighborList<B, S, Periodic<EightEight>, Hyperboloid<3>>
     for NeighborList<'_, B, S, Periodic<EightEight>>
 where
-    S: Position<Metric = Hyperboloid<3>> + Copy + Default,
+    S: Position<Position = Hyperboloid<3>> + Copy + Default,
 {
     /** Compute the neighbor list from a microstate in two-dimensional hyperbolic space with periodic boundary conditions
      */
     #[inline]
     fn from_microstate(
         microstate: &Microstate<B, S, Periodic<EightEight>>,
-    ) -> Result<NeighborList<B, S, Periodic<EightEight>>, Error> {
+    ) -> Result<NeighborList<'_, B, S, Periodic<EightEight>>, Error> {
         let mut nlist = vec![];
         let to_seed = |id: &usize| {
             let coords = microstate.sites()[*id].properties.position().coordinates();
@@ -988,26 +986,26 @@ mod tests {
     fn nlist_hyperboloid() -> Result<(), Box<dyn std::error::Error>> {
         let microstate = MicrostateBuilder::with_boundary(Open)
             .bodies([
-                Body::point(Hyperboloid::from(&Minkowski::from([
+                Body::point(Hyperboloid::from(Minkowski::from([
                     1.0,
                     -2.0,
                     6.0_f64.sqrt(),
-                ]))),
-                Body::point(Hyperboloid::from(&Minkowski::from([
+                ]), 1.0)),
+                Body::point(Hyperboloid::from(Minkowski::from([
                     1.0,
                     -1.0,
                     3.0_f64.sqrt(),
-                ]))),
-                Body::point(Hyperboloid::from(&Minkowski::from([
+                ]), 1.0)),
+                Body::point(Hyperboloid::from(Minkowski::from([
                     -1.0,
                     -2.0,
                     6.0_f64.sqrt(),
-                ]))),
-                Body::point(Hyperboloid::from(&Minkowski::from([
+                ]),1.0)),
+                Body::point(Hyperboloid::from(Minkowski::from([
                     -1.0,
                     1.0,
                     3.0_f64.sqrt(),
-                ]))),
+                ]), 1.0)),
             ])
             .try_build()
             .expect("hard-coded distributions should be valid");

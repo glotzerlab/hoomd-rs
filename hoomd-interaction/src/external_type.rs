@@ -122,11 +122,11 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<M, B, S, C, E> DeltaEnergyOne<B, S, C> for External<E>
+impl<P, B, S, C, E> DeltaEnergyOne<B, S, C> for External<E>
 where
     E: SiteEnergy<S>,
     B: Transform<S>,
-    S: Position<Metric = M>,
+    S: Position<Position = P>,
     C: Wrap<B> + Wrap<S>,
 {
     #[inline]
@@ -180,11 +180,11 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<M, B, S, C, E> DeltaEnergyInsert<B, S, C> for External<E>
+impl<P, B, S, C, E> DeltaEnergyInsert<B, S, C> for External<E>
 where
     E: SiteEnergy<S>,
     B: Transform<S>,
-    S: Position<Metric = M>,
+    S: Position<Position=P>,
     C: Wrap<B> + Wrap<S>,
 {
     #[inline]
@@ -277,7 +277,7 @@ mod tests {
 
     impl<S> SiteEnergy<S> for TestSE
     where
-        S: Position<Metric = Cartesian<2>>,
+        S: Position<Position= Cartesian<2>>,
     {
         fn site_energy(&self, site_properties: &S) -> f64 {
             site_properties.position()[0] + site_properties.position()[1]

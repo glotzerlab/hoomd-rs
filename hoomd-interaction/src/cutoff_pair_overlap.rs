@@ -79,7 +79,7 @@ pub struct CutoffPairOverlap<E> {
 impl<P, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
-    S: Position<Metric = P>,
+    S: Position<Position = P>,
     P: Metric,
 {
     /// Compute the total energy of the microstate contributed by functions on pairs of sites.
@@ -177,7 +177,7 @@ impl<P, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
     B: Transform<S>,
-    S: Position<Metric = P>,
+    S: Position<Position = P>,
     C: Wrap<B> + Wrap<S>,
     P: Metric,
 {
@@ -254,13 +254,13 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<M, B, S, C, E> DeltaEnergyInsert<B, S, C> for CutoffPairOverlap<E>
+impl<P, B, S, C, E> DeltaEnergyInsert<B, S, C> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
     B: Transform<S>,
-    S: Position<Metric = M>,
+    S: Position<Position = P>,
     C: Wrap<B> + Wrap<S>,
-    M: Metric,
+    P: Metric,
 {
     #[inline]
     fn delta_energy_insert(
@@ -330,11 +330,11 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<M, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPairOverlap<E>
+impl<P, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
-    S: Position<Metric = M>,
-    M: Metric,
+    S: Position<Position=P>,
+    P: Metric,
 {
     #[inline]
     fn delta_energy_remove(

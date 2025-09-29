@@ -53,7 +53,7 @@ impl<const N: usize> Sphere<N> {
     #[must_use]
     pub fn from(point: Cartesian<N>, radius: f64) -> Sphere<N> {
         let rad = point.norm();
-        assert_relative_eq!(rad, radius);
+        assert_relative_eq!(rad, radius, epsilon=1e-12);
         Sphere {
             point,
             radius,

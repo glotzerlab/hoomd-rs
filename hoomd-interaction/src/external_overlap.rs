@@ -140,11 +140,11 @@ where
 ///     Ok(())
 /// }
 /// ```
-impl<M, B, S, C, E> DeltaEnergyOne<B, S, C> for ExternalOverlap<E>
+impl<P, B, S, C, E> DeltaEnergyOne<B, S, C> for ExternalOverlap<E>
 where
     E: SiteOverlap<S>,
     B: Transform<S>,
-    S: Position<Metric = M>,
+    S: Position<Position=P>,
     C: Wrap<B> + Wrap<S>,
 {
     #[inline]
@@ -204,11 +204,11 @@ where
 ///     Ok(())
 /// }
 /// ```
-impl<M, B, S, C, E> DeltaEnergyInsert<B, S, C> for ExternalOverlap<E>
+impl<P, B, S, C, E> DeltaEnergyInsert<B, S, C> for ExternalOverlap<E>
 where
     E: SiteOverlap<S>,
     B: Transform<S>,
-    S: Position<Metric = M>,
+    S: Position<Position=P>,
     C: Wrap<B> + Wrap<S>,
 {
     #[inline]
@@ -306,7 +306,7 @@ mod tests {
 
     impl<S> SiteOverlap<S> for TestSO
     where
-        S: Position<Metric = Cartesian<2>>,
+        S: Position<Position = Cartesian<2>>,
     {
         fn site_overlap(&self, site_properties: &S) -> bool {
             site_properties.position()[1].abs() < 1.0

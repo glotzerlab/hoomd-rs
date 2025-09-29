@@ -5,7 +5,6 @@
 The methods are based on the struct `SpatialHistogram`.
 */
 
-#![allow(dead_code)]
 use hoomd_geometry::shape::{Hypercuboid, EightEight};
 use hoomd_manifold::Hyperboloid;
 use hoomd_microstate::{
@@ -52,7 +51,7 @@ pub struct SpatialHistogram<const N: usize, A> {
     pub n_bins: [usize; N],
 }
 
-/// A one-dimensional histogram storing data of type `f64`. 
+/// A one-dimensional histogram storing data of type `f64`.
 pub struct FloatHistogram {
     /// a vector containing the bin edges of the histogram
     pub bin_edges: Array<f64, Dim<[usize; 1]>>,
@@ -185,10 +184,10 @@ where
     }
 }
 
-impl<B, S, M> CorrelationFunction<B, S, Open, M> for SpatialHistogram<1, f64>
+impl<B, S, P> CorrelationFunction<B, S, Open, P> for SpatialHistogram<1, f64>
 where
-    S: Position<Metric = M>,
-    M: Metric,
+    S: Position<Position = P>,
+    P: Metric,
 {
     /// Calculate the radial distribution function (RDF), g(r), for a given microstate.
     #[inline]
@@ -241,8 +240,8 @@ where
 
 impl<B, S> CorrelationFunction<B, S, Periodic<Hypercuboid<2>>, Cartesian<2>> for SpatialHistogram<1, f64>
 where
-    S: Position<Metric = Cartesian<2>> + Copy + Default,
-    B: Transform<S> + Position<Metric = Cartesian<2>> + Copy,
+    S: Position<Position = Cartesian<2>> + Copy + Default,
+    B: Transform<S> + Position<Position = Cartesian<2>> + Copy,
 {
     /// Calculate the radial distribution function (RDF), g(r), for a given microstate with periodic boundary conditions
     #[inline]
@@ -311,8 +310,8 @@ where
 
 impl<B, S> CorrelationFunction<B, S, Periodic<Hypercuboid<3>>, Cartesian<3>> for SpatialHistogram<1, f64>
 where
-    S: Position<Metric = Cartesian<3>> + Copy + Default,
-    B: Transform<S> + Position<Metric = Cartesian<3>> + Copy,
+    S: Position<Position = Cartesian<3>> + Copy + Default,
+    B: Transform<S> + Position<Position = Cartesian<3>> + Copy,
 {
     /// Calculate the radial distribution function (RDF), g(r), for a given microstate with periodic boundary conditions
     #[inline]
@@ -382,8 +381,8 @@ where
 impl<B, S> CorrelationFunction<B, S, Periodic<EightEight>, Hyperboloid<3>>
     for SpatialHistogram<1, f64>
 where
-    S: Position<Metric = Hyperboloid<3>> + Copy + Default,
-    B: Transform<S> + Position<Metric = Hyperboloid<3>> + Copy,
+    S: Position<Position = Hyperboloid<3>> + Copy + Default,
+    B: Transform<S> + Position<Position = Hyperboloid<3>> + Copy,
 {
     /// Calculate the radial distribution function (RDF), g(r), for a given microstate with periodic boundary conditions
     #[inline]
@@ -663,7 +662,6 @@ mod tests {
 
     #[test]
     fn rdf_cartesian_square_periodic() -> Result<(), Box<dyn std::error::Error>> {
-        const SIZE: usize = 2;
         let boundary = Periodic::new(
             1.0,
             Hypercuboid::<2>::with_equal_edges(2.0.try_into().expect("hard-coded positive number")),
@@ -693,26 +691,26 @@ mod tests {
     fn rdf_hyperboloid() -> Result<(), Box<dyn std::error::Error>> {
         let microstate = MicrostateBuilder::with_boundary(Open)
             .bodies([
-                Body::point(Hyperboloid::from(&Minkowski::from([
+                Body::point(Hyperboloid::from(Minkowski::from([
                     1.0,
                     0.0,
                     2.0_f64.sqrt(),
-                ]))),
-                Body::point(Hyperboloid::from(&Minkowski::from([
+                ]), 1.0)),
+                Body::point(Hyperboloid::from(Minkowski::from([
                     2.0,
                     0.0,
                     5.0_f64.sqrt(),
-                ]))),
-                Body::point(Hyperboloid::from(&Minkowski::from([
+                ]), 1.0)),
+                Body::point(Hyperboloid::from(Minkowski::from([
                     1.0,
                     1.0,
                     3.0_f64.sqrt(),
-                ]))),
-                Body::point(Hyperboloid::from(&Minkowski::from([
+                ]), 1.0)),
+                Body::point(Hyperboloid::from(Minkowski::from([
                     2.0,
                     1.0,
                     6.0_f64.sqrt(),
-                ]))),
+                ]), 1.0)),
             ])
             .try_build()
             .expect("hard coded distribution should be valid");
@@ -736,9 +734,9 @@ mod tests {
         let boundary = Periodic::new(1.0, EightEight { skirt: 1.0_f64 })?;
         let microstate = MicrostateBuilder::with_boundary(boundary)
             .bodies([
-                Body::point(Hyperboloid::<3>::from_polar(EIGHTEIGHT - 0.2, 0.0, 1.0)),
-                Body::point(Hyperboloid::<3>::from_polar(EIGHTEIGHT - 0.25, 0.0, 1.0)),
-                Body::point(Hyperboloid::<3>::from_polar(
+                Body::point(Hyperboloid::<3>::from_polar_coordinates(EIGHTEIGHT - 0.2, 0.0, 1.0)),
+                Body::point(Hyperboloid::<3>::from_polar_coordinates(EIGHTEIGHT - 0.25, 0.0, 1.0)),
+                Body::point(Hyperboloid::<3>::from_polar_coordinates(
                     1.8,
                     0.01 + PI * 3.0 / 4.0,
                     1.0,
