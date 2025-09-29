@@ -3,6 +3,17 @@
 
 //! TODO
 
+use thiserror::Error;
+
+/// Enumerate possible sources of error in fallible order parameter calculations.
+#[non_exhaustive]
+#[derive(Error, PartialEq, Debug)]
+pub enum Error {
+    /// The two point sets do not have the same length.
+    #[error("The two point sets do not have the same length.")]
+    MismatchedPointSetSize,
+}
+
 mod cross_covariance;
 pub use cross_covariance::CrossCovariance;
 

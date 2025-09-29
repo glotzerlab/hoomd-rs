@@ -13,6 +13,7 @@ categories.workspace = true
 [dependencies]
 hoomd-linear-algebra.workspace = true
 hoomd-vector.workspace = true
+thiserror.workspace = true
 
 [dev-dependencies]
 approx.workspace = true

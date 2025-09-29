@@ -25,7 +25,7 @@ use hoomd_vector::{Cartesian, Rotate, RotationMatrix};
 /// let rotated_points = vec![[0.0,0.0],[0.0,1.0], [f64::sqrt(3.0)/2.0, 0.5]];
 ///
 /// // Align the point sets
-/// let (rotation_matrix, t, rmsd) = equilateral.template_match(&rotated_points);
+/// let (rotation_matrix, t, rmsd) = equilateral.template_match(&rotated_points).unwrap();
 ///
 /// // The rotation angle should be π / 2.0
 /// assert_relative_eq!(rotation_matrix.to_angle().theta, std::f64::consts::PI / 2., epsilon = 1e-14);
@@ -132,9 +132,15 @@ impl<const N: usize> Template<Cartesian<N>> {
 
 impl Template<Cartesian<3>> {
     /// Compute the rotation and translation that optimally align points in `test_set` to a [`Template`].
-    #[must_use]
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Err(super::Error::MismatchedPointSetSize)`](super::Error::MismatchedPointSetSize) when `test_set` and `self` have different numbers of points.
     #[inline]
-    pub fn template_match<V>(&self, test_set: &[V]) -> (RotationMatrix<3>, Cartesian<3>, f64)
+    pub fn template_match<V>(
+        &self,
+        test_set: &[V],
+    ) -> Result<(RotationMatrix<3>, Cartesian<3>, f64), super::Error>
     where
         V: Into<Cartesian<3>> + Copy,
     {
@@ -147,7 +153,7 @@ impl Template<Cartesian<3>> {
         let m = self
             .clone()
             .cross_covariance(test_set_centered)
-            .expect("Point set sizes did not match!");
+            .ok_or(super::Error::MismatchedPointSetSize)?;
 
         let (u, _, vt) = m.svd();
         let r: RotationMatrix<3> = u
@@ -157,21 +163,27 @@ impl Template<Cartesian<3>> {
 
         let t = r.rotate(&test_set_centroid);
 
-        (
+        Ok((
             r,
             t,
             compute_rmsd(
                 test_set.iter().map(|&v| r.rotate(&v.into())),
                 &self.coordinates,
             ),
-        )
+        ))
     }
 }
 impl Template<Cartesian<2>> {
     /// Compute the rotation and translation that optimally align points in `test_set` to a [`Template`].
-    #[must_use]
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Err(super::Error::MismatchedPointSetSize)`](super::Error::MismatchedPointSetSize) when `test_set` and `self` have different numbers of points.
     #[inline]
-    pub fn template_match<V>(&self, test_set: &[V]) -> (RotationMatrix<2>, Cartesian<2>, f64)
+    pub fn template_match<V>(
+        &self,
+        test_set: &[V],
+    ) -> Result<(RotationMatrix<2>, Cartesian<2>, f64), super::Error>
     where
         V: Into<Cartesian<2>> + Copy,
     {
@@ -184,7 +196,7 @@ impl Template<Cartesian<2>> {
         let m = self
             .clone()
             .cross_covariance(test_set_centered)
-            .expect("Point set sizes did not match!");
+            .ok_or(super::Error::MismatchedPointSetSize)?;
 
         let (u, _, vt) = m.svd();
         let r: RotationMatrix<2> = u
@@ -195,14 +207,14 @@ impl Template<Cartesian<2>> {
 
         let t = r.rotate(&test_set_centroid);
 
-        (
+        Ok((
             r,
             t,
             compute_rmsd(
                 test_set.iter().map(|&v| r_transpose.rotate(&v.into()) - t),
                 &self.coordinates,
             ),
-        )
+        ))
     }
 }
 #[cfg(test)]
