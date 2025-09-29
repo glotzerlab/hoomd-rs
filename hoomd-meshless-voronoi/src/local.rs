@@ -5,7 +5,7 @@
 */
 #![allow(dead_code)]
 use crate::{GeneratePowerDiagram, PDSeed, PowerDiagram, voronoi_neighborlist};
-use hoomd_geometry::shape::{Cuboid, EightEight};
+use hoomd_geometry::shape::{Hypercuboid, EightEight};
 use hoomd_manifold::Hyperboloid;
 use hoomd_microstate::{
     Microstate,
@@ -526,8 +526,8 @@ where
     }
 }
 
-impl<B, S> GenerateNeighborList<B, S, Periodic<Cuboid<3>>, Cartesian<3>>
-    for NeighborList<'_, B, S, Periodic<Cuboid<3>>>
+impl<B, S> GenerateNeighborList<B, S, Periodic<Hypercuboid<3>>, Cartesian<3>>
+    for NeighborList<'_, B, S, Periodic<Hypercuboid<3>>>
 where
     S: Position<Metric = Cartesian<3>> + Copy + Default,
 {
@@ -535,8 +535,8 @@ where
      */
     #[inline]
     fn from_microstate(
-        microstate: &Microstate<B, S, Periodic<Cuboid<3>>>,
-    ) -> Result<NeighborList<B, S, Periodic<Cuboid<3>>>, Error> {
+        microstate: &Microstate<B, S, Periodic<Hypercuboid<3>>>,
+    ) -> Result<NeighborList<B, S, Periodic<Hypercuboid<3>>>, Error> {
         let mut nlist = vec![];
         let mut seeds_with_ghosts = vec![];
         let n_particles = microstate.sites().len();
@@ -635,8 +635,8 @@ where
     }
 }
 
-impl<B, S> GenerateNeighborList<B, S, Periodic<Cuboid<2>>, Cartesian<2>>
-    for NeighborList<'_, B, S, Periodic<Cuboid<2>>>
+impl<B, S> GenerateNeighborList<B, S, Periodic<Hypercuboid<2>>, Cartesian<2>>
+    for NeighborList<'_, B, S, Periodic<Hypercuboid<2>>>
 where
     S: Position<Metric = Cartesian<2>> + Copy + Default,
 {
@@ -644,8 +644,8 @@ where
      */
     #[inline]
     fn from_microstate(
-        microstate: &Microstate<B, S, Periodic<Cuboid<2>>>,
-    ) -> Result<NeighborList<B, S, Periodic<Cuboid<2>>>, Error> {
+        microstate: &Microstate<B, S, Periodic<Hypercuboid<2>>>,
+    ) -> Result<NeighborList<B, S, Periodic<Hypercuboid<2>>>, Error> {
         let mut nlist = vec![];
         let mut seeds_with_ghosts = vec![];
         let n_particles = microstate.sites().len();
@@ -905,7 +905,7 @@ where
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
-    use hoomd_geometry::shape::Cuboid;
+    use hoomd_geometry::shape::Hypercuboid;
     use hoomd_manifold::{Hyperboloid, Minkowski};
     use hoomd_microstate::{Body, MicrostateBuilder, boundary::Open, boundary::Periodic};
     use hoomd_vector::Cartesian;
@@ -940,7 +940,7 @@ mod tests {
     fn nlist_cartesian_periodic_3d() -> Result<(), Box<dyn std::error::Error>> {
         let boundary = Periodic::new(
             1.0,
-            Cuboid::<3>::with_equal_edges(2.0.try_into().expect("hard-coded positive number")),
+            Hypercuboid::<3>::with_equal_edges(2.0.try_into().expect("hard-coded positive number")),
         )
         .expect("no interactions");
         let microstate = MicrostateBuilder::with_boundary(boundary)
@@ -964,7 +964,7 @@ mod tests {
     fn nlist_cartesian_periodic_2d() -> Result<(), Box<dyn std::error::Error>> {
         let boundary = Periodic::new(
             1.0,
-            Cuboid::<2>::with_equal_edges(2.0.try_into().expect("hard-coded positive number")),
+            Hypercuboid::<2>::with_equal_edges(2.0.try_into().expect("hard-coded positive number")),
         )
         .expect("no interactions");
         let microstate = MicrostateBuilder::with_boundary(boundary)

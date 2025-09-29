@@ -140,7 +140,7 @@ impl<E> CutoffPair<E> {
     /// # }
     /// ```
     #[inline]
-    pub fn site_pair_energy<V, S>(
+    pub fn site_pair_energy<M, S>(
         &self,
         site_properties_i: &Site<S>,
         site_properties_j: &Site<S>,

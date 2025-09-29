@@ -368,7 +368,7 @@ pub trait Metric {
     ///
     /// # Example
     /// ```
-    /// use hoomd_vector::{Cartesian, Vector};
+    /// use hoomd_vector::{Cartesian, Metric};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let x = Cartesian::from([0.0, 1.0, 1.0]);
@@ -383,7 +383,7 @@ pub trait Metric {
     ///
     /// # Example
     /// ```
-    /// use hoomd_vector::{Cartesian, Vector};
+    /// use hoomd_vector::{Cartesian, Metric};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let vec2 = Cartesian::<2>::default();
@@ -398,7 +398,7 @@ pub trait Metric {
     /// Compute the distance between two vectors belonging to a metric space.
     /// # Example
     /// ```
-    /// use hoomd_vector::{Cartesian, Vector};
+    /// use hoomd_vector::{Cartesian, Metric};
     ///
     /// let x = Cartesian::from([0.0, 0.0]);
     /// let y = Cartesian::from([3.0, 4.0]);

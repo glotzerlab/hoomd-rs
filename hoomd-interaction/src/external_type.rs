@@ -180,7 +180,7 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<V, B, S, C, E> DeltaEnergyInsert<B, S, C> for External<E>
+impl<M, B, S, C, E> DeltaEnergyInsert<B, S, C> for External<E>
 where
     E: SiteEnergy<S>,
     B: Transform<S>,

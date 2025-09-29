@@ -262,7 +262,7 @@ impl<D> QuickInsert<D> {
     /// # }
     /// ```
     #[inline]
-    pub fn apply<V, B, S, C, H>(
+    pub fn apply<M, B, S, C, H>(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
         hamiltonian: &H,

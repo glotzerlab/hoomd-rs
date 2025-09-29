@@ -64,7 +64,7 @@
 //! }
 //!
 //! impl Position for Custom {
-//!     type Vector = Cartesian<3>;
+//!     type Metric = Cartesian<3>;
 //!
 //!     fn position(&self) -> &Cartesian<3> {
 //!         &self.position

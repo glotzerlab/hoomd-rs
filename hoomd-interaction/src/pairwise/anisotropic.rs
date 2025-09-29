@@ -44,12 +44,12 @@ use hoomd_vector::{Rotate, Rotation, Vector};
 /// ```
 pub struct Anisotropic<E>(pub E);
 
-impl<V, R, S, E> SitePairEnergy<S> for Anisotropic<E>
+impl<M, R, S, E> SitePairEnergy<S> for Anisotropic<E>
 where
-    S: Position<Vector = V> + Orientation<Rotation = R>,
-    V: Vector,
-    R: Rotation + Rotate<V>,
-    E: AnisotropicEnergy<V, R>,
+    S: Position<Metric = M> + Orientation<Rotation = R>,
+    M: Vector,
+    R: Rotation + Rotate<M>,
+    E: AnisotropicEnergy<M, R>,
 {
     /// Compute the pair energy between two sites.
     ///

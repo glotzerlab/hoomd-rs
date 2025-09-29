@@ -6,7 +6,7 @@ The methods are based on the struct `SpatialHistogram`.
 */
 
 #![allow(dead_code)]
-use hoomd_geometry::shape::{Cuboid, EightEight};
+use hoomd_geometry::shape::{Hypercuboid, EightEight};
 use hoomd_manifold::Hyperboloid;
 use hoomd_microstate::{
     Microstate, MicrostateBuilder, Transform,
@@ -239,7 +239,7 @@ where
     }
 }
 
-impl<B, S> CorrelationFunction<B, S, Periodic<Cuboid<2>>, Cartesian<2>> for SpatialHistogram<1, f64>
+impl<B, S> CorrelationFunction<B, S, Periodic<Hypercuboid<2>>, Cartesian<2>> for SpatialHistogram<1, f64>
 where
     S: Position<Metric = Cartesian<2>> + Copy + Default,
     B: Transform<S> + Position<Metric = Cartesian<2>> + Copy,
@@ -247,7 +247,7 @@ where
     /// Calculate the radial distribution function (RDF), g(r), for a given microstate with periodic boundary conditions
     #[inline]
     fn rdf(
-        microstate: &Microstate<B, S, Periodic<Cuboid<2>>>,
+        microstate: &Microstate<B, S, Periodic<Hypercuboid<2>>>,
         r_min: f64,
         r_max: f64,
         nbins: usize,
@@ -271,9 +271,9 @@ where
             ndarray::stack![Axis(0), bin_edges_arr, bin_edges_arr];
         let mut distances: Vec<[f64; 1]> = vec![];
 
-        let max_boundary = Periodic::new(boundary_max, *microstate.boundary().shape())
+        let max_boundary = Periodic::new(boundary_max, microstate.boundary().shape().clone())
             .expect("copy of valid boundary");
-        let new_microstate: Microstate<B, S, Periodic<Cuboid<2>>> =
+        let new_microstate: Microstate<B, S, Periodic<Hypercuboid<2>>> =
             MicrostateBuilder::with_boundary(max_boundary)
                 .bodies(microstate.bodies().iter().map(|b| b.clone().item))
                 .try_build()
@@ -309,7 +309,7 @@ where
     }
 }
 
-impl<B, S> CorrelationFunction<B, S, Periodic<Cuboid<3>>, Cartesian<3>> for SpatialHistogram<1, f64>
+impl<B, S> CorrelationFunction<B, S, Periodic<Hypercuboid<3>>, Cartesian<3>> for SpatialHistogram<1, f64>
 where
     S: Position<Metric = Cartesian<3>> + Copy + Default,
     B: Transform<S> + Position<Metric = Cartesian<3>> + Copy,
@@ -317,7 +317,7 @@ where
     /// Calculate the radial distribution function (RDF), g(r), for a given microstate with periodic boundary conditions
     #[inline]
     fn rdf(
-        microstate: &Microstate<B, S, Periodic<Cuboid<3>>>,
+        microstate: &Microstate<B, S, Periodic<Hypercuboid<3>>>,
         r_min: f64,
         r_max: f64,
         nbins: usize,
@@ -341,9 +341,9 @@ where
             ndarray::stack![Axis(0), bin_edges_arr, bin_edges_arr];
         let mut distances: Vec<[f64; 1]> = vec![];
 
-        let max_boundary = Periodic::new(boundary_max, *microstate.boundary().shape())
+        let max_boundary = Periodic::new(boundary_max, microstate.boundary().shape().clone())
             .expect("copy of valid boundary");
-        let new_microstate: Microstate<B, S, Periodic<Cuboid<3>>> =
+        let new_microstate: Microstate<B, S, Periodic<Hypercuboid<3>>> =
             MicrostateBuilder::with_boundary(max_boundary)
                 .bodies(microstate.bodies().iter().map(|b| b.clone().item))
                 .try_build()
@@ -413,7 +413,7 @@ where
         let mut distances: Vec<[f64; 1]> = vec![];
 
         let max_boundary = Periodic::new(
-            1.0,
+            0.98,
             EightEight {
                 skirt: microstate.sites()[0].properties.position().skirt(),
             },
@@ -666,7 +666,7 @@ mod tests {
         const SIZE: usize = 2;
         let boundary = Periodic::new(
             1.0,
-            Cuboid::<2>::with_equal_edges(2.0.try_into().expect("hard-coded positive number")),
+            Hypercuboid::<2>::with_equal_edges(2.0.try_into().expect("hard-coded positive number")),
         )
         .expect("no interactions");
         let microstate = MicrostateBuilder::with_boundary(boundary)

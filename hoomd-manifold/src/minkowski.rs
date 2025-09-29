@@ -240,6 +240,10 @@ impl<const N: usize> Metric for Minkowski<N> {
     fn distance(&self, other: &Self) -> f64 {
         ((self.distance_squared(other)).abs()).sqrt()
     }
+    #[inline]
+    fn n_dimensions(&self) -> usize {
+        N
+    }
 }
 
 impl<const N: usize> Vector for Minkowski<N> {}
@@ -634,6 +638,10 @@ impl Metric for Hyperboloid<3> {
     fn distance_squared(&self, other: &Self) -> f64 {
         self.distance(other).powi(2)
     }
+    #[inline]
+    fn n_dimensions(&self) -> usize {
+        2_usize
+    }
 }
 
 impl Metric for Hyperboloid<4> {
@@ -654,6 +662,10 @@ impl Metric for Hyperboloid<4> {
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
         self.distance(other).powi(2)
+    }
+    #[inline]
+    fn n_dimensions(&self) -> usize {
+        3_usize
     }
 }
 
