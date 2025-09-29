@@ -167,7 +167,7 @@ fn sync_simulation(
         query,
         sites
             .iter()
-            .map(|site| (site.properties.position.point().clone(), DIAMETER)),
+            .map(|site| (*site.properties.position.point(), DIAMETER)),
     );
 }
 
@@ -187,6 +187,6 @@ fn sync_ghosts(
         ghost_query,
         ghosts
             .iter()
-            .map(|site| (site.properties.position.point().clone(), DIAMETER)),
+            .map(|site| (*site.properties.position.point(), DIAMETER)),
     );
 }
