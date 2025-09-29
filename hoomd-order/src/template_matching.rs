@@ -11,15 +11,26 @@ use hoomd_vector::{Cartesian, Rotate, RotationMatrix};
 
 /// TODO
 #[derive(Clone, Debug, PartialEq)]
-pub struct Template<'a, P> {
+pub struct Template<P> {
     /// The coordinates defining the geometry of the template, centered at the origin.
-    pub(crate) coordinates: &'a [P],
+    pub(crate) coordinates: Vec<P>,
 
     /// The center of mass of the `coordinates`.
     pub(crate) center: P,
 }
 
-impl<const N: usize, I> CrossCovariance<I, Matrix<N, N>> for Template<'_, Cartesian<N>>
+impl<const N: usize> From<Vec<Cartesian<N>>> for Template<Cartesian<N>> {
+    fn from(value: Vec<Cartesian<N>>) -> Self {
+        let centroid =
+            value.iter().fold(Cartesian::default(), |acc, &v| acc + v) / value.len() as f64;
+        Self {
+            coordinates: value.iter().map(|&v| v - centroid).collect::<Vec<_>>(),
+            center: centroid,
+        }
+    }
+}
+
+impl<const N: usize, I> CrossCovariance<I, Matrix<N, N>> for Template<Cartesian<N>>
 where
     I: ExactSizeIterator<Item = Cartesian<N>>,
 {
@@ -50,7 +61,7 @@ where
 }
 
 /// Compute the root-mean squared deviation between two sets of points.
-fn compute_rmsd<const N: usize, I>(test_set: I, reference_set: &[Cartesian<N>]) -> f64
+fn compute_rmsd<const N: usize, I>(test_set: I, reference_set: &Vec<Cartesian<N>>) -> f64
 where
     I: IntoIterator<Item = Cartesian<N>>,
 {
@@ -65,7 +76,7 @@ where
         })
 }
 
-impl Template<'_, Cartesian<3>> {
+impl Template<Cartesian<3>> {
     /// Compute the rotation and translation that optimally align points in `test_set` to a [`Template`].
     ///
     /// # Examples
@@ -96,7 +107,7 @@ impl Template<'_, Cartesian<3>> {
         (
             r,
             t,
-            compute_rmsd(test_set.iter().map(|&v| r.rotate(&v)), self.coordinates),
+            compute_rmsd(test_set.iter().map(|&v| r.rotate(&v)), &self.coordinates),
         )
     }
 }
