@@ -718,6 +718,7 @@ impl RotationMatrix<2> {
     /// assert_eq!(RotationMatrix::from(a).to_angle(), a);
     /// ```
     #[inline]
+    #[must_use]
     pub fn to_angle(self) -> Angle {
         Angle {
             theta: f64::acos(self.rows[0][0]),

@@ -22,7 +22,6 @@ use hoomd_vector::{Cartesian, Rotate, RotationMatrix};
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// // Align and measure similarity between two triangles
 /// let equilateral = Template::from(vec![[0.0, 0.0], [1.0,0.0], [0.5, f64::sqrt(3.0)/2.0]]);
-/// // let rotation = Angle::from(f64::consts::PI / 2.0);
 /// let rotated_points = vec![[0.0,0.0],[0.0,1.0], [f64::sqrt(3.0)/2.0, 0.5]];
 ///
 /// // Align the point sets
@@ -30,11 +29,13 @@ use hoomd_vector::{Cartesian, Rotate, RotationMatrix};
 ///
 /// // The rotation angle should be π / 2.0
 /// assert_relative_eq!(rotation_matrix.to_angle().theta, std::f64::consts::PI / 2., epsilon = 1e-14);
+///
 /// // No translation is required to align the points
-/// // Therefore, the output should be the same as the center of mass of the input equilateral
+/// // Therefore, the output should be the same as the center of mass of the input triangle
 /// assert_relative_eq!(t[0], equilateral.center()[0], epsilon=1e-14);
 /// assert_relative_eq!(t[1], equilateral.center()[1], epsilon=1e-14);
-/// // The shapes are identical save for the rotation
+///
+/// // The shapes are identical save for the rotation, so the RMSD between the aligned points is near zero.
 /// assert_relative_eq!(rmsd, 0.0, epsilon=1e-14);
 /// # Ok(())
 /// # }
@@ -139,6 +140,7 @@ impl Template<Cartesian<3>> {
     /// # Errors
     ///
     /// Returns [`Err(super::Error::MismatchedPointSetSize)`](super::Error::MismatchedPointSetSize) when `test_set` and `self` have different numbers of points.
+    /// Returns [`Err(super::Error::NonUnitaryMatrix)`](super::Error::NonUnitaryMatrix) when `test_set` and `self` have different numbers of points.
     #[inline]
     pub fn template_match<V>(
         &self,
@@ -183,6 +185,7 @@ impl Template<Cartesian<2>> {
     /// # Errors
     ///
     /// Returns [`Err(super::Error::MismatchedPointSetSize)`](super::Error::MismatchedPointSetSize) when `test_set` and `self` have different numbers of points.
+    /// Returns [`Err(super::Error::NonUnitaryMatrix)`](super::Error::NonUnitaryMatrix) when `test_set` and `self` have different numbers of points.
     #[inline]
     pub fn template_match<V>(
         &self,
