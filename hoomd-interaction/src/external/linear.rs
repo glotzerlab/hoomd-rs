@@ -33,7 +33,7 @@ use hoomd_vector::{InnerProduct, Unit};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Linear<V> {
     /// Interaction strength *(\[energy\] \[length\]^(-1))*.
     pub alpha: f64,

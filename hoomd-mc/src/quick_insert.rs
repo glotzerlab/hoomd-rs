@@ -230,7 +230,7 @@ impl<D> QuickInsert<D> {
     /// let rectangle = Rectangle::with_equal_edges(10.0.try_into()?);
     ///
     /// let distribution = UniformIn {
-    ///     boundary: rectangle,
+    ///     boundary: rectangle.clone(),
     ///     template_sites: vec![Point::default()],
     /// };
     /// let mut quick_insert = QuickInsert::new(distribution, 256);
@@ -364,7 +364,7 @@ mod tests {
             6.0.try_into().expect("hard-coded value is non-zero"),
         ));
 
-        let mut microstate = MicrostateBuilder::with_boundary(rectangle)
+        let mut microstate = MicrostateBuilder::with_boundary(rectangle.clone())
             .bodies(vec![Body::point(Cartesian::from([0.0, 0.0]))])
             .try_build()
             .expect("hard-coded point is in the boundary");

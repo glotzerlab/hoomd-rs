@@ -24,7 +24,7 @@ use hoomd_vector::{InnerProduct, Rotate, Unit, Vector};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Patch<V> {
     /// Vector pointing from the center of the particle to the center of the mask `[unitless]`.
     pub director: Unit<V>,
@@ -345,7 +345,7 @@ mod tests {
                 .expect("hard-coded vector should have non-zero length"),
             cos_delta: (PI / 8.0).cos(),
         }];
-        let angular_mask = AngularMask::new(boxcar, mask);
+        let angular_mask = AngularMask::new(boxcar.clone(), mask);
 
         // Check corner cases when the j particle is along the patch direction.
         assert_eq!(
@@ -527,7 +527,7 @@ mod tests {
                 .expect("hard-coded vector should have non-zero length"),
             cos_delta: (PI).cos(),
         }];
-        let angular_mask = AngularMask::new(lj, mask);
+        let angular_mask = AngularMask::new(lj.clone(), mask);
 
         // The patch covers the full surface. angular_mask.energy() should evaluate to the same
         // as lj.energy() for all orientations.

@@ -66,7 +66,7 @@ use hoomd_vector::{Cartesian, InnerProduct};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Capsule<const N: usize> {
     /// Radius of of points that are considered enclosed in the shape.
     pub radius: PositiveReal,

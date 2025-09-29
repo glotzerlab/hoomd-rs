@@ -72,12 +72,12 @@ where
     /// # }
     /// ```
     #[inline]
-    fn site_pair_overlap(&self, a: &S, b: &S) -> bool {
+    fn site_pair_overlap(&self, site_properties_i: &S, site_properties_j: &S) -> bool {
         let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(
-            a.position(),
-            a.orientation(),
-            b.position(),
-            b.orientation(),
+            site_properties_i.position(),
+            site_properties_i.orientation(),
+            site_properties_j.position(),
+            site_properties_j.orientation(),
         );
         self.0.intersects_at(&self.0, &v_ij, &o_ij)
     }

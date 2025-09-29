@@ -2,7 +2,7 @@
 // ANCHOR: use
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    CutoffPair, Single, TotalEnergy,
+    CutoffPair, External, TotalEnergy,
     external::Linear,
     pairwise::{Boxcar, Isotropic},
 };
@@ -22,7 +22,10 @@ struct Fill {
     microstate:
         Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Rectangle>>,
     /// How sites interact with other sites and fields.
-    hamiltonian: (Single<Linear<Cartesian<2>>>, CutoffPair<Isotropic<Boxcar>>),
+    hamiltonian: (
+        External<Linear<Cartesian<2>>>,
+        CutoffPair<Isotropic<Boxcar>>,
+    ),
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate>,
     /// Temperature set point.
@@ -51,7 +54,7 @@ impl Fill {
         // ANCHOR_END: microstate
 
         // ANCHOR: external
-        let linear = Single(Linear {
+        let linear = External(Linear {
             alpha,
             plane_origin: Cartesian::default(),
             plane_normal: [0.0, 1.0].try_into()?,

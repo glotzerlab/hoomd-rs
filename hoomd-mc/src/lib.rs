@@ -68,7 +68,7 @@ pub trait Trial<M, H> {
 /// Implementations of [`Trial`], such as [`Sweep`], apply a given local move
 /// to one or more bodies in the microstate.
 ///
-/// Use one of the provided local trials to [`Translate`] and/or `Rotate` (TODO: make link)
+/// Use one of the provided local trials to [`Translate`] and/or [`Rotate`]
 /// bodies or implement your own custom [`LocalTrial`].
 ///
 /// Local trial moves **MUST** satisfy *local detailed balance*,

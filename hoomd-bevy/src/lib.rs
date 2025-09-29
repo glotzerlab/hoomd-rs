@@ -35,7 +35,10 @@
 //!
 //! # Examples
 //!
-//! See any one of the many *hoomd-rs* examples that use [`HoomdBevyPlugin`].
+//! Many of the examples use [`HoomdBevyPlugin`]. Find them in the [`examples`]
+//! directory in the *hoomd-rs* repository.
+//!
+//! [`examples`]: https://github.com/glotzerlab/hoomd-rs/tree/trunk/examples
 //!
 //! # Embedded assets.
 //!

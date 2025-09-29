@@ -64,11 +64,14 @@ impl LocalTrial<Cartesian<2>, Point<Cartesian<2>>> for Discrete {
 #[cfg_attr(feature = "bevy", derive(Resource))]
 // ANCHOR: simulation_struct
 struct CustomRandomWalk {
-    /// TODO: Document
+    /// Positions of all the bodies in the simulation.
     microstate:
         Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Circle>>,
+    /// How sites interact with other sites and fields.
     hamiltonian: Zero,
+    /// Trial moves to apply.
     translate_sweep: Sweep<Discrete>,
+    /// Temperature set point.
     kt: f64,
 }
 // ANCHOR_END: simulation_struct

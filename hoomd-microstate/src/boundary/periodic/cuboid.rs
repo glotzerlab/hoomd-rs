@@ -11,11 +11,11 @@ use crate::{
     },
     property::Position,
 };
-use hoomd_geometry::{IsPointInside, shape::Cuboid};
+use hoomd_geometry::{IsPointInside, shape::Hypercuboid};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
-impl<const N: usize> MaximumAllowableInteractionRange for Cuboid<N> {
+impl<const N: usize> MaximumAllowableInteractionRange for Hypercuboid<N> {
     /// The largest value that the maximum interaction range can take.
     ///
     /// For a cuboid, the maximum is
@@ -27,11 +27,11 @@ impl<const N: usize> MaximumAllowableInteractionRange for Cuboid<N> {
     /// # Example
     ///
     /// ```
-    /// use hoomd_geometry::shape::Cuboid;
+    /// use hoomd_geometry::shape::Hypercuboid;
     /// use hoomd_microstate::boundary::MaximumAllowableInteractionRange;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let rectangular_prism = Cuboid {
+    /// let rectangular_prism = Hypercuboid {
     ///     edge_lengths: [2.0.try_into()?, 3.0.try_into()?, 9.0.try_into()?],
     /// };
     ///
@@ -51,7 +51,7 @@ impl<const N: usize> MaximumAllowableInteractionRange for Cuboid<N> {
     }
 }
 
-impl<const N: usize, P> Wrap<P> for Periodic<Cuboid<N>>
+impl<const N: usize, P> Wrap<P> for Periodic<Hypercuboid<N>>
 where
     P: Position<Position = Cartesian<N>>,
 {
@@ -93,7 +93,7 @@ where
     }
 }
 
-impl<S> GenerateGhosts<S> for Periodic<Cuboid<2>>
+impl<S> GenerateGhosts<S> for Periodic<Hypercuboid<2>>
 where
     S: Position<Position = Cartesian<2>> + Copy + Default,
 {
@@ -159,7 +159,7 @@ where
     }
 }
 
-impl<S> GenerateGhosts<S> for Periodic<Cuboid<3>>
+impl<S> GenerateGhosts<S> for Periodic<Hypercuboid<3>>
 where
     S: Position<Position = Cartesian<3>> + Copy + Default,
 {
@@ -300,7 +300,7 @@ mod tests {
 
         #[test]
         fn maximum_allowable() {
-            let cuboid = Cuboid {
+            let cuboid = Hypercuboid {
                 edge_lengths: [
                     10.0.try_into()
                         .expect("hard-coded constant should be positive"),
@@ -311,7 +311,7 @@ mod tests {
 
             assert_eq!(cuboid.maximum_allowable_interaction_range(), 3.0);
 
-            let cuboid = Cuboid {
+            let cuboid = Hypercuboid {
                 edge_lengths: [
                     4.0.try_into()
                         .expect("hard-coded constant should be positive"),
@@ -322,7 +322,7 @@ mod tests {
 
             assert_eq!(cuboid.maximum_allowable_interaction_range(), 2.0);
 
-            let cuboid = Cuboid {
+            let cuboid = Hypercuboid {
                 edge_lengths: [
                     100.0
                         .try_into()
@@ -337,7 +337,7 @@ mod tests {
 
         #[test]
         fn wrap() {
-            let cuboid = Cuboid {
+            let cuboid = Hypercuboid {
                 edge_lengths: [
                     20.0.try_into()
                         .expect("hard-coded constant should be positive"),
@@ -372,7 +372,7 @@ mod tests {
 
         #[test]
         fn no_ghosts() {
-            let cuboid = Cuboid {
+            let cuboid = Hypercuboid {
                 edge_lengths: [
                     20.0.try_into()
                         .expect("hard-coded constant should be positive"),
@@ -383,7 +383,7 @@ mod tests {
 
             let periodic = Periodic::new(1.0, cuboid).expect("hard-coded range should be valid");
 
-            let inner = Cuboid {
+            let inner = Hypercuboid {
                 edge_lengths: [
                     18.0.try_into()
                         .expect("hard-coded constant should be positive"),
@@ -402,7 +402,7 @@ mod tests {
 
         #[test]
         fn ghosts() {
-            let cuboid = Cuboid {
+            let cuboid = Hypercuboid {
                 edge_lengths: [
                     20.0.try_into()
                         .expect("hard-coded constant should be positive"),
@@ -468,7 +468,7 @@ mod tests {
 
         #[test]
         fn maximum_allowable() {
-            let cuboid = Cuboid {
+            let cuboid = Hypercuboid {
                 edge_lengths: [
                     10.0.try_into()
                         .expect("hard-coded constant should be positive"),
@@ -481,7 +481,7 @@ mod tests {
 
             assert_eq!(cuboid.maximum_allowable_interaction_range(), 2.0);
 
-            let cuboid = Cuboid {
+            let cuboid = Hypercuboid {
                 edge_lengths: [
                     6.0.try_into()
                         .expect("hard-coded constant should be positive"),
@@ -494,7 +494,7 @@ mod tests {
 
             assert_eq!(cuboid.maximum_allowable_interaction_range(), 3.0);
 
-            let cuboid = Cuboid {
+            let cuboid = Hypercuboid {
                 edge_lengths: [
                     18.0.try_into()
                         .expect("hard-coded constant should be positive"),
@@ -510,7 +510,7 @@ mod tests {
 
         #[test]
         fn wrap() {
-            let cuboid = Cuboid {
+            let cuboid = Hypercuboid {
                 edge_lengths: [
                     20.0.try_into()
                         .expect("hard-coded constant should be positive"),
@@ -563,7 +563,7 @@ mod tests {
 
         #[test]
         fn no_ghosts() {
-            let cuboid = Cuboid {
+            let cuboid = Hypercuboid {
                 edge_lengths: [
                     40.0.try_into()
                         .expect("hard-coded constant should be positive"),
@@ -576,7 +576,7 @@ mod tests {
 
             let periodic = Periodic::new(1.0, cuboid).expect("hard-coded range should be valid");
 
-            let inner = Cuboid {
+            let inner = Hypercuboid {
                 edge_lengths: [
                     38.0.try_into()
                         .expect("hard-coded constant should be positive"),
@@ -598,7 +598,7 @@ mod tests {
         #[expect(clippy::too_many_lines, reason = "There are many cases to test.")]
         #[test]
         fn ghosts() {
-            let cuboid = Cuboid {
+            let cuboid = Hypercuboid {
                 edge_lengths: [
                     20.0.try_into()
                         .expect("hard-coded constant should be positive"),

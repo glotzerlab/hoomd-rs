@@ -50,7 +50,7 @@ use super::{IsotropicEnergy, IsotropicForce, LennardJones};
 /// wca.epsilon = 1.5;
 /// wca.sigma = 3.0;
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct WeeksChandlerAnderson {
     /// Energy scale *(\[energy\])*.
     pub epsilon: f64,

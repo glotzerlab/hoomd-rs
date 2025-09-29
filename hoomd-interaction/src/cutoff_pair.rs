@@ -146,10 +146,11 @@ impl<E> CutoffPair<E> {
         S: Position<Position = P>,
         P: Metric,
     {
-        let r = (a.properties.position()).distance(b.properties.position());
-        if r < self.r_cut && a.body_tag != b.body_tag {
+        let r = (site_properties_i.properties.position())
+            .distance(site_properties_j.properties.position());
+        if r < self.r_cut && site_properties_i.body_tag != site_properties_j.body_tag {
             self.evaluator
-                .site_pair_energy(&a.properties, &b.properties)
+                .site_pair_energy(&site_properties_i.properties, &site_properties_j.properties)
         } else {
             0.0
         }
@@ -472,7 +473,7 @@ mod tests {
         TotalEnergy,
         pairwise::{Isotropic, LennardJones},
     };
-    use hoomd_geometry::shape::Cuboid;
+    use hoomd_geometry::shape::Hypercuboid;
     use hoomd_microstate::{
         MicrostateBuilder,
         boundary::{Closed, Open},
@@ -486,8 +487,8 @@ mod tests {
     use std::f64::consts::PI;
 
     #[fixture]
-    fn square() -> Closed<Cuboid<2>> {
-        let cuboid = Cuboid {
+    fn square() -> Closed<Hypercuboid<2>> {
+        let cuboid = Hypercuboid {
             edge_lengths: [
                 4.0.try_into()
                     .expect("hard-coded constant should be positive"),
@@ -604,7 +605,7 @@ mod tests {
         use super::*;
 
         #[rstest]
-        fn site_outside(square: Closed<Cuboid<2>>) {
+        fn site_outside(square: Closed<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -737,7 +738,7 @@ mod tests {
         use super::*;
 
         #[rstest]
-        fn site_outside(square: Closed<Cuboid<2>>) {
+        fn site_outside(square: Closed<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),

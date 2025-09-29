@@ -118,8 +118,8 @@ mod tests {
     use super::*;
     use crate::Translate;
     use ::approx::assert_relative_eq;
-    use hoomd_geometry::shape::Cuboid;
-    use hoomd_interaction::{Single, SiteEnergy, TotalEnergy, Zero};
+    use hoomd_geometry::shape::Hypercuboid;
+    use hoomd_interaction::{External, SiteEnergy, TotalEnergy, Zero};
     use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};
     use hoomd_vector::{Cartesian, InnerProduct};
     use rstest::*;
@@ -161,7 +161,7 @@ mod tests {
         microstate
             .add_body(Body::point(origin))
             .expect("the hard-coded body should be inside the boundary");
-        let hamiltonian = Single(Harmonic(origin));
+        let hamiltonian = External(Harmonic(origin));
 
         let d = 0.1;
         let translate = Translate {
@@ -193,7 +193,7 @@ mod tests {
 
     #[test]
     fn reject_boundary_body() {
-        let cuboid = Cuboid {
+        let cuboid = Hypercuboid {
             edge_lengths: [
                 4.0.try_into()
                     .expect("hard-coded constant should be positive"),
@@ -230,7 +230,7 @@ mod tests {
             sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
         };
 
-        let cuboid = Cuboid {
+        let cuboid = Hypercuboid {
             edge_lengths: [
                 6.0.try_into()
                     .expect("hard-coded constant should be positive"),

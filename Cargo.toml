@@ -116,7 +116,6 @@ cast_precision_loss = "allow"
 float_cmp = "allow"
 
 # opt-in to restrictions
-allow_attributes = "warn"
 allow_attributes_without_reason = "warn"
 exhaustive_enums = "warn"
 impl_trait_in_params = "warn"
@@ -158,8 +157,12 @@ lto = 'thin'  # TODO: Switch back to true after migrating to GitHub Pages for do
 codegen-units = 1
 inherits = "release"
 
-[profile.dev-wasm]
-inherits = "dev"
+# Reduce the size of binaries generated in CI builds.
+[profile.ci]
+inherits = "release"
+opt-level = 'z'
+strip = true
+codegen-units = 256
 
 # Bevy is extremely slow in debug builds, build it with optimizations
 # to avoid this: https://bevy.org/learn/quick-start/getting-started/setup/#compile-with-performance-optimizations
