@@ -776,10 +776,7 @@ impl<const N: usize> Diagonal for [f64; N] {}
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        fmt::Debug,
-        ops::{Index, Mul},
-    };
+    use std::{fmt::Debug, ops::Index};
 
     use super::*;
     use crate::matrix::{Matrix, Matrix22, Matrix33, Matrix44};

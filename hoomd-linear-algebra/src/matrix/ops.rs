@@ -149,12 +149,7 @@ impl<const N: usize, const M: usize> SubAssign for Matrix<N, M> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        GeneralMatrix,
-        matrix::{Matrix, Matrix22},
-    };
-    use approx::assert_ulps_eq;
+    use crate::{GeneralMatrix, matrix::Matrix};
     use rstest::rstest;
 
     #[test]
