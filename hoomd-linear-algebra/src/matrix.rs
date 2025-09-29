@@ -24,6 +24,11 @@ pub type Matrix33 = Matrix<3, 3>;
 /// A 4x4 matrix, allocated on the stack.
 pub type Matrix44 = Matrix<4, 4>;
 
+/// cos(π/8), used in svd 3x3
+const C_STAR: f64 = 0.923_879_532_511_286_8;
+/// sin(π/8), used in svd 3x3
+const S_STAR: f64 = 0.382_683_432_365_089_8;
+
 impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
     /// Fill a matrix with zeros.
     ///
@@ -760,7 +765,159 @@ impl Matrix<2, 2> {
         (u, singular_values, vt)
     }
 }
+impl Matrix<3, 3> {
+    /// Decompose a [`Matrix33`] into a rotation, a scaling, and a second rotation.
+    ///
+    /// ```math
+    /// A = U Σ V^\top;
+    /// ```
+    /// This implementation is based on the method described by `McAdams` et al. in
+    /// "Computing the Singular Value Decomposition of 3x3 matrices with minimal
+    /// branching and elementary floating point operations", which is a fast variant
+    /// of the Jacobi iteration method.
+    ///
+    /// The method ensures that U and V are pure rotation matrices (determinant = 1).
+    /// As a result, the third singular value may be negative. For a conventional
+    /// SVD with non-negative singular values, the sign can be absorbed into U.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::{
+    ///     MatMul, SquareMatrix,
+    ///     matrix::{DiagonalMatrix, Matrix33},
+    /// };
+    /// let m = Matrix33 {
+    ///     rows: [[1.0, 2.0, 3.0], [0.0, 1.0, 4.0], [5.0, 6.0, 0.0]],
+    /// };
+    /// let (u, s, vt) = m.svd();
+    /// let m_recon = u.matmul(&s.as_dense()).matmul(&vt);
+    /// for i in 0..3 {
+    ///     for j in 0..3 {
+    ///         assert!((m.rows[i][j] - m_recon.rows[i][j]).abs() < 1e-9);
+    ///     }
+    /// }
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn svd(&self) -> (Self, DiagonalMatrix<3>, Self) {
+        #[inline]
+        fn jacobi_rotation(p_idx: usize, q_idx: usize, s: &mut Matrix33, v: &mut Matrix33) {
+            // ApproxGivensQuaternion adapted to build rotation matrix
 
+            let c_h = 2.0 * (s[(p_idx, p_idx)] - s[(q_idx, q_idx)]);
+            let s_h = s[(p_idx, q_idx)];
+            let gamma = 5.828_427_124_746_2; // 3 + 2 * sqrt(2)
+
+            let b = gamma * s_h.powi(2) < c_h.powi(2);
+            let omega = (c_h.powi(2) + s_h.powi(2)).sqrt().recip();
+
+            let (c_h_res, s_h_res) = if b {
+                (omega * c_h, omega * s_h)
+            } else {
+                (C_STAR, S_STAR)
+            };
+
+            // Build normalized rotation matrix from quaternion components
+            let c_h_sq = c_h_res.powi(2);
+            let s_h_sq = s_h_res.powi(2);
+            let scale = c_h_sq + s_h_sq;
+            let cos = (c_h_sq - s_h_sq) / scale;
+            let sin = (2.0 * c_h_res * s_h_res) / scale;
+
+            let mut q_mat = Matrix33::identity();
+            q_mat[(p_idx, p_idx)] = cos;
+            q_mat[(p_idx, q_idx)] = -sin;
+            q_mat[(q_idx, p_idx)] = sin;
+            q_mat[(q_idx, q_idx)] = cos;
+
+            *s = q_mat.transpose().matmul(s).matmul(&q_mat);
+            *v = v.matmul(&q_mat);
+        }
+
+        #[inline]
+        fn cond_neg_swap_rows(c: bool, rows: &mut [[f64; 3]], i: usize, j: usize) {
+            if c {
+                rows.swap(i, j);
+                rows[j].iter_mut().for_each(|x| *x *= -1.0);
+            }
+        }
+
+        #[inline]
+        fn qr_givens_rotation(p: usize, q: usize, r_mat: &mut Matrix33, u_mat: &mut Matrix33) {
+            let rho = (r_mat[(p, p)].powi(2) + r_mat[(q, p)].powi(2)).sqrt();
+            let c = if rho == 0.0 { 1.0 } else { r_mat[(p, p)] / rho };
+            let s_val = if rho == 0.0 { 0.0 } else { r_mat[(q, p)] / rho };
+
+            let mut q_t = Matrix33::identity();
+            q_t[(p, p)] = c;
+            q_t[(p, q)] = s_val;
+            q_t[(q, p)] = -s_val;
+            q_t[(q, q)] = c;
+
+            *r_mat = q_t.matmul(r_mat);
+            *u_mat = u_mat.matmul(&q_t.transpose());
+        }
+
+        // Symmetric Eigenanalysis of A^T * A using Jacobi iterations
+        const NUM_JACOBI_SWEEPS: usize = 6; // Paper suggests 4, we want more accuracy
+        let mut singular_values = self.transpose().matmul(self);
+        let mut vt = Self::identity();
+
+        for _ in 0..NUM_JACOBI_SWEEPS {
+            jacobi_rotation(0, 1, &mut singular_values, &mut vt);
+            jacobi_rotation(0, 2, &mut singular_values, &mut vt);
+            jacobi_rotation(1, 2, &mut singular_values, &mut vt);
+        }
+
+        // Sort singular values and vectors
+        let mut b = self.matmul(&vt);
+        let mut b_cols = b.transpose().rows;
+        let mut v_cols = vt.transpose().rows;
+        let mut rhos: [f64; 3] = std::array::from_fn(|i| b_cols[i].iter().map(|&x| x * x).sum());
+
+        if rhos[0] < rhos[1] {
+            rhos.swap(0, 1);
+            cond_neg_swap_rows(true, &mut b_cols, 0, 1);
+            cond_neg_swap_rows(true, &mut v_cols, 0, 1);
+        }
+        if rhos[1] < rhos[2] {
+            rhos.swap(1, 2);
+            cond_neg_swap_rows(true, &mut b_cols, 1, 2);
+            cond_neg_swap_rows(true, &mut v_cols, 1, 2);
+        }
+        if rhos[0] < rhos[1] {
+            rhos.swap(0, 1);
+            cond_neg_swap_rows(true, &mut b_cols, 0, 1);
+            cond_neg_swap_rows(true, &mut v_cols, 0, 1);
+        }
+
+        b = Matrix { rows: b_cols }.transpose();
+        vt = Matrix { rows: v_cols }.transpose();
+
+        // QR Decomposition of B = U * Sigma
+        let mut r = b;
+        let mut u = Self::identity();
+
+        qr_givens_rotation(0, 1, &mut r, &mut u);
+        qr_givens_rotation(0, 2, &mut r, &mut u);
+        qr_givens_rotation(1, 2, &mut r, &mut u);
+
+        // Enforce conventions for outputs. Rotations are proper and S can be negative
+        let mut sigma = r.diag();
+
+        if u.determinant() < 0.0 {
+            u.rows.iter_mut().for_each(|row| row[2] *= -1.0);
+            sigma[2] *= -1.0;
+        }
+
+        if vt.determinant() < 0.0 {
+            vt.rows.iter_mut().for_each(|row| row[2] *= -1.0);
+            sigma[2] *= -1.0;
+        }
+
+        (u, sigma, vt.transpose())
+    }
+}
 /// Macro to generate impls for a given row size `N` and multiple column sizes `M`.
 macro_rules! impl_copy_for_m {
     ($N:literal, $($M:literal),+) => { $(#[doc(hidden)]impl Copy for Matrix<$N, $M> {})+ };
@@ -781,6 +938,7 @@ mod tests {
     use super::*;
     use crate::matrix::{Matrix, Matrix22, Matrix33, Matrix44};
     use approx::{assert_relative_eq, assert_ulps_eq, ulps_eq};
+
     use faer::Mat;
     use rstest::rstest;
 
@@ -938,7 +1096,7 @@ mod tests {
         let (u, s, vt) = matrix.svd();
 
         // Verify we can rebuild A from UΣVt
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&u.matmul(&s).matmul(&vt), &matrix);
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&u.matmul(&s.as_dense()).matmul(&vt), &matrix);
 
         // Test against faer
         let faer = fill_faer(rows);
@@ -982,7 +1140,7 @@ mod tests {
         let (u, s, vt) = matrix.svd();
 
         // Verify we can rebuild A from UΣVt
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&u.matmul(&s).matmul(&vt), &matrix);
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&u.matmul(&s.as_dense()).matmul(&vt), &matrix);
 
         // Test against nalgebra
         let na = nalgebra::Matrix2::from(rows).transpose();
@@ -992,6 +1150,38 @@ mod tests {
         assert_matrixes_ulps_eq::<2, 2, _, _>(&u, &nau);
         assert_diags_ulps_eq::<2, _>(&s, &nas);
         assert_matrixes_ulps_eq::<2, 2, _, _>(&vt, &navt);
+    }
+
+    #[rstest(
+        rows,
+        case::identity(Matrix33::identity().rows),
+        case::general([[1.0, 2.0, 3.0], [0.0, 1.0, 4.0], [5.0, 6.0, 0.0]]),
+        case::symmetric([[1.0, 2.0, 3.0], [2.0, 5.0, 6.0], [3.0, 6.0, 9.0]]),
+        case::near_singular([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0000001]]),
+        case::scaled((Matrix33::identity() * 10.0).rows),
+        case::from_paper_repo([[0.433_807, 0.269_185, 0.543_034], [0.440_339, 0.443_024, 0.166_492], [0.793_913, 0.125_443, 0.730_333]]), // See https://github.com/ericjang/svd3
+    )]
+    fn test_svd_3x3_faer(rows: [[f64; 3]; 3]) {
+        let matrix = Matrix33 { rows };
+        let (u, s, vt) = matrix.svd();
+
+        // Verify reconstruction
+        let m_recon = u.matmul(&s).matmul(&vt);
+        assert_matrixes_ulps_eq::<3, 3, _, _>(&m_recon, &matrix);
+
+        // Verify properties of U and V
+        assert_relative_eq!(u.determinant(), 1.0, epsilon = EPS);
+        assert_relative_eq!(vt.transpose().determinant(), 1.0, epsilon = EPS);
+        assert_matrixes_ulps_eq::<3, 3, _, _>(&u.matmul(&u.transpose()), &Matrix33::identity());
+        assert_matrixes_ulps_eq::<3, 3, _, _>(&vt.matmul(&vt.transpose()), &Matrix33::identity());
+
+        // Compare with faer SVD
+        let faer_mat = fill_faer(rows);
+        let faersvd = faer_mat.svd().unwrap();
+
+        let faers = faersvd.S();
+        // Our implementation allows negative singular value
+        assert_diags_ulps_eq::<3, _>(&s.rows.map(f64::abs), &faers);
     }
 
     #[test]

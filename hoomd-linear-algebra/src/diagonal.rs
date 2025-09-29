@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use std::ops::{Add, Index, Mul, Neg, Sub};
+use std::ops::{Add, Index, IndexMut, Mul, Neg, Sub};
 
 use crate::{Diagonal, GeneralMatrix, matrix::Matrix};
 
@@ -27,6 +27,12 @@ impl<const N: usize> Index<usize> for DiagonalMatrix<N> {
     #[inline]
     fn index(&self, index: usize) -> &f64 {
         &self.rows[index]
+    }
+}
+impl<const N: usize> IndexMut<usize> for DiagonalMatrix<N> {
+    #[inline]
+    fn index_mut(&mut self, index: usize) -> &mut f64 {
+        &mut self.rows[index]
     }
 }
 
