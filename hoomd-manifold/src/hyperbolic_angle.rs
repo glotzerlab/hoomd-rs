@@ -102,7 +102,7 @@ pub struct HyperbolicAngle {
 }
 
 impl HyperbolicAngle {
-    /// Modulo the second and third compoents of a HyperbolicAngle by $`2 pi`$.
+    /// Modulo the second and third components of a `HyperbolicAngle` by $`2 pi`$.
     #[inline]
     #[must_use]
     pub fn to_reduced(self) -> Self {
@@ -206,8 +206,8 @@ impl fmt::Display for HyperbolicAngle {
 }
 
 impl Distribution<HyperbolicAngle> for StandardUniform {
-    /// Sample a random hyperbolic angle. Note that the distrbution is not
-    /// truely uniform---the boost magnitude is sampled from a square-root
+    /// Sample a random hyperbolic angle. Note that the distribution is not
+    /// truly uniform---the boost magnitude is sampled from a square-root
     /// distribution (between zero and one) while the angle is sampled
     /// from a uniform distribution between 0 and $`2\pi`$.
     ///

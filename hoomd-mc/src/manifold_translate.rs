@@ -43,7 +43,6 @@ use rand::{Rng, distr::Distribution};
 /// # Ok(())
 /// # }
 /// ```
-
 impl<B> LocalTrial<Hyperboloid<3>, B> for Translate
 where
     B: Position<Position=Hyperboloid<3>>,
@@ -103,14 +102,14 @@ where
             point: *trial.position_mut().point(),
             skirt: rho,
         };
-        *trial.position_mut() = disk.sample(rng);
+        let trial_sample = disk.sample(rng);
         // push point back onto hyperboloid
         *trial.position_mut() = Hyperboloid::from(
             Minkowski::from([
-                trial.position_mut().coordinates()[0],
-                trial.position_mut().coordinates()[1],
-                (trial.position_mut().point()[0].powi(2)
-                    + trial.position_mut().point()[1].powi(2)
+                trial_sample.coordinates()[0],
+                trial_sample.coordinates()[1],
+                (trial_sample.point()[0].powi(2)
+                    + trial_sample.point()[1].powi(2)
                     + trial.position().skirt().powi(2))
                 .sqrt()]),
             rho
@@ -170,7 +169,6 @@ where
 /// # Ok(())
 /// # }
 /// ```
-
 impl<B> LocalTrial<Sphere<3>, B> for Translate
 where
     B: Position<Position = Sphere<3>>,

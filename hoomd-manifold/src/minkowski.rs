@@ -70,7 +70,7 @@ use approx::assert_relative_eq;
 /// ```
 /// Note that because this metric is not positive-definite, [`Minkowski`] this
 /// "spacetime interval" is not a true inner-product, and therefore
-/// [`Minkowski`] does not implement the methods of [`hoomd_vector::InnerProduct``].
+/// [`Minkowski`] does not implement the methods of [`hoomd_vector::InnerProduct`].
 ///
 /// ```
 /// use hoomd_manifold::Minkowski;
@@ -503,7 +503,7 @@ impl<const N: usize> Hyperboloid<N> {
         let skirt_squared = -point.distance_squared(&Minkowski::<N>::default());
         assert_relative_eq!(skirt_squared, skirt.powi(2), epsilon=1e-12);
         Hyperboloid {
-            point: point,
+            point,
             skirt: skirt_squared.sqrt(),
         }
     }

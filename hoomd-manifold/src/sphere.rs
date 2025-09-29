@@ -55,8 +55,8 @@ impl<const N: usize> Sphere<N> {
         let rad = point.norm();
         assert_relative_eq!(rad, radius);
         Sphere {
-            point: point,
-            radius: radius,
+            point,
+            radius,
         }
     }
     /// Implements a stereographic projection from the N-sphere to an N-dimensional plane.

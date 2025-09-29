@@ -31,7 +31,7 @@ use hoomd_vector::Quaternion;
 /// ## Construction of Biquaternions
 ///
 /// Create a biquaternion from an array of four complex numbers. Note that
-/// components are in the order $`[\mathbf{i},\mathbf{j},\mathbf{k},1``]$
+/// components are in the order $`[\mathbf{i},\mathbf{j},\mathbf{k},1]`$
 /// (i.e., the scalar component is at the end)
 /// ```
 /// use hoomd_manifold::Biquaternion;
