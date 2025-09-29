@@ -211,7 +211,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// Interchange the rows and columns of matrix `A` such that `A.transpose()[(j, i)] = A[(i, j)]`
     #[inline]
     #[must_use]
-    fn transpose(&self) -> Matrix<M, N> {
+    pub fn transpose(&self) -> Matrix<M, N> {
         Matrix {
             rows: std::array::from_fn(|j| std::array::from_fn(|i| self[(i, j)])),
         }

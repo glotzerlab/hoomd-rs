@@ -55,10 +55,10 @@ where
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let box_ = Parallelepiped{edge_vectors: [[1.0,0.0,0.0].into(),[0.5,f64::sqrt(3.0),0.0].into(), [0.0,0.0,1.0].into()]};
+    /// let box_ = Parallelepiped{edge_vectors: [[1.0,0.0,0.0].into(),[0.5,f64::sqrt(3.0)/2.0,0.0].into(), [0.0,0.0,1.0].into()]};
     /// let periodic =
-    ///     Periodic::new(0.5, box_)?;
-    /// let point = Point::new(Cartesian::from([6.0, -15.0, 2.0]));
+    ///     Periodic::new(0.25, box_)?;
+    /// let point = Point::new(Cartesian::from([6.0, -15.0, 2.5]));
     /// println!("{}",point.position);
     /// let wrapped_point = periodic.wrap(point)?;
     /// assert_eq!(wrapped_point.position, [0.0, 0.67949192, 0.0].into());
@@ -72,7 +72,8 @@ where
 
         let from_fractional = Matrix33 {
             rows: self.shape.edge_vectors.map(|v| v.coordinates),
-        };
+        }
+        .transpose();
 
         let to_fractional = Matrix33 {
             rows: [
@@ -88,9 +89,9 @@ where
             ],
         } * from_fractional.det().recip();
 
-        *r -= from_fractional
-            .matmul(&to_fractional.matmul(&r.to_column_matrix()))
-            .into();
+        let box_offset = to_fractional.matmul(&r.to_column_matrix()).map(f64::round);
+
+        *r -= from_fractional.matmul(&box_offset).into();
 
         Ok(properties)
     }
