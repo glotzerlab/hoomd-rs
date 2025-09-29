@@ -38,53 +38,6 @@ pub struct Thermalize {
     pub kT: f64,
 }
 
-
-impl<B, S, C> TranslationalThermalizer<2, B, S, C> for Thermalize
-    where
-        B: Position<Vector = Cartesian<2>>
-            + Momentum<Vector = Cartesian<2>>
-            + NetForce<Vector = Cartesian<2>>
-            + Mass
-            + Transform<S>
-            + Clone,
-        S: Position<Vector = Cartesian<2>> + Default,
-        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-{
-    /// Randomize the mometum of microstate, by drwan from
-    /// a Gaussian distribution, for two-dimension system.
-    /// Autometically zero the center-of-mass momentum.
-    fn translational_motion(
-        &self,
-        microstate: &mut Microstate<B, S, C>)
-
-    {
-        let mut rng = microstate.counter().make_rng();
-
-        for body_index in 0..microstate.bodies().len() {
-            // Get the important information from the body
-            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
-
-            let mass = body_properties.mass();
-
-            let sigma_momentum = (self.kT * mass).sqrt();
-
-            let normal = Normal::new(0.0, sigma_momentum).unwrap();
-            let random_momentum: Cartesian::<2> = Cartesian::from(
-                [
-                    normal.sample(&mut rng),
-                    normal.sample(&mut rng)
-                ]
-            );
-            *body_properties.momentum_mut() = random_momentum.clone();
-
-            // Update the microstate with new body properties, wrapping automatically
-            microstate
-                .update_body_properties(body_index, body_properties)
-                .expect("Bodies and sites should remain in simulation boundary.");
-        }
-    }
-}
-
 impl Thermalize
 {
     /// Remove the center-of-mass momentum.
@@ -177,11 +130,54 @@ impl Thermalize
             let velocity = body_properties.velocity();
             let mass = body_properties.mass();
 
-            com_angular_momentum += position.cross(&velocity) * *mass;
+            let p_to_com = *position - com;
+
+            com_angular_momentum += p_to_com.cross(&velocity) * *mass;
         }
-        com_angular_momentum /= microstate.bodies().len() as f64;
+    }
+}
 
+impl<const N: usize, B, S, C> TranslationalThermalizer<N, B, S, C> for Thermalize
+    where
+        B: Position<Vector = Cartesian<N>>
+            + Momentum<Vector = Cartesian<N>>
+            + NetForce<Vector = Cartesian<N>>
+            + Mass
+            + Transform<S>
+            + Clone,
+        S: Position<Vector = Cartesian<N>> + Default,
+        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+{
+    /// Randomize the mometum of microstate, by drwan from
+    /// a Gaussian distribution, for two-dimension system.
+    /// Autometically zero the center-of-mass momentum.
+    fn translational_motion(
+        &self,
+        microstate: &mut Microstate<B, S, C>)
 
+    {
+        let mut rng = microstate.counter().make_rng();
+
+        for body_index in 0..microstate.bodies().len() {
+            // Get the important information from the body
+            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+
+            let mass = body_properties.mass();
+
+            let sigma_momentum = (self.kT * mass).sqrt();
+
+            let normal = Normal::new(0.0, sigma_momentum).unwrap();
+
+            let random_momentum: Cartesian::<N> = Cartesian::from(
+                [(); N].map(|_| normal.sample(&mut rng))
+            );
+            *body_properties.momentum_mut() = random_momentum;
+
+            // Update the microstate with new body properties, wrapping automatically
+            microstate
+                .update_body_properties(body_index, body_properties)
+                .expect("Bodies and sites should remain in simulation boundary.");
+        }
     }
 }
 
@@ -217,54 +213,6 @@ impl<B, S, C> RotationalThermalizer<2, B, S, C> for Thermalize
             let sigma_angmom = (self.kT * Iz).sqrt();
 
             *body_properties.angular_momentum_mut() = Normal::new(0.0, sigma_angmom).unwrap().sample(&mut rng);
-            // Update the microstate with new body properties, wrapping automatically
-            microstate
-                .update_body_properties(body_index, body_properties)
-                .expect("Bodies and sites should remain in simulation boundary.");
-        }
-    }
-}
-
-impl<B, S, C> TranslationalThermalizer<3, B, S, C> for Thermalize
-    where
-        B: Position<Vector = Cartesian<3>>
-            + Momentum<Vector = Cartesian<3>>
-            + NetForce<Vector = Cartesian<3>>
-            + Mass
-            + Transform<S>
-            + Clone,
-        S: Position<Vector = Cartesian<3>> + Default,
-        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-{
-    /// Randomize the mometum of microstate, by drwan from
-    /// a Gaussian distribution, for three-dimension system.
-    /// Autometically zero the center-of-mass momentum.
-    fn translational_motion(
-        &self,
-        microstate: &mut Microstate<B, S, C>)
-
-    {
-        let mut rng = microstate.counter().make_rng();
-
-        for body_index in 0..microstate.bodies().len() {
-            // Get the important information from the body
-            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
-
-            // Calculate the net force on the body
-            let mass = body_properties.mass();
-
-            let sigma_momentum = (self.kT * mass).sqrt();
-
-            let normal = Normal::new(0.0, sigma_momentum).unwrap();
-            let random_momentum: Cartesian::<3> = Cartesian::from(
-                [
-                    normal.sample(&mut rng),
-                    normal.sample(&mut rng),
-                    normal.sample(&mut rng),
-                ]
-            );
-            *body_properties.momentum_mut() = random_momentum.clone();
-
             // Update the microstate with new body properties, wrapping automatically
             microstate
                 .update_body_properties(body_index, body_properties)
