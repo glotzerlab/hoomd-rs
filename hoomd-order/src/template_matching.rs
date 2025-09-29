@@ -7,7 +7,7 @@
 
 use crate::CrossCovariance;
 use hoomd_linear_algebra::{GeneralMatrix, MatMul, matrix::Matrix};
-use hoomd_vector::{Cartesian, RotationMatrix};
+use hoomd_vector::{Cartesian, Rotate, RotationMatrix};
 
 /// TODO
 #[derive(Clone, Debug, PartialEq)]
@@ -49,29 +49,54 @@ where
     }
 }
 
+/// Compute the root-mean squared deviation between two sets of points.
+fn compute_rmsd<const N: usize, I>(test_set: I, reference_set: &[Cartesian<N>]) -> f64
+where
+    I: IntoIterator<Item = Cartesian<N>>,
+{
+    test_set
+        .into_iter()
+        .zip(reference_set.iter())
+        .fold(0.0, |acc, (x, &y)| {
+            acc + (x - y)
+                .coordinates
+                .iter()
+                .fold(0.0, |sum, p| sum + p.powi(2))
+        })
+}
+
 impl Template<'_, Cartesian<3>> {
-    /// Compute the rotation and translation that optimally align two point sets in $`\mathbb{R}^3`$
+    /// Compute the rotation and translation that optimally align points in `test_set` to a [`Template`].
     ///
-    fn template_match(&self, other: &[Cartesian<3>]) -> (RotationMatrix<3>, Cartesian<3>, f64) {
+    /// # Examples
+    /// ```
+    /// ```
+    fn template_match(&self, test_set: &[Cartesian<3>]) -> (RotationMatrix<3>, Cartesian<3>, f64) {
         // TODO: pre-center self
-        // self.center = self
-        //     .coordinates
-        //     .iter()
-        //     .fold(Cartesian::default(), |acc, &x| acc + x) /n;
-        let other_centroid = other.iter().fold(Cartesian::default(), |acc, &v| acc + v)
+        let test_set_centroid = test_set
+            .iter()
+            .fold(Cartesian::default(), |acc, &v| acc + v)
             / self.coordinates.len() as f64;
+        let test_set_centered = test_set.iter().map(|&v| v - test_set_centroid);
+
         let m = self
             .clone()
-            .cross_covariance(other.iter().copied())
+            .cross_covariance(test_set_centered)
             .expect("Point set sizes did not match!");
 
         let (u, _, vt) = m.svd();
-        let r = u.matmul(&vt).transpose();
+        // let r = u.matmul(&vt).try_into().expect("Proper by convention.");
+        let r: RotationMatrix<3> = u
+            .matmul(&vt)
+            .try_into()
+            .expect("Should be unitary by construction.");
+
+        let t = r.rotate(&test_set_centroid);
 
         (
-            r.try_into().expect("Should be unitary by construction."),
-            Cartesian::default(),
-            0.0,
+            r,
+            t,
+            compute_rmsd(test_set.iter().map(|&v| r.rotate(&v)), self.coordinates),
         )
     }
 }
