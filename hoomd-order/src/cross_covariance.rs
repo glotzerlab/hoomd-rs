@@ -42,7 +42,7 @@ impl<'a, const N: usize> CrossCovariance<std::slice::Iter<'a, Cartesian<N>>, Mat
     ///     .expect("Sets match.");
     ///
     /// // The enclosed area of b is 4 times greater than a
-    /// assert_eq!(result.det(), 4.0);
+    /// assert_eq!(result.determinant(), 4.0);
     ///
     /// // a and b are aligned, so their cross-covariance is diagonal
     /// assert_eq!(result, Matrix22::from_diag(&[2.0, 2.0]));
