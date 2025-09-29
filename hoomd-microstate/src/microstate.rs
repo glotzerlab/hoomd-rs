@@ -528,8 +528,8 @@ where
         let new_ghosts = boundary.generate_ghosts(&site.properties);
         let ghost_tags = &mut sites_ghosts[site_index];
 
-        if ghost_tags.len() < new_ghosts.len() {
-            let ghosts_to_add = new_ghosts.len() - ghost_tags.len();
+        match ghost_tags.len().cmp(&new_ghosts.len()) {
+            std::cmp::Ordering::Less => {let ghosts_to_add = new_ghosts.len() - ghost_tags.len();
             for _ in 0..ghosts_to_add {
                 let ghost_tag = ghosts.push(Site {
                     site_tag: site.site_tag,
@@ -537,8 +537,8 @@ where
                     properties: S::default(),
                 });
                 ghost_tags.push(ghost_tag);
-            }
-        } else if ghost_tags.len() > new_ghosts.len() {
+            }}
+            std::cmp::Ordering::Greater => {
             let ghosts_to_remove = ghost_tags.len() - new_ghosts.len();
             for ghost_tag in ghost_tags.iter().rev().take(ghosts_to_remove) {
                 let ghost_index = ghosts.indices[*ghost_tag]
@@ -547,6 +547,8 @@ where
             }
 
             ghost_tags.truncate(new_ghosts.len());
+            }
+            std::cmp::Ordering::Equal => {}
         }
 
         debug_assert_eq!(ghost_tags.len(), new_ghosts.len());
