@@ -9,7 +9,33 @@ use crate::CrossCovariance;
 use hoomd_linear_algebra::{GeneralMatrix, MatMul, matrix::Matrix};
 use hoomd_vector::{Cartesian, Rotate, RotationMatrix};
 
-/// TODO
+/// Store a [`Template`] with origin-centered coordinates and a known center of mass.
+///
+/// This struct implements ``template_match``, enabling fast determination of similarity
+/// between a [`Template`] reference and an slice containing points to match against.
+///
+/// # Examples
+/// ```
+/// use hoomd_order::template_matching::Template;
+/// use hoomd_vector::{Angle, RotationMatrix, Cartesian};
+/// use approx::assert_relative_eq;
+/// // Align and measure similarity between two triangles
+/// let equilateral = Template::from(vec![[0.0, 0.0], [1.0,0.0], [0.5, f64::sqrt(3.0)/2.0]]);
+/// // let rotation = Angle::from(f64::consts::PI / 2.0);
+/// let rotated_points = vec![[0.0,0.0],[0.0,1.0], [f64::sqrt(3.0)/2.0, 0.5]];
+///
+/// // Align the point sets
+/// let (rotation_matrix, t, rmsd) = equilateral.template_match(&rotated_points);
+///
+/// // The rotation angle should be π / 2.0
+/// assert_relative_eq!(rotation_matrix.to_angle().theta, std::f64::consts::PI / 2., epsilon = 1e-14);
+/// // No translation is required to align the points
+/// // Therefore, the output should be the same as the center of mass of the input equilateral
+/// assert_relative_eq!(t[0], equilateral.center()[0], epsilon=1e-14);
+/// assert_relative_eq!(t[1], equilateral.center()[1], epsilon=1e-14);
+/// // The shapes are identical save for the rotation
+/// assert_relative_eq!(rmsd, 0.0, epsilon=1e-14);
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Template<P> {
     /// The coordinates defining the geometry of the template, centered at the origin.
@@ -19,12 +45,21 @@ pub struct Template<P> {
     pub(crate) center: P,
 }
 
-impl<const N: usize> From<Vec<Cartesian<N>>> for Template<Cartesian<N>> {
-    fn from(value: Vec<Cartesian<N>>) -> Self {
-        let centroid =
-            value.iter().fold(Cartesian::default(), |acc, &v| acc + v) / value.len() as f64;
+impl<const N: usize, P> From<Vec<P>> for Template<Cartesian<N>>
+where
+    P: Into<Cartesian<N>> + Copy,
+{
+    #[inline]
+    fn from(value: Vec<P>) -> Self {
+        let centroid = value
+            .iter()
+            .fold(Cartesian::default(), |acc, &v| acc + v.into())
+            / value.len() as f64;
         Self {
-            coordinates: value.iter().map(|&v| v - centroid).collect::<Vec<_>>(),
+            coordinates: value
+                .iter()
+                .map(|&v| v.into() - centroid)
+                .collect::<Vec<_>>(),
             center: centroid,
         }
     }
@@ -76,18 +111,38 @@ where
         })
 }
 
-impl Template<Cartesian<3>> {
-    /// Compute the rotation and translation that optimally align points in `test_set` to a [`Template`].
-    ///
+impl<const N: usize> Template<Cartesian<N>> {
+    /// Get the `center` from a [`Template`]
     /// # Examples
     /// ```
+    /// use hoomd_order::template_matching::Template;
+    /// let equilateral = Template::from(vec![
+    ///     [0.0, 0.0],
+    ///     [1.0, 0.0],
+    ///     [0.5, f64::sqrt(3.0) / 2.0],
+    /// ]);
+    /// assert_eq!(equilateral.center(), [0.5, f64::sqrt(3.0) / 6.0].into());
     /// ```
-    fn template_match(&self, test_set: &[Cartesian<3>]) -> (RotationMatrix<3>, Cartesian<3>, f64) {
+    #[must_use]
+    #[inline]
+    pub fn center(&self) -> Cartesian<N> {
+        self.center
+    }
+}
+
+impl Template<Cartesian<3>> {
+    /// Compute the rotation and translation that optimally align points in `test_set` to a [`Template`].
+    #[must_use]
+    #[inline]
+    pub fn template_match(
+        &self,
+        test_set: &[impl Into<Cartesian<3>> + Copy],
+    ) -> (RotationMatrix<3>, Cartesian<3>, f64) {
         let test_set_centroid = test_set
             .iter()
-            .fold(Cartesian::default(), |acc, &v| acc + v)
+            .fold(Cartesian::default(), |acc, &v| acc + v.into())
             / self.coordinates.len() as f64;
-        let test_set_centered = test_set.iter().map(|&v| v - test_set_centroid);
+        let test_set_centered = test_set.iter().map(|&v| v.into() - test_set_centroid);
 
         let m = self
             .clone()
@@ -105,7 +160,48 @@ impl Template<Cartesian<3>> {
         (
             r,
             t,
-            compute_rmsd(test_set.iter().map(|&v| r.rotate(&v)), &self.coordinates),
+            compute_rmsd(
+                test_set.iter().map(|&v| r.rotate(&v.into())),
+                &self.coordinates,
+            ),
+        )
+    }
+}
+impl Template<Cartesian<2>> {
+    /// Compute the rotation and translation that optimally align points in `test_set` to a [`Template`].
+    #[must_use]
+    #[inline]
+    pub fn template_match(
+        &self,
+        test_set: &[impl Into<Cartesian<2>> + Copy],
+    ) -> (RotationMatrix<2>, Cartesian<2>, f64) {
+        let test_set_centroid = test_set
+            .iter()
+            .fold(Cartesian::default(), |acc, &v| acc + v.into())
+            / self.coordinates.len() as f64;
+        let test_set_centered = test_set.iter().map(|&v| v.into() - test_set_centroid);
+
+        let m = self
+            .clone()
+            .cross_covariance(test_set_centered)
+            .expect("Point set sizes did not match!");
+
+        let (u, _, vt) = m.svd();
+        let r: RotationMatrix<2> = u
+            .matmul(&vt)
+            .try_into()
+            .expect("Should be unitary by construction.");
+        let r_transpose = r.inverted();
+
+        let t = r.rotate(&test_set_centroid);
+
+        (
+            r,
+            t,
+            compute_rmsd(
+                test_set.iter().map(|&v| r_transpose.rotate(&v.into()) - t),
+                &self.coordinates,
+            ),
         )
     }
 }

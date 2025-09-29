@@ -6,5 +6,5 @@
 mod cross_covariance;
 pub use cross_covariance::CrossCovariance;
 
-mod template_matching;
+pub mod template_matching;
 // pub use template_matching:;

@@ -13,10 +13,8 @@ use rand::{
     distr::{Distribution, StandardUniform, Uniform},
 };
 
-use crate::{Cross, Error, InnerProduct, Rotate, Unit, Vector};
-use hoomd_linear_algebra::{
-    Diagonal, GeneralMatrix, Invertible, MatMul, SquareMatrix, matrix::Matrix,
-};
+use crate::{Angle, Cross, Error, InnerProduct, Rotate, Unit, Vector};
+use hoomd_linear_algebra::{Diagonal, GeneralMatrix, Invertible, MatMul, matrix::Matrix};
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
 ///
@@ -707,6 +705,45 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
         }
 
         Cartesian { coordinates }
+    }
+}
+impl RotationMatrix<2> {
+    /// Extract the [`Angle`] representation of a rotation from a matrix.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::{Angle, RotationMatrix};
+    ///
+    /// let a = Angle::from(1.5);
+    /// assert_eq!(RotationMatrix::from(a).to_angle(), a);
+    /// ```
+    #[inline]
+    pub fn to_angle(self) -> Angle {
+        Angle {
+            theta: f64::acos(self.rows[0][0]),
+        }
+    }
+}
+
+impl TryFrom<Matrix<2, 2>> for RotationMatrix<2> {
+    type Error = Error;
+    #[inline]
+    fn try_from(value: Matrix<2, 2>) -> Result<Self, Self::Error> {
+        if let Some(inv) = value.inverse() {
+            let m_m_inv = value.matmul(&inv);
+            if !m_m_inv.is_nearly_identity(1e-12) {
+                return Err(Error::InvalidRotationMatrixNonunitary);
+            }
+            if m_m_inv.determinant() < 0.0 {
+                return Err(Error::InvalidRotationMatrixImproper);
+            }
+        } else {
+            return Err(Error::InvalidRotationMatrixNonunitary);
+        }
+
+        Ok(RotationMatrix {
+            rows: value.rows.map(Cartesian::from),
+        })
     }
 }
 
