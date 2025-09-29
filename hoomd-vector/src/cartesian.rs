@@ -300,7 +300,7 @@ impl<const N: usize> Metric for Cartesian<N> {
     ///
     /// # Example
     /// ```
-    /// use hoomd_vector::{Cartesian, Vector};
+    /// use hoomd_vector::{Cartesian, Metric};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let vec2 = Cartesian::<2>::default();

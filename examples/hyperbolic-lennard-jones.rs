@@ -1,7 +1,7 @@
 use anyhow::Context;
 use bevy::prelude::*;
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, Settings, Simulation,
+    AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
     representation::{self, HyperbolicDiskAssets, HyperbolicDiskMaterial},
 };
 use hoomd_geometry::shape::EightEight;
@@ -14,6 +14,7 @@ use hoomd_mc::{Translate, Sweep, Trial};
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder, boundary::Periodic, property::Point,
 };
+use hoomd_simulation::Simulation;
 use rand::distr::Distribution;
 use rand::{SeedableRng, rngs::StdRng};
 
@@ -23,15 +24,14 @@ struct A;
 struct Ghost;
 
 const RHO: f64 = 1.0;
-const PARTICLE_NUMBER: usize = 1118;
+const PARTICLE_NUMBER: usize = 200;
 const DIAMETER: f64 = 0.15; //in hyperboloid metric
 
-#[cfg_attr(feature = "bevy", derive(Resource))]
 fn main() -> anyhow::Result<()> {
     let simulation = Fill::new().context("failed to setup simulation")?;
     let hoomd_bevy_plugin = HoomdBevyPlugin {
         initial_settings: Settings {
-            viewport_height: 2.0_f32,
+            camera: InitialCamera::Orthographic2d(2.0),
             ..default()
         },
         simulation,
@@ -62,8 +62,7 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// The HOOMD simulation
-#[cfg_attr(feature = "bevy", derive(Resource))]
+#[derive(Resource)]
 struct Fill {
     /// Positions of all the bodies in the simulation.
     microstate: Microstate<
@@ -86,7 +85,7 @@ impl Fill {
         let mut microstate =
             MicrostateBuilder::with_boundary(boundary).try_build()?;
 
-        let initial_spacing = 2.0;
+        let initial_spacing = 1.0;
         let mut rng = StdRng::seed_from_u64(23);
         let sample_disk = HyperbolicDisk {
             r: initial_spacing.try_into()?,
@@ -99,7 +98,7 @@ impl Fill {
         };
         for _n in 0..PARTICLE_NUMBER {
             let new_point: Hyperboloid<3> =
-                Hyperboloid::from(sample_disk.sample(&mut rng).point(), RHO);
+                Hyperboloid::from(*sample_disk.sample(&mut rng).point(), RHO);
             microstate.add_body(Body::point(new_point))?;
         }
 
@@ -114,7 +113,7 @@ impl Fill {
             evaluator,
         };
 
-        let mut kt = 1.0;
+        let kt = 1.0;
 
         let hamiltonian = cutoff_pair;
         let d = 0.01;
@@ -168,7 +167,7 @@ fn sync_simulation(
         query,
         sites
             .iter()
-            .map(|site| (site.properties.position.point, DIAMETER)),
+            .map(|site| (site.properties.position.point().clone(), DIAMETER)),
     );
 }
 
@@ -188,6 +187,6 @@ fn sync_ghosts(
         ghost_query,
         ghosts
             .iter()
-            .map(|site| (site.properties.position.point, DIAMETER)),
+            .map(|site| (site.properties.position.point().clone(), DIAMETER)),
     );
 }

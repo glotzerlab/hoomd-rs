@@ -17,8 +17,6 @@ use std::{
     iter::zip,
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-
-#[cfg(debug_assertions)]
 use approx::assert_relative_eq;
 
 /// A vector in N-dimensional Minkowski space.
@@ -235,6 +233,10 @@ impl<const N: usize> Metric for Minkowski<N> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
         ((self.distance_squared(other)).abs()).sqrt()
+    }
+    #[inline]
+    fn n_dimensions(&self) -> usize {
+        N
     }
 }
 
@@ -630,6 +632,10 @@ impl Metric for Hyperboloid<3> {
     fn distance_squared(&self, other: &Self) -> f64 {
         self.distance(other).powi(2)
     }
+    #[inline]
+    fn n_dimensions(&self) -> usize {
+        2_usize
+    }
 }
 
 impl Metric for Hyperboloid<4> {
@@ -647,6 +653,10 @@ impl Metric for Hyperboloid<4> {
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
         self.distance(other).powi(2)
+    }
+    #[inline]
+    fn n_dimensions(&self) -> usize {
+        3_usize
     }
 }
 

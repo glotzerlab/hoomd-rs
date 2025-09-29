@@ -134,7 +134,6 @@ impl<T: Send + Sync + 'static> HyperbolicDisk<T> {
 }
 
 /// Project coordinates to Poincare disk
-/// TODO: fix radius
 fn poincare(point: &Minkowski<3>, skirt: f64, diameter: f64) -> ([f32; 3], f32) {
     let pt = Hyperboloid::from(point.clone(), skirt);
     let proj = pt.to_poincare();
@@ -180,6 +179,20 @@ impl Default for HyperbolicDiskMaterial {
     fn default() -> Self {
         Self {
             background_color: PRIMARY_COLOR.into(),
+            outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
+            outline_width: 0.005,
+            texture: TRANSPARENT_IMAGE_HANDLE,
+            texture_scale: 1.2,
+        }
+    }
+}
+
+impl HyperbolicDiskMaterial {
+    /// color for ghost particles
+    #[must_use]
+    pub fn ghost() -> Self {
+        Self {
+            background_color: Color::linear_rgb(0.5, 0.5, 0.5).into(),
             outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
             outline_width: 0.005,
             texture: TRANSPARENT_IMAGE_HANDLE,

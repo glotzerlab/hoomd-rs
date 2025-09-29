@@ -12,8 +12,6 @@ use rand::{
 
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric};
-
-#[cfg(debug_assertions)]
 use approx::assert_relative_eq;
 
 /// The trait [`Sphere`] for [`Cartesian`] implements types on the embedding
@@ -138,6 +136,10 @@ impl Metric for Sphere<3> {
     fn distance_squared(&self, other: &Self) -> f64 {
         (self.distance(other)).powi(2)
     }
+    #[inline]
+    fn n_dimensions(&self) -> usize {
+        2_usize
+    }
 }
 
 impl Metric for Sphere<4> {
@@ -150,6 +152,10 @@ impl Metric for Sphere<4> {
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
         (self.distance(other)).powi(2)
+    }
+    #[inline]
+    fn n_dimensions(&self) -> usize {
+        3_usize
     }
 }
 
