@@ -71,6 +71,6 @@ where
     fn site_pair_force(&self, a: &S, b: &S) -> V {
         let r = *a.position() - *b.position();
         let distance = r.norm();
-        r * self.0.force(distance)
+        r * self.0.force(distance) / distance
     }
 }
