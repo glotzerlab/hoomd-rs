@@ -6,7 +6,6 @@
 use crate::Error;
 use std::ops::{Mul, MulAssign};
 
-
 /// A f64 value that is not +/- inf, nan, or a value <= 0.
 ///
 /// # Example
@@ -91,26 +90,25 @@ impl Default for PositiveReal {
     }
 }
 
-impl Mul for PositiveReal{
+impl Mul for PositiveReal {
     type Output = Self;
 
-    fn mul(self, rhs: Self) -> Self::Output{
+    fn mul(self, rhs: Self) -> Self::Output {
         (self.get() * rhs.get()).try_into().unwrap()
     }
-
 }
 
-impl Mul<f64> for PositiveReal{
+impl Mul<f64> for PositiveReal {
     type Output = f64;
 
-    fn mul(self, rhs: f64) -> Self::Output{
+    fn mul(self, rhs: f64) -> Self::Output {
         self.get() * rhs
     }
 }
 
-impl MulAssign for PositiveReal{
-    fn mul_assign(&mut self, rhs: Self){
-        self.0 *= rhs.get()
+impl MulAssign for PositiveReal {
+    fn mul_assign(&mut self, rhs: Self) {
+        self.0 *= rhs.get();
     }
 }
 

@@ -1,8 +1,11 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 use crate::shape::{
     Capsule, ConvexPolytope, Cylinder, Hypercuboid, Hyperellipsoid, Hyperparallelepiped,
     Hypersphere, Simplex3,
 };
-use hoomd_linear_algebra::{GeneralMatrix, MatMul, SquareMatrix, matrix::Matrix};
+use hoomd_linear_algebra::{MatMul, SquareMatrix, matrix::Matrix};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 

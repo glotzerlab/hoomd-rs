@@ -4,16 +4,12 @@
 //! Implement periodic boundary conditions for cuboids in cartesian space.
 
 use crate::{
-    boundary::{
-        Error, GenerateGhosts, MAX_GHOSTS, MaximumAllowableInteractionRange, Periodic, Wrap,
-    },
+    boundary::{Error, MaximumAllowableInteractionRange, Periodic, Wrap},
     property::Position,
 };
-use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
+use hoomd_geometry::shape::Hyperparallelepiped;
 use hoomd_linear_algebra::{MatMul, matrix::Matrix33};
-use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::InnerProduct;
-use hoomd_vector::{Cartesian, Cross};
+use hoomd_vector::{Cartesian, Cross, InnerProduct};
 
 impl<const N: usize> MaximumAllowableInteractionRange for Hyperparallelepiped<N> {
     /// The largest value that the maximum interaction range can take.
@@ -25,7 +21,6 @@ impl<const N: usize> MaximumAllowableInteractionRange for Hyperparallelepiped<N>
     /// where $`L_\mathrm{min}`$ is the smallest edge length.
     ///
     /// # Example
-    ///
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
         let minimum_l = self
@@ -55,9 +50,14 @@ where
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let box_ = Parallelepiped{edge_vectors: [[1.0,0.0,0.0].into(),[0.5,f64::sqrt(3.0)/2.0,0.0].into(), [0.0,0.0,1.0].into()]};
-    /// let periodic =
-    ///     Periodic::new(0.25, box_)?;
+    /// let box_ = Parallelepiped {
+    ///     edge_vectors: [
+    ///         [1.0, 0.0, 0.0].into(),
+    ///         [0.5, f64::sqrt(3.0) / 2.0, 0.0].into(),
+    ///         [0.0, 0.0, 1.0].into(),
+    ///     ],
+    /// };
+    /// let periodic = Periodic::new(0.25, box_)?;
     /// let point = Point::new(Cartesian::from([1.0, f64::sqrt(3.0), 2.5]));
     /// let wrapped_point = periodic.wrap(point)?;
     /// assert_eq!(wrapped_point.position, [0.0, 0.0, -0.5].into());

@@ -9,8 +9,10 @@ use std::{
 };
 
 use hoomd_utility::valid::PositiveReal;
-use rand::Rng;
-use rand::distr::{Distribution, StandardUniform, Uniform};
+use rand::{
+    Rng,
+    distr::{Distribution, StandardUniform, Uniform},
+};
 
 use crate::{Cross, Error, InnerProduct, Rotate, Unit, Vector};
 use hoomd_linear_algebra::{Diagonal, GeneralMatrix, MatMul, matrix::Matrix};
@@ -127,10 +129,9 @@ impl<const N: usize> From<Cartesian<N>> for [f64; N] {
     ///
     /// # Example
     ///
-    /// use hoomd_vector::Cartesian;
+    /// use `hoomd_vector::Cartesian`;
     ///
-    /// let v: [f64; N] = Cartesian::from([4.0, 3.0]).into();
-    ///
+    /// let v: [f64; N] = `Cartesian::from`([4.0, 3.0]).`into()`;
     #[inline]
     fn from(coordinates: Cartesian<N>) -> Self {
         coordinates.coordinates
@@ -183,10 +184,12 @@ impl<const N: usize> From<Matrix<1, N>> for Cartesian<N> {
     ///
     /// # Example
     /// ```
-    /// use hoomd_vector::Cartesian;
     /// use hoomd_linear_algebra::matrix::Matrix;
+    /// use hoomd_vector::Cartesian;
     ///
-    /// let m: Matrix<1,3> = Matrix { rows: [[1.0, 2.0, 3.0]] };
+    /// let m: Matrix<1, 3> = Matrix {
+    ///     rows: [[1.0, 2.0, 3.0]],
+    /// };
     /// let v: Cartesian<3> = m.into();
     /// assert_eq!(v, [1.0, 2.0, 3.0].into());
     /// ```
