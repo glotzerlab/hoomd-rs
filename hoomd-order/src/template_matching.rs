@@ -8,6 +8,7 @@
 use crate::CrossCovariance;
 use hoomd_linear_algebra::{GeneralMatrix, MatMul, matrix::Matrix};
 use hoomd_vector::{Cartesian, RotationMatrix};
+use std::ops::Index;
 
 /// TODO
 #[derive(Clone, Debug, PartialEq)]
@@ -19,30 +20,33 @@ pub struct Template<'a, P> {
     pub(crate) center: P,
 }
 
-impl<'a, const N: usize> CrossCovariance<Template<'a, Cartesian<N>>, Matrix<N, N>>
-    for Template<'_, Cartesian<N>>
+impl<'a, const N: usize, I> CrossCovariance<I, Matrix<N, N>> for Template<'_, Cartesian<N>>
+where
+    I: ExactSizeIterator + Index<usize, Output = Cartesian<N>>,
 {
     /// Compute the cross-covariance between two sets of vectors.
     ///
     /// The result will be `None` if the two sets of points have differing numbers of
     /// points.
     #[inline]
-    fn cross_covariance(self, other: Template<'a, Cartesian<N>>) -> Option<Matrix<N, N>> {
+    fn cross_covariance(self, other: I) -> Option<Matrix<N, N>> {
         // TODO: better error?
-        if self.coordinates.len() != other.coordinates.len() {
+        if self.coordinates.len() != other.len() {
             return None;
         }
-        Some(self.coordinates.iter().zip(other.coordinates.iter()).fold(
-            Matrix::<N, N>::zeros(),
-            |mut acc, (l, r)| {
-                for i in 0..N {
-                    for j in 0..N {
-                        acc[(i, j)] += l[i] * r[j];
+        Some(
+            self.coordinates
+                .iter()
+                .zip(other)
+                .fold(Matrix::<N, N>::zeros(), |mut acc, (l, r)| {
+                    for i in 0..N {
+                        for j in 0..N {
+                            acc[(i, j)] += l[i] * r[j];
+                        }
                     }
-                }
-                acc
-            },
-        ))
+                    acc
+                }),
+        )
     }
 }
 
@@ -51,7 +55,9 @@ impl Template<'_, Cartesian<3>> {
     ///
     ///
     // fn template_match<I: ExactSizeIterator<Item = Cartesian<3>>>(
-    fn template_match<I: ExactSizeIterator<Item = Cartesian<3>>>(
+    fn template_match<
+        I: ExactSizeIterator<Item = Cartesian<3>> + Index<usize, Output = Cartesian<3>>,
+    >(
         &self,
         other: I,
     ) -> (RotationMatrix<3>, Cartesian<3>, f64) {
@@ -61,12 +67,21 @@ impl Template<'_, Cartesian<3>> {
         //     .iter()
         //     .fold(Cartesian::default(), |acc, &x| acc + x);
         // / Cartesian::from([self.coordinates.len() as f64; 3]);
+        // let n = a_coords.len() as f64;
+        // let a_center = a_coords
+        //     .iter()
+        //     .fold(Cartesian::default(), |acc, &v| acc + v)
+        //     / n;
+        // let b_center = b_coords
+        //     .iter()
+        //     .fold(Cartesian::default(), |acc, &v| acc + v)
+        //     / n;
         let m = self
             .clone()
             .cross_covariance(other)
             .expect("Point set sizes did not match!");
 
-        let (u, s, vt) = m.svd();
+        let (u, _, vt) = m.svd();
         let r = u.matmul(&vt).transpose();
 
         (
