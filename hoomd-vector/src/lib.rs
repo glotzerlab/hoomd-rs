@@ -213,6 +213,13 @@ pub enum Error {
     /// Attempted to normalize a quaternion with an invalid magnitude.
     #[error("cannot normalize the 0 quaternion")]
     InvalidQuaternionMagnitude,
+
+    /// Attempted to construct a rotation matrix from a non-unitary matrix
+    #[error("cannot construct a rotation matrix from a non-unitary input")]
+    InvalidRotationMatrixNonunitary,
+    /// Attempted to construct a rotation matrix from a rotoreflection
+    #[error("cannot construct a rotation matrix from an improper rotation")]
+    InvalidRotationMatrixImproper,
 }
 
 /// Operate on elements of a metric vector space.
