@@ -104,6 +104,10 @@ impl BussiThermostat {
     pub fn energy_drift(&self, kinetic_energy_old: &f64, rescaling_factor: &f64) -> f64 {
         kinetic_energy_old * (1.0 - rescaling_factor.powi(2))
     }
+    /// Get the energy of thermalstat.
+    pub fn get_energy(&self) -> &f64 {
+        &self.cumu_energy_drift
+    }
 }
 /// TODO: add documentation
 impl<B, S, C, M> Thermostat<B, S, C, M> for BussiThermostat
@@ -236,6 +240,11 @@ impl MTTKThermostat {
     /// Calculate thermostat energy.
     pub fn thermostat_energy(&self, kT_setpoint: &f64, dof: &f64) -> f64 {
         dof * kT_setpoint * (self.eta + 0.5 * (self.xi * self.tau).powi(2))
+    }
+
+    /// Get the energy of thermalstat.
+    pub fn get_energy(&self) -> &f64 {
+        &self.energy
     }
 }
 
