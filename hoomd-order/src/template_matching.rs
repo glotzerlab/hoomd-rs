@@ -8,21 +8,20 @@
 use crate::CrossCovariance;
 use hoomd_linear_algebra::{GeneralMatrix, MatMul, matrix::Matrix};
 use hoomd_vector::{Cartesian, RotationMatrix};
-use std::ops::Index;
 
 /// TODO
 #[derive(Clone, Debug, PartialEq)]
 pub struct Template<'a, P> {
-    /// The coordinates defining the geometry of the template.
+    /// The coordinates defining the geometry of the template, centered at the origin.
     pub(crate) coordinates: &'a [P],
 
     /// The center of mass of the `coordinates`.
     pub(crate) center: P,
 }
 
-impl<'a, const N: usize, I> CrossCovariance<I, Matrix<N, N>> for Template<'_, Cartesian<N>>
+impl<const N: usize, I> CrossCovariance<I, Matrix<N, N>> for Template<'_, Cartesian<N>>
 where
-    I: ExactSizeIterator + Index<usize, Output = Cartesian<N>>,
+    I: ExactSizeIterator<Item = Cartesian<N>>,
 {
     /// Compute the cross-covariance between two sets of vectors.
     ///
@@ -55,9 +54,7 @@ impl Template<'_, Cartesian<3>> {
     ///
     ///
     // fn template_match<I: ExactSizeIterator<Item = Cartesian<3>>>(
-    fn template_match<
-        I: ExactSizeIterator<Item = Cartesian<3>> + Index<usize, Output = Cartesian<3>>,
-    >(
+    fn template_match<I: ExactSizeIterator<Item = Cartesian<3>>>(
         &self,
         other: I,
     ) -> (RotationMatrix<3>, Cartesian<3>, f64) {
@@ -65,17 +62,9 @@ impl Template<'_, Cartesian<3>> {
         // self.center = self
         //     .coordinates
         //     .iter()
-        //     .fold(Cartesian::default(), |acc, &x| acc + x);
-        // / Cartesian::from([self.coordinates.len() as f64; 3]);
-        // let n = a_coords.len() as f64;
-        // let a_center = a_coords
-        //     .iter()
-        //     .fold(Cartesian::default(), |acc, &v| acc + v)
-        //     / n;
-        // let b_center = b_coords
-        //     .iter()
-        //     .fold(Cartesian::default(), |acc, &v| acc + v)
-        //     / n;
+        //     .fold(Cartesian::default(), |acc, &x| acc + x) /n;
+        let other_centroid =
+            other.fold(Cartesian::default(), |acc, v| acc + v) / self.coordinates.len() as f64;
         let m = self
             .clone()
             .cross_covariance(other)
