@@ -27,6 +27,7 @@ pub trait Shear<const N: usize> {
 // }
 
 impl<const N: usize> Scale for Capsule<N> {
+    #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
         self.height *= scale_factor;
         self.radius *= scale_factor;
@@ -34,6 +35,7 @@ impl<const N: usize> Scale for Capsule<N> {
 }
 
 impl Scale for Cylinder {
+    #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
         self.height *= scale_factor;
         self.radius *= scale_factor;
@@ -41,30 +43,35 @@ impl Scale for Cylinder {
 }
 
 impl<const N: usize> Scale for Hypercuboid<N> {
+    #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
         self.edge_lengths = self.edge_lengths.map(|v| v * scale_factor);
     }
 }
 
 impl<const N: usize> Scale for Hyperparallelepiped<N> {
+    #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
         self.edge_vectors = self.edge_vectors.map(|v| v * scale_factor);
     }
 }
 
 impl<const N: usize> Scale for Hypersphere<N> {
+    #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
         self.radius *= scale_factor;
     }
 }
 
 impl<const N: usize> Scale for Hyperellipsoid<N> {
+    #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
         self.semi_axes = self.semi_axes.map(|v| v * scale_factor);
     }
 }
 
 impl<const N: usize> Scale for ConvexPolytope<N> {
+    #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
         for vertex in &mut self.vertices {
             *vertex *= scale_factor;
@@ -73,6 +80,7 @@ impl<const N: usize> Scale for ConvexPolytope<N> {
 }
 
 impl Scale for Simplex3 {
+    #[inline]
     fn scale(&mut self, scale_factor: PositiveReal) {
         for vertex in &mut self.vertices {
             *vertex *= scale_factor;
@@ -81,6 +89,7 @@ impl Scale for Simplex3 {
 }
 
 impl<const N: usize> Shear<N> for Hyperparallelepiped<N> {
+    #[inline]
     fn shear(
         &mut self,
         angle: f64,

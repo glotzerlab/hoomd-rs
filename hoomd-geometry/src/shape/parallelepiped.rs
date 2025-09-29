@@ -14,6 +14,7 @@ pub type Parallelogram = Hyperparallelepiped<2>;
 pub type Parallelepiped = Hyperparallelepiped<3>;
 
 impl<const N: usize> Default for Hyperparallelepiped<N> {
+    #[inline]
     fn default() -> Self {
         Self {
             edge_vectors: std::array::from_fn(|i| {
