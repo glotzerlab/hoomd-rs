@@ -147,7 +147,6 @@ impl Transform<Point<Sphere<3>>> for Point<Sphere<3>> {
 impl Transform<Point<Sphere<4>>> for Point<Sphere<4>> {
     #[inline]
     fn transform(&self, site_properties: &Point<Sphere<4>>) -> Point<Sphere<4>> {
-        #[cfg(debug_assertions)]
         let radius = self.position.radius();
         let body_point = self.position.coordinates();
         let body_phi_1 = (body_point[2].powi(2) + body_point[1].powi(2))
