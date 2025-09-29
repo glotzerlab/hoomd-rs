@@ -134,10 +134,10 @@ impl Template<Cartesian<3>> {
     /// Compute the rotation and translation that optimally align points in `test_set` to a [`Template`].
     #[must_use]
     #[inline]
-    pub fn template_match(
-        &self,
-        test_set: &[impl Into<Cartesian<3>> + Copy],
-    ) -> (RotationMatrix<3>, Cartesian<3>, f64) {
+    pub fn template_match<V>(&self, test_set: &[V]) -> (RotationMatrix<3>, Cartesian<3>, f64)
+    where
+        V: Into<Cartesian<3>> + Copy,
+    {
         let test_set_centroid = test_set
             .iter()
             .fold(Cartesian::default(), |acc, &v| acc + v.into())
@@ -171,10 +171,10 @@ impl Template<Cartesian<2>> {
     /// Compute the rotation and translation that optimally align points in `test_set` to a [`Template`].
     #[must_use]
     #[inline]
-    pub fn template_match(
-        &self,
-        test_set: &[impl Into<Cartesian<2>> + Copy],
-    ) -> (RotationMatrix<2>, Cartesian<2>, f64) {
+    pub fn template_match<V>(&self, test_set: &[V]) -> (RotationMatrix<2>, Cartesian<2>, f64)
+    where
+        V: Into<Cartesian<2>> + Copy,
+    {
         let test_set_centroid = test_set
             .iter()
             .fold(Cartesian::default(), |acc, &v| acc + v.into())
