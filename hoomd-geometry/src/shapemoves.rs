@@ -99,6 +99,7 @@ impl<const N: usize> Shear<N> for Hyperparallelepiped<N> {
 #[expect(clippy::used_underscore_binding, reason = "Required for const tests.")]
 mod tests {
     use super::*;
+    use approx::assert_relative_eq;
     #[test]
     fn test_cuboid_scale() {
         let scale_factor: PositiveReal = 5.0.try_into().unwrap();
@@ -124,8 +125,12 @@ mod tests {
         };
         let angle = std::f64::consts::PI / 6.0;
         my_box.shear(angle, &parallel_axis, &perpendicular_axis);
-        assert_eq!(my_box.edge_vectors[0], [1., 0., 0.].into());
-        assert_eq!(my_box.edge_vectors[1], [0., 1., 0.].into());
-        assert_eq!(my_box.edge_vectors[2], [f64::sqrt(3.) / 3., 0., 1.].into());
+        assert_relative_eq!(my_box.edge_vectors[0], [1., 0., 0.].into(), epsilon = 1e-14);
+        assert_relative_eq!(my_box.edge_vectors[1], [0., 1., 0.].into(), epsilon = 1e-14);
+        assert_relative_eq!(
+            my_box.edge_vectors[2],
+            [f64::sqrt(3.) / 3., 0., 1.].into(),
+            epsilon = 1e-14
+        );
     }
 }
