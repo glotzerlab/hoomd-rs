@@ -861,18 +861,18 @@ impl Matrix<3, 3> {
         // Symmetric Eigenanalysis of A^T * A using Jacobi iterations
         const NUM_JACOBI_SWEEPS: usize = 6; // Paper suggests 4, we want more accuracy
         let mut singular_values = self.transpose().matmul(self);
-        let mut vt = Self::identity();
+        let mut v = Self::identity();
 
         for _ in 0..NUM_JACOBI_SWEEPS {
-            jacobi_rotation(0, 1, &mut singular_values, &mut vt);
-            jacobi_rotation(0, 2, &mut singular_values, &mut vt);
-            jacobi_rotation(1, 2, &mut singular_values, &mut vt);
+            jacobi_rotation(0, 1, &mut singular_values, &mut v);
+            jacobi_rotation(0, 2, &mut singular_values, &mut v);
+            jacobi_rotation(1, 2, &mut singular_values, &mut v);
         }
 
         // Sort singular values and vectors
-        let mut b = self.matmul(&vt);
+        let mut b = self.matmul(&v);
         let mut b_cols = b.transpose().rows;
-        let mut v_cols = vt.transpose().rows;
+        let mut v_cols = v.transpose().rows;
         let mut rhos: [f64; 3] = std::array::from_fn(|i| b_cols[i].iter().map(|&x| x * x).sum());
 
         if rhos[0] < rhos[1] {
@@ -892,7 +892,7 @@ impl Matrix<3, 3> {
         }
 
         b = Matrix { rows: b_cols }.transpose();
-        vt = Matrix { rows: v_cols }.transpose();
+        v = Matrix { rows: v_cols }.transpose();
 
         // QR Decomposition of B = U * Sigma
         let mut r = b;
@@ -910,12 +910,12 @@ impl Matrix<3, 3> {
             sigma[2] *= -1.0;
         }
 
-        if vt.determinant() < 0.0 {
-            vt.rows.iter_mut().for_each(|row| row[2] *= -1.0);
+        if v.determinant() < 0.0 {
+            v.rows.iter_mut().for_each(|row| row[2] *= -1.0);
             sigma[2] *= -1.0;
         }
 
-        (u, sigma, vt.transpose())
+        (u, sigma, v.transpose())
     }
 }
 /// Macro to generate impls for a given row size `N` and multiple column sizes `M`.
