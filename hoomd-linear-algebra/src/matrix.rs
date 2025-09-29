@@ -561,6 +561,25 @@ impl<const N: usize> Matrix<N, N> {
             }),
         }
     }
+
+    /// Verify if a matrix is the identity matrix, within a tolerance `tol`.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
+    ///
+    /// let m = Matrix22::identity();
+    /// assert!(m.is_nearly_identity(1e-12));
+    ///
+    /// let mut n = Matrix22::identity();
+    /// n[(0, 1)] = 0.1;
+    /// assert!(!n.is_nearly_identity(1e-3));
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn is_nearly_identity(&self, tol: f64) -> bool {
+        (0..N).all(|i| (0..N).all(|j| (self[(i, j)] - if i == j { 1.0 } else { 0.0 }).abs() < tol))
+    }
 }
 impl<const N: usize> QuadraticForm for Matrix<N, N> {
     #[inline]
@@ -1327,5 +1346,30 @@ mod tests {
         let identity = Matrix44::identity();
 
         assert_matrixes_ulps_eq::<4, 4, _, _>(&product, &identity);
+    }
+    #[rstest]
+    #[case(Matrix::<3,3>::identity(), 1e-12, true)]
+    #[case({
+        let mut m = Matrix::<3,3>::identity();
+        m[(1,2)] = 1e-6;
+        m[(0,0)] += 1e-6;
+        m
+    }, 1e-5, true)]
+    #[case({
+        let mut m = Matrix::<3,3>::identity();
+        m[(0,1)] = 0.1;
+        m
+    }, 1e-3, false)]
+    #[case({
+        let mut m = Matrix::<2,2>::identity();
+        m[(1,1)] = 0.8;
+        m
+    }, 1e-3, false)]
+    fn test_is_nearly_identity<const N: usize>(
+        #[case] m: Matrix<N, N>,
+        #[case] tol: f64,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(m.is_nearly_identity(tol), expected);
     }
 }
