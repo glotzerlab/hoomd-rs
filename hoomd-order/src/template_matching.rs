@@ -19,13 +19,14 @@ use hoomd_vector::{Cartesian, Rotate, RotationMatrix};
 /// use hoomd_order::template_matching::Template;
 /// use hoomd_vector::{Angle, RotationMatrix, Cartesian};
 /// use approx::assert_relative_eq;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// // Align and measure similarity between two triangles
 /// let equilateral = Template::from(vec![[0.0, 0.0], [1.0,0.0], [0.5, f64::sqrt(3.0)/2.0]]);
 /// // let rotation = Angle::from(f64::consts::PI / 2.0);
 /// let rotated_points = vec![[0.0,0.0],[0.0,1.0], [f64::sqrt(3.0)/2.0, 0.5]];
 ///
 /// // Align the point sets
-/// let (rotation_matrix, t, rmsd) = equilateral.template_match(&rotated_points).unwrap();
+/// let (rotation_matrix, t, rmsd) = equilateral.template_match(&rotated_points)?;
 ///
 /// // The rotation angle should be π / 2.0
 /// assert_relative_eq!(rotation_matrix.to_angle().theta, std::f64::consts::PI / 2., epsilon = 1e-14);
@@ -35,6 +36,8 @@ use hoomd_vector::{Cartesian, Rotate, RotationMatrix};
 /// assert_relative_eq!(t[1], equilateral.center()[1], epsilon=1e-14);
 /// // The shapes are identical save for the rotation
 /// assert_relative_eq!(rmsd, 0.0, epsilon=1e-14);
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Template<P> {
@@ -156,10 +159,11 @@ impl Template<Cartesian<3>> {
             .ok_or(super::Error::MismatchedPointSetSize)?;
 
         let (u, _, vt) = m.svd();
+
         let r: RotationMatrix<3> = u
             .matmul(&vt)
             .try_into()
-            .expect("Should be unitary by construction.");
+            .map_err(|_| super::Error::NonUnitaryMatrix)?;
 
         let t = r.rotate(&test_set_centroid);
 
@@ -202,7 +206,7 @@ impl Template<Cartesian<2>> {
         let r: RotationMatrix<2> = u
             .matmul(&vt)
             .try_into()
-            .expect("Should be unitary by construction.");
+            .map_err(|_| super::Error::NonUnitaryMatrix)?;
         let r_transpose = r.inverted();
 
         let t = r.rotate(&test_set_centroid);

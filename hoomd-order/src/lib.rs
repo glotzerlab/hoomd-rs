@@ -12,6 +12,9 @@ pub enum Error {
     /// The two point sets do not have the same length.
     #[error("The two point sets do not have the same length.")]
     MismatchedPointSetSize,
+    /// A matrix that was expected to be unitary was not.
+    #[error("A matrix that was expected to be unitary was not.")]
+    NonUnitaryMatrix,
 }
 
 mod cross_covariance;
