@@ -517,7 +517,7 @@ impl<const N: usize> Matrix<N, N> {
     /// ```
     #[must_use]
     #[inline]
-    pub fn powi(&self, n: i32) -> Self {
+    pub fn powi(&self, n: u32) -> Self {
         (0..n).fold(Self::identity(), |acc, _| acc.matmul(self))
     }
 
