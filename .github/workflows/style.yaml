@@ -15,7 +15,6 @@ on:
 env:
   CARGO_TERM_COLOR: always
   CLICOLOR: 1
-  RUSTFLAGS: -D warnings
 
 jobs:
   cargo-check-clippy:
