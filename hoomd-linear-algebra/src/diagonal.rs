@@ -67,10 +67,21 @@ impl<const N: usize> GeneralMatrix for DiagonalMatrix<N> {
 }
 
 impl<const N: usize> DiagonalMatrix<N> {
-    /// Return a dense view of the diagonal matrix, with zeros on the off-diagonals.
+    /// Construct a dense matrix with the given diagonal.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::{
+    ///     matrix::{DiagonalMatrix, Matrix22},
+    /// };
+    ///
+    /// let a = DiagonalMatrix { elements: [-2.0, 3.0], };
+    /// let b = a.to_dense();
+    /// assert_eq!(b.rows, [[-2.0, 0.0], [0.0, 3.0]]);
+    /// ```
     #[must_use]
     #[inline]
-    pub fn as_dense(&self) -> Matrix<N, N> {
+    pub fn to_dense(self) -> Matrix<N, N> {
         Matrix::<N, N>::from_diag(&self.elements)
     }
 }

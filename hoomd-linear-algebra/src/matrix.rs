@@ -720,7 +720,7 @@ impl Matrix<2, 2> {
     ///     rows: [[1.0, 2.0], [3.0, 4.0]],
     /// };
     /// let (u, s, vt) = m.svd();
-    /// let m_recon = u.matmul(&s.as_dense()).matmul(&vt);
+    /// let m_recon = u.matmul(&s.to_dense()).matmul(&vt);
     /// for i in 0..2 {
     ///     for j in 0..2 {
     ///         assert!((m.rows[i][j] - m_recon.rows[i][j]).abs() < 1e-9);
@@ -793,7 +793,7 @@ impl Matrix<3, 3> {
     ///     rows: [[1.0, 2.0, 3.0], [0.0, 1.0, 4.0], [5.0, 6.0, 0.0]],
     /// };
     /// let (u, s, vt) = m.svd();
-    /// let m_recon = u.matmul(&s.as_dense()).matmul(&vt);
+    /// let m_recon = u.matmul(&s.to_dense()).matmul(&vt);
     /// for i in 0..3 {
     ///     for j in 0..3 {
     ///         assert!((m.rows[i][j] - m_recon.rows[i][j]).abs() < 1e-9);
@@ -1001,7 +1001,7 @@ mod tests {
             [3.0, 6.0, 8.0, 9.0],
             [4.0, 7.0, 9.0, 10.0]
         ]),
-        case(Matrix::<5, 5>::full(3.6).diag().as_dense().rows),
+        case(Matrix::<5, 5>::full(3.6).diag().to_dense().rows),
         case(Matrix::<8, 8>::identity().rows),
     )]
     fn test_determinant<const N: usize>(rows: [[f64; N]; N]) {
@@ -1028,7 +1028,7 @@ mod tests {
             [[1.0, 0.0, 2.0], [0.0, 1.0, 1.0], [4.0, 0.0, 0.0]]
         ),
         case(Matrix::<4, 4>::identity().rows, Matrix::<4, 4>::full(2.0).rows),
-        case(Matrix::<5, 5>::full(3.6).diag().as_dense().rows, Matrix::<5, 5>::identity().rows),
+        case(Matrix::<5, 5>::full(3.6).diag().to_dense().rows, Matrix::<5, 5>::identity().rows),
         case(Matrix::<8, 8>::identity().rows, Matrix::<8, 8>::full(1.5).rows),
     )]
     fn test_matrix_multiply_square<const N: usize>(a_rows: [[f64; N]; N], b_rows: [[f64; N]; N]) {
@@ -1099,7 +1099,7 @@ mod tests {
         let (u, s, vt) = matrix.svd();
 
         // Verify we can rebuild A from UΣVt
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&u.matmul(&s.as_dense()).matmul(&vt), &matrix);
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&u.matmul(&s.to_dense()).matmul(&vt), &matrix);
 
         // Test against faer
         let faer = fill_faer(rows);
@@ -1143,7 +1143,7 @@ mod tests {
         let (u, s, vt) = matrix.svd();
 
         // Verify we can rebuild A from UΣVt
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&u.matmul(&s.as_dense()).matmul(&vt), &matrix);
+        assert_matrixes_ulps_eq::<2, 2, _, _>(&u.matmul(&s.to_dense()).matmul(&vt), &matrix);
 
         // Test against nalgebra
         let na = nalgebra::Matrix2::from(rows).transpose();
