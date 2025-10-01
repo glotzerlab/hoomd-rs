@@ -4,7 +4,7 @@
 //! Traits and subroutines for common linear algebra operations.
 //!
 //! This crate places an emphasis on generality and simplicity, with optimization efforts
-//! targeted at small matrixes. Some complex routines (SVD, matrix inversion, etc.) will
+//! targeted at small matrices. Some complex routines (SVD, matrix inversion, etc.) will
 //! only be implemented for certain shapes, and generally consist of specialized algorithms
 //! optimal for those inputs.
 //!
@@ -15,6 +15,13 @@
 //! analysis.
 
 use std::ops::{Add, Index, Mul, Neg};
+
+/// Structs implementing a large subset of Matrix traits.
+pub mod matrix;
+use matrix::DiagonalMatrix;
+
+/// A lightweight representation of a diagonal matrix.
+mod diagonal;
 
 /// Define whether a matrix $`A`$ has an inverse $`A^{-1}`$ such that $`AA^{-1} = A^{-1}A = I`$
 pub trait Invertible
@@ -32,13 +39,13 @@ where
 /// ```
 /// use hoomd_linear_algebra::{
 ///     Full, GeneralMatrix, MatMul, SquareMatrix,
-///     matrix::{DiagonalMatrix, Matrix22},
+///     matrix::{DiagonalMatrix, Matrix, Matrix22},
 /// };
 ///
 /// let mat = Matrix22::full(5.0);
 /// assert_eq!(mat.matmul(&Matrix22::identity()), mat);
 ///
-/// let diag = Matrix22::from_diag(&[3.0, 2.0]);
+/// let diag = Matrix::with_diagonal([3.0, 2.0]);
 ///
 /// assert_eq!(
 ///     mat.matmul(&diag),
@@ -52,7 +59,7 @@ where
     /// The type of the output matrix.
     ///
     /// This type is likely to be Self for dynamically sized [`GeneralMatrix`] types, but
-    /// will necessarily be different for statically allocated rectangular matrixes.
+    /// will necessarily be different for statically allocated rectangular matrices.
     type Output;
 
     /// Multiply a matrix by a general matrix RHS.
@@ -60,7 +67,7 @@ where
     fn matmul(&self, rhs: &RHS) -> Self::Output;
 }
 
-/// General implementation for size and container-agnostic matrixes.
+/// General implementation for size and container-agnostic matrices.
 ///
 /// This trait is designed to function with row-major ordering, but this is not strictly
 /// required for correct functionality.
@@ -91,28 +98,19 @@ pub trait Full {
     fn full(value: f64) -> Self;
 }
 
-/// Marker trait to indicate a sequence of values can be read as a diagonal matrix.
-pub trait Diagonal: Index<usize, Output = f64> {}
-
-/// Define properties and implementations that are well-defined for all square matrixes.
+/// Define properties and implementations that are well-defined for all square matrices.
 pub trait SquareMatrix: GeneralMatrix
 where
     Self: Sized,
 {
-    /// Return an N x N identity matrix, with ones on the diagonal and zeros elsewhere.
+    /// Construct an N x N identity matrix, with ones on the diagonal and zeros elsewhere.
     #[must_use]
     fn identity() -> Self;
 }
 
 /// Solve the quadratic form `A.transpose().matmul(x).matmul(A)`.
-pub trait QuadraticForm: SquareMatrix {
+pub trait QuadraticForm<const N: usize>: SquareMatrix {
     /// Evaluate the quadratic form for a matrix `A` and a vector `x`.
     #[must_use]
-    fn compute_quadratic_form<T: Diagonal>(&self, vars: &T) -> f64;
+    fn compute_quadratic_form(&self, variables: &DiagonalMatrix<N>) -> f64;
 }
-
-/// Structs implementing a large subset of Matrix traits.
-pub mod matrix;
-
-/// A lightweight representation of a diagonal matrix.
-mod diagonal;

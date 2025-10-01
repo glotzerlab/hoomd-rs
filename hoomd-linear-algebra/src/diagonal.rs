@@ -3,7 +3,7 @@
 
 use std::ops::{Add, Index, IndexMut, Mul, Neg, Sub};
 
-use crate::{Diagonal, GeneralMatrix, matrix::Matrix};
+use crate::{GeneralMatrix, matrix::Matrix};
 
 /// A square, diagonal matrix with N rows and N columns.
 ///
@@ -100,7 +100,11 @@ impl<const N: usize> DiagonalMatrix<N> {
     #[must_use]
     #[inline]
     pub fn to_dense(self) -> Matrix<N, N> {
-        Matrix::<N, N>::from_diag(&self.elements)
+        Matrix {
+            rows: std::array::from_fn(|i| {
+                std::array::from_fn(|j| if i == j { self.elements[i] } else { 0.0 })
+            }),
+        }
     }
 }
 
@@ -209,8 +213,6 @@ impl<const N: usize> Sub<Self> for DiagonalMatrix<N> {
     }
 }
 
-impl<const N: usize> Diagonal for DiagonalMatrix<N> {}
-
 #[cfg(test)]
 mod tests {
     use approx::assert_ulps_eq;
@@ -218,10 +220,10 @@ mod tests {
     use std::ops::Index;
 
     use super::*;
-    use crate::{Diagonal, GeneralMatrix};
+    use crate::GeneralMatrix;
 
-    fn assert_diags_ulps_eq<const N: usize, T: Diagonal>(
-        m0: &T,
+    fn assert_diags_ulps_eq<const N: usize>(
+        m0: &DiagonalMatrix<N>,
         m1: &impl Index<usize, Output = f64>,
     ) {
         for i in 0..N {
@@ -241,7 +243,7 @@ mod tests {
             .map(|(x, y)| x + y)
             .collect();
         let custom_sum = a + b;
-        assert_diags_ulps_eq::<2, _>(&custom_sum, &expected);
+        assert_diags_ulps_eq(&custom_sum, &expected);
     }
 
     #[test]
@@ -256,7 +258,7 @@ mod tests {
             .map(|(x, y)| x + y)
             .collect();
         let custom_sum = a + b;
-        assert_diags_ulps_eq::<3, _>(&custom_sum, &expected);
+        assert_diags_ulps_eq(&custom_sum, &expected);
     }
 
     #[test]
@@ -271,7 +273,7 @@ mod tests {
             .map(|(x, y)| x - y)
             .collect();
         let custom_sub = a - b;
-        assert_diags_ulps_eq::<2, _>(&custom_sub, &expected);
+        assert_diags_ulps_eq(&custom_sub, &expected);
     }
 
     #[test]
@@ -286,7 +288,7 @@ mod tests {
             .map(|(x, y)| x - y)
             .collect();
         let custom_sub = a - b;
-        assert_diags_ulps_eq::<3, _>(&custom_sub, &expected);
+        assert_diags_ulps_eq(&custom_sub, &expected);
     }
 
     #[test]
@@ -295,7 +297,7 @@ mod tests {
         let matrix = DiagonalMatrix::<2> { elements: diag };
         let expected: Vec<f64> = diag.iter().map(|x| -x).collect();
         let custom_neg = -matrix;
-        assert_diags_ulps_eq::<2, _>(&custom_neg, &expected);
+        assert_diags_ulps_eq(&custom_neg, &expected);
     }
 
     #[test]
@@ -304,7 +306,7 @@ mod tests {
         let matrix = DiagonalMatrix::<3> { elements: diag };
         let expected: Vec<f64> = diag.iter().map(|x| -x).collect();
         let custom_neg = -matrix;
-        assert_diags_ulps_eq::<3, _>(&custom_neg, &expected);
+        assert_diags_ulps_eq(&custom_neg, &expected);
     }
 
     #[rstest]
@@ -315,7 +317,7 @@ mod tests {
         let matrix = DiagonalMatrix::<2> { elements: diag };
         let expected: Vec<f64> = diag.iter().map(|x| x * scalar).collect();
         let custom_mul = matrix * scalar;
-        assert_diags_ulps_eq::<2, _>(&custom_mul, &expected);
+        assert_diags_ulps_eq(&custom_mul, &expected);
     }
 
     #[test]

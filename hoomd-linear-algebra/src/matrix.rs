@@ -9,7 +9,7 @@ pub use crate::diagonal::DiagonalMatrix;
 use std::fmt;
 
 /// A lightweight representation of a diagonal matrix.
-use crate::{Diagonal, Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
+use crate::{Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
 
 /// A matrix with N rows and M columns, allocated on the stack.
 #[derive(Clone, Debug, PartialEq)]
@@ -394,13 +394,30 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     }
 }
 impl<const N: usize> Matrix<N, N> {
+    /// Construct a square matrix with the given diagonal.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    ///
+    /// let a = Matrix::with_diagonal([2.0, -3.0]);
+    ///
+    /// assert_eq!(a.rows, [[2.0, 0.0], [0.0, -3.0]]);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn with_diagonal(diagonal: [f64; N]) -> Self {
+        DiagonalMatrix { elements: diagonal }.to_dense()
+    }
+
     /// Compute the signed hypervolume of the hyperparallelepiped defined by a matrix.
     ///
     /// This implementation uses the Laplace expansion, which is optimal for small
     /// matrices but will be extremely slow for large matrixes due to its O(N!)
     /// complexity.
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```
     /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
@@ -546,33 +563,15 @@ impl<const N: usize> Matrix<N, N> {
             elements: std::array::from_fn(|i| self.rows[i][i]),
         }
     }
-
-    /// Compute a full `NxN` matrix from N diagonal elements, setting all others to 0.
-    /// # Examples
-    /// ```
-    /// use hoomd_linear_algebra::matrix::Matrix33;
-    /// let mat = Matrix33::from_diag(&[1.0, 5.0, 9.0]);
-    /// assert_eq!(mat.diag().elements, [1.0, 5.0, 9.0]);
-    /// assert_eq!(mat[(1, 2)], 0.0);
-    /// ```
-    #[must_use]
-    #[inline]
-    pub fn from_diag<T: Diagonal>(other: &T) -> Self {
-        Matrix {
-            rows: std::array::from_fn(|i| {
-                std::array::from_fn(|j| if i == j { other[i] } else { 0.0 })
-            }),
-        }
-    }
 }
-impl<const N: usize> QuadraticForm for Matrix<N, N> {
+impl<const N: usize> QuadraticForm<N> for Matrix<N, N> {
     #[inline]
-    fn compute_quadratic_form<T: Diagonal>(&self, vars: &T) -> f64 {
+    fn compute_quadratic_form(&self, variables: &DiagonalMatrix<N>) -> f64 {
         let mut result = 0.0;
 
         for i in 0..N {
             for j in 0..N {
-                result += vars[i] * self[(i, j)] * vars[j];
+                result += variables[i] * self[(i, j)] * variables[j];
             }
         }
         result
@@ -618,11 +617,11 @@ impl Invertible for Matrix<3, 3> {
     ///
     /// # Examples
     /// ```
-    /// use hoomd_linear_algebra::{Invertible, SquareMatrix, matrix::Matrix33};
+    /// use hoomd_linear_algebra::{Invertible, SquareMatrix, matrix::{Matrix, Matrix33}};
     /// let m = Matrix33::identity() * 5.0;
     /// let m_inv = m.inverse().unwrap();
     /// // The inverse of a diagonal matrix is the reciprocal of each element.
-    /// assert_eq!(m_inv, Matrix33::from_diag(&[1.0 / 5.0; 3]));
+    /// assert_eq!(m_inv, Matrix::with_diagonal([1.0 / 5.0; 3]));
     /// ```
     #[inline]
     fn inverse(&self) -> Option<Self> {
@@ -932,8 +931,6 @@ macro_rules! impl_copy_for_n_m {
 
 impl_copy_for_n_m!(1, 2, 3, 4);
 
-impl<const N: usize> Diagonal for [f64; N] {}
-
 #[cfg(test)]
 mod tests {
     use std::{fmt::Debug, ops::Index};
@@ -980,8 +977,8 @@ mod tests {
             }
         }
     }
-    fn assert_diags_ulps_eq<const N: usize, T: Diagonal>(
-        m0: &T,
+    fn assert_diags_ulps_eq<const N: usize>(
+        m0: &DiagonalMatrix<N>,
         m1: &impl std::ops::Index<usize, Output = f64>,
     ) {
         for i in 0..N {
@@ -1117,7 +1114,7 @@ mod tests {
         }
 
         assert_matrixes_ulps_eq::<2, 2, _, _>(&u, &faeru);
-        assert_diags_ulps_eq::<2, _>(&s, &faers);
+        assert_diags_ulps_eq(&s, &faers);
         // Note that faer returns V, not Vt
         assert_matrixes_ulps_eq::<2, 2, _, _>(&vt, &faerv.transpose());
     }
@@ -1151,7 +1148,7 @@ mod tests {
         let (nau, nas, navt) = (nasvd.u.unwrap(), nasvd.singular_values, nasvd.v_t.unwrap());
 
         assert_matrixes_ulps_eq::<2, 2, _, _>(&u, &nau);
-        assert_diags_ulps_eq::<2, _>(&s, &nas);
+        assert_diags_ulps_eq::<2>(&s, &nas);
         assert_matrixes_ulps_eq::<2, 2, _, _>(&vt, &navt);
     }
 
@@ -1184,7 +1181,7 @@ mod tests {
 
         let faers = faersvd.S();
         // Our implementation allows negative singular value
-        assert_diags_ulps_eq::<3, _>(&s.elements.map(f64::abs), &faers);
+        assert_diags_ulps_eq(&DiagonalMatrix{ elements: s.elements.map(f64::abs)}, &faers);
     }
 
     #[test]
@@ -1255,9 +1252,9 @@ mod tests {
         let expected_diag = DiagonalMatrix {
             elements: [1.0, 5.0, 9.0],
         };
-        assert_diags_ulps_eq::<3, _>(&diag, &expected_diag);
+        assert_diags_ulps_eq(&diag, &expected_diag);
 
-        let from_diag = Matrix::<3, 3>::from_diag(&diag);
+        let from_diag = diag.to_dense();
         let expected_from_diag = Matrix {
             rows: [[1.0, 0.0, 0.0], [0.0, 5.0, 0.0], [0.0, 0.0, 9.0]],
         };
@@ -1281,7 +1278,7 @@ mod tests {
     )]
     fn test_quadratic_form<const N: usize>(rows: [[f64; N]; N], vars: [f64; N]) {
         let matrix = Matrix { rows };
-        let result = matrix.compute_quadratic_form(&vars);
+        let result = matrix.compute_quadratic_form(&DiagonalMatrix { elements: vars });
         assert_relative_eq!(
             result,
             (fill_faer_column(vars).transpose() * fill_faer(rows) * fill_faer_column(vars))[(0, 0)],
