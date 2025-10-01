@@ -188,7 +188,7 @@ pub trait SquareMatrix: GeneralMatrix {
 /// Solve the quadratic form.
 ///
 /// ```math
-/// x^T A x
+/// \mathbf{x}^T \mathbf{A} \mathbf{x}
 /// ```
 pub trait QuadraticForm<const N: usize>: SquareMatrix {
     /// Evaluate the quadratic form.

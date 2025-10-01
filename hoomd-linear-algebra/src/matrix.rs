@@ -163,7 +163,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// Interchange the rows and columns of matrix.
     ///
     /// ```math
-    /// A^T_{ji} = A_{ij}
+    /// \mathbf{A}^\top_{ji} = \mathbf{A}_{ij}
     /// ```
     ///
     /// # Examples
@@ -564,7 +564,7 @@ impl<const N: usize> Matrix<N, N> {
     /// Compute a matrix to an integer power
     ///
     /// ```math
-    /// \prod_{i=1}^n A
+    /// \mathbf{A}^n = \prod_{i=1}^n \mathbf{A}
     /// ```
     ///
     /// # Examples
@@ -747,7 +747,7 @@ impl Matrix<2, 2> {
     /// Decompose a [`Matrix22`] into a rotation, a scaling, and a second rotation.
     ///
     /// ```math
-    /// A = U Σ V^\top;
+    /// \mathbf{A} = \mathbf{U} \boldsymbol{\Sigma} \mathbf{V}^\top
     /// ```
     /// This implementation is based on the math in [Blinn 1996], and
     /// ensures good (but not optimal) numerical stability. For certain
@@ -821,16 +821,16 @@ impl Matrix<3, 3> {
     /// Decompose a [`Matrix33`] into a rotation, a scaling, and a second rotation.
     ///
     /// ```math
-    /// A = U Σ V^\top;
+    /// \mathbf{A} = \mathbf{U} \boldsymbol{\Sigma} \mathbf{V}^\top
     /// ```
-    /// This implementation is based on the method described by `McAdams` et al. in
-    /// "Computing the Singular Value Decomposition of 3x3 matrices with minimal
-    /// branching and elementary floating point operations", which is a fast variant
-    /// of the Jacobi iteration method.
+    /// This implementation is based on the method described by [McAdams 2011], which
+    ///  is a fast variant of the Jacobi iteration method.
     ///
     /// The method ensures that U and V are pure rotation matrices (determinant = 1).
     /// As a result, the third singular value may be negative. For a conventional
     /// SVD with non-negative singular values, the sign can be absorbed into U.
+    ///
+    /// [McAdams 2011]: http://digital.library.wisc.edu/1793/60736
     ///
     /// # Examples
     /// ```
@@ -910,7 +910,7 @@ impl Matrix<3, 3> {
             *u_mat = u_mat.matmul(&q_t.transpose());
         }
 
-        // Symmetric Eigenanalysis of A^T * A using Jacobi iterations
+        // Symmetric Eigenanalysis of A^\top * A using Jacobi iterations
         const NUM_JACOBI_SWEEPS: usize = 6; // Paper suggests 4, we want more accuracy
         let mut singular_values = self.transpose().matmul(self);
         let mut v = Self::identity();
