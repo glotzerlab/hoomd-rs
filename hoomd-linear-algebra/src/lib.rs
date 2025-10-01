@@ -114,7 +114,7 @@ pub trait MatMul<Rhs> {
 /// let b = -a;
 /// ```
 ///
-/// and indexed:
+/// and indexed (in row,column ordering):
 /// ```
 /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix};
 /// let a = Matrix { rows: [[1.0, -3.0], [-2.0, 4.0]] };
