@@ -68,7 +68,7 @@ tinyvec = "1.9.0"
 # Bevy and bevy-adjacent dependencies
 bevy_egui = "0.36.0"
 [workspace.dependencies.bevy]
-version = "0.16.1"
+version = "0.17.0"
 default-features = false
 features = ["async_executor",
             "bevy_asset",
