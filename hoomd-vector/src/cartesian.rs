@@ -728,7 +728,7 @@ impl<const N: usize> Cartesian<N> {
     /// let a = Cartesian::from([1.0, -2.0, 3.0]);
     ///
     /// let b = a.to_row_matrix();
-    /// assert_eq!(b.rows, [1.0, -2.0, 3.0]]);
+    /// assert_eq!(b.rows, [[1.0, -2.0, 3.0]]);
     /// ```
     #[inline]
     #[must_use]
@@ -747,7 +747,7 @@ impl<const N: usize> Cartesian<N> {
     /// let a = Cartesian::from([1.0, -2.0, 3.0]);
     ///
     /// let b = a.to_column_matrix();
-    /// assert_eq!(b.rows, [[1.0], [-2.0], [3.0]]]);
+    /// assert_eq!(b.rows, [[1.0], [-2.0], [3.0]]);
     /// ```
     #[inline]
     #[must_use]

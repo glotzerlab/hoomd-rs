@@ -174,21 +174,12 @@
 //! # }
 //! ```
 //!
-//! # Feature flags
-//!
-//! These unstable features are intended for internal use. `hoomd-vector` may make
-//! breaking changes to the code gated behind unstable features in any release.
-//!
-//! * `approx`: Enable `assert_relative_eq` and `assert_abs_diff_eq` from the
-//!   [`approx`](https://docs.rs/approx/latest/approx/) crate on [`Cartesian`],
-//!   [`Quaternion`] and [`Versor`].
 
 mod angle;
 mod cartesian;
 pub mod distribution;
 mod quaternion;
 
-#[cfg(any(test, feature = "approx"))]
 pub mod approx;
 
 pub use angle::Angle;
