@@ -17,7 +17,9 @@ use crate::{Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix
 /// ```
 /// use hoomd_linear_algebra::matrix::Matrix;
 ///
-/// let a = Matrix { rows: [[-1.0, 4.0, -6.0], [2.0, -3.0, 1.0]], };
+/// let a = Matrix {
+///     rows: [[-1.0, 4.0, -6.0], [2.0, -3.0, 1.0]],
+/// };
 /// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Matrix<const N: usize, const M: usize> {
@@ -42,7 +44,7 @@ impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
-    /// 
+    ///
     /// let m = Matrix22::zeros();
     /// assert_eq!(m.rows, [[0.0, 0.0], [0.0, 0.0]]);
     /// ```
@@ -60,7 +62,7 @@ impl<const N: usize, const M: usize> Full for Matrix<N, M> {
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{Full, matrix::Matrix22};
-    /// 
+    ///
     /// let m = Matrix22::full(5.0);
     /// assert_eq!(m.rows, [[5.0, 5.0], [5.0, 5.0]]);
     /// ```
@@ -76,7 +78,7 @@ impl<const N: usize> SquareMatrix for Matrix<N, N> {
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
-    /// 
+    ///
     /// let m = Matrix22::identity();
     /// assert_eq!(m.rows, [[1.0, 0.0], [0.0, 1.0]]);
     /// ```
@@ -98,7 +100,7 @@ impl<const N: usize, const M: usize, const K: usize> MatMul<Matrix<M, K>> for Ma
     ///     MatMul,
     ///     matrix::{Matrix, Matrix22},
     /// };
-    /// 
+    ///
     /// let a = Matrix22 {
     ///     rows: [[1.0, 2.0], [3.0, 4.0]],
     /// };
@@ -137,8 +139,10 @@ impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> 
     ///     Full, GeneralMatrix, MatMul,
     ///     matrix::{DiagonalMatrix, Matrix22},
     /// };
-    /// 
-    /// let diag = DiagonalMatrix { elements: [3.0, 4.0] };
+    ///
+    /// let diag = DiagonalMatrix {
+    ///     elements: [3.0, 4.0],
+    /// };
     /// let a = Matrix22::full(1.0).matmul(&diag);
     /// assert_eq!(a[(0, 1)], 4.0);
     /// assert_eq!(a[(1, 0)], 3.0);
@@ -185,7 +189,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
-    /// 
+    ///
     /// let m = Matrix22::full(3.0);
     /// assert_eq!(
     ///     m.map_rows(|v| [v[0] + 2.0, v[1]]),
@@ -210,7 +214,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
-    /// 
+    ///
     /// let m = Matrix22::full(3.0);
     /// assert_eq!(
     ///     m.map_cols(|v| [v[0] + 2.0, v[1]]),
@@ -232,7 +236,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix33};
-    /// 
+    ///
     /// let m = Matrix33::full(3.0);
     /// assert_eq!(m.map_elementwise(|x| x + 2.0), m + Matrix33::full(2.0));
     /// ```
@@ -254,11 +258,11 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
-    /// 
+    ///
     /// let x = Matrix22 {
     ///     rows: [[1.0, 2.0], [3.0, 4.0]],
     /// };
-    /// 
+    ///
     /// let mut iterator = x.iter_flat();
     /// assert_eq!(iterator.next(), Some(1.0));
     /// assert_eq!(iterator.next(), Some(2.0));
@@ -278,11 +282,11 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
-    /// 
+    ///
     /// let mut x = Matrix22 {
     ///     rows: [[1.0, 2.0], [3.0, 4.0]],
     /// };
-    /// 
+    ///
     /// let x_copy = x.clone();
     /// let mut iterator = x.iter_flat_mut();
     /// iterator.for_each(|x| *x *= 2.0);
@@ -294,11 +298,11 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     }
 
     /// Iterate over matrix rows.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
-    /// 
+    ///
     /// let x = Matrix22 {
     ///     rows: [[1.0, 2.0], [3.0, 4.0]],
     /// };
@@ -311,7 +315,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     pub fn iter(&self) -> impl Iterator<Item = [f64; M]> + '_ {
         self.rows.iter().copied()
     }
-    
+
     /// Folds every element into an accumulator by applying an operation.
     ///
     /// `fold_elementwise` takes two arguments: an initial value, and a closure
@@ -325,7 +329,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
-    /// 
+    ///
     /// let m = Matrix22::full(3.0);
     /// // Sum the elements of a matrix
     /// assert_eq!(m.fold_elementwise(0.0, |acc, x| acc + x), 3.0 * 4.0);
@@ -355,7 +359,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
-    /// 
+    ///
     /// let m = Matrix22 {
     ///     rows: [[1.0, 2.0], [3.0, 4.0]],
     /// };
@@ -626,7 +630,7 @@ impl Invertible for Matrix<2, 2> {
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{Invertible, matrix::Matrix22};
-    /// 
+    ///
     /// let m = Matrix22 {
     ///     rows: [[1.0, 2.0], [3.0, 4.0]],
     /// };
@@ -659,7 +663,7 @@ impl Invertible for Matrix<3, 3> {
     /// # Example
     /// ```
     /// use hoomd_linear_algebra::{Invertible, SquareMatrix, matrix::Matrix};
-    /// 
+    ///
     /// let m = Matrix::identity() * 5.0;
     /// let m_inv = m.inverse();
     ///
@@ -695,7 +699,7 @@ impl Invertible for Matrix<4, 4> {
     /// use hoomd_linear_algebra::{
     ///     Invertible, MatMul, SquareMatrix, matrix::Matrix44,
     /// };
-    /// 
+    ///
     /// let m = Matrix44::identity();
     /// let m_inv = m.inverse().unwrap();
     /// assert_eq!(m_inv.rows, m.rows);
@@ -1227,7 +1231,12 @@ mod tests {
 
         let faers = faersvd.S();
         // Our implementation allows negative singular value
-        assert_diags_ulps_eq(&DiagonalMatrix{ elements: s.elements.map(f64::abs)}, &faers);
+        assert_diags_ulps_eq(
+            &DiagonalMatrix {
+                elements: s.elements.map(f64::abs),
+            },
+            &faers,
+        );
     }
 
     #[test]

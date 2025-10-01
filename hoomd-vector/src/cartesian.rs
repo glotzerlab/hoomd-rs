@@ -722,8 +722,8 @@ impl<const N: usize> Cartesian<N> {
     ///
     /// # Example
     /// ```
-    /// use hoomd_vector::Cartesian;
     /// use hoomd_linear_algebra::matrix::Matrix;
+    /// use hoomd_vector::Cartesian;
     ///
     /// let a = Cartesian::from([1.0, -2.0, 3.0]);
     ///
@@ -741,8 +741,8 @@ impl<const N: usize> Cartesian<N> {
     ///
     /// # Example
     /// ```
-    /// use hoomd_vector::Cartesian;
     /// use hoomd_linear_algebra::matrix::Matrix;
+    /// use hoomd_vector::Cartesian;
     ///
     /// let a = Cartesian::from([1.0, -2.0, 3.0]);
     ///

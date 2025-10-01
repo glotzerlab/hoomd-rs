@@ -29,14 +29,14 @@ mod diagonal;
 /// A matrix $`A`$ has an inverse $`A^{-1}`$ such that $`AA^{-1} = A^{-1}A = I`$.
 pub trait Invertible
 where
-    Self: Sized
+    Self: Sized,
 {
     /// Compute the inverse of a matrix.
     ///
     /// Returns `None` when the matrix is not invertible.
     ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// use hoomd_linear_algebra::{Invertible, SquareMatrix, matrix::Matrix};
     /// let m = Matrix::identity() * 5.0;
@@ -67,10 +67,7 @@ pub trait MatMul<Rhs> {
     ///
     /// let b = Matrix::with_diagonal([3.0, 2.0]);
     ///
-    /// assert_eq!(
-    ///     a.matmul(&b).rows,
-    ///     [[15.0, 10.0], [15.0, 10.0]]
-    /// );
+    /// assert_eq!(a.matmul(&b).rows, [[15.0, 10.0], [15.0, 10.0]]);
     /// ```
     #[must_use]
     fn matmul(&self, rhs: &Rhs) -> Self::Output;
@@ -81,8 +78,12 @@ pub trait MatMul<Rhs> {
 /// Matrices can be added:
 /// ```
 /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix};
-/// let a = Matrix { rows: [[1.0, -3.0], [-2.0, 4.0]] };
-/// let b = Matrix { rows: [[4.0, -8.0], [6.0, 7.0]] };
+/// let a = Matrix {
+///     rows: [[1.0, -3.0], [-2.0, 4.0]],
+/// };
+/// let b = Matrix {
+///     rows: [[4.0, -8.0], [6.0, 7.0]],
+/// };
 ///
 /// let c = a + b;
 /// ```
@@ -90,8 +91,12 @@ pub trait MatMul<Rhs> {
 /// Subtracted:
 /// ```
 /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix};
-/// let a = Matrix { rows: [[1.0, -3.0], [-2.0, 4.0]] };
-/// let b = Matrix { rows: [[4.0, -8.0], [6.0, 7.0]] };
+/// let a = Matrix {
+///     rows: [[1.0, -3.0], [-2.0, 4.0]],
+/// };
+/// let b = Matrix {
+///     rows: [[4.0, -8.0], [6.0, 7.0]],
+/// };
 ///
 /// let c = a - b;
 /// ```
@@ -100,7 +105,9 @@ pub trait MatMul<Rhs> {
 /// ```
 /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix};
 /// let a = -2.0;
-/// let b = Matrix { rows: [[4.0, -8.0], [6.0, 7.0]] };
+/// let b = Matrix {
+///     rows: [[4.0, -8.0], [6.0, 7.0]],
+/// };
 ///
 /// let c = a * b;
 /// ```
@@ -108,7 +115,9 @@ pub trait MatMul<Rhs> {
 /// Negated:
 /// ```
 /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix};
-/// let a = Matrix { rows: [[1.0, -3.0], [-2.0, 4.0]] };
+/// let a = Matrix {
+///     rows: [[1.0, -3.0], [-2.0, 4.0]],
+/// };
 ///
 /// let b = -a;
 /// ```
@@ -116,9 +125,11 @@ pub trait MatMul<Rhs> {
 /// and indexed (in row,column ordering):
 /// ```
 /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix};
-/// let a = Matrix { rows: [[1.0, -3.0], [-2.0, 4.0]] };
+/// let a = Matrix {
+///     rows: [[1.0, -3.0], [-2.0, 4.0]],
+/// };
 ///
-/// let element = a[(1,0)];
+/// let element = a[(1, 0)];
 /// ```
 pub trait GeneralMatrix:
     Add<Self, Output = Self>
@@ -134,7 +145,7 @@ pub trait GeneralMatrix:
     /// Fill a matrix with zeros.
     ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix};
     ///
@@ -144,7 +155,6 @@ pub trait GeneralMatrix:
     /// ```
     #[must_use]
     fn zeros() -> Self;
-
 }
 
 /// Initialize matrices with identical elements.
@@ -162,8 +172,7 @@ pub trait Full {
 }
 
 /// Matrices that have the same number of rows and columns.
-pub trait SquareMatrix: GeneralMatrix
-{
+pub trait SquareMatrix: GeneralMatrix {
     /// Construct an N x N identity matrix.
     ///
     /// # Example

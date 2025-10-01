@@ -14,10 +14,10 @@ use crate::{GeneralMatrix, matrix::Matrix};
 ///     elements: [-2.0, 3.0],
 /// };
 ///
-/// assert_eq!(a[(0,0)], -2.0);
-/// assert_eq!(a[(0,1)], 0.0);
-/// assert_eq!(a[(1,0)], 0.0);
-/// assert_eq!(a[(1,1)], 3.0);
+/// assert_eq!(a[(0, 0)], -2.0);
+/// assert_eq!(a[(0, 1)], 0.0);
+/// assert_eq!(a[(1, 0)], 0.0);
+/// assert_eq!(a[(1, 1)], 3.0);
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct DiagonalMatrix<const N: usize> {
@@ -89,11 +89,11 @@ impl<const N: usize> DiagonalMatrix<N> {
     ///
     /// # Example
     /// ```
-    /// use hoomd_linear_algebra::{
-    ///     matrix::{DiagonalMatrix, Matrix22},
-    /// };
+    /// use hoomd_linear_algebra::matrix::{DiagonalMatrix, Matrix22};
     ///
-    /// let a = DiagonalMatrix { elements: [-2.0, 3.0], };
+    /// let a = DiagonalMatrix {
+    ///     elements: [-2.0, 3.0],
+    /// };
     /// let b = a.to_dense();
     /// assert_eq!(b.rows, [[-2.0, 0.0], [0.0, 3.0]]);
     /// ```
@@ -216,7 +216,8 @@ impl<const N: usize> Sub<Self> for DiagonalMatrix<N> {
 impl<const N: usize> AddAssign for DiagonalMatrix<N> {
     #[inline]
     fn add_assign(&mut self, rhs: Self) {
-        self.elements.iter_mut()
+        self.elements
+            .iter_mut()
             .zip(rhs.elements.iter())
             .for_each(|(x, r)| *x += r);
     }
@@ -225,15 +226,15 @@ impl<const N: usize> AddAssign for DiagonalMatrix<N> {
 impl<const N: usize> MulAssign<f64> for DiagonalMatrix<N> {
     #[inline]
     fn mul_assign(&mut self, rhs: f64) {
-        self.elements.iter_mut()
-            .for_each(|x| *x *= rhs);
+        self.elements.iter_mut().for_each(|x| *x *= rhs);
     }
 }
 
 impl<const N: usize> SubAssign for DiagonalMatrix<N> {
     #[inline]
     fn sub_assign(&mut self, rhs: Self) {
-        self.elements.iter_mut()
+        self.elements
+            .iter_mut()
             .zip(rhs.elements.iter())
             .for_each(|(x, r)| *x -= r);
     }

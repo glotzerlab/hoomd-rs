@@ -173,7 +173,6 @@
 //! # Ok(())
 //! # }
 //! ```
-//!
 
 mod angle;
 mod cartesian;
