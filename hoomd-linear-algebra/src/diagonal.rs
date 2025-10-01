@@ -6,25 +6,40 @@ use std::ops::{Add, Index, IndexMut, Mul, Neg, Sub};
 use crate::{Diagonal, GeneralMatrix, matrix::Matrix};
 
 /// A square, diagonal matrix with N rows and N columns.
+///
+/// # Example
+/// ```
+/// use hoomd_linear_algebra::{GeneralMatrix, matrix::DiagonalMatrix};
+/// let a = DiagonalMatrix {
+///     elements: [-2.0, 3.0],
+/// };
+///
+/// assert_eq!(a[(0,0)], -2.0);
+/// assert_eq!(a[(0,1)], 0.0);
+/// assert_eq!(a[(1,0)], 0.0);
+/// assert_eq!(a[(1,1)], 3.0);
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct DiagonalMatrix<const N: usize> {
     /// The members of the diagonal of the matrix
     pub elements: [f64; N],
 }
 
-/// Index the on-diagonal components of a diagonal matrix
-/// # Examples
-/// ```
-/// use hoomd_linear_algebra::{SquareMatrix, matrix::DiagonalMatrix};
-/// let mat = DiagonalMatrix {
-///     elements: [1.0, 2.0, 3.0],
-/// };
-/// assert_eq!(mat[0], 1.0);
-/// assert_eq!(mat[1], 2.0);
-/// assert_eq!(mat[2], 3.0);
-/// ```
 impl<const N: usize> Index<usize> for DiagonalMatrix<N> {
     type Output = f64;
+
+    /// Index the diagonal components.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::{SquareMatrix, matrix::DiagonalMatrix};
+    /// let a = DiagonalMatrix {
+    ///     elements: [1.0, 2.0, 3.0],
+    /// };
+    /// assert_eq!(a[0], 1.0);
+    /// assert_eq!(a[1], 2.0);
+    /// assert_eq!(a[2], 3.0);
+    /// ```
     #[inline]
     fn index(&self, index: usize) -> &f64 {
         &self.elements[index]
@@ -37,19 +52,22 @@ impl<const N: usize> IndexMut<usize> for DiagonalMatrix<N> {
     }
 }
 
-/// Index the dense view of a diagonal matrix. Off-diagonal elements will be `0.0`.
-/// # Examples
-/// ```
-/// use hoomd_linear_algebra::{SquareMatrix, matrix::DiagonalMatrix};
-/// let mat = DiagonalMatrix {
-///     elements: [1.0, 2.0, 3.0],
-/// };
-/// assert_eq!(mat[(0, 0)], 1.0);
-/// assert_eq!(mat[(1, 1)], 2.0);
-/// assert_eq!(mat[(0, 2)], 0.0);
-/// ```
 impl<const N: usize> Index<(usize, usize)> for DiagonalMatrix<N> {
     type Output = f64;
+
+    /// Index matrix elements by (row, column).
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::matrix::DiagonalMatrix;
+    /// let a = DiagonalMatrix {
+    ///     elements: [1.0, 2.0, 3.0],
+    /// };
+    /// assert_eq!(a[(0, 0)], 1.0);
+    /// assert_eq!(a[(1, 1)], 2.0);
+    /// assert_eq!(a[(0, 2)], 0.0);
+    /// assert_eq!(a[(2, 2)], 3.0);
+    /// ```
     #[inline]
     fn index(&self, index: (usize, usize)) -> &f64 {
         let (i, j) = index;
@@ -86,10 +104,23 @@ impl<const N: usize> DiagonalMatrix<N> {
     }
 }
 
-/// Compute the elementwise scalar multiplication of a [`DiagonalMatrix`]
 impl<const N: usize> Mul<f64> for DiagonalMatrix<N> {
     type Output = Self;
 
+    /// Multiply a diagonal matrix by a scalar.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::matrix::DiagonalMatrix;
+    /// let a = DiagonalMatrix {
+    ///     elements: [-3.0, 2.0, -8.0],
+    /// };
+    ///
+    /// let b = a * 3.0;
+    /// assert_eq!(b[0], -9.0);
+    /// assert_eq!(b[1], 6.0);
+    /// assert_eq!(b[2], -24.0);
+    /// ```
     #[inline]
     fn mul(self, rhs: f64) -> Self {
         Self {
@@ -97,10 +128,24 @@ impl<const N: usize> Mul<f64> for DiagonalMatrix<N> {
         }
     }
 }
-/// Compute the elementwise negation of a [`DiagonalMatrix`]
+
 impl<const N: usize> Neg for DiagonalMatrix<N> {
     type Output = Self;
 
+    /// Negate a diagonal matrix.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::matrix::DiagonalMatrix;
+    /// let a = DiagonalMatrix {
+    ///     elements: [-3.0, 2.0, -8.0],
+    /// };
+    ///
+    /// let b = -a;
+    /// assert_eq!(b[0], 3.0);
+    /// assert_eq!(b[1], -2.0);
+    /// assert_eq!(b[2], 8.0);
+    /// ```
     #[inline]
     fn neg(self) -> Self {
         Self {
@@ -112,6 +157,23 @@ impl<const N: usize> Neg for DiagonalMatrix<N> {
 impl<const N: usize> Add<Self> for DiagonalMatrix<N> {
     type Output = Self;
 
+    /// Add two diagonal matrices.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::matrix::DiagonalMatrix;
+    /// let a = DiagonalMatrix {
+    ///     elements: [-3.0, 2.0, -8.0],
+    /// };
+    /// let b = DiagonalMatrix {
+    ///     elements: [4.0, -4.0, 12.0],
+    /// };
+    ///
+    /// let c = a + b;
+    /// assert_eq!(c[0], 1.0);
+    /// assert_eq!(c[1], -2.0);
+    /// assert_eq!(c[2], 4.0);
+    /// ```
     #[inline]
     fn add(self, rhs: Self) -> Self {
         Self {
@@ -122,6 +184,23 @@ impl<const N: usize> Add<Self> for DiagonalMatrix<N> {
 impl<const N: usize> Sub<Self> for DiagonalMatrix<N> {
     type Output = Self;
 
+    /// Subtract two diagonal matrices.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::matrix::DiagonalMatrix;
+    /// let a = DiagonalMatrix {
+    ///     elements: [-3.0, 2.0, -8.0],
+    /// };
+    /// let b = DiagonalMatrix {
+    ///     elements: [4.0, -4.0, 12.0],
+    /// };
+    ///
+    /// let c = a - b;
+    /// assert_eq!(c[0], -7.0);
+    /// assert_eq!(c[1], 6.0);
+    /// assert_eq!(c[2], -20.0);
+    /// ```
     #[inline]
     fn sub(self, rhs: Self) -> Self {
         Self {
