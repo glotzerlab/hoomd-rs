@@ -2,13 +2,17 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /// TODO: documentation
-/// Contructs power diagrams using TODO: link algorithm. This algorithm works by lifting spheres in N-dimensional space (stored as `PDSeed<N>`) to points in (N+1)-dimensional space, and then constructing the voronoi diagram.
+/// Constructs power diagrams using TODO: link algorithm. This algorithm works
+/// by lifting spheres in N-dimensional space (stored as `PDSeed<N>`) to points
+/// in (N+1)-dimensional space, and then constructing the voronoi diagram.
 ///
 use kd_tree::KdTree;
 use robust::{Coord, Coord3D, orient2d, orient3d};
 use thiserror::Error;
 
-/// A point in a power diagram. `coordinate` stores the coordinates of the sphere center, `weight` stores the squared radius of the sphere, and `index` labels the point.
+/// A point in a power diagram. `coordinate` stores the coordinates of the sphere
+/// center, `weight` stores the squared radius of the sphere, and `index` labels
+/// the point.
 pub struct PDSeed<const N: usize> {
     pub coordinate: [f64; N],
     pub weight: f64,
@@ -71,28 +75,20 @@ impl<const N: usize> LiftedCells<N> {
     }
 }
 
-/// A power diagram in N-dimensional space, i.e., the seeds are N-dimensional
+/// A power diagram in N-dimensional space.
 pub struct PowerDiagram<const N: usize> {
     cells: Vec<LiftedCells<N>>,
 }
 
 impl<const N: usize> PowerDiagram<N> {
-    /// get a vector of nearest neighbors. Output is a vector of tuples containing the seed index and a vector of that seed's nearest neighbors.
+    /// Get a vector of nearest neighbors. Output is a vector of tuples containing the
+    /// seed index and a vector of that seed's nearest neighbors.
     pub fn neighborlist(&self) -> Vec<(usize, Vec<usize>)> {
         self.cells
             .iter()
             .map(|ls| (ls.center_point_index, ls.neighbor_indices()))
             .collect()
     }
-}
-
-/// Defines methods to build power diagrams
-pub trait GeneratePowerDiagram<const N: usize> {
-    fn build(
-        seeds: &[PDSeed<N>],
-        simulation_box_vertices: Vec<[f64; N]>,
-        exp_n: usize,
-    ) -> Result<PowerDiagram<N>, Error>;
 }
 
 impl PowerDiagram<2> {
@@ -350,8 +346,8 @@ impl PowerDiagram<3> {
     }
 }
 
-impl GeneratePowerDiagram<2> for PowerDiagram<2> {
-    fn build(
+impl PowerDiagram<2> {
+    pub fn build(
         seeds: &[PDSeed<2>],
         simulation_box_vertices: Vec<[f64; 2]>,
         exp_n: usize,
@@ -463,8 +459,8 @@ impl GeneratePowerDiagram<2> for PowerDiagram<2> {
     }
 }
 
-impl GeneratePowerDiagram<3> for PowerDiagram<3> {
-    fn build(
+impl PowerDiagram<3> {
+    pub fn build(
         seeds: &[PDSeed<3>],
         simulation_box_vertices: Vec<[f64; 3]>,
         exp_n: usize,
@@ -501,7 +497,6 @@ impl GeneratePowerDiagram<3> for PowerDiagram<3> {
         let mut stack: Vec<LiftedSeed<4>> = vec![];
         let mut visited: Vec<usize> = vec![];
         for (n, l_seed) in lifted_seeds.iter().enumerate() {
-            //stack.push(lifted_seeds[n].clone());
             if !visited.contains(&n) {
                 stack.push(l_seed.clone());
             }
@@ -580,7 +575,7 @@ impl GeneratePowerDiagram<3> for PowerDiagram<3> {
     }
 }
 
-/// Enumerate possible sources of error
+/// Enumerate possible sources of error.
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {

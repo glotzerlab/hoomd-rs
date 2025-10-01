@@ -1,9 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement various methods relating to the density of the system, namely radial distribution functions and correlation functions.
-The methods are based on the struct `SpatialHistogram`.
-*/
+//! Implement order parameters relating to the density of the system.
 
 use hoomd_geometry::shape::{Hypercuboid, EightEight};
 use hoomd_manifold::Hyperboloid;
@@ -16,38 +14,41 @@ use hoomd_vector::{Cartesian, Metric};
 use ndarray::prelude::*;
 use thiserror::Error;
 
-/** Struct for creating and manipulating histograms. `N` specifies the dimension of the histogram bins (may be 1, 2 or 3), `C`
-is the boundary condition of the data (e.g. `Open`, periodic), and `A` is the type for the data itself. `A` must be able to implement `Add`
- and `PartialOrd`.
-
-The default output `bin_counts` is an array of the frequencies for each of the bins and is stored as the type `usize`.
-
-```
-use hoomd_microstate::{Microstate, property::Position};
-use hoomd_order::{SpatialHistogram, GenerateHistogram};
-use hoomd_vector::Metric;
-use ndarray::prelude::*;
-
-let numbers = vec![[1],[2],[4],[10],[11],[12],[14],[20],[21],[22],[23]];
-let bin_edges = array![
-    [0_usize, 10_usize, 20_usize, 30_usize],
-    [0_usize, 0_usize, 0_usize, 0_usize]
-];
-let bounds = [[0_usize, 30_usize]; 1];
-let hist =
-    SpatialHistogram::<1, usize>::histogram(&numbers, bin_edges, bounds, [3_usize]);
-let ans = array![4_usize, 4_usize, 3_usize];
-assert_eq!(ans, hist.bin_counts);
-```
-*/
+///  Struct for creating and manipulating histograms. 
+/// 
+/// `N` specifies the dimension of the histogram bins (may be 1, 2 or 3), `C`
+/// is the boundary condition of the data (e.g. `Open`, `Periodic``), and `A` 
+/// is the type for the data itself. `A` must be able to implement `Add` 
+/// and `PartialOrd`.
+/// 
+// The default output `bin_counts` is an array of the frequencies for each of 
+/// the bins and is stored as the type `usize`.
+/// 
+/// ```
+/// use hoomd_microstate::{Microstate, property::Position};
+/// use hoomd_order::{SpatialHistogram, GenerateHistogram};
+/// use hoomd_vector::Metric;
+/// use ndarray::prelude::*;
+/// 
+/// let numbers = vec![[1],[2],[4],[10],[11],[12],[14],[20],[21],[22],[23]];
+/// let bin_edges = array![
+///     [0_usize, 10_usize, 20_usize, 30_usize],
+///     [0_usize, 0_usize, 0_usize, 0_usize]
+/// ];
+/// let bounds = [[0_usize, 30_usize]; 1];
+/// let hist =
+///     SpatialHistogram::<1, usize>::histogram(&numbers, bin_edges, bounds, [3_usize]);
+/// let ans = array![4_usize, 4_usize, 3_usize];
+/// assert_eq!(ans, hist.bin_counts);
+/// ```
 pub struct SpatialHistogram<const N: usize, A> {
-    /// a vector containing the bin edges of the histogram
+    /// A vector containing the bin edges of the histogram.
     pub bin_edges: Array<A, Dim<[usize; 2]>>,
-    /// an array containing the upper and lower bounds of the histogram
+    /// An array containing the upper and lower bounds of the histogram.
     pub bounds: [[A; 2]; N],
-    /// the bin counts in the histogram
+    /// The bin counts in the histogram.
     pub bin_counts: Array<usize, Dim<[usize; N]>>,
-    /// number of bins in each dimension
+    /// The number of bins in each dimension.
     pub n_bins: [usize; N],
 }
 
@@ -64,7 +65,7 @@ pub struct FloatHistogram {
 }
 
 impl FloatHistogram {
-    /// normalize the 1D histogram
+    /// Normalize the 1D histogram.
     #[inline]
     fn normalize(histogram: &SpatialHistogram<1, f64>) -> FloatHistogram {
         let sum = histogram
@@ -88,10 +89,10 @@ impl FloatHistogram {
     }
 }
 
-/** Compute a histogram with `N` dimensional data of type `A` which implements `Add` and `PartialOrd`
- */
+/// Compute a histogram with `N` dimensional data of type `A` which implements `Add` 
+/// and `PartialOrd`
 pub trait GenerateHistogram<const N: usize, A> {
-    /// generate a histogram from a given microstate
+    /// Generate a histogram from a given microstate.
     fn histogram(
         data: &[[A; N]],
         bin_edges: Array<A, Dim<[usize; 2]>>,
@@ -100,10 +101,9 @@ pub trait GenerateHistogram<const N: usize, A> {
     ) -> SpatialHistogram<N, A>;
 }
 
-/** Various correlation functions from microstate data.
- */
+/// Correlation functions from a microstate.
 pub trait CorrelationFunction<B, S, C, M> {
-    /// computes the radial distribution function g(r) from a given microstate
+    /// Computes the radial distribution function g(r) from a given microstate
     /// TODO:
     /// # Errors
     fn rdf(
@@ -112,7 +112,7 @@ pub trait CorrelationFunction<B, S, C, M> {
         r_max: f64,
         nbins: usize,
     ) -> Result<SpatialHistogram<1, f64>, Error>;
-    /// get the normalized rdf
+    /// Get the normalized rdf.
     /// # Errors
     #[inline]
     fn normed_rdf(
@@ -139,17 +139,18 @@ pub enum Error {
 }
 
 impl<const N: usize, A> SpatialHistogram<N, A> {
-    /// A 2D array with the bin edges of the histogram. Each row gives the edges along one of the axes.
+    /// A 2D array with the bin edges of the histogram. Each row gives the edges along 
+    /// one of the axes.
     #[inline]
     pub fn bin_edges(&self) -> &Array<A, Dim<[usize; 2]>> {
         &self.bin_edges
     }
-    /// The lower and upper bounds of the histogram for each of the axes
+    /// The lower and upper bounds of the histogram for each of the axes.
     #[inline]
     pub fn bounds(&self) -> &[[A; 2]; N] {
         &self.bounds
     }
-    /// The frequency counts for each of the bins
+    /// The frequency counts for each of the bins.
     #[inline]
     pub fn bin_counts(&self) -> &Array<usize, Dim<[usize; N]>> {
         &self.bin_counts
@@ -160,7 +161,7 @@ impl<A> GenerateHistogram<1, A> for SpatialHistogram<1, A>
 where
     A: std::ops::Add<Output = A> + std::cmp::PartialOrd,
 {
-    /// Create a one-dimensional histogram
+    /// Create a one-dimensional histogram.
     #[inline]
     fn histogram(
         data: &[[A; 1]],
@@ -243,7 +244,8 @@ where
     S: Position<Position = Cartesian<2>> + Copy + Default,
     B: Transform<S> + Position<Position = Cartesian<2>> + Copy,
 {
-    /// Calculate the radial distribution function (RDF), g(r), for a given microstate with periodic boundary conditions
+    /// Calculate the radial distribution function (RDF), g(r), for a given microstate 
+    /// with periodic boundary conditions.
     #[inline]
     fn rdf(
         microstate: &Microstate<B, S, Periodic<Hypercuboid<2>>>,
@@ -313,7 +315,8 @@ where
     S: Position<Position = Cartesian<3>> + Copy + Default,
     B: Transform<S> + Position<Position = Cartesian<3>> + Copy,
 {
-    /// Calculate the radial distribution function (RDF), g(r), for a given microstate with periodic boundary conditions
+    /// Calculate the radial distribution function (RDF), g(r), for a given microstate 
+    /// with periodic boundary conditions.
     #[inline]
     fn rdf(
         microstate: &Microstate<B, S, Periodic<Hypercuboid<3>>>,
@@ -384,7 +387,8 @@ where
     S: Position<Position = Hyperboloid<3>> + Copy + Default,
     B: Transform<S> + Position<Position = Hyperboloid<3>> + Copy,
 {
-    /// Calculate the radial distribution function (RDF), g(r), for a given microstate with periodic boundary conditions
+    /// Calculate the radial distribution function (RDF), g(r), for a given microstate 
+    /// with periodic boundary conditions.
     #[inline]
     fn rdf(
         microstate: &Microstate<B, S, Periodic<EightEight>>,
@@ -459,7 +463,7 @@ impl<A> GenerateHistogram<2, A> for SpatialHistogram<2, A>
 where
     A: std::ops::Add<Output = A> + std::cmp::PartialOrd,
 {
-    /// Create a two-dimensional histogram
+    /// Create a two-dimensional histogram.
     #[inline]
     fn histogram(
         data: &[[A; 2]],
@@ -494,7 +498,7 @@ impl<A> GenerateHistogram<3, A> for SpatialHistogram<3, A>
 where
     A: std::ops::Add<Output = A> + std::cmp::PartialOrd,
 {
-    /// Create a three-dimensional histogram
+    /// Create a three-dimensional histogram.
     #[inline]
     fn histogram(
         data: &[[A; 3]],

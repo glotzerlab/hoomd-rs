@@ -1,9 +1,9 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement Voronoi tesselations of a given point set
-*/
-use crate::{GeneratePowerDiagram, PDSeed, PowerDiagram, voronoi_neighborlist};
+//! Implement Voronoi tesselations of a given point set
+
+use crate::{PDSeed, PowerDiagram, voronoi_neighborlist};
 use hoomd_geometry::shape::{Hypercuboid, EightEight};
 use hoomd_manifold::Hyperboloid;
 use hoomd_microstate::{
@@ -16,53 +16,51 @@ use ndarray::prelude::*;
 use num::complex::Complex;
 use thiserror::Error;
 
-/** Define the neighbor list
-
-The neighborlist for a given microstate is a vector of two-element tuples giving the pair of nearest neighbors. Nearest
-neighbors are found using the voronoi diagram.
-*/
+/// Define the neighbor list.
+///
+/// The neighbor list for a given microstate is a vector of two-element tuples
+/// giving the pair of nearest neighbors. Nearest neighbors are found using
+/// the voronoi diagram.
 pub struct NeighborList<'a, B, S, C> {
-    /// ordered, nested vector of 2-tuples with nearest-neighbor pairs
+    /// Ordered vector of 2-tuples with nearest-neighbor pairs.
     pub neighbors: Vec<(usize, usize)>,
     /// Microstate
     pub microstate: &'a Microstate<B, S, C>,
 }
 
 pub trait GenerateNeighborList<B, S, C, M> {
-    /** Generate the neighbor list from a given microstate
-     */
+    /// Generate the neighbor list from a given microstate.
     fn from_microstate(microstate: &Microstate<B, S, C>) -> Result<NeighborList<'_, B, S, C>, Error>;
 }
 
 impl<B, S, C> NeighborList<'_, B, S, C> {
-    /// Get the neighbor list
+    /// Get the neighbor list.
     pub fn neighbors(&self) -> &Vec<(usize, usize)> {
         &self.neighbors
     }
-    /** Get the indices of the neighbors for a specific site
-
-    #Example
-
-    ```
-    use hoomd_microstate::{Microstate, MicrostateBuilder, Body, property::Point, boundary::Open};
-    use hoomd_vector::Cartesian;
-    use hoomd_meshless_voronoi::{GenerateNeighborList, NeighborList};
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let microstate = MicrostateBuilder::new()
-        .bodies([Body::point(Cartesian::from([0.5, 0.25])),
-                Body::point(Cartesian::from([-1.0, 1.0])),
-                Body::point(Cartesian::from([1.0, -0.75])),
-                Body::point(Cartesian::from([-0.5, -0.5]))])
-        .try_build()?;
-
-    let nlist = NeighborList::from_microstate(&microstate)?;
-    let nlist_for_0 = nlist.neighbors_of_site(microstate.site_indices()[0]);
-    assert_eq!(vec![1 as usize, 2 as usize, 3 as usize], nlist_for_0);
-    # Ok(())
-    # }
-    ```
-    */
+    /// Get the indices of the neighbors for a specific site.
+    ///
+    /// #Example
+    ///
+    /// ```
+    /// use hoomd_microstate::{Microstate, MicrostateBuilder, Body, property::Point, boundary::Open};
+    /// use hoomd_vector::Cartesian;
+    /// use hoomd_meshless_voronoi::{GenerateNeighborList, NeighborList};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let microstate = MicrostateBuilder::new()
+    ///    .bodies([Body::point(Cartesian::from([0.5, 0.25])),
+    ///            Body::point(Cartesian::from([-1.0, 1.0])),
+    ///            Body::point(Cartesian::from([1.0, -0.75])),
+    ///            Body::point(Cartesian::from([-0.5, -0.5]))])
+    ///    .try_build()?;
+    ///
+    /// let nlist = NeighborList::from_microstate(&microstate)?;
+    /// let nlist_for_0 = nlist.neighbors_of_site(microstate.site_indices()[0]);
+    /// assert_eq!(vec![1 as usize, 2 as usize, 3 as usize], nlist_for_0);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn neighbors_of_site(&self, site_index: Option<usize>) -> Vec<usize> {
         match site_index {
             Some(num) => {
@@ -83,30 +81,29 @@ impl<B, S, C> NeighborList<'_, B, S, C> {
             None => vec![0_usize],
         }
     }
-    /** Get the coordination numbers for each site in a microstate
-
-    #Example
-
-    ```
-    use hoomd_microstate::{MicrostateBuilder, Body, boundary::Open};
-    use hoomd_vector::Cartesian;
-    use hoomd_meshless_voronoi::{GenerateNeighborList, NeighborList};
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let microstate = MicrostateBuilder::new()
-        .bodies([Body::point(Cartesian::from([0.5, 0.25])),
-                Body::point(Cartesian::from([-1.0, 1.0])),
-                Body::point(Cartesian::from([1.0, -0.75])),
-                Body::point(Cartesian::from([-0.5, -0.5]))])
-        .try_build()?;
-
-    let nlist = NeighborList::from_microstate(&microstate)?;
-    let coordination_numbers = nlist.coordination_numbers();
-    assert_eq!(vec![3 as usize, 2 as usize, 2 as usize, 3 as usize], coordination_numbers);
-    # Ok(())
-    # }
-    ```
-    */
+    /// Get the coordination numbers for each site in a microstate.
+    ///
+    /// #Example
+    ///
+    /// ```
+    /// use hoomd_microstate::{MicrostateBuilder, Body, boundary::Open};
+    /// use hoomd_vector::Cartesian;
+    /// use hoomd_meshless_voronoi::{GenerateNeighborList, NeighborList};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let microstate = MicrostateBuilder::new()
+    ///     .bodies([Body::point(Cartesian::from([0.5, 0.25])),
+    ///             Body::point(Cartesian::from([-1.0, 1.0])),
+    ///             Body::point(Cartesian::from([1.0, -0.75])),
+    ///             Body::point(Cartesian::from([-0.5, -0.5]))])
+    ///     .try_build()?;
+    ///
+    /// let nlist = NeighborList::from_microstate(&microstate)?;
+    /// let coordination_numbers = nlist.coordination_numbers();
+    /// assert_eq!(vec![3 as usize, 2 as usize, 2 as usize, 3 as usize], coordination_numbers);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn coordination_numbers(&self) -> Vec<usize> {
         let mut coord_number = vec![];
         for site_index in self.microstate.site_indices().iter() {
@@ -132,8 +129,7 @@ pub trait DirectorField<B, S, C, M> {
     ) -> Result<ComplexField, Error>;
 }
 
-/** TODO: documentation
- */
+/// TODO: documentation
 pub struct ComplexField {
     pub bin_edges: Array<f64, Dim<[usize; 1]>>,
     pub bounds: [f64; 2],
@@ -145,7 +141,7 @@ impl<B, S, C> DirectorField<B, S, C, Cartesian<2>> for NeighborList<'_, B, S, C>
 where
     S: Position<Position = Cartesian<2>>,
 {
-    /// compute the hexatic director field at a point from the microstate
+    /// Compute the hexatic director field at a point from the microstate.
     fn hexatic(
         &self,
         microstate: &Microstate<B, S, C>,
@@ -241,7 +237,7 @@ impl<B, S, C> DirectorField<B, S, C, Hyperboloid<3>> for NeighborList<'_, B, S, 
 where
     S: Position<Position = Hyperboloid<3>>,
 {
-    /// compute the hexatic director field at a point from the microstate
+    /// Compute the hexatic director field at a point from the microstate.
     fn hexatic(
         &self,
         microstate: &Microstate<B, S, C>,
@@ -367,40 +363,39 @@ impl From<voronoi_neighborlist::Error> for Error {
     }
 }
 
-/** Neighbor list from microstates in cartesian space
-
-#Example
-
-```
-use hoomd_microstate::{Microstate, MicrostateBuilder, Body, property::Point, boundary::Open};
-use hoomd_vector::Cartesian;
-use hoomd_meshless_voronoi::{GenerateNeighborList, NeighborList};
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let microstate = MicrostateBuilder::new()
-    .bodies([Body::point(Cartesian::from([0.5, 0.25])),
-             Body::point(Cartesian::from([-1.0, 1.0])),
-             Body::point(Cartesian::from([1.0, -0.75])),
-             Body::point(Cartesian::from([-0.5, -0.5]))])
-    .try_build()?;
-
-let nlist = NeighborList::from_microstate(&microstate)?;
-assert_eq!(vec![(0 as usize, 1 as usize),
-                (0 as usize, 2 as usize),
-                (0 as usize, 3 as usize),
-                (1 as usize, 3 as usize),
-                (2 as usize, 3 as usize)],
-            *nlist.neighbors());
-# Ok(())
-# }
-```
-*/
+/// Compute the neighbor list from microstates in cartesian space.
+///
+/// #Example
+///
+/// ```
+/// use hoomd_microstate::{Microstate, MicrostateBuilder, Body, property::Point, boundary::Open};
+/// use hoomd_vector::Cartesian;
+/// use hoomd_meshless_voronoi::{GenerateNeighborList, NeighborList};
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let microstate = MicrostateBuilder::new()
+///     .bodies([Body::point(Cartesian::from([0.5, 0.25])),
+///              Body::point(Cartesian::from([-1.0, 1.0])),
+///              Body::point(Cartesian::from([1.0, -0.75])),
+///              Body::point(Cartesian::from([-0.5, -0.5]))])
+///     .try_build()?;
+///
+/// let nlist = NeighborList::from_microstate(&microstate)?;
+/// assert_eq!(vec![(0 as usize, 1 as usize),
+///                 (0 as usize, 2 as usize),
+///                 (0 as usize, 3 as usize),
+///                 (1 as usize, 3 as usize),
+///                 (2 as usize, 3 as usize)],
+///             *nlist.neighbors());
+/// # Ok(())
+/// # }
+/// ```
 impl<B, S> GenerateNeighborList<B, S, Open, Cartesian<2>> for NeighborList<'_, B, S, Open>
 where
     S: Position<Position = Cartesian<2>>,
 {
-    /** Compute the neighbor list from a microstate embedded in Cartesian space
-     */
+    /// Compute the neighbor list from a microstate in `Cartesian<2>` with `Open`
+    /// boundary conditions.
     #[inline]
     fn from_microstate(
         microstate: &Microstate<B, S, Open>,
@@ -461,8 +456,8 @@ impl<B, S> GenerateNeighborList<B, S, Open, Cartesian<3>> for NeighborList<'_, B
 where
     S: Position<Position = Cartesian<3>>,
 {
-    /** Compute the neighbor list from a microstate embedded in Cartesian space
-     */
+    /// Compute the neighbor list from a microstate in `Cartesian<3>` with `Open`
+    /// boundary conditions.
     #[inline]
     fn from_microstate(
         microstate: &Microstate<B, S, Open>,
@@ -529,8 +524,8 @@ impl<B, S> GenerateNeighborList<B, S, Periodic<Hypercuboid<3>>, Cartesian<3>>
 where
     S: Position<Position = Cartesian<3>> + Copy + Default,
 {
-    /** Compute the neighbor list from a microstate embedded in three-dimensional cartesian space with periodic cuboid boundary conditions
-     */
+    /// Compute the neighbor list from a microstate in `Cartesian<3>` with periodic
+    /// `Hypercuboid<3>` boundary conditions.
     #[inline]
     fn from_microstate(
         microstate: &Microstate<B, S, Periodic<Hypercuboid<3>>>,
@@ -638,8 +633,8 @@ impl<B, S> GenerateNeighborList<B, S, Periodic<Hypercuboid<2>>, Cartesian<2>>
 where
     S: Position<Position = Cartesian<2>> + Copy + Default,
 {
-    /** Compute the neighbor list from a microstate embedded in two-dimensional Cartesian space with periodic cuboid boundary conditions
-     */
+    /// Compute the neighbor list from a microstate in `Cartesian<2>` with periodic
+    /// `Hypercuboid<2>` boundary conditions.
     #[inline]
     fn from_microstate(
         microstate: &Microstate<B, S, Periodic<Hypercuboid<2>>>,
@@ -706,40 +701,39 @@ where
     }
 }
 
-/** Neighbor list from microstates in hyperbolic space
-
-#Example
-
-```
-use hoomd_microstate::{Microstate, MicrostateBuilder, Body, property::Point, boundary::Open};
-use hoomd_manifold::{Hyperboloid, Minkowski};
-use hoomd_meshless_voronoi::{GenerateNeighborList, NeighborList};
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let microstate = MicrostateBuilder::with_boundary(Open)
-    .bodies([Body::point(Hyperboloid::from(Minkowski::from([1.0, -2.0, 6.0_f64.sqrt()]),1.0)),
-        Body::point(Hyperboloid::from(Minkowski::from([1.0, -1.0, 3.0_f64.sqrt()]),1.0)),
-        Body::point(Hyperboloid::from(Minkowski::from([-1.0, -2.0, 6.0_f64.sqrt()]),1.0)),
-        Body::point(Hyperboloid::from(Minkowski::from([-1.0, 1.0, 3.0_f64.sqrt()]),1.0))])
-    .try_build()?;
-
-let nlist = NeighborList::from_microstate(&microstate)?;
-assert_eq!(vec![(0 as usize, 1 as usize),
-                (0 as usize, 2 as usize),
-                (1 as usize, 2 as usize),
-                (1 as usize, 3 as usize),
-                (2 as usize, 3 as usize)],
-            *nlist.neighbors());
-# Ok(())
-# }
-```
-*/
+/// Neighbor list from microstates in hyperbolic space.
+///
+/// #Example
+///
+/// ```
+/// use hoomd_microstate::{Microstate, MicrostateBuilder, Body, property::Point, boundary::Open};
+/// use hoomd_manifold::{Hyperboloid, Minkowski};
+/// use hoomd_meshless_voronoi::{GenerateNeighborList, NeighborList};
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let microstate = MicrostateBuilder::with_boundary(Open)
+///     .bodies([Body::point(Hyperboloid::from(Minkowski::from([1.0, -2.0, 6.0_f64.sqrt()]),1.0)),
+///         Body::point(Hyperboloid::from(Minkowski::from([1.0, -1.0, 3.0_f64.sqrt()]),1.0)),
+///         Body::point(Hyperboloid::from(Minkowski::from([-1.0, -2.0, 6.0_f64.sqrt()]),1.0)),
+///         Body::point(Hyperboloid::from(Minkowski::from([-1.0, 1.0, 3.0_f64.sqrt()]),1.0))])
+///     .try_build()?;
+///
+/// let nlist = NeighborList::from_microstate(&microstate)?;
+/// assert_eq!(vec![(0 as usize, 1 as usize),
+///                 (0 as usize, 2 as usize),
+///                 (1 as usize, 2 as usize),
+///                 (1 as usize, 3 as usize),
+///                 (2 as usize, 3 as usize)],
+///             *nlist.neighbors());
+/// # Ok(())
+/// # }
+/// ```
 impl<B, S> GenerateNeighborList<B, S, Open, Hyperboloid<3>> for NeighborList<'_, B, S, Open>
 where
     S: Position<Position = Hyperboloid<3>>,
 {
-    /** Compute the neighbor list from a microstate in hyperbolic space
-     */
+    /// Compute the neighbor list from a microstate in `Hyperboloid<3>` with `Open`
+    /// boundary conditions.
     #[inline]
     fn from_microstate(
         microstate: &Microstate<B, S, Open>,
@@ -805,8 +799,8 @@ impl<B, S> GenerateNeighborList<B, S, Periodic<EightEight>, Hyperboloid<3>>
 where
     S: Position<Position = Hyperboloid<3>> + Copy + Default,
 {
-    /** Compute the neighbor list from a microstate in two-dimensional hyperbolic space with periodic boundary conditions
-     */
+    /// Compute the neighbor list from a microstate in `Hyperboloid` with periodic
+    /// boundary conditions.
     #[inline]
     fn from_microstate(
         microstate: &Microstate<B, S, Periodic<EightEight>>,
