@@ -42,7 +42,7 @@ where
 ///
 /// assert_eq!(
 ///     mat.matmul(&diag),
-///     mat.matmul(&DiagonalMatrix { rows: [3.0, 2.0] })
+///     mat.matmul(&DiagonalMatrix { elements: [3.0, 2.0] })
 /// );
 /// ```
 pub trait MatMul<RHS>

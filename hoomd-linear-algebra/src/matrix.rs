@@ -120,7 +120,7 @@ impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> 
     ///     GeneralMatrix, MatMul,
     ///     matrix::{DiagonalMatrix, Matrix22},
     /// };
-    /// let diag = DiagonalMatrix { rows: [3.0, 4.0] };
+    /// let diag = DiagonalMatrix { elements: [3.0, 4.0] };
     /// let mat = Matrix22::full(1.0).matmul(&diag);
     /// assert_eq!(mat[(0, 1)], 4.0);
     /// assert_eq!(mat[(1, 0)], 3.0);
@@ -534,13 +534,13 @@ impl<const N: usize> Matrix<N, N> {
     ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
     /// };
     /// let diag = mat.diag();
-    /// assert_eq!(diag.rows, [1.0, 5.0, 9.0]);
+    /// assert_eq!(diag.elements, [1.0, 5.0, 9.0]);
     /// ```
     #[must_use]
     #[inline]
     pub fn diag(&self) -> DiagonalMatrix<N> {
         DiagonalMatrix {
-            rows: std::array::from_fn(|i| self.rows[i][i]),
+            elements: std::array::from_fn(|i| self.rows[i][i]),
         }
     }
 
@@ -549,7 +549,7 @@ impl<const N: usize> Matrix<N, N> {
     /// ```
     /// use hoomd_linear_algebra::matrix::Matrix33;
     /// let mat = Matrix33::from_diag(&[1.0, 5.0, 9.0]);
-    /// assert_eq!(mat.diag().rows, [1.0, 5.0, 9.0]);
+    /// assert_eq!(mat.diag().elements, [1.0, 5.0, 9.0]);
     /// assert_eq!(mat[(1, 2)], 0.0);
     /// ```
     #[must_use]
@@ -759,7 +759,7 @@ impl Matrix<2, 2> {
         };
 
         let singular_values = DiagonalMatrix::<2> {
-            rows: [q + r, sy.abs()],
+            elements: [q + r, sy.abs()],
         };
 
         (u, singular_values, vt)
@@ -1181,7 +1181,7 @@ mod tests {
 
         let faers = faersvd.S();
         // Our implementation allows negative singular value
-        assert_diags_ulps_eq::<3, _>(&s.rows.map(f64::abs), &faers);
+        assert_diags_ulps_eq::<3, _>(&s.elements.map(f64::abs), &faers);
     }
 
     #[test]
@@ -1250,7 +1250,7 @@ mod tests {
         };
         let diag = mat.diag();
         let expected_diag = DiagonalMatrix {
-            rows: [1.0, 5.0, 9.0],
+            elements: [1.0, 5.0, 9.0],
         };
         assert_diags_ulps_eq::<3, _>(&diag, &expected_diag);
 
