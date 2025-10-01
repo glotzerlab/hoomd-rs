@@ -91,7 +91,7 @@ features = ["async_executor",
             "bevy_dev_tools"]
 
 [workspace.dependencies.bevy_diagnostic]
-version = "0.16.1"
+version = "0.17.0"
 
 [workspace.dependencies.bevy_winit]
 version = "0.16.1"
