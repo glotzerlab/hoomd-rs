@@ -53,6 +53,8 @@ fn det_matn<const N: usize>(bencher: Bencher) {
         .bench_local_values(|a| black_box(a.determinant()));
 }
 
+/// This benchmark is included as a reference implementation for comparison with ``SquareMatrix::<3, 3>::determinant``.
+/// We want to ensure the performance of the latter is comparable to this optimal implementation.
 #[divan::bench]
 fn det_mat3_fast(bencher: Bencher) {
     #[expect(clippy::many_single_char_names, reason = "clarity")]
@@ -68,6 +70,8 @@ fn det_mat3_fast(bencher: Bencher) {
         .bench_local_values(|a| black_box(det33(&a)));
 }
 
+/// This benchmark is included as a reference implementation for comparison with ``SquareMatrix::<4, 4>::determinant``.
+/// We want to ensure the performance of the latter is comparable to this optimal implementation.
 #[divan::bench]
 fn det_mat4_fast(bencher: Bencher) {
     #[expect(clippy::many_single_char_names, reason = "clarity")]
