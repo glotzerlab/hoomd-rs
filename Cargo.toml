@@ -94,7 +94,7 @@ features = ["async_executor",
 version = "0.16.1"
 
 [workspace.dependencies.bevy_winit]
-version = "0.16.1"
+version = "0.17.0"
 
 [workspace.lints.rust]
 missing_docs = "warn"
