@@ -566,7 +566,7 @@ impl<const N: usize> Matrix<N, N> {
 }
 impl<const N: usize> QuadraticForm<N> for Matrix<N, N> {
     #[inline]
-    fn compute_quadratic_form(&self, x: &DiagonalMatrix<N>) -> f64 {
+    fn compute_quadratic_form(&self, x: &[f64; N]) -> f64 {
         let mut result = 0.0;
 
         for i in 0..N {
@@ -1278,7 +1278,7 @@ mod tests {
     )]
     fn test_quadratic_form<const N: usize>(rows: [[f64; N]; N], vars: [f64; N]) {
         let matrix = Matrix { rows };
-        let result = matrix.compute_quadratic_form(&DiagonalMatrix { elements: vars });
+        let result = matrix.compute_quadratic_form(&vars);
         assert_relative_eq!(
             result,
             (fill_faer_column(vars).transpose() * fill_faer(rows) * fill_faer_column(vars))[(0, 0)],

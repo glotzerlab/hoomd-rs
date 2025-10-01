@@ -184,5 +184,5 @@ pub trait QuadraticForm<const N: usize>: SquareMatrix {
     ///
     /// The matrix `A` is given by `self` and the vector `x` in the argument.
     #[must_use]
-    fn compute_quadratic_form(&self, x: &DiagonalMatrix<N>) -> f64;
+    fn compute_quadratic_form(&self, x: &[f64; N]) -> f64;
 }

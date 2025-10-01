@@ -6,7 +6,7 @@
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
 use hoomd_linear_algebra::{
-    Diagonal, Invertible, MatMul, QuadraticForm,
+    Invertible, MatMul, QuadraticForm,
     matrix::{DiagonalMatrix, Matrix22},
 };
 use hoomd_utility::valid::PositiveReal;
@@ -268,7 +268,7 @@ where
             .matmul(&Matrix22::from(rot_transpose));
 
         let v_ij = &v_ij.coordinates;
-        let a_inv = Matrix22::from_diag(&a_inv);
+        let a_inv = Matrix22::with_diagonal(a_inv);
 
         // Golden section solver for minimizing K(λ)
         let (mut b, mut a) = (_ELLIPSOID_K_MAX_BOUND, _ELLIPSOID_K_MIN_BOUND);
@@ -297,9 +297,9 @@ where
 
 /// Solve the characteristic equation of two ellipses.
 #[inline]
-fn k_lambda<const N: usize, M>(a_inv: &M, b_inv: &M, l: f64, v_ij: &impl Diagonal) -> f64
+fn k_lambda<const N: usize, M>(a_inv: &M, b_inv: &M, l: f64, v_ij: &[f64; N]) -> f64
 where
-    M: Invertible + Copy + QuadraticForm,
+    M: Invertible + Copy + QuadraticForm<N>,
 {
     let m = *b_inv * ((1.0 - l).recip()) + (*a_inv * l.recip());
 
