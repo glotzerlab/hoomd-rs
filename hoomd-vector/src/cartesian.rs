@@ -14,7 +14,7 @@ use rand::{
 };
 
 use crate::{Cross, Error, InnerProduct, Rotate, Unit, Vector};
-use hoomd_linear_algebra::{Diagonal, GeneralMatrix, MatMul, matrix::Matrix};
+use hoomd_linear_algebra::{MatMul, matrix::Matrix};
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
 ///
@@ -710,37 +710,48 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
 
 impl<const N: usize, const K: usize> MatMul<Matrix<N, K>> for RotationMatrix<N> {
     type Output = Matrix<N, K>;
+
     #[inline]
     fn matmul(&self, rhs: &Matrix<N, K>) -> Self::Output {
-        let mut result = Self::Output::zeros();
-        for n in 0..N {
-            for k in 0..K {
-                for m in 0..N {
-                    result[(n, k)] += self.rows()[n][m] * rhs[(m, k)];
-                }
-            }
-        }
-
-        result
+        Matrix::from(*self).matmul(rhs)
     }
 }
 
-impl<const N: usize> Diagonal for Cartesian<N> {}
-
-#[allow(dead_code, reason = "TODO: Used in other branch.")]
 impl<const N: usize> Cartesian<N> {
     /// Convert a [`Cartesian<N>`] into a row matrix [`Matrix<1, N>`].
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::Cartesian;
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    ///
+    /// let a = Cartesian::from([1.0, -2.0, 3.0]);
+    ///
+    /// let b = a.to_row_matrix();
+    /// assert_eq!(b.rows, [1.0, -2.0, 3.0]]);
+    /// ```
     #[inline]
     #[must_use]
-    fn to_row_matrix(self) -> Matrix<1, N> {
+    pub fn to_row_matrix(self) -> Matrix<1, N> {
         Matrix {
             rows: [self.coordinates],
         }
     }
     /// Convert a [`Cartesian<N>`] into a column matrix [`Matrix<N, 1>`].
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::Cartesian;
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    ///
+    /// let a = Cartesian::from([1.0, -2.0, 3.0]);
+    ///
+    /// let b = a.to_column_matrix();
+    /// assert_eq!(b.rows, [[1.0], [-2.0], [3.0]]]);
+    /// ```
     #[inline]
     #[must_use]
-    fn to_column_matrix(self) -> Matrix<N, 1> {
+    pub fn to_column_matrix(self) -> Matrix<N, 1> {
         Matrix {
             rows: std::array::from_fn(|i| [self[i]]),
         }
