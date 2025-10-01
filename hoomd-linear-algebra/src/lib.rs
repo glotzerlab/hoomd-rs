@@ -16,11 +16,10 @@
 //! [faer-rs]: https://github.com/sarah-quinones/faer-rs.git
 //! [nalgebra]: https://github.com/dimforge/nalgebra
 
-use std::ops::{Add, Sub, Index, Mul, Neg};
+use std::ops::{Add, AddAssign, Index, Mul, MulAssign, Neg, Sub, SubAssign};
 
 /// Structs implementing a large subset of Matrix traits.
 pub mod matrix;
-use matrix::DiagonalMatrix;
 
 /// A lightweight representation of a diagonal matrix.
 mod diagonal;
@@ -123,11 +122,14 @@ pub trait MatMul<Rhs> {
 /// ```
 pub trait GeneralMatrix:
     Add<Self, Output = Self>
-    + Sub<Self, Output = Self>
-    + Mul<f64, Output = Self>
-    + Neg<Output = Self>
+    + AddAssign<Self>
     + Index<(usize, usize), Output = f64>
+    + Mul<f64, Output = Self>
+    + MulAssign<f64>
+    + Neg<Output = Self>
     + Sized
+    + Sub<Self, Output = Self>
+    + SubAssign<Self>
 {
     /// Fill a matrix with zeros.
     ///

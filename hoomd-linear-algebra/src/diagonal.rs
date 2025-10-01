@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use std::ops::{Add, Index, IndexMut, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use crate::{GeneralMatrix, matrix::Matrix};
 
@@ -213,6 +213,32 @@ impl<const N: usize> Sub<Self> for DiagonalMatrix<N> {
     }
 }
 
+impl<const N: usize> AddAssign for DiagonalMatrix<N> {
+    #[inline]
+    fn add_assign(&mut self, rhs: Self) {
+        self.elements.iter_mut()
+            .zip(rhs.elements.iter())
+            .for_each(|(x, r)| *x += r);
+    }
+}
+
+impl<const N: usize> MulAssign<f64> for DiagonalMatrix<N> {
+    #[inline]
+    fn mul_assign(&mut self, rhs: f64) {
+        self.elements.iter_mut()
+            .for_each(|x| *x *= rhs);
+    }
+}
+
+impl<const N: usize> SubAssign for DiagonalMatrix<N> {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Self) {
+        self.elements.iter_mut()
+            .zip(rhs.elements.iter())
+            .for_each(|(x, r)| *x -= r);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use approx::assert_ulps_eq;
@@ -235,8 +261,8 @@ mod tests {
     fn test_diagonal_matrix_add_n2() {
         let a_diag = [1.0, 2.0];
         let b_diag = [3.0, 4.0];
-        let a = DiagonalMatrix::<2> { elements: a_diag };
-        let b = DiagonalMatrix::<2> { elements: b_diag };
+        let a = DiagonalMatrix { elements: a_diag };
+        let b = DiagonalMatrix { elements: b_diag };
         let expected: Vec<f64> = a_diag
             .iter()
             .zip(b_diag.iter())
@@ -250,8 +276,8 @@ mod tests {
     fn test_diagonal_matrix_add_n3() {
         let a_diag = [1.0, 2.0, 3.0];
         let b_diag = [4.0, 5.0, 6.0];
-        let a = DiagonalMatrix::<3> { elements: a_diag };
-        let b = DiagonalMatrix::<3> { elements: b_diag };
+        let a = DiagonalMatrix { elements: a_diag };
+        let b = DiagonalMatrix { elements: b_diag };
         let expected: Vec<f64> = a_diag
             .iter()
             .zip(b_diag.iter())
@@ -262,11 +288,26 @@ mod tests {
     }
 
     #[test]
+    fn test_diagonal_matrix_add_assign_n3() {
+        let a_diag = [1.0, 2.0, 3.0];
+        let b_diag = [4.0, 5.0, 6.0];
+        let mut a = DiagonalMatrix { elements: a_diag };
+        let b = DiagonalMatrix { elements: b_diag };
+        let expected: Vec<f64> = a_diag
+            .iter()
+            .zip(b_diag.iter())
+            .map(|(x, y)| x + y)
+            .collect();
+        a += b;
+        assert_diags_ulps_eq(&a, &expected);
+    }
+
+    #[test]
     fn test_diagonal_matrix_sub_n2() {
         let a_diag = [1.0, 2.0];
         let b_diag = [3.0, 4.0];
-        let a = DiagonalMatrix::<2> { elements: a_diag };
-        let b = DiagonalMatrix::<2> { elements: b_diag };
+        let a = DiagonalMatrix { elements: a_diag };
+        let b = DiagonalMatrix { elements: b_diag };
         let expected: Vec<f64> = a_diag
             .iter()
             .zip(b_diag.iter())
@@ -280,8 +321,8 @@ mod tests {
     fn test_diagonal_matrix_sub_n3() {
         let a_diag = [1.0, 2.0, 3.0];
         let b_diag = [4.0, 5.0, 6.0];
-        let a = DiagonalMatrix::<3> { elements: a_diag };
-        let b = DiagonalMatrix::<3> { elements: b_diag };
+        let a = DiagonalMatrix { elements: a_diag };
+        let b = DiagonalMatrix { elements: b_diag };
         let expected: Vec<f64> = a_diag
             .iter()
             .zip(b_diag.iter())
@@ -292,9 +333,24 @@ mod tests {
     }
 
     #[test]
+    fn test_diagonal_matrix_sub_assign_n3() {
+        let a_diag = [1.0, 2.0, 3.0];
+        let b_diag = [4.0, 5.0, 6.0];
+        let mut a = DiagonalMatrix { elements: a_diag };
+        let b = DiagonalMatrix { elements: b_diag };
+        let expected: Vec<f64> = a_diag
+            .iter()
+            .zip(b_diag.iter())
+            .map(|(x, y)| x - y)
+            .collect();
+        a -= b;
+        assert_diags_ulps_eq(&a, &expected);
+    }
+
+    #[test]
     fn test_diagonal_matrix_neg_n2() {
         let diag = [1.0, -2.0];
-        let matrix = DiagonalMatrix::<2> { elements: diag };
+        let matrix = DiagonalMatrix { elements: diag };
         let expected: Vec<f64> = diag.iter().map(|x| -x).collect();
         let custom_neg = -matrix;
         assert_diags_ulps_eq(&custom_neg, &expected);
@@ -303,7 +359,7 @@ mod tests {
     #[test]
     fn test_diagonal_matrix_neg_n3() {
         let diag = [1.0, -2.0, 0.0];
-        let matrix = DiagonalMatrix::<3> { elements: diag };
+        let matrix = DiagonalMatrix { elements: diag };
         let expected: Vec<f64> = diag.iter().map(|x| -x).collect();
         let custom_neg = -matrix;
         assert_diags_ulps_eq(&custom_neg, &expected);
@@ -314,10 +370,21 @@ mod tests {
     #[case([1.0, 2.0], -1.0)]
     #[case([1.0, 2.0], 0.0)]
     fn test_diagonal_matrix_scalar_mul_n2(#[case] diag: [f64; 2], #[case] scalar: f64) {
-        let matrix = DiagonalMatrix::<2> { elements: diag };
+        let matrix = DiagonalMatrix { elements: diag };
         let expected: Vec<f64> = diag.iter().map(|x| x * scalar).collect();
         let custom_mul = matrix * scalar;
         assert_diags_ulps_eq(&custom_mul, &expected);
+    }
+
+    #[rstest]
+    #[case([1.0, 2.0], 5.0)]
+    #[case([1.0, 2.0], -1.0)]
+    #[case([1.0, 2.0], 0.0)]
+    fn test_diagonal_matrix_scalar_mul_assign_n2(#[case] diag: [f64; 2], #[case] scalar: f64) {
+        let mut matrix = DiagonalMatrix { elements: diag };
+        let expected: Vec<f64> = diag.iter().map(|x| x * scalar).collect();
+        matrix *= scalar;
+        assert_diags_ulps_eq(&matrix, &expected);
     }
 
     #[test]
