@@ -64,12 +64,6 @@ impl<const N: usize> GeneralMatrix for DiagonalMatrix<N> {
             elements: std::array::from_fn(|_| 0.0),
         }
     }
-    #[inline]
-    fn full(val: f64) -> Self {
-        Self {
-            elements: std::array::from_fn(|_| val),
-        }
-    }
 }
 
 impl<const N: usize> DiagonalMatrix<N> {
@@ -249,10 +243,8 @@ mod tests {
     fn test_general_matrix_methods() {
         // DiagonalMatrix
         let diag_zeros = DiagonalMatrix::<4>::zeros();
-        let diag_full = DiagonalMatrix::<4>::full(-3.0);
         for i in 0..4 {
             assert_eq!(diag_zeros[i], 0.0);
-            assert_eq!(diag_full[i], -3.0);
         }
     }
 }

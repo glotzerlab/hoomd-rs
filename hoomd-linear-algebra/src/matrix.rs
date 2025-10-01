@@ -9,7 +9,7 @@ pub use crate::diagonal::DiagonalMatrix;
 use std::fmt;
 
 /// A lightweight representation of a diagonal matrix.
-use crate::{Diagonal, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
+use crate::{Diagonal, Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
 
 /// A matrix with N rows and M columns, allocated on the stack.
 #[derive(Clone, Debug, PartialEq)]
@@ -44,18 +44,21 @@ impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
             rows: std::array::from_fn(|_| std::array::from_fn(|_| 0.0)),
         }
     }
-    /// Fill a matrix with some scalar value.
+}
+
+impl<const N: usize, const M: usize> Full for Matrix<N, M> {
+    /// Construct a matrix the same value in every element.
     ///
     /// # Examples
     /// ```
-    /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+    /// use hoomd_linear_algebra::{Full, matrix::Matrix22};
     /// let m = Matrix22::full(5.0);
     /// assert_eq!(m.rows, [[5.0, 5.0], [5.0, 5.0]]);
     /// ```
     #[inline]
-    fn full(val: f64) -> Self {
+    fn full(value: f64) -> Self {
         Self {
-            rows: std::array::from_fn(|_| std::array::from_fn(|_| val)),
+            rows: std::array::from_fn(|_| std::array::from_fn(|_| value)),
         }
     }
 }
@@ -117,7 +120,7 @@ impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> 
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{
-    ///     GeneralMatrix, MatMul,
+    ///     Full, GeneralMatrix, MatMul,
     ///     matrix::{DiagonalMatrix, Matrix22},
     /// };
     /// let diag = DiagonalMatrix { elements: [3.0, 4.0] };
@@ -163,7 +166,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     ///
     /// # Examples
     /// ```
-    /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+    /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
     /// let m = Matrix22::full(3.0);
     /// assert_eq!(
     ///     m.map_rows(|v| [v[0] + 2.0, v[1]]),
@@ -187,7 +190,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     ///
     /// # Examples
     /// ```
-    /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+    /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
     /// let m = Matrix22::full(3.0);
     /// assert_eq!(
     ///     m.map_cols(|v| [v[0] + 2.0, v[1]]),
@@ -208,7 +211,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     ///
     /// # Examples
     /// ```
-    /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix33};
+    /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix33};
     /// let m = Matrix33::full(3.0);
     /// assert_eq!(m.map_elementwise(|x| x + 2.0), m + Matrix33::full(2.0));
     /// ```
@@ -290,7 +293,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     ///
     /// # Examples
     /// ```
-    /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+    /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
     /// let m = Matrix22::full(3.0);
     /// // Sum the elements of a matrix
     /// assert_eq!(m.fold_elementwise(0.0, |acc, x| acc + x), 3.0 * 4.0);
@@ -505,7 +508,7 @@ impl<const N: usize> Matrix<N, N> {
     /// # Examples
     ///
     /// ```
-    /// use hoomd_linear_algebra::{GeneralMatrix, MatMul, matrix::Matrix22};
+    /// use hoomd_linear_algebra::{Full, GeneralMatrix, MatMul, matrix::Matrix22};
     ///
     /// let matrix = Matrix22::full(2.0);
     ///

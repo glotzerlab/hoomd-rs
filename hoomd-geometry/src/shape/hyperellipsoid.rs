@@ -263,7 +263,7 @@ where
 
         let b_inv = Matrix22::from(rot)
             .matmul(&DiagonalMatrix {
-                rows: self.semi_axes.map(|x| x.get().powi(2)),
+                elements: self.semi_axes.map(|x| x.get().powi(2)),
             })
             .matmul(&Matrix22::from(rot_transpose));
 

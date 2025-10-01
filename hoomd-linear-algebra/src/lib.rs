@@ -31,7 +31,7 @@ where
 /// # Example
 /// ```
 /// use hoomd_linear_algebra::{
-///     GeneralMatrix, MatMul, SquareMatrix,
+///     Full, GeneralMatrix, MatMul, SquareMatrix,
 ///     matrix::{DiagonalMatrix, Matrix22},
 /// };
 ///
@@ -75,9 +75,20 @@ pub trait GeneralMatrix:
     #[must_use]
     fn zeros() -> Self;
 
-    /// Return a matrix where every element is equal to val.
+}
+
+/// Initialize matrices with a constant value.
+pub trait Full {
+    /// Construct a matrix the same value in every element.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::{Full, matrix::Matrix22};
+    /// let m = Matrix22::full(5.0);
+    /// assert_eq!(m.rows, [[5.0, 5.0], [5.0, 5.0]]);
+    /// ```
     #[must_use]
-    fn full(val: f64) -> Self;
+    fn full(value: f64) -> Self;
 }
 
 /// Marker trait to indicate a sequence of values can be read as a diagonal matrix.

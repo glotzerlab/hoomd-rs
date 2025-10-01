@@ -41,7 +41,7 @@ impl<const N: usize, const M: usize> IndexMut<(usize, usize)> for Matrix<N, M> {
 ///
 /// # Examples
 /// ```
-/// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+/// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
 /// let matrix = Matrix22::full(2.0);
 /// let scalar = 2.0;
 /// assert_eq!(matrix * scalar, matrix + matrix);
@@ -58,7 +58,7 @@ impl<const N: usize, const M: usize> Mul<f64> for Matrix<N, M> {
 ///
 /// # Examples
 /// ```
-/// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+/// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
 /// let matrix = Matrix22::full(2.0);
 /// let scalar = 3.0;
 /// assert_eq!(scalar * matrix, matrix * scalar);
@@ -76,7 +76,7 @@ impl<const N: usize, const M: usize> Mul<Matrix<N, M>> for f64 {
 ///
 /// # Examples
 /// ```
-/// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+/// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
 /// let mut matrix = Matrix22::full(2.0);
 /// let matrix_copy = matrix.clone();
 /// matrix *= 3.0;
@@ -93,7 +93,7 @@ impl<const N: usize, const M: usize> MulAssign<f64> for Matrix<N, M> {
 ///
 /// # Examples
 /// ```
-/// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+/// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
 /// let matrix = Matrix22::full(5.0);
 /// assert_eq!(-matrix, Matrix22::zeros() - matrix);
 /// ```
