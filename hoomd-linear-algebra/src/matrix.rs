@@ -566,12 +566,12 @@ impl<const N: usize> Matrix<N, N> {
 }
 impl<const N: usize> QuadraticForm<N> for Matrix<N, N> {
     #[inline]
-    fn compute_quadratic_form(&self, variables: &DiagonalMatrix<N>) -> f64 {
+    fn compute_quadratic_form(&self, x: &DiagonalMatrix<N>) -> f64 {
         let mut result = 0.0;
 
         for i in 0..N {
             for j in 0..N {
-                result += variables[i] * self[(i, j)] * variables[j];
+                result += x[i] * self[(i, j)] * x[j];
             }
         }
         result
@@ -615,13 +615,13 @@ impl Invertible for Matrix<3, 3> {
     /// This implementation uses a closed form solution for the matrix inverse based on
     /// the cross product of rows.
     ///
-    /// # Examples
+    /// # Example
     /// ```
-    /// use hoomd_linear_algebra::{Invertible, SquareMatrix, matrix::{Matrix, Matrix33}};
-    /// let m = Matrix33::identity() * 5.0;
-    /// let m_inv = m.inverse().unwrap();
-    /// // The inverse of a diagonal matrix is the reciprocal of each element.
-    /// assert_eq!(m_inv, Matrix::with_diagonal([1.0 / 5.0; 3]));
+    /// use hoomd_linear_algebra::{Invertible, SquareMatrix, matrix::Matrix};
+    /// let m = Matrix::identity() * 5.0;
+    /// let m_inv = m.inverse();
+    ///
+    /// assert_eq!(m_inv, Some(Matrix::with_diagonal([1.0 / 5.0; 3])));
     /// ```
     #[inline]
     fn inverse(&self) -> Option<Self> {
