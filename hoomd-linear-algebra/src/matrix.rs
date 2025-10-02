@@ -306,13 +306,13 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// let x = Matrix22 {
     ///     rows: [[1.0, 2.0], [3.0, 4.0]],
     /// };
-    /// let mut iterator = x.iter();
+    /// let mut iterator = x.iter_rows();
     /// assert_eq!(iterator.next(), Some([1.0, 2.0]));
     /// assert_eq!(iterator.next(), Some([3.0, 4.0]));
     /// assert_eq!(iterator.next(), None);
     /// ```
     #[inline]
-    pub fn iter(&self) -> impl Iterator<Item = [f64; M]> + '_ {
+    pub fn iter_rows(&self) -> impl Iterator<Item = [f64; M]> + '_ {
         self.rows.iter().copied()
     }
 
@@ -377,7 +377,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         F: FnMut(B, [f64; M]) -> B,
     {
         let mut accum = init;
-        for x in self.iter() {
+        for x in self.iter_rows() {
             accum = f(accum, x);
         }
         accum
@@ -730,7 +730,7 @@ impl<const N: usize, const M: usize> fmt::Display for Matrix<N, M> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(&format!(
             "[{}]",
-            self.iter()
+            self.iter_rows()
                 .map(|row| {
                     format!(
                         "[{}]",
