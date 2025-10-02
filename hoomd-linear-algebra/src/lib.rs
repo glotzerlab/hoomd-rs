@@ -18,7 +18,7 @@
 //!
 //! ## Matrices
 //!
-//! Construct a small rectangular matrix on the stack:
+//! Construct a small rectangular [`Matrix`] on the stack:
 //! ```
 //! use hoomd_linear_algebra::matrix::Matrix;
 //!
@@ -27,7 +27,9 @@
 //! };
 //! ```
 //!
-//! Diagonal matrices store only the diagonal elements:
+//! [`Matrix`]: matrix::Matrix
+//!
+//! Diagonal matrices ([`DiagonalMatrix`]) store only the diagonal elements:
 //! ```
 //! use hoomd_linear_algebra::matrix::DiagonalMatrix;
 //!
@@ -35,14 +37,20 @@
 //!     elements: [-2.0, 4.0, -5.0],
 //! };
 //! ```
+//! 
+//! [`DiagonalMatrix`]: matrix::DiagonalMatrix
 //!
-//! `Matrix22`, `Matrix33`, and `Matrix44` are type aliases for commonly used
+//! [`Matrix22`], [`Matrix33`], and [`Matrix44`] are type aliases for commonly used
 //! matrix sizes. Construct a 2x2 matrix with every element set to 4:
 //! ```
 //! use hoomd_linear_algebra::{Full, matrix::Matrix22};
 //!
 //! let m = Matrix22::full(4.0);
 //! ```
+//!
+//! [`Matrix22`]: matrix::Matrix22
+//! [`Matrix33`]: matrix::Matrix33
+//! [`Matrix44`]: matrix::Matrix44
 //!
 //! Construct a 3x3 identity matrix $` \mathbf{I} `$:
 //! ```
