@@ -217,7 +217,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     ///
     /// let m = Matrix22::full(3.0);
     /// assert_eq!(
-    ///     m.map_cols(|v| [v[0] + 2.0, v[1]]),
+    ///     m.map_columns(|v| [v[0] + 2.0, v[1]]),
     ///     Matrix22 {
     ///         rows: [[5.0, 5.0], [3.0, 3.0]]
     ///     }
@@ -225,7 +225,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn map_cols<F>(self, f: F) -> Self
+    pub fn map_columns<F>(self, f: F) -> Self
     where
         F: FnMut([f64; N]) -> [f64; N],
     {
