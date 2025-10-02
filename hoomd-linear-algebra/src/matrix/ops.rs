@@ -87,7 +87,7 @@ impl<const N: usize, const M: usize> MulAssign<f64> for Matrix<N, M> {
     /// assert_eq!(matrix, matrix_copy * 3.0);
     /// ```
     fn mul_assign(&mut self, rhs: f64) {
-        self.iter_flat_mut().for_each(|x| *x *= rhs);
+        self.iter_elements_mut().for_each(|x| *x *= rhs);
     }
 }
 
@@ -124,8 +124,8 @@ impl<const N: usize, const M: usize> Add<Self> for Matrix<N, M> {
 impl<const N: usize, const M: usize> AddAssign for Matrix<N, M> {
     #[inline]
     fn add_assign(&mut self, rhs: Self) {
-        self.iter_flat_mut()
-            .zip(rhs.iter_flat())
+        self.iter_elements_mut()
+            .zip(rhs.iter_elements())
             .for_each(|(x, r)| *x += r);
     }
 }
@@ -144,8 +144,8 @@ impl<const N: usize, const M: usize> Sub<Self> for Matrix<N, M> {
 impl<const N: usize, const M: usize> SubAssign for Matrix<N, M> {
     #[inline]
     fn sub_assign(&mut self, rhs: Self) {
-        self.iter_flat_mut()
-            .zip(rhs.iter_flat())
+        self.iter_elements_mut()
+            .zip(rhs.iter_elements())
             .for_each(|(x, r)| *x -= r);
     }
 }
