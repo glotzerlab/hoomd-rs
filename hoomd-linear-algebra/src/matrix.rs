@@ -170,7 +170,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// ```
     /// use hoomd_linear_algebra::matrix::Matrix;
     ///
-    /// let m: Matrix<2, 3> = Matrix {
+    /// let m = Matrix {
     ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
     /// };
     /// let m_t = m.transpose();
@@ -389,7 +389,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// ```
     /// use hoomd_linear_algebra::matrix::Matrix;
     ///
-    /// let m: Matrix<2, 3> = Matrix {
+    /// let m = Matrix {
     ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
     /// };
     /// assert_eq!(m.n_rows(), 2);
@@ -405,7 +405,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// ```
     /// use hoomd_linear_algebra::matrix::Matrix;
     ///
-    /// let m: Matrix<2, 3> = Matrix {
+    /// let m = Matrix {
     ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
     /// };
     /// assert_eq!(m.n_columns(), 3);
@@ -416,7 +416,9 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         M
     }
 
-    /// Get the shape of the [`Matrix`] `(n_rows, n_cols)`.
+    /// Get the shape of the [`Matrix`]
+    ///
+    /// The shape is a tuple: `(n_rows, n_cols)`.
     ///
     /// # Examples
     /// ```
@@ -454,7 +456,7 @@ impl<const N: usize> Matrix<N, N> {
     /// Compute the signed hypervolume of the hyperparallelepiped defined by a matrix.
     ///
     /// This implementation uses the Laplace expansion, which is optimal for small
-    /// matrices but will be extremely slow for large matrices due to its O(N!)
+    /// matrices but will be extremely slow for large matrices due to its $`O(N!)`$
     /// complexity.
     ///
     /// # Example
@@ -747,7 +749,7 @@ impl Matrix<2, 2> {
     /// Decompose a [`Matrix22`] into a rotation, a scaling, and a second rotation.
     ///
     /// ```math
-    /// \mathbf{A} = \mathbf{U} \boldsymbol{\Sigma} \mathbf{V}^\top
+    /// \mathbf{A} = \mathbf{U} \boldsymbol{\Sigma} \mathbf{V}^\intercal
     /// ```
     /// This implementation is based on the math in [Blinn 1996], and
     /// ensures good (but not optimal) numerical stability. For certain

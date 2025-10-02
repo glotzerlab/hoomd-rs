@@ -9,7 +9,7 @@ use crate::{GeneralMatrix, matrix::Matrix};
 ///
 /// # Example
 /// ```
-/// use hoomd_linear_algebra::{GeneralMatrix, matrix::DiagonalMatrix};
+/// use hoomd_linear_algebra::matrix::DiagonalMatrix;
 /// let a = DiagonalMatrix {
 ///     elements: [-2.0, 3.0],
 /// };
@@ -89,7 +89,7 @@ impl<const N: usize> DiagonalMatrix<N> {
     ///
     /// # Example
     /// ```
-    /// use hoomd_linear_algebra::matrix::{DiagonalMatrix, Matrix22};
+    /// use hoomd_linear_algebra::matrix::DiagonalMatrix;
     ///
     /// let a = DiagonalMatrix {
     ///     elements: [-2.0, 3.0],

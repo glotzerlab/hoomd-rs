@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Traits and subroutines for common linear algebra operations.
+//! Linear algebra optimized for small matrices.
 //!
 //! This crate places an emphasis on generality and simplicity, with optimization efforts
 //! targeted at small matrices. Some complex routines (SVD, matrix inversion, etc.) will
@@ -15,6 +15,149 @@
 //!
 //! [faer-rs]: https://github.com/sarah-quinones/faer-rs.git
 //! [nalgebra]: https://github.com/dimforge/nalgebra
+//!
+//! ## Matrices
+//!
+//! Construct a small rectangular matrix on the stack:
+//! ```
+//! use hoomd_linear_algebra::matrix::Matrix;
+//!
+//! let m = Matrix {
+//!     rows: [[1.0, 2.0, 3.0], [-6.0, 3.0, 2.0]],
+//! };
+//! ```
+//!
+//! Diagonal matrices store only the diagonal elements:
+//! ```
+//! use hoomd_linear_algebra::matrix::DiagonalMatrix;
+//!
+//! let m = DiagonalMatrix {
+//!     elements: [-2.0, 4.0, -5.0],
+//! };
+//! ```
+//!
+//! `Matrix22`, `Matrix33`, and `Matrix44` are type aliases for commonly used
+//! matrix sizes. Construct a 2x2 matrix with every element set to 4:
+//! ```
+//! use hoomd_linear_algebra::{Full, matrix::Matrix22};
+//!
+//! let m = Matrix22::full(4.0);
+//! ```
+//!
+//! Construct a 3x3 identity matrix `$ \mathbf{I} `$:
+//! ```
+//! use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix44};
+//!
+//! let m = Matrix44::identity();
+//! ```
+//!
+//! Index matrix entries by `(row, column)`:
+//! ```
+//! use hoomd_linear_algebra::matrix::Matrix;
+//!
+//! let m = Matrix {
+//!     rows: [[1.0, 2.0, 3.0], [-6.0, 3.0, 2.0]],
+//! };
+//!
+//! let element = m[(1, 2)];
+//! ```
+//!
+//! ## Matrix Operations
+//!
+//! Matrices can be added:
+//! ```
+//! use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix};
+//! let a = Matrix {
+//!     rows: [[1.0, -3.0], [-2.0, 4.0]],
+//! };
+//! let b = Matrix {
+//!     rows: [[4.0, -8.0], [6.0, 7.0]],
+//! };
+//!
+//! let mut c = a + b;
+//! c += a;
+//! ```
+//!
+//! subtracted:
+//! ```
+//! use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix};
+//! let a = Matrix {
+//!     rows: [[1.0, -3.0], [-2.0, 4.0]],
+//! };
+//! let b = Matrix {
+//!     rows: [[4.0, -8.0], [6.0, 7.0]],
+//! };
+//!
+//! let mut c = a - b;
+//! c += a;
+//! ```
+//!
+//! multiplied by a scalar:
+//! ```
+//! use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix};
+//! let a = Matrix {
+//!     rows: [[4.0, -8.0], [6.0, 7.0]],
+//! };
+//! let b = -2.0;
+//!
+//! let mut c = a * b;
+//! c *= b;
+//! ```
+//!
+//! negated:
+//! ```
+//! use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix};
+//! let a = Matrix {
+//!     rows: [[1.0, -3.0], [-2.0, 4.0]],
+//! };
+//!
+//! let b = -a;
+//! ```
+//!
+//! and indexed (in row,column ordering):
+//! ```
+//! use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix};
+//! let a = Matrix {
+//!     rows: [[1.0, -3.0], [-2.0, 4.0]],
+//! };
+//!
+//! let element = a[(1, 0)];
+//! ```
+//!
+//! You can also perform matrix-matrix multiplication:
+//! ```
+//! use hoomd_linear_algebra::{MatMul, matrix::Matrix};
+//!
+//! let a = Matrix {
+//!     rows: [[1.0, 2.0], [3.0, 4.0]],
+//! };
+//! let b = Matrix {
+//!     rows: [[4.0, 3.0], [2.0, 1.0]],
+//! };
+//!
+//! let c = a.matmul(&b);
+//! ```
+//!
+//! and invert matrices:
+//! ```
+//! use hoomd_linear_algebra::{Invertible, matrix::Matrix};
+//!
+//! let a = Matrix {
+//!     rows: [[1.0, 2.0], [3.0, 4.0]],
+//! };
+//!
+//! let b = a.inverse();
+//! ```
+//!
+//! ## Numerical Algorithms
+//!
+//! `hoomd-linear-algebra` implements a number of numerical algorithms on
+//! matrices:
+//!
+//! * [`Determinant`](matrix::Matrix::determinant)
+//! * [`Singular value decomposition (2x2)`](matrix::Matrix22::svd)
+//! * [`Singular value decomposition (3x3)`](matrix::Matrix33::svd)
+//! * [`Quadratic form`](QuadraticForm)
 
 use std::ops::{Add, AddAssign, Index, Mul, MulAssign, Neg, Sub, SubAssign};
 
@@ -85,10 +228,11 @@ pub trait MatMul<Rhs> {
 ///     rows: [[4.0, -8.0], [6.0, 7.0]],
 /// };
 ///
-/// let c = a + b;
+/// let mut c = a + b;
+/// c += a;
 /// ```
 ///
-/// Subtracted:
+/// subtracted:
 /// ```
 /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix};
 /// let a = Matrix {
@@ -98,21 +242,23 @@ pub trait MatMul<Rhs> {
 ///     rows: [[4.0, -8.0], [6.0, 7.0]],
 /// };
 ///
-/// let c = a - b;
+/// let mut c = a - b;
+/// c += a;
 /// ```
 ///
-/// Multiplied by a scalar:
+/// multiplied by a scalar:
 /// ```
 /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix};
-/// let a = -2.0;
-/// let b = Matrix {
+/// let a = Matrix {
 ///     rows: [[4.0, -8.0], [6.0, 7.0]],
 /// };
+/// let b = -2.0;
 ///
-/// let c = a * b;
+/// let mut c = a * b;
+/// c *= b;
 /// ```
 ///
-/// Negated:
+/// negated:
 /// ```
 /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix};
 /// let a = Matrix {
@@ -188,7 +334,7 @@ pub trait SquareMatrix: GeneralMatrix {
 /// Solve the quadratic form.
 ///
 /// ```math
-/// \mathbf{x}^T \mathbf{A} \mathbf{x}
+/// \mathbf{x}^{\intercal} \mathbf{A} \mathbf{x}
 /// ```
 pub trait QuadraticForm<const N: usize>: SquareMatrix {
     /// Evaluate the quadratic form.

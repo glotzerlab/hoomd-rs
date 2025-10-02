@@ -57,7 +57,7 @@ impl<const N: usize, const M: usize> Mul<f64> for Matrix<N, M> {
 impl<const N: usize, const M: usize> Mul<Matrix<N, M>> for f64 {
     type Output = Matrix<N, M>;
 
-    /// Matrix-scalar multiplication .
+    /// Matrix-scalar multiplication.
     ///
     /// # Examples
     /// ```
