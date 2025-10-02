@@ -348,13 +348,13 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
 
     /// Folds every row into an accumulator by applying an operation.
     ///
-    /// `fold` takes two arguments: an initial value, and a closure with two
+    /// `fold_rows` takes two arguments: an initial value, and a closure with two
     /// arguments: an ‘accumulator’, and an element. The closure returns the
     /// value that the accumulator should have for the next iteration.
     ///
     /// The initial value is the value the accumulator will have on the first
     /// call. After applying this closure to every element of the flattened
-    /// iterator, `fold` returns the accumulator.
+    /// iterator, `fold_rows` returns the accumulator.
     ///
     /// # Examples
     /// ```
@@ -366,13 +366,13 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// // Average the columns of a matrix
     /// let n_rows = m.n_rows() as f64;
     /// assert_eq!(
-    ///     m.fold([0.0; 2], |acc, x| [acc[0] + x[0], acc[1] + x[1]])
+    ///     m.fold_rows([0.0; 2], |acc, x| [acc[0] + x[0], acc[1] + x[1]])
     ///         .map(|x| x / n_rows),
     ///     [(1.0 + 3.0) / 2.0, (2.0 + 4.0) / 2.0]
     /// );
     /// ```
     #[inline]
-    pub fn fold<B, F>(self, init: B, mut f: F) -> B
+    pub fn fold_rows<B, F>(self, init: B, mut f: F) -> B
     where
         F: FnMut(B, [f64; M]) -> B,
     {
