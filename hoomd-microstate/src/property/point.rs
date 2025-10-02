@@ -139,7 +139,7 @@ impl Transform<Point<Sphere<3>>> for Point<Sphere<3>> {
                 + trial_coords[2] * (body_theta.sin()) * (body_phi.sin()),
             -trial_coords[0] * (body_theta.sin()) + trial_coords[2] * (body_theta.cos()),
         ]);
-        let new_sphere = Sphere::from(transformed_point, radius);
+        let new_sphere = Sphere::from_cartesian_coordinates(transformed_point, radius);
         Point::new(new_sphere)
     }
 }
@@ -173,7 +173,7 @@ impl Transform<Point<Sphere<4>>> for Point<Sphere<4>> {
                 + trial_coords[3] * (body_theta.sin()) * (body_phi_1.sin()) * (body_phi_2.sin()),
             -trial_coords[0] * (body_theta.sin()) + trial_coords[3] * (body_theta.cos()),
         ]);
-        let new_sphere = Sphere::from(transformed_point, radius);
+        let new_sphere = Sphere::from_cartesian_coordinates(transformed_point, radius);
         Point::new(new_sphere)
     }
 }

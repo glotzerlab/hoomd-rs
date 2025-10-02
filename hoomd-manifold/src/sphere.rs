@@ -14,14 +14,14 @@ use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric};
 use approx::assert_relative_eq;
 
-/// The trait [`Sphere`] for [`Cartesian`] implements types on the embedding
-/// of an N-sphere in Euclidean space. Explicitly, the N-sphere is defined
-/// by the set of (N+1)-dimensional points whose components satisfy
+/// Point on the surface of a sphere.
+///
+/// [`Sphere`] embeds an N-sphere in Euclidean space. Explicitly, the N-sphere
+/// is defined by the set of (N+1)-dimensional points whose components satisfy
 /// ```math
 /// x_1^2 + x_2^2 + \cdots + x_{N+1}^1 = R^2
 /// ```
 /// for some radius $`R`$.
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Sphere<const N: usize> {
     /// a cartesian point living on the surface of an N-sphere
@@ -48,10 +48,14 @@ impl<const N: usize> Sphere<N> {
     pub fn radius(&self) -> f64 {
         self.radius
     }
-    /// Create a sphere point from a cartesian vector
+    /// Construct a Sphere given a Cartesian vector and a radius.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the point is not sufficiently close to the sphere's surface.
     #[inline]
     #[must_use]
-    pub fn from(point: Cartesian<N>, radius: f64) -> Sphere<N> {
+    pub fn from_cartesian_coordinates(point: Cartesian<N>, radius: f64) -> Sphere<N> {
         let rad = point.norm();
         assert_relative_eq!(rad, radius);
         Sphere {
@@ -59,6 +63,7 @@ impl<const N: usize> Sphere<N> {
             radius,
         }
     }
+    
     /// Implements a stereographic projection from the N-sphere to an N-dimensional plane.
     ///
     /// # Example
@@ -69,7 +74,7 @@ impl<const N: usize> Sphere<N> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let radius = 1.0;
     /// let x = Cartesian::from([0.5_f64.sqrt(), 0.0, -(0.5_f64.sqrt())]);
-    /// let projection = Sphere::from(x, radius).stereographic_projection();
+    /// let projection = Sphere::from_cartesian_coordinates(x, radius).stereographic_projection();
     /// assert_eq!(
     ///     [1.0 / (2.0_f64.sqrt() + 1.0), 0.0],
     ///     [projection[0], projection[1]]
@@ -102,7 +107,7 @@ impl Sphere<3> {
             r * (theta_mod.sin()) * (phi_mod.sin()),
             r * (theta_mod.cos()),
         ]);
-        Sphere::from(point, r)
+        Sphere::from_cartesian_coordinates(point, r)
     }
 }
 
@@ -120,7 +125,7 @@ impl Sphere<4> {
             r * (theta_mod.sin()) * (phi_1_mod.sin()) * (phi_2_mod.sin()),
             r * (theta_mod.cos()),
         ]);
-        Sphere::from(point, r)
+        Sphere::from_cartesian_coordinates(point, r)
     }
 }
 
@@ -159,6 +164,8 @@ impl Metric for Sphere<4> {
     }
 }
 
+/// Randomly distribute points locally on a sphere.
+///
 /// A uniform distribution of points within distance r of a point on the
 /// 2-sphere with a given radius.
 ///
@@ -245,7 +252,7 @@ impl Distribution<Sphere<3>> for SphericalDisk {
                 + trial_coords[2] * (theta.sin()) * (phi.sin()),
             -trial_coords[0] * (theta.sin()) + trial_coords[2] * (theta.cos()),
         ]);
-        let new_sphere = Sphere::from(transformed_point, radius);
+        let new_sphere = Sphere::from_cartesian_coordinates(transformed_point, radius);
         #[cfg(debug_assertions)]
         assert_relative_eq!(radius, new_sphere.radius, epsilon = 1e-12);
         new_sphere

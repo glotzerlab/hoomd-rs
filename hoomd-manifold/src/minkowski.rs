@@ -441,7 +441,8 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
     }
 }
 
-/// ## Hyperboloid Model
+/// Point on the top sheet of a Hyperboloid.
+/// 
 /// The trait [`Hyperboloid`] implements an embedding of the top sheet of an (N-1)-dimensional
 /// two-sheeted hyperboloid in N-dimensional Minkowski space. This surface has constant negative curvature
 /// and therefore serves as a model of (N-1)-dimensional hyperbolic space.
@@ -839,6 +840,8 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     }
 }
 
+/// Randomly distribute points locally on a hyperboloid.
+///
 /// A uniform distribution of points within distance r of a point on the 2-dimensional hyperboloid
 /// with a given skirt width.
 ///
