@@ -51,7 +51,7 @@ where
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// const EIGHTEIGHT: f64 = 2.448_452_447_678_076;
+    /// const EIGHTEIGHT: f64 = EightEight::EIGHTEIGHT;
     /// let offset = PI / 8.0;
     /// let boost = 2.0;
     /// let point = Hyperboloid::<3>::from_polar_coordinates(boost, offset + PI / 4.0, 1.0);

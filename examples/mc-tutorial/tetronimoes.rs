@@ -29,7 +29,7 @@ type SiteProperties = Point<PositionVector>;
 /// Take fixed steps left, right, down, up, rotate left, or rotate right.
 struct DiscreteRotateOrTranslate;
 
-impl LocalTrial<Cartesian<2>, BodyProperties> for DiscreteRotateOrTranslate {
+impl LocalTrial<PositionVector, BodyProperties> for DiscreteRotateOrTranslate {
     fn propose<R: Rng>(
         &self,
         rng: &mut R,

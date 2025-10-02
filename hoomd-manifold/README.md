@@ -1,5 +1,5 @@
 # hoomd-manifold
 
-Store and manage system microstates for [hoomd-rs].
+Manifold and curved geometries [hoomd-rs].
 
 [hoomd-rs]: https://github.com/glotzerlab/hoomd-rs

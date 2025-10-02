@@ -18,14 +18,13 @@ hoomd-manifold.workspace = true
 hoomd-geometry.workspace = true
 hoomd-vector.workspace = true
 hoomd-utility.workspace = true
-approx.workspace = true
 rand.workspace = true
 thiserror.workspace = true
 tinyvec.workspace = true
 
 [dev-dependencies]
-hoomd-vector = { features = ["approx"], workspace = true }
 anyhow.workspace = true
+approx.workspace = true
 divan.workspace = true
 rand.workspace = true
 rstest.workspace = true

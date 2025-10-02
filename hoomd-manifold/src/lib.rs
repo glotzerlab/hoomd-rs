@@ -13,16 +13,19 @@
 //! ## Sphere
 //!
 //! [`Sphere`] describes an N-sphere of radius R embedded in
-//! [`hoomd_vector::Cartesian`]. The components of a point on an N-sphere
+//! [`Cartesian<N+1>`]. The components of a point on an N-sphere
 //! satisfy
 //! ```math
 //! \sum_{i=1}^{N+1}x_i^2 = R^2
 //! ```
 //! [`Sphere`] implements a distance metric through the trait
-//! [`hoomd_vector::Metric`] which calculates the geodesic distance on the
+//! [`Metric`] which calculates the geodesic distance on the
 //! surface of an N-sphere. Use [`Sphere`] to describe spaces with constant
-//! postive curvature.
+//! positive curvature.
 //!
+//! [`Cartesian<N+1>`]: hoomd_vector::Cartesian
+//! [`Metric`]: hoomd_vector::Metric
+//! 
 //! ## Hyperboloid
 //! [`Hyperboloid`] describes the upper sheet of an N-dimensional two-sheeted
 //! hyperboloid with skirt R embedded in (N+1)-dimensional Minkowski space.
@@ -30,9 +33,9 @@
 //! ```math
 //! x_1^2 + \cdots + x_{N-1}^2 - x_{N}^2 = -R^2
 //! ```
-//! [`Hyperboloid`] implements a distance metric throught the trait
-//! [`hoomd_vector::Metric`] which calculates the geodesic distance on the
-//! surface of a hyperboloid. Use [`Hyperboloid`] embdedded in [`Minkowski`]
+//! [`Hyperboloid`] implements a distance metric through the trait
+//! [`Metric`] which calculates the geodesic distance on the
+//! surface of a hyperboloid. Use [`Hyperboloid`] embedded in [`Minkowski`]
 //! to implement hyperbolic space.
 //!
 //! ## Minkowski

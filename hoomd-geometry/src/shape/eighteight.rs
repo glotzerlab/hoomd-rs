@@ -11,9 +11,9 @@ use std::f64::consts::PI;
 ///
 /// [`EightEight`] implements a single regular octagon in the {8,8} tiling of
 /// two-dimensional hyperbolic space. The scaling of the octagon is set such
-/// that each of the angles is 2 pi/ 8 so that eight equivalent octagons
-/// meet at each vertex.
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// that each of the angles is $` \frac{2\pi}{8} `$ so that eight equivalent
+/// octagons meet at each vertex.
+#[derive(Clone, Debug, PartialEq)]
 pub struct EightEight {
     /// Skirt width of the hyperboloid.
     pub skirt: f64,
@@ -41,9 +41,6 @@ impl IsPointInside<Hyperboloid<3>> for EightEight {
         EightEight::distance_to_boundary(point) >= 0.0
     }
 }
-
-/// Cusp-to-vertex distance for {8,8} tiling for Gauss curvature K = -1
-const EIGHTEIGHT: f64 = 2.448_452_447_678_076;
 
 impl EightEight {
     /// Computes the shortest distance between a given point and the boundary
@@ -82,7 +79,7 @@ impl EightEight {
         let theta = point.coordinates()[1].atan2(point.coordinates()[0]);
         let angle = theta.rem_euclid(PI / 4.0);
         let boost = (point.coordinates()[2] / point.skirt()).acosh();
-        let tile_size = EIGHTEIGHT;
+        let tile_size = EightEight::EIGHTEIGHT;
         let eta =
             (tile_size.tanh() / (angle.cos() - angle.sin() * (1.0 - (2.0_f64).sqrt()))).atanh();
         point.skirt() * (eta - boost)
@@ -94,7 +91,7 @@ impl EightEight {
         let mut coords = Vec::<(f64, f64)>::new();
         for n in 0..number_of_points {
             let angle = (n as f64) * 2.0 * PI / (number_of_points as f64);
-            let tile_size = EIGHTEIGHT;
+            let tile_size = EightEight::EIGHTEIGHT;
             let eta =
                 (tile_size.tanh() / (angle.cos() - angle.sin() * (1.0 - (2.0_f64).sqrt()))).atanh();
             let x = (skirt * eta.sinh()) / (1.0 + eta.cosh());

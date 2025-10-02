@@ -21,12 +21,12 @@ use hoomd_vector::Cartesian;
 /// let point = Point::new(Cartesian::from([1.0, -2.0, 3.0]));
 /// ```
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct Point<M> {
+pub struct Point<P> {
     /// The location of the point in space.
-    pub position: M,
+    pub position: P,
 }
 
-impl<M> Point<M> {
+impl<P> Point<P> {
     /// Construct a new point at the given position.
     ///
     /// # Example
@@ -39,7 +39,7 @@ impl<M> Point<M> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn new(position: M) -> Self {
+    pub fn new(position: P) -> Self {
         Self { position }
     }
 }
@@ -204,7 +204,6 @@ impl<const N: usize> Position for Hyperboloid<N> {
     }
 }
 
-// TODO: tests.
 #[cfg(test)]
 mod tests {
     use super::*;

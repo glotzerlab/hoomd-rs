@@ -46,7 +46,7 @@ use hoomd_vector::Quaternion;
 /// assert_eq!(4.0, q.components[0].im);
 /// ```
 ///
-/// ## Operations with Boquaternions.
+/// ## Operations with Biquaternions.
 ///
 /// Similar to [`Quaternion`], biquaternions support vector operations
 /// (addition, multiplication by a scalar, etc.):
@@ -97,7 +97,7 @@ use hoomd_vector::Quaternion;
 /// ```
 ///
 /// Complex conjugation:
-/// Deonted by method "conj", takes the complex conjugate of all components of
+/// Denoted by method "conj", takes the complex conjugate of all components of
 /// the biquaternion
 /// ```
 /// use hoomd_manifold::Biquaternion;
@@ -594,7 +594,7 @@ impl DivAssign<f64> for Biquaternion {
 /// ```math
 /// q = \cos(\theta/2) + \bf{i}\sin(\theta/2)
 /// ```
-/// generates a rotation about the $\mathbf{i}$ axis by angle $`\theta`$:
+/// generates a rotation about the $` \mathbf{i} `$ axis by angle $`\theta`$:
 /// ```
 /// use approx::assert_relative_eq;
 /// use hoomd_manifold::{

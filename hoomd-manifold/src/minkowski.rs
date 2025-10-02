@@ -27,7 +27,7 @@ use approx::assert_relative_eq;
 ///
 /// ## Constructing Minkowski vectors
 ///
-/// Similar to [`hoomd_vector::Cartesian`], N-dimensional vectors can be
+/// Similar to [`Cartesian`], N-dimensional vectors can be
 /// constructed using an array of (real-valued) coordinates. Three- and
 /// four-dimensional vectors can also be constructed from tuples:
 /// ```
@@ -70,8 +70,11 @@ use approx::assert_relative_eq;
 /// ```
 /// Note that because this metric is not positive-definite, [`Minkowski`] this
 /// "spacetime interval" is not a true inner-product, and therefore
-/// [`Minkowski`] does not implement the methods of [`hoomd_vector::InnerProduct`].
+/// [`Minkowski`] does not implement the methods of [`InnerProduct`].
 ///
+/// [`InnerProduct`]: hoomd_vector::InnerProduct
+/// [`Cartesian`]: hoomd_vector::Cartesian
+/// 
 /// ```
 /// use hoomd_manifold::Minkowski;
 /// use hoomd_vector::Metric;
@@ -106,7 +109,7 @@ impl<const N: usize> Default for Minkowski<N> {
 
 impl<const N: usize> From<[f64; N]> for Minkowski<N> {
     /// Create a vector in Minkowski space with the given coordinates. Note that
-    /// the last component has a (-) signature, while the preceeding coordinates
+    /// the last component has a (-) signature, while the preceding coordinates
     /// have (+) signatures in the metric.
     ///
     /// # Example

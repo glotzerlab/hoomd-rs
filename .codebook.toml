@@ -3,6 +3,7 @@ words = [
     "binaryen",
     "bindgen",
     "biquaternion",
+    "biquaternions",
     "cdots",
     "dyn",
     "egui",

@@ -75,6 +75,7 @@ pub trait Trial<M, H> {
 /// as defined in [Manousiouthakis & Deem](https://doi.org/10.1063/1.477973).
 ///
 /// The generic type names are:
+/// * `P`: Type of points in space..
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 pub trait LocalTrial<P, B> {
     /// Propose a new configuration for the given body properties.

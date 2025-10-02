@@ -10,39 +10,6 @@ use hoomd_vector::{Cartesian, InnerProduct};
 
 use rand::{Rng, distr::Distribution};
 
-/// Move the position of a body on a hyperbolic surface by a small distance.
-///
-/// # Example
-/// ```
-/// use hoomd_interaction::Zero;
-/// use hoomd_manifold::{Hyperboloid, Minkowski};
-/// use hoomd_mc::{LocalTrial, Sweep, Translate, Trial};
-/// use hoomd_microstate::{
-///     Body, Microstate,
-///     property::{Point, Position},
-/// };
-/// use hoomd_vector::Vector;
-/// use rand::{Rng, SeedableRng, rngs::StdRng};
-///
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let mut microstate = Microstate::new();
-/// microstate.add_body(Body::point(Hyperboloid::<3>::default()));
-/// let d = 0.1;
-/// let translate = Translate {
-///     maximum_distance: d.try_into()?
-/// };
-/// let translate_sweep = Sweep(translate);
-///
-/// let hamiltonian = Zero;
-/// let kt = 1.0;
-///
-/// for _ in 0..1000 {
-///     translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
-///     microstate.increment_step();
-/// }
-/// # Ok(())
-/// # }
-/// ```
 impl<B> LocalTrial<Hyperboloid<3>, B> for Translate
 where
     B: Position<Position=Hyperboloid<3>>,
@@ -118,57 +85,6 @@ where
     }
 }
 
-/// Move the position of a body on the surface of a sphere by a small distance.
-///
-/// `SphericalTranslate` used with Sweep:
-/// # Example
-/// ```
-/// use approx::assert_relative_eq;
-/// use hoomd_interaction::Zero;
-/// use hoomd_manifold::{Sphere, SphericalDisk};
-/// use hoomd_mc::{LocalTrial, Translate, Sweep, Trial};
-/// use hoomd_microstate::{Body, Microstate, property::Position};
-/// use hoomd_vector::{Cartesian, Metric, Vector};
-/// use rand::{Rng, SeedableRng, rngs::StdRng};
-///
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let mut microstate = Microstate::new();
-/// microstate.add_body(Body::point(
-///     Sphere::from(
-///         Cartesian::from([
-///             0.5_f64.sqrt(),
-///             0.5_f64.sqrt(),
-///             0.0,
-///         ]),
-///         1.0
-///     ))
-/// );
-/// let d = 0.1;
-/// let radius: f64 = 1.0;
-/// let translate = Translate {
-///     maximum_distance: d.try_into()?,
-/// };
-/// let translate_sweep = Sweep(translate);
-///
-/// let hamiltonian = Zero;
-/// let kt = 1.0;
-///
-/// for _ in 0..1_000 {
-///     translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
-///     microstate.increment_step();
-/// }
-/// assert_relative_eq!(
-///     microstate.bodies()[0]
-///         .item
-///         .properties
-///         .position()
-///         .radius(),
-///     radius,
-///     epsilon = 1e-12
-/// );
-/// # Ok(())
-/// # }
-/// ```
 impl<B> LocalTrial<Sphere<3>, B> for Translate
 where
     B: Position<Position = Sphere<3>>,
