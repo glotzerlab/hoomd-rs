@@ -18,7 +18,7 @@ publish = false
 print_stdout = "allow"
 
 [features]
-bevy = ["dep:bevy", "dep:hoomd-bevy"]
+bevy = ["dep:bevy", "dep:hoomd-bevy", "dep:bevy_egui"]
 webgpu = ["hoomd-bevy/webgpu"]
 doc-example = ["bevy", "hoomd-bevy/doc-example"]
 
@@ -36,6 +36,7 @@ hoomd-vector.workspace = true
 
 anyhow.workspace = true
 bevy = { workspace = true, optional = true }
+bevy_egui = { workspace = true, optional = true }
 rand.workspace = true
 
 # Work around failing build: https://github.com/bevyengine/bevy/issues/17699#issuecomment-2862717597

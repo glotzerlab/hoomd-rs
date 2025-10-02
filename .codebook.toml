@@ -5,6 +5,7 @@ words = [
     "biquaternion",
     "cdots",
     "dyn",
+    "egui",
     "frenkel",
     "gsd",
     "hoomd",

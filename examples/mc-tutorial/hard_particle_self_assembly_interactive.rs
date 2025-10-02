@@ -5,6 +5,7 @@ use hoomd_bevy::{
 
 use anyhow::Context;
 use bevy::prelude::*;
+use bevy_egui::EguiPlugin;
 
 use super::HardEllipseSelfAssembly;
 
@@ -29,6 +30,7 @@ pub(crate) fn main() -> anyhow::Result<()> {
 
     let mut app = App::new();
     hoomd_bevy::add_default_plugins(&mut app);
+    app.add_plugins(EguiPlugin::default());
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(
         Startup,
