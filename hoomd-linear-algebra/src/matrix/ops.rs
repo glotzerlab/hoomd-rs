@@ -50,7 +50,7 @@ impl<const N: usize, const M: usize> Mul<f64> for Matrix<N, M> {
     /// assert_eq!(matrix * scalar, matrix + matrix);
     /// ```
     fn mul(self, rhs: f64) -> Self {
-        self.map_elementwise(|x| x * rhs)
+        self.map_elements(|x| x * rhs)
     }
 }
 
@@ -69,7 +69,7 @@ impl<const N: usize, const M: usize> Mul<Matrix<N, M>> for f64 {
     /// ```
     #[inline]
     fn mul(self, rhs: Self::Output) -> Self::Output {
-        rhs.map_elementwise(|x| x * self)
+        rhs.map_elements(|x| x * self)
     }
 }
 
@@ -105,7 +105,7 @@ impl<const N: usize, const M: usize> Neg for Matrix<N, M> {
     /// ```
     #[inline]
     fn neg(self) -> Self {
-        self.map_elementwise(f64::neg)
+        self.map_elements(f64::neg)
     }
 }
 

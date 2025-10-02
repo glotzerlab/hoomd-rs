@@ -231,18 +231,18 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     {
         self.clone().transpose().map_rows(f).transpose()
     }
-    /// Apply a function to a [`Matrix`] elementwise.
+    /// Apply a function to [`Matrix`] elements.
     ///
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix33};
     ///
     /// let m = Matrix33::full(3.0);
-    /// assert_eq!(m.map_elementwise(|x| x + 2.0), m + Matrix33::full(2.0));
+    /// assert_eq!(m.map_elements(|x| x + 2.0), m + Matrix33::full(2.0));
     /// ```
     #[inline]
     #[must_use]
-    pub fn map_elementwise<F>(self, f: F) -> Self
+    pub fn map_elements<F>(self, f: F) -> Self
     where
         F: Fn(f64) -> f64,
     {
@@ -318,13 +318,13 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
 
     /// Folds every element into an accumulator by applying an operation.
     ///
-    /// `fold_elementwise` takes two arguments: an initial value, and a closure
+    /// `fold_elements` takes two arguments: an initial value, and a closure
     /// with two arguments: an ‘accumulator’, and an element. The closure
     /// returns the value that the accumulator should have for the next iteration.
     ///
     /// The initial value is the value the accumulator will have on the first call.
     /// After applying this closure to every element of the flattened iterator,
-    /// `fold_elementwise` returns the accumulator.
+    /// `fold_elements` returns the accumulator.
     ///
     /// # Examples
     /// ```
@@ -332,10 +332,10 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     ///
     /// let m = Matrix22::full(3.0);
     /// // Sum the elements of a matrix
-    /// assert_eq!(m.fold_elementwise(0.0, |acc, x| acc + x), 3.0 * 4.0);
+    /// assert_eq!(m.fold_elements(0.0, |acc, x| acc + x), 3.0 * 4.0);
     /// ```
     #[inline]
-    pub fn fold_elementwise<B, F>(self, init: B, mut f: F) -> B
+    pub fn fold_elements<B, F>(self, init: B, mut f: F) -> B
     where
         F: FnMut(B, f64) -> B,
     {
