@@ -5,7 +5,7 @@
   ],
   "packageRules": [
     {
-      "matchDatasources": ["crate"],
+      "matchManagers": ["cargo"],
       "matchPackageNames": ["bevy*"],
       "groupName": "bevy"
     }
