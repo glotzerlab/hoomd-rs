@@ -37,7 +37,7 @@
 //!     elements: [-2.0, 4.0, -5.0],
 //! };
 //! ```
-//! 
+//!
 //! [`DiagonalMatrix`]: matrix::DiagonalMatrix
 //!
 //! [`Matrix22`], [`Matrix33`], and [`Matrix44`] are type aliases for commonly used
