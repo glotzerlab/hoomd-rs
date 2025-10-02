@@ -271,7 +271,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// assert_eq!(iterator.next(), None);
     /// ```
     #[inline]
-    pub fn iter_flat(&self) -> impl Iterator<Item = f64> + '_ {
+    pub fn iter_flat(&self) -> impl Iterator<Item = f64> {
         self.rows.iter().flat_map(|row| row.iter().copied())
     }
 
@@ -293,7 +293,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// assert_eq!(x, x_copy * 2.0);
     /// ```
     #[inline]
-    pub fn iter_flat_mut(&mut self) -> impl Iterator<Item = &mut f64> + '_ {
+    pub fn iter_flat_mut(&mut self) -> impl Iterator<Item = &mut f64> {
         self.rows.iter_mut().flat_map(|row| row.iter_mut())
     }
 
@@ -312,7 +312,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// assert_eq!(iterator.next(), None);
     /// ```
     #[inline]
-    pub fn iter_rows(&self) -> impl Iterator<Item = [f64; M]> + '_ {
+    pub fn iter_rows(&self) -> impl Iterator<Item = [f64; M]> {
         self.rows.iter().copied()
     }
 
