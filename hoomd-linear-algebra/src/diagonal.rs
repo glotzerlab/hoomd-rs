@@ -7,6 +7,9 @@ use crate::{GeneralMatrix, matrix::Matrix};
 
 /// A square, diagonal matrix with N rows and N columns.
 ///
+/// `matrix.elements[i]` is the matrix element $` A_{ii} `$.
+/// All off-diagonal elements are 0.
+///
 /// # Example
 /// ```
 /// use hoomd_linear_algebra::matrix::DiagonalMatrix;

@@ -438,6 +438,9 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
 impl<const N: usize> Matrix<N, N> {
     /// Construct a square matrix with the given diagonal.
     ///
+    /// `diagonal[i]` is the matrix element $` A_{ii} `$.
+    /// All off-diagonal elements are 0.
+    ///
     /// # Example
     ///
     /// ```

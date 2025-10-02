@@ -44,7 +44,7 @@
 //! let m = Matrix22::full(4.0);
 //! ```
 //!
-//! Construct a 3x3 identity matrix `$ \mathbf{I} `$:
+//! Construct a 3x3 identity matrix $` \mathbf{I} `$:
 //! ```
 //! use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix44};
 //!
