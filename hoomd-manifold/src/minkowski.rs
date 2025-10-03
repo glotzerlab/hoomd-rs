@@ -86,8 +86,9 @@ use approx::assert_relative_eq;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Minkowski<const N: usize> {
-    /// The vector's coordinates. The final component is the one associated with
-    /// a minus sign (-) in the metric
+    /// The vector's coordinates.
+    ///
+    /// The final component is the one associated with a minus sign (-) in the metric.
     pub coordinates: [f64; N],
 }
 
@@ -108,8 +109,9 @@ impl<const N: usize> Default for Minkowski<N> {
 }
 
 impl<const N: usize> From<[f64; N]> for Minkowski<N> {
-    /// Create a vector in Minkowski space with the given coordinates. Note that
-    /// the last component has a (-) signature, while the preceding coordinates
+    /// Create a vector in Minkowski space with the given coordinates.
+    ///
+    /// The last component has a (-) signature, while the preceding coordinates
     /// have (+) signatures in the metric.
     ///
     /// # Example
@@ -207,8 +209,9 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for Minkowski<N> {
 }
 
 impl<const N: usize> Metric for Minkowski<N> {
-    /// Computes the squared distance between two points in Minkowski space with
-    /// the "mostly plusses" metric signature (+ ... + -).
+    /// Computes the squared distance between two points in Minkowski space.
+    ///
+    /// Employs the "mostly plusses" metric signature (+ ... + -).
     /// ```math
     /// d^2_M(\vec{x},\vec{y}) = -(x_N-y_N)^2 + \sum_{i=1}^{N-1} (x_i - y_i)^2
     /// ```
@@ -224,6 +227,7 @@ impl<const N: usize> Metric for Minkowski<N> {
     /// assert_eq!(-4.0, x.distance_squared(&y));
     /// # Ok(())
     /// # }
+    /// ```
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
         let last_component = -(self.coordinates[N - 1] - other.coordinates[N - 1]).powi(2);
@@ -393,7 +397,7 @@ impl<const N: usize, T> IndexMut<T> for Minkowski<N>
 where
     T: Into<usize> + std::slice::SliceIndex<[f64], Output = f64>,
 {
-    /// Get a mutable reference to the value of the vector at coordinate i.
+    /// Get a mutable reference to the value of the vector at coordinate `i`.
     ///
     /// # Example
     /// ```
@@ -414,7 +418,7 @@ where
 }
 
 impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
-    /// Sample a Minkowski vector from the uniform [-1, 1] hypercube.
+    /// Sample a Minkowski vector from the uniform $` [-1, 1] `$ hypercube.
     ///
     /// # Example
     /// ```
@@ -443,26 +447,29 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
 
 /// Point on the top sheet of a Hyperboloid.
 /// 
-/// The trait [`Hyperboloid`] implements an embedding of the top sheet of an (N-1)-dimensional
-/// two-sheeted hyperboloid in N-dimensional Minkowski space. This surface has constant negative curvature
-/// and therefore serves as a model of (N-1)-dimensional hyperbolic space.
+/// [`Hyperboloid`] implements an embedding of the top sheet of an
+/// (N-1)-dimensional two-sheeted hyperboloid in N-dimensional Minkowski space.
+/// This surface has constant negative curvature and therefore serves as a model
+/// of (N-1)-dimensional hyperbolic space.
 ///
-/// Explicitly, for N-dimensional Minkowski space with metric $\eta = \operatorname{diag}(+,\cdots,+,-)$,
-/// the hyperboloid with skirt width $R$ is defined by the set of points with components satisfying
+/// Explicitly, for N-dimensional Minkowski space with metric $`\eta =
+/// \operatorname{diag}(+,\cdots,+,-)`$, the hyperboloid with skirt width $`R`$ is
+/// defined by the set of points with components satisfying
 /// ```math
 /// x_1^2 +\cdots x_{N-1}^2 - x_{N}^2 = -R^2
 /// ```
-/// Where the "top sheet" is defined by the $`x_N>0`$ solutions. In Minkowski space, the hyperboloid
-/// has a natural interpretation as the set of points with the same spacetime interval
+/// Where the "top sheet" is defined by the $`x_N>0`$ solutions. In Minkowski
+/// space, the hyperboloid has a natural interpretation as the set of points
+/// with the same spacetime interval
 /// ```math
 /// \Delta s^2 = \vec{x}^T \eta \vec{x} = x_1^2 +\cdots x_{N-1}^2 - x_{N}^2
 /// ```
 ///
-/// [`Hyperboloid`] defines a distance metric [`hyperbolic_distance`] which computes the distance
-/// of the geodesic passing between two points on a hyperboloid with some given skirt width. This may be
-/// interpreted as the metric for the hyperboloid model of hyperbolic space.
+/// [`Hyperboloid`] implements a [`Metric`] that computes the distance of the
+/// geodesic passing between two points on a hyperboloid with some given skirt
+/// width.
 ///
-/// Two points on the hyperboloid with skirt width R = 1.0:
+/// Two points on the hyperboloid with skirt width $` R = 1.0 `$:
 /// ```
 /// use hoomd_manifold::{Hyperboloid, Minkowski};
 /// use hoomd_vector::Metric;
@@ -475,32 +482,40 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Hyperboloid<const N: usize> {
-    /// A point living on the surface of the upper sheet of a two-sheeted hyperboloid
+    /// A point on the surface of the upper sheet of a two-sheeted hyperboloid.
     point: Minkowski<N>,
-    /// The skirt width of the hyperboloid
+    /// The skirt width of the hyperboloid.
     skirt: f64,
 }
 
 impl<const N: usize> Hyperboloid<N> {
-    /// Get the coordinates of the point on the hyperboloid
+    /// Get the coordinates of the point on the hyperboloid.
     #[must_use]
     #[inline]
     pub fn coordinates(&self) -> &[f64; N] {
         &self.point.coordinates
     }
-    /// Get the Minkowski point of the hyperboloid
+    /// Get the Minkowski point of the hyperboloid.
     #[must_use]
     #[inline]
     pub fn point(&self) -> &Minkowski<N> {
         &self.point
     }
-    /// Get the skirt width of the hyperboloid
+    /// Get the skirt width of the hyperboloid.
     #[must_use]
     #[inline]
     pub fn skirt(&self) -> f64 {
         self.skirt
     }
-    /// Create a hyperboloid point from a Minkowski vector
+    /// Create a hyperboloid point from a Minkowski vector.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_manifold::{Hyperboloid, Minkowski};
+    /// use hoomd_vector::Metric;
+    ///
+    /// let x = Hyperboloid::from(Minkowski::from([0.0, 0.0, 1.0]), 1.0_f64);
+    /// ```
     #[must_use]
     #[inline]
     pub fn from(point: Minkowski<N>, skirt: f64) -> Hyperboloid<N> {
@@ -572,6 +587,7 @@ impl<const N: usize> Hyperboloid<N> {
     pub fn distance_from_cusp(&self) -> f64 {
         self.skirt * ((self.point.coordinates[N - 1]) / self.skirt).acosh()
     }
+    
     /// Projects points on the hyperboloid onto the Poincare disk/ball.
     ///
     /// # Example
@@ -619,7 +635,6 @@ impl<const N: usize> Default for Hyperboloid<N> {
     }
 }
 
-/// [`Metric`] implements the metric for the hyperboloid model of hyperbolic space
 impl Metric for Hyperboloid<3> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
@@ -632,10 +647,12 @@ impl Metric for Hyperboloid<3> {
         .fold(last_component, |product, x| product - (x.0 * x.1));
         self.skirt * (arg / (self.skirt.powi(2))).acosh()
     }
+    
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
         self.distance(other).powi(2)
     }
+    
     #[inline]
     fn n_dimensions(&self) -> usize {
         2_usize
@@ -654,17 +671,19 @@ impl Metric for Hyperboloid<4> {
         .fold(last_component, |product, x| product - (x.0 * x.1));
         self.skirt * (arg / (self.skirt.powi(2))).acosh()
     }
+    
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
         self.distance(other).powi(2)
     }
+    
     #[inline]
     fn n_dimensions(&self) -> usize {
         3_usize
     }
 }
 
-/// ## Hyperbolic Rotations in Minkowski Space
+/// Hyperbolic Rotations in Minkowski Space
 ///
 /// Construct a [`HyperbolicRotationMatrix`] to apply SO(N-1, 1) transformations to
 /// N-dimensional Minkowski vectors. For Minkowski 4-vectors, [`Biquaternion`] should be used

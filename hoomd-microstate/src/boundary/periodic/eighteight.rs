@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement periodic boundary conditions for the {8,8} tiling of hyperbolic
-//!  space.
+//! space.
 //!
 //! Specifically, `Periodic<EightEight>` identifies opposite edges of the
 //! octagon to implement the Bolza surface.
@@ -34,10 +34,11 @@ impl<P> Wrap<P> for Periodic<EightEight>
 where
     P: Position<Position = Hyperboloid<3>>,
 {
-    /// Wrap a point on the hyperboloid to the inside of the {8,8} tile. Note
-    /// that the function fails to wrap points that are outside the octagon
-    /// and further than `EightEight::EDGE_LENGTH`/2 from any of the verices.
-    /// In this case, the function returns `Error::CannotWrapProperties`
+    /// Wrap a point on the hyperboloid to the inside of the {8,8} tile.
+    ///
+    /// Note that the function fails to wrap points that are outside the octagon
+    /// and further than `EightEight::EDGE_LENGTH`/2 from any of the vertices. In
+    /// this case, the function returns `Error::CannotWrapProperties`
     ///
     /// # Example
     /// ```

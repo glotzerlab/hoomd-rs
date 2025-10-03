@@ -19,7 +19,7 @@ use crate::{Error, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski};
 #[expect(unused_imports, reason = "Needed for doc link")]
 use hoomd_vector::Quaternion;
 
-/// ## A quaternion with complex coefficients.
+/// A quaternion with complex coefficients.
 ///
 /// Biquaternions are the set of numbers $`a + b\mathbf{i} + c\mathbf{j} + d\mathbf{k}`$
 /// where $`a,b,c,d`$ are complex numbers and $`\{1,\mathbf{i},\mathbf{j},\mathbf{k}\}`$
@@ -564,7 +564,7 @@ impl DivAssign<f64> for Biquaternion {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-/// ## Represent SO(3,1) with a normalized biquaternion.
+/// Represent SO(3,1) with a normalized biquaternion.
 ///
 /// Unit-norm Biquaternions furnish a representation of SO(3,1), analogous to
 /// quaternions and SO(3). If $`\vec{x} = (x_1, x_2, x_3, x_4)`$ is a vector

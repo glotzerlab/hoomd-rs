@@ -31,7 +31,7 @@ use crate::HyperbolicRotationMatrix;
 /// K_y = \begin{bmatrix} 0&0&0\\ 0&0&1\\0&1&0 \end{bmatrix}\qquad\qquad
 /// J_z = \begin{bmatrix} 0&-1&0\\ 1&0&0\\0&0&0 \end{bmatrix}
 /// ```
-/// which satisfy commutation relations
+/// which satisfy the commutation relations
 /// ```math
 /// [J_z,K_x] = K_y \qquad [K_x,K_y] = -J_z \qquad [J_z, K_y] = -K_x
 /// ```
