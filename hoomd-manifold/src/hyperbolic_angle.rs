@@ -249,10 +249,6 @@ impl Distribution<HyperbolicAngle> for StandardUniform {
     /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> HyperbolicAngle {
-        #[expect(
-            clippy::expect_used,
-            reason = "This constants chosen for this distribution are valid"
-        )]
         let uniform_angle =
             Uniform::new(0.0, 2.0 * PI).expect("hard-coded distribution should be valid");
         let uniform_boost =

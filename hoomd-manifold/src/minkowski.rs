@@ -438,10 +438,6 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
     /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Minkowski<N> {
-        #[expect(
-            clippy::expect_used,
-            reason = "This constants chosen for this distribution are valid"
-        )]
         let uniform = Uniform::new_inclusive(-1.0, 1.0)
             .expect("hard-coded range should form a valid distribution");
         Minkowski {

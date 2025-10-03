@@ -773,10 +773,6 @@ impl Distribution<Versor> for StandardUniform {
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Versor {
         // Algorithm from: https://stackoverflow.com/questions/31600717/how-to-generate-a-random-quaternion-quickly
-        #[expect(
-            clippy::expect_used,
-            reason = "This constants chosen for this distribution are valid"
-        )]
         let uniform = Uniform::new(-1.0, 1.0).expect("hard-coded distribution should be valid");
 
         let (u, v) = loop {

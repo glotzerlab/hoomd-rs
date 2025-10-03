@@ -698,10 +698,6 @@ impl Distribution<UnitBiquaternion> for StandardUniform {
     /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> UnitBiquaternion {
-        #[expect(
-            clippy::expect_used,
-            reason = "This constants chosen for this distribution are valid"
-        )]
         let uniform = Uniform::new(-1.0, 1.0).expect("hard-coded distribution should be valid");
 
         let array_re: [f64; 4] = array::from_fn(|_| uniform.sample(rng));

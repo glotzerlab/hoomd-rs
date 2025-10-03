@@ -255,10 +255,6 @@ impl Distribution<Angle> for StandardUniform {
     /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Angle {
-        #[expect(
-            clippy::expect_used,
-            reason = "This constants chosen for this distribution are valid"
-        )]
         let uniform = Uniform::new(0.0, 2.0 * PI).expect("hard-coded distribution should be valid");
         Angle::from(uniform.sample(rng))
     }
