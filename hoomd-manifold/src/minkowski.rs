@@ -688,12 +688,13 @@ impl Metric for Hyperboloid<4> {
 
 /// Hyperbolic Rotations in Minkowski Space
 ///
-/// Construct a [`HyperbolicRotationMatrix`] to apply SO(N-1, 1) transformations to
-/// N-dimensional Minkowski vectors. For Minkowski 4-vectors, [`Biquaternion`] should be used
-/// instead for numeric stability. See documentation in [`HyperbolicAngle`] for details on
-/// SO(2,1) transformations (i.e., two-dimensional hyperbolic space), and see documentation
-/// in [`Biquaternion`] for details on SO(3,1) transformations (i.e., three-dimensional
-/// hyperbolic space).
+/// Construct a [`HyperbolicRotationMatrix`] to apply SO(N-1, 1)
+/// transformations to N-dimensional Minkowski vectors. For Minkowski 4-vectors,
+/// [`Biquaternion`] should be used instead for numerical stability. See
+/// documentation in [`HyperbolicAngle`] for details on SO(2,1) transformations
+/// (i.e., two-dimensional hyperbolic space), and in [`Biquaternion`] for
+/// details on SO(3,1) transformations (i.e., three-dimensional hyperbolic
+/// space).
 ///
 /// In two dimensional hyperbolic space:
 /// ```
@@ -725,6 +726,7 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
 
     #[inline]
     /// Rotate a [`Minkowski<N>`] by a [`HyperbolicRotationMatrix`]
+    /// 
     /// # Examples
     ///
     /// Rotate point in 2D hyperbolic space about z-axis:
@@ -864,8 +866,8 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
 
 /// Randomly distribute points locally on a hyperboloid.
 ///
-/// A uniform distribution of points within distance r of a point on the 2-dimensional hyperboloid
-/// with a given skirt width.
+/// [`HyperbolicDisk`] is a uniform distribution of points within distance `r`
+/// of a point on the 2-dimensional hyperboloid with a given skirt width.
 ///
 /// # Example
 ///
@@ -901,19 +903,22 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
 /// # }
 /// ```
 pub struct HyperbolicDisk {
-    /// Max distance away from point
+    /// Max distance away from point.
     pub r: PositiveReal,
-    /// The center of the disk
+    /// The center of the disk.
     pub point: Minkowski<3>,
-    /// The skirt width of the hyperboloid
+    /// The skirt width of the hyperboloid.
     pub skirt: f64,
 }
 
 impl Distribution<Hyperboloid<3>> for HyperbolicDisk {
-    /// Translates Minkowski 3-vector named "point" along the hyperboloid by maximum distance of r.
-    /// Note that because SO(2,1) is non-Abelian, the point must be transformed to the cusp before the
-    /// trial move is applied (and then the point is transformed back). This ensures that the max distance
-    /// translated by the trial move does not exceed r.
+    /// Sample a random point in the hyperbolic disk.
+    /// 
+    /// The implementation translates Minkowski 3-vector `point` along
+    /// the hyperboloid by maximum distance of `r`. Note that because SO(2,1) is
+    /// non-Abelian, the point must be transformed to the cusp before a trial
+    /// move is applied (and then the point is transformed back). This ensures
+    /// that the max distance translated by the trial move does not exceed `r`.
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Hyperboloid<3> {
         let rho = self.skirt;

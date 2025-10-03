@@ -106,11 +106,9 @@ where
     /// let initial_point =
     ///     Point::new(
     ///         Sphere::from_cartesian_coordinates(
-    ///             Cartesian::from(
     ///                 [2.0_f64.sqrt(),
     ///                 2.0_f64.sqrt(),
-    ///                 0.0]
-    ///             ),
+    ///                 0.0].into(),
     ///             2.0_f64
     ///         )
     ///     );
