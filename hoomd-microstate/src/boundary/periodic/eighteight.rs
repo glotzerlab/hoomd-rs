@@ -496,18 +496,8 @@ mod tests {
             1.0,
         );
         assert_relative_eq!(
-            ans.coordinates()[0],
-            wrapped_point.position.coordinates()[0],
-            epsilon = 1e-12
-        );
-        assert_relative_eq!(
-            ans.coordinates()[1],
-            wrapped_point.position.coordinates()[1],
-            epsilon = 1e-12
-        );
-        assert_relative_eq!(
-            ans.coordinates()[2],
-            wrapped_point.position.coordinates()[2],
+            ans,
+            wrapped_point.position,
             epsilon = 1e-12
         );
     }
@@ -531,19 +521,8 @@ mod tests {
         );
 
         assert_relative_eq!(
-            ans.coordinates()[0],
-            wrapped_point.position.coordinates()[0],
-            epsilon = 1e-12
-        );
-        assert_relative_eq!(
-            ans.coordinates()[1],
-            wrapped_point.position.coordinates()[1],
-            epsilon = 1e-12
-        );
-
-        assert_relative_eq!(
-            ans.coordinates()[2],
-            wrapped_point.position.coordinates()[2],
+            ans,
+            wrapped_point.position,
             epsilon = 1e-12
         );
     }
@@ -565,18 +544,8 @@ mod tests {
         let ans = Hyperboloid::<3>::from_polar_coordinates(new_boost, 3.0 * PI / 2.0, 1.0);
 
         assert_relative_eq!(
-            ans.coordinates()[0],
-            wrapped_point.position.coordinates()[0],
-            epsilon = 1e-12
-        );
-        assert_relative_eq!(
-            ans.coordinates()[1],
-            wrapped_point.position.coordinates()[1],
-            epsilon = 1e-12
-        );
-        assert_relative_eq!(
-            ans.coordinates()[2],
-            wrapped_point.position.coordinates()[2],
+            ans,
+            wrapped_point.position,
             epsilon = 1e-12
         );
     }
@@ -602,18 +571,8 @@ mod tests {
         );
 
         assert_relative_eq!(
-            ans.coordinates()[0],
-            ghost.position.coordinates()[0],
-            epsilon = 1e-12
-        );
-        assert_relative_eq!(
-            ans.coordinates()[1],
-            ghost.position.coordinates()[1],
-            epsilon = 1e-12
-        );
-        assert_relative_eq!(
-            ans.coordinates()[2],
-            ghost.position.coordinates()[2],
+            ans,
+            ghost.position,
             epsilon = 1e-12
         );
     }
@@ -632,18 +591,8 @@ mod tests {
 
         let ans_3 = Hyperboloid::<3>::from_polar_coordinates(v + offset_boost, PI, 1.0);
         assert_relative_eq!(
-            ans_3.coordinates()[0],
-            ghost_3.position.coordinates()[0],
-            epsilon = 1e-12
-        );
-        assert_relative_eq!(
-            ans_3.coordinates()[1],
-            ghost_3.position.coordinates()[1],
-            epsilon = 1e-12
-        );
-        assert_relative_eq!(
-            ans_3.coordinates()[2],
-            ghost_3.position.coordinates()[2],
+            ans_3,
+            ghost_3.position,
             epsilon = 1e-12
         );
 
@@ -655,18 +604,8 @@ mod tests {
             (v.cosh()) * (offset_boost.cosh()),
         ].into(), 1.0);
         assert_relative_eq!(
-            ans_5.coordinates()[0],
-            ghost_5.position.coordinates()[0],
-            epsilon = 1e-12
-        );
-        assert_relative_eq!(
-            ans_5.coordinates()[1],
-            ghost_5.position.coordinates()[1],
-            epsilon = 1e-12
-        );
-        assert_relative_eq!(
-            ans_5.coordinates()[2],
-            ghost_5.position.coordinates()[2],
+            ans_5,
+            ghost_5.position,
             epsilon = 1e-12
         );
     }

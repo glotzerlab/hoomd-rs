@@ -217,9 +217,7 @@ mod tests {
         let body = Point::new(Hyperboloid::<3>::from_polar_coordinates(boost, 0.0, 1.0));
         let site = Point::new(Hyperboloid::<3>::from_polar_coordinates(bump, PI/2.0, 1.0));
         let transformed_site = body.transform(&site);
-        assert_relative_eq!(transformed_site.position().coordinates()[0], (boost.sinh())*(bump.cosh()), epsilon=1e-12);
-        assert_relative_eq!(transformed_site.position().coordinates()[1], bump.sinh(), epsilon=1e-12);
-        assert_relative_eq!(transformed_site.position().coordinates()[2], (boost.cosh())*(bump.cosh()), epsilon=1e-12);
+        assert_relative_eq!(*transformed_site.position().point(), [(boost.sinh())*(bump.cosh()),bump.sinh(),(boost.cosh())*(bump.cosh())].into(), epsilon=1e-12);
     }
 
     #[test]
@@ -229,10 +227,7 @@ mod tests {
         let body = Point::new(Hyperboloid::<4>::from_polar_coordinates(boost, 0.0, 0.0,1.0));
         let site = Point::new(Hyperboloid::<4>::from_polar_coordinates(bump, PI/2.0, 0.0,1.0));
         let transformed_site = body.transform(&site);
-        assert_relative_eq!(transformed_site.position().coordinates()[0], (boost.sinh())*(bump.cosh()), epsilon=1e-12);
-        assert_relative_eq!(transformed_site.position().coordinates()[1], bump.sinh(), epsilon=1e-12);
-        assert_relative_eq!(transformed_site.position().coordinates()[2], 0.0, epsilon=1e-12);
-        assert_relative_eq!(transformed_site.position().coordinates()[3], (boost.cosh())*(bump.cosh()), epsilon=1e-12);
+        assert_relative_eq!(*transformed_site.position().point(), [(boost.sinh())*(bump.cosh()),bump.sinh(),0.0,(boost.cosh())*(bump.cosh())].into(), epsilon=1e-12);
     }
 
     #[test]
@@ -242,9 +237,7 @@ mod tests {
         let body = Point::new(Sphere::<3>::from_polar_coordinates(1.0, theta, 0.0));
         let site = Point::new(Sphere::<3>::from_polar_coordinates(1.0, blip, PI/2.0));
         let transformed_site = body.transform(&site);
-        assert_relative_eq!(transformed_site.position().coordinates()[0],(theta.sin())*(blip.cos()));
-        assert_relative_eq!(transformed_site.position().coordinates()[1], blip.sin());
-        assert_relative_eq!(transformed_site.position().coordinates()[2],(theta.cos())*(blip.cos()));
+        assert_relative_eq!(*transformed_site.position().point(), [(theta.sin())*(blip.cos()),blip.sin(),(theta.cos())*(blip.cos())].into() );
     }
 
     #[test]
@@ -254,9 +247,6 @@ mod tests {
         let body = Point::new(Sphere::<4>::from_polar_coordinates(1.0, theta, 0.0, 0.0));
         let site = Point::new(Sphere::<4>::from_polar_coordinates(1.0, blip, PI/2.0, 0.0));
         let transformed_site = body.transform(&site);
-        assert_relative_eq!(transformed_site.position().coordinates()[0],(theta.sin())*(blip.cos()));
-        assert_relative_eq!(transformed_site.position.coordinates()[1], blip.sin());
-        assert_relative_eq!(transformed_site.position().coordinates()[2], 0.0);
-        assert_relative_eq!(transformed_site.position().coordinates()[3],(theta.cos())*(blip.cos()));
+        assert_relative_eq!(*transformed_site.position().point(), [(theta.sin())*(blip.cos()),blip.sin(),0.0,(theta.cos())*(blip.cos())].into());
     }
 }

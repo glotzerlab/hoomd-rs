@@ -4,12 +4,13 @@
 //! Implements a three-dimensional representation of SO(3,1) on Minkowski
 //! space.
 
+use std::{f64::consts::PI, fmt};
+
 use num::complex::Complex;
 use rand::{
     Rng,
     distr::{Distribution, StandardUniform, Uniform},
 };
-use std::{f64::consts::PI, fmt};
 
 use crate::HyperbolicRotationMatrix;
 
@@ -66,9 +67,7 @@ use crate::HyperbolicRotationMatrix;
 /// let rotation_about_z = HyperbolicAngle::from((PI / 2.0, 0.0_f64, 0.0_f64));
 /// let matrix = HyperbolicRotationMatrix::from(rotation_about_z);
 /// let rotated = matrix.hyperbolic_rotate(&v);
-/// assert_relative_eq!(rotated.coordinates[0], 0.0, epsilon = 1e-12);
-/// assert_relative_eq!(rotated.coordinates[1], 1.0, epsilon = 1e-12);
-/// assert_relative_eq!(rotated.coordinates[2], 1.0, epsilon = 1e-12);
+/// assert_relative_eq!(rotated, [0.0, 1.0, 1.0].into(), epsilon = 1e-12);
 /// ```
 ///
 /// Boost in the y direction:
@@ -82,15 +81,9 @@ use crate::HyperbolicRotationMatrix;
 /// let boost_in_y = HyperbolicAngle::from((0.0_f64, 0.0_f64, 0.5_f64));
 /// let matrix = HyperbolicRotationMatrix::from(boost_in_y);
 /// let boosted = matrix.hyperbolic_rotate(&v);
-/// assert_relative_eq!(boosted.coordinates[0], 1.0, epsilon = 1e-12);
 /// assert_relative_eq!(
-///     boosted.coordinates[1],
-///     (0.5_f64).sinh(),
-///     epsilon = 1e-12
-/// );
-/// assert_relative_eq!(
-///     boosted.coordinates[2],
-///     (0.5_f64).cosh(),
+///     boosted,
+///     [1.0, (0.5_f64).sinh(),(0.5_f64).cosh()].into(),
 ///     epsilon = 1e-12
 /// );
 /// ```
@@ -307,18 +300,8 @@ mod tests {
         let matrix = HyperbolicRotationMatrix::from(hyperbolic_angle);
         let transformed = matrix.hyperbolic_rotate(&vec);
         assert_relative_eq!(
-            transformed.coordinates[0],
-            ans.coordinates[0],
-            epsilon = 1e-12
-        );
-        assert_relative_eq!(
-            transformed.coordinates[1],
-            ans.coordinates[1],
-            epsilon = 1e-12
-        );
-        assert_relative_eq!(
-            transformed.coordinates[2],
-            ans.coordinates[2],
+            transformed,
+            ans,
             epsilon = 1e-12
         );
     }

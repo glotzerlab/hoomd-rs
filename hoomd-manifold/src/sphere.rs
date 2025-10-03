@@ -5,6 +5,7 @@
 
 use std::f64::consts::PI;
 
+use approxim::{assert_relative_eq, approx_derive::RelativeEq};
 use rand::{
     Rng,
     distr::{Distribution, Uniform},
@@ -12,7 +13,6 @@ use rand::{
 
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric};
-use approxim::assert_relative_eq;
 
 /// Point on the surface of a sphere.
 ///
@@ -22,7 +22,7 @@ use approxim::assert_relative_eq;
 /// x_1^2 + x_2^2 + \cdots + x_{N+1}^1 = R^2
 /// ```
 /// for some radius $`R`$.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
 pub struct Sphere<const N: usize> {
     /// a cartesian point living on the surface of an N-sphere
     point: Cartesian<N>,

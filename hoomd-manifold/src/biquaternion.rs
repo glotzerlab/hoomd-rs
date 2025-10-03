@@ -615,10 +615,7 @@ impl DivAssign<f64> for Biquaternion {
 /// let rotation =
 ///     HyperbolicRotationMatrix::from(v.expect("non-zero biquaternion"));
 /// let rotated = rotation.hyperbolic_rotate(&x);
-/// assert_relative_eq!(rotated.coordinates[0], 1.0, epsilon = 1e-12);
-/// assert_relative_eq!(rotated.coordinates[1], -1.0, epsilon = 1e-12);
-/// assert_relative_eq!(rotated.coordinates[2], 1.0, epsilon = 1e-12);
-/// assert_relative_eq!(rotated.coordinates[3], 1.0, epsilon = 1e-12);
+/// assert_relative_eq!(rotated, [1.0, -1.0, 1.0, 1.0].into(), epsilon = 1e-12);
 /// ```
 ///
 /// However, biquaternions also generate boosts via
@@ -648,15 +645,8 @@ impl DivAssign<f64> for Biquaternion {
 /// );
 /// let boosted = boost.hyperbolic_rotate(&x);
 /// assert_relative_eq!(
-///     boosted.coordinates[0],
-///     (0.4_f64).sinh(),
-///     epsilon = 1e-12
-/// );
-/// assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon = 1e-12);
-/// assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon = 1e-12);
-/// assert_relative_eq!(
-///     boosted.coordinates[3],
-///     (0.4_f64).cosh(),
+///     boosted,
+///     [(0.4_f64).sinh(), 0.0, 0.0, (0.4_f64).cosh()].into(),
 ///     epsilon = 1e-12
 /// );
 /// ```
@@ -790,10 +780,7 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     /// ]);
     /// let v = q.to_unit_unchecked();
     /// let rotated = v.hyperbolic_rotate(&x);
-    /// assert_relative_eq!(rotated.coordinates[0], 0.0, epsilon = 1e-12);
-    /// assert_relative_eq!(rotated.coordinates[1], 1.0, epsilon = 1e-12);
-    /// assert_relative_eq!(rotated.coordinates[2], 0.0, epsilon = 1e-12);
-    /// assert_relative_eq!(rotated.coordinates[3], 1.0, epsilon = 1e-12);
+    /// assert_relative_eq!(rotated, [0.0, 1.0, 0.0, 1.0].into(), epsilon = 1e-12);
     /// # Ok(())
     /// # }
     /// ```
@@ -817,18 +804,7 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     /// ]);
     /// let v = q.to_unit_unchecked();
     /// let boosted = v.hyperbolic_rotate(&x);
-    /// assert_relative_eq!(
-    ///     boosted.coordinates[0],
-    ///     (PI / 2.0).sinh(),
-    ///     epsilon = 1e-12
-    /// );
-    /// assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon = 1e-12);
-    /// assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon = 1e-12);
-    /// assert_relative_eq!(
-    ///     boosted.coordinates[3],
-    ///     (PI / 2.0).cosh(),
-    ///     epsilon = 1e-12
-    /// );
+    /// assert_relative_eq!(boosted, [(PI / 2.0).sinh(),0.0, 0.0, (PI / 2.0).cosh()].into(), epsilon = 1e-12);
     /// # Ok(())
     /// # }
     /// ```
@@ -1119,16 +1095,10 @@ mod tests {
         // using matrix representation
         let matrix = HyperbolicRotationMatrix::from(v);
         let from_matrix = matrix.hyperbolic_rotate(&x);
-        assert_relative_eq!(from_matrix.coordinates[0], ans[0], epsilon = 1e-12);
-        assert_relative_eq!(from_matrix.coordinates[1], ans[1], epsilon = 1e-12);
-        assert_relative_eq!(from_matrix.coordinates[2], ans[2], epsilon = 1e-12);
-        assert_relative_eq!(from_matrix.coordinates[3], ans[3], epsilon = 1e-12);
+        assert_relative_eq!(from_matrix, ans.into(), epsilon = 1e-12);
 
         // using biquaternion algebra
         let from_algebra = v.hyperbolic_rotate(&x);
-        assert_relative_eq!(from_algebra.coordinates[0], ans[0], epsilon = 1e-12);
-        assert_relative_eq!(from_algebra.coordinates[1], ans[1], epsilon = 1e-12);
-        assert_relative_eq!(from_algebra.coordinates[2], ans[2], epsilon = 1e-12);
-        assert_relative_eq!(from_algebra.coordinates[3], ans[3], epsilon = 1e-12);
+        assert_relative_eq!(from_algebra, ans.into(), epsilon = 1e-12);
     }
 }

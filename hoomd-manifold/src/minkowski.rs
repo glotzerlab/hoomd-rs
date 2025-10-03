@@ -3,13 +3,6 @@
 
 //! Implement vector types in Minkowski space.
 
-use crate::{Error, HyperbolicRotate};
-use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Metric, Vector};
-use rand::{
-    Rng,
-    distr::{Distribution, StandardUniform, Uniform},
-};
 use std::{
     array,
     f64::consts::PI,
@@ -17,7 +10,17 @@ use std::{
     iter::zip,
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-use approxim::assert_relative_eq;
+
+
+use approxim::{assert_relative_eq, approx_derive::RelativeEq};
+use rand::{
+    Rng,
+    distr::{Distribution, StandardUniform, Uniform},
+};
+
+use crate::{Error, HyperbolicRotate};
+use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::{Metric, Vector};
 
 /// A vector in N-dimensional Minkowski space.
 ///
@@ -84,11 +87,13 @@ use approxim::assert_relative_eq;
 /// assert_eq!(-3.0, x.distance_squared(&y));
 /// ```
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
+#[approx(epsilon_type = f64)]
 pub struct Minkowski<const N: usize> {
     /// The vector's coordinates.
     ///
     /// The final component is the one associated with a minus sign (-) in the metric.
+    #[approx(into_iter)]
     pub coordinates: [f64; N],
 }
 
@@ -480,7 +485,7 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
 ///
 /// assert_eq!(((2.0_f64).sqrt()).acosh(), x.distance(&y));
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
 pub struct Hyperboloid<const N: usize> {
     /// A point on the surface of the upper sheet of a two-sheeted hyperboloid.
     point: Minkowski<N>,
@@ -813,10 +818,7 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     /// let x = Minkowski::from([1.0, 0.0, 0.0, 1.0]);
     /// let rotation = HyperbolicRotationMatrix::from(v);
     /// let rotated = rotation.hyperbolic_rotate(&x);
-    /// assert_relative_eq!(rotated.coordinates[0], 0.0, epsilon = 1e-12);
-    /// assert_relative_eq!(rotated.coordinates[1], 0.0, epsilon = 1e-12);
-    /// assert_relative_eq!(rotated.coordinates[2], -1.0, epsilon = 1e-12);
-    /// assert_relative_eq!(rotated.coordinates[3], 1.0, epsilon = 1e-12);
+    /// assert_relative_eq!(rotated, [0.0, 0.0, -1.0, 1.0].into(), epsilon = 1e-12);
     /// # Ok(())
     /// # }
     /// ```
@@ -841,15 +843,8 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     /// let v = q.to_unit()?;
     /// let boosted = v.hyperbolic_rotate(&x);
     /// assert_relative_eq!(
-    ///     boosted.coordinates[0],
-    ///     (0.5_f64).sinh(),
-    ///     epsilon = 1e-12
-    /// );
-    /// assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon = 1e-12);
-    /// assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon = 1e-12);
-    /// assert_relative_eq!(
-    ///     boosted.coordinates[3],
-    ///     (0.5_f64).cosh(),
+    ///     boosted,
+    ///     [(0.5_f64).sinh(), 0.0, 0.0, (0.5_f64).cosh()].into(),
     ///     epsilon = 1e-12
     /// );
     /// # Ok(())
