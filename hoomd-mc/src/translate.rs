@@ -3,18 +3,24 @@
 
 //! Implement Translate
 
+use std::marker::PhantomData;
+
+use rand::{Rng, distr::Distribution};
+
 use super::LocalTrial;
 use hoomd_microstate::property::Position;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, distribution::Ball};
 
-use rand::{Rng, distr::Distribution};
-
 /// Move the position of a body by a small distance.
 ///
 /// `Translate` proposes local trial moves that translate the position of a body
-/// in space by a random vector up a given maximum length, given by a
-/// [`PositiveReal`](hoomd_utility::valid::PositiveReal).
+/// in space by up to a maximum distance, given by a [`PositiveReal`].
+///
+/// [`PositiveReal`]: hoomd_utility::valid::PositiveReal
+///
+/// The generic type names are:
+/// * `P`: The type of the point to translate.
 ///
 /// # Example
 ///
@@ -24,18 +30,53 @@ use rand::{Rng, distr::Distribution};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let d = 0.1;
-/// let translate = Translate {
-///     maximum_distance: d.try_into()?,
-/// };
+/// let translate = Translate::<Cartesian<2>>::with_maximum_distance(d.try_into()?);
 /// # Ok(())
 /// # }
 /// ```
-pub struct Translate {
+pub struct Translate<P> {
     /// The maximum distance a body can be translated in one trial move.
-    pub maximum_distance: PositiveReal,
+    maximum_distance: PositiveReal,
+    /// Mark the type of the point to be translated.
+    marker: PhantomData<P>,
 }
 
-impl<const N: usize, B> LocalTrial<Cartesian<N>, B> for Translate
+impl<P> Translate<P> {
+    /// Construct a [`Translate`] move with the given maximum distance.
+    ///
+    /// ```
+    /// use hoomd_mc::Translate;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let d = 0.1;
+    /// let translate = Translate::<Cartesian<2>>::with_maximum_distance(d.try_into()?);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn with_maximum_distance(maximum_distance: PositiveReal) -> Self {
+        Self {
+            maximum_distance,
+            marker: PhantomData::default(),
+        }
+    }
+
+    /// Get the maximum distance.
+    #[inline]
+    pub fn maximum_distance(&self) -> &PositiveReal {
+        &self.maximum_distance
+    }
+
+    /// Get the maximum distance.
+    #[inline]
+    pub fn maximum_distance_mut(&mut self) -> &mut PositiveReal {
+        &mut self.maximum_distance
+    }
+}
+
+impl<const N: usize, B> LocalTrial<B> for Translate<Cartesian<N>>
 where
     B: Position<Position = Cartesian<N>>,
     Ball: Distribution<Cartesian<N>>,
@@ -54,9 +95,7 @@ where
     /// let mut rng = StdRng::seed_from_u64(1);
     /// let body_properties = Point::new(Cartesian::from([0.0, 0.0]));
     /// let d = 1.0;
-    /// let translate = Translate {
-    ///     maximum_distance: d.try_into()?,
-    /// };
+    /// let translate = Translate::with_maximum_distance(d.try_into()?);
     ///
     /// let new_body_properties = translate.propose(&mut rng, body_properties);
     /// assert!(new_body_properties.position.norm() < 1.0);
@@ -100,11 +139,10 @@ mod tests {
 
         let mut rng = StdRng::seed_from_u64(1);
         let a = Point::new(Cartesian::from([1.0, -5.0, 2.5]));
-        let translate = Translate {
-            maximum_distance: d
+        let translate = Translate::with_maximum_distance(d
                 .try_into()
                 .expect("hard-coded constant should be a positive real"),
-        };
+            );
 
         for _ in 0..N {
             let b = translate.propose(&mut rng, a);

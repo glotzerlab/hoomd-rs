@@ -45,7 +45,7 @@ pub struct Rotate {
     pub maximum_rotation: PositiveReal,
 }
 
-impl<P, B> LocalTrial<P, B> for Rotate
+impl<B> LocalTrial<B> for Rotate
 where
     B: Orientation<Rotation = Angle>,
 {
@@ -69,8 +69,7 @@ where
     ///     maximum_rotation: 0.1.try_into()?,
     /// };
     ///
-    /// let new_body_properties = <hoomd_mc::Rotate as LocalTrial<Cartesian<2>, OrientedPoint<Cartesian<2>, Angle>>>::propose::<StdRng>(&rotate, &mut rng, body_properties);
-    /// // TODO: fix this! rotate.propose(&mut rng, body_properties);
+    /// let new_body_properties = rotate.propose(&mut rng, body_properties);
     /// assert!(new_body_properties.orientation.theta.abs() < 0.1);
     /// # Ok(())
     /// # }
@@ -121,7 +120,7 @@ mod tests {
         };
 
         for _ in 0..N {
-            let trial =  <crate::Rotate as LocalTrial<Cartesian<2>, OrientedPoint<Cartesian<2>, Angle>>>::propose::<StdRng>(&rotate, &mut rng, body);
+            let trial = rotate.propose(&mut rng, body);
 
             let delta_theta = trial.orientation.theta - body.orientation.theta;
             total += delta_theta;

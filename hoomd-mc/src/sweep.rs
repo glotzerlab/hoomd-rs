@@ -35,9 +35,7 @@ use rand::Rng;
 /// let mut microstate = Microstate::new();
 /// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
 /// let d = 0.1;
-/// let translate = Translate {
-///     maximum_distance: d.try_into()?,
-/// };
+/// let translate = Translate::with_maximum_distance(d.try_into()?);
 /// let translate_sweep = Sweep(translate);
 ///
 /// let hamiltonian = Zero;
@@ -56,7 +54,7 @@ impl<P, B, S, C, L, H> Trial<Microstate<B, S, C>, H> for Sweep<L>
 where
     B: Copy + Default + Transform<S> + Position<Position = P>,
     S: Copy + Default + Position<Position = P>,
-    L: LocalTrial<P, B>,
+    L: LocalTrial<B>,
     H: DeltaEnergyOne<B, S, C>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
@@ -136,7 +134,7 @@ mod tests {
     }
 
     struct Right;
-    impl LocalTrial<Cartesian<2>, Point<Cartesian<2>>> for Right {
+    impl LocalTrial<Point<Cartesian<2>>> for Right {
         fn propose<R: Rng>(
             &self,
             _rng: &mut R,
@@ -164,11 +162,10 @@ mod tests {
         let hamiltonian = External(Harmonic(origin));
 
         let d = 0.1;
-        let translate = Translate {
-            maximum_distance: d
+        let translate = Translate::with_maximum_distance(d
                 .try_into()
                 .expect("hard-coded constant should be positive"),
-        };
+        );
         let translate_sweep = Sweep(translate);
 
         let mut position_accumulator = Cartesian::default();

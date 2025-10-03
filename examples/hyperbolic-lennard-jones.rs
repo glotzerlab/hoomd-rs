@@ -73,7 +73,7 @@ struct Fill {
     /// How sites interact with other sites and fields.
     hamiltonian: CutoffPair<Isotropic<LennardJones>>,
     /// Trial moves to apply.
-    translate_sweep: Sweep<Translate>,
+    translate_sweep: Sweep<Translate<Hyperboloid<3>>>,
     /// Temperature set point.
     kt: f64,
 }
@@ -118,9 +118,7 @@ impl Fill {
         let hamiltonian = cutoff_pair;
         let d = 0.01;
 
-        let hyp_translate = Translate {
-            maximum_distance: d.try_into()?,
-        };
+        let hyp_translate = Translate::with_maximum_distance(d.try_into()?);
         let translate_sweep = Sweep(hyp_translate);
 
         Ok(Fill {

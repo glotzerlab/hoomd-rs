@@ -16,9 +16,7 @@ fn main() -> anyhow::Result<()> {
     // ANCHOR_END: microstate
 
     // ANCHOR: local_trial
-    let translate = Translate {
-        maximum_distance: 0.15.try_into()?,
-    };
+    let translate = Translate::with_maximum_distance(0.15.try_into()?);
     // ANCHOR_END: local_trial
 
     // ANCHOR: sweep

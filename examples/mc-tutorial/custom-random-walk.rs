@@ -34,7 +34,7 @@ struct Discrete;
 // ANCHOR_END: local_trial_struct
 
 // ANCHOR: local_trial_impl
-impl LocalTrial<Cartesian<2>, Point<Cartesian<2>>> for Discrete {
+impl LocalTrial<Point<Cartesian<2>>> for Discrete {
     fn propose<R: Rng>(
         &self,
         rng: &mut R,

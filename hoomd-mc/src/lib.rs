@@ -75,9 +75,8 @@ pub trait Trial<M, H> {
 /// as defined in [Manousiouthakis & Deem](https://doi.org/10.1063/1.477973).
 ///
 /// The generic type names are:
-/// * `P`: Type of points in space..
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
-pub trait LocalTrial<P, B> {
+pub trait LocalTrial<B> {
     /// Propose a new configuration for the given body properties.
     #[must_use]
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B;
@@ -102,9 +101,7 @@ pub trait LocalTrial<P, B> {
 /// let mut microstate = Microstate::new();
 /// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
 /// let d = 0.1;
-/// let translate = Translate {
-///     maximum_distance: d.try_into()?,
-/// };
+/// let translate = Translate::with_maximum_distance(d.try_into()?);
 /// let translate_sweep = Sweep(translate);
 ///
 /// let mut count = Count::default();

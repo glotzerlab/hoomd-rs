@@ -10,7 +10,7 @@ use hoomd_vector::InnerProduct;
 
 use rand::{Rng, distr::Distribution};
 
-impl<B> LocalTrial<Hyperboloid<3>, B> for Translate
+impl<B> LocalTrial<B> for Translate<Hyperboloid<3>>
 where
     B: Position<Position=Hyperboloid<3>>,
 {
@@ -34,12 +34,10 @@ where
     ///     (2.0 + rho.powi(2)).sqrt(),
     /// ].into(), rho));
     /// let d = 0.1 * rho;
-    /// let hyperbolic_translate = Translate {
-    ///     maximum_distance: d.try_into()?,
-    /// };
+    /// let translate = Translate::with_maximum_distance(d.try_into()?);
     ///
     /// let new_body_properties =
-    ///     hyperbolic_translate.propose(&mut rng, body_properties);
+    ///     translate.propose(&mut rng, body_properties);
     ///
     /// // Translation move keeps the point on the hyperboloid
     /// assert_relative_eq!(
@@ -65,7 +63,7 @@ where
         let mut trial = body_properties;
         let rho = trial.position().skirt();
         let disk = HyperbolicDisk {
-            r: self.maximum_distance,
+            r: *self.maximum_distance(),
             point: *trial.position_mut().point(),
             skirt: rho,
         };
@@ -85,7 +83,7 @@ where
     }
 }
 
-impl<B> LocalTrial<Sphere<3>, B> for Translate
+impl<B> LocalTrial<B> for Translate<Sphere<3>>
 where
     B: Position<Position = Sphere<3>>,
 {
@@ -113,18 +111,15 @@ where
     ///         )
     ///     );
     /// let d = 0.1;
-    /// let spherical_translate = Translate {
-    ///     maximum_distance: d.try_into()?,
-    /// };
+    /// let translate = Translate::with_maximum_distance(d.try_into()?);
     ///
     /// let new_body_properties =
-    ///     spherical_translate.propose(&mut rng, initial_point);
+    ///     translate.propose(&mut rng, initial_point);
     ///
     /// // Translation move keeps point on the surface of the sphere
-    /// assert_relative_eq!(
+    /// assert_eq!(
     ///     new_body_properties.position().radius(),
     ///     radius,
-    ///     epsilon = 1e-12
     /// );
     ///
     /// // Translation move does not translate the point more than a distance d away
@@ -138,7 +133,7 @@ where
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B {
         let mut trial = body_properties;
         let disk = SphericalDisk {
-            r: self.maximum_distance,
+            r: *self.maximum_distance(),
             point: *trial.position_mut().point(),
             radius: trial.position().radius(),
         };

@@ -31,7 +31,7 @@ struct HardEllipseSelfAssembly {
     /// How sites interact with other sites and fields.
     hamiltonian: CutoffPairOverlap<HardShape<Ellipse>>,
     /// Trial moves to apply.
-    translate_sweep: Sweep<Translate>,
+    translate_sweep: Sweep<Translate<PositionVector>>,
     /// Trial moves to apply.
     rotate_sweep: Sweep<Rotate>,
     /// Temperature set point.
@@ -94,9 +94,7 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: microstate
 
         // ANCHOR: trial_moves
-        let translate = Translate {
-            maximum_distance: maximum_distance.try_into()?,
-        };
+        let translate = Translate::with_maximum_distance(maximum_distance.try_into()?);
         let translate_sweep = Sweep(translate);
 
         let rotate = Rotate {
