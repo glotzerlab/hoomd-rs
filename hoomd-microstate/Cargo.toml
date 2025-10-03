@@ -24,7 +24,7 @@ tinyvec.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
-approx.workspace = true
+approxim.workspace = true
 divan.workspace = true
 rand.workspace = true
 rstest.workspace = true

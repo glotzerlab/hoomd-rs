@@ -22,7 +22,7 @@ use super::{IsotropicEnergy, IsotropicForce, LennardJones};
 /// Basic usage:
 ///
 /// ```
-/// use approx::{assert_abs_diff_eq, assert_relative_eq};
+/// use approxim::{assert_abs_diff_eq, assert_relative_eq};
 /// use hoomd_interaction::pairwise::{
 ///     IsotropicEnergy, IsotropicForce, WeeksChandlerAnderson,
 /// };
@@ -110,7 +110,7 @@ impl IsotropicForce for WeeksChandlerAnderson {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::approx::{assert_abs_diff_eq, assert_relative_eq};
+    use approxim::{assert_abs_diff_eq, assert_relative_eq};
     use rstest::*;
 
     #[rstest]

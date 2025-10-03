@@ -596,7 +596,7 @@ impl DivAssign<f64> for Biquaternion {
 /// ```
 /// generates a rotation about the $` \mathbf{i} `$ axis by angle $`\theta`$:
 /// ```
-/// use approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_manifold::{
 ///     Biquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
 ///     UnitBiquaternion,
@@ -627,7 +627,7 @@ impl DivAssign<f64> for Biquaternion {
 /// ```
 /// which represents a boost of rapidity $`v`$ in the $`\mathbf{i}`$ direction:
 /// ```
-/// use approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_manifold::{
 ///     Biquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
 ///     UnitBiquaternion,
@@ -686,7 +686,7 @@ impl Distribution<UnitBiquaternion> for StandardUniform {
     /// # Example
     ///
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{Biquaternion, UnitBiquaternion};
     /// use num::complex::Complex;
     /// use rand::{Rng, SeedableRng, rngs::StdRng};
@@ -773,7 +773,7 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     /// # Examples
     /// Rotation about z axis:
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{
     ///     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
     /// };
@@ -800,7 +800,7 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     ///
     /// Boost in x direction:
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{
     ///     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
     /// };
@@ -854,7 +854,7 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use num::complex::Complex;
     use rstest::*;
     use std::f64::consts::PI;

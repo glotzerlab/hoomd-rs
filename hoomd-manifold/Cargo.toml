@@ -12,7 +12,7 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-approx.workspace = true
+approxim.workspace = true
 thiserror.workspace = true
 rand.workspace = true
 hoomd-utility.workspace = true

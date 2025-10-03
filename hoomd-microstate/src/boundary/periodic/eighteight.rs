@@ -42,7 +42,7 @@ where
     ///
     /// # Example
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_geometry::shape::EightEight;
     /// use hoomd_manifold::Hyperboloid;
     /// use hoomd_microstate::{
@@ -437,7 +437,7 @@ where
 mod tests {
     use super::*;
     use crate::property::Point;
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use hoomd_manifold::{HyperbolicDisk, Hyperboloid};
     use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
     use std::f64::consts::PI;

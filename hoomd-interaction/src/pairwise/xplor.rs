@@ -93,7 +93,7 @@ impl<F: IsotropicForce + IsotropicEnergy> IsotropicForce for Xplor<F> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::{assert_abs_diff_eq, assert_abs_diff_ne, assert_relative_eq};
+    use approxim::{assert_abs_diff_eq, assert_abs_diff_ne, assert_relative_eq};
     use rstest::*;
 
     use crate::pairwise::LennardJones;

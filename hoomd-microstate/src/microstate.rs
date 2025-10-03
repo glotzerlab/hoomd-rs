@@ -1457,7 +1457,7 @@ mod tests {
     use hoomd_geometry::shape::Hypercuboid;
     use hoomd_vector::Cartesian;
 
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng, seq::SliceRandom};
     use rstest::*;
     use std::collections::{HashMap, HashSet};

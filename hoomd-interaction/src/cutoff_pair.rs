@@ -102,7 +102,7 @@ impl<E> CutoffPair<E> {
     ///
     /// # Example
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     ///
     /// use hoomd_interaction::{
     ///     CutoffPair,
@@ -481,7 +481,7 @@ mod tests {
     };
     use hoomd_vector::Cartesian;
 
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rand::{Rng, SeedableRng, distr::Uniform, rngs::StdRng};
     use rstest::*;
     use std::f64::consts::PI;

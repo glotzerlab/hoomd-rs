@@ -90,7 +90,7 @@ mod tests {
     use hoomd_vector::Cartesian;
 
     use super::*;
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rstest::*;
 
     #[rstest]

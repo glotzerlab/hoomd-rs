@@ -424,7 +424,7 @@ impl<const N: usize> Distribution<Cartesian<N>> for Hypercuboid<N> {
 #[expect(clippy::used_underscore_binding, reason = "Required for const tests.")]
 mod tests {
     use super::*;
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
     use rstest::*;
     use std::marker::PhantomData;

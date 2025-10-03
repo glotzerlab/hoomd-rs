@@ -199,7 +199,7 @@ mod tests {
     use hoomd_vector::Cartesian;
     use hoomd_manifold::{Hyperboloid, Sphere};
     use std::f64::consts::PI;
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
 
 
     #[test]

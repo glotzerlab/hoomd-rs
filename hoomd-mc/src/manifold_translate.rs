@@ -18,7 +18,7 @@ where
     ///
     /// # Example
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{Hyperboloid, Minkowski};
     /// use hoomd_mc::{Translate, LocalTrial};
     /// use hoomd_microstate::property::{Point, Position};
@@ -93,7 +93,7 @@ where
     ///
     /// # Example
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{Sphere, SphericalDisk};
     /// use hoomd_mc::{LocalTrial, Translate};
     /// use hoomd_microstate::property::{Point, Position};

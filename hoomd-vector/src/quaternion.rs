@@ -2,13 +2,15 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Quaternion`] and related types.
-use rand::{
-    Rng,
-    distr::{Distribution, StandardUniform, Uniform},
-};
 use std::{
     fmt,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
+};
+
+use approxim::approx_derive::RelativeEq;
+use rand::{
+    Rng,
+    distr::{Distribution, StandardUniform, Uniform},
 };
 
 use crate::{Cartesian, Cross, Error, InnerProduct, Rotate, Rotation, RotationMatrix, Unit};
@@ -151,7 +153,7 @@ use crate::{Cartesian, Cross, Error, InnerProduct, Rotate, Rotation, RotationMat
 /// a *= b;
 /// assert_eq!(a, [-10.0, 32.0, -30.0, -35.0].into());
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
 pub struct Quaternion {
     /// Scalar component
     pub scalar: f64,
@@ -475,7 +477,7 @@ impl SubAssign for Quaternion {
 ///
 /// Rotate a [`Cartesian<3>`] by a [`Versor`]:
 /// ```
-/// use ::approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_vector::{Cartesian, Rotate, Rotation, Versor};
 /// use std::f64::consts::PI;
 ///
@@ -500,7 +502,7 @@ impl SubAssign for Quaternion {
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
 pub struct Versor(Quaternion);
 
 impl Versor {
@@ -578,7 +580,7 @@ impl From<Versor> for RotationMatrix<3> {
     ///
     /// # Example
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_vector::{Cartesian, Rotate, RotationMatrix, Versor};
     /// use std::f64::consts::PI;
     ///
@@ -655,7 +657,7 @@ impl Rotate<Cartesian<3>> for Versor {
     /// # Example
     ///
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_vector::{Cartesian, Rotate, Rotation, Versor};
     /// use std::f64::consts::PI;
     ///
@@ -804,7 +806,7 @@ impl Distribution<Versor> for StandardUniform {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::{assert_abs_diff_eq, assert_relative_eq};
+    use approxim::{assert_abs_diff_eq, assert_relative_eq};
     use rand::{SeedableRng, rngs::StdRng};
     use rstest::*;
     use std::f64::consts::PI;

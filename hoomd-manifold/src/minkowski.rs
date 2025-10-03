@@ -17,7 +17,7 @@ use std::{
     iter::zip,
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-use approx::assert_relative_eq;
+use approxim::assert_relative_eq;
 
 /// A vector in N-dimensional Minkowski space.
 ///
@@ -569,7 +569,7 @@ impl<const N: usize> Hyperboloid<N> {
     ///
     /// # Example
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{Hyperboloid, Minkowski};
     /// use hoomd_vector::Vector;
     ///
@@ -595,7 +595,7 @@ impl<const N: usize> Hyperboloid<N> {
     ///
     /// # Example
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{Hyperboloid, Minkowski};
     /// use hoomd_vector::Vector;
     ///
@@ -794,7 +794,7 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     ///
     /// Rotate point in 3D hyperbolic space about y axis using matrix representation:
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{
     ///     Biquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
     ///     UnitBiquaternion,
@@ -823,7 +823,7 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     ///
     /// Boost point in 3D hyperbolic space in x direction using biquaternion algebra:
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{
     ///     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
     /// };
@@ -958,7 +958,7 @@ impl Distribution<Hyperboloid<3>> for HyperbolicDisk {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use paste::paste;
     use rand::{SeedableRng, rngs::StdRng};
 

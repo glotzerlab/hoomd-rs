@@ -23,6 +23,6 @@ rand.workspace = true
 
 [dev-dependencies]
 hoomd-geometry.workspace = true
-approx.workspace = true
+approxim.workspace = true
 divan.workspace = true
 rstest.workspace = true

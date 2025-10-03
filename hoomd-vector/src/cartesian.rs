@@ -2,12 +2,14 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement canonical vector types.
+
 use std::{
     array, fmt,
     iter::{Sum, zip},
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
+use approxim::approx_derive::RelativeEq;
 use rand::{
     Rng,
     distr::{Distribution, StandardUniform, Uniform},
@@ -85,9 +87,11 @@ use crate::{Cross, Error, InnerProduct, Metric, Rotate, Unit, Vector};
 ///         .into_iter()
 ///         .sum();
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
+#[approx(epsilon_type = f64)]
 pub struct Cartesian<const N: usize> {
     /// The vector's coordinates.
+    #[approx(into_iter)]
     pub coordinates: [f64; N],
 }
 
@@ -665,7 +669,7 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
     ///
     /// # Examples
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_vector::{Angle, Cartesian, Rotate, RotationMatrix};
     /// use std::f64::consts::PI;
     ///
@@ -678,7 +682,7 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
     /// ```
     ///
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_vector::{Cartesian, Rotate, RotationMatrix, Versor};
     /// use std::f64::consts::PI;
     ///
@@ -708,7 +712,7 @@ mod tests {
     use crate::{Angle, Rotation, Versor};
 
     use super::*;
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use paste::paste;
     use rand::{SeedableRng, rngs::StdRng};
     use rstest::rstest;

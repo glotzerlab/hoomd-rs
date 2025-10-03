@@ -300,7 +300,7 @@ impl<const N: usize> Distribution<Cartesian<N>> for Hypersphere<N> {
 mod tests {
     use super::*;
     use crate::Convex;
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use hoomd_vector::{Cartesian, Versor};
     use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
     use rstest::*;

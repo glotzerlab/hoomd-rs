@@ -61,9 +61,9 @@ anyhow = "=1.0.99"
 tempfile = "=3.22.0"
 paste = "=1.0.15"
 clap = {version = "=4.5.47", features = ["derive"]}
+approxim = "0.6.6"
 
 # Dependencies used internally
-approx = "0.5.1"
 itertools = "0.14.0"
 
 # Dependencies exposed via Public APIs.

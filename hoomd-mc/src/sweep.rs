@@ -117,7 +117,7 @@ where
 mod tests {
     use super::*;
     use crate::Translate;
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use hoomd_geometry::shape::Hypercuboid;
     use hoomd_interaction::{External, SiteEnergy, TotalEnergy, Zero};
     use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};

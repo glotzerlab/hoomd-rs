@@ -56,7 +56,7 @@ use crate::HyperbolicRotationMatrix;
 ///
 /// Rotation about z axis:
 /// ```
-/// use approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_manifold::{
 ///     HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
 /// };
@@ -73,7 +73,7 @@ use crate::HyperbolicRotationMatrix;
 ///
 /// Boost in the y direction:
 /// ```
-/// use approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_manifold::{
 ///     HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
 /// };
@@ -232,7 +232,7 @@ impl Distribution<HyperbolicAngle> for StandardUniform {
     /// # Example
     ///
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{
     ///     HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
     /// };
@@ -279,7 +279,7 @@ impl Distribution<HyperbolicAngle> for StandardUniform {
 mod tests {
     use super::*;
     use crate::{HyperbolicRotate, HyperbolicRotationMatrix, Minkowski};
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rand::{SeedableRng, rngs::StdRng};
     use rstest::rstest;
     use std::f64::consts::PI;

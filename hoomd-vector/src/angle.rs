@@ -3,11 +3,13 @@
 
 //! Implement [`Angle`]
 
+use std::{f64::consts::PI, fmt};
+
+use approxim::approx_derive::RelativeEq;
 use rand::{
     Rng,
     distr::{Distribution, StandardUniform, Uniform},
 };
-use std::{f64::consts::PI, fmt};
 
 use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
 
@@ -52,7 +54,7 @@ use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
 ///
 /// Rotate a [`Cartesian<2>`] vector by an [`Angle`]:
 /// ```
-/// use ::approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
 /// use std::f64::consts::PI;
 ///
@@ -72,7 +74,7 @@ use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
 /// let c = a.combine(&b);
 /// assert_eq!(c.theta, PI / 4.0);
 /// ```
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, RelativeEq)]
 pub struct Angle {
     /// Rotation angle (radians).
     pub theta: f64,
@@ -112,7 +114,7 @@ impl From<Angle> for RotationMatrix<2> {
     ///
     /// # Example
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_vector::{Angle, Cartesian, Rotate, RotationMatrix};
     /// use std::f64::consts::PI;
     ///
@@ -160,7 +162,7 @@ impl Rotate<Cartesian<2>> for Angle {
     ///
     /// # Example
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
     /// use std::f64::consts::PI;
     ///
@@ -263,41 +265,9 @@ impl Distribution<Angle> for StandardUniform {
 }
 
 #[cfg(test)]
-mod approx {
-    use approx::{AbsDiffEq, RelativeEq};
-
-    impl AbsDiffEq for super::Angle {
-        type Epsilon = <f64 as AbsDiffEq>::Epsilon;
-
-        fn default_epsilon() -> Self::Epsilon {
-            f64::default_epsilon()
-        }
-
-        fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
-            f64::abs_diff_eq(&self.theta, &other.theta, epsilon)
-        }
-    }
-
-    impl RelativeEq for super::Angle {
-        fn default_max_relative() -> Self::Epsilon {
-            f64::default_max_relative()
-        }
-
-        fn relative_eq(
-            &self,
-            other: &Self,
-            epsilon: Self::Epsilon,
-            max_relative: Self::Epsilon,
-        ) -> bool {
-            f64::relative_eq(&self.theta, &other.theta, epsilon, max_relative)
-        }
-    }
-}
-
-#[cfg(test)]
 mod tests {
     use super::*;
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rand::{SeedableRng, rngs::StdRng};
     use rstest::*;
     use std::f64::consts::PI;

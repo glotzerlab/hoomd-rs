@@ -12,7 +12,7 @@ use rand::{
 
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric};
-use approx::assert_relative_eq;
+use approxim::assert_relative_eq;
 
 /// Point on the surface of a sphere.
 ///
@@ -262,7 +262,7 @@ impl Distribution<Sphere<3>> for SphericalDisk {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rand::{SeedableRng, rngs::StdRng};
 
     /// Generate a pair of points on the surface of a 2-sphere

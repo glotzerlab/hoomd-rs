@@ -51,7 +51,7 @@ impl EightEight {
     ///
     /// # Example
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_geometry::shape::EightEight;
     /// use hoomd_manifold::{Hyperboloid, Minkowski};
     /// use std::f64::consts::PI;
@@ -113,7 +113,7 @@ impl EightEight {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use hoomd_manifold::{HyperbolicDisk, Hyperboloid, Minkowski};
     use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
     use std::ops::Not;

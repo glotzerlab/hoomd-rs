@@ -123,7 +123,7 @@
 //!
 //! [`Angle`] implements rotations on [`Cartesian<2>`] vectors.
 //! ```
-//! use ::approx::assert_relative_eq;
+//! use approxim::assert_relative_eq;
 //! use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
 //! use std::f64::consts::PI;
 //!
@@ -135,7 +135,7 @@
 //!
 //! [`Versor`] implements rotations on [`Cartesian<3>`] vectors.
 //! ```
-//! use ::approx::assert_relative_eq;
+//! use approxim::assert_relative_eq;
 //! use hoomd_vector::{Cartesian, Rotate, Rotation, Versor};
 //! use std::f64::consts::PI;
 //!
@@ -187,8 +187,6 @@ mod angle;
 mod cartesian;
 pub mod distribution;
 mod quaternion;
-
-pub mod approx;
 
 pub use angle::Angle;
 pub use cartesian::{Cartesian, RotationMatrix};
@@ -634,7 +632,7 @@ pub trait Rotate<V: Vector> {
     ///
     /// # Example
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
     ///
     /// let v = Cartesian::from([-1.0, 0.0]);
@@ -704,7 +702,7 @@ pub trait Rotation: Copy {
 /// # Example
 ///
 /// ```
-/// use ::approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_vector::{self, Angle, Cartesian};
 /// use std::f64::consts::PI;
 ///
