@@ -523,7 +523,7 @@ impl<const N: usize> Hyperboloid<N> {
         assert_relative_eq!(skirt_squared, skirt.powi(2), epsilon=1e-12);
         Hyperboloid {
             point,
-            skirt: skirt_squared.sqrt(),
+            skirt,
         }
     }
 }

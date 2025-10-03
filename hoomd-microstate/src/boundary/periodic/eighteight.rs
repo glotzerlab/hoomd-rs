@@ -91,6 +91,7 @@ where
     fn wrap(&self, properties: P) -> Result<P, Error> {
         let mut properties = properties;
         let r = properties.position_mut();
+        assert_eq!(r.skirt(), self.shape.skirt, "point must be wrapped onto a hyperboloid with the same skirt");
 
         let angle = r.coordinates()[1].atan2(r.coordinates()[0]);
         let theta = angle.rem_euclid(PI * 2.0);
