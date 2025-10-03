@@ -353,7 +353,8 @@ mod tests {
             }),
         };
 
-        let translate = Translate::with_maximum_distance(0.1.try_into().expect("hard-coded value is non-zero"));
+        let translate =
+            Translate::with_maximum_distance(0.1.try_into().expect("hard-coded value is non-zero"));
         let translate_sweep = Sweep(translate);
 
         let rectangle = Closed(Rectangle::with_equal_edges(

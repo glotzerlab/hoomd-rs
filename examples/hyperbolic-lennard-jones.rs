@@ -10,7 +10,7 @@ use hoomd_interaction::{
     pairwise::{Isotropic, LennardJones},
 };
 use hoomd_manifold::{HyperbolicDisk, Hyperboloid, Minkowski};
-use hoomd_mc::{Translate, Sweep, Trial};
+use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder, boundary::Periodic, property::Point,
 };
@@ -98,7 +98,10 @@ impl Fill {
         };
         for _n in 0..PARTICLE_NUMBER {
             let new_point: Hyperboloid<3> =
-                Hyperboloid::from_minkowski_coordinates(*sample_disk.sample(&mut rng).point(), RHO);
+                Hyperboloid::from_minkowski_coordinates(
+                    *sample_disk.sample(&mut rng).point(),
+                    RHO,
+                );
             microstate.add_body(Body::point(new_point))?;
         }
 

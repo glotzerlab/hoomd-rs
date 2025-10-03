@@ -79,7 +79,8 @@ impl Fill {
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: sweep
-        let translate = Translate::with_maximum_distance(maximum_distance.try_into()?);
+        let translate =
+            Translate::with_maximum_distance(maximum_distance.try_into()?);
         let translate_sweep = Sweep(translate);
         // ANCHOR_END: sweep
 

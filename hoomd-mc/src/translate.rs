@@ -29,7 +29,8 @@ mod sphere;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let d = 0.1;
-/// let translate = Translate::<Cartesian<2>>::with_maximum_distance(d.try_into()?);
+/// let translate =
+///     Translate::<Cartesian<2>>::with_maximum_distance(d.try_into()?);
 /// # Ok(())
 /// # }
 /// ```
@@ -51,7 +52,8 @@ impl<P> Translate<P> {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let d = 0.1;
-    /// let translate = Translate::<Cartesian<2>>::with_maximum_distance(d.try_into()?);
+    /// let translate =
+    ///     Translate::<Cartesian<2>>::with_maximum_distance(d.try_into()?);
     /// # Ok(())
     /// # }
     /// ```

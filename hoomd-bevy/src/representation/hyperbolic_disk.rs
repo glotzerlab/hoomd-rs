@@ -97,8 +97,8 @@ impl<T: Send + Sync + 'static> HyperbolicDisk<T> {
                 Both((_, mut transform), (position, diameter)) => {
                     let (poincare_position, max_projected_radius) =
                         poincare(&position, RHO, diameter);
-                    let rad_arg =
-                        RHO * (diameter / (2.0 * RHO)).sinh()  / (1.0 + (diameter / (2.0 * RHO)).cosh());
+                    let rad_arg = RHO * (diameter / (2.0 * RHO)).sinh()
+                        / (1.0 + (diameter / (2.0 * RHO)).cosh());
                     let poincare_radius = (0.5)
                         * (1.0 + 2.0 * rad_arg.powi(2) / (1.0 - (rad_arg.powi(2)))).acosh() as f32;
                     transform.translation = Vec3::from_array(poincare_position);
@@ -113,8 +113,8 @@ impl<T: Send + Sync + 'static> HyperbolicDisk<T> {
                 Right((position, diameter)) => {
                     let (poincare_position, max_projected_radius) =
                         poincare(&position, RHO, diameter);
-                    let rad_arg =
-                        RHO * (diameter / (2.0 * RHO)).sinh() / (1.0 + (diameter / (2.0 * RHO)).cosh());
+                    let rad_arg = RHO * (diameter / (2.0 * RHO)).sinh()
+                        / (1.0 + (diameter / (2.0 * RHO)).cosh());
                     let poincare_radius = (0.5)
                         * (1.0 + 2.0 * rad_arg.powi(2) / (1.0 - (rad_arg.powi(2)))).acosh() as f32;
                     commands.spawn((

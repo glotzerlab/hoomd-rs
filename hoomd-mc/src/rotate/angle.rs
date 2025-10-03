@@ -79,8 +79,8 @@ mod tests {
             position: Cartesian::from([0.0, 0.0]),
             orientation: Angle::default(),
         };
-        let rotate = Rotate::with_maximum_rotation(a
-                .try_into()
+        let rotate = Rotate::with_maximum_rotation(
+            a.try_into()
                 .expect("hard-coded constant should be a positive real"),
         );
 

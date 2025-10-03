@@ -95,10 +95,12 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: microstate
 
         // ANCHOR: trial_moves
-        let translate = Translate::with_maximum_distance(maximum_distance.try_into()?);
+        let translate =
+            Translate::with_maximum_distance(maximum_distance.try_into()?);
         let translate_sweep = Sweep(translate);
 
-        let rotate = Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
+        let rotate =
+            Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
         let rotate_sweep = Sweep(rotate);
         // ANCHOR_END: trial_moves
 

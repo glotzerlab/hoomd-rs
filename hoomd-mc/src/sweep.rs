@@ -162,8 +162,8 @@ mod tests {
         let hamiltonian = External(Harmonic(origin));
 
         let d = 0.1;
-        let translate = Translate::with_maximum_distance(d
-                .try_into()
+        let translate = Translate::with_maximum_distance(
+            d.try_into()
                 .expect("hard-coded constant should be positive"),
         );
         let translate_sweep = Sweep(translate);

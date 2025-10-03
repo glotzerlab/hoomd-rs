@@ -389,7 +389,7 @@ impl Biquaternion {
         zip(self.components.iter(), other.components.iter())
             .fold(Complex::new(0.0, 0.0), |product, x| product + x.0 * x.1)
     }
-    
+
     /// Create a [`UnitBiquaternion`] by normalizing the given biquaternion.
     ///
     /// # Errors
@@ -403,7 +403,7 @@ impl Biquaternion {
         }
         Ok(UnitBiquaternion(self / mag))
     }
-    
+
     /// Create a [`UnitBiquaternion`] by normalizing the given biquaternion.
     #[inline]
     #[must_use]
@@ -617,8 +617,7 @@ impl DivAssign<f64> for Biquaternion {
 /// ]);
 /// let v = q.to_unit()?;
 /// let x = Minkowski::from([1.0, 1.0, 1.0, 1.0]);
-/// let rotation =
-///     HyperbolicRotationMatrix::from(v);
+/// let rotation = HyperbolicRotationMatrix::from(v);
 /// let rotated = rotation.hyperbolic_rotate(&x);
 /// assert_relative_eq!(rotated, [1.0, -1.0, 1.0, 1.0].into(), epsilon = 1e-12);
 /// # Ok(())
@@ -808,7 +807,11 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     /// ]);
     /// let v = q.to_unit_unchecked();
     /// let boosted = v.hyperbolic_rotate(&x);
-    /// assert_relative_eq!(boosted, [(PI / 2.0).sinh(),0.0, 0.0, (PI / 2.0).cosh()].into(), epsilon = 1e-12);
+    /// assert_relative_eq!(
+    ///     boosted,
+    ///     [(PI / 2.0).sinh(), 0.0, 0.0, (PI / 2.0).cosh()].into(),
+    ///     epsilon = 1e-12
+    /// );
     /// # Ok(())
     /// # }
     /// ```

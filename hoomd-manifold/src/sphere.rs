@@ -5,7 +5,7 @@
 
 use std::f64::consts::PI;
 
-use approxim::{assert_relative_eq, approx_derive::RelativeEq};
+use approxim::{approx_derive::RelativeEq, assert_relative_eq};
 use rand::{
     Rng,
     distr::{Distribution, Uniform},
@@ -58,12 +58,9 @@ impl<const N: usize> Sphere<N> {
     pub fn from_cartesian_coordinates(point: Cartesian<N>, radius: f64) -> Sphere<N> {
         let rad = point.norm();
         assert_relative_eq!(rad, radius);
-        Sphere {
-            point,
-            radius,
-        }
+        Sphere { point, radius }
     }
-    
+
     /// Implements a stereographic projection from the N-sphere to an N-dimensional plane.
     ///
     /// # Example
@@ -74,7 +71,8 @@ impl<const N: usize> Sphere<N> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let radius = 1.0;
     /// let x = Cartesian::from([0.5_f64.sqrt(), 0.0, -(0.5_f64.sqrt())]);
-    /// let projection = Sphere::from_cartesian_coordinates(x, radius).stereographic_projection();
+    /// let projection = Sphere::from_cartesian_coordinates(x, radius)
+    ///     .stereographic_projection();
     /// assert_eq!(
     ///     [1.0 / (2.0_f64.sqrt() + 1.0), 0.0],
     ///     [projection[0], projection[1]]
@@ -133,7 +131,10 @@ impl Sphere<4> {
 impl Metric for Sphere<3> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
-        assert_eq!(self.radius, other.radius, "points must be on the same sphere");
+        assert_eq!(
+            self.radius, other.radius,
+            "points must be on the same sphere"
+        );
         let arg = Cartesian::dot(&self.point, &other.point) / self.radius.powi(2);
         self.radius * (arg.acos())
     }
@@ -150,7 +151,10 @@ impl Metric for Sphere<3> {
 impl Metric for Sphere<4> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
-        assert_eq!(self.radius, other.radius, "points must be on the same sphere");
+        assert_eq!(
+            self.radius, other.radius,
+            "points must be on the same sphere"
+        );
         let arg = Cartesian::dot(&self.point, &other.point) / self.radius.powi(2);
         self.radius * (arg.acos())
     }

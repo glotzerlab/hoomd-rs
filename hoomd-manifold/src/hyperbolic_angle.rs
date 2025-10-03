@@ -83,7 +83,7 @@ use crate::HyperbolicRotationMatrix;
 /// let boosted = matrix.hyperbolic_rotate(&v);
 /// assert_relative_eq!(
 ///     boosted,
-///     [1.0, (0.5_f64).sinh(),(0.5_f64).cosh()].into(),
+///     [1.0, (0.5_f64).sinh(), (0.5_f64).cosh()].into(),
 ///     epsilon = 1e-12
 /// );
 /// ```
@@ -214,7 +214,7 @@ impl Distribution<HyperbolicAngle> for StandardUniform {
     /// transformations and the so(2,1) algebra generators. Explicitly,
     ///
     /// [Baker-Campbell-Hausdorff Lemma]: https://en.wikipedia.org/wiki/Baker%E2%80%93Campbell%E2%80%93Hausdorff_formula
-    /// 
+    ///
     /// ```math
     /// \exp[\theta J_z]\exp[v K_x] = \exp[(\theta + \frac{1}{12}\theta v^2)J_z + (v-\frac{1}{12}\theta^2v)K_x + \frac{1}{2}\theta v K_y + \text{higher order}]
     /// ```
@@ -295,11 +295,7 @@ mod tests {
 
         let matrix = HyperbolicRotationMatrix::from(hyperbolic_angle);
         let transformed = matrix.hyperbolic_rotate(&vec);
-        assert_relative_eq!(
-            transformed,
-            ans,
-            epsilon = 1e-12
-        );
+        assert_relative_eq!(transformed, ans, epsilon = 1e-12);
     }
 
     #[test]

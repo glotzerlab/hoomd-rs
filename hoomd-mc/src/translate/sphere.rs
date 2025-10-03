@@ -28,30 +28,23 @@ where
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(14);
     /// let radius: f64 = 2.0;
-    /// let initial_point =
-    ///     Point::new(
-    ///         Sphere::from_cartesian_coordinates(
-    ///                 [2.0_f64.sqrt(),
-    ///                 2.0_f64.sqrt(),
-    ///                 0.0].into(),
-    ///             2.0_f64
-    ///         )
-    ///     );
+    /// let initial_point = Point::new(Sphere::from_cartesian_coordinates(
+    ///     [2.0_f64.sqrt(), 2.0_f64.sqrt(), 0.0].into(),
+    ///     2.0_f64,
+    /// ));
     /// let d = 0.1;
     /// let translate = Translate::with_maximum_distance(d.try_into()?);
     ///
-    /// let new_body_properties =
-    ///     translate.propose(&mut rng, initial_point);
+    /// let new_body_properties = translate.propose(&mut rng, initial_point);
     ///
     /// // Translation move keeps point on the surface of the sphere
-    /// assert_eq!(
-    ///     new_body_properties.position().radius(),
-    ///     radius,
-    /// );
+    /// assert_eq!(new_body_properties.position().radius(), radius,);
     ///
     /// // Translation move does not translate the point more than a distance d away
     /// assert!(
-    ///     d > new_body_properties.position().distance(&initial_point.position())
+    ///     d > new_body_properties
+    ///         .position()
+    ///         .distance(&initial_point.position())
     /// );
     /// # Ok(())
     /// # }
@@ -68,7 +61,8 @@ where
         let rescale = trial.position().radius() / trial.position().point().norm();
         *trial.position_mut() = Sphere::from_cartesian_coordinates(
             *trial.position().point() * rescale,
-            trial.position().radius());
+            trial.position().radius(),
+        );
         trial
     }
 }

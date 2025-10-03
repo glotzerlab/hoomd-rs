@@ -82,4 +82,3 @@ impl<P> Rotate<P> {
         &mut self.maximum_rotation
     }
 }
-

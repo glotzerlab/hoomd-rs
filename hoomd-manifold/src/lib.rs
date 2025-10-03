@@ -25,7 +25,7 @@
 //!
 //! [`Cartesian<N+1>`]: hoomd_vector::Cartesian
 //! [`Metric`]: hoomd_vector::Metric
-//! 
+//!
 //! ## Hyperboloid
 //! [`Hyperboloid`] describes the upper sheet of an N-dimensional two-sheeted
 //! hyperboloid with skirt R embedded in (N+1)-dimensional Minkowski space.
@@ -108,15 +108,19 @@
 //! Rotate point in 3D hyperbolic space about z axis using matrix
 //! representation:
 //! ```
-//! use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate,
-//! Biquaternion, UnitBiquaternion};
-//! use std::f64::consts::PI;
+//! use hoomd_manifold::{
+//!     Biquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
+//!     UnitBiquaternion,
+//! };
 //! use num::complex::Complex;
+//! use std::f64::consts::PI;
 //!
-//! let q = Biquaternion::from([Complex::new((PI/4.0).sin(),0.0),
-//! Complex::new(0.0,0.0),
-//! Complex::new(0.0, 0.0),
-//! Complex::new((PI/4.0).cos(), 0.0)]);
+//! let q = Biquaternion::from([
+//!     Complex::new((PI / 4.0).sin(), 0.0),
+//!     Complex::new(0.0, 0.0),
+//!     Complex::new(0.0, 0.0),
+//!     Complex::new((PI / 4.0).cos(), 0.0),
+//! ]);
 //! let v = q.to_unit_unchecked();
 //! let x = Minkowski::from([0.0, 1.0, 0.0, 1.0]);
 //! let rotation_about_x = HyperbolicRotationMatrix::from(v);

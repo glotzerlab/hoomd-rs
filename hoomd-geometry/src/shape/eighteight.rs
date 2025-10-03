@@ -4,7 +4,7 @@
 //! Implement [`EightEight`]
 
 use crate::IsPointInside;
-use hoomd_manifold::{Hyperboloid};
+use hoomd_manifold::Hyperboloid;
 use std::f64::consts::PI;
 
 /// A regular octagon in two-dimensional hyperbolic space.
@@ -60,11 +60,15 @@ impl EightEight {
     /// let v: f64 = 2.448_452_447_678_076;
     /// let rho: f64 = 1.0;
     /// let theta: f64 = PI / 4.0;
-    /// let x = Hyperboloid::from_minkowski_coordinates([
-    ///     rho * (v.sinh()) * (theta.cos()),
-    ///     rho * (v.sinh()) * (theta.sin()),
-    ///     rho * (v.cosh()),
-    /// ].into(), 1.0);
+    /// let x = Hyperboloid::from_minkowski_coordinates(
+    ///     [
+    ///         rho * (v.sinh()) * (theta.cos()),
+    ///         rho * (v.sinh()) * (theta.sin()),
+    ///         rho * (v.cosh()),
+    ///     ]
+    ///     .into(),
+    ///     1.0,
+    /// );
     /// assert_relative_eq!(
     ///     EightEight::distance_to_boundary(&x),
     ///     0.0,
@@ -139,7 +143,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(239);
         let disk = HyperbolicDisk {
             r: r.try_into().expect("hard-coded positive number"),
-            point: Minkowski::from([0.0,0.0,1.0]),
+            point: Minkowski::from([0.0, 0.0, 1.0]),
             skirt: 1.0,
         };
         let random_point: Hyperboloid<3> = disk.sample(&mut rng);

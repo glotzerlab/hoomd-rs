@@ -152,11 +152,9 @@ impl Transform<Point<Sphere<4>>> for Point<Sphere<4>> {
         let body_phi_1 = (body_point[2].powi(2) + body_point[1].powi(2))
             .sqrt()
             .atan2(body_point[0]);
-        let body_theta = (body_point[0].powi(2)
-            + body_point[1].powi(2)
-            + body_point[2].powi(2))
-        .sqrt()
-        .atan2(body_point[3]);
+        let body_theta = (body_point[0].powi(2) + body_point[1].powi(2) + body_point[2].powi(2))
+            .sqrt()
+            .atan2(body_point[3]);
         let body_phi_2 = body_point[2].atan2(body_point[1]);
         let trial_coords = site_properties.position.coordinates();
         let transformed_point = Cartesian::from([
@@ -196,11 +194,10 @@ impl<P> Position for Point<P> {
 mod tests {
     use super::*;
 
-    use hoomd_vector::Cartesian;
-    use hoomd_manifold::{Hyperboloid, Sphere};
-    use std::f64::consts::PI;
     use approxim::assert_relative_eq;
-
+    use hoomd_manifold::{Hyperboloid, Sphere};
+    use hoomd_vector::Cartesian;
+    use std::f64::consts::PI;
 
     #[test]
     fn transform_point() {
@@ -215,38 +212,90 @@ mod tests {
         let boost: f64 = 1.3;
         let bump: f64 = 0.1;
         let body = Point::new(Hyperboloid::<3>::from_polar_coordinates(boost, 0.0, 1.0));
-        let site = Point::new(Hyperboloid::<3>::from_polar_coordinates(bump, PI/2.0, 1.0));
+        let site = Point::new(Hyperboloid::<3>::from_polar_coordinates(
+            bump,
+            PI / 2.0,
+            1.0,
+        ));
         let transformed_site = body.transform(&site);
-        assert_relative_eq!(*transformed_site.position().point(), [(boost.sinh())*(bump.cosh()),bump.sinh(),(boost.cosh())*(bump.cosh())].into(), epsilon=1e-12);
+        assert_relative_eq!(
+            *transformed_site.position().point(),
+            [
+                (boost.sinh()) * (bump.cosh()),
+                bump.sinh(),
+                (boost.cosh()) * (bump.cosh())
+            ]
+            .into(),
+            epsilon = 1e-12
+        );
     }
 
     #[test]
     fn transform_h3_point() {
         let boost: f64 = 1.4;
         let bump: f64 = 0.7;
-        let body = Point::new(Hyperboloid::<4>::from_polar_coordinates(boost, 0.0, 0.0,1.0));
-        let site = Point::new(Hyperboloid::<4>::from_polar_coordinates(bump, PI/2.0, 0.0,1.0));
+        let body = Point::new(Hyperboloid::<4>::from_polar_coordinates(
+            boost, 0.0, 0.0, 1.0,
+        ));
+        let site = Point::new(Hyperboloid::<4>::from_polar_coordinates(
+            bump,
+            PI / 2.0,
+            0.0,
+            1.0,
+        ));
         let transformed_site = body.transform(&site);
-        assert_relative_eq!(*transformed_site.position().point(), [(boost.sinh())*(bump.cosh()),bump.sinh(),0.0,(boost.cosh())*(bump.cosh())].into(), epsilon=1e-12);
+        assert_relative_eq!(
+            *transformed_site.position().point(),
+            [
+                (boost.sinh()) * (bump.cosh()),
+                bump.sinh(),
+                0.0,
+                (boost.cosh()) * (bump.cosh())
+            ]
+            .into(),
+            epsilon = 1e-12
+        );
     }
 
     #[test]
     fn transform_s2_point() {
-        let theta = PI/5.0;
-        let blip = PI/10.0;
+        let theta = PI / 5.0;
+        let blip = PI / 10.0;
         let body = Point::new(Sphere::<3>::from_polar_coordinates(1.0, theta, 0.0));
-        let site = Point::new(Sphere::<3>::from_polar_coordinates(1.0, blip, PI/2.0));
+        let site = Point::new(Sphere::<3>::from_polar_coordinates(1.0, blip, PI / 2.0));
         let transformed_site = body.transform(&site);
-        assert_relative_eq!(*transformed_site.position().point(), [(theta.sin())*(blip.cos()),blip.sin(),(theta.cos())*(blip.cos())].into() );
+        assert_relative_eq!(
+            *transformed_site.position().point(),
+            [
+                (theta.sin()) * (blip.cos()),
+                blip.sin(),
+                (theta.cos()) * (blip.cos())
+            ]
+            .into()
+        );
     }
 
     #[test]
     fn transform_s3_point() {
-        let theta = PI/5.0;
-        let blip = PI/10.0;
+        let theta = PI / 5.0;
+        let blip = PI / 10.0;
         let body = Point::new(Sphere::<4>::from_polar_coordinates(1.0, theta, 0.0, 0.0));
-        let site = Point::new(Sphere::<4>::from_polar_coordinates(1.0, blip, PI/2.0, 0.0));
+        let site = Point::new(Sphere::<4>::from_polar_coordinates(
+            1.0,
+            blip,
+            PI / 2.0,
+            0.0,
+        ));
         let transformed_site = body.transform(&site);
-        assert_relative_eq!(*transformed_site.position().point(), [(theta.sin())*(blip.cos()),blip.sin(),0.0,(theta.cos())*(blip.cos())].into());
+        assert_relative_eq!(
+            *transformed_site.position().point(),
+            [
+                (theta.sin()) * (blip.cos()),
+                blip.sin(),
+                0.0,
+                (theta.cos()) * (blip.cos())
+            ]
+            .into()
+        );
     }
 }
