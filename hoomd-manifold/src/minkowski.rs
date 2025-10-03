@@ -641,7 +641,7 @@ impl<const N: usize> Default for Hyperboloid<N> {
 impl Metric for Hyperboloid<3> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
-        assert_relative_eq!(self.skirt, other.skirt, epsilon = 1e-12);
+        assert_eq!(self.skirt, other.skirt, "points must be on the same hyperboloid");
         let last_component = self.point.coordinates[2] * other.point.coordinates[2];
         let arg = zip(
             self.point.coordinates[0..2].iter(),
@@ -665,7 +665,7 @@ impl Metric for Hyperboloid<3> {
 impl Metric for Hyperboloid<4> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
-        assert_relative_eq!(self.skirt, other.skirt, epsilon = 1e-12);
+        assert_eq!(self.skirt, other.skirt, "points must be on the same hyperboloid");
         let last_component = self.point.coordinates[3] * other.point.coordinates[3];
         let arg = zip(
             self.point.coordinates[0..3].iter(),

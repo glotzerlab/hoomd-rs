@@ -133,7 +133,7 @@ impl Sphere<4> {
 impl Metric for Sphere<3> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
-        assert_relative_eq!(self.radius, other.radius, epsilon = 1e-12);
+        assert_eq!(self.radius, other.radius, "points must be on the same sphere");
         let arg = Cartesian::dot(&self.point, &other.point) / self.radius.powi(2);
         self.radius * (arg.acos())
     }
@@ -150,7 +150,7 @@ impl Metric for Sphere<3> {
 impl Metric for Sphere<4> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
-        assert_relative_eq!(self.radius, other.radius, epsilon = 1e-12);
+        assert_eq!(self.radius, other.radius, "points must be on the same sphere");
         let arg = Cartesian::dot(&self.point, &other.point) / self.radius.powi(2);
         self.radius * (arg.acos())
     }
