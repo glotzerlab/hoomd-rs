@@ -4,12 +4,13 @@
 //! Implement periodic boundary conditions for cuboids in cartesian space.
 
 use crate::{
-    boundary::{Error, MaximumAllowableInteractionRange, Periodic, Wrap},
+    boundary::{Error, MAX_GHOSTS, MaximumAllowableInteractionRange, Periodic, Wrap},
     property::Position,
 };
 use hoomd_geometry::shape::Hyperparallelepiped;
 use hoomd_linear_algebra::{MatMul, matrix::Matrix33};
 use hoomd_vector::{Cartesian, Cross, InnerProduct};
+use tinyvec::ArrayVec;
 
 impl<const N: usize> MaximumAllowableInteractionRange for Hyperparallelepiped<N> {
     /// The largest value that the maximum interaction range can take.
@@ -108,5 +109,11 @@ where
 
     /// Place periodic images of sites near the edge of the periodic boundary.
     #[inline]
-    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {}
+    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
+        let mut result = ArrayVec::new();
+
+        let r = site_properties.position();
+        let max = self.shape.maximal_extents();
+        let min = self.shape.minimal_extents();
+    }
 }

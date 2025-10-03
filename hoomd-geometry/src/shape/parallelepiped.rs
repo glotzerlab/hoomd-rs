@@ -26,51 +26,57 @@ impl<const N: usize> Default for Hyperparallelepiped<N> {
     }
 }
 
-// impl<const N: usize> Hypercuboid<N> {
-//     #[inline]
-//     #[must_use]
-//     /// Determine the maximal extents of the cuboid along each Cartesian axis.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use hoomd_geometry::shape::Hypercuboid;
-//     ///
-//     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//     /// let unit_cube = Hypercuboid {
-//     ///     edge_lengths: [1.0.try_into()?; 3],
-//     /// };
-//     ///
-//     /// let max_extents = unit_cube.maximal_extents();
-//     /// assert_eq!(max_extents, [0.5; 3]);
-//     /// # Ok(())
-//     /// # }
-//     /// ```
-//     pub fn maximal_extents(&self) -> [f64; N] {}
+impl<const N: usize> Hyperparallelepiped<N> {
+    #[inline]
+    #[must_use]
+    /// Determine the maximal extents of the cuboid along each Cartesian axis.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Hypercuboid;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let unit_cube = Hypercuboid {
+    ///     edge_lengths: [1.0.try_into()?; 3],
+    /// };
+    ///
+    /// let max_extents = unit_cube.maximal_extents();
+    /// assert_eq!(max_extents, [0.5; 3]);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn maximal_extents(&self) -> [f64; N] {
+        (0.5 * self
+            .edge_vectors
+            .iter()
+            .fold(Cartesian::<N>::default(), |acc, v| v.map(f64::abs) + acc))
+        .into()
+    }
 
-//     #[inline]
-//     #[must_use]
-//     /// Determine the minimal extents of the cuboid along each Cartesian axis.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use hoomd_geometry::shape::Hypercuboid;
-//     ///
-//     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//     /// let unit_cube = Hypercuboid {
-//     ///     edge_lengths: [1.0.try_into()?; 3],
-//     /// };
-//     ///
-//     /// let min_extents = unit_cube.minimal_extents();
-//     /// assert_eq!(min_extents, [-0.5; 3]);
-//     /// # Ok(())
-//     /// # }
-//     /// ```
-//     pub fn minimal_extents(&self) -> [f64; N] {
-//         std::array::from_fn(|i| -self.edge_lengths[i].get() / 2.0)
-//     }
-// }
+    #[inline]
+    #[must_use]
+    /// Determine the minimal extents of the cuboid along each Cartesian axis.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Hypercuboid;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let unit_cube = Hypercuboid {
+    ///     edge_lengths: [1.0.try_into()?; 3],
+    /// };
+    ///
+    /// let min_extents = unit_cube.minimal_extents();
+    /// assert_eq!(min_extents, [-0.5; 3]);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn minimal_extents(&self) -> [f64; N] {
+        self.maximal_extents().map(|x| -x)
+    }
+}
 
 impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperparallelepiped<N> {
     #[inline]

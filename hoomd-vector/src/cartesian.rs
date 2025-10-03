@@ -501,6 +501,15 @@ impl<const N: usize> Neg for Cartesian<N> {
     }
 }
 
+impl<const N: usize> Cartesian<N> {
+    pub fn map<F>(self, f: F) -> Cartesian<N>
+    where
+        F: FnMut(f64) -> f64,
+    {
+        self.coordinates.map(f).into()
+    }
+}
+
 impl Cross for Cartesian<3> {
     #[inline]
     fn cross(&self, other: &Self) -> Self {
