@@ -133,6 +133,7 @@
 //! use num::complex::Complex;
 //! use std::f64::consts::PI;
 //!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
 //! let q = Biquaternion::from([
 //!     Complex::new(0.0, PI / 4.0).sinh(),
@@ -140,9 +141,11 @@
 //!     Complex::new(0.0, 0.0),
 //!     Complex::new(0.0, PI / 4.0).cosh(),
 //! ]);
-//! let v = q.to_unit();
-//! let boosted = v.expect("non-zero biquaternion").hyperbolic_rotate(&x);
+//! let v = q.to_unit()?;
+//! let boosted = v.hyperbolic_rotate(&x);
 //! // boosted is approximately [(PI/2.0).sinh(), 0.0, 0.0, (PI/2.0).cosh()]
+//! # Ok(())
+//! # }
 //! ```
 
 mod biquaternion;
