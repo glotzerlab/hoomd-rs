@@ -56,6 +56,7 @@ where
     /// let offset = PI / 8.0;
     /// let boost = 2.0;
     /// let point = Hyperboloid::<3>::from_polar_coordinates(boost, offset + PI / 4.0, 1.0);
+    /// let point = Point::new(point);
     /// let periodic = Periodic::new(0.5, EightEight { skirt: 1.0_f64 })?;
     ///
     /// let wrapped_point = periodic.wrap(point)?;
@@ -69,17 +70,17 @@ where
     ///     Hyperboloid::<3>::from_polar_coordinates(new_boost, 6.0 * PI / 4.0 - offset, 1.0);
     /// assert_relative_eq!(
     ///     ans.coordinates()[0],
-    ///     wrapped_point.coordinates()[0],
+    ///     wrapped_point.position.coordinates()[0],
     ///     epsilon = 1e-12
     /// );
     /// assert_relative_eq!(
     ///     ans.coordinates()[1],
-    ///     wrapped_point.coordinates()[1],
+    ///     wrapped_point.position.coordinates()[1],
     ///     epsilon = 1e-12
     /// );
     /// assert_relative_eq!(
     ///     ans.coordinates()[2],
-    ///     wrapped_point.coordinates()[2],
+    ///     wrapped_point.position.coordinates()[2],
     ///     epsilon = 1e-12
     /// );
     /// # Ok(())
@@ -435,6 +436,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::property::Point;
     use approx::assert_relative_eq;
     use hoomd_manifold::{HyperbolicDisk, Hyperboloid};
     use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
@@ -450,13 +452,14 @@ mod tests {
             skirt: 1.0,
         };
         let random_point: Hyperboloid<3> = disk.sample(&mut rng);
+        let random_point = Point::new(random_point);
 
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
         let wrapped_point = periodic.wrap(random_point).expect("hard-coded");
         assert_eq!(
-            random_point.coordinates(),
-            wrapped_point.coordinates()
+            random_point.position.coordinates(),
+            wrapped_point.position.coordinates()
         );
     }
 
@@ -467,13 +470,14 @@ mod tests {
         let boost = 1.6;
         let offset = PI / 8.0;
         let point = Hyperboloid::<3>::from_polar_coordinates(boost, side * PI / 4.0 + offset, 1.0);
+        let point = Point::new(point);
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
         let wrapped_point = periodic.wrap(point).expect("hard-coded");
 
         let wrapped_side = (side + 4.0).rem_euclid(8.0);
-        let octant = (((wrapped_point.coordinates()[1]
-            .atan2(wrapped_point.coordinates()[0]))
+        let octant = (((wrapped_point.position.coordinates()[1]
+            .atan2(wrapped_point.position.coordinates()[0]))
             / (PI / 4.0))
             .floor())
         .rem_euclid(8.0);
@@ -493,17 +497,17 @@ mod tests {
         );
         assert_relative_eq!(
             ans.coordinates()[0],
-            wrapped_point.coordinates()[0],
+            wrapped_point.position.coordinates()[0],
             epsilon = 1e-12
         );
         assert_relative_eq!(
             ans.coordinates()[1],
-            wrapped_point.coordinates()[1],
+            wrapped_point.position.coordinates()[1],
             epsilon = 1e-12
         );
         assert_relative_eq!(
             ans.coordinates()[2],
-            wrapped_point.coordinates()[2],
+            wrapped_point.position.coordinates()[2],
             epsilon = 1e-12
         );
     }
@@ -512,11 +516,12 @@ mod tests {
     fn wraps_vertex() {
         let boost = 2.45;
         let point = Hyperboloid::<3>::from_polar_coordinates(boost, PI / 4.0, 1.0);
+        let point = Point::new(point);
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
         let wrapped_point = periodic.wrap(point).expect("hard-coded");
 
-        let distance_from_vertex = -EightEight::distance_to_boundary(&point);
+        let distance_from_vertex = -EightEight::distance_to_boundary(&point.position);
         let v = 2.0 * 2.448_452_447_678_076 - boost;
         let ans = Hyperboloid::<3>::from_polar_coordinates(v, 5.0 * PI / 4.0, 1.0);
         assert_relative_eq!(
@@ -527,18 +532,18 @@ mod tests {
 
         assert_relative_eq!(
             ans.coordinates()[0],
-            wrapped_point.coordinates()[0],
+            wrapped_point.position.coordinates()[0],
             epsilon = 1e-12
         );
         assert_relative_eq!(
             ans.coordinates()[1],
-            wrapped_point.coordinates()[1],
+            wrapped_point.position.coordinates()[1],
             epsilon = 1e-12
         );
 
         assert_relative_eq!(
             ans.coordinates()[2],
-            wrapped_point.coordinates()[2],
+            wrapped_point.position.coordinates()[2],
             epsilon = 1e-12
         );
     }
@@ -551,6 +556,7 @@ mod tests {
             -offset_boost.sinh(),
             (v.cosh()) * (offset_boost.cosh()),
         ].into(), 1.0);
+        let point = Point::new(point);
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
         let wrapped_point = periodic.wrap(point).expect("hard-coded");
@@ -560,17 +566,17 @@ mod tests {
 
         assert_relative_eq!(
             ans.coordinates()[0],
-            wrapped_point.coordinates()[0],
+            wrapped_point.position.coordinates()[0],
             epsilon = 1e-12
         );
         assert_relative_eq!(
             ans.coordinates()[1],
-            wrapped_point.coordinates()[1],
+            wrapped_point.position.coordinates()[1],
             epsilon = 1e-12
         );
         assert_relative_eq!(
             ans.coordinates()[2],
-            wrapped_point.coordinates()[2],
+            wrapped_point.position.coordinates()[2],
             epsilon = 1e-12
         );
     }
@@ -581,6 +587,7 @@ mod tests {
         let offset = 0.1;
         let boost = 1.528_570_919_480_998 - offset;
         let point = Hyperboloid::<3>::from_polar_coordinates(boost, PI / 8.0 + side * PI / 4.0, 1.0);
+        let point = Point::new(point);
 
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
@@ -596,17 +603,17 @@ mod tests {
 
         assert_relative_eq!(
             ans.coordinates()[0],
-            ghost.coordinates()[0],
+            ghost.position.coordinates()[0],
             epsilon = 1e-12
         );
         assert_relative_eq!(
             ans.coordinates()[1],
-            ghost.coordinates()[1],
+            ghost.position.coordinates()[1],
             epsilon = 1e-12
         );
         assert_relative_eq!(
             ans.coordinates()[2],
-            ghost.coordinates()[2],
+            ghost.position.coordinates()[2],
             epsilon = 1e-12
         );
     }
@@ -616,6 +623,7 @@ mod tests {
         let offset_boost = 0.1;
         let v: f64 = 2.448_452_447_678_076;
         let point = Hyperboloid::<3>::from_polar_coordinates(v - offset_boost, 0.0, 1.0);
+        let point = Point::new(point);
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
 
@@ -625,17 +633,17 @@ mod tests {
         let ans_3 = Hyperboloid::<3>::from_polar_coordinates(v + offset_boost, PI, 1.0);
         assert_relative_eq!(
             ans_3.coordinates()[0],
-            ghost_3.coordinates()[0],
+            ghost_3.position.coordinates()[0],
             epsilon = 1e-12
         );
         assert_relative_eq!(
             ans_3.coordinates()[1],
-            ghost_3.coordinates()[1],
+            ghost_3.position.coordinates()[1],
             epsilon = 1e-12
         );
         assert_relative_eq!(
             ans_3.coordinates()[2],
-            ghost_3.coordinates()[2],
+            ghost_3.position.coordinates()[2],
             epsilon = 1e-12
         );
 
@@ -648,17 +656,17 @@ mod tests {
         ].into(), 1.0);
         assert_relative_eq!(
             ans_5.coordinates()[0],
-            ghost_5.coordinates()[0],
+            ghost_5.position.coordinates()[0],
             epsilon = 1e-12
         );
         assert_relative_eq!(
             ans_5.coordinates()[1],
-            ghost_5.coordinates()[1],
+            ghost_5.position.coordinates()[1],
             epsilon = 1e-12
         );
         assert_relative_eq!(
             ans_5.coordinates()[2],
-            ghost_5.coordinates()[2],
+            ghost_5.position.coordinates()[2],
             epsilon = 1e-12
         );
     }

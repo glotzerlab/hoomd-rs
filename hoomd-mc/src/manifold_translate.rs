@@ -6,7 +6,7 @@
 use crate::{LocalTrial, Translate};
 use hoomd_manifold::{HyperbolicDisk, Hyperboloid, Minkowski, Sphere, SphericalDisk};
 use hoomd_microstate::property::Position;
-use hoomd_vector::{Cartesian, InnerProduct};
+use hoomd_vector::InnerProduct;
 
 use rand::{Rng, distr::Distribution};
 

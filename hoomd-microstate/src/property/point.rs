@@ -192,18 +192,6 @@ impl<P> Position for Point<P> {
     }
 }
 
-impl<const N: usize> Position for Hyperboloid<N> {
-    type Position = Hyperboloid<N>;
-    #[inline]
-    fn position(&self) -> &Hyperboloid<N> {
-        self
-    }
-    #[inline]
-    fn position_mut(&mut self) -> &mut Hyperboloid<N> {
-        self
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
