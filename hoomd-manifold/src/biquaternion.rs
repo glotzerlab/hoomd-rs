@@ -389,9 +389,13 @@ impl Biquaternion {
         zip(self.components.iter(), other.components.iter())
             .fold(Complex::new(0.0, 0.0), |product, x| product + x.0 * x.1)
     }
+    
     /// Create a [`UnitBiquaternion`] by normalizing the given biquaternion.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::InvalidBiquaternionMagnitude`] when `self` is the 0 quaternion.
     #[inline]
-    #[expect(clippy::missing_errors_doc, reason = "maps to error message")]
     pub fn to_unit(self) -> Result<UnitBiquaternion, Error> {
         let mag = self.norm();
         if mag == Complex::new(0.0, 0.0) {
@@ -399,8 +403,8 @@ impl Biquaternion {
         }
         Ok(UnitBiquaternion(self / mag))
     }
-    /// Create a [`UnitBiquaternion`] by normalizing the given biquaternion
-    /// without returning an Option type.
+    
+    /// Create a [`UnitBiquaternion`] by normalizing the given biquaternion.
     #[inline]
     #[must_use]
     pub fn to_unit_unchecked(self) -> UnitBiquaternion {
@@ -604,18 +608,21 @@ impl DivAssign<f64> for Biquaternion {
 /// use num::complex::Complex;
 /// use std::f64::consts::PI;
 ///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let q = Biquaternion::from([
 ///     Complex::new((PI / 4.0).sin(), 0.0),
 ///     Complex::new(0.0, 0.0),
 ///     Complex::new(0.0, 0.0),
 ///     Complex::new((PI / 4.0).cos(), 0.0),
 /// ]);
-/// let v = q.to_unit();
+/// let v = q.to_unit()?;
 /// let x = Minkowski::from([1.0, 1.0, 1.0, 1.0]);
 /// let rotation =
-///     HyperbolicRotationMatrix::from(v.expect("non-zero biquaternion"));
+///     HyperbolicRotationMatrix::from(v);
 /// let rotated = rotation.hyperbolic_rotate(&x);
 /// assert_relative_eq!(rotated, [1.0, -1.0, 1.0, 1.0].into(), epsilon = 1e-12);
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// However, biquaternions also generate boosts via
@@ -632,23 +639,24 @@ impl DivAssign<f64> for Biquaternion {
 /// use num::complex::Complex;
 /// use std::f64::consts::PI;
 ///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let q = Biquaternion::from([
 ///     Complex::new(0.0, (0.2_f64).sinh()),
 ///     Complex::new(0.0, 0.0),
 ///     Complex::new(0.0, 0.0),
 ///     Complex::new((0.2_f64).cosh(), 0.0),
 /// ]);
-/// let v = q.to_unit();
+/// let v = q.to_unit()?;
 /// let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
-/// let boost = HyperbolicRotationMatrix::from(
-///     v.expect("hard-coded unit biquaternion"),
-/// );
+/// let boost = HyperbolicRotationMatrix::from(v);
 /// let boosted = boost.hyperbolic_rotate(&x);
 /// assert_relative_eq!(
 ///     boosted,
 ///     [(0.4_f64).sinh(), 0.0, 0.0, (0.4_f64).cosh()].into(),
 ///     epsilon = 1e-12
 /// );
+/// # Ok(())
+/// # }
 /// ```
 pub struct UnitBiquaternion(Biquaternion);
 
