@@ -96,3 +96,17 @@ where
         Ok(properties)
     }
 }
+
+impl<S, N> GenerateGhosts<S> for Periodic<Hypercuboid<N>>
+where
+    S: Position<Vector = Cartesian<N>> + Copy + Default,
+{
+    #[inline]
+    fn maximum_interaction_range(&self) -> f64 {
+        self.maximum_interaction_range
+    }
+
+    /// Place periodic images of sites near the edge of the periodic boundary.
+    #[inline]
+    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {}
+}

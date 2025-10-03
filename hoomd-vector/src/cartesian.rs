@@ -404,6 +404,17 @@ impl<const N: usize> Mul<f64> for Cartesian<N> {
     }
 }
 
+impl<const N: usize> Mul<Cartesian<N>> for f64 {
+    type Output = Cartesian<N>;
+
+    #[inline]
+    fn mul(self, rhs: Cartesian<N>) -> Self::Output {
+        Self::Output {
+            coordinates: rhs.coordinates.map(|x| x * self),
+        }
+    }
+}
+
 impl<const N: usize> Mul<PositiveReal> for Cartesian<N> {
     type Output = Self;
 
@@ -411,6 +422,17 @@ impl<const N: usize> Mul<PositiveReal> for Cartesian<N> {
     fn mul(self, rhs: PositiveReal) -> Self {
         Self {
             coordinates: self.coordinates.map(|x| x * rhs.get()),
+        }
+    }
+}
+
+impl<const N: usize> Mul<Cartesian<N>> for PositiveReal {
+    type Output = Cartesian<N>;
+
+    #[inline]
+    fn mul(self, rhs: Cartesian<N>) -> Self::Output {
+        Self::Output {
+            coordinates: rhs.coordinates.map(|x| x * self.get()),
         }
     }
 }
