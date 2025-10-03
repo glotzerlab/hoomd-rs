@@ -19,8 +19,9 @@ use hoomd_vector::{self, Angle, Cartesian};
 
 // ANCHOR: type_aliases
 type PositionVector = Cartesian<2>;
-type BodyProperties = OrientedPoint<PositionVector, Angle>;
-type SiteProperties = OrientedPoint<PositionVector, Angle>;
+type Orientation = Angle;
+type BodyProperties = OrientedPoint<PositionVector, Orientation>;
+type SiteProperties = OrientedPoint<PositionVector, Orientation>;
 // ANCHOR_END: type_aliases
 
 #[cfg_attr(feature = "bevy", derive(Resource))]
@@ -33,7 +34,7 @@ struct HardEllipseSelfAssembly {
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<PositionVector>>,
     /// Trial moves to apply.
-    rotate_sweep: Sweep<Rotate>,
+    rotate_sweep: Sweep<Rotate<Orientation>>,
     /// Temperature set point.
     kt: f64,
     /// Quick insert
@@ -97,9 +98,7 @@ impl HardEllipseSelfAssembly {
         let translate = Translate::with_maximum_distance(maximum_distance.try_into()?);
         let translate_sweep = Sweep(translate);
 
-        let rotate = Rotate {
-            maximum_rotation: maximum_rotation.try_into()?,
-        };
+        let rotate = Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
         let rotate_sweep = Sweep(rotate);
         // ANCHOR_END: trial_moves
 

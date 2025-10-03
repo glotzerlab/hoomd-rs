@@ -15,7 +15,6 @@
 use rand::Rng;
 use std::ops::AddAssign;
 
-mod manifold_translate;
 mod quick_insert;
 mod rotate;
 mod sweep;
