@@ -188,7 +188,7 @@ use hoomd_vector::Quaternion;
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Biquaternion {
-    /// Components of the biquaternion, in the order [i,j,k,1].
+    /// Components of the biquaternion, in the order `[i,j,k,1]`.
     pub components: [Complex<f64>; 4],
 }
 

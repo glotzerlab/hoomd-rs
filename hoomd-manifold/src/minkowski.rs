@@ -696,6 +696,9 @@ impl Metric for Hyperboloid<4> {
 /// details on SO(3,1) transformations (i.e., three-dimensional hyperbolic
 /// space).
 ///
+/// [`Biquaternion`]: crate::Biquaternion
+/// [`HyperbolicAngle`]: crate::HyperbolicAngle
+///
 /// In two dimensional hyperbolic space:
 /// ```
 /// use hoomd_manifold::{
