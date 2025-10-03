@@ -145,11 +145,7 @@ where
         *trial.position_mut() = disk.sample(rng);
         let rescale = trial.position().radius() / trial.position().point().norm();
         *trial.position_mut() = Sphere::from_cartesian_coordinates(
-            Cartesian::from([
-                rescale*trial.position().coordinates()[0],
-                rescale*trial.position().coordinates()[1],
-                rescale*trial.position().coordinates()[2],
-            ]),
+            *trial.position().point() * rescale,
             trial.position().radius());
         trial
     }
