@@ -28,11 +28,11 @@ where
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(13);
     /// let rho: f64 = 0.8;
-    /// let body_properties = Point::new(Hyperboloid::from(Minkowski::from([
+    /// let body_properties = Point::new(Hyperboloid::from_minkowski_coordinates([
     ///     1.0,
     ///     -1.0,
     ///     (2.0 + rho.powi(2)).sqrt(),
-    /// ]), rho));
+    /// ].into(), rho));
     /// let d = 0.1 * rho;
     /// let hyperbolic_translate = Translate {
     ///     maximum_distance: d.try_into()?,
@@ -53,7 +53,7 @@ where
     ///
     /// // Translation move does not move the point more than a distance d
     /// assert!(
-    ///     d > new_body_properties.position().distance(&Hyperboloid::from(
+    ///     d > new_body_properties.position().distance(&Hyperboloid::from_minkowski_coordinates(
     ///         Minkowski::from([1.0, -1.0, (2.0 + rho.powi(2)).sqrt()]), rho)
     ///     )
     /// );
@@ -71,7 +71,7 @@ where
         };
         let trial_sample = disk.sample(rng);
         // push point back onto hyperboloid
-        *trial.position_mut() = Hyperboloid::from(
+        *trial.position_mut() = Hyperboloid::from_minkowski_coordinates(
             Minkowski::from([
                 trial_sample.coordinates()[0],
                 trial_sample.coordinates()[1],

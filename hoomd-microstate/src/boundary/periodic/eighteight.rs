@@ -162,7 +162,7 @@ where
                 -rotated_in_center.coordinates[1] * (new_vertex_boost.sinh())
                     + rotated_in_center.coordinates[2] * (new_vertex_boost.cosh()),
             ]);
-            let wrapped_hyperboloid = Hyperboloid::<3>::from(wrapped, r.skirt());
+            let wrapped_hyperboloid = Hyperboloid::from_minkowski_coordinates(wrapped, r.skirt());
             *r = wrapped_hyperboloid;
             Ok(properties)
         } else {
@@ -249,7 +249,7 @@ where
                 rotated_in_center.coordinates[0] * (new_vertex_boost.sinh())
                     + rotated_in_center.coordinates[2] * (new_vertex_boost.cosh()),
             ]);
-            let new_hyperboloid = Hyperboloid::from(ghost, r.skirt());
+            let new_hyperboloid = Hyperboloid::from_minkowski_coordinates(ghost, r.skirt());
             let mut new_site = *site_properties;
             *new_site.position_mut() = new_hyperboloid;
             new_site
@@ -545,11 +545,11 @@ mod tests {
     fn wraps_vertex_non_center() {
         let offset_boost: f64 = 0.3;
         let v: f64 = 2.448_452_447_678_076;
-        let point = Hyperboloid::<3>::from(Minkowski::from([
+        let point = Hyperboloid::from_minkowski_coordinates([
             (v.sinh()) * (offset_boost.cosh()),
             -offset_boost.sinh(),
             (v.cosh()) * (offset_boost.cosh()),
-        ]), 1.0);
+        ].into(), 1.0);
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
         let wrapped_point = periodic.wrap(point).expect("hard-coded");
@@ -640,11 +640,11 @@ mod tests {
 
         let ghost_5 = ghost_array[5];
 
-        let ans_5 = Hyperboloid::<3>::from(Minkowski::from([
+        let ans_5 = Hyperboloid::from_minkowski_coordinates([
             offset_boost.sinh(),
             -(v.sinh()) * (offset_boost.cosh()),
             (v.cosh()) * (offset_boost.cosh()),
-        ]), 1.0);
+        ].into(), 1.0);
         assert_relative_eq!(
             ans_5.coordinates()[0],
             ghost_5.coordinates()[0],

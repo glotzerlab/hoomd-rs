@@ -98,7 +98,7 @@ impl Fill {
         };
         for _n in 0..PARTICLE_NUMBER {
             let new_point: Hyperboloid<3> =
-                Hyperboloid::from(*sample_disk.sample(&mut rng).point(), RHO);
+                Hyperboloid::from_minkowski_coordinates(*sample_disk.sample(&mut rng).point(), RHO);
             microstate.add_body(Body::point(new_point))?;
         }
 

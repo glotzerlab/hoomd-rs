@@ -60,11 +60,11 @@ impl EightEight {
     /// let v: f64 = 2.448_452_447_678_076;
     /// let rho: f64 = 1.0;
     /// let theta: f64 = PI / 4.0;
-    /// let x = Hyperboloid::from(Minkowski::from([
+    /// let x = Hyperboloid::from_minkowski_coordinates([
     ///     rho * (v.sinh()) * (theta.cos()),
     ///     rho * (v.sinh()) * (theta.sin()),
     ///     rho * (v.cosh()),
-    /// ]), 1.0);
+    /// ].into(), 1.0);
     /// assert_relative_eq!(
     ///     EightEight::distance_to_boundary(&x),
     ///     0.0,

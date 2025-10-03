@@ -135,7 +135,7 @@ impl<T: Send + Sync + 'static> HyperbolicDisk<T> {
 
 /// Project coordinates to Poincare disk
 fn poincare(point: &Minkowski<3>, skirt: f64, diameter: f64) -> ([f32; 3], f32) {
-    let pt = Hyperboloid::from(*point, skirt);
+    let pt = Hyperboloid::from_minkowski_coordinates(*point, skirt);
     let proj = pt.to_poincare();
     let v = diameter / (skirt * 2.0);
     let eta = (point.coordinates[2] / RHO).acosh();

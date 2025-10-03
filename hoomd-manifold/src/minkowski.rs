@@ -474,9 +474,9 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
 /// use hoomd_manifold::{Hyperboloid, Minkowski};
 /// use hoomd_vector::Metric;
 ///
-/// let x = Hyperboloid::from(Minkowski::from([0.0, 0.0, 1.0]), 1.0_f64);
+/// let x = Hyperboloid::from_minkowski_coordinates([0.0, 0.0, 1.0].into(), 1.0_f64);
 ///
-/// let y = Hyperboloid::from(Minkowski::from([0.0, 1.0, (2.0_f64).sqrt()]), 1.0_f64);
+/// let y = Hyperboloid::from_minkowski_coordinates([0.0, 1.0, (2.0_f64).sqrt()].into(), 1.0_f64);
 ///
 /// assert_eq!(((2.0_f64).sqrt()).acosh(), x.distance(&y));
 /// ```
@@ -514,11 +514,11 @@ impl<const N: usize> Hyperboloid<N> {
     /// use hoomd_manifold::{Hyperboloid, Minkowski};
     /// use hoomd_vector::Metric;
     ///
-    /// let x = Hyperboloid::from(Minkowski::from([0.0, 0.0, 1.0]), 1.0_f64);
+    /// let x = Hyperboloid::from_minkowski_coordinates([0.0, 0.0, 1.0].into(), 1.0_f64);
     /// ```
     #[must_use]
     #[inline]
-    pub fn from(point: Minkowski<N>, skirt: f64) -> Hyperboloid<N> {
+    pub fn from_minkowski_coordinates(point: Minkowski<N>, skirt: f64) -> Hyperboloid<N> {
         let skirt_squared = -point.distance_squared(&Minkowski::<N>::default());
         assert_relative_eq!(skirt_squared, skirt.powi(2), epsilon=1e-12);
         Hyperboloid {
@@ -539,7 +539,7 @@ impl Hyperboloid<3> {
             skirt * (v.sinh()) * (theta_mod.sin()),
             skirt * (v.cosh()),
         ]);
-        Hyperboloid::from(point, skirt)
+        Hyperboloid::from_minkowski_coordinates(point, skirt)
     }
 }
 
@@ -556,13 +556,16 @@ impl Hyperboloid<4> {
             skirt * (v.sinh()) * (theta_mod.sin()) * (phi_mod.sin()),
             skirt * (v.cosh()),
         ]);
-        Hyperboloid::from(point, skirt)
+        Hyperboloid::from_minkowski_coordinates(point, skirt)
     }
 }
 
 impl<const N: usize> Hyperboloid<N> {
-    /// Computes the length of the geodesic passing between the cusp $(0,\cdots,0,\rho)$ and a given
-    /// point on the hyperboloid with a given skirt length.
+    /// Compute the distance from a point to the cusp.
+    ///
+    /// Computes the length of the geodesic passing between the cusp
+    /// $`(0,\cdots,0,\rho)`$ and a given point on the hyperboloid with a given
+    /// skirt length.
     ///
     /// # Example
     /// ```
@@ -573,11 +576,11 @@ impl<const N: usize> Hyperboloid<N> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let v: f64 = 4.2;
     /// let rho: f64 = 1.0;
-    /// let x = Hyperboloid::from(Minkowski::from([
+    /// let x = Hyperboloid::from_minkowski_coordinates([
     ///     rho * (v.sinh()),
     ///     0.0,
     ///     rho * (v.cosh()),
-    /// ]), rho);
+    /// ].into(), rho);
     /// assert_relative_eq!(v * rho, x.distance_from_cusp(), epsilon = 1e-12);
     /// # Ok(())
     /// # }
@@ -599,7 +602,7 @@ impl<const N: usize> Hyperboloid<N> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let v: f64 = 1.098612;
     /// let rho: f64 = 1.0;
-    /// let x = Hyperboloid::from(Minkowski::from([v.sinh(), 0.0, v.cosh()]), rho);
+    /// let x = Hyperboloid::from_minkowski_coordinates([v.sinh(), 0.0, v.cosh()].into(), rho);
     /// let projection = x.to_poincare();
     /// assert_relative_eq!(
     ///     v.sinh() / (v.cosh() + 1.0),
@@ -881,7 +884,7 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
 /// let v: HyperbolicAngle = rng.random();
 /// let matrix = HyperbolicRotationMatrix::from(v);
 /// let origin = Minkowski::from([0.0, 0.0, rho]);
-/// let random_point = Hyperboloid::from(matrix.hyperbolic_rotate(&origin), rho);
+/// let random_point = Hyperboloid::from_minkowski_coordinates(matrix.hyperbolic_rotate(&origin), rho);
 ///
 /// let r = 0.1;
 /// let mut rng_2 = StdRng::seed_from_u64(239);
@@ -937,7 +940,7 @@ impl Distribution<Hyperboloid<3>> for HyperbolicDisk {
                 + trial_coords[2] * (eta.sinh()) * (phi.sin()),
             trial_coords[0] * (eta.sinh()) + trial_coords[2] * (eta.cosh()),
         ]);
-        let new_hyperboloid = Hyperboloid::from(transformed_point, rho);
+        let new_hyperboloid = Hyperboloid::from_minkowski_coordinates(transformed_point, rho);
         #[cfg(debug_assertions)]
         assert_relative_eq!(rho, new_hyperboloid.skirt(), epsilon = 1e-12);
         new_hyperboloid

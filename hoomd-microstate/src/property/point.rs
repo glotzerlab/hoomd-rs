@@ -87,7 +87,7 @@ impl Transform<Point<Hyperboloid<3>>> for Point<Hyperboloid<3>> {
                 + site_pos[2] * (body_boost.sinh()) * (body_theta.sin()),
             site_pos[0] * (body_boost.sinh()) + site_pos[2] * (body_boost.cosh()),
         ]);
-        let new_hyperboloid = Hyperboloid::from(transformed_point, skirt);
+        let new_hyperboloid = Hyperboloid::from_minkowski_coordinates(transformed_point, skirt);
         Point::new(new_hyperboloid)
     }
 }
@@ -117,7 +117,7 @@ impl Transform<Point<Hyperboloid<4>>> for Point<Hyperboloid<4>> {
                 + site_pos[3] * (body_boost.sinh()) * (body_theta.sin()) * (body_phi.sin()),
             site_pos[0] * (body_boost.sinh()) + site_pos[3] * (body_boost.cosh()),
         ]);
-        let new_hyperboloid = Hyperboloid::from(transformed_point, skirt);
+        let new_hyperboloid = Hyperboloid::from_minkowski_coordinates(transformed_point, skirt);
         Point::new(new_hyperboloid)
     }
 }
