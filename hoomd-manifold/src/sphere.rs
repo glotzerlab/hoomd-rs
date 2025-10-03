@@ -166,8 +166,8 @@ impl Metric for Sphere<4> {
 
 /// Randomly distribute points locally on a sphere.
 ///
-/// A uniform distribution of points within distance r of a point on the
-/// 2-sphere with a given radius.
+/// [`SphericalDisk`] is a uniform distribution of points within distance `r` of
+/// a point on the 2-sphere with a given radius.
 ///
 /// # Example
 ///
@@ -204,11 +204,11 @@ impl Metric for Sphere<4> {
 /// # }
 /// ```
 pub struct SphericalDisk {
-    /// Max distance away from point
+    /// Max distance away from point.
     pub r: PositiveReal,
-    /// The center of the disk
+    /// The center of the disk.
     pub point: Cartesian<3>,
-    /// The radius of the sphere
+    /// The radius of the sphere.
     pub radius: f64,
 }
 
