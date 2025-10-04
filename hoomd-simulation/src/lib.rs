@@ -8,13 +8,25 @@
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
 
-//! Interact with simulations at a high level.
+//! Interact with simulations.
+//!
+//! ## Simulation
 //!
 //! `hoomd-simulation` defines the [`Simulation`] trait. Implement it for a type
 //! that holds the simulation parameters, types that implement the simulation
 //! model, and the microstate (or microstates) that it operates on.
 //!
 //! See the tutorials in the documentation for numerous examples.
+//!
+//! ## Macrostate
+//! 
+//! The [`macrostate`] module provides types that set the parameters of the
+//! simulation. For example, set the temperature of the simulation with:
+//! ```
+//! use hoomd_simulation::macrostate::Isothermal;
+//! 
+//! let macrostate = Isothermal { temperature: 1.2, };
+//! ```
 
 pub mod macrostate;
 
