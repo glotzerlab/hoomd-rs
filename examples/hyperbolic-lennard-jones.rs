@@ -17,6 +17,7 @@ use hoomd_microstate::{
 use hoomd_simulation::Simulation;
 use rand::distr::Distribution;
 use rand::{SeedableRng, rngs::StdRng};
+use bevy_egui::EguiPlugin;
 
 /// Mark the disk representation type.
 struct A;
@@ -39,6 +40,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut app = App::new();
     app.add_plugins(DefaultPlugins);
+    app.add_plugins(EguiPlugin::default());
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(
         Startup,
