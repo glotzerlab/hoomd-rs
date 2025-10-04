@@ -8,10 +8,7 @@
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
 
-/*! Implements methods for analyzing microstate data. The basis for much of the analyses is
-the `SpatialHistogram` struct, which allows the user to construct histograms from any data type
-which implements `Add`.
-*/
+//! Compute order parameters relating to the density of a system.
 
 mod density;
 
