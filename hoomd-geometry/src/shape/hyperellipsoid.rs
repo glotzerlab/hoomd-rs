@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`Hyperellipsoid`].*/
+//! Implement [`Hyperellipsoid`].
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
@@ -130,157 +130,167 @@ impl SquareMatrix<2> {
     }
 }
 
-/** The geometry resulting from an Hypersphere that is scaled along the Cartesian axes.
-
-See [`Ellipse`] and [`Ellipsoid`] for special cases in 2 and 3 dimensions.
-
-# Examples
-
-Basic construction and methods:
-```
-use hoomd_geometry::{BoundingSphereRadius,
-    shape::Hyperellipsoid,
-    Volume};
-use std::f64::consts::PI;
-use approx::assert_relative_eq;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let ellipse = Hyperellipsoid {axes: [1.0.try_into()?, 2.0.try_into()?]};
-let bounding_radius = ellipse.bounding_sphere_radius();
-let volume = ellipse.volume();
-
-assert_eq!(bounding_radius.get(), 2.0);
-assert_relative_eq!(volume, PI * 1.0 * 2.0);
-
-let sphere = Hyperellipsoid {axes: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?]};
-let bounding_radius = sphere.bounding_sphere_radius();
-let volume = sphere.volume();
-
-assert_eq!(bounding_radius.get(), 2.0);
-assert_eq!(volume, 4.0 / 3.0 * PI * 2.0_f64.powi(3));
-# Ok(())
-# }
-```
-*/
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// The geometry resulting from an Hypersphere that is scaled along each Cartesian axes.
+///
+/// See [`Ellipse`] and [`Ellipsoid`] for special cases in 2 and 3 dimensions.
+///
+/// # Examples
+///
+/// Basic construction and methods:
+/// ```
+/// use approx::assert_relative_eq;
+/// use hoomd_geometry::{BoundingSphereRadius, Volume, shape::Hyperellipsoid};
+/// use std::f64::consts::PI;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let ellipse = Hyperellipsoid {
+///     semi_axes: [1.0.try_into()?, 2.0.try_into()?],
+/// };
+/// let bounding_radius = ellipse.bounding_sphere_radius();
+/// let volume = ellipse.volume();
+///
+/// assert_eq!(bounding_radius.get(), 2.0);
+/// assert_relative_eq!(volume, PI * 1.0 * 2.0);
+///
+/// let sphere = Hyperellipsoid {
+///     semi_axes: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?],
+/// };
+/// let bounding_radius = sphere.bounding_sphere_radius();
+/// let volume = sphere.volume();
+///
+/// assert_eq!(bounding_radius.get(), 2.0);
+/// assert_eq!(volume, 4.0 / 3.0 * PI * 2.0_f64.powi(3));
+/// # Ok(())
+/// # }
+/// ```
+#[derive(Clone, Debug, PartialEq)]
 pub struct Hyperellipsoid<const N: usize> {
     /// The principle semi-axes of the [`Hyperellipsoid`] along each cartesian direction.
-    pub axes: [PositiveReal; N],
+    pub semi_axes: [PositiveReal; N],
 }
 
-/** A circle scaled along the x and y axes.
-
-# Examples
-
-Basic construction and methods:
-```
-use hoomd_geometry::{BoundingSphereRadius,
-    shape::Ellipse,
-    Volume};
-use std::f64::consts::PI;
-use approx::assert_relative_eq;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let ellipse = Ellipse {axes: [1.0.try_into()?, 2.0.try_into()?]};
-let bounding_radius = ellipse.bounding_sphere_radius();
-let volume = ellipse.volume();
-
-assert_eq!(bounding_radius.get(), 2.0);
-assert_relative_eq!(volume, PI * 1.0 * 2.0);
-# Ok(())
-# }
-```
-
-Rapid ellipse-ellipse intersection testing is possible with hoomd-geometry. This check
-is based on a result from algebraic geometry, with the precise approach documented
-within the code:
-```
-use hoomd_geometry::{IntersectsAt, shape::Ellipse};
-use hoomd_vector::Angle;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let long_ellipse = Ellipse {axes: [0.5.try_into()?, 3.0.try_into()?]};
-let round_ellipse = Ellipse {axes: [1.0.try_into()?, 2.0.try_into()?]};
-
-let v_ij = [0.0, long_ellipse.axes[1].get() + round_ellipse.axes[1].get() - 0.1].into();
-
-assert_eq!(
-    long_ellipse.intersects_at(&round_ellipse, &v_ij, &Angle::from(0.0)),
-    true
-);
-# Ok(())
-# }
-```
-*/
+/// A circle scaled along the x and y axes.
+///
+/// # Examples
+///
+/// Basic construction and methods:
+/// ```
+/// use approx::assert_relative_eq;
+/// use hoomd_geometry::{BoundingSphereRadius, Volume, shape::Ellipse};
+/// use std::f64::consts::PI;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let ellipse = Ellipse {
+///     semi_axes: [1.0.try_into()?, 2.0.try_into()?],
+/// };
+/// let bounding_radius = ellipse.bounding_sphere_radius();
+/// let volume = ellipse.volume();
+///
+/// assert_eq!(bounding_radius.get(), 2.0);
+/// assert_relative_eq!(volume, PI * 1.0 * 2.0);
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Rapid ellipse-ellipse intersection testing is possible with hoomd-geometry. This check
+/// is based on a result from algebraic geometry, with the precise approach documented
+/// within the code:
+/// ```
+/// use hoomd_geometry::{IntersectsAt, shape::Ellipse};
+/// use hoomd_vector::Angle;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let long_ellipse = Ellipse {
+///     semi_axes: [0.5.try_into()?, 3.0.try_into()?],
+/// };
+/// let round_ellipse = Ellipse {
+///     semi_axes: [1.0.try_into()?, 2.0.try_into()?],
+/// };
+///
+/// let v_ij = [
+///     0.0,
+///     long_ellipse.semi_axes[1].get() + round_ellipse.semi_axes[1].get()
+///         - 0.1,
+/// ]
+/// .into();
+///
+/// assert_eq!(
+///     long_ellipse.intersects_at(&round_ellipse, &v_ij, &Angle::from(0.0)),
+///     true
+/// );
+/// # Ok(())
+/// # }
+/// ```
 pub type Ellipse = Hyperellipsoid<2>;
 
-/**A sphere scaled along the x, y, and z axes.
-
-# Examples
-
-Basic construction and methods:
-```
-use hoomd_geometry::{BoundingSphereRadius,
-    shape::Ellipsoid,
-    Volume};
-use std::f64::consts::PI;
-use approx::assert_relative_eq;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let sphere = Ellipsoid {axes: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?]};
-let bounding_radius = sphere.bounding_sphere_radius();
-let volume = sphere.volume();
-
-assert_eq!(bounding_radius.get(), 2.0);
-assert_eq!(volume, 4.0 / 3.0 * PI * 2.0_f64.powi(3));
-# Ok(())
-# }
-```
-
-Test for intersections using [`Convex`](crate::Convex):
-```
-use hoomd_geometry::{Convex, IntersectsAt, shape::Ellipsoid};
-use hoomd_vector::Versor;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let ellipsoid = Convex(Ellipsoid { axes: [1.0.try_into()?, 2.0.try_into()?, 3.0.try_into()?] });
-let q = Versor::default();
-
-assert_eq!(
-    ellipsoid.intersects_at(&ellipsoid, &[0.9, 0.0, 0.0].into(), &q),
-    true
-);
-assert_eq!(
-    ellipsoid.intersects_at(&ellipsoid, &[1.1, 0.0, 0.0].into(), &q),
-    true
-);
-assert_eq!(
-    ellipsoid.intersects_at(&ellipsoid, &[0.0, 1.9, 0.0].into(), &q),
-    true
-);
-assert_eq!(
-    ellipsoid.intersects_at(&ellipsoid, &[0.0, 2.1, 0.0].into(), &q),
-    true
-);
-# Ok(())
-# }
-```
-*/
+/// A sphere scaled along the x, y, and z axes.
+///
+/// # Examples
+///
+/// Basic construction and methods:
+/// ```
+/// use approx::assert_relative_eq;
+/// use hoomd_geometry::{BoundingSphereRadius, Volume, shape::Ellipsoid};
+/// use std::f64::consts::PI;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let sphere = Ellipsoid {
+///     semi_axes: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?],
+/// };
+/// let bounding_radius = sphere.bounding_sphere_radius();
+/// let volume = sphere.volume();
+///
+/// assert_eq!(bounding_radius.get(), 2.0);
+/// assert_eq!(volume, 4.0 / 3.0 * PI * 2.0_f64.powi(3));
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Test for intersections using [`Convex`](crate::Convex):
+/// ```
+/// use hoomd_geometry::{Convex, IntersectsAt, shape::Ellipsoid};
+/// use hoomd_vector::Versor;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let ellipsoid = Convex(Ellipsoid {
+///     semi_axes: [1.0.try_into()?, 2.0.try_into()?, 3.0.try_into()?],
+/// });
+/// let q = Versor::default();
+///
+/// assert_eq!(
+///     ellipsoid.intersects_at(&ellipsoid, &[0.9, 0.0, 0.0].into(), &q),
+///     true
+/// );
+/// assert_eq!(
+///     ellipsoid.intersects_at(&ellipsoid, &[1.1, 0.0, 0.0].into(), &q),
+///     true
+/// );
+/// assert_eq!(
+///     ellipsoid.intersects_at(&ellipsoid, &[0.0, 1.9, 0.0].into(), &q),
+///     true
+/// );
+/// assert_eq!(
+///     ellipsoid.intersects_at(&ellipsoid, &[0.0, 2.1, 0.0].into(), &q),
+///     true
+/// );
+/// # Ok(())
+/// # }
+/// ```
 pub type Ellipsoid = Hyperellipsoid<3>;
 
 impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperellipsoid<N> {
     #[inline]
     fn support_mapping(&self, n: &Cartesian<N>) -> Cartesian<N> {
         let denominator =
-            Cartesian::<N>::from(std::array::from_fn(|i| self.axes[i].get() * n[i])).norm();
-        std::array::from_fn(|i| n[i] * self.axes[i].get().powi(2) / denominator).into()
+            Cartesian::<N>::from(std::array::from_fn(|i| self.semi_axes[i].get() * n[i])).norm();
+        std::array::from_fn(|i| n[i] * self.semi_axes[i].get().powi(2) / denominator).into()
     }
 }
 
 impl<const N: usize> BoundingSphereRadius for Hyperellipsoid<N> {
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
-        self.axes
+        self.semi_axes
             .iter()
             .map(PositiveReal::get)
             .reduce(f64::max)
@@ -292,7 +302,7 @@ impl<const N: usize> BoundingSphereRadius for Hyperellipsoid<N> {
 impl<const N: usize> Volume for Hyperellipsoid<N> {
     #[inline]
     fn volume(&self) -> f64 {
-        self.axes
+        self.semi_axes
             .iter()
             .map(PositiveReal::get)
             .fold(sphere_volume_prefactor(N), f64::mul)
@@ -301,10 +311,9 @@ impl<const N: usize> Volume for Hyperellipsoid<N> {
 
 /// The inverse of the Golden ratio, used for a golden section solver
 const _INV_PHI: f64 = 0.618_033_988_749_894_9_f64;
-/** Precision within which ellipsoids are considered to be overlapping.
-
-This is 1000x more precise than HOOMD-Blue.
-*/
+/// Precision within which ellipsoids are considered to be overlapping.
+///
+/// This is 1000x more precise than HOOMD-Blue.
 const _ELLIPSOID_OVERLAP_PRECISION: f64 = 1e-9;
 /// Max bound of the root search for an ellipsoid characteristic polynomial.
 const _ELLIPSOID_K_MAX_BOUND: f64 = 1.0 - _ELLIPSOID_OVERLAP_PRECISION;
@@ -318,61 +327,58 @@ where
 {
     #[inline]
     fn intersects_at(&self, other: &Hyperellipsoid<2>, v_ij: &Cartesian<2>, o_ij: &R) -> bool {
-        /*
-
-        This approach is derived from "A Robust Computational Test for Overlap of Two
-        Arbitrary-dimensional Ellipsoids in Fault-Detection of Kalman Filters".
-        Rather than generalize over dimension (which results in significant performance
-        losses, even with efficient linear algebra libraries), we choose to implement
-        the special case of ellipses in 2d. This derivation is far from rigorous, but
-        aims to inform how the method actually works.
-
-        We begin with Remark 1 from the above paper. In essence, we are defininig a
-        convex, one dimensional function K(λ) that represents the intersection of our
-        two ellipsoids, which is also a conic section. If this intersection function has
-        any real roots (in the domain (0, 1)), our ellipsoids must intersect. To compute
-        this function, we represent our ellipsoids as matrixes $A$ and $B$. $K(λ)$ is...
-
-        $$
-            K(λ) = 1 - v^T @ (1/(1-λ) B^-1 + 1/λ A^-1)^-1
-        $$
-
-        The "natural" matrix form of an ellipse is $diag(1/axes_i**2)$. However, we must
-        transform one of our matrixes for the intersection calculation. We choose B, as
-        it simplifies our future calculations. With R as the rotation matrix of o_ij:
-
-        $$
-            B = (R^-1).T @ diag(1/axes_B**2) @ R^-1
-        $$
-        The inverse of a rotation matrix is its transpose, so this simplifies. However,
-        because we actually desire A_inverse and B_inverse (and A and B are diagonal),
-        we can simplify further:
-        $$
-            A^-1 = diag(axes_A**2)
-            B^-1 = R @ diag(axes_B**2) @ R^T
-        $$
-
-        Both these results can be cached and reused for evaluation of [`k_lambda`].
-        Note that our equation is really of the quadratic form $K(λ)=1 - v.T @ M @ v$,
-        with $M = (1/(1-λ) B^-1 + 1/λ A^-1)^-1$. This final inversion makes evaluating
-        K(λ) in this form undesirable in the general case, but in 2D we have a simple
-        closed form for the inverse.
-
-        Recall that our ellipsoids do not overlap if there is a real root of Κ(λ) on
-        (0, 1). Rather than searching for such a root, we can instead query for a
-        negative element in the codomain. Our function is extremely well behaved
-        (numerical instability notwithstanding), so we can use a simple golden section
-        search for such an element. In most cases, we can exit within a single iteration
-        although the method converges linearly in general. If the search does NOT find a
-        negative element in the codomain, the ellipsoids intersect (within a tolerance).
-        */
-        let a_inv = other.axes.map(|x| x.get().powi(2));
+        // This approach is derived from "A Robust Computational Test for Overlap of Two
+        // Arbitrary-dimensional Ellipsoids in Fault-Detection of Kalman Filters".
+        // Rather than generalize over dimension (which results in significant performance
+        // losses, even with efficient linear algebra libraries), we choose to implement
+        // the special case of ellipses in 2d. This derivation is far from rigorous, but
+        // aims to inform how the method actually works.
+        //
+        // We begin with Remark 1 from the above paper. In essence, we are defininig a
+        // convex, one dimensional function K(λ) that represents the intersection of our
+        // two ellipsoids, which is also a conic section. If this intersection function has
+        // any real roots (in the domain (0, 1)), our ellipsoids must intersect. To compute
+        // this function, we represent our ellipsoids as matrixes $A$ and $B$. $K(λ)$ is...
+        //
+        // $$
+        // K(λ) = 1 - v^T @ (1/(1-λ) B^-1 + 1/λ A^-1)^-1
+        // $$
+        //
+        // The "natural" matrix form of an ellipse is $diag(1/axes_i**2)$. However, we must
+        // transform one of our matrixes for the intersection calculation. We choose B, as
+        // it simplifies our future calculations. With R as the rotation matrix of o_ij:
+        //
+        // $$
+        // B = (R^-1).T @ diag(1/axes_B**2) @ R^-1
+        // $$
+        // The inverse of a rotation matrix is its transpose, so this simplifies. However,
+        // because we actually desire A_inverse and B_inverse (and A and B are diagonal),
+        // we can simplify further:
+        // $$
+        // A^-1 = diag(axes_A**2)
+        // B^-1 = R @ diag(axes_B**2) @ R^T
+        // $$
+        //
+        // Both these results can be cached and reused for evaluation of [`k_lambda`].
+        // Note that our equation is really of the quadratic form $K(λ)=1 - v.T @ M @ v$,
+        // with $M = (1/(1-λ) B^-1 + 1/λ A^-1)^-1$. This final inversion makes evaluating
+        // K(λ) in this form undesirable in the general case, but in 2D we have a simple
+        // closed form for the inverse.
+        //
+        // Recall that our ellipsoids do not overlap if there is a real root of Κ(λ) on
+        // (0, 1). Rather than searching for such a root, we can instead query for a
+        // negative element in the codomain. Our function is extremely well behaved
+        // (numerical instability notwithstanding), so we can use a simple golden section
+        // search for such an element. In most cases, we can exit within a single iteration
+        // although the method converges linearly in general. If the search does NOT find a
+        // negative element in the codomain, the ellipsoids intersect (within a tolerance).
+        let a_inv = other.semi_axes.map(|x| x.get().powi(2));
 
         let rot = RotationMatrix::<2>::from(*o_ij);
         let rot_transpose = rot.inverted();
 
         let b_inv = SquareMatrix::from(rot)
-            .mul_diagonal(&self.axes.map(|x| x.get().powi(2)))
+            .mul_diagonal(&self.semi_axes.map(|x| x.get().powi(2)))
             .matmul(&rot_transpose.into());
 
         let v_ij = &v_ij.coordinates;
@@ -443,7 +449,7 @@ mod tests {
             radius: radius.try_into().expect("test value is a positive real"),
         };
         let he = Hyperellipsoid {
-            axes: [radius.try_into().expect("test value is a positive real"); N],
+            semi_axes: [radius.try_into().expect("test value is a positive real"); N],
         };
         let v = [1.0; N].into();
         assert_relative_eq!(he.support_mapping(&v), s.support_mapping(&v));
@@ -463,7 +469,7 @@ mod tests {
             radius: radius.try_into().expect("test value is a positive real"),
         };
         let he = Hyperellipsoid {
-            axes: [radius.try_into().expect("test value is a positive real"); N],
+            semi_axes: [radius.try_into().expect("test value is a positive real"); N],
         };
         assert_relative_eq!(he.volume(), s.volume());
     }
@@ -474,13 +480,13 @@ mod tests {
         v_ij: [f64; 2],
     ) {
         let el0 = Ellipse {
-            axes: [
+            semi_axes: [
                 1.0.try_into().expect("test value is a positive real"),
                 4.0.try_into().expect("test value is a positive real"),
             ],
         };
         let el1 = Ellipse {
-            axes: [
+            semi_axes: [
                 1.0.try_into().expect("test value is a positive real"),
                 4.0.try_into().expect("test value is a positive real"),
             ],
@@ -498,8 +504,8 @@ mod tests {
             let (a, c): (f64, f64) = StdRng::random(&mut rng);
             let a = a.try_into().expect("test value is a positive real");
             let c = c.try_into().expect("test value is a positive real");
-            let el0 = Ellipse { axes: [a, a] };
-            let el1 = Ellipse { axes: [c, c] };
+            let el0 = Ellipse { semi_axes: [a, a] };
+            let el1 = Ellipse { semi_axes: [c, c] };
 
             let v_ij = StdRng::random::<Cartesian<2>>(&mut rng) * 10.0;
             let angle = Angle::from(
@@ -524,8 +530,8 @@ mod tests {
             let c = c.try_into().expect("test value is a positive real");
             let d = d.try_into().expect("test value is a positive real");
 
-            let el0 = Ellipse { axes: [a, b] };
-            let el1 = Ellipse { axes: [c, d] };
+            let el0 = Ellipse { semi_axes: [a, b] };
+            let el1 = Ellipse { semi_axes: [c, d] };
 
             let v_ij = StdRng::random::<Cartesian<2>>(&mut rng) * 10.0;
             let angle = Angle::from(

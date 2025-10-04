@@ -1,56 +1,73 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement `CutoffPairOverlap`
-*/
+//! Implement `CutoffPairOverlap`
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairOverlap, TotalEnergy};
 use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Position};
 use hoomd_vector::Vector;
 
-/** Short-ranged hard overlaps between pairs of sites.
-
-Use [`CutoffPairOverlap`] instead of [`CutoffPair`] for hard interactions.
-[`CutoffPairOverlap`] does not need to compute the initial energy and it can
-short-circuit energy evaluations when the first overlap is detected. Both of
-these lead to improved performance.
-
-Given an evaluator that implements [`SitePairOverlap`], [`CutoffPairOverlap`]
-represents:
-
-```math
-U_\mathrm{total} = \sum_{i=0}^{N-1}\sum_{j=i+1}^{N-1} U\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
-```
-where $`U(s_i, s_j)`$ is $`\infty`$ when [`CutoffPairOverlap::evaluator`] finds an
-overlap and 0 when it does not,
-$`s_i`$ is the full set of site properties for site i, $`\vec{r}_i`$ is
-the position of site i, $`b_i`$ is the body tag that holds site *i*, and
-$`\left[ \  \right]`$ denotes the Iverson bracket.
-
-In other words, [`CutoffPairOverlap`] checks for overlaps between all site pairs that
-are separated by a distance less than `r_cut` and belong to different bodies.
-
-For the evaluator, use [`AlwaysTrue`], [`HardShape`] or your own custom type.
-
-[`CutoffPair`]: crate::CutoffPair
-[`AlwaysTrue`]: crate::pairwise::AlwaysTrue
-[`HardShape`]: crate::pairwise::HardShape
-
-# Example
-
-Hard sphere:
-```
-use hoomd_interaction::{CutoffPairOverlap, pairwise::AlwaysTrue};
-use hoomd_microstate::property::Point;
-use hoomd_vector::Cartesian;
-
-let hard_sphere = CutoffPairOverlap { r_cut: 1.0, evaluator: AlwaysTrue };
-```
-
-Hard shape:
-
-TODO: Example
-*/
+/// Short-ranged hard overlaps between pairs of sites.
+///
+/// Use [`CutoffPairOverlap`] instead of [`CutoffPair`] for hard interactions.
+/// [`CutoffPairOverlap`] does not need to compute the initial energy and it can
+/// short-circuit energy evaluations when the first overlap is detected. Both of
+/// these lead to improved performance.
+///
+/// Given an evaluator that implements [`SitePairOverlap`], [`CutoffPairOverlap`]
+/// represents:
+///
+/// ```math
+/// U_\mathrm{total} = \sum_{i=0}^{N-1}\sum_{j=i+1}^{N-1} U\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
+/// ```
+/// where $`U(s_i, s_j)`$ is $`\infty`$ when [`CutoffPairOverlap::evaluator`] finds an
+/// overlap and 0 when it does not,
+/// $`s_i`$ is the full set of site properties for site i, $`\vec{r}_i`$ is
+/// the position of site i, $`b_i`$ is the body tag that holds site *i*, and
+/// $`\left[ \  \right]`$ denotes the Iverson bracket.
+///
+/// In other words, [`CutoffPairOverlap`] checks for overlaps between all site pairs that
+/// are separated by a distance less than `r_cut` and belong to different bodies.
+///
+/// For the evaluator, use [`AlwaysTrue`], [`HardShape`] or your own custom type.
+///
+/// [`CutoffPair`]: crate::CutoffPair
+/// [`AlwaysTrue`]: crate::pairwise::AlwaysTrue
+/// [`HardShape`]: crate::pairwise::HardShape
+///
+/// # Example
+///
+/// Hard sphere:
+/// ```
+/// use hoomd_interaction::{CutoffPairOverlap, pairwise::AlwaysTrue};
+/// use hoomd_microstate::property::Point;
+/// use hoomd_vector::Cartesian;
+///
+/// let hard_sphere = CutoffPairOverlap {
+///     r_cut: 1.0,
+///     evaluator: AlwaysTrue,
+/// };
+/// ```
+///
+/// Hard shape:
+///
+/// ```
+/// use hoomd_geometry::shape::Ellipse;
+/// use hoomd_interaction::{CutoffPairOverlap, pairwise::HardShape};
+/// use hoomd_microstate::property::Point;
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let ellipse = Ellipse {
+///     semi_axes: [4.0.try_into()?, 1.0.try_into()?],
+/// };
+/// let hard_ellipse = CutoffPairOverlap {
+///     r_cut: 8.0,
+///     evaluator: HardShape(ellipse),
+/// };
+/// # Ok(())
+/// # }
+/// ```
 pub struct CutoffPairOverlap<E> {
     /// The distance beyond which all pairwise interactions evaluate to 0.
     pub r_cut: f64,
@@ -65,34 +82,38 @@ where
     S: Position<Vector = V>,
     V: Vector,
 {
-    /** Compute the total energy of the microstate contributed by functions on pairs of sites.
-
-    # Example
-
-    ```
-    use hoomd_interaction::{CutoffPairOverlap, TotalEnergy, pairwise::AlwaysTrue};
-    use hoomd_microstate::{Microstate, Body};
-    use hoomd_microstate::property::Point;
-    use hoomd_vector::Cartesian;
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut microstate = Microstate::new();
-    microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
-                              Body::point(Cartesian::from([0.5, 0.0])),
-                            ])?;
-
-    let hard_sphere = CutoffPairOverlap { r_cut: 1.0, evaluator: AlwaysTrue };
-
-    let total_energy = hard_sphere.total_energy(&microstate);
-    assert_eq!(total_energy, f64::INFINITY);
-
-    microstate.update_body_properties(0, Point::new([0.0, -2.0].into()));
-    let total_energy = hard_sphere.total_energy(&microstate);
-    assert_eq!(total_energy, 0.0);
-    # Ok(())
-    # }
-    ```
-    */
+    /// Compute the total energy of the microstate contributed by functions on pairs of sites.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_interaction::{
+    ///     CutoffPairOverlap, TotalEnergy, pairwise::AlwaysTrue,
+    /// };
+    /// use hoomd_microstate::{Body, Microstate, property::Point};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate = Microstate::new();
+    /// microstate.extend_bodies([
+    ///     Body::point(Cartesian::from([0.0, 0.0])),
+    ///     Body::point(Cartesian::from([0.5, 0.0])),
+    /// ])?;
+    ///
+    /// let hard_sphere = CutoffPairOverlap {
+    ///     r_cut: 1.0,
+    ///     evaluator: AlwaysTrue,
+    /// };
+    ///
+    /// let total_energy = hard_sphere.total_energy(&microstate);
+    /// assert_eq!(total_energy, f64::INFINITY);
+    ///
+    /// microstate.update_body_properties(0, Point::new([0.0, -2.0].into()));
+    /// let total_energy = hard_sphere.total_energy(&microstate);
+    /// assert_eq!(total_energy, 0.0);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn total_energy(&self, microstate: &Microstate<B, S, C>) -> f64 {
         for site_i in microstate.sites() {
@@ -113,35 +134,45 @@ where
     }
 }
 
-/** Evaluate the change in energy contributed by `CutoffPairOverlap` when one body is updated.
-
-# Example
-
-```
-use hoomd_interaction::{CutoffPairOverlap, DeltaEnergyOne, pairwise::AlwaysTrue};
-use hoomd_microstate::{Microstate, Body};
-use hoomd_microstate::property::Point;
-use hoomd_vector::Cartesian;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let mut microstate = Microstate::new();
-microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
-                          Body::point(Cartesian::from([2.0, 0.0])),
-                        ])?;
-
-let hard_sphere = CutoffPairOverlap { r_cut: 1.0, evaluator: AlwaysTrue };
-
-let delta_energy = hard_sphere.delta_energy_one(&microstate, 1,
-    &Body::point([0.5, 0.0].into()));
-assert_eq!(delta_energy, f64::INFINITY);
-
-let delta_energy = hard_sphere.delta_energy_one(&microstate, 1,
-    &Body::point([1.5, 0.0].into()));
-assert_eq!(delta_energy, 0.0);
-# Ok(())
-# }
-```
-*/
+/// Evaluate the change in energy contributed by `CutoffPairOverlap` when one body is updated.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_interaction::{
+///     CutoffPairOverlap, DeltaEnergyOne, pairwise::AlwaysTrue,
+/// };
+/// use hoomd_microstate::{Body, Microstate, property::Point};
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut microstate = Microstate::new();
+/// microstate.extend_bodies([
+///     Body::point(Cartesian::from([0.0, 0.0])),
+///     Body::point(Cartesian::from([2.0, 0.0])),
+/// ])?;
+///
+/// let hard_sphere = CutoffPairOverlap {
+///     r_cut: 1.0,
+///     evaluator: AlwaysTrue,
+/// };
+///
+/// let delta_energy = hard_sphere.delta_energy_one(
+///     &microstate,
+///     1,
+///     &Body::point([0.5, 0.0].into()),
+/// );
+/// assert_eq!(delta_energy, f64::INFINITY);
+///
+/// let delta_energy = hard_sphere.delta_energy_one(
+///     &microstate,
+///     1,
+///     &Body::point([1.5, 0.0].into()),
+/// );
+/// assert_eq!(delta_energy, 0.0);
+/// # Ok(())
+/// # }
+/// ```
 impl<V, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
@@ -193,34 +224,36 @@ where
     }
 }
 
-/** Evaluate the change in energy contributed by `CutoffPairOverlap` when one body is inserted.
-
-# Example
-
-```
-use hoomd_interaction::{CutoffPairOverlap, DeltaEnergyInsert, pairwise::AlwaysTrue};
-use hoomd_microstate::{Microstate, Body};
-use hoomd_microstate::property::Point;
-use hoomd_vector::Cartesian;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let mut microstate = Microstate::new();
-microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
-                        ])?;
-
-let hard_sphere = CutoffPairOverlap { r_cut: 1.0, evaluator: AlwaysTrue };
-
-let delta_energy = hard_sphere.delta_energy_insert(&microstate,
-    &Body::point([0.5, 0.0].into()));
-assert_eq!(delta_energy, f64::INFINITY);
-
-let delta_energy = hard_sphere.delta_energy_insert(&microstate,
-    &Body::point([1.5, 0.0].into()));
-assert_eq!(delta_energy, 0.0);
-# Ok(())
-# }
-```
-*/
+/// Evaluate the change in energy contributed by `CutoffPairOverlap` when one body is inserted.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_interaction::{
+///     CutoffPairOverlap, DeltaEnergyInsert, pairwise::AlwaysTrue,
+/// };
+/// use hoomd_microstate::{Body, Microstate, property::Point};
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut microstate = Microstate::new();
+/// microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0]))])?;
+///
+/// let hard_sphere = CutoffPairOverlap {
+///     r_cut: 1.0,
+///     evaluator: AlwaysTrue,
+/// };
+///
+/// let delta_energy = hard_sphere
+///     .delta_energy_insert(&microstate, &Body::point([0.5, 0.0].into()));
+/// assert_eq!(delta_energy, f64::INFINITY);
+///
+/// let delta_energy = hard_sphere
+///     .delta_energy_insert(&microstate, &Body::point([1.5, 0.0].into()));
+/// assert_eq!(delta_energy, 0.0);
+/// # Ok(())
+/// # }
+/// ```
 impl<V, B, S, C, E> DeltaEnergyInsert<B, S, C> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
@@ -269,30 +302,34 @@ where
     }
 }
 
-/** Evaluate the change in energy contributed by `CutoffPair` when one body is removed.
-
-# Example
-
-```
-use hoomd_interaction::{CutoffPairOverlap, DeltaEnergyRemove, pairwise::AlwaysTrue};
-use hoomd_microstate::{Microstate, Body};
-use hoomd_microstate::property::Point;
-use hoomd_vector::Cartesian;
-
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let mut microstate = Microstate::new();
-microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
-                          Body::point(Cartesian::from([2.0, 0.0])),
-                        ])?;
-
-let hard_sphere = CutoffPairOverlap { r_cut: 1.0, evaluator: AlwaysTrue };
-
-let delta_energy = hard_sphere.delta_energy_remove(&microstate, 1);
-assert_eq!(delta_energy, 0.0);
-# Ok(())
-# }
-```
-*/
+/// Evaluate the change in energy contributed by `CutoffPair` when one body is removed.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_interaction::{
+///     CutoffPairOverlap, DeltaEnergyRemove, pairwise::AlwaysTrue,
+/// };
+/// use hoomd_microstate::{Body, Microstate, property::Point};
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut microstate = Microstate::new();
+/// microstate.extend_bodies([
+///     Body::point(Cartesian::from([0.0, 0.0])),
+///     Body::point(Cartesian::from([2.0, 0.0])),
+/// ])?;
+///
+/// let hard_sphere = CutoffPairOverlap {
+///     r_cut: 1.0,
+///     evaluator: AlwaysTrue,
+/// };
+///
+/// let delta_energy = hard_sphere.delta_energy_remove(&microstate, 1);
+/// assert_eq!(delta_energy, 0.0);
+/// # Ok(())
+/// # }
+/// ```
 impl<V, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
@@ -313,15 +350,15 @@ where
 mod tests {
     use super::*;
     use crate::{TotalEnergy, pairwise::AlwaysTrue};
-    use hoomd_geometry::shape::Cuboid;
+    use hoomd_geometry::shape::Hypercuboid;
     use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};
     use hoomd_vector::Cartesian;
 
     use rstest::*;
 
     #[fixture]
-    fn square() -> Closed<Cuboid<2>> {
-        let cuboid = Cuboid {
+    fn square() -> Closed<Hypercuboid<2>> {
+        let cuboid = Hypercuboid {
             edge_lengths: [
                 4.0.try_into()
                     .expect("hard-coded constant should be positive"),
@@ -404,7 +441,7 @@ mod tests {
         use super::*;
 
         #[rstest]
-        fn site_outside(square: Closed<Cuboid<2>>) {
+        fn site_outside(square: Closed<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -482,7 +519,7 @@ mod tests {
         use super::*;
 
         #[rstest]
-        fn site_outside(square: Closed<Cuboid<2>>) {
+        fn site_outside(square: Closed<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),

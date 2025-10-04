@@ -5,6 +5,7 @@ use hoomd_bevy::{
 
 use anyhow::Context;
 use bevy::prelude::*;
+use bevy_egui::EguiPlugin;
 
 use super::HardEllipseSelfAssembly;
 
@@ -29,6 +30,7 @@ pub(crate) fn main() -> anyhow::Result<()> {
 
     let mut app = App::new();
     hoomd_bevy::add_default_plugins(&mut app);
+    app.add_plugins(EguiPlugin::default());
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(
         Startup,
@@ -88,8 +90,10 @@ fn sync_sites(
                     0.0,
                 ),
                 site.properties.orientation.theta as f32,
-                1.0,
-                1.0 / 5.0,
+                (simulation.hamiltonian.evaluator.0.semi_axes[0].get() * 2.0)
+                    as f32,
+                (simulation.hamiltonian.evaluator.0.semi_axes[1].get() * 2.0)
+                    as f32,
             )
         }),
     );
@@ -115,8 +119,10 @@ fn sync_ghosts(
                     0.0,
                 ),
                 site.properties.orientation.theta as f32,
-                1.0,
-                1.0 / 5.0,
+                (simulation.hamiltonian.evaluator.0.semi_axes[0].get() * 2.0)
+                    as f32,
+                (simulation.hamiltonian.evaluator.0.semi_axes[1].get() * 2.0)
+                    as f32,
             )
         }),
     );

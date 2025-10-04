@@ -5,7 +5,7 @@ use std::f64::consts::PI;
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    CutoffPair, Single, TotalEnergy,
+    CutoffPair, External, TotalEnergy,
     external::Linear,
     pairwise::{Boxcar, Isotropic},
 };
@@ -70,7 +70,7 @@ struct Tetronimoes {
     microstate: Microstate<BodyProperties, SiteProperties, Closed<Rectangle>>,
     /// How sites interact with other sites and fields.
     hamiltonian: (
-        Single<Linear<PositionVector>>,
+        External<Linear<PositionVector>>,
         CutoffPair<Isotropic<Boxcar>>,
     ),
     /// Trial moves to apply.
@@ -106,7 +106,7 @@ impl Tetronimoes {
         // ANCHOR_END: microstate
 
         // ANCHOR: hamiltonian
-        let linear = Single(Linear {
+        let linear = External(Linear {
             alpha,
             plane_origin: Cartesian::default(),
             plane_normal: [0.0, 1.0].try_into()?,
@@ -170,7 +170,7 @@ impl Tetronimoes {
         ];
         // ANCHOR_END: template_sites
 
-        // ANCHOR: initialize_struct
+        // ANCHOR: struct_initialize
         Ok(Tetronimoes {
             microstate,
             hamiltonian,
@@ -180,7 +180,7 @@ impl Tetronimoes {
         })
     }
 }
-// ANCHOR_END: initialize_struct
+// ANCHOR_END: struct_initialize
 
 // ANCHOR: impl_simulation
 impl Simulation for Tetronimoes {

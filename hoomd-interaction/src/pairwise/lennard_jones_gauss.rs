@@ -1,49 +1,57 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`LennardJonesGauss`]
- */
+//! Implement [`LennardJonesGauss`]
 
 use super::{IsotropicEnergy, IsotropicForce};
 
-/** Double-well potential with a steep repulsive core
-
-```math
-U(r) = 1[\mathrm{energy}]\cdot\left[ \left(\frac{1[\mathrm{length}]}{r}\right)^{12} - 2\left(\frac{1[\mathrm{length}]}{r}\right)^{6}\right] - \varepsilon \exp \left(-\frac{(r-r_0)^2}{2\sigma^2}\right)
-```
-
-Compute the Lennard-Jones-Gauss (LJG) potential and force as a function of `r`.
-
-# Examples
-
-```
-use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, LennardJonesGauss};
-use approx::{assert_abs_diff_eq, assert_relative_eq};
-
-let epsilon = 0.5;
-let sigma_squared = 0.5;
-let r_0 = 0.5_f64.powf(1.0 / 6.0);
-
-let lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss { epsilon, sigma_squared, r_0 };
-assert_relative_eq!(lennard_jones_gauss.energy(0.5_f64.powf(1.0 / 6.0)), -epsilon, epsilon=1e-12);
-```
-
-The parameters are public fields and may be accessed directly:
-
-```
-use hoomd_interaction::pairwise::{LennardJonesGauss};
-
-let mut lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss{
-    epsilon: 1.5,
-    sigma_squared: 0.02,
-    r_0:  3.2
-};
-lennard_jones_gauss.epsilon = 1.5;
-lennard_jones_gauss.sigma_squared = 0.02;
-lennard_jones_gauss.r_0 = 3.2;
-```
-*/
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// Double-well potential with a steep repulsive core
+///
+/// ```math
+/// U(r) = 1[\mathrm{energy}]\cdot\left[ \left(\frac{1[\mathrm{length}]}{r}\right)^{12} - 2\left(\frac{1[\mathrm{length}]}{r}\right)^{6}\right] - \varepsilon \exp \left(-\frac{(r-r_0)^2}{2\sigma^2}\right)
+/// ```
+///
+/// Compute the Lennard-Jones-Gauss (LJG) potential and force as a function of `r`.
+///
+/// # Examples
+///
+/// ```
+/// use approx::{assert_abs_diff_eq, assert_relative_eq};
+/// use hoomd_interaction::pairwise::{
+///     IsotropicEnergy, IsotropicForce, LennardJonesGauss,
+/// };
+///
+/// let epsilon = 0.5;
+/// let sigma_squared = 0.5;
+/// let r_0 = 0.5_f64.powf(1.0 / 6.0);
+///
+/// let lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss {
+///     epsilon,
+///     sigma_squared,
+///     r_0,
+/// };
+/// assert_relative_eq!(
+///     lennard_jones_gauss.energy(0.5_f64.powf(1.0 / 6.0)),
+///     -epsilon,
+///     epsilon = 1e-12
+/// );
+/// ```
+///
+/// The parameters are public fields and may be accessed directly:
+///
+/// ```
+/// use hoomd_interaction::pairwise::LennardJonesGauss;
+///
+/// let mut lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss {
+///     epsilon: 1.5,
+///     sigma_squared: 0.02,
+///     r_0: 3.2,
+/// };
+/// lennard_jones_gauss.epsilon = 1.5;
+/// lennard_jones_gauss.sigma_squared = 0.02;
+/// lennard_jones_gauss.r_0 = 3.2;
+/// ```
+#[derive(Clone, Debug, PartialEq)]
 pub struct LennardJonesGauss {
     /// Scale of Gaussian, in units of energy
     pub epsilon: f64,

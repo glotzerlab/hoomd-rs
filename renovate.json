@@ -1,0 +1,13 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "local>glotzerlab/renovate-config"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["bevy*"],
+      "groupName": "bevy"
+    }
+  ]
+}
