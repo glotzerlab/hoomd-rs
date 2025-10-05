@@ -10,29 +10,29 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// ```math
 /// U(r) = 1[\mathrm{energy}]\cdot\left[ \left(\frac{\ell}{r}\right)^{12} - 2\left(\frac{\ell}{r}\right)^{6}\right] - \varepsilon \exp \left(-\frac{(r/\ell-r_0)^2}{2\sigma^2}\right)
 /// ```
-/// 
+///
 /// Compute the Lennard-Jones-Gauss (LJG) potential and force as a function of `r`.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, LennardJonesGauss};
 /// use approx::{assert_abs_diff_eq, assert_relative_eq};
-/// 
+///
 /// let epsilon = 0.5;
 /// let sigma_squared = 0.5;
 /// let r_0 = 0.5_f64.powf(1.0/6.0);
 /// let scale = 1.0_f64;
-/// 
+///
 /// let lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss { epsilon, sigma_squared, r_0, scale};
 /// assert_relative_eq!(lennard_jones_gauss.energy(0.5_f64.powf(1.0/6.0)), -epsilon, epsilon=1e-12);
 /// ```
-/// 
+///
 /// The parameters are public fields and may be accessed directly:
-/// 
+///
 /// ```
 /// use hoomd_interaction::pairwise::{LennardJonesGauss};
-/// 
+///
 /// let mut lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss{
 ///     epsilon: 1.5,
 ///     sigma_squared: 0.02,
