@@ -22,7 +22,6 @@ thiserror.workspace = true
 tinyvec.workspace = true
 
 [dev-dependencies]
-hoomd-vector = { features = ["approx"], workspace = true }
 approx.workspace = true
 anyhow.workspace = true
 divan.workspace = true

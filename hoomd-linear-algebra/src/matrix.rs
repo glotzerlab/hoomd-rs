@@ -9,9 +9,18 @@ pub use crate::diagonal::DiagonalMatrix;
 use std::fmt;
 
 /// A lightweight representation of a diagonal matrix.
-use crate::{Diagonal, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
+use crate::{Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
 
 /// A matrix with N rows and M columns, allocated on the stack.
+///
+/// # Example
+/// ```
+/// use hoomd_linear_algebra::matrix::Matrix;
+///
+/// let a = Matrix {
+///     rows: [[-1.0, 4.0, -6.0], [2.0, -3.0, 1.0]],
+/// };
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Matrix<const N: usize, const M: usize> {
     /// The elements of the matrix
@@ -35,6 +44,7 @@ impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+    ///
     /// let m = Matrix22::zeros();
     /// assert_eq!(m.rows, [[0.0, 0.0], [0.0, 0.0]]);
     /// ```
@@ -44,18 +54,22 @@ impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
             rows: std::array::from_fn(|_| std::array::from_fn(|_| 0.0)),
         }
     }
-    /// Fill a matrix with some scalar value.
+}
+
+impl<const N: usize, const M: usize> Full for Matrix<N, M> {
+    /// Construct a matrix with the same value in every element.
     ///
     /// # Examples
     /// ```
-    /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+    /// use hoomd_linear_algebra::{Full, matrix::Matrix22};
+    ///
     /// let m = Matrix22::full(5.0);
     /// assert_eq!(m.rows, [[5.0, 5.0], [5.0, 5.0]]);
     /// ```
     #[inline]
-    fn full(val: f64) -> Self {
+    fn full(value: f64) -> Self {
         Self {
-            rows: std::array::from_fn(|_| std::array::from_fn(|_| val)),
+            rows: std::array::from_fn(|_| std::array::from_fn(|_| value)),
         }
     }
 }
@@ -64,6 +78,7 @@ impl<const N: usize> SquareMatrix for Matrix<N, N> {
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
+    ///
     /// let m = Matrix22::identity();
     /// assert_eq!(m.rows, [[1.0, 0.0], [0.0, 1.0]]);
     /// ```
@@ -77,12 +92,15 @@ impl<const N: usize> SquareMatrix for Matrix<N, N> {
 
 impl<const N: usize, const M: usize, const K: usize> MatMul<Matrix<M, K>> for Matrix<N, M> {
     type Output = Matrix<N, K>;
+    /// Matrix-matrix multiplication.
+    ///
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{
     ///     MatMul,
     ///     matrix::{Matrix, Matrix22},
     /// };
+    ///
     /// let a = Matrix22 {
     ///     rows: [[1.0, 2.0], [3.0, 4.0]],
     /// };
@@ -109,7 +127,8 @@ impl<const N: usize, const M: usize, const K: usize> MatMul<Matrix<M, K>> for Ma
 
 impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> {
     type Output = Matrix<N, M>;
-    /// Multiply a matrix by a diagonal matrix RHS.
+
+    /// Matrix-diagonal matrix multiplication.
     ///
     /// This is equivalent to scaling each column of a [`Matrix`] by the corresponding
     /// element in a [`DiagonalMatrix`].
@@ -117,13 +136,16 @@ impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> 
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{
-    ///     GeneralMatrix, MatMul,
+    ///     Full, GeneralMatrix, MatMul,
     ///     matrix::{DiagonalMatrix, Matrix22},
     /// };
-    /// let diag = DiagonalMatrix { rows: [3.0, 4.0] };
-    /// let mat = Matrix22::full(1.0).matmul(&diag);
-    /// assert_eq!(mat[(0, 1)], 4.0);
-    /// assert_eq!(mat[(1, 0)], 3.0);
+    ///
+    /// let diag = DiagonalMatrix {
+    ///     elements: [3.0, 4.0],
+    /// };
+    /// let a = Matrix22::full(1.0).matmul(&diag);
+    /// assert_eq!(a[(0, 1)], 4.0);
+    /// assert_eq!(a[(1, 0)], 3.0);
     /// ```
     #[inline]
     fn matmul(&self, rhs: &DiagonalMatrix<M>) -> Self::Output {
@@ -138,19 +160,22 @@ impl<const N: usize, const M: usize> MatMul<DiagonalMatrix<M>> for Matrix<N, M> 
 }
 
 impl<const N: usize, const M: usize> Matrix<N, M> {
-    /// Interchange the rows and columns of matrix `A` such that `A.transpose()[(j, i)] = A[(i, j)]`
+    /// Interchange the rows and columns of matrix.
+    ///
+    /// ```math
+    /// \mathbf{A}^\top_{ji} = \mathbf{A}_{ij}
+    /// ```
     ///
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::matrix::Matrix;
     ///
-    /// let m: Matrix<2, 3> = Matrix {
+    /// let m = Matrix {
     ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
     /// };
     /// let m_t = m.transpose();
     /// assert_eq!(m_t.rows, [[1.0, 4.0], [2.0, 5.0], [3.0, 6.0]]);
     /// ```
-    #[allow(dead_code, reason = "No use case yet.")]
     #[inline]
     #[must_use]
     pub fn transpose(&self) -> Matrix<M, N> {
@@ -159,11 +184,12 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         }
     }
 
-    /// Apply a function to an [`Matrix`] by rows, returning a new matrix with the same shape.
+    /// Apply a function to an [`Matrix`] by rows.
     ///
     /// # Examples
     /// ```
-    /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+    /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
+    ///
     /// let m = Matrix22::full(3.0);
     /// assert_eq!(
     ///     m.map_rows(|v| [v[0] + 2.0, v[1]]),
@@ -183,14 +209,15 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         }
     }
 
-    /// Apply a function to an [`Matrix`] by columns, returning a new matrix with the same shape.
+    /// Apply a function to an [`Matrix`] by columns.
     ///
     /// # Examples
     /// ```
-    /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+    /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
+    ///
     /// let m = Matrix22::full(3.0);
     /// assert_eq!(
-    ///     m.map_cols(|v| [v[0] + 2.0, v[1]]),
+    ///     m.map_columns(|v| [v[0] + 2.0, v[1]]),
     ///     Matrix22 {
     ///         rows: [[5.0, 5.0], [3.0, 3.0]]
     ///     }
@@ -198,23 +225,24 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn map_cols<F>(self, f: F) -> Self
+    pub fn map_columns<F>(self, f: F) -> Self
     where
         F: FnMut([f64; N]) -> [f64; N],
     {
         self.clone().transpose().map_rows(f).transpose()
     }
-    /// Apply a function to a [`Matrix`] elementwise, returning a new matrix with the same shape.
+    /// Apply a function to [`Matrix`] elements.
     ///
     /// # Examples
     /// ```
-    /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix33};
+    /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix33};
+    ///
     /// let m = Matrix33::full(3.0);
-    /// assert_eq!(m.map_elementwise(|x| x + 2.0), m + Matrix33::full(2.0));
+    /// assert_eq!(m.map_elements(|x| x + 2.0), m + Matrix33::full(2.0));
     /// ```
     #[inline]
     #[must_use]
-    pub fn map_elementwise<F>(self, f: F) -> Self
+    pub fn map_elements<F>(self, f: F) -> Self
     where
         F: Fn(f64) -> f64,
     {
@@ -223,16 +251,19 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         }
     }
 
-    /// Returns an iterator over every element in the [`Matrix`]
-    /// The iterator yields all items from start to end.
+    /// Iterate over every element in the [`Matrix`].
+    ///
+    /// The iterator yields all matrix elements in row major order.
     ///
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
+    ///
     /// let x = Matrix22 {
     ///     rows: [[1.0, 2.0], [3.0, 4.0]],
     /// };
-    /// let mut iterator = x.iter_flat();
+    ///
+    /// let mut iterator = x.iter_elements();
     /// assert_eq!(iterator.next(), Some(1.0));
     /// assert_eq!(iterator.next(), Some(2.0));
     /// assert_eq!(iterator.next(), Some(3.0));
@@ -240,101 +271,113 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// assert_eq!(iterator.next(), None);
     /// ```
     #[inline]
-    pub fn iter_flat(&self) -> impl Iterator<Item = f64> + '_ {
+    pub fn iter_elements(&self) -> impl Iterator<Item = f64> {
         self.rows.iter().flat_map(|row| row.iter().copied())
     }
 
-    /// Returns an iterator over mutable references to every element in the [`Matrix`]
-    /// The iterator yields all items from start to end.
+    /// Iterate over every element in the [`Matrix`].
+    ///
+    /// The iterator yields all matrix elements in row major order.
     ///
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
+    ///
     /// let mut x = Matrix22 {
     ///     rows: [[1.0, 2.0], [3.0, 4.0]],
     /// };
+    ///
     /// let x_copy = x.clone();
-    /// let mut iterator = x.iter_flat_mut();
+    /// let mut iterator = x.iter_elements_mut();
     /// iterator.for_each(|x| *x *= 2.0);
     /// assert_eq!(x, x_copy * 2.0);
     /// ```
     #[inline]
-    pub fn iter_flat_mut(&mut self) -> impl Iterator<Item = &mut f64> + '_ {
+    pub fn iter_elements_mut(&mut self) -> impl Iterator<Item = &mut f64> {
         self.rows.iter_mut().flat_map(|row| row.iter_mut())
     }
 
-    /// Returns an iterator over every element in the [`Matrix`]
-    /// The iterator yields all items from start to end.
+    /// Iterate over matrix rows.
     ///
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
+    ///
     /// let x = Matrix22 {
     ///     rows: [[1.0, 2.0], [3.0, 4.0]],
     /// };
-    /// let mut iterator = x.iter();
+    /// let mut iterator = x.iter_rows();
     /// assert_eq!(iterator.next(), Some([1.0, 2.0]));
     /// assert_eq!(iterator.next(), Some([3.0, 4.0]));
     /// assert_eq!(iterator.next(), None);
     /// ```
     #[inline]
-    pub fn iter(&self) -> impl Iterator<Item = [f64; M]> + '_ {
+    pub fn iter_rows(&self) -> impl Iterator<Item = [f64; M]> {
         self.rows.iter().copied()
     }
-    /// Folds every element into an accumulator by applying an operation, returning the final result.
+
+    /// Folds every element into an accumulator by applying an operation.
     ///
-    /// `fold_elementwise` takes two arguments: an initial value, and a closure with two arguments: an ‘accumulator’, and an element. The closure returns the value that the accumulator should have for the next iteration.
+    /// `fold_elements` takes two arguments: an initial value, and a closure
+    /// with two arguments: an ‘accumulator’, and an element. The closure
+    /// returns the value that the accumulator should have for the next iteration.
     ///
     /// The initial value is the value the accumulator will have on the first call.
-    /// After applying this closure to every element of the flattened iterator, `fold_elementwise` returns the accumulator.
+    /// After applying this closure to every element of the flattened iterator,
+    /// `fold_elements` returns the accumulator.
     ///
     /// # Examples
     /// ```
-    /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+    /// use hoomd_linear_algebra::{Full, GeneralMatrix, matrix::Matrix22};
+    ///
     /// let m = Matrix22::full(3.0);
     /// // Sum the elements of a matrix
-    /// assert_eq!(m.fold_elementwise(0.0, |acc, x| acc + x), 3.0 * 4.0);
+    /// assert_eq!(m.fold_elements(0.0, |acc, x| acc + x), 3.0 * 4.0);
     /// ```
     #[inline]
-    pub fn fold_elementwise<B, F>(self, init: B, mut f: F) -> B
+    pub fn fold_elements<B, F>(self, init: B, mut f: F) -> B
     where
         F: FnMut(B, f64) -> B,
     {
         let mut accum = init;
-        for x in self.iter_flat() {
+        for x in self.iter_elements() {
             accum = f(accum, x);
         }
         accum
     }
 
-    /// Folds every row into an accumulator by applying an operation, returning the final result.
+    /// Folds every row into an accumulator by applying an operation.
     ///
-    /// `fold` takes two arguments: an initial value, and a closure with two arguments: an ‘accumulator’, and an element. The closure returns the value that the accumulator should have for the next iteration.
+    /// `fold_rows` takes two arguments: an initial value, and a closure with two
+    /// arguments: an ‘accumulator’, and an element. The closure returns the
+    /// value that the accumulator should have for the next iteration.
     ///
-    /// The initial value is the value the accumulator will have on the first call.
-    /// After applying this closure to every element of the flattened iterator, `fold` returns the accumulator.
+    /// The initial value is the value the accumulator will have on the first
+    /// call. After applying this closure to every element of the flattened
+    /// iterator, `fold_rows` returns the accumulator.
     ///
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix22};
+    ///
     /// let m = Matrix22 {
     ///     rows: [[1.0, 2.0], [3.0, 4.0]],
     /// };
     /// // Average the columns of a matrix
     /// let n_rows = m.n_rows() as f64;
     /// assert_eq!(
-    ///     m.fold([0.0; 2], |acc, x| [acc[0] + x[0], acc[1] + x[1]])
+    ///     m.fold_rows([0.0; 2], |acc, x| [acc[0] + x[0], acc[1] + x[1]])
     ///         .map(|x| x / n_rows),
     ///     [(1.0 + 3.0) / 2.0, (2.0 + 4.0) / 2.0]
     /// );
     /// ```
     #[inline]
-    pub fn fold<B, F>(self, init: B, mut f: F) -> B
+    pub fn fold_rows<B, F>(self, init: B, mut f: F) -> B
     where
         F: FnMut(B, [f64; M]) -> B,
     {
         let mut accum = init;
-        for x in self.iter() {
+        for x in self.iter_rows() {
             accum = f(accum, x);
         }
         accum
@@ -346,7 +389,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// ```
     /// use hoomd_linear_algebra::matrix::Matrix;
     ///
-    /// let m: Matrix<2, 3> = Matrix {
+    /// let m = Matrix {
     ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
     /// };
     /// assert_eq!(m.n_rows(), 2);
@@ -362,18 +405,20 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// ```
     /// use hoomd_linear_algebra::matrix::Matrix;
     ///
-    /// let m: Matrix<2, 3> = Matrix {
+    /// let m = Matrix {
     ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
     /// };
-    /// assert_eq!(m.n_cols(), 3);
+    /// assert_eq!(m.n_columns(), 3);
     /// ```
     #[must_use]
     #[inline]
-    pub const fn n_cols(&self) -> usize {
+    pub const fn n_columns(&self) -> usize {
         M
     }
 
-    /// Get the shape of the [`Matrix`] `(n_rows, n_cols)`.
+    /// Get the shape of the [`Matrix`]
+    ///
+    /// The shape is a tuple: `(n_rows, n_cols)`.
     ///
     /// # Examples
     /// ```
@@ -387,17 +432,37 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     #[must_use]
     #[inline]
     pub const fn shape(&self) -> (usize, usize) {
-        (self.n_rows(), self.n_cols())
+        (self.n_rows(), self.n_columns())
     }
 }
 impl<const N: usize> Matrix<N, N> {
+    /// Construct a square matrix with the given diagonal.
+    ///
+    /// `diagonal[i]` is the matrix element $` A_{ii} `$.
+    /// All off-diagonal elements are 0.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    ///
+    /// let a = Matrix::with_diagonal([2.0, -3.0]);
+    ///
+    /// assert_eq!(a.rows, [[2.0, 0.0], [0.0, -3.0]]);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn with_diagonal(diagonal: [f64; N]) -> Self {
+        DiagonalMatrix { elements: diagonal }.to_dense()
+    }
+
     /// Compute the signed hypervolume of the hyperparallelepiped defined by a matrix.
     ///
     /// This implementation uses the Laplace expansion, which is optimal for small
-    /// matrices but will be extremely slow for large matrixes due to its O(N!)
+    /// matrices but will be extremely slow for large matrices due to its $`O(N!)`$
     /// complexity.
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```
     /// use hoomd_linear_algebra::{SquareMatrix, matrix::Matrix22};
@@ -425,7 +490,7 @@ impl<const N: usize> Matrix<N, N> {
             col_indices: [usize; N],
             minor_size: usize,
         ) -> f64 {
-            // If we recurr any lower than 4x4 minors, performance drops dramatically
+            // If we recur any lower than 4x4 minors, performance drops dramatically
             if minor_size == 4 {
                 let r = matrix.rows;
                 let c = col_indices;
@@ -479,6 +544,7 @@ impl<const N: usize> Matrix<N, N> {
         let col_indices = std::array::from_fn(|i| i);
         det_recursive_noslice(self, 0, col_indices, N)
     }
+
     /// Compute the sum of diagonal elements of a square matrix.
     ///
     /// # Examples
@@ -500,19 +566,21 @@ impl<const N: usize> Matrix<N, N> {
             .sum()
     }
 
-    /// Compute a matrix to an integer power, equivalent to $`\prod_{i=1}^n A`$.
+    /// Compute a matrix to an integer power
+    ///
+    /// ```math
+    /// \mathbf{A}^n = \prod_{i=1}^n \mathbf{A}
+    /// ```
     ///
     /// # Examples
     ///
     /// ```
-    /// use hoomd_linear_algebra::{GeneralMatrix, MatMul, matrix::Matrix22};
+    /// use hoomd_linear_algebra::{Full, GeneralMatrix, MatMul, matrix::Matrix22};
     ///
     /// let matrix = Matrix22::full(2.0);
     ///
-    /// // powi(2) is equivalent to x.matmul(&x)
     /// assert_eq!(matrix.powi(2), matrix.matmul(&matrix));
     ///
-    /// // Standard power rules are respected.
     /// assert_eq!(matrix.powi(2).powi(2), matrix.powi(4));
     /// ```
     #[must_use]
@@ -530,35 +598,17 @@ impl<const N: usize> Matrix<N, N> {
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::matrix::Matrix33;
-    /// let mat = Matrix33 {
+    /// let a = Matrix33 {
     ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
     /// };
-    /// let diag = mat.diag();
-    /// assert_eq!(diag.rows, [1.0, 5.0, 9.0]);
+    /// let b = a.diagonal();
+    /// assert_eq!(b.elements, [1.0, 5.0, 9.0]);
     /// ```
     #[must_use]
     #[inline]
-    pub fn diag(&self) -> DiagonalMatrix<N> {
+    pub fn diagonal(&self) -> DiagonalMatrix<N> {
         DiagonalMatrix {
-            rows: std::array::from_fn(|i| self.rows[i][i]),
-        }
-    }
-
-    /// Compute a full `NxN` matrix from N diagonal elements, setting all others to 0.
-    /// # Examples
-    /// ```
-    /// use hoomd_linear_algebra::matrix::Matrix33;
-    /// let mat = Matrix33::from_diag(&[1.0, 5.0, 9.0]);
-    /// assert_eq!(mat.diag().rows, [1.0, 5.0, 9.0]);
-    /// assert_eq!(mat[(1, 2)], 0.0);
-    /// ```
-    #[must_use]
-    #[inline]
-    pub fn from_diag<T: Diagonal>(other: &T) -> Self {
-        Matrix {
-            rows: std::array::from_fn(|i| {
-                std::array::from_fn(|j| if i == j { other[i] } else { 0.0 })
-            }),
+            elements: std::array::from_fn(|i| self.rows[i][i]),
         }
     }
 
@@ -581,14 +631,15 @@ impl<const N: usize> Matrix<N, N> {
         (0..N).all(|i| (0..N).all(|j| (self[(i, j)] - if i == j { 1.0 } else { 0.0 }).abs() < tol))
     }
 }
-impl<const N: usize> QuadraticForm for Matrix<N, N> {
+
+impl<const N: usize> QuadraticForm<N> for Matrix<N, N> {
     #[inline]
-    fn compute_quadratic_form<T: Diagonal>(&self, vars: &T) -> f64 {
+    fn compute_quadratic_form(&self, x: &[f64; N]) -> f64 {
         let mut result = 0.0;
 
         for i in 0..N {
             for j in 0..N {
-                result += vars[i] * self[(i, j)] * vars[j];
+                result += x[i] * self[(i, j)] * x[j];
             }
         }
         result
@@ -603,6 +654,7 @@ impl Invertible for Matrix<2, 2> {
     /// # Examples
     /// ```
     /// use hoomd_linear_algebra::{Invertible, matrix::Matrix22};
+    ///
     /// let m = Matrix22 {
     ///     rows: [[1.0, 2.0], [3.0, 4.0]],
     /// };
@@ -632,13 +684,14 @@ impl Invertible for Matrix<3, 3> {
     /// This implementation uses a closed form solution for the matrix inverse based on
     /// the cross product of rows.
     ///
-    /// # Examples
+    /// # Example
     /// ```
-    /// use hoomd_linear_algebra::{Invertible, SquareMatrix, matrix::Matrix33};
-    /// let m = Matrix33::identity() * 5.0;
-    /// let m_inv = m.inverse().unwrap();
-    /// // The inverse of a diagonal matrix is the reciprocal of each element.
-    /// assert_eq!(m_inv, Matrix33::from_diag(&[1.0 / 5.0; 3]));
+    /// use hoomd_linear_algebra::{Invertible, SquareMatrix, matrix::Matrix};
+    ///
+    /// let m = Matrix::identity() * 5.0;
+    /// let m_inv = m.inverse();
+    ///
+    /// assert_eq!(m_inv, Some(Matrix::with_diagonal([1.0 / 5.0; 3])));
     /// ```
     #[inline]
     fn inverse(&self) -> Option<Self> {
@@ -670,6 +723,7 @@ impl Invertible for Matrix<4, 4> {
     /// use hoomd_linear_algebra::{
     ///     Invertible, MatMul, SquareMatrix, matrix::Matrix44,
     /// };
+    ///
     /// let m = Matrix44::identity();
     /// let m_inv = m.inverse().unwrap();
     /// assert_eq!(m_inv.rows, m.rows);
@@ -698,7 +752,7 @@ impl<const N: usize, const M: usize> fmt::Display for Matrix<N, M> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(&format!(
             "[{}]",
-            self.iter()
+            self.iter_rows()
                 .map(|row| {
                     format!(
                         "[{}]",
@@ -717,14 +771,16 @@ impl Matrix<2, 2> {
     /// Decompose a [`Matrix22`] into a rotation, a scaling, and a second rotation.
     ///
     /// ```math
-    /// A = U Σ V^\top;
+    /// \mathbf{A} = \mathbf{U} \boldsymbol{\Sigma} \mathbf{V}^\intercal
     /// ```
-    /// This implementation is based on the math in doi:10.1109/38.486688, and
+    /// This implementation is based on the math in [Blinn 1996], and
     /// ensures good (but not optimal) numerical stability. For certain
     /// pathological inputs, preconditioning the matrix could provide a benefit
     /// in numerical stability.
     ///
     /// `svd` sets all singular values to be positive.
+    ///
+    /// [Blinn 1996]: https://dx.doi/10.1109/38.486688
     ///
     /// # Examples
     /// ```
@@ -736,7 +792,7 @@ impl Matrix<2, 2> {
     ///     rows: [[1.0, 2.0], [3.0, 4.0]],
     /// };
     /// let (u, s, vt) = m.svd();
-    /// let m_recon = u.matmul(&s.as_dense()).matmul(&vt);
+    /// let m_recon = u.matmul(&s.to_dense()).matmul(&vt);
     /// for i in 0..2 {
     ///     for j in 0..2 {
     ///         assert!((m.rows[i][j] - m_recon.rows[i][j]).abs() < 1e-9);
@@ -778,26 +834,27 @@ impl Matrix<2, 2> {
         };
 
         let singular_values = DiagonalMatrix::<2> {
-            rows: [q + r, sy.abs()],
+            elements: [q + r, sy.abs()],
         };
 
         (u, singular_values, vt)
     }
 }
+
 impl Matrix<3, 3> {
     /// Decompose a [`Matrix33`] into a rotation, a scaling, and a second rotation.
     ///
     /// ```math
-    /// A = U Σ V^\top;
+    /// \mathbf{A} = \mathbf{U} \boldsymbol{\Sigma} \mathbf{V}^\top
     /// ```
-    /// This implementation is based on the method described by `McAdams` et al. in
-    /// "Computing the Singular Value Decomposition of 3x3 matrices with minimal
-    /// branching and elementary floating point operations", which is a fast variant
-    /// of the Jacobi iteration method.
+    /// This implementation is based on the method described by [McAdams 2011], which
+    ///  is a fast variant of the Jacobi iteration method.
     ///
     /// The method ensures that U and V are pure rotation matrices (determinant = 1).
     /// As a result, the third singular value may be negative. For a conventional
     /// SVD with non-negative singular values, the sign can be absorbed into U.
+    ///
+    /// [McAdams 2011]: http://digital.library.wisc.edu/1793/60736
     ///
     /// # Examples
     /// ```
@@ -809,7 +866,7 @@ impl Matrix<3, 3> {
     ///     rows: [[1.0, 2.0, 3.0], [0.0, 1.0, 4.0], [5.0, 6.0, 0.0]],
     /// };
     /// let (u, s, vt) = m.svd();
-    /// let m_recon = u.matmul(&s.as_dense()).matmul(&vt);
+    /// let m_recon = u.matmul(&s.to_dense()).matmul(&vt);
     /// for i in 0..3 {
     ///     for j in 0..3 {
     ///         assert!((m.rows[i][j] - m_recon.rows[i][j]).abs() < 1e-9);
@@ -877,7 +934,7 @@ impl Matrix<3, 3> {
             *u_mat = u_mat.matmul(&q_t.transpose());
         }
 
-        // Symmetric Eigenanalysis of A^T * A using Jacobi iterations
+        // Symmetric Eigenanalysis of A^\top * A using Jacobi iterations
         const NUM_JACOBI_SWEEPS: usize = 6; // Paper suggests 4, we want more accuracy
         let mut singular_values = self.transpose().matmul(self);
         let mut v = Self::identity();
@@ -922,7 +979,7 @@ impl Matrix<3, 3> {
         qr_givens_rotation(1, 2, &mut r, &mut u);
 
         // Enforce conventions for outputs. Rotations are proper and S can be negative
-        let mut sigma = r.diag();
+        let mut sigma = r.diagonal();
 
         if u.determinant() < 0.0 {
             u.rows.iter_mut().for_each(|row| row[2] *= -1.0);
@@ -947,8 +1004,6 @@ macro_rules! impl_copy_for_n_m {
 }
 
 impl_copy_for_n_m!(1, 2, 3, 4);
-
-impl<const N: usize> Diagonal for [f64; N] {}
 
 #[cfg(test)]
 mod tests {
@@ -979,7 +1034,7 @@ mod tests {
         }
         faer_matrix
     }
-    fn assert_matrixes_ulps_eq<
+    fn assert_matrices_ulps_eq<
         const N: usize,
         const M: usize,
         T0: Index<(usize, usize), Output = f64> + Debug,
@@ -996,8 +1051,8 @@ mod tests {
             }
         }
     }
-    fn assert_diags_ulps_eq<const N: usize, T: Diagonal>(
-        m0: &T,
+    fn assert_diags_ulps_eq<const N: usize>(
+        m0: &DiagonalMatrix<N>,
         m1: &impl std::ops::Index<usize, Output = f64>,
     ) {
         for i in 0..N {
@@ -1017,7 +1072,7 @@ mod tests {
             [3.0, 6.0, 8.0, 9.0],
             [4.0, 7.0, 9.0, 10.0]
         ]),
-        case(Matrix::<5, 5>::full(3.6).diag().as_dense().rows),
+        case(Matrix::<5, 5>::full(3.6).diagonal().to_dense().rows),
         case(Matrix::<8, 8>::identity().rows),
     )]
     fn test_determinant<const N: usize>(rows: [[f64; N]; N]) {
@@ -1044,7 +1099,7 @@ mod tests {
             [[1.0, 0.0, 2.0], [0.0, 1.0, 1.0], [4.0, 0.0, 0.0]]
         ),
         case(Matrix::<4, 4>::identity().rows, Matrix::<4, 4>::full(2.0).rows),
-        case(Matrix::<5, 5>::full(3.6).diag().as_dense().rows, Matrix::<5, 5>::identity().rows),
+        case(Matrix::<5, 5>::full(3.6).diagonal().to_dense().rows, Matrix::<5, 5>::identity().rows),
         case(Matrix::<8, 8>::identity().rows, Matrix::<8, 8>::full(1.5).rows),
     )]
     fn test_matrix_multiply_square<const N: usize>(a_rows: [[f64; N]; N], b_rows: [[f64; N]; N]) {
@@ -1056,7 +1111,7 @@ mod tests {
 
         let custom_prod = a.matmul(&b);
         let faer_prod = faer_a * faer_b;
-        assert_matrixes_ulps_eq::<N, N, _, _>(&custom_prod, &faer_prod);
+        assert_matrices_ulps_eq::<N, N, _, _>(&custom_prod, &faer_prod);
     }
 
     #[rstest]
@@ -1088,7 +1143,7 @@ mod tests {
 
         let custom_prod = a.matmul(&b);
         let faer_prod = faer_a * faer_b;
-        assert_matrixes_ulps_eq::<N, K, _, _>(&custom_prod, &faer_prod);
+        assert_matrices_ulps_eq::<N, K, _, _>(&custom_prod, &faer_prod);
     }
 
     #[rstest(
@@ -1115,7 +1170,7 @@ mod tests {
         let (u, s, vt) = matrix.svd();
 
         // Verify we can rebuild A from UΣVt
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&u.matmul(&s.as_dense()).matmul(&vt), &matrix);
+        assert_matrices_ulps_eq::<2, 2, _, _>(&u.matmul(&s.to_dense()).matmul(&vt), &matrix);
 
         // Test against faer
         let faer = fill_faer(rows);
@@ -1132,10 +1187,10 @@ mod tests {
             faerv[(1, 1)] *= -1.0;
         }
 
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&u, &faeru);
-        assert_diags_ulps_eq::<2, _>(&s, &faers);
+        assert_matrices_ulps_eq::<2, 2, _, _>(&u, &faeru);
+        assert_diags_ulps_eq(&s, &faers);
         // Note that faer returns V, not Vt
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&vt, &faerv.transpose());
+        assert_matrices_ulps_eq::<2, 2, _, _>(&vt, &faerv.transpose());
     }
 
     #[rstest(
@@ -1159,16 +1214,16 @@ mod tests {
         let (u, s, vt) = matrix.svd();
 
         // Verify we can rebuild A from UΣVt
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&u.matmul(&s.as_dense()).matmul(&vt), &matrix);
+        assert_matrices_ulps_eq::<2, 2, _, _>(&u.matmul(&s.to_dense()).matmul(&vt), &matrix);
 
         // Test against nalgebra
         let na = nalgebra::Matrix2::from(rows).transpose();
         let nasvd = na.svd(true, true);
         let (nau, nas, navt) = (nasvd.u.unwrap(), nasvd.singular_values, nasvd.v_t.unwrap());
 
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&u, &nau);
-        assert_diags_ulps_eq::<2, _>(&s, &nas);
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&vt, &navt);
+        assert_matrices_ulps_eq::<2, 2, _, _>(&u, &nau);
+        assert_diags_ulps_eq::<2>(&s, &nas);
+        assert_matrices_ulps_eq::<2, 2, _, _>(&vt, &navt);
     }
 
     #[rstest(
@@ -1186,13 +1241,13 @@ mod tests {
 
         // Verify reconstruction
         let m_recon = u.matmul(&s).matmul(&vt);
-        assert_matrixes_ulps_eq::<3, 3, _, _>(&m_recon, &matrix);
+        assert_matrices_ulps_eq::<3, 3, _, _>(&m_recon, &matrix);
 
         // Verify properties of U and V
         assert_relative_eq!(u.determinant(), 1.0, epsilon = EPS);
         assert_relative_eq!(vt.transpose().determinant(), 1.0, epsilon = EPS);
-        assert_matrixes_ulps_eq::<3, 3, _, _>(&u.matmul(&u.transpose()), &Matrix33::identity());
-        assert_matrixes_ulps_eq::<3, 3, _, _>(&vt.matmul(&vt.transpose()), &Matrix33::identity());
+        assert_matrices_ulps_eq::<3, 3, _, _>(&u.matmul(&u.transpose()), &Matrix33::identity());
+        assert_matrices_ulps_eq::<3, 3, _, _>(&vt.matmul(&vt.transpose()), &Matrix33::identity());
 
         // Compare with faer SVD
         let faer_mat = fill_faer(rows);
@@ -1200,7 +1255,12 @@ mod tests {
 
         let faers = faersvd.S();
         // Our implementation allows negative singular value
-        assert_diags_ulps_eq::<3, _>(&s.rows.map(f64::abs), &faers);
+        assert_diags_ulps_eq(
+            &DiagonalMatrix {
+                elements: s.elements.map(f64::abs),
+            },
+            &faers,
+        );
     }
 
     #[test]
@@ -1210,7 +1270,7 @@ mod tests {
         let faer_matrix = fill_faer(rows);
         let custom_transpose = matrix.transpose();
         let faer_transpose = faer_matrix.transpose();
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&custom_transpose, &faer_transpose);
+        assert_matrices_ulps_eq::<2, 2, _, _>(&custom_transpose, &faer_transpose);
     }
 
     #[test]
@@ -1220,7 +1280,7 @@ mod tests {
         let faer_matrix = fill_faer(rows);
         let custom_transpose = matrix.transpose();
         let faer_transpose = faer_matrix.transpose();
-        assert_matrixes_ulps_eq::<3, 2, _, _>(&custom_transpose, &faer_transpose);
+        assert_matrices_ulps_eq::<3, 2, _, _>(&custom_transpose, &faer_transpose);
     }
 
     #[test]
@@ -1230,14 +1290,14 @@ mod tests {
         let faer_matrix = fill_faer(rows);
         let custom_transpose = matrix.transpose();
         let faer_transpose = faer_matrix.transpose();
-        assert_matrixes_ulps_eq::<2, 3, _, _>(&custom_transpose, &faer_transpose);
+        assert_matrices_ulps_eq::<2, 3, _, _>(&custom_transpose, &faer_transpose);
     }
 
     #[test]
     fn test_transpose_1x1() {
         let rows = [[-9.0]];
         let matrix = Matrix::<1, 1> { rows };
-        assert_matrixes_ulps_eq::<1, 1, _, _>(&matrix.transpose(), &matrix);
+        assert_matrices_ulps_eq::<1, 1, _, _>(&matrix.transpose(), &matrix);
     }
 
     #[test]
@@ -1259,7 +1319,7 @@ mod tests {
         let expected = Matrix::<3, 3> {
             rows: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
         };
-        assert_matrixes_ulps_eq::<3, 3, _, _>(&identity, &expected);
+        assert_matrices_ulps_eq::<3, 3, _, _>(&identity, &expected);
     }
 
     #[test]
@@ -1267,17 +1327,17 @@ mod tests {
         let mat = Matrix::<3, 3> {
             rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
         };
-        let diag = mat.diag();
+        let diag = mat.diagonal();
         let expected_diag = DiagonalMatrix {
-            rows: [1.0, 5.0, 9.0],
+            elements: [1.0, 5.0, 9.0],
         };
-        assert_diags_ulps_eq::<3, _>(&diag, &expected_diag);
+        assert_diags_ulps_eq(&diag, &expected_diag);
 
-        let from_diag = Matrix::<3, 3>::from_diag(&diag);
+        let from_diag = diag.to_dense();
         let expected_from_diag = Matrix {
             rows: [[1.0, 0.0, 0.0], [0.0, 5.0, 0.0], [0.0, 0.0, 9.0]],
         };
-        assert_matrixes_ulps_eq::<3, 3, _, _>(&from_diag, &expected_from_diag);
+        assert_matrices_ulps_eq::<3, 3, _, _>(&from_diag, &expected_from_diag);
     }
 
     #[rstest(
@@ -1317,7 +1377,7 @@ mod tests {
         let product = matrix.matmul(&inv_matrix);
         let identity = Matrix22::identity();
 
-        assert_matrixes_ulps_eq::<2, 2, _, _>(&product, &identity);
+        assert_matrices_ulps_eq::<2, 2, _, _>(&product, &identity);
     }
     #[rstest(
         rows,
@@ -1332,7 +1392,7 @@ mod tests {
         let product = matrix.matmul(&inv_matrix);
         let identity = Matrix33::identity();
 
-        assert_matrixes_ulps_eq::<3, 3, _, _>(&product, &identity);
+        assert_matrices_ulps_eq::<3, 3, _, _>(&product, &identity);
     }
     #[rstest(
         rows,
@@ -1345,7 +1405,7 @@ mod tests {
         let product = matrix.matmul(&inv_matrix);
         let identity = Matrix44::identity();
 
-        assert_matrixes_ulps_eq::<4, 4, _, _>(&product, &identity);
+        assert_matrices_ulps_eq::<4, 4, _, _>(&product, &identity);
     }
     #[rstest]
     #[case(Matrix::<3,3>::identity(), 1e-12, true)]
