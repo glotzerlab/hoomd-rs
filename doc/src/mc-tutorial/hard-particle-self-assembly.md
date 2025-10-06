@@ -77,11 +77,11 @@ Assign all the model parameters in one code block so that they are easy to modif
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:parameters}}
 ```
 
-`box_length` is the side length of the square simulation box, `n_bodies` is
-the number of ellipses to add, `maximum_distance` is the largest distance
-a translation trial move can take, `maximum_rotation` is the largest angle
-possible in a rotation trial move, `sigma` is the major axis of the ellipse,
-`aspect` is the ellipse aspect ratio and `kt` is the temperature set point (in
+`box_length` is the side length of the square simulation box, `n_bodies` is the number
+of ellipses to add, `maximum_distance` is the largest distance a translation trial move
+can take, `maximum_rotation` is the largest angle possible in a rotation trial move,
+`sigma` is the major axis of the ellipse, `aspect` is the ellipse aspect ratio and
+`macrostate` holds the temperature set point (in
 units of energy).
 
 To ensure that `sigma` is the major axis, `aspect` must be greater than or equal

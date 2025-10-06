@@ -88,6 +88,15 @@ that expresses $`H = 0`$:
 {{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:hamiltonian}}
 ```
 
+### Macrostate
+
+Local trial moves are accepted or rejected based on the temperature of the
+simulation. You need to supply a macrostate even though this simulation has
+no interactions. Set the temperature to 1.0 as a placeholder:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:macrostate}}
+```
+
 ## Advancing the Simulation
 
 Use a `for` loop to execute the simulation a given number of steps:

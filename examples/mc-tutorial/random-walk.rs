@@ -3,6 +3,7 @@
 use hoomd_interaction::Zero;
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{Body, MicrostateBuilder};
+use hoomd_simulation::macrostate::Isothermal;
 use hoomd_vector::Cartesian;
 // ANCHOR_END: use
 
@@ -29,11 +30,15 @@ fn main() -> anyhow::Result<()> {
     let hamiltonian = Zero;
     // ANCHOR_END: hamiltonian
 
+    // ANCHOR: macrostate
+    let macrostate = Isothermal { temperature: 1.0, };
+    // ANCHOR_END: macrostate
+
     // ANCHOR: steps
     for _ in 0..100 {
         // ANCHOR_END: steps
         // ANCHOR: apply
-        translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);
+        translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
         // ANCHOR_END: apply
         // ANCHOR: increment
         microstate.increment_step();

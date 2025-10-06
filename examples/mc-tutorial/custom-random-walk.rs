@@ -9,7 +9,7 @@ use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder, boundary::Closed, property::Point,
 };
-use hoomd_simulation::Simulation;
+use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_vector::{Cartesian, Vector};
 // ANCHOR_END: use
 
@@ -72,7 +72,7 @@ struct CustomRandomWalk {
     /// Trial moves to apply.
     translate_sweep: Sweep<Discrete>,
     /// Temperature set point.
-    kt: f64,
+    macrostate: Isothermal,
 }
 // ANCHOR_END: simulation_struct
 
@@ -82,9 +82,9 @@ impl CustomRandomWalk {
     fn new() -> anyhow::Result<CustomRandomWalk> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
-        let kt = 1.0;
         let n = 1000;
         let radius = 50.0;
+        let macrostate = Isothermal { temperature: 1.0, };
         // ANCHOR_END: parameters
 
         // ANCHOR: microstate
@@ -108,7 +108,7 @@ impl CustomRandomWalk {
             microstate,
             hamiltonian,
             translate_sweep,
-            kt,
+            macrostate,
         })
     }
 }
@@ -123,7 +123,7 @@ impl Simulation for CustomRandomWalk {
         self.translate_sweep.apply(
             &mut self.microstate,
             &self.hamiltonian,
-            &self.kt,
+            &self.macrostate,
         );
         self.microstate.increment_step();
         Ok(())
