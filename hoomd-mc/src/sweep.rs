@@ -10,6 +10,7 @@ use hoomd_microstate::{
     boundary::{GenerateGhosts, Wrap},
     property::Position,
 };
+use hoomd_simulation::macrostate::Temperature;
 
 use rand::Rng;
 
@@ -20,8 +21,8 @@ use rand::Rng;
 /// r < \exp\left(\frac{-\Delta H}{kT}\right)
 /// ```
 /// where `r` is a random value uniformly distributed in `[0,1)`, $`\Delta H`$ is
-/// the change in energy computed by the given `hamiltonian` and $`kT`$ is the given
-/// `state` value (the last argument to `apply`).
+/// the change in energy computed by the given `hamiltonian` and $`kT`$ is the
+/// `temperature` given in `macrostate`.
 ///
 /// # Example
 ///
@@ -29,6 +30,7 @@ use rand::Rng;
 /// use hoomd_interaction::Zero;
 /// use hoomd_mc::{Sweep, Translate, Trial};
 /// use hoomd_microstate::{Body, Microstate, property::Position};
+/// use hoomd_simulation::macrostate::Isothermal;
 /// use hoomd_vector::Cartesian;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -41,10 +43,10 @@ use rand::Rng;
 /// let translate_sweep = Sweep(translate);
 ///
 /// let hamiltonian = Zero;
-/// let kt = 1.0;
+/// let macrostate = Isothermal { temperature: 1.0 };
 ///
 /// for _ in 0..1_000 {
-///     translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
+///     translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
 ///     microstate.increment_step();
 /// }
 /// # Ok(())
@@ -52,25 +54,25 @@ use rand::Rng;
 /// ```
 pub struct Sweep<L>(pub L);
 
-impl<V, B, S, C, L, H> Trial<Microstate<B, S, C>, H> for Sweep<L>
+impl<V, B, S, C, L, H, MA> Trial<Microstate<B, S, C>, H, MA> for Sweep<L>
 where
     B: Copy + Default + Transform<S> + Position<Vector = V>,
     S: Copy + Default + Position<Vector = V>,
     L: LocalTrial<B>,
     H: DeltaEnergyOne<B, S, C>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    MA: Temperature,
 {
     type Count = Count;
-    type Macrostate = f64;
 
     #[inline]
     fn apply(
         &self,
         microstate: &mut Microstate<B, S, C>,
         hamiltonian: &H,
-        state: &Self::Macrostate,
+        macrostate: &MA,
     ) -> Self::Count {
-        let kt = state;
+        let kt = macrostate.temperature();
         let mut rng = microstate.counter().make_rng();
         let mut count = Self::Count::default();
         let mut trial = Body::<B, S>::default();
@@ -121,6 +123,7 @@ mod tests {
     use hoomd_geometry::shape::Hypercuboid;
     use hoomd_interaction::{External, SiteEnergy, TotalEnergy, Zero};
     use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};
+    use hoomd_simulation::macrostate::Isothermal;
     use hoomd_vector::{Cartesian, InnerProduct};
     use rstest::*;
 
@@ -162,6 +165,7 @@ mod tests {
             .add_body(Body::point(origin))
             .expect("the hard-coded body should be inside the boundary");
         let hamiltonian = External(Harmonic(origin));
+        let macrostate = Isothermal { temperature: kt };
 
         let d = 0.1;
         let translate = Translate {
@@ -175,7 +179,7 @@ mod tests {
         let mut energy_accumulator = 0.0;
 
         for _ in 0..N_STEPS {
-            translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
+            translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
 
             position_accumulator += microstate.bodies()[0].item.properties.position;
             energy_accumulator += hamiltonian.total_energy(&microstate);
@@ -210,15 +214,16 @@ mod tests {
         let hamiltonian = Zero;
         let translate = Right;
         let translate_sweep = Sweep(translate);
+        let macrostate = Isothermal { temperature: 1.0 };
 
         // The first move to the right ends in the boundary and should be accepted.
-        let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);
+        let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
         assert_eq!(counter.accepted, 1);
         assert_eq!(counter.rejected, 0);
 
         // The second move to the right places the body just on the boundary and should be
         // rejected.
-        let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);
+        let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
         assert_eq!(counter.accepted, 0);
         assert_eq!(counter.rejected, 1);
     }
@@ -246,15 +251,16 @@ mod tests {
         let hamiltonian = Zero;
         let translate = Right;
         let translate_sweep = Sweep(translate);
+        let macrostate = Isothermal { temperature: 1.0 };
 
         // The first move to the right ends in the boundary and should be accepted.
-        let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);
+        let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
         assert_eq!(counter.accepted, 1);
         assert_eq!(counter.rejected, 0);
 
         // The second move to the right places the body just on the boundary and should be
         // rejected.
-        let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &1.0);
+        let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
         assert_eq!(counter.accepted, 0);
         assert_eq!(counter.rejected, 1);
     }

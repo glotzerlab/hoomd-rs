@@ -109,6 +109,7 @@ multiple_crate_versions = "allow"
 # allow some pedantic rules
 cast_precision_loss = "allow"
 float_cmp = "allow"
+similar_names = "allow"
 
 # opt-in to restrictions
 allow_attributes_without_reason = "warn"

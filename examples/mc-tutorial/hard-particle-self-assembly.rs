@@ -13,7 +13,7 @@ use hoomd_mc::{QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn};
 use hoomd_microstate::{
     Microstate, MicrostateBuilder, boundary::Periodic, property::OrientedPoint,
 };
-use hoomd_simulation::Simulation;
+use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_vector::{self, Angle, Cartesian};
 // ANCHOR_END: use
 
@@ -35,7 +35,7 @@ struct HardEllipseSelfAssembly {
     /// Trial moves to apply.
     rotate_sweep: Sweep<Rotate>,
     /// Temperature set point.
-    kt: f64,
+    macrostate: Isothermal,
     /// Quick insert
     quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Rectangle>>>,
     /// How sites interact when inserted.
@@ -66,7 +66,7 @@ impl HardEllipseSelfAssembly {
         let maximum_rotation = 0.1;
         let sigma = 1.0;
         let aspect = 5.0;
-        let kt = 1.0;
+        let macrostate = Isothermal { temperature: 1.0 };
         assert!(aspect >= 1.0);
         // ANCHOR_END: parameters
 
@@ -135,7 +135,7 @@ impl HardEllipseSelfAssembly {
             translate_sweep,
             rotate_sweep,
             quick_insert,
-            kt,
+            macrostate,
             phase: Phase::Initialize,
         })
     }
@@ -184,13 +184,13 @@ impl HardEllipseSelfAssembly {
         self.translate_sweep.apply(
             &mut self.microstate,
             &self.insert_hamiltonian,
-            &1.0,
+            &Isothermal { temperature: 1.0 },
         );
 
         self.rotate_sweep.apply(
             &mut self.microstate,
             &self.insert_hamiltonian,
-            &1.0,
+            &Isothermal { temperature: 1.0 },
         );
         // ANCHOR_END: initialize_trial_moves
 
@@ -223,11 +223,14 @@ impl HardEllipseSelfAssembly {
         self.translate_sweep.apply(
             &mut self.microstate,
             &self.hamiltonian,
-            &self.kt,
+            &self.macrostate,
         );
 
-        self.rotate_sweep
-            .apply(&mut self.microstate, &self.hamiltonian, &1.0);
+        self.rotate_sweep.apply(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.macrostate,
+        );
     }
 }
 // ANCHOR_END: equilibrate
