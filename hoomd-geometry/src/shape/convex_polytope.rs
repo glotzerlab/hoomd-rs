@@ -212,11 +212,6 @@ impl<const N: usize> BoundingSphereRadius for ConvexPolytope<N> {
 
 #[cfg(test)]
 mod tests {
-    #![expect(
-        clippy::similar_names,
-        reason = "tests do not need to adhere to this rule"
-    )]
-
     use super::*;
     use crate::{Convex, IntersectsAt};
     use hoomd_vector::{Angle, Cartesian, Rotate, Rotation, Versor};

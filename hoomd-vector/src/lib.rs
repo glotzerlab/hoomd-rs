@@ -717,7 +717,6 @@ pub trait Rotation: Copy {
 /// assert_relative_eq!(o_ab.theta, PI / 2.0);
 /// ```
 #[inline]
-#[expect(clippy::similar_names, reason = "standard math notation")]
 pub fn pair_system_to_local<V, R>(r_a: &V, o_a: &R, r_b: &V, o_b: &R) -> (V, R)
 where
     V: Vector,
