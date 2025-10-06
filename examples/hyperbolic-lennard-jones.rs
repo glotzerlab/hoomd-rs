@@ -90,13 +90,14 @@ impl Fill {
         let initial_spacing = 1.0;
         let mut rng = StdRng::seed_from_u64(23);
         let sample_disk = HyperbolicDisk {
-            r: initial_spacing.try_into()?,
-            point: Minkowski::from([
-                0.00001,
-                0.00001,
-                f64::sqrt(2.0 * (0.00001_f64).powi(2) + RHO.powi(2)),
-            ]),
-            skirt: RHO,
+            disk_radius: initial_spacing.try_into()?,
+            point: Hyperboloid::<3>::from_minkowski_coordinates(
+                Minkowski::from([
+                    0.00001,
+                    0.00001,
+                    f64::sqrt(2.0 * (0.00001_f64).powi(2) + RHO.powi(2)),
+                ]),
+            RHO),
         };
         for _n in 0..PARTICLE_NUMBER {
             let new_point: Hyperboloid<3> =

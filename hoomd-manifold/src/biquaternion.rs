@@ -408,7 +408,8 @@ impl Biquaternion {
     #[inline]
     #[must_use]
     pub fn to_unit_unchecked(self) -> UnitBiquaternion {
-        UnitBiquaternion(self)
+        let mag = self.norm();
+        UnitBiquaternion(self / mag)
     }
 }
 
@@ -1065,7 +1066,19 @@ mod tests {
             Complex::new(2.0, 1.0),
         ]);
         let a_unit = a.to_unit().expect("hard-coded to be nonzero");
-        assert_eq!(a_unit.norm_squared().re, 1.0);
+        assert_relative_eq!(a_unit.norm_squared().re, 1.0, epsilon=1e-12);
+    }
+
+    #[test]
+    fn to_unit_unchecked() {
+        let a = Biquaternion::from([
+            Complex::new(2.8, 0.5),
+            Complex::new(-1.0, 2.0),
+            Complex::new(0.5, 1.3),
+            Complex::new(2.3, 3.4),
+        ]);
+        let a_unit = a.to_unit_unchecked();
+        assert_relative_eq!(a_unit.norm_squared().re, 1.0, epsilon=1e-12);
     }
 
     // Test named cases of three input values (rotation biquaternion, Minkowski input, and answer)

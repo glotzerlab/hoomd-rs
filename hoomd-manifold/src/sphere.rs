@@ -127,7 +127,15 @@ impl Sphere<4> {
     }
 }
 
-/// [`Metric`] implements the positively curved metric on the surface of a sphere
+/// The distance between two points on a `Sphere<3>`. Explicitly, the
+/// metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a 2-sphere with
+/// radius  $`R`$ is given by
+///
+/// ```math
+/// d_{H_2}(\vec{u}, \vec{v}) = R \arccosh\left[\frac{1}{R^2}(u_1v_1 + u_2v_2 + u_3v_3)\right]
+/// ```
+/// This choice of metric furnishes a representation of 2-dimensional spherical
+/// space with Gaussian curvature $`K = 1/R^2`$.
 impl Metric for Sphere<3> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
@@ -148,6 +156,15 @@ impl Metric for Sphere<3> {
     }
 }
 
+/// The distance between two points on a `Sphere<4>`. Explicitly, the
+/// metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a 3-sphere with
+/// radius  $`R`$ is given by
+///
+/// ```math
+/// d_{H_2}(\vec{u}, \vec{v}) = R \arccosh\left[\frac{1}{R^2}(u_1v_1 + u_2v_2 + u_3v_3 + u_4v_4)\right]
+/// ```
+/// This choice of metric furnishes a representation of 3-dimensional spherical
+/// space with Gaussian curvature $`K = 1/R^2`$.
 impl Metric for Sphere<4> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
@@ -185,20 +202,20 @@ impl Metric for Sphere<4> {
 /// let mut rng = StdRng::seed_from_u64(12);
 ///
 /// let sample_disk = SphericalDisk {
-///     r: 0.5_f64.try_into()?,
-///     point: Cartesian::from([
-///         0.01,
-///         0.01,
-///         -(radius.powi(2) - 2.0 * (0.01_f64).powi(2)).sqrt(),
-///     ]),
-///     radius: radius,
+///     disk_radius: 0.5_f64.try_into()?,
+///     point: Sphere::<3>::from_cartesian_coordinates(
+///         Cartesian::from([
+///             0.01,
+///             0.01,
+///             -(radius.powi(2) - 2.0 * (0.01_f64).powi(2)).sqrt(),
+///         ]),
+///     radius),
 /// };
 /// let random_point: Sphere<3> = sample_disk.sample(&mut rng);
 ///
 /// let disk = SphericalDisk {
-///     r: 0.1_f64.try_into()?,
-///     point: *random_point.point(),
-///     radius: radius,
+///     disk_radius: 0.1_f64.try_into()?,
+///     point: random_point
 /// };
 /// let transformed_random_point: Sphere<3> = disk.sample(&mut rng);
 ///
@@ -209,11 +226,9 @@ impl Metric for Sphere<4> {
 /// ```
 pub struct SphericalDisk {
     /// Max distance away from point.
-    pub r: PositiveReal,
+    pub disk_radius: PositiveReal,
     /// The center of the disk.
-    pub point: Cartesian<3>,
-    /// The radius of the sphere.
-    pub radius: f64,
+    pub point: Sphere<3>
 }
 
 impl<const N: usize> Default for Sphere<N> {
@@ -233,11 +248,11 @@ impl Distribution<Sphere<3>> for SphericalDisk {
     /// surface of a sphere by maximum distance of r.
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Sphere<3> {
-        let radius = self.radius;
-        let max_trans = (self.r.get()) / radius;
+        let radius = self.point.radius;
+        let max_trans = (self.disk_radius.get()) / radius;
         let point = self.point;
-        let phi = point.coordinates[1].atan2(point.coordinates[0]);
-        let theta = (point.coordinates[2] / radius).acos();
+        let phi = point.point.coordinates[1].atan2(point.point.coordinates[0]);
+        let theta = (point.point.coordinates[2] / radius).acos();
         let trial_zenith = Uniform::new(0.0, 1.0).expect("r is positive and real");
         let trial_azimuth = Uniform::new(-PI, PI).expect("hard-coded distribution should be valid");
         let azi = trial_azimuth.sample(rng);
@@ -257,8 +272,6 @@ impl Distribution<Sphere<3>> for SphericalDisk {
             -trial_coords[0] * (theta.sin()) + trial_coords[2] * (theta.cos()),
         ]);
         let new_sphere = Sphere::from_cartesian_coordinates(transformed_point, radius);
-        #[cfg(debug_assertions)]
-        assert_relative_eq!(radius, new_sphere.radius, epsilon = 1e-12);
         new_sphere
     }
 }
@@ -335,9 +348,8 @@ mod tests {
         let n_pole = Cartesian::from([0.0, 0.0, 1.0]);
         for _n in 0..10 {
             let disk = SphericalDisk {
-                r: d.try_into().expect("hard-coded positive number"),
-                point: n_pole,
-                radius: 1.0,
+                disk_radius: d.try_into().expect("hard-coded positive number"),
+                point: Sphere::<3>::from_cartesian_coordinates(n_pole, 1.0)
             };
             let random_point: Sphere<3> = disk.sample(&mut rng);
 

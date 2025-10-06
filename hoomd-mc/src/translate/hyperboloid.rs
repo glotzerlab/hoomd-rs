@@ -63,9 +63,8 @@ where
         let mut trial = body_properties;
         let rho = trial.position().skirt();
         let disk = HyperbolicDisk {
-            r: *self.maximum_distance(),
-            point: *trial.position_mut().point(),
-            skirt: rho,
+            disk_radius: *self.maximum_distance(),
+            point: *trial.position_mut()
         };
         let trial_sample = disk.sample(rng);
         // push point back onto hyperboloid

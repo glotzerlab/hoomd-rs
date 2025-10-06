@@ -634,6 +634,8 @@ impl<const N: usize> Hyperboloid<N> {
     }
 }
 
+/// `Default` for `Hyperboloid<N>` is the cusp of a `Hyperboloid<N>` with skirt
+/// width of 1 (i.e., the point $`(0, \cdots, 0, 1)`$).
 impl<const N: usize> Default for Hyperboloid<N> {
     #[inline]
     fn default() -> Self {
@@ -646,6 +648,15 @@ impl<const N: usize> Default for Hyperboloid<N> {
     }
 }
 
+/// The distance between two points on a `Hyperboloid<3>`. Explicitly, the
+/// metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a hyperboloid with
+/// skirt width $`\rho`$ is given by
+///
+/// ```math
+/// d_{H_2}(\vec{u}, \vec{v}) = \rho \arccosh\left[\frac{1}{\rho^2}(u_3v_3 - u_1v_1 - u_2v_2)\right]
+/// ```
+/// This choice of metric furnishes a representation of 2-dimensional hyperbolic
+/// space with Gaussian curvature $`K = -1/\rho^2`$.
 impl Metric for Hyperboloid<3> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
@@ -673,6 +684,15 @@ impl Metric for Hyperboloid<3> {
     }
 }
 
+/// The distance between two points on a `Hyperboloid<4>`. Explicitly, the
+/// metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a hyperboloid with
+/// skirt width $`\rho`$ is given by
+///
+/// ```math
+/// d_{H_3}(\vec{u}, \vec{v}) = \rho \arccosh\left[\frac{1}{\rho^2}(u_4v_4 - u_1v_1 - u_2v_2 - u_3v_3)\right]
+/// ```
+/// This choice of metric furnishes a representation of 3-dimensional hyperbolic
+/// space with with Gaussian curvature $`K = -1/\rho^2`$.
 impl Metric for Hyperboloid<4> {
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
@@ -901,9 +921,8 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
 /// let r = 0.1;
 /// let mut rng_2 = StdRng::seed_from_u64(239);
 /// let disk = HyperbolicDisk {
-///     r: r.try_into()?,
-///     point: *random_point.point(),
-///     skirt: rho,
+///     disk_radius: r.try_into()?,
+///     point: random_point,
 /// };
 /// let transformed_random_point: Hyperboloid<3> = disk.sample(&mut rng_2);
 ///
@@ -914,11 +933,9 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
 /// ```
 pub struct HyperbolicDisk {
     /// Max distance away from point.
-    pub r: PositiveReal,
+    pub disk_radius: PositiveReal,
     /// The center of the disk.
-    pub point: Minkowski<3>,
-    /// The skirt width of the hyperboloid.
-    pub skirt: f64,
+    pub point: Hyperboloid<3>,
 }
 
 impl Distribution<Hyperboloid<3>> for HyperbolicDisk {
@@ -931,11 +948,11 @@ impl Distribution<Hyperboloid<3>> for HyperbolicDisk {
     /// that the max distance translated by the trial move does not exceed `r`.
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Hyperboloid<3> {
-        let rho = self.skirt;
-        let max_boost = (self.r.get()) / rho;
+        let rho = self.point.skirt;
+        let max_boost = (self.disk_radius.get()) / rho;
         let point = self.point;
-        let eta = (point.coordinates[2] / rho).acosh();
-        let phi = point.coordinates[1].atan2(point.coordinates[0]);
+        let eta = (point.point.coordinates[2] / rho).acosh();
+        let phi = point.point.coordinates[1].atan2(point.point.coordinates[0]);
         let trial_boost = Uniform::new(0.0, 1.0).expect("r is positive and real");
         let trial_rotation =
             Uniform::new(-PI, PI).expect("hard-coded distribution should be valid");
@@ -956,8 +973,6 @@ impl Distribution<Hyperboloid<3>> for HyperbolicDisk {
             trial_coords[0] * (eta.sinh()) + trial_coords[2] * (eta.cosh()),
         ]);
         let new_hyperboloid = Hyperboloid::from_minkowski_coordinates(transformed_point, rho);
-        #[cfg(debug_assertions)]
-        assert_relative_eq!(rho, new_hyperboloid.skirt(), epsilon = 1e-12);
         new_hyperboloid
     }
 }
@@ -1300,9 +1315,8 @@ mod tests {
         let origin = Minkowski::from([0.0, 0.0, 1.0]);
         for _n in 0..10 {
             let disk = HyperbolicDisk {
-                r: d.try_into().expect("hard-coded positive number"),
-                point: origin,
-                skirt: 1.0,
+                disk_radius: d.try_into().expect("hard-coded positive number"),
+                point: Hyperboloid::<3>::from_minkowski_coordinates(origin, 1.0)
             };
             let random_point: Hyperboloid<3> = disk.sample(&mut rng);
 

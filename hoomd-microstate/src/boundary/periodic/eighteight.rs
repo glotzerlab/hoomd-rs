@@ -490,9 +490,10 @@ mod tests {
         let r = 1.528_570_919_480_998;
         let mut rng = StdRng::seed_from_u64(239);
         let disk = HyperbolicDisk {
-            r: r.try_into().expect("hard-coded positive number"),
-            point: Minkowski::from([0.0, 0.0, 1.0]),
-            skirt: 1.0,
+            disk_radius: r.try_into().expect("hard-coded positive number"),
+            point: Hyperboloid::from_minkowski_coordinates(
+                Minkowski::from([0.0, 0.0, 1.0]),
+            1.0)
         };
         let random_point: Hyperboloid<3> = disk.sample(&mut rng);
         let random_point = Point::new(random_point);

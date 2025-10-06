@@ -53,9 +53,8 @@ where
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B {
         let mut trial = body_properties;
         let disk = SphericalDisk {
-            r: *self.maximum_distance(),
-            point: *trial.position_mut().point(),
-            radius: trial.position().radius(),
+            disk_radius: *self.maximum_distance(),
+            point: *trial.position_mut(),
         };
         *trial.position_mut() = disk.sample(rng);
         let rescale = trial.position().radius() / trial.position().point().norm();
