@@ -14,12 +14,12 @@ version.workspace = true
 workspace = true
 
 [dev-dependencies]
-faer = "0.22.6"
+faer = "=0.22.6"
 approx.workspace = true
 divan.workspace = true
 rand.workspace = true
 rstest.workspace = true
-nalgebra = "0.33.2"
+nalgebra = "=0.33.2"
 
 
 [[bench]]
