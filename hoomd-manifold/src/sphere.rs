@@ -271,8 +271,7 @@ impl Distribution<Sphere<3>> for SphericalDisk {
                 + trial_coords[2] * (theta.sin()) * (phi.sin()),
             -trial_coords[0] * (theta.sin()) + trial_coords[2] * (theta.cos()),
         ]);
-        let new_sphere = Sphere::from_cartesian_coordinates(transformed_point, radius);
-        new_sphere
+        Sphere::from_cartesian_coordinates(transformed_point, radius)
     }
 }
 

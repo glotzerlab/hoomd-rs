@@ -972,8 +972,7 @@ impl Distribution<Hyperboloid<3>> for HyperbolicDisk {
                 + trial_coords[2] * (eta.sinh()) * (phi.sin()),
             trial_coords[0] * (eta.sinh()) + trial_coords[2] * (eta.cosh()),
         ]);
-        let new_hyperboloid = Hyperboloid::from_minkowski_coordinates(transformed_point, rho);
-        new_hyperboloid
+        Hyperboloid::from_minkowski_coordinates(transformed_point, rho)
     }
 }
 
