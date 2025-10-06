@@ -1,7 +1,7 @@
 [package]
-name = "hoomd-microstate"
+name = "hoomd-linear-algebra"
 categories.workspace = true
-description = "Store and manage a system microstate."
+description = "Linear algebra library optimized for small matrixes."
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
@@ -13,17 +13,15 @@ version.workspace = true
 [lints]
 workspace = true
 
-[dependencies]
-hoomd-geometry.workspace = true
-hoomd-vector.workspace = true
-hoomd-utility.workspace = true
-rand.workspace = true
-thiserror.workspace = true
-tinyvec.workspace = true
-
 [dev-dependencies]
+faer = "0.22.6"
 approx.workspace = true
-anyhow.workspace = true
 divan.workspace = true
 rand.workspace = true
 rstest.workspace = true
+nalgebra = "0.33.2"
+
+
+[[bench]]
+name = "linalg"
+harness = false

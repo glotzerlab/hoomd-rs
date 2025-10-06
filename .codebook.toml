@@ -41,6 +41,7 @@ words = [
     "tetronimoes",
     "timestep",
     "trackpad",
+    "ulps",
     "unitless",
     "versor",
     "webgl",
