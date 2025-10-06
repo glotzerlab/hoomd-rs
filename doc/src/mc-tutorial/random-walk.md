@@ -45,7 +45,7 @@ crate will nicely print any errors that occur in a human-readable format.
 
 In the random walk simulation, the **microstate** contains the position of the
 point, the **sweep** applies a **trial move** to each point, the Hamiltonian
-is always 0 and the temperature $`kT`$ is not relevant.
+is always 0 and the temperature is not relevant.
 
 ### Microstate
 

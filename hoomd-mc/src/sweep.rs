@@ -21,8 +21,8 @@ use rand::Rng;
 /// r < \exp\left(\frac{-\Delta H}{kT}\right)
 /// ```
 /// where `r` is a random value uniformly distributed in `[0,1)`, $`\Delta H`$ is
-/// the change in energy computed by the given `hamiltonian` and $`kT`$ is the given
-/// `state` value (the last argument to `apply`).
+/// the change in energy computed by the given `hamiltonian` and $`kT`$ is the
+/// `temperature` given in `macrostate`.
 ///
 /// # Example
 ///

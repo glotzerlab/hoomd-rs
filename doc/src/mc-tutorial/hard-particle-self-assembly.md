@@ -263,10 +263,10 @@ space available for more body insertions:
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:initialize_trial_moves}}
 ```
 
-Use `insert_hamiltonian` for trial moves during the `initialize` step. The
-harmonic part of `OverlapPenalty` allows overlaps to be removed over many
-simulation steps. Pass a fixed `kt=1.0` because the energy scale in
-`OverlapPenalty` has no relation to that in `hamiltonian`.
+Use `insert_hamiltonian` for trial moves during the `initialize` step. The harmonic part
+of `OverlapPenalty` allows overlaps to be removed over many simulation steps. Pass a
+fixed `temperature=1.0` because the energy scale in `OverlapPenalty` has no relation to
+that in `hamiltonian`.
 
 > [!WARNING]
 > If you use `hamiltonian` here, then a trial move would need to remove an
