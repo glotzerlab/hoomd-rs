@@ -8,9 +8,9 @@ The `hoomd_manifold` crate defines and implements methods for non-Euclidean mani
 
 `hoomd_manifold` includes the struct `Sphere` for implementing an embedding of a sphere in cartesian space.
 
-## Hyperboloid
+## Hyperbolic
 
-`hoomd_manifold` includes the structs `Minkowski` and `Hyperboloid` to implement the hyperboloid model of hyperbolic space.
+`hoomd_manifold` includes the structs `Minkowski` and `Hyperbolic` to implement the Hyperbolic model of hyperbolic space.
 
 ## Rotations in Hyperbolic Space
 

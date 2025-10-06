@@ -17,7 +17,7 @@ use crate::{
     property::Position,
 };
 use hoomd_geometry::shape::EightEight;
-use hoomd_manifold::{Hyperboloid, Minkowski};
+use hoomd_manifold::{Hyperbolic, Minkowski};
 use hoomd_vector::Metric;
 
 impl MaximumAllowableInteractionRange for EightEight {
@@ -32,9 +32,9 @@ impl MaximumAllowableInteractionRange for EightEight {
 
 impl<P> Wrap<P> for Periodic<EightEight>
 where
-    P: Position<Position = Hyperboloid<3>>,
+    P: Position<Position = Hyperbolic<3>>,
 {
-    /// Wrap a point on the hyperboloid to the inside of the {8,8} tile.
+    /// Wrap a point on the Hyperbolic to the inside of the {8,8} tile.
     ///
     /// Note that the function fails to wrap points that are outside the octagon
     /// and further than `EightEight::EDGE_LENGTH`/2 from any of the vertices. In
@@ -44,7 +44,7 @@ where
     /// ```
     /// use approxim::assert_relative_eq;
     /// use hoomd_geometry::shape::EightEight;
-    /// use hoomd_manifold::Hyperboloid;
+    /// use hoomd_manifold::Hyperbolic;
     /// use hoomd_microstate::{
     ///     boundary::{Periodic, Wrap},
     ///     property::Point,
@@ -56,7 +56,7 @@ where
     /// let offset = PI / 8.0;
     /// let boost = 2.0;
     /// let point =
-    ///     Hyperboloid::<3>::from_polar_coordinates(boost, offset + PI / 4.0, 1.0);
+    ///     Hyperbolic::<3>::from_polar_coordinates(boost, offset + PI / 4.0, 1.0);
     /// let point = Point::new(point);
     /// let periodic = Periodic::new(0.5, EightEight { skirt: 1.0_f64 })?;
     ///
@@ -67,7 +67,7 @@ where
     ///         / (offset.cos() - offset.sin() * (1.0 - (2.0_f64).sqrt())))
     ///     .atanh()
     ///     - boost;
-    /// let ans = Hyperboloid::<3>::from_polar_coordinates(
+    /// let ans = Hyperbolic::<3>::from_polar_coordinates(
     ///     new_boost,
     ///     6.0 * PI / 4.0 - offset,
     ///     1.0,
@@ -99,7 +99,7 @@ where
         assert_eq!(
             r.skirt(),
             self.shape.skirt,
-            "point must be wrapped onto a hyperboloid with the same skirt"
+            "point must be wrapped onto a Hyperbolic with the same skirt"
         );
 
         let angle = r.coordinates()[1].atan2(r.coordinates()[0]);
@@ -110,7 +110,7 @@ where
 
         // find out which vertex of the octagon the point is closest to
         let vertex_number = (((theta + (PI / 8.0)).rem_euclid(PI * 2.0)) / (PI / 4.0)).floor();
-        let nearest_vertex = Hyperboloid::<3>::from_polar_coordinates(
+        let nearest_vertex = Hyperbolic::<3>::from_polar_coordinates(
             EightEight::EIGHTEIGHT,
             PI * vertex_number / 4.0,
             r.skirt(),
@@ -177,8 +177,8 @@ where
                 -rotated_in_center.coordinates[1] * (new_vertex_boost.sinh())
                     + rotated_in_center.coordinates[2] * (new_vertex_boost.cosh()),
             ]);
-            let wrapped_hyperboloid = Hyperboloid::from_minkowski_coordinates(wrapped, r.skirt());
-            *r = wrapped_hyperboloid;
+            let wrapped_hyperbolic = Hyperbolic::from_minkowski_coordinates(wrapped, r.skirt());
+            *r = wrapped_hyperbolic;
             Ok(properties)
         } else {
             Err(Error::CannotWrapProperties)
@@ -188,7 +188,7 @@ where
 
 impl<S> GenerateGhosts<S> for Periodic<EightEight>
 where
-    S: Position<Position = Hyperboloid<3>> + Copy + Default,
+    S: Position<Position = Hyperbolic<3>> + Copy + Default,
 {
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {
@@ -208,7 +208,7 @@ where
         let distance_to_bdy = EightEight::distance_to_boundary(r);
 
         // put a ghost particle near a vertex
-        let new_site_vertex = |loc_num: f64, next: i32, point: &Hyperboloid<3>| {
+        let new_site_vertex = |loc_num: f64, next: i32, point: &Hyperbolic<3>| {
             // boost to frame near vertex, get site position with respect to vertex
             // loc_num is the octagon vertex the point is closest to
             // next is the octagon vertex near which the ghost particle will be placed
@@ -264,14 +264,14 @@ where
                 rotated_in_center.coordinates[0] * (new_vertex_boost.sinh())
                     + rotated_in_center.coordinates[2] * (new_vertex_boost.cosh()),
             ]);
-            let new_hyperboloid = Hyperboloid::from_minkowski_coordinates(ghost, r.skirt());
+            let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(ghost, r.skirt());
             let mut new_site = *site_properties;
-            *new_site.position_mut() = new_hyperboloid;
+            *new_site.position_mut() = new_hyperbolic;
             new_site
         };
 
         // put a ghost particle near an edge
-        let new_site_edge = |edge_num: f64, point: &Hyperboloid<3>| {
+        let new_site_edge = |edge_num: f64, point: &Hyperbolic<3>| {
             let vertex_number = (((theta + (PI / 8.0)).rem_euclid(PI * 2.0)) / (PI / 4.0)).floor();
             let mut new_site = *site_properties;
             if vertex_number == edge_num {
@@ -284,42 +284,42 @@ where
 
         let toggle: f64 = EightEight::EDGE_LENGTH / 3.0;
 
-        let near_vertex_0 = r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+        let near_vertex_0 = r.distance(&Hyperbolic::<3>::from_polar_coordinates(
             EightEight::EIGHTEIGHT,
             0.0,
             r.skirt(),
         )) < toggle;
-        let near_vertex_1 = r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+        let near_vertex_1 = r.distance(&Hyperbolic::<3>::from_polar_coordinates(
             EightEight::EIGHTEIGHT,
             PI / 4.0,
             r.skirt(),
         )) < toggle;
-        let near_vertex_2 = r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+        let near_vertex_2 = r.distance(&Hyperbolic::<3>::from_polar_coordinates(
             EightEight::EIGHTEIGHT,
             2.0 * PI / 4.0,
             r.skirt(),
         )) < toggle;
-        let near_vertex_3 = r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+        let near_vertex_3 = r.distance(&Hyperbolic::<3>::from_polar_coordinates(
             EightEight::EIGHTEIGHT,
             3.0 * PI / 4.0,
             r.skirt(),
         )) < toggle;
-        let near_vertex_4 = r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+        let near_vertex_4 = r.distance(&Hyperbolic::<3>::from_polar_coordinates(
             EightEight::EIGHTEIGHT,
             4.0 * PI / 4.0,
             r.skirt(),
         )) < toggle;
-        let near_vertex_5 = r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+        let near_vertex_5 = r.distance(&Hyperbolic::<3>::from_polar_coordinates(
             EightEight::EIGHTEIGHT,
             5.0 * PI / 4.0,
             r.skirt(),
         )) < toggle;
-        let near_vertex_6 = r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+        let near_vertex_6 = r.distance(&Hyperbolic::<3>::from_polar_coordinates(
             EightEight::EIGHTEIGHT,
             6.0 * PI / 4.0,
             r.skirt(),
         )) < toggle;
-        let near_vertex_7 = r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+        let near_vertex_7 = r.distance(&Hyperbolic::<3>::from_polar_coordinates(
             EightEight::EIGHTEIGHT,
             7.0 * PI / 4.0,
             r.skirt(),
@@ -327,96 +327,96 @@ where
 
         let near_side_0 = octant == 0.0
             && distance_to_bdy < self.maximum_interaction_range
-            && r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
                 EightEight::EIGHTEIGHT,
                 0.0,
                 r.skirt(),
             )) > toggle
-            && r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
                 EightEight::EIGHTEIGHT,
                 PI / 4.0,
                 r.skirt(),
             )) > toggle;
         let near_side_1 = octant == 1.0
             && distance_to_bdy < self.maximum_interaction_range
-            && r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
                 EightEight::EIGHTEIGHT,
                 PI / 4.0,
                 r.skirt(),
             )) > toggle
-            && r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
                 EightEight::EIGHTEIGHT,
                 2.0 * PI / 4.0,
                 r.skirt(),
             )) > toggle;
         let near_side_2 = octant == 2.0
             && distance_to_bdy < self.maximum_interaction_range
-            && r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
                 EightEight::EIGHTEIGHT,
                 2.0 * PI / 4.0,
                 r.skirt(),
             )) > toggle
-            && r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
                 EightEight::EIGHTEIGHT,
                 3.0 * PI / 4.0,
                 r.skirt(),
             )) > toggle;
         let near_side_3 = octant == 3.0
             && distance_to_bdy < self.maximum_interaction_range
-            && r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
                 EightEight::EIGHTEIGHT,
                 3.0 * PI / 4.0,
                 r.skirt(),
             )) > toggle
-            && r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
                 EightEight::EIGHTEIGHT,
                 PI,
                 r.skirt(),
             )) > toggle;
         let near_side_4 = octant == 4.0
             && distance_to_bdy < self.maximum_interaction_range
-            && r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
                 EightEight::EIGHTEIGHT,
                 PI,
                 r.skirt(),
             )) > toggle
-            && r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
                 EightEight::EIGHTEIGHT,
                 5.0 * PI / 4.0,
                 r.skirt(),
             )) > toggle;
         let near_side_5 = octant == 5.0
             && distance_to_bdy < self.maximum_interaction_range
-            && r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
                 EightEight::EIGHTEIGHT,
                 5.0 * PI / 4.0,
                 r.skirt(),
             )) > toggle
-            && r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
                 EightEight::EIGHTEIGHT,
                 6.0 * PI / 4.0,
                 r.skirt(),
             )) > toggle;
         let near_side_6 = octant == 6.0
             && distance_to_bdy < self.maximum_interaction_range
-            && r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
                 EightEight::EIGHTEIGHT,
                 6.0 * PI / 4.0,
                 r.skirt(),
             )) > toggle
-            && r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
                 EightEight::EIGHTEIGHT,
                 7.0 * PI / 4.0,
                 r.skirt(),
             )) > toggle;
         let near_side_7 = octant == 7.0
             && distance_to_bdy < self.maximum_interaction_range
-            && r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
                 EightEight::EIGHTEIGHT,
                 7.0 * PI / 4.0,
                 r.skirt(),
             )) > toggle
-            && r.distance(&Hyperboloid::<3>::from_polar_coordinates(
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
                 EightEight::EIGHTEIGHT,
                 0.0,
                 r.skirt(),
@@ -481,7 +481,7 @@ mod tests {
     use super::*;
     use crate::property::Point;
     use approxim::assert_relative_eq;
-    use hoomd_manifold::{HyperbolicDisk, Hyperboloid};
+    use hoomd_manifold::{Hyperbolic, HyperbolicDisk};
     use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
     use std::f64::consts::PI;
 
@@ -491,11 +491,9 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(239);
         let disk = HyperbolicDisk {
             disk_radius: r.try_into().expect("hard-coded positive number"),
-            point: Hyperboloid::from_minkowski_coordinates(
-                Minkowski::from([0.0, 0.0, 1.0]),
-            1.0)
+            point: Hyperbolic::from_minkowski_coordinates(Minkowski::from([0.0, 0.0, 1.0]), 1.0),
         };
-        let random_point: Hyperboloid<3> = disk.sample(&mut rng);
+        let random_point: Hyperbolic<3> = disk.sample(&mut rng);
         let random_point = Point::new(random_point);
 
         let periodic =
@@ -513,7 +511,7 @@ mod tests {
         let side = f64::from(rng.random_range(0..8));
         let boost = 1.6;
         let offset = PI / 8.0;
-        let point = Hyperboloid::<3>::from_polar_coordinates(boost, side * PI / 4.0 + offset, 1.0);
+        let point = Hyperbolic::<3>::from_polar_coordinates(boost, side * PI / 4.0 + offset, 1.0);
         let point = Point::new(point);
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
@@ -535,7 +533,7 @@ mod tests {
                 / (offset.cos() - offset.sin() * (1.0 - (2.0_f64).sqrt())))
             .atanh()
             - boost;
-        let ans = Hyperboloid::<3>::from_polar_coordinates(
+        let ans = Hyperbolic::<3>::from_polar_coordinates(
             new_boost,
             (wrapped_side + 1.0) * (PI / 4.0) - offset,
             1.0,
@@ -546,7 +544,7 @@ mod tests {
     #[test]
     fn wraps_vertex() {
         let boost = 2.45;
-        let point = Hyperboloid::<3>::from_polar_coordinates(boost, PI / 4.0, 1.0);
+        let point = Hyperbolic::<3>::from_polar_coordinates(boost, PI / 4.0, 1.0);
         let point = Point::new(point);
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
@@ -554,7 +552,7 @@ mod tests {
 
         let distance_from_vertex = -EightEight::distance_to_boundary(&point.position);
         let v = 2.0 * 2.448_452_447_678_076 - boost;
-        let ans = Hyperboloid::<3>::from_polar_coordinates(v, 5.0 * PI / 4.0, 1.0);
+        let ans = Hyperbolic::<3>::from_polar_coordinates(v, 5.0 * PI / 4.0, 1.0);
         assert_relative_eq!(
             EightEight::distance_to_boundary(&ans),
             distance_from_vertex,
@@ -567,7 +565,7 @@ mod tests {
     fn wraps_vertex_non_center() {
         let offset_boost: f64 = 0.3;
         let v: f64 = 2.448_452_447_678_076;
-        let point = Hyperboloid::from_minkowski_coordinates(
+        let point = Hyperbolic::from_minkowski_coordinates(
             [
                 (v.sinh()) * (offset_boost.cosh()),
                 -offset_boost.sinh(),
@@ -582,7 +580,7 @@ mod tests {
         let wrapped_point = periodic.wrap(point).expect("hard-coded");
 
         let new_boost = 2.448_452_447_678_076 - offset_boost;
-        let ans = Hyperboloid::<3>::from_polar_coordinates(new_boost, 3.0 * PI / 2.0, 1.0);
+        let ans = Hyperbolic::<3>::from_polar_coordinates(new_boost, 3.0 * PI / 2.0, 1.0);
 
         assert_relative_eq!(ans, wrapped_point.position, epsilon = 1e-12);
     }
@@ -592,8 +590,7 @@ mod tests {
         let side = f64::from(rng.random_range(0..8));
         let offset = 0.1;
         let boost = 1.528_570_919_480_998 - offset;
-        let point =
-            Hyperboloid::<3>::from_polar_coordinates(boost, PI / 8.0 + side * PI / 4.0, 1.0);
+        let point = Hyperbolic::<3>::from_polar_coordinates(boost, PI / 8.0 + side * PI / 4.0, 1.0);
         let point = Point::new(point);
 
         let periodic =
@@ -602,7 +599,7 @@ mod tests {
         let ghost_array = periodic.generate_ghosts(&point);
         let ghost = ghost_array[0];
 
-        let ans = Hyperboloid::<3>::from_polar_coordinates(
+        let ans = Hyperbolic::<3>::from_polar_coordinates(
             1.528_570_919_480_998 + offset,
             (side + 4.0).rem_euclid(8.0) * PI / 4.0 + PI / 8.0,
             1.0,
@@ -615,7 +612,7 @@ mod tests {
     fn ghost_near_vertex() {
         let offset_boost = 0.1;
         let v: f64 = 2.448_452_447_678_076;
-        let point = Hyperboloid::<3>::from_polar_coordinates(v - offset_boost, 0.0, 1.0);
+        let point = Hyperbolic::<3>::from_polar_coordinates(v - offset_boost, 0.0, 1.0);
         let point = Point::new(point);
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
@@ -623,12 +620,12 @@ mod tests {
         let ghost_array = periodic.generate_ghosts(&point);
         let ghost_3 = ghost_array[3];
 
-        let ans_3 = Hyperboloid::<3>::from_polar_coordinates(v + offset_boost, PI, 1.0);
+        let ans_3 = Hyperbolic::<3>::from_polar_coordinates(v + offset_boost, PI, 1.0);
         assert_relative_eq!(ans_3, ghost_3.position, epsilon = 1e-12);
 
         let ghost_5 = ghost_array[5];
 
-        let ans_5 = Hyperboloid::from_minkowski_coordinates(
+        let ans_5 = Hyperbolic::from_minkowski_coordinates(
             [
                 offset_boost.sinh(),
                 -(v.sinh()) * (offset_boost.cosh()),

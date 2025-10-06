@@ -1,5 +1,6 @@
 use anyhow::Context;
 use bevy::prelude::*;
+use bevy_egui::EguiPlugin;
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
     representation::{self, HyperbolicDiskAssets, HyperbolicDiskMaterial},
@@ -9,7 +10,7 @@ use hoomd_interaction::{
     CutoffPair,
     pairwise::{Isotropic, LennardJones},
 };
-use hoomd_manifold::{HyperbolicDisk, Hyperboloid, Minkowski};
+use hoomd_manifold::{Hyperbolic, HyperbolicDisk, Minkowski};
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder, boundary::Periodic, property::Point,
@@ -17,7 +18,6 @@ use hoomd_microstate::{
 use hoomd_simulation::Simulation;
 use rand::distr::Distribution;
 use rand::{SeedableRng, rngs::StdRng};
-use bevy_egui::EguiPlugin;
 
 /// Mark the disk representation type.
 struct A;
@@ -26,7 +26,7 @@ struct Ghost;
 
 const RHO: f64 = 1.0;
 const PARTICLE_NUMBER: usize = 200;
-const DIAMETER: f64 = 0.15; //in hyperboloid metric
+const DIAMETER: f64 = 0.15; //in Hyperbolic metric
 
 fn main() -> anyhow::Result<()> {
     let simulation = Fill::new().context("failed to setup simulation")?;
@@ -68,14 +68,14 @@ fn main() -> anyhow::Result<()> {
 struct Fill {
     /// Positions of all the bodies in the simulation.
     microstate: Microstate<
-        Point<Hyperboloid<3>>,
-        Point<Hyperboloid<3>>,
+        Point<Hyperbolic<3>>,
+        Point<Hyperbolic<3>>,
         Periodic<EightEight>,
     >,
     /// How sites interact with other sites and fields.
     hamiltonian: CutoffPair<Isotropic<LennardJones>>,
     /// Trial moves to apply.
-    translate_sweep: Sweep<Translate<Hyperboloid<3>>>,
+    translate_sweep: Sweep<Translate<Hyperbolic<3>>>,
     /// Temperature set point.
     kt: f64,
 }
@@ -91,17 +91,18 @@ impl Fill {
         let mut rng = StdRng::seed_from_u64(23);
         let sample_disk = HyperbolicDisk {
             disk_radius: initial_spacing.try_into()?,
-            point: Hyperboloid::<3>::from_minkowski_coordinates(
+            point: Hyperbolic::<3>::from_minkowski_coordinates(
                 Minkowski::from([
                     0.00001,
                     0.00001,
                     f64::sqrt(2.0 * (0.00001_f64).powi(2) + RHO.powi(2)),
                 ]),
-            RHO),
+                RHO,
+            ),
         };
         for _n in 0..PARTICLE_NUMBER {
-            let new_point: Hyperboloid<3> =
-                Hyperboloid::from_minkowski_coordinates(
+            let new_point: Hyperbolic<3> =
+                Hyperbolic::from_minkowski_coordinates(
                     *sample_disk.sample(&mut rng).point(),
                     RHO,
                 );

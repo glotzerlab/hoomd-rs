@@ -5,7 +5,7 @@
 
 use super::Position;
 use crate::Transform;
-use hoomd_manifold::{Hyperboloid, Minkowski, Sphere};
+use hoomd_manifold::{Hyperbolic, Minkowski, Spherical};
 use hoomd_vector::Cartesian;
 
 /// A position in space and nothing more.
@@ -70,16 +70,16 @@ impl<const N: usize> Transform<Point<Cartesian<N>>> for Point<Cartesian<N>> {
     }
 }
 
-/// Move `Point<Hyperboloid<3>>` properties from the local body frame to the
+/// Move `Point<Hyperbolic<3>>` properties from the local body frame to the
 /// system frame. All positions in hyperbolic space are associated with some
 /// $`SO(2,1)`$ transformation which translates the origin to that position.
 /// The local body frame is the frame in which the body position is the origin.
 /// The position of the sites in the system frame is obtained by applying the
 /// transformation associated with the body's position to the sites in the
 /// local body frame.
-impl Transform<Point<Hyperboloid<3>>> for Point<Hyperboloid<3>> {
+impl Transform<Point<Hyperbolic<3>>> for Point<Hyperbolic<3>> {
     #[inline]
-    fn transform(&self, site_properties: &Point<Hyperboloid<3>>) -> Point<Hyperboloid<3>> {
+    fn transform(&self, site_properties: &Point<Hyperbolic<3>>) -> Point<Hyperbolic<3>> {
         let body_pos = self.position.coordinates();
         let skirt = self.position.skirt();
         let body_theta = body_pos[1].atan2(body_pos[0]);
@@ -94,21 +94,21 @@ impl Transform<Point<Hyperboloid<3>>> for Point<Hyperboloid<3>> {
                 + site_pos[2] * (body_boost.sinh()) * (body_theta.sin()),
             site_pos[0] * (body_boost.sinh()) + site_pos[2] * (body_boost.cosh()),
         ]);
-        let new_hyperboloid = Hyperboloid::from_minkowski_coordinates(transformed_point, skirt);
-        Point::new(new_hyperboloid)
+        let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(transformed_point, skirt);
+        Point::new(new_hyperbolic)
     }
 }
 
-/// Move `Point<Hyperboloid<4>>` properties from the local body frame to the
+/// Move `Point<Hyperbolic<4>>` properties from the local body frame to the
 /// system frame. All positions in hyperbolic space are associated with some
 /// $`SO(3,1)`$ transformation which translates the origin to that position.
 /// The local body frame is the frame in which the body position is the origin.
 /// The position of the sites in the system frame is obtained by applying the
 /// transformation associated with the body's position to the sites in the
 /// local body frame.
-impl Transform<Point<Hyperboloid<4>>> for Point<Hyperboloid<4>> {
+impl Transform<Point<Hyperbolic<4>>> for Point<Hyperbolic<4>> {
     #[inline]
-    fn transform(&self, site_properties: &Point<Hyperboloid<4>>) -> Point<Hyperboloid<4>> {
+    fn transform(&self, site_properties: &Point<Hyperbolic<4>>) -> Point<Hyperbolic<4>> {
         let body_point = self.position.coordinates();
         let skirt = self.position.skirt();
         let body_theta = (body_point[2].powi(2) + body_point[1].powi(2))
@@ -131,8 +131,8 @@ impl Transform<Point<Hyperboloid<4>>> for Point<Hyperboloid<4>> {
                 + site_pos[3] * (body_boost.sinh()) * (body_theta.sin()) * (body_phi.sin()),
             site_pos[0] * (body_boost.sinh()) + site_pos[3] * (body_boost.cosh()),
         ]);
-        let new_hyperboloid = Hyperboloid::from_minkowski_coordinates(transformed_point, skirt);
-        Point::new(new_hyperboloid)
+        let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(transformed_point, skirt);
+        Point::new(new_hyperbolic)
     }
 }
 
@@ -143,9 +143,9 @@ impl Transform<Point<Hyperboloid<4>>> for Point<Hyperboloid<4>> {
 /// The position of the sites in the system frame is obtained by applying the
 /// transformation associated with the body's position to the sites in the
 /// local body frame.
-impl Transform<Point<Sphere<3>>> for Point<Sphere<3>> {
+impl Transform<Point<Spherical<3>>> for Point<Spherical<3>> {
     #[inline]
-    fn transform(&self, site_properties: &Point<Sphere<3>>) -> Point<Sphere<3>> {
+    fn transform(&self, site_properties: &Point<Spherical<3>>) -> Point<Spherical<3>> {
         let radius = self.position.radius();
         let body_point = self.position.coordinates();
         let body_phi = body_point[1].atan2(body_point[0]);
@@ -160,7 +160,7 @@ impl Transform<Point<Sphere<3>>> for Point<Sphere<3>> {
                 + trial_coords[2] * (body_theta.sin()) * (body_phi.sin()),
             -trial_coords[0] * (body_theta.sin()) + trial_coords[2] * (body_theta.cos()),
         ]);
-        let new_sphere = Sphere::from_cartesian_coordinates(transformed_point, radius);
+        let new_sphere = Spherical::from_cartesian_coordinates(transformed_point, radius);
         Point::new(new_sphere)
     }
 }
@@ -172,9 +172,9 @@ impl Transform<Point<Sphere<3>>> for Point<Sphere<3>> {
 /// The position of the sites in the system frame is obtained by applying the
 /// transformation associated with the body's position to the sites in the
 /// local body frame.
-impl Transform<Point<Sphere<4>>> for Point<Sphere<4>> {
+impl Transform<Point<Spherical<4>>> for Point<Spherical<4>> {
     #[inline]
-    fn transform(&self, site_properties: &Point<Sphere<4>>) -> Point<Sphere<4>> {
+    fn transform(&self, site_properties: &Point<Spherical<4>>) -> Point<Spherical<4>> {
         let radius = self.position.radius();
         let body_point = self.position.coordinates();
         let body_phi_1 = (body_point[2].powi(2) + body_point[1].powi(2))
@@ -199,7 +199,7 @@ impl Transform<Point<Sphere<4>>> for Point<Sphere<4>> {
                 + trial_coords[3] * (body_theta.sin()) * (body_phi_1.sin()) * (body_phi_2.sin()),
             -trial_coords[0] * (body_theta.sin()) + trial_coords[3] * (body_theta.cos()),
         ]);
-        let new_sphere = Sphere::from_cartesian_coordinates(transformed_point, radius);
+        let new_sphere = Spherical::from_cartesian_coordinates(transformed_point, radius);
         Point::new(new_sphere)
     }
 }
@@ -223,7 +223,7 @@ mod tests {
     use super::*;
 
     use approxim::assert_relative_eq;
-    use hoomd_manifold::{Hyperboloid, Sphere};
+    use hoomd_manifold::{Hyperbolic, Spherical};
     use hoomd_vector::Cartesian;
     use std::f64::consts::PI;
 
@@ -239,12 +239,8 @@ mod tests {
     fn transform_h2_point() {
         let boost: f64 = 1.3;
         let bump: f64 = 0.1;
-        let body = Point::new(Hyperboloid::<3>::from_polar_coordinates(boost, 0.0, 1.0));
-        let site = Point::new(Hyperboloid::<3>::from_polar_coordinates(
-            bump,
-            PI / 2.0,
-            1.0,
-        ));
+        let body = Point::new(Hyperbolic::<3>::from_polar_coordinates(boost, 0.0, 1.0));
+        let site = Point::new(Hyperbolic::<3>::from_polar_coordinates(bump, PI / 2.0, 1.0));
         let transformed_site = body.transform(&site);
         assert_relative_eq!(
             *transformed_site.position().point(),
@@ -262,10 +258,10 @@ mod tests {
     fn transform_h3_point() {
         let boost: f64 = 1.4;
         let bump: f64 = 0.7;
-        let body = Point::new(Hyperboloid::<4>::from_polar_coordinates(
+        let body = Point::new(Hyperbolic::<4>::from_polar_coordinates(
             boost, 0.0, 0.0, 1.0,
         ));
-        let site = Point::new(Hyperboloid::<4>::from_polar_coordinates(
+        let site = Point::new(Hyperbolic::<4>::from_polar_coordinates(
             bump,
             PI / 2.0,
             0.0,
@@ -289,8 +285,8 @@ mod tests {
     fn transform_s2_point() {
         let theta = PI / 5.0;
         let blip = PI / 10.0;
-        let body = Point::new(Sphere::<3>::from_polar_coordinates(1.0, theta, 0.0));
-        let site = Point::new(Sphere::<3>::from_polar_coordinates(1.0, blip, PI / 2.0));
+        let body = Point::new(Spherical::<3>::from_polar_coordinates(1.0, theta, 0.0));
+        let site = Point::new(Spherical::<3>::from_polar_coordinates(1.0, blip, PI / 2.0));
         let transformed_site = body.transform(&site);
         assert_relative_eq!(
             *transformed_site.position().point(),
@@ -307,8 +303,8 @@ mod tests {
     fn transform_s3_point() {
         let theta = PI / 5.0;
         let blip = PI / 10.0;
-        let body = Point::new(Sphere::<4>::from_polar_coordinates(1.0, theta, 0.0, 0.0));
-        let site = Point::new(Sphere::<4>::from_polar_coordinates(
+        let body = Point::new(Spherical::<4>::from_polar_coordinates(1.0, theta, 0.0, 0.0));
+        let site = Point::new(Spherical::<4>::from_polar_coordinates(
             1.0,
             blip,
             PI / 2.0,

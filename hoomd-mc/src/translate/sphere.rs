@@ -6,20 +6,20 @@
 use rand::{Rng, distr::Distribution};
 
 use crate::{LocalTrial, Translate};
-use hoomd_manifold::{Sphere, SphericalDisk};
+use hoomd_manifold::{Spherical, SphericalDisk};
 use hoomd_microstate::property::Position;
 use hoomd_vector::InnerProduct;
 
-impl<B> LocalTrial<B> for Translate<Sphere<3>>
+impl<B> LocalTrial<B> for Translate<Spherical<3>>
 where
-    B: Position<Position = Sphere<3>>,
+    B: Position<Position = Spherical<3>>,
 {
     /// Propose local trial moves for a body on the surface of a sphere
     ///
     /// # Example
     /// ```
     /// use approxim::assert_relative_eq;
-    /// use hoomd_manifold::{Sphere, SphericalDisk};
+    /// use hoomd_manifold::{Spherical, SphericalDisk};
     /// use hoomd_mc::{LocalTrial, Translate};
     /// use hoomd_microstate::property::{Point, Position};
     /// use hoomd_vector::{Cartesian, Metric, Vector};
@@ -28,7 +28,7 @@ where
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(14);
     /// let radius: f64 = 2.0;
-    /// let initial_point = Point::new(Sphere::from_cartesian_coordinates(
+    /// let initial_point = Point::new(Spherical::from_cartesian_coordinates(
     ///     [2.0_f64.sqrt(), 2.0_f64.sqrt(), 0.0].into(),
     ///     2.0_f64,
     /// ));
@@ -58,7 +58,7 @@ where
         };
         *trial.position_mut() = disk.sample(rng);
         let rescale = trial.position().radius() / trial.position().point().norm();
-        *trial.position_mut() = Sphere::from_cartesian_coordinates(
+        *trial.position_mut() = Spherical::from_cartesian_coordinates(
             *trial.position().point() * rescale,
             trial.position().radius(),
         );

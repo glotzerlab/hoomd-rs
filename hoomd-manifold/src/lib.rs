@@ -26,16 +26,16 @@
 //! [`Cartesian<N+1>`]: hoomd_vector::Cartesian
 //! [`Metric`]: hoomd_vector::Metric
 //!
-//! ## Hyperboloid
-//! [`Hyperboloid`] describes the upper sheet of an N-dimensional two-sheeted
-//! hyperboloid with skirt R embedded in (N+1)-dimensional Minkowski space.
-//! The components of a point on the hyperboloid satisfy
+//! ## Hyperbolic
+//! [`Hyperbolic`] describes the upper sheet of an N-dimensional two-sheeted
+//! Hyperbolic with skirt R embedded in (N+1)-dimensional Minkowski space.
+//! The components of a point on the Hyperbolic satisfy
 //! ```math
 //! x_1^2 + \cdots + x_{N-1}^2 - x_{N}^2 = -R^2
 //! ```
-//! [`Hyperboloid`] implements a distance metric through the trait
+//! [`Hyperbolic`] implements a distance metric through the trait
 //! [`Metric`] which calculates the geodesic distance on the
-//! surface of a hyperboloid. Use [`Hyperboloid`] embedded in [`Minkowski`]
+//! surface of a Hyperboloid. Use [`Hyperbolic`] embedded in [`Minkowski`]
 //! to implement hyperbolic space.
 //!
 //! ## Minkowski
@@ -159,8 +159,8 @@ mod sphere;
 
 pub use biquaternion::{Biquaternion, UnitBiquaternion};
 pub use hyperbolic_angle::HyperbolicAngle;
-pub use minkowski::{HyperbolicDisk, HyperbolicRotationMatrix, Hyperboloid, Minkowski};
-pub use sphere::{Sphere, SphericalDisk};
+pub use minkowski::{Hyperbolic, HyperbolicDisk, HyperbolicRotationMatrix, Minkowski};
+pub use sphere::{Spherical, SphericalDisk};
 
 use hoomd_vector::Vector;
 use thiserror::Error;
@@ -169,7 +169,7 @@ use thiserror::Error;
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
-    /// Attempted converting a biquaternion not belonging to the hyperboloid to a 4-vector
+    /// Attempted converting a biquaternion not belonging to the Hyperbolic to a 4-vector
     #[error("Biquaternion does not fit required format of [re,re,re,im] to describe a 4-vector")]
     InvalidBiquaternion4Vector,
 
@@ -182,8 +182,8 @@ pub enum Error {
     InvalidVectorLength,
 
     /// Attempted to compare two points belonging to hyperboloids with different skirt widths
-    #[error("points do not belong to same hyperboloid")]
-    InvalidHyperboloidPointComparison,
+    #[error("points do not belong to same Hyperbolic")]
+    InvalidHyperbolicPointComparison,
 
     /// Attempted to compare two points belonging to spheres with different radii
     #[error("points do not belong to same sphere")]

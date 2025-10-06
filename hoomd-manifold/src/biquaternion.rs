@@ -1066,7 +1066,7 @@ mod tests {
             Complex::new(2.0, 1.0),
         ]);
         let a_unit = a.to_unit().expect("hard-coded to be nonzero");
-        assert_relative_eq!(a_unit.norm_squared().re, 1.0, epsilon=1e-12);
+        assert_relative_eq!(a_unit.norm_squared().re, 1.0, epsilon = 1e-12);
     }
 
     #[test]
@@ -1078,7 +1078,7 @@ mod tests {
             Complex::new(2.3, 3.4),
         ]);
         let a_unit = a.to_unit_unchecked();
-        assert_relative_eq!(a_unit.norm_squared().re, 1.0, epsilon=1e-12);
+        assert_relative_eq!(a_unit.norm_squared().re, 1.0, epsilon = 1e-12);
     }
 
     // Test named cases of three input values (rotation biquaternion, Minkowski input, and answer)
