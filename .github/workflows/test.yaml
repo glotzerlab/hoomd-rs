@@ -134,6 +134,9 @@ jobs:
         --workspace
       if: ${{ matrix.target == '' }}
 
+    - name: Show target directory size
+      run: du -hsc target/*
+
   tests_complete:
     name: All tests
     if: always()
