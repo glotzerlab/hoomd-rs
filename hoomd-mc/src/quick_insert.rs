@@ -249,7 +249,7 @@ impl<D> QuickInsert<D> {
     ///     }),
     /// };
     ///
-    /// let macrostate = Isothermal { temperature: 1.0, };
+    /// let macrostate = Isothermal { temperature: 1.0 };
     /// let mut microstate =
     ///     MicrostateBuilder::with_boundary(Periodic::new(1.0, rectangle)?)
     ///         .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
@@ -371,7 +371,7 @@ mod tests {
             .bodies(vec![Body::point(Cartesian::from([0.0, 0.0]))])
             .try_build()
             .expect("hard-coded point is in the boundary");
-        let macrostate = Isothermal { temperature: kt, };
+        let macrostate = Isothermal { temperature: kt };
 
         let distribution = UniformIn {
             boundary: rectangle,

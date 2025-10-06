@@ -11,8 +11,8 @@
 //!
 //! ```
 //! use hoomd_simulation::macrostate::Isothermal;
-//! 
-//! let macrostate = Isothermal { temperature: 1.2, };
+//!
+//! let macrostate = Isothermal { temperature: 1.2 };
 //! ```
 //!
 //! The *actual* ensemble that your simulation samples is set by the methods
@@ -35,8 +35,8 @@
 /// # Example
 /// ```
 /// use hoomd_simulation::macrostate::Isothermal;
-/// 
-/// let macrostate = Isothermal { temperature: 1.2, };
+///
+/// let macrostate = Isothermal { temperature: 1.2 };
 /// ```
 pub trait Temperature {
     /// The system's temperature $` ([\mathrm{energy}]) `$.
@@ -56,8 +56,8 @@ pub trait Temperature {
 /// # Example
 /// ```
 /// use hoomd_simulation::macrostate::Isobaric;
-/// 
-/// let macrostate = Isobaric { pressure: 0.4, };
+///
+/// let macrostate = Isobaric { pressure: 0.4 };
 /// ```
 pub trait Pressure {
     /// The system's pressure $` ([\mathrm{energy}] \cdot [\mathrm{length}]^{-D}) `$.
@@ -76,12 +76,12 @@ pub trait Pressure {
 /// # Example
 /// ```
 /// use hoomd_simulation::macrostate::Isothermal;
-/// 
-/// let macrostate = Isothermal { temperature: 1.2, };
+///
+/// let macrostate = Isothermal { temperature: 1.2 };
 /// ```
 pub struct Isothermal {
     /// The system's temperature $` ([\mathrm{energy}]) `$.
-    pub temperature: f64
+    pub temperature: f64,
 }
 impl Temperature for Isothermal {
     #[inline]
@@ -104,12 +104,12 @@ impl Temperature for Isothermal {
 /// # Example
 /// ```
 /// use hoomd_simulation::macrostate::Isobaric;
-/// 
-/// let macrostate = Isobaric { pressure: 0.4, };
+///
+/// let macrostate = Isobaric { pressure: 0.4 };
 /// ```
 pub struct Isobaric {
     /// The system's pressure $` ([\mathrm{energy}] \cdot [\mathrm{length}]^{-D}) `$.
-    pub pressure: f64
+    pub pressure: f64,
 }
 
 /// Constant temperature, constant pressure macrostate.
@@ -126,14 +126,14 @@ pub struct Isobaric {
 /// # Example
 /// ```
 /// use hoomd_simulation::macrostate::Isothermal;
-/// 
-/// let macrostate = Isothermal { temperature: 1.2, };
+///
+/// let macrostate = Isothermal { temperature: 1.2 };
 /// ```
 pub struct IsothermalIsobaric {
     /// Kinetic temperature of the system.
     pub temperature: f64,
     /// Pressure of the system.
-    pub pressure: f64
+    pub pressure: f64,
 }
 impl Temperature for IsothermalIsobaric {
     #[inline]

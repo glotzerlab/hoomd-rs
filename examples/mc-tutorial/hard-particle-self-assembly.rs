@@ -66,7 +66,7 @@ impl HardEllipseSelfAssembly {
         let maximum_rotation = 0.1;
         let sigma = 1.0;
         let aspect = 5.0;
-        let macrostate = Isothermal { temperature: 1.0, };
+        let macrostate = Isothermal { temperature: 1.0 };
         assert!(aspect >= 1.0);
         // ANCHOR_END: parameters
 
@@ -184,13 +184,13 @@ impl HardEllipseSelfAssembly {
         self.translate_sweep.apply(
             &mut self.microstate,
             &self.insert_hamiltonian,
-            &Isothermal { temperature: 1.0, },
+            &Isothermal { temperature: 1.0 },
         );
 
         self.rotate_sweep.apply(
             &mut self.microstate,
             &self.insert_hamiltonian,
-            &Isothermal { temperature: 1.0, },
+            &Isothermal { temperature: 1.0 },
         );
         // ANCHOR_END: initialize_trial_moves
 
@@ -226,8 +226,11 @@ impl HardEllipseSelfAssembly {
             &self.macrostate,
         );
 
-        self.rotate_sweep
-            .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+        self.rotate_sweep.apply(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.macrostate,
+        );
     }
 }
 // ANCHOR_END: equilibrate

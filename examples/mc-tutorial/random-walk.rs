@@ -31,7 +31,7 @@ fn main() -> anyhow::Result<()> {
     // ANCHOR_END: hamiltonian
 
     // ANCHOR: macrostate
-    let macrostate = Isothermal { temperature: 1.0, };
+    let macrostate = Isothermal { temperature: 1.0 };
     // ANCHOR_END: macrostate
 
     // ANCHOR: steps

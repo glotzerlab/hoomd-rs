@@ -43,7 +43,7 @@ use rand::Rng;
 /// let translate_sweep = Sweep(translate);
 ///
 /// let hamiltonian = Zero;
-/// let macrostate = Isothermal { temperature: 1.0, };
+/// let macrostate = Isothermal { temperature: 1.0 };
 ///
 /// for _ in 0..1_000 {
 ///     translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
@@ -165,7 +165,7 @@ mod tests {
             .add_body(Body::point(origin))
             .expect("the hard-coded body should be inside the boundary");
         let hamiltonian = External(Harmonic(origin));
-        let macrostate = Isothermal { temperature: kt, };
+        let macrostate = Isothermal { temperature: kt };
 
         let d = 0.1;
         let translate = Translate {
@@ -214,7 +214,7 @@ mod tests {
         let hamiltonian = Zero;
         let translate = Right;
         let translate_sweep = Sweep(translate);
-        let macrostate = Isothermal { temperature: 1.0, };
+        let macrostate = Isothermal { temperature: 1.0 };
 
         // The first move to the right ends in the boundary and should be accepted.
         let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
@@ -251,7 +251,7 @@ mod tests {
         let hamiltonian = Zero;
         let translate = Right;
         let translate_sweep = Sweep(translate);
-        let macrostate = Isothermal { temperature: 1.0, };
+        let macrostate = Isothermal { temperature: 1.0 };
 
         // The first move to the right ends in the boundary and should be accepted.
         let counter = translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);

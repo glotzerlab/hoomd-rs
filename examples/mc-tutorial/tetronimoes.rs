@@ -89,7 +89,7 @@ impl Tetronimoes {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
         let box_height = 30.0;
-        let macrostate = Isothermal { temperature: 1.0, };
+        let macrostate = Isothermal { temperature: 1.0 };
         let alpha = 1.0;
         let epsilon = 1000.0;
         let sigma = 1.0;
@@ -214,8 +214,11 @@ impl Simulation for Tetronimoes {
         // ANCHOR_END: add
 
         // ANCHOR: apply
-        self.sweep
-            .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+        self.sweep.apply(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.macrostate,
+        );
         self.microstate.increment_step();
         // ANCHOR_END: apply
 

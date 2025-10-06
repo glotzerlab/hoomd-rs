@@ -84,7 +84,7 @@ impl CustomRandomWalk {
         // ANCHOR: parameters
         let n = 1000;
         let radius = 50.0;
-        let macrostate = Isothermal { temperature: 1.0, };
+        let macrostate = Isothermal { temperature: 1.0 };
         // ANCHOR_END: parameters
 
         // ANCHOR: microstate

@@ -19,13 +19,13 @@
 //! See the tutorials in the documentation for numerous examples.
 //!
 //! ## Macrostate
-//! 
+//!
 //! The [`macrostate`] module provides types that set the parameters of the
 //! simulation. For example, set the temperature of the simulation with:
 //! ```
 //! use hoomd_simulation::macrostate::Isothermal;
-//! 
-//! let macrostate = Isothermal { temperature: 1.2, };
+//!
+//! let macrostate = Isothermal { temperature: 1.2 };
 //! ```
 
 pub mod macrostate;

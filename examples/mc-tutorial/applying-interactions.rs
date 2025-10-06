@@ -44,7 +44,7 @@ impl Fill {
         let alpha = 10.0;
         let epsilon = 1000.0;
         let sigma = 1.0;
-        let macrostate = Isothermal { temperature: 1.0, };
+        let macrostate = Isothermal { temperature: 1.0 };
         // ANCHOR_END: parameters
 
         // ANCHOR: microstate

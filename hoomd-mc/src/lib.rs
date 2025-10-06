@@ -96,7 +96,7 @@ pub trait LocalTrial<B> {
 /// use hoomd_vector::Cartesian;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let macrostate = Isothermal { temperature: 1.0, };
+/// let macrostate = Isothermal { temperature: 1.0 };
 /// let mut microstate = Microstate::new();
 /// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
 /// let d = 0.1;
