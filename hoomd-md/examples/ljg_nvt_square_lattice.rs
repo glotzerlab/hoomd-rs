@@ -41,8 +41,8 @@ struct LJG_sqaure {
 impl LJG_sqaure {
     /// Construct a new swimming simulation.
     fn new() -> anyhow::Result<LJG_sqaure> {
-        let box_length = 12.0;
-        let kT_init = 0.4;
+        let box_length = 16.0;
+        let kT_init = 0.15;
 
         // LJG potential
         let force = CutoffPair {

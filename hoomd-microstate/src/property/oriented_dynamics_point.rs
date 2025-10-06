@@ -213,7 +213,10 @@ impl<V, R> NetTorque for OrientedDynamicsPoint<V, R> {
 
 impl OrientedDynamicsPoint<Cartesian<3>, Quaternion> 
 {
-    fn angular_velocity(&self) -> Cartesian<3> {
+    /// Transform the three-dimensional
+    /// angular momentum as a quaternion of body to
+    /// angular velocity in vector form.
+    pub fn angular_velocity(&self) -> Cartesian<3> {
         // transform angmom to vector form (angmom_vec.scalar should be 0.0)
         let angmom_vec = (self.orientation.conjugate() * self.angular_momentum) * 0.5;
         Cartesian::from([
@@ -226,7 +229,9 @@ impl OrientedDynamicsPoint<Cartesian<3>, Quaternion>
 
 impl OrientedDynamicsPoint<f64, f64> 
 {
-    fn angular_velocity(&self) -> f64 {
+    /// Transform the two-dimensional
+    /// angular momentum to angular velocity.
+    pub fn angular_velocity(&self) -> f64 {
         self.angular_momentum / self.moment_of_inertia
     }
 }
