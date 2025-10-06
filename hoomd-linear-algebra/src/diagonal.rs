@@ -85,6 +85,10 @@ impl<const N: usize> GeneralMatrix for DiagonalMatrix<N> {
             elements: std::array::from_fn(|_| 0.0),
         }
     }
+    #[inline]
+    fn shape(&self) -> (usize, usize) {
+        (N, N)
+    }
 }
 
 impl<const N: usize> DiagonalMatrix<N> {

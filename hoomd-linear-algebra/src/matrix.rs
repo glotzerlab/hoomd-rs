@@ -54,6 +54,10 @@ impl<const N: usize, const M: usize> GeneralMatrix for Matrix<N, M> {
             rows: std::array::from_fn(|_| std::array::from_fn(|_| 0.0)),
         }
     }
+    #[inline]
+    fn shape(&self) -> (usize, usize) {
+        (self.n_rows(), self.n_columns())
+    }
 }
 
 impl<const N: usize, const M: usize> Full for Matrix<N, M> {
@@ -414,25 +418,6 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     #[inline]
     pub const fn n_columns(&self) -> usize {
         M
-    }
-
-    /// Get the shape of the [`Matrix`]
-    ///
-    /// The shape is a tuple: `(n_rows, n_cols)`.
-    ///
-    /// # Examples
-    /// ```
-    /// use hoomd_linear_algebra::matrix::Matrix;
-    ///
-    /// let m: Matrix<2, 3> = Matrix {
-    ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
-    /// };
-    /// assert_eq!(m.shape(), (2, 3));
-    /// ```
-    #[must_use]
-    #[inline]
-    pub const fn shape(&self) -> (usize, usize) {
-        (self.n_rows(), self.n_columns())
     }
 }
 impl<const N: usize> Matrix<N, N> {

@@ -309,6 +309,19 @@ pub trait GeneralMatrix:
     /// ```
     #[must_use]
     fn zeros() -> Self;
+
+    /// Get the shape of a matrix (``n_rows,n_columns``).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_linear_algebra::{GeneralMatrix, matrix::Matrix};
+    ///
+    /// let a = Matrix::<5, 7>::zeros();
+    /// assert_eq!(a.shape(), (5, 7));
+    /// ```
+    #[must_use]
+    fn shape(&self) -> (usize, usize);
 }
 
 /// Initialize matrices with identical elements.
