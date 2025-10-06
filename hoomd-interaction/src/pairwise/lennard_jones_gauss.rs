@@ -16,27 +16,38 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// # Examples
 ///
 /// ```
-/// use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, LennardJonesGauss};
 /// use approx::{assert_abs_diff_eq, assert_relative_eq};
+/// use hoomd_interaction::pairwise::{
+///     IsotropicEnergy, IsotropicForce, LennardJonesGauss,
+/// };
 ///
 /// let epsilon = 0.5;
 /// let sigma_squared = 0.5;
-/// let r_0 = 0.5_f64.powf(1.0/6.0);
+/// let r_0 = 0.5_f64.powf(1.0 / 6.0);
 /// let scale = 1.0_f64;
 ///
-/// let lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss { epsilon, sigma_squared, r_0, scale};
-/// assert_relative_eq!(lennard_jones_gauss.energy(0.5_f64.powf(1.0/6.0)), -epsilon, epsilon=1e-12);
+/// let lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss {
+///     epsilon,
+///     sigma_squared,
+///     r_0,
+///     scale,
+/// };
+/// assert_relative_eq!(
+///     lennard_jones_gauss.energy(0.5_f64.powf(1.0 / 6.0)),
+///     -epsilon,
+///     epsilon = 1e-12
+/// );
 /// ```
 ///
 /// The parameters are public fields and may be accessed directly:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::{LennardJonesGauss};
+/// use hoomd_interaction::pairwise::LennardJonesGauss;
 ///
-/// let mut lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss{
+/// let mut lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss {
 ///     epsilon: 1.5,
 ///     sigma_squared: 0.02,
-///     r_0:  3.2,
+///     r_0: 3.2,
 ///     scale: 1.0,
 /// };
 /// lennard_jones_gauss.epsilon = 1.5;
