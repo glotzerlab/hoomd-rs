@@ -15,7 +15,7 @@ where
     B: Position<Position = Cartesian<N>>,
     Ball: Distribution<Cartesian<N>>,
 {
-    /// Randomly translate a body's position.
+    /// Perturb a body's position by a random amount.
     ///
     /// # Example
     ///

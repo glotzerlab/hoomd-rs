@@ -17,7 +17,7 @@ impl<B> LocalTrial<B> for Rotate<Angle>
 where
     B: Orientation<Rotation = Angle>,
 {
-    /// Randomly translate a body's orientation.
+    /// Perturb a body's orientation by a random amount.
     ///
     /// # Example
     ///
