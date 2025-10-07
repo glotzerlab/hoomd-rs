@@ -70,10 +70,15 @@ jobs:
       run: rustup default ${{ matrix.rust }}
     - name: Check rust installation
       run: rustc -vV
+    # rust-cache already includes a Cargo.lock hash in the key. However, it
+    # eagerly restores caches with previous Cargo.lock files. This causes
+    # multiple builds to be cached in target/ increasing the cache usage
+    # dramatically. Add the Cargo.lock hash again in the key portion to
+    # prevent this restoration.
     - name: Cache
       uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
       with:
-        key: ${{ matrix.target || 'native' }}
+        key: ${{ matrix.target || 'native' }}-${{ hashFiles('Cargo.lock') }}
         cache-bin: false
 
     - name: Build [default features]
