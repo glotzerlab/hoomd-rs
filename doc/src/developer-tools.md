@@ -12,7 +12,7 @@ to perform a number of style checks and fixes.
 
 Run
 ```shell
-cargo +nightly-2025-09-17 fmt --check
+cargo +nightly-2025-09-17 fmt
 ```
 to automatically format the code. Use the shown Rust nightly version to obtain
 the same results as the CI checks.

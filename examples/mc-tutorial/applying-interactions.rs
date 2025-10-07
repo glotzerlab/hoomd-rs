@@ -2,7 +2,7 @@
 // ANCHOR: use
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    CutoffPair, Single, TotalEnergy,
+    CutoffPair, External, TotalEnergy,
     external::Linear,
     pairwise::{Boxcar, Isotropic},
 };
@@ -10,7 +10,7 @@ use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder, boundary::Closed, property::Point,
 };
-use hoomd_simulation::Simulation;
+use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_vector::Cartesian;
 // ANCHOR_END: use
 
@@ -22,11 +22,14 @@ struct Fill {
     microstate:
         Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Rectangle>>,
     /// How sites interact with other sites and fields.
-    hamiltonian: (Single<Linear<Cartesian<2>>>, CutoffPair<Isotropic<Boxcar>>),
+    hamiltonian: (
+        External<Linear<Cartesian<2>>>,
+        CutoffPair<Isotropic<Boxcar>>,
+    ),
     /// Trial moves to apply.
-    translate_sweep: Sweep<Translate>,
+    translate_sweep: Sweep<Translate<Cartesian<2>>>,
     /// Temperature set point.
-    kt: f64,
+    macrostate: Isothermal,
 }
 // ANCHOR_END: simulation_struct
 
@@ -41,7 +44,7 @@ impl Fill {
         let alpha = 10.0;
         let epsilon = 1000.0;
         let sigma = 1.0;
-        let kt = 1.0;
+        let macrostate = Isothermal { temperature: 1.0 };
         // ANCHOR_END: parameters
 
         // ANCHOR: microstate
@@ -51,7 +54,7 @@ impl Fill {
         // ANCHOR_END: microstate
 
         // ANCHOR: external
-        let linear = Single(Linear {
+        let linear = External(Linear {
             alpha,
             plane_origin: Cartesian::default(),
             plane_normal: [0.0, 1.0].try_into()?,
@@ -76,9 +79,8 @@ impl Fill {
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: sweep
-        let translate = Translate {
-            maximum_distance: maximum_distance.try_into()?,
-        };
+        let translate =
+            Translate::with_maximum_distance(maximum_distance.try_into()?);
         let translate_sweep = Sweep(translate);
         // ANCHOR_END: sweep
 
@@ -87,7 +89,7 @@ impl Fill {
             microstate,
             hamiltonian,
             translate_sweep,
-            kt,
+            macrostate,
         })
     }
 }
@@ -103,7 +105,7 @@ impl Simulation for Fill {
         // ANCHOR: add
         let boundary = self.microstate.boundary();
         let y = boundary.0.edge_lengths[1].get() / 2.0 - 0.5;
-        if self.microstate.step() % 100 == 0 {
+        if self.microstate.step().is_multiple_of(100) {
             self.microstate.add_body(Body::point([0.0, y].into()))?;
         }
         // ANCHOR_END: add
@@ -112,7 +114,7 @@ impl Simulation for Fill {
         self.translate_sweep.apply(
             &mut self.microstate,
             &self.hamiltonian,
-            &self.kt,
+            &self.macrostate,
         );
         self.microstate.increment_step();
         // ANCHOR_END: apply

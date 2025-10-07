@@ -5,10 +5,6 @@
     clippy::missing_docs_in_private_items,
     reason = "benches don't need public documentation"
 )]
-#![expect(
-    clippy::expect_used,
-    reason = "benches can use expect without individual reasons"
-)]
 
 //! Benchmark `AngularMask`
 
@@ -22,11 +18,9 @@ use hoomd_interaction::pairwise::{
 use hoomd_vector::{Angle, Cartesian, Versor};
 
 fn main() {
-    #[cfg(not(target_arch = "wasm32"))]
     divan::main();
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn energy_2d(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -72,7 +66,6 @@ fn energy_2d(bencher: Bencher) {
         .bench_local_values(|(r_ij, angle)| black_box(angular_mask.energy(&r_ij, &angle)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn energy_3d(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);

@@ -22,7 +22,7 @@
 //! arbitrary dimension, and therefore the implementation is parameterized with a
 //! const generic `N` representing the embedding dimension:
 //! ```
-//! use approx::assert_relative_eq;
+//! use approxim::assert_relative_eq;
 //! use hoomd_geometry::{Volume, shape::Hypersphere};
 //! use std::f64::consts::PI;
 //!
@@ -84,7 +84,7 @@
 //! ```
 //! use hoomd_geometry::{
 //!     Convex, IntersectsAt,
-//!     shape::{Cuboid, Sphere},
+//!     shape::{Hypercuboid, Sphere},
 //! };
 //! use hoomd_vector::Versor;
 //!
@@ -92,7 +92,7 @@
 //! let sphere = Convex(Sphere {
 //!     radius: 1.0.try_into()?,
 //! });
-//! let cuboid = Convex(Cuboid {
+//! let cuboid = Convex(Hypercuboid {
 //!     edge_lengths: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?],
 //! });
 //!
@@ -145,10 +145,10 @@ pub trait Volume {
 /// # Example
 ///
 /// ```
-/// use hoomd_geometry::{SupportMapping, shape::Cuboid};
+/// use hoomd_geometry::{SupportMapping, shape::Hypercuboid};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let cuboid = Cuboid {
+/// let cuboid = Hypercuboid {
 ///     edge_lengths: [3.0.try_into()?, 2.0.try_into()?],
 /// };
 ///
@@ -194,7 +194,7 @@ pub trait SupportMapping<V> {
 /// ```
 /// use hoomd_geometry::{
 ///     Convex, IntersectsAt,
-///     shape::{Cuboid, Sphere},
+///     shape::{Hypercuboid, Sphere},
 /// };
 /// use hoomd_vector::Versor;
 ///
@@ -202,7 +202,7 @@ pub trait SupportMapping<V> {
 /// let sphere = Convex(Sphere {
 ///     radius: 1.0.try_into()?,
 /// });
-/// let cuboid = Convex(Cuboid {
+/// let cuboid = Convex(Hypercuboid {
 ///     edge_lengths: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?],
 /// });
 ///
@@ -249,11 +249,11 @@ pub trait IntersectsAt<S, V, R> {
     /// If `v_ij` has 0 norm, move `other` along the `V::default_unit()`.
     ///
     /// ```
-    /// use hoomd_geometry::{Convex, IntersectsAt, shape::Cuboid};
+    /// use hoomd_geometry::{Convex, IntersectsAt, shape::Hypercuboid};
     /// use hoomd_vector::Versor;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let cuboid = Convex(Cuboid::with_equal_edges(2.0.try_into()?));
+    /// let cuboid = Convex(Hypercuboid::with_equal_edges(2.0.try_into()?));
     ///
     /// let d = cuboid.approximate_separation_distance(
     ///     &cuboid,
@@ -300,10 +300,10 @@ pub trait IntersectsAt<S, V, R> {
 /// # Example
 ///
 /// ```
-/// use hoomd_geometry::{BoundingSphereRadius, shape::Cuboid};
+/// use hoomd_geometry::{BoundingSphereRadius, shape::Hypercuboid};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let cuboid = Cuboid {
+/// let cuboid = Hypercuboid {
 ///     edge_lengths: [6.0.try_into()?, 8.0.try_into()?],
 /// };
 /// let bounding_radius = cuboid.bounding_sphere_radius();
@@ -322,10 +322,10 @@ pub trait BoundingSphereRadius {
 /// # Example
 ///
 /// ```
-/// use hoomd_geometry::{IsPointInside, shape::Cuboid};
+/// use hoomd_geometry::{IsPointInside, shape::Hypercuboid};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let cuboid = Cuboid {
+/// let cuboid = Hypercuboid {
 ///     edge_lengths: [6.0.try_into()?, 8.0.try_into()?],
 /// };
 ///

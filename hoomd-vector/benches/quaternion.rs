@@ -14,11 +14,9 @@ use rand::{Rng, SeedableRng, rngs::StdRng};
 use hoomd_vector::{Cartesian, Rotate, RotationMatrix, Versor};
 
 fn main() {
-    #[cfg(not(target_arch = "wasm32"))]
     divan::main();
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn rotate(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -31,7 +29,6 @@ fn rotate(bencher: Bencher) {
         .bench_local_values(|vec| black_box(q.rotate(&vec)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn rotate_matrix(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
@@ -45,7 +42,6 @@ fn rotate_matrix(bencher: Bencher) {
         .bench_local_values(|vec| black_box(matrix.rotate(&vec)));
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[divan::bench]
 fn gen_random(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);

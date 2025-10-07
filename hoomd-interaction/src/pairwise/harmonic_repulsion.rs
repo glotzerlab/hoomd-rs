@@ -40,7 +40,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 ///
 ///
 /// ```
-/// use approx::{assert_abs_diff_eq, assert_relative_eq};
+/// use approxim::{assert_abs_diff_eq, assert_relative_eq};
 /// use hoomd_interaction::pairwise::{
 ///     HarmonicRepulsion, IsotropicEnergy, IsotropicForce,
 /// };
@@ -63,7 +63,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// h_repulsion.a = 5.0;
 /// h_repulsion.r_cut = 0.75;
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct HarmonicRepulsion {
     /// Potential strength $`[\mathrm{energy}] [\mathrm{length}]^{-1}`$.
     pub a: f64,
@@ -96,7 +96,7 @@ impl IsotropicForce for HarmonicRepulsion {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rstest::*;
 
     #[rstest]

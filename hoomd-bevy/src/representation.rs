@@ -18,3 +18,6 @@ pub mod ellipse;
 
 pub(crate) mod rectangular_boundary;
 pub use rectangular_boundary::RectangularBoundary;
+
+pub(crate) mod hyperbolic_disk;
+pub use hyperbolic_disk::{HyperbolicDisk, HyperbolicDiskAssets, HyperbolicDiskMaterial};

@@ -18,10 +18,13 @@ mod convex_polytope;
 pub use convex_polytope::{ConvexPolygon, ConvexPolyhedron, ConvexPolytope};
 
 mod cuboid;
-pub use cuboid::{Cuboid, Rectangle};
+pub use cuboid::{Cuboid, Hypercuboid, Rectangle};
 
 mod cylinder;
 pub use cylinder::Cylinder;
+
+mod eighteight;
+pub use eighteight::EightEight;
 
 mod hyperellipsoid;
 pub use hyperellipsoid::{Ellipse, Ellipsoid, Hyperellipsoid};

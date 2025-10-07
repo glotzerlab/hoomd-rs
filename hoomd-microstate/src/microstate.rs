@@ -13,7 +13,7 @@ use crate::{
 };
 
 use hoomd_utility::random::Counter;
-use hoomd_vector::Vector;
+use hoomd_vector::Metric;
 
 /// Track a unique identifier for an item in [`Microstate`].
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -507,10 +507,10 @@ impl<B, S, C> Microstate<B, S, C> {
 }
 
 /// Manage bodies in the microstate.
-impl<V, B, S, C> Microstate<B, S, C>
+impl<P, B, S, C> Microstate<B, S, C>
 where
-    B: Transform<S> + Position<Vector = V>,
-    S: Position<Vector = V> + Default,
+    B: Transform<S> + Position<Position = P>,
+    S: Position<Position = P> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Update the ghosts of a site.
@@ -528,25 +528,29 @@ where
         let new_ghosts = boundary.generate_ghosts(&site.properties);
         let ghost_tags = &mut sites_ghosts[site_index];
 
-        if ghost_tags.len() < new_ghosts.len() {
-            let ghosts_to_add = new_ghosts.len() - ghost_tags.len();
-            for _ in 0..ghosts_to_add {
-                let ghost_tag = ghosts.push(Site {
-                    site_tag: site.site_tag,
-                    body_tag: site.body_tag,
-                    properties: S::default(),
-                });
-                ghost_tags.push(ghost_tag);
+        match ghost_tags.len().cmp(&new_ghosts.len()) {
+            std::cmp::Ordering::Less => {
+                let ghosts_to_add = new_ghosts.len() - ghost_tags.len();
+                for _ in 0..ghosts_to_add {
+                    let ghost_tag = ghosts.push(Site {
+                        site_tag: site.site_tag,
+                        body_tag: site.body_tag,
+                        properties: S::default(),
+                    });
+                    ghost_tags.push(ghost_tag);
+                }
             }
-        } else if ghost_tags.len() > new_ghosts.len() {
-            let ghosts_to_remove = ghost_tags.len() - new_ghosts.len();
-            for ghost_tag in ghost_tags.iter().rev().take(ghosts_to_remove) {
-                let ghost_index = ghosts.indices[*ghost_tag]
-                    .expect("sites_ghosts and ghost.indices should be consistent");
-                ghosts.remove(ghost_index);
-            }
+            std::cmp::Ordering::Greater => {
+                let ghosts_to_remove = ghost_tags.len() - new_ghosts.len();
+                for ghost_tag in ghost_tags.iter().rev().take(ghosts_to_remove) {
+                    let ghost_index = ghosts.indices[*ghost_tag]
+                        .expect("sites_ghosts and ghost.indices should be consistent");
+                    ghosts.remove(ghost_index);
+                }
 
-            ghost_tags.truncate(new_ghosts.len());
+                ghost_tags.truncate(new_ghosts.len());
+            }
+            std::cmp::Ordering::Equal => {}
         }
 
         debug_assert_eq!(ghost_tags.len(), new_ghosts.len());
@@ -833,8 +837,8 @@ where
     )]
     pub fn update_body_properties(&mut self, body_index: usize, properties: B) -> Result<(), Error>
     where
-        B: Transform<S> + Position<Vector = V>,
-        S: Position<Vector = V>,
+        B: Transform<S> + Position<Position = P>,
+        S: Position<Position = P>,
         C: Wrap<B> + Wrap<S>,
     {
         let body = &mut self.bodies.items[body_index];
@@ -1150,10 +1154,10 @@ impl<B, S, C> Microstate<B, S, C> {
     }
 }
 
-impl<V, B, S, C> Microstate<B, S, C>
+impl<P, B, S, C> Microstate<B, S, C>
 where
-    S: Position<Vector = V>,
-    V: Vector,
+    S: Position<Position = P>,
+    P: Metric,
 {
     /// Find sites near a point in space.
     ///
@@ -1172,7 +1176,7 @@ where
     /// In other words, `iter_sites_near` is meant for use with pairwise functions
     /// that follow the minimum image convention.
     #[inline]
-    pub fn iter_sites_near(&self, point: &V, r: f64) -> impl Iterator<Item = &Site<S>> {
+    pub fn iter_sites_near(&self, point: &P, r: f64) -> impl Iterator<Item = &Site<S>> {
         self.sites
             .items
             .iter()
@@ -1421,10 +1425,10 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     /// # }
     /// ```
     #[inline]
-    pub fn try_build<V>(self) -> Result<Microstate<B, S, C>, Error>
+    pub fn try_build<P>(self) -> Result<Microstate<B, S, C>, Error>
     where
-        B: Transform<S> + Position<Vector = V>,
-        S: Position<Vector = V> + Default,
+        B: Transform<S> + Position<Position = P>,
+        S: Position<Position = P> + Default,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     {
         let mut microstate = Microstate {
@@ -1452,10 +1456,10 @@ mod tests {
         boundary::{self, Closed, Periodic},
         property::Point,
     };
-    use hoomd_geometry::shape::Cuboid;
+    use hoomd_geometry::shape::Hypercuboid;
     use hoomd_vector::Cartesian;
 
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng, seq::SliceRandom};
     use rstest::*;
     use std::collections::{HashMap, HashSet};
@@ -1616,8 +1620,8 @@ mod tests {
         use super::*;
 
         #[fixture]
-        fn square() -> Closed<Cuboid<2>> {
-            let cuboid = Cuboid {
+        fn square() -> Closed<Hypercuboid<2>> {
+            let cuboid = Hypercuboid {
                 edge_lengths: [
                     4.0.try_into()
                         .expect("hard-coded constant should be positive"),
@@ -1629,7 +1633,7 @@ mod tests {
         }
 
         #[rstest]
-        fn add_body_outside(square: Closed<Cuboid<2>>) {
+        fn add_body_outside(square: Closed<Hypercuboid<2>>) {
             let mut microstate = MicrostateBuilder::with_boundary(square)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -1641,7 +1645,7 @@ mod tests {
         }
 
         #[rstest]
-        fn update_body_outside(square: Closed<Cuboid<2>>) {
+        fn update_body_outside(square: Closed<Hypercuboid<2>>) {
             let mut microstate = MicrostateBuilder::with_boundary(square)
                 .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
                 .try_build()
@@ -1659,7 +1663,7 @@ mod tests {
         }
 
         #[rstest]
-        fn add_site_outside(square: Closed<Cuboid<2>>) {
+        fn add_site_outside(square: Closed<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([1.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -1676,7 +1680,7 @@ mod tests {
         }
 
         #[rstest]
-        fn update_site_outside(square: Closed<Cuboid<2>>) {
+        fn update_site_outside(square: Closed<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -1704,7 +1708,7 @@ mod tests {
 
         fn create_body<R: Rng>(
             rng: &mut R,
-            boundary: &Periodic<Cuboid<2>>,
+            boundary: &Periodic<Hypercuboid<2>>,
         ) -> Body<Point<Cartesian<2>>> {
             let mut body = Body::point(boundary.sample(rng));
 
@@ -1717,8 +1721,8 @@ mod tests {
         }
 
         #[fixture]
-        fn rectangle() -> Periodic<Cuboid<2>> {
-            let cuboid = Cuboid {
+        fn rectangle() -> Periodic<Hypercuboid<2>> {
+            let cuboid = Hypercuboid {
                 edge_lengths: [
                     10.0.try_into()
                         .expect("hard-coded constant should be positive"),
@@ -1731,7 +1735,7 @@ mod tests {
         }
 
         #[rstest]
-        fn add_body_outside(rectangle: Periodic<Cuboid<2>>) {
+        fn add_body_outside(rectangle: Periodic<Hypercuboid<2>>) {
             let mut microstate = MicrostateBuilder::with_boundary(rectangle)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -1747,7 +1751,7 @@ mod tests {
         }
 
         #[rstest]
-        fn update_body_outside(rectangle: Periodic<Cuboid<2>>) {
+        fn update_body_outside(rectangle: Periodic<Hypercuboid<2>>) {
             let mut microstate = MicrostateBuilder::with_boundary(rectangle)
                 .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
                 .try_build()
@@ -1769,7 +1773,7 @@ mod tests {
         }
 
         #[rstest]
-        fn add_site_outside(rectangle: Periodic<Cuboid<2>>) {
+        fn add_site_outside(rectangle: Periodic<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([4.5, 1.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -1796,7 +1800,7 @@ mod tests {
         }
 
         #[rstest]
-        fn update_site_outside(rectangle: Periodic<Cuboid<2>>) {
+        fn update_site_outside(rectangle: Periodic<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -1844,7 +1848,7 @@ mod tests {
         }
 
         #[rstest]
-        fn consistency(#[values(1, 2, 3, 4)] seed: u64, rectangle: Periodic<Cuboid<2>>) {
+        fn consistency(#[values(1, 2, 3, 4)] seed: u64, rectangle: Periodic<Hypercuboid<2>>) {
             // The boundary-specific unit tests validate that the *right*
             // ghosts are created. This test throws random body insertions,
             // updates, and removals and ensures that the internal ghost/site
@@ -1860,7 +1864,7 @@ mod tests {
                 if move_type_r > 0.7 {
                     // Add bodies more often than removing bodies so that typical
                     // test executions will result in a non-empty microstate.
-                    let body = create_body(&mut rng, &rectangle);
+                    let body = create_body(&mut rng, microstate.boundary());
                     microstate
                         .add_body(body.clone())
                         .expect("all bodies should be wrapped into the boundary");
@@ -1911,14 +1915,14 @@ mod tests {
         }
 
         #[rstest]
-        fn remove_all(#[values(1, 2, 3, 4)] seed: u64, rectangle: Periodic<Cuboid<2>>) {
+        fn remove_all(#[values(1, 2, 3, 4)] seed: u64, rectangle: Periodic<Hypercuboid<2>>) {
             let mut microstate = MicrostateBuilder::with_boundary(rectangle)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
             let mut rng = StdRng::seed_from_u64(seed);
 
             for _ in 0..N_STEPS {
-                let body = create_body(&mut rng, &rectangle);
+                let body = create_body(&mut rng, microstate.boundary());
                 microstate
                     .add_body(body)
                     .expect("all bodies should be allowed in open boundary conditions");

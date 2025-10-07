@@ -5,7 +5,7 @@
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairEnergy, TotalEnergy};
 use hoomd_microstate::{Body, Microstate, Site, Transform, boundary::Wrap, property::Position};
-use hoomd_vector::Vector;
+use hoomd_vector::Metric;
 
 /// Short-ranged pairwise interactions between sites.
 ///
@@ -102,7 +102,7 @@ impl<E> CutoffPair<E> {
     ///
     /// # Example
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     ///
     /// use hoomd_interaction::{
     ///     CutoffPair,
@@ -140,27 +140,32 @@ impl<E> CutoffPair<E> {
     /// # }
     /// ```
     #[inline]
-    pub fn site_pair_energy<V, S>(&self, a: &Site<S>, b: &Site<S>) -> f64
+    pub fn site_pair_energy<P, S>(
+        &self,
+        site_properties_i: &Site<S>,
+        site_properties_j: &Site<S>,
+    ) -> f64
     where
         E: SitePairEnergy<S>,
-        S: Position<Vector = V>,
-        V: Vector,
+        S: Position<Position = P>,
+        P: Metric,
     {
-        let r = (a.properties.position()).distance(b.properties.position());
-        if r < self.r_cut && a.body_tag != b.body_tag {
+        let r = (site_properties_i.properties.position())
+            .distance(site_properties_j.properties.position());
+        if r < self.r_cut && site_properties_i.body_tag != site_properties_j.body_tag {
             self.evaluator
-                .site_pair_energy(&a.properties, &b.properties)
+                .site_pair_energy(&site_properties_i.properties, &site_properties_j.properties)
         } else {
             0.0
         }
     }
 }
 
-impl<V, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPair<E>
+impl<P, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
-    S: Position<Vector = V>,
-    V: Vector,
+    S: Position<Position = P>,
+    P: Metric,
 {
     /// Compute the total energy of the microstate contributed by functions on pairs of sites.
     ///
@@ -256,13 +261,13 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<V, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPair<E>
+impl<P, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
     B: Transform<S>,
-    S: Position<Vector = V>,
+    S: Position<Position = P>,
     C: Wrap<B> + Wrap<S>,
-    V: Vector,
+    P: Metric,
 {
     #[inline]
     fn delta_energy_one(
@@ -347,13 +352,13 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<V, B, S, C, E> DeltaEnergyInsert<B, S, C> for CutoffPair<E>
+impl<P, B, S, C, E> DeltaEnergyInsert<B, S, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
     B: Transform<S>,
-    S: Position<Vector = V>,
+    S: Position<Position = P>,
     C: Wrap<B> + Wrap<S>,
-    V: Vector,
+    P: Metric,
 {
     #[inline]
     fn delta_energy_insert(
@@ -426,11 +431,11 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<V, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPair<E>
+impl<P, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
-    S: Position<Vector = V>,
-    V: Vector,
+    S: Position<Position = P>,
+    P: Metric,
 {
     #[inline]
     fn delta_energy_remove(
@@ -472,7 +477,7 @@ mod tests {
         TotalEnergy,
         pairwise::{Isotropic, LennardJones},
     };
-    use hoomd_geometry::shape::Cuboid;
+    use hoomd_geometry::shape::Hypercuboid;
     use hoomd_microstate::{
         MicrostateBuilder,
         boundary::{Closed, Open},
@@ -480,14 +485,14 @@ mod tests {
     };
     use hoomd_vector::Cartesian;
 
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rand::{Rng, SeedableRng, distr::Uniform, rngs::StdRng};
     use rstest::*;
     use std::f64::consts::PI;
 
     #[fixture]
-    fn square() -> Closed<Cuboid<2>> {
-        let cuboid = Cuboid {
+    fn square() -> Closed<Hypercuboid<2>> {
+        let cuboid = Hypercuboid {
             edge_lengths: [
                 4.0.try_into()
                     .expect("hard-coded constant should be positive"),
@@ -604,7 +609,7 @@ mod tests {
         use super::*;
 
         #[rstest]
-        fn site_outside(square: Closed<Cuboid<2>>) {
+        fn site_outside(square: Closed<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -737,7 +742,7 @@ mod tests {
         use super::*;
 
         #[rstest]
-        fn site_outside(square: Closed<Cuboid<2>>) {
+        fn site_outside(square: Closed<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),

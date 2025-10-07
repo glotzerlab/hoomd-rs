@@ -124,8 +124,9 @@ practice in your applications. As you build more complex codes, however, you
 will need to move those elements to a struct so that the whole simulation model
 can be accessed in different modules.
 
-The custom random walk model consists of the **microstate**, the **Hamiltonian**,
-the translation **trial moves**, and the temperature set point `$kT$`:
+The custom random walk model consists of the **microstate**, the **Hamiltonian**, the
+translation **trial moves**, and the **temperature** set point (in units of energy
+$`kT`$):
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:simulation_struct}}
 ```
@@ -176,9 +177,9 @@ Apply the custom `Discrete` trial move to all bodies in the microstate:
 
 #### Hamiltonian
 
-As in the [Random Walk] tutorial, set `$H = 0$` so that bodies do not interact:
+As in the [Random Walk] tutorial, set $`H = 0`$ so that bodies do not interact:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:sweep}}
+{{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:hamiltonian}}
 ```
 
 #### Initialize the Struct

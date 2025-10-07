@@ -6,7 +6,7 @@
 use super::IsotropicEnergy;
 use crate::SitePairEnergy;
 use hoomd_microstate::property::Position;
-use hoomd_vector::Vector;
+use hoomd_vector::Metric;
 
 /// Compute isotropic properties from a pair of sites
 ///
@@ -49,14 +49,15 @@ use hoomd_vector::Vector;
 /// ```
 pub struct Isotropic<E>(pub E);
 
-impl<V, S, E> SitePairEnergy<S> for Isotropic<E>
+impl<P, S, E> SitePairEnergy<S> for Isotropic<E>
 where
-    S: Position<Vector = V>,
-    V: Vector,
+    S: Position<Position = P>,
+    P: Metric,
     E: IsotropicEnergy,
 {
     #[inline]
-    fn site_pair_energy(&self, a: &S, b: &S) -> f64 {
-        self.0.energy((a.position()).distance(b.position()))
+    fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
+        self.0
+            .energy((site_properties_i.position()).distance(site_properties_j.position()))
     }
 }

@@ -79,7 +79,7 @@ pub struct CutoffPairOverlap<E> {
 impl<V, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
-    S: Position<Vector = V>,
+    S: Position<Position = V>,
     V: Vector,
 {
     /// Compute the total energy of the microstate contributed by functions on pairs of sites.
@@ -177,7 +177,7 @@ impl<V, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
     B: Transform<S>,
-    S: Position<Vector = V>,
+    S: Position<Position = V>,
     C: Wrap<B> + Wrap<S>,
     V: Vector,
 {
@@ -258,7 +258,7 @@ impl<V, B, S, C, E> DeltaEnergyInsert<B, S, C> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
     B: Transform<S>,
-    S: Position<Vector = V>,
+    S: Position<Position = V>,
     C: Wrap<B> + Wrap<S>,
     V: Vector,
 {
@@ -333,7 +333,7 @@ where
 impl<V, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
-    S: Position<Vector = V>,
+    S: Position<Position = V>,
     V: Vector,
 {
     #[inline]
@@ -350,15 +350,15 @@ where
 mod tests {
     use super::*;
     use crate::{TotalEnergy, pairwise::AlwaysTrue};
-    use hoomd_geometry::shape::Cuboid;
+    use hoomd_geometry::shape::Hypercuboid;
     use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};
     use hoomd_vector::Cartesian;
 
     use rstest::*;
 
     #[fixture]
-    fn square() -> Closed<Cuboid<2>> {
-        let cuboid = Cuboid {
+    fn square() -> Closed<Hypercuboid<2>> {
+        let cuboid = Hypercuboid {
             edge_lengths: [
                 4.0.try_into()
                     .expect("hard-coded constant should be positive"),
@@ -441,7 +441,7 @@ mod tests {
         use super::*;
 
         #[rstest]
-        fn site_outside(square: Closed<Cuboid<2>>) {
+        fn site_outside(square: Closed<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -519,7 +519,7 @@ mod tests {
         use super::*;
 
         #[rstest]
-        fn site_outside(square: Closed<Cuboid<2>>) {
+        fn site_outside(square: Closed<Hypercuboid<2>>) {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),

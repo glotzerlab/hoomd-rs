@@ -46,7 +46,7 @@ pub struct Anisotropic<E>(pub E);
 
 impl<V, R, S, E> SitePairEnergy<S> for Anisotropic<E>
 where
-    S: Position<Vector = V> + Orientation<Rotation = R>,
+    S: Position<Position = V> + Orientation<Rotation = R>,
     V: Vector,
     R: Rotation + Rotate<V>,
     E: AnisotropicEnergy<V, R>,
@@ -99,12 +99,12 @@ where
     /// # }
     /// ```
     #[inline]
-    fn site_pair_energy(&self, a: &S, b: &S) -> f64 {
+    fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
         let (r_ab, o_ab) = hoomd_vector::pair_system_to_local(
-            a.position(),
-            a.orientation(),
-            b.position(),
-            b.orientation(),
+            site_properties_i.position(),
+            site_properties_i.orientation(),
+            site_properties_j.position(),
+            site_properties_j.orientation(),
         );
         self.0.energy(&r_ab, &o_ab)
     }

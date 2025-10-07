@@ -6,6 +6,8 @@ members = ["examples",
            "hoomd-geometry",
            "hoomd-gsd",
            "hoomd-interaction",
+           "hoomd-linear-algebra",
+           "hoomd-manifold",
            "hoomd-mc",
            "hoomd-microstate",
            "hoomd-simulation",
@@ -23,6 +25,8 @@ default-members = ["examples",
                    "hoomd-geometry",
                    "hoomd-gsd",
                    "hoomd-interaction",
+                   "hoomd-linear-algebra",
+                   "hoomd-manifold",
                    "hoomd-mc",
                    "hoomd-microstate",
                    "hoomd-simulation",
@@ -34,7 +38,7 @@ default-members = ["examples",
 [workspace.package]
 version = "0.0.0"
 edition = "2024"
-rust-version = "1.86"
+rust-version = "1.88"
 homepage = "https://glotzerlab.engin.umich.edu"
 repository = "https://github.com/glotzerlab/hoomd-rs"
 license = "BSD-3-Clause"
@@ -47,6 +51,8 @@ hoomd-bevy = { path = "hoomd-bevy" }
 hoomd-geometry = { path = "hoomd-geometry" }
 hoomd-gsd = { path = "hoomd-gsd" }
 hoomd-interaction = { path = "hoomd-interaction" }
+hoomd-linear-algebra = { path = "hoomd-linear-algebra" }
+hoomd-manifold = { path = "hoomd-manifold" }
 hoomd-mc = { path = "hoomd-mc" }
 hoomd-microstate = { path = "hoomd-microstate" }
 hoomd-simulation = { path = "hoomd-simulation" }
@@ -55,19 +61,25 @@ hoomd-vector = { path = "hoomd-vector" }
 hoomd-chimes = { path = "hoomd-chimes"}
 
 # Common dev dependencies
-approx = "0.5.1"
-divan = "0.1.17"
-rstest = "0.26.0"
-anyhow = "1.0.98"
-tempfile = "3.20.0"
-clap = {version = "4.5.40", features = ["derive"]}
+anyhow = "=1.0.100"
+clap = {version = "=4.5.48", features = ["derive"]}
+divan = "=0.1.21"
+paste = "=1.0.15"
+rstest = "=0.26.1"
+tempfile = "=3.22.0"
 
-# Common dependencies
+# Dependencies used internally
 itertools = "0.14.0"
+
+# Dependencies exposed via Public APIs.
+approxim = "0.6.6"
+num = "0.4.3"
 rand = "0.9.0"
 thiserror = "2.0.12"
 tinyvec = "1.9.0"
 
+# Bevy and bevy-adjacent dependencies
+bevy_egui = "0.36.0"
 [workspace.dependencies.bevy]
 version = "0.16.1"
 default-features = false
@@ -110,9 +122,9 @@ multiple_crate_versions = "allow"
 # allow some pedantic rules
 cast_precision_loss = "allow"
 float_cmp = "allow"
+similar_names = "allow"
 
 # opt-in to restrictions
-allow_attributes = "warn"
 allow_attributes_without_reason = "warn"
 exhaustive_enums = "warn"
 impl_trait_in_params = "warn"
@@ -154,8 +166,12 @@ lto = 'thin'  # TODO: Switch back to true after migrating to GitHub Pages for do
 codegen-units = 1
 inherits = "release"
 
-[profile.dev-wasm]
-inherits = "dev"
+# Reduce the size of binaries generated in CI builds.
+[profile.ci]
+inherits = "release"
+opt-level = 'z'
+strip = true
+codegen-units = 256
 
 # Bevy is extremely slow in debug builds, build it with optimizations
 # to avoid this: https://bevy.org/learn/quick-start/getting-started/setup/#compile-with-performance-optimizations

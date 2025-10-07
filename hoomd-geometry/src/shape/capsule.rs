@@ -17,7 +17,7 @@ use hoomd_vector::{Cartesian, InnerProduct};
 ///
 /// Construction and basic methods:
 /// ```
-/// use approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_geometry::{BoundingSphereRadius, Volume, shape::Capsule};
 /// use hoomd_vector::Cartesian;
 /// use std::f64::consts::PI;
@@ -66,7 +66,7 @@ use hoomd_vector::{Cartesian, InnerProduct};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Capsule<const N: usize> {
     /// Radius of of points that are considered enclosed in the shape.
     pub radius: PositiveReal,
@@ -132,7 +132,7 @@ mod tests {
     use hoomd_vector::{Angle, Versor};
 
     use super::*;
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rstest::*;
     use std::f64::consts::PI;
 
