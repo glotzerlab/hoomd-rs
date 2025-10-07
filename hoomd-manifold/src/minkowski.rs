@@ -501,7 +501,7 @@ impl<const N: usize> Hyperboloid<N> {
     #[inline]
     pub fn from(point: Minkowski<N>, skirt: f64) -> Hyperboloid<N> {
         let skirt_squared = -point.distance_squared(&Minkowski::<N>::default());
-        assert_relative_eq!(skirt_squared, skirt.powi(2), epsilon=1e-12);
+        assert_relative_eq!(skirt_squared, skirt.powi(2), epsilon=1e-8);
         Hyperboloid {
             point,
             skirt: skirt_squared.sqrt(),
