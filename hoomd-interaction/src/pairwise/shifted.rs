@@ -15,7 +15,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 ///
 /// Shifted Lennard-Jones:
 /// ```
-/// use approx::{assert_abs_diff_eq, assert_relative_eq};
+/// use approxim::{assert_abs_diff_eq, assert_relative_eq};
 /// use hoomd_interaction::pairwise::{IsotropicEnergy, LennardJones, Shifted};
 ///
 /// let epsilon = 1.5;
@@ -100,7 +100,7 @@ impl<F: IsotropicForce> IsotropicForce for Shifted<F> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::{assert_abs_diff_eq, assert_relative_eq};
+    use approxim::{assert_abs_diff_eq, assert_relative_eq};
     use rstest::*;
 
     use crate::pairwise::LennardJones;

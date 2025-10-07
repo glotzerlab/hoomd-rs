@@ -23,6 +23,9 @@ pub use cuboid::{Cuboid, Hypercuboid, Rectangle};
 mod cylinder;
 pub use cylinder::Cylinder;
 
+mod eighteight;
+pub use eighteight::EightEight;
+
 mod hyperellipsoid;
 pub use hyperellipsoid::{Ellipse, Ellipsoid, Hyperellipsoid};
 

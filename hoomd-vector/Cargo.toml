@@ -18,11 +18,11 @@ rand.workspace = true
 thiserror.workspace = true
 hoomd-linear-algebra.workspace = true
 hoomd-utility.workspace = true
-approx.workspace = true
+approxim.workspace = true
 
 [dev-dependencies]
 divan.workspace = true
-paste = "=1.0.15"
+paste.workspace = true
 rstest.workspace = true
 
 [[bench]]

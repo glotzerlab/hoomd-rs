@@ -37,9 +37,7 @@ use rand::Rng;
 /// let mut microstate = Microstate::new();
 /// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
 /// let d = 0.1;
-/// let translate = Translate {
-///     maximum_distance: d.try_into()?,
-/// };
+/// let translate = Translate::with_maximum_distance(d.try_into()?);
 /// let translate_sweep = Sweep(translate);
 ///
 /// let hamiltonian = Zero;
@@ -54,10 +52,10 @@ use rand::Rng;
 /// ```
 pub struct Sweep<L>(pub L);
 
-impl<V, B, S, C, L, H, MA> Trial<Microstate<B, S, C>, H, MA> for Sweep<L>
+impl<P, B, S, C, L, H, MA> Trial<Microstate<B, S, C>, H, MA> for Sweep<L>
 where
-    B: Copy + Default + Transform<S> + Position<Vector = V>,
-    S: Copy + Default + Position<Vector = V>,
+    B: Copy + Default + Transform<S> + Position<Position = P>,
+    S: Copy + Default + Position<Position = P>,
     L: LocalTrial<B>,
     H: DeltaEnergyOne<B, S, C>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
@@ -119,7 +117,7 @@ where
 mod tests {
     use super::*;
     use crate::Translate;
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use hoomd_geometry::shape::Hypercuboid;
     use hoomd_interaction::{External, SiteEnergy, TotalEnergy, Zero};
     use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};
@@ -168,11 +166,10 @@ mod tests {
         let macrostate = Isothermal { temperature: kt };
 
         let d = 0.1;
-        let translate = Translate {
-            maximum_distance: d
-                .try_into()
+        let translate = Translate::with_maximum_distance(
+            d.try_into()
                 .expect("hard-coded constant should be positive"),
-        };
+        );
         let translate_sweep = Sweep(translate);
 
         let mut position_accumulator = Cartesian::default();

@@ -1,0 +1,40 @@
+[package]
+name = "hoomd-manifold"
+description = "Manifold and curved geometries library."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme = "hoomd-manifold/README.md"
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+approxim.workspace = true
+thiserror.workspace = true
+rand.workspace = true
+hoomd-utility.workspace = true
+hoomd-vector.workspace = true
+num.workspace = true
+
+[dev-dependencies]
+divan.workspace = true
+paste.workspace = true
+rstest.workspace = true
+
+[lints]
+workspace = true
+
+[[bench]]
+name = "minkowski"
+harness = false
+
+[[bench]]
+name = "biquaternion"
+harness = false
+
+[[bench]]
+name = "hyperbolic_angle"
+harness = false

@@ -1,5 +1,19 @@
 # API Reference
 
+## Modules
+
+- [hoomd-bevy](api/hoomd_bevy/index.html)
+- [hoomd-gsd](api/hoomd_gsd/index.html)
+- [hoomd-geometry](api/hoomd_geometry/index.html)
+- [hoomd-interaction](api/hoomd_interaction/index.html)
+- [hoomd-linear-algebra](api/hoomd_linear_algebra/index.html)
+- [hoomd-manifold](api/hoomd_manifold/index.html)
+- [hoomd-mc](api/hoomd_mc/index.html)
+- [hoomd-microstate](api/hoomd_microstate/index.html)
+- [hoomd-simulation](api/hoomd_simulation/index.html)
+- [hoomd-utility](api/hoomd_utility/index.html)
+- [hoomd-vector](api/hoomd_vector/index.html)
+
 ## Structure Overview
 
 <style>
@@ -12,15 +26,3 @@
 </a>
 
 [*Full-size structure with links to the documentation.*](images/structure.svg)
-
-## Modules
-
-- [hoomd-bevy](api/hoomd_bevy/index.html)
-- [hoomd-gsd](api/hoomd_gsd/index.html)
-- [hoomd-geometry](api/hoomd_geometry/index.html)
-- [hoomd-interaction](api/hoomd_interaction/index.html)
-- [hoomd-linear-algebra](api/hoomd_linear_algebra/index.html)
-- [hoomd-mc](api/hoomd_mc/index.html)
-- [hoomd-microstate](api/hoomd_microstate/index.html)
-- [hoomd-utility](api/hoomd_utility/index.html)
-- [hoomd-vector](api/hoomd_vector/index.html)

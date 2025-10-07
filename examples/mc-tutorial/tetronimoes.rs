@@ -190,7 +190,7 @@ impl Simulation for Tetronimoes {
     fn advance(&mut self) -> anyhow::Result<()> {
         // ANCHOR_END: advance
         // ANCHOR: add
-        if self.microstate.step() % 100 == 0 {
+        if self.microstate.step().is_multiple_of(100) {
             let mut rng = self.microstate.counter().make_rng();
             let sites = self
                 .template_sites

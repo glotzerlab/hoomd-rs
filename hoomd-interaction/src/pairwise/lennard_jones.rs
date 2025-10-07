@@ -18,7 +18,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// In basic usage, the exponents `N` and `M` default to 12 and 6, respectively:
 ///
 /// ```
-/// use approx::{assert_abs_diff_eq, assert_relative_eq};
+/// use approxim::{assert_abs_diff_eq, assert_relative_eq};
 /// use hoomd_interaction::pairwise::{
 ///     IsotropicEnergy, IsotropicForce, LennardJones,
 /// };
@@ -42,7 +42,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// You can choose any values for `N` and `M` _at compile time_:
 ///
 /// ```
-/// use approx::{assert_abs_diff_eq, assert_relative_eq};
+/// use approxim::{assert_abs_diff_eq, assert_relative_eq};
 /// use hoomd_interaction::pairwise::{
 ///     IsotropicEnergy, IsotropicForce, LennardJones,
 /// };
@@ -123,7 +123,7 @@ impl<const N: i32, const M: i32> IsotropicForce for LennardJones<N, M> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::approx::{assert_abs_diff_eq, assert_relative_eq};
+    use approxim::{assert_abs_diff_eq, assert_relative_eq};
     use rstest::*;
 
     #[rstest]

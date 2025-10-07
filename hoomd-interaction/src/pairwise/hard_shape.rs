@@ -31,7 +31,7 @@ pub struct HardShape<G>(pub G);
 
 impl<S, G, V, R> SitePairOverlap<S> for HardShape<G>
 where
-    S: Position<Vector = V> + Orientation<Rotation = R>,
+    S: Position<Position = V> + Orientation<Rotation = R>,
     V: Vector,
     R: Rotation + Rotate<V>,
     G: IntersectsAt<G, V, R>,

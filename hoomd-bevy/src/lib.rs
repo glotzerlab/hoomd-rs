@@ -425,15 +425,15 @@ where
         if *time_since_rerender >= Duration::from_millis(100) {
             *time_since_rerender = Duration::ZERO;
 
-            if let Some(fps) = diagnostic.get(&FrameTimeDiagnosticsPlugin::FPS) {
-                if let Some(value) = fps.smoothed() {
-                    *writer.text(debug_text, 1) = format!(" FPS: {value:.2}\n");
-                }
+            if let Some(fps) = diagnostic.get(&FrameTimeDiagnosticsPlugin::FPS)
+                && let Some(value) = fps.smoothed()
+            {
+                *writer.text(debug_text, 1) = format!(" FPS: {value:.2}\n");
             }
-            if let Some(sps) = diagnostic.get(&Self::SPS) {
-                if let Some(value) = sps.smoothed() {
-                    *writer.text(debug_text, 2) = format!(" SPS: {value:.2}\n");
-                }
+            if let Some(sps) = diagnostic.get(&Self::SPS)
+                && let Some(value) = sps.smoothed()
+            {
+                *writer.text(debug_text, 2) = format!(" SPS: {value:.2}\n");
             }
             *writer.text(debug_text, 3) = format!("Step: {}\n", simulation.step());
         }
@@ -541,15 +541,14 @@ where
             .unwrap_or(Vec2::new(1280.0, 720.0));
 
         if let Projection::Orthographic(ref mut orthographic) = *projection.into_inner() {
-            if buttons.just_pressed(MouseButton::Left) {
-                if let Some(world_position) = window
+            if buttons.just_pressed(MouseButton::Left)
+                && let Some(world_position) = window
                     .cursor_position()
                     .and_then(|cursor| camera.viewport_to_world_2d(global_transform, cursor).ok())
-                {
-                    control.world_position = world_position;
-                    control.dragging = true;
-                    return;
-                }
+            {
+                control.world_position = world_position;
+                control.dragging = true;
+                return;
             }
 
             if !buttons.pressed(MouseButton::Left) {
@@ -635,6 +634,7 @@ where
     pub fn build(self, app: &mut App) {
         representation::disk::build(app);
         representation::ellipse::build(app);
+        representation::hyperbolic_disk::build(app);
 
         embedded_asset!(app, "logo.png");
 

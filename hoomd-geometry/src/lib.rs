@@ -22,7 +22,7 @@
 //! arbitrary dimension, and therefore the implementation is parameterized with a
 //! const generic `N` representing the embedding dimension:
 //! ```
-//! use approx::assert_relative_eq;
+//! use approxim::assert_relative_eq;
 //! use hoomd_geometry::{Volume, shape::Hypersphere};
 //! use std::f64::consts::PI;
 //!

@@ -27,7 +27,7 @@ struct Fill {
         CutoffPair<Isotropic<Boxcar>>,
     ),
     /// Trial moves to apply.
-    translate_sweep: Sweep<Translate>,
+    translate_sweep: Sweep<Translate<Cartesian<2>>>,
     /// Temperature set point.
     macrostate: Isothermal,
 }
@@ -79,9 +79,8 @@ impl Fill {
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: sweep
-        let translate = Translate {
-            maximum_distance: maximum_distance.try_into()?,
-        };
+        let translate =
+            Translate::with_maximum_distance(maximum_distance.try_into()?);
         let translate_sweep = Sweep(translate);
         // ANCHOR_END: sweep
 
@@ -106,7 +105,7 @@ impl Simulation for Fill {
         // ANCHOR: add
         let boundary = self.microstate.boundary();
         let y = boundary.0.edge_lengths[1].get() / 2.0 - 0.5;
-        if self.microstate.step() % 100 == 0 {
+        if self.microstate.step().is_multiple_of(100) {
             self.microstate.add_body(Body::point([0.0, y].into()))?;
         }
         // ANCHOR_END: add

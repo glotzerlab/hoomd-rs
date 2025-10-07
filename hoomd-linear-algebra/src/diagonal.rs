@@ -249,7 +249,7 @@ impl<const N: usize> SubAssign for DiagonalMatrix<N> {
 
 #[cfg(test)]
 mod tests {
-    use approx::assert_ulps_eq;
+    use approxim::assert_ulps_eq;
     use rstest::rstest;
     use std::ops::Index;
 

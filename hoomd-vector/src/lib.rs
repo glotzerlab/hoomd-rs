@@ -123,7 +123,7 @@
 //!
 //! [`Angle`] implements rotations on [`Cartesian<2>`] vectors.
 //! ```
-//! use ::approx::assert_relative_eq;
+//! use approxim::assert_relative_eq;
 //! use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
 //! use std::f64::consts::PI;
 //!
@@ -135,7 +135,7 @@
 //!
 //! [`Versor`] implements rotations on [`Cartesian<3>`] vectors.
 //! ```
-//! use ::approx::assert_relative_eq;
+//! use approxim::assert_relative_eq;
 //! use hoomd_vector::{Cartesian, Rotate, Rotation, Versor};
 //! use std::f64::consts::PI;
 //!
@@ -178,8 +178,6 @@ mod angle;
 mod cartesian;
 pub mod distribution;
 mod quaternion;
-
-pub mod approx;
 
 pub use angle::Angle;
 pub use cartesian::{Cartesian, RotationMatrix};
@@ -342,17 +340,24 @@ pub trait Vector:
     + Div<f64, Output = Self>
     + DivAssign<f64>
     + PartialEq
+    + Metric
     + Mul<f64, Output = Self>
     + MulAssign<f64>
     + Sub<Self, Output = Self>
     + SubAssign
     + Neg<Output = Self>
 {
+}
+
+/// Operates on elements on a metric space.
+///
+/// [`Metric`] implements a distance metric between points.
+pub trait Metric {
     /// Compute the squared distance between two vectors belonging to a metric space.
     ///
     /// # Example
     /// ```
-    /// use hoomd_vector::{Cartesian, Vector};
+    /// use hoomd_vector::{Cartesian, Metric};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let x = Cartesian::from([0.0, 1.0, 1.0]);
@@ -367,7 +372,7 @@ pub trait Vector:
     ///
     /// # Example
     /// ```
-    /// use hoomd_vector::{Cartesian, Vector};
+    /// use hoomd_vector::{Cartesian, Metric};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let vec2 = Cartesian::<2>::default();
@@ -382,17 +387,15 @@ pub trait Vector:
     /// Compute the distance between two vectors belonging to a metric space.
     /// # Example
     /// ```
-    /// use hoomd_vector::{Cartesian, Vector};
+    /// use hoomd_vector::{Cartesian, Metric};
     ///
     /// let x = Cartesian::from([0.0, 0.0]);
     /// let y = Cartesian::from([3.0, 4.0]);
     /// assert_eq!(5.0, x.distance(&y));
     /// ```
-    #[inline]
-    fn distance(&self, other: &Self) -> f64 {
-        self.distance_squared(other).sqrt()
-    }
+    fn distance(&self, other: &Self) -> f64;
 }
+
 /// Operate on elements of an inner product space.
 ///
 /// The [`InnerProduct`] subtrait defines additional methods that can be performed on any vector
@@ -620,7 +623,7 @@ pub trait Rotate<V: Vector> {
     ///
     /// # Example
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
     ///
     /// let v = Cartesian::from([-1.0, 0.0]);
@@ -690,7 +693,7 @@ pub trait Rotation: Copy {
 /// # Example
 ///
 /// ```
-/// use ::approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_vector::{self, Angle, Cartesian};
 /// use std::f64::consts::PI;
 ///

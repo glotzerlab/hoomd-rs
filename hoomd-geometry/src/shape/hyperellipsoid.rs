@@ -22,7 +22,7 @@ use std::ops::Mul;
 ///
 /// Basic construction and methods:
 /// ```
-/// use approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_geometry::{BoundingSphereRadius, Volume, shape::Hyperellipsoid};
 /// use std::f64::consts::PI;
 ///
@@ -59,7 +59,7 @@ pub struct Hyperellipsoid<const N: usize> {
 ///
 /// Basic construction and methods:
 /// ```
-/// use approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_geometry::{BoundingSphereRadius, Volume, shape::Ellipse};
 /// use std::f64::consts::PI;
 ///
@@ -113,7 +113,7 @@ pub type Ellipse = Hyperellipsoid<2>;
 ///
 /// Basic construction and methods:
 /// ```
-/// use approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_geometry::{BoundingSphereRadius, Volume, shape::Ellipsoid};
 /// use std::f64::consts::PI;
 ///
@@ -320,7 +320,7 @@ mod tests {
         Convex,
         shape::{Circle, Hypersphere},
     };
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use hoomd_vector::Angle;
     use rand::{Rng, SeedableRng, rngs::StdRng};
     use rstest::*;

@@ -236,9 +236,7 @@ impl<D> QuickInsert<D> {
     /// };
     /// let mut quick_insert = QuickInsert::new(distribution, 256);
     ///
-    /// let translate = Translate {
-    ///     maximum_distance: 0.1.try_into()?,
-    /// };
+    /// let translate = Translate::with_maximum_distance(0.1.try_into()?);
     /// let translate_sweep = Sweep(translate);
     ///
     /// let cutoff_pair = CutoffPair {
@@ -264,14 +262,14 @@ impl<D> QuickInsert<D> {
     /// # }
     /// ```
     #[inline]
-    pub fn apply<V, B, S, C, H>(
+    pub fn apply<P, B, S, C, H>(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
         hamiltonian: &H,
     ) -> Count
     where
-        B: Position<Vector = V> + Transform<S>,
-        S: Position<Vector = V> + Default,
+        B: Position<Position = P> + Transform<S>,
+        S: Position<Position = P> + Default,
         D: Distribution<Body<B, S>>,
         H: DeltaEnergyInsert<B, S, C> + TotalEnergy<Microstate<B, S, C>>,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
@@ -358,9 +356,8 @@ mod tests {
             }),
         };
 
-        let translate = Translate {
-            maximum_distance: 0.1.try_into().expect("hard-coded value is non-zero"),
-        };
+        let translate =
+            Translate::with_maximum_distance(0.1.try_into().expect("hard-coded value is non-zero"));
         let translate_sweep = Sweep(translate);
 
         let rectangle = Closed(Rectangle::with_equal_edges(

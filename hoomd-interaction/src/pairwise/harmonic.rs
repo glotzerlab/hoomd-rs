@@ -17,7 +17,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// # Examples
 ///
 /// ```
-/// use approx::{assert_abs_diff_eq, assert_relative_eq};
+/// use approxim::{assert_abs_diff_eq, assert_relative_eq};
 /// use hoomd_interaction::pairwise::{
 ///     Harmonic, IsotropicEnergy, IsotropicForce,
 /// };
@@ -65,7 +65,7 @@ impl IsotropicForce for Harmonic {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rstest::*;
 
     #[rstest]

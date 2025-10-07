@@ -46,7 +46,7 @@ pub struct Anisotropic<E>(pub E);
 
 impl<V, R, S, E> SitePairEnergy<S> for Anisotropic<E>
 where
-    S: Position<Vector = V> + Orientation<Rotation = R>,
+    S: Position<Position = V> + Orientation<Rotation = R>,
     V: Vector,
     R: Rotation + Rotate<V>,
     E: AnisotropicEnergy<V, R>,

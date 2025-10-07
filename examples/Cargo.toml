@@ -27,6 +27,7 @@ hoomd-bevy = { workspace =  true, optional = true }
 hoomd-geometry.workspace = true
 hoomd-gsd.workspace = true
 hoomd-interaction.workspace = true
+hoomd-manifold.workspace = true
 hoomd-mc.workspace = true
 hoomd-microstate.workspace = true
 hoomd-simulation.workspace = true
@@ -49,6 +50,11 @@ all-features = true
 [[example]]
 name = "hello"
 path = "hello.rs"
+
+[[example]]
+name = "hyperbolic-lennard-jones"
+path = "hyperbolic-lennard-jones.rs"
+required-features = ["bevy"]
 
 [[example]]
 name = "random-walk"
