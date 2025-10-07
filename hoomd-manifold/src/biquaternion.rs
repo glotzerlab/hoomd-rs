@@ -573,7 +573,7 @@ impl DivAssign<f64> for Biquaternion {
 ///
 /// Unit-norm Biquaternions furnish a representation of SO(3,1), analogous to
 /// quaternions and SO(3). If $`\vec{x} = (x_1, x_2, x_3, x_4)`$ is a vector
-/// in Minkowski space, then $\vec{x}$ can be mapped to a biquaternion
+/// in Minkowski space, then $`\vec{x}`$ can be mapped to a biquaternion
 /// ```math
 /// \vec{x} \mapsto X = [x_1, x_2, x_3,h x_4]
 /// ```

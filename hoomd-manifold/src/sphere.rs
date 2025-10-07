@@ -129,9 +129,10 @@ impl Spherical<4> {
 }
 
 impl Metric for Spherical<3> {
-    /// The distance between two points on a `Spherical<3>`. Explicitly, the
-    /// metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a 2-sphere with
-    /// radius  $`R`$ is given by
+    /// The distance between two [`Spherical<3>`] points.
+    ///
+    /// Explicitly, the metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a
+    /// 2-sphere with radius $`R`$ is given by
     ///
     /// ```math
     /// d_{S_2}(\vec{u}, \vec{v}) = R \arccos\left[\frac{1}{R^2}(u_1v_1 + u_2v_2 + u_3v_3)\right]
@@ -158,7 +159,9 @@ impl Metric for Spherical<3> {
 }
 
 impl Metric for Spherical<4> {
-    /// The distance between two points on a `Spherical<4>`. Explicitly, the
+    /// The distance between two [`Spherical<4>`] points.
+    ///
+    /// Explicitly, the
     /// metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a 3-sphere with
     /// radius  $`R`$ is given by
     ///

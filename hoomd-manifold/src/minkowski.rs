@@ -445,7 +445,7 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
     }
 }
 
-/// Point on the top sheet of a Hyperbolic.
+/// Point on the top sheet of a Hyperboloid.
 ///
 /// [`Hyperbolic`] implements an embedding of the top sheet of an
 /// (N-1)-dimensional two-sheeted hyperboloid in N-dimensional Minkowski space.
@@ -465,7 +465,7 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
 /// \Delta s^2 = \vec{x}^T \eta \vec{x} = x_1^2 +\cdots x_{N-1}^2 - x_{N}^2
 /// ```
 ///
-/// [`Hyperbolic`] implements a [`hoomd_vector::Metric`] that computes the distance of the
+/// [`Hyperbolic`] implements a [`Metric`] that computes the distance of the
 /// geodesic passing between two points on a hyperboloid with some given skirt
 /// width.
 ///
@@ -484,6 +484,8 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
 ///
 /// assert_eq!(((2.0_f64).sqrt()).acosh(), x.distance(&y));
 /// ```
+///
+/// [`Metric`]: hoomd_vector::Metric
 #[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
 pub struct Hyperbolic<const N: usize> {
     /// A point on the surface of the upper sheet of a two-sheeted hyperboloid.
@@ -645,9 +647,10 @@ impl<const N: usize> Default for Hyperbolic<N> {
 }
 
 impl Metric for Hyperbolic<3> {
-    /// The distance between two points on a `Hyperbolic<3>`. Explicitly, the
-    /// metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a Hyperbolic with
-    /// skirt width $`\rho`$ is given by
+    /// The distance between two [`Hyperbolic<3>`] points.
+    ///
+    /// Explicitly, the metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a
+    /// Hyperbolic with skirt width $`\rho`$ is given by
     ///
     /// ```math
     /// d_{H_2}(\vec{u}, \vec{v}) = \rho \operatorname{arccosh}\left[\frac{1}{\rho^2}(u_3v_3 - u_1v_1 - u_2v_2)\right]
@@ -681,8 +684,9 @@ impl Metric for Hyperbolic<3> {
 }
 
 impl Metric for Hyperbolic<4> {
-    /// The distance between two points on a `Hyperbolic<4>`. Explicitly, the
-    /// metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a hyperboloid with
+    /// The distance between two [`Hyperbolic<4>`] points.
+    ///
+    /// Explicitly, the metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a hyperboloid with
     /// skirt width $`\rho`$ is given by
     ///
     /// ```math
@@ -716,7 +720,7 @@ impl Metric for Hyperbolic<4> {
     }
 }
 
-/// Hyperbolic Rotations in Minkowski Space
+/// Hyperbolic rotations in Minkowski Space
 ///
 /// Construct a [`HyperbolicRotationMatrix`] to apply SO(N-1, 1)
 /// transformations to N-dimensional Minkowski vectors. For Minkowski 4-vectors,

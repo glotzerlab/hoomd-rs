@@ -169,10 +169,6 @@ use thiserror::Error;
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
-    /// Attempted converting a biquaternion not belonging to the Hyperbolic to a 4-vector
-    #[error("Biquaternion does not fit required format of [re,re,re,im] to describe a 4-vector")]
-    InvalidBiquaternion4Vector,
-
     /// Attempted to normalize a norm zero biquaternion
     #[error("Biquaternion with norm zero cannot be normalized")]
     InvalidBiquaternionMagnitude,
@@ -180,14 +176,6 @@ pub enum Error {
     /// Attempted converting a value to a vector with a dimension not equal to the value's length.
     #[error("source length does not match the target dimensions")]
     InvalidVectorLength,
-
-    /// Attempted to compare two points belonging to hyperboloids with different skirt widths
-    #[error("points do not belong to same Hyperbolic")]
-    InvalidHyperbolicPointComparison,
-
-    /// Attempted to compare two points belonging to spheres with different radii
-    #[error("points do not belong to same sphere")]
-    InvalidSpherePointComparison,
 }
 
 /// Linear transformations preserving hyperboloids.
