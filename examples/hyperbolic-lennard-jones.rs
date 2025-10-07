@@ -15,7 +15,7 @@ use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder, boundary::Periodic, property::Point,
 };
-use hoomd_simulation::Simulation;
+use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use rand::distr::Distribution;
 use rand::{SeedableRng, rngs::StdRng};
 
@@ -77,7 +77,7 @@ struct Fill {
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<Hyperbolic<3>>>,
     /// Temperature set point.
-    kt: f64,
+    macrostate: Isothermal,
 }
 
 impl Fill {
@@ -120,7 +120,7 @@ impl Fill {
             evaluator,
         };
 
-        let kt = 1.0;
+        let macrostate = Isothermal { temperature: 1.0 };
 
         let hamiltonian = cutoff_pair;
         let d = 0.01;
@@ -132,7 +132,7 @@ impl Fill {
             microstate,
             hamiltonian,
             translate_sweep,
-            kt,
+            macrostate,
         })
     }
 }
@@ -143,7 +143,7 @@ impl Simulation for Fill {
         self.translate_sweep.apply(
             &mut self.microstate,
             &self.hamiltonian,
-            &self.kt,
+            &self.macrostate,
         );
         self.microstate.increment_step();
         Ok(())
