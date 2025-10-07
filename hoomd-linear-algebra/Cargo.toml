@@ -14,7 +14,7 @@ version.workspace = true
 workspace = true
 
 [dev-dependencies]
-faer = "=0.23.2"
+faer = { version = "=0.23.2", default-features = false, features=["std"] }
 approxim.workspace = true
 divan.workspace = true
 rand.workspace = true
