@@ -18,13 +18,13 @@ use hoomd_geometry::IsPointInside;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Closed<T>(pub T);
 
-impl<P, T, V> Wrap<P> for Closed<T>
+impl<BS, T, P> Wrap<BS> for Closed<T>
 where
-    P: Position<Vector = V>,
-    T: IsPointInside<V>,
+    BS: Position<Position = P>,
+    T: IsPointInside<P>,
 {
     #[inline]
-    fn wrap(&self, properties: P) -> Result<P, Error> {
+    fn wrap(&self, properties: BS) -> Result<BS, Error> {
         if self.0.is_point_inside(properties.position()) {
             Ok(properties)
         } else {
@@ -48,9 +48,9 @@ where
     }
 }
 
-impl<T, V> Distribution<V> for Closed<T>
+impl<T, P> Distribution<P> for Closed<T>
 where
-    T: Distribution<V>,
+    T: Distribution<P>,
 {
     /// Generate points uniformly distributed in the wrapped shape.
     ///
@@ -73,7 +73,7 @@ where
     /// # }
     /// ```
     #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> V {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> P {
         self.0.sample(rng)
     }
 }

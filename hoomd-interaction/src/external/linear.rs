@@ -74,10 +74,10 @@ where
     }
 }
 
-impl<S, V> SiteEnergy<S> for Linear<V>
+impl<S, P> SiteEnergy<S> for Linear<P>
 where
-    S: Position<Vector = V>,
-    V: InnerProduct,
+    S: Position<Position = P>,
+    P: InnerProduct,
 {
     #[inline]
     fn site_energy(&self, site_properties: &S) -> f64 where {
@@ -90,7 +90,7 @@ mod tests {
     use hoomd_vector::Cartesian;
 
     use super::*;
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rstest::*;
 
     #[rstest]

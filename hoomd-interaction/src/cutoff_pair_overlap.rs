@@ -79,7 +79,7 @@ pub struct CutoffPairOverlap<E> {
 impl<V, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
-    S: Position<Vector = V>,
+    S: Position<Position = V>,
     V: Vector,
 {
     /// Compute the total energy of the microstate contributed by functions on pairs of sites.
@@ -177,7 +177,7 @@ impl<V, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
     B: Transform<S>,
-    S: Position<Vector = V>,
+    S: Position<Position = V>,
     C: Wrap<B> + Wrap<S>,
     V: Vector,
 {
@@ -258,7 +258,7 @@ impl<V, B, S, C, E> DeltaEnergyInsert<B, S, C> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
     B: Transform<S>,
-    S: Position<Vector = V>,
+    S: Position<Position = V>,
     C: Wrap<B> + Wrap<S>,
     V: Vector,
 {
@@ -333,7 +333,7 @@ where
 impl<V, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
-    S: Position<Vector = V>,
+    S: Position<Position = V>,
     V: Vector,
 {
     #[inline]

@@ -224,6 +224,7 @@ impl<D> QuickInsert<D> {
     /// use hoomd_microstate::{
     ///     Body, MicrostateBuilder, boundary::Periodic, property::Point,
     /// };
+    /// use hoomd_simulation::macrostate::Isothermal;
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -235,9 +236,7 @@ impl<D> QuickInsert<D> {
     /// };
     /// let mut quick_insert = QuickInsert::new(distribution, 256);
     ///
-    /// let translate = Translate {
-    ///     maximum_distance: 0.1.try_into()?,
-    /// };
+    /// let translate = Translate::with_maximum_distance(0.1.try_into()?);
     /// let translate_sweep = Sweep(translate);
     ///
     /// let cutoff_pair = CutoffPair {
@@ -248,6 +247,7 @@ impl<D> QuickInsert<D> {
     ///     }),
     /// };
     ///
+    /// let macrostate = Isothermal { temperature: 1.0 };
     /// let mut microstate =
     ///     MicrostateBuilder::with_boundary(Periodic::new(1.0, rectangle)?)
     ///         .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
@@ -255,21 +255,21 @@ impl<D> QuickInsert<D> {
     ///
     /// quick_insert.apply(&mut microstate, &cutoff_pair);
     ///
-    /// translate_sweep.apply(&mut microstate, &cutoff_pair, &1.0);
+    /// translate_sweep.apply(&mut microstate, &cutoff_pair, &macrostate);
     ///
     /// assert!(microstate.bodies().len() > 1);
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    pub fn apply<V, B, S, C, H>(
+    pub fn apply<P, B, S, C, H>(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
         hamiltonian: &H,
     ) -> Count
     where
-        B: Position<Vector = V> + Transform<S>,
-        S: Position<Vector = V> + Default,
+        B: Position<Position = P> + Transform<S>,
+        S: Position<Position = P> + Default,
         D: Distribution<Body<B, S>>,
         H: DeltaEnergyInsert<B, S, C> + TotalEnergy<Microstate<B, S, C>>,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
@@ -338,6 +338,7 @@ mod tests {
         pairwise::{Boxcar, Isotropic},
     };
     use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};
+    use hoomd_simulation::macrostate::Isothermal;
     use hoomd_vector::Cartesian;
 
     #[test]
@@ -355,9 +356,8 @@ mod tests {
             }),
         };
 
-        let translate = Translate {
-            maximum_distance: 0.1.try_into().expect("hard-coded value is non-zero"),
-        };
+        let translate =
+            Translate::with_maximum_distance(0.1.try_into().expect("hard-coded value is non-zero"));
         let translate_sweep = Sweep(translate);
 
         let rectangle = Closed(Rectangle::with_equal_edges(
@@ -368,6 +368,7 @@ mod tests {
             .bodies(vec![Body::point(Cartesian::from([0.0, 0.0]))])
             .try_build()
             .expect("hard-coded point is in the boundary");
+        let macrostate = Isothermal { temperature: kt };
 
         let distribution = UniformIn {
             boundary: rectangle,
@@ -385,7 +386,7 @@ mod tests {
             }
         }
 
-        translate_sweep.apply(&mut microstate, &hamiltonian, &kt);
+        translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
 
         assert_eq!(quick_insert.inserted, 10);
         assert_eq!(quick_insert.state, State::Complete);

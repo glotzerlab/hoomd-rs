@@ -8,6 +8,7 @@ use rand::{Rng, distr::Distribution};
 use super::{Error, MaximumAllowableInteractionRange};
 
 mod cuboid;
+mod eighteight;
 
 /// Describe a simulation space that repeats in one or more directions.
 ///
@@ -22,9 +23,11 @@ mod cuboid;
 /// and closed in others.
 ///
 /// [`Periodic`] is implemented for the following shapes:
+/// * [`EightEight`]
 /// * [`Hypercuboid<2>`] (also known as [`Rectangle`])
 /// * [`Hypercuboid<3>`] (also known as [`Cuboid`])
 ///
+/// [`EightEight`]: hoomd_geometry::shape::EightEight
 /// [`Hypercuboid<2>`]: hoomd_geometry::shape::Hypercuboid
 /// [`Hypercuboid<3>`]: hoomd_geometry::shape::Hypercuboid
 /// [`Cuboid`]: hoomd_geometry::shape::Cuboid

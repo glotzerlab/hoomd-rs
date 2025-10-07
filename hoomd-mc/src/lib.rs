@@ -41,24 +41,22 @@ pub use uniform_in::UniformIn;
 /// See [`Sweep`] or any of the other implementations of `Trial` for code examples.
 ///
 /// The generic type names are:
-/// * `M`: The [`Microstate`](hoomd_microstate::Microstate) type.
+/// * `MI`: The [`Microstate`](hoomd_microstate::Microstate) type.
 /// * `H`: The Hamiltonian type.
-pub trait Trial<M, H> {
+/// * `MA`: The [`Macrostate`](hoomd_simulation::macrostate) type.
+pub trait Trial<MI, H, MA> {
     /// Represent the number of accepted and rejected individual trial moves.
     ///
     /// Most implementations of `Trial` will use [`crate::Count`] directly. Some
     /// may provide more granular detail broken down by move type.
     type Count;
 
-    /// Represent the macrostate parameter(s) used when evaluating move acceptance.
-    type Macrostate;
-
     /// Apply the trial move(s).
     ///
     /// A given type that implements `Trial` may perform one or many trial moves
     /// in a single call to `apply`. The returned value informs the caller how many
     /// trial moves were accepted and rejected (possibly broken down by type).
-    fn apply(&self, microstate: &mut M, hamiltonian: &H, state: &Self::Macrostate) -> Self::Count;
+    fn apply(&self, microstate: &mut MI, hamiltonian: &H, macrostate: &MA) -> Self::Count;
 }
 
 /// Propose a new configuration for given body properties.
@@ -94,21 +92,21 @@ pub trait LocalTrial<B> {
 /// use hoomd_interaction::Zero;
 /// use hoomd_mc::{Count, Sweep, Translate, Trial};
 /// use hoomd_microstate::{Body, Microstate, property::Position};
+/// use hoomd_simulation::macrostate::Isothermal;
 /// use hoomd_vector::Cartesian;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let macrostate = Isothermal { temperature: 1.0 };
 /// let mut microstate = Microstate::new();
 /// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
 /// let d = 0.1;
-/// let translate = Translate {
-///     maximum_distance: d.try_into()?,
-/// };
+/// let translate = Translate::with_maximum_distance(d.try_into()?);
 /// let translate_sweep = Sweep(translate);
 ///
 /// let mut count = Count::default();
 ///
 /// for _ in 0..1_000 {
-///     count += translate_sweep.apply(&mut microstate, &Zero, &1.0);
+///     count += translate_sweep.apply(&mut microstate, &Zero, &macrostate);
 ///     microstate.increment_step();
 /// }
 ///

@@ -15,7 +15,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 ///
 /// Expanded Lennard-Jones:
 /// ```
-/// use approx::{assert_abs_diff_eq, assert_relative_eq};
+/// use approxim::{assert_abs_diff_eq, assert_relative_eq};
 /// use hoomd_interaction::pairwise::{
 ///     Expanded, IsotropicEnergy, LennardJones,
 /// };
@@ -75,7 +75,7 @@ impl<F: IsotropicForce> IsotropicForce for Expanded<F> {
 mod tests {
     use super::*;
     use crate::pairwise::LennardJones;
-    use ::approx::{assert_abs_diff_eq, assert_relative_eq};
+    use approxim::{assert_abs_diff_eq, assert_relative_eq};
     use rstest::*;
 
     #[rstest]

@@ -8,7 +8,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// Double-well potential with a steep repulsive core
 ///
 /// ```math
-/// U(r) = 1[\mathrm{energy}]\cdot\left[ \left(\frac{1[\mathrm{length}]}{r}\right)^{12} - 2\left(\frac{1[\mathrm{length}]}{r}\right)^{6}\right] - \varepsilon \exp \left(-\frac{(r-r_0)^2}{2\sigma^2}\right)
+/// U(r) = 1[\mathrm{energy}]\cdot\left[ \left(\frac{\ell}{r}\right)^{12} - 2\left(\frac{\ell}{r}\right)^{6}\right] - \varepsilon \exp \left(-\frac{(r/\ell-r_0)^2}{2\sigma^2}\right)
 /// ```
 ///
 /// Compute the Lennard-Jones-Gauss (LJG) potential and force as a function of `r`.
@@ -16,7 +16,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// # Examples
 ///
 /// ```
-/// use approx::{assert_abs_diff_eq, assert_relative_eq};
+/// use approxim::{assert_abs_diff_eq, assert_relative_eq};
 /// use hoomd_interaction::pairwise::{
 ///     IsotropicEnergy, IsotropicForce, LennardJonesGauss,
 /// };
@@ -24,11 +24,13 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// let epsilon = 0.5;
 /// let sigma_squared = 0.5;
 /// let r_0 = 0.5_f64.powf(1.0 / 6.0);
+/// let scale = 1.0_f64;
 ///
 /// let lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss {
 ///     epsilon,
 ///     sigma_squared,
 ///     r_0,
+///     scale,
 /// };
 /// assert_relative_eq!(
 ///     lennard_jones_gauss.energy(0.5_f64.powf(1.0 / 6.0)),
@@ -46,6 +48,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 ///     epsilon: 1.5,
 ///     sigma_squared: 0.02,
 ///     r_0: 3.2,
+///     scale: 1.0,
 /// };
 /// lennard_jones_gauss.epsilon = 1.5;
 /// lennard_jones_gauss.sigma_squared = 0.02;
@@ -55,17 +58,19 @@ use super::{IsotropicEnergy, IsotropicForce};
 pub struct LennardJonesGauss {
     /// Scale of Gaussian, in units of energy
     pub epsilon: f64,
-    /// Width of Gaussian, sigma^2 is in units of length squared
+    /// Width of Gaussian, sigma^2, unitless
     pub sigma_squared: f64,
-    /// Gaussian center, in units of length
+    /// Gaussian center, unitless
     pub r_0: f64,
+    /// unit of the length scale
+    pub scale: f64,
 }
 
 impl IsotropicEnergy for LennardJonesGauss {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
-        let r_inv = r.recip();
-        let arg = -(r - self.r_0).powi(2) / (2.0 * self.sigma_squared);
+        let r_inv = self.scale / r;
+        let arg = -((r / self.scale) - self.r_0).powi(2) / (2.0 * self.sigma_squared);
         r_inv.powi(12) - 2.0 * r_inv.powi(6) - self.epsilon * arg.exp()
     }
 }
@@ -73,17 +78,17 @@ impl IsotropicEnergy for LennardJonesGauss {
 impl IsotropicForce for LennardJonesGauss {
     #[inline]
     fn force(&self, r: f64) -> f64 {
-        let r_inv = r.recip();
-        let arg = -(r - self.r_0).powi(2) / (2.0 * self.sigma_squared);
+        let r_inv = self.scale / r;
+        let arg = -((r / self.scale) - self.r_0).powi(2) / (2.0 * self.sigma_squared);
         12.0 * (r_inv.powi(13) - r_inv.powi(7))
-            - (self.epsilon * (self.r_0 - r) / self.sigma_squared) * arg.exp()
+            - (self.epsilon * ((r / self.scale) - self.r_0) / self.sigma_squared) * arg.exp()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::approx::{assert_abs_diff_eq, assert_relative_eq};
+    use approxim::{assert_abs_diff_eq, assert_relative_eq};
     use rstest::*;
 
     #[rstest]
@@ -92,6 +97,7 @@ mod tests {
             epsilon: 2.0,
             sigma_squared: 0.5,
             r_0: 3.0,
+            scale: 1.0,
         };
 
         assert_eq!(lj_gauss.epsilon, 2.0);
@@ -106,7 +112,7 @@ mod tests {
         );
         assert_abs_diff_eq!(
             lj_gauss.force(1.5_f64),
-            -1.273_068_535_928_335,
+            -0.008_277_841_185_963,
             epsilon = 1e-12
         );
         assert_relative_eq!(
@@ -116,7 +122,7 @@ mod tests {
         );
         assert_abs_diff_eq!(
             lj_gauss.force(3.2_f64),
-            0.765_142_344_273_568,
+            -0.772_120_758_370_149,
             epsilon = 1e-12
         );
     }
@@ -126,6 +132,7 @@ mod tests {
             epsilon: 10.0,
             sigma_squared: 0.1,
             r_0: 5.0,
+            scale: 1.0,
         };
 
         assert_eq!(lj_gauss.epsilon, 10.0);
@@ -150,7 +157,7 @@ mod tests {
         );
         assert_abs_diff_eq!(
             lj_gauss.force(3.2_f64),
-            -0.003_505_791_529_792_807,
+            -0.003_472_622_566_788_369,
             epsilon = 1e-12
         );
     }

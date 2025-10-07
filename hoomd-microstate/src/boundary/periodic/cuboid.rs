@@ -53,7 +53,7 @@ impl<const N: usize> MaximumAllowableInteractionRange for Hypercuboid<N> {
 
 impl<const N: usize, P> Wrap<P> for Periodic<Hypercuboid<N>>
 where
-    P: Position<Vector = Cartesian<N>>,
+    P: Position<Position = Cartesian<N>>,
 {
     /// Wrap any cartesian vector to the inside of the given cuboid.
     ///
@@ -95,7 +95,7 @@ where
 
 impl<S> GenerateGhosts<S> for Periodic<Hypercuboid<2>>
 where
-    S: Position<Vector = Cartesian<2>> + Copy + Default,
+    S: Position<Position = Cartesian<2>> + Copy + Default,
 {
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {
@@ -161,7 +161,7 @@ where
 
 impl<S> GenerateGhosts<S> for Periodic<Hypercuboid<3>>
 where
-    S: Position<Vector = Cartesian<3>> + Copy + Default,
+    S: Position<Position = Cartesian<3>> + Copy + Default,
 {
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {
@@ -290,7 +290,7 @@ mod tests {
     use super::*;
     use crate::property::Point;
 
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
 
     const N_SAMPLES: usize = 1024;
