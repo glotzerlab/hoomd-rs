@@ -4,7 +4,15 @@
 use std::error::Error;
 use std::{fmt, fs};
 
-use crate::polynomial_basis::Chebyshev;
+use crate::potential::{Chimes2b, ChimesPenalty, CubicSmooth, TersoffSmooth};
+use crate::transformation::{
+    DirectTransformation, InverseTransformation, MorseTransformation, Transformation,
+};
+use hoomd_interaction::pairwise::Isotropic;
+use hoomd_interaction::{
+    CutoffPair,
+    pairwise::{IsotropicEnergy, IsotropicForce},
+};
 
 // Custom error for invalid format or data
 #[derive(Debug)]
@@ -18,8 +26,79 @@ impl fmt::Display for InvalidFormatError {
 
 impl Error for InvalidFormatError {}
 
+#[derive(Clone)]
+enum ChimesTransformation {
+    Morse(MorseTransformation),
+    Inverse(InverseTransformation),
+    Direct(DirectTransformation),
+}
+
+impl Transformation for ChimesTransformation {
+    fn s(&self, r: &f64) -> f64 {
+        match self {
+            ChimesTransformation::Morse(t) => t.s(r),
+            ChimesTransformation::Inverse(t) => t.s(r),
+            ChimesTransformation::Direct(t) => t.s(r),
+        }
+    }
+
+    fn ds_dr(&self, r: &f64) -> f64 {
+        match self {
+            ChimesTransformation::Morse(t) => t.ds_dr(r),
+            ChimesTransformation::Inverse(t) => t.ds_dr(r),
+            ChimesTransformation::Direct(t) => t.ds_dr(r),
+        }
+    }
+}
+
+/// Enum to encapsulate different smoothing functions.
+#[derive(Clone)]
+pub enum ChimesSmoothing<F: Transformation, const N: usize> {
+    Cubic(CubicSmooth<Chimes2b<F, N>>),
+    Tersoff(TersoffSmooth<Chimes2b<F, N>>),
+}
+
+impl<F: Transformation, const N: usize> IsotropicEnergy for ChimesSmoothing<F, N> {
+    fn energy(&self, r: f64) -> f64 {
+        match self {
+            ChimesSmoothing::Cubic(s) => s.energy(r),
+            ChimesSmoothing::Tersoff(s) => s.energy(r),
+        }
+    }
+}
+impl<F: Transformation, const N: usize> IsotropicForce for ChimesSmoothing<F, N> {
+    fn force(&self, r: f64) -> f64 {
+        match self {
+            ChimesSmoothing::Cubic(s) => s.force(r),
+            ChimesSmoothing::Tersoff(s) => s.force(r),
+        }
+    }
+}
+
+/// Represents a two-body ChIMES potential for a specific pair type.
+#[derive(Clone)]
+pub struct ChimesTwobPotential<const N: usize> {
+    pub type1: String,
+    pub type2: String,
+    pub chimes: ChimesSmoothing<ChimesTransformation, N>,
+    pub penalty: ChimesPenalty,
+    pub energy_shifting: f64,
+}
+
+impl<const N: usize> IsotropicEnergy for ChimesTwobPotential<N> {
+    fn energy(&self, r: f64) -> f64 {
+        self.penalty.energy(r) + self.chimes.energy(r) + self.energy_shifting
+    }
+}
+
+impl<const N: usize> IsotropicForce for ChimesTwobPotential<N> {
+    fn force(&self, r: f64) -> f64 {
+        self.penalty.force(r) + self.chimes.force(r)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
-pub struct Params {
+pub struct ChimesBuilder<const N: usize> {
     /// Chebyshev polynomial orders and related parameters from PAIRTYP (line 18).
     pub poly_order: Vec<usize>,
     /// Number of atom types (line 20).
@@ -60,7 +139,7 @@ pub struct Params {
     pub penalty_scaling: f64,
 }
 
-impl Params {
+impl<const N: usize> ChimesBuilder<N> {
     pub fn parse(file_path: &str) -> Result<Self, Box<dyn Error>> {
         let content = fs::read_to_string(file_path)?;
         let lines: Vec<&str> = content
@@ -98,6 +177,10 @@ impl Params {
                 "Missing PAIRTYP: CHEBYSHEV line".into(),
             )));
         }
+        assert!(
+            N == poly_order[0],
+            "Mismatch two-body order, assuming two-body, N={N}"
+        );
 
         // Extract the particle types and particle pair types related chimes parameters
         let mut atom_types: usize = 0;
@@ -307,7 +390,9 @@ impl Params {
                     .trim_start_matches("PAIRTYPE PARAMS: ")
                     .split_whitespace()
                     .collect();
-                let tmp_pair_type_index = pair_params_head_line[0].parse::<usize>().map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                let tmp_pair_type_index = pair_params_head_line[0]
+                    .parse::<usize>()
+                    .map_err(|e| Box::new(e) as Box<dyn Error>)?;
                 pair_type_index.push(tmp_pair_type_index);
 
                 let start = idx + 1;
@@ -326,13 +411,17 @@ impl Params {
                     .trim_start_matches("PAIRMAPS: ")
                     .split_whitespace()
                     .collect();
-                let n_pair_maps = pair_map_header[0].parse::<usize>().map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                let n_pair_maps = pair_map_header[0]
+                    .parse::<usize>()
+                    .map_err(|e| Box::new(e) as Box<dyn Error>)?;
 
                 let start = idx + 1;
                 let end = start + n_pair_maps;
                 for (i, line_after_start) in lines[start..end].iter().enumerate() {
                     let pair_idx_type: Vec<&str> = line_after_start.split_whitespace().collect();
-                    let tmp_pair_idx = pair_idx_type[0].parse::<usize>().map_err(|e| Box::new(e) as Box<dyn Error>)?;
+                    let tmp_pair_idx = pair_idx_type[0]
+                        .parse::<usize>()
+                        .map_err(|e| Box::new(e) as Box<dyn Error>)?;
                     pair_idx_slow_map.push(tmp_pair_idx);
                     pair_type_slow_map.push(pair_idx_type[1].to_string());
                 }
@@ -343,13 +432,20 @@ impl Params {
                         let typej = type_data.0[jj].clone();
                         let typeij = typei + &typej;
 
-                        let index_of_pair_match = pair_type_slow_map.iter().position(|s| s.contains(&typeij)).unwrap();
+                        let index_of_pair_match = pair_type_slow_map
+                            .iter()
+                            .position(|s| s.contains(&typeij))
+                            .unwrap();
                         pair_idx_fast_map.push(pair_idx_slow_map[index_of_pair_match]);
 
                         for iii in 0..pair_data.0.len() {
-                            if (type_data.0[ii] == pair_data.0[iii] && type_data.0[jj] == pair_data.1[iii]) ||
-                                (type_data.0[jj] == pair_data.0[iii] && type_data.0[ii] == pair_data.1[iii]) {
-                                pair_type_fast_map.push(pair_data.0[iii].clone() + &pair_data.1[iii]);
+                            if (type_data.0[ii] == pair_data.0[iii]
+                                && type_data.0[jj] == pair_data.1[iii])
+                                || (type_data.0[jj] == pair_data.0[iii]
+                                    && type_data.0[ii] == pair_data.1[iii])
+                            {
+                                pair_type_fast_map
+                                    .push(pair_data.0[iii].clone() + &pair_data.1[iii]);
                                 break;
                             }
                         }
@@ -359,7 +455,7 @@ impl Params {
             }
         }
 
-        Ok(Params {
+        Ok(ChimesBuilder {
             poly_order,
             atom_types,
             type_data,
@@ -379,6 +475,90 @@ impl Params {
         })
     }
 
+    pub fn get_twob_chimes_potential(
+        &self,
+        pair_idx: usize,
+    ) -> CutoffPair<Isotropic<ChimesTwobPotential<N>>> {
+        assert!(
+            pair_idx <= self.pair_data.0.len() - 1,
+            "Intend to access the potential model with pair idx {}, but only found {} pairs",
+            pair_idx,
+            self.pair_data.0.len()
+        );
+        let transformatiom_fn = self.get_tranformation(pair_idx).unwrap();
+        let cheby2b: Chimes2b<ChimesTransformation, N> = Chimes2b::new(
+            transformatiom_fn,
+            self.cheby_2b_coeffs[pair_idx].clone(),
+            self.pair_data.2[pair_idx],
+        );
+        let chimes_2b_model = self.get_smoothing(cheby2b, pair_idx).unwrap();
+        let penalty_fn = ChimesPenalty {
+            r_in: self.pair_data.2[pair_idx],
+            a: self.penalty_scaling,
+            dt: self.penalty_dist,
+        };
+        let chimes_potential = ChimesTwobPotential {
+            type1: self.pair_data.0[pair_idx].clone(),
+            type2: self.pair_data.1[pair_idx].clone(),
+            chimes: chimes_2b_model,
+            penalty: penalty_fn,
+            energy_shifting: self.energy_offset[pair_idx],
+        };
+
+        CutoffPair {
+            r_cut: self.pair_data.3[pair_idx],
+            evaluator: Isotropic(chimes_potential),
+        }
+    }
+
+    fn get_tranformation(&self, pair_idx: usize) -> Result<ChimesTransformation, Box<dyn Error>> {
+        match self.xform_style.as_str() {
+            "MORSE" => Ok(ChimesTransformation::Morse(MorseTransformation {
+                lambda: self.pair_data.4[pair_idx].unwrap(),
+                r_in: self.pair_data.2[pair_idx],
+                r_out: self.pair_data.3[pair_idx],
+            })),
+            "INVERSE" => Ok(ChimesTransformation::Inverse(InverseTransformation {
+                r_in: self.pair_data.2[pair_idx],
+                r_out: self.pair_data.3[pair_idx],
+            })),
+            "DIRECT" => Ok(ChimesTransformation::Direct(DirectTransformation {
+                r_in: self.pair_data.2[pair_idx],
+                r_out: self.pair_data.3[pair_idx],
+            })),
+            _ => {
+                return Err(Box::new(InvalidFormatError(format!(
+                    "Unknown transformation style: {}",
+                    self.xform_style
+                ))));
+            }
+        }
+    }
+
+    fn get_smoothing(
+        &self,
+        f: Chimes2b<ChimesTransformation, N>,
+        pair_idx: usize,
+    ) -> Result<ChimesSmoothing<ChimesTransformation, N>, Box<dyn Error>> {
+        match self.fcut.0.as_str() {
+            "CUBIC" => Ok(ChimesSmoothing::Cubic(CubicSmooth {
+                f: f,
+                r_out: self.pair_data.3[pair_idx],
+            })),
+            "TERSOFF" => Ok(ChimesSmoothing::Tersoff(TersoffSmooth {
+                f: f,
+                r_out: self.pair_data.3[pair_idx],
+                r_in: self.pair_data.2[pair_idx],
+                fo: self.fcut.1.unwrap(),
+            })),
+            _ => {
+                return Err(Box::new(InvalidFormatError(format!(
+                    "Unknown smoothing style: {}",
+                    self.xform_style
+                ))));
+            }
+        }
+    }
     /// Parses a space-separated line into a vector of i32.
     fn parse_i32_vec(line: &str) -> Result<Vec<i32>, Box<dyn Error>> {
         let values = line
@@ -401,39 +581,45 @@ impl Params {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use hoomd_interaction::pairwise::IsotropicEnergy;
     use rstest::*;
 
     #[rstest]
     fn parse_carbon_two_body() {
+        const N: usize = 12;
         let file_path = "./test-data/C-twobody.txt";
 
         // Read the entire file content into a String
         // This returns a Result, so we use `?` to propagate any errors
-        let params = Params::parse(file_path).expect("Failed to parse parameter file");
+        let params = ChimesBuilder::<N>::parse(file_path).expect("Failed to parse parameter file");
 
         let expected_poly_order = vec![12, 0, 0];
         let expected_type_data = (vec![String::from("C")], vec![12.011]);
         let expected_xform_style = String::from("MORSE");
         let expected_pair_data = (
-            vec![String::from("C")], vec![String::from("C")], vec![1.0], vec![3.15], vec![Some(1.25)]
+            vec![String::from("C")],
+            vec![String::from("C")],
+            vec![1.0],
+            vec![3.15],
+            vec![Some(1.25)],
         );
         let expected_fcut: (String, Option<f64>) = (String::from("CUBIC"), None);
         let expected_energy_offset = vec![0.0];
         let expected_penalty_dist = 0.01;
         let expected_pair_type_index = [0];
         let expected_cheby_2b_coeffs = vec![vec![
-                285.73883308072,
-                -213.71388752372,
-                358.53331099031,
-                -172.12400486549,
-                44.77502350315,
-                -34.154784921509,
-                30.632345544482,
-                -33.336059893072,
-                11.483163813684,
-                -0.9908672079118,
-                -3.3830138904188,
-                1.2480108628453
+            285.73883308072,
+            -213.71388752372,
+            358.53331099031,
+            -172.12400486549,
+            44.77502350315,
+            -34.154784921509,
+            30.632345544482,
+            -33.336059893072,
+            11.483163813684,
+            -0.9908672079118,
+            -3.3830138904188,
+            1.2480108628453,
         ]];
         let expected_pair_idx_slow_map = vec![0];
         let expected_pair_type_slow_map = vec!["CC"];
@@ -453,6 +639,16 @@ mod tests {
         assert_eq!(params.pair_type_slow_map, expected_pair_type_slow_map);
         assert_eq!(params.pair_idx_fast_map, expected_pair_idx_fast_map);
         assert_eq!(params.pair_type_fast_map, expected_pair_type_fast_map);
+
+        let chimes_pot = params.get_twob_chimes_potential(0);
+        assert_eq!(chimes_pot.evaluator.0.type1, String::from("C"));
+        assert_eq!(chimes_pot.evaluator.0.type2, String::from("C"));
+        // println!("{}", chimes_pot.evaluator.0.energy(1.1));
+        // println!("{}", chimes_pot.evaluator.0.energy(1.5));
+        // println!("{}", chimes_pot.evaluator.0.energy(2.0));
+        // println!("{}", chimes_pot.evaluator.0.energy(2.5));
+        // println!("{}", chimes_pot.evaluator.0.energy(3.0));
+
         // println!("Polynomial order: {:?}\n", params.poly_order);
         // println!("Atom data: {:?}\n", params.type_data);
         // println!("Transformation style: {:?}\n", params.xform_style);
