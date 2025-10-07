@@ -10,7 +10,7 @@ use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder, boundary::Closed, property::Point,
 };
-use hoomd_simulation::Simulation;
+use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_vector::Cartesian;
 // ANCHOR_END: use
 
@@ -29,7 +29,7 @@ struct Fill {
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<Cartesian<2>>>,
     /// Temperature set point.
-    kt: f64,
+    macrostate: Isothermal,
 }
 // ANCHOR_END: simulation_struct
 
@@ -44,7 +44,7 @@ impl Fill {
         let alpha = 10.0;
         let epsilon = 1000.0;
         let sigma = 1.0;
-        let kt = 1.0;
+        let macrostate = Isothermal { temperature: 1.0 };
         // ANCHOR_END: parameters
 
         // ANCHOR: microstate
@@ -89,7 +89,7 @@ impl Fill {
             microstate,
             hamiltonian,
             translate_sweep,
-            kt,
+            macrostate,
         })
     }
 }
@@ -114,7 +114,7 @@ impl Simulation for Fill {
         self.translate_sweep.apply(
             &mut self.microstate,
             &self.hamiltonian,
-            &self.kt,
+            &self.macrostate,
         );
         self.microstate.increment_step();
         // ANCHOR_END: apply

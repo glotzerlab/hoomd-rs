@@ -40,7 +40,6 @@ jobs:
           # TODO: Include Mac and Windows tests after the project made public.
           # - macos-14
         rust:
-          # Test multiple rust versions on multiple platforms in the debug profile.
           - 1.88.0
           - 1.90.0
         target:

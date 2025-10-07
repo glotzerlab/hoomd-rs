@@ -173,15 +173,6 @@
 //! # Ok(())
 //! # }
 //! ```
-//!
-//! # Feature flags
-//!
-//! These unstable features are intended for internal use. `hoomd-vector` may make
-//! breaking changes to the code gated behind unstable features in any release.
-//!
-//! * `approx`: Enable `assert_relative_eq` and `assert_abs_diff_eq` from the
-//!   [`approx`](https://docs.rs/approx/latest/approx/) crate on [`Cartesian`],
-//!   [`Quaternion`] and [`Versor`].
 
 mod angle;
 mod cartesian;
@@ -719,7 +710,6 @@ pub trait Rotation: Copy {
 /// assert_relative_eq!(o_ab.theta, PI / 2.0);
 /// ```
 #[inline]
-#[expect(clippy::similar_names, reason = "standard math notation")]
 pub fn pair_system_to_local<V, R>(r_a: &V, o_a: &R, r_b: &V, o_b: &R) -> (V, R)
 where
     V: Vector,

@@ -16,6 +16,7 @@ use rand::{
 };
 
 use crate::{Cross, Error, InnerProduct, Metric, Rotate, Unit, Vector};
+use hoomd_linear_algebra::{MatMul, matrix::Matrix};
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
 ///
@@ -568,6 +569,15 @@ pub struct RotationMatrix<const N: usize> {
     pub(crate) rows: [Cartesian<N>; N],
 }
 
+impl<const N: usize> From<RotationMatrix<N>> for Matrix<N, N> {
+    #[inline]
+    fn from(value: RotationMatrix<N>) -> Self {
+        Self {
+            rows: value.rows().map(|arr| arr.coordinates),
+        }
+    }
+}
+
 impl<const N: usize> RotationMatrix<N> {
     /// Get the rows of the rotation matrix.
     ///
@@ -700,6 +710,63 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
         }
 
         Cartesian { coordinates }
+    }
+}
+
+impl<const N: usize, const K: usize> MatMul<Matrix<N, K>> for RotationMatrix<N> {
+    type Output = Matrix<N, K>;
+
+    #[inline]
+    fn matmul(&self, rhs: &Matrix<N, K>) -> Self::Output {
+        Matrix::from(*self).matmul(rhs)
+    }
+}
+
+impl<const N: usize> Cartesian<N> {
+    /// Convert a [`Cartesian<N>`] into a row matrix [`Matrix<1, N>`].
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let a = Cartesian::from([1.0, -2.0, 3.0]);
+    ///
+    /// let b = a.to_row_matrix();
+    /// assert_eq!(b.rows, [[1.0, -2.0, 3.0]]);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn to_row_matrix(self) -> Matrix<1, N> {
+        Matrix {
+            rows: [self.coordinates],
+        }
+    }
+    /// Convert a [`Cartesian<N>`] into a column matrix [`Matrix<N, 1>`].
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let a = Cartesian::from([1.0, -2.0, 3.0]);
+    ///
+    /// let b = a.to_column_matrix();
+    /// assert_eq!(b.rows, [[1.0], [-2.0], [3.0]]);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn to_column_matrix(self) -> Matrix<N, 1> {
+        Matrix {
+            rows: std::array::from_fn(|i| [self[i]]),
+        }
+    }
+}
+
+impl<const N: usize> From<Matrix<1, N>> for Cartesian<N> {
+    #[inline]
+    fn from(value: Matrix<1, N>) -> Self {
+        value.rows[0].into()
     }
 }
 

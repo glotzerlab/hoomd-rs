@@ -10,26 +10,26 @@
 
 //! Tools for non-Euclidean geometries.
 //!
-//! ## Sphere
+//! ## Spherical points
 //!
-//! [`Sphere`] describes an N-sphere of radius R embedded in
+//! [`Spherical`] describes a point on an N-sphere of radius R embedded in
 //! [`Cartesian<N+1>`]. The components of a point on an N-sphere
 //! satisfy
 //! ```math
 //! \sum_{i=1}^{N+1}x_i^2 = R^2
 //! ```
-//! [`Sphere`] implements a distance metric through the trait
+//! [`Spherical`] implements a distance metric through the trait
 //! [`Metric`] which calculates the geodesic distance on the
-//! surface of an N-sphere. Use [`Sphere`] to describe spaces with constant
+//! surface of an N-sphere. Use [`Spherical`] to describe spaces with constant
 //! positive curvature.
 //!
 //! [`Cartesian<N+1>`]: hoomd_vector::Cartesian
 //! [`Metric`]: hoomd_vector::Metric
 //!
 //! ## Hyperbolic
-//! [`Hyperbolic`] describes the upper sheet of an N-dimensional two-sheeted
-//! Hyperbolic with skirt R embedded in (N+1)-dimensional Minkowski space.
-//! The components of a point on the Hyperbolic satisfy
+//! [`Hyperbolic`] describes a point on the upper sheet of an N-dimensional
+//! two-sheeted Hyperbolic with skirt R embedded in (N+1)-dimensional Minkowski
+//! space. The components of a point on the Hyperbolic satisfy
 //! ```math
 //! x_1^2 + \cdots + x_{N-1}^2 - x_{N}^2 = -R^2
 //! ```
