@@ -70,14 +70,16 @@ impl<const N: usize> Transform<Point<Cartesian<N>>> for Point<Cartesian<N>> {
     }
 }
 
-/// Move `Point<Hyperbolic<3>>` properties from the local body frame to the
-/// system frame. All positions in hyperbolic space are associated with some
-/// $`SO(2,1)`$ transformation which translates the origin to that position.
-/// The local body frame is the frame in which the body position is the origin.
-/// The position of the sites in the system frame is obtained by applying the
-/// transformation associated with the body's position to the sites in the
-/// local body frame.
 impl Transform<Point<Hyperbolic<3>>> for Point<Hyperbolic<3>> {
+    /// Move `Point<Hyperbolic<3>>` properties from the local body frame to the
+    /// system frame.
+    ///
+    /// All positions in hyperbolic space are associated with some $`SO(2,1)`$
+    /// transformation which translates the origin to that position. The local
+    /// body frame is the frame in which the body position is the origin. The
+    /// position of the sites in the system frame is obtained by applying the
+    /// transformation associated with the body's position to the sites in the
+    /// local body frame.
     #[inline]
     fn transform(&self, site_properties: &Point<Hyperbolic<3>>) -> Point<Hyperbolic<3>> {
         let body_pos = self.position.coordinates();
@@ -99,14 +101,16 @@ impl Transform<Point<Hyperbolic<3>>> for Point<Hyperbolic<3>> {
     }
 }
 
-/// Move `Point<Hyperbolic<4>>` properties from the local body frame to the
-/// system frame. All positions in hyperbolic space are associated with some
-/// $`SO(3,1)`$ transformation which translates the origin to that position.
-/// The local body frame is the frame in which the body position is the origin.
-/// The position of the sites in the system frame is obtained by applying the
-/// transformation associated with the body's position to the sites in the
-/// local body frame.
 impl Transform<Point<Hyperbolic<4>>> for Point<Hyperbolic<4>> {
+    /// Move `Point<Hyperbolic<4>>` properties from the local body frame to the
+    /// system frame.
+    ///
+    /// All positions in hyperbolic space are associated with some $`SO(3,1)`$
+    /// transformation which translates the origin to that position. The local
+    /// body frame is the frame in which the body position is the origin. The
+    /// position of the sites in the system frame is obtained by applying the
+    /// transformation associated with the body's position to the sites in the
+    /// local body frame.
     #[inline]
     fn transform(&self, site_properties: &Point<Hyperbolic<4>>) -> Point<Hyperbolic<4>> {
         let body_point = self.position.coordinates();
@@ -136,15 +140,17 @@ impl Transform<Point<Hyperbolic<4>>> for Point<Hyperbolic<4>> {
     }
 }
 
-/// Move `Point<Sphere<3>>` properties from the local body frame to the
-/// system frame. All positions on the 2-sphere are associated with some
-/// $`SO(3)`$ transformation which translates the origin to that position.
-/// The local body frame is the frame in which the body position is the origin.
-/// The position of the sites in the system frame is obtained by applying the
-/// transformation associated with the body's position to the sites in the
-/// local body frame.
 impl Transform<Point<Spherical<3>>> for Point<Spherical<3>> {
     #[inline]
+    /// Move `Point<Sphere<3>>` properties from the local body frame to the
+    /// system frame.
+    ///
+    /// All positions on the 2-sphere are associated with some $`SO(3)`$
+    /// transformation which translates the origin to that position. The local
+    /// body frame is the frame in which the body position is the origin. The
+    /// position of the sites in the system frame is obtained by applying the
+    /// transformation associated with the body's position to the sites in the
+    /// local body frame.
     fn transform(&self, site_properties: &Point<Spherical<3>>) -> Point<Spherical<3>> {
         let radius = self.position.radius();
         let body_point = self.position.coordinates();
@@ -165,14 +171,16 @@ impl Transform<Point<Spherical<3>>> for Point<Spherical<3>> {
     }
 }
 
-/// Move `Point<Sphere<4>>` properties from the local body frame to the
-/// system frame. All positions on the 3-sphere are associated with some
-/// $`SO(4)`$ transformation which translates the origin to that position.
-/// The local body frame is the frame in which the body position is the origin.
-/// The position of the sites in the system frame is obtained by applying the
-/// transformation associated with the body's position to the sites in the
-/// local body frame.
 impl Transform<Point<Spherical<4>>> for Point<Spherical<4>> {
+    /// Move `Point<Sphere<4>>` properties from the local body frame to the
+    /// system frame.
+    ///
+    /// All positions on the 3-sphere are associated with some $`SO(4)`$
+    /// transformation which translates the origin to that position. The local
+    /// body frame is the frame in which the body position is the origin. The
+    /// position of the sites in the system frame is obtained by applying the
+    /// transformation associated with the body's position to the sites in the
+    /// local body frame.
     #[inline]
     fn transform(&self, site_properties: &Point<Spherical<4>>) -> Point<Spherical<4>> {
         let radius = self.position.radius();

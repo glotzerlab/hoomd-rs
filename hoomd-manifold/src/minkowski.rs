@@ -632,9 +632,11 @@ impl<const N: usize> Hyperbolic<N> {
     }
 }
 
-/// `Default` for `Hyperbolic<N>` is the cusp of a `Hyperbolic<N>` with skirt
-/// width of 1 (i.e., the point $`(0, \cdots, 0, 1)`$).
 impl<const N: usize> Default for Hyperbolic<N> {
+    /// Construct a default point on a hyperboloid.
+    ///
+    /// The default `Hyperbolic<N>` point is on the cusp of a hyperboloid with
+    /// skirt width of 1 (i.e., the point $`(0, \cdots, 0, 1)`$).
     #[inline]
     fn default() -> Self {
         let mut zero = Minkowski::<N>::default();
