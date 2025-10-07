@@ -2942,7 +2942,7 @@ dependencies = [
 name = "hoomd-chimes"
 version = "0.0.0"
 dependencies = [
- "approx",
+ "approxim",
  "divan",
  "hoomd-interaction",
  "rstest",

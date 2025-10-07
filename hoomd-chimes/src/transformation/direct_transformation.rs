@@ -84,7 +84,7 @@ impl Transformation for DirectTransformation {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rstest::*;
 
     use crate::transformation::DirectTransformation;

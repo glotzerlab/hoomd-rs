@@ -19,9 +19,9 @@ hoomd-interaction.workspace = true
 tinyvec.workspace = true
 
 [dev-dependencies]
+approxim.workspace = true
 divan.workspace = true
 rstest.workspace = true
-approx.workspace = true
 
 [[example]]
 name = "TiO2-TiTi"

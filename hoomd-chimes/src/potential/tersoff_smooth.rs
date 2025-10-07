@@ -129,7 +129,7 @@ impl<F: IsotropicForce + IsotropicEnergy> IsotropicForce for TersoffSmooth<F> {
 mod tests {
     use super::*;
     use crate::transformation::MorseTransformation;
-    use ::approx::assert_abs_diff_eq;
+    use approxim::assert_abs_diff_eq;
     use hoomd_interaction::pairwise::LennardJones;
     use rstest::*;
 
