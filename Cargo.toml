@@ -63,7 +63,7 @@ clap = {version = "=4.5.48", features = ["derive"]}
 divan = "=0.1.21"
 paste = "=1.0.15"
 rstest = "=0.26.1"
-tempfile = "=3.22.0"
+tempfile = "=3.23.0"
 
 # Dependencies used internally
 itertools = "0.14.0"
