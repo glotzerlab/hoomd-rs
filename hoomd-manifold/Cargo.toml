@@ -1,6 +1,6 @@
 [package]
 name = "hoomd-manifold"
-description = "Manifold and Curved Geometries library."
+description = "Manifold and curved geometries library."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -12,12 +12,12 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
+approxim.workspace = true
 thiserror.workspace = true
 rand.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 num.workspace = true
-approx.workspace = true
 
 [dev-dependencies]
 divan.workspace = true

@@ -62,7 +62,7 @@ mod test {
 
     /// Number of random vectors to sample.
     const N: usize = 1024;
-    use approx::assert_abs_diff_eq;
+    use approxim::assert_abs_diff_eq;
     use rand::{SeedableRng, rngs::StdRng};
     use rstest::*;
 

@@ -5,10 +5,6 @@
     clippy::missing_docs_in_private_items,
     reason = "benches don't need public documentation"
 )]
-#![expect(
-    clippy::expect_used,
-    reason = "benches can use expect without individual reasons"
-)]
 
 //! Benchmark Cartesian
 

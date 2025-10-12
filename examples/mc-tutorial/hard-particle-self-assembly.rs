@@ -13,14 +13,15 @@ use hoomd_mc::{QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn};
 use hoomd_microstate::{
     Microstate, MicrostateBuilder, boundary::Periodic, property::OrientedPoint,
 };
-use hoomd_simulation::Simulation;
+use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_vector::{self, Angle, Cartesian};
 // ANCHOR_END: use
 
 // ANCHOR: type_aliases
 type PositionVector = Cartesian<2>;
-type BodyProperties = OrientedPoint<PositionVector, Angle>;
-type SiteProperties = OrientedPoint<PositionVector, Angle>;
+type Orientation = Angle;
+type BodyProperties = OrientedPoint<PositionVector, Orientation>;
+type SiteProperties = OrientedPoint<PositionVector, Orientation>;
 // ANCHOR_END: type_aliases
 
 #[cfg_attr(feature = "bevy", derive(Resource))]
@@ -31,11 +32,11 @@ struct HardEllipseSelfAssembly {
     /// How sites interact with other sites and fields.
     hamiltonian: CutoffPairOverlap<HardShape<Ellipse>>,
     /// Trial moves to apply.
-    translate_sweep: Sweep<Translate>,
+    translate_sweep: Sweep<Translate<PositionVector>>,
     /// Trial moves to apply.
-    rotate_sweep: Sweep<Rotate>,
+    rotate_sweep: Sweep<Rotate<Orientation>>,
     /// Temperature set point.
-    kt: f64,
+    macrostate: Isothermal,
     /// Quick insert
     quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Rectangle>>>,
     /// How sites interact when inserted.
@@ -66,7 +67,7 @@ impl HardEllipseSelfAssembly {
         let maximum_rotation = 0.1;
         let sigma = 1.0;
         let aspect = 5.0;
-        let kt = 1.0;
+        let macrostate = Isothermal { temperature: 1.0 };
         assert!(aspect >= 1.0);
         // ANCHOR_END: parameters
 
@@ -94,14 +95,12 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: microstate
 
         // ANCHOR: trial_moves
-        let translate = Translate {
-            maximum_distance: maximum_distance.try_into()?,
-        };
+        let translate =
+            Translate::with_maximum_distance(maximum_distance.try_into()?);
         let translate_sweep = Sweep(translate);
 
-        let rotate = Rotate {
-            maximum_rotation: maximum_rotation.try_into()?,
-        };
+        let rotate =
+            Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
         let rotate_sweep = Sweep(rotate);
         // ANCHOR_END: trial_moves
 
@@ -135,7 +134,7 @@ impl HardEllipseSelfAssembly {
             translate_sweep,
             rotate_sweep,
             quick_insert,
-            kt,
+            macrostate,
             phase: Phase::Initialize,
         })
     }
@@ -184,13 +183,13 @@ impl HardEllipseSelfAssembly {
         self.translate_sweep.apply(
             &mut self.microstate,
             &self.insert_hamiltonian,
-            &1.0,
+            &Isothermal { temperature: 1.0 },
         );
 
         self.rotate_sweep.apply(
             &mut self.microstate,
             &self.insert_hamiltonian,
-            &1.0,
+            &Isothermal { temperature: 1.0 },
         );
         // ANCHOR_END: initialize_trial_moves
 
@@ -223,11 +222,14 @@ impl HardEllipseSelfAssembly {
         self.translate_sweep.apply(
             &mut self.microstate,
             &self.hamiltonian,
-            &self.kt,
+            &self.macrostate,
         );
 
-        self.rotate_sweep
-            .apply(&mut self.microstate, &self.hamiltonian, &1.0);
+        self.rotate_sweep.apply(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.macrostate,
+        );
     }
 }
 // ANCHOR_END: equilibrate

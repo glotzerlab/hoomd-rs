@@ -5,6 +5,7 @@
 
 use std::f64::consts::PI;
 
+use approxim::{approx_derive::RelativeEq, assert_relative_eq};
 use rand::{
     Rng,
     distr::{Distribution, Uniform},
@@ -12,24 +13,24 @@ use rand::{
 
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric};
-use approx::assert_relative_eq;
 
-/// The trait [`Sphere`] for [`Cartesian`] implements types on the embedding
-/// of an N-sphere in Euclidean space. Explicitly, the N-sphere is defined
-/// by the set of (N+1)-dimensional points whose components satisfy
+/// Point on the surface of a sphere.
+///
+/// [`Spherical`] is a point on an N-sphere embedded in (N+1)-dimensional
+/// euclidean space. Explicitly, the N-sphere is defined by the set of
+/// (N+1)-dimensional points whose components satisfy
 /// ```math
 /// x_1^2 + x_2^2 + \cdots + x_{N+1}^1 = R^2
 /// ```
 /// for some radius $`R`$.
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Sphere<const N: usize> {
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
+pub struct Spherical<const N: usize> {
     /// a cartesian point living on the surface of an N-sphere
     point: Cartesian<N>,
     /// the radius of the sphere
     radius: f64,
 }
-impl<const N: usize> Sphere<N> {
+impl<const N: usize> Spherical<N> {
     /// Get the coordinates of the point
     #[inline]
     #[must_use]
@@ -48,10 +49,14 @@ impl<const N: usize> Sphere<N> {
     pub fn radius(&self) -> f64 {
         self.radius
     }
-    /// Create a sphere point from a cartesian vector
+    /// Construct a Sphere given a Cartesian vector and a radius.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the point is not sufficiently close to the sphere's surface.
     #[inline]
     #[must_use]
-    pub fn from(point: Cartesian<N>, radius: f64) -> Sphere<N> {
+    pub fn from_cartesian_coordinates(point: Cartesian<N>, radius: f64) -> Spherical<N> {
         let rad = point.norm();
         assert_relative_eq!(rad, radius, epsilon=1e-12);
         Sphere {
@@ -59,17 +64,19 @@ impl<const N: usize> Sphere<N> {
             radius,
         }
     }
+
     /// Implements a stereographic projection from the N-sphere to an N-dimensional plane.
     ///
     /// # Example
     /// ```
-    /// use hoomd_manifold::Sphere;
+    /// use hoomd_manifold::Spherical;
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let radius = 1.0;
     /// let x = Cartesian::from([0.5_f64.sqrt(), 0.0, -(0.5_f64.sqrt())]);
-    /// let projection = Sphere::from(x, radius).stereographic_projection();
+    /// let projection = Spherical::from_cartesian_coordinates(x, radius)
+    ///     .stereographic_projection();
     /// assert_eq!(
     ///     [1.0 / (2.0_f64.sqrt() + 1.0), 0.0],
     ///     [projection[0], projection[1]]
@@ -90,11 +97,11 @@ impl<const N: usize> Sphere<N> {
     }
 }
 
-impl Sphere<3> {
+impl Spherical<3> {
     /// Create a 2-sphere from spherical coordinates
     #[inline]
     #[must_use]
-    pub fn from_polar_coordinates(r: f64, theta: f64, phi: f64) -> Sphere<3> {
+    pub fn from_polar_coordinates(r: f64, theta: f64, phi: f64) -> Spherical<3> {
         let theta_mod = theta.rem_euclid(PI);
         let phi_mod = phi.rem_euclid(2.0 * PI);
         let point = Cartesian::from([
@@ -102,15 +109,15 @@ impl Sphere<3> {
             r * (theta_mod.sin()) * (phi_mod.sin()),
             r * (theta_mod.cos()),
         ]);
-        Sphere::from(point, r)
+        Spherical::from_cartesian_coordinates(point, r)
     }
 }
 
-impl Sphere<4> {
+impl Spherical<4> {
     /// Create a 3-sphere from spherical coordinates
     #[inline]
     #[must_use]
-    pub fn from_polar_coordinates(r: f64, theta: f64, phi_1: f64, phi_2: f64) -> Sphere<4> {
+    pub fn from_polar_coordinates(r: f64, theta: f64, phi_1: f64, phi_2: f64) -> Spherical<4> {
         let theta_mod = theta.rem_euclid(PI);
         let phi_1_mod = phi_1.rem_euclid(PI);
         let phi_2_mod = phi_2.rem_euclid(2.0 * PI);
@@ -120,15 +127,27 @@ impl Sphere<4> {
             r * (theta_mod.sin()) * (phi_1_mod.sin()) * (phi_2_mod.sin()),
             r * (theta_mod.cos()),
         ]);
-        Sphere::from(point, r)
+        Spherical::from_cartesian_coordinates(point, r)
     }
 }
 
-/// [`Metric`] implements the positively curved metric on the surface of a sphere
-impl Metric for Sphere<3> {
+impl Metric for Spherical<3> {
+    /// The distance between two [`Spherical<3>`] points.
+    ///
+    /// Explicitly, the metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a
+    /// 2-sphere with radius $`R`$ is given by
+    ///
+    /// ```math
+    /// d_{S_2}(\vec{u}, \vec{v}) = R \arccos\left[\frac{1}{R^2}(u_1v_1 + u_2v_2 + u_3v_3)\right]
+    /// ```
+    /// This choice of metric furnishes a representation of 2-dimensional spherical
+    /// space with Gaussian curvature $`K = 1/R^2`$.
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
-        assert_relative_eq!(self.radius, other.radius, epsilon = 1e-12);
+        assert_eq!(
+            self.radius, other.radius,
+            "points must be on the same sphere"
+        );
         let arg = Cartesian::dot(&self.point, &other.point) / self.radius.powi(2);
         self.radius * (arg.acos())
     }
@@ -142,10 +161,24 @@ impl Metric for Sphere<3> {
     }
 }
 
-impl Metric for Sphere<4> {
+impl Metric for Spherical<4> {
+    /// The distance between two [`Spherical<4>`] points.
+    ///
+    /// Explicitly, the
+    /// metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a 3-sphere with
+    /// radius  $`R`$ is given by
+    ///
+    /// ```math
+    /// d_{S_3}(\vec{u}, \vec{v}) = R \arccos\left[\frac{1}{R^2}(u_1v_1 + u_2v_2 + u_3v_3 + u_4v_4)\right]
+    /// ```
+    /// This choice of metric furnishes a representation of 3-dimensional spherical
+    /// space with Gaussian curvature $`K = 1/R^2`$.
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
-        assert_relative_eq!(self.radius, other.radius, epsilon = 1e-12);
+        assert_eq!(
+            self.radius, other.radius,
+            "points must be on the same sphere"
+        );
         let arg = Cartesian::dot(&self.point, &other.point) / self.radius.powi(2);
         self.radius * (arg.acos())
     }
@@ -159,13 +192,15 @@ impl Metric for Sphere<4> {
     }
 }
 
-/// A uniform distribution of points within distance r of a point on the
-/// 2-sphere with a given radius.
+/// Randomly distribute points locally on a sphere.
+///
+/// [`SphericalDisk`] is a uniform distribution of points within distance `r` of
+/// a point on the 2-sphere with a given radius.
 ///
 /// # Example
 ///
 /// ```
-/// use hoomd_manifold::{Sphere, SphericalDisk};
+/// use hoomd_manifold::{Spherical, SphericalDisk};
 /// use hoomd_vector::{Cartesian, Metric};
 /// use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
 ///
@@ -174,22 +209,23 @@ impl Metric for Sphere<4> {
 /// let mut rng = StdRng::seed_from_u64(12);
 ///
 /// let sample_disk = SphericalDisk {
-///     r: 0.5_f64.try_into()?,
-///     point: Cartesian::from([
-///         0.01,
-///         0.01,
-///         -(radius.powi(2) - 2.0 * (0.01_f64).powi(2)).sqrt(),
-///     ]),
-///     radius: radius,
+///     disk_radius: 0.5_f64.try_into()?,
+///     point: Spherical::<3>::from_cartesian_coordinates(
+///         Cartesian::from([
+///             0.01,
+///             0.01,
+///             -(radius.powi(2) - 2.0 * (0.01_f64).powi(2)).sqrt(),
+///         ]),
+///         radius,
+///     ),
 /// };
-/// let random_point: Sphere<3> = sample_disk.sample(&mut rng);
+/// let random_point: Spherical<3> = sample_disk.sample(&mut rng);
 ///
 /// let disk = SphericalDisk {
-///     r: 0.1_f64.try_into()?,
-///     point: *random_point.point(),
-///     radius: radius,
+///     disk_radius: 0.1_f64.try_into()?,
+///     point: random_point,
 /// };
-/// let transformed_random_point: Sphere<3> = disk.sample(&mut rng);
+/// let transformed_random_point: Spherical<3> = disk.sample(&mut rng);
 ///
 /// assert!(0.1 > random_point.distance(&transformed_random_point));
 ///
@@ -197,36 +233,34 @@ impl Metric for Sphere<4> {
 /// # }
 /// ```
 pub struct SphericalDisk {
-    /// Max distance away from point
-    pub r: PositiveReal,
-    /// The center of the disk
-    pub point: Cartesian<3>,
-    /// The radius of the sphere
-    pub radius: f64,
+    /// Max distance away from point.
+    pub disk_radius: PositiveReal,
+    /// The center of the disk.
+    pub point: Spherical<3>,
 }
 
-impl<const N: usize> Default for Sphere<N> {
+impl<const N: usize> Default for Spherical<N> {
     #[inline]
     fn default() -> Self {
         let mut zero = Cartesian::<N>::default();
         zero.coordinates[N - 1] = 1.0;
-        Sphere {
+        Spherical {
             point: zero,
             radius: 1.0_f64,
         }
     }
 }
 
-impl Distribution<Sphere<3>> for SphericalDisk {
+impl Distribution<Spherical<3>> for SphericalDisk {
     /// Translates 3-dimensional cartesian vector named "point" along the
     /// surface of a sphere by maximum distance of r.
     #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Sphere<3> {
-        let radius = self.radius;
-        let max_trans = (self.r.get()) / radius;
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Spherical<3> {
+        let radius = self.point.radius;
+        let max_trans = (self.disk_radius.get()) / radius;
         let point = self.point;
-        let phi = point.coordinates[1].atan2(point.coordinates[0]);
-        let theta = (point.coordinates[2] / radius).acos();
+        let phi = point.point.coordinates[1].atan2(point.point.coordinates[0]);
+        let theta = (point.point.coordinates[2] / radius).acos();
         let trial_zenith = Uniform::new(0.0, 1.0).expect("r is positive and real");
         let trial_azimuth = Uniform::new(-PI, PI).expect("hard-coded distribution should be valid");
         let azi = trial_azimuth.sample(rng);
@@ -245,31 +279,28 @@ impl Distribution<Sphere<3>> for SphericalDisk {
                 + trial_coords[2] * (theta.sin()) * (phi.sin()),
             -trial_coords[0] * (theta.sin()) + trial_coords[2] * (theta.cos()),
         ]);
-        let new_sphere = Sphere::from(transformed_point, radius);
-        #[cfg(debug_assertions)]
-        assert_relative_eq!(radius, new_sphere.radius, epsilon = 1e-12);
-        new_sphere
+        Spherical::from_cartesian_coordinates(transformed_point, radius)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rand::{SeedableRng, rngs::StdRng};
 
     /// Generate a pair of points on the surface of a 2-sphere
-    fn generate_s2_pair(radius: f64) -> (Sphere<3>, Sphere<3>) {
+    fn generate_s2_pair(radius: f64) -> (Spherical<3>, Spherical<3>) {
         (
-            Sphere::<3>::from_polar_coordinates(radius, 0.1, 0.3),
-            Sphere::<3>::from_polar_coordinates(radius, 1.1, 0.5),
+            Spherical::<3>::from_polar_coordinates(radius, 0.1, 0.3),
+            Spherical::<3>::from_polar_coordinates(radius, 1.1, 0.5),
         )
     }
     /// Generate a pair of points on the surface of a 3-sphere
-    fn generate_s3_pair(radius: f64) -> (Sphere<4>, Sphere<4>) {
+    fn generate_s3_pair(radius: f64) -> (Spherical<4>, Spherical<4>) {
         (
-            Sphere::<4>::from_polar_coordinates(radius, 0.2, 0.3, 0.5),
-            Sphere::<4>::from_polar_coordinates(radius, 2.3, 1.1, 0.4),
+            Spherical::<4>::from_polar_coordinates(radius, 0.2, 0.3, 0.5),
+            Spherical::<4>::from_polar_coordinates(radius, 2.3, 1.1, 0.4),
         )
     }
 
@@ -298,13 +329,13 @@ mod tests {
 
     #[test]
     fn stereographic() {
-        let a = Sphere::<3>::from_polar_coordinates(1.0, 2.1, 1.5);
+        let a = Spherical::<3>::from_polar_coordinates(1.0, 2.1, 1.5);
         let a_projection = a.stereographic_projection();
         let a_projection_numeric = [0.040_576_252_191_799_88, 0.572_182_772_038_917_1];
         assert_relative_eq![a_projection[0], a_projection_numeric[0], epsilon = 1e-12];
         assert_relative_eq![a_projection[1], a_projection_numeric[1], epsilon = 1e-12];
 
-        let b = Sphere::<4>::from_polar_coordinates(1.0, 2.1, 1.5, 0.5);
+        let b = Spherical::<4>::from_polar_coordinates(1.0, 2.1, 1.5, 0.5);
         let b_projection = b.stereographic_projection();
         let b_projection_numeric = [
             0.040_576_252_191_799_88,
@@ -318,17 +349,16 @@ mod tests {
 
     #[test]
     fn random_sphere() {
-        // Generate ten random points on the hyperboloid
+        // Generate ten random points on the Hyperbolic
         let mut rng = StdRng::seed_from_u64(42);
         let d = 0.1;
         let n_pole = Cartesian::from([0.0, 0.0, 1.0]);
         for _n in 0..10 {
             let disk = SphericalDisk {
-                r: d.try_into().expect("hard-coded positive number"),
-                point: n_pole,
-                radius: 1.0,
+                disk_radius: d.try_into().expect("hard-coded positive number"),
+                point: Spherical::<3>::from_cartesian_coordinates(n_pole, 1.0),
             };
-            let random_point: Sphere<3> = disk.sample(&mut rng);
+            let random_point: Spherical<3> = disk.sample(&mut rng);
 
             // check that points remain on Sphere
             let rho = random_point.point.norm_squared();

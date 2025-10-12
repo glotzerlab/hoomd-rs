@@ -2,18 +2,21 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement canonical vector types.
+
 use std::{
     array, fmt,
     iter::{Sum, zip},
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
+use approxim::approx_derive::RelativeEq;
 use rand::{
     Rng,
     distr::{Distribution, StandardUniform, Uniform},
 };
 
 use crate::{Cross, Error, InnerProduct, Metric, Rotate, Unit, Vector};
+use hoomd_linear_algebra::{MatMul, matrix::Matrix};
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
 ///
@@ -85,9 +88,11 @@ use crate::{Cross, Error, InnerProduct, Metric, Rotate, Unit, Vector};
 ///         .into_iter()
 ///         .sum();
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
+#[approx(epsilon_type = f64)]
 pub struct Cartesian<const N: usize> {
     /// The vector's coordinates.
+    #[approx(into_iter)]
     pub coordinates: [f64; N],
 }
 
@@ -458,10 +463,6 @@ impl<const N: usize> Distribution<Cartesian<N>> for StandardUniform {
     /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
-        #[expect(
-            clippy::expect_used,
-            reason = "This constants chosen for this distribution are valid"
-        )]
         let uniform = Uniform::new_inclusive(-1.0, 1.0)
             .expect("hard-coded range should form a valid distribution");
         Cartesian {
@@ -568,6 +569,15 @@ pub struct RotationMatrix<const N: usize> {
     pub(crate) rows: [Cartesian<N>; N],
 }
 
+impl<const N: usize> From<RotationMatrix<N>> for Matrix<N, N> {
+    #[inline]
+    fn from(value: RotationMatrix<N>) -> Self {
+        Self {
+            rows: value.rows().map(|arr| arr.coordinates),
+        }
+    }
+}
+
 impl<const N: usize> RotationMatrix<N> {
     /// Get the rows of the rotation matrix.
     ///
@@ -665,7 +675,7 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
     ///
     /// # Examples
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_vector::{Angle, Cartesian, Rotate, RotationMatrix};
     /// use std::f64::consts::PI;
     ///
@@ -678,7 +688,7 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
     /// ```
     ///
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_vector::{Cartesian, Rotate, RotationMatrix, Versor};
     /// use std::f64::consts::PI;
     ///
@@ -703,12 +713,69 @@ impl<const N: usize> Rotate<Cartesian<N>> for RotationMatrix<N> {
     }
 }
 
+impl<const N: usize, const K: usize> MatMul<Matrix<N, K>> for RotationMatrix<N> {
+    type Output = Matrix<N, K>;
+
+    #[inline]
+    fn matmul(&self, rhs: &Matrix<N, K>) -> Self::Output {
+        Matrix::from(*self).matmul(rhs)
+    }
+}
+
+impl<const N: usize> Cartesian<N> {
+    /// Convert a [`Cartesian<N>`] into a row matrix [`Matrix<1, N>`].
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let a = Cartesian::from([1.0, -2.0, 3.0]);
+    ///
+    /// let b = a.to_row_matrix();
+    /// assert_eq!(b.rows, [[1.0, -2.0, 3.0]]);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn to_row_matrix(self) -> Matrix<1, N> {
+        Matrix {
+            rows: [self.coordinates],
+        }
+    }
+    /// Convert a [`Cartesian<N>`] into a column matrix [`Matrix<N, 1>`].
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// let a = Cartesian::from([1.0, -2.0, 3.0]);
+    ///
+    /// let b = a.to_column_matrix();
+    /// assert_eq!(b.rows, [[1.0], [-2.0], [3.0]]);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn to_column_matrix(self) -> Matrix<N, 1> {
+        Matrix {
+            rows: std::array::from_fn(|i| [self[i]]),
+        }
+    }
+}
+
+impl<const N: usize> From<Matrix<1, N>> for Cartesian<N> {
+    #[inline]
+    fn from(value: Matrix<1, N>) -> Self {
+        value.rows[0].into()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{Angle, Rotation, Versor};
 
     use super::*;
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use paste::paste;
     use rand::{SeedableRng, rngs::StdRng};
     use rstest::rstest;

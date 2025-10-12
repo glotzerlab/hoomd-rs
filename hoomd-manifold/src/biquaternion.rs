@@ -19,7 +19,7 @@ use crate::{Error, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski};
 #[expect(unused_imports, reason = "Needed for doc link")]
 use hoomd_vector::Quaternion;
 
-/// ## A quaternion with complex coefficients.
+/// A quaternion with complex coefficients.
 ///
 /// Biquaternions are the set of numbers $`a + b\mathbf{i} + c\mathbf{j} + d\mathbf{k}`$
 /// where $`a,b,c,d`$ are complex numbers and $`\{1,\mathbf{i},\mathbf{j},\mathbf{k}\}`$
@@ -46,7 +46,7 @@ use hoomd_vector::Quaternion;
 /// assert_eq!(4.0, q.components[0].im);
 /// ```
 ///
-/// ## Operations with Boquaternions.
+/// ## Operations with Biquaternions.
 ///
 /// Similar to [`Quaternion`], biquaternions support vector operations
 /// (addition, multiplication by a scalar, etc.):
@@ -97,7 +97,7 @@ use hoomd_vector::Quaternion;
 /// ```
 ///
 /// Complex conjugation:
-/// Deonted by method "conj", takes the complex conjugate of all components of
+/// Denoted by method "conj", takes the complex conjugate of all components of
 /// the biquaternion
 /// ```
 /// use hoomd_manifold::Biquaternion;
@@ -188,7 +188,7 @@ use hoomd_vector::Quaternion;
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Biquaternion {
-    /// Components of the biquaternion, in the order [i,j,k,1].
+    /// Components of the biquaternion, in the order `[i,j,k,1]`.
     pub components: [Complex<f64>; 4],
 }
 
@@ -389,9 +389,13 @@ impl Biquaternion {
         zip(self.components.iter(), other.components.iter())
             .fold(Complex::new(0.0, 0.0), |product, x| product + x.0 * x.1)
     }
+
     /// Create a [`UnitBiquaternion`] by normalizing the given biquaternion.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::InvalidBiquaternionMagnitude`] when `self` is the 0 quaternion.
     #[inline]
-    #[expect(clippy::missing_errors_doc, reason = "maps to error message")]
     pub fn to_unit(self) -> Result<UnitBiquaternion, Error> {
         let mag = self.norm();
         if mag == Complex::new(0.0, 0.0) {
@@ -399,12 +403,13 @@ impl Biquaternion {
         }
         Ok(UnitBiquaternion(self / mag))
     }
-    /// Create a [`UnitBiquaternion`] by normalizing the given biquaternion
-    /// without returning an Option type.
+
+    /// Create a [`UnitBiquaternion`] by normalizing the given biquaternion.
     #[inline]
     #[must_use]
     pub fn to_unit_unchecked(self) -> UnitBiquaternion {
-        UnitBiquaternion(self)
+        let mag = self.norm();
+        UnitBiquaternion(self / mag)
     }
 }
 
@@ -564,11 +569,11 @@ impl DivAssign<f64> for Biquaternion {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-/// ## Represent SO(3,1) with a normalized biquaternion.
+/// Represent SO(3,1) with a normalized biquaternion.
 ///
 /// Unit-norm Biquaternions furnish a representation of SO(3,1), analogous to
 /// quaternions and SO(3). If $`\vec{x} = (x_1, x_2, x_3, x_4)`$ is a vector
-/// in Minkowski space, then $\vec{x}$ can be mapped to a biquaternion
+/// in Minkowski space, then $`\vec{x}`$ can be mapped to a biquaternion
 /// ```math
 /// \vec{x} \mapsto X = [x_1, x_2, x_3,h x_4]
 /// ```
@@ -594,9 +599,9 @@ impl DivAssign<f64> for Biquaternion {
 /// ```math
 /// q = \cos(\theta/2) + \bf{i}\sin(\theta/2)
 /// ```
-/// generates a rotation about the $\mathbf{i}$ axis by angle $`\theta`$:
+/// generates a rotation about the $` \mathbf{i} `$ axis by angle $`\theta`$:
 /// ```
-/// use approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_manifold::{
 ///     Biquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
 ///     UnitBiquaternion,
@@ -604,21 +609,20 @@ impl DivAssign<f64> for Biquaternion {
 /// use num::complex::Complex;
 /// use std::f64::consts::PI;
 ///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let q = Biquaternion::from([
 ///     Complex::new((PI / 4.0).sin(), 0.0),
 ///     Complex::new(0.0, 0.0),
 ///     Complex::new(0.0, 0.0),
 ///     Complex::new((PI / 4.0).cos(), 0.0),
 /// ]);
-/// let v = q.to_unit();
+/// let v = q.to_unit()?;
 /// let x = Minkowski::from([1.0, 1.0, 1.0, 1.0]);
-/// let rotation =
-///     HyperbolicRotationMatrix::from(v.expect("non-zero biquaternion"));
+/// let rotation = HyperbolicRotationMatrix::from(v);
 /// let rotated = rotation.hyperbolic_rotate(&x);
-/// assert_relative_eq!(rotated.coordinates[0], 1.0, epsilon = 1e-12);
-/// assert_relative_eq!(rotated.coordinates[1], -1.0, epsilon = 1e-12);
-/// assert_relative_eq!(rotated.coordinates[2], 1.0, epsilon = 1e-12);
-/// assert_relative_eq!(rotated.coordinates[3], 1.0, epsilon = 1e-12);
+/// assert_relative_eq!(rotated, [1.0, -1.0, 1.0, 1.0].into(), epsilon = 1e-12);
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// However, biquaternions also generate boosts via
@@ -627,7 +631,7 @@ impl DivAssign<f64> for Biquaternion {
 /// ```
 /// which represents a boost of rapidity $`v`$ in the $`\mathbf{i}`$ direction:
 /// ```
-/// use approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_manifold::{
 ///     Biquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
 ///     UnitBiquaternion,
@@ -635,30 +639,24 @@ impl DivAssign<f64> for Biquaternion {
 /// use num::complex::Complex;
 /// use std::f64::consts::PI;
 ///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let q = Biquaternion::from([
 ///     Complex::new(0.0, (0.2_f64).sinh()),
 ///     Complex::new(0.0, 0.0),
 ///     Complex::new(0.0, 0.0),
 ///     Complex::new((0.2_f64).cosh(), 0.0),
 /// ]);
-/// let v = q.to_unit();
+/// let v = q.to_unit()?;
 /// let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
-/// let boost = HyperbolicRotationMatrix::from(
-///     v.expect("hard-coded unit biquaternion"),
-/// );
+/// let boost = HyperbolicRotationMatrix::from(v);
 /// let boosted = boost.hyperbolic_rotate(&x);
 /// assert_relative_eq!(
-///     boosted.coordinates[0],
-///     (0.4_f64).sinh(),
+///     boosted,
+///     [(0.4_f64).sinh(), 0.0, 0.0, (0.4_f64).cosh()].into(),
 ///     epsilon = 1e-12
 /// );
-/// assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon = 1e-12);
-/// assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon = 1e-12);
-/// assert_relative_eq!(
-///     boosted.coordinates[3],
-///     (0.4_f64).cosh(),
-///     epsilon = 1e-12
-/// );
+/// # Ok(())
+/// # }
 /// ```
 pub struct UnitBiquaternion(Biquaternion);
 
@@ -686,7 +684,7 @@ impl Distribution<UnitBiquaternion> for StandardUniform {
     /// # Example
     ///
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{Biquaternion, UnitBiquaternion};
     /// use num::complex::Complex;
     /// use rand::{Rng, SeedableRng, rngs::StdRng};
@@ -700,10 +698,6 @@ impl Distribution<UnitBiquaternion> for StandardUniform {
     /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> UnitBiquaternion {
-        #[expect(
-            clippy::expect_used,
-            reason = "This constants chosen for this distribution are valid"
-        )]
         let uniform = Uniform::new(-1.0, 1.0).expect("hard-coded distribution should be valid");
 
         let array_re: [f64; 4] = array::from_fn(|_| uniform.sample(rng));
@@ -773,7 +767,7 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     /// # Examples
     /// Rotation about z axis:
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{
     ///     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
     /// };
@@ -790,17 +784,14 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     /// ]);
     /// let v = q.to_unit_unchecked();
     /// let rotated = v.hyperbolic_rotate(&x);
-    /// assert_relative_eq!(rotated.coordinates[0], 0.0, epsilon = 1e-12);
-    /// assert_relative_eq!(rotated.coordinates[1], 1.0, epsilon = 1e-12);
-    /// assert_relative_eq!(rotated.coordinates[2], 0.0, epsilon = 1e-12);
-    /// assert_relative_eq!(rotated.coordinates[3], 1.0, epsilon = 1e-12);
+    /// assert_relative_eq!(rotated, [0.0, 1.0, 0.0, 1.0].into(), epsilon = 1e-12);
     /// # Ok(())
     /// # }
     /// ```
     ///
     /// Boost in x direction:
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{
     ///     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
     /// };
@@ -818,15 +809,8 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
     /// let v = q.to_unit_unchecked();
     /// let boosted = v.hyperbolic_rotate(&x);
     /// assert_relative_eq!(
-    ///     boosted.coordinates[0],
-    ///     (PI / 2.0).sinh(),
-    ///     epsilon = 1e-12
-    /// );
-    /// assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon = 1e-12);
-    /// assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon = 1e-12);
-    /// assert_relative_eq!(
-    ///     boosted.coordinates[3],
-    ///     (PI / 2.0).cosh(),
+    ///     boosted,
+    ///     [(PI / 2.0).sinh(), 0.0, 0.0, (PI / 2.0).cosh()].into(),
     ///     epsilon = 1e-12
     /// );
     /// # Ok(())
@@ -854,7 +838,7 @@ impl HyperbolicRotate<Minkowski<4>> for UnitBiquaternion {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use num::complex::Complex;
     use rstest::*;
     use std::f64::consts::PI;
@@ -1082,7 +1066,19 @@ mod tests {
             Complex::new(2.0, 1.0),
         ]);
         let a_unit = a.to_unit().expect("hard-coded to be nonzero");
-        assert_eq!(a_unit.norm_squared().re, 1.0);
+        assert_relative_eq!(a_unit.norm_squared().re, 1.0, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn to_unit_unchecked() {
+        let a = Biquaternion::from([
+            Complex::new(2.8, 0.5),
+            Complex::new(-1.0, 2.0),
+            Complex::new(0.5, 1.3),
+            Complex::new(2.3, 3.4),
+        ]);
+        let a_unit = a.to_unit_unchecked();
+        assert_relative_eq!(a_unit.norm_squared().re, 1.0, epsilon = 1e-12);
     }
 
     // Test named cases of three input values (rotation biquaternion, Minkowski input, and answer)
@@ -1119,16 +1115,10 @@ mod tests {
         // using matrix representation
         let matrix = HyperbolicRotationMatrix::from(v);
         let from_matrix = matrix.hyperbolic_rotate(&x);
-        assert_relative_eq!(from_matrix.coordinates[0], ans[0], epsilon = 1e-12);
-        assert_relative_eq!(from_matrix.coordinates[1], ans[1], epsilon = 1e-12);
-        assert_relative_eq!(from_matrix.coordinates[2], ans[2], epsilon = 1e-12);
-        assert_relative_eq!(from_matrix.coordinates[3], ans[3], epsilon = 1e-12);
+        assert_relative_eq!(from_matrix, ans.into(), epsilon = 1e-12);
 
         // using biquaternion algebra
         let from_algebra = v.hyperbolic_rotate(&x);
-        assert_relative_eq!(from_algebra.coordinates[0], ans[0], epsilon = 1e-12);
-        assert_relative_eq!(from_algebra.coordinates[1], ans[1], epsilon = 1e-12);
-        assert_relative_eq!(from_algebra.coordinates[2], ans[2], epsilon = 1e-12);
-        assert_relative_eq!(from_algebra.coordinates[3], ans[3], epsilon = 1e-12);
+        assert_relative_eq!(from_algebra, ans.into(), epsilon = 1e-12);
     }
 }

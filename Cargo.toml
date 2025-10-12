@@ -6,6 +6,7 @@ members = ["examples",
            "hoomd-geometry",
            "hoomd-gsd",
            "hoomd-interaction",
+           "hoomd-linear-algebra",
            "hoomd-manifold",
            "hoomd-mc",
            "hoomd-meshless-voronoi",
@@ -25,6 +26,7 @@ default-members = ["examples",
                    "hoomd-geometry",
                    "hoomd-gsd",
                    "hoomd-interaction",
+                   "hoomd-linear-algebra",
                    "hoomd-manifold",
                    "hoomd-mc",
                    "hoomd-meshless-voronoi",
@@ -38,7 +40,7 @@ default-members = ["examples",
 [workspace.package]
 version = "0.0.0"
 edition = "2024"
-rust-version = "1.86"
+rust-version = "1.88"
 homepage = "https://glotzerlab.engin.umich.edu"
 repository = "https://github.com/glotzerlab/hoomd-rs"
 license = "BSD-3-Clause"
@@ -51,6 +53,7 @@ hoomd-bevy = { path = "hoomd-bevy" }
 hoomd-geometry = { path = "hoomd-geometry" }
 hoomd-gsd = { path = "hoomd-gsd" }
 hoomd-interaction = { path = "hoomd-interaction" }
+hoomd-linear-algebra = { path = "hoomd-linear-algebra" }
 hoomd-manifold = { path = "hoomd-manifold" }
 hoomd-mc = { path = "hoomd-mc" }
 hoomd-meshless-voronoi = { path = "hoomd-meshless-voronoi" }
@@ -61,23 +64,25 @@ hoomd-utility = { path = "hoomd-utility" }
 hoomd-vector = { path = "hoomd-vector" }
 
 # Common dev dependencies
+anyhow = "=1.0.100"
+clap = {version = "=4.5.48", features = ["derive"]}
 divan = "=0.1.21"
-rstest = "=0.26.1"
-anyhow = "=1.0.99"
-tempfile = "=3.22.0"
 paste = "=1.0.15"
-clap = {version = "=4.5.47", features = ["derive"]}
+rstest = "=0.26.1"
+tempfile = "=3.23.0"
 
 # Dependencies used internally
-approx = "0.5.1"
 itertools = "0.14.0"
 
 # Dependencies exposed via Public APIs.
+approxim = "0.6.6"
 num = "0.4.3"
 rand = "0.9.0"
 thiserror = "2.0.12"
 tinyvec = "1.9.0"
 
+# Bevy and bevy-adjacent dependencies
+bevy_egui = "0.36.0"
 [workspace.dependencies.bevy]
 version = "0.16.1"
 default-features = false
@@ -120,6 +125,7 @@ multiple_crate_versions = "allow"
 # allow some pedantic rules
 cast_precision_loss = "allow"
 float_cmp = "allow"
+similar_names = "allow"
 
 # opt-in to restrictions
 allow_attributes_without_reason = "warn"

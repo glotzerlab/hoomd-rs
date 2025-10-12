@@ -15,7 +15,7 @@ use hoomd_microstate::{
     boundary::Closed,
     property::{OrientedPoint, Point},
 };
-use hoomd_simulation::Simulation;
+use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_vector::{Angle, Cartesian};
 // ANCHOR_END: use
 
@@ -29,7 +29,7 @@ type SiteProperties = Point<PositionVector>;
 /// Take fixed steps left, right, down, up, rotate left, or rotate right.
 struct DiscreteRotateOrTranslate;
 
-impl LocalTrial<Cartesian<2>, BodyProperties> for DiscreteRotateOrTranslate {
+impl LocalTrial<BodyProperties> for DiscreteRotateOrTranslate {
     fn propose<R: Rng>(
         &self,
         rng: &mut R,
@@ -76,7 +76,7 @@ struct Tetronimoes {
     /// Trial moves to apply.
     sweep: Sweep<DiscreteRotateOrTranslate>,
     /// Temperature set point.
-    kt: f64,
+    macrostate: Isothermal,
     /// Tetronimo shapes.
     template_sites: Vec<Vec<Point<PositionVector>>>,
 }
@@ -89,7 +89,7 @@ impl Tetronimoes {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
         let box_height = 30.0;
-        let kt = 1.0;
+        let macrostate = Isothermal { temperature: 1.0 };
         let alpha = 1.0;
         let epsilon = 1000.0;
         let sigma = 1.0;
@@ -175,7 +175,7 @@ impl Tetronimoes {
             microstate,
             hamiltonian,
             sweep,
-            kt,
+            macrostate,
             template_sites,
         })
     }
@@ -190,7 +190,7 @@ impl Simulation for Tetronimoes {
     fn advance(&mut self) -> anyhow::Result<()> {
         // ANCHOR_END: advance
         // ANCHOR: add
-        if self.microstate.step() % 100 == 0 {
+        if self.microstate.step().is_multiple_of(100) {
             let mut rng = self.microstate.counter().make_rng();
             let sites = self
                 .template_sites
@@ -214,8 +214,11 @@ impl Simulation for Tetronimoes {
         // ANCHOR_END: add
 
         // ANCHOR: apply
-        self.sweep
-            .apply(&mut self.microstate, &self.hamiltonian, &self.kt);
+        self.sweep.apply(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.macrostate,
+        );
         self.microstate.increment_step();
         // ANCHOR_END: apply
 

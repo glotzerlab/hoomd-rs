@@ -10,29 +10,32 @@
 
 //! Tools for non-Euclidean geometries.
 //!
-//! ## Sphere
+//! ## Spherical points
 //!
-//! [`Sphere`] describes an N-sphere of radius R embedded in
-//! [`hoomd_vector::Cartesian`]. The components of a point on an N-sphere
+//! [`Spherical`] describes a point on an N-sphere of radius R embedded in
+//! [`Cartesian<N+1>`]. The components of a point on an N-sphere
 //! satisfy
 //! ```math
 //! \sum_{i=1}^{N+1}x_i^2 = R^2
 //! ```
-//! [`Sphere`] implements a distance metric through the trait
-//! [`hoomd_vector::Metric`] which calculates the geodesic distance on the
-//! surface of an N-sphere. Use [`Sphere`] to describe spaces with constant
-//! postive curvature.
+//! [`Spherical`] implements a distance metric through the trait
+//! [`Metric`] which calculates the geodesic distance on the
+//! surface of an N-sphere. Use [`Spherical`] to describe spaces with constant
+//! positive curvature.
 //!
-//! ## Hyperboloid
-//! [`Hyperboloid`] describes the upper sheet of an N-dimensional two-sheeted
-//! hyperboloid with skirt R embedded in (N+1)-dimensional Minkowski space.
-//! The components of a point on the hyperboloid satisfy
+//! [`Cartesian<N+1>`]: hoomd_vector::Cartesian
+//! [`Metric`]: hoomd_vector::Metric
+//!
+//! ## Hyperbolic
+//! [`Hyperbolic`] describes a point on the upper sheet of an N-dimensional
+//! two-sheeted Hyperbolic with skirt R embedded in (N+1)-dimensional Minkowski
+//! space. The components of a point on the Hyperbolic satisfy
 //! ```math
 //! x_1^2 + \cdots + x_{N-1}^2 - x_{N}^2 = -R^2
 //! ```
-//! [`Hyperboloid`] implements a distance metric throught the trait
-//! [`hoomd_vector::Metric`] which calculates the geodesic distance on the
-//! surface of a hyperboloid. Use [`Hyperboloid`] embdedded in [`Minkowski`]
+//! [`Hyperbolic`] implements a distance metric through the trait
+//! [`Metric`] which calculates the geodesic distance on the
+//! surface of a Hyperboloid. Use [`Hyperbolic`] embedded in [`Minkowski`]
 //! to implement hyperbolic space.
 //!
 //! ## Minkowski
@@ -105,15 +108,19 @@
 //! Rotate point in 3D hyperbolic space about z axis using matrix
 //! representation:
 //! ```
-//! use hoomd_manifold::{HyperbolicRotationMatrix, Minkowski, HyperbolicRotate,
-//! Biquaternion, UnitBiquaternion};
-//! use std::f64::consts::PI;
+//! use hoomd_manifold::{
+//!     Biquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
+//!     UnitBiquaternion,
+//! };
 //! use num::complex::Complex;
+//! use std::f64::consts::PI;
 //!
-//! let q = Biquaternion::from([Complex::new((PI/4.0).sin(),0.0),
-//! Complex::new(0.0,0.0),
-//! Complex::new(0.0, 0.0),
-//! Complex::new((PI/4.0).cos(), 0.0)]);
+//! let q = Biquaternion::from([
+//!     Complex::new((PI / 4.0).sin(), 0.0),
+//!     Complex::new(0.0, 0.0),
+//!     Complex::new(0.0, 0.0),
+//!     Complex::new((PI / 4.0).cos(), 0.0),
+//! ]);
 //! let v = q.to_unit_unchecked();
 //! let x = Minkowski::from([0.0, 1.0, 0.0, 1.0]);
 //! let rotation_about_x = HyperbolicRotationMatrix::from(v);
@@ -130,6 +137,7 @@
 //! use num::complex::Complex;
 //! use std::f64::consts::PI;
 //!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let x = Minkowski::from([0.0, 0.0, 0.0, 1.0]);
 //! let q = Biquaternion::from([
 //!     Complex::new(0.0, PI / 4.0).sinh(),
@@ -137,9 +145,11 @@
 //!     Complex::new(0.0, 0.0),
 //!     Complex::new(0.0, PI / 4.0).cosh(),
 //! ]);
-//! let v = q.to_unit();
-//! let boosted = v.expect("non-zero biquaternion").hyperbolic_rotate(&x);
+//! let v = q.to_unit()?;
+//! let boosted = v.hyperbolic_rotate(&x);
 //! // boosted is approximately [(PI/2.0).sinh(), 0.0, 0.0, (PI/2.0).cosh()]
+//! # Ok(())
+//! # }
 //! ```
 
 mod biquaternion;
@@ -149,8 +159,8 @@ mod sphere;
 
 pub use biquaternion::{Biquaternion, UnitBiquaternion};
 pub use hyperbolic_angle::HyperbolicAngle;
-pub use minkowski::{HyperbolicDisk, HyperbolicRotationMatrix, Hyperboloid, Minkowski};
-pub use sphere::{Sphere, SphericalDisk};
+pub use minkowski::{Hyperbolic, HyperbolicDisk, HyperbolicRotationMatrix, Minkowski};
+pub use sphere::{Spherical, SphericalDisk};
 
 use hoomd_vector::Vector;
 use thiserror::Error;
@@ -159,10 +169,6 @@ use thiserror::Error;
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
-    /// Attempted converting a biquaternion not belonging to the hyperboloid to a 4-vector
-    #[error("Biquaternion does not fit required format of [re,re,re,im] to describe a 4-vector")]
-    InvalidBiquaternion4Vector,
-
     /// Attempted to normalize a norm zero biquaternion
     #[error("Biquaternion with norm zero cannot be normalized")]
     InvalidBiquaternionMagnitude,

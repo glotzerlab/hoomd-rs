@@ -18,11 +18,12 @@ hoomd-interaction.workspace = true
 hoomd-manifold.workspace = true
 hoomd-microstate.workspace = true
 hoomd-utility.workspace = true
+hoomd-simulation.workspace = true
 hoomd-vector.workspace = true
 rand.workspace = true
 
 [dev-dependencies]
 hoomd-geometry.workspace = true
-approx.workspace = true
+approxim.workspace = true
 divan.workspace = true
 rstest.workspace = true

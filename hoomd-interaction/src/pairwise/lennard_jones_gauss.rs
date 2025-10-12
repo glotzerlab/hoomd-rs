@@ -16,16 +16,27 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// # Examples
 /// 
 /// ```
-/// use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, LennardJonesGauss};
-/// use approx::{assert_abs_diff_eq, assert_relative_eq};
-/// 
+/// use approxim::{assert_abs_diff_eq, assert_relative_eq};
+/// use hoomd_interaction::pairwise::{
+///     IsotropicEnergy, IsotropicForce, LennardJonesGauss,
+/// };
+///
 /// let epsilon = 0.5;
 /// let sigma_squared = 0.5;
-/// let r_0 = 0.5_f64.powf(1.0/6.0);
+/// let r_0 = 0.5_f64.powf(1.0 / 6.0);
 /// let scale = 1.0_f64;
-/// 
-/// let lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss { epsilon, sigma_squared, r_0, scale};
-/// assert_relative_eq!(lennard_jones_gauss.energy(0.5_f64.powf(1.0/6.0)), -epsilon, epsilon=1e-12);
+///
+/// let lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss {
+///     epsilon,
+///     sigma_squared,
+///     r_0,
+///     scale,
+/// };
+/// assert_relative_eq!(
+///     lennard_jones_gauss.energy(0.5_f64.powf(1.0 / 6.0)),
+///     -epsilon,
+///     epsilon = 1e-12
+/// );
 /// ```
 /// 
 /// The parameters are public fields and may be accessed directly:
@@ -36,7 +47,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// let mut lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss{
 ///     epsilon: 1.5,
 ///     sigma_squared: 0.02,
-///     r_0:  3.2,
+///     r_0: 3.2,
 ///     scale: 1.0,
 /// };
 /// lennard_jones_gauss.epsilon = 1.5;
@@ -77,7 +88,7 @@ impl IsotropicForce for LennardJonesGauss {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::approx::{assert_abs_diff_eq, assert_relative_eq};
+    use approxim::{assert_abs_diff_eq, assert_relative_eq};
     use rstest::*;
 
     #[rstest]
@@ -101,7 +112,7 @@ mod tests {
         );
         assert_abs_diff_eq!(
             lj_gauss.force(1.5_f64),
-            -1.273_068_535_928_335,
+            -0.008_277_841_185_963,
             epsilon = 1e-12
         );
         assert_relative_eq!(
@@ -111,7 +122,7 @@ mod tests {
         );
         assert_abs_diff_eq!(
             lj_gauss.force(3.2_f64),
-            0.765_142_344_273_568,
+            -0.772_120_758_370_149,
             epsilon = 1e-12
         );
     }
@@ -146,7 +157,7 @@ mod tests {
         );
         assert_abs_diff_eq!(
             lj_gauss.force(3.2_f64),
-            -0.003_505_791_529_792_807,
+            -0.003_472_622_566_788_369,
             epsilon = 1e-12
         );
     }

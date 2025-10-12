@@ -102,7 +102,7 @@ impl<E> CutoffPair<E> {
     ///
     /// # Example
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     ///
     /// use hoomd_interaction::{
     ///     CutoffPair,
@@ -140,7 +140,11 @@ impl<E> CutoffPair<E> {
     /// # }
     /// ```
     #[inline]
-    pub fn site_pair_energy<P, S>(&self, site_properties_i: &Site<S>, site_properties_j: &Site<S>) -> f64
+    pub fn site_pair_energy<P, S>(
+        &self,
+        site_properties_i: &Site<S>,
+        site_properties_j: &Site<S>,
+    ) -> f64
     where
         E: SitePairEnergy<S>,
         S: Position<Position = P>,
@@ -481,7 +485,7 @@ mod tests {
     };
     use hoomd_vector::Cartesian;
 
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rand::{Rng, SeedableRng, distr::Uniform, rngs::StdRng};
     use rstest::*;
     use std::f64::consts::PI;

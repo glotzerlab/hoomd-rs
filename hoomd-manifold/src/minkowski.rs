@@ -3,13 +3,6 @@
 
 //! Implement vector types in Minkowski space.
 
-use crate::{Error, HyperbolicRotate};
-use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Metric, Vector};
-use rand::{
-    Rng,
-    distr::{Distribution, StandardUniform, Uniform},
-};
 use std::{
     array,
     f64::consts::PI,
@@ -17,7 +10,16 @@ use std::{
     iter::zip,
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-use approx::assert_relative_eq;
+
+use approxim::{approx_derive::RelativeEq, assert_relative_eq};
+use rand::{
+    Rng,
+    distr::{Distribution, StandardUniform, Uniform},
+};
+
+use crate::{Error, HyperbolicRotate};
+use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::{Metric, Vector};
 
 /// A vector in N-dimensional Minkowski space.
 ///
@@ -27,7 +29,7 @@ use approx::assert_relative_eq;
 ///
 /// ## Constructing Minkowski vectors
 ///
-/// Similar to [`hoomd_vector::Cartesian`], N-dimensional vectors can be
+/// Similar to [`Cartesian`], N-dimensional vectors can be
 /// constructed using an array of (real-valued) coordinates. Three- and
 /// four-dimensional vectors can also be constructed from tuples:
 /// ```
@@ -70,7 +72,10 @@ use approx::assert_relative_eq;
 /// ```
 /// Note that because this metric is not positive-definite, [`Minkowski`] this
 /// "spacetime interval" is not a true inner-product, and therefore
-/// [`Minkowski`] does not implement the methods of [`hoomd_vector::InnerProduct`].
+/// [`Minkowski`] does not implement the methods of [`InnerProduct`].
+///
+/// [`InnerProduct`]: hoomd_vector::InnerProduct
+/// [`Cartesian`]: hoomd_vector::Cartesian
 ///
 /// ```
 /// use hoomd_manifold::Minkowski;
@@ -81,10 +86,13 @@ use approx::assert_relative_eq;
 /// assert_eq!(-3.0, x.distance_squared(&y));
 /// ```
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
+#[approx(epsilon_type = f64)]
 pub struct Minkowski<const N: usize> {
-    /// The vector's coordinates. The final component is the one associated with
-    /// a minus sign (-) in the metric
+    /// The vector's coordinates.
+    ///
+    /// The final component is the one associated with a minus sign (-) in the metric.
+    #[approx(into_iter)]
     pub coordinates: [f64; N],
 }
 
@@ -105,8 +113,9 @@ impl<const N: usize> Default for Minkowski<N> {
 }
 
 impl<const N: usize> From<[f64; N]> for Minkowski<N> {
-    /// Create a vector in Minkowski space with the given coordinates. Note that
-    /// the last component has a (-) signature, while the preceeding coordinates
+    /// Create a vector in Minkowski space with the given coordinates.
+    ///
+    /// The last component has a (-) signature, while the preceding coordinates
     /// have (+) signatures in the metric.
     ///
     /// # Example
@@ -204,8 +213,9 @@ impl<const N: usize> TryFrom<std::ops::Range<usize>> for Minkowski<N> {
 }
 
 impl<const N: usize> Metric for Minkowski<N> {
-    /// Computes the squared distance between two points in Minkowski space with
-    /// the "mostly plusses" metric signature (+ ... + -).
+    /// Computes the squared distance between two points in Minkowski space.
+    ///
+    /// Employs the "mostly plusses" metric signature (+ ... + -).
     /// ```math
     /// d^2_M(\vec{x},\vec{y}) = -(x_N-y_N)^2 + \sum_{i=1}^{N-1} (x_i - y_i)^2
     /// ```
@@ -221,6 +231,7 @@ impl<const N: usize> Metric for Minkowski<N> {
     /// assert_eq!(-4.0, x.distance_squared(&y));
     /// # Ok(())
     /// # }
+    /// ```
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
         let last_component = -(self.coordinates[N - 1] - other.coordinates[N - 1]).powi(2);
@@ -390,7 +401,7 @@ impl<const N: usize, T> IndexMut<T> for Minkowski<N>
 where
     T: Into<usize> + std::slice::SliceIndex<[f64], Output = f64>,
 {
-    /// Get a mutable reference to the value of the vector at coordinate i.
+    /// Get a mutable reference to the value of the vector at coordinate `i`.
     ///
     /// # Example
     /// ```
@@ -411,7 +422,7 @@ where
 }
 
 impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
-    /// Sample a Minkowski vector from the uniform [-1, 1] hypercube.
+    /// Sample a Minkowski vector from the uniform $` [-1, 1] `$ hypercube.
     ///
     /// # Example
     /// ```
@@ -426,10 +437,6 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
     /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Minkowski<N> {
-        #[expect(
-            clippy::expect_used,
-            reason = "This constants chosen for this distribution are valid"
-        )]
         let uniform = Uniform::new_inclusive(-1.0, 1.0)
             .expect("hard-coded range should form a valid distribution");
         Minkowski {
@@ -438,97 +445,116 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
     }
 }
 
-/// ## Hyperboloid Model
-/// The trait [`Hyperboloid`] implements an embedding of the top sheet of an (N-1)-dimensional
-/// two-sheeted hyperboloid in N-dimensional Minkowski space. This surface has constant negative curvature
-/// and therefore serves as a model of (N-1)-dimensional hyperbolic space.
+/// Point on the top sheet of a Hyperboloid.
 ///
-/// Explicitly, for N-dimensional Minkowski space with metric $\eta = \operatorname{diag}(+,\cdots,+,-)$,
-/// the hyperboloid with skirt width $R$ is defined by the set of points with components satisfying
+/// [`Hyperbolic`] implements an embedding of the top sheet of an
+/// (N-1)-dimensional two-sheeted hyperboloid in N-dimensional Minkowski space.
+/// This surface has constant negative curvature and therefore serves as a model
+/// of (N-1)-dimensional hyperbolic space.
+///
+/// Explicitly, for N-dimensional Minkowski space with metric $`\eta =
+/// \operatorname{diag}(+,\cdots,+,-)`$, the Hyperbolic with skirt width $`R`$ is
+/// defined by the set of points with components satisfying
 /// ```math
 /// x_1^2 +\cdots x_{N-1}^2 - x_{N}^2 = -R^2
 /// ```
-/// Where the "top sheet" is defined by the $`x_N>0`$ solutions. In Minkowski space, the hyperboloid
-/// has a natural interpretation as the set of points with the same spacetime interval
+/// Where the "top sheet" is defined by the $`x_N>0`$ solutions. In Minkowski
+/// space, the hyperboloid has a natural interpretation as the set of points
+/// with the same spacetime interval
 /// ```math
 /// \Delta s^2 = \vec{x}^T \eta \vec{x} = x_1^2 +\cdots x_{N-1}^2 - x_{N}^2
 /// ```
 ///
-/// [`Hyperboloid`] defines a distance metric [`hyperbolic_distance`] which computes the distance
-/// of the geodesic passing between two points on a hyperboloid with some given skirt width. This may be
-/// interpreted as the metric for the hyperboloid model of hyperbolic space.
+/// [`Hyperbolic`] implements a [`Metric`] that computes the distance of the
+/// geodesic passing between two points on a hyperboloid with some given skirt
+/// width.
 ///
-/// Two points on the hyperboloid with skirt width R = 1.0:
+/// Two points on the hyperboloid with skirt width $` R = 1.0 `$:
 /// ```
-/// use hoomd_manifold::{Hyperboloid, Minkowski};
+/// use hoomd_manifold::{Hyperbolic, Minkowski};
 /// use hoomd_vector::Metric;
 ///
-/// let x = Hyperboloid::from(Minkowski::from([0.0, 0.0, 1.0]), 1.0_f64);
+/// let x =
+///     Hyperbolic::from_minkowski_coordinates([0.0, 0.0, 1.0].into(), 1.0_f64);
 ///
-/// let y = Hyperboloid::from(Minkowski::from([0.0, 1.0, (2.0_f64).sqrt()]), 1.0_f64);
+/// let y = Hyperbolic::from_minkowski_coordinates(
+///     [0.0, 1.0, (2.0_f64).sqrt()].into(),
+///     1.0_f64,
+/// );
 ///
 /// assert_eq!(((2.0_f64).sqrt()).acosh(), x.distance(&y));
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Hyperboloid<const N: usize> {
-    /// A point living on the surface of the upper sheet of a two-sheeted hyperboloid
+///
+/// [`Metric`]: hoomd_vector::Metric
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
+pub struct Hyperbolic<const N: usize> {
+    /// A point on the surface of the upper sheet of a two-sheeted hyperboloid.
     point: Minkowski<N>,
-    /// The skirt width of the hyperboloid
+    /// The skirt width of the Hyperbolic.
     skirt: f64,
 }
 
-impl<const N: usize> Hyperboloid<N> {
-    /// Get the coordinates of the point on the hyperboloid
+impl<const N: usize> Hyperbolic<N> {
+    /// Get the coordinates of the point on the hyperboloid.
     #[must_use]
     #[inline]
     pub fn coordinates(&self) -> &[f64; N] {
         &self.point.coordinates
     }
-    /// Get the Minkowski point of the hyperboloid
+    /// Get the Minkowski point of the hyperboloid.
     #[must_use]
     #[inline]
     pub fn point(&self) -> &Minkowski<N> {
         &self.point
     }
-    /// Get the skirt width of the hyperboloid
+    /// Get the skirt width of the hyperboloid.
     #[must_use]
     #[inline]
     pub fn skirt(&self) -> f64 {
         self.skirt
     }
-    /// Create a hyperboloid point from a Minkowski vector
+    /// Create a Hyperbolic point from a Minkowski vector.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_manifold::{Hyperbolic, Minkowski};
+    /// use hoomd_vector::Metric;
+    ///
+    /// let x =
+    ///     Hyperbolic::from_minkowski_coordinates([0.0, 0.0, 1.0].into(), 1.0_f64);
+    /// ```
     #[must_use]
     #[inline]
-    pub fn from(point: Minkowski<N>, skirt: f64) -> Hyperboloid<N> {
+    pub fn from_minkowski_coordinates(point: Minkowski<N>, skirt: f64) -> Hyperbolic<N> {
         let skirt_squared = -point.distance_squared(&Minkowski::<N>::default());
         assert_relative_eq!(skirt_squared, skirt.powi(2), epsilon=1e-8);
-        Hyperboloid {
+        Hyperbolic {
             point,
-            skirt: skirt_squared.sqrt(),
+            skirt,
         }
     }
 }
 
-impl Hyperboloid<3> {
+impl Hyperbolic<3> {
     /// Create a point on the surface of a three-dimensional hyperboloid from the polar representation.
     #[must_use]
     #[inline]
-    pub fn from_polar_coordinates(v: f64, theta: f64, skirt: f64) -> Hyperboloid<3> {
+    pub fn from_polar_coordinates(v: f64, theta: f64, skirt: f64) -> Hyperbolic<3> {
         let theta_mod = theta.rem_euclid(2.0 * PI);
         let point = Minkowski::from([
             skirt * (v.sinh()) * (theta_mod.cos()),
             skirt * (v.sinh()) * (theta_mod.sin()),
             skirt * (v.cosh()),
         ]);
-        Hyperboloid::from(point, skirt)
+        Hyperbolic::from_minkowski_coordinates(point, skirt)
     }
 }
 
-impl Hyperboloid<4> {
+impl Hyperbolic<4> {
     /// Create a point on the surface of a four-dimensional hyperboloid from the spherical representation.
     #[must_use]
     #[inline]
-    pub fn from_polar_coordinates(v: f64, theta: f64, phi: f64, skirt: f64) -> Hyperboloid<4> {
+    pub fn from_polar_coordinates(v: f64, theta: f64, phi: f64, skirt: f64) -> Hyperbolic<4> {
         let theta_mod = theta.rem_euclid(2.0 * PI);
         let phi_mod = phi.rem_euclid(PI);
         let point = Minkowski::from([
@@ -537,28 +563,30 @@ impl Hyperboloid<4> {
             skirt * (v.sinh()) * (theta_mod.sin()) * (phi_mod.sin()),
             skirt * (v.cosh()),
         ]);
-        Hyperboloid::from(point, skirt)
+        Hyperbolic::from_minkowski_coordinates(point, skirt)
     }
 }
 
-impl<const N: usize> Hyperboloid<N> {
-    /// Computes the length of the geodesic passing between the cusp $(0,\cdots,0,\rho)$ and a given
-    /// point on the hyperboloid with a given skirt length.
+impl<const N: usize> Hyperbolic<N> {
+    /// Compute the distance from a point to the cusp.
+    ///
+    /// Computes the length of the geodesic passing between the cusp
+    /// $`(0,\cdots,0,\rho)`$ and a given point on the hyperboloid with a given
+    /// skirt length.
     ///
     /// # Example
     /// ```
-    /// use approx::assert_relative_eq;
-    /// use hoomd_manifold::{Hyperboloid, Minkowski};
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_manifold::{Hyperbolic, Minkowski};
     /// use hoomd_vector::Vector;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let v: f64 = 4.2;
     /// let rho: f64 = 1.0;
-    /// let x = Hyperboloid::from(Minkowski::from([
-    ///     rho * (v.sinh()),
-    ///     0.0,
-    ///     rho * (v.cosh()),
-    /// ]), rho);
+    /// let x = Hyperbolic::from_minkowski_coordinates(
+    ///     [rho * (v.sinh()), 0.0, rho * (v.cosh())].into(),
+    ///     rho,
+    /// );
     /// assert_relative_eq!(v * rho, x.distance_from_cusp(), epsilon = 1e-12);
     /// # Ok(())
     /// # }
@@ -568,18 +596,22 @@ impl<const N: usize> Hyperboloid<N> {
     pub fn distance_from_cusp(&self) -> f64 {
         self.skirt * ((self.point.coordinates[N - 1]) / self.skirt).acosh()
     }
+
     /// Projects points on the hyperboloid onto the Poincare disk/ball.
     ///
     /// # Example
     /// ```
-    /// use approx::assert_relative_eq;
-    /// use hoomd_manifold::{Hyperboloid, Minkowski};
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_manifold::{Hyperbolic, Minkowski};
     /// use hoomd_vector::Vector;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let v: f64 = 1.098612;
     /// let rho: f64 = 1.0;
-    /// let x = Hyperboloid::from(Minkowski::from([v.sinh(), 0.0, v.cosh()]), rho);
+    /// let x = Hyperbolic::from_minkowski_coordinates(
+    ///     [v.sinh(), 0.0, v.cosh()].into(),
+    ///     rho,
+    /// );
     /// let projection = x.to_poincare();
     /// assert_relative_eq!(
     ///     v.sinh() / (v.cosh() + 1.0),
@@ -603,23 +635,39 @@ impl<const N: usize> Hyperboloid<N> {
     }
 }
 
-impl<const N: usize> Default for Hyperboloid<N> {
+impl<const N: usize> Default for Hyperbolic<N> {
+    /// Construct a default point on a hyperboloid.
+    ///
+    /// The default `Hyperbolic<N>` point is on the cusp of a hyperboloid with
+    /// skirt width of 1 (i.e., the point $`(0, \cdots, 0, 1)`$).
     #[inline]
     fn default() -> Self {
         let mut zero = Minkowski::<N>::default();
         zero.coordinates[N - 1] = 1.0;
-        Hyperboloid {
+        Hyperbolic {
             point: zero,
             skirt: 1.0_f64,
         }
     }
 }
 
-/// [`Metric`] implements the metric for the hyperboloid model of hyperbolic space
-impl Metric for Hyperboloid<3> {
+impl Metric for Hyperbolic<3> {
+    /// The distance between two [`Hyperbolic<3>`] points.
+    ///
+    /// Explicitly, the metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a
+    /// Hyperbolic with skirt width $`\rho`$ is given by
+    ///
+    /// ```math
+    /// d_{H_2}(\vec{u}, \vec{v}) = \rho \operatorname{arccosh}\left[\frac{1}{\rho^2}(u_3v_3 - u_1v_1 - u_2v_2)\right]
+    /// ```
+    /// This choice of metric furnishes a representation of 2-dimensional hyperbolic
+    /// space with Gaussian curvature $`K = -1/\rho^2`$.
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
-        assert_relative_eq!(self.skirt, other.skirt, epsilon = 1e-12);
+        assert_eq!(
+            self.skirt, other.skirt,
+            "points must be on the same Hyperbolic"
+        );
         let last_component = self.point.coordinates[2] * other.point.coordinates[2];
         let arg = zip(
             self.point.coordinates[0..2].iter(),
@@ -628,20 +676,35 @@ impl Metric for Hyperboloid<3> {
         .fold(last_component, |product, x| product - (x.0 * x.1));
         self.skirt * (arg / (self.skirt.powi(2))).acosh()
     }
+
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
         self.distance(other).powi(2)
     }
+
     #[inline]
     fn n_dimensions(&self) -> usize {
         2_usize
     }
 }
 
-impl Metric for Hyperboloid<4> {
+impl Metric for Hyperbolic<4> {
+    /// The distance between two [`Hyperbolic<4>`] points.
+    ///
+    /// Explicitly, the metric for two points $`\vec{u}`$ and $`\vec{v}`$ on a hyperboloid with
+    /// skirt width $`\rho`$ is given by
+    ///
+    /// ```math
+    /// d_{H_3}(\vec{u}, \vec{v}) = \rho \operatorname{arccosh}\left[\frac{1}{\rho^2}(u_4v_4 - u_1v_1 - u_2v_2 - u_3v_3)\right]
+    /// ```
+    /// This choice of metric furnishes a representation of 3-dimensional hyperboloid
+    /// space with with Gaussian curvature $`K = -1/\rho^2`$.
     #[inline]
     fn distance(&self, other: &Self) -> f64 {
-        assert_relative_eq!(self.skirt, other.skirt, epsilon = 1e-12);
+        assert_eq!(
+            self.skirt, other.skirt,
+            "points must be on the same hyperboloid"
+        );
         let last_component = self.point.coordinates[3] * other.point.coordinates[3];
         let arg = zip(
             self.point.coordinates[0..3].iter(),
@@ -650,24 +713,30 @@ impl Metric for Hyperboloid<4> {
         .fold(last_component, |product, x| product - (x.0 * x.1));
         self.skirt * (arg / (self.skirt.powi(2))).acosh()
     }
+
     #[inline]
     fn distance_squared(&self, other: &Self) -> f64 {
         self.distance(other).powi(2)
     }
+
     #[inline]
     fn n_dimensions(&self) -> usize {
         3_usize
     }
 }
 
-/// ## Hyperbolic Rotations in Minkowski Space
+/// Hyperbolic rotations in Minkowski Space
 ///
-/// Construct a [`HyperbolicRotationMatrix`] to apply SO(N-1, 1) transformations to
-/// N-dimensional Minkowski vectors. For Minkowski 4-vectors, [`Biquaternion`] should be used
-/// instead for numeric stability. See documentation in [`HyperbolicAngle`] for details on
-/// SO(2,1) transformations (i.e., two-dimensional hyperbolic space), and see documentation
-/// in [`Biquaternion`] for details on SO(3,1) transformations (i.e., three-dimensional
-/// hyperbolic space).
+/// Construct a [`HyperbolicRotationMatrix`] to apply SO(N-1, 1)
+/// transformations to N-dimensional Minkowski vectors. For Minkowski 4-vectors,
+/// [`Biquaternion`] should be used instead for numerical stability. See
+/// documentation in [`HyperbolicAngle`] for details on SO(2,1) transformations
+/// (i.e., two-dimensional hyperbolic space), and in [`Biquaternion`] for
+/// details on SO(3,1) transformations (i.e., three-dimensional hyperbolic
+/// space).
+///
+/// [`Biquaternion`]: crate::Biquaternion
+/// [`HyperbolicAngle`]: crate::HyperbolicAngle
 ///
 /// In two dimensional hyperbolic space:
 /// ```
@@ -699,6 +768,7 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
 
     #[inline]
     /// Rotate a [`Minkowski<N>`] by a [`HyperbolicRotationMatrix`]
+    ///
     /// # Examples
     ///
     /// Rotate point in 2D hyperbolic space about z-axis:
@@ -763,7 +833,7 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     ///
     /// Rotate point in 3D hyperbolic space about y axis using matrix representation:
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{
     ///     Biquaternion, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
     ///     UnitBiquaternion,
@@ -782,17 +852,14 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     /// let x = Minkowski::from([1.0, 0.0, 0.0, 1.0]);
     /// let rotation = HyperbolicRotationMatrix::from(v);
     /// let rotated = rotation.hyperbolic_rotate(&x);
-    /// assert_relative_eq!(rotated.coordinates[0], 0.0, epsilon = 1e-12);
-    /// assert_relative_eq!(rotated.coordinates[1], 0.0, epsilon = 1e-12);
-    /// assert_relative_eq!(rotated.coordinates[2], -1.0, epsilon = 1e-12);
-    /// assert_relative_eq!(rotated.coordinates[3], 1.0, epsilon = 1e-12);
+    /// assert_relative_eq!(rotated, [0.0, 0.0, -1.0, 1.0].into(), epsilon = 1e-12);
     /// # Ok(())
     /// # }
     /// ```
     ///
     /// Boost point in 3D hyperbolic space in x direction using biquaternion algebra:
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{
     ///     Biquaternion, HyperbolicRotate, Minkowski, UnitBiquaternion,
     /// };
@@ -810,15 +877,8 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     /// let v = q.to_unit()?;
     /// let boosted = v.hyperbolic_rotate(&x);
     /// assert_relative_eq!(
-    ///     boosted.coordinates[0],
-    ///     (0.5_f64).sinh(),
-    ///     epsilon = 1e-12
-    /// );
-    /// assert_relative_eq!(boosted.coordinates[1], 0.0, epsilon = 1e-12);
-    /// assert_relative_eq!(boosted.coordinates[2], 0.0, epsilon = 1e-12);
-    /// assert_relative_eq!(
-    ///     boosted.coordinates[3],
-    ///     (0.5_f64).cosh(),
+    ///     boosted,
+    ///     [(0.5_f64).sinh(), 0.0, 0.0, (0.5_f64).cosh()].into(),
     ///     epsilon = 1e-12
     /// );
     /// # Ok(())
@@ -836,15 +896,17 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
     }
 }
 
-/// A uniform distribution of points within distance r of a point on the 2-dimensional hyperboloid
-/// with a given skirt width.
+/// Randomly distribute points locally on a hyperboloid.
+///
+/// [`HyperbolicDisk`] is a uniform distribution of points within distance `r`
+/// of a point on the 2-dimensional hyperboloid with a given skirt width.
 ///
 /// # Example
 ///
 /// ```
 /// use hoomd_manifold::{
-///     HyperbolicAngle, HyperbolicDisk, HyperbolicRotate,
-///     HyperbolicRotationMatrix, Hyperboloid, Minkowski,
+///     Hyperbolic, HyperbolicAngle, HyperbolicDisk, HyperbolicRotate,
+///     HyperbolicRotationMatrix, Minkowski,
 /// };
 /// use hoomd_vector::Metric;
 /// use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
@@ -856,16 +918,18 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
 /// let v: HyperbolicAngle = rng.random();
 /// let matrix = HyperbolicRotationMatrix::from(v);
 /// let origin = Minkowski::from([0.0, 0.0, rho]);
-/// let random_point = Hyperboloid::from(matrix.hyperbolic_rotate(&origin), rho);
+/// let random_point = Hyperbolic::from_minkowski_coordinates(
+///     matrix.hyperbolic_rotate(&origin),
+///     rho,
+/// );
 ///
 /// let r = 0.1;
 /// let mut rng_2 = StdRng::seed_from_u64(239);
 /// let disk = HyperbolicDisk {
-///     r: r.try_into()?,
-///     point: *random_point.point(),
-///     skirt: rho,
+///     disk_radius: r.try_into()?,
+///     point: random_point,
 /// };
-/// let transformed_random_point: Hyperboloid<3> = disk.sample(&mut rng_2);
+/// let transformed_random_point: Hyperbolic<3> = disk.sample(&mut rng_2);
 ///
 /// assert!(r > random_point.distance(&transformed_random_point));
 ///
@@ -873,26 +937,27 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
 /// # }
 /// ```
 pub struct HyperbolicDisk {
-    /// Max distance away from point
-    pub r: PositiveReal,
-    /// The center of the disk
-    pub point: Minkowski<3>,
-    /// The skirt width of the hyperboloid
-    pub skirt: f64,
+    /// Max distance away from point.
+    pub disk_radius: PositiveReal,
+    /// The center of the disk.
+    pub point: Hyperbolic<3>,
 }
 
-impl Distribution<Hyperboloid<3>> for HyperbolicDisk {
-    /// Translates Minkowski 3-vector named "point" along the hyperboloid by maximum distance of r.
-    /// Note that because SO(2,1) is non-Abelian, the point must be transformed to the cusp before the
-    /// trial move is applied (and then the point is transformed back). This ensures that the max distance
-    /// translated by the trial move does not exceed r.
+impl Distribution<Hyperbolic<3>> for HyperbolicDisk {
+    /// Sample a random point in the hyperbolic disk.
+    ///
+    /// The implementation translates Minkowski 3-vector `point` along
+    /// the Hyperbolic by maximum distance of `disk_radius`. Note that because SO(2,1) is
+    /// non-Abelian, the point must be transformed to the cusp before a trial
+    /// move is applied (and then the point is transformed back). This ensures
+    /// that the max distance translated by the trial move does not exceed `disk_radius`.
     #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Hyperboloid<3> {
-        let rho = self.skirt;
-        let max_boost = (self.r.get()) / rho;
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Hyperbolic<3> {
+        let rho = self.point.skirt;
+        let max_boost = (self.disk_radius.get()) / rho;
         let point = self.point;
-        let eta = (point.coordinates[2] / rho).acosh();
-        let phi = point.coordinates[1].atan2(point.coordinates[0]);
+        let eta = (point.point.coordinates[2] / rho).acosh();
+        let phi = point.point.coordinates[1].atan2(point.point.coordinates[0]);
         let trial_boost = Uniform::new(0.0, 1.0).expect("r is positive and real");
         let trial_rotation =
             Uniform::new(-PI, PI).expect("hard-coded distribution should be valid");
@@ -912,17 +977,14 @@ impl Distribution<Hyperboloid<3>> for HyperbolicDisk {
                 + trial_coords[2] * (eta.sinh()) * (phi.sin()),
             trial_coords[0] * (eta.sinh()) + trial_coords[2] * (eta.cosh()),
         ]);
-        let new_hyperboloid = Hyperboloid::from(transformed_point, rho);
-        #[cfg(debug_assertions)]
-        assert_relative_eq!(rho, new_hyperboloid.skirt(), epsilon = 1e-12);
-        new_hyperboloid
+        Hyperbolic::from_minkowski_coordinates(transformed_point, rho)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use paste::paste;
     use rand::{SeedableRng, rngs::StdRng};
 
@@ -1160,17 +1222,17 @@ mod tests {
     parameterize_vector_length!(random_in_range, [2, 3, 4, 8, 16, 32, 10_000]);
 
     /// Generate a pair of points in 2-dimensional hyperbolic space
-    fn generate_h2_pair(skirt: f64) -> (Hyperboloid<3>, Hyperboloid<3>) {
+    fn generate_h2_pair(skirt: f64) -> (Hyperbolic<3>, Hyperbolic<3>) {
         (
-            Hyperboloid::<3>::from_polar_coordinates(3.2, 0.1, skirt),
-            Hyperboloid::<3>::from_polar_coordinates(4.0, 3.1, skirt),
+            Hyperbolic::<3>::from_polar_coordinates(3.2, 0.1, skirt),
+            Hyperbolic::<3>::from_polar_coordinates(4.0, 3.1, skirt),
         )
     }
     /// Generate a pair of points in 3-dimensional hyperbolic space
-    fn generate_h3_pair(skirt: f64) -> (Hyperboloid<4>, Hyperboloid<4>) {
+    fn generate_h3_pair(skirt: f64) -> (Hyperbolic<4>, Hyperbolic<4>) {
         (
-            Hyperboloid::<4>::from_polar_coordinates(3.5, 0.4, 0.5, skirt),
-            Hyperboloid::<4>::from_polar_coordinates(4.2, 2.7, 0.1, skirt),
+            Hyperbolic::<4>::from_polar_coordinates(3.5, 0.4, 0.5, skirt),
+            Hyperbolic::<4>::from_polar_coordinates(4.2, 2.7, 0.1, skirt),
         )
     }
 
@@ -1200,25 +1262,25 @@ mod tests {
 
     #[test]
     fn poincare_projection() {
-        let a = Hyperboloid::<3>::from_polar_coordinates(1.5, 1.5, 1.0);
+        let a = Hyperbolic::<3>::from_polar_coordinates(1.5, 1.5, 1.0);
         let a_poincare = a.to_poincare();
         let a_numeric_poincare = [0.044_928_659_534_049_77, 0.633_557_895_753_136_3];
         assert_relative_eq![a_poincare[0], a_numeric_poincare[0], epsilon = 1e-12];
         assert_relative_eq![a_poincare[1], a_numeric_poincare[1], epsilon = 1e-12];
 
-        let b = Hyperboloid::<3>::from_polar_coordinates(0.5, 4.2, 1.0);
+        let b = Hyperbolic::<3>::from_polar_coordinates(0.5, 4.2, 1.0);
         let b_poincare = b.to_poincare();
         let b_numeric_poincare = [-0.120_074_024_591_707_93, -0.213_465_172_363_015_63];
         assert_relative_eq![b_poincare[0], b_numeric_poincare[0], epsilon = 1e-12];
         assert_relative_eq![b_poincare[1], b_numeric_poincare[1], epsilon = 1e-12];
 
-        let c = Hyperboloid::<3>::from_polar_coordinates(1.5, 1.5, 10.0);
+        let c = Hyperbolic::<3>::from_polar_coordinates(1.5, 1.5, 10.0);
         let c_poincare = c.to_poincare();
         let c_numeric_poincare = [0.449_286_595_340_497_7, 6.335_578_957_531_363];
         assert_relative_eq![c_poincare[0], c_numeric_poincare[0], epsilon = 1e-12];
         assert_relative_eq![c_poincare[1], c_numeric_poincare[1], epsilon = 1e-12];
 
-        let d = Hyperboloid::<3>::from_polar_coordinates(0.5, 4.2, 10.0);
+        let d = Hyperbolic::<3>::from_polar_coordinates(0.5, 4.2, 10.0);
         let d_poincare = d.to_poincare();
         let d_numeric_poincare = [-1.200_740_245_917_079_3, -2.134_651_723_630_156];
         assert_relative_eq![d_poincare[0], d_numeric_poincare[0], epsilon = 1e-12];
@@ -1228,22 +1290,22 @@ mod tests {
     #[test]
     fn specific_distances() {
         // Distance to the cusp
-        let a = Hyperboloid::<3>::from_polar_coordinates(1.2, 3.2, 1.0);
+        let a = Hyperbolic::<3>::from_polar_coordinates(1.2, 3.2, 1.0);
         let a_cusp_distance = a.distance_from_cusp();
         let a_cusp_distance_numeric = 1.2;
         assert_relative_eq!(a_cusp_distance, a_cusp_distance_numeric, epsilon = 1e-12);
 
-        let b = Hyperboloid::<3>::from_polar_coordinates(2.0, 1.6, 5.0);
+        let b = Hyperbolic::<3>::from_polar_coordinates(2.0, 1.6, 5.0);
         let b_cusp_distance = b.distance_from_cusp();
         let b_cusp_distance_numeric = 10.0;
         assert_relative_eq!(b_cusp_distance, b_cusp_distance_numeric, epsilon = 1e-12);
 
-        let c = Hyperboloid::<4>::from_polar_coordinates(1.2, 3.2, 1.2, 1.0);
+        let c = Hyperbolic::<4>::from_polar_coordinates(1.2, 3.2, 1.2, 1.0);
         let c_cusp_distance = c.distance_from_cusp();
         let c_cusp_distance_numeric = 1.2;
         assert_relative_eq!(c_cusp_distance, c_cusp_distance_numeric, epsilon = 1e-12);
 
-        let d = Hyperboloid::<4>::from_polar_coordinates(2.0, 1.6, 0.8, 5.0);
+        let d = Hyperbolic::<4>::from_polar_coordinates(2.0, 1.6, 0.8, 5.0);
         let d_cusp_distance = d.distance_from_cusp();
         let d_cusp_distance_numeric = 10.0;
         assert_relative_eq!(d_cusp_distance, d_cusp_distance_numeric, epsilon = 1e-12);
@@ -1251,19 +1313,18 @@ mod tests {
 
     #[test]
     fn random_hyperbolic() {
-        // Generate ten random points on the hyperboloid
+        // Generate ten random points on the Hyperbolic
         let mut rng = StdRng::seed_from_u64(42);
         let d = 0.1;
         let origin = Minkowski::from([0.0, 0.0, 1.0]);
         for _n in 0..10 {
             let disk = HyperbolicDisk {
-                r: d.try_into().expect("hard-coded positive number"),
-                point: origin,
-                skirt: 1.0,
+                disk_radius: d.try_into().expect("hard-coded positive number"),
+                point: Hyperbolic::<3>::from_minkowski_coordinates(origin, 1.0),
             };
-            let random_point: Hyperboloid<3> = disk.sample(&mut rng);
+            let random_point: Hyperbolic<3> = disk.sample(&mut rng);
 
-            // check that points remain on hyperboloid
+            // check that points remain on Hyperbolic
             let rho = -random_point
                 .point
                 .distance_squared(&Minkowski::<3>::default());

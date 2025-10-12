@@ -1,0 +1,27 @@
+[package]
+name = "hoomd-linear-algebra"
+categories.workspace = true
+description = "Linear algebra library optimized for small matrixes."
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+faer = { version = "=0.23.2", default-features = false, features=["std"] }
+approxim.workspace = true
+divan.workspace = true
+rand.workspace = true
+rstest.workspace = true
+nalgebra = "=0.34.1"
+
+
+[[bench]]
+name = "linalg"
+harness = false

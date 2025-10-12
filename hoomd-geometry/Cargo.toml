@@ -13,6 +13,7 @@ description = "Performant, general computational geometry methods in Rust."
 [dependencies]
 hoomd-manifold.workspace = true
 hoomd-vector.workspace = true
+hoomd-linear-algebra.workspace = true
 hoomd-utility.workspace = true
 rand.workspace = true
 itertools.workspace = true
@@ -22,8 +23,7 @@ thiserror.workspace = true
 workspace = true
 
 [dev-dependencies]
-hoomd-vector = { features = ["approx"], workspace = true }
-approx.workspace = true
+approxim.workspace = true
 divan.workspace = true
 rstest.workspace = true
 

@@ -43,7 +43,7 @@ where
     /// ```
     ///
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_microstate::{
     ///     Transform,
     ///     property::{OrientedPoint, Point},
@@ -84,7 +84,7 @@ where
     /// ```
     ///
     /// ```
-    /// use approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_microstate::{Transform, property::OrientedPoint};
     /// use hoomd_vector::{Angle, Cartesian};
     /// use std::f64::consts::PI;
@@ -142,7 +142,7 @@ impl<V, R> Orientation for OrientedPoint<V, R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use std::f64::consts::PI;
 
     use hoomd_vector::{Cartesian, Versor};

@@ -14,7 +14,7 @@ use bevy::{
     },
     sprite::{AlphaMode2d, Material2d, Material2dPlugin},
 };
-use hoomd_manifold::{Hyperboloid, Minkowski};
+use hoomd_manifold::{Hyperbolic, Minkowski};
 use itertools::{
     EitherOrBoth::{Both, Left, Right},
     Itertools,
@@ -23,7 +23,7 @@ use std::marker::PhantomData;
 
 /// Location of the shader implementation
 const SHADER_ASSET_PATH: &str = "embedded://hoomd_bevy/representation/hyperbolic_disk.wgsl";
-/// skirt width of the hyperboloid
+/// skirt width of the Hyperbolic
 const RHO: f64 = 1.0;
 
 /// Represent an entity with a 2D disk in the xy plane.
@@ -38,8 +38,11 @@ const RHO: f64 = 1.0;
 /// of disks with different marker types.
 ///
 /// To use:
-/// * Add [`setup`](Self::setup) to the `Startup` schedule.
-/// * Call [`sync`](Self::sync) in an `Update` schedule that runs after `AdvanceSet`.
+/// * Add [`setup`] to the `Startup` schedule.
+/// * Call [`sync`] in an `Update` schedule that runs after `AdvanceSet`.
+///
+/// [`setup`]: Self::setup
+/// [`sync`]: Self::sync
 #[derive(Component)]
 pub struct HyperbolicDisk<T> {
     /// Mark the type of the disk.
@@ -94,8 +97,8 @@ impl<T: Send + Sync + 'static> HyperbolicDisk<T> {
                 Both((_, mut transform), (position, diameter)) => {
                     let (poincare_position, max_projected_radius) =
                         poincare(&position, RHO, diameter);
-                    let rad_arg =
-                        RHO * (diameter / (2.0 * RHO)).sinh()  / (1.0 + (diameter / (2.0 * RHO)).cosh());
+                    let rad_arg = RHO * (diameter / (2.0 * RHO)).sinh()
+                        / (1.0 + (diameter / (2.0 * RHO)).cosh());
                     let poincare_radius = (0.5)
                         * (1.0 + 2.0 * rad_arg.powi(2) / (1.0 - (rad_arg.powi(2)))).acosh() as f32;
                     transform.translation = Vec3::from_array(poincare_position);
@@ -110,8 +113,8 @@ impl<T: Send + Sync + 'static> HyperbolicDisk<T> {
                 Right((position, diameter)) => {
                     let (poincare_position, max_projected_radius) =
                         poincare(&position, RHO, diameter);
-                    let rad_arg =
-                        RHO * (diameter / (2.0 * RHO)).sinh() / (1.0 + (diameter / (2.0 * RHO)).cosh());
+                    let rad_arg = RHO * (diameter / (2.0 * RHO)).sinh()
+                        / (1.0 + (diameter / (2.0 * RHO)).cosh());
                     let poincare_radius = (0.5)
                         * (1.0 + 2.0 * rad_arg.powi(2) / (1.0 - (rad_arg.powi(2)))).acosh() as f32;
                     commands.spawn((
@@ -135,7 +138,7 @@ impl<T: Send + Sync + 'static> HyperbolicDisk<T> {
 
 /// Project coordinates to Poincare disk
 fn poincare(point: &Minkowski<3>, skirt: f64, diameter: f64) -> ([f32; 3], f32) {
-    let pt = Hyperboloid::from(*point, skirt);
+    let pt = Hyperbolic::from_minkowski_coordinates(*point, skirt);
     let proj = pt.to_poincare();
     let v = diameter / (skirt * 2.0);
     let eta = (point.coordinates[2] / RHO).acosh();

@@ -118,9 +118,9 @@ to the user, and makes it obvious when and where that state can be modified.
 Additionally, it allows a single trial move object to be reused on many
 microstates with different Hamiltonians and/or at different macrostates.
 
-The `Macrostate` associated type on `Trial` describes which parameters a
-particular trial move needs. It should be set to a scalar or a tuple of the
-state parameters (`(kt, pressure)` for example) used by the trial move.
+The `macrostate` parameter in `Trial` describes which parameters a
+particular trial move needs. Pass in a type that implements the relevant
+macrostate trait from `hoomd_simulation::macrostate`.
 
 ### Tuning move sizes
 

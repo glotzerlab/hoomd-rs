@@ -13,7 +13,7 @@ use hoomd_vector::{Cartesian, InnerProduct};
 ///
 /// Construction and basic methods:
 /// ```
-/// use approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_geometry::{BoundingSphereRadius, shape::ConvexPolyhedron};
 ///
 /// # fn main() -> Result<(), hoomd_geometry::Error> {
@@ -212,16 +212,11 @@ impl<const N: usize> BoundingSphereRadius for ConvexPolytope<N> {
 
 #[cfg(test)]
 mod tests {
-    #![expect(
-        clippy::similar_names,
-        reason = "tests do not need to adhere to this rule"
-    )]
-
     use super::*;
     use crate::{Convex, IntersectsAt};
     use hoomd_vector::{Angle, Cartesian, Rotate, Rotation, Versor};
 
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rstest::*;
     use std::f64::consts::{FRAC_1_SQRT_2, PI};
 

@@ -529,24 +529,26 @@ where
         let ghost_tags = &mut sites_ghosts[site_index];
 
         match ghost_tags.len().cmp(&new_ghosts.len()) {
-            std::cmp::Ordering::Less => {let ghosts_to_add = new_ghosts.len() - ghost_tags.len();
-            for _ in 0..ghosts_to_add {
-                let ghost_tag = ghosts.push(Site {
-                    site_tag: site.site_tag,
-                    body_tag: site.body_tag,
-                    properties: S::default(),
-                });
-                ghost_tags.push(ghost_tag);
-            }}
-            std::cmp::Ordering::Greater => {
-            let ghosts_to_remove = ghost_tags.len() - new_ghosts.len();
-            for ghost_tag in ghost_tags.iter().rev().take(ghosts_to_remove) {
-                let ghost_index = ghosts.indices[*ghost_tag]
-                    .expect("sites_ghosts and ghost.indices should be consistent");
-                ghosts.remove(ghost_index);
+            std::cmp::Ordering::Less => {
+                let ghosts_to_add = new_ghosts.len() - ghost_tags.len();
+                for _ in 0..ghosts_to_add {
+                    let ghost_tag = ghosts.push(Site {
+                        site_tag: site.site_tag,
+                        body_tag: site.body_tag,
+                        properties: S::default(),
+                    });
+                    ghost_tags.push(ghost_tag);
+                }
             }
+            std::cmp::Ordering::Greater => {
+                let ghosts_to_remove = ghost_tags.len() - new_ghosts.len();
+                for ghost_tag in ghost_tags.iter().rev().take(ghosts_to_remove) {
+                    let ghost_index = ghosts.indices[*ghost_tag]
+                        .expect("sites_ghosts and ghost.indices should be consistent");
+                    ghosts.remove(ghost_index);
+                }
 
-            ghost_tags.truncate(new_ghosts.len());
+                ghost_tags.truncate(new_ghosts.len());
             }
             std::cmp::Ordering::Equal => {}
         }
@@ -1457,7 +1459,7 @@ mod tests {
     use hoomd_geometry::shape::Hypercuboid;
     use hoomd_vector::Cartesian;
 
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng, seq::SliceRandom};
     use rstest::*;
     use std::collections::{HashMap, HashSet};

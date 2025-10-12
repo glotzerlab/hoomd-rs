@@ -1,5 +1,6 @@
 use anyhow::Context;
 use bevy::prelude::*;
+use bevy_egui::EguiPlugin;
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
     representation::{self, HyperbolicDiskAssets, HyperbolicDiskMaterial},
@@ -9,12 +10,12 @@ use hoomd_interaction::{
     CutoffPair,
     pairwise::{Isotropic, LennardJones},
 };
-use hoomd_manifold::{HyperbolicDisk, Hyperboloid, Minkowski};
-use hoomd_mc::{Translate, Sweep, Trial};
+use hoomd_manifold::{Hyperbolic, HyperbolicDisk, Minkowski};
+use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder, boundary::Periodic, property::Point,
 };
-use hoomd_simulation::Simulation;
+use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use rand::distr::Distribution;
 use rand::{SeedableRng, rngs::StdRng};
 
@@ -25,7 +26,7 @@ struct Ghost;
 
 const RHO: f64 = 1.0;
 const PARTICLE_NUMBER: usize = 200;
-const DIAMETER: f64 = 0.15; //in hyperboloid metric
+const DIAMETER: f64 = 0.15; //in Hyperbolic metric
 
 fn main() -> anyhow::Result<()> {
     let simulation = Fill::new().context("failed to setup simulation")?;
@@ -39,6 +40,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut app = App::new();
     app.add_plugins(DefaultPlugins);
+    app.add_plugins(EguiPlugin::default());
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(
         Startup,
@@ -66,16 +68,16 @@ fn main() -> anyhow::Result<()> {
 struct Fill {
     /// Positions of all the bodies in the simulation.
     microstate: Microstate<
-        Point<Hyperboloid<3>>,
-        Point<Hyperboloid<3>>,
+        Point<Hyperbolic<3>>,
+        Point<Hyperbolic<3>>,
         Periodic<EightEight>,
     >,
     /// How sites interact with other sites and fields.
     hamiltonian: CutoffPair<Isotropic<LennardJones>>,
     /// Trial moves to apply.
-    translate_sweep: Sweep<Translate>,
+    translate_sweep: Sweep<Translate<Hyperbolic<3>>>,
     /// Temperature set point.
-    kt: f64,
+    macrostate: Isothermal,
 }
 
 impl Fill {
@@ -88,17 +90,22 @@ impl Fill {
         let initial_spacing = 1.0;
         let mut rng = StdRng::seed_from_u64(23);
         let sample_disk = HyperbolicDisk {
-            r: initial_spacing.try_into()?,
-            point: Minkowski::from([
-                0.00001,
-                0.00001,
-                f64::sqrt(2.0 * (0.00001_f64).powi(2) + RHO.powi(2)),
-            ]),
-            skirt: RHO,
+            disk_radius: initial_spacing.try_into()?,
+            point: Hyperbolic::<3>::from_minkowski_coordinates(
+                Minkowski::from([
+                    0.00001,
+                    0.00001,
+                    f64::sqrt(2.0 * (0.00001_f64).powi(2) + RHO.powi(2)),
+                ]),
+                RHO,
+            ),
         };
         for _n in 0..PARTICLE_NUMBER {
-            let new_point: Hyperboloid<3> =
-                Hyperboloid::from(*sample_disk.sample(&mut rng).point(), RHO);
+            let new_point: Hyperbolic<3> =
+                Hyperbolic::from_minkowski_coordinates(
+                    *sample_disk.sample(&mut rng).point(),
+                    RHO,
+                );
             microstate.add_body(Body::point(new_point))?;
         }
 
@@ -113,21 +120,19 @@ impl Fill {
             evaluator,
         };
 
-        let kt = 1.0;
+        let macrostate = Isothermal { temperature: 1.0 };
 
         let hamiltonian = cutoff_pair;
         let d = 0.01;
 
-        let hyp_translate = Translate {
-            maximum_distance: d.try_into()?,
-        };
+        let hyp_translate = Translate::with_maximum_distance(d.try_into()?);
         let translate_sweep = Sweep(hyp_translate);
 
         Ok(Fill {
             microstate,
             hamiltonian,
             translate_sweep,
-            kt,
+            macrostate,
         })
     }
 }
@@ -138,7 +143,7 @@ impl Simulation for Fill {
         self.translate_sweep.apply(
             &mut self.microstate,
             &self.hamiltonian,
-            &self.kt,
+            &self.macrostate,
         );
         self.microstate.increment_step();
         Ok(())

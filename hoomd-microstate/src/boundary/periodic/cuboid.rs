@@ -290,7 +290,7 @@ mod tests {
     use super::*;
     use crate::property::Point;
 
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
 
     const N_SAMPLES: usize = 1024;

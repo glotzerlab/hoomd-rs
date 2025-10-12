@@ -23,9 +23,11 @@ mod eighteight;
 /// and closed in others.
 ///
 /// [`Periodic`] is implemented for the following shapes:
+/// * [`EightEight`]
 /// * [`Hypercuboid<2>`] (also known as [`Rectangle`])
 /// * [`Hypercuboid<3>`] (also known as [`Cuboid`])
 ///
+/// [`EightEight`]: hoomd_geometry::shape::EightEight
 /// [`Hypercuboid<2>`]: hoomd_geometry::shape::Hypercuboid
 /// [`Hypercuboid<3>`]: hoomd_geometry::shape::Hypercuboid
 /// [`Cuboid`]: hoomd_geometry::shape::Cuboid
