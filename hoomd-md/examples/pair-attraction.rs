@@ -4,10 +4,9 @@
 /*! Simple example of two bodies attracted to each other.
 */
 
-use hoomd_simulation::macrostate::Isoenergy;
 use hoomd_vector::Cartesian;
 use hoomd_microstate::{Microstate, Body, property::{Point, DynamicsPoint}};
-use hoomd_interaction::{pairwise::LennardJones, CutoffPair};
+use hoomd_interaction::{pairwise::{LennardJones, Isotropic}, CutoffPair};
 use hoomd_md::{ConstantVolume, TranslationalMotion, thermostat::NoThermostat};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -39,15 +38,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Model interactions (in this case, a pairwise Lennard-Jones)
     let force = CutoffPair {
-        r_cut: 3.0,
-        evaluator: LennardJones::<12,6> {
+        r_cut: 6.0,
+        evaluator: Isotropic(LennardJones::<12,6> {
             epsilon: 1.0,
-            sigma: 2.0
-        }
+            sigma: 1.0
+        })
     };
 
     // Create an NVE macrostate
-    let macrostate = Isoenergy::default();
+    struct Isoenergy {};
+    
+    let macrostate = Isoenergy{};
 
     // Create a constant-volume integrator
     let dt = 0.1;

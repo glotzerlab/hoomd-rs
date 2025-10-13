@@ -590,7 +590,7 @@ pub struct GsdFile {
 /// frame*. The [`GsdFile::find_chunk`] method search for a matching index
 /// entry. The returned [`IndexEntry`] (if present) also carries information
 /// about the dimension and type of the array.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct IndexEntry {
     /// Frame index of the chunk.
     frame: u64,
@@ -617,7 +617,7 @@ pub struct IndexEntry {
 /// Data types that can be stored in chunks.
 ///
 /// Provided by [`IndexEntry::data_type`].
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum DataType {
     /// [`u8`]
@@ -654,7 +654,7 @@ pub enum DataType {
 /// result in an error.
 ///
 /// In the [`Mode::Write`] mode, you can call both read and write methods.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum Mode {
     /// Read-only.
@@ -901,7 +901,7 @@ impl IndexEntry {
 
     /// Encode an index entry.
     #[inline]
-    fn to_ne_bytes(self) -> [u8; INDEX_ENTRY_USIZE] {
+    fn to_ne_bytes(&self) -> [u8; INDEX_ENTRY_USIZE] {
         let mut result = [0u8; INDEX_ENTRY_USIZE];
         result[0..8].copy_from_slice(&self.frame.to_ne_bytes());
         result[8..16].copy_from_slice(&self.n.to_ne_bytes());
@@ -1671,7 +1671,7 @@ impl GsdFile {
             usize::try_from(index_entry.location).map_err(DecodeError::UnaddressableContent)?;
 
         if index_entry.location == 0 {
-            return Err(DecodeError::CorruptIndexEntry(*index_entry));
+            return Err(DecodeError::CorruptIndexEntry(index_entry.clone()));
         }
 
         debug_assert!(location + n_bytes <= self.mmap.len());

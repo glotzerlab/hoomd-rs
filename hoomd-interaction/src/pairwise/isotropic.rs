@@ -6,7 +6,7 @@
 use super::{IsotropicEnergy, IsotropicForce};
 use crate::{SitePairEnergy, SitePairForce};
 use hoomd_microstate::property::Position;
-use hoomd_vector::{InnerProduct, Vector};
+use hoomd_vector::{InnerProduct, Vector, Metric};
 
 /// Compute isotropic properties from a pair of sites
 ///
@@ -49,26 +49,27 @@ use hoomd_vector::{InnerProduct, Vector};
 /// ```
 pub struct Isotropic<E>(pub E);
 
-impl<V, S, E> SitePairEnergy<S> for Isotropic<E>
+impl<P, S, E> SitePairEnergy<S> for Isotropic<E>
 where
-    S: Position<Vector = V>,
-    V: Vector,
+    S: Position<Position = P>,
+    P: Metric,
     E: IsotropicEnergy,
 {
     #[inline]
-    fn site_pair_energy(&self, a: &S, b: &S) -> f64 {
-        self.0.energy((a.position()).distance(b.position()))
+    fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
+        self.0
+            .energy((site_properties_i.position()).distance(site_properties_j.position()))
     }
 }
 
-impl<V, S, E> SitePairForce<V, S> for Isotropic<E>
+impl<P, S, E> SitePairForce<P, S> for Isotropic<E>
 where
     E: IsotropicForce,
-    V: Vector + InnerProduct,
-    S: Position<Vector=V>
+    P: Vector + InnerProduct + Metric,
+    S: Position<Position = P>
 {
     #[inline]
-    fn site_pair_force(&self, a: &S, b: &S) -> V {
+    fn site_pair_force(&self, a: &S, b: &S) -> P {
         let r = *a.position() - *b.position();
         let distance = r.norm();
         r * self.0.force(distance) / distance

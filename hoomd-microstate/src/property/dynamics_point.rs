@@ -113,16 +113,16 @@ where
     }
 }
 
-impl<V> Position for DynamicsPoint<V> {
-    type Vector = V;
+impl<P> Position for DynamicsPoint<P> {
+    type Position = P;
 
     #[inline]
-    fn position(&self) -> &V {
+    fn position(&self) -> &P {
         &self.position
     }
 
     #[inline]
-    fn position_mut(&mut self) -> &mut V {
+    fn position_mut(&mut self) -> &mut P {
         &mut self.position
     }
 }

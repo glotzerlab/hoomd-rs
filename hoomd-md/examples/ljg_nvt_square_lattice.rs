@@ -9,7 +9,7 @@ use hoomd_microstate::{
     boundary::Periodic, property::{DynamicsPoint, NetForce, Point, Position}, Body, Microstate, MicrostateBuilder
 };
 use hoomd_simulation::{macrostate::Isothermal, Simulation};
-use hoomd_vector::{Cartesian, Vector};
+use hoomd_vector::{Cartesian, Vector, Metric};
 
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
@@ -50,7 +50,8 @@ impl LJG_sqaure {
             evaluator: Isotropic(LennardJonesGauss {
                 epsilon: 0.75,
                 sigma_squared: 0.02,
-                r_0: 1.41
+                r_0: 1.41,
+                scale: 1.0
             })
         };
 

@@ -5,9 +5,9 @@ on the display to focus it. Click on the rest of the page to cancel that focus.
 
 While focused, you can interact with the simulation. All the examples have a few
 common controls. For example, you can press `<space>` to pause the simulation
-and then the `<right arrow>` to advance it one step at a time. You can also press
-`<esc>` to bring up the settings screen and then `-` to decrease the simulation
-speed. Press `?` to see a help screen that shows all the keyboard controls.
+and then the `n` to advance it one step at a time. Press `m` to show/hide the
+options menu. Use the GUI to control the simulation speed, camera sensitivity,
+and other options. The GUI also shows the keyboard shortcuts on many controls.
 
 Some examples provide a relatively static view while others give you more
 opportunity to interact with the simulation. See the on-screen help messages of

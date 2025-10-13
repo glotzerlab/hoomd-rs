@@ -64,7 +64,7 @@
 //! }
 //!
 //! impl Position for Custom {
-//!     type Vector = Cartesian<3>;
+//!     type Position = Cartesian<3>;
 //!
 //!     fn position(&self) -> &Cartesian<3> {
 //!         &self.position
@@ -137,13 +137,13 @@ pub use oriented_dynamics_point::OrientedDynamicsPoint;
 /// Position vectors have units of *\[length\]*.
 pub trait Position {
     /// Every position is located in this vector space.
-    type Vector;
+    type Position;
 
-    /// The position of this site or body *\[length\]*.
-    fn position(&self) -> &Self::Vector;
+    /// The position of this body or site *\[length\]*.
+    fn position(&self) -> &Self::Position;
 
-    /// The mutable position of this site or body *\[length\]*.
-    fn position_mut(&mut self) -> &mut Self::Vector;
+    /// The mutable position of this body or site *\[length\]*.
+    fn position_mut(&mut self) -> &mut Self::Position;
 }
 
 /// The momentum of a site or body

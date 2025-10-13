@@ -123,7 +123,7 @@
 //!
 //! [`Angle`] implements rotations on [`Cartesian<2>`] vectors.
 //! ```
-//! use ::approx::assert_relative_eq;
+//! use approxim::assert_relative_eq;
 //! use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
 //! use std::f64::consts::PI;
 //!
@@ -135,7 +135,7 @@
 //!
 //! [`Versor`] implements rotations on [`Cartesian<3>`] vectors.
 //! ```
-//! use ::approx::assert_relative_eq;
+//! use approxim::assert_relative_eq;
 //! use hoomd_vector::{Cartesian, Rotate, Rotation, Versor};
 //! use std::f64::consts::PI;
 //!
@@ -173,23 +173,11 @@
 //! # Ok(())
 //! # }
 //! ```
-//!
-//! # Feature flags
-//!
-//! These unstable features are intended for internal use. `hoomd-vector` may make
-//! breaking changes to the code gated behind unstable features in any release.
-//!
-//! * `approx`: Enable `assert_relative_eq` and `assert_abs_diff_eq` from the
-//!   [`approx`](https://docs.rs/approx/latest/approx/) crate on [`Cartesian`],
-//!   [`Quaternion`] and [`Versor`].
 
 mod angle;
 mod cartesian;
 pub mod distribution;
 mod quaternion;
-
-#[cfg(any(test, feature = "approx"))]
-pub mod approx;
 
 pub use angle::Angle;
 pub use cartesian::{Cartesian, RotationMatrix};
@@ -352,17 +340,24 @@ pub trait Vector:
     + Div<f64, Output = Self>
     + DivAssign<f64>
     + PartialEq
+    + Metric
     + Mul<f64, Output = Self>
     + MulAssign<f64>
     + Sub<Self, Output = Self>
     + SubAssign
     + Neg<Output = Self>
 {
+}
+
+/// Operates on elements on a metric space.
+///
+/// [`Metric`] implements a distance metric between points.
+pub trait Metric {
     /// Compute the squared distance between two vectors belonging to a metric space.
     ///
     /// # Example
     /// ```
-    /// use hoomd_vector::{Cartesian, Vector};
+    /// use hoomd_vector::{Cartesian, Metric};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let x = Cartesian::from([0.0, 1.0, 1.0]);
@@ -373,38 +368,34 @@ pub trait Vector:
     /// ```
     fn distance_squared(&self, other: &Self) -> f64;
 
-
-    /** Return the number of dimensions in this vector-space.
-    
-    # Example
-    ```
-    use hoomd_vector::{Cartesian, Vector};
-
-    # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let vec2 = Cartesian::<2>::default();
-    let vec3 = Cartesian::<3>::default();
-    assert_eq!(2, vec2.n_dimensions());
-    assert_eq!(3, vec3.n_dimensions());
-    # Ok(())
-    # }
-    ```
-    */
+    /// Return the number of dimensions in this vector space.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_vector::{Cartesian, Metric};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let vec2 = Cartesian::<2>::default();
+    /// let vec3 = Cartesian::<3>::default();
+    /// assert_eq!(2, vec2.n_dimensions());
+    /// assert_eq!(3, vec3.n_dimensions());
+    /// # Ok(())
+    /// # }
+    /// ```
     fn n_dimensions(&self) -> usize;
 
     /// Compute the distance between two vectors belonging to a metric space.
     /// # Example
     /// ```
-    /// use hoomd_vector::{Cartesian, Vector};
+    /// use hoomd_vector::{Cartesian, Metric};
     ///
     /// let x = Cartesian::from([0.0, 0.0]);
     /// let y = Cartesian::from([3.0, 4.0]);
     /// assert_eq!(5.0, x.distance(&y));
     /// ```
-    #[inline]
-    fn distance(&self, other: &Self) -> f64 {
-        self.distance_squared(other).sqrt()
-    }
+    fn distance(&self, other: &Self) -> f64;
 }
+
 /// Operate on elements of an inner product space.
 ///
 /// The [`InnerProduct`] subtrait defines additional methods that can be performed on any vector
@@ -632,7 +623,7 @@ pub trait Rotate<V: Vector> {
     ///
     /// # Example
     /// ```
-    /// use ::approx::assert_relative_eq;
+    /// use approxim::assert_relative_eq;
     /// use hoomd_vector::{Angle, Cartesian, Rotate, Rotation};
     ///
     /// let v = Cartesian::from([-1.0, 0.0]);
@@ -702,7 +693,7 @@ pub trait Rotation: Copy {
 /// # Example
 ///
 /// ```
-/// use ::approx::assert_relative_eq;
+/// use approxim::assert_relative_eq;
 /// use hoomd_vector::{self, Angle, Cartesian};
 /// use std::f64::consts::PI;
 ///
@@ -719,7 +710,6 @@ pub trait Rotation: Copy {
 /// assert_relative_eq!(o_ab.theta, PI / 2.0);
 /// ```
 #[inline]
-#[expect(clippy::similar_names, reason = "standard math notation")]
 pub fn pair_system_to_local<V, R>(r_a: &V, o_a: &R, r_b: &V, o_b: &R) -> (V, R)
 where
     V: Vector,

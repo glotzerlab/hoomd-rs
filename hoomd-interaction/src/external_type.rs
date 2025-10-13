@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement `Single`
+//! Implement `External`
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, NetBodyForce, NetSiteForce, SiteEnergy, SiteSingleForce, TotalEnergy};
 use hoomd_microstate::{boundary::Wrap, property::Position, Body, Microstate, Site, Transform};
@@ -9,7 +9,7 @@ use hoomd_vector::Vector;
 
 /// Interactions between sites and external fields.
 ///
-/// Given an inner type that implements [`SiteEnergy`], [`Single`] represents:
+/// Given an inner type that implements [`SiteEnergy`], [`External`] represents:
 ///
 /// ```math
 /// U_\mathrm{total} = \sum_{i=0}^{N-1} U\left( s_i \right)
@@ -20,14 +20,14 @@ use hoomd_vector::Vector;
 ///
 /// [`external`]: crate::external
 ///
-/// Use [`SingleOverlap`] instead of [`Single`] for purely hard interactions.
+/// Use [`ExternalOverlap`] instead of [`External`] for purely hard interactions.
 ///
-/// [`SingleOverlap`]: crate::SingleOverlap
+/// [`ExternalOverlap`]: crate::ExternalOverlap
 ///
 /// # Example
 ///
 /// ```
-/// use hoomd_interaction::{Single, TotalEnergy, external::Linear};
+/// use hoomd_interaction::{External, TotalEnergy, external::Linear};
 /// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;
 ///
@@ -38,7 +38,7 @@ use hoomd_vector::Vector;
 ///     Body::point(Cartesian::from([-1.0, 2.0])),
 /// ])?;
 ///
-/// let linear = Single(Linear {
+/// let linear = External(Linear {
 ///     alpha: 1.0,
 ///     plane_origin: Cartesian::default(),
 ///     plane_normal: [0.0, 1.0].try_into()?,
@@ -49,9 +49,9 @@ use hoomd_vector::Vector;
 /// # Ok(())
 /// # }
 /// ```
-pub struct Single<E>(pub E);
+pub struct External<E>(pub E);
 
-impl<B, S, C, E> TotalEnergy<Microstate<B, S, C>> for Single<E>
+impl<B, S, C, E> TotalEnergy<Microstate<B, S, C>> for External<E>
 where
     E: SiteEnergy<S>,
 {
@@ -64,7 +64,7 @@ where
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::{Single, TotalEnergy, external::Linear};
+    /// use hoomd_interaction::{External, TotalEnergy, external::Linear};
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::Cartesian;
     ///
@@ -75,7 +75,7 @@ where
     ///     Body::point(Cartesian::from([-1.0, 2.0])),
     /// ])?;
     ///
-    /// let linear = Single(Linear {
+    /// let linear = External(Linear {
     ///     alpha: 1.0,
     ///     plane_origin: Cartesian::default(),
     ///     plane_normal: [0.0, 1.0].try_into()?,
@@ -95,12 +95,12 @@ where
     }
 }
 
-/// Evaluate the change in energy contributed by `Single` when a single body is updated.
+/// Evaluate the change in energy contributed by `External` when a single body is updated.
 ///
 /// # Example
 ///
 /// ```
-/// use hoomd_interaction::{DeltaEnergyOne, Single, external::Linear};
+/// use hoomd_interaction::{DeltaEnergyOne, External, external::Linear};
 /// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;
 ///
@@ -108,7 +108,7 @@ where
 /// let mut microstate = Microstate::new();
 /// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
 ///
-/// let linear = Single(Linear {
+/// let linear = External(Linear {
 ///     alpha: 1.0,
 ///     plane_origin: Cartesian::default(),
 ///     plane_normal: [0.0, 1.0].try_into()?,
@@ -123,11 +123,11 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<V, B, S, C, E> DeltaEnergyOne<B, S, C> for Single<E>
+impl<P, B, S, C, E> DeltaEnergyOne<B, S, C> for External<E>
 where
     E: SiteEnergy<S>,
     B: Transform<S>,
-    S: Position<Vector = V>,
+    S: Position<Position = P>,
     C: Wrap<B> + Wrap<S>,
 {
     #[inline]
@@ -156,12 +156,12 @@ where
     }
 }
 
-/// Evaluate the change in energy contributed by `Single` when a single body is inserted.
+/// Evaluate the change in energy contributed by `External` when a single body is inserted.
 ///
 /// # Example
 ///
 /// ```
-/// use hoomd_interaction::{DeltaEnergyInsert, Single, external::Linear};
+/// use hoomd_interaction::{DeltaEnergyInsert, External, external::Linear};
 /// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;
 ///
@@ -169,7 +169,7 @@ where
 /// let mut microstate = Microstate::new();
 /// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])))?;
 ///
-/// let linear = Single(Linear {
+/// let linear = External(Linear {
 ///     alpha: 1.0,
 ///     plane_origin: Cartesian::default(),
 ///     plane_normal: [0.0, 1.0].try_into()?,
@@ -181,11 +181,11 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<V, B, S, C, E> DeltaEnergyInsert<B, S, C> for Single<E>
+impl<P, B, S, C, E> DeltaEnergyInsert<B, S, C> for External<E>
 where
     E: SiteEnergy<S>,
     B: Transform<S>,
-    S: Position<Vector = V>,
+    S: Position<Position = P>,
     C: Wrap<B> + Wrap<S>,
 {
     #[inline]
@@ -209,12 +209,12 @@ where
     }
 }
 
-/// Evaluate the change in energy contributed by `Single` when a single body is removed.
+/// Evaluate the change in energy contributed by `External` when a single body is removed.
 ///
 /// # Example
 ///
 /// ```
-/// use hoomd_interaction::{DeltaEnergyRemove, Single, external::Linear};
+/// use hoomd_interaction::{DeltaEnergyRemove, External, external::Linear};
 /// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;
 ///
@@ -222,7 +222,7 @@ where
 /// let mut microstate = Microstate::new();
 /// microstate.add_body(Body::point(Cartesian::from([0.0, 1.0])))?;
 ///
-/// let linear = Single(Linear {
+/// let linear = External(Linear {
 ///     alpha: 1.0,
 ///     plane_origin: Cartesian::default(),
 ///     plane_normal: [0.0, 1.0].try_into()?,
@@ -233,7 +233,7 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<B, S, C, E> DeltaEnergyRemove<B, S, C> for Single<E>
+impl<B, S, C, E> DeltaEnergyRemove<B, S, C> for External<E>
 where
     E: SiteEnergy<S>,
 {
@@ -251,7 +251,7 @@ where
     }
 }
 
-impl<E, S> SiteEnergy<S> for Single<E>
+impl<E, S> SiteEnergy<S> for External<E>
 where
     E: SiteEnergy<S>,
 {
@@ -261,10 +261,10 @@ where
     }
 }
 
-impl<V, B, S, C, E> NetBodyForce<V, B, S, C> for Single<E>
+impl<V, B, S, C, E> NetBodyForce<V, B, S, C> for External<E>
 where
     V: Vector + Default,
-    S: Position<Vector = V>,
+    S: Position<Position = V>,
     E: SiteSingleForce<V, S>,
 {
     #[inline]
@@ -277,10 +277,10 @@ where
     }
 }
 
-impl<V, B, S, C, E> NetSiteForce<V, B, S, C> for Single<E>
+impl<V, B, S, C, E> NetSiteForce<V, B, S, C> for External<E>
 where
     V: Vector + Default,
-    S: Position<Vector = V>,
+    S: Position<Position = V>,
     E: SiteSingleForce<V, S>,
 {
     #[inline]
@@ -306,7 +306,7 @@ mod tests {
 
     impl<S> SiteEnergy<S> for TestSE
     where
-        S: Position<Vector = Cartesian<2>>,
+        S: Position<Position = Cartesian<2>>,
     {
         fn site_energy(&self, site_properties: &S) -> f64 {
             site_properties.position()[0] + site_properties.position()[1]
@@ -331,7 +331,7 @@ mod tests {
         #[rstest]
         fn single_total(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
             let test_se = TestSE;
-            let single = Single(test_se);
+            let single = External(test_se);
 
             assert_eq!(single.total_energy(&microstate), 3.0);
         }
@@ -339,7 +339,7 @@ mod tests {
         #[rstest]
         fn single_site(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
             let test_se = TestSE;
-            let single = Single(test_se);
+            let single = External(test_se);
 
             assert_eq!(single.site_energy(&microstate.sites()[0].properties), 1.0);
             assert_eq!(single.site_energy(&microstate.sites()[1].properties), 2.0);
@@ -376,7 +376,7 @@ mod tests {
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
-            let energy = Single(Zero);
+            let energy = External(Zero);
 
             assert_eq!(
                 energy.delta_energy_one(&microstate, 0, &final_body),
@@ -410,7 +410,7 @@ mod tests {
 
             let plane_normal = Unit::<Cartesian<2>>::try_from([0.0, 1.0])
                 .expect("the hard-coded vector is not zero");
-            let energy = Single(Linear {
+            let energy = External(Linear {
                 plane_origin: [0.0, -1.0].into(),
                 plane_normal,
                 alpha: 4.0,

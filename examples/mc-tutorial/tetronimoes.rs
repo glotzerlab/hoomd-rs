@@ -5,7 +5,7 @@ use std::f64::consts::PI;
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    CutoffPair, Single, TotalEnergy,
+    CutoffPair, External, TotalEnergy,
     external::Linear,
     pairwise::{Boxcar, Isotropic},
 };
@@ -15,7 +15,7 @@ use hoomd_microstate::{
     boundary::Closed,
     property::{OrientedPoint, Point},
 };
-use hoomd_simulation::Simulation;
+use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_vector::{Angle, Cartesian};
 // ANCHOR_END: use
 
@@ -70,13 +70,13 @@ struct Tetronimoes {
     microstate: Microstate<BodyProperties, SiteProperties, Closed<Rectangle>>,
     /// How sites interact with other sites and fields.
     hamiltonian: (
-        Single<Linear<PositionVector>>,
+        External<Linear<PositionVector>>,
         CutoffPair<Isotropic<Boxcar>>,
     ),
     /// Trial moves to apply.
     sweep: Sweep<DiscreteRotateOrTranslate>,
     /// Temperature set point.
-    kt: f64,
+    macrostate: Isothermal,
     /// Tetronimo shapes.
     template_sites: Vec<Vec<Point<PositionVector>>>,
 }
@@ -89,7 +89,7 @@ impl Tetronimoes {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
         let box_height = 30.0;
-        let kt = 1.0;
+        let macrostate = Isothermal { temperature: 1.0 };
         let alpha = 1.0;
         let epsilon = 1000.0;
         let sigma = 1.0;
@@ -106,7 +106,7 @@ impl Tetronimoes {
         // ANCHOR_END: microstate
 
         // ANCHOR: hamiltonian
-        let linear = Single(Linear {
+        let linear = External(Linear {
             alpha,
             plane_origin: Cartesian::default(),
             plane_normal: [0.0, 1.0].try_into()?,
@@ -175,7 +175,7 @@ impl Tetronimoes {
             microstate,
             hamiltonian,
             sweep,
-            kt,
+            macrostate,
             template_sites,
         })
     }
@@ -190,7 +190,7 @@ impl Simulation for Tetronimoes {
     fn advance(&mut self) -> anyhow::Result<()> {
         // ANCHOR_END: advance
         // ANCHOR: add
-        if self.microstate.step() % 100 == 0 {
+        if self.microstate.step().is_multiple_of(100) {
             let mut rng = self.microstate.counter().make_rng();
             let sites = self
                 .template_sites
@@ -214,8 +214,11 @@ impl Simulation for Tetronimoes {
         // ANCHOR_END: add
 
         // ANCHOR: apply
-        self.sweep
-            .apply(&mut self.microstate, &self.hamiltonian, &self.kt);
+        self.sweep.apply(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.macrostate,
+        );
         self.microstate.increment_step();
         // ANCHOR_END: apply
 

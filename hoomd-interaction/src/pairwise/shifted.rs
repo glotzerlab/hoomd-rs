@@ -15,14 +15,17 @@ use super::{IsotropicEnergy, IsotropicForce};
 ///
 /// Shifted Lennard-Jones:
 /// ```
-/// use approx::{assert_abs_diff_eq, assert_relative_eq};
+/// use approxim::{assert_abs_diff_eq, assert_relative_eq};
 /// use hoomd_interaction::pairwise::{IsotropicEnergy, LennardJones, Shifted};
 ///
 /// let epsilon = 1.5;
 /// let sigma = 1.0;
 /// let r_shift = 2.5;
 /// let lj: LennardJones = LennardJones { epsilon, sigma };
-/// let shifted_lj = Shifted { f: lj, r_shift };
+/// let shifted_lj = Shifted {
+///     f: lj.clone(),
+///     r_shift,
+/// };
 ///
 /// assert_abs_diff_eq!(shifted_lj.energy(r_shift), 0.0);
 /// assert_relative_eq!(
@@ -97,7 +100,7 @@ impl<F: IsotropicForce> IsotropicForce for Shifted<F> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::{assert_abs_diff_eq, assert_relative_eq};
+    use approxim::{assert_abs_diff_eq, assert_relative_eq};
     use rstest::*;
 
     use crate::pairwise::LennardJones;
@@ -109,7 +112,10 @@ mod tests {
     ) {
         let lj: LennardJones = LennardJones { epsilon, sigma };
         let r_shift = 2.5 * sigma;
-        let shifted_lj = Shifted { f: lj, r_shift };
+        let shifted_lj = Shifted {
+            f: lj.clone(),
+            r_shift,
+        };
 
         assert_eq!(shifted_lj.f.epsilon, epsilon);
         assert_eq!(shifted_lj.f.sigma, sigma);

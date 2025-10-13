@@ -17,7 +17,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// # Examples
 ///
 /// ```
-/// use approx::{assert_abs_diff_eq, assert_relative_eq};
+/// use approxim::{assert_abs_diff_eq, assert_relative_eq};
 /// use hoomd_interaction::pairwise::{
 ///     Harmonic, IsotropicEnergy, IsotropicForce,
 /// };
@@ -40,7 +40,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// harmonic.k = 5.0;
 /// harmonic.r_0 = 1.0;
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Harmonic {
     /// Spring constant $`[\mathrm{energy}] [\mathrm{length}]^{-2}`$.
     pub k: f64,
@@ -65,7 +65,7 @@ impl IsotropicForce for Harmonic {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use rstest::*;
 
     #[rstest]

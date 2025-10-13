@@ -1,61 +1,87 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Store global system parameters for use in thermostats, integrators, etc.
+//! Traits that describe system macrostates and types that implement them.
+//!
+//! ## Macrostate
+//!
+//! Use a built-in macrostate type, such as [`Isothermal`], [`IsothermalIsobaric`]
+//! or [`Isobaric`] store the temperature and/or pressure set points for use
+//! with thermostats, barostats, and/or Monte Carlo trial moves:
+//!
+//! ```
+//! use hoomd_simulation::macrostate::Isothermal;
+//!
+//! let macrostate = Isothermal { temperature: 1.2 };
+//! ```
+//!
+//! The *actual* ensemble that your simulation samples is set by the methods
+//! that you apply to it. These macrostate types exist merely to pass
+//! parameters to methods that need them. For example, you could choose an
+//! [`IsothermalIsobaric`] macrostate and use it only with local Monte Carlo
+//! moves. Without boundary moves, the simulation will be in the NVT ensemble.
+//!
+//! ## Traits
+//!
+//! When you need additional macrostate parameters, use a custom type.
+//! Implement [`Temperature`] and/or [`Pressure`] for your type as needed.
 
-/// Store the kinetic temperature of the system.
+/// Set the thermodynamic temperature of a system.
+///
+/// Macrostates with the [`Temperature`] trait set the temperature
+/// of the simulation. In *hoomd-rs*, temperature is given in units of
+/// $` [\mathrm{energy}] `$: $` \mathrm{temperature} = kT `$.
+///
+/// # Example
+/// ```
+/// use hoomd_simulation::macrostate::Isothermal;
+///
+/// let macrostate = Isothermal { temperature: 1.2 };
+/// ```
 pub trait Temperature {
-    /// The kinetic temperature of the system.
+    /// The system's temperature $` ([\mathrm{energy}]) `$.
     fn temperature(&self) -> &f64;
 
-    /// The mutable kinetic temperature of the system.
+    /// The system's temperature $` ([\mathrm{energy}]) `$.
     fn temperature_mut(&mut self) -> &mut f64;
 }
 
-/// Store the pressure of the system.
+/// Set the thermodynamic pressure of a system.
+///
+/// Macrostates with the [`Pressure`] trait set the pressure
+/// of the simulation. In *hoomd-rs*, pressure is given in units of
+/// $` [\mathrm{energy}] \cdot [\mathrm{length}]^{-D} `$ where $` D `$
+/// is the dimensionality of the system.
+///
+/// # Example
+/// ```
+/// use hoomd_simulation::macrostate::Isobaric;
+///
+/// let macrostate = Isobaric { pressure: 0.4 };
+/// ```
 pub trait Pressure {
-    /// The pressure of the system.
+    /// The system's pressure $` ([\mathrm{energy}] \cdot [\mathrm{length}]^{-D}) `$.
     fn pressure(&self) -> &f64;
 
-    /// The mutable pressure of the system.
+    /// The system's pressure $` ([\mathrm{energy}] \cdot [\mathrm{length}]^{-D}) `$.
     fn pressure_mut(&mut self) -> &mut f64;
 }
 
-/// Macrostate for an iso-energy ensemble.
-/// 
-/// This is a convenience type which implements [`Temperature`] without storing
-/// a temperature setpoint. Use it for simulating NVE ensembles, for example
-/// with the [`ConstantVolume`] integrator.
-/// 
-/// This type should only be instantiated with `::default()`
-pub struct Isoenergy {
-    /// The faux temperature for the system
-    _temperature: f64,
-}
-impl Default for Isoenergy {
-    #[inline]
-    fn default() -> Self {
-        Isoenergy {
-            _temperature: 1.0
-        }
-    }
-}
-impl Temperature for Isoenergy {
-    #[inline]
-    fn temperature(&self) -> &f64 {
-        &self._temperature
-    }
-
-    #[inline]
-    fn temperature_mut(&mut self) -> &mut f64 {
-        &mut self._temperature
-    }
-}
-
-/// Macrostate for an isothermal ensemble.
+/// Constant temperature macrostate.
+///
+/// Use [`Isothermal`] to set the system temperature using a thermostat or Monte
+/// Carlo trial moves. Temperature is given in units of $` [\mathrm{energy}] `$:
+/// $` \mathrm{temperature} = kT `$.
+///
+/// # Example
+/// ```
+/// use hoomd_simulation::macrostate::Isothermal;
+///
+/// let macrostate = Isothermal { temperature: 1.2 };
+/// ```
 pub struct Isothermal {
-    /// Kinetic temperature of the system.
-    pub temperature: f64
+    /// The system's temperature $` ([\mathrm{energy}]) `$.
+    pub temperature: f64,
 }
 impl Temperature for Isothermal {
     #[inline]
@@ -69,18 +95,45 @@ impl Temperature for Isothermal {
     }
 }
 
-/// Macrostate for an isobaric ensemble.
+/// Constant pressure macrostate.
+///
+/// Use [`Isobaric`] to set the system pressure using a thermostat or Monte
+/// Carlo trial moves. Pressure is given in units of $` [\mathrm{energy}] \cdot
+/// [\mathrm{length}]^{-D} `$ where $` D `$ is the dimensionality of the system.
+///
+/// # Example
+/// ```
+/// use hoomd_simulation::macrostate::Isobaric;
+///
+/// let macrostate = Isobaric { pressure: 0.4 };
+/// ```
 pub struct Isobaric {
-    /// Pressure of the system.
-    pub pressure: f64
+    /// The system's pressure $` ([\mathrm{energy}] \cdot [\mathrm{length}]^{-D}) `$.
+    pub pressure: f64,
 }
 
-/// Macrostate for an isothermal and isobaric ensemble.
+/// Constant temperature, constant pressure macrostate.
+///
+/// Use [`IsothermalIsobaric`] to set both the system temperature and pressure
+/// using a thermostat and barostat or Monte
+/// Carlo trial moves.
+///
+/// * Temperature is given in units of $` [\mathrm{energy}] `$:
+///   $` \mathrm{temperature} = kT `$.
+/// * Pressure is given in units of $` [\mathrm{energy}] \cdot
+///   [\mathrm{length}]^{-D} `$ where $` D `$ is the dimensionality of the system.
+///
+/// # Example
+/// ```
+/// use hoomd_simulation::macrostate::Isothermal;
+///
+/// let macrostate = Isothermal { temperature: 1.2 };
+/// ```
 pub struct IsothermalIsobaric {
     /// Kinetic temperature of the system.
     pub temperature: f64,
     /// Pressure of the system.
-    pub pressure: f64
+    pub pressure: f64,
 }
 impl Temperature for IsothermalIsobaric {
     #[inline]

@@ -93,7 +93,7 @@ impl<F: IsotropicForce + IsotropicEnergy> IsotropicForce for Xplor<F> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::{assert_abs_diff_eq, assert_abs_diff_ne, assert_relative_eq};
+    use approxim::{assert_abs_diff_eq, assert_abs_diff_ne, assert_relative_eq};
     use rstest::*;
 
     use crate::pairwise::LennardJones;
@@ -107,7 +107,7 @@ mod tests {
         let r_smooth = 1.0; // Provides cases where r_smooth <, =, > sigma and epsilon
         let r_cut = 2.5 * sigma;
         let xplor_lj = Xplor {
-            f: lj,
+            f: lj.clone(),
             r_cut,
             r_smooth,
         };

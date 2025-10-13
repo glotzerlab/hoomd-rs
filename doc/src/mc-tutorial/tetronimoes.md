@@ -49,7 +49,7 @@ site properties.
 
 Implement a custom trial move to make the tetronimoes move in the way you might
 expect. Like in the [Custom Random Walk], tetronimoes take discrete steps left,
-right, down, or up. Tetronimoes can also rotate by `$ \pm \pi/2 $`. The
+right, down, or up. Tetronimoes can also rotate by $` \pm \pi/2 `$. The
 `DiscreteRotateOrTranslate` type implements this behavior:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:local_trial}}
@@ -152,7 +152,7 @@ The code that adds tetronimoes is more complex than that for disks:
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:add}}
 ```
 It first chooses a random tetronimo from the `template_sites`, then it adds the
-body near the top of the boundary with a default orientation of `$ \theta = 0 $`
+body near the top of the boundary with a default orientation of $` \theta = 0 `$
 and clone of the chosen sites. Each body has four sites in this example.
 
 *hoomd-rs* uses a *counter based random number generator*. Whenever you need to

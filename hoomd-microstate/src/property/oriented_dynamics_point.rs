@@ -104,16 +104,16 @@ where
     }
 }
 
-impl<V, R> Position for OrientedDynamicsPoint<V, R> {
-    type Vector = V;
+impl<P, R> Position for OrientedDynamicsPoint<P, R> {
+    type Position = P;
 
     #[inline]
-    fn position(&self) -> &V {
+    fn position(&self) -> &P {
         &self.position
     }
 
     #[inline]
-    fn position_mut(&mut self) -> &mut V {
+    fn position_mut(&mut self) -> &mut P {
         &mut self.position
     }
 }

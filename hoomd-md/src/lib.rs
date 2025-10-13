@@ -146,17 +146,16 @@ pub struct ConstantPressure;
 impl<V, B, S, C, E, T, M> TranslationalMotion<B, S, C, E, T, M> for ConstantVolume
 where
     V: Default + Vector + InnerProduct,
-    B: Position<Vector = V>
+    B: Position<Position = V>
         + Momentum<Vector = V>
         + NetForce<Vector = V>
         + Mass
         + Transform<S>
         + Clone,
-    S: Position<Vector = V> + Default,
+    S: Position<Position = V> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     E: NetBodyForce<V, B, S, C>,
     T: Thermostat<B, S, C, M>,
-    M: Temperature,
 {
     /// Perform the first integration half-step, mutating the microstate and possibly the thermostat.
     ///
@@ -338,13 +337,12 @@ where
         + NetTorque<Vector=Cartesian<3>>
         + MomentOfInertia<Vector = Cartesian<3>>
         + Transform<S>
-        + Position<Vector = Cartesian<3>> // TODO: should this be required?
+        + Position<Position = Cartesian<3>> // TODO: should this be required?
         + Clone,
-    S: Position<Vector = Cartesian<3>> + Default,
+    S: Position<Position = Cartesian<3>> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     E: NetBodyTorque<Cartesian<3>, B, S, C>,
     T: Thermostat<B, S, C, M>,
-    M: Temperature,
 {
     /// Perform the first integration half-step, mutating the microstate and
     /// possibly the thermostat.
@@ -698,13 +696,12 @@ where
         + NetTorque<Vector = f64>
         + MomentOfInertia<Vector = f64>
         + Transform<S>
-        + Position<Vector = Cartesian<2>> // TODO: should this be required?
+        + Position<Position = Cartesian<2>> // TODO: should this be required?
         + Clone,
-    S: Position<Vector = Cartesian<2>> + Default,
+    S: Position<Position = Cartesian<2>> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     E: NetBodyTorque<f64, B, S, C>,
     T: Thermostat<B, S, C, M>,
-    M: Temperature,
 {
     /// Perform the first integration half-step, mutating the microstate and
     /// possibly the thermostat.

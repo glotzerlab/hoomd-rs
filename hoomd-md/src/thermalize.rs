@@ -46,13 +46,13 @@ impl Thermalize
         microstate: &mut Microstate<B, S, C>)
     where
         V: Default + Vector + InnerProduct,
-        B: Position<Vector = V>
+        B: Position<Position = V>
             + Momentum<Vector = V>
             + NetForce<Vector = V>
             + Mass
             + Transform<S>
             + Clone,
-        S: Position<Vector = V> + Default,
+        S: Position<Position = V> + Default,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 
     {
@@ -94,13 +94,13 @@ impl Thermalize
         microstate: &mut Microstate<B, S, C>)
     where
         V: Default + Vector + InnerProduct + Cross,
-        B: Position<Vector = V>
+        B: Position<Position = V>
             + Momentum<Vector = V>
             + NetForce<Vector = V>
             + Mass
             + Transform<S>
             + Clone,
-        S: Position<Vector = V> + Default,
+        S: Position<Position = V> + Default,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 
     {
@@ -139,13 +139,13 @@ impl Thermalize
 
 impl<const N: usize, B, S, C> TranslationalThermalizer<N, B, S, C> for Thermalize
     where
-        B: Position<Vector = Cartesian<N>>
+        B: Position<Position = Cartesian<N>>
             + Momentum<Vector = Cartesian<N>>
             + NetForce<Vector = Cartesian<N>>
             + Mass
             + Transform<S>
             + Clone,
-        S: Position<Vector = Cartesian<N>> + Default,
+        S: Position<Position = Cartesian<N>> + Default,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Randomize the mometum of microstate, by drwan from
@@ -187,10 +187,10 @@ impl<B, S, C> RotationalThermalizer<2, B, S, C> for Thermalize
         + AngularMomentum<Rotation = f64>
         + NetTorque<Vector=f64>
         + MomentOfInertia<Vector = f64>
-        + Position<Vector = Cartesian<2>>
+        + Position<Position = Cartesian<2>>
         + Transform<S>
         + Clone,
-    S: Position<Vector = Cartesian<2>> + Default,
+    S: Position<Position = Cartesian<2>> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 
 {
@@ -227,10 +227,10 @@ impl<B, S, C> RotationalThermalizer<3, B, S, C> for Thermalize
         + AngularMomentum<Rotation = Quaternion>
         + NetTorque<Vector=Cartesian<3>>
         + MomentOfInertia<Vector=Cartesian<3>>
-        + Position<Vector = Cartesian<3>>
+        + Position<Position = Cartesian<3>>
         + Transform<S>
         + Clone,
-    S: Position<Vector = Cartesian<3>> + Default,
+    S: Position<Position = Cartesian<3>> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 
 {

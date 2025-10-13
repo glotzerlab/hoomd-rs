@@ -9,7 +9,7 @@ use hoomd_md::{thermostat::NoThermostat, ConstantVolume, TranslationalMotion};
 use hoomd_microstate::{
     boundary::{Closed, Periodic}, property::{DynamicsPoint, Momentum, Point, Position}, Body, Microstate, MicrostateBuilder
 };
-use hoomd_simulation::{macrostate::Isoenergy, Simulation};
+use hoomd_simulation::{Simulation};
 use hoomd_vector::Cartesian;
 
 use hoomd_bevy::{
@@ -23,6 +23,8 @@ use bevy::prelude::*;
 
 /// Mark the disk representation type
 struct A;
+
+struct Isoenergy {}
 
 /// The state of the swimming simulation, tracked as a resource by Bevy
 #[derive(Resource)]
@@ -97,7 +99,7 @@ impl Swim {
         };
     
         // Create an NVE macrostate
-        let macrostate = Isoenergy::default();
+        let macrostate = Isoenergy{};
 
         // Create a constant-volume integrator
         let dt = 0.01;

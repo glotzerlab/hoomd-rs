@@ -364,7 +364,7 @@ mod tests {
     use crate::IntersectsAt;
     use rstest::*;
 
-    use crate::shape::{Circle, Cuboid, Hypersphere};
+    use crate::shape::{Circle, Hypercuboid, Hypersphere};
     use hoomd_utility::valid::PositiveReal;
     use hoomd_vector::{Angle, Versor};
 
@@ -425,8 +425,8 @@ mod tests {
         rect => [[1.0.try_into().expect("test value is a positive real"), 1.0.try_into().expect("test value is a positive real")], [999.0.try_into().expect("test value is a positive real"), 0.1.try_into().expect("test value is a positive real")], [1.0.try_into().expect("test value is a positive real"), (2.0*4.623).try_into().expect("test value is a positive real")]]
     )]
     fn test_aabrs_collide(v: [f64; 2], rect: [PositiveReal; 2]) {
-        let c0 = Cuboid { edge_lengths: rect };
-        let c1 = Cuboid {
+        let c0 = Hypercuboid { edge_lengths: rect };
+        let c1 = Hypercuboid {
             edge_lengths: [1.0.try_into().expect("test value is a positive real"); 2],
         };
         let theta = Angle::from(0.0);
@@ -440,8 +440,8 @@ mod tests {
 
     )]
     fn test_aabbs_collide(v: [f64; 3], aabb: [PositiveReal; 3]) {
-        let c0 = Cuboid { edge_lengths: aabb };
-        let c1 = Cuboid {
+        let c0 = Hypercuboid { edge_lengths: aabb };
+        let c1 = Hypercuboid {
             edge_lengths: [1.0.try_into().expect("test value is a positive real"); 3],
         };
         let theta = Versor::identity();
