@@ -4,7 +4,7 @@
 //! Implement order parameters relating to the density of the system.
 
 use hoomd_geometry::shape::{Hypercuboid, EightEight};
-use hoomd_manifold::Hyperboloid;
+use hoomd_manifold::Hyperbolic;
 use hoomd_microstate::{
     Microstate, MicrostateBuilder, Transform,
     boundary::{GenerateGhosts, MaximumAllowableInteractionRange, Open, Periodic},
@@ -381,11 +381,11 @@ where
     }
 }
 
-impl<B, S> CorrelationFunction<B, S, Periodic<EightEight>, Hyperboloid<3>>
+impl<B, S> CorrelationFunction<B, S, Periodic<EightEight>, Hyperbolic<3>>
     for SpatialHistogram<1, f64>
 where
-    S: Position<Position = Hyperboloid<3>> + Copy + Default,
-    B: Transform<S> + Position<Position = Hyperboloid<3>> + Copy,
+    S: Position<Position = Hyperbolic<3>> + Copy + Default,
+    B: Transform<S> + Position<Position = Hyperbolic<3>> + Copy,
 {
     /// Calculate the radial distribution function (RDF), g(r), for a given microstate 
     /// with periodic boundary conditions.
@@ -416,7 +416,7 @@ where
         let mut distances: Vec<[f64; 1]> = vec![];
 
         let max_boundary = Periodic::new(
-            0.98,
+            boundary_max,
             EightEight {
                 skirt: microstate.sites()[0].properties.position().skirt(),
             },
@@ -427,16 +427,15 @@ where
                 .bodies(microstate.bodies().iter().map(|b| b.clone().item))
                 .try_build()
                 .expect("copy of existing valid microstate");
-        let mut all_ghosts: Vec<Hyperboloid<3>> = vec![];
+        let mut all_ghosts: Vec<Hyperbolic<3>> = vec![];
         for site_b in new_microstate.sites() {
             let ghosts =
                 GenerateGhosts::generate_ghosts(new_microstate.boundary(), &site_b.properties);
             for ghost in ghosts {
                 all_ghosts.push(*ghost.position());
-                //println!("{:?}", ghost.position())
             }
         }
-        let mut everyone_else: Vec<Hyperboloid<3>> = microstate
+        let mut everyone_else: Vec<Hyperbolic<3>> = microstate
             .sites()
             .iter()
             .map(|s| *s.properties.position())
@@ -536,7 +535,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hoomd_manifold::{Hyperboloid, Minkowski};
+    use hoomd_manifold::{Hyperbolic, Minkowski};
     use hoomd_microstate::{Body, MicrostateBuilder, boundary::Open};
     use hoomd_vector::Cartesian;
     use std::f64::consts::PI;
@@ -692,25 +691,25 @@ mod tests {
     }
 
     #[test]
-    fn rdf_hyperboloid() -> Result<(), Box<dyn std::error::Error>> {
+    fn rdf_hyperbolic() -> Result<(), Box<dyn std::error::Error>> {
         let microstate = MicrostateBuilder::with_boundary(Open)
             .bodies([
-                Body::point(Hyperboloid::from(Minkowski::from([
+                Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([
                     1.0,
                     0.0,
                     2.0_f64.sqrt(),
                 ]), 1.0)),
-                Body::point(Hyperboloid::from(Minkowski::from([
+                Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([
                     2.0,
                     0.0,
                     5.0_f64.sqrt(),
                 ]), 1.0)),
-                Body::point(Hyperboloid::from(Minkowski::from([
+                Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([
                     1.0,
                     1.0,
                     3.0_f64.sqrt(),
                 ]), 1.0)),
-                Body::point(Hyperboloid::from(Minkowski::from([
+                Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([
                     2.0,
                     1.0,
                     6.0_f64.sqrt(),
@@ -733,14 +732,14 @@ mod tests {
     }
 
     #[test]
-    fn rdf_hyperboloid_periodic() -> Result<(), Box<dyn std::error::Error>> {
+    fn rdf_hyperbolic_periodic() -> Result<(), Box<dyn std::error::Error>> {
         const EIGHTEIGHT: f64 = 2.448_452_447_678_076;
         let boundary = Periodic::new(1.0, EightEight { skirt: 1.0_f64 })?;
         let microstate = MicrostateBuilder::with_boundary(boundary)
             .bodies([
-                Body::point(Hyperboloid::<3>::from_polar_coordinates(EIGHTEIGHT - 0.2, 0.0, 1.0)),
-                Body::point(Hyperboloid::<3>::from_polar_coordinates(EIGHTEIGHT - 0.25, 0.0, 1.0)),
-                Body::point(Hyperboloid::<3>::from_polar_coordinates(
+                Body::point(Hyperbolic::<3>::from_polar_coordinates(EIGHTEIGHT - 0.2, 0.0, 1.0)),
+                Body::point(Hyperbolic::<3>::from_polar_coordinates(EIGHTEIGHT - 0.25, 0.0, 1.0)),
+                Body::point(Hyperbolic::<3>::from_polar_coordinates(
                     1.8,
                     0.01 + PI * 3.0 / 4.0,
                     1.0,
@@ -748,10 +747,10 @@ mod tests {
             ])
             .try_build()
             .expect("hard coded distribution should be valid");
-        let rdf_hist = SpatialHistogram::<1, f64>::rdf(&microstate, 0.0_f64, 1.0_f64, 2_usize)?;
+        let rdf_hist = SpatialHistogram::<1, f64>::rdf(&microstate, 0.01_f64, 1.01_f64, 2_usize)?;
         let ans = array![4_usize, 2_usize];
         assert_eq!(ans, rdf_hist.bin_counts);
-        assert_eq!(rdf_hist.bin_edges.slice(s![0, ..]), array![0.0, 0.5, 1.0]);
+        assert_eq!(rdf_hist.bin_edges.slice(s![0, ..]), array![0.01, 0.51, 1.01]);
 
         let rdf_hist_normalized = FloatHistogram::normalize(&rdf_hist);
         let ans_normed = array![2.0 / 3.0, 1.0 / 3.0];

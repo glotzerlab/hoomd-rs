@@ -6,7 +6,7 @@
 /// `hoomd-meshless-voronoi` implements meshless voronoi and power diagrams for
 /// finding nearest neighbors. The neighbor list struct [`NeighborList`] is
 /// implemented for microstates which have bodies of the type `Cartesian<2>`,
-/// `Cartesian<3>`, or `Hyperboloid<3>`.
+/// `Cartesian<3>`, or `Hyperbolic<3>`.
 
 mod local;
 mod voronoi_neighborlist;

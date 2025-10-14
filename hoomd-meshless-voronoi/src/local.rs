@@ -5,7 +5,7 @@
 
 use crate::{PDSeed, PowerDiagram, voronoi_neighborlist};
 use hoomd_geometry::shape::{Hypercuboid, EightEight};
-use hoomd_manifold::Hyperboloid;
+use hoomd_manifold::Hyperbolic;
 use hoomd_microstate::{
     Microstate,
     boundary::{GenerateGhosts, Open, Periodic},
@@ -114,12 +114,15 @@ impl<B, S, C> NeighborList<'_, B, S, C> {
 }
 
 pub trait DirectorField<B, S, C, M> {
+    /// Calculate the hexatic order $`\psi_6`$ for a given site index belonging
+    /// to a microstate.
     fn hexatic(
         &self,
         microstate: &Microstate<B, S, C>,
         site_index: Option<usize>,
     ) -> Result<Complex<f64>, Error>;
-    /// TODO: add description
+    /// Get a histrogram of hexatic orders $`\psi_6`$ across all body sites in a 
+    /// given microstate.
     fn orientational_order(
         &self,
         microstate: &Microstate<B, S, C>,
@@ -129,7 +132,7 @@ pub trait DirectorField<B, S, C, M> {
     ) -> Result<ComplexField, Error>;
 }
 
-/// TODO: documentation
+/// A [`SpatialHistogram`] with data type `Complex<f64>`.
 pub struct ComplexField {
     pub bin_edges: Array<f64, Dim<[usize; 1]>>,
     pub bounds: [f64; 2],
@@ -170,7 +173,7 @@ where
             None => Err(Error::InvalidSiteIndex),
         }
     }
-    /// TODO: description
+    /// TODO: description.
     #[inline]
     fn orientational_order(
         &self,
@@ -233,9 +236,9 @@ where
     }
 }
 
-impl<B, S, C> DirectorField<B, S, C, Hyperboloid<3>> for NeighborList<'_, B, S, C>
+impl<B, S, C> DirectorField<B, S, C, Hyperbolic<3>> for NeighborList<'_, B, S, C>
 where
-    S: Position<Position = Hyperboloid<3>>,
+    S: Position<Position = Hyperbolic<3>>,
 {
     /// Compute the hexatic director field at a point from the microstate.
     fn hexatic(
@@ -603,7 +606,7 @@ where
                 count += 1;
             }
         }
-        let power_diagram = PowerDiagram::<3>::build(&seeds_with_ghosts, simulation_box, 14_usize)?; //.expect("TODO");
+        let power_diagram = PowerDiagram::<3>::build(&seeds_with_ghosts, simulation_box, 14_usize)?;
         let nnlist = power_diagram.neighborlist();
 
         for elt in nnlist {
@@ -676,7 +679,7 @@ where
                 count += 1;
             }
         }
-        let power_diagram = PowerDiagram::<2>::build(&seeds_with_ghosts, simulation_box, 14_usize)?; //.expect("TODO");
+        let power_diagram = PowerDiagram::<2>::build(&seeds_with_ghosts, simulation_box, 14_usize)?; 
         let nnlist = power_diagram.neighborlist();
 
         for elt in nnlist {
@@ -707,15 +710,15 @@ where
 ///
 /// ```
 /// use hoomd_microstate::{Microstate, MicrostateBuilder, Body, property::Point, boundary::Open};
-/// use hoomd_manifold::{Hyperboloid, Minkowski};
+/// use hoomd_manifold::{Hyperbolic, Minkowski};
 /// use hoomd_meshless_voronoi::{GenerateNeighborList, NeighborList};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let microstate = MicrostateBuilder::with_boundary(Open)
-///     .bodies([Body::point(Hyperboloid::from(Minkowski::from([1.0, -2.0, 6.0_f64.sqrt()]),1.0)),
-///         Body::point(Hyperboloid::from(Minkowski::from([1.0, -1.0, 3.0_f64.sqrt()]),1.0)),
-///         Body::point(Hyperboloid::from(Minkowski::from([-1.0, -2.0, 6.0_f64.sqrt()]),1.0)),
-///         Body::point(Hyperboloid::from(Minkowski::from([-1.0, 1.0, 3.0_f64.sqrt()]),1.0))])
+///     .bodies([Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([1.0, -2.0, 6.0_f64.sqrt()]),1.0)),
+///         Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([1.0, -1.0, 3.0_f64.sqrt()]),1.0)),
+///         Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([-1.0, -2.0, 6.0_f64.sqrt()]),1.0)),
+///         Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([-1.0, 1.0, 3.0_f64.sqrt()]),1.0))])
 ///     .try_build()?;
 ///
 /// let nlist = NeighborList::from_microstate(&microstate)?;
@@ -728,11 +731,11 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<B, S> GenerateNeighborList<B, S, Open, Hyperboloid<3>> for NeighborList<'_, B, S, Open>
+impl<B, S> GenerateNeighborList<B, S, Open, Hyperbolic<3>> for NeighborList<'_, B, S, Open>
 where
-    S: Position<Position = Hyperboloid<3>>,
+    S: Position<Position = Hyperbolic<3>>,
 {
-    /// Compute the neighbor list from a microstate in `Hyperboloid<3>` with `Open`
+    /// Compute the neighbor list from a microstate in `Hyperbolic<3>` with `Open`
     /// boundary conditions.
     #[inline]
     fn from_microstate(
@@ -794,12 +797,12 @@ where
     }
 }
 
-impl<B, S> GenerateNeighborList<B, S, Periodic<EightEight>, Hyperboloid<3>>
+impl<B, S> GenerateNeighborList<B, S, Periodic<EightEight>, Hyperbolic<3>>
     for NeighborList<'_, B, S, Periodic<EightEight>>
 where
-    S: Position<Position = Hyperboloid<3>> + Copy + Default,
+    S: Position<Position = Hyperbolic<3>> + Copy + Default,
 {
-    /// Compute the neighbor list from a microstate in `Hyperboloid` with periodic
+    /// Compute the neighbor list from a microstate in `Hyperbolic` with periodic
     /// boundary conditions.
     #[inline]
     fn from_microstate(
@@ -809,11 +812,11 @@ where
         let to_seed = |id: &usize| {
             let coords = microstate.sites()[*id].properties.position().coordinates();
             let klein: [f64; 2] = [coords[0] / coords[2], coords[1] / coords[2]];
-            let prefactor = 1.0 / (2.0 * (1.0 - klein[0].powi(2) - klein[1].powi(2)).sqrt());
+            let prefactor = 1.0 / (2.0 * (f64::from(1.0 - klein[0].powi(2) - klein[1].powi(2))).sqrt());
             let seed_coords = [prefactor * klein[0], prefactor * klein[1]];
             let radius = (klein[0].powi(2) + klein[1].powi(2))
                 / (4.0 * (1.0 - klein[0].powi(2) - klein[1].powi(2)))
-                - 1.0 / (1.0 - klein[0].powi(2) - klein[1].powi(2)).sqrt();
+                - 1.0 / (f64::from(1.0 - klein[0].powi(2) - klein[1].powi(2))).sqrt();
             PDSeed {
                 coordinate: seed_coords,
                 weight: radius.powi(2),
@@ -839,11 +842,11 @@ where
                     ghost_coord[1] / ghost_coord[2],
                 ];
                 let prefactor =
-                    1.0 / (2.0 * (1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2)).sqrt());
+                    1.0 / (2.0 * (f64::from(1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2))).sqrt());
                 let ghost_seed_coords = [prefactor * ghost_klein[0], prefactor * ghost_klein[1]];
                 let ghost_radius = (ghost_klein[0].powi(2) + ghost_klein[1].powi(2))
                     / (4.0 * (1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2)))
-                    - 1.0 / (1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2)).sqrt();
+                    - 1.0 / (f64::from(1.0 - ghost_klein[0].powi(2) - ghost_klein[1].powi(2))).sqrt();
                 seeds_with_ghosts.push(PDSeed {
                     coordinate: ghost_seed_coords,
                     weight: ghost_radius,
@@ -868,7 +871,7 @@ where
         ];
 
         let power_diagram =
-            PowerDiagram::<2>::build(&seeds_with_ghosts, simulation_box_vertices, 14_usize)?; //.expect("TODO");
+            PowerDiagram::<2>::build(&seeds_with_ghosts, simulation_box_vertices, 14_usize)?; 
         let nnlist = power_diagram.neighborlist();
 
         for elt in nnlist {
@@ -896,9 +899,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::assert_relative_eq;
+    use approxim::assert_relative_eq;
     use hoomd_geometry::shape::Hypercuboid;
-    use hoomd_manifold::{Hyperboloid, Minkowski};
+    use hoomd_manifold::{Hyperbolic, Minkowski};
     use hoomd_microstate::{Body, MicrostateBuilder, boundary::Open, boundary::Periodic};
     use hoomd_vector::Cartesian;
 
@@ -977,25 +980,25 @@ mod tests {
     }
 
     #[test]
-    fn nlist_hyperboloid() -> Result<(), Box<dyn std::error::Error>> {
+    fn nlist_hyperbolic() -> Result<(), Box<dyn std::error::Error>> {
         let microstate = MicrostateBuilder::with_boundary(Open)
             .bodies([
-                Body::point(Hyperboloid::from(Minkowski::from([
+                Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([
                     1.0,
                     -2.0,
                     6.0_f64.sqrt(),
                 ]), 1.0)),
-                Body::point(Hyperboloid::from(Minkowski::from([
+                Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([
                     1.0,
                     -1.0,
                     3.0_f64.sqrt(),
                 ]), 1.0)),
-                Body::point(Hyperboloid::from(Minkowski::from([
+                Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([
                     -1.0,
                     -2.0,
                     6.0_f64.sqrt(),
                 ]),1.0)),
-                Body::point(Hyperboloid::from(Minkowski::from([
+                Body::point(Hyperbolic::from_minkowski_coordinates(Minkowski::from([
                     -1.0,
                     1.0,
                     3.0_f64.sqrt(),

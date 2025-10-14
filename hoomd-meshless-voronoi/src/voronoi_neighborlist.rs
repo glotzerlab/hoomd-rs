@@ -316,7 +316,7 @@ impl PowerDiagram<3> {
             let prev_is_below = orient3d(bisect_a, bisect_b, bisect_c, vertex_p1) > 0.0;
             let current_is_below = orient3d(bisect_a, bisect_b, bisect_c, vertex_p2) > 0.0;
 
-            let origin_below = orient3d(bisect_a, bisect_b, bisect_c, pt_d) > 0.0; //orient2d(Coord{x:x_1,y:y_1}, Coord{x:x_2,y:y_2}, Coord{x:0.0,y:0.0}) > 0.0;
+            let origin_below = orient3d(bisect_a, bisect_b, bisect_c, pt_d) > 0.0; 
             let prev_is_inside =
                 (prev_is_below && origin_below) || (!prev_is_below && !origin_below);
             let current_is_inside =

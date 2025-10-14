@@ -31,14 +31,13 @@ num_enum = { version = "0.7.2", default-features = false }
 rayon = { version = "1", optional = true }
 rstar = "0.12"
 kd-tree = "=0.6.1"
-approx = "0.5.1"
 robust = "1.2.0"
 
 [features]
 default = ["ibig", "rayon"]
 
 [dev-dependencies]
-approx.workspace = true
+approxim.workspace = true
 divan.workspace = true
 paste = "1.0.15"
 rstest.workspace = true

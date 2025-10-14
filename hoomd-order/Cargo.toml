@@ -21,7 +21,6 @@ hoomd-meshless-voronoi.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 rand.workspace = true
-libm = "0.2.11"
 num = "0.4.3"
 ndarray = "0.16.1"
 ahash = "0.8"
@@ -37,7 +36,7 @@ rstar = "0.12"
 default = ["ibig", "rayon"]
 
 [dev-dependencies]
-approx.workspace = true
+approxim.workspace = true
 divan.workspace = true
 paste = "1.0.15"
 rstest.workspace = true

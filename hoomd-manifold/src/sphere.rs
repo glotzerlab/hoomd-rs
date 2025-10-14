@@ -59,7 +59,7 @@ impl<const N: usize> Spherical<N> {
     pub fn from_cartesian_coordinates(point: Cartesian<N>, radius: f64) -> Spherical<N> {
         let rad = point.norm();
         assert_relative_eq!(rad, radius, epsilon=1e-12);
-        Sphere {
+        Spherical {
             point,
             radius,
         }
