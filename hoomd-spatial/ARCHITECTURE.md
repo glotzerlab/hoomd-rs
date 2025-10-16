@@ -1,69 +1,103 @@
-# Spatial Data Structures Subcrate – Architecture Overview
+# hoomd_spatial
 
-This subcrate provides specialized spatial data structures for particle systems. It is designed to be independent of system infrastructure while supporting both real and ghost particles.
+This crate provides specialized spatial data structures for particle systems. It is
+designed to be independent of system infrastructure while supporting both primary and
+ghost sites.
 
-## System Components
+## Traits
 
-- **Data Arrays:**
-  - **Sites:** Array of particle positions.
-  - **Ghosts:** Array for ghost particles.
-- **Particle Types:**
-  - Enumeration distinguishing between ghost and real particles.
+The spatial algorithms must be exposed as traits so that `Microstate` and simulation
+models can at least be generic on vector types. For example, the cell list works for
+Cartesian vectors while points in curved space must use an all-pairs algorithm. In the
+future, these traits allow the possibility for different data structures (i.e. AABB
+trees or neighbor lists) and other spatial algorithms useful in data analysis. 
+
+For a first draft, these traits are designed to enable Monte Carlo simulations.
+
+* `PointUpdate` describes a type where points can be inserted to and removed from
+  a data structure. Points are identified by key.
+* `PointsInBall` describes a type that can find all points (identified by key) that
+  *may* be in a given ball.
+
+The traits are generic on the key type. `Microstate` will use a key that identifies
+primary and ghost particles by index with an enum.
 
 ## Cell List Data Structure
 
 The cell list is the core data structure for neighbor search operations. It maps space
-into a Cartesian grid of cube cells and leverages hash maps for storage and lookup. The
-struct is independent of spatial dimension and works only for N-dimensional Cartesian space.
+into a Cartesian grid of cubic cells and leverages hash maps for storage and lookup. The
+struct is independent of spatial dimension and works only for N-dimensional Cartesian
+space.
+
+The use of hash maps on cell indices provides
+1) Efficient memory usage even for sparse systems (occasional use of `shrink_to_fit`
+   may be needed in such circumstances).
+2) One implementation that works for any shape of boundary. Cells are always cubic
+   and may overhang boundaries but will still correctly find all points that
+   match search queries.
 
 ### Members
 
-- **Contains:**
-  - **Cell Width**
-    Uses cube boxes to partition space. The cell size is user-defined and exposed as a parameter.
-  - **Primary Hash Map:**
-    Maps cell indices (keys, represented as an array of cell indices) to vectors of particle indices (values).
-    *Note: This structure may be extended to use tuples to distinguish between ghost and real particles.*
-  - **Secondary Hash Map:**
-    Provides a mapping from individual particle indices to their corresponding cell index.
+- **Origin:**
+  Set the origin of the cell grid. Will be used by parallel Monte Carlo algorithms.
+- **Cell Width:**
+  Uses cube boxes to partition space. The cell size is user-defined and exposed as
+  a parameter.
+- **Primary Hash Map:**
+  Maps cell indices (keys, represented as an array of cell indices) to vectors of
+  particle indices (values).
+- **Secondary Hash Map:**
+  Provides a mapping from individual particle indices to their corresponding cell
+  index.
 
 ### Methods and Operations
 
 - **Creation:**
-   - Requires only points and cell width. PBCs are implemented via ghosts - if ghosts
-     are provided we might have to store a tuple instead of just index (index, type enum).
+   - Requires only points and cell width. PBCs are implemented via ghosts provided
+     by the caller.
    - Mapping of coordinates to cells is done via:
     `cell = floor(x / width)` using array from fn
-   - This information gets encoded in two Hash Maps.
+   - This information gets encoded in the two Hash Maps.
 
 - **Locate Cell:**
-   - Identify the cell that contains the particle of interest based on its position or
-     tag.
+   - Identify the cell that contains the particle of interest based on its index.
 
 - **Neighbor Search:**
-   - Given a particle position and a ball radius cutoff, determine all neighboring cells to consider.
-   - Retrieve and filter candidate particles from these cells for potential interactions
-     based on cutoff.
+   - Given a position in space and a ball radius cutoff, determine all sites
+     *potentially* within the ball.
 
-- **Adding a Particle:**
+- **Adding a site:**
   - Insert the particle into the appropriate cell.
   - Update both hash maps accordingly.
 
-- **Removing a Particle:**
+- **Removing a site:**
   - Delete the particle entry from the relevant cell.
   - Update both hash maps accordingly.
 
-- **Moving (Translating) a Particle:**
+- **Translating a site:**
   - **If the particle crosses cell boundaries:**
     - Remove it from the old cell and add it to the new one.
   - **If the particle remains in the same cell:**
     - No action is required.
 
-- **Rebuilding the Cell List:**
-  - Provide a convenience method to rebuild both hash maps.
+## AllPairs Data Structure
 
-## Future Enhancements
+In curved space or in tiny simulations, the `AllPairs` type implements a no-op spatial
+data structure. Every query will always match all points.
 
-- **Parallelism Support:**
-  - Introduce an origin offset for translating cube coordinates, which will aid in parallel computation.
-  - Develop an efficient method for iterating over all particle indices within a given cell.
+There are two options to implement this:
+1) Track all points present with `insert`/`remove` and iterate over them in queries.
+2) Make `insert` and `remove` empty functions and instead return an enum member
+   indicating that the caller should loop over all pairs.
+
+The first is a cleaner API but adds overhead in tracking the point keys. TODO:
+benchmark this implementation and determine whether the 2nd method is worth the effort.
+
+## Neighbor iteration protocols
+
+Looping over all neighbor cells is a complex operation. It is most naturally expressed
+in a for loop. The initial implementation will build a Vec result. This will establish
+a performance baseline. (TODO: document that baseline here). There are several
+optimizations that can be made on that baseline (reduce allocations, iterator
+approaches, and possibly others). TODO: after benchmarking these alternatives, document
+which method is selected here.
