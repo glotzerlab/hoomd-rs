@@ -28,6 +28,7 @@ pub use cutoff_pair::CutoffPair;
 pub use cutoff_pair_overlap::CutoffPairOverlap;
 pub use external_overlap::ExternalOverlap;
 pub use external_type::External;
+use hoomd_vector::Vector;
 pub use zero::Zero;
 
 /// Compute the total energy of a potential applied to the microstate.
@@ -537,7 +538,7 @@ The generic type names are:
 
 TODO: Add intra-doc links.
 */
-pub trait SiteForce<V, B, S, C> {
+pub trait SiteForce<V: Vector, B, S, C> {
     /** Compute the force.
     
     `microstate` describes the system configuration and `site` describes
@@ -621,3 +622,18 @@ pub trait PairSiteTorque<V, S> {
 
 
 // TODO: More doc examples for all implementors.
+
+
+// TODO: Move this implementation elsewhere
+impl<V, B, S, C, E1, E2> SiteForce<V, B, S, C> for (E1, E2)
+where
+    E1: SiteForce<V, B, S, C>,
+    E2: SiteForce<V, B, S, C>,
+    V: Vector   // TODO: necessary?
+{
+    #[inline]
+    fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V {
+        self.0.net_force_on_site(microstate, site)
+            + self.1.net_force_on_site(microstate, site)
+    }
+}
