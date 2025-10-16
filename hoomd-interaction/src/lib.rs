@@ -487,32 +487,6 @@ pub trait DeltaEnergyRemove<B, S, C> {
     ) -> f64;
 }
 
-/** Compute the non-pairwise force on a single site.
-
-The generic type names are:
-* `V`: The Vector type.
-* `S`: The Site properties type.
-
-TODO: Add intra-doc links.
-*/
-pub trait SiteSingleForce<V, S> {
-    /// Evaluate the force on a single site.
-    fn site_single_force(&self, site_properties: &S) -> V;
-}
-
-/** Compute the pairwise force on one site from another site.
-
-The generic type names are:
-* `V`: The Vector type.
-* `S`: The Site properties type.
-
-TODO: Add intra-doc links.
-*/
-pub trait SitePairForce<V, S> {
-    /// Evaluate the force on site a from site b.
-    fn site_pair_force(&self, a: &S, b: &S) -> V;
-}
-
 /** Compute the net force on a single body.
 
 The generic type names are:
@@ -531,52 +505,6 @@ pub trait NetBodyForce<V, B, S, C> {
     */
     #[must_use]
     fn net_force_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V;
-}
-
-/** Compute the net force on a single site.
-
-The generic type names are:
-* `V`: The Vector type.
-* `B`: The Body properties type.
-* `S`: The Site properties type.
-* `C`: The boundary conditions type.
-
-TODO: Add intra-doc links.
-*/
-pub trait NetSiteForce<V, B, S, C> {
-    /** Compute the net force.
-    
-    `microstate` describes the system configuration and `site` describes
-    a site for which the net force is calculated.
-    */
-    #[must_use]
-    fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V;
-}
-
-/** Compute the non-pairwise torque on a single site.
- * 
-The generic type names are:
-* `V`: The Vector type.
-* `S`: The Site properties type.
-
-TODO: Add intra-doc links.
-*/
-pub trait SiteSingleTorque<V, S> {
-    /// Evaluate the torque on a single site.
-    fn site_single_torque(&self, site_properties: &S) -> V;
-}
-
-/** Compute the pairwise torque on one site from another site.
-
-The generic type names are:
-* `V`: The Vector type.
-* `S`: The Site properties type.
-
-TODO: Add intra-doc links.
-*/
-pub trait SitePairTorque<V, S> {
-    /// Evaluate the torque torque on site a from site b.
-    fn site_pair_torque(&self, a: &S, b: &S) -> V;
 }
 
 /** Compute the net torque on a single body.
@@ -599,6 +527,26 @@ pub trait NetBodyTorque<V, B, S, C> {
     fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V;
 }
 
+/** Compute the net force on a single site.
+
+The generic type names are:
+* `V`: The Vector type.
+* `B`: The Body properties type.
+* `S`: The Site properties type.
+* `C`: The boundary conditions type.
+
+TODO: Add intra-doc links.
+*/
+pub trait NetSiteForce<V, B, S, C> {
+    /** Compute the net force.
+    
+    `microstate` describes the system configuration and `site` describes
+    a site for which the net force is calculated.
+    */
+    #[must_use]
+    fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V;
+}
+
 /** Compute the net torque on a single site.
 
 The generic type names are:
@@ -618,5 +566,58 @@ pub trait NetSiteTorque<V, B, S, C> {
     #[must_use]
     fn net_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V;
 }
+
+/** Compute the non-pairwise force on a single site.
+
+The generic type names are:
+* `V`: The Vector type.
+* `S`: The Site properties type.
+
+TODO: Add intra-doc links.
+*/
+pub trait SiteSingleForce<V, S> {
+    /// Evaluate the force on a single site.
+    fn site_single_force(&self, site_properties: &S) -> V;
+}
+
+/** Compute the non-pairwise torque on a single site.
+ * 
+The generic type names are:
+* `V`: The Vector type.
+* `S`: The Site properties type.
+
+TODO: Add intra-doc links.
+*/
+pub trait SiteSingleTorque<V, S> {
+    /// Evaluate the torque on a single site.
+    fn site_single_torque(&self, site_properties: &S) -> V;
+}
+
+/** Compute the pairwise force on one site from another site.
+
+The generic type names are:
+* `V`: The Vector type.
+* `S`: The Site properties type.
+
+TODO: Add intra-doc links.
+*/
+pub trait SitePairForce<V, S> {
+    /// Evaluate the force on site a from site b.
+    fn site_pair_force(&self, a: &S, b: &S) -> V;
+}
+
+/** Compute the pairwise torque on one site from another site.
+
+The generic type names are:
+* `V`: The Vector type.
+* `S`: The Site properties type.
+
+TODO: Add intra-doc links.
+*/
+pub trait SitePairTorque<V, S> {
+    /// Evaluate the torque torque on site a from site b.
+    fn site_pair_torque(&self, a: &S, b: &S) -> V;
+}
+
 
 // TODO: More doc examples for all implementors.
