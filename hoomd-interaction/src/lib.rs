@@ -527,7 +527,7 @@ pub trait NetBodyTorque<V, B, S, C> {
     fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V;
 }
 
-/** Compute the net force on a single site.
+/** Compute the force on a single site.
 
 The generic type names are:
 * `V`: The Vector type.
@@ -537,17 +537,17 @@ The generic type names are:
 
 TODO: Add intra-doc links.
 */
-pub trait NetSiteForce<V, B, S, C> {
-    /** Compute the net force.
+pub trait SiteForce<V, B, S, C> {
+    /** Compute the force.
     
     `microstate` describes the system configuration and `site` describes
-    a site for which the net force is calculated.
+    a site for which the force is calculated.
     */
     #[must_use]
     fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V;
 }
 
-/** Compute the net torque on a single site.
+/** Compute the torque on a single site.
 
 The generic type names are:
 * `V`: The Vector type.
@@ -557,11 +557,11 @@ The generic type names are:
 
 TODO: Add intra-doc links.
 */
-pub trait NetSiteTorque<V, B, S, C> {
-    /** Compute the net torque.
+pub trait SiteTorque<V, B, S, C> {
+    /** Compute the torque.
     
     `microstate` describes the system configuration and `site` describes
-    a site for which the net torque is calculated.
+    a site for which the torque is calculated.
     */
     #[must_use]
     fn net_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V;
@@ -575,7 +575,7 @@ The generic type names are:
 
 TODO: Add intra-doc links.
 */
-pub trait SiteSingleForce<V, S> {
+pub trait ExternalSiteForce<V, S> {
     /// Evaluate the force on a single site.
     fn site_single_force(&self, site_properties: &S) -> V;
 }
@@ -588,7 +588,7 @@ The generic type names are:
 
 TODO: Add intra-doc links.
 */
-pub trait SiteSingleTorque<V, S> {
+pub trait ExternalSiteTorque<V, S> {
     /// Evaluate the torque on a single site.
     fn site_single_torque(&self, site_properties: &S) -> V;
 }
@@ -601,7 +601,7 @@ The generic type names are:
 
 TODO: Add intra-doc links.
 */
-pub trait SitePairForce<V, S> {
+pub trait PairSiteForce<V, S> {
     /// Evaluate the force on site a from site b.
     fn site_pair_force(&self, a: &S, b: &S) -> V;
 }
@@ -614,7 +614,7 @@ The generic type names are:
 
 TODO: Add intra-doc links.
 */
-pub trait SitePairTorque<V, S> {
+pub trait PairSiteTorque<V, S> {
     /// Evaluate the torque torque on site a from site b.
     fn site_pair_torque(&self, a: &S, b: &S) -> V;
 }

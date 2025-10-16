@@ -3,7 +3,7 @@
 
 //! Implement `External`
 
-use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, NetBodyForce, NetSiteForce, SiteEnergy, SiteSingleForce, TotalEnergy};
+use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, NetBodyForce, SiteForce, SiteEnergy, ExternalSiteForce, TotalEnergy};
 use hoomd_microstate::{boundary::Wrap, property::Position, Body, Microstate, Site, Transform};
 use hoomd_vector::Vector;
 
@@ -265,7 +265,7 @@ impl<V, B, S, C, E> NetBodyForce<V, B, S, C> for External<E>
 where
     V: Vector + Default,
     S: Position<Position = V>,
-    E: SiteSingleForce<V, S>,
+    E: ExternalSiteForce<V, S>,
 {
     #[inline]
     fn net_force_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V {
@@ -277,11 +277,11 @@ where
     }
 }
 
-impl<V, B, S, C, E> NetSiteForce<V, B, S, C> for External<E>
+impl<V, B, S, C, E> SiteForce<V, B, S, C> for External<E>
 where
     V: Vector + Default,
     S: Position<Position = V>,
-    E: SiteSingleForce<V, S>,
+    E: ExternalSiteForce<V, S>,
 {
     #[inline]
     fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V {

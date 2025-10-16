@@ -3,7 +3,7 @@
 
 //! Implement [`Linear`]
 
-use crate::SiteSingleForce;
+use crate::ExternalSiteForce;
 
 use super::super::SiteEnergy;
 use hoomd_microstate::property::Position;
@@ -100,7 +100,7 @@ where
     }
 }
 
-impl<V, S> SiteSingleForce<V, S> for Linear<V>
+impl<V, S> ExternalSiteForce<V, S> for Linear<V>
 where
     V: InnerProduct,
     S: Position<Position = V>,

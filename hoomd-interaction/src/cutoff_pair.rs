@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `CutoffPair`
-use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, pairwise::IsotropicForce, NetBodyForce, NetSiteForce, SitePairEnergy, SitePairForce, TotalEnergy};
+use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, pairwise::IsotropicForce, NetBodyForce, SiteForce, SitePairEnergy, PairSiteForce, TotalEnergy};
 use hoomd_microstate::{Body, Microstate, Site, Transform, boundary::Wrap, property::Position};
 use hoomd_vector::{Cartesian, InnerProduct, Vector, Metric};
 
@@ -166,7 +166,7 @@ impl<E> CutoffPair<E> {
     #[inline]
     pub fn site_pair_force<V, S>(&self, a: &Site<S>, b: &Site<S>) -> V
     where
-        E: SitePairForce<V, S>,
+        E: PairSiteForce<V, S>,
         S: Position<Position = V>,
         V: Vector + Default + InnerProduct + Metric,
     {
@@ -498,7 +498,7 @@ where
     V: Vector + Default + InnerProduct + Metric,
     B: Transform<S>,
     S: Position<Position = V>,
-    E: SitePairForce<V, S>,
+    E: PairSiteForce<V, S>,
 {
     #[inline]
     fn net_force_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V {
@@ -516,12 +516,12 @@ where
 /** Compute the net cutoff pairwise force on a single site.
 TODO: Add example.
 */
-impl<V, B, S, C, E> NetSiteForce<V, B, S, C> for CutoffPair<E>
+impl<V, B, S, C, E> SiteForce<V, B, S, C> for CutoffPair<E>
 where
     V: Vector + Default + InnerProduct + Metric,
     B: Transform<S>,
     S: Position<Position = V>,
-    E: SitePairForce<V, S>,
+    E: PairSiteForce<V, S>,
 {
     #[inline]
     fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V {
