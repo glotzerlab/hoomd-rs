@@ -8,10 +8,12 @@
     html_logo_url = "https://hoomd-blue.readthedocs.io/en/latest/_static/hoomdblue-logo-favicon.svg"
 )]
 
-//! Implements spatial data structures for efficient neighbor finding.
+//! Spatial data structures.
+//!
+//! TODO: Document
 
 use hoomd_vector::Cartesian;
-use std::{cmp::Eq, hash::Hash, collections::HashMap};
+use std::{array, cmp::Eq, hash::Hash, collections::HashMap};
 
 pub trait PointUpdate<P, K> {
     /// Insert a point identified by a key.
@@ -252,7 +254,7 @@ pub struct CellList<K, const D: usize> {
 // }
 
 impl<K, const D: usize> CellList<K, D> where
-K: Eq + Hash
+K: Copy + Eq + Hash
 {
     /// Compute the cell index given a position in space.
     #[inline]
@@ -329,11 +331,27 @@ K: Eq + Hash
         self.particle_indices.shrink_to_fit();
         self.cell_index.shrink_to_fit();
     }
-  }
+
+    /// Common logic needed to implement `points_potentially_in_ball` .
+    #[inline]
+    fn nearby_points_detail(&self, position: &Cartesian<D>, stencil: &[[i64; D]]) -> Vec<K> {
+        let center = self.cell_index_from_position(position);
+        let mut result = Vec::new();
+        
+        for offset in stencil {
+            let cell_index = array::from_fn(|i| center[i] + offset[i]);
+            if let Some(keys) = self.particle_indices.get(&cell_index) {
+                result.extend(keys);
+            }
+        }
+
+        result
+    }
+}
 
 
 impl<K, const D: usize> PointUpdate<Cartesian<D>, K> for CellList<K, D> where
-K: Clone + Eq + Hash {
+K: Copy + Eq + Hash {
     /// Add particle to the cell list. If the particle is already in the cell list,
     /// it will update its position in the cell list.
     ///
@@ -371,14 +389,14 @@ K: Clone + Eq + Hash {
     #[inline]
     fn insert(&mut self, key: K, position: Cartesian<D>) {
         let cell_idx = self.cell_index_from_position(&position);
-        let old_cell_index = self.cell_index.insert(key.clone(), cell_idx);
+        let old_cell_index = self.cell_index.insert(key, cell_idx);
         // This checks if old_cell_index is None or if it is different from the new cell index.
         if old_cell_index != Some(cell_idx) {
             // Add the particle index to the new cell index vector.
             self.particle_indices
                 .entry(cell_idx)
                 .or_default()
-                .push(key.clone());
+                .push(key);
 
             if let Some(old_cell_index) = old_cell_index {
                 // If the particle was in a different cell, we need to remove it from the old cell.
@@ -444,6 +462,25 @@ K: Clone + Eq + Hash {
     fn clear(&mut self) {
         self.cell_index.clear();
         self.particle_indices.clear();
+    }
+}
+
+impl<K> PointsInBall<Cartesian<2>, K> for CellList<K, 2> where
+K: Copy + Eq + Hash
+{
+    #[inline]
+    fn points_potentially_in_ball(&self, position: &Cartesian<2>, radius: f64) -> Vec<K> {
+        assert!(radius <= self.cell_width, "search radius must be less than or equal to the cell width");
+        let stencil = [[0, 0],
+                       [0, -1],
+                       [0, 1],
+                       [-1, 0],
+                       [1, 0],
+                       [-1, -1],
+                       [-1, 1],
+                       [1, 1],
+                       [1, -1]];
+        self.nearby_points_detail(position, &stencil)
     }
 }
 
@@ -613,9 +650,7 @@ mod tests {
     mod cell_list {
     use super::*;
     use rand::{Rng, SeedableRng, distr::{Distribution, Uniform}, rngs::StdRng};
-    use hoomd_vector::distribution::Ball;
-
-    const N_STEPS: usize = 65536;
+    use hoomd_vector::{distribution::Ball, Metric};
 
     #[test]
     fn test_cell_index() {
@@ -796,6 +831,7 @@ mod tests {
 
     #[test]
     fn consistency() {
+        const N_STEPS: usize = 65_536;
         let mut rng = StdRng::seed_from_u64(0);
         let mut reference = HashMap::new();
 
@@ -836,6 +872,33 @@ mod tests {
         // Ensure that there are no extra values in particle_indices.
         let total = cell_list.particle_indices.values().map(Vec::len).sum();
         assert_eq!(cell_list.cell_index.len(), total);
+    }
+
+    #[test]
+    fn points_in_ball_2d() {
+        let mut rng = StdRng::seed_from_u64(0);
+        let mut reference = Vec::new();
+
+        let cell_width = 1.0;
+        let mut cell_list = CellList::with_cell_width(cell_width);
+        let position_distribution = Ball { radius: 20.0.try_into().expect("hardcoded value should be positive") };
+
+        for key in 0..2048 {
+            let position: Cartesian<2> = position_distribution.sample(&mut rng);
+
+            cell_list.insert(key, position);
+            reference.push(position);
+        }
+
+        for p_i in &reference {
+            let potential_neighbors = cell_list.points_potentially_in_ball(p_i, cell_width);
+
+            for (j, p_j) in reference.iter().enumerate() {
+                if p_i.distance(p_j) <= cell_width {
+                    assert!(potential_neighbors.contains(&j));
+                }
+            }
+        }
     }
 
     // #[test]
