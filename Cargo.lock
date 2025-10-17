@@ -3075,7 +3075,7 @@ name = "hoomd-spatial"
 version = "0.0.0"
 dependencies = [
  "hoomd-vector",
- "rstest",
+ "rand 0.9.2",
 ]
 
 [[package]]

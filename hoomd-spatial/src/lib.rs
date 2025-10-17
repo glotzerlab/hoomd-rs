@@ -282,40 +282,15 @@ K: Eq + Hash
         }
     }
 
-    /// Returns a cell index for a given particle index.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_spatial::CellList;
-    /// use hoomd_vector::Cartesian;
-    ///
-    /// // Create some sample 2D Cartesian positions.
-    /// let positions = vec![
-    ///     Cartesian {
-    ///         coordinates: [0.2, 0.3],
-    ///     },
-    ///     Cartesian {
-    ///         coordinates: [0.8, 1.3],
-    ///     },
-    ///     Cartesian {
-    ///         coordinates: [8.5, 9.5],
-    ///     },
-    /// ];
-    /// // Indices of particles corresponding to positions.
-    /// let indices = vec![0, 1, 2];
-    /// // Define the cell width.
-    /// let cell_width = 1.0;
-    /// // Build the cell list from positions.
-    /// let cell_list = CellList::<2>::new(cell_width, &positions, &indices);
-    ///
-    /// // Get the cell index for the first particle.
-    /// let cell_index = cell_list.cell_index(0).unwrap();
-    /// ```
     #[inline]
     #[must_use]
-    pub fn cell_index(&self, particle_index: &K) -> Option<&[i64; D]> {
-        self.cell_index.get(particle_index)
+    pub fn with_cell_width_and_origin(cell_width: f64, origin: Cartesian<D>) -> Self {
+        Self {
+            cell_width,
+            particle_indices: HashMap::new(),
+            cell_index: HashMap::new(),
+            origin,
+        }
     }
 
     /// Shrink both hashmaps in the cell list to fit their current capacity.
@@ -404,7 +379,7 @@ K: Clone + Eq + Hash {
                 .entry(cell_idx)
                 .or_default()
                 .push(key.clone());
-            // TODO: Does this duplicate?
+
             if let Some(old_cell_index) = old_cell_index {
                 // If the particle was in a different cell, we need to remove it from the old cell.
                 self.particle_indices
@@ -568,243 +543,340 @@ K: Clone + Eq + Hash {
 mod tests {
     use super::*;
 
+    // #[test]
+    // fn builder_new_has_empty_state() {
+    //     let cell_width = 1.0;
+    //     let builder = CellList::<2>::builder(cell_width);
+    //     assert_eq!(builder.cell_width, cell_width); // from Default
+    //     assert!(builder.positions.is_empty());
+    //     assert!(builder.indices.is_empty());
+    // }
+
+    // #[test]
+    // fn builder_with_positions_and_indices_works() {
+    //     let positions = vec![
+    //         Cartesian {
+    //             coordinates: [0.0, 0.0],
+    //         },
+    //         Cartesian {
+    //             coordinates: [1.0, 1.0],
+    //         },
+    //     ];
+    //     let indices = vec![0, 1];
+    //     let builder = CellList::<2>::builder(1.0).with_positions_and_indices(&positions, &indices);
+
+    //     assert_eq!(builder.positions, positions);
+    //     assert_eq!(builder.indices, indices);
+    // }
+
+    // #[test]
+    // fn builder_build_creates_celllist() {
+    //     let positions = vec![
+    //         Cartesian {
+    //             coordinates: [0.5, 0.5],
+    //         },
+    //         Cartesian {
+    //             coordinates: [1.5, 1.5],
+    //         },
+    //     ];
+    //     let indices = vec![0, 1];
+
+    //     let cell_list = CellList::<2>::builder(1.0)
+    //         .with_positions_and_indices(&positions, &indices)
+    //         .build();
+
+    //     assert_eq!(cell_list.cell_width, 1.0);
+    //     assert_eq!(cell_list.cell_index.len(), 2);
+    //     assert_eq!(cell_list.particle_indices.len(), 2);
+    // }
+
+    // #[test]
+    // fn builder_can_chain_methods() {
+    //     let cell_list = CellList::<2>::builder(1.0)
+    //         .with_positions_and_indices(
+    //             &vec![
+    //                 Cartesian {
+    //                     coordinates: [0.5, 0.5],
+    //                 },
+    //                 Cartesian {
+    //                     coordinates: [2.1, 2.9],
+    //                 },
+    //             ],
+    //             &vec![5, 9],
+    //         )
+    //         .build();
+
+    //     assert_eq!(cell_list.cell_index.get(&5).unwrap(), &[0, 0]);
+    //     assert_eq!(cell_list.cell_index.get(&9).unwrap(), &[2, 2]);
+    // }
+
+    mod cell_list {
+    use super::*;
+    use rand::{Rng, SeedableRng, distr::{Distribution, Uniform}, rngs::StdRng};
+    use hoomd_vector::distribution::Ball;
+
+    const N_STEPS: usize = 65536;
+
     #[test]
-    fn builder_new_has_empty_state() {
+    fn test_cell_index() {
+        let cell_list = CellList::<usize, 3>::with_cell_width(2.0);
+        assert_eq!(cell_list.cell_index_from_position(&[0.0, 0.0, 0.0].into()), [0, 0, 0]);
+        assert_eq!(cell_list.cell_index_from_position(&[2.0, 0.0, 0.0].into()), [1, 0, 0]);
+        assert_eq!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()), [0, 1, 0]);
+        assert_eq!(cell_list.cell_index_from_position(&[0.0, 0.0, 2.0].into()), [0, 0, 1]);
+        assert_eq!(cell_list.cell_index_from_position(&[-41.5, 18.5, -0.125].into()), [-21, 9, -1]);
+
+        let cell_list = CellList::<usize, 3>::with_cell_width_and_origin(2.0, [-4.0, 2.0, 8.0].into());
+        assert_eq!(cell_list.cell_index_from_position(&[0.0, 0.0, 0.0].into()), [2, -1, -4]);
+        assert_eq!(cell_list.cell_index_from_position(&[2.0, 0.0, 0.0].into()), [3, -1, -4]);
+        assert_eq!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()), [2, 0, -4]);
+        assert_eq!(cell_list.cell_index_from_position(&[0.0, 0.0, 2.0].into()), [2, -1, -3]);
+        assert_eq!(cell_list.cell_index_from_position(&[-41.5, 18.5, -0.125].into()), [-19, 8, -5]);
+    }
+    
+    #[test]
+    fn test_insert_one() {
         let cell_width = 1.0;
-        let builder = CellList::<2>::builder(cell_width);
-        assert_eq!(builder.cell_width, cell_width); // from Default
-        assert!(builder.positions.is_empty());
-        assert!(builder.indices.is_empty());
+        let mut cell_list = CellList::with_cell_width(cell_width);
+
+        cell_list.insert(0, Cartesian::from([0.125, 0.25]));
+
+        assert_eq!(cell_list.cell_index.get(&0), Some(&[0, 0]));
+
+        let keys = cell_list.particle_indices.get(&[0, 0]);
+        assert!(keys.is_some());
+        if let Some(keys) = keys {
+            assert_eq!(keys.len(), 1);
+            assert!(keys.contains(&0));
+        }
     }
 
     #[test]
-    fn builder_with_positions_and_indices_works() {
-        let positions = vec![
-            Cartesian {
-                coordinates: [0.0, 0.0],
-            },
-            Cartesian {
-                coordinates: [1.0, 1.0],
-            },
-        ];
-        let indices = vec![0, 1];
-        let builder = CellList::<2>::builder(1.0).with_positions_and_indices(&positions, &indices);
-
-        assert_eq!(builder.positions, positions);
-        assert_eq!(builder.indices, indices);
-    }
-
-    #[test]
-    fn builder_build_creates_celllist() {
-        let positions = vec![
-            Cartesian {
-                coordinates: [0.5, 0.5],
-            },
-            Cartesian {
-                coordinates: [1.5, 1.5],
-            },
-        ];
-        let indices = vec![0, 1];
-
-        let cell_list = CellList::<2>::builder(1.0)
-            .with_positions_and_indices(&positions, &indices)
-            .build();
-
-        assert_eq!(cell_list.cell_width, 1.0);
-        assert_eq!(cell_list.cell_index.len(), 2);
-        assert_eq!(cell_list.particle_indices.len(), 2);
-    }
-
-    #[test]
-    fn builder_can_chain_methods() {
-        let cell_list = CellList::<2>::builder(1.0)
-            .with_positions_and_indices(
-                &vec![
-                    Cartesian {
-                        coordinates: [0.5, 0.5],
-                    },
-                    Cartesian {
-                        coordinates: [2.1, 2.9],
-                    },
-                ],
-                &vec![5, 9],
-            )
-            .build();
-
-        assert_eq!(cell_list.cell_index.get(&5).unwrap(), &[0, 0]);
-        assert_eq!(cell_list.cell_index.get(&9).unwrap(), &[2, 2]);
-    }
-
-    #[test]
-    fn test_add_particle() {
+    fn test_insert_many() {
         let cell_width = 1.0;
-        let positions = vec![Cartesian {
-            coordinates: [0.2, 0.3],
-        }];
-        let indices = vec![0]; // Particle index corresponding to the position.
-        let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
+        let mut cell_list = CellList::with_cell_width(cell_width);
 
-        let new_position = Cartesian {
-            coordinates: [1.2, 1.3],
-        }; // cell index [1,1]
-        let new_index: usize = 1; // New particle index.
-        cell_list.insert(&new_position, &new_index);
+        cell_list.insert(0, Cartesian::from([0.125, 0.25]));
+        cell_list.insert(1, Cartesian::from([0.995, 0.897]));
+        cell_list.insert(2, Cartesian::from([-0.125, 3.25]));
 
-        let cell_idx_new = cell_list.cell_index(new_index).unwrap();
-        let expected_cell_idx = CellList::<2>::cell_index_from_position(cell_width, &new_position);
-        assert_eq!(*cell_idx_new, expected_cell_idx);
+        assert_eq!(cell_list.cell_index.get(&0), Some(&[0, 0]));
+        assert_eq!(cell_list.cell_index.get(&1), Some(&[0, 0]));
+        assert_eq!(cell_list.cell_index.get(&2), Some(&[-1, 3]));
 
-        let idx_in_new_cell = cell_list.particle_indices.get(&expected_cell_idx).unwrap();
-        assert!(idx_in_new_cell.contains(&new_index));
+        let keys = cell_list.particle_indices.get(&[0, 0]);
+        assert!(keys.is_some());
+        if let Some(keys) = keys {
+            assert_eq!(keys.len(), 2);
+            assert!(keys.contains(&0));
+            assert!(keys.contains(&1));
+        }
+
+        let keys = cell_list.particle_indices.get(&[-1, 3]);
+        assert!(keys.is_some());
+        if let Some(keys) = keys {
+            assert_eq!(keys.len(), 1);
+            assert!(keys.contains(&2));
+        }
     }
 
     #[test]
-    fn test_translate_particle() {
+    fn test_insert_again_same() {
         let cell_width = 1.0;
-        let positions = vec![
-            Cartesian {
-                coordinates: [0.2, 0.3],
-            }, // initially in cell [0,0]
-            Cartesian {
-                coordinates: [1.2, 0.3],
-            }, // in cell [1,0]
-        ];
-        let indices = vec![0, 1]; // Particle indices corresponding to positions.
-        let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
+        let mut cell_list = CellList::with_cell_width(cell_width);
 
-        // Translate first particle to a new position in a different cell.
-        let new_position = Cartesian {
-            coordinates: [1.1, 1.2],
-        }; // expected cell [1,1]
-        cell_list.translate_particle(0, new_position);
+        cell_list.insert(0, Cartesian::from([0.125, 0.25]));
+        cell_list.insert(0, Cartesian::from([0.25, 0.5]));
+        cell_list.insert(0, Cartesian::from([0.5, 0.75]));
 
-        let expected_cell_idx = CellList::<2>::cell_index_from_position(cell_width, &new_position);
-        let cell_idx_after = cell_list.cell_index(0).unwrap();
-        assert_eq!(*cell_idx_after, expected_cell_idx);
+        assert_eq!(cell_list.cell_index.get(&0), Some(&[0, 0]));
+
+        let keys = cell_list.particle_indices.get(&[0, 0]);
+        assert!(keys.is_some());
+        if let Some(keys) = keys {
+            assert_eq!(keys.len(), 1);
+            assert!(keys.contains(&0));
+        }
     }
 
     #[test]
-    fn test_remove_particle() {
+    fn test_insert_again_different() {
         let cell_width = 1.0;
-        let positions = vec![
-            Cartesian {
-                coordinates: [0.2, 0.3],
-            },
-            Cartesian {
-                coordinates: [1.2, 1.3],
-            },
-        ];
-        let indices = vec![0, 1]; // Particle indices corresponding to positions.
-        let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
+        let mut cell_list = CellList::with_cell_width(cell_width);
 
-        // Cell id of particle to be removed
-        let cell_idx = cell_list.cell_index(0).copied();
+        cell_list.insert(0, Cartesian::from([0.125, 0.25]));
+        cell_list.insert(1, Cartesian::from([0.25, 0.5]));
+        cell_list.insert(1, Cartesian::from([-0.5, -0.75]));
 
-        // Remove the first particle (index 0).
-        cell_list.remove(0);
-        let removed_particle_cell_index = cell_list.cell_index(0);
-        assert!(removed_particle_cell_index.is_none());
+        assert_eq!(cell_list.cell_index.get(&0), Some(&[0, 0]));
+        assert_eq!(cell_list.cell_index.get(&1), Some(&[-1, -1]));
 
-        // The cell corresponding to the removed particle should not hold the index.
-        let particle_indices_in_old_cell = cell_list
-            .particle_indices
-            .get(&cell_idx.unwrap())
-            .expect("The cell index should exist");
-        assert!(
-            particle_indices_in_old_cell.is_empty(),
-            "Expected cell to be empty after removal"
-        );
+        let keys = cell_list.particle_indices.get(&[0, 0]);
+        assert!(keys.is_some());
+        if let Some(keys) = keys {
+            assert_eq!(keys.len(), 1);
+            assert!(keys.contains(&0));
+        }
+
+        let keys = cell_list.particle_indices.get(&[-1, -1]);
+        assert!(keys.is_some());
+        if let Some(keys) = keys {
+            assert_eq!(keys.len(), 1);
+            assert!(keys.contains(&1));
+        }
     }
 
     #[test]
-    fn test_remove_nonexistent_particle() {
+    fn test_remove() {
         let cell_width = 1.0;
-        let positions = vec![Cartesian {
-            coordinates: [0.2, 0.3],
-        }];
-        let indices = vec![0]; // Particle index corresponding to the position.
-        let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
-        // Attempt to remove a particle that doesn't exist.
-        cell_list.remove(42);
-        // check if cell lists contains the original particle.
-        let cell_idx = cell_list.cell_index(0).unwrap();
-        let particle_indices_in_cell = cell_list
-            .particle_indices
-            .get(cell_idx)
-            .expect("The cell index should exist");
-        assert!(
-            !particle_indices_in_cell.is_empty(),
-            "Cell should not be empty"
-        );
-        assert!(
-            particle_indices_in_cell.contains(&0),
-            "Cell should contain the original particle"
-        );
+        let mut cell_list = CellList::with_cell_width(cell_width);
+
+        cell_list.insert(0, Cartesian::from([0.125, 0.25]));
+        cell_list.insert(1, Cartesian::from([0.995, 0.897]));
+        cell_list.insert(2, Cartesian::from([-0.125, 3.25]));
+
+        cell_list.remove(&1);
+        cell_list.remove(&2);
+
+        assert_eq!(cell_list.cell_index.get(&0), Some(&[0, 0]));
+        assert_eq!(cell_list.cell_index.get(&1), None);
+        assert_eq!(cell_list.cell_index.get(&2), None);
+
+        let keys = cell_list.particle_indices.get(&[0, 0]);
+        assert!(keys.is_some());
+        if let Some(keys) = keys {
+            assert_eq!(keys.len(), 1);
+            assert!(keys.contains(&0));
+        }
+
+        let keys = cell_list.particle_indices.get(&[-1, 3]);
+        assert!(keys.is_some());
+        if let Some(keys) = keys {
+            assert_eq!(keys.len(), 0);
+        }
+    }
+
+    #[test]
+    fn test_clear() {
+        let cell_width = 1.0;
+        let mut cell_list = CellList::with_cell_width(cell_width);
+
+        cell_list.insert(0, Cartesian::from([0.125, 0.25]));
+        cell_list.insert(1, Cartesian::from([0.995, 0.897]));
+        cell_list.insert(2, Cartesian::from([-0.125, 3.25]));
+
+        cell_list.clear();
+
+        assert_eq!(cell_list.cell_index.len(), 0);
+        assert_eq!(cell_list.particle_indices.len(), 0);
     }
 
     #[test]
     fn test_shrink_to_fit() {
         let cell_width = 1.0;
-        let positions = vec![
-            Cartesian {
-                coordinates: [0.2, 0.3],
-            },
-            Cartesian {
-                coordinates: [2.2, 2.3],
-            },
-        ];
-        let indices = vec![0, 1]; // Particle indices corresponding to positions.
-        let mut cell_list = CellList::<2>::new(cell_width, &positions, &indices);
-        // check the size of the particle indices before removing any particles
-        assert_eq!(cell_list.particle_indices.len(), 2);
-        // Remove the first particle.
-        cell_list.remove(0);
-        // Check the size of the particle indices after removing a particle.
-        assert_eq!(cell_list.particle_indices.len(), 2);
-        // Now shrink to fit.
+        let mut cell_list = CellList::with_cell_width(cell_width);
+
+        cell_list.insert(0, Cartesian::from([0.125, 0.25]));
+        cell_list.insert(1, Cartesian::from([0.995, 0.897]));
+        cell_list.insert(2, Cartesian::from([-0.125, 3.25]));
+
+        cell_list.remove(&1);
+        cell_list.remove(&2);
+
         cell_list.shrink_to_fit();
-        // After shrinking, the size should be 1, as one particle was removed.
         assert_eq!(cell_list.particle_indices.len(), 1);
+
+        let keys = cell_list.particle_indices.get(&[0, 0]);
+        assert!(keys.is_some());
+        if let Some(keys) = keys {
+            assert_eq!(keys.len(), 1);
+            assert!(keys.contains(&0));
+        }
     }
 
     #[test]
-    fn test_find_potential_neighbor_indices() {
-        let cell_width = 1.0;
+    fn consistency() {
+        let mut rng = StdRng::seed_from_u64(0);
+        let mut reference = HashMap::new();
 
-        // Create some sample 2D Cartesian positions.
-        let p0 = Cartesian {
-            coordinates: [0.2, 0.3],
-        };
-        let p1 = Cartesian {
-            coordinates: [0.8, 1.3],
-        };
-        let p2 = Cartesian {
-            coordinates: [1.2, 0.2],
-        };
-        let p3 = Cartesian {
-            coordinates: [1.5, 1.5],
-        };
+        let cell_width = 0.5;
+        let mut cell_list = CellList::with_cell_width(cell_width);
+        let position_distribution = Ball { radius: 20.0.try_into().expect("hardcoded value should be positive") };
+        let key_distribution = Uniform::new(0, N_STEPS/4).expect("hardcoded distribution should be valid");
 
-        // Construct a vector of positions.
-        let positions = vec![p0, p1, p2, p3];
+        for _ in 0..N_STEPS {
+            // Add more keys than removing
+            if rng.random_bool(0.7) {
+                let position: Cartesian<3> = position_distribution.sample(&mut rng);
+                let key = key_distribution.sample(&mut rng);
 
-        let indices = vec![0, 1, 2, 3]; // Particle indices corresponding to positions.
+                cell_list.insert(key, position);
+                reference.insert(key, cell_list.cell_index_from_position(&position));
+            } else {
+                let key = key_distribution.sample(&mut rng);
+                cell_list.remove(&key);
+                reference.remove(&key);
+            }
+        }
 
-        // Build the CellList.
-        let cell_list = CellList::<2>::new(cell_width, &positions, &indices);
+        // Validate that cell_index contains the expected keys and that
+        // particle_indices is consistent.
+        assert_eq!(cell_list.cell_index.len(), reference.len());
+        for (reference_key,reference_value) in reference.drain() {
+            let value = cell_list.cell_index.get(&reference_key);
+            assert_eq!(value, Some(&reference_value));
 
-        // Define a cutoff radius.
-        let cutoff_radius = 10.5;
+            let keys = cell_list.particle_indices.get(&reference_value);
+            assert!(keys.is_some());
+            if let Some(keys) = keys {
+                assert!(keys.contains(&reference_key));
+            }
+        }
 
-        // Use p0 ([0.2, 0.3] falls in cell [0,0]) as the query position.
-        let potential_neighbor_indices = cell_list
-            .find_potential_neighbor_indices(&0, &cutoff_radius)
-            .collect::<Vec<_>>();
+        // Ensure that there are no extra values in particle_indices.
+        let total = cell_list.particle_indices.values().map(Vec::len).sum();
+        assert_eq!(cell_list.cell_index.len(), total);
+    }
 
-        // p0's index should appear.
-        assert!(potential_neighbor_indices.contains(&0));
-        assert!(potential_neighbor_indices.contains(&1));
-        assert!(potential_neighbor_indices.contains(&2));
-        assert!(potential_neighbor_indices.contains(&3));
+    // #[test]
+    // fn test_find_potential_neighbor_indices() {
+    //     let cell_width = 1.0;
+
+    //     // Create some sample 2D Cartesian positions.
+    //     let p0 = Cartesian {
+    //         coordinates: [0.2, 0.3],
+    //     };
+    //     let p1 = Cartesian {
+    //         coordinates: [0.8, 1.3],
+    //     };
+    //     let p2 = Cartesian {
+    //         coordinates: [1.2, 0.2],
+    //     };
+    //     let p3 = Cartesian {
+    //         coordinates: [1.5, 1.5],
+    //     };
+
+    //     // Construct a vector of positions.
+    //     let positions = vec![p0, p1, p2, p3];
+
+    //     let indices = vec![0, 1, 2, 3]; // Particle indices corresponding to positions.
+
+    //     // Build the CellList.
+    //     let cell_list = CellList::<2>::new(cell_width, &positions, &indices);
+
+    //     // Define a cutoff radius.
+    //     let cutoff_radius = 10.5;
+
+    //     // Use p0 ([0.2, 0.3] falls in cell [0,0]) as the query position.
+    //     let potential_neighbor_indices = cell_list
+    //         .find_potential_neighbor_indices(&0, &cutoff_radius)
+    //         .collect::<Vec<_>>();
+
+    //     // p0's index should appear.
+    //     assert!(potential_neighbor_indices.contains(&0));
+    //     assert!(potential_neighbor_indices.contains(&1));
+    //     assert!(potential_neighbor_indices.contains(&2));
+    //     assert!(potential_neighbor_indices.contains(&3));
+    // }
     }
 }
