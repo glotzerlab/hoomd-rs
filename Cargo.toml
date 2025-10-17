@@ -57,6 +57,7 @@ hoomd-manifold = { path = "hoomd-manifold" }
 hoomd-mc = { path = "hoomd-mc" }
 hoomd-microstate = { path = "hoomd-microstate" }
 hoomd-simulation = { path = "hoomd-simulation" }
+hoomd-spatial = { path = "hoomd-spatial" }
 hoomd-utility = { path = "hoomd-utility" }
 hoomd-vector = { path = "hoomd-vector" }
 

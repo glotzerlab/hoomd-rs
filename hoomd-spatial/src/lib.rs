@@ -31,6 +31,25 @@ pub trait PointsInBall<P, K> {
     fn points_potentially_in_ball(&self, position: &P, radius: f64) -> Vec<K>;
     }
 
+/// Check all pairs.
+pub struct AllPairs;
+
+// TODO: Working implementation of AllPairs.
+
+impl<P, K> PointUpdate<P, K> for AllPairs {
+    fn insert(&mut self, key: K, position: P) {}
+
+    fn remove(&mut self, key: &K) {}
+
+    fn clear(&mut self) {}
+}
+
+impl<P, K> PointsInBall<P, K> for AllPairs {
+    fn points_potentially_in_ball(&self, position: &P, radius: f64) -> Vec<K> {
+        Vec::new()
+    }
+}
+
 /// Cell list is a spatial data structure used for efficient neighbor finding based on assigning particles to cell grids.
 ///
 /// Use cell list in your MD simulation to speed up neighbor finding for evaluation of forces between particles.

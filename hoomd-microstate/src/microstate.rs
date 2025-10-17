@@ -12,6 +12,7 @@ use crate::{
     property::Position,
 };
 
+use hoomd_spatial::{AllPairs, PointUpdate, PointsInBall};
 use hoomd_utility::random::Counter;
 use hoomd_vector::Metric;
 
@@ -165,7 +166,7 @@ impl<T> VecWithTags<T> {
 /// # }
 /// ```
 #[derive(Clone)]
-pub struct Microstate<B, S = B, C = Open> {
+pub struct Microstate<B, S = B, X = AllPairs, C = Open> {
     /// Total number of steps that this microstate has been advanced in a simulation model.
     step: u64,
 
@@ -192,9 +193,12 @@ pub struct Microstate<B, S = B, C = Open> {
 
     /// The range of allowed particle positions and a description of any periodicity.
     boundary: C,
+
+    /// Spatial data structure.
+    spatial_data: X,
 }
 
-impl<B, S> Default for Microstate<B, S, Open> {
+impl<B, S> Default for Microstate<B, S, AllPairs, Open> {
     /// Construct an empty microstate with open boundary conditions.
     ///
     /// See [`Microstate::new`].
@@ -204,11 +208,11 @@ impl<B, S> Default for Microstate<B, S, Open> {
     }
 }
 
-impl<B, S> Microstate<B, S, Open> {
+impl<B, S> Microstate<B, S, AllPairs, Open> {
     /// Construct an empty microstate with open boundary conditions.
     ///
     /// The microstate starts at step 0, substep 0, random number seed 0,
-    /// and has no bodies.
+    /// and has no bodies. Use the [`AllPairs`] spatial search algorithm.
     ///
     /// # Example
     ///
@@ -238,12 +242,13 @@ impl<B, S> Microstate<B, S, Open> {
             ghosts: VecWithTags::new(),
             sites_ghosts: Vec::new(),
             boundary: Open,
+            spatial_data: AllPairs,
         }
     }
 }
 
 /// Access and manage the simulation step, substep, RNG seeds.
-impl<B, S, C> Microstate<B, S, C> {
+impl<B, S, X, C> Microstate<B, S, X, C> {
     /// Get the simulation step.
     ///
     /// # Examples
@@ -442,7 +447,7 @@ impl<B, S, C> Microstate<B, S, C> {
 }
 
 /// Access and manage the boundary condition.
-impl<B, S, C> Microstate<B, S, C> {
+impl<B, S, X, C> Microstate<B, S, X, C> {
     /// Get the boundary condition.
     ///
     /// # Example
@@ -507,11 +512,12 @@ impl<B, S, C> Microstate<B, S, C> {
 }
 
 /// Manage bodies in the microstate.
-impl<P, B, S, C> Microstate<B, S, C>
+impl<P, B, S, X, C> Microstate<B, S, X, C>
 where
     B: Transform<S> + Position<Position = P>,
     S: Position<Position = P> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    X: PointUpdate<P, usize>
 {
     /// Update the ghosts of a site.
     ///
@@ -911,7 +917,7 @@ where
 }
 
 /// Access contents of the microstate.
-impl<B, S, C> Microstate<B, S, C> {
+impl<B, S, X, C> Microstate<B, S, X, C> {
     /// Access the microstate's tagged bodies in index order.
     ///
     /// [`Microstate`] stores bodies in a flat memory region. The [`Tagged`] type
@@ -1154,10 +1160,11 @@ impl<B, S, C> Microstate<B, S, C> {
     }
 }
 
-impl<P, B, S, C> Microstate<B, S, C>
+impl<P, B, S, X, C> Microstate<B, S, X, C>
 where
     S: Position<Position = P>,
     P: Metric,
+    X: PointsInBall<P, usize>,
 {
     /// Find sites near a point in space.
     ///
@@ -1213,21 +1220,28 @@ where
 /// # Ok(())
 /// # }
 /// ```
-pub struct MicrostateBuilder<B, S = B, C = Open> {
+pub struct MicrostateBuilder<B, S = B, X = AllPairs, C = Open> {
     /// The initial value for step in the resulting [`Microstate`].
     step: u64,
+
     /// The random number seed to set in the resulting [`Microstate`].
     seed: u32,
+
     /// Bodies to add to the resulting [`Microstate`].
     bodies: Vec<Body<B, S>>,
+
+    /// Spatial data structure to use in the resulting [`Microstate`].
+    spatial_data: X,
+
     /// Boundary conditions to apply in the resulting [`Microstate`].
     boundary: C,
 }
 
-impl<B, S> MicrostateBuilder<B, S, Open> {
+impl<B, S> MicrostateBuilder<B, S, AllPairs, Open> {
     /// Construct an empty [`MicrostateBuilder`] with open boundary conditions.
     ///
     /// The resulting microstate starts at step 0 and has a random seed of 0.
+    /// Use the [`AllPairs`] spatial search algorithm.
     ///
     /// # Example
     ///
@@ -1255,23 +1269,26 @@ impl<B, S> MicrostateBuilder<B, S, Open> {
     }
 }
 
-impl<B, S> Default for MicrostateBuilder<B, S, Open> {
+impl<B, S> Default for MicrostateBuilder<B, S, AllPairs, Open> {
+    /// See [`MicrostateBuilder::new()`].
     #[inline]
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<B, S, C> MicrostateBuilder<B, S, C> {
+impl<B, S, C> MicrostateBuilder<B, S, AllPairs, C> {
     /// Construct an empty [`MicrostateBuilder`] with the given boundary conditions.
     ///
     /// The resulting microstate starts at step 0 and has a random seed of 0.
+    /// Use the [`AllPairs`] spatial search algorithm.
     ///
     /// # Example
     ///
     /// ```
     /// use hoomd_geometry::shape::Rectangle;
     /// use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Closed};
+    /// use hoomd_spatial::AllPairs;
     /// use hoomd_vector::Cartesian;
     ///
     /// # use hoomd_microstate::property::Point;
@@ -1283,6 +1300,7 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     /// let microstate = MicrostateBuilder::<
     ///     BodyProperties,
     ///     SiteProperties,
+    ///     AllPairs,
     ///     Closed<Rectangle>,
     /// >::with_boundary(square)
     /// .try_build()?;
@@ -1300,10 +1318,27 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
             step: 0,
             seed: 0,
             bodies: Vec::new(),
+            spatial_data: AllPairs,
             boundary,
         }
     }
+}
 
+impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
+    /// TODO: Documentation, example, ane test
+    #[inline]
+    pub fn with_spatial_data_and_boundary(spatial_data: X, boundary: C) -> Self {
+        Self {
+            step: 0,
+            seed: 0,
+            bodies: Vec::new(),
+            spatial_data,
+            boundary,
+        }
+    }
+}
+
+impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
     /// Choose the initial step in the resulting [`Microstate`].
     ///
     /// The default `step` is 0.
@@ -1425,12 +1460,13 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
     /// # }
     /// ```
     #[inline]
-    pub fn try_build<P>(self) -> Result<Microstate<B, S, C>, Error>
+    pub fn try_build<P>(self) -> Result<Microstate<B, S, X, C>, Error>
     where
         B: Transform<S> + Position<Position = P>,
         S: Position<Position = P> + Default,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    {
+        X: PointUpdate<P, usize>
+    {   
         let mut microstate = Microstate {
             step: self.step,
             substep: 0,
@@ -1441,13 +1477,18 @@ impl<B, S, C> MicrostateBuilder<B, S, C> {
             bodies_sites: Vec::new(),
             ghosts: VecWithTags::new(),
             sites_ghosts: Vec::new(),
+            spatial_data: self.spatial_data,
         };
+
+        microstate.spatial_data.clear();
 
         microstate.extend_bodies(self.bodies)?;
 
         Ok(microstate)
     }
 }
+
+// TODO: Getter for spatial data.
 
 #[cfg(test)]
 mod tests {
