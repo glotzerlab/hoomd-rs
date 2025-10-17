@@ -16,6 +16,16 @@ use hoomd_spatial::{AllPairs, PointUpdate, PointsInBall};
 use hoomd_utility::random::Counter;
 use hoomd_vector::Metric;
 
+/// Either a primary site index or a ghost site index.
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
+pub enum SiteKey {
+    /// Index to a primary site.
+    Primary(usize),
+
+    /// Index to a ghost site.
+    Ghost(usize),
+}
+
 /// Track a unique identifier for an item in [`Microstate`].
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Tagged<T> {
@@ -514,10 +524,11 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
 /// Manage bodies in the microstate.
 impl<P, B, S, X, C> Microstate<B, S, X, C>
 where
+    P: Copy,
     B: Transform<S> + Position<Position = P>,
     S: Position<Position = P> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    X: PointUpdate<P, usize>
+    X: PointUpdate<P, SiteKey>
 {
     /// Update the ghosts of a site.
     ///
@@ -529,6 +540,7 @@ where
         boundary: &C,
         sites_ghosts: &mut [ArrayVec<[usize; MAX_GHOSTS]>],
         ghosts: &mut VecWithTags<Site<S>>,
+        spatial_data: &mut X,
     ) {
         let site = &sites.items[site_index];
         let new_ghosts = boundary.generate_ghosts(&site.properties);
@@ -552,6 +564,7 @@ where
                     let ghost_index = ghosts.indices[*ghost_tag]
                         .expect("sites_ghosts and ghost.indices should be consistent");
                     ghosts.remove(ghost_index);
+                    spatial_data.remove(&SiteKey::Ghost(*ghost_tag));
                 }
 
                 ghost_tags.truncate(new_ghosts.len());
@@ -564,6 +577,7 @@ where
         for (new_ghost, ghost_tag) in new_ghosts.into_iter().zip(ghost_tags) {
             let ghost_index = ghosts.indices[*ghost_tag]
                 .expect("sites_ghosts and ghost.indices should be consistent");
+            spatial_data.insert(SiteKey::Ghost(*ghost_tag), *new_ghost.position());
             ghosts.items[ghost_index].properties = new_ghost;
         }
     }
@@ -579,6 +593,7 @@ where
                 &self.boundary,
                 &mut self.sites_ghosts,
                 &mut self.ghosts,
+                &mut self.spatial_data,
             );
         }
     }
@@ -668,14 +683,16 @@ where
         for s in &body.sites {
             let site_tag = self.sites.next_tag();
 
-            self.sites.push(Site {
+            let site = Site {
                 site_tag,
                 properties: self
                     .boundary
                     .wrap(body.properties.transform(s))
                     .expect("sites should be validated as wrappable prior to this loop"),
                 body_tag,
-            });
+            };
+            self.spatial_data.insert(SiteKey::Primary(site.site_tag), *site.properties.position());
+            self.sites.push(site);
             self.sites_ghosts.push(ArrayVec::new());
 
             body_sites.push(site_tag);
@@ -789,9 +806,11 @@ where
             for ghost_tag in site_ghosts.iter().rev() {
                 let ghost_index = self.ghosts.indices[*ghost_tag]
                     .expect("sites_ghosts and ghosts.indices should be consistent");
+                self.spatial_data.remove(&SiteKey::Ghost(*ghost_tag));
                 self.ghosts.remove(ghost_index);
             }
 
+            self.spatial_data.remove(&SiteKey::Primary(*site_tag));
             self.sites.remove(site_index);
         }
 
@@ -872,10 +891,12 @@ where
         for (i, site_tag) in self.bodies_sites[body_index].iter().enumerate() {
             let site_index = self.sites.indices[*site_tag]
                 .expect("bodies_sites and site_indices should be consistent");
-            self.sites.items[site_index].properties = self
+            let site_properties = self
                 .boundary
                 .wrap(body.item.properties.transform(&body.item.sites[i]))
-                .expect("sites should be validated as wrappable prior to this loop");
+                .expect("sites should be validated as wrappable prior to this loop"); 
+            self.spatial_data.insert(SiteKey::Primary(*site_tag), *site_properties.position());
+            self.sites.items[site_index].properties = site_properties;
         }
 
         self.update_body_site_ghosts(body_index);
@@ -1462,10 +1483,11 @@ impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
     #[inline]
     pub fn try_build<P>(self) -> Result<Microstate<B, S, X, C>, Error>
     where
+        P: Copy,
         B: Transform<S> + Position<Position = P>,
         S: Position<Position = P> + Default,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-        X: PointUpdate<P, usize>
+        X: PointUpdate<P, SiteKey>
     {   
         let mut microstate = Microstate {
             step: self.step,
@@ -1489,6 +1511,7 @@ impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
 }
 
 // TODO: Getter for spatial data.
+// TODO: Consistency tests for spatial data.
 
 #[cfg(test)]
 mod tests {

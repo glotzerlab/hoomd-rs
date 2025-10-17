@@ -151,7 +151,7 @@ pub mod boundary;
 mod microstate;
 pub mod property;
 
-pub use microstate::{Microstate, MicrostateBuilder, Tagged};
+pub use microstate::{Microstate, MicrostateBuilder, SiteKey, Tagged};
 use property::Point;
 
 use thiserror::Error;
