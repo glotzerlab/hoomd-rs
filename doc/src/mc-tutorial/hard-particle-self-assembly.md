@@ -116,9 +116,9 @@ interaction range** between sites to construct `Periodic`:
 boundary that are periodic images of **sites** *inside*. Methods like
 `CutoffPairOverlap` will compute interactions between **sites** inside the
 boundary and *all* other sites (whether they are ghosts or not). When using
-`CutoffPairOverlap`, `CutoffPair`, or any method that utilizes `$ r_\mathrm{cut}
-$`, the `maximum_interaction_range` should be set to the maximum of all the  `$
-r_\mathrm{cut} $` values.
+`CutoffPairOverlap`, `CutoffPair`, or any method that utilizes $` r_\mathrm{cut}
+`$, the `maximum_interaction_range` should be set to the maximum of all the  $`
+r_\mathrm{cut} `$ values.
 
 > [!IMPORTANT]
 > In *hoomd-rs*, it is *YOUR responsibility* to determine the appropriate

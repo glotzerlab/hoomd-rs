@@ -154,8 +154,8 @@ U_\mathrm{step}(r) = \begin{cases}
 `Isotropic` is a wrapper that computes
 $` U(\left|\vec{r}_j - \vec{r}_i\right|)`$ in its implementation of
 `SitePairEnergy`. The `site_pair_energy()` method is a more general form that
-depends on the full set of properties of the two interacting sites: `$ U(s_i,
-s_j) $`. The `CutoffPair` type sums over all pairs of **sites** that are within
+depends on the full set of properties of the two interacting sites: $` U(s_i,
+s_j) `$. The `CutoffPair` type sums over all pairs of **sites** that are within
 a distance of $` r_\mathrm{cut} `$ *and do not belong to the same body*:
 ```math
 \sum_{i}\sum_{j>i} U\left(s_i, s_j\right)
@@ -249,15 +249,15 @@ Attempt one translation trial move for each body in the microstate:
 ```
 
 The previously unused temperature $` kT `$ now has meaning in this simulation
-model. A pair of overlapping disks in this model results in `$ U = 1000
-kT $`. The probability of accepting a trial move that adds an overlap is `$
-e^{\frac{\Delta E}{kT}} = e^{-1000} $` which is identically $` 0 `$ in `f64`
+model. A pair of overlapping disks in this model results in $` U = 1000
+kT `$. The probability of accepting a trial move that adds an overlap is
+$` e^{\frac{\Delta E}{kT}} = e^{-1000} `$ which is identically $` 0 `$ in `f64`
 arithmetic. Therefore, `translate_sweep.apply()` will never add new overlaps.
 
 However, the unconditional `add_body()` above can place overlapping bodies. When
 a pair of overlapping disks is placed, `translate_sweep.apply()` will accept
-trial moves that *keep the same number of overlaps* because `$ \Delta E = 1000 -
-1000 = 0 $`.
+trial moves that *keep the same number of overlaps* because $` \Delta E = 1000 -
+1000 = 0 `$.
 
 #### Reset the Simulation
 
