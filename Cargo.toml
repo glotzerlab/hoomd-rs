@@ -1,7 +1,8 @@
 [workspace]
 
 resolver = "3"
-members = ["examples",
+members = ["benchmarks",
+           "examples",
            "hoomd-bevy",
            "hoomd-geometry",
            "hoomd-gsd",
@@ -68,7 +69,9 @@ rstest = "=0.26.1"
 tempfile = "=3.22.0"
 
 # Dependencies used internally
+env_logger = "0.11.8"
 itertools = "0.14.0"
+log = "0.4.28"
 
 # Dependencies exposed via Public APIs.
 approxim = "0.6.6"
