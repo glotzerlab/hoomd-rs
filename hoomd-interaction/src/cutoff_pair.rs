@@ -210,6 +210,7 @@ where
         for site_i in microstate.sites() {
             for site_j in microstate
                 .iter_sites_near(site_i.properties.position(), self.r_cut)
+                .into_iter()
                 .filter(|s| site_i.site_tag < s.site_tag && site_i.body_tag != s.body_tag)
             {
                 total += self
@@ -289,6 +290,7 @@ where
         let site_energy = |site_properties: &S| {
             initial_microstate
                 .iter_sites_near(site_properties.position(), self.r_cut)
+                .into_iter()
                 .filter(|s| body_tag != s.body_tag)
                 .fold(0.0, |total, site_j| {
                     total
@@ -375,6 +377,7 @@ where
         let site_energy = |site_properties: &S| {
             initial_microstate
                 .iter_sites_near(site_properties.position(), self.r_cut)
+                .into_iter()
                 .fold(0.0, |total, site_j| {
                     total
                         + self
@@ -458,6 +461,7 @@ where
         let site_energy = |site_properties: &S| {
             initial_microstate
                 .iter_sites_near(site_properties.position(), self.r_cut)
+                .into_iter()
                 .filter(|s| body_tag != s.body_tag)
                 .fold(0.0, |total, site_j| {
                     total

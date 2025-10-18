@@ -403,6 +403,7 @@ dependencies = [
  "hoomd-mc",
  "hoomd-microstate",
  "hoomd-simulation",
+ "hoomd-spatial",
  "hoomd-vector",
  "log",
  "rand 0.9.2",

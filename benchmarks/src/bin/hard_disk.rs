@@ -2,7 +2,8 @@ use log::info;
 
 use hoomd_vector::Cartesian;
 use hoomd_simulation::{macrostate::Isothermal, Simulation};
-use hoomd_microstate::{Microstate, property::Point, boundary::Periodic};
+use hoomd_spatial::CellList;
+use hoomd_microstate::{boundary::Periodic, property::Point, Microstate, SiteKey};
 use hoomd_geometry::shape::Rectangle;
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_interaction::{CutoffPairOverlap, pairwise::AlwaysTrue};
@@ -12,7 +13,7 @@ type BodyProperties = Point<PositionVector>;
 type SiteProperties = Point<PositionVector>;
 
 struct HardDisk {
-    microstate: Microstate<BodyProperties, SiteProperties, Periodic<Rectangle>>,
+    microstate: Microstate<BodyProperties, SiteProperties, CellList<SiteKey, 2>, Periodic<Rectangle>>,
     translate_sweep: Sweep<Translate<PositionVector>>,
     hamiltonian: CutoffPairOverlap<AlwaysTrue>,
     macrostate: Isothermal,
@@ -38,7 +39,7 @@ impl Simulation for HardDisk {
 fn main() -> anyhow::Result<()> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
-    let n = 1024;
+    let n = 4096;
     let number_density = 0.8;
     let sigma = 1.0;
     

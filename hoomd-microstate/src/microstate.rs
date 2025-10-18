@@ -1205,12 +1205,35 @@ where
     /// In other words, `iter_sites_near` is meant for use with pairwise functions
     /// that follow the minimum image convention.
     #[inline]
-    pub fn iter_sites_near(&self, point: &P, r: f64) -> impl Iterator<Item = &Site<S>> {
-        self.sites
-            .items
-            .iter()
-            .chain(self.ghosts.items.iter())
-            .filter(move |s| point.distance_squared(s.properties.position()) < r.powi(2))
+    pub fn iter_sites_near(&self, point: &P, r: f64) -> impl IntoIterator<Item = &Site<S>> {
+        // All pairs.
+        // self.sites
+        //     .items
+        //     .iter()
+        //     .chain(self.ghosts.items.iter())
+        //     .filter(move |s| point.distance_squared(s.properties.position()) < r.powi(2))
+
+        // TODO: Implement a proper iterator type.
+
+        let potential_sites = self.spatial_data.points_potentially_in_ball(point, r);
+        let result: Vec<&Site<S>> = potential_sites.iter().map(|k| {
+            match k {
+                SiteKey::Primary(tag) => {
+                    let index = self.sites.indices[*tag]
+                    .expect("sites and spatial data should be consistent");
+                    &self.sites.items[index]
+                }
+                SiteKey::Ghost(tag) => {
+                    let index = self.ghosts.indices[*tag]
+                    .expect("ghosts and spatial data should be consistent");
+                    &self.ghosts.items[index]
+                }
+            }
+        })
+        .filter(move |s| point.distance_squared(s.properties.position()) < r.powi(2))
+        .collect();
+
+        result 
     }
 }
 
