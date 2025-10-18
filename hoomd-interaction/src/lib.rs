@@ -406,7 +406,7 @@ pub trait SitePairOverlap<S> {
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 ///
 /// See the [Implementors](#implementors) section below for examples.
-pub trait DeltaEnergyOne<B, S, C> {
+pub trait DeltaEnergyOne<B, S, X, C> {
     /// Compute the change in energy.
     ///
     /// `initial_microstate` describes the initial configuration and `final_body`
@@ -421,7 +421,7 @@ pub trait DeltaEnergyOne<B, S, C> {
     #[must_use]
     fn delta_energy_one(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<B, S, X, C>,
         body_index: usize,
         final_body: &Body<B, S>,
     ) -> f64;
@@ -435,10 +435,11 @@ pub trait DeltaEnergyOne<B, S, C> {
 /// The generic type names are:
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `X`: The spatial data structure type.
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 ///
 /// See the [Implementors](#implementors) section below for examples.
-pub trait DeltaEnergyInsert<B, S, C> {
+pub trait DeltaEnergyInsert<B, S, X, C> {
     /// Compute the change in energy.
     ///
     /// `initial_microstate` describes the initial configuration and `new_body`
@@ -452,7 +453,7 @@ pub trait DeltaEnergyInsert<B, S, C> {
     #[must_use]
     fn delta_energy_insert(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<B, S, X, C>,
         new_body: &Body<B, S>,
     ) -> f64;
 }
@@ -468,7 +469,7 @@ pub trait DeltaEnergyInsert<B, S, C> {
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 ///
 /// See the [Implementors](#implementors) section below for examples.
-pub trait DeltaEnergyRemove<B, S, C> {
+pub trait DeltaEnergyRemove<B, S, X, C> {
     /// Compute the change in energy.
     ///
     /// `initial_microstate` describes the initial configuration and `body_index` is
@@ -482,7 +483,7 @@ pub trait DeltaEnergyRemove<B, S, C> {
     #[must_use]
     fn delta_energy_remove(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<B, S, X, C>,
         body_index: usize,
     ) -> f64;
 }

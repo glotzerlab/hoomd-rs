@@ -3,15 +3,15 @@
 
 //! Implement `QuickInsert`
 
+use rand::distr::Distribution;
+
 use super::Count;
 use hoomd_interaction::{DeltaEnergyInsert, TotalEnergy};
 use hoomd_microstate::{
-    Body, Microstate, Transform,
-    boundary::{GenerateGhosts, Wrap},
-    property::Position,
+    boundary::{GenerateGhosts, Wrap}, property::Position, Body, Microstate, SiteKey, Transform
 };
 
-use rand::distr::Distribution;
+use hoomd_spatial::PointUpdate;
 
 /// Track the state of a given `QuickInsert` instance.
 #[derive(Debug, PartialEq)]
@@ -262,16 +262,18 @@ impl<D> QuickInsert<D> {
     /// # }
     /// ```
     #[inline]
-    pub fn apply<P, B, S, C, H>(
+    pub fn apply<P, B, S, X, C, H>(
         &mut self,
-        microstate: &mut Microstate<B, S, C>,
+        microstate: &mut Microstate<B, S, X, C>,
         hamiltonian: &H,
     ) -> Count
     where
+        P: Copy,
         B: Position<Position = P> + Transform<S>,
         S: Position<Position = P> + Default,
+        X: PointUpdate<P, SiteKey>,
         D: Distribution<Body<B, S>>,
-        H: DeltaEnergyInsert<B, S, C> + TotalEnergy<Microstate<B, S, C>>,
+        H: DeltaEnergyInsert<B, S, X, C> + TotalEnergy<Microstate<B, S, X, C>>,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     {
         let mut count = Count::default();

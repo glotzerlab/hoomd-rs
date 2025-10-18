@@ -58,7 +58,7 @@ use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Po
 /// ```
 pub struct ExternalOverlap<E>(pub E);
 
-impl<B, S, C, E> TotalEnergy<Microstate<B, S, C>> for ExternalOverlap<E>
+impl<B, S, X, C, E> TotalEnergy<Microstate<B, S, X, C>> for ExternalOverlap<E>
 where
     E: SiteOverlap<S>,
 {
@@ -94,7 +94,7 @@ where
     /// }
     /// ```
     #[inline]
-    fn total_energy(&self, microstate: &Microstate<B, S, C>) -> f64 {
+    fn total_energy(&self, microstate: &Microstate<B, S, X, C>) -> f64 {
         for site in microstate.sites() {
             if self.0.site_overlap(&site.properties) {
                 return f64::INFINITY;
@@ -140,7 +140,7 @@ where
 ///     Ok(())
 /// }
 /// ```
-impl<V, B, S, C, E> DeltaEnergyOne<B, S, C> for ExternalOverlap<E>
+impl<V, B, S, X, C, E> DeltaEnergyOne<B, S, X, C> for ExternalOverlap<E>
 where
     E: SiteOverlap<S>,
     B: Transform<S>,
@@ -150,7 +150,7 @@ where
     #[inline]
     fn delta_energy_one(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<B, S, X, C>,
         _body_index: usize,
         final_body: &Body<B, S>,
     ) -> f64 {
@@ -204,7 +204,7 @@ where
 ///     Ok(())
 /// }
 /// ```
-impl<V, B, S, C, E> DeltaEnergyInsert<B, S, C> for ExternalOverlap<E>
+impl<V, B, S, X, C, E> DeltaEnergyInsert<B, S, X, C> for ExternalOverlap<E>
 where
     E: SiteOverlap<S>,
     B: Transform<S>,
@@ -214,7 +214,7 @@ where
     #[inline]
     fn delta_energy_insert(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<B, S, X, C>,
         new_body: &Body<B, S>,
     ) -> f64 {
         for s in &new_body.sites {
@@ -266,14 +266,14 @@ where
 ///     Ok(())
 /// }
 /// ```
-impl<B, S, C, E> DeltaEnergyRemove<B, S, C> for ExternalOverlap<E>
+impl<B, S, X, C, E> DeltaEnergyRemove<B, S, X, C> for ExternalOverlap<E>
 where
     E: SiteOverlap<S>,
 {
     #[inline]
     fn delta_energy_remove(
         &self,
-        _initial_microstate: &Microstate<B, S, C>,
+        _initial_microstate: &Microstate<B, S, X, C>,
         _body_index: usize,
     ) -> f64 {
         0.0
@@ -315,9 +315,10 @@ mod tests {
 
     mod site_energy {
         use super::*;
+        use hoomd_spatial::AllPairs;
 
         #[fixture]
-        fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
+        fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open> {
             let mut microstate = Microstate::new();
             microstate
                 .extend_bodies([
@@ -329,7 +330,7 @@ mod tests {
         }
 
         #[fixture]
-        fn overlapping_microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
+        fn overlapping_microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open> {
             let mut microstate = Microstate::new();
             microstate
                 .extend_bodies([
@@ -341,7 +342,7 @@ mod tests {
         }
 
         #[rstest]
-        fn single_total_0(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+        fn single_total_0(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>) {
             let single = ExternalOverlap(TestSO);
 
             assert_eq!(single.total_energy(&microstate), 0.0);
@@ -349,7 +350,7 @@ mod tests {
 
         #[rstest]
         fn single_total_inf(
-            overlapping_microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>,
+            overlapping_microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>,
         ) {
             let single = ExternalOverlap(TestSO);
 
@@ -357,7 +358,7 @@ mod tests {
         }
 
         #[rstest]
-        fn single_site_0(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+        fn single_site_0(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>) {
             let single = ExternalOverlap(TestSO);
 
             assert!(!single.site_overlap(&microstate.sites()[0].properties));
@@ -366,7 +367,7 @@ mod tests {
 
         #[rstest]
         fn single_site_inf(
-            overlapping_microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>,
+            overlapping_microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>,
         ) {
             let single = ExternalOverlap(TestSO);
 

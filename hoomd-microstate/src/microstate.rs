@@ -137,6 +137,7 @@ impl<T> VecWithTags<T> {
 /// The generic type names are:
 /// * `B`: The [`Body::properties`](crate::Body) type.
 /// * `S`: The [`Site::properties`](crate::Site) type.
+/// * `X`: The [`spatial data structure`](hoomd_spatial) type.
 /// * `C`: The [`boundary`](crate::boundary) condition type.
 ///
 /// ## Constructing Microstate
@@ -1185,7 +1186,7 @@ impl<P, B, S, X, C> Microstate<B, S, X, C>
 where
     S: Position<Position = P>,
     P: Metric,
-    X: PointsInBall<P, usize>,
+    X: PointsInBall<P, SiteKey>,
 {
     /// Find sites near a point in space.
     ///

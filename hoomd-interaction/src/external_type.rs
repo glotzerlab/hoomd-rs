@@ -50,7 +50,7 @@ use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Po
 /// ```
 pub struct External<E>(pub E);
 
-impl<B, S, C, E> TotalEnergy<Microstate<B, S, C>> for External<E>
+impl<B, S, X, C, E> TotalEnergy<Microstate<B, S, X, C>> for External<E>
 where
     E: SiteEnergy<S>,
 {
@@ -86,7 +86,7 @@ where
     /// # }
     /// ```
     #[inline]
-    fn total_energy(&self, microstate: &Microstate<B, S, C>) -> f64 {
+    fn total_energy(&self, microstate: &Microstate<B, S, X, C>) -> f64 {
         microstate
             .sites()
             .iter()
@@ -122,7 +122,7 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<P, B, S, C, E> DeltaEnergyOne<B, S, C> for External<E>
+impl<P, B, S, X, C, E> DeltaEnergyOne<B, S, X, C> for External<E>
 where
     E: SiteEnergy<S>,
     B: Transform<S>,
@@ -132,7 +132,7 @@ where
     #[inline]
     fn delta_energy_one(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<B, S, X, C>,
         body_index: usize,
         final_body: &Body<B, S>,
     ) -> f64 {
@@ -180,7 +180,7 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<P, B, S, C, E> DeltaEnergyInsert<B, S, C> for External<E>
+impl<P, B, S, X, C, E> DeltaEnergyInsert<B, S, X, C> for External<E>
 where
     E: SiteEnergy<S>,
     B: Transform<S>,
@@ -190,7 +190,7 @@ where
     #[inline]
     fn delta_energy_insert(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<B, S, X, C>,
         new_body: &Body<B, S>,
     ) -> f64 {
         let mut energy_final = 0.0;
@@ -232,14 +232,14 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<B, S, C, E> DeltaEnergyRemove<B, S, C> for External<E>
+impl<B, S, X, C, E> DeltaEnergyRemove<B, S, X, C> for External<E>
 where
     E: SiteEnergy<S>,
 {
     #[inline]
     fn delta_energy_remove(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<B, S, X, C>,
         body_index: usize,
     ) -> f64 {
         let energy_initial = initial_microstate
@@ -286,9 +286,10 @@ mod tests {
 
     mod site_energy {
         use super::*;
+        use hoomd_spatial::AllPairs;
 
         #[fixture]
-        fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
+        fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open> {
             let mut microstate = Microstate::new();
             microstate
                 .extend_bodies([

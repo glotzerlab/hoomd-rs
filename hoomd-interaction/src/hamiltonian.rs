@@ -56,15 +56,15 @@ use hoomd_microstate::{Body, Microstate};
 /// # Ok(())
 /// # }
 /// ```
-impl<B, S, C, E1, E2> DeltaEnergyOne<B, S, C> for (E1, E2)
+impl<B, S, X, C, E1, E2> DeltaEnergyOne<B, S, X, C> for (E1, E2)
 where
-    E1: DeltaEnergyOne<B, S, C>,
-    E2: DeltaEnergyOne<B, S, C>,
+    E1: DeltaEnergyOne<B, S, X, C>,
+    E2: DeltaEnergyOne<B, S, X, C>,
 {
     #[inline]
     fn delta_energy_one(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<B, S, X, C>,
         body_index: usize,
         final_body: &Body<B, S>,
     ) -> f64 {
@@ -185,15 +185,15 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<B, S, C, E1, E2> DeltaEnergyInsert<B, S, C> for (E1, E2)
+impl<B, S, X, C, E1, E2> DeltaEnergyInsert<B, S, X, C> for (E1, E2)
 where
-    E1: DeltaEnergyInsert<B, S, C>,
-    E2: DeltaEnergyInsert<B, S, C>,
+    E1: DeltaEnergyInsert<B, S, X, C>,
+    E2: DeltaEnergyInsert<B, S, X, C>,
 {
     #[inline]
     fn delta_energy_insert(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<B, S, X, C>,
         new_body: &Body<B, S>,
     ) -> f64 {
         let mut total = self.0.delta_energy_insert(initial_microstate, new_body);

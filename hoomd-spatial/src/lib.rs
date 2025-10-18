@@ -12,6 +12,8 @@
 //!
 //! TODO: Document
 
+// TODO: PostiveReal for cell width?
+
 use hoomd_vector::Cartesian;
 use std::{array, cmp::Eq, hash::Hash, collections::HashMap};
 
@@ -32,6 +34,7 @@ pub trait PointsInBall<P, K> {
     }
 
 /// Check all pairs.
+#[derive(Clone)]
 pub struct AllPairs;
 
 // TODO: Working implementation of AllPairs.

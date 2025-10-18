@@ -17,6 +17,7 @@ workspace = true
 hoomd-microstate.workspace = true
 hoomd-vector.workspace = true
 hoomd-geometry.workspace = true
+hoomd-spatial.workspace = true
 hoomd-utility.workspace = true
 
 [dev-dependencies]

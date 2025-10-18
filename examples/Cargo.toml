@@ -31,6 +31,7 @@ hoomd-manifold.workspace = true
 hoomd-mc.workspace = true
 hoomd-microstate.workspace = true
 hoomd-simulation.workspace = true
+hoomd-spatial.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 

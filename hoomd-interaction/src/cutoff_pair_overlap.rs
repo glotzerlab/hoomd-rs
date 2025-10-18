@@ -4,7 +4,8 @@
 //! Implement `CutoffPairOverlap`
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairOverlap, TotalEnergy};
-use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Position};
+use hoomd_microstate::{boundary::Wrap, property::Position, Body, Microstate, SiteKey, Transform};
+use hoomd_spatial::PointsInBall;
 use hoomd_vector::Vector;
 
 /// Short-ranged hard overlaps between pairs of sites.
@@ -76,10 +77,11 @@ pub struct CutoffPairOverlap<E> {
     pub evaluator: E,
 }
 
-impl<V, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPairOverlap<E>
+impl<V, B, S, X, C, E> TotalEnergy<Microstate<B, S, X, C>> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
     S: Position<Position = V>,
+    X: PointsInBall<V, SiteKey>,
     V: Vector,
 {
     /// Compute the total energy of the microstate contributed by functions on pairs of sites.
@@ -115,7 +117,7 @@ where
     /// # }
     /// ```
     #[inline]
-    fn total_energy(&self, microstate: &Microstate<B, S, C>) -> f64 {
+    fn total_energy(&self, microstate: &Microstate<B, S, X, C>) -> f64 {
         for site_i in microstate.sites() {
             for site_j in microstate
                 .iter_sites_near(site_i.properties.position(), self.r_cut)
@@ -173,18 +175,19 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<V, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPairOverlap<E>
+impl<V, B, S, X, C, E> DeltaEnergyOne<B, S, X, C> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
     B: Transform<S>,
     S: Position<Position = V>,
+    X: PointsInBall<V, SiteKey>,
     C: Wrap<B> + Wrap<S>,
     V: Vector,
 {
     #[inline]
     fn delta_energy_one(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<B, S, X, C>,
         body_index: usize,
         final_body: &Body<B, S>,
     ) -> f64 {
@@ -254,18 +257,19 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<V, B, S, C, E> DeltaEnergyInsert<B, S, C> for CutoffPairOverlap<E>
+impl<V, B, S, X, C, E> DeltaEnergyInsert<B, S, X, C> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
     B: Transform<S>,
     S: Position<Position = V>,
+    X: PointsInBall<V, SiteKey>,
     C: Wrap<B> + Wrap<S>,
     V: Vector,
 {
     #[inline]
     fn delta_energy_insert(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<B, S, X, C>,
         new_body: &Body<B, S>,
     ) -> f64 {
         // The new body is not yet in the microstate, so there is no need to
@@ -330,7 +334,7 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<V, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPairOverlap<E>
+impl<V, B, S, X, C, E> DeltaEnergyRemove<B, S, X, C> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S>,
     S: Position<Position = V>,
@@ -339,7 +343,7 @@ where
     #[inline]
     fn delta_energy_remove(
         &self,
-        _initial_microstate: &Microstate<B, S, C>,
+        _initial_microstate: &Microstate<B, S, X, C>,
         _body_index: usize,
     ) -> f64 {
         0.0

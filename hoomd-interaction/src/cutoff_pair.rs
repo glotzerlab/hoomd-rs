@@ -4,7 +4,8 @@
 //! Implement `CutoffPair`
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairEnergy, TotalEnergy};
-use hoomd_microstate::{Body, Microstate, Site, Transform, boundary::Wrap, property::Position};
+use hoomd_microstate::{boundary::Wrap, property::Position, Body, Microstate, Site, SiteKey, Transform};
+use hoomd_spatial::PointsInBall;
 use hoomd_vector::Metric;
 
 /// Short-ranged pairwise interactions between sites.
@@ -161,11 +162,12 @@ impl<E> CutoffPair<E> {
     }
 }
 
-impl<P, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPair<E>
+impl<P, B, S, X, C, E> TotalEnergy<Microstate<B, S, X, C>> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
     S: Position<Position = P>,
     P: Metric,
+    X: PointsInBall<P, SiteKey>,
 {
     /// Compute the total energy of the microstate contributed by functions on pairs of sites.
     ///
@@ -203,7 +205,7 @@ where
     /// # }
     /// ```
     #[inline]
-    fn total_energy(&self, microstate: &Microstate<B, S, C>) -> f64 {
+    fn total_energy(&self, microstate: &Microstate<B, S, X, C>) -> f64 {
         let mut total = 0.0;
         for site_i in microstate.sites() {
             for site_j in microstate
@@ -261,18 +263,19 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<P, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPair<E>
+impl<P, B, S, X, C, E> DeltaEnergyOne<B, S, X, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
     B: Transform<S>,
     S: Position<Position = P>,
+    X: PointsInBall<P, SiteKey>,
     C: Wrap<B> + Wrap<S>,
     P: Metric,
 {
     #[inline]
     fn delta_energy_one(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<B, S, X, C>,
         body_index: usize,
         final_body: &Body<B, S>,
     ) -> f64 {
@@ -352,18 +355,19 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<P, B, S, C, E> DeltaEnergyInsert<B, S, C> for CutoffPair<E>
+impl<P, B, S, X, C, E> DeltaEnergyInsert<B, S, X, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
     B: Transform<S>,
     S: Position<Position = P>,
+    X: PointsInBall<P, SiteKey>,
     C: Wrap<B> + Wrap<S>,
     P: Metric,
 {
     #[inline]
     fn delta_energy_insert(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<B, S, X, C>,
         new_body: &Body<B, S>,
     ) -> f64 {
         // The new body is not yet in the microstate, so there is no need to
@@ -431,16 +435,17 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<P, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPair<E>
+impl<P, B, S, X, C, E> DeltaEnergyRemove<B, S, X, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
     S: Position<Position = P>,
+    X: PointsInBall<P, SiteKey>,
     P: Metric,
 {
     #[inline]
     fn delta_energy_remove(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<B, S, X, C>,
         body_index: usize,
     ) -> f64 {
         let body_tag = initial_microstate.bodies()[body_index].tag;
@@ -483,6 +488,7 @@ mod tests {
         boundary::{Closed, Open},
         property::Point,
     };
+    use hoomd_spatial::AllPairs;
     use hoomd_vector::Cartesian;
 
     use approxim::assert_relative_eq;
@@ -508,7 +514,7 @@ mod tests {
         use crate::pairwise::Isotropic;
 
         #[fixture]
-        fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open> {
+        fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open> {
             let mut microstate = Microstate::new();
             microstate
                 .extend_bodies([
@@ -522,7 +528,7 @@ mod tests {
         }
 
         #[rstest]
-        fn blanket_fn(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+        fn blanket_fn(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>) {
             // Ensure that closures can be used as IsotropicEnergy
             let cutoff_pair = CutoffPair {
                 r_cut: 2.0,
@@ -546,7 +552,7 @@ mod tests {
         }
 
         #[rstest]
-        fn large_r_cut(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+        fn large_r_cut(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>) {
             // Ensure that CutoffPair respects the r_cut value set.
             let cutoff_pair = CutoffPair {
                 r_cut: 5.0_f64.next_up(),
