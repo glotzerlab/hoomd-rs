@@ -116,6 +116,9 @@ pub use point::Point;
 mod oriented_point;
 pub use oriented_point::OrientedPoint;
 
+mod oriented_hyperbolic_point;
+pub use oriented_hyperbolic_point::OrientedHyperbolicPoint;
+
 /// Locate sites and bodies.
 ///
 /// When applied to site properties, [`Position`] describes the location of the site
