@@ -73,6 +73,7 @@ tempfile = "=3.22.0"
 env_logger = "0.11.8"
 itertools = "0.14.0"
 log = "0.4.28"
+rustc-hash = "2.1.1"
 
 # Dependencies exposed via Public APIs.
 approxim = "0.6.6"
@@ -177,9 +178,9 @@ strip = true
 codegen-units = 256
 
 # Build settings to profile benchmarks
-[profile.benchmark]
+[profile.profile]
 inherits = "release"
-# debug = true
+debug = true
 lto = true
 
 # Bevy is extremely slow in debug builds, build it with optimizations

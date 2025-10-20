@@ -15,7 +15,8 @@
 // TODO: PostiveReal for cell width?
 
 use hoomd_vector::Cartesian;
-use std::{array, cmp::Eq, hash::Hash, collections::HashMap};
+use std::{array, cmp::Eq, hash::Hash};
+use rustc_hash::FxHashMap;
 
 pub trait PointUpdate<P, K> {
     /// Insert a point identified by a key.
@@ -121,9 +122,9 @@ pub struct CellList<K, const D: usize> {
     /// The width of each cell.
     cell_width: f64,
     /// A map from cell indices to cell contents.
-    particle_indices: HashMap<[i64; D], Vec<K>>,
+    particle_indices: FxHashMap<[i64; D], Vec<K>>,
     /// A map from particle indices to cell indices.
-    cell_index: HashMap<K, [i64; D]>,
+    cell_index: FxHashMap<K, [i64; D]>,
     /// Location of the 0,..,0 cell.
     origin: Cartesian<D>,
 }
@@ -300,8 +301,8 @@ K: Copy + Eq + Hash
     pub fn with_cell_width(cell_width: f64) -> Self {
         Self {
             cell_width,
-            particle_indices: HashMap::new(),
-            cell_index: HashMap::new(),
+            particle_indices: FxHashMap::default(),
+            cell_index: FxHashMap::default(),
             origin: Cartesian::default(),
         }
     }
@@ -311,8 +312,8 @@ K: Copy + Eq + Hash
     pub fn with_cell_width_and_origin(cell_width: f64, origin: Cartesian<D>) -> Self {
         Self {
             cell_width,
-            particle_indices: HashMap::new(),
-            cell_index: HashMap::new(),
+            particle_indices: FxHashMap::default(),
+            cell_index: FxHashMap::default(),
             origin,
         }
     }
@@ -855,7 +856,7 @@ mod tests {
     fn consistency() {
         const N_STEPS: usize = 65_536;
         let mut rng = StdRng::seed_from_u64(0);
-        let mut reference = HashMap::new();
+        let mut reference = FxHashMap::default();
 
         let cell_width = 0.5;
         let mut cell_list = CellList::with_cell_width(cell_width);
