@@ -23,7 +23,7 @@ use hoomd_microstate::{
         Position, Mass, Momentum, NetForce, Orientation, MomentOfInertia, AngularMomentum, NetTorque
     },
 };
-use hoomd_vector::{Angle, Cartesian, InnerProduct, Quaternion, Rotate, Rotation, Vector};
+use hoomd_vector::{Angle, Cartesian, InnerProduct, Quaternion, Rotate, Vector};
 use thermostat::Thermostat;
 use hoomd_simulation::macrostate::Temperature;
 
