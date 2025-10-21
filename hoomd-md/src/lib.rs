@@ -700,7 +700,7 @@ where
         + Clone,
     S: Position<Position = Cartesian<2>> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    E: NetBodyTorque<f64, B, S, C>,
+    E: NetBodyTorque<2, Cartesian<2>, B, S, C>,
     T: Thermostat<B, S, C, M>,
 {
     /// Perform the first integration half-step, mutating the microstate and
