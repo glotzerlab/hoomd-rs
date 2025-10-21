@@ -31,7 +31,7 @@ pub trait PointUpdate<P, K> {
 
 pub trait PointsInBall<P, K> {
     /// Find all the points that *may* be in the given ball.
-    fn points_potentially_in_ball(&self, position: &P, radius: f64) -> Vec<K>;
+    fn points_potentially_in_ball<'a>(&'a self, position: &P, radius: f64) -> impl Iterator<Item=&'a K> where K: 'a;
     }
 
 /// Check all pairs.
@@ -48,11 +48,11 @@ impl<P, K> PointUpdate<P, K> for AllPairs {
     fn clear(&mut self) {}
 }
 
-impl<P, K> PointsInBall<P, K> for AllPairs {
-    fn points_potentially_in_ball(&self, position: &P, radius: f64) -> Vec<K> {
-        Vec::new()
-    }
-}
+// impl<P, K> PointsInBall<P, K> for AllPairs {
+//     fn points_potentially_in_ball(&self, position: &P, radius: f64) -> impl Iterator<Item=&K> {
+//         todo!()
+//     }
+// }
 
 /// Cell list is a spatial data structure used for efficient neighbor finding based on assigning particles to cell grids.
 ///
@@ -355,23 +355,21 @@ K: Copy + Eq + Hash
         self.cell_index.shrink_to_fit();
     }
 
-    /// Common logic needed to implement `points_potentially_in_ball` .
-    #[inline]
-    fn nearby_points_detail(&self, position: &Cartesian<D>, stencil: &[[i64; D]]) -> Vec<K> {
-        let center = self.cell_index_from_position(position);
-        let mut result = Vec::new();
+    // /// Common logic needed to implement `points_potentially_in_ball` .
+    // #[inline]
+    // fn nearby_points_detail(&self, position: &Cartesian<D>, stencil: &[[i64; D]]) -> Vec<K> {
+    //     let mut result = Vec::new();
         
-        for offset in stencil {
-            let cell_index = array::from_fn(|i| center[i] + offset[i]);
-            if let Some(keys) = self.particle_indices.get(&cell_index) {
-                result.extend(keys);
-            }
-        }
+    //     for offset in stencil {
+    //         let cell_index = array::from_fn(|i| center[i] + offset[i]);
+    //         if let Some(keys) = self.particle_indices.get(&cell_index) {
+    //             result.extend(keys);
+    //         }
+    //     }
 
-        result
-    }
+    //     result
+    // }
 }
-
 
 impl<K, const D: usize> PointUpdate<Cartesian<D>, K> for CellList<K, D> where
 K: Copy + Eq + Hash {
@@ -488,13 +486,38 @@ K: Copy + Eq + Hash {
     }
 }
 
-impl<K> PointsInBall<Cartesian<2>, K> for CellList<K, 2> where
-K: Copy + Eq + Hash
-{
-    #[inline]
-    fn points_potentially_in_ball(&self, position: &Cartesian<2>, radius: f64) -> Vec<K> {
-        assert!(radius <= self.cell_width, "search radius must be less than or equal to the cell width");
-        let stencil = [[0, 0],
+struct PointsIterator<'a, K, const D: usize> {
+    cell_list: &'a CellList<K, D>,
+    index_in_current_cell: usize,
+    current_stencil: usize,
+    stencil: &'a [[i64; D]],
+    center: [i64; D],
+    }
+
+impl<'a, K, const D: usize> Iterator for PointsIterator<'a, K, D> {
+    type Item=&'a K;
+
+    // Required method
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let cell_index = array::from_fn(|i| self.center[i] + self.stencil[self.current_stencil][i]);
+            let last_index = self.index_in_current_cell;
+            self.index_in_current_cell += 1;
+            if let Some(keys) = self.cell_list.particle_indices.get(&cell_index) && last_index < keys.len() {
+                return Some(&keys[last_index]);
+            }
+
+            self.index_in_current_cell = 0;
+            self.current_stencil += 1;
+            
+            if self.current_stencil >= self.stencil.len() {
+                return None;
+            }
+        }
+    }
+}
+
+        const STENCIL_2D: [[i64; 2]; 9] = [[0, 0],
                        [0, -1],
                        [0, 1],
                        [-1, 0],
@@ -503,7 +526,22 @@ K: Copy + Eq + Hash
                        [-1, 1],
                        [1, 1],
                        [1, -1]];
-        self.nearby_points_detail(position, &stencil)
+
+impl<K> PointsInBall<Cartesian<2>, K> for CellList<K, 2> where
+K: Copy + Eq + Hash
+{
+    #[inline]
+    fn points_potentially_in_ball<'a>(&'a self, position: &Cartesian<2>, radius: f64) -> impl Iterator<Item=&'a K> where K: 'a {
+        assert!(radius <= self.cell_width, "search radius must be less than or equal to the cell width");
+        let center = self.cell_index_from_position(position);
+        
+        PointsIterator {
+            cell_list: &self,
+            index_in_current_cell: 0,
+            current_stencil: 0,
+            stencil: &STENCIL_2D,
+            center,
+        }
     }
 }
 
@@ -914,7 +952,7 @@ mod tests {
         }
 
         for p_i in &reference {
-            let potential_neighbors = cell_list.points_potentially_in_ball(p_i, cell_width);
+            let potential_neighbors: Vec<_> = cell_list.points_potentially_in_ball(p_i, cell_width).copied().collect();
 
             for (j, p_j) in reference.iter().enumerate() {
                 if p_i.distance(p_j) <= cell_width {

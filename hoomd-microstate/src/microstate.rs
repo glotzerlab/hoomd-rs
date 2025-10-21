@@ -1216,7 +1216,7 @@ where
         // TODO: Implement a proper iterator type.
 
         let potential_sites = self.spatial_data.points_potentially_in_ball(point, r);
-        let result: Vec<&Site<S>> = potential_sites.iter().map(|k| {
+        potential_sites.map(|k| {
             match k {
                 SiteKey::Primary(tag) => {
                     let index = self.sites.indices[*tag]
@@ -1231,9 +1231,6 @@ where
             }
         })
         .filter(move |s| point.distance_squared(s.properties.position()) < r.powi(2))
-        .collect();
-
-        result 
     }
 }
 
