@@ -3155,6 +3155,7 @@ dependencies = [
  "anyhow",
  "approxim",
  "bevy",
+ "bevy_egui",
  "divan",
  "hoomd-bevy",
  "hoomd-geometry",

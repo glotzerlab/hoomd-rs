@@ -22,6 +22,7 @@ hoomd-vector.workspace = true
 hoomd-simulation.workspace = true
 rand.workspace = true
 rand_distr.workspace = true
+bevy_egui.workspace = true
 
 [dev-dependencies]
 hoomd-geometry.workspace = true
