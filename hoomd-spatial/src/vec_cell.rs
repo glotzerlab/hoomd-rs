@@ -14,13 +14,13 @@ pub struct VecCell<K, const D: usize> {
     /// The width of each cell.
     cell_width: f64,
     /// A map from cell indices to cell contents.
-    particle_indices: Vec<Vec<K>>,
+    keys_map: Vec<Vec<K>>,
     /// A map from particle indices to cell indices.
     cell_index: FxHashMap<K, [i64; D]>,
     /// Location of the 0,..,0 cell.
     origin: Cartesian<D>,
-    /// Dimension of the particle_indices vector
-    vec_dimension: i64,
+    /// Half the shape of the `keys_map` vector.
+    half_shape: usize,
 }
 
 impl<K, const D: usize> VecCell<K, D>
@@ -33,26 +33,37 @@ impl<K, const D: usize> VecCell<K, D>
     }
 
     /// Compute the vector index from a cell index
+    ///
+    /// # Errors
+    ///
+    /// On error, return `Err(max_half_shape)` where `max_half_shape` is the value
+    /// `half_shape` must be to include this cell index.
     #[inline]
-    fn vec_index_from_cell(&self, cell_index: &[i64; D]) -> usize {
+    fn map_index_from_cell(&self, cell_index: &[i64; D]) -> Result<usize, usize> {
         assert!(D > 0);
 
-        let mut vec_index: usize = (cell_index[D-1] + self.vec_dimension/2).try_into().expect("cell index should be in bounds");
-        let mut width = self.vec_dimension; 
+        let max_half_shape = cell_index.iter().copied().map(i64::abs).reduce(i64::max).expect("cell_index should have at least one element");
+        if max_half_shape as usize > self.half_shape {
+            return Err(max_half_shape as usize);
+        }
+    
+        let mut vec_index: usize = (cell_index[D-1] + self.half_shape as i64).try_into().expect("cell index should be in bounds");
+        let mut width = self.half_shape * 2; 
 
         for i in 2..=D {
-            let v: usize = (cell_index[D-i] + self.vec_dimension/2).try_into().expect("cell index should be in bounds"); 
+            let v: usize = (cell_index[D-i] + self.half_shape as i64).try_into().expect("cell index should be in bounds"); 
         
-            vec_index += v * width as usize;
-            width *= width; 
+            vec_index += v * width;
+            width *= self.half_shape * 2; 
         }
-        vec_index
+        Ok(vec_index)
     }
 
     /// Get the keys in a given cell index
     #[inline]
     fn get_keys(&self, cell_index: &[i64; D]) -> &[K] {
-        &self.particle_indices[self.vec_index_from_cell(cell_index)]
+        let index = self.map_index_from_cell(cell_index).expect("cell_index should be in bounds");
+        &self.keys_map[index]
     }
 }
 
@@ -62,13 +73,13 @@ K: Copy + Eq + Hash
 
     #[inline]
     #[must_use]
-    pub fn new(cell_width: f64, vec_dimension: u32) -> Self {
+    pub fn new(cell_width: f64, half_shape: usize) -> Self {
         VecCell {
             cell_width,
-            particle_indices: iter::repeat_n(Vec::new(), vec_dimension.pow(D as u32) as usize).collect(),
+            keys_map: iter::repeat_n(Vec::new(), (half_shape * 2 + 1).pow(D as u32)).collect(),
             cell_index: FxHashMap::default(),
             origin: Cartesian::default(),
-            vec_dimension: vec_dimension as i64,
+            half_shape,
         }
     }
 
@@ -85,10 +96,10 @@ K: Copy + Eq + Hash
 
     #[inline]
     pub fn shrink_to_fit(&mut self) {
-        for keys in &mut self.particle_indices {
+        for keys in &mut self.keys_map {
             keys.shrink_to_fit();
         }
-        self.particle_indices.shrink_to_fit();
+        self.keys_map.shrink_to_fit();
         self.cell_index.shrink_to_fit();
     }
 }
@@ -98,19 +109,22 @@ K: Copy + Eq + Hash {
     #[inline]
     fn insert(&mut self, key: K, position: Cartesian<D>) {
         let cell_index = self.cell_index_from_position(&position);
-        let vec_index = self.vec_index_from_cell(&cell_index);
         let old_cell_index = self.cell_index.insert(key, cell_index);
-        
+        let map_index = match self.map_index_from_cell(&cell_index) {
+            Ok(map_index) => map_index,
+            Err(v) => todo!("expand keys_map {v}")
+        };
+
         // This checks if old_cell_index is None or if it is different from the new cell index.
         if old_cell_index != Some(cell_index) {
             // Add the particle index to the new cell index vector.
-            self.particle_indices[vec_index]
+            self.keys_map[map_index]
                 .push(key);
 
             if let Some(old_cell_index) = old_cell_index {
                 // If the particle was in a different cell, we need to remove it from the old cell.
-                let old_vec_index = self.vec_index_from_cell(&old_cell_index);
-                let old_keys = &mut self.particle_indices[old_vec_index];
+                let old_map_index = self.map_index_from_cell(&old_cell_index).expect("cell_index and keys_map should agree");
+                let old_keys = &mut self.keys_map[old_map_index];
                 if let Some(pos) = old_keys.iter().position(|x| *x == key) {
                     old_keys.swap_remove(pos);
                 }
@@ -122,12 +136,12 @@ K: Copy + Eq + Hash {
     fn remove(&mut self, key: &K) {
         let cell_index = self.cell_index.remove(key);
         if let Some(cell_index) = cell_index {
-            // If the particle was found in the cell list, remove it from the particle indices.
-            let vec_index = self.vec_index_from_cell(&cell_index);
-            let keys = &mut self.particle_indices[vec_index];
-            if let Some(idx) = keys.iter().position(|x| x == key) {
-                // Remove the particle index from the vector.
-                keys.swap_remove(idx);
+            let map_index = self.map_index_from_cell(&cell_index);
+            if let Ok(map_index) = map_index {
+                let keys = &mut self.keys_map[map_index];
+                if let Some(idx) = keys.iter().position(|x| x == key) {
+                    keys.swap_remove(idx);
+                }
             }
         }
     }
@@ -135,14 +149,14 @@ K: Copy + Eq + Hash {
     #[inline]
     fn clear(&mut self) {
         self.cell_index.clear();
-        for keys in &mut self.particle_indices {
+        for keys in &mut self.keys_map {
             keys.clear();
         }
     }
 }
 
 struct PointsIterator<'a, K, const D: usize> {
-    keys: &'a Vec<K>,
+    keys: Option<&'a Vec<K>>,
     cell_list: &'a VecCell<K, D>,
     index_in_current_cell: usize,
     current_stencil: usize,
@@ -159,8 +173,8 @@ impl<'a, K, const D: usize> Iterator for PointsIterator<'a, K, D> {
         loop {
             let last_index = self.index_in_current_cell;
             self.index_in_current_cell += 1;
-            if last_index < self.keys.len() {
-                return Some(&self.keys[last_index]);
+            if let Some(keys) = self.keys && last_index < keys.len() {
+                return Some(&keys[last_index]);
             }
 
             self.index_in_current_cell = 0;
@@ -171,8 +185,8 @@ impl<'a, K, const D: usize> Iterator for PointsIterator<'a, K, D> {
             }
 
             let cell_index = array::from_fn(|i| self.center[i] + self.stencil[self.current_stencil][i]);
-            let vec_index = self.cell_list.vec_index_from_cell(&cell_index);
-            self.keys = &self.cell_list.particle_indices[vec_index];
+            let map_index = self.cell_list.map_index_from_cell(&cell_index);
+            self.keys = map_index.ok().map(|index| &self.cell_list.keys_map[index]);
         }
     }
 }
@@ -223,10 +237,10 @@ K: Copy + Eq + Hash
     fn points_potentially_in_ball<'a>(&'a self, position: &Cartesian<2>, radius: f64) -> impl Iterator<Item=&'a K> where K: 'a {
         assert!(radius <= self.cell_width, "search radius must be less than or equal to the cell width");
         let center = self.cell_index_from_position(position);
-        let vec_index = self.vec_index_from_cell(&center);
-        
+        let map_index = self.map_index_from_cell(&center);
+
         PointsIterator {
-            keys: &self.particle_indices[vec_index],
+            keys: map_index.ok().map(|index| &self.keys_map[index]),
             cell_list: self,
             index_in_current_cell: 0,
             current_stencil: 0,
@@ -243,10 +257,10 @@ K: Copy + Eq + Hash
     fn points_potentially_in_ball<'a>(&'a self, position: &Cartesian<3>, radius: f64) -> impl Iterator<Item=&'a K> where K: 'a {
         assert!(radius <= self.cell_width, "search radius must be less than or equal to the cell width");
         let center = self.cell_index_from_position(position);
-        let vec_index = self.vec_index_from_cell(&center);
-        
+        let map_index = self.map_index_from_cell(&center);
+
         PointsIterator {
-            keys: &self.particle_indices[vec_index],
+            keys: map_index.ok().map(|index| &self.keys_map[index]),
             cell_list: self,
             index_in_current_cell: 0,
             current_stencil: 0,
@@ -440,7 +454,7 @@ mod tests {
         }
 
         // Validate that cell_index contains the expected keys and that
-        // particle_indices is consistent.
+        // keys_map is consistent.
         assert_eq!(cell_list.cell_index.len(), reference.len());
         for (reference_key,reference_value) in reference.drain() {
             let value = cell_list.cell_index.get(&reference_key);
@@ -450,10 +464,12 @@ mod tests {
             assert!(keys.contains(&reference_key));
         }
 
-        // Ensure that there are no extra values in particle_indices.
-        let total = cell_list.particle_indices.iter().map(Vec::len).sum();
+        // Ensure that there are no extra values in keys_map.
+        let total = cell_list.keys_map.iter().map(Vec::len).sum();
         assert_eq!(cell_list.cell_index.len(), total);
     }
+
+    // TODO: Test queries just outside the allocated space.
 
     #[test]
     fn points_in_ball_2d() {
