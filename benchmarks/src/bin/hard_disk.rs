@@ -2,9 +2,9 @@ use log::info;
 
 use hoomd_vector::Cartesian;
 use hoomd_simulation::{macrostate::Isothermal, Simulation};
-use hoomd_spatial::CellList;
+use hoomd_spatial::HashCell;
 use hoomd_microstate::{boundary::Periodic, property::Point, Microstate, SiteKey};
-use hoomd_geometry::shape::Rectangle;
+use hoomd_geometry::shape::Hypercuboid;
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_interaction::{CutoffPairOverlap, pairwise::AlwaysTrue};
 
@@ -13,7 +13,7 @@ type BodyProperties = Point<PositionVector>;
 type SiteProperties = Point<PositionVector>;
 
 struct HardDisk {
-    microstate: Microstate<BodyProperties, SiteProperties, CellList<SiteKey, 2>, Periodic<Rectangle>>,
+    microstate: Microstate<BodyProperties, SiteProperties, HashCell<SiteKey, 2>, Periodic<Hypercuboid<2>>>,
     translate_sweep: Sweep<Translate<PositionVector>>,
     hamiltonian: CutoffPairOverlap<AlwaysTrue>,
     macrostate: Isothermal,
@@ -62,7 +62,7 @@ fn main() -> anyhow::Result<()> {
         macrostate: Isothermal { temperature: 1.0 },
     };
 
-    benchmarks::benchmark(&mut hard_disk, 1000, 1000, 30)?;
+    benchmarks::benchmark(&mut hard_disk, 1000, 1000, 5)?;
 
     Ok(())
 }
