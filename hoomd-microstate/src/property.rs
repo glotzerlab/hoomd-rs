@@ -273,13 +273,13 @@ pub trait MomentOfInertia {
 /// The units of `[AngularMomentum`] are *\[radian/time\ * mass * \length^2\]*.
 pub trait AngularMomentum {
     /// Type that can express the angular momentum of a site or body.
-    type Rotation;
+    type AngularMomentum;
     
     /// The angular momentum of this site or body *\[radian/time\ * mass * \length^2\]*.
-    fn angular_momentum(&self) -> &Self::Rotation;
+    fn angular_momentum(&self) -> &Self::AngularMomentum;
 
     /// The mutable angular momentum of this site or body *\[radian/time\ * mass * \length^2\]*.
-    fn angular_momentum_mut(&mut self) -> &mut Self::Rotation;
+    fn angular_momentum_mut(&mut self) -> &mut Self::AngularMomentum;
 }
 
 /// Get the net torque on a site or body.
@@ -291,11 +291,11 @@ pub trait AngularMomentum {
 /// The units of [`NetTorque`] are *\[radian/time^2\ * mass * \length^2\]*.
 pub trait NetTorque {
     /// Type that can express the net torque on a site or body.
-    type Vector;
+    type NetTorque;
     
     /// The net torque on this site or body *\[radian/time^2\ * mass * \length^2\]*.
-    fn net_torque(&self) -> &Self::Vector;
+    fn net_torque(&self) -> &Self::NetTorque;
 
     /// The mutable net torque on this site or body *\[radian/time^2\ * mass * \length^2\]*.
-    fn net_torque_mut(&mut self) -> &mut Self::Vector;
+    fn net_torque_mut(&mut self) -> &mut Self::NetTorque;
 }

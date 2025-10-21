@@ -184,8 +184,8 @@ impl<const N: usize, B, S, C> TranslationalThermalizer<N, B, S, C> for Thermaliz
 impl<B, S, C> RotationalThermalizer<2, B, S, C> for Thermalize
     where
     B: Orientation<Rotation = Angle>
-        + AngularMomentum<Rotation = f64>
-        + NetTorque<Vector=f64>
+        + AngularMomentum<AngularMomentum = f64>
+        + NetTorque<NetTorque=f64>
         + MomentOfInertia<Vector = f64>
         + Position<Position = Cartesian<2>>
         + Transform<S>
@@ -224,8 +224,8 @@ impl<B, S, C> RotationalThermalizer<2, B, S, C> for Thermalize
 impl<B, S, C> RotationalThermalizer<3, B, S, C> for Thermalize
     where
     B: Orientation<Rotation = Quaternion>
-        + AngularMomentum<Rotation = Quaternion>
-        + NetTorque<Vector=Cartesian<3>>
+        + AngularMomentum<AngularMomentum = Quaternion>
+        + NetTorque<NetTorque=Cartesian<3>>
         + MomentOfInertia<Vector=Cartesian<3>>
         + Position<Position = Cartesian<3>>
         + Transform<S>

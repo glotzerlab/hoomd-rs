@@ -333,15 +333,15 @@ where
 impl<B, S, C, E, T, M> RotationalMotion<3, B, S, C, E, T, M> for ConstantVolume
 where
     B: Orientation<Rotation = Quaternion>
-        + AngularMomentum<Rotation = Quaternion>
-        + NetTorque<Vector=Cartesian<3>>
+        + AngularMomentum<AngularMomentum = Quaternion>
+        + NetTorque<NetTorque=Cartesian<3>>
         + MomentOfInertia<Vector = Cartesian<3>>
         + Transform<S>
         + Position<Position = Cartesian<3>> // TODO: should this be required?
         + Clone,
     S: Position<Position = Cartesian<3>> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    E: NetBodyTorque<Cartesian<3>, B, S, C>,
+    E: NetBodyTorque<3, Cartesian<3>, B, S, C>,
     T: Thermostat<B, S, C, M>,
 {
     /// Perform the first integration half-step, mutating the microstate and
@@ -692,8 +692,8 @@ where
 impl<B, S, C, E, T, M> RotationalMotion<2, B, S, C, E, T, M> for ConstantVolume
 where
     B: Orientation<Rotation = Angle>
-        + AngularMomentum<Rotation = f64>
-        + NetTorque<Vector = f64>
+        + AngularMomentum<AngularMomentum = f64>
+        + NetTorque<NetTorque = f64>
         + MomentOfInertia<Vector = f64>
         + Transform<S>
         + Position<Position = Cartesian<2>> // TODO: should this be required?
