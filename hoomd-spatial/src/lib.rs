@@ -487,6 +487,7 @@ K: Copy + Eq + Hash {
 }
 
 struct PointsIterator<'a, K, const D: usize> {
+    keys: Option<&'a Vec<K>>,
     cell_list: &'a CellList<K, D>,
     index_in_current_cell: usize,
     current_stencil: usize,
@@ -498,12 +499,12 @@ impl<'a, K, const D: usize> Iterator for PointsIterator<'a, K, D> {
     type Item=&'a K;
 
     // Required method
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let cell_index = array::from_fn(|i| self.center[i] + self.stencil[self.current_stencil][i]);
             let last_index = self.index_in_current_cell;
             self.index_in_current_cell += 1;
-            if let Some(keys) = self.cell_list.particle_indices.get(&cell_index) && last_index < keys.len() {
+            if let Some(keys) = self.keys && last_index < keys.len() {
                 return Some(&keys[last_index]);
             }
 
@@ -513,6 +514,9 @@ impl<'a, K, const D: usize> Iterator for PointsIterator<'a, K, D> {
             if self.current_stencil >= self.stencil.len() {
                 return None;
             }
+
+            let cell_index = array::from_fn(|i| self.center[i] + self.stencil[self.current_stencil][i]);
+            self.keys = self.cell_list.particle_indices.get(&cell_index);
         }
     }
 }
@@ -536,7 +540,8 @@ K: Copy + Eq + Hash
         let center = self.cell_index_from_position(position);
         
         PointsIterator {
-            cell_list: &self,
+            keys: self.particle_indices.get(&center),
+            cell_list: self,
             index_in_current_cell: 0,
             current_stencil: 0,
             stencil: &STENCIL_2D,
