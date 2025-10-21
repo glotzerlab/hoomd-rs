@@ -349,6 +349,13 @@ pub trait Vector:
 {
 }
 
+// TODO: add documentation
+pub trait WedgeProduct {
+    type Bivector;
+
+    fn wedge_product(&self, other: &Self) -> Self::Bivector;
+}
+
 /// Operates on elements on a metric space.
 ///
 /// [`Metric`] implements a distance metric between points.

@@ -15,7 +15,7 @@ use rand::{
     distr::{Distribution, StandardUniform, Uniform},
 };
 
-use crate::{Cross, Error, InnerProduct, Metric, Rotate, Unit, Vector};
+use crate::{WedgeProduct, Cross, Error, InnerProduct, Metric, Rotate, Unit, Vector};
 use hoomd_linear_algebra::{MatMul, matrix::Matrix};
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
@@ -444,6 +444,15 @@ impl Cross for Cartesian<3> {
     }
 }
 
+impl WedgeProduct for Cartesian<3> {
+    type Bivector = Cartesian<3>;
+
+    #[inline]
+    fn wedge_product(&self, other: &Self) -> Self::Bivector {
+        self.cross(other)
+    }
+}
+
 impl<const N: usize> Distribution<Cartesian<N>> for StandardUniform {
     /// Sample a Cartesian vector from the uniform [-1, 1] hypercube.
     ///
@@ -517,6 +526,14 @@ impl Cartesian<2> {
     }
 }
 
+impl WedgeProduct for Cartesian<2> {
+    type Bivector = f64;
+
+    #[inline]
+    fn wedge_product(&self, other: &Self) -> Self::Bivector {
+        other[0] * self[1] - other[1] * self[0]
+    }
+}
 impl<const N: usize, T> IndexMut<T> for Cartesian<N>
 where
     T: Into<usize> + std::slice::SliceIndex<[f64], Output = f64>,
