@@ -428,7 +428,7 @@ where
             let t = *body_properties.net_torque();
             let I = *body_properties.moment_of_inertia();
 
-            // Rotate torque into principal frame
+            // Rotate torque into body frame based on principal axes
             // TODO: check that this is correct
             let mut t_inframe = q.conjugate().to_versor().unwrap().rotate(&t);
 
@@ -611,7 +611,7 @@ where
             // Update the torque in particle data
             *body_properties.net_torque_mut() = net_t_new;
 
-            // Rotate torque into principal frame
+            // Rotate torque into body frame based on principal axes
             // TODO: check that this is correct
             let mut t_new_inframe = q.conjugate().to_versor().unwrap().rotate(&net_t_new);
 
