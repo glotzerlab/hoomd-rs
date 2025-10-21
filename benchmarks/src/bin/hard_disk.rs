@@ -2,7 +2,7 @@ use log::info;
 
 use hoomd_vector::Cartesian;
 use hoomd_simulation::{macrostate::Isothermal, Simulation};
-use hoomd_spatial::HashCell;
+use hoomd_spatial::VecCell;
 use hoomd_microstate::{boundary::Periodic, property::Point, Microstate, SiteKey};
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_mc::{Sweep, Translate, Trial};
@@ -13,7 +13,7 @@ type BodyProperties = Point<PositionVector>;
 type SiteProperties = Point<PositionVector>;
 
 struct HardDisk {
-    microstate: Microstate<BodyProperties, SiteProperties, HashCell<SiteKey, 2>, Periodic<Hypercuboid<2>>>,
+    microstate: Microstate<BodyProperties, SiteProperties, VecCell<SiteKey, 2>, Periodic<Hypercuboid<2>>>,
     translate_sweep: Sweep<Translate<PositionVector>>,
     hamiltonian: CutoffPairOverlap<AlwaysTrue>,
     macrostate: Isothermal,

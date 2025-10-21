@@ -4,7 +4,7 @@
 //! Common benchmarking methods.
 use std::time::Instant;
 
-use hoomd_spatial::{HashCell, PointsInBall};
+use hoomd_spatial::{VecCell, PointsInBall};
 use rand::distr::Distribution;
 use log::{debug, trace};
 
@@ -20,12 +20,12 @@ use hoomd_vector::Cartesian;
 /// Place n hard hyperspheres in a D-dimensional hypercube at the given number density
 ///
 /// The spheres have diameter 1, are randomly placed in a non-overlapping configuration.
-pub fn place_hard_hyperspheres<B, S, const D: usize>(n: usize, number_density: f64) -> anyhow::Result<Microstate<B, S, HashCell<SiteKey, D>, Periodic<Hypercuboid<D>>>> where
+pub fn place_hard_hyperspheres<B, S, const D: usize>(n: usize, number_density: f64) -> anyhow::Result<Microstate<B, S, VecCell<SiteKey, D>, Periodic<Hypercuboid<D>>>> where
 B: Default + Position<Position = Cartesian<D>> + Transform<S> + Copy,
 S: Default + Position<Position = Cartesian<D>> + Copy,
 UniformIn<S, Periodic<Hypercuboid<D>>>: Distribution<Body<B, S>>,
 Periodic<Hypercuboid<D>>: GenerateGhosts<S>,
-HashCell<SiteKey, D>: PointsInBall<Cartesian<D>, SiteKey>,
+VecCell<SiteKey, D>: PointsInBall<Cartesian<D>, SiteKey>,
 {
     let box_length = (n as f64 / number_density).powf(1.0 / (D as f64));
     let sigma = 1.0;
@@ -33,12 +33,12 @@ HashCell<SiteKey, D>: PointsInBall<Cartesian<D>, SiteKey>,
 
     debug!("Initializing...");
 
-    let cell_list = HashCell::with_cell_width(sigma);
+    let cell_list = VecCell::new(sigma, (box_length / sigma).ceil() as u32 + 2);
     let boundary = Periodic::new(sigma,
         Hypercuboid::<D>::with_equal_edges(
             box_length.try_into()?))?;
 
-    let mut microstate = MicrostateBuilder::<B, S, HashCell<SiteKey, D>, Periodic<Hypercuboid<D>>>::with_spatial_data_and_boundary(cell_list, boundary)
+    let mut microstate = MicrostateBuilder::<B, S, VecCell<SiteKey, D>, Periodic<Hypercuboid<D>>>::with_spatial_data_and_boundary(cell_list, boundary)
         .try_build()?;
 
     let translate = Translate::with_maximum_distance(0.1.try_into()?);

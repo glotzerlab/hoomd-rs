@@ -14,7 +14,7 @@ use hoomd_microstate::{
     boundary::Periodic, property::OrientedPoint, Microstate, MicrostateBuilder, SiteKey
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
-use hoomd_spatial::CellList;
+use hoomd_spatial::VecCell;
 use hoomd_vector::{self, Angle, Cartesian};
 // ANCHOR_END: use
 
@@ -29,7 +29,7 @@ type SiteProperties = OrientedPoint<PositionVector, Orientation>;
 // ANCHOR: simulation_struct
 struct HardEllipseSelfAssembly {
     /// Positions of all the bodies in the simulation.
-    microstate: Microstate<BodyProperties, SiteProperties, CellList<SiteKey, 2>, Periodic<Rectangle>>,
+    microstate: Microstate<BodyProperties, SiteProperties, VecCell<SiteKey, 2>, Periodic<Rectangle>>,
     /// How sites interact with other sites and fields.
     hamiltonian: CutoffPairOverlap<HardShape<Ellipse>>,
     /// Trial moves to apply.
@@ -91,7 +91,7 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: periodic
 
         // ANCHOR: microstate
-        let cell_list = CellList::with_cell_width(sigma);
+        let cell_list = VecCell::new(sigma, (sigma / box_height).ceil() as u32 + 2);
         let microstate =
             MicrostateBuilder::with_spatial_data_and_boundary(cell_list, periodic_square).try_build()?;
         // ANCHOR_END: microstate

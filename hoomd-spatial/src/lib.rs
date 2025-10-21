@@ -14,13 +14,11 @@
 
 // TODO: PostiveReal for cell width?
 
-use hoomd_vector::Cartesian;
-use std::{array, cmp::Eq, hash::Hash};
-use rustc_hash::FxHashMap;
-
 mod hash_cell;
+mod vec_cell;
 
 pub use hash_cell::HashCell;
+pub use vec_cell::VecCell;
 
 pub trait PointUpdate<P, K> {
     /// Insert a point identified by a key.
