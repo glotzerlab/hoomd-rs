@@ -28,7 +28,7 @@ pub use cutoff_pair::CutoffPair;
 pub use cutoff_pair_overlap::CutoffPairOverlap;
 pub use external_overlap::ExternalOverlap;
 pub use external_type::External;
-use hoomd_vector::Vector;
+use hoomd_vector::{Vector, WedgeProduct};
 pub use zero::Zero;
 
 /// Compute the total energy of a potential applied to the microstate.
@@ -518,14 +518,14 @@ The generic type names are:
 
 TODO: Add intra-doc links.
 */
-pub trait NetBodyTorque<V, B, S, C> {
+pub trait NetBodyTorque<const N: usize, V: WedgeProduct, B, S, C> {
     /** Compute the net torque.
     
     `microstate` describes the system configuration and `body_index` specifies
     the body within the system for which the net torque is calculated.
     */
     #[must_use]
-    fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V;
+    fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V::Bivector;
 }
 
 /** Compute the force on a single site.
@@ -558,14 +558,14 @@ The generic type names are:
 
 TODO: Add intra-doc links.
 */
-pub trait SiteTorque<V, B, S, C> {
+pub trait SiteTorque<V: WedgeProduct, B, S, C> {
     /** Compute the torque.
     
     `microstate` describes the system configuration and `site` describes
     a site for which the torque is calculated.
     */
     #[must_use]
-    fn net_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V;
+    fn net_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V::Bivector;
 }
 
 /** Compute the non-pairwise force on a single site.
@@ -589,9 +589,9 @@ The generic type names are:
 
 TODO: Add intra-doc links.
 */
-pub trait ExternalSiteTorque<V, S> {
+pub trait ExternalSiteTorque<V: WedgeProduct, S> {
     /// Evaluate the torque on a single site.
-    fn site_single_torque(&self, site_properties: &S) -> V;
+    fn site_single_torque(&self, site_properties: &S) -> V::Bivector;
 }
 
 /** Compute the pairwise force on one site from another site.
@@ -615,9 +615,9 @@ The generic type names are:
 
 TODO: Add intra-doc links.
 */
-pub trait PairSiteTorque<V, S> {
+pub trait PairSiteTorque<V: WedgeProduct, S> {
     /// Evaluate the torque torque on site a from site b.
-    fn site_pair_torque(&self, a: &S, b: &S) -> V;
+    fn site_pair_torque(&self, a: &S, b: &S) -> V::Bivector;
 }
 
 
