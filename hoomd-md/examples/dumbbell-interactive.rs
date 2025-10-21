@@ -56,7 +56,7 @@ impl Dumbbell {
 
         let dumbbell_body = Body {
             properties: OrientedDynamicsPoint {
-                position: Cartesian::from([-(box_length/2.0)+0.01, 0.0]),
+                position: Cartesian::from([0.0, 0.0]),
                 momentum: Cartesian::from([0.0, 0.0]),
                 net_force: Cartesian::from([0.0, 0.0]),
                 mass: 1.0,
@@ -72,7 +72,7 @@ impl Dumbbell {
         };
         microstate.add_body(dumbbell_body)?;
 
-        let swimmer_x = -(box_length/2.0) + 0.01;
+        let swimmer_x = 0.0;
         let swimmer_y = - (box_length / 2.0) * (4.0 / 5.0);
         let swimmer_body = Body {
             properties: OrientedDynamicsPoint {     // why does this have to be of the same Type as the dumbbell body?
