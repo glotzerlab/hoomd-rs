@@ -2,7 +2,7 @@
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    pairwise::{Isotropic, LennardJonesGauss}, CutoffPair, NetBodyForce, TotalEnergy,
+    pairwise::{Isotropic, LennardJonesGauss}, rigid::Rigid, CutoffPair, NetBodyForce, TotalEnergy
 };
 use hoomd_md::{thermalize::{Thermalize, TranslationalThermalizer}, thermostat::{BussiThermostat}, ConstantVolume, TranslationalMotion};
 use hoomd_microstate::{
@@ -33,7 +33,7 @@ struct LJG_sqaure {
 
     thermostat: BussiThermostat,
 
-    force: CutoffPair<Isotropic<LennardJonesGauss>>,
+    force: Rigid<CutoffPair<Isotropic<LennardJonesGauss>>>,
 
     integrator: ConstantVolume,
 }
@@ -45,7 +45,7 @@ impl LJG_sqaure {
         let kT_init = 0.15;
 
         // LJG potential
-        let force = CutoffPair {
+        let force = Rigid(CutoffPair {
             r_cut: 3.0,
             evaluator: Isotropic(LennardJonesGauss {
                 epsilon: 0.75,
@@ -53,7 +53,7 @@ impl LJG_sqaure {
                 r_0: 1.41,
                 scale: 1.0
             })
-        };
+        });
 
         // Create a microstate with a grid of bodies and a swimmer (final body)
         let square = Rectangle::with_equal_edges(box_length.try_into()?);
@@ -153,7 +153,7 @@ impl Simulation for LJG_sqaure {
             let ke = self.integrator.get_kinetic_energy();
             let kT = 2.0 / (nd * (nparticle as f64 - 1.0)) * ke;
 
-            let pe = self.force.total_energy(&self.microstate);
+            let pe = self.force.0.total_energy(&self.microstate);
             let thermal_e = self.thermostat.get_energy();
             let hamiltonian = *ke + pe + *thermal_e;
 

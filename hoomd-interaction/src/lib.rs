@@ -31,6 +31,8 @@ pub use external_type::External;
 use hoomd_vector::{Vector, WedgeProduct};
 pub use zero::Zero;
 
+pub mod rigid;
+
 /// Compute the total energy of a potential applied to the microstate.
 ///
 /// The `TotalEnergy` trait describes a type that can compute the energy of a

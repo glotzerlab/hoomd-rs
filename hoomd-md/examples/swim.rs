@@ -2,8 +2,7 @@
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    CutoffPair,
-    pairwise::{LennardJones, Isotropic},
+    pairwise::{Isotropic, LennardJones}, rigid::Rigid, CutoffPair
 };
 use hoomd_md::{thermostat::NoThermostat, ConstantVolume, TranslationalMotion};
 use hoomd_microstate::{
@@ -17,6 +16,7 @@ use hoomd_bevy::{
     representation::RectangularBoundary,
     representation::disk::{self, Disk},
 };
+use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 
 use anyhow::Context;
 use bevy::prelude::*;
@@ -36,7 +36,7 @@ struct Swim {
     
     thermostat: NoThermostat,
 
-    force: CutoffPair<Isotropic<LennardJones<12, 6>>>,
+    force: Rigid<CutoffPair<Isotropic<LennardJones<12, 6>>>>,
 
     integrator: ConstantVolume,
 }
@@ -90,13 +90,13 @@ impl Swim {
         let microstate = builder.try_build()?;
      
         // Model interactions (in this case, a pairwise Lennard-Jones)
-        let force = CutoffPair {
+        let force = Rigid(CutoffPair {
             r_cut: 6.0,
             evaluator: Isotropic(LennardJones::<12,6> {
                 epsilon: 0.01,
                 sigma: 1.0
             })
-        };
+        });
     
         // Create an NVE macrostate
         let macrostate = Isoenergy{};
@@ -162,6 +162,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut app = App::new();
     hoomd_bevy::add_default_plugins(&mut app);
+    app.add_plugins(EguiPlugin::default());
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(
         Startup,

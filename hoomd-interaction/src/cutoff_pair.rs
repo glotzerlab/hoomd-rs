@@ -490,29 +490,6 @@ where
     }
 }
 
-/** Compute the net cutoff pairwise force on a single body.
-TODO: Add example.
-*/
-impl<V, B, S, C, E> NetBodyForce<V, B, S, C> for CutoffPair<E>
-where
-    V: Vector + Default + InnerProduct + Metric,
-    B: Transform<S>,
-    S: Position<Position = V>,
-    E: PairSiteForce<V, S>,
-{
-    #[inline]
-    fn net_force_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V {
-        let mut total = V::default();
-        for site in microstate.iter_body_sites(body_index) {
-            total += self.net_force_on_site(microstate, site);
-        }
-        total
-    }
-
-    // TODO: consider whether to add state here to track which body/sites have
-    // been calculated already, which would prevent double-calculations.
-}
-
 /** Compute the net cutoff pairwise force on a single site.
 TODO: Add example.
 */

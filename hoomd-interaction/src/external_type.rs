@@ -261,22 +261,6 @@ where
     }
 }
 
-impl<V, B, S, C, E> NetBodyForce<V, B, S, C> for External<E>
-where
-    V: Vector + Default,
-    S: Position<Position = V>,
-    E: ExternalSiteForce<V, S>,
-{
-    #[inline]
-    fn net_force_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V {
-        let mut total = V::default();
-        for site in microstate.iter_body_sites(body_index) {
-            total += self.net_force_on_site(microstate, site);
-        }
-        total
-    }
-}
-
 impl<V, B, S, C, E> SiteForce<V, B, S, C> for External<E>
 where
     V: Vector + Default,

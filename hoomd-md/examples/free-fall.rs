@@ -7,7 +7,7 @@
 // use hoomd_simulation::macrostate::{Isoenergy};
 use hoomd_vector::Cartesian;
 use hoomd_microstate::{Microstate, Body, property::{Point, DynamicsPoint}};
-use hoomd_interaction::{external::Linear, External};
+use hoomd_interaction::{external::Linear, rigid::Rigid, External};
 use hoomd_md::{ConstantVolume, TranslationalMotion, thermostat::NoThermostat};
 
 // Question: Why do I have to import TranslationalMotion and Position?
@@ -28,11 +28,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     microstate.add_body(body)?;
 
     // Model interactions (in this case, just gravity)
-    let force = External(Linear {
+    let force = Rigid(External(Linear {
         alpha: -2.0,
         plane_origin: [0.0, 1.0].into(),
         plane_normal: [0.0, 1.0].try_into()?,
-    });
+    }));
 
     // Create an NVE macrostate
     struct Isoenergy {};
