@@ -232,9 +232,9 @@ impl<'a, K, const D: usize> Iterator for PointsIterator<'a, K, D> {
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let last_index = self.index_in_current_cell;
-            self.index_in_current_cell += 1;
-            if let Some(keys) = self.keys && last_index < keys.len() {
+            if let Some(keys) = self.keys && self.index_in_current_cell < keys.len() {
+                let last_index = self.index_in_current_cell;
+                self.index_in_current_cell += 1;
                 return Some(&keys[last_index]);
             }
 
@@ -319,7 +319,8 @@ K: Copy + Eq + Hash
     fn points_potentially_in_ball<'a>(&'a self, position: &Cartesian<3>, radius: f64) -> impl Iterator<Item=&'a K> where K: 'a {
         assert!(radius <= self.cell_width, "search radius must be less than or equal to the cell width");
         let center = self.cell_index_from_position(position);
-        let map_index = Self::map_index_from_cell(self.half_extent, &center);
+        let map_index = Self::map_index_from_cell(self.half_extent,
+            &array::from_fn(|i| center[i] + STENCIL_3D[0][i]));
 
         PointsIterator {
             keys: map_index.ok().map(|index| &self.keys_map[index]),

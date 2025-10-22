@@ -42,11 +42,12 @@ impl<const N: usize> Distribution<Cartesian<N>> for Ball {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
         let r = self.radius.get();
 
-        let uniform = Uniform::new_inclusive(-r, r).expect("r should be a positive real value");
-
         loop {
+            let mut coordinates_01 = [0.0; N];
+            rng.fill(&mut coordinates_01);
+            
             let v = Cartesian {
-                coordinates: array::from_fn(|_| uniform.sample(rng)),
+                coordinates: array::from_fn(|i| (coordinates_01[i] * 2.0 - 1.0) * r),
             };
 
             if v.norm_squared() < r * r {
