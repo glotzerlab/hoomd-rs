@@ -33,7 +33,7 @@ VecCell<SiteKey, D>: PointsInBall<Cartesian<D>, SiteKey>,
 
     debug!("Initializing...");
 
-    let cell_list = VecCell::new(sigma, 100);
+    let cell_list = VecCell::new(sigma, 1);
     let boundary = Periodic::new(sigma,
         Hypercuboid::<D>::with_equal_edges(
             box_length.try_into()?))?;
