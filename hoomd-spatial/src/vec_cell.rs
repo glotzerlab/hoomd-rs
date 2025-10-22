@@ -20,7 +20,7 @@ pub struct VecCell<K, const D: usize> {
     /// Location of the 0,..,0 cell.
     origin: Cartesian<D>,
     /// The shape of `keys_map` is `(half_extent * 2 + 1).powi(D)`.
-    half_extent: usize,
+    half_extent: u32,
 }
 
 /// Increment a cell index.
@@ -28,16 +28,16 @@ pub struct VecCell<K, const D: usize> {
 /// Counts from `[-half_extent, -half_extent, ..., -half_extent]` to
 /// `[half_extent, half_extent, ..., half_extent]`. Returns `None` when
 /// the increment would count past the end point.
-fn increment_cell_index<const D: usize>(mut cell_index: [i64; D], half_extent: usize) -> Option<[i64; D]> {
+fn increment_cell_index<const D: usize>(mut cell_index: [i64; D], half_extent: u32) -> Option<[i64; D]> {
     cell_index[D-1] += 1;
 
     for i in (0..D).rev() {
-        if cell_index[i] > half_extent as i64 {
+        if cell_index[i] > half_extent.into() {
             if i == 0 {
                 return None;
             }
 
-            cell_index[i] = -(half_extent as i64);
+            cell_index[i] = -(i64::from(half_extent));
             cell_index[i-1] += 1;
         }
     }
@@ -61,23 +61,21 @@ impl<K, const D: usize> VecCell<K, D>
     /// On error, return `Err(max_half_extent)` where `max_half_extent` is the value
     /// `half_extent` must be to include this cell index.
     #[inline]
-    fn map_index_from_cell(half_extent: usize, cell_index: &[i64; D]) -> Result<usize, usize> {
+    fn map_index_from_cell(half_extent: u32, cell_index: &[i64; D]) -> Result<usize, u32> {
         assert!(D > 1);
 
         let mut vec_index: usize = 0;
         let mut width = 1; 
 
         for i in (0..D).rev() {
-            if cell_index[i] < -(half_extent as i64) {
-                return Err(-cell_index[D-1] as usize);
+            let needed_extent = cell_index[i].unsigned_abs();
+            if needed_extent > u64::from(half_extent) {
+                return Err(needed_extent.try_into().expect("cell index should have a reasonable size"));
             }
-            if cell_index[i] > half_extent as i64 {
-                return Err(cell_index[D-1] as usize);
-            }        
-            let v: usize = (cell_index[i] + half_extent as i64) as usize;
+            let v: usize = (cell_index[i] + i64::from(half_extent)).try_into().expect("cell index should be in bounds");
         
             vec_index += v * width;
-            width *= half_extent * 2; 
+            width *= (half_extent * 2 + 1) as usize;
         }
         Ok(vec_index)
     }
@@ -95,10 +93,10 @@ K: Copy + Eq + Hash
     {
     #[inline]
     #[must_use]
-    pub fn new(cell_width: f64, half_extent: usize) -> Self {
+    pub fn new(cell_width: f64, half_extent: u32) -> Self {
         VecCell {
             cell_width,
-            keys_map: iter::repeat_n(Vec::new(), (half_extent * 2 + 1).pow(D as u32)).collect(),
+            keys_map: iter::repeat_n(Vec::new(), (half_extent * 2 + 1).pow(D as u32) as usize).collect(),
             cell_index: FxHashMap::default(),
             origin: Cartesian::default(),
             half_extent,
@@ -127,7 +125,7 @@ K: Copy + Eq + Hash
 
     /// Double the number of cells stored along each axis until it includes the target.
     #[inline]
-    fn expand_to(&mut self, target: usize) {
+    fn expand_to(&mut self, target: u32) {
         if self.half_extent >= target {
             return;
         }
@@ -138,13 +136,13 @@ K: Copy + Eq + Hash
             new_half_extent *= 2;
         }
 
-        log::trace!("Expanding to {}^{} cells", new_half_extent*2+1, D);
+        trace!("Expanding to {}^{} cells", new_half_extent*2+1, D);
 
-        let mut new_keys_map: Vec<Vec<K>> = iter::repeat_n(Vec::new(), (new_half_extent*2 + 1).pow(D as u32)).collect();
+        let mut new_keys_map: Vec<Vec<K>> = iter::repeat_n(Vec::new(), (new_half_extent*2 + 1).pow(D as u32) as usize).collect();
         let old_half_extent = self.half_extent;
         let old_keys_map = &mut self.keys_map;
 
-        let mut old_cell_index = [-(old_half_extent as i64); D];
+        let mut old_cell_index = [-i64::from(old_half_extent); D];
         loop {
             let old_vec_index = Self::map_index_from_cell(old_half_extent, &old_cell_index)
                 .expect("cell_index should be consistent with keys_map");
@@ -173,8 +171,9 @@ K: Copy + Eq + Hash {
             Ok(map_index) => map_index,
             Err(max_half_extent) => {
                 self.expand_to(max_half_extent);
-                Self::map_index_from_cell(self.half_extent, &cell_index)
-                    .expect("cell_index should be in the expanded VecCell")
+                return self.insert(key, position); 
+                // Self::map_index_from_cell(self.half_extent, &cell_index)
+                //     .expect("cell_index should be in the expanded VecCell")
                 }
         };
 
@@ -299,7 +298,8 @@ K: Copy + Eq + Hash
     fn points_potentially_in_ball<'a>(&'a self, position: &Cartesian<2>, radius: f64) -> impl Iterator<Item=&'a K> where K: 'a {
         assert!(radius <= self.cell_width, "search radius must be less than or equal to the cell width");
         let center = self.cell_index_from_position(position);
-        let map_index = Self::map_index_from_cell(self.half_extent, &center);
+        let map_index = Self::map_index_from_cell(self.half_extent,
+            &array::from_fn(|i| center[i] + STENCIL_2D[0][i]));
 
         PointsIterator {
             keys: map_index.ok().map(|index| &self.keys_map[index]),
