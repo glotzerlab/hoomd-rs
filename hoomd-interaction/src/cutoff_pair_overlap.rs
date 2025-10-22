@@ -78,7 +78,7 @@ pub struct CutoffPairOverlap<E> {
 
 impl<V, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPairOverlap<E>
 where
-    E: SitePairOverlap<S>,
+    E: SitePairOverlap<S, V>,
     S: Position<Position = V>,
     V: Vector,
 {
@@ -175,7 +175,7 @@ where
 /// ```
 impl<V, B, S, C, E> DeltaEnergyOne<B, S, C> for CutoffPairOverlap<E>
 where
-    E: SitePairOverlap<S>,
+    E: SitePairOverlap<S, V>,
     B: Transform<S>,
     S: Position<Position = V>,
     C: Wrap<B> + Wrap<S>,
@@ -256,7 +256,7 @@ where
 /// ```
 impl<V, B, S, C, E> DeltaEnergyInsert<B, S, C> for CutoffPairOverlap<E>
 where
-    E: SitePairOverlap<S>,
+    E: SitePairOverlap<S, V>,
     B: Transform<S>,
     S: Position<Position = V>,
     C: Wrap<B> + Wrap<S>,
@@ -332,7 +332,7 @@ where
 /// ```
 impl<V, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPairOverlap<E>
 where
-    E: SitePairOverlap<S>,
+    E: SitePairOverlap<S, V>,
     S: Position<Position = V>,
     V: Vector,
 {

@@ -4,9 +4,10 @@
 //! Implement `HardShape`
 
 use crate::SitePairOverlap;
-use hoomd_geometry::IntersectsAt;
+use hoomd_geometry::{IntersectsAt, hyperbolic_overlap::SeparatingPlanes};
+use hoomd_manifold::Hyperbolic;
 use hoomd_microstate::property::{Orientation, Position};
-use hoomd_vector::{self, Rotate, Rotation, Vector};
+use hoomd_vector::{Angle, Cartesian, Metric, self, Rotate, Rotation, Vector};
 
 /// Infinite energy when sites overlap, 0 when they don't (*not differentiable*).
 ///
@@ -29,12 +30,11 @@ use hoomd_vector::{self, Rotate, Rotation, Vector};
 /// ```
 pub struct HardShape<G>(pub G);
 
-impl<S, G, V, R> SitePairOverlap<S> for HardShape<G>
+impl<S, G, R, const N: usize> SitePairOverlap<S, Cartesian<N>> for HardShape<G>
 where
-    S: Position<Position = V> + Orientation<Rotation = R>,
-    V: Vector,
-    R: Rotation + Rotate<V>,
-    G: IntersectsAt<G, V, R>,
+    S: Position<Position = Cartesian<N>> + Orientation<Rotation = R>,
+    R: Rotation + Rotate<Cartesian<N>>,
+    G: IntersectsAt<G, Cartesian<N>, R>,
 {
     /// Test whether two sites overlap.
     ///
@@ -80,5 +80,18 @@ where
             site_properties_j.orientation(),
         );
         self.0.intersects_at(&self.0, &v_ij, &o_ij)
+    }
+}
+
+impl<S, G> SitePairOverlap<S, Hyperbolic<3>> for HardShape<G>
+where
+    S: Position<Position = Hyperbolic<3>> + Orientation<Rotation = Angle>,
+    G: SeparatingPlanes<G, Hyperbolic<3>, Angle>,
+{
+    /// Test whether two sites overlap. 
+    /// TODO
+    #[inline]
+    fn site_pair_overlap(&self, site_properties_i: &S, site_properties_j: &S) -> bool {
+        false
     }
 }

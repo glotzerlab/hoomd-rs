@@ -18,6 +18,7 @@ hoomd-utility.workspace = true
 rand.workspace = true
 itertools.workspace = true
 thiserror.workspace = true
+robust = "1.2.0"
 
 [lints]
 workspace = true

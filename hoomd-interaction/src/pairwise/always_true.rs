@@ -13,7 +13,7 @@ use crate::SitePairOverlap;
 /// [`CutoffPairOverlap`]: crate::CutoffPairOverlap
 pub struct AlwaysTrue;
 
-impl<S> SitePairOverlap<S> for AlwaysTrue {
+impl<S, V> SitePairOverlap<S, V> for AlwaysTrue {
     /// Return true.
     #[inline]
     fn site_pair_overlap(&self, _site_properties_i: &S, _site_properties_j: &S) -> bool {

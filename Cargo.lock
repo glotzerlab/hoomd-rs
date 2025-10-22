@@ -2966,6 +2966,7 @@ dependencies = [
  "hoomd-vector",
  "itertools 0.14.0",
  "rand 0.9.2",
+ "robust",
  "rstest",
  "thiserror 2.0.17",
 ]
@@ -2989,6 +2990,7 @@ dependencies = [
  "approxim",
  "divan",
  "hoomd-geometry",
+ "hoomd-manifold",
  "hoomd-microstate",
  "hoomd-utility",
  "hoomd-vector",
@@ -4640,6 +4642,12 @@ name = "renderdoc-sys"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
+
+[[package]]
+name = "robust"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e27ee8bb91ca0adcf0ecb116293afa12d393f9c2b9b9cd54d33e8078fe19839"
 
 [[package]]
 name = "ron"
