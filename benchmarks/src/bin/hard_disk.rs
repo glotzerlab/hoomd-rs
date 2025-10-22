@@ -62,7 +62,7 @@ fn main() -> anyhow::Result<()> {
         macrostate: Isothermal { temperature: 1.0 },
     };
 
-    benchmarks::benchmark(&mut hard_disk, 1000, 1000, 5)?;
+    benchmarks::benchmark(&mut hard_disk, 1000, 1000, 30)?;
 
     Ok(())
 }

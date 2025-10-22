@@ -7,3 +7,4 @@ perf.data.old
 screenshot.png
 *.wasm
 flamegraph.svg
+profile.json.gz
