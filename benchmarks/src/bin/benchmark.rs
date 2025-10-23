@@ -7,8 +7,8 @@ use clap::Parser;
 use clap_verbosity_flag::{Verbosity, InfoLevel};
 use clap_verbosity_flag::log::LevelFilter;
 
-use hoomd_microstate::property::Point;
-use hoomd_vector::Cartesian;
+use hoomd_microstate::property::{OrientedPoint, Point};
+use hoomd_vector::{Cartesian, Versor};
 
 use benchmarks::{Benchmark, mc};
 use wildmatch::WildMatch;
@@ -68,6 +68,7 @@ fn main() -> anyhow::Result<()> {
     }
 
     let microstate_3d = benchmarks::place_hard_hyperspheres::<Point<Cartesian<3>>, Point<Cartesian<3>>, 3>(n, number_density)?;
+    let microstate_oriented_3d = benchmarks::place_hard_hyperspheres::<OrientedPoint<Cartesian<3>, Versor>, OrientedPoint<Cartesian<3>, Versor>, 3>(n, number_density)?;
 
     if benchmark_matcher.matches("mc_hard_sphere_3d") {
         let mut mc_hard_sphere_3d = mc::HardSphere::with_microstate(&microstate_3d)?;
@@ -85,6 +86,12 @@ fn main() -> anyhow::Result<()> {
         let mut mc_lennard_jones_3d = mc::LennardJones::with_microstate(&microstate_3d)?;
         info!("mc_lennard_jones_3d: {} spheres at number density {}", n, number_density);
         benchmark.benchmark_one(&mut mc_lennard_jones_3d)?;
+    }
+
+    if benchmark_matcher.matches("mc_octahedron_3d") {
+        let mut mc_octahedron_3d = mc::Octahedron::with_microstate(&microstate_oriented_3d)?;
+        info!("mc_octahedron_3d: {} octahedra at number density {}", n, number_density);
+        benchmark.benchmark_one(&mut mc_octahedron_3d)?;
     }
 
     Ok(())

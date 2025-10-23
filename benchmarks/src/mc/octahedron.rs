@@ -1,0 +1,78 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+use hoomd_spatial::{PointUpdate, PointsInBall, VecCell};
+use hoomd_vector::{Cartesian, Versor};
+use hoomd_simulation::{macrostate::Isothermal, Simulation};
+use hoomd_microstate::{boundary::{GenerateGhosts, Periodic}, property::OrientedPoint, Microstate, MicrostateBuilder, SiteKey};
+use hoomd_geometry::{shape::Hypercuboid, Convex};
+use hoomd_mc::{Sweep, Translate, Trial};
+use hoomd_interaction::{CutoffPairOverlap, pairwise::HardShape};
+use hoomd_geometry::shape::ConvexPolyhedron;
+
+pub struct Octahedron<X> {
+    microstate: Microstate<OrientedPoint<Cartesian<3>, Versor>, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<Hypercuboid<3>>>,
+    translate_sweep: Sweep<Translate<Cartesian<3>>>,
+    hamiltonian: CutoffPairOverlap<HardShape<Convex<ConvexPolyhedron>>>,
+    macrostate: Isothermal,
+}
+
+impl<X> Simulation for Octahedron<X> where
+X: PointsInBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey>,
+Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
+{
+    fn advance(&mut self) -> anyhow::Result<()> {
+        self.translate_sweep.apply(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.macrostate,
+        );
+        self.microstate.increment_step();
+
+        // TODO: Rotate moves
+
+        Ok(())
+    }
+
+    fn step(&self) -> u64 {
+        self.microstate.step()
+    }
+}
+
+impl Octahedron<VecCell<SiteKey, 3>> where
+Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
+{
+    pub fn with_microstate<X>(microstate: &Microstate<OrientedPoint<Cartesian<3>, Versor>, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<Hypercuboid<3>>>) -> anyhow::Result<Self> {
+        let sigma = 1.0;
+
+        let translate = Translate::with_maximum_distance((sigma * 0.1).try_into()?);
+        let translate_sweep = Sweep(translate);
+
+        let octahedron = ConvexPolyhedron::with_vertices(vec![
+                [-0.5, 0.0, 0.0].into(),
+                [0.5, 0.0, 0.0].into(),
+                [0.0, -0.5, 0.0].into(),
+                [0.0, 0.5, 0.0].into(),
+                [0.0, 0.0, -0.5].into(),
+                [0.0, 0.0, 0.5].into(),
+            ]
+        
+            )?;
+        let hamiltonian = CutoffPairOverlap {
+            r_cut: sigma,
+            evaluator: HardShape(Convex(octahedron)),
+        };    
+    
+        let cell_list = VecCell::new(sigma, 1);
+        let microstate = MicrostateBuilder::with_spatial_data_and_boundary(cell_list, microstate.boundary().clone())
+            .bodies(microstate.bodies().iter().map(|b| b.item.clone()))
+            .try_build()?;
+
+        Ok(Self {
+            microstate,
+            translate_sweep,
+            hamiltonian,
+            macrostate: Isothermal { temperature: 1.0 },
+        })
+    }
+}

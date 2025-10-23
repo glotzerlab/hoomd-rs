@@ -3,9 +3,11 @@
 
 mod hard_sphere;
 mod lennard_jones;
+mod octahedron;
 mod step;
 
 
 pub use hard_sphere::HardSphere;
 pub use lennard_jones::LennardJones;
+pub use octahedron::Octahedron;
 pub use step::Step;
