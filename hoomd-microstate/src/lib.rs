@@ -277,12 +277,32 @@ pub struct Site<S> {
 ///
 /// The [`property`] module documentation shows you how to define custom body
 /// and site property types.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Body<B, S = B> {
     /// The body's degrees of freedom.
     pub properties: B,
     /// Interaction sites in the body's frame of reference.
     pub sites: Vec<S>,
+}
+
+impl<B, S> Clone for Body<B, S> where
+B: Clone,
+S: Clone,
+{
+    #[inline]
+    fn clone(&self) -> Self {
+        Self {
+            properties: self.properties.clone(),
+            sites: self.sites.clone(),
+        }
+    }
+
+    // Provided method
+    #[inline]
+    fn clone_from(&mut self, source: &Self) {
+        self.properties.clone_from(&source.properties);
+        self.sites.clone_from(&source.sites);
+    }
 }
 
 impl<V> Body<Point<V>, Point<V>> {
