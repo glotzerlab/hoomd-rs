@@ -4,9 +4,8 @@
 //! hoomd-rs benchmarking framework.
 
 mod benchmark;
-mod hard_sphere;
+pub mod mc;
 mod place;
 
 pub use benchmark::Benchmark;
-pub use hard_sphere::HardSphere;
 pub use place::place_hard_hyperspheres;
