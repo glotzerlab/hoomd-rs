@@ -96,7 +96,7 @@ where
 
                     let delta_h = hamiltonian.delta_energy_one(microstate, body_index, &trial);
                     if delta_h != f64::INFINITY &&
-                        rng.random::<f64>() < (-delta_h / kt).exp()
+                        (delta_h <= 0.0 || rng.random::<f64>() < (-delta_h / kt).exp())
                         && microstate
                             .update_body_properties(body_index, trial.properties)
                             .is_ok()
