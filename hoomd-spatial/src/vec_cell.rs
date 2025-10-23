@@ -122,7 +122,6 @@ K: Copy + Eq + Hash
     }
 
     /// Double the number of cells stored along each axis until it includes the target.
-    #[inline]
     fn expand_to(&mut self, target: u32) {
         if self.half_extent >= target {
             return;
