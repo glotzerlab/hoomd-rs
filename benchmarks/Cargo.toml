@@ -23,7 +23,9 @@ hoomd-spatial.workspace = true
 hoomd-vector.workspace = true
 
 anyhow.workspace = true
-# clap.workspace = true
+clap.workspace = true
+clap-verbosity-flag.workspace = true
 env_logger.workspace = true
 log.workspace = true
 rand.workspace = true
+wildmatch.workspace = true

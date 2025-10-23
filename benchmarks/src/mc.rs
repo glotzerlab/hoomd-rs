@@ -2,7 +2,10 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 mod hard_sphere;
+mod lennard_jones;
 mod step;
 
+
 pub use hard_sphere::HardSphere;
+pub use lennard_jones::LennardJones;
 pub use step::Step;
