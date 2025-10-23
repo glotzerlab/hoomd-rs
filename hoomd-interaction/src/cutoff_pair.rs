@@ -307,7 +307,12 @@ where
                 .wrap(final_body.properties.transform(s))
             {
                 Err(_) => return f64::INFINITY,
-                Ok(wrapped_site) => energy_final += site_energy(&wrapped_site),
+                Ok(wrapped_site) => {
+                    energy_final += site_energy(&wrapped_site);
+                    if energy_final == f64::INFINITY {
+                        return energy_final
+                    }
+                    },
             }
         }
 
