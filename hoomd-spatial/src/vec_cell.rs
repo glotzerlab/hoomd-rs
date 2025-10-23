@@ -28,6 +28,7 @@ pub struct VecCell<K, const D: usize> {
 /// Counts from `[-half_extent, -half_extent, ..., -half_extent]` to
 /// `[half_extent, half_extent, ..., half_extent]`. Returns `None` when
 /// the increment would count past the end point.
+#[inline]
 fn increment_cell_index<const D: usize>(mut cell_index: [i64; D], half_extent: u32) -> Option<[i64; D]> {
     cell_index[D-1] += 1;
 
@@ -56,12 +57,9 @@ impl<K, const D: usize> VecCell<K, D>
 
     /// Compute the vector index from a cell index
     ///
-    /// # Errors
-    ///
-    /// On error, return `Err(max_half_extent)` where `max_half_extent` is the value
-    /// `half_extent` must be to include this cell index.
+    /// Returns `None` when the index is out of bounds.
     #[inline]
-    fn map_index_from_cell(half_extent: u32, cell_index: &[i64; D]) -> Result<usize, u32> {
+    fn map_index_from_cell(half_extent: u32, cell_index: &[i64; D]) -> Option<usize> {
         assert!(D > 1);
 
         let mut vec_index: usize = 0;
@@ -70,14 +68,14 @@ impl<K, const D: usize> VecCell<K, D>
         for i in (0..D).rev() {
             let needed_extent = cell_index[i].unsigned_abs();
             if needed_extent > u64::from(half_extent) {
-                return Err(needed_extent.try_into().expect("cell index should have a reasonable size"));
+                return None;
             }
             let v: usize = (cell_index[i] + i64::from(half_extent)).try_into().expect("cell index should be in bounds");
         
             vec_index += v * width;
             width *= (half_extent * 2 + 1) as usize;
         }
-        Ok(vec_index)
+        Some(vec_index)
     }
 
     /// Get the keys in a given cell index
@@ -167,15 +165,12 @@ K: Copy + Eq + Hash {
     fn insert(&mut self, key: K, position: Cartesian<D>) {
         let cell_index = self.cell_index_from_position(&position);
         let old_cell_index = self.cell_index.insert(key, cell_index);
-        let map_index = match Self::map_index_from_cell(self.half_extent, &cell_index) {
-            Ok(map_index) => map_index,
-            Err(max_half_extent) => {
-                self.expand_to(max_half_extent);
-                return self.insert(key, position); 
-                // Self::map_index_from_cell(self.half_extent, &cell_index)
-                //     .expect("cell_index should be in the expanded VecCell")
-                }
-        };
+        let map_index = Self::map_index_from_cell(self.half_extent, &cell_index).unwrap_or_else(|| {
+            let max_half_extent = cell_index.iter().map(|x| x.unsigned_abs()).reduce(u64::max).expect("D should be greater than 1");
+            self.expand_to(max_half_extent.try_into().expect("max extent cannot exceed u32::MAX"));
+            Self::map_index_from_cell(self.half_extent, &cell_index)
+                .expect("cell_index should be in the expanded VecCell")
+            });
 
         // This checks if old_cell_index is None or if it is different from the new cell index.
         if old_cell_index != Some(cell_index) {
@@ -199,7 +194,7 @@ K: Copy + Eq + Hash {
         let cell_index = self.cell_index.remove(key);
         if let Some(cell_index) = cell_index {
             let map_index = Self::map_index_from_cell(self.half_extent, &cell_index);
-            if let Ok(map_index) = map_index {
+            if let Some(map_index) = map_index {
                 let keys = &mut self.keys_map[map_index];
                 if let Some(idx) = keys.iter().position(|x| x == key) {
                     keys.swap_remove(idx);
@@ -247,7 +242,7 @@ impl<'a, K, const D: usize> Iterator for PointsIterator<'a, K, D> {
 
             let cell_index = array::from_fn(|i| self.center[i] + self.stencil[self.current_stencil][i]);
             let map_index = VecCell::<K,D>::map_index_from_cell(self.cell_list.half_extent, &cell_index);
-            self.keys = map_index.ok().map(|index| &self.cell_list.keys_map[index]);
+            self.keys = map_index.map(|index| &self.cell_list.keys_map[index]);
         }
     }
 }
@@ -302,7 +297,7 @@ K: Copy + Eq + Hash
             &array::from_fn(|i| center[i] + STENCIL_2D[0][i]));
 
         PointsIterator {
-            keys: map_index.ok().map(|index| &self.keys_map[index]),
+            keys: map_index.map(|index| &self.keys_map[index]),
             cell_list: self,
             index_in_current_cell: 0,
             current_stencil: 0,
@@ -323,7 +318,7 @@ K: Copy + Eq + Hash
             &array::from_fn(|i| center[i] + STENCIL_3D[0][i]));
 
         PointsIterator {
-            keys: map_index.ok().map(|index| &self.keys_map[index]),
+            keys: map_index.map(|index| &self.keys_map[index]),
             cell_list: self,
             index_in_current_cell: 0,
             current_stencil: 0,
