@@ -43,7 +43,7 @@ use super::{PointUpdate, PointsInBall};
 /// };
 /// let new_index: usize = 3; // New particle index.
 /// // Add particles to the cell list.
-/// cell_list.insert(&new_position, &new_index);
+// cell_list.insert(&new_position, &new_index);
 /// // Now delete the first particle from the cell list.
 /// cell_list.remove(0);
 /// // Shrink the cell list to fit its current capacity.
@@ -519,7 +519,7 @@ impl<K> PointsInBall<Cartesian<2>, K> for HashCell<K, 2> where
 K: Copy + Eq + Hash
 {
     #[inline]
-    fn points_potentially_in_ball<I: Iterator<Item=K>>(&self, position: &Cartesian<2>, radius: f64, _all_keys: I) -> impl Iterator<Item=K> {
+    fn points_potentially_in_ball(&self, position: &Cartesian<2>, radius: f64) -> impl Iterator<Item=K> {
         assert!(radius <= self.cell_width, "search radius must be less than or equal to the cell width");
         let center = self.cell_index_from_position(position);
         
@@ -540,7 +540,7 @@ impl<K> PointsInBall<Cartesian<3>, K> for HashCell<K, 3> where
 K: Copy + Eq + Hash
 {
     #[inline]
-    fn points_potentially_in_ball<I: Iterator<Item=K>>(&self, position: &Cartesian<3>, radius: f64, _all_keys: I) -> impl Iterator<Item=K> {
+    fn points_potentially_in_ball(&self, position: &Cartesian<3>, radius: f64) -> impl Iterator<Item=K> {
         assert!(radius <= self.cell_width, "search radius must be less than or equal to the cell width");
         let center = self.cell_index_from_position(position);
         
@@ -960,7 +960,7 @@ mod tests {
         }
 
         for p_i in &reference {
-            let potential_neighbors: Vec<_> = cell_list.points_potentially_in_ball(p_i, cell_width).copied().collect();
+            let potential_neighbors: Vec<_> = cell_list.points_potentially_in_ball(p_i, cell_width).collect();
 
             for (j, p_j) in reference.iter().enumerate() {
                 if p_i.distance(p_j) <= cell_width {

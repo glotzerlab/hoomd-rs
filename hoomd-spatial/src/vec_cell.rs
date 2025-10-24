@@ -299,7 +299,7 @@ impl<const D: usize, K> PointsInBall<Cartesian<D>, K> for VecCell<K, D> where
 K: Copy + Eq + Hash
 {
     #[inline]
-    fn points_potentially_in_ball<I: Iterator<Item=K>>(&self, position: &Cartesian<D>, radius: f64, _all_keys: I) -> impl Iterator<Item=K> {
+    fn points_potentially_in_ball(&self, position: &Cartesian<D>, radius: f64) -> impl Iterator<Item=K> {
         let stencil_index = (radius / self.cell_width).ceil() as usize - 1;
         assert!(stencil_index < self.stencils.len(), "search radius must be less than or equal to the maximum interaction range");
 
@@ -564,7 +564,7 @@ mod tests {
         }
 
         for p_i in &reference {
-            let potential_neighbors: Vec<_> = cell_list.points_potentially_in_ball(p_i, cell_width).copied().collect();
+            let potential_neighbors: Vec<_> = cell_list.points_potentially_in_ball(p_i, cell_width).collect();
 
             for (j, p_j) in reference.iter().enumerate() {
                 if p_i.distance(p_j) <= cell_width {

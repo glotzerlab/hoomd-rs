@@ -35,5 +35,5 @@ pub trait PointUpdate<P, K> {
 
 pub trait PointsInBall<P, K> {
     /// Find all the points that *may* be in the given ball.
-    fn points_potentially_in_ball<I: Iterator<Item=K>>(&self, position: &P, radius: f64, all_keys: I) -> impl Iterator<Item=K>;
+    fn points_potentially_in_ball(&self, position: &P, radius: f64) -> impl Iterator<Item=K>;
     }

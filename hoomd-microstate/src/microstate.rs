@@ -177,7 +177,7 @@ impl<T> VecWithTags<T> {
 /// # }
 /// ```
 #[derive(Clone)]
-pub struct Microstate<B, S = B, X = AllPairs, C = Open> {
+pub struct Microstate<B, S = B, X = AllPairs<SiteKey>, C = Open> {
     /// Total number of steps that this microstate has been advanced in a simulation model.
     step: u64,
 
@@ -209,7 +209,7 @@ pub struct Microstate<B, S = B, X = AllPairs, C = Open> {
     spatial_data: X,
 }
 
-impl<B, S> Default for Microstate<B, S, AllPairs, Open> {
+impl<B, S> Default for Microstate<B, S, AllPairs<SiteKey>, Open> {
     /// Construct an empty microstate with open boundary conditions.
     ///
     /// See [`Microstate::new`].
@@ -219,7 +219,7 @@ impl<B, S> Default for Microstate<B, S, AllPairs, Open> {
     }
 }
 
-impl<B, S> Microstate<B, S, AllPairs, Open> {
+impl<B, S> Microstate<B, S, AllPairs<SiteKey>, Open> {
     /// Construct an empty microstate with open boundary conditions.
     ///
     /// The microstate starts at step 0, substep 0, random number seed 0,
@@ -253,7 +253,7 @@ impl<B, S> Microstate<B, S, AllPairs, Open> {
             ghosts: VecWithTags::new(),
             sites_ghosts: Vec::new(),
             boundary: Open,
-            spatial_data: AllPairs,
+            spatial_data: AllPairs::default(),
         }
     }
 }
@@ -1213,14 +1213,7 @@ where
         //     .chain(self.ghosts.items.iter())
         //     .filter(move |s| point.distance_squared(s.properties.position()) < r.powi(2))
         // However, specialization is not in stable Rust and will likely never be.
-        // AllPairs doesn't know about these arrays (and storing them internally
-        // is expensive). Work around the issue by giving `points_potentially_in_ball` an
-        // iterator over keys.
-
-        let primary_sites = self.sites.tags.iter().map(|t| SiteKey::Primary(*t));
-        let ghost_sites = self.ghosts.tags.iter().map(|t| SiteKey::Ghost(*t));
-
-        let potential_sites = self.spatial_data.points_potentially_in_ball(point, r, primary_sites.chain(ghost_sites));
+        let potential_sites = self.spatial_data.points_potentially_in_ball(point, r);
         potential_sites.map(|k| {
             match k {
                 SiteKey::Primary(tag) => {
@@ -1267,7 +1260,7 @@ where
 /// # Ok(())
 /// # }
 /// ```
-pub struct MicrostateBuilder<B, S = B, X = AllPairs, C = Open> {
+pub struct MicrostateBuilder<B, S = B, X = AllPairs<SiteKey>, C = Open> {
     /// The initial value for step in the resulting [`Microstate`].
     step: u64,
 
@@ -1284,7 +1277,7 @@ pub struct MicrostateBuilder<B, S = B, X = AllPairs, C = Open> {
     boundary: C,
 }
 
-impl<B, S> MicrostateBuilder<B, S, AllPairs, Open> {
+impl<B, S> MicrostateBuilder<B, S, AllPairs<SiteKey>, Open> {
     /// Construct an empty [`MicrostateBuilder`] with open boundary conditions.
     ///
     /// The resulting microstate starts at step 0 and has a random seed of 0.
@@ -1316,7 +1309,7 @@ impl<B, S> MicrostateBuilder<B, S, AllPairs, Open> {
     }
 }
 
-impl<B, S> Default for MicrostateBuilder<B, S, AllPairs, Open> {
+impl<B, S> Default for MicrostateBuilder<B, S, AllPairs<SiteKey>, Open> {
     /// See [`MicrostateBuilder::new()`].
     #[inline]
     fn default() -> Self {
@@ -1324,7 +1317,7 @@ impl<B, S> Default for MicrostateBuilder<B, S, AllPairs, Open> {
     }
 }
 
-impl<B, S, C> MicrostateBuilder<B, S, AllPairs, C> {
+impl<B, S, C> MicrostateBuilder<B, S, AllPairs<SiteKey>, C> {
     /// Construct an empty [`MicrostateBuilder`] with the given boundary conditions.
     ///
     /// The resulting microstate starts at step 0 and has a random seed of 0.
@@ -1365,7 +1358,7 @@ impl<B, S, C> MicrostateBuilder<B, S, AllPairs, C> {
             step: 0,
             seed: 0,
             bodies: Vec::new(),
-            spatial_data: AllPairs,
+            spatial_data: AllPairs::default(),
             boundary,
         }
     }
