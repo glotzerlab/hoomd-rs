@@ -76,7 +76,7 @@ impl Benchmark {
         let steps = simulation.step() - start_step;
         let milliseconds_per_step = run_time / steps as f64;
 
-        info!("{milliseconds_per_step} ms/step");
+        info!("Average: {} steps/s", steps as f64 / start_time.elapsed().as_secs_f64());
 
         Ok(milliseconds_per_step)
     }
