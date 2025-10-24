@@ -267,8 +267,10 @@ struct PointsIterator<'a, K, const D: usize> {
     center: [i64; D],
     }
 
-impl<'a, K, const D: usize> Iterator for PointsIterator<'a, K, D> {
-    type Item=&'a K;
+impl<'a, K, const D: usize> Iterator for PointsIterator<'a, K, D> where
+K: Copy
+{
+    type Item=K;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -276,7 +278,7 @@ impl<'a, K, const D: usize> Iterator for PointsIterator<'a, K, D> {
             if let Some(keys) = self.keys && self.index_in_current_cell < keys.len() {
                 let last_index = self.index_in_current_cell;
                 self.index_in_current_cell += 1;
-                return Some(&keys[last_index]);
+                return Some(keys[last_index]);
             }
 
             self.index_in_current_cell = 0;
@@ -297,7 +299,7 @@ impl<const D: usize, K> PointsInBall<Cartesian<D>, K> for VecCell<K, D> where
 K: Copy + Eq + Hash
 {
     #[inline]
-    fn points_potentially_in_ball<'a>(&'a self, position: &Cartesian<D>, radius: f64) -> impl Iterator<Item=&'a K> where K: 'a {
+    fn points_potentially_in_ball<I: Iterator<Item=K>>(&self, position: &Cartesian<D>, radius: f64, _all_keys: I) -> impl Iterator<Item=K> {
         let stencil_index = (radius / self.cell_width).ceil() as usize - 1;
         assert!(stencil_index < self.stencils.len(), "search radius must be less than or equal to the maximum interaction range");
 

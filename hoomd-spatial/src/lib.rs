@@ -14,9 +14,11 @@
 
 // TODO: PostiveReal for cell width?
 
+mod all_pairs;
 mod hash_cell;
 mod vec_cell;
 
+pub use all_pairs::AllPairs;
 pub use hash_cell::HashCell;
 pub use vec_cell::VecCell;
 
@@ -33,32 +35,5 @@ pub trait PointUpdate<P, K> {
 
 pub trait PointsInBall<P, K> {
     /// Find all the points that *may* be in the given ball.
-    fn points_potentially_in_ball<'a>(&'a self, position: &P, radius: f64) -> impl Iterator<Item=&'a K> where K: 'a;
+    fn points_potentially_in_ball<I: Iterator<Item=K>>(&self, position: &P, radius: f64, all_keys: I) -> impl Iterator<Item=K>;
     }
-
-/// Check all pairs.
-#[derive(Clone)]
-pub struct AllPairs;
-
-// TODO: Working implementation of AllPairs.
-
-impl<P, K> PointUpdate<P, K> for AllPairs {
-    fn insert(&mut self, key: K, position: P) {}
-
-    fn remove(&mut self, key: &K) {}
-
-    fn clear(&mut self) {}
-}
-
-// impl<P, K> PointsInBall<P, K> for AllPairs {
-//     fn points_potentially_in_ball(&self, position: &P, radius: f64) -> impl Iterator<Item=&K> {
-//         todo!()
-//     }
-// }
-
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-}

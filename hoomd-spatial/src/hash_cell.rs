@@ -448,8 +448,10 @@ struct PointsIterator<'a, K, const D: usize> {
     center: [i64; D],
     }
 
-impl<'a, K, const D: usize> Iterator for PointsIterator<'a, K, D> {
-    type Item=&'a K;
+impl<'a, K, const D: usize> Iterator for PointsIterator<'a, K, D>
+where K: Copy
+{
+    type Item=K;
 
     // Required method
     #[inline]
@@ -458,7 +460,7 @@ impl<'a, K, const D: usize> Iterator for PointsIterator<'a, K, D> {
             let last_index = self.index_in_current_cell;
             self.index_in_current_cell += 1;
             if let Some(keys) = self.keys && last_index < keys.len() {
-                return Some(&keys[last_index]);
+                return Some(keys[last_index]);
             }
 
             self.index_in_current_cell = 0;
@@ -517,7 +519,7 @@ impl<K> PointsInBall<Cartesian<2>, K> for HashCell<K, 2> where
 K: Copy + Eq + Hash
 {
     #[inline]
-    fn points_potentially_in_ball<'a>(&'a self, position: &Cartesian<2>, radius: f64) -> impl Iterator<Item=&'a K> where K: 'a {
+    fn points_potentially_in_ball<I: Iterator<Item=K>>(&self, position: &Cartesian<2>, radius: f64, _all_keys: I) -> impl Iterator<Item=K> {
         assert!(radius <= self.cell_width, "search radius must be less than or equal to the cell width");
         let center = self.cell_index_from_position(position);
         
@@ -538,7 +540,7 @@ impl<K> PointsInBall<Cartesian<3>, K> for HashCell<K, 3> where
 K: Copy + Eq + Hash
 {
     #[inline]
-    fn points_potentially_in_ball<'a>(&'a self, position: &Cartesian<3>, radius: f64) -> impl Iterator<Item=&'a K> where K: 'a {
+    fn points_potentially_in_ball<I: Iterator<Item=K>>(&self, position: &Cartesian<3>, radius: f64, _all_keys: I) -> impl Iterator<Item=K> {
         assert!(radius <= self.cell_width, "search radius must be less than or equal to the cell width");
         let center = self.cell_index_from_position(position);
         

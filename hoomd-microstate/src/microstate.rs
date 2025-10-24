@@ -12,9 +12,9 @@ use crate::{
     property::Position,
 };
 
-use hoomd_spatial::{AllPairs, PointUpdate, PointsInBall};
+use hoomd_spatial::{AllPairs, PointUpdate, PointsInBall, VecCell};
 use hoomd_utility::random::Counter;
-use hoomd_vector::Metric;
+use hoomd_vector::{Cartesian, Metric};
 
 /// Either a primary site index or a ghost site index.
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
@@ -1206,25 +1206,30 @@ where
     /// that follow the minimum image convention.
     #[inline]
     pub fn iter_sites_near(&self, point: &P, r: f64) -> impl IntoIterator<Item = &Site<S>> {
-        // All pairs.
+        // Ideally, an AllPairs specialized implementation would do this:
         // self.sites
         //     .items
         //     .iter()
         //     .chain(self.ghosts.items.iter())
         //     .filter(move |s| point.distance_squared(s.properties.position()) < r.powi(2))
+        // However, specialization is not in stable Rust and will likely never be.
+        // AllPairs doesn't know about these arrays (and storing them internally
+        // is expensive). Work around the issue by giving `points_potentially_in_ball` an
+        // iterator over keys.
 
-        // TODO: Implement a proper iterator type.
+        let primary_sites = self.sites.tags.iter().map(|t| SiteKey::Primary(*t));
+        let ghost_sites = self.ghosts.tags.iter().map(|t| SiteKey::Ghost(*t));
 
-        let potential_sites = self.spatial_data.points_potentially_in_ball(point, r);
+        let potential_sites = self.spatial_data.points_potentially_in_ball(point, r, primary_sites.chain(ghost_sites));
         potential_sites.map(|k| {
             match k {
                 SiteKey::Primary(tag) => {
-                    let index = self.sites.indices[*tag]
+                    let index = self.sites.indices[tag]
                     .expect("sites and spatial data should be consistent");
                     &self.sites.items[index]
                 }
                 SiteKey::Ghost(tag) => {
-                    let index = self.ghosts.indices[*tag]
+                    let index = self.ghosts.indices[tag]
                     .expect("ghosts and spatial data should be consistent");
                     &self.ghosts.items[index]
                 }
@@ -1329,7 +1334,7 @@ impl<B, S, C> MicrostateBuilder<B, S, AllPairs, C> {
     ///
     /// ```
     /// use hoomd_geometry::shape::Rectangle;
-    /// use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Closed};
+    /// use hoomd_microstate::{Microstate, MicrostateBuilder, SiteKey, boundary::Closed};
     /// use hoomd_spatial::AllPairs;
     /// use hoomd_vector::Cartesian;
     ///
