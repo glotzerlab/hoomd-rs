@@ -56,12 +56,6 @@ fn main() -> anyhow::Result<()> {
         benchmark.benchmark_one(&mut mc_hard_sphere_2d)?;
     }
 
-    if benchmark_matcher.matches("mc_step_2d") {
-        let mut mc_step_2d = mc::Step::with_microstate(&microstate_2d)?;
-        info!("mc_step_2d: {} disks at number density {}", n, number_density);
-        benchmark.benchmark_one(&mut mc_step_2d)?;
-    }
-
     if benchmark_matcher.matches("mc_lennard_jones_2d") {
         let mut mc_lennard_jones_2d = mc::LennardJones::with_microstate(&microstate_2d)?;
         info!("mc_lennard_jones_2d: {} disks at number density {}", n, number_density);
@@ -76,18 +70,11 @@ fn main() -> anyhow::Result<()> {
 
     let microstate_3d = benchmarks::place_hard_hyperspheres::<Point<Cartesian<3>>, Point<Cartesian<3>>, 3>(n, number_density)?;
     let microstate_oriented_3d = benchmarks::place_hard_hyperspheres::<OrientedPoint<Cartesian<3>, Versor>, OrientedPoint<Cartesian<3>, Versor>, 3>(n, number_density)?;
-    let microstate_body_3d = benchmarks::place_hard_hyperspheres::<OrientedPoint<Cartesian<3>, Versor>, Point<Cartesian<3>>, 3>(n, number_density)?;
 
     if benchmark_matcher.matches("mc_hard_sphere_3d") {
         let mut mc_hard_sphere_3d = mc::HardSphere::with_microstate(&microstate_3d)?;
         info!("mc_hard_sphere_3d: {} disks at number density {}", n, number_density);
         benchmark.benchmark_one(&mut mc_hard_sphere_3d)?;
-    }
-
-    if benchmark_matcher.matches("mc_step_3d") {
-        let mut mc_step_3d = mc::Step::with_microstate(&microstate_3d)?;
-        info!("mc_step_3d: {} spheres at number density {}", n, number_density);
-        benchmark.benchmark_one(&mut mc_step_3d)?;
     }
 
     if benchmark_matcher.matches("mc_lennard_jones_3d") {
@@ -100,18 +87,6 @@ fn main() -> anyhow::Result<()> {
         let mut mc_octahedron_3d = mc::Octahedron::with_microstate(&microstate_oriented_3d)?;
         info!("mc_octahedron_3d: {} octahedra at number density {}", n, number_density);
         benchmark.benchmark_one(&mut mc_octahedron_3d)?;
-    }
-
-    if benchmark_matcher.matches("mc_kern_frenkel_3d") {
-        let mut mc_kern_frenkel_3d = mc::KernFrenkel::with_microstate(&microstate_oriented_3d)?;
-        info!("mc_kern_frenkel_3d: {} patchy particles at number density {}", n, number_density);
-        benchmark.benchmark_one(&mut mc_kern_frenkel_3d)?;
-    }
-
-    if benchmark_matcher.matches("mc_wca_union_3d") {
-        let mut mc_wca_union_3d = mc::WcaUnion::with_microstate(&microstate_body_3d)?;
-        info!("mc_wca_union_3d: {} patchy particles at number density {}", n, number_density);
-        benchmark.benchmark_one(&mut mc_wca_union_3d)?;
     }
 
     Ok(())
