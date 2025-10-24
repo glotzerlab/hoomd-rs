@@ -21,29 +21,81 @@ pub struct VecCell<K, const D: usize> {
     origin: Cartesian<D>,
     /// The shape of `keys_map` is `(half_extent * 2 + 1).powi(D)`.
     half_extent: u32,
+    /// Pre-computed stencils.
+    stencils: Vec<Vec<[i64; D]>>,
 }
 
-/// Increment a cell index.
-///
-/// Counts from `[-half_extent, -half_extent, ..., -half_extent]` to
-/// `[half_extent, half_extent, ..., half_extent]`. Returns `None` when
-/// the increment would count past the end point.
-#[inline]
-fn increment_cell_index<const D: usize>(mut cell_index: [i64; D], half_extent: u32) -> Option<[i64; D]> {
-    cell_index[D-1] += 1;
+/// Iterate over cell indices in row major order.
+struct CellIndexIterator<const D: usize> {
+    /// The current cell index.
+    cell_index: [i64; D],
+    /// The half extent of the cube.
+    half_extent: u32,
+}
 
-    for i in (0..D).rev() {
-        if cell_index[i] > half_extent.into() {
-            if i == 0 {
-                return None;
-            }
-
-            cell_index[i] = -(i64::from(half_extent));
-            cell_index[i-1] += 1;
-        }
+impl<const D: usize> CellIndexIterator<D> {
+    /// Iterate over a cube.
+    ///
+    /// The cube extends from `[-half_extent, -half_extent, ..., -half_extent]` to
+    /// `[half_extent, half_extent, ..., half_extent]`.
+    fn cube(half_extent: u32) -> Self {
+        let mut cell_index = [-i64::from(half_extent); D];
+        cell_index[D-1] -= 1;
+        Self { cell_index, half_extent }
     }
+        
+    /// Increment the cell index.
+    #[inline]
+    fn increment_cell_index(&mut self) -> Option<[i64; D]> {
+        self.cell_index[D-1] += 1;
 
-    Some(cell_index)
+        for i in (0..D).rev() {
+            if self.cell_index[i] > self.half_extent.into() {
+                if i == 0 {
+                    return None;
+                }
+
+                self.cell_index[i] = -(i64::from(self.half_extent));
+                self.cell_index[i-1] += 1;
+            }
+        }
+
+        Some(self.cell_index)
+    }
+}
+
+impl<const D: usize> Iterator for CellIndexIterator<D> {
+    type Item = [i64; D];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.increment_cell_index()
+    }
+}
+
+/// Generate the stencil for a given radius.
+fn generate_stencil<const D: usize>(radius: u32) -> Vec<[i64; D]> {
+    assert!(radius >= 1, "cell list must have a minimum radius of 1");
+    
+    let mut result = CellIndexIterator::cube(radius).collect::<Vec<_>>();
+    result.sort_by(|a, b| {
+        let r_a = a.iter().map(|x| x.pow(2));
+        let r_b = b.iter().map(|x| x.pow(2));
+        r_a.cmp(r_b)
+    });
+    result
+}
+
+/// Generate the stencils up to a given radius.
+fn generate_all_stencils<const D: usize>(max_radius: u32) -> Vec<Vec<[i64; D]>> {
+    assert!(max_radius >= 1, "cell list must have a minimum radius of 1");
+    let mut result = Vec::new();
+
+    // A cell list will never use radius=0, so stencil[i] stores the stencil needed for
+    // radius i+1.
+    for radius in 0..max_radius {
+        result.push(generate_stencil(radius+1));
+    }
+    result
 }
 
 impl<K, const D: usize> VecCell<K, D>
@@ -98,6 +150,7 @@ K: Copy + Eq + Hash
             cell_index: FxHashMap::default(),
             origin: Cartesian::default(),
             half_extent,
+            stencils: generate_all_stencils(1),
         }
     }
 
@@ -139,18 +192,12 @@ K: Copy + Eq + Hash
         let old_half_extent = self.half_extent;
         let old_keys_map = &mut self.keys_map;
 
-        let mut old_cell_index = [-i64::from(old_half_extent); D];
-        loop {
+        for old_cell_index in CellIndexIterator::cube(old_half_extent) {
             let old_vec_index = Self::map_index_from_cell(old_half_extent, &old_cell_index)
                 .expect("cell_index should be consistent with keys_map");
             let new_vec_index = Self::map_index_from_cell(new_half_extent, &old_cell_index)
                 .expect("old_cell_index should be inside the new keys_map");
             new_keys_map[new_vec_index] = mem::take(&mut old_keys_map[old_vec_index]);
-            
-            old_cell_index = match increment_cell_index(old_cell_index, old_half_extent) {
-                Some(index) => index,
-                None => { break }
-            };
         }
 
         self.half_extent = new_half_extent;
@@ -246,82 +293,25 @@ impl<'a, K, const D: usize> Iterator for PointsIterator<'a, K, D> {
     }
 }
 
-        const STENCIL_2D: [[i64; 2]; 9] = [[0, 0],
-                       [0, -1],
-                       [0, 1],
-                       [-1, 0],
-                       [1, 0],
-                       [-1, -1],
-                       [-1, 1],
-                       [1, 1],
-                       [1, -1]];
-
-        const STENCIL_3D: [[i64; 3]; 27] = [[0, 0, 0],
-                       [0, 0, -1],
-                       [0, 0, 1],
-                       [0, -1, 0],
-                       [0, 1, 0],
-                       [-1, 0, 0],
-                       [1, 0, 0],
-                       [0, -1, -1],
-                       [0, 1, -1],
-                       [0, -1, 1],
-                       [0, 1, 1],
-                       [-1, -1, 0],
-                       [-1, 1, 0],
-                       [1, -1, 0],
-                       [1, 1, 0],
-                       [-1, 0, -1],
-                       [-1, 0, 1],
-                       [1, 0, -1],
-                       [1, 0, 1],
-                       [-1, -1, -1],
-                       [-1, -1, 1],
-                       [-1, 1, -1],
-                       [-1, 1, 1],
-                       [1, -1, -1],
-                       [1, -1, 1],
-                       [1, 1, -1],
-                       [1, 1, 1],
-                    ];
-
-impl<K> PointsInBall<Cartesian<2>, K> for VecCell<K, 2> where
+impl<const D: usize, K> PointsInBall<Cartesian<D>, K> for VecCell<K, D> where
 K: Copy + Eq + Hash
 {
     #[inline]
-    fn points_potentially_in_ball<'a>(&'a self, position: &Cartesian<2>, radius: f64) -> impl Iterator<Item=&'a K> where K: 'a {
-        assert!(radius <= self.cell_width, "search radius must be less than or equal to the cell width");
+    fn points_potentially_in_ball<'a>(&'a self, position: &Cartesian<D>, radius: f64) -> impl Iterator<Item=&'a K> where K: 'a {
+        let stencil_index = (radius / self.cell_width).ceil() as usize - 1;
+        assert!(stencil_index < self.stencils.len(), "search radius must be less than or equal to the maximum interaction range");
+
         let center = self.cell_index_from_position(position);
+        let stencil = &self.stencils[stencil_index];
         let map_index = Self::map_index_from_cell(self.half_extent,
-            &array::from_fn(|i| center[i] + STENCIL_2D[0][i]));
+            &array::from_fn(|i| center[i] + stencil[0][i]));
 
         PointsIterator {
             keys: map_index.map(|index| &self.keys_map[index]),
             cell_list: self,
             index_in_current_cell: 0,
             current_stencil: 0,
-            stencil: &STENCIL_2D,
-            center,
-        }
-    }
-}
-
-impl<K> PointsInBall<Cartesian<3>, K> for VecCell<K, 3> where
-K: Copy + Eq + Hash
-{
-    #[inline]
-    fn points_potentially_in_ball<'a>(&'a self, position: &Cartesian<3>, radius: f64) -> impl Iterator<Item=&'a K> where K: 'a {
-        assert!(radius <= self.cell_width, "search radius must be less than or equal to the cell width");
-        let center = self.cell_index_from_position(position);
-        let map_index = Self::map_index_from_cell(self.half_extent,
-            &array::from_fn(|i| center[i] + STENCIL_3D[0][i]));
-
-        PointsIterator {
-            keys: map_index.map(|index| &self.keys_map[index]),
-            cell_list: self,
-            index_in_current_cell: 0,
-            current_stencil: 0,
-            stencil: &STENCIL_3D,
+            stencil,
             center,
         }
     }
@@ -335,29 +325,29 @@ mod tests {
 
     #[test]
     fn test_increment_cell_index() {
-        let cell_index = [-1, -1];
-        let cell_index = increment_cell_index(cell_index, 1);
-        assert_eq!(cell_index, Some([-1, 0]));
-        let cell_index = increment_cell_index(cell_index.unwrap(), 1);
-        assert_eq!(cell_index, Some([-1, 1]));
-        let cell_index = increment_cell_index(cell_index.unwrap(), 1);
-        assert_eq!(cell_index, Some([0, -1]));
-        let cell_index = increment_cell_index(cell_index.unwrap(), 1);
-        assert_eq!(cell_index, Some([0, 0]));
-        let cell_index = increment_cell_index(cell_index.unwrap(), 1);
-        assert_eq!(cell_index, Some([0, 1]));
-        let cell_index = increment_cell_index(cell_index.unwrap(), 1);
-        assert_eq!(cell_index, Some([1, -1]));
-        let cell_index = increment_cell_index(cell_index.unwrap(), 1);
-        assert_eq!(cell_index, Some([1, 0]));
-        let cell_index = increment_cell_index(cell_index.unwrap(), 1);
-        assert_eq!(cell_index, Some([1, 1]));
-        assert_eq!(increment_cell_index(cell_index.unwrap(), 1), None);
+        let mut cells = CellIndexIterator::cube(1);
+        assert_eq!(cells.next(), Some([-1, -1]));
+        assert_eq!(cells.next(), Some([-1, 0]));
+        assert_eq!(cells.next(), Some([-1, 1]));
+        assert_eq!(cells.next(), Some([0, -1]));
+        assert_eq!(cells.next(), Some([0, 0]));
+        assert_eq!(cells.next(), Some([0, 1]));
+        assert_eq!(cells.next(), Some([1, -1]));
+        assert_eq!(cells.next(), Some([1, 0]));
+        assert_eq!(cells.next(), Some([1, 1]));
+        assert_eq!(cells.next(), None);
+        assert_eq!(cells.next(), None);
+        assert_eq!(cells.next(), None);
+        assert_eq!(cells.next(), None);
 
-        assert_eq!(increment_cell_index([1, 2, 2], 2), Some([2, -2, -2]));
-        assert_eq!(increment_cell_index([0, 1, 2], 2), Some([0, 2, -2]));
-        assert_eq!(increment_cell_index([0, 0, -2], 2), Some([0, 0, -1]));
-        assert_eq!(increment_cell_index([2, 2, 2], 2), None);
+        let mut c = CellIndexIterator { cell_index: [1, 2, 2], half_extent: 2 };
+        assert_eq!(c.increment_cell_index(), Some([2, -2, -2]));
+        let mut c = CellIndexIterator { cell_index: [0, 1, 2], half_extent: 2 };
+        assert_eq!(c.increment_cell_index(), Some([0, 2, -2]));
+        let mut c = CellIndexIterator { cell_index: [0, 0, -2], half_extent: 2 };
+        assert_eq!(c.increment_cell_index(), Some([0, 0, -1]));
+        let mut c = CellIndexIterator { cell_index: [2, 2, 2], half_extent: 2 };
+        assert_eq!(c.increment_cell_index(), None);
     }
 
     // #[test]
