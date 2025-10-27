@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use hoomd_spatial::{PointUpdate, PointsInBall, VecCell};
+use hoomd_spatial::{PointUpdate, PointsInBall, VecCell, WithSearchRadius};
 use hoomd_vector::{Cartesian, Versor};
 use hoomd_simulation::{macrostate::Isothermal, Simulation};
 use hoomd_microstate::{boundary::{GenerateGhosts, Periodic}, property::OrientedPoint, Microstate, MicrostateBuilder, SiteKey};
@@ -39,10 +39,11 @@ Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
     }
 }
 
-impl Octahedron<VecCell<SiteKey, 3>> where
+impl<X> Octahedron<X> where
+X: PointsInBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey> + WithSearchRadius,
 Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
-    pub fn with_microstate<X>(microstate: &Microstate<OrientedPoint<Cartesian<3>, Versor>, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<Hypercuboid<3>>>) -> anyhow::Result<Self> {
+    pub fn with_microstate(microstate: &Microstate<OrientedPoint<Cartesian<3>, Versor>, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<Hypercuboid<3>>>) -> anyhow::Result<Self> {
         let sigma = 1.0;
 
         let translate = Translate::with_maximum_distance((sigma * 0.1).try_into()?);
@@ -63,7 +64,7 @@ Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
             evaluator: HardShape(Convex(octahedron)),
         };    
     
-        let cell_list = VecCell::new(sigma, 1);
+        let cell_list = X::with_search_radius(sigma.try_into()?);
         let microstate = MicrostateBuilder::with_spatial_data_and_boundary(cell_list, microstate.boundary().clone())
             .bodies(microstate.bodies().iter().map(|b| b.item.clone()))
             .try_build()?;

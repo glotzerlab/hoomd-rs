@@ -14,13 +14,15 @@
 
 // TODO: PostiveReal for cell width?
 
+use hoomd_utility::valid::PositiveReal;
+
 mod all_pairs;
 mod hash_cell;
 mod vec_cell;
 
 pub use all_pairs::AllPairs;
 pub use hash_cell::HashCell;
-pub use vec_cell::VecCell;
+pub use vec_cell::{VecCell, VecCellBuilder};
 
 pub trait PointUpdate<P, K> {
     /// Insert a point identified by a key.
@@ -37,3 +39,8 @@ pub trait PointsInBall<P, K> {
     /// Find all the points that *may* be in the given ball.
     fn points_potentially_in_ball(&self, position: &P, radius: f64) -> impl Iterator<Item=K>;
     }
+
+pub trait WithSearchRadius {
+    /// Construct a spatial data structure that can search *at least* as far as the given radius.
+    fn with_search_radius(radius: PositiveReal) -> Self;
+}

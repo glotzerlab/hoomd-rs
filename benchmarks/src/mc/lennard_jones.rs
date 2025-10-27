@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use hoomd_spatial::{PointUpdate, PointsInBall, VecCell};
+use hoomd_spatial::{PointUpdate, PointsInBall, VecCell, WithSearchRadius};
 use hoomd_vector::Cartesian;
 use hoomd_simulation::{macrostate::Isothermal, Simulation};
 use hoomd_microstate::{boundary::{GenerateGhosts, Periodic}, property::{Point, Position}, Body, Microstate, MicrostateBuilder, SiteKey};
@@ -36,10 +36,11 @@ Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
     }
 }
 
-impl<const D: usize> LennardJones<D, VecCell<SiteKey, D>> where
+impl<const D: usize, X> LennardJones<D, X> where
+X: PointsInBall<Cartesian<D>, SiteKey> + PointUpdate<Cartesian<D>, SiteKey> + WithSearchRadius,
 Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
-    pub fn with_microstate<B, S, X>(microstate: &Microstate<B, S, X, Periodic<Hypercuboid<D>>>) -> anyhow::Result<Self>
+    pub fn with_microstate<B, S>(microstate: &Microstate<B, S, X, Periodic<Hypercuboid<D>>>) -> anyhow::Result<Self>
     where B: Position<Position = Cartesian<D>>,
     {
         let maximum_interaction_range = 2.5;
@@ -52,7 +53,7 @@ Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
             evaluator: Isotropic(pairwise::LennardJones { epsilon: 1.0, sigma: 1.0 }),
         };    
     
-        let cell_list = VecCell::new(maximum_interaction_range, 1);
+        let cell_list = X::with_search_radius(maximum_interaction_range.try_into()?);
         let boundary = Periodic::new(maximum_interaction_range,
             microstate.boundary().shape().clone())?;
         let microstate = MicrostateBuilder::with_spatial_data_and_boundary(cell_list, boundary)

@@ -16,6 +16,7 @@ workspace = true
 
 [dependencies]
 hoomd-vector.workspace = true
+hoomd-utility.workspace = true
 log.workspace = true
 rustc-hash.workspace = true
 

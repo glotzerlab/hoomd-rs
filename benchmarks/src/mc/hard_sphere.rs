@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use hoomd_spatial::{PointUpdate, PointsInBall, VecCell};
+use hoomd_spatial::{PointUpdate, PointsInBall, VecCell, WithSearchRadius};
 use hoomd_vector::Cartesian;
 use hoomd_simulation::{macrostate::Isothermal, Simulation};
 use hoomd_microstate::{boundary::{GenerateGhosts, Periodic}, property::{Point, Position}, Body, Microstate, MicrostateBuilder, SiteKey};
@@ -36,10 +36,11 @@ Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
     }
 }
 
-impl<const D: usize> HardSphere<D, VecCell<SiteKey, D>> where
+impl<const D: usize, X> HardSphere<D, X> where
+X: PointsInBall<Cartesian<D>, SiteKey> + PointUpdate<Cartesian<D>, SiteKey> + WithSearchRadius,
 Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
-    pub fn with_microstate<B, S, X>(microstate: &Microstate<B, S, X, Periodic<Hypercuboid<D>>>) -> anyhow::Result<Self>
+    pub fn with_microstate<B, S>(microstate: &Microstate<B, S, X, Periodic<Hypercuboid<D>>>) -> anyhow::Result<Self>
     where B: Position<Position = Cartesian<D>>,
     {
         let sigma = 1.0;
@@ -52,7 +53,7 @@ Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
             evaluator: AlwaysTrue,
         };    
     
-        let cell_list = VecCell::new(sigma, 1);
+        let cell_list = X::with_search_radius(sigma.try_into()?);
         let microstate = MicrostateBuilder::with_spatial_data_and_boundary(cell_list, microstate.boundary().clone())
             .bodies(microstate.bodies().iter().map(|b|
                 Body { properties: Point::<Cartesian<D>>::new(*b.item.properties.position()),

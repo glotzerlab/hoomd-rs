@@ -1,26 +1,32 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use std::{array, iter, mem, cmp::Eq, hash::Hash};
+use std::{array, iter, marker::PhantomData, mem, cmp::Eq, hash::Hash};
 
 use log::trace;
 use rustc_hash::FxHashMap;
 
 use hoomd_vector::Cartesian;
+use hoomd_utility::valid::PositiveReal;
 
-use super::{PointUpdate, PointsInBall};
+use super::{PointUpdate, PointsInBall, WithSearchRadius};
 
 pub struct VecCell<K, const D: usize> {
     /// The width of each cell.
-    cell_width: f64,
+    cell_width: PositiveReal,
+    
     /// A map from cell indices to cell contents.
     keys_map: Vec<Vec<K>>,
+    
     /// A map from particle indices to cell indices.
     cell_index: FxHashMap<K, [i64; D]>,
+    
     /// Location of the 0,..,0 cell.
     origin: Cartesian<D>,
+    
     /// The shape of `keys_map` is `(half_extent * 2 + 1).powi(D)`.
     half_extent: u32,
+    
     /// Pre-computed stencils.
     stencils: Vec<Vec<[i64; D]>>,
 }
@@ -98,13 +104,79 @@ fn generate_all_stencils<const D: usize>(max_radius: u32) -> Vec<Vec<[i64; D]>> 
     result
 }
 
+pub struct VecCellBuilder<K, const D: usize> {
+    /// Most commonly used search radius.
+    nominal_search_radius: PositiveReal,
+
+    /// Largest possible search radius.
+    maximum_search_radius: f64,
+
+    /// Location of the 0,..,0 cell.
+    origin: Cartesian<D>,
+
+    /// Track the key type.
+    phantom_key: PhantomData<K>,
+}
+
+impl<K, const D: usize> VecCellBuilder<K, D> where
+        K: Copy + Eq + Hash {
+    pub fn nominal_search_radius(mut self, nominal_search_radius: PositiveReal) -> Self {
+        self.nominal_search_radius = nominal_search_radius;
+        self
+    }
+
+    pub fn maximum_search_radius(mut self, maximum_search_radius: f64) -> Self {
+        self.maximum_search_radius = maximum_search_radius;
+        self
+    }
+
+    pub fn origin(mut self, origin: Cartesian<D>) -> Self {
+        self.origin = origin;
+        self
+    }
+
+    pub fn build(self) -> VecCell<K, D> 
+    {
+        let maximum_stencil_radius = (self.maximum_search_radius / self.nominal_search_radius.get()).ceil() as u32;
+        let half_extent: u32 = 1;
+    
+        VecCell {
+            cell_width: self.nominal_search_radius,
+            keys_map: iter::repeat_n(Vec::new(), (half_extent*2 + 1).pow(D as u32) as usize).collect(),
+            cell_index: FxHashMap::default(),
+            origin: self.origin,
+            half_extent,
+            stencils: generate_all_stencils(maximum_stencil_radius.min(1)),
+        }
+    }
+}
+
+impl<K, const D: usize> Default for VecCell<K, D> where
+K: Copy + Eq + Hash
+{
+    fn default() -> Self {
+         Self::builder().build()
+    }
+}
+
+impl<K, const D: usize> WithSearchRadius for VecCell<K, D> where
+K: Copy + Eq + Hash
+{
+    fn with_search_radius(radius: PositiveReal) -> Self {
+         Self::builder()
+            .nominal_search_radius(radius)
+            .build()
+    }
+    }
+
+
 impl<K, const D: usize> VecCell<K, D>
 {
     /// Compute the cell index given a position in space.
     #[inline]
     fn cell_index_from_position(&self, position: &Cartesian<D>) -> [i64; D] {
         let v = *position - self.origin;
-        std::array::from_fn(|j| (v.coordinates[j] / self.cell_width).floor() as i64)
+        std::array::from_fn(|j| (v.coordinates[j] / self.cell_width.get()).floor() as i64)
     }
 
     /// Compute the vector index from a cell index
@@ -143,27 +215,14 @@ K: Copy + Eq + Hash
     {
     #[inline]
     #[must_use]
-    pub fn new(cell_width: f64, half_extent: u32) -> Self {
-        VecCell {
-            cell_width,
-            keys_map: iter::repeat_n(Vec::new(), (half_extent * 2 + 1).pow(D as u32) as usize).collect(),
-            cell_index: FxHashMap::default(),
+    pub fn builder() -> VecCellBuilder<K, D> {
+        VecCellBuilder {
+            nominal_search_radius: 1.0.try_into().expect("hard-coded constant is a positive real"),
+            maximum_search_radius: 1.0,
             origin: Cartesian::default(),
-            half_extent,
-            stencils: generate_all_stencils(1),
+            phantom_key: PhantomData,
         }
     }
-
-    // #[inline]
-    // #[must_use]
-    // pub fn with_cell_width_and_origin(cell_width: f64, origin: Cartesian<D>) -> Self {
-    //     HashCell {
-    //         cell_width,
-    //         particle_indices: FxHashMap::default(),
-    //         cell_index: FxHashMap::default(),
-    //         origin,
-    //     }
-    // }
 
     #[inline]
     pub fn shrink_to_fit(&mut self) {
@@ -180,7 +239,7 @@ K: Copy + Eq + Hash
             return;
         }
 
-        let mut new_half_extent = self.half_extent * 2;
+        let mut new_half_extent = self.half_extent.min(1) * 2;
 
         while new_half_extent < target {
             new_half_extent *= 2;
@@ -300,8 +359,8 @@ K: Copy + Eq + Hash
 {
     #[inline]
     fn points_potentially_in_ball(&self, position: &Cartesian<D>, radius: f64) -> impl Iterator<Item=K> {
-        let stencil_index = (radius / self.cell_width).ceil() as usize - 1;
-        assert!(stencil_index < self.stencils.len(), "search radius must be less than or equal to the maximum interaction range");
+        let stencil_index = (radius / self.cell_width.get()).ceil() as usize - 1;
+        assert!(stencil_index < self.stencils.len(), "search radius must be less than or equal to the maximum search radius");
 
         let center = self.cell_index_from_position(position);
         let stencil = &self.stencils[stencil_index];
@@ -371,8 +430,7 @@ mod tests {
     
     #[test]
     fn test_insert_one() {
-        let cell_width = 1.0;
-        let mut cell_list = VecCell::new(cell_width, 10);
+        let mut cell_list = VecCell::default();
 
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
 
@@ -385,8 +443,7 @@ mod tests {
 
     #[test]
     fn test_insert_many() {
-        let cell_width = 1.0;
-        let mut cell_list = VecCell::new(cell_width, 10);
+        let mut cell_list = VecCell::default();
 
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
         cell_list.insert(1, Cartesian::from([0.995, 0.897]));
@@ -408,8 +465,7 @@ mod tests {
 
     #[test]
     fn test_insert_again_same() {
-        let cell_width = 1.0;
-        let mut cell_list = VecCell::new(cell_width, 10);
+        let mut cell_list = VecCell::default();
 
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
         cell_list.insert(0, Cartesian::from([0.25, 0.5]));
@@ -424,8 +480,7 @@ mod tests {
 
     #[test]
     fn test_insert_again_different() {
-        let cell_width = 1.0;
-        let mut cell_list = VecCell::new(cell_width, 10);
+        let mut cell_list = VecCell::default();
 
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
         cell_list.insert(1, Cartesian::from([0.25, 0.5]));
@@ -445,8 +500,7 @@ mod tests {
 
     #[test]
     fn test_remove() {
-        let cell_width = 1.0;
-        let mut cell_list = VecCell::new(cell_width, 10);
+        let mut cell_list = VecCell::default();
 
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
         cell_list.insert(1, Cartesian::from([0.995, 0.897]));
@@ -469,8 +523,7 @@ mod tests {
 
     #[test]
     fn test_clear() {
-        let cell_width = 1.0;
-        let mut cell_list = VecCell::new(cell_width, 10);
+        let mut cell_list = VecCell::default();
 
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
         cell_list.insert(1, Cartesian::from([0.995, 0.897]));
@@ -484,8 +537,7 @@ mod tests {
 
     #[test]
     fn test_shrink_to_fit() {
-        let cell_width = 1.0;
-        let mut cell_list = VecCell::new(cell_width, 10);
+        let mut cell_list = VecCell::default();
 
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
         cell_list.insert(1, Cartesian::from([0.995, 0.897]));
@@ -510,7 +562,7 @@ mod tests {
         let mut reference = FxHashMap::default();
 
         let cell_width = 0.5;
-        let mut cell_list = VecCell::new(cell_width, 82);
+        let mut cell_list = VecCell::builder().nominal_search_radius(cell_width.try_into().expect("hard-coded cell with should be positive")).build();
         let position_distribution = Ball { radius: 20.0.try_into().expect("hardcoded value should be positive") };
         let key_distribution = Uniform::new(0, N_STEPS/4).expect("hardcoded distribution should be valid");
 
@@ -546,14 +598,14 @@ mod tests {
     }
 
     // TODO: Test queries just outside the allocated space.
+    // TODO: Test consistency with origin.
 
     #[test]
     fn points_in_ball_2d() {
         let mut rng = StdRng::seed_from_u64(0);
         let mut reference = Vec::new();
 
-        let cell_width = 1.0;
-        let mut cell_list = VecCell::new(cell_width, 42);
+        let mut cell_list = VecCell::default();
         let position_distribution = Ball { radius: 20.0.try_into().expect("hardcoded value should be positive") };
 
         for key in 0..2048 {
@@ -564,54 +616,15 @@ mod tests {
         }
 
         for p_i in &reference {
-            let potential_neighbors: Vec<_> = cell_list.points_potentially_in_ball(p_i, cell_width).collect();
+            let potential_neighbors: Vec<_> = cell_list.points_potentially_in_ball(p_i, 1.0).collect();
 
             for (j, p_j) in reference.iter().enumerate() {
-                if p_i.distance(p_j) <= cell_width {
+                if p_i.distance(p_j) <= 1.0 {
                     assert!(potential_neighbors.contains(&j));
                 }
             }
         }
     }
 
-    // #[test]
-    // fn test_find_potential_neighbor_indices() {
-    //     let cell_width = 1.0;
-
-    //     // Create some sample 2D Cartesian positions.
-    //     let p0 = Cartesian {
-    //         coordinates: [0.2, 0.3],
-    //     };
-    //     let p1 = Cartesian {
-    //         coordinates: [0.8, 1.3],
-    //     };
-    //     let p2 = Cartesian {
-    //         coordinates: [1.2, 0.2],
-    //     };
-    //     let p3 = Cartesian {
-    //         coordinates: [1.5, 1.5],
-    //     };
-
-    //     // Construct a vector of positions.
-    //     let positions = vec![p0, p1, p2, p3];
-
-    //     let indices = vec![0, 1, 2, 3]; // Particle indices corresponding to positions.
-
-    //     // Build the CellList.
-    //     let cell_list = CellList::<2>::new(cell_width, &positions, &indices);
-
-    //     // Define a cutoff radius.
-    //     let cutoff_radius = 10.5;
-
-    //     // Use p0 ([0.2, 0.3] falls in cell [0,0]) as the query position.
-    //     let potential_neighbor_indices = cell_list
-    //         .find_potential_neighbor_indices(&0, &cutoff_radius)
-    //         .collect::<Vec<_>>();
-
-    //     // p0's index should appear.
-    //     assert!(potential_neighbor_indices.contains(&0));
-    //     assert!(potential_neighbor_indices.contains(&1));
-    //     assert!(potential_neighbor_indices.contains(&2));
-    //     assert!(potential_neighbor_indices.contains(&3));
-    // }
+    // TODO: Test maximum search radius
 }

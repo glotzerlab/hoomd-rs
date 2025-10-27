@@ -32,7 +32,9 @@ VecCell<SiteKey, D>: PointsInBall<Cartesian<D>, SiteKey>,
 
     debug!("Initializing {n} points in {D} dimensions with number density {number_density}...");
 
-    let cell_list = VecCell::new(sigma, 1);
+    let cell_list = VecCell::builder()
+        .nominal_search_radius(1.0.try_into()?)
+        .build();
     let boundary = Periodic::new(sigma,
         Hypercuboid::<D>::with_equal_edges(
             box_length.try_into()?))?;
