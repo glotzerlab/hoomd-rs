@@ -5,10 +5,13 @@
 */
 
 // use hoomd_simulation::macrostate::{Isoenergy};
-use hoomd_vector::Cartesian;
-use hoomd_microstate::{Microstate, Body, property::{Point, DynamicsPoint}};
-use hoomd_interaction::{external::Linear, rigid::Rigid, External};
+use hoomd_interaction::{External, external::Linear, rigid::Rigid};
 use hoomd_md::{ConstantVolume, TranslationalMotion, thermostat::NoThermostat};
+use hoomd_microstate::{
+    Body, Microstate,
+    property::{DynamicsPoint, Point},
+};
+use hoomd_vector::Cartesian;
 
 // Question: Why do I have to import TranslationalMotion and Position?
 
@@ -20,9 +23,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             position: Cartesian::from([0.0, 1.0]),
             momentum: Cartesian::from([0.0, 0.0]),
             net_force: Cartesian::from([0.0, 0.0]),
-            mass: 1.0
+            mass: 1.0,
         },
-        sites: vec![Point::default()]
+        sites: vec![Point::default()],
     };
 
     microstate.add_body(body)?;
@@ -36,8 +39,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create an NVE macrostate
     struct Isoenergy {};
-    
-    let macrostate = Isoenergy{};
+
+    let macrostate = Isoenergy {};
 
     // Create a constant-volume integrator
     let dt = 0.1;
@@ -45,7 +48,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Constant V integration requires a thermostat, even if it does nothing
     let mut thermostat = NoThermostat;
-    
+
     // Simulation loop
     for timestep in 0..10 {
         integrator.integrate_translation_step_one(
@@ -61,10 +64,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &mut thermostat,
             &macrostate,
         );
-        
+
         println!("=============== {} ===============", timestep);
-        println!("Position of body 0: {}", microstate.bodies()[0].item.properties.position);
-        println!("Kinetic energy of body 0: {}", integrator.get_kinetic_energy());
+        println!(
+            "Position of body 0: {}",
+            microstate.bodies()[0].item.properties.position
+        );
+        println!(
+            "Kinetic energy of body 0: {}",
+            integrator.get_translational_kinetic_energy()
+        );
         microstate.increment_step();
     }
 

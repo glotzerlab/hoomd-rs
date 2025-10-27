@@ -1,15 +1,24 @@
 //! A simulation with a single particle swimming through a Lennard-Jones fluid.
 
+use bevy_egui::EguiPlugin;
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    pairwise::{Isotropic, LennardJonesGauss}, rigid::Rigid, CutoffPair, NetBodyForce, TotalEnergy
+    CutoffPair, NetBodyForce, TotalEnergy,
+    pairwise::{Isotropic, LennardJonesGauss},
+    rigid::Rigid,
 };
-use hoomd_md::{thermalize::{Thermalize, TranslationalThermalizer}, thermostat::{BussiThermostat}, ConstantVolume, TranslationalMotion};
+use hoomd_md::{
+    ConstantVolume, TranslationalMotion,
+    thermalize::{Thermalize, TranslationalAngularMomentumModifier, TranslationalModifier},
+    thermostat::BussiThermostat,
+};
 use hoomd_microstate::{
-    boundary::Periodic, property::{DynamicsPoint, NetForce, Point, Position}, Body, Microstate, MicrostateBuilder
+    Body, Microstate, MicrostateBuilder,
+    boundary::Periodic,
+    property::{DynamicsPoint, NetForce, Point, Position},
 };
-use hoomd_simulation::{macrostate::Isothermal, Simulation};
-use hoomd_vector::{Cartesian, Vector, Metric};
+use hoomd_simulation::{Simulation, macrostate::Isothermal};
+use hoomd_vector::{Cartesian, Metric};
 
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
@@ -51,8 +60,8 @@ impl LJG_sqaure {
                 epsilon: 0.75,
                 sigma_squared: 0.02,
                 r_0: 1.41,
-                scale: 1.0
-            })
+                scale: 1.0,
+            }),
         });
 
         // Create a microstate with a grid of bodies and a swimmer (final body)
@@ -68,25 +77,24 @@ impl LJG_sqaure {
             for j in 0..n_columns {
                 let x = space * f64::from(i + 1) - (f64::from(1 + n_columns) * space / 2.0);
                 let y = space * f64::from(j + 1) - (f64::from(1 + n_rows) * space / 2.0);
-                builder = builder.bodies([
-                    Body {
-                        properties: DynamicsPoint {
-                            position: Cartesian::from([x, y]),
-                            momentum: Cartesian::from([0.0, 0.0]),
-                            net_force: Cartesian::from([0.0, 0.0]),
-                            mass: 1.0
-                        },
-                        sites: vec![Point::default()]
-                    }
-                ]);
+                builder = builder.bodies([Body {
+                    properties: DynamicsPoint {
+                        position: Cartesian::from([x, y]),
+                        momentum: Cartesian::from([0.0, 0.0]),
+                        net_force: Cartesian::from([0.0, 0.0]),
+                        mass: 1.0,
+                    },
+                    sites: vec![Point::default()],
+                }]);
             }
         }
 
         let mut microstate = builder.try_build()?;
 
         // Ramdomize momentum and zero com momentum
-        let thermalizer = Thermalize{kT: kT_init};
-        thermalizer.translational_motion(&mut microstate);
+        let thermalizer = Thermalize { kT: kT_init };
+        thermalizer.thermalize_translation(&mut microstate);
+        thermalizer.remove_com_angular_momentum(&mut microstate);
         thermalizer.remove_com_momentum(&mut microstate);
 
         // Store net body force at t=0
@@ -107,11 +115,13 @@ impl LJG_sqaure {
         }
 
         // Create an NVT macrostate
-        let macrostate = Isothermal{ temperature:kT_init };
+        let macrostate = Isothermal {
+            temperature: kT_init,
+        };
 
         // Create a constant-volume integrator
         let dt = 0.005;
-        let tau = 50.0*dt;
+        let tau = 50.0 * dt;
         let integrator = ConstantVolume::new(dt);
 
         // Constant T integration
@@ -122,7 +132,7 @@ impl LJG_sqaure {
             macrostate,
             thermostat,
             force,
-            integrator
+            integrator,
         })
     }
 }
@@ -146,18 +156,23 @@ impl Simulation for LJG_sqaure {
         );
         self.microstate.increment_step();
 
-        if self.step() % 5000 == 0 {
-            let nparticle = self.microstate.bodies().len();
-            let nd = self.microstate.bodies()[0].item.properties.position().n_dimensions() as f64;
-
-            let ke = self.integrator.get_kinetic_energy();
-            let kT = 2.0 / (nd * (nparticle as f64 - 1.0)) * ke;
+        if self.step() % 5000 == 1 {
+            let ke = self.integrator.get_translational_kinetic_energy();
+            let dof = self.integrator.get_translational_dof();
+            let kT = 2.0 / dof * ke;
 
             let pe = self.force.0.total_energy(&self.microstate);
             let thermal_e = self.thermostat.get_energy();
             let hamiltonian = *ke + pe + *thermal_e;
 
-            println!("Step: {:}, kT: {:.4}, PE: {:.4}, H: {:.4}, thermostat: {:.4}", self.step(), kT, pe, hamiltonian, thermal_e);
+            println!(
+                "Step: {:}, kT: {:.4}, PE: {:.4}, H: {:.4}, thermostat: {:.4}",
+                self.step(),
+                kT,
+                pe,
+                hamiltonian,
+                thermal_e
+            );
         }
 
         Ok(())
@@ -170,7 +185,6 @@ impl Simulation for LJG_sqaure {
 }
 
 fn main() -> anyhow::Result<()> {
-
     let mut simulation = LJG_sqaure::new().context("failed to setup simulation")?;
     let l = simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
 
@@ -182,10 +196,9 @@ fn main() -> anyhow::Result<()> {
         simulation,
     };
 
-
-
     let mut app = App::new();
     hoomd_bevy::add_default_plugins(&mut app);
+    app.add_plugins(EguiPlugin::default());
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(
         Startup,
@@ -204,12 +217,14 @@ fn main() -> anyhow::Result<()> {
         Update,
         (
             //move_swimmer,
-            sync_simulation.run_if(resource_changed::<LJG_sqaure>).after(AdvanceSet),
-        ).chain(),
+            sync_simulation
+                .run_if(resource_changed::<LJG_sqaure>)
+                .after(AdvanceSet),
+        )
+            .chain(),
     );
 
     app.run();
-
 
     Ok(())
 }
