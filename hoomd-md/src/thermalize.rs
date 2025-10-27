@@ -121,7 +121,7 @@ where
 
             let p_to_com = *position - com;
 
-            // p_new = p_old - omega x p
+            // p_new = p_old - omega x r
             momentum -= p_to_com.wedge_product(&com_angular_velocity) * *mass;
 
             *body_properties.momentum_mut() = momentum;

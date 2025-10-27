@@ -156,7 +156,7 @@ impl Simulation for LJG_sqaure {
         );
         self.microstate.increment_step();
 
-        if self.step() % 5000 == 1 {
+        if self.step() % 10000 == 1 {
             let ke = self.integrator.get_translational_kinetic_energy();
             let dof = self.integrator.get_translational_dof();
             let kT = 2.0 / dof * ke;
