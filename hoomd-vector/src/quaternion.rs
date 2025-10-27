@@ -570,6 +570,15 @@ impl Versor {
     pub fn get(&self) -> &Quaternion {
         &self.0
     }
+
+    /// Take the conjugate of the versor.
+    #[inline]
+    #[must_use]
+    pub fn conjugate(self) -> Self {
+        let Versor(quaternion) = self;
+
+        Versor(quaternion.conjugate())
+    }
 }
 
 impl From<Versor> for RotationMatrix<3> {
@@ -741,9 +750,7 @@ impl Rotation for Versor {
     /// ```
     #[inline]
     fn inverted(self) -> Self {
-        let Versor(quaternion) = self;
-
-        Versor(quaternion.conjugate())
+        self.conjugate()
     }
 }
 
