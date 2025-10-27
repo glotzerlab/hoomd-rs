@@ -3,33 +3,34 @@
 
 //! Implement OrientedDynamicsPoint
 
-use super::{Position, Mass, Momentum, NetForce, MomentOfInertia, AngularMomentum, NetTorque};
-use super::point::Point;
 use super::oriented_point::OrientedPoint;
-use crate::property::Orientation;
+use super::point::Point;
+use super::{AngularMomentum, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, Position};
 use crate::Transform;
-use hoomd_vector::{Angle, WedgeProduct, Cartesian, Quaternion, Rotate, Rotation, Vector};
+use crate::property::Orientation;
+use hoomd_vector::{Rotate, Rotation, Vector, WedgeProduct};
 
 /// The position, orientation, mass, velocity, acceleration, moment of inertia,
 /// and angular velocity of an extended body, such as  is useful for Molecular
 /// Dynamics simulations.
-/// 
+///
 /// Use [`OrientedDynamicsPoint`] as a [`Body`](crate::Body) or [`Site`](crate::Site) property type.
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
 /// use hoomd_microstate::property::OrientedDynamicsPoint;
-/// use hoomd_vector::Cartesian;
-/// 
+/// use hoomd_vector::{Cartesian, Angle};
+///
 /// let oriented_dynamics_point = OrientedDynamicsPoint {
 ///     position: Cartesian::from([1.0, -3.0]),
-///     orientation: 
+///     orientation: Angle::default(),
 ///     mass: 1.0,
-///     velocity: Cartesian::from([0.0, 1.0]),
-///     acceleration: Cartesian::from([1.0, 0.0]),
-///     moment_of_inertia: Cartesian::from([1.0, 1.0]),
-///     angular_velocity: Cartesian::from([1.0, 1.0])
+///     momentum: Cartesian::<2>::default(),
+///     net_force: Cartesian::<2>::default(),
+///     moment_of_inertia: 1.0,
+///     angular_momentum: 0.0,
+///     net_torque: 0.0
 /// };
 /// ```
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -50,13 +51,13 @@ pub struct OrientedDynamicsPoint<V: WedgeProduct, R> {
     pub net_force: V,
 
     /// The moment of inertia of the extended body.
-    pub moment_of_inertia: V::Bivector,   // TODO: this is strictly speaking wrong
+    pub moment_of_inertia: V::Bivector, // TODO: this is strictly speaking wrong
 
     /// The angular velocity of the extended body.
-    pub angular_momentum: V::Bivector,  // TODO: convert to Quat in integrator
+    pub angular_momentum: V::Bivector, // TODO: convert to Quat in integrator
 
-    /// The torque velocity of the extended body. 
-    pub net_torque: V::Bivector
+    /// The torque velocity of the extended body.
+    pub net_torque: V::Bivector,
 }
 
 /// Treat [`Point`] sites as constituents of oriented rigid bodies.
@@ -66,11 +67,11 @@ where
     R: Rotate<V>,
 {
     /// Move [`Point`] properties from the local body frame to the system frame.
-    /// 
+    ///
     /// ```math
     /// \vec{r} = \vec{r}_\mathrm{body} + R_\mathrm{body}(\vec{r}_\mathrm{site})
     /// ```
-    /// 
+    ///
     /// TODO: Add example.
     #[inline]
     fn transform(&self, site_properties: &Point<V>) -> Point<V> {
@@ -87,14 +88,14 @@ where
     R: Rotate<V> + Rotation,
 {
     /// Move [`Point`] properties from the local body frame to the system frame.
-    /// 
+    ///
     /// ```math
     /// \vec{r} = \vec{r}_\mathrm{body} + R_\mathrm{body}(\vec{r}_\mathrm{site})
     /// ```
     /// ```math
     /// R = R_\mathrm{body}(R_\mathrm{site})
     /// ```
-    /// 
+    ///
     /// TODO: add example.
     #[inline]
     fn transform(&self, site_properties: &OrientedPoint<V, R>) -> OrientedPoint<V, R> {
@@ -107,7 +108,7 @@ where
 
 impl<V, R> Position for OrientedDynamicsPoint<V, R>
 where
-    V: WedgeProduct
+    V: WedgeProduct,
 {
     // TODO: bring the associated type name into alignment with convention used elsewhere
     type Position = V;
@@ -125,7 +126,7 @@ where
 
 impl<V, R> Orientation for OrientedDynamicsPoint<V, R>
 where
-    V: WedgeProduct
+    V: WedgeProduct,
 {
     type Rotation = R;
 
@@ -142,10 +143,7 @@ where
 
 impl<V, R> Momentum for OrientedDynamicsPoint<V, R>
 where
-    V: std::ops::Mul<f64, Output = V>
-        + std::ops::Div<f64, Output = V>
-        + Copy
-        + WedgeProduct
+    V: std::ops::Mul<f64, Output = V> + std::ops::Div<f64, Output = V> + Copy + WedgeProduct,
 {
     type Vector = V;
 
@@ -172,9 +170,8 @@ where
 
 impl<V, R> Mass for OrientedDynamicsPoint<V, R>
 where
-    V: WedgeProduct
+    V: WedgeProduct,
 {
-
     #[inline]
     fn mass(&self) -> &f64 {
         &self.mass
@@ -183,7 +180,7 @@ where
 
 impl<V, R> NetForce for OrientedDynamicsPoint<V, R>
 where
-    V: WedgeProduct
+    V: WedgeProduct,
 {
     type Vector = V;
 
@@ -200,7 +197,7 @@ where
 
 impl<V, R> MomentOfInertia for OrientedDynamicsPoint<V, R>
 where
-    V: WedgeProduct
+    V: WedgeProduct,
 {
     type Vector = V::Bivector;
 
@@ -217,7 +214,7 @@ where
 
 impl<V, R> AngularMomentum for OrientedDynamicsPoint<V, R>
 where
-    V: WedgeProduct
+    V: WedgeProduct,
 {
     type AngularMomentum = V::Bivector;
 
@@ -234,7 +231,7 @@ where
 
 impl<V, R> NetTorque for OrientedDynamicsPoint<V, R>
 where
-    V: WedgeProduct
+    V: WedgeProduct,
 {
     type NetTorque = V::Bivector;
 
@@ -249,7 +246,7 @@ where
     }
 }
 
-// impl OrientedDynamicsPoint<Cartesian<3>, Quaternion> 
+// impl OrientedDynamicsPoint<Cartesian<3>, Quaternion>
 // {
 //     /// Transform the three-dimensional
 //     /// angular momentum as a quaternion of body to
@@ -258,14 +255,14 @@ where
 //         // transform angmom to vector form (angmom_vec.scalar should be 0.0)
 //         let angmom_vec = (self.orientation.conjugate() * self.angular_momentum) * 0.5;
 //         Cartesian::from([
-//             angmom_vec.vector[0] / self.moment_of_inertia[0], 
-//             angmom_vec.vector[1] / self.moment_of_inertia[1], 
+//             angmom_vec.vector[0] / self.moment_of_inertia[0],
+//             angmom_vec.vector[1] / self.moment_of_inertia[1],
 //             angmom_vec.vector[2] / self.moment_of_inertia[2]
 //         ])
 //     }
 // }
 
-// impl OrientedDynamicsPoint<f64, f64> 
+// impl OrientedDynamicsPoint<f64, f64>
 // {
 //     /// Transform the two-dimensional
 //     /// angular momentum to angular velocity.

@@ -3,24 +3,24 @@
 
 //! Implement DynamicsPoint
 
-use super::{Position, Momentum, Mass};
-use super::point::Point;
 use super::oriented_point::OrientedPoint;
-use crate::property::NetForce;
+use super::point::Point;
+use super::{Mass, Momentum, Position};
 use crate::Transform;
+use crate::property::NetForce;
 use hoomd_vector::Vector;
 
 /// The position, mass, momentum, and net force of an extended body, such as is
 /// useful for Molecular Dynamics simulations.
-/// 
+///
 /// Use [`DynamicsPoint`] as a [`Body`](crate::Body) property type.
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
 /// use hoomd_microstate::property::DynamicsPoint;
 /// use hoomd_vector::Cartesian;
-/// 
+///
 /// let dynamics_point = DynamicsPoint {
 ///     position: Cartesian::from([1.0, -3.0]),
 ///     mass: 1.0,
@@ -49,56 +49,60 @@ where
     V: Vector,
 {
     /// [`DynamicsPoint`] transforms [`Point`] by vector addition.
-    /// 
+    ///
     /// ```math
     /// \vec{r} = \vec{r}_\mathrm{body} + \vec{r}_\mathrm{site}
     /// ```
-    /// 
+    ///
     /// ```
+    /// use approxim::assert_relative_eq;
     /// use hoomd_vector::Cartesian;
-    /// use hoomd_microstate::{property::DynamicsPoint, Transform};
-    /// 
+    /// use hoomd_microstate::{property::{DynamicsPoint, Point}, Transform};
+    ///
     /// let body_properties = DynamicsPoint {
     ///     position: Cartesian::from([1.0, -2.0, 3.0]),
     ///     mass: 1.0,
-    ///     momentum: Cartesian::from([0.0, 1.0, 1.0]),
-    ///     net_force: Cartesian::from([0.0, 0.0, 0.0]),
+    ///     momentum: Cartesian::<3>::default(),
+    ///     net_force: Cartesian::<3>::default(),
     /// };
     /// let site_properties = Point::new(Cartesian::from([-3.0, 2.0, 1.0]));
-    /// 
+    ///
     /// let system_site = body_properties.transform(&site_properties);
     /// assert_relative_eq!(system_site.position, [-2.0, 0.0, 4.0].into());
     /// ```
     #[inline]
     fn transform(&self, site_properties: &Point<V>) -> Point<V> {
-        Point { position: self.position + site_properties.position }
+        Point {
+            position: self.position + site_properties.position,
+        }
     }
 }
 
 impl<V, R> Transform<OrientedPoint<V, R>> for DynamicsPoint<V>
 where
     V: Vector,
-    R: Copy
+    R: Copy,
 {
     /// [`DynamicsPoint`] transforms [`OrientedPoint`] by vector addition.
-    /// 
+    ///
     /// ```math
     /// \vec{r} = \vec{r}_\mathrm{body} + \vec{r}_\mathrm{site}
     /// ```
-    /// 
+    ///
     /// ```
-    /// use hoomd_vector::Cartesian;
-    /// use hoomd_microstate::{property::DynamicsPoint, Transform};
-    /// 
+    /// use approxim::assert_relative_eq;
+    /// use hoomd_vector::{Cartesian, Versor};
+    /// use hoomd_microstate::{property::{DynamicsPoint, OrientedPoint}, Transform};
+    ///
     /// let body_properties = DynamicsPoint {
     ///     position: Cartesian::from([1.0, -2.0, 3.0]),
     ///     mass: 1.0,
-    ///     momentum: Cartesian::from([0.0, 1.0, 1.0]),
-    ///     net_force: Cartesian::from([0.0, 0.0, 0.0]),
+    ///     momentum: Cartesian::<3>::default(),
+    ///     net_force: Cartesian::<3>::default(),
     /// };
     /// let site_properties = OrientedPoint {
     ///     position: Cartesian::from([-3.0, 2.0, 1.0]),
-    ///     orientation: Angle::from(PI/2.0),
+    ///     orientation: Versor::default(),
     /// };
     ///
     /// let system_site = body_properties.transform(&site_properties);
@@ -129,9 +133,7 @@ impl<P> Position for DynamicsPoint<P> {
 
 impl<V> Momentum for DynamicsPoint<V>
 where
-    V: std::ops::Mul<f64, Output = V>
-        + std::ops::Div<f64, Output = V>
-        + Copy
+    V: std::ops::Mul<f64, Output = V> + std::ops::Div<f64, Output = V> + Copy,
 {
     type Vector = V;
 
