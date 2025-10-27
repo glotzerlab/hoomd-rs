@@ -43,7 +43,7 @@ impl<X> Octahedron<X> where
 X: PointsInBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey> + WithSearchRadius,
 Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
-    pub fn with_microstate(microstate: &Microstate<OrientedPoint<Cartesian<3>, Versor>, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<Hypercuboid<3>>>) -> anyhow::Result<Self> {
+    pub fn with_microstate<X2>(microstate: &Microstate<OrientedPoint<Cartesian<3>, Versor>, OrientedPoint<Cartesian<3>, Versor>, X2, Periodic<Hypercuboid<3>>>) -> anyhow::Result<Self> {
         let sigma = 1.0;
 
         let translate = Translate::with_maximum_distance((sigma * 0.1).try_into()?);

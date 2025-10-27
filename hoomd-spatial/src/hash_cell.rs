@@ -1,11 +1,14 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use hoomd_vector::Cartesian;
-use std::{array, cmp::Eq, hash::Hash};
+use std::{array, cmp::Eq, hash::Hash, marker::PhantomData};
+
 use rustc_hash::FxHashMap;
 
-use super::{PointUpdate, PointsInBall};
+use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::Cartesian;
+
+use super::{PointUpdate, PointsInBall, WithSearchRadius, vec_cell};
 
 /// Cell list is a spatial data structure used for efficient neighbor finding based on assigning particles to cell grids.
 ///
@@ -73,161 +76,84 @@ use super::{PointUpdate, PointsInBall};
 /// ```
 pub struct HashCell<K, const D: usize> {
     /// The width of each cell.
-    cell_width: f64,
+    cell_width: PositiveReal,
+    
     /// A map from cell indices to cell contents.
     particle_indices: FxHashMap<[i64; D], Vec<K>>,
+    
     /// A map from particle indices to cell indices.
     cell_index: FxHashMap<K, [i64; D]>,
+    
     /// Location of the 0,..,0 cell.
     origin: Cartesian<D>,
+
+    /// Pre-computed stencils.
+    stencils: Vec<Vec<[i64; D]>>,
 }
 
-// /// `CellListBuilder` is a builder for creating a `CellList`.
-// ///
-// /// Each `CellList` must at least be given a cell width. Builder API allows for creation of empty `CellList` without any particles.
-// /// Particles can also be added by adding positions and indices to the `CellListBuilder`.
-// ///
-// /// # Example constructing an empty `CellList` using the builder API.
-// ///
-// /// ```
-// /// use hoomd_spatial::{CellList, CellListBuilder};
-// /// use hoomd_vector::Cartesian;
-// ///
-// /// // Define the cell width.
-// /// let cell_width = 2.0;
-// /// // Create a cell list object from the builder
-// /// let cell_list = CellListBuilder::<2>::new(cell_width).build();
-// /// ```
-// ///
-// /// # Example constructing a `CellList` with particles using the builder API.
-// /// ```
-// /// use hoomd_spatial::{CellList, CellListBuilder};
-// /// use hoomd_vector::Cartesian;
-// /// // Define the cell width.
-// /// let cell_width = 2.0;
-// /// // Create some sample 2D Cartesian positions.
-// /// let positions = vec![
-// ///     Cartesian {
-// ///         coordinates: [0.2, 0.3],
-// ///     },
-// ///     Cartesian {
-// ///         coordinates: [0.8, 1.3],
-// ///     },
-// ///     Cartesian {
-// ///         coordinates: [8.5, 9.5],
-// ///     },
-// /// ];
-// /// let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
-// /// // Build a cell list with particles.
-// /// let cell_list = CellListBuilder::<2>::new(cell_width)
-// ///     .with_positions_and_indices(&positions, &indices)
-// ///     .build();
-// /// ```
-// pub struct CellListBuilder<const D: usize> {
-//     /// The width of each cell.
-//     pub cell_width: f64,
-//     /// The positions of the particles in the cell list.
-//     pub positions: Vec<Cartesian<D>>,
-//     /// The indices of the particles in the cell list.
-//     pub indices: Vec<usize>,
-// }
+pub struct HashCellBuilder<K, const D: usize> {
+    /// Most commonly used search radius.
+    nominal_search_radius: PositiveReal,
 
-// impl<const D: usize> CellListBuilder<D> {
-//     /// Create a new cell list builder from the given cell width and positions.
-//     ///
-//     /// This is usually used with the build command, to construct a `CellList`. Empty cell list without particles can be created as well using the builder API.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use hoomd_spatial::{CellList, CellListBuilder};
-//     /// use hoomd_vector::Cartesian;
-//     /// // Define the cell width.
-//     /// let cell_width = 2.0;
-//     /// // Create a cell list object from the builder
-//     /// let cell_list = CellListBuilder::<2>::new(cell_width).build();
-//     /// ```
-//     #[inline]
-//     #[must_use]
-//     pub fn new(cell_width: f64) -> Self {
-//         Self {
-//             cell_width,
-//             positions: Vec::new(),
-//             indices: Vec::new(),
-//         }
-//     }
+    /// Largest possible search radius.
+    maximum_search_radius: f64,
 
-//     /// Adds particles to the newly initialized cell list builder in `CellList` builder API.
-//     ///
-//     /// Builder API supports optional parameters which are particle positions and indices for populating the `CellList`.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use hoomd_spatial::{CellList, CellListBuilder};
-//     /// use hoomd_vector::Cartesian;
-//     /// // Define the cell width.
-//     /// let cell_width = 2.0;
-//     /// // Create some sample 2D Cartesian positions.
-//     /// let positions = vec![
-//     ///     Cartesian {
-//     ///         coordinates: [0.2, 0.3],
-//     ///     },
-//     ///     Cartesian {
-//     ///         coordinates: [0.8, 1.3],
-//     ///     },
-//     ///     Cartesian {
-//     ///         coordinates: [8.5, 9.5],
-//     ///     },
-//     /// ];
-//     /// let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
-//     /// // Build a cell list with particles.
-//     /// let cell_list = CellListBuilder::new(cell_width)
-//     ///     .with_positions_and_indices(&positions, &indices)
-//     ///     .build();
-//     /// ```
-//     #[inline]
-//     #[must_use]
-//     pub fn with_positions_and_indices(
-//         mut self,
-//         positions: &Vec<Cartesian<D>>,
-//         indices: &Vec<usize>,
-//     ) -> Self {
-//         self.positions.clone_from(positions);
-//         self.indices.clone_from(indices);
-//         self
-//     }
+    /// Location of the 0,..,0 cell.
+    origin: Cartesian<D>,
 
-//     /// Create an actual `CellList` from `CellListBuilder`.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use hoomd_spatial::{CellList, CellListBuilder};
-//     /// use hoomd_vector::Cartesian;
-//     /// // Define the cell width.
-//     /// let cell_width = 2.0;
-//     /// // Create a builder object
-//     /// let cell_list_builder = CellListBuilder::<2>::new(cell_width);
-//     /// // Create a cell list object from the builder
-//     /// let cell_list = cell_list_builder.build();
-//     /// ```
-//     #[inline]
-//     #[must_use]
-//     pub fn build(self) -> CellList<D> {
-        // let mut instance = Self {
-        //     cell_width,
-        //     particle_indices: HashMap::with_capacity(positions.len()),
-        //     cell_index: HashMap::with_capacity(indices.len()),
-        // };
+    /// Track the key type.
+    phantom_key: PhantomData<K>,
+}
 
-        // for (position, index) in positions.iter().zip(indices.iter()) {
-        //     instance.insert(position, index);
-        // }
+impl<K, const D: usize> HashCellBuilder<K, D> where
+        K: Copy + Eq + Hash {
+    pub fn nominal_search_radius(mut self, nominal_search_radius: PositiveReal) -> Self {
+        self.nominal_search_radius = nominal_search_radius;
+        self
+    }
 
-        // instance
-//     }
-// }
+    pub fn maximum_search_radius(mut self, maximum_search_radius: f64) -> Self {
+        self.maximum_search_radius = maximum_search_radius;
+        self
+    }
+
+    pub fn origin(mut self, origin: Cartesian<D>) -> Self {
+        self.origin = origin;
+        self
+    }
+
+    pub fn build(self) -> HashCell<K, D> 
+    {
+        let maximum_stencil_radius = (self.maximum_search_radius / self.nominal_search_radius.get()).ceil() as u32;
+    
+        HashCell {
+            cell_width: self.nominal_search_radius,
+            particle_indices: FxHashMap::default(),
+            cell_index: FxHashMap::default(),
+            origin: self.origin,
+            stencils: vec_cell::generate_all_stencils(maximum_stencil_radius.min(1)),
+        }
+    }
+}
+
+impl<K, const D: usize> Default for HashCell<K, D> where
+K: Copy + Eq + Hash
+{
+    fn default() -> Self {
+         Self::builder().build()
+    }
+}
+
+impl<K, const D: usize> WithSearchRadius for HashCell<K, D> where
+K: Copy + Eq + Hash
+{
+    fn with_search_radius(radius: PositiveReal) -> Self {
+         Self::builder()
+            .nominal_search_radius(radius)
+            .build()
+    }
+    }
+
 
 impl<K, const D: usize> HashCell<K, D> where
 K: Copy + Eq + Hash
@@ -236,39 +162,7 @@ K: Copy + Eq + Hash
     #[inline]
     fn cell_index_from_position(&self, position: &Cartesian<D>) -> [i64; D] {
         let v = *position - self.origin;
-        std::array::from_fn(|j| (v.coordinates[j] / self.cell_width).floor() as i64)
-    }
-
-    /// Create an empty cell list with the given cell width.
-    ///
-    /// # Example
-    /// ```
-    /// use hoomd_spatial::CellList;
-    /// use hoomd_vector::Cartesian;
-    ///
-    /// let cell_width = 1.0;
-    /// let cell_list = CellList::<usize, 2>::with_cell_width(cell_width);
-    /// ```
-    #[inline]
-    #[must_use]
-    pub fn with_cell_width(cell_width: f64) -> Self {
-        HashCell {
-            cell_width,
-            particle_indices: FxHashMap::default(),
-            cell_index: FxHashMap::default(),
-            origin: Cartesian::default(),
-        }
-    }
-
-    #[inline]
-    #[must_use]
-    pub fn with_cell_width_and_origin(cell_width: f64, origin: Cartesian<D>) -> Self {
-        HashCell {
-            cell_width,
-            particle_indices: FxHashMap::default(),
-            cell_index: FxHashMap::default(),
-            origin,
-        }
+        std::array::from_fn(|j| (v.coordinates[j] / self.cell_width.get()).floor() as i64)
     }
 
     /// Shrink both hashmaps in the cell list to fit their current capacity.
@@ -308,20 +202,16 @@ K: Copy + Eq + Hash
         self.cell_index.shrink_to_fit();
     }
 
-    // /// Common logic needed to implement `points_potentially_in_ball` .
-    // #[inline]
-    // fn nearby_points_detail(&self, position: &Cartesian<D>, stencil: &[[i64; D]]) -> Vec<K> {
-    //     let mut result = Vec::new();
-        
-    //     for offset in stencil {
-    //         let cell_index = array::from_fn(|i| center[i] + offset[i]);
-    //         if let Some(keys) = self.particle_indices.get(&cell_index) {
-    //             result.extend(keys);
-    //         }
-    //     }
-
-    //     result
-    // }
+    #[inline]
+    #[must_use]
+    pub fn builder() -> HashCellBuilder<K, D> {
+        HashCellBuilder {
+            nominal_search_radius: 1.0.try_into().expect("hard-coded constant is a positive real"),
+            maximum_search_radius: 1.0,
+            origin: Cartesian::default(),
+            phantom_key: PhantomData,
+        }
+    }
 }
 
 impl<K, const D: usize> PointUpdate<Cartesian<D>, K> for HashCell<K, D> where
@@ -457,9 +347,9 @@ where K: Copy
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let last_index = self.index_in_current_cell;
-            self.index_in_current_cell += 1;
-            if let Some(keys) = self.keys && last_index < keys.len() {
+            if let Some(keys) = self.keys && self.index_in_current_cell < keys.len() {
+                let last_index = self.index_in_current_cell;
+                self.index_in_current_cell += 1;
                 return Some(keys[last_index]);
             }
 
@@ -476,59 +366,23 @@ where K: Copy
     }
 }
 
-        const STENCIL_2D: [[i64; 2]; 9] = [[0, 0],
-                       [0, -1],
-                       [0, 1],
-                       [-1, 0],
-                       [1, 0],
-                       [-1, -1],
-                       [-1, 1],
-                       [1, 1],
-                       [1, -1]];
-
-        const STENCIL_3D: [[i64; 3]; 27] = [[0, 0, 0],
-                       [0, 0, -1],
-                       [0, 0, 1],
-                       [0, -1, 0],
-                       [0, 1, 0],
-                       [-1, 0, 0],
-                       [1, 0, 0],
-                       [0, -1, -1],
-                       [0, 1, -1],
-                       [0, -1, 1],
-                       [0, 1, 1],
-                       [-1, -1, 0],
-                       [-1, 1, 0],
-                       [1, -1, 0],
-                       [1, 1, 0],
-                       [-1, 0, -1],
-                       [-1, 0, 1],
-                       [1, 0, -1],
-                       [1, 0, 1],
-                       [-1, -1, -1],
-                       [-1, -1, 1],
-                       [-1, 1, -1],
-                       [-1, 1, 1],
-                       [1, -1, -1],
-                       [1, -1, 1],
-                       [1, 1, -1],
-                       [1, 1, 1],
-                    ];
-
-impl<K> PointsInBall<Cartesian<2>, K> for HashCell<K, 2> where
+impl<const D: usize, K> PointsInBall<Cartesian<D>, K> for HashCell<K, D> where
 K: Copy + Eq + Hash
 {
     #[inline]
-    fn points_potentially_in_ball(&self, position: &Cartesian<2>, radius: f64) -> impl Iterator<Item=K> {
-        assert!(radius <= self.cell_width, "search radius must be less than or equal to the cell width");
+    fn points_potentially_in_ball(&self, position: &Cartesian<D>, radius: f64) -> impl Iterator<Item=K> {
+        let stencil_index = (radius / self.cell_width.get()).ceil() as usize - 1;
+        assert!(stencil_index < self.stencils.len(), "search radius must be less than or equal to the maximum search radius");
+
         let center = self.cell_index_from_position(position);
+        let stencil = &self.stencils[stencil_index];
         
         PointsIterator {
             keys: self.particle_indices.get(&center),
             cell_list: self,
             index_in_current_cell: 0,
             current_stencil: 0,
-            stencil: &STENCIL_2D,
+            stencil: &stencil,
             center,
         }
     }
@@ -536,201 +390,22 @@ K: Copy + Eq + Hash
 
 // TODO: Test HashCell<K,3>
 
-impl<K> PointsInBall<Cartesian<3>, K> for HashCell<K, 3> where
-K: Copy + Eq + Hash
-{
-    #[inline]
-    fn points_potentially_in_ball(&self, position: &Cartesian<3>, radius: f64) -> impl Iterator<Item=K> {
-        assert!(radius <= self.cell_width, "search radius must be less than or equal to the cell width");
-        let center = self.cell_index_from_position(position);
-        
-        PointsIterator {
-            keys: self.particle_indices.get(&center),
-            cell_list: self,
-            index_in_current_cell: 0,
-            current_stencil: 0,
-            stencil: &STENCIL_3D,
-            center,
-        }
-    }
-}
-
-//     /// Find potential neighbor indices.
-//     ///
-//     /// This function finds the POTENTIAL neighbor indices for a given position and cutoff radius.
-//     ///
-//     /// # Example
-//     ///
-//     /// ```
-//     /// use hoomd_spatial::CellList;
-//     /// use hoomd_vector::Cartesian;
-//     ///
-//     /// // Create some sample 2D Cartesian positions.
-//     /// let positions = vec![
-//     ///     Cartesian {
-//     ///         coordinates: [0.2, 0.3],
-//     ///     },
-//     ///     Cartesian {
-//     ///         coordinates: [0.8, 1.3],
-//     ///     },
-//     ///     Cartesian {
-//     ///         coordinates: [8.5, 9.5],
-//     ///     },
-//     /// ];
-//     /// let cell_width = 1.0;
-//     /// let indices = vec![0, 1, 2]; // Particle indices corresponding to positions.
-//     /// // Build the cell list from positions.
-//     /// let cell_list = CellList::<2>::new(cell_width, &positions, &indices);
-//     ///
-//     /// // Choose a query position (for example, the first one).
-//     /// let query_position = &positions[0];
-//     /// // Define a cutoff radius.
-//     /// let cutoff_radius = 1.5;
-//     ///
-//     /// // Call the function to find potential neighbor indices.
-//     /// let potential_neighbor_indices = cell_list
-//     ///     .find_potential_neighbor_indices(&0, &cutoff_radius)
-//     ///     .collect::<Vec<_>>();
-//     ///
-//     /// // Print the resulting neighbor indices.
-//     /// println!(
-//     ///     "Potential neighbor indices: {:?}",
-//     ///     potential_neighbor_indices
-//     /// );
-//     /// ```
-//     #[expect(clippy::cast_possible_truncation, reason = "Intentional truncation.")]
-//     #[inline]
-//     // TODO: instead of recursion, loop over the number of iterations and use //
-//     pub fn find_potential_neighbor_indices<'a>(
-//         &'a self,
-//         particle_index: &usize,
-//         cutoff_radius: &f64,
-//     ) -> impl Iterator<Item = usize> + 'a {
-//         // Generate all D‑dimensional offsets in [-n..=n]^D
-//         // Define a recursive helper function to generate all translation combinations.
-//         // For each dimension, it iterates from -max_offset to max_offset.
-//         // TODO figure out if there is a better way to do this. Is there an itertools
-//         // like functionality in std library? cartesian product?
-//         fn generate_translations<const D: usize>(
-//             i: usize,
-//             n: i32,
-//             current: &mut [i32; D],
-//             translations: &mut Vec<[i32; D]>,
-//         ) {
-//             if i == D {
-//                 translations.push(*current);
-//             } else {
-//                 for offset in -n..=n {
-//                     current[i] = offset;
-//                     generate_translations(i + 1, n, current, translations);
-//                 }
-//             }
-//         }
-//         let particle_cell_idx = self.cell_index[particle_index];
-//         let n = (cutoff_radius / self.cell_width).ceil() as i32; // TODO try try_into but check performance
-//         let mut translations = Vec::new();
-//         let mut current = [0; D];
-//         generate_translations(0, n, &mut current, &mut translations);
-//         translations.into_iter().flat_map(move |delta| {
-//             // compute neighbor cell coords
-//             let mut c = particle_cell_idx;
-//             for i in 0..D {
-//                 c[i] += delta[i];
-//             }
-//             // yield occupants or empty vec
-//             self.particle_indices
-//                 .get(&c)
-//                 .cloned()
-//                 .unwrap_or_default()
-//                 .into_iter()
-//         })
-//     }
-// }
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use rand::{Rng, SeedableRng, distr::{Distribution, Uniform}, rngs::StdRng};
     use hoomd_vector::{distribution::Ball, Metric};
 
-    // #[test]
-    // fn builder_new_has_empty_state() {
-    //     let cell_width = 1.0;
-    //     let builder = CellList::<2>::builder(cell_width);
-    //     assert_eq!(builder.cell_width, cell_width); // from Default
-    //     assert!(builder.positions.is_empty());
-    //     assert!(builder.indices.is_empty());
-    // }
-
-    // #[test]
-    // fn builder_with_positions_and_indices_works() {
-    //     let positions = vec![
-    //         Cartesian {
-    //             coordinates: [0.0, 0.0],
-    //         },
-    //         Cartesian {
-    //             coordinates: [1.0, 1.0],
-    //         },
-    //     ];
-    //     let indices = vec![0, 1];
-    //     let builder = CellList::<2>::builder(1.0).with_positions_and_indices(&positions, &indices);
-
-    //     assert_eq!(builder.positions, positions);
-    //     assert_eq!(builder.indices, indices);
-    // }
-
-    // #[test]
-    // fn builder_build_creates_celllist() {
-    //     let positions = vec![
-    //         Cartesian {
-    //             coordinates: [0.5, 0.5],
-    //         },
-    //         Cartesian {
-    //             coordinates: [1.5, 1.5],
-    //         },
-    //     ];
-    //     let indices = vec![0, 1];
-
-    //     let cell_list = CellList::<2>::builder(1.0)
-    //         .with_positions_and_indices(&positions, &indices)
-    //         .build();
-
-    //     assert_eq!(cell_list.cell_width, 1.0);
-    //     assert_eq!(cell_list.cell_index.len(), 2);
-    //     assert_eq!(cell_list.particle_indices.len(), 2);
-    // }
-
-    // #[test]
-    // fn builder_can_chain_methods() {
-    //     let cell_list = CellList::<2>::builder(1.0)
-    //         .with_positions_and_indices(
-    //             &vec![
-    //                 Cartesian {
-    //                     coordinates: [0.5, 0.5],
-    //                 },
-    //                 Cartesian {
-    //                     coordinates: [2.1, 2.9],
-    //                 },
-    //             ],
-    //             &vec![5, 9],
-    //         )
-    //         .build();
-
-    //     assert_eq!(cell_list.cell_index.get(&5).unwrap(), &[0, 0]);
-    //     assert_eq!(cell_list.cell_index.get(&9).unwrap(), &[2, 2]);
-    // }
-
-
     #[test]
     fn test_cell_index() {
-        let cell_list = HashCell::<usize, 3>::with_cell_width(2.0);
+        let cell_list = HashCell::<usize, 3>::builder().nominal_search_radius(2.0.try_into().expect("hard-coded constant is a positive real")).build();
         assert_eq!(cell_list.cell_index_from_position(&[0.0, 0.0, 0.0].into()), [0, 0, 0]);
         assert_eq!(cell_list.cell_index_from_position(&[2.0, 0.0, 0.0].into()), [1, 0, 0]);
         assert_eq!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()), [0, 1, 0]);
         assert_eq!(cell_list.cell_index_from_position(&[0.0, 0.0, 2.0].into()), [0, 0, 1]);
         assert_eq!(cell_list.cell_index_from_position(&[-41.5, 18.5, -0.125].into()), [-21, 9, -1]);
 
-        let cell_list = HashCell::<usize, 3>::with_cell_width_and_origin(2.0, [-4.0, 2.0, 8.0].into());
+        let cell_list = HashCell::<usize, 3>::builder().nominal_search_radius(2.0.try_into().expect("hard-coded constant is a positive real")).origin([-4.0, 2.0, 8.0].into()).build();
         assert_eq!(cell_list.cell_index_from_position(&[0.0, 0.0, 0.0].into()), [2, -1, -4]);
         assert_eq!(cell_list.cell_index_from_position(&[2.0, 0.0, 0.0].into()), [3, -1, -4]);
         assert_eq!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()), [2, 0, -4]);
@@ -740,8 +415,7 @@ mod tests {
     
     #[test]
     fn test_insert_one() {
-        let cell_width = 1.0;
-        let mut cell_list = HashCell::with_cell_width(cell_width);
+        let mut cell_list = HashCell::default();
 
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
 
@@ -757,8 +431,7 @@ mod tests {
 
     #[test]
     fn test_insert_many() {
-        let cell_width = 1.0;
-        let mut cell_list = HashCell::with_cell_width(cell_width);
+        let mut cell_list = HashCell::default();
 
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
         cell_list.insert(1, Cartesian::from([0.995, 0.897]));
@@ -786,8 +459,7 @@ mod tests {
 
     #[test]
     fn test_insert_again_same() {
-        let cell_width = 1.0;
-        let mut cell_list = HashCell::with_cell_width(cell_width);
+        let mut cell_list = HashCell::default();
 
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
         cell_list.insert(0, Cartesian::from([0.25, 0.5]));
@@ -805,9 +477,8 @@ mod tests {
 
     #[test]
     fn test_insert_again_different() {
-        let cell_width = 1.0;
-        let mut cell_list = HashCell::with_cell_width(cell_width);
-
+        let mut cell_list = HashCell::default();
+        
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
         cell_list.insert(1, Cartesian::from([0.25, 0.5]));
         cell_list.insert(1, Cartesian::from([-0.5, -0.75]));
@@ -832,8 +503,7 @@ mod tests {
 
     #[test]
     fn test_remove() {
-        let cell_width = 1.0;
-        let mut cell_list = HashCell::with_cell_width(cell_width);
+        let mut cell_list = HashCell::default();
 
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
         cell_list.insert(1, Cartesian::from([0.995, 0.897]));
@@ -862,8 +532,7 @@ mod tests {
 
     #[test]
     fn test_clear() {
-        let cell_width = 1.0;
-        let mut cell_list = HashCell::with_cell_width(cell_width);
+        let mut cell_list = HashCell::default();
 
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
         cell_list.insert(1, Cartesian::from([0.995, 0.897]));
@@ -877,8 +546,7 @@ mod tests {
 
     #[test]
     fn test_shrink_to_fit() {
-        let cell_width = 1.0;
-        let mut cell_list = HashCell::with_cell_width(cell_width);
+        let mut cell_list = HashCell::default();
 
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
         cell_list.insert(1, Cartesian::from([0.995, 0.897]));
@@ -905,7 +573,7 @@ mod tests {
         let mut reference = FxHashMap::default();
 
         let cell_width = 0.5;
-        let mut cell_list = HashCell::with_cell_width(cell_width);
+        let mut cell_list = HashCell::builder().nominal_search_radius(cell_width.try_into().expect("hard-coded value should be positive")).build();
         let position_distribution = Ball { radius: 20.0.try_into().expect("hardcoded value should be positive") };
         let key_distribution = Uniform::new(0, N_STEPS/4).expect("hardcoded distribution should be valid");
 
@@ -949,7 +617,7 @@ mod tests {
         let mut reference = Vec::new();
 
         let cell_width = 1.0;
-        let mut cell_list = HashCell::with_cell_width(cell_width);
+        let mut cell_list = HashCell::default();
         let position_distribution = Ball { radius: 20.0.try_into().expect("hardcoded value should be positive") };
 
         for key in 0..2048 {
@@ -969,45 +637,4 @@ mod tests {
             }
         }
     }
-
-    // #[test]
-    // fn test_find_potential_neighbor_indices() {
-    //     let cell_width = 1.0;
-
-    //     // Create some sample 2D Cartesian positions.
-    //     let p0 = Cartesian {
-    //         coordinates: [0.2, 0.3],
-    //     };
-    //     let p1 = Cartesian {
-    //         coordinates: [0.8, 1.3],
-    //     };
-    //     let p2 = Cartesian {
-    //         coordinates: [1.2, 0.2],
-    //     };
-    //     let p3 = Cartesian {
-    //         coordinates: [1.5, 1.5],
-    //     };
-
-    //     // Construct a vector of positions.
-    //     let positions = vec![p0, p1, p2, p3];
-
-    //     let indices = vec![0, 1, 2, 3]; // Particle indices corresponding to positions.
-
-    //     // Build the CellList.
-    //     let cell_list = CellList::<2>::new(cell_width, &positions, &indices);
-
-    //     // Define a cutoff radius.
-    //     let cutoff_radius = 10.5;
-
-    //     // Use p0 ([0.2, 0.3] falls in cell [0,0]) as the query position.
-    //     let potential_neighbor_indices = cell_list
-    //         .find_potential_neighbor_indices(&0, &cutoff_radius)
-    //         .collect::<Vec<_>>();
-
-    //     // p0's index should appear.
-    //     assert!(potential_neighbor_indices.contains(&0));
-    //     assert!(potential_neighbor_indices.contains(&1));
-    //     assert!(potential_neighbor_indices.contains(&2));
-    //     assert!(potential_neighbor_indices.contains(&3));
-    // }
 }

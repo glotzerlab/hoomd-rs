@@ -40,7 +40,7 @@ impl<const D: usize, X> HardSphere<D, X> where
 X: PointsInBall<Cartesian<D>, SiteKey> + PointUpdate<Cartesian<D>, SiteKey> + WithSearchRadius,
 Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
-    pub fn with_microstate<B, S>(microstate: &Microstate<B, S, X, Periodic<Hypercuboid<D>>>) -> anyhow::Result<Self>
+    pub fn with_microstate<B, S, X2>(microstate: &Microstate<B, S, X2, Periodic<Hypercuboid<D>>>) -> anyhow::Result<Self>
     where B: Position<Position = Cartesian<D>>,
     {
         let sigma = 1.0;

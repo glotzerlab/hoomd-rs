@@ -43,7 +43,7 @@ impl<X> RegularPolygon<X> where
 X: PointsInBall<Cartesian<2>, SiteKey> + PointUpdate<Cartesian<2>, SiteKey> + WithSearchRadius,
 Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>,
 {
-    pub fn with_microstate(microstate: &Microstate<OrientedPoint<Cartesian<2>, Angle>, OrientedPoint<Cartesian<2>, Angle>, X, Periodic<Hypercuboid<2>>>) -> anyhow::Result<Self> {
+    pub fn with_microstate<X2>(microstate: &Microstate<OrientedPoint<Cartesian<2>, Angle>, OrientedPoint<Cartesian<2>, Angle>, X2, Periodic<Hypercuboid<2>>>) -> anyhow::Result<Self> {
         let sigma = 1.0;
 
         let translate = Translate::with_maximum_distance((sigma * 0.1).try_into()?);

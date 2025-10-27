@@ -92,7 +92,7 @@ fn generate_stencil<const D: usize>(radius: u32) -> Vec<[i64; D]> {
 }
 
 /// Generate the stencils up to a given radius.
-fn generate_all_stencils<const D: usize>(max_radius: u32) -> Vec<Vec<[i64; D]>> {
+pub(crate) fn generate_all_stencils<const D: usize>(max_radius: u32) -> Vec<Vec<[i64; D]>> {
     assert!(max_radius >= 1, "cell list must have a minimum radius of 1");
     let mut result = Vec::new();
 

@@ -3,6 +3,8 @@
 
 use std::collections::HashMap;
 
+use hoomd_microstate::SiteKey;
+use hoomd_spatial::{AllPairs, HashCell, VecCell};
 use log::info;
 use clap::Parser;
 use clap_verbosity_flag::{Verbosity, InfoLevel};
@@ -19,7 +21,9 @@ use wildmatch::WildMatch;
 struct Performance {
     units: String,
     n: Vec<usize>,
-    performance: Vec<f64>,
+    hash_cell_performance: Vec<f64>,
+    vec_cell_performance: Vec<f64>,
+    all_pairs_performance: Vec<f64>,
 }
 
 impl Performance {
@@ -27,7 +31,10 @@ impl Performance {
         Self {
             units,
             n: Vec::new(),
-            performance: Vec::new(),
+            hash_cell_performance: Vec::new(),
+            vec_cell_performance: Vec::new(),
+            all_pairs_performance: Vec::new(),
+            
         }
     }
 }
@@ -82,65 +89,113 @@ fn main() -> anyhow::Result<()> {
     let microstate_2d = benchmarks::place_hard_hyperspheres::<OrientedPoint<Cartesian<2>, Angle>, OrientedPoint<Cartesian<2>, Angle>, 2>(n, number_density)?;
 
     if benchmark_matcher.matches("mc_hard_sphere_2d") {
-        let mut mc_hard_sphere_2d = mc::HardSphere::with_microstate(&microstate_2d)?;
         info!("mc_hard_sphere_2d: {} disks at number density {}", n, number_density);
+        let mut mc_hard_sphere_2d = mc::HardSphere::<2, VecCell<SiteKey, 2>>::with_microstate(&microstate_2d)?;
         let performance = benchmark.benchmark_one(&mut mc_hard_sphere_2d)?;
 
         let entry = results.entry("mc_hard_sphere_2d").or_insert_with(|| Performance::with_units("ms / step".to_string()));
         entry.n.push(n);
-        entry.performance.push(performance);
+        entry.vec_cell_performance.push(performance);
+
+        let mut mc_hard_sphere_2d = mc::HardSphere::<2, AllPairs<SiteKey>>::with_microstate(&microstate_2d)?;
+        let performance = benchmark.benchmark_one(&mut mc_hard_sphere_2d)?;
+        entry.all_pairs_performance.push(performance);
+
+        let mut mc_hard_sphere_2d = mc::HardSphere::<2, HashCell<SiteKey, 2>>::with_microstate(&microstate_2d)?;
+        let performance = benchmark.benchmark_one(&mut mc_hard_sphere_2d)?;
+        entry.hash_cell_performance.push(performance);
     }
 
     if benchmark_matcher.matches("mc_lennard_jones_2d") {
-        let mut mc_lennard_jones_2d = mc::LennardJones::with_microstate(&microstate_2d)?;
         info!("mc_lennard_jones_2d: {} disks at number density {}", n, number_density);
+        let mut mc_lennard_jones_2d = mc::LennardJones::<2, VecCell<SiteKey, 2>>::with_microstate(&microstate_2d)?;
         let performance = benchmark.benchmark_one(&mut mc_lennard_jones_2d)?;
 
         let entry = results.entry("mc_lennard_jones_2d").or_insert_with(|| Performance::with_units("ms / step".to_string()));
         entry.n.push(n);
-        entry.performance.push(performance);
+        entry.vec_cell_performance.push(performance);
+
+        let mut mc_lennard_jones_2d = mc::LennardJones::<2, AllPairs<SiteKey>>::with_microstate(&microstate_2d)?;
+        let performance = benchmark.benchmark_one(&mut mc_lennard_jones_2d)?;
+        entry.all_pairs_performance.push(performance);
+
+        let mut mc_lennard_jones_2d = mc::LennardJones::<2, HashCell<SiteKey, 2>>::with_microstate(&microstate_2d)?;
+        let performance = benchmark.benchmark_one(&mut mc_lennard_jones_2d)?;
+        entry.hash_cell_performance.push(performance);
     }
 
     if benchmark_matcher.matches("mc_hexagon_2d") {
-        let mut mc_hexagon_2d = mc::RegularPolygon::with_microstate(&microstate_2d)?;
         info!("mc_hexagon_2d: {} hexagons at number density {}", n, number_density);
+        let mut mc_hexagon_2d = mc::RegularPolygon::<VecCell<SiteKey, 2>>::with_microstate(&microstate_2d)?;
         let performance = benchmark.benchmark_one(&mut mc_hexagon_2d)?;
 
         let entry = results.entry("mc_hexagon_2d").or_insert_with(|| Performance::with_units("ms / step".to_string()));
         entry.n.push(n);
-        entry.performance.push(performance);
+        entry.vec_cell_performance.push(performance);
+
+        let mut mc_hexagon_2d = mc::RegularPolygon::<AllPairs<SiteKey>>::with_microstate(&microstate_2d)?;
+        let performance = benchmark.benchmark_one(&mut mc_hexagon_2d)?;
+        entry.all_pairs_performance.push(performance);
+
+        let mut mc_hexagon_2d = mc::RegularPolygon::<HashCell<SiteKey, 2>>::with_microstate(&microstate_2d)?;
+        let performance = benchmark.benchmark_one(&mut mc_hexagon_2d)?;
+        entry.hash_cell_performance.push(performance);
     }
 
     let microstate_3d = benchmarks::place_hard_hyperspheres::<OrientedPoint<Cartesian<3>, Versor>, OrientedPoint<Cartesian<3>, Versor>, 3>(n, number_density)?;
 
     if benchmark_matcher.matches("mc_hard_sphere_3d") {
-        let mut mc_hard_sphere_3d = mc::HardSphere::with_microstate(&microstate_3d)?;
         info!("mc_hard_sphere_3d: {} disks at number density {}", n, number_density);
+        let mut mc_hard_sphere_3d = mc::HardSphere::<3, VecCell<SiteKey, 3>>::with_microstate(&microstate_3d)?;
         let performance = benchmark.benchmark_one(&mut mc_hard_sphere_3d)?;
 
         let entry = results.entry("mc_hard_sphere_3d").or_insert_with(|| Performance::with_units("ms / step".to_string()));
         entry.n.push(n);
-        entry.performance.push(performance);
+        entry.vec_cell_performance.push(performance);
+
+        let mut mc_hard_sphere_3d = mc::HardSphere::<3, AllPairs<SiteKey>>::with_microstate(&microstate_3d)?;
+        let performance = benchmark.benchmark_one(&mut mc_hard_sphere_3d)?;
+        entry.all_pairs_performance.push(performance);
+
+        let mut mc_hard_sphere_3d = mc::HardSphere::<3, HashCell<SiteKey, 3>>::with_microstate(&microstate_3d)?;
+        let performance = benchmark.benchmark_one(&mut mc_hard_sphere_3d)?;
+        entry.hash_cell_performance.push(performance);
     }
 
     if benchmark_matcher.matches("mc_lennard_jones_3d") {
-        let mut mc_lennard_jones_3d = mc::LennardJones::with_microstate(&microstate_3d)?;
         info!("mc_lennard_jones_3d: {} spheres at number density {}", n, number_density);
+        let mut mc_lennard_jones_3d = mc::LennardJones::<3, VecCell<SiteKey, 3>>::with_microstate(&microstate_3d)?;
         let performance = benchmark.benchmark_one(&mut mc_lennard_jones_3d)?;
 
         let entry = results.entry("mc_lennard_jones_3d").or_insert_with(|| Performance::with_units("ms / step".to_string()));
         entry.n.push(n);
-        entry.performance.push(performance);
+        entry.vec_cell_performance.push(performance);
+
+        let mut mc_lennard_jones_3d = mc::LennardJones::<3, AllPairs<SiteKey>>::with_microstate(&microstate_3d)?;
+        let performance = benchmark.benchmark_one(&mut mc_lennard_jones_3d)?;
+        entry.all_pairs_performance.push(performance);
+
+        let mut mc_lennard_jones_3d = mc::LennardJones::<3, HashCell<SiteKey, 3>>::with_microstate(&microstate_3d)?;
+        let performance = benchmark.benchmark_one(&mut mc_lennard_jones_3d)?;
+        entry.hash_cell_performance.push(performance);
     }
 
     if benchmark_matcher.matches("mc_octahedron_3d") {
-        let mut mc_octahedron_3d = mc::Octahedron::with_microstate(&microstate_3d)?;
         info!("mc_octahedron_3d: {} octahedra at number density {}", n, number_density);
+        let mut mc_octahedron_3d = mc::Octahedron::<VecCell<SiteKey, 3>>::with_microstate(&microstate_3d)?;
         let performance = benchmark.benchmark_one(&mut mc_octahedron_3d)?;
 
         let entry = results.entry("mc_octahedron_3d").or_insert_with(|| Performance::with_units("ms / step".to_string()));
         entry.n.push(n);
-        entry.performance.push(performance);
+        entry.vec_cell_performance.push(performance);
+
+        let mut mc_octahedron_3d = mc::Octahedron::<AllPairs<SiteKey>>::with_microstate(&microstate_3d)?;
+        let performance = benchmark.benchmark_one(&mut mc_octahedron_3d)?;
+        entry.all_pairs_performance.push(performance);
+
+        let mut mc_octahedron_3d = mc::Octahedron::<HashCell<SiteKey, 3>>::with_microstate(&microstate_3d)?;
+        let performance = benchmark.benchmark_one(&mut mc_octahedron_3d)?;
+        entry.hash_cell_performance.push(performance);
     }
 
     n *= 2;

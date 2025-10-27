@@ -3,9 +3,10 @@
 
 use std::hash::Hash;
 
+use hoomd_utility::valid::PositiveReal;
 use rustc_hash::FxHashSet;
 
-use super::{PointUpdate, PointsInBall};
+use super::{PointUpdate, PointsInBall, WithSearchRadius};
 
 
 /// Check all pairs.
@@ -21,6 +22,14 @@ K: Copy + Eq + Hash
         Self {
             keys: FxHashSet::default(),
         }
+    }
+}
+
+impl<K> WithSearchRadius for AllPairs<K> where
+K: Copy + Eq + Hash
+{
+    fn with_search_radius(_radius: PositiveReal) -> Self {
+        Self::default()
     }
 }
 
