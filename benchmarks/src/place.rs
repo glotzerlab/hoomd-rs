@@ -30,7 +30,7 @@ VecCell<SiteKey, D>: PointsInBall<Cartesian<D>, SiteKey>,
     let sigma = 1.0;
     let macrostate = Isothermal { temperature: 1.0 };
 
-    debug!("Initializing...");
+    debug!("Initializing {n} points in {D} dimensions with number density {number_density}...");
 
     let cell_list = VecCell::new(sigma, 1);
     let boundary = Periodic::new(sigma,
