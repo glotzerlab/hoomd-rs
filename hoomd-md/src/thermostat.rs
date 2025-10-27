@@ -13,10 +13,13 @@ use hoomd_simulation::macrostate::{Isothermal, Temperature};
 use hoomd_vector::{Cartesian, Vector};
 use rand_distr::{Distribution, Gamma, Normal};
 
-/// Adjust the temperature of a system.
+/// Adjust the temperature of a system for sampling
+/// the kinetic energy in the form of
+/// canonical distribution.
 ///
-/// TODO: ensure that docs indicate two-step integration is baked into the thermostat trait
-/// TODO: Add example.
+/// Implement [`Thermostat`] or use one of the
+/// provided method in [`thermostat`](crate::thermostat)
+/// in MD simulations.
 pub trait Thermostat<B, S, C, M> {
     /// Integrate the thermostat dof foward, and return
     /// Note that translation and rotation are assumed to have identical math
@@ -45,12 +48,14 @@ pub trait Thermostat<B, S, C, M> {
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64);
 }
 
-/// Constant temperature.
-/// TODO: Add example.
+/// [`NoThermostat`] implement the dummy method
+/// that performs no adjustment on the temperature
+/// for [`TranslationalMotion`] and [`RotationalMotion`]
+/// as they require to input a [`Thermostat`] during
+/// integration.
 pub struct NoThermostat;
 
-impl<B, S, C, M> Thermostat<B, S, C, M> for NoThermostat
-{
+impl<B, S, C, M> Thermostat<B, S, C, M> for NoThermostat {
     #[inline]
     fn integrate_step_one<P>(
         &mut self,
@@ -82,9 +87,50 @@ impl<B, S, C, M> Thermostat<B, S, C, M> for NoThermostat
     }
 }
 
-/// Bussi thermostat.
-/// TODO: Add documentation.
-/// TODO: Add example.
+/// [`BussiThermostat`] adjust the temperature with a
+/// canonical sampling thermostat that uses stochastic
+/// velocity rescaling with Hamiltonian dynamics
+/// given time constant $`\tau`$.
+///
+/// When $`\tau`$ is 0, the stochastic evolution of
+/// system is instantly thermalized and the
+/// rescaling factor $`\alpha`$:
+/// ```math
+///  \alpha = \sqrt{\frac{g k_BT}{K}}
+/// ```
+/// where $`K`$ is the instantaneous kinetic energy
+/// of the corresponding translational or rotational
+/// degrees of freedom, $`N`$ is the number of degrees
+/// of freedom, and $`g`$ is a random value sampled from
+/// the gamma distribution $`\mathrm{Gamma}(N, 1)`$ with the
+/// probability density function:
+/// ```math
+///    f_N(g) = \frac{1}{\Gamma{(N)}} g^{N-1} e^{-g}
+/// ```
+///
+/// When $`\tau`$ is non-zero, the kinetic energies decay to
+/// equilibrium with the given characteristic time
+/// constant $`\tau`$ and the $`\alpha`$ is given by:
+/// ```math
+///    \alpha = \sqrt{e^{-\delta t / \tau}
+///         + (1 - e^{-\delta t / \tau}) \frac{(2 g + n^2) kT}{2 K}
+///         + 2 n \sqrt{e^{-\delta t / \tau} (1-e^{-\delta t / \tau})
+///            \frac{k_BT}{2 K}}}
+/// ```
+/// where $`\delta t`$ is the step size of [`TranslationalMotion`]
+/// or [`RotationalMotion`] and $`n`$ is a random value
+/// sampled from the standard normal distribution
+/// $`\mathcal{N}(0, 1)`$.
+///
+/// # Examples
+///
+/// ```
+/// use hoomd_md::{thermostat::BussiThermostat, ConstantVolume, TranslationalMotion};
+///
+/// let dt = 0.001;
+/// let tau = 100.0*dt;
+/// let thermostat = BussiThermostat::new(tau);
+/// ```
 pub struct BussiThermostat {
     /// Thermostat time constant (`[time]`).
     tau: f64,
@@ -109,15 +155,18 @@ impl BussiThermostat {
         &self.cumu_energy_drift
     }
 }
-/// TODO: add documentation
+/// Calculate velocity rescaling factor following
+/// the Appendix in <https://doi.org/10.1063/1.2408420>
+/// in `integrate_step_one`.
+///
+/// `integrate_step_two` is a dummy method that
+/// performs no temperature adjustment as the Bussi thermostat
+/// requires only one step to finish temeperature adjustment.
 impl<B, S, C, M> Thermostat<B, S, C, M> for BussiThermostat
 where
     B: Clone,
     M: Temperature,
 {
-    /// Calculate velocity rescaling factor following the Appendix in https://doi.org/10.1063/1.2408420.
-    /// Bussi requires the rng, instataneous kinetic_energy, timestep and degrees-of-freedom,
-    /// change the trait function definition accordingly?
     #[inline]
     fn integrate_step_one<P>(
         &mut self,
@@ -307,11 +356,6 @@ where
     where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
-        self.integrate_step_one(
-            microstate,
-            macrostate,
-            &dt,
-            &mut compute_properties
-        )
+        self.integrate_step_one(microstate, macrostate, &dt, &mut compute_properties)
     }
 }
