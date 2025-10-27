@@ -8,9 +8,8 @@ use clap::Parser;
 use clap_verbosity_flag::{Verbosity, InfoLevel};
 use clap_verbosity_flag::log::LevelFilter;
 use serde::Serialize;
-use serde_json::Result;
 
-use hoomd_microstate::property::{OrientedPoint, Point};
+use hoomd_microstate::property::OrientedPoint;
 use hoomd_vector::{Angle, Cartesian, Versor};
 
 use benchmarks::{Benchmark, mc};
@@ -39,7 +38,15 @@ pub struct Options {
     /// Execute benchmarks that match a wildcard pattern.
     #[arg(short, long, value_name = "pattern", default_value_t=String::from("*"), display_order=0)]
     benchmarks: String,
-    
+
+    /// Smallest system size to benchmark.
+    #[arg(short, long, default_value_t=4096, display_order=0)]
+    n_min: usize,
+
+    /// Largest system size to benchmark (defaults to the smallest).
+    #[arg(long, display_order=0)]
+    n_max: Option<usize>,
+        
     #[command(flatten)]
     pub verbose: Verbosity<InfoLevel>,
 }
@@ -68,10 +75,11 @@ fn main() -> anyhow::Result<()> {
     let number_density = 0.8;
     let benchmark = Benchmark::default();
 
-    for n in [256, 512, 1_024, 2_048, 4_096, 8_192, 16_384, 32_768, 65_536, 131_072] {
+    let mut n = options.n_min;
+
+    loop {
     
-    let microstate_2d = benchmarks::place_hard_hyperspheres::<Point<Cartesian<2>>, Point<Cartesian<2>>, 2>(n, number_density)?;
-    let microstate_oriented_2d = benchmarks::place_hard_hyperspheres::<OrientedPoint<Cartesian<2>, Angle>, OrientedPoint<Cartesian<2>, Angle>, 2>(n, number_density)?;
+    let microstate_2d = benchmarks::place_hard_hyperspheres::<OrientedPoint<Cartesian<2>, Angle>, OrientedPoint<Cartesian<2>, Angle>, 2>(n, number_density)?;
 
     if benchmark_matcher.matches("mc_hard_sphere_2d") {
         let mut mc_hard_sphere_2d = mc::HardSphere::with_microstate(&microstate_2d)?;
@@ -94,7 +102,7 @@ fn main() -> anyhow::Result<()> {
     }
 
     if benchmark_matcher.matches("mc_hexagon_2d") {
-        let mut mc_hexagon_2d = mc::RegularPolygon::with_microstate(&microstate_oriented_2d)?;
+        let mut mc_hexagon_2d = mc::RegularPolygon::with_microstate(&microstate_2d)?;
         info!("mc_hexagon_2d: {} hexagons at number density {}", n, number_density);
         let performance = benchmark.benchmark_one(&mut mc_hexagon_2d)?;
 
@@ -103,8 +111,7 @@ fn main() -> anyhow::Result<()> {
         entry.performance.push(performance);
     }
 
-    let microstate_3d = benchmarks::place_hard_hyperspheres::<Point<Cartesian<3>>, Point<Cartesian<3>>, 3>(n, number_density)?;
-    let microstate_oriented_3d = benchmarks::place_hard_hyperspheres::<OrientedPoint<Cartesian<3>, Versor>, OrientedPoint<Cartesian<3>, Versor>, 3>(n, number_density)?;
+    let microstate_3d = benchmarks::place_hard_hyperspheres::<OrientedPoint<Cartesian<3>, Versor>, OrientedPoint<Cartesian<3>, Versor>, 3>(n, number_density)?;
 
     if benchmark_matcher.matches("mc_hard_sphere_3d") {
         let mut mc_hard_sphere_3d = mc::HardSphere::with_microstate(&microstate_3d)?;
@@ -127,7 +134,7 @@ fn main() -> anyhow::Result<()> {
     }
 
     if benchmark_matcher.matches("mc_octahedron_3d") {
-        let mut mc_octahedron_3d = mc::Octahedron::with_microstate(&microstate_oriented_3d)?;
+        let mut mc_octahedron_3d = mc::Octahedron::with_microstate(&microstate_3d)?;
         info!("mc_octahedron_3d: {} octahedra at number density {}", n, number_density);
         let performance = benchmark.benchmark_one(&mut mc_octahedron_3d)?;
 
@@ -136,6 +143,10 @@ fn main() -> anyhow::Result<()> {
         entry.performance.push(performance);
     }
 
+    n *= 2;
+    if n > options.n_max.unwrap_or(options.n_min) {
+        break;
+    }
     }
     let results_json = serde_json::to_string(&results)?;
     println!("{results_json}");

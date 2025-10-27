@@ -4,14 +4,10 @@
 use hoomd_spatial::{PointUpdate, PointsInBall, VecCell};
 use hoomd_vector::Cartesian;
 use hoomd_simulation::{macrostate::Isothermal, Simulation};
-use hoomd_microstate::{boundary::{GenerateGhosts, Periodic}, property::Point, Microstate, MicrostateBuilder, SiteKey};
+use hoomd_microstate::{boundary::{GenerateGhosts, Periodic}, property::{Point, Position}, Body, Microstate, MicrostateBuilder, SiteKey};
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_interaction::{pairwise::{self, Isotropic}, CutoffPair};
-
-struct HardSphereWell {
-    maximum_interaction_range: f64
-}
 
 pub struct LennardJones<const D: usize, X> {
     microstate: Microstate<Point<Cartesian<D>>, Point<Cartesian<D>>, X, Periodic<Hypercuboid<D>>>,
@@ -43,7 +39,9 @@ Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 impl<const D: usize> LennardJones<D, VecCell<SiteKey, D>> where
 Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
-    pub fn with_microstate<X>(microstate: &Microstate<Point<Cartesian<D>>, Point<Cartesian<D>>, X, Periodic<Hypercuboid<D>>>) -> anyhow::Result<Self> {
+    pub fn with_microstate<B, S, X>(microstate: &Microstate<B, S, X, Periodic<Hypercuboid<D>>>) -> anyhow::Result<Self>
+    where B: Position<Position = Cartesian<D>>,
+    {
         let maximum_interaction_range = 2.5;
 
         let translate = Translate::with_maximum_distance(0.18.try_into()?);
@@ -58,7 +56,11 @@ Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
         let boundary = Periodic::new(maximum_interaction_range,
             microstate.boundary().shape().clone())?;
         let microstate = MicrostateBuilder::with_spatial_data_and_boundary(cell_list, boundary)
-            .bodies(microstate.bodies().iter().map(|b| b.item.clone()))
+            .bodies(microstate.bodies().iter().map(|b|
+                Body { properties: Point::<Cartesian<D>>::new(*b.item.properties.position()),
+                    sites: vec![Point::<Cartesian<D>>::default()],
+                }
+                ))
             .try_build()?;
 
         Ok(Self {
