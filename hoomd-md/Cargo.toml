@@ -15,6 +15,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
+hoomd-linear-algebra.workspace = true
 hoomd-interaction.workspace = true
 hoomd-microstate.workspace = true
 hoomd-utility.workspace = true
