@@ -3,4 +3,4 @@ runner = "wasm-server-runner"
 
 [target.'cfg(target_arch = "x86_64")']
 # Native builds perform significantly faster on x86_64
-rustflags= ['-C target-cpu=native']
+rustflags= ['-C', 'target-cpu=native']
