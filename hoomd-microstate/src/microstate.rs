@@ -12,12 +12,13 @@ use crate::{
     property::Position,
 };
 
-use hoomd_spatial::{AllPairs, PointUpdate, PointsInBall, VecCell};
+use hoomd_spatial::{AllPairs, PointUpdate, PointsInBall};
 use hoomd_utility::random::Counter;
-use hoomd_vector::{Cartesian, Metric};
+use hoomd_vector::Metric;
 
 /// Either a primary site index or a ghost site index.
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
+#[expect(clippy::exhaustive_enums, reason = "There will only ever be primary and ghost sites.")]
 pub enum SiteKey {
     /// Index to a primary site.
     Primary(usize),
@@ -256,6 +257,46 @@ impl<B, S> Microstate<B, S, AllPairs<SiteKey>, Open> {
             spatial_data: AllPairs::default(),
         }
     }
+
+    /// Set microstate parameters before construction.
+    ///
+    /// Call the [`MicrostateBuilder`] methods in a chain to set parameters.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_microstate::{Body, Microstate, property::Point, boundary::Closed, SiteKey};
+    /// use hoomd_spatial::AllPairs;
+    /// use hoomd_vector::Cartesian;
+    /// use hoomd_spatial::VecCell;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let cell_list = VecCell::builder().nominal_search_radius(2.5.try_into()?).build();
+    /// let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
+    ///
+    /// let microstate = Microstate::builder().boundary(square).spatial_data(cell_list)
+    ///     .step(100_000)
+    ///     .seed(0x1234abcd)
+    ///     .bodies([
+    ///         Body::point(Cartesian::from([1.0, 0.0])),
+    ///         Body::point(Cartesian::from([-1.0, 2.0])),
+    ///     ])
+    /// .try_build()?;
+    ///
+    /// assert_eq!(microstate.boundary().0.edge_lengths[0].get(), 10.0);
+    /// assert_eq!(microstate.step(), 100_000);
+    /// assert_eq!(microstate.seed(), 0x1234abcd);
+    /// assert_eq!(microstate.bodies().len(), 2);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn builder() -> MicrostateBuilder<B, S, AllPairs<SiteKey>, Open> {
+        MicrostateBuilder::new()
+    }
+    
 }
 
 /// Access and manage the simulation step, substep, RNG seeds.
@@ -1205,6 +1246,7 @@ where
     /// In other words, `iter_sites_near` is meant for use with pairwise functions
     /// that follow the minimum image convention.
     #[inline]
+    #[expect(clippy::missing_panics_doc, reason = "Will panic only due to a bug in hoomd-rs.")]
     pub fn iter_sites_near(&self, point: &P, r: f64) -> impl IntoIterator<Item = &Site<S>> {
         // Ideally, an AllPairs specialized implementation would do this:
         // self.sites
@@ -1280,8 +1322,8 @@ pub struct MicrostateBuilder<B, S = B, X = AllPairs<SiteKey>, C = Open> {
 impl<B, S> MicrostateBuilder<B, S, AllPairs<SiteKey>, Open> {
     /// Construct an empty [`MicrostateBuilder`] with open boundary conditions.
     ///
-    /// The resulting microstate starts at step 0 and has a random seed of 0.
-    /// Use the [`AllPairs`] spatial search algorithm.
+    /// The resulting microstate starts at step 0, has a random seed of 0, and
+    /// uses the [`AllPairs`] spatial search algorithm.
     ///
     /// # Example
     ///
@@ -1305,7 +1347,13 @@ impl<B, S> MicrostateBuilder<B, S, AllPairs<SiteKey>, Open> {
     #[inline]
     #[must_use]
     pub fn new() -> Self {
-        MicrostateBuilder::with_boundary(Open)
+        Self {
+            step: 0,
+            seed: 0,
+            bodies: Vec::new(),
+            spatial_data: AllPairs::default(),
+            boundary: Open,
+        }
     }
 }
 
@@ -1317,17 +1365,14 @@ impl<B, S> Default for MicrostateBuilder<B, S, AllPairs<SiteKey>, Open> {
     }
 }
 
-impl<B, S, C> MicrostateBuilder<B, S, AllPairs<SiteKey>, C> {
-    /// Construct an empty [`MicrostateBuilder`] with the given boundary conditions.
-    ///
-    /// The resulting microstate starts at step 0 and has a random seed of 0.
-    /// Use the [`AllPairs`] spatial search algorithm.
+impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
+    /// Choose the boundary conditions in the resulting [`Microstate`].
     ///
     /// # Example
     ///
     /// ```
     /// use hoomd_geometry::shape::Rectangle;
-    /// use hoomd_microstate::{Microstate, MicrostateBuilder, SiteKey, boundary::Closed};
+    /// use hoomd_microstate::{Microstate, MicrostateBuilder, boundary::Closed};
     /// use hoomd_spatial::AllPairs;
     /// use hoomd_vector::Cartesian;
     ///
@@ -1339,46 +1384,60 @@ impl<B, S, C> MicrostateBuilder<B, S, AllPairs<SiteKey>, C> {
     ///
     /// let microstate = MicrostateBuilder::<
     ///     BodyProperties,
-    ///     SiteProperties,
-    ///     AllPairs,
-    ///     Closed<Rectangle>,
-    /// >::with_boundary(square)
+    ///     SiteProperties
+    /// >::new().boundary(square)
     /// .try_build()?;
     ///
-    /// assert_eq!(microstate.step(), 0);
-    /// assert_eq!(microstate.seed(), 0);
-    /// assert_eq!(microstate.bodies().len(), 0);
     /// assert_eq!(microstate.boundary().0.edge_lengths[0].get(), 10.0);
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    pub fn with_boundary(boundary: C) -> Self {
-        Self {
-            step: 0,
-            seed: 0,
-            bodies: Vec::new(),
-            spatial_data: AllPairs::default(),
+    pub fn boundary<C2>(self, boundary: C2) -> MicrostateBuilder<B, S, X, C2> {
+        MicrostateBuilder::<B, S, X, C2> {
+            step: self.step,
+            seed: self.seed,
+            bodies: self.bodies,
+            spatial_data: self.spatial_data,
             boundary,
         }
     }
-}
 
-impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
-    /// TODO: Documentation, example, ane test
+    /// Set the spatial data structure in the resulting [`Microstate`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_microstate::{Microstate, MicrostateBuilder, SiteKey};
+    /// use hoomd_spatial::VecCell;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # use hoomd_microstate::property::Point;
+    /// # type BodyProperties = Point<Cartesian<2>>;
+    /// # type SiteProperties = Point<Cartesian<2>>;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///
+    /// let cell_list = VecCell::builder().nominal_search_radius(2.5.try_into()?).build();
+    ///
+    /// let microstate = MicrostateBuilder::<
+    ///     BodyProperties,
+    ///     SiteProperties
+    /// >::new().spatial_data(cell_list)
+    /// .try_build()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
-    pub fn with_spatial_data_and_boundary(spatial_data: X, boundary: C) -> Self {
-        Self {
-            step: 0,
-            seed: 0,
-            bodies: Vec::new(),
+    pub fn spatial_data<X2>(self, spatial_data: X2) -> MicrostateBuilder<B, S, X2, C> {
+        MicrostateBuilder::<B, S, X2, C> {
+            step: self.step,
+            seed: self.seed,
+            bodies: self.bodies,
             spatial_data,
-            boundary,
+            boundary: self.boundary,
         }
     }
-}
 
-impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
     /// Choose the initial step in the resulting [`Microstate`].
     ///
     /// The default `step` is 0.
@@ -1999,7 +2058,7 @@ mod tests {
 
         #[rstest]
         fn remove_all(#[values(1, 2, 3, 4)] seed: u64, rectangle: Periodic<Hypercuboid<2>>) {
-            let mut microstate = MicrostateBuilder::with_boundary(rectangle)
+            let mut microstate = Microstate::builder().boundary(rectangle)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
             let mut rng = StdRng::seed_from_u64(seed);
