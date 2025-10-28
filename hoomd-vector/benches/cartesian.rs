@@ -22,7 +22,6 @@ fn create_random_vector_pair<const N: usize, R: Rng>(rng: &mut R) -> (Cartesian<
 }
 
 const DIMENSIONS: &[usize] = &[2, 3, 8, 16, 32, 128];
-const BALL_DIMENSIONS: &[usize] = &[2, 3, 4, 8, 16];
 
 #[divan::bench(consts = DIMENSIONS)]
 fn create_vecn_tryfrom_vec<const N: usize>(bencher: Bencher) {
