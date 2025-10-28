@@ -97,13 +97,13 @@ fn main() -> anyhow::Result<()> {
         entry.n.push(n);
         entry.vec_cell_performance.push(performance);
 
-        // let mut mc_hard_sphere_2d = mc::HardSphere::<2, AllPairs<SiteKey>>::with_microstate(&microstate_2d)?;
-        // let performance = benchmark.benchmark_one(&mut mc_hard_sphere_2d)?;
-        // entry.all_pairs_performance.push(performance);
+        let mut mc_hard_sphere_2d = mc::HardSphere::<2, AllPairs<SiteKey>>::with_microstate(&microstate_2d)?;
+        let performance = benchmark.benchmark_one(&mut mc_hard_sphere_2d)?;
+        entry.all_pairs_performance.push(performance);
 
-        // let mut mc_hard_sphere_2d = mc::HardSphere::<2, HashCell<SiteKey, 2>>::with_microstate(&microstate_2d)?;
-        // let performance = benchmark.benchmark_one(&mut mc_hard_sphere_2d)?;
-        // entry.hash_cell_performance.push(performance);
+        let mut mc_hard_sphere_2d = mc::HardSphere::<2, HashCell<SiteKey, 2>>::with_microstate(&microstate_2d)?;
+        let performance = benchmark.benchmark_one(&mut mc_hard_sphere_2d)?;
+        entry.hash_cell_performance.push(performance);
     }
 
     if benchmark_matcher.matches("mc_lennard_jones_2d") {
