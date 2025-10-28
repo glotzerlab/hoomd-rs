@@ -514,7 +514,7 @@ where
                     -q_quaternion.vector[0],
                     q_quaternion.scalar,
                 ]);
-                let phi3 = (1. / (4. * I[2])) * (p.scalar + q3.scalar) * p.vector.dot(&q3.vector);
+                let phi3 = (1. / (4. * I[2])) * ((p.scalar * q3.scalar) + p.vector.dot(&q3.vector));
                 let cphi3 = (0.5 * self.dt * phi3).cos();
                 let sphi3 = (0.5 * self.dt * phi3).sin();
 
@@ -530,7 +530,7 @@ where
                     q_quaternion.scalar,
                     q_quaternion.vector[0],
                 ]);
-                let phi2 = (1. / (4. * I[1])) * (p.scalar + q2.scalar) * p.vector.dot(&q2.vector);
+                let phi2 = (1. / (4. * I[1])) * ((p.scalar * q2.scalar) + p.vector.dot(&q2.vector));
                 let cphi2 = (0.5 * self.dt * phi2).cos();
                 let sphi2 = (0.5 * self.dt * phi2).sin();
 
@@ -546,7 +546,7 @@ where
                     q_quaternion.vector[2],
                     -q_quaternion.vector[1],
                 ]);
-                let phi1 = (1. / (4. * I[0])) * (p.scalar + q1.scalar) * p.vector.dot(&q1.vector);
+                let phi1 = (1. / (4. * I[0])) * ((p.scalar * q1.scalar) + p.vector.dot(&q1.vector));
                 let cphi1 = (self.dt * phi1).cos();
                 let sphi1 = (self.dt * phi1).sin();
 
@@ -562,7 +562,7 @@ where
                     q_quaternion.scalar,
                     q_quaternion.vector[0],
                 ]);
-                let phi2 = (1. / (4. * I[1])) * (p.scalar + q2.scalar) * p.vector.dot(&q2.vector);
+                let phi2 = (1. / (4. * I[1])) * ((p.scalar * q2.scalar) + p.vector.dot(&q2.vector));
                 let cphi2 = (0.5 * self.dt * phi2).cos();
                 let sphi2 = (0.5 * self.dt * phi2).sin();
 
@@ -578,7 +578,7 @@ where
                     -q_quaternion.vector[0],
                     q_quaternion.scalar,
                 ]);
-                let phi3 = (1. / (4. * I[2])) * (p.scalar + q3.scalar) * p.vector.dot(&q3.vector);
+                let phi3 = (1. / (4. * I[2])) * ((p.scalar * q3.scalar) + p.vector.dot(&q3.vector));
                 let cphi3 = (0.5 * self.dt * phi3).cos();
                 let sphi3 = (0.5 * self.dt * phi3).sin();
 
