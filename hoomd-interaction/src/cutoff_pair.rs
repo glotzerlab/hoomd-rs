@@ -109,7 +109,7 @@ impl<E> CutoffPair<E> {
     ///     CutoffPair,
     ///     pairwise::{Isotropic, LennardJones},
     /// };
-    /// use hoomd_microstate::{Body, MicrostateBuilder, Site};
+    /// use hoomd_microstate::{Body, Microstate, Site};
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -127,7 +127,7 @@ impl<E> CutoffPair<E> {
     /// let body_b = Body::point(Cartesian::from([0.0, 3.0]));
     /// let body_c = Body::point(Cartesian::from([0.0, -2.0f64.powf(1.0 / 6.0)]));
     ///
-    /// let microstate = MicrostateBuilder::new()
+    /// let microstate = Microstate::builder()
     ///     .bodies([body_a, body_b, body_c])
     ///     .try_build()?;
     ///
@@ -706,7 +706,7 @@ mod tests {
             };
             let body_b = body_template.clone();
 
-            let microstate_initial = MicrostateBuilder::new()
+            let microstate_initial = Microstate::builder()
                 .bodies([body_a, body_b])
                 .try_build()
                 .expect("hard-coded bodies should be in the boundary");
@@ -839,7 +839,7 @@ mod tests {
                 sites: body_template.sites.clone(),
             };
 
-            let microstate_initial = MicrostateBuilder::new()
+            let microstate_initial = Microstate::builder()
                 .bodies([body_a])
                 .try_build()
                 .expect("hard-coded bodies should be in the boundary");

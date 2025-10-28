@@ -57,7 +57,7 @@ use hoomd_simulation::macrostate::Isothermal;
 use hoomd_vector::Cartesian;
 
 fn main() -> anyhow::Result<()> {
-    let mut microstate = MicrostateBuilder::new()
+    let mut microstate = Microstate::builder()
         .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
         .try_build()?;
 
