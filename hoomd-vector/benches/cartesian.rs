@@ -12,7 +12,6 @@ use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Cross, InnerProduct, distribution::Ball};
 use rand::{Rng, SeedableRng, distr::Distribution, distr::Uniform, rngs::StdRng};
-use rand_distr::StandardNormal;
 
 fn main() {
     divan::main();
@@ -20,15 +19,6 @@ fn main() {
 
 fn create_random_vector_pair<const N: usize, R: Rng>(rng: &mut R) -> (Cartesian<N>, Cartesian<N>) {
     (rng.random::<Cartesian<N>>(), rng.random::<Cartesian<N>>())
-}
-
-fn create_random_ball<const N: usize, R: Rng>(rng: &mut R) -> Ball {
-    Ball {
-        radius: rng
-            .random_range(1e-3..1000.0)
-            .try_into()
-            .expect("hard-coded constant should be positive"),
-    }
 }
 
 const DIMENSIONS: &[usize] = &[2, 3, 8, 16, 32, 128];
@@ -128,5 +118,4 @@ fn gen_ball_rejection<const N: usize>(bencher: Bencher) {
         .bench_local_values(|ball| {
             black_box::<Cartesian<N>>(ball.sample(&mut rng));
         });
-}
 }
