@@ -106,8 +106,8 @@ fn gen_random<const N: usize>(bencher: Bencher) {
         .bench_local(|| black_box(rng.random::<Cartesian<N>>()));
 }
 
-#[divan::bench(consts = BALL_DIMENSIONS)]
-fn gen_ball_rejection<const N: usize>(bencher: Bencher) {
+#[divan::bench(consts = DIMENSIONS)]
+fn gen_ball<const N: usize>(bencher: Bencher) {
     let mut rng = StdRng::seed_from_u64(1);
 
     bencher
