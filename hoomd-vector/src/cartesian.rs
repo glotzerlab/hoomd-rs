@@ -531,7 +531,7 @@ impl WedgeProduct for Cartesian<2> {
 
     #[inline]
     fn wedge_product(&self, other: &Self) -> Self::Bivector {
-        other[0] * self[1] - other[1] * self[0]
+        self[0] * other[1] - self[1] * other[0]
     }
 }
 impl<const N: usize, T> IndexMut<T> for Cartesian<N>

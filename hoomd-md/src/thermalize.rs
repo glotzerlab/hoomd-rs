@@ -79,7 +79,7 @@ where
 
             let p_to_com = *position - com;
 
-            com_angular_momentum += momentum.wedge_product(&p_to_com); // r x p
+            com_angular_momentum += p_to_com.wedge_product(&momentum); // r x p
 
             // cast it to Matrix, resulting in a 1x3 matrix
             let p_to_com_matrix = p_to_com.to_row_matrix();
@@ -122,7 +122,7 @@ where
             let p_to_com = *position - com;
 
             // p_new = p_old - omega x r
-            momentum -= p_to_com.wedge_product(&com_angular_velocity) * *mass;
+            momentum -= com_angular_velocity.wedge_product(&p_to_com) * *mass;
 
             *body_properties.momentum_mut() = momentum;
 
@@ -175,7 +175,7 @@ where
 
             let p_to_com = *position - com;
 
-            com_angular_momentum += momentum.wedge_product(&p_to_com);
+            com_angular_momentum += p_to_com.wedge_product(&momentum);
 
             let p_to_com_lengthsq = p_to_com.norm_squared();
             com_moment_of_inertia += p_to_com_lengthsq * *mass;

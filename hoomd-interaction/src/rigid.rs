@@ -66,7 +66,7 @@ where
             let f = self.0.net_force_on_site(microstate, site);                     // the force on the site in the system frame
 
             // Calculate Torque in the system frame
-            let t = f.wedge_product(&r);
+            let t = r.wedge_product(&f);
 
             // Add to the total
             total += t;
