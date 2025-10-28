@@ -10,7 +10,7 @@ use std::{
 use approxim::approx_derive::RelativeEq;
 use rand::{
     Rng,
-    distr::{Distribution, StandardUniform, Uniform},
+    distr::{Distribution, StandardUniform},
 };
 use rand_distr::StandardNormal;
 
