@@ -206,7 +206,7 @@ mod tests {
         };
         let square = Closed(cuboid);
 
-        let mut microstate = MicrostateBuilder::with_boundary(square)
+        let mut microstate = Microstate::builder().boundary(square)
             .bodies([Body::point([0.0, 0.0].into())])
             .try_build()
             .expect("the hard-coded bodies should be in the boundary");
@@ -243,7 +243,7 @@ mod tests {
             ],
         };
         let square = Closed(cuboid);
-        let mut microstate = MicrostateBuilder::with_boundary(square)
+        let mut microstate = Microstate::builder().boundary(square)
             .bodies([body])
             .try_build()
             .expect("the hard-coded bodies should be in the boundary");

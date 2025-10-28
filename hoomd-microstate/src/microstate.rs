@@ -169,7 +169,7 @@ impl<T> VecWithTags<T> {
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
 ///
-/// let microstate = MicrostateBuilder::with_boundary(square)
+/// let microstate = Microstate::builder().boundary(square)
 ///     .seed(0x43abf1)
 ///     .step(100_000)
 ///     .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
@@ -512,7 +512,7 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     ///
     /// let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
-    /// let microstate = MicrostateBuilder::with_boundary(square)
+    /// let microstate = Microstate::builder().boundary(square)
     /// # .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
     ///     .try_build()?;
     ///
@@ -537,7 +537,7 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     ///
     /// let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
-    /// let mut microstate = MicrostateBuilder::with_boundary(square)
+    /// let mut microstate = Microstate::builder().boundary(square)
     /// # .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
     ///     .try_build()?;
     ///
@@ -1776,7 +1776,7 @@ mod tests {
 
         #[rstest]
         fn add_body_outside(square: Closed<Hypercuboid<2>>) {
-            let mut microstate = MicrostateBuilder::with_boundary(square)
+            let mut microstate = Microstate::builder().boundary(square)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
@@ -1788,7 +1788,7 @@ mod tests {
 
         #[rstest]
         fn update_body_outside(square: Closed<Hypercuboid<2>>) {
-            let mut microstate = MicrostateBuilder::with_boundary(square)
+            let mut microstate = Microstate::builder().boundary(square)
                 .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -1811,7 +1811,7 @@ mod tests {
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
             };
 
-            let mut microstate = MicrostateBuilder::with_boundary(square)
+            let mut microstate = Microstate::builder().boundary(square)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
@@ -1828,7 +1828,7 @@ mod tests {
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
             };
 
-            let mut microstate = MicrostateBuilder::with_boundary(square)
+            let mut microstate = Microstate::builder().boundary(square)
                 .bodies([body])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -1878,7 +1878,7 @@ mod tests {
 
         #[rstest]
         fn add_body_outside(rectangle: Periodic<Hypercuboid<2>>) {
-            let mut microstate = MicrostateBuilder::with_boundary(rectangle)
+            let mut microstate = Microstate::builder().boundary(rectangle)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
@@ -1894,7 +1894,7 @@ mod tests {
 
         #[rstest]
         fn update_body_outside(rectangle: Periodic<Hypercuboid<2>>) {
-            let mut microstate = MicrostateBuilder::with_boundary(rectangle)
+            let mut microstate = Microstate::builder().boundary(rectangle)
                 .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -1921,7 +1921,7 @@ mod tests {
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
             };
 
-            let mut microstate = MicrostateBuilder::with_boundary(rectangle)
+            let mut microstate = Microstate::builder().boundary(rectangle)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
@@ -1948,7 +1948,7 @@ mod tests {
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
             };
 
-            let mut microstate = MicrostateBuilder::with_boundary(rectangle)
+            let mut microstate = Microstate::builder().boundary(rectangle)
                 .bodies([body])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -1997,7 +1997,7 @@ mod tests {
             // data structures remain consistent.
 
             let mut rng = StdRng::seed_from_u64(seed);
-            let mut microstate = MicrostateBuilder::with_boundary(rectangle)
+            let mut microstate = Microstate::builder().boundary(rectangle)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
