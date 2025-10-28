@@ -244,9 +244,10 @@ impl Counter {
         seed[24..28].copy_from_slice(&self.counter_b.to_le_bytes());
         seed[28..].copy_from_slice(&self.counter_c.to_le_bytes());
 
-        let mut rng = ChaCha8Rng::from_seed(seed);
-        rng.set_stream(stream);
-        rng
+        // let mut rng = ChaCha8Rng::from_seed(seed);
+        // rng.set_stream(stream);
+        // rng
+        rand_aes::Aes128Ctr128::from_seed(rand_aes::seeds::Aes128Ctr128Seed::new([0; 16], self.step as u128))
     }
 }
 

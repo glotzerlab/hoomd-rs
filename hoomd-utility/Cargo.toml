@@ -16,6 +16,7 @@ workspace = true
 [dependencies]
 rand.workspace = true
 chacha20 = { version = "= 0.10.0-rc.0", default-features = false, features = ["rng"]}
+rand_aes = "0.5.0"
 thiserror.workspace = true
 
 [dev-dependencies]
