@@ -41,14 +41,13 @@ impl<const N: usize> Distribution<Cartesian<N>> for Ball {
 
         // Muller/Marsaglia 'normalized Gaussians' approach: see the following source.
         // https://extremelearning.com.au/how-to-generate-uniformly-random-points-on-n-spheres-and-n-balls/
-        let mut point = Cartesian {
+        let point = Cartesian {
             coordinates: std::array::from_fn::<_, N, _>(|_| rng.sample(StandardNormal)),
         };
-        point /= point.norm();
         match N {
-            2 => point * (r * rng.random::<f64>().sqrt()),
-            3 => point * (r * rng.random::<f64>().cbrt()),
-            _ => point * (r * rng.random::<f64>().powf(1.0 / N as f64)),
+            2 => point * (r / point.norm() * rng.random::<f64>().sqrt()),
+            3 => point * (r / point.norm() * rng.random::<f64>().cbrt()),
+            _ => point * (r / point.norm() * rng.random::<f64>().powf(1.0 / N as f64)),
         }
     }
 }
