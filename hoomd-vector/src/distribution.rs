@@ -10,6 +10,7 @@ use rand::{
     Rng,
     distr::{Distribution, Uniform},
 };
+use rand_distr::StandardNormal;
 use std::array;
 
 /// A uniform distribution of all points inside or on a sphere with radius `r`.
@@ -42,17 +43,17 @@ impl<const N: usize> Distribution<Cartesian<N>> for Ball {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
         let r = self.radius.get();
 
-        loop {
-            let mut coordinates_01 = [0.0; N];
-            rng.fill(&mut coordinates_01);
-            
-            let v = Cartesian {
-                coordinates: array::from_fn(|i| (coordinates_01[i] * 2.0 - 1.0) * r),
-            };
-
-            if v.norm_squared() < r * r {
-                return v;
-            }
+        // Muller/Marsaglia 'normalized Gaussians' approach: see the following source.
+        // https://extremelearning.com.au/how-to-generate-uniformly-random-points-on-n-spheres-and-n-balls/
+        let mut point = Cartesian {
+            coordinates: std::array::from_fn::<_, N, _>(|_| rng.sample(StandardNormal)),
+        };
+        point /= point.norm();
+        point *= r;
+        match N {
+            2 => point * rng.random::<f64>().sqrt(),
+            3 => point * rng.random::<f64>().cbrt(),
+            _ => point * rng.random::<f64>().powf(1.0 / N as f64),
         }
     }
 }

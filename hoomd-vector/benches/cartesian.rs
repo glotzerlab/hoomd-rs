@@ -9,9 +9,10 @@
 //! Benchmark Cartesian
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
-use rand::{Rng, SeedableRng, distr::Uniform, rngs::StdRng};
-
-use hoomd_vector::{Cartesian, Cross, InnerProduct};
+use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::{Cartesian, Cross, InnerProduct, distribution::Ball};
+use rand::{Rng, SeedableRng, distr::Distribution, distr::Uniform, rngs::StdRng};
+use rand_distr::StandardNormal;
 
 fn main() {
     divan::main();
@@ -21,7 +22,17 @@ fn create_random_vector_pair<const N: usize, R: Rng>(rng: &mut R) -> (Cartesian<
     (rng.random::<Cartesian<N>>(), rng.random::<Cartesian<N>>())
 }
 
+fn create_random_ball<const N: usize, R: Rng>(rng: &mut R) -> Ball {
+    Ball {
+        radius: rng
+            .random_range(1e-3..1000.0)
+            .try_into()
+            .expect("hard-coded constant should be positive"),
+    }
+}
+
 const DIMENSIONS: &[usize] = &[2, 3, 8, 16, 32, 128];
+const BALL_DIMENSIONS: &[usize] = &[2, 3, 4, 8, 16];
 
 #[divan::bench(consts = DIMENSIONS)]
 fn create_vecn_tryfrom_vec<const N: usize>(bencher: Bencher) {
@@ -103,4 +114,95 @@ fn gen_random<const N: usize>(bencher: Bencher) {
     bencher
         .counter(ItemsCount::from(1_u32))
         .bench_local(|| black_box(rng.random::<Cartesian<N>>()));
+}
+
+#[divan::bench(consts = BALL_DIMENSIONS)]
+fn gen_ball_rejection<const N: usize>(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| Ball {
+            radius: PositiveReal::default(),
+        })
+        .bench_local_values(|ball| {
+            // black_box(<Ball as rand::distr::Distribution<Cartesian<N>>>::sample::<
+            //     StdRng,
+            // >(&ball, &mut rng));
+
+            black_box::<Cartesian<N>>(ball.sample(&mut rng));
+        });
+}
+#[divan::bench(consts = BALL_DIMENSIONS)]
+fn gen_ball_muller<const N: usize>(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| Ball {
+            radius: PositiveReal::default(),
+        })
+        .bench_local_values(|ball| {
+            fn muller<const N: usize, R: Rng + ?Sized>(rng: &mut R) -> Cartesian<N> {
+                let mut point = Cartesian {
+                    coordinates: std::array::from_fn::<_, N, _>(|_| rng.sample(StandardNormal)),
+                };
+                point /= point.norm();
+                match N {
+                    2 => point * rng.random::<f64>().sqrt(),
+                    3 => point * rng.random::<f64>().cbrt(),
+                    _ => point * rng.random::<f64>().powf(1.0 / N as f64),
+                }
+            }
+
+            black_box::<Cartesian<N>>(muller(&mut rng));
+        });
+}
+#[divan::bench(consts = BALL_DIMENSIONS)]
+fn gen_ball_exponential<const N: usize>(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| Ball {
+            radius: PositiveReal::default(),
+        })
+        .bench_local_values(|ball| {
+            fn exponential<const N: usize, R: Rng + ?Sized>(rng: &mut R) -> Cartesian<N> {
+                let coordinates = Cartesian::from(std::array::from_fn::<_, N, _>(|_| {
+                    rng.sample(StandardNormal)
+                }));
+
+                let e: f64 = rng.sample::<f64, _>(rand_distr::Exp::new(0.5).expect("df"));
+
+                coordinates / (e + coordinates.norm())
+            }
+
+            black_box::<Cartesian<N>>(exponential(&mut rng));
+        });
+}
+
+#[divan::bench(consts = BALL_DIMENSIONS)]
+fn gen_ball_dropped<const N: usize>(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| Ball {
+            radius: PositiveReal::default(),
+        })
+        .bench_local_values(|ball| {
+            fn dropped<const N: usize, R: Rng + ?Sized>(rng: &mut R) -> Cartesian<N> {
+                let coordinates = Cartesian::from(std::array::from_fn::<_, N, _>(|_| {
+                    rng.sample(StandardNormal)
+                }));
+                let extras =
+                    Cartesian::from([rng.sample(StandardNormal), rng.sample(StandardNormal)]);
+                let norm = (coordinates.norm_squared() + extras.norm_squared()).sqrt();
+
+                coordinates / norm
+            }
+
+            black_box::<Cartesian<N>>(dropped(&mut rng));
+        });
 }
