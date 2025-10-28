@@ -45,11 +45,10 @@ impl<const N: usize> Distribution<Cartesian<N>> for Ball {
             coordinates: std::array::from_fn::<_, N, _>(|_| rng.sample(StandardNormal)),
         };
         point /= point.norm();
-        point *= r;
         match N {
-            2 => point * rng.random::<f64>().sqrt(),
-            3 => point * rng.random::<f64>().cbrt(),
-            _ => point * rng.random::<f64>().powf(1.0 / N as f64),
+            2 => point * (r * rng.random::<f64>().sqrt()),
+            3 => point * (r * rng.random::<f64>().cbrt()),
+            _ => point * (r * rng.random::<f64>().powf(1.0 / N as f64)),
         }
     }
 }
