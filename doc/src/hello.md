@@ -86,20 +86,21 @@ and molecular dynamics simulations using *hoomd-rs*.
 > to troubleshoot problems with your code, but they run **very slowly**. When
 > your code is working, build in **release** mode and it will run much faster:
 > ```shell
-> $ cargo run --release
+> $ RUSTFLAGS="-C target-cpu=native" cargo run --release
 > ```
 
 
 > [!NOTE]
 > On HPC platforms, you should run:
 > ```shell
-> $ cargo build --release
+> $ RUSTFLAGS="-C target-cpu=native" cargo build --release
 > ```
 > on the login node and and then use the executable placed in the
 > `target/release` directory in your submitted job scripts.
 >
 > Unlike scripting languages (e.g. Python), saving changes to `main.rs` will
-> not take effect until you run `cargo build --release` again.
+> not take effect until you run
+> `RUSTFLAGS="-C target-cpu=native" cargo build --release` again.
 
 
 [Rust]: https://www.rust-lang.org/
