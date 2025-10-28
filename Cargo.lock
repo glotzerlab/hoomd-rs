@@ -2683,11 +2683,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "899def5c37c4fd7b2664648c28120ecec138e4d395b459e5ca34f9cce2dd77fd"
 dependencies = [
  "cfg-if",
- "js-sys",
  "libc",
  "r-efi",
  "wasip2",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -2985,13 +2983,11 @@ dependencies = [
  "bevy_diagnostic",
  "bevy_egui",
  "bevy_winit",
- "getrandom 0.3.4",
  "hoomd-manifold",
  "hoomd-microstate",
  "hoomd-simulation",
  "hoomd-vector",
  "itertools 0.14.0",
- "web-time",
 ]
 
 [[package]]
@@ -3001,7 +2997,6 @@ dependencies = [
  "anyhow",
  "bevy",
  "bevy_egui",
- "getrandom 0.3.4",
  "hoomd-bevy",
  "hoomd-geometry",
  "hoomd-gsd",
@@ -3014,7 +3009,6 @@ dependencies = [
  "hoomd-utility",
  "hoomd-vector",
  "rand 0.9.2",
- "uuid",
 ]
 
 [[package]]
