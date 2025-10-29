@@ -222,7 +222,7 @@ impl<D> QuickInsert<D> {
     /// };
     /// use hoomd_mc::{QuickInsert, Sweep, Translate, Trial, UniformIn};
     /// use hoomd_microstate::{
-    ///     Body, MicrostateBuilder, boundary::Periodic, property::Point,
+    ///     Body, Microstate, boundary::Periodic, property::Point,
     /// };
     /// use hoomd_simulation::macrostate::Isothermal;
     /// use hoomd_vector::Cartesian;
@@ -249,7 +249,7 @@ impl<D> QuickInsert<D> {
     ///
     /// let macrostate = Isothermal { temperature: 1.0 };
     /// let mut microstate =
-    ///     MicrostateBuilder::with_boundary(Periodic::new(1.0, rectangle)?)
+    ///     Microstate::builder().boundary(Periodic::new(1.0, rectangle)?)
     ///         .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
     ///         .try_build()?;
     ///
@@ -339,7 +339,7 @@ mod tests {
         CutoffPair,
         pairwise::{Boxcar, Isotropic},
     };
-    use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};
+    use hoomd_microstate::{Microstate, boundary::Closed, property::Point};
     use hoomd_simulation::macrostate::Isothermal;
     use hoomd_vector::Cartesian;
 
@@ -366,7 +366,7 @@ mod tests {
             6.0.try_into().expect("hard-coded value is non-zero"),
         ));
 
-        let mut microstate = MicrostateBuilder::with_boundary(rectangle.clone())
+        let mut microstate = Microstate::builder().boundary(rectangle.clone())
             .bodies(vec![Body::point(Cartesian::from([0.0, 0.0]))])
             .try_build()
             .expect("hard-coded point is in the boundary");

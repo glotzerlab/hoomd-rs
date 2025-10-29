@@ -177,7 +177,7 @@ use thiserror::Error;
 /// use hoomd_vector::{Cartesian, Vector};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let microstate = MicrostateBuilder::new()
+/// let microstate = Microstate::builder()
 ///     .bodies([
 ///         Body::point(Cartesian::from([1.0, 0.0])),
 ///         Body::point(Cartesian::from([-1.0, 2.0])),

@@ -85,7 +85,7 @@ impl Fill {
     fn new() -> anyhow::Result<Fill> {
         let boundary = Periodic::new(0.6, EightEight { skirt: 1.0_f64 })?;
         let mut microstate =
-            MicrostateBuilder::with_boundary(boundary).try_build()?;
+            Microstate::builder().boundary(boundary).try_build()?;
 
         let initial_spacing = 1.0;
         let mut rng = StdRng::seed_from_u64(23);

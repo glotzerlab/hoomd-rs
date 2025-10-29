@@ -11,7 +11,7 @@ use hoomd_vector::Cartesian;
 fn main() -> anyhow::Result<()> {
     // ANCHOR_END: main
     // ANCHOR: microstate
-    let mut microstate = MicrostateBuilder::new()
+    let mut microstate = Microstate::builder()
         .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
         .try_build()?;
     // ANCHOR_END: microstate
