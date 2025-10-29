@@ -8,10 +8,10 @@ use rand::distr::Distribution;
 use log::{debug, trace};
 
 use hoomd_geometry::shape::{Hypercuboid};
-use hoomd_microstate::{boundary::{GenerateGhosts, Periodic}, property::Position, Body, Microstate, MicrostateBuilder, SiteKey, Transform 
+use hoomd_microstate::{boundary::{GenerateGhosts, Periodic}, property::Position, Body, Microstate, SiteKey, Transform 
 };
 use hoomd_interaction::{pairwise::{Isotropic, OverlapPenalty, Expanded}, CutoffPair};
-use hoomd_simulation::{macrostate::Isothermal, Simulation};
+use hoomd_simulation::macrostate::Isothermal;
 use hoomd_mc::{Sweep, Translate, Trial, UniformIn, QuickInsert};
 use hoomd_vector::Cartesian;
 
@@ -39,7 +39,7 @@ VecCell<SiteKey, D>: PointsInBall<Cartesian<D>, SiteKey>,
         Hypercuboid::<D>::with_equal_edges(
             box_length.try_into()?))?;
 
-    let mut microstate = MicrostateBuilder::<B, S, VecCell<SiteKey, D>, Periodic<Hypercuboid<D>>>::with_spatial_data_and_boundary(cell_list, boundary)
+    let mut microstate = Microstate::builder().spatial_data(cell_list).boundary(boundary)
         .try_build()?;
 
     let translate = Translate::with_maximum_distance(0.1.try_into()?);
