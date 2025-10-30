@@ -243,9 +243,45 @@ where
     }
 }
 
-/// MTTK thermostat.
-/// TODO: Add documentation.
-/// TODO: Add example.
+/// [`MTTKThermostat`] implement the Nose-Hoover thermostat
+/// that adjsut temperture using non-Hamiltonian dynamics
+/// given a time constant $`\tau`$.
+///
+/// It perform time integration on the
+/// extra degrees-of-freedom in the non-Hamiltonian
+/// equations of motion,
+/// which are designed to sample the canonical (nvt).
+///
+/// [`MTTKThermostat`] store the extra degrees-of-freedom
+/// as the one-dimensional thermostat position $`\eta`$ and
+/// thermostat velocity $`\xi`$, resulting in the extended
+/// Hamiltonian $`H`$
+/// ```math
+///    H = \frac{K}{\exp{(2\eta)}} + U
+///         + N k_BT_\mathrm{setpoint} \eta
+///         + N k_BT_\mathrm{setpoint} \frac{1}{2} (\xi\tau)^2
+/// ```
+/// Where $`K`$ is the kinetic energy of the system, $`U`$ is the
+/// potential energy of the system, $`N`$ is the degrees-of-freedom,
+/// $`k_BT_\mathrm{setpoint}`$ is the temperature setpoint.
+///
+/// Following the Trotter decomposition of Liouvillian,
+/// [`MTTKThermostat`] integrate the $`\eta`$ and
+/// $`\xi`$ forward by half time step $`\frac{\delta t}{2}`$
+/// by the following procedure:
+/// ```math
+/// \begin{align}
+///
+/// &G[t] = \frac{1}{\tau^2} \left( \frac{k_B T[t]}{k_BT_\mathrm{setpoint}} - 1 \right) \\
+/// &\xi \left[ t+\frac{\delta t} {4} \right] = \xi[t] + G[t]\frac{\delta t}{4} \\
+/// &\alpha = \exp{\left[ -\xi\left[t+\frac{\delta t} {4} \right] \frac{dt}{2} \right]}  \quad \text{calculate rescaling factor} \\
+/// &k_B T\left[ t+\frac{\delta t} {4} \right] = k_B T[t] \alpha^2 \quad \; \text{adjust temperature} \\
+/// &\eta \left[ t+\frac{\delta t} {2} \right] = \eta[t] + \xi \left[ t+\frac{\delta t} {4} \right] \frac{\delta t}{2} \\
+/// &G \left[ t+\frac{\delta t} {4} \right] = \frac{1}{\tau^2} \left( \frac{k_B T \left[ t+\frac{\delta t} {4} \right] }{k_BT_\mathrm{setpoint}} - 1 \right) \\
+/// &\xi \left[ t+\frac{\delta t} {2} \right] = \xi \left[ t+\frac{\delta t} {4} \right] + G \left[ t+\frac{\delta t} {4} \right] \frac{\delta t}{4} \\
+///         
+/// \end{align}
+/// ```
 pub struct MTTKThermostat {
     /// Thermostat time constant (`[time]`).
     tau: f64,
@@ -295,8 +331,25 @@ impl MTTKThermostat {
     pub fn get_energy(&self) -> &f64 {
         &self.energy
     }
+
+    /// Get the thermostat position.
+    pub fn get_position(&self) -> &f64 {
+        &self.eta
+    }
+
+    /// Get the thermostat velocity.
+    pub fn get_velocity(&self) -> &f64 {
+        &self.xi
+    }
 }
 
+/// Integrate extra degrees-of-freedom and
+/// return the velocity rescaling factor, following
+/// Tuckerman's work <https://doi.org/10.1088/0305-4470/39/19/S18>
+/// in `integrate_step_one`.
+///
+/// `integrate_step_two` call `intergrate_step_one`,
+/// internally
 impl<B, S, C, M> Thermostat<B, S, C, M> for MTTKThermostat
 where
     B: Clone,
