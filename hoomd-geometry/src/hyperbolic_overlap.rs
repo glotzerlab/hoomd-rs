@@ -1,10 +1,11 @@
 //! Implement Overlap Check for Hyperbolic Surfaces
 
 use hoomd_manifold::{Minkowski, Hyperbolic};
-use hoomd_vector::{Angle, Metric};
+use hoomd_vector::Angle;
 use std::f64::consts::PI;
 use robust::{Coord, orient2d};
 
+/// TODO
 #[derive(Clone, Debug, PartialEq)]
 pub struct HyperbolicConvexPolytope<const N: usize> {
     /// The vertices of the shape
@@ -24,11 +25,12 @@ impl<const N: usize> HyperbolicConvexPolytope<N> {
     #[inline]
     #[must_use] 
     pub fn bounding_radius(vertices: &[Hyperbolic<N>]) -> f64 {
-        vertices.iter().map(|hyp| hyp.distance_from_cusp())
+        vertices.iter().map(hoomd_manifold::Hyperbolic::distance_from_cusp)
             .fold(0.0, f64::max)
     }
 }
 
+/// TODO
 pub type HyperbolicConvexPolygon = HyperbolicConvexPolytope<3>;
 
 impl HyperbolicConvexPolytope<3> {
@@ -78,17 +80,17 @@ pub trait SeparatingPlanes<S, M, R> {
 impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for HyperbolicConvexPolygon {
     #[inline]
     fn intersects_at(&self, other: &[Hyperbolic<3>], x_i: &Hyperbolic<3>, r_i: &Angle) -> bool {
-        let mut result: bool = true;
+        let mut result = true;
         let mut v_count = 0_usize;
         let n = self.vertices.len();
-        while (result == true) && (v_count < n) {
+        while result && (v_count < n) {
             let v_num = v_count;
             let v_next = (v_num + 1)%n;
             // translate all vertices  
             let v_1 = Self::vertex_to_system_frame(&self.vertices[v_num], r_i, x_i);
             let v_2 = Self::vertex_to_system_frame(&self.vertices[v_next], r_i, x_i);
             let self_translated = Self::to_vertex_frame_oriented(x_i, r_i, v_num, self.bounding_radius, &[v_1,v_2], n);
-            let other_translated = Self::to_vertex_frame_oriented(x_i, r_i, v_num, self.bounding_radius, &other, n);
+            let other_translated = Self::to_vertex_frame_oriented(x_i, r_i, v_num, self.bounding_radius, other, n);
             // convert to poincare coordinates to perform orientation checks. 
             let self_coord = self_translated
                 .iter()
@@ -107,11 +109,11 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
             // then do edge check
             let mut overlap = false;
             let mut counter = 0_usize;
-            while (overlap == false) && (counter < other.len()) {
+            while !overlap && (counter < other.len()) {
                 if orient2d(self_coord[0], self_coord[1], other_coord[counter]) >= 0.0 {
                     // break out of loop once one of the vertices is on the wrong side of the line
                     overlap = true;
-                };
+                }
                 counter += 1;
             }
             result = overlap;
@@ -383,31 +385,35 @@ mod tests {
             })
             .collect::<Vec<Vec<Hyperbolic<3>>>>();
 
-        println!("square 8 : {:?}",nudged_squares[8]);
         // Check over overlaps
-        for i in 0..num_spaces {
-            println!("{}",i);
-            println!("{}",square.intersects_at(&nudged_squares[i], &com, &Angle::from(PI/4.0)));
-            assert!(!square.intersects_at(&nudged_squares[i], &com, &Angle::from(PI/4.0)));
+        for translated in nudged_squares.iter().take(num_spaces) {
+            assert!(!square.intersects_at(&translated, &com, &Angle::from(PI/4.0)));
         }
-        for j in num_spaces..num_trials {
-            println!("{}",j);
-            println!("{}",square.intersects_at(&nudged_squares[j], &com, &Angle::from(PI/4.0)));
-            assert!(square.intersects_at(&nudged_squares[j], &com, &Angle::from(PI/4.0)));
+        for translated in nudged_squares.iter().take(num_trials).skip(num_spaces) {
+            assert!(square.intersects_at(&translated, &com, &Angle::from(PI/4.0)));
         }
     }
     #[test]
     fn overlap_rotation_check() {
         let r_0 = 0.5;
+        let boost: f64 = 0.339_203_554_136_322;
+        let distance: f64 = 0.45;
         let square = HyperbolicConvexPolytope::<3>::regular(4, r_0, 1.0);
         let com = Hyperbolic::<3>::from_polar_coordinates(0.0, 0.0, 1.0);
-        let distance = 0.8;
-        let (square_1, square_2) = generate_square_pair(&com, r_0, distance, 0.0, Angle::from(PI/4.0));
-        println!("square 1 : {:?}",square_1);
-        println!("{:?}",square_2);
+        let (_square_1_u, square_2_u) = generate_square_pair(&com, r_0, 0.0, 0.0, Angle::from(PI/4.0));
+        let square_2 = square_2_u.iter().map(|point| {
+            let pt = point.coordinates();
+            let transformed_point = Minkowski::from([
+                pt[0]*(distance.cosh()) + pt[2]*(distance.sinh()),
+                pt[1],
+                pt[0]*(distance.sinh()) + pt[2]*(distance.cosh())
+            ]);
+            Hyperbolic::from_minkowski_coordinates(transformed_point, 1.0)
+            })
+            .collect::<Vec<Hyperbolic<3>>>();
         let num_spaces: usize = 10;
         let num_trials: usize = 15;
-        let spacing = 0.353_662_786_505_693;
+        let spacing = 0.365_106_058_818_114;
         let trials = (0..num_trials).map(|n| (n as f64)*spacing/(num_spaces as f64)).collect::<Vec<f64>>();
         let nudged_squares: Vec<Vec<Hyperbolic<3>>>  = trials.iter().map(|inch| {
                 square_2.iter().map(|sq| {
@@ -423,17 +429,13 @@ mod tests {
             })
             .collect::<Vec<Vec<Hyperbolic<3>>>>();
 
-        println!("square 11 : {:?}",nudged_squares[11]);
+        let center = Hyperbolic::<3>::from_polar_coordinates(-boost, 0.0, 1.0);
         // Check over overlaps
-        for i in 0..num_spaces {
-            println!("{}",i);
-            println!("{}",square.intersects_at(&nudged_squares[i], &com, &Angle::from(PI/4.0)));
-            assert!(!square.intersects_at(&nudged_squares[i], &com, &Angle::from(PI/4.0)));
+        for rotated in nudged_squares.iter().take(num_spaces) {
+            assert!(!square.intersects_at(&rotated, &center, &Angle::from(PI/4.0)));
         }
-        for j in num_spaces..num_trials {
-            println!("{}",j);
-            println!("{}",square.intersects_at(&nudged_squares[j], &com, &Angle::from(PI/4.0)));
-            assert!(square.intersects_at(&nudged_squares[j], &com, &Angle::from(PI/4.0)));
+        for rotated in nudged_squares.iter().take(num_trials).skip(num_spaces) {
+            assert!(square.intersects_at(&rotated, &center, &Angle::from(PI/4.0)));
         }
     }
 }
