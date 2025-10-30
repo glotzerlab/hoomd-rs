@@ -57,6 +57,11 @@ path = "hyperbolic-lennard-jones.rs"
 required-features = ["bevy"]
 
 [[example]]
+name = "hyperbolic-hard-shape"
+path = "hyperbolic-hard-shape.rs"
+required-features = ["bevy"]
+
+[[example]]
 name = "random-walk"
 path = "mc-tutorial/random-walk.rs"
 

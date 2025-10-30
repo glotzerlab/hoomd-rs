@@ -179,6 +179,35 @@ impl Transform<Point<Hyperbolic<3>>> for OrientedHyperbolicPoint<3, Angle> {
     }
 }
 
+impl Transform<OrientedHyperbolicPoint<3, Angle>> for OrientedHyperbolicPoint<3, Angle> {
+    /// TODO
+    #[inline]
+    fn transform(&self, site_properties: &OrientedHyperbolicPoint<3, Angle>) -> OrientedHyperbolicPoint<3, Angle> {
+        let body_pos = self.position.coordinates();
+        let skirt = self.position.skirt();
+        let body_pos_theta = body_pos[1].atan2(body_pos[0]);
+        let body_pos_boost = (body_pos[2] / self.position.skirt()).acosh();
+        let body_angle = self.orientation.theta;
+        let site_pos = site_properties.position.coordinates();
+        let rotated_site_pos = Minkowski::from([
+            site_pos[0]*(body_angle.cos()) - site_pos[1]*(body_angle.sin()),
+            site_pos[0]*(body_angle.sin()) + site_pos[1]*(body_angle.cos()),
+            site_pos[2]
+        ]);
+        let transformed_point = Minkowski::from([
+            rotated_site_pos[0] * (body_pos_boost.cosh()) * (body_pos_theta.cos())
+                - rotated_site_pos[1] * (body_pos_theta.sin())
+                + rotated_site_pos[2] * (body_pos_boost.sinh()) * (body_pos_theta.cos()),
+            rotated_site_pos[0] * (body_pos_boost.cosh()) * (body_pos_theta.sin())
+                + rotated_site_pos[1] * (body_pos_theta.cos())
+                + rotated_site_pos[2] * (body_pos_boost.sinh()) * (body_pos_theta.sin()),
+            rotated_site_pos[0] * (body_pos_boost.sinh()) + rotated_site_pos[2] * (body_pos_boost.cosh()),
+        ]);
+        let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(transformed_point, skirt);
+        OrientedHyperbolicPoint { position: new_hyperbolic, orientation: Angle::from(body_angle + site_properties.orientation.theta) }
+    }
+}
+
 impl<const N: usize, R> Position for OrientedHyperbolicPoint<N, R> {
     type Position = Hyperbolic<N>;
 

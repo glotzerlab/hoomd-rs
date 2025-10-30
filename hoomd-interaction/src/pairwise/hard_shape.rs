@@ -82,3 +82,54 @@ where
         self.0.intersects_at(&self.0, &v_ij, &o_ij)
     }
 }
+
+impl<S, G> SitePairOverlap<S, Hyperbolic<3>> for HardShape<G>
+where
+    S: Position<Position = Hyperbolic<3>> + Orientation<Rotation = Angle>,
+    G: SeparatingPlanes<G, Hyperbolic<3>, Angle>,
+{
+    /// Test whether two sites in two-dimensional hyperbolic space overlap.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::hyperbolic_overlap::HyperbolicConvexPolytope;
+    /// use hoomd_interaction::{SitePairOverlap, pairwise::HardShape};
+    /// use hoomd_manifold::Hyperbolic;
+    /// use hoomd_microstate::property::OrientedHyperbolicPoint;
+    /// use hoomd_vector::Angle;
+    /// use std::f64::consts::PI;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let square = HyperbolicConvexPolytope::<3>::regular(4, 1.0, 1.0);
+    /// let hard_shape = HardShape(square);
+    ///
+    /// let a = OrientedHyperbolicPoint {
+    ///     position: Hyperbolic::<3>::default(),
+    ///     orientation: Angle::default(),
+    /// };
+    /// let b = OrientedHyperbolicPoint {
+    ///     position: Hyperbolic::<3>::from_polar_coordinates(3.0, 2.0, 1.0),
+    ///     orientation: Angle::from(0.4),
+    /// };
+    ///
+    /// assert!(!hard_shape.site_pair_overlap(&a, &b));
+    ///
+    /// let c = OrientedHyperbolicPoint {
+    ///     position: Hyperbolic::<3>::from_polar_coordinates(0.49, 2.3, 1.0),
+    ///     orientation: Angle::from(0.4),
+    /// };
+    ///
+    /// assert!(hard_shape.site_pair_overlap(&a, &c));
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn site_pair_overlap(&self, site_properties_i: &S, site_properties_j: &S) -> bool {
+        let x_i = site_properties_i.position();
+        let r_i = site_properties_i.orientation();
+        let x_j = site_properties_j.position();
+        let r_j = site_properties_j.orientation();
+        self.0.intersects_at(x_i, r_i, x_j, r_j)
+    }
+}

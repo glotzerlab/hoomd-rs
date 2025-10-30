@@ -70,7 +70,7 @@ pub trait SeparatingPlanes<S, M, R> {
     /// hyperplane which pass through the two vertices, and checking if all the 
     /// points of `other` are on the opposite side. If a separating plane exists, then 
     /// the two shapes do not overlap and the method returns `false`.  
-    fn intersects_at(&self, other: &[M],  x_i: &M, r_i: &R) -> bool;
+    fn intersects_at(&self, x_i: &M, r_i: &R, x_j: &M, r_j: &R) -> bool;
     /// Translate vector of vertices to frame where query vertex is at origin.
     fn to_vertex_frame_oriented(body_position: &M, body_orientation: &Angle, vertex_num: usize, bounding_radius: f64, points: &[M], num_of_sides: usize) -> Vec<M>;
     /// Translate a vertex stored in `HyperbolicConvexPolygon` into the system frame.
@@ -79,7 +79,7 @@ pub trait SeparatingPlanes<S, M, R> {
 
 impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for HyperbolicConvexPolygon {
     #[inline]
-    fn intersects_at(&self, other: &[Hyperbolic<3>], x_i: &Hyperbolic<3>, r_i: &Angle) -> bool {
+    fn intersects_at(&self, x_i: &Hyperbolic<3>, r_i: &Angle, x_j: &Hyperbolic<3>, r_j: &Angle) -> bool {
         let mut result = true;
         let mut v_count = 0_usize;
         let n = self.vertices.len();
@@ -89,8 +89,9 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
             // translate all vertices  
             let v_1 = Self::vertex_to_system_frame(&self.vertices[v_num], r_i, x_i);
             let v_2 = Self::vertex_to_system_frame(&self.vertices[v_next], r_i, x_i);
+            let other = self.vertices.iter().map(|vertex| Self::vertex_to_system_frame(vertex, r_j, x_j)).collect::<Vec<Hyperbolic<3>>>();
             let self_translated = Self::to_vertex_frame_oriented(x_i, r_i, v_num, self.bounding_radius, &[v_1,v_2], n);
-            let other_translated = Self::to_vertex_frame_oriented(x_i, r_i, v_num, self.bounding_radius, other, n);
+            let other_translated = Self::to_vertex_frame_oriented(x_i, r_i, v_num, self.bounding_radius, &other, n);
             // convert to poincare coordinates to perform orientation checks. 
             let self_coord = self_translated
                 .iter()
@@ -302,31 +303,8 @@ mod tests {
         let boost:f64 = 3.0;
         let rotation:f64 = 2.3;
         let orientation: f64 = 0.4;
-        let transformed_square: Vec<Hyperbolic<3>> = square.vertices
-            .iter()
-            .map(|point| {
-                let site_pos = point.coordinates();
-                let rotated_site_pos = Minkowski::from([
-                    site_pos[0]*(orientation.cos()) - site_pos[1]*(orientation.sin()),
-                    site_pos[0]*(orientation.sin()) + site_pos[1]*(orientation.cos()),
-                    site_pos[2]
-                ]);
-                let transformed_point = Minkowski::from([
-                    rotated_site_pos[0] * (boost.cosh()) * (rotation.cos())
-                    - rotated_site_pos[1] * (rotation.sin())
-                    + rotated_site_pos[2] * (boost.sinh()) * (rotation.cos()),
-            
-                    rotated_site_pos[0] * (boost.cosh()) * (rotation.sin())
-                    + rotated_site_pos[1] * (rotation.cos())
-                    + rotated_site_pos[2] * (boost.sinh()) * (rotation.sin()),
-
-                    rotated_site_pos[0] * (boost.sinh()) 
-                    + rotated_site_pos[2] * (boost.cosh()),
-                ]);
-                Hyperbolic::from_minkowski_coordinates(transformed_point, 1.0)
-            })
-            .collect::<Vec<Hyperbolic<3>>>();
-        assert!(!square.intersects_at(&transformed_square, &Hyperbolic::<3>::default(), &Angle::default()));
+        let x_j = Hyperbolic::<3>::from_polar_coordinates(boost, rotation, 1.0);
+        assert!(!square.intersects_at(&Hyperbolic::<3>::default(), &Angle::default(), &x_j, &Angle::from(orientation)));
     }
     #[test]
     fn square_overlap() {
@@ -334,63 +312,40 @@ mod tests {
         let boost:f64 = 0.49;
         let rotation:f64 = 2.3;
         let orientation: f64 = 0.4;
-        let transformed_square: Vec<Hyperbolic<3>> = square.vertices
-            .iter()
-            .map(|point| {
-                let site_pos = point.coordinates();
-                let rotated_site_pos = Minkowski::from([
-                    site_pos[0]*(orientation.cos()) - site_pos[1]*(orientation.sin()),
-                    site_pos[0]*(orientation.sin()) + site_pos[1]*(orientation.cos()),
-                    site_pos[2]
-                ]);
-                let transformed_point = Minkowski::from([
-                    rotated_site_pos[0] * (boost.cosh()) * (rotation.cos())
-                    - rotated_site_pos[1] * (rotation.sin())
-                    + rotated_site_pos[2] * (boost.sinh()) * (rotation.cos()),
-            
-                    rotated_site_pos[0] * (boost.cosh()) * (rotation.sin())
-                    + rotated_site_pos[1] * (rotation.cos())
-                    + rotated_site_pos[2] * (boost.sinh()) * (rotation.sin()),
-
-                    rotated_site_pos[0] * (boost.sinh()) 
-                    + rotated_site_pos[2] * (boost.cosh()),
-                ]);
-                Hyperbolic::from_minkowski_coordinates(transformed_point, 1.0)
-            })
-            .collect::<Vec<Hyperbolic<3>>>();
-        assert!(square.intersects_at(&transformed_square, &Hyperbolic::<3>::default(), &Angle::default()));
+        let x_j = Hyperbolic::<3>::from_polar_coordinates(boost, rotation, 1.0);
+        assert!(square.intersects_at(&Hyperbolic::<3>::default(), &Angle::default(), &x_j, &Angle::from(orientation)));
     }
     #[test]
     fn overlap_translation_check() {
         let r_0 = 0.5;
         let square = HyperbolicConvexPolytope::<3>::regular(4, r_0, 1.0);
-        let com = Hyperbolic::<3>::from_polar_coordinates(0.0, 0.0, 1.0);
+        let com = Hyperbolic::<3>::from_polar_coordinates(1.0, 0.0, 1.0);
         let distance = 2.0;
-        let (_square_1, square_2) = generate_square_pair(&com, r_0, distance, 0.0, Angle::from(PI/4.0));
         let num_spaces: usize = 10;
         let num_trials: usize = 15;
         let spacing = 1.321_592_891_727_355;
         let trials = (0..num_trials).map(|n| -(n as f64)*spacing/(num_spaces as f64)).collect::<Vec<f64>>();
-        let nudged_squares: Vec<Vec<Hyperbolic<3>>>  = trials.iter().map(|inch| {
-                square_2.iter().map(|sq| {
-                    let site_pos = sq.coordinates();
-                    let transformed_point = Minkowski::from([
-                        site_pos[0] * (inch.cosh()) + site_pos[2] * (inch.sinh()),
-                        site_pos[1],
-                        site_pos[0] * (inch.sinh()) + site_pos[2] * (inch.cosh()),
-                    ]);
-                Hyperbolic::from_minkowski_coordinates(transformed_point, 1.0)
-                })
-                .collect::<Vec<Hyperbolic<3>>>()
+            
+        let nudged_centers = trials.iter().map(|inch| {
+            let original_center = [
+                (1.0_f64 + distance).sinh(),
+                0.0_f64,
+                (1.0_f64 + distance).cosh(),
+            ];
+            let translated = Minkowski::from([
+                original_center[0] * (inch.cosh()) + original_center[2] * (inch.sinh()),
+                original_center[1],
+                original_center[0] * (inch.sinh()) + original_center[2] * (inch.cosh()),
+            ]);
+            Hyperbolic::from_minkowski_coordinates(translated, 1.0)
             })
-            .collect::<Vec<Vec<Hyperbolic<3>>>>();
-
+            .collect::<Vec<Hyperbolic<3>>>();
         // Check over overlaps
-        for translated in nudged_squares.iter().take(num_spaces) {
-            assert!(!square.intersects_at(&translated, &com, &Angle::from(PI/4.0)));
+        for translated in nudged_centers.iter().take(num_spaces) {
+            assert!(!square.intersects_at(&com, &Angle::from(PI/4.0), translated, &Angle::from(PI/4.0)));
         }
-        for translated in nudged_squares.iter().take(num_trials).skip(num_spaces) {
-            assert!(square.intersects_at(&translated, &com, &Angle::from(PI/4.0)));
+        for translated in nudged_centers.iter().take(num_trials).skip(num_spaces) {
+            assert!(square.intersects_at(&com, &Angle::from(PI/4.0), translated, &Angle::from(PI/4.0)));
         }
     }
     #[test]
@@ -399,43 +354,18 @@ mod tests {
         let boost: f64 = 0.339_203_554_136_322;
         let distance: f64 = 0.45;
         let square = HyperbolicConvexPolytope::<3>::regular(4, r_0, 1.0);
-        let com = Hyperbolic::<3>::from_polar_coordinates(0.0, 0.0, 1.0);
-        let (_square_1_u, square_2_u) = generate_square_pair(&com, r_0, 0.0, 0.0, Angle::from(PI/4.0));
-        let square_2 = square_2_u.iter().map(|point| {
-            let pt = point.coordinates();
-            let transformed_point = Minkowski::from([
-                pt[0]*(distance.cosh()) + pt[2]*(distance.sinh()),
-                pt[1],
-                pt[0]*(distance.sinh()) + pt[2]*(distance.cosh())
-            ]);
-            Hyperbolic::from_minkowski_coordinates(transformed_point, 1.0)
-            })
-            .collect::<Vec<Hyperbolic<3>>>();
         let num_spaces: usize = 10;
         let num_trials: usize = 15;
         let spacing = 0.365_106_058_818_114;
         let trials = (0..num_trials).map(|n| (n as f64)*spacing/(num_spaces as f64)).collect::<Vec<f64>>();
-        let nudged_squares: Vec<Vec<Hyperbolic<3>>>  = trials.iter().map(|inch| {
-                square_2.iter().map(|sq| {
-                    let pt = sq.coordinates();
-                    let transformed_point = Minkowski::from([
-                        pt[0]*(distance.cosh())*(distance.cosh())*(inch.cos()) - pt[2]*(distance.cosh())*(distance.sinh())*(inch.cos())- pt[1]*(distance.cosh())*(inch.sin())-pt[0]*(distance.sinh())*(distance.sinh()) + pt[2]*(distance.sinh())*(distance.cosh()),
-                        pt[0]*(distance.cosh())*(inch.sin()) - pt[2]*(distance.sinh())*(inch.sin()) + pt[1]*(inch.cos()),
-                        pt[0]*(distance.sinh())*(distance.cosh())*(inch.cos()) - pt[2]*(distance.sinh())*(distance.sinh())*(inch.cos())- pt[1]*(distance.sinh())*(inch.sin())-pt[0]*(distance.cosh())*(distance.sinh()) + pt[2]*(distance.cosh())*(distance.cosh()),
-                    ]);
-                Hyperbolic::from_minkowski_coordinates(transformed_point, 1.0)
-                })
-                .collect::<Vec<Hyperbolic<3>>>()
-            })
-            .collect::<Vec<Vec<Hyperbolic<3>>>>();
-
-        let center = Hyperbolic::<3>::from_polar_coordinates(-boost, 0.0, 1.0);
+        let center_1 = Hyperbolic::<3>::from_polar_coordinates(-boost, 0.0, 1.0);
+        let center_2 = Hyperbolic::<3>::from_polar_coordinates(distance, 0.0, 1.0);
         // Check over overlaps
-        for rotated in nudged_squares.iter().take(num_spaces) {
-            assert!(!square.intersects_at(&rotated, &center, &Angle::from(PI/4.0)));
+        for ep in trials.iter().take(num_spaces) {
+            assert!(!square.intersects_at(&center_1, &Angle::from(PI/4.0), &center_2, &Angle::from(ep + PI/4.0)));
         }
-        for rotated in nudged_squares.iter().take(num_trials).skip(num_spaces) {
-            assert!(square.intersects_at(&rotated, &center, &Angle::from(PI/4.0)));
+        for ep in trials.iter().take(num_trials).skip(num_spaces) {
+            assert!(square.intersects_at(&center_1, &Angle::from(PI/4.0), &center_2, &Angle::from(ep + PI/4.0)));
         }
     }
 }

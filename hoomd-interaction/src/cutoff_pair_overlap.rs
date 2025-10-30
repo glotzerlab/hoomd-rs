@@ -5,7 +5,7 @@
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairOverlap, TotalEnergy};
 use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Position};
-use hoomd_vector::Vector;
+use hoomd_vector::Metric;
 
 /// Short-ranged hard overlaps between pairs of sites.
 ///
@@ -80,7 +80,7 @@ impl<V, B, S, C, E> TotalEnergy<Microstate<B, S, C>> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S, V>,
     S: Position<Position = V>,
-    V: Vector,
+    V: Metric,
 {
     /// Compute the total energy of the microstate contributed by functions on pairs of sites.
     ///
@@ -179,7 +179,7 @@ where
     B: Transform<S>,
     S: Position<Position = V>,
     C: Wrap<B> + Wrap<S>,
-    V: Vector,
+    V: Metric,
 {
     #[inline]
     fn delta_energy_one(
@@ -260,7 +260,7 @@ where
     B: Transform<S>,
     S: Position<Position = V>,
     C: Wrap<B> + Wrap<S>,
-    V: Vector,
+    V: Metric,
 {
     #[inline]
     fn delta_energy_insert(
@@ -334,7 +334,7 @@ impl<V, B, S, C, E> DeltaEnergyRemove<B, S, C> for CutoffPairOverlap<E>
 where
     E: SitePairOverlap<S, V>,
     S: Position<Position = V>,
-    V: Vector,
+    V: Metric,
 {
     #[inline]
     fn delta_energy_remove(
