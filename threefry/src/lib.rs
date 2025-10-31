@@ -7,12 +7,7 @@
 pub(crate) mod backends;
 
 use backends::C240;
-pub use cipher::{
-    IvSizeUser, KeyIvInit, KeySizeUser, StreamCipherCoreWrapper,
-    array::Array,
-    consts::{U12, U32, U64},
-};
-use rand::{Rng, SeedableRng};
+use rand::SeedableRng;
 use rand_core::{
     RngCore,
     block::{BlockRng64, BlockRngCore},
@@ -34,21 +29,30 @@ pub struct ThreeFry2x64Core {
     /// .
     counter: [u64; 2],
 }
-const TF2X64_ROUNDS: usize = 13;
+const TF2X64_ROUNDS: usize = 20;
 impl BlockRngCore for ThreeFry2x64Core {
     type Item = u64;
     type Results = [u64; 2];
 
     #[inline]
     fn generate(&mut self, results: &mut Self::Results) {
-        for d in 0..TF2X64_ROUNDS {
-            if (d % 4) == 0 {
+        // for d in 0..TF2X64_ROUNDS {
+        //     if (d % 4) == 0 {
+        //         let s = d / 4;
+        //         self.counter[0] = self.counter[0].wrapping_add(self.seed[s % 3]);
+        //         self.counter[1] = self.counter[1].wrapping_add(self.seed[(s + 1) % 3] + s as u64);
+        //     }
+        //     backends::mix(&mut self.counter, ROTATION_2X64[d % 8]);
+        // }
+
+        (0..TF2X64_ROUNDS).for_each(|d| {
+            if d % 4 == 0 {
                 let s = d / 4;
                 self.counter[0] = self.counter[0].wrapping_add(self.seed[s % 3]);
                 self.counter[1] = self.counter[1].wrapping_add(self.seed[(s + 1) % 3] + s as u64);
             }
             backends::mix(&mut self.counter, ROTATION_2X64[d % 8]);
-        }
+        });
         self.counter[0] = self.counter[0].wrapping_add(self.seed[(TF2X64_ROUNDS / 4) % 3]);
         self.counter[1] = self.counter[1]
             .wrapping_add(self.seed[((TF2X64_ROUNDS / 4) + 1) % 3] + (TF2X64_ROUNDS / 4) as u64);
