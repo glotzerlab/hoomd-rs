@@ -62,7 +62,7 @@ impl BlockRngCore for ThreeFry2x64Core {
         self.counter[0] = self.counter[0].wrapping_add(self.seed[(TF2X64_ROUNDS / 4) % 3]);
         self.counter[1] = self.counter[1]
             .wrapping_add(self.seed[((TF2X64_ROUNDS / 4) + 1) % 3] + (TF2X64_ROUNDS / 4) as u64);
-        *results = self.counter.into();
+        *results = self.counter;
     }
 }
 
