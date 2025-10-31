@@ -15,6 +15,7 @@ workspace = true
 
 [dependencies]
 rand.workspace = true
+rand_distr.workspace = true
 thiserror.workspace = true
 hoomd-linear-algebra.workspace = true
 hoomd-utility.workspace = true
@@ -23,6 +24,7 @@ approxim.workspace = true
 [dev-dependencies]
 divan.workspace = true
 paste.workspace = true
+rand_distr = "0.5.1"
 rstest.workspace = true
 
 [[bench]]

@@ -10,8 +10,9 @@ use std::{
 use approxim::approx_derive::RelativeEq;
 use rand::{
     Rng,
-    distr::{Distribution, StandardUniform, Uniform},
+    distr::{Distribution, StandardUniform},
 };
+use rand_distr::StandardNormal;
 
 use crate::{Cartesian, Cross, Error, InnerProduct, Rotate, Rotation, RotationMatrix, Unit};
 
@@ -772,29 +773,15 @@ impl Distribution<Versor> for StandardUniform {
     /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Versor {
-        // Algorithm from: https://stackoverflow.com/questions/31600717/how-to-generate-a-random-quaternion-quickly
-        let uniform = Uniform::new(-1.0, 1.0).expect("hard-coded distribution should be valid");
+        // See method 19 from: https://extremelearning.com.au/how-to-generate-uniformly-random-points-on-n-spheres-and-n-balls/
+        let scalar = rng.sample::<f64, _>(StandardNormal);
+        let vector = Cartesian::<3>::from(std::array::from_fn(|_| rng.sample(StandardNormal)));
 
-        let (u, v) = loop {
-            let u: f64 = uniform.sample(rng);
-            let v: f64 = uniform.sample(rng);
-            if u * u + v * v < 1.0 {
-                break (u, v);
-            }
-        };
+        let norm = (vector.norm_squared() + (scalar * scalar)).sqrt();
 
-        let (x, y) = loop {
-            let x: f64 = uniform.sample(rng);
-            let y: f64 = uniform.sample(rng);
-            if x * x + y * y < 1.0 {
-                break (x, y);
-            }
-        };
-
-        let scale = ((1.0 - (x * x + y * y)) / (u * u + v * v)).sqrt();
         Versor(Quaternion {
-            scalar: x,
-            vector: [y, scale * u, scale * v].into(),
+            scalar: scalar / norm,
+            vector: vector / norm,
         })
     }
 }

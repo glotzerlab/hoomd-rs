@@ -2,15 +2,13 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Random distributions of vectors.
+use std::array;
 
 use super::{Cartesian, InnerProduct};
 use hoomd_utility::valid::PositiveReal;
 
-use rand::{
-    Rng,
-    distr::{Distribution, Uniform},
-};
-use std::array;
+use rand::{Rng, distr::Distribution};
+use rand_distr::StandardNormal;
 
 /// A uniform distribution of all points inside or on a sphere with radius `r`.
 ///
@@ -42,17 +40,31 @@ impl<const N: usize> Distribution<Cartesian<N>> for Ball {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Cartesian<N> {
         let r = self.radius.get();
 
-        loop {
-            let mut coordinates_01 = [0.0; N];
-            rng.fill(&mut coordinates_01);
-            
-            let v = Cartesian {
-                coordinates: array::from_fn(|i| (coordinates_01[i] * 2.0 - 1.0) * r),
-            };
+        if N == 2 {
+            // Rejection sampling is fastest in 2D
+            loop {
+                let mut coordinates_01 = [0.0; N];
+                rng.fill(&mut coordinates_01);
 
-            if v.norm_squared() < r * r {
-                return v;
+                let v = Cartesian {
+                    coordinates: array::from_fn(|i| (coordinates_01[i] * 2.0 - 1.0) * r),
+                };
+
+                if v.norm_squared() < r * r {
+                    return v;
+                }
             }
+        }
+
+        // Muller/Marsaglia 'normalized Gaussians' approach is faster n 3 and larger dimensions.
+        // The implementation is based on:
+        // https://extremelearning.com.au/how-to-generate-uniformly-random-points-on-n-spheres-and-n-balls/
+        let point = Cartesian {
+            coordinates: std::array::from_fn::<_, N, _>(|_| rng.sample(StandardNormal)),
+        };
+        match N {
+            3 => point * (r / point.norm() * rng.random::<f64>().cbrt()),
+            _ => point * (r / point.norm() * rng.random::<f64>().powf(1.0 / N as f64)),
         }
     }
 }
