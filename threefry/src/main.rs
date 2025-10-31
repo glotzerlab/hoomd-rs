@@ -18,6 +18,8 @@ use rand_core::{
     RngCore,
     block::{BlockRng64, BlockRngCore},
 };
+/// Key schedule for ``ThreeFry2x64``.
+const ROTATION_2X64: [u32; 8] = [16, 42, 12, 31, 16, 32, 24, 21];
 
 /// TODO: unsafe if N < slice size
 fn read_u64_le_unchecked<const N: usize>(stream: [u8; N], range: std::ops::Range<usize>) -> u64 {
@@ -39,19 +41,40 @@ fn read_u64_le_unchecked<const N: usize>(stream: [u8; N], range: std::ops::Range
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ThreeFry2x64Core {
     /// .
-    seed: (u64, u64, u64),
+    seed: [u64; 3],
     /// .
     counter: (u64, u64),
 }
-
+const TF2X64_ROUNDS: usize = 20;
 impl BlockRngCore for ThreeFry2x64Core {
     type Item = u64;
     type Results = [u64; 2];
 
     fn generate(&mut self, results: &mut Self::Results) {
-        // unimplemented!()
-        println!("Generated 2 u64");
-        *results = [999u64; 2];
+        for d in 0..TF2X64_ROUNDS {
+            if (d % 4) == 0 {
+                let s = d / 4;
+                self.counter.0 = self.counter.0.overflowing_add(self.seed[s % 3]).0;
+                self.counter.1 = self
+                    .counter
+                    .1
+                    .overflowing_add(self.seed[(s + 1) % 3] + s as u64)
+                    .0;
+            }
+            backends::mix(&mut self.counter, ROTATION_2X64[d % 8]);
+        }
+        self.counter.0 = self
+            .counter
+            .0
+            .overflowing_add(self.seed[(TF2X64_ROUNDS / 4) % 3])
+            .0;
+        self.counter.1 = self
+            .counter
+            .1
+            .overflowing_add(self.seed[((TF2X64_ROUNDS / 4) + 1) % 3] + (TF2X64_ROUNDS / 4) as u64)
+            .0;
+        // self.counter.1 += self.seed[((TF2X64_ROUNDS / 4) + 1) % 3] + (TF2X64_ROUNDS / 4) as u64;
+        *results = self.counter.into();
     }
 }
 
@@ -63,13 +86,13 @@ impl SeedableRng for ThreeFry2x64Rng {
             read_u64_le_unchecked(seed, 8..16),
         );
         Self(BlockRng64::new(ThreeFry2x64Core {
-            seed: (k0, k1, C240 ^ k0 ^ k1),
+            seed: [k0, k1, C240 ^ k0 ^ k1],
             counter: (0u64, 0u64),
         }))
     }
     fn seed_from_u64(state: u64) -> Self {
         Self(BlockRng64::new(ThreeFry2x64Core {
-            seed: (0, state, C240 ^ state),
+            seed: [0, state, C240 ^ state],
             counter: (0u64, 0u64),
         }))
     }
