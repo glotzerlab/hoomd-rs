@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 //! Asdf.
 
 /// asdf
@@ -47,6 +50,7 @@ impl BlockRngCore for ThreeFry2x64Core {
 
     fn generate(&mut self, results: &mut Self::Results) {
         // unimplemented!()
+        println!("Generated 2 u64");
         *results = [999u64; 2];
     }
 }
@@ -84,9 +88,25 @@ impl ThreeFry2x64Rng {
         self.0.core.counter = (0, stream);
     }
 }
+impl RngCore for ThreeFry2x64Rng {
+    fn next_u64(&mut self) -> u64 {
+        self.0.next_u64()
+    }
+    fn next_u32(&mut self) -> u32 {
+        self.0.next_u32()
+    }
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        self.0.fill_bytes(dest);
+    }
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
+        Ok(self.0.try_fill_bytes(dest)?)
+    }
+}
 
 fn main() {
     let mut x = ThreeFry2x64Rng::seed_from_u64(0);
     x.set_stream_from_u64(0);
-    println!("Hello, world: {}", x.0.next_u64());
+    println!("Hello, world: {}", x.next_u64());
+    println!("Hello, world: {}", x.next_u64());
+    println!("Hello, world: {}", x.next_u64());
 }

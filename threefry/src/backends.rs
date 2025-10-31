@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 /// Key schedule for ``ThreeFry2x64``.
 const ROTATION_2X64: [u32; 8] = [16, 42, 12, 31, 16, 32, 24, 21];
 
