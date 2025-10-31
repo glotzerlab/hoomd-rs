@@ -1,56 +1,47 @@
 //! Asdf.
-use num_traits::{PrimInt, Unsigned};
 
-/// Key schedule for ``ThreeFry2x64``.
-const ROTATION_2X64: [u32; 8] = [16, 42, 12, 31, 16, 32, 24, 21];
+/// asdf
+pub(crate) mod backends;
+use std::ops::DerefMut;
 
-/// Key schedule constant C240.
-///
-/// This increases the randomness of outputs when keys are mostly zero. C240 is the AES
-/// encryption of the plaintext "240" (in decimal), under the all 0 AES256 key.
-/// In the Random123 library, this constant is named ``SKEIN_KS_PARITY64``
-const C240: u64 = 0x1_BD1_1BD_AA9_FC1_A22;
-
-/// Rotate a 64 bit unsigned integer left by `r bits`
-fn rotl(x: u64, d: u32) -> u64 {
-    (x << d) | (x >> (u64::BITS - d))
-}
-/// TODO.
-fn mix<const N: usize>(state: &mut (u64, u64), round_key: u32) {
-    state.0 += state.1;
-    state.1 = rotl(state.1, round_key) ^ state.0;
-}
+use backends::C240;
+pub use cipher::{
+    IvSizeUser, KeyIvInit, KeySizeUser, StreamCipherCoreWrapper,
+    array::Array,
+    consts::{U12, U32, U64},
+};
+use rand::SeedableRng;
+use rand_core::{
+    RngCore,
+    block::{BlockRng64, BlockRngCore},
+};
 
 /// TODO: unsafe if N < slice size
 fn read_u64_le_unchecked<const N: usize>(stream: [u8; N], range: std::ops::Range<usize>) -> u64 {
     u64::from_le_bytes(stream[range].try_into().unwrap_or_else(|_| unreachable!()))
 }
 
+// use crate::{ChaChaCore, R8, R12, R20, Rounds, variants::Ietf};
+
+// /// Key type used by all ChaCha variants.
+// pub type Key = Array<u8, U32>;
+
+// /// Nonce type used by ChaCha variants.
+// pub type Nonce = Array<u8, U12>;
+
+// /// ChaCha8 stream cipher (reduced-round variant of [`ChaCha20`] with 8 rounds)
+// pub type ChaCha8 = StreamCipherCoreWrapper<ChaChaCore<R8, Ietf>>;
+
 /// TODO.
-struct ThreeFry2x64 {
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct ThreeFry2x64Core {
+    /// .
     seed: (u64, u64, u64),
+    /// .
     counter: (u64, u64),
 }
 
-impl ThreeFry2x64 {
-    /// TODO.
-    fn from_seed(seed: [u8; 16]) -> ThreeFry2x64 {
-        let (k0, k1) = (
-            read_u64_le_unchecked(seed, 0..8),
-            read_u64_le_unchecked(seed, 8..16),
-        );
-        ThreeFry2x64 {
-            seed: (k0, k1, C240 ^ k0 ^ k1),
-            counter: (0u64, 0u64),
-        }
-    }
-    /// TODO:
-    fn seed_from_u64(seed: u64) -> ThreeFry2x64 {
-        ThreeFry2x64 {
-            seed: (0, seed, C240 ^ seed),
-            counter: (0u64, 0u64),
-        }
-    }
+impl ThreeFry2x64Core {
     /// TODO
     fn set_stream(&mut self, stream: [u8; 16]) {
         self.counter.0 = read_u64_le_unchecked(stream, 0..8);
@@ -58,6 +49,65 @@ impl ThreeFry2x64 {
     }
 }
 
+/// TODO;
+pub struct ThreeFry2x64Rng {
+    /// .
+    pub core: BlockRng64<ThreeFry2x64Core>,
+}
+impl From<ThreeFry2x64Core> for ThreeFry2x64Rng {
+    fn from(core: ThreeFry2x64Core) -> Self {
+        Self { core }
+    }
+}
+
+impl BlockRngCore for ThreeFry2x64Core {
+    type Item = u64;
+    // Results is a 128-bit (16-byte) block, viewed as 2 x u64.
+    type Results = [u64; 2];
+
+    fn generate(&mut self, results: &mut Self::Results) {
+        unimplemented!()
+    }
+}
+
+impl RngCore for ThreeFry2x64Rng {
+    #[expect(clippy::cast_possible_truncation, reason = "Truncation is intended")]
+    fn next_u32(&mut self) -> u32 {
+        self.next_u64() as u32 // TODO: efficient
+    }
+    fn next_u64(&mut self) -> u64 {
+        backends::step()
+    }
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        rand_core::impls::fill_bytes_via_next(self, dest);
+    }
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
+        self.fill_bytes(dest);
+        Ok(())
+    }
+}
+
+impl SeedableRng for ThreeFry2x64Rng {
+    type Seed = [u8; 16];
+    fn from_seed(seed: Self::Seed) -> Self {
+        let (k0, k1) = (
+            read_u64_le_unchecked(seed, 0..8),
+            read_u64_le_unchecked(seed, 8..16),
+        );
+        Self::from(ThreeFry2x64Core {
+            seed: (k0, k1, C240 ^ k0 ^ k1),
+            counter: (0u64, 0u64),
+        })
+    }
+    fn seed_from_u64(state: u64) -> Self {
+        Self::from(ThreeFry2x64Core {
+            seed: (0, state, C240 ^ state),
+            counter: (0u64, 0u64),
+        })
+    }
+}
+
 fn main() {
-    println!("Hello, world!");
+    let mut x = ThreeFry2x64Rng::seed_from_u64(0);
+    println!("Hello, world: {}", x.next_u64());
 }
