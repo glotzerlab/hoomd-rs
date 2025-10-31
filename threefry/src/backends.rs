@@ -14,6 +14,6 @@ fn rotl(x: u64, d: u32) -> u64 {
 }
 /// TODO.
 pub(crate) fn mix(state: &mut (u64, u64), round_key: u32) {
-    state.0 = state.0.overflowing_add(state.1).0;
+    state.0 = state.0.wrapping_add(state.1);
     state.1 = rotl(state.1, round_key) ^ state.0;
 }

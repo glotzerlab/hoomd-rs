@@ -54,25 +54,22 @@ impl BlockRngCore for ThreeFry2x64Core {
         for d in 0..TF2X64_ROUNDS {
             if (d % 4) == 0 {
                 let s = d / 4;
-                self.counter.0 = self.counter.0.overflowing_add(self.seed[s % 3]).0;
+                self.counter.0 = self.counter.0.wrapping_add(self.seed[s % 3]);
                 self.counter.1 = self
                     .counter
                     .1
-                    .overflowing_add(self.seed[(s + 1) % 3] + s as u64)
-                    .0;
+                    .wrapping_add(self.seed[(s + 1) % 3] + s as u64);
             }
             backends::mix(&mut self.counter, ROTATION_2X64[d % 8]);
         }
         self.counter.0 = self
             .counter
             .0
-            .overflowing_add(self.seed[(TF2X64_ROUNDS / 4) % 3])
-            .0;
+            .wrapping_add(self.seed[(TF2X64_ROUNDS / 4) % 3]);
         self.counter.1 = self
             .counter
             .1
-            .overflowing_add(self.seed[((TF2X64_ROUNDS / 4) + 1) % 3] + (TF2X64_ROUNDS / 4) as u64)
-            .0;
+            .wrapping_add(self.seed[((TF2X64_ROUNDS / 4) + 1) % 3] + (TF2X64_ROUNDS / 4) as u64);
         // self.counter.1 += self.seed[((TF2X64_ROUNDS / 4) + 1) % 3] + (TF2X64_ROUNDS / 4) as u64;
         *results = self.counter.into();
     }
@@ -129,7 +126,6 @@ impl RngCore for ThreeFry2x64Rng {
 fn main() {
     let mut x = ThreeFry2x64Rng::seed_from_u64(0);
     x.set_stream_from_u64(0);
-    println!("Hello, world: {}", x.next_u64());
-    println!("Hello, world: {}", x.next_u64());
-    println!("Hello, world: {}", x.next_u64());
+    assert_eq!(x.next_u64(), 14_030_652_003_081_164_901);
+    assert_eq!(x.next_u64(), 8_034_964_082_011_408_461);
 }
