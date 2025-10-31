@@ -1,10 +1,10 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use hoomd_spatial::{PointUpdate, PointsInBall, VecCell, WithSearchRadius};
+use hoomd_spatial::{PointUpdate, PointsInBall, WithSearchRadius};
 use hoomd_vector::Cartesian;
 use hoomd_simulation::{macrostate::Isothermal, Simulation};
-use hoomd_microstate::{boundary::{GenerateGhosts, Periodic}, property::{Point, Position}, Body, Microstate, MicrostateBuilder, SiteKey};
+use hoomd_microstate::{boundary::{GenerateGhosts, Periodic}, property::{Point, Position}, Body, Microstate, SiteKey};
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_interaction::{CutoffPairOverlap, pairwise::AlwaysTrue};
@@ -54,7 +54,7 @@ Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
         };    
     
         let cell_list = X::with_search_radius(sigma.try_into()?);
-        let microstate = MicrostateBuilder::with_spatial_data_and_boundary(cell_list, microstate.boundary().clone())
+        let microstate = Microstate::builder().spatial_data(cell_list).boundary(microstate.boundary().clone())
             .bodies(microstate.bodies().iter().map(|b|
                 Body { properties: Point::<Cartesian<D>>::new(*b.item.properties.position()),
                     sites: vec![Point::<Cartesian<D>>::default()],

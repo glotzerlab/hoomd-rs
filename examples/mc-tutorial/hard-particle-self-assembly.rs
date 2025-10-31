@@ -95,7 +95,7 @@ impl HardEllipseSelfAssembly {
             .nominal_search_radius(sigma.try_into()?)
             .build();
         let microstate =
-            MicrostateBuilder::with_spatial_data_and_boundary(cell_list, periodic_square).try_build()?;
+            Microstate::builder().spatial_data(cell_list).boundary(periodic_square).try_build()?;
         // ANCHOR_END: microstate
 
         // ANCHOR: trial_moves

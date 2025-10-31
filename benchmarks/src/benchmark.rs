@@ -22,8 +22,8 @@ const INFO_TIME: Duration = Duration::new(0, 500_000_000);
 impl Default for Benchmark {
     fn default() -> Self {
         Self {
-            warmup_time: Duration::new(1,0),
-            benchmark_time: Duration::new(2,0),
+            warmup_time: Duration::new(2,0),
+            benchmark_time: Duration::new(4,0),
         }
     }
 }
