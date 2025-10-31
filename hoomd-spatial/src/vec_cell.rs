@@ -1,6 +1,9 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+#![expect(clippy::cast_possible_truncation, reason = "the necessary conversions are necessary and have been checked")]
+#![expect(clippy::cast_sign_loss, reason = "the necessary conversions are necessary and have been checked")]
+
 use std::{array, iter, marker::PhantomData, mem, cmp::Eq, hash::Hash};
 
 use log::trace;
@@ -120,21 +123,29 @@ pub struct VecCellBuilder<K, const D: usize> {
 
 impl<K, const D: usize> VecCellBuilder<K, D> where
         K: Copy + Eq + Hash {
+    #[inline]
+    #[must_use]
     pub fn nominal_search_radius(mut self, nominal_search_radius: PositiveReal) -> Self {
         self.nominal_search_radius = nominal_search_radius;
         self
     }
 
+    #[inline]
+    #[must_use]
     pub fn maximum_search_radius(mut self, maximum_search_radius: f64) -> Self {
         self.maximum_search_radius = maximum_search_radius;
         self
     }
 
+    #[inline]
+    #[must_use]
     pub fn origin(mut self, origin: Cartesian<D>) -> Self {
         self.origin = origin;
         self
     }
 
+    #[inline]
+    #[must_use]
     pub fn build(self) -> VecCell<K, D> 
     {
         let maximum_stencil_radius = (self.maximum_search_radius / self.nominal_search_radius.get()).ceil() as u32;
@@ -154,6 +165,7 @@ impl<K, const D: usize> VecCellBuilder<K, D> where
 impl<K, const D: usize> Default for VecCell<K, D> where
 K: Copy + Eq + Hash
 {
+    #[inline]
     fn default() -> Self {
          Self::builder().build()
     }
@@ -162,6 +174,7 @@ K: Copy + Eq + Hash
 impl<K, const D: usize> WithSearchRadius for VecCell<K, D> where
 K: Copy + Eq + Hash
 {
+    #[inline]
     fn with_search_radius(radius: PositiveReal) -> Self {
          Self::builder()
             .nominal_search_radius(radius)
@@ -204,6 +217,7 @@ impl<K, const D: usize> VecCell<K, D>
     }
 
     /// Get the keys in a given cell index
+    #[cfg(test)]
     #[inline]
     fn get_keys(&self, cell_index: &[i64; D]) -> &[K] {
         let index = Self::map_index_from_cell(self.half_extent, cell_index).expect("cell_index should be in bounds");
@@ -214,6 +228,7 @@ impl<K, const D: usize> VecCell<K, D>
 impl<K, const D: usize> VecCell<K, D> where
 K: Copy + Eq + Hash
     {
+    #[expect(clippy::missing_panics_doc, reason="hard-coded constant will never panic")]
     #[inline]
     #[must_use]
     pub fn builder() -> VecCellBuilder<K, D> {
@@ -318,16 +333,29 @@ K: Copy + Eq + Hash {
     }
 }
 
+
+/// Iterate over keys in the cell list around a given center cell.
 struct PointsIterator<'a, K, const D: usize> {
+    /// Keys of the current cell iteration (None if the cell is empty)
     keys: Option<&'a Vec<K>>,
+
+    /// The cell list we are iterating in.
     cell_list: &'a VecCell<K, D>,
+
+    /// Current location of the iteration in the cell.
     index_in_current_cell: usize,
+
+    /// Current location of the iteration in the stencil.
     current_stencil: usize,
+
+    /// Cell offsets to iterate over.
     stencil: &'a [[i64; D]],
+
+    /// The cell at the center of the iteration.
     center: [i64; D],
     }
 
-impl<'a, K, const D: usize> Iterator for PointsIterator<'a, K, D> where
+impl<K, const D: usize> Iterator for PointsIterator<'_, K, D> where
 K: Copy
 {
     type Item=K;
@@ -379,37 +407,44 @@ K: Copy + Eq + Hash
     }
 }
 
+#[expect(
+    clippy::used_underscore_binding,
+    reason = "Used for const parameterization."
+)]
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use assert2::{assert, check};
     use rand::{Rng, SeedableRng, distr::{Distribution, Uniform}, rngs::StdRng};
+    use rstest::*;
+
+    use super::*;
     use hoomd_vector::{distribution::Ball, Metric};
 
     #[test]
     fn test_increment_cell_index() {
         let mut cells = CellIndexIterator::cube(1);
-        assert_eq!(cells.next(), Some([-1, -1]));
-        assert_eq!(cells.next(), Some([-1, 0]));
-        assert_eq!(cells.next(), Some([-1, 1]));
-        assert_eq!(cells.next(), Some([0, -1]));
-        assert_eq!(cells.next(), Some([0, 0]));
-        assert_eq!(cells.next(), Some([0, 1]));
-        assert_eq!(cells.next(), Some([1, -1]));
-        assert_eq!(cells.next(), Some([1, 0]));
-        assert_eq!(cells.next(), Some([1, 1]));
-        assert_eq!(cells.next(), None);
-        assert_eq!(cells.next(), None);
-        assert_eq!(cells.next(), None);
-        assert_eq!(cells.next(), None);
+        check!(cells.next() == Some([-1, -1]));
+        check!(cells.next() == Some([-1, 0]));
+        check!(cells.next() == Some([-1, 1]));
+        check!(cells.next() == Some([0, -1]));
+        check!(cells.next() == Some([0, 0]));
+        check!(cells.next() == Some([0, 1]));
+        check!(cells.next() == Some([1, -1]));
+        check!(cells.next() == Some([1, 0]));
+        check!(cells.next() == Some([1, 1]));
+        check!(cells.next() == None);
+        check!(cells.next() == None);
+        check!(cells.next() == None);
+        check!(cells.next() == None);
 
         let mut c = CellIndexIterator { cell_index: [1, 2, 2], half_extent: 2 };
-        assert_eq!(c.increment_cell_index(), Some([2, -2, -2]));
+        check!(c.increment_cell_index() == Some([2, -2, -2]));
         let mut c = CellIndexIterator { cell_index: [0, 1, 2], half_extent: 2 };
-        assert_eq!(c.increment_cell_index(), Some([0, 2, -2]));
+        check!(c.increment_cell_index() == Some([0, 2, -2]));
         let mut c = CellIndexIterator { cell_index: [0, 0, -2], half_extent: 2 };
-        assert_eq!(c.increment_cell_index(), Some([0, 0, -1]));
+        check!(c.increment_cell_index() == Some([0, 0, -1]));
         let mut c = CellIndexIterator { cell_index: [2, 2, 2], half_extent: 2 };
-        assert_eq!(c.increment_cell_index(), None);
+        check!(c.increment_cell_index() == None);
     }
 
     // #[test]
@@ -435,10 +470,10 @@ mod tests {
 
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
 
-        assert_eq!(cell_list.cell_index.get(&0), Some(&[0, 0]));
+        assert!(cell_list.cell_index.get(&0) == Some(&[0, 0]));
 
         let keys = cell_list.get_keys(&[0, 0]);
-        assert_eq!(keys.len(), 1);
+        assert!(keys.len() == 1);
         assert!(keys.contains(&0));
     }
 
@@ -450,18 +485,18 @@ mod tests {
         cell_list.insert(1, Cartesian::from([0.995, 0.897]));
         cell_list.insert(2, Cartesian::from([-0.125, 3.25]));
 
-        assert_eq!(cell_list.cell_index.get(&0), Some(&[0, 0]));
-        assert_eq!(cell_list.cell_index.get(&1), Some(&[0, 0]));
-        assert_eq!(cell_list.cell_index.get(&2), Some(&[-1, 3]));
+        check!(cell_list.cell_index.get(&0) == Some(&[0, 0]));
+        check!(cell_list.cell_index.get(&1) == Some(&[0, 0]));
+        check!(cell_list.cell_index.get(&2) == Some(&[-1, 3]));
 
         let keys = cell_list.get_keys(&[0, 0]);
-        assert_eq!(keys.len(), 2);
-        assert!(keys.contains(&0));
-        assert!(keys.contains(&1));
+        assert!(keys.len() == 2);
+        check!(keys.contains(&0));
+        check!(keys.contains(&1));
 
         let keys = cell_list.get_keys(&[-1, 3]);
-        assert_eq!(keys.len(), 1);
-        assert!(keys.contains(&2));
+        assert!(keys.len() == 1);
+        check!(keys.contains(&2));
     }
 
     #[test]
@@ -472,11 +507,11 @@ mod tests {
         cell_list.insert(0, Cartesian::from([0.25, 0.5]));
         cell_list.insert(0, Cartesian::from([0.5, 0.75]));
 
-        assert_eq!(cell_list.cell_index.get(&0), Some(&[0, 0]));
+        check!(cell_list.cell_index.get(&0) == Some(&[0, 0]));
 
         let keys = cell_list.get_keys(&[0, 0]);
-        assert_eq!(keys.len(), 1);
-        assert!(keys.contains(&0));
+        assert!(keys.len() == 1);
+        check!(keys.contains(&0));
     }
 
     #[test]
@@ -487,16 +522,16 @@ mod tests {
         cell_list.insert(1, Cartesian::from([0.25, 0.5]));
         cell_list.insert(1, Cartesian::from([-0.5, -0.75]));
 
-        assert_eq!(cell_list.cell_index.get(&0), Some(&[0, 0]));
-        assert_eq!(cell_list.cell_index.get(&1), Some(&[-1, -1]));
+        check!(cell_list.cell_index.get(&0) == Some(&[0, 0]));
+        check!(cell_list.cell_index.get(&1) == Some(&[-1, -1]));
 
         let keys = cell_list.get_keys(&[0, 0]);
-        assert_eq!(keys.len(), 1);
-        assert!(keys.contains(&0));
+        assert!(keys.len() == 1);
+        check!(keys.contains(&0));
 
         let keys = cell_list.get_keys(&[-1, -1]);
-        assert_eq!(keys.len(), 1);
-        assert!(keys.contains(&1));
+        assert!(keys.len() == 1);
+        check!(keys.contains(&1));
     }
 
     #[test]
@@ -510,16 +545,16 @@ mod tests {
         cell_list.remove(&1);
         cell_list.remove(&2);
 
-        assert_eq!(cell_list.cell_index.get(&0), Some(&[0, 0]));
-        assert_eq!(cell_list.cell_index.get(&1), None);
-        assert_eq!(cell_list.cell_index.get(&2), None);
+        check!(cell_list.cell_index.get(&0) == Some(&[0, 0]));
+        check!(cell_list.cell_index.get(&1) == None);
+        check!(cell_list.cell_index.get(&2) == None);
 
         let keys = cell_list.get_keys(&[0, 0]);
-        assert_eq!(keys.len(), 1);
-        assert!(keys.contains(&0));
+        assert!(keys.len() == 1);
+        check!(keys.contains(&0));
 
         let keys = cell_list.get_keys(&[-1, 3]);
-        assert_eq!(keys.len(), 0);
+        check!(keys.is_empty());
     }
 
     #[test]
@@ -532,8 +567,10 @@ mod tests {
 
         cell_list.clear();
 
-        assert_eq!(cell_list.cell_index.len(), 0);
-        // TODO: assert all vec lengths
+        check!(cell_list.cell_index.is_empty());
+        for keys in cell_list.keys_map {
+            check!(keys.is_empty());
+        }
     }
 
     #[test]
@@ -543,20 +580,33 @@ mod tests {
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
         cell_list.insert(1, Cartesian::from([0.995, 0.897]));
         cell_list.insert(2, Cartesian::from([-0.125, 3.25]));
+        cell_list.insert(3, Cartesian::from([10.995, -12.897]));
+        cell_list.insert(4, Cartesian::from([15.125, 19.25]));
 
         cell_list.remove(&1);
         cell_list.remove(&2);
+        cell_list.remove(&3);
+        cell_list.remove(&4);
 
         cell_list.shrink_to_fit();
 
-        // TODO: check vec capacities
+        let filled_cell_index = VecCell::<usize, 2>::map_index_from_cell(cell_list.half_extent, &[0, 0]).expect("hard-coded cell is valid");
+        for (i, keys) in cell_list.keys_map.iter().enumerate() {
+            if i == filled_cell_index {                
+                check!(keys.capacity() == 1);
+                check!(keys.len() == 1);
+            } else {
+                check!(keys.capacity() == 0);
+                check!(keys.len() == 0);
+            }
+        }
 
         let keys = cell_list.get_keys(&[0, 0]);
-        assert_eq!(keys.len(), 1);
-        assert!(keys.contains(&0));
+        assert!(keys.len() == 1);
+        check!(keys.contains(&0));
     }
 
-    #[test]
+    #[rstest]
     fn consistency() {
         const N_STEPS: usize = 65_536;
         let mut rng = StdRng::seed_from_u64(0);
@@ -584,29 +634,34 @@ mod tests {
 
         // Validate that cell_index contains the expected keys and that
         // keys_map is consistent.
-        assert_eq!(cell_list.cell_index.len(), reference.len());
+        assert!(cell_list.cell_index.len() == reference.len());
         for (reference_key,reference_value) in reference.drain() {
             let value = cell_list.cell_index.get(&reference_key);
-            assert_eq!(value, Some(&reference_value));
+            check!(value == Some(&reference_value));
 
             let keys = cell_list.get_keys(&reference_value);
-            assert!(keys.contains(&reference_key));
+            check!(keys.contains(&reference_key));
         }
 
         // Ensure that there are no extra values in keys_map.
         let total = cell_list.keys_map.iter().map(Vec::len).sum();
-        assert_eq!(cell_list.cell_index.len(), total);
+        check!(cell_list.cell_index.len() == total);
+        check!(total > 2000);
     }
 
     // TODO: Test queries just outside the allocated space.
-    // TODO: Test consistency with origin.
 
-    #[test]
-    fn points_in_ball_2d() {
+    #[rstest]
+    #[case::d_2(PhantomData::<VecCell<usize, 2>>)]
+    #[case::d_3(PhantomData::<VecCell<usize, 3>>)]
+    fn test_points_in_ball<const D: usize>(#[case] _d: PhantomData<VecCell<usize, D>>, #[values(1.0, 0.5, 0.25)] nominal_search_radius: f64) {
         let mut rng = StdRng::seed_from_u64(0);
         let mut reference = Vec::new();
 
-        let mut cell_list = VecCell::default();
+        let mut cell_list = VecCell::builder()
+            .nominal_search_radius(nominal_search_radius.try_into().expect("hardcoded value should be positive"))
+            .maximum_search_radius(1.0)
+            .build();
         let position_distribution = Ball { radius: 20.0.try_into().expect("hardcoded value should be positive") };
 
         for key in 0..2048 {
@@ -616,16 +671,17 @@ mod tests {
             reference.push(position);
         }
 
+        let mut n_neighbors = 0;
         for p_i in &reference {
             let potential_neighbors: Vec<_> = cell_list.points_potentially_in_ball(p_i, 1.0).collect();
 
             for (j, p_j) in reference.iter().enumerate() {
                 if p_i.distance(p_j) <= 1.0 {
-                    assert!(potential_neighbors.contains(&j));
+                    check!(potential_neighbors.contains(&j));
+                    n_neighbors += 1;
                 }
             }
         }
+        check!(n_neighbors >= 10_000);
     }
-
-    // TODO: Test maximum search radius
 }
