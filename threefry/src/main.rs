@@ -41,49 +41,13 @@ pub struct ThreeFry2x64Core {
     counter: (u64, u64),
 }
 
-impl ThreeFry2x64Core {
-    /// TODO
-    fn set_stream(&mut self, stream: [u8; 16]) {
-        self.counter.0 = read_u64_le_unchecked(stream, 0..8);
-        self.counter.1 = read_u64_le_unchecked(stream, 8..16);
-    }
-}
-
-/// TODO;
-pub struct ThreeFry2x64Rng {
-    /// .
-    pub core: BlockRng64<ThreeFry2x64Core>,
-}
-impl From<ThreeFry2x64Core> for ThreeFry2x64Rng {
-    fn from(core: ThreeFry2x64Core) -> Self {
-        Self { core }
-    }
-}
-
 impl BlockRngCore for ThreeFry2x64Core {
     type Item = u64;
-    // Results is a 128-bit (16-byte) block, viewed as 2 x u64.
     type Results = [u64; 2];
 
     fn generate(&mut self, results: &mut Self::Results) {
-        unimplemented!()
-    }
-}
-
-impl RngCore for ThreeFry2x64Rng {
-    #[expect(clippy::cast_possible_truncation, reason = "Truncation is intended")]
-    fn next_u32(&mut self) -> u32 {
-        self.next_u64() as u32 // TODO: efficient
-    }
-    fn next_u64(&mut self) -> u64 {
-        backends::step()
-    }
-    fn fill_bytes(&mut self, dest: &mut [u8]) {
-        rand_core::impls::fill_bytes_via_next(self, dest);
-    }
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
-        self.fill_bytes(dest);
-        Ok(())
+        // unimplemented!()
+        *results = [999u64; 2];
     }
 }
 
@@ -94,20 +58,35 @@ impl SeedableRng for ThreeFry2x64Rng {
             read_u64_le_unchecked(seed, 0..8),
             read_u64_le_unchecked(seed, 8..16),
         );
-        Self::from(ThreeFry2x64Core {
+        Self(BlockRng64::new(ThreeFry2x64Core {
             seed: (k0, k1, C240 ^ k0 ^ k1),
             counter: (0u64, 0u64),
-        })
+        }))
     }
     fn seed_from_u64(state: u64) -> Self {
-        Self::from(ThreeFry2x64Core {
+        Self(BlockRng64::new(ThreeFry2x64Core {
             seed: (0, state, C240 ^ state),
             counter: (0u64, 0u64),
-        })
+        }))
+    }
+}
+
+/// TODO.
+pub struct ThreeFry2x64Rng(BlockRng64<ThreeFry2x64Core>);
+impl ThreeFry2x64Rng {
+    /// TODO
+    fn set_stream(&mut self, stream: [u8; 16]) {
+        self.0.core.counter.0 = read_u64_le_unchecked(stream, 0..8);
+        self.0.core.counter.1 = read_u64_le_unchecked(stream, 8..16);
+    }
+    ///.
+    fn set_stream_from_u64(&mut self, stream: u64) {
+        self.0.core.counter = (0, stream);
     }
 }
 
 fn main() {
     let mut x = ThreeFry2x64Rng::seed_from_u64(0);
-    println!("Hello, world: {}", x.next_u64());
+    x.set_stream_from_u64(0);
+    println!("Hello, world: {}", x.0.next_u64());
 }
