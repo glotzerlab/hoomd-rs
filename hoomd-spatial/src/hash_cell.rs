@@ -131,7 +131,7 @@ impl<K, const D: usize> HashCellBuilder<K, D> where
             particle_indices: FxHashMap::default(),
             cell_index: FxHashMap::default(),
             origin: self.origin,
-            stencils: vec_cell::generate_all_stencils(maximum_stencil_radius.min(1)),
+            stencils: vec_cell::generate_all_stencils(maximum_stencil_radius.max(1)),
         }
     }
 }

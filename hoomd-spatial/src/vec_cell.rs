@@ -146,7 +146,7 @@ impl<K, const D: usize> VecCellBuilder<K, D> where
             cell_index: FxHashMap::default(),
             origin: self.origin,
             half_extent,
-            stencils: generate_all_stencils(maximum_stencil_radius.min(1)),
+            stencils: generate_all_stencils(maximum_stencil_radius.max(1)),
         }
     }
 }
@@ -165,6 +165,7 @@ K: Copy + Eq + Hash
     fn with_search_radius(radius: PositiveReal) -> Self {
          Self::builder()
             .nominal_search_radius(radius)
+            .maximum_search_radius(radius.get())
             .build()
     }
     }
