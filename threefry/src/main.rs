@@ -5,7 +5,6 @@
 
 /// asdf
 pub(crate) mod backends;
-use std::ops::DerefMut;
 
 use backends::C240;
 pub use cipher::{
