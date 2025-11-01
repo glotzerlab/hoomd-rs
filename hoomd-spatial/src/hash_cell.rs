@@ -22,6 +22,7 @@ use super::{PointUpdate, PointsInBall, WithSearchRadius, vec_cell};
 /// unbounded collections of points.
 ///
 /// [`VecCell`]: crate::VecCell
+/// [`HashMap`]: std::collections::HashMap
 ///
 /// # Examples
 ///
@@ -434,6 +435,12 @@ K: Copy + Eq + Hash
     /// 0
     /// 1
     /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics when `radius` is larger than the *maximum search radius*
+    /// provided at construction, rounded up to the nearest integer multiple
+    /// of the *nominal search radius*.
     #[inline]
     fn points_potentially_in_ball(&self, position: &Cartesian<D>, radius: f64) -> impl Iterator<Item=K> {
         let stencil_index = (radius / self.cell_width.get()).ceil() as usize - 1;
