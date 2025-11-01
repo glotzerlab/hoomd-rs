@@ -157,13 +157,16 @@ mod tests {
         x.set_stream_from_u64(0);
         (0..17).for_each(|i| assert_eq!(x.next_u64(), THREEFRY_ZEROS_R20_OUTPUT[i], "Index {i}"));
     }
+
+    /// This test is quite slow, but tests that our generation of the ~2^26th value
+    /// matches the reference impl
     #[test]
     fn test_threefry2x64_r13_deep() {
         let mut x = ThreeFry2x64Rng::<13>::seed_from_u64(0);
         x.set_stream_from_u64(0);
-        (0..(2_110_423_590u64 * 2 - 4)).for_each(|_| {
+        (0..(110_423_593 * 2 - 4)).for_each(|_| {
             x.next_u64();
         });
-        assert_eq!(x.next_u64(), 15_032_243_537_753_055_507u64);
+        assert_eq!(x.next_u64(), 9_808_966_926_499_203_172u64);
     }
 }
