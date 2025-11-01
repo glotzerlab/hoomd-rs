@@ -7,8 +7,6 @@
 )]
 
 //! Benchmark Cartesian
-
-use chacha20::ChaCha8Rng;
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_utility::{random::Counter, valid::PositiveReal};
 use hoomd_vector::{Cartesian, Cross, InnerProduct, distribution::Ball};
