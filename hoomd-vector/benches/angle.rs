@@ -8,10 +8,12 @@
 
 //! Benchmark Angle
 
+use chacha20::ChaCha8Rng;
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
 use hoomd_vector::{Angle, Cartesian, Rotate, RotationMatrix};
+// use threefry::ThreeFry2x64Rng;
 
 fn main() {
     divan::main();
@@ -44,7 +46,7 @@ fn rotate_matrix(bencher: Bencher) {
 
 #[divan::bench]
 fn gen_random(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
+    let mut rng = ChaCha8Rng::seed_from_u64(1);
 
     bencher
         .counter(ItemsCount::from(1_u32))

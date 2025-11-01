@@ -8,6 +8,7 @@
 
 //! Benchmark Cartesian
 
+use chacha20::ChaCha8Rng;
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Cross, InnerProduct, distribution::Ball};
@@ -98,7 +99,7 @@ fn cross_vec3(bencher: Bencher) {
 
 #[divan::bench(consts = DIMENSIONS)]
 fn gen_random<const N: usize>(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
+    let mut rng = ChaCha8Rng::seed_from_u64(1);
 
     bencher
         .counter(ItemsCount::from(1_u32))
@@ -107,7 +108,7 @@ fn gen_random<const N: usize>(bencher: Bencher) {
 
 #[divan::bench(consts = DIMENSIONS)]
 fn gen_ball<const N: usize>(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
+    let mut rng = ChaCha8Rng::seed_from_u64(1);
 
     bencher
         .counter(ItemsCount::from(1_u32))
