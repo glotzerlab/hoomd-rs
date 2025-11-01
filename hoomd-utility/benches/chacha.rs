@@ -36,7 +36,7 @@ fn bench_chacha20<const N: usize>(bencher: Bencher) {
 }
 
 #[divan::bench(consts = N)]
-fn bench_counter<const N: usize>(bencher: Bencher) {
+fn gen_bench_counter<const N: usize>(bencher: Bencher) {
     bencher.counter(ItemsCount::from(N)).bench_local(|| {
         let mut rng = Counter::new(black_box(10), black_box(11), black_box(12))
             .index(black_box(13))

@@ -235,10 +235,8 @@ impl Counter {
 
         let mut stream = [0u8; 16];
         stream[..8].copy_from_slice(&self.index_a.to_le_bytes());
-        stream[8..12].copy_from_slice(&self.counter_a.to_le_bytes());
-        stream[13] = 0;
-        stream[14] = 0;
-        stream[15] = 0;
+        stream[8..16].copy_from_slice(&self.index_b.to_le_bytes());
+        // stream[8..12].copy_from_slice(&self.counter_a.to_le_bytes());
 
         let mut seed = [0u8; 16];
         seed[..8].copy_from_slice(&self.step.to_le_bytes());
@@ -248,7 +246,7 @@ impl Counter {
 
         // seed[28..].copy_from_slice(&self.counter_c.to_le_bytes());
 
-        let mut rng = ThreeFry2x64Rng::from_seed(seed);
+        let mut rng = ThreeFry2x64Rng::<20>::from_seed(seed);
         rng.set_stream(stream);
         rng
     }
