@@ -11,11 +11,19 @@ pub const C240: u64 = 0x1_BD1_1BD_AA9_FC1_A22;
 /// Rotate a 64 bit unsigned integer left by `r bits`
 #[inline]
 fn rotl(x: u64, d: u32) -> u64 {
-    (x << d) | (x >> (u64::BITS - d))
+    (x << d) | (x >> (64 - d))
+    // NOTE: vshlq_n_u64 if make const?c
+    // use core::arch::aarch64::*;
+    // unsafe {
+    //     let v = vdupq_n_u64(x); // splat in our input
+    //     let left = vshlq_u64(v, vdupq_n_s64(d as i64));
+    //     let right = vshlq_u64(v, vdupq_n_s64(-(64 - d as i64)));
+    //     vgetq_lane_u64(vorrq_u64(left, right), 0)
+    // }
 }
 /// TODO.
 #[inline]
-pub(crate) fn mix(state: &mut [u64; 2], round_key: u32) {
+pub(crate) fn mix2x64(state: &mut [u64; 2], round_key: u32) {
     state[0] = state[0].wrapping_add(state[1]);
     state[1] = rotl(state[1], round_key) ^ state[0];
 }
