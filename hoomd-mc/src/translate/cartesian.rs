@@ -60,7 +60,7 @@ mod tests {
     use rstest::*;
 
     /// Number of trial moves to test.
-    const N: usize = 1024;
+    const N: usize = 2048;
 
     #[rstest]
     fn translate(#[values(0.1, 1.0)] d: f64) {

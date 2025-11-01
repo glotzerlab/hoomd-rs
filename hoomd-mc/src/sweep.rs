@@ -124,7 +124,7 @@ mod tests {
     use approxim::assert_relative_eq;
     use hoomd_geometry::shape::Hypercuboid;
     use hoomd_interaction::{External, SiteEnergy, TotalEnergy, Zero};
-    use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};
+    use hoomd_microstate::{boundary::Closed, property::Point};
     use hoomd_simulation::macrostate::Isothermal;
     use hoomd_vector::{Cartesian, InnerProduct};
     use rstest::*;

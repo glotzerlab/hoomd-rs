@@ -8,11 +8,10 @@ use hoomd_interaction::{
 };
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder, SiteKey, boundary::Closed,
-    property::Point,
+    Body, Microstate, SiteKey, boundary::Closed, property::Point,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
-use hoomd_spatial::CellList;
+use hoomd_spatial::VecCell;
 use hoomd_vector::Cartesian;
 // ANCHOR_END: use
 
@@ -24,7 +23,7 @@ struct Fill {
     microstate: Microstate<
         Point<Cartesian<2>>,
         Point<Cartesian<2>>,
-        CellList<SiteKey, 2>,
+        VecCell<SiteKey, 2>,
         Closed<Rectangle>,
     >,
     /// How sites interact with other sites and fields.
@@ -54,13 +53,14 @@ impl Fill {
         // ANCHOR_END: parameters
 
         // ANCHOR: microstate
-        let cell_list = CellList::with_cell_width(sigma);
+        let vec_cell = VecCell::builder()
+            .nominal_search_radius(sigma.try_into()?)
+            .build();
         let square = Rectangle::with_equal_edges(box_length.try_into()?);
-        let microstate = MicrostateBuilder::with_spatial_data_and_boundary(
-            cell_list,
-            Closed(square),
-        )
-        .try_build()?;
+        let microstate = Microstate::builder()
+            .spatial_data(vec_cell)
+            .boundary(Closed(square))
+            .try_build()?;
         // ANCHOR_END: microstate
 
         // ANCHOR: external

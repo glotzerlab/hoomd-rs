@@ -11,11 +11,12 @@ use hoomd_interaction::{
 };
 use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder,
+    Body, Microstate, SiteKey,
     boundary::Closed,
     property::{OrientedPoint, Point},
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
+use hoomd_spatial::VecCell;
 use hoomd_vector::{Angle, Cartesian};
 // ANCHOR_END: use
 
@@ -67,7 +68,12 @@ impl LocalTrial<BodyProperties> for DiscreteRotateOrTranslate {
 // ANCHOR: simulation_struct
 struct Tetronimoes {
     /// Positions and orientations of all the bodies in the simulation.
-    microstate: Microstate<BodyProperties, SiteProperties, Closed<Rectangle>>,
+    microstate: Microstate<
+        BodyProperties,
+        SiteProperties,
+        VecCell<SiteKey, 2>,
+        Closed<Rectangle>,
+    >,
     /// How sites interact with other sites and fields.
     hamiltonian: (
         External<Linear<PositionVector>>,
@@ -96,13 +102,14 @@ impl Tetronimoes {
         // ANCHOR_END: parameters
 
         // ANCHOR: microstate
+        let vec_cell = VecCell::builder()
+            .nominal_search_radius(sigma.try_into()?)
+            .build();
         let square = Rectangle::with_equal_edges(box_height.try_into()?);
-        let microstate = MicrostateBuilder::<
-            BodyProperties,
-            SiteProperties,
-            Closed<Rectangle>,
-        >::with_boundary(Closed(square))
-        .try_build()?;
+        let microstate = Microstate::builder()
+            .spatial_data(vec_cell)
+            .boundary(Closed(square))
+            .try_build()?;
         // ANCHOR_END: microstate
 
         // ANCHOR: hamiltonian

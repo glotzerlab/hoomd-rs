@@ -357,7 +357,7 @@ mod tests {
     use super::*;
     use crate::{TotalEnergy, pairwise::AlwaysTrue};
     use hoomd_geometry::shape::Hypercuboid;
-    use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};
+    use hoomd_microstate::{boundary::Closed, property::Point};
     use hoomd_vector::Cartesian;
 
     use rstest::*;

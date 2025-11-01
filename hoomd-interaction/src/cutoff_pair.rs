@@ -495,7 +495,6 @@ mod tests {
     };
     use hoomd_geometry::shape::Hypercuboid;
     use hoomd_microstate::{
-        MicrostateBuilder,
         boundary::{Closed, Open},
         property::Point,
     };
@@ -525,7 +524,8 @@ mod tests {
         use crate::pairwise::Isotropic;
 
         #[fixture]
-        fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open> {
+        fn microstate()
+        -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs<SiteKey>, Open> {
             let mut microstate = Microstate::new();
             microstate
                 .extend_bodies([
@@ -540,7 +540,12 @@ mod tests {
 
         #[rstest]
         fn blanket_fn(
-            microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>,
+            microstate: Microstate<
+                Point<Cartesian<2>>,
+                Point<Cartesian<2>>,
+                AllPairs<SiteKey>,
+                Open,
+            >,
         ) {
             // Ensure that closures can be used as IsotropicEnergy
             let cutoff_pair = CutoffPair {
@@ -566,7 +571,12 @@ mod tests {
 
         #[rstest]
         fn large_r_cut(
-            microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>,
+            microstate: Microstate<
+                Point<Cartesian<2>>,
+                Point<Cartesian<2>>,
+                AllPairs<SiteKey>,
+                Open,
+            >,
         ) {
             // Ensure that CutoffPair respects the r_cut value set.
             let cutoff_pair = CutoffPair {
@@ -867,7 +877,7 @@ mod tests {
             // However, we need to avoid numerical errors when two sites get
             // too close. Randomly insert the 2nd body in a well-defined area
             // to avoid this.
-            let mut rng = StdRng::seed_from_u64(0);
+            let mut rng = StdRng::seed_from_u64(2);
             let r_distribution =
                 Uniform::new(3.0, 6.0).expect("hard-coded constants should be valid");
             let theta_distribution =

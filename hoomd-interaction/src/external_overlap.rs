@@ -295,7 +295,7 @@ mod tests {
     use super::*;
     use hoomd_geometry::shape::Rectangle;
     use hoomd_microstate::{
-        Body, Microstate, MicrostateBuilder,
+        Body, Microstate,
         boundary::{Closed, Open},
         property::{Point, Position},
     };
@@ -315,10 +315,12 @@ mod tests {
 
     mod site_energy {
         use super::*;
+        use hoomd_microstate::SiteKey;
         use hoomd_spatial::AllPairs;
 
         #[fixture]
-        fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open> {
+        fn microstate()
+        -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs<SiteKey>, Open> {
             let mut microstate = Microstate::new();
             microstate
                 .extend_bodies([
@@ -331,7 +333,7 @@ mod tests {
 
         #[fixture]
         fn overlapping_microstate()
-        -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open> {
+        -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs<SiteKey>, Open> {
             let mut microstate = Microstate::new();
             microstate
                 .extend_bodies([
@@ -344,7 +346,12 @@ mod tests {
 
         #[rstest]
         fn single_total_0(
-            microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>,
+            microstate: Microstate<
+                Point<Cartesian<2>>,
+                Point<Cartesian<2>>,
+                AllPairs<SiteKey>,
+                Open,
+            >,
         ) {
             let single = ExternalOverlap(TestSO);
 
@@ -356,7 +363,7 @@ mod tests {
             overlapping_microstate: Microstate<
                 Point<Cartesian<2>>,
                 Point<Cartesian<2>>,
-                AllPairs,
+                AllPairs<SiteKey>,
                 Open,
             >,
         ) {
@@ -367,7 +374,12 @@ mod tests {
 
         #[rstest]
         fn single_site_0(
-            microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>,
+            microstate: Microstate<
+                Point<Cartesian<2>>,
+                Point<Cartesian<2>>,
+                AllPairs<SiteKey>,
+                Open,
+            >,
         ) {
             let single = ExternalOverlap(TestSO);
 
@@ -380,7 +392,7 @@ mod tests {
             overlapping_microstate: Microstate<
                 Point<Cartesian<2>>,
                 Point<Cartesian<2>>,
-                AllPairs,
+                AllPairs<SiteKey>,
                 Open,
             >,
         ) {
