@@ -200,3 +200,4 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.bevy_winit]
 opt-level = 3
+

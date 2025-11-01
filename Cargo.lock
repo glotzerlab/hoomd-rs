@@ -3182,6 +3182,7 @@ name = "hoomd-vector"
 version = "0.0.0"
 dependencies = [
  "approxim",
+ "chacha20",
  "divan",
  "hoomd-linear-algebra",
  "hoomd-utility",
@@ -3190,6 +3191,7 @@ dependencies = [
  "rand_distr 0.5.1",
  "rstest",
  "thiserror 2.0.17",
+ "threefry",
 ]
 
 [[package]]

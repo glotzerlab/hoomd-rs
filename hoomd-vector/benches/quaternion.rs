@@ -8,8 +8,8 @@
 
 //! Benchmark Quaternion
 
-use chacha20::ChaCha8Rng;
 use divan::{self, Bencher, black_box, counter::ItemsCount};
+use hoomd_utility::random::Counter;
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
 use hoomd_vector::{Cartesian, Rotate, RotationMatrix, Versor};
@@ -45,7 +45,7 @@ fn rotate_matrix(bencher: Bencher) {
 
 #[divan::bench]
 fn gen_random(bencher: Bencher) {
-    let mut rng = ChaCha8Rng::seed_from_u64(1);
+    let mut rng = Counter::new(0, 0, 0).make_rng();
 
     bencher
         .counter(ItemsCount::from(1_u32))

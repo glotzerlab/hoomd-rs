@@ -103,6 +103,8 @@ mod tests {
     use super::*;
     use rand::{SeedableRng, rngs::StdRng};
 
+    // Data generated from the Random123 ThreeFry2x64_rN
+
     const THREEFRY_ZEROS_R13_OUTPUT: [u64; 17] = [
         17_395_065_817_820_070_077,
         16_798_320_980_932_587_445,
@@ -154,5 +156,14 @@ mod tests {
         let mut x = ThreeFry2x64Rng::<20>::seed_from_u64(0);
         x.set_stream_from_u64(0);
         (0..17).for_each(|i| assert_eq!(x.next_u64(), THREEFRY_ZEROS_R20_OUTPUT[i], "Index {i}"));
+    }
+    #[test]
+    fn test_threefry2x64_r13_deep() {
+        let mut x = ThreeFry2x64Rng::<13>::seed_from_u64(0);
+        x.set_stream_from_u64(0);
+        (0..(2_110_423_590u64 * 2 - 4)).for_each(|_| {
+            x.next_u64();
+        });
+        assert_eq!(x.next_u64(), 15_032_243_537_753_055_507u64);
     }
 }

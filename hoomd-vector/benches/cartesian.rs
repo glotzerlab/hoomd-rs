@@ -10,7 +10,7 @@
 
 use chacha20::ChaCha8Rng;
 use divan::{self, Bencher, black_box, counter::ItemsCount};
-use hoomd_utility::valid::PositiveReal;
+use hoomd_utility::{random::Counter, valid::PositiveReal};
 use hoomd_vector::{Cartesian, Cross, InnerProduct, distribution::Ball};
 use rand::{Rng, SeedableRng, distr::Distribution, distr::Uniform, rngs::StdRng};
 
@@ -99,7 +99,7 @@ fn cross_vec3(bencher: Bencher) {
 
 #[divan::bench(consts = DIMENSIONS)]
 fn gen_random<const N: usize>(bencher: Bencher) {
-    let mut rng = ChaCha8Rng::seed_from_u64(1);
+    let mut rng = Counter::new(0, 0, 0).make_rng();
 
     bencher
         .counter(ItemsCount::from(1_u32))
@@ -108,7 +108,7 @@ fn gen_random<const N: usize>(bencher: Bencher) {
 
 #[divan::bench(consts = DIMENSIONS)]
 fn gen_ball<const N: usize>(bencher: Bencher) {
-    let mut rng = ChaCha8Rng::seed_from_u64(1);
+    let mut rng = Counter::new(0, 0, 0).make_rng();
 
     bencher
         .counter(ItemsCount::from(1_u32))

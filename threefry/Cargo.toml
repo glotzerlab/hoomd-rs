@@ -19,3 +19,4 @@ wide = "0.7.33"
 
 [lints]
 workspace = true
+
