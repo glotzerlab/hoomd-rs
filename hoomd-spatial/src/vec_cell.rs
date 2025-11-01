@@ -4,6 +4,8 @@
 #![expect(clippy::cast_possible_truncation, reason = "the necessary conversions are necessary and have been checked")]
 #![expect(clippy::cast_sign_loss, reason = "the necessary conversions are necessary and have been checked")]
 
+//! Implement `VecCell`
+
 use std::{array, iter, marker::PhantomData, mem, cmp::Eq, hash::Hash};
 
 use log::trace;
@@ -14,6 +16,70 @@ use hoomd_utility::valid::PositiveReal;
 
 use super::{PointUpdate, PointsInBall, WithSearchRadius};
 
+/// Bucket sort points into cubes with [`Vec`]-backed storage
+///
+/// [`VecCell`] is a spatial data structure that can efficiently update one
+/// point at a time (see [`PointUpdate`]) and find all stored points that are
+/// *potentially* near a position in space (see [`PointsInBall`]).
+///
+/// Points are stored in [`VecCell`] by key. The caller can choose a generic key
+/// type `K` appropriately. For example, `K` could be `usize` and map to an
+/// array index. Or it could be an enum that distinguishes between primary and
+/// ghost site positions.
+///
+/// Internally, [`VecCell`] stores a `D`-dimensional vector of cells that
+/// partition space. Each bucket is a hypercube with an edge length equal to
+/// the *nominal search radius*. When searching for points near a position in
+/// space, `VecCell` first determines which bucket that point is in. Then it
+/// iterates over all the keys in all the cells within the given search radius.
+/// To perform this iteration efficiently, [`VecCell`] pre-computes a set of
+/// stencils up to the given *maximum search radius* given at const
+///
+/// In systems with low density fluctuations, the time complexity of [`VecCell`]
+/// is O(1). More generally, and important when density fluctuations are
+/// present, the time complexity scales with the maximum number of points in any
+/// of the cells.
+///
+/// [`VecCell`] performs best when the search radius is equal to the nominal
+/// search radius. In that case, 2D searches loop over 9 cells and 3D searches
+/// loop over 27. The caller must filter the output of this iteration because
+/// the resulting hypercube covers more volume than the given hypersphere.
+/// When searching with a radius larger than the nominal, many more cells must
+/// be iterated leading to slower performance. At the same time, the stencil
+/// covers less excess volume and therefore fewer points must be filtered.
+///
+/// [`VecCell`] stores each cell at a unique index backed by storage in [`Vec`].
+/// This performs very well in dense, compact systems. However, the memory
+/// utilization scales with the *volume* of the cube that spans from the most
+/// negative point to the most positive point. In dilute systems, [`VecCell`]
+/// can therefore waste a lot of memory storing empty cells. Use [`HashCell`]
+/// and occasionally call its `shrink_to_fit` method to limit the memory
+/// required in dilute systems.
+///
+/// [`HashCell`]: crate::HashCell
+///
+/// # Examples
+///
+/// The default [`VecCell`] set both the *nominal* and *maximum* search radii to 1.0.
+/// ```
+/// use hoomd_spatial::VecCell;
+///
+/// let vec_cell = VecCell::<usize, 3>::default();
+/// ```
+///
+/// Use the builder API to set any or all parameters:
+///
+/// ```
+/// use hoomd_spatial::VecCell;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let vec_cell = VecCell::<usize, 3>::builder()
+///      .nominal_search_radius(2.5.try_into()?)
+///      .maximum_search_radius(7.5)
+///      .build();
+/// # Ok(())
+/// # }
+/// ```
 pub struct VecCell<K, const D: usize> {
     /// The width of each cell.
     cell_width: PositiveReal,
@@ -107,6 +173,21 @@ pub(crate) fn generate_all_stencils<const D: usize>(max_radius: u32) -> Vec<Vec<
     result
 }
 
+/// Construct a [`VecCell`] with given parameters.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_spatial::VecCell;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let vec_cell = VecCell::<usize, 3>::builder()
+///      .nominal_search_radius(2.5.try_into()?)
+///      .maximum_search_radius(7.5)
+///      .build();
+/// # Ok(())
+/// # }
+/// ```
 pub struct VecCellBuilder<K, const D: usize> {
     /// Most commonly used search radius.
     nominal_search_radius: PositiveReal,
@@ -123,6 +204,23 @@ pub struct VecCellBuilder<K, const D: usize> {
 
 impl<K, const D: usize> VecCellBuilder<K, D> where
         K: Copy + Eq + Hash {
+
+    /// Choose the most commonly used search radius.
+    ///
+    /// [`VecCell`] performs the best when searching for points within the
+    /// *nominal search radius* of a given position.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_spatial::VecCell;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let vec_cell = VecCell::<usize, 3>::builder()
+    ///      .nominal_search_radius(2.5.try_into()?)
+    ///      .build();
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[must_use]
     pub fn nominal_search_radius(mut self, nominal_search_radius: PositiveReal) -> Self {
@@ -130,6 +228,24 @@ impl<K, const D: usize> VecCellBuilder<K, D> where
         self
     }
 
+    /// Choose the largest search radius.
+    ///
+    /// The maximum radius is rounded up to the nearest integer multiple of the
+    /// *nominal search radius*. [`VecCell`] will panic when asked to search for
+    /// points within a radius larger than the maximum.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_spatial::VecCell;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let vec_cell = VecCell::<usize, 3>::builder()
+    ///      .nominal_search_radius(2.5.try_into()?)
+    ///      .maximum_search_radius(7.5)
+    ///      .build();
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[must_use]
     pub fn maximum_search_radius(mut self, maximum_search_radius: f64) -> Self {
@@ -137,6 +253,7 @@ impl<K, const D: usize> VecCellBuilder<K, D> where
         self
     }
 
+    /// Choose the location of the 0,0,...0 cell.
     #[inline]
     #[must_use]
     pub fn origin(mut self, origin: Cartesian<D>) -> Self {
@@ -144,6 +261,20 @@ impl<K, const D: usize> VecCellBuilder<K, D> where
         self
     }
 
+    /// Construct the [`VecCell`] with the chosen parameters.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_spatial::VecCell;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let vec_cell = VecCell::<usize, 3>::builder()
+    ///      .nominal_search_radius(2.5.try_into()?)
+    ///      .maximum_search_radius(7.5)
+    ///      .build();
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     #[must_use]
     pub fn build(self) -> VecCell<K, D> 
@@ -165,6 +296,17 @@ impl<K, const D: usize> VecCellBuilder<K, D> where
 impl<K, const D: usize> Default for VecCell<K, D> where
 K: Copy + Eq + Hash
 {
+    /// Construct a default [`VecCell`].
+    ///
+    /// The default sets both the *nominal* and *maximum* search radii to 1.0.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_spatial::VecCell;
+    ///
+    /// let vec_cell = VecCell::<usize, 3>::default();
+    /// ```
     #[inline]
     fn default() -> Self {
          Self::builder().build()
@@ -174,6 +316,20 @@ K: Copy + Eq + Hash
 impl<K, const D: usize> WithSearchRadius for VecCell<K, D> where
 K: Copy + Eq + Hash
 {
+    /// Construct a [`VecCell`] with the given search radius.
+    ///
+    /// Set both the *nominal* and *maximum* search radii to `radius`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_spatial::{VecCell, WithSearchRadius};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let vec_cell = VecCell::<usize, 3>::with_search_radius(2.5.try_into()?);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn with_search_radius(radius: PositiveReal) -> Self {
          Self::builder()
@@ -228,6 +384,23 @@ impl<K, const D: usize> VecCell<K, D>
 impl<K, const D: usize> VecCell<K, D> where
 K: Copy + Eq + Hash
     {
+    /// Construct a `VecCell` builder.
+    ///
+    /// Use the builder to set any or all parameters and construct a [`VecCell`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_spatial::VecCell;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let vec_cell = VecCell::<usize, 3>::builder()
+    ///      .nominal_search_radius(2.5.try_into()?)
+    ///      .maximum_search_radius(7.5)
+    ///      .build();
+    /// # Ok(())
+    /// # }
+    /// ```
     #[expect(clippy::missing_panics_doc, reason="hard-coded constant will never panic")]
     #[inline]
     #[must_use]
@@ -240,6 +413,11 @@ K: Copy + Eq + Hash
         }
     }
 
+    /// Remove excess capacity from dynamically allocated arrays.
+    ///
+    /// At this time, `shrink_to_fit` only reduces the memory utilized by the
+    /// cell contents. It does not shrink the `D`-dimensional storage to match
+    /// the range spanned by points currently in the data structure.
     #[inline]
     pub fn shrink_to_fit(&mut self) {
         for keys in &mut self.keys_map {
@@ -282,6 +460,16 @@ K: Copy + Eq + Hash
 
 impl<K, const D: usize> PointUpdate<Cartesian<D>, K> for VecCell<K, D> where
 K: Copy + Eq + Hash {
+    /// Insert or update a point identified by a key.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_spatial::{PointUpdate, VecCell};
+    ///
+    /// let mut vec_cell = VecCell::default();
+    ///
+    /// vec_cell.insert(0, [1.25, 2.5].into());
+    /// ```
     #[inline]
     fn insert(&mut self, key: K, position: Cartesian<D>) {
         let cell_index = self.cell_index_from_position(&position);
@@ -310,6 +498,17 @@ K: Copy + Eq + Hash {
         }
     }
 
+    /// Remove the point with the given key.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_spatial::{PointUpdate, VecCell};
+    ///
+    /// let mut vec_cell = VecCell::default();
+    /// vec_cell.insert(0, [1.25, 2.5].into());
+    ///
+    /// vec_cell.remove(&0)
+    /// ```
     #[inline]
     fn remove(&mut self, key: &K) {
         let cell_index = self.cell_index.remove(key);
@@ -324,6 +523,17 @@ K: Copy + Eq + Hash {
         }
     }
 
+    /// Remove all points.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_spatial::{PointUpdate, VecCell};
+    ///
+    /// let mut vec_cell = VecCell::default();
+    /// vec_cell.insert(0, [1.25, 2.5].into());
+    ///
+    /// vec_cell.clear();
+    /// ```
     #[inline]
     fn clear(&mut self) {
         self.cell_index.clear();
@@ -386,6 +596,32 @@ K: Copy
 impl<const D: usize, K> PointsInBall<Cartesian<D>, K> for VecCell<K, D> where
 K: Copy + Eq + Hash
 {
+    /// Find all the points that *may* be in the given ball.
+    ///
+    /// `points_potentially_in_ball` will iterate over all points in the given ball.
+    /// It may include any number of points inserted into the spatial data structure
+    /// that are *not* in the ball. Filter the output as needed.
+    ///
+    /// [`VecCell`] may iterate over the points in any order.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_spatial::{PointsInBall, PointUpdate, VecCell};
+    ///
+    /// let mut vec_cell = VecCell::default();
+    /// vec_cell.insert(0, [1.25, 0.0].into());
+    /// vec_cell.insert(1, [3.25, 0.75].into());
+    /// vec_cell.insert(2, [-10.0, 12.0].into());
+    ///
+    /// for key in vec_cell.points_potentially_in_ball(&[2.0, 0.0].into(), 1.0) {
+    ///     println!("{key}");
+    /// }
+    /// ```
+    /// Prints (in any order):
+    /// ```text
+    /// 0
+    /// 1
+    /// ```
     #[inline]
     fn points_potentially_in_ball(&self, position: &Cartesian<D>, radius: f64) -> impl Iterator<Item=K> {
         let stencil_index = (radius / self.cell_width.get()).ceil() as usize - 1;
@@ -447,22 +683,22 @@ mod tests {
         check!(c.increment_cell_index() == None);
     }
 
-    // #[test]
-    // fn test_cell_index() {
-    //     let cell_list = HashCell::<usize, 3>::with_cell_width(2.0);
-    //     assert_eq!(cell_list.cell_index_from_position(&[0.0, 0.0, 0.0].into()), [0, 0, 0]);
-    //     assert_eq!(cell_list.cell_index_from_position(&[2.0, 0.0, 0.0].into()), [1, 0, 0]);
-    //     assert_eq!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()), [0, 1, 0]);
-    //     assert_eq!(cell_list.cell_index_from_position(&[0.0, 0.0, 2.0].into()), [0, 0, 1]);
-    //     assert_eq!(cell_list.cell_index_from_position(&[-41.5, 18.5, -0.125].into()), [-21, 9, -1]);
+    #[test]
+    fn test_cell_index() {
+        let cell_list = VecCell::<usize, 3>::builder().nominal_search_radius(2.0.try_into().expect("hard-coded constant should be positive")).build();
+        check!(cell_list.cell_index_from_position(&[0.0, 0.0, 0.0].into()) == [0, 0, 0]);
+        check!(cell_list.cell_index_from_position(&[2.0, 0.0, 0.0].into()) == [1, 0, 0]);
+        check!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()) == [0, 1, 0]);
+        check!(cell_list.cell_index_from_position(&[0.0, 0.0, 2.0].into()) == [0, 0, 1]);
+        check!(cell_list.cell_index_from_position(&[-41.5, 18.5, -0.125].into()) == [-21, 9, -1]);
 
-    //     let cell_list = HashCell::<usize, 3>::with_cell_width_and_origin(2.0, [-4.0, 2.0, 8.0].into());
-    //     assert_eq!(cell_list.cell_index_from_position(&[0.0, 0.0, 0.0].into()), [2, -1, -4]);
-    //     assert_eq!(cell_list.cell_index_from_position(&[2.0, 0.0, 0.0].into()), [3, -1, -4]);
-    //     assert_eq!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()), [2, 0, -4]);
-    //     assert_eq!(cell_list.cell_index_from_position(&[0.0, 0.0, 2.0].into()), [2, -1, -3]);
-    //     assert_eq!(cell_list.cell_index_from_position(&[-41.5, 18.5, -0.125].into()), [-19, 8, -5]);
-    // }
+        let cell_list = VecCell::<usize, 3>::builder().nominal_search_radius(2.0.try_into().expect("hard-coded constant should be positive")).origin([-4.0, 2.0, 8.0].into()).build();
+        check!(cell_list.cell_index_from_position(&[0.0, 0.0, 0.0].into()) == [2, -1, -4]);
+        check!(cell_list.cell_index_from_position(&[2.0, 0.0, 0.0].into()) == [3, -1, -4]);
+        check!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()) == [2, 0, -4]);
+        check!(cell_list.cell_index_from_position(&[0.0, 0.0, 2.0].into()) == [2, -1, -3]);
+        check!(cell_list.cell_index_from_position(&[-41.5, 18.5, -0.125].into()) == [-19, 8, -5]);
+    }
     
     #[test]
     fn test_insert_one() {
@@ -649,7 +885,19 @@ mod tests {
         check!(total > 2000);
     }
 
-    // TODO: Test queries just outside the allocated space.
+    #[test]
+    fn test_outside() {
+        let mut cell_list = VecCell::default();
+
+        cell_list.insert(0, Cartesian::from([0.125, 0.25]));
+        cell_list.insert(1, Cartesian::from([0.995, 0.897]));
+        cell_list.insert(2, Cartesian::from([8.125, 0.0]));
+
+        check!(cell_list.half_extent == 8);
+        let potential_neighbors: Vec<_> = cell_list.points_potentially_in_ball(&[9.125, 0.0].into(), 1.0).collect();
+        assert!(potential_neighbors.len() == 1);
+        check!(potential_neighbors[0] == 2);
+    }
 
     #[rstest]
     #[case::d_2(PhantomData::<VecCell<usize, 2>>)]
@@ -662,10 +910,12 @@ mod tests {
             .nominal_search_radius(nominal_search_radius.try_into().expect("hardcoded value should be positive"))
             .maximum_search_radius(1.0)
             .build();
-        let position_distribution = Ball { radius: 20.0.try_into().expect("hardcoded value should be positive") };
+        let position_distribution = Ball { radius: 12.0.try_into().expect("hardcoded value should be positive") };
 
-        for key in 0..2048 {
-            let position: Cartesian<2> = position_distribution.sample(&mut rng);
+        let n = 2048;
+
+        for key in 0..n {
+            let position: Cartesian<D> = position_distribution.sample(&mut rng);
 
             cell_list.insert(key, position);
             reference.push(position);
@@ -682,6 +932,6 @@ mod tests {
                 }
             }
         }
-        check!(n_neighbors >= 10_000);
+        check!(n_neighbors >= n * 2);
     }
 }

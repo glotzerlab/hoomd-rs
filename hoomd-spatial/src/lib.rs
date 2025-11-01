@@ -12,8 +12,6 @@
 //!
 //! TODO: Document
 
-// TODO: PostiveReal for cell width?
-
 use hoomd_utility::valid::PositiveReal;
 
 mod all_pairs;
@@ -21,11 +19,11 @@ mod hash_cell;
 mod vec_cell;
 
 pub use all_pairs::AllPairs;
-pub use hash_cell::HashCell;
+pub use hash_cell::{HashCell, HashCellBuilder};
 pub use vec_cell::{VecCell, VecCellBuilder};
 
 pub trait PointUpdate<P, K> {
-    /// Insert a point identified by a key.
+    /// Insert or update a point identified by a key.
     fn insert(&mut self, key: K, position: P);
 
     /// Remove the point with the given key.

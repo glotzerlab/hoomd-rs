@@ -11,7 +11,7 @@ use hoomd_interaction::{
 };
 use hoomd_mc::{QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn};
 use hoomd_microstate::{
-    boundary::Periodic, property::OrientedPoint, Microstate, MicrostateBuilder, SiteKey
+    boundary::Periodic, property::OrientedPoint, Microstate, SiteKey
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
