@@ -8,3 +8,5 @@ pub(crate) mod backends;
 
 mod threefry2x64;
 pub use threefry2x64::ThreeFry2x64Rng;
+mod threefry4x64;
+pub use threefry4x64::ThreeFry4x64Rng;

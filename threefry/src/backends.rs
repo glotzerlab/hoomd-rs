@@ -19,3 +19,26 @@ pub(crate) fn mix2x64(state: &mut [u64; 2], round_key: u32) {
     state[0] = state[0].wrapping_add(state[1]);
     state[1] = rotl(state[1], round_key) ^ state[0];
 }
+/// .
+#[inline]
+pub(crate) fn mix4x64(state: &mut [u64; 4], rotations: (u32, u32), round: usize) {
+    if round.is_multiple_of(2) {
+        state[0] = state[0].wrapping_add(state[1]);
+        state[1] = rotl(state[1], rotations.0) ^ state[0];
+        state[2] = state[2].wrapping_add(state[3]);
+        state[3] = rotl(state[3], rotations.1) ^ state[2];
+    } else {
+        state[0] = state[0].wrapping_add(state[3]);
+        state[3] = rotl(state[3], rotations.0) ^ state[0];
+        state[2] = state[2].wrapping_add(state[1]);
+        state[1] = rotl(state[1], rotations.1) ^ state[2];
+    }
+}
+/// TODO: unsafe if N < slice size
+#[inline]
+pub(crate) fn read_u64_le_unchecked<const N: usize>(
+    stream: [u8; N],
+    range: std::ops::Range<usize>,
+) -> u64 {
+    u64::from_le_bytes(stream[range].try_into().unwrap_or_else(|_| unreachable!()))
+}

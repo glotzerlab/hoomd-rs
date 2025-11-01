@@ -1,7 +1,7 @@
 //! Asdf.
 
 /// asdf
-use crate::backends::{self, C240};
+use crate::backends::{self, C240, read_u64_le_unchecked};
 use rand::SeedableRng;
 use rand_core::{
     RngCore,
@@ -9,12 +9,6 @@ use rand_core::{
 };
 /// Key schedule for ``ThreeFry2x64``.
 const ROTATION_2X64: [u32; 8] = [16, 42, 12, 31, 16, 32, 24, 21];
-
-/// TODO: unsafe if N < slice size
-#[inline]
-fn read_u64_le_unchecked<const N: usize>(stream: [u8; N], range: std::ops::Range<usize>) -> u64 {
-    u64::from_le_bytes(stream[range].try_into().unwrap_or_else(|_| unreachable!()))
-}
 
 /// TODO.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
