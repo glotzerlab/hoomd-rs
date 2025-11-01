@@ -93,7 +93,7 @@ pub trait PointsInBall<P, K> {
     ///
     /// # Example
     /// ```
-    /// use hoomd_spatial::{PointsInBall, PointUpdate, VecCell};
+    /// use hoomd_spatial::{PointUpdate, PointsInBall, VecCell};
     ///
     /// let mut vec_cell = VecCell::default();
     /// vec_cell.insert(0, [1.25, 0.0].into());
@@ -109,8 +109,8 @@ pub trait PointsInBall<P, K> {
     /// 0
     /// 1
     /// ```
-    fn points_potentially_in_ball(&self, position: &P, radius: f64) -> impl Iterator<Item=K>;
-    }
+    fn points_potentially_in_ball(&self, position: &P, radius: f64) -> impl Iterator<Item = K>;
+}
 
 /// Construct a spatial data structure capable of searching up to the given radius.
 pub trait WithSearchRadius {

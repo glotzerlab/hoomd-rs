@@ -343,7 +343,8 @@ mod tests {
             let mut final_body = body.clone();
             final_body.properties.position[0] = 1.0;
 
-            let microstate = Microstate::builder().boundary(square)
+            let microstate = Microstate::builder()
+                .boundary(square)
                 .bodies([body])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -375,7 +376,8 @@ mod tests {
             let mut final_body = body.clone();
             final_body.properties.position[1] = 0.5;
 
-            let microstate = Microstate::builder().boundary(square)
+            let microstate = Microstate::builder()
+                .boundary(square)
                 .bodies([body])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");

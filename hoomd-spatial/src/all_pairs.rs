@@ -10,18 +10,18 @@ use rustc_hash::FxHashSet;
 
 use super::{PointUpdate, PointsInBall, WithSearchRadius};
 
-
 /// Check all pairs.
 ///
 /// [`AllPairs`] is extremely slow. Use it only when absolutely necessary.
 #[derive(Clone)]
 pub struct AllPairs<K> {
     /// Store all keys currently in the spatial data.
-    keys: FxHashSet<K>
+    keys: FxHashSet<K>,
 }
 
-impl<K> Default for AllPairs<K> where
-K: Copy + Eq + Hash
+impl<K> Default for AllPairs<K>
+where
+    K: Copy + Eq + Hash,
 {
     #[inline]
     fn default() -> Self {
@@ -31,8 +31,9 @@ K: Copy + Eq + Hash
     }
 }
 
-impl<K> WithSearchRadius for AllPairs<K> where
-K: Copy + Eq + Hash
+impl<K> WithSearchRadius for AllPairs<K>
+where
+    K: Copy + Eq + Hash,
 {
     #[inline]
     fn with_search_radius(_radius: PositiveReal) -> Self {
@@ -40,8 +41,9 @@ K: Copy + Eq + Hash
     }
 }
 
-impl<P, K> PointUpdate<P, K> for AllPairs<K> where
-K: Copy + Eq + Hash
+impl<P, K> PointUpdate<P, K> for AllPairs<K>
+where
+    K: Copy + Eq + Hash,
 {
     #[inline]
     fn insert(&mut self, key: K, _position: P) {
@@ -59,11 +61,12 @@ K: Copy + Eq + Hash
     }
 }
 
-impl<P, K> PointsInBall<P, K> for AllPairs<K> where
-K: Copy + Eq + Hash
+impl<P, K> PointsInBall<P, K> for AllPairs<K>
+where
+    K: Copy + Eq + Hash,
 {
     #[inline]
-    fn points_potentially_in_ball(&self, _position: &P, _radius: f64) -> impl Iterator<Item=K> {
+    fn points_potentially_in_ball(&self, _position: &P, _radius: f64) -> impl Iterator<Item = K> {
         self.keys.iter().copied()
     }
 }

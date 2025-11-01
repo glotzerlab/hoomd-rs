@@ -90,7 +90,8 @@ impl CustomRandomWalk {
         // ANCHOR: microstate
         let circle = Circle { radius };
 
-        let microstate = Microstate::builder().boundary(Closed(circle))
+        let microstate = Microstate::builder()
+            .boundary(Closed(circle))
             .bodies(iter::repeat_n(Body::point(Cartesian::default()), n))
             .try_build()?;
         // ANCHOR_END: microstate

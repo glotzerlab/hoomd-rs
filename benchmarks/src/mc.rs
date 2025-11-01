@@ -6,7 +6,6 @@ mod lennard_jones;
 mod octahedron;
 mod regular_polygon;
 
-
 pub use hard_sphere::HardSphere;
 pub use lennard_jones::LennardJones;
 pub use octahedron::Octahedron;

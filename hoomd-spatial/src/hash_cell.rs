@@ -1,8 +1,14 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-#![expect(clippy::cast_possible_truncation, reason = "the necessary conversions are necessary and have been checked")]
-#![expect(clippy::cast_sign_loss, reason = "the necessary conversions are necessary and have been checked")]
+#![expect(
+    clippy::cast_possible_truncation,
+    reason = "the necessary conversions are necessary and have been checked"
+)]
+#![expect(
+    clippy::cast_sign_loss,
+    reason = "the necessary conversions are necessary and have been checked"
+)]
 
 //! Implement `HashCell`
 
@@ -40,22 +46,22 @@ use super::{PointUpdate, PointsInBall, WithSearchRadius, vec_cell};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let hash_cell = HashCell::<usize, 3>::builder()
-///      .nominal_search_radius(2.5.try_into()?)
-///      .maximum_search_radius(7.5)
-///      .build();
+///     .nominal_search_radius(2.5.try_into()?)
+///     .maximum_search_radius(7.5)
+///     .build();
 /// # Ok(())
 /// # }
 /// ```
 pub struct HashCell<K, const D: usize> {
     /// The width of each cell.
     cell_width: PositiveReal,
-    
+
     /// A map from cell indices to cell contents.
     particle_indices: FxHashMap<[i64; D], Vec<K>>,
-    
+
     /// A map from particle indices to cell indices.
     cell_index: FxHashMap<K, [i64; D]>,
-    
+
     /// Location of the 0,..,0 cell.
     origin: Cartesian<D>,
 
@@ -72,9 +78,9 @@ pub struct HashCell<K, const D: usize> {
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let hash_cell = HashCell::<usize, 3>::builder()
-///      .nominal_search_radius(2.5.try_into()?)
-///      .maximum_search_radius(7.5)
-///      .build();
+///     .nominal_search_radius(2.5.try_into()?)
+///     .maximum_search_radius(7.5)
+///     .build();
 /// # Ok(())
 /// # }
 /// ```
@@ -92,9 +98,10 @@ pub struct HashCellBuilder<K, const D: usize> {
     phantom_key: PhantomData<K>,
 }
 
-impl<K, const D: usize> HashCellBuilder<K, D> where
-        K: Copy + Eq + Hash {
-
+impl<K, const D: usize> HashCellBuilder<K, D>
+where
+    K: Copy + Eq + Hash,
+{
     /// Choose the most commonly used search radius.
     ///
     /// [`HashCell`] performs the best when searching for points within the
@@ -106,8 +113,8 @@ impl<K, const D: usize> HashCellBuilder<K, D> where
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let hash_cell = HashCell::<usize, 3>::builder()
-    ///      .nominal_search_radius(2.5.try_into()?)
-    ///      .build();
+    ///     .nominal_search_radius(2.5.try_into()?)
+    ///     .build();
     /// # Ok(())
     /// # }
     /// ```
@@ -130,9 +137,9 @@ impl<K, const D: usize> HashCellBuilder<K, D> where
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let hash_cell = HashCell::<usize, 3>::builder()
-    ///      .nominal_search_radius(2.5.try_into()?)
-    ///      .maximum_search_radius(7.5)
-    ///      .build();
+    ///     .nominal_search_radius(2.5.try_into()?)
+    ///     .maximum_search_radius(7.5)
+    ///     .build();
     /// # Ok(())
     /// # }
     /// ```
@@ -159,18 +166,18 @@ impl<K, const D: usize> HashCellBuilder<K, D> where
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let hash_cell = HashCell::<usize, 3>::builder()
-    ///      .nominal_search_radius(2.5.try_into()?)
-    ///      .maximum_search_radius(7.5)
-    ///      .build();
+    ///     .nominal_search_radius(2.5.try_into()?)
+    ///     .maximum_search_radius(7.5)
+    ///     .build();
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
     #[must_use]
-    pub fn build(self) -> HashCell<K, D> 
-    {
-        let maximum_stencil_radius = (self.maximum_search_radius / self.nominal_search_radius.get()).ceil() as u32;
-    
+    pub fn build(self) -> HashCell<K, D> {
+        let maximum_stencil_radius =
+            (self.maximum_search_radius / self.nominal_search_radius.get()).ceil() as u32;
+
         HashCell {
             cell_width: self.nominal_search_radius,
             particle_indices: FxHashMap::default(),
@@ -181,8 +188,9 @@ impl<K, const D: usize> HashCellBuilder<K, D> where
     }
 }
 
-impl<K, const D: usize> Default for HashCell<K, D> where
-K: Copy + Eq + Hash
+impl<K, const D: usize> Default for HashCell<K, D>
+where
+    K: Copy + Eq + Hash,
 {
     /// Construct a default [`HashCell`].
     ///
@@ -197,12 +205,13 @@ K: Copy + Eq + Hash
     /// ```
     #[inline]
     fn default() -> Self {
-         Self::builder().build()
+        Self::builder().build()
     }
 }
 
-impl<K, const D: usize> WithSearchRadius for HashCell<K, D> where
-K: Copy + Eq + Hash
+impl<K, const D: usize> WithSearchRadius for HashCell<K, D>
+where
+    K: Copy + Eq + Hash,
 {
     /// Construct a [`HashCell`] with the given search radius.
     ///
@@ -220,15 +229,13 @@ K: Copy + Eq + Hash
     /// ```
     #[inline]
     fn with_search_radius(radius: PositiveReal) -> Self {
-         Self::builder()
-            .nominal_search_radius(radius)
-            .build()
+        Self::builder().nominal_search_radius(radius).build()
     }
-    }
+}
 
-
-impl<K, const D: usize> HashCell<K, D> where
-K: Copy + Eq + Hash
+impl<K, const D: usize> HashCell<K, D>
+where
+    K: Copy + Eq + Hash,
 {
     /// Compute the cell index given a position in space.
     #[inline]
@@ -256,18 +263,23 @@ K: Copy + Eq + Hash
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let hash_cell = HashCell::<usize, 3>::builder()
-    ///      .nominal_search_radius(2.5.try_into()?)
-    ///      .maximum_search_radius(7.5)
-    ///      .build();
+    ///     .nominal_search_radius(2.5.try_into()?)
+    ///     .maximum_search_radius(7.5)
+    ///     .build();
     /// # Ok(())
     /// # }
     /// ```
-    #[expect(clippy::missing_panics_doc, reason="hard-coded constant will never panic")]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "hard-coded constant will never panic"
+    )]
     #[inline]
     #[must_use]
     pub fn builder() -> HashCellBuilder<K, D> {
         HashCellBuilder {
-            nominal_search_radius: 1.0.try_into().expect("hard-coded constant is a positive real"),
+            nominal_search_radius: 1.0
+                .try_into()
+                .expect("hard-coded constant is a positive real"),
             maximum_search_radius: 1.0,
             origin: Cartesian::default(),
             phantom_key: PhantomData,
@@ -275,13 +287,15 @@ K: Copy + Eq + Hash
     }
 }
 
-impl<K, const D: usize> PointUpdate<Cartesian<D>, K> for HashCell<K, D> where
-K: Copy + Eq + Hash {
+impl<K, const D: usize> PointUpdate<Cartesian<D>, K> for HashCell<K, D>
+where
+    K: Copy + Eq + Hash,
+{
     /// Insert or update a point identified by a key.
     ///
     /// # Example
     /// ```
-    /// use hoomd_spatial::{PointUpdate, HashCell};
+    /// use hoomd_spatial::{HashCell, PointUpdate};
     ///
     /// let mut hash_cell = HashCell::default();
     ///
@@ -294,10 +308,7 @@ K: Copy + Eq + Hash {
         // This checks if old_cell_index is None or if it is different from the new cell index.
         if old_cell_index != Some(cell_idx) {
             // Add the particle index to the new cell index vector.
-            self.particle_indices
-                .entry(cell_idx)
-                .or_default()
-                .push(key);
+            self.particle_indices.entry(cell_idx).or_default().push(key);
 
             if let Some(old_cell_index) = old_cell_index {
                 // If the particle was in a different cell, we need to remove it from the old cell.
@@ -316,7 +327,7 @@ K: Copy + Eq + Hash {
     ///
     /// # Example
     /// ```
-    /// use hoomd_spatial::{PointUpdate, HashCell};
+    /// use hoomd_spatial::{HashCell, PointUpdate};
     ///
     /// let mut hash_cell = HashCell::default();
     /// hash_cell.insert(0, [1.25, 2.5].into());
@@ -344,7 +355,7 @@ K: Copy + Eq + Hash {
     ///
     /// # Example
     /// ```
-    /// use hoomd_spatial::{PointUpdate, HashCell};
+    /// use hoomd_spatial::{HashCell, PointUpdate};
     ///
     /// let mut hash_cell = HashCell::default();
     /// hash_cell.insert(0, [1.25, 2.5].into());
@@ -377,17 +388,20 @@ struct PointsIterator<'a, K, const D: usize> {
 
     /// The cell at the center of the iteration.
     center: [i64; D],
-    }
+}
 
 impl<K, const D: usize> Iterator for PointsIterator<'_, K, D>
-where K: Copy
+where
+    K: Copy,
 {
-    type Item=K;
+    type Item = K;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            if let Some(keys) = self.keys && self.index_in_current_cell < keys.len() {
+            if let Some(keys) = self.keys
+                && self.index_in_current_cell < keys.len()
+            {
                 let last_index = self.index_in_current_cell;
                 self.index_in_current_cell += 1;
                 return Some(keys[last_index]);
@@ -395,19 +409,21 @@ where K: Copy
 
             self.index_in_current_cell = 0;
             self.current_stencil += 1;
-            
+
             if self.current_stencil >= self.stencil.len() {
                 return None;
             }
 
-            let cell_index = array::from_fn(|i| self.center[i] + self.stencil[self.current_stencil][i]);
+            let cell_index =
+                array::from_fn(|i| self.center[i] + self.stencil[self.current_stencil][i]);
             self.keys = self.cell_list.particle_indices.get(&cell_index);
         }
     }
 }
 
-impl<const D: usize, K> PointsInBall<Cartesian<D>, K> for HashCell<K, D> where
-K: Copy + Eq + Hash
+impl<const D: usize, K> PointsInBall<Cartesian<D>, K> for HashCell<K, D>
+where
+    K: Copy + Eq + Hash,
 {
     /// Find all the points that *may* be in the given ball.
     ///
@@ -419,7 +435,7 @@ K: Copy + Eq + Hash
     ///
     /// # Example
     /// ```
-    /// use hoomd_spatial::{PointsInBall, PointUpdate, HashCell};
+    /// use hoomd_spatial::{HashCell, PointUpdate, PointsInBall};
     ///
     /// let mut hash_cell = HashCell::default();
     /// hash_cell.insert(0, [1.25, 0.0].into());
@@ -442,13 +458,20 @@ K: Copy + Eq + Hash
     /// provided at construction, rounded up to the nearest integer multiple
     /// of the *nominal search radius*.
     #[inline]
-    fn points_potentially_in_ball(&self, position: &Cartesian<D>, radius: f64) -> impl Iterator<Item=K> {
+    fn points_potentially_in_ball(
+        &self,
+        position: &Cartesian<D>,
+        radius: f64,
+    ) -> impl Iterator<Item = K> {
         let stencil_index = (radius / self.cell_width.get()).ceil() as usize - 1;
-        assert!(stencil_index < self.stencils.len(), "search radius must be less than or equal to the maximum search radius");
+        assert!(
+            stencil_index < self.stencils.len(),
+            "search radius must be less than or equal to the maximum search radius"
+        );
 
         let center = self.cell_index_from_position(position);
         let stencil = &self.stencils[stencil_index];
-        
+
         PointsIterator {
             keys: self.particle_indices.get(&center),
             cell_list: self,
@@ -467,29 +490,44 @@ K: Copy + Eq + Hash
 #[cfg(test)]
 mod tests {
     use assert2::{assert, check, let_assert};
-    use rand::{Rng, SeedableRng, distr::{Distribution, Uniform}, rngs::StdRng};
+    use rand::{
+        Rng, SeedableRng,
+        distr::{Distribution, Uniform},
+        rngs::StdRng,
+    };
     use rstest::*;
 
     use super::*;
-    use hoomd_vector::{distribution::Ball, Metric};
+    use hoomd_vector::{Metric, distribution::Ball};
 
     #[test]
     fn test_cell_index() {
-        let cell_list = HashCell::<usize, 3>::builder().nominal_search_radius(2.0.try_into().expect("hard-coded constant is a positive real")).build();
+        let cell_list = HashCell::<usize, 3>::builder()
+            .nominal_search_radius(
+                2.0.try_into()
+                    .expect("hard-coded constant is a positive real"),
+            )
+            .build();
         check!(cell_list.cell_index_from_position(&[0.0, 0.0, 0.0].into()) == [0, 0, 0]);
         check!(cell_list.cell_index_from_position(&[2.0, 0.0, 0.0].into()) == [1, 0, 0]);
         check!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()) == [0, 1, 0]);
         check!(cell_list.cell_index_from_position(&[0.0, 0.0, 2.0].into()) == [0, 0, 1]);
         check!(cell_list.cell_index_from_position(&[-41.5, 18.5, -0.125].into()) == [-21, 9, -1]);
 
-        let cell_list = HashCell::<usize, 3>::builder().nominal_search_radius(2.0.try_into().expect("hard-coded constant is a positive real")).origin([-4.0, 2.0, 8.0].into()).build();
+        let cell_list = HashCell::<usize, 3>::builder()
+            .nominal_search_radius(
+                2.0.try_into()
+                    .expect("hard-coded constant is a positive real"),
+            )
+            .origin([-4.0, 2.0, 8.0].into())
+            .build();
         check!(cell_list.cell_index_from_position(&[0.0, 0.0, 0.0].into()) == [2, -1, -4]);
         check!(cell_list.cell_index_from_position(&[2.0, 0.0, 0.0].into()) == [3, -1, -4]);
         check!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()) == [2, 0, -4]);
         check!(cell_list.cell_index_from_position(&[0.0, 0.0, 2.0].into()) == [2, -1, -3]);
         check!(cell_list.cell_index_from_position(&[-41.5, 18.5, -0.125].into()) == [-19, 8, -5]);
     }
-    
+
     #[test]
     fn test_insert_one() {
         let mut cell_list = HashCell::default();
@@ -547,7 +585,7 @@ mod tests {
     #[test]
     fn test_insert_again_different() {
         let mut cell_list = HashCell::default();
-        
+
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
         cell_list.insert(1, Cartesian::from([0.25, 0.5]));
         cell_list.insert(1, Cartesian::from([-0.5, -0.75]));
@@ -632,9 +670,18 @@ mod tests {
         let mut reference = FxHashMap::default();
 
         let cell_width = 0.5;
-        let mut cell_list = HashCell::builder().nominal_search_radius(cell_width.try_into().expect("hard-coded value should be positive")).build();
-        let position_distribution = Ball { radius: 20.0.try_into().expect("hardcoded value should be positive") };
-        let key_distribution = Uniform::new(0, N_STEPS/4).expect("hardcoded distribution should be valid");
+        let mut cell_list = HashCell::builder()
+            .nominal_search_radius(
+                cell_width
+                    .try_into()
+                    .expect("hard-coded value should be positive"),
+            )
+            .build();
+        let position_distribution = Ball {
+            radius: 20.0.try_into().expect("hardcoded value should be positive"),
+        };
+        let key_distribution =
+            Uniform::new(0, N_STEPS / 4).expect("hardcoded distribution should be valid");
 
         for _ in 0..N_STEPS {
             // Add more keys than removing
@@ -654,7 +701,7 @@ mod tests {
         // Validate that cell_index contains the expected keys and that
         // particle_indices is consistent.
         assert!(cell_list.cell_index.len() == reference.len());
-        for (reference_key,reference_value) in reference.drain() {
+        for (reference_key, reference_value) in reference.drain() {
             let value = cell_list.cell_index.get(&reference_key);
             assert!(value == Some(&reference_value));
 
@@ -677,7 +724,9 @@ mod tests {
         cell_list.insert(1, Cartesian::from([0.995, 0.897]));
         cell_list.insert(2, Cartesian::from([8.125, 0.0]));
 
-        let potential_neighbors: Vec<_> = cell_list.points_potentially_in_ball(&[9.125, 0.0].into(), 1.0).collect();
+        let potential_neighbors: Vec<_> = cell_list
+            .points_potentially_in_ball(&[9.125, 0.0].into(), 1.0)
+            .collect();
         assert!(potential_neighbors.len() == 1);
         check!(potential_neighbors[0] == 2);
     }
@@ -685,16 +734,25 @@ mod tests {
     #[rstest]
     #[case::d_2(PhantomData::<HashCell<usize, 2>>)]
     #[case::d_3(PhantomData::<HashCell<usize, 3>>)]
-    fn test_points_in_ball<const D: usize>(#[case] _d: PhantomData<HashCell<usize, D>>, #[values(1.0, 0.5, 0.25)] nominal_search_radius: f64) {
+    fn test_points_in_ball<const D: usize>(
+        #[case] _d: PhantomData<HashCell<usize, D>>,
+        #[values(1.0, 0.5, 0.25)] nominal_search_radius: f64,
+    ) {
         let mut rng = StdRng::seed_from_u64(0);
         let mut reference = Vec::new();
 
         let cell_width = 1.0;
         let mut cell_list = HashCell::builder()
-            .nominal_search_radius(nominal_search_radius.try_into().expect("hardcoded value should be positive"))
+            .nominal_search_radius(
+                nominal_search_radius
+                    .try_into()
+                    .expect("hardcoded value should be positive"),
+            )
             .maximum_search_radius(1.0)
             .build();
-        let position_distribution = Ball { radius: 12.0.try_into().expect("hardcoded value should be positive") };
+        let position_distribution = Ball {
+            radius: 12.0.try_into().expect("hardcoded value should be positive"),
+        };
 
         let n = 2048;
 
@@ -707,7 +765,9 @@ mod tests {
 
         let mut n_neighbors = 0;
         for p_i in &reference {
-            let potential_neighbors: Vec<_> = cell_list.points_potentially_in_ball(p_i, cell_width).collect();
+            let potential_neighbors: Vec<_> = cell_list
+                .points_potentially_in_ball(p_i, cell_width)
+                .collect();
 
             for (j, p_j) in reference.iter().enumerate() {
                 if p_i.distance(p_j) <= cell_width {
@@ -716,6 +776,6 @@ mod tests {
                 }
             }
         }
-    check!(n_neighbors >= n * 2);
+        check!(n_neighbors >= n * 2);
     }
 }

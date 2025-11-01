@@ -62,6 +62,7 @@ use bevy::{
         common_conditions::{input_just_released, input_pressed},
         mouse::MouseWheel,
     },
+    platform::time::Instant,
     prelude::*,
     time::common_conditions::once_after_delay,
     window::PrimaryWindow,
@@ -85,7 +86,6 @@ use bevy_egui::{
 };
 #[cfg(not(target_arch = "wasm32"))]
 use bevy_winit::WinitWindows;
-use bevy::platform::time::Instant;
 
 use hoomd_simulation::Simulation;
 

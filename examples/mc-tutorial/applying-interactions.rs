@@ -8,7 +8,8 @@ use hoomd_interaction::{
 };
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
-    boundary::Closed, property::Point, Body, Microstate, MicrostateBuilder, SiteKey
+    Body, Microstate, MicrostateBuilder, SiteKey, boundary::Closed,
+    property::Point,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::CellList;
@@ -20,8 +21,12 @@ use hoomd_vector::Cartesian;
 // ANCHOR: simulation_struct
 struct Fill {
     /// Positions of all the bodies in the simulation.
-    microstate:
-        Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, CellList<SiteKey, 2>, Closed<Rectangle>>,
+    microstate: Microstate<
+        Point<Cartesian<2>>,
+        Point<Cartesian<2>>,
+        CellList<SiteKey, 2>,
+        Closed<Rectangle>,
+    >,
     /// How sites interact with other sites and fields.
     hamiltonian: (
         External<Linear<Cartesian<2>>>,
@@ -51,8 +56,11 @@ impl Fill {
         // ANCHOR: microstate
         let cell_list = CellList::with_cell_width(sigma);
         let square = Rectangle::with_equal_edges(box_length.try_into()?);
-        let microstate =
-            MicrostateBuilder::with_spatial_data_and_boundary(cell_list, Closed(square)).try_build()?;
+        let microstate = MicrostateBuilder::with_spatial_data_and_boundary(
+            cell_list,
+            Closed(square),
+        )
+        .try_build()?;
         // ANCHOR_END: microstate
 
         // ANCHOR: external

@@ -285,9 +285,10 @@ pub struct Body<B, S = B> {
     pub sites: Vec<S>,
 }
 
-impl<B, S> Clone for Body<B, S> where
-B: Clone,
-S: Clone,
+impl<B, S> Clone for Body<B, S>
+where
+    B: Clone,
+    S: Clone,
 {
     #[inline]
     fn clone(&self) -> Self {

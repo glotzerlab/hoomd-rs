@@ -18,7 +18,10 @@ use hoomd_vector::Metric;
 
 /// Either a primary site index or a ghost site index.
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
-#[expect(clippy::exhaustive_enums, reason = "There will only ever be primary and ghost sites.")]
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "There will only ever be primary and ghost sites."
+)]
 pub enum SiteKey {
     /// Index to a primary site.
     Primary(usize),
@@ -161,15 +164,14 @@ impl<T> VecWithTags<T> {
 ///
 /// ```
 /// use hoomd_geometry::shape::Rectangle;
-/// use hoomd_microstate::{
-///     Body, Microstate, boundary::Closed,
-/// };
+/// use hoomd_microstate::{Body, Microstate, boundary::Closed};
 /// use hoomd_vector::Cartesian;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
 ///
-/// let microstate = Microstate::builder().boundary(square)
+/// let microstate = Microstate::builder()
+///     .boundary(square)
 ///     .seed(0x43abf1)
 ///     .step(100_000)
 ///     .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
@@ -273,23 +275,28 @@ impl<B, S> Microstate<B, S, AllPairs<SiteKey>, Open> {
     ///
     /// ```
     /// use hoomd_geometry::shape::Rectangle;
-    /// use hoomd_microstate::{Body, Microstate, property::Point, boundary::Closed, SiteKey};
-    /// use hoomd_spatial::AllPairs;
+    /// use hoomd_microstate::{
+    ///     Body, Microstate, SiteKey, boundary::Closed, property::Point,
+    /// };
+    /// use hoomd_spatial::{AllPairs, VecCell};
     /// use hoomd_vector::Cartesian;
-    /// use hoomd_spatial::VecCell;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let cell_list = VecCell::builder().nominal_search_radius(2.5.try_into()?).build();
+    /// let cell_list = VecCell::builder()
+    ///     .nominal_search_radius(2.5.try_into()?)
+    ///     .build();
     /// let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
     ///
-    /// let microstate = Microstate::builder().boundary(square).spatial_data(cell_list)
+    /// let microstate = Microstate::builder()
+    ///     .boundary(square)
+    ///     .spatial_data(cell_list)
     ///     .step(100_000)
     ///     .seed(0x1234abcd)
     ///     .bodies([
     ///         Body::point(Cartesian::from([1.0, 0.0])),
     ///         Body::point(Cartesian::from([-1.0, 2.0])),
     ///     ])
-    /// .try_build()?;
+    ///     .try_build()?;
     ///
     /// assert_eq!(microstate.boundary().0.edge_lengths[0].get(), 10.0);
     /// assert_eq!(microstate.step(), 100_000);
@@ -309,7 +316,6 @@ impl<B, S> Microstate<B, S, AllPairs<SiteKey>, Open> {
             boundary: Open,
         }
     }
-    
 }
 
 /// Access and manage the simulation step, substep, RNG seeds.
@@ -525,7 +531,8 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     ///
     /// let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
-    /// let microstate = Microstate::builder().boundary(square)
+    /// let microstate = Microstate::builder()
+    ///     .boundary(square)
     /// # .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
     ///     .try_build()?;
     ///
@@ -550,7 +557,8 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     ///
     /// let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
-    /// let mut microstate = Microstate::builder().boundary(square)
+    /// let mut microstate = Microstate::builder()
+    ///     .boundary(square)
     /// # .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
     ///     .try_build()?;
     ///
@@ -583,7 +591,7 @@ where
     B: Transform<S> + Position<Position = P>,
     S: Position<Position = P> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    X: PointUpdate<P, SiteKey>
+    X: PointUpdate<P, SiteKey>,
 {
     /// Update the ghosts of a site.
     ///
@@ -746,7 +754,8 @@ where
                     .expect("sites should be validated as wrappable prior to this loop"),
                 body_tag,
             };
-            self.spatial_data.insert(SiteKey::Primary(site.site_tag), *site.properties.position());
+            self.spatial_data
+                .insert(SiteKey::Primary(site.site_tag), *site.properties.position());
             self.sites.push(site);
             self.sites_ghosts.push(ArrayVec::new());
 
@@ -887,9 +896,7 @@ where
     /// # Example
     ///
     /// ```
-    /// use hoomd_microstate::{
-    ///     Body, Microstate, property::Point,
-    /// };
+    /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -949,8 +956,9 @@ where
             let site_properties = self
                 .boundary
                 .wrap(body.item.properties.transform(&body.item.sites[i]))
-                .expect("sites should be validated as wrappable prior to this loop"); 
-            self.spatial_data.insert(SiteKey::Primary(*site_tag), *site_properties.position());
+                .expect("sites should be validated as wrappable prior to this loop");
+            self.spatial_data
+                .insert(SiteKey::Primary(*site_tag), *site_properties.position());
             self.sites.items[site_index].properties = site_properties;
         }
 
@@ -966,9 +974,7 @@ where
     /// # Example
     ///
     /// ```
-    /// use hoomd_microstate::{
-    ///     Body, Microstate, property::Point,
-    /// };
+    /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -1259,7 +1265,10 @@ where
     /// In other words, `iter_sites_near` is meant for use with pairwise functions
     /// that follow the minimum image convention.
     #[inline]
-    #[expect(clippy::missing_panics_doc, reason = "Will panic only due to a bug in hoomd-rs.")]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "Will panic only due to a bug in hoomd-rs."
+    )]
     pub fn iter_sites_near(&self, point: &P, r: f64) -> impl IntoIterator<Item = &Site<S>> {
         // Ideally, an AllPairs specialized implementation would do this:
         // self.sites
@@ -1269,21 +1278,20 @@ where
         //     .filter(move |s| point.distance_squared(s.properties.position()) < r.powi(2))
         // However, specialization is not in stable Rust and will likely never be.
         let potential_sites = self.spatial_data.points_potentially_in_ball(point, r);
-        potential_sites.map(|k| {
-            match k {
+        potential_sites
+            .map(|k| match k {
                 SiteKey::Primary(tag) => {
                     let index = self.sites.indices[tag]
-                    .expect("sites and spatial data should be consistent");
+                        .expect("sites and spatial data should be consistent");
                     &self.sites.items[index]
                 }
                 SiteKey::Ghost(tag) => {
                     let index = self.ghosts.indices[tag]
-                    .expect("ghosts and spatial data should be consistent");
+                        .expect("ghosts and spatial data should be consistent");
                     &self.ghosts.items[index]
                 }
-            }
-        })
-        .filter(move |s| point.distance_squared(s.properties.position()) < r.powi(2))
+            })
+            .filter(move |s| point.distance_squared(s.properties.position()) < r.powi(2))
     }
 }
 
@@ -1349,11 +1357,9 @@ impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
     ///
-    /// let microstate = Microstate::<
-    ///     BodyProperties,
-    ///     SiteProperties
-    /// >::builder().boundary(square)
-    /// .try_build()?;
+    /// let microstate = Microstate::<BodyProperties, SiteProperties>::builder()
+    ///     .boundary(square)
+    ///     .try_build()?;
     ///
     /// assert_eq!(microstate.boundary().0.edge_lengths[0].get(), 10.0);
     /// # Ok(())
@@ -1384,13 +1390,13 @@ impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
     /// # type SiteProperties = Point<Cartesian<2>>;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     ///
-    /// let cell_list = VecCell::builder().nominal_search_radius(2.5.try_into()?).build();
+    /// let cell_list = VecCell::builder()
+    ///     .nominal_search_radius(2.5.try_into()?)
+    ///     .build();
     ///
-    /// let microstate = Microstate::<
-    ///     BodyProperties,
-    ///     SiteProperties
-    /// >::builder().spatial_data(cell_list)
-    /// .try_build()?;
+    /// let microstate = Microstate::<BodyProperties, SiteProperties>::builder()
+    ///     .spatial_data(cell_list)
+    ///     .try_build()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -1412,9 +1418,7 @@ impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
     /// # Example
     ///
     /// ```
-    /// use hoomd_microstate::{
-    ///     Microstate, boundary::Open, property::Point,
-    /// };
+    /// use hoomd_microstate::{Microstate, boundary::Open, property::Point};
     /// use hoomd_vector::Cartesian;
     ///
     /// # type BodyProperties = Point<Cartesian<2>>;
@@ -1442,9 +1446,7 @@ impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
     /// # Example
     ///
     /// ```
-    /// use hoomd_microstate::{
-    ///     Microstate, boundary::Open, property::Point,
-    /// };
+    /// use hoomd_microstate::{Microstate, boundary::Open, property::Point};
     /// use hoomd_vector::Cartesian;
     ///
     /// # type BodyProperties = Point<Cartesian<2>>;
@@ -1532,8 +1534,8 @@ impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
         B: Transform<S> + Position<Position = P>,
         S: Position<Position = P> + Default,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-        X: PointUpdate<P, SiteKey>
-    {   
+        X: PointUpdate<P, SiteKey>,
+    {
         let mut microstate = Microstate {
             step: self.step,
             substep: 0,
@@ -1743,7 +1745,8 @@ mod tests {
 
         #[rstest]
         fn add_body_outside(square: Closed<Hypercuboid<2>>) {
-            let mut microstate = Microstate::builder().boundary(square)
+            let mut microstate = Microstate::builder()
+                .boundary(square)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
@@ -1755,7 +1758,8 @@ mod tests {
 
         #[rstest]
         fn update_body_outside(square: Closed<Hypercuboid<2>>) {
-            let mut microstate = Microstate::builder().boundary(square)
+            let mut microstate = Microstate::builder()
+                .boundary(square)
                 .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -1778,7 +1782,8 @@ mod tests {
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
             };
 
-            let mut microstate = Microstate::builder().boundary(square)
+            let mut microstate = Microstate::builder()
+                .boundary(square)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
@@ -1795,7 +1800,8 @@ mod tests {
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
             };
 
-            let mut microstate = Microstate::builder().boundary(square)
+            let mut microstate = Microstate::builder()
+                .boundary(square)
                 .bodies([body])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -1845,7 +1851,8 @@ mod tests {
 
         #[rstest]
         fn add_body_outside(rectangle: Periodic<Hypercuboid<2>>) {
-            let mut microstate = Microstate::builder().boundary(rectangle)
+            let mut microstate = Microstate::builder()
+                .boundary(rectangle)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
@@ -1861,7 +1868,8 @@ mod tests {
 
         #[rstest]
         fn update_body_outside(rectangle: Periodic<Hypercuboid<2>>) {
-            let mut microstate = Microstate::builder().boundary(rectangle)
+            let mut microstate = Microstate::builder()
+                .boundary(rectangle)
                 .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -1888,7 +1896,8 @@ mod tests {
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
             };
 
-            let mut microstate = Microstate::builder().boundary(rectangle)
+            let mut microstate = Microstate::builder()
+                .boundary(rectangle)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
@@ -1915,7 +1924,8 @@ mod tests {
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
             };
 
-            let mut microstate = Microstate::builder().boundary(rectangle)
+            let mut microstate = Microstate::builder()
+                .boundary(rectangle)
                 .bodies([body])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -1964,7 +1974,8 @@ mod tests {
             // data structures remain consistent.
 
             let mut rng = StdRng::seed_from_u64(seed);
-            let mut microstate = Microstate::builder().boundary(rectangle)
+            let mut microstate = Microstate::builder()
+                .boundary(rectangle)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
@@ -2025,7 +2036,8 @@ mod tests {
 
         #[rstest]
         fn remove_all(#[values(1, 2, 3, 4)] seed: u64, rectangle: Periodic<Hypercuboid<2>>) {
-            let mut microstate = Microstate::builder().boundary(rectangle)
+            let mut microstate = Microstate::builder()
+                .boundary(rectangle)
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
             let mut rng = StdRng::seed_from_u64(seed);

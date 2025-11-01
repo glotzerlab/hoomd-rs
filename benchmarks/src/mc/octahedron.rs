@@ -1,32 +1,41 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+use hoomd_geometry::{
+    Convex,
+    shape::{ConvexPolyhedron, Hypercuboid},
+};
+use hoomd_interaction::{CutoffPairOverlap, pairwise::HardShape};
+use hoomd_mc::{Sweep, Translate, Trial};
+use hoomd_microstate::{
+    Microstate, SiteKey,
+    boundary::{GenerateGhosts, Periodic},
+    property::OrientedPoint,
+};
+use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::{PointUpdate, PointsInBall, WithSearchRadius};
 use hoomd_vector::{Cartesian, Versor};
-use hoomd_simulation::{macrostate::Isothermal, Simulation};
-use hoomd_microstate::{boundary::{GenerateGhosts, Periodic}, property::OrientedPoint, Microstate, SiteKey};
-use hoomd_geometry::{shape::Hypercuboid, Convex};
-use hoomd_mc::{Sweep, Translate, Trial};
-use hoomd_interaction::{CutoffPairOverlap, pairwise::HardShape};
-use hoomd_geometry::shape::ConvexPolyhedron;
 
 pub struct Octahedron<X> {
-    microstate: Microstate<OrientedPoint<Cartesian<3>, Versor>, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<Hypercuboid<3>>>,
+    microstate: Microstate<
+        OrientedPoint<Cartesian<3>, Versor>,
+        OrientedPoint<Cartesian<3>, Versor>,
+        X,
+        Periodic<Hypercuboid<3>>,
+    >,
     translate_sweep: Sweep<Translate<Cartesian<3>>>,
     hamiltonian: CutoffPairOverlap<HardShape<Convex<ConvexPolyhedron>>>,
     macrostate: Isothermal,
 }
 
-impl<X> Simulation for Octahedron<X> where
-X: PointsInBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey>,
-Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
+impl<X> Simulation for Octahedron<X>
+where
+    X: PointsInBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey>,
+    Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
     fn advance(&mut self) -> anyhow::Result<()> {
-        self.translate_sweep.apply(
-            &mut self.microstate,
-            &self.hamiltonian,
-            &self.macrostate,
-        );
+        self.translate_sweep
+            .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
         self.microstate.increment_step();
 
         // TODO: Rotate moves
@@ -39,33 +48,41 @@ Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
     }
 }
 
-impl<X> Octahedron<X> where
-X: PointsInBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey> + WithSearchRadius,
-Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
+impl<X> Octahedron<X>
+where
+    X: PointsInBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey> + WithSearchRadius,
+    Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
-    pub fn with_microstate<X2>(microstate: &Microstate<OrientedPoint<Cartesian<3>, Versor>, OrientedPoint<Cartesian<3>, Versor>, X2, Periodic<Hypercuboid<3>>>) -> anyhow::Result<Self> {
+    pub fn with_microstate<X2>(
+        microstate: &Microstate<
+            OrientedPoint<Cartesian<3>, Versor>,
+            OrientedPoint<Cartesian<3>, Versor>,
+            X2,
+            Periodic<Hypercuboid<3>>,
+        >,
+    ) -> anyhow::Result<Self> {
         let sigma = 1.0;
 
         let translate = Translate::with_maximum_distance((sigma * 0.1).try_into()?);
         let translate_sweep = Sweep(translate);
 
         let octahedron = ConvexPolyhedron::with_vertices(vec![
-                [-0.5, 0.0, 0.0].into(),
-                [0.5, 0.0, 0.0].into(),
-                [0.0, -0.5, 0.0].into(),
-                [0.0, 0.5, 0.0].into(),
-                [0.0, 0.0, -0.5].into(),
-                [0.0, 0.0, 0.5].into(),
-            ]
-        
-            )?;
+            [-0.5, 0.0, 0.0].into(),
+            [0.5, 0.0, 0.0].into(),
+            [0.0, -0.5, 0.0].into(),
+            [0.0, 0.5, 0.0].into(),
+            [0.0, 0.0, -0.5].into(),
+            [0.0, 0.0, 0.5].into(),
+        ])?;
         let hamiltonian = CutoffPairOverlap {
             r_cut: sigma,
             evaluator: HardShape(Convex(octahedron)),
-        };    
-    
+        };
+
         let cell_list = X::with_search_radius(sigma.try_into()?);
-        let microstate = Microstate::builder().spatial_data(cell_list).boundary(microstate.boundary().clone())
+        let microstate = Microstate::builder()
+            .spatial_data(cell_list)
+            .boundary(microstate.boundary().clone())
             .bodies(microstate.bodies().iter().map(|b| b.item.clone()))
             .try_build()?;
 

@@ -1,18 +1,24 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-#![expect(clippy::cast_possible_truncation, reason = "the necessary conversions are necessary and have been checked")]
-#![expect(clippy::cast_sign_loss, reason = "the necessary conversions are necessary and have been checked")]
+#![expect(
+    clippy::cast_possible_truncation,
+    reason = "the necessary conversions are necessary and have been checked"
+)]
+#![expect(
+    clippy::cast_sign_loss,
+    reason = "the necessary conversions are necessary and have been checked"
+)]
 
 //! Implement `VecCell`
 
-use std::{array, iter, marker::PhantomData, mem, cmp::Eq, hash::Hash};
+use std::{array, cmp::Eq, hash::Hash, iter, marker::PhantomData, mem};
 
 use log::trace;
 use rustc_hash::FxHashMap;
 
-use hoomd_vector::Cartesian;
 use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::Cartesian;
 
 use super::{PointUpdate, PointsInBall, WithSearchRadius};
 
@@ -74,28 +80,28 @@ use super::{PointUpdate, PointsInBall, WithSearchRadius};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let vec_cell = VecCell::<usize, 3>::builder()
-///      .nominal_search_radius(2.5.try_into()?)
-///      .maximum_search_radius(7.5)
-///      .build();
+///     .nominal_search_radius(2.5.try_into()?)
+///     .maximum_search_radius(7.5)
+///     .build();
 /// # Ok(())
 /// # }
 /// ```
 pub struct VecCell<K, const D: usize> {
     /// The width of each cell.
     cell_width: PositiveReal,
-    
+
     /// A map from cell indices to cell contents.
     keys_map: Vec<Vec<K>>,
-    
+
     /// A map from particle indices to cell indices.
     cell_index: FxHashMap<K, [i64; D]>,
-    
+
     /// Location of the 0,..,0 cell.
     origin: Cartesian<D>,
-    
+
     /// The shape of `keys_map` is `(half_extent * 2 + 1).powi(D)`.
     half_extent: u32,
-    
+
     /// Pre-computed stencils.
     stencils: Vec<Vec<[i64; D]>>,
 }
@@ -115,14 +121,17 @@ impl<const D: usize> CellIndexIterator<D> {
     /// `[half_extent, half_extent, ..., half_extent]`.
     fn cube(half_extent: u32) -> Self {
         let mut cell_index = [-i64::from(half_extent); D];
-        cell_index[D-1] -= 1;
-        Self { cell_index, half_extent }
+        cell_index[D - 1] -= 1;
+        Self {
+            cell_index,
+            half_extent,
+        }
     }
-        
+
     /// Increment the cell index.
     #[inline]
     fn increment_cell_index(&mut self) -> Option<[i64; D]> {
-        self.cell_index[D-1] += 1;
+        self.cell_index[D - 1] += 1;
 
         for i in (0..D).rev() {
             if self.cell_index[i] > self.half_extent.into() {
@@ -131,7 +140,7 @@ impl<const D: usize> CellIndexIterator<D> {
                 }
 
                 self.cell_index[i] = -(i64::from(self.half_extent));
-                self.cell_index[i-1] += 1;
+                self.cell_index[i - 1] += 1;
             }
         }
 
@@ -150,7 +159,7 @@ impl<const D: usize> Iterator for CellIndexIterator<D> {
 /// Generate the stencil for a given radius.
 fn generate_stencil<const D: usize>(radius: u32) -> Vec<[i64; D]> {
     assert!(radius >= 1, "cell list must have a minimum radius of 1");
-    
+
     let mut result = CellIndexIterator::cube(radius).collect::<Vec<_>>();
     result.sort_by(|a, b| {
         let r_a = a.iter().map(|x| x.pow(2));
@@ -168,7 +177,7 @@ pub(crate) fn generate_all_stencils<const D: usize>(max_radius: u32) -> Vec<Vec<
     // A cell list will never use radius=0, so stencil[i] stores the stencil needed for
     // radius i+1.
     for radius in 0..max_radius {
-        result.push(generate_stencil(radius+1));
+        result.push(generate_stencil(radius + 1));
     }
     result
 }
@@ -182,9 +191,9 @@ pub(crate) fn generate_all_stencils<const D: usize>(max_radius: u32) -> Vec<Vec<
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let vec_cell = VecCell::<usize, 3>::builder()
-///      .nominal_search_radius(2.5.try_into()?)
-///      .maximum_search_radius(7.5)
-///      .build();
+///     .nominal_search_radius(2.5.try_into()?)
+///     .maximum_search_radius(7.5)
+///     .build();
 /// # Ok(())
 /// # }
 /// ```
@@ -202,9 +211,10 @@ pub struct VecCellBuilder<K, const D: usize> {
     phantom_key: PhantomData<K>,
 }
 
-impl<K, const D: usize> VecCellBuilder<K, D> where
-        K: Copy + Eq + Hash {
-
+impl<K, const D: usize> VecCellBuilder<K, D>
+where
+    K: Copy + Eq + Hash,
+{
     /// Choose the most commonly used search radius.
     ///
     /// [`VecCell`] performs the best when searching for points within the
@@ -216,8 +226,8 @@ impl<K, const D: usize> VecCellBuilder<K, D> where
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let vec_cell = VecCell::<usize, 3>::builder()
-    ///      .nominal_search_radius(2.5.try_into()?)
-    ///      .build();
+    ///     .nominal_search_radius(2.5.try_into()?)
+    ///     .build();
     /// # Ok(())
     /// # }
     /// ```
@@ -240,9 +250,9 @@ impl<K, const D: usize> VecCellBuilder<K, D> where
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let vec_cell = VecCell::<usize, 3>::builder()
-    ///      .nominal_search_radius(2.5.try_into()?)
-    ///      .maximum_search_radius(7.5)
-    ///      .build();
+    ///     .nominal_search_radius(2.5.try_into()?)
+    ///     .maximum_search_radius(7.5)
+    ///     .build();
     /// # Ok(())
     /// # }
     /// ```
@@ -269,22 +279,23 @@ impl<K, const D: usize> VecCellBuilder<K, D> where
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let vec_cell = VecCell::<usize, 3>::builder()
-    ///      .nominal_search_radius(2.5.try_into()?)
-    ///      .maximum_search_radius(7.5)
-    ///      .build();
+    ///     .nominal_search_radius(2.5.try_into()?)
+    ///     .maximum_search_radius(7.5)
+    ///     .build();
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
     #[must_use]
-    pub fn build(self) -> VecCell<K, D> 
-    {
-        let maximum_stencil_radius = (self.maximum_search_radius / self.nominal_search_radius.get()).ceil() as u32;
+    pub fn build(self) -> VecCell<K, D> {
+        let maximum_stencil_radius =
+            (self.maximum_search_radius / self.nominal_search_radius.get()).ceil() as u32;
         let half_extent: u32 = 1;
-    
+
         VecCell {
             cell_width: self.nominal_search_radius,
-            keys_map: iter::repeat_n(Vec::new(), (half_extent*2 + 1).pow(D as u32) as usize).collect(),
+            keys_map: iter::repeat_n(Vec::new(), (half_extent * 2 + 1).pow(D as u32) as usize)
+                .collect(),
             cell_index: FxHashMap::default(),
             origin: self.origin,
             half_extent,
@@ -293,8 +304,9 @@ impl<K, const D: usize> VecCellBuilder<K, D> where
     }
 }
 
-impl<K, const D: usize> Default for VecCell<K, D> where
-K: Copy + Eq + Hash
+impl<K, const D: usize> Default for VecCell<K, D>
+where
+    K: Copy + Eq + Hash,
 {
     /// Construct a default [`VecCell`].
     ///
@@ -309,12 +321,13 @@ K: Copy + Eq + Hash
     /// ```
     #[inline]
     fn default() -> Self {
-         Self::builder().build()
+        Self::builder().build()
     }
 }
 
-impl<K, const D: usize> WithSearchRadius for VecCell<K, D> where
-K: Copy + Eq + Hash
+impl<K, const D: usize> WithSearchRadius for VecCell<K, D>
+where
+    K: Copy + Eq + Hash,
 {
     /// Construct a [`VecCell`] with the given search radius.
     ///
@@ -332,16 +345,14 @@ K: Copy + Eq + Hash
     /// ```
     #[inline]
     fn with_search_radius(radius: PositiveReal) -> Self {
-         Self::builder()
+        Self::builder()
             .nominal_search_radius(radius)
             .maximum_search_radius(radius.get())
             .build()
     }
-    }
+}
 
-
-impl<K, const D: usize> VecCell<K, D>
-{
+impl<K, const D: usize> VecCell<K, D> {
     /// Compute the cell index given a position in space.
     #[inline]
     fn cell_index_from_position(&self, position: &Cartesian<D>) -> [i64; D] {
@@ -357,15 +368,17 @@ impl<K, const D: usize> VecCell<K, D>
         assert!(D > 1);
 
         let mut vec_index: usize = 0;
-        let mut width = 1; 
+        let mut width = 1;
 
         for i in (0..D).rev() {
             let needed_extent = cell_index[i].unsigned_abs();
             if needed_extent > u64::from(half_extent) {
                 return None;
             }
-            let v: usize = (cell_index[i] + i64::from(half_extent)).try_into().expect("cell index should be in bounds");
-        
+            let v: usize = (cell_index[i] + i64::from(half_extent))
+                .try_into()
+                .expect("cell index should be in bounds");
+
             vec_index += v * width;
             width *= (half_extent * 2 + 1) as usize;
         }
@@ -376,14 +389,16 @@ impl<K, const D: usize> VecCell<K, D>
     #[cfg(test)]
     #[inline]
     fn get_keys(&self, cell_index: &[i64; D]) -> &[K] {
-        let index = Self::map_index_from_cell(self.half_extent, cell_index).expect("cell_index should be in bounds");
+        let index = Self::map_index_from_cell(self.half_extent, cell_index)
+            .expect("cell_index should be in bounds");
         &self.keys_map[index]
     }
 }
 
-impl<K, const D: usize> VecCell<K, D> where
-K: Copy + Eq + Hash
-    {
+impl<K, const D: usize> VecCell<K, D>
+where
+    K: Copy + Eq + Hash,
+{
     /// Construct a `VecCell` builder.
     ///
     /// Use the builder to set any or all parameters and construct a [`VecCell`].
@@ -395,18 +410,23 @@ K: Copy + Eq + Hash
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let vec_cell = VecCell::<usize, 3>::builder()
-    ///      .nominal_search_radius(2.5.try_into()?)
-    ///      .maximum_search_radius(7.5)
-    ///      .build();
+    ///     .nominal_search_radius(2.5.try_into()?)
+    ///     .maximum_search_radius(7.5)
+    ///     .build();
     /// # Ok(())
     /// # }
     /// ```
-    #[expect(clippy::missing_panics_doc, reason="hard-coded constant will never panic")]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "hard-coded constant will never panic"
+    )]
     #[inline]
     #[must_use]
     pub fn builder() -> VecCellBuilder<K, D> {
         VecCellBuilder {
-            nominal_search_radius: 1.0.try_into().expect("hard-coded constant is a positive real"),
+            nominal_search_radius: 1.0
+                .try_into()
+                .expect("hard-coded constant is a positive real"),
             maximum_search_radius: 1.0,
             origin: Cartesian::default(),
             phantom_key: PhantomData,
@@ -439,9 +459,10 @@ K: Copy + Eq + Hash
             new_half_extent *= 2;
         }
 
-        trace!("Expanding to {}^{} cells", new_half_extent*2+1, D);
+        trace!("Expanding to {}^{} cells", new_half_extent * 2 + 1, D);
 
-        let mut new_keys_map: Vec<Vec<K>> = iter::repeat_n(Vec::new(), (new_half_extent*2 + 1).pow(D as u32) as usize).collect();
+        let mut new_keys_map: Vec<Vec<K>> =
+            iter::repeat_n(Vec::new(), (new_half_extent * 2 + 1).pow(D as u32) as usize).collect();
         let old_half_extent = self.half_extent;
         let old_keys_map = &mut self.keys_map;
 
@@ -458,8 +479,10 @@ K: Copy + Eq + Hash
     }
 }
 
-impl<K, const D: usize> PointUpdate<Cartesian<D>, K> for VecCell<K, D> where
-K: Copy + Eq + Hash {
+impl<K, const D: usize> PointUpdate<Cartesian<D>, K> for VecCell<K, D>
+where
+    K: Copy + Eq + Hash,
+{
     /// Insert or update a point identified by a key.
     ///
     /// # Example
@@ -474,22 +497,31 @@ K: Copy + Eq + Hash {
     fn insert(&mut self, key: K, position: Cartesian<D>) {
         let cell_index = self.cell_index_from_position(&position);
         let old_cell_index = self.cell_index.insert(key, cell_index);
-        let map_index = Self::map_index_from_cell(self.half_extent, &cell_index).unwrap_or_else(|| {
-            let max_half_extent = cell_index.iter().map(|x| x.unsigned_abs()).reduce(u64::max).expect("D should be greater than 1");
-            self.expand_to(max_half_extent.try_into().expect("max extent cannot exceed u32::MAX"));
-            Self::map_index_from_cell(self.half_extent, &cell_index)
-                .expect("cell_index should be in the expanded VecCell")
+        let map_index =
+            Self::map_index_from_cell(self.half_extent, &cell_index).unwrap_or_else(|| {
+                let max_half_extent = cell_index
+                    .iter()
+                    .map(|x| x.unsigned_abs())
+                    .reduce(u64::max)
+                    .expect("D should be greater than 1");
+                self.expand_to(
+                    max_half_extent
+                        .try_into()
+                        .expect("max extent cannot exceed u32::MAX"),
+                );
+                Self::map_index_from_cell(self.half_extent, &cell_index)
+                    .expect("cell_index should be in the expanded VecCell")
             });
 
         // This checks if old_cell_index is None or if it is different from the new cell index.
         if old_cell_index != Some(cell_index) {
             // Add the particle index to the new cell index vector.
-            self.keys_map[map_index]
-                .push(key);
+            self.keys_map[map_index].push(key);
 
             if let Some(old_cell_index) = old_cell_index {
                 // If the particle was in a different cell, we need to remove it from the old cell.
-                let old_map_index = Self::map_index_from_cell(self.half_extent, &old_cell_index).expect("cell_index and keys_map should agree");
+                let old_map_index = Self::map_index_from_cell(self.half_extent, &old_cell_index)
+                    .expect("cell_index and keys_map should agree");
                 let old_keys = &mut self.keys_map[old_map_index];
                 if let Some(pos) = old_keys.iter().position(|x| *x == key) {
                     old_keys.swap_remove(pos);
@@ -543,7 +575,6 @@ K: Copy + Eq + Hash {
     }
 }
 
-
 /// Iterate over keys in the cell list around a given center cell.
 struct PointsIterator<'a, K, const D: usize> {
     /// Keys of the current cell iteration (None if the cell is empty)
@@ -563,17 +594,20 @@ struct PointsIterator<'a, K, const D: usize> {
 
     /// The cell at the center of the iteration.
     center: [i64; D],
-    }
+}
 
-impl<K, const D: usize> Iterator for PointsIterator<'_, K, D> where
-K: Copy
+impl<K, const D: usize> Iterator for PointsIterator<'_, K, D>
+where
+    K: Copy,
 {
-    type Item=K;
+    type Item = K;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            if let Some(keys) = self.keys && self.index_in_current_cell < keys.len() {
+            if let Some(keys) = self.keys
+                && self.index_in_current_cell < keys.len()
+            {
                 let last_index = self.index_in_current_cell;
                 self.index_in_current_cell += 1;
                 return Some(keys[last_index]);
@@ -581,20 +615,23 @@ K: Copy
 
             self.index_in_current_cell = 0;
             self.current_stencil += 1;
-            
+
             if self.current_stencil >= self.stencil.len() {
                 return None;
             }
 
-            let cell_index = array::from_fn(|i| self.center[i] + self.stencil[self.current_stencil][i]);
-            let map_index = VecCell::<K,D>::map_index_from_cell(self.cell_list.half_extent, &cell_index);
+            let cell_index =
+                array::from_fn(|i| self.center[i] + self.stencil[self.current_stencil][i]);
+            let map_index =
+                VecCell::<K, D>::map_index_from_cell(self.cell_list.half_extent, &cell_index);
             self.keys = map_index.map(|index| &self.cell_list.keys_map[index]);
         }
     }
 }
 
-impl<const D: usize, K> PointsInBall<Cartesian<D>, K> for VecCell<K, D> where
-K: Copy + Eq + Hash
+impl<const D: usize, K> PointsInBall<Cartesian<D>, K> for VecCell<K, D>
+where
+    K: Copy + Eq + Hash,
 {
     /// Find all the points that *may* be in the given ball.
     ///
@@ -606,7 +643,7 @@ K: Copy + Eq + Hash
     ///
     /// # Example
     /// ```
-    /// use hoomd_spatial::{PointsInBall, PointUpdate, VecCell};
+    /// use hoomd_spatial::{PointUpdate, PointsInBall, VecCell};
     ///
     /// let mut vec_cell = VecCell::default();
     /// vec_cell.insert(0, [1.25, 0.0].into());
@@ -629,14 +666,23 @@ K: Copy + Eq + Hash
     /// provided at construction, rounded up to the nearest integer multiple
     /// of the *nominal search radius*.
     #[inline]
-    fn points_potentially_in_ball(&self, position: &Cartesian<D>, radius: f64) -> impl Iterator<Item=K> {
+    fn points_potentially_in_ball(
+        &self,
+        position: &Cartesian<D>,
+        radius: f64,
+    ) -> impl Iterator<Item = K> {
         let stencil_index = (radius / self.cell_width.get()).ceil() as usize - 1;
-        assert!(stencil_index < self.stencils.len(), "search radius must be less than or equal to the maximum search radius");
+        assert!(
+            stencil_index < self.stencils.len(),
+            "search radius must be less than or equal to the maximum search radius"
+        );
 
         let center = self.cell_index_from_position(position);
         let stencil = &self.stencils[stencil_index];
-        let map_index = Self::map_index_from_cell(self.half_extent,
-            &array::from_fn(|i| center[i] + stencil[0][i]));
+        let map_index = Self::map_index_from_cell(
+            self.half_extent,
+            &array::from_fn(|i| center[i] + stencil[0][i]),
+        );
 
         PointsIterator {
             keys: map_index.map(|index| &self.keys_map[index]),
@@ -656,11 +702,15 @@ K: Copy + Eq + Hash
 #[cfg(test)]
 mod tests {
     use assert2::{assert, check};
-    use rand::{Rng, SeedableRng, distr::{Distribution, Uniform}, rngs::StdRng};
+    use rand::{
+        Rng, SeedableRng,
+        distr::{Distribution, Uniform},
+        rngs::StdRng,
+    };
     use rstest::*;
 
     use super::*;
-    use hoomd_vector::{distribution::Ball, Metric};
+    use hoomd_vector::{Metric, distribution::Ball};
 
     #[test]
     fn test_increment_cell_index() {
@@ -679,33 +729,56 @@ mod tests {
         check!(cells.next() == None);
         check!(cells.next() == None);
 
-        let mut c = CellIndexIterator { cell_index: [1, 2, 2], half_extent: 2 };
+        let mut c = CellIndexIterator {
+            cell_index: [1, 2, 2],
+            half_extent: 2,
+        };
         check!(c.increment_cell_index() == Some([2, -2, -2]));
-        let mut c = CellIndexIterator { cell_index: [0, 1, 2], half_extent: 2 };
+        let mut c = CellIndexIterator {
+            cell_index: [0, 1, 2],
+            half_extent: 2,
+        };
         check!(c.increment_cell_index() == Some([0, 2, -2]));
-        let mut c = CellIndexIterator { cell_index: [0, 0, -2], half_extent: 2 };
+        let mut c = CellIndexIterator {
+            cell_index: [0, 0, -2],
+            half_extent: 2,
+        };
         check!(c.increment_cell_index() == Some([0, 0, -1]));
-        let mut c = CellIndexIterator { cell_index: [2, 2, 2], half_extent: 2 };
+        let mut c = CellIndexIterator {
+            cell_index: [2, 2, 2],
+            half_extent: 2,
+        };
         check!(c.increment_cell_index() == None);
     }
 
     #[test]
     fn test_cell_index() {
-        let cell_list = VecCell::<usize, 3>::builder().nominal_search_radius(2.0.try_into().expect("hard-coded constant should be positive")).build();
+        let cell_list = VecCell::<usize, 3>::builder()
+            .nominal_search_radius(
+                2.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+            )
+            .build();
         check!(cell_list.cell_index_from_position(&[0.0, 0.0, 0.0].into()) == [0, 0, 0]);
         check!(cell_list.cell_index_from_position(&[2.0, 0.0, 0.0].into()) == [1, 0, 0]);
         check!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()) == [0, 1, 0]);
         check!(cell_list.cell_index_from_position(&[0.0, 0.0, 2.0].into()) == [0, 0, 1]);
         check!(cell_list.cell_index_from_position(&[-41.5, 18.5, -0.125].into()) == [-21, 9, -1]);
 
-        let cell_list = VecCell::<usize, 3>::builder().nominal_search_radius(2.0.try_into().expect("hard-coded constant should be positive")).origin([-4.0, 2.0, 8.0].into()).build();
+        let cell_list = VecCell::<usize, 3>::builder()
+            .nominal_search_radius(
+                2.0.try_into()
+                    .expect("hard-coded constant should be positive"),
+            )
+            .origin([-4.0, 2.0, 8.0].into())
+            .build();
         check!(cell_list.cell_index_from_position(&[0.0, 0.0, 0.0].into()) == [2, -1, -4]);
         check!(cell_list.cell_index_from_position(&[2.0, 0.0, 0.0].into()) == [3, -1, -4]);
         check!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()) == [2, 0, -4]);
         check!(cell_list.cell_index_from_position(&[0.0, 0.0, 2.0].into()) == [2, -1, -3]);
         check!(cell_list.cell_index_from_position(&[-41.5, 18.5, -0.125].into()) == [-19, 8, -5]);
     }
-    
+
     #[test]
     fn test_insert_one() {
         let mut cell_list = VecCell::default();
@@ -832,9 +905,11 @@ mod tests {
 
         cell_list.shrink_to_fit();
 
-        let filled_cell_index = VecCell::<usize, 2>::map_index_from_cell(cell_list.half_extent, &[0, 0]).expect("hard-coded cell is valid");
+        let filled_cell_index =
+            VecCell::<usize, 2>::map_index_from_cell(cell_list.half_extent, &[0, 0])
+                .expect("hard-coded cell is valid");
         for (i, keys) in cell_list.keys_map.iter().enumerate() {
-            if i == filled_cell_index {                
+            if i == filled_cell_index {
                 check!(keys.capacity() == 1);
                 check!(keys.len() == 1);
             } else {
@@ -855,9 +930,18 @@ mod tests {
         let mut reference = FxHashMap::default();
 
         let cell_width = 0.5;
-        let mut cell_list = VecCell::builder().nominal_search_radius(cell_width.try_into().expect("hard-coded cell with should be positive")).build();
-        let position_distribution = Ball { radius: 20.0.try_into().expect("hardcoded value should be positive") };
-        let key_distribution = Uniform::new(0, N_STEPS/4).expect("hardcoded distribution should be valid");
+        let mut cell_list = VecCell::builder()
+            .nominal_search_radius(
+                cell_width
+                    .try_into()
+                    .expect("hard-coded cell with should be positive"),
+            )
+            .build();
+        let position_distribution = Ball {
+            radius: 20.0.try_into().expect("hardcoded value should be positive"),
+        };
+        let key_distribution =
+            Uniform::new(0, N_STEPS / 4).expect("hardcoded distribution should be valid");
 
         for _ in 0..N_STEPS {
             // Add more keys than removing
@@ -877,7 +961,7 @@ mod tests {
         // Validate that cell_index contains the expected keys and that
         // keys_map is consistent.
         assert!(cell_list.cell_index.len() == reference.len());
-        for (reference_key,reference_value) in reference.drain() {
+        for (reference_key, reference_value) in reference.drain() {
             let value = cell_list.cell_index.get(&reference_key);
             check!(value == Some(&reference_value));
 
@@ -900,7 +984,9 @@ mod tests {
         cell_list.insert(2, Cartesian::from([8.125, 0.0]));
 
         check!(cell_list.half_extent == 8);
-        let potential_neighbors: Vec<_> = cell_list.points_potentially_in_ball(&[9.125, 0.0].into(), 1.0).collect();
+        let potential_neighbors: Vec<_> = cell_list
+            .points_potentially_in_ball(&[9.125, 0.0].into(), 1.0)
+            .collect();
         assert!(potential_neighbors.len() == 1);
         check!(potential_neighbors[0] == 2);
     }
@@ -908,15 +994,24 @@ mod tests {
     #[rstest]
     #[case::d_2(PhantomData::<VecCell<usize, 2>>)]
     #[case::d_3(PhantomData::<VecCell<usize, 3>>)]
-    fn test_points_in_ball<const D: usize>(#[case] _d: PhantomData<VecCell<usize, D>>, #[values(1.0, 0.5, 0.25)] nominal_search_radius: f64) {
+    fn test_points_in_ball<const D: usize>(
+        #[case] _d: PhantomData<VecCell<usize, D>>,
+        #[values(1.0, 0.5, 0.25)] nominal_search_radius: f64,
+    ) {
         let mut rng = StdRng::seed_from_u64(0);
         let mut reference = Vec::new();
 
         let mut cell_list = VecCell::builder()
-            .nominal_search_radius(nominal_search_radius.try_into().expect("hardcoded value should be positive"))
+            .nominal_search_radius(
+                nominal_search_radius
+                    .try_into()
+                    .expect("hardcoded value should be positive"),
+            )
             .maximum_search_radius(1.0)
             .build();
-        let position_distribution = Ball { radius: 12.0.try_into().expect("hardcoded value should be positive") };
+        let position_distribution = Ball {
+            radius: 12.0.try_into().expect("hardcoded value should be positive"),
+        };
 
         let n = 2048;
 
@@ -929,7 +1024,8 @@ mod tests {
 
         let mut n_neighbors = 0;
         for p_i in &reference {
-            let potential_neighbors: Vec<_> = cell_list.points_potentially_in_ball(p_i, 1.0).collect();
+            let potential_neighbors: Vec<_> =
+                cell_list.points_potentially_in_ball(p_i, 1.0).collect();
 
             for (j, p_j) in reference.iter().enumerate() {
                 if p_i.distance(p_j) <= 1.0 {

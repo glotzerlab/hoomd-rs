@@ -6,7 +6,9 @@
 use super::{Count, LocalTrial, Trial};
 use hoomd_interaction::DeltaEnergyOne;
 use hoomd_microstate::{
-    boundary::{GenerateGhosts, Wrap}, property::Position, Body, Microstate, SiteKey, Transform
+    Body, Microstate, SiteKey, Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::Position,
 };
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_spatial::PointUpdate;
@@ -95,8 +97,8 @@ where
                     trial.properties = new_properties;
 
                     let delta_h = hamiltonian.delta_energy_one(microstate, body_index, &trial);
-                    if delta_h != f64::INFINITY &&
-                        (delta_h <= 0.0 || rng.random::<f64>() < (-delta_h / kt).exp())
+                    if delta_h != f64::INFINITY
+                        && (delta_h <= 0.0 || rng.random::<f64>() < (-delta_h / kt).exp())
                         && microstate
                             .update_body_properties(body_index, trial.properties)
                             .is_ok()
@@ -206,7 +208,8 @@ mod tests {
         };
         let square = Closed(cuboid);
 
-        let mut microstate = Microstate::builder().boundary(square)
+        let mut microstate = Microstate::builder()
+            .boundary(square)
             .bodies([Body::point([0.0, 0.0].into())])
             .try_build()
             .expect("the hard-coded bodies should be in the boundary");
@@ -243,7 +246,8 @@ mod tests {
             ],
         };
         let square = Closed(cuboid);
-        let mut microstate = Microstate::builder().boundary(square)
+        let mut microstate = Microstate::builder()
+            .boundary(square)
             .bodies([body])
             .try_build()
             .expect("the hard-coded bodies should be in the boundary");

@@ -330,7 +330,8 @@ mod tests {
         }
 
         #[fixture]
-        fn overlapping_microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open> {
+        fn overlapping_microstate()
+        -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open> {
             let mut microstate = Microstate::new();
             microstate
                 .extend_bodies([
@@ -342,7 +343,9 @@ mod tests {
         }
 
         #[rstest]
-        fn single_total_0(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>) {
+        fn single_total_0(
+            microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>,
+        ) {
             let single = ExternalOverlap(TestSO);
 
             assert_eq!(single.total_energy(&microstate), 0.0);
@@ -350,7 +353,12 @@ mod tests {
 
         #[rstest]
         fn single_total_inf(
-            overlapping_microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>,
+            overlapping_microstate: Microstate<
+                Point<Cartesian<2>>,
+                Point<Cartesian<2>>,
+                AllPairs,
+                Open,
+            >,
         ) {
             let single = ExternalOverlap(TestSO);
 
@@ -358,7 +366,9 @@ mod tests {
         }
 
         #[rstest]
-        fn single_site_0(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>) {
+        fn single_site_0(
+            microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>,
+        ) {
             let single = ExternalOverlap(TestSO);
 
             assert!(!single.site_overlap(&microstate.sites()[0].properties));
@@ -367,7 +377,12 @@ mod tests {
 
         #[rstest]
         fn single_site_inf(
-            overlapping_microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>,
+            overlapping_microstate: Microstate<
+                Point<Cartesian<2>>,
+                Point<Cartesian<2>>,
+                AllPairs,
+                Open,
+            >,
         ) {
             let single = ExternalOverlap(TestSO);
 
@@ -401,7 +416,8 @@ mod tests {
             let mut final_body = body.clone();
             final_body.properties.position[0] = 1.0;
 
-            let microstate = Microstate::builder().boundary(square)
+            let microstate = Microstate::builder()
+                .boundary(square)
                 .bodies([body])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -436,7 +452,8 @@ mod tests {
             let mut final_body_0 = body.clone();
             final_body_0.properties.position[1] = -1.5;
 
-            let microstate = Microstate::builder().boundary(square)
+            let microstate = Microstate::builder()
+                .boundary(square)
                 .bodies([body])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
