@@ -2,7 +2,7 @@
 // ANCHOR: use
 use hoomd_interaction::Zero;
 use hoomd_mc::{Sweep, Translate, Trial};
-use hoomd_microstate::{Body, MicrostateBuilder};
+use hoomd_microstate::{Body, Microstate};
 use hoomd_simulation::macrostate::Isothermal;
 use hoomd_vector::Cartesian;
 // ANCHOR_END: use

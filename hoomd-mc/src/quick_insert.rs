@@ -8,7 +8,9 @@ use rand::distr::Distribution;
 use super::Count;
 use hoomd_interaction::{DeltaEnergyInsert, TotalEnergy};
 use hoomd_microstate::{
-    boundary::{GenerateGhosts, Wrap}, property::Position, Body, Microstate, SiteKey, Transform
+    Body, Microstate, SiteKey, Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::Position,
 };
 
 use hoomd_spatial::PointUpdate;
@@ -248,10 +250,10 @@ impl<D> QuickInsert<D> {
     /// };
     ///
     /// let macrostate = Isothermal { temperature: 1.0 };
-    /// let mut microstate =
-    ///     Microstate::builder().boundary(Periodic::new(1.0, rectangle)?)
-    ///         .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
-    ///         .try_build()?;
+    /// let mut microstate = Microstate::builder()
+    ///     .boundary(Periodic::new(1.0, rectangle)?)
+    ///     .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
+    ///     .try_build()?;
     ///
     /// quick_insert.apply(&mut microstate, &cutoff_pair);
     ///
@@ -366,7 +368,8 @@ mod tests {
             6.0.try_into().expect("hard-coded value is non-zero"),
         ));
 
-        let mut microstate = Microstate::builder().boundary(rectangle.clone())
+        let mut microstate = Microstate::builder()
+            .boundary(rectangle.clone())
             .bodies(vec![Body::point(Cartesian::from([0.0, 0.0]))])
             .try_build()
             .expect("hard-coded point is in the boundary");

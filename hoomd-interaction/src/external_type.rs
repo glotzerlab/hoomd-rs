@@ -266,7 +266,7 @@ mod tests {
     use crate::external::Linear;
     use hoomd_geometry::shape::Rectangle;
     use hoomd_microstate::{
-        Body, Microstate, MicrostateBuilder,
+        Body, Microstate,
         boundary::{Closed, Open},
         property::{Point, Position},
     };
@@ -286,10 +286,12 @@ mod tests {
 
     mod site_energy {
         use super::*;
+        use hoomd_microstate::SiteKey;
         use hoomd_spatial::AllPairs;
 
         #[fixture]
-        fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open> {
+        fn microstate()
+        -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs<SiteKey>, Open> {
             let mut microstate = Microstate::new();
             microstate
                 .extend_bodies([
@@ -301,7 +303,14 @@ mod tests {
         }
 
         #[rstest]
-        fn single_total(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+        fn single_total(
+            microstate: Microstate<
+                Point<Cartesian<2>>,
+                Point<Cartesian<2>>,
+                AllPairs<SiteKey>,
+                Open,
+            >,
+        ) {
             let test_se = TestSE;
             let single = External(test_se);
 
@@ -309,7 +318,14 @@ mod tests {
         }
 
         #[rstest]
-        fn single_site(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Open>) {
+        fn single_site(
+            microstate: Microstate<
+                Point<Cartesian<2>>,
+                Point<Cartesian<2>>,
+                AllPairs<SiteKey>,
+                Open,
+            >,
+        ) {
             let test_se = TestSE;
             let single = External(test_se);
 
@@ -343,7 +359,8 @@ mod tests {
             let mut final_body = body.clone();
             final_body.properties.position[0] = 1.0;
 
-            let microstate = Microstate::builder().boundary(square)
+            let microstate = Microstate::builder()
+                .boundary(square)
                 .bodies([body])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -375,7 +392,8 @@ mod tests {
             let mut final_body = body.clone();
             final_body.properties.position[1] = 0.5;
 
-            let microstate = Microstate::builder().boundary(square)
+            let microstate = Microstate::builder()
+                .boundary(square)
                 .bodies([body])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");

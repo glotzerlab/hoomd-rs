@@ -13,9 +13,10 @@ use hoomd_interaction::{
 use hoomd_manifold::{Hyperbolic, HyperbolicDisk, Minkowski};
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder, boundary::Periodic, property::Point,
+    Body, Microstate, SiteKey, boundary::Periodic, property::Point,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
+use hoomd_spatial::AllPairs;
 use rand::distr::Distribution;
 use rand::{SeedableRng, rngs::StdRng};
 
@@ -70,6 +71,7 @@ struct Fill {
     microstate: Microstate<
         Point<Hyperbolic<3>>,
         Point<Hyperbolic<3>>,
+        AllPairs<SiteKey>,
         Periodic<EightEight>,
     >,
     /// How sites interact with other sites and fields.

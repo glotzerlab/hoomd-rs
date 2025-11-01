@@ -65,11 +65,11 @@ hoomd-vector = { path = "hoomd-vector" }
 threefry = { path = "threefry" }
 
 # Common dev dependencies
-anyhow = "=1.0.100"
+assert2 = "=0.3.16"
 divan = "=0.1.21"
 paste = "=1.0.15"
 rstest = "=0.26.1"
-tempfile = "=3.22.0"
+tempfile = "=3.23.0"
 
 # Dependencies used internally
 clap = {version = "4.5.48", features = ["derive"]}
@@ -83,6 +83,7 @@ serde_json = "1.0.145"
 wildmatch = "2.4.0"
 
 # Dependencies exposed via Public APIs.
+anyhow = "1.0.100"
 approxim = "0.6.6"
 num = "0.4.3"
 rand = { version = "0.9.0", default-features=false, features = ["std", "std_rng"] }

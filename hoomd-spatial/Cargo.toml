@@ -21,4 +21,6 @@ log.workspace = true
 rustc-hash.workspace = true
 
 [dev-dependencies]
+assert2.workspace = true
 rand.workspace = true
+rstest.workspace = true

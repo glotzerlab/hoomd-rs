@@ -4,7 +4,9 @@
 //! Implement `CutoffPair`
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairEnergy, TotalEnergy};
-use hoomd_microstate::{boundary::Wrap, property::Position, Body, Microstate, Site, SiteKey, Transform};
+use hoomd_microstate::{
+    Body, Microstate, Site, SiteKey, Transform, boundary::Wrap, property::Position,
+};
 use hoomd_spatial::PointsInBall;
 use hoomd_vector::Metric;
 
@@ -310,9 +312,9 @@ where
                 Ok(wrapped_site) => {
                     energy_final += site_energy(&wrapped_site);
                     if energy_final == f64::INFINITY {
-                        return energy_final
+                        return energy_final;
                     }
-                    },
+                }
             }
         }
 
@@ -493,7 +495,6 @@ mod tests {
     };
     use hoomd_geometry::shape::Hypercuboid;
     use hoomd_microstate::{
-        MicrostateBuilder,
         boundary::{Closed, Open},
         property::Point,
     };
@@ -523,7 +524,8 @@ mod tests {
         use crate::pairwise::Isotropic;
 
         #[fixture]
-        fn microstate() -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open> {
+        fn microstate()
+        -> Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs<SiteKey>, Open> {
             let mut microstate = Microstate::new();
             microstate
                 .extend_bodies([
@@ -537,7 +539,14 @@ mod tests {
         }
 
         #[rstest]
-        fn blanket_fn(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>) {
+        fn blanket_fn(
+            microstate: Microstate<
+                Point<Cartesian<2>>,
+                Point<Cartesian<2>>,
+                AllPairs<SiteKey>,
+                Open,
+            >,
+        ) {
             // Ensure that closures can be used as IsotropicEnergy
             let cutoff_pair = CutoffPair {
                 r_cut: 2.0,
@@ -561,7 +570,14 @@ mod tests {
         }
 
         #[rstest]
-        fn large_r_cut(microstate: Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs, Open>) {
+        fn large_r_cut(
+            microstate: Microstate<
+                Point<Cartesian<2>>,
+                Point<Cartesian<2>>,
+                AllPairs<SiteKey>,
+                Open,
+            >,
+        ) {
             // Ensure that CutoffPair respects the r_cut value set.
             let cutoff_pair = CutoffPair {
                 r_cut: 5.0_f64.next_up(),
@@ -632,7 +648,8 @@ mod tests {
             let mut final_body = body.clone();
             final_body.properties.position[0] = 1.0;
 
-            let microstate = Microstate::builder().boundary(square)
+            let microstate = Microstate::builder()
+                .boundary(square)
                 .bodies([body])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -765,7 +782,8 @@ mod tests {
             let mut new_body = body.clone();
             new_body.properties.position[0] = 1.0;
 
-            let microstate = Microstate::builder().boundary(square)
+            let microstate = Microstate::builder()
+                .boundary(square)
                 .bodies([body])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -859,7 +877,7 @@ mod tests {
             // However, we need to avoid numerical errors when two sites get
             // too close. Randomly insert the 2nd body in a well-defined area
             // to avoid this.
-            let mut rng = StdRng::seed_from_u64(0);
+            let mut rng = StdRng::seed_from_u64(2);
             let r_distribution =
                 Uniform::new(3.0, 6.0).expect("hard-coded constants should be valid");
             let theta_distribution =

@@ -22,23 +22,23 @@ const INFO_TIME: Duration = Duration::new(0, 500_000_000);
 impl Default for Benchmark {
     fn default() -> Self {
         Self {
-            warmup_time: Duration::new(2,0),
-            benchmark_time: Duration::new(4,0),
+            warmup_time: Duration::new(2, 0),
+            benchmark_time: Duration::new(4, 0),
         }
     }
 }
 
 impl Benchmark {
-
     /// Benchmark a simulation
     ///
     /// Return the average time per step (in milliseconds) when the simulation is successful.
     ///
     /// # Errors
     ///
-    /// Returns any error reported by `simulation.advance`.    
+    /// Returns any error reported by `simulation.advance`.
     pub fn benchmark_one<S>(&self, simulation: &mut S) -> anyhow::Result<f64>
-    where S: Simulation
+    where
+        S: Simulation,
     {
         let total_time = Instant::now();
 
@@ -56,7 +56,7 @@ impl Benchmark {
             if chunk_duration >= INFO_TIME {
                 let run_time = chunk_duration.as_secs_f64();
                 let steps = simulation.step() - last_info_step;
-    
+
                 debug!("{} steps/s", steps as f64 / run_time);
 
                 last_info_step = simulation.step();
@@ -76,7 +76,10 @@ impl Benchmark {
         let steps = simulation.step() - start_step;
         let milliseconds_per_step = run_time / steps as f64;
 
-        info!("Average: {} steps/s", steps as f64 / start_time.elapsed().as_secs_f64());
+        info!(
+            "Average: {} steps/s",
+            steps as f64 / start_time.elapsed().as_secs_f64()
+        );
 
         Ok(milliseconds_per_step)
     }

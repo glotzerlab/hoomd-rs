@@ -10,7 +10,11 @@
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_utility::{random::Counter, valid::PositiveReal};
 use hoomd_vector::{Cartesian, Cross, InnerProduct, distribution::Ball};
-use rand::{Rng, SeedableRng, distr::Distribution, distr::Uniform, rngs::StdRng};
+use rand::{
+    Rng, SeedableRng,
+    distr::{Distribution, Uniform},
+    rngs::StdRng,
+};
 
 fn main() {
     divan::main();

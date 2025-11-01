@@ -4,7 +4,7 @@
 //! Implement `CutoffPairOverlap`
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairOverlap, TotalEnergy};
-use hoomd_microstate::{boundary::Wrap, property::Position, Body, Microstate, SiteKey, Transform};
+use hoomd_microstate::{Body, Microstate, SiteKey, Transform, boundary::Wrap, property::Position};
 use hoomd_spatial::PointsInBall;
 use hoomd_vector::Vector;
 
@@ -357,7 +357,7 @@ mod tests {
     use super::*;
     use crate::{TotalEnergy, pairwise::AlwaysTrue};
     use hoomd_geometry::shape::Hypercuboid;
-    use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};
+    use hoomd_microstate::{boundary::Closed, property::Point};
     use hoomd_vector::Cartesian;
 
     use rstest::*;
@@ -455,7 +455,8 @@ mod tests {
             let mut final_body = body.clone();
             final_body.properties.position[0] = 1.0;
 
-            let microstate = Microstate::builder().boundary(square)
+            let microstate = Microstate::builder()
+                .boundary(square)
                 .bodies([body])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
@@ -533,7 +534,8 @@ mod tests {
             let mut new_body = body.clone();
             new_body.properties.position[0] = 1.0;
 
-            let microstate = Microstate::builder().boundary(square)
+            let microstate = Microstate::builder()
+                .boundary(square)
                 .bodies([body])
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
