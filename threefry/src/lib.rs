@@ -36,22 +36,13 @@ impl BlockRngCore for ThreeFry2x64Core {
 
     #[inline]
     fn generate(&mut self, results: &mut Self::Results) {
-        // for d in 0..TF2X64_ROUNDS {
-        //     if (d % 4) == 0 {
-        //         let s = d / 4;
-        //         self.counter[0] = self.counter[0].wrapping_add(self.seed[s % 3]);
-        //         self.counter[1] = self.counter[1].wrapping_add(self.seed[(s + 1) % 3] + s as u64);
-        //     }
-        //     backends::mix(&mut self.counter, ROTATION_2X64[d % 8]);
-        // }
-
         (0..TF2X64_ROUNDS).for_each(|d| {
             if d % 4 == 0 {
                 let s = d / 4;
                 self.counter[0] = self.counter[0].wrapping_add(self.seed[s % 3]);
                 self.counter[1] = self.counter[1].wrapping_add(self.seed[(s + 1) % 3] + s as u64);
             }
-            backends::mix(&mut self.counter, ROTATION_2X64[d % 8]);
+            backends::mix2x64(&mut self.counter, ROTATION_2X64[d % 8]);
         });
         self.counter[0] = self.counter[0].wrapping_add(self.seed[(TF2X64_ROUNDS / 4) % 3]);
         self.counter[1] = self.counter[1]
