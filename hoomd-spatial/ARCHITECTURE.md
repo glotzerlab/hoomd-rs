@@ -10,7 +10,7 @@ The spatial algorithms must be exposed as traits so that `Microstate` and simula
 models can at least be generic on vector types. For example, the cell list works for
 Cartesian vectors while points in curved space must use an all-pairs algorithm. In the
 future, these traits allow the possibility for different data structures (i.e. AABB
-trees or neighbor lists) and other spatial algorithms useful in data analysis. 
+trees or neighbor lists) and other spatial algorithms useful in data analysis.
 
 For a first draft, these traits are designed to enable Monte Carlo simulations.
 

@@ -35,7 +35,7 @@ impl Benchmark {
     ///
     /// # Errors
     ///
-    /// Returns any error reported by `simulation.advance`.    
+    /// Returns any error reported by `simulation.advance`.
     pub fn benchmark_one<S>(&self, simulation: &mut S) -> anyhow::Result<f64>
     where
         S: Simulation,

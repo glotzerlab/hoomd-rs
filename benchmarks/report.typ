@@ -5,8 +5,8 @@
 
 #for (benchmark, details) in data {
 
-  let (units, n, vec_cell_performance, hash_cell_performance, all_pairs_performance) = details 
-  
+  let (units, n, vec_cell_performance, hash_cell_performance, all_pairs_performance) = details
+
   lilaq.diagram(
     title: [#benchmark],
 
