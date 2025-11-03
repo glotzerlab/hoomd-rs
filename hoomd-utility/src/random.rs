@@ -5,7 +5,7 @@
 
 // use chacha20::ChaCha8Rng;
 use rand::{Rng, SeedableRng};
-use threefry::{Squares, ThreeFry2x64Rng};
+use threefry::{Squares64, Squares128, ThreeFry2x64Rng};
 
 /// Conveniently construct counter based random number generators.
 ///
@@ -258,7 +258,7 @@ impl Counter {
         // rng
         // rng.set_stream(stream);
         // rng
-        Squares::seed_from_u64(0x16d7358fe8d9a17b)
+        Squares128::seed_from_u64(0x16d7358fe8d9a17b)
         // rand_xoshiro::Xoshiro256Plus::from_seed(stream)
     }
 }
