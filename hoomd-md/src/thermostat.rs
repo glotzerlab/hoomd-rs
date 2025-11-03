@@ -143,7 +143,7 @@ pub struct BussiThermostat {
     cumu_energy_drift: f64,
 }
 impl BussiThermostat {
-    /// Constrcut MTTKThermostat.
+    /// Constrcut BussiThermostat.
     pub fn new(tau: f64) -> Self {
         assert!(tau >= 0.0, "BussiThermostat requires tau >= 0");
         Self {
