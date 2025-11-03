@@ -17,11 +17,11 @@ fn squares32(seed: u64, counter: &mut u64) -> u32 {
 }
 
 /// .
-pub struct Squares {
+pub struct Squares64 {
     seed: u64,
     counter: u64,
 }
-impl RngCore for Squares {
+impl RngCore for Squares64 {
     #[inline]
     fn next_u64(&mut self) -> u64 {
         let mut x = self.seed.wrapping_mul(self.counter);
@@ -49,18 +49,18 @@ impl RngCore for Squares {
         impls::fill_bytes_via_next(self, dst);
     }
 }
-impl SeedableRng for Squares {
+impl SeedableRng for Squares64 {
     type Seed = [u8; 8];
     #[inline]
     fn from_seed(seed: Self::Seed) -> Self {
-        Squares {
+        Squares64 {
             seed: u64::from_le_bytes(seed),
             counter: 0,
         }
     }
     #[inline]
     fn seed_from_u64(state: u64) -> Self {
-        Squares {
+        Squares64 {
             seed: state,
             counter: 0,
         }
