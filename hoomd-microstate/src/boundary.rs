@@ -20,8 +20,8 @@
 //! [`Closed`]. To implement a custom periodic boundary, create your custom
 //! type and implement both [`Wrap`] and [`GenerateGhosts`] for it.
 
-use thiserror::Error;
 use arrayvec::ArrayVec;
+use thiserror::Error;
 
 mod closed;
 mod open;

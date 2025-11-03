@@ -119,14 +119,19 @@ where
     #[inline]
     fn total_energy(&self, microstate: &Microstate<B, S, X, C>) -> f64 {
         for site_i in microstate.sites() {
-            for site_j in microstate
-                .iter_sites_potentially_near(site_i.properties.position(), self.r_cut)
+            for site_j in
+                microstate.iter_sites_potentially_near(site_i.properties.position(), self.r_cut)
             {
-                if site_i.site_tag < site_j.site_tag && site_i.body_tag != site_j.body_tag &&
-                    site_i.properties.position().distance_squared(site_j.properties.position()) < self.r_cut.powi(2) &&
-                    self
-                    .evaluator
-                    .site_pair_overlap(&site_i.properties, &site_j.properties)
+                if site_i.site_tag < site_j.site_tag
+                    && site_i.body_tag != site_j.body_tag
+                    && site_i
+                        .properties
+                        .position()
+                        .distance_squared(site_j.properties.position())
+                        < self.r_cut.powi(2)
+                    && self
+                        .evaluator
+                        .site_pair_overlap(&site_i.properties, &site_j.properties)
                 {
                     return f64::INFINITY;
                 }
@@ -198,11 +203,14 @@ where
             for site_j in initial_microstate
                 .iter_sites_potentially_near(site_properties.position(), self.r_cut)
             {
-                if body_tag != site_j.body_tag &&
-                    site_properties.position().distance_squared(site_j.properties.position()) < self.r_cut.powi(2) &&
-                    self
-                    .evaluator
-                    .site_pair_overlap(site_properties, &site_j.properties)
+                if body_tag != site_j.body_tag
+                    && site_properties
+                        .position()
+                        .distance_squared(site_j.properties.position())
+                        < self.r_cut.powi(2)
+                    && self
+                        .evaluator
+                        .site_pair_overlap(site_properties, &site_j.properties)
                 {
                     return true;
                 }
@@ -277,12 +285,16 @@ where
         // The new body is not yet in the microstate, so there is no need to
         // filter matching body tags. The new body does not yet have a tag.
         let site_overlap = |site_properties: &S| {
-            for site_j in initial_microstate.iter_sites_potentially_near(site_properties.position(), self.r_cut)
+            for site_j in initial_microstate
+                .iter_sites_potentially_near(site_properties.position(), self.r_cut)
             {
-                if site_properties.position().distance_squared(site_j.properties.position()) < self.r_cut.powi(2) &&
-                    self
-                    .evaluator
-                    .site_pair_overlap(site_properties, &site_j.properties)
+                if site_properties
+                    .position()
+                    .distance_squared(site_j.properties.position())
+                    < self.r_cut.powi(2)
+                    && self
+                        .evaluator
+                        .site_pair_overlap(site_properties, &site_j.properties)
                 {
                     return true;
                 }

@@ -210,12 +210,17 @@ where
     fn total_energy(&self, microstate: &Microstate<B, S, X, C>) -> f64 {
         let mut total = 0.0;
         for site_i in microstate.sites() {
-            for site_j in microstate
-                .iter_sites_potentially_near(site_i.properties.position(), self.r_cut)
+            for site_j in
+                microstate.iter_sites_potentially_near(site_i.properties.position(), self.r_cut)
             {
-                if site_i.site_tag < site_j.site_tag && site_i.body_tag != site_j.body_tag &&
-                    site_i.properties.position().distance_squared(site_j.properties.position()) < self.r_cut.powi(2)
-                    {
+                if site_i.site_tag < site_j.site_tag
+                    && site_i.body_tag != site_j.body_tag
+                    && site_i
+                        .properties
+                        .position()
+                        .distance_squared(site_j.properties.position())
+                        < self.r_cut.powi(2)
+                {
                     total += self
                         .evaluator
                         .site_pair_energy(&site_i.properties, &site_j.properties);
@@ -296,9 +301,12 @@ where
                 .iter_sites_potentially_near(site_properties.position(), self.r_cut)
                 .into_iter()
                 .fold(0.0, |total, site_j| {
-                    if body_tag != site_j.body_tag &&
-                       site_properties.position().distance_squared(site_j.properties.position()) < self.r_cut.powi(2)
-                     {
+                    if body_tag != site_j.body_tag
+                        && site_properties
+                            .position()
+                            .distance_squared(site_j.properties.position())
+                            < self.r_cut.powi(2)
+                    {
                         total
                             + self
                                 .evaluator
@@ -393,11 +401,15 @@ where
                 .iter_sites_potentially_near(site_properties.position(), self.r_cut)
                 .into_iter()
                 .fold(0.0, |total, site_j| {
-                    if site_properties.position().distance_squared(site_j.properties.position()) < self.r_cut.powi(2) {
-                    total
-                        + self
-                            .evaluator
-                            .site_pair_energy(site_properties, &site_j.properties)
+                    if site_properties
+                        .position()
+                        .distance_squared(site_j.properties.position())
+                        < self.r_cut.powi(2)
+                    {
+                        total
+                            + self
+                                .evaluator
+                                .site_pair_energy(site_properties, &site_j.properties)
                     } else {
                         total
                     }
@@ -481,9 +493,12 @@ where
                 .iter_sites_potentially_near(site_properties.position(), self.r_cut)
                 .into_iter()
                 .fold(0.0, |total, site_j| {
-                    if body_tag != site_j.body_tag &&
-                       site_properties.position().distance_squared(site_j.properties.position()) < self.r_cut.powi(2)
-                     {
+                    if body_tag != site_j.body_tag
+                        && site_properties
+                            .position()
+                            .distance_squared(site_j.properties.position())
+                            < self.r_cut.powi(2)
+                    {
                         total
                             + self
                                 .evaluator

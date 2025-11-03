@@ -687,8 +687,8 @@ impl<K, const D: usize> fmt::Display for VecCell<K, D> {
     /// # Example
     ///
     /// ```
-    /// use log::info;
     /// use hoomd_spatial::VecCell;
+    /// use log::info;
     ///
     /// let vec_cell = VecCell::<usize, 3>::default();
     ///
@@ -702,9 +702,19 @@ impl<K, const D: usize> fmt::Display for VecCell<K, D> {
         let largest_cell_size = self.keys_map.iter().map(Vec::len).fold(0, usize::max);
 
         writeln!(f, "VecCell<K, {D}>:")?;
-        writeln!(f, "- {} total cells with {} cells on each side.", self.keys_map.len(),self.half_extent*2 + 1)?;
+        writeln!(
+            f,
+            "- {} total cells with {} cells on each side.",
+            self.keys_map.len(),
+            self.half_extent * 2 + 1
+        )?;
         writeln!(f, "- {} points.", self.cell_index.len())?;
-        writeln!(f, "- Nominal, maximum search radii: {}, {}", self.cell_width, self.cell_width.get() * self.stencils.len() as f64)?;
+        writeln!(
+            f,
+            "- Nominal, maximum search radii: {}, {}",
+            self.cell_width,
+            self.cell_width.get() * self.stencils.len() as f64
+        )?;
         write!(f, "- Largest cell length: {largest_cell_size}")
     }
 }

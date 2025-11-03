@@ -7,8 +7,8 @@
 //! Specifically, `Periodic<EightEight>` identifies opposite edges of the
 //! octagon to implement the Bolza surface.
 
-use std::f64::consts::PI;
 use arrayvec::ArrayVec;
+use std::f64::consts::PI;
 
 use crate::{
     boundary::{

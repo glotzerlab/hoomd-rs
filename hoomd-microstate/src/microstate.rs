@@ -3,8 +3,8 @@
 
 //! Implement [`Microstate`] and related types.
 
-use std::{cmp::Reverse, collections::BinaryHeap, fmt};
 use arrayvec::ArrayVec;
+use std::{cmp::Reverse, collections::BinaryHeap, fmt};
 
 use crate::{
     Body, Error, Site, Transform,
@@ -1277,7 +1277,11 @@ where
         clippy::missing_panics_doc,
         reason = "Will panic only due to a bug in hoomd-rs."
     )]
-    pub fn iter_sites_potentially_near(&self, point: &P, r: f64) -> impl IntoIterator<Item = &Site<S>> {
+    pub fn iter_sites_potentially_near(
+        &self,
+        point: &P,
+        r: f64,
+    ) -> impl IntoIterator<Item = &Site<S>> {
         // Ideally, an AllPairs specialized implementation would do this:
         // self.sites
         //     .items
@@ -1285,19 +1289,18 @@ where
         //     .chain(self.ghosts.items.iter())
         // However, specialization is not in stable Rust and will likely never be.
         let potential_sites = self.spatial_data.points_potentially_in_ball(point, r);
-        potential_sites
-            .map(|k| match k {
-                SiteKey::Primary(tag) => {
-                    let index = self.sites.indices[tag]
-                        .expect("sites and spatial data should be consistent");
-                    &self.sites.items[index]
-                }
-                SiteKey::Ghost(tag) => {
-                    let index = self.ghosts.indices[tag]
-                        .expect("ghosts and spatial data should be consistent");
-                    &self.ghosts.items[index]
-                }
-            })
+        potential_sites.map(|k| match k {
+            SiteKey::Primary(tag) => {
+                let index =
+                    self.sites.indices[tag].expect("sites and spatial data should be consistent");
+                &self.sites.items[index]
+            }
+            SiteKey::Ghost(tag) => {
+                let index =
+                    self.ghosts.indices[tag].expect("ghosts and spatial data should be consistent");
+                &self.ghosts.items[index]
+            }
+        })
     }
 }
 
@@ -1563,10 +1566,10 @@ impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
     }
 }
 
-
-impl<B, S, X, C> fmt::Display for Microstate<B, S, X, C> where
-X: fmt::Display
-     {
+impl<B, S, X, C> fmt::Display for Microstate<B, S, X, C>
+where
+    X: fmt::Display,
+{
     /// Summarize the contents of the microstate.
     ///
     /// This is a slow operation. It is meant to be printed to logs only
@@ -1575,8 +1578,8 @@ X: fmt::Display
     /// # Example
     ///
     /// ```
-    /// use log::info;
     /// use hoomd_spatial::VecCell;
+    /// use log::info;
     ///
     /// let vec_cell = VecCell::<usize, 3>::default();
     ///
@@ -1590,7 +1593,12 @@ X: fmt::Display
         writeln!(f, "Microstate:")?;
         writeln!(f, "- step, substep: {}, {}.", self.step, self.substep)?;
         writeln!(f, "- {} bodies.", self.bodies().len())?;
-        writeln!(f, "- {} sites / {} ghosts.", self.sites.items.len(), self.ghosts.items.len())?;
+        writeln!(
+            f,
+            "- {} sites / {} ghosts.",
+            self.sites.items.len(),
+            self.ghosts.items.len()
+        )?;
         write!(f, "{}", self.spatial_data)
     }
 }
