@@ -62,9 +62,6 @@ pub struct HashCell<K, const D: usize> {
     /// A map from particle indices to cell indices.
     cell_index: FxHashMap<K, [i64; D]>,
 
-    /// Location of the 0,..,0 cell.
-    origin: Cartesian<D>,
-
     /// Pre-computed stencils.
     stencils: Vec<Vec<[i64; D]>>,
 }
@@ -90,9 +87,6 @@ pub struct HashCellBuilder<K, const D: usize> {
 
     /// Largest possible search radius.
     maximum_search_radius: f64,
-
-    /// Location of the 0,..,0 cell.
-    origin: Cartesian<D>,
 
     /// Track the key type.
     phantom_key: PhantomData<K>,
@@ -150,14 +144,6 @@ where
         self
     }
 
-    /// Choose the location of the 0,0,...0 cell.
-    #[inline]
-    #[must_use]
-    pub fn origin(mut self, origin: Cartesian<D>) -> Self {
-        self.origin = origin;
-        self
-    }
-
     /// Construct the [`HashCell`] with the chosen parameters.
     ///
     /// # Example
@@ -182,7 +168,6 @@ where
             cell_width: self.nominal_search_radius,
             particle_indices: FxHashMap::default(),
             cell_index: FxHashMap::default(),
-            origin: self.origin,
             stencils: vec_cell::generate_all_stencils(maximum_stencil_radius.max(1)),
         }
     }
@@ -240,8 +225,7 @@ where
     /// Compute the cell index given a position in space.
     #[inline]
     fn cell_index_from_position(&self, position: &Cartesian<D>) -> [i64; D] {
-        let v = *position - self.origin;
-        std::array::from_fn(|j| (v.coordinates[j] / self.cell_width.get()).floor() as i64)
+        std::array::from_fn(|j| (position.coordinates[j] / self.cell_width.get()).floor() as i64)
     }
 
     /// Remove excess capacity from dynamically allocated arrays.
@@ -281,7 +265,6 @@ where
                 .try_into()
                 .expect("hard-coded constant is a positive real"),
             maximum_search_radius: 1.0,
-            origin: Cartesian::default(),
             phantom_key: PhantomData,
         }
     }
@@ -513,19 +496,6 @@ mod tests {
         check!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()) == [0, 1, 0]);
         check!(cell_list.cell_index_from_position(&[0.0, 0.0, 2.0].into()) == [0, 0, 1]);
         check!(cell_list.cell_index_from_position(&[-41.5, 18.5, -0.125].into()) == [-21, 9, -1]);
-
-        let cell_list = HashCell::<usize, 3>::builder()
-            .nominal_search_radius(
-                2.0.try_into()
-                    .expect("hard-coded constant is a positive real"),
-            )
-            .origin([-4.0, 2.0, 8.0].into())
-            .build();
-        check!(cell_list.cell_index_from_position(&[0.0, 0.0, 0.0].into()) == [2, -1, -4]);
-        check!(cell_list.cell_index_from_position(&[2.0, 0.0, 0.0].into()) == [3, -1, -4]);
-        check!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()) == [2, 0, -4]);
-        check!(cell_list.cell_index_from_position(&[0.0, 0.0, 2.0].into()) == [2, -1, -3]);
-        check!(cell_list.cell_index_from_position(&[-41.5, 18.5, -0.125].into()) == [-19, 8, -5]);
     }
 
     #[test]

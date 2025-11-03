@@ -96,9 +96,6 @@ pub struct VecCell<K, const D: usize> {
     /// A map from particle indices to cell indices.
     cell_index: FxHashMap<K, [i64; D]>,
 
-    /// Location of the 0,..,0 cell.
-    origin: Cartesian<D>,
-
     /// The shape of `keys_map` is `(half_extent * 2 + 1).powi(D)`.
     half_extent: u32,
 
@@ -204,9 +201,6 @@ pub struct VecCellBuilder<K, const D: usize> {
     /// Largest possible search radius.
     maximum_search_radius: f64,
 
-    /// Location of the 0,..,0 cell.
-    origin: Cartesian<D>,
-
     /// Track the key type.
     phantom_key: PhantomData<K>,
 }
@@ -263,14 +257,6 @@ where
         self
     }
 
-    /// Choose the location of the 0,0,...0 cell.
-    #[inline]
-    #[must_use]
-    pub fn origin(mut self, origin: Cartesian<D>) -> Self {
-        self.origin = origin;
-        self
-    }
-
     /// Construct the [`VecCell`] with the chosen parameters.
     ///
     /// # Example
@@ -297,7 +283,6 @@ where
             keys_map: iter::repeat_n(Vec::new(), (half_extent * 2 + 1).pow(D as u32) as usize)
                 .collect(),
             cell_index: FxHashMap::default(),
-            origin: self.origin,
             half_extent,
             stencils: generate_all_stencils(maximum_stencil_radius.max(1)),
         }
@@ -356,8 +341,7 @@ impl<K, const D: usize> VecCell<K, D> {
     /// Compute the cell index given a position in space.
     #[inline]
     fn cell_index_from_position(&self, position: &Cartesian<D>) -> [i64; D] {
-        let v = *position - self.origin;
-        std::array::from_fn(|j| (v.coordinates[j] / self.cell_width.get()).floor() as i64)
+        std::array::from_fn(|j| (position.coordinates[j] / self.cell_width.get()).floor() as i64)
     }
 
     /// Compute the vector index from a cell index
@@ -428,7 +412,6 @@ where
                 .try_into()
                 .expect("hard-coded constant is a positive real"),
             maximum_search_radius: 1.0,
-            origin: Cartesian::default(),
             phantom_key: PhantomData,
         }
     }
@@ -795,19 +778,6 @@ mod tests {
         check!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()) == [0, 1, 0]);
         check!(cell_list.cell_index_from_position(&[0.0, 0.0, 2.0].into()) == [0, 0, 1]);
         check!(cell_list.cell_index_from_position(&[-41.5, 18.5, -0.125].into()) == [-21, 9, -1]);
-
-        let cell_list = VecCell::<usize, 3>::builder()
-            .nominal_search_radius(
-                2.0.try_into()
-                    .expect("hard-coded constant should be positive"),
-            )
-            .origin([-4.0, 2.0, 8.0].into())
-            .build();
-        check!(cell_list.cell_index_from_position(&[0.0, 0.0, 0.0].into()) == [2, -1, -4]);
-        check!(cell_list.cell_index_from_position(&[2.0, 0.0, 0.0].into()) == [3, -1, -4]);
-        check!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()) == [2, 0, -4]);
-        check!(cell_list.cell_index_from_position(&[0.0, 0.0, 2.0].into()) == [2, -1, -3]);
-        check!(cell_list.cell_index_from_position(&[-41.5, 18.5, -0.125].into()) == [-19, 8, -5]);
     }
 
     #[test]
