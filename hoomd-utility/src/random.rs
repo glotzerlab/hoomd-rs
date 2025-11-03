@@ -233,6 +233,12 @@ impl Counter {
         // placing the first index and counter in the stream id and everything
         // else in the seed.
 
+        // let mut stream = [0u8; 32];
+        // stream[..8].copy_from_slice(&self.index_a.to_le_bytes());
+        // stream[8..16].copy_from_slice(&self.index_b.to_le_bytes());
+        // stream[16..24].copy_from_slice(&self.step.to_le_bytes());
+        // stream[24..28].copy_from_slice(&self.substep.to_le_bytes());
+        // stream[28..32].copy_from_slice(&self.seed.to_le_bytes());
         let mut stream = [0u8; 16];
         stream[..8].copy_from_slice(&self.index_a.to_le_bytes());
         stream[8..16].copy_from_slice(&self.index_b.to_le_bytes());
@@ -242,16 +248,18 @@ impl Counter {
         seed[..8].copy_from_slice(&self.step.to_le_bytes());
         seed[8..12].copy_from_slice(&self.substep.to_le_bytes());
         seed[12..16].copy_from_slice(&self.seed.to_le_bytes());
-        // seed[16..24].copy_from_slice(&self.index_b.to_le_bytes());
 
+        // seed[16..24].copy_from_slice(&self.index_b.to_le_bytes());
         // seed[28..].copy_from_slice(&self.counter_c.to_le_bytes());
 
         // let mut rng = ThreeFry2x64Rng::<13>::from_seed(seed);
 
-        // let mut rng = chacha20::ChaCha8Rng::from_seed(seed);
+        // let mut rng = chacha20::ChaCha8Rng::from_seed(stream);
+        // rng
         // rng.set_stream(stream);
         // rng
-        Squares::seed_from_u64(1_347_891_341_384)
+        Squares::seed_from_u64(0x16d7358fe8d9a17b)
+        // rand_xoshiro::Xoshiro256Plus::from_seed(stream)
     }
 }
 
