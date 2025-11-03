@@ -25,11 +25,11 @@ primary and ghost particles by index with an enum.
 ## Cell List Data Structure
 
 The cell list is the core data structure for neighbor search operations. It maps space
-into a Cartesian grid of cubic cells and leverages hash maps for storage and lookup. The
+into a Cartesian grid of cubic cells and leverages maps for storage and lookup. The
 struct is independent of spatial dimension and works only for N-dimensional Cartesian
 space.
 
-The use of hash maps on cell indices provides
+The use of maps on cell indices provides
 1) Efficient memory usage even for sparse systems (occasional use of `shrink_to_fit`
    may be needed in such circumstances).
 2) One implementation that works for any shape of boundary. Cells are always cubic
@@ -38,8 +38,6 @@ The use of hash maps on cell indices provides
 
 ### Members
 
-- **Origin:**
-  Set the origin of the cell grid. Will be used by parallel Monte Carlo algorithms.
 - **Cell Width:**
   Uses cube boxes to partition space. The cell size is user-defined and exposed as
   a parameter.
@@ -82,22 +80,28 @@ The use of hash maps on cell indices provides
 
 ## AllPairs Data Structure
 
-In curved space or in tiny simulations, the `AllPairs` type implements a no-op spatial
-data structure. Every query will always match all points.
+For curved space or in tiny simulations, the `AllPairs` type implements a no-op spatial
+data structure. Every query will always match all points. To effectively
+implement `PointUpdate` and `PointsInBall`, `AllPairs` must unfortunately store
+a `HashSet` of all keys. That makes ball searches run at 1/4 the speed of a tight
+for loop over all sites.
 
-There are two options to implement this:
-1) Track all points present with `insert`/`remove` and iterate over them in queries.
-2) Make `insert` and `remove` empty functions and instead return an enum member
-   indicating that the caller should loop over all pairs.
-
-The first is a cleaner API but adds overhead in tracking the point keys. TODO:
-benchmark this implementation and determine whether the 2nd method is worth the effort.
+We *could* have `iter_sites_near` return some kind of hybrid iterator that stores
+both types of iterators internally and uses the one appropriate to the spatial
+data structure. However, it may be better to write a separate implementation of
+`CutoffPair` instead: `CutoffPairAll`. `CutoffPairAll` would not call
+`iter_sites_near` and would instead loop over `sites()` and `ghosts()` directly.
+As a bonus, `CutoffPairAll` could iterate over sites in parallel and boost performance
+for simulations on curved surfaces that have no other opportunity for parallelism.
 
 ## Neighbor iteration protocols
 
-Looping over all neighbor cells is a complex operation. It is most naturally expressed
-in a for loop. The initial implementation will build a Vec result. This will establish
-a performance baseline. (TODO: document that baseline here). There are several
-optimizations that can be made on that baseline (reduce allocations, iterator
-approaches, and possibly others). TODO: after benchmarking these alternatives, document
-which method is selected here.
+Profiling shows that the majority of the runtime in MC benchmarks is spent iterating
+over potential neighbors. `VecCell` and `HashCell` pre-compute sorted stencils that
+check the nearest cells first. Their implementation of `PointsInBall` builds an
+iterator that stores several references and counters that effectively implements an
+outer iteration over nearby cells and an inner iteration over sites in the cell.
+These iterators were carefully constructed and profiled to avoid extra computations
+of the cell index. Overall, they attain a performance much higher than expected ---
+the hoomd-rs hard disk benchmark is more than twice as fast as HOOMD-blue. Other
+MC benchmarks range from 20-50% faster.
