@@ -121,10 +121,9 @@ where
         for site_i in microstate.sites() {
             for site_j in microstate
                 .iter_sites_near(site_i.properties.position(), self.r_cut)
-                .into_iter()
-                .filter(|s| site_i.site_tag < s.site_tag && site_i.body_tag != s.body_tag)
             {
-                if self
+                if site_i.site_tag < site_j.site_tag && site_i.body_tag != site_j.body_tag &&
+                    self
                     .evaluator
                     .site_pair_overlap(&site_i.properties, &site_j.properties)
                 {
@@ -197,10 +196,8 @@ where
         let site_overlap = |site_properties: &S| {
             for site_j in initial_microstate
                 .iter_sites_near(site_properties.position(), self.r_cut)
-                .into_iter()
-                .filter(|s| body_tag != s.body_tag)
             {
-                if self
+                if body_tag != site_j.body_tag && self
                     .evaluator
                     .site_pair_overlap(site_properties, &site_j.properties)
                 {
