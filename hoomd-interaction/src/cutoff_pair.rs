@@ -211,9 +211,11 @@ where
         let mut total = 0.0;
         for site_i in microstate.sites() {
             for site_j in microstate
-                .iter_sites_near(site_i.properties.position(), self.r_cut)
+                .iter_sites_potentially_near(site_i.properties.position(), self.r_cut)
             {
-                if site_i.site_tag < site_j.site_tag && site_i.body_tag != site_j.body_tag {
+                if site_i.site_tag < site_j.site_tag && site_i.body_tag != site_j.body_tag &&
+                    site_i.properties.position().distance_squared(site_j.properties.position()) < self.r_cut.powi(2)
+                    {
                     total += self
                         .evaluator
                         .site_pair_energy(&site_i.properties, &site_j.properties);
@@ -291,16 +293,18 @@ where
         // the necessary loops and call `site_pair_energy` directly.
         let site_energy = |site_properties: &S| {
             initial_microstate
-                .iter_sites_near(site_properties.position(), self.r_cut)
+                .iter_sites_potentially_near(site_properties.position(), self.r_cut)
                 .into_iter()
                 .fold(0.0, |total, site_j| {
-                    if body_tag == site_j.body_tag {
-                        total
-                    } else {
+                    if body_tag != site_j.body_tag &&
+                       site_properties.position().distance_squared(site_j.properties.position()) < self.r_cut.powi(2)
+                     {
                         total
                             + self
                                 .evaluator
                                 .site_pair_energy(site_properties, &site_j.properties)
+                    } else {
+                        total
                     }
                 })
         };
@@ -386,13 +390,17 @@ where
         // filter matching body tags. The new body does not yet have a tag.
         let site_energy = |site_properties: &S| {
             initial_microstate
-                .iter_sites_near(site_properties.position(), self.r_cut)
+                .iter_sites_potentially_near(site_properties.position(), self.r_cut)
                 .into_iter()
                 .fold(0.0, |total, site_j| {
+                    if site_properties.position().distance_squared(site_j.properties.position()) < self.r_cut.powi(2) {
                     total
                         + self
                             .evaluator
                             .site_pair_energy(site_properties, &site_j.properties)
+                    } else {
+                        total
+                    }
                 })
         };
 
@@ -470,16 +478,18 @@ where
         // the necessary loops and call `site_pair_energy` directly.
         let site_energy = |site_properties: &S| {
             initial_microstate
-                .iter_sites_near(site_properties.position(), self.r_cut)
+                .iter_sites_potentially_near(site_properties.position(), self.r_cut)
                 .into_iter()
                 .fold(0.0, |total, site_j| {
-                    if body_tag == site_j.body_tag {
-                        total
-                    } else {
+                    if body_tag != site_j.body_tag &&
+                       site_properties.position().distance_squared(site_j.properties.position()) < self.r_cut.powi(2)
+                     {
                         total
                             + self
                                 .evaluator
                                 .site_pair_energy(site_properties, &site_j.properties)
+                    } else {
+                        total
                     }
                 })
         };

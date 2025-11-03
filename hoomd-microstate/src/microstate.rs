@@ -14,7 +14,6 @@ use crate::{
 
 use hoomd_spatial::{AllPairs, PointUpdate, PointsInBall};
 use hoomd_utility::random::Counter;
-use hoomd_vector::Metric;
 
 /// Either a primary site index or a ghost site index.
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
@@ -1251,17 +1250,20 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
 impl<P, B, S, X, C> Microstate<B, S, X, C>
 where
     S: Position<Position = P>,
-    P: Metric,
     X: PointsInBall<P, SiteKey>,
 {
-    /// Find sites near a point in space.
+    /// Find sites potentially near a point in space.
     ///
-    /// Iterate over all sites and ghost sites within a distance `r` of the given
-    /// `point`. All sites produced by this iterator will be in the system reference
-    /// frame and within the given distance metric. No wrapping is required for
-    /// ghost sites, which will be slightly outside the boundary condition. When a
-    /// ghost site is provided by the iterator, its `site_tag` and `body_tag` will
-    /// match that of the actual site.
+    /// Iterate over all sites and ghost sites within a distance `r` of the
+    /// given `point`, *and possibly other sites as well*. All sites produced by
+    /// this iterator will be in the system reference frame and within the given
+    /// distance metric. No wrapping is required for ghost sites, which will be
+    /// slightly outside the boundary condition. When a ghost site is provided
+    /// by the iterator, its `site_tag` and `body_tag` will match that of the
+    /// actual site.
+    ///
+    /// The iterator does not filter on distance to avoid duplicating effort
+    /// as many callers already perform circumsphere checks.
     ///
     /// The caller *may* provide a value for `r` that is larger than the maximum
     /// interaction range. In the current implementation, this is not an error.
@@ -1275,13 +1277,12 @@ where
         clippy::missing_panics_doc,
         reason = "Will panic only due to a bug in hoomd-rs."
     )]
-    pub fn iter_sites_near(&self, point: &P, r: f64) -> impl IntoIterator<Item = &Site<S>> {
+    pub fn iter_sites_potentially_near(&self, point: &P, r: f64) -> impl IntoIterator<Item = &Site<S>> {
         // Ideally, an AllPairs specialized implementation would do this:
         // self.sites
         //     .items
         //     .iter()
         //     .chain(self.ghosts.items.iter())
-        //     .filter(move |s| point.distance_squared(s.properties.position()) < r.powi(2))
         // However, specialization is not in stable Rust and will likely never be.
         let potential_sites = self.spatial_data.points_potentially_in_ball(point, r);
         potential_sites
@@ -1297,7 +1298,6 @@ where
                     &self.ghosts.items[index]
                 }
             })
-            .filter(move |s| point.distance_squared(s.properties.position()) < r.powi(2))
     }
 }
 
