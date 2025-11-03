@@ -7,7 +7,7 @@ use clap::Parser;
 use clap_verbosity_flag::{InfoLevel, Verbosity, log::LevelFilter};
 use hoomd_microstate::SiteKey;
 use hoomd_spatial::{AllPairs, HashCell, VecCell};
-use log::info;
+use log::{debug, info};
 use serde::Serialize;
 
 use hoomd_microstate::property::OrientedPoint;
@@ -103,6 +103,7 @@ fn main() -> anyhow::Result<()> {
                 .or_insert_with(|| Performance::with_units("ms / step".to_string()));
             entry.n.push(n);
             entry.vec_cell_performance.push(performance);
+            debug!("{}", mc_hard_sphere_2d.microstate);
 
             // let mut mc_hard_sphere_2d = mc::HardSphere::<2, AllPairs<SiteKey>>::with_microstate(&microstate_2d)?;
             // let performance = benchmark.benchmark_one(&mut mc_hard_sphere_2d)?;
@@ -127,16 +128,17 @@ fn main() -> anyhow::Result<()> {
                 .or_insert_with(|| Performance::with_units("ms / step".to_string()));
             entry.n.push(n);
             entry.vec_cell_performance.push(performance);
+            debug!("{}", mc_lennard_jones_2d.microstate);
 
-            let mut mc_lennard_jones_2d =
-                mc::LennardJones::<2, AllPairs<SiteKey>>::with_microstate(&microstate_2d)?;
-            let performance = benchmark.benchmark_one(&mut mc_lennard_jones_2d)?;
-            entry.all_pairs_performance.push(performance);
+            // let mut mc_lennard_jones_2d =
+            //     mc::LennardJones::<2, AllPairs<SiteKey>>::with_microstate(&microstate_2d)?;
+            // let performance = benchmark.benchmark_one(&mut mc_lennard_jones_2d)?;
+            // entry.all_pairs_performance.push(performance);
 
-            let mut mc_lennard_jones_2d =
-                mc::LennardJones::<2, HashCell<SiteKey, 2>>::with_microstate(&microstate_2d)?;
-            let performance = benchmark.benchmark_one(&mut mc_lennard_jones_2d)?;
-            entry.hash_cell_performance.push(performance);
+            // let mut mc_lennard_jones_2d =
+            //     mc::LennardJones::<2, HashCell<SiteKey, 2>>::with_microstate(&microstate_2d)?;
+            // let performance = benchmark.benchmark_one(&mut mc_lennard_jones_2d)?;
+            // entry.hash_cell_performance.push(performance);
         }
 
         if benchmark_matcher.matches("mc_hexagon_2d") {
@@ -185,6 +187,7 @@ fn main() -> anyhow::Result<()> {
                 .or_insert_with(|| Performance::with_units("ms / step".to_string()));
             entry.n.push(n);
             entry.vec_cell_performance.push(performance);
+            debug!("{}", mc_hard_sphere_3d.microstate);
 
             // let mut mc_hard_sphere_3d = mc::HardSphere::<3, AllPairs<SiteKey>>::with_microstate(&microstate_3d)?;
             // let performance = benchmark.benchmark_one(&mut mc_hard_sphere_3d)?;
@@ -209,16 +212,17 @@ fn main() -> anyhow::Result<()> {
                 .or_insert_with(|| Performance::with_units("ms / step".to_string()));
             entry.n.push(n);
             entry.vec_cell_performance.push(performance);
+            debug!("{}", mc_lennard_jones_3d.microstate);
 
-            let mut mc_lennard_jones_3d =
-                mc::LennardJones::<3, AllPairs<SiteKey>>::with_microstate(&microstate_3d)?;
-            let performance = benchmark.benchmark_one(&mut mc_lennard_jones_3d)?;
-            entry.all_pairs_performance.push(performance);
+            // let mut mc_lennard_jones_3d =
+            //     mc::LennardJones::<3, AllPairs<SiteKey>>::with_microstate(&microstate_3d)?;
+            // let performance = benchmark.benchmark_one(&mut mc_lennard_jones_3d)?;
+            // entry.all_pairs_performance.push(performance);
 
-            let mut mc_lennard_jones_3d =
-                mc::LennardJones::<3, HashCell<SiteKey, 3>>::with_microstate(&microstate_3d)?;
-            let performance = benchmark.benchmark_one(&mut mc_lennard_jones_3d)?;
-            entry.hash_cell_performance.push(performance);
+            // let mut mc_lennard_jones_3d =
+            //     mc::LennardJones::<3, HashCell<SiteKey, 3>>::with_microstate(&microstate_3d)?;
+            // let performance = benchmark.benchmark_one(&mut mc_lennard_jones_3d)?;
+            // entry.hash_cell_performance.push(performance);
         }
 
         if benchmark_matcher.matches("mc_octahedron_3d") {

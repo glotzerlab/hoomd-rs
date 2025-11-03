@@ -12,7 +12,7 @@
 
 //! Implement `VecCell`
 
-use std::{array, cmp::Eq, hash::Hash, iter, marker::PhantomData, mem};
+use std::{array, cmp::Eq, fmt, hash::Hash, iter, marker::PhantomData, mem};
 
 use log::trace;
 use rustc_hash::FxHashMap;
@@ -60,7 +60,7 @@ use super::{PointUpdate, PointsInBall, WithSearchRadius};
 /// negative point to the most positive point. In dilute systems, [`VecCell`]
 /// can therefore waste a lot of memory storing empty cells. Use [`HashCell`]
 /// and occasionally call its `shrink_to_fit` method to limit the memory
-/// required in dilute systems.
+/// required to model dilute systems.
 ///
 /// [`HashCell`]: crate::HashCell
 ///
@@ -692,6 +692,37 @@ where
             stencil,
             center,
         }
+    }
+}
+
+impl<K, const D: usize> fmt::Display for VecCell<K, D> {
+    /// Summarize the contents of the cell list.
+    ///
+    /// This is a slow operation. It is meant to be printed to logs only
+    /// occasionally, such as at the end of a benchmark or simulation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use log::info;
+    /// use hoomd_spatial::VecCell;
+    ///
+    /// let vec_cell = VecCell::<usize, 3>::default();
+    ///
+    /// info!("{vec_cell}");
+    /// ```
+    #[allow(
+        clippy::missing_inline_in_public_items,
+        reason = "no need to inline display"
+    )]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let largest_cell_size = self.keys_map.iter().map(Vec::len).fold(0, usize::max);
+
+        writeln!(f, "VecCell<K, {D}>:")?;
+        writeln!(f, "- {} total cells with {} cells on each side.", self.keys_map.len(),self.half_extent*2 + 1)?;
+        writeln!(f, "- {} points.", self.cell_index.len())?;
+        writeln!(f, "- Nominal, maximum search radii: {}, {}", self.cell_width, self.cell_width.get() * self.stencils.len() as f64)?;
+        write!(f, "- Largest cell length: {largest_cell_size}")
     }
 }
 

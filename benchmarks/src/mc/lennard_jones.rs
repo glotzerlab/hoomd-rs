@@ -17,10 +17,10 @@ use hoomd_spatial::{PointUpdate, PointsInBall, WithSearchRadius};
 use hoomd_vector::Cartesian;
 
 pub struct LennardJones<const D: usize, X> {
-    microstate: Microstate<Point<Cartesian<D>>, Point<Cartesian<D>>, X, Periodic<Hypercuboid<D>>>,
-    translate_sweep: Sweep<Translate<Cartesian<D>>>,
-    hamiltonian: CutoffPair<Isotropic<pairwise::LennardJones>>,
-    macrostate: Isothermal,
+    pub microstate: Microstate<Point<Cartesian<D>>, Point<Cartesian<D>>, X, Periodic<Hypercuboid<D>>>,
+    pub translate_sweep: Sweep<Translate<Cartesian<D>>>,
+    pub hamiltonian: CutoffPair<Isotropic<pairwise::LennardJones>>,
+    pub macrostate: Isothermal,
 }
 
 impl<const D: usize, X> Simulation for LennardJones<D, X>

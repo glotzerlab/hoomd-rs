@@ -3,7 +3,7 @@
 
 //! Implement [`Microstate`] and related types.
 
-use std::{cmp::Reverse, collections::BinaryHeap};
+use std::{cmp::Reverse, collections::BinaryHeap, fmt};
 use arrayvec::ArrayVec;
 
 use crate::{
@@ -1560,6 +1560,38 @@ impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
         microstate.extend_bodies(self.bodies)?;
 
         Ok(microstate)
+    }
+}
+
+
+impl<B, S, X, C> fmt::Display for Microstate<B, S, X, C> where
+X: fmt::Display
+     {
+    /// Summarize the contents of the microstate.
+    ///
+    /// This is a slow operation. It is meant to be printed to logs only
+    /// occasionally, such as at the end of a benchmark or simulation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use log::info;
+    /// use hoomd_spatial::VecCell;
+    ///
+    /// let vec_cell = VecCell::<usize, 3>::default();
+    ///
+    /// info!("{vec_cell}");
+    /// ```
+    #[allow(
+        clippy::missing_inline_in_public_items,
+        reason = "no need to inline display"
+    )]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Microstate:")?;
+        writeln!(f, "- step, substep: {}, {}.", self.step, self.substep)?;
+        writeln!(f, "- {} bodies.", self.bodies().len())?;
+        writeln!(f, "- {} sites / {} ghosts.", self.sites.items.len(), self.ghosts.items.len())?;
+        write!(f, "{}", self.spatial_data)
     }
 }
 
