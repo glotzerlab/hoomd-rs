@@ -298,9 +298,11 @@ where
         }
     }
 
-    // Provided method
     #[inline]
     fn clone_from(&mut self, source: &Self) {
+        // `Sweep` and other methods use clone_from to efficiently generate
+        // trial moves while minimizing memory copies. #[derive(Clone)] does
+        // not implement `clone_from`, so it must be done manually.
         self.properties.clone_from(&source.properties);
         self.sites.clone_from(&source.sites);
     }
