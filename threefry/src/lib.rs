@@ -13,3 +13,6 @@ pub use threefry4x64::ThreeFry4x64Rng;
 
 mod squares;
 pub use squares::Squares;
+
+mod xsm;
+pub use xsm::XSM64Rng;
