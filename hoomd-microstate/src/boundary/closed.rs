@@ -4,7 +4,7 @@
 //! Implement Closed
 
 use rand::{Rng, distr::Distribution};
-use tinyvec::ArrayVec;
+use arrayvec::ArrayVec;
 
 use super::{Error, GenerateGhosts, MAX_GHOSTS, Wrap};
 use crate::property::Position;
@@ -43,7 +43,7 @@ where
     }
 
     #[inline]
-    fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
+    fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         ArrayVec::new()
     }
 }

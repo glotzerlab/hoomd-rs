@@ -8,7 +8,7 @@
 //! octagon to implement the Bolza surface.
 
 use std::f64::consts::PI;
-use tinyvec::ArrayVec;
+use arrayvec::ArrayVec;
 
 use crate::{
     boundary::{
@@ -199,7 +199,7 @@ where
     #[expect(clippy::too_many_lines, reason = "complicated function")]
     #[expect(clippy::cast_possible_truncation, reason = "truncating float to usize")]
     #[expect(clippy::cast_sign_loss, reason = "hard-coded positive numbers")]
-    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
+    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         let mut result = ArrayVec::new();
         let r = site_properties.position();
 

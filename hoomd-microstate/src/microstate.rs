@@ -4,7 +4,7 @@
 //! Implement [`Microstate`] and related types.
 
 use std::{cmp::Reverse, collections::BinaryHeap};
-use tinyvec::ArrayVec;
+use arrayvec::ArrayVec;
 
 use crate::{
     Body, Error, Site, Transform,
@@ -203,7 +203,7 @@ pub struct Microstate<B, S = B, X = AllPairs<SiteKey>, C = Open> {
     ghosts: VecWithTags<Site<S>>,
 
     /// Tags of the ghosts associated with a given site (in site index order).
-    sites_ghosts: Vec<ArrayVec<[usize; MAX_GHOSTS]>>,
+    sites_ghosts: Vec<ArrayVec<usize, MAX_GHOSTS>>,
 
     /// The range of allowed particle positions and a description of any periodicity.
     boundary: C,
@@ -601,7 +601,7 @@ where
         sites: &VecWithTags<Site<S>>,
         site_index: usize,
         boundary: &C,
-        sites_ghosts: &mut [ArrayVec<[usize; MAX_GHOSTS]>],
+        sites_ghosts: &mut [ArrayVec<usize, MAX_GHOSTS>],
         ghosts: &mut VecWithTags<Site<S>>,
         spatial_data: &mut X,
     ) {
@@ -1240,6 +1240,11 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
                 .expect("bodies_sites and site_indices should be consistent")]
         })
     }
+
+    #[inline]
+    pub fn spatial_data(&self) -> &X {
+        &self.spatial_data
+    }
 }
 
 impl<P, B, S, X, C> Microstate<B, S, X, C>
@@ -1557,7 +1562,6 @@ impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
     }
 }
 
-// TODO: Getter for spatial data.
 // TODO: Consistency tests for spatial data.
 
 #[cfg(test)]
