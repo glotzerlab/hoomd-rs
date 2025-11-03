@@ -1241,6 +1241,7 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
         })
     }
 
+    /// Get the spatial data structure.
     #[inline]
     pub fn spatial_data(&self) -> &X {
         &self.spatial_data
