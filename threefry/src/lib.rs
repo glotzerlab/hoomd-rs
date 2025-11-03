@@ -5,6 +5,7 @@
 
 /// asdf
 pub(crate) mod backends;
+pub use backends::C240;
 
 mod threefry2x64;
 pub use threefry2x64::ThreeFry2x64Rng;

@@ -41,8 +41,8 @@ impl RngCore for Squares64 {
         // Round 3
         x = (x.wrapping_mul(x).wrapping_add(y)).rotate_left(32);
         // Round 4
-        let t = (x.wrapping_mul(x).wrapping_add(z)).rotate_left(32);
-        x = t;
+        let t = x.wrapping_mul(x).wrapping_add(z);
+        x = t.rotate_left(32);
         self.counter += 1;
         // Round 5
         t ^ ((x.wrapping_mul(x).wrapping_add(y)) >> 32)
@@ -57,7 +57,6 @@ impl RngCore for Squares64 {
     }
 }
 impl RngCore for Squares128 {
-    #[expect(clippy::cast_possible_truncation, reason = "Truncation is intended.")]
     #[inline]
     fn next_u64(&mut self) -> u64 {
         /*
@@ -81,11 +80,11 @@ impl RngCore for Squares128 {
         // Round 3
         x = (x.wrapping_mul(x).wrapping_add(y)).rotate_left(64);
         // Round 4
-        let t = (x.wrapping_mul(x).wrapping_add(z)).rotate_left(64);
-        x = t;
+        let t = x.wrapping_mul(x).wrapping_add(z);
+        x = t.rotate_left(64);
         self.counter += 1;
         // Round 5
-        (t ^ (x.wrapping_mul(x).wrapping_add(y))) as u64
+        ((t ^ (x.wrapping_mul(x).wrapping_add(y))) >> 64) as u64
     }
     #[inline]
     fn next_u32(&mut self) -> u32 {
@@ -129,4 +128,9 @@ impl SeedableRng for Squares128 {
             counter: 0,
         }
     }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::{SeedableRng, rngs::StdRng};
 }
