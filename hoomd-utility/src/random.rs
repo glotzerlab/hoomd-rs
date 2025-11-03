@@ -5,7 +5,7 @@
 
 // use chacha20::ChaCha8Rng;
 use rand::{Rng, SeedableRng};
-use threefry::{Squares64, Squares128, ThreeFry2x64Rng};
+use threefry::Squares128;
 
 /// Conveniently construct counter based random number generators.
 ///
