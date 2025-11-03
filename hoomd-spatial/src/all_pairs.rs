@@ -12,7 +12,9 @@ use super::{PointUpdate, PointsInBall, WithSearchRadius};
 
 /// Check all pairs.
 ///
-/// [`AllPairs`] is extremely slow. Use it only when absolutely necessary.
+/// [`AllPairs`] is extremely slow when used with [`CutoffPair`].
+/// Prefer [`VecCell`] or [`HashCell`] when possible. When not possible,
+/// TODO: Mention `PairwiseCutoffall`.
 #[derive(Clone)]
 pub struct AllPairs<K> {
     /// Store all keys currently in the spatial data.
