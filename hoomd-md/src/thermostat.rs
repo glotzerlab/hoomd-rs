@@ -51,7 +51,7 @@ pub trait Thermostat<B, S, C, M> {
 /// [`NoThermostat`] implement the dummy method
 /// that performs no adjustment on the temperature
 /// for [`TranslationalMotion`] and [`RotationalMotion`]
-/// as they require to input a [`Thermostat`] during
+/// as they require an input of a [`Thermostat`] during
 /// integration.
 pub struct NoThermostat;
 
@@ -121,11 +121,16 @@ impl<B, S, C, M> Thermostat<B, S, C, M> for NoThermostat {
 /// or [`RotationalMotion`] and $`n`$ is a random value
 /// sampled from the standard normal distribution
 /// $`\mathcal{N}(0, 1)`$.
+/// 
+/// # Reference
+/// [Bussi et al. 2007]
+/// 
+/// [Bussi et al. 2007]: <https://doi.org/10.1063/1.2408420>
 ///
 /// # Examples
 ///
 /// ```
-/// use hoomd_md::{thermostat::BussiThermostat, ConstantVolume, TranslationalMotion};
+/// use hoomd_md::{thermostat::BussiThermostat};
 ///
 /// let dt = 0.001;
 /// let tau = 100.0*dt;
@@ -269,18 +274,34 @@ where
 /// [`MTTKThermostat`] integrate the $`\eta`$ and
 /// $`\xi`$ forward by half time step $`\frac{\delta t}{2}`$
 /// by the following procedure:
+/// 
 /// ```math
 /// \begin{align}
 ///
-/// &G[t] = \frac{1}{\tau^2} \left( \frac{k_B T[t]}{k_BT_\mathrm{setpoint}} - 1 \right) \\
-/// &\xi \left[ t+\frac{\delta t} {4} \right] = \xi[t] + G[t]\frac{\delta t}{4} \\
-/// &\alpha = \exp{\left[ -\xi\left[t+\frac{\delta t} {4} \right] \frac{dt}{2} \right]}  \quad \text{calculate rescaling factor} \\
-/// &k_B T\left[ t+\frac{\delta t} {4} \right] = k_B T[t] \alpha^2 \quad \; \text{adjust temperature} \\
+/// &G_\mathrm{old} = \frac{1}{\tau^2} \left( \frac{k_B T_\mathrm{old}}{k_BT_\mathrm{setpoint}} - 1 \right) \\
+/// &\xi \left[ t+\frac{\delta t} {4} \right] = \xi[t] + G_\mathrm{old}\frac{\delta t}{4} \\
+/// &\alpha = \exp{\left[ -\xi\left[t+\frac{\delta t} {4} \right] \frac{dt}{2} \right]}  \quad\; \text{calculate rescaling factor} \\
+/// &k_B T_\mathrm{new} = k_B T_\mathrm{old} \times \alpha^2 \quad\quad\quad\; \text{adjust temperature} \\
 /// &\eta \left[ t+\frac{\delta t} {2} \right] = \eta[t] + \xi \left[ t+\frac{\delta t} {4} \right] \frac{\delta t}{2} \\
-/// &G \left[ t+\frac{\delta t} {4} \right] = \frac{1}{\tau^2} \left( \frac{k_B T \left[ t+\frac{\delta t} {4} \right] }{k_BT_\mathrm{setpoint}} - 1 \right) \\
-/// &\xi \left[ t+\frac{\delta t} {2} \right] = \xi \left[ t+\frac{\delta t} {4} \right] + G \left[ t+\frac{\delta t} {4} \right] \frac{\delta t}{4} \\
+/// &G_\mathrm{new} = \frac{1}{\tau^2} \left( \frac{k_B T_\mathrm{new} }{k_BT_\mathrm{setpoint}} - 1 \right) \\
+/// &\xi \left[ t+\frac{\delta t} {2} \right] = \xi \left[ t+\frac{\delta t} {4} \right] + G_\mathrm{new} \frac{\delta t}{4} \\
 ///         
 /// \end{align}
+/// ```
+/// 
+/// # Reference
+/// [Tuckerman et al. 2006]
+/// 
+/// [Tuckerman et al. 2006]: <https://doi.org/10.1088/0305-4470/39/19/S18>
+///
+/// # Examples
+///
+/// ```
+/// use hoomd_md::{thermostat::MTTKThermostat};
+///
+/// let dt = 0.001;
+/// let tau = 100.0*dt;
+/// let thermostat = MTTKThermostat::new(tau);
 /// ```
 pub struct MTTKThermostat {
     /// Thermostat time constant (`[time]`).
