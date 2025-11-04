@@ -994,6 +994,7 @@ where
         self.bodies_sites.clear();
         self.ghosts.clear();
         self.sites_ghosts.clear();
+        self.spatial_data.clear();
     }
 }
 
