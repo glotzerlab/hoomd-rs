@@ -3,7 +3,7 @@
 
 //! .
 use rand::{RngCore, SeedableRng};
-use threefry::Squares;
+use threefry::Squares64;
 use threefry::ThreeFry2x64Rng;
 use threefry::XSM64Rng;
 

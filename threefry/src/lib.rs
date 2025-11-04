@@ -17,3 +17,6 @@ pub use squares::{Squares64, Squares128};
 
 mod xsm;
 pub use xsm::XSM64Rng;
+
+mod tyche;
+pub use tyche::Tyche4x32Rng;

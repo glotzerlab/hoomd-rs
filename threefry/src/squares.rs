@@ -112,21 +112,25 @@ impl SeedableRng for Squares64 {
         }
     }
 }
+
+// Seeds for Squares-type PRNGs cannot use the full entropy range of the underlying type
+// More specifically,
+
 impl SeedableRng for Squares128 {
     type Seed = [u8; 16];
     #[inline]
     fn from_seed(seed: Self::Seed) -> Self {
-        Self {
-            seed: u128::from_le_bytes(seed), // TODO:
-            counter: 0,
-        }
+        // Step is u64, substep and seed are u32.
+        // First word must be odd in 1-15, so 8 choices
+        // Words 9-15 (6 words, 12 bytes) are random from 1-15 ODD | EVEN, with n != n-1
+        // See openrand commented out code
+        let seed = (u128::from_le_bytes(seed) + 1) * 0xc58e_fd15_4ce3_2f6d;
+        Self { seed, counter: 0 }
     }
     #[inline]
     fn seed_from_u64(state: u64) -> Self {
-        Self {
-            seed: u128::from(state),
-            counter: 0,
-        }
+        let seed = (u128::from(state) + 1) * 0xc58e_fd15_4ce3_2f6d;
+        Self { seed, counter: 0 }
     }
 }
 #[cfg(test)]

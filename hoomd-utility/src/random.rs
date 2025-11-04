@@ -5,7 +5,7 @@
 
 // use chacha20::ChaCha8Rng;
 use rand::{Rng, SeedableRng};
-use threefry::{Squares64, Squares128, ThreeFry2x64Rng};
+use threefry::{Squares64, Squares128, ThreeFry2x64Rng, Tyche4x32Rng};
 
 /// Conveniently construct counter based random number generators.
 ///
@@ -245,9 +245,10 @@ impl Counter {
         // stream[8..12].copy_from_slice(&self.counter_a.to_le_bytes());
 
         let mut seed = [0u8; 16];
-        seed[..8].copy_from_slice(&self.step.to_le_bytes());
+        // let mut seed = [0u8; 32]; // ChaCha and Xoshiro256
+        seed[..8].copy_from_slice(&(self.step).to_le_bytes());
         seed[8..12].copy_from_slice(&self.substep.to_le_bytes());
-        seed[12..16].copy_from_slice(&self.seed.to_le_bytes());
+        seed[12..16].copy_from_slice(&(self.seed).to_le_bytes());
 
         // seed[16..24].copy_from_slice(&self.index_b.to_le_bytes());
         // seed[28..].copy_from_slice(&self.counter_c.to_le_bytes());
@@ -258,8 +259,10 @@ impl Counter {
         // rng
         // rng.set_stream(stream);
         // rng
-        Squares64::seed_from_u64(0x16d7358fe8d9a17b)
-        // rand_xoshiro::Xoshiro256Plus::from_seed(stream)
+        // Squares64::seed_from_u64(0x16d7358fe8d9a17b)
+        // Squares128::from_seed(seed)
+        // rand_xoshiro::Xoshiro256Plus::from_seed(seed)
+        Tyche4x32Rng::from_seed(seed)
     }
 }
 
