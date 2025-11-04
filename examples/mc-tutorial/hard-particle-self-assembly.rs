@@ -96,12 +96,12 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: periodic
 
         // ANCHOR: microstate
-        let cell_list = VecCell::builder()
+        let vec_cell = VecCell::builder()
             .nominal_search_radius(sigma.try_into()?)
             .build();
         let microstate = Microstate::builder()
-            .spatial_data(cell_list)
             .boundary(periodic_square)
+            .spatial_data(vec_cell)
             .try_build()?;
         // ANCHOR_END: microstate
 
