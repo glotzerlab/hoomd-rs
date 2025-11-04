@@ -10,7 +10,7 @@ pub const C240: u64 = 0x1_BD1_1BD_AA9_FC1_A22;
 
 /// Rotate a 64 bit unsigned integer left by `r bits`
 #[inline]
-fn rotl_u64(x: u64, d: u32) -> u64 {
+pub(crate) fn rotl_u64(x: u64, d: u32) -> u64 {
     (x << d) | (x >> (64 - d))
 }
 /// Rotate a 32 bit unsigned integer left by `r bits`

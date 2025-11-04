@@ -5,7 +5,9 @@
 
 // use chacha20::ChaCha8Rng;
 use rand::{Rng, SeedableRng};
-use threefry::{CWG64Rng, Squares64, Squares128, ThreeFry2x64Rng, Tyche4x32Rng, XSM64Rng};
+use threefry::{
+    CWG64Rng, SFC64Rng, Squares64, Squares128, ThreeFry2x64Rng, Tyche4x32Rng, XSM64Rng,
+};
 
 /// Conveniently construct counter based random number generators.
 ///
@@ -263,7 +265,8 @@ impl Counter {
         // rand_xoshiro::Xoshiro256Plus::from_seed(seed)
         // Tyche4x32Rng::from_seed(seed)
         // XSM64Rng::from_seed(seed)
-        CWG64Rng::from_seed(seed)
+        // CWG64Rng::from_seed(seed)
+        SFC64Rng::from_seed(seed)
     }
 }
 

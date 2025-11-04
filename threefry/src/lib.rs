@@ -23,3 +23,5 @@ pub use tyche::Tyche4x32Rng;
 
 mod cwg;
 pub use cwg::CWG64Rng;
+mod sfc;
+pub use sfc::SFC64Rng;
