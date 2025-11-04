@@ -692,11 +692,7 @@ where
     /// provided at construction, rounded up to the nearest integer multiple
     /// of the *nominal search radius*.
     #[inline]
-    fn points_in_ball(
-        &self,
-        position: &Cartesian<D>,
-        radius: f64,
-    ) -> impl Iterator<Item = K> {
+    fn points_in_ball(&self, position: &Cartesian<D>, radius: f64) -> impl Iterator<Item = K> {
         let stencil_index = (radius / self.cell_width.get()).ceil() as usize - 1;
         assert!(
             stencil_index < self.stencils.len(),
@@ -1078,8 +1074,7 @@ mod tests {
 
         let mut n_neighbors = 0;
         for p_i in &reference {
-            let potential_neighbors: Vec<_> =
-                cell_list.points_in_ball(p_i, 1.0).collect();
+            let potential_neighbors: Vec<_> = cell_list.points_in_ball(p_i, 1.0).collect();
 
             for (j, p_j) in reference.iter().enumerate() {
                 if p_i.distance(p_j) <= 1.0 {

@@ -210,9 +210,7 @@ where
     fn total_energy(&self, microstate: &Microstate<B, S, X, C>) -> f64 {
         let mut total = 0.0;
         for site_i in microstate.sites() {
-            for site_j in
-                microstate.iter_sites_near(site_i.properties.position(), self.r_cut)
-            {
+            for site_j in microstate.iter_sites_near(site_i.properties.position(), self.r_cut) {
                 if site_i.site_tag < site_j.site_tag
                     && site_i.body_tag != site_j.body_tag
                     && site_i

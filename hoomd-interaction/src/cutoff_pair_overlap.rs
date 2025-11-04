@@ -119,9 +119,7 @@ where
     #[inline]
     fn total_energy(&self, microstate: &Microstate<B, S, X, C>) -> f64 {
         for site_i in microstate.sites() {
-            for site_j in
-                microstate.iter_sites_near(site_i.properties.position(), self.r_cut)
-            {
+            for site_j in microstate.iter_sites_near(site_i.properties.position(), self.r_cut) {
                 if site_i.site_tag < site_j.site_tag
                     && site_i.body_tag != site_j.body_tag
                     && site_i
@@ -200,8 +198,7 @@ where
         let body_tag = initial_microstate.bodies()[body_index].tag;
 
         let site_overlap = |site_properties: &S| {
-            for site_j in initial_microstate
-                .iter_sites_near(site_properties.position(), self.r_cut)
+            for site_j in initial_microstate.iter_sites_near(site_properties.position(), self.r_cut)
             {
                 if body_tag != site_j.body_tag
                     && site_properties
@@ -285,8 +282,7 @@ where
         // The new body is not yet in the microstate, so there is no need to
         // filter matching body tags. The new body does not yet have a tag.
         let site_overlap = |site_properties: &S| {
-            for site_j in initial_microstate
-                .iter_sites_near(site_properties.position(), self.r_cut)
+            for site_j in initial_microstate.iter_sites_near(site_properties.position(), self.r_cut)
             {
                 if site_properties
                     .position()

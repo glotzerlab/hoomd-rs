@@ -1278,11 +1278,7 @@ where
         clippy::missing_panics_doc,
         reason = "Will panic only due to a bug in hoomd-rs."
     )]
-    pub fn iter_sites_near(
-        &self,
-        point: &P,
-        r: f64,
-    ) -> impl IntoIterator<Item = &Site<S>> {
+    pub fn iter_sites_near(&self, point: &P, r: f64) -> impl IntoIterator<Item = &Site<S>> {
         // Ideally, an AllPairs specialized implementation would do this:
         // self.sites
         //     .items
