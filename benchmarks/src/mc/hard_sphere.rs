@@ -16,8 +16,7 @@ use hoomd_spatial::{PointUpdate, PointsInBall, WithSearchRadius};
 use hoomd_vector::Cartesian;
 
 pub struct HardSphere<const D: usize, X> {
-    microstate:
-        Microstate<Point<Cartesian<D>>, Point<Cartesian<D>>, X, Periodic<Hypercuboid<D>>>,
+    microstate: Microstate<Point<Cartesian<D>>, Point<Cartesian<D>>, X, Periodic<Hypercuboid<D>>>,
     translate_sweep: Sweep<Translate<Cartesian<D>>>,
     hamiltonian: CutoffPairOverlap<AlwaysTrue>,
     macrostate: Isothermal,
@@ -41,8 +40,10 @@ where
     }
 }
 
-impl<const D: usize, X> fmt::Display for HardSphere<D, X> where
-    X: fmt::Display {
+impl<const D: usize, X> fmt::Display for HardSphere<D, X>
+where
+    X: fmt::Display,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.microstate.fmt(f)
     }
