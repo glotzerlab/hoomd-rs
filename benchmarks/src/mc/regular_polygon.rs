@@ -61,7 +61,9 @@ where
 
 impl<X> RegularPolygon<X>
 where
-    X: PointsNearBall<Cartesian<2>, SiteKey> + PointUpdate<Cartesian<2>, SiteKey> + WithSearchRadius,
+    X: PointsNearBall<Cartesian<2>, SiteKey>
+        + PointUpdate<Cartesian<2>, SiteKey>
+        + WithSearchRadius,
     Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>,
 {
     pub fn with_microstate<X2>(

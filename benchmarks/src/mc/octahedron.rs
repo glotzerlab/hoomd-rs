@@ -61,7 +61,9 @@ where
 
 impl<X> Octahedron<X>
 where
-    X: PointsNearBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey> + WithSearchRadius,
+    X: PointsNearBall<Cartesian<3>, SiteKey>
+        + PointUpdate<Cartesian<3>, SiteKey>
+        + WithSearchRadius,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
     pub fn with_microstate<X2>(

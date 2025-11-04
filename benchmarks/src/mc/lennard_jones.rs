@@ -54,7 +54,9 @@ where
 
 impl<const D: usize, X> LennardJones<D, X>
 where
-    X: PointsNearBall<Cartesian<D>, SiteKey> + PointUpdate<Cartesian<D>, SiteKey> + WithSearchRadius,
+    X: PointsNearBall<Cartesian<D>, SiteKey>
+        + PointUpdate<Cartesian<D>, SiteKey>
+        + WithSearchRadius,
     Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
     pub fn with_microstate<B, S, X2>(
