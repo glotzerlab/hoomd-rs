@@ -334,6 +334,51 @@ where
         }
     }
 
+    /// Get the number of points in the spatial data structure.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_spatial::{HashCell, PointUpdate};
+    ///
+    /// let mut hash_cell = HashCell::default();
+    /// hash_cell.insert(0, [1.25, 2.5].into());
+    ///
+    /// assert_eq!(hash_cell.len(), 1)
+    /// ```
+    #[inline]
+    fn len(&self) -> usize {
+        self.cell_index.len()
+    }
+
+    /// Test if the spatial data structure is empty.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_spatial::{HashCell, PointUpdate};
+    ///
+    /// let mut hash_cell = HashCell::default();
+    ///
+    /// assert_eq!(hash_cell.is_empty());
+    /// ```
+    #[inline]
+    fn is_empty(&self) -> bool {
+        self.cell_index.is_empty()
+    }
+
+    /// Test if the spatial data structure contains a key.
+    /// ```
+    /// use hoomd_spatial::{HashCell, PointUpdate};
+    ///
+    /// let mut hash_cell = HashCell::default();
+    /// hash_cell.insert(0, [1.25, 2.5].into());
+    ///
+    /// assert!(hash_cell.contains_key(&0));
+    /// ```
+    #[inline]
+    fn contains_key(&self, key: &K) -> bool {
+        self.cell_index.contains_key(key)
+    }
+
     /// Remove all points.
     ///
     /// # Example

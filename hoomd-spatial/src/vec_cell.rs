@@ -538,6 +538,51 @@ where
         }
     }
 
+    /// Get the number of points in the spatial data structure.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_spatial::{PointUpdate, VecCell};
+    ///
+    /// let mut vec_cell = VecCell::default();
+    /// vec_cell.insert(0, [1.25, 2.5].into());
+    ///
+    /// assert_eq!(vec_cell.len(), 1)
+    /// ```
+    #[inline]
+    fn len(&self) -> usize {
+        self.cell_index.len()
+    }
+
+    /// Test if the spatial data structure is empty.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_spatial::{PointUpdate, VecCell};
+    ///
+    /// let mut vec_cell = VecCell::default();
+    ///
+    /// assert_eq!(vec_cell.is_empty());
+    /// ```
+    #[inline]
+    fn is_empty(&self) -> bool {
+        self.cell_index.is_empty()
+    }
+
+    /// Test if the spatial data structure contains a key.
+    /// ```
+    /// use hoomd_spatial::{PointUpdate, VecCell};
+    ///
+    /// let mut vec_cell = VecCell::default();
+    /// vec_cell.insert(0, [1.25, 2.5].into());
+    ///
+    /// assert!(vec_cell.contains_key(&0));
+    /// ```
+    #[inline]
+    fn contains_key(&self, key: &K) -> bool {
+        self.cell_index.contains_key(key)
+    }
+
     /// Remove all points.
     ///
     /// # Example

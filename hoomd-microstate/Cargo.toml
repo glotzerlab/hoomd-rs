@@ -24,6 +24,7 @@ rand.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
+assert2.workspace = true
 anyhow.workspace = true
 approxim.workspace = true
 divan.workspace = true

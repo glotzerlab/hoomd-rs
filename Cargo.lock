@@ -3146,6 +3146,7 @@ dependencies = [
  "anyhow",
  "approxim",
  "arrayvec",
+ "assert2",
  "divan",
  "hoomd-geometry",
  "hoomd-manifold",

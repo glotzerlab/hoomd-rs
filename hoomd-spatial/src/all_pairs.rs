@@ -58,6 +58,21 @@ where
     }
 
     #[inline]
+    fn len(&self) -> usize {
+        self.keys.len()
+    }
+
+    #[inline]
+    fn is_empty(&self) -> bool {
+        self.keys.is_empty()
+    }
+
+    #[inline]
+    fn contains_key(&self, key: &K) -> bool {
+        self.keys.contains(key)
+    }
+
+    #[inline]
     fn clear(&mut self) {
         self.keys.clear();
     }

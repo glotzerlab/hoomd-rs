@@ -98,7 +98,6 @@ impl Fill {
             .try_build()?;
         // ANCHOR_END: microstate
 
-
         // ANCHOR: initialize_struct
         Ok(Fill {
             microstate,

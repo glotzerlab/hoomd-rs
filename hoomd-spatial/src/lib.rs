@@ -67,6 +67,42 @@ pub trait PointUpdate<P, K> {
     /// ```
     fn remove(&mut self, key: &K);
 
+    /// Get the number of points in the spatial data structure.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_spatial::{PointUpdate, VecCell};
+    ///
+    /// let mut vec_cell = VecCell::default();
+    /// vec_cell.insert(0, [1.25, 2.5].into());
+    ///
+    /// assert_eq!(vec_cell.len(), 1)
+    /// ```
+    fn len(&self) -> usize;
+
+    /// Test if the spatial data structure is empty.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_spatial::{PointUpdate, VecCell};
+    ///
+    /// let mut vec_cell = VecCell::default();
+    ///
+    /// assert_eq!(vec_cell.is_empty());
+    /// ```
+    fn is_empty(&self) -> bool;
+
+    /// Test if the spatial data structure contains a key.
+    /// ```
+    /// use hoomd_spatial::{PointUpdate, VecCell};
+    ///
+    /// let mut vec_cell = VecCell::default();
+    /// vec_cell.insert(0, [1.25, 2.5].into());
+    ///
+    /// assert!(vec_cell.contains_key(&0));
+    /// ```
+    fn contains_key(&self, key: &K) -> bool;
+
     /// Remove all points.
     ///
     /// # Example
