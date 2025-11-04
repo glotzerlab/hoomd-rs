@@ -560,9 +560,9 @@ where
     /// ```
     /// use hoomd_spatial::{PointUpdate, VecCell};
     ///
-    /// let mut vec_cell = VecCell::default();
+    /// let mut vec_cell = VecCell::<usize, 2>::default();
     ///
-    /// assert_eq!(vec_cell.is_empty());
+    /// assert!(vec_cell.is_empty());
     /// ```
     #[inline]
     fn is_empty(&self) -> bool {

@@ -357,8 +357,10 @@ where
     /// use hoomd_spatial::{HashCell, PointUpdate};
     ///
     /// let mut hash_cell = HashCell::default();
+    /// # hash_cell.insert(0, [1.25, 2.5].into());
+    /// # hash_cell.remove(&0);
     ///
-    /// assert_eq!(hash_cell.is_empty());
+    /// assert!(hash_cell.is_empty());
     /// ```
     #[inline]
     fn is_empty(&self) -> bool {
