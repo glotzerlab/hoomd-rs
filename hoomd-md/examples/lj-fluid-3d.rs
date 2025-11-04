@@ -1,9 +1,11 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Simple example of three-dimensional rods simualtion with MD.
+/*! Example of three-dimensional LJ fluid
+    copied from the lj_fluid.py in hoomd-validation repo,
+    using second param_list (line 62 - 69 in lj_fluid.py).
 */
-
+ 
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{
     CutoffPair, TotalEnergy,
