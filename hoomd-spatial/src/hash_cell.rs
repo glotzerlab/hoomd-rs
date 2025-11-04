@@ -528,14 +528,14 @@ impl<K, const D: usize> fmt::Display for HashCell<K, D> {
         reason = "no need to inline display"
     )]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let largest_cell_size = self.particle_indices.values().map(Vec::len).fold(0, usize::max);
+        let largest_cell_size = self
+            .particle_indices
+            .values()
+            .map(Vec::len)
+            .fold(0, usize::max);
 
         writeln!(f, "HashCell<K, {D}>:")?;
-        writeln!(
-            f,
-            "- {} total cells.",
-            self.particle_indices.len(),
-        )?;
+        writeln!(f, "- {} total cells.", self.particle_indices.len(),)?;
         writeln!(f, "- {} points.", self.cell_index.len())?;
         writeln!(
             f,
