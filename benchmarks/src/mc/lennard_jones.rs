@@ -1,6 +1,8 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+use std::fmt;
+
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{
     CutoffPair,
@@ -17,11 +19,11 @@ use hoomd_spatial::{PointUpdate, PointsInBall, WithSearchRadius};
 use hoomd_vector::Cartesian;
 
 pub struct LennardJones<const D: usize, X> {
-    pub microstate:
+    microstate:
         Microstate<Point<Cartesian<D>>, Point<Cartesian<D>>, X, Periodic<Hypercuboid<D>>>,
-    pub translate_sweep: Sweep<Translate<Cartesian<D>>>,
-    pub hamiltonian: CutoffPair<Isotropic<pairwise::LennardJones>>,
-    pub macrostate: Isothermal,
+    translate_sweep: Sweep<Translate<Cartesian<D>>>,
+    hamiltonian: CutoffPair<Isotropic<pairwise::LennardJones>>,
+    macrostate: Isothermal,
 }
 
 impl<const D: usize, X> Simulation for LennardJones<D, X>
@@ -39,6 +41,13 @@ where
 
     fn step(&self) -> u64 {
         self.microstate.step()
+    }
+}
+
+impl<const D: usize, X> fmt::Display for LennardJones<D, X> where
+    X: fmt::Display {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.microstate.fmt(f)
     }
 }
 

@@ -12,7 +12,7 @@
 
 //! Implement `HashCell`
 
-use std::{array, cmp::Eq, hash::Hash, marker::PhantomData};
+use std::{array, cmp::Eq, fmt, hash::Hash, marker::PhantomData};
 
 use rustc_hash::FxHashMap;
 
@@ -507,6 +507,45 @@ where
     }
 }
 
+impl<K, const D: usize> fmt::Display for HashCell<K, D> {
+    /// Summarize the contents of the cell list.
+    ///
+    /// This is a slow operation. It is meant to be printed to logs only
+    /// occasionally, such as at the end of a benchmark or simulation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_spatial::HashCell;
+    /// use log::info;
+    ///
+    /// let vec_cell = HashCell::<usize, 3>::default();
+    ///
+    /// info!("{vec_cell}");
+    /// ```
+    #[allow(
+        clippy::missing_inline_in_public_items,
+        reason = "no need to inline display"
+    )]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let largest_cell_size = self.particle_indices.values().map(Vec::len).fold(0, usize::max);
+
+        writeln!(f, "HashCell<K, {D}>:")?;
+        writeln!(
+            f,
+            "- {} total cells.",
+            self.particle_indices.len(),
+        )?;
+        writeln!(f, "- {} points.", self.cell_index.len())?;
+        writeln!(
+            f,
+            "- Nominal, maximum search radii: {}, {}",
+            self.cell_width,
+            self.cell_width.get() * self.stencils.len() as f64
+        )?;
+        write!(f, "- Largest cell length: {largest_cell_size}")
+    }
+}
 #[expect(
     clippy::used_underscore_binding,
     reason = "Used for const parameterization."

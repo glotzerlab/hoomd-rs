@@ -3,7 +3,7 @@
 
 //! Implement `AllPairs`
 
-use std::hash::Hash;
+use std::{fmt, hash::Hash};
 
 use hoomd_utility::valid::PositiveReal;
 use rustc_hash::FxHashSet;
@@ -88,5 +88,12 @@ where
     #[inline]
     fn points_in_ball(&self, _position: &P, _radius: f64) -> impl Iterator<Item = K> {
         self.keys.iter().copied()
+    }
+}
+
+impl<K> fmt::Display for AllPairs<K> {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "AllPairs")
     }
 }

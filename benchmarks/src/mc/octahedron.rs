@@ -1,6 +1,8 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+use std::fmt;
+
 use hoomd_geometry::{
     Convex,
     shape::{ConvexPolyhedron, Hypercuboid},
@@ -45,6 +47,13 @@ where
 
     fn step(&self) -> u64 {
         self.microstate.step()
+    }
+}
+
+impl<X> fmt::Display for Octahedron<X> where
+    X: fmt::Display {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.microstate.fmt(f)
     }
 }
 
