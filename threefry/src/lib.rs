@@ -20,3 +20,6 @@ pub use xsm::XSM64Rng;
 
 mod tyche;
 pub use tyche::Tyche4x32Rng;
+
+mod cwg;
+pub use cwg::CWG64Rng;
