@@ -15,7 +15,7 @@ use hoomd_microstate::{
     property::OrientedPoint,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
-use hoomd_spatial::{PointUpdate, PointsInBall, WithSearchRadius};
+use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
 use hoomd_vector::{Cartesian, Versor};
 
 pub struct Octahedron<X> {
@@ -32,7 +32,7 @@ pub struct Octahedron<X> {
 
 impl<X> Simulation for Octahedron<X>
 where
-    X: PointsInBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey>,
+    X: PointsNearBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey>,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
     fn advance(&mut self) -> anyhow::Result<()> {
@@ -61,7 +61,7 @@ where
 
 impl<X> Octahedron<X>
 where
-    X: PointsInBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey> + WithSearchRadius,
+    X: PointsNearBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey> + WithSearchRadius,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
     pub fn with_microstate<X2>(

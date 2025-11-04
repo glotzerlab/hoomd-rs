@@ -16,7 +16,7 @@ For a first draft, these traits are designed to enable Monte Carlo simulations.
 
 * `PointUpdate` describes a type where points can be inserted to and removed from
   a data structure. Points are identified by key.
-* `PointsInBall` describes a type that can find all points (identified by key) that
+* `PointsNearBall` describes a type that can find all points (identified by key) that
   *may* be in a given ball.
 
 The traits are generic on the key type. `Microstate` will use a key that identifies
@@ -82,7 +82,7 @@ The use of maps on cell indices provides
 
 For curved space or in tiny simulations, the `AllPairs` type implements a no-op spatial
 data structure. Every query will always match all points. To effectively
-implement `PointUpdate` and `PointsInBall`, `AllPairs` must unfortunately store
+implement `PointUpdate` and `PointsNearBall`, `AllPairs` must unfortunately store
 a `HashSet` of all keys. That makes ball searches run at 1/4 the speed of a tight
 for loop over all sites.
 
@@ -98,7 +98,7 @@ for simulations on curved surfaces that have no other opportunity for parallelis
 
 Profiling shows that the majority of the runtime in MC benchmarks is spent iterating
 over potential neighbors. `VecCell` and `HashCell` pre-compute sorted stencils that
-check the nearest cells first. Their implementation of `PointsInBall` builds an
+check the nearest cells first. Their implementation of `PointsNearBall` builds an
 iterator that stores several references and counters that effectively implements an
 outer iteration over nearby cells and an inner iteration over sites in the cell.
 These iterators were carefully constructed and profiled to avoid extra computations

@@ -15,7 +15,7 @@ use hoomd_microstate::{
     property::OrientedPoint,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
-use hoomd_spatial::{PointUpdate, PointsInBall, WithSearchRadius};
+use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
 use hoomd_vector::{Angle, Cartesian};
 
 pub struct RegularPolygon<X> {
@@ -32,7 +32,7 @@ pub struct RegularPolygon<X> {
 
 impl<X> Simulation for RegularPolygon<X>
 where
-    X: PointsInBall<Cartesian<2>, SiteKey> + PointUpdate<Cartesian<2>, SiteKey>,
+    X: PointsNearBall<Cartesian<2>, SiteKey> + PointUpdate<Cartesian<2>, SiteKey>,
     Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>,
 {
     fn advance(&mut self) -> anyhow::Result<()> {
@@ -61,7 +61,7 @@ where
 
 impl<X> RegularPolygon<X>
 where
-    X: PointsInBall<Cartesian<2>, SiteKey> + PointUpdate<Cartesian<2>, SiteKey> + WithSearchRadius,
+    X: PointsNearBall<Cartesian<2>, SiteKey> + PointUpdate<Cartesian<2>, SiteKey> + WithSearchRadius,
     Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>,
 {
     pub fn with_microstate<X2>(

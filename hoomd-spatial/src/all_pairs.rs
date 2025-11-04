@@ -8,7 +8,7 @@ use std::{fmt, hash::Hash};
 use hoomd_utility::valid::PositiveReal;
 use rustc_hash::FxHashSet;
 
-use super::{PointUpdate, PointsInBall, WithSearchRadius};
+use super::{PointUpdate, PointsNearBall, WithSearchRadius};
 
 /// Check all pairs.
 ///
@@ -81,12 +81,12 @@ where
     }
 }
 
-impl<P, K> PointsInBall<P, K> for AllPairs<K>
+impl<P, K> PointsNearBall<P, K> for AllPairs<K>
 where
     K: Copy + Eq + Hash,
 {
     #[inline]
-    fn points_in_ball(&self, _position: &P, _radius: f64) -> impl Iterator<Item = K> {
+    fn points_near_ball(&self, _position: &P, _radius: f64) -> impl Iterator<Item = K> {
         self.keys.iter().copied()
     }
 }

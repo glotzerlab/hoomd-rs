@@ -12,7 +12,7 @@ use hoomd_microstate::{
     property::{Point, Position},
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
-use hoomd_spatial::{PointUpdate, PointsInBall, WithSearchRadius};
+use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
 use hoomd_vector::Cartesian;
 
 pub struct HardSphere<const D: usize, X> {
@@ -24,7 +24,7 @@ pub struct HardSphere<const D: usize, X> {
 
 impl<const D: usize, X> Simulation for HardSphere<D, X>
 where
-    X: PointsInBall<Cartesian<D>, SiteKey> + PointUpdate<Cartesian<D>, SiteKey>,
+    X: PointsNearBall<Cartesian<D>, SiteKey> + PointUpdate<Cartesian<D>, SiteKey>,
     Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
     fn advance(&mut self) -> anyhow::Result<()> {
@@ -51,7 +51,7 @@ where
 
 impl<const D: usize, X> HardSphere<D, X>
 where
-    X: PointsInBall<Cartesian<D>, SiteKey> + PointUpdate<Cartesian<D>, SiteKey> + WithSearchRadius,
+    X: PointsNearBall<Cartesian<D>, SiteKey> + PointUpdate<Cartesian<D>, SiteKey> + WithSearchRadius,
     Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
     pub fn with_microstate<B, S, X2>(

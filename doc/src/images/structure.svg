@@ -850,10 +850,10 @@
 <!-- spatial -->
 <g id="node52" class="node">
 <title>spatial</title>
-<g id="a_node52"><a xlink:href="../api/hoomd_spatial/index.html" xlink:title="PointUpdate\nPointsInBall">
+<g id="a_node52"><a xlink:href="../api/hoomd_spatial/index.html" xlink:title="PointUpdate\nPointsNearBall">
 <ellipse fill="#f5c2e7" stroke="#181825" stroke-width="2" cx="1292.64" cy="-264.08" rx="74.95" ry="26.87"/>
 <text xml:space="preserve" text-anchor="middle" x="1292.64" y="-267.68" font-family="Monaco" font-size="12.00" fill="#181825">PointUpdate</text>
-<text xml:space="preserve" text-anchor="middle" x="1292.64" y="-252.68" font-family="Monaco" font-size="12.00" fill="#181825">PointsInBall</text>
+<text xml:space="preserve" text-anchor="middle" x="1292.64" y="-252.68" font-family="Monaco" font-size="12.00" fill="#181825">PointsNearBall</text>
 </a>
 </g>
 </g>

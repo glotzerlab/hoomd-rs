@@ -12,7 +12,7 @@ use crate::{
     property::Position,
 };
 
-use hoomd_spatial::{AllPairs, PointUpdate, PointsInBall};
+use hoomd_spatial::{AllPairs, PointUpdate, PointsNearBall};
 use hoomd_utility::random::Counter;
 
 /// Either a primary site index or a ghost site index.
@@ -1251,17 +1251,16 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
 impl<P, B, S, X, C> Microstate<B, S, X, C>
 where
     S: Position<Position = P>,
-    X: PointsInBall<P, SiteKey>,
+    X: PointsNearBall<P, SiteKey>,
 {
     /// Find sites near a point in space.
     ///
     /// Iterate over all sites and ghost sites within a distance `r` of the
-    /// given `point`, *and possibly other sites as well*. All sites produced by
-    /// this iterator will be in the system reference frame and within the given
-    /// distance metric. No wrapping is required for ghost sites, which will be
-    /// slightly outside the boundary condition. When a ghost site is provided
-    /// by the iterator, its `site_tag` and `body_tag` will match that of the
-    /// actual site.
+    /// given `point`, *and possibly other sites as well*. All sites produced
+    /// by this iterator will be in the system reference frame. No wrapping is
+    /// required for ghost sites, which will be slightly outside the boundary
+    /// condition. When a ghost site is provided by the iterator, its `site_tag`
+    /// and `body_tag` will match that of the actual site.
     ///
     /// The iterator does not filter on distance to avoid duplicating effort
     /// as many callers already perform circumsphere checks.
@@ -1285,7 +1284,7 @@ where
         //     .iter()
         //     .chain(self.ghosts.items.iter())
         // However, specialization is not in stable Rust and will likely never be.
-        let potential_sites = self.spatial_data.points_in_ball(point, r);
+        let potential_sites = self.spatial_data.points_near_ball(point, r);
         potential_sites.map(|k| match k {
             SiteKey::Primary(tag) => {
                 let index =
@@ -1643,7 +1642,7 @@ mod tests {
 
         fn test_consistency<X>(seed: u64)
         where
-            X: PointUpdate<Cartesian<2>, SiteKey> + PointsInBall<Cartesian<2>, SiteKey> + Default,
+            X: PointUpdate<Cartesian<2>, SiteKey> + PointsNearBall<Cartesian<2>, SiteKey> + Default,
         {
             // Rather than crafting many corner cases by hand, generate many
             // microstates randomly by adding, removing, and updating bodies.
@@ -2028,7 +2027,7 @@ mod tests {
 
         fn test_consistency<X>(seed: u64, rectangle: Periodic<Hypercuboid<2>>)
         where
-            X: PointUpdate<Cartesian<2>, SiteKey> + PointsInBall<Cartesian<2>, SiteKey> + Default,
+            X: PointUpdate<Cartesian<2>, SiteKey> + PointsNearBall<Cartesian<2>, SiteKey> + Default,
         {
             // The boundary-specific unit tests validate that the *right*
             // ghosts are created. This test throws random body insertions,

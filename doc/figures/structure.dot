@@ -207,7 +207,7 @@ digraph hoomd_rs {
         // Traits
         node [ shape=ellipse, fillcolor="#f5c2e7", style="bold,filled,rounded"]
 
-        spatial [ label="PointUpdate\nPointsInBall" ]
+        spatial [ label="PointUpdate\nPointsNearBall" ]
 
         // Types and their relation to traits
         node [ shape=rectangle, fillcolor="#f5c2e7", style="filled"]

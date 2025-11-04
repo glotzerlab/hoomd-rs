@@ -7,7 +7,7 @@ use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairEnergy
 use hoomd_microstate::{
     Body, Microstate, Site, SiteKey, Transform, boundary::Wrap, property::Position,
 };
-use hoomd_spatial::PointsInBall;
+use hoomd_spatial::PointsNearBall;
 use hoomd_vector::Metric;
 
 /// Short-ranged pairwise interactions between sites.
@@ -169,7 +169,7 @@ where
     E: SitePairEnergy<S>,
     S: Position<Position = P>,
     P: Metric,
-    X: PointsInBall<P, SiteKey>,
+    X: PointsNearBall<P, SiteKey>,
 {
     /// Compute the total energy of the microstate contributed by functions on pairs of sites.
     ///
@@ -276,7 +276,7 @@ where
     E: SitePairEnergy<S>,
     B: Transform<S>,
     S: Position<Position = P>,
-    X: PointsInBall<P, SiteKey>,
+    X: PointsNearBall<P, SiteKey>,
     C: Wrap<B> + Wrap<S>,
     P: Metric,
 {
@@ -382,7 +382,7 @@ where
     E: SitePairEnergy<S>,
     B: Transform<S>,
     S: Position<Position = P>,
-    X: PointsInBall<P, SiteKey>,
+    X: PointsNearBall<P, SiteKey>,
     C: Wrap<B> + Wrap<S>,
     P: Metric,
 {
@@ -470,7 +470,7 @@ impl<P, B, S, X, C, E> DeltaEnergyRemove<B, S, X, C> for CutoffPair<E>
 where
     E: SitePairEnergy<S>,
     S: Position<Position = P>,
-    X: PointsInBall<P, SiteKey>,
+    X: PointsNearBall<P, SiteKey>,
     P: Metric,
 {
     #[inline]

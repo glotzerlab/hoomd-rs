@@ -19,7 +19,7 @@ use rustc_hash::FxHashMap;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
-use super::{PointUpdate, PointsInBall, WithSearchRadius, vec_cell};
+use super::{PointUpdate, PointsNearBall, WithSearchRadius, vec_cell};
 
 /// Bucket sort points into cubes with [`HashMap`]-backed storage
 ///
@@ -451,26 +451,26 @@ where
     }
 }
 
-impl<const D: usize, K> PointsInBall<Cartesian<D>, K> for HashCell<K, D>
+impl<const D: usize, K> PointsNearBall<Cartesian<D>, K> for HashCell<K, D>
 where
     K: Copy + Eq + Hash,
 {
-    /// Find all the points that *may* be in the given ball.
+    /// Find all the points that *might* be in the given ball.
     ///
-    /// `points_in_ball` will iterate over all points in the given ball *and
+    /// `points_near_ball` will iterate over all points in the given ball *and
     /// possibly others as well*. [`HashCell`] may iterate over the points in
     /// any order.
     ///
     /// # Example
     /// ```
-    /// use hoomd_spatial::{HashCell, PointUpdate, PointsInBall};
+    /// use hoomd_spatial::{HashCell, PointUpdate, PointsNearBall};
     ///
     /// let mut hash_cell = HashCell::default();
     /// hash_cell.insert(0, [1.25, 0.0].into());
     /// hash_cell.insert(1, [3.25, 0.75].into());
     /// hash_cell.insert(2, [-10.0, 12.0].into());
     ///
-    /// for key in hash_cell.points_in_ball(&[2.0, 0.0].into(), 1.0) {
+    /// for key in hash_cell.points_near_ball(&[2.0, 0.0].into(), 1.0) {
     ///     println!("{key}");
     /// }
     /// ```
@@ -486,7 +486,7 @@ where
     /// provided at construction, rounded up to the nearest integer multiple
     /// of the *nominal search radius*.
     #[inline]
-    fn points_in_ball(&self, position: &Cartesian<D>, radius: f64) -> impl Iterator<Item = K> {
+    fn points_near_ball(&self, position: &Cartesian<D>, radius: f64) -> impl Iterator<Item = K> {
         let stencil_index = (radius / self.cell_width.get()).ceil() as usize - 1;
         assert!(
             stencil_index < self.stencils.len(),
@@ -775,7 +775,7 @@ mod tests {
         cell_list.insert(2, Cartesian::from([8.125, 0.0]));
 
         let potential_neighbors: Vec<_> = cell_list
-            .points_in_ball(&[9.125, 0.0].into(), 1.0)
+            .points_near_ball(&[9.125, 0.0].into(), 1.0)
             .collect();
         assert!(potential_neighbors.len() == 1);
         check!(potential_neighbors[0] == 2);
@@ -784,7 +784,7 @@ mod tests {
     #[rstest]
     #[case::d_2(PhantomData::<HashCell<usize, 2>>)]
     #[case::d_3(PhantomData::<HashCell<usize, 3>>)]
-    fn test_points_in_ball<const D: usize>(
+    fn test_points_near_ball<const D: usize>(
         #[case] _d: PhantomData<HashCell<usize, D>>,
         #[values(1.0, 0.5, 0.25)] nominal_search_radius: f64,
     ) {
@@ -815,7 +815,7 @@ mod tests {
 
         let mut n_neighbors = 0;
         for p_i in &reference {
-            let potential_neighbors: Vec<_> = cell_list.points_in_ball(p_i, cell_width).collect();
+            let potential_neighbors: Vec<_> = cell_list.points_near_ball(p_i, cell_width).collect();
 
             for (j, p_j) in reference.iter().enumerate() {
                 if p_i.distance(p_j) <= cell_width {
