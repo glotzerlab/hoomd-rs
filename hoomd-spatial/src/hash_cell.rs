@@ -457,11 +457,9 @@ where
 {
     /// Find all the points that *may* be in the given ball.
     ///
-    /// `points_potentially_in_ball` will iterate over all points in the given ball.
-    /// It may include any number of points inserted into the spatial data structure
-    /// that are *not* in the ball. Filter the output as needed.
-    ///
-    /// [`HashCell`] may iterate over the points in any order.
+    /// `points_in_ball` will iterate over all points in the given ball *and
+    /// possibly others as well*. [`HashCell`] may iterate over the points in
+    /// any order.
     ///
     /// # Example
     /// ```
@@ -472,7 +470,7 @@ where
     /// hash_cell.insert(1, [3.25, 0.75].into());
     /// hash_cell.insert(2, [-10.0, 12.0].into());
     ///
-    /// for key in hash_cell.points_potentially_in_ball(&[2.0, 0.0].into(), 1.0) {
+    /// for key in hash_cell.points_in_ball(&[2.0, 0.0].into(), 1.0) {
     ///     println!("{key}");
     /// }
     /// ```
@@ -488,7 +486,7 @@ where
     /// provided at construction, rounded up to the nearest integer multiple
     /// of the *nominal search radius*.
     #[inline]
-    fn points_potentially_in_ball(
+    fn points_in_ball(
         &self,
         position: &Cartesian<D>,
         radius: f64,
@@ -742,7 +740,7 @@ mod tests {
         cell_list.insert(2, Cartesian::from([8.125, 0.0]));
 
         let potential_neighbors: Vec<_> = cell_list
-            .points_potentially_in_ball(&[9.125, 0.0].into(), 1.0)
+            .points_in_ball(&[9.125, 0.0].into(), 1.0)
             .collect();
         assert!(potential_neighbors.len() == 1);
         check!(potential_neighbors[0] == 2);
@@ -783,7 +781,7 @@ mod tests {
         let mut n_neighbors = 0;
         for p_i in &reference {
             let potential_neighbors: Vec<_> = cell_list
-                .points_potentially_in_ball(p_i, cell_width)
+                .points_in_ball(p_i, cell_width)
                 .collect();
 
             for (j, p_j) in reference.iter().enumerate() {

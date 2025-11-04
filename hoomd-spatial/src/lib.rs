@@ -26,7 +26,7 @@
 //! data structure with [`PointUpdate::insert`], which also updates the position of
 //! already added points. Remove points with [`PointUpdate::remove`].
 //!
-//! [`PointsInBall::points_potentially_in_ball`] takes a position and a radius
+//! [`PointsInBall::points_in_ball`] takes a position and a radius
 //! and returns an iterator that will yield all of the inserted points within
 //! the given ball. It *may* yield additional points that you need to filter out.
 
@@ -121,11 +121,9 @@ pub trait PointUpdate<P, K> {
 pub trait PointsInBall<P, K> {
     /// Find all the points that *may* be in the given ball.
     ///
-    /// `points_potentially_in_ball` will iterate over all points in the given ball.
-    /// It may include any number of points inserted into the spatial data structure
-    /// that are *not* in the ball. Filter the output as needed.
-    ///
-    /// The spatial data may iterate over the points in any order.
+    /// `points_in_ball` will iterate over all points in the given ball *and
+    /// possibly others as well*. The spatial data structure may iterate over
+    /// the points in any order.
     ///
     /// # Example
     /// ```
@@ -136,7 +134,7 @@ pub trait PointsInBall<P, K> {
     /// vec_cell.insert(1, [3.25, 0.75].into());
     /// vec_cell.insert(2, [-10.0, 12.0].into());
     ///
-    /// for key in vec_cell.points_potentially_in_ball(&[2.0, 0.0].into(), 1.0) {
+    /// for key in vec_cell.points_in_ball(&[2.0, 0.0].into(), 1.0) {
     ///     println!("{key}");
     /// }
     /// ```
@@ -145,7 +143,7 @@ pub trait PointsInBall<P, K> {
     /// 0
     /// 1
     /// ```
-    fn points_potentially_in_ball(&self, position: &P, radius: f64) -> impl Iterator<Item = K>;
+    fn points_in_ball(&self, position: &P, radius: f64) -> impl Iterator<Item = K>;
 }
 
 /// Construct a spatial data structure capable of searching up to the given radius.

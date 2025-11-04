@@ -1253,7 +1253,7 @@ where
     S: Position<Position = P>,
     X: PointsInBall<P, SiteKey>,
 {
-    /// Find sites potentially near a point in space.
+    /// Find sites near a point in space.
     ///
     /// Iterate over all sites and ghost sites within a distance `r` of the
     /// given `point`, *and possibly other sites as well*. All sites produced by
@@ -1278,7 +1278,7 @@ where
         clippy::missing_panics_doc,
         reason = "Will panic only due to a bug in hoomd-rs."
     )]
-    pub fn iter_sites_potentially_near(
+    pub fn iter_sites_near(
         &self,
         point: &P,
         r: f64,
@@ -1289,7 +1289,7 @@ where
         //     .iter()
         //     .chain(self.ghosts.items.iter())
         // However, specialization is not in stable Rust and will likely never be.
-        let potential_sites = self.spatial_data.points_potentially_in_ball(point, r);
+        let potential_sites = self.spatial_data.points_in_ball(point, r);
         potential_sites.map(|k| match k {
             SiteKey::Primary(tag) => {
                 let index =

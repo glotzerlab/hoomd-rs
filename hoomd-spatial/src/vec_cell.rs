@@ -25,8 +25,8 @@ use super::{PointUpdate, PointsInBall, WithSearchRadius};
 /// Bucket sort points into cubes with [`Vec`]-backed storage
 ///
 /// [`VecCell`] is a spatial data structure that can efficiently update one
-/// point at a time (see [`PointUpdate`]) and find all stored points that are
-/// *potentially* near a position in space (see [`PointsInBall`]).
+/// point at a time (see [`PointUpdate`]) and find all points that are near a
+/// position in space (see [`PointsInBall`]).
 ///
 /// Points are stored in [`VecCell`] by key. The caller can choose a generic key
 /// type `K` appropriately. For example, `K` could be `usize` and map to an
@@ -663,11 +663,9 @@ where
 {
     /// Find all the points that *may* be in the given ball.
     ///
-    /// `points_potentially_in_ball` will iterate over all points in the given ball.
-    /// It may include any number of points inserted into the spatial data structure
-    /// that are *not* in the ball. Filter the output as needed.
-    ///
-    /// [`VecCell`] may iterate over the points in any order.
+    /// `points_in_ball` will iterate over all points in the given ball *and
+    /// possibly others as well*. [`VecCell`] may iterate over the points in
+    /// any order.
     ///
     /// # Example
     /// ```
@@ -678,7 +676,7 @@ where
     /// vec_cell.insert(1, [3.25, 0.75].into());
     /// vec_cell.insert(2, [-10.0, 12.0].into());
     ///
-    /// for key in vec_cell.points_potentially_in_ball(&[2.0, 0.0].into(), 1.0) {
+    /// for key in vec_cell.points_in_ball(&[2.0, 0.0].into(), 1.0) {
     ///     println!("{key}");
     /// }
     /// ```
@@ -694,7 +692,7 @@ where
     /// provided at construction, rounded up to the nearest integer multiple
     /// of the *nominal search radius*.
     #[inline]
-    fn points_potentially_in_ball(
+    fn points_in_ball(
         &self,
         position: &Cartesian<D>,
         radius: f64,
@@ -1041,7 +1039,7 @@ mod tests {
 
         check!(cell_list.half_extent == 8);
         let potential_neighbors: Vec<_> = cell_list
-            .points_potentially_in_ball(&[9.125, 0.0].into(), 1.0)
+            .points_in_ball(&[9.125, 0.0].into(), 1.0)
             .collect();
         assert!(potential_neighbors.len() == 1);
         check!(potential_neighbors[0] == 2);
@@ -1081,7 +1079,7 @@ mod tests {
         let mut n_neighbors = 0;
         for p_i in &reference {
             let potential_neighbors: Vec<_> =
-                cell_list.points_potentially_in_ball(p_i, 1.0).collect();
+                cell_list.points_in_ball(p_i, 1.0).collect();
 
             for (j, p_j) in reference.iter().enumerate() {
                 if p_i.distance(p_j) <= 1.0 {

@@ -10,10 +10,10 @@ use hoomd_spatial::{AllPairs, HashCell, VecCell};
 use log::{debug, info};
 use serde::Serialize;
 
+use benchmarks::{Benchmark, mc};
 use hoomd_microstate::property::OrientedPoint;
 use hoomd_vector::{Angle, Cartesian, Versor};
 
-use benchmarks::{Benchmark, mc};
 use wildmatch::WildMatch;
 
 #[derive(Serialize)]

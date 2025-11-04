@@ -12,9 +12,12 @@ use super::{PointUpdate, PointsInBall, WithSearchRadius};
 
 /// Check all pairs.
 ///
-/// [`AllPairs`] is extremely slow when used with [`CutoffPair`].
+/// [`AllPairs`] is extremely slow when used with `CutoffPair`.
 /// Prefer [`VecCell`] or [`HashCell`] when possible. When not possible,
 /// TODO: Mention `PairwiseCutoffall`.
+///
+/// [`VecCell`]: crate::VecCell
+/// [`HashCell`]: crate::HashCell
 #[derive(Clone)]
 pub struct AllPairs<K> {
     /// Store all keys currently in the spatial data.
@@ -83,7 +86,7 @@ where
     K: Copy + Eq + Hash,
 {
     #[inline]
-    fn points_potentially_in_ball(&self, _position: &P, _radius: f64) -> impl Iterator<Item = K> {
+    fn points_in_ball(&self, _position: &P, _radius: f64) -> impl Iterator<Item = K> {
         self.keys.iter().copied()
     }
 }
