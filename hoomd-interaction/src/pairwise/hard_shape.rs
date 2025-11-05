@@ -126,13 +126,13 @@ where
     /// and zero when they do not.
     #[inline]
     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
-        let r_squared = (site_properties_i.position())
-            .distance_squared(site_properties_j.position());
-        if r_squared < self.radius.get().powi(2) {
+        // let r_squared = (site_properties_i.position())
+        //     .distance_squared(site_properties_j.position());
+        // if r_squared < self.radius.get().powi(2) {
             f64::INFINITY
-        } else {
-            0.0
-        }
+        // } else {
+        //     0.0
+        // }
     }
     
     /// Evaluate the energy contribution from a pair of sites *in the initial state*.
