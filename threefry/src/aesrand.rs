@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 //! Ported to aarch64
 use std::arch::aarch64::*;
 
@@ -17,11 +20,11 @@ const INCREMENT_BYTES: [u8; 16] = [
 ];
 
 impl AESRandCore {
-    /// # SAFETY: While the array might not be aligned, ``vld1q_u8`` aligns the data
+    /// .
     #[target_feature(enable = "aes")]
     #[inline]
     pub fn gen_array(&mut self) -> [uint8x16_t; 2] {
-        // SAFETY: While the array might not be aligned, vld1q_u8c aligns the data
+        // SAFETY: While the array might not be aligned, vld1q_u8 aligns the data
         let increment = unsafe { vld1q_u8(INCREMENT_BYTES.as_ptr()) };
 
         // Increment the counter as a u64
@@ -30,10 +33,9 @@ impl AESRandCore {
             vreinterpretq_u64_u8(increment),
         ));
         let penultimate = vaesmcq_u8(vaeseq_u8(self.state, increment));
-        let penultimate1 = vaesmcq_u8(vaeseq_u8(penultimate, increment));
-        // InverseMixColumns + (InvSubBytes + InvShiftRows + AddRoundKey)
-        let penultimate2 = vaesimcq_u8(vaesdq_u8(penultimate, increment));
-        [penultimate1, penultimate2]
+        let left = vaesmcq_u8(vaeseq_u8(penultimate, increment));
+        let right = vaesimcq_u8(vaesdq_u8(penultimate, increment));
+        [left, right]
     }
 }
 
@@ -59,7 +61,7 @@ impl SeedableRng for AESRandRng {
 
     #[inline]
     fn from_seed(seed: Self::Seed) -> Self {
-        // SAFETY: ???
+        // SAFETY: seed.as_ptr() has all 16 bytes and properly aligned for uint8x16_t
         Self(BlockRng64::new(AESRandCore {
             state: unsafe { vld1q_u8(seed.as_ptr()) },
         }))
