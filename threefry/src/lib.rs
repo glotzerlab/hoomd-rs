@@ -25,3 +25,6 @@ mod cwg;
 pub use cwg::CWG64Rng;
 mod sfc;
 pub use sfc::SFC64Rng;
+
+mod aesrand;
+pub use aesrand::AESRandRng;
