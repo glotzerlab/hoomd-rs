@@ -93,6 +93,7 @@ impl SeedableRng for SFC64Rng {
 mod tests {
     use super::*;
     use rand::SeedableRng;
+    use rstest::rstest;
 
     // To generate test data:
     // ```python
@@ -136,6 +137,13 @@ mod tests {
         15_071_469_935_640_508_508
     ];
 
+    #[rstest::fixture]
+    fn large_uniform_sample() -> Vec<u64> {
+        const N: u32 = 2u32.pow(23);
+        let mut rng = SFC64Rng::seed_from_u64(1);
+        (0..N).map(|_| rng.next_u64()).collect::<Vec<_>>()
+    }
+
     #[test]
     fn test_sfc64_against_numpy() {
         // Numpy starts its counter at 1
@@ -163,20 +171,30 @@ mod tests {
         assert_eq!(rng.next_u64(), 4_977_758_738_274_538_201);
     }
 
-    #[test]
-    fn test_uniformity() {
-        const N: u32 = 2u32.pow(23);
-        let mut rng = SFC64Rng::seed_from_u64(1);
-        let sample = (0..N).map(|_| rng.next_u64()).collect::<Vec<_>>();
-
-        let (zeros, ones) = sample.iter().fold((0, 0), |acc, x| {
+    #[rstest]
+    fn test_uniformity_mean(large_uniform_sample: Vec<u64>) {
+        let (zeros, ones) = large_uniform_sample.iter().fold((0, 0), |acc, x| {
             (acc.0 + x.count_zeros(), acc.1 + x.count_ones())
         });
-        let standard_error = f64::from(4 * 64 * N).sqrt().recip();
+        let standard_error = ((4 * 64 * large_uniform_sample.len()) as f64)
+            .sqrt()
+            .recip();
         approxim::assert_abs_diff_eq!(
             f64::from(zeros) / f64::from(ones),
             1.0,
             epsilon = standard_error
         );
+    }
+    #[rstest]
+    fn test_uniformity_variance(large_uniform_sample: Vec<u64>) {
+        let n_bits: u128 = large_uniform_sample.len() as u128 * 64;
+
+        let ones = large_uniform_sample
+            .iter()
+            .fold(0u128, |acc, x| acc + u128::from(x.count_ones()));
+
+        let variance = (ones * (n_bits - ones)) as f64 / (n_bits * (n_bits - 1)) as f64;
+        let expected_deviation = ((n_bits - 1) as f64).recip();
+        approxim::assert_abs_diff_eq!(variance, 0.25, epsilon = expected_deviation);
     }
 }
