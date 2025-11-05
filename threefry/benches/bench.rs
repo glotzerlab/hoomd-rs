@@ -1,5 +1,9 @@
 //! Benchmark code for PRNGs
 
+#![expect(
+    clippy::missing_docs_in_private_items,
+    reason = "benches don't need public documentation"
+)]
 use divan::{Bencher, black_box};
 use rand_core::{RngCore, SeedableRng};
 use threefry::{AESRandRng, SFC64Rng, Squares64, Squares128, ThreeFry2x64Rng};
@@ -10,9 +14,13 @@ fn main() {
 
 const SEED: u64 = 42;
 
+/// Time to first number
 #[divan::bench_group]
 mod latency {
-    use super::*;
+    use super::{
+        AESRandRng, Bencher, RngCore, SEED, SFC64Rng, SeedableRng, Squares64, Squares128,
+        ThreeFry2x64Rng, black_box,
+    };
 
     #[divan::bench]
     fn threefry2x64r13(bencher: Bencher) {
@@ -55,14 +63,17 @@ mod latency {
     }
 }
 
-/// Throughput benmchmarks
+/// Measure the time to generate a particular quantitity of data.
 #[divan::bench_group]
 mod throughput {
-    use super::*;
+    use super::{
+        AESRandRng, Bencher, RngCore, SEED, SFC64Rng, SeedableRng, Squares64, Squares128,
+        ThreeFry2x64Rng, black_box,
+    };
     use divan::counter::BytesCount;
 
-    /// 1 GiB
-    const SIZE: usize = 1024 * 1024 * 1024;
+    /// 1 MiB
+    const SIZE: usize = 1024 * 1024;
 
     #[divan::bench(counters = [BytesCount::new(SIZE)])]
     fn threefry2x64r13(bencher: Bencher) {
