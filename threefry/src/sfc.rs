@@ -91,7 +91,7 @@ impl SeedableRng for SFC64Rng {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::{SeedableRng, rngs::StdRng};
+    use rand::SeedableRng;
 
     // To generate test data:
     // ```python
