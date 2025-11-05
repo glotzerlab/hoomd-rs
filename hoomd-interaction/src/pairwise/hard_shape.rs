@@ -3,7 +3,9 @@
 
 //! Implement `HardShape`
 
-use crate::SitePairOverlap;
+use std::marker::PhantomData;
+
+use crate::SitePairEnergy;
 use hoomd_geometry::IntersectsAt;
 use hoomd_microstate::property::{Orientation, Position};
 use hoomd_vector::{self, Rotate, Rotation, Vector};
@@ -29,20 +31,23 @@ use hoomd_vector::{self, Rotate, Rotation, Vector};
 /// ```
 pub struct HardShape<G>(pub G);
 
-impl<S, G, V, R> SitePairOverlap<S> for HardShape<G>
+impl<S, G, V, R> SitePairEnergy<S> for HardShape<G>
 where
     S: Position<Position = V> + Orientation<Rotation = R>,
     V: Vector,
     R: Rotation + Rotate<V>,
     G: IntersectsAt<G, V, R>,
 {
-    /// Test whether two sites overlap.
+    /// Compute the energy contribution from a pair of sites.
+    ///
+    /// A pair of hard shapes contributes an infinite energy when they overlap,
+    /// and zero when they do not.
     ///
     /// # Example
     ///
     /// ```
     /// use hoomd_geometry::{Convex, shape::Rectangle};
-    /// use hoomd_interaction::{SitePairOverlap, pairwise::HardShape};
+    /// use hoomd_interaction::{SitePairEnergy, pairwise::HardShape};
     /// use hoomd_microstate::property::OrientedPoint;
     /// use hoomd_vector::{Angle, Cartesian};
     /// use std::f64::consts::PI;
@@ -60,25 +65,111 @@ where
     ///     orientation: Angle::from(PI / 4.0),
     /// };
     ///
-    /// assert!(!hard_shape.site_pair_overlap(&a, &b));
+    /// assert_eq!(hard_shape.site_pair_energy(&a, &b), 0.0);
     ///
     /// let c = OrientedPoint {
     ///     position: Cartesian::from([1.5, -0.5]),
     ///     orientation: Angle::from(PI / 4.0),
     /// };
     ///
-    /// assert!(hard_shape.site_pair_overlap(&a, &c));
+    /// assert_eq!(hard_shape.site_pair_energy(&a, &c), f64::INFINITY);
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    fn site_pair_overlap(&self, site_properties_i: &S, site_properties_j: &S) -> bool {
+    fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
         let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(
             site_properties_i.position(),
             site_properties_i.orientation(),
             site_properties_j.position(),
             site_properties_j.orientation(),
         );
-        self.0.intersects_at(&self.0, &v_ij, &o_ij)
+        if self.0.intersects_at(&self.0, &v_ij, &o_ij) {
+            f64::INFINITY
+        } else {
+            0.0
+        }
+    }
+    
+    /// Evaluate the energy contribution from a pair of sites *in the initial state*.
+    ///
+    /// Hard shapes are assumed to be non-overlapping in the initial state.
+    /// This method always returns zero.
+    #[inline]
+    fn site_pair_energy_initial(&self, _site_properties_i: &S, _site_properties_j: &S) -> f64 {
+        0.0
+    }
+
+    #[inline]
+    fn is_only_infinite_or_zero() -> bool {
+        true
+    }    
+}
+
+/// Infinite energy when sites overlap, 0 when they don't (*not differentiable*).
+///
+/// [`NonOrientableHardShape`] represents each site with a hard shape in its
+/// *default* orientation.
+///
+/// The generic type names are:
+/// * `G`: The [`shape`](hoomd_geometry::shape) type.
+pub struct NonOrientableHardShape<G, R> {
+    shape: G,
+    rotation: PhantomData<R>,
+}
+
+impl<G, R> NonOrientableHardShape<G, R> {
+    /// Construct a non-orientable hard shape with the given shape.
+    #[inline]
+    #[must_use]
+    pub fn new(shape: G) -> Self {
+        Self {
+            shape,
+            rotation: PhantomData,
+        }
     }
 }
+
+impl<S, G, V, R> SitePairEnergy<S> for NonOrientableHardShape<G, R>
+where
+    S: Position<Position = V>,
+    V: Vector,
+    R: Rotation + Rotate<V>,
+    G: IntersectsAt<G, V, R>,
+{
+    /// Compute the energy contribution from a pair of sites.
+    ///
+    /// A pair of hard shapes contributes an infinite energy when they overlap,
+    /// and zero when they do not. The orientation of each shape is always
+    /// the identity rotation.
+    #[inline]
+    fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
+        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(
+            site_properties_i.position(),
+            &R::identity(),
+            site_properties_j.position(),
+            &R::identity(),
+        );
+        if self.shape.intersects_at(&self.shape, &v_ij, &o_ij) {
+            f64::INFINITY
+        } else {
+            0.0
+        }
+    }
+    
+    /// Evaluate the energy contribution from a pair of sites *in the initial state*.
+    ///
+    /// Hard shapes are assumed to be non-overlapping in the initial state.
+    /// This method always returns zero.
+    #[inline]
+    fn site_pair_energy_initial(&self, _site_properties_i: &S, _site_properties_j: &S) -> f64 {
+        0.0
+    }
+
+    #[inline]
+    fn is_only_infinite_or_zero() -> bool {
+        true
+    }    
+}
+
+// TODO: Test HardShape and NonOrientableHardShape

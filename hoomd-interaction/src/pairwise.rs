@@ -9,7 +9,6 @@ pub mod angular_mask;
 #[doc(inline)]
 pub use angular_mask::AngularMask;
 
-mod always_true;
 mod anisotropic;
 mod approximate_shape_overlap;
 mod boxcar;
@@ -25,12 +24,11 @@ mod shifted;
 mod weeks_chandler_anderson;
 mod xplor;
 
-pub use always_true::AlwaysTrue;
 pub use anisotropic::Anisotropic;
 pub use approximate_shape_overlap::ApproximateShapeOverlap;
 pub use boxcar::Boxcar;
 pub use expanded::Expanded;
-pub use hard_shape::HardShape;
+pub use hard_shape::{HardShape, NonOrientableHardShape};
 pub use harmonic::Harmonic;
 pub use harmonic_repulsion::HarmonicRepulsion;
 pub use isotropic::Isotropic;

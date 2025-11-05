@@ -6,13 +6,17 @@
 use super::{DeltaEnergyInsert, DeltaEnergyOne, TotalEnergy};
 use hoomd_microstate::{Body, Microstate};
 
+// TODO: Implement tuple that sums two SiteEnergy terms and produces another
+// SiteEnergy. It should take into account only_infinite_or_zero and _initial
+// properly.
+
 /// Sum two delta energy terms.
 ///
 /// # Example
 ///
 /// ```
 /// use hoomd_interaction::{
-///     CutoffPair, DeltaEnergyOne, External,
+///     PairwiseCutoff, DeltaEnergyOne, External,
 ///     external::Linear,
 ///     pairwise::{Boxcar, Isotropic},
 /// };
@@ -34,7 +38,7 @@ use hoomd_microstate::{Body, Microstate};
 ///     right,
 /// };
 /// let evaluator = Isotropic(boxcar);
-/// let cutoff_pair = CutoffPair {
+/// let cutoff_pair = PairwiseCutoff {
 ///     r_cut: right,
 ///     evaluator,
 /// };
@@ -86,7 +90,7 @@ where
 ///
 /// ```
 /// use hoomd_interaction::{
-///     CutoffPair, External, TotalEnergy,
+///     PairwiseCutoff, External, TotalEnergy,
 ///     external::Linear,
 ///     pairwise::{Boxcar, Isotropic},
 /// };
@@ -108,7 +112,7 @@ where
 ///     right,
 /// };
 /// let evaluator = Isotropic(boxcar);
-/// let cutoff_pair = CutoffPair {
+/// let cutoff_pair = PairwiseCutoff {
 ///     r_cut: right,
 ///     evaluator,
 /// };
@@ -147,7 +151,7 @@ where
 ///
 /// ```
 /// use hoomd_interaction::{
-///     CutoffPair, DeltaEnergyInsert, External,
+///     PairwiseCutoff, DeltaEnergyInsert, External,
 ///     external::Linear,
 ///     pairwise::{Boxcar, Isotropic},
 /// };
@@ -166,7 +170,7 @@ where
 ///     right,
 /// };
 /// let evaluator = Isotropic(boxcar);
-/// let cutoff_pair = CutoffPair {
+/// let cutoff_pair = PairwiseCutoff {
 ///     r_cut: right,
 ///     evaluator,
 /// };
