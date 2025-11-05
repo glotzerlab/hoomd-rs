@@ -1,4 +1,3 @@
-//! https://github.com/TheIronBorn/simd_prngs/blob/master/src/prngs/aes_rand.rs
 //! Ported to aarch64
 use std::arch::aarch64::*;
 
@@ -6,10 +5,16 @@ use rand::{RngCore, SeedableRng};
 use rand_core::block::{BlockRng64, BlockRngCore};
 
 /// .
+/// <https://github.com/TheIronBorn/simd_prngs/blob/master/src/prngs/aes_rand.rs>
 pub struct AESRandCore {
     /// .
     state: uint8x16_t,
 }
+
+/// .
+const INCREMENT_BYTES: [u8; 16] = [
+    0x2f, 0x2b, 0x29, 0x25, 0x1f, 0x1d, 0x17, 0x13, 0x11, 0x0D, 0x0B, 0x07, 0x05, 0x03, 0x02, 0x01,
+];
 
 impl AESRandCore {
     /// # SAFETY: While the array might not be aligned, ``vld1q_u8`` aligns the data
@@ -17,17 +22,8 @@ impl AESRandCore {
     #[inline]
     pub fn gen_array(&mut self) -> [uint8x16_t; 2] {
         // SAFETY: While the array might not be aligned, vld1q_u8c aligns the data
-        let increment = unsafe {
-            vld1q_u8(
-                [
-                    0x2f, 0x2b, 0x29, 0x25, 0x1f, 0x1d, 0x17, 0x13, 0x11, 0x0D, 0x0B, 0x07, 0x05,
-                    0x03, 0x02, 0x01,
-                ]
-                .as_ptr(),
-            )
-        };
+        let increment = unsafe { vld1q_u8(INCREMENT_BYTES.as_ptr()) };
 
-        // self.state = vaddq_u8(self.state, increment);
         // Increment the counter as a u64
         self.state = vreinterpretq_u8_u64(vaddq_u64(
             vreinterpretq_u64_u8(self.state),
@@ -49,13 +45,11 @@ impl BlockRngCore for AESRandCore {
     fn generate(&mut self, results: &mut Self::Results) {
         // SAFETY: As long as the +aes feature is enabled
         let data = unsafe { self.gen_array() };
-        // SAFETY: ???
-        *results = unsafe { std::mem::transmute::<[uint8x16_t; 2], [u64; 4]>(data) };
-        //         [
-        //         vreinterpretq_u64_u8(data[0]),
-        //         vreinterpretq_u64_u8(data[1]),
-        //     ])
-        // };
+        // SAFETY: As long as size_of::<[uint8x16_t; 2]>() == 32
+        let bytes: [u8; 32] = unsafe { std::mem::transmute(data) };
+        for (i, chunk) in bytes.chunks_exact(8).enumerate() {
+            results[i] = u64::from_ne_bytes(chunk.try_into().expect("asdf"));
+        }
     }
 }
 /// .
