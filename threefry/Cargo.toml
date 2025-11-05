@@ -27,3 +27,8 @@ path = "bin/catrng.rs"
 [dev-dependencies]
 approxim.workspace = true
 rstest.workspace = true
+divan.workspace = true
+
+[[bench]]
+name = "bench"
+harness = false
