@@ -1,11 +1,9 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use crate::backends::read_u32_le_unchecked;
-use crate::backends::read_u64_le_unchecked;
-use crate::backends::rotl_u32;
+use crate::backends::{read_u32_le_unchecked, read_u64_le_unchecked, rotl_u32};
 use rand::{RngCore, SeedableRng};
-use rand_core::{impls, le::read_u32_into};
+use rand_core::impls;
 
 pub struct Tyche4x32Rng {
     a: u32,
@@ -21,7 +19,7 @@ impl Tyche4x32Rng {
     fn initialize(step: u64, substep: u32, seed: u32) -> Self {
         let mut rng = Self {
             a: (step >> 32) as u32,         //  upper 32 bits
-            b: (step & 0xFFFF_FFFF) as u32, // lower 32 bits
+            b: (step & 0xffff_ffff) as u32, // lower 32 bits
             seed,
             d: D_INIT ^ substep,
         };
@@ -77,6 +75,6 @@ impl SeedableRng for Tyche4x32Rng {
     }
     #[inline]
     fn seed_from_u64(state: u64) -> Self {
-        Self::initialize(state, 0, 0xAAAA_AAAA)
+        Self::initialize(state, 0, 0xaaaa_aaaa)
     }
 }

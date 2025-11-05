@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Ported to aarch64
-use std::arch::aarch64::*;
+use std::arch::aarch64::{uint8x16_t, vld1q_u8, vreinterpretq_u8_u64, vaddq_u64, vreinterpretq_u64_u8, vaesmcq_u8, vaeseq_u8, vaesimcq_u8, vaesdq_u8};
 
 use rand::{RngCore, SeedableRng};
 use rand_core::block::{BlockRng64, BlockRngCore};
@@ -22,7 +22,7 @@ pub struct AESRandCore {
 
 /// .
 const INCREMENT_BYTES: [u8; 16] = [
-    0x2f, 0x2b, 0x29, 0x25, 0x1f, 0x1d, 0x17, 0x13, 0x11, 0x0D, 0x0B, 0x07, 0x05, 0x03, 0x02, 0x01,
+    0x2f, 0x2b, 0x29, 0x25, 0x1f, 0x1d, 0x17, 0x13, 0x11, 0x0d, 0x0b, 0x07, 0x05, 0x03, 0x02, 0x01,
 ];
 
 impl AESRandCore {

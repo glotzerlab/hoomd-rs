@@ -88,7 +88,7 @@ impl<const R: usize> ThreeFry4x64Rng<R> {
         self.0.core.counter[2] = read_u64_le_unchecked(stream, 16..24);
         self.0.core.counter[3] = read_u64_le_unchecked(stream, 24..32);
     }
-    ///.
+    /// .
     #[inline]
     pub fn set_stream_from_u64(&mut self, stream: u64) {
         self.0.core.counter = [0, 0, 0, stream];

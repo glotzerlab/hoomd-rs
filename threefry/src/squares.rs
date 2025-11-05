@@ -8,7 +8,7 @@ use rand_core::{
     impls,
 };
 
-///..
+/// ..
 fn squares32(seed: u64, counter: &mut u64) -> u32 {
     let mut x = seed.wrapping_mul(*counter);
     let y = x;
@@ -88,15 +88,13 @@ impl BlockRngCore for Squares128Core {
 
     #[inline]
     fn generate(&mut self, results: &mut Self::Results) {
-        /*
-         * NOTE: corsika rotates right, but it's by half the width of the value so the
-         * direction does not matter. We rotate left to match Squares64
-         *
-         * NOTE: corsika also suggests only 3-4 rounds are needed for Squares128, but
-         * it's possible this could be a 'too big to fail' situation. We maintain
-         * the same 5 rounds as the Squares64 implementation, with the final xor at
-         * the end.
-         */
+        // NOTE: corsika rotates right, but it's by half the width of the value so the
+        // direction does not matter. We rotate left to match Squares64
+        //
+        // NOTE: corsika also suggests only 3-4 rounds are needed for Squares128, but
+        // it's possible this could be a 'too big to fail' situation. We maintain
+        // the same 5 rounds as the Squares64 implementation, with the final xor at
+        // the end.
         let mut x = self.seed.wrapping_mul(self.counter);
         let y = x;
         let z = y.wrapping_add(self.seed);

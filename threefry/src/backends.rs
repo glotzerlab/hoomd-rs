@@ -6,7 +6,7 @@
 /// This increases the randomness of outputs when keys are mostly zero. C240 is the AES
 /// encryption of the plaintext "240" (in decimal), under the all 0 AES256 key.
 /// In the Random123 library, this constant is named ``SKEIN_KS_PARITY64``
-pub const C240: u64 = 0x1_BD1_1BD_AA9_FC1_A22;
+pub const C240: u64 = 0x1_bd1_1bd_aa9_fc1_a22;
 
 /// Rotate a 64 bit unsigned integer left by `r bits`
 #[inline]
@@ -18,13 +18,13 @@ pub(crate) fn rotl_u64(x: u64, d: u32) -> u64 {
 pub(crate) fn rotl_u32(x: u32, d: u32) -> u32 {
     (x << d) | (x >> (32 - d))
 }
-/// Mixing function for the ThreeFry2x64 PRNG.
+/// Mixing function for the `ThreeFry2x64` PRNG.
 #[inline]
 pub(crate) fn mix2x64(state: &mut [u64; 2], round_key: u32) {
     state[0] = state[0].wrapping_add(state[1]);
     state[1] = rotl_u64(state[1], round_key) ^ state[0];
 }
-/// Mixing function for the ThreeFry4x64 PRNG.
+/// Mixing function for the `ThreeFry4x64` PRNG.
 #[inline]
 pub(crate) fn mix4x64(state: &mut [u64; 4], rotations: (u32, u32), round: usize) {
     if round.is_multiple_of(2) {

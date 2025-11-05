@@ -19,3 +19,7 @@ wide = "0.7.33"
 
 [lints]
 workspace = true
+
+[[bin]]
+name = "catrng"
+path = "src/bin/catrng.rs"

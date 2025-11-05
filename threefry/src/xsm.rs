@@ -8,7 +8,7 @@ use crate::backends::read_u64_le_unchecked;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct XSM64Rng {
-    seed: [u64; 2],    //state
+    seed: [u64; 2],    // state
     counter: [u64; 2], // adder
 }
 
@@ -29,7 +29,7 @@ impl XSM64Rng {
     fn from_u64_pair(seed_low: u64, seed_high: u64) -> Self {
         let lcg_adder_low = (seed_low << 1) | 1;
 
-        //every bit of seed except the highest bit gets used in the adder
+        // every bit of seed except the highest bit gets used in the adder
         let lcg_adder_high = (seed_low >> 63) | (seed_high << 1);
 
         let lcg_low = lcg_adder_low;
@@ -60,7 +60,7 @@ impl SeedableRng for XSM64Rng {
 impl RngCore for XSM64Rng {
     #[inline]
     fn next_u64(&mut self) -> u64 {
-        const K: u64 = 0xA3E_C647_6593_59AC;
+        const K: u64 = 0xa3e_c647_6593_59ac;
         let mut tmp = self.seed[0] ^ (self.seed[0].wrapping_add(self.seed[1]).rotate_left(16));
         tmp ^= tmp.wrapping_add(self.counter[0]).rotate_left(40);
         tmp = tmp.wrapping_mul(K);
