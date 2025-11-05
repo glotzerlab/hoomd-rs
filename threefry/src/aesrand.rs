@@ -7,7 +7,13 @@ use std::arch::aarch64::*;
 use rand::{RngCore, SeedableRng};
 use rand_core::block::{BlockRng64, BlockRngCore};
 
-/// .
+/// PRNG using the AES block cipher as an [invertible random mapping](https://www.pcg-random.org/posts/random-invertible-mapping-statistics.html).
+///
+///
+/// On systems where AES operations are implemented in hardware, this generator yields
+/// data extremely quickly, with very low latency. This is relatively unique in the
+/// ratio of state to output, with a 128 bit state and 256 bits of output per step.
+/// The original (x86-64 implementation) of this method is here:
 /// <https://github.com/TheIronBorn/simd_prngs/blob/master/src/prngs/aes_rand.rs>
 pub struct AESRandCore {
     /// .
