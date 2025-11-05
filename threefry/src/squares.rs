@@ -2,7 +2,12 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use rand::SeedableRng;
-use rand_core::{RngCore, impls};
+use rand_core::{
+    RngCore,
+    block::{BlockRng64, BlockRngCore},
+    impls,
+};
+
 ///..
 fn squares32(seed: u64, counter: &mut u64) -> u32 {
     let mut x = seed.wrapping_mul(*counter);
@@ -24,10 +29,7 @@ pub struct Squares64 {
     seed: u64,
     counter: u64,
 }
-pub struct Squares128 {
-    seed: u128,
-    counter: u128,
-}
+
 impl RngCore for Squares64 {
     #[inline]
     fn next_u64(&mut self) -> u64 {
@@ -56,9 +58,36 @@ impl RngCore for Squares64 {
         impls::fill_bytes_via_next(self, dst);
     }
 }
-impl RngCore for Squares128 {
+
+impl SeedableRng for Squares64 {
+    type Seed = [u8; 8];
     #[inline]
-    fn next_u64(&mut self) -> u64 {
+    fn from_seed(seed: Self::Seed) -> Self {
+        Self {
+            seed: u64::from_le_bytes(seed),
+            counter: 0,
+        }
+    }
+    #[inline]
+    fn seed_from_u64(state: u64) -> Self {
+        Self {
+            seed: state,
+            counter: 0,
+        }
+    }
+}
+
+pub struct Squares128Core {
+    seed: u128,
+    counter: u128,
+}
+
+impl BlockRngCore for Squares128Core {
+    type Item = u64;
+    type Results = [u64; 2];
+
+    #[inline]
+    fn generate(&mut self, results: &mut Self::Results) {
         /*
          * NOTE: corsika rotates right, but it's by half the width of the value so the
          * direction does not matter. We rotate left to match Squares64
@@ -84,37 +113,13 @@ impl RngCore for Squares128 {
         x = t.rotate_left(64);
         self.counter += 1;
         // Round 5
-        ((t ^ (x.wrapping_mul(x).wrapping_add(y))) >> 64) as u64
-    }
-    #[inline]
-    fn next_u32(&mut self) -> u32 {
-        impls::next_u32_via_fill(self)
-    }
-    #[inline]
-    fn fill_bytes(&mut self, dst: &mut [u8]) {
-        impls::fill_bytes_via_next(self, dst);
-    }
-}
-impl SeedableRng for Squares64 {
-    type Seed = [u8; 8];
-    #[inline]
-    fn from_seed(seed: Self::Seed) -> Self {
-        Self {
-            seed: u64::from_le_bytes(seed),
-            counter: 0,
-        }
-    }
-    #[inline]
-    fn seed_from_u64(state: u64) -> Self {
-        Self {
-            seed: state,
-            counter: 0,
-        }
+        let final_val = t ^ (x.wrapping_mul(x).wrapping_add(y));
+        results[0] = (final_val >> 64) as u64;
+        results[1] = final_val as u64;
     }
 }
 
-// Seeds for Squares-type PRNGs cannot use the full entropy range of the underlying type
-// More specifically,
+pub struct Squares128(BlockRng64<Squares128Core>);
 
 impl SeedableRng for Squares128 {
     type Seed = [u8; 16];
@@ -125,14 +130,30 @@ impl SeedableRng for Squares128 {
         // Words 9-15 (6 words, 12 bytes) are random from 1-15 ODD | EVEN, with n != n-1
         // See openrand commented out code
         let seed = (u128::from_le_bytes(seed) + 1) * 0xc58e_fd15_4ce3_2f6d;
-        Self { seed, counter: 0 }
+        Self(BlockRng64::new(Squares128Core { seed, counter: 0 }))
     }
     #[inline]
     fn seed_from_u64(state: u64) -> Self {
         let seed = (u128::from(state) + 1) * 0xc58e_fd15_4ce3_2f6d;
-        Self { seed, counter: 0 }
+        Self(BlockRng64::new(Squares128Core { seed, counter: 0 }))
     }
 }
+
+impl RngCore for Squares128 {
+    #[inline]
+    fn next_u64(&mut self) -> u64 {
+        self.0.next_u64()
+    }
+    #[inline]
+    fn next_u32(&mut self) -> u32 {
+        self.0.next_u32()
+    }
+    #[inline]
+    fn fill_bytes(&mut self, dst: &mut [u8]) {
+        self.0.fill_bytes(dst);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
