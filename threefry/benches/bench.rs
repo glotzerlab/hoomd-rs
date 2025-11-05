@@ -19,7 +19,7 @@ fn main() {
 const SEED: u64 = 42;
 
 /// Time to first generated value
-#[divan::bench_group]
+#[divan::bench_group(sample_count = 1000)]
 mod latency {
     use super::{
         AESRandRng, Bencher, ChaCha8Rng, RngCore, SEED, SFC64Rng, SeedableRng, Squares64,
@@ -27,15 +27,16 @@ mod latency {
     };
 
     #[divan::bench]
-    fn threefry2x64r13(bencher: Bencher) {
-        let mut rng = ThreeFry2x64Rng::<13>::seed_from_u64(SEED);
+    fn chacha8(bencher: Bencher) {
+        let mut rng = ChaCha8Rng::seed_from_u64(SEED);
         bencher.bench_local(|| {
             black_box(rng.next_u64());
         });
     }
+
     #[divan::bench]
-    fn chacha8(bencher: Bencher) {
-        let mut rng = ChaCha8Rng::seed_from_u64(SEED);
+    fn threefry2x64r13(bencher: Bencher) {
+        let mut rng = ThreeFry2x64Rng::<13>::seed_from_u64(SEED);
         bencher.bench_local(|| {
             black_box(rng.next_u64());
         });
