@@ -8,6 +8,7 @@
 //! `$ catrng 12345 | ...` (Single u64 seed)
 //! `$ catrng 1 2 3 0 | ...` (Four u64 values as a seed)
 //!
+//! Note this also works with [gjrand](https://gjrand.sourceforge.net)
 //! This is drawn from [simd_prngs](https://github.com/TheIronBorn/simd_prngs/blob/master/src/bin/cat_rng.rs) with a few modifications for our use case.
 
 extern crate rand;
