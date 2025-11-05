@@ -27,7 +27,12 @@ impl AESRandCore {
             )
         };
 
-        self.state = vaddq_u8(self.state, increment);
+        // self.state = vaddq_u8(self.state, increment);
+        // Increment the counter as a u64
+        self.state = vreinterpretq_u8_u64(vaddq_u64(
+            vreinterpretq_u64_u8(self.state),
+            vreinterpretq_u64_u8(increment),
+        ));
         let penultimate = vaesmcq_u8(vaeseq_u8(self.state, increment));
         let penultimate1 = vaesmcq_u8(vaeseq_u8(penultimate, increment));
         // InverseMixColumns + (InvSubBytes + InvShiftRows + AddRoundKey)
