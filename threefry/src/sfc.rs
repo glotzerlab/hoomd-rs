@@ -93,6 +93,7 @@ mod tests {
     use super::*;
     use rand::{SeedableRng, rngs::StdRng};
 
+    // To generate test data:
     // ```python
     // from numpy.random import SFC64
     // rng = SFC64()
