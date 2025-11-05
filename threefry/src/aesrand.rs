@@ -5,20 +5,7 @@ use std::arch::aarch64::*;
 use rand::{RngCore, SeedableRng};
 use rand_core::block::{BlockRng64, BlockRngCore};
 
-/// AESRand, a counter-based invertible PRNG.
-///
-/// - Source: <https://github.com/dragontamer/AESRand>
-/// - State: 128-bits
-/// - Output: 256-bits
-/// - Cycle Length: 2<sup>64</sup>
-/// - Noncryptographic
-/// - PractRand: >8TB
-/// - BigCrush: passed
-///
-/// Good throughput, decent latency. Easily the best throughput of any 128-bit
-/// PRNG in this library, and better than many 256-bit PRNGs.
-///
-/// Requires x86 AES support.
+/// .
 pub struct AESRandCore {
     /// .
     state: uint8x16_t,
@@ -42,7 +29,7 @@ impl AESRandCore {
 
         self.state = vaddq_u8(self.state, increment);
         let penultimate = vaesmcq_u8(vaeseq_u8(self.state, increment));
-        let penultimate1 = vaesmcq_u8(vaeseq_u8(self.state, increment));
+        let penultimate1 = vaesmcq_u8(vaeseq_u8(penultimate, increment));
         // InverseMixColumns + (InvSubBytes + InvShiftRows + AddRoundKey)
         let penultimate2 = vaesimcq_u8(vaesdq_u8(penultimate, increment));
         [penultimate1, penultimate2]
