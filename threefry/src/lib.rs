@@ -9,20 +9,10 @@ pub use backends::C240;
 
 mod threefry2x64;
 pub use threefry2x64::ThreeFry2x64Rng;
-mod threefry4x64;
-pub use threefry4x64::ThreeFry4x64Rng;
 
 mod squares;
 pub use squares::{Squares64, Squares128};
 
-mod xsm;
-pub use xsm::XSM64Rng;
-
-mod tyche;
-pub use tyche::Tyche4x32Rng;
-
-mod cwg;
-pub use cwg::CWG64Rng;
 mod sfc;
 pub use sfc::SFC64Rng;
 
