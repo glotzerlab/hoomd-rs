@@ -4,7 +4,7 @@
 use rand::{RngCore, SeedableRng};
 use rand_core::impls;
 
-use crate::backends::{read_u64_le_unchecked, rotl_u64};
+use crate::backends::read_u64_le_unchecked;
 
 /// The "Small Fast Chaotic" PRNG, originally designed by Chris Doty-Humphrey.
 ///
@@ -40,13 +40,12 @@ impl SFC64Rng {
         const BARREL_SHIFT: u32 = 24;
         const RSHIFT: u64 = 11;
         const LSHIFT: u64 = 3;
-        // println!("{:?} : {:?}", self.counter, self.state);
         let out = self.state[0] + self.state[1] + self.counter;
         self.state[0] = self.state[1] ^ (self.state[1] >> RSHIFT);
         self.state[1] = self.state[2] + (self.state[2] << LSHIFT);
-        self.state[2] = rotl_u64(self.state[2], BARREL_SHIFT) + out;
+        self.state[2] = self.state[2].rotate_left(BARREL_SHIFT) + out;
         self.counter += 1;
-        println!("  : {out}");
+        // println!("{} : {out}", self.counter - 1);
         out
     }
 
@@ -99,65 +98,66 @@ mod tests {
     // rng = SFC64()
     // rng.state = {
     // "bit_generator": "SFC64",
-    // "state": {"state":np.array([0,0,0,0], dtype=np.uint64)},
+    // "state": {"state":np.array([0,0,0,1], dtype=np.uint64)},
     // "has_uint32": 0,
     // "uinteger": 0
     // }
-    // Generator(rng).integers(np.uint64(2**64-1), size=29, dtype=np.uint64)
+    // Generator(rng).integers(
+    //     np.uint64(2**64-1), size=30, dtype=np.uint64, endpoint=True
+    // )
     //
-    // np.array([            0,                    1,                   11,
-    // 150994974,     2533275243454594,     7601064794802824,
-    // 81067317779357879,   939904496648135861,  8358283255545778678,
-    // 3766502869832372393,  3749490695777847965, 10585829324311968282,
-    // # INITIALIZATION COMPLETE (12 values)
-    // 4237781876154851392, 17705428440413258139,  1322197197711907680,
-    // 822724228132957141,  2474202602039083745,  5912426283212852000,
-    // 15821317571115833756, 10375476962501160790, 16772721532102950985,
-    // 10344472337605944265, 17980158625826311726,  5068054200821024953,
-    // 7387740087731720140,  3233965506304800124,   805889469043559032,
-    // 5406730423683535817, 15071469935640508507], dtype=uint64)
+    // array([                   1,                    2,                   12,
+    //                   150994975,     2533275243454595,     7601064794802825,
+    //           81067317779357880,   939904496648135862,  8358283255545778679,
+    //         3766502869832372394,  3749490695777847966, 10585829324311968283,
+    // # Done warming up =====================================================
+    //         4237781876154851393, 17705428440413258140,  1322197197711907681,
+    //          822724228132957142,  2474202602039083746,  5912426283212852001,
+    //        15821317571115833757, 10375476962501160791, 16772721532102950986,
+    //        10344472337605944266, 17980158625826311727,  5068054200821024954,
+    //         7387740087731720141,  3233965506304800125,   805889469043559033,
+    //         5406730423683535818, 15071469935640508508,  4156074611580516626],
+    //       dtype=uint64)
+
     // ```
 
+    #[rustfmt::skip]
     const SFC64_REFERENCE_OUTPUT: [u64; 17] = [
-        4_237_781_876_154_851_392,
-        17_705_428_440_413_258_139,
-        1_322_197_197_711_907_680,
-        822_724_228_132_957_141,
-        2_474_202_602_039_083_745,
-        5_912_426_283_212_852_000,
-        15_821_317_571_115_833_756,
-        10_375_476_962_501_160_790,
-        16_772_721_532_102_950_985,
-        10_344_472_337_605_944_265,
-        17_980_158_625_826_311_726,
-        5_068_054_200_821_024_953,
-        7_387_740_087_731_720_140,
-        3_233_965_506_304_800_124,
-        805_889_469_043_559_032,
-        5_406_730_423_683_535_817,
-        15_071_469_935_640_508_507,
+        4_237_781_876_154_851_393,  17_705_428_440_413_258_140,
+        1_322_197_197_711_907_681,     822_724_228_132_957_142,
+        2_474_202_602_039_083_746,   5_912_426_283_212_852_001,
+        15_821_317_571_115_833_757, 10_375_476_962_501_160_791,
+        16_772_721_532_102_950_986, 10_344_472_337_605_944_266,
+        17_980_158_625_826_311_727,  5_068_054_200_821_024_954,
+        7_387_740_087_731_720_141,   3_233_965_506_304_800_125,
+        805_889_469_043_559_033,     5_406_730_423_683_535_818,
+        15_071_469_935_640_508_508
     ];
 
     #[test]
-    fn test_sfc64_zeros() {
-        let mut x = SFC64Rng::seed_from_u64(0);
+    fn test_sfc64_against_numpy() {
+        // Numpy starts its counter at 1
+        let mut x = SFC64Rng::seed_from_u64(1);
         (0..17).for_each(|i| {
             assert_eq!(
                 x.next_u64(),
-                SFC64_REFERENCE_OUTPUT[0],
+                SFC64_REFERENCE_OUTPUT[i],
                 "failed at index {i}"
             );
         });
     }
 
-    // This test is quite slow, but tests that our generation of the ~2^26th value
-    // matches the reference impl
-    // #[test]
-    // fn test_threefry2x64_r13_deep() {
-    //     let mut x = SFC64Rng::seed_from_u64(0);
-    //     (0..(110_423_593 * 2 - 4)).for_each(|_| {
-    //         x.next_u64();
-    //     });
-    //     assert_eq!(x.next_u64(), 9_808_966_926_499_203_172u64);
-    // }
+    /// This test is quite slow, but tests that our generation of the ~2^26th value
+    /// matches the reference impl
+    ///
+    /// NOTE: set state to [0,0,0,1], then
+    /// `rg.integers(np.uint64(2**64-1), size=2**(17)+12, dtype=np.uint64, endpoint=True)[-1]`
+    #[test]
+    fn test_sfc64_deep() {
+        let mut x = SFC64Rng::seed_from_u64(1);
+        (0..(2u64.pow(17) - 1)).for_each(|_| {
+            x.next_u64();
+        });
+        assert_eq!(x.next_u64(), 4_977_758_738_274_538_201);
+    }
 }
