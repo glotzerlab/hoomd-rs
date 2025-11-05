@@ -85,7 +85,7 @@ pub struct Squares128Core {
 impl BlockRngCore for Squares128Core {
     type Item = u64;
     type Results = [u64; 2];
-
+    #[expect(clippy::cast_possible_truncation, reason = "Truncation is expected.")]
     #[inline]
     fn generate(&mut self, results: &mut Self::Results) {
         // NOTE: corsika rotates right, but it's by half the width of the value so the
@@ -116,7 +116,7 @@ impl BlockRngCore for Squares128Core {
         results[1] = final_val as u64;
     }
 }
-
+/// TODO.
 pub struct Squares128(BlockRng64<Squares128Core>);
 
 impl SeedableRng for Squares128 {
