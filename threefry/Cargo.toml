@@ -23,3 +23,6 @@ workspace = true
 [[bin]]
 name = "catrng"
 path = "bin/catrng.rs"
+
+[dev-dependencies]
+approxim.workspace = true

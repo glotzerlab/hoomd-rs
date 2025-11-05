@@ -139,10 +139,10 @@ mod tests {
     #[test]
     fn test_sfc64_against_numpy() {
         // Numpy starts its counter at 1
-        let mut x = SFC64Rng::seed_from_u64(1);
+        let mut rng = SFC64Rng::seed_from_u64(1);
         (0..17).for_each(|i| {
             assert_eq!(
-                x.next_u64(),
+                rng.next_u64(),
                 SFC64_REFERENCE_OUTPUT[i],
                 "failed at index {i}"
             );
@@ -156,10 +156,27 @@ mod tests {
     /// `rg.integers(np.uint64(2**64-1), size=2**(17)+12, dtype=np.uint64, endpoint=True)[-1]`
     #[test]
     fn test_sfc64_deep() {
-        let mut x = SFC64Rng::seed_from_u64(1);
+        let mut rng = SFC64Rng::seed_from_u64(1);
         (0..(2u64.pow(17) - 1)).for_each(|_| {
-            x.next_u64();
+            rng.next_u64();
         });
-        assert_eq!(x.next_u64(), 4_977_758_738_274_538_201);
+        assert_eq!(rng.next_u64(), 4_977_758_738_274_538_201);
+    }
+
+    #[test]
+    fn test_uniformity() {
+        const N: u32 = 2u32.pow(23);
+        let mut rng = SFC64Rng::seed_from_u64(1);
+        let sample = (0..N).map(|_| rng.next_u64()).collect::<Vec<_>>();
+
+        let (zeros, ones) = sample.iter().fold((0, 0), |acc, x| {
+            (acc.0 + x.count_zeros(), acc.1 + x.count_ones())
+        });
+        let standard_error = f64::from(4 * 64 * N).sqrt().recip();
+        approxim::assert_abs_diff_eq!(
+            f64::from(zeros) / f64::from(ones),
+            1.0,
+            epsilon = standard_error
+        );
     }
 }
