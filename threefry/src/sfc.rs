@@ -144,6 +144,19 @@ mod tests {
         (0..N).map(|_| rng.next_u64()).collect::<Vec<_>>()
     }
 
+    #[rstest::fixture]
+    fn zeros(large_uniform_sample: Vec<u64>) -> u32 {
+        large_uniform_sample
+            .iter()
+            .fold(0, |acc, x| acc + x.count_zeros())
+    }
+    #[rstest::fixture]
+    fn ones(large_uniform_sample: Vec<u64>) -> u32 {
+        large_uniform_sample
+            .iter()
+            .fold(0, |acc, x| acc + x.count_ones())
+    }
+
     #[test]
     fn test_sfc64_against_numpy() {
         // Numpy starts its counter at 1
@@ -172,10 +185,7 @@ mod tests {
     }
 
     #[rstest]
-    fn test_uniformity_mean(large_uniform_sample: Vec<u64>) {
-        let (zeros, ones) = large_uniform_sample.iter().fold((0, 0), |acc, x| {
-            (acc.0 + x.count_zeros(), acc.1 + x.count_ones())
-        });
+    fn test_uniformity_mean(large_uniform_sample: Vec<u64>, zeros: u32, ones: u32) {
         let standard_error = ((4 * 64 * large_uniform_sample.len()) as f64)
             .sqrt()
             .recip();
@@ -186,15 +196,41 @@ mod tests {
         );
     }
     #[rstest]
-    fn test_uniformity_variance(large_uniform_sample: Vec<u64>) {
+    fn test_uniformity_variance(large_uniform_sample: Vec<u64>, ones: u32) {
         let n_bits: u128 = large_uniform_sample.len() as u128 * 64;
 
-        let ones = large_uniform_sample
-            .iter()
-            .fold(0u128, |acc, x| acc + u128::from(x.count_ones()));
-
-        let variance = (ones * (n_bits - ones)) as f64 / (n_bits * (n_bits - 1)) as f64;
-        let expected_deviation = ((n_bits - 1) as f64).recip();
+        let variance = (u128::from(ones) * (n_bits - u128::from(ones))) as f64
+            / (n_bits * (n_bits - 1)) as f64;
+        let expected_deviation = ((n_bits - 1) as f64).sqrt().recip();
         approxim::assert_abs_diff_eq!(variance, 0.25, epsilon = expected_deviation);
+    }
+
+    #[rstest]
+    fn test_autocorrelation(
+        large_uniform_sample: Vec<u64>,
+        zeros: u32,
+        ones: u32,
+        #[values(1, 2, 4, 8, 64, 256, 65536)] lag: usize,
+    ) {
+        let n = large_uniform_sample.len();
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "Fixed value is not truncated."
+        )]
+        let mean = (f64::from(zeros) + f64::from(ones)) / (f64::from(n as u32 * 64));
+        let var = large_uniform_sample
+            .iter()
+            .map(|&x| (x as f64 - mean).powi(2))
+            .sum::<f64>()
+            / n as f64;
+        let cov = (0..n - lag)
+            .map(|i| {
+                (large_uniform_sample[i] as f64 - mean)
+                    * (large_uniform_sample[i + lag] as f64 - mean)
+            })
+            .sum::<f64>()
+            / (n - lag) as f64;
+        let autocorr = cov / var;
+        approxim::assert_abs_diff_eq!(autocorr, 0.0, epsilon = (n as f64).sqrt());
     }
 }
