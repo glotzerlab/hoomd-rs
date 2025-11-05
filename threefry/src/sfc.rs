@@ -6,15 +6,28 @@ use rand_core::{impls, le::read_u64_into};
 
 use crate::backends::{read_u64_le_unchecked, rotl_u64};
 
+/// The "Small Fast Chaotic" PRNG, originally designed by Chris Doty-Humphrey.
+///
+/// This PRNG holds 256 bits of state (including a 64-bit counter) and generates 64 bits
+/// of output with each step. The minimum cycle length is $`2^64`$, and the expected
+/// period is $`~2^255`$. Independent seeds are guaranteed to not collide within the
+/// first $`2^64`$ steps, although the actual time to collision may be much longer.
 pub struct SFC64Rng {
-    state: [u64; 4],
+    /// The internal state of the PRNG.
+    state: [u64; 3],
+    /// The current step of the PRNG. This value is incremented with each output, but
+    /// can be set independently without issues.
+    counter: u64,
 }
 
 impl SFC64Rng {
+    /// Set up the PRNG from four u64 values, discarding the first 12 outputs to avoid
+    /// correlations between similar seeds.
     #[inline]
-    fn initialize(a: u64, b: u64, c: u64, d: u64) -> Self {
+    pub(crate) fn initialize(a: u64, b: u64, c: u64, counter: u64) -> Self {
         let mut rng = Self {
-            state: [a, b, c, d],
+            state: [a, b, c],
+            counter,
         };
         (0..12).for_each(|_| {
             rng.step();
@@ -24,12 +37,12 @@ impl SFC64Rng {
     /// Increment the RNG forward, returning the generated result.
     #[inline]
     fn step(&mut self) -> u64 {
-        self.state[3] += 1;
-        let tmp = self.state[0] + self.state[1] + self.state[3];
+        self.counter += 1;
+        let out = self.state[0] + self.state[1] + self.counter;
         self.state[0] = self.state[1] ^ (self.state[1] >> 9);
         self.state[1] = self.state[2] + (self.state[2] << 3);
-        self.state[2] = rotl_u64(self.state[2], 21) + tmp;
-        tmp
+        self.state[2] = rotl_u64(self.state[2], 21) + out;
+        out
     }
 }
 
