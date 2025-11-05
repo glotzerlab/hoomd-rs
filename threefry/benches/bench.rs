@@ -1,9 +1,13 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 //! Benchmark code for PRNGs
 
 #![expect(
     clippy::missing_docs_in_private_items,
     reason = "benches don't need public documentation"
 )]
+use chacha20::ChaCha8Rng;
 use divan::{Bencher, black_box};
 use rand_core::{RngCore, SeedableRng};
 use threefry::{AESRandRng, SFC64Rng, Squares64, Squares128, ThreeFry2x64Rng};
@@ -14,17 +18,24 @@ fn main() {
 
 const SEED: u64 = 42;
 
-/// Time to first number
+/// Time to first generated value
 #[divan::bench_group]
 mod latency {
     use super::{
-        AESRandRng, Bencher, RngCore, SEED, SFC64Rng, SeedableRng, Squares64, Squares128,
-        ThreeFry2x64Rng, black_box,
+        AESRandRng, Bencher, ChaCha8Rng, RngCore, SEED, SFC64Rng, SeedableRng, Squares64,
+        Squares128, ThreeFry2x64Rng, black_box,
     };
 
     #[divan::bench]
     fn threefry2x64r13(bencher: Bencher) {
         let mut rng = ThreeFry2x64Rng::<13>::seed_from_u64(SEED);
+        bencher.bench_local(|| {
+            black_box(rng.next_u64());
+        });
+    }
+    #[divan::bench]
+    fn chacha8(bencher: Bencher) {
+        let mut rng = ChaCha8Rng::seed_from_u64(SEED);
         bencher.bench_local(|| {
             black_box(rng.next_u64());
         });
@@ -67,14 +78,22 @@ mod latency {
 #[divan::bench_group]
 mod throughput {
     use super::{
-        AESRandRng, Bencher, RngCore, SEED, SFC64Rng, SeedableRng, Squares64, Squares128,
-        ThreeFry2x64Rng, black_box,
+        AESRandRng, Bencher, ChaCha8Rng, RngCore, SEED, SFC64Rng, SeedableRng, Squares64,
+        Squares128, ThreeFry2x64Rng, black_box,
     };
     use divan::counter::BytesCount;
 
     /// 1 MiB
     const SIZE: usize = 1024 * 1024;
 
+    #[divan::bench(counters = [BytesCount::new(SIZE)])]
+    fn chacha8(bencher: Bencher) {
+        let mut rng = ChaCha8Rng::seed_from_u64(SEED);
+        let mut buffer = vec![0u8; SIZE];
+        bencher.bench_local(|| {
+            rng.fill_bytes(black_box(&mut buffer));
+        });
+    }
     #[divan::bench(counters = [BytesCount::new(SIZE)])]
     fn threefry2x64r13(bencher: Bencher) {
         let mut rng = ThreeFry2x64Rng::<13>::seed_from_u64(SEED);
