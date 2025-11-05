@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 use crate::backends::read_u32_le_unchecked;
 use crate::backends::read_u64_le_unchecked;
 use crate::backends::rotl_u32;
