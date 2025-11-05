@@ -4,9 +4,9 @@
 //! A small utility to concatenate the output of an RNG to stdout.
 //!
 //! To use with [``PractRand``](https://pracrand.sourceforge.net):
-//! `$ cat_rng | RNG_test stdin -multithreaded` (Random seed from ``StdRng``)
-//! `$ cat_rng 12345 | ...` (Single u64 seed)
-//! `$ cat_rng 1 2 3 0 | ...` (Four u64 values as a seed)
+//! `$ catrng | RNG_test stdin -multithreaded` (Random seed from ``StdRng``)
+//! `$ catrng 12345 | ...` (Single u64 seed)
+//! `$ catrng 1 2 3 0 | ...` (Four u64 values as a seed)
 //!
 //! This is drawn from [simd_prngs](https://github.com/TheIronBorn/simd_prngs/blob/master/src/bin/cat_rng.rs) with a few modifications for our use case.
 
