@@ -202,36 +202,27 @@ mod tests {
 
         let variance = (u128::from(ones) * (n_bits - u128::from(ones))) as f64
             / (n_bits * (n_bits - 1)) as f64;
-        let expected_deviation = ((n_bits - 1) as f64).sqrt().recip();
-        approxim::assert_abs_diff_eq!(variance, 0.25, epsilon = expected_deviation);
+        let epsilon = (n_bits as f64).sqrt().recip(); // approximate
+        approxim::assert_abs_diff_eq!(variance, 0.25, epsilon = epsilon);
     }
 
     #[rstest]
     fn test_autocorrelation(
         large_uniform_sample: Vec<u64>,
-        zeros: u32,
-        ones: u32,
         #[values(1, 2, 4, 8, 64, 256, 65536)] lag: usize,
     ) {
         let n = large_uniform_sample.len();
-        #[expect(
-            clippy::cast_possible_truncation,
-            reason = "Fixed value is not truncated."
-        )]
-        let mean = (f64::from(zeros) + f64::from(ones)) / (f64::from(n as u32 * 64));
-        let var = large_uniform_sample
-            .iter()
-            .map(|&x| (x as f64 - mean).powi(2))
-            .sum::<f64>()
-            / n as f64;
+        let sample_f64: Vec<f64> = large_uniform_sample.iter().map(|&x| x as f64).collect();
+
+        let mean = sample_f64.iter().sum::<f64>() / n as f64;
+        let var = sample_f64.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / n as f64;
         let cov = (0..n - lag)
-            .map(|i| {
-                (large_uniform_sample[i] as f64 - mean)
-                    * (large_uniform_sample[i + lag] as f64 - mean)
-            })
+            .map(|i| (sample_f64[i] - mean) * (sample_f64[i + lag] - mean))
             .sum::<f64>()
             / (n - lag) as f64;
         let autocorr = cov / var;
-        approxim::assert_abs_diff_eq!(autocorr, 0.0, epsilon = (n as f64).sqrt());
+
+        let epsilon = 3.0 / (n as f64).sqrt();
+        approxim::assert_abs_diff_eq!(autocorr, 0.0, epsilon = epsilon);
     }
 }
