@@ -90,11 +90,11 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
         query: Query<(Entity, &mut Transform), With<Self>>,
         disks: I,
     ) where
-        I: IntoIterator<Item = (Minkowski<3>, f64)>,
+        I: IntoIterator<Item = (Minkowski<3>, f32, f64, f32)>,
     {
         for item in &mut query.into_iter().zip_longest(disks) {
             match item {
-                Both((_, mut transform), (position, diameter)) => {
+                Both((_, mut transform), (position, theta, diameter, sides)) => {
                     let (poincare_position, max_projected_radius) =
                         poincare(&position, RHO, diameter);
                     let rad_arg = RHO * (diameter / (2.0 * RHO)).sinh()
@@ -102,7 +102,6 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
                     let poincare_radius = (0.5)
                         * (1.0 + 2.0 * rad_arg.powi(2) / (1.0 - (rad_arg.powi(2)))).acosh() as f32;
                     transform.translation = Vec3::from_array(poincare_position);
-                    // transform.scale = Vec3::splat(1.0);
                     transform.scale = Vec3::from_array([
                         max_projected_radius,
                         max_projected_radius,
@@ -110,7 +109,7 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
                     ]);
                 }
                 Left((entity, _)) => commands.entity(entity).despawn(),
-                Right((position, diameter)) => {
+                Right((position, theta, diameter, sides)) => {
                     let (poincare_position, max_projected_radius) =
                         poincare(&position, RHO, diameter);
                     let rad_arg = RHO * (diameter / (2.0 * RHO)).sinh()
@@ -125,7 +124,8 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
                                 max_projected_radius,
                                 max_projected_radius,
                                 poincare_radius,
-                            ])),
+                            ]))
+                            .with_rotation(Quat::from_rotation_z(theta)),
                         Self {
                             marker: PhantomData,
                         },

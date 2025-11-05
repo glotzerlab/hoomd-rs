@@ -81,7 +81,7 @@ struct HyperbolicPolygonSelfAssembly {
 
 const RHO: f64 = 1.0;
 const PARTICLE_NUMBER: usize = 3;
-const DIAMETER: f64 = 0.5;
+const DIAMETER: f64 = 0.8;
 
 impl HyperbolicPolygonSelfAssembly {
     /// Construct a new hard ellipsoid self-assembly simulation.
@@ -155,6 +155,11 @@ impl Simulation for HyperbolicPolygonSelfAssembly {
             &self.hamiltonian,
             &self.macrostate,
         );
+        self.rotate_sweep.apply(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.macrostate,
+        );
         self.microstate.increment_step();
         Ok(())
     }
@@ -181,7 +186,7 @@ fn sync_simulation(
         query,
         sites
             .iter()
-            .map(|site| (*site.properties.position.point(), DIAMETER)),
+            .map(|site| (*site.properties.position.point(), site.properties.orientation.theta as f32, DIAMETER, 4_f32)),
     );
 }
 
@@ -201,6 +206,6 @@ fn sync_ghosts(
         ghost_query,
         ghosts
             .iter()
-            .map(|site| (*site.properties.position.point(), DIAMETER)),
+            .map(|site| (*site.properties.position.point(), site.properties.orientation.theta as f32, DIAMETER, 4_f32)),
     );
 }

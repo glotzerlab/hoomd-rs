@@ -26,7 +26,7 @@ struct VertexOutput {
     #endif
     @location(5) @interpolate(flat) disk_center: vec2<f32>,
     @location(6) @interpolate(flat) disk_radius: f32,
-    @location(7) @interpolate(flat) sides: int,
+    @location(7) @interpolate(flat) sides: f32,
 }
 struct Vertex {
     @builtin(instance_index) instance_index: u32,
@@ -51,7 +51,8 @@ struct Vertex {
 fn vertex(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
 #ifdef VERTEX_UVS
-    out.uv = vertex.uv;
+    out.uv = vec2<f32>(vertex.uv.x, vertex.uv.y);
+    out.sides = 4.0;
 #endif
 
 #ifdef VERTEX_POSITIONS
@@ -86,14 +87,14 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let pos1 = in.disk_center;
     let pos2 = in.world_position.xy;
-    let n = in.sides;
+    let n = 4.0;
     let arg = 1 + 2*dot((pos1 - pos2),(pos1 - pos2))/((1-dot(pos1,pos1))*(1-dot(pos2,pos2)));
     let r = acosh(arg);
-    let angle = atan2((pos1 - pos2)[1], (pos1-pos2)[0]);
-    let phi = (angle % (3.1415926/n)) - (3.1415926/n);
+    //let angle = atan2(pos1.y - pos2.y, pos1.x-pos2.x);
+    //let phi = (angle % (2.0*3.1415926/n)) - (3.1415926/n);
 
-    let radius = in.disk_radius * cos(3.1415926/n)/cos(phi);
-
+    let radius = in.disk_radius; //* cos(3.1415926/n)/cos(phi);
+    
     if r > radius {
         discard;
     }
