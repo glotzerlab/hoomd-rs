@@ -139,7 +139,7 @@ for MD.
 
 The `TotalEnergy` trait must serve the needs of both MD and MC simulations.
 MD simulations will call `total_energy` only for logging and rely mainly
-on `force` and `torque` (see below). MC simulations use `toal_energy` directly
+on `force` and `torque` (see below). MC simulations use `total_energy` directly
 in the evaluation of trial move acceptance. For finite potentials, there is
 no practical difference. But MC simulations can (and often do) operate with
 infinite potentials. To improve performance, the `TotalEnergy` implementations

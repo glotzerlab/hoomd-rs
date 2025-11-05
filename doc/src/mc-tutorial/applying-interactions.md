@@ -181,7 +181,7 @@ $` \Delta E `$ when needed.
 You can use `hamiltonian` to compute properties of the system:
 * `hamiltonian.total_energy(&microstate)` - The total energy of the system.
 * `hamiltonian.0.total_energy(&microstate)` - The total external energy term.
-* `hamiltonian.0.site_energy(&site.properties)` - The contribution of a single site to the
+* `hamiltonian.0.0.site_energy(&site.properties)` - The contribution of a single site to the
   external energy.
 * `hamiltonian.1.total_energy(&microstate)` - The total pair energy term.
 * `hamiltonian.1.site_pair_energy(&site_i, &site_j)` - The contribution of a
