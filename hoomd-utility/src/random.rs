@@ -247,13 +247,13 @@ impl Counter {
         // stream[8..12].copy_from_slice(&self.counter_a.to_le_bytes());
 
         let mut seed = [0u8; 16];
-        // let mut seed = [0u8; 32]; // ChaCha and Xoshiro256
+        let mut seed = [0u8; 32]; // ChaCha and Xoshiro256
         seed[..8].copy_from_slice(&(self.step).to_le_bytes());
         seed[8..12].copy_from_slice(&self.substep.to_le_bytes());
         seed[12..16].copy_from_slice(&(self.seed).to_le_bytes());
 
-        // seed[16..24].copy_from_slice(&self.index_b.to_le_bytes());
-        // seed[28..].copy_from_slice(&self.counter_c.to_le_bytes());
+        seed[16..24].copy_from_slice(&self.index_b.to_le_bytes());
+        seed[28..].copy_from_slice(&self.counter_c.to_le_bytes());
 
         // let mut rng = ThreeFry2x64Rng::<13>::from_seed(seed);
 
@@ -266,8 +266,8 @@ impl Counter {
         // Tyche4x32Rng::from_seed(seed)
         // XSM64Rng::from_seed(seed)
         // CWG64Rng::from_seed(seed)
-        // SFC64Rng::from_seed(seed)
-        AESRandRng::from_seed(seed)
+        SFC64Rng::from_seed(seed)
+        // AESRandRng::from_seed(seed)
     }
 }
 
