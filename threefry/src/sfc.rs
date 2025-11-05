@@ -44,6 +44,13 @@ impl SFC64Rng {
         self.state[2] = rotl_u64(self.state[2], 21) + out;
         out
     }
+
+    /// Initialize the PRNG from 192 bits of state and a u64 counter.
+    #[inline]
+    #[must_use]
+    pub fn from_state_and_counter(state: [u64; 3], counter: u64) -> Self {
+        Self::initialize(state[0], state[1], state[2], counter)
+    }
 }
 
 impl RngCore for SFC64Rng {

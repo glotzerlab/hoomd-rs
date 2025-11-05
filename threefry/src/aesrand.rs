@@ -2,7 +2,10 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Ported to aarch64
-use std::arch::aarch64::{uint8x16_t, vld1q_u8, vreinterpretq_u8_u64, vaddq_u64, vreinterpretq_u64_u8, vaesmcq_u8, vaeseq_u8, vaesimcq_u8, vaesdq_u8};
+use std::arch::aarch64::{
+    uint8x16_t, vaddq_u64, vaesdq_u8, vaeseq_u8, vaesimcq_u8, vaesmcq_u8, vld1q_u8,
+    vreinterpretq_u8_u64, vreinterpretq_u64_u8,
+};
 
 use rand::{RngCore, SeedableRng};
 use rand_core::block::{BlockRng64, BlockRngCore};

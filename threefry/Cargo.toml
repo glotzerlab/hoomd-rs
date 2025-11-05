@@ -22,4 +22,4 @@ workspace = true
 
 [[bin]]
 name = "catrng"
-path = "src/bin/catrng.rs"
+path = "bin/catrng.rs"
