@@ -3,12 +3,11 @@
 
 //! Implement `HardShape`
 
-use std::marker::PhantomData;
-
 use crate::SitePairEnergy;
 use hoomd_geometry::IntersectsAt;
 use hoomd_microstate::property::{Orientation, Position};
-use hoomd_vector::{self, Rotate, Rotation, Vector};
+use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::{self, Metric, Rotate, Rotation, Vector};
 
 /// Infinite energy when sites overlap, 0 when they don't (*not differentiable*).
 ///
@@ -108,49 +107,28 @@ where
 
 /// Infinite energy when sites overlap, 0 when they don't (*not differentiable*).
 ///
-/// [`NonOrientableHardShape`] represents each site with a hard shape in its
-/// *default* orientation.
-///
-/// The generic type names are:
-/// * `G`: The [`shape`](hoomd_geometry::shape) type.
-pub struct NonOrientableHardShape<G, R> {
-    shape: G,
-    rotation: PhantomData<R>,
+/// [`HardSphere`] represents each site as a hard sphere with the given radius.
+/// [`HardShape<Hypersphere>`] requires that the site properties implement
+/// `Orientation`, while `HardSphere` does not.
+pub struct HardSphere {
+    /// Distance from the center to the surface of the sphere.
+    pub radius: PositiveReal,
 }
 
-impl<G, R> NonOrientableHardShape<G, R> {
-    /// Construct a non-orientable hard shape with the given shape.
-    #[inline]
-    #[must_use]
-    pub fn new(shape: G) -> Self {
-        Self {
-            shape,
-            rotation: PhantomData,
-        }
-    }
-}
-
-impl<S, G, V, R> SitePairEnergy<S> for NonOrientableHardShape<G, R>
+impl<S, V> SitePairEnergy<S> for HardSphere
 where
     S: Position<Position = V>,
-    V: Vector,
-    R: Rotation + Rotate<V>,
-    G: IntersectsAt<G, V, R>,
+    V: Metric,
 {
     /// Compute the energy contribution from a pair of sites.
     ///
-    /// A pair of hard shapes contributes an infinite energy when they overlap,
-    /// and zero when they do not. The orientation of each shape is always
-    /// the identity rotation.
+    /// A pair of hard spheres contributes an infinite energy when they overlap,
+    /// and zero when they do not.
     #[inline]
     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
-        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(
-            site_properties_i.position(),
-            &R::identity(),
-            site_properties_j.position(),
-            &R::identity(),
-        );
-        if self.shape.intersects_at(&self.shape, &v_ij, &o_ij) {
+        let r_squared = (site_properties_i.position())
+            .distance_squared(site_properties_j.position());
+        if r_squared < self.radius.get().powi(2) {
             f64::INFINITY
         } else {
             0.0
@@ -172,4 +150,3 @@ where
     }    
 }
 
-// TODO: Test HardShape and NonOrientableHardShape

@@ -28,7 +28,7 @@ pub use anisotropic::Anisotropic;
 pub use approximate_shape_overlap::ApproximateShapeOverlap;
 pub use boxcar::Boxcar;
 pub use expanded::Expanded;
-pub use hard_shape::{HardShape, NonOrientableHardShape};
+pub use hard_shape::{HardShape, HardSphere};
 pub use harmonic::Harmonic;
 pub use harmonic_repulsion::HarmonicRepulsion;
 pub use isotropic::Isotropic;

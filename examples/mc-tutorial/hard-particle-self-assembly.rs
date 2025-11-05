@@ -4,7 +4,7 @@ use anyhow::{Context, anyhow};
 
 use hoomd_geometry::shape::{Ellipse, Rectangle};
 use hoomd_interaction::{
-    CutoffPair, CutoffPairOverlap,
+    PairwiseCutoff,
     pairwise::{
         Anisotropic, ApproximateShapeOverlap, HardShape, OverlapPenalty,
     },
@@ -36,7 +36,7 @@ struct HardEllipseSelfAssembly {
         Periodic<Rectangle>,
     >,
     /// How sites interact with other sites and fields.
-    hamiltonian: CutoffPairOverlap<HardShape<Ellipse>>,
+    hamiltonian: PairwiseCutoff<HardShape<Ellipse>>,
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<PositionVector>>,
     /// Trial moves to apply.
@@ -46,7 +46,7 @@ struct HardEllipseSelfAssembly {
     /// Quick insert
     quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Rectangle>>>,
     /// How sites interact when inserted.
-    insert_hamiltonian: CutoffPair<
+    insert_hamiltonian: PairwiseCutoff<
         Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Ellipse>>,
     >,
     /// The current phase of the simulation.
@@ -84,7 +84,7 @@ impl HardEllipseSelfAssembly {
                 (sigma / aspect / 2.0).try_into()?,
             ],
         };
-        let hamiltonian = CutoffPairOverlap {
+        let hamiltonian = PairwiseCutoff {
             r_cut: sigma,
             evaluator: HardShape(ellipse.clone()),
         };
@@ -131,7 +131,7 @@ impl HardEllipseSelfAssembly {
                 0.01.try_into()?,
             ));
 
-        let insert_hamiltonian = CutoffPair {
+        let insert_hamiltonian = PairwiseCutoff {
             r_cut: sigma,
             evaluator: approximate_shape_overlap,
         };

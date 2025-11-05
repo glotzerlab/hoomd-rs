@@ -7,7 +7,7 @@ use hoomd_geometry::{
     Convex,
     shape::{ConvexPolygon, Hypercuboid},
 };
-use hoomd_interaction::{CutoffPairOverlap, pairwise::HardShape};
+use hoomd_interaction::{PairwiseCutoff, pairwise::HardShape};
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
     Microstate, SiteKey,
@@ -26,7 +26,7 @@ pub struct RegularPolygon<X> {
         Periodic<Hypercuboid<2>>,
     >,
     translate_sweep: Sweep<Translate<Cartesian<2>>>,
-    hamiltonian: CutoffPairOverlap<HardShape<Convex<ConvexPolygon>>>,
+    hamiltonian: PairwiseCutoff<HardShape<Convex<ConvexPolygon>>>,
     macrostate: Isothermal,
 }
 
@@ -83,7 +83,7 @@ where
         let hexagon =
             ConvexPolygon::with_vertices(big_hexagon.vertices().iter().map(|v| *v / 2.0))?;
 
-        let hamiltonian = CutoffPairOverlap {
+        let hamiltonian = PairwiseCutoff {
             r_cut: sigma,
             evaluator: HardShape(Convex(hexagon)),
         };

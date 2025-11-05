@@ -7,7 +7,7 @@ use hoomd_geometry::{
     Convex,
     shape::{ConvexPolyhedron, Hypercuboid},
 };
-use hoomd_interaction::{CutoffPairOverlap, pairwise::HardShape};
+use hoomd_interaction::{PairwiseCutoff, pairwise::HardShape};
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
     Microstate, SiteKey,
@@ -26,7 +26,7 @@ pub struct Octahedron<X> {
         Periodic<Hypercuboid<3>>,
     >,
     translate_sweep: Sweep<Translate<Cartesian<3>>>,
-    hamiltonian: CutoffPairOverlap<HardShape<Convex<ConvexPolyhedron>>>,
+    hamiltonian: PairwiseCutoff<HardShape<Convex<ConvexPolyhedron>>>,
     macrostate: Isothermal,
 }
 
@@ -87,7 +87,7 @@ where
             [0.0, 0.0, -0.5].into(),
             [0.0, 0.0, 0.5].into(),
         ])?;
-        let hamiltonian = CutoffPairOverlap {
+        let hamiltonian = PairwiseCutoff {
             r_cut: sigma,
             evaluator: HardShape(Convex(octahedron)),
         };

@@ -4,7 +4,7 @@
 use std::fmt;
 
 use hoomd_geometry::shape::Hypercuboid;
-use hoomd_interaction::{CutoffPairOverlap, pairwise::AlwaysTrue};
+use hoomd_interaction::{PairwiseCutoff, pairwise::HardSphere};
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
     Body, Microstate, SiteKey,
@@ -15,14 +15,14 @@ use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
 use hoomd_vector::Cartesian;
 
-pub struct HardSphere<const D: usize, X> {
+pub struct HardSphereSim<const D: usize, X> {
     microstate: Microstate<Point<Cartesian<D>>, Point<Cartesian<D>>, X, Periodic<Hypercuboid<D>>>,
     translate_sweep: Sweep<Translate<Cartesian<D>>>,
-    hamiltonian: CutoffPairOverlap<AlwaysTrue>,
+    hamiltonian: PairwiseCutoff<HardSphere>,
     macrostate: Isothermal,
 }
 
-impl<const D: usize, X> Simulation for HardSphere<D, X>
+impl<const D: usize, X> Simulation for HardSphereSim<D, X>
 where
     X: PointsNearBall<Cartesian<D>, SiteKey> + PointUpdate<Cartesian<D>, SiteKey>,
     Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
@@ -40,7 +40,7 @@ where
     }
 }
 
-impl<const D: usize, X> fmt::Display for HardSphere<D, X>
+impl<const D: usize, X> fmt::Display for HardSphereSim<D, X>
 where
     X: fmt::Display,
 {
@@ -49,7 +49,7 @@ where
     }
 }
 
-impl<const D: usize, X> HardSphere<D, X>
+impl<const D: usize, X> HardSphereSim<D, X>
 where
     X: PointsNearBall<Cartesian<D>, SiteKey>
         + PointUpdate<Cartesian<D>, SiteKey>
@@ -67,9 +67,9 @@ where
         let translate = Translate::with_maximum_distance((sigma * 0.1).try_into()?);
         let translate_sweep = Sweep(translate);
 
-        let hamiltonian = CutoffPairOverlap {
+        let hamiltonian = PairwiseCutoff {
             r_cut: sigma,
-            evaluator: AlwaysTrue,
+            evaluator: HardSphere { radius: (sigma/2.0).try_into()? },
         };
 
         let cell_list = X::with_search_radius(sigma.try_into()?);

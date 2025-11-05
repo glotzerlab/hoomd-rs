@@ -253,7 +253,7 @@ where
     /// Hard circle:
     /// ```
     /// use hoomd_interaction::{
-    ///     PairwiseCutoff, TotalEnergy, pairwise::NonOrientableHardShape,
+    ///     PairwiseCutoff, TotalEnergy, pairwise::HardSphere,
     /// };
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::{Angle, Cartesian};
@@ -263,16 +263,12 @@ where
     /// let mut microstate = Microstate::new();
     /// microstate.extend_bodies([
     ///     Body::point(Cartesian::from([0.0, 0.0])),
-    ///     Body::point(Cartesian::from([0.5, 0.0])),
+    ///     Body::point(Cartesian::from([0.4, 0.0])),
     /// ])?;
-    ///
-    /// let circle = Circle {
-    ///     radius: 0.5.try_into()?,
-    /// };
     ///
     /// let hard_circle = PairwiseCutoff {
     ///     r_cut: 1.0,
-    ///     evaluator: NonOrientableHardShape::<Circle, Angle>::new(circle),
+    ///     evaluator: HardSphere { radius: 0.5.try_into()? },
     /// };
     ///
     /// let total_energy = hard_circle.total_energy(&microstate);
@@ -372,7 +368,7 @@ where
     /// Hard circle:
     /// ```
     /// use hoomd_interaction::{
-    ///     PairwiseCutoff, DeltaEnergyOne, pairwise::NonOrientableHardShape,
+    ///     PairwiseCutoff, DeltaEnergyOne, pairwise::HardSphere,
     /// };
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::{Angle, Cartesian};
@@ -385,19 +381,15 @@ where
     ///     Body::point(Cartesian::from([2.0, 0.0])),
     /// ])?;
     ///
-    /// let circle = Circle {
-    ///     radius: 0.5.try_into()?,
-    /// };
-    ///
     /// let hard_circle = PairwiseCutoff {
     ///     r_cut: 1.0,
-    ///     evaluator: NonOrientableHardShape::<Circle, Angle>::new(circle),
+    ///     evaluator: HardSphere { radius: 0.5.try_into()? },
     /// };
     ///
     /// let delta_energy = hard_circle.delta_energy_one(
     ///     &microstate,
     ///     1,
-    ///     &Body::point([0.5, 0.0].into()),
+    ///     &Body::point([0.4, 0.0].into()),
     /// );
     /// assert_eq!(delta_energy, f64::INFINITY);
     ///
@@ -527,7 +519,7 @@ where
     /// Hard circle:
     /// ```
     /// use hoomd_interaction::{
-    ///     PairwiseCutoff, DeltaEnergyInsert, pairwise::NonOrientableHardShape,
+    ///     PairwiseCutoff, DeltaEnergyInsert, pairwise::HardSphere,
     /// };
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::{Angle, Cartesian};
@@ -537,17 +529,13 @@ where
     /// let mut microstate = Microstate::new();
     /// microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0]))])?;
     ///
-    /// let circle = Circle {
-    ///     radius: 0.5.try_into()?,
-    /// };
-    ///
     /// let hard_circle = PairwiseCutoff {
     ///     r_cut: 1.0,
-    ///     evaluator: NonOrientableHardShape::<Circle, Angle>::new(circle),
+    ///     evaluator: HardSphere { radius: 0.5.try_into()? },
     /// };
     ///
     /// let delta_energy = hard_circle
-    ///     .delta_energy_insert(&microstate, &Body::point([0.5, 0.0].into()));
+    ///     .delta_energy_insert(&microstate, &Body::point([0.4, 0.0].into()));
     /// assert_eq!(delta_energy, f64::INFINITY);
     ///
     /// let delta_energy = hard_circle
@@ -645,7 +633,7 @@ where
     /// Hard circle:
     /// ```
     /// use hoomd_interaction::{
-    ///     PairwiseCutoff, DeltaEnergyRemove, pairwise::NonOrientableHardShape,
+    ///     PairwiseCutoff, DeltaEnergyRemove, pairwise::HardSphere,
     /// };
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::{Angle, Cartesian};
@@ -658,13 +646,9 @@ where
     ///     Body::point(Cartesian::from([2.0, 0.0])),
     /// ])?;
     ///
-    /// let circle = Circle {
-    ///     radius: 0.5.try_into()?,
-    /// };
-    ///
     /// let hard_circle = PairwiseCutoff {
     ///     r_cut: 1.0,
-    ///     evaluator: NonOrientableHardShape::<Circle, Angle>::new(circle),
+    ///     evaluator: HardSphere { radius: 0.5.try_into()? },
     /// };
     ///
     /// let delta_energy = hard_circle.delta_energy_remove(&microstate, 1);
@@ -1136,10 +1120,10 @@ mod tests_finite {
 mod tests {
     use super::*;
     use assert2::check;
-    use crate::{TotalEnergy, pairwise::NonOrientableHardShape};
-    use hoomd_geometry::shape::{Circle, Hypercuboid};
+    use crate::{TotalEnergy, pairwise::HardSphere};
+    use hoomd_geometry::shape::Hypercuboid;
     use hoomd_microstate::{boundary::Closed, property::Point};
-    use hoomd_vector::{Angle, Cartesian};
+    use hoomd_vector::Cartesian;
 
     use rstest::*;
 
@@ -1169,23 +1153,19 @@ mod tests {
                 ])
                 .expect("hard-coded bodies should be in the boundary");
 
-            // Ensure that CutoffPairOverlap respects the r_cut value set.
-            let circle = Circle {
-                radius: 5.0_f64.next_up().try_into().expect("hard-coded value should be positive"),
-            };
+            // Ensure that PairwiseCutoff respects the r_cut value set.
+            let r_cut = 5.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff{
-                r_cut: 5.0_f64.next_up(),
-                evaluator: NonOrientableHardShape::<Circle, Angle>::new(circle),
+                r_cut,
+                evaluator: HardSphere { radius: r_cut.try_into().expect("hard-coded value should be positive") },
             };
 
             check!(cutoff_pair.total_energy(&microstate) == f64::INFINITY);
 
-            let circle = Circle {
-                radius: 5.0_f64.try_into().expect("hard-coded value should be positive"),
-            };
+            let r_cut = 5.0_f64;
             let cutoff_pair = PairwiseCutoff{
-                r_cut: 5.0_f64,
-                evaluator: NonOrientableHardShape::<Circle, Angle>::new(circle),
+                r_cut,
+                evaluator: HardSphere { radius: r_cut.try_into().expect("hard-coded value should be positive") },
             };
 
             check!(cutoff_pair.total_energy(&microstate) == 0.0);
@@ -1193,7 +1173,7 @@ mod tests {
 
         #[test]
         fn body_exclusion() {
-            // Ensure that CutoffPairOverlap excludes pairs in the same body.
+            // Ensure that PairwiseCutoff excludes pairs in the same body.
             let body_a = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [
@@ -1214,22 +1194,18 @@ mod tests {
                 .extend_bodies([body_a, body_b])
                 .expect("hard-coded bodies should be in the boundary");
 
-            let circle = Circle {
-                radius: 1.0_f64.next_up().try_into().expect("hard-coded value should be positive"),
-            };
+            let r_cut = 1.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff{
-                r_cut: 1.0_f64.next_up(),
-                evaluator: NonOrientableHardShape::<Circle, Angle>::new(circle),
+                r_cut,
+                evaluator: HardSphere { radius: r_cut.try_into().expect("hard-coded value should be positive") },
             };
 
             check!(cutoff_pair.total_energy(&microstate) == 0.0);
 
-            let circle = Circle {
-                radius: 2.0_f64.next_up().try_into().expect("hard-coded value should be positive"),
-            };
+            let r_cut = 2.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff{
-                r_cut: 2.0_f64.next_up(),
-                evaluator: NonOrientableHardShape::<Circle, Angle>::new(circle),
+                r_cut,
+                evaluator: HardSphere { radius: r_cut.try_into().expect("hard-coded value should be positive") },
             };
 
             check!(cutoff_pair.total_energy(&microstate) == f64::INFINITY);
@@ -1254,12 +1230,9 @@ mod tests {
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
-            let circle = Circle {
-                radius: 1.0_f64.next_up().try_into().expect("hard-coded value should be positive"),
-            };
             let energy = PairwiseCutoff{
                 r_cut: 0.0,
-                evaluator: NonOrientableHardShape::<Circle, Angle>::new(circle),
+                evaluator: HardSphere { radius: 1.0.try_into().expect("hard-coded value should be positive") },
             };
 
             check!(
@@ -1270,7 +1243,7 @@ mod tests {
 
         #[test]
         fn body_exclusion() {
-            // Ensure that CutoffPairOverlap.delta_energy_one excludes pairs in the same body.
+            // Ensure that PairwiseCutoff.delta_energy_one excludes pairs in the same body.
             let body_a = Body {
                 properties: Point::new(Cartesian::from([-1.0, 0.0])),
                 sites: [
@@ -1299,12 +1272,10 @@ mod tests {
                 .extend_bodies([body_a, body_b])
                 .expect("hard-coded bodies should be in the boundary");
 
-            let circle = Circle {
-                radius: 1.0_f64.next_up().try_into().expect("hard-coded value should be positive"),
-            };
+            let r_cut = 1.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff{
-                r_cut: 1.0_f64.next_up(),
-                evaluator: NonOrientableHardShape::<Circle, Angle>::new(circle),
+                r_cut,
+                evaluator: HardSphere { radius: r_cut.try_into().expect("hard-coded value should be positive") },
             };
 
             // moving body a to the right generates overlaps
@@ -1339,12 +1310,9 @@ mod tests {
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
-            let circle = Circle {
-                radius: 1.0_f64.next_up().try_into().expect("hard-coded value should be positive"),
-            };
             let energy = PairwiseCutoff{
                 r_cut: 0.0,
-                evaluator: NonOrientableHardShape::<Circle, Angle>::new(circle),
+                evaluator: HardSphere { radius: 1.0.try_into().expect("hard-coded value should be positive") },
             };
 
             check!(
@@ -1355,7 +1323,7 @@ mod tests {
 
         #[test]
         fn body_exclusion() {
-            // Ensure that CutoffPairOverlap.delta_energy_insert excludes pairs in the same body.
+            // Ensure that PairwiseCutoff.delta_energy_insert excludes pairs in the same body.
             let body_a_new = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [
@@ -1376,12 +1344,10 @@ mod tests {
                 .extend_bodies([body_b])
                 .expect("hard-coded bodies should be in the boundary");
 
-            let circle = Circle {
-                radius: 1.0_f64.next_up().try_into().expect("hard-coded value should be positive"),
-            };
+            let r_cut = 1.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff{
-                r_cut: 1.0_f64.next_up(),
-                evaluator: NonOrientableHardShape::<Circle, Angle>::new(circle),
+                r_cut,
+                evaluator: HardSphere { radius: r_cut.try_into().expect("hard-coded value should be positive") },
             };
 
             check!(
@@ -1396,3 +1362,5 @@ mod tests {
         }
     }
 }
+
+// TODO: Test HardShape
