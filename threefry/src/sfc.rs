@@ -40,12 +40,13 @@ impl SFC64Rng {
         const BARREL_SHIFT: u32 = 24;
         const RSHIFT: u64 = 11;
         const LSHIFT: u64 = 3;
-        let out = self.state[0] + self.state[1] + self.counter;
+        let out = self.state[0]
+            .wrapping_add(self.state[1])
+            .wrapping_add(self.counter);
         self.state[0] = self.state[1] ^ (self.state[1] >> RSHIFT);
-        self.state[1] = self.state[2] + (self.state[2] << LSHIFT);
-        self.state[2] = self.state[2].rotate_left(BARREL_SHIFT) + out;
-        self.counter += 1;
-        // println!("{} : {out}", self.counter - 1);
+        self.state[1] = self.state[2].wrapping_add(self.state[2] << LSHIFT);
+        self.state[2] = self.state[2].rotate_left(BARREL_SHIFT).wrapping_add(out);
+        self.counter = self.counter.wrapping_add(1);
         out
     }
 
@@ -148,7 +149,7 @@ mod tests {
         });
     }
 
-    /// This test is quite slow, but tests that our generation of the ~2^26th value
+    /// This test is quite slow, but tests that our generation of the ~2^17th value
     /// matches the reference impl
     ///
     /// NOTE: set state to [0,0,0,1], then
