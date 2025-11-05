@@ -15,7 +15,7 @@ use hoomd_vector::{Rotate, Rotation, Vector};
 /// which operates on site properties and [`AnisotropicEnergy`] which is a function
 /// only of the the relative position and orientation.
 ///
-/// Use [`Anisotropic`] with [`CutoffPair`](crate::CutoffPair) in MD and MC
+/// Use [`Anisotropic`] with [`PairwiseCutoff`](crate::PairwiseCutoff) in MD and MC
 /// simulations.
 ///
 /// # Example

@@ -89,25 +89,20 @@ use hoomd_vector::Metric;
 ///
 /// Hard sphere:
 /// ```
-/// use hoomd_geometry::shape::Sphere;
-/// use hoomd_interaction::{PairwiseCutoff, pairwise::HardShape};
+/// use hoomd_interaction::{PairwiseCutoff, pairwise::HardSphere};
 /// use hoomd_microstate::property::Point;
 /// use hoomd_vector::Cartesian;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let sphere = Sphere {
-///     radius: 0.5.try_into()?,
-/// };
-///
 /// let hard_sphere = PairwiseCutoff {
 ///     r_cut: 1.0,
-///     evaluator: HardShape(sphere),
+///     evaluator: HardSphere,
 /// };
 /// # Ok(())
 /// # }
 /// ```
 ///
-/// Hard shape:
+/// Hard ellipse:
 ///
 /// ```
 /// use hoomd_geometry::shape::Ellipse;
@@ -268,7 +263,7 @@ where
     ///
     /// let hard_circle = PairwiseCutoff {
     ///     r_cut: 1.0,
-    ///     evaluator: HardSphere { radius: 0.5.try_into()? },
+    ///     evaluator: HardSphere,
     /// };
     ///
     /// let total_energy = hard_circle.total_energy(&microstate);
@@ -383,7 +378,7 @@ where
     ///
     /// let hard_circle = PairwiseCutoff {
     ///     r_cut: 1.0,
-    ///     evaluator: HardSphere { radius: 0.5.try_into()? },
+    ///     evaluator: HardSphere,
     /// };
     ///
     /// let delta_energy = hard_circle.delta_energy_one(
@@ -531,7 +526,7 @@ where
     ///
     /// let hard_circle = PairwiseCutoff {
     ///     r_cut: 1.0,
-    ///     evaluator: HardSphere { radius: 0.5.try_into()? },
+    ///     evaluator: HardSphere,
     /// };
     ///
     /// let delta_energy = hard_circle
@@ -648,7 +643,7 @@ where
     ///
     /// let hard_circle = PairwiseCutoff {
     ///     r_cut: 1.0,
-    ///     evaluator: HardSphere { radius: 0.5.try_into()? },
+    ///     evaluator: HardSphere,
     /// };
     ///
     /// let delta_energy = hard_circle.delta_energy_remove(&microstate, 1);
@@ -1157,7 +1152,7 @@ mod tests {
             let r_cut = 5.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff{
                 r_cut,
-                evaluator: HardSphere { radius: r_cut.try_into().expect("hard-coded value should be positive") },
+                evaluator: HardSphere,
             };
 
             check!(cutoff_pair.total_energy(&microstate) == f64::INFINITY);
@@ -1165,7 +1160,7 @@ mod tests {
             let r_cut = 5.0_f64;
             let cutoff_pair = PairwiseCutoff{
                 r_cut,
-                evaluator: HardSphere { radius: r_cut.try_into().expect("hard-coded value should be positive") },
+                evaluator: HardSphere,
             };
 
             check!(cutoff_pair.total_energy(&microstate) == 0.0);
@@ -1197,7 +1192,7 @@ mod tests {
             let r_cut = 1.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff{
                 r_cut,
-                evaluator: HardSphere { radius: r_cut.try_into().expect("hard-coded value should be positive") },
+                evaluator: HardSphere,
             };
 
             check!(cutoff_pair.total_energy(&microstate) == 0.0);
@@ -1205,7 +1200,7 @@ mod tests {
             let r_cut = 2.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff{
                 r_cut,
-                evaluator: HardSphere { radius: r_cut.try_into().expect("hard-coded value should be positive") },
+                evaluator: HardSphere,
             };
 
             check!(cutoff_pair.total_energy(&microstate) == f64::INFINITY);
@@ -1232,7 +1227,7 @@ mod tests {
 
             let energy = PairwiseCutoff{
                 r_cut: 0.0,
-                evaluator: HardSphere { radius: 1.0.try_into().expect("hard-coded value should be positive") },
+                evaluator: HardSphere,
             };
 
             check!(
@@ -1275,7 +1270,7 @@ mod tests {
             let r_cut = 1.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff{
                 r_cut,
-                evaluator: HardSphere { radius: r_cut.try_into().expect("hard-coded value should be positive") },
+                evaluator: HardSphere,
             };
 
             // moving body a to the right generates overlaps
@@ -1312,7 +1307,7 @@ mod tests {
 
             let energy = PairwiseCutoff{
                 r_cut: 0.0,
-                evaluator: HardSphere { radius: 1.0.try_into().expect("hard-coded value should be positive") },
+                evaluator: HardSphere,
             };
 
             check!(
@@ -1347,7 +1342,7 @@ mod tests {
             let r_cut = 1.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff{
                 r_cut,
-                evaluator: HardSphere { radius: r_cut.try_into().expect("hard-coded value should be positive") },
+                evaluator: HardSphere,
             };
 
             check!(

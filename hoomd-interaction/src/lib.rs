@@ -223,7 +223,7 @@ pub trait SiteEnergy<S> {
 ///
 /// The [`pairwise`] module provides a number of commonly used implementations,
 /// such as [`Isotropic`], [`Anisotropic`], and [`HardShape`]. Combine any
-/// of them with the [`CutoffPair`] for use with MC and MD simulations or to
+/// of them with the [`PairwiseCutoff`] for use with MC and MD simulations or to
 /// compute system-wide properties.
 ///
 /// The generic type names are:

@@ -47,7 +47,7 @@ pub use xplor::Xplor;
 /// Implement [`IsotropicEnergy`] on a custom type or use one of the provided
 /// potentials in [`pairwise`](crate::pairwise) in MD or MC simulations.
 /// Use an [`IsotropicEnergy`] in combination with [`Isotropic`] and
-/// [`CutoffPair`](crate::CutoffPair).
+/// [`PairwiseCutoff`](crate::PairwiseCutoff).
 ///
 /// # Examples
 ///

@@ -6,12 +6,11 @@
 use crate::SitePairEnergy;
 use hoomd_geometry::IntersectsAt;
 use hoomd_microstate::property::{Orientation, Position};
-use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{self, Metric, Rotate, Rotation, Vector};
 
 /// Infinite energy when sites overlap, 0 when they don't (*not differentiable*).
 ///
-/// [`HardShape`] represents each site with a hard shape.
+/// [`HardShape`] represents each site with a hard orientable shape.
 ///
 /// The generic type names are:
 /// * `G`: The [`shape`](hoomd_geometry::shape) type.
@@ -105,15 +104,11 @@ where
     }    
 }
 
-/// Infinite energy when sites overlap, 0 when they don't (*not differentiable*).
+/// Model infinitely hard spheres when used with [`PairwiseCutoff`] (*not differentiable*).
 ///
-/// [`HardSphere`] represents each site as a hard sphere with the given radius.
-/// [`HardShape<Hypersphere>`] requires that the site properties implement
-/// `Orientation`, while `HardSphere` does not.
-pub struct HardSphere {
-    /// Distance from the center to the surface of the sphere.
-    pub radius: PositiveReal,
-}
+/// [`HardSphere`] represents each site as a hard sphere with a diameter given
+/// by the `r_cut` field of [`PairwiseCutoff`].
+pub struct HardSphere;
 
 impl<S, V> SitePairEnergy<S> for HardSphere
 where
@@ -122,23 +117,17 @@ where
 {
     /// Compute the energy contribution from a pair of sites.
     ///
-    /// A pair of hard spheres contributes an infinite energy when they overlap,
-    /// and zero when they do not.
+    /// This implementation always returns infinity. The overlap check is
+    /// performed by the calling [`PairwiseCutoff`] method.
     #[inline]
-    fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
-        // let r_squared = (site_properties_i.position())
-        //     .distance_squared(site_properties_j.position());
-        // if r_squared < self.radius.get().powi(2) {
+    fn site_pair_energy(&self, _site_properties_i: &S, _site_properties_j: &S) -> f64 {
             f64::INFINITY
-        // } else {
-        //     0.0
-        // }
     }
     
     /// Evaluate the energy contribution from a pair of sites *in the initial state*.
     ///
     /// Hard shapes are assumed to be non-overlapping in the initial state.
-    /// This method always returns zero.
+    /// This implementation always returns zero.
     #[inline]
     fn site_pair_energy_initial(&self, _site_properties_i: &S, _site_properties_j: &S) -> f64 {
         0.0

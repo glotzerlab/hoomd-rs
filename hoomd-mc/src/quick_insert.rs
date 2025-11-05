@@ -219,7 +219,7 @@ impl<D> QuickInsert<D> {
     /// ```
     /// use hoomd_geometry::shape::Rectangle;
     /// use hoomd_interaction::{
-    ///     CutoffPair,
+    ///     PairwiseCutoff,
     ///     pairwise::{Expanded, Isotropic, OverlapPenalty},
     /// };
     /// use hoomd_mc::{QuickInsert, Sweep, Translate, Trial, UniformIn};
@@ -241,7 +241,7 @@ impl<D> QuickInsert<D> {
     /// let translate = Translate::with_maximum_distance(0.1.try_into()?);
     /// let translate_sweep = Sweep(translate);
     ///
-    /// let cutoff_pair = CutoffPair {
+    /// let cutoff_pair = PairwiseCutoff {
     ///     r_cut: 1.0,
     ///     evaluator: Isotropic(Expanded {
     ///         delta: 1.0,
@@ -338,7 +338,7 @@ mod tests {
     use crate::{QuickInsert, Sweep, Translate, Trial, UniformIn};
     use hoomd_geometry::shape::Rectangle;
     use hoomd_interaction::{
-        CutoffPair,
+        PairwiseCutoff,
         pairwise::{Boxcar, Isotropic},
     };
     use hoomd_microstate::{Microstate, boundary::Closed, property::Point};
@@ -351,7 +351,7 @@ mod tests {
         let epsilon = f64::INFINITY;
         let kt = 1.0;
 
-        let hamiltonian = CutoffPair {
+        let hamiltonian = PairwiseCutoff {
             r_cut: sigma,
             evaluator: Isotropic(Boxcar {
                 left: 0.0,

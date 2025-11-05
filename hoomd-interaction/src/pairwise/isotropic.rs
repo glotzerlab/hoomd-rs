@@ -15,7 +15,7 @@ use hoomd_vector::Metric;
 /// which operates on site properties and [`IsotropicEnergy`] which is a function
 /// only of the separation distance.
 ///
-/// Use [`Isotropic`] with [`CutoffPair`](crate::CutoffPair) in MD and MC
+/// Use [`Isotropic`] with [`PairwiseCutoff`](crate::PairwiseCutoff) in MD and MC
 /// simulations.
 ///
 /// # Example

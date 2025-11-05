@@ -12,9 +12,9 @@ use super::{PointUpdate, PointsNearBall, WithSearchRadius};
 
 /// Check all pairs.
 ///
-/// [`AllPairs`] is extremely slow when used with `CutoffPair`.
+/// [`AllPairs`] is extremely slow when used with `PairwiseCutoff`.
 /// Prefer [`VecCell`] or [`HashCell`] when possible. When not possible,
-/// TODO: Mention `PairwiseCutoffall`.
+/// TODO: Mention `PairwiseCutoffAll`.
 ///
 /// [`VecCell`]: crate::VecCell
 /// [`HashCell`]: crate::HashCell

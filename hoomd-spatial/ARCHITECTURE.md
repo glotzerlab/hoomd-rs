@@ -86,13 +86,14 @@ implement `PointUpdate` and `PointsNearBall`, `AllPairs` must unfortunately stor
 a `HashSet` of all keys. That makes ball searches run at 1/4 the speed of a tight
 for loop over all sites.
 
-We *could* have `iter_sites_near` return some kind of hybrid iterator that stores
-both types of iterators internally and uses the one appropriate to the spatial
-data structure. However, it may be better to write a separate implementation of
-`CutoffPair` instead: `CutoffPairAll`. `CutoffPairAll` would not call
-`iter_sites_near` and would instead loop over `sites()` and `ghosts()` directly.
-As a bonus, `CutoffPairAll` could iterate over sites in parallel and boost performance
-for simulations on curved surfaces that have no other opportunity for parallelism.
+We *could* have `iter_sites_near` return some kind of hybrid iterator that
+stores both types of iterators internally and uses the one appropriate
+to the spatial data structure. However, it may be better to write a
+separate implementation of `PairwiseCutoff` instead: `PairwiseCutoffAll`.
+`PairwiseCutoffAll` would not call `iter_sites_near` and would instead loop over
+`sites()` and `ghosts()` directly. As a bonus, `PairwiseCutoffAll` could iterate
+over sites in parallel and boost performance for simulations on curved surfaces
+that have no other opportunity for parallelism.
 
 ## Neighbor iteration protocols
 

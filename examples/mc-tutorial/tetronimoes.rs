@@ -5,7 +5,7 @@ use std::f64::consts::PI;
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    CutoffPair, External, TotalEnergy,
+    PairwiseCutoff, External, TotalEnergy,
     external::Linear,
     pairwise::{Boxcar, Isotropic},
 };
@@ -77,7 +77,7 @@ struct Tetronimoes {
     /// How sites interact with other sites and fields.
     hamiltonian: (
         External<Linear<PositionVector>>,
-        CutoffPair<Isotropic<Boxcar>>,
+        PairwiseCutoff<Isotropic<Boxcar>>,
     ),
     /// Trial moves to apply.
     sweep: Sweep<DiscreteRotateOrTranslate>,
@@ -125,7 +125,7 @@ impl Tetronimoes {
             right: sigma,
         };
         let isotropic = Isotropic(boxcar);
-        let cutoff_pair = CutoffPair {
+        let cutoff_pair = PairwiseCutoff {
             r_cut: sigma,
             evaluator: isotropic,
         };

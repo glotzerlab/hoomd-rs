@@ -174,7 +174,7 @@ implement an entirely custom implementation of `TotalEnergy`.
 Similarly, `SitePairEnergy` describes a type that can compute an energy between
 a pair of sites (as a function of their properties). The wrappers `Isotropic`
 and `Anisotropic` implement this for the implement `SitePairEnergy` for the
-potentials described above. `CutoffPair` implements `TotalEnergy` for pairwise
+potentials described above. `PairwiseCutoff` implements `TotalEnergy` for pairwise
 interactions that are cutoff to 0 at a given distance `r_cut`.
 
 ## Type dependent parameters
@@ -183,10 +183,10 @@ TODO: Sketch out how enums and `SiteEnergy`/`SitePairEnergy` work with match exp
 
 ## Cutoff potentials, spatial data structures, and periodic boundary conditions
 
-`CutoffPair` needs to find all sites (including ghost sites with periodic
+`PairwiseCutoff` needs to find all sites (including ghost sites with periodic
 boundaries) that are close to a given point in space. The `r_cut` value
 thus needs to be consistent between 3 different structs, the boundary,
-the spatial data structure, and `CutoffPair` itself.
+the spatial data structure, and `PairwiseCutoff` itself.
 
 At this point, the best `hoomd-rs` can do is check for this consistency at
 runtime and panic when it is not met. Perhaps a cleaner solution will present
