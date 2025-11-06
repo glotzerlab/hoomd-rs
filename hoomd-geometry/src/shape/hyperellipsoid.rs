@@ -174,6 +174,11 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperellipsoid<N> {
 impl<const N: usize> BoundingSphereRadius for Hyperellipsoid<N> {
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
+        // TODO: Test this in a benchmark and refactor if needed. Convex was experiencing a
+        // slowdown due to a `try_into().expect()` that was solved by storing the bounding
+        // radius directly as a PositiveReal. Also, removing the map reduce and caching
+        // the maximum could provide a performance benefit because the circumsphere
+        // check is applied *many* times when scanning for possible overlaps.
         self.semi_axes
             .iter()
             .map(PositiveReal::get)
