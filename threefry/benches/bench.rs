@@ -10,7 +10,11 @@
 use chacha20::ChaCha8Rng;
 use divan::{Bencher, black_box};
 use rand_core::{RngCore, SeedableRng};
-use threefry::{AESRandRng, SFC64Rng, Squares64, Squares128, ThreeFry2x64Rng};
+use threefry::{
+    threefry2x64::ThreeFry2x64Rng,
+    squares::{Squares128, Squares64},
+    AESRandRng, SFC64Rng,
+};
 
 fn main() {
     divan::main();
@@ -22,8 +26,12 @@ const SEED: u64 = 42;
 #[divan::bench_group(sample_count = 1000)]
 mod latency {
     use super::{
-        AESRandRng, Bencher, ChaCha8Rng, RngCore, SEED, SFC64Rng, SeedableRng, Squares64,
-        Squares128, ThreeFry2x64Rng, black_box,
+        Bencher, ChaCha8Rng, RngCore, SEED, SFC64Rng, SeedableRng, black_box,
+    };
+    use threefry::{
+        squares::{Squares128, Squares64},
+        threefry2x64::ThreeFry2x64Rng,
+        AESRandRng,
     };
 
     #[divan::bench]
@@ -79,10 +87,14 @@ mod latency {
 #[divan::bench_group]
 mod throughput {
     use super::{
-        AESRandRng, Bencher, ChaCha8Rng, RngCore, SEED, SFC64Rng, SeedableRng, Squares64,
-        Squares128, ThreeFry2x64Rng, black_box,
+        Bencher, ChaCha8Rng, RngCore, SEED, SFC64Rng, SeedableRng, black_box,
     };
     use divan::counter::BytesCount;
+    use threefry::{
+        squares::{Squares128, Squares64},
+        threefry2x64::ThreeFry2x64Rng,
+        AESRandRng,
+    };
 
     /// 1 MiB
     const SIZE: usize = 1024 * 1024;
