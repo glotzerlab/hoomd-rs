@@ -46,7 +46,7 @@ impl SFC64Rng {
         self.state[0] = self.state[1] ^ (self.state[1] >> RSHIFT);
         self.state[1] = self.state[2].wrapping_add(self.state[2] << LSHIFT);
         self.state[2] = self.state[2].rotate_left(BARREL_SHIFT).wrapping_add(out);
-        self.counter = self.counter.wrapping_add(1);
+        self.counter = self.counter.wrapping_add(1); // Weyl increment of 1
         out
     }
 
