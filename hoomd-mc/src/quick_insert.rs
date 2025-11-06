@@ -220,7 +220,8 @@ impl<D> QuickInsert<D> {
     /// use hoomd_geometry::shape::Rectangle;
     /// use hoomd_interaction::{
     ///     PairwiseCutoff,
-    ///     pairwise::{Expanded, Isotropic, OverlapPenalty},
+    ///     pairwise::Isotropic,
+    ///     univariate::{Expanded, OverlapPenalty},
     /// };
     /// use hoomd_mc::{QuickInsert, Sweep, Translate, Trial, UniformIn};
     /// use hoomd_microstate::{
@@ -339,7 +340,8 @@ mod tests {
     use hoomd_geometry::shape::Rectangle;
     use hoomd_interaction::{
         PairwiseCutoff,
-        pairwise::{Boxcar, Isotropic},
+        pairwise::Isotropic,
+        univariate::Boxcar,
     };
     use hoomd_microstate::{Microstate, boundary::Closed, property::Point};
     use hoomd_simulation::macrostate::Isothermal;

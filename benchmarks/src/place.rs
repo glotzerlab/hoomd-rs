@@ -10,7 +10,8 @@ use rand::distr::Distribution;
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{
     PairwiseCutoff,
-    pairwise::{Expanded, Isotropic, OverlapPenalty},
+    pairwise::Isotropic,
+    univariate::{Expanded, OverlapPenalty},
 };
 use hoomd_mc::{QuickInsert, Sweep, Translate, Trial, UniformIn};
 use hoomd_microstate::{

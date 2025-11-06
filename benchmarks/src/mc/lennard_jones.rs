@@ -6,7 +6,8 @@ use std::fmt;
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{
     PairwiseCutoff,
-    pairwise::{self, Isotropic},
+    pairwise::Isotropic,
+    univariate,
 };
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
@@ -21,7 +22,7 @@ use hoomd_vector::Cartesian;
 pub struct LennardJones<const D: usize, X> {
     microstate: Microstate<Point<Cartesian<D>>, Point<Cartesian<D>>, X, Periodic<Hypercuboid<D>>>,
     translate_sweep: Sweep<Translate<Cartesian<D>>>,
-    hamiltonian: PairwiseCutoff<Isotropic<pairwise::LennardJones>>,
+    hamiltonian: PairwiseCutoff<Isotropic<univariate::LennardJones>>,
     macrostate: Isothermal,
 }
 
@@ -72,7 +73,7 @@ where
 
         let hamiltonian = PairwiseCutoff {
             r_cut: maximum_interaction_range,
-            evaluator: Isotropic(pairwise::LennardJones {
+            evaluator: Isotropic(univariate::LennardJones {
                 epsilon: 1.0,
                 sigma: 1.0,
             }),

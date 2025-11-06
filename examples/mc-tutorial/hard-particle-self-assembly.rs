@@ -6,8 +6,9 @@ use hoomd_geometry::shape::{Ellipse, Rectangle};
 use hoomd_interaction::{
     PairwiseCutoff,
     pairwise::{
-        Anisotropic, ApproximateShapeOverlap, HardShape, OverlapPenalty,
+        Anisotropic, ApproximateShapeOverlap, HardShape,
     },
+    univariate::OverlapPenalty,
 };
 use hoomd_mc::{QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn};
 use hoomd_microstate::{
