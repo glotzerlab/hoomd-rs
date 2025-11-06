@@ -247,12 +247,12 @@ where
     ///
     /// Hard circle:
     /// ```
+    /// use hoomd_geometry::shape::Circle;
     /// use hoomd_interaction::{
     ///     PairwiseCutoff, TotalEnergy, pairwise::HardSphere,
     /// };
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::{Angle, Cartesian};
-    /// use hoomd_geometry::shape::Circle;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::new();
@@ -282,11 +282,12 @@ where
             for site_j in microstate.iter_sites_near(site_i.properties.position(), self.r_cut) {
                 if site_i.site_tag < site_j.site_tag
                     && site_i.body_tag != site_j.body_tag
-                    && (E::performs_own_distance_check() || site_i
-                        .properties
-                        .position()
-                        .distance_squared(site_j.properties.position())
-                        < self.r_cut.powi(2))
+                    && (E::performs_own_distance_check()
+                        || site_i
+                            .properties
+                            .position()
+                            .distance_squared(site_j.properties.position())
+                            < self.r_cut.powi(2))
                 {
                     let one = self
                         .evaluator
@@ -316,7 +317,7 @@ where
     X: PointsNearBall<P, SiteKey>,
     C: Wrap<B> + Wrap<S>,
     P: Metric,
-    {
+{
     /// Evaluate the change in energy contributed by `PairwiseCutoff` when one body is updated.
     ///
     /// # Examples
@@ -324,7 +325,7 @@ where
     /// Boxcar:
     /// ```
     /// use hoomd_interaction::{
-    ///     PairwiseCutoff, DeltaEnergyOne,
+    ///     DeltaEnergyOne, PairwiseCutoff,
     ///     pairwise::{Boxcar, Isotropic},
     /// };
     /// use hoomd_microstate::{Body, Microstate, property::Point};
@@ -362,12 +363,12 @@ where
     ///
     /// Hard circle:
     /// ```
+    /// use hoomd_geometry::shape::Circle;
     /// use hoomd_interaction::{
-    ///     PairwiseCutoff, DeltaEnergyOne, pairwise::HardSphere,
+    ///     DeltaEnergyOne, PairwiseCutoff, pairwise::HardSphere,
     /// };
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::{Angle, Cartesian};
-    /// use hoomd_geometry::shape::Circle;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::new();
@@ -414,20 +415,23 @@ where
             {
                 Err(_) => return f64::INFINITY,
                 Ok(site_i_properties) => {
-                    for site_j in initial_microstate.iter_sites_near(site_i_properties.position(), self.r_cut) {
+                    for site_j in
+                        initial_microstate.iter_sites_near(site_i_properties.position(), self.r_cut)
+                    {
                         if body_tag != site_j.body_tag
-                            && (E::performs_own_distance_check() || site_i_properties
-                                .position()
-                                .distance_squared(site_j.properties.position())
-                                < self.r_cut.powi(2))
+                            && (E::performs_own_distance_check()
+                                || site_i_properties
+                                    .position()
+                                    .distance_squared(site_j.properties.position())
+                                    < self.r_cut.powi(2))
                         {
                             let one = self
-                                    .evaluator
-                                    .site_pair_energy(&site_i_properties, &site_j.properties);
+                                .evaluator
+                                .site_pair_energy(&site_i_properties, &site_j.properties);
                             if one == f64::INFINITY {
                                 return one;
-                            }                                    
-                        
+                            }
+
                             energy_final += one;
                         }
                     }
@@ -438,20 +442,24 @@ where
         let mut energy_initial = 0.0;
         if !E::is_only_infinite_or_zero() {
             for site_i in initial_microstate.iter_body_sites(body_index) {
-                for site_j in initial_microstate.iter_sites_near(site_i.properties.position(), self.r_cut) {
+                for site_j in
+                    initial_microstate.iter_sites_near(site_i.properties.position(), self.r_cut)
+                {
                     if body_tag != site_j.body_tag
-                        && (E::performs_own_distance_check() ||  site_i.properties
-                            .position()
-                            .distance_squared(site_j.properties.position())
-                            < self.r_cut.powi(2))
+                        && (E::performs_own_distance_check()
+                            || site_i
+                                .properties
+                                .position()
+                                .distance_squared(site_j.properties.position())
+                                < self.r_cut.powi(2))
                     {
                         let one = self
-                                .evaluator
-                                .site_pair_energy_initial(&site_i.properties, &site_j.properties);
+                            .evaluator
+                            .site_pair_energy_initial(&site_i.properties, &site_j.properties);
                         if one == f64::INFINITY {
                             return one;
-                        }                                    
-                    
+                        }
+
                         energy_initial += one;
                     }
                 }
@@ -478,7 +486,7 @@ where
     /// Boxcar:
     /// ```
     /// use hoomd_interaction::{
-    ///     PairwiseCutoff, DeltaEnergyInsert,
+    ///     DeltaEnergyInsert, PairwiseCutoff,
     ///     pairwise::{Boxcar, Isotropic},
     /// };
     /// use hoomd_microstate::{Body, Microstate, property::Point};
@@ -513,12 +521,12 @@ where
     ///
     /// Hard circle:
     /// ```
+    /// use hoomd_geometry::shape::Circle;
     /// use hoomd_interaction::{
-    ///     PairwiseCutoff, DeltaEnergyInsert, pairwise::HardSphere,
+    ///     DeltaEnergyInsert, PairwiseCutoff, pairwise::HardSphere,
     /// };
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::{Angle, Cartesian};
-    /// use hoomd_geometry::shape::Circle;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::new();
@@ -555,19 +563,22 @@ where
             {
                 Err(_) => return f64::INFINITY,
                 Ok(site_i_properties) => {
-                    for site_j in initial_microstate.iter_sites_near(site_i_properties.position(), self.r_cut) {
-                        if E::performs_own_distance_check() ||  site_i_properties
+                    for site_j in
+                        initial_microstate.iter_sites_near(site_i_properties.position(), self.r_cut)
+                    {
+                        if E::performs_own_distance_check()
+                            || site_i_properties
                                 .position()
                                 .distance_squared(site_j.properties.position())
                                 < self.r_cut.powi(2)
                         {
                             let one = self
-                                    .evaluator
-                                    .site_pair_energy(&site_i_properties, &site_j.properties);
+                                .evaluator
+                                .site_pair_energy(&site_i_properties, &site_j.properties);
                             if one == f64::INFINITY {
                                 return one;
-                            }                                    
-                        
+                            }
+
                             energy_final += one;
                         }
                     }
@@ -585,7 +596,7 @@ where
     S: Position<Position = P>,
     X: PointsNearBall<P, SiteKey>,
     P: Metric,
-    {
+{
     /// Evaluate the change in energy contributed by `PairwiseCutoff` when one body is removed.
     ///
     /// # Example
@@ -593,7 +604,7 @@ where
     /// Boxcar:
     /// ```
     /// use hoomd_interaction::{
-    ///     PairwiseCutoff, DeltaEnergyRemove,
+    ///     DeltaEnergyRemove, PairwiseCutoff,
     ///     pairwise::{Boxcar, Isotropic},
     /// };
     /// use hoomd_microstate::{Body, Microstate, property::Point};
@@ -627,12 +638,12 @@ where
     ///
     /// Hard circle:
     /// ```
+    /// use hoomd_geometry::shape::Circle;
     /// use hoomd_interaction::{
-    ///     PairwiseCutoff, DeltaEnergyRemove, pairwise::HardSphere,
+    ///     DeltaEnergyRemove, PairwiseCutoff, pairwise::HardSphere,
     /// };
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::{Angle, Cartesian};
-    /// use hoomd_geometry::shape::Circle;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::new();
@@ -662,20 +673,24 @@ where
         let mut energy_initial = 0.0;
         if !E::is_only_infinite_or_zero() {
             for site_i in initial_microstate.iter_body_sites(body_index) {
-                for site_j in initial_microstate.iter_sites_near(site_i.properties.position(), self.r_cut) {
+                for site_j in
+                    initial_microstate.iter_sites_near(site_i.properties.position(), self.r_cut)
+                {
                     if body_tag != site_j.body_tag
-                        && (E::performs_own_distance_check() || site_i.properties
-                            .position()
-                            .distance_squared(site_j.properties.position())
-                            < self.r_cut.powi(2))
+                        && (E::performs_own_distance_check()
+                            || site_i
+                                .properties
+                                .position()
+                                .distance_squared(site_j.properties.position())
+                                < self.r_cut.powi(2))
                     {
                         let one = self
-                                .evaluator
-                                .site_pair_energy_initial(&site_i.properties, &site_j.properties);
+                            .evaluator
+                            .site_pair_energy_initial(&site_i.properties, &site_j.properties);
                         if one == f64::INFINITY {
                             return one;
-                        }                                    
-                    
+                        }
+
                         energy_initial += one;
                     }
                 }
@@ -689,11 +704,11 @@ where
 #[cfg(test)]
 mod tests_finite {
     use super::*;
-    use assert2::check;
     use crate::{
         TotalEnergy,
         pairwise::{Isotropic, LennardJones},
     };
+    use assert2::check;
     use hoomd_geometry::shape::Hypercuboid;
     use hoomd_microstate::{
         boundary::{Closed, Open},
@@ -860,10 +875,7 @@ mod tests_finite {
                 evaluator: Isotropic(|_r| 0.0),
             };
 
-            check!(
-                energy.delta_energy_one(&microstate, 0, &final_body) ==
-                f64::INFINITY
-            );
+            check!(energy.delta_energy_one(&microstate, 0, &final_body) == f64::INFINITY);
         }
 
         #[test]
@@ -900,10 +912,7 @@ mod tests_finite {
 
             // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
             // Moving body 0 to the left results in a -2.0 energy difference.
-            check!(
-                cutoff_pair.delta_energy_one(&microstate, 0, &body_a_final) ==
-                -2.0
-            );
+            check!(cutoff_pair.delta_energy_one(&microstate, 0, &body_a_final) == -2.0);
         }
 
         #[test]
@@ -994,10 +1003,7 @@ mod tests_finite {
                 evaluator: Isotropic(|_r| 0.0),
             };
 
-            check!(
-                energy.delta_energy_insert(&microstate, &new_body) ==
-                f64::INFINITY
-            );
+            check!(energy.delta_energy_insert(&microstate, &new_body) == f64::INFINITY);
         }
 
         #[test]
@@ -1030,10 +1036,7 @@ mod tests_finite {
 
             // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
             // Moving body 0 to the left results in a -2.0 energy difference.
-            check!(
-                cutoff_pair.delta_energy_insert(&microstate, &body_a_new) ==
-                2.0
-            );
+            check!(cutoff_pair.delta_energy_insert(&microstate, &body_a_new) == 2.0);
 
             microstate
                 .add_body(body_a_new)
@@ -1114,8 +1117,8 @@ mod tests_finite {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use assert2::check;
     use crate::{TotalEnergy, pairwise::HardSphere};
+    use assert2::check;
     use hoomd_geometry::shape::Hypercuboid;
     use hoomd_microstate::{boundary::Closed, property::Point};
     use hoomd_vector::Cartesian;
@@ -1150,7 +1153,7 @@ mod tests {
 
             // Ensure that PairwiseCutoff respects the r_cut value set.
             let r_cut = 5.0_f64.next_up();
-            let cutoff_pair = PairwiseCutoff{
+            let cutoff_pair = PairwiseCutoff {
                 r_cut,
                 evaluator: HardSphere { diameter: r_cut },
             };
@@ -1158,7 +1161,7 @@ mod tests {
             check!(cutoff_pair.total_energy(&microstate) == f64::INFINITY);
 
             let r_cut = 5.0_f64;
-            let cutoff_pair = PairwiseCutoff{
+            let cutoff_pair = PairwiseCutoff {
                 r_cut,
                 evaluator: HardSphere { diameter: r_cut },
             };
@@ -1190,7 +1193,7 @@ mod tests {
                 .expect("hard-coded bodies should be in the boundary");
 
             let r_cut = 1.0_f64.next_up();
-            let cutoff_pair = PairwiseCutoff{
+            let cutoff_pair = PairwiseCutoff {
                 r_cut,
                 evaluator: HardSphere { diameter: r_cut },
             };
@@ -1198,7 +1201,7 @@ mod tests {
             check!(cutoff_pair.total_energy(&microstate) == 0.0);
 
             let r_cut = 2.0_f64.next_up();
-            let cutoff_pair = PairwiseCutoff{
+            let cutoff_pair = PairwiseCutoff {
                 r_cut,
                 evaluator: HardSphere { diameter: r_cut },
             };
@@ -1225,15 +1228,12 @@ mod tests {
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
-            let energy = PairwiseCutoff{
+            let energy = PairwiseCutoff {
                 r_cut: 0.0,
                 evaluator: HardSphere { diameter: 0.0 },
             };
 
-            check!(
-                energy.delta_energy_one(&microstate, 0, &final_body) ==
-                f64::INFINITY
-            );
+            check!(energy.delta_energy_one(&microstate, 0, &final_body) == f64::INFINITY);
         }
 
         #[test]
@@ -1268,22 +1268,16 @@ mod tests {
                 .expect("hard-coded bodies should be in the boundary");
 
             let r_cut = 1.0_f64.next_up();
-            let cutoff_pair = PairwiseCutoff{
+            let cutoff_pair = PairwiseCutoff {
                 r_cut,
                 evaluator: HardSphere { diameter: r_cut },
             };
 
             // moving body a to the right generates overlaps
-            check!(
-                cutoff_pair.delta_energy_one(&microstate, 0, &body_a_overlap) ==
-                f64::INFINITY
-            );
+            check!(cutoff_pair.delta_energy_one(&microstate, 0, &body_a_overlap) == f64::INFINITY);
 
             // moving body away results in no overlaps
-            check!(
-                cutoff_pair.delta_energy_one(&microstate, 0, &body_a_no_overlap) ==
-                0.0
-            );
+            check!(cutoff_pair.delta_energy_one(&microstate, 0, &body_a_no_overlap) == 0.0);
         }
     }
 
@@ -1305,15 +1299,12 @@ mod tests {
                 .try_build()
                 .expect("the hard-coded bodies should be in the boundary");
 
-            let energy = PairwiseCutoff{
+            let energy = PairwiseCutoff {
                 r_cut: 0.0,
                 evaluator: HardSphere { diameter: 0.0 },
             };
 
-            check!(
-                energy.delta_energy_insert(&microstate, &new_body) ==
-                f64::INFINITY
-            );
+            check!(energy.delta_energy_insert(&microstate, &new_body) == f64::INFINITY);
         }
 
         #[test]
@@ -1340,15 +1331,12 @@ mod tests {
                 .expect("hard-coded bodies should be in the boundary");
 
             let r_cut = 1.0_f64.next_up();
-            let cutoff_pair = PairwiseCutoff{
+            let cutoff_pair = PairwiseCutoff {
                 r_cut,
                 evaluator: HardSphere { diameter: r_cut },
             };
 
-            check!(
-                cutoff_pair.delta_energy_insert(&microstate, &body_a_new) ==
-                f64::INFINITY
-            );
+            check!(cutoff_pair.delta_energy_insert(&microstate, &body_a_new) == f64::INFINITY);
 
             microstate
                 .add_body(body_a_new)

@@ -2,7 +2,7 @@
 // ANCHOR: use
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    PairwiseCutoff, External, TotalEnergy,
+    External, PairwiseCutoff, TotalEnergy,
     external::Linear,
     pairwise::{Boxcar, Isotropic},
 };

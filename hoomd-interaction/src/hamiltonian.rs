@@ -16,7 +16,7 @@ use hoomd_microstate::{Body, Microstate};
 ///
 /// ```
 /// use hoomd_interaction::{
-///     PairwiseCutoff, DeltaEnergyOne, External,
+///     DeltaEnergyOne, External, PairwiseCutoff,
 ///     external::Linear,
 ///     pairwise::{Boxcar, Isotropic},
 /// };
@@ -90,7 +90,7 @@ where
 ///
 /// ```
 /// use hoomd_interaction::{
-///     PairwiseCutoff, External, TotalEnergy,
+///     External, PairwiseCutoff, TotalEnergy,
 ///     external::Linear,
 ///     pairwise::{Boxcar, Isotropic},
 /// };
@@ -151,7 +151,7 @@ where
 ///
 /// ```
 /// use hoomd_interaction::{
-///     PairwiseCutoff, DeltaEnergyInsert, External,
+///     DeltaEnergyInsert, External, PairwiseCutoff,
 ///     external::Linear,
 ///     pairwise::{Boxcar, Isotropic},
 /// };

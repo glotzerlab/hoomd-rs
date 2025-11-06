@@ -4,7 +4,7 @@
 //! Implement [`Hypersphere`]
 use crate::{BoundingSphereRadius, IntersectsAt, IsPointInside, SupportMapping, Volume};
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{distribution::Ball, Cartesian, InnerProduct, Rotate, Rotation};
+use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation, distribution::Ball};
 
 use rand::{Rng, distr::Distribution};
 use std::{f64::consts::PI, ops::Mul};
@@ -203,7 +203,7 @@ impl<const N: usize> Hypersphere<N> {
     #[inline]
     pub fn intersects<V>(&self, other: &Hypersphere<N>, v_ij: &V) -> bool
     where
-        V: InnerProduct
+        V: InnerProduct,
     {
         (v_ij).norm_squared() <= (other.radius.get() + self.radius.get()).powi(2)
     }
@@ -229,11 +229,10 @@ impl<const N: usize> Volume for Hypersphere<N> {
     }
 }
 
-impl<const N: usize, V, R> IntersectsAt<Hypersphere<N>, V, R>
-    for Hypersphere<N>
+impl<const N: usize, V, R> IntersectsAt<Hypersphere<N>, V, R> for Hypersphere<N>
 where
     V: InnerProduct,
-    R: Rotation + Rotate<V>
+    R: Rotation + Rotate<V>,
 {
     #[inline]
     fn intersects_at(&self, other: &Hypersphere<N>, v_ij: &V, _o_ij: &R) -> bool {

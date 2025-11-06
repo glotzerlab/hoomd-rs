@@ -124,7 +124,9 @@ impl ConvexPolytope<2> {
                     Cartesian::from([f64::cos(theta), f64::sin(theta)])
                 })
                 .collect::<Vec<_>>(),
-            bounding_radius: 1.0.try_into().expect("hard-coded constant should be positive"),
+            bounding_radius: 1.0
+                .try_into()
+                .expect("hard-coded constant should be positive"),
         }
     }
 }

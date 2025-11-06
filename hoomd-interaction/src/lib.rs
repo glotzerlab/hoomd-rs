@@ -17,13 +17,13 @@ use hoomd_microstate::{Body, Microstate};
 pub mod external;
 pub mod pairwise;
 
-mod pairwise_cutoff;
 mod external_type;
 mod hamiltonian;
+mod pairwise_cutoff;
 mod zero;
 
-pub use pairwise_cutoff::PairwiseCutoff;
 pub use external_type::External;
+pub use pairwise_cutoff::PairwiseCutoff;
 pub use zero::Zero;
 
 /// Compute the total energy of a potential applied to the microstate.

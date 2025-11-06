@@ -204,8 +204,7 @@ const _ELLIPSOID_K_MAX_BOUND: f64 = 1.0 - _ELLIPSOID_OVERLAP_PRECISION;
 /// Min bound of the root search for an ellipsoid characteristic polynomial.
 const _ELLIPSOID_K_MIN_BOUND: f64 = _ELLIPSOID_OVERLAP_PRECISION;
 
-impl<R> IntersectsAt<Hyperellipsoid<2>, Cartesian<2>, R>
-    for Hyperellipsoid<2>
+impl<R> IntersectsAt<Hyperellipsoid<2>, Cartesian<2>, R> for Hyperellipsoid<2>
 where
     R: Rotation + Rotate<Cartesian<2>>,
     RotationMatrix<2>: From<R>,

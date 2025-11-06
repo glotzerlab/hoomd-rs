@@ -79,16 +79,19 @@ where
         // Use the global form of `intersects_at` so that the circumsphere early
         // rejection test can be performed before the expensive transformation
         // into the local coordinate system.
-        if self.0.intersects_at_global(&self.0, site_properties_i.position(),
+        if self.0.intersects_at_global(
+            &self.0,
+            site_properties_i.position(),
             site_properties_i.orientation(),
             site_properties_j.position(),
-            site_properties_j.orientation()) {
+            site_properties_j.orientation(),
+        ) {
             f64::INFINITY
         } else {
             0.0
         }
     }
-    
+
     /// Evaluate the energy contribution from a pair of sites *in the initial state*.
     ///
     /// Hard shapes are assumed to be non-overlapping in the initial state.
@@ -101,7 +104,7 @@ where
     #[inline]
     fn is_only_infinite_or_zero() -> bool {
         true
-    }    
+    }
 
     #[inline]
     fn performs_own_distance_check() -> bool {
@@ -116,7 +119,7 @@ where
 pub struct HardSphere {
     /// The sphere's diameter.
     pub diameter: f64,
-    }
+}
 
 impl<S, V> SitePairEnergy<S> for HardSphere
 where
@@ -129,14 +132,17 @@ where
     /// when they do not.
     #[inline]
     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
-        if site_properties_i.position()
+        if site_properties_i
+            .position()
             .distance_squared(site_properties_j.position())
-            < self.diameter.powi(2) {
+            < self.diameter.powi(2)
+        {
             f64::INFINITY
-            } else {
-                0.0 }
+        } else {
+            0.0
+        }
     }
-    
+
     /// Evaluate the energy contribution from a pair of sites *in the initial state*.
     ///
     /// Hard shapes are assumed to be non-overlapping in the initial state.
@@ -149,11 +155,10 @@ where
     #[inline]
     fn is_only_infinite_or_zero() -> bool {
         true
-    }    
+    }
 
     #[inline]
     fn performs_own_distance_check() -> bool {
         true
     }
 }
-

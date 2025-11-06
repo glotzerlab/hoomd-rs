@@ -223,7 +223,7 @@ pub trait IntersectsAt<S, V, R>
 where
     V: Vector,
     R: Rotation + Rotate<V>,
- {
+{
     /// Test whether the set of points in one shape intersects with the set of another
     /// (in the local frame).
     ///
@@ -255,17 +255,18 @@ where
     /// overlap *before* transforming into the local coordinate system about
     /// `self`.
     #[inline]
-    fn intersects_at_global(&self, other: &S, r_self: &V, o_self: &R, r_other: &V, o_other: &R) -> bool {
-        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(
-            r_self,
-            o_self,
-            r_other,
-            o_other,
-        );
+    fn intersects_at_global(
+        &self,
+        other: &S,
+        r_self: &V,
+        o_self: &R,
+        r_other: &V,
+        o_other: &R,
+    ) -> bool {
+        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(r_self, o_self, r_other, o_other);
 
         self.intersects_at(other, &v_ij, &o_ij)
     }
-
 
     /// Approximate the amount of overlap between two shapes.
     ///
