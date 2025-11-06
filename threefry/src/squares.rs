@@ -151,9 +151,3 @@ impl RngCore for Squares128 {
         self.0.fill_bytes(dst);
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rand::{SeedableRng, rngs::StdRng};
-}

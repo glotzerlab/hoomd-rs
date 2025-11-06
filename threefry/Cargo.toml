@@ -13,9 +13,7 @@ categories.workspace = true
 num-traits = "0.2.19"
 cipher = { version = "0.5.0-rc.1", features = ["stream-wrapper"] }
 rand_core = "0.9.0"
-# rand_core.workspace = true
 rand.workspace = true
-wide = "0.7.33"
 clap = { version = "4.5.4", features = ["derive"] }
 
 [lints]
