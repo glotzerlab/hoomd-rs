@@ -32,13 +32,36 @@ pub trait RotationalModifier<const N: usize, B, S, C> {
     fn thermalize_rotation(&self, microstate: &mut Microstate<B, S, C>);
 }
 
-/// Construct the [Thermalizer].
+/// Construct the [Thermalize].
 #[derive(Clone, Debug, PartialEq)]
 pub struct Thermalize {
     /// The desired temperature
     pub kT: f64,
 }
 
+/// `remove_com_angular_momentum` modify the three-dimensional system's momentum by zeroing the
+/// center-of-mass (COM) angular momentum as
+/// ```math
+/// \mathbf{p}_{k,\; \mathrm{new}} = \mathbf{p}_{k,\; \mathrm{old}} - \left( \mathbf{\omega}_\mathrm{com} \times \mathbf{r}_{k,\; \mathrm{com}} \right) m_k
+/// ```
+/// where $`k`$ is the index of each body in a system,
+/// $`\mathbf{\omega}_\mathrm{com}`$ is the COM angular velocity vector,
+/// $`\mathbf{r}_{k,\; \mathrm{com}}`$ is the relative position vector
+/// point from COM to $`k`$-th body, $`\mathbf{p}_{k,\; \mathrm{old}}`$
+/// and $`\mathbf{p}_{k,\; \mathrm{new}}`$ are the momentum vector before and after
+/// modification of $`k`$-th body, and $`m_k`$ is the mass of $`k`$-th body.
+///
+/// The $`\mathbf{\omega}_\mathrm{com}`$ is obtained by solving
+/// the following linear system:
+/// ```math
+/// \mathbf{I}_\mathrm{com} \mathbf{\omega}_\mathrm{com} = \mathbf{L}_\mathrm{com}
+/// ```
+/// where $`\mathbf{I}_\mathrm{com}`$ is the COM moment-of-inertia matrix, and
+/// $`\mathbf{L}_\mathrm{com}`$ is the COM angular momentum.
+/// If the algorithm found one pricipal component of $`\mathbf{I}_\mathrm{com}`$
+/// is 0, it will set the corresponding $`\mathbf{\omega}_\mathrm{com}`$ component
+/// to 0, by assuming the system do not rotate with respect to the corresponding
+/// principal axis.
 impl<B, S, C> TranslationalAngularMomentumModifier<3, B, S, C> for Thermalize
 where
     B: Position<Position = Cartesian<3>>
@@ -51,7 +74,6 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Remove the center-of-mass angular momentum resulting from translational DOF.
-    /// TODO: Finish the implementation.
     fn remove_com_angular_momentum(&self, microstate: &mut Microstate<B, S, C>) {
         let mut com = Cartesian::default();
         let mut total_mass = 0.0;
@@ -134,6 +156,18 @@ where
     }
 }
 
+/// `remove_com_angular_momentum` modify the two-dimensional system's momentum by zeroing the
+/// center-of-mass (COM) angular momentum as
+/// ```math
+/// \mathbf{p}_{k,\; \mathrm{new}} = \mathbf{p}_{k,\; \mathrm{old}} - \left( [-r_{k,\; \mathrm{com}}^{y}, r_{k,\; \mathrm{com}}^{x}] \right) \frac{l_\mathrm{com}}{I_\mathrm{com}} m_k
+/// ```
+/// where $`k`$ is the index of each body in a system,
+/// $`l_\mathrm{com}`$ is the COM angular momentum, $`I_\mathrm{com}`$ is the COM moment of inertia,
+/// $`r_{k,\; \mathrm{com}}^{i}`$ is the relative position vector component $`i`$
+/// pointing from COM to $`k`$-th body, $`\mathbf{p}_{k,\; \mathrm{old}}`$
+/// and $`\mathbf{p}_{k,\; \mathrm{new}}`$ are the momentum vector before and after
+/// modification of $`k`$-th body, and $`m_k`$ is the mass of $`k`$-th body.
+///
 impl<B, S, C> TranslationalAngularMomentumModifier<2, B, S, C> for Thermalize
 where
     B: Position<Position = Cartesian<2>>
@@ -146,7 +180,6 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Remove the center-of-mass angular momentum resulting from translational DOF.
-    /// TODO: Finish the implementation.
     fn remove_com_angular_momentum(&self, microstate: &mut Microstate<B, S, C>) {
         let mut com = Cartesian::default();
         let mut total_mass = 0.0;
@@ -208,6 +241,33 @@ where
     }
 }
 
+/// `thermalize_translation` thermalize the system's translational montion given $`k_BT`$ by
+/// drawing random momentum from Gaussians.
+///
+/// According to the Maxwell–Boltzmann statistics, each
+/// component of momentum $`p_i,\; i=x,y,z`$ with the mass $`m`$ distributes
+/// as a Gaussian with the probability density function
+/// with mean of 0 and the standard deviation of $`\sqrt{m k_B}`$ as:
+/// ```math
+///    f(p_i) = \sqrt{ \frac{1}{2 \pi m k_B T} } \exp{\left( -\frac{p_i^2}{2 m k_B T} \right)}
+/// ```
+///
+/// It is equivalent to sample the Maxwell-Boltzmann distribution $`f_\mathrm{Maxwell-Boltzmann}(p)`$,
+/// which can be obtained by the relation to the joint Gaussian
+/// $`f_\mathrm{Maxwell-Boltzmann}(p) dp = f(p_x)f(p_y)f(p_z) dp_x dp_y dp_z`$ and express it in terms of the
+/// magnitude of momentum $`p = \sqrt{(p_x^2+p_y^2+p_z^2)}`$ as:
+/// ```math
+///    f_\mathrm{Maxwell-Boltzmann}(p) = \left[ \frac{1}{2 \pi k_B T} \right]^\frac{3}{2} (\frac{4 \pi p^2}{\sqrt{m}}) \exp{\left( -\frac{p^2}{2 m k_B T} \right)}
+/// ```
+///
+/// `remove_com_momentum` modify the system's momentum by zeroing the
+/// center-of-mass momentum as
+/// ```math
+/// \mathbf{p}_{k,\; \mathrm{new}} = \mathbf{p}_{k,\; \mathrm{old}} - \frac{\sum_k \mathbf{p}_{k,\; \mathrm{old}}}{\sum_k m_k} m_k
+/// ```
+/// where $`k`$ is the index of each body in a system, $`\mathbf{p}_{k,\; \mathrm{old}}`$
+/// and $`\mathbf{p}_{k,\; \mathrm{new}}`$ are the momentum vector before and after
+/// modification of $`k`$-th body, and $`m_k`$ is the mass of $`k`$-th body.
 impl<const N: usize, B, S, C> TranslationalModifier<N, B, S, C> for Thermalize
 where
     B: Position<Position = Cartesian<N>>
@@ -219,9 +279,7 @@ where
     S: Position<Position = Cartesian<N>> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
-    /// Randomize the mometum of microstate, by drwan from
-    /// a Gaussian distribution, for two-dimension system.
-    /// Autometically zero the center-of-mass momentum.
+    /// Draw random momentum from Gaussian.
     fn thermalize_translation(&self, microstate: &mut Microstate<B, S, C>) {
         let mut rng = microstate.counter().make_rng();
 
@@ -280,6 +338,18 @@ where
     }
 }
 
+/// `thermalize_rotation` thermalize two-dimensional
+/// system's rotational montion given $`k_BT`$ by
+/// drawing random angular momentum from Gaussians.
+/// Note that, in 2D, angular momentum is a scalar.
+///
+/// According to the Maxwell–Boltzmann statistics, angular momentum
+/// $`l`$ with the moment of inertia $`I`$ distributes
+/// as a Gaussian with the probability density function
+/// with mean of 0 and the standard deviation of $`\sqrt{I k_B}`$ as:
+/// ```math
+///    f(l) = \sqrt{ \frac{1}{2 \pi I k_B T} } \exp{\left( -\frac{l^2}{2 I k_B T} \right)}
+/// ```
 impl<B, S, C> RotationalModifier<2, B, S, C> for Thermalize
 where
     B: Orientation<Rotation = Angle>
@@ -292,9 +362,7 @@ where
     S: Position<Position = Cartesian<2>> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
-    /// Randomize the mometum of microstate, by drwan from
-    /// a Gaussian distribution, for two-dimension system.
-    /// Autometically zero the center-of-mass momentum.
+    /// Draw random angular momentum from Gaussian.
     fn thermalize_rotation(&self, microstate: &mut Microstate<B, S, C>) {
         let mut rng = microstate.counter().make_rng();
 
@@ -316,6 +384,17 @@ where
     }
 }
 
+/// `thermalize_rotation` thermalize three-dimensional system's rotational montion given $`k_BT`$ by
+/// drawing random angular momentum from Gaussians.
+///
+/// According to the Maxwell–Boltzmann statistics, angular momentum
+/// $`l_i,\; i=x,y,z`$ with the moment of inertia $`I_{ij}`$ that carrys
+/// the pricipal components $`I_{ii},\; i=x,y,z`$ distributes
+/// as a Gaussian with the probability density function
+/// with mean of 0 and the standard deviation of $`\sqrt{I_{ii} k_B}`$ as:
+/// ```math
+///    f(l_i) = \sqrt{ \frac{1}{2 \pi I_{ii} k_B T} } \exp{\left( -\frac{l_i^2}{2 I_{ii} k_B T} \right)}
+/// ```
 impl<B, S, C> RotationalModifier<3, B, S, C> for Thermalize
 where
     B: Orientation<Rotation = Versor>
@@ -328,9 +407,7 @@ where
     S: Position<Position = Cartesian<3>> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
-    /// Randomize the mometum of microstate, by drwan from
-    /// a Gaussian distribution, for two-dimension system.
-    /// Autometically zero the center-of-mass momentum.
+    /// Draw random angular momentum from Gaussian.
     fn thermalize_rotation(&self, microstate: &mut Microstate<B, S, C>) {
         let mut rng = microstate.counter().make_rng();
 
