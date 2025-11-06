@@ -36,17 +36,11 @@ use rand::{Rng, SeedableRng};
 /// # Performance
 ///
 /// The current implementation uses `SFC64`, which generates one 64-bit word at at time.
-/// Benchmarks show that `Counter.new(...).make_rng()`
+/// Benchmarks show that executing `Counter.new(...).make_rng()`
 /// and sampling values that fall in the first batch runs at approximately
 /// 100 million operations per second (run `cargo bench` to see the measured
-/// performance on your architecture). Both serial and parallel algorithms should be
-/// able to rapidly construct generators for
-/// This is fast enough that serial
-/// algorithms should make ONE random generator and sample from it repeatedly
-/// (instead of e.g. making one random generator per particle). Parallel
-/// algorithms by necessity must make many different random generators from
-/// different counters. Should `ChaCha` prove to be a bottleneck in practice,
-/// this implementation may be switched to a more efficient RNG.
+/// performance on your architecture). If performance is somehow an issue, `AESRand` may
+/// be slightly faster on some platforms.
 ///
 /// # Example
 ///
@@ -127,7 +121,7 @@ impl Counter {
         self
     }
 
-    /// Set indices from a 64-bit integer, split to fill both items.
+    /// Set indices from a 64-bit integer, splitting to fill both items.
     ///
     /// There are only 2 indices. Calling `indices` (or [`index`](Self::index)) more
     /// than once will overwrite existing values.
