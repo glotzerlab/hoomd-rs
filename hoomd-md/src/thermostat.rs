@@ -121,10 +121,10 @@ impl<B, S, C, M> Thermostat<B, S, C, M> for NoThermostat {
 /// or [`RotationalMotion`] and $`n`$ is a random value
 /// sampled from the standard normal distribution
 /// $`\mathcal{N}(0, 1)`$.
-/// 
+///
 /// # Reference
 /// [Bussi et al. 2007]
-/// 
+///
 /// [Bussi et al. 2007]: <https://doi.org/10.1063/1.2408420>
 ///
 /// # Examples
@@ -274,7 +274,7 @@ where
 /// [`MTTKThermostat`] integrate the $`\eta`$ and
 /// $`\xi`$ forward by half time step $`\frac{\delta t}{2}`$
 /// by the following procedure:
-/// 
+///
 /// ```math
 /// \begin{align}
 ///
@@ -288,10 +288,10 @@ where
 ///         
 /// \end{align}
 /// ```
-/// 
+///
 /// # Reference
 /// [Tuckerman et al. 2006]
-/// 
+///
 /// [Tuckerman et al. 2006]: <https://doi.org/10.1088/0305-4470/39/19/S18>
 ///
 /// # Examples
