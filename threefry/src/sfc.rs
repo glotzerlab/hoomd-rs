@@ -85,7 +85,7 @@ impl SeedableRng for SFC64Rng {
     }
     #[inline]
     fn seed_from_u64(state: u64) -> Self {
-        Self::initialize(0, 0, 0, state)
+        Self::initialize(state, 0, 0, 1)
     }
 }
 
@@ -160,8 +160,7 @@ mod tests {
 
     #[test]
     fn test_sfc64_against_numpy() {
-        // Numpy starts its counter at 1
-        let mut rng = SFC64Rng::seed_from_u64(1);
+        let mut rng = SFC64Rng::seed_from_u64(0);
         (0..17).for_each(|i| {
             assert_eq!(
                 rng.next_u64(),
@@ -178,7 +177,7 @@ mod tests {
     /// `rg.integers(np.uint64(2**64-1), size=2**(17)+12, dtype=np.uint64, endpoint=True)[-1]`
     #[test]
     fn test_sfc64_deep() {
-        let mut rng = SFC64Rng::seed_from_u64(1);
+        let mut rng = SFC64Rng::seed_from_u64(0);
         (0..(2u64.pow(17) - 1)).for_each(|_| {
             rng.next_u64();
         });
