@@ -5,9 +5,7 @@
 
 // use chacha20::ChaCha8Rng;
 use rand::{Rng, SeedableRng};
-use threefry::{
-    AESRandRng, CWG64Rng, SFC64Rng, Squares64, Squares128, ThreeFry2x64Rng, Tyche4x32Rng, XSM64Rng,
-};
+use threefry::SFC64Rng;
 
 /// Conveniently construct counter based random number generators.
 ///
@@ -62,10 +60,6 @@ use threefry::{
 /// let r: f64 = rng.random();
 /// ```
 #[derive(Clone, Debug, PartialEq)]
-#[expect(
-    clippy::struct_field_names,
-    reason = "The counters must be distinguishable from the indices."
-)]
 pub struct Counter {
     /// The current simulation step.
     step: u64,
@@ -77,12 +71,6 @@ pub struct Counter {
     index_a: u64,
     /// Second index.
     index_b: u64,
-    /// First counter.
-    counter_a: u32,
-    /// Second counter.
-    counter_b: u32,
-    /// Third counter.
-    counter_c: u32,
 }
 
 impl Counter {
@@ -109,9 +97,6 @@ impl Counter {
             seed,
             index_a: 0,
             index_b: 0,
-            counter_a: 0,
-            counter_b: 0,
-            counter_c: 0,
         }
     }
 
@@ -162,54 +147,6 @@ impl Counter {
         self
     }
 
-    /// Set counters.
-    ///
-    /// There are only 3 counters. Calling `counters` (or
-    /// [`counter`](Self::counter)) more than once will overwrite existing values.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_utility::random::Counter;
-    ///
-    /// # let step = 100_000;
-    /// # let substep = 10;
-    /// # let seed = 100;
-    /// # let a = 12;
-    /// # let b = 54;
-    /// # let c = 62;
-    /// let counter = Counter::new(step, substep, seed).counters(a, b, c);
-    /// ```
-    #[must_use]
-    #[inline]
-    pub fn counters(mut self, a: u32, b: u32, c: u32) -> Self {
-        self.counter_a = a;
-        self.counter_b = b;
-        self.counter_c = c;
-        self
-    }
-
-    /// Set one counter.
-    ///
-    /// Equivalent to `counters(a, 0, 0)`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_utility::random::Counter;
-    ///
-    /// # let step = 100_000;
-    /// # let substep = 10;
-    /// # let seed = 100;
-    /// let counter = Counter::new(step, substep, seed).counter(1);
-    /// ```
-    #[must_use]
-    #[inline]
-    pub fn counter(mut self, a: u32) -> Self {
-        self.counter_a = a;
-        self
-    }
-
     /// Seed a [`Rng`] with the counter.
     ///
     /// # Example
@@ -241,33 +178,16 @@ impl Counter {
         // stream[16..24].copy_from_slice(&self.step.to_le_bytes());
         // stream[24..28].copy_from_slice(&self.substep.to_le_bytes());
         // stream[28..32].copy_from_slice(&self.seed.to_le_bytes());
-        let mut stream = [0u8; 16];
-        stream[..8].copy_from_slice(&self.index_a.to_le_bytes());
-        stream[8..16].copy_from_slice(&self.index_b.to_le_bytes());
-        // stream[8..12].copy_from_slice(&self.counter_a.to_le_bytes());
 
-        let mut seed = [0u8; 16];
-        let mut seed = [0u8; 32]; // ChaCha and Xoshiro256
-        seed[..8].copy_from_slice(&(self.step).to_le_bytes());
+        let mut seed = [0u8; 32];
+        seed[..8].copy_from_slice(&self.step.to_le_bytes());
         seed[8..12].copy_from_slice(&self.substep.to_le_bytes());
-        seed[12..16].copy_from_slice(&(self.seed).to_le_bytes());
+        seed[12..16].copy_from_slice(&self.seed.to_le_bytes());
 
-        seed[16..24].copy_from_slice(&self.index_b.to_le_bytes());
-        seed[28..].copy_from_slice(&self.counter_c.to_le_bytes());
+        seed[16..24].copy_from_slice(&self.index_a.to_le_bytes());
+        seed[24..].copy_from_slice(&self.index_b.to_le_bytes());
 
-        // let mut rng = ThreeFry2x64Rng::<13>::from_seed(seed);
-
-        // chacha20::ChaCha8Rng::from_seed(seed)
-        // rng.set_stream(stream);
-        // rng
-        // Squares64::seed_from_u64(0x16d7358fe8d9a17b)
-        // Squares128::from_seed(seed)
-        // rand_xoshiro::Xoshiro256Plus::from_seed(seed)
-        // Tyche4x32Rng::from_seed(seed)
-        // XSM64Rng::from_seed(seed)
-        // CWG64Rng::from_seed(seed)
         SFC64Rng::from_seed(seed)
-        // AESRandRng::from_seed(seed)
     }
 }
 
@@ -284,7 +204,7 @@ mod tests {
         // different elements in Counter indeed produce different random
         // number streams.
 
-        let counters = vec![
+        let counters = [
             Counter::new(0, 0, 0),
             Counter::new(1, 0, 0),
             Counter::new(0, 1, 0),
@@ -292,10 +212,6 @@ mod tests {
             Counter::new(0, 0, 0).indices(1, 0),
             Counter::new(0, 0, 0).indices(0, 1),
             Counter::new(0, 0, 0).index(2),
-            Counter::new(0, 0, 0).counters(1, 0, 0),
-            Counter::new(0, 0, 0).counters(0, 1, 0),
-            Counter::new(0, 0, 0).counters(0, 0, 1),
-            Counter::new(0, 0, 0).counter(2),
         ];
 
         for (i, counter_i) in counters.iter().enumerate() {
