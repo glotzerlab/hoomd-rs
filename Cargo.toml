@@ -16,7 +16,7 @@ members = ["benchmarks",
            "hoomd-utility",
            "hoomd-vector",
            "tools/build-wasm-doc-examples",
-           "threefry"
+           "hoomd-rand"
           ]
 
 # Include only core hoomd simulation crates by default so that `cargo build`,
@@ -35,7 +35,7 @@ default-members = ["examples",
                    "hoomd-spatial",
                    "hoomd-utility",
                    "hoomd-vector",
-                   "threefry"
+                   "hoomd-rand"
                   ]
 
 [workspace.package]
@@ -62,7 +62,7 @@ hoomd-simulation = { path = "hoomd-simulation" }
 hoomd-spatial = { path = "hoomd-spatial" }
 hoomd-utility = { path = "hoomd-utility" }
 hoomd-vector = { path = "hoomd-vector" }
-threefry = { path = "threefry" }
+hoomd-rand = { path = "hoomd-rand" }
 
 # Common dev dependencies
 assert2 = "=0.3.16"

@@ -1,0 +1,63 @@
+
+***** MCP version 13 --tera *****
+
+
+
+============
+binr -c 1/280 (3926827242 bytes)
+=======
+dim = 128 ; rnk = 127 ; p = 1
+dim = 256 ; rnk = 253 ; p = 0.25
+dim = 27264 ; rnk = 27258 ; p = 0.0312
+done 24 matrices ; largest 27264 X 27264
+
+processed in 361 seconds. Thu Nov  6 07:47:24 2025
+
+one sided P value (very small numbers are bad)
+P = 0.533
+... after 1 tests running guess [p] = 0.53
+
+
+============
+rda 1/1 (1099511627776 bytes)
+=======
+chisquare (df=749)  808 (p = 0.067)
+extreme = 0.00109 (719 +) (p = 0.558)
+zero1st = 0.00453 (3 +) (p = 0.967)
+ext = 4244715089 ; exk = 33242967 ; expect = 33226605
+
+processed 1.1e+12 bytes in 4.92e+03 seconds. Thu Nov  6 09:09:20 2025
+
+one sided P value (very small numbers are bad)
+P = 0.188
+... after 2 tests running guess [p] = 0.34
+
+
+============
+z9 1/1 (1099511627776 bytes)
+=======
+mix3 extreme = 2.50299 (lags = 002) low weight 44
+mix3 extreme = 2.90128 (lags = 001101) medium weight 378
+mix3 extreme = 3.60807 (lags = 22222) high weight 6138
+bits per word =  32 : sub-test P value = 0.805
+
+mix3 extreme = 2.67246 (lags = 100001) low weight 44
+mix3 extreme = 3.44054 (lags = 110101) medium weight 378
+mix3 extreme = 3.84325 (lags = 11020001) high weight 6138
+bits per word = 128 : sub-test P value = 0.482
+
+mix3 extreme = 2.55207 (lags = 00002) low weight 44
+mix3 extreme = 3.24387 (lags = 201001) medium weight 378
+mix3 extreme = 3.86339 (lags = 00200021) high weight 6138
+bits per word = 512 : sub-test P value = 0.738
+
+processed 1.1e+12 bytes in 5.4e+03 seconds. Thu Nov  6 10:39:18 2025
+
+one sided P value (very small numbers are bad)
+P = 0.861
+... after 3 tests running guess [p] = 0.46
+
+
+============
+diff12 1/7 (157073089682 bytes)
+=======

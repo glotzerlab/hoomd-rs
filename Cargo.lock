@@ -3187,6 +3187,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "hoomd-rand"
+version = "0.0.0"
+dependencies = [
+ "approxim",
+ "chacha20",
+ "cipher",
+ "clap",
+ "divan",
+ "num-traits",
+ "rand 0.9.2",
+ "rand_core 0.9.3",
+ "rstest",
+]
+
+[[package]]
 name = "hoomd-simulation"
 version = "0.0.0"
 dependencies = [
@@ -3212,11 +3227,11 @@ version = "0.0.0"
 dependencies = [
  "chacha20",
  "divan",
+ "hoomd-rand",
  "rand 0.9.2",
  "rand_chacha 0.9.0",
  "rstest",
  "thiserror 2.0.17",
- "threefry",
 ]
 
 [[package]]
@@ -3227,13 +3242,13 @@ dependencies = [
  "chacha20",
  "divan",
  "hoomd-linear-algebra",
+ "hoomd-rand",
  "hoomd-utility",
  "paste",
  "rand 0.9.2",
  "rand_distr 0.5.1",
  "rstest",
  "thiserror 2.0.17",
- "threefry",
 ]
 
 [[package]]
@@ -5428,17 +5443,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f60246a4944f24f6e018aa17cdeffb7818b76356965d03b07d6a9886e8962185"
 dependencies = [
  "cfg-if",
-]
-
-[[package]]
-name = "threefry"
-version = "0.0.0"
-dependencies = [
- "cipher",
- "num-traits",
- "rand 0.9.2",
- "rand_core 0.9.3",
- "wide",
 ]
 
 [[package]]

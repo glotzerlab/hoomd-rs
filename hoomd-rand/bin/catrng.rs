@@ -14,14 +14,14 @@
 //! `$ catrng | ./mcp --tera`
 //! This is drawn from [simd_prngs](https://github.com/TheIronBorn/simd_prngs/blob/master/src/bin/cat_rng.rs) with a few modifications for our use case.
 
+extern crate hoomd_rand;
 extern crate rand;
-extern crate threefry;
 
 use std::{io, io::prelude::*};
 
 use clap::Parser;
+use hoomd_rand::SFC64Rng;
 use rand::prelude::*;
-use threefry::SFC64Rng;
 
 /// Command line options for RNG testing.
 #[derive(Parser, Debug)]
@@ -39,6 +39,8 @@ enum Cli {
         #[arg(short, long, default_value_t = 4)]
         n: usize,
     },
+    /// Generate single items from RNGs with a fixed seed and manually incremented ctr.
+    ManualCounter,
     /// Use the seed as a counter, generating one value per seed.
     SeedIncrement,
 }
@@ -92,6 +94,16 @@ fn main() -> io::Result<()> {
                     let val = rngs[i % n].next_u64();
                     chunk.copy_from_slice(&val.to_le_bytes());
                 }
+                writer.write_all(&buf)?;
+            }
+        }
+        Cli::ManualCounter => {
+            let mut counter = 0u64;
+
+            loop {
+                let mut rng = SFC64Rng::from_state_and_counter([0; 3], counter);
+                rng.fill_bytes(&mut buf);
+                counter = counter.wrapping_add(1);
                 writer.write_all(&buf)?;
             }
         }

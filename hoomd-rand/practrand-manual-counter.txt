@@ -1,0 +1,31 @@
+RNG_test using PractRand version 0.95
+RNG = RNG_stdin, seed = unknown
+test set = expanded, folding = extra
+
+rng=RNG_stdin, seed=unknown
+length= 128 megabytes (2^27 bytes), time= 3.4 seconds
+  no anomalies in 1283 test result(s)
+
+rng=RNG_stdin, seed=unknown
+length= 256 megabytes (2^28 bytes), time= 15.6 seconds
+  no anomalies in 1361 test result(s)
+
+rng=RNG_stdin, seed=unknown
+length= 512 megabytes (2^29 bytes), time= 28.6 seconds
+  no anomalies in 1439 test result(s)
+
+rng=RNG_stdin, seed=unknown
+length= 1 gigabyte (2^30 bytes), time= 43.9 seconds
+  no anomalies in 1522 test result(s)
+
+rng=RNG_stdin, seed=unknown
+length= 2 gigabytes (2^31 bytes), time= 72.1 seconds
+  no anomalies in 1606 test result(s)
+
+rng=RNG_stdin, seed=unknown
+length= 4 gigabytes (2^32 bytes), time= 120 seconds
+  no anomalies in 1696 test result(s)
+
+rng=RNG_stdin, seed=unknown
+length= 8 gigabytes (2^33 bytes), time= 237 seconds
+  no anomalies in 1802 test result(s)

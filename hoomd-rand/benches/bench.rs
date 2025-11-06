@@ -9,12 +9,12 @@
 )]
 use chacha20::ChaCha8Rng;
 use divan::{Bencher, black_box};
-use rand_core::{RngCore, SeedableRng};
-use threefry::{
+use hoomd_rand::{
     AESRandRng, SFC64Rng,
     squares::{Squares64, Squares128},
     threefry2x64::ThreeFry2x64Rng,
 };
+use rand_core::{RngCore, SeedableRng};
 
 fn main() {
     divan::main();
@@ -26,7 +26,7 @@ const SEED: u64 = 42;
 #[divan::bench_group(sample_count = 1000)]
 mod latency {
     use super::{Bencher, ChaCha8Rng, RngCore, SEED, SFC64Rng, SeedableRng, black_box};
-    use threefry::{
+    use hoomd_rand::{
         squares::{Squares64, Squares128},
         threefry2x64::ThreeFry2x64Rng,
     };
@@ -36,7 +36,7 @@ mod latency {
         target_feature = "neon",
         target_feature = "aes"
     ))]
-    use threefry::AESRandRng;
+    use hoomd_rand::AESRandRng;
 
     #[divan::bench]
     fn chacha8(bencher: Bencher) {
@@ -97,7 +97,7 @@ mod latency {
 mod throughput {
     use super::{Bencher, ChaCha8Rng, RngCore, SEED, SFC64Rng, SeedableRng, black_box};
     use divan::counter::BytesCount;
-    use threefry::{
+    use hoomd_rand::{
         squares::{Squares64, Squares128},
         threefry2x64::ThreeFry2x64Rng,
     };
@@ -107,7 +107,7 @@ mod throughput {
         target_feature = "neon",
         target_feature = "aes"
     ))]
-    use threefry::AESRandRng;
+    use hoomd_rand::AESRandRng;
 
     /// 1 MiB
     const SIZE: usize = 1024 * 1024;

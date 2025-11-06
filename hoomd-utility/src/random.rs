@@ -4,8 +4,8 @@
 //! Helpers that enable consistent use of random numbers throughout hoomd-rs.
 
 // use chacha20::ChaCha8Rng;
+use hoomd_rand::SFC64Rng;
 use rand::{Rng, SeedableRng};
-use threefry::SFC64Rng;
 
 /// Conveniently construct counter based random number generators.
 ///
