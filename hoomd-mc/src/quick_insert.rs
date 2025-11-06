@@ -69,7 +69,7 @@ enum State {
 ///
 /// [`apply`]: Self::apply
 /// [`is_complete`]: Self::is_complete
-/// [`OverlapPenalty`]: hoomd_interaction::pairwise::OverlapPenalty
+/// [`OverlapPenalty`]: hoomd_interaction::univariate::OverlapPenalty
 ///
 /// # Example
 ///

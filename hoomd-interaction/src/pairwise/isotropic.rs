@@ -7,7 +7,7 @@ use crate::{SitePairEnergy, univariate::UnivariateEnergy};
 use hoomd_microstate::property::Position;
 use hoomd_vector::Metric;
 
-/// Compute isotropic properties from a pair of sites
+/// Compute isotropic properties from a pair of sites.
 ///
 /// [`Isotropic`] is a newtype that provides a single implementation to compute
 /// pairwise properties. It fills the gap between traits like [`SitePairEnergy`]

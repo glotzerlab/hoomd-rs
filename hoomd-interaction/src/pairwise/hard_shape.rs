@@ -116,6 +116,8 @@ where
 ///
 /// [`HardSphere`] represents each site as a hard sphere with a diameter given
 /// by the `diameter` field.
+///
+/// [`PairwiseCutoff`]: crate::PairwiseCutoff
 pub struct HardSphere {
     /// The sphere's diameter.
     pub diameter: f64,

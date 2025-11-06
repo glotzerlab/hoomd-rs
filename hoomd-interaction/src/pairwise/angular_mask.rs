@@ -55,10 +55,11 @@ pub struct Patch<V> {
 /// \end{cases}
 /// ```
 ///
-/// Implement the [Kern-Frenkel] potential with the [`Boxcar`](super::Boxcar) isotropic potential
+/// Implement the [Kern-Frenkel] potential with the [`Boxcar`] isotropic potential
 /// and single patch in both `masks_i` and `masks_j`.
 ///
 /// [Kern-Frenkel]: http://dx.doi.org/10.1063/1.1569473
+/// [`Boxcar`]: crate::univariate::Boxcar
 ///
 /// # Examples
 ///
@@ -252,11 +253,13 @@ where
     /// To obtain the best performance, construct [`AngularMask`] once and
     /// call use it many times. `new` dynamically allocates `Vec` types
     /// and is therefore not suitable to be called per particle,
-    /// unlike other potentials such as [`LennardJones`](super::LennardJones)
-    /// or [`Boxcar`](super::Boxcar).
+    /// unlike other potentials such as [`LennardJones`] or [`Boxcar`].
     ///
     /// `new` sets both `masks_i` and `masks_j` to `masks`. Use struct initialization
     /// syntax to set these separately.
+    ///
+    /// [`LennardJones`]: crate::univariate::LennardJones
+    /// [`Boxcar`]: crate::univariate::Boxcar
     ///
     /// # Example
     ///

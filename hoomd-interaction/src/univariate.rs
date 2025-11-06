@@ -40,8 +40,8 @@ pub use xplor::Xplor;
 ///   [`PairwiseCutoff`] to model pairwise interactions between sites.
 ///
 /// [`univariate`]: crate::univariate
-/// [`Isotropic`]: crtate::pairwise::Isotropic
-/// [`PairwiseCutoff`]: crtate::PairwiseCutoff
+/// [`Isotropic`]: crate::pairwise::Isotropic
+/// [`PairwiseCutoff`]: crate::PairwiseCutoff
 ///
 /// # Examples
 ///

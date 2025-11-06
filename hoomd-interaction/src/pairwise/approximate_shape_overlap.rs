@@ -27,7 +27,7 @@ use hoomd_vector::{InnerProduct, Rotate, Rotation};
 /// for use during a brief initialization phase when `QuickInsert` is adding
 /// bodies or `QuickCompress` is compressing the system.
 ///
-/// [`OverlapPenalty`]: crate::pairwise::OverlapPenalty
+/// [`OverlapPenalty`]: crate::univariate::OverlapPenalty
 ///
 /// # Example
 ///
