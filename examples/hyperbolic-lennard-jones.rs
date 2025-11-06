@@ -7,8 +7,7 @@ use hoomd_bevy::{
 };
 use hoomd_geometry::shape::EightEight;
 use hoomd_interaction::{
-    PairwiseCutoff,
-    pairwise::{Isotropic, LennardJones},
+    PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones,
 };
 use hoomd_manifold::{Hyperbolic, HyperbolicDisk, Minkowski};
 use hoomd_mc::{Sweep, Translate, Trial};
