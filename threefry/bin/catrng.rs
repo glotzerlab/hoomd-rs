@@ -21,43 +21,6 @@ use clap::Parser;
 use rand::prelude::*;
 use threefry::SFC64Rng;
 
-/// Creates an RNG based on CLI arguments.
-#[expect(clippy::print_stderr, reason = "Required.")]
-fn seed_from_cli(args: &[String]) -> SFC64Rng {
-    match args.len() {
-        1 => {
-            if let Ok(seed_u64) = args[0].parse::<u64>() {
-                eprintln!("Using 1 u64 seed: {seed_u64}");
-                return SFC64Rng::seed_from_u64(seed_u64);
-            }
-            eprintln!("Failed to parse 1 u64 input. Using entropy seed.");
-        }
-        4 => {
-            let nums: Result<Vec<u64>, _> = args.iter().map(|s| s.parse::<u64>()).collect();
-
-            if let Ok(n) = nums {
-                eprintln!("Using 4 u64 seeds: {}, {}, {}, {}", n[0], n[1], n[2], n[3]);
-                return SFC64Rng::from_state_and_counter([n[0], n[1], n[2]], n[3]);
-            }
-            eprintln!("Failed to parse 4 u64 inputs. Using entropy seed.");
-        }
-        0 => {
-            // This is fine, just fall through to the default entropy seed.
-        }
-        _ => {
-            eprintln!(
-                "Expected 0, 1, or 4 arguments (as u64). Got {}. Using entropy seed.",
-                args.len()
-            );
-        }
-    }
-
-    // Default case: Use entropy
-    let seed: [u8; 32] = rand::rngs::StdRng::seed_from_u64(0).random();
-    eprintln!("Using entropy seed: {seed:?}");
-    SFC64Rng::from_seed(seed)
-}
-
 /// Command line options for RNG testing.
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -66,7 +29,7 @@ enum Cli {
     SingleSeed {
         /// Optional seed values (0, 1, or 4 u64s).
         #[arg(num_args(0..=4))]
-        seeds: Vec<String>,
+        seeds: Vec<u64>,
     },
     /// Interleave bytes from N RNGs with similar seeds.
     TestInterleaved {
@@ -78,6 +41,7 @@ enum Cli {
     SeedIncrement,
 }
 
+#[expect(clippy::print_stderr, reason = "Required.")]
 fn main() -> io::Result<()> {
     let cli = Cli::parse();
 
@@ -87,7 +51,32 @@ fn main() -> io::Result<()> {
 
     match cli {
         Cli::SingleSeed { seeds } => {
-            let mut rng = seed_from_cli(&seeds);
+            let mut rng = match seeds.len() {
+                1 => {
+                    eprintln!("Using 1 u64 seed: {}", seeds[0]);
+                    SFC64Rng::seed_from_u64(seeds[0])
+                }
+                4 => {
+                    eprintln!(
+                        "Using 4 u64 seeds: {}, {}, {}, {}",
+                        seeds[0], seeds[1], seeds[2], seeds[3]
+                    );
+                    SFC64Rng::from_state_and_counter([seeds[0], seeds[1], seeds[2]], seeds[3])
+                }
+                0 => {
+                    let seed: [u8; 32] = rand::rngs::StdRng::seed_from_u64(0).random();
+                    eprintln!("Using entropy seed: {seed:?}");
+                    SFC64Rng::from_seed(seed)
+                }
+                _ => {
+                    eprintln!(
+                        "Expected 0, 1, or 4 arguments (as u64). Got {}. Using entropy seed.",
+                        seeds.len()
+                    );
+                    let seed: [u8; 32] = rand::rngs::StdRng::seed_from_u64(0).random();
+                    SFC64Rng::from_seed(seed)
+                }
+            };
             loop {
                 rng.fill_bytes(&mut buf);
                 writer.write_all(&buf)?;
