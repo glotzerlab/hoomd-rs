@@ -23,7 +23,7 @@ use super::UnivariateEnergy;
 /// Basic usage:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::{Boxcar, UnivariateEnergy};
+/// use hoomd_interaction::univariate::{Boxcar, UnivariateEnergy};
 ///
 /// let epsilon = 1.5;
 /// let (left, right) = (1.0, 2.5);
@@ -43,7 +43,7 @@ use super::UnivariateEnergy;
 /// The parameters are public fields and may be accessed directly:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::{Boxcar, UnivariateEnergy};
+/// use hoomd_interaction::univariate::{Boxcar, UnivariateEnergy};
 ///
 /// let mut boxcar = Boxcar {
 ///     epsilon: 1.5,

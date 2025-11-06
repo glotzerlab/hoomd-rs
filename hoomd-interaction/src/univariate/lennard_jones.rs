@@ -19,7 +19,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 ///
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
-/// use hoomd_interaction::pairwise::{
+/// use hoomd_interaction::univariate::{
 ///     UnivariateEnergy, UnivariateForce, LennardJones,
 /// };
 ///
@@ -43,7 +43,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 ///
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
-/// use hoomd_interaction::pairwise::{
+/// use hoomd_interaction::univariate::{
 ///     UnivariateEnergy, UnivariateForce, LennardJones,
 /// };
 ///
@@ -66,7 +66,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// The parameters are public fields and may be accessed directly:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::LennardJones;
+/// use hoomd_interaction::univariate::LennardJones;
 ///
 /// let mut lennard_jones: LennardJones = LennardJones::default();
 /// lennard_jones.epsilon = 1.5;
@@ -86,7 +86,7 @@ impl<const N: i32, const M: i32> Default for LennardJones<N, M> {
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::pairwise::LennardJones;
+    /// use hoomd_interaction::univariate::LennardJones;
     ///
     /// let lennard_jones: LennardJones = LennardJones::default();
     /// ```

@@ -41,7 +41,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 ///
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
-/// use hoomd_interaction::pairwise::{
+/// use hoomd_interaction::univariate::{
 ///     HarmonicRepulsion, UnivariateEnergy, UnivariateForce,
 /// };
 ///
@@ -57,7 +57,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// The parameters are public fields and may be accessed directly:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::HarmonicRepulsion;
+/// use hoomd_interaction::univariate::HarmonicRepulsion;
 ///
 /// let mut h_repulsion = HarmonicRepulsion { a: 1.0, r_cut: 1.0 };
 /// h_repulsion.a = 5.0;

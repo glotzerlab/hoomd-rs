@@ -39,7 +39,8 @@ use hoomd_vector::Metric;
 /// ```
 /// use hoomd_interaction::{
 ///     PairwiseCutoff,
-///     pairwise::{Isotropic, LennardJones},
+///     pairwise::Isotropic,
+///     univariate::LennardJones,
 /// };
 ///
 /// let lennard_jones: LennardJones = LennardJones {
@@ -67,14 +68,15 @@ use hoomd_vector::Metric;
 /// ```
 /// use hoomd_interaction::{
 ///     PairwiseCutoff,
-///     pairwise::{Isotropic, IsotropicEnergy},
+///     pairwise::Isotropic,
+///     univariate::UnivariateEnergy,
 /// };
 ///
 /// struct Custom {
 ///     a: f64,
 /// }
 ///
-/// impl IsotropicEnergy for Custom {
+/// impl UnivariateEnergy for Custom {
 ///     fn energy(&self, r: f64) -> f64 {
 ///         self.a / r.powi(12)
 ///     }
@@ -145,7 +147,8 @@ impl<E> PairwiseCutoff<E> {
     ///
     /// use hoomd_interaction::{
     ///     PairwiseCutoff,
-    ///     pairwise::{Isotropic, LennardJones},
+    ///     pairwise::Isotropic,
+    ///     univariate::LennardJones,
     /// };
     /// use hoomd_microstate::{Body, Microstate, Site};
     /// use hoomd_vector::Cartesian;
@@ -214,7 +217,8 @@ where
     /// Lennard-Jones:
     /// ```
     /// use hoomd_interaction::{PairwiseCutoff, SitePairEnergy, TotalEnergy,
-    /// pairwise::{Isotropic, LennardJones}};
+    ///     pairwise::Isotropic,
+    ///     univariate::LennardJones};
     /// use hoomd_microstate::{Microstate, Body};
     /// use hoomd_microstate::property::{Point, Position};
     /// use hoomd_vector::{Cartesian, InnerProduct};
@@ -326,7 +330,8 @@ where
     /// ```
     /// use hoomd_interaction::{
     ///     DeltaEnergyOne, PairwiseCutoff,
-    ///     pairwise::{Boxcar, Isotropic},
+    ///     univariate::Boxcar,
+    ///     pairwise::Isotropic,
     /// };
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::Cartesian;
@@ -487,7 +492,8 @@ where
     /// ```
     /// use hoomd_interaction::{
     ///     DeltaEnergyInsert, PairwiseCutoff,
-    ///     pairwise::{Boxcar, Isotropic},
+    ///     univariate::Boxcar,
+    ///     pairwise::Isotropic,
     /// };
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::Cartesian;
@@ -605,7 +611,8 @@ where
     /// ```
     /// use hoomd_interaction::{
     ///     DeltaEnergyRemove, PairwiseCutoff,
-    ///     pairwise::{Boxcar, Isotropic},
+    ///     univariate::Boxcar,
+    ///     pairwise::Isotropic,
     /// };
     /// use hoomd_microstate::{Body, Microstate, property::Point};
     /// use hoomd_vector::Cartesian;

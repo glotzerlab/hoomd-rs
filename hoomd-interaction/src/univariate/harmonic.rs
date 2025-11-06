@@ -18,7 +18,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 ///
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
-/// use hoomd_interaction::pairwise::{
+/// use hoomd_interaction::univariate::{
 ///     Harmonic, UnivariateEnergy, UnivariateForce,
 /// };
 ///
@@ -34,7 +34,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// The parameters are public fields and may be accessed directly:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::Harmonic;
+/// use hoomd_interaction::univariate::Harmonic;
 ///
 /// let mut harmonic = Harmonic { k: 1.0, r_0: 0.0 };
 /// harmonic.k = 5.0;

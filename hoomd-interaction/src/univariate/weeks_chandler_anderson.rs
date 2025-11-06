@@ -23,7 +23,7 @@ use super::{UnivariateEnergy, UnivariateForce, LennardJones};
 ///
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
-/// use hoomd_interaction::pairwise::{
+/// use hoomd_interaction::univariate::{
 ///     UnivariateEnergy, UnivariateForce, WeeksChandlerAnderson,
 /// };
 ///
@@ -44,7 +44,7 @@ use super::{UnivariateEnergy, UnivariateForce, LennardJones};
 /// The parameters are public fields and may be accessed directly:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::WeeksChandlerAnderson;
+/// use hoomd_interaction::univariate::WeeksChandlerAnderson;
 ///
 /// let mut wca = WeeksChandlerAnderson::default();
 /// wca.epsilon = 1.5;
@@ -64,7 +64,7 @@ impl Default for WeeksChandlerAnderson {
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::pairwise::WeeksChandlerAnderson;
+    /// use hoomd_interaction::univariate::WeeksChandlerAnderson;
     ///
     /// let wca = WeeksChandlerAnderson::default();
     /// ```

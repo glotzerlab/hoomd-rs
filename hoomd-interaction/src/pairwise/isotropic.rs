@@ -22,7 +22,8 @@ use hoomd_vector::Metric;
 /// ```
 /// use hoomd_interaction::{
 ///     SitePairEnergy,
-///     pairwise::{Isotropic, LennardJones},
+///     pairwise::Isotropic,
+///     univariate::LennardJones,
 /// };
 /// use hoomd_microstate::property::Point;
 /// use hoomd_vector::Cartesian;

@@ -17,7 +17,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 ///
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
-/// use hoomd_interaction::pairwise::{
+/// use hoomd_interaction::univariate::{
 ///     UnivariateEnergy, UnivariateForce, LennardJonesGauss,
 /// };
 ///
@@ -42,7 +42,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// The parameters are public fields and may be accessed directly:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::LennardJonesGauss;
+/// use hoomd_interaction::univariate::LennardJonesGauss;
 ///
 /// let mut lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss {
 ///     epsilon: 1.5,

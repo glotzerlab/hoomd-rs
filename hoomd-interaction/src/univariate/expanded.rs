@@ -16,7 +16,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// Expanded Lennard-Jones:
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
-/// use hoomd_interaction::pairwise::{
+/// use hoomd_interaction::univariate::{
 ///     Expanded, UnivariateEnergy, LennardJones,
 /// };
 ///

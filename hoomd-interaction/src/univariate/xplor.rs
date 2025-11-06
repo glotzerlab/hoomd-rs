@@ -26,7 +26,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// # Example
 ///
 /// ```
-/// use hoomd_interaction::pairwise::{LennardJones, Xplor};
+/// use hoomd_interaction::univariate::{LennardJones, Xplor};
 ///
 /// let epsilon = 1.5;
 /// let sigma = 1.0;

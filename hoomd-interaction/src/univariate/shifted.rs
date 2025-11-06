@@ -16,7 +16,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// Shifted Lennard-Jones:
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
-/// use hoomd_interaction::pairwise::{UnivariateEnergy, LennardJones, Shifted};
+/// use hoomd_interaction::univariate::{UnivariateEnergy, LennardJones, Shifted};
 ///
 /// let epsilon = 1.5;
 /// let sigma = 1.0;
@@ -36,7 +36,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 ///
 /// Fields can be accessed directly, including those of the original potential `f`:
 /// ```
-/// use hoomd_interaction::pairwise::{LennardJones, Shifted};
+/// use hoomd_interaction::univariate::{LennardJones, Shifted};
 ///
 /// let epsilon = 1.5;
 /// let sigma = 1.0;
@@ -70,7 +70,7 @@ where
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::pairwise::{LennardJones, Shifted};
+    /// use hoomd_interaction::univariate::{LennardJones, Shifted};
     ///
     /// let shifted_lj = Shifted::<LennardJones>::default();
     /// ```

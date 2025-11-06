@@ -65,8 +65,9 @@ pub struct Patch<V> {
 /// Construction:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::{
-///     AngularMask, Boxcar, angular_mask::Patch,
+/// use hoomd_interaction::{pairwise::{
+///     AngularMask, angular_mask::Patch},
+///     univariate::Boxcar,
 /// };
 /// use hoomd_vector::Angle;
 /// use std::f64::consts::PI;
@@ -88,8 +89,9 @@ pub struct Patch<V> {
 ///
 /// All fields are public and can be directly manipulated:
 /// ```
-/// use hoomd_interaction::pairwise::{
-///     AngularMask, Boxcar, angular_mask::Patch,
+/// use hoomd_interaction::{pairwise::{
+///     AngularMask, angular_mask::Patch},
+///     univariate::Boxcar,
 /// };
 /// use hoomd_vector::Angle;
 /// use std::f64::consts::PI;
@@ -115,8 +117,9 @@ pub struct Patch<V> {
 /// Evaluate energy between particles:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::{
-///     AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch,
+/// use hoomd_interaction::{pairwise::{
+///     AngularMask, AnisotropicEnergy, angular_mask::Patch},
+///     univariate::Boxcar,
 /// };
 /// use hoomd_vector::Angle;
 /// use std::f64::consts::PI;
@@ -144,8 +147,9 @@ pub struct Patch<V> {
 ///
 /// Apply different patches to the _i_ and _j_ particles:
 /// ```
-/// use hoomd_interaction::pairwise::{
-///     AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch,
+/// use hoomd_interaction::{pairwise::{
+///     AngularMask, AnisotropicEnergy, angular_mask::Patch},
+///     univariate::Boxcar,
 /// };
 /// use hoomd_vector::Angle;
 /// use std::f64::consts::PI;
@@ -188,8 +192,9 @@ pub struct Patch<V> {
 ///
 /// Evaluate the angular mask potential on 3D particles:
 /// ```
-/// use hoomd_interaction::pairwise::{
-///     AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch,
+/// use hoomd_interaction::{pairwise::{
+///     AngularMask, AnisotropicEnergy, angular_mask::Patch},
+///     univariate::Boxcar,
 /// };
 /// use hoomd_vector::{Cartesian, InnerProduct, Versor};
 /// use std::f64::consts::PI;
@@ -256,8 +261,9 @@ where
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::pairwise::{
-    ///     AngularMask, Boxcar, angular_mask::Patch,
+    /// use hoomd_interaction::{pairwise::{
+    ///     AngularMask, angular_mask::Patch},
+    ///     univariate::Boxcar,
     /// };
     /// use std::f64::consts::PI;
     ///

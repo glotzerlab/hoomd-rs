@@ -18,7 +18,8 @@ use hoomd_microstate::{Body, Microstate};
 /// use hoomd_interaction::{
 ///     DeltaEnergyOne, External, PairwiseCutoff,
 ///     external::Linear,
-///     pairwise::{Boxcar, Isotropic},
+///     pairwise::Isotropic,
+///     univariate::Boxcar,
 /// };
 /// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;
@@ -92,7 +93,8 @@ where
 /// use hoomd_interaction::{
 ///     External, PairwiseCutoff, TotalEnergy,
 ///     external::Linear,
-///     pairwise::{Boxcar, Isotropic},
+///     pairwise::Isotropic,
+///     univariate::Boxcar,
 /// };
 /// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;
@@ -153,7 +155,8 @@ where
 /// use hoomd_interaction::{
 ///     DeltaEnergyInsert, External, PairwiseCutoff,
 ///     external::Linear,
-///     pairwise::{Boxcar, Isotropic},
+///     pairwise::Isotropic,
+///     univariate::Boxcar,
 /// };
 /// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;

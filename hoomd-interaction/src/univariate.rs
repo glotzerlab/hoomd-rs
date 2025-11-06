@@ -61,13 +61,13 @@ pub use xplor::Xplor;
 ///
 /// Implement a custom potential via a type:
 /// ```
-/// use hoomd_interaction::Univariate::UnivariateEnergy;
+/// use hoomd_interaction::univariate::UnivariateEnergy;
 ///
 /// struct Custom {
 ///     a: f64,
 /// }
 ///
-/// impl IsotropicEnergy for Custom {
+/// impl UnivariateEnergy for Custom {
 ///     fn energy(&self, r: f64) -> f64 {
 ///         self.a / r.powi(12)
 ///     }

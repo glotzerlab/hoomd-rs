@@ -33,8 +33,8 @@ use hoomd_vector::{InnerProduct, Rotate, Rotation};
 ///
 /// ```
 /// use hoomd_geometry::{Convex, shape::ConvexPolygon};
-/// use hoomd_interaction::pairwise::{
-///     ApproximateShapeOverlap, OverlapPenalty,
+/// use hoomd_interaction::{pairwise::ApproximateShapeOverlap,
+///    univariate::OverlapPenalty,
 /// };
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -70,7 +70,8 @@ where
     /// use hoomd_geometry::{Convex, shape::ConvexPolygon};
     /// use hoomd_interaction::{
     ///     SitePairEnergy,
-    ///     pairwise::{Anisotropic, ApproximateShapeOverlap, OverlapPenalty},
+    ///     pairwise::{Anisotropic, ApproximateShapeOverlap},
+    ///     univariate::OverlapPenalty,
     /// };
     /// use hoomd_microstate::property::OrientedPoint;
     /// use hoomd_vector::{Angle, Cartesian};
@@ -136,8 +137,8 @@ impl<E, G> ApproximateShapeOverlap<E, G> {
     ///
     /// ```
     /// use hoomd_geometry::{Convex, shape::ConvexPolygon};
-    /// use hoomd_interaction::pairwise::{
-    ///     ApproximateShapeOverlap, OverlapPenalty,
+    /// use hoomd_interaction::{pairwise::ApproximateShapeOverlap,
+    ///     univariate::OverlapPenalty,
     /// };
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {

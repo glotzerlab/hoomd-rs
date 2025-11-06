@@ -32,7 +32,7 @@ use super::UnivariateEnergy;
 /// # Example
 ///
 /// ```
-/// use hoomd_interaction::pairwise::OverlapPenalty;
+/// use hoomd_interaction::univariate::OverlapPenalty;
 ///
 /// let overlap_penalty = OverlapPenalty::default();
 /// ```
@@ -64,7 +64,7 @@ impl Default for OverlapPenalty {
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::pairwise::OverlapPenalty;
+    /// use hoomd_interaction::univariate::OverlapPenalty;
     ///
     /// let overlap_penalty = OverlapPenalty::default();
     /// ```
@@ -87,7 +87,7 @@ impl OverlapPenalty {
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::pairwise::OverlapPenalty;
+    /// use hoomd_interaction::univariate::OverlapPenalty;
     ///
     /// let overlap_penalty = OverlapPenalty::scaled_default(2.0);
     ///
