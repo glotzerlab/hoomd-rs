@@ -22,15 +22,8 @@ use crate::util::read_u64_le_unchecked;
 /// This generator implements the [`SeedableRng`] trait. Any method may be used,
 /// and the results are guaranteed to be [portable].
 ///
-/// Using a fresh seed **direct from the OS** is the most secure option:
-/// ```
-/// use hoomd_rand::SFC64Rng;
-/// use rand::SeedableRng;
-/// let rng = SFC64Rng::from_os_rng();
-/// ```
-///
-/// That said, `seed_from_u64` is often the most convenient and still guarantees good
-/// pseudorandom statistics.
+/// Seeding the generator with `seed_from_u64` is often the most convenient and
+/// guarantees good pseudorandom statistics.
 /// ```
 /// use hoomd_rand::SFC64Rng;
 /// use rand::SeedableRng;
@@ -85,51 +78,6 @@ impl SFC64Rng {
         self.state[2] = self.state[2].rotate_left(BARREL_SHIFT).wrapping_add(out);
         self.counter = self.counter.wrapping_add(1); // Weyl increment of 1
         out
-    }
-
-    /// Creates a new instance of the RNG seeded via [`getrandom`].
-    ///
-    /// This method is the recommended way to construct non-deterministic PRNGs
-    /// since it is convenient and secure.
-    ///
-    /// Note that this method may panic on (extremely unlikely) [`getrandom`] errors.
-    /// If it's not desirable, use the `try_from_os_rng` method instead.
-    ///
-    /// In case the overhead of using [`getrandom`] to seed *many* PRNGs is an
-    /// issue, one may prefer to seed from a local PRNG, e.g.
-    /// `from_rng(rand::rng()).unwrap()`.
-    ///
-    /// # Panics
-    ///
-    /// If [`getrandom`] is unable to provide secure entropy this method will panic.
-    ///
-    /// [`getrandom`]: https://docs.rs/getrandom
-    #[inline]
-    #[must_use]
-    #[expect(clippy::panic, reason = "Matches original rand crate.")]
-    pub fn from_os_rng() -> Self {
-        match Self::try_from_os_rng() {
-            Ok(res) => res,
-            Err(err) => panic!("from_os_rng failed: {err}"),
-        }
-    }
-    /// Creates a new instance of the RNG seeded via [`getrandom`] without unwrapping
-    /// potential [`getrandom`] errors.
-    ///
-    /// In case the overhead of using [`getrandom`] to seed *many* PRNGs is an
-    /// issue, one may prefer to seed from a local PRNG, e.g.
-    /// `from_rng(&mut rand::rng()).unwrap()`.
-    ///
-    /// # Errors
-    /// [`getrandom::Error`] if the OS RNG fails to provide a value.
-    ///
-    /// [`getrandom`]: https://docs.rs/getrandom
-    #[inline]
-    pub fn try_from_os_rng() -> Result<Self, getrandom::Error> {
-        let mut seed = [0u8; 24];
-        getrandom::fill(seed.as_mut())?;
-        let res = Self::from_seed(seed);
-        Ok(res)
     }
 }
 
