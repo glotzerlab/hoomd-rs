@@ -141,7 +141,7 @@ mod tests {
     fn large_uniform_sample() -> Vec<u64> {
         const N: u32 = 2u32.pow(23);
         let mut rng =
-            SFC64Rng::from_state_and_counter([456_981, 0xCAFE, 9_345_663_908], 123_456_789);
+            SFC64Rng::from_state_and_counter([456_981, 0xcafe, 9_345_663_908], 123_456_789);
         (0..N).map(|_| rng.next_u64()).collect::<Vec<_>>()
     }
 
