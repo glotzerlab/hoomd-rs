@@ -16,7 +16,9 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// Shifted Lennard-Jones:
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
-/// use hoomd_interaction::univariate::{UnivariateEnergy, LennardJones, Shifted};
+/// use hoomd_interaction::univariate::{
+///     LennardJones, Shifted, UnivariateEnergy,
+/// };
 ///
 /// let epsilon = 1.5;
 /// let sigma = 1.0;

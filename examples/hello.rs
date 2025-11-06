@@ -1,4 +1,4 @@
-use hoomd_interaction::univariate::{UnivariateEnergy, LennardJones};
+use hoomd_interaction::univariate::{LennardJones, UnivariateEnergy};
 
 fn main() {
     let lennard_jones: LennardJones = LennardJones::default();

@@ -4,11 +4,7 @@
 use std::fmt;
 
 use hoomd_geometry::shape::Hypercuboid;
-use hoomd_interaction::{
-    PairwiseCutoff,
-    pairwise::Isotropic,
-    univariate,
-};
+use hoomd_interaction::{PairwiseCutoff, pairwise::Isotropic, univariate};
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
     Body, Microstate, SiteKey,

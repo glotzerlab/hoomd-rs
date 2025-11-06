@@ -5,10 +5,8 @@ use std::f64::consts::PI;
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    External, PairwiseCutoff, TotalEnergy,
-    external::Linear,
-    pairwise::Isotropic,
-    univariate::Boxcar,
+    External, PairwiseCutoff, TotalEnergy, external::Linear,
+    pairwise::Isotropic, univariate::Boxcar,
 };
 use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{

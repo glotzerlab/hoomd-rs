@@ -5,9 +5,7 @@ use anyhow::{Context, anyhow};
 use hoomd_geometry::shape::{Ellipse, Rectangle};
 use hoomd_interaction::{
     PairwiseCutoff,
-    pairwise::{
-        Anisotropic, ApproximateShapeOverlap, HardShape,
-    },
+    pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape},
     univariate::OverlapPenalty,
 };
 use hoomd_mc::{QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn};

@@ -11,10 +11,10 @@ mod harmonic;
 mod harmonic_repulsion;
 mod lennard_jones;
 mod lennard_jones_gauss;
+mod overlap_penalty;
 mod shifted;
 mod weeks_chandler_anderson;
 mod xplor;
-mod overlap_penalty;
 
 pub use boxcar::Boxcar;
 pub use expanded::Expanded;

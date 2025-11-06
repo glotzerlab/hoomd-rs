@@ -2,10 +2,8 @@
 // ANCHOR: use
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    External, PairwiseCutoff, TotalEnergy,
-    external::Linear,
-    pairwise::Isotropic,
-    univariate::Boxcar,
+    External, PairwiseCutoff, TotalEnergy, external::Linear,
+    pairwise::Isotropic, univariate::Boxcar,
 };
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{

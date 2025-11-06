@@ -17,7 +17,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
 /// use hoomd_interaction::univariate::{
-///     Expanded, UnivariateEnergy, LennardJones,
+///     Expanded, LennardJones, UnivariateEnergy,
 /// };
 ///
 /// let epsilon = 1.5;

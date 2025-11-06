@@ -21,8 +21,8 @@ use hoomd_vector::{Rotate, Rotation, Vector};
 /// # Example
 ///
 /// ```
-/// use hoomd_interaction::{pairwise::{
-///     AngularMask, Anisotropic, angular_mask::Patch},
+/// use hoomd_interaction::{
+///     pairwise::{AngularMask, Anisotropic, angular_mask::Patch},
 ///     univariate::Boxcar,
 /// };
 /// use hoomd_vector::Angle;
@@ -61,7 +61,7 @@ where
     /// use hoomd_interaction::{
     ///     SitePairEnergy,
     ///     pairwise::{AngularMask, Anisotropic, angular_mask::Patch},
-    ///     univariate::Boxcar, 
+    ///     univariate::Boxcar,
     /// };
     /// use hoomd_microstate::property::OrientedPoint;
     /// use hoomd_vector::{Angle, Cartesian};

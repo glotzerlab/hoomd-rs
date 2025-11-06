@@ -3,7 +3,7 @@
 
 //! Implement [`WeeksChandlerAnderson`]
 
-use super::{UnivariateEnergy, UnivariateForce, LennardJones};
+use super::{LennardJones, UnivariateEnergy, UnivariateForce};
 
 /// Potential with a steep repulsive core.
 ///

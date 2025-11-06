@@ -338,11 +338,7 @@ mod tests {
     use super::*;
     use crate::{QuickInsert, Sweep, Translate, Trial, UniformIn};
     use hoomd_geometry::shape::Rectangle;
-    use hoomd_interaction::{
-        PairwiseCutoff,
-        pairwise::Isotropic,
-        univariate::Boxcar,
-    };
+    use hoomd_interaction::{PairwiseCutoff, pairwise::Isotropic, univariate::Boxcar};
     use hoomd_microstate::{Microstate, boundary::Closed, property::Point};
     use hoomd_simulation::macrostate::Isothermal;
     use hoomd_vector::Cartesian;

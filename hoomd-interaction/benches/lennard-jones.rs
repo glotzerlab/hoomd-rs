@@ -11,7 +11,7 @@
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
-use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce, LennardJones};
+use hoomd_interaction::univariate::{LennardJones, UnivariateEnergy, UnivariateForce};
 
 fn main() {
     divan::main();

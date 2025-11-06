@@ -38,8 +38,7 @@ pub use zero::Zero;
 ///
 /// ```
 /// use hoomd_interaction::{
-///     PairwiseCutoff, SitePairEnergy, TotalEnergy,
-///     pairwise::Isotropic,
+///     PairwiseCutoff, SitePairEnergy, TotalEnergy, pairwise::Isotropic,
 ///     univariate::LennardJones,
 /// };
 /// use hoomd_microstate::{
