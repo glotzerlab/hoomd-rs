@@ -29,7 +29,7 @@ const INCREMENT_BYTES: [u8; 16] = [
 ];
 
 impl AESRandCore {
-    /// .
+    /// Small, fast PRNG that uses AES as a random invertible mapping.
     #[target_feature(enable = "aes")]
     #[inline]
     pub fn gen_array(&mut self) -> [uint8x16_t; 2] {
