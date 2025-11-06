@@ -26,7 +26,8 @@ name = "catrng"
 path = "bin/catrng.rs"
 
 [features]
-aesrand_aarch64 = []
+default = []
+bench = []
 
 [dev-dependencies]
 approxim.workspace = true

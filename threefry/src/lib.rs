@@ -12,7 +12,8 @@
 //! - `AESRandRng`: An AES-based RNG (currently only available on some aarch64 platforms). This is even faster than SFC64, but has a smaller state that makes it less suitable
 //! for highly parallel applications.
 
-pub(crate) mod backends;
+/// Utility functions for random number generation.
+pub(crate) mod util;
 
 #[cfg(feature = "bench")]
 pub mod threefry2x64;
