@@ -5,11 +5,13 @@
 //!
 //! To use with [``PractRand``](https://pracrand.sourceforge.net):
 //! `$ catrng | RNG_test stdin -multithreaded` (Random seed from ``StdRng``)
-//! `$ catrng single-seed 12345 | ...` (Single u64 seed)
-//! `$ catrng single-seed 1 2 3 0 | ...` (Four u64 values as a seed)
+//! `$ catrng seed-single 12345 | ...` (Single u64 seed)
+//! `$ catrng seed-single 1 2 3 0 | ...` (Four u64 values as a seed)
+//! `$ catrng seed-increment | ...` (Alternate u64 generation with seed changes.)
+//! `$ catrng test-interleaved -n 8 | ...` (8 interleaved RNGs with similar seeds.)
 //!
 //! Note this also works with [gjrand](https://gjrand.sourceforge.net)
-//! `$ catrng | ./mcp --huge`
+//! `$ catrng | ./mcp --tera`
 //! This is drawn from [simd_prngs](https://github.com/TheIronBorn/simd_prngs/blob/master/src/bin/cat_rng.rs) with a few modifications for our use case.
 
 extern crate rand;
@@ -26,7 +28,7 @@ use threefry::SFC64Rng;
 #[command(version, about, long_about = None)]
 enum Cli {
     /// Cat data from a single SFC64 seed to STDOUT.
-    SingleSeed {
+    SeedSingle {
         /// Optional seed values (0, 1, or 4 u64s).
         #[arg(num_args(0..=4))]
         seeds: Vec<u64>,
@@ -50,7 +52,7 @@ fn main() -> io::Result<()> {
     let mut buf = [0; 4096];
 
     match cli {
-        Cli::SingleSeed { seeds } => {
+        Cli::SeedSingle { seeds } => {
             let mut rng = match seeds.len() {
                 1 => {
                     eprintln!("Using 1 u64 seed: {}", seeds[0]);
