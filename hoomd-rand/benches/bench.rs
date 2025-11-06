@@ -10,7 +10,7 @@
 use chacha20::ChaCha8Rng;
 use divan::{Bencher, black_box};
 use hoomd_rand::{
-    AESRandRng, SFC64Rng,
+    SFC64Rng,
     squares::{Squares64, Squares128},
     threefry2x64::ThreeFry2x64Rng,
 };
