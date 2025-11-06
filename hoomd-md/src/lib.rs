@@ -15,7 +15,7 @@ pub mod thermostat;
 
 use std::array;
 
-use hoomd_interaction::{NetBodyForce, NetBodyTorque};
+use hoomd_interaction::{NetBodyForce, NetBodyForceAndTorque, NetBodyTorque};
 use hoomd_microstate::{
     Microstate, Transform,
     boundary::{GenerateGhosts, Wrap},
@@ -25,7 +25,9 @@ use hoomd_microstate::{
     },
 };
 use hoomd_simulation::macrostate::Temperature;
-use hoomd_vector::{Angle, Cartesian, InnerProduct, Quaternion, Rotate, Vector, Versor, WedgeProduct};
+use hoomd_vector::{
+    Angle, Cartesian, InnerProduct, Quaternion, Rotate, Vector, Versor, WedgeProduct,
+};
 use thermostat::Thermostat;
 
 /// Integrate over translational degrees of freedom.
@@ -45,12 +47,11 @@ use thermostat::Thermostat;
 /// symplectic and time-reversible two-step Verlet integration schemes published
 /// in Miller et al. (2002) and Kamberaj et al. (2005). Jens Glaser adapted
 /// these derivations to also accommodate constant pressure integration.
-pub trait TranslationalMotion<B, S, C, E, T, M> {
+pub trait TranslationalMotion<B, S, C, T, M> {
     /// Perform the first integration half-step, mutating the microstate and possibly the thermostat.
     fn integrate_translation_step_one(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
-        force: &E,
         thermostat: &mut T,
         macrostate: &M,
     );
@@ -59,7 +60,6 @@ pub trait TranslationalMotion<B, S, C, E, T, M> {
     fn integrate_translation_step_two(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
-        force: &E,
         thermostat: &mut T,
         macrostate: &M,
     );
@@ -81,12 +81,11 @@ pub trait TranslationalMotion<B, S, C, E, T, M> {
 /// symplectic and time-reversible two-step Verlet integration schemes published
 /// in Miller et al. (2002) and Kamberaj et al. (2005). Jens Glaser adapted
 /// these derivations to also accommodate constant pressure integration.
-pub trait RotationalMotion<const N: usize, B, S, C, E, T, M> {
+pub trait RotationalMotion<const N: usize, B, S, C, T, M> {
     /// Perform the first integration half-step, mutating the microstate and possibly the thermostat.
     fn integrate_rotation_step_one(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
-        torque: &E,
         thermostat: &mut T,
         macrostate: &M,
     );
@@ -95,23 +94,21 @@ pub trait RotationalMotion<const N: usize, B, S, C, E, T, M> {
     fn integrate_rotation_step_two(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
-        torque: &E,
         thermostat: &mut T,
         macrostate: &M,
     );
 }
 
-
 pub trait ForceUpdate<B, S, C, E> {
-    fn update_force(microstate: &mut Microstate<B, S, C>, evaluator: E);
+    fn update_force(&self, microstate: &mut Microstate<B, S, C>, evaluator: &E);
 }
 
 pub trait TorqueUpdate<const N: usize, B, S, C, E> {
-    fn update_torque(microstate: &mut Microstate<B, S, C>, evaluator: E);
+    fn update_torque(&self, microstate: &mut Microstate<B, S, C>, evaluator: &E);
 }
 
 pub trait ForceAndTorqueUpdate<const N: usize, B, S, C, E> {
-    fn update_force_and_torque(microstate: &mut Microstate<B, S, C>, evaluator: E);
+    fn update_force_and_torque(&self, microstate: &mut Microstate<B, S, C>, evaluator: &E);
 }
 
 /// Evolve a system that is constrained to a constant volume.
@@ -184,7 +181,7 @@ impl ConstantVolume {
 /// * `E`: The interaction [`evaluator`]() type.
 /// * `T`: The [`Thermostat`]() type.
 /// * `M`: The [`macrostate`](crate::macrostate) type.
-impl<V, B, S, C, E, T, M> TranslationalMotion<B, S, C, E, T, M> for ConstantVolume
+impl<V, B, S, C, T, M> TranslationalMotion<B, S, C, T, M> for ConstantVolume
 where
     V: Default + Vector + InnerProduct,
     B: Position<Position = V>
@@ -195,7 +192,6 @@ where
         + Clone,
     S: Position<Position = V> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    E: NetBodyForce<V, B, S, C>,
     T: Thermostat<B, S, C, M>,
 {
     /// Perform the first integration half-step, mutating the microstate and possibly the thermostat.
@@ -210,7 +206,6 @@ where
     fn integrate_translation_step_one(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
-        _force: &E,
         thermostat: &mut T,
         macrostate: &M,
     ) {
@@ -289,7 +284,6 @@ where
     fn integrate_translation_step_two(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
-        force: &E,
         thermostat: &mut T,
         macrostate: &M,
     ) {
@@ -326,13 +320,11 @@ where
             // Get the important information from the body
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
 
-            // Calculate the net force on the body
-            let net_force_new = force.net_force_on_body(microstate, body_index);
+            // Get net force on body
+            let net_force = body_properties.net_force().clone();
 
             // Perform the integration step
-            // TODO: should we use the momentum methods here?
-            *body_properties.net_force_mut() = net_force_new;
-            *body_properties.momentum_mut() += net_force_new * self.dt * 0.5;
+            *body_properties.momentum_mut() += net_force * self.dt * 0.5;
 
             // Update the microstate with new body properties, wrapping automatically
             microstate
@@ -379,7 +371,7 @@ where
 /// * `E`: The interaction [`evaluator`]() type.
 /// * `T`: The [`Thermostat`]() type.
 /// * `M`: The [`macrostate`](crate::macrostate) type.
-impl<B, S, C, E, T, M> RotationalMotion<3, B, S, C, E, T, M> for ConstantVolume
+impl<B, S, C, T, M> RotationalMotion<3, B, S, C, T, M> for ConstantVolume
 where
     B: Orientation<Rotation = Versor>
         + AngularMomentum<AngularMomentum = Cartesian<3>>
@@ -390,7 +382,6 @@ where
         + Clone,
     S: Position<Position = Cartesian<3>> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    E: NetBodyTorque<3, Cartesian<3>, B, S, C>,
     T: Thermostat<B, S, C, M>,
 {
     /// Perform the first integration half-step, mutating the microstate and
@@ -405,7 +396,6 @@ where
     fn integrate_rotation_step_one(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
-        _torque: &E, // do not update toruqe in this step.
         thermostat: &mut T,
         macrostate: &M,
     ) {
@@ -627,7 +617,6 @@ where
     fn integrate_rotation_step_two(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
-        torque: &E,
         thermostat: &mut T,
         macrostate: &M,
     ) {
@@ -682,17 +671,13 @@ where
             // s is the vector representation of angular momentum
             // I is the diagonal values of the moment of inertia
             let q = *body_properties.orientation_mut();
+            let t = *body_properties.net_torque();
             let mut s = *body_properties.angular_momentum_mut();
             let I = *body_properties.moment_of_inertia();
 
-            // calculate the net torque since position has been updated at integrate_rotation_step_one
-            let net_t_new = torque.net_torque_on_body(microstate, body_index);
-            // Update the torque in particle data
-            *body_properties.net_torque_mut() = net_t_new;
-
             // Rotate torque into body frame based on principal axes
             // TODO: check that this is correct
-            let mut t_new_inframe = q.conjugate().rotate(&net_t_new);
+            let mut t_inframe = q.conjugate().rotate(&t);
 
             // convert orientation from versor to quaternion
             let q_quaternion = *q.get();
@@ -710,13 +695,13 @@ where
             let z_zero = I[2] == 0.0;
 
             if x_zero {
-                t_new_inframe[0] = 0.0
+                t_inframe[0] = 0.0
             };
             if y_zero {
-                t_new_inframe[1] = 0.0
+                t_inframe[1] = 0.0
             };
             if z_zero {
-                t_new_inframe[2] = 0.0
+                t_inframe[2] = 0.0
             };
 
             // Advance p by half a timestep following Trotter
@@ -724,7 +709,7 @@ where
             p += q_quaternion
                 * Quaternion {
                     scalar: 0.0,
-                    vector: t_new_inframe.coordinates.into(),
+                    vector: t_inframe.coordinates.into(),
                 }
                 * self.dt;
 
@@ -782,7 +767,7 @@ where
 /// * `E`: The interaction [`evaluator`]() type.
 /// * `T`: The [`Thermostat`]() type.
 /// * `M`: The [`macrostate`](crate::macrostate) type.
-impl<B, S, C, E, T, M> RotationalMotion<2, B, S, C, E, T, M> for ConstantVolume
+impl<B, S, C, T, M> RotationalMotion<2, B, S, C, T, M> for ConstantVolume
 where
     B: Orientation<Rotation = Angle>
         + AngularMomentum<AngularMomentum = f64>
@@ -793,7 +778,6 @@ where
         + Clone,
     S: Position<Position = Cartesian<2>> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    E: NetBodyTorque<2, Cartesian<2>, B, S, C>,
     T: Thermostat<B, S, C, M>,
 {
     /// Perform the first integration half-step, mutating the microstate and
@@ -807,7 +791,6 @@ where
     fn integrate_rotation_step_one(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
-        _torque: &E,
         thermostat: &mut T,
         macrostate: &M,
     ) {
@@ -893,7 +876,6 @@ where
     fn integrate_rotation_step_two(
         &mut self,
         microstate: &mut Microstate<B, S, C>,
-        torque: &E,
         thermostat: &mut T,
         macrostate: &M,
     ) {
@@ -933,14 +915,12 @@ where
             // Get the important information from the body
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
 
-            // calculate the net torque since position has been updated at integrate_rotation_step_one
-            let net_t_new = torque.net_torque_on_body(microstate, body_index);
-            // Update the torque in particle data
-            *body_properties.net_torque_mut() = net_t_new;
+            // Get net torque on body.
+            let t = *body_properties.net_torque();
 
             // Advance p by half a timestep following Trotter
             // factorization of Liouvillian rotation
-            *body_properties.angular_momentum_mut() += net_t_new * 0.5 * self.dt;
+            *body_properties.angular_momentum_mut() += t * 0.5 * self.dt;
 
             // Update the microstate with new body properties, wrapping automatically
             microstate
@@ -979,18 +959,13 @@ where
 impl<V, B, S, C, E> ForceUpdate<B, S, C, E> for ConstantVolume
 where
     V: Default + Vector + InnerProduct,
-    B: Position<Position = V>
-        + Momentum<Vector = V>
-        + NetForce<Vector = V>
-        + Mass
-        + Transform<S>
-        + Clone,
+    B: Position<Position = V> + NetForce<Vector = V> + Transform<S> + Clone,
     S: Position<Position = V> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     E: NetBodyForce<V, B, S, C>,
 {
     #[inline]
-    fn update_force(microstate: &mut Microstate<B, S, C>, evaluator: E) {
+    fn update_force(&self, microstate: &mut Microstate<B, S, C>, evaluator: &E) {
         for body_index in 0..microstate.bodies().len() {
             // Get a copy of the body properties to modify
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
@@ -1010,8 +985,7 @@ where
 // Impl for just rotation
 impl<B, S, C, E> TorqueUpdate<2, B, S, C, E> for ConstantVolume
 where
-    B: Orientation<Rotation = Versor>
-        + NetTorque<NetTorque = f64>
+    B: NetTorque<NetTorque = f64>
         + Transform<S>
         + Position<Position = Cartesian<2>> // TODO: should this be required?
         + Clone,
@@ -1019,7 +993,7 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     E: NetBodyTorque<2, Cartesian<2>, B, S, C>,
 {
-    fn update_torque(microstate: &mut Microstate<B, S, C>, evaluator: E) {
+    fn update_torque(&self, microstate: &mut Microstate<B, S, C>, evaluator: &E) {
         for body_index in 0..microstate.bodies().len() {
             // Get a copy of the body properties to modify
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
@@ -1038,8 +1012,7 @@ where
 
 impl<B, S, C, E> TorqueUpdate<3, B, S, C, E> for ConstantVolume
 where
-    B: Orientation<Rotation = Versor>
-        + NetTorque<NetTorque = Cartesian<3>>
+    B: NetTorque<NetTorque = Cartesian<3>>
         + Transform<S>
         + Position<Position = Cartesian<3>> // TODO: should this be required?
         + Clone,
@@ -1047,7 +1020,7 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     E: NetBodyTorque<3, Cartesian<3>, B, S, C>,
 {
-    fn update_torque(microstate: &mut Microstate<B, S, C>, evaluator: E) {
+    fn update_torque(&self, microstate: &mut Microstate<B, S, C>, evaluator: &E) {
         for body_index in 0..microstate.bodies().len() {
             // Get a copy of the body properties to modify
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
@@ -1067,22 +1040,64 @@ where
 // Impl for both translation and rotation
 impl<B, S, C, E> ForceAndTorqueUpdate<2, B, S, C, E> for ConstantVolume
 where
-    B: Position<Position = Cartesian<2>>
-        + Momentum<Vector = Cartesian<2>>
+    B: Orientation<Rotation = Angle>
         + NetForce<Vector = Cartesian<2>>
-        + Mass
-        + Orientation<Rotation = Versor>
-        + NetTorque<NetTorque = Cartesian<2>>
+        + NetTorque<NetTorque = f64>
         + Transform<S>
         + Position<Position = Cartesian<2>> // TODO: should this be required?
         + Clone,
     S: Position<Position = Cartesian<2>> + Default,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-    E: NetBodyForce<Cartesian<2>, B, S, C>
-        + NetBodyTorque<2, Cartesian<2>, B, S, C>,
+    E: NetBodyForceAndTorque<2, Cartesian<2>, B, S, C>,
 {
-    fn update_force_and_torque(microstate: &mut Microstate<B, S, C>, evaluator: E) {
-        todo!()
+    fn update_force_and_torque(&self, microstate: &mut Microstate<B, S, C>, evaluator: &E) {
+        for body_index in 0..microstate.bodies().len() {
+            // Get a copy of the body properties to modify
+            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+
+            // Calculate the net force and update the properties copy
+            let (net_force_new, net_torque_new) =
+                evaluator.net_force_and_torque_on_body(microstate, body_index);
+            *body_properties.net_force_mut() = net_force_new;
+            *body_properties.net_torque_mut() = net_torque_new;
+
+            // Update the microstate with new body properties, wrapping automatically
+            microstate
+                .update_body_properties(body_index, body_properties)
+                .expect("Bodies and sites should remain in simulation boundary.");
+        }
+    }
+}
+
+// Impl for both translation and rotation
+impl<B, S, C, E> ForceAndTorqueUpdate<3, B, S, C, E> for ConstantVolume
+where
+    B: Orientation<Rotation = Versor>
+        + NetForce<Vector = Cartesian<3>>
+        + NetTorque<NetTorque = Cartesian<3>>
+        + Transform<S>
+        + Position<Position = Cartesian<3>> // TODO: should this be required?
+        + Clone,
+    S: Position<Position = Cartesian<3>> + Default,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    E: NetBodyForceAndTorque<3, Cartesian<3>, B, S, C>,
+{
+    fn update_force_and_torque(&self, microstate: &mut Microstate<B, S, C>, evaluator: &E) {
+        for body_index in 0..microstate.bodies().len() {
+            // Get a copy of the body properties to modify
+            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+
+            // Calculate the net force and update the properties copy
+            let (net_force_new, net_torque_new) =
+                evaluator.net_force_and_torque_on_body(microstate, body_index);
+            *body_properties.net_force_mut() = net_force_new;
+            *body_properties.net_torque_mut() = net_torque_new;
+
+            // Update the microstate with new body properties, wrapping automatically
+            microstate
+                .update_body_properties(body_index, body_properties)
+                .expect("Bodies and sites should remain in simulation boundary.");
+        }
     }
 }
 
