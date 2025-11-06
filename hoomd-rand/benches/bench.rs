@@ -8,12 +8,13 @@
     reason = "benches don't need public documentation"
 )]
 use chacha20::ChaCha8Rng;
-use divan::{Bencher, black_box};
+use divan::{Bencher, black_box, counter::ItemsCount};
 use hoomd_rand::{
     SFC64Rng,
     squares::{Squares64, Squares128},
     threefry2x64::ThreeFry2x64Rng,
 };
+use rand::Rng;
 use rand_core::{RngCore, SeedableRng};
 
 fn main() {
@@ -169,4 +170,14 @@ mod throughput {
             rng.fill_bytes(black_box(&mut buffer));
         });
     }
+}
+const N: &[usize] = &[1, 4, 8, 16, 32];
+#[divan::bench(consts = N)]
+fn bench_counter<const N: usize>(bencher: Bencher) {
+    bencher.counter(ItemsCount::from(N)).bench_local(|| {
+        let mut rng = hoomd_rand::Counter::new(black_box(10), black_box(11), black_box(12))
+            .index(black_box(13))
+            .make_rng();
+        black_box(core::array::from_fn::<_, N, _>(|_| rng.random::<f64>()))
+    });
 }
