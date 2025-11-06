@@ -12,8 +12,8 @@ use crate::{
     property::Position,
 };
 
-use hoomd_spatial::{AllPairs, PointUpdate, PointsInBall};
 use hoomd_rand::Counter;
+use hoomd_spatial::{AllPairs, PointUpdate, PointsInBall};
 use hoomd_vector::Metric;
 
 /// Either a primary site index or a ghost site index.

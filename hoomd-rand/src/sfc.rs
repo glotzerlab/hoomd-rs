@@ -24,16 +24,16 @@ use crate::util::read_u64_le_unchecked;
 ///
 /// Using a fresh seed **direct from the OS** is the most secure option:
 /// ```
-/// use rand::SeedableRng;
 /// use hoomd_rand::SFC64Rng;
+/// use rand::SeedableRng;
 /// let rng = SFC64Rng::from_os_rng();
 /// ```
 ///
 /// That said, `seed_from_u64` is often the most convenient and still guarantees good
 /// pseudorandom statistics.
 /// ```
-/// use rand::SeedableRng;
 /// use hoomd_rand::SFC64Rng;
+/// use rand::SeedableRng;
 /// let rng = SFC64Rng::seed_from_u64(42);
 /// ```
 /// See also [Seeding RNGs] in the Rust Rand book.

@@ -141,7 +141,7 @@ impl Counter {
     #[inline]
     pub fn indices_from_u64(mut self, combined_index: u64) -> Self {
         self.index_a = (combined_index >> 32) as u32;
-        self.index_b = (combined_index & 0xFFFF_FFFF) as u32;
+        self.index_b = (combined_index & 0xffff_ffff) as u32;
         self
     }
 
