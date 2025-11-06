@@ -87,13 +87,6 @@ impl SFC64Rng {
         out
     }
 
-    /// Initialize the PRNG from 192 bits of state and a u64 counter.
-    #[inline]
-    #[must_use]
-    fn from_state_and_counter(state: [u64; 3], counter: u64) -> Self {
-        Self::initialize(state[0], state[1], state[2], counter)
-    }
-
     /// Creates a new instance of the RNG seeded via [`getrandom`].
     ///
     /// This method is the recommended way to construct non-deterministic PRNGs
@@ -222,8 +215,7 @@ mod tests {
     #[rstest::fixture]
     fn large_uniform_sample() -> Vec<u64> {
         const N: u32 = 2u32.pow(23);
-        let mut rng =
-            SFC64Rng::from_state_and_counter([456_981, 0xcafe, 9_345_663_908], 123_456_789);
+        let mut rng = SFC64Rng::initialize(456_981, 0xcafe, 9_345_663_908, 123_456_789);
         (0..N).map(|_| rng.next_u64()).collect::<Vec<_>>()
     }
 
