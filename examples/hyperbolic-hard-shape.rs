@@ -2,8 +2,8 @@ use anyhow::Context;
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
-    representation::{self, HyperbolicPolygonAssets, HyperbolicPolygonMaterial},
+    AdvanceSet, HoomdBevyPlugin, InitialCamera, MUTED_COLOR, Settings,
+    representation::{self, HyperbolicPolygonAssets, HyperbolicPolygonMaterial,HyperbolicPolygonMaterialParameters},
 };
 use hoomd_geometry::{hyperbolic_overlap::HyperbolicConvexPolytope, shape::EightEight};
 use hoomd_interaction::{
@@ -12,7 +12,7 @@ use hoomd_interaction::{
 use hoomd_manifold::{Hyperbolic, HyperbolicDisk, Minkowski};
 use hoomd_mc::{Rotate, Sweep, Translate, Trial};
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder, boundary::Periodic, property::OrientedHyperbolicPoint,
+    Body, Microstate, MicrostateBuilder, boundary::{Open, Periodic}, property::OrientedHyperbolicPoint,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_vector::Angle;
@@ -45,13 +45,18 @@ fn main() -> anyhow::Result<()> {
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(
         Startup,
-        (|| HyperbolicPolygonMaterial::default())
-            .pipe(representation::HyperbolicPolygon::<A>::setup),
+        (|| HyperbolicPolygonMaterialParameters {
+            ..default()
+        })
+        .pipe(representation::HyperbolicPolygon::<A>::setup),
     );
     app.add_systems(
         Startup,
-        (|| HyperbolicPolygonMaterial::ghost())
-            .pipe(representation::HyperbolicPolygon::<Ghost>::setup),
+        (|| HyperbolicPolygonMaterialParameters {
+            background_color: MUTED_COLOR.into(),
+            ..default()
+        })
+        .pipe(representation::HyperbolicPolygon::<Ghost>::setup),
     );
     app.add_systems(
         Update,
@@ -68,7 +73,7 @@ fn main() -> anyhow::Result<()> {
 #[cfg_attr(feature = "bevy", derive(Resource))]
 struct HyperbolicPolygonSelfAssembly {
     /// Positions of all the bodies in the simulation.
-    microstate: Microstate<BodyProperties, SiteProperties, Periodic<EightEight>>,
+    microstate: Microstate<BodyProperties, SiteProperties, Open>,
     /// How sites interact with other sites and fields.
     hamiltonian: CutoffPairOverlap<HardShape<HyperbolicConvexPolytope<3>>>,
     /// Trial moves to apply.
@@ -81,25 +86,25 @@ struct HyperbolicPolygonSelfAssembly {
 
 const RHO: f64 = 1.0;
 const PARTICLE_NUMBER: usize = 3;
-const DIAMETER: f64 = 0.5;
+const RADIUS: f64 = 0.5;
 
 impl HyperbolicPolygonSelfAssembly {
     /// Construct a new hard ellipsoid self-assembly simulation.
     fn new() -> anyhow::Result<HyperbolicPolygonSelfAssembly> {
         let maximum_distance = 0.005;
-        let maximum_rotation = 0.1;
+        let maximum_rotation = 0.000001;
         let macrostate = Isothermal { temperature: 1.0 };
 
-        let square = HyperbolicConvexPolytope::<3>::regular(4, DIAMETER, 1.0);
+        let square = HyperbolicConvexPolytope::<3>::regular(4, RADIUS, 1.0);
         let hamiltonian = CutoffPairOverlap {
             r_cut: 1.0,
             evaluator: HardShape(square.clone()),
         };
 
-        let boundary = Periodic::new(0.6, EightEight { skirt: 1.0_f64 })?;
+        //let boundary = Periodic::new(0.6, EightEight { skirt: 1.0_f64 })?;
 
         let mut microstate =
-            MicrostateBuilder::with_boundary(boundary).try_build()?;
+            MicrostateBuilder::with_boundary(Open).try_build()?;
 
             let hyp_translate = Translate::with_maximum_distance(maximum_distance.try_into()?);
             let translate_sweep = Sweep(hyp_translate);
@@ -155,6 +160,11 @@ impl Simulation for HyperbolicPolygonSelfAssembly {
             &self.hamiltonian,
             &self.macrostate,
         );
+        self.rotate_sweep.apply(
+            &mut self.microstate,
+            &self.hamiltonian,
+            &self.macrostate,
+        );
         self.microstate.increment_step();
         Ok(())
     }
@@ -181,7 +191,7 @@ fn sync_simulation(
         query,
         sites
             .iter()
-            .map(|site| (*site.properties.position.point(), DIAMETER)),
+            .map(|site| (*site.properties.position.point(), RADIUS, site.properties.orientation.theta as f32)),
     );
 }
 
@@ -201,6 +211,6 @@ fn sync_ghosts(
         ghost_query,
         ghosts
             .iter()
-            .map(|site| (*site.properties.position.point(), DIAMETER)),
+            .map(|site| (*site.properties.position.point(), RADIUS, site.properties.orientation.theta as f32)),
     );
 }

@@ -11,8 +11,17 @@ use bevy::{
     render::{
         render_resource::{AsBindGroup, ShaderRef},
         texture::TRANSPARENT_IMAGE_HANDLE,
+        storage::ShaderStorageBuffer,
     },
     sprite::{AlphaMode2d, Material2d, Material2dPlugin},
+};
+#[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
+use bevy::{
+    render::{
+        mesh::MeshVertexBufferLayoutRef,
+        render_resource::{RenderPipelineDescriptor, SpecializedMeshPipelineError},
+    },
+    sprite::Material2dKey,
 };
 use hoomd_manifold::{Hyperbolic, Minkowski};
 use itertools::{
@@ -69,13 +78,29 @@ pub(crate) fn build(app: &mut App) {
 impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
     /// Create assets to render disks.
     pub fn setup(
-        material: In<HyperbolicPolygonMaterial>,
+        material: In<HyperbolicPolygonMaterialParameters>,
         mut commands: Commands,
+        #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))] mut buffers: ResMut<
+            Assets<ShaderStorageBuffer>,
+        >,
         mut meshes: ResMut<Assets<Mesh>>,
         mut materials: ResMut<Assets<HyperbolicPolygonMaterial>>,
+        asset_server: Res<AssetServer>,
     ) {
+        #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
+        let n_sides =
+            buffers.add(ShaderStorageBuffer::from([material.0.n_sides]));
+
         let mesh = meshes.add(Rectangle::new(1.0, 1.0));
-        let material = materials.add(material.0);
+        let material = HyperbolicPolygonMaterial {
+            n_sides, 
+            background_color: material.0.background_color,
+            outline_color: material.0.outline_color,
+            outline_width: material.0.outline_width,
+            texture_scale: material.0.texture_scale,
+            texture: material.0.texture_asset.map(|t| asset_server.load(t)),
+        };
+        let material = materials.add(material);
         commands.insert_resource(HyperbolicPolygonAssets::<T> {
             mesh,
             material,
@@ -90,31 +115,32 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
         query: Query<(Entity, &mut Transform), With<Self>>,
         disks: I,
     ) where
-        I: IntoIterator<Item = (Minkowski<3>, f64)>,
+        I: IntoIterator<Item = (Minkowski<3>, f64, f32)>,
     {
         for item in &mut query.into_iter().zip_longest(disks) {
             match item {
-                Both((_, mut transform), (position, diameter)) => {
+                Both((_, mut transform), (position, radius, theta)) => {
                     let (poincare_position, max_projected_radius) =
-                        poincare(&position, RHO, diameter);
-                    let rad_arg = RHO * (diameter / (2.0 * RHO)).sinh()
-                        / (1.0 + (diameter / (2.0 * RHO)).cosh());
+                        poincare(&position, RHO, radius, theta);
+                    let rad_arg = RHO * (radius / RHO).sinh()
+                        / (1.0 + (radius / RHO).cosh());
                     let poincare_radius = (0.5)
                         * (1.0 + 2.0 * rad_arg.powi(2) / (1.0 - (rad_arg.powi(2)))).acosh() as f32;
                     transform.translation = Vec3::from_array(poincare_position);
                     // transform.scale = Vec3::splat(1.0);
                     transform.scale = Vec3::from_array([
-                        max_projected_radius,
-                        max_projected_radius,
+                        max_projected_radius*2.0,
+                        max_projected_radius*2.0,
                         poincare_radius,
                     ]);
+                    //transform.rotation = Quat::from_rotation_z(theta);
                 }
                 Left((entity, _)) => commands.entity(entity).despawn(),
-                Right((position, diameter)) => {
+                Right((position, radius, theta)) => {
                     let (poincare_position, max_projected_radius) =
-                        poincare(&position, RHO, diameter);
-                    let rad_arg = RHO * (diameter / (2.0 * RHO)).sinh()
-                        / (1.0 + (diameter / (2.0 * RHO)).cosh());
+                        poincare(&position, RHO, radius, theta);
+                    let rad_arg = RHO * (radius / RHO).sinh()
+                        / (1.0 + (radius / RHO).cosh());
                     let poincare_radius = (0.5)
                         * (1.0 + 2.0 * rad_arg.powi(2) / (1.0 - (rad_arg.powi(2)))).acosh() as f32;
                     commands.spawn((
@@ -122,10 +148,11 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
                         MeshMaterial2d(disk_assets.material.clone()),
                         Transform::from_translation(Vec3::from_array(poincare_position))
                             .with_scale(Vec3::from_array([
-                                max_projected_radius,
-                                max_projected_radius,
+                                max_projected_radius*2.0,
+                                max_projected_radius*2.0,
                                 poincare_radius,
                             ])),
+                            //.with_rotation(Quat::from_rotation_z(theta)),
                         Self {
                             marker: PhantomData,
                         },
@@ -137,14 +164,14 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
 }
 
 /// Project coordinates to Poincare disk
-fn poincare(point: &Minkowski<3>, skirt: f64, diameter: f64) -> ([f32; 3], f32) {
+fn poincare(point: &Minkowski<3>, skirt: f64, radius: f64, angle: f32) -> ([f32; 3], f32) {
     let pt = Hyperbolic::from_minkowski_coordinates(*point, skirt);
     let proj = pt.to_poincare();
-    let v = diameter / (skirt * 2.0);
+    let v = radius/ skirt;
     let eta = (point.coordinates[2] / RHO).acosh();
     let edge_proj = (RHO * (eta - v).sinh()) / (1.0 + (eta - v).cosh());
     let rad_proj = (RHO * (eta).sinh()) / (1.0 + (eta).cosh()) - edge_proj;
-    ([proj[0] as f32, proj[1] as f32, 0.0_f32], rad_proj as f32)
+    ([proj[0] as f32, proj[1] as f32, angle], rad_proj as f32)
 }
 
 /// Control how disks are rendered.
@@ -175,31 +202,94 @@ pub struct HyperbolicPolygonMaterial {
     /// Texture to apply. Blended with `color`.
     #[texture(4)]
     #[sampler(5)]
-    pub texture: Handle<Image>,
+    pub texture: Option<Handle<Image>>,
+    /// Color applied to the interior of the disk (indexed by disk % array size).
+    #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
+    #[storage(6, read_only)]
+    pub n_sides: Handle<ShaderStorageBuffer>,
 }
 
-impl Default for HyperbolicPolygonMaterial {
+
+pub struct HyperbolicPolygonMaterialParameters {
+    pub n_sides: f32,
+    pub background_color: LinearRgba,
+    pub outline_color: LinearRgba,
+    pub outline_width: f32,
+    pub texture_scale: f32,
+    pub texture_asset: Option<String>,
+}
+
+impl Default for HyperbolicPolygonMaterialParameters {
     fn default() -> Self {
         Self {
+            n_sides: 0.0 as f32,
             background_color: PRIMARY_COLOR.into(),
             outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
-            outline_width: 0.005,
-            texture: TRANSPARENT_IMAGE_HANDLE,
-            texture_scale: 1.2,
+            outline_width: 0.01,
+            texture_asset: None,
+            texture_scale: 1000.0,
         }
     }
 }
 
-impl HyperbolicPolygonMaterial {
+impl HyperbolicPolygonMaterialParameters {
     /// color for ghost particles
     #[must_use]
     pub fn ghost() -> Self {
         Self {
             background_color: Color::linear_rgb(0.5, 0.5, 0.5).into(),
             outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
-            outline_width: 0.005,
-            texture: TRANSPARENT_IMAGE_HANDLE,
+            outline_width: 0.01,
+            texture_asset: None,
             texture_scale: 1.2,
+            n_sides: 4.0 as f32,
+        }
+    }
+}
+
+//impl Default for HyperbolicPolygonMaterial {
+//    fn default() -> Self {
+//        Self {
+//            background_color: PRIMARY_COLOR.into(),
+//            outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
+//            outline_width: 0.005,
+//            texture: TRANSPARENT_IMAGE_HANDLE,
+//            texture_scale: 1.2,
+//            n_sides: 4.0 as f32,
+//        }
+//    }
+//}
+
+impl HyperbolicPolygonMaterial {
+    // /// color for ghost particles
+    // #[must_use]
+    // pub fn ghost() -> Self {
+    //    Self {
+    //        background_color: Color::linear_rgb(0.5, 0.5, 0.5).into(),
+    //        outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
+    //        outline_width: 0.005,
+    //        texture: TRANSPARENT_IMAGE_HANDLE,
+    //        texture_scale: 1.2,
+    //        n_sides: 4.0 as f32,
+    //    }
+    //}
+    pub fn set_n_sides(
+        &mut self,
+        #[allow(
+            unused_variables,
+            unused_mut,
+            reason = "Not used in all build configurations."
+        )]
+        mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
+        n_sides: f32,
+    ) {
+        #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
+        {
+            let n_sides_buffer = buffers
+                .get_mut(&self.n_sides)
+                .expect("Disk::setup should have added the storage buffer");
+
+            n_sides_buffer.set_data(n_sides);
         }
     }
 }

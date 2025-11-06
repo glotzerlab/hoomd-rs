@@ -23,4 +23,4 @@ pub(crate) mod hyperbolic_disk;
 pub use hyperbolic_disk::{HyperbolicDisk, HyperbolicDiskAssets, HyperbolicDiskMaterial};
 
 pub(crate) mod hyperbolic_polygon;
-pub use hyperbolic_polygon::{HyperbolicPolygon, HyperbolicPolygonAssets, HyperbolicPolygonMaterial};
+pub use hyperbolic_polygon::{HyperbolicPolygon, HyperbolicPolygonAssets, HyperbolicPolygonMaterial, HyperbolicPolygonMaterialParameters};
