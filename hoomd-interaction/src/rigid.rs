@@ -6,13 +6,18 @@
 //! This module provides the Rigid type, which handles intrabody summation of
 //! forces and torques, and also provides logic for converting between site
 //! forces and body torques.
-//! 
+//!
 //! TODO: Expand documentation.
 
 use std::ops::AddAssign;
 
-use hoomd_microstate::{property::{Orientation, Position}, Microstate, Transform};
-use hoomd_vector::{Angle, Cartesian, Cross, Rotate, Rotation, RotationMatrix, Vector, Versor, WedgeProduct};
+use hoomd_microstate::{
+    Microstate, Transform,
+    property::{Orientation, Position},
+};
+use hoomd_vector::{
+    Angle, Cartesian, Cross, Rotate, Rotation, RotationMatrix, Vector, Versor, WedgeProduct,
+};
 
 use crate::{NetBodyForce, NetBodyForceAndTorque, NetBodyTorque, SiteForce, SiteTorque};
 
@@ -39,7 +44,6 @@ where
     // would prevent double-calculations.
 }
 
-
 impl<const N: usize, V, B, S, C, E, R> NetBodyTorque<N, V, B, S, C> for Rigid<E>
 where
     V: Vector + WedgeProduct,
@@ -51,19 +55,26 @@ where
     V::Bivector: Default + AddAssign,
 {
     #[inline]
-    fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V::Bivector {
+    fn net_torque_on_body(
+        &self,
+        microstate: &Microstate<B, S, C>,
+        body_index: usize,
+    ) -> V::Bivector {
         let mut total = V::Bivector::default();
 
-        let q = microstate.bodies()[body_index].item.properties.orientation();  // the body's orientation in the system frame
+        let q = microstate.bodies()[body_index]
+            .item
+            .properties
+            .orientation(); // the body's orientation in the system frame
         // let q = RotationMatrix::from(*q);    // TODO: add a "to" method (microoptimization)
-        
+
         // Torque based on forces on all sites around the center of mass
         for (site_index, site) in microstate.iter_body_sites(body_index).enumerate() {
             // Get relevant quantities
             let site_body_frame = &microstate.bodies()[body_index].item.sites[site_index];
-            let r_body_frame = site_body_frame.position();                                  // the site's position in the body frame (which we need in order to not have wrapping issues)
-            let r = q.rotate(r_body_frame);                                      // the moment arm in the system frame
-            let f = self.0.net_force_on_site(microstate, site);                     // the force on the site in the system frame
+            let r_body_frame = site_body_frame.position(); // the site's position in the body frame (which we need in order to not have wrapping issues)
+            let r = q.rotate(r_body_frame); // the moment arm in the system frame
+            let f = self.0.net_force_on_site(microstate, site); // the force on the site in the system frame
 
             // Calculate Torque in the system frame
             let t = r.wedge_product(&f);
@@ -87,23 +98,30 @@ where
     V::Bivector: Default + AddAssign,
 {
     #[inline]
-    fn net_force_and_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> (V, <V as WedgeProduct>::Bivector) {
+    fn net_force_and_torque_on_body(
+        &self,
+        microstate: &Microstate<B, S, C>,
+        body_index: usize,
+    ) -> (V, <V as WedgeProduct>::Bivector) {
         let mut total_force = V::default();
         let mut total_torque = V::Bivector::default();
 
-        let q = microstate.bodies()[body_index].item.properties.orientation();  // the body's orientation in the system frame
+        let q = microstate.bodies()[body_index]
+            .item
+            .properties
+            .orientation(); // the body's orientation in the system frame
         // let q = RotationMatrix::from(*q);    // TODO: add a "to" method (microoptimization)
-        
+
         // Torque based on forces on all sites around the center of mass
         for (site_index, site) in microstate.iter_body_sites(body_index).enumerate() {
             // Get relevant quantities
             let site_body_frame = &microstate.bodies()[body_index].item.sites[site_index];
-            let r_body_frame = site_body_frame.position();                                  // the site's position in the body frame (which we need in order to not have wrapping issues)
-            let r = q.rotate(r_body_frame);                                      // the moment arm in the system frame
-            let f = self.0.net_force_on_site(microstate, site);                     // the force on the site in the system frame
+            let r_body_frame = site_body_frame.position(); // the site's position in the body frame (which we need in order to not have wrapping issues)
+            let r = q.rotate(r_body_frame); // the moment arm in the system frame
+            let f = self.0.net_force_on_site(microstate, site); // the force on the site in the system frame
 
             // Calculate Torque in the system frame
-            let t = f.wedge_product(&r);
+            let t = r.wedge_product(&f);
 
             // Add to the total
             total_force += f;
