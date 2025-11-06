@@ -4,7 +4,7 @@ use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
     pairwise::{Isotropic, LennardJones, WeeksChandlerAnderson}, rigid::Rigid, CutoffPair
 };
-use hoomd_md::{thermostat::NoThermostat, ConstantVolume, RotationalMotion, TranslationalMotion};
+use hoomd_md::{thermostat::NoThermostat, ConstantVolume, ForceAndTorqueUpdate, RotationalMotion, TranslationalMotion};
 use hoomd_microstate::{
     boundary::{Closed, Open, Periodic},
     property::{DynamicsPoint, Momentum, OrientedDynamicsPoint, Point, Position},
@@ -127,28 +127,27 @@ impl Simulation for Dumbbell {
         // Evolve the system forward using the integrator
         self.integrator.integrate_translation_step_one(
             &mut self.microstate,
-            &self.force,
             &mut self.thermostat,
             &self.macrostate,
         );
 
         self.integrator.integrate_rotation_step_one(
             &mut self.microstate,
-            &self.force,
             &mut self.thermostat,
             &self.macrostate,
         );
 
+        self.integrator
+                    .update_force_and_torque(&mut self.microstate, &self.force);
+
         self.integrator.integrate_translation_step_two(
             &mut self.microstate,
-            &self.force,
             &mut self.thermostat,
             &self.macrostate,
         );
 
         self.integrator.integrate_rotation_step_two(
             &mut self.microstate,
-            &self.force,
             &mut self.thermostat,
             &self.macrostate,
         );
