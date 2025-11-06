@@ -8,3 +8,4 @@ screenshot.png
 *.wasm
 flamegraph.svg
 profile.json.gz
+mc_*.json

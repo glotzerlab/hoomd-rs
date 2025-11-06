@@ -5,7 +5,7 @@
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairOverlap, TotalEnergy};
 use hoomd_microstate::{Body, Microstate, SiteKey, Transform, boundary::Wrap, property::Position};
-use hoomd_spatial::PointsInBall;
+use hoomd_spatial::PointsNearBall;
 use hoomd_vector::Vector;
 
 /// Short-ranged hard overlaps between pairs of sites.
@@ -81,7 +81,7 @@ impl<V, B, S, X, C, E> TotalEnergy<Microstate<B, S, X, C>> for CutoffPairOverlap
 where
     E: SitePairOverlap<S>,
     S: Position<Position = V>,
-    X: PointsInBall<V, SiteKey>,
+    X: PointsNearBall<V, SiteKey>,
     V: Vector,
 {
     /// Compute the total energy of the microstate contributed by functions on pairs of sites.
@@ -119,14 +119,17 @@ where
     #[inline]
     fn total_energy(&self, microstate: &Microstate<B, S, X, C>) -> f64 {
         for site_i in microstate.sites() {
-            for site_j in microstate
-                .iter_sites_near(site_i.properties.position(), self.r_cut)
-                .into_iter()
-                .filter(|s| site_i.site_tag < s.site_tag && site_i.body_tag != s.body_tag)
-            {
-                if self
-                    .evaluator
-                    .site_pair_overlap(&site_i.properties, &site_j.properties)
+            for site_j in microstate.iter_sites_near(site_i.properties.position(), self.r_cut) {
+                if site_i.site_tag < site_j.site_tag
+                    && site_i.body_tag != site_j.body_tag
+                    && site_i
+                        .properties
+                        .position()
+                        .distance_squared(site_j.properties.position())
+                        < self.r_cut.powi(2)
+                    && self
+                        .evaluator
+                        .site_pair_overlap(&site_i.properties, &site_j.properties)
                 {
                     return f64::INFINITY;
                 }
@@ -181,7 +184,7 @@ where
     E: SitePairOverlap<S>,
     B: Transform<S>,
     S: Position<Position = V>,
-    X: PointsInBall<V, SiteKey>,
+    X: PointsNearBall<V, SiteKey>,
     C: Wrap<B> + Wrap<S>,
     V: Vector,
 {
@@ -195,14 +198,16 @@ where
         let body_tag = initial_microstate.bodies()[body_index].tag;
 
         let site_overlap = |site_properties: &S| {
-            for site_j in initial_microstate
-                .iter_sites_near(site_properties.position(), self.r_cut)
-                .into_iter()
-                .filter(|s| body_tag != s.body_tag)
+            for site_j in initial_microstate.iter_sites_near(site_properties.position(), self.r_cut)
             {
-                if self
-                    .evaluator
-                    .site_pair_overlap(site_properties, &site_j.properties)
+                if body_tag != site_j.body_tag
+                    && site_properties
+                        .position()
+                        .distance_squared(site_j.properties.position())
+                        < self.r_cut.powi(2)
+                    && self
+                        .evaluator
+                        .site_pair_overlap(site_properties, &site_j.properties)
                 {
                     return true;
                 }
@@ -264,7 +269,7 @@ where
     E: SitePairOverlap<S>,
     B: Transform<S>,
     S: Position<Position = V>,
-    X: PointsInBall<V, SiteKey>,
+    X: PointsNearBall<V, SiteKey>,
     C: Wrap<B> + Wrap<S>,
     V: Vector,
 {
@@ -279,9 +284,13 @@ where
         let site_overlap = |site_properties: &S| {
             for site_j in initial_microstate.iter_sites_near(site_properties.position(), self.r_cut)
             {
-                if self
-                    .evaluator
-                    .site_pair_overlap(site_properties, &site_j.properties)
+                if site_properties
+                    .position()
+                    .distance_squared(site_j.properties.position())
+                    < self.r_cut.powi(2)
+                    && self
+                        .evaluator
+                        .site_pair_overlap(site_properties, &site_j.properties)
                 {
                     return true;
                 }

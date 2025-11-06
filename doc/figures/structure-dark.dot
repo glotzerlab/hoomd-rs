@@ -3,6 +3,7 @@ digraph hoomd_rs {
     // rankdir = "LR"
     bgcolor = "#00000000"
 
+    // colors from: https://github.com/catppuccin/catppuccin
     node [ color = "#cdd6f4", fontcolor = "#181825"]
     edge [ color = "#cdd6f4" ]
 
@@ -28,6 +29,8 @@ digraph hoomd_rs {
         AnisotropicEnergy
         IsotropicEnergy
 
+        Hamiltonian [ label="TotalEnergy\nDeltaEnergyRemove\nDeltaEnergyOne\nDeltaEnergyInsert"]
+
         // Types and their relations to traits
         node [ shape=rectangle, fillcolor="#89b4fa", style="filled"]
 
@@ -48,8 +51,6 @@ digraph hoomd_rs {
         Shifted -> IsotropicEnergy [ dir=both ]
         Xplor -> IsotropicEnergy [ dir=both ]
         Anisotropic -> SitePairEnergy
-
-        Hamiltonian [ label="TotalEnergy\nDeltaEnergyRemove\nDeltaEnergyOne\nDeltaEnergyInsert"]
 
         External -> Hamiltonian
         ExternalOverlap -> Hamiltonian
@@ -198,10 +199,39 @@ digraph hoomd_rs {
         IsPointInside [ URL="../api/hoomd_geometry/trait.IsPointInside.html" ]
         }
 
+    subgraph hoomd_spatial {
+        label = "hoomd-spatial"
+
+        style = rounded
+
+        // Traits
+        node [ shape=ellipse, fillcolor="#f5c2e7", style="bold,filled,rounded"]
+
+        spatial [ label="PointUpdate\nPointsNearBall" ]
+
+        // Types and their relation to traits
+        node [ shape=rectangle, fillcolor="#f5c2e7", style="filled"]
+
+        VecCell
+        HashCell
+        AllPairs
+
+        VecCell -> spatial
+        HashCell -> spatial
+        AllPairs -> spatial
+
+        // URLs to the documentation
+        spatial [ URL="../api/hoomd_spatial/index.html" ]
+        AllPairs [ URL="../api/hoomd_spatial/struct.AllPairs.html" ]
+        HashCell [ URL="../api/hoomd_spatial/struct.HashCell.html" ]
+        VecCell [ URL="../api/hoomd_spatial/struct.VecCell.html" ]
+    }
+
     Hamiltonian -> {QuickInsert, Sweep}
     Trial -> Microstate [ style=dashed, arrowhead=empty ]
     QuickInsert -> Microstate [ style=dashed, arrowhead=empty ]
     Hamiltonian -> Microstate [ style=dashed, arrowhead=empty ]
+    spatial -> Microstate
     IntersectsAt -> HardShape
     IsPointInside -> Closed
     shapes -> Periodic
@@ -209,5 +239,5 @@ digraph hoomd_rs {
 
     // layout help
     { rank=same; Open; Closed; Periodic }
-    { rank=same; UniformIn; Rotate; Translate }
+    { rank=same; UniformIn; Rotate; Translate; HashCell; AllPairs; VecCell }
 }

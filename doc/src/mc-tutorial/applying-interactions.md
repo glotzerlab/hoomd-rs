@@ -103,16 +103,6 @@ gravitational potential, `epsilon` is the strength of the pairwise potential, `s
 is the range of the pairwise potential, and `macrostate` holds the temperature set point
 (in units of energy).
 
-### Microstate
-
-Confine the bodies and sites inside of a closed square. While the previous
-tutorial showed how you could implement custom boundary conditions, this one
-uses the built in `Rectangle` type:
-
-```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:microstate}}
-```
-
 ### External Potential
 
 This code implements the external potential term in the Hamiltonian:
@@ -213,6 +203,34 @@ more about ownership in [The Rust Programming Language].
 Apply translation trial moves to the bodies:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:sweep}}
+```
+
+### Microstate
+
+Confine the bodies and sites inside of a closed square. While the previous
+tutorial showed how you could implement custom boundary conditions, this one
+uses the built in `Rectangle` type:
+
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:boundary}}
+```
+
+When using `CutoffPair`, construct the `VecCell` **spatial data structure** and pass
+it to the `Microstate`. `CutoffPair` will use this spatial data structure to
+efficiently compute the pairwise interactions.
+
+> [!IMPORTANT]
+> If you forget this step, your simulation will run **very slowly!**
+
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:spatial_data}}
+```
+
+Set the *nominal search radius* to the same value as the `r_cut` used with `CutoffPair`.
+
+Construct the `Microstate` with the square boundary and `vec_cell` spatial data:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:microstate}}
 ```
 
 ### Initialize the Struct

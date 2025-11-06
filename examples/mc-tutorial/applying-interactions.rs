@@ -52,17 +52,6 @@ impl Fill {
         let macrostate = Isothermal { temperature: 1.0 };
         // ANCHOR_END: parameters
 
-        // ANCHOR: microstate
-        let vec_cell = VecCell::builder()
-            .nominal_search_radius(sigma.try_into()?)
-            .build();
-        let square = Rectangle::with_equal_edges(box_length.try_into()?);
-        let microstate = Microstate::builder()
-            .spatial_data(vec_cell)
-            .boundary(Closed(square))
-            .try_build()?;
-        // ANCHOR_END: microstate
-
         // ANCHOR: external
         let linear = External(Linear {
             alpha,
@@ -93,6 +82,21 @@ impl Fill {
             Translate::with_maximum_distance(maximum_distance.try_into()?);
         let translate_sweep = Sweep(translate);
         // ANCHOR_END: sweep
+
+        // ANCHOR: boundary
+        let square = Rectangle::with_equal_edges(box_length.try_into()?);
+        // ANCHOR_END: boundary
+        // ANCHOR: spatial_data
+        let vec_cell = VecCell::builder()
+            .nominal_search_radius(sigma.try_into()?)
+            .build();
+        // ANCHOR_END: spatial_data
+        // ANCHOR: microstate
+        let microstate = Microstate::builder()
+            .spatial_data(vec_cell)
+            .boundary(Closed(square))
+            .try_build()?;
+        // ANCHOR_END: microstate
 
         // ANCHOR: initialize_struct
         Ok(Fill {

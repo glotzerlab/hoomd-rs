@@ -1,6 +1,8 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+use std::fmt;
+
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{
     CutoffPair,
@@ -13,7 +15,7 @@ use hoomd_microstate::{
     property::{Point, Position},
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
-use hoomd_spatial::{PointUpdate, PointsInBall, WithSearchRadius};
+use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
 use hoomd_vector::Cartesian;
 
 pub struct LennardJones<const D: usize, X> {
@@ -25,7 +27,7 @@ pub struct LennardJones<const D: usize, X> {
 
 impl<const D: usize, X> Simulation for LennardJones<D, X>
 where
-    X: PointsInBall<Cartesian<D>, SiteKey> + PointUpdate<Cartesian<D>, SiteKey>,
+    X: PointsNearBall<Cartesian<D>, SiteKey> + PointUpdate<Cartesian<D>, SiteKey>,
     Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
     fn advance(&mut self) -> anyhow::Result<()> {
@@ -41,9 +43,20 @@ where
     }
 }
 
+impl<const D: usize, X> fmt::Display for LennardJones<D, X>
+where
+    X: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.microstate.fmt(f)
+    }
+}
+
 impl<const D: usize, X> LennardJones<D, X>
 where
-    X: PointsInBall<Cartesian<D>, SiteKey> + PointUpdate<Cartesian<D>, SiteKey> + WithSearchRadius,
+    X: PointsNearBall<Cartesian<D>, SiteKey>
+        + PointUpdate<Cartesian<D>, SiteKey>
+        + WithSearchRadius,
     Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
     pub fn with_microstate<B, S, X2>(

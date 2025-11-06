@@ -1,59 +1,109 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use std::collections::HashMap;
+use std::{collections::BTreeMap, fmt, fs::File, io::Write, time::Duration};
 
-use clap::Parser;
+use anyhow::anyhow;
+use clap::{Parser, ValueEnum};
 use clap_verbosity_flag::{InfoLevel, Verbosity, log::LevelFilter};
-use hoomd_microstate::SiteKey;
-use hoomd_spatial::{AllPairs, HashCell, VecCell};
-use log::info;
+use log::{info, trace};
 use serde::Serialize;
 
-use hoomd_microstate::property::OrientedPoint;
+use benchmarks::{Benchmark, mc};
+use hoomd_microstate::{SiteKey, property::OrientedPoint};
+use hoomd_simulation::Simulation;
+use hoomd_spatial::{AllPairs, HashCell, VecCell};
 use hoomd_vector::{Angle, Cartesian, Versor};
 
-use benchmarks::{Benchmark, mc};
 use wildmatch::WildMatch;
 
-#[derive(Serialize)]
-struct Performance {
-    units: String,
-    n: Vec<usize>,
-    hash_cell_performance: Vec<f64>,
-    vec_cell_performance: Vec<f64>,
-    all_pairs_performance: Vec<f64>,
-}
-
-impl Performance {
-    fn with_units(units: String) -> Self {
-        Self {
-            units,
-            n: Vec::new(),
-            hash_cell_performance: Vec::new(),
-            vec_cell_performance: Vec::new(),
-            all_pairs_performance: Vec::new(),
-        }
-    }
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum SpatialData {
+    /// Cell list, backed by Vec storage.
+    VecCell,
+    /// Cell list, backed by HashMap storage.
+    HashCell,
+    /// Loop over all sites.
+    AllPairs,
 }
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Options {
     /// Execute benchmarks that match a wildcard pattern.
-    #[arg(short, long, value_name = "pattern", default_value_t=String::from("*"), display_order=0)]
+    #[arg(short, long, value_name = "pattern", default_value_t=String::from("*"))]
     benchmarks: String,
 
-    /// Smallest system size to benchmark.
-    #[arg(short, long, default_value_t = 4096, display_order = 0)]
+    /// The smallest system size to benchmark.
+    #[arg(short, long, default_value_t = 4096)]
     n_min: usize,
 
-    /// Largest system size to benchmark (defaults to the smallest).
-    #[arg(long, display_order = 0)]
+    /// Largest system size to benchmark (inclusive, defaults to the smallest).
+    #[arg(long)]
     n_max: Option<usize>,
+
+    /// The spatial data structure to use.
+    #[arg(short, long, default_value_t = SpatialData::VecCell, value_enum)]
+    spatial_data: SpatialData,
+
+    /// Write the json files {benchmark}-{suffix}.json
+    #[arg(long, default_value_t = false)]
+    json: bool,
+
+    /// Time to warm up each benchmark (seconds)
+    #[arg(long, default_value_t = 2.0)]
+    warmup_time: f64,
+
+    /// Time to run each benchmark (seconds)
+    #[arg(long, default_value_t = 4.0)]
+    benchmark_time: f64,
+
+    /// Suffix to use in json file names.
+    #[arg(long)]
+    suffix: Option<String>,
 
     #[command(flatten)]
     pub verbose: Verbosity<InfoLevel>,
+}
+
+#[derive(Serialize)]
+struct Performance {
+    unit: String,
+    n: Vec<usize>,
+    time_per_operation: Vec<f64>,
+}
+
+impl Performance {
+    fn with_unit(unit: String) -> Self {
+        Self {
+            unit,
+            n: Vec::new(),
+            time_per_operation: Vec::new(),
+        }
+    }
+}
+
+fn execute<'a, S>(
+    results: &mut BTreeMap<&'a str, Performance>,
+    simulation: &mut S,
+    benchmark: &Benchmark,
+    name: &'a str,
+    n: usize,
+) -> anyhow::Result<()>
+where
+    S: Simulation + fmt::Display,
+{
+    info!("{name}: {n} bodies");
+    let performance = benchmark.measure(simulation)?;
+    trace!("{simulation}");
+
+    let entry = results
+        .entry(name)
+        .or_insert_with(|| Performance::with_unit("step".to_string()));
+    entry.n.push(n);
+    entry.time_per_operation.push(performance);
+
+    Ok(())
 }
 
 fn main() -> anyhow::Result<()> {
@@ -75,185 +125,234 @@ fn main() -> anyhow::Result<()> {
 
     let benchmark_matcher = WildMatch::new(&options.benchmarks);
 
-    let mut results: HashMap<&str, Performance> = HashMap::new();
+    let mut results: BTreeMap<&str, Performance> = BTreeMap::new();
 
     let number_density = 0.8;
-    let benchmark = Benchmark::default();
+    let benchmark = Benchmark {
+        warmup_time: Duration::from_secs_f64(options.warmup_time),
+        benchmark_time: Duration::from_secs_f64(options.benchmark_time),
+    };
 
     let mut n = options.n_min;
+    let n_max = options.n_max.unwrap_or(options.n_min);
+
+    if n_max != n && !options.json {
+        return Err(anyhow!(
+            "JSON output is required when n_min ({n}) is not equal to n_max ({n_max})"
+        ));
+    }
+
+    let needs_microstate_2d = benchmark_matcher.matches("mc_2d_sphere")
+        || benchmark_matcher.matches("mc_2d_lennard_jones")
+        || benchmark_matcher.matches("mc_2d_hexagon");
+
+    let needs_microstate_3d = benchmark_matcher.matches("mc_3d_sphere")
+        || benchmark_matcher.matches("mc_3d_lennard_jones")
+        || benchmark_matcher.matches("mc_3d_octahedron");
 
     loop {
-        let microstate_2d = benchmarks::place_hard_hyperspheres::<
-            OrientedPoint<Cartesian<2>, Angle>,
-            OrientedPoint<Cartesian<2>, Angle>,
-            2,
-        >(n, number_density)?;
+        let maybe_microstate_2d = if needs_microstate_2d {
+            Some(benchmarks::place_hard_hyperspheres::<
+                OrientedPoint<Cartesian<2>, Angle>,
+                OrientedPoint<Cartesian<2>, Angle>,
+                2,
+            >(n, number_density)?)
+        } else {
+            None
+        };
 
-        if benchmark_matcher.matches("mc_hard_sphere_2d") {
-            info!(
-                "mc_hard_sphere_2d: {} disks at number density {}",
-                n, number_density
-            );
-            let mut mc_hard_sphere_2d =
-                mc::HardSphere::<2, VecCell<SiteKey, 2>>::with_microstate(&microstate_2d)?;
-            let performance = benchmark.benchmark_one(&mut mc_hard_sphere_2d)?;
-
-            let entry = results
-                .entry("mc_hard_sphere_2d")
-                .or_insert_with(|| Performance::with_units("ms / step".to_string()));
-            entry.n.push(n);
-            entry.vec_cell_performance.push(performance);
-
-            // let mut mc_hard_sphere_2d = mc::HardSphere::<2, AllPairs<SiteKey>>::with_microstate(&microstate_2d)?;
-            // let performance = benchmark.benchmark_one(&mut mc_hard_sphere_2d)?;
-            // entry.all_pairs_performance.push(performance);
-
-            // let mut mc_hard_sphere_2d = mc::HardSphere::<2, HashCell<SiteKey, 2>>::with_microstate(&microstate_2d)?;
-            // let performance = benchmark.benchmark_one(&mut mc_hard_sphere_2d)?;
-            // entry.hash_cell_performance.push(performance);
+        let name = "mc_2d_sphere";
+        if benchmark_matcher.matches(name) {
+            let microstate_2d = &maybe_microstate_2d
+                .as_ref()
+                .expect("microstate_2d should be initialized");
+            match options.spatial_data {
+                SpatialData::VecCell => {
+                    let mut simulation =
+                        mc::HardSphere::<2, VecCell<SiteKey, 2>>::with_microstate(microstate_2d)?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+                SpatialData::HashCell => {
+                    let mut simulation =
+                        mc::HardSphere::<2, HashCell<SiteKey, 2>>::with_microstate(microstate_2d)?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+                SpatialData::AllPairs => {
+                    let mut simulation =
+                        mc::HardSphere::<2, AllPairs<SiteKey>>::with_microstate(microstate_2d)?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+            }
         }
 
-        if benchmark_matcher.matches("mc_lennard_jones_2d") {
-            info!(
-                "mc_lennard_jones_2d: {} disks at number density {}",
-                n, number_density
-            );
-            let mut mc_lennard_jones_2d =
-                mc::LennardJones::<2, VecCell<SiteKey, 2>>::with_microstate(&microstate_2d)?;
-            let performance = benchmark.benchmark_one(&mut mc_lennard_jones_2d)?;
-
-            let entry = results
-                .entry("mc_lennard_jones_2d")
-                .or_insert_with(|| Performance::with_units("ms / step".to_string()));
-            entry.n.push(n);
-            entry.vec_cell_performance.push(performance);
-
-            let mut mc_lennard_jones_2d =
-                mc::LennardJones::<2, AllPairs<SiteKey>>::with_microstate(&microstate_2d)?;
-            let performance = benchmark.benchmark_one(&mut mc_lennard_jones_2d)?;
-            entry.all_pairs_performance.push(performance);
-
-            let mut mc_lennard_jones_2d =
-                mc::LennardJones::<2, HashCell<SiteKey, 2>>::with_microstate(&microstate_2d)?;
-            let performance = benchmark.benchmark_one(&mut mc_lennard_jones_2d)?;
-            entry.hash_cell_performance.push(performance);
+        let name = "mc_2d_lennard_jones";
+        if benchmark_matcher.matches(name) {
+            let microstate_2d = &maybe_microstate_2d
+                .as_ref()
+                .expect("microstate_2d should be initialized");
+            match options.spatial_data {
+                SpatialData::VecCell => {
+                    let mut simulation =
+                        mc::LennardJones::<2, VecCell<SiteKey, 2>>::with_microstate(microstate_2d)?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+                SpatialData::HashCell => {
+                    let mut simulation =
+                        mc::LennardJones::<2, HashCell<SiteKey, 2>>::with_microstate(
+                            microstate_2d,
+                        )?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+                SpatialData::AllPairs => {
+                    let mut simulation =
+                        mc::LennardJones::<2, AllPairs<SiteKey>>::with_microstate(microstate_2d)?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+            }
         }
 
-        if benchmark_matcher.matches("mc_hexagon_2d") {
-            info!(
-                "mc_hexagon_2d: {} hexagons at number density {}",
-                n, number_density
-            );
-            let mut mc_hexagon_2d =
-                mc::RegularPolygon::<VecCell<SiteKey, 2>>::with_microstate(&microstate_2d)?;
-            let performance = benchmark.benchmark_one(&mut mc_hexagon_2d)?;
-
-            let entry = results
-                .entry("mc_hexagon_2d")
-                .or_insert_with(|| Performance::with_units("ms / step".to_string()));
-            entry.n.push(n);
-            entry.vec_cell_performance.push(performance);
-
-            let mut mc_hexagon_2d =
-                mc::RegularPolygon::<AllPairs<SiteKey>>::with_microstate(&microstate_2d)?;
-            let performance = benchmark.benchmark_one(&mut mc_hexagon_2d)?;
-            entry.all_pairs_performance.push(performance);
-
-            let mut mc_hexagon_2d =
-                mc::RegularPolygon::<HashCell<SiteKey, 2>>::with_microstate(&microstate_2d)?;
-            let performance = benchmark.benchmark_one(&mut mc_hexagon_2d)?;
-            entry.hash_cell_performance.push(performance);
+        let name = "mc_2d_hexagon";
+        if benchmark_matcher.matches(name) {
+            let microstate_2d = &maybe_microstate_2d
+                .as_ref()
+                .expect("microstate_2d should be initialized");
+            match options.spatial_data {
+                SpatialData::VecCell => {
+                    let mut simulation =
+                        mc::RegularPolygon::<VecCell<SiteKey, 2>>::with_microstate(microstate_2d)?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+                SpatialData::HashCell => {
+                    let mut simulation =
+                        mc::RegularPolygon::<HashCell<SiteKey, 2>>::with_microstate(microstate_2d)?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+                SpatialData::AllPairs => {
+                    let mut simulation =
+                        mc::RegularPolygon::<AllPairs<SiteKey>>::with_microstate(microstate_2d)?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+            }
         }
 
-        let microstate_3d = benchmarks::place_hard_hyperspheres::<
-            OrientedPoint<Cartesian<3>, Versor>,
-            OrientedPoint<Cartesian<3>, Versor>,
-            3,
-        >(n, number_density)?;
+        let maybe_microstate_3d = if needs_microstate_3d {
+            Some(benchmarks::place_hard_hyperspheres::<
+                OrientedPoint<Cartesian<3>, Versor>,
+                OrientedPoint<Cartesian<3>, Versor>,
+                3,
+            >(n, number_density)?)
+        } else {
+            None
+        };
 
-        if benchmark_matcher.matches("mc_hard_sphere_3d") {
-            info!(
-                "mc_hard_sphere_3d: {} disks at number density {}",
-                n, number_density
-            );
-            let mut mc_hard_sphere_3d =
-                mc::HardSphere::<3, VecCell<SiteKey, 3>>::with_microstate(&microstate_3d)?;
-            let performance = benchmark.benchmark_one(&mut mc_hard_sphere_3d)?;
-
-            let entry = results
-                .entry("mc_hard_sphere_3d")
-                .or_insert_with(|| Performance::with_units("ms / step".to_string()));
-            entry.n.push(n);
-            entry.vec_cell_performance.push(performance);
-
-            // let mut mc_hard_sphere_3d = mc::HardSphere::<3, AllPairs<SiteKey>>::with_microstate(&microstate_3d)?;
-            // let performance = benchmark.benchmark_one(&mut mc_hard_sphere_3d)?;
-            // entry.all_pairs_performance.push(performance);
-
-            // let mut mc_hard_sphere_3d = mc::HardSphere::<3, HashCell<SiteKey, 3>>::with_microstate(&microstate_3d)?;
-            // let performance = benchmark.benchmark_one(&mut mc_hard_sphere_3d)?;
-            // entry.hash_cell_performance.push(performance);
+        let name = "mc_3d_sphere";
+        if benchmark_matcher.matches(name) {
+            let microstate_3d = &maybe_microstate_3d
+                .as_ref()
+                .expect("microstate_3d should be initialized");
+            match options.spatial_data {
+                SpatialData::VecCell => {
+                    let mut simulation =
+                        mc::HardSphere::<3, VecCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+                SpatialData::HashCell => {
+                    let mut simulation =
+                        mc::HardSphere::<3, HashCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+                SpatialData::AllPairs => {
+                    let mut simulation =
+                        mc::HardSphere::<3, AllPairs<SiteKey>>::with_microstate(microstate_3d)?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+            }
         }
 
-        if benchmark_matcher.matches("mc_lennard_jones_3d") {
-            info!(
-                "mc_lennard_jones_3d: {} spheres at number density {}",
-                n, number_density
-            );
-            let mut mc_lennard_jones_3d =
-                mc::LennardJones::<3, VecCell<SiteKey, 3>>::with_microstate(&microstate_3d)?;
-            let performance = benchmark.benchmark_one(&mut mc_lennard_jones_3d)?;
-
-            let entry = results
-                .entry("mc_lennard_jones_3d")
-                .or_insert_with(|| Performance::with_units("ms / step".to_string()));
-            entry.n.push(n);
-            entry.vec_cell_performance.push(performance);
-
-            let mut mc_lennard_jones_3d =
-                mc::LennardJones::<3, AllPairs<SiteKey>>::with_microstate(&microstate_3d)?;
-            let performance = benchmark.benchmark_one(&mut mc_lennard_jones_3d)?;
-            entry.all_pairs_performance.push(performance);
-
-            let mut mc_lennard_jones_3d =
-                mc::LennardJones::<3, HashCell<SiteKey, 3>>::with_microstate(&microstate_3d)?;
-            let performance = benchmark.benchmark_one(&mut mc_lennard_jones_3d)?;
-            entry.hash_cell_performance.push(performance);
+        let name = "mc_3d_lennard_jones";
+        if benchmark_matcher.matches(name) {
+            let microstate_3d = &maybe_microstate_3d
+                .as_ref()
+                .expect("microstate_3d should be initialized");
+            match options.spatial_data {
+                SpatialData::VecCell => {
+                    let mut simulation =
+                        mc::LennardJones::<3, VecCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+                SpatialData::HashCell => {
+                    let mut simulation =
+                        mc::LennardJones::<3, HashCell<SiteKey, 3>>::with_microstate(
+                            microstate_3d,
+                        )?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+                SpatialData::AllPairs => {
+                    let mut simulation =
+                        mc::LennardJones::<3, AllPairs<SiteKey>>::with_microstate(microstate_3d)?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+            }
         }
 
-        if benchmark_matcher.matches("mc_octahedron_3d") {
-            info!(
-                "mc_octahedron_3d: {} octahedra at number density {}",
-                n, number_density
-            );
-            let mut mc_octahedron_3d =
-                mc::Octahedron::<VecCell<SiteKey, 3>>::with_microstate(&microstate_3d)?;
-            let performance = benchmark.benchmark_one(&mut mc_octahedron_3d)?;
-
-            let entry = results
-                .entry("mc_octahedron_3d")
-                .or_insert_with(|| Performance::with_units("ms / step".to_string()));
-            entry.n.push(n);
-            entry.vec_cell_performance.push(performance);
-
-            let mut mc_octahedron_3d =
-                mc::Octahedron::<AllPairs<SiteKey>>::with_microstate(&microstate_3d)?;
-            let performance = benchmark.benchmark_one(&mut mc_octahedron_3d)?;
-            entry.all_pairs_performance.push(performance);
-
-            let mut mc_octahedron_3d =
-                mc::Octahedron::<HashCell<SiteKey, 3>>::with_microstate(&microstate_3d)?;
-            let performance = benchmark.benchmark_one(&mut mc_octahedron_3d)?;
-            entry.hash_cell_performance.push(performance);
+        let name = "mc_3d_octahedron";
+        if benchmark_matcher.matches(name) {
+            let microstate_3d = &maybe_microstate_3d
+                .as_ref()
+                .expect("microstate_3d should be initialized");
+            match options.spatial_data {
+                SpatialData::VecCell => {
+                    let mut simulation =
+                        mc::Octahedron::<VecCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+                SpatialData::HashCell => {
+                    let mut simulation =
+                        mc::Octahedron::<HashCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+                SpatialData::AllPairs => {
+                    let mut simulation =
+                        mc::Octahedron::<AllPairs<SiteKey>>::with_microstate(microstate_3d)?;
+                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                }
+            }
         }
 
         n *= 2;
-        if n > options.n_max.unwrap_or(options.n_min) {
+        if n > n_max {
             break;
         }
     }
-    let results_json = serde_json::to_string(&results)?;
-    println!("{results_json}");
+
+    if options.json {
+        let mut filename_suffix = String::new();
+        if let Some(suffix) = options.suffix {
+            filename_suffix.push('-');
+            filename_suffix.push_str(&suffix);
+        }
+        filename_suffix.push_str(".json");
+
+        for (name, performance) in results {
+            let performance_json = serde_json::to_string(&performance)?;
+            let filename = name.to_string() + &filename_suffix;
+            info!("Writing {filename}.");
+            let mut file = File::create(filename)?;
+            file.write_all(performance_json.as_bytes())?;
+        }
+    } else {
+        for (name, performance) in results {
+            let operations_per_second = 1.0
+                / performance
+                    .time_per_operation
+                    .last()
+                    .expect("results should contain at least one measurement");
+            println!(
+                "{name:20}: {operations_per_second:9.3} {}s/s",
+                performance.unit
+            );
+        }
+    }
 
     Ok(())
 }

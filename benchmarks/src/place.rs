@@ -3,7 +3,7 @@
 
 //! Implement particle placement methods.
 
-use hoomd_spatial::{PointsInBall, VecCell};
+use hoomd_spatial::{PointsNearBall, VecCell};
 use log::{debug, trace};
 use rand::distr::Distribution;
 
@@ -33,7 +33,7 @@ where
     S: Default + Position<Position = Cartesian<D>> + Copy,
     UniformIn<S, Periodic<Hypercuboid<D>>>: Distribution<Body<B, S>>,
     Periodic<Hypercuboid<D>>: GenerateGhosts<S>,
-    VecCell<SiteKey, D>: PointsInBall<Cartesian<D>, SiteKey>,
+    VecCell<SiteKey, D>: PointsNearBall<Cartesian<D>, SiteKey>,
 {
     let box_length = (n as f64 / number_density).powf(1.0 / (D as f64));
     let sigma = 1.0;

@@ -1,6 +1,8 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+use std::fmt;
+
 use hoomd_geometry::{
     Convex,
     shape::{ConvexPolyhedron, Hypercuboid},
@@ -13,7 +15,7 @@ use hoomd_microstate::{
     property::OrientedPoint,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
-use hoomd_spatial::{PointUpdate, PointsInBall, WithSearchRadius};
+use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
 use hoomd_vector::{Cartesian, Versor};
 
 pub struct Octahedron<X> {
@@ -30,7 +32,7 @@ pub struct Octahedron<X> {
 
 impl<X> Simulation for Octahedron<X>
 where
-    X: PointsInBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey>,
+    X: PointsNearBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey>,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
     fn advance(&mut self) -> anyhow::Result<()> {
@@ -48,9 +50,20 @@ where
     }
 }
 
+impl<X> fmt::Display for Octahedron<X>
+where
+    X: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.microstate.fmt(f)
+    }
+}
+
 impl<X> Octahedron<X>
 where
-    X: PointsInBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey> + WithSearchRadius,
+    X: PointsNearBall<Cartesian<3>, SiteKey>
+        + PointUpdate<Cartesian<3>, SiteKey>
+        + WithSearchRadius,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
     pub fn with_microstate<X2>(

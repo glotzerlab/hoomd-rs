@@ -20,13 +20,15 @@ hoomd-spatial.workspace = true
 hoomd-utility.workspace = true
 hoomd-rand.workspace = true
 hoomd-vector.workspace = true
+arrayvec.workspace = true
 rand.workspace = true
 thiserror.workspace = true
-tinyvec.workspace = true
 
 [dev-dependencies]
+assert2.workspace = true
 anyhow.workspace = true
 approxim.workspace = true
 divan.workspace = true
+log.workspace = true
 rand.workspace = true
 rstest.workspace = true

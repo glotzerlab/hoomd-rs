@@ -12,6 +12,7 @@
 - [hoomd-microstate](api/hoomd_microstate/index.html)
 - [hoomd-rand](api/hoomd_rand/index.html)
 - [hoomd-simulation](api/hoomd_simulation/index.html)
+- [hoomd-spatial](api/hoomd_spatial/index.html)
 - [hoomd-utility](api/hoomd_utility/index.html)
 - [hoomd-vector](api/hoomd_vector/index.html)
 

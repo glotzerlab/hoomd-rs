@@ -11,10 +11,10 @@ use hoomd_simulation::Simulation;
 
 pub struct Benchmark {
     /// Time to warm up.
-    warmup_time: Duration,
+    pub warmup_time: Duration,
 
     /// Time to benchmark.
-    benchmark_time: Duration,
+    pub benchmark_time: Duration,
 }
 
 const INFO_TIME: Duration = Duration::new(0, 500_000_000);
@@ -29,14 +29,14 @@ impl Default for Benchmark {
 }
 
 impl Benchmark {
-    /// Benchmark a simulation
+    /// Measure the average run time of a simulation.
     ///
     /// Return the average time per step (in milliseconds) when the simulation is successful.
     ///
     /// # Errors
     ///
     /// Returns any error reported by `simulation.advance`.
-    pub fn benchmark_one<S>(&self, simulation: &mut S) -> anyhow::Result<f64>
+    pub fn measure<S>(&self, simulation: &mut S) -> anyhow::Result<f64>
     where
         S: Simulation,
     {
@@ -72,15 +72,16 @@ impl Benchmark {
             }
         }
 
-        let run_time = start_time.elapsed().as_secs_f64() / 1e-3;
+        let run_time = start_time.elapsed().as_secs_f64();
+        // TODO: Trait to measure operations performed and provide unit.
         let steps = simulation.step() - start_step;
-        let milliseconds_per_step = run_time / steps as f64;
+        let seconds_per_step = run_time / steps as f64;
 
         info!(
             "Average: {} steps/s",
             steps as f64 / start_time.elapsed().as_secs_f64()
         );
 
-        Ok(milliseconds_per_step)
+        Ok(seconds_per_step)
     }
 }

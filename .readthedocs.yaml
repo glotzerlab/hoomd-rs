@@ -27,7 +27,7 @@ build:
     - mdbook build doc --dest-dir=$READTHEDOCS_OUTPUT/html
     # Build the API reference
     - mkdir -p $READTHEDOCS_OUTPUT/html/api
-    - RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --locked --workspace --all-features --exclude hoomd-examples --exclude build-wasm-doc-examples --no-deps
+    - RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --locked --workspace --all-features --exclude benchmarks --exclude hoomd-examples --exclude build-wasm-doc-examples --no-deps
     - mv target/doc/* $READTHEDOCS_OUTPUT/html/api
     # List the output files
     - ls -lR $READTHEDOCS_OUTPUT/html

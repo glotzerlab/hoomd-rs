@@ -12,14 +12,14 @@
 
 //! Implement `HashCell`
 
-use std::{array, cmp::Eq, hash::Hash, marker::PhantomData};
+use std::{array, cmp::Eq, fmt, hash::Hash, marker::PhantomData};
 
 use rustc_hash::FxHashMap;
 
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
-use super::{PointUpdate, PointsInBall, WithSearchRadius, vec_cell};
+use super::{PointUpdate, PointsNearBall, WithSearchRadius, vec_cell};
 
 /// Bucket sort points into cubes with [`HashMap`]-backed storage
 ///
@@ -62,9 +62,6 @@ pub struct HashCell<K, const D: usize> {
     /// A map from particle indices to cell indices.
     cell_index: FxHashMap<K, [i64; D]>,
 
-    /// Location of the 0,..,0 cell.
-    origin: Cartesian<D>,
-
     /// Pre-computed stencils.
     stencils: Vec<Vec<[i64; D]>>,
 }
@@ -90,9 +87,6 @@ pub struct HashCellBuilder<K, const D: usize> {
 
     /// Largest possible search radius.
     maximum_search_radius: f64,
-
-    /// Location of the 0,..,0 cell.
-    origin: Cartesian<D>,
 
     /// Track the key type.
     phantom_key: PhantomData<K>,
@@ -150,14 +144,6 @@ where
         self
     }
 
-    /// Choose the location of the 0,0,...0 cell.
-    #[inline]
-    #[must_use]
-    pub fn origin(mut self, origin: Cartesian<D>) -> Self {
-        self.origin = origin;
-        self
-    }
-
     /// Construct the [`HashCell`] with the chosen parameters.
     ///
     /// # Example
@@ -182,7 +168,6 @@ where
             cell_width: self.nominal_search_radius,
             particle_indices: FxHashMap::default(),
             cell_index: FxHashMap::default(),
-            origin: self.origin,
             stencils: vec_cell::generate_all_stencils(maximum_stencil_radius.max(1)),
         }
     }
@@ -240,8 +225,7 @@ where
     /// Compute the cell index given a position in space.
     #[inline]
     fn cell_index_from_position(&self, position: &Cartesian<D>) -> [i64; D] {
-        let v = *position - self.origin;
-        std::array::from_fn(|j| (v.coordinates[j] / self.cell_width.get()).floor() as i64)
+        std::array::from_fn(|j| (position.coordinates[j] / self.cell_width.get()).floor() as i64)
     }
 
     /// Remove excess capacity from dynamically allocated arrays.
@@ -281,7 +265,6 @@ where
                 .try_into()
                 .expect("hard-coded constant is a positive real"),
             maximum_search_radius: 1.0,
-            origin: Cartesian::default(),
             phantom_key: PhantomData,
         }
     }
@@ -349,6 +332,53 @@ where
                     }
                 });
         }
+    }
+
+    /// Get the number of points in the spatial data structure.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_spatial::{HashCell, PointUpdate};
+    ///
+    /// let mut hash_cell = HashCell::default();
+    /// hash_cell.insert(0, [1.25, 2.5].into());
+    ///
+    /// assert_eq!(hash_cell.len(), 1)
+    /// ```
+    #[inline]
+    fn len(&self) -> usize {
+        self.cell_index.len()
+    }
+
+    /// Test if the spatial data structure is empty.
+    ///
+    /// # Example
+    /// ```
+    /// use hoomd_spatial::{HashCell, PointUpdate};
+    ///
+    /// let mut hash_cell = HashCell::default();
+    /// # hash_cell.insert(0, [1.25, 2.5].into());
+    /// # hash_cell.remove(&0);
+    ///
+    /// assert!(hash_cell.is_empty());
+    /// ```
+    #[inline]
+    fn is_empty(&self) -> bool {
+        self.cell_index.is_empty()
+    }
+
+    /// Test if the spatial data structure contains a key.
+    /// ```
+    /// use hoomd_spatial::{HashCell, PointUpdate};
+    ///
+    /// let mut hash_cell = HashCell::default();
+    /// hash_cell.insert(0, [1.25, 2.5].into());
+    ///
+    /// assert!(hash_cell.contains_key(&0));
+    /// ```
+    #[inline]
+    fn contains_key(&self, key: &K) -> bool {
+        self.cell_index.contains_key(key)
     }
 
     /// Remove all points.
@@ -421,28 +451,26 @@ where
     }
 }
 
-impl<const D: usize, K> PointsInBall<Cartesian<D>, K> for HashCell<K, D>
+impl<const D: usize, K> PointsNearBall<Cartesian<D>, K> for HashCell<K, D>
 where
     K: Copy + Eq + Hash,
 {
-    /// Find all the points that *may* be in the given ball.
+    /// Find all the points that *might* be in the given ball.
     ///
-    /// `points_potentially_in_ball` will iterate over all points in the given ball.
-    /// It may include any number of points inserted into the spatial data structure
-    /// that are *not* in the ball. Filter the output as needed.
-    ///
-    /// [`HashCell`] may iterate over the points in any order.
+    /// `points_near_ball` will iterate over all points in the given ball *and
+    /// possibly others as well*. [`HashCell`] may iterate over the points in
+    /// any order.
     ///
     /// # Example
     /// ```
-    /// use hoomd_spatial::{HashCell, PointUpdate, PointsInBall};
+    /// use hoomd_spatial::{HashCell, PointUpdate, PointsNearBall};
     ///
     /// let mut hash_cell = HashCell::default();
     /// hash_cell.insert(0, [1.25, 0.0].into());
     /// hash_cell.insert(1, [3.25, 0.75].into());
     /// hash_cell.insert(2, [-10.0, 12.0].into());
     ///
-    /// for key in hash_cell.points_potentially_in_ball(&[2.0, 0.0].into(), 1.0) {
+    /// for key in hash_cell.points_near_ball(&[2.0, 0.0].into(), 1.0) {
     ///     println!("{key}");
     /// }
     /// ```
@@ -458,11 +486,7 @@ where
     /// provided at construction, rounded up to the nearest integer multiple
     /// of the *nominal search radius*.
     #[inline]
-    fn points_potentially_in_ball(
-        &self,
-        position: &Cartesian<D>,
-        radius: f64,
-    ) -> impl Iterator<Item = K> {
+    fn points_near_ball(&self, position: &Cartesian<D>, radius: f64) -> impl Iterator<Item = K> {
         let stencil_index = (radius / self.cell_width.get()).ceil() as usize - 1;
         assert!(
             stencil_index < self.stencils.len(),
@@ -483,6 +507,45 @@ where
     }
 }
 
+impl<K, const D: usize> fmt::Display for HashCell<K, D> {
+    /// Summarize the contents of the cell list.
+    ///
+    /// This is a slow operation. It is meant to be printed to logs only
+    /// occasionally, such as at the end of a benchmark or simulation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_spatial::HashCell;
+    /// use log::info;
+    ///
+    /// let vec_cell = HashCell::<usize, 3>::default();
+    ///
+    /// info!("{vec_cell}");
+    /// ```
+    #[allow(
+        clippy::missing_inline_in_public_items,
+        reason = "no need to inline display"
+    )]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let largest_cell_size = self
+            .particle_indices
+            .values()
+            .map(Vec::len)
+            .fold(0, usize::max);
+
+        writeln!(f, "HashCell<K, {D}>:")?;
+        writeln!(f, "- {} total cells.", self.particle_indices.len(),)?;
+        writeln!(f, "- {} points.", self.cell_index.len())?;
+        writeln!(
+            f,
+            "- Nominal, maximum search radii: {}, {}",
+            self.cell_width,
+            self.cell_width.get() * self.stencils.len() as f64
+        )?;
+        write!(f, "- Largest cell length: {largest_cell_size}")
+    }
+}
 #[expect(
     clippy::used_underscore_binding,
     reason = "Used for const parameterization."
@@ -513,19 +576,6 @@ mod tests {
         check!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()) == [0, 1, 0]);
         check!(cell_list.cell_index_from_position(&[0.0, 0.0, 2.0].into()) == [0, 0, 1]);
         check!(cell_list.cell_index_from_position(&[-41.5, 18.5, -0.125].into()) == [-21, 9, -1]);
-
-        let cell_list = HashCell::<usize, 3>::builder()
-            .nominal_search_radius(
-                2.0.try_into()
-                    .expect("hard-coded constant is a positive real"),
-            )
-            .origin([-4.0, 2.0, 8.0].into())
-            .build();
-        check!(cell_list.cell_index_from_position(&[0.0, 0.0, 0.0].into()) == [2, -1, -4]);
-        check!(cell_list.cell_index_from_position(&[2.0, 0.0, 0.0].into()) == [3, -1, -4]);
-        check!(cell_list.cell_index_from_position(&[0.0, 2.0, 0.0].into()) == [2, 0, -4]);
-        check!(cell_list.cell_index_from_position(&[0.0, 0.0, 2.0].into()) == [2, -1, -3]);
-        check!(cell_list.cell_index_from_position(&[-41.5, 18.5, -0.125].into()) == [-19, 8, -5]);
     }
 
     #[test]
@@ -725,7 +775,7 @@ mod tests {
         cell_list.insert(2, Cartesian::from([8.125, 0.0]));
 
         let potential_neighbors: Vec<_> = cell_list
-            .points_potentially_in_ball(&[9.125, 0.0].into(), 1.0)
+            .points_near_ball(&[9.125, 0.0].into(), 1.0)
             .collect();
         assert!(potential_neighbors.len() == 1);
         check!(potential_neighbors[0] == 2);
@@ -734,7 +784,7 @@ mod tests {
     #[rstest]
     #[case::d_2(PhantomData::<HashCell<usize, 2>>)]
     #[case::d_3(PhantomData::<HashCell<usize, 3>>)]
-    fn test_points_in_ball<const D: usize>(
+    fn test_points_near_ball<const D: usize>(
         #[case] _d: PhantomData<HashCell<usize, D>>,
         #[values(1.0, 0.5, 0.25)] nominal_search_radius: f64,
     ) {
@@ -765,9 +815,7 @@ mod tests {
 
         let mut n_neighbors = 0;
         for p_i in &reference {
-            let potential_neighbors: Vec<_> = cell_list
-                .points_potentially_in_ball(p_i, cell_width)
-                .collect();
+            let potential_neighbors: Vec<_> = cell_list.points_near_ball(p_i, cell_width).collect();
 
             for (j, p_j) in reference.iter().enumerate() {
                 if p_i.distance(p_j) <= cell_width {

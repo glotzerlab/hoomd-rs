@@ -129,11 +129,12 @@ r_\mathrm{cut} `$ values.
 
 > [!WARNING]
 > If you set `maximum_interaction_range` too small, `CutoffPair` (and similar
-> methods) will *miss interactions that be computed*.
+> methods) will *miss interactions that should be computed*.
 
 #### Microstate
 
-Construct a microstate with the periodic boundary conditions:
+Construct a microstate with the periodic boundary conditions and the `VecCell`
+spatial data structure:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:microstate}}
 ```
