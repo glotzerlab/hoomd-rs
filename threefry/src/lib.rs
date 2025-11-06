@@ -16,5 +16,15 @@ pub use squares::{Squares64, Squares128};
 mod sfc;
 pub use sfc::SFC64Rng;
 
+#[cfg(all(
+    target_arch = "aarch64",
+    target_feature = "neon",
+    target_feature = "aes"
+))]
 mod aesrand;
+#[cfg(all(
+    target_arch = "aarch64",
+    target_feature = "neon",
+    target_feature = "aes"
+))]
 pub use aesrand::AESRandRng;
