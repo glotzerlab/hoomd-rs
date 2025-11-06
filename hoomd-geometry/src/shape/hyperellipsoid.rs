@@ -298,6 +298,10 @@ where
         }
         true // If we did not detect a negative value of K(λ), the shapes overlap
     }
+
+    // TODO: Implement intersects_at_global and perform the circumsphere check.
+    // There is a performance degradation when `performs_own_distance_check`
+    // returns `true` for `HardShape<Ellipse>`.
 }
 
 /// Solve the characteristic equation of two ellipses.
