@@ -8,6 +8,7 @@ use crate::{
     shape::{Circle, Sphere},
     xenocollide::{collide2d, collide3d},
 };
+use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix};
 
 /// A newtype that checks for intersections using [`xenocollide`](crate::xenocollide).
@@ -63,10 +64,21 @@ impl<V, S> SupportMapping<V> for Convex<S>
 where
     S: SupportMapping<V>,
 {
-    /// Forward the call to the inner type.
+    // Forward the call to the inner type.
     #[inline]
     fn support_mapping(&self, n: &V) -> V {
         self.0.support_mapping(n)
+    }
+}
+
+impl<S> BoundingSphereRadius for Convex<S>
+where
+    S: BoundingSphereRadius
+{
+    // Forward the call to the inner type.
+    #[inline]
+    fn bounding_sphere_radius(&self) -> PositiveReal {
+        self.0.bounding_sphere_radius()
     }
 }
 

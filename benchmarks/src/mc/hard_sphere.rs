@@ -69,7 +69,7 @@ where
 
         let hamiltonian = PairwiseCutoff {
             r_cut: sigma,
-            evaluator: HardSphere,
+            evaluator: HardSphere { diameter: sigma },
         };
 
         let cell_list = X::with_search_radius(sigma.try_into()?);

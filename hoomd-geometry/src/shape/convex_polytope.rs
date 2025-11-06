@@ -64,7 +64,7 @@ pub struct ConvexPolytope<const N: usize> {
     /// The vertices of the shape.
     vertices: Vec<Cartesian<N>>,
     /// The radius of a bounding sphere of the geometry.
-    pub(crate) bounding_radius: f64,
+    pub(crate) bounding_radius: PositiveReal,
 }
 
 /// A faceted convex body in two dimensions.
@@ -124,7 +124,7 @@ impl ConvexPolytope<2> {
                     Cartesian::from([f64::cos(theta), f64::sin(theta)])
                 })
                 .collect::<Vec<_>>(),
-            bounding_radius: 1.0,
+            bounding_radius: 1.0.try_into().expect("hard-coded constant should be positive"),
         }
     }
 }
@@ -173,12 +173,14 @@ impl<const N: usize> ConvexPolytope<N> {
     }
 
     /// Compute the bounding radius.
-    fn bounding_radius(vertices: &[Cartesian<N>]) -> f64 {
+    fn bounding_radius(vertices: &[Cartesian<N>]) -> PositiveReal {
         vertices
             .iter()
             .map(Cartesian::norm_squared)
             .fold(0.0, f64::max)
             .sqrt()
+            .try_into()
+            .expect("convex polytope should have a positive bounding radius")
     }
 }
 
@@ -205,8 +207,6 @@ impl<const N: usize> BoundingSphereRadius for ConvexPolytope<N> {
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
         self.bounding_radius
-            .try_into()
-            .expect("bounding radius expression is always a positive real.")
     }
 }
 
@@ -246,14 +246,14 @@ mod tests {
         simplex3: ConvexPolyhedron,
         equilateral_triangle: ConvexPolygon,
     ) {
-        assert_eq!(simplex3.bounding_radius, f64::sqrt(3.0));
-        assert_eq!(equilateral_triangle.bounding_radius, f64::sqrt(1.0));
+        assert_eq!(simplex3.bounding_radius.get(), f64::sqrt(3.0));
+        assert_eq!(equilateral_triangle.bounding_radius.get(), f64::sqrt(1.0));
     }
 
     #[rstest]
     fn test_bounding_radius_regular_polygons(#[values(1, 3, 8, 64)] n: usize) {
-        assert_eq!(ConvexPolygon::regular(n).bounding_radius, 1.0);
-        assert_eq!(ConvexPolytope::regular(n).bounding_radius, 1.0);
+        assert_eq!(ConvexPolygon::regular(n).bounding_radius.get(), 1.0);
+        assert_eq!(ConvexPolytope::regular(n).bounding_radius.get(), 1.0);
     }
 
     #[test]

@@ -96,7 +96,7 @@ use hoomd_vector::Metric;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let hard_sphere = PairwiseCutoff {
 ///     r_cut: 1.0,
-///     evaluator: HardSphere,
+///     evaluator: HardSphere { diameter: 1.0 },
 /// };
 /// # Ok(())
 /// # }
@@ -263,7 +263,7 @@ where
     ///
     /// let hard_circle = PairwiseCutoff {
     ///     r_cut: 1.0,
-    ///     evaluator: HardSphere,
+    ///     evaluator: HardSphere { diameter: 1.0 },
     /// };
     ///
     /// let total_energy = hard_circle.total_energy(&microstate);
@@ -282,11 +282,11 @@ where
             for site_j in microstate.iter_sites_near(site_i.properties.position(), self.r_cut) {
                 if site_i.site_tag < site_j.site_tag
                     && site_i.body_tag != site_j.body_tag
-                    && site_i
+                    && (E::performs_own_distance_check() || site_i
                         .properties
                         .position()
                         .distance_squared(site_j.properties.position())
-                        < self.r_cut.powi(2)
+                        < self.r_cut.powi(2))
                 {
                     let one = self
                         .evaluator
@@ -378,7 +378,7 @@ where
     ///
     /// let hard_circle = PairwiseCutoff {
     ///     r_cut: 1.0,
-    ///     evaluator: HardSphere,
+    ///     evaluator: HardSphere { diameter: 1.0 },
     /// };
     ///
     /// let delta_energy = hard_circle.delta_energy_one(
@@ -416,10 +416,10 @@ where
                 Ok(site_i_properties) => {
                     for site_j in initial_microstate.iter_sites_near(site_i_properties.position(), self.r_cut) {
                         if body_tag != site_j.body_tag
-                            && site_i_properties
+                            && (E::performs_own_distance_check() || site_i_properties
                                 .position()
                                 .distance_squared(site_j.properties.position())
-                                < self.r_cut.powi(2)
+                                < self.r_cut.powi(2))
                         {
                             let one = self
                                     .evaluator
@@ -440,10 +440,10 @@ where
             for site_i in initial_microstate.iter_body_sites(body_index) {
                 for site_j in initial_microstate.iter_sites_near(site_i.properties.position(), self.r_cut) {
                     if body_tag != site_j.body_tag
-                        && site_i.properties
+                        && (E::performs_own_distance_check() ||  site_i.properties
                             .position()
                             .distance_squared(site_j.properties.position())
-                            < self.r_cut.powi(2)
+                            < self.r_cut.powi(2))
                     {
                         let one = self
                                 .evaluator
@@ -526,7 +526,7 @@ where
     ///
     /// let hard_circle = PairwiseCutoff {
     ///     r_cut: 1.0,
-    ///     evaluator: HardSphere,
+    ///     evaluator: HardSphere { diameter: 1.0 },
     /// };
     ///
     /// let delta_energy = hard_circle
@@ -556,7 +556,7 @@ where
                 Err(_) => return f64::INFINITY,
                 Ok(site_i_properties) => {
                     for site_j in initial_microstate.iter_sites_near(site_i_properties.position(), self.r_cut) {
-                        if site_i_properties
+                        if E::performs_own_distance_check() ||  site_i_properties
                                 .position()
                                 .distance_squared(site_j.properties.position())
                                 < self.r_cut.powi(2)
@@ -643,7 +643,7 @@ where
     ///
     /// let hard_circle = PairwiseCutoff {
     ///     r_cut: 1.0,
-    ///     evaluator: HardSphere,
+    ///     evaluator: HardSphere { diameter: 1.0 },
     /// };
     ///
     /// let delta_energy = hard_circle.delta_energy_remove(&microstate, 1);
@@ -664,10 +664,10 @@ where
             for site_i in initial_microstate.iter_body_sites(body_index) {
                 for site_j in initial_microstate.iter_sites_near(site_i.properties.position(), self.r_cut) {
                     if body_tag != site_j.body_tag
-                        && site_i.properties
+                        && (E::performs_own_distance_check() || site_i.properties
                             .position()
                             .distance_squared(site_j.properties.position())
-                            < self.r_cut.powi(2)
+                            < self.r_cut.powi(2))
                     {
                         let one = self
                                 .evaluator
@@ -1152,7 +1152,7 @@ mod tests {
             let r_cut = 5.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff{
                 r_cut,
-                evaluator: HardSphere,
+                evaluator: HardSphere { diameter: r_cut },
             };
 
             check!(cutoff_pair.total_energy(&microstate) == f64::INFINITY);
@@ -1160,7 +1160,7 @@ mod tests {
             let r_cut = 5.0_f64;
             let cutoff_pair = PairwiseCutoff{
                 r_cut,
-                evaluator: HardSphere,
+                evaluator: HardSphere { diameter: r_cut },
             };
 
             check!(cutoff_pair.total_energy(&microstate) == 0.0);
@@ -1192,7 +1192,7 @@ mod tests {
             let r_cut = 1.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff{
                 r_cut,
-                evaluator: HardSphere,
+                evaluator: HardSphere { diameter: r_cut },
             };
 
             check!(cutoff_pair.total_energy(&microstate) == 0.0);
@@ -1200,7 +1200,7 @@ mod tests {
             let r_cut = 2.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff{
                 r_cut,
-                evaluator: HardSphere,
+                evaluator: HardSphere { diameter: r_cut },
             };
 
             check!(cutoff_pair.total_energy(&microstate) == f64::INFINITY);
@@ -1227,7 +1227,7 @@ mod tests {
 
             let energy = PairwiseCutoff{
                 r_cut: 0.0,
-                evaluator: HardSphere,
+                evaluator: HardSphere { diameter: 0.0 },
             };
 
             check!(
@@ -1270,7 +1270,7 @@ mod tests {
             let r_cut = 1.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff{
                 r_cut,
-                evaluator: HardSphere,
+                evaluator: HardSphere { diameter: r_cut },
             };
 
             // moving body a to the right generates overlaps
@@ -1307,7 +1307,7 @@ mod tests {
 
             let energy = PairwiseCutoff{
                 r_cut: 0.0,
-                evaluator: HardSphere,
+                evaluator: HardSphere { diameter: 0.0 },
             };
 
             check!(
@@ -1342,7 +1342,7 @@ mod tests {
             let r_cut = 1.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff{
                 r_cut,
-                evaluator: HardSphere,
+                evaluator: HardSphere { diameter: r_cut },
             };
 
             check!(

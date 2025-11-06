@@ -422,6 +422,21 @@ pub trait SitePairEnergy<S> {
     fn is_only_infinite_or_zero() -> bool {
         false
     }
+
+    /// Does this potential perform distance cutoff checks itself?
+    ///
+    /// By default, this method returns `false` and [`PairwiseCutoff`] will
+    /// only call `site_pair_energy` for pairs within the given `r_cut`
+    /// distance.
+    ///
+    /// Override it and return `true` when the implemented potential checks the
+    /// distance cutoff itself. [`PairwiseCutoff`] will skip its distance check.
+    /// Avoiding repeated distance checks improves performance.
+    #[must_use]
+    #[inline]
+    fn performs_own_distance_check() -> bool {
+        false
+    }
 }
 
 /// Compute the change energy as a function of a single modified body.

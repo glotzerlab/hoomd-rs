@@ -4,7 +4,7 @@
 //! Implement `HardShape`
 
 use crate::SitePairEnergy;
-use hoomd_geometry::IntersectsAt;
+use hoomd_geometry::{BoundingSphereRadius, IntersectsAt};
 use hoomd_microstate::property::{Orientation, Position};
 use hoomd_vector::{self, Metric, Rotate, Rotation, Vector};
 
@@ -34,7 +34,7 @@ where
     S: Position<Position = V> + Orientation<Rotation = R>,
     V: Vector,
     R: Rotation + Rotate<V>,
-    G: IntersectsAt<G, V, R>,
+    G: IntersectsAt<G, V, R> + BoundingSphereRadius,
 {
     /// Compute the energy contribution from a pair of sites.
     ///
@@ -76,6 +76,11 @@ where
     /// ```
     #[inline]
     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
+        let r_cut = self.0.bounding_sphere_radius().get() * 2.0;
+        if site_properties_i.position().distance_squared(site_properties_j.position()) >= r_cut.powi(2) {
+            return 0.0
+        }
+    
         let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(
             site_properties_i.position(),
             site_properties_i.orientation(),
@@ -102,13 +107,21 @@ where
     fn is_only_infinite_or_zero() -> bool {
         true
     }    
+
+    #[inline]
+    fn performs_own_distance_check() -> bool {
+        true
+    }
 }
 
 /// Model infinitely hard spheres when used with [`PairwiseCutoff`] (*not differentiable*).
 ///
 /// [`HardSphere`] represents each site as a hard sphere with a diameter given
-/// by the `r_cut` field of [`PairwiseCutoff`].
-pub struct HardSphere;
+/// by the `diameter` field.
+pub struct HardSphere {
+    /// The sphere's diameter.
+    pub diameter: f64,
+    }
 
 impl<S, V> SitePairEnergy<S> for HardSphere
 where
@@ -117,11 +130,16 @@ where
 {
     /// Compute the energy contribution from a pair of sites.
     ///
-    /// This implementation always returns infinity. The overlap check is
-    /// performed by the calling [`PairwiseCutoff`] method.
+    /// The interaction energy is infinite when two spheres overlap and zero
+    /// when they do not.
     #[inline]
-    fn site_pair_energy(&self, _site_properties_i: &S, _site_properties_j: &S) -> f64 {
+    fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
+        if site_properties_i.position()
+            .distance_squared(site_properties_j.position())
+            < self.diameter.powi(2) {
             f64::INFINITY
+            } else {
+                0.0 }
     }
     
     /// Evaluate the energy contribution from a pair of sites *in the initial state*.
@@ -137,5 +155,10 @@ where
     fn is_only_infinite_or_zero() -> bool {
         true
     }    
+
+    #[inline]
+    fn performs_own_distance_check() -> bool {
+        true
+    }
 }
 
