@@ -9,9 +9,10 @@ use crate::util::read_u64_le_unchecked;
 /// The "Small Fast Chaotic" PRNG, originally designed by Chris Doty-Humphrey.
 ///
 /// This PRNG holds 256 bits of state (including a 64-bit counter) and generates 64 bits
-/// of output with each step. The minimum cycle length is $`2^64`$, and the expected
-/// period is $`~2^255`$. Independent seeds are guaranteed to not collide within the
-/// first $`2^64`$ steps, although the actual time to collision may be much longer.
+/// of output with each step. The minimum cycle length is $`2^{64}`$, and the expected
+/// period is $`~2^{255}`$. Independent seeds are guaranteed to not collide within the
+/// first $`2^{64}`$ steps, although the actual time to collision may be much longer.
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SFC64Rng {
     /// The internal state of the PRNG.
     state: [u64; 3],
