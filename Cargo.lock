@@ -3177,6 +3177,7 @@ dependencies = [
  "divan",
  "hoomd-geometry",
  "hoomd-manifold",
+ "hoomd-rand",
  "hoomd-spatial",
  "hoomd-utility",
  "hoomd-vector",

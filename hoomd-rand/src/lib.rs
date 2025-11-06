@@ -31,6 +31,10 @@ mod squares;
 mod sfc;
 pub use sfc::SFC64Rng;
 
+/// Counter RNG wrapper for simulations.
+mod random;
+pub use random::Counter;
+
 #[cfg(all(
     target_arch = "aarch64",
     target_feature = "neon",

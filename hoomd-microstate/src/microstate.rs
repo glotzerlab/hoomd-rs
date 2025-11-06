@@ -13,7 +13,7 @@ use crate::{
 };
 
 use hoomd_spatial::{AllPairs, PointUpdate, PointsInBall};
-use hoomd_utility::random::Counter;
+use hoomd_rand::Counter;
 use hoomd_vector::Metric;
 
 /// Either a primary site index or a ghost site index.
