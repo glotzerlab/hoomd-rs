@@ -2,6 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Asdf.
+#![cfg(feature = "extras")]
 
 /// asdf
 use crate::util::read_u64_le_unchecked;
@@ -80,6 +81,19 @@ impl<const R: usize> SeedableRng for ThreeFry2x64Rng<R> {
 
 /// Reduced-round Threefish based cypher, originally described in the Random123 paper.
 pub struct ThreeFry2x64Rng<const R: usize>(BlockRng64<ThreeFry2x64Core<R>>);
+impl<const R: usize> ThreeFry2x64Rng<R> {
+    /// TODO
+    #[inline]
+    pub fn set_stream(&mut self, stream: [u8; 16]) {
+        self.0.core.counter[0] = read_u64_le_unchecked(stream, 0..8);
+        self.0.core.counter[1] = read_u64_le_unchecked(stream, 8..16);
+    }
+    /// .
+    #[inline]
+    pub fn set_stream_from_u64(&mut self, stream: u64) {
+        self.0.core.counter = [0, stream];
+    }
+}
 impl<const R: usize> RngCore for ThreeFry2x64Rng<R> {
     #[inline]
     fn next_u64(&mut self) -> u64 {
@@ -143,11 +157,13 @@ mod tests {
     #[test]
     fn test_threefry2x64_r13_zeros() {
         let mut x = ThreeFry2x64Rng::<13>::seed_from_u64(0);
+        x.set_stream_from_u64(0);
         (0..17).for_each(|i| assert_eq!(x.next_u64(), THREEFRY_ZEROS_R13_OUTPUT[i], "Index {i}"));
     }
     #[test]
     fn test_threefry2x64_r20_zeros() {
         let mut x = ThreeFry2x64Rng::<20>::seed_from_u64(0);
+        x.set_stream_from_u64(0);
         (0..17).for_each(|i| assert_eq!(x.next_u64(), THREEFRY_ZEROS_R20_OUTPUT[i], "Index {i}"));
     }
 }

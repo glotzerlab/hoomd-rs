@@ -22,6 +22,7 @@ pub mod threefry2x64;
 mod threefry2x64;
 
 #[cfg(feature = "extras")]
+/// Squares PRNGs, which have good performance but worst statistics than SFC64.
 pub mod squares;
 #[cfg(not(feature = "extras"))]
 /// Squares PRNGs, which have good performance but worst statistics than SFC64.

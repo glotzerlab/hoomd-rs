@@ -9,11 +9,7 @@
 )]
 use chacha20::ChaCha8Rng;
 use divan::{Bencher, black_box, counter::ItemsCount};
-use hoomd_rand::{
-    SFC64Rng,
-    squares::{Squares64, Squares128},
-    threefry2x64::ThreeFry2x64Rng,
-};
+use hoomd_rand::SFC64Rng;
 use rand::Rng;
 use rand_core::{RngCore, SeedableRng};
 
@@ -27,6 +23,7 @@ const SEED: u64 = 42;
 #[divan::bench_group(sample_count = 1000)]
 mod latency {
     use super::{Bencher, ChaCha8Rng, RngCore, SEED, SFC64Rng, SeedableRng, black_box};
+    #[cfg(feature = "extras")]
     use hoomd_rand::{
         squares::{Squares64, Squares128},
         threefry2x64::ThreeFry2x64Rng,
@@ -47,6 +44,7 @@ mod latency {
         });
     }
 
+    #[cfg(feature = "extras")]
     #[divan::bench]
     fn threefry2x64r13(bencher: Bencher) {
         let mut rng = ThreeFry2x64Rng::<13>::seed_from_u64(SEED);
@@ -55,6 +53,7 @@ mod latency {
         });
     }
 
+    #[cfg(feature = "extras")]
     #[divan::bench]
     fn squares64(bencher: Bencher) {
         let mut rng = Squares64::seed_from_u64(SEED);
@@ -63,6 +62,7 @@ mod latency {
         });
     }
 
+    #[cfg(feature = "extras")]
     #[divan::bench]
     fn squares128(bencher: Bencher) {
         let mut rng = Squares128::seed_from_u64(SEED);
@@ -98,6 +98,7 @@ mod latency {
 mod throughput {
     use super::{Bencher, ChaCha8Rng, RngCore, SEED, SFC64Rng, SeedableRng, black_box};
     use divan::counter::BytesCount;
+    #[cfg(feature = "extras")]
     use hoomd_rand::{
         squares::{Squares64, Squares128},
         threefry2x64::ThreeFry2x64Rng,
@@ -121,6 +122,7 @@ mod throughput {
             rng.fill_bytes(black_box(&mut buffer));
         });
     }
+    #[cfg(feature = "extras")]
     #[divan::bench(counters = [BytesCount::new(SIZE)])]
     fn threefry2x64r13(bencher: Bencher) {
         let mut rng = ThreeFry2x64Rng::<13>::seed_from_u64(SEED);
@@ -130,6 +132,7 @@ mod throughput {
         });
     }
 
+    #[cfg(feature = "extras")]
     #[divan::bench(counters = [BytesCount::new(SIZE)])]
     fn squares64(bencher: Bencher) {
         let mut rng = Squares64::seed_from_u64(SEED);
@@ -139,6 +142,7 @@ mod throughput {
         });
     }
 
+    #[cfg(feature = "extras")]
     #[divan::bench(counters = [BytesCount::new(SIZE)])]
     fn squares128(bencher: Bencher) {
         let mut rng = Squares128::seed_from_u64(SEED);
