@@ -27,7 +27,7 @@ path = "bin/catrng.rs"
 
 [features]
 default = []
-bench = []
+extras = []
 
 [dev-dependencies]
 approxim.workspace = true
@@ -38,3 +38,4 @@ chacha20 = { version = "= 0.10.0-rc.0", default-features = false, features = ["r
 [[bench]]
 name = "bench"
 harness = false
+required-features = ["extras"]

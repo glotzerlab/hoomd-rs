@@ -4,7 +4,7 @@
 use rand::{RngCore, SeedableRng};
 use rand_core::impls;
 
-use crate::backends::read_u64_le_unchecked;
+use crate::util::read_u64_le_unchecked;
 
 /// The "Small Fast Chaotic" PRNG, originally designed by Chris Doty-Humphrey.
 ///

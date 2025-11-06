@@ -31,8 +31,14 @@ mod latency {
     use threefry::{
         squares::{Squares128, Squares64},
         threefry2x64::ThreeFry2x64Rng,
-        AESRandRng,
     };
+
+    #[cfg(all(
+        target_arch = "aarch64",
+        target_feature = "neon",
+        target_feature = "aes"
+    ))]
+    use threefry::AESRandRng;
 
     #[divan::bench]
     fn chacha8(bencher: Bencher) {
@@ -74,6 +80,11 @@ mod latency {
         });
     }
 
+    #[cfg(all(
+        target_arch = "aarch64",
+        target_feature = "neon",
+        target_feature = "aes"
+    ))]
     #[divan::bench]
     fn aesrand(bencher: Bencher) {
         let mut rng = AESRandRng::seed_from_u64(SEED);
@@ -93,8 +104,14 @@ mod throughput {
     use threefry::{
         squares::{Squares128, Squares64},
         threefry2x64::ThreeFry2x64Rng,
-        AESRandRng,
     };
+
+    #[cfg(all(
+        target_arch = "aarch64",
+        target_feature = "neon",
+        target_feature = "aes"
+    ))]
+    use threefry::AESRandRng;
 
     /// 1 MiB
     const SIZE: usize = 1024 * 1024;
@@ -143,6 +160,11 @@ mod throughput {
         });
     }
 
+    #[cfg(all(
+        target_arch = "aarch64",
+        target_feature = "neon",
+        target_feature = "aes"
+    ))]
     #[divan::bench(counters = [BytesCount::new(SIZE)])]
     fn aesrand(bencher: Bencher) {
         let mut rng = AESRandRng::seed_from_u64(SEED);

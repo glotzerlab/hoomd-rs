@@ -15,14 +15,14 @@
 /// Utility functions for random number generation.
 pub(crate) mod util;
 
-#[cfg(feature = "bench")]
+#[cfg(feature = "extras")]
 pub mod threefry2x64;
-#[cfg(not(feature = "bench"))]
+#[cfg(not(feature = "extras"))]
 mod threefry2x64;
 
-#[cfg(feature = "bench")]
+#[cfg(feature = "extras")]
 pub mod squares;
-#[cfg(not(feature = "bench"))]
+#[cfg(not(feature = "extras"))]
 mod squares;
 
 /// Structs and implementations for the SFC64 PRNG.

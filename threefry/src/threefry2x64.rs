@@ -5,7 +5,7 @@
 #[expect(dead_code, reason = "Used in benchmarks")]
 
 /// asdf
-use crate::backends::{self, read_u64_le_unchecked};
+use crate::util::{self, read_u64_le_unchecked};
 use rand::SeedableRng;
 use rand_core::{
     RngCore,
@@ -40,7 +40,7 @@ impl<const R: usize> BlockRngCore for ThreeFry2x64Core<R> {
                 self.counter[0] = self.counter[0].wrapping_add(self.seed[s % 3]);
                 self.counter[1] = self.counter[1].wrapping_add(self.seed[(s + 1) % 3] + s as u64);
             }
-            backends::mix2x64(&mut self.counter, ROTATION_2X64[d % 8]);
+            util::mix2x64(&mut self.counter, ROTATION_2X64[d % 8]);
         });
         if R.is_multiple_of(4) {
             let s = R / 4;
