@@ -5,8 +5,8 @@
 //!
 //! To use with [``PractRand``](https://pracrand.sourceforge.net):
 //! `$ catrng | RNG_test stdin -multithreaded` (Random seed from ``StdRng``)
-//! `$ catrng 12345 | ...` (Single u64 seed)
-//! `$ catrng 1 2 3 0 | ...` (Four u64 values as a seed)
+//! `$ catrng single-seed 12345 | ...` (Single u64 seed)
+//! `$ catrng single-seed 1 2 3 0 | ...` (Four u64 values as a seed)
 //!
 //! Note this also works with [gjrand](https://gjrand.sourceforge.net)
 //! `$ catrng | ./mcp --huge`
@@ -17,16 +17,13 @@ extern crate threefry;
 
 use std::{io, io::prelude::*};
 
-use std::env;
-
+use clap::Parser;
 use rand::prelude::*;
 use threefry::SFC64Rng;
 
 /// Creates an RNG based on CLI arguments.
 #[expect(clippy::print_stderr, reason = "Required.")]
-fn get_rng() -> SFC64Rng {
-    let args: Vec<String> = env::args().skip(1).collect();
-
+fn seed_from_cli(args: &[String]) -> SFC64Rng {
     match args.len() {
         1 => {
             if let Ok(seed_u64) = args[0].parse::<u64>() {
@@ -61,15 +58,63 @@ fn get_rng() -> SFC64Rng {
     SFC64Rng::from_seed(seed)
 }
 
-fn main() -> io::Result<()> {
-    let mut rng = get_rng();
+/// Command line options for RNG testing.
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+enum Cli {
+    /// Cat data from a single SFC64 seed to STDOUT.
+    SingleSeed {
+        /// Optional seed values (0, 1, or 4 u64s).
+        #[arg(num_args(0..=4))]
+        seeds: Vec<String>,
+    },
+    /// Interleave bytes from N RNGs with similar seeds.
+    TestInterleaved {
+        /// Number of RNGs to interleave.
+        #[arg(short, long, default_value_t = 4)]
+        n: usize,
+    },
+    /// Use the seed as a counter, generating one value per seed.
+    SeedIncrement,
+}
 
-    let mut buf = [0; 4096];
+fn main() -> io::Result<()> {
+    let cli = Cli::parse();
+
     let stdout = io::stdout();
     let mut writer = stdout.lock();
+    let mut buf = [0; 4096];
 
-    loop {
-        rng.fill_bytes(&mut buf);
-        writer.write_all(&buf)?;
+    match cli {
+        Cli::SingleSeed { seeds } => {
+            let mut rng = seed_from_cli(&seeds);
+            loop {
+                rng.fill_bytes(&mut buf);
+                writer.write_all(&buf)?;
+            }
+        }
+        Cli::TestInterleaved { n } => {
+            let mut rngs: Vec<SFC64Rng> =
+                (0..n).map(|i| SFC64Rng::seed_from_u64(i as u64)).collect();
+            loop {
+                for (i, chunk) in buf.chunks_mut(8).enumerate() {
+                    let val = rngs[i % n].next_u64();
+                    chunk.copy_from_slice(&val.to_le_bytes());
+                }
+                writer.write_all(&buf)?;
+            }
+        }
+        Cli::SeedIncrement => {
+            let mut seed_counter = 0u64;
+            loop {
+                for chunk in buf.chunks_mut(8) {
+                    let mut rng = SFC64Rng::seed_from_u64(seed_counter);
+                    let val = rng.next_u64();
+                    chunk.copy_from_slice(&val.to_le_bytes());
+                    seed_counter = seed_counter.wrapping_add(1);
+                }
+                writer.write_all(&buf)?;
+            }
+        }
     }
 }

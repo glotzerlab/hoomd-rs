@@ -16,6 +16,7 @@ rand_core = "0.9.0"
 # rand_core.workspace = true
 rand.workspace = true
 wide = "0.7.33"
+clap = { version = "4.5.4", features = ["derive"] }
 
 [lints]
 workspace = true
