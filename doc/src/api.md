@@ -10,6 +10,7 @@
 - [hoomd-manifold](api/hoomd_manifold/index.html)
 - [hoomd-mc](api/hoomd_mc/index.html)
 - [hoomd-microstate](api/hoomd_microstate/index.html)
+- [hoomd-rand](api/hoomd_rand/index.html)
 - [hoomd-simulation](api/hoomd_simulation/index.html)
 - [hoomd-utility](api/hoomd_utility/index.html)
 - [hoomd-vector](api/hoomd_vector/index.html)
