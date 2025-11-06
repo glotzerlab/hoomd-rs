@@ -116,6 +116,7 @@ impl ConvexPolytope<2> {
     /// ```
     #[inline]
     #[must_use]
+    #[expect(clippy::missing_panics_doc, reason="panic will never occur on a hard-coded constant")]
     pub fn regular(n: usize) -> ConvexPolytope<2> {
         ConvexPolytope {
             vertices: (0..n)
