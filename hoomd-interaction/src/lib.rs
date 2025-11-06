@@ -530,6 +530,19 @@ pub trait NetBodyTorque<const N: usize, V: WedgeProduct, B, S, C> {
     fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V::Bivector;
 }
 
+/** Compute the net force and torque on a single body.
+
+This double calculation should be more efficient than either of the individuals (TODO)
+*/
+pub trait NetBodyForceAndTorque<const N: usize, V: WedgeProduct, B, S, C> {
+    /**
+    TODO
+    */
+    #[must_use]
+    fn net_force_and_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> (V, V::Bivector);
+}
+
+
 /** Compute the force on a single site.
 
 The generic type names are:

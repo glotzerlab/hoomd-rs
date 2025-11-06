@@ -14,7 +14,7 @@ use std::ops::AddAssign;
 use hoomd_microstate::{property::{Orientation, Position}, Microstate, Transform};
 use hoomd_vector::{Angle, Cartesian, Cross, Rotate, Rotation, RotationMatrix, Vector, Versor, WedgeProduct};
 
-use crate::{NetBodyForce, NetBodyTorque, SiteForce, SiteTorque};
+use crate::{NetBodyForce, NetBodyForceAndTorque, NetBodyTorque, SiteForce, SiteTorque};
 
 pub struct Rigid<E>(pub E);
 
@@ -73,5 +73,43 @@ where
         }
 
         total
+    }
+}
+
+impl<const N: usize, V, B, S, C, E, R> NetBodyForceAndTorque<N, V, B, S, C> for Rigid<E>
+where
+    V: Vector + WedgeProduct + Default,
+    B: Transform<S> + Orientation<Rotation = R>,
+    S: Position<Position = V>,
+    E: SiteForce<V, B, S, C>, // TODO: do we need + SiteTorque<V, B, S, C> ?
+    R: Rotate<V>,
+    RotationMatrix<N>: From<R>,
+    V::Bivector: Default + AddAssign,
+{
+    #[inline]
+    fn net_force_and_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> (V, <V as WedgeProduct>::Bivector) {
+        let mut total_force = V::default();
+        let mut total_torque = V::Bivector::default();
+
+        let q = microstate.bodies()[body_index].item.properties.orientation();  // the body's orientation in the system frame
+        // let q = RotationMatrix::from(*q);    // TODO: add a "to" method (microoptimization)
+        
+        // Torque based on forces on all sites around the center of mass
+        for (site_index, site) in microstate.iter_body_sites(body_index).enumerate() {
+            // Get relevant quantities
+            let site_body_frame = &microstate.bodies()[body_index].item.sites[site_index];
+            let r_body_frame = site_body_frame.position();                                  // the site's position in the body frame (which we need in order to not have wrapping issues)
+            let r = q.rotate(r_body_frame);                                      // the moment arm in the system frame
+            let f = self.0.net_force_on_site(microstate, site);                     // the force on the site in the system frame
+
+            // Calculate Torque in the system frame
+            let t = f.wedge_product(&r);
+
+            // Add to the total
+            total_force += f;
+            total_torque += t;
+        }
+
+        (total_force, total_torque)
     }
 }

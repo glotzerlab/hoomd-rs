@@ -25,7 +25,7 @@ use hoomd_microstate::{
     },
 };
 use hoomd_simulation::macrostate::Temperature;
-use hoomd_vector::{Angle, Cartesian, InnerProduct, Quaternion, Rotate, Vector, Versor};
+use hoomd_vector::{Angle, Cartesian, InnerProduct, Quaternion, Rotate, Vector, Versor, WedgeProduct};
 use thermostat::Thermostat;
 
 /// Integrate over translational degrees of freedom.
@@ -101,6 +101,19 @@ pub trait RotationalMotion<const N: usize, B, S, C, E, T, M> {
     );
 }
 
+
+pub trait ForceUpdate<B, S, C, E> {
+    fn update_force(microstate: &mut Microstate<B, S, C>, evaluator: E);
+}
+
+pub trait TorqueUpdate<const N: usize, B, S, C, E> {
+    fn update_torque(microstate: &mut Microstate<B, S, C>, evaluator: E);
+}
+
+pub trait ForceAndTorqueUpdate<const N: usize, B, S, C, E> {
+    fn update_force_and_torque(microstate: &mut Microstate<B, S, C>, evaluator: E);
+}
+
 /// Evolve a system that is constrained to a constant volume.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConstantVolume {
@@ -157,9 +170,6 @@ impl ConstantVolume {
         &self.rotational_dof
     }
 }
-
-/// TODO: add documentation
-pub struct ConstantPressure;
 
 /// Integrate over translational degrees of freedom for a system with constant
 /// volume in any vector space.
@@ -964,3 +974,117 @@ where
         microstate.increment_substep();
     }
 }
+
+// Impl for just translation
+impl<V, B, S, C, E> ForceUpdate<B, S, C, E> for ConstantVolume
+where
+    V: Default + Vector + InnerProduct,
+    B: Position<Position = V>
+        + Momentum<Vector = V>
+        + NetForce<Vector = V>
+        + Mass
+        + Transform<S>
+        + Clone,
+    S: Position<Position = V> + Default,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    E: NetBodyForce<V, B, S, C>,
+{
+    #[inline]
+    fn update_force(microstate: &mut Microstate<B, S, C>, evaluator: E) {
+        for body_index in 0..microstate.bodies().len() {
+            // Get a copy of the body properties to modify
+            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+
+            // Calculate the net force and update the properties copy
+            let net_force_new = evaluator.net_force_on_body(microstate, body_index);
+            *body_properties.net_force_mut() = net_force_new;
+
+            // Update the microstate with new body properties, wrapping automatically
+            microstate
+                .update_body_properties(body_index, body_properties)
+                .expect("Bodies and sites should remain in simulation boundary.");
+        }
+    }
+}
+
+// Impl for just rotation
+impl<B, S, C, E> TorqueUpdate<2, B, S, C, E> for ConstantVolume
+where
+    B: Orientation<Rotation = Versor>
+        + NetTorque<NetTorque = f64>
+        + Transform<S>
+        + Position<Position = Cartesian<2>> // TODO: should this be required?
+        + Clone,
+    S: Position<Position = Cartesian<2>> + Default,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    E: NetBodyTorque<2, Cartesian<2>, B, S, C>,
+{
+    fn update_torque(microstate: &mut Microstate<B, S, C>, evaluator: E) {
+        for body_index in 0..microstate.bodies().len() {
+            // Get a copy of the body properties to modify
+            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+
+            // Calculate the net force and update the properties copy
+            let net_torque_new = evaluator.net_torque_on_body(microstate, body_index);
+            *body_properties.net_torque_mut() = net_torque_new;
+
+            // Update the microstate with new body properties, wrapping automatically
+            microstate
+                .update_body_properties(body_index, body_properties)
+                .expect("Bodies and sites should remain in simulation boundary.");
+        }
+    }
+}
+
+impl<B, S, C, E> TorqueUpdate<3, B, S, C, E> for ConstantVolume
+where
+    B: Orientation<Rotation = Versor>
+        + NetTorque<NetTorque = Cartesian<3>>
+        + Transform<S>
+        + Position<Position = Cartesian<3>> // TODO: should this be required?
+        + Clone,
+    S: Position<Position = Cartesian<3>> + Default,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    E: NetBodyTorque<3, Cartesian<3>, B, S, C>,
+{
+    fn update_torque(microstate: &mut Microstate<B, S, C>, evaluator: E) {
+        for body_index in 0..microstate.bodies().len() {
+            // Get a copy of the body properties to modify
+            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+
+            // Calculate the net force and update the properties copy
+            let net_torque_new = evaluator.net_torque_on_body(microstate, body_index);
+            *body_properties.net_torque_mut() = net_torque_new;
+
+            // Update the microstate with new body properties, wrapping automatically
+            microstate
+                .update_body_properties(body_index, body_properties)
+                .expect("Bodies and sites should remain in simulation boundary.");
+        }
+    }
+}
+
+// Impl for both translation and rotation
+impl<B, S, C, E> ForceAndTorqueUpdate<2, B, S, C, E> for ConstantVolume
+where
+    B: Position<Position = Cartesian<2>>
+        + Momentum<Vector = Cartesian<2>>
+        + NetForce<Vector = Cartesian<2>>
+        + Mass
+        + Orientation<Rotation = Versor>
+        + NetTorque<NetTorque = Cartesian<2>>
+        + Transform<S>
+        + Position<Position = Cartesian<2>> // TODO: should this be required?
+        + Clone,
+    S: Position<Position = Cartesian<2>> + Default,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    E: NetBodyForce<Cartesian<2>, B, S, C>
+        + NetBodyTorque<2, Cartesian<2>, B, S, C>,
+{
+    fn update_force_and_torque(microstate: &mut Microstate<B, S, C>, evaluator: E) {
+        todo!()
+    }
+}
+
+/// TODO: add documentation
+pub struct ConstantPressure;
