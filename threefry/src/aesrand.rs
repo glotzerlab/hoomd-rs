@@ -19,11 +19,11 @@ use rand_core::block::{BlockRng64, BlockRngCore};
 /// The original (x86-64 implementation) of this method is here:
 /// <https://github.com/TheIronBorn/simd_prngs/blob/master/src/prngs/aes_rand.rs>
 pub struct AESRandCore {
-    /// .
+    /// Internal state of the prng.
     state: uint8x16_t,
 }
 
-/// .
+/// Byte increment for each step of the rng.
 const INCREMENT_BYTES: [u8; 16] = [
     0x2f, 0x2b, 0x29, 0x25, 0x1f, 0x1d, 0x17, 0x13, 0x11, 0x0d, 0x0b, 0x07, 0x05, 0x03, 0x02, 0x01,
 ];

@@ -2,14 +2,21 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Asdf.
+#[expect(dead_code, reason = "Used in benchmarks")]
 
 /// asdf
-use crate::backends::{self, C240, read_u64_le_unchecked};
+use crate::backends::{self, read_u64_le_unchecked};
 use rand::SeedableRng;
 use rand_core::{
     RngCore,
     block::{BlockRng64, BlockRngCore},
 };
+/// Key schedule constant C240.
+///
+/// This increases the randomness of outputs when keys are mostly zero. C240 is the AES
+/// encryption of the plaintext "240" (in decimal), under the all 0 AES256 key.
+/// In the Random123 library, this constant is named ``SKEIN_KS_PARITY64``
+const C240: u64 = 0x1_bd1_1bd_aa9_fc1_a22;
 /// Key schedule for ``ThreeFry2x64``.
 const ROTATION_2X64: [u32; 8] = [16, 42, 12, 31, 16, 32, 24, 21];
 
