@@ -3,7 +3,7 @@
 
 //! Implement [`HarmonicRepulsion`]
 
-use super::{IsotropicEnergy, IsotropicForce};
+use super::{UnivariateEnergy, UnivariateForce};
 
 /// Repulsive half of a quadratic potential well.
 ///
@@ -42,7 +42,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
 /// use hoomd_interaction::pairwise::{
-///     HarmonicRepulsion, IsotropicEnergy, IsotropicForce,
+///     HarmonicRepulsion, UnivariateEnergy, UnivariateForce,
 /// };
 ///
 /// let a = 1.0;
@@ -71,7 +71,7 @@ pub struct HarmonicRepulsion {
     pub r_cut: f64,
 }
 
-impl IsotropicEnergy for HarmonicRepulsion {
+impl UnivariateEnergy for HarmonicRepulsion {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         if r < self.r_cut {
@@ -82,7 +82,7 @@ impl IsotropicEnergy for HarmonicRepulsion {
     }
 }
 
-impl IsotropicForce for HarmonicRepulsion {
+impl UnivariateForce for HarmonicRepulsion {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         if r < self.r_cut {

@@ -3,7 +3,7 @@
 
 //! Implement `OverlapPenalty`.
 
-use super::IsotropicEnergy;
+use super::UnivariateEnergy;
 
 /// Monotonically non-decreasing potential to push sites apart (*not differentiable*).
 ///
@@ -102,7 +102,7 @@ impl OverlapPenalty {
     }
 }
 
-impl IsotropicEnergy for OverlapPenalty {
+impl UnivariateEnergy for OverlapPenalty {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         match r {

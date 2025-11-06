@@ -3,8 +3,7 @@
 
 //! Implement Isotropic
 
-use super::IsotropicEnergy;
-use crate::SitePairEnergy;
+use crate::{SitePairEnergy, univariate::UnivariateEnergy};
 use hoomd_microstate::property::Position;
 use hoomd_vector::Metric;
 
@@ -12,7 +11,7 @@ use hoomd_vector::Metric;
 ///
 /// [`Isotropic`] is a newtype that provides a single implementation to compute
 /// pairwise properties. It fills the gap between traits like [`SitePairEnergy`]
-/// which operates on site properties and [`IsotropicEnergy`] which is a function
+/// which operates on site properties and [`UnivariateEnergy`] which is a function
 /// only of the separation distance.
 ///
 /// Use [`Isotropic`] with [`PairwiseCutoff`](crate::PairwiseCutoff) in MD and MC
@@ -53,7 +52,7 @@ impl<P, S, E> SitePairEnergy<S> for Isotropic<E>
 where
     S: Position<Position = P>,
     P: Metric,
-    E: IsotropicEnergy,
+    E: UnivariateEnergy,
 {
     #[inline]
     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {

@@ -3,7 +3,7 @@
 
 //! Implement [`WeeksChandlerAnderson`]
 
-use super::{IsotropicEnergy, IsotropicForce, LennardJones};
+use super::{UnivariateEnergy, UnivariateForce, LennardJones};
 
 /// Potential with a steep repulsive core.
 ///
@@ -24,7 +24,7 @@ use super::{IsotropicEnergy, IsotropicForce, LennardJones};
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
 /// use hoomd_interaction::pairwise::{
-///     IsotropicEnergy, IsotropicForce, WeeksChandlerAnderson,
+///     UnivariateEnergy, UnivariateForce, WeeksChandlerAnderson,
 /// };
 ///
 /// let epsilon = 1.5;
@@ -77,7 +77,7 @@ impl Default for WeeksChandlerAnderson {
     }
 }
 
-impl IsotropicEnergy for WeeksChandlerAnderson {
+impl UnivariateEnergy for WeeksChandlerAnderson {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         if r < 2.0_f64.powf(1.0 / 6.0) * self.sigma {
@@ -92,7 +92,7 @@ impl IsotropicEnergy for WeeksChandlerAnderson {
     }
 }
 
-impl IsotropicForce for WeeksChandlerAnderson {
+impl UnivariateForce for WeeksChandlerAnderson {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         if r < 2.0_f64.powf(1.0 / 6.0) * self.sigma {

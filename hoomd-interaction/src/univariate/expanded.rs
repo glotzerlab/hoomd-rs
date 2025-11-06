@@ -3,7 +3,7 @@
 
 //! Implement [`Expanded`]
 
-use super::{IsotropicEnergy, IsotropicForce};
+use super::{UnivariateEnergy, UnivariateForce};
 
 /// Expand another potential.
 ///
@@ -17,7 +17,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
 /// use hoomd_interaction::pairwise::{
-///     Expanded, IsotropicEnergy, LennardJones,
+///     Expanded, UnivariateEnergy, LennardJones,
 /// };
 ///
 /// let epsilon = 1.5;
@@ -57,14 +57,14 @@ where
     }
 }
 
-impl<F: IsotropicEnergy> IsotropicEnergy for Expanded<F> {
+impl<F: UnivariateEnergy> UnivariateEnergy for Expanded<F> {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         self.f.energy(r - self.delta)
     }
 }
 
-impl<F: IsotropicForce> IsotropicForce for Expanded<F> {
+impl<F: UnivariateForce> UnivariateForce for Expanded<F> {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         self.f.force(r - self.delta)
@@ -74,7 +74,7 @@ impl<F: IsotropicForce> IsotropicForce for Expanded<F> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pairwise::LennardJones;
+    use crate::univariate::LennardJones;
     use approxim::{assert_abs_diff_eq, assert_relative_eq};
     use rstest::*;
 

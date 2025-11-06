@@ -16,6 +16,7 @@ use hoomd_microstate::{Body, Microstate};
 
 pub mod external;
 pub mod pairwise;
+pub mod univariate;
 
 mod external_type;
 mod hamiltonian;

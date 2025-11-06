@@ -3,7 +3,8 @@
 
 //! Implement [`ApproximateShapeOverlap`].
 
-use super::{AnisotropicEnergy, IsotropicEnergy};
+use super::AnisotropicEnergy;
+use crate::univariate::UnivariateEnergy;
 use hoomd_geometry::IntersectsAt;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{InnerProduct, Rotate, Rotation};
@@ -58,7 +59,7 @@ pub struct ApproximateShapeOverlap<E, A, B = A> {
 
 impl<E, A, B, V, R> AnisotropicEnergy<V, R> for ApproximateShapeOverlap<E, A, B>
 where
-    E: IsotropicEnergy,
+    E: UnivariateEnergy,
     V: InnerProduct,
     R: Rotation + Rotate<V>,
     A: IntersectsAt<B, V, R>,

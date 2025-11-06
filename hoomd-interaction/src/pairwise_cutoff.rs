@@ -706,7 +706,8 @@ mod tests_finite {
     use super::*;
     use crate::{
         TotalEnergy,
-        pairwise::{Isotropic, LennardJones},
+        pairwise::Isotropic,
+        univariate::LennardJones,
     };
     use assert2::check;
     use hoomd_geometry::shape::Hypercuboid;

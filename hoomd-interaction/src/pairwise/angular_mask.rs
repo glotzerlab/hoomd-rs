@@ -3,7 +3,8 @@
 
 //! [`AngularMask`] and related data structures.
 
-use super::{AnisotropicEnergy, IsotropicEnergy};
+use super::AnisotropicEnergy;
+use crate::univariate::UnivariateEnergy;
 use hoomd_vector::{InnerProduct, Rotate, Unit, Vector};
 
 /// A single patch in the [`AngularMask`] potential.
@@ -291,7 +292,7 @@ where
 
 impl<E, V, R> AnisotropicEnergy<V, R> for AngularMask<E, V>
 where
-    E: IsotropicEnergy,
+    E: UnivariateEnergy,
     V: InnerProduct,
     R: Rotate<V> + Into<R::Matrix> + Copy,
 {
@@ -324,7 +325,7 @@ mod tests {
     use rstest::*;
     use std::f64::consts::PI;
 
-    use crate::pairwise::{Boxcar, LennardJones};
+    use crate::univariate::{Boxcar, LennardJones};
     use hoomd_vector::{Angle, Cartesian, InnerProduct, Versor};
 
     #[test]
