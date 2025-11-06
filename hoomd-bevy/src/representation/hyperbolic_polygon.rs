@@ -127,7 +127,6 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
                     let poincare_radius = (0.5)
                         * (1.0 + 2.0 * rad_arg.powi(2) / (1.0 - (rad_arg.powi(2)))).acosh() as f32;
                     transform.translation = Vec3::from_array(poincare_position);
-                    // transform.scale = Vec3::splat(1.0);
                     transform.scale = Vec3::from_array([
                         max_projected_radius*2.0,
                         max_projected_radius*2.0,
@@ -152,7 +151,6 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
                                 max_projected_radius*2.0,
                                 poincare_radius,
                             ])),
-                            //.with_rotation(Quat::from_rotation_z(theta)),
                         Self {
                             marker: PhantomData,
                         },

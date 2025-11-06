@@ -60,7 +60,8 @@ struct Vertex {
 fn vertex(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
 #ifdef VERTEX_UVS
-    out.uv = vertex.uv;
+    out.uv = vec2<f32>(vertex.uv.x, vertex.uv.y);
+    out.sides = 4.0;
 #endif
 
 #ifdef VERTEX_POSITIONS
@@ -113,7 +114,7 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let phi = angle - (2.0 * 3.1415926/n)* floor(angle/(2.0 * 3.1415926/n))  - (3.1415926/n);
 
     let radius = in.disk_radius * cos(3.1415926/n)/cos(phi);
-
+    
     if r > radius {
         discard;
     }

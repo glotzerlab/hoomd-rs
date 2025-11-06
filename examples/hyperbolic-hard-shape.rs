@@ -216,6 +216,6 @@ fn sync_ghosts(
         ghost_query,
         ghosts
             .iter()
-            .map(|site| (*site.properties.position.point(), RADIUS, site.properties.orientation.theta as f32)),
+            .map(|site| (*site.properties.position.point(), RADIUS, site.properties.orientation.theta as f32)),b8bb8bd8871b7e36fb4f06c1f1cda1e727b5c06
     );
 }
