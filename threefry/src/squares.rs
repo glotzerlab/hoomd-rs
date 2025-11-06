@@ -8,7 +8,7 @@ use rand_core::{
     impls,
 };
 
-/// ..
+/// Generate a u32 from a Squares64 PRNG.
 fn squares32(seed: u64, counter: &mut u64) -> u32 {
     let mut x = seed.wrapping_mul(*counter);
     let y = x;
@@ -24,9 +24,11 @@ fn squares32(seed: u64, counter: &mut u64) -> u32 {
     ((x.wrapping_mul(x).wrapping_add(z)) >> 32) as u32
 }
 
-/// .
+/// A 64-bit variant of the counter-based Middle Square Weyl Sequence PRNG.
 pub struct Squares64 {
+    /// The seed for the PRNG.
     seed: u64,
+    /// The current counter state.
     counter: u64,
 }
 
@@ -77,8 +79,11 @@ impl SeedableRng for Squares64 {
     }
 }
 
-pub struct Squares128Core {
+/// A 128-bit variant of the counter-based Middle Square Weyl Sequence PRNG.
+struct Squares128Core {
+    /// The seed for the PRNG.
     seed: u128,
+    /// The current state of the counter.
     counter: u128,
 }
 
@@ -116,7 +121,7 @@ impl BlockRngCore for Squares128Core {
         results[1] = final_val as u64;
     }
 }
-/// TODO.
+/// A 128-bit variant of the counter-based Middle Square Weyl Sequence PRNG.
 pub struct Squares128(BlockRng64<Squares128Core>);
 
 impl SeedableRng for Squares128 {

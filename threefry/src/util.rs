@@ -1,14 +1,6 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-#[cfg(not(feature = "extras"))]
-#[expect(dead_code, reason = "Used in benchmarks")]
-/// Rotate a 64 bit unsigned integer left by `r bits`
-#[inline]
-pub(crate) fn rotl_u64(x: u64, d: u32) -> u64 {
-    (x << d) | (x >> (64 - d))
-}
-
 /// Read a little-endian u64 from a byte array.
 ///
 /// # Panics
