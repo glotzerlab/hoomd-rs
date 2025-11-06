@@ -40,8 +40,8 @@ use crate::util::read_u64_le_unchecked;
 ///
 /// ## Generation
 ///
-/// The generators implements [`RngCore`] and thus also [`Rng`][crate::Rng].
-/// See also the [Random Values] chapter in the book.
+/// The generators implements [`RngCore`] and thus also `Rng`.
+/// See also the [Random Values] chapter in the Rust Rand book.
 ///
 /// [portable]: https://rust-random.github.io/book/crate-reprod.html
 /// [Seeding RNGs]: https://rust-random.github.io/book/guide-seeding.html
@@ -90,16 +90,17 @@ impl SFC64Rng {
     /// Initialize the PRNG from 192 bits of state and a u64 counter.
     #[inline]
     #[must_use]
-    pub fn from_state_and_counter(state: [u64; 3], counter: u64) -> Self {
+    pub(crate) fn from_state_and_counter(state: [u64; 3], counter: u64) -> Self {
         Self::initialize(state[0], state[1], state[2], counter)
     }
+
     /// Creates a new instance of the RNG seeded via [`getrandom`].
     ///
     /// This method is the recommended way to construct non-deterministic PRNGs
     /// since it is convenient and secure.
     ///
     /// Note that this method may panic on (extremely unlikely) [`getrandom`] errors.
-    /// If it's not desirable, use the [`try_from_os_rng`] method instead.
+    /// If it's not desirable, use the `try_from_os_rng` method instead.
     ///
     /// In case the overhead of using [`getrandom`] to seed *many* PRNGs is an
     /// issue, one may prefer to seed from a local PRNG, e.g.
@@ -110,7 +111,6 @@ impl SFC64Rng {
     /// If [`getrandom`] is unable to provide secure entropy this method will panic.
     ///
     /// [`getrandom`]: https://docs.rs/getrandom
-    /// [`try_from_os_rng`]: SeedableRng::try_from_os_rng
     #[inline]
     #[must_use]
     #[expect(clippy::panic, reason = "Matches original rand crate.")]
@@ -133,7 +133,7 @@ impl SFC64Rng {
     /// [`getrandom`]: https://docs.rs/getrandom
     #[inline]
     pub fn try_from_os_rng() -> Result<Self, getrandom::Error> {
-        let mut seed = [0u8; 32];
+        let mut seed = [0u8; 24];
         getrandom::fill(seed.as_mut())?;
         let res = Self::from_seed(seed);
         Ok(res)
@@ -155,14 +155,14 @@ impl RngCore for SFC64Rng {
     }
 }
 impl SeedableRng for SFC64Rng {
-    type Seed = [u8; 32];
+    type Seed = [u8; 24];
     #[inline]
     fn from_seed(seed: Self::Seed) -> Self {
         Self::initialize(
             read_u64_le_unchecked(seed, 0..8),
             read_u64_le_unchecked(seed, 8..16),
             read_u64_le_unchecked(seed, 16..24),
-            read_u64_le_unchecked(seed, 24..32),
+            0,
         )
     }
     #[inline]

@@ -39,8 +39,9 @@ enum Cli {
         #[arg(short, long, default_value_t = 4)]
         n: usize,
     },
-    /// Generate single items from RNGs with a fixed seed and manually incremented ctr.
-    ManualCounter,
+    // Disabled, as we shouldn't let users do this.
+    // /// Generate single items from RNGs with a fixed seed and manually incremented ctr.
+    // ManualCounter,
     /// Use the seed as a counter, generating one value per seed.
     SeedIncrement,
 }
@@ -65,10 +66,14 @@ fn main() -> io::Result<()> {
                         "Using 4 u64 seeds: {}, {}, {}, {}",
                         seeds[0], seeds[1], seeds[2], seeds[3]
                     );
-                    SFC64Rng::from_state_and_counter([seeds[0], seeds[1], seeds[2]], seeds[3])
+                    let mut bytes = [0u8; 24];
+                    bytes[..8].copy_from_slice(&seeds[0].to_be_bytes());
+                    bytes[8..16].copy_from_slice(&seeds[1].to_be_bytes());
+                    bytes[16..24].copy_from_slice(&seeds[2].to_be_bytes());
+                    SFC64Rng::from_seed(bytes)
                 }
                 0 => {
-                    let seed: [u8; 32] = rand::rngs::StdRng::seed_from_u64(0).random();
+                    let seed: [u8; 24] = rand::rngs::StdRng::seed_from_u64(0).random();
                     eprintln!("Using entropy seed: {seed:?}");
                     SFC64Rng::from_seed(seed)
                 }
@@ -77,7 +82,7 @@ fn main() -> io::Result<()> {
                         "Expected 0, 1, or 4 arguments (as u64). Got {}. Using entropy seed.",
                         seeds.len()
                     );
-                    let seed: [u8; 32] = rand::rngs::StdRng::seed_from_u64(0).random();
+                    let seed: [u8; 24] = rand::rngs::StdRng::seed_from_u64(0).random();
                     SFC64Rng::from_seed(seed)
                 }
             };
@@ -98,16 +103,16 @@ fn main() -> io::Result<()> {
                 writer.write_all(&buf)?;
             }
         }
-        Cli::ManualCounter => {
-            let mut counter = 0u64;
+        // Cli::ManualCounter => {
+        //     let mut counter = 0u64;
 
-            loop {
-                let mut rng = SFC64Rng::from_state_and_counter([0; 3], counter);
-                rng.fill_bytes(&mut buf);
-                counter = counter.wrapping_add(1);
-                writer.write_all(&buf)?;
-            }
-        }
+        //     loop {
+        //         let mut rng = SFC64Rng::from_state_and_counter([0; 3], counter);
+        //         rng.fill_bytes(&mut buf);
+        //         counter = counter.wrapping_add(1);
+        //         writer.write_all(&buf)?;
+        //     }
+        // }
         Cli::SeedIncrement => {
             let mut seed_counter = 0u64;
             loop {

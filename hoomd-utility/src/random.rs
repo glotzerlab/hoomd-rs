@@ -68,9 +68,9 @@ pub struct Counter {
     /// User-chosen random seed.
     seed: u32,
     /// First index.
-    index_a: u64,
+    index_a: u32,
     /// Second index.
-    index_b: u64,
+    index_b: u32,
 }
 
 impl Counter {
@@ -119,7 +119,7 @@ impl Counter {
     /// ```
     #[must_use]
     #[inline]
-    pub fn indices(mut self, a: u64, b: u64) -> Self {
+    pub fn indices(mut self, a: u32, b: u32) -> Self {
         self.index_a = a;
         self.index_b = b;
         self
@@ -142,7 +142,7 @@ impl Counter {
     /// ```
     #[must_use]
     #[inline]
-    pub fn index(mut self, a: u64) -> Self {
+    pub fn index(mut self, a: u32) -> Self {
         self.index_a = a;
         self
     }
@@ -165,27 +165,13 @@ impl Counter {
     #[must_use]
     #[inline]
     pub fn make_rng(self) -> impl Rng + use<> {
-        // ChaCha separates the input into a seed and a stream id. As a hash,
-        // it shouldn't matter where different parts of the counter are placed.
-        // However, best practice in the encryption community is to put the
-        // fastest-varying parts in the stream id. For Counter, this means
-        // placing the first index and counter in the stream id and everything
-        // else in the seed.
-
-        // let mut stream = [0u8; 32];
-        // stream[..8].copy_from_slice(&self.index_a.to_le_bytes());
-        // stream[8..16].copy_from_slice(&self.index_b.to_le_bytes());
-        // stream[16..24].copy_from_slice(&self.step.to_le_bytes());
-        // stream[24..28].copy_from_slice(&self.substep.to_le_bytes());
-        // stream[28..32].copy_from_slice(&self.seed.to_le_bytes());
-
-        let mut seed = [0u8; 32];
+        let mut seed = [0u8; 24];
         seed[..8].copy_from_slice(&self.step.to_le_bytes());
         seed[8..12].copy_from_slice(&self.substep.to_le_bytes());
         seed[12..16].copy_from_slice(&self.seed.to_le_bytes());
 
-        seed[16..24].copy_from_slice(&self.index_a.to_le_bytes());
-        seed[24..].copy_from_slice(&self.index_b.to_le_bytes());
+        seed[16..20].copy_from_slice(&self.index_a.to_le_bytes());
+        seed[20..].copy_from_slice(&self.index_b.to_le_bytes());
 
         SFC64Rng::from_seed(seed)
     }
