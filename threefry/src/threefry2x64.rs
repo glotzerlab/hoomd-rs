@@ -2,7 +2,6 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Asdf.
-#[expect(dead_code, reason = "Used in benchmarks")]
 
 /// asdf
 use crate::util::{self, read_u64_le_unchecked};
@@ -28,6 +27,12 @@ pub struct ThreeFry2x64Core<const R: usize> {
     /// .
     counter: [u64; 2],
 }
+/// Mixing function for the `ThreeFry2x64` PRNG.
+#[inline]
+pub(crate) fn mix2x64(state: &mut [u64; 2], round_key: u32) {
+    state[0] = state[0].wrapping_add(state[1]);
+    state[1] = state[1].rotate_left(round_key) ^ state[0];
+}
 impl<const R: usize> BlockRngCore for ThreeFry2x64Core<R> {
     type Item = u64;
     type Results = [u64; 2];
@@ -40,7 +45,7 @@ impl<const R: usize> BlockRngCore for ThreeFry2x64Core<R> {
                 self.counter[0] = self.counter[0].wrapping_add(self.seed[s % 3]);
                 self.counter[1] = self.counter[1].wrapping_add(self.seed[(s + 1) % 3] + s as u64);
             }
-            util::mix2x64(&mut self.counter, ROTATION_2X64[d % 8]);
+            mix2x64(&mut self.counter, ROTATION_2X64[d % 8]);
         });
         if R.is_multiple_of(4) {
             let s = R / 4;
