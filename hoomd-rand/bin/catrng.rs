@@ -87,8 +87,9 @@ fn main() -> io::Result<()> {
             }
         }
         Cli::TestInterleaved { n } => {
-            let mut rngs: Vec<SFC64Rng> =
-                (0..n).map(|i| SFC64Rng::seed_from_u64(i as u64)).collect();
+            let mut rngs: Vec<SFC64Rng> = (0..n)
+                .map(|i| SFC64Rng::seed_from_u64((i as u64) << n))
+                .collect();
             loop {
                 for (i, chunk) in buf.chunks_mut(8).enumerate() {
                     let val = rngs[i % n].next_u64();

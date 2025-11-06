@@ -12,6 +12,42 @@ use crate::util::read_u64_le_unchecked;
 /// of output with each step. The minimum cycle length is $`2^{64}`$, and the expected
 /// period is $`~2^{255}`$. Independent seeds are guaranteed to not collide within the
 /// first $`2^{64}`$ steps, although the actual time to collision may be much longer.
+///
+/// This specific implementation passes [PractRand] with >2TB of output for each of
+/// several low-entropy seeds, and >1TB for sets of 8 and 64 parallel streams whose seed
+/// differs by only a single bit.
+///
+/// ## Seeding (construction)
+///
+/// This generator implements the [`SeedableRng`] trait. Any method may be used,
+/// and the results are guaranteed to be [portable].
+///
+/// Using a fresh seed **direct from the OS** is the most secure option:
+/// ```
+/// use rand::SeedableRng;
+/// use hoomd_rand::SFC64Rng;
+/// let rng = SFC64Rng::from_os_rng();
+/// ```
+///
+/// That said, `seed_from_u64` is often the most convenient and still guarantees good
+/// pseudorandom statistics.
+/// ```
+/// use rand::SeedableRng;
+/// use hoomd_rand::SFC64Rng;
+/// let rng = SFC64Rng::seed_from_u64(42);
+/// ```
+/// See also [Seeding RNGs] in the Rust Rand book.
+///
+/// ## Generation
+///
+/// The generators implements [`RngCore`] and thus also [`Rng`][crate::Rng].
+/// See also the [Random Values] chapter in the book.
+///
+/// [portable]: https://rust-random.github.io/book/crate-reprod.html
+/// [Seeding RNGs]: https://rust-random.github.io/book/guide-seeding.html
+/// [Random Values]: https://rust-random.github.io/book/guide-values.html
+/// [PractRand]: https://pracrand.sourceforge.net
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SFC64Rng {
     /// The internal state of the PRNG.
@@ -56,6 +92,51 @@ impl SFC64Rng {
     #[must_use]
     pub fn from_state_and_counter(state: [u64; 3], counter: u64) -> Self {
         Self::initialize(state[0], state[1], state[2], counter)
+    }
+    /// Creates a new instance of the RNG seeded via [`getrandom`].
+    ///
+    /// This method is the recommended way to construct non-deterministic PRNGs
+    /// since it is convenient and secure.
+    ///
+    /// Note that this method may panic on (extremely unlikely) [`getrandom`] errors.
+    /// If it's not desirable, use the [`try_from_os_rng`] method instead.
+    ///
+    /// In case the overhead of using [`getrandom`] to seed *many* PRNGs is an
+    /// issue, one may prefer to seed from a local PRNG, e.g.
+    /// `from_rng(rand::rng()).unwrap()`.
+    ///
+    /// # Panics
+    ///
+    /// If [`getrandom`] is unable to provide secure entropy this method will panic.
+    ///
+    /// [`getrandom`]: https://docs.rs/getrandom
+    /// [`try_from_os_rng`]: SeedableRng::try_from_os_rng
+    #[inline]
+    #[must_use]
+    #[expect(clippy::panic, reason = "Matches original rand crate.")]
+    pub fn from_os_rng() -> Self {
+        match Self::try_from_os_rng() {
+            Ok(res) => res,
+            Err(err) => panic!("from_os_rng failed: {err}"),
+        }
+    }
+    /// Creates a new instance of the RNG seeded via [`getrandom`] without unwrapping
+    /// potential [`getrandom`] errors.
+    ///
+    /// In case the overhead of using [`getrandom`] to seed *many* PRNGs is an
+    /// issue, one may prefer to seed from a local PRNG, e.g.
+    /// `from_rng(&mut rand::rng()).unwrap()`.
+    ///
+    /// # Errors
+    /// [`getrandom::Error`] if the OS RNG fails to provide a value.
+    ///
+    /// [`getrandom`]: https://docs.rs/getrandom
+    #[inline]
+    pub fn try_from_os_rng() -> Result<Self, getrandom::Error> {
+        let mut seed = [0u8; 32];
+        getrandom::fill(seed.as_mut())?;
+        let res = Self::from_seed(seed);
+        Ok(res)
     }
 }
 
