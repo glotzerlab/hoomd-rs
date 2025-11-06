@@ -6,12 +6,12 @@
 //! This crate offers implementations of several modern RNG algorithms, including:
 //!
 //! - `SFC64Rng`: The "Small Fast Chaotic" counter based RNG, which should be considered
-//! the default in most cases. It is extremely fast, has low latency, and is very
-//! statistically sound -- we have validated that streams are independent and
-//! uncorrelated for >2TB of data per seed.
+//!   the default in most cases. It is extremely fast, has low latency, and is very
+//!   statistically sound -- we have validated that streams are independent and
+//!   uncorrelated for >2TB of data per seed.
 //! - `AESRandRng`: An AES-based RNG (currently only available on some aarch64
-//! platforms). This can be even faster than SFC64, but has a smaller state that
-//! makes it less suitable for highly parallel applications.
+//!   platforms). This can be even faster than SFC64, but has a smaller state that
+//!   makes it less suitable for highly parallel applications.
 
 /// Utility functions for random number generation.
 pub(crate) mod util;

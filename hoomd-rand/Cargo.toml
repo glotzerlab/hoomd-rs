@@ -1,5 +1,6 @@
 [package]
 name = "hoomd-rand"
+description = "Performant random number generators, designed and tested for HPC."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
