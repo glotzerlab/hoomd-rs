@@ -7,7 +7,7 @@ use hoomd_interaction::{
     rigid::Rigid,
 };
 use hoomd_md::{
-    ConstantVolume, RotationalMotion, TranslationalMotion,
+    ConstantVolume, ForceAndTorqueUpdate, ForceUpdate, RotationalMotion, TranslationalMotion,
     thermalize::{
         RotationalModifier, Thermalize, TranslationalAngularMomentumModifier, TranslationalModifier,
     },
@@ -139,28 +139,27 @@ impl Simulation for System {
         // Evolve the system forward using the integrator
         self.integrator.integrate_translation_step_one(
             &mut self.microstate,
-            &self.force,
             &mut self.thermostat.0,
             &self.macrostate,
         );
 
         self.integrator.integrate_rotation_step_one(
             &mut self.microstate,
-            &self.force,
             &mut self.thermostat.1,
             &self.macrostate,
         );
 
+        self.integrator
+            .update_force_and_torque(&mut self.microstate, &self.force);
+
         self.integrator.integrate_translation_step_two(
             &mut self.microstate,
-            &self.force,
             &mut self.thermostat.0,
             &self.macrostate,
         );
 
         self.integrator.integrate_rotation_step_two(
             &mut self.microstate,
-            &self.force,
             &mut self.thermostat.1,
             &self.macrostate,
         );
