@@ -88,6 +88,11 @@ const RHO: f64 = 1.0;
 const PARTICLE_NUMBER: usize = 3;
 const RADIUS: f64 = 0.5;
 
+enum Phase {
+    Initialize,
+    Equilibrate,
+}
+
 impl HyperbolicPolygonSelfAssembly {
     /// Construct a new hard ellipsoid self-assembly simulation.
     fn new() -> anyhow::Result<HyperbolicPolygonSelfAssembly> {

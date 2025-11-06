@@ -14,11 +14,11 @@ use crate::{
     boundary::{
         Error, GenerateGhosts, MAX_GHOSTS, MaximumAllowableInteractionRange, Periodic, Wrap,
     },
-    property::Position,
+    property::{Position, Point, OrientedHyperbolicPoint},
 };
 use hoomd_geometry::shape::EightEight;
 use hoomd_manifold::{Hyperbolic, Minkowski};
-use hoomd_vector::Metric;
+use hoomd_vector::{Angle, Metric};
 
 impl MaximumAllowableInteractionRange for EightEight {
     /// The largest value that the maximum interaction range can take.
@@ -30,10 +30,7 @@ impl MaximumAllowableInteractionRange for EightEight {
     }
 }
 
-impl<P> Wrap<P> for Periodic<EightEight>
-where
-    P: Position<Position = Hyperbolic<3>>,
-{
+impl Wrap<Point<Hyperbolic<3>>> for Periodic<EightEight> {
     /// Wrap a point on the Hyperbolic to the inside of the {8,8} tile.
     ///
     /// Note that the function fails to wrap points that are outside the octagon
@@ -93,7 +90,7 @@ where
     #[inline]
     #[expect(clippy::cast_possible_truncation, reason = "truncating float to usize")]
     #[expect(clippy::cast_sign_loss, reason = "hard-coded positive numbers")]
-    fn wrap(&self, properties: P) -> Result<P, Error> {
+    fn wrap(&self, properties: Point<Hyperbolic<3>>) -> Result<Point<Hyperbolic<3>>, Error> {
         let mut properties = properties;
         let r = properties.position_mut();
         assert_eq!(
@@ -186,10 +183,110 @@ where
     }
 }
 
-impl<S> GenerateGhosts<S> for Periodic<EightEight>
-where
-    S: Position<Position = Hyperbolic<3>> + Copy + Default,
-{
+impl Wrap<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> {
+    /// TODO
+    #[inline]
+    #[expect(clippy::cast_possible_truncation, reason = "truncating float to usize")]
+    #[expect(clippy::cast_sign_loss, reason = "hard-coded positive numbers")]
+    fn wrap(&self, properties: OrientedHyperbolicPoint<3, Angle>) -> Result<OrientedHyperbolicPoint<3, Angle>, Error> {
+        let orientation = properties.orientation.theta;
+        let mut properties = properties;
+        let r = properties.position_mut();
+        assert_eq!(
+            r.skirt(),
+            self.shape.skirt,
+            "point must be wrapped onto a Hyperbolic with the same skirt"
+        );
+
+        let angle = r.coordinates()[1].atan2(r.coordinates()[0]);
+        let theta = angle.rem_euclid(PI * 2.0);
+
+        // distance to the boundary; if positive, r is within the tile
+        let d = EightEight::distance_to_boundary(r);
+
+        // find out which vertex of the octagon the point is closest to
+        let vertex_number = (((theta + (PI / 8.0)).rem_euclid(PI * 2.0)) / (PI / 4.0)).floor();
+        let nearest_vertex = Hyperbolic::<3>::from_polar_coordinates(
+            EightEight::EIGHTEIGHT,
+            PI * vertex_number / 4.0,
+            r.skirt(),
+        );
+
+        // if point is safely within the tile, do nothing
+        if d >= 0.0 {
+            Ok(properties)
+        } else if r.distance(&nearest_vertex) < EightEight::EDGE_LENGTH / 2.0
+            || d > -self.maximum_interaction_range
+        {
+            // if point is past EIGHTEIGHT and within EDGE_LENGTH/2 of the vertex, figure out which octagon it needs to be wrapped into
+            // transform point to frame where relevant vertex is in the center
+            let (vertex_boost, vertex_angle) = (
+                EightEight::EIGHTEIGHT,
+                (vertex_number * PI / 4.0).rem_euclid(PI * 2.0),
+            );
+            let transformed_point = Minkowski::from([
+                r.coordinates()[0] * (-vertex_boost).cosh() * (-vertex_angle).cos()
+                    - r.coordinates()[1] * (-vertex_boost).cosh() * (-vertex_angle).sin()
+                    + r.coordinates()[2] * (-vertex_boost).sinh(),
+                r.coordinates()[0] * (-vertex_angle).sin()
+                    + r.coordinates()[1] * (-vertex_angle).cos(),
+                r.coordinates()[0] * (-vertex_boost).sinh() * (-vertex_angle).cos()
+                    - r.coordinates()[1] * (-vertex_boost).sinh() * (-vertex_angle).sin()
+                    + r.coordinates()[2] * (-vertex_boost).cosh(),
+            ]);
+            // get coords of point in transformed frame
+            let trans_orientation = (orientation - vertex_angle).rem_euclid(2.0*PI);
+            let trans_angle =
+                transformed_point.coordinates[1].atan2(transformed_point.coordinates[0]);
+            let octant = (((trans_angle + (PI / 8.0)).rem_euclid(2.0 * PI)) / (PI / 4.0)).floor(); //octant the point is inside of, in the transformed frame, in global coords
+            let new_vertex = (octant + (4.0 + 3.0 * vertex_number).rem_euclid(8.0)).rem_euclid(8.0); // in vertex coords
+            let vertex_list = [0.0, 3.0, 6.0, 1.0, 4.0, 7.0, 2.0, 5.0];
+            let new_vertex_num = vertex_list[new_vertex.floor() as usize]; // new vertex which point should be mapped to the inside of, in global
+            // rotate frame in center to get the relevant octant facing up
+            let rot = (PI / 2.0 - octant * PI / 4.0).rem_euclid(PI * 2.0);
+            let rotated_in_center = Minkowski::from([
+                transformed_point.coordinates[0] * (rot.cos())
+                    - transformed_point.coordinates[1] * (rot.sin()),
+                transformed_point.coordinates[0] * (rot.sin())
+                    + transformed_point.coordinates[1] * (rot.cos()),
+                transformed_point.coordinates[2],
+            ]);
+            let orientation_center_rotate = (trans_orientation + rot).rem_euclid(2.0*PI);
+            // now boost and rotate to put the vertex back into the correct spot
+            let (new_vertex_boost, new_vertex_angle) = (
+                EightEight::EIGHTEIGHT,
+                (new_vertex_num * (PI / 4.0) + (PI / 2.0)).rem_euclid(PI * 2.0),
+            );
+            let wrapped = Minkowski::from([
+                rotated_in_center.coordinates[0] * (new_vertex_angle.cos())
+                    - rotated_in_center.coordinates[1]
+                        * (new_vertex_boost.cosh())
+                        * (new_vertex_angle.sin())
+                    + rotated_in_center.coordinates[2]
+                        * (new_vertex_boost.sinh())
+                        * (new_vertex_angle.sin()),
+                rotated_in_center.coordinates[0] * (new_vertex_angle.sin())
+                    + rotated_in_center.coordinates[1]
+                        * (new_vertex_boost.cosh())
+                        * (new_vertex_angle.cos())
+                    - rotated_in_center.coordinates[2]
+                        * (new_vertex_boost.sinh())
+                        * (new_vertex_angle.cos()),
+                -rotated_in_center.coordinates[1] * (new_vertex_boost.sinh())
+                    + rotated_in_center.coordinates[2] * (new_vertex_boost.cosh()),
+            ]);
+            let final_orientation = (orientation_center_rotate + new_vertex_angle).rem_euclid(2.0*PI);
+            let wrapped_hyperbolic_position = Hyperbolic::from_minkowski_coordinates(wrapped, r.skirt());
+            *r = wrapped_hyperbolic_position;
+            properties.orientation = Angle::from(final_orientation);
+            Ok(properties)
+        } else {
+            Err(Error::CannotWrapProperties)
+        }
+    }
+}
+
+impl GenerateGhosts<Point<Hyperbolic<3>>> for Periodic<EightEight> {
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {
         self.maximum_interaction_range
@@ -199,7 +296,7 @@ where
     #[expect(clippy::too_many_lines, reason = "complicated function")]
     #[expect(clippy::cast_possible_truncation, reason = "truncating float to usize")]
     #[expect(clippy::cast_sign_loss, reason = "hard-coded positive numbers")]
-    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
+    fn generate_ghosts(&self, site_properties: &Point<Hyperbolic<3>>) -> ArrayVec<[Point<Hyperbolic<3>>; MAX_GHOSTS]> {
         let mut result = ArrayVec::new();
         let r = site_properties.position();
 
@@ -479,7 +576,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::property::Point;
+    use crate::property::{Point, OrientedHyperbolicPoint};
     use approxim::assert_relative_eq;
     use hoomd_manifold::{Hyperbolic, HyperbolicDisk};
     use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
@@ -513,6 +610,43 @@ mod tests {
         let offset = PI / 8.0;
         let point = Hyperbolic::<3>::from_polar_coordinates(boost, side * PI / 4.0 + offset, 1.0);
         let point = Point::new(point);
+        let periodic =
+            Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
+        let wrapped_point = periodic.wrap(point).expect("hard-coded");
+
+        let wrapped_side = (side + 4.0).rem_euclid(8.0);
+        let octant = (((wrapped_point.position.coordinates()[1]
+            .atan2(wrapped_point.position.coordinates()[0]))
+            / (PI / 4.0))
+            .floor())
+        .rem_euclid(8.0);
+
+        // Check that point is wraped to correct octant
+        assert_eq!(wrapped_side, octant);
+
+        // Check that point mapping is correct
+        let new_boost = 2.0
+            * (EightEight::EIGHTEIGHT.tanh()
+                / (offset.cos() - offset.sin() * (1.0 - (2.0_f64).sqrt())))
+            .atanh()
+            - boost;
+        let ans = Hyperbolic::<3>::from_polar_coordinates(
+            new_boost,
+            (wrapped_side + 1.0) * (PI / 4.0) - offset,
+            1.0,
+        );
+        assert_relative_eq!(ans, wrapped_point.position, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn wraps_orientation() {
+        let angle_offset = 0.;
+        let boost = ((EightEight::EIGHTEIGHT)* ((PI/4.0).sin())/((PI/8.0 - angle_offset).sin() + (PI/8.0 + angle_offset).sin())).atanh() + 0.001;
+        let point = Hyperbolic::<3>::from_polar_coordinates(boost, -angle_offset, 1.0);
+        let oriented_point = OrientedHyperbolicPoint {
+            position: point,
+            orientation: 
+        };
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
         let wrapped_point = periodic.wrap(point).expect("hard-coded");
