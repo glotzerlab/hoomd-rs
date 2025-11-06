@@ -90,7 +90,7 @@ impl SFC64Rng {
     /// Initialize the PRNG from 192 bits of state and a u64 counter.
     #[inline]
     #[must_use]
-    pub(crate) fn from_state_and_counter(state: [u64; 3], counter: u64) -> Self {
+    fn from_state_and_counter(state: [u64; 3], counter: u64) -> Self {
         Self::initialize(state[0], state[1], state[2], counter)
     }
 

@@ -35,11 +35,13 @@ use rand::{Rng, SeedableRng};
 ///
 /// # Performance
 ///
-/// The current implementation uses `ChaCha8`. `ChaCha` generates random numbers
-/// in 64 word batches. Benchmarks show that `Counter.new(...).make_rng()`
+/// The current implementation uses `SFC64`, which generates one 64-bit word at at time.
+/// Benchmarks show that `Counter.new(...).make_rng()`
 /// and sampling values that fall in the first batch runs at approximately
-/// 10 million operations per second (run `cargo bench` to see the measured
-/// performance on your architecture). This is slow enough that serial
+/// 100 million operations per second (run `cargo bench` to see the measured
+/// performance on your architecture). Both serial and parallel algorithms should be
+/// able to rapidly construct generators for
+/// This is fast enough that serial
 /// algorithms should make ONE random generator and sample from it repeatedly
 /// (instead of e.g. making one random generator per particle). Parallel
 /// algorithms by necessity must make many different random generators from
@@ -122,6 +124,30 @@ impl Counter {
     pub fn indices(mut self, a: u32, b: u32) -> Self {
         self.index_a = a;
         self.index_b = b;
+        self
+    }
+
+    /// Set indices from a 64-bit integer, split to fill both items.
+    ///
+    /// There are only 2 indices. Calling `indices` (or [`index`](Self::index)) more
+    /// than once will overwrite existing values.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_utility::random::Counter;
+    ///
+    /// # let step = 100_000;
+    /// # let substep = 10;
+    /// # let seed = 100;
+    /// let long_int = 1_000_000_000_000u64;
+    /// let counter = Counter::new(step, substep, seed).indices_from_u64(long_int);
+    /// ```
+    #[must_use]
+    #[inline]
+    pub fn indices_from_u64(mut self, combined_index: u64) -> Self {
+        self.index_a = (combined_index >> 32) as u32;
+        self.index_b = (combined_index & 0xFFFF_FFFF) as u32;
         self
     }
 
