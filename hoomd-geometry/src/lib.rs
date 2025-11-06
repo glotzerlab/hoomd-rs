@@ -111,7 +111,7 @@
 //! ```
 
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::InnerProduct;
+use hoomd_vector::{InnerProduct, Rotate, Rotation, Vector};
 use thiserror::Error;
 
 mod convex;
@@ -219,8 +219,13 @@ pub trait SupportMapping<V> {
 /// # Ok(())
 /// # }
 /// ```
-pub trait IntersectsAt<S, V, R> {
-    /// Test whether the set of points in one shape intersects with the set of another.
+pub trait IntersectsAt<S, V, R>
+where
+    V: Vector,
+    R: Rotation + Rotate<V>,
+ {
+    /// Test whether the set of points in one shape intersects with the set of another
+    /// (in the local frame).
     ///
     /// Each shape (`self` and `other`) remain unmodified in their own local
     /// coordinate systems. The intersection test is performed in the local
@@ -235,6 +240,32 @@ pub trait IntersectsAt<S, V, R> {
     ///
     /// [`pair_system_to_local`]: hoomd_vector::pair_system_to_local
     fn intersects_at(&self, other: &S, v_ij: &V, o_ij: &R) -> bool;
+
+    /// Test whether the set of points in one shape intersects with the set of another
+    /// (in the global frame).
+    ///
+    /// Each shape (`self` and `other`) remain unmodified in their own local
+    /// coordinate systems. The intersection test is performed in a global
+    /// coordinate system where `self` has position/orientation `r_self`/`o_self`
+    /// and other has position/orientation `r_other`/`o_other`.
+    ///
+    /// When starting with shapes in the global frame (such as in Monte Carlo
+    /// simulations), `intersects_at_global` may be faster than `intersects_at`
+    /// as it is able to check whether the bounding spheres of the shapes
+    /// overlap *before* transforming into the local coordinate system about
+    /// `self`.
+    #[inline]
+    fn intersects_at_global(&self, other: &S, r_self: &V, o_self: &R, r_other: &V, o_other: &R) -> bool {
+        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(
+            r_self,
+            o_self,
+            r_other,
+            o_other,
+        );
+
+        self.intersects_at(other, &v_ij, &o_ij)
+    }
+
 
     /// Approximate the amount of overlap between two shapes.
     ///

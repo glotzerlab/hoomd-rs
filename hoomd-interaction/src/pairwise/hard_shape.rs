@@ -76,18 +76,13 @@ where
     /// ```
     #[inline]
     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
-        let r_cut = self.0.bounding_sphere_radius().get() * 2.0;
-        if site_properties_i.position().distance_squared(site_properties_j.position()) >= r_cut.powi(2) {
-            return 0.0
-        }
-    
-        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(
-            site_properties_i.position(),
+        // Use the global form of `intersects_at` so that the circumsphere early
+        // rejection test can be performed before the expensive transformation
+        // into the local coordinate system.
+        if self.0.intersects_at_global(&self.0, site_properties_i.position(),
             site_properties_i.orientation(),
             site_properties_j.position(),
-            site_properties_j.orientation(),
-        );
-        if self.0.intersects_at(&self.0, &v_ij, &o_ij) {
+            site_properties_j.orientation()) {
             f64::INFINITY
         } else {
             0.0

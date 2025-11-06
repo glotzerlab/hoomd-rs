@@ -10,7 +10,7 @@ use hoomd_linear_algebra::{
     matrix::{DiagonalMatrix, Matrix22},
 };
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, InnerProduct, Rotate, RotationMatrix};
+use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation, RotationMatrix};
 
 use std::ops::Mul;
 
@@ -204,9 +204,10 @@ const _ELLIPSOID_K_MAX_BOUND: f64 = 1.0 - _ELLIPSOID_OVERLAP_PRECISION;
 /// Min bound of the root search for an ellipsoid characteristic polynomial.
 const _ELLIPSOID_K_MIN_BOUND: f64 = _ELLIPSOID_OVERLAP_PRECISION;
 
-impl<R: Copy + Rotate<Cartesian<2>>> IntersectsAt<Hyperellipsoid<2>, Cartesian<2>, R>
+impl<R> IntersectsAt<Hyperellipsoid<2>, Cartesian<2>, R>
     for Hyperellipsoid<2>
 where
+    R: Rotation + Rotate<Cartesian<2>>,
     RotationMatrix<2>: From<R>,
 {
     #[inline]
