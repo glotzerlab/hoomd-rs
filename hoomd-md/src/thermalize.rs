@@ -58,8 +58,8 @@ pub trait TranslationalAngularMomentumModifier<const N: usize, B, S, C> {
     fn modify(&self, microstate: &mut Microstate<B, S, C>);
 }
 
-/// Construct the [Thermalizer].
-#[derive(Clone, Debug, PartialEq)]
+/// Thermalize system's momenta
+/// according to Maxwell-Boltzmann distribtion.
 pub struct Thermalizer {
     /// The desired temperature
     pub kT: f64,
