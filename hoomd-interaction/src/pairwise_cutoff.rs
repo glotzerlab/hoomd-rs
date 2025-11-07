@@ -788,7 +788,7 @@ mod tests_finite {
                 Open,
             >,
         ) {
-            // Ensure that closures can be used as IsotropicEnergy
+            // Ensure that closures can be used as UnivariateEnergy
             let pairwise_cutoff = PairwiseCutoff(Isotropic {
                 interaction: |r| 1.0 / (r * 2.0),
                 r_cut: 2.0,

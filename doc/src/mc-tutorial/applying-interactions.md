@@ -134,22 +134,21 @@ This code implements the pairwise potential term in the Hamiltonian:
 ```
 
 The [Boxcar function] implements $` U_\mathrm{step}(r) `$ via the
-`IsotropicEnergy` trait.
+`UnivariateEnergy` trait.
 ```math
 U_\mathrm{step}(r) = \begin{cases}
 \varepsilon & r \lt \sigma \\
 0 & r \ge \sigma
 \end{cases}
 ```
-`Isotropic` is a wrapper that computes $` U(\left|\vec{r}_j -
-\vec{r}_i\right|)`$ in its implementation of `SitePairEnergy`. The
+`Isotropic` is a wrapper that computes $` U(\left|\vec{r}_j - \vec{r}_i\right|) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]`$
+in its implementation of `SitePairEnergy`. The
 `site_pair_energy()` method is a more general form that depends on the
 full set of properties of the two interacting sites: $` U(s_i, s_j) `$. The
 `PairwiseCutoff` type sums over all pairs of **sites** that are within a
 distance of $` r_\mathrm{cut} `$ *and do not belong to the same body*:
 ```math
 \sum_{i}\sum_{j>i} U\left(s_i, s_j\right)
-\left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]
 \left[b_i \ne b_j\right]
 ```
 Finally, `PairwiseCutoff` implements the `DeltaEnergyOne` trait which `Sweep`
@@ -191,8 +190,8 @@ The types `External` and `Isotropic` are single element tuples.
 To access the parameters of the inner types, you need access the elements of
 these tuples:
 * `hamiltonian.0.0.alpha` - Strength of the linear external potential.
-* `hamiltonian.1.r_cut` - Maximum cutoff radius of of the pair potential.
-* `hamiltonian.1.evaluator.0.epsilon` - Strength of the pairwise step potential.
+* `hamiltonian.1.0.r_cut` - Maximum cutoff radius of of the pair potential.
+* `hamiltonian.1.0.interaction.epsilon` - Strength of the pairwise step potential.
 
 Due to Rust's ownership model, you *cannot* use names like `boxcar.epsilon`
 to refer to parameters after constructing `hamiltonian`. You can read

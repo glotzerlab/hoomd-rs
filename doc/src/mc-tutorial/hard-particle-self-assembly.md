@@ -91,16 +91,14 @@ to 1.0.
 
 `HardShape` represents each site with the given shape. The site pair
 energy $` U_{ij} `$ is infinite when the two sites overlap and 0 when they do
-not. Use `PairwiseCutoff` with the `HardShape` evaluator as the Hamiltonian:
+not. Use `PairwiseCutoff` with the `HardShape` interaction as the Hamiltonian:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:hamiltonian}}
 ```
 
-All pairs separated by a distance larger than $` r_\mathrm{cut} `$ are assumed
-to be non-overlapping. You must choose $` r_\mathrm{cut} `$ appropriately for
-your shape(s). For the case of hard ellipses, the largest distance between the
-centers of two potentially overlapping ellipses is `sigma` &mdash; when two
-ellipses a distance `sigma` apart rotated so their their long axes just touch.
+`HardShape` checks for overlaps between pairs of sites in `site_pair_energy`.
+When any two sites overlap, the energy is infinite. When there are no overlaps,
+the energy is 0.
 
 #### Periodic Boundary Conditions
 
@@ -114,9 +112,12 @@ interaction range** between sites to construct `Periodic`:
 `Periodic` uses this distance to generate **ghost sites** *outside* the
 boundary that are periodic images of **sites** *inside*. Methods like
 `PairwiseCutoff` will compute interactions between **sites** inside the
-boundary and *all* other sites (whether they are ghosts or not). When using
-any method that has a $` r_\mathrm{cut} `$, the `maximum_interaction_range`
-should be set to the maximum of all the  $` r_\mathrm{cut} `$ values.
+boundary and *all* other sites (whether they are ghosts or not).
+All pairs separated by a distance larger than the **maximum interaction range**
+are assumed to be non-overlapping. You must choose this value appropriately for
+your shape(s). For the case of hard ellipses, the largest distance between the
+centers of two potentially overlapping ellipses is `sigma` &mdash; when two
+ellipses a distance `sigma` apart rotated so their their long axes just touch.
 
 > [!IMPORTANT]
 > In *hoomd-rs*, it is *YOUR responsibility* to determine the appropriate
@@ -178,7 +179,7 @@ prevents inserted bodies from overlapping too much, the harmonic potential
 encourages the trial moves to separate bodies, and the step function prevents
 the trial moves from moving non-overlapping sites into overlapping configurations.
 
-Express this Hamiltonian using `PairwiseCutoff` with an `Anisotropic` evaluator:
+Express this Hamiltonian using `PairwiseCutoff` with an `Anisotropic` interaction:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:insert_hamiltonian}}
 ```
