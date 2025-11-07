@@ -36,11 +36,7 @@ use hoomd_microstate::{Body, Microstate};
 ///     left,
 ///     right,
 /// };
-/// let evaluator = Isotropic(boxcar);
-/// let cutoff_pair = PairwiseCutoff {
-///     r_cut: right,
-///     evaluator,
-/// };
+/// let pairwise_cutoff = PairwiseCutoff (Isotropic { interaction: boxcar, r_cut: right });
 ///
 /// let linear = External(Linear {
 ///     alpha: 10.0,
@@ -48,7 +44,7 @@ use hoomd_microstate::{Body, Microstate};
 ///     plane_normal: [0.0, 1.0].try_into()?,
 /// });
 ///
-/// let hamiltonian = (cutoff_pair, linear);
+/// let hamiltonian = (pairwise_cutoff, linear);
 ///
 /// let delta_energy = hamiltonian.delta_energy_one(
 ///     &microstate,
@@ -109,11 +105,7 @@ where
 ///     left,
 ///     right,
 /// };
-/// let evaluator = Isotropic(boxcar);
-/// let cutoff_pair = PairwiseCutoff {
-///     r_cut: right,
-///     evaluator,
-/// };
+/// let pairwise_cutoff = PairwiseCutoff (Isotropic { interaction: boxcar, r_cut: right });
 ///
 /// let linear = External(Linear {
 ///     alpha: 1.0,
@@ -121,7 +113,7 @@ where
 ///     plane_normal: [0.0, 1.0].try_into()?,
 /// });
 ///
-/// let hamiltonian = (cutoff_pair, linear);
+/// let hamiltonian = (pairwise_cutoff, linear);
 ///
 /// let total_energy = hamiltonian.total_energy(&microstate);
 /// assert_eq!(total_energy, 10.0);
@@ -166,11 +158,7 @@ where
 ///     left,
 ///     right,
 /// };
-/// let evaluator = Isotropic(boxcar);
-/// let cutoff_pair = PairwiseCutoff {
-///     r_cut: right,
-///     evaluator,
-/// };
+/// let pairwise_cutoff = PairwiseCutoff (Isotropic { interaction: boxcar, r_cut: right });
 ///
 /// let linear = External(Linear {
 ///     alpha: 1.0,
@@ -178,7 +166,7 @@ where
 ///     plane_normal: [0.0, 1.0].try_into()?,
 /// });
 ///
-/// let hamiltonian = (cutoff_pair, linear);
+/// let hamiltonian = (pairwise_cutoff, linear);
 ///
 /// let new_body = Body::point(Cartesian::from([1.0, 4.0]));
 /// let delta_energy = hamiltonian.delta_energy_insert(&microstate, &new_body);

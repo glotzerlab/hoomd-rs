@@ -39,7 +39,7 @@ use hoomd_vector::Metric;
 ///     epsilon: 1.5,
 ///     sigma: 2.0,
 /// };
-/// let lennard_jones = Isotropic(lennard_jones);
+/// let lennard_jones = Isotropic{interaction: lennard_jones, r_cut: 2.5};
 ///
 /// let energy = lennard_jones.site_pair_energy(&a, &b);
 /// assert_eq!(energy, -1.5);

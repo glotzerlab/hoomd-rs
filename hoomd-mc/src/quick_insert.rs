@@ -242,7 +242,7 @@ impl<D> QuickInsert<D> {
     /// let translate = Translate::with_maximum_distance(0.1.try_into()?);
     /// let translate_sweep = Sweep(translate);
     ///
-    /// let cutoff_pair = PairwiseCutoff {
+    /// let pairwise_cutoff = PairwiseCutoff {
     ///     r_cut: 1.0,
     ///     evaluator: Isotropic(Expanded {
     ///         delta: 1.0,
@@ -256,9 +256,9 @@ impl<D> QuickInsert<D> {
     ///     .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
     ///     .try_build()?;
     ///
-    /// quick_insert.apply(&mut microstate, &cutoff_pair);
+    /// quick_insert.apply(&mut microstate, &pairwise_cutoff);
     ///
-    /// translate_sweep.apply(&mut microstate, &cutoff_pair, &macrostate);
+    /// translate_sweep.apply(&mut microstate, &pairwise_cutoff, &macrostate);
     ///
     /// assert!(microstate.bodies().len() > 1);
     /// # Ok(())

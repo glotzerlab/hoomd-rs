@@ -116,14 +116,14 @@ impl Fill {
         };
 
         let evaluator = Isotropic(lj);
-        let cutoff_pair = PairwiseCutoff {
+        let pairwise_cutoff = PairwiseCutoff {
             r_cut: 0.5,
             evaluator,
         };
 
         let macrostate = Isothermal { temperature: 1.0 };
 
-        let hamiltonian = cutoff_pair;
+        let hamiltonian = pairwise_cutoff;
         let d = 0.01;
 
         let hyp_translate = Translate::with_maximum_distance(d.try_into()?);

@@ -77,11 +77,11 @@ where
     /// use hoomd_vector::{Angle, Cartesian};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let approximate_shape_overlap = Anisotropic(ApproximateShapeOverlap::new(
+    /// let approximate_shape_overlap = Anisotropic { interaction: ApproximateShapeOverlap::new(
     ///     Convex(ConvexPolygon::regular(6)),
     ///     OverlapPenalty::default(),
     ///     0.01.try_into()?,
-    /// ));
+    /// ), r_cut: 2.0};
     ///
     /// let a = OrientedPoint {
     ///     position: Cartesian::from([0.0, 0.0]),

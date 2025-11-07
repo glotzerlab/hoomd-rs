@@ -39,7 +39,7 @@ use hoomd_vector::{Rotate, Rotation, Vector};
 ///     cos_delta: (PI / 8.0).cos(),
 /// }];
 ///
-/// let angular_mask = Anisotropic(AngularMask::new(boxcar, masks));
+/// let angular_mask = Anisotropic{interaction: AngularMask::new(boxcar, masks), r_cut: 1.5};
 /// # Ok(())
 /// # }
 /// ```
@@ -83,7 +83,7 @@ where
     ///     cos_delta: (PI / 8.0).cos(),
     /// }];
     ///
-    /// let angular_mask = Anisotropic(AngularMask::new(boxcar, masks));
+    /// let angular_mask = Anisotropic{ interaction: AngularMask::new(boxcar, masks), r_cut: 1.5};
     ///
     /// let a = OrientedPoint {
     ///     position: Cartesian::from([0.0, 0.0]),

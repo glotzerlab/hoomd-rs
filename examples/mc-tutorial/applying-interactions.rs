@@ -66,14 +66,14 @@ impl Fill {
             right: sigma,
         };
         let isotropic = Isotropic(boxcar);
-        let cutoff_pair = PairwiseCutoff {
+        let pairwise_cutoff = PairwiseCutoff {
             r_cut: sigma,
             evaluator: isotropic,
         };
         // ANCHOR_END: pair
 
         // ANCHOR: hamiltonian
-        let hamiltonian = (linear, cutoff_pair);
+        let hamiltonian = (linear, pairwise_cutoff);
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: sweep
