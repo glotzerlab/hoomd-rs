@@ -146,6 +146,77 @@ impl<const N: usize, const M: usize> SubAssign for Matrix<N, M> {
             .for_each(|(x, r)| *x -= r);
     }
 }
+impl<const N: usize, const M: usize> Matrix<N, M> {
+    /// Extract a single row from a matrix.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    ///
+    /// let m: Matrix<2, 3> = Matrix {
+    ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
+    /// };
+    /// let row = m.get_row(1);
+    /// assert_eq!(row.rows, [[4.0, 5.0, 6.0]]);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn get_row(&self, row_index: usize) -> Matrix<1, M> {
+        Matrix {
+            rows: [self.rows[row_index]],
+        }
+    }
+
+    /// Extract a single column from a matrix.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    ///
+    /// let m: Matrix<2, 3> = Matrix {
+    ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
+    /// };
+    /// let col = m.get_col(1);
+    /// assert_eq!(col.rows, [[2.0], [5.0]]);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn get_col(&self, col_index: usize) -> Matrix<N, 1> {
+        Matrix {
+            rows: std::array::from_fn(|i| [self.rows[i][col_index]]),
+        }
+    }
+
+    /// Extract a submatrix of size `R`x`C` starting at `(start_row, start_col)`.
+    ///
+    /// # Panics
+    ///
+    /// If the requested data is out-of-bounds.
+    ///
+    /// # Examples
+    /// ```
+    /// use hoomd_linear_algebra::matrix::Matrix;
+    ///
+    /// let m: Matrix<3, 3> = Matrix {
+    ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
+    /// };
+    /// let sub = m.get_slice::<2, 2>(1, 1);
+    /// assert_eq!(sub.rows, [[5.0, 6.0], [8.0, 9.0]]);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn get_slice<const R: usize, const C: usize>(
+        &self,
+        start_row: usize,
+        start_col: usize,
+    ) -> Matrix<R, C> {
+        Matrix {
+            rows: std::array::from_fn(|i| {
+                std::array::from_fn(|j| self.rows[start_row + i][start_col + j])
+            }),
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -347,5 +418,43 @@ mod tests {
     ) {
         let a = Matrix { rows: a_rows };
         assert_eq!(a.clone() * x, x * a);
+    }
+
+    #[test]
+    fn test_get_row() {
+        let m: Matrix<2, 3> = Matrix {
+            rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
+        };
+        let row0 = m.get_row(0);
+        assert_eq!(row0.rows, [[1.0, 2.0, 3.0]]);
+        let row1 = m.get_row(1);
+        assert_eq!(row1.rows, [[4.0, 5.0, 6.0]]);
+    }
+
+    #[test]
+    fn test_get_col() {
+        let m: Matrix<2, 3> = Matrix {
+            rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
+        };
+        let col0 = m.get_col(0);
+        assert_eq!(col0.rows, [[1.0], [4.0]]);
+        let col2 = m.get_col(2);
+        assert_eq!(col2.rows, [[3.0], [6.0]]);
+    }
+
+    #[test]
+    fn test_get_slice() {
+        let m: Matrix<3, 4> = Matrix {
+            rows: [
+                [1.0, 2.0, 3.0, 4.0],
+                [5.0, 6.0, 7.0, 8.0],
+                [9.0, 10.0, 11.0, 12.0],
+            ],
+        };
+        let sub = m.get_slice::<2, 2>(1, 1);
+        assert_eq!(sub.rows, [[6.0, 7.0], [10.0, 11.0]]);
+
+        let sub2 = m.get_slice::<1, 3>(0, 1);
+        assert_eq!(sub2.rows, [[2.0, 3.0, 4.0]]);
     }
 }
