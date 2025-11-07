@@ -3,13 +3,18 @@
 
 /// ``std::ops`` implementations for [`Matrix`]
 mod ops;
+/// ``qr`` decomposition for [`Matrix`] types.
+mod qr;
 
 pub use crate::diagonal::DiagonalMatrix;
 
 use std::fmt;
 
 /// A lightweight representation of a diagonal matrix.
-use crate::{Diagonal, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
+use crate::{
+    Diagonal, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix,
+    matrix::qr::qr_decomposition,
+};
 
 /// A matrix with N rows and M columns, allocated on the stack.
 #[derive(Clone, Debug, PartialEq)]
@@ -388,6 +393,12 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     #[inline]
     pub const fn shape(&self) -> (usize, usize) {
         (self.n_rows(), self.n_cols())
+    }
+    /// Compute the QR decomposition of a matrix $`A`$ such that $`A = QR`$ where Q is orthogonal and R is upper triangular.
+    #[must_use]
+    #[inline]
+    pub fn qr(&self) -> (Matrix<M, M>, Matrix<N, M>) {
+        qr_decomposition(self)
     }
 }
 impl<const N: usize> Matrix<N, N> {
