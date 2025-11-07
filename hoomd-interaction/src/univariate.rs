@@ -2,8 +2,6 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Interactions as a function of one variable.
-//!
-//! TODO: Document
 
 mod boxcar;
 mod expanded;
