@@ -25,7 +25,7 @@ digraph hoomd_rs {
         SiteEnergy
         // pairwise
         AnisotropicEnergy
-        IsotropicEnergy
+        UnivariateEnergy
 
         Hamiltonian [ label="TotalEnergy\nDeltaEnergyRemove\nDeltaEnergyOne\nDeltaEnergyInsert"]
 
@@ -38,14 +38,14 @@ digraph hoomd_rs {
         Linear -> SiteEnergy
         AngularMask -> AnisotropicEnergy
         AnisotropicEnergy -> Anisotropic
-        Expanded -> IsotropicEnergy [ dir=both ]
+        Expanded -> UnivariateEnergy [ dir=both ]
         HardShape -> SitePairEnergy
         HardSphere -> SitePairEnergy
-        isotropic_potentials -> IsotropicEnergy
-        IsotropicEnergy -> Isotropic
+        isotropic_potentials -> UnivariateEnergy
+        UnivariateEnergy -> Isotropic
         Isotropic -> SitePairEnergy
-        Shifted -> IsotropicEnergy [ dir=both ]
-        Xplor -> IsotropicEnergy [ dir=both ]
+        Shifted -> UnivariateEnergy [ dir=both ]
+        Xplor -> UnivariateEnergy [ dir=both ]
         Anisotropic -> SitePairEnergy
 
         External -> Hamiltonian
@@ -61,7 +61,7 @@ digraph hoomd_rs {
         Expanded [ URL="../api/hoomd_interaction/pairwise/struct.Expanded.html" ]
         Xplor [ URL="../api/hoomd_interaction/pairwise/struct.Xplor.html" ]
         Isotropic [ URL="../api/hoomd_interaction/pairwise/struct.Isotropic.html" ]
-        IsotropicEnergy [ URL="../api/hoomd_interaction/pairwise/struct.IsotropicEnergy.html" ]
+        UnivariateEnergy [ URL="../api/hoomd_interaction/pairwise/struct.UnivariateEnergy.html" ]
         SitePairEnergy [ URL="../api/hoomd_interaction/trait.SitePairEnergy.html" ]
         PairwiseCutoff [ URL="../api/hoomd_interaction/struct.PairwiseCutoff.html" ]
         Linear [ URL="../api/hoomd_interaction/external/struct.Linear.html" ]

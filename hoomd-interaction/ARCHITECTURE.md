@@ -23,8 +23,8 @@ separate traits. Similarly, anisotropic interactions require more information to
 compute than isotropic ones. This leads to a number of possible traits that each
 interaction type can implement (or not) as appropriate:
 
-* `pairwise::IsotropicForce`
-* `pairwise::IsotropicEnergy`
+* `pairwise::UnivariateForce`
+* `pairwise::UnivariateEnergy`
 * `pairwise::AnisotropicForce`
 * `pairwise::AnisotropicPairwiseEnergy`
 
