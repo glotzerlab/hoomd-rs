@@ -195,6 +195,186 @@ impl<E> PairwiseCutoff<E> {
             0.0
         }
     }
+
+    /// Compute the filtered energy contribution of a single site (`AllPairs` specialization)
+    #[inline(always)]
+    fn filtered_site_energy_all<P, B, S, X, C, F, F2>(
+        &self,
+        microstate: &Microstate<B, S, X, C>,
+        site_i_properties: &S,
+        filter: F,
+        site_pair_energy: F2,
+    ) -> f64
+    where
+        E: SitePairEnergy<S>,
+        S: Position<Position = P>,
+        X: PointsNearBall<P, SiteKey>,
+        P: Metric,
+        F: Fn(&Site<S>) -> bool,
+        F2: Fn(&E, &S, &S) -> f64,
+    {
+        let mut energy = 0.0;
+
+        for site_j in microstate.sites().iter().chain(microstate.ghosts()) {
+            if filter(site_j)
+                && (E::performs_own_distance_check()
+                    || site_i_properties
+                        .position()
+                        .distance_squared(site_j.properties.position())
+                        < self.r_cut.powi(2))
+            {
+                let one = site_pair_energy(&self.evaluator, site_i_properties, &site_j.properties);
+                if one == f64::INFINITY {
+                    return one;
+                }
+
+                energy += one;
+            }
+        }
+
+        energy
+    }
+
+    /// Compute the filtered energy contribution of a single site (spatial data specialization)
+    #[inline(always)]
+    fn filtered_site_energy_spatial<P, B, S, X, C, F, F2>(
+        &self,
+        microstate: &Microstate<B, S, X, C>,
+        site_i_properties: &S,
+        filter: F,
+        site_pair_energy: F2,
+    ) -> f64
+    where
+        E: SitePairEnergy<S>,
+        S: Position<Position = P>,
+        X: PointsNearBall<P, SiteKey>,
+        P: Metric,
+        F: Fn(&Site<S>) -> bool,
+        F2: Fn(&E, &S, &S) -> f64,
+    {
+        let mut energy = 0.0;
+
+        for site_j in microstate.iter_sites_near(site_i_properties.position(), self.r_cut) {
+            if filter(site_j)
+                && (E::performs_own_distance_check()
+                    || site_i_properties
+                        .position()
+                        .distance_squared(site_j.properties.position())
+                        < self.r_cut.powi(2))
+            {
+                let one = site_pair_energy(&self.evaluator, site_i_properties, &site_j.properties);
+                if one == f64::INFINITY {
+                    return one;
+                }
+
+                energy += one;
+            }
+        }
+
+        energy
+    }
+
+    /// Compute the filtered energy contribution of a single site.
+    #[inline(always)]
+    fn filtered_site_energy<P, B, S, X, C, F, F2>(
+        &self,
+        microstate: &Microstate<B, S, X, C>,
+        site_i_properties: &S,
+        filter: F,
+        site_pair_energy: F2,
+    ) -> f64
+    where
+        E: SitePairEnergy<S>,
+        S: Position<Position = P>,
+        X: PointsNearBall<P, SiteKey>,
+        P: Metric,
+        F: Fn(&Site<S>) -> bool,
+        F2: Fn(&E, &S, &S) -> f64,
+    {
+        if X::is_all_pairs() {
+            self.filtered_site_energy_all(microstate, site_i_properties, filter, site_pair_energy)
+        } else {
+            self.filtered_site_energy_spatial(
+                microstate,
+                site_i_properties,
+                filter,
+                site_pair_energy,
+            )
+        }
+    }
+
+    /// Compute the final energy of a body in the microstate.
+    #[inline(always)]
+    fn filtered_body_energy_final<P, B, S, X, C, F>(
+        &self,
+        microstate: &Microstate<B, S, X, C>,
+        body: &Body<B, S>,
+        filter: F,
+    ) -> f64
+    where
+        E: SitePairEnergy<S>,
+        B: Transform<S>,
+        S: Position<Position = P>,
+        X: PointsNearBall<P, SiteKey>,
+        C: Wrap<B> + Wrap<S>,
+        P: Metric,
+        F: Fn(&Site<S>) -> bool,
+    {
+        let mut energy_final = 0.0;
+        for s in &body.sites {
+            match microstate.boundary().wrap(body.properties.transform(s)) {
+                Err(_) => return f64::INFINITY,
+                Ok(site_i_properties) => {
+                    let one = self.filtered_site_energy(
+                        microstate,
+                        &site_i_properties,
+                        &filter,
+                        E::site_pair_energy,
+                    );
+                    if one == f64::INFINITY {
+                        return one;
+                    }
+
+                    energy_final += one;
+                }
+            }
+        }
+        energy_final
+    }
+
+    /// Compute the initial energy of a body in the microstate.
+    #[inline(always)]
+    fn filtered_body_energy_initial<P, B, S, X, C, F>(
+        &self,
+        microstate: &Microstate<B, S, X, C>,
+        body_index: usize,
+        filter: F,
+    ) -> f64
+    where
+        E: SitePairEnergy<S>,
+        S: Position<Position = P>,
+        X: PointsNearBall<P, SiteKey>,
+        P: Metric,
+        F: Fn(&Site<S>) -> bool,
+    {
+        let mut energy_initial = 0.0;
+        if !E::is_only_infinite_or_zero() {
+            for site_i in microstate.iter_body_sites(body_index) {
+                let one = self.filtered_site_energy(
+                    microstate,
+                    &site_i.properties,
+                    &filter,
+                    E::site_pair_energy_initial,
+                );
+                if one == f64::INFINITY {
+                    return one;
+                }
+
+                energy_initial += one;
+            }
+        }
+        energy_initial
+    }
 }
 
 impl<P, B, S, X, C, E> TotalEnergy<Microstate<B, S, X, C>> for PairwiseCutoff<E>
@@ -276,27 +456,26 @@ where
     #[inline]
     fn total_energy(&self, microstate: &Microstate<B, S, X, C>) -> f64 {
         let mut total = 0.0;
-        for site_i in microstate.sites() {
-            for site_j in microstate.iter_sites_near(site_i.properties.position(), self.r_cut) {
-                if site_i.site_tag < site_j.site_tag
-                    && site_i.body_tag != site_j.body_tag
-                    && (E::performs_own_distance_check()
-                        || site_i
-                            .properties
-                            .position()
-                            .distance_squared(site_j.properties.position())
-                            < self.r_cut.powi(2))
-                {
-                    let one = self
-                        .evaluator
-                        .site_pair_energy(&site_i.properties, &site_j.properties);
-                    if one == f64::INFINITY {
-                        return one;
-                    }
 
-                    total += one;
-                }
+        // If needed, total_energy could specialize further in the all-pairs
+        // code path. The current implementation performs many unneeded
+        // site_i.site_tag < site_j.site_tag checks. However, the solution is
+        // non-trivial. It would need to loop over the j sites *by tag*
+        // to avoid looping over unneeded sites. The ghost loop would need
+        // to be separate and include the tag filter.
+
+        for site_i in microstate.sites() {
+            let one = self.filtered_site_energy(
+                microstate,
+                &site_i.properties,
+                |site_j| site_i.site_tag < site_j.site_tag && site_i.body_tag != site_j.body_tag,
+                E::site_pair_energy,
+            );
+            if one == f64::INFINITY {
+                return one;
             }
+
+            total += one;
         }
 
         total
@@ -404,109 +583,18 @@ where
     ) -> f64 {
         let body_tag = initial_microstate.bodies()[body_index].tag;
 
-        let mut energy_final = 0.0;
-        for s in &final_body.sites {
-            match initial_microstate
-                .boundary()
-                .wrap(final_body.properties.transform(s))
-            {
-                Err(_) => return f64::INFINITY,
-                Ok(site_i_properties) => {
-                    if X::is_all_pairs() {
-                        for site_j in initial_microstate.sites().iter().chain(initial_microstate.ghosts())
-                        {
-                            if body_tag != site_j.body_tag
-                                && (E::performs_own_distance_check()
-                                    || site_i_properties
-                                        .position()
-                                        .distance_squared(site_j.properties.position())
-                                        < self.r_cut.powi(2))
-                            {
-                                let one = self
-                                    .evaluator
-                                    .site_pair_energy(&site_i_properties, &site_j.properties);
-                                if one == f64::INFINITY {
-                                    return one;
-                                }
-
-                                energy_final += one;
-                            }
-                        }
-                    } else {
-                        for site_j in
-                            initial_microstate.iter_sites_near(site_i_properties.position(), self.r_cut)
-                        {
-                            if body_tag != site_j.body_tag
-                                && (E::performs_own_distance_check()
-                                    || site_i_properties
-                                        .position()
-                                        .distance_squared(site_j.properties.position())
-                                        < self.r_cut.powi(2))
-                            {
-                                let one = self
-                                    .evaluator
-                                    .site_pair_energy(&site_i_properties, &site_j.properties);
-                                if one == f64::INFINITY {
-                                    return one;
-                                }
-
-                                energy_final += one;
-                            }
-                        }
-                    }
-                }
-            }
+        let energy_final =
+            self.filtered_body_energy_final(initial_microstate, final_body, |site_j| {
+                body_tag != site_j.body_tag
+            });
+        if energy_final == f64::INFINITY {
+            return energy_final;
         }
 
-        let mut energy_initial = 0.0;
-        if !E::is_only_infinite_or_zero() {
-            for site_i in initial_microstate.iter_body_sites(body_index) {
-                if X::is_all_pairs() {
-                    for site_j in initial_microstate.sites().iter().chain(initial_microstate.ghosts())
-                    {
-                        if body_tag != site_j.body_tag
-                            && (E::performs_own_distance_check()
-                                || site_i
-                                    .properties
-                                    .position()
-                                    .distance_squared(site_j.properties.position())
-                                    < self.r_cut.powi(2))
-                        {
-                            let one = self
-                                .evaluator
-                                .site_pair_energy_initial(&site_i.properties, &site_j.properties);
-                            if one == f64::INFINITY {
-                                return one;
-                            }
-
-                            energy_initial += one;
-                        }
-                    }
-                } else {
-                    for site_j in
-                        initial_microstate.iter_sites_near(site_i.properties.position(), self.r_cut)
-                    {
-                        if body_tag != site_j.body_tag
-                            && (E::performs_own_distance_check()
-                                || site_i
-                                    .properties
-                                    .position()
-                                    .distance_squared(site_j.properties.position())
-                                    < self.r_cut.powi(2))
-                        {
-                            let one = self
-                                .evaluator
-                                .site_pair_energy_initial(&site_i.properties, &site_j.properties);
-                            if one == f64::INFINITY {
-                                return one;
-                            }
-
-                            energy_initial += one;
-                        }
-                    }
-                }
-            }
-        }
+        let energy_initial =
+            self.filtered_body_energy_initial(initial_microstate, body_index, |site_j| {
+                body_tag != site_j.body_tag
+            });
 
         energy_final - energy_initial
     }
@@ -597,38 +685,7 @@ where
     ) -> f64 {
         // The new body is not yet in the microstate, so there is no need to
         // filter matching body tags. The new body does not yet have a tag.
-        let mut energy_final = 0.0;
-        for s in &new_body.sites {
-            match initial_microstate
-                .boundary()
-                .wrap(new_body.properties.transform(s))
-            {
-                Err(_) => return f64::INFINITY,
-                Ok(site_i_properties) => {
-                    for site_j in
-                        initial_microstate.iter_sites_near(site_i_properties.position(), self.r_cut)
-                    {
-                        if E::performs_own_distance_check()
-                            || site_i_properties
-                                .position()
-                                .distance_squared(site_j.properties.position())
-                                < self.r_cut.powi(2)
-                        {
-                            let one = self
-                                .evaluator
-                                .site_pair_energy(&site_i_properties, &site_j.properties);
-                            if one == f64::INFINITY {
-                                return one;
-                            }
-
-                            energy_final += one;
-                        }
-                    }
-                }
-            }
-        }
-
-        energy_final
+        self.filtered_body_energy_final(initial_microstate, new_body, |_| true)
     }
 }
 
@@ -711,33 +768,10 @@ where
         body_index: usize,
     ) -> f64 {
         let body_tag = initial_microstate.bodies()[body_index].tag;
-
-        let mut energy_initial = 0.0;
-        if !E::is_only_infinite_or_zero() {
-            for site_i in initial_microstate.iter_body_sites(body_index) {
-                for site_j in
-                    initial_microstate.iter_sites_near(site_i.properties.position(), self.r_cut)
-                {
-                    if body_tag != site_j.body_tag
-                        && (E::performs_own_distance_check()
-                            || site_i
-                                .properties
-                                .position()
-                                .distance_squared(site_j.properties.position())
-                                < self.r_cut.powi(2))
-                    {
-                        let one = self
-                            .evaluator
-                            .site_pair_energy_initial(&site_i.properties, &site_j.properties);
-                        if one == f64::INFINITY {
-                            return one;
-                        }
-
-                        energy_initial += one;
-                    }
-                }
-            }
-        }
+        let energy_initial =
+            self.filtered_body_energy_initial(initial_microstate, body_index, |site_j| {
+                body_tag != site_j.body_tag
+            });
 
         -energy_initial
     }
@@ -978,10 +1012,7 @@ mod tests_finite {
                 .expect("hard-coded bodies should be in the boundary");
 
             let mut microstate_final = microstate_initial.clone();
-            let harmonic_repulsion: HarmonicRepulsion = HarmonicRepulsion {
-                a: 5.0,
-                r_cut: 5.0,
-            };
+            let harmonic_repulsion: HarmonicRepulsion = HarmonicRepulsion { a: 5.0, r_cut: 5.0 };
             let cutoff_pair = PairwiseCutoff {
                 r_cut: 5.0,
                 evaluator: Isotropic(harmonic_repulsion),
@@ -1105,10 +1136,7 @@ mod tests_finite {
                 .expect("hard-coded bodies should be in the boundary");
 
             let mut microstate_final = microstate_initial.clone();
-            let harmonic_repulsion: HarmonicRepulsion = HarmonicRepulsion {
-                a: 5.0,
-                r_cut: 5.0,
-            };
+            let harmonic_repulsion: HarmonicRepulsion = HarmonicRepulsion { a: 5.0, r_cut: 5.0 };
             let cutoff_pair = PairwiseCutoff {
                 r_cut: 5.0,
                 evaluator: Isotropic(harmonic_repulsion),
