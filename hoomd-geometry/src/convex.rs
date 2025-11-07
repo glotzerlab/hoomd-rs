@@ -106,8 +106,9 @@ where
         r_other: &Cartesian<2>,
         o_other: &R,
     ) -> bool {
-        let r_cut = self.0.bounding_sphere_radius().get() + other.0.bounding_sphere_radius().get();
-        if r_self.distance_squared(r_other) >= r_cut.powi(2) {
+        let max_separation =
+            self.0.bounding_sphere_radius().get() + other.0.bounding_sphere_radius().get();
+        if r_self.distance_squared(r_other) >= max_separation.powi(2) {
             return false;
         }
 

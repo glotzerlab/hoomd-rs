@@ -90,8 +90,8 @@ fn sync_sites(
                     0.0,
                 ),
                 site.properties.orientation.theta as f32,
-                (simulation.hamiltonian.0.0.semi_axes[0].get() * 2.0) as f32,
-                (simulation.hamiltonian.0.0.semi_axes[1].get() * 2.0) as f32,
+                (simulation.hamiltonian.0.0.semi_axes()[0].get() * 2.0) as f32,
+                (simulation.hamiltonian.0.0.semi_axes()[1].get() * 2.0) as f32,
             )
         }),
     );
@@ -117,8 +117,8 @@ fn sync_ghosts(
                     0.0,
                 ),
                 site.properties.orientation.theta as f32,
-                (simulation.hamiltonian.0.0.semi_axes[0].get() * 2.0) as f32,
-                (simulation.hamiltonian.0.0.semi_axes[1].get() * 2.0) as f32,
+                (simulation.hamiltonian.0.0.semi_axes()[0].get() * 2.0) as f32,
+                (simulation.hamiltonian.0.0.semi_axes()[1].get() * 2.0) as f32,
             )
         }),
     );

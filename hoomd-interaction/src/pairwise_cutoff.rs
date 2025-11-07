@@ -109,9 +109,7 @@ use hoomd_spatial::PointsNearBall;
 /// use hoomd_microstate::property::Point;
 /// use hoomd_vector::Cartesian;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let ellipse = Ellipse {
-///     semi_axes: [4.0.try_into()?, 1.0.try_into()?],
-/// };
+/// let ellipse = Ellipse::with_semi_axes([4.0.try_into()?, 1.0.try_into()?]);
 /// let hard_ellipse = PairwiseCutoff(HardShape(ellipse));
 /// # Ok(())
 /// # }
@@ -1432,9 +1430,7 @@ mod test_infinite {
             let mut microstate = Microstate::new();
             microstate.extend_bodies([body_a, body_b.clone()])?;
 
-            let ellipse = Ellipse {
-                semi_axes: [1.0.try_into()?, 2.0.try_into()?],
-            };
+            let ellipse = Ellipse::with_semi_axes([1.0.try_into()?, 2.0.try_into()?]);
             let hard_ellipse = PairwiseCutoff(HardShape(ellipse));
 
             // The initial configuration should have infinite energy.

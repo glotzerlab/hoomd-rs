@@ -77,12 +77,10 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: parameters
 
         // ANCHOR: hamiltonian
-        let ellipse = Ellipse {
-            semi_axes: [
-                (sigma / 2.0).try_into()?,
-                (sigma / aspect / 2.0).try_into()?,
-            ],
-        };
+        let ellipse = Ellipse::with_semi_axes([
+            (sigma / 2.0).try_into()?,
+            (sigma / aspect / 2.0).try_into()?,
+        ]);
         let hamiltonian = PairwiseCutoff(HardShape(ellipse.clone()));
         // ANCHOR_END: hamiltonian
 

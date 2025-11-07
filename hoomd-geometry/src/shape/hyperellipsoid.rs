@@ -10,7 +10,7 @@ use hoomd_linear_algebra::{
     matrix::{DiagonalMatrix, Matrix22},
 };
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation, RotationMatrix};
+use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMatrix};
 
 use std::ops::Mul;
 
@@ -27,18 +27,19 @@ use std::ops::Mul;
 /// use std::f64::consts::PI;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let ellipse = Hyperellipsoid {
-///     semi_axes: [1.0.try_into()?, 2.0.try_into()?],
-/// };
+/// let ellipse =
+///     Hyperellipsoid::with_semi_axes([1.0.try_into()?, 2.0.try_into()?]);
 /// let bounding_radius = ellipse.bounding_sphere_radius();
 /// let volume = ellipse.volume();
 ///
 /// assert_eq!(bounding_radius.get(), 2.0);
 /// assert_relative_eq!(volume, PI * 1.0 * 2.0);
 ///
-/// let sphere = Hyperellipsoid {
-///     semi_axes: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?],
-/// };
+/// let sphere = Hyperellipsoid::with_semi_axes([
+///     2.0.try_into()?,
+///     2.0.try_into()?,
+///     2.0.try_into()?,
+/// ]);
 /// let bounding_radius = sphere.bounding_sphere_radius();
 /// let volume = sphere.volume();
 ///
@@ -49,8 +50,42 @@ use std::ops::Mul;
 /// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hyperellipsoid<const N: usize> {
-    /// The principle semi-axes of the [`Hyperellipsoid`] along each cartesian direction.
-    pub semi_axes: [PositiveReal; N],
+    /// The principle semi-axes of the [`Hyperellipsoid`] along each Cartesian direction.
+    semi_axes: [PositiveReal; N],
+
+    /// The bounding sphere radius.
+    bounding_sphere_radius: PositiveReal,
+}
+
+impl<const N: usize> Hyperellipsoid<N> {
+    /// Construct a new Hyperellipsoid with the given semi-axes along each Cartesian direction.
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "Panic would occur due to a bug in hoomd-rs."
+    )]
+    #[must_use]
+    #[inline]
+    pub fn with_semi_axes(semi_axes: [PositiveReal; N]) -> Self {
+        let bounding_sphere_radius = semi_axes
+            .iter()
+            .map(PositiveReal::get)
+            .reduce(f64::max)
+            .expect("N must be greater than or equal to 1")
+            .try_into()
+            .expect("expression evaluates to a positive real");
+
+        Self {
+            semi_axes,
+            bounding_sphere_radius,
+        }
+    }
+
+    /// Get the semi axes.
+    #[must_use]
+    #[inline]
+    pub fn semi_axes(&self) -> &[PositiveReal; N] {
+        &self.semi_axes
+    }
 }
 
 /// A circle scaled along the x and y axes.
@@ -64,9 +99,7 @@ pub struct Hyperellipsoid<const N: usize> {
 /// use std::f64::consts::PI;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let ellipse = Ellipse {
-///     semi_axes: [1.0.try_into()?, 2.0.try_into()?],
-/// };
+/// let ellipse = Ellipse::with_semi_axes([1.0.try_into()?, 2.0.try_into()?]);
 /// let bounding_radius = ellipse.bounding_sphere_radius();
 /// let volume = ellipse.volume();
 ///
@@ -84,16 +117,14 @@ pub struct Hyperellipsoid<const N: usize> {
 /// use hoomd_vector::Angle;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let long_ellipse = Ellipse {
-///     semi_axes: [0.5.try_into()?, 3.0.try_into()?],
-/// };
-/// let round_ellipse = Ellipse {
-///     semi_axes: [1.0.try_into()?, 2.0.try_into()?],
-/// };
+/// let long_ellipse =
+///     Ellipse::with_semi_axes([0.5.try_into()?, 3.0.try_into()?]);
+/// let round_ellipse =
+///     Ellipse::with_semi_axes([1.0.try_into()?, 2.0.try_into()?]);
 ///
 /// let v_ij = [
 ///     0.0,
-///     long_ellipse.semi_axes[1].get() + round_ellipse.semi_axes[1].get()
+///     long_ellipse.semi_axes()[1].get() + round_ellipse.semi_axes()[1].get()
 ///         - 0.1,
 /// ]
 /// .into();
@@ -118,9 +149,11 @@ pub type Ellipse = Hyperellipsoid<2>;
 /// use std::f64::consts::PI;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let sphere = Ellipsoid {
-///     semi_axes: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?],
-/// };
+/// let sphere = Ellipsoid::with_semi_axes([
+///     2.0.try_into()?,
+///     2.0.try_into()?,
+///     2.0.try_into()?,
+/// ]);
 /// let bounding_radius = sphere.bounding_sphere_radius();
 /// let volume = sphere.volume();
 ///
@@ -136,9 +169,11 @@ pub type Ellipse = Hyperellipsoid<2>;
 /// use hoomd_vector::Versor;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let ellipsoid = Convex(Ellipsoid {
-///     semi_axes: [1.0.try_into()?, 2.0.try_into()?, 3.0.try_into()?],
-/// });
+/// let ellipsoid = Convex(Ellipsoid::with_semi_axes([
+///     1.0.try_into()?,
+///     2.0.try_into()?,
+///     3.0.try_into()?,
+/// ]));
 /// let q = Versor::default();
 ///
 /// assert_eq!(
@@ -174,18 +209,7 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperellipsoid<N> {
 impl<const N: usize> BoundingSphereRadius for Hyperellipsoid<N> {
     #[inline]
     fn bounding_sphere_radius(&self) -> PositiveReal {
-        // TODO: Test this in a benchmark and refactor if needed. Convex was experiencing a
-        // slowdown due to a `try_into().expect()` that was solved by storing the bounding
-        // radius directly as a PositiveReal. Also, removing the map reduce and caching
-        // the maximum could provide a performance benefit because the circumsphere
-        // check is applied *many* times when scanning for possible overlaps.
-        self.semi_axes
-            .iter()
-            .map(PositiveReal::get)
-            .reduce(f64::max)
-            .expect("N must be greater than or equal to 1")
-            .try_into()
-            .expect("expression evaluates to a positive real")
+        self.bounding_sphere_radius
     }
 }
 impl<const N: usize> Volume for Hyperellipsoid<N> {
@@ -299,9 +323,25 @@ where
         true // If we did not detect a negative value of K(λ), the shapes overlap
     }
 
-    // TODO: Implement intersects_at_global and perform the circumsphere check.
-    // There is a performance degradation when `performs_own_distance_check`
-    // returns `true` for `HardShape<Ellipse>`.
+    #[inline]
+    fn intersects_at_global(
+        &self,
+        other: &Hyperellipsoid<2>,
+        r_self: &Cartesian<2>,
+        o_self: &R,
+        r_other: &Cartesian<2>,
+        o_other: &R,
+    ) -> bool {
+        let max_separation =
+            self.bounding_sphere_radius().get() + other.bounding_sphere_radius().get();
+        if r_self.distance_squared(r_other) >= max_separation.powi(2) {
+            return false;
+        }
+
+        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(r_self, o_self, r_other, o_other);
+
+        self.intersects_at(other, &v_ij, &o_ij)
+    }
 }
 
 /// Solve the characteristic equation of two ellipses.
@@ -336,7 +376,6 @@ mod tests {
     use std::marker::PhantomData;
 
     #[rstest]
-    #[case(PhantomData::<Hypersphere<0>>)]
     #[case(PhantomData::<Hypersphere<1>>)]
     #[case(PhantomData::<Hypersphere<2>>)]
     #[case(PhantomData::<Hypersphere<3>>)]
@@ -349,14 +388,13 @@ mod tests {
         let s = Hypersphere::<N> {
             radius: radius.try_into().expect("test value is a positive real"),
         };
-        let he = Hyperellipsoid {
-            semi_axes: [radius.try_into().expect("test value is a positive real"); N],
-        };
+        let he = Hyperellipsoid::with_semi_axes(
+            [radius.try_into().expect("test value is a positive real"); N],
+        );
         let v = [1.0; N].into();
         assert_relative_eq!(he.support_mapping(&v), s.support_mapping(&v));
     }
     #[rstest]
-    #[case(PhantomData::<Hypersphere<0>>)]
     #[case(PhantomData::<Hypersphere<1>>)]
     #[case(PhantomData::<Hypersphere<2>>)]
     #[case(PhantomData::<Hypersphere<3>>)]
@@ -369,9 +407,9 @@ mod tests {
         let s = Hypersphere::<N> {
             radius: radius.try_into().expect("test value is a positive real"),
         };
-        let he = Hyperellipsoid {
-            semi_axes: [radius.try_into().expect("test value is a positive real"); N],
-        };
+        let he = Hyperellipsoid::with_semi_axes(
+            [radius.try_into().expect("test value is a positive real"); N],
+        );
         assert_relative_eq!(he.volume(), s.volume());
     }
 
@@ -380,18 +418,14 @@ mod tests {
         #[values([0.0, 0.0], [1.0,0.0], [1.999_999, 0.0], [2.000_001, 0.0], [2.1, 0.0])]
         v_ij: [f64; 2],
     ) {
-        let el0 = Ellipse {
-            semi_axes: [
-                1.0.try_into().expect("test value is a positive real"),
-                4.0.try_into().expect("test value is a positive real"),
-            ],
-        };
-        let el1 = Ellipse {
-            semi_axes: [
-                1.0.try_into().expect("test value is a positive real"),
-                4.0.try_into().expect("test value is a positive real"),
-            ],
-        };
+        let el0 = Ellipse::with_semi_axes([
+            1.0.try_into().expect("test value is a positive real"),
+            4.0.try_into().expect("test value is a positive real"),
+        ]);
+        let el1 = Ellipse::with_semi_axes([
+            1.0.try_into().expect("test value is a positive real"),
+            4.0.try_into().expect("test value is a positive real"),
+        ]);
 
         assert_eq!(
             el0.intersects_at(&el1, &v_ij.into(), &Angle::default()),
@@ -405,8 +439,8 @@ mod tests {
             let (a, c): (f64, f64) = StdRng::random(&mut rng);
             let a = a.try_into().expect("test value is a positive real");
             let c = c.try_into().expect("test value is a positive real");
-            let el0 = Ellipse { semi_axes: [a, a] };
-            let el1 = Ellipse { semi_axes: [c, c] };
+            let el0 = Ellipse::with_semi_axes([a, a]);
+            let el1 = Ellipse::with_semi_axes([c, c]);
 
             let v_ij = StdRng::random::<Cartesian<2>>(&mut rng) * 10.0;
             let angle = Angle::from(
@@ -431,8 +465,8 @@ mod tests {
             let c = c.try_into().expect("test value is a positive real");
             let d = d.try_into().expect("test value is a positive real");
 
-            let el0 = Ellipse { semi_axes: [a, b] };
-            let el1 = Ellipse { semi_axes: [c, d] };
+            let el0 = Ellipse::with_semi_axes([a, b]);
+            let el1 = Ellipse::with_semi_axes([c, d]);
 
             let v_ij = StdRng::random::<Cartesian<2>>(&mut rng) * 10.0;
             let angle = Angle::from(

@@ -12,6 +12,7 @@ words = [
     "gsd",
     "hoomd",
     "hypercuboid",
+    "hyperellipsoid",
     "hypersphere",
     "hyperspheres",
     "hypervolume",
