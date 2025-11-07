@@ -457,4 +457,59 @@ mod tests {
         let sub2 = m.get_slice::<1, 3>(0, 1);
         assert_eq!(sub2.rows, [[2.0, 3.0, 4.0]]);
     }
+
+    #[test]
+    fn test_get_slice_square() {
+        let m: Matrix<3, 3> = Matrix {
+            rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
+        };
+        let sub = m.get_slice::<2, 2>(0, 0);
+        assert_eq!(sub.rows, [[1.0, 2.0], [4.0, 5.0]]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_get_row_panic() {
+        let m: Matrix<2, 3> = Matrix {
+            rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
+        };
+        m.get_row(2);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_get_col_panic() {
+        let m: Matrix<2, 3> = Matrix {
+            rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
+        };
+        m.get_col(3);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_get_slice_panic_row() {
+        let m: Matrix<3, 4> = Matrix {
+            rows: [
+                [1.0, 2.0, 3.0, 4.0],
+                [5.0, 6.0, 7.0, 8.0],
+                [9.0, 10.0, 11.0, 12.0],
+            ],
+        };
+        // this should panic because it tries to access row 3
+        m.get_slice::<2, 2>(2, 0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_get_slice_panic_col() {
+        let m: Matrix<3, 4> = Matrix {
+            rows: [
+                [1.0, 2.0, 3.0, 4.0],
+                [5.0, 6.0, 7.0, 8.0],
+                [9.0, 10.0, 11.0, 12.0],
+            ],
+        };
+        // this should panic because it tries to access col 4
+        m.get_slice::<2, 2>(0, 3);
+    }
 }
