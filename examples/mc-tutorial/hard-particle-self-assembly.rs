@@ -83,9 +83,7 @@ impl HardEllipseSelfAssembly {
                 (sigma / aspect / 2.0).try_into()?,
             ],
         };
-        let hamiltonian = PairwiseCutoff (
-            HardShape(ellipse.clone()),
-        );
+        let hamiltonian = PairwiseCutoff(HardShape(ellipse.clone()));
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: periodic
@@ -122,16 +120,16 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: quick_insert
 
         // ANCHOR: insert_hamiltonian
-        let approximate_shape_overlap =
-            Anisotropic{ interaction: ApproximateShapeOverlap::new(
+        let approximate_shape_overlap = Anisotropic {
+            interaction: ApproximateShapeOverlap::new(
                 ellipse,
                 OverlapPenalty::default(),
                 0.01.try_into()?,
-            ), r_cut: sigma};
+            ),
+            r_cut: sigma,
+        };
 
-        let insert_hamiltonian = PairwiseCutoff (
-            approximate_shape_overlap,
-        );
+        let insert_hamiltonian = PairwiseCutoff(approximate_shape_overlap);
         // ANCHOR_END: insert_hamiltonian
 
         // ANCHOR: struct_initialize

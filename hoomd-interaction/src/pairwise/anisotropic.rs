@@ -39,7 +39,10 @@ use hoomd_vector::{Rotate, Rotation, Vector};
 ///     cos_delta: (PI / 8.0).cos(),
 /// }];
 ///
-/// let angular_mask = Anisotropic{interaction: AngularMask::new(boxcar, masks), r_cut: 1.5};
+/// let angular_mask = Anisotropic {
+///     interaction: AngularMask::new(boxcar, masks),
+///     r_cut: 1.5,
+/// };
 /// # Ok(())
 /// # }
 /// ```
@@ -83,7 +86,10 @@ where
     ///     cos_delta: (PI / 8.0).cos(),
     /// }];
     ///
-    /// let angular_mask = Anisotropic{ interaction: AngularMask::new(boxcar, masks), r_cut: 1.5};
+    /// let angular_mask = Anisotropic {
+    ///     interaction: AngularMask::new(boxcar, masks),
+    ///     r_cut: 1.5,
+    /// };
     ///
     /// let a = OrientedPoint {
     ///     position: Cartesian::from([0.0, 0.0]),
@@ -107,11 +113,13 @@ where
     /// ```
     #[inline]
     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
-        let r = site_properties_i.position().distance(site_properties_j.position());
+        let r = site_properties_i
+            .position()
+            .distance(site_properties_j.position());
         if r >= self.r_cut {
             return 0.0;
         }
-        
+
         let (r_ab, o_ab) = hoomd_vector::pair_system_to_local(
             site_properties_i.position(),
             site_properties_i.orientation(),

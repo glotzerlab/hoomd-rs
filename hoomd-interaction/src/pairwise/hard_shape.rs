@@ -107,8 +107,10 @@ where
     }
 }
 
-impl<G> MaximumInteractionRange for HardShape<G> where
-    G: BoundingSphereRadius {
+impl<G> MaximumInteractionRange for HardShape<G>
+where
+    G: BoundingSphereRadius,
+{
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {
         self.0.bounding_sphere_radius().get() * 2.0

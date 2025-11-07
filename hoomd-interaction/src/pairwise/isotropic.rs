@@ -3,7 +3,7 @@
 
 //! Implement Isotropic
 
-use crate::{univariate::UnivariateEnergy, MaximumInteractionRange, SitePairEnergy};
+use crate::{MaximumInteractionRange, SitePairEnergy, univariate::UnivariateEnergy};
 use hoomd_microstate::property::Position;
 use hoomd_vector::Metric;
 
@@ -39,7 +39,10 @@ use hoomd_vector::Metric;
 ///     epsilon: 1.5,
 ///     sigma: 2.0,
 /// };
-/// let lennard_jones = Isotropic{interaction: lennard_jones, r_cut: 2.5};
+/// let lennard_jones = Isotropic {
+///     interaction: lennard_jones,
+///     r_cut: 2.5,
+/// };
 ///
 /// let energy = lennard_jones.site_pair_energy(&a, &b);
 /// assert_eq!(energy, -1.5);
@@ -52,7 +55,6 @@ pub struct Isotropic<E> {
     /// Maximum distance between two interacting sites.
     pub r_cut: f64,
 }
-    
 
 impl<P, S, E> SitePairEnergy<S> for Isotropic<E>
 where
@@ -62,7 +64,9 @@ where
 {
     #[inline]
     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
-        let r = site_properties_i.position().distance(site_properties_j.position());
+        let r = site_properties_i
+            .position()
+            .distance(site_properties_j.position());
         if r >= self.r_cut {
             return 0.0;
         }

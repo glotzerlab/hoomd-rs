@@ -3,7 +3,10 @@
 
 //! Implement `PairwiseCutoff`
 
-use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy, TotalEnergy};
+use crate::{
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy,
+    TotalEnergy,
+};
 use hoomd_microstate::{
     Body, Microstate, Site, SiteKey, Transform, boundary::Wrap, property::Position,
 };
@@ -47,16 +50,20 @@ use hoomd_spatial::PointsNearBall;
 ///     epsilon: 1.5,
 ///     sigma: 2.0,
 /// };
-/// let pairwise_cutoff = PairwiseCutoff (Isotropic{interaction: lennard_jones, r_cut: 5.0});
+/// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+///     interaction: lennard_jones,
+///     r_cut: 5.0,
+/// });
 /// ```
 ///
 /// Set a custom potential using a closure:
 /// ```
 /// use hoomd_interaction::{PairwiseCutoff, pairwise::Isotropic};
 ///
-/// let pairwise_cutoff = PairwiseCutoff (
-///     Isotropic{interaction: |r: f64| 1.0 / (r.powi(12)), r_cut: 3.0},
-/// );
+/// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+///     interaction: |r: f64| 1.0 / (r.powi(12)),
+///     r_cut: 3.0,
+/// });
 /// ```
 ///
 /// Implement a custom potential via a type:
@@ -76,9 +83,10 @@ use hoomd_spatial::PointsNearBall;
 /// }
 ///
 /// let custom = Custom { a: 2.0 };
-/// let pairwise_cutoff = PairwiseCutoff (
-///     Isotropic{interaction: custom, r_cut: 2.0},
-/// );
+/// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+///     interaction: custom,
+///     r_cut: 2.0,
+/// });
 /// ```
 ///
 /// Hard sphere:
@@ -88,9 +96,7 @@ use hoomd_spatial::PointsNearBall;
 /// use hoomd_vector::Cartesian;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let hard_sphere = PairwiseCutoff (
-///     HardSphere { diameter: 1.0 },
-/// );
+/// let hard_sphere = PairwiseCutoff(HardSphere { diameter: 1.0 });
 /// # Ok(())
 /// # }
 /// ```
@@ -106,9 +112,7 @@ use hoomd_spatial::PointsNearBall;
 /// let ellipse = Ellipse {
 ///     semi_axes: [4.0.try_into()?, 1.0.try_into()?],
 /// };
-/// let hard_ellipse = PairwiseCutoff (
-///     HardShape(ellipse)
-/// );
+/// let hard_ellipse = PairwiseCutoff(HardShape(ellipse));
 /// # Ok(())
 /// # }
 /// ```
@@ -139,9 +143,10 @@ impl<E> PairwiseCutoff<E> {
     ///     epsilon: 1.0,
     ///     sigma: 1.0,
     /// };
-    /// let pairwise_cutoff = PairwiseCutoff (
-    ///     Isotropic{ interaction: lennard_jones, r_cut: 2.5 }
-    /// );
+    /// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+    ///     interaction: lennard_jones,
+    ///     r_cut: 2.5,
+    /// });
     ///
     /// let body_a = Body::point(Cartesian::from([0.0, 0.0]));
     /// let body_b = Body::point(Cartesian::from([0.0, 3.0]));
@@ -161,11 +166,7 @@ impl<E> PairwiseCutoff<E> {
     /// # }
     /// ```
     #[inline]
-    pub fn site_pair_energy<S>(
-        &self,
-        site_i: &Site<S>,
-        site_j: &Site<S>,
-    ) -> f64
+    pub fn site_pair_energy<S>(&self, site_i: &Site<S>, site_j: &Site<S>) -> f64
     where
         E: SitePairEnergy<S>,
     {
@@ -173,7 +174,8 @@ impl<E> PairwiseCutoff<E> {
             return 0.0;
         }
 
-        self.0.site_pair_energy(&site_i.properties, &site_j.properties)
+        self.0
+            .site_pair_energy(&site_i.properties, &site_j.properties)
     }
 
     /// Compute the filtered energy contribution of a single site (`AllPairs` specialization)
@@ -224,7 +226,10 @@ impl<E> PairwiseCutoff<E> {
     {
         let mut energy = 0.0;
 
-        for site_j in microstate.iter_sites_near(site_i_properties.position(), self.0.maximum_interaction_range()) {
+        for site_j in microstate.iter_sites_near(
+            site_i_properties.position(),
+            self.0.maximum_interaction_range(),
+        ) {
             if filter(site_j) {
                 let one = site_pair_energy(&self.0, site_i_properties, &site_j.properties);
                 if one == f64::INFINITY {
@@ -350,24 +355,33 @@ where
     ///
     /// Lennard-Jones:
     /// ```
-    /// use hoomd_interaction::{PairwiseCutoff, SitePairEnergy, TotalEnergy,
-    ///     pairwise::Isotropic,
-    ///     univariate::LennardJones};
-    /// use hoomd_microstate::{Microstate, Body};
-    /// use hoomd_microstate::property::{Point, Position};
+    /// use hoomd_interaction::{
+    ///     PairwiseCutoff, SitePairEnergy, TotalEnergy, pairwise::Isotropic,
+    ///     univariate::LennardJones,
+    /// };
+    /// use hoomd_microstate::{
+    ///     Body, Microstate,
+    ///     property::{Point, Position},
+    /// };
     /// use hoomd_vector::{Cartesian, InnerProduct};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut microstate = Microstate::new();
-    /// microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0])),
-    /// Body::point(Cartesian::from([1.0, 0.0])),
-    /// Body::point(Cartesian::from([0.0, 5.0])),
-    /// Body::point(Cartesian::from([-1.0, 5.0])),
+    /// microstate.extend_bodies([
+    ///     Body::point(Cartesian::from([0.0, 0.0])),
+    ///     Body::point(Cartesian::from([1.0, 0.0])),
+    ///     Body::point(Cartesian::from([0.0, 5.0])),
+    ///     Body::point(Cartesian::from([-1.0, 5.0])),
     /// ])?;
     ///
-    /// let lennard_jones: LennardJones = LennardJones { epsilon: 1.5,
-    /// sigma: 1.0 / 2.0_f64.powf(1.0 / 6.0) };
-    /// let pairwise_cutoff = PairwiseCutoff(Isotropic{ interaction: lennard_jones, r_cut: 2.5 });
+    /// let lennard_jones: LennardJones = LennardJones {
+    ///     epsilon: 1.5,
+    ///     sigma: 1.0 / 2.0_f64.powf(1.0 / 6.0),
+    /// };
+    /// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+    ///     interaction: lennard_jones,
+    ///     r_cut: 2.5,
+    /// });
     ///
     /// let total_energy = pairwise_cutoff.total_energy(&microstate);
     /// assert_eq!(total_energy, -3.0);
@@ -391,9 +405,7 @@ where
     ///     Body::point(Cartesian::from([0.4, 0.0])),
     /// ])?;
     ///
-    /// let hard_circle = PairwiseCutoff (
-    ///     HardSphere { diameter: 1.0 },
-    /// );
+    /// let hard_circle = PairwiseCutoff(HardSphere { diameter: 1.0 });
     ///
     /// let total_energy = hard_circle.total_energy(&microstate);
     /// assert_eq!(total_energy, f64::INFINITY);
@@ -471,7 +483,10 @@ where
     ///     left,
     ///     right,
     /// };
-    /// let pairwise_cutoff = PairwiseCutoff (Isotropic{interaction: boxcar, r_cut: 1.5});
+    /// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+    ///     interaction: boxcar,
+    ///     r_cut: 1.5,
+    /// });
     ///
     /// let delta_energy = pairwise_cutoff.delta_energy_one(
     ///     &microstate,
@@ -499,9 +514,7 @@ where
     ///     Body::point(Cartesian::from([2.0, 0.0])),
     /// ])?;
     ///
-    /// let hard_circle = PairwiseCutoff (
-    ///     HardSphere { diameter: 1.0 },
-    /// );
+    /// let hard_circle = PairwiseCutoff(HardSphere { diameter: 1.0 });
     ///
     /// let delta_energy = hard_circle.delta_energy_one(
     ///     &microstate,
@@ -580,7 +593,10 @@ where
     ///     left,
     ///     right,
     /// };
-    /// let pairwise_cutoff = PairwiseCutoff(Isotropic{interaction: boxcar, r_cut: 1.5});
+    /// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+    ///     interaction: boxcar,
+    ///     r_cut: 1.5,
+    /// });
     ///
     /// let delta_energy = pairwise_cutoff
     ///     .delta_energy_insert(&microstate, &Body::point([-1.0, 0.0].into()));
@@ -602,9 +618,7 @@ where
     /// let mut microstate = Microstate::new();
     /// microstate.extend_bodies([Body::point(Cartesian::from([0.0, 0.0]))])?;
     ///
-    /// let hard_circle = PairwiseCutoff (
-    ///     HardSphere { diameter: 1.0 },
-    /// );
+    /// let hard_circle = PairwiseCutoff(HardSphere { diameter: 1.0 });
     ///
     /// let delta_energy = hard_circle
     ///     .delta_energy_insert(&microstate, &Body::point([0.4, 0.0].into()));
@@ -661,7 +675,10 @@ where
     ///     left,
     ///     right,
     /// };
-    /// let pairwise_cutoff = PairwiseCutoff(Isotropic {interaction: boxcar, r_cut: 1.5});
+    /// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+    ///     interaction: boxcar,
+    ///     r_cut: 1.5,
+    /// });
     ///
     /// let delta_energy = pairwise_cutoff.delta_energy_remove(&microstate, 0);
     /// assert_eq!(delta_energy, -2.0);
@@ -685,9 +702,7 @@ where
     ///     Body::point(Cartesian::from([2.0, 0.0])),
     /// ])?;
     ///
-    /// let hard_circle = PairwiseCutoff (
-    ///     HardSphere { diameter: 1.0 },
-    /// );
+    /// let hard_circle = PairwiseCutoff(HardSphere { diameter: 1.0 });
     ///
     /// let delta_energy = hard_circle.delta_energy_remove(&microstate, 1);
     /// assert_eq!(delta_energy, 0.0);
@@ -774,9 +789,10 @@ mod tests_finite {
             >,
         ) {
             // Ensure that closures can be used as IsotropicEnergy
-            let pairwise_cutoff = PairwiseCutoff (
-                Isotropic{interaction: |r| 1.0 / (r * 2.0), r_cut: 2.0,},
-            );
+            let pairwise_cutoff = PairwiseCutoff(Isotropic {
+                interaction: |r| 1.0 / (r * 2.0),
+                r_cut: 2.0,
+            });
 
             // Two pairs at a distance of 1.0 each with energy 1/2.
             assert_eq!(pairwise_cutoff.total_energy(&microstate), 1.0);
@@ -804,9 +820,10 @@ mod tests_finite {
             >,
         ) {
             // Ensure that PairwiseCutoff respects the r_cut value set.
-            let pairwise_cutoff = PairwiseCutoff (Isotropic{interaction: |r| 1.0 / (r * 2.0),
-                r_cut: 5.0_f64.next_up(),}
-            );
+            let pairwise_cutoff = PairwiseCutoff(Isotropic {
+                interaction: |r| 1.0 / (r * 2.0),
+                r_cut: 5.0_f64.next_up(),
+            });
 
             // Two pairs at a distance of 1.0 each with energy 1/2.
             // Plus two pairs at a distance of 5.0 with energy 1/10
@@ -834,9 +851,10 @@ mod tests_finite {
             let mut microstate = Microstate::new();
             microstate.extend_bodies([body_a, body_b])?;
 
-            let pairwise_cutoff = PairwiseCutoff (
-                Isotropic{interaction: |_r| 1.0, r_cut: 1.0_f64.next_up(), },
-            );
+            let pairwise_cutoff = PairwiseCutoff(Isotropic {
+                interaction: |_r| 1.0,
+                r_cut: 1.0_f64.next_up(),
+            });
 
             // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
             check!(pairwise_cutoff.total_energy(&microstate) == 2.0);
@@ -876,9 +894,10 @@ mod tests_finite {
                 .bodies([body])
                 .try_build()?;
 
-            let energy = PairwiseCutoff (
-                Isotropic{interaction: |_r| 0.0, r_cut: 0.0},
-            );
+            let energy = PairwiseCutoff(Isotropic {
+                interaction: |_r| 0.0,
+                r_cut: 0.0,
+            });
 
             check!(energy.delta_energy_one(&microstate, 0, &final_body) == f64::INFINITY);
 
@@ -910,9 +929,10 @@ mod tests_finite {
             let mut microstate = Microstate::new();
             microstate.extend_bodies([body_a, body_b])?;
 
-            let pairwise_cutoff = PairwiseCutoff (
-                Isotropic{interaction: |_r| 1.0,r_cut: 1.0_f64.next_up(),}
-            );
+            let pairwise_cutoff = PairwiseCutoff(Isotropic {
+                interaction: |_r| 1.0,
+                r_cut: 1.0_f64.next_up(),
+            });
 
             // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
             // Moving body 0 to the left results in a -2.0 energy difference.
@@ -943,9 +963,10 @@ mod tests_finite {
 
             let mut microstate_final = microstate_initial.clone();
             let harmonic_repulsion: HarmonicRepulsion = HarmonicRepulsion { a: 5.0, r_cut: 5.0 };
-            let pairwise_cutoff = PairwiseCutoff (
-                Isotropic{interaction: harmonic_repulsion,r_cut: 5.0,}
-            );
+            let pairwise_cutoff = PairwiseCutoff(Isotropic {
+                interaction: harmonic_repulsion,
+                r_cut: 5.0,
+            });
 
             check!(pairwise_cutoff.total_energy(&microstate_initial) != 0.0);
 
@@ -993,9 +1014,10 @@ mod tests_finite {
                 .bodies([body])
                 .try_build()?;
 
-            let energy = PairwiseCutoff (
-                Isotropic{interaction: |_r| 0.0, r_cut: 0.0},
-            );
+            let energy = PairwiseCutoff(Isotropic {
+                interaction: |_r| 0.0,
+                r_cut: 0.0,
+            });
 
             check!(energy.delta_energy_insert(&microstate, &new_body) == f64::INFINITY);
 
@@ -1023,9 +1045,10 @@ mod tests_finite {
             let mut microstate = Microstate::new();
             microstate.extend_bodies([body_b])?;
 
-            let pairwise_cutoff = PairwiseCutoff (
-                Isotropic{interaction: |_r| 1.0,r_cut: 1.0_f64.next_up(),}
-            );
+            let pairwise_cutoff = PairwiseCutoff(Isotropic {
+                interaction: |_r| 1.0,
+                r_cut: 1.0_f64.next_up(),
+            });
 
             // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
             // Moving body 0 to the left results in a -2.0 energy difference.
@@ -1058,9 +1081,10 @@ mod tests_finite {
 
             let mut microstate_final = microstate_initial.clone();
             let harmonic_repulsion: HarmonicRepulsion = HarmonicRepulsion { a: 5.0, r_cut: 5.0 };
-            let pairwise_cutoff = PairwiseCutoff (
-                Isotropic{interaction: harmonic_repulsion,r_cut: 5.0,}
-            );
+            let pairwise_cutoff = PairwiseCutoff(Isotropic {
+                interaction: harmonic_repulsion,
+                r_cut: 5.0,
+            });
 
             // Use `HarmonicRepulsion` for validation because it is a varies
             // with r and will therefore show some changes for any moves (unlike
@@ -1127,9 +1151,10 @@ mod tests_finite {
         }
 
         let harmonic_repulsion: HarmonicRepulsion = HarmonicRepulsion { a: 5.0, r_cut };
-        let pairwise_cutoff = PairwiseCutoff (
-            Isotropic{interaction: harmonic_repulsion, r_cut},
-        );
+        let pairwise_cutoff = PairwiseCutoff(Isotropic {
+            interaction: harmonic_repulsion,
+            r_cut,
+        });
 
         assert_relative_eq!(
             pairwise_cutoff.total_energy(&microstate_all_pairs),
@@ -1214,16 +1239,12 @@ mod test_infinite {
 
             // Ensure that PairwiseCutoff respects the r_cut value set.
             let r_cut = 5.0_f64.next_up();
-            let pairwise_cutoff = PairwiseCutoff (
-                HardSphere { diameter: r_cut }
-            );
+            let pairwise_cutoff = PairwiseCutoff(HardSphere { diameter: r_cut });
 
             check!(pairwise_cutoff.total_energy(&microstate) == f64::INFINITY);
 
             let r_cut = 5.0_f64;
-            let pairwise_cutoff = PairwiseCutoff (
-                HardSphere { diameter: r_cut }
-            );
+            let pairwise_cutoff = PairwiseCutoff(HardSphere { diameter: r_cut });
 
             check!(pairwise_cutoff.total_energy(&microstate) == 0.0);
 
@@ -1252,16 +1273,12 @@ mod test_infinite {
             microstate.extend_bodies([body_a, body_b])?;
 
             let r_cut = 1.0_f64.next_up();
-            let pairwise_cutoff = PairwiseCutoff (
-                HardSphere { diameter: r_cut }
-            );
+            let pairwise_cutoff = PairwiseCutoff(HardSphere { diameter: r_cut });
 
             check!(pairwise_cutoff.total_energy(&microstate) == 0.0);
 
             let r_cut = 2.0_f64.next_up();
-            let pairwise_cutoff = PairwiseCutoff (
-                HardSphere { diameter: r_cut }
-            );
+            let pairwise_cutoff = PairwiseCutoff(HardSphere { diameter: r_cut });
 
             check!(pairwise_cutoff.total_energy(&microstate) == f64::INFINITY);
 
@@ -1286,9 +1303,7 @@ mod test_infinite {
                 .bodies([body])
                 .try_build()?;
 
-            let energy = PairwiseCutoff (
-                HardSphere { diameter: 0.0 }
-            );
+            let energy = PairwiseCutoff(HardSphere { diameter: 0.0 });
 
             check!(energy.delta_energy_one(&microstate, 0, &final_body) == f64::INFINITY);
 
@@ -1325,12 +1340,12 @@ mod test_infinite {
             microstate.extend_bodies([body_a, body_b])?;
 
             let r_cut = 1.0_f64.next_up();
-            let pairwise_cutoff = PairwiseCutoff (
-                HardSphere { diameter: r_cut }
-            );
+            let pairwise_cutoff = PairwiseCutoff(HardSphere { diameter: r_cut });
 
             // moving body a to the right generates overlaps
-            check!(pairwise_cutoff.delta_energy_one(&microstate, 0, &body_a_overlap) == f64::INFINITY);
+            check!(
+                pairwise_cutoff.delta_energy_one(&microstate, 0, &body_a_overlap) == f64::INFINITY
+            );
 
             // moving body away results in no overlaps
             check!(pairwise_cutoff.delta_energy_one(&microstate, 0, &body_a_no_overlap) == 0.0);
@@ -1356,9 +1371,7 @@ mod test_infinite {
                 .bodies([body])
                 .try_build()?;
 
-            let energy = PairwiseCutoff (
-                HardSphere { diameter: 0.0 }
-            );
+            let energy = PairwiseCutoff(HardSphere { diameter: 0.0 });
 
             check!(energy.delta_energy_insert(&microstate, &new_body) == f64::INFINITY);
 
@@ -1387,9 +1400,7 @@ mod test_infinite {
             microstate.extend_bodies([body_b])?;
 
             let r_cut = 1.0_f64.next_up();
-            let pairwise_cutoff = PairwiseCutoff (
-                HardSphere { diameter: r_cut }
-            );
+            let pairwise_cutoff = PairwiseCutoff(HardSphere { diameter: r_cut });
 
             check!(pairwise_cutoff.delta_energy_insert(&microstate, &body_a_new) == f64::INFINITY);
 
@@ -1424,9 +1435,7 @@ mod test_infinite {
             let ellipse = Ellipse {
                 semi_axes: [1.0.try_into()?, 2.0.try_into()?],
             };
-            let hard_ellipse = PairwiseCutoff (
-                HardShape(ellipse),
-            );
+            let hard_ellipse = PairwiseCutoff(HardShape(ellipse));
 
             // The initial configuration should have infinite energy.
             check!(hard_ellipse.total_energy(&microstate) == f64::INFINITY);

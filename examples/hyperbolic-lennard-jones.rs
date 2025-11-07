@@ -115,7 +115,10 @@ impl Fill {
             sigma: 0.15,
         };
 
-        let pairwise_cutoff = PairwiseCutoff (Isotropic {interaction: lj, r_cut: 0.5});
+        let pairwise_cutoff = PairwiseCutoff(Isotropic {
+            interaction: lj,
+            r_cut: 0.5,
+        });
 
         let macrostate = Isothermal { temperature: 1.0 };
 

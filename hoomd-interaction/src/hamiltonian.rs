@@ -36,7 +36,10 @@ use hoomd_microstate::{Body, Microstate};
 ///     left,
 ///     right,
 /// };
-/// let pairwise_cutoff = PairwiseCutoff (Isotropic { interaction: boxcar, r_cut: right });
+/// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+///     interaction: boxcar,
+///     r_cut: right,
+/// });
 ///
 /// let linear = External(Linear {
 ///     alpha: 10.0,
@@ -105,7 +108,10 @@ where
 ///     left,
 ///     right,
 /// };
-/// let pairwise_cutoff = PairwiseCutoff (Isotropic { interaction: boxcar, r_cut: right });
+/// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+///     interaction: boxcar,
+///     r_cut: right,
+/// });
 ///
 /// let linear = External(Linear {
 ///     alpha: 1.0,
@@ -158,7 +164,10 @@ where
 ///     left,
 ///     right,
 /// };
-/// let pairwise_cutoff = PairwiseCutoff (Isotropic { interaction: boxcar, r_cut: right });
+/// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+///     interaction: boxcar,
+///     r_cut: right,
+/// });
 ///
 /// let linear = External(Linear {
 ///     alpha: 1.0,

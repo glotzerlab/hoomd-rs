@@ -87,9 +87,7 @@ where
             [0.0, 0.0, -0.5].into(),
             [0.0, 0.0, 0.5].into(),
         ])?;
-        let hamiltonian = PairwiseCutoff (
-            HardShape(Convex(octahedron)),
-        );
+        let hamiltonian = PairwiseCutoff(HardShape(Convex(octahedron)));
 
         let cell_list = X::with_search_radius(sigma.try_into()?);
         let microstate = Microstate::builder()

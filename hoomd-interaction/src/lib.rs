@@ -60,9 +60,10 @@ pub use zero::Zero;
 ///     epsilon: 1.5,
 ///     sigma: 1.0 / 2.0_f64.powf(1.0 / 6.0),
 /// };
-/// let pairwise_cutoff = PairwiseCutoff (
-///     Isotropic{interaction: lennard_jones, r_cut: 2.5}
-/// );
+/// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+///     interaction: lennard_jones,
+///     r_cut: 2.5,
+/// });
 ///
 /// let total_energy = pairwise_cutoff.total_energy(&microstate);
 /// assert_eq!(total_energy, -3.0);
@@ -122,8 +123,7 @@ pub trait TotalEnergy<M> {
 /// ])?;
 ///
 /// let custom = Custom { a: 1.0, b: 10.0 };
-/// let site_energy =
-///     custom.site_energy(&microstate.sites()[0].properties);
+/// let site_energy = custom.site_energy(&microstate.sites()[0].properties);
 ///
 /// let custom = External(custom);
 /// let total_energy = custom.total_energy(&microstate);
@@ -169,8 +169,7 @@ pub trait TotalEnergy<M> {
 /// microstate.extend_bodies([Body::point(Cartesian::from([9.6, 0.0]))])?;
 ///
 /// let custom = Custom { r: 10.0 };
-/// let site_energy =
-///     custom.site_energy(&microstate.sites()[0].properties);
+/// let site_energy = custom.site_energy(&microstate.sites()[0].properties);
 /// assert_eq!(site_energy, f64::INFINITY);
 ///
 /// let custom = External(custom);
@@ -236,7 +235,9 @@ pub trait SiteEnergy<S> {
 ///
 /// Implement a custom site energy method:
 /// ```
-/// use hoomd_interaction::{MaximumInteractionRange, PairwiseCutoff, SitePairEnergy, TotalEnergy};
+/// use hoomd_interaction::{
+///     MaximumInteractionRange, PairwiseCutoff, SitePairEnergy, TotalEnergy,
+/// };
 /// use hoomd_microstate::{
 ///     Body, Microstate,
 ///     property::{Point, Position},
@@ -264,7 +265,9 @@ pub trait SiteEnergy<S> {
 /// }
 ///
 /// impl MaximumInteractionRange for Custom {
-///     fn maximum_interaction_range(&self) -> f64 { 2.5 }
+///     fn maximum_interaction_range(&self) -> f64 {
+///         2.5
+///     }
 /// }
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -289,7 +292,9 @@ pub trait SiteEnergy<S> {
 /// Implement a custom site overlap method:
 /// ```
 /// use hoomd_geometry::{IntersectsAt, shape::Circle};
-/// use hoomd_interaction::{MaximumInteractionRange, PairwiseCutoff, SitePairEnergy, TotalEnergy};
+/// use hoomd_interaction::{
+///     MaximumInteractionRange, PairwiseCutoff, SitePairEnergy, TotalEnergy,
+/// };
 /// use hoomd_microstate::{
 ///     Body, Microstate, Transform,
 ///     property::{Point, Position},
@@ -356,7 +361,9 @@ pub trait SiteEnergy<S> {
 /// }
 ///
 /// impl MaximumInteractionRange for PolydisperseCircleOverlap {
-///     fn maximum_interaction_range(&self) -> f64 { 1.5 }
+///     fn maximum_interaction_range(&self) -> f64 {
+///         1.5
+///     }
 /// }
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -385,7 +392,7 @@ pub trait SiteEnergy<S> {
 /// );
 /// assert_eq!(site_pair_energy, f64::INFINITY);
 ///
-/// let pairwise_cutoff = PairwiseCutoff (PolydisperseCircleOverlap);
+/// let pairwise_cutoff = PairwiseCutoff(PolydisperseCircleOverlap);
 /// let total_energy = pairwise_cutoff.total_energy(&microstate);
 /// assert_eq!(total_energy, f64::INFINITY);
 /// # Ok(())

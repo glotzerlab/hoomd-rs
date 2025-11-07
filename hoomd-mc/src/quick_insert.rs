@@ -242,11 +242,13 @@ impl<D> QuickInsert<D> {
     /// let translate = Translate::with_maximum_distance(0.1.try_into()?);
     /// let translate_sweep = Sweep(translate);
     ///
-    /// let pairwise_cutoff = PairwiseCutoff (Isotropic{interaction: Expanded {
+    /// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+    ///     interaction: Expanded {
     ///         delta: 1.0,
     ///         f: OverlapPenalty::default(),
-    ///     },r_cut: 1.0,},
-    /// );
+    ///     },
+    ///     r_cut: 1.0,
+    /// });
     ///
     /// let macrostate = Isothermal { temperature: 1.0 };
     /// let mut microstate = Microstate::builder()
@@ -347,13 +349,14 @@ mod tests {
         let epsilon = f64::INFINITY;
         let kt = 1.0;
 
-        let hamiltonian = PairwiseCutoff (
-            Isotropic{interaction: Boxcar {
+        let hamiltonian = PairwiseCutoff(Isotropic {
+            interaction: Boxcar {
                 left: 0.0,
                 right: sigma,
                 epsilon,
-            }, r_cut: sigma},
-        );
+            },
+            r_cut: sigma,
+        });
 
         let translate =
             Translate::with_maximum_distance(0.1.try_into().expect("hard-coded value is non-zero"));

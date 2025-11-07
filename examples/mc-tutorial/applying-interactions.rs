@@ -65,7 +65,10 @@ impl Fill {
             left: 0.0,
             right: sigma,
         };
-        let pairwise_cutoff = PairwiseCutoff (Isotropic{interaction: boxcar, r_cut: sigma});
+        let pairwise_cutoff = PairwiseCutoff(Isotropic {
+            interaction: boxcar,
+            r_cut: sigma,
+        });
         // ANCHOR_END: pair
 
         // ANCHOR: hamiltonian
