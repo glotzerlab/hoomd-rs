@@ -115,5 +115,17 @@ where
         let r = site_properties.position();
         let max = self.shape.maximal_extents();
         let min = self.shape.minimal_extents();
+
+        if !self.shape.is_point_inside(r) {
+            return result;
+        }
+
+        let new_site = |x, y| {
+            let mut new_site = *site_properties;
+            new_site.position_mut()[0] += x * self.shape.edge_vectors[0].get();
+            new_site.position_mut()[1] += y * self.shape.edge_vectors[1].get();
+            new_site
+        };
+        
     }
 }
