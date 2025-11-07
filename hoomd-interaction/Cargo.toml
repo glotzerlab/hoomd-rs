@@ -21,6 +21,7 @@ hoomd-spatial.workspace = true
 hoomd-utility.workspace = true
 
 [dev-dependencies]
+anyhow.workspace = true
 assert2.workspace = true
 approxim.workspace = true
 divan.workspace = true

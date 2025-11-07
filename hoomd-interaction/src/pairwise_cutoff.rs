@@ -787,11 +787,15 @@ mod tests_finite {
         boundary::{Closed, Open},
         property::Point,
     };
-    use hoomd_spatial::AllPairs;
-    use hoomd_vector::Cartesian;
+    use hoomd_spatial::{AllPairs, VecCell};
+    use hoomd_vector::{Cartesian, distribution::Ball};
 
     use approxim::assert_relative_eq;
-    use rand::{Rng, SeedableRng, distr::Uniform, rngs::StdRng};
+    use rand::{
+        Rng, SeedableRng,
+        distr::{Distribution, Uniform},
+        rngs::StdRng,
+    };
     use rstest::*;
     use std::f64::consts::PI;
 
@@ -879,7 +883,7 @@ mod tests_finite {
         }
 
         #[test]
-        fn body_exclusion() {
+        fn body_exclusion() -> anyhow::Result<()> {
             // Ensure that PairwiseCutoff excludes pairs in the same body.
             let body_a = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
@@ -897,9 +901,7 @@ mod tests_finite {
             };
 
             let mut microstate = Microstate::new();
-            microstate
-                .extend_bodies([body_a, body_b])
-                .expect("hard-coded bodies should be in the boundary");
+            microstate.extend_bodies([body_a, body_b])?;
 
             let cutoff_pair = PairwiseCutoff {
                 r_cut: 1.0_f64.next_up(),
@@ -922,6 +924,8 @@ mod tests_finite {
 
             check!(cutoff_pair.site_pair_energy(&sites[0], &sites[6]) == 1.0);
             check!(cutoff_pair.site_pair_energy(&sites[1], &sites[7]) == 1.0);
+
+            Ok(())
         }
     }
 
@@ -929,7 +933,7 @@ mod tests_finite {
         use super::*;
 
         #[rstest]
-        fn site_outside(square: Closed<Hypercuboid<2>>) {
+        fn site_outside(square: Closed<Hypercuboid<2>>) -> anyhow::Result<()> {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -940,8 +944,7 @@ mod tests_finite {
             let microstate = Microstate::builder()
                 .boundary(square)
                 .bodies([body])
-                .try_build()
-                .expect("the hard-coded bodies should be in the boundary");
+                .try_build()?;
 
             let energy = PairwiseCutoff {
                 r_cut: 0.0,
@@ -949,10 +952,12 @@ mod tests_finite {
             };
 
             check!(energy.delta_energy_one(&microstate, 0, &final_body) == f64::INFINITY);
+
+            Ok(())
         }
 
         #[test]
-        fn body_exclusion() {
+        fn body_exclusion() -> anyhow::Result<()> {
             // Ensure that PairwiseCutoff.delta_energy_one excludes pairs in the same body.
             let body_a = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
@@ -974,9 +979,7 @@ mod tests_finite {
             };
 
             let mut microstate = Microstate::new();
-            microstate
-                .extend_bodies([body_a, body_b])
-                .expect("hard-coded bodies should be in the boundary");
+            microstate.extend_bodies([body_a, body_b])?;
 
             let cutoff_pair = PairwiseCutoff {
                 r_cut: 1.0_f64.next_up(),
@@ -986,10 +989,12 @@ mod tests_finite {
             // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
             // Moving body 0 to the left results in a -2.0 energy difference.
             check!(cutoff_pair.delta_energy_one(&microstate, 0, &body_a_final) == -2.0);
+
+            Ok(())
         }
 
         #[test]
-        fn random_moves() {
+        fn random_moves() -> anyhow::Result<()> {
             // Ensure that PairwiseCutoff.delta_energy_one is consistent with TotalEnergy
             let body_template = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
@@ -1006,10 +1011,7 @@ mod tests_finite {
             };
             let body_b = body_template.clone();
 
-            let microstate_initial = Microstate::builder()
-                .bodies([body_a, body_b])
-                .try_build()
-                .expect("hard-coded bodies should be in the boundary");
+            let microstate_initial = Microstate::builder().bodies([body_a, body_b]).try_build()?;
 
             let mut microstate_final = microstate_initial.clone();
             let harmonic_repulsion: HarmonicRepulsion = HarmonicRepulsion { a: 5.0, r_cut: 5.0 };
@@ -1025,10 +1027,8 @@ mod tests_finite {
             // `BoxCar`). HarmonicRepulsion avoids numerical errors when two
             // sites get too close.
             let mut rng = StdRng::seed_from_u64(0);
-            let r_distribution =
-                Uniform::new(3.0, 6.0).expect("hard-coded constants should be valid");
-            let theta_distribution =
-                Uniform::new(0.0, 2.0 * PI).expect("hard-coded constants should be valid");
+            let r_distribution = Uniform::new(3.0, 6.0)?;
+            let theta_distribution = Uniform::new(0.0, 2.0 * PI)?;
 
             let mut new_body = body_template.clone();
             for _ in 0..1024 {
@@ -1038,14 +1038,14 @@ mod tests_finite {
 
                 let delta_energy_one =
                     cutoff_pair.delta_energy_one(&microstate_initial, 0, &new_body);
-                microstate_final
-                    .update_body_properties(0, new_body.properties)
-                    .expect("generated bodies should be inside open boundaries");
+                microstate_final.update_body_properties(0, new_body.properties)?;
                 let delta_energy_total = cutoff_pair.total_energy(&microstate_final)
                     - cutoff_pair.total_energy(&microstate_initial);
 
                 assert_relative_eq!(delta_energy_one, delta_energy_total, epsilon = 1e-10);
             }
+
+            Ok(())
         }
     }
 
@@ -1053,7 +1053,7 @@ mod tests_finite {
         use super::*;
 
         #[rstest]
-        fn site_outside(square: Closed<Hypercuboid<2>>) {
+        fn site_outside(square: Closed<Hypercuboid<2>>) -> anyhow::Result<()> {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -1064,8 +1064,7 @@ mod tests_finite {
             let microstate = Microstate::builder()
                 .boundary(square)
                 .bodies([body])
-                .try_build()
-                .expect("the hard-coded bodies should be in the boundary");
+                .try_build()?;
 
             let energy = PairwiseCutoff {
                 r_cut: 0.0,
@@ -1073,10 +1072,12 @@ mod tests_finite {
             };
 
             check!(energy.delta_energy_insert(&microstate, &new_body) == f64::INFINITY);
+
+            Ok(())
         }
 
         #[test]
-        fn body_exclusion() {
+        fn body_exclusion() -> anyhow::Result<()> {
             // Ensure that PairwiseCutoff.delta_energy_insert excludes pairs in the same body.
             let body_a_new = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
@@ -1094,9 +1095,7 @@ mod tests_finite {
             };
 
             let mut microstate = Microstate::new();
-            microstate
-                .extend_bodies([body_b])
-                .expect("hard-coded bodies should be in the boundary");
+            microstate.extend_bodies([body_b])?;
 
             let cutoff_pair = PairwiseCutoff {
                 r_cut: 1.0_f64.next_up(),
@@ -1107,14 +1106,14 @@ mod tests_finite {
             // Moving body 0 to the left results in a -2.0 energy difference.
             check!(cutoff_pair.delta_energy_insert(&microstate, &body_a_new) == 2.0);
 
-            microstate
-                .add_body(body_a_new)
-                .expect("hard-coded bodies should be in the boundary");
+            microstate.add_body(body_a_new)?;
             check!(cutoff_pair.delta_energy_remove(&microstate, 1) == -2.0);
+
+            Ok(())
         }
 
         #[test]
-        fn random_moves() {
+        fn random_moves() -> anyhow::Result<()> {
             // Ensure that PairwiseCutoff.delta_energy_insert is consistent with TotalEnergy
             let body_template = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
@@ -1130,10 +1129,7 @@ mod tests_finite {
                 sites: body_template.sites.clone(),
             };
 
-            let microstate_initial = Microstate::builder()
-                .bodies([body_a])
-                .try_build()
-                .expect("hard-coded bodies should be in the boundary");
+            let microstate_initial = Microstate::builder().bodies([body_a]).try_build()?;
 
             let mut microstate_final = microstate_initial.clone();
             let harmonic_repulsion: HarmonicRepulsion = HarmonicRepulsion { a: 5.0, r_cut: 5.0 };
@@ -1147,10 +1143,8 @@ mod tests_finite {
             // `BoxCar`). HarmonicRepulsion avoids numerical errors when two
             // sites get too close.
             let mut rng = StdRng::seed_from_u64(2);
-            let r_distribution =
-                Uniform::new(3.0, 6.0).expect("hard-coded constants should be valid");
-            let theta_distribution =
-                Uniform::new(0.0, 2.0 * PI).expect("hard-coded constants should be valid");
+            let r_distribution = Uniform::new(3.0, 6.0)?;
+            let theta_distribution = Uniform::new(0.0, 2.0 * PI)?;
 
             for _ in 0..1024 {
                 let r = rng.sample(r_distribution);
@@ -1160,9 +1154,7 @@ mod tests_finite {
 
                 let delta_energy_insert =
                     cutoff_pair.delta_energy_insert(&microstate_initial, &new_body);
-                let tag = microstate_final
-                    .add_body(new_body)
-                    .expect("generated bodies should be inside open boundaries");
+                let tag = microstate_final.add_body(new_body)?;
                 let delta_energy_total = cutoff_pair.total_energy(&microstate_final)
                     - cutoff_pair.total_energy(&microstate_initial);
 
@@ -1175,18 +1167,101 @@ mod tests_finite {
                     microstate_final.body_indices()[tag].expect("tag should be present"),
                 );
             }
+
+            Ok(())
         }
+    }
+
+    #[rstest]
+    fn spatial_data_consistency(square: Closed<Hypercuboid<2>>) -> anyhow::Result<()> {
+        const N_BODIES: usize = 2_000;
+        let r_cut = 0.5;
+        let mut rng = StdRng::seed_from_u64(0);
+
+        let mut microstate_all_pairs = Microstate::builder()
+            .spatial_data(AllPairs::<SiteKey>::default())
+            .boundary(square.clone())
+            .try_build()?;
+
+        let cell_list = VecCell::builder()
+            .nominal_search_radius(r_cut.try_into()?)
+            .build();
+        let mut microstate_vec_cell = Microstate::builder()
+            .boundary(square.clone())
+            .spatial_data(cell_list)
+            .try_build()?;
+
+        let body_template = Body {
+            properties: Point::new(Cartesian::from([0.0, 0.0])),
+            sites: [Point::default()].into(),
+        };
+        for _ in 0..N_BODIES {
+            let mut new_body = body_template.clone();
+            new_body.properties.position = square.sample(&mut rng);
+            microstate_all_pairs.add_body(new_body.clone())?;
+            microstate_vec_cell.add_body(new_body)?;
+        }
+
+        let harmonic_repulsion: HarmonicRepulsion = HarmonicRepulsion { a: 5.0, r_cut };
+        let cutoff_pair = PairwiseCutoff {
+            r_cut,
+            evaluator: Isotropic(harmonic_repulsion),
+        };
+
+        assert_relative_eq!(
+            cutoff_pair.total_energy(&microstate_all_pairs),
+            cutoff_pair.total_energy(&microstate_vec_cell)
+        );
+
+        let move_distribution = Ball {
+            radius: 0.2.try_into()?,
+        };
+        for i in (0..N_BODIES).step_by(4) {
+            assert_relative_eq!(
+                cutoff_pair.delta_energy_remove(&microstate_all_pairs, i),
+                cutoff_pair.delta_energy_remove(&microstate_vec_cell, i),
+                epsilon = 1e-10
+            );
+
+            let mut final_body = microstate_all_pairs.bodies()[i].clone();
+            final_body.item.properties.position += move_distribution.sample(&mut rng);
+
+            assert_relative_eq!(
+                cutoff_pair.delta_energy_one(&microstate_all_pairs, i, &final_body.item),
+                cutoff_pair.delta_energy_one(&microstate_vec_cell, i, &final_body.item),
+                epsilon = 1e-10
+            );
+        }
+
+        for _ in 0..N_BODIES / 4 {
+            let mut new_body = body_template.clone();
+            new_body.properties.position = square.sample(&mut rng);
+
+            assert_relative_eq!(
+                cutoff_pair.delta_energy_insert(&microstate_all_pairs, &new_body),
+                cutoff_pair.delta_energy_insert(&microstate_vec_cell, &new_body),
+                epsilon = 1e-10
+            );
+        }
+
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod test_infinite {
     use super::*;
-    use crate::{TotalEnergy, pairwise::HardSphere};
+    use crate::{
+        TotalEnergy,
+        pairwise::{HardShape, HardSphere},
+    };
     use assert2::check;
-    use hoomd_geometry::shape::Hypercuboid;
-    use hoomd_microstate::{boundary::Closed, property::Point};
-    use hoomd_vector::Cartesian;
+    use hoomd_geometry::shape::{Ellipse, Hypercuboid};
+    use hoomd_microstate::{
+        boundary::Closed,
+        property::{OrientedPoint, Point},
+    };
+    use hoomd_vector::{Angle, Cartesian};
 
     use rstest::*;
 
@@ -1207,14 +1282,12 @@ mod test_infinite {
         use super::*;
 
         #[test]
-        fn large_r_cut() {
+        fn large_r_cut() -> anyhow::Result<()> {
             let mut microstate = Microstate::new();
-            microstate
-                .extend_bodies([
-                    Body::point(Cartesian::from([0.0, 0.0])),
-                    Body::point(Cartesian::from([0.0, 5.0])),
-                ])
-                .expect("hard-coded bodies should be in the boundary");
+            microstate.extend_bodies([
+                Body::point(Cartesian::from([0.0, 0.0])),
+                Body::point(Cartesian::from([0.0, 5.0])),
+            ])?;
 
             // Ensure that PairwiseCutoff respects the r_cut value set.
             let r_cut = 5.0_f64.next_up();
@@ -1232,10 +1305,12 @@ mod test_infinite {
             };
 
             check!(cutoff_pair.total_energy(&microstate) == 0.0);
+
+            Ok(())
         }
 
         #[test]
-        fn body_exclusion() {
+        fn body_exclusion() -> anyhow::Result<()> {
             // Ensure that PairwiseCutoff excludes pairs in the same body.
             let body_a = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
@@ -1253,9 +1328,7 @@ mod test_infinite {
             };
 
             let mut microstate = Microstate::new();
-            microstate
-                .extend_bodies([body_a, body_b])
-                .expect("hard-coded bodies should be in the boundary");
+            microstate.extend_bodies([body_a, body_b])?;
 
             let r_cut = 1.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff {
@@ -1272,6 +1345,8 @@ mod test_infinite {
             };
 
             check!(cutoff_pair.total_energy(&microstate) == f64::INFINITY);
+
+            Ok(())
         }
     }
 
@@ -1279,7 +1354,7 @@ mod test_infinite {
         use super::*;
 
         #[rstest]
-        fn site_outside(square: Closed<Hypercuboid<2>>) {
+        fn site_outside(square: Closed<Hypercuboid<2>>) -> anyhow::Result<()> {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -1290,8 +1365,7 @@ mod test_infinite {
             let microstate = Microstate::builder()
                 .boundary(square)
                 .bodies([body])
-                .try_build()
-                .expect("the hard-coded bodies should be in the boundary");
+                .try_build()?;
 
             let energy = PairwiseCutoff {
                 r_cut: 0.0,
@@ -1299,10 +1373,12 @@ mod test_infinite {
             };
 
             check!(energy.delta_energy_one(&microstate, 0, &final_body) == f64::INFINITY);
+
+            Ok(())
         }
 
         #[test]
-        fn body_exclusion() {
+        fn body_exclusion() -> anyhow::Result<()> {
             // Ensure that PairwiseCutoff.delta_energy_one excludes pairs in the same body.
             let body_a = Body {
                 properties: Point::new(Cartesian::from([-1.0, 0.0])),
@@ -1328,9 +1404,7 @@ mod test_infinite {
             };
 
             let mut microstate = Microstate::new();
-            microstate
-                .extend_bodies([body_a, body_b])
-                .expect("hard-coded bodies should be in the boundary");
+            microstate.extend_bodies([body_a, body_b])?;
 
             let r_cut = 1.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff {
@@ -1343,6 +1417,8 @@ mod test_infinite {
 
             // moving body away results in no overlaps
             check!(cutoff_pair.delta_energy_one(&microstate, 0, &body_a_no_overlap) == 0.0);
+
+            Ok(())
         }
     }
 
@@ -1350,7 +1426,7 @@ mod test_infinite {
         use super::*;
 
         #[rstest]
-        fn site_outside(square: Closed<Hypercuboid<2>>) {
+        fn site_outside(square: Closed<Hypercuboid<2>>) -> anyhow::Result<()> {
             let body = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
                 sites: [Point::new(Cartesian::from([1.0, 0.0]))].into(),
@@ -1361,8 +1437,7 @@ mod test_infinite {
             let microstate = Microstate::builder()
                 .boundary(square)
                 .bodies([body])
-                .try_build()
-                .expect("the hard-coded bodies should be in the boundary");
+                .try_build()?;
 
             let energy = PairwiseCutoff {
                 r_cut: 0.0,
@@ -1370,10 +1445,12 @@ mod test_infinite {
             };
 
             check!(energy.delta_energy_insert(&microstate, &new_body) == f64::INFINITY);
+
+            Ok(())
         }
 
         #[test]
-        fn body_exclusion() {
+        fn body_exclusion() -> anyhow::Result<()> {
             // Ensure that PairwiseCutoff.delta_energy_insert excludes pairs in the same body.
             let body_a_new = Body {
                 properties: Point::new(Cartesian::from([0.0, 0.0])),
@@ -1391,9 +1468,7 @@ mod test_infinite {
             };
 
             let mut microstate = Microstate::new();
-            microstate
-                .extend_bodies([body_b])
-                .expect("hard-coded bodies should be in the boundary");
+            microstate.extend_bodies([body_b])?;
 
             let r_cut = 1.0_f64.next_up();
             let cutoff_pair = PairwiseCutoff {
@@ -1403,15 +1478,54 @@ mod test_infinite {
 
             check!(cutoff_pair.delta_energy_insert(&microstate, &body_a_new) == f64::INFINITY);
 
-            microstate
-                .add_body(body_a_new)
-                .expect("hard-coded bodies should be in the boundary");
+            microstate.add_body(body_a_new)?;
             check!(cutoff_pair.delta_energy_remove(&microstate, 1) == 0.0);
+
+            Ok(())
+        }
+
+        #[test]
+        fn hard_shape_initial() -> anyhow::Result<()> {
+            // Ensure that HardShape always evaluates 0 initial energies.
+            let a = OrientedPoint {
+                position: Cartesian::from([0.0, 0.0]),
+                orientation: Angle::default(),
+            };
+            let b = OrientedPoint {
+                position: Cartesian::from([1.5, 0.0]),
+                orientation: Angle::default(),
+            };
+            let body_a = Body {
+                properties: a,
+                sites: [a].into(),
+            };
+            let body_b = Body {
+                properties: b,
+                sites: [a].into(),
+            };
+            let mut microstate = Microstate::new();
+            microstate.extend_bodies([body_a, body_b.clone()])?;
+
+            let ellipse = Ellipse {
+                semi_axes: [1.0.try_into()?, 2.0.try_into()?],
+            };
+            let hard_ellipse = PairwiseCutoff {
+                r_cut: 4.0,
+                evaluator: HardShape(ellipse),
+            };
+
+            // The initial configuration should have infinite energy.
+            check!(hard_ellipse.total_energy(&microstate) == f64::INFINITY);
+            check!(hard_ellipse.delta_energy_one(&microstate, 1, &body_b) == f64::INFINITY);
+
+            let mut new_body_b = body_b;
+            new_body_b.properties.position.coordinates = [2.1, 0.0];
+
+            // That infinity should be ignored, resulting in a delta E of 0
+            // when the body is moved into a non-overlapping state.
+            check!(hard_ellipse.delta_energy_one(&microstate, 1, &new_body_b) == 0.0);
+
+            Ok(())
         }
     }
 }
-
-// TODO: Test with HardShape
-// TODO: Test select methods with both VecCell and AllPairs. Perhaps by generating
-// a prescribed microstate, duplicating it with the different spatial data structures,
-// then testing all the `*energy` methods on it thrice.

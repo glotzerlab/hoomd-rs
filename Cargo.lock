@@ -3083,6 +3083,7 @@ dependencies = [
 name = "hoomd-interaction"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "approxim",
  "assert2",
  "divan",
