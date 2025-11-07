@@ -5,7 +5,7 @@
     copied from the lj_fluid.py in hoomd-validation repo,
     using second param_list (line 62 - 69 in lj_fluid.py).
 */
- 
+
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{
     CutoffPair, TotalEnergy,
@@ -14,7 +14,11 @@ use hoomd_interaction::{
 };
 use hoomd_md::{
     ConstantVolume, TranslationalMotion,
-    thermalize::{Thermalize, TranslationalAngularMomentumModifier, TranslationalModifier},
+    thermalize::{
+        ComAngularMomentumRemover, ComMomentumRemover, RotationalThermalizer, Thermalizer,
+        TranslationalAngularMomentumModifier, TranslationalMomentumModifier,
+        TranslationalThermalizer,
+    },
     thermostat::NoThermostat,
 };
 use hoomd_microstate::{
@@ -94,12 +98,15 @@ impl System {
             }),
         });
 
-        // Randomize momenta of the whole system.
-        // Remove com momentum anf angular momentum afterwards.
-        let thermalizer = Thermalize { kT: kT_init };
+        // Randomize the momenta of system.
+        let thermalizer = Thermalizer { kT: kT_init };
         thermalizer.thermalize_translation(&mut microstate);
-        thermalizer.remove_com_angular_momentum(&mut microstate);
-        thermalizer.remove_com_momentum(&mut microstate);
+
+        // Remove com momentum and angular momentum afterwards.
+        let angular_remover = ComAngularMomentumRemover {};
+        let linear_remover = ComMomentumRemover {};
+        angular_remover.modify(&mut microstate);
+        linear_remover.modify(&mut microstate);
 
         // Create an NVT macrostate
         let macrostate = Isothermal {
