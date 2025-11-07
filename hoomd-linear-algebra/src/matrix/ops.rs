@@ -200,12 +200,12 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// let m: Matrix<3, 3> = Matrix {
     ///     rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
     /// };
-    /// let sub = m.get_slice::<2, 2>(1, 1);
+    /// let sub = m.get_submatrix::<2, 2>(1, 1);
     /// assert_eq!(sub.rows, [[5.0, 6.0], [8.0, 9.0]]);
     /// ```
     #[inline]
     #[must_use]
-    pub fn get_slice<const R: usize, const C: usize>(
+    pub fn get_submatrix<const R: usize, const C: usize>(
         &self,
         start_row: usize,
         start_col: usize,
@@ -443,7 +443,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_slice() {
+    fn test_get_submatrix() {
         let m: Matrix<3, 4> = Matrix {
             rows: [
                 [1.0, 2.0, 3.0, 4.0],
@@ -451,19 +451,19 @@ mod tests {
                 [9.0, 10.0, 11.0, 12.0],
             ],
         };
-        let sub = m.get_slice::<2, 2>(1, 1);
+        let sub = m.get_submatrix::<2, 2>(1, 1);
         assert_eq!(sub.rows, [[6.0, 7.0], [10.0, 11.0]]);
 
-        let sub2 = m.get_slice::<1, 3>(0, 1);
+        let sub2 = m.get_submatrix::<1, 3>(0, 1);
         assert_eq!(sub2.rows, [[2.0, 3.0, 4.0]]);
     }
 
     #[test]
-    fn test_get_slice_square() {
+    fn test_get_submatrix_square() {
         let m: Matrix<3, 3> = Matrix {
             rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
         };
-        let sub = m.get_slice::<2, 2>(0, 0);
+        let sub = m.get_submatrix::<2, 2>(0, 0);
         assert_eq!(sub.rows, [[1.0, 2.0], [4.0, 5.0]]);
     }
 
@@ -487,7 +487,7 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_get_slice_panic_row() {
+    fn test_get_submatrix_panic_row() {
         let m: Matrix<3, 4> = Matrix {
             rows: [
                 [1.0, 2.0, 3.0, 4.0],
@@ -496,12 +496,12 @@ mod tests {
             ],
         };
         // this should panic because it tries to access row 3
-        m.get_slice::<2, 2>(2, 0);
+        let _ = m.get_submatrix::<2, 2>(2, 0);
     }
 
     #[test]
     #[should_panic]
-    fn test_get_slice_panic_col() {
+    fn test_get_submatrix_panic_col() {
         let m: Matrix<3, 4> = Matrix {
             rows: [
                 [1.0, 2.0, 3.0, 4.0],
@@ -510,6 +510,6 @@ mod tests {
             ],
         };
         // this should panic because it tries to access col 4
-        m.get_slice::<2, 2>(0, 3);
+        let _ = m.get_submatrix::<2, 2>(0, 3);
     }
 }
