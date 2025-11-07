@@ -243,9 +243,19 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     ) -> impl Iterator<Item = f64> + '_ {
         assert!(start_row + num_rows <= N);
         assert!(col_index < M);
-        self.rows[start_row..start_row + num_rows]
+        self.as_slice()[start_row * M + col_index..]
             .iter()
-            .map(move |row| row[col_index])
+            .step_by(M)
+            .take(num_rows)
+            .copied()
+    }
+
+    /// Returns the matrix as a flat slice of `f64`.
+    #[must_use]
+    #[inline]
+    pub fn as_slice(&self) -> &[f64] {
+        // This is safe because the layout of [[f64; M]; N] is contiguous.
+        unsafe { std::slice::from_raw_parts(self.rows.as_ptr().cast::<f64>(), N * M) }
     }
 
     /// Returns an iterator over slices of each row in a submatrix view.
@@ -591,6 +601,15 @@ mod tests {
     }
 
     #[test]
+    fn test_as_slice() {
+        let m: Matrix<2, 3> = Matrix {
+            rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
+        };
+        let slice = m.as_slice();
+        assert_eq!(slice, &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+    }
+
+    #[test]
     fn test_submatrix_slice_iter() {
         let m: Matrix<3, 4> = Matrix {
             rows: [
@@ -616,7 +635,7 @@ mod tests {
             ],
         };
         // This should panic.
-        m.submatrix_slice_iter(1, 1, 3, 3);
+        let _ = m.submatrix_slice_iter(1, 1, 3, 3);
     }
 
     #[test]
