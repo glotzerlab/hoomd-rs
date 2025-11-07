@@ -84,7 +84,7 @@
 <!-- UnivariateEnergy -->
 <g id="node4" class="node">
 <title>UnivariateEnergy</title>
-<g id="a_node4"><a xlink:href="../api/hoomd_interaction/pairwise/struct.UnivariateEnergy.html" xlink:title="UnivariateEnergy">
+<g id="a_node4"><a xlink:href="../api/hoomd_interaction/univariate/struct.UnivariateEnergy.html" xlink:title="UnivariateEnergy">
 <ellipse fill="#89b4fa" stroke="#181825" stroke-width="2" cx="603.27" cy="-591.04" rx="88.39" ry="18"/>
 <text xml:space="preserve" text-anchor="middle" x="603.27" y="-587.14" font-family="Monaco" font-size="12.00" fill="#181825">UnivariateEnergy</text>
 </a>
@@ -165,7 +165,7 @@
 <!-- isotropic_potentials -->
 <g id="node6" class="node">
 <title>isotropic_potentials</title>
-<g id="a_node6"><a xlink:href="../api/hoomd_interaction/pairwise/index.html" xlink:title="BoxCar\nHarmonic\nHarmonicRepulsion\nLennardJones\nLennardJonesGuass\nOverlapPenalty\nWeeksChandlerAnderson">
+<g id="a_node6"><a xlink:href="../api/hoomd_interaction/univariate/index.html" xlink:title="BoxCar\nHarmonic\nHarmonicRepulsion\nLennardJones\nLennardJonesGuass\nOverlapPenalty\nWeeksChandlerAnderson">
 <polygon fill="#89b4fa" stroke="#181825" points="469.02,-766.91 295.52,-766.91 295.52,-653.91 469.02,-653.91 469.02,-766.91"/>
 <text xml:space="preserve" text-anchor="middle" x="382.27" y="-751.51" font-family="Monaco" font-size="12.00" fill="#181825">BoxCar</text>
 <text xml:space="preserve" text-anchor="middle" x="382.27" y="-736.51" font-family="Monaco" font-size="12.00" fill="#181825">Harmonic</text>
@@ -234,7 +234,7 @@
 <!-- Expanded -->
 <g id="node12" class="node">
 <title>Expanded</title>
-<g id="a_node12"><a xlink:href="../api/hoomd_interaction/pairwise/struct.Expanded.html" xlink:title="Expanded">
+<g id="a_node12"><a xlink:href="../api/hoomd_interaction/univariate/struct.Expanded.html" xlink:title="Expanded">
 <polygon fill="#89b4fa" stroke="#181825" points="563.27,-728.41 487.27,-728.41 487.27,-692.41 563.27,-692.41 563.27,-728.41"/>
 <text xml:space="preserve" text-anchor="middle" x="525.27" y="-706.51" font-family="Monaco" font-size="12.00" fill="#181825">Expanded</text>
 </a>
@@ -286,7 +286,7 @@
 <!-- Shifted -->
 <g id="node16" class="node">
 <title>Shifted</title>
-<g id="a_node16"><a xlink:href="../api/hoomd_interaction/pairwise/struct.Shifted.html" xlink:title="Shifted">
+<g id="a_node16"><a xlink:href="../api/hoomd_interaction/univariate/struct.Shifted.html" xlink:title="Shifted">
 <polygon fill="#89b4fa" stroke="#181825" points="649.52,-728.41 581.02,-728.41 581.02,-692.41 649.52,-692.41 649.52,-728.41"/>
 <text xml:space="preserve" text-anchor="middle" x="615.27" y="-706.51" font-family="Monaco" font-size="12.00" fill="#181825">Shifted</text>
 </a>
@@ -302,7 +302,7 @@
 <!-- Xplor -->
 <g id="node17" class="node">
 <title>Xplor</title>
-<g id="a_node17"><a xlink:href="../api/hoomd_interaction/pairwise/struct.Xplor.html" xlink:title="Xplor">
+<g id="a_node17"><a xlink:href="../api/hoomd_interaction/univariate/struct.Xplor.html" xlink:title="Xplor">
 <polygon fill="#89b4fa" stroke="#181825" points="721.27,-728.41 667.27,-728.41 667.27,-692.41 721.27,-692.41 721.27,-728.41"/>
 <text xml:space="preserve" text-anchor="middle" x="694.27" y="-706.51" font-family="Monaco" font-size="12.00" fill="#181825">Xplor</text>
 </a>
