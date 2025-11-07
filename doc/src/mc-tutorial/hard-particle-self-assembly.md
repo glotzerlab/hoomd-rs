@@ -81,8 +81,7 @@ Assign all the model parameters in one code block so that they are easy to modif
 of ellipses to add, `maximum_distance` is the largest distance a translation trial move
 can take, `maximum_rotation` is the largest angle possible in a rotation trial move,
 `sigma` is the major axis of the ellipse, `aspect` is the ellipse aspect ratio and
-`macrostate` holds the temperature set point (in
-units of energy).
+`macrostate` holds the temperature set point (in units of energy).
 
 To ensure that `sigma` is the major axis, `aspect` must be greater than or equal
 to 1.0.
@@ -118,6 +117,7 @@ are assumed to be non-overlapping. You must choose this value appropriately for
 your shape(s). For the case of hard ellipses, the largest distance between the
 centers of two potentially overlapping ellipses is `sigma` &mdash; when two
 ellipses a distance `sigma` apart rotated so their their long axes just touch.
+`HardShape` computes this in the `maximum_interaction_range()` method.
 
 > [!IMPORTANT]
 > In *hoomd-rs*, it is *YOUR responsibility* to determine the appropriate

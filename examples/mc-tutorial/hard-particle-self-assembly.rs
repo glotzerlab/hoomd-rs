@@ -4,7 +4,7 @@ use anyhow::{Context, anyhow};
 
 use hoomd_geometry::shape::{Ellipse, Rectangle};
 use hoomd_interaction::{
-    PairwiseCutoff,
+    MaximumInteractionRange, PairwiseCutoff,
     pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape},
     univariate::OverlapPenalty,
 };
@@ -88,7 +88,8 @@ impl HardEllipseSelfAssembly {
 
         // ANCHOR: periodic
         let square = Rectangle::with_equal_edges(box_height.try_into()?);
-        let periodic_square = Periodic::new(sigma, square)?;
+        let periodic_square =
+            Periodic::new(hamiltonian.0.maximum_interaction_range(), square)?;
         // ANCHOR_END: periodic
 
         // ANCHOR: microstate
