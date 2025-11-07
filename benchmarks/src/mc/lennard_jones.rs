@@ -67,13 +67,12 @@ where
         let translate = Translate::with_maximum_distance(0.18.try_into()?);
         let translate_sweep = Sweep(translate);
 
-        let hamiltonian = PairwiseCutoff {
-            r_cut: maximum_interaction_range,
-            evaluator: Isotropic(univariate::LennardJones {
+        let hamiltonian = PairwiseCutoff (
+            Isotropic{interaction: univariate::LennardJones {
                 epsilon: 1.0,
                 sigma: 1.0,
-            }),
-        };
+            },r_cut: maximum_interaction_range,},
+        );
 
         let cell_list = X::with_search_radius(maximum_interaction_range.try_into()?);
         let boundary = Periodic::new(

@@ -121,11 +121,11 @@ pub trait TotalEnergy<M> {
 ///     Body::point(Cartesian::from([-1.0, 2.0])),
 /// ])?;
 ///
-/// let custom_evaluator = Custom { a: 1.0, b: 10.0 };
+/// let custom = Custom { a: 1.0, b: 10.0 };
 /// let site_energy =
-///     custom_evaluator.site_energy(&microstate.sites()[0].properties);
+///     custom.site_energy(&microstate.sites()[0].properties);
 ///
-/// let custom = External(custom_evaluator);
+/// let custom = External(custom);
 /// let total_energy = custom.total_energy(&microstate);
 /// # Ok(())
 /// # }
@@ -168,12 +168,12 @@ pub trait TotalEnergy<M> {
 /// let mut microstate = Microstate::new();
 /// microstate.extend_bodies([Body::point(Cartesian::from([9.6, 0.0]))])?;
 ///
-/// let custom_evaluator = Custom { r: 10.0 };
+/// let custom = Custom { r: 10.0 };
 /// let site_energy =
-///     custom_evaluator.site_energy(&microstate.sites()[0].properties);
+///     custom.site_energy(&microstate.sites()[0].properties);
 /// assert_eq!(site_energy, f64::INFINITY);
 ///
-/// let custom = External(custom_evaluator);
+/// let custom = External(custom);
 /// let total_energy = custom.total_energy(&microstate);
 /// assert_eq!(total_energy, f64::INFINITY);
 /// # Ok(())
@@ -378,8 +378,8 @@ pub trait SiteEnergy<S> {
 ///     },
 /// ])?;
 ///
-/// let evaluator = PolydisperseCircleOverlap;
-/// let site_pair_energy = evaluator.site_pair_energy(
+/// let overlap = PolydisperseCircleOverlap;
+/// let site_pair_energy = overlap.site_pair_energy(
 ///     &microstate.sites()[0].properties,
 ///     &microstate.sites()[1].properties,
 /// );

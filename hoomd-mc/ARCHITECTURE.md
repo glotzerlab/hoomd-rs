@@ -73,7 +73,7 @@ energy calculation. This specialization was originally achieved with separate
 the maintenance burden. That implementation was replaced with some additional
 methods in `SiteEnergy` and `SitePairEnergy`: 1) An `_energy_initial` method
 allows an implementation to always compute 0 for the initial energy and 2) an
-`is_only_infinite_or_zero` const method allows the delta energy evaluators  to
+`is_only_infinite_or_zero` const method allows the delta energy methods to
 implement specialized code paths. When a full potential is infinite or zero
 only, they can skip the initial energy term entirely. When only a portion of
 the potential is (e.g. hard particle + patches), then `_energy_initial` allows

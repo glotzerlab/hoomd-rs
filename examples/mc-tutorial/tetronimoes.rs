@@ -123,11 +123,7 @@ impl Tetronimoes {
             left: 0.0,
             right: sigma,
         };
-        let isotropic = Isotropic(boxcar);
-        let pairwise_cutoff = PairwiseCutoff {
-            r_cut: sigma,
-            evaluator: isotropic,
-        };
+        let pairwise_cutoff = PairwiseCutoff (Isotropic{ interaction: boxcar, r_cut: sigma});
 
         let hamiltonian = (linear, pairwise_cutoff);
         // ANCHOR_END: hamiltonian

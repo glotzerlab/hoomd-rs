@@ -83,10 +83,9 @@ where
         let hexagon =
             ConvexPolygon::with_vertices(big_hexagon.vertices().iter().map(|v| *v / 2.0))?;
 
-        let hamiltonian = PairwiseCutoff {
-            r_cut: sigma,
-            evaluator: HardShape(Convex(hexagon)),
-        };
+        let hamiltonian = PairwiseCutoff (
+            HardShape(Convex(hexagon)),
+        );
 
         let cell_list = X::with_search_radius(sigma.try_into()?);
         let microstate = Microstate::builder()

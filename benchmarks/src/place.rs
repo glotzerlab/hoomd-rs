@@ -66,11 +66,7 @@ where
 
     let f = OverlapPenalty::default();
     let overlap_penalty = Expanded { f, delta: sigma };
-    let evaluator = Isotropic(overlap_penalty);
-    let insert_hamiltonian = PairwiseCutoff {
-        r_cut: sigma,
-        evaluator,
-    };
+    let insert_hamiltonian = PairwiseCutoff ( Isotropic{ interaction: overlap_penalty, r_cut: sigma});
 
     while !quick_insert.is_complete() {
         quick_insert.apply(&mut microstate, &insert_hamiltonian);

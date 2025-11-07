@@ -67,10 +67,9 @@ where
         let translate = Translate::with_maximum_distance((sigma * 0.1).try_into()?);
         let translate_sweep = Sweep(translate);
 
-        let hamiltonian = PairwiseCutoff {
-            r_cut: sigma,
-            evaluator: HardSphere { diameter: sigma },
-        };
+        let hamiltonian = PairwiseCutoff (
+            HardSphere { diameter: sigma },
+        );
 
         let cell_list = X::with_search_radius(sigma.try_into()?);
         let microstate = Microstate::builder()
