@@ -133,6 +133,7 @@ multiple_crate_versions = "allow"
 cast_precision_loss = "allow"
 float_cmp = "allow"
 similar_names = "allow"
+inline_always = "allow"
 
 # opt-in to restrictions
 allow_attributes_without_reason = "warn"

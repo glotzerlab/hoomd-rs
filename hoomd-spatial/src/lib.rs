@@ -144,6 +144,13 @@ pub trait PointsNearBall<P, K> {
     /// 1
     /// ```
     fn points_near_ball(&self, position: &P, radius: f64) -> impl Iterator<Item = K>;
+
+    /// Is this spatial data structures [`AllPairs`]?
+    #[must_use]
+    #[inline]
+    fn is_all_pairs() -> bool {
+        false
+    }
 }
 
 /// Construct a spatial data structure capable of searching up to the given radius.

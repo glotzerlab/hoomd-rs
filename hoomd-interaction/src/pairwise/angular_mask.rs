@@ -3,7 +3,8 @@
 
 //! [`AngularMask`] and related data structures.
 
-use super::{AnisotropicEnergy, IsotropicEnergy};
+use super::AnisotropicEnergy;
+use crate::univariate::UnivariateEnergy;
 use hoomd_vector::{InnerProduct, Rotate, Unit, Vector};
 
 /// A single patch in the [`AngularMask`] potential.
@@ -54,18 +55,20 @@ pub struct Patch<V> {
 /// \end{cases}
 /// ```
 ///
-/// Implement the [Kern-Frenkel] potential with the [`Boxcar`](super::Boxcar) isotropic potential
+/// Implement the [Kern-Frenkel] potential with the [`Boxcar`] isotropic potential
 /// and single patch in both `masks_i` and `masks_j`.
 ///
 /// [Kern-Frenkel]: http://dx.doi.org/10.1063/1.1569473
+/// [`Boxcar`]: crate::univariate::Boxcar
 ///
 /// # Examples
 ///
 /// Construction:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::{
-///     AngularMask, Boxcar, angular_mask::Patch,
+/// use hoomd_interaction::{
+///     pairwise::{AngularMask, angular_mask::Patch},
+///     univariate::Boxcar,
 /// };
 /// use hoomd_vector::Angle;
 /// use std::f64::consts::PI;
@@ -87,8 +90,9 @@ pub struct Patch<V> {
 ///
 /// All fields are public and can be directly manipulated:
 /// ```
-/// use hoomd_interaction::pairwise::{
-///     AngularMask, Boxcar, angular_mask::Patch,
+/// use hoomd_interaction::{
+///     pairwise::{AngularMask, angular_mask::Patch},
+///     univariate::Boxcar,
 /// };
 /// use hoomd_vector::Angle;
 /// use std::f64::consts::PI;
@@ -114,8 +118,9 @@ pub struct Patch<V> {
 /// Evaluate energy between particles:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::{
-///     AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch,
+/// use hoomd_interaction::{
+///     pairwise::{AngularMask, AnisotropicEnergy, angular_mask::Patch},
+///     univariate::Boxcar,
 /// };
 /// use hoomd_vector::Angle;
 /// use std::f64::consts::PI;
@@ -143,8 +148,9 @@ pub struct Patch<V> {
 ///
 /// Apply different patches to the _i_ and _j_ particles:
 /// ```
-/// use hoomd_interaction::pairwise::{
-///     AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch,
+/// use hoomd_interaction::{
+///     pairwise::{AngularMask, AnisotropicEnergy, angular_mask::Patch},
+///     univariate::Boxcar,
 /// };
 /// use hoomd_vector::Angle;
 /// use std::f64::consts::PI;
@@ -187,8 +193,9 @@ pub struct Patch<V> {
 ///
 /// Evaluate the angular mask potential on 3D particles:
 /// ```
-/// use hoomd_interaction::pairwise::{
-///     AngularMask, AnisotropicEnergy, Boxcar, angular_mask::Patch,
+/// use hoomd_interaction::{
+///     pairwise::{AngularMask, AnisotropicEnergy, angular_mask::Patch},
+///     univariate::Boxcar,
 /// };
 /// use hoomd_vector::{Cartesian, InnerProduct, Versor};
 /// use std::f64::consts::PI;
@@ -246,17 +253,20 @@ where
     /// To obtain the best performance, construct [`AngularMask`] once and
     /// call use it many times. `new` dynamically allocates `Vec` types
     /// and is therefore not suitable to be called per particle,
-    /// unlike other potentials such as [`LennardJones`](super::LennardJones)
-    /// or [`Boxcar`](super::Boxcar).
+    /// unlike other potentials such as [`LennardJones`] or [`Boxcar`].
     ///
     /// `new` sets both `masks_i` and `masks_j` to `masks`. Use struct initialization
     /// syntax to set these separately.
     ///
+    /// [`LennardJones`]: crate::univariate::LennardJones
+    /// [`Boxcar`]: crate::univariate::Boxcar
+    ///
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::pairwise::{
-    ///     AngularMask, Boxcar, angular_mask::Patch,
+    /// use hoomd_interaction::{
+    ///     pairwise::{AngularMask, angular_mask::Patch},
+    ///     univariate::Boxcar,
     /// };
     /// use std::f64::consts::PI;
     ///
@@ -291,7 +301,7 @@ where
 
 impl<E, V, R> AnisotropicEnergy<V, R> for AngularMask<E, V>
 where
-    E: IsotropicEnergy,
+    E: UnivariateEnergy,
     V: InnerProduct,
     R: Rotate<V> + Into<R::Matrix> + Copy,
 {
@@ -324,7 +334,7 @@ mod tests {
     use rstest::*;
     use std::f64::consts::PI;
 
-    use crate::pairwise::{Boxcar, LennardJones};
+    use crate::univariate::{Boxcar, LennardJones};
     use hoomd_vector::{Angle, Cartesian, InnerProduct, Versor};
 
     #[test]

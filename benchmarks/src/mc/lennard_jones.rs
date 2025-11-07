@@ -4,10 +4,7 @@
 use std::fmt;
 
 use hoomd_geometry::shape::Hypercuboid;
-use hoomd_interaction::{
-    CutoffPair,
-    pairwise::{self, Isotropic},
-};
+use hoomd_interaction::{PairwiseCutoff, pairwise::Isotropic, univariate};
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
     Body, Microstate, SiteKey,
@@ -21,7 +18,7 @@ use hoomd_vector::Cartesian;
 pub struct LennardJones<const D: usize, X> {
     microstate: Microstate<Point<Cartesian<D>>, Point<Cartesian<D>>, X, Periodic<Hypercuboid<D>>>,
     translate_sweep: Sweep<Translate<Cartesian<D>>>,
-    hamiltonian: CutoffPair<Isotropic<pairwise::LennardJones>>,
+    hamiltonian: PairwiseCutoff<Isotropic<univariate::LennardJones>>,
     macrostate: Isothermal,
 }
 
@@ -70,13 +67,13 @@ where
         let translate = Translate::with_maximum_distance(0.18.try_into()?);
         let translate_sweep = Sweep(translate);
 
-        let hamiltonian = CutoffPair {
-            r_cut: maximum_interaction_range,
-            evaluator: Isotropic(pairwise::LennardJones {
+        let hamiltonian = PairwiseCutoff(Isotropic {
+            interaction: univariate::LennardJones {
                 epsilon: 1.0,
                 sigma: 1.0,
-            }),
-        };
+            },
+            r_cut: maximum_interaction_range,
+        });
 
         let cell_list = X::with_search_radius(maximum_interaction_range.try_into()?);
         let boundary = Periodic::new(

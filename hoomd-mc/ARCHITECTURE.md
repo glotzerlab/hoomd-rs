@@ -68,7 +68,17 @@ the move.
 Metropolis check. Therefore, potentials that return `inf` are technically
 well-defined and should not be prevented. To boost performance, specialized
 implementations of `DeltaEnergy` for hard overlaps will skip the initial
-energy calculation.
+energy calculation. This specialization was originally achieved with separate
+`*Overlap` and therefore increased the complexity of the API for users and
+the maintenance burden. That implementation was replaced with some additional
+methods in `SiteEnergy` and `SitePairEnergy`: 1) An `_energy_initial` method
+allows an implementation to always compute 0 for the initial energy and 2) an
+`is_only_infinite_or_zero` const method allows the delta energy methods to
+implement specialized code paths. When a full potential is infinite or zero
+only, they can skip the initial energy term entirely. When only a portion of
+the potential is (e.g. hard particle + patches), then `_energy_initial` allows
+that potential to only compute the non-infinite part when evaluating the initial
+energy.
 
 In some cases, such as Frenkel-Ladd integration, the move sizes may be so small
 that the phantom overlaps cannot be resolved. In such cases, potentials can

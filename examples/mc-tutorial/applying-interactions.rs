@@ -2,9 +2,8 @@
 // ANCHOR: use
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    CutoffPair, External, TotalEnergy,
-    external::Linear,
-    pairwise::{Boxcar, Isotropic},
+    External, PairwiseCutoff, TotalEnergy, external::Linear,
+    pairwise::Isotropic, univariate::Boxcar,
 };
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
@@ -29,7 +28,7 @@ struct Fill {
     /// How sites interact with other sites and fields.
     hamiltonian: (
         External<Linear<Cartesian<2>>>,
-        CutoffPair<Isotropic<Boxcar>>,
+        PairwiseCutoff<Isotropic<Boxcar>>,
     ),
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<Cartesian<2>>>,
@@ -66,15 +65,14 @@ impl Fill {
             left: 0.0,
             right: sigma,
         };
-        let isotropic = Isotropic(boxcar);
-        let cutoff_pair = CutoffPair {
+        let pairwise_cutoff = PairwiseCutoff(Isotropic {
+            interaction: boxcar,
             r_cut: sigma,
-            evaluator: isotropic,
-        };
+        });
         // ANCHOR_END: pair
 
         // ANCHOR: hamiltonian
-        let hamiltonian = (linear, cutoff_pair);
+        let hamiltonian = (linear, pairwise_cutoff);
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: sweep

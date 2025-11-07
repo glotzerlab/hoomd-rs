@@ -169,17 +169,21 @@ fn main() -> anyhow::Result<()> {
             match options.spatial_data {
                 SpatialData::VecCell => {
                     let mut simulation =
-                        mc::HardSphere::<2, VecCell<SiteKey, 2>>::with_microstate(microstate_2d)?;
+                        mc::HardSphereSim::<2, VecCell<SiteKey, 2>>::with_microstate(
+                            microstate_2d,
+                        )?;
                     execute(&mut results, &mut simulation, &benchmark, name, n)?;
                 }
                 SpatialData::HashCell => {
                     let mut simulation =
-                        mc::HardSphere::<2, HashCell<SiteKey, 2>>::with_microstate(microstate_2d)?;
+                        mc::HardSphereSim::<2, HashCell<SiteKey, 2>>::with_microstate(
+                            microstate_2d,
+                        )?;
                     execute(&mut results, &mut simulation, &benchmark, name, n)?;
                 }
                 SpatialData::AllPairs => {
                     let mut simulation =
-                        mc::HardSphere::<2, AllPairs<SiteKey>>::with_microstate(microstate_2d)?;
+                        mc::HardSphereSim::<2, AllPairs<SiteKey>>::with_microstate(microstate_2d)?;
                     execute(&mut results, &mut simulation, &benchmark, name, n)?;
                 }
             }
@@ -253,17 +257,21 @@ fn main() -> anyhow::Result<()> {
             match options.spatial_data {
                 SpatialData::VecCell => {
                     let mut simulation =
-                        mc::HardSphere::<3, VecCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
+                        mc::HardSphereSim::<3, VecCell<SiteKey, 3>>::with_microstate(
+                            microstate_3d,
+                        )?;
                     execute(&mut results, &mut simulation, &benchmark, name, n)?;
                 }
                 SpatialData::HashCell => {
                     let mut simulation =
-                        mc::HardSphere::<3, HashCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
+                        mc::HardSphereSim::<3, HashCell<SiteKey, 3>>::with_microstate(
+                            microstate_3d,
+                        )?;
                     execute(&mut results, &mut simulation, &benchmark, name, n)?;
                 }
                 SpatialData::AllPairs => {
                     let mut simulation =
-                        mc::HardSphere::<3, AllPairs<SiteKey>>::with_microstate(microstate_3d)?;
+                        mc::HardSphereSim::<3, AllPairs<SiteKey>>::with_microstate(microstate_3d)?;
                     execute(&mut results, &mut simulation, &benchmark, name, n)?;
                 }
             }

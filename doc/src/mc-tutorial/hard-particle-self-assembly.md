@@ -81,27 +81,23 @@ Assign all the model parameters in one code block so that they are easy to modif
 of ellipses to add, `maximum_distance` is the largest distance a translation trial move
 can take, `maximum_rotation` is the largest angle possible in a rotation trial move,
 `sigma` is the major axis of the ellipse, `aspect` is the ellipse aspect ratio and
-`macrostate` holds the temperature set point (in
-units of energy).
+`macrostate` holds the temperature set point (in units of energy).
 
 To ensure that `sigma` is the major axis, `aspect` must be greater than or equal
 to 1.0.
 
 #### Hamiltonian
 
-`CutoffPairOverlap` represents each site with the given shape. The site pair
+`HardShape` represents each site with the given shape. The site pair
 energy $` U_{ij} `$ is infinite when the two sites overlap and 0 when they do
-not. Use `CutoffPairOverlap` as the Hamiltonian:
+not. Use `PairwiseCutoff` with the `HardShape` interaction as the Hamiltonian:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:hamiltonian}}
 ```
 
-As with `CutoffPair`, you must provide $` r_\mathrm{cut} `$. All pairs
-separated by a distance larger than $` r_\mathrm{cut} `$ are assumed to be
-non-overlapping. You must choose $` r_\mathrm{cut} `$ appropriately for your
-shape(s). For the case of hard ellipses, the largest distance between the
-centers of two potentially overlapping ellipses is `sigma` &mdash; when two ellipses
-a distance `sigma` apart rotated so their their long axes just touch.
+`HardShape` checks for overlaps between pairs of sites in `site_pair_energy`.
+When any two sites overlap, the energy is infinite. When there are no overlaps,
+the energy is 0.
 
 #### Periodic Boundary Conditions
 
@@ -114,11 +110,14 @@ interaction range** between sites to construct `Periodic`:
 
 `Periodic` uses this distance to generate **ghost sites** *outside* the
 boundary that are periodic images of **sites** *inside*. Methods like
-`CutoffPairOverlap` will compute interactions between **sites** inside the
-boundary and *all* other sites (whether they are ghosts or not). When using
-`CutoffPairOverlap`, `CutoffPair`, or any method that utilizes $` r_\mathrm{cut}
-`$, the `maximum_interaction_range` should be set to the maximum of all the  $`
-r_\mathrm{cut} `$ values.
+`PairwiseCutoff` will compute interactions between **sites** inside the
+boundary and *all* other sites (whether they are ghosts or not).
+All pairs separated by a distance larger than the **maximum interaction range**
+are assumed to be non-overlapping. You must choose this value appropriately for
+your shape(s). For the case of hard ellipses, the largest distance between the
+centers of two potentially overlapping ellipses is `sigma` &mdash; when two
+ellipses a distance `sigma` apart rotated so their their long axes just touch.
+`HardShape` computes this in the `maximum_interaction_range()` method.
 
 > [!IMPORTANT]
 > In *hoomd-rs*, it is *YOUR responsibility* to determine the appropriate
@@ -128,7 +127,7 @@ r_\mathrm{cut} `$ values.
 > and/or any analysis methods could be *any arbitrary code*.
 
 > [!WARNING]
-> If you set `maximum_interaction_range` too small, `CutoffPair` (and similar
+> If you set `maximum_interaction_range` too small, `PairwiseCutoff` (and similar
 > methods) will *miss interactions that should be computed*.
 
 #### Microstate
@@ -180,14 +179,14 @@ prevents inserted bodies from overlapping too much, the harmonic potential
 encourages the trial moves to separate bodies, and the step function prevents
 the trial moves from moving non-overlapping sites into overlapping configurations.
 
-Express this Hamiltonian using `CutoffPair` with an `Anisotropic` evaluator:
+Express this Hamiltonian using `PairwiseCutoff` with an `Anisotropic` interaction:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-particle-self-assembly.rs:insert_hamiltonian}}
 ```
 
 `ApproximateShapeOverlap` computes the *approximate* amount of overlap between
 a pair of shapes, `OverlapPenalty` applies the potential described above,
-and the `Anisotropic` `CutoffPair` computes this potential on pairs of
+and the `Anisotropic` `PairwiseCutoff` computes this potential on pairs of
 sites.
 
 > [!IMPORTANT]

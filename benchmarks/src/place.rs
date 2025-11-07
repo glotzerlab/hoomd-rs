@@ -9,8 +9,9 @@ use rand::distr::Distribution;
 
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{
-    CutoffPair,
-    pairwise::{Expanded, Isotropic, OverlapPenalty},
+    PairwiseCutoff,
+    pairwise::Isotropic,
+    univariate::{Expanded, OverlapPenalty},
 };
 use hoomd_mc::{QuickInsert, Sweep, Translate, Trial, UniformIn};
 use hoomd_microstate::{
@@ -65,11 +66,10 @@ where
 
     let f = OverlapPenalty::default();
     let overlap_penalty = Expanded { f, delta: sigma };
-    let evaluator = Isotropic(overlap_penalty);
-    let insert_hamiltonian = CutoffPair {
+    let insert_hamiltonian = PairwiseCutoff(Isotropic {
+        interaction: overlap_penalty,
         r_cut: sigma,
-        evaluator,
-    };
+    });
 
     while !quick_insert.is_complete() {
         quick_insert.apply(&mut microstate, &insert_hamiltonian);
