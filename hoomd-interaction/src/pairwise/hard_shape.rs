@@ -3,7 +3,7 @@
 
 //! Implement `HardShape`
 
-use crate::SitePairEnergy;
+use crate::{MaximumInteractionRange, SitePairEnergy};
 use hoomd_geometry::{BoundingSphereRadius, IntersectsAt};
 use hoomd_microstate::property::{Orientation, Position};
 use hoomd_vector::{self, Metric, Rotate, Rotation, Vector};
@@ -105,10 +105,13 @@ where
     fn is_only_infinite_or_zero() -> bool {
         true
     }
+}
 
+impl<G> MaximumInteractionRange for HardShape<G> where
+    G: BoundingSphereRadius {
     #[inline]
-    fn performs_own_distance_check() -> bool {
-        true
+    fn maximum_interaction_range(&self) -> f64 {
+        self.0.bounding_sphere_radius().get() * 2.0
     }
 }
 
@@ -158,9 +161,11 @@ where
     fn is_only_infinite_or_zero() -> bool {
         true
     }
+}
 
+impl MaximumInteractionRange for HardSphere {
     #[inline]
-    fn performs_own_distance_check() -> bool {
-        true
+    fn maximum_interaction_range(&self) -> f64 {
+        self.diameter
     }
 }

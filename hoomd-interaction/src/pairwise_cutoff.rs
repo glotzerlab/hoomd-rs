@@ -3,12 +3,11 @@
 
 //! Implement `PairwiseCutoff`
 
-use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SitePairEnergy, TotalEnergy};
+use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy, TotalEnergy};
 use hoomd_microstate::{
     Body, Microstate, Site, SiteKey, Transform, boundary::Wrap, property::Position,
 };
 use hoomd_spatial::PointsNearBall;
-use hoomd_vector::Metric;
 
 /// Short-ranged pairwise interactions between sites.
 ///
@@ -22,10 +21,12 @@ use hoomd_vector::Metric;
 /// the position of site i, $`b_i`$ is the body tag that holds site *i*, and
 /// $`\left[ \  \right]`$ denotes the Iverson bracket.
 ///
-/// In other words, [`PairwiseCutoff`] sums the energy for all pairs that are separated
-/// by a distance less than `r_cut` and belong to different bodies.
+/// In other words, [`PairwiseCutoff`] sums the energy for all pairs that are
+/// separated by a distance less than the maximum interaction range `r_cut` and
+/// belong to different bodies.
 ///
-/// For the evaluator, use [`Anisotropic`], [`Isotropic`], [`HardShape`], or your own custom type.
+/// For the evaluator, use [`Anisotropic`], [`Isotropic`], [`HardShape`], or
+/// your own custom type.
 ///
 /// TODO: Reword this when [`PairwiseCutoff`] also implements `SitePairForce`.
 ///
@@ -119,19 +120,13 @@ use hoomd_vector::Metric;
 /// # Ok(())
 /// # }
 /// ```
-pub struct PairwiseCutoff<E> {
-    /// The distance beyond which all pairwise interactions evaluate to 0.
-    pub r_cut: f64,
-
-    /// Computes the pairwise energies and forces.
-    pub evaluator: E,
-}
+pub struct PairwiseCutoff<E>(pub E);
 
 impl<E> PairwiseCutoff<E> {
     /// Compute the pair energy between two sites.
     ///
     /// Use this method to compute an individual term in the total pair energy,
-    /// subject to the `r_cut` and inter-body checks:
+    /// subject to the the maximum interaction range `r_cut` and inter-body checks:
     ///
     /// ```math
     /// U\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
@@ -176,29 +171,24 @@ impl<E> PairwiseCutoff<E> {
     /// # }
     /// ```
     #[inline]
-    pub fn site_pair_energy<P, S>(
+    pub fn site_pair_energy<S>(
         &self,
-        site_properties_i: &Site<S>,
-        site_properties_j: &Site<S>,
+        site_i: &Site<S>,
+        site_j: &Site<S>,
     ) -> f64
     where
         E: SitePairEnergy<S>,
-        S: Position<Position = P>,
-        P: Metric,
     {
-        let r = (site_properties_i.properties.position())
-            .distance(site_properties_j.properties.position());
-        if r < self.r_cut && site_properties_i.body_tag != site_properties_j.body_tag {
-            self.evaluator
-                .site_pair_energy(&site_properties_i.properties, &site_properties_j.properties)
-        } else {
-            0.0
+        if site_i.body_tag == site_j.body_tag {
+            return 0.0;
         }
+
+        self.0.site_pair_energy(&site_i.properties, &site_j.properties)
     }
 
     /// Compute the filtered energy contribution of a single site (`AllPairs` specialization)
     #[inline(always)]
-    fn filtered_site_energy_all<P, B, S, X, C, F, F2>(
+    fn filtered_site_energy_all<B, S, X, C, F, F2>(
         &self,
         microstate: &Microstate<B, S, X, C>,
         site_i_properties: &S,
@@ -207,23 +197,14 @@ impl<E> PairwiseCutoff<E> {
     ) -> f64
     where
         E: SitePairEnergy<S>,
-        S: Position<Position = P>,
-        X: PointsNearBall<P, SiteKey>,
-        P: Metric,
         F: Fn(&Site<S>) -> bool,
         F2: Fn(&E, &S, &S) -> f64,
     {
         let mut energy = 0.0;
 
         for site_j in microstate.sites().iter().chain(microstate.ghosts()) {
-            if filter(site_j)
-                && (E::performs_own_distance_check()
-                    || site_i_properties
-                        .position()
-                        .distance_squared(site_j.properties.position())
-                        < self.r_cut.powi(2))
-            {
-                let one = site_pair_energy(&self.evaluator, site_i_properties, &site_j.properties);
+            if filter(site_j) {
+                let one = site_pair_energy(&self.0, site_i_properties, &site_j.properties);
                 if one == f64::INFINITY {
                     return one;
                 }
@@ -245,24 +226,17 @@ impl<E> PairwiseCutoff<E> {
         site_pair_energy: F2,
     ) -> f64
     where
-        E: SitePairEnergy<S>,
+        E: SitePairEnergy<S> + MaximumInteractionRange,
         S: Position<Position = P>,
         X: PointsNearBall<P, SiteKey>,
-        P: Metric,
         F: Fn(&Site<S>) -> bool,
         F2: Fn(&E, &S, &S) -> f64,
     {
         let mut energy = 0.0;
 
-        for site_j in microstate.iter_sites_near(site_i_properties.position(), self.r_cut) {
-            if filter(site_j)
-                && (E::performs_own_distance_check()
-                    || site_i_properties
-                        .position()
-                        .distance_squared(site_j.properties.position())
-                        < self.r_cut.powi(2))
-            {
-                let one = site_pair_energy(&self.evaluator, site_i_properties, &site_j.properties);
+        for site_j in microstate.iter_sites_near(site_i_properties.position(), self.0.maximum_interaction_range()) {
+            if filter(site_j) {
+                let one = site_pair_energy(&self.0, site_i_properties, &site_j.properties);
                 if one == f64::INFINITY {
                     return one;
                 }
@@ -284,10 +258,9 @@ impl<E> PairwiseCutoff<E> {
         site_pair_energy: F2,
     ) -> f64
     where
-        E: SitePairEnergy<S>,
+        E: SitePairEnergy<S> + MaximumInteractionRange,
         S: Position<Position = P>,
         X: PointsNearBall<P, SiteKey>,
-        P: Metric,
         F: Fn(&Site<S>) -> bool,
         F2: Fn(&E, &S, &S) -> f64,
     {
@@ -312,12 +285,11 @@ impl<E> PairwiseCutoff<E> {
         filter: F,
     ) -> f64
     where
-        E: SitePairEnergy<S>,
+        E: SitePairEnergy<S> + MaximumInteractionRange,
         B: Transform<S>,
         S: Position<Position = P>,
         X: PointsNearBall<P, SiteKey>,
         C: Wrap<B> + Wrap<S>,
-        P: Metric,
         F: Fn(&Site<S>) -> bool,
     {
         let mut energy_final = 0.0;
@@ -351,10 +323,9 @@ impl<E> PairwiseCutoff<E> {
         filter: F,
     ) -> f64
     where
-        E: SitePairEnergy<S>,
+        E: SitePairEnergy<S> + MaximumInteractionRange,
         S: Position<Position = P>,
         X: PointsNearBall<P, SiteKey>,
-        P: Metric,
         F: Fn(&Site<S>) -> bool,
     {
         let mut energy_initial = 0.0;
@@ -379,9 +350,8 @@ impl<E> PairwiseCutoff<E> {
 
 impl<P, B, S, X, C, E> TotalEnergy<Microstate<B, S, X, C>> for PairwiseCutoff<E>
 where
-    E: SitePairEnergy<S>,
+    E: SitePairEnergy<S> + MaximumInteractionRange,
     S: Position<Position = P>,
-    P: Metric,
     X: PointsNearBall<P, SiteKey>,
 {
     /// Compute the total energy of the microstate contributed by functions on pairs of sites.
@@ -488,12 +458,11 @@ where
 
 impl<P, B, S, X, C, E> DeltaEnergyOne<B, S, X, C> for PairwiseCutoff<E>
 where
-    E: SitePairEnergy<S>,
+    E: SitePairEnergy<S> + MaximumInteractionRange,
     B: Transform<S>,
     S: Position<Position = P>,
     X: PointsNearBall<P, SiteKey>,
     C: Wrap<B> + Wrap<S>,
-    P: Metric,
 {
     /// Evaluate the change in energy contributed by `PairwiseCutoff` when one body is updated.
     ///
@@ -602,12 +571,11 @@ where
 
 impl<P, B, S, X, C, E> DeltaEnergyInsert<B, S, X, C> for PairwiseCutoff<E>
 where
-    E: SitePairEnergy<S>,
+    E: SitePairEnergy<S> + MaximumInteractionRange,
     B: Transform<S>,
     S: Position<Position = P>,
     X: PointsNearBall<P, SiteKey>,
     C: Wrap<B> + Wrap<S>,
-    P: Metric,
 {
     /// Evaluate the change in energy contributed by `PairwiseCutoff` when one body is inserted.
     ///
@@ -691,10 +659,9 @@ where
 
 impl<P, B, S, X, C, E> DeltaEnergyRemove<B, S, X, C> for PairwiseCutoff<E>
 where
-    E: SitePairEnergy<S>,
+    E: SitePairEnergy<S> + MaximumInteractionRange,
     S: Position<Position = P>,
     X: PointsNearBall<P, SiteKey>,
-    P: Metric,
 {
     /// Evaluate the change in energy contributed by `PairwiseCutoff` when one body is removed.
     ///
@@ -841,10 +808,9 @@ mod tests_finite {
             >,
         ) {
             // Ensure that closures can be used as IsotropicEnergy
-            let cutoff_pair = PairwiseCutoff {
-                r_cut: 2.0,
-                evaluator: Isotropic(|r| 1.0 / (r * 2.0)),
-            };
+            let cutoff_pair = PairwiseCutoff (
+                Isotropic{interaction: |r| 1.0 / (r * 2.0), r_cut: 2.0,},
+            );
 
             // Two pairs at a distance of 1.0 each with energy 1/2.
             assert_eq!(cutoff_pair.total_energy(&microstate), 1.0);
@@ -872,10 +838,9 @@ mod tests_finite {
             >,
         ) {
             // Ensure that PairwiseCutoff respects the r_cut value set.
-            let cutoff_pair = PairwiseCutoff {
-                r_cut: 5.0_f64.next_up(),
-                evaluator: Isotropic(|r| 1.0 / (r * 2.0)),
-            };
+            let cutoff_pair = PairwiseCutoff (Isotropic{interaction: |r| 1.0 / (r * 2.0),
+                r_cut: 5.0_f64.next_up(),}
+            );
 
             // Two pairs at a distance of 1.0 each with energy 1/2.
             // Plus two pairs at a distance of 5.0 with energy 1/10
@@ -903,10 +868,9 @@ mod tests_finite {
             let mut microstate = Microstate::new();
             microstate.extend_bodies([body_a, body_b])?;
 
-            let cutoff_pair = PairwiseCutoff {
-                r_cut: 1.0_f64.next_up(),
-                evaluator: Isotropic(|_r| 1.0),
-            };
+            let cutoff_pair = PairwiseCutoff (
+                Isotropic{interaction: |_r| 1.0, r_cut: 1.0_f64.next_up(), },
+            );
 
             // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
             check!(cutoff_pair.total_energy(&microstate) == 2.0);
@@ -946,10 +910,9 @@ mod tests_finite {
                 .bodies([body])
                 .try_build()?;
 
-            let energy = PairwiseCutoff {
-                r_cut: 0.0,
-                evaluator: Isotropic(|_r| 0.0),
-            };
+            let energy = PairwiseCutoff (
+                Isotropic{interaction: |_r| 0.0, r_cut: 0.0},
+            );
 
             check!(energy.delta_energy_one(&microstate, 0, &final_body) == f64::INFINITY);
 
@@ -981,10 +944,9 @@ mod tests_finite {
             let mut microstate = Microstate::new();
             microstate.extend_bodies([body_a, body_b])?;
 
-            let cutoff_pair = PairwiseCutoff {
-                r_cut: 1.0_f64.next_up(),
-                evaluator: Isotropic(|_r| 1.0),
-            };
+            let cutoff_pair = PairwiseCutoff (
+                Isotropic{interaction: |_r| 1.0,r_cut: 1.0_f64.next_up(),}
+            );
 
             // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
             // Moving body 0 to the left results in a -2.0 energy difference.
@@ -1015,10 +977,9 @@ mod tests_finite {
 
             let mut microstate_final = microstate_initial.clone();
             let harmonic_repulsion: HarmonicRepulsion = HarmonicRepulsion { a: 5.0, r_cut: 5.0 };
-            let cutoff_pair = PairwiseCutoff {
-                r_cut: 5.0,
-                evaluator: Isotropic(harmonic_repulsion),
-            };
+            let cutoff_pair = PairwiseCutoff (
+                Isotropic{interaction: harmonic_repulsion,r_cut: 5.0,}
+            );
 
             check!(cutoff_pair.total_energy(&microstate_initial) != 0.0);
 
@@ -1066,10 +1027,9 @@ mod tests_finite {
                 .bodies([body])
                 .try_build()?;
 
-            let energy = PairwiseCutoff {
-                r_cut: 0.0,
-                evaluator: Isotropic(|_r| 0.0),
-            };
+            let energy = PairwiseCutoff (
+                Isotropic{interaction: |_r| 0.0, r_cut: 0.0},
+            );
 
             check!(energy.delta_energy_insert(&microstate, &new_body) == f64::INFINITY);
 
@@ -1097,10 +1057,9 @@ mod tests_finite {
             let mut microstate = Microstate::new();
             microstate.extend_bodies([body_b])?;
 
-            let cutoff_pair = PairwiseCutoff {
-                r_cut: 1.0_f64.next_up(),
-                evaluator: Isotropic(|_r| 1.0),
-            };
+            let cutoff_pair = PairwiseCutoff (
+                Isotropic{interaction: |_r| 1.0,r_cut: 1.0_f64.next_up(),}
+            );
 
             // Of all the pairs a distance 1.0 apart, only 2 are interbody pairs.
             // Moving body 0 to the left results in a -2.0 energy difference.
@@ -1133,10 +1092,9 @@ mod tests_finite {
 
             let mut microstate_final = microstate_initial.clone();
             let harmonic_repulsion: HarmonicRepulsion = HarmonicRepulsion { a: 5.0, r_cut: 5.0 };
-            let cutoff_pair = PairwiseCutoff {
-                r_cut: 5.0,
-                evaluator: Isotropic(harmonic_repulsion),
-            };
+            let cutoff_pair = PairwiseCutoff (
+                Isotropic{interaction: harmonic_repulsion,r_cut: 5.0,}
+            );
 
             // Use `HarmonicRepulsion` for validation because it is a varies
             // with r and will therefore show some changes for any moves (unlike
@@ -1203,10 +1161,9 @@ mod tests_finite {
         }
 
         let harmonic_repulsion: HarmonicRepulsion = HarmonicRepulsion { a: 5.0, r_cut };
-        let cutoff_pair = PairwiseCutoff {
-            r_cut,
-            evaluator: Isotropic(harmonic_repulsion),
-        };
+        let cutoff_pair = PairwiseCutoff (
+            Isotropic{interaction: harmonic_repulsion, r_cut},
+        );
 
         assert_relative_eq!(
             cutoff_pair.total_energy(&microstate_all_pairs),
@@ -1291,18 +1248,16 @@ mod test_infinite {
 
             // Ensure that PairwiseCutoff respects the r_cut value set.
             let r_cut = 5.0_f64.next_up();
-            let cutoff_pair = PairwiseCutoff {
-                r_cut,
-                evaluator: HardSphere { diameter: r_cut },
-            };
+            let cutoff_pair = PairwiseCutoff (
+                HardSphere { diameter: r_cut }
+            );
 
             check!(cutoff_pair.total_energy(&microstate) == f64::INFINITY);
 
             let r_cut = 5.0_f64;
-            let cutoff_pair = PairwiseCutoff {
-                r_cut,
-                evaluator: HardSphere { diameter: r_cut },
-            };
+            let cutoff_pair = PairwiseCutoff (
+                HardSphere { diameter: r_cut }
+            );
 
             check!(cutoff_pair.total_energy(&microstate) == 0.0);
 
@@ -1331,18 +1286,16 @@ mod test_infinite {
             microstate.extend_bodies([body_a, body_b])?;
 
             let r_cut = 1.0_f64.next_up();
-            let cutoff_pair = PairwiseCutoff {
-                r_cut,
-                evaluator: HardSphere { diameter: r_cut },
-            };
+            let cutoff_pair = PairwiseCutoff (
+                HardSphere { diameter: r_cut }
+            );
 
             check!(cutoff_pair.total_energy(&microstate) == 0.0);
 
             let r_cut = 2.0_f64.next_up();
-            let cutoff_pair = PairwiseCutoff {
-                r_cut,
-                evaluator: HardSphere { diameter: r_cut },
-            };
+            let cutoff_pair = PairwiseCutoff (
+                HardSphere { diameter: r_cut }
+            );
 
             check!(cutoff_pair.total_energy(&microstate) == f64::INFINITY);
 
@@ -1367,10 +1320,9 @@ mod test_infinite {
                 .bodies([body])
                 .try_build()?;
 
-            let energy = PairwiseCutoff {
-                r_cut: 0.0,
-                evaluator: HardSphere { diameter: 0.0 },
-            };
+            let energy = PairwiseCutoff (
+                HardSphere { diameter: 0.0 }
+            );
 
             check!(energy.delta_energy_one(&microstate, 0, &final_body) == f64::INFINITY);
 
@@ -1407,10 +1359,9 @@ mod test_infinite {
             microstate.extend_bodies([body_a, body_b])?;
 
             let r_cut = 1.0_f64.next_up();
-            let cutoff_pair = PairwiseCutoff {
-                r_cut,
-                evaluator: HardSphere { diameter: r_cut },
-            };
+            let cutoff_pair = PairwiseCutoff (
+                HardSphere { diameter: r_cut }
+            );
 
             // moving body a to the right generates overlaps
             check!(cutoff_pair.delta_energy_one(&microstate, 0, &body_a_overlap) == f64::INFINITY);
@@ -1439,10 +1390,9 @@ mod test_infinite {
                 .bodies([body])
                 .try_build()?;
 
-            let energy = PairwiseCutoff {
-                r_cut: 0.0,
-                evaluator: HardSphere { diameter: 0.0 },
-            };
+            let energy = PairwiseCutoff (
+                HardSphere { diameter: 0.0 }
+            );
 
             check!(energy.delta_energy_insert(&microstate, &new_body) == f64::INFINITY);
 
@@ -1471,10 +1421,9 @@ mod test_infinite {
             microstate.extend_bodies([body_b])?;
 
             let r_cut = 1.0_f64.next_up();
-            let cutoff_pair = PairwiseCutoff {
-                r_cut,
-                evaluator: HardSphere { diameter: r_cut },
-            };
+            let cutoff_pair = PairwiseCutoff (
+                HardSphere { diameter: r_cut }
+            );
 
             check!(cutoff_pair.delta_energy_insert(&microstate, &body_a_new) == f64::INFINITY);
 
@@ -1509,10 +1458,9 @@ mod test_infinite {
             let ellipse = Ellipse {
                 semi_axes: [1.0.try_into()?, 2.0.try_into()?],
             };
-            let hard_ellipse = PairwiseCutoff {
-                r_cut: 4.0,
-                evaluator: HardShape(ellipse),
-            };
+            let hard_ellipse = PairwiseCutoff (
+                HardShape(ellipse),
+            );
 
             // The initial configuration should have infinite energy.
             check!(hard_ellipse.total_energy(&microstate) == f64::INFINITY);

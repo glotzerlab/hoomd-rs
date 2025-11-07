@@ -77,11 +77,11 @@ documented.
 
 ### Cutoff potentials
 
-The goal is that the base types in `hoomd_interaction` cleanly define the
-functional form of the interaction. In most cases, this implies that it
-evaluates potentials without any notion of a cutoff radius. The use of a cutoff
-is a detail left up to the caller and is not present in `hoomd_interaction`'s
-API.
+The goal is that the base types in `hoomd_interaction::univariate` cleanly
+define the functional form of the interaction. In most cases, this implies
+that it evaluates potentials without any notion of a cutoff radius. The
+use of a cutoff is a detail left up to the caller and is not present in
+`hoomd_interaction::univariate`'s API.
 
 In some specific cases (e.g. Weeks-Chandler-Anderson), the notion of a cutoff
 is baked into the definition of the potential. `hoomd_interaction` evaluates
@@ -151,10 +151,10 @@ spend time computing values that will not change the total.
 `hoomd_interaction` breaks each energy/force computation up into multiple layers.
 For example, the external potential module defines the `SiteEnergy` trait
 that computes the energy of a single site. The `External` type wraps a
-generic `SiteEnergy` type, implements `TotalEnergy` over the microstate, and
-reimplements `SiteEnergy`. This way, one variable (e.g. `linear`) implements
+generic `SiteEnergy` type and implements `TotalEnergy` over the microstate.
+This way, one variable (e.g. `linear`) implements
 multiple methods that both the MD and MC engines can use.
-* `site_energy(&self, site_properties: &S)` evaluates the energy of a given site.
+* `.0.site_energy(&self, site_properties: &S)` evaluates the energy of a given site.
 * `total_energy(&self, microstate: &M)` evaluates the total
   energy of the microstate.
 * ... and later forces
@@ -173,9 +173,9 @@ implement an entirely custom implementation of `TotalEnergy`.
 
 Similarly, `SitePairEnergy` describes a type that can compute an energy between
 a pair of sites (as a function of their properties). The wrappers `Isotropic`
-and `Anisotropic` implement this for the implement `SitePairEnergy` for the
-potentials described above. `PairwiseCutoff` implements `TotalEnergy` for pairwise
-interactions that are cutoff to 0 at a given distance `r_cut`.
+and `Anisotropic` implement `SitePairEnergy` for the potentials described above.
+`PairwiseCutoff` implements `TotalEnergy` for pairwise interactions that are
+cutoff to 0 at a given distance `r_cut`.
 
 ## Type dependent parameters
 
@@ -184,10 +184,24 @@ TODO: Sketch out how enums and `SiteEnergy`/`SitePairEnergy` work with match exp
 ## Cutoff potentials, spatial data structures, and periodic boundary conditions
 
 `PairwiseCutoff` needs to find all sites (including ghost sites with periodic
-boundaries) that are close to a given point in space. The `r_cut` value
-thus needs to be consistent between 3 different structs, the boundary,
-the spatial data structure, and `PairwiseCutoff` itself.
+boundaries) that are close to a given point in space. However, the specific
+`r_cut` value needed varies depending on the interaction. Hard shapes have
+a natural `r_cut` that is a function of the shape. Generic potentials (such
+as `LennardJones`) must be given an explicit `r_cut` by the user. Therefore,
+implementors of `SitePairEnergy` (and related traits) must also implement
+`MaximumInteractionRange`.
 
-At this point, the best `hoomd-rs` can do is check for this consistency at
-runtime and panic when it is not met. Perhaps a cleaner solution will present
-itself.
+The `r_cut` value also must be consistent with the maximum interaction range in
+the boundary and the maximum search radius in the spatial data structure.
+
+There is no direct connection between the boundary and the interaction model.
+Therefore, the user is responsible to set the values correctly. There is no
+way to detect if the boundary's maximum interaction range is set too small -
+the resulting simulation will simply behave as if some interactions across the
+boundary are ignored.
+
+The spatial data structures in `hoomd-spatial` must be given an appropriate
+nominal and maximum search radius. `VecCell` and `HashCell` will panic
+when asked to search past the maximum possible. If a user sets the nominal
+incorrectly, `VecCell` and `HashCell` will produce correct results, but
+performance will suffer.
