@@ -89,6 +89,11 @@ where
     fn points_near_ball(&self, _position: &P, _radius: f64) -> impl Iterator<Item = K> {
         self.keys.iter().copied()
     }
+
+    #[inline]
+    fn is_all_pairs() -> bool {
+        true
+    }
 }
 
 impl<K> fmt::Display for AllPairs<K> {

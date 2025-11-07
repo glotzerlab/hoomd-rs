@@ -412,24 +412,46 @@ where
             {
                 Err(_) => return f64::INFINITY,
                 Ok(site_i_properties) => {
-                    for site_j in
-                        initial_microstate.iter_sites_near(site_i_properties.position(), self.r_cut)
-                    {
-                        if body_tag != site_j.body_tag
-                            && (E::performs_own_distance_check()
-                                || site_i_properties
-                                    .position()
-                                    .distance_squared(site_j.properties.position())
-                                    < self.r_cut.powi(2))
+                    if X::is_all_pairs() {
+                        for site_j in initial_microstate.sites().iter().chain(initial_microstate.ghosts())
                         {
-                            let one = self
-                                .evaluator
-                                .site_pair_energy(&site_i_properties, &site_j.properties);
-                            if one == f64::INFINITY {
-                                return one;
-                            }
+                            if body_tag != site_j.body_tag
+                                && (E::performs_own_distance_check()
+                                    || site_i_properties
+                                        .position()
+                                        .distance_squared(site_j.properties.position())
+                                        < self.r_cut.powi(2))
+                            {
+                                let one = self
+                                    .evaluator
+                                    .site_pair_energy(&site_i_properties, &site_j.properties);
+                                if one == f64::INFINITY {
+                                    return one;
+                                }
 
-                            energy_final += one;
+                                energy_final += one;
+                            }
+                        }
+                    } else {
+                        for site_j in
+                            initial_microstate.iter_sites_near(site_i_properties.position(), self.r_cut)
+                        {
+                            if body_tag != site_j.body_tag
+                                && (E::performs_own_distance_check()
+                                    || site_i_properties
+                                        .position()
+                                        .distance_squared(site_j.properties.position())
+                                        < self.r_cut.powi(2))
+                            {
+                                let one = self
+                                    .evaluator
+                                    .site_pair_energy(&site_i_properties, &site_j.properties);
+                                if one == f64::INFINITY {
+                                    return one;
+                                }
+
+                                energy_final += one;
+                            }
                         }
                     }
                 }
@@ -439,25 +461,48 @@ where
         let mut energy_initial = 0.0;
         if !E::is_only_infinite_or_zero() {
             for site_i in initial_microstate.iter_body_sites(body_index) {
-                for site_j in
-                    initial_microstate.iter_sites_near(site_i.properties.position(), self.r_cut)
-                {
-                    if body_tag != site_j.body_tag
-                        && (E::performs_own_distance_check()
-                            || site_i
-                                .properties
-                                .position()
-                                .distance_squared(site_j.properties.position())
-                                < self.r_cut.powi(2))
+                if X::is_all_pairs() {
+                    for site_j in initial_microstate.sites().iter().chain(initial_microstate.ghosts())
                     {
-                        let one = self
-                            .evaluator
-                            .site_pair_energy_initial(&site_i.properties, &site_j.properties);
-                        if one == f64::INFINITY {
-                            return one;
-                        }
+                        if body_tag != site_j.body_tag
+                            && (E::performs_own_distance_check()
+                                || site_i
+                                    .properties
+                                    .position()
+                                    .distance_squared(site_j.properties.position())
+                                    < self.r_cut.powi(2))
+                        {
+                            let one = self
+                                .evaluator
+                                .site_pair_energy_initial(&site_i.properties, &site_j.properties);
+                            if one == f64::INFINITY {
+                                return one;
+                            }
 
-                        energy_initial += one;
+                            energy_initial += one;
+                        }
+                    }
+                } else {
+                    for site_j in
+                        initial_microstate.iter_sites_near(site_i.properties.position(), self.r_cut)
+                    {
+                        if body_tag != site_j.body_tag
+                            && (E::performs_own_distance_check()
+                                || site_i
+                                    .properties
+                                    .position()
+                                    .distance_squared(site_j.properties.position())
+                                    < self.r_cut.powi(2))
+                        {
+                            let one = self
+                                .evaluator
+                                .site_pair_energy_initial(&site_i.properties, &site_j.properties);
+                            if one == f64::INFINITY {
+                                return one;
+                            }
+
+                            energy_initial += one;
+                        }
                     }
                 }
             }
@@ -701,7 +746,7 @@ where
 #[cfg(test)]
 mod tests_finite {
     use super::*;
-    use crate::{TotalEnergy, pairwise::Isotropic, univariate::LennardJones};
+    use crate::{TotalEnergy, pairwise::Isotropic, univariate::HarmonicRepulsion};
     use assert2::check;
     use hoomd_geometry::shape::Hypercuboid;
     use hoomd_microstate::{
@@ -933,22 +978,21 @@ mod tests_finite {
                 .expect("hard-coded bodies should be in the boundary");
 
             let mut microstate_final = microstate_initial.clone();
-            let lennard_jones: LennardJones = LennardJones {
-                epsilon: 1.5,
-                sigma: 1.25,
+            let harmonic_repulsion: HarmonicRepulsion = HarmonicRepulsion {
+                a: 5.0,
+                r_cut: 5.0,
             };
             let cutoff_pair = PairwiseCutoff {
                 r_cut: 5.0,
-                evaluator: Isotropic(lennard_jones),
+                evaluator: Isotropic(harmonic_repulsion),
             };
 
             check!(cutoff_pair.total_energy(&microstate_initial) != 0.0);
 
-            // Use `LennardJones` for validation because it is a varies with r and
-            // will therefore show some changes for any moves (unlike `BoxCar`).
-            // However, we need to avoid numerical errors when two sites get
-            // too close. Randomly move the 2nd particle around within a
-            // well-defined space where there will be no such overlaps.
+            // Use `HarmonicRepulsion` for validation because it is a varies
+            // with r and will therefore show some changes for any moves (unlike
+            // `BoxCar`). HarmonicRepulsion avoids numerical errors when two
+            // sites get too close.
             let mut rng = StdRng::seed_from_u64(0);
             let r_distribution =
                 Uniform::new(3.0, 6.0).expect("hard-coded constants should be valid");
@@ -1061,20 +1105,19 @@ mod tests_finite {
                 .expect("hard-coded bodies should be in the boundary");
 
             let mut microstate_final = microstate_initial.clone();
-            let lennard_jones: LennardJones = LennardJones {
-                epsilon: 1.5,
-                sigma: 1.25,
+            let harmonic_repulsion: HarmonicRepulsion = HarmonicRepulsion {
+                a: 5.0,
+                r_cut: 5.0,
             };
             let cutoff_pair = PairwiseCutoff {
                 r_cut: 5.0,
-                evaluator: Isotropic(lennard_jones),
+                evaluator: Isotropic(harmonic_repulsion),
             };
 
-            // Use `LennardJones` for validation because it is a varies with r and
-            // will therefore show some changes for any moves (unlike `BoxCar`).
-            // However, we need to avoid numerical errors when two sites get
-            // too close. Randomly insert the 2nd body in a well-defined area
-            // to avoid this.
+            // Use `HarmonicRepulsion` for validation because it is a varies
+            // with r and will therefore show some changes for any moves (unlike
+            // `BoxCar`). HarmonicRepulsion avoids numerical errors when two
+            // sites get too close.
             let mut rng = StdRng::seed_from_u64(2);
             let r_distribution =
                 Uniform::new(3.0, 6.0).expect("hard-coded constants should be valid");
@@ -1095,7 +1138,7 @@ mod tests_finite {
                 let delta_energy_total = cutoff_pair.total_energy(&microstate_final)
                     - cutoff_pair.total_energy(&microstate_initial);
 
-                assert_relative_eq!(delta_energy_insert, delta_energy_total, epsilon = 1e-4);
+                assert_relative_eq!(delta_energy_insert, delta_energy_total, epsilon = 1e-6);
 
                 let delta_energy_remove = cutoff_pair.delta_energy_remove(&microstate_final, 1);
                 assert_relative_eq!(delta_energy_remove, -delta_energy_total, epsilon = 1e-6);
@@ -1109,7 +1152,7 @@ mod tests_finite {
 }
 
 #[cfg(test)]
-mod tests {
+mod test_infinite {
     use super::*;
     use crate::{TotalEnergy, pairwise::HardSphere};
     use assert2::check;
@@ -1340,4 +1383,7 @@ mod tests {
     }
 }
 
-// TODO: Test HardShape
+// TODO: Test with HardShape
+// TODO: Test select methods with both VecCell and AllPairs. Perhaps by generating
+// a prescribed microstate, duplicating it with the different spatial data structures,
+// then testing all the `*energy` methods on it thrice.
