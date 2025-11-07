@@ -78,22 +78,19 @@ The use of maps on cell indices provides
   - **If the particle remains in the same cell:**
     - No action is required.
 
-## AllPairs Data Structure
+## `AllPairs` Data Structure
 
-For curved space or in tiny simulations, the `AllPairs` type implements a no-op spatial
-data structure. Every query will always match all points. To effectively
-implement `PointUpdate` and `PointsNearBall`, `AllPairs` must unfortunately store
-a `HashSet` of all keys. That makes ball searches run at 1/4 the speed of a tight
-for loop over all sites.
+For curved space or in tiny simulations, the `AllPairs` type implements a
+pseudo-no-op spatial data structure. Every query will always match all points.
+To effectively implement `PointUpdate` and `PointsNearBall`, `AllPairs` must
+unfortunately store a `HashSet` of all keys which significantly degrades the
+performance of `iter_sites_near`.
 
-We *could* have `iter_sites_near` return some kind of hybrid iterator that
-stores both types of iterators internally and uses the one appropriate
-to the spatial data structure. However, it may be better to write a
-separate implementation of `PairwiseCutoff` instead: `PairwiseCutoffAll`.
-`PairwiseCutoffAll` would not call `iter_sites_near` and would instead loop over
-`sites()` and `ghosts()` directly. As a bonus, `PairwiseCutoffAll` could iterate
-over sites in parallel and boost performance for simulations on curved surfaces
-that have no other opportunity for parallelism.
+To work around this performance issue, `PointsNearBall` provides the
+`is_all_pairs` method to identify when it is `AllPairs`. `PairwiseCutoff` checks
+this flag and switches to direct iteration over `sites` and `ghosts`. Rust's
+dead code optimizer is able to optimize away these "runtime" checks and produce
+code as optimal as if it has been specialized.
 
 ## Neighbor iteration protocols
 
