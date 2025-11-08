@@ -37,6 +37,24 @@ impl<const N: usize, const M: usize> IndexMut<(usize, usize)> for Matrix<N, M> {
     }
 }
 
+impl<const N: usize, const M: usize> Index<(usize, std::ops::Range<usize>)> for Matrix<N, M> {
+    type Output = [f64];
+
+    #[inline]
+    fn index(&self, index: (usize, std::ops::Range<usize>)) -> &Self::Output {
+        let (row_index, col_range) = index;
+        &self.rows[row_index][col_range]
+    }
+}
+
+impl<const N: usize, const M: usize> IndexMut<(usize, std::ops::Range<usize>)> for Matrix<N, M> {
+    #[inline]
+    fn index_mut(&mut self, index: (usize, std::ops::Range<usize>)) -> &mut Self::Output {
+        let (row_index, col_range) = index;
+        &mut self.rows[row_index][col_range]
+    }
+}
+
 /// Compute the elementwise scalar multiplication of a [`Matrix`]
 ///
 /// # Examples
