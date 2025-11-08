@@ -2,11 +2,11 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /// General matrix-vector products
-pub(crate) mod gemv;
+pub mod gemv;
 /// ``std::ops`` implementations for [`Matrix`]
 pub mod ops;
 /// ``qr`` decomposition for [`Matrix`] types.
-pub(crate) mod qr;
+pub mod qr;
 
 pub use crate::diagonal::DiagonalMatrix;
 
