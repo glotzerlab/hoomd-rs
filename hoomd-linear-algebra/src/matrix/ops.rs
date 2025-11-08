@@ -245,7 +245,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         &self,
         col_index: usize,
         row_range: std::ops::Range<usize>,
-    ) -> impl Iterator<Item = f64> + '_ + Clone {
+    ) -> impl ExactSizeIterator<Item = f64> + '_ + Clone {
         self.rows[row_range].iter().map(move |row| row[col_index])
     }
 
@@ -259,7 +259,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         &mut self,
         col_index: usize,
         row_range: std::ops::Range<usize>,
-    ) -> impl Iterator<Item = &mut f64> + '_ {
+    ) -> impl ExactSizeIterator<Item = &mut f64> + '_ {
         self.rows[row_range]
             .iter_mut()
             .map(move |row| &mut row[col_index])
@@ -285,7 +285,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         &'_ self,
         row_range: std::ops::Range<usize>,
         col_range: std::ops::Range<usize>,
-    ) -> impl Iterator<Item = &'_ [f64]> + Clone {
+    ) -> impl ExactSizeIterator<Item = &'_ [f64]> + Clone {
         self.rows[row_range]
             .iter()
             .map(move |row| &row[col_range.clone()])
@@ -303,7 +303,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         &mut self,
         row_range: std::ops::Range<usize>,
         col_range: std::ops::Range<usize>,
-    ) -> impl Iterator<Item = &mut [f64]> {
+    ) -> impl ExactSizeIterator<Item = &mut [f64]> {
         self.rows[row_range]
             .iter_mut()
             .map(move |row| &mut row[col_range.clone()])
