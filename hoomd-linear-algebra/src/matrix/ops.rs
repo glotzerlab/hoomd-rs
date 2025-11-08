@@ -658,4 +658,25 @@ mod tests {
         assert_eq!(sub_iter_zero_cols.next(), Some(&[] as &[f64]));
         assert_eq!(sub_iter_zero_cols.next(), None);
     }
+
+    #[rstest]
+    #[case([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])]
+    #[case([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])]
+    #[case([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0], [9.0, 10.0, 11.0, 12.0], [13.0, 14.0, 15.0, 16.0]])]
+    #[case([[1.0, 2.0, 3.0, 4.0, 5.0]])]
+    #[case([[1.0], [2.0], [3.0], [4.0], [5.0]])]
+    #[case([[1.0]])]
+    fn test_submatrix_slice_iter_whole_matrix<const N: usize, const M: usize>(
+        #[case] rows: [[f64; M]; N],
+    ) {
+        let m = Matrix::<N, M> { rows };
+
+        let mut sub_iter = m.submatrix_slice_iter(0..N, 0..M);
+
+        for i in 0..N {
+            let row_slice = sub_iter.next().unwrap();
+            assert_eq!(row_slice, &m.rows[i][..]);
+        }
+        assert!(sub_iter.next().is_none());
+    }
 }
