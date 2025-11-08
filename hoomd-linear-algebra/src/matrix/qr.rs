@@ -31,11 +31,24 @@ where
     }
 }
 
-/// Performs a general matrix-column vector product `y = A * x`, writing the result to `y`.
+/// Performs an in-place matrix-vector multiplication using sub-regions of a matrix.
 ///
-/// - `a`: The matrix `A`, represented as an iterator of row-slices.
-/// - `x`: The column vector `x`, represented as a slice.
-/// - `y`: The mutable output slice to write the result vector to.
+/// This function computes `y = B * x`, where `B` is a submatrix of `a`, `x` is a
+/// column vector from `a`, and `y` is a column of `a` that gets overwritten
+/// with the result.
+///
+/// # Panics
+///
+/// This function will panic if:
+/// - Any of the provided ranges are out of bounds for the matrix `a`.
+/// - The dimensions of `B`, `x`, and `y` are not compatible for multiplication.
+/// - The output column `y` overlaps with any of the input columns from `B` or `x`.
+///
+/// # Safety
+///
+/// This function uses `unsafe` code to perform the in-place modification, bypassing
+/// the borrow checker. The operation is safe because the function asserts that the
+/// input and output memory regions do not alias.
 pub fn gemv_submatrix_column_into_column<const N: usize>(
     a: &mut Matrix<N, N>,
     b_rows: std::ops::Range<usize>,
@@ -95,13 +108,14 @@ pub fn gemv_submatrix_column_into_column<const N: usize>(
         for j in 0..b_cols.len() {
             let b_col_idx = b_cols.start + j;
             let x_row_idx = x_rows.start + j;
+            debug_assert!(b_row_idx < N);
+            debug_assert!(b_col_idx < N);
+            debug_assert!(x_row_idx < N);
 
             // SAFETY: We are reading from the matrix using raw pointers.
             // This is safe because:
             // 1. `matrix_ptr` is valid.
-            // 2. The indices are within the bounds of the matrix (this is
-            //    implicitly trusted by using ranges, but can be asserted for
-            //    extra safety if needed).
+            // 2. The top-level assertions guarantee the indices are in-bounds.
             // 3. We've asserted that the read locations do not alias the
             //    write location for this loop iteration.
             unsafe {
@@ -115,6 +129,7 @@ pub fn gemv_submatrix_column_into_column<const N: usize>(
         // This is safe because we've asserted that the output column `y_col`
         // does not overlap with any input columns.
         unsafe {
+            debug_assert!(y_row_idx < N);
             (*matrix_ptr.add(y_row_idx))[y_col] = sum;
         }
     }
