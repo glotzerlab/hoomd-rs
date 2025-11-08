@@ -2,7 +2,6 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Asdf.
-#![cfg(feature = "extras")]
 
 /// asdf
 use crate::util::read_u64_le_unchecked;

@@ -18,15 +18,10 @@ pub(crate) mod util;
 
 #[cfg(feature = "extras")]
 pub mod threefry2x64;
-#[cfg(not(feature = "extras"))]
-mod threefry2x64;
 
 #[cfg(feature = "extras")]
 /// Squares PRNGs, which have good performance but worst statistics than SFC64.
 pub mod squares;
-#[cfg(not(feature = "extras"))]
-/// Squares PRNGs, which have good performance but worst statistics than SFC64.
-mod squares;
 
 /// Structs and implementations for the SFC64 PRNG.
 mod sfc;

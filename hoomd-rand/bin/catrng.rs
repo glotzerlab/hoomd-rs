@@ -12,6 +12,7 @@
 //!
 //! Note this also works with [gjrand](https://gjrand.sourceforge.net)
 //! * `$ catrng | ./mcp --tera`
+//!
 //! This is drawn from [simd_prngs](https://github.com/TheIronBorn/simd_prngs/blob/master/src/bin/cat_rng.rs) with a few modifications for our use case.
 
 extern crate hoomd_rand;
