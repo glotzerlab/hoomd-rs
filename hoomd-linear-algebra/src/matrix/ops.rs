@@ -249,6 +249,22 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         self.rows[row_range].iter().map(move |row| row[col_index])
     }
 
+    /// Returns a mutable iterator over the elements of a part of a column.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the slice is out of bounds.
+    #[inline]
+    pub fn get_col_slice_iter_mut(
+        &mut self,
+        col_index: usize,
+        row_range: std::ops::Range<usize>,
+    ) -> impl Iterator<Item = &mut f64> + '_ {
+        self.rows[row_range]
+            .iter_mut()
+            .map(move |row| &mut row[col_index])
+    }
+
     /// Returns the matrix as a flat slice of `f64`.
     #[must_use]
     #[inline]
@@ -603,6 +619,26 @@ mod tests {
         let col_iter = m.get_col_slice_iter(1, 0..2);
         let col_vec: Vec<f64> = col_iter.collect();
         assert_eq!(col_vec, vec![2.0, 6.0]);
+    }
+
+    #[test]
+    fn test_get_col_slice_iter_mut() {
+        let mut m: Matrix<3, 4> = Matrix {
+            rows: [
+                [1.0, 2.0, 3.0, 4.0],
+                [5.0, 6.0, 7.0, 8.0],
+                [9.0, 10.0, 11.0, 12.0],
+            ],
+        };
+        let col_iter_mut = m.get_col_slice_iter_mut(1, 0..2);
+        col_iter_mut.for_each(|x| *x *= 10.0);
+
+        let expected_rows = [
+            [1.0, 20.0, 3.0, 4.0],
+            [5.0, 60.0, 7.0, 8.0],
+            [9.0, 10.0, 11.0, 12.0],
+        ];
+        assert_eq!(m.rows, expected_rows);
     }
 
     #[test]
