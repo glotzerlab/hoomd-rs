@@ -19,15 +19,13 @@ rand_distr.workspace = true
 thiserror.workspace = true
 hoomd-linear-algebra.workspace = true
 hoomd-utility.workspace = true
-hoomd-rand.workspace = true
 approxim.workspace = true
-chacha20 = { version = "= 0.10.0-rc.0", default-features = false, features = ["rng"] }
 
 [dev-dependencies]
 divan.workspace = true
 paste.workspace = true
-rand_distr = "0.5.1"
 rstest.workspace = true
+hoomd-rand.workspace = true
 
 [[bench]]
 name = "cartesian"

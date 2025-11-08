@@ -3204,7 +3204,6 @@ name = "hoomd-vector"
 version = "0.0.0"
 dependencies = [
  "approxim",
- "chacha20",
  "divan",
  "hoomd-linear-algebra",
  "hoomd-rand",
