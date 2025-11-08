@@ -245,7 +245,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         &self,
         col_index: usize,
         row_range: std::ops::Range<usize>,
-    ) -> impl Iterator<Item = f64> + '_ {
+    ) -> impl Iterator<Item = f64> + '_ + Clone {
         self.rows[row_range].iter().map(move |row| row[col_index])
     }
 
@@ -285,7 +285,7 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         &'_ self,
         row_range: std::ops::Range<usize>,
         col_range: std::ops::Range<usize>,
-    ) -> impl Iterator<Item = &'_ [f64]> {
+    ) -> impl Iterator<Item = &'_ [f64]> + Clone {
         self.rows[row_range]
             .iter()
             .map(move |row| &row[col_range.clone()])
