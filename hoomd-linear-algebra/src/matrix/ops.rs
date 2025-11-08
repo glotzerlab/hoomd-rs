@@ -224,9 +224,8 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// Panics if the slice is out of bounds.
     #[must_use]
     #[inline]
-    pub fn get_row_slice(&self, row_index: usize, start_col: usize, num_cols: usize) -> &[f64] {
-        assert!(start_col + num_cols <= M);
-        &self.rows[row_index][start_col..start_col + num_cols]
+    pub fn get_row_slice(&self, row_index: usize, col_range: std::ops::Range<usize>) -> &[f64] {
+        &self.rows[row_index][col_range]
     }
 
     /// Returns an iterator over the elements of a part of a column.
@@ -236,32 +235,24 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     /// Panics if the slice is out of bounds.
     #[inline]
     pub fn get_col_slice_iter(
-        &'_ self,
+        &self,
         col_index: usize,
-        start_row: usize,
-        num_rows: usize,
+        row_range: std::ops::Range<usize>,
     ) -> impl Iterator<Item = f64> + '_ {
-        assert!(start_row + num_rows <= N);
-        assert!(col_index < M);
-        self.as_slice()[start_row * M + col_index..]
-            .iter()
-            .step_by(M)
-            .take(num_rows)
-            .copied()
+        self.rows[row_range].iter().map(move |row| row[col_index])
     }
 
     /// Returns the matrix as a flat slice of `f64`.
     #[must_use]
     #[inline]
     pub fn as_slice(&self) -> &[f64] {
-        // This is safe because the layout of [[f64; M]; N] is contiguous.
+        // SAFETY: This is safe because the layout of [[f64; M]; N] is contiguous.
         unsafe { std::slice::from_raw_parts(self.rows.as_ptr().cast::<f64>(), N * M) }
     }
 
     /// Returns an iterator over slices of each row in a submatrix view.
     ///
-    /// The submatrix is defined by its top-left corner `(start_row, start_col)`
-    /// and its dimensions `(num_rows, num_cols)`.
+    /// The submatrix is defined by `row_range` and `col_range`.
     ///
     /// # Panics
     ///
@@ -269,16 +260,12 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
     #[inline]
     pub fn submatrix_slice_iter(
         &'_ self,
-        start_row: usize,
-        start_col: usize,
-        num_rows: usize,
-        num_cols: usize,
+        row_range: std::ops::Range<usize>,
+        col_range: std::ops::Range<usize>,
     ) -> impl Iterator<Item = &'_ [f64]> {
-        assert!(start_row + num_rows <= N);
-        assert!(start_col + num_cols <= M);
-        self.rows[start_row..start_row + num_rows]
+        self.rows[row_range]
             .iter()
-            .map(move |row| &row[start_col..start_col + num_cols])
+            .map(move |row| &row[col_range.clone()])
     }
 }
 
@@ -582,7 +569,7 @@ mod tests {
         let m: Matrix<2, 3> = Matrix {
             rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
         };
-        let row_slice = m.get_row_slice(1, 1, 2);
+        let row_slice = m.get_row_slice(1, 1..3);
         assert_eq!(row_slice, &[5.0, 6.0]);
     }
 
@@ -595,7 +582,7 @@ mod tests {
                 [9.0, 10.0, 11.0, 12.0],
             ],
         };
-        let col_iter = m.get_col_slice_iter(1, 0, 2);
+        let col_iter = m.get_col_slice_iter(1, 0..2);
         let col_vec: Vec<f64> = col_iter.collect();
         assert_eq!(col_vec, vec![2.0, 6.0]);
     }
@@ -618,7 +605,7 @@ mod tests {
                 [9.0, 10.0, 11.0, 12.0],
             ],
         };
-        let mut sub_iter = m.submatrix_slice_iter(1, 1, 2, 2);
+        let mut sub_iter = m.submatrix_slice_iter(1..3, 1..3);
         assert_eq!(sub_iter.next(), Some(&[6.0, 7.0] as &[f64]));
         assert_eq!(sub_iter.next(), Some(&[10.0, 11.0] as &[f64]));
         assert_eq!(sub_iter.next(), None);
@@ -635,7 +622,7 @@ mod tests {
             ],
         };
         // This should panic.
-        let _ = m.submatrix_slice_iter(1, 1, 3, 3);
+        let _ = m.submatrix_slice_iter(1..4, 1..4);
     }
 
     #[test]
@@ -643,7 +630,7 @@ mod tests {
         let m: Matrix<2, 2> = Matrix {
             rows: [[1.0, 2.0], [3.0, 4.0]],
         };
-        let mut sub_iter = m.submatrix_slice_iter(0, 0, 2, 2);
+        let mut sub_iter = m.submatrix_slice_iter(0..2, 0..2);
         assert_eq!(sub_iter.next(), Some(&[1.0, 2.0] as &[f64]));
         assert_eq!(sub_iter.next(), Some(&[3.0, 4.0] as &[f64]));
         assert_eq!(sub_iter.next(), None);
@@ -654,7 +641,7 @@ mod tests {
         let m: Matrix<2, 2> = Matrix {
             rows: [[1.0, 2.0], [3.0, 4.0]],
         };
-        let mut sub_iter = m.submatrix_slice_iter(1, 1, 1, 1);
+        let mut sub_iter = m.submatrix_slice_iter(1..2, 1..2);
         assert_eq!(sub_iter.next(), Some(&[4.0] as &[f64]));
         assert_eq!(sub_iter.next(), None);
     }
@@ -664,10 +651,10 @@ mod tests {
         let m: Matrix<2, 2> = Matrix {
             rows: [[1.0, 2.0], [3.0, 4.0]],
         };
-        let mut sub_iter_zero_rows = m.submatrix_slice_iter(1, 1, 0, 1);
+        let mut sub_iter_zero_rows = m.submatrix_slice_iter(1..1, 1..2);
         assert_eq!(sub_iter_zero_rows.next(), None);
 
-        let mut sub_iter_zero_cols = m.submatrix_slice_iter(1, 1, 1, 0);
+        let mut sub_iter_zero_cols = m.submatrix_slice_iter(1..2, 1..1);
         assert_eq!(sub_iter_zero_cols.next(), Some(&[] as &[f64]));
         assert_eq!(sub_iter_zero_cols.next(), None);
     }
