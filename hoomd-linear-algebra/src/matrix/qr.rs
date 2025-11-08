@@ -36,23 +36,23 @@ where
 /// - `a`: The matrix `A`, represented as an iterator of row-slices.
 /// - `x`: The column vector `x`, represented as a slice.
 /// - `y`: The mutable output slice to write the result vector to.
-pub fn gemv_col_slice<'a, M, I>(a: M, x: &I, y: &mut [f64])
+pub fn gemv_col_slice<'a, M, I, O>(a: M, x: &I, y: O)
 where
-    M: Iterator<Item = &'a [f64]> + Clone,
+    M: ExactSizeIterator<Item = &'a [f64]> + Clone,
     I: ExactSizeIterator<Item = f64> + Clone,
+    O: ExactSizeIterator<Item = &'a mut f64>,
 {
-    let a_rows = a.clone().count();
-    assert_eq!(a_rows, y.len(), "Output slice has incorrect length");
+    assert_eq!(a.len(), y.len(), "Output iterator has incorrect length");
+    if let Some(first_row) = a.clone().next() {
+        assert_eq!(
+            first_row.len(),
+            x.len(),
+            "Matrix and column vector dimensions are incompatible"
+        );
+    }
 
-    for (i, row_slice) in a.enumerate() {
-        if i == 0 {
-            assert_eq!(
-                row_slice.len(),
-                x.len(),
-                "Matrix and column vector dimensions are incompatible"
-            );
-        }
-        y[i] = row_slice
+    for (y_i, row_slice) in y.zip(a) {
+        *y_i = row_slice
             .iter()
             .zip(x.clone())
             .map(|(a_ij, x_j)| a_ij * x_j)
@@ -85,7 +85,7 @@ mod tests {
         let a_iter = a.submatrix_slice_iter(0..2, 0..3);
         let x = &a[(0, 0..2)];
         let mut y = vec![0.0; 3];
-        gemv_row_slice(&a_iter, &x, &mut y);
+        gemv_row_slice(&a_iter, x, &mut y);
         assert_eq!(y, vec![9.0, 12.0, 15.0]);
     }
 
@@ -125,14 +125,9 @@ mod tests {
         // submatrix B = A[1..N, 1..N]
         let b_iter = a.submatrix_slice_iter(1..N, 1..N);
 
-        // y = B * x
-        let mut y = vec![0.0; N - 1];
-        gemv_col_slice(b_iter, &x, &mut y);
-
-        // Write result to the first column of A (from row 1)
-        for i in 0..(N - 1) {
-            a[(i + 1, 0)] = y[i];
-        }
+        // y = B * x, where y is the first column of A (from row 1)
+        let y_iter = a.get_col_slice_iter_mut(0, 1..N);
+        gemv_col_slice(b_iter, &x, y_iter);
 
         // Check if the column was updated correctly
         let result_col: Vec<f64> = a.get_col_slice_iter(0, 1..N).collect();
