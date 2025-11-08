@@ -33,12 +33,6 @@ use super::{GeneralMatrix, Matrix};
 /// - The dimensions of `B`, `x`, and `y` are not compatible for multiplication.
 /// - The output column `y` overlaps with any of the input columns from `B` or `x`.
 ///
-/// # Safety
-///
-/// This function uses `unsafe` code to perform the in-place modification, bypassing
-/// the borrow checker. The operation is safe because the function asserts that the
-/// input and output memory regions do not alias.
-///
 #[inline]
 pub(super) fn gemv_submatrix_column_into_column<const N: usize>(
     a: &mut Matrix<N, N>,
@@ -49,7 +43,6 @@ pub(super) fn gemv_submatrix_column_into_column<const N: usize>(
     y_rows: std::ops::Range<usize>,
     y_col: usize,
 ) {
-    // Precondition checks for memory safety and correctness.
     assert!(
         b_rows.end <= N && b_cols.end <= N,
         "Input matrix B is out of bounds."
@@ -72,9 +65,6 @@ pub(super) fn gemv_submatrix_column_into_column<const N: usize>(
         y_rows.len(),
         "Incompatible dimensions between B and y."
     );
-
-    // Safety precondition: The output column `y` must not overlap with any
-    // of the input columns from `B` or `x`.
     assert_ne!(
         y_col, x_col,
         "Output column cannot be the same as the input vector column."
@@ -84,47 +74,107 @@ pub(super) fn gemv_submatrix_column_into_column<const N: usize>(
         "Output column cannot be within the input matrix columns."
     );
 
-    // SAFETY: We use a raw pointer to the matrix data so that we can read and write
-    // from the same matrix. This is safe because we have asserted that the read and
-    // write regions do not overlap. The pointer `matrix_ptr` is
-    // derived from a valid mutable reference `a` and is only used within this
-    // function, so its lifetime is valid.
-    let matrix_ptr = a.rows.as_mut_ptr();
-
-    for i in 0..y_rows.len() {
-        let b_row_idx = b_rows.start + i;
+    for (i, b_row_idx) in b_rows.clone().enumerate() {
         let y_row_idx = y_rows.start + i;
-
-        let mut sum = 0.0;
-        for j in 0..b_cols.len() {
-            let b_col_idx = b_cols.start + j;
-            let x_row_idx = x_rows.start + j;
-
-            // SAFETY: We are reading from the matrix using raw pointers.
-            // This is safe because:
-            // 1. `matrix_ptr` is valid.
-            // 2. The top-level assertions guarantee the indices are in-bounds.
-            // 3. We've asserted that the read locations do not alias the
-            //    write location for this loop iteration.
-            unsafe {
-                debug_assert!(b_row_idx < N);
-                debug_assert!(b_col_idx < N);
-                debug_assert!(x_row_idx < N);
-                let b_ij = (*matrix_ptr.add(b_row_idx))[b_col_idx];
-                let x_j = (*matrix_ptr.add(x_row_idx))[x_col];
-                sum += b_ij * x_j;
-            }
-        }
-
-        // SAFETY: We are writing to the matrix using a raw pointer.
-        // This is safe because we've asserted that the output column `y_col`
-        // does not overlap with any input columns.
-        unsafe {
-            debug_assert!(y_row_idx < N);
-            (*matrix_ptr.add(y_row_idx))[y_col] = sum;
-        }
+        // let mut sum = 0.0;
+        // for (j, b_col_idx) in b_cols.clone().enumerate() {
+        //     let x_row_idx = x_rows.start + j;
+        //     sum += a[(b_row_idx, b_col_idx)] * a[(x_row_idx, x_col)];
+        // }
+        let sum = b_cols
+            .clone()
+            .zip(x_rows.clone())
+            .map(|(b_col_idx, x_row_idx)| a[(b_row_idx, b_col_idx)] * a[(x_row_idx, x_col)])
+            .sum();
+        a[(y_row_idx, y_col)] = sum;
     }
 }
+
+// pub(super) fn gemv_submatrix_column_into_column<const N: usize>(
+//     a: &mut Matrix<N, N>,
+//     b_rows: std::ops::Range<usize>,
+//     b_cols: std::ops::Range<usize>,
+//     x_rows: std::ops::Range<usize>,
+//     x_col: usize,
+//     y_rows: std::ops::Range<usize>,
+//     y_col: usize,
+// ) {
+//     // Precondition checks for memory safety and correctness.
+//     assert!(
+//         b_rows.end <= N && b_cols.end <= N,
+//         "Input matrix B is out of bounds."
+//     );
+//     assert!(
+//         x_rows.end <= N && x_col < N,
+//         "Input vector x is out of bounds."
+//     );
+//     assert!(
+//         y_rows.end <= N && y_col < N,
+//         "Output vector y is out of bounds."
+//     );
+//     assert_eq!(
+//         b_cols.len(),
+//         x_rows.len(),
+//         "Incompatible dimensions between B and x."
+//     );
+//     assert_eq!(
+//         b_rows.len(),
+//         y_rows.len(),
+//         "Incompatible dimensions between B and y."
+//     );
+
+//     // Safety precondition: The output column `y` must not overlap with any
+//     // of the input columns from `B` or `x`.
+//     assert_ne!(
+//         y_col, x_col,
+//         "Output column cannot be the same as the input vector column."
+//     );
+//     assert!(
+//         !b_cols.contains(&y_col),
+//         "Output column cannot be within the input matrix columns."
+//     );
+
+//     // SAFETY: We use a raw pointer to the matrix data so that we can read and write
+//     // from the same matrix. This is safe because we have asserted that the read and
+//     // write regions do not overlap. The pointer `matrix_ptr` is
+//     // derived from a valid mutable reference `a` and is only used within this
+//     // function, so its lifetime is valid.
+//     let matrix_ptr = a.rows.as_mut_ptr();
+
+//     for i in 0..y_rows.len() {
+//         let b_row_idx = b_rows.start + i;
+//         let y_row_idx = y_rows.start + i;
+
+//         let mut sum = 0.0;
+//         for j in 0..b_cols.len() {
+//             let b_col_idx = b_cols.start + j;
+//             let x_row_idx = x_rows.start + j;
+
+//             // SAFETY: We are reading from the matrix using raw pointers.
+//             // This is safe because:
+//             // 1. `matrix_ptr` is valid.
+//             // 2. The top-level assertions guarantee the indices are in-bounds.
+//             // 3. We've asserted that the read locations do not alias the
+//             //    write location for this loop iteration.
+//             unsafe {
+//                 debug_assert!(b_row_idx < N);
+//                 debug_assert!(b_col_idx < N);
+//                 debug_assert!(x_row_idx < N);
+//                 let b_ij = (*matrix_ptr.add(b_row_idx))[b_col_idx];
+//                 let x_j = (*matrix_ptr.add(x_row_idx))[x_col];
+//                 sum += b_ij * x_j;
+//             }
+//         }
+
+//         // SAFETY: We are writing to the matrix using a raw pointer.
+//         // This is safe because we've asserted that the output column `y_col`
+//         // does not overlap with any input columns.
+//         unsafe {
+//             debug_assert!(y_row_idx < N);
+//             (*matrix_ptr.add(y_row_idx))[y_col] = sum;
+//         }
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
