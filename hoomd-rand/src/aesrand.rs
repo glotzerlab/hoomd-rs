@@ -8,7 +8,7 @@ use std::arch::aarch64::{
 };
 
 use rand::{RngCore, SeedableRng};
-use rand_core::block::{BlockRng64, BlockRngCore};
+use rand::rand_core::block::{BlockRng64, BlockRngCore};
 
 /// PRNG using the AES block cipher as an [invertible random mapping](https://www.pcg-random.org/posts/random-invertible-mapping-statistics.html).
 ///

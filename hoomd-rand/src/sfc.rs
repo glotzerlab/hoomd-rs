@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use rand::{RngCore, SeedableRng};
-use rand_core::impls;
+use rand::rand_core::impls;
 
 use crate::util::read_u64_le_unchecked;
 

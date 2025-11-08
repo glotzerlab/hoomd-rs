@@ -14,11 +14,4 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-rand.workspace = true
-hoomd-rand.workspace = true
-chacha20 = { version = "= 0.10.0-rc.0", default-features = false, features = ["rng"] }
 thiserror.workspace = true
-
-[dev-dependencies]
-divan.workspace = true
-rstest.workspace = true

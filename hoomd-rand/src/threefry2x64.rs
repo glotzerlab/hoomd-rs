@@ -7,7 +7,7 @@
 /// asdf
 use crate::util::read_u64_le_unchecked;
 use rand::SeedableRng;
-use rand_core::{
+use rand::rand_core::{
     RngCore,
     block::{BlockRng64, BlockRngCore},
 };

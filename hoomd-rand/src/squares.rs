@@ -3,7 +3,7 @@
 
 #![cfg(feature = "extras")]
 use rand::SeedableRng;
-use rand_core::{
+use rand::rand_core::{
     RngCore,
     block::{BlockRng64, BlockRngCore},
     impls,
