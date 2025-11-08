@@ -45,9 +45,32 @@ pub fn gemv_sub_col_into_col<const N: usize>(
     y_rows: std::ops::Range<usize>,
     y_col: usize,
 ) {
+    // Precondition checks for memory safety and correctness.
+    assert!(
+        b_rows.end <= N && b_cols.end <= N,
+        "Input matrix B is out of bounds."
+    );
+    assert!(
+        x_rows.end <= N && x_col < N,
+        "Input vector x is out of bounds."
+    );
+    assert!(
+        y_rows.end <= N && y_col < N,
+        "Output vector y is out of bounds."
+    );
+    assert_eq!(
+        b_cols.len(),
+        x_rows.len(),
+        "Incompatible dimensions between B and x."
+    );
+    assert_eq!(
+        b_rows.len(),
+        y_rows.len(),
+        "Incompatible dimensions between B and y."
+    );
+
     // Safety precondition: The output column `y` must not overlap with any
-    // of the input columns from `B` or `x`. This is crucial because we are
-    // reading from the inputs while writing to the output in the same loop.
+    // of the input columns from `B` or `x`.
     assert_ne!(
         y_col, x_col,
         "Output column cannot be the same as the input vector column."
@@ -57,9 +80,9 @@ pub fn gemv_sub_col_into_col<const N: usize>(
         "Output column cannot be within the input matrix columns."
     );
 
-    // SAFETY: We use a raw pointer to the matrix data to bypass the borrow checker.
-    // This is safe because we have asserted that the read and write regions
-    // do not overlap, preventing data races. The pointer `matrix_ptr` is
+    // SAFETY: We use a raw pointer to the matrix data so that we can read and write
+    // from the same matrix. This is safe because we have asserted that the read and
+    // write regions do not overlap. The pointer `matrix_ptr` is
     // derived from a valid mutable reference `a` and is only used within this
     // function, so its lifetime is valid.
     let matrix_ptr = a.rows.as_mut_ptr();
@@ -156,5 +179,65 @@ mod tests {
 
         let result_col: Vec<f64> = a.get_col_slice_iter(0, 1..N).collect();
         assert_eq!(result_col, expected_y);
+    }
+
+    #[test]
+    #[should_panic(expected = "Input vector x is out of bounds.")]
+    fn test_gemv_out_of_bounds_x() {
+        let mut a = Matrix::<3, 3>::zeros();
+        gemv_sub_col_into_col(
+            &mut a,
+            0..2, // b_rows
+            0..2, // b_cols
+            0..2, // x_rows
+            3,    // x_col (out of bounds)
+            0..2, // y_rows
+            2,    // y_col
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Output vector y is out of bounds.")]
+    fn test_gemv_out_of_bounds_y() {
+        let mut a = Matrix::<3, 3>::zeros();
+        gemv_sub_col_into_col(
+            &mut a,
+            0..2, // b_rows
+            0..2, // b_cols
+            0..2, // x_rows
+            1,    // x_col
+            0..4, // y_rows (out of bounds)
+            2,    // y_col
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Incompatible dimensions between B and x.")]
+    fn test_gemv_incompatible_dims_b_x() {
+        let mut a = Matrix::<3, 3>::zeros();
+        gemv_sub_col_into_col(
+            &mut a,
+            0..2, // b_rows
+            0..2, // b_cols (len 2)
+            0..1, // x_rows (len 1)
+            1,    // x_col
+            0..2, // y_rows
+            2,    // y_col
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Incompatible dimensions between B and y.")]
+    fn test_gemv_incompatible_dims_b_y() {
+        let mut a = Matrix::<3, 3>::zeros();
+        gemv_sub_col_into_col(
+            &mut a,
+            0..2, // b_rows (len 2)
+            0..2, // b_cols
+            0..2, // x_rows
+            1,    // x_col
+            0..1, // y_rows (len 1)
+            2,    // y_col
+        );
     }
 }
