@@ -36,7 +36,7 @@ where
 /// - `a`: The matrix `A`, represented as an iterator of row-slices.
 /// - `x`: The column vector `x`, represented as a slice.
 /// - `y`: The mutable output slice to write the result vector to.
-pub fn gemv_sub_col_into_col<const N: usize>(
+pub fn gemv_submatrix_column_into_column<const N: usize>(
     a: &mut Matrix<N, N>,
     b_rows: std::ops::Range<usize>,
     b_cols: std::ops::Range<usize>,
@@ -167,7 +167,7 @@ mod tests {
     ) {
         let mut a = Matrix::<N, N> { rows };
 
-        gemv_sub_col_into_col(
+        gemv_submatrix_column_into_column(
             &mut a,
             1..N, // b_rows
             1..N, // b_cols
@@ -185,7 +185,7 @@ mod tests {
     #[should_panic(expected = "Input vector x is out of bounds.")]
     fn test_gemv_out_of_bounds_x() {
         let mut a = Matrix::<3, 3>::zeros();
-        gemv_sub_col_into_col(
+        gemv_submatrix_column_into_column(
             &mut a,
             0..2, // b_rows
             0..2, // b_cols
@@ -200,7 +200,7 @@ mod tests {
     #[should_panic(expected = "Output vector y is out of bounds.")]
     fn test_gemv_out_of_bounds_y() {
         let mut a = Matrix::<3, 3>::zeros();
-        gemv_sub_col_into_col(
+        gemv_submatrix_column_into_column(
             &mut a,
             0..2, // b_rows
             0..2, // b_cols
@@ -215,7 +215,7 @@ mod tests {
     #[should_panic(expected = "Incompatible dimensions between B and x.")]
     fn test_gemv_incompatible_dims_b_x() {
         let mut a = Matrix::<3, 3>::zeros();
-        gemv_sub_col_into_col(
+        gemv_submatrix_column_into_column(
             &mut a,
             0..2, // b_rows
             0..2, // b_cols (len 2)
@@ -230,7 +230,7 @@ mod tests {
     #[should_panic(expected = "Incompatible dimensions between B and y.")]
     fn test_gemv_incompatible_dims_b_y() {
         let mut a = Matrix::<3, 3>::zeros();
-        gemv_sub_col_into_col(
+        gemv_submatrix_column_into_column(
             &mut a,
             0..2, // b_rows (len 2)
             0..2, // b_cols
