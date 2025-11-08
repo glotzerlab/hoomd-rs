@@ -85,20 +85,38 @@ mod tests {
         let a_iter = a.submatrix_slice_iter(0..2, 0..3);
         let x = &a[(0, 0..2)];
         let mut y = vec![0.0; 3];
-        gemv_row_slice(&a_iter, x, &mut y);
+        gemv_row_slice(&a_iter, &x, &mut y);
         assert_eq!(y, vec![9.0, 12.0, 15.0]);
     }
 
     #[rstest]
-    #[case(Matrix::<3, 3>::zeros().rows)]
-    #[case(Matrix::<4, 4>::zeros().rows)]
-    #[case(Matrix::<5, 5>::zeros().rows)]
-    fn test_gemv_submatrix_col_vector<const N: usize>(#[case] mut rows: [[f64; N]; N]) {
-        for i in 0..N {
-            for j in 0..N {
-                rows[i][j] = (i * N + j + 1) as f64;
-            }
-        }
+    #[case(
+        [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
+        vec![73.0, 112.0]
+    )]
+    #[case(
+        [
+            [1.0, 2.0, 3.0, 4.0],
+            [5.0, 6.0, 7.0, 8.0],
+            [9.0, 10.0, 11.0, 12.0],
+            [13.0, 14.0, 15.0, 16.0]
+        ],
+        vec![218.0, 338.0, 458.0]
+    )]
+    #[case(
+        [
+            [1.0, 2.0, 3.0, 4.0, 5.0],
+            [6.0, 7.0, 8.0, 9.0, 10.0],
+            [11.0, 12.0, 13.0, 14.0, 15.0],
+            [16.0, 17.0, 18.0, 19.0, 20.0],
+            [21.0, 22.0, 23.0, 24.0, 25.0]
+        ],
+        vec![518.0, 808.0, 1098.0, 1388.0]
+    )]
+    fn test_gemv_submatrix_col_vector<const N: usize>(
+        #[case] rows: [[f64; N]; N],
+        #[case] expected_y: Vec<f64>,
+    ) {
         let a = Matrix::<N, N> { rows };
 
         // column vector x = A[1..N, 1]
@@ -110,18 +128,6 @@ mod tests {
         // y = B * x
         let mut y = vec![0.0; N - 1];
         gemv_col_slice(b_iter, &x, &mut y);
-
-        // Calculate expected result
-        let mut expected_y = vec![0.0; N - 1];
-        for i in 0..(N - 1) {
-            let mut sum = 0.0;
-            for j in 0..(N - 1) {
-                let b_ij = a.rows[i + 1][j + 1];
-                let x_j = a.rows[j + 1][1];
-                sum += b_ij * x_j;
-            }
-            expected_y[i] = sum;
-        }
 
         assert_eq!(y, expected_y);
     }
