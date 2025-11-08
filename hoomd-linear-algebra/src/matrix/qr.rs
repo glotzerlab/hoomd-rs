@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 //! General-purpose linear algebra functions on slices.
 
 use super::{GeneralMatrix, Matrix};
@@ -49,7 +52,7 @@ where
 /// This function uses `unsafe` code to perform the in-place modification, bypassing
 /// the borrow checker. The operation is safe because the function asserts that the
 /// input and output memory regions do not alias.
-pub fn gemv_submatrix_column_into_column<const N: usize>(
+pub(crate) fn gemv_submatrix_column_into_column<const N: usize>(
     a: &mut Matrix<N, N>,
     b_rows: std::ops::Range<usize>,
     b_cols: std::ops::Range<usize>,
@@ -108,9 +111,7 @@ pub fn gemv_submatrix_column_into_column<const N: usize>(
         for j in 0..b_cols.len() {
             let b_col_idx = b_cols.start + j;
             let x_row_idx = x_rows.start + j;
-            debug_assert!(b_row_idx < N);
-            debug_assert!(b_col_idx < N);
-            debug_assert!(x_row_idx < N);
+            debug_assert!(b_row_idx < N && x_row_idx < N);
 
             // SAFETY: We are reading from the matrix using raw pointers.
             // This is safe because:
