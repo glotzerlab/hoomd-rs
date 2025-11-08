@@ -4,14 +4,14 @@
 //! A small utility to concatenate the output of an RNG to stdout.
 //!
 //! To use with [``PractRand``](https://pracrand.sourceforge.net):
-//! `$ catrng | RNG_test stdin -multithreaded` (Random seed from ``StdRng``)
-//! `$ catrng seed-single 12345 | ...` (Single u64 seed)
-//! `$ catrng seed-single 1 2 3 0 | ...` (Four u64 values as a seed)
-//! `$ catrng seed-increment | ...` (Alternate u64 generation with seed changes.)
-//! `$ catrng test-interleaved -n 8 | ...` (8 interleaved RNGs with similar seeds.)
+//! * `$ catrng | RNG_test stdin -multithreaded` (Random seed from ``StdRng``)
+//! * `$ catrng seed-single 12345 | ...` (Single u64 seed)
+//! * `$ catrng seed-single 1 2 3 0 | ...` (Four u64 values as a seed)
+//! * `$ catrng seed-increment | ...` (Alternate u64 generation with seed changes.)
+//! * `$ catrng test-interleaved -n 8 | ...` (8 interleaved RNGs with similar seeds.)
 //!
 //! Note this also works with [gjrand](https://gjrand.sourceforge.net)
-//! `$ catrng | ./mcp --tera`
+//! * `$ catrng | ./mcp --tera`
 //! This is drawn from [simd_prngs](https://github.com/TheIronBorn/simd_prngs/blob/master/src/bin/cat_rng.rs) with a few modifications for our use case.
 
 extern crate hoomd_rand;
