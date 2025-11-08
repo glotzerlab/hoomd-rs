@@ -7,8 +7,7 @@ use hoomd_bevy::{
 };
 use hoomd_geometry::shape::EightEight;
 use hoomd_interaction::{
-    CutoffPair,
-    pairwise::{Isotropic, LennardJones},
+    PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones,
 };
 use hoomd_manifold::{Hyperbolic, HyperbolicDisk, Minkowski};
 use hoomd_mc::{Sweep, Translate, Trial};
@@ -75,7 +74,7 @@ struct Fill {
         Periodic<EightEight>,
     >,
     /// How sites interact with other sites and fields.
-    hamiltonian: CutoffPair<Isotropic<LennardJones>>,
+    hamiltonian: PairwiseCutoff<Isotropic<LennardJones>>,
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<Hyperbolic<3>>>,
     /// Temperature set point.
@@ -116,15 +115,14 @@ impl Fill {
             sigma: 0.15,
         };
 
-        let evaluator = Isotropic(lj);
-        let cutoff_pair = CutoffPair {
+        let pairwise_cutoff = PairwiseCutoff(Isotropic {
+            interaction: lj,
             r_cut: 0.5,
-            evaluator,
-        };
+        });
 
         let macrostate = Isothermal { temperature: 1.0 };
 
-        let hamiltonian = cutoff_pair;
+        let hamiltonian = pairwise_cutoff;
         let d = 0.01;
 
         let hyp_translate = Translate::with_maximum_distance(d.try_into()?);

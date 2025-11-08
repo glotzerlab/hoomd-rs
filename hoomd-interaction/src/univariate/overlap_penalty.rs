@@ -3,7 +3,7 @@
 
 //! Implement `OverlapPenalty`.
 
-use super::IsotropicEnergy;
+use super::UnivariateEnergy;
 
 /// Monotonically non-decreasing potential to push sites apart (*not differentiable*).
 ///
@@ -32,7 +32,7 @@ use super::IsotropicEnergy;
 /// # Example
 ///
 /// ```
-/// use hoomd_interaction::pairwise::OverlapPenalty;
+/// use hoomd_interaction::univariate::OverlapPenalty;
 ///
 /// let overlap_penalty = OverlapPenalty::default();
 /// ```
@@ -64,7 +64,7 @@ impl Default for OverlapPenalty {
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::pairwise::OverlapPenalty;
+    /// use hoomd_interaction::univariate::OverlapPenalty;
     ///
     /// let overlap_penalty = OverlapPenalty::default();
     /// ```
@@ -87,7 +87,7 @@ impl OverlapPenalty {
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::pairwise::OverlapPenalty;
+    /// use hoomd_interaction::univariate::OverlapPenalty;
     ///
     /// let overlap_penalty = OverlapPenalty::scaled_default(2.0);
     ///
@@ -102,7 +102,7 @@ impl OverlapPenalty {
     }
 }
 
-impl IsotropicEnergy for OverlapPenalty {
+impl UnivariateEnergy for OverlapPenalty {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         match r {

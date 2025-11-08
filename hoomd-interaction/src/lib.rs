@@ -16,18 +16,15 @@ use hoomd_microstate::{Body, Microstate};
 
 pub mod external;
 pub mod pairwise;
+pub mod univariate;
 
-mod cutoff_pair;
-mod cutoff_pair_overlap;
-mod external_overlap;
 mod external_type;
 mod hamiltonian;
+mod pairwise_cutoff;
 mod zero;
 
-pub use cutoff_pair::CutoffPair;
-pub use cutoff_pair_overlap::CutoffPairOverlap;
-pub use external_overlap::ExternalOverlap;
 pub use external_type::External;
+pub use pairwise_cutoff::PairwiseCutoff;
 pub use zero::Zero;
 
 /// Compute the total energy of a potential applied to the microstate.
@@ -41,8 +38,8 @@ pub use zero::Zero;
 ///
 /// ```
 /// use hoomd_interaction::{
-///     CutoffPair, SitePairEnergy, TotalEnergy,
-///     pairwise::{Isotropic, LennardJones},
+///     PairwiseCutoff, SitePairEnergy, TotalEnergy, pairwise::Isotropic,
+///     univariate::LennardJones,
 /// };
 /// use hoomd_microstate::{
 ///     Body, Microstate,
@@ -63,13 +60,12 @@ pub use zero::Zero;
 ///     epsilon: 1.5,
 ///     sigma: 1.0 / 2.0_f64.powf(1.0 / 6.0),
 /// };
-/// let lennard_jones = Isotropic(lennard_jones);
-/// let cutoff_pair = CutoffPair {
+/// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+///     interaction: lennard_jones,
 ///     r_cut: 2.5,
-///     evaluator: lennard_jones,
-/// };
+/// });
 ///
-/// let total_energy = cutoff_pair.total_energy(&microstate);
+/// let total_energy = pairwise_cutoff.total_energy(&microstate);
 /// assert_eq!(total_energy, -3.0);
 /// # Ok(())
 /// # }
@@ -95,7 +91,7 @@ pub trait TotalEnergy<M> {
 ///
 /// ## Examples
 ///
-/// Implement a custom site energy method:
+/// Implement a custom site energy function:
 ///
 /// ```
 /// use hoomd_interaction::{External, SiteEnergy, TotalEnergy};
@@ -126,40 +122,19 @@ pub trait TotalEnergy<M> {
 ///     Body::point(Cartesian::from([-1.0, 2.0])),
 /// ])?;
 ///
-/// let custom_evaluator = Custom { a: 1.0, b: 10.0 };
-/// let site_energy =
-///     custom_evaluator.site_energy(&microstate.sites()[0].properties);
+/// let custom = Custom { a: 1.0, b: 10.0 };
+/// let site_energy = custom.site_energy(&microstate.sites()[0].properties);
 ///
-/// let custom = External(custom_evaluator);
+/// let custom = External(custom);
 /// let total_energy = custom.total_energy(&microstate);
 /// # Ok(())
 /// # }
 /// ```
-pub trait SiteEnergy<S> {
-    /// Evaluate the energy contribution of a single site.
-    #[must_use]
-    fn site_energy(&self, site_properties: &S) -> f64;
-}
-
-/// Check if a site overlaps with an object external to the microstate.
 ///
-/// The `SiteOverlap` trait describes a type that can determine whether or not
-/// a site overlaps with another object *as a function only of that site's
-/// properties*.
-///
-/// The [`external`] module provides a number of commonly used implementations.
-/// Combine them with [`ExternalOverlap`] newtype for use with MC simulations or to
-/// compute system-wide properties.
-///
-/// The generic type names are:
-/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-///
-/// ## Examples
-///
-/// Implement a custom site overlap method:
+/// Custom method that checks for overlaps of a disk with a circular boundary.
 ///
 /// ```
-/// use hoomd_interaction::{ExternalOverlap, SiteOverlap, TotalEnergy};
+/// use hoomd_interaction::{External, SiteEnergy, TotalEnergy};
 /// use hoomd_microstate::{
 ///     Body, Microstate,
 ///     property::{Point, Position},
@@ -170,14 +145,22 @@ pub trait SiteEnergy<S> {
 ///     r: f64,
 /// }
 ///
-/// impl<S> SiteOverlap<S> for Custom
+/// impl<S> SiteEnergy<S> for Custom
 /// where
 ///     S: Position<Position = Cartesian<2>>,
 /// {
-///     /// Check for overlaps of a disk with a circular boundary.
-///     fn site_overlap(&self, site_properties: &S) -> bool {
-///         site_properties.position().distance(&Cartesian::default())
+///     fn site_energy(&self, site_properties: &S) -> f64 {
+///         if site_properties.position().distance(&Cartesian::default())
 ///             > self.r - 0.5
+///         {
+///             f64::INFINITY
+///         } else {
+///             0.0
+///         }
+///     }
+///
+///     fn is_only_infinite_or_zero() -> bool {
+///         true
 ///     }
 /// }
 ///
@@ -185,21 +168,49 @@ pub trait SiteEnergy<S> {
 /// let mut microstate = Microstate::new();
 /// microstate.extend_bodies([Body::point(Cartesian::from([9.6, 0.0]))])?;
 ///
-/// let custom_evaluator = Custom { r: 10.0 };
-/// let site_overlap =
-///     custom_evaluator.site_overlap(&microstate.sites()[0].properties);
-/// assert!(site_overlap);
+/// let custom = Custom { r: 10.0 };
+/// let site_energy = custom.site_energy(&microstate.sites()[0].properties);
+/// assert_eq!(site_energy, f64::INFINITY);
 ///
-/// let custom = ExternalOverlap(custom_evaluator);
+/// let custom = External(custom);
 /// let total_energy = custom.total_energy(&microstate);
 /// assert_eq!(total_energy, f64::INFINITY);
 /// # Ok(())
 /// # }
 /// ```
-pub trait SiteOverlap<S> {
-    /// Determine if a site overlaps with an object external to the microstate.
+pub trait SiteEnergy<S> {
+    /// Evaluate the energy contribution of a single site.
     #[must_use]
-    fn site_overlap(&self, site_properties: &S) -> bool;
+    fn site_energy(&self, site_properties: &S) -> f64;
+
+    /// Evaluate the energy contribution of a single site *in the initial state*.
+    ///
+    /// Override this method in potentials that have both infinite or zero
+    /// terms and finite terms, such as the sum of a hard site-wall interaction
+    /// plus an attractive well. `site_energy` should compute both terms and
+    /// `site_energy_initial` should compute only the finite terms.
+    ///
+    /// [`External`] calls `site_energy_initial` when evaluating the energy of
+    /// the initial state in a trial move. The infinite interaction term can be
+    /// assumed 0 in the initial state because no site will ever be placed in an
+    /// infinite energy configuration.
+    #[must_use]
+    #[inline]
+    fn site_energy_initial(&self, site_properties: &S) -> f64 {
+        self.site_energy(site_properties)
+    }
+
+    /// Does this potential only ever return infinity or zero?
+    ///
+    /// Override this method and return `true` for e.g. hard site-wall
+    /// interactions that always return infinity or zero and **never** any other
+    /// value. When this method returns `true`, [`External`] skips the initial
+    /// energy computation and assumes it is zero.
+    #[must_use]
+    #[inline]
+    fn is_only_infinite_or_zero() -> bool {
+        false
+    }
 }
 
 /// Compute the energy contribution from a pair of sites.
@@ -209,22 +220,24 @@ pub trait SiteOverlap<S> {
 /// only of those site's properties*.
 ///
 /// The [`pairwise`] module provides a number of commonly used implementations,
-/// such as [`Isotropic`] and [`Anisotropic`]. Combine any of them with the
-/// [`CutoffPair`] for use with MC and MD simulations or to compute system-wide
-/// properties.
+/// such as [`Isotropic`], [`Anisotropic`], and [`HardShape`]. Combine any
+/// of them with the [`PairwiseCutoff`] for use with MC and MD simulations or to
+/// compute system-wide properties.
 ///
 /// The generic type names are:
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 ///
 /// [`Isotropic`]: pairwise::Isotropic
-/// [`Anisotropic`]: pairwise::Isotropic
+/// [`Anisotropic`]: pairwise::Anisotropic
+/// [`HardShape`]: pairwise::HardShape
 ///
 /// ## Examples
 ///
 /// Implement a custom site energy method:
-///
 /// ```
-/// use hoomd_interaction::{CutoffPair, SitePairEnergy, TotalEnergy};
+/// use hoomd_interaction::{
+///     MaximumInteractionRange, PairwiseCutoff, SitePairEnergy, TotalEnergy,
+/// };
 /// use hoomd_microstate::{
 ///     Body, Microstate,
 ///     property::{Point, Position},
@@ -251,6 +264,12 @@ pub trait SiteOverlap<S> {
 ///     }
 /// }
 ///
+/// impl MaximumInteractionRange for Custom {
+///     fn maximum_interaction_range(&self) -> f64 {
+///         2.5
+///     }
+/// }
+///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut microstate = Microstate::new();
 /// microstate.extend_bodies([
@@ -258,46 +277,24 @@ pub trait SiteOverlap<S> {
 ///     Body::point(Cartesian::from([0.0, 1.0])),
 /// ])?;
 ///
-/// let evaluator = Custom { epsilon: 1.0 };
-/// let site_pair_energy = evaluator.site_pair_energy(
+/// let custom = Custom { epsilon: 1.0 };
+/// let site_pair_energy = custom.site_pair_energy(
 ///     &microstate.sites()[0].properties,
 ///     &microstate.sites()[1].properties,
 /// );
 ///
-/// let custom = CutoffPair {
-///     r_cut: 2.5,
-///     evaluator,
-/// };
+/// let custom = PairwiseCutoff(custom);
 /// let total_energy = custom.total_energy(&microstate);
 /// # Ok(())
 /// # }
 /// ```
-pub trait SitePairEnergy<S> {
-    /// Evaluate the energy contribution from a pair of sites.
-    fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64;
-}
-
-/// Check if two sites overlap.
-///
-/// The `SitePairOverlap` trait describes a type that can determine if a pair of
-/// sites overlap *as a function only of those site's properties*.
-///
-/// The [`pairwise`] module provides a number of commonly used implementations, such
-/// as [`HardShape`]. Combine any of these the [`CutoffPairOverlap`] for use with MC
-/// simulations or to compute system-wide properties.
-///
-/// The generic type names are:
-/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-///
-/// [`HardShape`]: pairwise::HardShape
-///
-/// ## Examples
 ///
 /// Implement a custom site overlap method:
-///
 /// ```
 /// use hoomd_geometry::{IntersectsAt, shape::Circle};
-/// use hoomd_interaction::{CutoffPairOverlap, SitePairOverlap, TotalEnergy};
+/// use hoomd_interaction::{
+///     MaximumInteractionRange, PairwiseCutoff, SitePairEnergy, TotalEnergy,
+/// };
 /// use hoomd_microstate::{
 ///     Body, Microstate, Transform,
 ///     property::{Point, Position},
@@ -337,12 +334,12 @@ pub trait SitePairEnergy<S> {
 ///
 /// struct PolydisperseCircleOverlap;
 ///
-/// impl SitePairOverlap<CircleSiteProperties> for PolydisperseCircleOverlap {
-///     fn site_pair_overlap(
+/// impl SitePairEnergy<CircleSiteProperties> for PolydisperseCircleOverlap {
+///     fn site_pair_energy(
 ///         &self,
 ///         a: &CircleSiteProperties,
 ///         b: &CircleSiteProperties,
-///     ) -> bool {
+///     ) -> f64 {
 ///         let circle_a = Circle { radius: a.radius };
 ///         let circle_b = Circle { radius: b.radius };
 ///         let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(
@@ -351,7 +348,21 @@ pub trait SitePairEnergy<S> {
 ///             b.position(),
 ///             &Angle::default(),
 ///         );
-///         circle_a.intersects_at(&circle_b, &v_ij, &o_ij)
+///         if circle_a.intersects_at(&circle_b, &v_ij, &o_ij) {
+///             f64::INFINITY
+///         } else {
+///             0.0
+///         }
+///     }
+///
+///     fn is_only_infinite_or_zero() -> bool {
+///         true
+///     }
+/// }
+///
+/// impl MaximumInteractionRange for PolydisperseCircleOverlap {
+///     fn maximum_interaction_range(&self) -> f64 {
+///         1.5
 ///     }
 /// }
 ///
@@ -374,25 +385,62 @@ pub trait SitePairEnergy<S> {
 ///     },
 /// ])?;
 ///
-/// let evaluator = PolydisperseCircleOverlap;
-/// let site_pair_overlap = evaluator.site_pair_overlap(
+/// let overlap = PolydisperseCircleOverlap;
+/// let site_pair_energy = overlap.site_pair_energy(
 ///     &microstate.sites()[0].properties,
 ///     &microstate.sites()[1].properties,
 /// );
-/// assert!(site_pair_overlap);
+/// assert_eq!(site_pair_energy, f64::INFINITY);
 ///
-/// let cutoff_pair_overlap = CutoffPairOverlap {
-///     r_cut: 1.5,
-///     evaluator,
-/// };
-/// let total_energy = cutoff_pair_overlap.total_energy(&microstate);
+/// let pairwise_cutoff = PairwiseCutoff(PolydisperseCircleOverlap);
+/// let total_energy = pairwise_cutoff.total_energy(&microstate);
 /// assert_eq!(total_energy, f64::INFINITY);
 /// # Ok(())
 /// # }
 /// ```
-pub trait SitePairOverlap<S> {
-    /// Determine if two sites overlap.
-    fn site_pair_overlap(&self, site_properties_i: &S, site_properties_j: &S) -> bool;
+pub trait SitePairEnergy<S> {
+    /// Evaluate the energy contribution from a pair of sites.
+    fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64;
+
+    /// Evaluate the energy contribution from a pair of sites *in the initial state*.
+    ///
+    /// Override this method in potentials that have both infinite or zero terms
+    /// and finite terms, such as the sum of a hard site-wall interaction plus
+    /// an attractive well. `site_pair_energy` should compute both terms and
+    /// `site_pair_energy_initial` should compute only the finite terms.
+    ///
+    /// [`PairwiseCutoff`] calls `site_pair_energy_initial` when evaluating the
+    /// energy of the initial state in a trial move. The infinite interaction
+    /// term can be assumed 0 in the initial state because no site will ever be
+    /// placed in an infinite energy configuration.
+    #[must_use]
+    #[inline]
+    fn site_pair_energy_initial(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
+        self.site_pair_energy(site_properties_i, site_properties_j)
+    }
+
+    /// Does this potential only ever return infinity or zero?
+    ///
+    /// Override this method and return `true` for e.g. hard particle
+    /// interactions that always return infinity or zero and **never** any other
+    /// value. When this method returns `true`, [`PairwiseCutoff`] skips the
+    /// initial energy computation and assumes it is zero.
+    #[must_use]
+    #[inline]
+    fn is_only_infinite_or_zero() -> bool {
+        false
+    }
+}
+
+/// Largest distance between two sites where the pairwise interaction may be non-zero.
+///
+/// [`PairwiseCutoff`] uses the provided maximum interaction range to
+/// efficiently compute only the needed interactions. All types that
+/// implement `SitePair*` traits must also implement
+/// [`MaximumInteractionRange`].
+pub trait MaximumInteractionRange {
+    /// The largest distance between two sites where the pairwise interaction may be non-zero.
+    fn maximum_interaction_range(&self) -> f64;
 }
 
 /// Compute the change energy as a function of a single modified body.

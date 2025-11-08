@@ -3,7 +3,7 @@
 
 //! Implement [`WeeksChandlerAnderson`]
 
-use super::{IsotropicEnergy, IsotropicForce};
+use super::{UnivariateEnergy, UnivariateForce};
 
 /// Smoothly shift a potential (and its force) to 0 at some `r_cut`, beginning at `r_smooth`.
 ///
@@ -26,7 +26,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// # Example
 ///
 /// ```
-/// use hoomd_interaction::pairwise::{LennardJones, Xplor};
+/// use hoomd_interaction::univariate::{LennardJones, Xplor};
 ///
 /// let epsilon = 1.5;
 /// let sigma = 1.0;
@@ -69,14 +69,14 @@ impl<F> Xplor<F> {
     }
 }
 
-impl<F: IsotropicEnergy> IsotropicEnergy for Xplor<F> {
+impl<F: UnivariateEnergy> UnivariateEnergy for Xplor<F> {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         self.s(r) * self.f.energy(r)
     }
 }
 
-impl<F: IsotropicForce + IsotropicEnergy> IsotropicForce for Xplor<F> {
+impl<F: UnivariateForce + UnivariateEnergy> UnivariateForce for Xplor<F> {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         if r < self.r_smooth {
@@ -96,7 +96,7 @@ mod tests {
     use approxim::{assert_abs_diff_eq, assert_abs_diff_ne, assert_relative_eq};
     use rstest::*;
 
-    use crate::pairwise::LennardJones;
+    use crate::univariate::LennardJones;
 
     #[rstest]
     fn special_points_12_6(

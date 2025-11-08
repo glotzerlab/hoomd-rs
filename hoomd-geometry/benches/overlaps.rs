@@ -17,7 +17,7 @@ use hoomd_geometry::{
 };
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
-use hoomd_vector::{Angle, Cartesian, RotationMatrix, Versor};
+use hoomd_vector::{Angle, Cartesian, Versor};
 
 #[inline(never)]
 fn asm_collide3d() {
@@ -126,20 +126,20 @@ fn create_ellipsoid_pair<const N: usize, R: Rng>(
     rng: &mut R,
 ) -> (Hyperellipsoid<N>, Hyperellipsoid<N>) {
     (
-        Hyperellipsoid {
-            semi_axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
+        Hyperellipsoid::with_semi_axes((rng.random::<Cartesian<N>>() * 10.0).coordinates.map(
+            |x| {
                 (x + 11.0)
                     .try_into()
                     .expect("test value is a positive real")
-            }),
-        },
-        Hyperellipsoid {
-            semi_axes: (rng.random::<Cartesian<N>>() * 10.0).coordinates.map(|x| {
+            },
+        )),
+        Hyperellipsoid::with_semi_axes((rng.random::<Cartesian<N>>() * 10.0).coordinates.map(
+            |x| {
                 (x + 11.0)
                     .try_into()
                     .expect("test value is a positive real")
-            }),
-        },
+            },
+        )),
     )
 }
 
@@ -150,11 +150,8 @@ fn create_offset_2d<R: Rng>(rng: &mut R) -> (Cartesian<2>, Angle) {
     )
 }
 
-fn create_offset<const N: usize, R: Rng>(rng: &mut R) -> (Cartesian<N>, RotationMatrix<N>) {
-    (
-        rng.random::<Cartesian<N>>() * 10.0,
-        RotationMatrix::default(),
-    )
+fn create_offset<const N: usize, R: Rng>(rng: &mut R) -> Cartesian<N> {
+    rng.random::<Cartesian<N>>() * 10.0
 }
 fn create_offset_3d<R: Rng>(rng: &mut R) -> (Cartesian<3>, Versor) {
     (rng.random::<Cartesian<3>>() * 10.0, rng.random())
@@ -175,7 +172,7 @@ fn sphere_fast_nd<const N: usize>(bencher: Bencher) {
                 create_offset::<N, _>(&mut rng),
             )
         })
-        .bench_local_values(|((s0, s1), (t, r))| black_box(s0.intersects_at(&s1, &t, &r)));
+        .bench_local_values(|((s0, s1), t)| black_box(s0.intersects(&s1, &t)));
 }
 
 #[divan::bench]

@@ -12,9 +12,9 @@ use super::{PointUpdate, PointsNearBall, WithSearchRadius};
 
 /// Check all pairs.
 ///
-/// [`AllPairs`] is extremely slow when used with `CutoffPair`.
-/// Prefer [`VecCell`] or [`HashCell`] when possible. When not possible,
-/// TODO: Mention `PairwiseCutoffall`.
+/// Prefer [`VecCell`] or [`HashCell`] when possible. In typical benchmarks,
+/// [`AllPairs`] outperforms [`VecCell`] only when the system size is less
+/// than 32 sites.
 ///
 /// [`VecCell`]: crate::VecCell
 /// [`HashCell`]: crate::HashCell
@@ -88,6 +88,11 @@ where
     #[inline]
     fn points_near_ball(&self, _position: &P, _radius: f64) -> impl Iterator<Item = K> {
         self.keys.iter().copied()
+    }
+
+    #[inline]
+    fn is_all_pairs() -> bool {
+        true
     }
 }
 

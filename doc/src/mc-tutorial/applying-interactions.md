@@ -53,9 +53,9 @@ properties** from the *body reference frame* to the *system reference frame*.
 All **interactions** on bodies are a function only of its **sites** and are
 computed in the *system reference frame*. Understanding this will help as
 you review the [API documentation] for the types used later in this tutorial:
-`External`, `Linear`, `Boxcar`, `Isotropic`, and `CutoffPair`. For a complete
-reference on **bodies**, **sites**, and all their related traits, read the
-[`hoomd-microstate`] API documentation.
+`External`, `Linear`, `Boxcar`, `Isotropic`, and `PairwiseCutoff`. For a
+complete reference on **bodies**, **sites**, and all their related traits, read
+the [`hoomd-microstate`] API documentation.
 
 In this tutorial, the bodies will still be points. Specifically, that means
 each **body** has `Point<Cartesian<2>>` for its **body properties** type (`B`),
@@ -134,26 +134,25 @@ This code implements the pairwise potential term in the Hamiltonian:
 ```
 
 The [Boxcar function] implements $` U_\mathrm{step}(r) `$ via the
-`IsotropicEnergy` trait.
+`UnivariateEnergy` trait.
 ```math
 U_\mathrm{step}(r) = \begin{cases}
 \varepsilon & r \lt \sigma \\
 0 & r \ge \sigma
 \end{cases}
 ```
-`Isotropic` is a wrapper that computes
-$` U(\left|\vec{r}_j - \vec{r}_i\right|)`$ in its implementation of
-`SitePairEnergy`. The `site_pair_energy()` method is a more general form that
-depends on the full set of properties of the two interacting sites: $` U(s_i,
-s_j) `$. The `CutoffPair` type sums over all pairs of **sites** that are within
-a distance of $` r_\mathrm{cut} `$ *and do not belong to the same body*:
+`Isotropic` is a wrapper that computes $` U(\left|\vec{r}_j - \vec{r}_i\right|) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]`$
+in its implementation of `SitePairEnergy`. The
+`site_pair_energy()` method is a more general form that depends on the
+full set of properties of the two interacting sites: $` U(s_i, s_j) `$. The
+`PairwiseCutoff` type sums over all pairs of **sites** that are within a
+distance of $` r_\mathrm{cut} `$ *and do not belong to the same body*:
 ```math
 \sum_{i}\sum_{j>i} U\left(s_i, s_j\right)
-\left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]
 \left[b_i \ne b_j\right]
 ```
-Finally, `CutoffPair` implements the `DeltaEnergyOne` trait which `Sweep` will
-use to evaluate the change in energy $`\Delta E`$ of a trial move.
+Finally, `PairwiseCutoff` implements the `DeltaEnergyOne` trait which `Sweep`
+will use to evaluate the change in energy $`\Delta E`$ of a trial move.
 
 > [!IMPORTANT]
 > In *hoomd-rs*, it is *YOUR responsibility* to determine the appropriate
@@ -181,7 +180,7 @@ $` \Delta E `$ when needed.
 You can use `hamiltonian` to compute properties of the system:
 * `hamiltonian.total_energy(&microstate)` - The total energy of the system.
 * `hamiltonian.0.total_energy(&microstate)` - The total external energy term.
-* `hamiltonian.0.site_energy(&site.properties)` - The contribution of a single site to the
+* `hamiltonian.0.0.site_energy(&site.properties)` - The contribution of a single site to the
   external energy.
 * `hamiltonian.1.total_energy(&microstate)` - The total pair energy term.
 * `hamiltonian.1.site_pair_energy(&site_i, &site_j)` - The contribution of a
@@ -191,8 +190,8 @@ The types `External` and `Isotropic` are single element tuples.
 To access the parameters of the inner types, you need access the elements of
 these tuples:
 * `hamiltonian.0.0.alpha` - Strength of the linear external potential.
-* `hamiltonian.1.r_cut` - Maximum cutoff radius of of the pair potential.
-* `hamiltonian.1.evaluator.0.epsilon` - Strength of the pairwise step potential.
+* `hamiltonian.1.0.r_cut` - Maximum cutoff radius of of the pair potential.
+* `hamiltonian.1.0.interaction.epsilon` - Strength of the pairwise step potential.
 
 Due to Rust's ownership model, you *cannot* use names like `boxcar.epsilon`
 to refer to parameters after constructing `hamiltonian`. You can read
@@ -215,9 +214,9 @@ uses the built in `Rectangle` type:
 {{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:boundary}}
 ```
 
-When using `CutoffPair`, construct the `VecCell` **spatial data structure** and pass
-it to the `Microstate`. `CutoffPair` will use this spatial data structure to
-efficiently compute the pairwise interactions.
+Construct the `VecCell` **spatial data structure** and pass it to the
+`Microstate` when using `PairwiseCutoff`. `PairwiseCutoff` will use the spatial
+data structure to efficiently compute the pairwise interactions.
 
 > [!IMPORTANT]
 > If you forget this step, your simulation will run **very slowly!**
@@ -226,7 +225,8 @@ efficiently compute the pairwise interactions.
 {{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:spatial_data}}
 ```
 
-Set the *nominal search radius* to the same value as the `r_cut` used with `CutoffPair`.
+Set the *nominal search radius* to the same value as the `r_cut` used with
+`PairwiseCutoff`.
 
 Construct the `Microstate` with the square boundary and `vec_cell` spatial data:
 ```rust,ignore

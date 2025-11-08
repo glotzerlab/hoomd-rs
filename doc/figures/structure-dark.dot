@@ -21,13 +21,11 @@ digraph hoomd_rs {
 
         // Traits
         node [ shape=ellipse, fillcolor="#89b4fa", style="bold,filled,rounded"]
-        SitePairOverlap
         SitePairEnergy
-        SiteOverlap
         SiteEnergy
         // pairwise
         AnisotropicEnergy
-        IsotropicEnergy
+        UnivariateEnergy
 
         Hamiltonian [ label="TotalEnergy\nDeltaEnergyRemove\nDeltaEnergyOne\nDeltaEnergyInsert"]
 
@@ -35,50 +33,42 @@ digraph hoomd_rs {
         node [ shape=rectangle, fillcolor="#89b4fa", style="filled"]
 
         isotropic_potentials [ label = "BoxCar\nHarmonic\nHarmonicRepulsion\nLennardJones\nLennardJonesGuass\nOverlapPenalty\nWeeksChandlerAnderson" ]
-        SitePairEnergy -> CutoffPair
-        SitePairOverlap -> CutoffPairOverlap
-        SiteOverlap -> ExternalOverlap
+        SitePairEnergy -> PairwiseCutoff
         SiteEnergy -> External
         Linear -> SiteEnergy
-        AlwaysTrue -> SitePairOverlap
         AngularMask -> AnisotropicEnergy
         AnisotropicEnergy -> Anisotropic
-        Expanded -> IsotropicEnergy [ dir=both ]
-        HardShape -> SitePairOverlap
-        isotropic_potentials -> IsotropicEnergy
-        IsotropicEnergy -> Isotropic
+        Expanded -> UnivariateEnergy [ dir=both ]
+        HardShape -> SitePairEnergy
+        HardSphere -> SitePairEnergy
+        isotropic_potentials -> UnivariateEnergy
+        UnivariateEnergy -> Isotropic
         Isotropic -> SitePairEnergy
-        Shifted -> IsotropicEnergy [ dir=both ]
-        Xplor -> IsotropicEnergy [ dir=both ]
+        Shifted -> UnivariateEnergy [ dir=both ]
+        Xplor -> UnivariateEnergy [ dir=both ]
         Anisotropic -> SitePairEnergy
 
         External -> Hamiltonian
-        ExternalOverlap -> Hamiltonian
-        CutoffPair -> Hamiltonian
-        CutoffPairOverlap -> Hamiltonian
+        PairwiseCutoff -> Hamiltonian
         Zero -> Hamiltonian
 
         // URLs to the documentation
         AngularMask [ URL="../api/hoomd_interaction/pairwise/struct.AngularMask.html" ]
         AnisotropicEnergy [ URL="../api/hoomd_interaction/pairwise/trait.AnisotropicEnergy.html" ]
         Anisotropic [ URL="../api/hoomd_interaction/pairwise/struct.Anisotropic.html" ]
-        isotropic_potentials [ URL="../api/hoomd_interaction/pairwise/index.html" ]
-        Shifted [ URL="../api/hoomd_interaction/pairwise/struct.Shifted.html" ]
-        Expanded [ URL="../api/hoomd_interaction/pairwise/struct.Expanded.html" ]
-        Xplor [ URL="../api/hoomd_interaction/pairwise/struct.Xplor.html" ]
+        isotropic_potentials [ URL="../api/hoomd_interaction/univariate/index.html" ]
+        Shifted [ URL="../api/hoomd_interaction/univariate/struct.Shifted.html" ]
+        Expanded [ URL="../api/hoomd_interaction/univariate/struct.Expanded.html" ]
+        Xplor [ URL="../api/hoomd_interaction/univariate/struct.Xplor.html" ]
         Isotropic [ URL="../api/hoomd_interaction/pairwise/struct.Isotropic.html" ]
-        IsotropicEnergy [ URL="../api/hoomd_interaction/pairwise/struct.IsotropicEnergy.html" ]
+        UnivariateEnergy [ URL="../api/hoomd_interaction/univariate/struct.UnivariateEnergy.html" ]
         SitePairEnergy [ URL="../api/hoomd_interaction/trait.SitePairEnergy.html" ]
-        CutoffPair [ URL="../api/hoomd_interaction/struct.CutoffPair.html" ]
+        PairwiseCutoff [ URL="../api/hoomd_interaction/struct.PairwiseCutoff.html" ]
         Linear [ URL="../api/hoomd_interaction/external/struct.Linear.html" ]
         SiteEnergy [ URL="../api/hoomd_interaction/trait.SiteEnergy.html" ]
         External [ URL="../api/hoomd_interaction/struct.External.html" ]
         HardShape [ URL="../api/hoomd_interaction/pairwise/struct.HardShape.html" ]
-        SitePairOverlap [ URL="../api/hoomd_interaction/trait.SitePairOverlap.html" ]
-        CutoffPairOverlap [ URL="../api/hoomd_interaction/struct.CutoffPairOverlap.html" ]
-        AlwaysTrue [ URL="../api/hoomd_interaction/pairwise/struct.AlwaysTrue.html" ]
-        SiteOverlap [ URL="../api/hoomd_interaction/trait.SiteOverlap.html" ]
-        ExternalOverlap [ URL="../api/hoomd_interaction/struct.ExternalOverlap.html" ]
+        HardSphere [ URL="../api/hoomd_interaction/pairwise/struct.HardSphere.html" ]
         Zero [ URL="../api/hoomd_interaction/struct.Zero.html" ]
         Hamiltonian [ URL="../api/hoomd_interaction/index.html" ]
     }
