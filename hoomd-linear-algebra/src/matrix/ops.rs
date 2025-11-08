@@ -235,17 +235,6 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
         }
     }
 
-    /// Returns a slice of a part of a row.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the slice is out of bounds.
-    #[must_use]
-    #[inline]
-    pub fn get_row_slice(&self, row_index: usize, col_range: std::ops::Range<usize>) -> &[f64] {
-        &self.rows[row_index][col_range]
-    }
-
     /// Returns an iterator over the elements of a part of a column.
     ///
     /// # Panics
@@ -587,8 +576,19 @@ mod tests {
         let m: Matrix<2, 3> = Matrix {
             rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
         };
-        let row_slice = m.get_row_slice(1, 1..3);
+        let row_slice = &m[(1, 1..3)];
         assert_eq!(row_slice, &[5.0, 6.0]);
+    }
+
+    #[test]
+    fn test_get_row_slice_mut() {
+        let mut m: Matrix<2, 3> = Matrix {
+            rows: [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
+        };
+        let row_slice = &mut m[(1, 1..3)];
+        row_slice[0] = 99.0;
+        row_slice[1] = 101.0;
+        assert_eq!(m.rows, [[1.0, 2.0, 3.0], [4.0, 99.0, 101.0]]);
     }
 
     #[test]
