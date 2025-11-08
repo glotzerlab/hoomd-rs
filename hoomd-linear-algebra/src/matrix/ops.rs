@@ -290,6 +290,24 @@ impl<const N: usize, const M: usize> Matrix<N, M> {
             .iter()
             .map(move |row| &row[col_range.clone()])
     }
+
+    /// Returns a mutable iterator over slices of each row in a submatrix view.
+    ///
+    /// The submatrix is defined by `row_range` and `col_range`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the submatrix is out of bounds.
+    #[inline]
+    pub fn submatrix_slice_iter_mut(
+        &mut self,
+        row_range: std::ops::Range<usize>,
+        col_range: std::ops::Range<usize>,
+    ) -> impl Iterator<Item = &mut [f64]> {
+        self.rows[row_range]
+            .iter_mut()
+            .map(move |row| &mut row[col_range.clone()])
+    }
 }
 
 #[cfg(test)]
@@ -732,5 +750,30 @@ mod tests {
             assert_eq!(row_slice, &m.rows[i][..]);
         }
         assert!(sub_iter.next().is_none());
+    }
+
+    #[test]
+    fn test_submatrix_slice_iter_mut() {
+        let mut m: Matrix<3, 4> = Matrix {
+            rows: [
+                [1.0, 2.0, 3.0, 4.0],
+                [5.0, 6.0, 7.0, 8.0],
+                [9.0, 10.0, 11.0, 12.0],
+            ],
+        };
+
+        let sub_iter_mut = m.submatrix_slice_iter_mut(1..3, 1..3);
+        for row_slice in sub_iter_mut {
+            for x in row_slice {
+                *x *= 10.0;
+            }
+        }
+
+        let expected_rows = [
+            [1.0, 2.0, 3.0, 4.0],
+            [5.0, 60.0, 70.0, 8.0],
+            [9.0, 100.0, 110.0, 12.0],
+        ];
+        assert_eq!(m.rows, expected_rows);
     }
 }
