@@ -117,7 +117,7 @@ mod tests {
         #[case] rows: [[f64; N]; N],
         #[case] expected_y: Vec<f64>,
     ) {
-        let a = Matrix::<N, N> { rows };
+        let mut a = Matrix::<N, N> { rows };
 
         // column vector x = A[1..N, 1]
         let x = a.get_col_slice_iter(1, 1..N);
@@ -129,6 +129,13 @@ mod tests {
         let mut y = vec![0.0; N - 1];
         gemv_col_slice(b_iter, &x, &mut y);
 
-        assert_eq!(y, expected_y);
+        // Write result to the first column of A (from row 1)
+        for i in 0..(N - 1) {
+            a[(i + 1, 0)] = y[i];
+        }
+
+        // Check if the column was updated correctly
+        let result_col: Vec<f64> = a.get_col_slice_iter(0, 1..N).collect();
+        assert_eq!(result_col, expected_y);
     }
 }
