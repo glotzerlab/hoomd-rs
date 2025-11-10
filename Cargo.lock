@@ -2924,6 +2924,7 @@ dependencies = [
  "bevy_egui",
  "bevy_winit",
  "getrandom 0.3.4",
+ "hoomd-geometry",
  "hoomd-manifold",
  "hoomd-microstate",
  "hoomd-simulation",

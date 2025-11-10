@@ -24,6 +24,7 @@ bevy_diagnostic.workspace = true
 bevy_winit.workspace = true
 bevy_egui.workspace = true
 itertools.workspace = true
+hoomd-geometry.workspace = true
 hoomd-manifold.workspace = true
 hoomd-microstate.workspace = true
 hoomd-simulation.workspace = true

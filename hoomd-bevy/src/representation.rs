@@ -27,3 +27,6 @@ pub use hyperbolic_polygon::{
     HyperbolicPolygon, HyperbolicPolygonAssets, HyperbolicPolygonMaterial,
     HyperbolicPolygonMaterialParameters,
 };
+
+pub(crate) mod eighteight_boundary;
+pub use eighteight_boundary::EightEightBoundary;
