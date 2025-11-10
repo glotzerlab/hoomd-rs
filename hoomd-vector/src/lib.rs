@@ -356,6 +356,12 @@ pub trait WedgeProduct {
     fn wedge_product(&self, other: &Self) -> Self::Bivector;
 }
 
+pub trait TensorProduct {
+    type Tensor;
+
+    fn tensor_product(&self, other: &Self) -> Self::Tensor;
+}
+
 /// Operates on elements on a metric space.
 ///
 /// [`Metric`] implements a distance metric between points.
