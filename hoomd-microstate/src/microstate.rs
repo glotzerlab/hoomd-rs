@@ -15,7 +15,6 @@ use crate::{
 use hoomd_rand::Counter;
 use hoomd_spatial::{AllPairs, PointUpdate, PointsNearBall};
 
-
 /// Either a primary site index or a ghost site index.
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
 #[expect(

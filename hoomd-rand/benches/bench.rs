@@ -10,8 +10,10 @@
 use chacha20::ChaCha8Rng;
 use divan::{Bencher, black_box, counter::ItemsCount};
 use hoomd_rand::SFC64Rng;
-use rand::Rng;
-use rand::rand_core::{RngCore, SeedableRng};
+use rand::{
+    Rng,
+    rand_core::{RngCore, SeedableRng},
+};
 
 fn main() {
     divan::main();

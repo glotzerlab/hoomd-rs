@@ -1,8 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use rand::{RngCore, SeedableRng};
-use rand::rand_core::impls;
+use rand::{RngCore, SeedableRng, rand_core::impls};
 
 use crate::util::read_u64_le_unchecked;
 

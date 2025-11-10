@@ -3,9 +3,8 @@
 
 //! Helpers that enable consistent use of random numbers throughout hoomd-rs.
 
-// use chacha20::ChaCha8Rng;
 use crate::SFC64Rng;
-use rand::{Rng, SeedableRng};
+use rand::Rng;
 
 /// Conveniently construct counter based random number generators.
 ///
@@ -16,31 +15,32 @@ use rand::{Rng, SeedableRng};
 /// as ones that produce identical values.
 ///
 /// There are 3 required elements of each counter.
-/// * `step` is the current simulation step and ensures that random number
-///   streams are not correlated from one simulation step to the next.
-/// * `substep` similarly ensures that different parts of the algorithm that
-///   advance the simulation are not correlated within a single step.
-/// * `seed` is a value that allows users to execute replicate simulations that
-///   are identical except for the random numbers applied.
+/// * `step` (8 bytes) is the current simulation step and ensures that random
+///   number streams are not correlated from one simulation step to the next.
+/// * `substep` (4 bytes) similarly ensures that different parts of the
+///   algorithm that advance the simulation are not correlated within a single
+///   step.
+/// * `seed` (4 bytes) is a value that allows users to execute replicate
+///   simulations that are identical except for the random numbers applied.
 ///
-/// There are two optional indices. Generally, many simulation algorithms will
-/// set these to particle indices so that RNG streams are independent from one
-/// particle (or pair of particles) to the next. To generate the same random
-/// numbers (e.g. for use in a DPD thermostat) in independent threads, set the
-/// first index to `min(i,j)` and the second to `max(i,j)`.
+/// There is an additional 8-byte index. Generally, many simulation algorithms
+/// will set this to particle indices so that RNG streams are independent from
+/// one particle (or pair of particles) to the next. The [`indices`] method
+/// treats the index as two 4-byte indices. To generate the same random numbers
+/// (e.g. for use in a DPD thermostat) in independent threads, set the first
+/// index to `min(i,j)` and the second to `max(i,j)`.
 ///
-/// There are also three general purpose counters. Simulation algorithms can
-/// use these as needed when many independent streams are needed per particle,
-/// per substep.
+/// [`indices`]: Self::indices
 ///
 /// # Performance
 ///
-/// The current implementation uses `SFC64`, which generates one 64-bit word at at time.
-/// Benchmarks show that executing `Counter.new(...).make_rng()`
-/// and sampling values that fall in the first batch runs at approximately
-/// 100 million operations per second (run `cargo bench` to see the measured
-/// performance on your architecture). If performance is somehow an issue, `AESRand` may
-/// be slightly faster on some platforms.
+/// The current implementation uses [`SFC64Rng`], which generates
+/// one 64-bit word at at time. Benchmarks show that executing
+/// `Counter.new(...).make_rng()` and sampling values that fall in the first
+/// batch runs at approximately 100 million operations per second (run `cargo
+/// bench` to see the measured performance on your architecture).
+///
+/// [`SFC64`]: crate::SFC64Rng
 ///
 /// # Example
 ///
@@ -63,25 +63,24 @@ pub struct Counter {
     substep: u32,
     /// User-chosen random seed.
     seed: u32,
-    /// First index.
-    index_a: u32,
-    /// Second index.
-    index_b: u32,
+    /// The index.
+    index: u64,
 }
 
 impl Counter {
     /// Construct a new counter.
     ///
-    /// On constructions, all indices and counters default to 0.
+    /// On constructions, the index defaults to 0.
     ///
     /// # Example
     ///
     /// ```
     /// use hoomd_rand::Counter;
     ///
-    /// # let step = 100_000;
-    /// # let substep = 10;
-    /// # let seed = 100;
+    /// let step = 100_000;
+    /// let substep = 10;
+    /// let seed = 100;
+    ///
     /// let counter = Counter::new(step, substep, seed);
     /// ```
     #[must_use]
@@ -91,79 +90,50 @@ impl Counter {
             step,
             substep,
             seed,
-            index_a: 0,
-            index_b: 0,
+            index: 0,
         }
     }
 
-    /// Set indices.
-    ///
-    /// There are only 2 indices. Calling `indices` (or [`index`](Self::index)) more
-    /// than once will overwrite existing values.
+    /// Set the index with two 4-byte values.
     ///
     /// # Example
     ///
     /// ```
     /// use hoomd_rand::Counter;
     ///
-    /// # let step = 100_000;
-    /// # let substep = 10;
-    /// # let seed = 100;
-    /// # let i = 12;
-    /// # let j = 152;
+    /// let step = 100_000;
+    /// let substep = 10;
+    /// let seed = 100;
+    /// let i = 12;
+    /// let j = 152;
+    ///
     /// let counter = Counter::new(step, substep, seed).indices(i.max(j), i.min(j));
     /// ```
     #[must_use]
     #[inline]
     pub fn indices(mut self, a: u32, b: u32) -> Self {
-        self.index_a = a;
-        self.index_b = b;
+        self.index = u64::from(a) << 32 | u64::from(b);
         self
     }
 
-    /// Set indices from a 64-bit integer, splitting to fill both items.
-    ///
-    /// There are only 2 indices. Calling `indices` (or [`index`](Self::index)) more
-    /// than once will overwrite existing values.
+    /// Set the index.
     ///
     /// # Example
     ///
     /// ```
     /// use hoomd_rand::Counter;
     ///
-    /// # let step = 100_000;
-    /// # let substep = 10;
-    /// # let seed = 100;
-    /// let long_int = 1_000_000_000_000u64;
-    /// let counter = Counter::new(step, substep, seed).indices_from_u64(long_int);
+    /// let step = 100_000;
+    /// let substep = 10;
+    /// let seed = 100;
+    /// let index = 1_000_000_000_000u64;
+    ///
+    /// let counter = Counter::new(step, substep, seed).index(index);
     /// ```
     #[must_use]
     #[inline]
-    pub fn indices_from_u64(mut self, combined_index: u64) -> Self {
-        self.index_a = (combined_index >> 32) as u32;
-        self.index_b = (combined_index & 0xffff_ffff) as u32;
-        self
-    }
-
-    /// Set one index.
-    ///
-    /// Equivalent to `indices(a, 0)`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_rand::Counter;
-    ///
-    /// # let step = 100_000;
-    /// # let substep = 10;
-    /// # let seed = 100;
-    /// # let i = 12;
-    /// let counter = Counter::new(step, substep, seed).index(i);
-    /// ```
-    #[must_use]
-    #[inline]
-    pub fn index(mut self, a: u32) -> Self {
-        self.index_a = a;
+    pub fn index(mut self, index: u64) -> Self {
+        self.index = index;
         self
     }
 
@@ -175,9 +145,10 @@ impl Counter {
     /// use hoomd_rand::Counter;
     /// use rand::Rng;
     ///
-    /// # let step = 100_000;
-    /// # let substep = 10;
-    /// # let seed = 100;
+    /// let step = 100_000;
+    /// let substep = 10;
+    /// let seed = 100;
+    ///
     /// let mut rng = Counter::new(step, substep, seed).make_rng();
     ///
     /// let r: f64 = rng.random();
@@ -185,21 +156,15 @@ impl Counter {
     #[must_use]
     #[inline]
     pub fn make_rng(self) -> impl Rng + use<> {
-        let mut seed = [0u8; 24];
-        seed[..8].copy_from_slice(&self.step.to_le_bytes());
-        seed[8..12].copy_from_slice(&self.substep.to_le_bytes());
-        seed[12..16].copy_from_slice(&self.seed.to_le_bytes());
-
-        seed[16..20].copy_from_slice(&self.index_a.to_le_bytes());
-        seed[20..].copy_from_slice(&self.index_b.to_le_bytes());
-
-        SFC64Rng::from_seed(seed)
+        SFC64Rng::initialize(self.step, u64::from(self.substep) << 32 | u64::from(self.seed),
+            self.index, 0)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use assert2::check;
 
     /// Number of stream elements to sample.
     const N: usize = 256;
@@ -228,7 +193,11 @@ mod tests {
                 let mut rng_j = counter_j.clone().make_rng();
                 let values_j = core::array::from_fn::<_, N, _>(|_| rng_j.random::<f64>());
 
-                assert_eq!(values_i == values_j, i == j);
+                if i == j {
+                    check!(values_i == values_j);
+                } else {
+                    check!(values_i != values_j);
+                }
             }
         }
     }

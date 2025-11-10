@@ -1,11 +1,13 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use rand::SeedableRng;
-use rand::rand_core::{
-    RngCore,
-    block::{BlockRng64, BlockRngCore},
-    impls,
+use rand::{
+    SeedableRng,
+    rand_core::{
+        RngCore,
+        block::{BlockRng64, BlockRngCore},
+        impls,
+    },
 };
 
 /// Generate a u32 from a Squares64 PRNG.

@@ -3167,6 +3167,7 @@ name = "hoomd-rand"
 version = "0.0.0"
 dependencies = [
  "approxim",
+ "assert2",
  "chacha20",
  "clap",
  "divan",

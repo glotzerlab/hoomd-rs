@@ -26,6 +26,7 @@ default = []
 extras = []
 
 [dev-dependencies]
+assert2.workspace = true
 approxim.workspace = true
 rstest.workspace = true
 divan.workspace = true
