@@ -35,4 +35,3 @@ chacha20 = { version = "=0.10.0-rc.0", default-features = false, features = ["rn
 [[bench]]
 name = "bench"
 harness = false
-required-features = ["extras"]
