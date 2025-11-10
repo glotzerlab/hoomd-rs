@@ -6,7 +6,6 @@ edition.workspace = true
 rust-version.workspace = true
 homepage.workspace = true
 repository.workspace = true
-readme = "hoomd-manifold/README.md"
 license.workspace = true
 keywords.workspace = true
 categories.workspace = true

@@ -18,6 +18,8 @@ use hoomd_vector::{Rotate, Rotation, Vector};
 ///
 /// Use [`Anisotropic`] with [`PairwiseCutoff`] in MD and MC simulations.
 ///
+/// [`PairwiseCutoff`]: crate::PairwiseCutoff
+///
 /// # Example
 ///
 /// ```

@@ -18,6 +18,7 @@ hoomd-geometry.workspace = true
 hoomd-manifold.workspace = true
 hoomd-spatial.workspace = true
 hoomd-utility.workspace = true
+hoomd-rand.workspace = true
 hoomd-vector.workspace = true
 arrayvec.workspace = true
 rand.workspace = true

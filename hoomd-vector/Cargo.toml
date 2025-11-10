@@ -25,6 +25,7 @@ approxim.workspace = true
 divan.workspace = true
 paste.workspace = true
 rstest.workspace = true
+hoomd-rand.workspace = true
 
 [[bench]]
 name = "cartesian"
