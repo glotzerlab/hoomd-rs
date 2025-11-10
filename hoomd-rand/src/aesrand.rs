@@ -64,7 +64,7 @@ impl BlockRngCore for AESRandCore {
         // SAFETY: As long as size_of::<[uint8x16_t; 2]>() == 32
         let bytes: [u8; 32] = unsafe { std::mem::transmute(data) };
         for (i, chunk) in bytes.chunks_exact(8).enumerate() {
-            results[i] = u64::from_ne_bytes(chunk.try_into().expect("asdf"));
+            results[i] = u64::from_ne_bytes(chunk.try_into().expect("Not enough bytes to read."));
         }
     }
 }
