@@ -4,7 +4,7 @@
 //! Asdf.
 
 /// asdf
-use crate::util::{read_ne_u64, read_u64_le_unchecked};
+use crate::util::read_ne_u64;
 use rand::{
     SeedableRng,
     rand_core::{
@@ -84,8 +84,9 @@ impl<const R: usize> ThreeFry2x64Rng<R> {
     /// TODO
     #[inline]
     pub fn set_stream(&mut self, stream: [u8; 16]) {
-        self.0.core.counter[0] = read_u64_le_unchecked(stream, 0..8);
-        self.0.core.counter[1] = read_u64_le_unchecked(stream, 8..16);
+        let stream = &mut stream.as_slice();
+        self.0.core.counter[0] = read_ne_u64(stream);
+        self.0.core.counter[1] = read_ne_u64(stream);
     }
     /// .
     #[inline]
