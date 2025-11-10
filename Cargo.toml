@@ -172,6 +172,7 @@ default.extend-words = { ratatui = "ratatui" }
 # TODO: Check that this works after release. It may need to be in package.metadata
 # https://docs.rs/about/metadata
 rustdoc-args = [ "--html-in-header", "katex.html" ]
+all-features = true
 
 # Optimize for size in wasm builds
 [profile.release-wasm]

@@ -21,6 +21,8 @@ use rand::{
 ///
 /// This implementation is based on:
 /// <https://github.com/TheIronBorn/simd_prngs/blob/master/src/prngs/aes_rand.rs>
+///
+/// Requires arch `aarch64` with `neon` and `aes` features.
 pub struct AESRandCore {
     /// Internal state of the prng.
     state: uint8x16_t,
