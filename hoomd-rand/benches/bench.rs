@@ -26,9 +26,7 @@ const SEED: u64 = 42;
 mod latency {
     use super::{Bencher, ChaCha8Rng, RngCore, SEED, SFC64, SeedableRng, black_box};
     #[cfg(feature = "extras")]
-    use hoomd_rand::{
-        ThreeFry2x64Rng, {Squares64, Squares128},
-    };
+    use hoomd_rand::ThreeFry2x64Rng;
 
     #[cfg(all(
         target_arch = "aarch64",
@@ -49,24 +47,6 @@ mod latency {
     #[divan::bench]
     fn threefry2x64r13(bencher: Bencher) {
         let mut rng = ThreeFry2x64Rng::<13>::seed_from_u64(SEED);
-        bencher.bench_local(|| {
-            black_box(rng.next_u64());
-        });
-    }
-
-    #[cfg(feature = "extras")]
-    #[divan::bench]
-    fn squares64(bencher: Bencher) {
-        let mut rng = Squares64::seed_from_u64(SEED);
-        bencher.bench_local(|| {
-            black_box(rng.next_u64());
-        });
-    }
-
-    #[cfg(feature = "extras")]
-    #[divan::bench]
-    fn squares128(bencher: Bencher) {
-        let mut rng = Squares128::seed_from_u64(SEED);
         bencher.bench_local(|| {
             black_box(rng.next_u64());
         });
@@ -100,9 +80,7 @@ mod throughput {
     use super::{Bencher, ChaCha8Rng, RngCore, SEED, SFC64, SeedableRng, black_box};
     use divan::counter::BytesCount;
     #[cfg(feature = "extras")]
-    use hoomd_rand::{
-        ThreeFry2x64Rng, {Squares64, Squares128},
-    };
+    use hoomd_rand::ThreeFry2x64Rng;
 
     #[cfg(all(
         target_arch = "aarch64",
@@ -126,26 +104,6 @@ mod throughput {
     #[divan::bench(counters = [BytesCount::new(SIZE)])]
     fn threefry2x64r13(bencher: Bencher) {
         let mut rng = ThreeFry2x64Rng::<13>::seed_from_u64(SEED);
-        let mut buffer = vec![0u8; SIZE];
-        bencher.bench_local(|| {
-            rng.fill_bytes(black_box(&mut buffer));
-        });
-    }
-
-    #[cfg(feature = "extras")]
-    #[divan::bench(counters = [BytesCount::new(SIZE)])]
-    fn squares64(bencher: Bencher) {
-        let mut rng = Squares64::seed_from_u64(SEED);
-        let mut buffer = vec![0u8; SIZE];
-        bencher.bench_local(|| {
-            rng.fill_bytes(black_box(&mut buffer));
-        });
-    }
-
-    #[cfg(feature = "extras")]
-    #[divan::bench(counters = [BytesCount::new(SIZE)])]
-    fn squares128(bencher: Bencher) {
-        let mut rng = Squares128::seed_from_u64(SEED);
         let mut buffer = vec![0u8; SIZE];
         bencher.bench_local(|| {
             rng.fill_bytes(black_box(&mut buffer));

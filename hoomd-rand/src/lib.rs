@@ -21,16 +21,6 @@ mod threefry2x64;
 #[cfg(feature = "extras")]
 pub use threefry2x64::ThreeFry2x64Rng;
 
-#[cfg(feature = "extras")]
-/// Squares PRNGs, which have good performance but worst statistics than SFC64.
-///
-/// Requires the feature `extras`.
-pub mod squares;
-#[cfg(feature = "extras")]
-pub use squares::Squares64;
-#[cfg(feature = "extras")]
-pub use squares::Squares128;
-
 /// Structs and implementations for the SFC64 PRNG.
 mod sfc;
 pub use sfc::SFC64;
