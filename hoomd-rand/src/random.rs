@@ -156,8 +156,12 @@ impl Counter {
     #[must_use]
     #[inline]
     pub fn make_rng(self) -> impl Rng + use<> {
-        SFC64Rng::initialize(self.step, u64::from(self.substep) << 32 | u64::from(self.seed),
-            self.index, 0)
+        SFC64Rng::initialize(
+            self.step,
+            u64::from(self.substep) << 32 | u64::from(self.seed),
+            self.index,
+            0,
+        )
     }
 }
 

@@ -4,7 +4,7 @@
 //! Asdf.
 
 /// asdf
-use crate::util::read_u64_le_unchecked;
+use crate::util::{read_ne_u64, read_u64_le_unchecked};
 use rand::{
     SeedableRng,
     rand_core::{
@@ -62,10 +62,8 @@ impl<const R: usize> SeedableRng for ThreeFry2x64Rng<R> {
     type Seed = [u8; 16];
     #[inline]
     fn from_seed(seed: Self::Seed) -> Self {
-        let (k0, k1) = (
-            read_u64_le_unchecked(seed, 0..8),
-            read_u64_le_unchecked(seed, 8..16),
-        );
+        let seed = &mut seed.as_slice();
+        let (k0, k1) = (read_ne_u64(seed), read_ne_u64(seed));
         Self(BlockRng64::new(ThreeFry2x64Core {
             seed: [k0, k1, C240 ^ k0 ^ k1],
             counter: [0u64, 0u64],

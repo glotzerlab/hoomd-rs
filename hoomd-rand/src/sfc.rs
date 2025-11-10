@@ -3,7 +3,7 @@
 
 use rand::{RngCore, SeedableRng, rand_core::impls};
 
-use crate::util::read_u64_le_unchecked;
+use crate::util::read_ne_u64;
 
 /// The "Small Fast Chaotic" PRNG, originally designed by Chris Doty-Humphrey.
 ///
@@ -98,12 +98,8 @@ impl SeedableRng for SFC64Rng {
     type Seed = [u8; 24];
     #[inline]
     fn from_seed(seed: Self::Seed) -> Self {
-        Self::initialize(
-            read_u64_le_unchecked(seed, 0..8),
-            read_u64_le_unchecked(seed, 8..16),
-            read_u64_le_unchecked(seed, 16..24),
-            0,
-        )
+        let seed = &mut seed.as_slice();
+        Self::initialize(read_ne_u64(seed), read_ne_u64(seed), read_ne_u64(seed), 0)
     }
     #[inline]
     fn seed_from_u64(state: u64) -> Self {
