@@ -6,7 +6,7 @@
 //! Requires the feature `extras`.
 
 /// asdf
-use crate::util::read_ne_u64;
+use crate::util::read_le_u64;
 use rand::{
     SeedableRng,
     rand_core::{
@@ -65,7 +65,7 @@ impl<const R: usize> SeedableRng for ThreeFry2x64Rng<R> {
     #[inline]
     fn from_seed(seed: Self::Seed) -> Self {
         let seed = &mut seed.as_slice();
-        let (k0, k1) = (read_ne_u64(seed), read_ne_u64(seed));
+        let (k0, k1) = (read_le_u64(seed), read_le_u64(seed));
         Self(BlockRng64::new(ThreeFry2x64Core {
             seed: [k0, k1, C240 ^ k0 ^ k1],
             counter: [0u64, 0u64],
@@ -87,8 +87,8 @@ impl<const R: usize> ThreeFry2x64Rng<R> {
     #[inline]
     pub fn set_stream(&mut self, stream: [u8; 16]) {
         let stream = &mut stream.as_slice();
-        self.0.core.counter[0] = read_ne_u64(stream);
-        self.0.core.counter[1] = read_ne_u64(stream);
+        self.0.core.counter[0] = read_le_u64(stream);
+        self.0.core.counter[1] = read_le_u64(stream);
     }
     /// .
     #[inline]
