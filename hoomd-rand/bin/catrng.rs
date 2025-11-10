@@ -21,7 +21,7 @@ extern crate rand;
 use std::{io, io::prelude::*};
 
 use clap::Parser;
-use hoomd_rand::SFC64Rng;
+use hoomd_rand::SFC64;
 use rand::prelude::*;
 
 /// Command line options for RNG testing.
@@ -60,7 +60,7 @@ fn main() -> io::Result<()> {
             let mut rng = match seeds.len() {
                 1 => {
                     eprintln!("Using 1 u64 seed: {}", seeds[0]);
-                    SFC64Rng::seed_from_u64(seeds[0])
+                    SFC64::seed_from_u64(seeds[0])
                 }
                 4 => {
                     eprintln!(
@@ -71,12 +71,12 @@ fn main() -> io::Result<()> {
                     bytes[..8].copy_from_slice(&seeds[0].to_be_bytes());
                     bytes[8..16].copy_from_slice(&seeds[1].to_be_bytes());
                     bytes[16..24].copy_from_slice(&seeds[2].to_be_bytes());
-                    SFC64Rng::from_seed(bytes)
+                    SFC64::from_seed(bytes)
                 }
                 0 => {
                     let seed: [u8; 24] = rand::rngs::StdRng::seed_from_u64(0).random();
                     eprintln!("Using entropy seed: {seed:?}");
-                    SFC64Rng::from_seed(seed)
+                    SFC64::from_seed(seed)
                 }
                 _ => {
                     eprintln!(
@@ -84,7 +84,7 @@ fn main() -> io::Result<()> {
                         seeds.len()
                     );
                     let seed: [u8; 24] = rand::rngs::StdRng::seed_from_u64(0).random();
-                    SFC64Rng::from_seed(seed)
+                    SFC64::from_seed(seed)
                 }
             };
             loop {
@@ -93,8 +93,8 @@ fn main() -> io::Result<()> {
             }
         }
         Cli::TestInterleaved { n } => {
-            let mut rngs: Vec<SFC64Rng> = (0..n)
-                .map(|i| SFC64Rng::seed_from_u64((i as u64) << n))
+            let mut rngs: Vec<SFC64> = (0..n)
+                .map(|i| SFC64::seed_from_u64((i as u64) << n))
                 .collect();
             loop {
                 for (i, chunk) in buf.chunks_mut(8).enumerate() {
@@ -108,7 +108,7 @@ fn main() -> io::Result<()> {
         //     let mut counter = 0u64;
 
         //     loop {
-        //         let mut rng = SFC64Rng::from_state_and_counter([0; 3], counter);
+        //         let mut rng = SFC64::from_state_and_counter([0; 3], counter);
         //         rng.fill_bytes(&mut buf);
         //         counter = counter.wrapping_add(1);
         //         writer.write_all(&buf)?;
@@ -118,7 +118,7 @@ fn main() -> io::Result<()> {
             let mut seed_counter = 0u64;
             loop {
                 for chunk in buf.chunks_mut(8) {
-                    let mut rng = SFC64Rng::seed_from_u64(seed_counter);
+                    let mut rng = SFC64::seed_from_u64(seed_counter);
                     let val = rng.next_u64();
                     chunk.copy_from_slice(&val.to_le_bytes());
                     seed_counter = seed_counter.wrapping_add(1);

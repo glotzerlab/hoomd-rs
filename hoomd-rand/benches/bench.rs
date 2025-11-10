@@ -9,7 +9,7 @@
 )]
 use chacha20::ChaCha8Rng;
 use divan::{Bencher, black_box, counter::ItemsCount};
-use hoomd_rand::SFC64Rng;
+use hoomd_rand::SFC64;
 use rand::{
     Rng,
     rand_core::{RngCore, SeedableRng},
@@ -24,7 +24,7 @@ const SEED: u64 = 42;
 /// Time to first generated value
 #[divan::bench_group(sample_count = 1000)]
 mod latency {
-    use super::{Bencher, ChaCha8Rng, RngCore, SEED, SFC64Rng, SeedableRng, black_box};
+    use super::{Bencher, ChaCha8Rng, RngCore, SEED, SFC64, SeedableRng, black_box};
     #[cfg(feature = "extras")]
     use hoomd_rand::{
         squares::{Squares64, Squares128},
@@ -36,7 +36,7 @@ mod latency {
         target_feature = "neon",
         target_feature = "aes"
     ))]
-    use hoomd_rand::AESRandRng;
+    use hoomd_rand::AESRand;
 
     #[divan::bench]
     fn chacha8(bencher: Bencher) {
@@ -75,7 +75,7 @@ mod latency {
 
     #[divan::bench]
     fn sfc64(bencher: Bencher) {
-        let mut rng = SFC64Rng::seed_from_u64(SEED);
+        let mut rng = SFC64::seed_from_u64(SEED);
         bencher.bench_local(|| {
             black_box(rng.next_u64());
         });
@@ -88,7 +88,7 @@ mod latency {
     ))]
     #[divan::bench]
     fn aesrand(bencher: Bencher) {
-        let mut rng = AESRandRng::seed_from_u64(SEED);
+        let mut rng = AESRand::seed_from_u64(SEED);
         bencher.bench_local(|| {
             black_box(rng.next_u64());
         });
@@ -98,7 +98,7 @@ mod latency {
 /// Measure the time to generate a particular quantitity of data.
 #[divan::bench_group]
 mod throughput {
-    use super::{Bencher, ChaCha8Rng, RngCore, SEED, SFC64Rng, SeedableRng, black_box};
+    use super::{Bencher, ChaCha8Rng, RngCore, SEED, SFC64, SeedableRng, black_box};
     use divan::counter::BytesCount;
     #[cfg(feature = "extras")]
     use hoomd_rand::{
@@ -111,7 +111,7 @@ mod throughput {
         target_feature = "neon",
         target_feature = "aes"
     ))]
-    use hoomd_rand::AESRandRng;
+    use hoomd_rand::AESRand;
 
     /// 1 MiB
     const SIZE: usize = 1024 * 1024;
@@ -156,7 +156,7 @@ mod throughput {
 
     #[divan::bench(counters = [BytesCount::new(SIZE)])]
     fn sfc64(bencher: Bencher) {
-        let mut rng = SFC64Rng::seed_from_u64(SEED);
+        let mut rng = SFC64::seed_from_u64(SEED);
         let mut buffer = vec![0u8; SIZE];
         bencher.bench_local(|| {
             rng.fill_bytes(black_box(&mut buffer));
@@ -170,7 +170,7 @@ mod throughput {
     ))]
     #[divan::bench(counters = [BytesCount::new(SIZE)])]
     fn aesrand(bencher: Bencher) {
-        let mut rng = AESRandRng::seed_from_u64(SEED);
+        let mut rng = AESRand::seed_from_u64(SEED);
         let mut buffer = vec![0u8; SIZE];
         bencher.bench_local(|| {
             rng.fill_bytes(black_box(&mut buffer));

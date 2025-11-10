@@ -3,7 +3,7 @@
 
 //! Helpers that enable consistent use of random numbers throughout hoomd-rs.
 
-use crate::SFC64Rng;
+use crate::SFC64;
 use rand::Rng;
 
 /// Conveniently construct counter based random number generators.
@@ -34,13 +34,13 @@ use rand::Rng;
 ///
 /// # Performance
 ///
-/// The current implementation uses [`SFC64Rng`], which generates
+/// The current implementation uses [`SFC64`], which generates
 /// one 64-bit word at at time. Benchmarks show that executing
 /// `Counter.new(...).make_rng()` and sampling values that fall in the first
 /// batch runs at approximately 100 million operations per second (run `cargo
 /// bench` to see the measured performance on your architecture).
 ///
-/// [`SFC64`]: crate::SFC64Rng
+/// [`SFC64`]: crate::SFC64
 ///
 /// # Example
 ///
@@ -156,7 +156,7 @@ impl Counter {
     #[must_use]
     #[inline]
     pub fn make_rng(self) -> impl Rng + use<> {
-        SFC64Rng::initialize(
+        SFC64::initialize(
             self.step,
             u64::from(self.substep) << 32 | u64::from(self.seed),
             self.index,

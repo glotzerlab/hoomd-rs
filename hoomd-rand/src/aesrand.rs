@@ -76,8 +76,8 @@ impl BlockRngCore for AESRandCore {
 /// ratio of state to output, with a 128 bit state and 256 bits of output per step.
 /// The original (x86-64 implementation) of this method is here:
 /// <https://github.com/TheIronBorn/simd_prngs/blob/master/src/prngs/aes_rand.rs>
-pub struct AESRandRng(BlockRng64<AESRandCore>);
-impl SeedableRng for AESRandRng {
+pub struct AESRand(BlockRng64<AESRandCore>);
+impl SeedableRng for AESRand {
     type Seed = [u8; 16];
 
     #[inline]
@@ -89,7 +89,7 @@ impl SeedableRng for AESRandRng {
     }
 }
 
-impl RngCore for AESRandRng {
+impl RngCore for AESRand {
     #[inline]
     fn next_u64(&mut self) -> u64 {
         self.0.next_u64()

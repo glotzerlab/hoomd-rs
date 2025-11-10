@@ -24,9 +24,9 @@ use crate::util::read_ne_u64;
 /// Seeding the generator with `seed_from_u64` is often the most convenient and
 /// guarantees good pseudorandom statistics.
 /// ```
-/// use hoomd_rand::SFC64Rng;
+/// use hoomd_rand::SFC64;
 /// use rand::SeedableRng;
-/// let rng = SFC64Rng::seed_from_u64(42);
+/// let rng = SFC64::seed_from_u64(42);
 /// ```
 /// See also [Seeding RNGs] in the Rust Rand book.
 ///
@@ -41,7 +41,7 @@ use crate::util::read_ne_u64;
 /// [PractRand]: https://pracrand.sourceforge.net
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SFC64Rng {
+pub struct SFC64 {
     /// The internal state of the PRNG.
     state: [u64; 3],
     /// The current step of the PRNG. This value is incremented with each output, but
@@ -49,7 +49,7 @@ pub struct SFC64Rng {
     counter: u64,
 }
 
-impl SFC64Rng {
+impl SFC64 {
     /// Set up the PRNG from four u64 values, discarding the first 12 outputs to avoid
     /// correlations between similar seeds.
     #[inline]
@@ -80,7 +80,7 @@ impl SFC64Rng {
     }
 }
 
-impl RngCore for SFC64Rng {
+impl RngCore for SFC64 {
     #[inline]
     fn next_u64(&mut self) -> u64 {
         self.step()
@@ -94,7 +94,7 @@ impl RngCore for SFC64Rng {
         impls::fill_bytes_via_next(self, dst);
     }
 }
-impl SeedableRng for SFC64Rng {
+impl SeedableRng for SFC64 {
     type Seed = [u8; 24];
     #[inline]
     fn from_seed(seed: Self::Seed) -> Self {
@@ -158,7 +158,7 @@ mod tests {
     #[rstest::fixture]
     fn large_uniform_sample() -> Vec<u64> {
         const N: u32 = 2u32.pow(23);
-        let mut rng = SFC64Rng::initialize(456_981, 0xcafe, 9_345_663_908, 123_456_789);
+        let mut rng = SFC64::initialize(456_981, 0xcafe, 9_345_663_908, 123_456_789);
         (0..N).map(|_| rng.next_u64()).collect::<Vec<_>>()
     }
 
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn test_sfc64_against_numpy() {
-        let mut rng = SFC64Rng::seed_from_u64(0);
+        let mut rng = SFC64::seed_from_u64(0);
         (0..17).for_each(|i| {
             assert_eq!(
                 rng.next_u64(),
@@ -194,7 +194,7 @@ mod tests {
     /// `rg.integers(np.uint64(2**64-1), size=2**(17)+12, dtype=np.uint64, endpoint=True)[-1]`
     #[test]
     fn test_sfc64_deep() {
-        let mut rng = SFC64Rng::seed_from_u64(0);
+        let mut rng = SFC64::seed_from_u64(0);
         (0..(2u64.pow(17) - 1)).for_each(|_| {
             rng.next_u64();
         });
