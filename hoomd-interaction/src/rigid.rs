@@ -16,10 +16,9 @@ use hoomd_microstate::{
     property::{Orientation, Position},
 };
 use hoomd_vector::{
-    Angle, Cartesian, Cross, Rotate, Rotation, RotationMatrix, Vector, Versor, WedgeProduct,
+    Angle, Cartesian, Cross, Rotate, Rotation, RotationMatrix, TensorProduct, Vector, Versor, WedgeProduct
 };
-
-use crate::{NetBodyForce, NetBodyForceAndTorque, NetBodyTorque, SiteForce, SiteTorque};
+use crate::{NetBodyForce, NetBodyForceAndTorque, NetBodyTorque, NetBodyForceAndVirial, SiteForce, SiteForceAndVirial};
 
 pub struct Rigid<E>(pub E);
 
@@ -129,5 +128,27 @@ where
         }
 
         (total_force, total_torque)
+    }
+}
+
+impl<V, B, S, C, E> NetBodyForceAndVirial< V, B, S, C> for Rigid<E>
+where
+    V: Vector + Default + WedgeProduct + TensorProduct,
+    B: Transform<S>,
+    S: Position<Position = V>,
+    E: SiteForceAndVirial<V, B, S, C>,
+    V::Tensor: Default + AddAssign,
+{
+    /// Sum the forces on the sites to get the net force on a body.
+    #[inline]
+    fn net_force_and_virial_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> (V, V::Tensor) {
+        let mut total_force = V::default();
+        let mut total_virial = V::Tensor::default();
+        for site in microstate.iter_body_sites(body_index) {
+            let (force, virial) = self.0.net_force_and_virial_on_site(microstate, site); 
+            total_force += force;
+            total_virial += virial;
+        }
+        (total_force, total_virial)
     }
 }

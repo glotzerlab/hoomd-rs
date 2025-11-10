@@ -28,7 +28,7 @@ pub use cutoff_pair::CutoffPair;
 pub use cutoff_pair_overlap::CutoffPairOverlap;
 pub use external_overlap::ExternalOverlap;
 pub use external_type::External;
-use hoomd_vector::{Vector, WedgeProduct};
+use hoomd_vector::{TensorProduct, Vector, WedgeProduct};
 pub use zero::Zero;
 
 pub mod rigid;
@@ -542,6 +542,25 @@ pub trait NetBodyForceAndTorque<const N: usize, V: WedgeProduct, B, S, C> {
     fn net_force_and_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> (V, V::Bivector);
 }
 
+/** Compute the net force and virial on a body.
+*/
+pub trait NetBodyForceAndVirial<V: TensorProduct, B, S, C> {
+    /** Compute the net force and virial on a body.
+    TODO
+    */
+    #[must_use]
+    fn net_force_and_virial_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> (V, V::Tensor);
+}
+
+/** Compute the net force and virial on a site.
+*/
+pub trait SiteForceAndVirial<V: TensorProduct, B, S, C> {
+    /** Compute the net force and virial on a site.
+    TODO
+    */
+    #[must_use]
+    fn net_force_and_virial_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Tensor);
+}
 
 /** Compute the force on a single site.
 
