@@ -28,8 +28,8 @@ mod sfc;
 pub use sfc::SFC64Rng;
 
 /// Counter RNG wrapper for simulations.
-mod random;
-pub use random::Counter;
+mod counter;
+pub use counter::Counter;
 
 #[cfg(all(
     target_arch = "aarch64",
