@@ -16,7 +16,7 @@ streams are uncorrelated and have a sufficiently long period. In most cases, a m
 period length is enforced by a 64-bit counter that prevents streams from colliding
 (sharing regions of PRNG state space) for at least $`2^{64}`$ generated values.
 
-## SFC64 and the alternative PRNGs
+## SFC64 and alternative PRNGs
 
 The default PRNG in hoomd-rs is `SFC64`, a chaotic PRNG with a 256-bit state. The
 "chaotic" nature indicates the presence of multiple, disconnected cycles through subsets
@@ -29,12 +29,11 @@ before colliding with another stream. Users can refer to
 of chaotic-type PRNGs for further details.
 
 `SFC64` was selected as the fastest portable PRNG we tested, although the `AESRand` PRNG
-is somewhat faster on systems that have hardware support for AES instructions. This is
-also a chaotic-type PRNG, but uses AES encode and decode to form a random invertible
-mapping rather than standard operations like addition or xor. For users who require
-extreme volumes of random data, `AESRand` might be valuable -- however, the 128-bit
-state means limits its use in parallel contexts where more than $`2^32`$ parallel
-streams are required.
+is faster on systems that have hardware AES instructions. This is also a chaotic-type
+PRNG, but uses AES encode and decode to form a random invertible mapping rather than
+standard operations like addition or xor. For users who require extreme volumes of
+random data, `AESRand` might be valuable -- however, the 128-bit state limits its use in
+parallel contexts where large numbers of independent streams are required.
 
 The `extras` feature of this crate also includes the classic
 [`ThreeFry2x64`](https://random123.com) PRNG, which has excellent statistics but
