@@ -61,7 +61,6 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
 #ifdef VERTEX_UVS
     out.uv = vec2<f32>(vertex.uv.x, vertex.uv.y);
-    out.sides = 4.0;
 #endif
 
 #ifdef VERTEX_POSITIONS

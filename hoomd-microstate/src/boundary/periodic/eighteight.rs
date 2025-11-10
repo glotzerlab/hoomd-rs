@@ -14,7 +14,7 @@ use crate::{
     boundary::{
         Error, GenerateGhosts, MAX_GHOSTS, MaximumAllowableInteractionRange, Periodic, Wrap,
     },
-    property::{Position, Point, OrientedHyperbolicPoint},
+    property::{OrientedHyperbolicPoint, Point, Position},
 };
 use hoomd_geometry::shape::EightEight;
 use hoomd_manifold::{Hyperbolic, Minkowski};
@@ -188,7 +188,10 @@ impl Wrap<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> {
     #[inline]
     #[expect(clippy::cast_possible_truncation, reason = "truncating float to usize")]
     #[expect(clippy::cast_sign_loss, reason = "hard-coded positive numbers")]
-    fn wrap(&self, properties: OrientedHyperbolicPoint<3, Angle>) -> Result<OrientedHyperbolicPoint<3, Angle>, Error> {
+    fn wrap(
+        &self,
+        properties: OrientedHyperbolicPoint<3, Angle>,
+    ) -> Result<OrientedHyperbolicPoint<3, Angle>, Error> {
         let orientation = properties.orientation.theta;
         let mut properties = properties;
         let r = properties.position_mut();
@@ -235,11 +238,22 @@ impl Wrap<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> {
                     + r.coordinates()[2] * (-vertex_boost).cosh(),
             ]);
             // get coords of point in transformed frame
-            let trans_orientation = (orientation - vertex_angle).rem_euclid(2.0*PI);
             let trans_angle =
                 transformed_point.coordinates[1].atan2(transformed_point.coordinates[0]);
             let octant = (((trans_angle + (PI / 8.0)).rem_euclid(2.0 * PI)) / (PI / 4.0)).floor(); //octant the point is inside of, in the transformed frame, in global coords
             let new_vertex = (octant + (4.0 + 3.0 * vertex_number).rem_euclid(8.0)).rem_euclid(8.0); // in vertex coords
+            // get the orientation relative to the midpoint of the target vertex
+            let theta_pt_1 = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
+                &r.clone(),
+                &Hyperbolic::<3>::from_polar_coordinates(
+                    EightEight::EIGHTEIGHT,
+                    vertex_angle,
+                    r.skirt(),
+                ),
+            );
+            let midpoint = ((octant + vertex_number) * PI / 4.0).rem_euclid(2.0 * PI);
+            let first_transformation_orientation =
+                (theta_pt_1 + orientation).rem_euclid(2.0 * PI) - midpoint; // orientation relative to nearest vertex
             let vertex_list = [0.0, 3.0, 6.0, 1.0, 4.0, 7.0, 2.0, 5.0];
             let new_vertex_num = vertex_list[new_vertex.floor() as usize]; // new vertex which point should be mapped to the inside of, in global
             // rotate frame in center to get the relevant octant facing up
@@ -251,7 +265,6 @@ impl Wrap<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> {
                     + transformed_point.coordinates[1] * (rot.cos()),
                 transformed_point.coordinates[2],
             ]);
-            let orientation_center_rotate = (trans_orientation + rot).rem_euclid(2.0*PI);
             // now boost and rotate to put the vertex back into the correct spot
             let (new_vertex_boost, new_vertex_angle) = (
                 EightEight::EIGHTEIGHT,
@@ -275,8 +288,20 @@ impl Wrap<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> {
                 -rotated_in_center.coordinates[1] * (new_vertex_boost.sinh())
                     + rotated_in_center.coordinates[2] * (new_vertex_boost.cosh()),
             ]);
-            let final_orientation = (orientation_center_rotate + new_vertex_angle).rem_euclid(2.0*PI);
-            let wrapped_hyperbolic_position = Hyperbolic::from_minkowski_coordinates(wrapped, r.skirt());
+            let wrapped_hyperbolic_position =
+                Hyperbolic::from_minkowski_coordinates(wrapped, r.skirt());
+            let theta_pt_2 = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
+                &Hyperbolic::<3>::from_polar_coordinates(
+                    EightEight::EIGHTEIGHT,
+                    new_vertex_num * (PI / 4.0),
+                    r.skirt(),
+                ),
+                &wrapped_hyperbolic_position,
+            );
+            let final_orientation = (first_transformation_orientation
+                + (new_vertex_angle + PI / 2.0).rem_euclid(2.0 * PI)
+                + theta_pt_2)
+                .rem_euclid(2.0 * PI);
             *r = wrapped_hyperbolic_position;
             properties.orientation = Angle::from(final_orientation);
             Ok(properties)
@@ -296,7 +321,10 @@ impl GenerateGhosts<Point<Hyperbolic<3>>> for Periodic<EightEight> {
     #[expect(clippy::too_many_lines, reason = "complicated function")]
     #[expect(clippy::cast_possible_truncation, reason = "truncating float to usize")]
     #[expect(clippy::cast_sign_loss, reason = "hard-coded positive numbers")]
-    fn generate_ghosts(&self, site_properties: &Point<Hyperbolic<3>>) -> ArrayVec<[Point<Hyperbolic<3>>; MAX_GHOSTS]> {
+    fn generate_ghosts(
+        &self,
+        site_properties: &Point<Hyperbolic<3>>,
+    ) -> ArrayVec<[Point<Hyperbolic<3>>; MAX_GHOSTS]> {
         let mut result = ArrayVec::new();
         let r = site_properties.position();
 
@@ -573,10 +601,322 @@ impl GenerateGhosts<Point<Hyperbolic<3>>> for Periodic<EightEight> {
     }
 }
 
+impl GenerateGhosts<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> {
+    #[inline]
+    fn maximum_interaction_range(&self) -> f64 {
+        self.maximum_interaction_range
+    }
+    /// Place periodic images of sites near the edge of the periodic boundary
+    #[inline]
+    #[expect(clippy::too_many_lines, reason = "complicated function")]
+    #[expect(clippy::cast_possible_truncation, reason = "truncating float to usize")]
+    #[expect(clippy::cast_sign_loss, reason = "hard-coded positive numbers")]
+    fn generate_ghosts(
+        &self,
+        site_properties: &OrientedHyperbolicPoint<3, Angle>,
+    ) -> ArrayVec<[OrientedHyperbolicPoint<3, Angle>; MAX_GHOSTS]> {
+        let mut result = ArrayVec::new();
+        let r = site_properties.position();
+
+        let theta = (r.coordinates()[1].atan2(r.coordinates()[0])).rem_euclid(2.0 * PI);
+        let octant = ((theta / (PI / 4.0)).floor()).rem_euclid(8.0);
+        let distance_to_bdy = EightEight::distance_to_boundary(r);
+
+        // get the orientation relative to nearest vertex
+        let theta_pt = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
+            &r.clone(),
+            &Hyperbolic::<3>::from_polar_coordinates(
+                EightEight::EIGHTEIGHT,
+                octant * PI / 4.0,
+                r.skirt(),
+            ),
+        );
+        let relative_angle = site_properties.orientation.theta + theta_pt - octant * PI / 4.0;
+
+        // put a ghost particle near a vertex
+        let new_site_vertex = |loc_num: f64, next: i32, point: &Hyperbolic<3>| {
+            // boost to frame near vertex, get site position with respect to vertex
+            // loc_num is the octagon vertex the point is closest to
+            // next is the octagon vertex near which the ghost particle will be placed
+            let (loc_boost, loc_angle) = (EightEight::EIGHTEIGHT, loc_num * (PI / 4.0));
+            let in_vertex_frame = Minkowski::from([
+                point.coordinates()[0] * (-loc_boost).cosh() * (-loc_angle).cos()
+                    - point.coordinates()[1] * (-loc_boost).cosh() * (-loc_angle).sin()
+                    + point.coordinates()[2] * (-loc_boost).sinh(),
+                point.coordinates()[0] * (-loc_angle).sin()
+                    + point.coordinates()[1] * (-loc_angle).cos(),
+                point.coordinates()[0] * (-loc_boost).sinh() * (-loc_angle).cos()
+                    - point.coordinates()[1] * (-loc_boost).sinh() * (-loc_angle).sin()
+                    + point.coordinates()[2] * (-loc_boost).cosh(),
+            ]);
+            // Put a ghost particle near each of the vertices
+            let real_to_vertex = [0.0, 3.0, 6.0, 1.0, 4.0, 7.0, 2.0, 5.0];
+            let vertex_num = real_to_vertex[(loc_num.rem_euclid(8.0)).floor() as usize];
+            // look at the in-center frame of the vertex that is i-th CCW from current one
+            let next_vertex_num =
+                real_to_vertex[((loc_num + f64::from(next)).rem_euclid(8.0)).floor() as usize];
+            // Find which octant our vertex is in, in this frame
+            let zeroth = (4.0_f64 + next_vertex_num).rem_euclid(8.0);
+            let octant = (vertex_num - zeroth).rem_euclid(8.0);
+            // now rotate point in center to put it in the right orientation
+            let rot = ((octant - 4.0) * (PI / 4.0)).rem_euclid(PI * 2.0);
+            let rotated_in_center = Minkowski::from([
+                in_vertex_frame.coordinates[0] * (rot.cos())
+                    - in_vertex_frame.coordinates[1] * (rot.sin()),
+                in_vertex_frame.coordinates[0] * (rot.sin())
+                    + in_vertex_frame.coordinates[1] * (rot.cos()),
+                in_vertex_frame.coordinates[2],
+            ]);
+            // boost and rotate to correct position in global frame
+            let (new_vertex_boost, new_vertex_angle) = (
+                EightEight::EIGHTEIGHT,
+                ((f64::from(next) + loc_num).rem_euclid(8.0) * (PI / 4.0)),
+            );
+            let ghost = Minkowski::from([
+                rotated_in_center.coordinates[0]
+                    * (new_vertex_boost.cosh())
+                    * (new_vertex_angle.cos())
+                    - rotated_in_center.coordinates[1] * (new_vertex_angle.sin())
+                    + rotated_in_center.coordinates[2]
+                        * (new_vertex_boost.sinh())
+                        * (new_vertex_angle.cos()),
+                rotated_in_center.coordinates[0]
+                    * (new_vertex_boost.cosh())
+                    * (new_vertex_angle.sin())
+                    + rotated_in_center.coordinates[1] * (new_vertex_angle.cos())
+                    + rotated_in_center.coordinates[2]
+                        * (new_vertex_boost.sinh())
+                        * (new_vertex_angle.sin()),
+                rotated_in_center.coordinates[0] * (new_vertex_boost.sinh())
+                    + rotated_in_center.coordinates[2] * (new_vertex_boost.cosh()),
+            ]);
+            let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(ghost, r.skirt());
+            let midpoint_angle = (octant * PI / 4.0 + new_vertex_angle + PI).rem_euclid(2.0 * PI);
+            let shift = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
+                &Hyperbolic::<3>::from_polar_coordinates(
+                    new_vertex_boost,
+                    new_vertex_angle,
+                    r.skirt(),
+                ),
+                &new_hyperbolic,
+            );
+            let new_orientation = (midpoint_angle + relative_angle + shift).rem_euclid(2.0 * PI);
+            let mut new_site = *site_properties;
+            *new_site.position_mut() = new_hyperbolic;
+            new_site.orientation = Angle::from(new_orientation);
+            new_site
+        };
+
+        // put a ghost particle near an edge
+        let new_site_edge = |edge_num: f64, point: &Hyperbolic<3>| {
+            let vertex_number = (((theta + (PI / 8.0)).rem_euclid(PI * 2.0)) / (PI / 4.0)).floor();
+            let mut new_site = *site_properties;
+            if vertex_number == edge_num {
+                new_site = new_site_vertex(vertex_number, 5, point);
+            } else if vertex_number == (edge_num + 1.0_f64).rem_euclid(8.0) {
+                new_site = new_site_vertex(vertex_number, 3, point);
+            }
+            new_site
+        };
+
+        let toggle: f64 = EightEight::EDGE_LENGTH / 3.0;
+
+        let near_vertex_0 = r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+            EightEight::EIGHTEIGHT,
+            0.0,
+            r.skirt(),
+        )) < toggle;
+        let near_vertex_1 = r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+            EightEight::EIGHTEIGHT,
+            PI / 4.0,
+            r.skirt(),
+        )) < toggle;
+        let near_vertex_2 = r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+            EightEight::EIGHTEIGHT,
+            2.0 * PI / 4.0,
+            r.skirt(),
+        )) < toggle;
+        let near_vertex_3 = r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+            EightEight::EIGHTEIGHT,
+            3.0 * PI / 4.0,
+            r.skirt(),
+        )) < toggle;
+        let near_vertex_4 = r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+            EightEight::EIGHTEIGHT,
+            4.0 * PI / 4.0,
+            r.skirt(),
+        )) < toggle;
+        let near_vertex_5 = r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+            EightEight::EIGHTEIGHT,
+            5.0 * PI / 4.0,
+            r.skirt(),
+        )) < toggle;
+        let near_vertex_6 = r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+            EightEight::EIGHTEIGHT,
+            6.0 * PI / 4.0,
+            r.skirt(),
+        )) < toggle;
+        let near_vertex_7 = r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+            EightEight::EIGHTEIGHT,
+            7.0 * PI / 4.0,
+            r.skirt(),
+        )) < toggle;
+
+        let near_side_0 = octant == 0.0
+            && distance_to_bdy < self.maximum_interaction_range
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+                EightEight::EIGHTEIGHT,
+                0.0,
+                r.skirt(),
+            )) > toggle
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+                EightEight::EIGHTEIGHT,
+                PI / 4.0,
+                r.skirt(),
+            )) > toggle;
+        let near_side_1 = octant == 1.0
+            && distance_to_bdy < self.maximum_interaction_range
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+                EightEight::EIGHTEIGHT,
+                PI / 4.0,
+                r.skirt(),
+            )) > toggle
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+                EightEight::EIGHTEIGHT,
+                2.0 * PI / 4.0,
+                r.skirt(),
+            )) > toggle;
+        let near_side_2 = octant == 2.0
+            && distance_to_bdy < self.maximum_interaction_range
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+                EightEight::EIGHTEIGHT,
+                2.0 * PI / 4.0,
+                r.skirt(),
+            )) > toggle
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+                EightEight::EIGHTEIGHT,
+                3.0 * PI / 4.0,
+                r.skirt(),
+            )) > toggle;
+        let near_side_3 = octant == 3.0
+            && distance_to_bdy < self.maximum_interaction_range
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+                EightEight::EIGHTEIGHT,
+                3.0 * PI / 4.0,
+                r.skirt(),
+            )) > toggle
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+                EightEight::EIGHTEIGHT,
+                PI,
+                r.skirt(),
+            )) > toggle;
+        let near_side_4 = octant == 4.0
+            && distance_to_bdy < self.maximum_interaction_range
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+                EightEight::EIGHTEIGHT,
+                PI,
+                r.skirt(),
+            )) > toggle
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+                EightEight::EIGHTEIGHT,
+                5.0 * PI / 4.0,
+                r.skirt(),
+            )) > toggle;
+        let near_side_5 = octant == 5.0
+            && distance_to_bdy < self.maximum_interaction_range
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+                EightEight::EIGHTEIGHT,
+                5.0 * PI / 4.0,
+                r.skirt(),
+            )) > toggle
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+                EightEight::EIGHTEIGHT,
+                6.0 * PI / 4.0,
+                r.skirt(),
+            )) > toggle;
+        let near_side_6 = octant == 6.0
+            && distance_to_bdy < self.maximum_interaction_range
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+                EightEight::EIGHTEIGHT,
+                6.0 * PI / 4.0,
+                r.skirt(),
+            )) > toggle
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+                EightEight::EIGHTEIGHT,
+                7.0 * PI / 4.0,
+                r.skirt(),
+            )) > toggle;
+        let near_side_7 = octant == 7.0
+            && distance_to_bdy < self.maximum_interaction_range
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+                EightEight::EIGHTEIGHT,
+                7.0 * PI / 4.0,
+                r.skirt(),
+            )) > toggle
+            && r.distance(&Hyperbolic::<3>::from_polar_coordinates(
+                EightEight::EIGHTEIGHT,
+                0.0,
+                r.skirt(),
+            )) > toggle;
+
+        if near_vertex_0 {
+            for i in 1..8 {
+                result.push(new_site_vertex(0.0, i, r));
+            }
+        } else if near_vertex_1 {
+            for i in 1..8 {
+                result.push(new_site_vertex(1.0, i, r));
+            }
+        } else if near_vertex_2 {
+            for i in 1..8 {
+                result.push(new_site_vertex(2.0, i, r));
+            }
+        } else if near_vertex_3 {
+            for i in 1..8 {
+                result.push(new_site_vertex(3.0, i, r));
+            }
+        } else if near_vertex_4 {
+            for i in 1..8 {
+                result.push(new_site_vertex(4.0, i, r));
+            }
+        } else if near_vertex_5 {
+            for i in 1..8 {
+                result.push(new_site_vertex(5.0, i, r));
+            }
+        } else if near_vertex_6 {
+            for i in 1..8 {
+                result.push(new_site_vertex(6.0, i, r));
+            }
+        } else if near_vertex_7 {
+            for i in 1..8 {
+                result.push(new_site_vertex(7.0, i, r));
+            }
+        } else if near_side_0 {
+            result.push(new_site_edge(0.0, r));
+        } else if near_side_1 {
+            result.push(new_site_edge(1.0, r));
+        } else if near_side_2 {
+            result.push(new_site_edge(2.0, r));
+        } else if near_side_3 {
+            result.push(new_site_edge(3.0, r));
+        } else if near_side_4 {
+            result.push(new_site_edge(4.0, r));
+        } else if near_side_5 {
+            result.push(new_site_edge(5.0, r));
+        } else if near_side_6 {
+            result.push(new_site_edge(6.0, r));
+        } else if near_side_7 {
+            result.push(new_site_edge(7.0, r));
+        }
+
+        result
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::property::{Point, OrientedHyperbolicPoint};
+    use crate::property::{OrientedHyperbolicPoint, Point};
     use approxim::assert_relative_eq;
     use hoomd_manifold::{Hyperbolic, HyperbolicDisk};
     use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
@@ -640,39 +980,34 @@ mod tests {
 
     #[test]
     fn wraps_orientation() {
-        let angle_offset = 0.;
-        let boost = ((EightEight::EIGHTEIGHT)* ((PI/4.0).sin())/((PI/8.0 - angle_offset).sin() + (PI/8.0 + angle_offset).sin())).atanh() + 0.001;
-        let point = Hyperbolic::<3>::from_polar_coordinates(boost, -angle_offset, 1.0);
+        let angle_offset: f64 = 0.1;
+        let boost = ((EightEight::EIGHTEIGHT).tanh() * ((PI / 4.0).sin())
+            / ((angle_offset).sin() + (PI / 4.0 - angle_offset).sin()))
+        .atanh()
+            + 0.000_000_001;
+        let point = Hyperbolic::<3>::from_polar_coordinates(boost, angle_offset + PI / 4.0, 1.0);
+        let tangent = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(EightEight::EIGHTEIGHT, PI / 4.0, 1.0),
+            &point,
+        );
         let oriented_point = OrientedHyperbolicPoint {
             position: point,
-            orientation: 
+            orientation: Angle::from(9.0 * PI / 8.0 + tangent),
         };
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
-        let wrapped_point = periodic.wrap(point).expect("hard-coded");
+        let wrapped_point = periodic.wrap(oriented_point).expect("hard-coded");
 
-        let wrapped_side = (side + 4.0).rem_euclid(8.0);
-        let octant = (((wrapped_point.position.coordinates()[1]
-            .atan2(wrapped_point.position.coordinates()[0]))
-            / (PI / 4.0))
-            .floor())
-        .rem_euclid(8.0);
-
-        // Check that point is wraped to correct octant
-        assert_eq!(wrapped_side, octant);
-
-        // Check that point mapping is correct
-        let new_boost = 2.0
-            * (EightEight::EIGHTEIGHT.tanh()
-                / (offset.cos() - offset.sin() * (1.0 - (2.0_f64).sqrt())))
-            .atanh()
-            - boost;
-        let ans = Hyperbolic::<3>::from_polar_coordinates(
-            new_boost,
-            (wrapped_side + 1.0) * (PI / 4.0) - offset,
-            1.0,
+        let answer = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(EightEight::EIGHTEIGHT, 6.0 * PI / 4.0, 1.0),
+            &wrapped_point.position,
         );
-        assert_relative_eq!(ans, wrapped_point.position, epsilon = 1e-12);
+        // Check that orientation maps correctly
+        assert_relative_eq!(
+            wrapped_point.orientation.theta,
+            5.0 * PI / 8.0 + answer,
+            epsilon = 1e-12
+        );
     }
 
     #[test]
@@ -769,5 +1104,36 @@ mod tests {
             1.0,
         );
         assert_relative_eq!(ans_5, ghost_5.position, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn ghost_near_vertex_orientation() {
+        let offset_boost = 0.1;
+        let v: f64 = 2.448_452_447_678_076;
+        let point = Hyperbolic::<3>::from_polar_coordinates(v - offset_boost, 0.0, 1.0);
+        let point = OrientedHyperbolicPoint {
+            position: point,
+            orientation: Angle::from(0.0),
+        };
+        let periodic =
+            Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
+
+        let ghost_array = periodic.generate_ghosts(&point);
+
+        let ghost_0 = ghost_array[0];
+        let shift_0 = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, PI / 4.0, 1.0),
+            &ghost_0.position,
+        );
+        let ans_0 = shift_0 + 3.0 * PI / 2.0;
+        assert_relative_eq!(ans_0, ghost_0.orientation.theta, epsilon = 1e-12);
+
+        let ghost_5 = ghost_array[5];
+        let shift_5 = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, 6.0 * PI / 4.0, 1.0),
+            &ghost_5.position,
+        );
+        let ans_5 = shift_5 + PI;
+        assert_relative_eq!(ans_5, ghost_5.orientation.theta, epsilon = 1e-12);
     }
 }

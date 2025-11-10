@@ -337,7 +337,9 @@ pub trait SitePairEnergy<S> {
 ///
 /// struct PolydisperseCircleOverlap;
 ///
-/// impl SitePairOverlap<CircleSiteProperties, Cartesian<2>> for PolydisperseCircleOverlap {
+/// impl SitePairOverlap<CircleSiteProperties, Cartesian<2>>
+///     for PolydisperseCircleOverlap
+/// {
 ///     fn site_pair_overlap(
 ///         &self,
 ///         a: &CircleSiteProperties,

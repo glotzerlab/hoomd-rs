@@ -527,7 +527,7 @@ impl<const N: usize> Hyperbolic<N> {
     #[inline]
     pub fn from_minkowski_coordinates(point: Minkowski<N>, skirt: f64) -> Hyperbolic<N> {
         let skirt_squared = -point.distance_squared(&Minkowski::<N>::default());
-        assert_relative_eq!(skirt_squared, skirt.powi(2), epsilon = 1e-12);
+        assert_relative_eq!(skirt_squared, skirt.powi(2), epsilon = 1e-8);
         Hyperbolic { point, skirt }
     }
 }

@@ -21,6 +21,7 @@ hoomd-utility.workspace = true
 rand.workspace = true
 thiserror.workspace = true
 tinyvec.workspace = true
+robust = "1.2.0"
 
 [dev-dependencies]
 anyhow.workspace = true

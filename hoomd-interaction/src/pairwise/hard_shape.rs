@@ -7,7 +7,7 @@ use crate::SitePairOverlap;
 use hoomd_geometry::{IntersectsAt, hyperbolic_overlap::SeparatingPlanes};
 use hoomd_manifold::Hyperbolic;
 use hoomd_microstate::property::{Orientation, Position};
-use hoomd_vector::{Angle, Cartesian, self, Rotate, Rotation};
+use hoomd_vector::{self, Angle, Cartesian, Rotate, Rotation};
 
 /// Infinite energy when sites overlap, 0 when they don't (*not differentiable*).
 ///

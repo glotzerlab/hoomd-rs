@@ -117,9 +117,9 @@ use thiserror::Error;
 mod convex;
 pub use convex::Convex;
 
+pub mod hyperbolic_overlap;
 pub mod shape;
 pub mod xenocollide;
-pub mod hyperbolic_overlap;
 
 /// The N-hypervolume of a geometry. In 2D, this is area and in 3D this is Volume.
 ///
