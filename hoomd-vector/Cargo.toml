@@ -24,7 +24,7 @@ approxim.workspace = true
 [dev-dependencies]
 divan.workspace = true
 paste.workspace = true
-rand_distr = "0.5.1"
+rand_distr = "=0.5.1"
 rstest.workspace = true
 
 [[bench]]
