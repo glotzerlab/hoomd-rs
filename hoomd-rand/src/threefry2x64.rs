@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! PRNG using the ThreeFish cipher with a reduced number of rounds for performance.
+//! PRNG using the `ThreeFish` cipher with a reduced number of rounds for performance.
 //!
 //! Requires the feature `extras`.
 
@@ -22,7 +22,7 @@ const C240: u64 = 0x1_bd1_1bd_aa9_fc1_a22;
 /// Key schedule for ``ThreeFry2x64``.
 const ROTATION_2X64: [u32; 8] = [16, 42, 12, 31, 16, 32, 24, 21];
 
-/// PRNG using the ThreeFish cipher with a reduced number of rounds for performance.
+/// PRNG using the `ThreeFish` cipher with a reduced number of rounds for performance.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ThreeFry2x64Core<const R: usize> {
     /// Internal seed to initialize the PRNG.
