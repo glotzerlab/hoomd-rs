@@ -3,7 +3,7 @@
 
 //! Implement [`LennardJonesGauss`]
 
-use super::{IsotropicEnergy, IsotropicForce};
+use super::{UnivariateEnergy, UnivariateForce};
 
 /// Double-well potential with a steep repulsive core
 ///
@@ -17,8 +17,8 @@ use super::{IsotropicEnergy, IsotropicForce};
 ///
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
-/// use hoomd_interaction::pairwise::{
-///     IsotropicEnergy, IsotropicForce, LennardJonesGauss,
+/// use hoomd_interaction::univariate::{
+///     LennardJonesGauss, UnivariateEnergy, UnivariateForce,
 /// };
 ///
 /// let epsilon = 0.5;
@@ -42,7 +42,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// The parameters are public fields and may be accessed directly:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::LennardJonesGauss;
+/// use hoomd_interaction::univariate::LennardJonesGauss;
 ///
 /// let mut lennard_jones_gauss: LennardJonesGauss = LennardJonesGauss {
 ///     epsilon: 1.5,
@@ -66,7 +66,7 @@ pub struct LennardJonesGauss {
     pub scale: f64,
 }
 
-impl IsotropicEnergy for LennardJonesGauss {
+impl UnivariateEnergy for LennardJonesGauss {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         let r_inv = self.scale / r;
@@ -75,7 +75,7 @@ impl IsotropicEnergy for LennardJonesGauss {
     }
 }
 
-impl IsotropicForce for LennardJonesGauss {
+impl UnivariateForce for LennardJonesGauss {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         let r_inv = self.scale / r;

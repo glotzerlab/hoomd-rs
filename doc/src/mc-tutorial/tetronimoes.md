@@ -95,8 +95,8 @@ Assign all the model parameters in one code block so that they are easy to modif
 
 #### Microstate
 
-Confine the bodies and sites inside of a closed square. Start with no bodies in
-the microstate.
+Use the `VecCell` spatial data structure, confine the bodies and sites inside of a
+closed square, and start with no bodies in the microstate:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:microstate}}
 ```

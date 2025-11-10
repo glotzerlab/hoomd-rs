@@ -3,7 +3,7 @@
 
 //! Implement [`Shifted`]
 
-use super::{IsotropicEnergy, IsotropicForce};
+use super::{UnivariateEnergy, UnivariateForce};
 
 /// Shift another potential to 0 at a given `r`.
 ///
@@ -16,7 +16,9 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// Shifted Lennard-Jones:
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
-/// use hoomd_interaction::pairwise::{IsotropicEnergy, LennardJones, Shifted};
+/// use hoomd_interaction::univariate::{
+///     LennardJones, Shifted, UnivariateEnergy,
+/// };
 ///
 /// let epsilon = 1.5;
 /// let sigma = 1.0;
@@ -36,7 +38,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 ///
 /// Fields can be accessed directly, including those of the original potential `f`:
 /// ```
-/// use hoomd_interaction::pairwise::{LennardJones, Shifted};
+/// use hoomd_interaction::univariate::{LennardJones, Shifted};
 ///
 /// let epsilon = 1.5;
 /// let sigma = 1.0;
@@ -70,7 +72,7 @@ where
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::pairwise::{LennardJones, Shifted};
+    /// use hoomd_interaction::univariate::{LennardJones, Shifted};
     ///
     /// let shifted_lj = Shifted::<LennardJones>::default();
     /// ```
@@ -83,14 +85,14 @@ where
     }
 }
 
-impl<F: IsotropicEnergy> IsotropicEnergy for Shifted<F> {
+impl<F: UnivariateEnergy> UnivariateEnergy for Shifted<F> {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         self.f.energy(r) - self.f.energy(self.r_shift)
     }
 }
 
-impl<F: IsotropicForce> IsotropicForce for Shifted<F> {
+impl<F: UnivariateForce> UnivariateForce for Shifted<F> {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         self.f.force(r)
@@ -103,7 +105,7 @@ mod tests {
     use approxim::{assert_abs_diff_eq, assert_relative_eq};
     use rstest::*;
 
-    use crate::pairwise::LennardJones;
+    use crate::univariate::LennardJones;
 
     #[rstest]
     fn special_points_12_6(

@@ -1,0 +1,26 @@
+[package]
+name = "hoomd-spatial"
+categories.workspace = true
+description = "Infrastructure for efficient computation of neighbors using spatial data structures."
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+readme = "hoomd-spatial/README.md"
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+hoomd-vector.workspace = true
+hoomd-utility.workspace = true
+log.workspace = true
+rustc-hash.workspace = true
+
+[dev-dependencies]
+assert2.workspace = true
+rand.workspace = true
+rstest.workspace = true

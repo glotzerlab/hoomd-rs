@@ -3,15 +3,17 @@
 
 //! Implement `QuickInsert`
 
+use rand::distr::Distribution;
+
 use super::Count;
 use hoomd_interaction::{DeltaEnergyInsert, TotalEnergy};
 use hoomd_microstate::{
-    Body, Microstate, Transform,
+    Body, Microstate, SiteKey, Transform,
     boundary::{GenerateGhosts, Wrap},
     property::Position,
 };
 
-use rand::distr::Distribution;
+use hoomd_spatial::PointUpdate;
 
 /// Track the state of a given `QuickInsert` instance.
 #[derive(Debug, PartialEq)]
@@ -67,7 +69,7 @@ enum State {
 ///
 /// [`apply`]: Self::apply
 /// [`is_complete`]: Self::is_complete
-/// [`OverlapPenalty`]: hoomd_interaction::pairwise::OverlapPenalty
+/// [`OverlapPenalty`]: hoomd_interaction::univariate::OverlapPenalty
 ///
 /// # Example
 ///
@@ -217,12 +219,13 @@ impl<D> QuickInsert<D> {
     /// ```
     /// use hoomd_geometry::shape::Rectangle;
     /// use hoomd_interaction::{
-    ///     CutoffPair,
-    ///     pairwise::{Expanded, Isotropic, OverlapPenalty},
+    ///     PairwiseCutoff,
+    ///     pairwise::Isotropic,
+    ///     univariate::{Expanded, OverlapPenalty},
     /// };
     /// use hoomd_mc::{QuickInsert, Sweep, Translate, Trial, UniformIn};
     /// use hoomd_microstate::{
-    ///     Body, MicrostateBuilder, boundary::Periodic, property::Point,
+    ///     Body, Microstate, boundary::Periodic, property::Point,
     /// };
     /// use hoomd_simulation::macrostate::Isothermal;
     /// use hoomd_vector::Cartesian;
@@ -239,39 +242,41 @@ impl<D> QuickInsert<D> {
     /// let translate = Translate::with_maximum_distance(0.1.try_into()?);
     /// let translate_sweep = Sweep(translate);
     ///
-    /// let cutoff_pair = CutoffPair {
-    ///     r_cut: 1.0,
-    ///     evaluator: Isotropic(Expanded {
+    /// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+    ///     interaction: Expanded {
     ///         delta: 1.0,
     ///         f: OverlapPenalty::default(),
-    ///     }),
-    /// };
+    ///     },
+    ///     r_cut: 1.0,
+    /// });
     ///
     /// let macrostate = Isothermal { temperature: 1.0 };
-    /// let mut microstate =
-    ///     MicrostateBuilder::with_boundary(Periodic::new(1.0, rectangle)?)
-    ///         .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
-    ///         .try_build()?;
+    /// let mut microstate = Microstate::builder()
+    ///     .boundary(Periodic::new(1.0, rectangle)?)
+    ///     .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
+    ///     .try_build()?;
     ///
-    /// quick_insert.apply(&mut microstate, &cutoff_pair);
+    /// quick_insert.apply(&mut microstate, &pairwise_cutoff);
     ///
-    /// translate_sweep.apply(&mut microstate, &cutoff_pair, &macrostate);
+    /// translate_sweep.apply(&mut microstate, &pairwise_cutoff, &macrostate);
     ///
     /// assert!(microstate.bodies().len() > 1);
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    pub fn apply<P, B, S, C, H>(
+    pub fn apply<P, B, S, X, C, H>(
         &mut self,
-        microstate: &mut Microstate<B, S, C>,
+        microstate: &mut Microstate<B, S, X, C>,
         hamiltonian: &H,
     ) -> Count
     where
+        P: Copy,
         B: Position<Position = P> + Transform<S>,
         S: Position<Position = P> + Default,
+        X: PointUpdate<P, SiteKey>,
         D: Distribution<Body<B, S>>,
-        H: DeltaEnergyInsert<B, S, C> + TotalEnergy<Microstate<B, S, C>>,
+        H: DeltaEnergyInsert<B, S, X, C> + TotalEnergy<Microstate<B, S, X, C>>,
         C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     {
         let mut count = Count::default();
@@ -333,11 +338,8 @@ mod tests {
     use super::*;
     use crate::{QuickInsert, Sweep, Translate, Trial, UniformIn};
     use hoomd_geometry::shape::Rectangle;
-    use hoomd_interaction::{
-        CutoffPair,
-        pairwise::{Boxcar, Isotropic},
-    };
-    use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};
+    use hoomd_interaction::{PairwiseCutoff, pairwise::Isotropic, univariate::Boxcar};
+    use hoomd_microstate::{Microstate, boundary::Closed, property::Point};
     use hoomd_simulation::macrostate::Isothermal;
     use hoomd_vector::Cartesian;
 
@@ -347,14 +349,14 @@ mod tests {
         let epsilon = f64::INFINITY;
         let kt = 1.0;
 
-        let hamiltonian = CutoffPair {
-            r_cut: sigma,
-            evaluator: Isotropic(Boxcar {
+        let hamiltonian = PairwiseCutoff(Isotropic {
+            interaction: Boxcar {
                 left: 0.0,
                 right: sigma,
                 epsilon,
-            }),
-        };
+            },
+            r_cut: sigma,
+        });
 
         let translate =
             Translate::with_maximum_distance(0.1.try_into().expect("hard-coded value is non-zero"));
@@ -364,7 +366,8 @@ mod tests {
             6.0.try_into().expect("hard-coded value is non-zero"),
         ));
 
-        let mut microstate = MicrostateBuilder::with_boundary(rectangle.clone())
+        let mut microstate = Microstate::builder()
+            .boundary(rectangle.clone())
             .bodies(vec![Body::point(Cartesian::from([0.0, 0.0]))])
             .try_build()
             .expect("hard-coded point is in the boundary");
