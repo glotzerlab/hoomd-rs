@@ -1,11 +1,10 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Asdf.
+//! PRNG using the ThreeFish cipher with a reduced number of rounds for performance.
 //!
 //! Requires the feature `extras`.
 
-/// asdf
 use crate::util::read_le_u64;
 use rand::{
     SeedableRng,
@@ -23,12 +22,12 @@ const C240: u64 = 0x1_bd1_1bd_aa9_fc1_a22;
 /// Key schedule for ``ThreeFry2x64``.
 const ROTATION_2X64: [u32; 8] = [16, 42, 12, 31, 16, 32, 24, 21];
 
-/// TODO.
+/// PRNG using the ThreeFish cipher with a reduced number of rounds for performance.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ThreeFry2x64Core<const R: usize> {
-    /// .
+    /// Internal seed to initialize the PRNG.
     seed: [u64; 3],
-    /// .
+    /// Counter storing progress through the state space.
     counter: [u64; 2],
 }
 /// Mixing function for the `ThreeFry2x64` PRNG.
@@ -83,14 +82,14 @@ impl<const R: usize> SeedableRng for ThreeFry2x64Rng<R> {
 /// Reduced-round Threefish based cypher, originally described in the Random123 paper.
 pub struct ThreeFry2x64Rng<const R: usize>(BlockRng64<ThreeFry2x64Core<R>>);
 impl<const R: usize> ThreeFry2x64Rng<R> {
-    /// TODO
+    /// Set the full 128 bytes of the counter to a stream.
     #[inline]
     pub fn set_stream(&mut self, stream: [u8; 16]) {
         let stream = &mut stream.as_slice();
         self.0.core.counter[0] = read_le_u64(stream);
         self.0.core.counter[1] = read_le_u64(stream);
     }
-    /// .
+    /// Set the lowest 64 bytes of the counter to a stream.
     #[inline]
     pub fn set_stream_from_u64(&mut self, stream: u64) {
         self.0.core.counter = [0, stream];

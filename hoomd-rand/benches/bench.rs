@@ -27,8 +27,7 @@ mod latency {
     use super::{Bencher, ChaCha8Rng, RngCore, SEED, SFC64, SeedableRng, black_box};
     #[cfg(feature = "extras")]
     use hoomd_rand::{
-        squares::{Squares64, Squares128},
-        threefry2x64::ThreeFry2x64Rng,
+        ThreeFry2x64Rng, {Squares64, Squares128},
     };
 
     #[cfg(all(
@@ -102,8 +101,7 @@ mod throughput {
     use divan::counter::BytesCount;
     #[cfg(feature = "extras")]
     use hoomd_rand::{
-        squares::{Squares64, Squares128},
-        threefry2x64::ThreeFry2x64Rng,
+        ThreeFry2x64Rng, {Squares64, Squares128},
     };
 
     #[cfg(all(
