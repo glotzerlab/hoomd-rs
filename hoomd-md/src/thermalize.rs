@@ -81,7 +81,7 @@ pub struct Thermalizer {
 /// $`f_\mathrm{Maxwell-Boltzmann}(p) dp = f(p_x)f(p_y)f(p_z) dp_x dp_y dp_z`$ and express it in terms of the
 /// magnitude of momentum $`p = \sqrt{(p_x^2+p_y^2+p_z^2)}`$ as:
 /// ```math
-///    f_\mathrm{Maxwell-Boltzmann}(p) = \left[ \frac{1}{2 \pi k_B T} \right]^\frac{3}{2} (\frac{4 \pi p^2}{\sqrt{m}}) \exp{\left( -\frac{p^2}{2 m k_B T} \right)}
+///    f_\mathrm{Maxwell-Boltzmann}(p) = \left[ \frac{1}{2 m \pi k_B T} \right]^\frac{3}{2} (4 \pi p^2) \exp{\left( -\frac{p^2}{2 m k_B T} \right)}
 /// ```
 impl<const N: usize, B, S, C> TranslationalThermalizer<N, B, S, C> for Thermalizer
 where
