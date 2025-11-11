@@ -4,15 +4,12 @@
 use std::error::Error;
 use std::{fmt, fs};
 
-use crate::potential::{Chimes2b, ChimesPenalty, CubicSmooth, TersoffSmooth};
-use crate::transformation::{
-    DirectTransformation, InverseTransformation, MorseTransformation, Transformation,
+use crate::potential::{
+    Chimes2b, ChimesPenalty, ChimesSmoothing, ChimesTransformation, ChimesTwobPotential,
+    CubicSmooth, TersoffSmooth,
 };
-use hoomd_interaction::{
-    PairwiseCutoff,
-    pairwise::Isotropic,
-    univariate::{UnivariateEnergy, UnivariateForce},
-};
+use crate::transformation::{DirectTransformation, InverseTransformation, MorseTransformation};
+use hoomd_interaction::{PairwiseCutoff, pairwise::Isotropic};
 
 // Custom error for invalid format or data
 #[derive(Debug)]
@@ -26,90 +23,63 @@ impl fmt::Display for InvalidFormatError {
 
 impl Error for InvalidFormatError {}
 
-#[derive(Clone)]
-enum ChimesTransformation {
-    Morse(MorseTransformation),
-    Inverse(InverseTransformation),
-    Direct(DirectTransformation),
-}
+/**
+Builder for constructing ChIMES potential from
+the ChIMES parameter file.
 
-impl Transformation for ChimesTransformation {
-    fn s(&self, r: &f64) -> f64 {
-        match self {
-            ChimesTransformation::Morse(t) => t.s(r),
-            ChimesTransformation::Inverse(t) => t.s(r),
-            ChimesTransformation::Direct(t) => t.s(r),
-        }
-    }
+Given a known maximum two-body Chebyshev polynomial
+orders `N`, [`ChimesBuilder`] can be used to parse the
+potential parameter in the ChIMES parameter TXT file,
+as described in the Generating a ChIMES model
+writen in the [ChIMES-LSQ].
 
-    fn ds_dr(&self, r: &f64) -> f64 {
-        match self {
-            ChimesTransformation::Morse(t) => t.ds_dr(r),
-            ChimesTransformation::Inverse(t) => t.ds_dr(r),
-            ChimesTransformation::Direct(t) => t.ds_dr(r),
-        }
-    }
-}
+The `parse` function perform the TXT file parsing
+given a `file_path`, pointing to the TXT file. The
+current implementation only parse out the two-body
+potential component.
 
-/// Enum to encapsulate different smoothing functions.
-#[derive(Clone)]
-pub enum ChimesSmoothing<F: Transformation, const N: usize> {
-    Cubic(CubicSmooth<Chimes2b<F, N>>),
-    Tersoff(TersoffSmooth<Chimes2b<F, N>>),
-}
+Given a valid `pair_idx`, representing one of
+the particle pair type recognized by [`ChimesBuilder`] during
+the excution of `parse`. The `get_twob_chimes_potential` assemble the complete
+ChIMES potential functional, wrapped in [`PairwiseCutoff`]
+, and return it.
 
-impl<F: Transformation, const N: usize> UnivariateEnergy for ChimesSmoothing<F, N> {
-    fn energy(&self, r: f64) -> f64 {
-        match self {
-            ChimesSmoothing::Cubic(s) => s.energy(r),
-            ChimesSmoothing::Tersoff(s) => s.energy(r),
-        }
-    }
-}
-impl<F: Transformation, const N: usize> UnivariateForce for ChimesSmoothing<F, N> {
-    fn force(&self, r: f64) -> f64 {
-        match self {
-            ChimesSmoothing::Cubic(s) => s.force(r),
-            ChimesSmoothing::Tersoff(s) => s.force(r),
-        }
-    }
-}
+[ChIMES-LSQ]: <https://chimes-lsq.readthedocs.io/en/latest/lsq_input_file.html>
 
-/// Represents a two-body ChIMES potential for a specific pair type.
-#[derive(Clone)]
-pub struct ChimesTwobPotential<const N: usize> {
-    pub type1: String,
-    pub type2: String,
-    pub chimes: ChimesSmoothing<ChimesTransformation, N>,
-    pub penalty: ChimesPenalty,
-    pub energy_shifting: f64,
-}
 
-impl<const N: usize> UnivariateEnergy for ChimesTwobPotential<N> {
-    fn energy(&self, r: f64) -> f64 {
-        self.penalty.energy(r) + self.chimes.energy(r) + self.energy_shifting
-    }
-}
+# Example
+```
+use hoomd_chimes::parser::ChimesBuilder;
 
-impl<const N: usize> UnivariateForce for ChimesTwobPotential<N> {
-    fn force(&self, r: f64) -> f64 {
-        self.penalty.force(r) + self.chimes.force(r)
-    }
-}
+// Maximum two-body order is 12 for the example parameter file.
+const N: usize = 12;
+let file_path = "./test-data/C-twobody.txt";
 
+
+let chimes_builder = ChimesBuilder::<N>::parse(file_path).expect("Failed to parse parameter file");
+let chimes_fn = chimes_builder.get_twob_chimes_potential(0).expect("Error assemling ChIMES potential");
+assert_eq!(chimes_fn.0.interaction.type1, String::from("C"));
+```
+*/
 #[derive(Clone, Debug, PartialEq)]
 pub struct ChimesBuilder<const N: usize> {
-    /// Chebyshev polynomial orders and related parameters from PAIRTYP (line 18).
+    /// Chebyshev polynomial orders and related parameters from PAIRTYP.
     pub poly_order: Vec<usize>,
-    /// Number of atom types (line 20).
+    /// Number of atom types.
     pub atom_types: usize,
-    /// Combined numeric values from atom types and atom pairs (lines 23 and 28).
+    /// A tuple stores parameters of each particle type.
+    /// The elements of the tuple stores parameters as follows:
+    /// (particle types, masses)
     pub type_data: (Vec<String>, Vec<f64>),
-    /// Number of pair types (line 20).
+    /// Number of pair types.
     pub atom_pair_types: usize,
-    /// Distance transformation style (assume the same for all pair types).
+    /// Distance transformation style, assuming the same for all pair types.
     pub xform_style: String,
-    /// Combined numeric values of pair types.
+    /// A tuple with length of `atom_pair_types`
+    /// stores pairwise ChIMES parameters of each pair type.
+    /// Each element of the tuple stores the parameters as follows:
+    /// (first particle types, second particle types,
+    /// inner radial cutoffs, outer radial cutofsf, morse lambdas).
     pub pair_data: (
         Vec<String>,
         Vec<String>,
@@ -117,29 +87,38 @@ pub struct ChimesBuilder<const N: usize> {
         Vec<f64>,
         Vec<Option<f64>>,
     ),
-    /// FCUT type and value (line 11).
+    /// FCUT type and value, assuming the same for all pair types.
+    /// See [`ChimesSmoothing`].
     pub fcut: (String, Option<f64>),
-
+    /// Indexes represent each pair type.
     pub pair_type_index: Vec<usize>,
-    /// Chebyshev coefficients (lines 39–50).
+    /// A vector stores Chebyshev polynomial coefficient of each
+    /// pair type. See [`Chimes2b`].
     pub cheby_2b_coeffs: Vec<Vec<f64>>,
-
+    /// A vector contains indexes of
+    /// pair types slow mapping.
     pub pair_idx_slow_map: Vec<usize>,
-
+    /// A vector contains string of
+    /// pair types for the corresponding
+    /// `pair_idx_slow_map`.
     pub pair_type_slow_map: Vec<String>,
-
+    /// A vector contains indexes of
+    /// pair types fast mapping.
     pub pair_idx_fast_map: Vec<usize>,
-
+    /// A vector contains string of
+    /// pair types for the corresponding
+    /// `pair_idx_fast_map`.
     pub pair_type_fast_map: Vec<String>,
-    /// Energy offset (line 57).
+    /// Single particle energy for each particle type.
     pub energy_offset: Vec<f64>,
-
+    /// The smooth kick-in distance of [`ChimesPenalty`].
     pub penalty_dist: f64,
-
+    /// The penalty strength of [`ChimesPenalty`].
     pub penalty_scaling: f64,
 }
 
 impl<const N: usize> ChimesBuilder<N> {
+    /// parse the ChIMES parameter file given the file path.
     pub fn parse(file_path: &str) -> Result<Self, Box<dyn Error>> {
         let content = fs::read_to_string(file_path)?;
         let lines: Vec<&str> = content
@@ -475,23 +454,25 @@ impl<const N: usize> ChimesBuilder<N> {
         })
     }
 
+    /// Assemble two-body chimes potential function given
+    /// a pair_idx.
     pub fn get_twob_chimes_potential(
         &self,
         pair_idx: usize,
-    ) -> PairwiseCutoff<Isotropic<ChimesTwobPotential<N>>> {
+    ) -> Result<PairwiseCutoff<Isotropic<ChimesTwobPotential<N>>>, Box<dyn Error>> {
         assert!(
             pair_idx <= self.pair_data.0.len() - 1,
             "Intend to access the potential model with pair idx {}, but only found {} pairs",
             pair_idx,
             self.pair_data.0.len()
         );
-        let transformatiom_fn = self.get_tranformation(pair_idx).unwrap();
+        let transformatiom_fn = self.get_tranformation(pair_idx)?;
         let cheby2b: Chimes2b<ChimesTransformation, N> = Chimes2b::new(
             transformatiom_fn,
             self.cheby_2b_coeffs[pair_idx].clone(),
             self.pair_data.2[pair_idx],
         );
-        let chimes_2b_model = self.get_smoothing(cheby2b, pair_idx).unwrap();
+        let chimes_2b_model = self.get_smoothing(cheby2b, pair_idx)?;
         let penalty_fn = ChimesPenalty {
             r_in: self.pair_data.2[pair_idx],
             a: self.penalty_scaling,
@@ -505,12 +486,13 @@ impl<const N: usize> ChimesBuilder<N> {
             energy_shifting: self.energy_offset[pair_idx],
         };
 
-        PairwiseCutoff(Isotropic {
+        Ok(PairwiseCutoff(Isotropic {
             interaction: chimes_potential,
             r_cut: self.pair_data.3[pair_idx],
-        })
+        }))
     }
 
+    /// Assemble transformation function.
     fn get_tranformation(&self, pair_idx: usize) -> Result<ChimesTransformation, Box<dyn Error>> {
         match self.xform_style.as_str() {
             "MORSE" => Ok(ChimesTransformation::Morse(MorseTransformation {
@@ -535,6 +517,7 @@ impl<const N: usize> ChimesBuilder<N> {
         }
     }
 
+    /// Assemble smoothing function.
     fn get_smoothing(
         &self,
         f: Chimes2b<ChimesTransformation, N>,
@@ -639,7 +622,9 @@ mod tests {
         assert_eq!(params.pair_idx_fast_map, expected_pair_idx_fast_map);
         assert_eq!(params.pair_type_fast_map, expected_pair_type_fast_map);
 
-        let chimes_pot = params.get_twob_chimes_potential(0);
+        let chimes_pot = params
+            .get_twob_chimes_potential(0)
+            .expect("Error assemling ChIMES potential");
         assert_eq!(chimes_pot.0.interaction.type1, String::from("C"));
         assert_eq!(chimes_pot.0.interaction.type2, String::from("C"));
         // println!("{}", chimes_pot.evaluator.0.energy(1.1));
