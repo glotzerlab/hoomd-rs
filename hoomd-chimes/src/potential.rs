@@ -14,3 +14,8 @@ pub use cubic_smooth::CubicSmooth;
 
 mod chimes_penalty;
 pub use chimes_penalty::ChimesPenalty;
+
+mod chimes_assembler;
+pub use chimes_assembler::ChimesSmoothing;
+pub use chimes_assembler::ChimesTransformation;
+pub use chimes_assembler::ChimesTwobPotential;
