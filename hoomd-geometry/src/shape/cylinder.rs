@@ -96,52 +96,26 @@ mod tests {
 
     #[rstest]
     // --- PARALLEL CASES ---
-    // Parallel, intersecting
-    #[case(1.0, 1.0, [1.5, 0.0, 0.0], Versor::default(), true, "parallel, intersecting")]
-    // Parallel, touching
-    #[case(1.0, 1.0, [2.0, 0.0, 5.0], Versor::default(), true, "parallel, touching")]
-    // Parallel, not intersecting
-    #[case(1.0, 1.0, [2.1, 0.0, 0.0], Versor::default(), false, "parallel, not intersecting")]
-    // Parallel, second cylinder has different radius
-    #[case(1.0, 0.5, [1.5, 0.0, 0.0], Versor::default(), true, "parallel, different radii, touching")]
-    #[case(1.0, 0.5, [1.6, 0.0, 0.0], Versor::default(), false, "parallel, different radii, not intersecting")]
+    #[case::parallel_intersecting(1.0, 1.0, [1.5, 0.0, 0.0], Versor::default(), true)]
+    #[case::parallel_touching(1.0, 1.0, [2.0, 0.0, 5.0], Versor::default(), true)]
+    #[case::parallel_not_intersecting(1.0, 1.0, [2.1, 0.0, 0.0], Versor::default(), false)]
+    #[case::parallel_different_radii_touching(1.0, 0.5, [1.5, 0.0, 0.0], Versor::default(), true)]
+    #[case::parallel_different_radii_not_intersecting(1.0, 0.5, [1.6, 0.0, 0.0], Versor::default(), false)]
     // --- NON-PARALLEL CASES ---
-    // Perpendicular, intersecting at origin
-    #[case(1.0, 1.0, [0.0, 0.0, 0.0],
-         Versor::from_axis_angle(Cartesian::from([1., 0., 0.]).to_unit_unchecked().0, PI / 2.0),
-          true, "perpendicular, intersecting at origin")]
-    // Perpendicular, skew, intersecting
-    #[case(1.0, 1.0, [1.5, 0.0, 0.0],
-         Versor::from_axis_angle(Cartesian::from([1., 0., 0.]).to_unit_unchecked().0, PI / 2.0),
-          true, "perpendicular, skew, intersecting")]
-    // Perpendicular, skew, touching
-    #[case(1.0, 1.0, [0.0, 2.0, 0.0],
-         Versor::from_axis_angle(Cartesian::from([0., 1., 0.]).to_unit_unchecked().0, PI / 2.0),
-          true, "perpendicular, skew, touching")]
-    // Perpendicular, skew, not intersecting
-    #[case(1.0, 1.0, [2.1, 0.0, 5.0],
-         Versor::from_axis_angle(Cartesian::from([1., 0., 0.]).to_unit_unchecked().0, PI / 2.0),
-          false, "perpendicular, skew, not intersecting")]
+    #[case::perpendicular_intersecting_at_origin(1.0, 1.0, [0.0, 0.0, 0.0], Versor::from_axis_angle(Cartesian::from([1., 0., 0.]).to_unit_unchecked().0, PI / 2.0), true)]
+    #[case::perpendicular_skew_intersecting(1.0, 1.0, [1.5, 0.0, 0.0], Versor::from_axis_angle(Cartesian::from([1., 0., 0.]).to_unit_unchecked().0, PI / 2.0), true)]
+    #[case::perpendicular_skew_touching(1.0, 1.0, [0.0, 2.0, 0.0], Versor::from_axis_angle(Cartesian::from([0., 1., 0.]).to_unit_unchecked().0, PI / 2.0), true)]
+    #[case::perpendicular_skew_not_intersecting(1.0, 1.0, [2.1, 0.0, 5.0], Versor::from_axis_angle(Cartesian::from([1., 0., 0.]).to_unit_unchecked().0, PI / 2.0), false)]
     // --- GENERAL SKEW CASES ---
-    // Skew, intersecting
-    #[case(1.0, 1.0, [1.0, 1.0, 0.0],
-         Versor::from_axis_angle(Cartesian::from([0., 1., 0.]).to_unit_unchecked().0, PI / 4.0),
-          true, "skew, intersecting")]
-    // Skew, touching
-    #[case(1.0, 1.0, [0.0, 2.0, 0.0],
-         Versor::from_axis_angle(Cartesian::from([0., 1., 0.]).to_unit_unchecked().0, PI / 4.0),
-          true, "skew, touching")]
-    // Skew, not intersecting
-    #[case(1.0, 1.0, [0.0, 2.1, 0.0],
-         Versor::from_axis_angle(Cartesian::from([0., 1., 0.]).to_unit_unchecked().0, PI / 4.0),
-          false, "skew, not intersecting")]
+    #[case::skew_intersecting(1.0, 1.0, [1.0, 1.0, 0.0], Versor::from_axis_angle(Cartesian::from([0., 1., 0.]).to_unit_unchecked().0, PI / 4.0), true)]
+    #[case::skew_touching(1.0, 1.0, [0.0, 2.0, 0.0], Versor::from_axis_angle(Cartesian::from([0., 1., 0.]).to_unit_unchecked().0, PI / 4.0), true)]
+    #[case::skew_not_intersecting(1.0, 1.0, [0.0, 2.1, 0.0], Versor::from_axis_angle(Cartesian::from([0., 1., 0.]).to_unit_unchecked().0, PI / 4.0), false)]
     fn test_intersects_at_infinite(
         #[case] r1: f64,
         #[case] r2: f64,
         #[case] v_ij: impl Into<Cartesian<3>>,
         #[case] o_ij: Versor,
         #[case] expected: bool,
-        #[case] description: &str,
     ) {
         let c1 = Cylinder {
             radius: r1.try_into().unwrap(),
@@ -156,8 +130,6 @@ mod tests {
         assert_eq!(
             c1.intersects_at_infinite(&c2, &v_ij_cartesian, &o_ij),
             expected,
-            "Failed test case: {}",
-            description
         );
     }
 }
