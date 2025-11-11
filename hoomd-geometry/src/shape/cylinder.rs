@@ -6,7 +6,7 @@
 use super::Circle;
 use crate::Volume;
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, Rotate};
+use hoomd_vector::{Cartesian, Versor};
 
 /// A circle with normal `[0 0 1]` swept by `h/2` in the `+z` and `-z` directions.
 ///
@@ -45,33 +45,29 @@ impl Volume for Cylinder {
             * self.height.get()
     }
 }
+/// Precision below which cylinders are considered overlapping
+const _CYLINDER_OVERLAP_PRECISION: f64 = 1e-9;
 
 impl Cylinder {
     /// Determine whether two infinitely long cylinders intersect
-    fn intersects_at_infinite<R>(&self, other: &Self, v_ij: &Cartesian<3>, o_ij: &R) -> bool
-    where
-        R: Rotate<Cartesian<3>>,
-    {
-        const EPSILON: f64 = 1e-9;
+    fn intersects_at_infinite(&self, other: &Self, v_ij: &Cartesian<3>, o_ij: &Versor) -> bool {
         let [cx, cy, _cz] = v_ij.coordinates;
-        let [sx, sy, _sz] = o_ij.rotate(&Cartesian::from([0., 0., 1.])).coordinates;
 
-        // We only need the x and y components of the direction vector s
-        // to find the magnitude of the cross product (v1 x v2) and check for parallelism.
-        // v1 = (0, 0, 1)
-        // v2 = s = (sx, sy, sz)
-        // v1 x v2 = (-sy, sx, 0)
-        // |v1 x v2| = sqrt(sx^2 + sy^2)
+        // Calculate sx and sy directly from the Versor components
+        // for rotating (0, 0, 1) by quaternion q = (w, x, y, z):
+        let q = o_ij.get();
+        let sx = 2.0 * (q.vector[0] * q.vector[2] + q.scalar * q.vector[1]);
+        let sy = 2.0 * (q.vector[1] * q.vector[2] - q.scalar * q.vector[0]);
+
         let n_magnitude = (sx.powi(2) + sy.powi(2)).sqrt();
 
-        let distance = if n_magnitude < EPSILON {
-            // --- PARALLEL CASE ---
+        let distance = if n_magnitude < _CYLINDER_OVERLAP_PRECISION {
             // The axes are parallel (s is parallel to the z-axis).
             // The shortest distance `d` is just the distance from the point c
             // to the z-axis, which is the distance in the xy-plane.
             (cx.powi(2) + cy.powi(2)).sqrt()
         } else {
-            // --- NON-PARALLEL CASE ---
+            // Non-Parallel
             // We use the full formula: d = |(p2 - p1) . (v1 x v2)| / |v1 x v2|
             // p2 - p1 = c = (cx, cy, cz)
             // v1 x v2 = (-sy, sx, 0)
