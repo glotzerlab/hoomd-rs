@@ -191,13 +191,13 @@ impl<E> CutoffPair<E> {
         E: PairSiteForce<V, S>,
         S: Position<Position = V>,
         V: Vector + Default + InnerProduct + Metric + TensorProduct,
-        V::Tensor: GeneralMatrix + AddAssign + Mul<f64, Output = V::Tensor>
+        V::Tensor: GeneralMatrix + AddAssign
     {
         let r = (a.properties.position()).distance(b.properties.position());
         if r < self.r_cut && a.body_tag != b.body_tag {
             let rvec = *a.properties.position() - *b.properties.position();
             let force = self.evaluator.site_pair_force(&a.properties, &b.properties);
-            let virial = force.tensor_product(&rvec) * 0.5;
+            let virial = (force*0.5).tensor_product(&rvec);
             (force, virial)
         } else {
             (V::default(), V::Tensor::zeros())
@@ -549,7 +549,7 @@ where
     B: Transform<S>,
     S: Position<Position = V>,
     E: PairSiteForce<V, S>,
-    V::Tensor: GeneralMatrix + AddAssign + Mul<f64, Output = V::Tensor>
+    V::Tensor: GeneralMatrix + AddAssign
 {
     #[inline]
     fn net_force_and_virial_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Tensor) {
@@ -563,7 +563,7 @@ where
             let force = self
                 .evaluator
                 .site_pair_force(&site.properties, &other_site.properties);
-            let virial = force.tensor_product(&rvec) * 0.5;
+            let virial = (force*0.5).tensor_product(&rvec);
             total_force += force;
             total_virial += virial;
         }
