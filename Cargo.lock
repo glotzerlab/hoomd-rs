@@ -3098,6 +3098,7 @@ dependencies = [
  "approxim",
  "divan",
  "hoomd-geometry",
+ "hoomd-linear-algebra",
  "hoomd-microstate",
  "hoomd-utility",
  "hoomd-vector",

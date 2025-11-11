@@ -7,6 +7,7 @@ use std::ops::{AddAssign, Mul};
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, pairwise::IsotropicForce, NetBodyForce, SiteForce, SitePairEnergy, PairSiteForce, TotalEnergy, SiteForceAndVirial};
 use hoomd_microstate::{Body, Microstate, Site, Transform, boundary::Wrap, property::Position};
 use hoomd_vector::{Cartesian, InnerProduct, Metric, TensorProduct, Vector};
+use hoomd_linear_algebra::GeneralMatrix;
 
 /// Short-ranged pairwise interactions between sites.
 ///
@@ -190,7 +191,7 @@ impl<E> CutoffPair<E> {
         E: PairSiteForce<V, S>,
         S: Position<Position = V>,
         V: Vector + Default + InnerProduct + Metric + TensorProduct,
-        V::Tensor: Default + AddAssign + Mul<f64, Output = V::Tensor>
+        V::Tensor: GeneralMatrix + AddAssign + Mul<f64, Output = V::Tensor>
     {
         let r = (a.properties.position()).distance(b.properties.position());
         if r < self.r_cut && a.body_tag != b.body_tag {
@@ -199,7 +200,7 @@ impl<E> CutoffPair<E> {
             let virial = force.tensor_product(&rvec) * 0.5;
             (force, virial)
         } else {
-            (V::default(), V::Tensor::default())
+            (V::default(), V::Tensor::zeros())
         }
     }
 }
@@ -548,12 +549,12 @@ where
     B: Transform<S>,
     S: Position<Position = V>,
     E: PairSiteForce<V, S>,
-    V::Tensor: Default + AddAssign + Mul<f64, Output = V::Tensor>
+    V::Tensor: GeneralMatrix + AddAssign + Mul<f64, Output = V::Tensor>
 {
     #[inline]
     fn net_force_and_virial_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Tensor) {
         let mut total_force = V::default();
-        let mut total_virial = V::Tensor::default();
+        let mut total_virial = V::Tensor::zeros();
         for other_site in microstate
             .iter_sites_near(site.properties.position(), self.r_cut)
             .filter(|s| site.body_tag != s.body_tag)

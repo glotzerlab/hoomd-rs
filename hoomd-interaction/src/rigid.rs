@@ -23,6 +23,7 @@ use hoomd_vector::{
     Angle, Cartesian, Cross, Rotate, Rotation, RotationMatrix, TensorProduct, Vector, Versor,
     WedgeProduct,
 };
+use hoomd_linear_algebra::GeneralMatrix;
 
 pub struct Rigid<E>(pub E);
 
@@ -142,7 +143,7 @@ where
     S: Position<Position = V>,
     E: SiteForceAndVirial<V, B, S, C>,
     R: Rotate<V>,
-    V::Tensor: Default + AddAssign + Sub<Output = V::Tensor>,
+    V::Tensor: GeneralMatrix + AddAssign + Sub<Output = V::Tensor>
 {
     /// Sum the forces on the sites to get the net force on a body.
     #[inline]
@@ -152,7 +153,7 @@ where
         body_index: usize,
     ) -> (V, V::Tensor) {
         let mut total_force = V::default();
-        let mut total_virial = V::Tensor::default();
+        let mut total_virial = V::Tensor::zeros();
         let q = microstate.bodies()[body_index]
             .item
             .properties
