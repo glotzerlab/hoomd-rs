@@ -1,7 +1,8 @@
 [workspace]
 
 resolver = "3"
-members = ["examples",
+members = ["benchmarks",
+           "examples",
            "hoomd-bevy",
            "hoomd-geometry",
            "hoomd-gsd",
@@ -11,10 +12,12 @@ members = ["examples",
            "hoomd-mc",
            "hoomd-microstate",
            "hoomd-simulation",
+           "hoomd-spatial",
            "hoomd-utility",
            "hoomd-vector",
            "hoomd-chimes",
            "tools/build-wasm-doc-examples",
+           "hoomd-rand"
           ]
 
 # Include only core hoomd simulation crates by default so that `cargo build`,
@@ -30,8 +33,10 @@ default-members = ["examples",
                    "hoomd-mc",
                    "hoomd-microstate",
                    "hoomd-simulation",
+                   "hoomd-spatial",
                    "hoomd-utility",
                    "hoomd-vector",
+                   "hoomd-rand",
                    "hoomd-chimes",
                   ]
 
@@ -56,27 +61,38 @@ hoomd-manifold = { path = "hoomd-manifold" }
 hoomd-mc = { path = "hoomd-mc" }
 hoomd-microstate = { path = "hoomd-microstate" }
 hoomd-simulation = { path = "hoomd-simulation" }
+hoomd-spatial = { path = "hoomd-spatial" }
 hoomd-utility = { path = "hoomd-utility" }
 hoomd-vector = { path = "hoomd-vector" }
+hoomd-rand = { path = "hoomd-rand" }
 hoomd-chimes = { path = "hoomd-chimes"}
 
 # Common dev dependencies
-anyhow = "=1.0.100"
-clap = {version = "=4.5.48", features = ["derive"]}
+assert2 = "=0.3.16"
 divan = "=0.1.21"
 paste = "=1.0.15"
 rstest = "=0.26.1"
-tempfile = "=3.22.0"
+tempfile = "=3.23.0"
 
 # Dependencies used internally
+clap = {version = "4.5.48", features = ["derive"]}
+clap-verbosity-flag = "3.0.3"
+env_logger = "0.11.8"
 itertools = "0.14.0"
+log = "0.4.28"
+rustc-hash = "2.1.1"
+serde = { version = "1.0.228", features = ["derive"]}
+serde_json = "1.0.145"
+wildmatch = "2.4.0"
 
 # Dependencies exposed via Public APIs.
+anyhow = "1.0.100"
 approxim = "0.6.6"
+arrayvec = "0.7.6"
 num = "0.4.3"
-rand = "0.9.0"
+rand = { version = "0.9.0", default-features=false, features = ["std", "std_rng"] }
+rand_distr = "0.5.1"
 thiserror = "2.0.12"
-tinyvec = "1.9.0"
 
 # Bevy and bevy-adjacent dependencies
 bevy_egui = "0.36.0"
@@ -123,6 +139,7 @@ multiple_crate_versions = "allow"
 cast_precision_loss = "allow"
 float_cmp = "allow"
 similar_names = "allow"
+inline_always = "allow"
 
 # opt-in to restrictions
 allow_attributes_without_reason = "warn"
@@ -158,6 +175,7 @@ default.extend-words = { ratatui = "ratatui" }
 # TODO: Check that this works after release. It may need to be in package.metadata
 # https://docs.rs/about/metadata
 rustdoc-args = [ "--html-in-header", "katex.html" ]
+all-features = true
 
 # Optimize for size in wasm builds
 [profile.release-wasm]
@@ -172,6 +190,11 @@ inherits = "release"
 opt-level = 'z'
 strip = true
 codegen-units = 256
+
+# Build settings to profile benchmarks
+[profile.profile]
+inherits = "release"
+debug = true
 
 # Bevy is extremely slow in debug builds, build it with optimizations
 # to avoid this: https://bevy.org/learn/quick-start/getting-started/setup/#compile-with-performance-optimizations

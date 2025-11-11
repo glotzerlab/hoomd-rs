@@ -8,7 +8,8 @@ use crate::{
     shape::{Circle, Sphere},
     xenocollide::{collide2d, collide3d},
 };
-use hoomd_vector::{Cartesian, Rotate, Rotation, RotationMatrix};
+use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::{Cartesian, Metric, Rotate, Rotation, RotationMatrix};
 
 /// A newtype that checks for intersections using [`xenocollide`](crate::xenocollide).
 ///
@@ -63,10 +64,21 @@ impl<V, S> SupportMapping<V> for Convex<S>
 where
     S: SupportMapping<V>,
 {
-    /// Forward the call to the inner type.
+    // Forward the call to the inner type.
     #[inline]
     fn support_mapping(&self, n: &V) -> V {
         self.0.support_mapping(n)
+    }
+}
+
+impl<S> BoundingSphereRadius for Convex<S>
+where
+    S: BoundingSphereRadius,
+{
+    // Forward the call to the inner type.
+    #[inline]
+    fn bounding_sphere_radius(&self) -> PositiveReal {
+        self.0.bounding_sphere_radius()
     }
 }
 
@@ -84,7 +96,28 @@ where
 
         self_circle.intersects_at(&other_circle, v_ij, o_ij) && collide2d(self, other, v_ij, o_ij)
     }
+
+    #[inline]
+    fn intersects_at_global(
+        &self,
+        other: &Convex<A>,
+        r_self: &Cartesian<2>,
+        o_self: &R,
+        r_other: &Cartesian<2>,
+        o_other: &R,
+    ) -> bool {
+        let max_separation =
+            self.0.bounding_sphere_radius().get() + other.0.bounding_sphere_radius().get();
+        if r_self.distance_squared(r_other) >= max_separation.powi(2) {
+            return false;
+        }
+
+        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(r_self, o_self, r_other, o_other);
+
+        collide2d(self, other, &v_ij, &o_ij)
+    }
 }
+
 impl<A, B, R> IntersectsAt<Convex<A>, Cartesian<3>, R> for Convex<B>
 where
     A: SupportMapping<Cartesian<3>> + BoundingSphereRadius,
@@ -98,5 +131,24 @@ where
         let other_sphere = Sphere::with_radius(other.0.bounding_sphere_radius());
 
         self_sphere.intersects_at(&other_sphere, v_ij, o_ij) && collide3d(self, other, v_ij, o_ij)
+    }
+
+    #[inline]
+    fn intersects_at_global(
+        &self,
+        other: &Convex<A>,
+        r_self: &Cartesian<3>,
+        o_self: &R,
+        r_other: &Cartesian<3>,
+        o_other: &R,
+    ) -> bool {
+        let r_cut = self.0.bounding_sphere_radius().get() + other.0.bounding_sphere_radius().get();
+        if r_self.distance_squared(r_other) >= r_cut.powi(2) {
+            return false;
+        }
+
+        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(r_self, o_self, r_other, o_other);
+
+        collide3d(self, other, &v_ij, &o_ij)
     }
 }

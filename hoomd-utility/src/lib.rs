@@ -12,7 +12,6 @@
 //!
 //! Common utility code used by many other hoomd-rs crates.
 
-pub mod random;
 pub mod valid;
 
 use thiserror::Error;

@@ -31,6 +31,7 @@ hoomd-manifold.workspace = true
 hoomd-mc.workspace = true
 hoomd-microstate.workspace = true
 hoomd-simulation.workspace = true
+hoomd-spatial.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 
@@ -38,11 +39,6 @@ anyhow.workspace = true
 bevy = { workspace = true, optional = true }
 bevy_egui = { workspace = true, optional = true }
 rand.workspace = true
-
-# Work around failing build: https://github.com/bevyengine/bevy/issues/17699#issuecomment-2862717597
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom = { version = "0.3.3", default-features = false, features = ["wasm_js"] }
-uuid = { version = "1.17.0", default-features = false, features = ["js"] }
 
 [package.metadata.docs.rs]
 all-features = true

@@ -3,7 +3,7 @@
 
 //! Implement [`LennardJones`]
 
-use super::{IsotropicEnergy, IsotropicForce};
+use super::{UnivariateEnergy, UnivariateForce};
 
 /// Potential with a steep repulsive core and an attractive well.
 ///
@@ -19,8 +19,8 @@ use super::{IsotropicEnergy, IsotropicForce};
 ///
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
-/// use hoomd_interaction::pairwise::{
-///     IsotropicEnergy, IsotropicForce, LennardJones,
+/// use hoomd_interaction::univariate::{
+///     LennardJones, UnivariateEnergy, UnivariateForce,
 /// };
 ///
 /// let epsilon = 1.5;
@@ -43,8 +43,8 @@ use super::{IsotropicEnergy, IsotropicForce};
 ///
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
-/// use hoomd_interaction::pairwise::{
-///     IsotropicEnergy, IsotropicForce, LennardJones,
+/// use hoomd_interaction::univariate::{
+///     LennardJones, UnivariateEnergy, UnivariateForce,
 /// };
 ///
 /// let epsilon = 1.5;
@@ -66,7 +66,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// The parameters are public fields and may be accessed directly:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::LennardJones;
+/// use hoomd_interaction::univariate::LennardJones;
 ///
 /// let mut lennard_jones: LennardJones = LennardJones::default();
 /// lennard_jones.epsilon = 1.5;
@@ -86,7 +86,7 @@ impl<const N: i32, const M: i32> Default for LennardJones<N, M> {
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::pairwise::LennardJones;
+    /// use hoomd_interaction::univariate::LennardJones;
     ///
     /// let lennard_jones: LennardJones = LennardJones::default();
     /// ```
@@ -99,7 +99,7 @@ impl<const N: i32, const M: i32> Default for LennardJones<N, M> {
     }
 }
 
-impl<const N: i32, const M: i32> IsotropicEnergy for LennardJones<N, M> {
+impl<const N: i32, const M: i32> UnivariateEnergy for LennardJones<N, M> {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         let sigma_r = self.sigma / r;
@@ -108,7 +108,7 @@ impl<const N: i32, const M: i32> IsotropicEnergy for LennardJones<N, M> {
     }
 }
 
-impl<const N: i32, const M: i32> IsotropicForce for LennardJones<N, M> {
+impl<const N: i32, const M: i32> UnivariateForce for LennardJones<N, M> {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         let r_inv = r.recip();

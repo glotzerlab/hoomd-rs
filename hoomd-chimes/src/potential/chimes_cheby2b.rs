@@ -5,8 +5,7 @@
  */
 use crate::polynomial_basis::{Basis, Chebyshev};
 use crate::transformation::Transformation;
-use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
-
+use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 /**
 Implement the main body of one- plus two-body
 part of `ChIMES` potential. It performs the
@@ -164,7 +163,7 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
     }
 }
 
-impl<F: Transformation, const N: usize> IsotropicEnergy for Chimes2b<F, N> {
+impl<F: Transformation, const N: usize> UnivariateEnergy for Chimes2b<F, N> {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         let mut value: f64 = 0.0;
@@ -189,7 +188,7 @@ impl<F: Transformation, const N: usize> IsotropicEnergy for Chimes2b<F, N> {
     }
 }
 
-impl<F: Transformation, const N: usize> IsotropicForce for Chimes2b<F, N> {
+impl<F: Transformation, const N: usize> UnivariateForce for Chimes2b<F, N> {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         let mut value: f64 = 0.0;

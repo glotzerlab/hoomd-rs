@@ -4,7 +4,7 @@
 /*! Implement [`ChimesPenalty`]
  */
 
-use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
+use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 
 /**
 Implement the penalty potential $`f_\mathrm{p}`$ of `ChIMES`
@@ -33,7 +33,7 @@ See equation 9 in <https://doi.org/10.1038/s41524-024-01497-y>.
 ```
 use hoomd_chimes::transformation::MorseTransformation;
 use hoomd_chimes::potential::{Chimes2b, TersoffSmooth, ChimesPenalty};
-use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
+use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 
 // Main body of chimes potential
 let lambda = 1.5;
@@ -78,7 +78,7 @@ pub struct ChimesPenalty {
     pub dt: f64,
 }
 
-impl IsotropicEnergy for ChimesPenalty {
+impl UnivariateEnergy for ChimesPenalty {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         let r_penalty = self.r_in + self.dt - r;
@@ -91,7 +91,7 @@ impl IsotropicEnergy for ChimesPenalty {
     }
 }
 
-impl IsotropicForce for ChimesPenalty {
+impl UnivariateForce for ChimesPenalty {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         let r_penalty = self.r_in + self.dt - r;

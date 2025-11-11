@@ -4,7 +4,7 @@
 /*! Implement [`TersoffSmooth`]
  */
 
-use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
+use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 use std::f64::consts::PI; // Note: Becky's chimes uses hard coding value: 3.14159265359
 
 /**
@@ -43,7 +43,7 @@ See equation 8 in <https://doi.org/10.1038/s41524-024-01497-y>.
 ```
 use hoomd_chimes::transformation::MorseTransformation;
 use hoomd_chimes::potential::{Chimes2b, TersoffSmooth};
-use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
+use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 
 let lambda = 1.5;
 let r_out = 3.0;
@@ -110,14 +110,14 @@ impl<F> TersoffSmooth<F> {
     }
 }
 
-impl<F: IsotropicEnergy> IsotropicEnergy for TersoffSmooth<F> {
+impl<F: UnivariateEnergy> UnivariateEnergy for TersoffSmooth<F> {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         self.fs(r) * self.f.energy(r)
     }
 }
 
-impl<F: IsotropicForce + IsotropicEnergy> IsotropicForce for TersoffSmooth<F> {
+impl<F: UnivariateForce + UnivariateEnergy> UnivariateForce for TersoffSmooth<F> {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         // Chain rule of -d/dr(fs(r)*U(r))
@@ -130,7 +130,7 @@ mod tests {
     use super::*;
     use crate::transformation::MorseTransformation;
     use approxim::assert_abs_diff_eq;
-    use hoomd_interaction::pairwise::LennardJones;
+    use hoomd_interaction::univariate::LennardJones;
     use rstest::*;
 
     use crate::potential::Chimes2b;

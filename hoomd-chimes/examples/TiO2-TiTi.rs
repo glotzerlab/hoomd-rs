@@ -6,7 +6,7 @@
 )]
 use hoomd_chimes::potential::{Chimes2b, ChimesPenalty, TersoffSmooth};
 use hoomd_chimes::transformation::MorseTransformation;
-use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
+use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 use std::fs::File;
 use std::io::{BufWriter, Write};
 

@@ -5,7 +5,7 @@
 //! more complex geometries in addition to its standalone functionality.
 use std::{array, fmt};
 
-use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, RotationMatrix};
+use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, Rotation, RotationMatrix};
 use itertools::Itertools;
 
 use crate::{IntersectsAt, SupportMapping, Volume};
@@ -303,8 +303,9 @@ fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) 
     true
 }
 
-impl<R: Rotate<Cartesian<3>> + Copy> IntersectsAt<Simplex3, Cartesian<3>, R> for Simplex3
+impl<R> IntersectsAt<Simplex3, Cartesian<3>, R> for Simplex3
 where
+    R: Rotation + Rotate<Cartesian<3>>,
     RotationMatrix<3>: From<R>,
 {
     /// Original C code of algorithm:

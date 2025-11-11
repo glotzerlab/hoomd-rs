@@ -53,7 +53,7 @@
 //! `doc-example` Make examples suitable for display in a web browser.
 //! `webgpu` Compile for the WebGPU platform when building for the wasm32 target.
 
-use std::ops::Range;
+use std::{ops::Range, time::Duration};
 
 use anyhow::Context;
 use bevy::{
@@ -62,6 +62,7 @@ use bevy::{
         common_conditions::{input_just_released, input_pressed},
         mouse::MouseWheel,
     },
+    platform::time::Instant,
     prelude::*,
     time::common_conditions::once_after_delay,
     window::PrimaryWindow,
@@ -85,7 +86,6 @@ use bevy_egui::{
 };
 #[cfg(not(target_arch = "wasm32"))]
 use bevy_winit::WinitWindows;
-use web_time::{Duration, Instant};
 
 use hoomd_simulation::Simulation;
 

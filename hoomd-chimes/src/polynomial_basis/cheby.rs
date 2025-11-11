@@ -4,7 +4,7 @@
 /*! Implement [`Chebyshev`]
  */
 use super::Basis;
-use tinyvec::ArrayVec;
+use arrayvec::ArrayVec;
 
 /** Evaluates the Chebyshev polynomials and its derivatives
   of the first kind $`T_i(s)`$ for orders $`i`$ equals 1 to
@@ -64,8 +64,8 @@ impl<const N: usize> Basis<N> for Chebyshev<N> {
     ```
     */
     #[inline]
-    fn evaluate(&self, s: &f64) -> ArrayVec<[f64; N]> {
-        let mut tn = ArrayVec::<[f64; N]>::new();
+    fn evaluate(&self, s: &f64) -> ArrayVec<f64, N> {
+        let mut tn = ArrayVec::<f64, N>::new();
         let t0_fn = 1.0; // T_0(s) = 1
 
         tn.push(*s); // T_1(s) = s
@@ -119,8 +119,8 @@ impl<const N: usize> Basis<N> for Chebyshev<N> {
     ```
     */
     #[inline]
-    fn evaluate_derivative(&self, s: &f64) -> ArrayVec<[f64; N]> {
-        let mut tnd = ArrayVec::<[f64; N]>::new();
+    fn evaluate_derivative(&self, s: &f64) -> ArrayVec<f64, N> {
+        let mut tnd = ArrayVec::<f64, N>::new();
         let u0_fn = 1.0; // U_0(s) = 1
 
         tnd.push(2.0 * s); // U_1(s) = 2s

@@ -75,7 +75,7 @@ impl<'a, const N: usize, A: SupportMapping<Cartesian<N>>, B: SupportMapping<Cart
         sb_n - self.sa.support_mapping(&-n) // eq. 2.5.6 in GPG7
     }
 
-    /// Create a new `MinkowskiDifference` evaluator.
+    /// Create a new `MinkowskiDifference`
     #[inline]
     fn new<R: Rotation>(
         sa: &'a A,

@@ -4,16 +4,16 @@ use anyhow::{Context, anyhow};
 
 use hoomd_geometry::shape::{Ellipse, Rectangle};
 use hoomd_interaction::{
-    CutoffPair, CutoffPairOverlap,
-    pairwise::{
-        Anisotropic, ApproximateShapeOverlap, HardShape, OverlapPenalty,
-    },
+    MaximumInteractionRange, PairwiseCutoff,
+    pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape},
+    univariate::OverlapPenalty,
 };
 use hoomd_mc::{QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn};
 use hoomd_microstate::{
-    Microstate, MicrostateBuilder, boundary::Periodic, property::OrientedPoint,
+    Microstate, SiteKey, boundary::Periodic, property::OrientedPoint,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
+use hoomd_spatial::VecCell;
 use hoomd_vector::{self, Angle, Cartesian};
 // ANCHOR_END: use
 
@@ -28,9 +28,14 @@ type SiteProperties = OrientedPoint<PositionVector, Orientation>;
 // ANCHOR: simulation_struct
 struct HardEllipseSelfAssembly {
     /// Positions of all the bodies in the simulation.
-    microstate: Microstate<BodyProperties, SiteProperties, Periodic<Rectangle>>,
+    microstate: Microstate<
+        BodyProperties,
+        SiteProperties,
+        VecCell<SiteKey, 2>,
+        Periodic<Rectangle>,
+    >,
     /// How sites interact with other sites and fields.
-    hamiltonian: CutoffPairOverlap<HardShape<Ellipse>>,
+    hamiltonian: PairwiseCutoff<HardShape<Ellipse>>,
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<PositionVector>>,
     /// Trial moves to apply.
@@ -40,7 +45,7 @@ struct HardEllipseSelfAssembly {
     /// Quick insert
     quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Rectangle>>>,
     /// How sites interact when inserted.
-    insert_hamiltonian: CutoffPair<
+    insert_hamiltonian: PairwiseCutoff<
         Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Ellipse>>,
     >,
     /// The current phase of the simulation.
@@ -72,26 +77,27 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: parameters
 
         // ANCHOR: hamiltonian
-        let ellipse = Ellipse {
-            semi_axes: [
-                (sigma / 2.0).try_into()?,
-                (sigma / aspect / 2.0).try_into()?,
-            ],
-        };
-        let hamiltonian = CutoffPairOverlap {
-            r_cut: sigma,
-            evaluator: HardShape(ellipse.clone()),
-        };
+        let ellipse = Ellipse::with_semi_axes([
+            (sigma / 2.0).try_into()?,
+            (sigma / aspect / 2.0).try_into()?,
+        ]);
+        let hamiltonian = PairwiseCutoff(HardShape(ellipse.clone()));
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: periodic
         let square = Rectangle::with_equal_edges(box_height.try_into()?);
-        let periodic_square = Periodic::new(sigma, square)?;
+        let periodic_square =
+            Periodic::new(hamiltonian.0.maximum_interaction_range(), square)?;
         // ANCHOR_END: periodic
 
         // ANCHOR: microstate
-        let microstate =
-            MicrostateBuilder::with_boundary(periodic_square).try_build()?;
+        let vec_cell = VecCell::builder()
+            .nominal_search_radius(sigma.try_into()?)
+            .build();
+        let microstate = Microstate::builder()
+            .boundary(periodic_square)
+            .spatial_data(vec_cell)
+            .try_build()?;
         // ANCHOR_END: microstate
 
         // ANCHOR: trial_moves
@@ -113,17 +119,16 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: quick_insert
 
         // ANCHOR: insert_hamiltonian
-        let approximate_shape_overlap =
-            Anisotropic(ApproximateShapeOverlap::new(
+        let approximate_shape_overlap = Anisotropic {
+            interaction: ApproximateShapeOverlap::new(
                 ellipse,
                 OverlapPenalty::default(),
                 0.01.try_into()?,
-            ));
-
-        let insert_hamiltonian = CutoffPair {
+            ),
             r_cut: sigma,
-            evaluator: approximate_shape_overlap,
         };
+
+        let insert_hamiltonian = PairwiseCutoff(approximate_shape_overlap);
         // ANCHOR_END: insert_hamiltonian
 
         // ANCHOR: struct_initialize

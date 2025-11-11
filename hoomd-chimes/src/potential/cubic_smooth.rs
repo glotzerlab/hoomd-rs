@@ -4,7 +4,7 @@
 /*! Implement [`CubicSmooth`]
  */
 
-use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
+use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 
 /**
 Implement the cubic style smoothing $`f_s`$ of `ChIMES`
@@ -28,7 +28,7 @@ See equation 7 in <https://doi.org/10.1038/s41524-024-01497-y>.
 ```
 use hoomd_chimes::transformation::MorseTransformation;
 use hoomd_chimes::potential::{Chimes2b, CubicSmooth};
-use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce};
+use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 
 let lambda = 1.5;
 let r_out = 3.0;
@@ -74,14 +74,14 @@ impl<F> CubicSmooth<F> {
     }
 }
 
-impl<F: IsotropicEnergy> IsotropicEnergy for CubicSmooth<F> {
+impl<F: UnivariateEnergy> UnivariateEnergy for CubicSmooth<F> {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         self.fs(r) * self.f.energy(r)
     }
 }
 
-impl<F: IsotropicForce + IsotropicEnergy> IsotropicForce for CubicSmooth<F> {
+impl<F: UnivariateForce + UnivariateEnergy> UnivariateForce for CubicSmooth<F> {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         // Chain rule of -d/dr(fs(r)*U(r))
@@ -94,7 +94,7 @@ mod tests {
     use super::*;
     use crate::transformation::MorseTransformation;
     use approxim::assert_abs_diff_eq;
-    use hoomd_interaction::pairwise::LennardJones;
+    use hoomd_interaction::univariate::LennardJones;
     use rstest::*;
 
     use crate::potential::Chimes2b;

@@ -7,7 +7,7 @@
 mod cheby;
 pub use cheby::Chebyshev;
 
-use tinyvec::ArrayVec;
+use arrayvec::ArrayVec;
 /** Implement the `Basis` trait for `ChIMES`.
 
 Implement [`Basis`] for constructing [`Chebyshev`]
@@ -19,12 +19,12 @@ pub trait Basis<const N: usize> {
     Implement the basis function `f(s)`
      */
     #[must_use]
-    fn evaluate(&self, s: &f64) -> ArrayVec<[f64; N]>;
+    fn evaluate(&self, s: &f64) -> ArrayVec<f64, N>;
 
     /**
     Implement the derivative of the basis fucntion
      $`\frac{df}{ds}`$.
     */
     #[must_use]
-    fn evaluate_derivative(&self, s: &f64) -> ArrayVec<[f64; N]>;
+    fn evaluate_derivative(&self, s: &f64) -> ArrayVec<f64, N>;
 }

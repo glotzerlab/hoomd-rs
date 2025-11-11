@@ -6,11 +6,12 @@
 use super::{Count, LocalTrial, Trial};
 use hoomd_interaction::DeltaEnergyOne;
 use hoomd_microstate::{
-    Body, Microstate, Transform,
+    Body, Microstate, SiteKey, Transform,
     boundary::{GenerateGhosts, Wrap},
     property::Position,
 };
 use hoomd_simulation::macrostate::Temperature;
+use hoomd_spatial::PointUpdate;
 
 use rand::Rng;
 
@@ -52,12 +53,14 @@ use rand::Rng;
 /// ```
 pub struct Sweep<L>(pub L);
 
-impl<P, B, S, C, L, H, MA> Trial<Microstate<B, S, C>, H, MA> for Sweep<L>
+impl<P, B, S, X, C, L, H, MA> Trial<Microstate<B, S, X, C>, H, MA> for Sweep<L>
 where
+    P: Copy,
     B: Copy + Default + Transform<S> + Position<Position = P>,
     S: Copy + Default + Position<Position = P>,
+    X: PointUpdate<P, SiteKey>,
     L: LocalTrial<B>,
-    H: DeltaEnergyOne<B, S, C>,
+    H: DeltaEnergyOne<B, S, X, C>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     MA: Temperature,
 {
@@ -66,7 +69,7 @@ where
     #[inline]
     fn apply(
         &self,
-        microstate: &mut Microstate<B, S, C>,
+        microstate: &mut Microstate<B, S, X, C>,
         hamiltonian: &H,
         macrostate: &MA,
     ) -> Self::Count {
@@ -94,7 +97,8 @@ where
                     trial.properties = new_properties;
 
                     let delta_h = hamiltonian.delta_energy_one(microstate, body_index, &trial);
-                    if rng.random::<f64>() < (-delta_h / kt).exp()
+                    if delta_h != f64::INFINITY
+                        && (delta_h <= 0.0 || rng.random::<f64>() < (-delta_h / kt).exp())
                         && microstate
                             .update_body_properties(body_index, trial.properties)
                             .is_ok()
@@ -120,7 +124,7 @@ mod tests {
     use approxim::assert_relative_eq;
     use hoomd_geometry::shape::Hypercuboid;
     use hoomd_interaction::{External, SiteEnergy, TotalEnergy, Zero};
-    use hoomd_microstate::{MicrostateBuilder, boundary::Closed, property::Point};
+    use hoomd_microstate::{boundary::Closed, property::Point};
     use hoomd_simulation::macrostate::Isothermal;
     use hoomd_vector::{Cartesian, InnerProduct};
     use rstest::*;
@@ -204,7 +208,8 @@ mod tests {
         };
         let square = Closed(cuboid);
 
-        let mut microstate = MicrostateBuilder::with_boundary(square)
+        let mut microstate = Microstate::builder()
+            .boundary(square)
             .bodies([Body::point([0.0, 0.0].into())])
             .try_build()
             .expect("the hard-coded bodies should be in the boundary");
@@ -241,7 +246,8 @@ mod tests {
             ],
         };
         let square = Closed(cuboid);
-        let mut microstate = MicrostateBuilder::with_boundary(square)
+        let mut microstate = Microstate::builder()
+            .boundary(square)
             .bodies([body])
             .try_build()
             .expect("the hard-coded bodies should be in the boundary");

@@ -16,7 +16,7 @@ workspace = true
 
 [dependencies]
 hoomd-interaction.workspace = true
-tinyvec.workspace = true
+arrayvec.workspace = true
 
 [dev-dependencies]
 approxim.workspace = true

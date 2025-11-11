@@ -8,10 +8,10 @@ use crate::potential::{Chimes2b, ChimesPenalty, CubicSmooth, TersoffSmooth};
 use crate::transformation::{
     DirectTransformation, InverseTransformation, MorseTransformation, Transformation,
 };
-use hoomd_interaction::pairwise::Isotropic;
 use hoomd_interaction::{
-    CutoffPair,
-    pairwise::{IsotropicEnergy, IsotropicForce},
+    PairwiseCutoff,
+    pairwise::Isotropic,
+    univariate::{UnivariateEnergy, UnivariateForce},
 };
 
 // Custom error for invalid format or data
@@ -58,7 +58,7 @@ pub enum ChimesSmoothing<F: Transformation, const N: usize> {
     Tersoff(TersoffSmooth<Chimes2b<F, N>>),
 }
 
-impl<F: Transformation, const N: usize> IsotropicEnergy for ChimesSmoothing<F, N> {
+impl<F: Transformation, const N: usize> UnivariateEnergy for ChimesSmoothing<F, N> {
     fn energy(&self, r: f64) -> f64 {
         match self {
             ChimesSmoothing::Cubic(s) => s.energy(r),
@@ -66,7 +66,7 @@ impl<F: Transformation, const N: usize> IsotropicEnergy for ChimesSmoothing<F, N
         }
     }
 }
-impl<F: Transformation, const N: usize> IsotropicForce for ChimesSmoothing<F, N> {
+impl<F: Transformation, const N: usize> UnivariateForce for ChimesSmoothing<F, N> {
     fn force(&self, r: f64) -> f64 {
         match self {
             ChimesSmoothing::Cubic(s) => s.force(r),
@@ -85,13 +85,13 @@ pub struct ChimesTwobPotential<const N: usize> {
     pub energy_shifting: f64,
 }
 
-impl<const N: usize> IsotropicEnergy for ChimesTwobPotential<N> {
+impl<const N: usize> UnivariateEnergy for ChimesTwobPotential<N> {
     fn energy(&self, r: f64) -> f64 {
         self.penalty.energy(r) + self.chimes.energy(r) + self.energy_shifting
     }
 }
 
-impl<const N: usize> IsotropicForce for ChimesTwobPotential<N> {
+impl<const N: usize> UnivariateForce for ChimesTwobPotential<N> {
     fn force(&self, r: f64) -> f64 {
         self.penalty.force(r) + self.chimes.force(r)
     }
@@ -478,7 +478,7 @@ impl<const N: usize> ChimesBuilder<N> {
     pub fn get_twob_chimes_potential(
         &self,
         pair_idx: usize,
-    ) -> CutoffPair<Isotropic<ChimesTwobPotential<N>>> {
+    ) -> PairwiseCutoff<Isotropic<ChimesTwobPotential<N>>> {
         assert!(
             pair_idx <= self.pair_data.0.len() - 1,
             "Intend to access the potential model with pair idx {}, but only found {} pairs",
@@ -505,10 +505,10 @@ impl<const N: usize> ChimesBuilder<N> {
             energy_shifting: self.energy_offset[pair_idx],
         };
 
-        CutoffPair {
+        PairwiseCutoff(Isotropic {
+            interaction: chimes_potential,
             r_cut: self.pair_data.3[pair_idx],
-            evaluator: Isotropic(chimes_potential),
-        }
+        })
     }
 
     fn get_tranformation(&self, pair_idx: usize) -> Result<ChimesTransformation, Box<dyn Error>> {
@@ -581,7 +581,6 @@ impl<const N: usize> ChimesBuilder<N> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hoomd_interaction::pairwise::IsotropicEnergy;
     use rstest::*;
 
     #[rstest]
@@ -641,8 +640,8 @@ mod tests {
         assert_eq!(params.pair_type_fast_map, expected_pair_type_fast_map);
 
         let chimes_pot = params.get_twob_chimes_potential(0);
-        assert_eq!(chimes_pot.evaluator.0.type1, String::from("C"));
-        assert_eq!(chimes_pot.evaluator.0.type2, String::from("C"));
+        assert_eq!(chimes_pot.0.interaction.type1, String::from("C"));
+        assert_eq!(chimes_pot.0.interaction.type2, String::from("C"));
         // println!("{}", chimes_pot.evaluator.0.energy(1.1));
         // println!("{}", chimes_pot.evaluator.0.energy(1.5));
         // println!("{}", chimes_pot.evaluator.0.energy(2.0));
