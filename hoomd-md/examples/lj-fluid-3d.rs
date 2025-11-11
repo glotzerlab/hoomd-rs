@@ -13,13 +13,11 @@ use hoomd_interaction::{
     rigid::Rigid,
 };
 use hoomd_md::{
-    ConstantVolume, TranslationalMotion,
-    thermalize::{
+    ConstantVolume, ForceUpdate, TranslationalMotion, thermalize::{
         ComAngularMomentumRemover, ComMomentumRemover, RotationalThermalizer, Thermalizer,
         TranslationalAngularMomentumModifier, TranslationalMomentumModifier,
         TranslationalThermalizer,
-    },
-    thermostat::NoThermostat,
+    }, thermostat::NoThermostat
 };
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder,
@@ -136,14 +134,15 @@ impl Simulation for System {
         // Evolve the system forward using the integrator
         self.integrator.integrate_translation_step_one(
             &mut self.microstate,
-            &self.force,
             &mut self.thermostat,
             &self.macrostate,
         );
 
+        self.integrator
+            .update_force(&mut self.microstate, &self.force);
+
         self.integrator.integrate_translation_step_two(
             &mut self.microstate,
-            &self.force,
             &mut self.thermostat,
             &self.macrostate,
         );

@@ -8,13 +8,11 @@ use hoomd_interaction::{
     rigid::Rigid,
 };
 use hoomd_md::{
-    ConstantVolume, TranslationalMotion,
-    thermalize::{
+    ConstantVolume, ForceUpdate, TranslationalMotion, thermalize::{
         ComAngularMomentumRemover, ComMomentumRemover, RotationalThermalizer, Thermalizer,
         TranslationalAngularMomentumModifier, TranslationalMomentumModifier,
         TranslationalThermalizer,
-    },
-    thermostat::BussiThermostat,
+    }, thermostat::BussiThermostat
 };
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder,
@@ -149,16 +147,18 @@ impl Simulation for LJG_sqaure {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
         // Evolve the system forward using the integrator
+        // Evolve the system forward using the integrator
         self.integrator.integrate_translation_step_one(
             &mut self.microstate,
-            &self.force,
             &mut self.thermostat,
             &self.macrostate,
         );
 
+        self.integrator
+            .update_force(&mut self.microstate, &self.force);
+
         self.integrator.integrate_translation_step_two(
             &mut self.microstate,
-            &self.force,
             &mut self.thermostat,
             &self.macrostate,
         );
