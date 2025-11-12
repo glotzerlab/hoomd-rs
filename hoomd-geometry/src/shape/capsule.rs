@@ -139,17 +139,16 @@ where
         // Note we ignore fallbacks when the capsule length is small, as these could be
         // valid inputs.
 
-        // let d1 = axis_aligned_cartesian::<N>(self.height.get());
-        // let p1 = d1 * -0.5;
-        let (d1, p1) = (Cartesian::default(), Cartesian::default());
+        let d1 = axis_aligned_cartesian::<N>(self.height.get());
+        let p1 = d1 * -0.5;
 
         let d2 = o_ij.rotate(&axis_aligned_cartesian(other.height.get()));
         let p2 = *v_ij - d2 * 0.5;
 
         let distance_between_centers = p1 - p2;
 
-        let d1_norm_sq = d1.dot(&d1); // Squared length of segment S1
-        let d2_norm_sq = d2.dot(&d2); // Squared length of segment S2
+        let d1_norm_sq = d1.dot(&d1);
+        let d2_norm_sq = d2.dot(&d2);
         let f = d2.dot(&distance_between_centers);
 
         let t: f64;
@@ -350,5 +349,104 @@ mod tests {
         );
 
         // on the caps is not so easy to test manually...
+    }
+
+    #[rstest]
+    #[case(true, 1.9, 0.0, 0.0)]
+    #[case(true, 2.0, 0.0, 0.0)]
+    #[case(false, 2.1, 0.0, 0.0)]
+    fn test_intersect_capsule_capsule_2d(
+        #[case] expected: bool,
+        #[case] x: f64,
+        #[case] y: f64,
+        #[case] angle: f64,
+    ) {
+        let capsule1 = Capsule::<2> {
+            radius: 1.0.try_into().unwrap(),
+            height: 2.0.try_into().unwrap(),
+        };
+        let capsule2 = Capsule::<2> {
+            radius: 1.0.try_into().unwrap(),
+            height: 2.0.try_into().unwrap(),
+        };
+
+        let v_ij = [x, y].into();
+        let o_ij = Angle::from(angle);
+        assert_eq!(capsule1.intersects_at(&capsule2, &v_ij, &o_ij), expected);
+        assert_eq!(
+            capsule2.intersects_at(&capsule1, &(-v_ij), &o_ij.inverted()),
+            expected
+        );
+    }
+
+    #[rstest]
+    #[case(true, 0.0, 1.8, 90.0)]
+    #[case(true, 0.0, 2.0, 90.0)]
+    #[case(true, 0.0, 2.1, 90.0)]
+    #[case(true, 0.0, 3.0, 90.0)]
+    #[case(false, 0.0, 3.000_001, 90.0)]
+    fn test_intersect_capsule_capsule_2d_rotated(
+        #[case] expected: bool,
+        #[case] x: f64,
+        #[case] y: f64,
+        #[case] angle: f64,
+    ) {
+        let capsule1 = Capsule::<2> {
+            radius: 1.0.try_into().unwrap(),
+            height: 2.0.try_into().unwrap(),
+        };
+        let capsule2 = Capsule::<2> {
+            radius: 1.0.try_into().unwrap(),
+            height: 2.0.try_into().unwrap(),
+        };
+
+        let v_ij = [x, y].into();
+        let o_ij = Angle::from(angle.to_radians());
+        assert_eq!(capsule1.intersects_at(&capsule2, &v_ij, &o_ij), expected);
+        assert_eq!(
+            capsule2.intersects_at(&capsule1, &(-v_ij), &o_ij.inverted()),
+            expected
+        );
+    }
+
+    /// Nearly-0 height
+    #[test]
+    fn test_intersect_degenerate_capsules() {
+        let sphere1 = Capsule::<3> {
+            radius: 1.0.try_into().unwrap(),
+            height: 1e-12.try_into().unwrap(),
+        };
+        let sphere2 = Capsule::<3> {
+            radius: 1.0.try_into().unwrap(),
+            height: 1e-12.try_into().unwrap(),
+        };
+
+        let o_ij = Versor::identity();
+        // Intersecting
+        let v_ij = [1.999_999, 0.0, 0.0].into();
+        assert!(sphere1.intersects_at(&sphere2, &v_ij, &o_ij));
+        // Touching
+        let v_ij = [2.0, 0.0, 0.0].into();
+        assert!(sphere1.intersects_at(&sphere2, &v_ij, &o_ij));
+        // Not intersecting
+        let v_ij = [2.000_001, 0.0, 0.0].into();
+        assert!(!sphere1.intersects_at(&sphere2, &v_ij, &o_ij));
+
+        let capsule = Capsule::<3> {
+            radius: 1.0.try_into().unwrap(),
+            height: 2.0.try_into().unwrap(),
+        };
+        // Intersecting
+        let v_ij = [1.999_999, 0.0, 0.0].into();
+        assert!(sphere1.intersects_at(&capsule, &v_ij, &o_ij));
+        assert!(capsule.intersects_at(&sphere1, &v_ij, &o_ij));
+        // Touching
+        let v_ij = [2.0, 0.0, 0.0].into();
+        assert!(sphere1.intersects_at(&capsule, &v_ij, &o_ij));
+        assert!(capsule.intersects_at(&sphere1, &v_ij, &o_ij));
+        // Not intersecting
+        let v_ij = [2.000_001, 0.0, 0.0].into();
+        assert!(!sphere1.intersects_at(&capsule, &v_ij, &o_ij));
+        assert!(!capsule.intersects_at(&sphere1, &v_ij, &o_ij));
     }
 }
