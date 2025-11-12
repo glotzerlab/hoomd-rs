@@ -798,6 +798,15 @@ pub struct VersorDisplacement {
     std_dev: f64,
 }
 
+impl From<(Versor, f64)> for VersorDisplacement {
+    #[inline]
+    fn from(value: (Versor, f64)) -> Self {
+        Self {
+            mean: value.0,
+            std_dev: value.1,
+        }
+    }
+}
 impl Distribution<Versor> for VersorDisplacement {
     /// Sample a random [`Versor`] displacement from a provided mean.
     ///
@@ -816,7 +825,7 @@ impl Distribution<Versor> for VersorDisplacement {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(1);
-    /// let normal = VersorDisplacement::new(Versor::default(), 0.1);
+    /// let normal = VersorDisplacement::from(Versor::default(), 0.1);
     /// let v: Versor = normal.sample(&mut rng);
     /// # Ok(())
     /// # }
