@@ -151,8 +151,6 @@ where
         let d2_norm_sq = d2.dot(&d2);
         let f = d2.dot(&distance_between_centers);
 
-        let t: f64;
-
         let c = d1.dot(&distance_between_centers);
 
         // The general nondegenerate case - very small capsules are valid.
@@ -161,7 +159,7 @@ where
 
         // If segments not parallel, compute closest point on L1 to L2 and
         // clamp to segment S1. Else pick arbitrary s (here 0)
-        let mut s = if denom == 0.0 {
+        let s = if denom == 0.0 {
             0.0
         } else {
             ((d1_dot_d2 * f - c * d2_norm_sq) / denom).clamp(0.0, 1.0)
@@ -170,15 +168,14 @@ where
         // Compute point on L2 closest to S1(s) using
         // t = Dot((P1 + D1*s) - P2,D2) / Dot(D2,D2) = (b*s + f) / e
         let tnom = d1_dot_d2 * s + f;
-        if tnom < 0.0 {
-            t = 0.0;
-            s = (-c / d1_norm_sq).clamp(0.0, 1.0);
+        // let t: f64;
+        let (t, s) = if tnom < 0.0 {
+            (0.0, (-c / d1_norm_sq).clamp(0.0, 1.0))
         } else if tnom > d2_norm_sq {
-            t = 1.0;
-            s = ((d1_dot_d2 - c) / d1_norm_sq).clamp(0.0, 1.0);
+            (1.0, ((d1_dot_d2 - c) / d1_norm_sq).clamp(0.0, 1.0))
         } else {
-            t = tnom / d2_norm_sq;
-        }
+            (tnom / d2_norm_sq, s)
+        };
 
         let c1 = p1 + d1 * s;
         let c2 = p2 + d2 * t;
