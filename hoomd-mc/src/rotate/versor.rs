@@ -93,7 +93,7 @@ where
     /// ```
     /// use hoomd_mc::{LocalTrial, Rotate};
     /// use hoomd_microstate::property::OrientedPoint;
-    /// use hoomd_vector::{Angle, Cartesian};
+    /// use hoomd_vector::{Angle, Cartesian, Versor};
     /// use rand::{Rng, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
