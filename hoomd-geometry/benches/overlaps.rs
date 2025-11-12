@@ -12,7 +12,7 @@
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_geometry::{
     Convex, IntersectsAt,
-    shape::{ConvexPolytope, Hypercuboid, Hyperellipsoid, Hypersphere, Simplex3},
+    shape::{ConvexPolytope, Cylinder, Hypercuboid, Hyperellipsoid, Hypersphere, Simplex3},
     xenocollide::{collide2d, collide3d},
 };
 use rand::{Rng, SeedableRng, rngs::StdRng};
@@ -334,4 +334,39 @@ fn simplex_fast(bencher: Bencher) {
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| (create_simplex_pair(&mut rng), create_offset_3d(&mut rng)))
         .bench_local_values(|((t0, t1), (t, r))| black_box(t0.intersects_at(&t1, &t, &r)));
+}
+
+fn create_cylinder_pair<R: Rng>(rng: &mut R) -> (Cylinder, Cylinder) {
+    (
+        Cylinder {
+            radius: rng
+                .random_range(0.0..10.0)
+                .try_into()
+                .expect("test value is a positive real"),
+            height: rng
+                .random_range(0.0..10.0)
+                .try_into()
+                .expect("test value is a positive real"),
+        },
+        Cylinder {
+            radius: rng
+                .random_range(0.0..10.0)
+                .try_into()
+                .expect("test value is a positive real"),
+            height: rng
+                .random_range(0.0..10.0)
+                .try_into()
+                .expect("test value is a positive real"),
+        },
+    )
+}
+
+#[divan::bench]
+fn infinite_cylinder(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| (create_cylinder_pair(&mut rng), create_offset_3d(&mut rng)))
+        .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at_infinite(&c1, &t, &r)));
 }
