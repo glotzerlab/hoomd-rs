@@ -136,7 +136,9 @@ where
     #[inline]
     fn intersects_at(&self, other: &Capsule<N>, v_ij: &Cartesian<N>, o_ij: &R) -> bool {
         // Adapted from Real Time Collision Detection, D. Eberly, pp 148
-        // Note we ignore fallbacks when the capsule length is small, as these could be valid inputs. If we somehow underflow to NaN, a (possibly spurious) overlap will be detected.
+        // Note we ignore fallbacks when the capsule length is small, as these
+        // could be valid inputs. If we somehow underflow to NaN, a (possibly spurious)
+        // overlap will be detected.
 
         let d1 = axis_aligned_cartesian::<N>(self.height.get());
         let p1 = d1 * -0.5;
