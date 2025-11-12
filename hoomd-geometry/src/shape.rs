@@ -12,7 +12,7 @@
 //! encodes the dimensionality.
 
 mod capsule;
-pub use capsule::Capsule;
+pub use capsule::{Capsule, Spherocylinder};
 
 mod convex_polytope;
 pub use convex_polytope::{ConvexPolygon, ConvexPolyhedron, ConvexPolytope};

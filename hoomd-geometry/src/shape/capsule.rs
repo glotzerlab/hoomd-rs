@@ -75,7 +75,7 @@ pub struct Capsule<const N: usize> {
 }
 
 /// A sphere swept along a line segment in $`\mathbb{R}^3`$.
-type SpheroCylinder = Capsule<3>;
+pub type Spherocylinder = Capsule<3>;
 
 impl<const N: usize> SupportMapping<Cartesian<N>> for Capsule<N> {
     #[inline]
