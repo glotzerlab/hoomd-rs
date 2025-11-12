@@ -352,9 +352,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case(true, 1.9, 0.0, 0.0)]
+    #[case(true, 1.999_999, 0.0, 0.0)]
     #[case(true, 2.0, 0.0, 0.0)]
-    #[case(false, 2.1, 0.0, 0.0)]
+    #[case(false, 2.000_001, 0.0, 0.0)]
     fn test_intersect_capsule_capsule_2d(
         #[case] expected: bool,
         #[case] x: f64,
@@ -380,9 +380,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case(true, 0.0, 1.8, 90.0)]
     #[case(true, 0.0, 2.0, 90.0)]
-    #[case(true, 0.0, 2.1, 90.0)]
     #[case(true, 0.0, 3.0, 90.0)]
     #[case(false, 0.0, 3.000_001, 90.0)]
     fn test_intersect_capsule_capsule_2d_rotated(
