@@ -46,7 +46,7 @@ impl Volume for Cylinder {
     }
 }
 /// Precision below which cylinders are considered overlapping
-const _CYLINDER_OVERLAP_PRECISION: f64 = 1e-9;
+const _CYLINDER_OVERLAP_PRECISION_SQUARED: f64 = 1e-14;
 
 impl Cylinder {
     /// Determine whether two cylinders would intersect if they both had infinite length.
@@ -97,13 +97,13 @@ impl Cylinder {
         let sx = 2.0 * (q.vector[0] * q.vector[2] + q.scalar * q.vector[1]);
         let sy = 2.0 * (q.vector[1] * q.vector[2] - q.scalar * q.vector[0]);
 
-        let n_magnitude = (sx.powi(2) + sy.powi(2)).sqrt();
+        let n_magnitude_sq = sx.powi(2) + sy.powi(2);
 
-        let distance = if n_magnitude < _CYLINDER_OVERLAP_PRECISION {
+        let distance_sq = if n_magnitude_sq < _CYLINDER_OVERLAP_PRECISION_SQUARED {
             // The axes of the cylinders are parallel
             // The shortest distance `d` is just the distance from the point c
             // to the z-axis, which is the distance in the xy-plane.
-            (vx.powi(2) + vy.powi(2)).sqrt()
+            vx.powi(2) + vy.powi(2)
         } else {
             // Non-Parallel
             // We use the full formula: d = |(p2 - p1) . (v1 x v2)| / |v1 x v2|
@@ -111,11 +111,11 @@ impl Cylinder {
             // v1 x v2 = (-sy, sx, 0)
             // (p2 - p1) . (v1 x v2) = cx*(-sy) + cy*sx + cz*0 = cy*sx - cx*sy
             let dot_product = vy * sx - vx * sy;
-            dot_product.abs() / n_magnitude
+            dot_product.powi(2) / n_magnitude_sq
         };
 
         // A collision occurs if the shortest distance between the axes is <= r1+r2
-        distance <= self.radius.get() + other.radius.get()
+        distance_sq <= (self.radius.get() + other.radius.get()).powi(2)
     }
 }
 
