@@ -826,10 +826,12 @@ impl Distribution<Versor> for VersorDisplacement {
             let normal =
                 Normal::new(0.0, self.std_dev).expect("Failed to create normal distribution.");
 
-            let s = Cartesian::from([(); 3].map(|_| normal.sample(rng)));
+            let s = Cartesian::from([(); 3].map(|()| normal.sample(rng)));
             let theta = s.norm();
 
-            // Reject moves with |s| > pi to ensure detailed balance
+            // Reject moves with |s| > pi to ensure detailed balance. Otherwise, there
+            // is a shorter path between the proposed move and the start (theta - pi),
+            // which has a different rejection probability.
             if theta > PI {
                 continue;
             }
@@ -845,9 +847,9 @@ impl Distribution<Versor> for VersorDisplacement {
                 half_theta.sin() / theta
             };
 
-            let v = s * half_theta.sin() * v_factor;
+            let v = s * v_factor * half_theta.sin();
 
-            // We are normalized by construction
+            // We are normalized by construction, so call the tuple initializer
             return self
                 .mean
                 .combine(&Versor(Quaternion::from([w, v[0], v[1], v[2]])));
