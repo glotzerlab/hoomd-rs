@@ -49,9 +49,14 @@ impl Volume for Cylinder {
 const _CYLINDER_OVERLAP_PRECISION: f64 = 1e-9;
 
 impl Cylinder {
-    /// Determine whether two infinitely long cylinders intersect
+    /// Determine whether two cylinders would intersect if they both had infinite length.
+    ///
+    /// This implementation is based on [Collision detection of cylindrical rigid bodies for motion planning](https://doi.org/10.1109/ROBOT.2006.1641925), and provides a
+    /// useful alternative to bounding sphere-based checks when the underlying bodies
+    /// are highly elongated.
+    #[inline]
     fn intersects_at_infinite(&self, other: &Self, v_ij: &Cartesian<3>, o_ij: &Versor) -> bool {
-        let [cx, cy, _cz] = v_ij.coordinates;
+        let [vx, vy, _vz] = v_ij.coordinates;
 
         // Calculate sx and sy directly from the Versor components
         // for rotating (0, 0, 1) by quaternion q = (w, x, y, z):
@@ -65,16 +70,14 @@ impl Cylinder {
             // The axes of the cylinders are parallel
             // The shortest distance `d` is just the distance from the point c
             // to the z-axis, which is the distance in the xy-plane.
-            (cx.powi(2) + cy.powi(2)).sqrt()
+            (vx.powi(2) + vy.powi(2)).sqrt()
         } else {
             // Non-Parallel
             // We use the full formula: d = |(p2 - p1) . (v1 x v2)| / |v1 x v2|
             // p2 - p1 = c = (cx, cy, cz)
             // v1 x v2 = (-sy, sx, 0)
             // (p2 - p1) . (v1 x v2) = cx*(-sy) + cy*sx + cz*0 = cy*sx - cx*sy
-            let dot_product = cy * sx - cx * sy;
-
-            // d = |dot_product| / n_magnitude
+            let dot_product = vy * sx - vx * sy;
             dot_product.abs() / n_magnitude
         };
 
@@ -102,8 +105,8 @@ mod tests {
     #[case::perpendicular_skew_touching(1.0, 1.0, [0.0, 2.0, 0.0], Versor::from_axis_angle(Cartesian::from([0., 1., 0.]).to_unit_unchecked().0, PI / 2.0), true)]
     #[case::perpendicular_skew_barely_not_touching(1.0, 0.999_999, [0.0, 2.0, 0.0], Versor::from_axis_angle(Cartesian::from([0., 1., 0.]).to_unit_unchecked().0, PI / 2.0), false)]
     #[case::perpendicular_skew_not_intersecting(1.0, 1.0, [2.000_001, 0.0, 5.0], Versor::from_axis_angle(Cartesian::from([1., 0., 0.]).to_unit_unchecked().0, PI / 2.0), false)]
-    #[case::skew_intersecting(1.0, 1.0, [1.0, 1.0, 0.0], Versor::from_axis_angle(Cartesian::from([0., 1., 0.]).to_unit_unchecked().0, PI / 4.0), true)]
-    #[case::skew_touching(1.0, 1.0, [0.0, 2.0, 0.0], Versor::from_axis_angle(Cartesian::from([0., 1., 0.]).to_unit_unchecked().0, PI / 4.0), true)]
+    #[case::skew_intersecting(1.0, 1.0, [1.0, 1.0, 0.0], Versor::from_axis_angle(Cartesian::from([0., 1., 0.]).to_unit_unchecked().0, PI / 5.0), true)]
+    #[case::skew_touching(1.0, 1.0, [0.0, 2.0, 0.0], Versor::from_axis_angle(Cartesian::from([0., 1., 0.]).to_unit_unchecked().0, PI / 5.0), true)]
     #[case::skew_not_intersecting(1.0, 1.0, [0.0, 2.000_001, 0.0], Versor::from_axis_angle(Cartesian::from([0., 1., 0.]).to_unit_unchecked().0, PI / 5.0), false)]
     fn test_intersects_at_infinite(
         #[case] r1: f64,
