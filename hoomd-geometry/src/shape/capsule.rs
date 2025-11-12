@@ -4,9 +4,9 @@
 //! Implement [`Capsule`]
 
 use super::sphere::sphere_volume_prefactor;
-use crate::{BoundingSphereRadius, SupportMapping, Volume};
+use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, InnerProduct};
+use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation};
 
 /// All points less than or equal to a distance `r` from a line segment of length `h`.
 ///
@@ -122,6 +122,35 @@ impl<const N: usize> Volume for Capsule<N> {
     }
 }
 
+/// .
+#[inline]
+fn axis_aligned_cartesian<const N: usize>(h: f64) -> Cartesian<N> {
+    Cartesian::from(std::array::from_fn(|i| if i == (N - 1) { h } else { 0.0 }))
+}
+
+impl<const N: usize, R> IntersectsAt<Capsule<N>, Cartesian<N>, R> for Capsule<N>
+where
+    R: Rotate<Cartesian<N>> + Rotation,
+    Cartesian<N>: From<[f64; N]>,
+{
+    #[inline]
+    fn intersects_at(&self, other: &Capsule<N>, v_ij: &Cartesian<N>, o_ij: &R) -> bool {
+        // https://ceng2.ktu.edu.tr/~cakir/files/grafikler/rtcd.pdf, pp 148
+        let d1 = axis_aligned_cartesian::<N>(self.height.get());
+        let d2 = o_ij.rotate(&axis_aligned_cartesian(other.height.get()));
+        let center_center_vector = d2 * -0.5; // TODO
+
+        let d1_norm_sq = d1.norm_squared();
+        let d2_norm_sq = d2.norm_squared();
+        let f = d2.dot(&center_center_vector);
+        // Check if either or both segments degenerate into points
+        if (d1_norm_sq <= EPSILON && d2_norm_sq <= EPSILON) {
+            // Both segments degenerate into points
+            let (s, t) = (0.0, 0.0);
+        }
+        false // TODO
+    }
+}
 #[cfg(test)]
 mod tests {
 
