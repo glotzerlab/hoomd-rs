@@ -79,14 +79,14 @@ where
 {
     /// Perturb a body's orientation by a random amount.
     ///
-    /// In three dimensions, we design this perturbation as a quaternion whose
+    /// In three dimensions, we design this perturbation as a versor whose
     /// distribution is centered on the existing orientation and whose distribition is
     /// narrow. To do so, we sample from a 3-dimensional Normal distribution
     /// in the tangent space of SO(3), lift to the manifold, then rotate to center on
-    /// the mean of the [`VersorDisplacement`]. The result is a small displacement from
+    /// the current orientation. The result is a small displacement from
     /// a quaternion input, with fast decay in the tails that make large displacements
     /// unlikely. This is desirable for Monte Carlo, as large moves are very likely to
-    /// be rejected.
+    /// be rejected. This sampling obeys detailed balance.
     ///
     /// # Example
     ///
