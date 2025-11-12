@@ -68,7 +68,7 @@ use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation};
 /// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Capsule<const N: usize> {
-    /// Radius of of points that are considered enclosed in the shape.
+    /// Radius of points that are considered enclosed in the shape.
     pub radius: PositiveReal,
     /// Length of the line segment.
     pub height: PositiveReal,
