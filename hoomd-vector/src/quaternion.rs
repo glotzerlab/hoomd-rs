@@ -3,6 +3,7 @@
 
 //! Implement [`Quaternion`] and related types.
 use std::{
+    f64::consts::PI,
     fmt,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
 };
@@ -12,7 +13,7 @@ use rand::{
     Rng,
     distr::{Distribution, StandardUniform},
 };
-use rand_distr::StandardNormal;
+use rand_distr::{Normal, StandardNormal};
 
 use crate::{Cartesian, Cross, Error, InnerProduct, Rotate, Rotation, RotationMatrix, Unit};
 
@@ -783,6 +784,72 @@ impl Distribution<Versor> for StandardUniform {
             scalar: scalar / norm,
             vector: vector / norm,
         })
+    }
+}
+
+/// A normal distribution of random Versors, centered on a mean with
+/// some standard deviation.
+#[derive(Debug, Clone, Copy)]
+pub struct VersorDisplacement {
+    /// The center of the distribution on the 3-Sphere.
+    mean: Versor,
+    /// The standard deviation of the normal distribution of quaternions around the mean.
+    // normal: Normal<f64>,
+    std_dev: f64,
+}
+
+impl Distribution<Versor> for VersorDisplacement {
+    /// Sample a random [`Versor`] displacement from a provided mean.
+    ///
+    /// Mathematically, we sample from a 3-dimensional Normal distribution
+    /// in the tangent space of SO(3), lift to the manifold, then rotate to center on the mean of the [`VersorDisplacement`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_vector::{Versor, VersorDisplacement};
+    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut rng = StdRng::seed_from_u64(1);
+    /// let normal = VersorDisplacement::new(Versor::default(), 0.1);
+    /// let v: Versor = normal.sample(&mut rng);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Versor {
+        const _SAFE_THETA: f64 = 1e-12;
+        loop {
+            // Per equation (4.58), we select s from a 3D Gaussian distribution.
+            // This is equivalent to sampling three 1D Gaussians with std dev = d.
+            let normal =
+                Normal::new(0.0, self.std_dev).expect("Failed to create normal distribution.");
+
+            let s = Cartesian::from([(); 3].map(|_| normal.sample(rng)));
+            let theta = s.norm();
+
+            // Reject moves with |s| > pi to ensure detailed balance
+            if theta > PI {
+                continue;
+            }
+
+            // Lift the normally distributed value to SO(3) (4.59)
+            let half_theta = 0.5 * theta;
+            let w = half_theta.cos();
+
+            // If theta is near 0, do not compute the value. TODO: detailed balance?
+            let v_factor = if theta < _SAFE_THETA {
+                0.5
+            } else {
+                half_theta.sin() / theta
+            };
+
+            let v = s * half_theta.sin() * v_factor;
+
+            // We are normalized by construction
+            return Versor(Quaternion::from([w, v[0], v[1], v[2]]));
+        }
     }
 }
 
