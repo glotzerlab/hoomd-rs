@@ -16,9 +16,20 @@ workspace = true
 
 [dependencies]
 hoomd-interaction.workspace = true
+hoomd-geometry.workspace = true
+hoomd-mc.workspace = true
+hoomd-microstate.workspace = true
+hoomd-simulation.workspace = true
+hoomd-spatial.workspace = true
+hoomd-vector.workspace = true
+hoomd-bevy.workspace=true
+anyhow.workspace = true
 arrayvec.workspace = true
+bevy_egui.workspace = true
+rand.workspace = true
 
 [dev-dependencies]
+bevy = { workspace = true }
 approxim.workspace = true
 divan.workspace = true
 rstest.workspace = true

@@ -1,6 +1,9 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
-
+/*!
+Builder for constructing ChIMES potential from
+the ChIMES parameter file.
+ */
 use std::error::Error;
 use std::{fmt, fs};
 
@@ -215,27 +218,20 @@ impl<const N: usize> ChimesBuilder<N> {
                 let start = idx + 1;
                 let end = start + atom_pair_types;
 
-                let mut xform_style_idx: Option<usize> = None;
-                let mut morse_idx: Option<usize> = None;
+
                 let mut tmp_xform_style = String::new();
                 for (i, line_after_start) in lines[start..end].iter().enumerate() {
                     let total_pair_type_data: Vec<&str> =
                         line_after_start.split_whitespace().collect();
-
-                    if total_pair_type_data.len() == 8 {
-                        // With S_DELTA
-                        xform_style_idx = Some(6);
-                        morse_idx = Some(7);
-                    } else if total_pair_type_data.len() == 7 {
-                        // No S_DELTA
-                        xform_style_idx = Some(5);
-                        morse_idx = Some(6);
-                    } else {
-                        return Err(Box::new(InvalidFormatError(
+                    
+                    let (xform_style_idx, morse_idx): (usize, usize) = match total_pair_type_data.len() {
+                        8 => (6, 7),
+                        7 => (5, 6),
+                        _ => return Err(Box::new(InvalidFormatError(
                             "Incorrect input in line after # PAIRIDX # \nExpect 7 or 8 entries\n"
                                 .into(),
-                        )));
-                    }
+                        )))
+                    };
 
                     pair_data.0.push(total_pair_type_data[1].to_string());
                     pair_data.1.push(total_pair_type_data[2].to_string());
@@ -252,8 +248,8 @@ impl<const N: usize> ChimesBuilder<N> {
 
                     if i == 0 {
                         tmp_xform_style =
-                            total_pair_type_data[xform_style_idx.unwrap()].to_string();
-                    } else if total_pair_type_data[xform_style_idx.unwrap()] != tmp_xform_style {
+                            total_pair_type_data[xform_style_idx].to_string();
+                    } else if total_pair_type_data[xform_style_idx] != tmp_xform_style {
                         return Err(Box::new(InvalidFormatError(
                             "Distance transformation style must be the same for all pair types"
                                 .into(),
@@ -262,13 +258,13 @@ impl<const N: usize> ChimesBuilder<N> {
 
                     xform_style = tmp_xform_style.clone();
 
-                    if tmp_xform_style == "MORSE" && total_pair_type_data.len() > morse_idx.unwrap()
+                    if tmp_xform_style == "MORSE" && total_pair_type_data.len() > morse_idx
                     {
                         pair_data.4.push(Some(
-                            total_pair_type_data[morse_idx.unwrap()]
+                            total_pair_type_data[morse_idx]
                                 .parse::<f64>()
                                 .map_err(|e| Box::new(e) as Box<dyn Error>)?,
-                        ))
+                        ));
                     } else {
                         return Err(Box::new(InvalidFormatError(
                             "Missing morse lambda value in line after # PAIRIDX #".into(),
@@ -378,7 +374,7 @@ impl<const N: usize> ChimesBuilder<N> {
                 let end = start + poly_order[0];
 
                 let mut tmp_2b_coeff: Vec<f64> = Vec::new();
-                for (i, line_after_start) in lines[start..end].iter().enumerate() {
+                for (_i, line_after_start) in lines[start..end].iter().enumerate() {
                     let order_coeff = Self::parse_f64_vec(line_after_start)?;
                     tmp_2b_coeff.push(order_coeff[1]);
                 }
@@ -396,7 +392,7 @@ impl<const N: usize> ChimesBuilder<N> {
 
                 let start = idx + 1;
                 let end = start + n_pair_maps;
-                for (i, line_after_start) in lines[start..end].iter().enumerate() {
+                for (_i, line_after_start) in lines[start..end].iter().enumerate() {
                     let pair_idx_type: Vec<&str> = line_after_start.split_whitespace().collect();
                     let tmp_pair_idx = pair_idx_type[0]
                         .parse::<usize>()
@@ -627,26 +623,5 @@ mod tests {
             .expect("Error assemling ChIMES potential");
         assert_eq!(chimes_pot.0.interaction.type1, String::from("C"));
         assert_eq!(chimes_pot.0.interaction.type2, String::from("C"));
-        // println!("{}", chimes_pot.evaluator.0.energy(1.1));
-        // println!("{}", chimes_pot.evaluator.0.energy(1.5));
-        // println!("{}", chimes_pot.evaluator.0.energy(2.0));
-        // println!("{}", chimes_pot.evaluator.0.energy(2.5));
-        // println!("{}", chimes_pot.evaluator.0.energy(3.0));
-
-        // println!("Polynomial order: {:?}\n", params.poly_order);
-        // println!("Atom data: {:?}\n", params.type_data);
-        // println!("Transformation style: {:?}\n", params.xform_style);
-        // println!("Pair data: {:?}\n", params.pair_data);
-        // println!("Fcut data: {:?}\n", params.fcut);
-        // println!("Energy offset: {:?}\n", params.energy_offset);
-        // println!("Penalty distance: {:?}\n", params.penalty_dist);
-        // println!("Pair type index: {:?}\n", params.pair_type_index);
-        //println!("Two-body coefficients: {:?}\n", params.cheby_2b_coeffs);
-        //println!("Pair index slow map: {:?}\n", params.pair_idx_slow_map);
-        //println!("Pair type slow map: {:?}\n", params.pair_type_slow_map);
-        //println!("Pair index fast map: {:?}\n", params.pair_idx_fast_map);
-        //println!("Pair type fast map: {:?}\n", params.pair_type_fast_map);
-
-        // Ok(())
     }
 }
