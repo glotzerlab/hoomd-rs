@@ -5,10 +5,7 @@
 
 use std::f64::consts::PI;
 
-use rand::{
-    Rng,
-    distr::Distribution,
-};
+use rand::{Rng, distr::Distribution};
 use rand_distr::Normal;
 
 use super::Rotate;
@@ -19,20 +16,14 @@ use hoomd_vector::{Cartesian, InnerProduct, Quaternion, Rotation, Versor};
 /// some standard deviation.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct VersorDisplacement {
-    /// The center of the distribution on the 3-Sphere.
-    mean: Versor,
     /// The standard deviation of the normal distribution of quaternions around the mean.
-    // normal: Normal<f64>,
     std_dev: f64,
 }
 
-impl From<(Versor, f64)> for VersorDisplacement {
+impl From<f64> for VersorDisplacement {
     #[inline]
-    fn from(value: (Versor, f64)) -> Self {
-        Self {
-            mean: value.0,
-            std_dev: value.1,
-        }
+    fn from(value: f64) -> Self {
+        Self { std_dev: value }
     }
 }
 impl Distribution<Versor> for VersorDisplacement {
@@ -74,13 +65,10 @@ impl Distribution<Versor> for VersorDisplacement {
                 half_theta.sin() / theta
             };
 
-            let v = s * v_factor * half_theta.sin();
+            let v = s * v_factor;
 
             // We are normalized by construction, so call the tuple initializer
-            // Then, rotate by the current quaternion we displace from
-            return (Quaternion::from([w, v[0], v[1], v[2]]))
-                .to_versor_unchecked() // TODO: no need to re-normalize!
-                .combine(&self.mean);
+            return (Quaternion::from([w, v[0], v[1], v[2]])).to_versor_unchecked(); // TODO: no need to re-normalize!
         }
     }
 }
@@ -128,11 +116,10 @@ where
 
         let a = self.maximum_rotation.get();
 
-        let displacement = VersorDisplacement::from((*trial.orientation(), a));
+        let displacement = VersorDisplacement { std_dev: a };
 
         let delta_quat = displacement.sample(rng);
-        // TODO: this is q * rand_q * q, do we need both rotations?
-        *trial.orientation_mut() = trial.orientation().combine(&delta_quat);
+        *trial.orientation_mut() = delta_quat.combine(trial.orientation());
 
         trial
     }
