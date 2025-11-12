@@ -9,3 +9,8 @@ screenshot.png
 flamegraph.svg
 profile.json.gz
 mc_*.json
+*.parquet
+.RData
+.Rhistory
+*.Rmd
+*.html

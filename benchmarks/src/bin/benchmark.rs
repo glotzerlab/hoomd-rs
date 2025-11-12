@@ -1,13 +1,17 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use std::{collections::BTreeMap, fmt, fs::File, io::Write, time::Duration};
+use std::{fmt, fs::File, sync::Arc, time::Duration};
 
 use anyhow::anyhow;
 use clap::{Parser, ValueEnum};
 use clap_verbosity_flag::{InfoLevel, Verbosity, log::LevelFilter};
 use log::{info, trace};
-use serde::Serialize;
+use parquet::{
+    file::{properties::WriterProperties,
+        writer::SerializedFileWriter},
+    record::RecordWriter};
+use parquet_derive::ParquetRecordWriter;
 
 use benchmarks::{Benchmark, mc};
 use hoomd_microstate::{SiteKey, property::OrientedPoint};
@@ -46,9 +50,9 @@ pub struct Options {
     #[arg(short, long, default_value_t = SpatialData::VecCell, value_enum)]
     spatial_data: SpatialData,
 
-    /// Write the json files {benchmark}-{suffix}.json
-    #[arg(long, default_value_t = false)]
-    json: bool,
+    /// Writes the parquet file
+    #[arg(long, value_name = "filename")]
+    parquet: Option<String>,
 
     /// Time to warm up each benchmark (seconds)
     #[arg(long, default_value_t = 2.0)]
@@ -58,52 +62,45 @@ pub struct Options {
     #[arg(long, default_value_t = 4.0)]
     benchmark_time: f64,
 
-    /// Suffix to use in json file names.
-    #[arg(long)]
-    suffix: Option<String>,
-
     #[command(flatten)]
     pub verbose: Verbosity<InfoLevel>,
 }
 
-#[derive(Serialize)]
+#[derive(ParquetRecordWriter)]
 struct Performance {
+    benchmark: String,
     unit: String,
-    n: Vec<usize>,
-    time_per_operation: Vec<f64>,
+    spatial_data: String,
+    n: usize,
+    threads: usize,
+    time_per_operation: f64,
 }
 
-impl Performance {
-    fn with_unit(unit: String) -> Self {
-        Self {
-            unit,
-            n: Vec::new(),
-            time_per_operation: Vec::new(),
-        }
-    }
-}
+// TODO: unit in metadata?
+// TODO: data structure
 
-fn execute<'a, S>(
-    results: &mut BTreeMap<&'a str, Performance>,
+fn execute<S>(
     simulation: &mut S,
     benchmark: &Benchmark,
-    name: &'a str,
+    name: &str,
+    spatial_data: &str,
     n: usize,
-) -> anyhow::Result<()>
+) -> anyhow::Result<Performance>
 where
     S: Simulation + fmt::Display,
 {
     info!("{name}: {n} bodies");
-    let performance = benchmark.measure(simulation)?;
+    let time_per_operation = benchmark.measure(simulation)?;
     trace!("{simulation}");
 
-    let entry = results
-        .entry(name)
-        .or_insert_with(|| Performance::with_unit("step".to_string()));
-    entry.n.push(n);
-    entry.time_per_operation.push(performance);
-
-    Ok(())
+    Ok(Performance {
+        benchmark: name.to_string(),
+        spatial_data: spatial_data.to_string(),
+        unit: "step".to_string(),
+        n,
+        threads: 1,
+        time_per_operation,
+    })
 }
 
 fn main() -> anyhow::Result<()> {
@@ -125,7 +122,7 @@ fn main() -> anyhow::Result<()> {
 
     let benchmark_matcher = WildMatch::new(&options.benchmarks);
 
-    let mut results: BTreeMap<&str, Performance> = BTreeMap::new();
+    let mut results = Vec::new();
 
     let number_density = 0.8;
     let benchmark = Benchmark {
@@ -136,9 +133,9 @@ fn main() -> anyhow::Result<()> {
     let mut n = options.n_min;
     let n_max = options.n_max.unwrap_or(options.n_min);
 
-    if n_max != n && !options.json {
+    if n_max != n && options.parquet.is_none() {
         return Err(anyhow!(
-            "JSON output is required when n_min ({n}) is not equal to n_max ({n_max})"
+            "Parquet output is required when n_min ({n}) is not equal to n_max ({n_max})"
         ));
     }
 
@@ -172,19 +169,19 @@ fn main() -> anyhow::Result<()> {
                         mc::HardSphereSim::<2, VecCell<SiteKey, 2>>::with_microstate(
                             microstate_2d,
                         )?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n)?);
                 }
                 SpatialData::HashCell => {
                     let mut simulation =
                         mc::HardSphereSim::<2, HashCell<SiteKey, 2>>::with_microstate(
                             microstate_2d,
                         )?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n)?);
                 }
                 SpatialData::AllPairs => {
                     let mut simulation =
                         mc::HardSphereSim::<2, AllPairs<SiteKey>>::with_microstate(microstate_2d)?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n)?);
                 }
             }
         }
@@ -198,19 +195,19 @@ fn main() -> anyhow::Result<()> {
                 SpatialData::VecCell => {
                     let mut simulation =
                         mc::LennardJones::<2, VecCell<SiteKey, 2>>::with_microstate(microstate_2d)?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n)?);
                 }
                 SpatialData::HashCell => {
                     let mut simulation =
                         mc::LennardJones::<2, HashCell<SiteKey, 2>>::with_microstate(
                             microstate_2d,
                         )?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n)?);
                 }
                 SpatialData::AllPairs => {
                     let mut simulation =
                         mc::LennardJones::<2, AllPairs<SiteKey>>::with_microstate(microstate_2d)?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n)?);
                 }
             }
         }
@@ -224,17 +221,17 @@ fn main() -> anyhow::Result<()> {
                 SpatialData::VecCell => {
                     let mut simulation =
                         mc::RegularPolygon::<VecCell<SiteKey, 2>>::with_microstate(microstate_2d)?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n)?);
                 }
                 SpatialData::HashCell => {
                     let mut simulation =
                         mc::RegularPolygon::<HashCell<SiteKey, 2>>::with_microstate(microstate_2d)?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n)?);
                 }
                 SpatialData::AllPairs => {
                     let mut simulation =
                         mc::RegularPolygon::<AllPairs<SiteKey>>::with_microstate(microstate_2d)?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n)?);
                 }
             }
         }
@@ -260,19 +257,19 @@ fn main() -> anyhow::Result<()> {
                         mc::HardSphereSim::<3, VecCell<SiteKey, 3>>::with_microstate(
                             microstate_3d,
                         )?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n)?);
                 }
                 SpatialData::HashCell => {
                     let mut simulation =
                         mc::HardSphereSim::<3, HashCell<SiteKey, 3>>::with_microstate(
                             microstate_3d,
                         )?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n)?);
                 }
                 SpatialData::AllPairs => {
                     let mut simulation =
                         mc::HardSphereSim::<3, AllPairs<SiteKey>>::with_microstate(microstate_3d)?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n)?);
                 }
             }
         }
@@ -286,19 +283,19 @@ fn main() -> anyhow::Result<()> {
                 SpatialData::VecCell => {
                     let mut simulation =
                         mc::LennardJones::<3, VecCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n)?);
                 }
                 SpatialData::HashCell => {
                     let mut simulation =
                         mc::LennardJones::<3, HashCell<SiteKey, 3>>::with_microstate(
                             microstate_3d,
                         )?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n)?);
                 }
                 SpatialData::AllPairs => {
                     let mut simulation =
                         mc::LennardJones::<3, AllPairs<SiteKey>>::with_microstate(microstate_3d)?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n)?);
                 }
             }
         }
@@ -312,17 +309,17 @@ fn main() -> anyhow::Result<()> {
                 SpatialData::VecCell => {
                     let mut simulation =
                         mc::Octahedron::<VecCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n)?);
                 }
                 SpatialData::HashCell => {
                     let mut simulation =
                         mc::Octahedron::<HashCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n)?);
                 }
                 SpatialData::AllPairs => {
                     let mut simulation =
                         mc::Octahedron::<AllPairs<SiteKey>>::with_microstate(microstate_3d)?;
-                    execute(&mut results, &mut simulation, &benchmark, name, n)?;
+                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n)?);
                 }
             }
         }
@@ -333,31 +330,26 @@ fn main() -> anyhow::Result<()> {
         }
     }
 
-    if options.json {
-        let mut filename_suffix = String::new();
-        if let Some(suffix) = options.suffix {
-            filename_suffix.push('-');
-            filename_suffix.push_str(&suffix);
-        }
-        filename_suffix.push_str(".json");
+    if let Some(filename) = options.parquet {
+            let schema = results.as_slice().schema()?;
+            let props = Arc::new(WriterProperties::builder().build());
+            let file = File::create(filename)?;
+            let mut writer = SerializedFileWriter::new(file, schema, props)?;
+            let mut row_group = writer.next_row_group()?;
 
-        for (name, performance) in results {
-            let performance_json = serde_json::to_string(&performance)?;
-            let filename = name.to_string() + &filename_suffix;
-            info!("Writing {filename}.");
-            let mut file = File::create(filename)?;
-            file.write_all(performance_json.as_bytes())?;
-        }
-    } else {
-        for (name, performance) in results {
-            let operations_per_second = 1.0
-                / performance
-                    .time_per_operation
-                    .last()
-                    .expect("results should contain at least one measurement");
+            results
+                .as_slice()
+                .write_to_row_group(&mut row_group)?;
+
+            row_group.close()?;
+            writer.close()?;
+        } else {
+        for result in results {
+            let operations_per_second = 1.0 / result.time_per_operation;
+            let name = result.benchmark;
+            let unit = result.unit;
             println!(
-                "{name:20}: {operations_per_second:9.3} {}s/s",
-                performance.unit
+                "{name:20}: {operations_per_second:9.3} {unit}s/s"
             );
         }
     }
