@@ -469,9 +469,9 @@ mod tests {
                 height: h2.try_into()?,
             };
 
-            let x = rng.random_range(-10.0..10.0);
-            let y = rng.random_range(-10.0..10.0);
-            let z = rng.random_range(-10.0..10.0);
+            let x = rng.random_range(-5.0..5.0);
+            let y = rng.random_range(-5.0..5.0);
+            let z = rng.random_range(-5.0..5.0);
             let v_ij = [x, y, z].into();
 
             // Generate a random axis for rotation
