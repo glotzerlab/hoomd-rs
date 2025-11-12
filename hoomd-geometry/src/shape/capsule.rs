@@ -135,9 +135,8 @@ where
 {
     #[inline]
     fn intersects_at(&self, other: &Capsule<N>, v_ij: &Cartesian<N>, o_ij: &R) -> bool {
-        // Adapted from https://ceng2.ktu.edu.tr/~cakir/files/grafikler/rtcd.pdf, pp 148
-        // Note we ignore fallbacks when the capsule length is small, as these could be
-        // valid inputs.
+        // Adapted from Real Time Collision Detection, D. Eberly, pp 148
+        // Note we ignore fallbacks when the capsule length is small, as these could be valid inputs. If we somehow underflow to NaN, a (possibly spurious) overlap will be detected.
 
         let d1 = axis_aligned_cartesian::<N>(self.height.get());
         let p1 = d1 * -0.5;
@@ -168,7 +167,6 @@ where
         // Compute point on L2 closest to S1(s) using
         // t = Dot((P1 + D1*s) - P2,D2) / Dot(D2,D2) = (b*s + f) / e
         let tnom = d1_dot_d2 * s + f;
-        // let t: f64;
         let (t, s) = if tnom < 0.0 {
             (0.0, (-c / d1_norm_sq).clamp(0.0, 1.0))
         } else if tnom > d2_norm_sq {
@@ -177,8 +175,7 @@ where
             (tnom / d2_norm_sq, s)
         };
 
-        let c1 = p1 + d1 * s;
-        let c2 = p2 + d2 * t;
+        let (c1, c2) = (p1 + d1 * s, p2 + d2 * t);
         let dist_sq = (c1 - c2).norm_squared();
 
         let total_radius = self.radius.get() + other.radius.get();
