@@ -181,7 +181,7 @@ mod quaternion;
 
 pub use angle::Angle;
 pub use cartesian::{Cartesian, RotationMatrix};
-pub use quaternion::{Quaternion, Versor, VersorDisplacement};
+pub use quaternion::{Quaternion, Versor};
 
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use thiserror::Error;

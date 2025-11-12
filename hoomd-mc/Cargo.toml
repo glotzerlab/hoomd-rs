@@ -22,6 +22,7 @@ hoomd-simulation.workspace = true
 hoomd-spatial.workspace = true
 hoomd-vector.workspace = true
 rand.workspace = true
+rand_distr.workspace = true
 
 [dev-dependencies]
 hoomd-geometry.workspace = true

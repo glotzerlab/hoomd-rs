@@ -8,6 +8,7 @@ use std::marker::PhantomData;
 use hoomd_utility::valid::PositiveReal;
 
 mod angle;
+mod versor;
 
 /// Change the orientation of a body by a small amount.
 ///
