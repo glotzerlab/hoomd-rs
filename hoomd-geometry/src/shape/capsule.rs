@@ -469,30 +469,13 @@ mod tests {
                 height: h2.try_into()?,
             };
 
-            let x = rng.random_range(-5.0..5.0);
-            let y = rng.random_range(-5.0..5.0);
-            let z = rng.random_range(-5.0..5.0);
-            let v_ij = [x, y, z].into();
+            let v_ij = (rng.random::<Cartesian<_>>() * 10.0) - Cartesian::from([5.0; 3]);
 
-            // Generate a random axis for rotation
-            let axis: Cartesian<3> = [
-                rng.random_range(-1.0..1.0),
-                rng.random_range(-1.0..1.0),
-                rng.random_range(-1.0..1.0),
-            ]
-            .into();
-            let axis = axis.to_unit()?.0; // Normalize
-
-            let angle = rng.random_range(0.0..2.0 * PI);
-
-            let o_ij = Versor::from_axis_angle(axis, angle);
+            let o_ij = rng.random::<Versor>();
 
             let result_direct = capsule1.intersects_at(&capsule2, &v_ij, &o_ij);
 
-            let convex_capsule1 = Convex(capsule1);
-            let convex_capsule2 = Convex(capsule2);
-            let result_xeno = convex_capsule1.intersects_at(&convex_capsule2, &v_ij, &o_ij);
-
+            let result_xeno = Convex(capsule1).intersects_at(&Convex(capsule2), &v_ij, &o_ij);
             assert_eq!(
                 result_direct, result_xeno,
                 "Failed with r1={r1}, h1={h1}, r2={r2}, h2={h2}, v_ij={v_ij:?}, o_ij={o_ij:?}"
