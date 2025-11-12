@@ -125,7 +125,7 @@ impl<const N: usize> Volume for Capsule<N> {
     }
 }
 
-/// .
+/// Create a `Cartesian<N>` with zeros except in the final index.
 #[inline]
 fn axis_aligned_cartesian<const N: usize>(h: f64) -> Cartesian<N> {
     Cartesian::from(std::array::from_fn(|i| if i == (N - 1) { h } else { 0.0 }))
