@@ -74,6 +74,8 @@ pub struct Capsule<const N: usize> {
     pub height: PositiveReal,
 }
 
+type SpheroCylinder = Capsule<3>;
+
 impl<const N: usize> SupportMapping<Cartesian<N>> for Capsule<N> {
     #[inline]
     fn support_mapping(&self, n: &Cartesian<N>) -> Cartesian<N> {
