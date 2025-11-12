@@ -196,6 +196,7 @@ mod tests {
         shape::{Circle, Cylinder, Hypersphere},
     };
     use hoomd_vector::{Angle, Versor};
+    use rand::{Rng, SeedableRng};
 
     use super::*;
     use approxim::assert_relative_eq;
@@ -446,5 +447,57 @@ mod tests {
         let v_ij = [2.000_001, 0.0, 0.0].into();
         assert!(!sphere1.intersects_at(&capsule, &v_ij, &o_ij));
         assert!(!capsule.intersects_at(&sphere1, &v_ij, &o_ij));
+    }
+
+    #[test]
+    fn test_intersect_capsule_capsule_complex_3d_random() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let mut rng = rand::rngs::StdRng::seed_from_u64(0);
+
+        for _ in 0..10_000 {
+            let r1 = rng.random_range(0.1..10.0);
+            let h1 = rng.random_range(0.1..10.0);
+            let r2 = rng.random_range(0.1..10.0);
+            let h2 = rng.random_range(0.1..10.0);
+
+            let capsule1 = Capsule::<3> {
+                radius: r1.try_into()?,
+                height: h1.try_into()?,
+            };
+            let capsule2 = Capsule::<3> {
+                radius: r2.try_into()?,
+                height: h2.try_into()?,
+            };
+
+            let x = rng.random_range(-10.0..10.0);
+            let y = rng.random_range(-10.0..10.0);
+            let z = rng.random_range(-10.0..10.0);
+            let v_ij = [x, y, z].into();
+
+            // Generate a random axis for rotation
+            let axis: Cartesian<3> = [
+                rng.random_range(-1.0..1.0),
+                rng.random_range(-1.0..1.0),
+                rng.random_range(-1.0..1.0),
+            ]
+            .into();
+            let axis = axis.to_unit()?.0; // Normalize
+
+            let angle = rng.random_range(0.0..2.0 * PI);
+
+            let o_ij = Versor::from_axis_angle(axis, angle);
+
+            let result_direct = capsule1.intersects_at(&capsule2, &v_ij, &o_ij);
+
+            let convex_capsule1 = Convex(capsule1);
+            let convex_capsule2 = Convex(capsule2);
+            let result_xeno = convex_capsule1.intersects_at(&convex_capsule2, &v_ij, &o_ij);
+
+            assert_eq!(
+                result_direct, result_xeno,
+                "Failed with r1={r1}, h1={h1}, r2={r2}, h2={h2}, v_ij={v_ij:?}, o_ij={o_ij:?}"
+            );
+        }
+        Ok(())
     }
 }
