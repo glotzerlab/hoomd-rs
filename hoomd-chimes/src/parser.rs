@@ -14,7 +14,8 @@ use crate::potential::{
 use crate::transformation::{DirectTransformation, InverseTransformation, MorseTransformation};
 use hoomd_interaction::{PairwiseCutoff, pairwise::Isotropic};
 
-// Custom error for invalid format or data
+/// Custom error for invalid format or data
+/// found in the parameter file.
 #[derive(Debug)]
 struct InvalidFormatError(String);
 
@@ -123,11 +124,18 @@ pub struct ChimesBuilder<const N: usize> {
 impl<const N: usize> ChimesBuilder<N> {
     /// parse the `ChIMES` parameter file given the file path.
     ///
-    /// # Panic
+    /// # Panics
+    /// 
     /// This function will panic if the user provide
     /// `N` that does not match the two-body order
     /// read from the `file_path`.
+    /// 
+    /// # Errors
+    ///
+    /// Will return `Err` if `filename` if the parser
+    /// cannot read the parameter file .
     #[allow(clippy::too_many_lines)]
+    #[allow(clippy::cast_sign_loss)]
     #[inline]
     pub fn parse(file_path: &str) -> Result<Self, Box<dyn Error>> {
         let content = fs::read_to_string(file_path)?;
@@ -460,9 +468,11 @@ impl<const N: usize> ChimesBuilder<N> {
     /// Assemble two-body `ChIMES` potential function given
     /// a pair_idx.
     ///
-    /// # Panic
-    /// This function will panic if the user `pair_idx`
-    /// provide unreasonable.
+    /// # Panics
+    /// 
+    /// This function will panic if the `pair_idx` provided
+    /// do not exist in the parameter file.
+    #[inline]
     pub fn get_twob_chimes_potential(
         &self,
         pair_idx: usize,
@@ -516,10 +526,10 @@ impl<const N: usize> ChimesBuilder<N> {
                 r_out: self.pair_data.3[pair_idx],
             })),
             _ => {
-                return Err(Box::new(InvalidFormatError(format!(
+                Err(Box::new(InvalidFormatError(format!(
                     "Unknown transformation style: {}",
                     self.xform_style
-                ))));
+                ))))
             }
         }
     }
@@ -532,20 +542,20 @@ impl<const N: usize> ChimesBuilder<N> {
     ) -> Result<ChimesSmoothing<ChimesTransformation, N>, Box<dyn Error>> {
         match self.fcut.0.as_str() {
             "CUBIC" => Ok(ChimesSmoothing::Cubic(CubicSmooth {
-                f: f,
+                f,
                 r_out: self.pair_data.3[pair_idx],
             })),
             "TERSOFF" => Ok(ChimesSmoothing::Tersoff(TersoffSmooth {
-                f: f,
+                f,
                 r_out: self.pair_data.3[pair_idx],
                 r_in: self.pair_data.2[pair_idx],
                 fo: self.fcut.1.expect("Error reading tersoff fo"),
             })),
             _ => {
-                return Err(Box::new(InvalidFormatError(format!(
+                Err(Box::new(InvalidFormatError(format!(
                     "Unknown smoothing style: {}",
                     self.xform_style
-                ))));
+                ))))
             }
         }
     }

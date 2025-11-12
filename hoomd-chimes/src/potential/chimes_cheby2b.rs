@@ -39,49 +39,44 @@ pub struct Chimes2b<F: Transformation, const N: usize> {
     cheby: Chebyshev<N>,
 }
 
+/** Constructs a new `Chimes2b` with the given transformation function,
+`ChIMES` coefficients, and inner distance cutoff.
+
+The Chebyshev polynomial order is set to `coeff.len() + 1`.
+The inner smoothing distance defaults to 0.01.
+
+# Arguments
+
+* `trans_style` - Transformation function implementing `Transformation`.
+* `coeff` - `ChIMES` coefficients (`[energy]`).
+* `r_in` - Inner radial cut-off (`[length]`).
+
+# Example
+```
+use hoomd_chimes::potential::Chimes2b;
+use hoomd_chimes::transformation::MorseTransformation;
+
+let lambda = 1.5;
+let r_out = 3.0;
+let r_in = 1.0;
+let coeff = vec![1.0, 2.0, 3.0];
+let morse_trans = MorseTransformation { lambda, r_out, r_in };
+
+let mut chimes2b: Chimes2b<MorseTransformation, 3> = Chimes2b::new(morse_trans, coeff.clone(), r_in);
+assert_eq!(chimes2b.coeff(), &coeff);
+assert_eq!(chimes2b.r_in(), &1.0);
+chimes2b.set_inner_smooth_r(0.02);
+assert_eq!(chimes2b.inner_smooth_r(), &0.02);
+```
+*/
 impl<F: Transformation, const N: usize> Chimes2b<F, N> {
-    /** Constructs a new `Chimes2b` with the given transformation function,
-    `ChIMES` coefficients, and inner distance cutoff.
-
-    The Chebyshev polynomial order is set to `coeff.len() + 1`.
-    The inner smoothing distance defaults to 0.01.
-
-    # Arguments
-
-    * `trans_style` - Transformation function implementing `Transformation`.
-    * `coeff` - `ChIMES` coefficients (`[energy]`).
-    * `r_in` - Inner radial cut-off (`[length]`).
-
-    # Example
-    ```
-    use hoomd_chimes::potential::Chimes2b;
-    use hoomd_chimes::transformation::MorseTransformation;
-
-    let lambda = 1.5;
-    let r_out = 3.0;
-    let r_in = 1.0;
-    let coeff = vec![1.0, 2.0, 3.0];
-    let morse_trans = MorseTransformation { lambda, r_out, r_in };
-
-    let mut chimes2b: Chimes2b<MorseTransformation, 3> = Chimes2b::new(morse_trans, coeff.clone(), r_in);
-    assert_eq!(chimes2b.coeff(), &coeff);
-    assert_eq!(chimes2b.r_in(), &1.0);
-    chimes2b.set_inner_smooth_r(0.02);
-    assert_eq!(chimes2b.inner_smooth_r(), &0.02);
-    ```
-    # Panics
-
-    Will panic if `coeff` is empty.
-    */
-
-    /**
-    Construct a new `Chimes2b` from a `Vec<f64>` for coefficients,
-    converting to `ArrayVec<f64, N>`.
-    # Panics
-
-    Will panic if `coeff` is empty.
-    Will panic if N does not match the `coeff.len()`.
-    */
+    /// Construct a new `Chimes2b` from a `Vec<f64>` for coefficients,
+    /// converting to `ArrayVec<f64, N>`.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if `coeff` is empty.
+    /// Will panic if N does not match the `coeff.len()`.
     #[inline]
     #[must_use]
     pub fn new(trans_style: F, coeff: Vec<f64>, r_in: f64) -> Self {
@@ -120,7 +115,10 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
         &self.coeff
     }
 
-    /// Sets the `ChIMES` coefficients and updates the Chebyshev polynomial order.
+    /// Sets the `ChIMES` coefficients.
+    /// 
+    /// Cannot change the maximun order set during
+    /// initialization.
     #[inline]
     pub fn set_coeff(&mut self, coeff: Vec<f64>) {
         assert!(
