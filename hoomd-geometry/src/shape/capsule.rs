@@ -135,20 +135,58 @@ where
 {
     #[inline]
     fn intersects_at(&self, other: &Capsule<N>, v_ij: &Cartesian<N>, o_ij: &R) -> bool {
-        // https://ceng2.ktu.edu.tr/~cakir/files/grafikler/rtcd.pdf, pp 148
-        let d1 = axis_aligned_cartesian::<N>(self.height.get());
-        let d2 = o_ij.rotate(&axis_aligned_cartesian(other.height.get()));
-        let center_center_vector = d2 * -0.5; // TODO
+        // Adapted from https://ceng2.ktu.edu.tr/~cakir/files/grafikler/rtcd.pdf, pp 148
+        // Note we ignore fallbacks when the capsule length is small, as these could be
+        // valid inputs.
 
-        let d1_norm_sq = d1.norm_squared();
-        let d2_norm_sq = d2.norm_squared();
-        let f = d2.dot(&center_center_vector);
-        // Check if either or both segments degenerate into points
-        if (d1_norm_sq <= EPSILON && d2_norm_sq <= EPSILON) {
-            // Both segments degenerate into points
-            let (s, t) = (0.0, 0.0);
+        // let d1 = axis_aligned_cartesian::<N>(self.height.get());
+        // let p1 = d1 * -0.5;
+        let (d1, p1) = (Cartesian::default(), Cartesian::default());
+
+        let d2 = o_ij.rotate(&axis_aligned_cartesian(other.height.get()));
+        let p2 = *v_ij - d2 * 0.5;
+
+        let distance_between_centers = p1 - p2;
+
+        let d1_norm_sq = d1.dot(&d1); // Squared length of segment S1
+        let d2_norm_sq = d2.dot(&d2); // Squared length of segment S2
+        let f = d2.dot(&distance_between_centers);
+
+        let t: f64;
+
+        let c = d1.dot(&distance_between_centers);
+
+        // The general nondegenerate case - very small capsules are valid.
+        let d1_dot_d2 = d1.dot(&d2);
+        let denom = d1_norm_sq * d2_norm_sq - d1_dot_d2 * d1_dot_d2;
+
+        // If segments not parallel, compute closest point on L1 to L2 and
+        // clamp to segment S1. Else pick arbitrary s (here 0)
+        let mut s = if denom == 0.0 {
+            0.0
+        } else {
+            ((d1_dot_d2 * f - c * d2_norm_sq) / denom).clamp(0.0, 1.0)
+        };
+
+        // Compute point on L2 closest to S1(s) using
+        // t = Dot((P1 + D1*s) - P2,D2) / Dot(D2,D2) = (b*s + f) / e
+        let tnom = d1_dot_d2 * s + f;
+        if tnom < 0.0 {
+            t = 0.0;
+            s = (-c / d1_norm_sq).clamp(0.0, 1.0);
+        } else if tnom > d2_norm_sq {
+            t = 1.0;
+            s = ((d1_dot_d2 - c) / d1_norm_sq).clamp(0.0, 1.0);
+        } else {
+            t = tnom / d2_norm_sq;
         }
-        false // TODO
+
+        let c1 = p1 + d1 * s;
+        let c2 = p2 + d2 * t;
+        let dist_sq = (c1 - c2).norm_squared();
+
+        let total_radius = self.radius.get() + other.radius.get();
+        dist_sq <= total_radius.powi(2)
     }
 }
 #[cfg(test)]
