@@ -465,7 +465,7 @@ mod tests {
                 height: h2.try_into()?,
             };
 
-            let v_ij = (rng.random::<Cartesian<N>>() * 10.0) - Cartesian::from([5.0; 3]);
+            let v_ij = (rng.random::<Cartesian<3>>() * 10.0) - Cartesian::from([5.0; 3]);
 
             let o_ij = rng.random::<Versor>();
 
