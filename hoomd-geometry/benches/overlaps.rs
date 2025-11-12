@@ -12,7 +12,9 @@
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_geometry::{
     Convex, IntersectsAt,
-    shape::{ConvexPolytope, Cylinder, Hypercuboid, Hyperellipsoid, Hypersphere, Simplex3},
+    shape::{
+        Capsule, ConvexPolytope, Cylinder, Hypercuboid, Hyperellipsoid, Hypersphere, Simplex3,
+    },
     xenocollide::{collide2d, collide3d},
 };
 use rand::{Rng, SeedableRng, rngs::StdRng};
@@ -369,4 +371,54 @@ fn infinite_cylinder(bencher: Bencher) {
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| (create_cylinder_pair(&mut rng), create_offset_3d(&mut rng)))
         .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at_infinite(&c1, &t, &r)));
+}
+
+fn create_capsule_pair<R: Rng>(rng: &mut R) -> (Capsule<3>, Capsule<3>) {
+    (
+        Capsule {
+            radius: rng
+                .random_range(0.0..10.0)
+                .try_into()
+                .expect("test value is a positive real"),
+            height: rng
+                .random_range(0.0..10.0)
+                .try_into()
+                .expect("test value is a positive real"),
+        },
+        Capsule {
+            radius: rng
+                .random_range(0.0..10.0)
+                .try_into()
+                .expect("test value is a positive real"),
+            height: rng
+                .random_range(0.0..10.0)
+                .try_into()
+                .expect("test value is a positive real"),
+        },
+    )
+}
+
+#[divan::bench]
+fn capsule_fast_3d(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| (create_capsule_pair(&mut rng), create_offset_3d(&mut rng)))
+        .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &r)));
+}
+
+#[divan::bench]
+fn capsule_xenocollide_3d(bencher: Bencher) {
+    let mut rng = StdRng::seed_from_u64(1);
+
+    bencher
+        .counter(ItemsCount::from(1_u32))
+        .with_inputs(|| {
+            (
+                shapes_to_convex(create_capsule_pair(&mut rng)),
+                create_offset_3d(&mut rng),
+            )
+        })
+        .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &r)));
 }
