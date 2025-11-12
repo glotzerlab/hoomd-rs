@@ -2,8 +2,8 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 /*! Implementations that enable dynamic switch between styles of
-ChIMES transformation and smoothing function. Also provide a
-assembler to construct complete ChIMES potential functional.
+`ChIMES` transformation and smoothing function. Also provide a
+assembler to construct complete `ChIMES` potential functional.
  */
 use crate::potential::{Chimes2b, ChimesPenalty, CubicSmooth, TersoffSmooth};
 use crate::transformation::{
@@ -11,8 +11,9 @@ use crate::transformation::{
 };
 use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 
-/// Enum to encapsulate different ChIMES transformation style.
-#[derive(Clone)]
+/// Enum to encapsulate different `ChIMES` transformation style.
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum ChimesTransformation {
     /// See [`MorseTransformation`].
     Morse(MorseTransformation),
@@ -23,6 +24,7 @@ pub enum ChimesTransformation {
 }
 
 impl Transformation for ChimesTransformation {
+    #[inline]
     fn s(&self, r: &f64) -> f64 {
         match self {
             ChimesTransformation::Morse(t) => t.s(r),
@@ -31,6 +33,7 @@ impl Transformation for ChimesTransformation {
         }
     }
 
+    #[inline]
     fn ds_dr(&self, r: &f64) -> f64 {
         match self {
             ChimesTransformation::Morse(t) => t.ds_dr(r),
@@ -40,8 +43,9 @@ impl Transformation for ChimesTransformation {
     }
 }
 
-/// Enum to encapsulate different ChIMES smoothing functions.
-#[derive(Clone)]
+/// Enum to encapsulate different `ChIMES` smoothing functions.
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum ChimesSmoothing<F: Transformation, const N: usize> {
     /// See [`CubicSmooth`].
     Cubic(CubicSmooth<Chimes2b<F, N>>),
@@ -50,6 +54,7 @@ pub enum ChimesSmoothing<F: Transformation, const N: usize> {
 }
 
 impl<F: Transformation, const N: usize> UnivariateEnergy for ChimesSmoothing<F, N> {
+    #[inline]
     fn energy(&self, r: f64) -> f64 {
         match self {
             ChimesSmoothing::Cubic(s) => s.energy(r),
@@ -58,6 +63,7 @@ impl<F: Transformation, const N: usize> UnivariateEnergy for ChimesSmoothing<F, 
     }
 }
 impl<F: Transformation, const N: usize> UnivariateForce for ChimesSmoothing<F, N> {
+    #[inline]
     fn force(&self, r: f64) -> f64 {
         match self {
             ChimesSmoothing::Cubic(s) => s.force(r),
@@ -66,14 +72,14 @@ impl<F: Transformation, const N: usize> UnivariateForce for ChimesSmoothing<F, N
     }
 }
 
-/// Represents a two-body ChIMES potential for a specific pair type.
-#[derive(Clone)]
+/// Represents a two-body `ChIMES` potential for a specific pair type.
+#[derive(Clone, Debug, PartialEq)]
 pub struct ChimesTwobPotential<const N: usize> {
     /// A string represents particle type one in a pair.
     pub type1: String,
     /// A string represents particle type two in a pair.
     pub type2: String,
-    /// The Chebyshev expansion part of ChIMES two-body potential.
+    /// The Chebyshev expansion part of `ChIMES` two-body potential.
     /// See [`ChimesSmoothing`] and [`ChimesTransformation`].
     pub chimes: ChimesSmoothing<ChimesTransformation, N>,
     /// See [`ChimesPenalty`].
@@ -83,12 +89,14 @@ pub struct ChimesTwobPotential<const N: usize> {
 }
 
 impl<const N: usize> UnivariateEnergy for ChimesTwobPotential<N> {
+    #[inline]
     fn energy(&self, r: f64) -> f64 {
         self.penalty.energy(r) + self.chimes.energy(r) + self.energy_shifting
     }
 }
 
 impl<const N: usize> UnivariateForce for ChimesTwobPotential<N> {
+    #[inline]
     fn force(&self, r: f64) -> f64 {
         self.penalty.force(r) + self.chimes.force(r)
     }
