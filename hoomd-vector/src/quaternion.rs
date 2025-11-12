@@ -848,7 +848,9 @@ impl Distribution<Versor> for VersorDisplacement {
             let v = s * half_theta.sin() * v_factor;
 
             // We are normalized by construction
-            return Versor(Quaternion::from([w, v[0], v[1], v[2]]));
+            return self
+                .mean
+                .combine(&Versor(Quaternion::from([w, v[0], v[1], v[2]])));
         }
     }
 }
