@@ -802,7 +802,11 @@ impl Distribution<Versor> for VersorDisplacement {
     /// Sample a random [`Versor`] displacement from a provided mean.
     ///
     /// Mathematically, we sample from a 3-dimensional Normal distribution
-    /// in the tangent space of SO(3), lift to the manifold, then rotate to center on the mean of the [`VersorDisplacement`].
+    /// in the tangent space of SO(3), lift to the manifold, then rotate to center on
+    /// the mean of the [`VersorDisplacement`]. The result is a small displacement from
+    /// a quaternion input, with fast decay in the tails that make large displacements
+    /// unlikely. This is desirable for Monte Carlo, as large moves are very likely to
+    /// be rejected.
     ///
     /// # Example
     ///
@@ -819,10 +823,10 @@ impl Distribution<Versor> for VersorDisplacement {
     /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Versor {
+        // Based on Karney 2007: doi.org/10.1016/j.jmgm.2006.04.002
         const _SAFE_THETA: f64 = 1e-12;
         loop {
-            // Per equation (4.58), we select s from a 3D Gaussian distribution.
-            // This is equivalent to sampling three 1D Gaussians with std dev = d.
+            // As in section 7, we select `s` from a 3D Gaussian distribution.
             let normal =
                 Normal::new(0.0, self.std_dev).expect("Failed to create normal distribution.");
 
@@ -836,7 +840,7 @@ impl Distribution<Versor> for VersorDisplacement {
                 continue;
             }
 
-            // Lift the normally distributed value to SO(3) (4.59)
+            // Lift the normally distributed values to SO(3) with the exponential map
             let half_theta = 0.5 * theta;
             let w = half_theta.cos();
 
@@ -850,9 +854,8 @@ impl Distribution<Versor> for VersorDisplacement {
             let v = s * v_factor * half_theta.sin();
 
             // We are normalized by construction, so call the tuple initializer
-            return self
-                .mean
-                .combine(&Versor(Quaternion::from([w, v[0], v[1], v[2]])));
+            // Then, rotate by the current quaternion we displace from
+            return Versor(Quaternion::from([w, v[0], v[1], v[2]])).combine(&self.mean);
         }
     }
 }
