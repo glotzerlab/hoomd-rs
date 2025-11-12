@@ -43,10 +43,10 @@ use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation};
 /// use std::f64::consts::PI;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let capsule = Convex(Capsule::<2> {
+/// let capsule = Capsule::<2> {
 ///     radius: 1.0.try_into()?,
 ///     height: 8.0.try_into()?,
-/// });
+/// };
 ///
 /// assert!(capsule.intersects_at(
 ///     &capsule,
@@ -74,6 +74,7 @@ pub struct Capsule<const N: usize> {
     pub height: PositiveReal,
 }
 
+/// A sphere swept along a line segment in $`\mathbb{R}^3`$.
 type SpheroCylinder = Capsule<3>;
 
 impl<const N: usize> SupportMapping<Cartesian<N>> for Capsule<N> {
