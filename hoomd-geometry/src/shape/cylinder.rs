@@ -62,7 +62,7 @@ impl Cylinder {
         let n_magnitude = (sx.powi(2) + sy.powi(2)).sqrt();
 
         let distance = if n_magnitude < _CYLINDER_OVERLAP_PRECISION {
-            // The axes are parallel (s is parallel to the z-axis).
+            // The axes of the cylinders are parallel
             // The shortest distance `d` is just the distance from the point c
             // to the z-axis, which is the distance in the xy-plane.
             (cx.powi(2) + cy.powi(2)).sqrt()
