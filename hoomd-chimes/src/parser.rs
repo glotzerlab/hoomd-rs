@@ -142,7 +142,7 @@ impl<const N: usize> ChimesBuilder<N> {
         for line in &lines {
             if line.starts_with("PAIRTYP:") {
                 let pairtyp =
-                    Self::parse_usize_vec(line.trim_start_matches("PAIRTYP: CHEBYSHEV "))?;
+                    Self::parse_i32_vec(line.trim_start_matches("PAIRTYP: CHEBYSHEV "))?;
 
                 if pairtyp.len() < 3 {
                     return Err(Box::new(InvalidFormatError(
@@ -150,14 +150,14 @@ impl<const N: usize> ChimesBuilder<N> {
                     )));
                 }
 
-                poly_order.push(pairtyp[0]);
+                poly_order.push(pairtyp[0] as usize);
 
                 if pairtyp.len() >= 4 {
-                    poly_order.push(pairtyp[1]);
+                    poly_order.push(pairtyp[1] as usize);
                 }
 
                 if pairtyp.len() >= 5 {
-                    poly_order.push(pairtyp[2]);
+                    poly_order.push(pairtyp[2] as usize);
                 }
                 break;
             }
@@ -550,14 +550,14 @@ impl<const N: usize> ChimesBuilder<N> {
         }
     }
     /// Parses a space-separated line into a vector of i32.
-    fn parse_usize_vec(line: &str) -> Result<Vec<usize>, Box<dyn Error>> {
+    fn parse_i32_vec(line: &str) -> Result<Vec<i32>, Box<dyn Error>> {
         let values = line
             .split_whitespace()
             .map(|s| {
-                s.parse::<usize>()
+                s.parse::<i32>()
                     .map_err(|e| Box::new(e) as Box<dyn Error>)
             })
-            .collect::<Result<Vec<usize>, _>>()?;
+            .collect::<Result<Vec<i32>, _>>()?;
         Ok(values)
     }
 
