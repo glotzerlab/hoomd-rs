@@ -44,20 +44,6 @@ impl Distribution<Versor> for VersorDisplacement {
     /// a quaternion input, with fast decay in the tails that make large displacements
     /// unlikely. This is desirable for Monte Carlo, as large moves are very likely to
     /// be rejected.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_vector::{Versor, VersorDisplacement};
-    /// use rand::{Rng, SeedableRng, rngs::StdRng};
-    ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let mut rng = StdRng::seed_from_u64(1);
-    /// let normal = VersorDisplacement::from(Versor::default(), 0.1);
-    /// let v: Versor = normal.sample(&mut rng);
-    /// # Ok(())
-    /// # }
-    /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Versor {
         // Based on Karney 2007: doi.org/10.1016/j.jmgm.2006.04.002
@@ -104,6 +90,15 @@ where
     B: Orientation<Rotation = Versor>,
 {
     /// Perturb a body's orientation by a random amount.
+    ///
+    /// In three dimensions, we design this perturbation as a quaternion whose
+    /// distribution is centered on the existing orientation and whose distribition is
+    /// narrow. To do so, we sample from a 3-dimensional Normal distribution
+    /// in the tangent space of SO(3), lift to the manifold, then rotate to center on
+    /// the mean of the [`VersorDisplacement`]. The result is a small displacement from
+    /// a quaternion input, with fast decay in the tails that make large displacements
+    /// unlikely. This is desirable for Monte Carlo, as large moves are very likely to
+    /// be rejected.
     ///
     /// # Example
     ///
