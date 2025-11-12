@@ -66,7 +66,7 @@ impl Cylinder {
     /// ```
     /// # use hoomd_geometry::shape::Cylinder;
     /// # use hoomd_vector::{Cartesian, Versor};
-    /// // Two parallel cylinders that wrap a dipyramid of height:width ratio 5.
+    /// // Two parallel cylinders that wrap a dipyramid of height:width ratio 5:1.
     /// let c1 = Cylinder {
     ///     radius: 1.0.try_into().unwrap(),
     ///     height: 10.0.try_into().unwrap(),
