@@ -59,7 +59,6 @@ use hoomd_chimes::parser::ChimesBuilder;
 const N: usize = 12;
 let file_path = "./test-data/C-twobody.txt";
 
-
 let chimes_builder = ChimesBuilder::<N>::parse(file_path).expect("Failed to parse parameter file");
 let chimes_fn = chimes_builder.get_twob_chimes_potential(0).expect("Error assemling ChIMES potential");
 assert_eq!(chimes_fn.0.interaction.type1, String::from("C"));
@@ -124,16 +123,15 @@ pub struct ChimesBuilder<const N: usize> {
 impl<const N: usize> ChimesBuilder<N> {
     /// parse the `ChIMES` parameter file given the file path.
     ///
-    /// # Panics
-    /// 
-    /// This function will panic if the user provide
-    /// `N` that does not match the two-body order
-    /// read from the `file_path`.
-    /// 
+    ///
     /// # Errors
     ///
-    /// Will return `Err` if `filename` if the parser
+    /// Will return `Err` if the parser
     /// cannot read the parameter file .
+    ///
+    /// Will return `Err` if `N` does not
+    /// match the two-body order read in the
+    /// parameter file.
     #[allow(clippy::too_many_lines)]
     #[allow(clippy::cast_sign_loss)]
     #[inline]
@@ -149,8 +147,7 @@ impl<const N: usize> ChimesBuilder<N> {
         let mut poly_order: Vec<usize> = Vec::new();
         for line in &lines {
             if line.starts_with("PAIRTYP:") {
-                let pairtyp =
-                    Self::parse_i32_vec(line.trim_start_matches("PAIRTYP: CHEBYSHEV "))?;
+                let pairtyp = Self::parse_i32_vec(line.trim_start_matches("PAIRTYP: CHEBYSHEV "))?;
 
                 if pairtyp.len() < 3 {
                     return Err(Box::new(InvalidFormatError(
@@ -175,10 +172,12 @@ impl<const N: usize> ChimesBuilder<N> {
                 "Missing PAIRTYP: CHEBYSHEV line".into(),
             )));
         }
-        assert!(
-            N == poly_order[0],
-            "Mismatch two-body order, assuming two-body, N={N}"
-        );
+        if N != poly_order[0] {
+            return Err(Box::new(InvalidFormatError(format!(
+                "Mismatch two-body order found in the parameter file = {}, assuming two-body order N={}",
+                poly_order[0], N
+            ))));
+        }
 
         // Extract the particle types and particle pair types related chimes parameters
         let mut atom_types: usize = 0;
@@ -239,16 +238,17 @@ impl<const N: usize> ChimesBuilder<N> {
                     let total_pair_type_data: Vec<&str> =
                         line_after_start.split_whitespace().collect();
 
-                    let (xform_style_idx, morse_idx): (usize, usize) = match total_pair_type_data
-                        .len()
-                    {
-                        8 => (6, 7),
-                        7 => (5, 6),
-                        _ => return Err(Box::new(InvalidFormatError(
-                            "Incorrect input in line after # PAIRIDX # \nExpect 7 or 8 entries\n"
-                                .into(),
-                        ))),
-                    };
+                    let (xform_style_idx, morse_idx): (usize, usize) =
+                        match total_pair_type_data.len() {
+                            8 => (6, 7),
+                            7 => (5, 6),
+                            _ => {
+                                return Err(Box::new(InvalidFormatError(format!(
+                                    "Incorrect input at the line {} \nExpect 7 or 8 entries\n",
+                                    start + i + 1
+                                ))));
+                            }
+                        };
 
                     pair_data.0.push(total_pair_type_data[1].to_string());
                     pair_data.1.push(total_pair_type_data[2].to_string());
@@ -281,9 +281,10 @@ impl<const N: usize> ChimesBuilder<N> {
                                 .map_err(|e| Box::new(e) as Box<dyn Error>)?,
                         ));
                     } else {
-                        return Err(Box::new(InvalidFormatError(
-                            "Missing morse lambda value in line after # PAIRIDX #".into(),
-                        )));
+                        return Err(Box::new(InvalidFormatError(format!(
+                            "Missing morse lambda value at line {}",
+                            start + i + 1
+                        ))));
                     }
                 }
             }
@@ -368,6 +369,8 @@ impl<const N: usize> ChimesBuilder<N> {
             )));
         }
 
+        // Extract the two-body coefficient and interaction
+        // topology mapping.
         let mut pair_type_index: Vec<usize> = Vec::new();
         let mut cheby_2b_coeffs: Vec<Vec<f64>> = Vec::new();
         let mut pair_idx_slow_map: Vec<usize> = Vec::new();
@@ -389,7 +392,7 @@ impl<const N: usize> ChimesBuilder<N> {
                 let end = start + poly_order[0];
 
                 let mut tmp_2b_coeff: Vec<f64> = Vec::new();
-                for line_after_start in lines[start..end].iter() {
+                for line_after_start in &lines[start..end] {
                     let order_coeff = Self::parse_f64_vec(line_after_start)?;
                     tmp_2b_coeff.push(order_coeff[1]);
                 }
@@ -407,7 +410,7 @@ impl<const N: usize> ChimesBuilder<N> {
 
                 let start = idx + 1;
                 let end = start + n_pair_maps;
-                for line_after_start in lines[start..end].iter() {
+                for line_after_start in &lines[start..end] {
                     let pair_idx_type: Vec<&str> = line_after_start.split_whitespace().collect();
                     let tmp_pair_idx = pair_idx_type[0]
                         .parse::<usize>()
@@ -468,21 +471,22 @@ impl<const N: usize> ChimesBuilder<N> {
     /// Assemble two-body `ChIMES` potential function given
     /// a pair_idx.
     ///
-    /// # Panics
-    /// 
-    /// This function will panic if the `pair_idx` provided
+    /// # Error
+    ///
+    /// Will return `Err` if the `pair_idx` provided
     /// do not exist in the parameter file.
     #[inline]
     pub fn get_twob_chimes_potential(
         &self,
         pair_idx: usize,
     ) -> Result<PairwiseCutoff<Isotropic<ChimesTwobPotential<N>>>, Box<dyn Error>> {
-        assert!(
-            pair_idx < self.pair_data.0.len(),
-            "Intend to access the potential model with pair idx {}, but only found {} pairs",
-            pair_idx,
-            self.pair_data.0.len()
-        );
+        if pair_idx >= self.pair_data.0.len() {
+            return Err(Box::new(InvalidFormatError(format!(
+                "Intend to access the potential model with pair idx {}, but only found {} pairs",
+                pair_idx,
+                self.pair_data.0.len()
+            ))));
+        }
         let transformatiom_fn = self.get_tranformation(pair_idx)?;
         let cheby2b: Chimes2b<ChimesTransformation, N> = Chimes2b::new(
             transformatiom_fn,
@@ -525,12 +529,10 @@ impl<const N: usize> ChimesBuilder<N> {
                 r_in: self.pair_data.2[pair_idx],
                 r_out: self.pair_data.3[pair_idx],
             })),
-            _ => {
-                Err(Box::new(InvalidFormatError(format!(
-                    "Unknown transformation style: {}",
-                    self.xform_style
-                ))))
-            }
+            _ => Err(Box::new(InvalidFormatError(format!(
+                "Unknown transformation style: {}",
+                self.xform_style
+            )))),
         }
     }
 
@@ -551,22 +553,17 @@ impl<const N: usize> ChimesBuilder<N> {
                 r_in: self.pair_data.2[pair_idx],
                 fo: self.fcut.1.expect("Error reading tersoff fo"),
             })),
-            _ => {
-                Err(Box::new(InvalidFormatError(format!(
-                    "Unknown smoothing style: {}",
-                    self.xform_style
-                ))))
-            }
+            _ => Err(Box::new(InvalidFormatError(format!(
+                "Unknown smoothing style: {}",
+                self.xform_style
+            )))),
         }
     }
     /// Parses a space-separated line into a vector of i32.
     fn parse_i32_vec(line: &str) -> Result<Vec<i32>, Box<dyn Error>> {
         let values = line
             .split_whitespace()
-            .map(|s| {
-                s.parse::<i32>()
-                    .map_err(|e| Box::new(e) as Box<dyn Error>)
-            })
+            .map(|s| s.parse::<i32>().map_err(|e| Box::new(e) as Box<dyn Error>))
             .collect::<Result<Vec<i32>, _>>()?;
         Ok(values)
     }
@@ -644,7 +641,7 @@ mod tests {
 
         let chimes_pot = params
             .get_twob_chimes_potential(0)
-            .expect("Error assemling ChIMES potential");
+            .expect("Error assembling ChIMES potential");
         assert_eq!(chimes_pot.0.interaction.type1, String::from("C"));
         assert_eq!(chimes_pot.0.interaction.type2, String::from("C"));
     }
