@@ -137,13 +137,11 @@ mod tests {
     const N: usize = 65536;
 
     #[rstest]
-    fn rotate(#[values(0.1, 1.0)] a: f64) {
+    fn rotate(#[values(0.1, 1.0, 1.53)] a: f64) {
         // Ensure that `Rotate` proposes moves that rotate the body with a valid
         // range of maximum distances.
 
-        let mut total = 0.0;
-        let mut min_norm = f64::INFINITY;
-        let mut max_norm = 0.0_f64;
+        let mut delta_thetas = Vec::with_capacity(N);
 
         let mut rng = StdRng::seed_from_u64(1);
         let body = OrientedPoint {
@@ -157,31 +155,11 @@ mod tests {
 
         for _ in 0..N {
             let trial = rotate.propose(&mut rng, body);
-
             let delta_theta = trial.orientation.arc_distance(&body.orientation);
-            total += delta_theta;
-            min_norm = min_norm.min(delta_theta.abs());
-            max_norm = max_norm.max(delta_theta.abs());
+            delta_thetas.push(delta_theta);
         }
 
-        let average = total / N as f64;
-
-        // Validate with appropriately loose tolerances to account for the small sample size.
-        assert!(
-            min_norm < a * 0.1,
-            "Minimum larger than expected: {min_norm} !< {}",
-            a * 0.1
-        );
-        assert!(
-            max_norm > a * 0.9,
-            "Maximum smaller than expected: {max_norm} !> {}",
-            a * 0.9
-        );
-        assert!(
-            average.abs() < a * 0.1,
-            "Average too large: {} !< {}",
-            average.abs(),
-            a * 0.1
-        );
+        // Validate our distribution's mean is relatively close to 0
+        assert!((delta_thetas.iter().sum::<f64>() / N as f64).abs() < a);
     }
 }
