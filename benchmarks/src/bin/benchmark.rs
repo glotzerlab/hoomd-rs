@@ -366,7 +366,7 @@ fn main() -> anyhow::Result<()> {
         }
     }
 
-    threads *= 2;
+    threads += 1;
     if threads > threads_max {
         break;
     }
