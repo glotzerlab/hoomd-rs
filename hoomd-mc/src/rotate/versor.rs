@@ -134,43 +134,54 @@ mod tests {
     use rstest::*;
 
     /// Number of trial moves to test.
-    const N: usize = 1024;
+    const N: usize = 65536;
 
-    // #[rstest]
-    // fn rotate(#[values(0.1, 1.0)] a: f64) {
-    //     // Ensure that `Rotate` proposes moves that rotate the body with a valid
-    //     // range of maximum distances.
+    #[rstest]
+    fn rotate(#[values(0.1, 1.0)] a: f64) {
+        // Ensure that `Rotate` proposes moves that rotate the body with a valid
+        // range of maximum distances.
 
-    //     let mut total = 0.0;
-    //     let mut min_norm = f64::INFINITY;
-    //     let mut max_norm = 0.0_f64;
+        let mut total = 0.0;
+        let mut min_norm = f64::INFINITY;
+        let mut max_norm = 0.0_f64;
 
-    //     let mut rng = StdRng::seed_from_u64(1);
-    //     let body = OrientedPoint {
-    //         position: Cartesian::from([0.0, 0.0, 0.0]),
-    //         orientation: Versor::default(),
-    //     };
-    //     let rotate = Rotate::with_maximum_rotation(
-    //         a.try_into()
-    //             .expect("hard-coded constant should be a positive real"),
-    //     );
+        let mut rng = StdRng::seed_from_u64(1);
+        let body = OrientedPoint {
+            position: Cartesian::from([0.0, 0.0, 0.0]),
+            orientation: Versor::default(),
+        };
+        let rotate = Rotate::with_maximum_rotation(
+            a.try_into()
+                .expect("hard-coded constant should be a positive real"),
+        );
 
-    //     for _ in 0..N {
-    //         let trial = rotate.propose(&mut rng, body);
+        for _ in 0..N {
+            let trial = rotate.propose(&mut rng, body);
 
-    //         let delta_theta = trial.orientation.theta - body.orientation.theta;
-    //         total += delta_theta;
-    //         min_norm = min_norm.min(delta_theta.abs());
-    //         max_norm = max_norm.max(delta_theta.abs());
-    //     }
+            let delta_theta = trial.orientation.arc_distance(&body.orientation);
+            total += delta_theta;
+            min_norm = min_norm.min(delta_theta.abs());
+            max_norm = max_norm.max(delta_theta.abs());
+        }
 
-    //     assert!(max_norm <= a);
+        let average = total / N as f64;
 
-    //     let average = total / N as f64;
-
-    //     // Validate with appropriately loose tolerances to account for the small sample size.
-    //     assert!(min_norm < a * 0.1);
-    //     assert!(max_norm > a * 0.9);
-    //     assert!(average.abs() < a * 0.1);
-    // }
+        // Validate with appropriately loose tolerances to account for the small sample size.
+        assert!(
+            min_norm < a * 0.1,
+            "Minimum larger than expected: {min_norm} !< {}",
+            a * 0.1
+        );
+        assert!(
+            max_norm > a * 0.9,
+            "Maximum smaller than expected: {max_norm} !> {}",
+            a * 0.9
+        );
+        assert!(
+            average.abs() < a * 0.1,
+            "Average too large: {} !< {}",
+            average.abs(),
+            a * 0.1
+        );
+    }
 }
