@@ -19,6 +19,7 @@ use hoomd_simulation::Simulation;
 use hoomd_spatial::{AllPairs, HashCell, VecCell};
 use hoomd_vector::{Angle, Cartesian, Versor};
 
+use rayon::ThreadPoolBuilder;
 use wildmatch::WildMatch;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -45,6 +46,14 @@ pub struct Options {
     /// Largest system size to benchmark (inclusive, defaults to the smallest).
     #[arg(long)]
     n_max: Option<usize>,
+
+    /// The smallest number of threads to benchmark on.
+    #[arg(short, long, default_value_t = 1)]
+    threads_min: usize,
+
+    /// Largest number of threads to benchmark on (inclusive, defaults to the smallest).
+    #[arg(long)]
+    threads_max: Option<usize>,
 
     /// The spatial data structure to use.
     #[arg(short, long, default_value_t = SpatialData::VecCell, value_enum)]
@@ -77,7 +86,6 @@ struct Performance {
 }
 
 // TODO: unit in metadata?
-// TODO: data structure
 
 fn execute<S>(
     simulation: &mut S,
@@ -85,11 +93,13 @@ fn execute<S>(
     name: &str,
     spatial_data: &str,
     n: usize,
+    threads: usize,
 ) -> anyhow::Result<Performance>
 where
     S: Simulation + fmt::Display,
 {
     info!("{name}: {n} bodies");
+    info!("{threads} threads");
     let time_per_operation = benchmark.measure(simulation)?;
     trace!("{simulation}");
 
@@ -98,46 +108,18 @@ where
         spatial_data: spatial_data.to_string(),
         unit: "step".to_string(),
         n,
-        threads: 1,
+        threads,
         time_per_operation,
     })
 }
 
-fn main() -> anyhow::Result<()> {
-    let options = Options::parse();
-
-    let log_level = match options.verbose.log_level_filter() {
-        LevelFilter::Off => "off",
-        LevelFilter::Error => "error",
-        LevelFilter::Warn => "warn",
-
-        LevelFilter::Info => "info",
-        LevelFilter::Debug => "debug",
-        LevelFilter::Trace => "trace",
-    };
-
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level))
-        .format_timestamp(None)
-        .init();
-
+fn execute_matching(results: &mut Vec<Performance>, n: usize, threads: usize, options: &Options) -> anyhow::Result<()> {
     let benchmark_matcher = WildMatch::new(&options.benchmarks);
-
-    let mut results = Vec::new();
-
     let number_density = 0.8;
     let benchmark = Benchmark {
         warmup_time: Duration::from_secs_f64(options.warmup_time),
         benchmark_time: Duration::from_secs_f64(options.benchmark_time),
     };
-
-    let mut n = options.n_min;
-    let n_max = options.n_max.unwrap_or(options.n_min);
-
-    if n_max != n && options.parquet.is_none() {
-        return Err(anyhow!(
-            "Parquet output is required when n_min ({n}) is not equal to n_max ({n_max})"
-        ));
-    }
 
     let needs_microstate_2d = benchmark_matcher.matches("mc_2d_sphere")
         || benchmark_matcher.matches("mc_2d_lennard_jones")
@@ -147,7 +129,6 @@ fn main() -> anyhow::Result<()> {
         || benchmark_matcher.matches("mc_3d_lennard_jones")
         || benchmark_matcher.matches("mc_3d_octahedron");
 
-    loop {
         let maybe_microstate_2d = if needs_microstate_2d {
             Some(benchmarks::place_hard_hyperspheres::<
                 OrientedPoint<Cartesian<2>, Angle>,
@@ -169,19 +150,19 @@ fn main() -> anyhow::Result<()> {
                         mc::HardSphereSim::<2, VecCell<SiteKey, 2>>::with_microstate(
                             microstate_2d,
                         )?;
-                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n, threads)?);
                 }
                 SpatialData::HashCell => {
                     let mut simulation =
                         mc::HardSphereSim::<2, HashCell<SiteKey, 2>>::with_microstate(
                             microstate_2d,
                         )?;
-                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n, threads)?);
                 }
                 SpatialData::AllPairs => {
                     let mut simulation =
                         mc::HardSphereSim::<2, AllPairs<SiteKey>>::with_microstate(microstate_2d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n, threads)?);
                 }
             }
         }
@@ -195,19 +176,19 @@ fn main() -> anyhow::Result<()> {
                 SpatialData::VecCell => {
                     let mut simulation =
                         mc::LennardJones::<2, VecCell<SiteKey, 2>>::with_microstate(microstate_2d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n, threads)?);
                 }
                 SpatialData::HashCell => {
                     let mut simulation =
                         mc::LennardJones::<2, HashCell<SiteKey, 2>>::with_microstate(
                             microstate_2d,
                         )?;
-                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n, threads)?);
                 }
                 SpatialData::AllPairs => {
                     let mut simulation =
                         mc::LennardJones::<2, AllPairs<SiteKey>>::with_microstate(microstate_2d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n, threads)?);
                 }
             }
         }
@@ -221,17 +202,17 @@ fn main() -> anyhow::Result<()> {
                 SpatialData::VecCell => {
                     let mut simulation =
                         mc::RegularPolygon::<VecCell<SiteKey, 2>>::with_microstate(microstate_2d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n, threads)?);
                 }
                 SpatialData::HashCell => {
                     let mut simulation =
                         mc::RegularPolygon::<HashCell<SiteKey, 2>>::with_microstate(microstate_2d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n, threads)?);
                 }
                 SpatialData::AllPairs => {
                     let mut simulation =
                         mc::RegularPolygon::<AllPairs<SiteKey>>::with_microstate(microstate_2d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n, threads)?);
                 }
             }
         }
@@ -257,19 +238,19 @@ fn main() -> anyhow::Result<()> {
                         mc::HardSphereSim::<3, VecCell<SiteKey, 3>>::with_microstate(
                             microstate_3d,
                         )?;
-                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n, threads)?);
                 }
                 SpatialData::HashCell => {
                     let mut simulation =
                         mc::HardSphereSim::<3, HashCell<SiteKey, 3>>::with_microstate(
                             microstate_3d,
                         )?;
-                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n, threads)?);
                 }
                 SpatialData::AllPairs => {
                     let mut simulation =
                         mc::HardSphereSim::<3, AllPairs<SiteKey>>::with_microstate(microstate_3d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n, threads)?);
                 }
             }
         }
@@ -283,19 +264,19 @@ fn main() -> anyhow::Result<()> {
                 SpatialData::VecCell => {
                     let mut simulation =
                         mc::LennardJones::<3, VecCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n, threads)?);
                 }
                 SpatialData::HashCell => {
                     let mut simulation =
                         mc::LennardJones::<3, HashCell<SiteKey, 3>>::with_microstate(
                             microstate_3d,
                         )?;
-                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n, threads)?);
                 }
                 SpatialData::AllPairs => {
                     let mut simulation =
                         mc::LennardJones::<3, AllPairs<SiteKey>>::with_microstate(microstate_3d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n, threads)?);
                 }
             }
         }
@@ -309,25 +290,86 @@ fn main() -> anyhow::Result<()> {
                 SpatialData::VecCell => {
                     let mut simulation =
                         mc::Octahedron::<VecCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n, threads)?);
                 }
                 SpatialData::HashCell => {
                     let mut simulation =
                         mc::Octahedron::<HashCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n, threads)?);
                 }
                 SpatialData::AllPairs => {
                     let mut simulation =
                         mc::Octahedron::<AllPairs<SiteKey>>::with_microstate(microstate_3d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n)?);
+                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n, threads)?);
                 }
             }
         }
+
+        let name = "micro_threaded_rng";
+        if benchmark_matcher.matches(name) {
+            let mut simulation =
+                benchmarks::rayon::ThreadedRng::new(n, 100);
+            results.push(execute(&mut simulation, &benchmark, name, "n/a", n, threads)?);
+        }
+
+        Ok(())
+}
+
+fn main() -> anyhow::Result<()> {
+    let options = Options::parse();
+
+    let log_level = match options.verbose.log_level_filter() {
+        LevelFilter::Off => "off",
+        LevelFilter::Error => "error",
+        LevelFilter::Warn => "warn",
+
+        LevelFilter::Info => "info",
+        LevelFilter::Debug => "debug",
+        LevelFilter::Trace => "trace",
+    };
+
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level))
+        .format_timestamp(None)
+        .init();
+
+
+    let mut results = Vec::new();
+
+
+    let mut threads = options.threads_min;
+    let threads_max = options.threads_max.unwrap_or(options.threads_min);
+
+    if threads_max != threads && options.parquet.is_none() {
+        return Err(anyhow!(
+            "Parquet output is required when threads_min ({threads}) is not equal to threads_max ({threads_max})"
+        ));
+    }
+
+    loop {
+
+    let mut n = options.n_min;
+    let n_max = options.n_max.unwrap_or(options.n_min);
+
+    if n_max != n && options.parquet.is_none() {
+        return Err(anyhow!(
+            "Parquet output is required when n_min ({n}) is not equal to n_max ({n_max})"
+        ));
+    }
+        
+    loop {
+        let pool = ThreadPoolBuilder::new().num_threads(threads).build().unwrap();
+        pool.install(|| execute_matching(&mut results, n, threads, &options))?;
 
         n *= 2;
         if n > n_max {
             break;
         }
+    }
+
+    threads *= 2;
+    if threads > threads_max {
+        break;
+    }
     }
 
     if let Some(filename) = options.parquet {

@@ -13,14 +13,20 @@ version.workspace = true
 # Do not publish benchmarks to crates.io
 publish = false
 
+[lints]
+# workspace = true
+# TODO: enable lints
+
 [dependencies]
 parquet.workspace = true
 parquet_derive.workspace = true
+rayon.workspace = true
 
 hoomd-geometry.workspace = true
 hoomd-interaction.workspace = true
 hoomd-mc.workspace = true
 hoomd-microstate.workspace = true
+hoomd-rand.workspace = true
 hoomd-simulation.workspace = true
 hoomd-spatial.workspace = true
 hoomd-vector.workspace = true

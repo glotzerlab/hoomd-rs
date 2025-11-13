@@ -6,6 +6,7 @@
 mod benchmark;
 pub mod mc;
 mod place;
+pub mod rayon;
 
 pub use benchmark::Benchmark;
 pub use place::place_hard_hyperspheres;
