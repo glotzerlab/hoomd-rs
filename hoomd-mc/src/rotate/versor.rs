@@ -93,7 +93,7 @@ where
     /// ```
     /// use hoomd_mc::{LocalTrial, Rotate};
     /// use hoomd_microstate::property::OrientedPoint;
-    /// use hoomd_vector::{Angle, Cartesian, Versor};
+    /// use hoomd_vector::{Cartesian, Versor};
     /// use rand::{Rng, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -113,10 +113,9 @@ where
     #[inline]
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B {
         let mut trial = body_properties;
-
-        let a = self.maximum_rotation.get();
-
-        let displacement = VersorDisplacement { std_dev: a };
+        let displacement = VersorDisplacement {
+            std_dev: self.maximum_rotation.get(),
+        };
 
         let delta_quat = displacement.sample(rng);
         *trial.orientation_mut() = delta_quat.combine(trial.orientation());
@@ -129,7 +128,7 @@ where
 mod tests {
     use super::*;
     use hoomd_microstate::property::OrientedPoint;
-    use hoomd_vector::{Angle, Cartesian, Versor};
+    use hoomd_vector::{Cartesian, Versor};
     use rand::{SeedableRng, rngs::StdRng};
     use rstest::*;
 
@@ -159,7 +158,15 @@ mod tests {
             delta_thetas.push(delta_theta);
         }
 
-        // Validate our distribution's mean is relatively close to 0
-        assert!((delta_thetas.iter().sum::<f64>() / N as f64).abs() < a);
+        // Validate our distribution's mean is relatively close to 0.75 * a.
+        // Why this is the correct choice? I'm not sure. But most values of `a` result
+        // in a distribution whose mean is near 0.75 * a
+        let mean = (delta_thetas.iter().sum::<f64>() / N as f64).abs();
+        assert!(
+            (mean - (0.75 * a)).abs() < (0.1 * a),
+            "{} !< {}",
+            (mean - (0.75 * a)).abs(),
+            (0.1 * a)
+        );
     }
 }
