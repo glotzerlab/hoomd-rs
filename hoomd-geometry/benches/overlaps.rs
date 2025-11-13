@@ -376,21 +376,6 @@ mod ellipsoid {
             })
             .bench_local_values(|((t0, t1), (t, r))| black_box(collide3d(&t0, &t1, &t, &r)));
     }
-
-    #[divan::bench]
-    fn fast_3d(bencher: Bencher) {
-        let mut rng = StdRng::seed_from_u64(1);
-
-        bencher
-            .counter(ItemsCount::from(1_u32))
-            .with_inputs(|| {
-                (
-                    create_ellipsoid_pair::<3, _>(&mut rng),
-                    create_offset_3d(&mut rng),
-                )
-            })
-            .bench_local_values(|((e0, e1), (t, r))| black_box(e0.intersects_at(&e1, &t, &r)));
-    }
 }
 
 fn create_cylinder_pair<R: Rng>(rng: &mut R) -> (Cylinder, Cylinder) {
