@@ -308,7 +308,7 @@ fn execute_matching(results: &mut Vec<Performance>, n: usize, threads: usize, op
         let name = "micro_threaded_rng";
         if benchmark_matcher.matches(name) {
             let mut simulation =
-                benchmarks::rayon::ThreadedRng::new(n, 100);
+                benchmarks::rayon::ThreadedRng::new(n, 380);
             results.push(execute(&mut simulation, &benchmark, name, "n/a", n, threads)?);
         }
 
@@ -366,7 +366,7 @@ fn main() -> anyhow::Result<()> {
         }
     }
 
-    threads += 1;
+    threads *= 2;
     if threads > threads_max {
         break;
     }
