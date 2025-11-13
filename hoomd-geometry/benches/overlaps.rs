@@ -6,6 +6,7 @@
     reason = "benches don't need public documentation"
 )]
 #![expect(clippy::unwrap_used, reason = "benches can use unwrap where needed")]
+#![expect(clippy::wildcard_imports, reason = "simplifies code")]
 
 //! Benchmark overlaps
 
@@ -300,6 +301,7 @@ mod polytopes {
 #[divan::bench_group]
 mod simplex {
     use super::*;
+
     #[divan::bench]
     fn xenocollide_3d(bencher: Bencher) {
         let mut rng = StdRng::seed_from_u64(1);
