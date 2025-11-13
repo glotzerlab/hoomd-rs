@@ -17,9 +17,8 @@ use hoomd_geometry::{
     },
     xenocollide::{collide2d, collide3d},
 };
-use rand::{Rng, SeedableRng, rngs::StdRng};
-
 use hoomd_vector::{Angle, Cartesian, Versor};
+use rand::{Rng, SeedableRng, rngs::StdRng};
 
 #[inline(never)]
 fn asm_collide3d() {
@@ -162,180 +161,223 @@ fn create_offset_3d<R: Rng>(rng: &mut R) -> (Cartesian<3>, Versor) {
 const DIMENSIONS: &[usize] = &[2, 3, 4];
 const NUM_VERTICES: &[usize] = &[3, 4, 8, 16, 64, 256];
 
-#[divan::bench(consts = DIMENSIONS)]
-fn sphere_fast_nd<const N: usize>(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
+#[divan::bench_group]
+mod sphere {
+    use super::*;
 
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| {
-            (
-                create_sphere_pair::<N, _>(&mut rng),
-                create_offset::<N, _>(&mut rng),
-            )
-        })
-        .bench_local_values(|((s0, s1), t)| black_box(s0.intersects(&s1, &t)));
+    #[divan::bench(consts = DIMENSIONS)]
+    fn fast_nd<const N: usize>(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
+
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| {
+                (
+                    create_sphere_pair::<N, _>(&mut rng),
+                    create_offset::<N, _>(&mut rng),
+                )
+            })
+            .bench_local_values(|((s0, s1), t)| black_box(s0.intersects(&s1, &t)));
+    }
+
+    #[divan::bench]
+    fn xenocollide_2d(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
+
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| {
+                (
+                    shapes_to_convex(create_sphere_pair::<2, _>(&mut rng)),
+                    create_offset_2d(&mut rng),
+                )
+            })
+            .bench_local_values(|((s0, s1), (t, r))| black_box(collide2d(&s0, &s1, &t, &r)));
+    }
+
+    #[divan::bench(sample_size = 10_000)]
+    fn xenocollide_3d(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
+
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| {
+                (
+                    shapes_to_convex(create_sphere_pair::<3, _>(&mut rng)),
+                    create_offset_3d(&mut rng),
+                )
+            })
+            .bench_local_values(|((s0, s1), (t, r))| black_box(collide3d(&s0, &s1, &t, &r)));
+    }
 }
 
-#[divan::bench]
-fn sphere_xenocollide_2d(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
+#[divan::bench_group]
+mod cuboid {
+    use super::*;
 
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| {
-            (
-                shapes_to_convex(create_sphere_pair::<2, _>(&mut rng)),
-                create_offset_2d(&mut rng),
-            )
-        })
-        .bench_local_values(|((s0, s1), (t, r))| black_box(collide2d(&s0, &s1, &t, &r)));
+    #[divan::bench(consts = DIMENSIONS)]
+    fn aligned_nd<const N: usize>(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
+
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| {
+                (
+                    create_cuboid_pair::<N, _>(&mut rng),
+                    create_offset::<N, _>(&mut rng),
+                )
+            })
+            .bench_local_values(|((s0, s1), t)| black_box(s0.intersects_aligned(&s1, &t)));
+    }
+
+    #[divan::bench]
+    fn xenocollide_2d(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
+
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| {
+                (
+                    shapes_to_convex(create_cuboid_pair::<2, _>(&mut rng)),
+                    create_offset_2d(&mut rng),
+                )
+            })
+            .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &r)));
+    }
+
+    #[divan::bench]
+    fn xenocollide_3d(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
+
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| {
+                (
+                    shapes_to_convex(create_cuboid_pair::<3, _>(&mut rng)),
+                    create_offset_3d(&mut rng),
+                )
+            })
+            .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &r)));
+    }
 }
 
-#[divan::bench(sample_size = 10_000)]
-fn sphere_xenocollide_3d(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
+#[divan::bench_group()]
+mod polytopes {
 
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| {
-            (
-                shapes_to_convex(create_sphere_pair::<3, _>(&mut rng)),
-                create_offset_3d(&mut rng),
-            )
-        })
-        .bench_local_values(|((s0, s1), (t, r))| black_box(collide3d(&s0, &s1, &t, &r)));
+    use super::*;
+
+    #[divan::bench(consts = NUM_VERTICES)]
+    fn polygon_2d<const N: usize>(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
+
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| {
+                (
+                    shapes_to_convex(create_polygon_pair::<N>()),
+                    create_offset_2d(&mut rng),
+                )
+            })
+            .bench_local_values(|((p0, p1), (t, r))| black_box(collide2d(&p0, &p1, &t, &r)));
+    }
+
+    #[divan::bench(consts = NUM_VERTICES)]
+    fn dipyramid_3d<const N: usize>(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
+
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| {
+                (
+                    shapes_to_convex(create_dipyramid_pair::<N, _>(&mut rng, 10.0)),
+                    create_offset_3d(&mut rng),
+                )
+            })
+            .bench_local_values(|((p0, p1), (t, r))| black_box(collide3d(&p0, &p1, &t, &r)));
+    }
 }
 
-/// Note this is not 1:1 with the naive test, as this uses oriented cuboids!
-#[divan::bench]
-fn cuboid_xenocollide_2d(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
+#[divan::bench_group]
+mod simplex {
+    use super::*;
+    #[divan::bench]
+    fn xenocollide_3d(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
 
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| {
-            (
-                shapes_to_convex(create_cuboid_pair::<2, _>(&mut rng)),
-                create_offset_2d(&mut rng),
-            )
-        })
-        .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &r)));
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| {
+                (
+                    shapes_to_convex(create_simplex_pair(&mut rng)),
+                    create_offset_3d(&mut rng),
+                )
+            })
+            .bench_local_values(|((t0, t1), (t, r))| black_box(collide3d(&t0, &t1, &t, &r)));
+    }
+
+    #[divan::bench]
+    fn fast_3d(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
+
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| (create_simplex_pair(&mut rng), create_offset_3d(&mut rng)))
+            .bench_local_values(|((t0, t1), (t, r))| black_box(t0.intersects_at(&t1, &t, &r)));
+    }
 }
 
-#[divan::bench]
-fn cuboid_xenocollide_3d(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
+#[divan::bench_group]
+mod ellipsoid {
+    use super::*;
 
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| {
-            (
-                shapes_to_convex(create_cuboid_pair::<3, _>(&mut rng)),
-                create_offset_3d(&mut rng),
-            )
-        })
-        .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &r)));
-}
+    #[divan::bench]
+    fn xenocollide_2d(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
 
-#[divan::bench(consts = NUM_VERTICES, )]
-fn polygon_xenocollide_2d<const N: usize>(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| {
+                (
+                    shapes_to_convex(create_ellipsoid_pair::<2, _>(&mut rng)),
+                    create_offset_2d(&mut rng),
+                )
+            })
+            .bench_local_values(|((t0, t1), (t, r))| black_box(collide2d(&t0, &t1, &t, &r)));
+    }
 
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| {
-            (
-                shapes_to_convex(create_polygon_pair::<N>()),
-                create_offset_2d(&mut rng),
-            )
-        })
-        .bench_local_values(|((p0, p1), (t, r))| black_box(collide2d(&p0, &p1, &t, &r)));
-}
+    #[divan::bench]
+    fn fast_2d(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
 
-#[divan::bench(consts = NUM_VERTICES, )]
-fn dipyramid_xenocollide_3d<const N: usize>(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| {
+                (
+                    create_ellipsoid_pair::<2, _>(&mut rng),
+                    create_offset_2d(&mut rng),
+                )
+            })
+            .bench_local_values(|((e0, e1), (t, r))| {
+                let e0 = Convex(e0);
+                let e1 = Convex(e1);
+                black_box(e0.intersects_at(&e1, &t, &r))
+            });
+    }
 
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| {
-            (
-                shapes_to_convex(create_dipyramid_pair::<N, _>(&mut rng, 10.0)),
-                create_offset_3d(&mut rng),
-            )
-        })
-        .bench_local_values(|((p0, p1), (t, r))| black_box(collide3d(&p0, &p1, &t, &r)));
-}
+    #[divan::bench]
+    fn xenocollide_3d(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
 
-#[divan::bench]
-fn simplex_xenocollide_3d(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
-
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| {
-            (
-                shapes_to_convex(create_simplex_pair(&mut rng)),
-                create_offset_3d(&mut rng),
-            )
-        })
-        .bench_local_values(|((t0, t1), (t, r))| black_box(collide3d(&t0, &t1, &t, &r)));
-}
-
-#[divan::bench]
-fn ellipsoid_xenocollide_2d(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
-
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| {
-            (
-                shapes_to_convex(create_ellipsoid_pair::<2, _>(&mut rng)),
-                create_offset_2d(&mut rng),
-            )
-        })
-        .bench_local_values(|((t0, t1), (t, r))| black_box(collide2d(&t0, &t1, &t, &r)));
-}
-
-#[divan::bench]
-fn ellipsoid_fast_2d(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
-
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| {
-            (
-                shapes_to_convex(create_ellipsoid_pair::<2, _>(&mut rng)),
-                create_offset_2d(&mut rng),
-            )
-        })
-        .bench_local_values(|((e0, e1), (t, r))| black_box(e0.intersects_at(&e1, &t, &r)));
-}
-
-#[divan::bench]
-fn ellipsoid_xenocollide_3d(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
-
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| {
-            (
-                shapes_to_convex(create_ellipsoid_pair::<3, _>(&mut rng)),
-                create_offset_3d(&mut rng),
-            )
-        })
-        .bench_local_values(|((t0, t1), (t, r))| black_box(collide3d(&t0, &t1, &t, &r)));
-}
-
-#[divan::bench]
-fn simplex_fast(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
-
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| (create_simplex_pair(&mut rng), create_offset_3d(&mut rng)))
-        .bench_local_values(|((t0, t1), (t, r))| black_box(t0.intersects_at(&t1, &t, &r)));
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| {
+                (
+                    shapes_to_convex(create_ellipsoid_pair::<3, _>(&mut rng)),
+                    create_offset_3d(&mut rng),
+                )
+            })
+            .bench_local_values(|((t0, t1), (t, r))| black_box(collide3d(&t0, &t1, &t, &r)));
+    }
 }
 
 fn create_cylinder_pair<R: Rng>(rng: &mut R) -> (Cylinder, Cylinder) {
@@ -363,14 +405,21 @@ fn create_cylinder_pair<R: Rng>(rng: &mut R) -> (Cylinder, Cylinder) {
     )
 }
 
-#[divan::bench]
-fn infinite_cylinder(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
+#[divan::bench_group]
+mod cylinder {
+    use super::*;
 
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| (create_cylinder_pair(&mut rng), create_offset_3d(&mut rng)))
-        .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at_infinite(&c1, &t, &r)));
+    #[divan::bench]
+    fn infinite_3d(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
+
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| (create_cylinder_pair(&mut rng), create_offset_3d(&mut rng)))
+            .bench_local_values(|((c0, c1), (t, r))| {
+                black_box(c0.intersects_at_infinite(&c1, &t, &r))
+            });
+    }
 }
 
 fn create_capsule_pair<R: Rng>(rng: &mut R) -> (Capsule<3>, Capsule<3>) {
@@ -397,28 +446,32 @@ fn create_capsule_pair<R: Rng>(rng: &mut R) -> (Capsule<3>, Capsule<3>) {
         },
     )
 }
+#[divan::bench_group]
+mod capsule {
+    use super::*;
 
-#[divan::bench]
-fn capsule_fast_3d(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
+    #[divan::bench]
+    fn fast_3d(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
 
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| (create_capsule_pair(&mut rng), create_offset_3d(&mut rng)))
-        .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &r)));
-}
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| (create_capsule_pair(&mut rng), create_offset_3d(&mut rng)))
+            .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &r)));
+    }
 
-#[divan::bench]
-fn capsule_xenocollide_3d(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(1);
+    #[divan::bench]
+    fn xenocollide_3d(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
 
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| {
-            (
-                shapes_to_convex(create_capsule_pair(&mut rng)),
-                create_offset_3d(&mut rng),
-            )
-        })
-        .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &r)));
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| {
+                (
+                    shapes_to_convex(create_capsule_pair(&mut rng)),
+                    create_offset_3d(&mut rng),
+                )
+            })
+            .bench_local_values(|((c0, c1), (t, r))| black_box(c0.intersects_at(&c1, &t, &r)));
+    }
 }
