@@ -507,6 +507,11 @@ impl SubAssign for Quaternion {
 pub struct Versor(Quaternion);
 
 impl Versor {
+    /// Take the dot product of the Versor as an element of $`\mathbb{R}^4`$.
+    #[inline]
+    fn dot_as_cartesian(&self, other: &Self) -> f64 {
+        self.get().scalar * other.get().scalar + self.get().vector.dot(&other.get().vector)
+    }
     /// Create a [`Versor`] that rotates by an angle (in radians)
     /// counterclockwise about an axis.
     ///
@@ -570,6 +575,32 @@ impl Versor {
     #[must_use]
     pub fn get(&self) -> &Quaternion {
         &self.0
+    }
+
+    /// A metric quantifying the angle (in radians) of the spherical arc separating two Versors.
+    ///
+    /// $`d : \mathbb{H} \times \mathbb{H} \to \mathbb{R}^+, \quad d(q_0, q_1) = \arccos(|q_0 \cdot q_1|)`$
+    ///
+    /// This value always lies in the range $`[0, \pi]`$, and is symmetric: while there
+    /// are multiple arcs separating a pair of quaternions, this metric always chooses
+    /// the shortest.
+    #[inline]
+    #[must_use]
+    pub fn arc_distance(&self, other: &Self) -> f64 {
+        self.dot_as_cartesian(other).acos()
+    }
+    /// A fast metric on Versors representing elements of SO(3).
+    ///
+    /// $`d : \mathbb{H} \times \mathbb{H} \to \mathbb{R}^+, \quad d(q_0, q_1) = 1 - |q_0 \cdot q_1 |`$
+    ///
+    /// This has less geometric meaning than the [`arc_distance`](Versor::arc_distance) metric. However, it
+    /// is much faster while still obeying the triangle inequality and the axiom
+    /// $`d(q_0, q_1) = d(q_1, q_0)`$. This metric always lies in the range
+    /// $`[0, 1]`$, and is symmetric such that $`d(q, q)`$ = $`d(q, -q)`$.
+    #[inline]
+    #[must_use]
+    pub fn half_euclidean_norm_squared(&self, other: &Self) -> f64 {
+        1.0 - self.dot_as_cartesian(other)
     }
 }
 
