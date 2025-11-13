@@ -359,11 +359,7 @@ mod ellipsoid {
                     create_offset_2d(&mut rng),
                 )
             })
-            .bench_local_values(|((e0, e1), (t, r))| {
-                let e0 = Convex(e0);
-                let e1 = Convex(e1);
-                black_box(e0.intersects_at(&e1, &t, &r))
-            });
+            .bench_local_values(|((e0, e1), (t, r))| black_box(e0.intersects_at(&e1, &t, &r)));
     }
 
     #[divan::bench]
@@ -379,6 +375,21 @@ mod ellipsoid {
                 )
             })
             .bench_local_values(|((t0, t1), (t, r))| black_box(collide3d(&t0, &t1, &t, &r)));
+    }
+
+    #[divan::bench]
+    fn fast_3d(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(1);
+
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| {
+                (
+                    create_ellipsoid_pair::<3, _>(&mut rng),
+                    create_offset_3d(&mut rng),
+                )
+            })
+            .bench_local_values(|((e0, e1), (t, r))| black_box(e0.intersects_at(&e1, &t, &r)));
     }
 }
 
