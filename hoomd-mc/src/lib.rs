@@ -20,7 +20,9 @@ mod rotate;
 mod sweep;
 mod translate;
 mod uniform_in;
+mod checkerboard;
 
+pub use checkerboard::Checkerboard;
 pub use quick_insert::QuickInsert;
 pub use rotate::Rotate;
 pub use sweep::Sweep;

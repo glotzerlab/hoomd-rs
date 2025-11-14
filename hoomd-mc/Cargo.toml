@@ -24,6 +24,8 @@ hoomd-vector.workspace = true
 rand.workspace = true
 
 [dev-dependencies]
+anyhow.workspace = true
+assert2.workspace = true
 hoomd-geometry.workspace = true
 approxim.workspace = true
 divan.workspace = true
