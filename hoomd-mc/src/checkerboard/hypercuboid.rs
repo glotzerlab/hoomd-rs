@@ -14,6 +14,8 @@
 
 use std::array;
 
+use itertools::izip;
+
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
@@ -33,7 +35,7 @@ pub struct HypercuboidCheckerboard<const N: usize> {
     origin: Cartesian<N>,
     space_width: [f64; N],
     shape: [usize; N],
-    periodic: bool,
+    periodic: [bool; N],
     space_indices_by_color: Vec<Vec<usize>>,
 }
 
@@ -44,7 +46,7 @@ impl<const N: usize> Checkerboard<Cartesian<N>> for HypercuboidCheckerboard<N> {
         let p = *point - self.origin;
         let mut space_multi_index: [i64; N] = array::from_fn(|i| (p.coordinates[i] / self.space_width[i]).floor() as i64);
 
-        for (index, shape) in space_multi_index.iter_mut().zip(self.shape) {
+        for (index, shape, periodic) in izip!(&mut space_multi_index, self.shape, self.periodic) {
             // The origin is in the lower left corner of the box and may be up
             // to one space width to the left of simulation boundary. Therefore,
             // negative indices are out of bounds (and should never been seen
@@ -53,7 +55,7 @@ impl<const N: usize> Checkerboard<Cartesian<N>> for HypercuboidCheckerboard<N> {
                 return None;
             }
 
-            if self.periodic {
+            if periodic {
                 // In periodic boundaries, the checkerboard spaces end before
                 // the right side. The space at the rightmost edge is identical
                 // to space 0 to make the checkerboard coloring commensurate
@@ -101,11 +103,11 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
     #[inline]
     fn compute_dimensions(edge_lengths: [PositiveReal; N],
         interaction_range: PositiveReal,
-        periodic: bool) -> ([f64; N], [usize; N]) {
+        periodic: [bool; N]) -> ([f64; N], [usize; N]) {
 
-        let mut shape_inside = array::from_fn(|i| (edge_lengths[i].get() / interaction_range.get()).floor() as usize);
+        let mut shape_inside: [usize; N] = array::from_fn(|i| (edge_lengths[i].get() / interaction_range.get()).floor() as usize);
 
-        for width in shape_inside.iter_mut() {
+        for (width, periodic) in shape_inside.iter_mut().zip(periodic) {
             // In periodic boundaries, the checkerboard must have an even number
             // of spaces on a side and fit entirely within the given boundary.
             // Spaces must be made larger to accommodate.
@@ -123,7 +125,12 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         }
 
         let space_width = array::from_fn(|i| edge_lengths[i].get() / shape_inside[i] as f64);
-        let shape = if periodic { shape_inside } else { array::from_fn(|i| shape_inside[i] + 1) };
+        let shape = array::from_fn(|i| {
+            if periodic[i] {
+                shape_inside[i]
+            } else {
+                shape_inside[i] + 1
+            }});
 
         (space_width, shape)
         }
@@ -160,7 +167,7 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
     }
 
     #[cfg(test)]
-    fn with_fixed_origin(edge_lengths: [PositiveReal; N], interaction_range: PositiveReal, periodic: bool) -> Self {
+    fn with_fixed_origin(edge_lengths: [PositiveReal; N], interaction_range: PositiveReal, periodic: [bool; N]) -> Self {
         let (space_width, shape) = Self::compute_dimensions(edge_lengths, interaction_range, periodic);
 
         Self {
@@ -217,14 +224,21 @@ mod tests {
         let (space_width, shape) = HypercuboidCheckerboard::<2>::compute_dimensions(
             [16.0.try_into()?, 24.0.try_into()?],
             2.0.try_into()?,
-            true);
+            [true; 2]);
         check!(space_width == [2.0, 2.0]);
         check!(shape == [8, 12]);
 
         let (space_width, shape) = HypercuboidCheckerboard::<2>::compute_dimensions(
             [14.0.try_into()?, 22.0.try_into()?],
             2.0.try_into()?,
-            false);
+            [false; 2]);
+        check!(space_width == [2.0, 2.0]);
+        check!(shape == [8, 12]);
+
+        let (space_width, shape) = HypercuboidCheckerboard::<2>::compute_dimensions(
+            [16.0.try_into()?, 22.0.try_into()?],
+            2.0.try_into()?,
+            [true, false]);
         check!(space_width == [2.0, 2.0]);
         check!(shape == [8, 12]);
 
@@ -236,14 +250,14 @@ mod tests {
         let (space_width, shape) = HypercuboidCheckerboard::<2>::compute_dimensions(
             [15.0.try_into()?, 23.0.try_into()?],
             1.0.try_into()?,
-            true);
+            [true; 2]);
         check!(space_width == [15.0/14.0, 23.0/22.0]);
         check!(shape == [14, 22]);
 
         let (space_width, shape) = HypercuboidCheckerboard::<2>::compute_dimensions(
             [14.0.try_into()?, 22.0.try_into()?],
             1.0.try_into()?,
-            false);
+            [false; 2]);
         check!(space_width == [14.0/13.0, 22.0/21.0]);
         check!(shape == [14, 22]);
 
@@ -293,7 +307,7 @@ mod tests {
         let checkerboard = HypercuboidCheckerboard::with_fixed_origin(
             [16.0.try_into()?, 24.0.try_into()?],
             2.0.try_into()?,
-            true);
+            [true; 2]);
         check!(checkerboard.space_width == [2.0, 2.0]);
         check!(checkerboard.shape == [8, 12]);
 
@@ -323,7 +337,7 @@ mod tests {
         let checkerboard = HypercuboidCheckerboard::with_fixed_origin(
             [14.0.try_into()?, 22.0.try_into()?],
             2.0.try_into()?,
-            false);
+            [false; 2]);
         check!(checkerboard.space_width == [2.0, 2.0]);
         check!(checkerboard.shape == [8, 12]);
 

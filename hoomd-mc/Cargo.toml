@@ -21,6 +21,7 @@ hoomd-utility.workspace = true
 hoomd-simulation.workspace = true
 hoomd-spatial.workspace = true
 hoomd-vector.workspace = true
+itertools.workspace = true
 rand.workspace = true
 
 [dev-dependencies]

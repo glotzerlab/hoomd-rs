@@ -3,6 +3,10 @@
 
 //! Define checkerboard
 
+use rand::Rng;
+
+use hoomd_utility::valid::PositiveReal;
+
 mod hypercuboid;
 
 pub trait Checkerboard<P> {
@@ -10,3 +14,8 @@ pub trait Checkerboard<P> {
     fn space_indices_by_color(&self) -> &[Vec<usize>];
 } 
 
+pub trait Cover<P> {
+    type Checkerboard;
+    
+    fn cover<R: Rng + ?Sized>(&self, rng: &mut R, interaction_range: PositiveReal) -> Self::Checkerboard;
+}
