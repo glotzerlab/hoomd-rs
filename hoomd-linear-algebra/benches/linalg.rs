@@ -11,7 +11,11 @@
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
-use hoomd_linear_algebra::{Invertible, MatMul, matrix::Matrix};
+use hoomd_linear_algebra::{
+    Invertible, MatMul,
+    matrix::Matrix,
+    matrix::gemv::{gemv_submatrix_column_into_column, gemv_submatrix_column_into_column_unsafe},
+};
 
 fn main() {
     divan::main();
@@ -106,12 +110,50 @@ fn svd_mat2(bencher: Bencher) {
         .with_inputs(|| create_random_matrix::<2, 2, _>(&mut rng))
         .bench_local_values(|a| black_box(a.svd()));
 }
-#[divan::bench]
-fn svd_mat3(bencher: Bencher) {
-    let mut rng = StdRng::seed_from_u64(42);
+#[divan::bench_group]
+mod gemv {
+    use super::*;
+    use hoomd_linear_algebra::matrix::gemv::{
+        gemv_submatrix_column_into_column, gemv_submatrix_column_into_column_unsafe,
+    };
 
-    bencher
-        .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| create_random_matrix::<3, 3, _>(&mut rng))
-        .bench_local_values(|a| black_box(a.svd()));
+    const GEMV_DIMS: &[usize] = &[4, 8, 16, 32];
+
+    #[divan::bench(consts = GEMV_DIMS)]
+    fn safe<const N: usize>(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(42);
+        bencher
+            .with_inputs(|| create_random_matrix::<N, N, _>(&mut rng))
+            .bench_local_values(|mut a| {
+                gemv_submatrix_column_into_column(
+                    &mut a,
+                    1..N, // b_rows
+                    1..N, // b_cols
+                    1..N, // x_rows
+                    1,    // x_col
+                    1..N, // y_rows
+                    0,    // y_col
+                );
+                black_box(a);
+            });
+    }
+
+    #[divan::bench(consts = GEMV_DIMS)]
+    fn unsafe_impl<const N: usize>(bencher: Bencher) {
+        let mut rng = StdRng::seed_from_u64(42);
+        bencher
+            .with_inputs(|| create_random_matrix::<N, N, _>(&mut rng))
+            .bench_local_values(|mut a| {
+                gemv_submatrix_column_into_column_unsafe(
+                    &mut a,
+                    1..N, // b_rows
+                    1..N, // b_cols
+                    1..N, // x_rows
+                    1,    // x_col
+                    1..N, // y_rows
+                    0,    // y_col
+                );
+                black_box(a);
+            });
+    }
 }

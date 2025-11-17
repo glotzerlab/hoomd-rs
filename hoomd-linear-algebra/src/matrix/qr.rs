@@ -1,6 +1,12 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
+//! General-purpose linear algebra functions on slices.
+
+use super::gemv::gemv_submatrix_column_into_column;
 use super::{GeneralMatrix, Matrix};
 
-/// Compute the QR decomposition of a [`Matrix`] $`a`$
+/// .
 pub(super) fn qr_decomposition<const N: usize, const M: usize>(
     a: &Matrix<N, M>,
 ) -> (Matrix<M, M>) {
