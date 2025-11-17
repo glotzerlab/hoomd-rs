@@ -21,4 +21,6 @@ pub trait Cover<P> {
     type Checkerboard: Checkerboard<P> + Sync;
     
     fn cover<R: Rng + ?Sized>(&self, rng: &mut R, interaction_range: PositiveReal) -> Self::Checkerboard;
+
+    fn cover_into<R: Rng + ?Sized>(&self, checkerboard: &mut Self::Checkerboard, rng: &mut R, interaction_range: PositiveReal);
 }

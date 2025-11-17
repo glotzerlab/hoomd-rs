@@ -3,7 +3,7 @@
 
 //! Implement ParallelSweep
 
-use std::iter;
+use std::{cell::RefCell, iter, sync::RwLock};
 
 use rand::{rngs::StdRng, seq::IndexedRandom, Rng, RngCore, SeedableRng};
 use rayon::prelude::*;
@@ -43,39 +43,60 @@ struct BodyTrial<B, S> {
 //    * Store the result in the trial bodies
 // 7. Process the trial bodies output and apply the accepted moves.
 
-pub struct ParallelSweep<L> {
+pub struct ParallelSweep<L, K> {
     pub body_interaction_range: PositiveReal,
     pub local_trial: L,
+    checkerboard: RwLock<K>,
+    spaces: RwLock<Vec<Vec<usize>>>,
 }
 
-impl<L> ParallelSweep<L> where
+impl<L, K> ParallelSweep<L, K> where
+    K: Default
+{
+    /// TODO
+    #[inline]
+    pub fn new(body_interaction_range: PositiveReal, local_trial: L) -> Self {
+        Self {
+            body_interaction_range,
+            local_trial,
+            checkerboard: RwLock::new(K::default()),
+            spaces: RwLock::new(Vec::new()),
+        }
+    }
+}
+
+impl<L, K> ParallelSweep<L, K>
 {
     /// TODO
     #[inline(always)]
     fn update_checkerboard<P, B, S, X, C>(
         &self,
         microstate: &Microstate<B, S, X, C>,
-        ) -> (C::Checkerboard, Vec<Vec<usize>>)
+        )
         where
     B: Position<Position = P>,
-    C: Cover<P>
+    K: Checkerboard<P>,
+    C: Cover<P, Checkerboard=K>
     {
     let mut checkerboard_rng = microstate.counter().index(u64::MAX).make_rng();
-    let checkerboard = microstate.boundary().cover(&mut checkerboard_rng, self.body_interaction_range);
+    let mut checkerboard = self.checkerboard.write().expect("there should be no other writers");
+    microstate.boundary().cover_into(&mut checkerboard, &mut checkerboard_rng, self.body_interaction_range);
 
-    let mut spaces: Vec<_> = iter::repeat_n(Vec::new(), checkerboard.num_spaces()).collect();
+    let mut spaces = self.spaces.write().expect("there should be no other writers");
+    spaces.resize_with(checkerboard.num_spaces(), Vec::default);
+    for space in &mut *spaces {
+        space.truncate(0);
+    }
     for (body_index, body) in microstate.bodies().iter().enumerate() {
         let space_index = checkerboard.point_to_space_index(body.item.properties.position());
         spaces[space_index.expect("body should be inside the checkerboard")].push(body_index);
     }
-
-    (checkerboard, spaces)
     }
 
     /// TODO
     #[inline(always)]
-    fn generate_trial_moves<P, B, S, X, C, H, K>(
-        &self,
+    fn generate_trial_moves<P, B, S, X, C, H>(
+        local_trial: &L,
         body_trials: &mut Vec<BodyTrial<B,S>>,
         microstate: &Microstate<B, S, X, C>,
         hamiltonian: &H,
@@ -107,7 +128,7 @@ impl<L> ParallelSweep<L> where
 
                 match microstate
                     .boundary()
-                    .wrap(self.local_trial.propose(&mut rng, body_trial.body.properties))
+                    .wrap(local_trial.propose(&mut rng, body_trial.body.properties))
                 {
                     Ok(new_properties) if checkerboard.point_to_space_index(new_properties.position()) != Some(space_index) => body_trial.accepted = false,
                     Ok(new_properties) => {
@@ -158,7 +179,7 @@ impl<L> ParallelSweep<L> where
     }
 }
 
-impl<P, B, S, X, C, L, H, MA> Trial<Microstate<B, S, X, C>, H, MA> for ParallelSweep<L>
+impl<P, B, S, X, C, L, H, MA, K> Trial<Microstate<B, S, X, C>, H, MA> for ParallelSweep<L, K>
 where
     P: Copy,
     B: Copy + Default + Transform<S> + Position<Position = P> + Send + Sync,
@@ -166,8 +187,9 @@ where
     X: PointUpdate<P, SiteKey> + Sync,
     L: LocalTrial<B> + Sync,
     H: DeltaEnergyOne<B, S, X, C> + Sync,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + Cover<P> + Sync,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + Cover<P, Checkerboard=K> + Sync,
     MA: Temperature,
+    K: Checkerboard<P> + Sync,
 {
     type Count = Count;
 
@@ -181,7 +203,9 @@ where
     ) -> Self::Count {
         let kt = macrostate.temperature();
         
-        let (checkerboard, spaces) = self.update_checkerboard(microstate);
+        self.update_checkerboard(microstate);
+        let checkerboard = self.checkerboard.read().expect("there should be no writers");
+        let spaces = self.spaces.read().expect("there should be no writers");
                
         let mut body_trials: Vec<BodyTrial<B,S>> = Vec::with_capacity(checkerboard.space_indices_by_color().first()
             .expect("checkerboard should have at least one color").len());
@@ -190,7 +214,8 @@ where
 
         while count.total() < microstate.bodies().len() as u64 {
             for space_indices in checkerboard.space_indices_by_color() {           
-                self.generate_trial_moves(
+                Self::generate_trial_moves(
+                        &self.local_trial,
                         &mut body_trials,
                         microstate,
                         hamiltonian,

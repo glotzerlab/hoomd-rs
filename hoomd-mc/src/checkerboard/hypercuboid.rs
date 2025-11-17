@@ -34,12 +34,25 @@ use super::{Cover, Checkerboard};
 //     When shifting the origin to the left by up to one space, all possible
 //     positions are still covered by the existing spaces.
 
+#[derive(Clone, Debug)]
 pub struct HypercuboidCheckerboard<const N: usize> {
     origin: Cartesian<N>,
     space_width: [f64; N],
     shape: [usize; N],
     periodic: [bool; N],
     space_indices_by_color: Vec<Vec<usize>>,
+}
+
+impl<const N: usize> Default for HypercuboidCheckerboard<N> {
+    fn default() -> Self {
+        Self {
+            origin: Cartesian::default(),
+            space_width: [1.0; N],
+            shape: [2; N],
+            periodic: [false; N],
+            space_indices_by_color: Vec::new(),
+        }
+    }
 }
 
 impl<const N: usize> Checkerboard<Cartesian<N>> for HypercuboidCheckerboard<N> {
@@ -208,6 +221,31 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
             periodic,
         }        
     }
+
+    pub fn update<R: Rng + ?Sized>(&mut self,
+        rng: &mut R,
+        interaction_range: PositiveReal,
+        edge_lengths: [PositiveReal; N],
+        periodic: [bool; N]) {
+        let (space_width, shape) = Self::compute_dimensions(edge_lengths, interaction_range, periodic);
+
+        let mut offset = [0.0; N];
+        rng.fill(&mut offset);
+
+        let origin = Cartesian {
+            coordinates: array::from_fn(|i| -edge_lengths[i].get() / 2.0 - offset[i] * space_width[i]),
+        };
+        
+        if shape != self.shape {
+            // TODO: Reuse space indices arrays?
+            self.space_indices_by_color = Self::construct_space_indices_by_color(shape);
+            self.shape = shape;
+        }
+
+        self.space_width = space_width;
+        self.origin = origin;
+        self.periodic = periodic;
+    }
 }
 
 impl<const N: usize> Cover<Cartesian<N>> for Closed<Hypercuboid<N>> {
@@ -217,6 +255,11 @@ impl<const N: usize> Cover<Cartesian<N>> for Closed<Hypercuboid<N>> {
     fn cover<R: Rng + ?Sized>(&self, rng: &mut R, interaction_range: PositiveReal) -> Self::Checkerboard {
         HypercuboidCheckerboard::new(rng, interaction_range, self.0.edge_lengths, [false; N])
     }
+
+    #[inline]
+    fn cover_into<R: Rng + ?Sized>(&self, checkerboard: &mut Self::Checkerboard, rng: &mut R, interaction_range: PositiveReal) {
+        checkerboard.update(rng, interaction_range, self.0.edge_lengths, [false; N]);
+    }
 }
 
 impl<const N: usize> Cover<Cartesian<N>> for Periodic<Hypercuboid<N>> {
@@ -225,6 +268,11 @@ impl<const N: usize> Cover<Cartesian<N>> for Periodic<Hypercuboid<N>> {
     #[inline]
     fn cover<R: Rng + ?Sized>(&self, rng: &mut R, interaction_range: PositiveReal) -> Self::Checkerboard {
         HypercuboidCheckerboard::new(rng, interaction_range, self.shape().edge_lengths, [true; N])
+    }
+
+    #[inline]
+    fn cover_into<R: Rng + ?Sized>(&self, checkerboard: &mut Self::Checkerboard, rng: &mut R, interaction_range: PositiveReal) {
+        checkerboard.update(rng, interaction_range, self.shape().edge_lengths, [true; N]);
     }
 }
 
