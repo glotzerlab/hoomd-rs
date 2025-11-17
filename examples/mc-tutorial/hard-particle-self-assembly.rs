@@ -68,8 +68,8 @@ impl HardEllipseSelfAssembly {
         // ANCHOR: parameters
         let box_height = 14.0;
         let n_bodies = 820;
-        let maximum_distance = 0.05;
-        let maximum_rotation = 0.1;
+        let maximum_distance = 0.07;
+        let maximum_rotation = 0.3;
         let sigma = 1.0;
         let aspect = 5.0;
         let macrostate = Isothermal { temperature: 1.0 };
