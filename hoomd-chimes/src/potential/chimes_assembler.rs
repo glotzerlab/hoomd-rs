@@ -5,7 +5,7 @@
 `ChIMES` transformation and smoothing function. Also provide a
 assembler to construct complete `ChIMES` potential functional.
  */
-use crate::potential::{Chimes2b, ChimesPenalty, CubicSmooth, TersoffSmooth};
+use crate::potential::{ChimesChebyshevExpansion, ChimesPenalty, CubicSmooth, TersoffSmooth};
 use crate::transformation::{
     DirectTransformation, InverseTransformation, MorseTransformation, Transformation,
 };
@@ -48,9 +48,9 @@ impl Transformation for ChimesTransformation {
 #[non_exhaustive]
 pub enum ChimesSmoothing<F: Transformation, const N: usize> {
     /// See [`CubicSmooth`].
-    Cubic(CubicSmooth<Chimes2b<F, N>>),
+    Cubic(CubicSmooth<ChimesChebyshevExpansion<F, N>>),
     /// See [`TersoffSmooth`].
-    Tersoff(TersoffSmooth<Chimes2b<F, N>>),
+    Tersoff(TersoffSmooth<ChimesChebyshevExpansion<F, N>>),
 }
 
 impl<F: Transformation, const N: usize> UnivariateEnergy for ChimesSmoothing<F, N> {

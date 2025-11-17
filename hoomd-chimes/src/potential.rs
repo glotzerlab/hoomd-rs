@@ -3,8 +3,8 @@
 
 /*! `ChIMES` interatomic potential components.
  */
-mod chimes_cheby2b;
-pub use chimes_cheby2b::Chimes2b;
+mod chimes_expansion;
+pub use chimes_expansion::ChimesChebyshevExpansion;
 
 mod tersoff_smooth;
 pub use tersoff_smooth::TersoffSmooth;

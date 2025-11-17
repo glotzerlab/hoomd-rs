@@ -4,7 +4,7 @@
     clippy::missing_docs_in_private_items,
     reason = "benches don't need public documentation"
 )]
-use hoomd_chimes::potential::{Chimes2b, ChimesPenalty, TersoffSmooth};
+use hoomd_chimes::potential::{ChimesChebyshevExpansion, ChimesPenalty, TersoffSmooth};
 use hoomd_chimes::transformation::MorseTransformation;
 use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 use std::fs::File;
@@ -50,8 +50,8 @@ fn run() -> std::io::Result<()> {
         r_in,
     };
 
-    let chimes2b_cheby: Chimes2b<MorseTransformation, 12> =
-        Chimes2b::new(morse_trans, coeff_2b, r_in);
+    let chimes2b_cheby: ChimesChebyshevExpansion<MorseTransformation, 12> =
+        ChimesChebyshevExpansion::new(morse_trans, coeff_2b, r_in);
 
     let chimes2b = TersoffSmooth {
         f: chimes2b_cheby,

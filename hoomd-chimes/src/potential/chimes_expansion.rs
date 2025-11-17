@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`Chimes2b`]
+/*! Implement [`ChimesChebyshevExpansion`]
  */
 use crate::polynomial_basis::{Basis, Chebyshev};
 use crate::transformation::Transformation;
@@ -26,7 +26,7 @@ distance between particles, given by [`Transformation`].
   to enable correct potential calculation.
  */
 #[derive(Clone, Debug, PartialEq)]
-pub struct Chimes2b<F: Transformation, const N: usize> {
+pub struct ChimesChebyshevExpansion<F: Transformation, const N: usize> {
     /// Transformation style.
     trans_style: F,
     /// Two-body `ChIMES` coefficient (`[energy]`).
@@ -39,7 +39,7 @@ pub struct Chimes2b<F: Transformation, const N: usize> {
     cheby: Chebyshev<N>,
 }
 
-/** Constructs a new `Chimes2b` with the given transformation function,
+/** Constructs a new [`ChimesChebyshevExpansion`] with the given transformation function,
 `ChIMES` coefficients, and inner distance cutoff.
 
 The Chebyshev polynomial order is set to `coeff.len() + 1`.
@@ -53,7 +53,7 @@ The inner smoothing distance defaults to 0.01.
 
 # Example
 ```
-use hoomd_chimes::potential::Chimes2b;
+use hoomd_chimes::potential::ChimesChebyshevExpansion;
 use hoomd_chimes::transformation::MorseTransformation;
 
 let lambda = 1.5;
@@ -62,16 +62,16 @@ let r_in = 1.0;
 let coeff = vec![1.0, 2.0, 3.0];
 let morse_trans = MorseTransformation { lambda, r_out, r_in };
 
-let mut chimes2b: Chimes2b<MorseTransformation, 3> = Chimes2b::new(morse_trans, coeff.clone(), r_in);
+let mut chimes2b: ChimesChebyshevExpansion<MorseTransformation, 3> = ChimesChebyshevExpansion::new(morse_trans, coeff.clone(), r_in);
 assert_eq!(chimes2b.coeff(), &coeff);
 assert_eq!(chimes2b.r_in(), &1.0);
 chimes2b.set_inner_smooth_r(0.02);
 assert_eq!(chimes2b.inner_smooth_r(), &0.02);
 ```
 */
-impl<F: Transformation, const N: usize> Chimes2b<F, N> {
-    /// Construct a new `Chimes2b` from a `Vec<f64>` for coefficients,
-    /// converting to `ArrayVec<f64, N>`.
+impl<F: Transformation, const N: usize> ChimesChebyshevExpansion<F, N> {
+    /// Construct a new [`ChimesChebyshevExpansion`] from a `Vec<f64>` 
+    /// for coefficients.
     ///
     /// # Panics
     ///
@@ -80,7 +80,7 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
     #[inline]
     #[must_use]
     pub fn new(trans_style: F, coeff: Vec<f64>, r_in: f64) -> Self {
-        assert!(N != 0, "Chimes2b requires at least one coefficient");
+        assert!(N != 0, "ChimesChebyshevExpansion requires at least one coefficient");
         assert!(
             (coeff.len() == N),
             "Coefficient vector length {} does not match N = {}",
@@ -161,7 +161,7 @@ impl<F: Transformation, const N: usize> Chimes2b<F, N> {
     }
 }
 
-impl<F: Transformation, const N: usize> UnivariateEnergy for Chimes2b<F, N> {
+impl<F: Transformation, const N: usize> UnivariateEnergy for ChimesChebyshevExpansion<F, N> {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         let mut value: f64 = 0.0;
@@ -186,7 +186,7 @@ impl<F: Transformation, const N: usize> UnivariateEnergy for Chimes2b<F, N> {
     }
 }
 
-impl<F: Transformation, const N: usize> UnivariateForce for Chimes2b<F, N> {
+impl<F: Transformation, const N: usize> UnivariateForce for ChimesChebyshevExpansion<F, N> {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         let mut value: f64 = 0.0;
@@ -217,7 +217,7 @@ mod tests {
     use rstest::*;
 
     #[rstest]
-    fn test_chimes2b_new() {
+    fn test_new() {
         let lambda = 1.5;
         let r_out = 3.0;
         let r_in = 1.0;
@@ -229,14 +229,14 @@ mod tests {
             r_in,
         };
 
-        let chimes2b: Chimes2b<MorseTransformation, 3> =
-            Chimes2b::new(morse_trans, coeff.clone(), r_in);
+        let chimes2b: ChimesChebyshevExpansion<MorseTransformation, 3> =
+            ChimesChebyshevExpansion::new(morse_trans, coeff.clone(), r_in);
         assert_eq!(chimes2b.coeff(), &coeff);
         assert_eq!(chimes2b.r_in(), &1.0);
     }
 
     #[rstest]
-    fn test_chimes2b_change_coefficient() {
+    fn test_change_coefficient() {
         let lambda = 1.5;
         let r_out = 3.0;
         let r_in = 1.0;
@@ -247,8 +247,8 @@ mod tests {
             r_out,
             r_in,
         };
-        let mut chimes2b: Chimes2b<MorseTransformation, 3> =
-            Chimes2b::new(morse_trans, coeff, r_in);
+        let mut chimes2b: ChimesChebyshevExpansion<MorseTransformation, 3> =
+            ChimesChebyshevExpansion::new(morse_trans, coeff, r_in);
         let new_coeff = vec![1.0, 2.0, 3.0];
         chimes2b.set_coeff(new_coeff.clone());
 
@@ -260,7 +260,7 @@ mod tests {
     #[should_panic(
         expected = "Coefficient vector length 4 must be the same as during initialization N = 3"
     )]
-    fn test_panic_chimes2b_inconsistent_coeff_length() {
+    fn test_panic_inconsistent_coeff_length() {
         let lambda = 1.5;
         let r_out = 3.0;
         let r_in = 1.0;
@@ -271,8 +271,8 @@ mod tests {
             r_out,
             r_in,
         };
-        let mut chimes2b: Chimes2b<MorseTransformation, 3> =
-            Chimes2b::new(morse_trans, coeff, r_in);
+        let mut chimes2b: ChimesChebyshevExpansion<MorseTransformation, 3> =
+            ChimesChebyshevExpansion::new(morse_trans, coeff, r_in);
         let new_coeff = vec![1.0, 2.0, 3.0, 4.0];
         chimes2b.set_coeff(new_coeff.clone());
     }
@@ -312,7 +312,7 @@ mod tests {
             r_in,
         };
 
-        let chimes2b: Chimes2b<MorseTransformation, 3> = Chimes2b::new(morse_trans, coeff, r_in);
+        let chimes2b: ChimesChebyshevExpansion<MorseTransformation, 3> = ChimesChebyshevExpansion::new(morse_trans, coeff, r_in);
         assert_eq!(chimes2b.energy(r_in), 1.0 + 2.0 + 3.0);
         assert_eq!(chimes2b.energy(r_out), -1.0 + 2.0 - 3.0);
     }

@@ -4,7 +4,7 @@
 TODO
 */
 use hoomd_chimes::{
-    parser::ChimesBuilder,
+    builder::ChimesBuilder,
     potential::ChimesTwobPotential,
 };
 use hoomd_geometry::shape::Rectangle;
@@ -60,7 +60,7 @@ impl Fill {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
         let box_length = 60.0;
-        let macrostate = Isothermal { temperature: 0.5 };
+        let macrostate = Isothermal { temperature: 2.5 };
         let maximum_distance = 0.15;
 
         // ChIMES model

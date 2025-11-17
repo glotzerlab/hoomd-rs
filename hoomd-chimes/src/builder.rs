@@ -8,7 +8,7 @@ use std::error::Error;
 use std::{fmt, fs};
 
 use crate::potential::{
-    Chimes2b, ChimesPenalty, ChimesSmoothing, ChimesTransformation, ChimesTwobPotential,
+    ChimesChebyshevExpansion, ChimesPenalty, ChimesSmoothing, ChimesTransformation, ChimesTwobPotential,
     CubicSmooth, TersoffSmooth,
 };
 use crate::transformation::{DirectTransformation, InverseTransformation, MorseTransformation};
@@ -471,7 +471,7 @@ impl<const N: usize> ChimesBuilder<N> {
     /// Assemble two-body `ChIMES` potential function given
     /// a pair_idx.
     ///
-    /// # Error
+    /// # Errors
     ///
     /// Will return `Err` if the `pair_idx` provided
     /// do not exist in the parameter file.
@@ -488,7 +488,7 @@ impl<const N: usize> ChimesBuilder<N> {
             ))));
         }
         let transformatiom_fn = self.get_tranformation(pair_idx)?;
-        let cheby2b: Chimes2b<ChimesTransformation, N> = Chimes2b::new(
+        let cheby2b: ChimesChebyshevExpansion<ChimesTransformation, N> = ChimesChebyshevExpansion::new(
             transformatiom_fn,
             self.cheby_2b_coeffs[pair_idx].clone(),
             self.pair_data.2[pair_idx],
@@ -539,7 +539,7 @@ impl<const N: usize> ChimesBuilder<N> {
     /// Assemble smoothing function.
     fn get_smoothing(
         &self,
-        f: Chimes2b<ChimesTransformation, N>,
+        f: ChimesChebyshevExpansion<ChimesTransformation, N>,
         pair_idx: usize,
     ) -> Result<ChimesSmoothing<ChimesTransformation, N>, Box<dyn Error>> {
         match self.fcut.0.as_str() {

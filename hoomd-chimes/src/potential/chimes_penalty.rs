@@ -22,7 +22,7 @@ f_p(r) =
 ```
 
 Where $`r_\mathrm{in}`$ is the inner distance cutoff, same as that
-defined in [`Chimes2b`], $`A_\mathrm{p}`$ is the penalty strength
+defined in [`ChimesChebyshevExpansion`], $`A_\mathrm{p}`$ is the penalty strength
 , and $`d_\mathrm{p}`$ is a small distance to smooth activation of
 penalty potential.
 
@@ -32,7 +32,7 @@ See equation 9 in <https://doi.org/10.1038/s41524-024-01497-y>.
 # Example:
 ```
 use hoomd_chimes::transformation::MorseTransformation;
-use hoomd_chimes::potential::{Chimes2b, TersoffSmooth, ChimesPenalty};
+use hoomd_chimes::potential::{ChimesChebyshevExpansion, TersoffSmooth, ChimesPenalty};
 use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 
 // Main body of chimes potential
@@ -48,8 +48,8 @@ let morse_trans: MorseTransformation = MorseTransformation {
     r_in,
 };
 
-let chimes2b_cheby: Chimes2b<MorseTransformation, 3> =
-    Chimes2b::new(morse_trans, coeff, r_in);
+let chimes2b_cheby: ChimesChebyshevExpansion<MorseTransformation, 3> =
+    ChimesChebyshevExpansion::new(morse_trans, coeff, r_in);
 
 let chimes2b = TersoffSmooth {
     f: chimes2b_cheby,

@@ -32,7 +32,7 @@ d_t = r_{\mathrm{out}} * (1.0 - f_o)
 ```
 
 Where `r_in` is the inner distance cutoff, same as that
-defined in [`Chimes2b`], `r_out` is the outer distance cutoff
+defined in [`ChimesChebyshevExpansion`], `r_out` is the outer distance cutoff
 , and `f_o` is the parameter with the value between 0 and 1
  to control the activation of smoothing.
 
@@ -42,7 +42,7 @@ See equation 8 in <https://doi.org/10.1038/s41524-024-01497-y>.
 # Example:
 ```
 use hoomd_chimes::transformation::MorseTransformation;
-use hoomd_chimes::potential::{Chimes2b, TersoffSmooth};
+use hoomd_chimes::potential::{ChimesChebyshevExpansion, TersoffSmooth};
 use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 
 let lambda = 1.5;
@@ -57,8 +57,8 @@ let morse_trans: MorseTransformation = MorseTransformation {
     r_in,
 };
 
-let chimes2b_cheby: Chimes2b<MorseTransformation, 3> =
-    Chimes2b::new(morse_trans, coeff, r_in);
+let chimes2b_cheby: ChimesChebyshevExpansion<MorseTransformation, 3> =
+    ChimesChebyshevExpansion::new(morse_trans, coeff, r_in);
 
 let chimes2b = TersoffSmooth {
     f: chimes2b_cheby,
@@ -70,7 +70,7 @@ let chimes2b = TersoffSmooth {
 */
 #[derive(Clone, Debug, PartialEq)]
 pub struct TersoffSmooth<F> {
-    /// The [`Chimes2b`] fucntion.
+    /// The [`ChimesChebyshevExpansion`] fucntion.
     pub f: F,
     /// Outer radial cut-off (`[length]`).
     pub r_out: f64,
@@ -133,7 +133,7 @@ mod tests {
     use hoomd_interaction::univariate::LennardJones;
     use rstest::*;
 
-    use crate::potential::Chimes2b;
+    use crate::potential::ChimesChebyshevExpansion;
 
     #[rstest]
     fn test_construction() {
@@ -149,8 +149,8 @@ mod tests {
             r_in,
         };
 
-        let chimes2b_cheby: Chimes2b<MorseTransformation, 3> =
-            Chimes2b::new(morse_trans, coeff, r_in);
+        let chimes2b_cheby: ChimesChebyshevExpansion<MorseTransformation, 3> =
+            ChimesChebyshevExpansion::new(morse_trans, coeff, r_in);
 
         let chimes2b = TersoffSmooth {
             f: chimes2b_cheby,
@@ -218,8 +218,8 @@ mod tests {
             r_in: r_in,
         };
 
-        let chimes2b_cheby: Chimes2b<MorseTransformation, NCOEFF> =
-            Chimes2b::new(morse_trans, coeff_2b, r_in);
+        let chimes2b_cheby: ChimesChebyshevExpansion<MorseTransformation, NCOEFF> =
+            ChimesChebyshevExpansion::new(morse_trans, coeff_2b, r_in);
 
         let chimes2b = TersoffSmooth {
             f: chimes2b_cheby,
