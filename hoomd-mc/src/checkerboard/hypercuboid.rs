@@ -15,11 +15,14 @@
 use std::array;
 
 use itertools::izip;
+use rand::Rng;
 
 use hoomd_utility::valid::PositiveReal;
+use hoomd_geometry::shape::Hypercuboid;
+use hoomd_microstate::boundary::{Closed, Periodic};
 use hoomd_vector::Cartesian;
 
-use super::Checkerboard;
+use super::{Cover, Checkerboard};
 
 // * MakeCheckerboard trait implemented by a boundary
 // * HypercuboidCheckerboard type implements these
@@ -83,6 +86,11 @@ impl<const N: usize> Checkerboard<Cartesian<N>> for HypercuboidCheckerboard<N> {
     #[inline]
     fn space_indices_by_color(&self) -> &[Vec<usize>] {
         &self.space_indices_by_color
+    }
+
+    #[inline]
+    fn num_spaces(&self) -> usize {
+        self.shape.iter().product()
     }
 }
 
@@ -167,7 +175,7 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
     }
 
     #[cfg(test)]
-    fn with_fixed_origin(edge_lengths: [PositiveReal; N], interaction_range: PositiveReal, periodic: [bool; N]) -> Self {
+    fn with_fixed_origin(interaction_range: PositiveReal, edge_lengths: [PositiveReal; N], periodic: [bool; N]) -> Self {
         let (space_width, shape) = Self::compute_dimensions(edge_lengths, interaction_range, periodic);
 
         Self {
@@ -178,11 +186,53 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
             periodic,
         }
     }
+
+    pub fn new<R: Rng + ?Sized>(rng: &mut R,
+        interaction_range: PositiveReal,
+        edge_lengths: [PositiveReal; N],
+        periodic: [bool; N]) -> Self {
+        let (space_width, shape) = Self::compute_dimensions(edge_lengths, interaction_range, periodic);
+
+        let mut offset = [0.0; N];
+        rng.fill(&mut offset);
+
+        let origin = Cartesian {
+            coordinates: array::from_fn(|i| -edge_lengths[i].get() / 2.0 - offset[i] * space_width[i]),
+        };
+        
+        Self {
+            space_width,
+            shape,
+            origin,
+            space_indices_by_color: Self::construct_space_indices_by_color(shape),
+            periodic,
+        }        
+    }
+}
+
+impl<const N: usize> Cover<Cartesian<N>> for Closed<Hypercuboid<N>> {
+    type Checkerboard = HypercuboidCheckerboard<N>;
+
+    #[inline]
+    fn cover<R: Rng + ?Sized>(&self, rng: &mut R, interaction_range: PositiveReal) -> Self::Checkerboard {
+        HypercuboidCheckerboard::new(rng, interaction_range, self.0.edge_lengths, [false; N])
+    }
+}
+
+impl<const N: usize> Cover<Cartesian<N>> for Periodic<Hypercuboid<N>> {
+    type Checkerboard = HypercuboidCheckerboard<N>;
+
+    #[inline]
+    fn cover<R: Rng + ?Sized>(&self, rng: &mut R, interaction_range: PositiveReal) -> Self::Checkerboard {
+        HypercuboidCheckerboard::new(rng, interaction_range, self.shape().edge_lengths, [true; N])
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use assert2::{assert, check};
+    use rand::{SeedableRng, rngs::StdRng};
+    use rstest::*;
 
     use super::*;
 
@@ -305,8 +355,8 @@ mod tests {
     #[test]
     fn test_point_to_space_index_periodic() -> anyhow::Result<()> {
         let checkerboard = HypercuboidCheckerboard::with_fixed_origin(
-            [16.0.try_into()?, 24.0.try_into()?],
             2.0.try_into()?,
+            [16.0.try_into()?, 24.0.try_into()?],
             [true; 2]);
         check!(checkerboard.space_width == [2.0, 2.0]);
         check!(checkerboard.shape == [8, 12]);
@@ -335,8 +385,8 @@ mod tests {
     #[test]
     fn test_point_to_space_index_nonperiodic() -> anyhow::Result<()> {
         let checkerboard = HypercuboidCheckerboard::with_fixed_origin(
-            [14.0.try_into()?, 22.0.try_into()?],
             2.0.try_into()?,
+            [14.0.try_into()?, 22.0.try_into()?],
             [false; 2]);
         check!(checkerboard.space_width == [2.0, 2.0]);
         check!(checkerboard.shape == [8, 12]);
@@ -360,6 +410,45 @@ mod tests {
         check!(checkerboard.point_to_space_index(&Cartesian::from([9.0, 1.0])) == None);
 
         check!(checkerboard.point_to_space_index(&Cartesian::from([8.9, 12.9])) == Some(95));
+        
+        Ok(())
+    }
+
+    #[rstest]
+    fn test_all_points_inside(
+        #[values(true, false)] periodic: bool,
+        #[values(1, 2, 3, 4, 5, 6, 7)] seed: u64) -> anyhow::Result<()> {
+
+        const N_SAMPLES: usize = 512;
+
+        let interaction_range = 1.5.try_into()?;
+        let edge_lengths: [PositiveReal; _] = [10.0.try_into()?,
+                            7.0.try_into()?];
+        let periodic = [periodic; 2];
+
+        let lower_left = Cartesian::from([-edge_lengths[0].get() / 2.0, -edge_lengths[1].get() / 2.0]);
+        let upper_right = Cartesian::from([edge_lengths[0].get() / 2.0 - 0.1, edge_lengths[1].get() / 2.0 - 0.1]);
+
+        let mut rng = StdRng::seed_from_u64(seed);
+
+        for _ in 0..N_SAMPLES {
+            let checkerboard = HypercuboidCheckerboard::new(
+                &mut rng,
+                interaction_range,
+                edge_lengths,
+                periodic);
+
+            let boundary = Hypercuboid { edge_lengths };
+
+            for _ in 0..N_SAMPLES {
+                let v: Cartesian<2> = rng.sample(&boundary);
+
+                check!(checkerboard.point_to_space_index(&v).is_some());
+                check!(checkerboard.point_to_space_index(&lower_left) == Some(0));
+                check!(checkerboard.point_to_space_index(&upper_right).is_some());
+                
+            }
+        }
         
         Ok(())
     }

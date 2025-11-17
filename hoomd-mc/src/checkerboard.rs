@@ -9,13 +9,16 @@ use hoomd_utility::valid::PositiveReal;
 
 mod hypercuboid;
 
+pub use hypercuboid::HypercuboidCheckerboard;
+
 pub trait Checkerboard<P> {
     fn point_to_space_index(&self, point: &P) -> Option<usize>;
     fn space_indices_by_color(&self) -> &[Vec<usize>];
+    fn num_spaces(&self) -> usize;
 } 
 
 pub trait Cover<P> {
-    type Checkerboard;
+    type Checkerboard: Checkerboard<P> + Sync;
     
     fn cover<R: Rng + ?Sized>(&self, rng: &mut R, interaction_range: PositiveReal) -> Self::Checkerboard;
 }
