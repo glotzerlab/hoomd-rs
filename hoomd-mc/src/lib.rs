@@ -15,14 +15,15 @@
 use rand::Rng;
 use std::ops::AddAssign;
 
+pub mod checkerboard;
+mod parallel_sweep;
 mod quick_insert;
 mod rotate;
 mod sweep;
 mod translate;
 mod uniform_in;
-mod checkerboard;
 
-pub use checkerboard::Checkerboard;
+pub use parallel_sweep::ParallelSweep;
 pub use quick_insert::QuickInsert;
 pub use rotate::Rotate;
 pub use sweep::Sweep;

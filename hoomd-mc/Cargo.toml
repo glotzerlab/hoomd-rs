@@ -14,6 +14,11 @@ version.workspace = true
 workspace = true
 
 [dependencies]
+itertools.workspace = true
+rand.workspace = true
+rayon.workspace = true
+
+hoomd-geometry.workspace = true
 hoomd-interaction.workspace = true
 hoomd-manifold.workspace = true
 hoomd-microstate.workspace = true
@@ -21,13 +26,10 @@ hoomd-utility.workspace = true
 hoomd-simulation.workspace = true
 hoomd-spatial.workspace = true
 hoomd-vector.workspace = true
-itertools.workspace = true
-rand.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
 assert2.workspace = true
-hoomd-geometry.workspace = true
 approxim.workspace = true
 divan.workspace = true
 rstest.workspace = true
