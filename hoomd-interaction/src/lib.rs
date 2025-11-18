@@ -12,7 +12,9 @@
 //!
 //! TODO: Expand documentation.
 
-use hoomd_microstate::{Body, Site, Microstate};
+use std::ops::{Add, AddAssign};
+
+use hoomd_microstate::{property::{Orientation, Position}, Body, Microstate, Site, Transform};
 
 pub mod external;
 pub mod pairwise;
@@ -28,7 +30,7 @@ pub use cutoff_pair::CutoffPair;
 pub use cutoff_pair_overlap::CutoffPairOverlap;
 pub use external_overlap::ExternalOverlap;
 pub use external_type::External;
-use hoomd_vector::{Vector, WedgeProduct};
+use hoomd_vector::{Rotate, RotationMatrix, Vector, WedgeProduct};
 pub use zero::Zero;
 
 pub mod rigid;
@@ -635,6 +637,19 @@ pub trait PairSiteTorque<V: WedgeProduct, S> {
     fn site_pair_torque(&self, a: &S, b: &S) -> V::Bivector;
 }
 
+/** Compute the non-pairwise torque on a body.
+ * 
+The generic type names are:
+* `V`: The Vector type.
+* `B`: The Body properties type.
+
+TODO: Add intra-doc links.
+*/
+pub trait ExternalBodyTorque<V: WedgeProduct, B> {
+    /// Evaluate the torque on a body.
+    fn body_single_torque(&self, body_properties: &B) -> V::Bivector;
+}
+
 
 // TODO: More doc examples for all implementors.
 
@@ -650,5 +665,23 @@ where
     fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V {
         self.0.net_force_on_site(microstate, site)
             + self.1.net_force_on_site(microstate, site)
+    }
+}
+
+impl<const N: usize, V, B, S, C, E1, E2, R> NetBodyTorque<N, V, B, S, C> for (E1, E2)
+where
+    V: Vector + WedgeProduct,
+    B: Transform<S> + Orientation<Rotation = R>,
+    S: Position<Position = V>,
+    E1: NetBodyTorque<N, V, B, S, C>,
+    E2: NetBodyTorque<N, V, B, S, C>,
+    R: Rotate<V>,
+    RotationMatrix<N>: From<R>,
+    V::Bivector: Default + Add<Output = V::Bivector>,
+{
+    #[inline]
+    fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V::Bivector {
+        self.0.net_torque_on_body(microstate, body_index)
+            + self.1.net_torque_on_body(microstate, body_index)
     }
 }

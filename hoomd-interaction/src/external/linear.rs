@@ -3,11 +3,11 @@
 
 //! Implement [`Linear`]
 
-use crate::ExternalSiteForce;
+use crate::{ExternalBodyTorque, ExternalSiteForce};
 
 use super::super::SiteEnergy;
-use hoomd_microstate::property::Position;
-use hoomd_vector::{InnerProduct, Unit};
+use hoomd_microstate::property::{Mass, MomentOfInertia, Orientation, Position};
+use hoomd_vector::{InnerProduct, Rotate, Unit, Vector, WedgeProduct};
 
 /// Linear potential based on position.
 ///
@@ -108,6 +108,18 @@ where
     #[inline]
     fn site_single_force(&self, site_properties: &S) -> V {
         self.force()
+    }
+}
+
+impl<V, B, R> ExternalBodyTorque<V, B> for Linear<V>
+where
+    V: Vector + WedgeProduct,
+    B: Orientation<Rotation=R> + MomentOfInertia + Mass,
+    R: Rotate<V>
+{
+    #[inline]
+    fn body_single_torque(&self, body_properties: &B) -> V::Bivector {
+        !todo()
     }
 }
 
