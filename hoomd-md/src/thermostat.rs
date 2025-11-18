@@ -1,21 +1,17 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Control system temperature.
+//! Methods for sampling the canonical distribution
+//! of kinetic energy.
 //!
-//! TODO: Expand documentation.
-
-use hoomd_microstate::{
-    Microstate, Transform,
-    boundary::{GenerateGhosts, Wrap},
-};
-use hoomd_simulation::macrostate::{Isothermal, Temperature};
-use hoomd_vector::{Cartesian, Vector};
+//! 
+use hoomd_microstate::Microstate;
+use hoomd_simulation::macrostate::Temperature;
 use rand_distr::{Distribution, Gamma, Normal};
 
 /// Adjust the temperature of a system for sampling
-/// the kinetic energy in the form of
-/// canonical distribution.
+/// the canonical distribution
+/// of kinetic energy.
 ///
 /// Implement [`Thermostat`] or use one of the
 /// provided method in [`thermostat`](crate::thermostat)

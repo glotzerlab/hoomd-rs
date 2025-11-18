@@ -8,9 +8,11 @@ use hoomd_interaction::{
     rigid::Rigid,
 };
 use hoomd_md::{
-    ConstantVolume, TranslationalMotion,
-    thermalize::{Thermalize, TranslationalAngularMomentumModifier, TranslationalModifier},
-    thermostat::BussiThermostat,
+    ConstantVolume, ForceUpdate, TranslationalMotion, thermalize::{
+        ComAngularMomentumRemover, ComMomentumRemover, RotationalThermalizer, Thermalizer,
+        TranslationalAngularMomentumModifier, TranslationalMomentumModifier,
+        TranslationalThermalizer,
+    }, thermostat::BussiThermostat
 };
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder,
@@ -91,11 +93,15 @@ impl LJG_sqaure {
 
         let mut microstate = builder.try_build()?;
 
-        // Ramdomize momentum and zero com momentum
-        let thermalizer = Thermalize { kT: kT_init };
+        // Randomize the momenta of system.
+        let thermalizer = Thermalizer { kT: kT_init };
         thermalizer.thermalize_translation(&mut microstate);
-        thermalizer.remove_com_angular_momentum(&mut microstate);
-        thermalizer.remove_com_momentum(&mut microstate);
+
+        // Remove com momentum and angular momentum afterwards.
+        let angular_remover = ComAngularMomentumRemover {};
+        let linear_remover = ComMomentumRemover {};
+        angular_remover.modify(&mut microstate);
+        linear_remover.modify(&mut microstate);
 
         // Store net body force at t=0
         for body_index in 0..microstate.bodies().len() {
@@ -141,16 +147,18 @@ impl Simulation for LJG_sqaure {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
         // Evolve the system forward using the integrator
+        // Evolve the system forward using the integrator
         self.integrator.integrate_translation_step_one(
             &mut self.microstate,
-            &self.force,
             &mut self.thermostat,
             &self.macrostate,
         );
 
+        self.integrator
+            .update_force(&mut self.microstate, &self.force);
+
         self.integrator.integrate_translation_step_two(
             &mut self.microstate,
-            &self.force,
             &mut self.thermostat,
             &self.macrostate,
         );

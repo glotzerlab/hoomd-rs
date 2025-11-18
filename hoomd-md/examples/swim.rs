@@ -4,7 +4,7 @@ use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
     pairwise::{Isotropic, LennardJones}, rigid::Rigid, CutoffPair
 };
-use hoomd_md::{thermostat::NoThermostat, ConstantVolume, TranslationalMotion};
+use hoomd_md::{ConstantVolume, ForceUpdate, TranslationalMotion, thermostat::NoThermostat};
 use hoomd_microstate::{
     boundary::{Closed, Periodic}, property::{DynamicsPoint, Momentum, Point, Position}, Body, Microstate, MicrostateBuilder
 };
@@ -123,18 +123,19 @@ impl Simulation for Swim {
     fn advance(&mut self) -> anyhow::Result<()> {
         // Read keyboard events and kick the swimmer appropriately
         let swimmer_index = self.microstate.bodies().len() - 1;
-
+        
         // Evolve the system forward using the integrator
         self.integrator.integrate_translation_step_one(
             &mut self.microstate,
-            &self.force,
             &mut self.thermostat,
             &self.macrostate,
         );
 
+        self.integrator
+            .update_force(&mut self.microstate, &self.force);
+
         self.integrator.integrate_translation_step_two(
             &mut self.microstate,
-            &self.force,
             &mut self.thermostat,
             &self.macrostate,
         );

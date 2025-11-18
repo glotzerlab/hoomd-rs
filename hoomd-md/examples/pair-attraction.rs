@@ -7,7 +7,7 @@
 use hoomd_vector::Cartesian;
 use hoomd_microstate::{Microstate, Body, property::{Point, DynamicsPoint}};
 use hoomd_interaction::{pairwise::{Isotropic, LennardJones}, rigid::Rigid, CutoffPair};
-use hoomd_md::{ConstantVolume, TranslationalMotion, thermostat::NoThermostat};
+use hoomd_md::{ConstantVolume, ForceUpdate, TranslationalMotion, thermostat::NoThermostat};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create a microstate with two bodies, each with a single site
@@ -59,16 +59,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Simulation loop
     for timestep in 0..10 {
+        // Evolve the system forward using the integrator
         integrator.integrate_translation_step_one(
             &mut microstate,
-            &force,
             &mut thermostat,
             &macrostate,
         );
 
+        integrator
+            .update_force(&mut microstate, &force);
+
         integrator.integrate_translation_step_two(
             &mut microstate,
-            &force,
             &mut thermostat,
             &macrostate,
         );

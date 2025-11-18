@@ -15,7 +15,7 @@ use rand::{
     distr::{Distribution, StandardUniform, Uniform},
 };
 
-use crate::{WedgeProduct, Cross, Error, InnerProduct, Metric, Rotate, Unit, Vector};
+use crate::{Cross, Error, InnerProduct, Metric, Rotate, TensorProduct, Unit, Vector, WedgeProduct};
 use hoomd_linear_algebra::{MatMul, matrix::Matrix};
 
 /// A [`Vector`] represented by `N` `f64` coordinates.
@@ -534,6 +534,16 @@ impl WedgeProduct for Cartesian<2> {
         self[0] * other[1] - self[1] * other[0]
     }
 }
+
+impl<const N: usize> TensorProduct for Cartesian<N> {
+    type Tensor = Matrix::<N, N>;
+
+    #[inline]
+    fn tensor_product(&self, other: &Self) -> Self::Tensor {
+        self.to_column_matrix().matmul(&other.to_row_matrix())
+    }
+}
+
 impl<const N: usize, T> IndexMut<T> for Cartesian<N>
 where
     T: Into<usize> + std::slice::SliceIndex<[f64], Output = f64>,

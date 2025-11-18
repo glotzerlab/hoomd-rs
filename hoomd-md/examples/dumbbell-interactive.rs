@@ -138,7 +138,7 @@ impl Simulation for Dumbbell {
         );
 
         self.integrator
-                    .update_force_and_torque(&mut self.microstate, &self.force);
+            .update_force_and_torque(&mut self.microstate, &self.force);
 
         self.integrator.integrate_translation_step_two(
             &mut self.microstate,
