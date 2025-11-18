@@ -59,7 +59,7 @@ pub trait Trial<MI, H, MA> {
     /// A given type that implements `Trial` may perform one or many trial moves
     /// in a single call to `apply`. The returned value informs the caller how many
     /// trial moves were accepted and rejected (possibly broken down by type).
-    fn apply(&self, microstate: &mut MI, hamiltonian: &H, macrostate: &MA) -> Self::Count;
+    fn apply(&mut self, microstate: &mut MI, hamiltonian: &H, macrostate: &MA) -> Self::Count;
 }
 
 /// Propose a new configuration for given body properties.

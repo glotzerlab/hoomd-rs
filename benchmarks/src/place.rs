@@ -56,7 +56,7 @@ where
         .try_build()?;
 
     let translate = Translate::with_maximum_distance(0.1.try_into()?);
-    let translate_sweep = Sweep(translate);
+    let mut translate_sweep = Sweep(translate);
 
     let distribution = UniformIn {
         boundary: microstate.boundary().clone(),

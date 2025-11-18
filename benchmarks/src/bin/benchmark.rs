@@ -13,7 +13,7 @@ use parquet::{
     record::RecordWriter};
 use parquet_derive::ParquetRecordWriter;
 
-use benchmarks::{Benchmark, mc};
+use benchmarks::{mc, Benchmark, Effort};
 use hoomd_microstate::{SiteKey, property::OrientedPoint};
 use hoomd_simulation::Simulation;
 use hoomd_spatial::{AllPairs, HashCell, VecCell};
@@ -96,7 +96,7 @@ fn execute<S>(
     threads: usize,
 ) -> anyhow::Result<Performance>
 where
-    S: Simulation + fmt::Display,
+    S: Simulation + fmt::Display + Effort,
 {
     info!("{name}: {n} bodies");
     info!("{threads} threads");
@@ -217,100 +217,100 @@ fn execute_matching(results: &mut Vec<Performance>, n: usize, threads: usize, op
             }
         }
 
-        let maybe_microstate_3d = if needs_microstate_3d {
-            Some(benchmarks::place_hard_hyperspheres::<
-                OrientedPoint<Cartesian<3>, Versor>,
-                OrientedPoint<Cartesian<3>, Versor>,
-                3,
-            >(n, number_density)?)
-        } else {
-            None
-        };
+        // let maybe_microstate_3d = if needs_microstate_3d {
+        //     Some(benchmarks::place_hard_hyperspheres::<
+        //         OrientedPoint<Cartesian<3>, Versor>,
+        //         OrientedPoint<Cartesian<3>, Versor>,
+        //         3,
+        //     >(n, number_density)?)
+        // } else {
+        //     None
+        // };
 
-        let name = "mc_3d_sphere";
-        if benchmark_matcher.matches(name) {
-            let microstate_3d = &maybe_microstate_3d
-                .as_ref()
-                .expect("microstate_3d should be initialized");
-            match options.spatial_data {
-                SpatialData::VecCell => {
-                    let mut simulation =
-                        mc::HardSphereSim::<3, VecCell<SiteKey, 3>>::with_microstate(
-                            microstate_3d,
-                        )?;
-                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n, threads)?);
-                }
-                SpatialData::HashCell => {
-                    let mut simulation =
-                        mc::HardSphereSim::<3, HashCell<SiteKey, 3>>::with_microstate(
-                            microstate_3d,
-                        )?;
-                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n, threads)?);
-                }
-                SpatialData::AllPairs => {
-                    let mut simulation =
-                        mc::HardSphereSim::<3, AllPairs<SiteKey>>::with_microstate(microstate_3d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n, threads)?);
-                }
-            }
-        }
+        // let name = "mc_3d_sphere";
+        // if benchmark_matcher.matches(name) {
+        //     let microstate_3d = &maybe_microstate_3d
+        //         .as_ref()
+        //         .expect("microstate_3d should be initialized");
+        //     match options.spatial_data {
+        //         SpatialData::VecCell => {
+        //             let mut simulation =
+        //                 mc::HardSphereSim::<3, VecCell<SiteKey, 3>>::with_microstate(
+        //                     microstate_3d,
+        //                 )?;
+        //             results.push(execute(&mut simulation, &benchmark, name, "VecCell", n, threads)?);
+        //         }
+        //         SpatialData::HashCell => {
+        //             let mut simulation =
+        //                 mc::HardSphereSim::<3, HashCell<SiteKey, 3>>::with_microstate(
+        //                     microstate_3d,
+        //                 )?;
+        //             results.push(execute(&mut simulation, &benchmark, name, "HashCell", n, threads)?);
+        //         }
+        //         SpatialData::AllPairs => {
+        //             let mut simulation =
+        //                 mc::HardSphereSim::<3, AllPairs<SiteKey>>::with_microstate(microstate_3d)?;
+        //             results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n, threads)?);
+        //         }
+        //     }
+        // }
 
-        let name = "mc_3d_lennard_jones";
-        if benchmark_matcher.matches(name) {
-            let microstate_3d = &maybe_microstate_3d
-                .as_ref()
-                .expect("microstate_3d should be initialized");
-            match options.spatial_data {
-                SpatialData::VecCell => {
-                    let mut simulation =
-                        mc::LennardJones::<3, VecCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n, threads)?);
-                }
-                SpatialData::HashCell => {
-                    let mut simulation =
-                        mc::LennardJones::<3, HashCell<SiteKey, 3>>::with_microstate(
-                            microstate_3d,
-                        )?;
-                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n, threads)?);
-                }
-                SpatialData::AllPairs => {
-                    let mut simulation =
-                        mc::LennardJones::<3, AllPairs<SiteKey>>::with_microstate(microstate_3d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n, threads)?);
-                }
-            }
-        }
+        // let name = "mc_3d_lennard_jones";
+        // if benchmark_matcher.matches(name) {
+        //     let microstate_3d = &maybe_microstate_3d
+        //         .as_ref()
+        //         .expect("microstate_3d should be initialized");
+        //     match options.spatial_data {
+        //         SpatialData::VecCell => {
+        //             let mut simulation =
+        //                 mc::LennardJones::<3, VecCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
+        //             results.push(execute(&mut simulation, &benchmark, name, "VecCell", n, threads)?);
+        //         }
+        //         SpatialData::HashCell => {
+        //             let mut simulation =
+        //                 mc::LennardJones::<3, HashCell<SiteKey, 3>>::with_microstate(
+        //                     microstate_3d,
+        //                 )?;
+        //             results.push(execute(&mut simulation, &benchmark, name, "HashCell", n, threads)?);
+        //         }
+        //         SpatialData::AllPairs => {
+        //             let mut simulation =
+        //                 mc::LennardJones::<3, AllPairs<SiteKey>>::with_microstate(microstate_3d)?;
+        //             results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n, threads)?);
+        //         }
+        //     }
+        // }
 
-        let name = "mc_3d_octahedron";
-        if benchmark_matcher.matches(name) {
-            let microstate_3d = &maybe_microstate_3d
-                .as_ref()
-                .expect("microstate_3d should be initialized");
-            match options.spatial_data {
-                SpatialData::VecCell => {
-                    let mut simulation =
-                        mc::Octahedron::<VecCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "VecCell", n, threads)?);
-                }
-                SpatialData::HashCell => {
-                    let mut simulation =
-                        mc::Octahedron::<HashCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "HashCell", n, threads)?);
-                }
-                SpatialData::AllPairs => {
-                    let mut simulation =
-                        mc::Octahedron::<AllPairs<SiteKey>>::with_microstate(microstate_3d)?;
-                    results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n, threads)?);
-                }
-            }
-        }
+        // let name = "mc_3d_octahedron";
+        // if benchmark_matcher.matches(name) {
+        //     let microstate_3d = &maybe_microstate_3d
+        //         .as_ref()
+        //         .expect("microstate_3d should be initialized");
+        //     match options.spatial_data {
+        //         SpatialData::VecCell => {
+        //             let mut simulation =
+        //                 mc::Octahedron::<VecCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
+        //             results.push(execute(&mut simulation, &benchmark, name, "VecCell", n, threads)?);
+        //         }
+        //         SpatialData::HashCell => {
+        //             let mut simulation =
+        //                 mc::Octahedron::<HashCell<SiteKey, 3>>::with_microstate(microstate_3d)?;
+        //             results.push(execute(&mut simulation, &benchmark, name, "HashCell", n, threads)?);
+        //         }
+        //         SpatialData::AllPairs => {
+        //             let mut simulation =
+        //                 mc::Octahedron::<AllPairs<SiteKey>>::with_microstate(microstate_3d)?;
+        //             results.push(execute(&mut simulation, &benchmark, name, "AllPairs", n, threads)?);
+        //         }
+        //     }
+        // }
 
-        let name = "micro_threaded_rng";
-        if benchmark_matcher.matches(name) {
-            let mut simulation =
-                benchmarks::rayon::ThreadedRng::new(n, 380);
-            results.push(execute(&mut simulation, &benchmark, name, "n/a", n, threads)?);
-        }
+        // let name = "micro_threaded_rng";
+        // if benchmark_matcher.matches(name) {
+        //     let mut simulation =
+        //         benchmarks::rayon::ThreadedRng::new(n, 380);
+        //     results.push(execute(&mut simulation, &benchmark, name, "n/a", n, threads)?);
+        // }
 
         Ok(())
 }

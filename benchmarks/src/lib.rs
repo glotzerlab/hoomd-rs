@@ -10,3 +10,8 @@ pub mod rayon;
 
 pub use benchmark::Benchmark;
 pub use place::place_hard_hyperspheres;
+
+pub trait Effort {
+    fn units() -> String;
+    fn effort(&self) -> f64;
+}

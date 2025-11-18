@@ -68,7 +68,7 @@ where
 
     #[inline]
     fn apply(
-        &self,
+        &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         hamiltonian: &H,
         macrostate: &MA,

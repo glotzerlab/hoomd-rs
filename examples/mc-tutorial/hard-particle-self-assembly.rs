@@ -38,15 +38,17 @@ struct HardEllipseSelfAssembly {
     hamiltonian: PairwiseCutoff<HardShape<Convex<Ellipse>>>,
     /// Trial moves to apply.
     translate_sweep: ParallelSweep<Translate<PositionVector>, HypercuboidCheckerboard<2>>,
+    // translate_sweep: Sweep<Translate<PositionVector>>,
     /// Trial moves to apply.
     rotate_sweep: ParallelSweep<Rotate<Orientation>, HypercuboidCheckerboard<2>>,
+    // rotate_sweep: Sweep<Rotate<Orientation>>,
     /// Temperature set point.
     macrostate: Isothermal,
     /// Quick insert
     quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Rectangle>>>,
     /// How sites interact when inserted.
     insert_hamiltonian: PairwiseCutoff<
-        Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Ellipse>>,
+        Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Convex<Ellipse>>>,
     >,
     /// The current phase of the simulation.
     phase: Phase,
@@ -66,8 +68,10 @@ impl HardEllipseSelfAssembly {
     fn new() -> anyhow::Result<HardEllipseSelfAssembly> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
-        let box_height = 14.0;
-        let n_bodies = 820;
+        // let box_height = 14.0;
+        // let n_bodies = 820;
+        let box_height = 14.0*2.0;
+        let n_bodies = 3280;
         let maximum_distance = 0.07;
         let maximum_rotation = 0.3;
         let sigma = 1.0;
@@ -104,10 +108,12 @@ impl HardEllipseSelfAssembly {
         let translate =
             Translate::with_maximum_distance(maximum_distance.try_into()?);
         let translate_sweep = ParallelSweep::new(sigma.try_into()?, translate);
+        // let translate_sweep = Sweep(translate);
 
         let rotate =
             Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
         let rotate_sweep = ParallelSweep::new(sigma.try_into()?, rotate);
+        // let rotate_sweep = Sweep(rotate);
         // ANCHOR_END: trial_moves
 
         // ANCHOR: quick_insert
@@ -121,7 +127,7 @@ impl HardEllipseSelfAssembly {
         // ANCHOR: insert_hamiltonian
         let approximate_shape_overlap = Anisotropic {
             interaction: ApproximateShapeOverlap::new(
-                ellipse,
+                Convex(ellipse),
                 OverlapPenalty::default(),
                 0.01.try_into()?,
             ),
