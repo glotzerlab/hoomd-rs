@@ -1,26 +1,30 @@
-//! A simulation with a single particle 
+//! A simulation with a single particle
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    external::ConstantTorque, pairwise::{Isotropic, LennardJones, WeeksChandlerAnderson}, rigid::Rigid, CutoffPair, External
+    CutoffPair, External,
+    external::ConstantTorque,
+    pairwise::{Isotropic, LennardJones, WeeksChandlerAnderson},
+    rigid::Rigid,
 };
-use hoomd_md::{thermostat::NoThermostat, ConstantVolume, ForceAndTorqueUpdate, RotationalMotion, TranslationalMotion};
+use hoomd_md::{
+    ConstantVolume, ForceAndTorqueUpdate, RotationalMotion, TranslationalMotion,
+    thermostat::NoThermostat,
+};
 use hoomd_microstate::{
+    Body, Microstate, MicrostateBuilder,
     boundary::{Closed, Open, Periodic},
     property::{DynamicsPoint, Momentum, OrientedDynamicsPoint, Point, Position},
-    Body,
-    Microstate,
-    MicrostateBuilder
 };
-use hoomd_simulation::{Simulation};
+use hoomd_simulation::Simulation;
 use hoomd_vector::{Angle, Cartesian};
 
+use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
     representation::RectangularBoundary,
     representation::disk::{self, Disk},
 };
-use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 
 use anyhow::Context;
 use bevy::prelude::*;
@@ -33,10 +37,14 @@ struct Isoenergy {}
 /// The state of the swimming simulation, tracked as a resource by Bevy
 #[derive(Resource)]
 struct Dumbbell {
-    microstate: Microstate<OrientedDynamicsPoint<Cartesian<2>, Angle>, Point<Cartesian<2>>, Periodic<Rectangle>>,
+    microstate: Microstate<
+        OrientedDynamicsPoint<Cartesian<2>, Angle>,
+        Point<Cartesian<2>>,
+        Periodic<Rectangle>,
+    >,
 
     macrostate: Isoenergy,
-    
+
     thermostat: NoThermostat,
 
     force: Rigid<External<ConstantTorque<Cartesian<2>>>>,
@@ -68,20 +76,18 @@ impl Dumbbell {
             sites: vec![
                 Point::new(Cartesian::from([-3.0, 0.0])),
                 Point::new(Cartesian::from([3.0, 0.0])),
-            ]
+            ],
         };
         microstate.add_body(dumbbell_body)?;
 
         // Model interactions (in this case, a pairwise Lennard-Jones)
-        let force = Rigid(External(
-            ConstantTorque {
-                alpha: 0.0001,
-                direction: 1.0
-            }
-        ));
-    
+        let force = Rigid(External(ConstantTorque {
+            alpha: 0.001,
+            direction: 1.0,
+        }));
+
         // Create an NVE macrostate
-        let macrostate = Isoenergy{};
+        let macrostate = Isoenergy {};
 
         // Create a constant-volume integrator
         let dt = 0.01;
@@ -89,13 +95,13 @@ impl Dumbbell {
 
         // Constant V integration requires a thermostat, even if it does nothing
         let thermostat = NoThermostat;
-    
+
         Ok(Dumbbell {
             microstate,
             macrostate,
             thermostat,
             force,
-            integrator
+            integrator,
         })
     }
 }
@@ -130,8 +136,6 @@ impl Simulation for Dumbbell {
             &mut self.thermostat,
             &self.macrostate,
         );
-
-        println!("{}", self.microstate.bodies()[0].item.properties.orientation);
 
         Ok(())
     }
@@ -170,6 +174,16 @@ fn main() -> anyhow::Result<()> {
             ..default()
         })
         .pipe(RectangularBoundary::setup),
+    );
+    app.add_systems(
+        Update,
+        (
+            //move_swimmer,
+            sync_simulation
+                .run_if(resource_changed::<Dumbbell>)
+                .after(AdvanceSet),
+        )
+            .chain(),
     );
 
     app.run();
