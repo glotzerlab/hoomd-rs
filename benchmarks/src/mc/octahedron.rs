@@ -8,7 +8,7 @@ use hoomd_geometry::{
     shape::{ConvexPolyhedron, Hypercuboid},
 };
 use hoomd_interaction::{PairwiseCutoff, pairwise::HardShape};
-use hoomd_mc::{Sweep, Translate, Trial};
+use hoomd_mc::{checkerboard::HypercuboidCheckerboard, Count, ParallelSweep, Sweep, Translate, Trial};
 use hoomd_microstate::{
     Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},
@@ -18,6 +18,8 @@ use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
 use hoomd_vector::{Cartesian, Versor};
 
+use crate::Effort;
+
 pub struct Octahedron<X> {
     microstate: Microstate<
         OrientedPoint<Cartesian<3>, Versor>,
@@ -26,18 +28,36 @@ pub struct Octahedron<X> {
         Periodic<Hypercuboid<3>>,
     >,
     translate_sweep: Sweep<Translate<Cartesian<3>>>,
+    parallel_translate_sweep: ParallelSweep<Translate<Cartesian<3>>, HypercuboidCheckerboard<3>, OrientedPoint<Cartesian<3>, Versor>, OrientedPoint<Cartesian<3>, Versor>>,
     hamiltonian: PairwiseCutoff<HardShape<Convex<ConvexPolyhedron>>>,
     macrostate: Isothermal,
+    count: Count,
+    parallel: bool,
+}
+
+impl<X> Effort for Octahedron<X> {
+    fn units() -> String {
+        "sweep".to_string()
+    }
+
+    fn effort(&self) -> f64 {
+        self.count.total() as f64 / self.microstate.bodies().len() as f64
+    }
 }
 
 impl<X> Simulation for Octahedron<X>
 where
-    X: PointsNearBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey>,
+    X: PointsNearBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey> + Sync,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
     fn advance(&mut self) -> anyhow::Result<()> {
-        self.translate_sweep
-            .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+        if self.parallel {
+            self.count += self.parallel_translate_sweep
+                .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+        } else {
+            self.count += self.translate_sweep
+                .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+        }
         self.microstate.increment_step();
 
         // TODO: Rotate moves
@@ -55,7 +75,8 @@ where
     X: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.microstate.fmt(f)
+        self.microstate.fmt(f)?;
+        write!(f, "\nTranslate acceptance: {}", self.count.acceptance_ratio().expect("there should be some trial moves"))
     }
 }
 
@@ -66,18 +87,20 @@ where
         + WithSearchRadius,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
-    pub fn with_microstate<X2>(
+    pub fn new<X2>(
         microstate: &Microstate<
             OrientedPoint<Cartesian<3>, Versor>,
             OrientedPoint<Cartesian<3>, Versor>,
             X2,
             Periodic<Hypercuboid<3>>,
         >,
+        parallel: bool,
     ) -> anyhow::Result<Self> {
         let sigma = 1.0;
 
         let translate = Translate::with_maximum_distance((sigma * 0.1).try_into()?);
-        let translate_sweep = Sweep(translate);
+        let translate_sweep = Sweep(translate.clone());
+        let parallel_translate_sweep = ParallelSweep::new(sigma.try_into()?, translate);
 
         let octahedron = ConvexPolyhedron::with_vertices(vec![
             [-0.5, 0.0, 0.0].into(),
@@ -99,8 +122,11 @@ where
         Ok(Self {
             microstate,
             translate_sweep,
+            parallel_translate_sweep,
             hamiltonian,
             macrostate: Isothermal { temperature: 1.0 },
+            count: Count::default(),
+            parallel,
         })
     }
 }

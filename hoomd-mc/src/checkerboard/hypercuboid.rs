@@ -184,6 +184,32 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         return result;
         }
 
+        if N == 3 {
+            for offset_k in 0..=1 {
+                for offset_j in 0..=1 {
+                    for offset_i in 0..=1 {
+                        let mut space_indices = Vec::new();
+                        let mut multi_index = [0; N];
+                    
+                        for k in 0..shape[0] / 2 {
+                            multi_index[0] = 2*k + offset_k;
+                            for j in 0..shape[1] / 2 {
+                                multi_index[1] = 2*j + offset_j;
+                                for i in 0..shape[2] / 2 {
+                                    multi_index[2] = 2*i + offset_i;
+                                    space_indices.push(Self::multi_index_to_index(multi_index, shape));
+                                }
+                            }
+                        }
+
+                    result.push(space_indices);
+                    }
+                }
+            }
+
+        return result;
+        }
+
         todo!("Implement a general method");
     }
 
@@ -237,7 +263,6 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         };
         
         if shape != self.shape {
-            // TODO: Reuse space indices arrays?
             self.space_indices_by_color = Self::construct_space_indices_by_color(shape);
             self.shape = shape;
         }
@@ -398,6 +423,76 @@ mod tests {
         check!(space_indices_by_color[3][3] == 15);
         check!(space_indices_by_color[3][4] == 21);
         check!(space_indices_by_color[3][5] == 23);
+    }
+
+    #[test]
+    fn test_construct_space_indices_by_color_3d() {
+        let space_indices_by_color = HypercuboidCheckerboard::<3>::construct_space_indices_by_color([2, 6, 4]);
+
+        assert!(space_indices_by_color.len() == 8);
+        assert!(space_indices_by_color[0].len() == 6);
+        check!(space_indices_by_color[0][0] == 0);
+        check!(space_indices_by_color[0][1] == 2);
+        check!(space_indices_by_color[0][2] == 8);
+        check!(space_indices_by_color[0][3] == 10);
+        check!(space_indices_by_color[0][4] == 16);
+        check!(space_indices_by_color[0][5] == 18);
+
+        assert!(space_indices_by_color[1].len() == 6);
+        check!(space_indices_by_color[1][0] == 1);
+        check!(space_indices_by_color[1][1] == 3);
+        check!(space_indices_by_color[1][2] == 9);
+        check!(space_indices_by_color[1][3] == 11);
+        check!(space_indices_by_color[1][4] == 17);
+        check!(space_indices_by_color[1][5] == 19);
+
+        assert!(space_indices_by_color[2].len() == 6);
+        check!(space_indices_by_color[2][0] == 4);
+        check!(space_indices_by_color[2][1] == 6);
+        check!(space_indices_by_color[2][2] == 12);
+        check!(space_indices_by_color[2][3] == 14);
+        check!(space_indices_by_color[2][4] == 20);
+        check!(space_indices_by_color[2][5] == 22);
+
+        assert!(space_indices_by_color[3].len() == 6);
+        check!(space_indices_by_color[3][0] == 5);
+        check!(space_indices_by_color[3][1] == 7);
+        check!(space_indices_by_color[3][2] == 13);
+        check!(space_indices_by_color[3][3] == 15);
+        check!(space_indices_by_color[3][4] == 21);
+        check!(space_indices_by_color[3][5] == 23);
+
+        assert!(space_indices_by_color[4].len() == 6);
+        check!(space_indices_by_color[4][0] == 24);
+        check!(space_indices_by_color[4][1] == 24+2);
+        check!(space_indices_by_color[4][2] == 24+8);
+        check!(space_indices_by_color[4][3] == 24+10);
+        check!(space_indices_by_color[4][4] == 24+16);
+        check!(space_indices_by_color[4][5] == 24+18);
+
+        assert!(space_indices_by_color[5].len() == 6);
+        check!(space_indices_by_color[5][0] == 24+1);
+        check!(space_indices_by_color[5][1] == 24+3);
+        check!(space_indices_by_color[5][2] == 24+9);
+        check!(space_indices_by_color[5][3] == 24+11);
+        check!(space_indices_by_color[5][4] == 24+17);
+        check!(space_indices_by_color[5][5] == 24+19);
+
+        assert!(space_indices_by_color[6].len() == 6);
+        check!(space_indices_by_color[6][0] == 24+4);
+        check!(space_indices_by_color[6][1] == 24+6);
+        check!(space_indices_by_color[6][2] == 24+12);
+        check!(space_indices_by_color[6][3] == 24+14);
+        check!(space_indices_by_color[6][4] == 24+20);
+        check!(space_indices_by_color[6][5] == 24+22);
+
+        assert!(space_indices_by_color[7].len() == 6);
+        check!(space_indices_by_color[7][0] == 24+5);
+        check!(space_indices_by_color[7][1] == 24+7);
+        check!(space_indices_by_color[7][2] == 24+13);
+        check!(space_indices_by_color[7][3] == 24+15);
+        check!(space_indices_by_color[7][4] == 24+21);
+        check!(space_indices_by_color[7][5] == 24+23);
     }
 
     #[test]

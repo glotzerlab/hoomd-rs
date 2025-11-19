@@ -35,6 +35,7 @@ pub struct RegularPolygon<X> {
     macrostate: Isothermal,
     translate_count: Count,
     rotate_count: Count,
+    parallel: bool,
 }
 
 impl<X> Effort for RegularPolygon<X> {
@@ -53,14 +54,17 @@ where
     Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>,
 {
     fn advance(&mut self) -> anyhow::Result<()> {
-        // self.translate_count += self.translate_sweep
-        //     .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
-        // self.rotate_count += self.rotate_sweep
-        //     .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
-        self.translate_count += self.parallel_translate_sweep
-            .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
-        self.rotate_count += self.parallel_rotate_sweep
-            .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+        if self.parallel {
+            self.translate_count += self.parallel_translate_sweep
+                .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+            self.rotate_count += self.parallel_rotate_sweep
+                .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+        } else {
+            self.translate_count += self.translate_sweep
+                .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+            self.rotate_count += self.rotate_sweep
+                .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+        }
 
         self.microstate.increment_step();
 
@@ -90,13 +94,14 @@ where
         + WithSearchRadius,
     Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>,
 {
-    pub fn with_microstate<X2>(
+    pub fn new<X2>(
         microstate: &Microstate<
             OrientedPoint<Cartesian<2>, Angle>,
             OrientedPoint<Cartesian<2>, Angle>,
             X2,
             Periodic<Hypercuboid<2>>,
         >,
+        parallel: bool,
     ) -> anyhow::Result<Self> {
         let sigma = 1.0;
         let maximum_rotation = 0.5;
@@ -133,6 +138,7 @@ where
             macrostate: Isothermal { temperature: 1.0 },
             translate_count: Count::default(),
             rotate_count: Count::default(),
+            parallel,
         })
     }
 }

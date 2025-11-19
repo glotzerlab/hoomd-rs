@@ -174,7 +174,7 @@ mod tests {
             d.try_into()
                 .expect("hard-coded constant should be positive"),
         );
-        let translate_sweep = Sweep(translate);
+        let mut translate_sweep = Sweep(translate);
 
         let mut position_accumulator = Cartesian::default();
         let mut energy_accumulator = 0.0;
@@ -215,7 +215,7 @@ mod tests {
             .expect("the hard-coded bodies should be in the boundary");
         let hamiltonian = Zero;
         let translate = Right;
-        let translate_sweep = Sweep(translate);
+        let mut translate_sweep = Sweep(translate);
         let macrostate = Isothermal { temperature: 1.0 };
 
         // The first move to the right ends in the boundary and should be accepted.
@@ -253,7 +253,7 @@ mod tests {
             .expect("the hard-coded bodies should be in the boundary");
         let hamiltonian = Zero;
         let translate = Right;
-        let translate_sweep = Sweep(translate);
+        let mut translate_sweep = Sweep(translate);
         let macrostate = Isothermal { temperature: 1.0 };
 
         // The first move to the right ends in the boundary and should be accepted.

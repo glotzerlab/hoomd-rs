@@ -24,6 +24,7 @@ pub struct HardSphereSim<const D: usize, X> {
     hamiltonian: PairwiseCutoff<HardSphere>,
     macrostate: Isothermal,
     count: Count,
+    parallel: bool,
 }
 
 impl<const D: usize, X> Effort for HardSphereSim<D, X> {
@@ -42,10 +43,13 @@ where
     Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
     fn advance(&mut self) -> anyhow::Result<()> {
-        // self.count += self.translate_sweep
-        //     .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
-        self.count += self.parallel_translate_sweep
-            .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+        if self.parallel {
+            self.count += self.parallel_translate_sweep
+                .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+        } else {
+            self.count += self.translate_sweep
+                .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+        }
         self.microstate.increment_step();
 
         Ok(())
@@ -73,8 +77,9 @@ where
         + WithSearchRadius,
     Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
-    pub fn with_microstate<B, S, X2>(
+    pub fn new<B, S, X2>(
         microstate: &Microstate<B, S, X2, Periodic<Hypercuboid<D>>>,
+        parallel: bool,
     ) -> anyhow::Result<Self>
     where
         B: Position<Position = Cartesian<D>>,
@@ -103,7 +108,8 @@ where
             parallel_translate_sweep,
             hamiltonian,
             macrostate: Isothermal { temperature: 1.0 },
-            count: Count::default()
+            count: Count::default(),
+            parallel,
         })
     }
 }
