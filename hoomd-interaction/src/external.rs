@@ -3,5 +3,5 @@
 
 //! External interactions.
 
-mod linear;
-pub use linear::Linear;
+mod constant_force;
+pub use constant_force::ConstantForce;

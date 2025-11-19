@@ -294,7 +294,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::external::Linear;
+    use crate::external::ConstantForce;
     use hoomd_geometry::shape::Rectangle;
     use hoomd_microstate::{
         Body, Microstate, MicrostateBuilder,
@@ -412,7 +412,7 @@ mod tests {
 
             let plane_normal = Unit::<Cartesian<2>>::try_from([0.0, 1.0])
                 .expect("the hard-coded vector is not zero");
-            let energy = External(Linear {
+            let energy = External(ConstantForce {
                 plane_origin: [0.0, -1.0].into(),
                 plane_normal,
                 alpha: 4.0,
