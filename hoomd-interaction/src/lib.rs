@@ -564,44 +564,11 @@ pub trait SiteForceAndVirial<V: TensorProduct, B, S, C> {
     fn net_force_and_virial_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Tensor);
 }
 
-/** Compute the force on a single site.
-
-The generic type names are:
-* `V`: The Vector type.
-* `B`: The Body properties type.
-* `S`: The Site properties type.
-* `C`: The boundary conditions type.
-
-TODO: Add intra-doc links.
-*/
-pub trait SiteForce<V: Vector, B, S, C> {
-    /** Compute the force.
-    
-    `microstate` describes the system configuration and `site` describes
-    a site for which the force is calculated.
-    */
+/** TODO: Documentation */
+pub trait SiteForceAndTorque<V: WedgeProduct, B, S, C> {
+    /** TODO: Documentation */
     #[must_use]
-    fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V;
-}
-
-/** Compute the torque on a single site.
-
-The generic type names are:
-* `V`: The Vector type.
-* `B`: The Body properties type.
-* `S`: The Site properties type.
-* `C`: The boundary conditions type.
-
-TODO: Add intra-doc links.
-*/
-pub trait SiteTorque<V: WedgeProduct, B, S, C> {
-    /** Compute the torque.
-    
-    `microstate` describes the system configuration and `site` describes
-    a site for which the torque is calculated.
-    */
-    #[must_use]
-    fn net_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V::Bivector;
+    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Bivector);
 }
 
 /** Compute the non-pairwise force on a single site.
@@ -672,20 +639,6 @@ pub trait ExternalBodyTorque<V: WedgeProduct, B> {
 
 // TODO: More doc examples for all implementors.
 
-
-// TODO: Move this implementation elsewhere
-impl<V, B, S, C, E1, E2> SiteForce<V, B, S, C> for (E1, E2)
-where
-    E1: SiteForce<V, B, S, C>,
-    E2: SiteForce<V, B, S, C>,
-    V: Vector   // TODO: necessary?
-{
-    #[inline]
-    fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V {
-        self.0.net_force_on_site(microstate, site)
-            + self.1.net_force_on_site(microstate, site)
-    }
-}
 
 impl<const N: usize, V, B, S, C, E1, E2, R> NetBodyTorque<N, V, B, S, C> for (E1, E2)
 where

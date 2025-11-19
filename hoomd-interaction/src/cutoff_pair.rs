@@ -4,9 +4,19 @@
 //! Implement `CutoffPair`
 use std::ops::{AddAssign, Mul};
 
-use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, pairwise::IsotropicForce, NetBodyForce, SiteForce, SitePairEnergy, PairSiteForce, TotalEnergy, SiteForceAndVirial};
+use crate::{
+    pairwise::{Isotropic, IsotropicForce},
+    DeltaEnergyInsert,
+    DeltaEnergyOne,
+    DeltaEnergyRemove,
+    PairSiteForce,
+    SiteForceAndTorque,
+    SiteForceAndVirial,
+    SitePairEnergy,
+    TotalEnergy
+};
 use hoomd_microstate::{Body, Microstate, Site, Transform, boundary::Wrap, property::Position};
-use hoomd_vector::{Cartesian, InnerProduct, Metric, TensorProduct, Vector};
+use hoomd_vector::{Cartesian, InnerProduct, Metric, TensorProduct, Vector, WedgeProduct};
 use hoomd_linear_algebra::GeneralMatrix;
 
 /// Short-ranged pairwise interactions between sites.
@@ -517,26 +527,31 @@ where
 /** Compute the net cutoff pairwise force on a single site.
 TODO: Add example.
 */
-impl<V, B, S, C, E> SiteForce<V, B, S, C> for CutoffPair<E>
+impl<V, B, S, C, E> SiteForceAndTorque<V, B, S, C> for CutoffPair<Isotropic<E>>
 where
-    V: Vector + Default + InnerProduct + Metric,
+    V: Vector + Default + InnerProduct + Metric + WedgeProduct,
     B: Transform<S>,
     S: Position<Position = V>,
-    E: PairSiteForce<V, S>,
+    E: IsotropicForce,
+    V::Bivector: Default,
 {
     #[inline]
-    fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V {
-        let mut total = V::default();
+    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, <V as WedgeProduct>::Bivector) {
+        // Calculate net force from all of the pairwise interactions
+        let mut total_force = V::default();
         for other_site in microstate
             .iter_sites_near(site.properties.position(), self.r_cut)
             .filter(|s| site.body_tag != s.body_tag)
         {
-            total += self
+            total_force += self
                 .evaluator
                 .site_pair_force(&site.properties, &other_site.properties);
         }
-        total
 
+        // Assume net torque is 0
+        let total_torque = V::Bivector::default();
+
+        (total_force, total_torque)
     }
 }
 

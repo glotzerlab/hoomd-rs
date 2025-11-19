@@ -3,10 +3,10 @@
 
 //! Implement [`ConstantForce`]
 
-use crate::{ExternalBodyTorque, ExternalSiteForce};
+use crate::{ExternalBodyTorque, ExternalSiteForce, SiteForceAndTorque};
 
 use super::super::SiteEnergy;
-use hoomd_microstate::property::{Mass, MomentOfInertia, Orientation, Position};
+use hoomd_microstate::{property::{Mass, MomentOfInertia, Orientation, Position}, Microstate, Site};
 use hoomd_vector::{InnerProduct, Rotate, Unit, Vector, WedgeProduct};
 
 /// ConstantForce potential based on position.
@@ -120,6 +120,19 @@ where
     #[inline]
     fn body_single_torque(&self, body_properties: &B) -> V::Bivector {
         todo!()
+    }
+}
+
+impl<V, B, S, C> SiteForceAndTorque<V, B, S, C> for ConstantForce<V>
+where
+    V: InnerProduct + WedgeProduct,
+    S: Position<Position = V>,
+    V::Bivector: Default
+{
+    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Bivector) {
+        let force = self.site_single_force(&site.properties);
+        let torque = V::Bivector::default();
+        (force, torque)
     }
 }
 
