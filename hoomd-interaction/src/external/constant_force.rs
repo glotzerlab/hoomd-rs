@@ -9,7 +9,7 @@ use super::super::SiteEnergy;
 use hoomd_microstate::{property::{Mass, MomentOfInertia, Orientation, Position}, Microstate, Site};
 use hoomd_vector::{InnerProduct, Rotate, Unit, Vector, WedgeProduct};
 
-/// ConstantForce potential based on position.
+/// Constant force potential based on position.
 ///
 /// ```math
 /// U = \alpha \cdot \vec{n} \cdot ( \vec{r} - \vec{p} )
