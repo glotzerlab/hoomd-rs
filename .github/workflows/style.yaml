@@ -23,7 +23,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
     - name: Configure Rust
-      uses: dtolnay/rust-toolchain@0f44b27771c32bda9f458f75a1e241b09791b331
+      uses: dtolnay/rust-toolchain@0b1efabc08b657293548b77fb76cc02d26091c7e
       with:
         toolchain: 1.90.0
         targets: wasm32-unknown-unknown
@@ -109,7 +109,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
     - name: Configure Rust
-      uses: dtolnay/rust-toolchain@0f44b27771c32bda9f458f75a1e241b09791b331
+      uses: dtolnay/rust-toolchain@0b1efabc08b657293548b77fb76cc02d26091c7e
       with:
         toolchain: nightly-2025-09-17
         components: rustfmt
