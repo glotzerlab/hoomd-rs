@@ -58,12 +58,10 @@ impl Distribution<Versor> for VersorDisplacement {
             let half_theta = 0.5 * theta;
             let w = half_theta.cos();
 
-            // If theta is near 0, do not compute the value. TODO: detailed balance?
-            let v_factor = if theta < _SAFE_THETA {
-                0.5
-            } else {
-                half_theta.sin() / theta
-            };
+            let mut v_factor = half_theta.sin() / theta;
+            if !v_factor.is_finite() {
+                v_factor = 0.5;
+            }
 
             let v = s * v_factor;
 
