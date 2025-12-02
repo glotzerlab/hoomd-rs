@@ -31,7 +31,8 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(a: &Matrix<N, M>)
                 A[(i, i)] = 1.0; //Temporary. Rescale to beta later.
             }
         }
-        if tau == 0.0 { //either in last row or remainder of column is zero
+        if tau == 0.0 {
+            //either in last row or remainder of column is zero
             continue;
         } else {
             let v_col: Vec<f64> = A.get_col_slice_iter(i, i..N).collect();
@@ -47,15 +48,29 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(a: &Matrix<N, M>)
             }
 
             // Now mutate the submatrix rows using the precomputed wT.
-            for (row_slice_mut, &v_r) in A.submatrix_slice_iter_mut(i..N, i..M)
-                .zip(v_col.iter())
-            {
+            for (row_slice_mut, &v_r) in A.submatrix_slice_iter_mut(i..N, i..M).zip(v_col.iter()) {
                 for (j, cell) in row_slice_mut.iter_mut().enumerate() {
                     *cell -= tau * v_r * w_t[j];
                 }
             }
-        A[(i, i)] = beta;
+            A[(i, i)] = beta;
         }
     }
     A
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_qr_decomp() {
+        A = super::qr_decomposition(&Matrix::<3, 3> {
+            rows: [[2., 9., 24.], [1., 10., 10.], [2., 10., 10.]],
+        });
+    }
+    assert_eq!(
+        A,
+        Matrix::<3, 3> {
+            rows: [[-3., -16., -26.], [0.2, 5., 0.], [0.4, 0., -10.]],
+        }
+    );
 }
