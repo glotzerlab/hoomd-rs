@@ -14,7 +14,6 @@ use rand::{Rng, SeedableRng, rngs::StdRng};
 use hoomd_linear_algebra::{
     Invertible, MatMul,
     matrix::Matrix,
-    matrix::gemv::{gemv_submatrix_column_into_column, gemv_submatrix_column_into_column_unsafe},
 };
 
 fn main() {

@@ -3,8 +3,7 @@
 
 //! General-purpose linear algebra functions on slices.
 
-use super::gemv::gemv_submatrix_column_into_column;
-use super::{GeneralMatrix, Matrix};
+use super::Matrix;
 
 /// .
 pub(super) fn qr_decomposition<const N: usize, const M: usize>(a: &Matrix<N, M>) -> Matrix<N, M> {
@@ -13,7 +12,7 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(a: &Matrix<N, M>)
     let mut A = a.clone();
     for i in 0..N {
         let mut tau = 0.;
-        let mut beta = 0.;
+        let beta = 0.;
         if i == (N - 1) {
         } else if let x_norm_2 = A
             .get_col_slice_iter(i, (i + 1)..N)
