@@ -7,14 +7,13 @@ use super::gemv::gemv_submatrix_column_into_column;
 use super::{GeneralMatrix, Matrix};
 
 /// .
-pub(super) fn qr_decomposition<const N: usize, const M: usize>(a: &Matrix<N, M>) -> (Matrix<M, M>) {
+pub(super) fn qr_decomposition<const N: usize, const M: usize>(a: &Matrix<N, M>) -> Matrix<N, M> {
     // Return default TODO;
-    (Matrix::<M, M>::zeros(), Matrix::<N, M>::zeros());
 
     let mut A = a.clone();
     for i in 0..N {
-        let tau = 0.;
-        let beta = 1.;
+        let mut tau = 0.;
+        let mut beta = 0.;
         if i == (N - 1) {
         } else if let x_norm_2 = A
             .get_col_slice_iter(i, (i + 1)..N)
@@ -23,36 +22,41 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(a: &Matrix<N, M>)
         {
             if x_norm_2 != 0.0 {
                 let alpha = A[(i, i)];
-                beta = -alpha.signum() * (x_norm_2 + alpha * alpha).sqrt();
-                //TODO: scale beta
+                let beta = -alpha.signum() * (x_norm_2 + alpha * alpha).sqrt();
+                //TODO: scale beta in extreme cases
                 tau = (beta - alpha) / beta;
                 for j in i + 1..N {
                     A[(i, j)] /= alpha - beta;
                 }
                 //TODO: unscale beta
-                A[(i, i)] = 1.0;
+                A[(i, i)] = 1.0; //Temporary. Rescale to beta later.
             }
         }
-        if tau == 0.0 {
+        if tau == 0.0 { //either in last row or remainder of column is zero
             continue;
         } else {
-            let mut C = A.submatrix_slice_iter(i..N, i..M);
-            let v = A.get_col_slice_iter(i, i..M);
+            let v_col: Vec<f64> = A.get_col_slice_iter(i, i..N).collect();
 
-            //let (wT, other_rows) = C.split_first_mut().unwrap();
-            let wT = C.first();
-            for row in other_rows {
-                for (j, (value, v_jp1)) in row.zip(v.clone().skip()).enumerate() {
-                    wT[j] += value * v_jp1;
+            // Compute w^T = (C^T) * v where C is the submatrix A[i..N, i..M].
+            // We can compute it using an immutable submatrix iterator then
+            // perform the mutable updates once the immutable borrow is dropped.
+            let mut w_t = vec![0.0; M - i];
+            for (row_slice, &v_r) in A.submatrix_slice_iter(i..N, i..M).zip(v_col.iter()) {
+                for (j, &val) in row_slice.iter().enumerate() {
+                    w_t[j] += val * v_r;
                 }
             }
 
-            for row in i..N {
-                for col in i..M {
-                    A[(row, col)] -= tau * v[row] * wT[col];
+            // Now mutate the submatrix rows using the precomputed wT.
+            for (row_slice_mut, &v_r) in A.submatrix_slice_iter_mut(i..N, i..M)
+                .zip(v_col.iter())
+            {
+                for (j, cell) in row_slice_mut.iter_mut().enumerate() {
+                    *cell -= tau * v_r * w_t[j];
                 }
             }
-        }
         A[(i, i)] = beta;
+        }
     }
+    A
 }

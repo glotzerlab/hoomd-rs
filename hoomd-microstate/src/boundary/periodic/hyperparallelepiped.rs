@@ -4,7 +4,7 @@
 //! Implement periodic boundary conditions for cuboids in cartesian space.
 
 use crate::{
-    boundary::{Error, MAX_GHOSTS, MaximumAllowableInteractionRange, Periodic, Wrap},
+    boundary::{GenerateGhosts, Error, MAX_GHOSTS, MaximumAllowableInteractionRange, Periodic, Wrap},
     property::Position,
 };
 use hoomd_geometry::shape::Hyperparallelepiped;
@@ -98,34 +98,35 @@ where
     }
 }
 
-impl<S, N> GenerateGhosts<S> for Periodic<Hypercuboid<N>>
+impl<S> GenerateGhosts<S> for Periodic<Hyperparallelepiped<3>>
 where
-    S: Position<Vector = Cartesian<N>> + Copy + Default,
+    S: Position<Vector = Cartesian<3>> + Copy + Default,
 {
-    #[inline]
+    // #[inline]
     fn maximum_interaction_range(&self) -> f64 {
         self.maximum_interaction_range
     }
 
-    /// Place periodic images of sites near the edge of the periodic boundary.
-    #[inline]
+    // /// Place periodic images of sites near the edge of the periodic boundary.
+    // #[inline]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
-        let mut result = ArrayVec::new();
+        // let mut result = ArrayVec::new();
 
-        let r = site_properties.position();
-        let max = self.shape.maximal_extents();
-        let min = self.shape.minimal_extents();
+        // let r = site_properties.position();
+        // let max = self.shape.maximal_extents();
+        // let min = self.shape.minimal_extents();
 
-        if !self.shape.is_point_inside(r) {
-            return result;
-        }
+        // if !self.shape.is_point_inside(r) {
+        //     return result;
+        // }
 
-        let new_site = |x, y| {
-            let mut new_site = *site_properties;
-            new_site.position_mut()[0] += x * self.shape.edge_vectors[0].get();
-            new_site.position_mut()[1] += y * self.shape.edge_vectors[1].get();
-            new_site
-        };
+        // let new_site = |x, y| {
+        //     let mut new_site = *site_properties;
+        //     new_site.position_mut()[0] += x * self.shape.edge_vectors[0].get();
+        //     new_site.position_mut()[1] += y * self.shape.edge_vectors[1].get();
+        //     new_site
+        // };
+        todo!("Working on it!")
         
     }
 }
