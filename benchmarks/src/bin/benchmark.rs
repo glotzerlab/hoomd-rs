@@ -8,12 +8,12 @@ use clap::Parser;
 use clap_verbosity_flag::{InfoLevel, Verbosity, log::LevelFilter};
 use log::{info, trace};
 use parquet::{
-    file::{properties::WriterProperties,
-        writer::SerializedFileWriter},
-    record::RecordWriter};
+    file::{properties::WriterProperties, writer::SerializedFileWriter},
+    record::RecordWriter,
+};
 use parquet_derive::ParquetRecordWriter;
 
-use benchmarks::{mc, Benchmark, Effort};
+use benchmarks::{Benchmark, Effort, mc};
 use hoomd_microstate::{SiteKey, property::OrientedPoint};
 use hoomd_simulation::Simulation;
 use hoomd_spatial::VecCell;
@@ -98,7 +98,12 @@ where
     })
 }
 
-fn execute_matching(results: &mut Vec<Performance>, n: usize, threads: usize, options: &Options) -> anyhow::Result<()> {
+fn execute_matching(
+    results: &mut Vec<Performance>,
+    n: usize,
+    threads: usize,
+    options: &Options,
+) -> anyhow::Result<()> {
     let benchmark_matcher = WildMatch::new(&options.benchmarks);
     let number_density = 0.8;
     let benchmark = Benchmark {
@@ -114,93 +119,99 @@ fn execute_matching(results: &mut Vec<Performance>, n: usize, threads: usize, op
         || benchmark_matcher.matches("mc_3d_lennard_jones")
         || benchmark_matcher.matches("mc_3d_octahedron");
 
-        let maybe_microstate_2d = if needs_microstate_2d {
-            Some(benchmarks::place_hard_hyperspheres::<
-                OrientedPoint<Cartesian<2>, Angle>,
-                OrientedPoint<Cartesian<2>, Angle>,
-                2,
-            >(n, number_density)?)
-        } else {
-            None
-        };
+    let maybe_microstate_2d = if needs_microstate_2d {
+        Some(benchmarks::place_hard_hyperspheres::<
+            OrientedPoint<Cartesian<2>, Angle>,
+            OrientedPoint<Cartesian<2>, Angle>,
+            2,
+        >(n, number_density)?)
+    } else {
+        None
+    };
 
-        let name = "mc_2d_sphere";
-        if benchmark_matcher.matches(name) {
-            let microstate_2d = &maybe_microstate_2d
-                .as_ref()
-                .expect("microstate_2d should be initialized");
-            let mut simulation =
-                mc::HardSphereSim::<2, VecCell<SiteKey, 2>>::new(
-                    microstate_2d,
-                    options.parallel_sweep || threads > 1,
-                )?;
-            results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
-        }
+    let name = "mc_2d_sphere";
+    if benchmark_matcher.matches(name) {
+        let microstate_2d = &maybe_microstate_2d
+            .as_ref()
+            .expect("microstate_2d should be initialized");
+        let mut simulation = mc::HardSphereSim::<2, VecCell<SiteKey, 2>>::new(
+            microstate_2d,
+            options.parallel_sweep || threads > 1,
+        )?;
+        results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
+    }
 
-        let name = "mc_2d_lennard_jones";
-        if benchmark_matcher.matches(name) {
-            let microstate_2d = &maybe_microstate_2d
-                .as_ref()
-                .expect("microstate_2d should be initialized");
-            let mut simulation =
-                mc::LennardJones::<2, VecCell<SiteKey, 2>>::new(microstate_2d, options.parallel_sweep || threads > 1)?;
-            results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
-        }
+    let name = "mc_2d_lennard_jones";
+    if benchmark_matcher.matches(name) {
+        let microstate_2d = &maybe_microstate_2d
+            .as_ref()
+            .expect("microstate_2d should be initialized");
+        let mut simulation = mc::LennardJones::<2, VecCell<SiteKey, 2>>::new(
+            microstate_2d,
+            options.parallel_sweep || threads > 1,
+        )?;
+        results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
+    }
 
-        let name = "mc_2d_hexagon";
-        if benchmark_matcher.matches(name) {
-            let microstate_2d = &maybe_microstate_2d
-                .as_ref()
-                .expect("microstate_2d should be initialized");
-            let mut simulation =
-                mc::RegularPolygon::<VecCell<SiteKey, 2>>::new(microstate_2d, options.parallel_sweep || threads > 1)?;
-            results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
-        }
+    let name = "mc_2d_hexagon";
+    if benchmark_matcher.matches(name) {
+        let microstate_2d = &maybe_microstate_2d
+            .as_ref()
+            .expect("microstate_2d should be initialized");
+        let mut simulation = mc::RegularPolygon::<VecCell<SiteKey, 2>>::new(
+            microstate_2d,
+            options.parallel_sweep || threads > 1,
+        )?;
+        results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
+    }
 
-        let maybe_microstate_3d = if needs_microstate_3d {
-            Some(benchmarks::place_hard_hyperspheres::<
-                OrientedPoint<Cartesian<3>, Versor>,
-                OrientedPoint<Cartesian<3>, Versor>,
-                3,
-            >(n, number_density)?)
-        } else {
-            None
-        };
+    let maybe_microstate_3d = if needs_microstate_3d {
+        Some(benchmarks::place_hard_hyperspheres::<
+            OrientedPoint<Cartesian<3>, Versor>,
+            OrientedPoint<Cartesian<3>, Versor>,
+            3,
+        >(n, number_density)?)
+    } else {
+        None
+    };
 
-        let name = "mc_3d_sphere";
-        if benchmark_matcher.matches(name) {
-            let microstate_3d = &maybe_microstate_3d
-                .as_ref()
-                .expect("microstate_3d should be initialized");
-            let mut simulation =
-                mc::HardSphereSim::<3, VecCell<SiteKey, 3>>::new(
-                    microstate_3d,
-                    options.parallel_sweep || threads > 1,
-                )?;
-            results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
-        }
+    let name = "mc_3d_sphere";
+    if benchmark_matcher.matches(name) {
+        let microstate_3d = &maybe_microstate_3d
+            .as_ref()
+            .expect("microstate_3d should be initialized");
+        let mut simulation = mc::HardSphereSim::<3, VecCell<SiteKey, 3>>::new(
+            microstate_3d,
+            options.parallel_sweep || threads > 1,
+        )?;
+        results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
+    }
 
-        let name = "mc_3d_lennard_jones";
-        if benchmark_matcher.matches(name) {
-            let microstate_3d = &maybe_microstate_3d
-                .as_ref()
-                .expect("microstate_3d should be initialized");
-            let mut simulation =
-                mc::LennardJones::<3, VecCell<SiteKey, 3>>::new(microstate_3d, options.parallel_sweep || threads > 1)?;
-            results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
-        }
+    let name = "mc_3d_lennard_jones";
+    if benchmark_matcher.matches(name) {
+        let microstate_3d = &maybe_microstate_3d
+            .as_ref()
+            .expect("microstate_3d should be initialized");
+        let mut simulation = mc::LennardJones::<3, VecCell<SiteKey, 3>>::new(
+            microstate_3d,
+            options.parallel_sweep || threads > 1,
+        )?;
+        results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
+    }
 
-        let name = "mc_3d_octahedron";
-        if benchmark_matcher.matches(name) {
-            let microstate_3d = &maybe_microstate_3d
-                .as_ref()
-                .expect("microstate_3d should be initialized");
-            let mut simulation =
-                mc::Octahedron::<VecCell<SiteKey, 3>>::new(microstate_3d, options.parallel_sweep || threads > 1)?;
-            results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
-        }
+    let name = "mc_3d_octahedron";
+    if benchmark_matcher.matches(name) {
+        let microstate_3d = &maybe_microstate_3d
+            .as_ref()
+            .expect("microstate_3d should be initialized");
+        let mut simulation = mc::Octahedron::<VecCell<SiteKey, 3>>::new(
+            microstate_3d,
+            options.parallel_sweep || threads > 1,
+        )?;
+        results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
+    }
 
-        Ok(())
+    Ok(())
 }
 
 fn main() -> anyhow::Result<()> {
@@ -220,9 +231,7 @@ fn main() -> anyhow::Result<()> {
         .format_timestamp(None)
         .init();
 
-
     let mut results = Vec::new();
-
 
     let mut threads = options.threads_min;
     let threads_max = options.threads_max.unwrap_or(options.threads_min);
@@ -234,53 +243,51 @@ fn main() -> anyhow::Result<()> {
     }
 
     loop {
+        let mut n = options.n_min;
+        let n_max = options.n_max.unwrap_or(options.n_min);
 
-    let mut n = options.n_min;
-    let n_max = options.n_max.unwrap_or(options.n_min);
+        if n_max != n && options.parquet.is_none() {
+            return Err(anyhow!(
+                "Parquet output is required when n_min ({n}) is not equal to n_max ({n_max})"
+            ));
+        }
 
-    if n_max != n && options.parquet.is_none() {
-        return Err(anyhow!(
-            "Parquet output is required when n_min ({n}) is not equal to n_max ({n_max})"
-        ));
-    }
+        loop {
+            let pool = ThreadPoolBuilder::new()
+                .num_threads(threads)
+                .build()
+                .unwrap();
+            pool.install(|| execute_matching(&mut results, n, threads, &options))?;
 
-    loop {
-        let pool = ThreadPoolBuilder::new().num_threads(threads).build().unwrap();
-        pool.install(|| execute_matching(&mut results, n, threads, &options))?;
+            n *= 2;
+            if n > n_max {
+                break;
+            }
+        }
 
-        n *= 2;
-        if n > n_max {
+        threads *= 2;
+        if threads > threads_max {
             break;
         }
     }
 
-    threads *= 2;
-    if threads > threads_max {
-        break;
-    }
-    }
-
     if let Some(filename) = options.parquet {
-            let schema = results.as_slice().schema()?;
-            let props = Arc::new(WriterProperties::builder().build());
-            let file = File::create(filename)?;
-            let mut writer = SerializedFileWriter::new(file, schema, props)?;
-            let mut row_group = writer.next_row_group()?;
+        let schema = results.as_slice().schema()?;
+        let props = Arc::new(WriterProperties::builder().build());
+        let file = File::create(filename)?;
+        let mut writer = SerializedFileWriter::new(file, schema, props)?;
+        let mut row_group = writer.next_row_group()?;
 
-            results
-                .as_slice()
-                .write_to_row_group(&mut row_group)?;
+        results.as_slice().write_to_row_group(&mut row_group)?;
 
-            row_group.close()?;
-            writer.close()?;
-        } else {
+        row_group.close()?;
+        writer.close()?;
+    } else {
         for result in results {
             let operations_per_second = 1.0 / result.time_per_operation;
             let name = result.benchmark;
             let unit = result.unit;
-            println!(
-                "{name:20}: {operations_per_second:9.3} {unit}s/s"
-            );
+            println!("{name:20}: {operations_per_second:9.3} {unit}s/s");
         }
     }
 

@@ -17,12 +17,12 @@ use std::array;
 use itertools::izip;
 use rand::Rng;
 
-use hoomd_utility::valid::PositiveReal;
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_microstate::boundary::{Closed, Periodic};
+use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
-use crate::{Cover, Checkerboard};
+use crate::{Checkerboard, Cover};
 
 /// `2^N` color checkerboard with axis-aligned hypercuboidal cells.
 ///
@@ -78,11 +78,11 @@ impl<const N: usize> Default for HypercuboidCheckerboard<N> {
 }
 
 impl<const N: usize> Checkerboard<Cartesian<N>> for HypercuboidCheckerboard<N> {
-
     #[inline]
     fn point_to_space_index(&self, point: &Cartesian<N>) -> Option<usize> {
         let p = *point - self.origin;
-        let mut space_multi_index: [i64; N] = array::from_fn(|i| (p.coordinates[i] / self.space_width[i]).floor() as i64);
+        let mut space_multi_index: [i64; N] =
+            array::from_fn(|i| (p.coordinates[i] / self.space_width[i]).floor() as i64);
 
         for (index, shape, periodic) in izip!(&mut space_multi_index, self.shape, self.periodic) {
             // The origin is in the lower left corner of the box and may be up
@@ -114,8 +114,10 @@ impl<const N: usize> Checkerboard<Cartesian<N>> for HypercuboidCheckerboard<N> {
             }
         }
 
-
-        Some(Self::multi_index_to_index(array::from_fn(|i| space_multi_index[i] as usize), self.shape))
+        Some(Self::multi_index_to_index(
+            array::from_fn(|i| space_multi_index[i] as usize),
+            self.shape,
+        ))
     }
 
     #[inline]
@@ -146,13 +148,18 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
 
     /// Compute the space width and checkerboard shape.
     #[inline]
-    fn compute_dimensions(edge_lengths: [PositiveReal; N],
+    fn compute_dimensions(
+        edge_lengths: [PositiveReal; N],
         interaction_range: PositiveReal,
-        periodic: [bool; N]) -> ([f64; N], [usize; N]) {
+        periodic: [bool; N],
+    ) -> ([f64; N], [usize; N]) {
+        let mut shape_inside: [usize; N] =
+            array::from_fn(|i| (edge_lengths[i].get() / interaction_range.get()).floor() as usize);
 
-        let mut shape_inside: [usize; N] = array::from_fn(|i| (edge_lengths[i].get() / interaction_range.get()).floor() as usize);
-
-        assert!(shape_inside.iter().all(|n| *n >= 2), "body interaction range {interaction_range} is too large for the boundary dimensions {edge_lengths:?}");
+        assert!(
+            shape_inside.iter().all(|n| *n >= 2),
+            "body interaction range {interaction_range} is too large for the boundary dimensions {edge_lengths:?}"
+        );
 
         for (width, periodic) in shape_inside.iter_mut().zip(periodic) {
             // In periodic boundaries, the checkerboard must have an even number
@@ -177,13 +184,17 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
                 shape_inside[i]
             } else {
                 shape_inside[i] + 1
-            }});
+            }
+        });
 
         (space_width, shape)
-        }
+    }
 
     /// Partition the space indices by color.
-    #[expect(clippy::todo, reason = "there are no known use-cases for parallel 4D, 5D, ... simulations at this time")]
+    #[expect(
+        clippy::todo,
+        reason = "there are no known use-cases for parallel 4D, 5D, ... simulations at this time"
+    )]
     fn construct_space_indices_by_color(shape: [usize; N]) -> Vec<Vec<usize>> {
         for width in shape {
             assert!(width.is_multiple_of(2));
@@ -198,18 +209,18 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
                     let mut multi_index = [0; N];
 
                     for j in 0..shape[0] / 2 {
-                        multi_index[0] = 2*j + offset_j;
+                        multi_index[0] = 2 * j + offset_j;
                         for i in 0..shape[1] / 2 {
-                            multi_index[1] = 2*i + offset_i;
+                            multi_index[1] = 2 * i + offset_i;
                             space_indices.push(Self::multi_index_to_index(multi_index, shape));
                         }
                     }
 
-                result.push(space_indices);
+                    result.push(space_indices);
                 }
             }
 
-        return result;
+            return result;
         }
 
         if N == 3 {
@@ -220,22 +231,23 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
                         let mut multi_index = [0; N];
 
                         for k in 0..shape[0] / 2 {
-                            multi_index[0] = 2*k + offset_k;
+                            multi_index[0] = 2 * k + offset_k;
                             for j in 0..shape[1] / 2 {
-                                multi_index[1] = 2*j + offset_j;
+                                multi_index[1] = 2 * j + offset_j;
                                 for i in 0..shape[2] / 2 {
-                                    multi_index[2] = 2*i + offset_i;
-                                    space_indices.push(Self::multi_index_to_index(multi_index, shape));
+                                    multi_index[2] = 2 * i + offset_i;
+                                    space_indices
+                                        .push(Self::multi_index_to_index(multi_index, shape));
                                 }
                             }
                         }
 
-                    result.push(space_indices);
+                        result.push(space_indices);
                     }
                 }
             }
 
-        return result;
+            return result;
         }
 
         todo!("Implement a general method");
@@ -243,13 +255,18 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
 
     /// Construct a checkerboard with a given origin (for testing).
     #[cfg(test)]
-    fn with_fixed_origin(interaction_range: PositiveReal, edge_lengths: [PositiveReal; N], periodic: [bool; N]) -> Self {
-        let (space_width, shape) = Self::compute_dimensions(edge_lengths, interaction_range, periodic);
+    fn with_fixed_origin(
+        interaction_range: PositiveReal,
+        edge_lengths: [PositiveReal; N],
+        periodic: [bool; N],
+    ) -> Self {
+        let (space_width, shape) =
+            Self::compute_dimensions(edge_lengths, interaction_range, periodic);
 
         Self {
             space_width,
             shape,
-            origin: Cartesian::from(array::from_fn(|i| -edge_lengths[i].get()/2.0)),
+            origin: Cartesian::from(array::from_fn(|i| -edge_lengths[i].get() / 2.0)),
             space_indices_by_color: Self::construct_space_indices_by_color(shape),
             periodic,
         }
@@ -262,17 +279,22 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
     /// the range `[-edge_lengths[i]/2.0, edge_lengths[i]/2.0)` (respecting
     /// `periodic[i]`) for each dimension `i`.
     #[inline]
-    pub fn new<R: Rng + ?Sized>(rng: &mut R,
+    pub fn new<R: Rng + ?Sized>(
+        rng: &mut R,
         interaction_range: PositiveReal,
         edge_lengths: [PositiveReal; N],
-        periodic: [bool; N]) -> Self {
-        let (space_width, shape) = Self::compute_dimensions(edge_lengths, interaction_range, periodic);
+        periodic: [bool; N],
+    ) -> Self {
+        let (space_width, shape) =
+            Self::compute_dimensions(edge_lengths, interaction_range, periodic);
 
         let mut offset = [0.0; N];
         rng.fill(&mut offset);
 
         let origin = Cartesian {
-            coordinates: array::from_fn(|i| -edge_lengths[i].get() / 2.0 - offset[i] * space_width[i]),
+            coordinates: array::from_fn(|i| {
+                -edge_lengths[i].get() / 2.0 - offset[i] * space_width[i]
+            }),
         };
 
         Self {
@@ -290,18 +312,23 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
     /// Prefer `update` when possible, as it can reuse the space index partitioning
     /// when the shape doesn't change.
     #[inline]
-    pub fn update<R: Rng + ?Sized>(&mut self,
+    pub fn update<R: Rng + ?Sized>(
+        &mut self,
         rng: &mut R,
         interaction_range: PositiveReal,
         edge_lengths: [PositiveReal; N],
-        periodic: [bool; N]) {
-        let (space_width, shape) = Self::compute_dimensions(edge_lengths, interaction_range, periodic);
+        periodic: [bool; N],
+    ) {
+        let (space_width, shape) =
+            Self::compute_dimensions(edge_lengths, interaction_range, periodic);
 
         let mut offset = [0.0; N];
         rng.fill(&mut offset);
 
         let origin = Cartesian {
-            coordinates: array::from_fn(|i| -edge_lengths[i].get() / 2.0 - offset[i] * space_width[i]),
+            coordinates: array::from_fn(|i| {
+                -edge_lengths[i].get() / 2.0 - offset[i] * space_width[i]
+            }),
         };
 
         if shape != self.shape {
@@ -319,12 +346,21 @@ impl<const N: usize> Cover<Cartesian<N>> for Closed<Hypercuboid<N>> {
     type Checkerboard = HypercuboidCheckerboard<N>;
 
     #[inline]
-    fn cover<R: Rng + ?Sized>(&self, rng: &mut R, interaction_range: PositiveReal) -> Self::Checkerboard {
+    fn cover<R: Rng + ?Sized>(
+        &self,
+        rng: &mut R,
+        interaction_range: PositiveReal,
+    ) -> Self::Checkerboard {
         HypercuboidCheckerboard::new(rng, interaction_range, self.0.edge_lengths, [false; N])
     }
 
     #[inline]
-    fn cover_into<R: Rng + ?Sized>(&self, checkerboard: &mut Self::Checkerboard, rng: &mut R, interaction_range: PositiveReal) {
+    fn cover_into<R: Rng + ?Sized>(
+        &self,
+        checkerboard: &mut Self::Checkerboard,
+        rng: &mut R,
+        interaction_range: PositiveReal,
+    ) {
         checkerboard.update(rng, interaction_range, self.0.edge_lengths, [false; N]);
     }
 }
@@ -333,12 +369,21 @@ impl<const N: usize> Cover<Cartesian<N>> for Periodic<Hypercuboid<N>> {
     type Checkerboard = HypercuboidCheckerboard<N>;
 
     #[inline]
-    fn cover<R: Rng + ?Sized>(&self, rng: &mut R, interaction_range: PositiveReal) -> Self::Checkerboard {
+    fn cover<R: Rng + ?Sized>(
+        &self,
+        rng: &mut R,
+        interaction_range: PositiveReal,
+    ) -> Self::Checkerboard {
         HypercuboidCheckerboard::new(rng, interaction_range, self.shape().edge_lengths, [true; N])
     }
 
     #[inline]
-    fn cover_into<R: Rng + ?Sized>(&self, checkerboard: &mut Self::Checkerboard, rng: &mut R, interaction_range: PositiveReal) {
+    fn cover_into<R: Rng + ?Sized>(
+        &self,
+        checkerboard: &mut Self::Checkerboard,
+        rng: &mut R,
+        interaction_range: PositiveReal,
+    ) {
         checkerboard.update(rng, interaction_range, self.shape().edge_lengths, [true; N]);
     }
 }
@@ -389,21 +434,24 @@ mod tests {
         let (space_width, shape) = HypercuboidCheckerboard::<2>::compute_dimensions(
             [16.0.try_into()?, 24.0.try_into()?],
             2.0.try_into()?,
-            [true; 2]);
+            [true; 2],
+        );
         check!(space_width == [2.0, 2.0]);
         check!(shape == [8, 12]);
 
         let (space_width, shape) = HypercuboidCheckerboard::<2>::compute_dimensions(
             [14.0.try_into()?, 22.0.try_into()?],
             2.0.try_into()?,
-            [false; 2]);
+            [false; 2],
+        );
         check!(space_width == [2.0, 2.0]);
         check!(shape == [8, 12]);
 
         let (space_width, shape) = HypercuboidCheckerboard::<2>::compute_dimensions(
             [16.0.try_into()?, 22.0.try_into()?],
             2.0.try_into()?,
-            [true, false]);
+            [true, false],
+        );
         check!(space_width == [2.0, 2.0]);
         check!(shape == [8, 12]);
 
@@ -415,15 +463,17 @@ mod tests {
         let (space_width, shape) = HypercuboidCheckerboard::<2>::compute_dimensions(
             [15.0.try_into()?, 23.0.try_into()?],
             1.0.try_into()?,
-            [true; 2]);
-        check!(space_width == [15.0/14.0, 23.0/22.0]);
+            [true; 2],
+        );
+        check!(space_width == [15.0 / 14.0, 23.0 / 22.0]);
         check!(shape == [14, 22]);
 
         let (space_width, shape) = HypercuboidCheckerboard::<2>::compute_dimensions(
             [14.0.try_into()?, 22.0.try_into()?],
             1.0.try_into()?,
-            [false; 2]);
-        check!(space_width == [14.0/13.0, 22.0/21.0]);
+            [false; 2],
+        );
+        check!(space_width == [14.0 / 13.0, 22.0 / 21.0]);
         check!(shape == [14, 22]);
 
         Ok(())
@@ -431,7 +481,8 @@ mod tests {
 
     #[test]
     fn test_construct_space_indices_by_color_2d() {
-        let space_indices_by_color = HypercuboidCheckerboard::<2>::construct_space_indices_by_color([6, 4]);
+        let space_indices_by_color =
+            HypercuboidCheckerboard::<2>::construct_space_indices_by_color([6, 4]);
 
         assert!(space_indices_by_color.len() == 4);
         assert!(space_indices_by_color[0].len() == 6);
@@ -469,7 +520,8 @@ mod tests {
 
     #[test]
     fn test_construct_space_indices_by_color_3d() {
-        let space_indices_by_color = HypercuboidCheckerboard::<3>::construct_space_indices_by_color([2, 6, 4]);
+        let space_indices_by_color =
+            HypercuboidCheckerboard::<3>::construct_space_indices_by_color([2, 6, 4]);
 
         assert!(space_indices_by_color.len() == 8);
         assert!(space_indices_by_color[0].len() == 6);
@@ -506,35 +558,35 @@ mod tests {
 
         assert!(space_indices_by_color[4].len() == 6);
         check!(space_indices_by_color[4][0] == 24);
-        check!(space_indices_by_color[4][1] == 24+2);
-        check!(space_indices_by_color[4][2] == 24+8);
-        check!(space_indices_by_color[4][3] == 24+10);
-        check!(space_indices_by_color[4][4] == 24+16);
-        check!(space_indices_by_color[4][5] == 24+18);
+        check!(space_indices_by_color[4][1] == 24 + 2);
+        check!(space_indices_by_color[4][2] == 24 + 8);
+        check!(space_indices_by_color[4][3] == 24 + 10);
+        check!(space_indices_by_color[4][4] == 24 + 16);
+        check!(space_indices_by_color[4][5] == 24 + 18);
 
         assert!(space_indices_by_color[5].len() == 6);
-        check!(space_indices_by_color[5][0] == 24+1);
-        check!(space_indices_by_color[5][1] == 24+3);
-        check!(space_indices_by_color[5][2] == 24+9);
-        check!(space_indices_by_color[5][3] == 24+11);
-        check!(space_indices_by_color[5][4] == 24+17);
-        check!(space_indices_by_color[5][5] == 24+19);
+        check!(space_indices_by_color[5][0] == 24 + 1);
+        check!(space_indices_by_color[5][1] == 24 + 3);
+        check!(space_indices_by_color[5][2] == 24 + 9);
+        check!(space_indices_by_color[5][3] == 24 + 11);
+        check!(space_indices_by_color[5][4] == 24 + 17);
+        check!(space_indices_by_color[5][5] == 24 + 19);
 
         assert!(space_indices_by_color[6].len() == 6);
-        check!(space_indices_by_color[6][0] == 24+4);
-        check!(space_indices_by_color[6][1] == 24+6);
-        check!(space_indices_by_color[6][2] == 24+12);
-        check!(space_indices_by_color[6][3] == 24+14);
-        check!(space_indices_by_color[6][4] == 24+20);
-        check!(space_indices_by_color[6][5] == 24+22);
+        check!(space_indices_by_color[6][0] == 24 + 4);
+        check!(space_indices_by_color[6][1] == 24 + 6);
+        check!(space_indices_by_color[6][2] == 24 + 12);
+        check!(space_indices_by_color[6][3] == 24 + 14);
+        check!(space_indices_by_color[6][4] == 24 + 20);
+        check!(space_indices_by_color[6][5] == 24 + 22);
 
         assert!(space_indices_by_color[7].len() == 6);
-        check!(space_indices_by_color[7][0] == 24+5);
-        check!(space_indices_by_color[7][1] == 24+7);
-        check!(space_indices_by_color[7][2] == 24+13);
-        check!(space_indices_by_color[7][3] == 24+15);
-        check!(space_indices_by_color[7][4] == 24+21);
-        check!(space_indices_by_color[7][5] == 24+23);
+        check!(space_indices_by_color[7][0] == 24 + 5);
+        check!(space_indices_by_color[7][1] == 24 + 7);
+        check!(space_indices_by_color[7][2] == 24 + 13);
+        check!(space_indices_by_color[7][3] == 24 + 15);
+        check!(space_indices_by_color[7][4] == 24 + 21);
+        check!(space_indices_by_color[7][5] == 24 + 23);
     }
 
     #[test]
@@ -542,7 +594,8 @@ mod tests {
         let checkerboard = HypercuboidCheckerboard::with_fixed_origin(
             2.0.try_into()?,
             [16.0.try_into()?, 24.0.try_into()?],
-            [true; 2]);
+            [true; 2],
+        );
         check!(checkerboard.space_width == [2.0, 2.0]);
         check!(checkerboard.shape == [8, 12]);
 
@@ -572,7 +625,8 @@ mod tests {
         let checkerboard = HypercuboidCheckerboard::with_fixed_origin(
             2.0.try_into()?,
             [14.0.try_into()?, 22.0.try_into()?],
-            [false; 2]);
+            [false; 2],
+        );
         check!(checkerboard.space_width == [2.0, 2.0]);
         check!(checkerboard.shape == [8, 12]);
 
@@ -602,26 +656,26 @@ mod tests {
     #[rstest]
     fn test_all_points_inside(
         #[values(true, false)] periodic: bool,
-        #[values(1, 2, 3, 4, 5, 6, 7)] seed: u64) -> anyhow::Result<()> {
-
+        #[values(1, 2, 3, 4, 5, 6, 7)] seed: u64,
+    ) -> anyhow::Result<()> {
         const N_SAMPLES: usize = 512;
 
         let interaction_range = 1.5.try_into()?;
-        let edge_lengths: [PositiveReal; 2] = [10.0.try_into()?,
-                            7.0.try_into()?];
+        let edge_lengths: [PositiveReal; 2] = [10.0.try_into()?, 7.0.try_into()?];
         let periodic = [periodic; 2];
 
-        let lower_left = Cartesian::from([-edge_lengths[0].get() / 2.0, -edge_lengths[1].get() / 2.0]);
-        let upper_right = Cartesian::from([edge_lengths[0].get() / 2.0 - 0.1, edge_lengths[1].get() / 2.0 - 0.1]);
+        let lower_left =
+            Cartesian::from([-edge_lengths[0].get() / 2.0, -edge_lengths[1].get() / 2.0]);
+        let upper_right = Cartesian::from([
+            edge_lengths[0].get() / 2.0 - 0.1,
+            edge_lengths[1].get() / 2.0 - 0.1,
+        ]);
 
         let mut rng = StdRng::seed_from_u64(seed);
 
         for _ in 0..N_SAMPLES {
-            let checkerboard = HypercuboidCheckerboard::new(
-                &mut rng,
-                interaction_range,
-                edge_lengths,
-                periodic);
+            let checkerboard =
+                HypercuboidCheckerboard::new(&mut rng, interaction_range, edge_lengths, periodic);
 
             let boundary = Hypercuboid { edge_lengths };
 
@@ -631,7 +685,6 @@ mod tests {
                 check!(checkerboard.point_to_space_index(&v).is_some());
                 check!(checkerboard.point_to_space_index(&lower_left) == Some(0));
                 check!(checkerboard.point_to_space_index(&upper_right).is_some());
-
             }
         }
 

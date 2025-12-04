@@ -242,7 +242,11 @@ pub trait Cover<P> {
     /// `interaction_range`. [`ParallelSweep`] must reject trial moves from one
     /// space to another. To make simulations ergodic, `cover` must randomly
     /// place the checkerboard boundaries using the provided `rng`.
-    fn cover<R: Rng + ?Sized>(&self, rng: &mut R, interaction_range: PositiveReal) -> Self::Checkerboard;
+    fn cover<R: Rng + ?Sized>(
+        &self,
+        rng: &mut R,
+        interaction_range: PositiveReal,
+    ) -> Self::Checkerboard;
 
     /// Update a given checkerboard to match this boundary.
     ///
@@ -251,7 +255,12 @@ pub trait Cover<P> {
     /// `cover_into` may be able to reuse existing dynamically allocated memory
     /// in `checkerboard` or avoid some calculations completely (e.g. when the
     /// checkerboard dimensions remain the same).
-    fn cover_into<R: Rng + ?Sized>(&self, checkerboard: &mut Self::Checkerboard, rng: &mut R, interaction_range: PositiveReal);
+    fn cover_into<R: Rng + ?Sized>(
+        &self,
+        checkerboard: &mut Self::Checkerboard,
+        rng: &mut R,
+        interaction_range: PositiveReal,
+    );
 }
 
 #[cfg(test)]

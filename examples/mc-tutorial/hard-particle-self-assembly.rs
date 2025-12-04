@@ -2,13 +2,19 @@
 // ANCHOR: use
 use anyhow::{Context, anyhow};
 
-use hoomd_geometry::{shape::{Ellipse, Rectangle}, Convex};
+use hoomd_geometry::{
+    Convex,
+    shape::{Ellipse, Rectangle},
+};
 use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff,
     pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape},
     univariate::OverlapPenalty,
 };
-use hoomd_mc::{ParallelSweep, QuickInsert, Rotate, Translate, Trial, UniformIn, HypercuboidCheckerboard};
+use hoomd_mc::{
+    HypercuboidCheckerboard, ParallelSweep, QuickInsert, Rotate, Translate,
+    Trial, UniformIn,
+};
 use hoomd_microstate::{
     Microstate, SiteKey, boundary::Periodic, property::OrientedPoint,
 };
@@ -37,9 +43,19 @@ struct HardEllipseSelfAssembly {
     /// How sites interact with other sites and fields.
     hamiltonian: PairwiseCutoff<HardShape<Convex<Ellipse>>>,
     /// Trial moves to apply.
-    translate_sweep: ParallelSweep<Translate<PositionVector>, HypercuboidCheckerboard<2>, BodyProperties, SiteProperties>,
+    translate_sweep: ParallelSweep<
+        Translate<PositionVector>,
+        HypercuboidCheckerboard<2>,
+        BodyProperties,
+        SiteProperties,
+    >,
     /// Trial moves to apply.
-    rotate_sweep: ParallelSweep<Rotate<Orientation>, HypercuboidCheckerboard<2>, BodyProperties, SiteProperties>,
+    rotate_sweep: ParallelSweep<
+        Rotate<Orientation>,
+        HypercuboidCheckerboard<2>,
+        BodyProperties,
+        SiteProperties,
+    >,
     /// Temperature set point.
     macrostate: Isothermal,
     /// Quick insert
@@ -68,7 +84,7 @@ impl HardEllipseSelfAssembly {
         // ANCHOR: parameters
         // let box_height = 14.0;
         // let n_bodies = 820;
-        let box_height = 14.0*2.0;
+        let box_height = 14.0 * 2.0;
         let n_bodies = 3280;
         let maximum_distance = 0.07;
         let maximum_rotation = 0.3;

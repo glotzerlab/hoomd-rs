@@ -3,7 +3,7 @@
 
 //! Implement `ParallelSweep`
 
-use rand::{seq::IndexedRandom, Rng};
+use rand::{Rng, seq::IndexedRandom};
 use rayon::prelude::*;
 
 use super::{Count, LocalTrial, Trial};
@@ -40,7 +40,7 @@ enum TrialStatus {
 #[derive(Default)]
 struct BodyTrial<B, S> {
     /// The trial body configuration.
-    body: Body::<B, S>,
+    body: Body<B, S>,
 
     /// Index of the body in the microstate.
     body_index: usize,
@@ -48,7 +48,6 @@ struct BodyTrial<B, S> {
     /// Status of the trial.
     status: TrialStatus,
 }
-
 
 /// In parallel, apply local trial moves to bodies in the microstate.
 ///
@@ -61,15 +60,20 @@ struct BodyTrial<B, S> {
 /// # Example
 ///
 /// ```
-/// use hoomd_mc::{ParallelSweep, Translate};
+/// use hoomd_mc::{HypercuboidCheckerboard, ParallelSweep, Translate};
 /// use hoomd_microstate::property::Point;
 /// use hoomd_vector::Cartesian;
-/// use hoomd_mc::HypercuboidCheckerboard;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let d = 0.1;
-/// let translate = Translate::<Cartesian<2>>::with_maximum_distance(d.try_into()?);
-/// let translate_sweep = ParallelSweep::<_, HypercuboidCheckerboard<2>, Point<Cartesian<2>>, Point<Cartesian<2>>>::new(1.0.try_into()?, translate);
+/// let translate =
+///     Translate::<Cartesian<2>>::with_maximum_distance(d.try_into()?);
+/// let translate_sweep = ParallelSweep::<
+///     _,
+///     HypercuboidCheckerboard<2>,
+///     Point<Cartesian<2>>,
+///     Point<Cartesian<2>>,
+/// >::new(1.0.try_into()?, translate);
 /// # Ok(())
 /// # }
 /// ```
@@ -87,11 +91,12 @@ pub struct ParallelSweep<L, K, B, S> {
     spaces: Vec<Vec<usize>>,
 
     /// Cached storage of the body trial moves in each space.
-    body_trials: Vec<BodyTrial<B,S>>,
+    body_trials: Vec<BodyTrial<B, S>>,
 }
 
-impl<L, K, B, S> ParallelSweep<L, K, B, S> where
-    K: Default
+impl<L, K, B, S> ParallelSweep<L, K, B, S>
+where
+    K: Default,
 {
     /// Construct a new `ParallelSweep`.
     ///
@@ -107,15 +112,20 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S> where
     /// # Example
     ///
     /// ```
-    /// use hoomd_mc::{ParallelSweep, Translate};
+    /// use hoomd_mc::{HypercuboidCheckerboard, ParallelSweep, Translate};
     /// use hoomd_microstate::property::Point;
     /// use hoomd_vector::Cartesian;
-    /// use hoomd_mc::HypercuboidCheckerboard;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let d = 0.1;
-    /// let translate = Translate::<Cartesian<2>>::with_maximum_distance(d.try_into()?);
-    /// let translate_sweep = ParallelSweep::<_, HypercuboidCheckerboard<2>, Point<Cartesian<2>>, Point<Cartesian<2>>>::new(1.0.try_into()?, translate);
+    /// let translate =
+    ///     Translate::<Cartesian<2>>::with_maximum_distance(d.try_into()?);
+    /// let translate_sweep = ParallelSweep::<
+    ///     _,
+    ///     HypercuboidCheckerboard<2>,
+    ///     Point<Cartesian<2>>,
+    ///     Point<Cartesian<2>>,
+    /// >::new(1.0.try_into()?, translate);
     /// # Ok(())
     /// # }
     /// ```
@@ -131,8 +141,7 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S> where
     }
 }
 
-impl<L, K, B, S> ParallelSweep<L, K, B, S>
-{
+impl<L, K, B, S> ParallelSweep<L, K, B, S> {
     /// Get the body interaction range.
     #[inline]
     pub fn body_interaction_range(&self) -> &PositiveReal {
@@ -159,116 +168,138 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S>
 
     /// Make the cached checkerboard consistent with the current microstate's boundary.
     #[inline(always)]
-    fn update_checkerboard<P, X, C>(
-        &mut self,
-        microstate: &Microstate<B, S, X, C>,
-        )
-        where
-    B: Position<Position = P>,
-    K: Checkerboard<P>,
-    C: Cover<P, Checkerboard=K>
+    fn update_checkerboard<P, X, C>(&mut self, microstate: &Microstate<B, S, X, C>)
+    where
+        B: Position<Position = P>,
+        K: Checkerboard<P>,
+        C: Cover<P, Checkerboard = K>,
     {
-    let mut checkerboard_rng = microstate.counter().index(u64::MAX).make_rng();
-    microstate.boundary().cover_into(&mut self.checkerboard, &mut checkerboard_rng, self.body_interaction_range);
+        let mut checkerboard_rng = microstate.counter().index(u64::MAX).make_rng();
+        microstate.boundary().cover_into(
+            &mut self.checkerboard,
+            &mut checkerboard_rng,
+            self.body_interaction_range,
+        );
 
-    self.spaces.resize_with(self.checkerboard.num_spaces(), Vec::default);
-    for space in &mut self.spaces {
-        space.truncate(0);
-    }
-    for (body_index, body) in microstate.bodies().iter().enumerate() {
-        let space_index = self.checkerboard.point_to_space_index(body.item.properties.position());
-        self.spaces[space_index.expect("body should be inside the checkerboard")].push(body_index);
-    }
+        self.spaces
+            .resize_with(self.checkerboard.num_spaces(), Vec::default);
+        for space in &mut self.spaces {
+            space.truncate(0);
+        }
+        for (body_index, body) in microstate.bodies().iter().enumerate() {
+            let space_index = self
+                .checkerboard
+                .point_to_space_index(body.item.properties.position());
+            self.spaces[space_index.expect("body should be inside the checkerboard")]
+                .push(body_index);
+        }
     }
 
     /// Generate trial moves in parallel.
-    #[expect(clippy::too_many_arguments, reason = "many arguments must be passed to avoid too many lines of code in other methods")]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "many arguments must be passed to avoid too many lines of code in other methods"
+    )]
     #[inline(always)]
     fn generate_trial_moves<P, X, C, H>(
         local_trial: &L,
-        body_trials: &mut Vec<BodyTrial<B,S>>,
+        body_trials: &mut Vec<BodyTrial<B, S>>,
         microstate: &Microstate<B, S, X, C>,
         hamiltonian: &H,
         kt: f64,
         checkerboard: &K,
         spaces: &[Vec<usize>],
         space_indices: &Vec<usize>,
-        ) where
-    P: Copy,
-    B: Copy + Default + Transform<S> + Position<Position = P> + Send + Sync,
-    S: Copy + Default + Position<Position = P> + Send + Sync,
-    L: LocalTrial<B> + Sync,
-    H: DeltaEnergyOne<B, S, X, C> + Sync,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + Sync,
-    K: Checkerboard<P> + Sync,
-    X: Sync,
-        {
+    ) where
+        P: Copy,
+        B: Copy + Default + Transform<S> + Position<Position = P> + Send + Sync,
+        S: Copy + Default + Position<Position = P> + Send + Sync,
+        L: LocalTrial<B> + Sync,
+        H: DeltaEnergyOne<B, S, X, C> + Sync,
+        C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + Sync,
+        K: Checkerboard<P> + Sync,
+        X: Sync,
+    {
         body_trials.resize_with(space_indices.len(), Default::default);
 
-        body_trials.par_iter_mut().zip(space_indices).for_each(|(body_trial, space_index)| {
-        // body_trials.iter_mut().zip(space_indices).for_each(|(body_trial, space_index)| {
-            body_trial.status = TrialStatus::Invalid;
-            let space_index = *space_index;
-            let mut rng = microstate.counter().index(space_index as u64).make_rng();
+        body_trials
+            .par_iter_mut()
+            .zip(space_indices)
+            .for_each(|(body_trial, space_index)| {
+                // body_trials.iter_mut().zip(space_indices).for_each(|(body_trial, space_index)| {
+                body_trial.status = TrialStatus::Invalid;
+                let space_index = *space_index;
+                let mut rng = microstate.counter().index(space_index as u64).make_rng();
 
-            if let Some(body_index) = spaces[space_index].choose(&mut rng) {
-                let body_index = *body_index;
-                body_trial.body.clone_from(&microstate.bodies()[body_index].item);
-                body_trial.body_index = body_index;
+                if let Some(body_index) = spaces[space_index].choose(&mut rng) {
+                    let body_index = *body_index;
+                    body_trial
+                        .body
+                        .clone_from(&microstate.bodies()[body_index].item);
+                    body_trial.body_index = body_index;
 
-                match microstate
-                    .boundary()
-                    .wrap(local_trial.propose(&mut rng, body_trial.body.properties))
-                {
-                    Ok(new_properties) if checkerboard.point_to_space_index(new_properties.position()) != Some(space_index) => body_trial.status = TrialStatus::Invalid,
-                    Ok(new_properties) => {
-                        body_trial.body.properties = new_properties;
-
-                        let delta_h = hamiltonian.delta_energy_one(microstate, body_index, &body_trial.body);
-                        if delta_h != f64::INFINITY && (delta_h <= 0.0 || rng.random::<f64>() < (-delta_h / kt).exp()) {
-                            body_trial.status = TrialStatus::Accepted;
-                        } else {
-                            body_trial.status = TrialStatus::Rejected;
+                    match microstate
+                        .boundary()
+                        .wrap(local_trial.propose(&mut rng, body_trial.body.properties))
+                    {
+                        Ok(new_properties)
+                            if checkerboard.point_to_space_index(new_properties.position())
+                                != Some(space_index) =>
+                        {
+                            body_trial.status = TrialStatus::Invalid
                         }
+                        Ok(new_properties) => {
+                            body_trial.body.properties = new_properties;
+
+                            let delta_h = hamiltonian.delta_energy_one(
+                                microstate,
+                                body_index,
+                                &body_trial.body,
+                            );
+                            if delta_h != f64::INFINITY
+                                && (delta_h <= 0.0 || rng.random::<f64>() < (-delta_h / kt).exp())
+                            {
+                                body_trial.status = TrialStatus::Accepted;
+                            } else {
+                                body_trial.status = TrialStatus::Rejected;
+                            }
+                        }
+                        Err(_) => body_trial.status = TrialStatus::Rejected,
                     }
-                    Err(_) => body_trial.status = TrialStatus::Rejected,
                 }
-            }
-        });
+            });
     }
 
     /// Update the properties of bodies with accepted moves.
     #[inline(always)]
     fn update_bodies<P, X, C>(
-       microstate: &mut Microstate<B, S, X, C>,
-        body_trials: &Vec<BodyTrial<B,S>>,
-        ) -> Count
-
-        where
-    P: Copy,
-    B: Copy + Default + Transform<S> + Position<Position = P>,
-    S: Copy + Default + Position<Position = P>,
-    X: PointUpdate<P, SiteKey>,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
-        {
+        microstate: &mut Microstate<B, S, X, C>,
+        body_trials: &Vec<BodyTrial<B, S>>,
+    ) -> Count
+    where
+        P: Copy,
+        B: Copy + Default + Transform<S> + Position<Position = P>,
+        S: Copy + Default + Position<Position = P>,
+        X: PointUpdate<P, SiteKey>,
+        C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    {
         let mut count = Count::default();
 
         for body_trial in body_trials {
             match body_trial.status {
                 TrialStatus::Rejected => count.rejected += 1,
-                TrialStatus::Invalid => {},
+                TrialStatus::Invalid => {}
                 TrialStatus::Accepted => {
-
-            if microstate
-                .update_body_properties(body_trial.body_index, body_trial.body.properties)
-                .is_ok()
-                {
-                    count.accepted += 1;
-                } else {
-                    count.rejected += 1;
+                    if microstate
+                        .update_body_properties(body_trial.body_index, body_trial.body.properties)
+                        .is_ok()
+                    {
+                        count.accepted += 1;
+                    } else {
+                        count.rejected += 1;
+                    }
                 }
             }
-        }
         }
         count
     }
@@ -282,7 +313,7 @@ where
     X: PointUpdate<P, SiteKey> + Sync,
     L: LocalTrial<B> + Sync,
     H: DeltaEnergyOne<B, S, X, C> + Sync,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + Cover<P, Checkerboard=K> + Sync,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + Cover<P, Checkerboard = K> + Sync,
     MA: Temperature,
     K: Checkerboard<P> + Sync,
 {
@@ -317,17 +348,21 @@ where
     /// # Example
     ///
     /// ```
+    /// use hoomd_geometry::shape::Rectangle;
     /// use hoomd_interaction::Zero;
     /// use hoomd_mc::{ParallelSweep, Translate, Trial};
-    /// use hoomd_microstate::{Body, Microstate, boundary::Closed, property::Position};
+    /// use hoomd_microstate::{
+    ///     Body, Microstate, boundary::Closed, property::Position,
+    /// };
     /// use hoomd_simulation::macrostate::Isothermal;
     /// use hoomd_vector::Cartesian;
-    /// use hoomd_geometry::shape::Rectangle;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let square = Rectangle::with_equal_edges(10.0.try_into()?);
-    /// let mut microstate = Microstate::builder().boundary(Closed(square)).
-    /// bodies([Body::point(Cartesian::from([0.0, 0.0]))]).try_build()?;
+    /// let mut microstate = Microstate::builder()
+    ///     .boundary(Closed(square))
+    ///     .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
+    ///     .try_build()?;
     /// let d = 0.1;
     /// let translate = Translate::with_maximum_distance(d.try_into()?);
     /// let mut translate_sweep = ParallelSweep::new(1.0.try_into()?, translate);
@@ -356,14 +391,15 @@ where
         while count.total() < microstate.bodies().len() as u64 {
             for space_indices in self.checkerboard.space_indices_by_color() {
                 Self::generate_trial_moves(
-                        &self.local_trial,
-                        &mut self.body_trials,
-                        microstate,
-                        hamiltonian,
-                        *kt,
-                        &self.checkerboard,
-                        &self.spaces,
-                        space_indices);
+                    &self.local_trial,
+                    &mut self.body_trials,
+                    microstate,
+                    hamiltonian,
+                    *kt,
+                    &self.checkerboard,
+                    &self.spaces,
+                    space_indices,
+                );
 
                 count += Self::update_bodies(microstate, &self.body_trials);
             }

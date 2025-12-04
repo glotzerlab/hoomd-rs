@@ -5,7 +5,7 @@ use std::fmt;
 
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{PairwiseCutoff, pairwise::HardSphere};
-use hoomd_mc::{HypercuboidCheckerboard, Count, ParallelSweep, Sweep, Translate, Trial};
+use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Sweep, Translate, Trial};
 use hoomd_microstate::{
     Body, Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},
@@ -20,7 +20,12 @@ use crate::Effort;
 pub struct HardSphereSim<const D: usize, X> {
     microstate: Microstate<Point<Cartesian<D>>, Point<Cartesian<D>>, X, Periodic<Hypercuboid<D>>>,
     translate_sweep: Sweep<Translate<Cartesian<D>>>,
-    parallel_translate_sweep: ParallelSweep<Translate<Cartesian<D>>, HypercuboidCheckerboard<D>, Point<Cartesian<D>>, Point<Cartesian<D>>>,
+    parallel_translate_sweep: ParallelSweep<
+        Translate<Cartesian<D>>,
+        HypercuboidCheckerboard<D>,
+        Point<Cartesian<D>>,
+        Point<Cartesian<D>>,
+    >,
     hamiltonian: PairwiseCutoff<HardSphere>,
     macrostate: Isothermal,
     count: Count,
@@ -44,11 +49,17 @@ where
 {
     fn advance(&mut self) -> anyhow::Result<()> {
         if self.parallel {
-            self.count += self.parallel_translate_sweep
-                .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+            self.count += self.parallel_translate_sweep.apply(
+                &mut self.microstate,
+                &self.hamiltonian,
+                &self.macrostate,
+            );
         } else {
-            self.count += self.translate_sweep
-                .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+            self.count += self.translate_sweep.apply(
+                &mut self.microstate,
+                &self.hamiltonian,
+                &self.macrostate,
+            );
         }
         self.microstate.increment_step();
 
@@ -66,7 +77,13 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.microstate.fmt(f)?;
-        write!(f, "\nTranslate acceptance: {}", self.count.acceptance_ratio().expect("there should be some trial moves"))
+        write!(
+            f,
+            "\nTranslate acceptance: {}",
+            self.count
+                .acceptance_ratio()
+                .expect("there should be some trial moves")
+        )
     }
 }
 

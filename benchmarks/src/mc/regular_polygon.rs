@@ -8,7 +8,7 @@ use hoomd_geometry::{
     shape::{ConvexPolygon, Hypercuboid},
 };
 use hoomd_interaction::{PairwiseCutoff, pairwise::HardShape};
-use hoomd_mc::{HypercuboidCheckerboard, Count, ParallelSweep, Rotate, Sweep, Translate, Trial};
+use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial};
 use hoomd_microstate::{
     Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},
@@ -28,9 +28,19 @@ pub struct RegularPolygon<X> {
         Periodic<Hypercuboid<2>>,
     >,
     translate_sweep: Sweep<Translate<Cartesian<2>>>,
-    parallel_translate_sweep: ParallelSweep<Translate<Cartesian<2>>, HypercuboidCheckerboard<2>, OrientedPoint<Cartesian<2>, Angle>, OrientedPoint<Cartesian<2>, Angle>>,
+    parallel_translate_sweep: ParallelSweep<
+        Translate<Cartesian<2>>,
+        HypercuboidCheckerboard<2>,
+        OrientedPoint<Cartesian<2>, Angle>,
+        OrientedPoint<Cartesian<2>, Angle>,
+    >,
     rotate_sweep: Sweep<Rotate<Angle>>,
-    parallel_rotate_sweep: ParallelSweep<Rotate<Angle>, HypercuboidCheckerboard<2>,OrientedPoint<Cartesian<2>, Angle>,OrientedPoint<Cartesian<2>, Angle>>,
+    parallel_rotate_sweep: ParallelSweep<
+        Rotate<Angle>,
+        HypercuboidCheckerboard<2>,
+        OrientedPoint<Cartesian<2>, Angle>,
+        OrientedPoint<Cartesian<2>, Angle>,
+    >,
     hamiltonian: PairwiseCutoff<HardShape<Convex<ConvexPolygon>>>,
     macrostate: Isothermal,
     translate_count: Count,
@@ -44,7 +54,8 @@ impl<X> Effort for RegularPolygon<X> {
     }
 
     fn effort(&self) -> f64 {
-        (self.translate_count.total() + self.rotate_count.total()) as f64 / self.microstate.bodies().len() as f64
+        (self.translate_count.total() + self.rotate_count.total()) as f64
+            / self.microstate.bodies().len() as f64
     }
 }
 
@@ -55,15 +66,25 @@ where
 {
     fn advance(&mut self) -> anyhow::Result<()> {
         if self.parallel {
-            self.translate_count += self.parallel_translate_sweep
-                .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
-            self.rotate_count += self.parallel_rotate_sweep
-                .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+            self.translate_count += self.parallel_translate_sweep.apply(
+                &mut self.microstate,
+                &self.hamiltonian,
+                &self.macrostate,
+            );
+            self.rotate_count += self.parallel_rotate_sweep.apply(
+                &mut self.microstate,
+                &self.hamiltonian,
+                &self.macrostate,
+            );
         } else {
-            self.translate_count += self.translate_sweep
-                .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
-            self.rotate_count += self.rotate_sweep
-                .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+            self.translate_count += self.translate_sweep.apply(
+                &mut self.microstate,
+                &self.hamiltonian,
+                &self.macrostate,
+            );
+            self.rotate_count +=
+                self.rotate_sweep
+                    .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
         }
 
         self.microstate.increment_step();
@@ -82,8 +103,20 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.microstate.fmt(f)?;
-        write!(f, "\nTranslate acceptance: {}", self.translate_count.acceptance_ratio().expect("there should be some trial moves"))?;
-        write!(f, "\nRotate acceptance: {}", self.rotate_count.acceptance_ratio().expect("there should be some trial moves"))
+        write!(
+            f,
+            "\nTranslate acceptance: {}",
+            self.translate_count
+                .acceptance_ratio()
+                .expect("there should be some trial moves")
+        )?;
+        write!(
+            f,
+            "\nRotate acceptance: {}",
+            self.rotate_count
+                .acceptance_ratio()
+                .expect("there should be some trial moves")
+        )
     }
 }
 
@@ -110,8 +143,7 @@ where
         let translate_sweep = Sweep(translate.clone());
         let parallel_translate_sweep = ParallelSweep::new(sigma.try_into()?, translate);
 
-        let rotate =
-            Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
+        let rotate = Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
         let rotate_sweep = Sweep(rotate.clone());
         let parallel_rotate_sweep = ParallelSweep::new(sigma.try_into()?, rotate);
 

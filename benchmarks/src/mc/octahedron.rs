@@ -8,7 +8,7 @@ use hoomd_geometry::{
     shape::{ConvexPolyhedron, Hypercuboid},
 };
 use hoomd_interaction::{PairwiseCutoff, pairwise::HardShape};
-use hoomd_mc::{HypercuboidCheckerboard, Count, ParallelSweep, Sweep, Translate, Trial};
+use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Sweep, Translate, Trial};
 use hoomd_microstate::{
     Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},
@@ -28,7 +28,12 @@ pub struct Octahedron<X> {
         Periodic<Hypercuboid<3>>,
     >,
     translate_sweep: Sweep<Translate<Cartesian<3>>>,
-    parallel_translate_sweep: ParallelSweep<Translate<Cartesian<3>>, HypercuboidCheckerboard<3>, OrientedPoint<Cartesian<3>, Versor>, OrientedPoint<Cartesian<3>, Versor>>,
+    parallel_translate_sweep: ParallelSweep<
+        Translate<Cartesian<3>>,
+        HypercuboidCheckerboard<3>,
+        OrientedPoint<Cartesian<3>, Versor>,
+        OrientedPoint<Cartesian<3>, Versor>,
+    >,
     hamiltonian: PairwiseCutoff<HardShape<Convex<ConvexPolyhedron>>>,
     macrostate: Isothermal,
     count: Count,
@@ -52,11 +57,17 @@ where
 {
     fn advance(&mut self) -> anyhow::Result<()> {
         if self.parallel {
-            self.count += self.parallel_translate_sweep
-                .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+            self.count += self.parallel_translate_sweep.apply(
+                &mut self.microstate,
+                &self.hamiltonian,
+                &self.macrostate,
+            );
         } else {
-            self.count += self.translate_sweep
-                .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
+            self.count += self.translate_sweep.apply(
+                &mut self.microstate,
+                &self.hamiltonian,
+                &self.macrostate,
+            );
         }
         self.microstate.increment_step();
 
@@ -76,7 +87,13 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.microstate.fmt(f)?;
-        write!(f, "\nTranslate acceptance: {}", self.count.acceptance_ratio().expect("there should be some trial moves"))
+        write!(
+            f,
+            "\nTranslate acceptance: {}",
+            self.count
+                .acceptance_ratio()
+                .expect("there should be some trial moves")
+        )
     }
 }
 

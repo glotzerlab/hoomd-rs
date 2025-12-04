@@ -86,7 +86,10 @@ impl RngCore for SFC64 {
         self.step()
     }
     #[inline]
-    #[expect(clippy::cast_possible_truncation, reason="the truncation is intended")]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "the truncation is intended"
+    )]
     fn next_u32(&mut self) -> u32 {
         self.step() as u32
     }
