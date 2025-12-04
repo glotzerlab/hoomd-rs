@@ -50,7 +50,7 @@ where
             self.count +=self.translate_sweep
                 .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
         }
-        
+
         self.microstate.increment_step();
 
         Ok(())

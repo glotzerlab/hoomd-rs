@@ -196,7 +196,7 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
                 for offset_i in 0..=1 {
                     let mut space_indices = Vec::new();
                     let mut multi_index = [0; N];
-                    
+
                     for j in 0..shape[0] / 2 {
                         multi_index[0] = 2*j + offset_j;
                         for i in 0..shape[1] / 2 {
@@ -218,7 +218,7 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
                     for offset_i in 0..=1 {
                         let mut space_indices = Vec::new();
                         let mut multi_index = [0; N];
-                    
+
                         for k in 0..shape[0] / 2 {
                             multi_index[0] = 2*k + offset_k;
                             for j in 0..shape[1] / 2 {
@@ -274,14 +274,14 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         let origin = Cartesian {
             coordinates: array::from_fn(|i| -edge_lengths[i].get() / 2.0 - offset[i] * space_width[i]),
         };
-        
+
         Self {
             space_width,
             shape,
             origin,
             space_indices_by_color: Self::construct_space_indices_by_color(shape),
             periodic,
-        }        
+        }
     }
 
     /// Update an existing checkerboard.
@@ -303,7 +303,7 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         let origin = Cartesian {
             coordinates: array::from_fn(|i| -edge_lengths[i].get() / 2.0 - offset[i] * space_width[i]),
         };
-        
+
         if shape != self.shape {
             self.space_indices_by_color = Self::construct_space_indices_by_color(shape);
             self.shape = shape;
@@ -563,7 +563,7 @@ mod tests {
         check!(checkerboard.point_to_space_index(&Cartesian::from([8.0, 0.0])) == Some(6));
 
         check!(checkerboard.point_to_space_index(&Cartesian::from([7.9, 11.9])) == Some(95));
-        
+
         Ok(())
     }
 
@@ -595,7 +595,7 @@ mod tests {
         check!(checkerboard.point_to_space_index(&Cartesian::from([9.0, 1.0])) == None);
 
         check!(checkerboard.point_to_space_index(&Cartesian::from([8.9, 12.9])) == Some(95));
-        
+
         Ok(())
     }
 
@@ -631,10 +631,10 @@ mod tests {
                 check!(checkerboard.point_to_space_index(&v).is_some());
                 check!(checkerboard.point_to_space_index(&lower_left) == Some(0));
                 check!(checkerboard.point_to_space_index(&upper_right).is_some());
-                
+
             }
         }
-        
+
         Ok(())
     }
 }

@@ -25,7 +25,7 @@ enum TrialStatus {
     /// The trial move was rejected by the Metropolis criterion.
     #[default]
     Rejected,
-    
+
     /// The trial move was accepted.
     Accepted,
 
@@ -48,7 +48,7 @@ struct BodyTrial<B, S> {
     /// Status of the trial.
     status: TrialStatus,
 }
-    
+
 
 /// In parallel, apply local trial moves to bodies in the microstate.
 ///
@@ -156,7 +156,7 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S>
     pub fn local_trial_mut(&mut self) -> &mut L {
         &mut self.local_trial
     }
-    
+
     /// Make the cached checkerboard consistent with the current microstate's boundary.
     #[inline(always)]
     fn update_checkerboard<P, X, C>(
@@ -235,7 +235,7 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S>
                 }
             }
         });
-    }        
+    }
 
     /// Update the properties of bodies with accepted moves.
     #[inline(always)]
@@ -258,7 +258,7 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S>
                 TrialStatus::Rejected => count.rejected += 1,
                 TrialStatus::Invalid => {},
                 TrialStatus::Accepted => {
-            
+
             if microstate
                 .update_body_properties(body_trial.body_index, body_trial.body.properties)
                 .is_ok()
@@ -348,13 +348,13 @@ where
         macrostate: &MA,
     ) -> Self::Count {
         let kt = macrostate.temperature();
-        
+
         self.update_checkerboard(microstate);
-               
+
         let mut count = Self::Count::default();
 
         while count.total() < microstate.bodies().len() as u64 {
-            for space_indices in self.checkerboard.space_indices_by_color() {           
+            for space_indices in self.checkerboard.space_indices_by_color() {
                 Self::generate_trial_moves(
                         &self.local_trial,
                         &mut self.body_trials,

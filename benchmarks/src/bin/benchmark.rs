@@ -243,7 +243,7 @@ fn main() -> anyhow::Result<()> {
             "Parquet output is required when n_min ({n}) is not equal to n_max ({n_max})"
         ));
     }
-        
+
     loop {
         let pool = ThreadPoolBuilder::new().num_threads(threads).build().unwrap();
         pool.install(|| execute_matching(&mut results, n, threads, &options))?;

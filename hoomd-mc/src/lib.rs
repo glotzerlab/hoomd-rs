@@ -228,7 +228,7 @@ pub trait Checkerboard<P> {
 
     /// The total number of spaces in the checkerboard.
     fn num_spaces(&self) -> usize;
-} 
+}
 
 /// Construct a [`Checkerboard`] that covers all points in this boundary.
 pub trait Cover<P> {
