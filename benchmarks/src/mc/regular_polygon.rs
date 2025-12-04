@@ -53,7 +53,7 @@ pub struct RegularPolygon<X> {
         OrientedPoint<Cartesian<2>, Angle>,
         OrientedPoint<Cartesian<2>, Angle>,
     >,
-    
+
     /// Hard polygon interaction.
     hamiltonian: PairwiseCutoff<HardShape<Convex<ConvexPolygon>>>,
 

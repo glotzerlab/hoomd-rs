@@ -230,7 +230,7 @@ fn execute_matching(
     Ok(())
 }
 
-#[expect(clippy::print_stdout, reason="benchmark should provide output")]
+#[expect(clippy::print_stdout, reason = "benchmark should provide output")]
 fn main() -> anyhow::Result<()> {
     let options = Options::parse();
 

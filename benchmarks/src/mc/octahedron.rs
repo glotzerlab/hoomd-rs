@@ -43,8 +43,6 @@ pub struct Octahedron<X> {
         OrientedPoint<Cartesian<3>, Versor>,
     >,
 
-    // TODO: add rotate moves.
-
     /// Hard octahedra interaction.
     hamiltonian: PairwiseCutoff<HardShape<Convex<ConvexPolyhedron>>>,
 
