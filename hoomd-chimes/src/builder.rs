@@ -8,8 +8,8 @@ use std::error::Error;
 use std::{fmt, fs};
 
 use crate::potential::{
-    ChimesChebyshevExpansion, ChimesPenalty, ChimesSmoothing, ChimesTransformation, ChimesTwobPotential,
-    CubicSmooth, TersoffSmooth,
+    ChimesChebyshevExpansion, ChimesPenalty, ChimesSmoothing, ChimesTransformation,
+    ChimesTwobPotential, CubicSmooth, TersoffSmooth,
 };
 use crate::transformation::{DirectTransformation, InverseTransformation, MorseTransformation};
 use hoomd_interaction::{PairwiseCutoff, pairwise::Isotropic};
@@ -26,6 +26,20 @@ impl fmt::Display for InvalidFormatError {
 }
 
 impl Error for InvalidFormatError {}
+
+/// Custom error for not able to
+/// construct potential from
+/// the parsed data.
+#[derive(Debug)]
+struct PotentialConstructionError(String);
+
+impl fmt::Display for PotentialConstructionError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Error for PotentialConstructionError {}
 
 /**
 Builder for constructing `ChIMES` potential from
@@ -132,8 +146,11 @@ impl<const N: usize> ChimesBuilder<N> {
     /// Will return `Err` if `N` does not
     /// match the two-body order read in the
     /// parameter file.
-    #[allow(clippy::too_many_lines)]
-    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::too_many_lines, reason = "Parse complex TXT file")]
+    #[allow(
+        clippy::cast_sign_loss,
+        reason = "Parse the line with positive and negative number but use it as index"
+    )]
     #[inline]
     pub fn parse(file_path: &str) -> Result<Self, Box<dyn Error>> {
         let content = fs::read_to_string(file_path)?;
@@ -425,10 +442,20 @@ impl<const N: usize> ChimesBuilder<N> {
                         let typej = type_data.0[jj].clone();
                         let typeij = typei + &typej;
 
+                        //let index_of_pair_match = pair_type_slow_map
+                        //    .iter()
+                        //    .position(|s| s.contains(&typeij))
+                        //    .expect("Error finding pair type from the slow map");
+                        // idiomatically propogate the error, instead of unwrap which
+                        // may cause panics
                         let index_of_pair_match = pair_type_slow_map
                             .iter()
-                            .position(|s| s.contains(&typeij))
-                            .expect("Error finding pair type from the slow map");
+                            .position(|s| *s == typeij)
+                            .ok_or_else(|| {
+                                InvalidFormatError(format!(
+                                    "Error reading pair type slow mapping at line {start}"
+                                ))
+                            })?;
                         pair_idx_fast_map.push(pair_idx_slow_map[index_of_pair_match]);
 
                         for iii in 0..pair_data.0.len() {
@@ -469,7 +496,7 @@ impl<const N: usize> ChimesBuilder<N> {
     }
 
     /// Assemble two-body `ChIMES` potential function given
-    /// a pair_idx.
+    /// a `pair_idx`.
     ///
     /// # Errors
     ///
@@ -481,30 +508,31 @@ impl<const N: usize> ChimesBuilder<N> {
         pair_idx: usize,
     ) -> Result<PairwiseCutoff<Isotropic<ChimesTwobPotential<N>>>, Box<dyn Error>> {
         if pair_idx >= self.pair_data.0.len() {
-            return Err(Box::new(InvalidFormatError(format!(
+            return Err(Box::new(PotentialConstructionError(format!(
                 "Intend to access the potential model with pair idx {}, but only found {} pairs",
                 pair_idx,
                 self.pair_data.0.len()
             ))));
         }
         let transformatiom_fn = self.get_tranformation(pair_idx)?;
-        let cheby2b: ChimesChebyshevExpansion<ChimesTransformation, N> = ChimesChebyshevExpansion::new(
-            transformatiom_fn,
-            self.cheby_2b_coeffs[pair_idx].clone(),
-            self.pair_data.2[pair_idx],
-        );
+        let cheby2b: ChimesChebyshevExpansion<ChimesTransformation, N> =
+            ChimesChebyshevExpansion::new(
+                transformatiom_fn,
+                self.cheby_2b_coeffs[pair_idx].clone(),
+                self.pair_data.2[pair_idx],
+            );
         let chimes_2b_model = self.get_smoothing(cheby2b, pair_idx)?;
         let penalty_fn = ChimesPenalty {
             r_in: self.pair_data.2[pair_idx],
             a: self.penalty_scaling,
             dt: self.penalty_dist,
         };
+
         let chimes_potential = ChimesTwobPotential {
             type1: self.pair_data.0[pair_idx].clone(),
             type2: self.pair_data.1[pair_idx].clone(),
             chimes: chimes_2b_model,
-            penalty: penalty_fn,
-            energy_shifting: self.energy_offset[pair_idx],
+            penalty: penalty_fn
         };
 
         Ok(PairwiseCutoff(Isotropic {
@@ -529,7 +557,7 @@ impl<const N: usize> ChimesBuilder<N> {
                 r_in: self.pair_data.2[pair_idx],
                 r_out: self.pair_data.3[pair_idx],
             })),
-            _ => Err(Box::new(InvalidFormatError(format!(
+            _ => Err(Box::new(PotentialConstructionError(format!(
                 "Unknown transformation style: {}",
                 self.xform_style
             )))),
@@ -553,9 +581,9 @@ impl<const N: usize> ChimesBuilder<N> {
                 r_in: self.pair_data.2[pair_idx],
                 fo: self.fcut.1.expect("Error reading tersoff fo"),
             })),
-            _ => Err(Box::new(InvalidFormatError(format!(
+            _ => Err(Box::new(PotentialConstructionError(format!(
                 "Unknown smoothing style: {}",
-                self.xform_style
+                self.fcut.0
             )))),
         }
     }
@@ -605,20 +633,21 @@ mod tests {
         let expected_fcut: (String, Option<f64>) = (String::from("CUBIC"), None);
         let expected_energy_offset = vec![0.0];
         let expected_penalty_dist = 0.01;
+        let expected_penalty_scaling = 1e+8;
         let expected_pair_type_index = [0];
         let expected_cheby_2b_coeffs = vec![vec![
-            285.73883308072,
-            -213.71388752372,
-            358.53331099031,
-            -172.12400486549,
-            44.77502350315,
-            -34.154784921509,
-            30.632345544482,
-            -33.336059893072,
-            11.483163813684,
-            -0.9908672079118,
-            -3.3830138904188,
-            1.2480108628453,
+            285.738_833_080_72,
+            -213.713_887_523_72,
+            358.533_310_990_31,
+            -172.124_004_865_49,
+            44.775_023_503_15,
+            -34.154_784_921_509,
+            30.632_345_544_482,
+            -33.336_059_893_072,
+            11.483_163_813_684,
+            -0.990_867_207_911_8,
+            -3.383_013_890_418_8,
+            1.248_010_862_845_3,
         ]];
         let expected_pair_idx_slow_map = vec![0];
         let expected_pair_type_slow_map = vec!["CC"];
@@ -632,6 +661,7 @@ mod tests {
         assert_eq!(params.fcut, expected_fcut);
         assert_eq!(params.energy_offset, expected_energy_offset);
         assert_eq!(params.penalty_dist, expected_penalty_dist);
+        assert_eq!(params.penalty_scaling, expected_penalty_scaling);
         assert_eq!(params.pair_type_index, expected_pair_type_index);
         assert_eq!(params.cheby_2b_coeffs, expected_cheby_2b_coeffs);
         assert_eq!(params.pair_idx_slow_map, expected_pair_idx_slow_map);
@@ -644,5 +674,126 @@ mod tests {
             .expect("Error assembling ChIMES potential");
         assert_eq!(chimes_pot.0.interaction.type1, String::from("C"));
         assert_eq!(chimes_pot.0.interaction.type2, String::from("C"));
+    }
+
+    #[rstest]
+    fn parse_azoimide_twobodypart() {
+        const N: usize = 12;
+        let file_path = "./test-data/HN-fourbody.txt";
+
+        let params = ChimesBuilder::<N>::parse(file_path).expect("Failed to parse parameter file");
+
+        let expected_poly_order = vec![12, 8, 4];
+        let expected_type_data = (
+            vec![String::from("N"), String::from("H")],
+            vec![14.0064, 1.0079],
+        );
+        let expected_xform_style = String::from("MORSE");
+        let expected_pair_data = (
+            vec![String::from("N"), String::from("H"), String::from("N")],
+            vec![String::from("N"), String::from("H"), String::from("H")],
+            vec![0.793, 0.451, 0.666],
+            vec![8.0, 8.0, 8.0],
+            vec![Some(1.15), Some(0.8), Some(1.0)],
+        );
+        let expected_fcut: (String, Option<f64>) = (String::from("TERSOFF"), Some(0.5));
+        let expected_energy_offset = vec![-126.828700616, -59.0402284083];
+        let expected_penalty_dist = 0.02;
+        let expected_penalty_scaling = 1e+6;
+        let expected_pair_type_index = [0, 1, 2];
+        let expected_cheby_2b_coeffs = vec![
+            vec![
+                17.341_009_355_697_139,
+                57.774_119_773_766_508,
+                76.220_068_702_688_152,
+                40.597_946_713_780_949,
+                -3.090_950_293_142_406_7,
+                -9.568_323_288_481_783_7,
+                -1.398_446_509_119_888_8,
+                -0.284_883_283_536_185_81,
+                -0.217_319_593_051_684_55,
+                0.156_890_951_659_628_66,
+                0.056_716_863_392_651_549,
+                0.214_859_981_309_824_75,
+            ],
+            vec![
+                12.505_788_696_001_36,
+                28.829_120_708_867_389,
+                24.295_927_978_434_74,
+                9.351_183_377_623_707_2,
+                0.809_540_068_944_617_27,
+                1.108_761_409_653_912_5,
+                2.308_831_039_570_009_6,
+                -0.171_536_478_297_497_44,
+                0.035_436_599_340_995_96,
+                0.501_230_272_711_822_86,
+                -0.056_263_800_428_875_528,
+                0.203_871_981_318_344_89,
+            ],
+            vec![
+                1.701_481_886_171_263_5,
+                10.542_458_855_813_658,
+                13.624_902_173_816_118,
+                -1.951_617_500_501_013_2,
+                -11.233_817_110_914_156,
+                -4.308_217_478_930_769_7,
+                -0.189_647_654_903_229_32,
+                -0.921_076_193_724_393_2,
+                -0.159_350_209_186_874_81,
+                0.267_439_675_848_717_86,
+                0.034_690_942_326_356_888,
+                0.002_082_396_054_432_101_4,
+            ],
+        ];
+        let expected_pair_idx_slow_map = vec![1, 2, 2, 0];
+        let expected_pair_type_slow_map = vec!["HH", "HN", "NH", "NN"];
+        let expected_pair_idx_fast_map = vec![0, 2, 2, 1];
+        let expected_pair_type_fast_map = vec!["NN", "NH", "NH", "HH"];
+
+        assert_eq!(params.poly_order, expected_poly_order);
+        assert_eq!(params.type_data, expected_type_data);
+        assert_eq!(params.xform_style, expected_xform_style);
+        assert_eq!(params.pair_data, expected_pair_data);
+        assert_eq!(params.fcut, expected_fcut);
+        assert_eq!(params.energy_offset, expected_energy_offset);
+        assert_eq!(params.penalty_dist, expected_penalty_dist);
+        assert_eq!(params.penalty_scaling, expected_penalty_scaling);
+        assert_eq!(params.pair_type_index, expected_pair_type_index);
+        assert_eq!(params.cheby_2b_coeffs, expected_cheby_2b_coeffs);
+        assert_eq!(params.pair_idx_slow_map, expected_pair_idx_slow_map);
+        assert_eq!(params.pair_type_slow_map, expected_pair_type_slow_map);
+        assert_eq!(params.pair_idx_fast_map, expected_pair_idx_fast_map);
+        assert_eq!(params.pair_type_fast_map, expected_pair_type_fast_map);
+
+        let nn_pot = params
+            .get_twob_chimes_potential(0)
+            .expect("Error assembling ChIMES potential");
+        let nh_pot = params
+            .get_twob_chimes_potential(1)
+            .expect("Error assembling ChIMES potential");
+        let hh_pot = params
+            .get_twob_chimes_potential(2)
+            .expect("Error assembling ChIMES potential");
+        assert_eq!(nn_pot.0.interaction.type1, String::from("N"));
+        assert_eq!(nn_pot.0.interaction.type2, String::from("N"));
+        assert_eq!(nh_pot.0.interaction.type1, String::from("H"));
+        assert_eq!(nh_pot.0.interaction.type2, String::from("H"));
+        assert_eq!(hh_pot.0.interaction.type1, String::from("N"));
+        assert_eq!(hh_pot.0.interaction.type2, String::from("H"));
+    }
+
+    #[rstest]
+    #[should_panic]
+    // Only find one pair type 
+    // but intend to access the pair type with index 1.
+    fn invalid_pair_index() {
+        const N: usize = 12;
+        let file_path = "./test-data/C-twobody.txt";
+
+        // Read the entire file content into a String
+        // This returns a Result, so we use `?` to propagate any errors
+        let params = ChimesBuilder::<N>::parse(file_path).expect("Failed to parse parameter file");
+
+        let _ = params.get_twob_chimes_potential(1).expect("Error assembling ChIMES potential");
     }
 }

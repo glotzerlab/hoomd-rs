@@ -7,8 +7,8 @@ use crate::polynomial_basis::{Basis, Chebyshev};
 use crate::transformation::Transformation;
 use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 /**
-Implement the main body of one- plus two-body
-part of `ChIMES` potential. It performs the
+Implement the calculation of Chebyshev expansion
+of `ChIMES` potential. It performs the
 sum of product between `ChIMES` coefficient
 and the corresponding Chebyshev polynomials as:
 
@@ -119,6 +119,10 @@ impl<F: Transformation, const N: usize> ChimesChebyshevExpansion<F, N> {
     /// 
     /// Cannot change the maximun order set during
     /// initialization.
+    /// 
+    /// # Panics
+    ///
+    /// Will panic if trying to change the length of `coeff`.
     #[inline]
     pub fn set_coeff(&mut self, coeff: Vec<f64>) {
         assert!(

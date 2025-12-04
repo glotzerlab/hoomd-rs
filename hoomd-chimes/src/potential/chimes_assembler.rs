@@ -84,14 +84,12 @@ pub struct ChimesTwobPotential<const N: usize> {
     pub chimes: ChimesSmoothing<ChimesTransformation, N>,
     /// See [`ChimesPenalty`].
     pub penalty: ChimesPenalty,
-    /// Single particle energy.
-    pub energy_shifting: f64,
 }
 
 impl<const N: usize> UnivariateEnergy for ChimesTwobPotential<N> {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
-        self.penalty.energy(r) + self.chimes.energy(r) + self.energy_shifting
+        self.penalty.energy(r) + self.chimes.energy(r)
     }
 }
 
