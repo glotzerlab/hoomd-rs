@@ -313,6 +313,33 @@ where
     /// attempted moves.
     ///
     /// [`Sweep::apply`]: crate::Sweep::apply
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_interaction::Zero;
+    /// use hoomd_mc::{ParallelSweep, Translate, Trial};
+    /// use hoomd_microstate::{Body, Microstate, boundary::Closed, property::Position};
+    /// use hoomd_simulation::macrostate::Isothermal;
+    /// use hoomd_vector::Cartesian;
+    /// use hoomd_geometry::shape::Rectangle;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let square = Rectangle::with_equal_edges(10.0.try_into()?);
+    /// let mut microstate = Microstate::builder().boundary(Closed(square)).
+    /// bodies([Body::point(Cartesian::from([0.0, 0.0]))]).try_build()?;
+    /// let d = 0.1;
+    /// let translate = Translate::with_maximum_distance(d.try_into()?);
+    /// let mut translate_sweep = ParallelSweep::new(1.0.try_into()?, translate);
+    ///
+    /// let hamiltonian = Zero;
+    /// let macrostate = Isothermal { temperature: 1.0 };
+    ///
+    /// translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
+    /// microstate.increment_step();
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn apply(
         &mut self,

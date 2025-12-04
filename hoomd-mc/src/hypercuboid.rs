@@ -27,7 +27,7 @@ use crate::{Cover, Checkerboard};
 /// `2^N` color checkerboard with axis-aligned hypercuboidal cells.
 ///
 /// A `HypercuboidCheckerboard` is comprised of n x m x ... axis aligned
-/// spaces. Each space is the same shape, but each axis might have a different
+/// spaces. Each space has the same shape, but each axis might have a different
 /// edge length. Each axis may be periodic or not.
 ///
 /// Along the non-periodic axes, the checkerboard overhangs the boundary so that
@@ -37,12 +37,12 @@ use crate::{Cover, Checkerboard};
 /// periodic space.
 ///
 /// Obviously, `HypercuboidCheckerboard` is a suitable checkerboard for
-/// `Hypercuboid` boundary geometries. It can also be a good choice for other
-/// boundaries. For example: cylindrical boundaries (periodic in one direction)
-/// and closed boundaries of any shape. The `hypercuboid` shape will result
-/// in many overhanging spaces (some completely outside the boundary) in these
-/// cases. However, the checkerboard is still valid and rayon's dynamic load
-/// balancing scheme should be able to handle the empty cells efficiently.
+/// [`Hypercuboid`] boundary geometries. It can also be a good choice for
+/// other boundaries. For example: cylindrical boundaries (periodic in one
+/// direction) and closed boundaries of any shape. There may be many overhanging
+/// spaces (some completely outside the boundary) in these cases. However, the
+/// checkerboard is still valid and rayon's dynamic load balancing scheme should
+/// be able to handle the empty cells efficiently.
 #[derive(Clone, Debug)]
 pub struct HypercuboidCheckerboard<const N: usize> {
     /// Position of the 0,0,0 cell's lower left corner.
@@ -151,6 +151,8 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         periodic: [bool; N]) -> ([f64; N], [usize; N]) {
 
         let mut shape_inside: [usize; N] = array::from_fn(|i| (edge_lengths[i].get() / interaction_range.get()).floor() as usize);
+
+        assert!(shape_inside.iter().all(|n| *n >= 2), "body interaction range {interaction_range} is too large for the boundary dimensions {edge_lengths:?}");
 
         for (width, periodic) in shape_inside.iter_mut().zip(periodic) {
             // In periodic boundaries, the checkerboard must have an even number
@@ -285,7 +287,7 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
     /// Update an existing checkerboard.
     ///
     /// `update` performs the same steps as `new`, but modifies `self` in place.
-    /// Prefer update when possible, as it can reuse the space index partitioning
+    /// Prefer `update` when possible, as it can reuse the space index partitioning
     /// when the shape doesn't change.
     #[inline]
     pub fn update<R: Rng + ?Sized>(&mut self,
