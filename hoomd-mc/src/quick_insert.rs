@@ -29,8 +29,8 @@ enum State {
 /// [`QuickInsert`] allows you to *quickly* insert many bodies into the microstate.
 /// It does so by *breaking detailed balance*, so you should use it only during
 /// the initialization phase of your simulation where you prepare a microstate
-/// for later equilibration. The [`QuickInsert`] protocol is an alternate to the
-/// `QuickCompress` protocol with the advantage that you can keep the boundary and
+/// for later equilibration. The [`QuickInsert`] algorithm is an alternate to the
+/// `QuickCompress` algorithm with the advantage that you can keep the boundary and
 /// any of your barriers fixed while randomly inserting particles. The disadvantage
 /// is that [`QuickInsert`] cannot achieve densities as high as `QuickCompress`.
 ///
@@ -39,7 +39,7 @@ enum State {
 /// allows sites to overlap a small amount and for trial moves to partially reduce
 /// that overlap.
 ///
-/// As a **protocol**, [`QuickInsert`] is more than just a trial move. A
+/// As a **algorithm**, [`QuickInsert`] is more than just a trial move. A
 /// [`QuickInsert`] instance stores internal state to track its progress. Therefore,
 /// you should only use a given [`QuickInsert`] on one [`Microstate`]. After
 /// initialization, a [`QuickInsert`] knows the *target* number of bodies it should
@@ -108,7 +108,7 @@ pub struct QuickInsert<D> {
 }
 
 impl<D> QuickInsert<D> {
-    /// Build a new quick insert protocol.
+    /// Build a new quick insert algorithm.
     ///
     /// After construction, the `QuickInsert` starts in a running state. On
     /// successive calls to `apply`, it will attempt to insert `target` bodies into
@@ -145,7 +145,7 @@ impl<D> QuickInsert<D> {
         }
     }
 
-    /// Check if the quick insert protocol is complete.
+    /// Check if the quick insert algorithm is complete.
     ///
     /// `QuickInsert` completes after it has inserted all `target` bodies **and**
     /// the total energy of the system is less than or equal to 0. When using the
@@ -208,7 +208,7 @@ impl<D> QuickInsert<D> {
         self.target
     }
 
-    /// Apply the quick insert protocol to a microstate.
+    /// Apply the quick insert algorithm to a microstate.
     ///
     /// Combine [`QuickInsert::apply`] with local trial moves that translate and/or
     /// rotate bodies by small amounts to relieve the stress caused by inserting
@@ -288,7 +288,7 @@ impl<D> QuickInsert<D> {
 
         let energy = hamiltonian.total_energy(microstate);
 
-        // The quick insert protocol is not complete until the energy has reached 0.
+        // The quick insert algorithm is not complete until the energy has reached 0.
         if energy <= 0.0 && self.inserted >= self.target {
             self.state = State::Complete;
             return count;
