@@ -8,7 +8,7 @@ use hoomd_interaction::{
     pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape},
     univariate::OverlapPenalty,
 };
-use hoomd_mc::{ParallelSweep, QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn, checkerboard::HypercuboidCheckerboard};
+use hoomd_mc::{ParallelSweep, QuickInsert, Rotate, Translate, Trial, UniformIn, HypercuboidCheckerboard};
 use hoomd_microstate::{
     Microstate, SiteKey, boundary::Periodic, property::OrientedPoint,
 };
@@ -37,11 +37,9 @@ struct HardEllipseSelfAssembly {
     /// How sites interact with other sites and fields.
     hamiltonian: PairwiseCutoff<HardShape<Convex<Ellipse>>>,
     /// Trial moves to apply.
-    translate_sweep: ParallelSweep<Translate<PositionVector>, HypercuboidCheckerboard<2>>,
-    // translate_sweep: Sweep<Translate<PositionVector>>,
+    translate_sweep: ParallelSweep<Translate<PositionVector>, HypercuboidCheckerboard<2>, BodyProperties, SiteProperties>,
     /// Trial moves to apply.
-    rotate_sweep: ParallelSweep<Rotate<Orientation>, HypercuboidCheckerboard<2>>,
-    // rotate_sweep: Sweep<Rotate<Orientation>>,
+    rotate_sweep: ParallelSweep<Rotate<Orientation>, HypercuboidCheckerboard<2>, BodyProperties, SiteProperties>,
     /// Temperature set point.
     macrostate: Isothermal,
     /// Quick insert
@@ -108,12 +106,10 @@ impl HardEllipseSelfAssembly {
         let translate =
             Translate::with_maximum_distance(maximum_distance.try_into()?);
         let translate_sweep = ParallelSweep::new(sigma.try_into()?, translate);
-        // let translate_sweep = Sweep(translate);
 
         let rotate =
             Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
         let rotate_sweep = ParallelSweep::new(sigma.try_into()?, rotate);
-        // let rotate_sweep = Sweep(rotate);
         // ANCHOR_END: trial_moves
 
         // ANCHOR: quick_insert

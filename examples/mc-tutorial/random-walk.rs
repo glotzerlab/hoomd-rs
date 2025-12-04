@@ -21,7 +21,7 @@ fn main() -> anyhow::Result<()> {
     // ANCHOR_END: local_trial
 
     // ANCHOR: sweep
-    let translate_sweep = Sweep(translate);
+    let mut translate_sweep = Sweep(translate);
     // ANCHOR_END: sweep
 
     // ANCHOR: hamiltonian

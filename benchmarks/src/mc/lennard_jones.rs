@@ -5,7 +5,7 @@ use std::fmt;
 
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{PairwiseCutoff, pairwise::Isotropic, univariate};
-use hoomd_mc::{checkerboard::HypercuboidCheckerboard, Count, ParallelSweep, Rotate, Sweep, Translate, Trial};
+use hoomd_mc::{HypercuboidCheckerboard, Count, ParallelSweep, Sweep, Translate, Trial};
 use hoomd_microstate::{
     Body, Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},

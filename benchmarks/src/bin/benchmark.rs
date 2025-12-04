@@ -4,7 +4,7 @@
 use std::{fmt, fs::File, sync::Arc, time::Duration};
 
 use anyhow::anyhow;
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 use clap_verbosity_flag::{InfoLevel, Verbosity, log::LevelFilter};
 use log::{info, trace};
 use parquet::{
@@ -16,7 +16,7 @@ use parquet_derive::ParquetRecordWriter;
 use benchmarks::{mc, Benchmark, Effort};
 use hoomd_microstate::{SiteKey, property::OrientedPoint};
 use hoomd_simulation::Simulation;
-use hoomd_spatial::{AllPairs, HashCell, VecCell};
+use hoomd_spatial::VecCell;
 use hoomd_vector::{Angle, Cartesian, Versor};
 
 use rayon::ThreadPoolBuilder;

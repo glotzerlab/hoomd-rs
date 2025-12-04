@@ -240,7 +240,7 @@ impl<D> QuickInsert<D> {
     /// let mut quick_insert = QuickInsert::new(distribution, 256);
     ///
     /// let translate = Translate::with_maximum_distance(0.1.try_into()?);
-    /// let translate_sweep = Sweep(translate);
+    /// let mut translate_sweep = Sweep(translate);
     ///
     /// let pairwise_cutoff = PairwiseCutoff(Isotropic {
     ///     interaction: Expanded {

@@ -13,9 +13,12 @@
 //! TODO: Expand documentation.
 
 use rand::Rng;
+
 use std::ops::AddAssign;
 
-pub mod checkerboard;
+use hoomd_utility::valid::PositiveReal;
+
+mod hypercuboid;
 mod parallel_sweep;
 mod quick_insert;
 mod rotate;
@@ -23,6 +26,7 @@ mod sweep;
 mod translate;
 mod uniform_in;
 
+pub use hypercuboid::HypercuboidCheckerboard;
 pub use parallel_sweep::ParallelSweep;
 pub use quick_insert::QuickInsert;
 pub use rotate::Rotate;
@@ -104,7 +108,7 @@ pub trait LocalTrial<B> {
 /// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
 /// let d = 0.1;
 /// let translate = Translate::with_maximum_distance(d.try_into()?);
-/// let translate_sweep = Sweep(translate);
+/// let mut translate_sweep = Sweep(translate);
 ///
 /// let mut count = Count::default();
 ///
@@ -194,6 +198,60 @@ impl AddAssign for Count {
         self.accepted += rhs.accepted;
         self.rejected += rhs.rejected;
     }
+}
+
+/// Partition space into sets of spaces where trial moves can safely be applied in parallel.
+///
+/// [`ParallelSweep`] uses a [`Checkerboard`] when selecting bodies for
+/// parallel trial moves. A well-behaved checkerboard:
+///
+/// 1. Colors spaces such that any body with its position in a space cannot possibly
+///    interact with any body positioned in any other space of the same color.
+/// 1. Covers all points within the boundary of the simulation.
+/// 3. Respects periodic boundary conditions (when present).
+///
+/// Given a boundary, construct a suitable [`Checkerboard`] via the [`Cover`] trait.
+pub trait Checkerboard<P> {
+    /// Determine the space index of a given point.
+    ///
+    /// Space indices must be in the range `[0,num_spaces)`. [`ParallelSweep`]
+    /// uses the space index as an array index. `point_to_space_index` maps
+    /// a real-valued, D-dimensional point to the linear index.
+    fn point_to_space_index(&self, point: &P) -> Option<usize>;
+
+    /// The indices of all spaces, grouped by color.
+    ///
+    /// In the return value, the outer slice's length is the number of colors
+    /// in the checkerboard. Element of that slice contains the indices of all
+    /// the spaces of that color.
+    fn space_indices_by_color(&self) -> &[Vec<usize>];
+
+    /// The total number of spaces in the checkerboard.
+    fn num_spaces(&self) -> usize;
+} 
+
+/// Construct a [`Checkerboard`] that covers all points in this boundary.
+pub trait Cover<P> {
+    /// The checkerboard type associated with this boundary.
+    type Checkerboard: Checkerboard<P>;
+
+    /// Construct a [`Checkerboard`] that covers all points in this boundary.
+    ///
+    /// The constructed [`Checkerboard`] must place spaces assuming that
+    /// any body might interact with another body at distances less than
+    /// `interaction_range`. [`ParallelSweep`] must reject trial moves from one
+    /// space to another. To make simulations ergodic, `cover` must randomly
+    /// place the checkerboard boundaries using the provided `rng`.
+    fn cover<R: Rng + ?Sized>(&self, rng: &mut R, interaction_range: PositiveReal) -> Self::Checkerboard;
+
+    /// Update a given checkerboard to match this boundary.
+    ///
+    /// After calling `cover_into`, `checkerboard` will have the same properties
+    /// as the return value of `self.cover(rng, interaction_range)`. However,
+    /// `cover_into` may be able to reuse existing dynamically allocated memory
+    /// in `checkerboard` or avoid some calculations completely (e.g. when the
+    /// checkerboard dimensions remain the same).
+    fn cover_into<R: Rng + ?Sized>(&self, checkerboard: &mut Self::Checkerboard, rng: &mut R, interaction_range: PositiveReal);
 }
 
 #[cfg(test)]

@@ -22,28 +22,50 @@ use hoomd_geometry::shape::Hypercuboid;
 use hoomd_microstate::boundary::{Closed, Periodic};
 use hoomd_vector::Cartesian;
 
-use super::{Cover, Checkerboard};
+use crate::{Cover, Checkerboard};
 
-// * MakeCheckerboard trait implemented by a boundary
-// * HypercuboidCheckerboard type implements these
-//   * Give it a `periodic` flag.
-//   * When periodic, fit an even number of spaces across each dimension. Adjust the origin up to
-//     one space width to the left. Points 1 space to the right of the end are still in the box,
-//     but are logically in the 0 space because of periodic boundary conditions.
-//   * When not periodic, fit an odd number of spaces in the box and add 1 more to make it even
-//     When shifting the origin to the left by up to one space, all possible
-//     positions are still covered by the existing spaces.
-
+/// `2^N` color checkerboard with axis-aligned hypercuboidal cells.
+///
+/// A `HypercuboidCheckerboard` is comprised of n x m x ... axis aligned
+/// spaces. Each space is the same shape, but each axis might have a different
+/// edge length. Each axis may be periodic or not.
+///
+/// Along the non-periodic axes, the checkerboard overhangs the boundary so that
+/// the entire domain is always covered (for any origin shift up to 1 cell length).
+/// Along periodic axes, the checkerboard has exactly the same width as the domain.
+/// `HypercuboidCheckerboard` wraps points "outside" the checkerboard into the correct
+/// periodic space.
+///
+/// Obviously, `HypercuboidCheckerboard` is a suitable checkerboard for
+/// `Hypercuboid` boundary geometries. It can also be a good choice for other
+/// boundaries. For example: cylindrical boundaries (periodic in one direction)
+/// and closed boundaries of any shape. The `hypercuboid` shape will result
+/// in many overhanging spaces (some completely outside the boundary) in these
+/// cases. However, the checkerboard is still valid and rayon's dynamic load
+/// balancing scheme should be able to handle the empty cells efficiently.
 #[derive(Clone, Debug)]
 pub struct HypercuboidCheckerboard<const N: usize> {
+    /// Position of the 0,0,0 cell's lower left corner.
     origin: Cartesian<N>,
+
+    /// Length of each axis aligned space edge.
     space_width: [f64; N],
+
+    /// Number of spaces along each axis.
     shape: [usize; N],
+
+    /// True when an axis is periodic.
     periodic: [bool; N],
+
+    /// The set of all space indices, grouped by color.
     space_indices_by_color: Vec<Vec<usize>>,
 }
 
 impl<const N: usize> Default for HypercuboidCheckerboard<N> {
+    /// Construct a default `HypercuboidCheckerboard`.
+    ///
+    /// The default is a 2x2x... non-periodic checkerboard with 1.0 x 1.0 x ... spaces.
+    #[inline]
     fn default() -> Self {
         Self {
             origin: Cartesian::default(),
@@ -108,6 +130,7 @@ impl<const N: usize> Checkerboard<Cartesian<N>> for HypercuboidCheckerboard<N> {
 }
 
 impl<const N: usize> HypercuboidCheckerboard<N> {
+    /// Collapse a multi-dimensional index to a single value in `[0, num_spaces]`.
     #[inline]
     fn multi_index_to_index(multi_index: [usize; N], shape: [usize; N]) -> usize {
         let mut index: usize = 0;
@@ -121,6 +144,7 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         index
     }
 
+    /// Compute the space width and checkerboard shape.
     #[inline]
     fn compute_dimensions(edge_lengths: [PositiveReal; N],
         interaction_range: PositiveReal,
@@ -156,6 +180,8 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         (space_width, shape)
         }
 
+    /// Partition the space indices by color.
+    #[expect(clippy::todo, reason = "there are no known use-cases for parallel 4D, 5D, ... simulations at this time")]
     fn construct_space_indices_by_color(shape: [usize; N]) -> Vec<Vec<usize>> {
         for width in shape {
             assert!(width.is_multiple_of(2));
@@ -213,6 +239,7 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         todo!("Implement a general method");
     }
 
+    /// Construct a checkerboard with a given origin (for testing).
     #[cfg(test)]
     fn with_fixed_origin(interaction_range: PositiveReal, edge_lengths: [PositiveReal; N], periodic: [bool; N]) -> Self {
         let (space_width, shape) = Self::compute_dimensions(edge_lengths, interaction_range, periodic);
@@ -226,6 +253,13 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         }
     }
 
+    /// Construct a new `HypercuboidCheckerboard`.
+    ///
+    /// Set `interaction_range` to the largest distance between any two
+    /// interacting bodies. `new` will construct a checkerboard that covers
+    /// the range `[-edge_lengths[i]/2.0, edge_lengths[i]/2.0)` (respecting
+    /// `periodic[i]`) for each dimension `i`.
+    #[inline]
     pub fn new<R: Rng + ?Sized>(rng: &mut R,
         interaction_range: PositiveReal,
         edge_lengths: [PositiveReal; N],
@@ -248,6 +282,12 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         }        
     }
 
+    /// Update an existing checkerboard.
+    ///
+    /// `update` performs the same steps as `new`, but modifies `self` in place.
+    /// Prefer update when possible, as it can reuse the space index partitioning
+    /// when the shape doesn't change.
+    #[inline]
     pub fn update<R: Rng + ?Sized>(&mut self,
         rng: &mut R,
         interaction_range: PositiveReal,

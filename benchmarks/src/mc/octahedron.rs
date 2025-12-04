@@ -8,7 +8,7 @@ use hoomd_geometry::{
     shape::{ConvexPolyhedron, Hypercuboid},
 };
 use hoomd_interaction::{PairwiseCutoff, pairwise::HardShape};
-use hoomd_mc::{checkerboard::HypercuboidCheckerboard, Count, ParallelSweep, Sweep, Translate, Trial};
+use hoomd_mc::{HypercuboidCheckerboard, Count, ParallelSweep, Sweep, Translate, Trial};
 use hoomd_microstate::{
     Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},
