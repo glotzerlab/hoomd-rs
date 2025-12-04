@@ -38,6 +38,7 @@ mod angle;
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq)]
 pub struct Rotate<O> {
     /// Limit the maximum rotation applied during a single trial move.
     maximum_rotation: PositiveReal,

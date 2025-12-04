@@ -240,7 +240,7 @@ impl<D> QuickInsert<D> {
     /// let mut quick_insert = QuickInsert::new(distribution, 256);
     ///
     /// let translate = Translate::with_maximum_distance(0.1.try_into()?);
-    /// let translate_sweep = Sweep(translate);
+    /// let mut translate_sweep = Sweep(translate);
     ///
     /// let pairwise_cutoff = PairwiseCutoff(Isotropic {
     ///     interaction: Expanded {
@@ -360,7 +360,7 @@ mod tests {
 
         let translate =
             Translate::with_maximum_distance(0.1.try_into().expect("hard-coded value is non-zero"));
-        let translate_sweep = Sweep(translate);
+        let mut translate_sweep = Sweep(translate);
 
         let rectangle = Closed(Rectangle::with_equal_edges(
             6.0.try_into().expect("hard-coded value is non-zero"),

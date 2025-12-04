@@ -34,6 +34,7 @@ mod sphere;
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq)]
 pub struct Translate<P> {
     /// The maximum distance a body can be translated in one trial move.
     maximum_distance: PositiveReal,

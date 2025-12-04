@@ -9,6 +9,9 @@ use log::{debug, info};
 
 use hoomd_simulation::Simulation;
 
+use crate::Effort;
+
+/// A benchmark.
 pub struct Benchmark {
     /// Time to warm up.
     pub warmup_time: Duration,
@@ -17,9 +20,12 @@ pub struct Benchmark {
     pub benchmark_time: Duration,
 }
 
+/// Print log messes to `info!` with this period.
 const INFO_TIME: Duration = Duration::new(0, 500_000_000);
 
 impl Default for Benchmark {
+    /// A default benchmark warms up for 2 seconds and runs for 4.
+    #[inline]
     fn default() -> Self {
         Self {
             warmup_time: Duration::new(2, 0),
@@ -36,18 +42,19 @@ impl Benchmark {
     /// # Errors
     ///
     /// Returns any error reported by `simulation.advance`.
+    #[inline]
     pub fn measure<S>(&self, simulation: &mut S) -> anyhow::Result<f64>
     where
-        S: Simulation,
+        S: Simulation + Effort,
     {
         let total_time = Instant::now();
 
         let mut start_time = total_time;
-        let mut start_step = simulation.step();
+        let mut start_effort = simulation.effort();
         let mut warmup = true;
 
         let mut last_info_instant = start_time;
-        let mut last_info_step = simulation.step();
+        let mut last_info_effort = simulation.effort();
         loop {
             simulation.advance()?;
 
@@ -55,17 +62,17 @@ impl Benchmark {
             let chunk_duration = time.duration_since(last_info_instant);
             if chunk_duration >= INFO_TIME {
                 let run_time = chunk_duration.as_secs_f64();
-                let steps = simulation.step() - last_info_step;
+                let effort = simulation.effort() - last_info_effort;
 
-                debug!("{} steps/s", steps as f64 / run_time);
+                debug!("{} {}/s", effort / run_time, S::units());
 
-                last_info_step = simulation.step();
+                last_info_effort = simulation.effort();
                 last_info_instant = time;
             }
             if !warmup && time.duration_since(total_time) >= self.warmup_time {
                 warmup = false;
                 start_time = time;
-                start_step = simulation.step();
+                start_effort = simulation.effort();
             }
             if time.duration_since(total_time) >= self.warmup_time + self.benchmark_time {
                 break;
@@ -73,15 +80,15 @@ impl Benchmark {
         }
 
         let run_time = start_time.elapsed().as_secs_f64();
-        // TODO: Trait to measure operations performed and provide unit.
-        let steps = simulation.step() - start_step;
-        let seconds_per_step = run_time / steps as f64;
+        let effort = simulation.effort() - start_effort;
+        let seconds_per_effort = run_time / effort;
 
         info!(
-            "Average: {} steps/s",
-            steps as f64 / start_time.elapsed().as_secs_f64()
+            "Average: {} {}/s",
+            effort / start_time.elapsed().as_secs_f64(),
+            S::units()
         );
 
-        Ok(seconds_per_step)
+        Ok(seconds_per_effort)
     }
 }

@@ -2,13 +2,19 @@
 // ANCHOR: use
 use anyhow::{Context, anyhow};
 
-use hoomd_geometry::shape::{Ellipse, Rectangle};
+use hoomd_geometry::{
+    Convex,
+    shape::{Ellipse, Rectangle},
+};
 use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff,
     pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape},
     univariate::OverlapPenalty,
 };
-use hoomd_mc::{QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn};
+use hoomd_mc::{
+    HypercuboidCheckerboard, ParallelSweep, QuickInsert, Rotate, Translate,
+    Trial, UniformIn,
+};
 use hoomd_microstate::{
     Microstate, SiteKey, boundary::Periodic, property::OrientedPoint,
 };
@@ -35,18 +41,28 @@ struct HardEllipseSelfAssembly {
         Periodic<Rectangle>,
     >,
     /// How sites interact with other sites and fields.
-    hamiltonian: PairwiseCutoff<HardShape<Ellipse>>,
+    hamiltonian: PairwiseCutoff<HardShape<Convex<Ellipse>>>,
     /// Trial moves to apply.
-    translate_sweep: Sweep<Translate<PositionVector>>,
+    translate_sweep: ParallelSweep<
+        Translate<PositionVector>,
+        HypercuboidCheckerboard<2>,
+        BodyProperties,
+        SiteProperties,
+    >,
     /// Trial moves to apply.
-    rotate_sweep: Sweep<Rotate<Orientation>>,
+    rotate_sweep: ParallelSweep<
+        Rotate<Orientation>,
+        HypercuboidCheckerboard<2>,
+        BodyProperties,
+        SiteProperties,
+    >,
     /// Temperature set point.
     macrostate: Isothermal,
     /// Quick insert
     quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Rectangle>>>,
     /// How sites interact when inserted.
     insert_hamiltonian: PairwiseCutoff<
-        Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Ellipse>>,
+        Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Convex<Ellipse>>>,
     >,
     /// The current phase of the simulation.
     phase: Phase,
@@ -66,10 +82,12 @@ impl HardEllipseSelfAssembly {
     fn new() -> anyhow::Result<HardEllipseSelfAssembly> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
-        let box_height = 14.0;
-        let n_bodies = 820;
-        let maximum_distance = 0.05;
-        let maximum_rotation = 0.1;
+        // let box_height = 14.0;
+        // let n_bodies = 820;
+        let box_height = 14.0 * 2.0;
+        let n_bodies = 3280;
+        let maximum_distance = 0.07;
+        let maximum_rotation = 0.3;
         let sigma = 1.0;
         let aspect = 5.0;
         let macrostate = Isothermal { temperature: 1.0 };
@@ -81,7 +99,7 @@ impl HardEllipseSelfAssembly {
             (sigma / 2.0).try_into()?,
             (sigma / aspect / 2.0).try_into()?,
         ]);
-        let hamiltonian = PairwiseCutoff(HardShape(ellipse.clone()));
+        let hamiltonian = PairwiseCutoff(HardShape(Convex(ellipse.clone())));
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: periodic
@@ -103,11 +121,11 @@ impl HardEllipseSelfAssembly {
         // ANCHOR: trial_moves
         let translate =
             Translate::with_maximum_distance(maximum_distance.try_into()?);
-        let translate_sweep = Sweep(translate);
+        let translate_sweep = ParallelSweep::new(sigma.try_into()?, translate);
 
         let rotate =
             Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
-        let rotate_sweep = Sweep(rotate);
+        let rotate_sweep = ParallelSweep::new(sigma.try_into()?, rotate);
         // ANCHOR_END: trial_moves
 
         // ANCHOR: quick_insert
@@ -121,7 +139,7 @@ impl HardEllipseSelfAssembly {
         // ANCHOR: insert_hamiltonian
         let approximate_shape_overlap = Anisotropic {
             interaction: ApproximateShapeOverlap::new(
-                ellipse,
+                Convex(ellipse),
                 OverlapPenalty::default(),
                 0.01.try_into()?,
             ),
@@ -246,7 +264,7 @@ fn main() -> anyhow::Result<()> {
     let mut simulation = HardEllipseSelfAssembly::new()?;
     // TODO: Write GSD file.
 
-    for _ in 0..20_000 {
+    for _ in 0..10_000 {
         simulation.advance()?;
     }
 
