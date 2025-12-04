@@ -246,7 +246,7 @@ impl<L, K, B, S> ParallelSweep<L, K, B, S> {
                             if checkerboard.point_to_space_index(new_properties.position())
                                 != Some(space_index) =>
                         {
-                            body_trial.status = TrialStatus::Invalid
+                            body_trial.status = TrialStatus::Invalid;
                         }
                         Ok(new_properties) => {
                             body_trial.body.properties = new_properties;
