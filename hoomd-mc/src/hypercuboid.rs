@@ -607,7 +607,7 @@ mod tests {
         const N_SAMPLES: usize = 512;
 
         let interaction_range = 1.5.try_into()?;
-        let edge_lengths: [PositiveReal; _] = [10.0.try_into()?,
+        let edge_lengths: [PositiveReal; 2] = [10.0.try_into()?,
                             7.0.try_into()?];
         let periodic = [periodic; 2];
 
