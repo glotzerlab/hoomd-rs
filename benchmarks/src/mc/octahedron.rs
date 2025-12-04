@@ -1,6 +1,8 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+//! Benchmark hard octahedra Monte Carlo simulations.
+
 use std::fmt;
 
 use hoomd_geometry::{
@@ -20,31 +22,49 @@ use hoomd_vector::{Cartesian, Versor};
 
 use crate::Effort;
 
+/// The hard octahedra simulation.
 pub struct Octahedron<X> {
+    /// Simulation microstate
     microstate: Microstate<
         OrientedPoint<Cartesian<3>, Versor>,
         OrientedPoint<Cartesian<3>, Versor>,
         X,
         Periodic<Hypercuboid<3>>,
     >,
+
+    /// Translate moves (serial)
     translate_sweep: Sweep<Translate<Cartesian<3>>>,
+
+    /// Translate moves (parallel)
     parallel_translate_sweep: ParallelSweep<
         Translate<Cartesian<3>>,
         HypercuboidCheckerboard<3>,
         OrientedPoint<Cartesian<3>, Versor>,
         OrientedPoint<Cartesian<3>, Versor>,
     >,
+
+    // TODO: add rotate moves.
+
+    /// Hard octahedra interaction.
     hamiltonian: PairwiseCutoff<HardShape<Convex<ConvexPolyhedron>>>,
+
+    /// Temperature set point.
     macrostate: Isothermal,
+
+    /// Track moves attempted during the benchmark period.
     count: Count,
+
+    /// Set to true to use the parallel translate moves.
     parallel: bool,
 }
 
 impl<X> Effort for Octahedron<X> {
+    #[inline]
     fn units() -> String {
         "sweep".to_string()
     }
 
+    #[inline]
     fn effort(&self) -> f64 {
         self.count.total() as f64 / self.microstate.bodies().len() as f64
     }
@@ -55,6 +75,7 @@ where
     X: PointsNearBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey> + Sync,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
+    #[inline]
     fn advance(&mut self) -> anyhow::Result<()> {
         if self.parallel {
             self.count += self.parallel_translate_sweep.apply(
@@ -76,6 +97,7 @@ where
         Ok(())
     }
 
+    #[inline]
     fn step(&self) -> u64 {
         self.microstate.step()
     }
@@ -85,6 +107,7 @@ impl<X> fmt::Display for Octahedron<X>
 where
     X: fmt::Display,
 {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.microstate.fmt(f)?;
         write!(
@@ -104,6 +127,11 @@ where
         + WithSearchRadius,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
+    /// Construct a new hard octahedra simulation
+    ///
+    /// # Errors
+    /// Returns an error when the microstate cannot be constructed.
+    #[inline]
     pub fn new<X2>(
         microstate: &Microstate<
             OrientedPoint<Cartesian<3>, Versor>,

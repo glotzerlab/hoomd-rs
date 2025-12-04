@@ -11,6 +11,7 @@ use hoomd_simulation::Simulation;
 
 use crate::Effort;
 
+/// A benchmark.
 pub struct Benchmark {
     /// Time to warm up.
     pub warmup_time: Duration,
@@ -19,9 +20,12 @@ pub struct Benchmark {
     pub benchmark_time: Duration,
 }
 
+/// Print log messes to `info!` with this period.
 const INFO_TIME: Duration = Duration::new(0, 500_000_000);
 
 impl Default for Benchmark {
+    /// A default benchmark warms up for 2 seconds and runs for 4.
+    #[inline]
     fn default() -> Self {
         Self {
             warmup_time: Duration::new(2, 0),
@@ -38,6 +42,7 @@ impl Benchmark {
     /// # Errors
     ///
     /// Returns any error reported by `simulation.advance`.
+    #[inline]
     pub fn measure<S>(&self, simulation: &mut S) -> anyhow::Result<f64>
     where
         S: Simulation + Effort,

@@ -1,6 +1,8 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+//! Benchmark hard polygon Monte Carlo simulations.
+
 use std::fmt;
 
 use hoomd_geometry::{
@@ -20,39 +22,61 @@ use hoomd_vector::{Angle, Cartesian};
 
 use crate::Effort;
 
+/// The hard polygon simulation.
 pub struct RegularPolygon<X> {
+    /// Simulation microstate
     microstate: Microstate<
         OrientedPoint<Cartesian<2>, Angle>,
         OrientedPoint<Cartesian<2>, Angle>,
         X,
         Periodic<Hypercuboid<2>>,
     >,
+
+    /// Translate moves (serial)
     translate_sweep: Sweep<Translate<Cartesian<2>>>,
+
+    /// Translate moves (parallel)
     parallel_translate_sweep: ParallelSweep<
         Translate<Cartesian<2>>,
         HypercuboidCheckerboard<2>,
         OrientedPoint<Cartesian<2>, Angle>,
         OrientedPoint<Cartesian<2>, Angle>,
     >,
+
+    /// Rotate moves (serial)
     rotate_sweep: Sweep<Rotate<Angle>>,
+
+    /// Rotate moves (parallel)
     parallel_rotate_sweep: ParallelSweep<
         Rotate<Angle>,
         HypercuboidCheckerboard<2>,
         OrientedPoint<Cartesian<2>, Angle>,
         OrientedPoint<Cartesian<2>, Angle>,
     >,
+    
+    /// Hard polygon interaction.
     hamiltonian: PairwiseCutoff<HardShape<Convex<ConvexPolygon>>>,
+
+    /// Temperature set point.
     macrostate: Isothermal,
+
+    /// Track translate moves attempted during the benchmark period.
     translate_count: Count,
+
+    /// Track rotate moves attempted during the benchmark period.
     rotate_count: Count,
+
+    /// Set to true to use the parallel translate moves.
     parallel: bool,
 }
 
 impl<X> Effort for RegularPolygon<X> {
+    #[inline]
     fn units() -> String {
         "sweep".to_string()
     }
 
+    #[inline]
     fn effort(&self) -> f64 {
         (self.translate_count.total() + self.rotate_count.total()) as f64
             / self.microstate.bodies().len() as f64
@@ -64,6 +88,7 @@ where
     X: PointsNearBall<Cartesian<2>, SiteKey> + PointUpdate<Cartesian<2>, SiteKey> + Sync,
     Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>,
 {
+    #[inline]
     fn advance(&mut self) -> anyhow::Result<()> {
         if self.parallel {
             self.translate_count += self.parallel_translate_sweep.apply(
@@ -92,6 +117,7 @@ where
         Ok(())
     }
 
+    #[inline]
     fn step(&self) -> u64 {
         self.microstate.step()
     }
@@ -101,6 +127,7 @@ impl<X> fmt::Display for RegularPolygon<X>
 where
     X: fmt::Display,
 {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.microstate.fmt(f)?;
         write!(
@@ -127,6 +154,11 @@ where
         + WithSearchRadius,
     Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>,
 {
+    /// Construct a new polygon simulation
+    ///
+    /// # Errors
+    /// Returns an error when the microstate cannot be constructed.
+    #[inline]
     pub fn new<X2>(
         microstate: &Microstate<
             OrientedPoint<Cartesian<2>, Angle>,

@@ -1,6 +1,8 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+//! Command line tool that benchmarks hoomd-rs performance.
+
 use std::{fmt, fs::File, sync::Arc, time::Duration};
 
 use anyhow::anyhow;
@@ -22,6 +24,7 @@ use hoomd_vector::{Angle, Cartesian, Versor};
 use rayon::ThreadPoolBuilder;
 use wildmatch::WildMatch;
 
+/// Command line options.
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Options {
@@ -61,19 +64,31 @@ pub struct Options {
     #[arg(long, default_value_t = 4.0)]
     benchmark_time: f64,
 
+    /// Verbosity.
     #[command(flatten)]
-    pub verbose: Verbosity<InfoLevel>,
+    verbose: Verbosity<InfoLevel>,
 }
 
+/// A single entry in the performance table.
 #[derive(ParquetRecordWriter)]
 struct Performance {
+    /// Name of the benchmark.
     benchmark: String,
+
+    /// The units of the benchmark result.
     unit: String,
+
+    /// Number of bodies or sites in the benchmark.
     n: usize,
+
+    /// Number of threads the benchmark executed on.
     threads: usize,
+
+    /// Time (in seconds) for each unit of effort.
     time_per_operation: f64,
 }
 
+/// Execute a single benchmark.
 fn execute<S>(
     simulation: &mut S,
     benchmark: &Benchmark,
@@ -98,6 +113,7 @@ where
     })
 }
 
+/// Execute all benchmarks that match a given glob.
 fn execute_matching(
     results: &mut Vec<Performance>,
     n: usize,
@@ -214,6 +230,7 @@ fn execute_matching(
     Ok(())
 }
 
+#[expect(clippy::print_stdout, reason="benchmark should provide output")]
 fn main() -> anyhow::Result<()> {
     let options = Options::parse();
 
@@ -256,7 +273,7 @@ fn main() -> anyhow::Result<()> {
             let pool = ThreadPoolBuilder::new()
                 .num_threads(threads)
                 .build()
-                .unwrap();
+                .expect("the thread pool should be valid");
             pool.install(|| execute_matching(&mut results, n, threads, &options))?;
 
             n *= 2;

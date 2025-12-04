@@ -1,6 +1,8 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+//! Benchmark Lennard Jones Monte Carlo simulations.
+
 use std::fmt;
 
 use hoomd_geometry::shape::Hypercuboid;
@@ -17,26 +19,42 @@ use hoomd_vector::Cartesian;
 
 use crate::Effort;
 
+/// The Lennard Jones simulation.
 pub struct LennardJones<const D: usize, X> {
+    /// Simulation microstate
     microstate: Microstate<Point<Cartesian<D>>, Point<Cartesian<D>>, X, Periodic<Hypercuboid<D>>>,
+
+    /// Translate moves (serial)
     translate_sweep: Sweep<Translate<Cartesian<D>>>,
+
+    /// Translate moves (parallel)
     parallel_translate_sweep: ParallelSweep<
         Translate<Cartesian<D>>,
         HypercuboidCheckerboard<D>,
         Point<Cartesian<D>>,
         Point<Cartesian<D>>,
     >,
+
+    /// Lennard Jones interaction.
     hamiltonian: PairwiseCutoff<Isotropic<univariate::LennardJones>>,
+
+    /// Temperature set point
     macrostate: Isothermal,
+
+    /// Track moves accepted during the benchmark period.
     count: Count,
+
+    /// Set to true to use parallel translate moves.
     parallel: bool,
 }
 
 impl<const D: usize, X> Effort for LennardJones<D, X> {
+    #[inline]
     fn units() -> String {
         "sweep".to_string()
     }
 
+    #[inline]
     fn effort(&self) -> f64 {
         self.count.total() as f64 / self.microstate.bodies().len() as f64
     }
@@ -47,6 +65,7 @@ where
     X: PointsNearBall<Cartesian<D>, SiteKey> + PointUpdate<Cartesian<D>, SiteKey> + Sync,
     Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
+    #[inline]
     fn advance(&mut self) -> anyhow::Result<()> {
         if self.parallel {
             self.count += self.parallel_translate_sweep.apply(
@@ -67,6 +86,7 @@ where
         Ok(())
     }
 
+    #[inline]
     fn step(&self) -> u64 {
         self.microstate.step()
     }
@@ -76,6 +96,7 @@ impl<const D: usize, X> fmt::Display for LennardJones<D, X>
 where
     X: fmt::Display,
 {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.microstate.fmt(f)?;
         write!(
@@ -95,6 +116,11 @@ where
         + WithSearchRadius,
     Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
+    /// Construct a new Lennard Jones simulation
+    ///
+    /// # Errors
+    /// Returns an error when the microstate cannot be constructed.
+    #[inline]
     pub fn new<B, S, X2>(
         microstate: &Microstate<B, S, X2, Periodic<Hypercuboid<D>>>,
         parallel: bool,

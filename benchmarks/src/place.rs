@@ -25,6 +25,10 @@ use hoomd_vector::Cartesian;
 /// Place n hard hyperspheres in a D-dimensional hypercube at the given number density
 ///
 /// The spheres have diameter 1, are randomly placed in a non-overlapping configuration.
+///
+/// # Errors
+/// Returns an error when the microstate cannot be constructed.
+#[inline]
 pub fn place_hard_hyperspheres<B, S, const D: usize>(
     n: usize,
     number_density: f64,
