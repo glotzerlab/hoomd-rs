@@ -1,0 +1,31 @@
+[package]
+name = "hoomd-cv"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+hoomd-bevy = { workspace =  true, optional = true }
+hoomd-geometry.workspace = true
+hoomd-gsd.workspace = true
+hoomd-interaction.workspace = true
+hoomd-manifold.workspace = true
+hoomd-mc.workspace = true
+hoomd-microstate.workspace = true
+hoomd-simulation.workspace = true
+hoomd-spatial.workspace = true
+hoomd-utility.workspace = true
+hoomd-vector.workspace = true
+
+anyhow.workspace = true
+bevy = { workspace = true, optional = true }
+bevy_egui = { workspace = true, optional = true }
+rand.workspace = true
+
+[lints]
+workspace = true
