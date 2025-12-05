@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 //! .
 // ANCHOR: all
 // ANCHOR: use
@@ -7,15 +10,13 @@ use std::iter;
 use hoomd_geometry::IsPointInside;
 use hoomd_interaction::Zero;
 use hoomd_mc::{LocalTrial, Sweep, Trial};
-use hoomd_microstate::{
-    Body, Microstate, SiteKey, boundary::Closed, property::Point,
-};
+use hoomd_microstate::{Body, Microstate, SiteKey, boundary::Closed, property::Point};
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::AllPairs;
 use hoomd_vector::{Cartesian, Metric};
 // ANCHOR_END: use
 
-pub mod pairwise;
+pub mod localorder;
 
 // ANCHOR: boundary_struct
 /// Closed circular boundary condition.
@@ -69,12 +70,8 @@ impl LocalTrial<Point<Cartesian<2>>> for Discrete {
 // ANCHOR: simulation_struct
 struct CustomRandomWalk {
     /// Positions of all the bodies in the simulation.
-    microstate: Microstate<
-        Point<Cartesian<2>>,
-        Point<Cartesian<2>>,
-        AllPairs<SiteKey>,
-        Closed<Circle>,
-    >,
+    microstate:
+        Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, AllPairs<SiteKey>, Closed<Circle>>,
     /// How sites interact with other sites and fields.
     hamiltonian: Zero,
     /// Trial moves to apply.
@@ -83,14 +80,13 @@ struct CustomRandomWalk {
     macrostate: Isothermal,
 }
 // ANCHOR_END: simulation_struct
-
+const N: usize = 1000;
 // ANCHOR: simulation_new
 impl CustomRandomWalk {
     /// Construct a new random walk simulation.
     fn new() -> anyhow::Result<CustomRandomWalk> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
-        let n = 1000;
         let radius = 50.0;
         let macrostate = Isothermal { temperature: 1.0 };
         // ANCHOR_END: parameters
@@ -100,7 +96,7 @@ impl CustomRandomWalk {
 
         let microstate = Microstate::builder()
             .boundary(Closed(circle))
-            .bodies(iter::repeat_n(Body::point(Cartesian::default()), n))
+            .bodies(iter::repeat_n(Body::point(Cartesian::default()), N))
             .try_build()?;
         // ANCHOR_END: microstate
 
@@ -129,13 +125,10 @@ impl Simulation for CustomRandomWalk {
     // ANCHOR: advance
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
-        self.translate_sweep.apply(
-            &mut self.microstate,
-            &self.hamiltonian,
-            &self.macrostate,
-        );
+        self.translate_sweep
+            .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
         self.microstate.increment_step();
-        println!("running");
+
         Ok(())
     }
     // ANCHOR_END: advance
@@ -152,11 +145,22 @@ impl Simulation for CustomRandomWalk {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
+    use crate::localorder::CoordinationNumber;
+
     let mut simulation = CustomRandomWalk::new()?;
     // TODO: Write GSD file.
 
-    for _ in 0..100_000 {
+    let cn = CoordinationNumber {
+        particle_cn: Vec::with_capacity(N),
+    };
+
+    for i in 0..100 {
+        use hoomd_spatial::PointsNearBall;
+
         simulation.advance()?;
+        let nlist = simulation.microstate.spatial_data();
+        nlist.points_near_ball(Cartesian::from([0.0, 0.0]));
+        println!("{i}");
     }
 
     Ok(())
