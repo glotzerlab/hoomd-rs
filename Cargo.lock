@@ -215,9 +215,9 @@ dependencies = [
 
 [[package]]
 name = "approx-derive"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fe983a589f7658d803c7f4ec0458fce2fe22d93808a366acc54c3f14812928f"
+checksum = "975325d44fbc3b668d8d5205cf65f96ca72758bef5431fec79cf80ff29dde8ea"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -227,9 +227,9 @@ dependencies = [
 
 [[package]]
 name = "approxim"
-version = "0.6.6"
+version = "0.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5bd37130ed2dff8ae28af3a80524def9005bd5d7b4d39695949e761bc0229c85"
+checksum = "be3df53c6309aa9d6ff9c1b6371ddc609337b4a175876755c70ca765eb360fb3"
 dependencies = [
  "approx-derive",
  "num-traits",
