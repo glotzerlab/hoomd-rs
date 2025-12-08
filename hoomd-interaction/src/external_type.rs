@@ -170,6 +170,32 @@ where
 
         total
     }
+
+    /// TODO: Document method
+    #[inline]
+    fn delta_energy_total(&self, initial_microstate: &Microstate<B, S, X, C>, final_microstate: &Microstate<B, S, X, C>) -> f64 {
+        let mut energy_final = 0.0;
+        for site in final_microstate.sites() {
+            let one = self.0.site_energy(&site.properties);
+            if one == f64::INFINITY {
+                return one;
+            }
+            energy_final += one;
+        }
+
+        let mut energy_initial = 0.0;
+        if !E::is_only_infinite_or_zero() {
+            for site in initial_microstate.sites() {
+                let one = self.0.site_energy_initial(&site.properties);
+                if one == f64::INFINITY {
+                    return -one;
+                }
+                energy_initial += one;
+            }
+        }
+
+        energy_final - energy_initial
+    }
 }
 
 impl<P, B, S, X, C, E> DeltaEnergyOne<B, S, X, C> for External<E>

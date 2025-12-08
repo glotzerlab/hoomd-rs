@@ -442,9 +442,42 @@ where
         total
     }
 
-    // TODO: TotalEnergy needs a delta_energy method that takes an initial and final microstate
-    // so that it can call `site_pair_energy_initial` (or skip the evaluation entirely
-    // for infinite-only potentials) on the initial state.
+    /// TODO: Document method
+    #[inline]
+    fn delta_energy_total(&self, initial_microstate: &Microstate<B, S, X, C>, final_microstate: &Microstate<B, S, X, C>) -> f64 {
+        let mut energy_final = 0.0;
+
+        for site_i in final_microstate.sites() {
+            let one = self.filtered_site_energy(
+                final_microstate,
+                &site_i.properties,
+                |site_j| site_i.site_tag < site_j.site_tag && site_i.body_tag != site_j.body_tag,
+                E::site_pair_energy,
+            );
+            if one == f64::INFINITY {
+                return one;
+            }
+            energy_final += one;
+        }
+
+        let mut energy_initial = 0.0;
+        if !E::is_only_infinite_or_zero() {
+            for site_i in initial_microstate.sites() {
+                let one = self.filtered_site_energy(
+                    initial_microstate,
+                    &site_i.properties,
+                    |site_j| site_i.site_tag < site_j.site_tag && site_i.body_tag != site_j.body_tag,
+                    E::site_pair_energy_initial,
+                );
+                if one == f64::INFINITY {
+                    return -one;
+                }
+                energy_initial += one;
+            }
+        }
+
+        energy_final - energy_initial
+    }
 }
 
 impl<P, B, S, X, C, E> DeltaEnergyOne<B, S, X, C> for PairwiseCutoff<E>
