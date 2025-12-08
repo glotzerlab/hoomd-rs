@@ -168,6 +168,7 @@ pub fn gemv_submatrix_column_into_column_unsafe<const N: usize>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::GeneralMatrix;
     use rstest::*;
 
     #[rstest]

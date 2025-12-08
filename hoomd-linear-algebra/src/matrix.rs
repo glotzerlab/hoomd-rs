@@ -945,34 +945,14 @@ impl_copy_for_n_m!(1, 2, 3, 4);
 impl<const N: usize> Diagonal for [f64; N] {}
 
 #[cfg(test)]
-mod tests {
+pub mod test_utils {
     use std::{fmt::Debug, ops::Index};
 
     use super::*;
-    use crate::matrix::{Matrix, Matrix22, Matrix33, Matrix44};
-    use approx::{assert_relative_eq, assert_ulps_eq, ulps_eq};
-
-    use faer::Mat;
-    use rstest::rstest;
+    use approx::{assert_ulps_eq, ulps_eq};
 
     const EPS: f64 = 1e-13;
 
-    fn fill_faer<const N: usize, const M: usize>(m: [[f64; M]; N]) -> Mat<f64> {
-        let mut faer_matrix = Mat::<f64>::zeros(N, M);
-        for (i, row) in m.iter().enumerate() {
-            for (j, el) in row.iter().enumerate() {
-                *faer_matrix.get_mut(i, j) = *el;
-            }
-        }
-        faer_matrix
-    }
-    fn fill_faer_column<const N: usize>(c: [f64; N]) -> Mat<f64> {
-        let mut faer_matrix = Mat::<f64>::zeros(N, 1);
-        for (i, el) in c.iter().enumerate() {
-            *faer_matrix.get_mut(i, 0) = *el;
-        }
-        faer_matrix
-    }
     fn assert_matrixes_ulps_eq<
         const N: usize,
         const M: usize,
@@ -990,7 +970,8 @@ mod tests {
             }
         }
     }
-    fn assert_diags_ulps_eq<const N: usize, T: Diagonal>(
+
+    pub(crate) fn assert_diags_ulps_eq<const N: usize, T: Diagonal>(
         m0: &T,
         m1: &impl std::ops::Index<usize, Output = f64>,
     ) {
@@ -998,6 +979,37 @@ mod tests {
             assert_ulps_eq!(m0[i], m1[i], epsilon = EPS);
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{fmt::Debug, ops::Index};
+
+    use super::test_utils::{assert_diags_ulps_eq, assert_matrixes_ulps_eq};
+    use super::*;
+    use crate::matrix::{Matrix, Matrix22, Matrix33, Matrix44};
+    use approx::{assert_relative_eq, assert_ulps_eq, ulps_eq};
+
+    use faer::Mat;
+    use rstest::rstest;
+
+    fn fill_faer<const N: usize, const M: usize>(m: [[f64; M]; N]) -> Mat<f64> {
+        let mut faer_matrix = Mat::<f64>::zeros(N, M);
+        for (i, row) in m.iter().enumerate() {
+            for (j, el) in row.iter().enumerate() {
+                *faer_matrix.get_mut(i, j) = *el;
+            }
+        }
+        faer_matrix
+    }
+    fn fill_faer_column<const N: usize>(c: [f64; N]) -> Mat<f64> {
+        let mut faer_matrix = Mat::<f64>::zeros(N, 1);
+        for (i, el) in c.iter().enumerate() {
+            *faer_matrix.get_mut(i, 0) = *el;
+        }
+        faer_matrix
+    }
+
     #[rstest(
         rows,
         case([[-9.0]]),
@@ -1014,6 +1026,7 @@ mod tests {
         case(Matrix::<5, 5>::full(3.6).diag().as_dense().rows),
         case(Matrix::<8, 8>::identity().rows),
     )]
+
     fn test_determinant<const N: usize>(rows: [[f64; N]; N]) {
         let matrix = Matrix { rows };
         let faer_matrix = fill_faer(rows);
