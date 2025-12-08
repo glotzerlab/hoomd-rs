@@ -16,7 +16,7 @@ use hoomd_microstate::{
 use hoomd_spatial::PointUpdate;
 
 /// Track the state of a given `QuickInsert` instance.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 enum State {
     /// Inserting bodies or performing trial moves to separate them.
     Running,
