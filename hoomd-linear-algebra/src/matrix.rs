@@ -953,7 +953,7 @@ pub mod test_utils {
 
     const EPS: f64 = 1e-13;
 
-    fn assert_matrixes_ulps_eq<
+    pub(crate) fn assert_matrixes_ulps_eq<
         const N: usize,
         const M: usize,
         T0: Index<(usize, usize), Output = f64> + Debug,
@@ -992,6 +992,8 @@ mod tests {
 
     use faer::Mat;
     use rstest::rstest;
+
+    const EPS: f64 = 1e-13;
 
     fn fill_faer<const N: usize, const M: usize>(m: [[f64; M]; N]) -> Mat<f64> {
         let mut faer_matrix = Mat::<f64>::zeros(N, M);

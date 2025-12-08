@@ -64,10 +64,7 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(a: &Matrix<N, M>)
 #[cfg(test)]
 mod tests {
     use super::Matrix;
-    use approx::{assert_ulps_eq, ulps_eq};
-    use std::{fmt::Debug, ops::Index};
-
-    const EPS: f64 = 1e-13;
+    use crate::matrix::test_utils::assert_matrixes_ulps_eq;
 
     #[test]
     fn test_qr_decomp() {
@@ -76,8 +73,14 @@ mod tests {
         });
 
         let correct_answer = Matrix::<3, 3> {
-            rows: [[-3., -16., -26.], [0.2, 5., 0.], [0.4, 0., -10.]],
+            rows: [[-3., -16., -26.], [0.2, -5., 0.], [0.4, 0., -10.]],
         };
-        assert_matrixes_ulps_eq::<3, 3, _, _>(correct_answer, qr);
+
+        for i in 0..3 {
+            for j in 0..3 {
+                println!("qr[{}, {}] = {}", i, j, qr[(i, j)]);
+            }
+        }
+        assert_matrixes_ulps_eq::<3, 3, _, _>(&correct_answer, &qr);
     }
 }
