@@ -371,6 +371,17 @@ pub trait IsPointInside<V> {
     fn is_point_inside(&self, point: &V) -> bool;
 }
 
+// TODO: Define that the scaling factor is applied to the *volume*. Fix the implementation.
+pub trait Scale {
+    /// Produce a new shape by uniform scaling.
+    fn scale(&self, v: PositiveReal) -> Self;
+}
+
+pub trait Map<P> {
+    /// Map points from one boundary to another.
+    fn map(&self, position: P, other: &Self) -> Result<P, Error>;
+}
+
 /// Enumerate possible sources of error in fallible geometry methods.
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
@@ -378,4 +389,8 @@ pub enum Error {
     /// Polytopes require at least one vertex.
     #[error("a ConvexPolytope must have at least one vertex")]
     DegeneratePolytope,
+    
+    /// The point is outside the shape.
+    #[error("cannot map a point that is outside the shape")]
+    PointOutsideShape,
 }

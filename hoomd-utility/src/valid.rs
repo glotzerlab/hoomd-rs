@@ -3,7 +3,7 @@
 
 //! Ensure that values are in well-defined ranges.
 
-use std::fmt;
+use std::{fmt, ops::{Div, DivAssign, Mul, MulAssign}};
 
 use crate::Error;
 
@@ -96,6 +96,38 @@ impl fmt::Display for PositiveReal {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
+    }
+}
+
+impl Mul for PositiveReal {
+    type Output = Self;
+
+    #[inline]
+    fn mul(self, rhs: Self) -> Self {
+        Self(self.0 * rhs.0)
+    }
+}
+
+impl MulAssign<PositiveReal> for PositiveReal {
+    #[inline]
+    fn mul_assign(&mut self, rhs: PositiveReal) {
+        self.0 *= rhs.0;
+    }
+}
+
+impl Div for PositiveReal {
+    type Output = Self;
+
+    #[inline]
+    fn div(self, rhs: Self) -> Self {
+        Self(self.0 / rhs.0)
+    }
+}
+
+impl DivAssign<PositiveReal> for PositiveReal {
+    #[inline]
+    fn div_assign(&mut self, rhs: PositiveReal) {
+        self.0 /= rhs.0;
     }
 }
 

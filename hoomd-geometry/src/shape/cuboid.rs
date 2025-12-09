@@ -3,7 +3,7 @@
 
 //! Implement [`Hypercuboid`]
 
-use crate::{BoundingSphereRadius, IsPointInside, SupportMapping, Volume};
+use crate::{BoundingSphereRadius, Error, IsPointInside, Map, Scale, SupportMapping, Volume};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
@@ -386,6 +386,41 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Hypercuboid<N> {
     }
 }
 
+impl<const N: usize> Scale for Hypercuboid<N> {
+    /// Construct a scaled hypercuboid.
+    ///
+    /// The resulting Hypercuboid's edge lengths $` L_\mathrm{new} `$ are
+    /// the original's $` L `$ scaled by $` v `$:
+    /// ```math
+    /// L_\mathrm{new} = v L
+    /// ```
+    ///
+    /// The centroid remains at the origin.
+    #[inline]
+    fn scale(&self, v: PositiveReal) -> Self {
+        Self {
+            edge_lengths: array::from_fn(|i| self.edge_lengths[i] * v),
+        }
+    }
+}
+
+impl<const N: usize> Map<Cartesian<N>> for Hypercuboid<N> {
+    /// Map points from one hypercuboid to another.
+    ///
+    /// Given a point P *inside `self`*, map it to the other boundary
+    /// by scaling.
+    #[inline]
+    fn map(&self, position: Cartesian<N>, other: &Self) -> Result<Cartesian<N>, Error> {
+        if !self.is_point_inside(&position) {
+            return Err(Error::PointOutsideShape);
+        }
+
+        let scale: [_; N] = array::from_fn(|i| other.edge_lengths[i] / self.edge_lengths[i]);
+        Ok(Cartesian::from(array::from_fn(|i| (scale[i].get() * position[i])
+            .clamp(-other.edge_lengths[i].get()/2.0, other.edge_lengths[i].get()/2.0))))
+    }
+}
+
 impl<const N: usize> Distribution<Cartesian<N>> for Hypercuboid<N> {
     /// Generate points uniformly distributed in the cuboid.
     ///
@@ -692,4 +727,7 @@ mod tests {
         assert!(&points.iter().any(|p| p[1] < -4.8));
         assert!(&points.iter().any(|p| p[1] > 4.8));
     }
+
+    // TODO: test scale
+    // TODO: test map
 }

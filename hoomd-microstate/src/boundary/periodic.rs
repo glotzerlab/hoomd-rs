@@ -3,6 +3,8 @@
 
 //! Implement periodic boundary conditions.
 
+use hoomd_geometry::{Map, Scale, Volume};
+use hoomd_utility::valid::PositiveReal;
 use rand::{Rng, distr::Distribution};
 
 use super::{Error, MaximumAllowableInteractionRange};
@@ -148,6 +150,46 @@ where
         self.shape.sample(rng)
     }
 }
+
+impl<T> Scale for Periodic<T>
+where
+    T: Scale
+{
+    /// Scale the wrapped shape.
+    #[inline]
+    fn scale(&self, v: PositiveReal) -> Self {
+        // TODO: validate maximum allowable interaction range.
+        // Should we panic? Or make scale fallible? First thought: in MC and NPT MD simulations,
+        // it may not be a recoverable error if the volume cannot be scaled...
+        Self {
+            shape: self.shape.scale(v),
+            ..*self
+        }
+    }
+}
+
+impl<P, T> Map<P> for Periodic<T>
+where
+    T: Map<P>
+{
+    /// Map points in the wrapped shape.
+    #[inline]
+    fn map(&self, position: P, other: &Self) -> Result<P, hoomd_geometry::Error> {
+        self.shape.map(position, &other.shape)
+    }
+}
+
+impl<T> Volume for Periodic<T>
+where
+    T: Volume
+{
+    /// Volume of the wrapped shape.
+    #[inline]
+    fn volume(&self) -> f64 {
+        self.shape.volume()
+    }
+}
+        
 
 #[cfg(test)]
 mod tests {

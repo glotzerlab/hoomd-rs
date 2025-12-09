@@ -78,6 +78,13 @@ path = "mc-tutorial/tetronimoes.rs"
 path = "mc-tutorial"
 
 [[example]]
+name = "hard-disk-self-assembly"
+path = "mc-tutorial/hard-disk-self-assembly.rs"
+
+[package.metadata.example.hard-disk-self-assembly]
+path = "mc-tutorial"
+
+[[example]]
 name = "hard-particle-self-assembly"
 path = "mc-tutorial/hard-particle-self-assembly.rs"
 
