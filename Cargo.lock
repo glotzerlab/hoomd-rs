@@ -227,9 +227,9 @@ dependencies = [
 
 [[package]]
 name = "approxim"
-version = "0.6.8"
+version = "0.6.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dac46b42e91d972872ff55e2be5dcd4d8437464f7926067783166eef9227d3a5"
+checksum = "6a5c2a568af8c49854c15b682d27eb4827058aeae70a3d4452d0f37ace18c7b6"
 dependencies = [
  "approx-derive",
  "num-traits",
