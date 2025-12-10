@@ -170,7 +170,7 @@ impl HardDiskSelfAssembly {
     fn compress(&mut self) -> anyhow::Result<()> {
         // ANCHOR_END: initialize
         // ANCHOR: apply_quick_insert
-        self.quick_compress.compress(&mut self.microstate, &self.overlap_penalty_hamiltonian);
+        self.quick_compress.compress(&mut self.microstate, &self.overlap_penalty_hamiltonian, |_| true);
         // ANCHOR_END: apply_quick_insert
 
         // ANCHOR: initialize_trial_moves
@@ -188,14 +188,8 @@ impl HardDiskSelfAssembly {
                 "Compression complete at step {}.",
                 self.microstate.step()
             );
-            println!("Final  volume: {}", self.microstate.boundary().volume());
-            println!("Target volume: {}", self.quick_compress.target_volume());
         }
         // ANCHOR_END: state_transition
-
-        if self.step().is_multiple_of(100) {
-            println!("{}: {}", self.microstate.step(), self.microstate.boundary().volume());
-        }
 
         // ANCHOR: failed
         if self.step() >= 10_000 {

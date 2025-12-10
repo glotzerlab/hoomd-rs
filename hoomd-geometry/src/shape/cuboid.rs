@@ -389,7 +389,7 @@ impl<const N: usize> IsPointInside<Cartesian<N>> for Hypercuboid<N> {
 impl<const N: usize> Scale for Hypercuboid<N> {
     /// Construct a scaled hypercuboid.
     ///
-    /// The resulting Hypercuboid's edge lengths $` L_\mathrm{new} `$ are
+    /// The resulting hypercuboid's edge lengths $` L_\mathrm{new} `$ are
     /// the original's $` L `$ scaled by $` v `$:
     /// ```math
     /// L_\mathrm{new} = v L
@@ -397,10 +397,25 @@ impl<const N: usize> Scale for Hypercuboid<N> {
     ///
     /// The centroid remains at the origin.
     #[inline]
-    fn scale(&self, v: PositiveReal) -> Self {
+    fn scale_length(&self, v: PositiveReal) -> Self {
         Self {
             edge_lengths: array::from_fn(|i| self.edge_lengths[i] * v),
         }
+    }
+
+    /// Construct a scaled hypercuboid.
+    ///
+    /// The resulting hypercuboid's edge lengths $` L_\mathrm{new} `$ are
+    /// the original's $` L `$ scaled by $` v^\frac{1}{N} `$:
+    /// ```math
+    /// L_\mathrm{new} = v^\frac{1}{N} L
+    /// ```
+    ///
+    /// The centroid remains at the origin.
+    #[inline]
+    fn scale_volume(&self, v: PositiveReal) -> Self {
+        let v = v.get().powf(1.0 / N as f64);
+        self.scale_length(v.try_into().expect("v^{1/N} should be a positive real"))
     }
 }
 
@@ -410,13 +425,14 @@ impl<const N: usize> Map<Cartesian<N>> for Hypercuboid<N> {
     /// Given a point P *inside `self`*, map it to the other boundary
     /// by scaling.
     #[inline]
-    fn map(&self, position: Cartesian<N>, other: &Self) -> Result<Cartesian<N>, Error> {
-        if !self.is_point_inside(&position) {
+    fn map(&self, point: Cartesian<N>, other: &Self) -> Result<Cartesian<N>, Error> {
+        if !self.is_point_inside(&point) {
             return Err(Error::PointOutsideShape);
         }
 
+        // TODO: Test (and fix) corner case where rounding puts the mapped point outside other.
         let scale: [_; N] = array::from_fn(|i| other.edge_lengths[i] / self.edge_lengths[i]);
-        Ok(Cartesian::from(array::from_fn(|i| (scale[i].get() * position[i])
+        Ok(Cartesian::from(array::from_fn(|i| (scale[i].get() * point[i])
             .clamp(-other.edge_lengths[i].get()/2.0, other.edge_lengths[i].get()/2.0))))
     }
 }

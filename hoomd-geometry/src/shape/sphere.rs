@@ -2,12 +2,12 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Hypersphere`]
-use crate::{BoundingSphereRadius, IntersectsAt, IsPointInside, SupportMapping, Volume};
+use crate::{BoundingSphereRadius, Error, IntersectsAt, IsPointInside, Map, Scale, SupportMapping, Volume};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation, distribution::Ball};
 
 use rand::{Rng, distr::Distribution};
-use std::{f64::consts::PI, ops::Mul};
+use std::{array, f64::consts::PI, ops::Mul};
 
 /// The (single, double, ...)-factorial function
 pub fn factorial(n: usize, ntuple: usize) -> usize {
@@ -270,6 +270,56 @@ where
     #[inline]
     fn is_point_inside(&self, point: &V) -> bool {
         point.dot(point) < self.radius.get().powi(2)
+    }
+}
+
+impl<const N: usize> Scale for Hypersphere<N> {
+    /// Construct a scaled hypersphere.
+    ///
+    /// The resulting hypersphere's radious $` r_\mathrm{new} `$ is
+    /// the original's $` r `$ scaled by $` v `$:
+    /// ```math
+    /// r_\mathrm{new} = v r
+    /// ```
+    ///
+    /// The centroid remains at the origin.
+    #[inline]
+    fn scale_length(&self, v: PositiveReal) -> Self {
+        Self {
+            radius: self.radius * v,
+        }
+    }
+
+    /// Construct a scaled hypersphere.
+    ///
+    /// The resulting hypersphere's radius $` r_\mathrm{new} `$ is
+    /// the original's $` r `$ scaled by $` v^\frac{1}{N} `$:
+    /// ```math
+    /// r_\mathrm{new} = v^\frac{1}{N} r
+    /// ```
+    ///
+    /// The centroid remains at the origin.
+    #[inline]
+    fn scale_volume(&self, v: PositiveReal) -> Self {
+        let v = v.get().powf(1.0 / N as f64);
+        self.scale_length(v.try_into().expect("v^{1/N} should be a positive real"))
+    }
+}
+
+impl<const N: usize> Map<Cartesian<N>> for Hypersphere<N> {
+    /// Map points from one hypersphere to another.
+    ///
+    /// Given a point P *inside `self`*, map it to the other boundary
+    /// by scaling.
+    #[inline]
+    fn map(&self, point: Cartesian<N>, other: &Self) -> Result<Cartesian<N>, Error> {
+        if !self.is_point_inside(&point) {
+            return Err(Error::PointOutsideShape);
+        }
+
+        let scale = other.radius / self.radius;
+        // TODO: Test (and fix) corner case where rounding puts the mapped point outside other.
+        Ok(Cartesian::from(array::from_fn(|i| scale.get() * point[i])))
     }
 }
 

@@ -8,9 +8,7 @@ use super::Count;
 use hoomd_geometry::{Map, Scale, Volume};
 use hoomd_interaction::{TotalEnergy};
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, Transform,
-    boundary::{GenerateGhosts, Wrap},
-    property::Position,
+    boundary::{GenerateGhosts, Wrap}, property::Position, Body, Microstate, SiteKey, Tagged, Transform
 };
 use hoomd_spatial::PointUpdate;
 
@@ -108,10 +106,11 @@ impl<C> QuickCompress<C> {
         reason = "Panic would occur due to a bug in hoomd-rs."
     )]
     #[inline]
-    pub fn compress<P, B, S, X, H>(
+    pub fn compress<P, B, S, X, H, F>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         hamiltonian: &H,
+        map_body: F,
     )
     where
         P: Copy,
@@ -121,8 +120,8 @@ impl<C> QuickCompress<C> {
         H: TotalEnergy<Microstate<B, S, X, C>>,
         C: Clone + Map<P> + Wrap<B> + Wrap<S> + GenerateGhosts<S> + Volume + Scale + PartialEq,
         Microstate<B, S, X, C>: Clone,
+        F: Fn(&Tagged<Body<B, S>>) -> bool,
     {
-        // TODO: pass through map argument
         let mut rng = microstate.counter().make_rng();
         microstate.increment_substep();
 
@@ -149,9 +148,9 @@ impl<C> QuickCompress<C> {
                     (current_volume * (1.0 - delta)).max(self.target_volume)
                 };
 
-                let trial_boundary = microstate.boundary().scale((trial_volume / current_volume)
+                let trial_boundary = microstate.boundary().scale_volume((trial_volume / current_volume)
                     .try_into().expect("both volumes should be positive"));
-                let Ok(trial_microstate) = microstate.clone_with_boundary(trial_boundary, |_| true) else { return };
+                let Ok(trial_microstate) = microstate.clone_with_boundary(trial_boundary, map_body) else { return };
                 let delta_energy = hamiltonian.delta_energy_total(microstate, &trial_microstate); 
 
                 if delta_energy > self.maximum_energy_per_site * microstate.sites().len() as f64 {
