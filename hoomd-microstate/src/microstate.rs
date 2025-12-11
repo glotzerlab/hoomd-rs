@@ -1304,12 +1304,51 @@ where
     C: Clone + Wrap<B> + Wrap<S> + GenerateGhosts<S> + MapPoint<P>,
     X: Clone + PointUpdate<P, SiteKey>,
 {
-    /// TODO: Document
+    /// Clone the microstate, mapping or wrapping bodies into a new boundary.
+    ///
+    /// The resulting microstate contains the same bodies and sites as the source.
+    /// All bodies and sites maintain the same index order and tags.
+    ///
+    /// `should_map_body` will be called on every body in the microstate. When
+    /// it returns `true`, `clone_with_boundary` will map the body's position
+    /// from `self.boundary` to `new_boundary` using [`MapPoint`]. When
+    /// `should_map_body` returns `false`, the `clone_with_boundary` wraps
+    /// the body's unmodified position into `new_boundary`. That wrap may fail,
+    /// especially in closed (or partially closed) boundary conditions.
+    ///
+    /// [`MapPoint`]: hoomd_geometry::MapPoint
     ///
     /// # Errors
     ///
-    /// [`Error::UpdateBody`] some body properties cannot be updated because the body
-    /// position or any site position cannot be wrapped into the new boundary.
+    /// [`Error::UpdateBody`] when some body or site cannot be wrapped into the
+    /// new boundary.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_microstate::{Microstate, boundary::Closed};
+    /// use hoomd_microstate::{Body, property::{Point, Position}};
+    /// use hoomd_vector::Cartesian;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///
+    /// let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
+    /// let microstate = Microstate::builder()
+    ///     .boundary(square)
+    ///     .bodies([Body::point(Cartesian::from([1.0, 2.0]))])
+    ///     .bodies([Body::point(Cartesian::from([3.0, 4.0]))])
+    ///     .try_build()?;
+    ///
+    /// let new_square = Closed(Rectangle::with_equal_edges(20.0.try_into()?));
+    ///
+    /// let new_microstate = microstate.clone_with_boundary(new_square,
+    ///     |body| body.tag > 0)?;
+    ///
+    /// assert_eq!(*new_microstate.bodies()[0].item.properties.position(), Cartesian::from([1.0, 2.0]));
+    /// assert_eq!(*new_microstate.bodies()[1].item.properties.position(), Cartesian::from([6.0, 8.0]));
+    /// # Ok(())
+    /// # }
+    /// ```
     #[allow(
         clippy::missing_inline_in_public_items,
         reason = "extremely expensive methods should not be inlined"
