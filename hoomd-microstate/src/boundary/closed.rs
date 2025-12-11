@@ -141,7 +141,7 @@ where
     /// [`hoomd_geometry::Error::PointOutsideShape`] when `point` is outside
     /// `self.shape()`.
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```
     /// use hoomd_geometry::{MapPoint, shape::Rectangle};
