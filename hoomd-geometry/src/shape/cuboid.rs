@@ -455,6 +455,11 @@ impl<const N: usize> MapPoint<Cartesian<N>> for Hypercuboid<N> {
     /// Given a point P *inside `self`*, map it to the other shape
     /// by scaling.
     ///
+    /// # Errors
+    ///
+    /// Returns [`Error::PointOutsideShape`] when `point` is outside the shape
+    /// `self`.
+    ///
     /// # Example
     ///
     /// ```
