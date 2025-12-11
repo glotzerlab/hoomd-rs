@@ -5,7 +5,7 @@
 
 use std::fmt;
 
-use hoomd_geometry::{Map, Scale, Volume};
+use hoomd_geometry::{MapPoint, Scale, Volume};
 use hoomd_utility::valid::PositiveReal;
 use rand::{Rng, distr::Distribution};
 
@@ -282,9 +282,9 @@ where
     }
 }
 
-impl<P, T> Map<P> for Periodic<T>
+impl<P, T> MapPoint<P> for Periodic<T>
 where
-    T: Map<P>
+    T: MapPoint<P>
 {
     /// Map points in from the wrapped shape into another periodic boundary.
     ///
@@ -293,10 +293,10 @@ where
     /// [`hoomd_geometry::Error::PointOutsideShape`] when `point` is outside
     /// `self.shape()`.
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```
-    /// use hoomd_geometry::{Map, shape::Rectangle};
+    /// use hoomd_geometry::{MapPoint, shape::Rectangle};
     /// use hoomd_microstate::boundary::Periodic;
     /// use hoomd_vector::Cartesian;
     ///
@@ -306,16 +306,16 @@ where
     /// let periodic_b =
     ///     Periodic::new(2.5, Rectangle::with_equal_edges(20.0.try_into()?))?;
     ///
-    /// let mapped_point = periodic_a.map(Cartesian::from([-1.0, 1.0]), &periodic_b);
+    /// let mapped_point = periodic_a.map_point(Cartesian::from([-1.0, 1.0]), &periodic_b);
     ///
     /// assert_eq!(mapped_point, Ok(Cartesian::from([-2.0, 2.0])));
-    /// assert_eq!(periodic_a.map(Cartesian::from([-100.0, 1.0]), &periodic_b), Err(hoomd_geometry::Error::PointOutsideShape));
+    /// assert_eq!(periodic_a.map_point(Cartesian::from([-100.0, 1.0]), &periodic_b), Err(hoomd_geometry::Error::PointOutsideShape));
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    fn map(&self, point: P, other: &Self) -> Result<P, hoomd_geometry::Error> {
-        self.shape.map(point, &other.shape)
+    fn map_point(&self, point: P, other: &Self) -> Result<P, hoomd_geometry::Error> {
+        self.shape.map_point(point, &other.shape)
     }
 }
 

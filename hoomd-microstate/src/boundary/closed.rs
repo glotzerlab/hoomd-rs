@@ -8,7 +8,7 @@ use rand::{Rng, distr::Distribution};
 
 use super::{Error, GenerateGhosts, MAX_GHOSTS, Wrap};
 use crate::property::Position;
-use hoomd_geometry::{IsPointInside, Map, Scale, Volume};
+use hoomd_geometry::{IsPointInside, MapPoint, Scale, Volume};
 use hoomd_utility::valid::PositiveReal;
 
 /// Restrict points to the inside of a shape.
@@ -130,11 +130,11 @@ where
     }
 }
 
-impl<P, T> Map<P> for Closed<T>
+impl<P, T> MapPoint<P> for Closed<T>
 where
-    T: Map<P>
+    T: MapPoint<P>
 {
-    /// Map points in the wrapped shape.
+    /// Map a point in the wrapped shape to another.
     ///
     /// # Errors
     ///
@@ -144,7 +144,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use hoomd_geometry::{Map, shape::Rectangle};
+    /// use hoomd_geometry::{MapPoint, shape::Rectangle};
     /// use hoomd_microstate::boundary::Closed;
     /// use hoomd_vector::Cartesian;
     ///
@@ -152,16 +152,16 @@ where
     /// let closed_a = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
     /// let closed_b = Closed(Rectangle::with_equal_edges(20.0.try_into()?));
     ///
-    /// let mapped_point = closed_a.map(Cartesian::from([-1.0, 1.0]), &closed_b);
+    /// let mapped_point = closed_a.map_point(Cartesian::from([-1.0, 1.0]), &closed_b);
     ///
     /// assert_eq!(mapped_point, Ok(Cartesian::from([-2.0, 2.0])));
-    /// assert_eq!(closed_a.map(Cartesian::from([-100.0, 1.0]), &closed_b), Err(hoomd_geometry::Error::PointOutsideShape));
+    /// assert_eq!(closed_a.map_point(Cartesian::from([-100.0, 1.0]), &closed_b), Err(hoomd_geometry::Error::PointOutsideShape));
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    fn map(&self, point: P, other: &Self) -> Result<P, hoomd_geometry::Error> {
-        self.0.map(point, &other.0)
+    fn map_point(&self, point: P, other: &Self) -> Result<P, hoomd_geometry::Error> {
+        self.0.map_point(point, &other.0)
     }
 }
 

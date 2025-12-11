@@ -5,7 +5,7 @@
 use rand::Rng;
 
 use super::Count;
-use hoomd_geometry::{Map, Scale, Volume};
+use hoomd_geometry::{MapPoint, Scale, Volume};
 use hoomd_interaction::{TotalEnergy};
 use hoomd_microstate::{
     boundary::{GenerateGhosts, Wrap}, property::Position, Body, Microstate, SiteKey, Tagged, Transform
@@ -110,7 +110,7 @@ impl<C> QuickCompress<C> {
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         hamiltonian: &H,
-        map_body: F,
+        should_map_body: F,
     )
     where
         P: Copy,
@@ -118,7 +118,7 @@ impl<C> QuickCompress<C> {
         S: Clone + Position<Position = P> + Default,
         X: Clone + PointUpdate<P, SiteKey>,
         H: TotalEnergy<Microstate<B, S, X, C>>,
-        C: Clone + Map<P> + Wrap<B> + Wrap<S> + GenerateGhosts<S> + Volume + Scale + PartialEq,
+        C: Clone + MapPoint<P> + Wrap<B> + Wrap<S> + GenerateGhosts<S> + Volume + Scale + PartialEq,
         Microstate<B, S, X, C>: Clone,
         F: Fn(&Tagged<Body<B, S>>) -> bool,
     {
@@ -150,7 +150,7 @@ impl<C> QuickCompress<C> {
 
                 let trial_boundary = microstate.boundary().scale_volume((trial_volume / current_volume)
                     .try_into().expect("both volumes should be positive"));
-                let Ok(trial_microstate) = microstate.clone_with_boundary(trial_boundary, map_body) else { return };
+                let Ok(trial_microstate) = microstate.clone_with_boundary(trial_boundary, should_map_body) else { return };
                 let delta_energy = hamiltonian.delta_energy_total(microstate, &trial_microstate); 
 
                 if delta_energy > self.maximum_energy_per_site * microstate.sites().len() as f64 {

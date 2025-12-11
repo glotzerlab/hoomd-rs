@@ -371,7 +371,6 @@ pub trait IsPointInside<V> {
     fn is_point_inside(&self, point: &V) -> bool;
 }
 
-// TODO: Define that the scaling factor is applied to the *volume*. Fix the implementation.
 pub trait Scale {
     /// Produce a new shape by uniformly scaling length.
     fn scale_length(&self, v: PositiveReal) -> Self;
@@ -380,9 +379,9 @@ pub trait Scale {
     fn scale_volume(&self, v: PositiveReal) -> Self;
 }
 
-pub trait Map<P> {
-    /// Map points from one boundary to another.
-    fn map(&self, point: P, other: &Self) -> Result<P, Error>;
+pub trait MapPoint<P> {
+    /// Map a point from one boundary to another.
+    fn map_point(&self, point: P, other: &Self) -> Result<P, Error>;
 }
 
 /// Enumerate possible sources of error in fallible geometry methods.

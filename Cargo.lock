@@ -3110,7 +3110,9 @@ dependencies = [
 name = "hoomd-geometry"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "approxim",
+ "assert2",
  "divan",
  "hoomd-linear-algebra",
  "hoomd-manifold",

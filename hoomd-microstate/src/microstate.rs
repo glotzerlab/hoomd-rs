@@ -4,7 +4,7 @@
 //! Implement [`Microstate`] and related types.
 
 use arrayvec::ArrayVec;
-use hoomd_geometry::Map;
+use hoomd_geometry::MapPoint;
 use std::{cmp::Reverse, collections::BinaryHeap, fmt};
 
 use crate::{
@@ -1301,7 +1301,7 @@ where
     P: Copy,
     B: Clone + Transform<S> + Position<Position = P>,
     S: Clone + Position<Position = P> + Default,
-    C: Clone + Wrap<B> + Wrap<S> + GenerateGhosts<S> + Map<P>,
+    C: Clone + Wrap<B> + Wrap<S> + GenerateGhosts<S> + MapPoint<P>,
     X: Clone + PointUpdate<P, SiteKey>,
 {
     /// TODO: Document
@@ -1318,7 +1318,7 @@ where
         clippy::missing_panics_doc,
         reason = "Panic would occur due to a bug in hoomd-rs."
     )]
-    pub fn clone_with_boundary<F>(&self, new_boundary: C, map: F) -> Result<Microstate<B, S, X, C>, Error> where
+    pub fn clone_with_boundary<F>(&self, new_boundary: C, should_map_body: F) -> Result<Microstate<B, S, X, C>, Error> where
         F: Fn(&Tagged<Body<B, S>>) -> bool,
     {
         // clone_with_boundary is used in Monte Carlo methods, such as box trial
@@ -1341,8 +1341,8 @@ where
         for body_index in 0..new_microstate.bodies().len() {
             let tagged_body = &new_microstate.bodies()[body_index];
             let mut new_properties = tagged_body.item.properties.clone();
-            if map(tagged_body) {
-                *new_properties.position_mut() = self.boundary.map(*new_properties.position(), &new_microstate.boundary)
+            if should_map_body(tagged_body) {
+                *new_properties.position_mut() = self.boundary.map_point(*new_properties.position(), &new_microstate.boundary)
                     .expect("body position should be inside the boundary");
             }
 
