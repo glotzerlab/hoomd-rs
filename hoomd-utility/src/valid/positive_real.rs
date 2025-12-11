@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Ensure that values are in well-defined ranges.
+//! Implement PositiveReal
 
 use std::{fmt, ops::{Div, DivAssign, Mul, MulAssign}};
 
@@ -134,22 +134,23 @@ impl DivAssign<PositiveReal> for PositiveReal {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use assert2::check;
 
     #[test]
     fn positive_real_validation() {
         let result = PositiveReal::try_from(f64::INFINITY);
-        assert_eq!(result, Err(Error::NotFinite(f64::INFINITY)));
+        check!(result == Err(Error::NotFinite(f64::INFINITY)));
 
         let result = PositiveReal::try_from(-f64::INFINITY);
-        assert_eq!(result, Err(Error::NotFinite(-f64::INFINITY)));
+        check!(result == Err(Error::NotFinite(-f64::INFINITY)));
 
         let result = PositiveReal::try_from(f64::NAN);
-        assert!(matches!(result, Err(Error::NotFinite(_))));
+        check!(matches!(result, Err(Error::NotFinite(_))));
 
         let result = PositiveReal::try_from(0.0);
-        assert_eq!(result, Err(Error::NotPositive(0.0)));
+        check!(result == Err(Error::NotPositive(0.0)));
 
         let result = PositiveReal::try_from(-1.0);
-        assert_eq!(result, Err(Error::NotPositive(-1.0)));
+        check!(result == Err(Error::NotPositive(-1.0)));
     }
 }
