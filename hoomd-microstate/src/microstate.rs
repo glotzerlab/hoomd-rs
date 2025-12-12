@@ -2252,5 +2252,4 @@ mod tests {
     }
 
     // TODO: Test iter_sites_near: with and without periodic boundaries
-    // TODO: Test clone_with_boundary
 }

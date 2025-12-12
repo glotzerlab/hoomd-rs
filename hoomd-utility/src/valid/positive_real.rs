@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement PositiveReal
+//! Implement `PositiveReal`
 
 use std::{fmt, ops::{Div, DivAssign, Mul, MulAssign}};
 
