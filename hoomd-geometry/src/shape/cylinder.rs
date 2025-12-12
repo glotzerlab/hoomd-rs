@@ -99,20 +99,11 @@ impl Cylinder {
 
         let n_magnitude_sq = sx.powi(2) + sy.powi(2);
 
-        let distance_sq = if n_magnitude_sq < _CYLINDER_OVERLAP_PRECISION_SQUARED {
-            // The axes of the cylinders are parallel
-            // The shortest distance `d` is just the distance from the point c
-            // to the z-axis, which is the distance in the xy-plane.
-            vx.powi(2) + vy.powi(2)
-        } else {
-            // Non-Parallel
-            // We use the full formula: d = |(p2 - p1) . (v1 x v2)| / |v1 x v2|
-            // p2 - p1 = c = (cx, cy, cz)
-            // v1 x v2 = (-sy, sx, 0)
-            // (p2 - p1) . (v1 x v2) = cx*(-sy) + cy*sx + cz*0 = cy*sx - cx*sy
-            let dot_product = vy * sx - vx * sy;
-            dot_product.powi(2) / n_magnitude_sq
-        };
+        let dot_product = vy * sx - vx * sy;
+        let mut distance_sq = dot_product.powi(2) / n_magnitude_sq;
+        if !distance_sq.is_finite() {
+            distance_sq = vx.powi(2) + vy.powi(2);
+        }
 
         // A collision occurs if the shortest distance between the axes is <= r1+r2
         distance_sq <= (self.radius.get() + other.radius.get()).powi(2)
