@@ -3,8 +3,7 @@
 use anyhow::{Context, anyhow};
 
 use hoomd_geometry::{
-    Convex,
-    shape::{Ellipse, Rectangle},
+    shape::{Ellipse, Rectangle}, Convex, Volume
 };
 use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff,
@@ -12,7 +11,7 @@ use hoomd_interaction::{
     univariate::OverlapPenalty,
 };
 use hoomd_mc::{
-    HypercuboidCheckerboard, ParallelSweep, QuickInsert, Rotate, Translate,
+    HypercuboidCheckerboard, Sweep, QuickCompress, QuickInsert, Rotate, Translate,
     Trial, UniformIn,
 };
 use hoomd_microstate::{
@@ -43,22 +42,18 @@ struct HardEllipseSelfAssembly {
     /// How sites interact with other sites and fields.
     hamiltonian: PairwiseCutoff<HardShape<Convex<Ellipse>>>,
     /// Trial moves to apply.
-    translate_sweep: ParallelSweep<
+    translate_sweep: Sweep<
         Translate<PositionVector>,
-        HypercuboidCheckerboard<2>,
-        BodyProperties,
-        SiteProperties,
     >,
     /// Trial moves to apply.
-    rotate_sweep: ParallelSweep<
+    rotate_sweep: Sweep<
         Rotate<Orientation>,
-        HypercuboidCheckerboard<2>,
-        BodyProperties,
-        SiteProperties,
     >,
     /// Temperature set point.
     macrostate: Isothermal,
-    /// Quick insert
+    /// Quick compress algorithm.
+    quick_compress: QuickCompress<Periodic<Rectangle>>,
+    /// Quick insert algorithm.
     quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Rectangle>>>,
     /// How sites interact when inserted.
     insert_hamiltonian: PairwiseCutoff<
@@ -82,10 +77,9 @@ impl HardEllipseSelfAssembly {
     fn new() -> anyhow::Result<HardEllipseSelfAssembly> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
-        // let box_height = 14.0;
-        // let n_bodies = 820;
-        let box_height = 14.0 * 2.0;
-        let n_bodies = 3280;
+        let initial_packing_fraction = 0.5;
+        let target_packing_fraction = 0.7;
+        let n_bodies = 1024;
         let maximum_distance = 0.07;
         let maximum_rotation = 0.3;
         let sigma = 1.0;
@@ -103,7 +97,9 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: periodic
-        let square = Rectangle::with_equal_edges(box_height.try_into()?);
+        let initial_box_volume = n_bodies as f64 * ellipse.volume() / initial_packing_fraction;
+        let initial_box_edge_length = initial_box_volume.sqrt();        
+        let square = Rectangle::with_equal_edges(initial_box_edge_length.try_into()?);
         let periodic_square =
             Periodic::new(hamiltonian.0.maximum_interaction_range(), square)?;
         // ANCHOR_END: periodic
@@ -121,11 +117,11 @@ impl HardEllipseSelfAssembly {
         // ANCHOR: trial_moves
         let translate =
             Translate::with_maximum_distance(maximum_distance.try_into()?);
-        let translate_sweep = ParallelSweep::new(sigma.try_into()?, translate);
+        let translate_sweep = Sweep(translate);
 
         let rotate =
             Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
-        let rotate_sweep = ParallelSweep::new(sigma.try_into()?, rotate);
+        let rotate_sweep = Sweep(rotate);
         // ANCHOR_END: trial_moves
 
         // ANCHOR: quick_insert
@@ -135,7 +131,10 @@ impl HardEllipseSelfAssembly {
         };
         let quick_insert = QuickInsert::new(distribution, n_bodies);
         // ANCHOR_END: quick_insert
-
+        let target_box_volume = n_bodies as f64 * ellipse.volume() / target_packing_fraction;
+        let quick_compress = QuickCompress::with_target_volume(target_box_volume.try_into()?);
+        // ANCHOR: quick_compress
+        
         // ANCHOR: insert_hamiltonian
         let approximate_shape_overlap = Anisotropic {
             interaction: ApproximateShapeOverlap::new(
@@ -156,6 +155,7 @@ impl HardEllipseSelfAssembly {
             hamiltonian,
             translate_sweep,
             rotate_sweep,
+            quick_compress,
             quick_insert,
             macrostate,
             phase: Phase::Initialize,
@@ -197,10 +197,14 @@ impl HardEllipseSelfAssembly {
     // ANCHOR: initialize
     fn initialize(&mut self) -> anyhow::Result<()> {
         // ANCHOR_END: initialize
-        // ANCHOR: apply_quick_insert
-        self.quick_insert
-            .apply(&mut self.microstate, &self.insert_hamiltonian);
-        // ANCHOR_END: apply_quick_insert
+        // ANCHOR: apply_quick_insert_compress
+        if self.quick_insert.is_complete() {
+            self.quick_compress.compress(&mut self.microstate, &self.insert_hamiltonian, |_| true);
+        } else {
+            self.quick_insert
+                .apply(&mut self.microstate, &self.insert_hamiltonian);
+        }
+        // ANCHOR_END: apply_quick_insert_compress
 
         // ANCHOR: initialize_trial_moves
         self.translate_sweep.apply(
@@ -217,7 +221,7 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: initialize_trial_moves
 
         // ANCHOR: state_transition
-        if self.quick_insert.is_complete() {
+        if self.quick_compress.is_complete() {
             self.phase = Phase::Equilibrate;
             println!(
                 "Initialization complete at step {}.",
@@ -227,12 +231,14 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: state_transition
 
         // ANCHOR: failed
-        if self.step() >= 10_000 {
+        if self.step() >= 20_000 {
             let n = self.microstate.bodies().len();
-            let target = self.quick_insert.target();
+            let target_n = self.quick_insert.target();
+            let volume = self.microstate.boundary().volume();
+            let target_volume = self.quick_compress.target_volume();
             let step = self.microstate.step();
             return Err(anyhow!(
-                "{n} of {target} bodies inserted after {step} steps"
+                "fail to initialize at step {step} --- inserted {n}/{target_n} bodies and compressed to {volume} / {target_volume}"
             ));
         }
 

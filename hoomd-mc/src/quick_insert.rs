@@ -214,6 +214,7 @@ impl<D> QuickInsert<D> {
     ///
     /// # Example
     ///
+    /// Hard spheres
     /// ```
     /// use hoomd_geometry::shape::Rectangle;
     /// use hoomd_interaction::{
