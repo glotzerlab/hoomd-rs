@@ -4,6 +4,7 @@
 //! Implement vector and curved manifold types on a sphere.
 
 use std::f64::consts::PI;
+use std::ops::Mul;
 
 use approxim::{approx_derive::RelativeEq, assert_relative_eq};
 use rand::{
@@ -12,7 +13,7 @@ use rand::{
 };
 
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, InnerProduct, Metric, Quaternion, Versor};
+use hoomd_vector::{Cartesian, InnerProduct, Metric, Quaternion, Rotate, Versor};
 
 /// Point on the surface of a sphere.
 ///
@@ -297,11 +298,11 @@ impl Metric for Spherical<4> {
 /// # Ok(())
 /// # }
 /// ```
-pub struct SphericalDisk {
+pub struct SphericalDisk<const N: usize> {
     /// Max distance away from point.
     pub disk_radius: PositiveReal,
     /// The center of the disk.
-    pub point: Spherical<3>,
+    pub point: Spherical<N>,
 }
 
 impl<const N: usize> Default for Spherical<N> {
@@ -316,7 +317,7 @@ impl<const N: usize> Default for Spherical<N> {
     }
 }
 
-impl Distribution<Spherical<3>> for SphericalDisk {
+impl Distribution<Spherical<3>> for SphericalDisk<3> {
     /// Translates 3-dimensional cartesian vector named "point" along the
     /// surface of a sphere by maximum distance of r.
     #[inline]
@@ -345,6 +346,29 @@ impl Distribution<Spherical<3>> for SphericalDisk {
             -trial_coords[0] * (theta.sin()) + trial_coords[2] * (theta.cos()),
         ]);
         Spherical::from_cartesian_coordinates(transformed_point, radius)
+    }
+}
+
+impl Distribution<Spherical<4>> for SphericalDisk<4> {
+    /// Translates 3-dimensional cartesian vector named "point" along the
+    /// surface of a sphere by maximum distance of r.
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Spherical<4> {
+        let radius = self.point.radius;
+        let max_trans = (self.disk_radius.get()) / radius;
+        let point = self.point;
+        // generate random unit cartesian vector
+        let v : Versor = rng.random();
+        let b_hat = v.rotate(&Cartesian::from([1.0,0.0,0.0])).to_unit().expect("hard coded non-null vector");
+        let eta = Uniform::new(0.0, max_trans).expect("hard coded non-negative");
+        let translation_versor = Versor::from_axis_angle(b_hat.0, eta.sample(rng));
+        
+        let position_versor = Quaternion::from(*point.coordinates()).to_versor().expect("spherical points cannot be null");
+        let transformation = ((*translation_versor.get()) * (*position_versor.get()) * (*translation_versor.get())).to_versor().expect("sperical points cannot be null");
+        let sphere_point = Spherical::<4>::from_versor(transformation);
+        let transformed_point = Spherical::<4>::from_cartesian_coordinates(
+            sphere_point.point().mul(radius), radius);
+        transformed_point
     }
 }
 
@@ -413,7 +437,7 @@ mod tests {
     }
 
     #[test]
-    fn random_sphere() {
+    fn random_two_sphere() {
         // Generate ten random points on the Hyperbolic
         let mut rng = StdRng::seed_from_u64(42);
         let d = 0.1;
@@ -431,6 +455,28 @@ mod tests {
 
             // check that points are within distance d of north pole
             let distance = (random_point.point[2].acos()) * (rho.sqrt());
+            assert!(d > distance);
+        }
+    }
+    #[test]
+    fn random_three_sphere() {
+        // Generate ten random points on the Hyperbolic
+        let mut rng = StdRng::seed_from_u64(42);
+        let d = 0.1;
+        let n_pole = Spherical::from_cartesian_coordinates(Cartesian::from([1.0, 0.0, 0.0, 0.0]), 1.0);
+        for _n in 0..10 {
+            let disk = SphericalDisk {
+                disk_radius: d.try_into().expect("hard-coded positive number"),
+                point: n_pole,
+            };
+            let random_point: Spherical<4> = disk.sample(&mut rng);
+
+            // check that points remain on Sphere
+            let rho = random_point.point.norm_squared();
+            assert_relative_eq!(rho, 1.0, epsilon = 1e-12);
+
+            // check that points are within distance d of north pole
+            let distance = random_point.point().distance(n_pole.point());
             assert!(d > distance);
         }
     }
