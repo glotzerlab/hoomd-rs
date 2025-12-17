@@ -7,13 +7,10 @@ use rand::{Rng, distr::Distribution};
 
 use crate::{LocalTrial, Translate};
 use hoomd_manifold::{Spherical, SphericalDisk};
-use hoomd_microstate::property::Position;
-use hoomd_vector::InnerProduct;
+use hoomd_microstate::property::{Point, Position};
+use hoomd_vector::{InnerProduct, Quaternion, Versor};
 
-impl<B> LocalTrial<B> for Translate<Spherical<3>>
-where
-    B: Position<Position = Spherical<3>>,
-{
+impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
     /// Propose local trial moves for a body on the surface of a sphere
     ///
     /// # Example
@@ -50,7 +47,7 @@ where
     /// # }
     /// ```
     #[inline]
-    fn propose<R: Rng>(&self, rng: &mut R, body_properties: B) -> B {
+    fn propose<R: Rng>(&self, rng: &mut R, body_properties: Point<Spherical<3>>) -> Point<Spherical<3>> {
         let mut trial = body_properties;
         let disk = SphericalDisk {
             disk_radius: *self.maximum_distance(),

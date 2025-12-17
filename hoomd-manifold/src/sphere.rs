@@ -12,7 +12,7 @@ use rand::{
 };
 
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, InnerProduct, Metric};
+use hoomd_vector::{Cartesian, InnerProduct, Metric, Quaternion, Versor};
 
 /// Point on the surface of a sphere.
 ///
@@ -61,8 +61,24 @@ impl<const N: usize> Spherical<N> {
         assert_relative_eq!(rad, radius);
         Spherical { point, radius }
     }
+}
 
-    /// Implements a stereographic projection from the N-sphere to an N-dimensional plane.
+impl Spherical<3> {
+    /// Create a 2-sphere from spherical coordinates
+    #[inline]
+    #[must_use]
+    pub fn from_polar_coordinates(r: f64, theta: f64, phi: f64) -> Spherical<3> {
+        let theta_mod = theta.rem_euclid(PI);
+        let phi_mod = phi.rem_euclid(2.0 * PI);
+        let point = Cartesian::from([
+            r * (theta_mod.sin()) * (phi_mod.cos()),
+            r * (theta_mod.sin()) * (phi_mod.sin()),
+            r * (theta_mod.cos()),
+        ]);
+        Spherical::from_cartesian_coordinates(point, r)
+    }
+    /// Implements a stereographic projection from the 2-sphere to an 2-dimensional 
+    /// plane by projecting through the $`(0,0,1)`$ axis.
     ///
     /// # Example
     /// ```
@@ -84,47 +100,99 @@ impl<const N: usize> Spherical<N> {
     #[inline]
     #[must_use]
     pub fn stereographic_projection(&self) -> Vec<f64> {
-        (0..N - 1)
+        (0..2)
             .collect::<Vec<usize>>()
             .iter()
             .map(|i| {
-                self.point.coordinates[*i] / (1.0 - self.point.coordinates[N - 1] / self.radius)
+                self.point.coordinates[*i] / (1.0 - self.point.coordinates[2] / self.radius)
             })
             .collect::<Vec<f64>>()
     }
 }
 
-impl Spherical<3> {
-    /// Create a 2-sphere from spherical coordinates
+impl Spherical<4> {
+    /// Create a point on a 3-sphere from spherical coordinates. Note that this uses 
+    /// the convention 
+    /// ```math 
+    /// \begin{pmatrix}r\cos\psi 
+    /// \\ r\sin\psi\cos\theta 
+    /// \\ r\sin\psi\sin\theta\cos\phi 
+    /// \\ r\sin\psi\sin\theta\sin\phi
+    /// \end{pmatrix}
+    /// ```
+    /// where $`\psi`$ and $`theta`$ both run over the range $`0`$ to $`\pi`$ and $`\phi`$ 
+    /// runs from $`0`$ to $`2\pi`$.
     #[inline]
     #[must_use]
-    pub fn from_polar_coordinates(r: f64, theta: f64, phi: f64) -> Spherical<3> {
+    pub fn from_polar_coordinates(r: f64, psi: f64, theta: f64, phi: f64) -> Spherical<4> {
+        let psi_mod = psi.rem_euclid(PI);
         let theta_mod = theta.rem_euclid(PI);
         let phi_mod = phi.rem_euclid(2.0 * PI);
         let point = Cartesian::from([
-            r * (theta_mod.sin()) * (phi_mod.cos()),
-            r * (theta_mod.sin()) * (phi_mod.sin()),
-            r * (theta_mod.cos()),
+            r * (psi_mod.cos()),
+            r * (psi_mod.sin()) * (theta_mod.cos()),
+            r * (psi_mod.sin()) * (theta_mod.sin()) * (phi_mod.cos()),
+            r * (psi_mod.sin()) * (theta_mod.sin()) * (phi_mod.sin()),
         ]);
         Spherical::from_cartesian_coordinates(point, r)
     }
-}
-
-impl Spherical<4> {
-    /// Create a 3-sphere from spherical coordinates
+    /// Create a point on a unit-radius 3-sphere from a unit quaternion.
     #[inline]
     #[must_use]
-    pub fn from_polar_coordinates(r: f64, theta: f64, phi_1: f64, phi_2: f64) -> Spherical<4> {
-        let theta_mod = theta.rem_euclid(PI);
-        let phi_1_mod = phi_1.rem_euclid(PI);
-        let phi_2_mod = phi_2.rem_euclid(2.0 * PI);
-        let point = Cartesian::from([
-            r * (theta_mod.sin()) * (phi_1_mod.cos()),
-            r * (theta_mod.sin()) * (phi_1_mod.sin()) * (phi_2_mod.cos()),
-            r * (theta_mod.sin()) * (phi_1_mod.sin()) * (phi_2_mod.sin()),
-            r * (theta_mod.cos()),
-        ]);
-        Spherical::from_cartesian_coordinates(point, r)
+    pub fn from_versor(versor: Versor) -> Spherical<4> {
+        let (a,b,c,d) = versor.get_components();
+        Spherical::<4>::from_cartesian_coordinates(
+            Cartesian::from([a,b,c,d]),
+             1.0)
+    }
+    /// Create a versor which maps $`(1,0,0,0)`$ to the target `Spherical<4>` point.
+    /// # Example
+    /// ```
+    /// use hoomd_manifold::Spherical;
+    /// use hoomd_vector::{Cartesian, Quaternion, Versor};
+    /// use approxim::assert_relative_eq;
+    /// use std::f64::consts::PI;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let radius = 1.0;
+    /// let x = Spherical::<4>::from_polar_coordinates(1.0,PI/4.0, PI/8.0, 5.0*PI/4.0);
+    
+    /// let x_versor = x.to_versor();
+    /// let pole_versor = Quaternion::from([1.0,0.0,0.0,0.0]).to_versor().expect("not a null vector");
+    /// let transformation = (*x_versor.get() * *pole_versor.get() * *x_versor.get())
+    ///     .to_versor()
+    ///     .expect("Hard-coded example is valid");
+    /// let mapped_pole = Spherical::<4>::from_versor(transformation);
+    /// 
+    /// assert_relative_eq!(mapped_pole.coordinates()[0], x.coordinates()[0], epsilon=1e-12);
+    /// assert_relative_eq!(mapped_pole.coordinates()[1], x.coordinates()[1], epsilon=1e-12);
+    /// assert_relative_eq!(mapped_pole.coordinates()[2], x.coordinates()[2], epsilon=1e-12);
+    /// assert_relative_eq!(mapped_pole.coordinates()[3], x.coordinates()[3], epsilon=1e-12);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn to_versor(&self) -> Versor {
+        let phi = self.coordinates()[3].atan2(self.coordinates()[2]);
+        let theta = ((self.coordinates()[3].powi(2) + self.coordinates()[2].powi(2)).sqrt()).atan2(self.coordinates()[1]);
+        let psi = ((self.coordinates()[3].powi(2) + self.coordinates()[2].powi(2) + self.coordinates()[1].powi(2)).sqrt()).atan2(self.coordinates()[0]);
+        println!("phi {} theta {} psi {}", phi, theta, psi);
+        let n_hat = Cartesian::from([theta.cos(), (theta.sin())*(phi.cos()), (theta.sin())*(phi.sin())]).to_unit_unchecked();
+        Versor::from_axis_angle(n_hat.0, psi)
+    }
+    /// Implements a stereographic projection from the 2-sphere to an 2-dimensional 
+    /// plane by projecting through the $`(1,0,0,0)`$ axis.
+    #[inline]
+    #[must_use]
+    pub fn stereographic_projection(&self) -> Vec<f64> {
+        (1..4)
+            .collect::<Vec<usize>>()
+            .iter()
+            .map(|i| {
+                self.point.coordinates[*i] / (1.0 - self.point.coordinates[0] / self.radius)
+            })
+            .collect::<Vec<f64>>()
     }
 }
 
@@ -240,7 +308,7 @@ impl<const N: usize> Default for Spherical<N> {
     #[inline]
     fn default() -> Self {
         let mut zero = Cartesian::<N>::default();
-        zero.coordinates[N - 1] = 1.0;
+        zero.coordinates[0] = 1.0;
         Spherical {
             point: zero,
             radius: 1.0_f64,

@@ -13,6 +13,7 @@ mod overlap_penalty;
 mod shifted;
 mod weeks_chandler_anderson;
 mod xplor;
+mod zetterling;
 
 pub use boxcar::Boxcar;
 pub use expanded::Expanded;
@@ -24,6 +25,7 @@ pub use overlap_penalty::OverlapPenalty;
 pub use shifted::Shifted;
 pub use weeks_chandler_anderson::WeeksChandlerAnderson;
 pub use xplor::Xplor;
+pub use zetterling::Zetterling;
 
 /// Computes energy as a function of one variable.
 ///
