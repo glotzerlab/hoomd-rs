@@ -542,6 +542,15 @@ impl Versor {
         })
     }
 
+    /// Get the components of a [`Versor`].
+    #[inline]
+    #[must_use]
+    pub fn get_components(&self) -> (f64, f64, f64, f64) {
+        let quaternion = self.get();
+        let vec_components = quaternion.vector;
+        (quaternion.scalar, vec_components[0], vec_components[1], vec_components[2])
+    }
+
     /// Normalize the versor.
     ///
     /// Nominally, all [`Versor`] instances retain a unit norm. Due to limited
