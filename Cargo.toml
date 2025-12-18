@@ -95,9 +95,9 @@ rand_distr = "0.5.1"
 thiserror = "2.0.12"
 
 # Bevy and bevy-adjacent dependencies
-bevy_egui = "0.36.0"
+bevy_egui = "0.38.0"
 [workspace.dependencies.bevy]
-version = "0.16.1"
+version = "0.17.0"
 default-features = false
 features = ["async_executor",
             "bevy_asset",
@@ -120,10 +120,10 @@ features = ["async_executor",
             "bevy_dev_tools"]
 
 [workspace.dependencies.bevy_diagnostic]
-version = "0.16.1"
+version = "0.17.0"
 
 [workspace.dependencies.bevy_winit]
-version = "0.16.1"
+version = "0.17.0"
 
 [workspace.lints.rust]
 missing_docs = "warn"
