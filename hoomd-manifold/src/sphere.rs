@@ -178,7 +178,6 @@ impl Spherical<4> {
         let phi = self.coordinates()[3].atan2(self.coordinates()[2]);
         let theta = ((self.coordinates()[3].powi(2) + self.coordinates()[2].powi(2)).sqrt()).atan2(self.coordinates()[1]);
         let psi = ((self.coordinates()[3].powi(2) + self.coordinates()[2].powi(2) + self.coordinates()[1].powi(2)).sqrt()).atan2(self.coordinates()[0]);
-        println!("phi {} theta {} psi {}", phi, theta, psi);
         let n_hat = Cartesian::from([theta.cos(), (theta.sin())*(phi.cos()), (theta.sin())*(phi.sin())]).to_unit_unchecked();
         Versor::from_axis_angle(n_hat.0, psi)
     }
