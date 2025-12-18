@@ -9,10 +9,11 @@ use bevy::{
     prelude::*,
     reflect::TypePath,
     render::{
-        render_resource::{AsBindGroup, ShaderRef},
-        texture::TRANSPARENT_IMAGE_HANDLE,
+        render_resource::{AsBindGroup},
     },
-    sprite::{AlphaMode2d, Material2d, Material2dPlugin},
+    image::TRANSPARENT_IMAGE_HANDLE,
+    shader::ShaderRef,
+    sprite_render::{AlphaMode2d, Material2d, Material2dPlugin},
 };
 use hoomd_manifold::{Hyperbolic, Minkowski};
 use itertools::{
