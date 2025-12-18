@@ -104,7 +104,7 @@ features = ["async_executor",
             "bevy_color",
             "bevy_log",
             "bevy_render",
-            "bevy_sprite",
+            "bevy_sprite_render",
             "bevy_state",
             "bevy_text",
             "bevy_ui",
@@ -272,7 +272,7 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.bevy_scene]
 opt-level = 3
-[profile.dev.package.bevy_sprite]
+[profile.dev.package.bevy_sprite_render]
 opt-level = 3
 [profile.dev.package.bevy_state]
 opt-level = 3

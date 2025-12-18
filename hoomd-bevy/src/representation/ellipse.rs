@@ -11,11 +11,12 @@ use bevy::{
     prelude::*,
     reflect::TypePath,
     render::{
-        mesh::MeshTag,
-        render_resource::{AsBindGroup, ShaderRef},
+        render_resource::{AsBindGroup},
         storage::ShaderStorageBuffer,
     },
-    sprite::{AlphaMode2d, Material2d, Material2dPlugin},
+    mesh::MeshTag,
+    shader::ShaderRef,
+    sprite_render::{AlphaMode2d, Material2d, Material2dPlugin},
 };
 #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
 use bevy::{
