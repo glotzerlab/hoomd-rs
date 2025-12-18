@@ -8,13 +8,10 @@
 
 use bevy::{
     asset::embedded_asset,
+    mesh::MeshTag,
     prelude::*,
     reflect::TypePath,
-    render::{
-        render_resource::{AsBindGroup},
-        storage::ShaderStorageBuffer,
-    },
-    mesh::MeshTag,
+    render::{render_resource::AsBindGroup, storage::ShaderStorageBuffer},
     shader::ShaderRef,
     sprite_render::{AlphaMode2d, Material2d, Material2dPlugin},
 };

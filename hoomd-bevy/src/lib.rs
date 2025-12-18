@@ -466,23 +466,21 @@ where
 
     /// Detect the minimum frame time for all windows.
     #[cfg(not(target_arch = "wasm32"))]
-    fn detect_frame_time(
-        windows: impl Iterator<Item = Entity>,
-    ) -> Option<Duration> {
+    fn detect_frame_time(windows: impl Iterator<Item = Entity>) -> Option<Duration> {
         WINIT_WINDOWS.with_borrow(|winit| {
-        let best_framerate = {
-            f64::from(
-                windows
-                    .filter_map(|e| winit.get_window(e))
-                    .filter_map(|w| w.current_monitor())
-                    .filter_map(|monitor| monitor.refresh_rate_millihertz())
-                    .min()?,
-            ) / 1000.0
-                - 0.5
-        };
+            let best_framerate = {
+                f64::from(
+                    windows
+                        .filter_map(|e| winit.get_window(e))
+                        .filter_map(|w| w.current_monitor())
+                        .filter_map(|monitor| monitor.refresh_rate_millihertz())
+                        .min()?,
+                ) / 1000.0
+                    - 0.5
+            };
 
-        let best_frame_time = Duration::from_secs_f64(1.0 / best_framerate);
-        Some(best_frame_time)
+            let best_frame_time = Duration::from_secs_f64(1.0 / best_framerate);
+            Some(best_frame_time)
         })
     }
 
