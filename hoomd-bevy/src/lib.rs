@@ -85,7 +85,7 @@ use bevy_egui::{
     input::{egui_wants_any_keyboard_input, egui_wants_any_pointer_input},
 };
 #[cfg(not(target_arch = "wasm32"))]
-use bevy_winit::WinitWindows;
+use bevy_winit::WINIT_WINDOWS;
 
 use hoomd_simulation::Simulation;
 
@@ -161,11 +161,11 @@ struct OptionsWindowState(bool);
 pub struct ParametersWindowState(pub bool);
 
 /// Reset the camera to the default.
-#[derive(Event)]
+#[derive(Message)]
 struct ResetCamera;
 
 /// Advance the simulation one step.
-#[derive(Event)]
+#[derive(Message)]
 struct AdvanceSimulation;
 
 /// Configure the initial camera view and set how the camera will be controlled.
@@ -280,7 +280,7 @@ where
     /// Bevy system that advances the simulation forward one step.
     fn step_simulation(
         mut diagnostics: Diagnostics,
-        mut exit: EventWriter<AppExit>,
+        mut exit: MessageWriter<AppExit>,
         simulation: ResMut<Sim>,
         time: Res<Time>,
         mut accumulated_steps: Local<f32>,
@@ -321,8 +321,8 @@ where
     /// Advance the simulation one step
     fn advance_simulation(
         simulation: ResMut<Sim>,
-        mut exit: EventWriter<AppExit>,
-        mut event: EventReader<AdvanceSimulation>,
+        mut exit: MessageWriter<AppExit>,
+        mut event: MessageReader<AdvanceSimulation>,
     ) {
         let simulation = simulation.into_inner();
         for _ in event.read() {
@@ -445,13 +445,13 @@ where
     /// `frame_budget_fraction` settings.
     #[cfg(not(target_arch = "wasm32"))]
     fn set_frame_budget(
-        winit: NonSend<WinitWindows>,
         windows: Query<Entity, With<Window>>,
         settings: Res<Settings>,
         mut frame_budget: ResMut<FrameBudget>,
     ) {
         // adapted from: https://github.com/aevyrie/bevy_framepace/blob/main/src/lib.rs
-        let new_frame_budget = match Self::detect_frame_time(winit, windows.iter()) {
+
+        let new_frame_budget = match Self::detect_frame_time(windows.iter()) {
             Some(frame_time) => {
                 Duration::from_secs_f32(frame_time.as_secs_f32() * settings.frame_budget_fraction)
             }
@@ -466,29 +466,28 @@ where
 
     /// Detect the minimum frame time for all windows.
     #[cfg(not(target_arch = "wasm32"))]
-    fn detect_frame_time(
-        winit: NonSend<WinitWindows>,
-        windows: impl Iterator<Item = Entity>,
-    ) -> Option<Duration> {
-        let best_framerate = {
-            f64::from(
-                windows
-                    .filter_map(|e| winit.get_window(e))
-                    .filter_map(|w| w.current_monitor())
-                    .filter_map(|monitor| monitor.refresh_rate_millihertz())
-                    .min()?,
-            ) / 1000.0
-                - 0.5
-        };
+    fn detect_frame_time(windows: impl Iterator<Item = Entity>) -> Option<Duration> {
+        WINIT_WINDOWS.with_borrow(|winit| {
+            let best_framerate = {
+                f64::from(
+                    windows
+                        .filter_map(|e| winit.get_window(e))
+                        .filter_map(|w| w.current_monitor())
+                        .filter_map(|monitor| monitor.refresh_rate_millihertz())
+                        .min()?,
+                ) / 1000.0
+                    - 0.5
+            };
 
-        let best_frame_time = Duration::from_secs_f64(1.0 / best_framerate);
-        Some(best_frame_time)
+            let best_frame_time = Duration::from_secs_f64(1.0 / best_framerate);
+            Some(best_frame_time)
+        })
     }
 
     /// Set up the 2D camera.
     fn setup_camera_2d(mut commands: Commands, viewport_height: f32) {
         let projection = Projection::Orthographic(OrthographicProjection {
-            scaling_mode: bevy::render::camera::ScalingMode::FixedVertical { viewport_height },
+            scaling_mode: bevy::camera::ScalingMode::FixedVertical { viewport_height },
             ..OrthographicProjection::default_2d()
         });
 
@@ -499,7 +498,7 @@ where
     ///
     /// `=` resets the camera to the default.
     fn camera_reset_2d(
-        mut reset_camera: EventReader<ResetCamera>,
+        mut reset_camera: MessageReader<ResetCamera>,
         camera: Single<(&mut Transform, &mut Projection), With<Camera2d>>,
         mut control: ResMut<CameraControl2d>,
     ) {
@@ -581,7 +580,7 @@ where
             With<Camera2d>,
         >,
         settings: Res<Settings>,
-        mut scroll: EventReader<MouseWheel>,
+        mut scroll: MessageReader<MouseWheel>,
         window: Single<&Window, With<PrimaryWindow>>,
     ) {
         let (camera, global_transform, mut transform, projection) = camera.into_inner();
@@ -662,12 +661,12 @@ where
             .add_systems(Update, Self::step_simulation.in_set(AdvanceSet))
             .add_systems(
                 Update,
-                Self::advance_simulation.run_if(on_event::<AdvanceSimulation>),
+                Self::advance_simulation.run_if(on_message::<AdvanceSimulation>),
             )
             .add_systems(Update, Self::update_debug_text.after(AdvanceSet))
             .add_systems(EguiPrimaryContextPass, Self::ui_system)
-            .add_event::<ResetCamera>()
-            .add_event::<AdvanceSimulation>();
+            .add_message::<ResetCamera>()
+            .add_message::<AdvanceSimulation>();
 
         match initial_camera {
             InitialCamera::Orthographic2d(initial_viewport_height) => {
@@ -683,12 +682,12 @@ where
                 .add_systems(
                     Update,
                     Self::camera_mouse_zoom_control_2d
-                        .run_if(on_event::<MouseWheel>)
+                        .run_if(on_message::<MouseWheel>)
                         .in_set(MouseInputSet),
                 )
                 .add_systems(
                     Update,
-                    Self::camera_reset_2d.run_if(on_event::<ResetCamera>),
+                    Self::camera_reset_2d.run_if(on_message::<ResetCamera>),
                 )
                 .insert_resource(CameraControl2d::default())
                 .add_systems(Startup, move |commands: Commands| {
@@ -741,9 +740,9 @@ where
         mut settings: ResMut<Settings>,
         window: Single<&Window, With<PrimaryWindow>>,
         mut debug_text: Single<&mut Visibility, (With<DebugText>, Without<OverlayRoot>)>,
-        #[cfg(not(target_arch = "wasm32"))] mut exit: EventWriter<AppExit>,
-        mut reset_camera: EventWriter<ResetCamera>,
-        mut advance_simulation: EventWriter<AdvanceSimulation>,
+        #[cfg(not(target_arch = "wasm32"))] mut exit: MessageWriter<AppExit>,
+        mut reset_camera: MessageWriter<ResetCamera>,
+        mut advance_simulation: MessageWriter<AdvanceSimulation>,
     ) -> Result {
         let advance_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::N);
         let options_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::M);

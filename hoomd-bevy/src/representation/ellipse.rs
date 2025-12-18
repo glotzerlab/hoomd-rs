@@ -8,22 +8,18 @@
 
 use bevy::{
     asset::embedded_asset,
+    mesh::MeshTag,
     prelude::*,
     reflect::TypePath,
-    render::{
-        mesh::MeshTag,
-        render_resource::{AsBindGroup, ShaderRef},
-        storage::ShaderStorageBuffer,
-    },
-    sprite::{AlphaMode2d, Material2d, Material2dPlugin},
+    render::{render_resource::AsBindGroup, storage::ShaderStorageBuffer},
+    shader::ShaderRef,
+    sprite_render::{AlphaMode2d, Material2d, Material2dPlugin},
 };
 #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
 use bevy::{
-    render::{
-        mesh::MeshVertexBufferLayoutRef,
-        render_resource::{RenderPipelineDescriptor, SpecializedMeshPipelineError},
-    },
-    sprite::Material2dKey,
+    mesh::MeshVertexBufferLayoutRef,
+    render::render_resource::{RenderPipelineDescriptor, SpecializedMeshPipelineError},
+    sprite_render::Material2dKey,
 };
 use itertools::{
     EitherOrBoth::{Both, Left, Right},
