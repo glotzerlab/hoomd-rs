@@ -3,13 +3,13 @@
 
 //! Implement Translation moves on curved surfaces
 
-use rand::Rng;
+use rand::{Rng, RngExt};
+use rand_distr::StandardNormal;
 
 use crate::{LocalTrial, Translate};
 use hoomd_manifold::Spherical;
 use hoomd_microstate::property::{Point, Position};
 use hoomd_vector::{Cartesian, InnerProduct};
-use rand_distr::StandardNormal;
 
 impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
     /// Propose local trial moves for a body on the surface of a sphere
