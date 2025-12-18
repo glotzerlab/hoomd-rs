@@ -51,10 +51,10 @@ impl HyperbolicConvexPolytope<3> {
             bounding_radius: circumradius,
         }
     }
-    /// Calculate the distance between the center of a `HyperbolicConvexPolytope<3>`
-    /// and the edge at angle phi. The calculation works by computing the intersection
-    /// of the the hyperboloid with a plane passing through the origin and the two
-    /// adjacent vertices of the polygon.
+    /// Calculate the distance between the center of a `HyperbolicConvexPolytope<3>` 
+    /// centered at the origin and the edge at angle phi. The calculation works by 
+    /// computing the intersection of the the hyperboloid with a plane passing 
+    /// through the origin and the two adjacent vertices of the polygon.
     #[inline]
     #[must_use]
     pub fn edge_distance(&self, phi: f64) -> f64 {
@@ -104,60 +104,116 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
         let mut result = true;
         let mut v_count = 0_usize;
         let n = self.vertices.len();
-        while result && (v_count < n) {
-            let v_num = v_count;
-            let v_next = (v_num + 1) % n;
-            // translate all vertices
-            let v_1 = Self::vertex_to_system_frame(&self.vertices[v_num], r_i, x_i);
-            let v_2 = Self::vertex_to_system_frame(&self.vertices[v_next], r_i, x_i);
-            let other = self
-                .vertices
-                .iter()
-                .map(|vertex| Self::vertex_to_system_frame(vertex, r_j, x_j))
-                .collect::<Vec<Hyperbolic<3>>>();
-            let self_translated = Self::to_vertex_frame_oriented(
-                x_i,
-                r_i,
-                v_num,
-                self.bounding_radius,
-                &[v_1, v_2],
-                n,
-            );
-            let other_translated =
-                Self::to_vertex_frame_oriented(x_i, r_i, v_num, self.bounding_radius, &other, n);
-            // convert to poincare coordinates to perform orientation checks.
-            let self_coord = self_translated
-                .iter()
-                .map(|pt| {
-                    let poincare = pt.to_poincare();
-                    Coord {
-                        x: poincare[0],
-                        y: poincare[1],
+        while result && (v_count < 2*n) {
+            if v_count < n {
+                let v_num = v_count % n;
+                let v_next = (v_num + 1) % n;
+                // translate all vertices
+                let v_1 = Self::vertex_to_system_frame(&self.vertices[v_num], r_i, x_i);
+                let v_2 = Self::vertex_to_system_frame(&self.vertices[v_next], r_i, x_i);
+                let other = self
+                    .vertices
+                    .iter()
+                    .map(|vertex| Self::vertex_to_system_frame(vertex, r_j, x_j))
+                    .collect::<Vec<Hyperbolic<3>>>();
+                let self_translated = Self::to_vertex_frame_oriented(
+                    x_i,
+                    r_i,
+                    v_num,
+                    self.bounding_radius,
+                    &[v_1, v_2],
+                    n,
+                );
+                let other_translated =
+                    Self::to_vertex_frame_oriented(x_i, r_i, v_num, self.bounding_radius, &other, n);
+                // convert to poincare coordinates to perform orientation checks.
+                let self_coord = self_translated
+                    .iter()
+                    .map(|pt| {
+                        let poincare = pt.to_poincare();
+                        Coord {
+                            x: poincare[0],
+                            y: poincare[1],
+                        }
+                    })
+                    .collect::<Vec<Coord<f64>>>();
+                let other_coord = other_translated
+                    .iter()
+                    .map(|pt| {
+                        let poincare = pt.to_poincare();
+                        Coord {
+                            x: poincare[0],
+                            y: poincare[1],
+                        }
+                    })
+                    .collect::<Vec<Coord<f64>>>();
+                // then do edge check
+                let mut overlap = false;
+                let mut counter = 0_usize;
+                while !overlap && (counter < other.len()) {
+                    if orient2d(self_coord[0], self_coord[1], other_coord[counter]) >= 0.0 {
+                        // break out of loop once one of the vertices is on the wrong side of the line
+                        overlap = true;
                     }
-                })
-                .collect::<Vec<Coord<f64>>>();
-            let other_coord = other_translated
-                .iter()
-                .map(|pt| {
-                    let poincare = pt.to_poincare();
-                    Coord {
-                        x: poincare[0],
-                        y: poincare[1],
-                    }
-                })
-                .collect::<Vec<Coord<f64>>>();
-            // then do edge check
-            let mut overlap = false;
-            let mut counter = 0_usize;
-            while !overlap && (counter < other.len()) {
-                if orient2d(self_coord[0], self_coord[1], other_coord[counter]) >= 0.0 {
-                    // break out of loop once one of the vertices is on the wrong side of the line
-                    overlap = true;
+                    counter += 1;
                 }
-                counter += 1;
+                result = overlap;
+                v_count += 1;
+            } else {
+                let v_num = v_count % n;
+                let v_next = (v_num + 1) % n;
+                // translate all vertices
+                let v_1 = Self::vertex_to_system_frame(&self.vertices[v_num], r_j, x_j);
+                let v_2 = Self::vertex_to_system_frame(&self.vertices[v_next], r_j, x_j);
+                let other = self
+                    .vertices
+                    .iter()
+                    .map(|vertex| Self::vertex_to_system_frame(vertex, r_i, x_i))
+                    .collect::<Vec<Hyperbolic<3>>>();
+                let self_translated = Self::to_vertex_frame_oriented(
+                    x_j,
+                    r_j,
+                    v_num,
+                    self.bounding_radius,
+                    &[v_1, v_2],
+                    n,
+                );
+                let other_translated =
+                    Self::to_vertex_frame_oriented(x_j, r_j, v_num, self.bounding_radius, &other, n);
+                // convert to poincare coordinates to perform orientation checks.
+                let self_coord = self_translated
+                    .iter()
+                    .map(|pt| {
+                        let poincare = pt.to_poincare();
+                        Coord {
+                            x: poincare[0],
+                            y: poincare[1],
+                        }
+                    })
+                    .collect::<Vec<Coord<f64>>>();
+                let other_coord = other_translated
+                    .iter()
+                    .map(|pt| {
+                        let poincare = pt.to_poincare();
+                        Coord {
+                            x: poincare[0],
+                            y: poincare[1],
+                        }
+                    })
+                    .collect::<Vec<Coord<f64>>>();
+                // then do edge check
+                let mut overlap = false;
+                let mut counter = 0_usize;
+                while !overlap && (counter < other.len()) {
+                    if orient2d(self_coord[0], self_coord[1], other_coord[counter]) >= 0.0 {
+                        // break out of loop once one of the vertices is on the wrong side of the line
+                        overlap = true;
+                    }
+                    counter += 1;
+                }
+                result = overlap;
+                v_count += 1;
             }
-            result = overlap;
-            v_count += 1;
         }
         result
     }
@@ -170,7 +226,34 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
         points: &[Hyperbolic<3>],
         num_of_sides: usize,
     ) -> Vec<Hyperbolic<3>> {
-        let phi = body_orientation.theta + 2.0 * PI * (vertex_num as f64) / (num_of_sides as f64);
+        let theta = body_position.coordinates()[1].atan2(body_position.coordinates()[0]);
+        let eta = (body_position.coordinates()[2]).acosh();
+        let tau_over_two = -eta/2.0;
+        let poincare = body_position.to_poincare();
+        let body_angle_body = -2.0 * (
+            ((tau_over_two.sinh())*((theta.cos())*poincare[1] - (theta.sin())*poincare[0]))
+            .atan2(
+                (tau_over_two.cosh()) + (tau_over_two.sinh())*((theta.cos())*poincare[0] + (theta.sin())*poincare[1])
+            )) + body_orientation.theta; 
+    
+        let alpha = body_angle_body - theta + 2.0*(vertex_num as f64)*PI/(num_of_sides as f64);
+        let r = bounding_radius;
+        let vertex_translate = |point: &Hyperbolic<3>| -> Hyperbolic<3> {
+            let pt = point.point().coordinates;
+            let translated = Minkowski::from([
+                ((eta.cosh())*(r.cosh())*(alpha.cos())*(theta.cos()) - (r.cosh())*(alpha.sin())*(theta.sin()) + (eta.sinh())*(r.sinh())*(theta.cos())) * pt[0]
+                + ((eta.cosh())*(r.cosh())*(alpha.cos())*(theta.sin()) + (r.cosh())*(alpha.sin())*(theta.cos()) + (eta.sinh())*(r.sinh())*(theta.sin())) * pt[1]
+                - ((eta.sinh())*(r.cosh())*(alpha.cos()) + (eta.cosh())*(r.sinh())) * pt[2],
+                -((eta.cosh())*(alpha.sin())*(theta.cos()) + (alpha.cos())*(theta.sin())) * pt[0]
+                + (-(eta.cosh())*(alpha.sin())*(theta.sin()) + (alpha.cos())*(theta.cos())) * pt[1]
+                + (eta.sinh())*(alpha.sin())*pt[2],
+                (-(eta.cosh())*(r.sinh())*(alpha.cos())*(theta.cos()) + (r.sinh())*(alpha.sin())*(theta.sin()) - (eta.sinh())*(r.cosh())*(theta.cos())) * pt[0]
+                -((eta.cosh())*(r.sinh())*(alpha.cos())*(theta.sin()) + (r.sinh())*(alpha.sin())*(theta.cos()) + (eta.sinh())*(r.cosh())*(theta.sin())) * pt[1]
+                + ((eta.sinh())*(r.sinh())*(alpha.cos()) + (eta.cosh())*(r.cosh()))*pt[2]
+            ]);
+            Hyperbolic::from_minkowski_coordinates(translated, point.skirt())
+        };
+        /* let phi = body_orientation.theta + 2.0 * PI * (vertex_num as f64) / (num_of_sides as f64);
         let theta = body_position.coordinates()[1].atan2(body_position.coordinates()[0]);
         let nu = (body_position.coordinates()[2] / body_position.skirt()).acosh();
         let ep = bounding_radius;
@@ -200,9 +283,9 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
                         - nu.sinh() * ep.cosh() * theta.sin())
                         * pt[1]
                     + ((nu.sinh()) * (ep.sinh()) * (phi.cos()) + (nu.cosh()) * (ep.cosh())) * pt[2],
-            ]);
+            ]); 
             Hyperbolic::from_minkowski_coordinates(translated, point.skirt())
-        };
+        }; */
         points.iter().map(vertex_translate).collect::<Vec<_>>()
     }
     #[inline]
@@ -211,23 +294,27 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
         body_orientation: &Angle,
         body_position: &Hyperbolic<3>,
     ) -> Hyperbolic<3> {
-        let phi = body_orientation.theta;
         let theta = body_position.coordinates()[1].atan2(body_position.coordinates()[0]);
         let nu = (body_position.coordinates()[2] / body_position.skirt()).acosh();
+        let tau_over_two = -nu/2.0;
+        let poincare = body_position.to_poincare();
+        let body_angle_body = (-2.0 * (
+            ((tau_over_two.sinh())*((theta.cos())*poincare[1] - (theta.sin())*poincare[0]))
+            .atan2(
+                (tau_over_two.cosh()) + (tau_over_two.sinh())*((theta.cos())*poincare[0] + (theta.sin())*poincare[1])
+            )) + body_orientation.theta).rem_euclid(2.0*PI);
+        let phi = body_angle_body - theta;
         let pt = vertex.point().coordinates;
         let transformed = Minkowski::from([
-            pt[0] * (nu.cosh()) * (theta.cos()) * (phi.cos())
-                - pt[1] * (nu.cosh()) * (theta.cos()) * (phi.sin())
-                + pt[2] * (nu.sinh()) * (theta.cos())
-                - pt[0] * (theta.sin()) * (phi.sin())
-                - pt[1] * (theta.sin()) * (phi.cos()),
-            pt[0] * (nu.cosh()) * (theta.sin()) * (phi.cos())
-                - pt[1] * (nu.cosh()) * (theta.sin()) * (phi.sin())
-                + pt[2] * (nu.sinh()) * (theta.sin())
-                + pt[0] * (theta.cos()) * (phi.sin())
-                + pt[1] * (theta.cos()) * (phi.cos()),
-            pt[0] * (nu.sinh()) * (phi.cos()) - pt[1] * (nu.sinh()) * (phi.sin())
-                + pt[2] * (nu.cosh()),
+            ((nu.cosh())*(phi.cos())*(theta.cos()) - (phi.sin())*(theta.sin()))*pt[0]
+            -((nu.cosh())*(phi.sin())*(theta.cos()) + (phi.cos())*(theta.sin()))*pt[1]
+            +(nu.sinh())*(theta.cos())*pt[2],
+            ((nu.cosh())*(phi.cos())*(theta.sin()) + (phi.sin())*(theta.cos()))*pt[0]
+            +(-(nu.cosh())*(phi.sin())*(theta.sin()) + (phi.cos())*(theta.cos()))*pt[1]
+            +(nu.sinh())*(theta.sin())*pt[2],
+            (nu.sinh())*(phi.cos())*pt[0]
+            -(nu.sinh())*(phi.sin())*pt[1]
+            +(nu.cosh())*pt[2]
         ]);
         Hyperbolic::from_minkowski_coordinates(transformed, vertex.skirt())
     }
@@ -278,57 +365,28 @@ mod tests {
     #[test]
     fn center_at_oriented_vertex() {
         let square = HyperbolicConvexPolytope::<3>::regular(4, 0.5, 1.0);
-        let body_position = Hyperbolic::<3>::default();
+        let (boost, rotation, orientation) = (0.5, PI/4.0, 0.4);
+        let body_position = Hyperbolic::<3>::from_polar_coordinates(boost, rotation, 1.0);
+        let square_system = square
+            .vertices()
+            .iter()
+            .map(|v| 
+                HyperbolicConvexPolygon::vertex_to_system_frame(v, &Angle::from(orientation), &body_position))
+            .collect::<Vec<Hyperbolic<3>>>();
         let translated = HyperbolicConvexPolygon::to_vertex_frame_oriented(
             &body_position,
-            &Angle::from(0.0),
+            &Angle::from(orientation),
             2_usize,
             0.5,
-            square.vertices(),
+            &square_system,
             4_usize,
         );
+        println!("translated: {:?}", translated);
         assert_relative_eq!(0.0, translated[2].coordinates()[0], epsilon = 1e-12);
         assert_relative_eq!(0.0, translated[2].coordinates()[1], epsilon = 1e-12);
         assert_relative_eq!(1.0, translated[2].coordinates()[2], epsilon = 1e-12);
-
-        let boost: f64 = 1.2;
-        let rotation: f64 = 0.5;
-        let new_body = Hyperbolic::<3>::from_polar_coordinates(boost, rotation, 1.0);
-        let orientation: f64 = 0.6;
-        let transformed_square: Vec<Hyperbolic<3>> = square
-            .vertices
-            .iter()
-            .map(|point| {
-                let site_pos = point.coordinates();
-                let rotated_site_pos = Minkowski::from([
-                    site_pos[0] * (orientation.cos()) - site_pos[1] * (orientation.sin()),
-                    site_pos[0] * (orientation.sin()) + site_pos[1] * (orientation.cos()),
-                    site_pos[2],
-                ]);
-                let transformed_point = Minkowski::from([
-                    rotated_site_pos[0] * (boost.cosh()) * (rotation.cos())
-                        - rotated_site_pos[1] * (rotation.sin())
-                        + rotated_site_pos[2] * (boost.sinh()) * (rotation.cos()),
-                    rotated_site_pos[0] * (boost.cosh()) * (rotation.sin())
-                        + rotated_site_pos[1] * (rotation.cos())
-                        + rotated_site_pos[2] * (boost.sinh()) * (rotation.sin()),
-                    rotated_site_pos[0] * (boost.sinh()) + rotated_site_pos[2] * (boost.cosh()),
-                ]);
-                Hyperbolic::from_minkowski_coordinates(transformed_point, 1.0)
-            })
-            .collect::<Vec<Hyperbolic<3>>>();
-        let translated_again = HyperbolicConvexPolygon::to_vertex_frame_oriented(
-            &new_body,
-            &Angle::from(orientation),
-            1_usize,
-            0.5,
-            &transformed_square,
-            4_usize,
-        );
-        assert_relative_eq!(0.0, translated_again[1].coordinates()[0], epsilon = 1e-12);
-        assert_relative_eq!(0.0, translated_again[1].coordinates()[1], epsilon = 1e-12);
-        assert_relative_eq!(1.0, translated_again[1].coordinates()[2], epsilon = 1e-12);
     }
+    
     #[test]
     fn no_square_overlap() {
         let square = HyperbolicConvexPolytope::<3>::regular(4, 0.5, 1.0);

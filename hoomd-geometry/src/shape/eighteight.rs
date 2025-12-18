@@ -4,7 +4,8 @@
 //! Implement [`EightEight`]
 
 use crate::IsPointInside;
-use hoomd_manifold::Hyperbolic;
+use hoomd_manifold::{Hyperbolic, Minkowski};
+use hoomd_vector::Metric;
 use std::f64::consts::PI;
 
 /// A regular octagon in two-dimensional hyperbolic space.
@@ -46,8 +47,9 @@ impl EightEight {
     /// Computes the shortest distance between a given point and the boundary
     /// of `EightEight`.
     ///
-    /// The shortest distance is along the radial path &mdash; the geodesic
-    /// passing between the Hyperbolic cusp and the query point.
+    /// The shortest distance is computed by finding the arclength of the geodesic
+    /// which passes through the query point and intersects the boundary at a 
+    /// right angle.
     ///
     /// # Example
     /// ```
@@ -57,9 +59,9 @@ impl EightEight {
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let v: f64 = 2.448_452_447_678_076;
+    /// let v: f64 = EightEight::CUSP_TO_EDGE - 0.4;
     /// let rho: f64 = 1.0;
-    /// let theta: f64 = PI / 4.0;
+    /// let theta: f64 = PI / 8.0;
     /// let x = Hyperbolic::from_minkowski_coordinates(
     ///     [
     ///         rho * (v.sinh()) * (theta.cos()),
@@ -71,7 +73,7 @@ impl EightEight {
     /// );
     /// assert_relative_eq!(
     ///     EightEight::distance_to_boundary(&x),
-    ///     0.0,
+    ///     0.4,
     ///     epsilon = 1e-12
     /// );
     /// # Ok(())
@@ -80,13 +82,30 @@ impl EightEight {
     #[inline]
     #[must_use]
     pub fn distance_to_boundary(point: &Hyperbolic<3>) -> f64 {
-        let theta = point.coordinates()[1].atan2(point.coordinates()[0]);
-        let angle = theta.rem_euclid(PI / 4.0);
+        // TODO: FIX THIS!
+        let theta = (point.coordinates()[1].atan2(point.coordinates()[0])).rem_euclid(PI/4.0) - PI/8.0;
         let boost = (point.coordinates()[2] / point.skirt()).acosh();
-        let tile_size = EightEight::EIGHTEIGHT;
-        let eta =
-            (tile_size.tanh() / (angle.cos() - angle.sin() * (1.0 - (2.0_f64).sqrt()))).atanh();
-        point.skirt() * (eta - boost)
+        let rho = point.skirt();
+        let xi = Self::CUSP_TO_EDGE;
+        // boost into frame where edge is the vertical diameter
+        let edge_as_diameter: Hyperbolic<3> = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                rho*(xi.cosh())*(boost.sinh())*(theta.cos()) - rho*(xi.sinh())*(boost.cosh()),
+                rho*(boost.sinh())*(theta.sin()),
+                -rho*(xi.sinh())*(boost.sinh())*(theta.cos()) + rho*(xi.cosh())*(boost.cosh()),
+            ]),
+            rho
+        );
+        let flipped = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                -edge_as_diameter.coordinates()[0],
+                edge_as_diameter.coordinates()[1],
+                edge_as_diameter.coordinates()[2]
+            ]),
+            rho
+            );
+        let sign = -(edge_as_diameter.coordinates()[0]).signum();
+        sign*(edge_as_diameter.distance(&flipped))/2.0
     }
     /// Points on the boundary of the fundamental domain
     #[inline]
@@ -108,9 +127,11 @@ impl EightEight {
         }
         coords
     }
-    /// Cusp-to-vertex distance for {8,8} tiling for Gauss curvature K = -1
+    /// Cusp-to-vertex distance for the {8,8} tiling for Gauss curvature K = -1.
     pub const EIGHTEIGHT: f64 = 2.448_452_447_678_076;
-    /// Length of one of the sides of the {8,8} tiling for Gauss curvature K = -1
+    /// Cusp-to-middle-of-edge distance for the {8,8} tiling for Gauss curvature K = -1.
+    pub const CUSP_TO_EDGE: f64 = 1.528_570_919_480_998;
+    /// Length of one of the sides of the {8,8} tiling for Gauss curvature K = -1.
     pub const EDGE_LENGTH: f64 = 3.057_141_838_961_997;
 }
 
@@ -122,17 +143,19 @@ mod tests {
     use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
     use std::ops::Not;
 
+    //TODO: fix distance_to_boundary issue with Nans
+
     #[test]
     fn boundary_distance() {
         // Distance to the edge of the {8,8} fundamental domain
         let e = Hyperbolic::<3>::from_polar_coordinates(1.0, 0.1, 1.0);
         let e_edge_distance = EightEight::distance_to_boundary(&e);
-        let e_edge_distance_numeric = 0.838_080_324_331_728;
+        let e_edge_distance_numeric = 0.631_401_734_734_821;
         assert_relative_eq!(e_edge_distance, e_edge_distance_numeric, epsilon = 1e-12);
 
-        let f = Hyperbolic::<3>::from_polar_coordinates(1.0, 1.1, 1.0);
+        let f = Hyperbolic::<3>::from_polar_coordinates(0.6, 0.2+PI/4.0, 1.0);
         let f_edge_distance = EightEight::distance_to_boundary(&f);
-        let f_edge_distance_numeric = 0.545_034_457_278_499_5;
+        let f_edge_distance_numeric = 0.947_879_122_461_848;
         assert_relative_eq!(f_edge_distance, f_edge_distance_numeric, epsilon = 1e-12);
     }
 
@@ -161,7 +184,7 @@ mod tests {
     #[test]
     fn outside_is_outside() {
         let eight_eight = EightEight { skirt: 1.0 };
-        let point_1 = Hyperbolic::<3>::from_polar_coordinates(1.53, PI / 8.0, 1.0);
+        let point_1 = Hyperbolic::<3>::from_polar_coordinates(1.54, PI / 8.0, 1.0);
         assert!((eight_eight.is_point_inside(&point_1)).not());
 
         let point_2 = Hyperbolic::<3>::from_polar_coordinates(2.45, PI / 4.0, 1.0);

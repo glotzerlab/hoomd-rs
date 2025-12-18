@@ -953,7 +953,7 @@ impl Distribution<Hyperbolic<3>> for HyperbolicDisk {
         let rho = self.point.skirt;
         let max_boost = (self.disk_radius.get()) / rho;
         let point = self.point;
-        let eta = (point.point.coordinates[2] / rho).acosh();
+        let eta = (point.point.coordinates[2] / self.point.skirt).acosh();
         let phi = point.point.coordinates[1].atan2(point.point.coordinates[0]);
         let trial_boost = Uniform::new(0.0, 1.0).expect("r is positive and real");
         let trial_rotation =
@@ -967,12 +967,15 @@ impl Distribution<Hyperbolic<3>> for HyperbolicDisk {
             rho * v.cosh(),
         ];
         let transformed_point = Minkowski::from([
-            trial_coords[0] * (eta.cosh()) * (phi.cos()) - trial_coords[1] * (phi.sin())
+            trial_coords[0] * ((eta.cosh()) * ((phi.cos()).powi(2)) + (phi.sin()).powi(2))
+                + trial_coords[1] * (phi.sin())*(phi.cos())*((eta.cosh())-1.0)
                 + trial_coords[2] * (eta.sinh()) * (phi.cos()),
-            trial_coords[0] * (eta.cosh()) * (phi.sin())
-                + trial_coords[1] * (phi.cos())
+            trial_coords[0] * (phi.sin())*(phi.cos())*((eta.cosh())-1.0)
+                + trial_coords[1] * ((eta.cosh()) * ((phi.sin()).powi(2)) + (phi.cos()).powi(2))
                 + trial_coords[2] * (eta.sinh()) * (phi.sin()),
-            trial_coords[0] * (eta.sinh()) + trial_coords[2] * (eta.cosh()),
+            trial_coords[0] * (eta.sinh()) * (phi.cos())
+                + trial_coords[1] * (eta.sinh()) * (phi.sin())
+                + trial_coords[2] * (eta.cosh()),
         ]);
         Hyperbolic::from_minkowski_coordinates(transformed_point, rho)
     }

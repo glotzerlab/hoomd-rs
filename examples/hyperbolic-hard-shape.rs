@@ -82,7 +82,7 @@ struct HyperbolicPolygonSelfAssembly {
     /// How sites interact with other sites and fields.
     hamiltonian: CutoffPairOverlap<HardShape<HyperbolicConvexPolytope<3>>>,
     /// Trial moves to apply.
-    translate_sweep: Sweep<Translate<Position>>,
+    translate_sweep: Sweep<Translate<OrientedHyperbolicPoint<3,Angle>>>,
     /// Trial moves to apply.
     rotate_sweep: Sweep<Rotate<Orientation>>,
     /// Temperature set point.
@@ -96,8 +96,8 @@ struct HyperbolicPolygonSelfAssembly {
 }
 
 const RHO: f64 = 1.0;
-const PARTICLE_NUMBER: usize = 200;
-const RADIUS: f64 = 0.1;
+const PARTICLE_NUMBER: usize = 12;
+const RADIUS: f64 = 0.3; // units of rapidity
 
 enum Phase {
     Initialize,
@@ -118,7 +118,7 @@ impl Distribution<Body<OrientedHyperbolicPoint<3, Angle>>>
         rng: &mut R,
     ) -> Body<
         OrientedHyperbolicPoint<3, Angle>,
-        OrientedHyperbolicPoint<3, Angle>,
+        OrientedHyperbolicPoint<3,Angle>,
     > {
         let initial_spacing = 1.4;
         let sample_disk = HyperbolicDisk {
@@ -136,14 +136,14 @@ impl Distribution<Body<OrientedHyperbolicPoint<3, Angle>>>
             *sample_disk.sample(rng).point(),
             RHO,
         );
-        let new_angle: Angle = rng.random();
+        //let new_angle: Angle = rng.random();
         let body_properties = OrientedHyperbolicPoint {
             position: new_point,
-            orientation: new_angle,
+            orientation: Angle::default(), //new_angle,
         };
         let site_properties = OrientedHyperbolicPoint {
             position: Hyperbolic::<3>::default(),
-            orientation: Angle::default(),
+            orientation: Angle::default(), //new_angle,
         };
         Body {
             properties: body_properties,
@@ -156,8 +156,8 @@ impl HyperbolicPolygonSelfAssembly {
     /// Construct a new hard ellipsoid self-assembly simulation.
     #[allow(unused_mut)]
     fn new() -> anyhow::Result<HyperbolicPolygonSelfAssembly> {
-        let maximum_distance = 0.005;
-        let maximum_rotation = 0.001;
+        let maximum_distance = 0.01;
+        let maximum_rotation = 0.0001;
         let macrostate = Isothermal { temperature: 1.0 };
 
         let square = HyperbolicConvexPolytope::<3>::regular(4, RADIUS, 1.0);
@@ -186,7 +186,7 @@ impl HyperbolicPolygonSelfAssembly {
 
         let lj: LennardJones = LennardJones {
             epsilon: 10.0,
-            sigma: 0.2,
+            sigma: 1.0,
         };
 
         let lj_evaluator = Isotropic(lj);
@@ -265,6 +265,7 @@ impl Simulation for HyperbolicPolygonSelfAssembly {
                 );
             }
         }
+        //println!("orientation: {} ",self.microstate.bodies()[0].item.properties.orientation.theta);
         self.microstate.increment_step();
         Ok(())
     }

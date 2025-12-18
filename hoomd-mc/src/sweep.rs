@@ -166,7 +166,7 @@ mod tests {
         let macrostate = Isothermal { temperature: kt };
 
         let d = 0.1;
-        let translate = Translate::with_maximum_distance(
+        let translate = Translate::<Cartesian<2>>::with_maximum_distance(
             d.try_into()
                 .expect("hard-coded constant should be positive"),
         );

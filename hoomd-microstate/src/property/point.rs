@@ -88,13 +88,15 @@ impl Transform<Point<Hyperbolic<3>>> for Point<Hyperbolic<3>> {
         let body_boost = (body_pos[2] / self.position.skirt()).acosh();
         let site_pos = site_properties.position.coordinates();
         let transformed_point = Minkowski::from([
-            site_pos[0] * (body_boost.cosh()) * (body_theta.cos())
-                - site_pos[1] * (body_theta.sin())
+            site_pos[0] * ((body_boost.cosh()) * (body_theta.cos()).powi(2) + (body_theta.sin()).powi(2)) 
+                + site_pos[1] * (body_theta.sin()) * (body_theta.cos()) * ((body_boost.cosh()) - 1.0)
                 + site_pos[2] * (body_boost.sinh()) * (body_theta.cos()),
-            site_pos[0] * (body_boost.cosh()) * (body_theta.sin())
-                + site_pos[1] * (body_theta.cos())
+            site_pos[0] * (body_theta.sin()) * (body_theta.cos()) * ((body_boost.cosh()) - 1.0)
+                + site_pos[1] * ((body_boost.cosh()) * (body_theta.sin()).powi(2) + (body_theta.cos()).powi(2)) 
                 + site_pos[2] * (body_boost.sinh()) * (body_theta.sin()),
-            site_pos[0] * (body_boost.sinh()) + site_pos[2] * (body_boost.cosh()),
+            site_pos[0] * (body_boost.sinh()) * (body_theta.cos())
+                + site_pos[1] * (body_boost.sinh()) * (body_theta.sin())
+                + site_pos[2] * (body_boost.cosh()),
         ]);
         let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(transformed_point, skirt);
         Point::new(new_hyperbolic)
@@ -122,18 +124,22 @@ impl Transform<Point<Hyperbolic<4>>> for Point<Hyperbolic<4>> {
         let body_boost = (body_point[3] / self.position.skirt()).acosh();
         let site_pos = site_properties.position.coordinates();
         let transformed_point = Minkowski::from([
-            site_pos[0] * (body_boost.cosh()) * (body_theta.cos())
-                - site_pos[1] * (body_theta.sin())
+            site_pos[0] * ((body_boost.cosh()) * ((body_theta.cos()).powi(2)) + ((body_theta.sin()).powi(2)))
+                + site_pos[1] * (body_phi.cos()) * (body_theta.sin()) * (body_theta.cos()) * ((body_boost.cosh()) - 1.0)
+                + site_pos[2] * (body_phi.sin()) * (body_theta.sin()) * (body_theta.cos()) * ((body_boost.cosh()) - 1.0)
                 + site_pos[3] * (body_boost.sinh()) * (body_theta.cos()),
-            site_pos[0] * (body_boost.cosh()) * (body_theta.sin()) * (body_phi.cos())
-                + site_pos[1] * (body_theta.cos()) * (body_phi.cos())
-                - site_pos[2] * (body_phi.sin())
+            site_pos[0] * (body_phi.cos()) * (body_theta.sin()) * (body_theta.cos()) * ((body_boost.cosh()) - 1.0)
+                + site_pos[1] * (((body_phi.cos()).powi(2)) * ((body_boost.cosh()) * ((body_theta.sin()).powi(2)) + ((body_theta.cos()).powi(2))) + ((body_phi.sin()).powi(2)))
+                + site_pos[2] * (body_phi.sin()) * (body_phi.cos()) * ((body_boost.cosh())*((body_theta.sin()).powi(2)) + ((body_theta.cos()).powi(2)) - 1.0)
                 + site_pos[3] * (body_boost.sinh()) * (body_theta.sin()) * (body_phi.cos()),
-            site_pos[0] * (body_boost.cosh()) * (body_theta.sin()) * (body_phi.sin())
-                + site_pos[1] * (body_theta.cos()) * (body_phi.sin())
-                + site_pos[2] * (body_phi.cos())
+            site_pos[0] * (body_theta.cos()) * (body_theta.sin()) * (body_phi.sin()) * ((body_boost.cosh()) - 1.0)
+                + site_pos[1] * (body_phi.cos()) * (body_phi.sin()) * ((body_boost.cosh())*((body_theta.sin()).powi(2)) + ((body_theta.cos()).powi(2)) - 1.0)
+                + site_pos[2] * (((body_phi.sin()).powi(2)) * ((body_boost.cosh())*((body_theta.sin()).powi(2)) + ((body_theta.cos()).powi(2))) + ((body_phi.cos()).powi(2)))
                 + site_pos[3] * (body_boost.sinh()) * (body_theta.sin()) * (body_phi.sin()),
-            site_pos[0] * (body_boost.sinh()) + site_pos[3] * (body_boost.cosh()),
+            site_pos[0] * (body_boost.sinh()) * (body_theta.cos())
+                + site_pos[1] * (body_boost.sinh()) * (body_phi.cos()) * (body_theta.sin())
+                + site_pos[2] * (body_boost.sinh()) * (body_phi.sin()) * (body_theta.sin())
+                + site_pos[3] * (body_boost.cosh()),
         ]);
         let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(transformed_point, skirt);
         Point::new(new_hyperbolic)

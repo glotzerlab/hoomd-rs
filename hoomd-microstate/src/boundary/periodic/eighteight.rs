@@ -14,7 +14,7 @@ use crate::{
     boundary::{
         Error, GenerateGhosts, MAX_GHOSTS, MaximumAllowableInteractionRange, Periodic, Wrap,
     },
-    property::{OrientedHyperbolicPoint, Point, Position},
+    property::{Orientation, OrientedHyperbolicPoint, Point, Position},
 };
 use hoomd_geometry::shape::EightEight;
 use hoomd_manifold::{Hyperbolic, Minkowski};
@@ -26,7 +26,7 @@ impl MaximumAllowableInteractionRange for EightEight {
     /// This bound is determined by the edge length of the octagon.
     #[inline]
     fn maximum_allowable_interaction_range(&self) -> f64 {
-        self.skirt * EightEight::EDGE_LENGTH / 3.0
+        self.skirt * EightEight::CUSP_TO_EDGE
     }
 }
 
@@ -96,34 +96,22 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<EightEight> {
         assert_eq!(
             r.skirt(),
             self.shape.skirt,
-            "point must be wrapped onto a Hyperbolic with the same skirt"
+            "point must be wrapped onto a Hyperboloid with the same skirt"
         );
+        let angle = r.coordinates()[1].atan2(r.coordinates()[0]).rem_euclid(2.0*PI);
 
-        let angle = r.coordinates()[1].atan2(r.coordinates()[0]);
-        let theta = angle.rem_euclid(PI * 2.0);
-
-        // distance to the boundary; if positive, r is within the tile
+        // distance to the boundary; if positive, r is within the tile and does not need to be wrapped
         let d = EightEight::distance_to_boundary(r);
-
-        // find out which vertex of the octagon the point is closest to
-        let vertex_number = (((theta + (PI / 8.0)).rem_euclid(PI * 2.0)) / (PI / 4.0)).floor();
-        let nearest_vertex = Hyperbolic::<3>::from_polar_coordinates(
-            EightEight::EIGHTEIGHT,
-            PI * vertex_number / 4.0,
-            r.skirt(),
-        );
-
-        // if point is safely within the tile, do nothing
-        if d >= 0.0 {
+        if d>= 0.0 {
             Ok(properties)
-        } else if r.distance(&nearest_vertex) < EightEight::EDGE_LENGTH / 2.0
-            || d > -self.maximum_interaction_range
-        {
-            // if point is past EIGHTEIGHT and within EDGE_LENGTH/2 of the vertex, figure out which octagon it needs to be wrapped into
+        } else if d > -self.maximum_interaction_range {
+            // get the sequence of transformations necessary to wrap point back into the tile
+            let nearest_vertex_number = (((angle + (PI / 8.0)).rem_euclid(PI * 2.0)) / (PI / 4.0)).floor();
+
             // transform point to frame where relevant vertex is in the center
             let (vertex_boost, vertex_angle) = (
                 EightEight::EIGHTEIGHT,
-                (vertex_number * PI / 4.0).rem_euclid(PI * 2.0),
+                (nearest_vertex_number * PI / 4.0).rem_euclid(PI * 2.0),
             );
             let transformed_point = Minkowski::from([
                 r.coordinates()[0] * (-vertex_boost).cosh() * (-vertex_angle).cos()
@@ -138,61 +126,436 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<EightEight> {
             // get coords of point in transformed frame
             let trans_angle =
                 transformed_point.coordinates[1].atan2(transformed_point.coordinates[0]);
-            let octant = (((trans_angle + (PI / 8.0)).rem_euclid(2.0 * PI)) / (PI / 4.0)).floor(); //octant the point is inside of, in the transformed frame, in global coords
-            let new_vertex = (octant + (4.0 + 3.0 * vertex_number).rem_euclid(8.0)).rem_euclid(8.0); // in vertex coords
-            let vertex_list = [0.0, 3.0, 6.0, 1.0, 4.0, 7.0, 2.0, 5.0];
-            let new_vertex_num = vertex_list[new_vertex.floor() as usize]; // new vertex which point should be mapped to the inside of, in global
-            // rotate frame in center to get the relevant octant facing up
-            let rot = (PI / 2.0 - octant * PI / 4.0).rem_euclid(PI * 2.0);
-            let rotated_in_center = Minkowski::from([
-                transformed_point.coordinates[0] * (rot.cos())
-                    - transformed_point.coordinates[1] * (rot.sin()),
-                transformed_point.coordinates[0] * (rot.sin())
-                    + transformed_point.coordinates[1] * (rot.cos()),
-                transformed_point.coordinates[2],
-            ]);
-            // now boost and rotate to put the vertex back into the correct spot
-            let (new_vertex_boost, new_vertex_angle) = (
-                EightEight::EIGHTEIGHT,
-                (new_vertex_num * (PI / 4.0) + (PI / 2.0)).rem_euclid(PI * 2.0),
-            );
-            let wrapped = Minkowski::from([
-                rotated_in_center.coordinates[0] * (new_vertex_angle.cos())
-                    - rotated_in_center.coordinates[1]
-                        * (new_vertex_boost.cosh())
-                        * (new_vertex_angle.sin())
-                    + rotated_in_center.coordinates[2]
-                        * (new_vertex_boost.sinh())
-                        * (new_vertex_angle.sin()),
-                rotated_in_center.coordinates[0] * (new_vertex_angle.sin())
-                    + rotated_in_center.coordinates[1]
-                        * (new_vertex_boost.cosh())
-                        * (new_vertex_angle.cos())
-                    - rotated_in_center.coordinates[2]
-                        * (new_vertex_boost.sinh())
-                        * (new_vertex_angle.cos()),
-                -rotated_in_center.coordinates[1] * (new_vertex_boost.sinh())
-                    + rotated_in_center.coordinates[2] * (new_vertex_boost.cosh()),
-            ]);
-            let wrapped_hyperbolic = Hyperbolic::from_minkowski_coordinates(wrapped, r.skirt());
-            *r = wrapped_hyperbolic;
-            Ok(properties)
-        } else {
+            // find which octant the transformed point is in 
+            let octant = (((trans_angle + (PI / 8.0)).rem_euclid(2.0 * PI)) / (PI / 4.0)).floor();
+
+            // transform to tile
+            let eta = EightEight::CUSP_TO_EDGE;
+            let gamma = |theta: f64, point: &[f64;3]| {
+                [
+                    (2.0*((eta.sinh()).powi(2))*((theta.cos()).powi(2))+1.0)*point[0]
+                        + ((2.0*theta).sin())*((eta.sinh()).powi(2))*point[1]
+                        + ((2.0*eta).sinh())*(theta.cos())*point[2],
+                    ((2.0*theta).sin())*((eta.sinh()).powi(2))*point[0]
+                        + (2.0*((eta.sinh()).powi(2))*((theta.sin()).powi(2)) + 1.0)*point[1]
+                        + ((2.0*eta).sinh())*(theta.sin())*point[2],
+                    ((2.0*eta).sinh())*(theta.cos())*point[0]
+                        + ((2.0*eta).sinh())*(theta.sin())*point[1]
+                        + ((2.0*eta).cosh())*point[2]
+                ]
+            };
+            let wrapped: [f64;3];
+            match octant {
+                    5.0 => {
+                        let theta_1 = (nearest_vertex_number + 3.0).rem_euclid(8.0);
+                        wrapped = gamma(theta_1*PI/4.0 + PI/8.0, r.coordinates())
+                    }
+                    6.0 => {
+                        let theta_1 = (nearest_vertex_number + 3.0).rem_euclid(8.0);
+                        let wrapped_1 = gamma(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                        let theta_2 = (theta_1 + 3.0).rem_euclid(8.0);
+                        wrapped = gamma(theta_2*PI/4.0 + PI/8.0, &wrapped_1)
+                    }
+                    7.0 => {
+                        let theta_1 = (nearest_vertex_number + 3.0).rem_euclid(8.0);
+                        let wrapped_1 = gamma(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                        let theta_2 = (theta_1 + 3.0).rem_euclid(8.0);
+                        let wrapped_2 = gamma(theta_2*PI/4.0 + PI/8.0, &wrapped_1);
+                        let theta_3 = (theta_2 + 3.0).rem_euclid(8.0);
+                        wrapped = gamma(theta_3*PI/4.0 + PI/8.0, &wrapped_2)
+                    }
+                    3.0 => {
+                        let theta_1 = (nearest_vertex_number + 4.0).rem_euclid(8.0);
+                        wrapped = gamma(theta_1*PI/4.0 + PI/8.0, r.coordinates())
+                    }
+                    2.0 => {
+                        let theta_1 = (nearest_vertex_number + 4.0).rem_euclid(8.0);
+                        let wrapped_1 = gamma(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                        let theta_2 = (theta_1 - 3.0).rem_euclid(8.0);
+                        wrapped = gamma(theta_2*PI/4.0 + PI/8.0, &wrapped_1)
+                    }
+                    1.0 => {
+                        let theta_1 = (nearest_vertex_number + 4.0).rem_euclid(8.0);
+                        let wrapped_1 = gamma(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                        let theta_2 = (theta_1 - 3.0).rem_euclid(8.0);
+                        let wrapped_2 = gamma(theta_2*PI/4.0 + PI/8.0, &wrapped_1);
+                        let theta_3 = (theta_2 - 3.0).rem_euclid(8.0);
+                        wrapped = gamma(theta_3*PI/4.0 + PI/8.0, &wrapped_2)
+                    }
+                    0.0 => {
+                        if transformed_point.coordinates[1] >= 0.0 {
+                            let theta_1 = (nearest_vertex_number + 4.0).rem_euclid(8.0);
+                            let wrapped_1 = gamma(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                            let theta_2 = (theta_1 - 3.0).rem_euclid(8.0);
+                            let wrapped_2 = gamma(theta_2*PI/4.0 + PI/8.0, &wrapped_1);
+                            let theta_3 = (theta_2 - 3.0).rem_euclid(8.0);
+                            let wrapped_3 = gamma(theta_3*PI/4.0 + PI/8.0, &wrapped_2);
+                            let theta_4 = (theta_3 - 3.0).rem_euclid(8.0);
+                            wrapped = gamma(theta_4*PI/4.0 + PI/8.0, &wrapped_3)
+                        } else {
+                            let theta_1 = (nearest_vertex_number + 3.0).rem_euclid(8.0);
+                            let wrapped_1 = gamma(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                            let theta_2 = (theta_1 + 3.0).rem_euclid(8.0);
+                            let wrapped_2 = gamma(theta_2*PI/4.0 + PI/8.0, &wrapped_1);
+                            let theta_3 = (theta_2 + 3.0).rem_euclid(8.0);
+                            let wrapped_3 = gamma(theta_3*PI/4.0 + PI/8.0, &wrapped_2);
+                            let theta_4 = (theta_3 + 3.0).rem_euclid(8.0);
+                            wrapped = gamma(theta_4*PI/4.0 + PI/8.0, &wrapped_3)
+                        }
+                    }
+                    _ => {
+                        return Err(Error::CannotWrapProperties)
+                    }
+                }
+                let wrapped_hyperbolic = Hyperbolic::<3>::from_minkowski_coordinates(
+                    Minkowski::from(wrapped),
+                     r.skirt()
+                );
+                *r = wrapped_hyperbolic;
+                Ok(properties)
+            } else {
             Err(Error::CannotWrapProperties)
         }
     }
+    //fn old_wrap(&self, properties: Point<Hyperbolic<3>>) -> Result<Point<Hyperbolic<3>>, Error> {
+    //    let mut properties = properties;
+    //    let r = properties.position_mut();
+    //    assert_eq!(
+    //        r.skirt(),
+    //        self.shape.skirt,
+    //        "point must be wrapped onto a Hyperboloid with the same skirt"
+    //    );
+    //
+    //    let angle = r.coordinates()[1].atan2(r.coordinates()[0]);
+    //    let theta = angle.rem_euclid(PI * 2.0);
+    //
+    //    // distance to the boundary; if positive, r is within the tile
+    //    let d = EightEight::distance_to_boundary(r);
+    //
+    //    // find out which vertex of the octagon the point is closest to
+    //    let vertex_number = (((theta + (PI / 8.0)).rem_euclid(PI * 2.0)) / (PI / 4.0)).floor();
+    //    let nearest_vertex = Hyperbolic::<3>::from_polar_coordinates(
+    //        EightEight::EIGHTEIGHT,
+    //        PI * vertex_number / 4.0,
+    //        r.skirt(),
+    //    );
+    //
+    //    // if point is safely within the tile, do nothing
+    //    if d >= 0.0 {
+    //        Ok(properties)
+    //    } else if r.distance(&nearest_vertex) < EightEight::EDGE_LENGTH / 2.0
+    //        || d > -self.maximum_interaction_range
+    //    {
+    //        // if point is past EIGHTEIGHT and within EDGE_LENGTH/2 of the vertex, figure out which octagon it needs to be wrapped into
+    //        // transform point to frame where relevant vertex is in the center
+    //        let (vertex_boost, vertex_angle) = (
+    //            EightEight::EIGHTEIGHT,
+    //            (vertex_number * PI / 4.0).rem_euclid(PI * 2.0),
+    //        );
+    //        let transformed_point = Minkowski::from([
+    //            r.coordinates()[0] * (-vertex_boost).cosh() * (-vertex_angle).cos()
+    //                - r.coordinates()[1] * (-vertex_boost).cosh() * (-vertex_angle).sin()
+    //                + r.coordinates()[2] * (-vertex_boost).sinh(),
+    //            r.coordinates()[0] * (-vertex_angle).sin()
+    //                + r.coordinates()[1] * (-vertex_angle).cos(),
+    //            r.coordinates()[0] * (-vertex_boost).sinh() * (-vertex_angle).cos()
+    //                - r.coordinates()[1] * (-vertex_boost).sinh() * (-vertex_angle).sin()
+    //                + r.coordinates()[2] * (-vertex_boost).cosh(),
+    //        ]);
+    //        // get coords of point in transformed frame
+    //        let trans_angle =
+    //            transformed_point.coordinates[1].atan2(transformed_point.coordinates[0]);
+    //        let octant = (((trans_angle + (PI / 8.0)).rem_euclid(2.0 * PI)) / (PI / 4.0)).floor(); //octant the point is inside of, in the transformed frame, in global coords
+    //        let new_vertex = (octant + (4.0 + 3.0 * vertex_number).rem_euclid(8.0)).rem_euclid(8.0); // in vertex coords
+    //        let vertex_list = [0.0, 3.0, 6.0, 1.0, 4.0, 7.0, 2.0, 5.0];
+    //        let new_vertex_num = vertex_list[new_vertex.floor() as usize]; // new vertex which point should be mapped to the inside of, in global
+    //        // rotate frame in center to get the relevant octant facing up
+    //        let rot = (PI / 2.0 - octant * PI / 4.0).rem_euclid(PI * 2.0);
+    //        let rotated_in_center = Minkowski::from([
+    //            transformed_point.coordinates[0] * (rot.cos())
+    //                - transformed_point.coordinates[1] * (rot.sin()),
+    //            transformed_point.coordinates[0] * (rot.sin())
+    //                + transformed_point.coordinates[1] * (rot.cos()),
+    //            transformed_point.coordinates[2],
+    //        ]);
+    //        // now boost and rotate to put the vertex back into the correct spot
+    //        let (new_vertex_boost, new_vertex_angle) = (
+    //            EightEight::EIGHTEIGHT,
+    //            (new_vertex_num * (PI / 4.0) + (PI / 2.0)).rem_euclid(PI * 2.0),
+    //        );
+    //        let wrapped = Minkowski::from([
+    //            rotated_in_center.coordinates[0] * (new_vertex_angle.cos())
+    //                - rotated_in_center.coordinates[1]
+    //                    * (new_vertex_boost.cosh())
+    //                    * (new_vertex_angle.sin())
+    //                + rotated_in_center.coordinates[2]
+    //                    * (new_vertex_boost.sinh())
+    //                    * (new_vertex_angle.sin()),
+    //            rotated_in_center.coordinates[0] * (new_vertex_angle.sin())
+    //                + rotated_in_center.coordinates[1]
+    //                    * (new_vertex_boost.cosh())
+    //                    * (new_vertex_angle.cos())
+    //                - rotated_in_center.coordinates[2]
+    //                    * (new_vertex_boost.sinh())
+    //                    * (new_vertex_angle.cos()),
+    //            -rotated_in_center.coordinates[1] * (new_vertex_boost.sinh())
+    //                + rotated_in_center.coordinates[2] * (new_vertex_boost.cosh()),
+    //        ]);
+    //        let wrapped_hyperbolic = Hyperbolic::from_minkowski_coordinates(wrapped, r.skirt());
+    //        *r = wrapped_hyperbolic;
+    //        Ok(properties)
+    //    } else {
+    //        Err(Error::CannotWrapProperties)
+    //    }
+    //}
 }
 
 impl Wrap<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> {
-    /// TODO
+    /// Wrap the positions and orientations of oriented bodies in two-dimensional 
+    /// hyperbolic space under the {8,8} tiling.
+    ///
+    /// TODO: examples
     #[inline]
     #[expect(clippy::cast_possible_truncation, reason = "truncating float to usize")]
     #[expect(clippy::cast_sign_loss, reason = "hard-coded positive numbers")]
-    fn wrap(
+    fn wrap(&self, properties: OrientedHyperbolicPoint<3, Angle>) -> Result<OrientedHyperbolicPoint<3, Angle>, Error> {
+        let original_orientation = properties.orientation.theta;
+        let mut properties = properties;
+        //let orientation = properties.orientation_mut();
+        let r = properties.position_mut();
+        assert_eq!(
+            r.skirt(),
+            self.shape.skirt,
+            "point must be wrapped onto a Hyperboloid with the same skirt"
+        );
+        let angle = r.coordinates()[1].atan2(r.coordinates()[0]).rem_euclid(2.0*PI);
+
+        // distance to the boundary; if positive, r is within the tile and does not need to be wrapped
+        let d = EightEight::distance_to_boundary(r);
+        if d>= 0.0 {
+            Ok(properties)
+        } else if d > -self.maximum_interaction_range {
+            // get the sequence of transformations necessary to wrap point back into the tile
+            let nearest_vertex_number = (((angle + (PI / 8.0)).rem_euclid(PI * 2.0)) / (PI / 4.0)).floor();
+
+            // transform point to frame where relevant vertex is in the center
+            let (vertex_boost, vertex_angle) = (
+                EightEight::EIGHTEIGHT,
+                (nearest_vertex_number * PI / 4.0).rem_euclid(PI * 2.0),
+            );
+            let transformed_point = Minkowski::from([
+                r.coordinates()[0] * (-vertex_boost).cosh() * (-vertex_angle).cos()
+                    - r.coordinates()[1] * (-vertex_boost).cosh() * (-vertex_angle).sin()
+                    + r.coordinates()[2] * (-vertex_boost).sinh(),
+                r.coordinates()[0] * (-vertex_angle).sin()
+                    + r.coordinates()[1] * (-vertex_angle).cos(),
+                r.coordinates()[0] * (-vertex_boost).sinh() * (-vertex_angle).cos()
+                    - r.coordinates()[1] * (-vertex_boost).sinh() * (-vertex_angle).sin()
+                    + r.coordinates()[2] * (-vertex_boost).cosh(),
+            ]);
+            // get coords of point in transformed frame
+            let trans_angle =
+                transformed_point.coordinates[1].atan2(transformed_point.coordinates[0]);
+            //let trans_boost = (transformed_point.coordinates[2]).acosh();
+
+            // find which octant the transformed point is in 
+            let octant = (((trans_angle + (PI / 8.0)).rem_euclid(2.0 * PI)) / (PI / 4.0)).floor();
+
+            // transform to tile
+            let eta = EightEight::CUSP_TO_EDGE;
+            let gamma = |theta: f64, point: &[f64;3]| {
+                [
+                    (2.0*((eta.sinh()).powi(2))*((theta.cos()).powi(2))+1.0)*point[0]
+                        + ((2.0*theta).sin())*((eta.sinh()).powi(2))*point[1]
+                        + ((2.0*eta).sinh())*(theta.cos())*point[2],
+                    ((2.0*theta).sin())*((eta.sinh()).powi(2))*point[0]
+                        + (2.0*((eta.sinh()).powi(2))*((theta.sin()).powi(2)) + 1.0)*point[1]
+                        + ((2.0*eta).sinh())*(theta.sin())*point[2],
+                    ((2.0*eta).sinh())*(theta.cos())*point[0]
+                        + ((2.0*eta).sinh())*(theta.sin())*point[1]
+                        + ((2.0*eta).cosh())*point[2]
+                ]
+            };
+            // given a reflection edge, get the relative orientation between the oriented point and the tangent vector
+            /* let reorient = |reflection_edge_num: f64| {
+                let ref_angle = reflection_edge_num*PI/4.0 + PI/8.0;
+                let theta = (trans_angle - ref_angle).abs();
+                let (x_0, _pt0) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(theta, trans_boost);
+                let intersection_point = Hyperbolic::<3>::from_minkowski_coordinates(
+                Minkowski::from([
+                    (x_0.sinh())*(vertex_boost.cosh())*(vertex_angle.cos())*(ref_angle.cos())
+                        -(x_0.sinh())*(vertex_angle.sin())*(ref_angle.sin())
+                        + (x_0.cosh())*(vertex_boost.sinh())*(vertex_angle.cos()),
+                    (x_0.sinh())*(vertex_boost.cosh())*(vertex_angle.sin())*(ref_angle.cos())
+                        +(x_0.sinh())*(vertex_angle.cos())*(ref_angle.sin())
+                        +(x_0.cosh())*(vertex_boost.sinh())*(vertex_angle.sin()),
+                    (x_0.sinh())*(vertex_boost.sinh())*(ref_angle.cos())
+                        + (x_0.cosh())*(vertex_boost.cosh()),
+                    ]), 
+                    r.skirt(),
+                );
+                let pt_to_inx_1 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(&r.clone(), &intersection_point);
+                let vertex_to_inx =  OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(&Hyperbolic::<3>::from_polar_coordinates(EightEight::EIGHTEIGHT, nearest_vertex_number*PI/4.0, r.skirt()), &intersection_point);
+                let tangent_angle_1 = (ref_angle + nearest_vertex_number*PI/4.0).rem_euclid(2.0*PI); // tangent vector of wrapping edge pointing out from vertex
+                (orientation + pt_to_inx_1 - tangent_angle_1 - vertex_to_inx).rem_euclid(2.0*PI) // orientation relative to tangent of nearest boundary point
+            }; */
+            let reorient = |theta: f64, point: &[f64;3]| {
+                let (u,v) = (point[0]/(1.0+point[2]), point[1]/(1.0 + point[2]));
+                let a = (1.0 + (PI/4.0).cos()).sqrt();
+                let b = (theta.cos())*((2.0*((PI/4.0).cos())).sqrt());
+                let c = (theta.sin())*((2.0*((PI/4.0).cos())).sqrt());
+                //let prefactor = 1.0/((b*v-c*u).powi(2)+(a+b*u+c*v).powi(2)).powi(2);
+                let p_x = a + b*u + c*v;
+                let p_y = b*v-c*u;
+                -2.0*(p_y.atan2(p_x))
+            };
+
+            let wrapped: [f64;3];
+            let relative_angle: f64;
+            match octant {
+                    5.0 => {
+                        let theta_1 = (nearest_vertex_number + 3.0).rem_euclid(8.0);
+                        wrapped = gamma(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                        relative_angle = reorient(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                    }
+                    6.0 => {
+                        let theta_1 = (nearest_vertex_number + 3.0).rem_euclid(8.0);
+                        let wrapped_1 = gamma(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                        let relative_angle_1 = reorient(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                        let theta_2 = (theta_1 + 3.0).rem_euclid(8.0);
+                        wrapped = gamma(theta_2*PI/4.0 + PI/8.0, &wrapped_1);
+                        relative_angle = reorient(theta_2*PI/4.0 + PI/8.0, &wrapped_1) + relative_angle_1;
+                    }
+                    7.0 => {
+                        let theta_1 = (nearest_vertex_number + 3.0).rem_euclid(8.0);
+                        let wrapped_1 = gamma(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                        let relative_angle_1 = reorient(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                        let theta_2 = (theta_1 + 3.0).rem_euclid(8.0);
+                        let wrapped_2 = gamma(theta_2*PI/4.0 + PI/8.0, &wrapped_1);
+                        let relative_angle_2 = reorient(theta_2*PI/4.0 + PI/8.0, &wrapped_1);
+                        let theta_3 = (theta_2 + 3.0).rem_euclid(8.0);
+                        wrapped = gamma(theta_3*PI/4.0 + PI/8.0, &wrapped_2);
+                        relative_angle = reorient(theta_3*PI/4.0 + PI/8.0, &wrapped_2) + relative_angle_1 + relative_angle_2;
+                    }
+                    3.0 => {
+                        let theta_1 = (nearest_vertex_number + 4.0).rem_euclid(8.0);
+                        wrapped = gamma(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                        relative_angle = reorient(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                    }
+                    2.0 => {
+                        let theta_1 = (nearest_vertex_number + 4.0).rem_euclid(8.0);
+                        let wrapped_1 = gamma(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                        let relative_angle_1 = reorient(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                        let theta_2 = (theta_1 - 3.0).rem_euclid(8.0);
+                        wrapped = gamma(theta_2*PI/4.0 + PI/8.0, &wrapped_1);
+                        relative_angle = reorient(theta_2*PI/4.0 + PI/8.0, &wrapped_1) + relative_angle_1;
+                    }
+                    1.0 => {
+                        let theta_1 = (nearest_vertex_number + 4.0).rem_euclid(8.0);
+                        let wrapped_1 = gamma(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                        let relative_angle_1 = reorient(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                        let theta_2 = (theta_1 - 3.0).rem_euclid(8.0);
+                        let wrapped_2 = gamma(theta_2*PI/4.0 + PI/8.0, &wrapped_1);
+                        let relative_angle_2 = reorient(theta_2*PI/4.0 + PI/8.0, &wrapped_1);
+                        let theta_3 = (theta_2 - 3.0).rem_euclid(8.0);
+                        wrapped = gamma(theta_3*PI/4.0 + PI/8.0, &wrapped_2);
+                        relative_angle = reorient(theta_3*PI/4.0 + PI/8.0, &wrapped_2) + relative_angle_1 + relative_angle_2;
+                    }
+                    0.0 => {
+                        if transformed_point.coordinates[1] >= 0.0 {
+                            let theta_1 = (nearest_vertex_number + 4.0).rem_euclid(8.0);
+                            let wrapped_1 = gamma(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                            let relative_angle_1 = reorient(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                            let theta_2 = (theta_1 - 3.0).rem_euclid(8.0);
+                            let wrapped_2 = gamma(theta_2*PI/4.0 + PI/8.0, &wrapped_1);
+                            let relative_angle_2 = reorient(theta_2*PI/4.0 + PI/8.0, &wrapped_1);
+                            let theta_3 = (theta_2 - 3.0).rem_euclid(8.0);
+                            let wrapped_3 = gamma(theta_3*PI/4.0 + PI/8.0, &wrapped_2);
+                            let relative_angle_3 = reorient(theta_3*PI/4.0 + PI/8.0, &wrapped_2);
+                            let theta_4 = (theta_3 - 3.0).rem_euclid(8.0);
+                            wrapped = gamma(theta_4*PI/4.0 + PI/8.0, &wrapped_3);
+                            relative_angle = reorient(theta_4*PI/4.0 + PI/8.0, &wrapped_3) + relative_angle_1 + relative_angle_2 + relative_angle_3;
+                        } else {
+                            let theta_1 = (nearest_vertex_number + 3.0).rem_euclid(8.0);
+                            let wrapped_1 = gamma(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                            let relative_angle_1 = reorient(theta_1*PI/4.0 + PI/8.0, r.coordinates());
+                            let theta_2 = (theta_1 + 3.0).rem_euclid(8.0);
+                            let wrapped_2 = gamma(theta_2*PI/4.0 + PI/8.0, &wrapped_1);
+                            let relative_angle_2 = reorient(theta_2*PI/4.0 + PI/8.0, &wrapped_1);
+                            let theta_3 = (theta_2 + 3.0).rem_euclid(8.0);
+                            let wrapped_3 = gamma(theta_3*PI/4.0 + PI/8.0, &wrapped_2);
+                            let relative_angle_3 = reorient(theta_3*PI/4.0 + PI/8.0, &wrapped_2);
+                            let theta_4 = (theta_3 + 3.0).rem_euclid(8.0);
+                            wrapped = gamma(theta_4*PI/4.0 + PI/8.0, &wrapped_3);
+                            relative_angle = reorient(theta_4*PI/4.0 + PI/8.0, &wrapped_3) + relative_angle_1 + relative_angle_2 + relative_angle_3;
+                        }
+                    }
+                    _ => {
+                        return Err(Error::CannotWrapProperties)
+                    }
+                }
+                let wrapped_hyperbolic = Hyperbolic::<3>::from_minkowski_coordinates(
+                    Minkowski::from(wrapped),
+                     r.skirt()
+                );
+                /* let new_vertex_num = (((wrapped[1].atan2(wrapped[0]) + (PI/8.0)).rem_euclid(2.0*PI))/(PI/4.0)).floor();
+                // get the boundary point closest to wrapped position
+                let wrapped_edge_num = match transformed_point.coordinates[1] >= 0.0 {
+                    true => (((((wrapped[1]).atan2(wrapped[0]) + PI/8.0).rem_euclid(2.0*PI))/(PI/4.0)).floor()-1.0).rem_euclid(8.0),
+                    false => ((((wrapped[1]).atan2(wrapped[0]) + PI/8.0).rem_euclid(2.0*PI))/(PI/4.0)).floor(),
+                }; 
+                let (xi, eta, ph) = (EightEight::EDGE_LENGTH/2.0, EightEight::CUSP_TO_EDGE, PI*(12.0 - 2.0*wrapped_edge_num -1.0)/8.0);
+                let wrapped_edgeframe = [
+                    ((xi.cosh())*(ph.cos()) + (xi.sinh())*(eta.sinh())*(ph.sin()))*wrapped[0]
+                        + (-(xi.cosh())*(ph.sin()) + (xi.sinh())*(eta.sinh())*(ph.cos()))*wrapped[1]
+                        + (xi.sinh())*(eta.cosh())*wrapped[2],
+                    (eta.cosh())*(ph.sin())*wrapped[0]
+                        + (eta.cosh())*(ph.cos())*wrapped[1]
+                        + (eta.sinh())*wrapped[2],
+                    ((xi.sinh())*(ph.cos()) + (xi.cosh())*(eta.sinh())*(ph.sin()))*wrapped[0]
+                        + (-(xi.sinh())*(ph.sin()) + (xi.cosh())*(eta.sinh())*(ph.cos()))*wrapped[1]
+                        + (xi.cosh())*(eta.cosh())*wrapped[2],
+                ];
+                let (x_0f, _ptf) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(
+                    wrapped_edgeframe[1].atan2(wrapped_edgeframe[0]),
+                     wrapped_edgeframe[2].acosh()
+                );
+                let intersection_pt_2 = Hyperbolic::<3>::from_minkowski_coordinates(
+                Minkowski::from([
+                    (x_0f.sinh())*((xi.cosh())*(ph.cos()) + (xi.sinh())*(eta.sinh())*(ph.sin()))
+                        -(x_0f.cosh())*((xi.sinh())*(ph.cos()) + (xi.cosh())*(eta.sinh())*(ph.sin())),
+                    (x_0f.sinh())*(-(xi.cosh())*(ph.sin())+(xi.sinh())*(eta.sinh())*(ph.cos()))
+                        +(x_0f.cosh())*((xi.sinh())*(ph.sin()) - (xi.cosh())*(eta.sinh())*(ph.cos())),
+                    -(x_0f.sinh())*(xi.sinh())*(eta.cosh())
+                        +(x_0f.cosh())*(xi.cosh())*(eta.cosh()),
+                    ]), 
+                    r.skirt()
+                );
+                let tangent_2 = (7.0*PI/8.0 + new_vertex_num*(PI/4.0) + (new_vertex_num-wrapped_edge_num)*PI/4.0).rem_euclid(2.0*PI);
+                let intersection_to_wrapped = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle( &intersection_pt_2, &wrapped_hyperbolic);
+                let new_vertex_to_intersection = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
+                    &Hyperbolic::<3>::from_polar_coordinates(EightEight::EIGHTEIGHT, new_vertex_num*PI/4.0, r.skirt()),
+                    &intersection_pt_2); */
+                let mut final_orientation = relative_angle + original_orientation;
+                while final_orientation > PI {
+                    final_orientation -= 2.0*PI;
+                }
+                while final_orientation <= -PI {
+                    final_orientation += 2.0*PI;
+                }
+                *r = wrapped_hyperbolic;
+                *properties.orientation_mut() = Angle::from(final_orientation);
+                Ok(properties)
+            } else {
+            Err(Error::CannotWrapProperties)
+        }
+    }
+    /* fn wrap(
         &self,
         properties: OrientedHyperbolicPoint<3, Angle>,
     ) -> Result<OrientedHyperbolicPoint<3, Angle>, Error> {
         let orientation = properties.orientation.theta;
+        println!("original orientation: {}", orientation);
         let mut properties = properties;
         let r = properties.position_mut();
         assert_eq!(
@@ -206,7 +569,6 @@ impl Wrap<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> {
 
         // distance to the boundary; if positive, r is within the tile
         let d = EightEight::distance_to_boundary(r);
-
         // find out which vertex of the octagon the point is closest to
         let vertex_number = (((theta + (PI / 8.0)).rem_euclid(PI * 2.0)) / (PI / 4.0)).floor();
         let nearest_vertex = Hyperbolic::<3>::from_polar_coordinates(
@@ -242,20 +604,44 @@ impl Wrap<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> {
                 transformed_point.coordinates[1].atan2(transformed_point.coordinates[0]);
             let octant = (((trans_angle + (PI / 8.0)).rem_euclid(2.0 * PI)) / (PI / 4.0)).floor(); //octant the point is inside of, in the transformed frame, in global coords
             let new_vertex = (octant + (4.0 + 3.0 * vertex_number).rem_euclid(8.0)).rem_euclid(8.0); // in vertex coords
-            // get the orientation relative to the midpoint of the target vertex
-            let theta_pt_1 = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
-                &r.clone(),
-                &Hyperbolic::<3>::from_polar_coordinates(
-                    EightEight::EIGHTEIGHT,
-                    vertex_angle,
-                    r.skirt(),
-                ),
-            );
-            let midpoint = ((octant + vertex_number) * PI / 4.0).rem_euclid(2.0 * PI);
-            let first_transformation_orientation =
-                (theta_pt_1 + orientation).rem_euclid(2.0 * PI) - midpoint; // orientation relative to nearest vertex
+            
             let vertex_list = [0.0, 3.0, 6.0, 1.0, 4.0, 7.0, 2.0, 5.0];
             let new_vertex_num = vertex_list[new_vertex.floor() as usize]; // new vertex which point should be mapped to the inside of, in global
+
+            // Find the point on on the nearest edge which the transformed point is closest to 
+            let edge_num = (trans_angle/(PI/4.0)).floor();
+            let del_theta = (trans_angle - (edge_num*(PI/4.0) + PI/8.0)).rem_euclid(2.0*PI);
+            let trans_boost = (transformed_point.coordinates[2]/r.skirt()).acosh();
+            let (x_0, pt_1) = OrientedHyperbolicPoint::<3, Angle>::intersection_point(del_theta, trans_boost);
+            let phi = PI*edge_num/4.0 + PI/8.0;
+            let intersection_point = Hyperbolic::<3>::from_minkowski_coordinates(
+                Minkowski::from([
+                    r.skirt()*(x_0.sinh())*(vertex_boost.cosh())*(vertex_angle.cos())*(phi.cos())
+                        -r.skirt()*(x_0.sinh())*(vertex_angle.sin())*(phi.sin())
+                        + r.skirt()*(x_0.cosh())*(vertex_boost.sinh())*(vertex_angle.cos()),
+                    r.skirt()*(x_0.sinh())*(vertex_boost.cosh())*(vertex_angle.sin())*(phi.cos())
+                        +r.skirt()*(x_0.sinh())*(vertex_angle.cos())*(phi.sin())
+                        +r.skirt()*(x_0.cosh())*(vertex_boost.sinh())*(vertex_angle.sin()),
+                    r.skirt()*(x_0.sinh())*(vertex_boost.sinh())*(phi.cos())
+                        + r.skirt()*(x_0.cosh())*(vertex_boost.cosh()),
+                ]), 
+                r.skirt(),
+            );
+            let d1 = EightEight::distance_to_boundary(&intersection_point);
+            println!("intersection 1 distance to boundary: {}", d1);
+            println!("vertex : {:?}", Hyperbolic::<3>::from_polar_coordinates(EightEight::EIGHTEIGHT, vertex_angle, r.skirt()));
+            println!("intersection point: {:?}", intersection_point);
+            let pt_to_inx_1 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(&r.clone(), &intersection_point);
+            let vertex_to_inx =  OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(&Hyperbolic::<3>::from_polar_coordinates(EightEight::EIGHTEIGHT, vertex_angle, r.skirt()), &intersection_point);
+            println!("pt_1 from center frame: {}", pt_1);
+            println!("vertex to intersection: {}", vertex_to_inx);
+            // Find the orientation of the point relative to the tangent vector of the boundary the point will be wrapped across
+
+            // fix tangent_1
+            let tangent_angle_1 = (edge_num*PI/4.0 + PI/8.0 + vertex_number*PI/4.0).rem_euclid(2.0*PI); // tangent vector of wrapping edge pointing out from vertex
+            println!("tangent 1 at vertex: {}", tangent_angle_1);
+            println!("tangent at nearest point: {}", tangent_angle_1 + vertex_to_inx);
+            let relative_orientation = (orientation + pt_to_inx_1 - tangent_angle_1 - vertex_to_inx).rem_euclid(2.0*PI); // orientation relative to tangent of nearest boundary point
             // rotate frame in center to get the relevant octant facing up
             let rot = (PI / 2.0 - octant * PI / 4.0).rem_euclid(PI * 2.0);
             let rotated_in_center = Minkowski::from([
@@ -265,6 +651,7 @@ impl Wrap<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> {
                     + transformed_point.coordinates[1] * (rot.cos()),
                 transformed_point.coordinates[2],
             ]);
+            println!("CHECK 1: rotated_in_center: {:?}", rotated_in_center);
             // now boost and rotate to put the vertex back into the correct spot
             let (new_vertex_boost, new_vertex_angle) = (
                 EightEight::EIGHTEIGHT,
@@ -288,27 +675,63 @@ impl Wrap<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> {
                 -rotated_in_center.coordinates[1] * (new_vertex_boost.sinh())
                     + rotated_in_center.coordinates[2] * (new_vertex_boost.cosh()),
             ]);
+            println!("CHECK 2: wrapped: {:?}", wrapped);
             let wrapped_hyperbolic_position =
                 Hyperbolic::from_minkowski_coordinates(wrapped, r.skirt());
-            let theta_pt_2 = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
-                &Hyperbolic::<3>::from_polar_coordinates(
-                    EightEight::EIGHTEIGHT,
-                    new_vertex_num * (PI / 4.0),
-                    r.skirt(),
-                ),
-                &wrapped_hyperbolic_position,
+
+            let wrapped_edge_num = (((wrapped.coordinates[1]).atan2(wrapped.coordinates[0]))/(PI/4.0)).floor();
+            println!("CHECK 3: wrapped_edge_num {}", wrapped_edge_num);
+            let (xi, eta, ph) = (EightEight::EDGE_LENGTH/2.0, EightEight::CUSP_TO_EDGE, PI*(12.0 - 2.0*wrapped_edge_num -1.0)/8.0);
+            println!("CHECK 4: xi {} eta {} and phi {}", xi, eta, ph);
+            let wrapped_edgeframe = [
+                ((xi.cosh())*(ph.cos()) + (xi.sinh())*(eta.sinh())*(ph.sin()))*wrapped[0]
+                    + (-(xi.cosh())*(ph.sin()) + (xi.sinh())*(eta.sinh())*(ph.cos()))*wrapped[1]
+                    + (xi.sinh())*(eta.cosh())*wrapped[2],
+                (eta.cosh())*(ph.sin())*wrapped[0]
+                    + (eta.cosh())*(ph.cos())*wrapped[1]
+                    + (eta.sinh())*wrapped[2],
+                ((xi.sinh())*(ph.cos()) + (xi.cosh())*(eta.sinh())*(ph.sin()))*wrapped[0]
+                    + (-(xi.sinh())*(ph.sin()) + (xi.cosh())*(eta.sinh())*(ph.cos()))*wrapped[1]
+                    + (xi.cosh())*(eta.cosh())*wrapped[2],
+            ];
+            println!("CHECK!! wrapped edgeframe: {:?}", wrapped_edgeframe);
+            let (x_0f, pt_2) = OrientedHyperbolicPoint::<3, Angle>::intersection_point((wrapped_edgeframe[1]).atan2(wrapped_edgeframe[0]), (wrapped_edgeframe[2]).acosh());
+
+            println!("intersection point 2 : WATCH FOR NAN {} ", x_0f);
+            let intersection_pt_2 = Hyperbolic::<3>::from_minkowski_coordinates(
+                Minkowski::from([
+                    (x_0f.sinh())*((xi.cosh())*(ph.cos()) + (xi.sinh())*(eta.sinh())*(ph.sin()))
+                        -(x_0f.cosh())*((xi.sinh())*(ph.cos()) + (xi.cosh())*(eta.sinh())*(ph.sin())),
+                    (x_0f.sinh())*(-(xi.cosh())*(ph.sin())+(xi.sinh())*(eta.sinh())*(ph.cos()))
+                        +(x_0f.cosh())*((xi.sinh())*(ph.sin()) - (xi.cosh())*(eta.sinh())*(ph.cos())),
+                    -(x_0f.sinh())*(xi.sinh())*(eta.cosh())
+                        +(x_0f.cosh())*(xi.cosh())*(eta.cosh()),
+                ]), 
+                r.skirt()
             );
-            let final_orientation = (first_transformation_orientation
-                + (new_vertex_angle + PI / 2.0).rem_euclid(2.0 * PI)
-                + theta_pt_2)
-                .rem_euclid(2.0 * PI);
+            let d2 = EightEight::distance_to_boundary(&intersection_pt_2);
+            println!("intersection 2 distance to boundary: {}", d2);
+            println!("vertex 2 : {:?}",Hyperbolic::<3>::from_polar_coordinates(EightEight::EIGHTEIGHT, new_vertex_num*PI/4.0, r.skirt()));
+            println!("intersection point 2: {:?}", intersection_pt_2);
+            println!("pt_2 from edge-in-center frame: {}", pt_2);
+            let tangent_2 = (7.0*PI/8.0 + new_vertex_num*(PI/4.0) + (new_vertex_num-wrapped_edge_num)*PI/4.0).rem_euclid(2.0*PI);
+            println!("tangent 2 at vertex: {}", tangent_2);
+            println!("new vertex num: {} and wrapped edge num: {}", new_vertex_num, wrapped_edge_num);
+            let intersection_to_wrapped = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle( &intersection_pt_2, &wrapped_hyperbolic_position);
+            println!("final intersection to wrapped: {}", intersection_to_wrapped);
+            let new_vertex_to_intersection = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
+                &Hyperbolic::<3>::from_polar_coordinates(EightEight::EIGHTEIGHT, new_vertex_num*PI/4.0, r.skirt()),
+                 &intersection_pt_2);
+
+            println!("new vertex to final intersection: {}", new_vertex_to_intersection);
+            let final_orientation = (relative_orientation + tangent_2 + new_vertex_to_intersection + intersection_to_wrapped).rem_euclid(2.0*PI);
             *r = wrapped_hyperbolic_position;
             properties.orientation = Angle::from(final_orientation);
             Ok(properties)
         } else {
             Err(Error::CannotWrapProperties)
         }
-    }
+    } */
 }
 
 impl GenerateGhosts<Point<Hyperbolic<3>>> for Periodic<EightEight> {
@@ -321,7 +744,65 @@ impl GenerateGhosts<Point<Hyperbolic<3>>> for Periodic<EightEight> {
     #[expect(clippy::too_many_lines, reason = "complicated function")]
     #[expect(clippy::cast_possible_truncation, reason = "truncating float to usize")]
     #[expect(clippy::cast_sign_loss, reason = "hard-coded positive numbers")]
-    fn generate_ghosts(
+    fn generate_ghosts(&self, site_properties: &Point<Hyperbolic<3>>) -> ArrayVec<[Point<Hyperbolic<3>>; MAX_GHOSTS]> {
+        let mut result = ArrayVec::new();
+        let r = site_properties.position();
+
+        // transform to tile
+        let eta = EightEight::CUSP_TO_EDGE;
+        let gamma = |theta: f64, point: &[f64;3]| {
+            let ghost = [
+                (2.0*((eta.sinh()).powi(2))*((theta.cos()).powi(2))+1.0)*point[0]
+                    + ((2.0*theta).sin())*((eta.sinh()).powi(2))*point[1]
+                    + ((2.0*eta).sinh())*(theta.cos())*point[2],
+                ((2.0*theta).sin())*((eta.sinh()).powi(2))*point[0]
+                    + (2.0*((eta.sinh()).powi(2))*((theta.sin()).powi(2)) + 1.0)*point[1]
+                    + ((2.0*eta).sinh())*(theta.sin())*point[2],
+                ((2.0*eta).sinh())*(theta.cos())*point[0]
+                    + ((2.0*eta).sinh())*(theta.sin())*point[1]
+                    + ((2.0*eta).cosh())*point[2]
+            ];
+            let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(
+                Minkowski::from(ghost),
+                 r.skirt()
+            );
+            let mut new_site = *site_properties;
+            *new_site.position_mut() = new_hyperbolic;
+            new_site
+        };
+        // identify which octant the point is in 
+        let angle = (r.coordinates()[1].atan2(r.coordinates()[0])).rem_euclid(2.0 * PI);
+        let nearest_vertex_number = (((angle + (PI / 8.0)).rem_euclid(PI * 2.0)) / (PI / 4.0)).floor();
+        let coords = r.coordinates().clone();
+
+        let theta_1a = (nearest_vertex_number + 4.0).rem_euclid(8.0);
+        let ghost_1a = gamma(theta_1a*PI/4.0 + PI/8.0, &coords);
+        result.push(ghost_1a);
+        let theta_1b = (nearest_vertex_number + 3.0).rem_euclid(8.0);
+        let ghost_1b = gamma(theta_1b*PI/4.0 + PI/8.0, &coords);
+        result.push(ghost_1b);
+
+        let theta_2a = (theta_1a - 3.0).rem_euclid(8.0);
+        let ghost_2a = gamma(theta_2a*PI/4.0 + PI/8.0, ghost_1a.position.coordinates());
+        result.push(ghost_2a);
+        let theta_2b = (theta_1b + 3.0).rem_euclid(8.0);
+        let ghost_2b = gamma(theta_2b*PI/4.0 + PI/8.0, ghost_1b.position.coordinates());
+        result.push(ghost_2b);
+
+        let theta_3a = (theta_2a - 3.0).rem_euclid(8.0);
+        let ghost_3a = gamma(theta_3a*PI/4.0 + PI/8.0, ghost_2a.position.coordinates());
+        result.push(ghost_3a);
+        let theta_3b = (theta_2b + 3.0).rem_euclid(8.0);
+        let ghost_3b = gamma(theta_3b*PI/4.0 + PI/8.0, ghost_2b.position.coordinates());
+        result.push(ghost_3b);
+
+        let theta_4 = (theta_3a - 3.0).rem_euclid(8.0);
+        let ghost_4 = gamma(theta_4*PI/4.0 + PI/8.0, ghost_3a.position.coordinates());
+        result.push(ghost_4);
+        
+        result
+    }
+    /* fn generate_ghosts(
         &self,
         site_properties: &Point<Hyperbolic<3>>,
     ) -> ArrayVec<[Point<Hyperbolic<3>>; MAX_GHOSTS]> {
@@ -598,7 +1079,7 @@ impl GenerateGhosts<Point<Hyperbolic<3>>> for Periodic<EightEight> {
         }
 
         result
-    }
+    } */
 }
 
 impl GenerateGhosts<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> {
@@ -611,7 +1092,274 @@ impl GenerateGhosts<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> 
     #[expect(clippy::too_many_lines, reason = "complicated function")]
     #[expect(clippy::cast_possible_truncation, reason = "truncating float to usize")]
     #[expect(clippy::cast_sign_loss, reason = "hard-coded positive numbers")]
-    fn generate_ghosts(
+    fn generate_ghosts(&self, site_properties: &OrientedHyperbolicPoint<3,Angle>) -> ArrayVec<[OrientedHyperbolicPoint<3,Angle>; MAX_GHOSTS]> {
+        let mut result = ArrayVec::new();
+        let r = site_properties.position();
+        // identify which octant the point is in 
+        let angle = (r.coordinates()[1].atan2(r.coordinates()[0])).rem_euclid(2.0 * PI);
+        let nearest_vertex_number = (((angle + (PI / 8.0)).rem_euclid(PI * 2.0)) / (PI / 4.0)).floor();
+        let coords = r.coordinates().clone();
+        let orientation = site_properties.orientation.theta;
+
+        /* // transform point to frame where relevant vertex is in the center
+        let (vertex_boost, vertex_angle) = (
+            EightEight::EIGHTEIGHT,
+            (nearest_vertex_number * PI / 4.0).rem_euclid(PI * 2.0),
+        );
+        let transformed_point = Minkowski::from([
+            coords[0] * (-vertex_boost).cosh() * (-vertex_angle).cos()
+                - coords[1] * (-vertex_boost).cosh() * (-vertex_angle).sin()
+                + coords[2] * (-vertex_boost).sinh(),
+            coords[0] * (-vertex_angle).sin()
+                + coords[1] * (-vertex_angle).cos(),
+            coords[0] * (-vertex_boost).sinh() * (-vertex_angle).cos()
+                - coords[1] * (-vertex_boost).sinh() * (-vertex_angle).sin()
+                + coords[2] * (-vertex_boost).cosh(),
+        ]);
+        // get coords of point in transformed frame
+        let trans_angle =
+            transformed_point.coordinates[1].atan2(transformed_point.coordinates[0]);
+        let trans_boost = (transformed_point.coordinates[2]).acosh(); */
+        // transform to tile
+        let eta = EightEight::CUSP_TO_EDGE;
+        let gamma = |theta: f64, point: &[f64;3]| {
+            let ghost = [
+                (2.0*((eta.sinh()).powi(2))*((theta.cos()).powi(2))+1.0)*point[0]
+                    + ((2.0*theta).sin())*((eta.sinh()).powi(2))*point[1]
+                    + ((2.0*eta).sinh())*(theta.cos())*point[2],
+                ((2.0*theta).sin())*((eta.sinh()).powi(2))*point[0]
+                    + (2.0*((eta.sinh()).powi(2))*((theta.sin()).powi(2)) + 1.0)*point[1]
+                    + ((2.0*eta).sinh())*(theta.sin())*point[2],
+                ((2.0*eta).sinh())*(theta.cos())*point[0]
+                    + ((2.0*eta).sinh())*(theta.sin())*point[1]
+                    + ((2.0*eta).cosh())*point[2]
+            ];
+            let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(
+                Minkowski::from(ghost),
+                 r.skirt()
+            );
+            let mut new_site = *site_properties;
+            *new_site.position_mut() = new_hyperbolic;
+            new_site
+        };
+        let reorient = |theta: f64, point: &[f64;3]| {
+                let (u,v) = (point[0]/(1.0+point[2]), point[1]/(1.0 + point[2]));
+                let a = (1.0 + (PI/4.0).cos()).sqrt();
+                let b = (theta.cos())*((2.0*((PI/4.0).cos())).sqrt());
+                let c = (theta.sin())*((2.0*((PI/4.0).cos())).sqrt());
+                //let prefactor = 1.0/((b*v-c*u).powi(2)+(a+b*u+c*v).powi(2)).powi(2);
+                let p_x = a + b*u + c*v;
+                let p_y = b*v-c*u;
+                -2.0*(p_y.atan2(p_x))
+            };
+            
+        // given a reflection edge, get the relative orientation between the oriented point and the tangent vector
+        /* let reorient_o_to_bndy = |reflection_edge_num: f64, upper_or_lower: f64| {
+            let ref_angle = (reflection_edge_num*PI/4.0 + 7.0*PI/8.0 + upper_or_lower*PI/4.0).rem_euclid(2.0*PI);
+            let theta = (trans_angle - ref_angle).abs();
+            let (x_0, _pt0) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(theta, trans_boost);
+            let intersection_point = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (x_0.sinh())*(vertex_boost.cosh())*(vertex_angle.cos())*(ref_angle.cos())
+                    -(x_0.sinh())*(vertex_angle.sin())*(ref_angle.sin())
+                    + (x_0.cosh())*(vertex_boost.sinh())*(vertex_angle.cos()),
+                (x_0.sinh())*(vertex_boost.cosh())*(vertex_angle.sin())*(ref_angle.cos())
+                    +(x_0.sinh())*(vertex_angle.cos())*(ref_angle.sin())
+                    +(x_0.cosh())*(vertex_boost.sinh())*(vertex_angle.sin()),
+                (x_0.sinh())*(vertex_boost.sinh())*(ref_angle.cos())
+                    + (x_0.cosh())*(vertex_boost.cosh()),
+                ]), 
+                r.skirt(),
+            );
+            let pt_to_inx_1 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(&r.clone(), &intersection_point);
+            let vertex_to_inx =  OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(&Hyperbolic::<3>::from_polar_coordinates(EightEight::EIGHTEIGHT, nearest_vertex_number*PI/4.0, r.skirt()), &intersection_point);
+            let tangent_angle_1 = (ref_angle + nearest_vertex_number*PI/4.0).rem_euclid(2.0*PI); // tangent vector of wrapping edge pointing out from vertex
+            ((orientation + pt_to_inx_1 - tangent_angle_1 - vertex_to_inx).rem_euclid(2.0*PI),
+             *intersection_point.coordinates(),
+            tangent_angle_1) // orientation relative to tangent of nearest boundary point
+        }; 
+
+        let (rel_upper, int_upper, tang_upper) = reorient_o_to_bndy(nearest_vertex_number, 0.0);
+        let (rel_lower, int_lower, tang_lower) = reorient_o_to_bndy(nearest_vertex_number, 1.0); */
+        // a uses upper, b uses lower
+
+        let theta_1a = (nearest_vertex_number + 4.0).rem_euclid(8.0);
+        let ghost_1a = gamma(theta_1a*PI/4.0 + PI/8.0, &coords);
+        let rel_angle_1a = reorient(theta_1a*PI/4.0 + PI/8.0, &coords);
+        /* let int_1a = gamma(theta_1a*PI/4.0 + PI/8.0, &int_upper);
+        let tang_1a = (tang_upper - PI/2.0).rem_euclid(2.0*PI);
+        let v_1a_num = (((ghost_1a.position.coordinates()[1].atan2(ghost_1a.position.coordinates()[0]) + PI/8.0).rem_euclid(2.0*PI))/(PI/4.0)).floor();
+        let int1a_to_g1a = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            int_1a.position(),
+             ghost_1a.position());
+        let v1a_to_int1a = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(vertex_boost, v_1a_num*PI/4.0, r.skirt()),
+             int_1a.position()); */
+        let orientation_1a = rel_angle_1a + orientation;
+        let mut final_orientation = orientation_1a;
+        while final_orientation > PI {
+            final_orientation -= 2.0*PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0*PI;
+        }
+        let mut new_site_1a = *site_properties;
+        *new_site_1a.position_mut() = ghost_1a.position;
+        *new_site_1a.orientation_mut() = Angle::from(final_orientation);
+        result.push(new_site_1a);
+
+        let theta_1b = (nearest_vertex_number + 3.0).rem_euclid(8.0);
+        let ghost_1b = gamma(theta_1b*PI/4.0 + PI/8.0, &coords);
+        let rel_angle_1b = reorient(theta_1b*PI/4.0 + PI/8.0, &coords);
+        /* let int_1b = gamma(theta_1b*PI/4.0 + PI/8.0, &int_lower);
+        let tang_1b = (tang_lower + PI/2.0).rem_euclid(2.0*PI);
+        let v_1b_num = (((ghost_1b.position.coordinates()[1].atan2(ghost_1b.position.coordinates()[0]) + PI/8.0).rem_euclid(2.0*PI))/(PI/4.0)).floor();
+        let int1b_to_g1b = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            int_1b.position(),
+             ghost_1b.position());
+        let v1b_to_int1b = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(vertex_boost, v_1b_num*PI/4.0, r.skirt()),
+             int_1b.position()); */
+        let orientation_1b = orientation + rel_angle_1b;
+        let mut final_orientation = orientation_1b;
+        while final_orientation > PI {
+            final_orientation -= 2.0*PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0*PI;
+        }
+        let mut new_site_1b = *site_properties;
+        *new_site_1b.position_mut() = ghost_1b.position;
+        *new_site_1b.orientation_mut() = Angle::from(final_orientation);
+        result.push(new_site_1b);
+
+        let theta_2a = (theta_1a - 3.0).rem_euclid(8.0);
+        let ghost_2a = gamma(theta_2a*PI/4.0 + PI/8.0, ghost_1a.position.coordinates());
+        let rel_angle_2a = reorient(theta_2a*PI/4.0 + PI/8.0, ghost_1a.position.coordinates());
+        /* let int_2a = gamma(theta_2a*PI/4.0 + PI/8.0, int_1a.position.coordinates());
+        let tang_2a = (tang_1a - PI/2.0).rem_euclid(2.0*PI);
+        let v_2a_num = ((ghost_2a.position.coordinates()[1].atan2(ghost_2a.position.coordinates()[0]) + PI/8.0).rem_euclid(2.0*PI)/(PI/4.0)).floor();
+        let int2a_to_g2a = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &int_2a.position, 
+            &ghost_2a.position);
+        let v2a_to_int2a = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(vertex_boost, v_2a_num*PI/4.0, r.skirt()),
+             &int_2a.position); */
+        let orientation_2a = orientation_1a+ rel_angle_2a;
+        let mut final_orientation = orientation_2a;
+        while final_orientation > PI {
+            final_orientation -= 2.0*PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0*PI;
+        }
+        let mut new_site_2a = *site_properties;
+        *new_site_2a.position_mut() = ghost_2a.position;
+        *new_site_2a.orientation_mut() = Angle::from(final_orientation);
+        result.push(new_site_2a);
+
+        let theta_2b = (theta_1b + 3.0).rem_euclid(8.0);
+        let ghost_2b = gamma(theta_2b*PI/4.0 + PI/8.0, ghost_1b.position.coordinates());
+        let rel_angle_2b = reorient(theta_2b*PI/4.0 + PI/8.0, ghost_1b.position.coordinates());
+        /* let int_2b = gamma(theta_2b*PI/4.0 + PI/8.0, int_1b.position.coordinates());
+        let tang_2b = (tang_1b + PI/2.0).rem_euclid(2.0*PI);
+        let v_2b_num = (((ghost_2b.position.coordinates()[1]).atan2(ghost_2b.position.coordinates()[0]) + PI/8.0).rem_euclid(2.0*PI)/(PI/4.0)).floor();
+        let int2b_to_g2b = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &int_2b.position,
+             &ghost_2b.position);
+        let v2b_to_int2b = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(vertex_boost, v_2b_num*PI/4.0, r.skirt()),
+             &int_2b.position); */
+        let orientation_2b = orientation_1b + rel_angle_2b;
+        let mut final_orientation = orientation_2b;
+        while final_orientation > PI {
+            final_orientation -= 2.0*PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0*PI;
+        }
+        let mut new_site_2b = *site_properties;
+        *new_site_2b.position_mut() = ghost_2b.position;
+        *new_site_2b.orientation_mut() = Angle::from(final_orientation);
+        result.push(new_site_2b);
+
+        let theta_3a = (theta_2a - 3.0).rem_euclid(8.0);
+        let ghost_3a = gamma(theta_3a*PI/4.0 + PI/8.0, ghost_2a.position.coordinates());
+        let rel_angle_3a = reorient(theta_3a*PI/4.0 + PI/8.0, ghost_2a.position.coordinates());
+        /* let int_3a = gamma(theta_3a*PI/4.0 + PI/8.0, int_2a.position.coordinates());
+        let tang_3a = (tang_2a - PI/2.0).rem_euclid(2.0*PI);
+        let v_3a_num = ((ghost_3a.position.coordinates()[1].atan2(ghost_3a.position.coordinates()[0]) + PI/8.0).rem_euclid(2.0*PI)/(PI/4.0)).floor();
+        let int3a_to_g3a = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &int_3a.position,
+             &ghost_3a.position);
+        let v3a_to_int3a = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(vertex_boost, v_3a_num*PI/4.0, r.skirt()),
+             &int_3a.position); */
+        let orientation_3a = orientation_2a + rel_angle_3a;
+        let mut final_orientation = orientation_3a;
+        while final_orientation > PI {
+            final_orientation -= 2.0*PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0*PI;
+        }
+        let mut new_site_3a = *site_properties;
+        *new_site_3a.position_mut() = ghost_3a.position;
+        *new_site_3a.orientation_mut() = Angle::from(final_orientation);
+        result.push(new_site_3a);
+
+        let theta_3b = (theta_2b + 3.0).rem_euclid(8.0);
+        let ghost_3b = gamma(theta_3b*PI/4.0 + PI/8.0, ghost_2b.position.coordinates());
+        let rel_angle_3b = reorient(theta_3b*PI/4.0 + PI/8.0, ghost_2b.position.coordinates());
+        /* let int_3b = gamma(theta_3b*PI/4.0 + PI/8.0, int_2b.position.coordinates());
+        let tang_3b = (tang_2b + PI/2.0).rem_euclid(2.0*PI);
+        let v_3b_num = ((ghost_3b.position.coordinates()[1].atan2(ghost_3b.position.coordinates()[0])+PI/8.0).rem_euclid(2.0*PI)/(PI/4.0)).floor();
+        let int3b_to_g3b = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &int_3b.position,
+             &ghost_3b.position);
+        let v3b_to_int3b = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(vertex_boost, v_3b_num*PI/4.0, r.skirt()),
+             &int_3b.position); */
+        let orientation_3b = rel_angle_3b + orientation_2b;
+        let mut final_orientation = orientation_3b;
+        while final_orientation > PI {
+            final_orientation -= 2.0*PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0*PI;
+        }
+        let mut new_site_3b = *site_properties;
+        *new_site_3b.position_mut() = ghost_3b.position;
+        *new_site_3b.orientation_mut() = Angle::from(final_orientation);
+        result.push(new_site_3b);
+
+        let theta_4 = (theta_3a - 3.0).rem_euclid(8.0);
+        let ghost_4 = gamma(theta_4*PI/4.0 + PI/8.0, ghost_3a.position.coordinates());
+        let rel_angle_4 = reorient(theta_4*PI/4.0 + PI/8.0, ghost_3a.position.coordinates());
+        /* let int_4 = gamma(theta_4*PI/4.0 + PI/8.0, int_3a.position.coordinates());
+        let tang_4 = (tang_3a - PI/2.0).rem_euclid(2.0*PI);
+        let v_4_num = ((ghost_4.position.coordinates()[1].atan2(ghost_4.position.coordinates()[0])+ PI/8.0).rem_euclid(2.0*PI)/(PI/4.0)).floor();
+        let int4_to_g4 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &int_4.position,
+             &ghost_4.position);
+        let v4_to_int4 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(vertex_boost, v_4_num*PI/4.0, r.skirt()),
+             &int_4.position); */
+        let orientation_4 = orientation_3a + rel_angle_4;
+        let mut final_orientation = orientation_4;
+        while final_orientation > PI {
+            final_orientation -= 2.0*PI;
+        }
+        while final_orientation <= -PI {
+            final_orientation += 2.0*PI;
+        }
+        let mut new_site_4 = *site_properties;
+        *new_site_4.position_mut() = ghost_4.position;
+        *new_site_4.orientation_mut() = Angle::from(final_orientation);
+        result.push(new_site_4);
+        
+        result
+    /* fn generate_ghosts(
         &self,
         site_properties: &OrientedHyperbolicPoint<3, Angle>,
     ) -> ArrayVec<[OrientedHyperbolicPoint<3, Angle>; MAX_GHOSTS]> {
@@ -620,18 +1368,48 @@ impl GenerateGhosts<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> 
 
         let theta = (r.coordinates()[1].atan2(r.coordinates()[0])).rem_euclid(2.0 * PI);
         let octant = ((theta / (PI / 4.0)).floor()).rem_euclid(8.0);
+        let vertex_number = (((theta + (PI / 8.0)).rem_euclid(PI * 2.0)) / (PI / 4.0)).floor();
         let distance_to_bdy = EightEight::distance_to_boundary(r);
 
-        // get the orientation relative to nearest vertex
-        let theta_pt = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
-            &r.clone(),
-            &Hyperbolic::<3>::from_polar_coordinates(
-                EightEight::EIGHTEIGHT,
-                octant * PI / 4.0,
-                r.skirt(),
-            ),
-        );
-        let relative_angle = site_properties.orientation.theta + theta_pt - octant * PI / 4.0;
+        // get the orientation relative to a given edge
+        let reorient = |reflect_edge: f64 | {
+            let (xi, eta, ph) = (EightEight::EDGE_LENGTH/2.0, EightEight::CUSP_TO_EDGE, PI*(12.0 - 2.0*reflect_edge -1.0)/8.0);
+            let point_edgeframe = [
+                    ((xi.cosh())*(ph.cos()) + (xi.sinh())*(eta.sinh())*(ph.sin()))*r.coordinates()[0]
+                        + (-(xi.cosh())*(ph.sin()) + (xi.sinh())*(eta.sinh())*(ph.cos()))*r.coordinates()[1]
+                        + (xi.sinh())*(eta.cosh())*r.coordinates()[2],
+                    (eta.cosh())*(ph.sin())*r.coordinates()[0]
+                        + (eta.cosh())*(ph.cos())*r.coordinates()[1]
+                        + (eta.sinh())*r.coordinates()[2],
+                    ((xi.sinh())*(ph.cos()) + (xi.cosh())*(eta.sinh())*(ph.sin()))*r.coordinates()[0]
+                        + (-(xi.sinh())*(ph.sin()) + (xi.cosh())*(eta.sinh())*(ph.cos()))*r.coordinates()[1]
+                        + (xi.cosh())*(eta.cosh())*r.coordinates()[2],
+            ];
+            let (x_0, pt_1) = OrientedHyperbolicPoint::<3, Angle>::intersection_point((point_edgeframe[1]).atan2(point_edgeframe[0]), (point_edgeframe[2]).acosh());
+
+            let intersection_pt_1 = Hyperbolic::<3>::from_minkowski_coordinates(
+                 Minkowski::from([
+                        (x_0.sinh())*((xi.cosh())*(ph.cos()) + (xi.sinh())*(eta.sinh())*(ph.sin()))
+                            -(x_0.cosh())*((xi.sinh())*(ph.cos()) + (xi.cosh())*(eta.sinh())*(ph.sin())),
+                        (x_0.sinh())*(-(xi.cosh())*(ph.sin())+(xi.sinh())*(eta.sinh())*(ph.cos()))
+                            +(x_0.cosh())*((xi.sinh())*(ph.sin()) - (xi.cosh())*(eta.sinh())*(ph.cos())),
+                        -(x_0.sinh())*(xi.sinh())*(eta.cosh())
+                            +(x_0.cosh())*(xi.cosh())*(eta.cosh()),
+                    ]), 
+                    r.skirt()
+            );
+            let tangent_1 = (7.0*PI/8.0 + vertex_number*(PI/4.0) + (vertex_number-reflect_edge)*PI/4.0).rem_euclid(2.0*PI);
+            println!("tangent 1 : {}",tangent_1);
+            let pt_vertex_to_int = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+                &Hyperbolic::<3>::from_polar_coordinates(EightEight::EIGHTEIGHT, vertex_number*PI/4.0, r.skirt()),
+                &intersection_pt_1
+            );
+            let pt_point_to_int = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(&r.clone(), &intersection_pt_1);
+            let relative_angle = (site_properties.orientation.theta + pt_point_to_int - tangent_1 - pt_vertex_to_int).rem_euclid(2.0*PI);
+            relative_angle
+        };
+
+        let relative_angle = reorient(octant);
 
         // put a ghost particle near a vertex
         let new_site_vertex = |loc_num: f64, next: i32, point: &Hyperbolic<3>| {
@@ -649,7 +1427,16 @@ impl GenerateGhosts<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> 
                     - point.coordinates()[1] * (-loc_boost).sinh() * (-loc_angle).sin()
                     + point.coordinates()[2] * (-loc_boost).cosh(),
             ]);
-            // Put a ghost particle near each of the vertices
+            // find where intersection point is in this frame
+            // get nearest edge
+            let center_edge_num = ((in_vertex_frame.coordinates[1]).atan2(in_vertex_frame.coordinates[0])/(PI/4.0)).floor();
+            println!("center edge num {}", center_edge_num);
+            let del_theta = (((in_vertex_frame.coordinates[1]).atan2(in_vertex_frame.coordinates[0])).rem_euclid(2.0*PI)-center_edge_num*PI/4.0).abs();
+
+            let (x_0f, _pt_2) = OrientedHyperbolicPoint::<3, Angle>::intersection_point(del_theta, (in_vertex_frame.coordinates[2]).acosh());
+            let phi = PI*center_edge_num/4.0 + PI/8.0;
+            
+            // Put a ghost particle near vertex
             let real_to_vertex = [0.0, 3.0, 6.0, 1.0, 4.0, 7.0, 2.0, 5.0];
             let vertex_num = real_to_vertex[(loc_num.rem_euclid(8.0)).floor() as usize];
             // look at the in-center frame of the vertex that is i-th CCW from current one
@@ -666,6 +1453,16 @@ impl GenerateGhosts<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> 
                 in_vertex_frame.coordinates[0] * (rot.sin())
                     + in_vertex_frame.coordinates[1] * (rot.cos()),
                 in_vertex_frame.coordinates[2],
+            ]);
+            let new_edge_num = (((rotated_in_center.coordinates[1]).atan2(rotated_in_center.coordinates[0])/(PI/4.0)).floor()).rem_euclid(8.0);
+            println!("new edge num {}", new_edge_num);
+            // do same with intersection
+            let intersection_rotated_in_center = Minkowski::from([
+                r.skirt()*(x_0f.sinh())*(phi.cos()) * (rot.cos())
+                    - r.skirt()*(x_0f.sinh())*(phi.sin()) * (rot.sin()),
+                r.skirt()*(x_0f.sinh())*(phi.cos()) * (rot.sin())
+                    + r.skirt()*(x_0f.sinh())*(phi.sin()) * (rot.cos()),
+                r.skirt()*(x_0f.cosh()),
             ]);
             // boost and rotate to correct position in global frame
             let (new_vertex_boost, new_vertex_angle) = (
@@ -691,16 +1488,36 @@ impl GenerateGhosts<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> 
                     + rotated_in_center.coordinates[2] * (new_vertex_boost.cosh()),
             ]);
             let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(ghost, r.skirt());
-            let midpoint_angle = (octant * PI / 4.0 + new_vertex_angle + PI).rem_euclid(2.0 * PI);
-            let shift = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
-                &Hyperbolic::<3>::from_polar_coordinates(
-                    new_vertex_boost,
-                    new_vertex_angle,
-                    r.skirt(),
-                ),
-                &new_hyperbolic,
+
+            let intersection_final = Minkowski::from([
+                intersection_rotated_in_center[0]
+                    * (new_vertex_boost.cosh())
+                    * (new_vertex_angle.cos())
+                    - intersection_rotated_in_center[1] * (new_vertex_angle.sin())
+                    + intersection_rotated_in_center[2]
+                        * (new_vertex_boost.sinh())
+                        * (new_vertex_angle.cos()),
+                intersection_rotated_in_center[0]
+                    * (new_vertex_boost.cosh())
+                    * (new_vertex_angle.sin())
+                    + intersection_rotated_in_center[1] * (new_vertex_angle.cos())
+                    + intersection_rotated_in_center[2]
+                        * (new_vertex_boost.sinh())
+                        * (new_vertex_angle.sin()),
+                intersection_rotated_in_center[0] * (new_vertex_boost.sinh())
+                    + intersection_rotated_in_center[2] * (new_vertex_boost.cosh()),
+            ]);
+            let new_intersection = Hyperbolic::from_minkowski_coordinates(intersection_final, r.skirt());
+            //compute new tangent
+            let new_tangent = (new_vertex_angle +PI*new_edge_num/4.0 + PI/8.0).rem_euclid(2.0*PI);
+            println!("new tangent: {}", new_tangent);
+            let pt_vertex_to_int = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+                &Hyperbolic::<3>::from_polar_coordinates(new_vertex_boost, new_vertex_angle, r.skirt()),
+                 &new_intersection
             );
-            let new_orientation = (midpoint_angle + relative_angle + shift).rem_euclid(2.0 * PI);
+            let pt_int_to_ghost = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(&new_intersection, &new_hyperbolic);
+            
+            let new_orientation = (relative_angle + pt_int_to_ghost + new_tangent + pt_vertex_to_int).rem_euclid(2.0 * PI);
             let mut new_site = *site_properties;
             *new_site.position_mut() = new_hyperbolic;
             new_site.orientation = Angle::from(new_orientation);
@@ -909,7 +1726,7 @@ impl GenerateGhosts<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> 
             result.push(new_site_edge(7.0, r));
         }
 
-        result
+        result */
     }
 }
 
@@ -946,12 +1763,12 @@ mod tests {
     fn wraps_to_opposite_edge() {
         let mut rng = rand::rng();
         let side = f64::from(rng.random_range(0..8));
-        let boost = 1.6;
+        let boost = EightEight::CUSP_TO_EDGE + 0.5;
         let offset = PI / 8.0;
         let point = Hyperbolic::<3>::from_polar_coordinates(boost, side * PI / 4.0 + offset, 1.0);
         let point = Point::new(point);
         let periodic =
-            Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
+            Periodic::new(1.0, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
         let wrapped_point = periodic.wrap(point).expect("hard-coded");
 
         let wrapped_side = (side + 4.0).rem_euclid(8.0);
@@ -961,7 +1778,7 @@ mod tests {
             .floor())
         .rem_euclid(8.0);
 
-        // Check that point is wraped to correct octant
+        // Check that point is wrapped to correct octant
         assert_eq!(wrapped_side, octant);
 
         // Check that point mapping is correct
@@ -976,15 +1793,61 @@ mod tests {
             1.0,
         );
         assert_relative_eq!(ans, wrapped_point.position, epsilon = 1e-12);
+        assert_relative_eq!(-EightEight::distance_to_boundary(&point.position), EightEight::distance_to_boundary(&wrapped_point.position), epsilon=1e-12);
+    }
+
+    #[test]
+    fn consistency_edge() {
+        let mut rng = rand::rng();
+        let side = f64::from(rng.random_range(0..8));
+        let boost = EightEight::CUSP_TO_EDGE + 0.5;
+        let offset = PI / 8.0 + 0.15*rng.random::<f64>();
+        let point = Hyperbolic::<3>::from_polar_coordinates(boost, side * PI / 4.0 + offset, 1.0);
+        let point = Point::new(point);
+        let periodic =
+            Periodic::new(1.0, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
+        let wrapped_point = periodic.wrap(point).expect("hard-coded");
+        let wrapped_poincare = wrapped_point.position.to_poincare();
+
+        // Check that mapping is consistent with Poincare transformation
+        let (u,v) = (point.position.to_poincare()[0],point.position.to_poincare()[1]);
+        let phi = (side+4.0).rem_euclid(8.0)*PI/4.0 + PI/8.0;
+        let a = ((1.0 + (PI/4.0).cos())/(1.0-(PI/4.0).cos())).sqrt();
+        let b = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi.cos());
+        let c = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi.sin());
+        let pref = 1.0/((b*v-c*u).powi(2) + (a+b*u+c*v).powi(2));
+        let ans = vec![
+            pref*(u*(a.powi(2)+b.powi(2)-c.powi(2)) + 2.0*b*c*v + a*b*(1.0+u.powi(2) + v.powi(2))),
+            pref*(v*(a.powi(2)-b.powi(2)+c.powi(2)) + 2.0*b*c*u + a*c*(1.0 +u.powi(2) + v.powi(2)))
+        ];
+
+        assert_relative_eq!(ans[0], wrapped_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans[1], wrapped_poincare[1], epsilon = 1e-12);
+    }
+
+    #[test]
+    fn wraps_to_opposite_edge_distance() {
+        let mut rng = rand::rng();
+        let side = f64::from(rng.random_range(0..8));
+        let boost = EightEight::CUSP_TO_EDGE + 0.2;
+        let offset = PI / 8.0 + f64::from(rng.random::<f64>())*(PI/8.0)*(1.0-0.5);
+        let point = Hyperbolic::<3>::from_polar_coordinates(boost, side * PI / 4.0 + offset, 1.0);
+        let point = Point::new(point);
+        let periodic =
+            Periodic::new(1.0, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
+        let wrapped_point = periodic.wrap(point).expect("hard-coded");
+        
+        // Check that mapping preserves the distance to the boundary
+        assert_relative_eq!(-EightEight::distance_to_boundary(&point.position), EightEight::distance_to_boundary(&wrapped_point.position), epsilon=1e-12);
     }
 
     #[test]
     fn wraps_orientation() {
-        let angle_offset: f64 = 0.1;
+        let angle_offset: f64 = 0.3;
         let boost = ((EightEight::EIGHTEIGHT).tanh() * ((PI / 4.0).sin())
             / ((angle_offset).sin() + (PI / 4.0 - angle_offset).sin()))
         .atanh()
-            + 0.000_000_001;
+            + 0.1;
         let point = Hyperbolic::<3>::from_polar_coordinates(boost, angle_offset + PI / 4.0, 1.0);
         let tangent = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
             &Hyperbolic::<3>::from_polar_coordinates(EightEight::EIGHTEIGHT, PI / 4.0, 1.0),
@@ -1002,6 +1865,7 @@ mod tests {
             &Hyperbolic::<3>::from_polar_coordinates(EightEight::EIGHTEIGHT, 6.0 * PI / 4.0, 1.0),
             &wrapped_point.position,
         );
+
         // Check that orientation maps correctly
         assert_relative_eq!(
             wrapped_point.orientation.theta,
@@ -1011,28 +1875,146 @@ mod tests {
     }
 
     #[test]
+    fn wraps_nearby_orientations() {
+        let offset = 0.000_001;
+        let angle = PI/8.0 + offset;
+        let boost = ((EightEight::EIGHTEIGHT).tanh() * ((PI / 4.0).sin())
+            / ((angle).sin() + (PI / 4.0 - angle).sin()))
+        .atanh()
+            + 0.5;
+        let point_1 = Hyperbolic::<3>::from_polar_coordinates(boost, 5.0*PI/4.0 + PI/8.0 - offset, 1.0);
+        let point_2 = Hyperbolic::<3>::from_polar_coordinates(boost, 5.0*PI/4.0 + PI/8.0 + offset, 1.0);
+
+        let oriented_point_1 = OrientedHyperbolicPoint {
+            position: point_1,
+            orientation: Angle::from(PI),
+        };
+        let oriented_point_2 = OrientedHyperbolicPoint {
+            position: point_2,
+            orientation: Angle::from(PI),
+        };
+        let periodic =
+            Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
+        let wrapped_point_1 = periodic.wrap(oriented_point_1).expect("hard-coded");
+        let wrapped_point_2 = periodic.wrap(oriented_point_2).expect("hard-coded");
+
+        //check that positions are nearby
+        assert_relative_eq!(wrapped_point_1.position.coordinates()[0], wrapped_point_2.position.coordinates()[0], epsilon = 1e-5);
+        assert_relative_eq!(wrapped_point_1.position.coordinates()[1], wrapped_point_2.position.coordinates()[1], epsilon = 1e-5);
+        assert_relative_eq!(wrapped_point_1.position.coordinates()[2], wrapped_point_2.position.coordinates()[2], epsilon = 1e-5);
+
+        //check that orientations are nearby
+        assert_relative_eq!(wrapped_point_1.orientation.theta, wrapped_point_2.orientation.theta, epsilon=1e-5);
+    }
+
+    #[test]
     fn wraps_vertex() {
-        let boost = 2.45;
-        let point = Hyperbolic::<3>::from_polar_coordinates(boost, PI / 4.0, 1.0);
+        let boost = EightEight::EIGHTEIGHT + 0.4;
+        let point = Hyperbolic::<3>::from_polar_coordinates(boost, 3.0 * PI / 4.0 - 0.01, 1.0);
         let point = Point::new(point);
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
         let wrapped_point = periodic.wrap(point).expect("hard-coded");
+        let wrapped_poincare = wrapped_point.position.to_poincare();
+        let point_poincare = point.position.to_poincare();
 
-        let distance_from_vertex = -EightEight::distance_to_boundary(&point.position);
-        let v = 2.0 * 2.448_452_447_678_076 - boost;
-        let ans = Hyperbolic::<3>::from_polar_coordinates(v, 5.0 * PI / 4.0, 1.0);
-        assert_relative_eq!(
-            EightEight::distance_to_boundary(&ans),
-            distance_from_vertex,
-            epsilon = 1e-12
+        let phi7 = 7.0*PI/4.0 + PI/8.0;
+        let a7 = ((1.0 + (PI/4.0).cos())/(1.0-(PI/4.0).cos())).sqrt();
+        let b7 = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi7.cos());
+        let c7 = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi7.sin());
+        let pref_7 = 1.0/((b7*point_poincare[1]-c7*point_poincare[0]).powi(2) + (a7+b7*point_poincare[0]+c7*point_poincare[1]).powi(2));
+        let ans_7 = vec![
+            pref_7*(point_poincare[0]*(a7.powi(2)+b7.powi(2)-c7.powi(2)) + 2.0*b7*c7*point_poincare[1] + a7*b7*(1.0+point_poincare[0].powi(2) + point_poincare[1].powi(2))),
+            pref_7*(point_poincare[1]*(a7.powi(2)-b7.powi(2)+c7.powi(2)) + 2.0*b7*c7*point_poincare[0] + a7*c7*(1.0 +point_poincare[0].powi(2) + point_poincare[1].powi(2)))
+        ];
+        let phi4 = PI + PI/8.0;
+        let a4 = ((1.0 + (PI/4.0).cos())/(1.0-(PI/4.0).cos())).sqrt();
+        let b4 = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi4.cos());
+        let c4 = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi4.sin());
+        let pref_4 = 1.0/((b4*ans_7[1]-c4*ans_7[0]).powi(2) + (a4+b4*ans_7[0]+c4*ans_7[1]).powi(2));
+        let ans_4 = vec![
+            pref_4*(ans_7[0]*(a4.powi(2)+b4.powi(2)-c4.powi(2)) + 2.0*b4*c4*ans_7[1] + a4*b4*(1.0+ans_7[0].powi(2) + ans_7[1].powi(2))),
+            pref_4*(ans_7[1]*(a4.powi(2)-b4.powi(2)+c4.powi(2)) + 2.0*b4*c4*ans_7[0] + a4*c4*(1.0 +ans_7[0].powi(2) + ans_7[1].powi(2)))
+        ];
+        let phi1 = PI/4.0 + PI/8.0;
+        let a1 = ((1.0 + (PI/4.0).cos())/(1.0-(PI/4.0).cos())).sqrt();
+        let b1 = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi1.cos());
+        let c1 = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi1.sin());
+        let pref_1 = 1.0/((b1*ans_4[1]-c1*ans_4[0]).powi(2) + (a1+b1*ans_4[0]+c1*ans_4[1]).powi(2));
+        let ans_1 = vec![
+            pref_1*(ans_4[0]*(a1.powi(2)+b1.powi(2)-c1.powi(2)) + 2.0*b1*c1*ans_4[1] + a1*b1*(1.0+ans_4[0].powi(2) + ans_4[1].powi(2))),
+            pref_1*(ans_4[1]*(a1.powi(2)-b1.powi(2)+c1.powi(2)) + 2.0*b1*c1*ans_4[0] + a1*c1*(1.0 +ans_4[0].powi(2) + ans_4[1].powi(2)))
+        ];
+        let phi6= 6.0 * PI / 4.0 + PI/8.0;
+        let a6 = ((1.0 + (PI/4.0).cos())/(1.0-(PI/4.0).cos())).sqrt();
+        let b6 = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi6.cos());
+        let c6 = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi6.sin());
+        let pref_6 = 1.0/((b6*ans_1[1]-c6*ans_1[0]).powi(2) + (a6+b6*ans_1[0]+c6*ans_1[1]).powi(2));
+        let ans_6 = vec![
+            pref_6*(ans_1[0]*(a6.powi(2)+b6.powi(2)-c6.powi(2)) + 2.0*b6*c6*ans_1[1] + a6*b6*(1.0+ans_1[0].powi(2) + ans_1[1].powi(2))),
+            pref_6*(ans_1[1]*(a6.powi(2)-b6.powi(2)+c6.powi(2)) + 2.0*b6*c6*ans_1[0] + a6*c6*(1.0 +ans_1[0].powi(2) + ans_1[1].powi(2)))
+        ];
+
+        assert_relative_eq!(ans_6[0], wrapped_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_6[1], wrapped_poincare[1], epsilon = 1e-12);
+    }
+
+    #[test]
+    fn wraps_vertex_orientation() {
+        let boost = EightEight::EIGHTEIGHT + 0.5;
+        let ve = EightEight::EIGHTEIGHT;
+        let point = Hyperbolic::<3>::from_polar_coordinates(boost, PI / 4.0+0.00001, 1.0);
+
+        let (int_1, _or1) = OrientedHyperbolicPoint::<3, Angle>::intersection_point(PI/8.0, ve - boost);
+        let intersection = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (ve.cosh())*(int_1.sinh())*((PI/4.0).cos())*((PI/8.0).cos()) - (int_1.sinh())*((PI/4.0).sin())*((PI/8.0).sin()) + (ve.sinh())*(int_1.cosh())*((PI/4.0).cos()),
+                (ve.cosh())*(int_1.sinh())*((PI/4.0).sin())*((PI/8.0).cos()) + (int_1.sinh())*((PI/4.0).cos())*((PI/8.0).sin()) + (ve.sinh())*(int_1.cosh())*((PI/4.0).sin()),
+                (ve.sinh())*(int_1.sinh())*((PI/8.0).cos()) + (ve.cosh())*(int_1.cosh())
+            ]),
+            1.0
         );
+        let pt_v_to_int = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(ve, PI/4.0, 1.0), 
+            &intersection
+        );
+        let pt_int_to_pnt = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
+            &intersection,
+             &point
+        );
+        
+        let oriented_point = OrientedHyperbolicPoint {
+            position: point,
+            orientation: Angle::from(pt_v_to_int + pt_int_to_pnt + 3.0*PI/8.0)
+        };
+        let periodic =
+            Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
+        let wrapped_point = periodic.wrap(oriented_point).expect("hard-coded");
 
-        assert_relative_eq!(ans, wrapped_point.position, epsilon = 1e-12);
+        //check that the orientation maps correctly
+        let new_intersection = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (ve.cosh())*(int_1.sinh())*((5.0*PI/4.0).cos())*((9.0*PI/8.0).cos()) - (int_1.sinh())*((5.0*PI/4.0).sin())*((9.0*PI/8.0).sin()) + (ve.sinh())*(int_1.cosh())*((5.0*PI/4.0).cos()),
+                (ve.cosh())*(int_1.sinh())*((5.0*PI/4.0).sin())*((9.0*PI/8.0).cos()) + (int_1.sinh())*((5.0*PI/4.0).cos())*((9.0*PI/8.0).sin()) + (ve.sinh())*(int_1.cosh())*((5.0*PI/4.0).sin()),
+                (ve.sinh())*(int_1.sinh())*((9.0*PI/8.0).cos()) + (ve.cosh())*(int_1.cosh())
+            ]),
+            1.0
+        );
+        let pt_v_to_n_int = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(ve, 5.0*PI/4.0, 1.0), 
+            &new_intersection
+        );
+        let pt_n_int_to_w_pnt = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
+            &new_intersection,
+             &wrapped_point.position
+        );
+        println!("wrapped orientation {}",wrapped_point.orientation.theta);
+        println!("computed orientation {}", 3.0*PI/8.0 + pt_v_to_n_int + pt_n_int_to_w_pnt);
+        assert_relative_eq!(3.0*PI/8.0 + pt_v_to_n_int + pt_n_int_to_w_pnt, wrapped_point.orientation.theta, epsilon=1e-12);
     }
     #[test]
     fn wraps_vertex_non_center() {
-        let offset_boost: f64 = 0.3;
+        let offset_boost: f64 = 0.4;
         let v: f64 = 2.448_452_447_678_076;
         let point = Hyperbolic::from_minkowski_coordinates(
             [
@@ -1048,25 +2030,110 @@ mod tests {
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
         let wrapped_point = periodic.wrap(point).expect("hard-coded");
 
-        let new_boost = 2.448_452_447_678_076 - offset_boost;
-        let ans = Hyperbolic::<3>::from_polar_coordinates(new_boost, 3.0 * PI / 2.0, 1.0);
+        let wrapped_poincare = wrapped_point.position.to_poincare();
+        let point_poincare = point.position.to_poincare();
 
-        assert_relative_eq!(ans, wrapped_point.position, epsilon = 1e-12);
+        let phi3 = 3.0*PI/4.0 + PI/8.0;
+        let a3 = ((1.0 + (PI/4.0).cos())/(1.0-(PI/4.0).cos())).sqrt();
+        let b3 = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi3.cos());
+        let c3 = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi3.sin());
+        let pref_3 = 1.0/((b3*point_poincare[1]-c3*point_poincare[0]).powi(2) + (a3+b3*point_poincare[0]+c3*point_poincare[1]).powi(2));
+        let ans_3 = vec![
+            pref_3*(point_poincare[0]*(a3.powi(2)+b3.powi(2)-c3.powi(2)) + 2.0*b3*c3*point_poincare[1] + a3*b3*(1.0+point_poincare[0].powi(2) + point_poincare[1].powi(2))),
+            pref_3*(point_poincare[1]*(a3.powi(2)-b3.powi(2)+c3.powi(2)) + 2.0*b3*c3*point_poincare[0] + a3*c3*(1.0 +point_poincare[0].powi(2) + point_poincare[1].powi(2)))
+        ];
+        let phi6= 6.0 * PI / 4.0 + PI/8.0;
+        let a6 = ((1.0 + (PI/4.0).cos())/(1.0-(PI/4.0).cos())).sqrt();
+        let b6 = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi6.cos());
+        let c6 = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi6.sin());
+        let pref_6 = 1.0/((b6*ans_3[1]-c6*ans_3[0]).powi(2) + (a6+b6*ans_3[0]+c6*ans_3[1]).powi(2));
+        let ans_6 = vec![
+            pref_6*(ans_3[0]*(a6.powi(2)+b6.powi(2)-c6.powi(2)) + 2.0*b6*c6*ans_3[1] + a6*b6*(1.0+ans_3[0].powi(2) + ans_3[1].powi(2))),
+            pref_6*(ans_3[1]*(a6.powi(2)-b6.powi(2)+c6.powi(2)) + 2.0*b6*c6*ans_3[0] + a6*c6*(1.0 +ans_3[0].powi(2) + ans_3[1].powi(2)))
+        ];
+
+        assert_relative_eq!(ans_6[0], wrapped_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_6[1], wrapped_poincare[1], epsilon = 1e-12);
+    }
+    #[test]
+    fn wraps_orientation_vertex_non_center() {
+        let offset_boost: f64 = 0.2;
+        let angle_offset = 0.01;
+        let v: f64 = 2.448_452_447_678_076;
+        let point = Hyperbolic::from_minkowski_coordinates(
+            [
+                (v.sinh()) * (offset_boost.cosh()) + (v.cosh())*(offset_boost.sinh())*((angle_offset+3.0*PI/2.0).cos()),
+                (offset_boost.sinh())*((angle_offset + 3.0*PI/2.0).sin()),
+                (v.cosh()) * (offset_boost.cosh()) + (v.sinh())*(offset_boost.sinh())*((angle_offset+3.0*PI/2.0).cos()),
+            ]
+            .into(),
+            1.0,
+        );
+
+        let (int_1, _or1) = OrientedHyperbolicPoint::<3, Angle>::intersection_point(PI/8.0 + angle_offset, offset_boost);
+
+        let intersection = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*(int_1.sinh())*((11.0*PI/8.0).cos()) + (v.sinh())*(int_1.cosh()),
+                (int_1.sinh())*((11.0*PI/8.0).sin()),
+                (v.sinh())*(int_1.sinh())*((11.0*PI/8.0).cos()) + (v.cosh())*(int_1.cosh())
+            ]),
+            1.0
+        );
+        let pt_v_to_int = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, 0.0, 1.0), 
+            &intersection
+        );
+        let pt_int_to_pnt = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
+            &intersection,
+             &point
+        );
+
+        let oriented_point = OrientedHyperbolicPoint {
+            position: point,
+            orientation: Angle::from(pt_v_to_int + pt_int_to_pnt + 11.0*PI/8.0)
+        };
+
+        let periodic =
+            Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
+        let wrapped_point = periodic.wrap(oriented_point).expect("hard-coded");
+
+        //check that wrapping correctly maps orientation
+        let new_intersection = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*(int_1.sinh())*((3.0*PI/2.0).cos())*((7.0*PI/8.0).cos()) - (int_1.sinh())*((3.0*PI/2.0).sin())*((7.0*PI/8.0).sin()) + (v.sinh())*(int_1.cosh())*((3.0*PI/2.0).cos()),
+                (v.cosh())*(int_1.sinh())*((3.0*PI/2.0).sin())*((7.0*PI/8.0).cos()) + (int_1.sinh())*((3.0*PI/2.0).cos())*((7.0*PI/8.0).sin()) + (v.sinh())*(int_1.cosh())*((3.0*PI/2.0).sin()),
+                (v.sinh())*(int_1.sinh())*((7.0*PI/8.0).cos()) + (v.cosh())*(int_1.cosh())
+            ]),
+            1.0
+        );
+        let pt_v_to_n_int = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, 3.0*PI/2.0, 1.0), 
+            &new_intersection
+        );
+        let pt_n_int_to_w_pnt = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
+            &new_intersection,
+             &wrapped_point.position
+        );
+        assert_relative_eq!(3.0*PI/8.0 + pt_v_to_n_int + pt_n_int_to_w_pnt, wrapped_point.orientation.theta, epsilon=1e-12);
     }
     #[test]
     fn ghost_near_side() {
         let mut rng = rand::rng();
         let side = f64::from(rng.random_range(0..8));
-        let offset = 0.1;
+        let offset = 0.4;
         let boost = 1.528_570_919_480_998 - offset;
         let point = Hyperbolic::<3>::from_polar_coordinates(boost, PI / 8.0 + side * PI / 4.0, 1.0);
         let point = Point::new(point);
 
         let periodic =
-            Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
+            Periodic::new(1.0, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
 
         let ghost_array = periodic.generate_ghosts(&point);
-        let ghost = ghost_array[0];
+        let ghost = match side {
+            4.0 => ghost_array[0],
+            _ => ghost_array[1]
+        };
 
         let ans = Hyperbolic::<3>::from_polar_coordinates(
             1.528_570_919_480_998 + offset,
@@ -1075,26 +2142,27 @@ mod tests {
         );
 
         assert_relative_eq!(ans, ghost.position, epsilon = 1e-12);
+        assert_relative_eq!(EightEight::distance_to_boundary(&ghost.position), -EightEight::distance_to_boundary(&point.position), epsilon=1e-12);
     }
 
     #[test]
     fn ghost_near_vertex() {
-        let offset_boost = 0.1;
+        let offset_boost = 0.3;
         let v: f64 = 2.448_452_447_678_076;
         let point = Hyperbolic::<3>::from_polar_coordinates(v - offset_boost, 0.0, 1.0);
         let point = Point::new(point);
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
 
-        let ghost_array = periodic.generate_ghosts(&point);
+        let ghost_array: ArrayVec<[Point<Hyperbolic<3>>; 8]> = periodic.generate_ghosts(&point);
+        let ghost_6 = ghost_array[6];
+
+        let ans_6 = Hyperbolic::<3>::from_polar_coordinates(v + offset_boost, PI, 1.0);
+        assert_relative_eq!(ans_6, ghost_6.position, epsilon = 1e-12);
+
         let ghost_3 = ghost_array[3];
 
-        let ans_3 = Hyperbolic::<3>::from_polar_coordinates(v + offset_boost, PI, 1.0);
-        assert_relative_eq!(ans_3, ghost_3.position, epsilon = 1e-12);
-
-        let ghost_5 = ghost_array[5];
-
-        let ans_5 = Hyperbolic::from_minkowski_coordinates(
+        let ans_3 = Hyperbolic::from_minkowski_coordinates(
             [
                 offset_boost.sinh(),
                 -(v.sinh()) * (offset_boost.cosh()),
@@ -1103,37 +2171,815 @@ mod tests {
             .into(),
             1.0,
         );
-        assert_relative_eq!(ans_5, ghost_5.position, epsilon = 1e-12);
+        assert_relative_eq!(ans_3, ghost_3.position, epsilon = 1e-12);
     }
 
     #[test]
-    fn ghost_near_vertex_orientation() {
-        let offset_boost = 0.1;
+    fn consistency_vertex() {
+        let offset_boost = 0.3;
+        let offset_angle = 0.1;
         let v: f64 = 2.448_452_447_678_076;
-        let point = Hyperbolic::<3>::from_polar_coordinates(v - offset_boost, 0.0, 1.0);
+        let point = Hyperbolic::<3>::from_polar_coordinates(v - offset_boost, offset_angle, 1.0);
+        let point = Point::new(point);
+        let periodic =
+            Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
+
+        let ghost_array: ArrayVec<[Point<Hyperbolic<3>>; 8]> = periodic.generate_ghosts(&point);
+
+        // check double transformations
+        let ghost_2_poincare = ghost_array[2].position.to_poincare();
+        let (u,v) = (point.position.to_poincare()[0], point.position.to_poincare()[1]);
+        let phi1 = PI/4.0 + PI/8.0;
+        let phi4 = PI + PI/8.0;
+        let a = (1.0+(PI/4.0).cos() + 2.0*((PI/4.0).cos())*((phi1-phi4).cos()))/(1.0-(PI/4.0).cos());
+        let d = (2.0*((PI/4.0).cos())*((phi1-phi4)).sin())/(1.0 - (PI/4.0).cos());
+        let b = ((2.0*((PI/4.0).cos())*(1.0 + (PI/4.0).cos())).sqrt())*(phi4.cos() + phi1.cos())/(1.0-(PI/4.0).cos());
+        let c = ((2.0*((PI/4.0).cos())*(1.0 + (PI/4.0).cos())).sqrt())*(phi4.sin() + phi1.sin())/(1.0-(PI/4.0).cos());
+        let pref = 1.0/((b*v-c*u-d).powi(2)+(a+b*u+c*v).powi(2));
+        let ans_2 = vec![
+            pref*((a*b-c*d)*(1.0+u.powi(2)+v.powi(2)) + u*(a.powi(2)+b.powi(2)-c.powi(2)-d.powi(2))+2.0*b*c*v-2.0*a*d*v),
+            pref*((a*c+b*d)*(1.0+u.powi(2)+v.powi(2)) + v*(a.powi(2)-b.powi(2)+c.powi(2)-d.powi(2)) + 2.0*b*c*u +2.0*a*d*u)
+        ];
+        assert_relative_eq!(ans_2[0], ghost_2_poincare[0], epsilon=1e-12);
+        assert_relative_eq!(ans_2[1], ghost_2_poincare[1], epsilon=1e-12);
+
+        let ghost_3_poincare = ghost_array[3].position.to_poincare();
+        let (u,v) = (point.position.to_poincare()[0], point.position.to_poincare()[1]);
+        let phi3 = 3.0*PI/4.0 + PI/8.0;
+        let phi6 = 6.0*PI/4.0 + PI/8.0;
+        let a = (1.0+(PI/4.0).cos() + 2.0*((PI/4.0).cos())*((phi3-phi6).cos()))/(1.0-(PI/4.0).cos());
+        let d = (2.0*((PI/4.0).cos())*((phi6-phi3)).sin())/(1.0 - (PI/4.0).cos());
+        let b = ((2.0*((PI/4.0).cos())*(1.0 + (PI/4.0).cos())).sqrt())*(phi6.cos() + phi3.cos())/(1.0-(PI/4.0).cos());
+        let c = ((2.0*((PI/4.0).cos())*(1.0 + (PI/4.0).cos())).sqrt())*(phi6.sin() + phi3.sin())/(1.0-(PI/4.0).cos());
+        let pref = 1.0/((b*v-c*u-d).powi(2)+(a+b*u+c*v).powi(2));
+        let ans_3 = vec![
+            pref*((a*b-c*d)*(1.0+u.powi(2)+v.powi(2)) + u*(a.powi(2)+b.powi(2)-c.powi(2)-d.powi(2))+2.0*b*c*v-2.0*a*d*v),
+            pref*((a*c+b*d)*(1.0+u.powi(2)+v.powi(2)) + v*(a.powi(2)-b.powi(2)+c.powi(2)-d.powi(2)) + 2.0*b*c*u +2.0*a*d*u)
+        ];
+        assert_relative_eq!(ans_3[0], ghost_3_poincare[0], epsilon=1e-12);
+        assert_relative_eq!(ans_3[1], ghost_3_poincare[1], epsilon=1e-12);
+
+        //check triple transformations
+        let ghost_4_poincare = ghost_array[4].position.to_poincare();
+        let a = ((1.0 + (PI/4.0).cos())/(1.0-(PI/4.0).cos())).sqrt();
+        let b = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi6.cos());
+        let c = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi6.sin());
+        let pref = 1.0/((b*ans_2[1]-c*ans_2[0]).powi(2) + (a+b*ans_2[0]+c*ans_2[1]).powi(2));
+        let ans_4 = vec![
+            pref*(ans_2[0]*(a.powi(2)+b.powi(2)-c.powi(2)) + 2.0*b*c*ans_2[1] + a*b*(1.0+ans_2[0].powi(2) + ans_2[1].powi(2))),
+            pref*(ans_2[1]*(a.powi(2)-b.powi(2)+c.powi(2)) + 2.0*b*c*ans_2[0] + a*c*(1.0 +ans_2[0].powi(2) + ans_2[1].powi(2)))
+        ];
+        assert_relative_eq!(ans_4[0], ghost_4_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_4[1], ghost_4_poincare[1], epsilon = 1e-12);
+
+        let ghost_5_poincare = ghost_array[5].position.to_poincare();
+        let a = ((1.0 + (PI/4.0).cos())/(1.0-(PI/4.0).cos())).sqrt();
+        let b = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi1.cos());
+        let c = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi1.sin());
+        let pref = 1.0/((b*ans_3[1]-c*ans_3[0]).powi(2) + (a+b*ans_3[0]+c*ans_3[1]).powi(2));
+        let ans_5 = vec![
+            pref*(ans_3[0]*(a.powi(2)+b.powi(2)-c.powi(2)) + 2.0*b*c*ans_3[1] + a*b*(1.0+ans_3[0].powi(2) + ans_3[1].powi(2))),
+            pref*(ans_3[1]*(a.powi(2)-b.powi(2)+c.powi(2)) + 2.0*b*c*ans_3[0] + a*c*(1.0 +ans_3[0].powi(2) + ans_3[1].powi(2)))
+        ];
+        assert_relative_eq!(ans_5[0], ghost_5_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_5[1], ghost_5_poincare[1], epsilon = 1e-12);
+
+        // check quadruple transformation
+        let ghost_6_poincare = ghost_array[6].position.to_poincare();
+        let a = ((1.0 + (PI/4.0).cos())/(1.0-(PI/4.0).cos())).sqrt();
+        let b = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi3.cos());
+        let c = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi3.sin());
+        let pref = 1.0/((b*ans_4[1]-c*ans_4[0]).powi(2) + (a+b*ans_4[0]+c*ans_4[1]).powi(2));
+        let ans_6 = vec![
+            pref*(ans_4[0]*(a.powi(2)+b.powi(2)-c.powi(2)) + 2.0*b*c*ans_4[1] + a*b*(1.0+ans_4[0].powi(2) + ans_4[1].powi(2))),
+            pref*(ans_4[1]*(a.powi(2)-b.powi(2)+c.powi(2)) + 2.0*b*c*ans_4[0] + a*c*(1.0 +ans_4[0].powi(2) + ans_4[1].powi(2)))
+        ];
+        assert_relative_eq!(ans_6[0], ghost_6_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_6[1], ghost_6_poincare[1], epsilon = 1e-12);
+
+        // check single transformations
+        let ghost_1_poincare = ghost_array[1].position.to_poincare();
+        let a = ((1.0 + (PI/4.0).cos())/(1.0-(PI/4.0).cos())).sqrt();
+        let b = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi3.cos());
+        let c = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi3.sin());
+        let pref = 1.0/((b*v-c*u).powi(2) + (a+b*u+c*v).powi(2));
+        let ans_1 = vec![
+            pref*(u*(a.powi(2)+b.powi(2)-c.powi(2)) + 2.0*b*c*v + a*b*(1.0+u.powi(2) + v.powi(2))),
+            pref*(v*(a.powi(2)-b.powi(2)+c.powi(2)) + 2.0*b*c*u + a*c*(1.0 +u.powi(2) + v.powi(2)))
+        ];
+        assert_relative_eq!(ans_1[0], ghost_1_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_1[1], ghost_1_poincare[1], epsilon = 1e-12);
+
+        let ghost_0_poincare = ghost_array[0].position.to_poincare();
+        let a = ((1.0 + (PI/4.0).cos())/(1.0-(PI/4.0).cos())).sqrt();
+        let b = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi4.cos());
+        let c = ((2.0*((PI/4.0).cos()))/(1.0-(PI/4.0).cos())).sqrt() * (phi4.sin());
+        let pref = 1.0/((b*v-c*u).powi(2) + (a+b*u+c*v).powi(2));
+        let ans_0 = vec![
+            pref*(u*(a.powi(2)+b.powi(2)-c.powi(2)) + 2.0*b*c*v + a*b*(1.0+u.powi(2) + v.powi(2))),
+            pref*(v*(a.powi(2)-b.powi(2)+c.powi(2)) + 2.0*b*c*u + a*c*(1.0 +u.powi(2) + v.powi(2)))
+        ];
+        assert_relative_eq!(ans_0[0], ghost_0_poincare[0], epsilon = 1e-12);
+        assert_relative_eq!(ans_0[1], ghost_0_poincare[1], epsilon = 1e-12);
+    
+    }
+
+    //TODO!!! Test code
+    #[test]
+    fn ghost_near_zeroth_vertex_orientation() {
+        let offset_boost = 0.3;
+        let v: f64 = 2.448_452_447_678_076;
+        let point = Hyperbolic::<3>::from_polar_coordinates(v - offset_boost, 0.1, 1.0);
         let point = OrientedHyperbolicPoint {
             position: point,
             orientation: Angle::from(0.0),
         };
+
+        // get nearest boundary point
+        let point_in_center = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*point.position.coordinates()[0] - (v.sinh())*point.position.coordinates()[2],
+                point.position.coordinates()[1],
+                -(v.sinh())*point.position.coordinates()[0] + (v.cosh())*point.position.coordinates()[2]
+            ]),
+            1.0
+        );
+        let (angle_c, boost_c) = (point_in_center.coordinates()[1].atan2(point_in_center.coordinates()[0]).rem_euclid(2.0*PI), (point_in_center.coordinates()[2]).acosh());
+        let (int_o, _o_o) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(angle_c-7.0*PI/8.0, boost_c);
+        // have confirmed that this is the shortest path from the point to the boundary
+        let intersection_o = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*(int_o.sinh())*((7.0*PI/8.0).cos()) + (v.sinh())*(int_o.cosh()),
+                (int_o.sinh())*((7.0*PI/8.0).sin()),
+                (v.sinh())*(int_o.sinh())*((7.0*PI/8.0).cos()) + (v.cosh())*(int_o.cosh())
+            ]),
+            1.0
+        );
+
+        let int_to_v_o = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, 0.0, 1.0),
+             &intersection_o
+        );
+        let tang_o = 7.0*PI/8.0 + int_to_v_o;
+        let relative_orientation_upper = (OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &point.position,
+             &intersection_o
+        ) - tang_o).rem_euclid(2.0*PI);
+
+        let (int_ol, _o_ol) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(9.0*PI/8.0 - angle_c, boost_c);
+    
+        let intersection_ol = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*(int_ol.sinh())*((9.0*PI/8.0).cos()) + (v.sinh())*(int_ol.cosh()),
+                (int_ol.sinh())*((9.0*PI/8.0).sin()),
+                (v.sinh())*(int_ol.sinh())*((9.0*PI/8.0).cos()) + (v.cosh())*(int_ol.cosh())
+            ]),
+            1.0
+        );
+
+        let int_to_v_ol = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, 0.0, 1.0),
+             &intersection_ol
+        );
+        let tang_ol = 9.0*PI/8.0 + int_to_v_ol;
+        let relative_orientation_lower = (OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &point.position,
+             &intersection_ol
+        ) - tang_ol).rem_euclid(2.0*PI);
+
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
 
         let ghost_array = periodic.generate_ghosts(&point);
 
         let ghost_0 = ghost_array[0];
-        let shift_0 = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
-            &Hyperbolic::<3>::from_polar_coordinates(v, PI / 4.0, 1.0),
-            &ghost_0.position,
+        let ghost_0_center = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((5.0*PI/4.0).cos())*ghost_0.position.coordinates()[0] + (v.cosh())*((5.0*PI/4.0).sin())*ghost_0.position.coordinates()[1] - (v.sinh())*ghost_0.position.coordinates()[2],
+                -((5.0*PI/4.0).sin())*ghost_0.position.coordinates()[0] + ((5.0*PI/4.0).cos())*ghost_0.position.coordinates()[1],
+                (v.cosh())*ghost_0.position.coordinates()[2] - (v.sinh())*((5.0*PI/4.0).cos())*ghost_0.position.coordinates()[0] - (v.sinh())*((5.0*PI/4.0).sin())*ghost_0.position.coordinates()[1],
+            ]),
+            1.0
         );
-        let ans_0 = shift_0 + 3.0 * PI / 2.0;
+        let (angle_0, boost_0) = (ghost_0_center.coordinates()[1].atan2(ghost_0_center.coordinates()[0]), (ghost_0_center.coordinates()[2]).acosh());
+        let (int_0, _o_0) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(9.0*PI/8.0 - angle_0, boost_0);
+        // check that intersection is minimum in center frame
+        let int_c = Hyperbolic::<3>::from_polar_coordinates(int_0, 9.0*PI/8.0, 1.0);
+        let int_c_plus = Hyperbolic::<3>::from_polar_coordinates(int_0+0.05, 9.0*PI/8.0, 1.0);
+        let int_c_minus = Hyperbolic::<3>::from_polar_coordinates(int_0-0.05, 9.0*PI/8.0, 1.0);
+        assert!(ghost_0_center.distance(&int_c) < ghost_0_center.distance(&int_c_minus));
+        assert!(ghost_0_center.distance(&int_c) < ghost_0_center.distance(&int_c_plus));
+        
+        let intersection_0 = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((5.0*PI/4.0).cos())*(int_0.sinh())*((9.0*PI/8.0).cos()) - ((5.0*PI/4.0).sin())*(int_0.sinh())*((9.0*PI/8.0).sin()) + (v.sinh())*((5.0*PI/4.0).cos())*(int_0.cosh()),
+                (v.cosh())*((5.0*PI/4.0).sin())*(int_0.sinh())*((9.0*PI/8.0).cos()) + ((5.0*PI/4.0).cos())*(int_0.sinh())*((9.0*PI/8.0).sin()) + (v.sinh())*((5.0*PI/4.0).sin())*(int_0.cosh()),
+                (v.sinh())*(int_0.sinh())*((9.0*PI/8.0).cos()) + (v.cosh())*(int_0.cosh())
+            ]),
+            1.0
+        );
+
+        // check that intersection point is also a minimum
+        let blip = 0.05;
+        let intersection_plus = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((5.0*PI/4.0).cos())*((int_0+blip).sinh())*((9.0*PI/8.0).cos()) - ((5.0*PI/4.0).sin())*((int_0+blip).sinh())*((9.0*PI/8.0).sin()) + (v.sinh())*((5.0*PI/4.0).cos())*((int_0+blip).cosh()),
+                (v.cosh())*((5.0*PI/4.0).sin())*((int_0+blip).sinh())*((9.0*PI/8.0).cos()) + ((5.0*PI/4.0).cos())*((int_0+blip).sinh())*((9.0*PI/8.0).sin()) + (v.sinh())*((5.0*PI/4.0).sin())*((int_0+blip).cosh()),
+                (v.sinh())*((int_0+blip).sinh())*((9.0*PI/8.0).cos()) + (v.cosh())*((int_0+blip).cosh())
+            ]),
+            1.0
+        );
+        let intersection_minus = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((5.0*PI/4.0).cos())*((int_0-blip).sinh())*((9.0*PI/8.0).cos()) - ((5.0*PI/4.0).sin())*((int_0-blip).sinh())*((9.0*PI/8.0).sin()) + (v.sinh())*((5.0*PI/4.0).cos())*((int_0-blip).cosh()),
+                (v.cosh())*((5.0*PI/4.0).sin())*((int_0-blip).sinh())*((9.0*PI/8.0).cos()) + ((5.0*PI/4.0).cos())*((int_0-blip).sinh())*((9.0*PI/8.0).sin()) + (v.sinh())*((5.0*PI/4.0).sin())*((int_0-blip).cosh()),
+                (v.sinh())*((int_0-blip).sinh())*((9.0*PI/8.0).cos()) + (v.cosh())*((int_0-blip).cosh())
+            ]),
+            1.0
+        );
+        assert!(ghost_0.position.distance(&intersection_0) < ghost_0.position.distance(&intersection_minus));
+        assert!(ghost_0.position.distance(&intersection_0) < ghost_0.position.distance(&intersection_plus));
+
+        let int_to_ghost = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &intersection_0, 
+            &ghost_0.position
+        );
+        let v_to_int = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, 5.0*PI/4.0, 1.0),
+            &intersection_0
+        );
+        let tang_0 = 3.0*PI/8.0 + v_to_int;
+        let ans_0 = (relative_orientation_upper + tang_0 + int_to_ghost).rem_euclid(2.0*PI);
         assert_relative_eq!(ans_0, ghost_0.orientation.theta, epsilon = 1e-12);
 
-        let ghost_5 = ghost_array[5];
-        let shift_5 = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(
-            &Hyperbolic::<3>::from_polar_coordinates(v, 6.0 * PI / 4.0, 1.0),
-            &ghost_5.position,
+        // check remaining ghosts in less detail
+        // ghost 1
+        let ghost_1 = ghost_array[1];
+        let ghost_1_center = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((3.0*PI/4.0).cos())*ghost_1.position.coordinates()[0] + (v.cosh())*((3.0*PI/4.0).sin())*ghost_1.position.coordinates()[1] - (v.sinh())*ghost_1.position.coordinates()[2],
+                -((3.0*PI/4.0).sin())*ghost_1.position.coordinates()[0] + ((3.0*PI/4.0).cos())*ghost_1.position.coordinates()[1],
+                (v.cosh())*ghost_1.position.coordinates()[2] - (v.sinh())*((3.0*PI/4.0).cos())*ghost_1.position.coordinates()[0] - (v.sinh())*((3.0*PI/4.0).sin())*ghost_1.position.coordinates()[1],
+            ]),
+            1.0
         );
-        let ans_5 = shift_5 + PI;
+        let (angle_1, boost_1) = (ghost_1_center.coordinates()[1].atan2(ghost_1_center.coordinates()[0]), (ghost_1_center.coordinates()[2]).acosh());
+        let (int_1, _o_1) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(angle_1-7.0*PI/8.0, boost_1);
+        let intersection_1 = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((3.0*PI/4.0).cos())*(int_1.sinh())*((7.0*PI/8.0).cos()) - ((3.0*PI/4.0).sin())*(int_1.sinh())*((7.0*PI/8.0).sin()) + (v.sinh())*((3.0*PI/4.0).cos())*(int_1.cosh()),
+                (v.cosh())*((3.0*PI/4.0).sin())*(int_1.sinh())*((7.0*PI/8.0).cos()) + ((3.0*PI/4.0).cos())*(int_1.sinh())*((7.0*PI/8.0).sin()) + (v.sinh())*((3.0*PI/4.0).sin())*(int_1.cosh()),
+                (v.sinh())*(int_1.sinh())*((7.0*PI/8.0).cos()) + (v.cosh())*(int_1.cosh())
+            ]),
+            1.0
+        );
+        let int_to_ghost_1 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &intersection_1, 
+            &ghost_1.position
+        );
+        let v_to_int_1 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, 3.0*PI/4.0, 1.0),
+            &intersection_1
+        );
+        let tang_1 = 13.0*PI/8.0 + v_to_int_1;
+        let ans_1 = (relative_orientation_lower + tang_1 + int_to_ghost_1).rem_euclid(2.0*PI);
+        assert_relative_eq!(ans_1, ghost_1.orientation.theta, epsilon = 1e-12);
+
+        // ghost 2
+        let ghost_2 = ghost_array[2];
+        let ghost_2_center = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((PI/2.0).cos())*ghost_2.position.coordinates()[0] + (v.cosh())*((PI/2.0).sin())*ghost_2.position.coordinates()[1] - (v.sinh())*ghost_2.position.coordinates()[2],
+                -((PI/2.0).sin())*ghost_2.position.coordinates()[0] + ((PI/2.0).cos())*ghost_2.position.coordinates()[1],
+                (v.cosh())*ghost_2.position.coordinates()[2] - (v.sinh())*((PI/2.0).cos())*ghost_2.position.coordinates()[0] - (v.sinh())*((PI/2.0).sin())*ghost_2.position.coordinates()[1],
+            ]),
+            1.0
+        );
+        let (angle_2, boost_2) = (ghost_2_center.coordinates()[1].atan2(ghost_2_center.coordinates()[0]), (ghost_2_center.coordinates()[2]).acosh());
+        let (int_2, _o_1) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(angle_2-11.0*PI/8.0, boost_2);
+        let intersection_2 = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((PI/2.0).cos())*(int_2.sinh())*((11.0*PI/8.0).cos()) - ((PI/2.0).sin())*(int_2.sinh())*((11.0*PI/8.0).sin()) + (v.sinh())*((PI/2.0).cos())*(int_2.cosh()),
+                (v.cosh())*((PI/2.0).sin())*(int_2.sinh())*((11.0*PI/8.0).cos()) + ((PI/2.0).cos())*(int_2.sinh())*((11.0*PI/8.0).sin()) + (v.sinh())*((PI/2.0).sin())*(int_2.cosh()),
+                (v.sinh())*(int_2.sinh())*((11.0*PI/8.0).cos()) + (v.cosh())*(int_2.cosh())
+            ]),
+            1.0
+        );
+        let int_to_ghost_2 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &intersection_2, 
+            &ghost_2.position
+        );
+        let v_to_int_2 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, PI/2.0, 1.0),
+            &intersection_2
+        );
+        let tang_2 = 15.0*PI/8.0 + v_to_int_2;
+        let ans_2 = (relative_orientation_upper + tang_2 + int_to_ghost_2).rem_euclid(2.0*PI);
+        assert_relative_eq!(ans_2, ghost_2.orientation.theta, epsilon = 1e-12);
+
+        // ghost 3
+        let ghost_3 = ghost_array[3];
+        let ghost_3_center = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((3.0*PI/2.0).cos())*ghost_3.position.coordinates()[0] + (v.cosh())*((3.0*PI/2.0).sin())*ghost_3.position.coordinates()[1] - (v.sinh())*ghost_3.position.coordinates()[2],
+                -((3.0*PI/2.0).sin())*ghost_3.position.coordinates()[0] + ((3.0*PI/2.0).cos())*ghost_3.position.coordinates()[1],
+                (v.cosh())*ghost_3.position.coordinates()[2] - (v.sinh())*((3.0*PI/2.0).cos())*ghost_3.position.coordinates()[0] - (v.sinh())*((3.0*PI/2.0).sin())*ghost_3.position.coordinates()[1],
+            ]),
+            1.0
+        );
+        let (angle_3, boost_3) = (ghost_3_center.coordinates()[1].atan2(ghost_3_center.coordinates()[0]), (ghost_3_center.coordinates()[2]).acosh());
+        let (int_3, _o_1) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(5.0*PI/8.0 - angle_3, boost_3);
+        let intersection_3 = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((3.0*PI/2.0).cos())*(int_3.sinh())*((5.0*PI/8.0).cos()) - ((3.0*PI/2.0).sin())*(int_3.sinh())*((5.0*PI/8.0).sin()) + (v.sinh())*((3.0*PI/2.0).cos())*(int_3.cosh()),
+                (v.cosh())*((3.0*PI/2.0).sin())*(int_3.sinh())*((5.0*PI/8.0).cos()) + ((3.0*PI/2.0).cos())*(int_3.sinh())*((5.0*PI/8.0).sin()) + (v.sinh())*((3.0*PI/2.0).sin())*(int_3.cosh()),
+                (v.sinh())*(int_3.sinh())*((5.0*PI/8.0).cos()) + (v.cosh())*(int_3.cosh())
+            ]),
+            1.0
+        );
+        let int_to_ghost_3 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &intersection_3, 
+            &ghost_3.position
+        );
+        let v_to_int_3 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, 3.0*PI/2.0, 1.0),
+            &intersection_3
+        );
+        let tang_3 = PI/8.0 + v_to_int_3;
+        let ans_3 = (relative_orientation_lower + tang_3 + int_to_ghost_3).rem_euclid(2.0*PI);
+        assert_relative_eq!(ans_3, ghost_3.orientation.theta, epsilon = 1e-12);
+
+        // ghost 4
+        let ghost_4 = ghost_array[4];
+        let ghost_4_center = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((7.0*PI/4.0).cos())*ghost_4.position.coordinates()[0] + (v.cosh())*((7.0*PI/4.0).sin())*ghost_4.position.coordinates()[1] - (v.sinh())*ghost_4.position.coordinates()[2],
+                -((7.0*PI/4.0).sin())*ghost_4.position.coordinates()[0] + ((7.0*PI/4.0).cos())*ghost_4.position.coordinates()[1],
+                (v.cosh())*ghost_4.position.coordinates()[2] - (v.sinh())*((7.0*PI/4.0).cos())*ghost_4.position.coordinates()[0] - (v.sinh())*((7.0*PI/4.0).sin())*ghost_4.position.coordinates()[1],
+            ]),
+            1.0
+        );
+        let (angle_4, boost_4) = (ghost_4_center.coordinates()[1].atan2(ghost_4_center.coordinates()[0]).rem_euclid(2.0*PI), (ghost_4_center.coordinates()[2]).acosh());
+        let (int_4, _o_1) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(angle_4 - 13.0*PI/8.0, boost_4);
+        let intersection_4 = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((7.0*PI/4.0).cos())*(int_4.sinh())*((13.0*PI/8.0).cos()) - ((7.0*PI/4.0).sin())*(int_4.sinh())*((13.0*PI/8.0).sin()) + (v.sinh())*((7.0*PI/4.0).cos())*(int_4.cosh()),
+                (v.cosh())*((7.0*PI/4.0).sin())*(int_4.sinh())*((13.0*PI/8.0).cos()) + ((7.0*PI/4.0).cos())*(int_4.sinh())*((13.0*PI/8.0).sin()) + (v.sinh())*((7.0*PI/4.0).sin())*(int_4.cosh()),
+                (v.sinh())*(int_4.sinh())*((13.0*PI/8.0).cos()) + (v.cosh())*(int_4.cosh())
+            ]),
+            1.0
+        );
+        let int_to_ghost_4 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &intersection_4, 
+            &ghost_4.position
+        );
+        let v_to_int_4 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, 7.0*PI/4.0, 1.0),
+            &intersection_4
+        );
+        let tang_4 = 11.0*PI/8.0 + v_to_int_4;
+        let ans_4 = (relative_orientation_upper + tang_4 + int_to_ghost_4).rem_euclid(2.0*PI);
+        assert_relative_eq!(ans_4, ghost_4.orientation.theta, epsilon = 1e-12);
+
+        // ghost 5
+        let ghost_5 = ghost_array[5];
+        let ghost_5_center = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((PI/4.0).cos())*ghost_5.position.coordinates()[0] + (v.cosh())*((PI/4.0).sin())*ghost_5.position.coordinates()[1] - (v.sinh())*ghost_5.position.coordinates()[2],
+                -((PI/4.0).sin())*ghost_5.position.coordinates()[0] + ((PI/4.0).cos())*ghost_5.position.coordinates()[1],
+                (v.cosh())*ghost_5.position.coordinates()[2] - (v.sinh())*((PI/4.0).cos())*ghost_5.position.coordinates()[0] - (v.sinh())*((PI/4.0).sin())*ghost_5.position.coordinates()[1],
+            ]),
+            1.0
+        );
+        let (angle_5, boost_5) = (ghost_5_center.coordinates()[1].atan2(ghost_5_center.coordinates()[0]), (ghost_5_center.coordinates()[2]).acosh());
+        let (int_5, _o_1) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(3.0*PI/8.0 - angle_5, boost_5);
+        let intersection_5 = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((PI/4.0).cos())*(int_5.sinh())*((3.0*PI/8.0).cos()) - ((PI/4.0).sin())*(int_5.sinh())*((3.0*PI/8.0).sin()) + (v.sinh())*((PI/4.0).cos())*(int_5.cosh()),
+                (v.cosh())*((PI/4.0).sin())*(int_5.sinh())*((3.0*PI/8.0).cos()) + ((PI/4.0).cos())*(int_5.sinh())*((3.0*PI/8.0).sin()) + (v.sinh())*((PI/4.0).sin())*(int_5.cosh()),
+                (v.sinh())*(int_5.sinh())*((3.0*PI/8.0).cos()) + (v.cosh())*(int_5.cosh())
+            ]),
+            1.0
+        );
+        let int_to_ghost_5 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &intersection_5, 
+            &ghost_5.position
+        );
+        let v_to_int_5 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, PI/4.0, 1.0),
+            &intersection_5
+        );
+        let tang_5 = 5.0*PI/8.0 + v_to_int_5;
+        let ans_5 = (relative_orientation_lower + tang_5 + int_to_ghost_5).rem_euclid(2.0*PI);
         assert_relative_eq!(ans_5, ghost_5.orientation.theta, epsilon = 1e-12);
+
+        // ghost 6
+        let ghost_6 = ghost_array[6];
+        let ghost_6_center = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((PI).cos())*ghost_6.position.coordinates()[0] + (v.cosh())*((PI).sin())*ghost_6.position.coordinates()[1] - (v.sinh())*ghost_6.position.coordinates()[2],
+                -((PI).sin())*ghost_6.position.coordinates()[0] + ((PI).cos())*ghost_6.position.coordinates()[1],
+                (v.cosh())*ghost_6.position.coordinates()[2] - (v.sinh())*((PI).cos())*ghost_6.position.coordinates()[0] - (v.sinh())*((PI).sin())*ghost_6.position.coordinates()[1],
+            ]),
+            1.0
+        );
+        let (angle_6, boost_6) = (ghost_6_center.coordinates()[1].atan2(ghost_6_center.coordinates()[0]).rem_euclid(2.0*PI), (ghost_6_center.coordinates()[2]).acosh());
+        let (int_6, _o_1) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(angle_6 - 15.0*PI/8.0, boost_6);
+        let intersection_6 = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((PI).cos())*(int_6.sinh())*((15.0*PI/8.0).cos()) - ((PI).sin())*(int_6.sinh())*((15.0*PI/8.0).sin()) + (v.sinh())*((PI).cos())*(int_6.cosh()),
+                (v.cosh())*((PI).sin())*(int_6.sinh())*((15.0*PI/8.0).cos()) + ((PI).cos())*(int_6.sinh())*((15.0*PI/8.0).sin()) + (v.sinh())*((PI).sin())*(int_6.cosh()),
+                (v.sinh())*(int_6.sinh())*((15.0*PI/8.0).cos()) + (v.cosh())*(int_6.cosh())
+            ]),
+            1.0
+        );
+        let int_to_ghost_6 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &intersection_6, 
+            &ghost_6.position
+        );
+        let v_to_int_6 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, PI, 1.0),
+            &intersection_6
+        );
+        let tang_6 = 7.0*PI/8.0 + v_to_int_6;
+        let ans_6 = (relative_orientation_upper + tang_6 + int_to_ghost_6).rem_euclid(2.0*PI);
+        assert_relative_eq!(ans_6, ghost_6.orientation.theta, epsilon = 1e-12);
+
+        let (int_6_b, _o_1) = OrientedHyperbolicPoint::<3,Angle>::intersection_point((PI/8.0 - angle_6).rem_euclid(2.0*PI), boost_6);
+        let intersection_6_b = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((PI).cos())*(int_6_b.sinh())*((PI/8.0).cos()) - ((PI).sin())*(int_6_b.sinh())*((PI/8.0).sin()) + (v.sinh())*((PI).cos())*(int_6_b.cosh()),
+                (v.cosh())*((PI).sin())*(int_6_b.sinh())*((PI/8.0).cos()) + ((PI).cos())*(int_6_b.sinh())*((PI/8.0).sin()) + (v.sinh())*((PI).sin())*(int_6_b.cosh()),
+                (v.sinh())*(int_6_b.sinh())*((PI/8.0).cos()) + (v.cosh())*(int_6_b.cosh())
+            ]),
+            1.0
+        );
+        let int_to_ghost_6_b = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &intersection_6_b, 
+            &ghost_6.position
+        );
+        let v_to_int_6_b = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, PI, 1.0),
+            &intersection_6_b
+        );
+        let tang_6_b = 9.0*PI/8.0 + v_to_int_6_b;
+        let ans_6_b = (relative_orientation_lower + tang_6_b + int_to_ghost_6_b).rem_euclid(2.0*PI);
+        assert_relative_eq!(ans_6_b, ghost_6.orientation.theta, epsilon = 1e-12);
+
+    } 
+
+    #[test]
+    fn ghost_near_third_vertex_orientation() {
+        let offset_boost = 0.25;
+        let v: f64 = 2.448_452_447_678_076;
+        let point = Hyperbolic::<3>::from_polar_coordinates(v - offset_boost, 3.0*PI/4.0 + 0.1, 1.0);
+        let point = OrientedHyperbolicPoint {
+            position: point,
+            orientation: Angle::from(PI),
+        };
+
+        // get nearest boundary point
+        let point_in_center = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((3.0*PI/4.0).cos())*point.position.coordinates()[0] 
+                    + (v.cosh())*((3.0*PI/4.0).sin())*point.position.coordinates()[1]
+                    - (v.sinh())*point.position.coordinates()[2],
+                -((3.0*PI/4.0).sin())*point.position.coordinates()[0]
+                    + ((3.0*PI/4.0).cos())*point.position.coordinates()[1],
+                -(v.sinh())*((3.0*PI/4.0).cos())*point.position.coordinates()[0] 
+                    - (v.sinh())*((3.0*PI/4.0).sin())*point.position.coordinates()[1]
+                    + (v.cosh())*point.position.coordinates()[2]
+            ]),
+            1.0
+        );
+        let (angle_c, boost_c) = (point_in_center.coordinates()[1].atan2(point_in_center.coordinates()[0]).rem_euclid(2.0*PI), (point_in_center.coordinates()[2]).acosh());
+        let (int_o, _o_o) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(angle_c-7.0*PI/8.0, boost_c);
+        // have confirmed that this is the shortest path from the point to the boundary
+        let intersection_o = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((3.0*PI/4.0).cos())*(int_o.sinh())*((7.0*PI/8.0).cos()) 
+                    - ((3.0*PI/4.0).sin())*(int_o.sinh())*((7.0*PI/8.0).sin())
+                    + (v.sinh())*((3.0*PI/4.0).cos())*(int_o.cosh()),
+                (v.cosh())*((3.0*PI/4.0).sin())*(int_o.sinh())*((7.0*PI/8.0).cos())
+                    + ((3.0*PI/4.0).cos())*(int_o.sinh())*((7.0*PI/8.0).sin())
+                    + (v.sinh())*((3.0*PI/4.0).sin())*(int_o.cosh()),
+                (v.sinh())*(int_o.sinh())*((7.0*PI/8.0).cos()) + (v.cosh())*(int_o.cosh())
+            ]),
+            1.0
+        );
+
+        let int_to_v_o = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, 3.0*PI/4.0, 1.0),
+             &intersection_o
+        );
+        let tang_o = 13.0*PI/8.0 + int_to_v_o;
+        let relative_orientation_upper = PI + (OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &point.position,
+             &intersection_o
+        ) - tang_o).rem_euclid(2.0*PI);
+
+        let (int_ol, _o_ol) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(9.0*PI/8.0 - angle_c, boost_c);
+    
+        let intersection_ol = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((3.0*PI/4.0).cos())*(int_ol.sinh())*((9.0*PI/8.0).cos()) 
+                    - ((3.0*PI/4.0).sin())*(int_ol.sinh())*((9.0*PI/8.0).sin())
+                    + (v.sinh())*((3.0*PI/4.0).cos())*(int_ol.cosh()),
+                (v.cosh())*((3.0*PI/4.0).sin())*(int_ol.sinh())*((9.0*PI/8.0).cos())
+                    + ((3.0*PI/4.0).cos())*(int_ol.sinh())*((9.0*PI/8.0).sin())
+                    + (v.sinh())*((3.0*PI/4.0).sin())*(int_ol.cosh()),
+                (v.sinh())*(int_ol.sinh())*((9.0*PI/8.0).cos()) + (v.cosh())*(int_ol.cosh())
+            ]),
+            1.0
+        );
+
+        let int_to_v_ol = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, 3.0*PI/4.0, 1.0),
+             &intersection_ol
+        );
+        let tang_ol = 15.0*PI/8.0 + int_to_v_ol;
+        let relative_orientation_lower = PI + (OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &point.position,
+             &intersection_ol
+        ) - tang_ol).rem_euclid(2.0*PI);
+
+        let periodic =
+            Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
+
+        let ghost_array = periodic.generate_ghosts(&point);
+
+        let ghost_0 = ghost_array[0];
+        let ghost_0_center = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*ghost_0.position.coordinates()[0] - (v.sinh())*ghost_0.position.coordinates()[2],
+                ghost_0.position.coordinates()[1],
+                (v.cosh())*ghost_0.position.coordinates()[2] - (v.sinh())*ghost_0.position.coordinates()[0],
+            ]),
+            1.0
+        );
+        let (angle_0, boost_0) = (ghost_0_center.coordinates()[1].atan2(ghost_0_center.coordinates()[0]), (ghost_0_center.coordinates()[2]).acosh());
+        let (int_0, _o_0) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(angle_0 - 9.0*PI/8.0, boost_0);
+        // check that intersection is minimum in center frame
+        let int_c = Hyperbolic::<3>::from_polar_coordinates(int_0, 9.0*PI/8.0, 1.0);
+        let int_c_plus = Hyperbolic::<3>::from_polar_coordinates(int_0+0.05, 9.0*PI/8.0, 1.0);
+        let int_c_minus = Hyperbolic::<3>::from_polar_coordinates(int_0-0.05, 9.0*PI/8.0, 1.0);
+        assert!(ghost_0_center.distance(&int_c) < ghost_0_center.distance(&int_c_minus));
+        assert!(ghost_0_center.distance(&int_c) < ghost_0_center.distance(&int_c_plus));
+        
+        let intersection_0 = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*(int_0.sinh())*((9.0*PI/8.0).cos()) + (v.sinh())*(int_0.cosh()),
+                (int_0.sinh())*((9.0*PI/8.0).sin()),
+                (v.sinh())*(int_0.sinh())*((9.0*PI/8.0).cos()) + (v.cosh())*(int_0.cosh())
+            ]),
+            1.0
+        );
+
+        // check that intersection point is also a minimum
+        let blip = 0.05;
+        let intersection_plus = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((int_0+blip).sinh())*((9.0*PI/8.0).cos()) + (v.sinh())*((int_0+blip).cosh()),
+                ((int_0+blip).sinh())*((9.0*PI/8.0).sin()),
+                (v.sinh())*((int_0+blip).sinh())*((9.0*PI/8.0).cos()) + (v.cosh())*((int_0+blip).cosh())
+            ]),
+            1.0
+        );
+        let intersection_minus = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((int_0-blip).sinh())*((9.0*PI/8.0).cos()) + (v.sinh())*((int_0-blip).cosh()),
+                ((int_0-blip).sinh())*((9.0*PI/8.0).sin()),
+                (v.sinh())*((int_0-blip).sinh())*((9.0*PI/8.0).cos()) + (v.cosh())*((int_0-blip).cosh())
+            ]),
+            1.0
+        );
+        assert!(ghost_0.position.distance(&intersection_0) < ghost_0.position.distance(&intersection_minus));
+        assert!(ghost_0.position.distance(&intersection_0) < ghost_0.position.distance(&intersection_plus));
+
+        let int_to_ghost = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &intersection_0, 
+            &ghost_0.position
+        );
+        let v_to_int = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, 0.0, 1.0),
+            &intersection_0
+        );
+        let tang_0 = 9.0*PI/8.0 + v_to_int;
+        let ans_0 = (relative_orientation_upper + tang_0 + int_to_ghost).rem_euclid(2.0*PI);
+        assert_relative_eq!(ans_0, ghost_0.orientation.theta, epsilon = 1e-12);
+
+        // check remaining ghosts in less detail
+        // ghost 1
+        let ghost_1 = ghost_array[1];
+        let ghost_1_center = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((3.0*PI/2.0).cos())*ghost_1.position.coordinates()[0] + (v.cosh())*((3.0*PI/2.0).sin())*ghost_1.position.coordinates()[1] - (v.sinh())*ghost_1.position.coordinates()[2],
+                -((3.0*PI/2.0).sin())*ghost_1.position.coordinates()[0] + ((3.0*PI/2.0).cos())*ghost_1.position.coordinates()[1],
+                (v.cosh())*ghost_1.position.coordinates()[2] - (v.sinh())*((3.0*PI/2.0).cos())*ghost_1.position.coordinates()[0] - (v.sinh())*((3.0*PI/2.0).sin())*ghost_1.position.coordinates()[1],
+            ]),
+            1.0
+        );
+        let (angle_1, boost_1) = (ghost_1_center.coordinates()[1].atan2(ghost_1_center.coordinates()[0]), (ghost_1_center.coordinates()[2]).acosh());
+        let (int_1, _o_1) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(7.0*PI/8.0 - angle_1, boost_1);
+        let intersection_1 = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((3.0*PI/2.0).cos())*(int_1.sinh())*((7.0*PI/8.0).cos()) - ((3.0*PI/2.0).sin())*(int_1.sinh())*((7.0*PI/8.0).sin()) + (v.sinh())*((3.0*PI/2.0).cos())*(int_1.cosh()),
+                (v.cosh())*((3.0*PI/2.0).sin())*(int_1.sinh())*((7.0*PI/8.0).cos()) + ((3.0*PI/2.0).cos())*(int_1.sinh())*((7.0*PI/8.0).sin()) + (v.sinh())*((3.0*PI/2.0).sin())*(int_1.cosh()),
+                (v.sinh())*(int_1.sinh())*((7.0*PI/8.0).cos()) + (v.cosh())*(int_1.cosh())
+            ]),
+            1.0
+        );
+        let int_to_ghost_1 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &intersection_1, 
+            &ghost_1.position
+        );
+        let v_to_int_1 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, 3.0*PI/2.0, 1.0),
+            &intersection_1
+        );
+        let tang_1 = 3.0*PI/8.0 + v_to_int_1;
+        let ans_1 = (relative_orientation_lower + tang_1 + int_to_ghost_1).rem_euclid(2.0*PI);
+        assert_relative_eq!(ans_1, ghost_1.orientation.theta, epsilon = 1e-12); 
+
+        // ghost 2
+        let ghost_2 = ghost_array[2];
+        let ghost_2_center = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((5.0*PI/4.0).cos())*ghost_2.position.coordinates()[0] + (v.cosh())*((5.0*PI/4.0).sin())*ghost_2.position.coordinates()[1] - (v.sinh())*ghost_2.position.coordinates()[2],
+                -((5.0*PI/4.0).sin())*ghost_2.position.coordinates()[0] + ((5.0*PI/4.0).cos())*ghost_2.position.coordinates()[1],
+                (v.cosh())*ghost_2.position.coordinates()[2] - (v.sinh())*((5.0*PI/4.0).cos())*ghost_2.position.coordinates()[0] - (v.sinh())*((5.0*PI/4.0).sin())*ghost_2.position.coordinates()[1],
+            ]),
+            1.0
+        );
+        let (angle_2, boost_2) = (ghost_2_center.coordinates()[1].atan2(ghost_2_center.coordinates()[0]), (ghost_2_center.coordinates()[2]).acosh());
+        let (int_2, _o_1) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(angle_2 - 11.0*PI/8.0, boost_2);
+        let intersection_2 = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((5.0*PI/4.0).cos())*(int_2.sinh())*((11.0*PI/8.0).cos()) - ((5.0*PI/4.0).sin())*(int_2.sinh())*((11.0*PI/8.0).sin()) + (v.sinh())*((5.0*PI/4.0).cos())*(int_2.cosh()),
+                (v.cosh())*((5.0*PI/4.0).sin())*(int_2.sinh())*((11.0*PI/8.0).cos()) + ((5.0*PI/4.0).cos())*(int_2.sinh())*((11.0*PI/8.0).sin()) + (v.sinh())*((5.0*PI/4.0).sin())*(int_2.cosh()),
+                (v.sinh())*(int_2.sinh())*((11.0*PI/8.0).cos()) + (v.cosh())*(int_2.cosh())
+            ]),
+            1.0
+        );
+        let int_to_ghost_2 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &intersection_2, 
+            &ghost_2.position
+        );
+        let v_to_int_2 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, 5.0*PI/4.0, 1.0),
+            &intersection_2
+        );
+        let tang_2 = 5.0*PI/8.0 + v_to_int_2;
+        let ans_2 = (relative_orientation_upper + tang_2 + int_to_ghost_2).rem_euclid(2.0*PI);
+        assert_relative_eq!(ans_2, ghost_2.orientation.theta, epsilon = 1e-12); 
+
+        // ghost 3
+        let ghost_3 = ghost_array[3];
+        let ghost_3_center = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((PI/4.0).cos())*ghost_3.position.coordinates()[0] + (v.cosh())*((PI/4.0).sin())*ghost_3.position.coordinates()[1] - (v.sinh())*ghost_3.position.coordinates()[2],
+                -((PI/4.0).sin())*ghost_3.position.coordinates()[0] + ((PI/4.0).cos())*ghost_3.position.coordinates()[1],
+                (v.cosh())*ghost_3.position.coordinates()[2] - (v.sinh())*((PI/4.0).cos())*ghost_3.position.coordinates()[0] - (v.sinh())*((PI/4.0).sin())*ghost_3.position.coordinates()[1],
+            ]),
+            1.0
+        );
+        let (angle_3, boost_3) = (ghost_3_center.coordinates()[1].atan2(ghost_3_center.coordinates()[0]), (ghost_3_center.coordinates()[2]).acosh());
+        let (int_3, _o_1) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(5.0*PI/8.0 - angle_3, boost_3);
+        let intersection_3 = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((PI/4.0).cos())*(int_3.sinh())*((5.0*PI/8.0).cos()) - ((PI/4.0).sin())*(int_3.sinh())*((5.0*PI/8.0).sin()) + (v.sinh())*((PI/4.0).cos())*(int_3.cosh()),
+                (v.cosh())*((PI/4.0).sin())*(int_3.sinh())*((5.0*PI/8.0).cos()) + ((PI/4.0).cos())*(int_3.sinh())*((5.0*PI/8.0).sin()) + (v.sinh())*((PI/4.0).sin())*(int_3.cosh()),
+                (v.sinh())*(int_3.sinh())*((5.0*PI/8.0).cos()) + (v.cosh())*(int_3.cosh())
+            ]),
+            1.0
+        );
+        let int_to_ghost_3 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &intersection_3, 
+            &ghost_3.position
+        );
+        let v_to_int_3 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, PI/4.0, 1.0),
+            &intersection_3
+        );
+        let tang_3 = 7.0*PI/8.0 + v_to_int_3;
+        let ans_3 = (relative_orientation_lower + tang_3 + int_to_ghost_3).rem_euclid(2.0*PI);
+        assert_relative_eq!(ans_3, ghost_3.orientation.theta, epsilon = 1e-12); 
+
+        // ghost 4
+        let ghost_4 = ghost_array[4];
+        let ghost_4_center = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((PI/2.0).cos())*ghost_4.position.coordinates()[0] + (v.cosh())*((PI/2.0).sin())*ghost_4.position.coordinates()[1] - (v.sinh())*ghost_4.position.coordinates()[2],
+                -((PI/2.0).sin())*ghost_4.position.coordinates()[0] + ((PI/2.0).cos())*ghost_4.position.coordinates()[1],
+                (v.cosh())*ghost_4.position.coordinates()[2] - (v.sinh())*((PI/2.0).cos())*ghost_4.position.coordinates()[0] - (v.sinh())*((PI/2.0).sin())*ghost_4.position.coordinates()[1],
+            ]),
+            1.0
+        );
+        let (angle_4, boost_4) = (ghost_4_center.coordinates()[1].atan2(ghost_4_center.coordinates()[0]), (ghost_4_center.coordinates()[2]).acosh());
+        let (int_4, _o_1) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(angle_4 - 13.0*PI/8.0, boost_4);
+        let intersection_4 = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((PI/2.0).cos())*(int_4.sinh())*((13.0*PI/8.0).cos()) - ((PI/2.0).sin())*(int_4.sinh())*((13.0*PI/8.0).sin()) + (v.sinh())*((PI/2.0).cos())*(int_4.cosh()),
+                (v.cosh())*((PI/2.0).sin())*(int_4.sinh())*((13.0*PI/8.0).cos()) + ((PI/2.0).cos())*(int_4.sinh())*((13.0*PI/8.0).sin()) + (v.sinh())*((PI/2.0).sin())*(int_4.cosh()),
+                (v.sinh())*(int_4.sinh())*((13.0*PI/8.0).cos()) + (v.cosh())*(int_4.cosh())
+            ]),
+            1.0
+        );
+        let int_to_ghost_4 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &intersection_4, 
+            &ghost_4.position
+        );
+        let v_to_int_4 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, PI/2.0, 1.0),
+            &intersection_4
+        );
+        let tang_4 = PI/8.0 + v_to_int_4;
+        let ans_4 = (relative_orientation_upper + tang_4 + int_to_ghost_4).rem_euclid(2.0*PI);
+        assert_relative_eq!(ans_4, ghost_4.orientation.theta, epsilon = 1e-12); 
+
+        // ghost 5
+        let ghost_5 = ghost_array[5];
+        let ghost_5_center = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((PI).cos())*ghost_5.position.coordinates()[0] + (v.cosh())*((PI).sin())*ghost_5.position.coordinates()[1] - (v.sinh())*ghost_5.position.coordinates()[2],
+                -((PI).sin())*ghost_5.position.coordinates()[0] + ((PI).cos())*ghost_5.position.coordinates()[1],
+                (v.cosh())*ghost_5.position.coordinates()[2] - (v.sinh())*((PI).cos())*ghost_5.position.coordinates()[0] - (v.sinh())*((PI).sin())*ghost_5.position.coordinates()[1],
+            ]),
+            1.0
+        );
+        let (angle_5, boost_5) = (ghost_5_center.coordinates()[1].atan2(ghost_5_center.coordinates()[0]), (ghost_5_center.coordinates()[2]).acosh());
+        let (int_5, _o_1) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(3.0*PI/8.0 - angle_5, boost_5);
+        let intersection_5 = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((PI).cos())*(int_5.sinh())*((3.0*PI/8.0).cos()) - ((PI).sin())*(int_5.sinh())*((3.0*PI/8.0).sin()) + (v.sinh())*((PI).cos())*(int_5.cosh()),
+                (v.cosh())*((PI).sin())*(int_5.sinh())*((3.0*PI/8.0).cos()) + ((PI).cos())*(int_5.sinh())*((3.0*PI/8.0).sin()) + (v.sinh())*((PI).sin())*(int_5.cosh()),
+                (v.sinh())*(int_5.sinh())*((3.0*PI/8.0).cos()) + (v.cosh())*(int_5.cosh())
+            ]),
+            1.0
+        );
+        let int_to_ghost_5 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &intersection_5, 
+            &ghost_5.position
+        );
+        let v_to_int_5 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, PI, 1.0),
+            &intersection_5
+        );
+        let tang_5 = 11.0*PI/8.0 + v_to_int_5;
+        let ans_5 = (relative_orientation_lower + tang_5 + int_to_ghost_5).rem_euclid(2.0*PI);
+        assert_relative_eq!(ans_5, ghost_5.orientation.theta, epsilon = 1e-12); 
+
+        // ghost 6
+        let ghost_6 = ghost_array[6];
+        let ghost_6_center = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((7.0*PI/4.0).cos())*ghost_6.position.coordinates()[0] + (v.cosh())*((7.0*PI/4.0).sin())*ghost_6.position.coordinates()[1] - (v.sinh())*ghost_6.position.coordinates()[2],
+                -((7.0*PI/4.0).sin())*ghost_6.position.coordinates()[0] + ((7.0*PI/4.0).cos())*ghost_6.position.coordinates()[1],
+                (v.cosh())*ghost_6.position.coordinates()[2] - (v.sinh())*((7.0*PI/4.0).cos())*ghost_6.position.coordinates()[0] - (v.sinh())*((7.0*PI/4.0).sin())*ghost_6.position.coordinates()[1],
+            ]),
+            1.0
+        );
+        let (angle_6, boost_6) = (ghost_6_center.coordinates()[1].atan2(ghost_6_center.coordinates()[0]), (ghost_6_center.coordinates()[2]).acosh());
+        let (int_6, _o_1) = OrientedHyperbolicPoint::<3,Angle>::intersection_point(15.0*PI/8.0 - angle_6, boost_6);
+        let intersection_6 = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((7.0*PI/4.0).cos())*(int_6.sinh())*((15.0*PI/8.0).cos()) - ((7.0*PI/4.0).sin())*(int_6.sinh())*((15.0*PI/8.0).sin()) + (v.sinh())*((7.0*PI/4.0).cos())*(int_6.cosh()),
+                (v.cosh())*((7.0*PI/4.0).sin())*(int_6.sinh())*((15.0*PI/8.0).cos()) + ((7.0*PI/4.0).cos())*(int_6.sinh())*((15.0*PI/8.0).sin()) + (v.sinh())*((7.0*PI/4.0).sin())*(int_6.cosh()),
+                (v.sinh())*(int_6.sinh())*((15.0*PI/8.0).cos()) + (v.cosh())*(int_6.cosh())
+            ]),
+            1.0
+        );
+        let int_to_ghost_6 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &intersection_6, 
+            &ghost_6.position
+        );
+        let v_to_int_6 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, 7.0*PI/4.0, 1.0),
+            &intersection_6
+        );
+        let tang_6 = 13.0*PI/8.0 + v_to_int_6;
+        let ans_6 = (relative_orientation_upper + tang_6 + int_to_ghost_6).rem_euclid(2.0*PI);
+        assert_relative_eq!(ans_6, ghost_6.orientation.theta, epsilon = 1e-12); 
+
+        let (int_6, _o_1) = OrientedHyperbolicPoint::<3,Angle>::intersection_point((PI/8.0 - angle_6).rem_euclid(2.0*PI), boost_6);
+        let intersection_6 = Hyperbolic::<3>::from_minkowski_coordinates(
+            Minkowski::from([
+                (v.cosh())*((7.0*PI/4.0).cos())*(int_6.sinh())*((PI/8.0).cos()) - ((7.0*PI/4.0).sin())*(int_6.sinh())*((PI/8.0).sin()) + (v.sinh())*((7.0*PI/4.0).cos())*(int_6.cosh()),
+                (v.cosh())*((7.0*PI/4.0).sin())*(int_6.sinh())*((PI/8.0).cos()) + ((7.0*PI/4.0).cos())*(int_6.sinh())*((PI/8.0).sin()) + (v.sinh())*((7.0*PI/4.0).sin())*(int_6.cosh()),
+                (v.sinh())*(int_6.sinh())*((PI/8.0).cos()) + (v.cosh())*(int_6.cosh())
+            ]),
+            1.0
+        );
+        let int_to_ghost_6 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &intersection_6, 
+            &ghost_6.position
+        );
+        let v_to_int_6 = OrientedHyperbolicPoint::<3,Angle>::parallel_transport_angle(
+            &Hyperbolic::<3>::from_polar_coordinates(v, 7.0*PI/4.0, 1.0),
+            &intersection_6
+        );
+        let tang_6 = 15.0*PI/8.0 + v_to_int_6;
+        let ans_6 = (relative_orientation_lower + tang_6 + int_to_ghost_6).rem_euclid(2.0*PI);
+        assert_relative_eq!(ans_6, ghost_6.orientation.theta, epsilon = 1e-12); 
     }
 }

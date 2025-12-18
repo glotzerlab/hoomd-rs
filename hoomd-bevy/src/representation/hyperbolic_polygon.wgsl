@@ -10,6 +10,8 @@ struct HyperbolicPolygonMaterial {
     n_sides: f32,
 }
 
+const PI: f32 = 3.141592653589793238462643;
+
 @group(2) @binding(0) var<uniform> background_color: vec4<f32>;
 @group(2) @binding(1) var<uniform> outline_color: vec4<f32>;
 @group(2) @binding(2) var<uniform> outline_width: f32;
@@ -98,25 +100,49 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let pos1 = in.disk_center;
     let pos2 = in.world_position.xy;
     let n = 4.0;
-    let arg = 1 + 2*dot((pos1 - pos2),(pos1 - pos2))/((1-dot(pos1,pos1))*(1-dot(pos2,pos2)));
-    let r = acosh(arg)/2.0;
-    let a = sqrt(pow(pos1.x,2.0) + pow(pos1.y, 2.0));
+    let arg = 1.0 + 2.0*dot((pos1 - pos2),(pos1 - pos2))/((1.0-dot(pos1,pos1))*(1.0-dot(pos2,pos2)));
+    let r = acosh(arg); //distance from the center
+    //let a = sqrt(pow(pos1.x,2.0) + pow(pos1.y, 2.0));
     let theta = atan2(pos1.y, pos1.x);
-    let c = pos2.x * cos(theta) + pos2.y * sin(theta);
-    let d = - pos2.x * sin(theta) + pos2.y * cos(theta);
+    //let c = pos2.x * cos(theta) + pos2.y * sin(theta);
+    //let d = - pos2.x * sin(theta) + pos2.y * cos(theta);
 
-    let world_angle = in.angle;
+    let world_angle = in.angle; // orientation of the body in system frame 
+    let tau = acosh(1.0 + 2.0*dot(pos1, pos1)/(1.0 - dot(pos1,pos1)));
+    let alpha = cosh(tau/2.0);
+    let beta = -sinh(tau/2.0)*cos(theta);
+    let gamma = -sinh(tau/2.0)*sin(theta);
+    //let del_orientation = -2.0 * atan2(beta*pos2.y - gamma*pos2.x, alpha + beta*pos2.x + gamma*pos2.y);
+    let local_orientation_unwrapped = world_angle; // + del_orientation;
 
-    let real = (c + pow(a,2.0)* c  - a * (1.0 + pow(c, 2.0) + pow(d, 2.0)))/ (1.0 - 2.0 * a * c + pow(a,2.0)*(pow(c,2.0) + pow(d,2.0)));
-    let imag = (d - pow(a,2.0) * d)/(1.0  - 2.0*a*c + pow(a,2.0) * (pow(c, 2.0) + pow(d, 2.0)));
-    let angle = atan2(imag, real) - world_angle;
-    let phi = angle - (2.0 * 3.1415926/n)* floor(angle/(2.0 * 3.1415926/n))  - (3.1415926/n);
+    let local_orientation = local_orientation_unwrapped - 2.0*PI * floor(local_orientation_unwrapped / 2.0*PI);
 
-    let radius = in.disk_radius * cos(3.1415926/n)/cos(phi);
-    
-    if r > radius {
-        discard;
+    //let real = (c + pow(a,2.0)* c  - a * (1.0 + pow(c, 2.0) + pow(d, 2.0)))/ (1.0 - 2.0 * a * c + pow(a,2.0)*(pow(c,2.0) + pow(d,2.0)));
+    //let imag = (d - pow(a,2.0) * d)/(1.0  - 2.0*a*c + pow(a,2.0) * (pow(c, 2.0) + pow(d, 2.0)));
+    let pref_1 = 1.0/(pow((beta*pos2.y - gamma*pos2.x),2.0) + pow((alpha+beta*pos2.x+gamma*pos2.y),2.0));
+    let w_xu = pref_1*(alpha*beta*(1.0 + pow(pos2.x,2.0) + pow(pos2.y, 2.0)) + pos2.x*(pow(alpha, 2.0) + pow(beta,2.0) - pow(gamma,2.0)) + 2.0*beta*gamma*pos2.y);
+    let w_yu = pref_1*(alpha*gamma*(1.0 + pow(pos2.x,2.0) + pow(pos2.y, 2.0)) + pos2.y*(pow(alpha, 2.0) - pow(beta,2.0) + pow(gamma, 2.0)) + 2.0*beta*gamma*pos2.x);
+    let w_x = cos(local_orientation)*w_xu + sin(local_orientation)*w_yu;
+    let w_y = -sin(local_orientation)*w_xu + cos(local_orientation)*w_yu;
+    let omega = 1.0/(1.0 + pow(w_x, 2.0) + pow(w_y, 2.0));
+    let u = 2.0*w_x*omega;
+    let v = 2.0*w_y*omega;
+    //let angle = atan2(imag, real) - local_orientation;
+    //let phi = angle - (2.0 * PI/n)* floor(angle/(2.0 * PI/n))  - (PI/n);
+
+    let rapidity = in.disk_radius;
+    let R = tanh(rapidity);                 // Klein circumradius
+    let bound = R * cos(PI / n);
+
+    for (var k = 0; k < 4; k = k + 1) {
+        let phi = 2.0 * PI * f32(k) / n - PI/n;
+        let nx = cos(phi);
+        let ny = sin(phi);
+        if (u * nx + v * ny > bound) {
+            discard;
+        }
     }
+    
 
     // Sample the scaled texture.
     let scaled_uv = in.uv * texture_scale - vec2<f32>(texture_scale) / 2.0 + vec2<f32>(0.5);
@@ -136,5 +162,5 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     }
 
     //return(vec4<f32>(0, 1-r,1-r/2,1));
-    return select(outline_color, vec4<f32>(color, 1.0), r <= radius - outline_width);
+    return select(outline_color, vec4<f32>(color, 1.0), r <= 2.0*(rapidity - outline_width));
 }

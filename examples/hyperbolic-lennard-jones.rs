@@ -75,7 +75,7 @@ struct Fill {
     /// How sites interact with other sites and fields.
     hamiltonian: CutoffPair<Isotropic<LennardJones>>,
     /// Trial moves to apply.
-    translate_sweep: Sweep<Translate<Hyperbolic<3>>>,
+    translate_sweep: Sweep<Translate<Point<Hyperbolic<3>>>>,
     /// Temperature set point.
     macrostate: Isothermal,
 }
