@@ -20,11 +20,11 @@ impl<M> TotalEnergy<M> for Zero {
     }
 }
 
-impl<B, S, C> DeltaEnergyOne<B, S, C> for Zero {
+impl<B, S, X, C> DeltaEnergyOne<B, S, X, C> for Zero {
     #[inline]
     fn delta_energy_one(
         &self,
-        _initial_microstate: &Microstate<B, S, C>,
+        _initial_microstate: &Microstate<B, S, X, C>,
         _body_index: usize,
         _final_body: &Body<B, S>,
     ) -> f64 {
@@ -32,22 +32,22 @@ impl<B, S, C> DeltaEnergyOne<B, S, C> for Zero {
     }
 }
 
-impl<B, S, C> DeltaEnergyInsert<B, S, C> for Zero {
+impl<B, S, X, C> DeltaEnergyInsert<B, S, X, C> for Zero {
     #[inline]
     fn delta_energy_insert(
         &self,
-        _initial_microstate: &Microstate<B, S, C>,
+        _initial_microstate: &Microstate<B, S, X, C>,
         _new_body: &Body<B, S>,
     ) -> f64 {
         0.0
     }
 }
 
-impl<B, S, C> DeltaEnergyRemove<B, S, C> for Zero {
+impl<B, S, X, C> DeltaEnergyRemove<B, S, X, C> for Zero {
     #[inline]
     fn delta_energy_remove(
         &self,
-        _initial_microstate: &Microstate<B, S, C>,
+        _initial_microstate: &Microstate<B, S, X, C>,
         _body_index: usize,
     ) -> f64 {
         0.0

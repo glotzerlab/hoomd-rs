@@ -7,8 +7,8 @@
 //! Specifically, `Periodic<EightEight>` identifies opposite edges of the
 //! octagon to implement the Bolza surface.
 
+use arrayvec::ArrayVec;
 use std::f64::consts::PI;
-use tinyvec::ArrayVec;
 
 use crate::{
     boundary::{
@@ -669,7 +669,7 @@ mod tests {
 
     #[test]
     fn wraps_to_opposite_edge() {
-        let mut rng = rand::rng();
+        let mut rng = StdRng::seed_from_u64(1);
         let side = f64::from(rng.random_range(0..8));
         let boost = EightEight::CUSP_TO_EDGE + 0.5;
         let offset = PI / 8.0;
@@ -1027,7 +1027,7 @@ mod tests {
     }
     #[test]
     fn ghost_near_side() {
-        let mut rng = rand::rng();
+        let mut rng = StdRng::seed_from_u64(1);
         let side = f64::from(rng.random_range(0..8));
         let offset = 0.4;
         let boost = 1.528_570_919_480_998 - offset;

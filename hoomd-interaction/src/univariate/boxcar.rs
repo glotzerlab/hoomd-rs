@@ -3,7 +3,7 @@
 
 //! Implement [`Boxcar`]
 
-use super::IsotropicEnergy;
+use super::UnivariateEnergy;
 
 /// Constant valued potential in a given range of `r` (_not differentiable_).
 ///
@@ -23,7 +23,7 @@ use super::IsotropicEnergy;
 /// Basic usage:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::{Boxcar, IsotropicEnergy};
+/// use hoomd_interaction::univariate::{Boxcar, UnivariateEnergy};
 ///
 /// let epsilon = 1.5;
 /// let (left, right) = (1.0, 2.5);
@@ -43,7 +43,7 @@ use super::IsotropicEnergy;
 /// The parameters are public fields and may be accessed directly:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::{Boxcar, IsotropicEnergy};
+/// use hoomd_interaction::univariate::{Boxcar, UnivariateEnergy};
 ///
 /// let mut boxcar = Boxcar {
 ///     epsilon: 1.5,
@@ -64,7 +64,7 @@ pub struct Boxcar {
     pub right: f64,
 }
 
-impl IsotropicEnergy for Boxcar {
+impl UnivariateEnergy for Boxcar {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         match r {

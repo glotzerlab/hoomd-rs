@@ -6,13 +6,12 @@
 use crate::PRIMARY_COLOR;
 use bevy::{
     asset::embedded_asset,
+    image::TRANSPARENT_IMAGE_HANDLE,
     prelude::*,
     reflect::TypePath,
-    render::{
-        render_resource::{AsBindGroup, ShaderRef},
-        texture::TRANSPARENT_IMAGE_HANDLE,
-    },
-    sprite::{AlphaMode2d, Material2d, Material2dPlugin},
+    render::render_resource::AsBindGroup,
+    shader::ShaderRef,
+    sprite_render::{AlphaMode2d, Material2d, Material2dPlugin},
 };
 use hoomd_manifold::{Hyperbolic, Minkowski};
 use itertools::{

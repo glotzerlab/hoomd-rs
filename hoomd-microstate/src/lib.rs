@@ -151,7 +151,7 @@ pub mod boundary;
 mod microstate;
 pub mod property;
 
-pub use microstate::{Microstate, MicrostateBuilder, Tagged};
+pub use microstate::{Microstate, MicrostateBuilder, SiteKey, Tagged};
 use property::Point;
 
 use thiserror::Error;
@@ -177,7 +177,7 @@ use thiserror::Error;
 /// use hoomd_vector::{Cartesian, Vector};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let microstate = MicrostateBuilder::new()
+/// let microstate = Microstate::builder()
 ///     .bodies([
 ///         Body::point(Cartesian::from([1.0, 0.0])),
 ///         Body::point(Cartesian::from([-1.0, 2.0])),
@@ -277,12 +277,35 @@ pub struct Site<S> {
 ///
 /// The [`property`] module documentation shows you how to define custom body
 /// and site property types.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Body<B, S = B> {
     /// The body's degrees of freedom.
     pub properties: B,
     /// Interaction sites in the body's frame of reference.
     pub sites: Vec<S>,
+}
+
+impl<B, S> Clone for Body<B, S>
+where
+    B: Clone,
+    S: Clone,
+{
+    #[inline]
+    fn clone(&self) -> Self {
+        Self {
+            properties: self.properties.clone(),
+            sites: self.sites.clone(),
+        }
+    }
+
+    #[inline]
+    fn clone_from(&mut self, source: &Self) {
+        // `Sweep` and other methods use clone_from to efficiently generate
+        // trial moves while minimizing memory copies. #[derive(Clone)] does
+        // not implement `clone_from`, so it must be done manually.
+        self.properties.clone_from(&source.properties);
+        self.sites.clone_from(&source.sites);
+    }
 }
 
 impl<V> Body<Point<V>, Point<V>> {

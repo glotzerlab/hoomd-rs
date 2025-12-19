@@ -3,6 +3,8 @@
 
 //! Ensure that values are in well-defined ranges.
 
+use std::fmt;
+
 use crate::Error;
 
 /// A f64 value that is not +/- inf, nan, or a value <= 0.
@@ -87,6 +89,13 @@ impl Default for PositiveReal {
     #[inline]
     fn default() -> Self {
         PositiveReal(1.0)
+    }
+}
+
+impl fmt::Display for PositiveReal {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
     }
 }
 

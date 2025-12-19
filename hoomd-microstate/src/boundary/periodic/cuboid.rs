@@ -3,7 +3,7 @@
 
 //! Implement periodic boundary conditions for cuboids in cartesian space.
 
-use tinyvec::ArrayVec;
+use arrayvec::ArrayVec;
 
 use crate::{
     boundary::{
@@ -107,7 +107,7 @@ where
     /// For 2D cuboids, `generate_ghosts` places ghosts near the 4 edges and 4
     /// vertices.
     #[inline]
-    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
+    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         let mut result = ArrayVec::new();
 
         let r = site_properties.position();
@@ -173,7 +173,7 @@ where
     /// For 3D cuboids, `generate_ghosts` places ghosts near the 6 faces, 12 edges,
     /// and 8 vertices.
     #[inline]
-    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
+    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         let mut result = ArrayVec::new();
 
         let r = site_properties.position();

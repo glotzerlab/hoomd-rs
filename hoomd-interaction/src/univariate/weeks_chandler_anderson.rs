@@ -3,7 +3,7 @@
 
 //! Implement [`WeeksChandlerAnderson`]
 
-use super::{IsotropicEnergy, IsotropicForce, LennardJones};
+use super::{LennardJones, UnivariateEnergy, UnivariateForce};
 
 /// Potential with a steep repulsive core.
 ///
@@ -23,8 +23,8 @@ use super::{IsotropicEnergy, IsotropicForce, LennardJones};
 ///
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
-/// use hoomd_interaction::pairwise::{
-///     IsotropicEnergy, IsotropicForce, WeeksChandlerAnderson,
+/// use hoomd_interaction::univariate::{
+///     UnivariateEnergy, UnivariateForce, WeeksChandlerAnderson,
 /// };
 ///
 /// let epsilon = 1.5;
@@ -44,7 +44,7 @@ use super::{IsotropicEnergy, IsotropicForce, LennardJones};
 /// The parameters are public fields and may be accessed directly:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::WeeksChandlerAnderson;
+/// use hoomd_interaction::univariate::WeeksChandlerAnderson;
 ///
 /// let mut wca = WeeksChandlerAnderson::default();
 /// wca.epsilon = 1.5;
@@ -64,7 +64,7 @@ impl Default for WeeksChandlerAnderson {
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::pairwise::WeeksChandlerAnderson;
+    /// use hoomd_interaction::univariate::WeeksChandlerAnderson;
     ///
     /// let wca = WeeksChandlerAnderson::default();
     /// ```
@@ -77,7 +77,7 @@ impl Default for WeeksChandlerAnderson {
     }
 }
 
-impl IsotropicEnergy for WeeksChandlerAnderson {
+impl UnivariateEnergy for WeeksChandlerAnderson {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         if r < 2.0_f64.powf(1.0 / 6.0) * self.sigma {
@@ -92,7 +92,7 @@ impl IsotropicEnergy for WeeksChandlerAnderson {
     }
 }
 
-impl IsotropicForce for WeeksChandlerAnderson {
+impl UnivariateForce for WeeksChandlerAnderson {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         if r < 2.0_f64.powf(1.0 / 6.0) * self.sigma {

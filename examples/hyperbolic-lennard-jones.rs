@@ -7,15 +7,15 @@ use hoomd_bevy::{
 };
 use hoomd_geometry::shape::EightEight;
 use hoomd_interaction::{
-    CutoffPair,
-    pairwise::{Isotropic, LennardJones},
+    PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones,
 };
 use hoomd_manifold::{Hyperbolic, HyperbolicDisk, Minkowski};
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder, boundary::Periodic, property::Point,
+    Body, Microstate, SiteKey, boundary::Periodic, property::Point,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
+use hoomd_spatial::AllPairs;
 use rand::distr::Distribution;
 use rand::{SeedableRng, rngs::StdRng};
 
@@ -70,10 +70,11 @@ struct Fill {
     microstate: Microstate<
         Point<Hyperbolic<3>>,
         Point<Hyperbolic<3>>,
+        AllPairs<SiteKey>,
         Periodic<EightEight>,
     >,
     /// How sites interact with other sites and fields.
-    hamiltonian: CutoffPair<Isotropic<LennardJones>>,
+    hamiltonian: PairwiseCutoff<Isotropic<LennardJones>>,
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<Point<Hyperbolic<3>>>>,
     /// Temperature set point.
@@ -85,7 +86,7 @@ impl Fill {
     fn new() -> anyhow::Result<Fill> {
         let boundary = Periodic::new(0.6, EightEight { skirt: 1.0_f64 })?;
         let mut microstate =
-            MicrostateBuilder::with_boundary(boundary).try_build()?;
+            Microstate::builder().boundary(boundary).try_build()?;
 
         let initial_spacing = 1.0;
         let mut rng = StdRng::seed_from_u64(23);
@@ -114,15 +115,14 @@ impl Fill {
             sigma: 0.15,
         };
 
-        let evaluator = Isotropic(lj);
-        let cutoff_pair = CutoffPair {
+        let pairwise_cutoff = PairwiseCutoff(Isotropic {
+            interaction: lj,
             r_cut: 0.5,
-            evaluator,
-        };
+        });
 
         let macrostate = Isothermal { temperature: 1.0 };
 
-        let hamiltonian = cutoff_pair;
+        let hamiltonian = pairwise_cutoff;
         let d = 0.01;
 
         let hyp_translate = Translate::with_maximum_distance(d.try_into()?);

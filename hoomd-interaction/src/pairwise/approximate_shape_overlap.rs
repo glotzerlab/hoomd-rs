@@ -3,7 +3,8 @@
 
 //! Implement [`ApproximateShapeOverlap`].
 
-use super::{AnisotropicEnergy, IsotropicEnergy};
+use super::AnisotropicEnergy;
+use crate::univariate::UnivariateEnergy;
 use hoomd_geometry::IntersectsAt;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{InnerProduct, Rotate, Rotation};
@@ -26,14 +27,14 @@ use hoomd_vector::{InnerProduct, Rotate, Rotation};
 /// for use during a brief initialization phase when `QuickInsert` is adding
 /// bodies or `QuickCompress` is compressing the system.
 ///
-/// [`OverlapPenalty`]: crate::pairwise::OverlapPenalty
+/// [`OverlapPenalty`]: crate::univariate::OverlapPenalty
 ///
 /// # Example
 ///
 /// ```
 /// use hoomd_geometry::{Convex, shape::ConvexPolygon};
-/// use hoomd_interaction::pairwise::{
-///     ApproximateShapeOverlap, OverlapPenalty,
+/// use hoomd_interaction::{
+///     pairwise::ApproximateShapeOverlap, univariate::OverlapPenalty,
 /// };
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -58,7 +59,7 @@ pub struct ApproximateShapeOverlap<E, A, B = A> {
 
 impl<E, A, B, V, R> AnisotropicEnergy<V, R> for ApproximateShapeOverlap<E, A, B>
 where
-    E: IsotropicEnergy,
+    E: UnivariateEnergy,
     V: InnerProduct,
     R: Rotation + Rotate<V>,
     A: IntersectsAt<B, V, R>,
@@ -69,17 +70,21 @@ where
     /// use hoomd_geometry::{Convex, shape::ConvexPolygon};
     /// use hoomd_interaction::{
     ///     SitePairEnergy,
-    ///     pairwise::{Anisotropic, ApproximateShapeOverlap, OverlapPenalty},
+    ///     pairwise::{Anisotropic, ApproximateShapeOverlap},
+    ///     univariate::OverlapPenalty,
     /// };
     /// use hoomd_microstate::property::OrientedPoint;
     /// use hoomd_vector::{Angle, Cartesian};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let approximate_shape_overlap = Anisotropic(ApproximateShapeOverlap::new(
-    ///     Convex(ConvexPolygon::regular(6)),
-    ///     OverlapPenalty::default(),
-    ///     0.01.try_into()?,
-    /// ));
+    /// let approximate_shape_overlap = Anisotropic {
+    ///     interaction: ApproximateShapeOverlap::new(
+    ///         Convex(ConvexPolygon::regular(6)),
+    ///         OverlapPenalty::default(),
+    ///         0.01.try_into()?,
+    ///     ),
+    ///     r_cut: 2.0,
+    /// };
     ///
     /// let a = OrientedPoint {
     ///     position: Cartesian::from([0.0, 0.0]),
@@ -135,8 +140,8 @@ impl<E, G> ApproximateShapeOverlap<E, G> {
     ///
     /// ```
     /// use hoomd_geometry::{Convex, shape::ConvexPolygon};
-    /// use hoomd_interaction::pairwise::{
-    ///     ApproximateShapeOverlap, OverlapPenalty,
+    /// use hoomd_interaction::{
+    ///     pairwise::ApproximateShapeOverlap, univariate::OverlapPenalty,
     /// };
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {

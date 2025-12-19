@@ -3,7 +3,7 @@
 
 //! Implement [`Harmonic`]
 
-use super::{IsotropicEnergy, IsotropicForce};
+use super::{UnivariateEnergy, UnivariateForce};
 
 /// Quadratic potential well centered at a given separation distance.
 ///
@@ -18,8 +18,8 @@ use super::{IsotropicEnergy, IsotropicForce};
 ///
 /// ```
 /// use approxim::{assert_abs_diff_eq, assert_relative_eq};
-/// use hoomd_interaction::pairwise::{
-///     Harmonic, IsotropicEnergy, IsotropicForce,
+/// use hoomd_interaction::univariate::{
+///     Harmonic, UnivariateEnergy, UnivariateForce,
 /// };
 ///
 /// let k = 2.0;
@@ -34,7 +34,7 @@ use super::{IsotropicEnergy, IsotropicForce};
 /// The parameters are public fields and may be accessed directly:
 ///
 /// ```
-/// use hoomd_interaction::pairwise::Harmonic;
+/// use hoomd_interaction::univariate::Harmonic;
 ///
 /// let mut harmonic = Harmonic { k: 1.0, r_0: 0.0 };
 /// harmonic.k = 5.0;
@@ -48,14 +48,14 @@ pub struct Harmonic {
     pub r_0: f64,
 }
 
-impl IsotropicEnergy for Harmonic {
+impl UnivariateEnergy for Harmonic {
     #[inline]
     fn energy(&self, r: f64) -> f64 {
         0.5 * self.k * (r - self.r_0) * (r - self.r_0)
     }
 }
 
-impl IsotropicForce for Harmonic {
+impl UnivariateForce for Harmonic {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         -self.k * (r - self.r_0)
