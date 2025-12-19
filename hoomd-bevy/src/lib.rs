@@ -164,6 +164,10 @@ pub struct ParametersWindowState(pub bool);
 #[derive(Message)]
 struct ResetCamera;
 
+/// Quit the application.
+#[derive(Message)]
+struct Quit;
+
 /// Advance the simulation one step.
 #[derive(Message)]
 struct AdvanceSimulation;
@@ -466,23 +470,21 @@ where
 
     /// Detect the minimum frame time for all windows.
     #[cfg(not(target_arch = "wasm32"))]
-    fn detect_frame_time(
-        windows: impl Iterator<Item = Entity>,
-    ) -> Option<Duration> {
+    fn detect_frame_time(windows: impl Iterator<Item = Entity>) -> Option<Duration> {
         WINIT_WINDOWS.with_borrow(|winit| {
-        let best_framerate = {
-            f64::from(
-                windows
-                    .filter_map(|e| winit.get_window(e))
-                    .filter_map(|w| w.current_monitor())
-                    .filter_map(|monitor| monitor.refresh_rate_millihertz())
-                    .min()?,
-            ) / 1000.0
-                - 0.5
-        };
+            let best_framerate = {
+                f64::from(
+                    windows
+                        .filter_map(|e| winit.get_window(e))
+                        .filter_map(|w| w.current_monitor())
+                        .filter_map(|monitor| monitor.refresh_rate_millihertz())
+                        .min()?,
+                ) / 1000.0
+                    - 0.5
+            };
 
-        let best_frame_time = Duration::from_secs_f64(1.0 / best_framerate);
-        Some(best_frame_time)
+            let best_frame_time = Duration::from_secs_f64(1.0 / best_framerate);
+            Some(best_frame_time)
         })
     }
 
@@ -515,6 +517,18 @@ where
         }
 
         reset_camera.clear();
+    }
+
+    /// Quit.
+    fn quit(
+        mut quit: MessageReader<Quit>,
+        mut exit: MessageWriter<AppExit>,
+        ) {
+        if !quit.is_empty() {
+            exit.write(AppExit::Success);
+        }
+
+        quit.clear();
     }
 
     /// Left click and drag to pan the 2D camera.
@@ -668,7 +682,12 @@ where
             .add_systems(Update, Self::update_debug_text.after(AdvanceSet))
             .add_systems(EguiPrimaryContextPass, Self::ui_system)
             .add_message::<ResetCamera>()
-            .add_message::<AdvanceSimulation>();
+            .add_message::<AdvanceSimulation>()
+            .add_message::<Quit>()
+            .add_systems(
+                Update,
+                Self::quit.run_if(on_message::<Quit>),
+            );
 
         match initial_camera {
             InitialCamera::Orthographic2d(initial_viewport_height) => {
@@ -742,7 +761,7 @@ where
         mut settings: ResMut<Settings>,
         window: Single<&Window, With<PrimaryWindow>>,
         mut debug_text: Single<&mut Visibility, (With<DebugText>, Without<OverlayRoot>)>,
-        #[cfg(not(target_arch = "wasm32"))] mut exit: MessageWriter<AppExit>,
+        #[cfg(not(target_arch = "wasm32"))] mut quit: MessageWriter<Quit>,
         mut reset_camera: MessageWriter<ResetCamera>,
         mut advance_simulation: MessageWriter<AdvanceSimulation>,
     ) -> Result {
@@ -865,7 +884,9 @@ where
 
             #[cfg(not(target_arch = "wasm32"))]
             if ui.button("⊗ Quit (q)").clicked() {
-                exit.write(AppExit::Success);
+                // Sending AppExit messages in this system causes deadlocks.
+                // Send a quit message that defers AppExit until later.
+                quit.write(Quit);
             }
         });
 
@@ -893,7 +914,7 @@ where
 
                 #[cfg(not(target_arch = "wasm32"))]
                 if context.input_mut(|i| i.consume_shortcut(&quit_shortcut)) {
-                    exit.write(AppExit::Success);
+                    quit.write(Quit);
                 }
                 #[cfg(not(target_arch = "wasm32"))]
                 if context.input_mut(|i| i.consume_shortcut(&screenshot_shortcut)) {
