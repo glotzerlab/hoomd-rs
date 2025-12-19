@@ -6,7 +6,7 @@
 use super::{Orientation, Point, Position};
 use crate::Transform;
 use hoomd_manifold::{Hyperbolic, HyperbolicDisk, Minkowski};
-use hoomd_vector::{Angle, Cartesian, Rotate, Versor};
+use hoomd_vector::Angle;
 use robust::{Coord, orient2d};
 use std::f64::consts::PI;
 use rand::{
@@ -165,95 +165,6 @@ impl OrientedHyperbolicPoint<3, Angle> {
     }
 }
 
-/// Treat `Point<Hyperbolic<4>>` sites as constituents of oriented rigid bodies.
-/// TODO
-impl Transform<Point<Hyperbolic<4>>> for OrientedHyperbolicPoint<4, Versor> {
-    /// Move `Point<Hyperbolic<4>>` properties from the local body frame to the system frame.
-    /// ```
-    /// use approxim::assert_relative_eq;
-    /// use hoomd_manifold::Hyperbolic;
-    /// use hoomd_microstate::{
-    ///     Transform,
-    ///     property::{OrientedHyperbolicPoint, Point, Position},
-    /// };
-    /// use hoomd_vector::Versor;
-    /// use std::f64::consts::PI;
-    ///
-    /// let body_boost = 1.3;
-    /// let body_orientation = Versor::from_axis_angle(
-    ///     [0.0, 0.0, 1.0]
-    ///         .try_into()
-    ///         .expect("hard-coded vector should be non-zero"),
-    ///     PI / 2.0,
-    /// );
-    /// let site_boost = 0.4;
-    /// let body = OrientedHyperbolicPoint {
-    ///     position: Hyperbolic::<4>::from_polar_coordinates(
-    ///         body_boost, 0.0, 0.0, 1.0,
-    ///     ),
-    ///     orientation: body_orientation,
-    /// };
-    /// let site = Point::new(Hyperbolic::<4>::from_polar_coordinates(
-    ///     site_boost,
-    ///     PI / 4.0,
-    ///     0.0,
-    ///     1.0,
-    /// ));
-    /// let transformed_site = body.transform(&site);
-    /// assert_relative_eq!(
-    ///     *transformed_site.position().point(),
-    ///     [
-    ///         (body_boost.sinh()) * (site_boost.cosh())
-    ///             - ((PI / 4.0).sin())
-    ///                 * (body_boost.cosh())
-    ///                 * (site_boost.sinh()),
-    ///         ((PI / 4.0).cos()) * site_boost.sinh(),
-    ///         0.0,
-    ///         (body_boost.cosh()) * (site_boost.cosh())
-    ///             - ((PI / 4.0).sin())
-    ///                 * (body_boost.sinh())
-    ///                 * (site_boost.sinh())
-    ///     ]
-    ///     .into(),
-    ///     epsilon = 1e-12
-    /// );
-    /// ```
-    #[inline]
-    fn transform(&self, site_properties: &Point<Hyperbolic<4>>) -> Point<Hyperbolic<4>> {
-        // TODO!!! This needs to be fixed! transformation CONJUGATES by the angle!
-        let body_point = self.position.coordinates();
-        let skirt = self.position.skirt();
-        let body_theta = (body_point[2].powi(2) + body_point[1].powi(2))
-            .sqrt()
-            .atan2(body_point[0]);
-        let body_phi = body_point[2].atan2(body_point[1]);
-        let body_pos_boost = (body_point[3] / self.position.skirt()).acosh();
-        let body_angle_system = self.orientation; // orientation of the body, in the system frame 
-        // TODO: this is incorrect: the point is transformed via conjugation
-        // Also need to account for parallel transport
-        let site_pos = site_properties.position.coordinates();
-        let transformed_point = Minkowski::from([
-            site_pos[0] * ((body_pos_boost.cosh()) * ((body_theta.cos()).powi(2)) + ((body_theta.sin()).powi(2)))
-                + site_pos[1] * (body_phi.cos()) * (body_theta.sin()) * (body_theta.cos()) * ((body_pos_boost.cosh()) - 1.0)
-                + site_pos[2] * (body_phi.sin()) * (body_theta.sin()) * (body_theta.cos()) * ((body_pos_boost.cosh()) - 1.0)
-                + site_pos[3] * (body_pos_boost.sinh()) * (body_theta.cos()),
-            site_pos[0] * (body_phi.cos()) * (body_theta.sin()) * (body_theta.cos()) * ((body_pos_boost.cosh()) - 1.0)
-                + site_pos[1] * (((body_phi.cos()).powi(2)) * ((body_pos_boost.cosh()) * ((body_theta.sin()).powi(2)) + ((body_theta.cos()).powi(2))) + ((body_phi.sin()).powi(2)))
-                + site_pos[2] * (body_phi.sin()) * (body_phi.cos()) * ((body_pos_boost.cosh())*((body_theta.sin()).powi(2)) + ((body_theta.cos()).powi(2)) - 1.0)
-                + site_pos[3] * (body_pos_boost.sinh()) * (body_theta.sin()) * (body_phi.cos()),
-            site_pos[0] * (body_theta.cos()) * (body_theta.sin()) * (body_phi.sin()) * ((body_pos_boost.cosh()) - 1.0)
-                + site_pos[1] * (body_phi.cos()) * (body_phi.sin()) * ((body_pos_boost.cosh())*((body_theta.sin()).powi(2)) + ((body_theta.cos()).powi(2)) - 1.0)
-                + site_pos[2] * (((body_phi.sin()).powi(2)) * ((body_pos_boost.cosh())*((body_theta.sin()).powi(2)) + ((body_theta.cos()).powi(2))) + ((body_phi.cos()).powi(2)))
-                + site_pos[3] * (body_pos_boost.sinh()) * (body_theta.sin()) * (body_phi.sin()),
-            site_pos[0] * (body_pos_boost.sinh()) * (body_theta.cos())
-                + site_pos[1] * (body_pos_boost.sinh()) * (body_phi.cos()) * (body_theta.sin())
-                + site_pos[2] * (body_pos_boost.sinh()) * (body_phi.sin()) * (body_theta.sin())
-                + site_pos[3] * (body_pos_boost.cosh()),
-        ]);
-        let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(transformed_point, skirt);
-        Point::new(new_hyperbolic)
-    }
-}
 /// Treat `Point<Hyperbolic<3>>` sites as constituents of oriented rigid bodies.
 impl Transform<Point<Hyperbolic<3>>> for OrientedHyperbolicPoint<3, Angle> {
     /// Move `Point<Hyperbolic<3>>` properties from the local body frame to the system frame.
@@ -388,7 +299,7 @@ mod tests {
     use super::*;
     use approxim::assert_relative_eq;
     use hoomd_geometry::shape::EightEight;
-    use hoomd_vector::{Angle, Metric, Versor};
+    use hoomd_vector::{Angle, Metric};
     use std::f64::consts::PI;
 
     #[test]
@@ -414,42 +325,6 @@ mod tests {
                 ((PI / 4.0).sin()) * site_boost.sinh(),
                 (body_boost.cosh()) * (site_boost.cosh())
                     + ((PI / 4.0).cos()) * (body_boost.sinh()) * (site_boost.sinh()),
-            ]
-            .into(),
-            epsilon = 1e-12
-        );
-    }
-
-    #[test]
-    fn transform_oriented_h3_point() {
-        let body_boost = 1.3;
-        let body_orientation = Versor::from_axis_angle(
-            [0.0, 0.0, 1.0]
-                .try_into()
-                .expect("hard-coded vector should be non-zero"),
-            PI / 2.0,
-        );
-        let site_boost = 0.4;
-        let body = OrientedHyperbolicPoint {
-            position: Hyperbolic::<4>::from_polar_coordinates(body_boost, 0.0, 0.0, 1.0),
-            orientation: body_orientation,
-        };
-        let site = Point::new(Hyperbolic::<4>::from_polar_coordinates(
-            site_boost,
-            PI / 4.0,
-            0.0,
-            1.0,
-        ));
-        let transformed_site = body.transform(&site);
-        assert_relative_eq!(
-            *transformed_site.position().point(),
-            [
-                (body_boost.sinh()) * (site_boost.cosh())
-                    - ((PI / 4.0).sin()) * (body_boost.cosh()) * (site_boost.sinh()),
-                ((PI / 4.0).cos()) * site_boost.sinh(),
-                0.0,
-                (body_boost.cosh()) * (site_boost.cosh())
-                    - ((PI / 4.0).sin()) * (body_boost.sinh()) * (site_boost.sinh())
             ]
             .into(),
             epsilon = 1e-12
@@ -497,7 +372,6 @@ mod tests {
 
     #[test]
     fn intersection_points() {
-        // TODO: more extensive tests
         let (x_0, del_theta) = OrientedHyperbolicPoint::<3, Angle>::intersection_point(PI/8.0, EightEight::EIGHTEIGHT);
         assert_relative_eq!(EightEight::CUSP_TO_EDGE, x_0, epsilon=1e-12);
         assert_relative_eq!(PI/4.0, del_theta, epsilon=1e-12);

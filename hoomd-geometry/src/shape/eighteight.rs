@@ -82,7 +82,6 @@ impl EightEight {
     #[inline]
     #[must_use]
     pub fn distance_to_boundary(point: &Hyperbolic<3>) -> f64 {
-        // TODO: FIX THIS!
         let theta = (point.coordinates()[1].atan2(point.coordinates()[0])).rem_euclid(PI/4.0) - PI/8.0;
         let boost = (point.coordinates()[2] / point.skirt()).acosh();
         let rho = point.skirt();
@@ -142,8 +141,6 @@ mod tests {
     use hoomd_manifold::{Hyperbolic, HyperbolicDisk, Minkowski};
     use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
     use std::ops::Not;
-
-    //TODO: fix distance_to_boundary issue with Nans
 
     #[test]
     fn boundary_distance() {

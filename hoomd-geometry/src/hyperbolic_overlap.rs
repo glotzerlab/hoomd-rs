@@ -5,7 +5,7 @@ use hoomd_vector::Angle;
 use robust::{Coord, orient2d};
 use std::f64::consts::PI;
 
-/// TODO
+/// A faceted hyperbolic solid defined by the convex hull of its vertices.
 #[derive(Clone, Debug, PartialEq)]
 pub struct HyperbolicConvexPolytope<const N: usize> {
     /// The vertices of the shape
@@ -32,7 +32,7 @@ impl<const N: usize> HyperbolicConvexPolytope<N> {
     }
 }
 
-/// TODO
+/// A two-dimensional hyperbolic convex polytope. 
 pub type HyperbolicConvexPolygon = HyperbolicConvexPolytope<3>;
 
 impl HyperbolicConvexPolytope<3> {
