@@ -208,6 +208,8 @@ opt-level = 3
 opt-level = 3
 # [profile.dev.package.bevy_animation]
 # opt-level = 3
+[profile.dev.package.bevy_anti_alias]
+opt-level = 3
 [profile.dev.package.bevy_app]
 opt-level = 3
 [profile.dev.package.bevy_asset]
@@ -216,6 +218,8 @@ opt-level = 3
 opt-level = 3
 # [profile.dev.package.bevy_audio]
 # opt-level = 3
+[profile.dev.package.bevy_camera]
+opt-level = 3
 [profile.dev.package.bevy_color]
 opt-level = 3
 [profile.dev.package.bevy_core_pipeline]
@@ -227,6 +231,8 @@ opt-level = 3
 [profile.dev.package.bevy_ecs]
 opt-level = 3
 [profile.dev.package.bevy_ecs_macros]
+opt-level = 3
+[profile.dev.package.bevy_egui]
 opt-level = 3
 [profile.dev.package.bevy_encase_derive]
 opt-level = 3
@@ -247,6 +253,8 @@ opt-level = 3
 [profile.dev.package.bevy_internal]
 opt-level = 3
 [profile.dev.package.bevy_log]
+opt-level = 3
+[profile.dev.package.bevy_light]
 opt-level = 3
 [profile.dev.package.bevy_macro_utils]
 opt-level = 3
@@ -287,6 +295,8 @@ opt-level = 3
 [profile.dev.package.bevy_transform]
 opt-level = 3
 [profile.dev.package.bevy_ui]
+opt-level = 3
+[profile.dev.package.bevy_ui_render]
 opt-level = 3
 [profile.dev.package.bevy_utils]
 opt-level = 3
