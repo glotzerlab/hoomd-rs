@@ -30,7 +30,7 @@ assert2.workspace = true
 approxim.workspace = true
 rstest.workspace = true
 divan.workspace = true
-chacha20 = { version = "=0.10.0-rc.0", default-features = false, features = ["rng"]}
+chacha20 = { version = "=0.10.0-rc.6", default-features = false, features = ["rng"]}
 
 [[bench]]
 name = "bench"
