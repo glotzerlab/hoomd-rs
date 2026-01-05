@@ -5,11 +5,14 @@
 use super::Matrix;
 
 /// .
-pub(super) fn qr_decomposition<const N: usize, const M: usize>(a: &Matrix<N, M>) -> Matrix<N, M> {
+pub(super) fn qr_decomposition<const N: usize, const M: usize>(
+    a: &Matrix<N, M>,
+) -> (Matrix<N, M>, Vec<f64>) {
     // Return default TODO;
 
     let mut qr = a.clone();
-    for i in 0..N {
+    let mut taus = Vec::new();
+    for i in 0..M {
         let mut tau = 0.;
         let mut beta = 0.;
         if i <= (N - 1) {
@@ -17,7 +20,6 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(a: &Matrix<N, M>)
                 .get_col_slice_iter(i, (i + 1)..N)
                 .map(|x| x * x)
                 .sum::<f64>();
-            println!("x_norm_2 = {}", x_norm_2);
             if x_norm_2 != 0.0 {
                 let alpha = qr[(i, i)];
                 beta = -alpha.signum() * (x_norm_2 + alpha * alpha).sqrt();
@@ -31,14 +33,13 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(a: &Matrix<N, M>)
             }
         }
         if tau == 0.0 {
-            //either in last row or remainder of column is zero
+            //either in last column or remainder of column is zero
+            taus.push(tau);
             continue;
         } else {
             let v_col: Vec<f64> = qr.get_col_slice_iter(i, i..N).collect();
 
             // Compute w^T = (C^T) * v where C is the submatrix qr[i..N, i..M].
-            // We can compute it using an immutable submatrix iterator then
-            // perform the mutable updates once the immutable borrow is dropped.
             let mut w_t = vec![0.0; M - i];
             for (row_slice, &v_r) in qr.submatrix_slice_iter(i..N, (i + 1)..M).zip(v_col.iter()) {
                 for (j, &val) in row_slice.iter().enumerate() {
@@ -46,7 +47,7 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(a: &Matrix<N, M>)
                 }
             }
 
-            // Now mutate the submatrix rows using the precomputed wT.
+            // Now change the submatrix rows using the precomputed wT.
             for (row_slice_mut, &v_r) in qr
                 .submatrix_slice_iter_mut(i..N, (i + 1)..M)
                 .zip(v_col.iter())
@@ -56,9 +57,45 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(a: &Matrix<N, M>)
                 }
             }
             qr[(i, i)] = beta;
+            taus.push(tau);
         }
     }
-    qr
+    (qr, taus)
+}
+
+fn get_Q() {
+    //TODO
+    unimplemented!()
+}
+
+fn get_R() {
+    //TODO
+    unimplemented!()
+}
+
+fn times_Q() {
+    //TODO
+    unimplemented!()
+}
+
+fn times_QT() {
+    //TODO
+    unimplemented!()
+}
+
+fn Q_times() {
+    //TODO
+    unimplemented!()
+}
+
+fn QT_times() {
+    //TODO
+    unimplemented!()
+}
+
+fn qr_solve() {
+    //TODO
+    unimplemented!()
 }
 
 #[cfg(test)]
@@ -67,20 +104,42 @@ mod tests {
     use crate::matrix::test_utils::assert_matrixes_ulps_eq;
 
     #[test]
-    fn test_qr_decomp() {
-        let qr = super::qr_decomposition(&Matrix::<3, 3> {
+    fn test_qr_square() {
+        let (qr, taus) = super::qr_decomposition(&Matrix::<3, 3> {
             rows: [[2., 9., 24.], [1., 10., 10.], [2., 10., 10.]],
         });
 
         let correct_answer = Matrix::<3, 3> {
             rows: [[-3., -16., -26.], [0.2, -5., 0.], [0.4, 0., -10.]],
         };
-
-        for i in 0..3 {
-            for j in 0..3 {
-                println!("qr[{}, {}] = {}", i, j, qr[(i, j)]);
-            }
-        }
         assert_matrixes_ulps_eq::<3, 3, _, _>(&correct_answer, &qr);
+    }
+
+    #[test]
+    fn test_qr_tall() {
+        let (qr, taus) = super::qr_decomposition(&Matrix::<4, 3> {
+            rows: [[-1., -1., 1.], [1., 3., 3.], [-1., -1., 5.], [1., 3., 7.]],
+        });
+
+        for row in 0..4 {
+            for col in 0..3 {
+                print!("{:8.4} ", qr[(row, col)]);
+            }
+            println!();
+        }
+
+        for element in taus {
+            println!("{:8.4} ", element);
+        }
+
+        let correct_answer = Matrix::<4, 3> {
+            rows: [
+                [3., 4., 2.],
+                [-1. / 3., -2., -8.],
+                [1. / 3., 1. / 5., -4.],
+                [-1. / 3., 2. / 5., 1. / 3.],
+            ],
+        };
+        assert_matrixes_ulps_eq::<4, 3, _, _>(&correct_answer, &qr);
     }
 }
