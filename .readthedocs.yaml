@@ -2,17 +2,14 @@ version: 2
 build:
   os: "ubuntu-24.04"
   tools:
-    rust: "1.86"
+    rust: "1.91"
   commands:
-    # Rust 1.89.0 is needed to build hoomd-rs
-    - rustup install 1.89.0
-    - rustup default 1.89.0
     # Install cargo binstall
     - mkdir -p "${PATH%%:*}"
     - curl -sSL "https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-gnu.tgz" | tar -xvz --directory "${PATH%%:*}"
     # Install mdbook
     - cargo binstall mdbook@0.4.52 mdbook-alerts@0.8.0 --no-confirm --disable-strategies=compile --disable-telemetry --install-path "${PATH%%:*}"
-    - curl -sSL "https://github.com/lzanini/mdbook-katex/releases/download/0.9.3-binaries/mdbook-katex-v0.9.3-x86_64-unknown-linux-gnu.tar.gz" | tar -xvz --directory "${PATH%%:*}"
+    - curl -sSL "https://github.com/lzanini/mdbook-katex/releases/download/0.10.0-alpha-binaries/mdbook-katex-v0.10.0-alpha-x86_64-unknown-linux-gnu.tar.gz" | tar -xvz --directory "${PATH%%:*}"
     # Install wasm toolchain with bindgen matching the version in the lockfile
     - rustup target install wasm32-unknown-unknown
     - cargo info wasm-bindgen -q
