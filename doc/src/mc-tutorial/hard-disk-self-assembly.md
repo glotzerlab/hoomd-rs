@@ -1,10 +1,10 @@
 # Hard Disk Self-Assembly
 
-<!-- <script type="module"> -->
-<!-- import init from './hard-disk-self-assembly.js' -->
-<!-- {{#include ../../scripts/init-wasm-canvas.js}} -->
-<!-- </script> -->
-<!-- {{#include ../../scripts/canvas.html}} -->
+<script type="module">
+import init from './hard-disk-self-assembly.js'
+{{#include ../../scripts/init-wasm-canvas.js}}
+</script>
+{{#include ../../scripts/canvas.html}}
 
 ## Overview
 

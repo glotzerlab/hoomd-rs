@@ -11,7 +11,7 @@ use hoomd_interaction::{
     univariate::OverlapPenalty,
 };
 use hoomd_mc::{
-    HypercuboidCheckerboard, Sweep, QuickCompress, QuickInsert, Rotate, Translate,
+    Sweep, QuickCompress, QuickInsert, Rotate, Translate,
     Trial, UniformIn,
 };
 use hoomd_microstate::{
@@ -55,8 +55,8 @@ struct HardEllipseSelfAssembly {
     quick_compress: QuickCompress<Periodic<Rectangle>>,
     /// Quick insert algorithm.
     quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Rectangle>>>,
-    /// How sites interact when inserted.
-    insert_hamiltonian: PairwiseCutoff<
+    /// How sites interact when inserted and compressed.
+    overlap_penalty_hamiltonian: PairwiseCutoff<
         Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Convex<Ellipse>>>,
     >,
     /// The current phase of the simulation.
@@ -79,7 +79,7 @@ impl HardEllipseSelfAssembly {
         // ANCHOR: parameters
         let initial_packing_fraction = 0.5;
         let target_packing_fraction = 0.7;
-        let n_bodies = 1024;
+        let n_bodies = 256;
         let maximum_distance = 0.07;
         let maximum_rotation = 0.3;
         let sigma = 1.0;
@@ -131,11 +131,13 @@ impl HardEllipseSelfAssembly {
         };
         let quick_insert = QuickInsert::new(distribution, n_bodies);
         // ANCHOR_END: quick_insert
+                
+        // ANCHOR: quick_compress
         let target_box_volume = n_bodies as f64 * ellipse.volume() / target_packing_fraction;
         let quick_compress = QuickCompress::with_target_volume(target_box_volume.try_into()?);
-        // ANCHOR: quick_compress
+        // ANCHOR_END: quick_compress
         
-        // ANCHOR: insert_hamiltonian
+        // ANCHOR: overlap_penalty_hamiltonian
         let approximate_shape_overlap = Anisotropic {
             interaction: ApproximateShapeOverlap::new(
                 Convex(ellipse),
@@ -145,13 +147,13 @@ impl HardEllipseSelfAssembly {
             r_cut: sigma,
         };
 
-        let insert_hamiltonian = PairwiseCutoff(approximate_shape_overlap);
-        // ANCHOR_END: insert_hamiltonian
+        let overlap_penalty_hamiltonian = PairwiseCutoff(approximate_shape_overlap);
+        // ANCHOR_END: overlap_penalty_hamiltonian
 
         // ANCHOR: struct_initialize
         Ok(HardEllipseSelfAssembly {
             microstate,
-            insert_hamiltonian,
+            overlap_penalty_hamiltonian,
             hamiltonian,
             translate_sweep,
             rotate_sweep,
@@ -199,23 +201,23 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: initialize
         // ANCHOR: apply_quick_insert_compress
         if self.quick_insert.is_complete() {
-            self.quick_compress.compress(&mut self.microstate, &self.insert_hamiltonian, |_| true);
+            self.quick_compress.compress(&mut self.microstate, &self.overlap_penalty_hamiltonian, |_| true);
         } else {
             self.quick_insert
-                .apply(&mut self.microstate, &self.insert_hamiltonian);
+                .apply(&mut self.microstate, &self.overlap_penalty_hamiltonian);
         }
         // ANCHOR_END: apply_quick_insert_compress
 
         // ANCHOR: initialize_trial_moves
         self.translate_sweep.apply(
             &mut self.microstate,
-            &self.insert_hamiltonian,
+            &self.overlap_penalty_hamiltonian,
             &Isothermal { temperature: 1.0 },
         );
 
         self.rotate_sweep.apply(
             &mut self.microstate,
-            &self.insert_hamiltonian,
+            &self.overlap_penalty_hamiltonian,
             &Isothermal { temperature: 1.0 },
         );
         // ANCHOR_END: initialize_trial_moves
@@ -280,8 +282,8 @@ fn main() -> anyhow::Result<()> {
 // ANCHOR_END: all
 
 #[cfg(feature = "bevy")]
-mod hard_particle_self_assembly_interactive;
+mod hard_ellipse_self_assembly_interactive;
 #[cfg(feature = "bevy")]
 use bevy::prelude::Resource;
 #[cfg(feature = "bevy")]
-use hard_particle_self_assembly_interactive::main;
+use hard_ellipse_self_assembly_interactive::main;
