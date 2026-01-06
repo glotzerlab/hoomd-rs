@@ -23,9 +23,7 @@ For more details, including instructions for a native Windows installation, see
 the [Rust installation documentation] (make sure you install the 64-bit build).
 
 > [!TIP]
-> *hoomd-rs* works very well with *native* builds on all platforms. You can use
-> WSL for command line applications, but is much slower and takes significantly
-> more steps to configure. WSL doesn't work at all for the interactive examples.
+> *hoomd-rs* works very well with *native* builds on all platforms.
 
 ## Using *hoomd-rs* in your application
 

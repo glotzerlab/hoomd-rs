@@ -144,10 +144,7 @@
 .latte :is(h1, h2, h3, h4, h5, h6) a code {
   color: #4c4f69;
 }
-.latte a code {
-  color: #1e66f5;
-}
-.latte code {
+.latte .hljs {
   color: #4c4f69;
   background: #e6e9ef;
 }
@@ -320,10 +317,7 @@
 .frappe :is(h1, h2, h3, h4, h5, h6) a code {
   color: #c6d0f5;
 }
-.frappe a code {
-  color: #8caaee;
-}
-.frappe code {
+.frappe .hljs {
   color: #c6d0f5;
   background: #292c3c;
 }
@@ -496,10 +490,7 @@
 .macchiato :is(h1, h2, h3, h4, h5, h6) a code {
   color: #cad3f5;
 }
-.macchiato a code {
-  color: #8aadf4;
-}
-.macchiato code {
+.macchiato .hljs {
   color: #cad3f5;
   background: #1e2030;
 }
@@ -672,10 +663,7 @@
 .mocha :is(h1, h2, h3, h4, h5, h6) a code {
   color: #cdd6f4;
 }
-.mocha a code {
-  color: #89b4fa;
-}
-.mocha code {
+.mocha .hljs {
   color: #cdd6f4;
   background: #181825;
 }
@@ -739,7 +727,7 @@
   --blockquote-note-color: #1e66f5;
   --blockquote-tip-color: #40a02b;
   --blockquote-important-color: #8839ef;
-  --blockquote-wraning-color: #df8e1d;
+  --blockquote-warning-color: #df8e1d;
   --blockquote-caution-color: #d20f39;
 }
 
@@ -779,7 +767,7 @@
   --blockquote-note-color: #8caaee;
   --blockquote-tip-color: #a6d189;
   --blockquote-important-color: #ca9ee6;
-  --blockquote-wraning-color: #e5c890;
+  --blockquote-warning-color: #e5c890;
   --blockquote-caution-color: #e78284;
 }
 
@@ -819,7 +807,7 @@
   --blockquote-note-color: #8aadf4;
   --blockquote-tip-color: #a6da95;
   --blockquote-important-color: #c6a0f6;
-  --blockquote-wraning-color: #eed49f;
+  --blockquote-warning-color: #eed49f;
   --blockquote-caution-color: #ed8796;
 }
 
@@ -859,6 +847,6 @@
   --blockquote-note-color: #89b4fa;
   --blockquote-tip-color: #a6e3a1;
   --blockquote-important-color: #cba6f7;
-  --blockquote-wraning-color: #f9e2af;
+  --blockquote-warning-color: #f9e2af;
   --blockquote-caution-color: #f38ba8;
 }

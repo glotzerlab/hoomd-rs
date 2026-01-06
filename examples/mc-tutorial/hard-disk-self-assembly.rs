@@ -20,20 +20,26 @@ use hoomd_spatial::VecCell;
 use hoomd_vector::Cartesian;
 // ANCHOR_END: use
 
+// ANCHOR: type_aliases
+type PositionVector = Cartesian<2>;
+type BodyProperties = Point<PositionVector>;
+type SiteProperties = Point<PositionVector>;
+// ANCHOR_END: type_aliases
+
 #[cfg_attr(feature = "bevy", derive(Resource))]
 // ANCHOR: simulation_struct
 struct HardDiskSelfAssembly {
     /// Positions of all the bodies in the simulation.
     microstate: Microstate<
-        Point<Cartesian<2>>,
-        Point<Cartesian<2>>,
+        BodyProperties,
+        SiteProperties,
         VecCell<SiteKey, 2>,
         Periodic<Rectangle>,
     >,
     /// How sites interact with other sites and fields.
     hamiltonian: PairwiseCutoff<HardSphere>,
     /// Trial moves to apply.
-    translate_sweep: Sweep<Translate<Cartesian<2>>>,
+    translate_sweep: Sweep<Translate<PositionVector>>,
     /// Temperature set point.
     macrostate: Isothermal,
     /// Quick compress algorithm
@@ -59,7 +65,7 @@ impl HardDiskSelfAssembly {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
         let initial_packing_fraction = 0.4;
-        let target_packing_fraction = 0.75;
+        let target_packing_fraction = 1.0;
         let n_disks = 64_usize.pow(2);
         let maximum_distance = 0.07;
         let sigma = 1.0;
@@ -67,11 +73,11 @@ impl HardDiskSelfAssembly {
         // ANCHOR_END: parameters
 
         // ANCHOR: hamiltonian
-        let circle = Circle { radius: (sigma/2.0).try_into()? };
         let hamiltonian = PairwiseCutoff(HardSphere { diameter: sigma});
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: periodic
+        let circle = Circle { radius: (sigma/2.0).try_into()? };
         let initial_box_volume = n_disks as f64 * circle.volume() / initial_packing_fraction;
         let initial_box_edge_length = initial_box_volume.sqrt();
         let square = Rectangle::with_equal_edges(initial_box_edge_length.try_into()?);
@@ -96,8 +102,10 @@ impl HardDiskSelfAssembly {
         for j in 0..n_on_side {
             let y = -initial_box_edge_length / 2.0 + j as f64 * a;
             for i in 0..n_on_side {
-                let x = -initial_box_edge_length / 2.0 + i as f64 * a;            
-                microstate.add_body(Body::point(Cartesian::from([x, y])))?;
+                let x = -initial_box_edge_length / 2.0 + i as f64 * a;
+                if microstate.bodies().len() < n_disks {
+                    microstate.add_body(Body::point(Cartesian::from([x, y])))?;
+                }
             }
         }        
         // ANCHOR_END: place_disks
@@ -111,16 +119,16 @@ impl HardDiskSelfAssembly {
         // ANCHOR: quick_compress
         let target_box_volume = n_disks as f64 * circle.volume() / target_packing_fraction;
         let quick_compress = QuickCompress::with_target_volume(target_box_volume.try_into()?);
-        // ANCHOR_END: quick_insert
+        // ANCHOR_END: quick_compress
 
-        // ANCHOR: insert_hamiltonian
+        // ANCHOR: compress_hamiltonian
         let overlap_penalty = Isotropic {
             interaction: Expanded { delta: sigma, f: OverlapPenalty::default() },
             r_cut: sigma,
         };
 
         let overlap_penalty_hamiltonian = PairwiseCutoff(overlap_penalty);
-        // ANCHOR_END: insert_hamiltonian
+        // ANCHOR_END: compress_hamiltonian
 
         // ANCHOR: struct_initialize
         Ok(HardDiskSelfAssembly {
@@ -166,20 +174,20 @@ impl Simulation for HardDiskSelfAssembly {
 // ANCHOR: inherent_simulation
 impl HardDiskSelfAssembly {
     // ANCHOR_END: inherent_simulation
-    // ANCHOR: initialize
+    // ANCHOR: compress
     fn compress(&mut self) -> anyhow::Result<()> {
-        // ANCHOR_END: initialize
-        // ANCHOR: apply_quick_insert
+        // ANCHOR_END: compress
+        // ANCHOR: apply_quick_compress
         self.quick_compress.compress(&mut self.microstate, &self.overlap_penalty_hamiltonian, |_| true);
-        // ANCHOR_END: apply_quick_insert
+        // ANCHOR_END: apply_quick_compress
 
-        // ANCHOR: initialize_trial_moves
+        // ANCHOR: compress_trial_moves
         self.translate_sweep.apply(
             &mut self.microstate,
             &self.overlap_penalty_hamiltonian,
             &Isothermal { temperature: 1.0 },
         );
-        // ANCHOR_END: initialize_trial_moves
+        // ANCHOR_END: compress_trial_moves
 
         // ANCHOR: state_transition
         if self.quick_compress.is_complete() {
