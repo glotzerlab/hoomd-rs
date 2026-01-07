@@ -41,14 +41,14 @@ jobs:
           # - macos-14
         rust:
           - 1.88.0
-          - 1.90.0
+          - 1.92.0
         target:
          - ''
 
         include:
         # Add a WASM build.
         - os: ubuntu-24.04
-          rust: 1.90.0
+          rust: 1.92.0
           target: wasm32-unknown-unknown
 
     steps:
