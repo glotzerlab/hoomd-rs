@@ -162,7 +162,7 @@ impl Simulation for HardDiskSelfAssembly {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
         match self.phase {
-            Phase::Compress => self.apply().context("failed to compress")?,
+            Phase::Compress => self.compress().context("failed to compress")?,
             Phase::Equilibrate => self.equilibrate(),
         }
 
