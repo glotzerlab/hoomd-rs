@@ -250,7 +250,7 @@ impl<C> QuickCompress<C> {
     ///
     /// The largest energy per site allowed during [`apply`].
     ///
-    /// [`apply`]: Self::compress
+    /// [`apply`]: Self::apply
     ///
     /// # Example
     ///
