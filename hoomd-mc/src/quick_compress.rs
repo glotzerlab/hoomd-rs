@@ -5,9 +5,11 @@
 use rand::distr::{Distribution, Uniform};
 
 use hoomd_geometry::{MapPoint, Scale, Volume};
-use hoomd_interaction::{TotalEnergy};
+use hoomd_interaction::TotalEnergy;
 use hoomd_microstate::{
-    boundary::{GenerateGhosts, Wrap}, property::Position, Body, Microstate, SiteKey, Tagged, Transform
+    Body, Microstate, SiteKey, Tagged, Transform,
+    boundary::{GenerateGhosts, Wrap},
+    property::Position,
 };
 use hoomd_spatial::PointUpdate;
 use hoomd_utility::valid::{OpenUnitIntervalNumber, PositiveReal};
@@ -70,12 +72,14 @@ enum State<C> {
 /// # Example
 ///
 /// ```
-/// use hoomd_mc::QuickCompress;
 /// use hoomd_geometry::shape::Rectangle;
+/// use hoomd_mc::QuickCompress;
 /// use hoomd_microstate::boundary::Closed;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let quick_compress = QuickCompress::<Closed<Rectangle>>::with_target_volume(1000.0.try_into()?);
+/// let quick_compress = QuickCompress::<Closed<Rectangle>>::with_target_volume(
+///     1000.0.try_into()?,
+/// );
 /// # Ok(())
 /// # }
 /// ```
@@ -114,12 +118,14 @@ impl<C> QuickCompress<C> {
     /// # Example
     ///
     /// ```
-    /// use hoomd_mc::QuickCompress;
     /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_mc::QuickCompress;
     /// use hoomd_microstate::boundary::Closed;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let quick_compress = QuickCompress::<Closed<Rectangle>>::with_target_volume(1000.0.try_into()?);
+    /// let quick_compress = QuickCompress::<Closed<Rectangle>>::with_target_volume(
+    ///     1000.0.try_into()?,
+    /// );
     /// # Ok(())
     /// # }
     /// ```
@@ -134,7 +140,9 @@ impl<C> QuickCompress<C> {
             target_volume,
             maximum_energy_per_site: 25.0,
             state: State::default(),
-            maximum_delta: 0.01.try_into().expect("hard-coded constant should be in the open unit interval"),
+            maximum_delta: 0.01
+                .try_into()
+                .expect("hard-coded constant should be in the open unit interval"),
         }
     }
 
@@ -150,12 +158,14 @@ impl<C> QuickCompress<C> {
     /// # Example
     ///
     /// ```
-    /// use hoomd_mc::QuickCompress;
     /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_mc::QuickCompress;
     /// use hoomd_microstate::boundary::Closed;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let quick_compress = QuickCompress::<Closed<Rectangle>>::with_target_volume(1000.0.try_into()?);
+    /// let quick_compress = QuickCompress::<Closed<Rectangle>>::with_target_volume(
+    ///     1000.0.try_into()?,
+    /// );
     ///
     /// assert!(!quick_compress.is_complete());
     /// # Ok(())
@@ -171,12 +181,14 @@ impl<C> QuickCompress<C> {
     /// # Example
     ///
     /// ```
-    /// use hoomd_mc::QuickCompress;
     /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_mc::QuickCompress;
     /// use hoomd_microstate::boundary::Closed;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let quick_compress = QuickCompress::<Closed<Rectangle>>::with_target_volume(1000.0.try_into()?);
+    /// let quick_compress = QuickCompress::<Closed<Rectangle>>::with_target_volume(
+    ///     1000.0.try_into()?,
+    /// );
     ///
     /// let target_volume = quick_compress.target_volume();
     ///
@@ -188,7 +200,7 @@ impl<C> QuickCompress<C> {
     pub fn target_volume(&self) -> PositiveReal {
         self.target_volume
     }
-    
+
     /// Set the target volume.
     ///
     /// Setting a new value will transition a complete [`QuickCompress`] to
@@ -197,28 +209,36 @@ impl<C> QuickCompress<C> {
     /// # Example
     ///
     /// ```
-    /// use hoomd_mc::QuickCompress;
     /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_mc::QuickCompress;
     /// use hoomd_microstate::boundary::Closed;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let mut quick_compress = QuickCompress::<Closed<Rectangle>>::with_target_volume(1000.0.try_into()?);
+    /// let mut quick_compress =
+    ///     QuickCompress::<Closed<Rectangle>>::with_target_volume(
+    ///         1000.0.try_into()?,
+    ///     );
     ///
     /// quick_compress.set_target_volume(500.0.try_into()?);
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    pub fn set_target_volume(&mut self, target_volume: PositiveReal) where C: Clone {
+    pub fn set_target_volume(&mut self, target_volume: PositiveReal)
+    where
+        C: Clone,
+    {
         // Callers will expect `QuickCompress::compress` to seamlessly move
         // toward the new target. How to do that depends on the current state.
         // We cannot always switch to `Startup` because a caller *might* call
         // `set_target_volume` every time they call `compress` and that would
-        // result in no progress. 
+        // result in no progress.
         if self.target_volume != target_volume {
             self.state = match self.state {
                 State::Startup | State::Complete(_) => State::Startup,
-                State::Waiting(_, ref last_known_boundary) => State::Waiting(false, last_known_boundary.clone()),
+                State::Waiting(_, ref last_known_boundary) => {
+                    State::Waiting(false, last_known_boundary.clone())
+                }
                 State::Compressing => State::Compressing,
             };
         }
@@ -235,12 +255,14 @@ impl<C> QuickCompress<C> {
     /// # Example
     ///
     /// ```
-    /// use hoomd_mc::QuickCompress;
     /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_mc::QuickCompress;
     /// use hoomd_microstate::boundary::Closed;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let quick_compress = QuickCompress::<Closed<Rectangle>>::with_target_volume(1000.0.try_into()?);
+    /// let quick_compress = QuickCompress::<Closed<Rectangle>>::with_target_volume(
+    ///     1000.0.try_into()?,
+    /// );
     ///
     /// let maximum_energy_per_site = quick_compress.maximum_energy_per_site();
     /// # Ok(())
@@ -256,12 +278,15 @@ impl<C> QuickCompress<C> {
     /// # Example
     ///
     /// ```
-    /// use hoomd_mc::QuickCompress;
     /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_mc::QuickCompress;
     /// use hoomd_microstate::boundary::Closed;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let mut quick_compress = QuickCompress::<Closed<Rectangle>>::with_target_volume(1000.0.try_into()?);
+    /// let mut quick_compress =
+    ///     QuickCompress::<Closed<Rectangle>>::with_target_volume(
+    ///         1000.0.try_into()?,
+    ///     );
     ///
     /// *quick_compress.maximum_energy_per_site_mut() = 10.0;
     /// # Ok(())
@@ -277,12 +302,14 @@ impl<C> QuickCompress<C> {
     /// # Example
     ///
     /// ```
-    /// use hoomd_mc::QuickCompress;
     /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_mc::QuickCompress;
     /// use hoomd_microstate::boundary::Closed;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let quick_compress = QuickCompress::<Closed<Rectangle>>::with_target_volume(1000.0.try_into()?);
+    /// let quick_compress = QuickCompress::<Closed<Rectangle>>::with_target_volume(
+    ///     1000.0.try_into()?,
+    /// );
     ///
     /// let maximum_delta = quick_compress.maximum_delta();
     /// # Ok(())
@@ -298,12 +325,15 @@ impl<C> QuickCompress<C> {
     /// # Example
     ///
     /// ```
-    /// use hoomd_mc::QuickCompress;
     /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_mc::QuickCompress;
     /// use hoomd_microstate::boundary::Closed;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let mut quick_compress = QuickCompress::<Closed<Rectangle>>::with_target_volume(1000.0.try_into()?);
+    /// let mut quick_compress =
+    ///     QuickCompress::<Closed<Rectangle>>::with_target_volume(
+    ///         1000.0.try_into()?,
+    ///     );
     ///
     /// *quick_compress.maximum_delta_mut() = 0.001.try_into()?;
     /// # Ok(())
@@ -336,7 +366,7 @@ impl<C> QuickCompress<C> {
     /// bodies by small amounts to relieve the stress caused by inserting
     /// overlapping sites. Without local moves, the quick compress algorithm
     /// will not achieve the target volume.
-    /// 
+    ///
     /// [`target_volume`]: Self::target_volume
     /// [`maximum_delta`]: Self::maximum_delta
     /// [`maximum_energy_per_site`]: Self::maximum_energy_per_site
@@ -383,7 +413,7 @@ impl<C> QuickCompress<C> {
     /// for j in 0..8 {
     ///     let y = -8.0 + j as f64 * 2.0;
     ///     for i in 0..8 {
-    ///         let x = -8.0 + i as f64 * 2.0;            
+    ///         let x = -8.0 + i as f64 * 2.0;
     ///         microstate.add_body(Body::point(Cartesian::from([x, y])))?;
     ///     }
     /// }
@@ -415,8 +445,7 @@ impl<C> QuickCompress<C> {
         microstate: &mut Microstate<B, S, X, C>,
         hamiltonian: &H,
         should_map_body: F,
-    )
-    where
+    ) where
         P: Copy,
         B: Clone + Position<Position = P> + Transform<S>,
         S: Clone + Position<Position = P> + Default,
@@ -433,8 +462,7 @@ impl<C> QuickCompress<C> {
             State::Startup => {
                 self.state = State::Waiting(false, microstate.boundary().clone());
             }
-            State::Complete(ref final_boundary) if final_boundary == microstate.boundary() => {
-            }
+            State::Complete(ref final_boundary) if final_boundary == microstate.boundary() => {}
             State::Complete(_) => {
                 // While it is not intended that callers change the microstate's
                 // boundary outside `QuickCompress`, it is a possibility. Should
@@ -443,7 +471,8 @@ impl<C> QuickCompress<C> {
                 self.state = State::Waiting(false, microstate.boundary().clone());
             }
             State::Compressing => {
-                let delta_distribution = Uniform::new(0.0, self.maximum_delta.get()).expect("maximum_delta should be greater than 0.0");
+                let delta_distribution = Uniform::new(0.0, self.maximum_delta.get())
+                    .expect("maximum_delta should be greater than 0.0");
                 let delta = delta_distribution.sample(&mut rng);
                 let current_volume = microstate.boundary().volume();
 
@@ -453,10 +482,17 @@ impl<C> QuickCompress<C> {
                     (current_volume * (1.0 - delta)).max(self.target_volume.get())
                 };
 
-                let trial_boundary = microstate.boundary().scale_volume((trial_volume / current_volume)
-                    .try_into().expect("both volumes should be positive"));
-                let Ok(trial_microstate) = microstate.clone_with_boundary(trial_boundary, should_map_body) else { return };
-                let delta_energy = hamiltonian.delta_energy_total(microstate, &trial_microstate); 
+                let trial_boundary = microstate.boundary().scale_volume(
+                    (trial_volume / current_volume)
+                        .try_into()
+                        .expect("both volumes should be positive"),
+                );
+                let Ok(trial_microstate) =
+                    microstate.clone_with_boundary(trial_boundary, should_map_body)
+                else {
+                    return;
+                };
+                let delta_energy = hamiltonian.delta_energy_total(microstate, &trial_microstate);
 
                 if delta_energy > self.maximum_energy_per_site * microstate.sites().len() as f64 {
                     // The trial state is too strained. Remain in the `Compressing` state
@@ -464,7 +500,10 @@ impl<C> QuickCompress<C> {
                 } else {
                     // The trial state is valid. Transition to the waiting state and indicate
                     // whether this trial achieved the target.
-                    self.state = State::Waiting(trial_volume == self.target_volume.get(), trial_microstate.boundary().clone());
+                    self.state = State::Waiting(
+                        trial_volume == self.target_volume.get(),
+                        trial_microstate.boundary().clone(),
+                    );
                     *microstate = trial_microstate;
                 }
             }

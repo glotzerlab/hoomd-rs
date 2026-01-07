@@ -3,17 +3,17 @@
 use anyhow::{Context, anyhow};
 
 use hoomd_geometry::{
-    shape::{Circle, Rectangle}, Volume,
+    Volume,
+    shape::{Circle, Rectangle},
 };
 use hoomd_interaction::{
-    pairwise::{HardSphere, Isotropic}, univariate::{Expanded, OverlapPenalty}, MaximumInteractionRange, PairwiseCutoff
+    MaximumInteractionRange, PairwiseCutoff,
+    pairwise::{HardSphere, Isotropic},
+    univariate::{Expanded, OverlapPenalty},
 };
-use hoomd_mc::{
-    Sweep, QuickCompress, Translate,
-    Trial,
-};
+use hoomd_mc::{QuickCompress, Sweep, Translate, Trial};
 use hoomd_microstate::{
-    boundary::Periodic, property::Point, Body, Microstate, SiteKey
+    Body, Microstate, SiteKey, boundary::Periodic, property::Point,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
@@ -45,7 +45,8 @@ struct HardDiskSelfAssembly {
     /// Quick compress algorithm
     quick_compress: QuickCompress<Periodic<Rectangle>>,
     /// How sites interact during compression.
-    overlap_penalty_hamiltonian: PairwiseCutoff<Isotropic<Expanded<OverlapPenalty>>>,
+    overlap_penalty_hamiltonian:
+        PairwiseCutoff<Isotropic<Expanded<OverlapPenalty>>>,
     /// The current phase of the simulation.
     phase: Phase,
 }
@@ -73,14 +74,18 @@ impl HardDiskSelfAssembly {
         // ANCHOR_END: parameters
 
         // ANCHOR: hamiltonian
-        let hamiltonian = PairwiseCutoff(HardSphere { diameter: sigma});
+        let hamiltonian = PairwiseCutoff(HardSphere { diameter: sigma });
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: periodic
-        let circle = Circle { radius: (sigma/2.0).try_into()? };
-        let initial_box_volume = n_disks as f64 * circle.volume() / initial_packing_fraction;
+        let circle = Circle {
+            radius: (sigma / 2.0).try_into()?,
+        };
+        let initial_box_volume =
+            n_disks as f64 * circle.volume() / initial_packing_fraction;
         let initial_box_edge_length = initial_box_volume.sqrt();
-        let square = Rectangle::with_equal_edges(initial_box_edge_length.try_into()?);
+        let square =
+            Rectangle::with_equal_edges(initial_box_edge_length.try_into()?);
         let periodic_square =
             Periodic::new(hamiltonian.0.maximum_interaction_range(), square)?;
         // ANCHOR_END: periodic
@@ -104,10 +109,11 @@ impl HardDiskSelfAssembly {
             for i in 0..n_on_side {
                 let x = -initial_box_edge_length / 2.0 + i as f64 * a;
                 if microstate.bodies().len() < n_disks {
-                    microstate.add_body(Body::point(Cartesian::from([x, y])))?;
+                    microstate
+                        .add_body(Body::point(Cartesian::from([x, y])))?;
                 }
             }
-        }        
+        }
         // ANCHOR_END: place_disks
 
         // ANCHOR: trial_moves
@@ -117,13 +123,18 @@ impl HardDiskSelfAssembly {
         // ANCHOR_END: trial_moves
 
         // ANCHOR: quick_compress
-        let target_box_volume = n_disks as f64 * circle.volume() / target_packing_fraction;
-        let quick_compress = QuickCompress::with_target_volume(target_box_volume.try_into()?);
+        let target_box_volume =
+            n_disks as f64 * circle.volume() / target_packing_fraction;
+        let quick_compress =
+            QuickCompress::with_target_volume(target_box_volume.try_into()?);
         // ANCHOR_END: quick_compress
 
         // ANCHOR: compress_hamiltonian
         let overlap_penalty = Isotropic {
-            interaction: Expanded { delta: sigma, f: OverlapPenalty::default() },
+            interaction: Expanded {
+                delta: sigma,
+                f: OverlapPenalty::default(),
+            },
             r_cut: sigma,
         };
 
@@ -151,9 +162,7 @@ impl Simulation for HardDiskSelfAssembly {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
         match self.phase {
-            Phase::Compress => {
-                self.apply().context("failed to compress")?
-            }
+            Phase::Compress => self.apply().context("failed to compress")?,
             Phase::Equilibrate => self.equilibrate(),
         }
 
@@ -178,7 +187,11 @@ impl HardDiskSelfAssembly {
     fn compress(&mut self) -> anyhow::Result<()> {
         // ANCHOR_END: compress
         // ANCHOR: apply_quick_compress
-        self.quick_compress.apply(&mut self.microstate, &self.overlap_penalty_hamiltonian, |_| true);
+        self.quick_compress.apply(
+            &mut self.microstate,
+            &self.overlap_penalty_hamiltonian,
+            |_| true,
+        );
         // ANCHOR_END: apply_quick_compress
 
         // ANCHOR: compress_trial_moves

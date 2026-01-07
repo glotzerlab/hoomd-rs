@@ -408,13 +408,21 @@ pub trait Scale {
 /// use hoomd_vector::Cartesian;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let closed_a = Circle { radius: 10.0.try_into()? };
-/// let closed_b = Circle { radius: 20.0.try_into()? };
+/// let closed_a = Circle {
+///     radius: 10.0.try_into()?,
+/// };
+/// let closed_b = Circle {
+///     radius: 20.0.try_into()?,
+/// };
 ///
-/// let mapped_point = closed_a.map_point(Cartesian::from([-1.0, 1.0]), &closed_b);
+/// let mapped_point =
+///     closed_a.map_point(Cartesian::from([-1.0, 1.0]), &closed_b);
 ///
 /// assert_eq!(mapped_point, Ok(Cartesian::from([-2.0, 2.0])));
-/// assert_eq!(closed_a.map_point(Cartesian::from([-100.0, 1.0]), &closed_b), Err(hoomd_geometry::Error::PointOutsideShape));
+/// assert_eq!(
+///     closed_a.map_point(Cartesian::from([-100.0, 1.0]), &closed_b),
+///     Err(hoomd_geometry::Error::PointOutsideShape)
+/// );
 /// # Ok(())
 /// # }
 /// ```
@@ -435,7 +443,7 @@ pub enum Error {
     /// Polytopes require at least one vertex.
     #[error("a ConvexPolytope must have at least one vertex")]
     DegeneratePolytope,
-    
+
     /// The point is outside the shape.
     #[error("cannot map a point that is outside the shape")]
     PointOutsideShape,

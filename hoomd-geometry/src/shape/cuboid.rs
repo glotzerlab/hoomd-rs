@@ -470,10 +470,14 @@ impl<const N: usize> MapPoint<Cartesian<N>> for Hypercuboid<N> {
     /// let rectangle_a = Rectangle::with_equal_edges(10.0.try_into()?);
     /// let rectangle_b = Rectangle::with_equal_edges(20.0.try_into()?);
     ///
-    /// let mapped_point = rectangle_a.map_point(Cartesian::from([-1.0, 1.0]), &rectangle_b);
+    /// let mapped_point =
+    ///     rectangle_a.map_point(Cartesian::from([-1.0, 1.0]), &rectangle_b);
     ///
     /// assert_eq!(mapped_point, Ok(Cartesian::from([-2.0, 2.0])));
-    /// assert_eq!(rectangle_a.map_point(Cartesian::from([-100.0, 1.0]), &rectangle_b), Err(hoomd_geometry::Error::PointOutsideShape));
+    /// assert_eq!(
+    ///     rectangle_a.map_point(Cartesian::from([-100.0, 1.0]), &rectangle_b),
+    ///     Err(hoomd_geometry::Error::PointOutsideShape)
+    /// );
     /// # Ok(())
     /// # }
     /// ```
@@ -484,9 +488,12 @@ impl<const N: usize> MapPoint<Cartesian<N>> for Hypercuboid<N> {
         }
 
         let scale: [_; N] = array::from_fn(|i| other.edge_lengths[i] / self.edge_lengths[i]);
-        Ok(Cartesian::from(array::from_fn(|i| (scale[i].get() * point[i])
-            .clamp(-other.edge_lengths[i].get()/2.0, (other.edge_lengths[i].get()/2.0).next_down())
-            )))
+        Ok(Cartesian::from(array::from_fn(|i| {
+            (scale[i].get() * point[i]).clamp(
+                -other.edge_lengths[i].get() / 2.0,
+                (other.edge_lengths[i].get() / 2.0).next_down(),
+            )
+        })))
     }
 }
 
@@ -528,8 +535,8 @@ impl<const N: usize> Distribution<Cartesian<N>> for Hypercuboid<N> {
 #[expect(clippy::used_underscore_binding, reason = "Required for const tests.")]
 mod tests {
     use super::*;
-    use assert2::check;
     use approxim::assert_relative_eq;
+    use assert2::check;
     use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
     use rstest::*;
     use std::marker::PhantomData;
@@ -604,7 +611,10 @@ mod tests {
         ],
         l => [1e-6, 1.0, 3.456, 99_999_999.9],
     )]
-    fn test_box_volume<const N: usize>(_n: PhantomData<Hypercuboid<N>>, l: f64) -> anyhow::Result<()> {
+    fn test_box_volume<const N: usize>(
+        _n: PhantomData<Hypercuboid<N>>,
+        l: f64,
+    ) -> anyhow::Result<()> {
         let c = Hypercuboid {
             edge_lengths: [l.try_into()?; N],
         };
@@ -627,10 +637,7 @@ mod tests {
         let c = Hypercuboid {
             edge_lengths: [l.try_into()?; 3],
         };
-        check!(
-            [c.a(), c.b(), c.c()] ==
-            [l.try_into()?; 3]
-        );
+        check!([c.a(), c.b(), c.c()] == [l.try_into()?; 3]);
 
         Ok(())
     }
@@ -638,26 +645,17 @@ mod tests {
     #[test]
     fn bounding_sphere_radius_2d() -> anyhow::Result<()> {
         let cuboid = Hypercuboid {
-            edge_lengths: [
-                1.0.try_into()?,
-                1.0.try_into()?,
-            ],
+            edge_lengths: [1.0.try_into()?, 1.0.try_into()?],
         };
         assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 2.0_f64.sqrt() / 2.0);
 
         let cuboid = Hypercuboid {
-            edge_lengths: [
-                2.0.try_into()?,
-                2.0.try_into()?,
-            ],
+            edge_lengths: [2.0.try_into()?, 2.0.try_into()?],
         };
         assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 2.0_f64.sqrt());
 
         let cuboid = Hypercuboid {
-            edge_lengths: [
-                6.0.try_into()?,
-                8.0.try_into()?,
-            ],
+            edge_lengths: [6.0.try_into()?, 8.0.try_into()?],
         };
         assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 5.0);
 
@@ -667,29 +665,17 @@ mod tests {
     #[test]
     fn bounding_sphere_radius_3d() -> anyhow::Result<()> {
         let cuboid = Hypercuboid {
-            edge_lengths: [
-                1.0.try_into()?,
-                1.0.try_into()?,
-                1.0.try_into()?,
-            ],
+            edge_lengths: [1.0.try_into()?, 1.0.try_into()?, 1.0.try_into()?],
         };
         assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 3.0_f64.sqrt() / 2.0);
 
         let cuboid = Hypercuboid {
-            edge_lengths: [
-                2.0.try_into()?,
-                2.0.try_into()?,
-                2.0.try_into()?,
-            ],
+            edge_lengths: [2.0.try_into()?, 2.0.try_into()?, 2.0.try_into()?],
         };
         assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 3.0_f64.sqrt());
 
         let cuboid = Hypercuboid {
-            edge_lengths: [
-                2.0.try_into()?,
-                4.0.try_into()?,
-                6.0.try_into()?,
-            ],
+            edge_lengths: [2.0.try_into()?, 4.0.try_into()?, 6.0.try_into()?],
         };
         assert_relative_eq!(cuboid.bounding_sphere_radius().get(), 14.0_f64.sqrt());
 
@@ -699,10 +685,7 @@ mod tests {
     #[test]
     fn support_mapping_2d() -> anyhow::Result<()> {
         let cuboid = Hypercuboid {
-            edge_lengths: [
-                2.0.try_into()?,
-                4.0.try_into()?,
-            ],
+            edge_lengths: [2.0.try_into()?, 4.0.try_into()?],
         };
 
         assert_relative_eq!(
@@ -728,11 +711,7 @@ mod tests {
     #[test]
     fn support_mapping_3d() -> anyhow::Result<()> {
         let cuboid = Hypercuboid {
-            edge_lengths: [
-                2.0.try_into()?,
-                4.0.try_into()?,
-                6.0.try_into()?,
-            ],
+            edge_lengths: [2.0.try_into()?, 4.0.try_into()?, 6.0.try_into()?],
         };
 
         assert_relative_eq!(
@@ -774,10 +753,7 @@ mod tests {
     #[test]
     fn is_point_inside() -> anyhow::Result<()> {
         let cuboid = Hypercuboid {
-            edge_lengths: [
-                2.0.try_into()?,
-                4.0.try_into()?,
-            ],
+            edge_lengths: [2.0.try_into()?, 4.0.try_into()?],
         };
 
         check!(cuboid.is_point_inside(&Cartesian::from([0.0, 0.0])));
@@ -797,10 +773,7 @@ mod tests {
     #[test]
     fn distribution() -> anyhow::Result<()> {
         let cuboid = Hypercuboid {
-            edge_lengths: [
-                6.0.try_into()?,
-                10.0.try_into()?,
-            ],
+            edge_lengths: [6.0.try_into()?, 10.0.try_into()?],
         };
         let mut rng = StdRng::seed_from_u64(3);
 
@@ -817,10 +790,7 @@ mod tests {
     #[test]
     fn test_scale_length() -> anyhow::Result<()> {
         let cuboid = Hypercuboid {
-            edge_lengths: [
-                6.0.try_into()?,
-                10.0.try_into()?,
-            ],
+            edge_lengths: [6.0.try_into()?, 10.0.try_into()?],
         };
 
         let scaled_cuboid = cuboid.scale_length(2.0.try_into()?);
@@ -837,10 +807,7 @@ mod tests {
     #[test]
     fn test_scale_volume() -> anyhow::Result<()> {
         let cuboid = Hypercuboid {
-            edge_lengths: [
-                6.0.try_into()?,
-                10.0.try_into()?,
-            ],
+            edge_lengths: [6.0.try_into()?, 10.0.try_into()?],
         };
 
         let scaled_cuboid = cuboid.scale_volume(4.0.try_into()?);
@@ -857,30 +824,48 @@ mod tests {
     #[test]
     fn test_map_basic() -> anyhow::Result<()> {
         let cuboid_a = Hypercuboid {
-            edge_lengths: [
-                6.0.try_into()?,
-                10.0.try_into()?,
-            ],
+            edge_lengths: [6.0.try_into()?, 10.0.try_into()?],
         };
 
         let cuboid_b = Hypercuboid {
-            edge_lengths: [
-                12.0.try_into()?,
-                5.0.try_into()?,
-            ],
+            edge_lengths: [12.0.try_into()?, 5.0.try_into()?],
         };
 
-        check!(cuboid_a.map_point(Cartesian::from([0.0, 0.0]), &cuboid_b) == Ok(Cartesian::from([0.0, 0.0])));
-        check!(cuboid_b.map_point(Cartesian::from([0.0, 0.0]), &cuboid_a) == Ok(Cartesian::from([0.0, 0.0])));
+        check!(
+            cuboid_a.map_point(Cartesian::from([0.0, 0.0]), &cuboid_b)
+                == Ok(Cartesian::from([0.0, 0.0]))
+        );
+        check!(
+            cuboid_b.map_point(Cartesian::from([0.0, 0.0]), &cuboid_a)
+                == Ok(Cartesian::from([0.0, 0.0]))
+        );
 
-        check!(cuboid_a.map_point(Cartesian::from([100.0, 0.0]), &cuboid_b) == Err(Error::PointOutsideShape));
-        check!(cuboid_b.map_point(Cartesian::from([0.0, -200.0]), &cuboid_a) == Err(Error::PointOutsideShape));
+        check!(
+            cuboid_a.map_point(Cartesian::from([100.0, 0.0]), &cuboid_b)
+                == Err(Error::PointOutsideShape)
+        );
+        check!(
+            cuboid_b.map_point(Cartesian::from([0.0, -200.0]), &cuboid_a)
+                == Err(Error::PointOutsideShape)
+        );
 
-        check!(cuboid_a.map_point(Cartesian::from([2.0, 1.0]), &cuboid_b) == Ok(Cartesian::from([4.0, 0.5])));
-        check!(cuboid_b.map_point(Cartesian::from([-4.0, 0.5]), &cuboid_a) == Ok(Cartesian::from([-2.0, 1.0])));
+        check!(
+            cuboid_a.map_point(Cartesian::from([2.0, 1.0]), &cuboid_b)
+                == Ok(Cartesian::from([4.0, 0.5]))
+        );
+        check!(
+            cuboid_b.map_point(Cartesian::from([-4.0, 0.5]), &cuboid_a)
+                == Ok(Cartesian::from([-2.0, 1.0]))
+        );
 
-        check!(cuboid_a.map_point(Cartesian::from([-3.0, -5.0]), &cuboid_b) == Ok(Cartesian::from([-6.0, -2.5])));
-        check!(cuboid_b.map_point(Cartesian::from([-6.0, -2.5]), &cuboid_a) == Ok(Cartesian::from([-3.0, -5.0])));
+        check!(
+            cuboid_a.map_point(Cartesian::from([-3.0, -5.0]), &cuboid_b)
+                == Ok(Cartesian::from([-6.0, -2.5]))
+        );
+        check!(
+            cuboid_b.map_point(Cartesian::from([-6.0, -2.5]), &cuboid_a)
+                == Ok(Cartesian::from([-3.0, -5.0]))
+        );
 
         Ok(())
     }
@@ -901,12 +886,22 @@ mod tests {
             // round  and place a point just outside the shape. This test fails
             // when the `.clamp` call in `map_point` is commented out.
 
-            let lower_left = cuboid_a.map_point(Cartesian::from([-a/2.0, -a/2.0]), &cuboid_b)?;
-            check!(cuboid_b.is_point_inside(&lower_left), "{lower_left:?} should be inside {cuboid_b:?}");
+            let lower_left =
+                cuboid_a.map_point(Cartesian::from([-a / 2.0, -a / 2.0]), &cuboid_b)?;
+            check!(
+                cuboid_b.is_point_inside(&lower_left),
+                "{lower_left:?} should be inside {cuboid_b:?}"
+            );
 
-            let upper_right = cuboid_a.map_point(Cartesian::from([(a/2.0).next_down(), (a/2.0).next_down()]), &cuboid_b)?;
-            check!(cuboid_b.is_point_inside(&upper_right), "{upper_right:?} should be inside {cuboid_b:?}");
-            }
+            let upper_right = cuboid_a.map_point(
+                Cartesian::from([(a / 2.0).next_down(), (a / 2.0).next_down()]),
+                &cuboid_b,
+            )?;
+            check!(
+                cuboid_b.is_point_inside(&upper_right),
+                "{upper_right:?} should be inside {cuboid_b:?}"
+            );
+        }
 
         Ok(())
     }

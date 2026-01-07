@@ -201,13 +201,18 @@ where
     ///     plane_normal: [0.0, 1.0].try_into()?,
     /// });
     ///
-    /// let delta_energy_total = linear.delta_energy_total(&microstate_a, &microstate_b);
+    /// let delta_energy_total =
+    ///     linear.delta_energy_total(&microstate_a, &microstate_b);
     /// assert_eq!(delta_energy_total, 1.0);
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    fn delta_energy_total(&self, initial_microstate: &Microstate<B, S, X, C>, final_microstate: &Microstate<B, S, X, C>) -> f64 {
+    fn delta_energy_total(
+        &self,
+        initial_microstate: &Microstate<B, S, X, C>,
+        final_microstate: &Microstate<B, S, X, C>,
+    ) -> f64 {
         let mut energy_final = 0.0;
         for site in final_microstate.sites() {
             let one = self.0.site_energy(&site.properties);

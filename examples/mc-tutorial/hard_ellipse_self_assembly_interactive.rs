@@ -134,7 +134,7 @@ fn sync_boundary(
     children: Query<&Children>,
     transforms: Query<&mut Transform>,
     simulation: Res<HardEllipseSelfAssembly>,
-    ) {
+) {
     let l =
         simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
     RectangularBoundary::sync(entity_rectangle, children, transforms, l, l);

@@ -65,7 +65,10 @@ impl TryFrom<f64> for OpenUnitIntervalNumber {
     /// use hoomd_utility::valid::OpenUnitIntervalNumber;
     ///
     /// let result = OpenUnitIntervalNumber::try_from(2.0);
-    /// assert!(matches!(result, Err(hoomd_utility::Error::NotInOpenUnitInterval(_))));
+    /// assert!(matches!(
+    ///     result,
+    ///     Err(hoomd_utility::Error::NotInOpenUnitInterval(_))
+    /// ));
     /// ```
     ///
     /// # Errors

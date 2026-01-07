@@ -81,7 +81,7 @@ where
 
 impl<T> Scale for Closed<T>
 where
-    T: Scale
+    T: Scale,
 {
     /// Scale the wrapped shape.
     ///
@@ -106,7 +106,7 @@ where
     fn scale_length(&self, v: PositiveReal) -> Self {
         Self(self.0.scale_length(v))
     }
-    
+
     /// Scale the wrapped shape.
     ///
     /// # Example
@@ -132,7 +132,7 @@ where
 
 impl<P, T> MapPoint<P> for Closed<T>
 where
-    T: MapPoint<P>
+    T: MapPoint<P>,
 {
     /// Map a point in the wrapped shape to another.
     ///
@@ -152,10 +152,14 @@ where
     /// let closed_a = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
     /// let closed_b = Closed(Rectangle::with_equal_edges(20.0.try_into()?));
     ///
-    /// let mapped_point = closed_a.map_point(Cartesian::from([-1.0, 1.0]), &closed_b);
+    /// let mapped_point =
+    ///     closed_a.map_point(Cartesian::from([-1.0, 1.0]), &closed_b);
     ///
     /// assert_eq!(mapped_point, Ok(Cartesian::from([-2.0, 2.0])));
-    /// assert_eq!(closed_a.map_point(Cartesian::from([-100.0, 1.0]), &closed_b), Err(hoomd_geometry::Error::PointOutsideShape));
+    /// assert_eq!(
+    ///     closed_a.map_point(Cartesian::from([-100.0, 1.0]), &closed_b),
+    ///     Err(hoomd_geometry::Error::PointOutsideShape)
+    /// );
     /// # Ok(())
     /// # }
     /// ```
@@ -167,7 +171,7 @@ where
 
 impl<T> Volume for Closed<T>
 where
-    T: Volume
+    T: Volume,
 {
     /// Volume of the wrapped shape.
     ///

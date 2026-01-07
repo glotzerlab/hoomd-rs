@@ -34,8 +34,7 @@ pub(crate) fn main() -> anyhow::Result<()> {
     hoomd_bevy_plugin.build(&mut app);
     app.add_systems(
         Startup,
-        (|| disk::MaterialParameters::default())
-        .pipe(disk::Disk::<A>::setup),
+        (|| disk::MaterialParameters::default()).pipe(disk::Disk::<A>::setup),
     );
     app.add_systems(
         Startup,
@@ -85,7 +84,7 @@ fn sync_sites(
                     site.properties.position[1] as f32,
                     0.0,
                 ),
-                1.0f32
+                1.0f32,
             )
         }),
     );
@@ -110,7 +109,7 @@ fn sync_ghosts(
                     site.properties.position[1] as f32,
                     0.0,
                 ),
-                1.0f32
+                1.0f32,
             )
         }),
     );
@@ -122,10 +121,8 @@ fn sync_boundary(
     children: Query<&Children>,
     transforms: Query<&mut Transform>,
     simulation: Res<HardDiskSelfAssembly>,
-    ) {
+) {
     let l =
         simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
     RectangularBoundary::sync(entity_rectangle, children, transforms, l, l);
 }
-    
-    

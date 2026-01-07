@@ -1327,8 +1327,11 @@ where
     ///
     /// ```
     /// use hoomd_geometry::shape::Rectangle;
-    /// use hoomd_microstate::{Microstate, boundary::Closed};
-    /// use hoomd_microstate::{Body, property::{Point, Position}};
+    /// use hoomd_microstate::{
+    ///     Body, Microstate,
+    ///     boundary::Closed,
+    ///     property::{Point, Position},
+    /// };
     /// use hoomd_vector::Cartesian;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     ///
@@ -1341,11 +1344,17 @@ where
     ///
     /// let new_square = Closed(Rectangle::with_equal_edges(20.0.try_into()?));
     ///
-    /// let new_microstate = microstate.clone_with_boundary(new_square,
-    ///     |body| body.tag > 0)?;
+    /// let new_microstate =
+    ///     microstate.clone_with_boundary(new_square, |body| body.tag > 0)?;
     ///
-    /// assert_eq!(*new_microstate.bodies()[0].item.properties.position(), Cartesian::from([1.0, 2.0]));
-    /// assert_eq!(*new_microstate.bodies()[1].item.properties.position(), Cartesian::from([6.0, 8.0]));
+    /// assert_eq!(
+    ///     *new_microstate.bodies()[0].item.properties.position(),
+    ///     Cartesian::from([1.0, 2.0])
+    /// );
+    /// assert_eq!(
+    ///     *new_microstate.bodies()[1].item.properties.position(),
+    ///     Cartesian::from([6.0, 8.0])
+    /// );
     /// # Ok(())
     /// # }
     /// ```
@@ -1357,7 +1366,12 @@ where
         clippy::missing_panics_doc,
         reason = "Panic would occur due to a bug in hoomd-rs."
     )]
-    pub fn clone_with_boundary<F>(&self, new_boundary: C, should_map_body: F) -> Result<Microstate<B, S, X, C>, Error> where
+    pub fn clone_with_boundary<F>(
+        &self,
+        new_boundary: C,
+        should_map_body: F,
+    ) -> Result<Microstate<B, S, X, C>, Error>
+    where
         F: Fn(&Tagged<Body<B, S>>) -> bool,
     {
         // clone_with_boundary is used in Monte Carlo methods, such as box trial
@@ -1381,14 +1395,16 @@ where
             let tagged_body = &new_microstate.bodies()[body_index];
             let mut new_properties = tagged_body.item.properties.clone();
             if should_map_body(tagged_body) {
-                *new_properties.position_mut() = self.boundary.map_point(*new_properties.position(), &new_microstate.boundary)
+                *new_properties.position_mut() = self
+                    .boundary
+                    .map_point(*new_properties.position(), &new_microstate.boundary)
                     .expect("body position should be inside the boundary");
             }
 
             new_microstate.update_body_properties(body_index, new_properties)?;
         }
 
-        Ok(new_microstate)        
+        Ok(new_microstate)
     }
 }
 

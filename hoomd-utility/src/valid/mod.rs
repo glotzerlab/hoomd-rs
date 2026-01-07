@@ -3,8 +3,8 @@
 
 //! Ensure that values are in well-defined ranges.
 
-mod positive_real;
 mod open_unit_interval_number;
+mod positive_real;
 
-pub use positive_real::PositiveReal;
 pub use open_unit_interval_number::OpenUnitIntervalNumber;
+pub use positive_real::PositiveReal;

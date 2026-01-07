@@ -136,7 +136,10 @@ impl<T> Periodic<T> {
     /// # Ok(())
     /// # }
     /// ```
-    #[expect(clippy::same_name_method, reason="MaximumInteractionRange is a trait in hoomd-interaction")]
+    #[expect(
+        clippy::same_name_method,
+        reason = "MaximumInteractionRange is a trait in hoomd-interaction"
+    )]
     #[inline]
     pub fn maximum_interaction_range(&self) -> f64 {
         self.maximum_interaction_range
@@ -177,7 +180,7 @@ where
 
 impl<T> Scale for Periodic<T>
 where
-    T: fmt::Debug + Scale + MaximumAllowableInteractionRange
+    T: fmt::Debug + Scale + MaximumAllowableInteractionRange,
 {
     /// Scale the wrapped shape.
     ///
@@ -220,16 +223,18 @@ where
     #[inline]
     fn scale_length(&self, v: PositiveReal) -> Self {
         let new_shape = self.shape.scale_length(v);
-        assert!(new_shape.maximum_allowable_interaction_range() >= self.maximum_interaction_range,
+        assert!(
+            new_shape.maximum_allowable_interaction_range() >= self.maximum_interaction_range,
             "The scaled periodic boundary {new_shape:?} is too small for the maximum interaction range {}",
-            self.maximum_interaction_range);
-                
+            self.maximum_interaction_range
+        );
+
         Self {
             shape: new_shape,
             ..*self
         }
     }
-    
+
     /// Scale the wrapped shape.
     ///
     /// # Panics
@@ -271,10 +276,12 @@ where
     #[inline]
     fn scale_volume(&self, v: PositiveReal) -> Self {
         let new_shape = self.shape.scale_volume(v);
-        assert!(new_shape.maximum_allowable_interaction_range() >= self.maximum_interaction_range,
+        assert!(
+            new_shape.maximum_allowable_interaction_range() >= self.maximum_interaction_range,
             "The scaled periodic boundary {new_shape:?} is too small for the maximum interaction range {}",
-            self.maximum_interaction_range);
-                
+            self.maximum_interaction_range
+        );
+
         Self {
             shape: new_shape,
             ..*self
@@ -284,7 +291,7 @@ where
 
 impl<P, T> MapPoint<P> for Periodic<T>
 where
-    T: MapPoint<P>
+    T: MapPoint<P>,
 {
     /// Map points in from the wrapped shape into another periodic boundary.
     ///
@@ -306,10 +313,14 @@ where
     /// let periodic_b =
     ///     Periodic::new(2.5, Rectangle::with_equal_edges(20.0.try_into()?))?;
     ///
-    /// let mapped_point = periodic_a.map_point(Cartesian::from([-1.0, 1.0]), &periodic_b);
+    /// let mapped_point =
+    ///     periodic_a.map_point(Cartesian::from([-1.0, 1.0]), &periodic_b);
     ///
     /// assert_eq!(mapped_point, Ok(Cartesian::from([-2.0, 2.0])));
-    /// assert_eq!(periodic_a.map_point(Cartesian::from([-100.0, 1.0]), &periodic_b), Err(hoomd_geometry::Error::PointOutsideShape));
+    /// assert_eq!(
+    ///     periodic_a.map_point(Cartesian::from([-100.0, 1.0]), &periodic_b),
+    ///     Err(hoomd_geometry::Error::PointOutsideShape)
+    /// );
     /// # Ok(())
     /// # }
     /// ```
@@ -321,7 +332,7 @@ where
 
 impl<T> Volume for Periodic<T>
 where
-    T: Volume
+    T: Volume,
 {
     /// Volume of the wrapped shape.
     ///
@@ -346,7 +357,6 @@ where
         self.shape.volume()
     }
 }
-        
 
 #[cfg(test)]
 mod tests {

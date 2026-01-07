@@ -520,10 +520,7 @@ where
     }
 
     /// Quit.
-    fn quit(
-        mut quit: MessageReader<Quit>,
-        mut exit: MessageWriter<AppExit>,
-        ) {
+    fn quit(mut quit: MessageReader<Quit>, mut exit: MessageWriter<AppExit>) {
         if !quit.is_empty() {
             exit.write(AppExit::Success);
         }
@@ -684,10 +681,7 @@ where
             .add_message::<ResetCamera>()
             .add_message::<AdvanceSimulation>()
             .add_message::<Quit>()
-            .add_systems(
-                Update,
-                Self::quit.run_if(on_message::<Quit>),
-            );
+            .add_systems(Update, Self::quit.run_if(on_message::<Quit>));
 
         match initial_camera {
             InitialCamera::Orthographic2d(initial_viewport_height) => {

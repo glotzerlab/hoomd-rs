@@ -481,13 +481,18 @@ where
     ///     r_cut: 2.5,
     /// });
     ///
-    /// let delta_energy_total = pairwise_cutoff.delta_energy_total(&microstate_a, &microstate_b);
+    /// let delta_energy_total =
+    ///     pairwise_cutoff.delta_energy_total(&microstate_a, &microstate_b);
     /// assert_eq!(delta_energy_total, 1.5);
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    fn delta_energy_total(&self, initial_microstate: &Microstate<B, S, X, C>, final_microstate: &Microstate<B, S, X, C>) -> f64 {
+    fn delta_energy_total(
+        &self,
+        initial_microstate: &Microstate<B, S, X, C>,
+        final_microstate: &Microstate<B, S, X, C>,
+    ) -> f64 {
         let mut energy_final = 0.0;
 
         for site_i in final_microstate.sites() {
@@ -509,7 +514,9 @@ where
                 let one = self.filtered_site_energy(
                     initial_microstate,
                     &site_i.properties,
-                    |site_j| site_i.site_tag < site_j.site_tag && site_i.body_tag != site_j.body_tag,
+                    |site_j| {
+                        site_i.site_tag < site_j.site_tag && site_i.body_tag != site_j.body_tag
+                    },
                     E::site_pair_energy_initial,
                 );
                 if one == f64::INFINITY {
@@ -1065,7 +1072,11 @@ mod tests_finite {
                     - pairwise_cutoff.total_energy(&microstate_initial);
 
                 assert_relative_eq!(delta_energy_one, delta_energy_total, epsilon = 1e-10);
-                assert_relative_eq!(pairwise_cutoff.delta_energy_total(&microstate_initial, &microstate_final), delta_energy_total, epsilon = 1e-10);
+                assert_relative_eq!(
+                    pairwise_cutoff.delta_energy_total(&microstate_initial, &microstate_final),
+                    delta_energy_total,
+                    epsilon = 1e-10
+                );
             }
 
             Ok(())
@@ -1541,9 +1552,14 @@ mod test_infinite {
             let pairwise_cutoff = PairwiseCutoff(HardSphere { diameter: 1.0 });
 
             check!(pairwise_cutoff.delta_energy_total(&microstate_0, &microstate_0) == 0.0);
-            check!(pairwise_cutoff.delta_energy_total(&microstate_0, &microstate_inf) == f64::INFINITY);
+            check!(
+                pairwise_cutoff.delta_energy_total(&microstate_0, &microstate_inf) == f64::INFINITY
+            );
             check!(pairwise_cutoff.delta_energy_total(&microstate_inf, &microstate_0) == 0.0);
-            check!(pairwise_cutoff.delta_energy_total(&microstate_inf, &microstate_inf) == f64::INFINITY);
+            check!(
+                pairwise_cutoff.delta_energy_total(&microstate_inf, &microstate_inf)
+                    == f64::INFINITY
+            );
 
             Ok(())
         }

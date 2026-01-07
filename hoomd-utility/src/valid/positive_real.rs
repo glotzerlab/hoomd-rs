@@ -3,7 +3,10 @@
 
 //! Implement `PositiveReal`
 
-use std::{fmt, ops::{Div, DivAssign, Mul, MulAssign}};
+use std::{
+    fmt,
+    ops::{Div, DivAssign, Mul, MulAssign},
+};
 
 use crate::Error;
 

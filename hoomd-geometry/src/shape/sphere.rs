@@ -2,7 +2,10 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Hypersphere`]
-use crate::{BoundingSphereRadius, Error, IntersectsAt, IsPointInside, MapPoint, Scale, SupportMapping, Volume};
+use crate::{
+    BoundingSphereRadius, Error, IntersectsAt, IsPointInside, MapPoint, Scale, SupportMapping,
+    Volume,
+};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation, distribution::Ball};
 
@@ -360,13 +363,21 @@ impl<const N: usize> MapPoint<Cartesian<N>> for Hypersphere<N> {
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let closed_a = Circle { radius: 10.0.try_into()? };
-    /// let closed_b = Circle { radius: 20.0.try_into()? };
+    /// let closed_a = Circle {
+    ///     radius: 10.0.try_into()?,
+    /// };
+    /// let closed_b = Circle {
+    ///     radius: 20.0.try_into()?,
+    /// };
     ///
-    /// let mapped_point = closed_a.map_point(Cartesian::from([-1.0, 1.0]), &closed_b);
+    /// let mapped_point =
+    ///     closed_a.map_point(Cartesian::from([-1.0, 1.0]), &closed_b);
     ///
     /// assert_eq!(mapped_point, Ok(Cartesian::from([-2.0, 2.0])));
-    /// assert_eq!(closed_a.map_point(Cartesian::from([-100.0, 1.0]), &closed_b), Err(hoomd_geometry::Error::PointOutsideShape));
+    /// assert_eq!(
+    ///     closed_a.map_point(Cartesian::from([-100.0, 1.0]), &closed_b),
+    ///     Err(hoomd_geometry::Error::PointOutsideShape)
+    /// );
     /// # Ok(())
     /// # }
     /// ```
@@ -387,7 +398,11 @@ impl<const N: usize> MapPoint<Cartesian<N>> for Hypersphere<N> {
                 return Ok(point);
             }
 
-            scale = scale.get().next_down().try_into().expect("scale should remain a positive real");
+            scale = scale
+                .get()
+                .next_down()
+                .try_into()
+                .expect("scale should remain a positive real");
         }
     }
 }
@@ -433,10 +448,14 @@ impl<const N: usize> Distribution<Cartesian<N>> for Hypersphere<N> {
 mod tests {
     use super::*;
     use crate::Convex;
-    use assert2::check;
     use approxim::assert_relative_eq;
+    use assert2::check;
     use hoomd_vector::{Cartesian, Versor};
-    use rand::{SeedableRng, distr::{Distribution, Uniform}, rngs::StdRng};
+    use rand::{
+        SeedableRng,
+        distr::{Distribution, Uniform},
+        rngs::StdRng,
+    };
     use rstest::*;
     use std::marker::PhantomData;
 
@@ -642,17 +661,41 @@ mod tests {
         let circle_a = Circle::with_radius(4.0.try_into()?);
         let circle_b = Circle::with_radius(8.0.try_into()?);
 
-        check!(circle_a.map_point(Cartesian::from([0.0, 0.0]), &circle_b) == Ok(Cartesian::from([0.0, 0.0])));
-        check!(circle_b.map_point(Cartesian::from([0.0, 0.0]), &circle_a) == Ok(Cartesian::from([0.0, 0.0])));
+        check!(
+            circle_a.map_point(Cartesian::from([0.0, 0.0]), &circle_b)
+                == Ok(Cartesian::from([0.0, 0.0]))
+        );
+        check!(
+            circle_b.map_point(Cartesian::from([0.0, 0.0]), &circle_a)
+                == Ok(Cartesian::from([0.0, 0.0]))
+        );
 
-        check!(circle_a.map_point(Cartesian::from([100.0, 0.0]), &circle_b) == Err(Error::PointOutsideShape));
-        check!(circle_b.map_point(Cartesian::from([0.0, -200.0]), &circle_a) == Err(Error::PointOutsideShape));
+        check!(
+            circle_a.map_point(Cartesian::from([100.0, 0.0]), &circle_b)
+                == Err(Error::PointOutsideShape)
+        );
+        check!(
+            circle_b.map_point(Cartesian::from([0.0, -200.0]), &circle_a)
+                == Err(Error::PointOutsideShape)
+        );
 
-        check!(circle_a.map_point(Cartesian::from([3.0, 0.0]), &circle_b) == Ok(Cartesian::from([6.0, 0.0])));
-        check!(circle_b.map_point(Cartesian::from([-6.0, 0.0]), &circle_a) == Ok(Cartesian::from([-3.0, 0.0])));
+        check!(
+            circle_a.map_point(Cartesian::from([3.0, 0.0]), &circle_b)
+                == Ok(Cartesian::from([6.0, 0.0]))
+        );
+        check!(
+            circle_b.map_point(Cartesian::from([-6.0, 0.0]), &circle_a)
+                == Ok(Cartesian::from([-3.0, 0.0]))
+        );
 
-        check!(circle_a.map_point(Cartesian::from([-1.0, 2.0]), &circle_b) == Ok(Cartesian::from([-2.0, 4.0])));
-        check!(circle_b.map_point(Cartesian::from([2.0, -4.0]), &circle_a) == Ok(Cartesian::from([1.0, -2.0])));
+        check!(
+            circle_a.map_point(Cartesian::from([-1.0, 2.0]), &circle_b)
+                == Ok(Cartesian::from([-2.0, 4.0]))
+        );
+        check!(
+            circle_b.map_point(Cartesian::from([2.0, -4.0]), &circle_a)
+                == Ok(Cartesian::from([1.0, -2.0]))
+        );
 
         Ok(())
     }
@@ -675,16 +718,28 @@ mod tests {
             // without corner case handling in `map_point`.
 
             let left = circle_a.map_point(Cartesian::from([(-a).next_up(), 0.0]), &circle_b)?;
-            check!(circle_b.is_point_inside(&left), "{left:?} should be inside {circle_b:?}");
-            
+            check!(
+                circle_b.is_point_inside(&left),
+                "{left:?} should be inside {circle_b:?}"
+            );
+
             let right = circle_a.map_point(Cartesian::from([a.next_down(), 0.0]), &circle_b)?;
-            check!(circle_b.is_point_inside(&right), "{right:?} should be inside {circle_b:?}");
-            
+            check!(
+                circle_b.is_point_inside(&right),
+                "{right:?} should be inside {circle_b:?}"
+            );
+
             let bottom = circle_a.map_point(Cartesian::from([0.0, (-a).next_up()]), &circle_b)?;
-            check!(circle_b.is_point_inside(&bottom), "{bottom:?} should be inside {circle_b:?}");
-            
+            check!(
+                circle_b.is_point_inside(&bottom),
+                "{bottom:?} should be inside {circle_b:?}"
+            );
+
             let top = circle_a.map_point(Cartesian::from([0.0, a.next_down()]), &circle_b)?;
-            check!(circle_b.is_point_inside(&top), "{top:?} should be inside {circle_b:?}");
+            check!(
+                circle_b.is_point_inside(&top),
+                "{top:?} should be inside {circle_b:?}"
+            );
 
             for _ in 0..32 {
                 let theta = uniform_angle.sample(&mut rng);
@@ -696,11 +751,14 @@ mod tests {
                 if !circle_a.is_point_inside(&point) {
                     continue;
                 }
-                
+
                 let mapped_point = circle_a.map_point(point, &circle_b)?;
-                check!(circle_b.is_point_inside(&mapped_point), "{mapped_point:?} should be inside {circle_b:?}");
-                }
+                check!(
+                    circle_b.is_point_inside(&mapped_point),
+                    "{mapped_point:?} should be inside {circle_b:?}"
+                );
             }
+        }
 
         Ok(())
     }
