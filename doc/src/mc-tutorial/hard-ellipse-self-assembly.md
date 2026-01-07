@@ -130,6 +130,12 @@ In 2D simulations, `Rotate` uniformly selects a random angle between
 
 #### Quickly Insert Bodies
 
+The [Hard Disk Self-Assembly] tutorial placed disks on a square lattice. While
+the same can be done for hard ellipses, the process is not as simple. Instead,
+this tutorial uses `QuickInsert` to randomly place the ellipses.
+
+[Hard Disk Self-Assembly]: hard-disk-self-assembly.md
+
 `QuickInsert` will add *up to* `n_bodies` new bodies to the microstate
 drawn randomly from the given distribution. `UniformIn` generates bodies
 with positions uniformly distributed in the given `boundary` and orientations
@@ -231,7 +237,7 @@ Implement the `initialize` phase:
 #### Add New Bodies and Compress
 
 The `quick_insert.apply` method adds new randomly placed bodies to the microstate and
-`quick_compress.compress` irreversibly compresses the microstate toward the
+`quick_compress.apply` irreversibly compresses the microstate toward the
 target boundary volume. Insert all `n_bodies` ellipses first, *then* compress
 to the target volume:
 ```rust,ignore
@@ -280,13 +286,14 @@ condition and report an error:
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-ellipse-self-assembly.rs:failed}}
 ```
 
-You can use the `anyhow` crate to report errors with context. Set `box_height`
-to `4.0`, run the example, and you should get an error similar to:
+You can use the `anyhow` crate to report errors with context. Set
+`initial_packing_fraction` to `1.0`, run the example, and you should get an
+error similar to:
 ```text
 Error: failed to initialize
 
 Caused by:
-    83 of 820 bodies inserted after 10000 steps
+    inserted 391/512 bodies and compressed to 80.4247719318987 / 114.89253133128388
 ```
 
 ### Equilibrate
@@ -298,7 +305,8 @@ trial moves with the hard overlap Hamiltonian (`hamiltonian`):
 ```
 
 Equilibration never ends in this tutorial. In your own simulations, you might
-transition to a production phase after a certain number of steps.
+transition to a production phase after a certain number of steps and eventually
+complete the simulation.
 
 ## Implement `main()`
 
@@ -323,7 +331,7 @@ to add bodies.
 
 Navigate to the top of the page and refresh to see the simulation in action
 again. Notice that ellipses are first added in a large batch. Once all the
-overlaps are removed, another batch appears. After all 820 ellipses are in the
+overlaps are removed, another batch appears. After all all ellipses are in the
 microstate and not overlapping, the simulation compresses to a higher packing
 fraction. After that, it speeds up as it begins using the more efficient hard
 particle overlap Hamiltonian. Watch the simulation long enough and you should
@@ -331,7 +339,7 @@ see domains form where all the ellipses point in roughly the same direction
 while at the same time there is no translational order. This is the nematic
 phase.
 
-Alternately, you can run the example in batch mode and then open
+You can also run the example in batch mode and then open
 the generated `trajectory.gsd` in [Ovito] or another visualization tool:
 ```shell
 cargo run --release --example hard-ellipse-self-assembly

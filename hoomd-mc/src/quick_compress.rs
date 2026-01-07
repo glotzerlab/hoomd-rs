@@ -15,7 +15,7 @@ use hoomd_utility::valid::{OpenUnitIntervalNumber, PositiveReal};
 /// Track the state of a given `QuickCompress` instance.
 #[derive(Default, Clone, Debug, PartialEq)]
 enum State<C> {
-    /// `compress` has not yet been called.
+    /// `apply` has not yet been called.
     #[default]
     Startup,
     /// Waiting for all overlaps to be removed.
@@ -45,7 +45,7 @@ enum State<C> {
 /// stores internal state to track its progress. Therefore, you should only use
 /// a given [`QuickCompress`] on one [`Microstate`].
 ///
-/// When not complete, [`compress`] takes the following steps:
+/// When not complete, [`apply`] takes the following steps:
 /// 1. Check the total energy of the given Hamiltonian.
 /// 2. If the total energy is less than or equal to zero *and* the microstate
 ///    boundary's volume does not match [`target_volume`], compress (or
@@ -55,13 +55,13 @@ enum State<C> {
 ///
 /// When the target volume is reached *and* the total energy is less than
 /// or equal to 0, [`QuickCompress`] transitions to the complete state.
-/// When complete, [`is_complete`] returns `true` and [`compress`] returns
+/// When complete, [`is_complete`] returns `true` and [`apply`] returns
 /// immediately.
 ///
 /// The generic type names are:
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 ///
-/// [`compress`]: Self::compress
+/// [`apply`]: Self::apply
 /// [`maximum_energy_per_site`]: Self::maximum_energy_per_site
 /// [`target_volume`]: Self::target_volume
 /// [`is_complete`]: Self::is_complete
@@ -142,10 +142,10 @@ impl<C> QuickCompress<C> {
     ///
     /// `is_complete` will return `true` when the microstate has reached the
     /// target volume *and* the total energy of the system was less than or
-    /// equal to zero during a call to [`compress`]. After that, `is_complete`
+    /// equal to zero during a call to [`apply`]. After that, `is_complete`
     /// will continue to return `true` even when the system energy changes.
     ///
-    /// [`compress`]: Self::compress
+    /// [`apply`]: Self::apply
     ///
     /// # Example
     ///
@@ -228,9 +228,9 @@ impl<C> QuickCompress<C> {
 
     /// Get the maximum energy per site.
     ///
-    /// The largest energy per site allowed after a [`compress`] trial.
+    /// The largest energy per site allowed during [`apply`].
     ///
-    /// [`compress`]: Self::compress
+    /// [`apply`]: Self::compress
     ///
     /// # Example
     ///
@@ -317,7 +317,7 @@ impl<C> QuickCompress<C> {
     /// Apply the quick compress algorithm to a microstate.
     ///
     /// When the total energy of the microstate (given by `hamiltonian`) is less
-    /// than or equal to 0, `compress` scales the microstate's boundary toward
+    /// than or equal to 0, `apply` scales the microstate's boundary toward
     /// the [`target_volume`] by an amount $` 1 \pm \delta `$ where $` \delta `$
     /// is a randomly sampled value between 0 and [`maximum_delta`].
     ///
@@ -327,12 +327,12 @@ impl<C> QuickCompress<C> {
     /// `should_map_body` returns `false`, the body position is wrapped
     /// into the boundary (via [`Wrap`]).
     ///
-    /// `compress` then evaluates the total energy change between the initial
+    /// `apply` then evaluates the total energy change between the initial
     /// and compressed microstates. To avoid introducing too much stress
     /// into the system, it rejects moves where the total change in energy
     /// per site is greater than [`maximum_energy_per_site`].
     ///
-    /// Combine `compress` with local trial moves that translate and/or rotate
+    /// Combine `apply` with local trial moves that translate and/or rotate
     /// bodies by small amounts to relieve the stress caused by inserting
     /// overlapping sites. Without local moves, the quick compress algorithm
     /// will not achieve the target volume.
@@ -389,7 +389,7 @@ impl<C> QuickCompress<C> {
     /// }
     ///
     /// while(!quick_compress.is_complete()) {
-    ///     quick_compress.compress(&mut microstate, &pairwise_cutoff, |_| true);
+    ///     quick_compress.apply(&mut microstate, &pairwise_cutoff, |_| true);
     ///     translate_sweep.apply(&mut microstate, &pairwise_cutoff, &macrostate);
     ///     microstate.increment_step();
     ///
@@ -410,7 +410,7 @@ impl<C> QuickCompress<C> {
         reason = "Panic would occur due to a bug in hoomd-rs."
     )]
     #[inline]
-    pub fn compress<P, B, S, X, H, F>(
+    pub fn apply<P, B, S, X, H, F>(
         &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         hamiltonian: &H,

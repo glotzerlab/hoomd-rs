@@ -152,7 +152,7 @@ impl Simulation for HardDiskSelfAssembly {
     fn advance(&mut self) -> anyhow::Result<()> {
         match self.phase {
             Phase::Compress => {
-                self.compress().context("failed to compress")?
+                self.apply().context("failed to compress")?
             }
             Phase::Equilibrate => self.equilibrate(),
         }
@@ -178,7 +178,7 @@ impl HardDiskSelfAssembly {
     fn compress(&mut self) -> anyhow::Result<()> {
         // ANCHOR_END: compress
         // ANCHOR: apply_quick_compress
-        self.quick_compress.compress(&mut self.microstate, &self.overlap_penalty_hamiltonian, |_| true);
+        self.quick_compress.apply(&mut self.microstate, &self.overlap_penalty_hamiltonian, |_| true);
         // ANCHOR_END: apply_quick_compress
 
         // ANCHOR: compress_trial_moves

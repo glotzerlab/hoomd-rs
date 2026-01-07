@@ -321,7 +321,7 @@ action again. Notice how the disks fall to the bottom of the boundary and do
 not overlap, except when newly added. Wait long enough and you will see the
 simulation clear the bodies.
 
-Alternately, you can run the example in batch mode and then open
+You can also run the example in batch mode and then open
 the generated `trajectory.gsd` in [Ovito] or another visualization tool:
 ```shell
 cargo run --release --example applying-interactions

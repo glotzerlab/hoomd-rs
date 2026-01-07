@@ -77,9 +77,9 @@ impl HardEllipseSelfAssembly {
     fn new() -> anyhow::Result<HardEllipseSelfAssembly> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
-        let initial_packing_fraction = 0.5;
+        let initial_packing_fraction = 0.4;
         let target_packing_fraction = 0.7;
-        let n_bodies = 256;
+        let n_bodies = 512;
         let maximum_distance = 0.07;
         let maximum_rotation = 0.3;
         let sigma = 1.0;
@@ -201,7 +201,7 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: initialize
         // ANCHOR: apply_quick_insert_compress
         if self.quick_insert.is_complete() {
-            self.quick_compress.compress(&mut self.microstate, &self.overlap_penalty_hamiltonian, |_| true);
+            self.quick_compress.apply(&mut self.microstate, &self.overlap_penalty_hamiltonian, |_| true);
         } else {
             self.quick_insert
                 .apply(&mut self.microstate, &self.overlap_penalty_hamiltonian);
@@ -238,9 +238,8 @@ impl HardEllipseSelfAssembly {
             let target_n = self.quick_insert.target();
             let volume = self.microstate.boundary().volume();
             let target_volume = self.quick_compress.target_volume();
-            let step = self.microstate.step();
             return Err(anyhow!(
-                "fail to initialize at step {step} --- inserted {n}/{target_n} bodies and compressed to {volume} / {target_volume}"
+                "inserted {n}/{target_n} bodies and compressed to {volume} / {target_volume}"
             ));
         }
 
@@ -272,7 +271,7 @@ fn main() -> anyhow::Result<()> {
     let mut simulation = HardEllipseSelfAssembly::new()?;
     // TODO: Write GSD file.
 
-    for _ in 0..10_000 {
+    for _ in 0..40_000 {
         simulation.advance()?;
     }
 

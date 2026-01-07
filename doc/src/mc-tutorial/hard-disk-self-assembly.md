@@ -189,7 +189,7 @@ Begin the simulation in the `Compress` phase.
 
 ### Advance the Simulation
 
-`advance` calls `self.compress()` to advance the simulation when in the
+`advance` calls `self.apply()` to advance the simulation when in the
 compress phase and `self.equilibrate()` when in the equilibrate phase:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-disk-self-assembly.rs:advance}}
@@ -222,7 +222,7 @@ Implement the `compress` phase:
 
 #### Compress the Microstate
 
-The `quick_compress.compress` method irreversibly compresses the microstate toward the
+The `quick_compress.apply` method irreversibly compresses the microstate toward the
 target boundary volume:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-disk-self-assembly.rs:apply_quick_compress}}
@@ -291,7 +291,8 @@ trial moves with the hard overlap Hamiltonian (`hamiltonian`):
 ```
 
 Equilibration never ends in this tutorial. In your own simulations, you might
-transition to a production phase after a certain number of steps.
+transition to a production phase after a certain number of steps and eventually
+complete the simulation.
 
 ## Implement `main()`
 
@@ -320,7 +321,7 @@ scaled to a higher packing fraction. The many grain boundaries are caused by the
 quick compression. Over time, local trial moves will heal these grain boundaries
 leaving a single crystal.
 
-Alternately, you can run the example in batch mode and then open
+You can also run the example in batch mode and then open
 the generated `trajectory.gsd` in [Ovito] or another visualization tool:
 ```shell
 cargo run --release --example hard-particle-self-assembly
