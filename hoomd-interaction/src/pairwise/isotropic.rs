@@ -56,7 +56,7 @@ pub struct Isotropic<E> {
     pub r_cut: f64,
 }
 
-impl<P, S, E> SitePairEnergy<S> for Isotropic<E>
+impl<P, S, E> SitePairEnergy<S, P> for Isotropic<E>
 where
     S: Position<Position = P>,
     P: Metric,

@@ -10,8 +10,7 @@ use hoomd_manifold::{Spherical, SphericalDisk};
 use hoomd_microstate::property::{Point, Position};
 use hoomd_vector::InnerProduct;
 
-impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>>
-{
+impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
     /// Propose local trial moves for a body on the surface of a sphere
     ///
     /// # Example
@@ -48,7 +47,11 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>>
     /// # }
     /// ```
     #[inline]
-    fn propose<R: Rng>(&self, rng: &mut R, body_properties: Point<Spherical<3>>) -> Point<Spherical<3>> {
+    fn propose<R: Rng>(
+        &self,
+        rng: &mut R,
+        body_properties: Point<Spherical<3>>,
+    ) -> Point<Spherical<3>> {
         let mut trial = body_properties;
         let disk = SphericalDisk {
             disk_radius: *self.maximum_distance(),

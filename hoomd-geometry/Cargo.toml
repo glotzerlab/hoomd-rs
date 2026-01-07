@@ -31,3 +31,7 @@ rstest.workspace = true
 [[bench]]
 name = "overlaps"
 harness = false
+
+[[bench]]
+name = "hyperbolic_overlaps"
+harness = false

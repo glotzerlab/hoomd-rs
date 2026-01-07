@@ -11,20 +11,21 @@ use hoomd_geometry::{
     hyperbolic_overlap::HyperbolicConvexPolytope, shape::EightEight,
 };
 use hoomd_interaction::{
-    CutoffPair, CutoffPairOverlap,
-    pairwise::{HardShape, Isotropic, LennardJones},
+    PairwiseCutoff,
+    pairwise::{HardShape, Isotropic},
+    univariate::LennardJones,
 };
 use hoomd_manifold::{Hyperbolic, HyperbolicDisk, Minkowski};
 use hoomd_mc::{QuickInsert, Rotate, Sweep, Translate, Trial};
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder, boundary::Periodic,
+    Body, Microstate, SiteKey, boundary::Periodic,
     property::OrientedHyperbolicPoint,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
+use hoomd_spatial::AllPairs;
 use hoomd_vector::Angle;
 use rand::{Rng, distr::Distribution};
 
-type Position = Hyperbolic<3>;
 type Orientation = Angle;
 type SiteProperties = OrientedHyperbolicPoint<3, Angle>;
 type BodyProperties = OrientedHyperbolicPoint<3, Angle>;
@@ -77,12 +78,16 @@ fn main() -> anyhow::Result<()> {
 #[cfg_attr(feature = "bevy", derive(Resource))]
 struct HyperbolicPolygonSelfAssembly {
     /// Positions of all the bodies in the simulation.
-    microstate:
-        Microstate<BodyProperties, SiteProperties, Periodic<EightEight>>,
+    microstate: Microstate<
+        BodyProperties,
+        SiteProperties,
+        AllPairs<SiteKey>,
+        Periodic<EightEight>,
+    >,
     /// How sites interact with other sites and fields.
-    hamiltonian: CutoffPairOverlap<HardShape<HyperbolicConvexPolytope<3>>>,
+    hamiltonian: PairwiseCutoff<HardShape<HyperbolicConvexPolytope<3>>>,
     /// Trial moves to apply.
-    translate_sweep: Sweep<Translate<OrientedHyperbolicPoint<3,Angle>>>,
+    translate_sweep: Sweep<Translate<OrientedHyperbolicPoint<3, Angle>>>,
     /// Trial moves to apply.
     rotate_sweep: Sweep<Rotate<Orientation>>,
     /// Temperature set point.
@@ -90,14 +95,14 @@ struct HyperbolicPolygonSelfAssembly {
     /// Quick insert
     quick_insert: QuickInsert<UniformHyperbolic<SiteProperties>>,
     /// how sites interact when inserted
-    insert_hamiltonian: CutoffPair<Isotropic<LennardJones>>,
+    insert_hamiltonian: PairwiseCutoff<Isotropic<LennardJones>>,
     /// the current phase of the simulation
     phase: Phase,
 }
 
 const RHO: f64 = 1.0;
-const PARTICLE_NUMBER: usize = 12;
-const RADIUS: f64 = 0.3; // units of rapidity
+const PARTICLE_NUMBER: usize = 20;
+const RADIUS: f64 = 0.1; // units of rapidity
 
 enum Phase {
     Initialize,
@@ -118,7 +123,7 @@ impl Distribution<Body<OrientedHyperbolicPoint<3, Angle>>>
         rng: &mut R,
     ) -> Body<
         OrientedHyperbolicPoint<3, Angle>,
-        OrientedHyperbolicPoint<3,Angle>,
+        OrientedHyperbolicPoint<3, Angle>,
     > {
         let initial_spacing = 1.4;
         let sample_disk = HyperbolicDisk {
@@ -161,15 +166,14 @@ impl HyperbolicPolygonSelfAssembly {
         let macrostate = Isothermal { temperature: 1.0 };
 
         let square = HyperbolicConvexPolytope::<3>::regular(4, RADIUS, 1.0);
-        let hamiltonian = CutoffPairOverlap {
-            r_cut: 1.0,
-            evaluator: HardShape(square.clone()),
-        };
+        let hamiltonian = PairwiseCutoff(HardShape(square.clone()));
 
         let boundary = Periodic::new(0.6, EightEight { skirt: 1.0_f64 })?;
-
-        let mut microstate =
-            MicrostateBuilder::with_boundary(boundary).try_build()?;
+        //let allpairs = AllPairs
+        let mut microstate = Microstate::builder()
+            //.spatial_data(allpairs)
+            .boundary(boundary)
+            .try_build()?;
 
         let hyp_translate =
             Translate::with_maximum_distance(maximum_distance.try_into()?);
@@ -186,15 +190,13 @@ impl HyperbolicPolygonSelfAssembly {
 
         let lj: LennardJones = LennardJones {
             epsilon: 10.0,
-            sigma: 1.0,
+            sigma: RADIUS*2.0,
         };
 
-        let lj_evaluator = Isotropic(lj);
-
-        let insert_hamiltonian = CutoffPair {
+        let insert_hamiltonian = PairwiseCutoff(Isotropic {
+            interaction: lj,
             r_cut: 1.0,
-            evaluator: lj_evaluator,
-        };
+        });
 
         Ok(HyperbolicPolygonSelfAssembly {
             microstate,

@@ -8,11 +8,9 @@ use bevy::{
     asset::embedded_asset,
     prelude::*,
     reflect::TypePath,
-    render::{
-        render_resource::{AsBindGroup, ShaderRef},
-        storage::ShaderStorageBuffer,
-    },
-    sprite::{AlphaMode2d, Material2d, Material2dPlugin},
+    render::{render_resource::AsBindGroup, storage::ShaderStorageBuffer},
+    shader::ShaderRef,
+    sprite_render::{AlphaMode2d, Material2d, Material2dPlugin},
 };
 #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
 use bevy::{
@@ -120,14 +118,14 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
                 Both((_, mut transform), (position, radius, theta)) => {
                     let (poincare_position, max_projected_radius) =
                         poincare(&position, RHO, radius, theta);
-                    //let rad_arg = RHO * (radius / RHO).sinh() / (1.0 + (radius / RHO).cosh());
-                    //let poincare_radius = (0.5) 
+                    // let rad_arg = RHO * (radius / RHO).sinh() / (1.0 + (radius / RHO).cosh());
+                    // let poincare_radius = (0.5)
                     //    * (1.0 + 2.0 * rad_arg.powi(2) / (1.0 - (rad_arg.powi(2)))).acosh() as f32;
                     transform.translation = Vec3::from_array(poincare_position);
                     transform.scale = Vec3::from_array([
                         max_projected_radius * 2.0,
                         max_projected_radius * 2.0,
-                        radius as f32 // radius in units of rapidity,
+                        radius as f32, // radius in units of rapidity,
                     ]);
                     // transform.rotation = Quat::from_rotation_z(theta);
                 }
@@ -135,8 +133,8 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
                 Right((position, radius, theta)) => {
                     let (poincare_position, max_projected_radius) =
                         poincare(&position, RHO, radius, theta);
-                    //let rad_arg = RHO * (radius / RHO).sinh() / (1.0 + (radius / RHO).cosh());
-                    //let poincare_radius = (0.5)
+                    // let rad_arg = RHO * (radius / RHO).sinh() / (1.0 + (radius / RHO).cosh());
+                    // let poincare_radius = (0.5)
                     //    * (1.0 + 2.0 * rad_arg.powi(2) / (1.0 - (rad_arg.powi(2)))).acosh() as f32;
                     commands.spawn((
                         Mesh2d(disk_assets.mesh.clone()),
@@ -145,7 +143,7 @@ impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
                             .with_scale(Vec3::from_array([
                                 max_projected_radius * 2.0,
                                 max_projected_radius * 2.0,
-                                radius as f32, //radius in units of rapidity,
+                                radius as f32, // radius in units of rapidity,
                             ])),
                         Self {
                             marker: PhantomData,
@@ -225,7 +223,7 @@ impl Default for HyperbolicPolygonMaterialParameters {
             n_sides: 0.0_f32,
             background_color: PRIMARY_COLOR.into(),
             outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
-            outline_width: 0.05,
+            outline_width: 0.005,
             texture_asset: None,
             texture_scale: 1000.0,
         }
@@ -239,7 +237,7 @@ impl HyperbolicPolygonMaterialParameters {
         Self {
             background_color: Color::linear_rgb(0.5, 0.5, 0.5).into(),
             outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
-            outline_width: 0.05,
+            outline_width: 0.005,
             texture_asset: None,
             texture_scale: 1.2,
             n_sides: 4.0_f32,

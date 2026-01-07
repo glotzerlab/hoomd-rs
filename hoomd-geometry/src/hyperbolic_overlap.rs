@@ -1,6 +1,8 @@
 //! Implement Overlap Check for Hyperbolic Surfaces
 
+use crate::BoundingSphereRadius;
 use hoomd_manifold::{Hyperbolic, Minkowski};
+use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Angle;
 use robust::{Coord, orient2d};
 use std::f64::consts::PI;
@@ -32,7 +34,16 @@ impl<const N: usize> HyperbolicConvexPolytope<N> {
     }
 }
 
-/// A two-dimensional hyperbolic convex polytope. 
+impl<const N: usize> BoundingSphereRadius for HyperbolicConvexPolytope<N> {
+    #[inline]
+    fn bounding_sphere_radius(&self) -> PositiveReal {
+        self.bounding_radius
+            .try_into()
+            .expect("hard coded constant should be positive")
+    }
+}
+
+/// A two-dimensional hyperbolic convex polytope.
 pub type HyperbolicConvexPolygon = HyperbolicConvexPolytope<3>;
 
 impl HyperbolicConvexPolytope<3> {
@@ -51,9 +62,9 @@ impl HyperbolicConvexPolytope<3> {
             bounding_radius: circumradius,
         }
     }
-    /// Calculate the distance between the center of a `HyperbolicConvexPolytope<3>` 
-    /// centered at the origin and the edge at angle phi. The calculation works by 
-    /// computing the intersection of the the hyperboloid with a plane passing 
+    /// Calculate the distance between the center of a `HyperbolicConvexPolytope<3>`
+    /// centered at the origin and the edge at angle phi. The calculation works by
+    /// computing the intersection of the the hyperboloid with a plane passing
     /// through the origin and the two adjacent vertices of the polygon.
     #[inline]
     #[must_use]
@@ -94,6 +105,7 @@ pub trait SeparatingPlanes<S, M, R> {
 
 impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for HyperbolicConvexPolygon {
     #[inline]
+    #[allow(clippy::too_many_lines, reason = "complicated function")]
     fn intersects_at(
         &self,
         x_i: &Hyperbolic<3>,
@@ -104,7 +116,7 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
         let mut result = true;
         let mut v_count = 0_usize;
         let n = self.vertices.len();
-        while result && (v_count < 2*n) {
+        while result && (v_count < 2 * n) {
             if v_count < n {
                 let v_num = v_count % n;
                 let v_next = (v_num + 1) % n;
@@ -124,8 +136,14 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
                     &[v_1, v_2],
                     n,
                 );
-                let other_translated =
-                    Self::to_vertex_frame_oriented(x_i, r_i, v_num, self.bounding_radius, &other, n);
+                let other_translated = Self::to_vertex_frame_oriented(
+                    x_i,
+                    r_i,
+                    v_num,
+                    self.bounding_radius,
+                    &other,
+                    n,
+                );
                 // convert to poincare coordinates to perform orientation checks.
                 let self_coord = self_translated
                     .iter()
@@ -178,8 +196,14 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
                     &[v_1, v_2],
                     n,
                 );
-                let other_translated =
-                    Self::to_vertex_frame_oriented(x_j, r_j, v_num, self.bounding_radius, &other, n);
+                let other_translated = Self::to_vertex_frame_oriented(
+                    x_j,
+                    r_j,
+                    v_num,
+                    self.bounding_radius,
+                    &other,
+                    n,
+                );
                 // convert to poincare coordinates to perform orientation checks.
                 let self_coord = self_translated
                     .iter()
@@ -228,64 +252,86 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
     ) -> Vec<Hyperbolic<3>> {
         let theta = body_position.coordinates()[1].atan2(body_position.coordinates()[0]);
         let eta = (body_position.coordinates()[2]).acosh();
-        let tau_over_two = -eta/2.0;
+        let tau_over_two = -eta / 2.0;
         let poincare = body_position.to_poincare();
-        let body_angle_body = -2.0 * (
-            ((tau_over_two.sinh())*((theta.cos())*poincare[1] - (theta.sin())*poincare[0]))
-            .atan2(
-                (tau_over_two.cosh()) + (tau_over_two.sinh())*((theta.cos())*poincare[0] + (theta.sin())*poincare[1])
-            )) + body_orientation.theta; 
-    
-        let alpha = body_angle_body - theta + 2.0*(vertex_num as f64)*PI/(num_of_sides as f64);
+        let body_angle_body = -2.0
+            * (((tau_over_two.sinh())
+                * ((theta.cos()) * poincare[1] - (theta.sin()) * poincare[0]))
+                .atan2(
+                    (tau_over_two.cosh())
+                        + (tau_over_two.sinh())
+                            * ((theta.cos()) * poincare[0] + (theta.sin()) * poincare[1]),
+                ))
+            + body_orientation.theta;
+
+        let alpha =
+            body_angle_body - theta + 2.0 * (vertex_num as f64) * PI / (num_of_sides as f64);
         let r = bounding_radius;
         let vertex_translate = |point: &Hyperbolic<3>| -> Hyperbolic<3> {
             let pt = point.point().coordinates;
             let translated = Minkowski::from([
-                ((eta.cosh())*(r.cosh())*(alpha.cos())*(theta.cos()) - (r.cosh())*(alpha.sin())*(theta.sin()) + (eta.sinh())*(r.sinh())*(theta.cos())) * pt[0]
-                + ((eta.cosh())*(r.cosh())*(alpha.cos())*(theta.sin()) + (r.cosh())*(alpha.sin())*(theta.cos()) + (eta.sinh())*(r.sinh())*(theta.sin())) * pt[1]
-                - ((eta.sinh())*(r.cosh())*(alpha.cos()) + (eta.cosh())*(r.sinh())) * pt[2],
-                -((eta.cosh())*(alpha.sin())*(theta.cos()) + (alpha.cos())*(theta.sin())) * pt[0]
-                + (-(eta.cosh())*(alpha.sin())*(theta.sin()) + (alpha.cos())*(theta.cos())) * pt[1]
-                + (eta.sinh())*(alpha.sin())*pt[2],
-                (-(eta.cosh())*(r.sinh())*(alpha.cos())*(theta.cos()) + (r.sinh())*(alpha.sin())*(theta.sin()) - (eta.sinh())*(r.cosh())*(theta.cos())) * pt[0]
-                -((eta.cosh())*(r.sinh())*(alpha.cos())*(theta.sin()) + (r.sinh())*(alpha.sin())*(theta.cos()) + (eta.sinh())*(r.cosh())*(theta.sin())) * pt[1]
-                + ((eta.sinh())*(r.sinh())*(alpha.cos()) + (eta.cosh())*(r.cosh()))*pt[2]
+                ((eta.cosh()) * (r.cosh()) * (alpha.cos()) * (theta.cos())
+                    - (r.cosh()) * (alpha.sin()) * (theta.sin())
+                    + (eta.sinh()) * (r.sinh()) * (theta.cos()))
+                    * pt[0]
+                    + ((eta.cosh()) * (r.cosh()) * (alpha.cos()) * (theta.sin())
+                        + (r.cosh()) * (alpha.sin()) * (theta.cos())
+                        + (eta.sinh()) * (r.sinh()) * (theta.sin()))
+                        * pt[1]
+                    - ((eta.sinh()) * (r.cosh()) * (alpha.cos()) + (eta.cosh()) * (r.sinh()))
+                        * pt[2],
+                -((eta.cosh()) * (alpha.sin()) * (theta.cos()) + (alpha.cos()) * (theta.sin()))
+                    * pt[0]
+                    + (-(eta.cosh()) * (alpha.sin()) * (theta.sin())
+                        + (alpha.cos()) * (theta.cos()))
+                        * pt[1]
+                    + (eta.sinh()) * (alpha.sin()) * pt[2],
+                (-(eta.cosh()) * (r.sinh()) * (alpha.cos()) * (theta.cos())
+                    + (r.sinh()) * (alpha.sin()) * (theta.sin())
+                    - (eta.sinh()) * (r.cosh()) * (theta.cos()))
+                    * pt[0]
+                    - ((eta.cosh()) * (r.sinh()) * (alpha.cos()) * (theta.sin())
+                        + (r.sinh()) * (alpha.sin()) * (theta.cos())
+                        + (eta.sinh()) * (r.cosh()) * (theta.sin()))
+                        * pt[1]
+                    + ((eta.sinh()) * (r.sinh()) * (alpha.cos()) + (eta.cosh()) * (r.cosh()))
+                        * pt[2],
             ]);
             Hyperbolic::from_minkowski_coordinates(translated, point.skirt())
         };
-        /* let phi = body_orientation.theta + 2.0 * PI * (vertex_num as f64) / (num_of_sides as f64);
-        let theta = body_position.coordinates()[1].atan2(body_position.coordinates()[0]);
-        let nu = (body_position.coordinates()[2] / body_position.skirt()).acosh();
-        let ep = bounding_radius;
-        let vertex_translate = |point: &Hyperbolic<3>| -> Hyperbolic<3> {
-            let pt = point.point().coordinates;
-            let translated = Minkowski::from([
-                ((nu.cosh()) * (ep.cosh()) * (theta.cos()) * (phi.cos())
-                    - (ep.cosh()) * (theta.sin()) * (phi.sin())
-                    + (nu.sinh()) * (ep.sinh()) * (theta.cos()))
-                    * pt[0]
-                    + ((nu.cosh()) * (ep.cosh()) * (theta.sin()) * (phi.cos())
-                        + (ep.cosh()) * (theta.cos()) * (phi.sin())
-                        + (nu.sinh()) * (ep.sinh()) * (theta.sin()))
-                        * pt[1]
-                    + (-(nu.sinh()) * (ep.cosh()) * (phi.cos()) - (nu.cosh()) * (ep.sinh()))
-                        * pt[2],
-                (-(nu.cosh()) * (theta.cos()) * (phi.sin()) - (theta.sin()) * (phi.cos())) * pt[0]
-                    + (-(nu.cosh()) * (theta.sin()) * (phi.sin()) + (theta.cos()) * (phi.cos()))
-                        * pt[1]
-                    + ((nu.sinh()) * (phi.sin())) * pt[2],
-                (-(nu.cosh()) * (ep.sinh()) * (theta.cos()) * (phi.cos())
-                    + (ep.sinh()) * (theta.sin()) * (phi.sin())
-                    - (nu.sinh()) * (ep.cosh()) * (theta.cos()))
-                    * pt[0]
-                    + (-(nu.cosh()) * ep.sinh() * theta.sin() * phi.cos()
-                        - ep.sinh() * theta.cos() * phi.sin()
-                        - nu.sinh() * ep.cosh() * theta.sin())
-                        * pt[1]
-                    + ((nu.sinh()) * (ep.sinh()) * (phi.cos()) + (nu.cosh()) * (ep.cosh())) * pt[2],
-            ]); 
-            Hyperbolic::from_minkowski_coordinates(translated, point.skirt())
-        }; */
+        // let phi = body_orientation.theta + 2.0 * PI * (vertex_num as f64) / (num_of_sides as f64);
+        // let theta = body_position.coordinates()[1].atan2(body_position.coordinates()[0]);
+        // let nu = (body_position.coordinates()[2] / body_position.skirt()).acosh();
+        // let ep = bounding_radius;
+        // let vertex_translate = |point: &Hyperbolic<3>| -> Hyperbolic<3> {
+        // let pt = point.point().coordinates;
+        // let translated = Minkowski::from([
+        // ((nu.cosh()) * (ep.cosh()) * (theta.cos()) * (phi.cos())
+        // - (ep.cosh()) * (theta.sin()) * (phi.sin())
+        // + (nu.sinh()) * (ep.sinh()) * (theta.cos()))
+        // pt[0]
+        // + ((nu.cosh()) * (ep.cosh()) * (theta.sin()) * (phi.cos())
+        // + (ep.cosh()) * (theta.cos()) * (phi.sin())
+        // + (nu.sinh()) * (ep.sinh()) * (theta.sin()))
+        // pt[1]
+        // + (-(nu.sinh()) * (ep.cosh()) * (phi.cos()) - (nu.cosh()) * (ep.sinh()))
+        // pt[2],
+        // (-(nu.cosh()) * (theta.cos()) * (phi.sin()) - (theta.sin()) * (phi.cos())) * pt[0]
+        // + (-(nu.cosh()) * (theta.sin()) * (phi.sin()) + (theta.cos()) * (phi.cos()))
+        // pt[1]
+        // + ((nu.sinh()) * (phi.sin())) * pt[2],
+        // (-(nu.cosh()) * (ep.sinh()) * (theta.cos()) * (phi.cos())
+        // + (ep.sinh()) * (theta.sin()) * (phi.sin())
+        // - (nu.sinh()) * (ep.cosh()) * (theta.cos()))
+        // pt[0]
+        // + (-(nu.cosh()) * ep.sinh() * theta.sin() * phi.cos()
+        // - ep.sinh() * theta.cos() * phi.sin()
+        // - nu.sinh() * ep.cosh() * theta.sin())
+        // pt[1]
+        // + ((nu.sinh()) * (ep.sinh()) * (phi.cos()) + (nu.cosh()) * (ep.cosh())) * pt[2],
+        // ]);
+        // Hyperbolic::from_minkowski_coordinates(translated, point.skirt())
+        // };
         points.iter().map(vertex_translate).collect::<Vec<_>>()
     }
     #[inline]
@@ -296,25 +342,30 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
     ) -> Hyperbolic<3> {
         let theta = body_position.coordinates()[1].atan2(body_position.coordinates()[0]);
         let nu = (body_position.coordinates()[2] / body_position.skirt()).acosh();
-        let tau_over_two = -nu/2.0;
+        let tau_over_two = -nu / 2.0;
         let poincare = body_position.to_poincare();
-        let body_angle_body = (-2.0 * (
-            ((tau_over_two.sinh())*((theta.cos())*poincare[1] - (theta.sin())*poincare[0]))
-            .atan2(
-                (tau_over_two.cosh()) + (tau_over_two.sinh())*((theta.cos())*poincare[0] + (theta.sin())*poincare[1])
-            )) + body_orientation.theta).rem_euclid(2.0*PI);
+        let body_angle_body = (-2.0
+            * (((tau_over_two.sinh())
+                * ((theta.cos()) * poincare[1] - (theta.sin()) * poincare[0]))
+                .atan2(
+                    (tau_over_two.cosh())
+                        + (tau_over_two.sinh())
+                            * ((theta.cos()) * poincare[0] + (theta.sin()) * poincare[1]),
+                ))
+            + body_orientation.theta)
+            .rem_euclid(2.0 * PI);
         let phi = body_angle_body - theta;
         let pt = vertex.point().coordinates;
         let transformed = Minkowski::from([
-            ((nu.cosh())*(phi.cos())*(theta.cos()) - (phi.sin())*(theta.sin()))*pt[0]
-            -((nu.cosh())*(phi.sin())*(theta.cos()) + (phi.cos())*(theta.sin()))*pt[1]
-            +(nu.sinh())*(theta.cos())*pt[2],
-            ((nu.cosh())*(phi.cos())*(theta.sin()) + (phi.sin())*(theta.cos()))*pt[0]
-            +(-(nu.cosh())*(phi.sin())*(theta.sin()) + (phi.cos())*(theta.cos()))*pt[1]
-            +(nu.sinh())*(theta.sin())*pt[2],
-            (nu.sinh())*(phi.cos())*pt[0]
-            -(nu.sinh())*(phi.sin())*pt[1]
-            +(nu.cosh())*pt[2]
+            ((nu.cosh()) * (phi.cos()) * (theta.cos()) - (phi.sin()) * (theta.sin())) * pt[0]
+                - ((nu.cosh()) * (phi.sin()) * (theta.cos()) + (phi.cos()) * (theta.sin())) * pt[1]
+                + (nu.sinh()) * (theta.cos()) * pt[2],
+            ((nu.cosh()) * (phi.cos()) * (theta.sin()) + (phi.sin()) * (theta.cos())) * pt[0]
+                + (-(nu.cosh()) * (phi.sin()) * (theta.sin()) + (phi.cos()) * (theta.cos()))
+                    * pt[1]
+                + (nu.sinh()) * (theta.sin()) * pt[2],
+            (nu.sinh()) * (phi.cos()) * pt[0] - (nu.sinh()) * (phi.sin()) * pt[1]
+                + (nu.cosh()) * pt[2],
         ]);
         Hyperbolic::from_minkowski_coordinates(transformed, vertex.skirt())
     }
@@ -365,13 +416,18 @@ mod tests {
     #[test]
     fn center_at_oriented_vertex() {
         let square = HyperbolicConvexPolytope::<3>::regular(4, 0.5, 1.0);
-        let (boost, rotation, orientation) = (0.5, PI/4.0, 0.4);
+        let (boost, rotation, orientation) = (0.5, PI / 4.0, 0.4);
         let body_position = Hyperbolic::<3>::from_polar_coordinates(boost, rotation, 1.0);
         let square_system = square
             .vertices()
             .iter()
-            .map(|v| 
-                HyperbolicConvexPolygon::vertex_to_system_frame(v, &Angle::from(orientation), &body_position))
+            .map(|v| {
+                HyperbolicConvexPolygon::vertex_to_system_frame(
+                    v,
+                    &Angle::from(orientation),
+                    &body_position,
+                )
+            })
             .collect::<Vec<Hyperbolic<3>>>();
         let translated = HyperbolicConvexPolygon::to_vertex_frame_oriented(
             &body_position,
@@ -381,12 +437,11 @@ mod tests {
             &square_system,
             4_usize,
         );
-        println!("translated: {:?}", translated);
         assert_relative_eq!(0.0, translated[2].coordinates()[0], epsilon = 1e-12);
         assert_relative_eq!(0.0, translated[2].coordinates()[1], epsilon = 1e-12);
         assert_relative_eq!(1.0, translated[2].coordinates()[2], epsilon = 1e-12);
     }
-    
+
     #[test]
     fn no_square_overlap() {
         let square = HyperbolicConvexPolytope::<3>::regular(4, 0.5, 1.0);

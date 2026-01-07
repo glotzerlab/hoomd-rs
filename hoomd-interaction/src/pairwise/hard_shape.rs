@@ -4,9 +4,10 @@
 //! Implement `HardShape`
 
 use crate::{MaximumInteractionRange, SitePairEnergy};
-use hoomd_geometry::{BoundingSphereRadius, IntersectsAt};
+use hoomd_geometry::{BoundingSphereRadius, IntersectsAt, hyperbolic_overlap::SeparatingPlanes};
+use hoomd_manifold::Hyperbolic;
 use hoomd_microstate::property::{Orientation, Position};
-use hoomd_vector::{self, Metric, Rotate, Rotation, Vector};
+use hoomd_vector::{self, Angle, Cartesian, Metric, Rotate, Rotation};
 
 /// Infinite energy when sites overlap, 0 when they don't (*not differentiable*).
 ///
@@ -29,12 +30,11 @@ use hoomd_vector::{self, Metric, Rotate, Rotation, Vector};
 /// ```
 pub struct HardShape<G>(pub G);
 
-impl<S, G, V, R> SitePairEnergy<S> for HardShape<G>
+impl<S, G, const N: usize, R> SitePairEnergy<S, Cartesian<N>> for HardShape<G>
 where
-    S: Position<Position = V> + Orientation<Rotation = R>,
-    V: Vector,
-    R: Rotation + Rotate<V>,
-    G: IntersectsAt<G, V, R> + BoundingSphereRadius,
+    S: Position<Position = Cartesian<N>> + Orientation<Rotation = R>,
+    R: Rotation + Rotate<Cartesian<N>>,
+    G: IntersectsAt<G, Cartesian<N>, R> + BoundingSphereRadius,
 {
     /// Compute the energy contribution from a pair of sites.
     ///
@@ -128,7 +128,7 @@ pub struct HardSphere {
     pub diameter: f64,
 }
 
-impl<S, V> SitePairEnergy<S> for HardSphere
+impl<S, V> SitePairEnergy<S, V> for HardSphere
 where
     S: Position<Position = V>,
     V: Metric,
@@ -172,7 +172,7 @@ impl MaximumInteractionRange for HardSphere {
     }
 }
 
-impl<S, G> SitePairOverlap<S, Hyperbolic<3>> for HardShape<G>
+impl<G, S> SitePairEnergy<S, Hyperbolic<3>> for HardShape<G>
 where
     S: Position<Position = Hyperbolic<3>> + Orientation<Rotation = Angle>,
     G: SeparatingPlanes<G, Hyperbolic<3>, Angle>,
@@ -183,7 +183,7 @@ where
     ///
     /// ```
     /// use hoomd_geometry::hyperbolic_overlap::HyperbolicConvexPolytope;
-    /// use hoomd_interaction::{SitePairOverlap, pairwise::HardShape};
+    /// use hoomd_interaction::{SitePairEnergy, pairwise::HardShape};
     /// use hoomd_manifold::Hyperbolic;
     /// use hoomd_microstate::property::OrientedHyperbolicPoint;
     /// use hoomd_vector::Angle;
@@ -202,23 +202,27 @@ where
     ///     orientation: Angle::from(0.4),
     /// };
     ///
-    /// assert!(!hard_shape.site_pair_overlap(&a, &b));
+    /// assert_eq!(hard_shape.site_pair_energy(&a, &b), 0.0);
     ///
     /// let c = OrientedHyperbolicPoint {
     ///     position: Hyperbolic::<3>::from_polar_coordinates(0.49, 2.3, 1.0),
     ///     orientation: Angle::from(0.4),
     /// };
     ///
-    /// assert!(hard_shape.site_pair_overlap(&a, &c));
+    /// assert_eq!(hard_shape.site_pair_energy(&a, &c), f64::INFINITY);
     /// # Ok(())
     /// # }
     /// ```
     #[inline]
-    fn site_pair_overlap(&self, site_properties_i: &S, site_properties_j: &S) -> bool {
+    fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
         let x_i = site_properties_i.position();
         let r_i = site_properties_i.orientation();
         let x_j = site_properties_j.position();
         let r_j = site_properties_j.orientation();
-        self.0.intersects_at(x_i, r_i, x_j, r_j)
+        if self.0.intersects_at(x_i, r_i, x_j, r_j) {
+            f64::INFINITY
+        } else {
+            0.0
+        }
     }
 }

@@ -968,9 +968,9 @@ impl Distribution<Hyperbolic<3>> for HyperbolicDisk {
         ];
         let transformed_point = Minkowski::from([
             trial_coords[0] * ((eta.cosh()) * ((phi.cos()).powi(2)) + (phi.sin()).powi(2))
-                + trial_coords[1] * (phi.sin())*(phi.cos())*((eta.cosh())-1.0)
+                + trial_coords[1] * (phi.sin()) * (phi.cos()) * ((eta.cosh()) - 1.0)
                 + trial_coords[2] * (eta.sinh()) * (phi.cos()),
-            trial_coords[0] * (phi.sin())*(phi.cos())*((eta.cosh())-1.0)
+            trial_coords[0] * (phi.sin()) * (phi.cos()) * ((eta.cosh()) - 1.0)
                 + trial_coords[1] * ((eta.cosh()) * ((phi.sin()).powi(2)) + (phi.cos()).powi(2))
                 + trial_coords[2] * (eta.sinh()) * (phi.sin()),
             trial_coords[0] * (eta.sinh()) * (phi.cos())

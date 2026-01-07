@@ -48,7 +48,7 @@ impl EightEight {
     /// of `EightEight`.
     ///
     /// The shortest distance is computed by finding the arclength of the geodesic
-    /// which passes through the query point and intersects the boundary at a 
+    /// which passes through the query point and intersects the boundary at a
     /// right angle.
     ///
     /// # Example
@@ -82,29 +82,32 @@ impl EightEight {
     #[inline]
     #[must_use]
     pub fn distance_to_boundary(point: &Hyperbolic<3>) -> f64 {
-        let theta = (point.coordinates()[1].atan2(point.coordinates()[0])).rem_euclid(PI/4.0) - PI/8.0;
+        let theta =
+            (point.coordinates()[1].atan2(point.coordinates()[0])).rem_euclid(PI / 4.0) - PI / 8.0;
         let boost = (point.coordinates()[2] / point.skirt()).acosh();
         let rho = point.skirt();
         let xi = Self::CUSP_TO_EDGE;
         // boost into frame where edge is the vertical diameter
         let edge_as_diameter: Hyperbolic<3> = Hyperbolic::<3>::from_minkowski_coordinates(
             Minkowski::from([
-                rho*(xi.cosh())*(boost.sinh())*(theta.cos()) - rho*(xi.sinh())*(boost.cosh()),
-                rho*(boost.sinh())*(theta.sin()),
-                -rho*(xi.sinh())*(boost.sinh())*(theta.cos()) + rho*(xi.cosh())*(boost.cosh()),
+                rho * (xi.cosh()) * (boost.sinh()) * (theta.cos())
+                    - rho * (xi.sinh()) * (boost.cosh()),
+                rho * (boost.sinh()) * (theta.sin()),
+                -rho * (xi.sinh()) * (boost.sinh()) * (theta.cos())
+                    + rho * (xi.cosh()) * (boost.cosh()),
             ]),
-            rho
+            rho,
         );
         let flipped = Hyperbolic::<3>::from_minkowski_coordinates(
             Minkowski::from([
                 -edge_as_diameter.coordinates()[0],
                 edge_as_diameter.coordinates()[1],
-                edge_as_diameter.coordinates()[2]
+                edge_as_diameter.coordinates()[2],
             ]),
-            rho
-            );
+            rho,
+        );
         let sign = -(edge_as_diameter.coordinates()[0]).signum();
-        sign*(edge_as_diameter.distance(&flipped))/2.0
+        sign * (edge_as_diameter.distance(&flipped)) / 2.0
     }
     /// Points on the boundary of the fundamental domain
     #[inline]
@@ -150,7 +153,7 @@ mod tests {
         let e_edge_distance_numeric = 0.631_401_734_734_821;
         assert_relative_eq!(e_edge_distance, e_edge_distance_numeric, epsilon = 1e-12);
 
-        let f = Hyperbolic::<3>::from_polar_coordinates(0.6, 0.2+PI/4.0, 1.0);
+        let f = Hyperbolic::<3>::from_polar_coordinates(0.6, 0.2 + PI / 4.0, 1.0);
         let f_edge_distance = EightEight::distance_to_boundary(&f);
         let f_edge_distance_numeric = 0.947_879_122_461_848;
         assert_relative_eq!(f_edge_distance, f_edge_distance_numeric, epsilon = 1e-12);

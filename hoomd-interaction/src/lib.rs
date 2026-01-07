@@ -248,7 +248,7 @@ pub trait SiteEnergy<S> {
 ///     epsilon: f64,
 /// }
 ///
-/// impl<S> SitePairEnergy<S> for Custom
+/// impl<S> SitePairEnergy<S, Cartesian<2>> for Custom
 /// where
 ///     S: Position<Position = Cartesian<2>>,
 /// {
@@ -334,7 +334,9 @@ pub trait SiteEnergy<S> {
 ///
 /// struct PolydisperseCircleOverlap;
 ///
-/// impl SitePairEnergy<CircleSiteProperties> for PolydisperseCircleOverlap {
+/// impl SitePairEnergy<CircleSiteProperties, Cartesian<2>>
+///     for PolydisperseCircleOverlap
+/// {
 ///     fn site_pair_energy(
 ///         &self,
 ///         a: &CircleSiteProperties,
@@ -398,7 +400,7 @@ pub trait SiteEnergy<S> {
 /// # Ok(())
 /// # }
 /// ```
-pub trait SitePairEnergy<S> {
+pub trait SitePairEnergy<S, V> {
     /// Evaluate the energy contribution from a pair of sites.
     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64;
 
