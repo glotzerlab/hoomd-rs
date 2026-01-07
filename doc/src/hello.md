@@ -93,8 +93,9 @@ and molecular dynamics simulations using *hoomd-rs*.
 > ```shell
 > $ RUSTFLAGS="-C target-cpu=native" cargo build --release
 > ```
-> on the login node and and then use the executable placed in the
-> `target/release` directory in your submitted job scripts.
+> one (preferably in an interactive compute job) and and then use the
+> executable placed in the `target/release` directory in your submitted job
+> scripts.
 >
 > Unlike scripting languages (e.g. Python), saving changes to `main.rs` will
 > not take effect until you run
