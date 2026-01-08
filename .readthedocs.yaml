@@ -16,15 +16,14 @@ build:
     - cargo binstall wasm-bindgen-cli@`cargo info wasm-bindgen -q | grep "^version:" | cut -f 2 -d " "` --no-confirm --disable-strategies=compile --disable-telemetry --install-path "${PATH%%:*}"
     - curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz" | tar -xvz --strip-components 2 --directory "${PATH%%:*}"
     - ls "${PATH%%:*}"
-    # Build the API reference
-    - ./build_api_documentation.sh
     # Build the WASM examples
-    # - cargo run --locked -p build-wasm-doc-examples -- --reduce-size
+    - cargo run --locked -p build-wasm-doc-examples -- --reduce-size
     # Build the book
     - mkdir -p $READTHEDOCS_OUTPUT/html
     - echo "site-url = \"/$READTHEDOCS_LANGUAGE/$READTHEDOCS_VERSION/\"" >> doc/book.toml
     - mdbook build doc --dest-dir=$READTHEDOCS_OUTPUT/html
-    # Move the API docs
+    # Build the API docs
+    - ./build_api_documentation.sh
     - mkdir -p $READTHEDOCS_OUTPUT/html/api
     - mv target/doc/* $READTHEDOCS_OUTPUT/html/api
     # List the output files
