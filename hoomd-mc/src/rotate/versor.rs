@@ -4,14 +4,16 @@
 //! Implement Rotate for Versor
 
 use std::f64::consts::PI;
-
 use rand::{Rng, distr::Distribution};
 use rand_distr::Normal;
 
-use super::Rotate;
-use crate::LocalTrial;
+use hoomd_utility::valid::PositiveReal;
 use hoomd_microstate::property::Orientation;
 use hoomd_vector::{Cartesian, InnerProduct, Quaternion, Rotation, Versor};
+
+use super::Rotate;
+use crate::{Adjust, LocalTrial};
+
 /// A normal distribution of random Versors, centered on a mean with
 /// some standard deviation.
 #[derive(Debug, Clone, Copy)]
@@ -78,7 +80,7 @@ where
     /// Perturb a body's orientation by a random amount.
     ///
     /// In three dimensions, we design this perturbation as a versor whose
-    /// distribution is centered on the existing orientation and whose distribition is
+    /// distribution is centered on the existing orientation and whose distribution is
     /// narrow. To do so, we sample from a 3-dimensional Normal distribution
     /// in the tangent space of SO(3), lift to the manifold, then rotate to center on
     /// the current orientation. The result is a small displacement from
@@ -122,11 +124,24 @@ where
     }
 }
 
+impl Adjust for Rotate<Versor> {
+    /// Change the maximum trial move size by the given scale factor.
+    #[inline]
+    fn adjust(&mut self, factor: PositiveReal) {
+        self.maximum_rotation *= factor;
+
+        if self.maximum_rotation.get() > PI/2.0 {
+            self.maximum_rotation = (PI/2.0).try_into().expect("PI/2.0 should be a positive real");
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use hoomd_microstate::property::OrientedPoint;
     use hoomd_vector::{Cartesian, Versor};
+    use assert2::check;
     use rand::{SeedableRng, rngs::StdRng};
     use rstest::*;
 
@@ -166,5 +181,23 @@ mod tests {
             (mean - (0.75 * a)).abs(),
             (0.1 * a)
         );
+    }
+
+    #[test]
+    fn test_adjust() -> anyhow::Result<()> {
+        let mut rotate = Rotate::<Versor>::with_maximum_rotation(
+            0.5.try_into()?
+        );
+
+        rotate.adjust(2.0.try_into()?);
+        check!(rotate.maximum_rotation().get() == 1.0);
+
+        rotate.adjust(0.5.try_into()?);
+        check!(rotate.maximum_rotation().get() == 0.5);
+
+        rotate.adjust(10.0.try_into()?);
+        check!(rotate.maximum_rotation().get() == PI/2.0);
+        
+        Ok(())
     }
 }

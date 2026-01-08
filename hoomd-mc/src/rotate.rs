@@ -16,10 +16,12 @@ mod versor;
 /// by a small amount. The [`maximum_rotation`] parameter sets the largest possible
 /// rotation.
 ///
-/// For the 2D [`Angle`], [`maximum_rotation`] is measured in radians and the
-/// rotation is uniformly chosen between `-maximum_rotation` and `maximum_rotation`.
+/// When proposing trial moves for [`Angle`], [`maximum_rotation`] is measured
+/// in radians and the rotation is uniformly chosen between `-maximum_rotation`
+/// and `maximum_rotation`.
 ///
-/// TODO: document 3d maximum.
+/// When proposing trial moves for [`Versor`], [`maximum_rotation`] is measured
+/// in radians and the width of a Gaussian distribution centered on 0.
 ///
 /// [`Angle`]: hoomd_vector::Angle
 /// [`maximum_rotation`]: Self::maximum_rotation

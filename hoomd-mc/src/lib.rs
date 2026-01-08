@@ -265,6 +265,12 @@ pub trait Cover<P> {
     );
 }
 
+/// Change the maximum size of a local trial move.
+pub trait Adjust {
+    /// Change the maximum trial move size by the given scale factor.
+    fn adjust(&mut self, factor: PositiveReal);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

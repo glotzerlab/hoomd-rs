@@ -7,6 +7,8 @@ use std::marker::PhantomData;
 
 use hoomd_utility::valid::PositiveReal;
 
+use crate::Adjust;
+
 mod cartesian;
 mod hyperboloid;
 mod sphere;
@@ -78,5 +80,13 @@ impl<P> Translate<P> {
     #[inline]
     pub fn maximum_distance_mut(&mut self) -> &mut PositiveReal {
         &mut self.maximum_distance
+    }
+}
+
+impl<P> Adjust for Translate<P> {
+    /// Change the maximum trial move size by the given scale factor.
+    #[inline]
+    fn adjust(&mut self, factor: PositiveReal) {
+        self.maximum_distance *= factor;
     }
 }
