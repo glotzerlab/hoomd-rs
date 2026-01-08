@@ -8,7 +8,7 @@ use super::UnivariateEnergy;
 /// Monotonically non-decreasing potential to push sites apart (*not differentiable*).
 ///
 /// [`OverlapPenalty`] is specifically designed to work with the `QuickInsert`
-/// and `QuickCompress` protocols to quickly prepare states with non-overlapping
+/// and `QuickCompress` algorithms to quickly prepare states with non-overlapping
 /// particles. Combine it with [`ApproximateShapeOverlap`] to compute an energy that
 /// penalizes hard particle overlaps.
 ///

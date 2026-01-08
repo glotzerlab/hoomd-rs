@@ -1,9 +1,12 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Ensure that values are in well-defined ranges.
+//! Implement `PositiveReal`
 
-use std::fmt;
+use std::{
+    fmt,
+    ops::{Div, DivAssign, Mul, MulAssign},
+};
 
 use crate::Error;
 
@@ -99,25 +102,58 @@ impl fmt::Display for PositiveReal {
     }
 }
 
+impl Mul for PositiveReal {
+    type Output = Self;
+
+    #[inline]
+    fn mul(self, rhs: Self) -> Self {
+        Self(self.0 * rhs.0)
+    }
+}
+
+impl MulAssign<PositiveReal> for PositiveReal {
+    #[inline]
+    fn mul_assign(&mut self, rhs: PositiveReal) {
+        self.0 *= rhs.0;
+    }
+}
+
+impl Div for PositiveReal {
+    type Output = Self;
+
+    #[inline]
+    fn div(self, rhs: Self) -> Self {
+        Self(self.0 / rhs.0)
+    }
+}
+
+impl DivAssign<PositiveReal> for PositiveReal {
+    #[inline]
+    fn div_assign(&mut self, rhs: PositiveReal) {
+        self.0 /= rhs.0;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use assert2::check;
 
     #[test]
     fn positive_real_validation() {
         let result = PositiveReal::try_from(f64::INFINITY);
-        assert_eq!(result, Err(Error::NotFinite(f64::INFINITY)));
+        check!(result == Err(Error::NotFinite(f64::INFINITY)));
 
         let result = PositiveReal::try_from(-f64::INFINITY);
-        assert_eq!(result, Err(Error::NotFinite(-f64::INFINITY)));
+        check!(result == Err(Error::NotFinite(-f64::INFINITY)));
 
         let result = PositiveReal::try_from(f64::NAN);
-        assert!(matches!(result, Err(Error::NotFinite(_))));
+        check!(matches!(result, Err(Error::NotFinite(_))));
 
         let result = PositiveReal::try_from(0.0);
-        assert_eq!(result, Err(Error::NotPositive(0.0)));
+        check!(result == Err(Error::NotPositive(0.0)));
 
         let result = PositiveReal::try_from(-1.0);
-        assert_eq!(result, Err(Error::NotPositive(-1.0)));
+        check!(result == Err(Error::NotPositive(-1.0)));
     }
 }

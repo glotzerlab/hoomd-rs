@@ -27,4 +27,8 @@ pub enum Error {
     /// A finite value is required.
     #[error("{0} is not finite")]
     NotFinite(f64),
+
+    /// An value in (0,1) is required.
+    #[error("{0} is not in (0,1)")]
+    NotInOpenUnitInterval(f64),
 }

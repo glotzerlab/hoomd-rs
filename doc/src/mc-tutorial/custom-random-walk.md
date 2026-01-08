@@ -248,7 +248,7 @@ again. Notice that no points leave the boundary. Try pausing the simulation and
 advancing one step at a time. You should see that every particle moves left,
 right, down, or up on every step.
 
-Alternately, you can run the example in batch mode and then open
+You can also run the example in batch mode and then open
 the generated `trajectory.gsd` in [Ovito] or another visualization tool:
 ```shell
 cargo run --release --example custom-random-walk

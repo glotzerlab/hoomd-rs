@@ -50,26 +50,26 @@ categories = ["science"]
 
 [workspace.dependencies]
 # Subcrates
-hoomd-bevy = { path = "hoomd-bevy" }
-hoomd-geometry = { path = "hoomd-geometry" }
-hoomd-gsd = { path = "hoomd-gsd" }
-hoomd-interaction = { path = "hoomd-interaction" }
-hoomd-linear-algebra = { path = "hoomd-linear-algebra" }
-hoomd-manifold = { path = "hoomd-manifold" }
-hoomd-mc = { path = "hoomd-mc" }
-hoomd-microstate = { path = "hoomd-microstate" }
-hoomd-simulation = { path = "hoomd-simulation" }
-hoomd-spatial = { path = "hoomd-spatial" }
-hoomd-utility = { path = "hoomd-utility" }
-hoomd-vector = { path = "hoomd-vector" }
-hoomd-rand = { path = "hoomd-rand" }
+hoomd-bevy = { path = "hoomd-bevy", version = "0.0.0" }
+hoomd-geometry = { path = "hoomd-geometry", version = "0.0.0"}
+hoomd-gsd = { path = "hoomd-gsd", version = "0.0.0"}
+hoomd-interaction = { path = "hoomd-interaction", version = "0.0.0"}
+hoomd-linear-algebra = { path = "hoomd-linear-algebra", version = "0.0.0"}
+hoomd-manifold = { path = "hoomd-manifold", version = "0.0.0"}
+hoomd-mc = { path = "hoomd-mc", version = "0.0.0"}
+hoomd-microstate = { path = "hoomd-microstate", version = "0.0.0"}
+hoomd-simulation = { path = "hoomd-simulation", version = "0.0.0"}
+hoomd-spatial = { path = "hoomd-spatial", version = "0.0.0"}
+hoomd-utility = { path = "hoomd-utility", version = "0.0.0"}
+hoomd-vector = { path = "hoomd-vector", version = "0.0.0"}
+hoomd-rand = { path = "hoomd-rand", version = "0.0.0"}
 
 # Common dev dependencies
 assert2 = "=0.3.16"
 divan = "=0.1.21"
 paste = "=1.0.15"
 rstest = "=0.26.1"
-tempfile = "=3.23.0"
+tempfile = "=3.24.0"
 
 # Dependencies used internally
 clap = {version = "4.5.48", features = ["derive"]}
@@ -77,10 +77,13 @@ clap-verbosity-flag = "3.0.3"
 env_logger = "0.11.8"
 itertools = "0.14.0"
 log = "0.4.28"
+rayon = "1.11.0"
 rustc-hash = "2.1.1"
 serde = { version = "1.0.228", features = ["derive"]}
 serde_json = "1.0.145"
 wildmatch = "2.4.0"
+parquet = { version = "57.0.0", default-features=false }
+parquet_derive = { version = "57.0.0", default-features=false }
 
 # Dependencies exposed via Public APIs.
 anyhow = "1.0.100"
@@ -92,19 +95,22 @@ rand_distr = "0.5.1"
 thiserror = "2.0.12"
 
 # Bevy and bevy-adjacent dependencies
-bevy_egui = "0.36.0"
+bevy_egui = "0.38.0"
 [workspace.dependencies.bevy]
-version = "0.16.1"
+version = "0.17.0"
 default-features = false
 features = ["async_executor",
             "bevy_asset",
             "bevy_color",
             "bevy_log",
+            "bevy_mesh_picking_backend",
             "bevy_render",
-            "bevy_sprite",
+            "bevy_sprite_picking_backend",
+            "bevy_sprite_render",
             "bevy_state",
             "bevy_text",
             "bevy_ui",
+            "bevy_ui_render",
             "bevy_window",
             "bevy_winit",
             "default_font",
@@ -117,10 +123,10 @@ features = ["async_executor",
             "bevy_dev_tools"]
 
 [workspace.dependencies.bevy_diagnostic]
-version = "0.16.1"
+version = "0.17.0"
 
 [workspace.dependencies.bevy_winit]
-version = "0.16.1"
+version = "0.17.0"
 
 [workspace.lints.rust]
 missing_docs = "warn"
@@ -144,7 +150,6 @@ exhaustive_enums = "warn"
 impl_trait_in_params = "warn"
 missing_docs_in_private_items = "warn"
 missing_inline_in_public_items = "warn"
-mod_module_files = "warn"
 panic = "warn"
 partial_pub_fields = "warn"
 print_stderr = "warn"
@@ -172,7 +177,6 @@ default.extend-words = { ratatui = "ratatui" }
 # TODO: Check that this works after release. It may need to be in package.metadata
 # https://docs.rs/about/metadata
 rustdoc-args = [ "--html-in-header", "katex.html" ]
-all-features = true
 
 # Optimize for size in wasm builds
 [profile.release-wasm]
@@ -203,6 +207,8 @@ opt-level = 3
 opt-level = 3
 # [profile.dev.package.bevy_animation]
 # opt-level = 3
+[profile.dev.package.bevy_anti_alias]
+opt-level = 3
 [profile.dev.package.bevy_app]
 opt-level = 3
 [profile.dev.package.bevy_asset]
@@ -211,6 +217,8 @@ opt-level = 3
 opt-level = 3
 # [profile.dev.package.bevy_audio]
 # opt-level = 3
+[profile.dev.package.bevy_camera]
+opt-level = 3
 [profile.dev.package.bevy_color]
 opt-level = 3
 [profile.dev.package.bevy_core_pipeline]
@@ -222,6 +230,8 @@ opt-level = 3
 [profile.dev.package.bevy_ecs]
 opt-level = 3
 [profile.dev.package.bevy_ecs_macros]
+opt-level = 3
+[profile.dev.package.bevy_egui]
 opt-level = 3
 [profile.dev.package.bevy_encase_derive]
 opt-level = 3
@@ -242,6 +252,8 @@ opt-level = 3
 [profile.dev.package.bevy_internal]
 opt-level = 3
 [profile.dev.package.bevy_log]
+opt-level = 3
+[profile.dev.package.bevy_light]
 opt-level = 3
 [profile.dev.package.bevy_macro_utils]
 opt-level = 3
@@ -267,9 +279,7 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.bevy_render_macros]
 opt-level = 3
-[profile.dev.package.bevy_scene]
-opt-level = 3
-[profile.dev.package.bevy_sprite]
+[profile.dev.package.bevy_sprite_render]
 opt-level = 3
 [profile.dev.package.bevy_state]
 opt-level = 3
@@ -284,6 +294,8 @@ opt-level = 3
 [profile.dev.package.bevy_transform]
 opt-level = 3
 [profile.dev.package.bevy_ui]
+opt-level = 3
+[profile.dev.package.bevy_ui_render]
 opt-level = 3
 [profile.dev.package.bevy_utils]
 opt-level = 3

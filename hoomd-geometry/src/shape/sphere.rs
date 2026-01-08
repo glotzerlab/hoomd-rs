@@ -2,12 +2,15 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Hypersphere`]
-use crate::{BoundingSphereRadius, IntersectsAt, IsPointInside, SupportMapping, Volume};
+use crate::{
+    BoundingSphereRadius, Error, IntersectsAt, IsPointInside, MapPoint, Scale, SupportMapping,
+    Volume,
+};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation, distribution::Ball};
 
 use rand::{Rng, distr::Distribution};
-use std::{f64::consts::PI, ops::Mul};
+use std::{array, f64::consts::PI, ops::Mul};
 
 /// The (single, double, ...)-factorial function
 pub fn factorial(n: usize, ntuple: usize) -> usize {
@@ -273,6 +276,137 @@ where
     }
 }
 
+impl<const N: usize> Scale for Hypersphere<N> {
+    /// Construct a scaled hypersphere.
+    ///
+    /// The resulting hypersphere's radious $` r_\mathrm{new} `$ is
+    /// the original's $` r `$ scaled by $` v `$:
+    /// ```math
+    /// r_\mathrm{new} = v r
+    /// ```
+    ///
+    /// The centroid remains at the origin.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::Sphere};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let sphere = Sphere {
+    ///     radius: 5.0.try_into()?,
+    /// };
+    ///
+    /// let scaled_sphere = sphere.scale_length(0.5.try_into()?);
+    ///
+    /// assert_eq!(scaled_sphere.radius.get(), 2.5);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_length(&self, v: PositiveReal) -> Self {
+        Self {
+            radius: self.radius * v,
+        }
+    }
+
+    /// Construct a scaled hypersphere.
+    ///
+    /// The resulting hypersphere's radius $` r_\mathrm{new} `$ is
+    /// the original's $` r `$ scaled by $` v^\frac{1}{N} `$:
+    /// ```math
+    /// r_\mathrm{new} = v^\frac{1}{N} r
+    /// ```
+    ///
+    /// The centroid remains at the origin.
+    ///
+    /// # Example
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::Circle};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let sphere = Circle {
+    ///     radius: 5.0.try_into()?,
+    /// };
+    ///
+    /// let scaled_sphere = sphere.scale_volume(0.25.try_into()?);
+    ///
+    /// assert_eq!(scaled_sphere.radius.get(), 2.5);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_volume(&self, v: PositiveReal) -> Self {
+        let v = v.get().powf(1.0 / N as f64);
+        self.scale_length(v.try_into().expect("v^{1/N} should be a positive real"))
+    }
+}
+
+impl<const N: usize> MapPoint<Cartesian<N>> for Hypersphere<N> {
+    /// Map a point from one hypersphere to another.
+    ///
+    /// Given a point P *inside `self`*, map it to the other shape
+    /// by scaling.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::PointOutsideShape`] when `point` is outside the shape
+    /// `self`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{MapPoint, shape::Circle};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let closed_a = Circle {
+    ///     radius: 10.0.try_into()?,
+    /// };
+    /// let closed_b = Circle {
+    ///     radius: 20.0.try_into()?,
+    /// };
+    ///
+    /// let mapped_point =
+    ///     closed_a.map_point(Cartesian::from([-1.0, 1.0]), &closed_b);
+    ///
+    /// assert_eq!(mapped_point, Ok(Cartesian::from([-2.0, 2.0])));
+    /// assert_eq!(
+    ///     closed_a.map_point(Cartesian::from([-100.0, 1.0]), &closed_b),
+    ///     Err(hoomd_geometry::Error::PointOutsideShape)
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn map_point(&self, point: Cartesian<N>, other: &Self) -> Result<Cartesian<N>, Error> {
+        if !self.is_point_inside(&point) {
+            return Err(Error::PointOutsideShape);
+        }
+
+        // When multiplying by the scale factor, the floating point multiply
+        // might round up in a way that places the mapped point outside the
+        // other shape. Progressively make the scale smaller until the
+        // check passes.
+        let mut scale = other.radius / self.radius;
+        loop {
+            let point = Cartesian::from(array::from_fn(|i| scale.get() * point[i]));
+            if other.is_point_inside(&point) {
+                return Ok(point);
+            }
+
+            scale = scale
+                .get()
+                .next_down()
+                .try_into()
+                .expect("scale should remain a positive real");
+        }
+    }
+}
+
 impl<const N: usize> Distribution<Cartesian<N>> for Hypersphere<N> {
     /// Generate points uniformly distributed in the hypersphere.
     ///
@@ -315,8 +449,13 @@ mod tests {
     use super::*;
     use crate::Convex;
     use approxim::assert_relative_eq;
+    use assert2::check;
     use hoomd_vector::{Cartesian, Versor};
-    use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
+    use rand::{
+        SeedableRng,
+        distr::{Distribution, Uniform},
+        rngs::StdRng,
+    };
     use rstest::*;
     use std::marker::PhantomData;
 
@@ -345,28 +484,30 @@ mod tests {
     fn test_volume_and_radius<const N: usize>(
         #[case] _n: PhantomData<Hypersphere<N>>,
         #[values(0.01, 1.0, 33.3, 1e6)] radius: f64,
-    ) {
+    ) -> anyhow::Result<()> {
         let s = Hypersphere::<N> {
-            radius: radius.try_into().expect("test value is a positive real"),
+            radius: radius.try_into()?,
         };
 
         if radius == 1.0 {
-            assert_eq!(s.radius.get(), 1.0);
-            assert_eq!(s, Hypersphere::<N>::default());
+            check!(s.radius.get() == 1.0);
+            check!(s == Hypersphere::<N>::default());
         } else {
-            assert_eq!(s.radius.get(), radius);
+            check!(s.radius.get() == radius);
         }
 
         assert_relative_eq!(s.volume(), volume_map(N, radius));
+
+        Ok(())
     }
 
     #[rstest]
     fn test_n_factorial(#[values(1, 2, 3, 4)] m: usize) {
-        assert_eq!(factorial(m, m), m);
+        check!(factorial(m, m) == m);
     }
     #[rstest]
     fn test_single_double_factorial(#[values(1, 5, 10, 18, 20)] n: usize) {
-        assert_eq!(factorial(n, 1), factorial(n, 2) * factorial(n - 1, 2));
+        check!(factorial(n, 1) == factorial(n, 2) * factorial(n - 1, 2));
     }
 
     #[rstest]
@@ -379,17 +520,19 @@ mod tests {
     fn test_support_fn<const N: usize>(
         #[case] _n: PhantomData<Hypersphere<N>>,
         #[values(0.1, 1.0, 33.3)] radius: f64,
-    ) {
+    ) -> anyhow::Result<()> {
         let s = Hypersphere::<N> {
-            radius: radius.try_into().expect("test value is a positive real"),
+            radius: radius.try_into()?,
         };
         let v = Cartesian::<N>::from([radius.powi(2) / 1.8; N]);
-        assert_eq!(v / v.norm() * radius, s.support_mapping(&v));
+        check!(v / v.norm() * radius == s.support_mapping(&v));
+
+        Ok(())
     }
 
     #[test]
-    fn support_mapping() {
-        let sphere = Sphere::with_radius(2.0.try_into().expect("test value is a positive real"));
+    fn support_mapping() -> anyhow::Result<()> {
+        let sphere = Sphere::with_radius(2.0.try_into()?);
 
         assert_relative_eq!(
             sphere.support_mapping(&Cartesian::from([0.0, 0.0, 1.0])),
@@ -420,62 +563,203 @@ mod tests {
             sphere.support_mapping(&Cartesian::from([1.0, 1.0, 1.0])),
             [1.1547005383792517, 1.1547005383792517, 1.1547005383792517].into()
         );
+
+        Ok(())
     }
 
     #[test]
-    fn intersects_at() {
-        let sphere0 = Sphere::with_radius(2.0.try_into().expect("test value is a positive real"));
-        let sphere1 = Sphere::with_radius(4.0.try_into().expect("test value is a positive real"));
+    fn intersects_at() -> anyhow::Result<()> {
+        let sphere0 = Sphere::with_radius(2.0.try_into()?);
+        let sphere1 = Sphere::with_radius(4.0.try_into()?);
         let identity = Versor::default();
 
-        assert!(sphere0.intersects_at(&sphere1, &[0.0, 0.0, 5.9].into(), &identity));
-        assert!(sphere0.intersects_at(&sphere1, &[0.0, 5.9, 0.0].into(), &identity));
-        assert!(sphere0.intersects_at(&sphere1, &[5.9, 0.0, 0.0].into(), &identity));
-        assert!(sphere0.intersects_at(&sphere1, &[3.4, 3.4, 3.4].into(), &identity));
+        check!(sphere0.intersects_at(&sphere1, &[0.0, 0.0, 5.9].into(), &identity));
+        check!(sphere0.intersects_at(&sphere1, &[0.0, 5.9, 0.0].into(), &identity));
+        check!(sphere0.intersects_at(&sphere1, &[5.9, 0.0, 0.0].into(), &identity));
+        check!(sphere0.intersects_at(&sphere1, &[3.4, 3.4, 3.4].into(), &identity));
 
-        assert!(!sphere0.intersects_at(&sphere1, &[0.0, 0.0, 6.1].into(), &identity));
-        assert!(!sphere0.intersects_at(&sphere1, &[0.0, 6.1, 0.0].into(), &identity));
-        assert!(!sphere0.intersects_at(&sphere1, &[6.1, 0.0, 0.0].into(), &identity));
-        assert!(!sphere0.intersects_at(&sphere1, &[3.52, 3.52, 3.52].into(), &identity));
+        check!(!sphere0.intersects_at(&sphere1, &[0.0, 0.0, 6.1].into(), &identity));
+        check!(!sphere0.intersects_at(&sphere1, &[0.0, 6.1, 0.0].into(), &identity));
+        check!(!sphere0.intersects_at(&sphere1, &[6.1, 0.0, 0.0].into(), &identity));
+        check!(!sphere0.intersects_at(&sphere1, &[3.52, 3.52, 3.52].into(), &identity));
 
         let sphere0 = Convex(sphere0);
         let sphere1 = Convex(sphere1);
 
-        assert!(sphere0.intersects_at(&sphere1, &[0.0, 0.0, 5.9].into(), &identity));
-        assert!(sphere0.intersects_at(&sphere1, &[0.0, 5.9, 0.0].into(), &identity));
-        assert!(sphere0.intersects_at(&sphere1, &[5.9, 0.0, 0.0].into(), &identity));
-        assert!(sphere0.intersects_at(&sphere1, &[3.4, 3.4, 3.4].into(), &identity));
+        check!(sphere0.intersects_at(&sphere1, &[0.0, 0.0, 5.9].into(), &identity));
+        check!(sphere0.intersects_at(&sphere1, &[0.0, 5.9, 0.0].into(), &identity));
+        check!(sphere0.intersects_at(&sphere1, &[5.9, 0.0, 0.0].into(), &identity));
+        check!(sphere0.intersects_at(&sphere1, &[3.4, 3.4, 3.4].into(), &identity));
 
-        assert!(!sphere0.intersects_at(&sphere1, &[0.0, 0.0, 6.1].into(), &identity));
-        assert!(!sphere0.intersects_at(&sphere1, &[0.0, 6.1, 0.0].into(), &identity));
-        assert!(!sphere0.intersects_at(&sphere1, &[6.1, 0.0, 0.0].into(), &identity));
-        assert!(!sphere0.intersects_at(&sphere1, &[3.52, 3.52, 3.52].into(), &identity));
+        check!(!sphere0.intersects_at(&sphere1, &[0.0, 0.0, 6.1].into(), &identity));
+        check!(!sphere0.intersects_at(&sphere1, &[0.0, 6.1, 0.0].into(), &identity));
+        check!(!sphere0.intersects_at(&sphere1, &[6.1, 0.0, 0.0].into(), &identity));
+        check!(!sphere0.intersects_at(&sphere1, &[3.52, 3.52, 3.52].into(), &identity));
+
+        Ok(())
     }
 
     #[test]
-    fn is_point_inside() {
-        let circle = Circle::with_radius(2.0.try_into().expect("test value is a positive real"));
+    fn is_point_inside() -> anyhow::Result<()> {
+        let circle = Circle::with_radius(2.0.try_into()?);
 
-        assert!(circle.is_point_inside(&Cartesian::from([0.0, 0.0])));
-        assert!(circle.is_point_inside(&Cartesian::from([0.0, 1.0])));
-        assert!(circle.is_point_inside(&Cartesian::from([0.0, -1.0])));
-        assert!(circle.is_point_inside(&Cartesian::from([1.0, 0.0])));
-        assert!(circle.is_point_inside(&Cartesian::from([-1.0, 0.0])));
-        assert!(circle.is_point_inside(&Cartesian::from([2.0f64.next_down(), 0.0])));
-        assert!(circle.is_point_inside(&Cartesian::from([0.0, 2.0f64.next_down()])));
+        check!(circle.is_point_inside(&Cartesian::from([0.0, 0.0])));
+        check!(circle.is_point_inside(&Cartesian::from([0.0, 1.0])));
+        check!(circle.is_point_inside(&Cartesian::from([0.0, -1.0])));
+        check!(circle.is_point_inside(&Cartesian::from([1.0, 0.0])));
+        check!(circle.is_point_inside(&Cartesian::from([-1.0, 0.0])));
+        check!(circle.is_point_inside(&Cartesian::from([2.0f64.next_down(), 0.0])));
+        check!(circle.is_point_inside(&Cartesian::from([0.0, 2.0f64.next_down()])));
 
-        assert!(!circle.is_point_inside(&Cartesian::from([2.0, 0.0])));
-        assert!(!circle.is_point_inside(&Cartesian::from([0.0, 2.0])));
-        assert!(!circle.is_point_inside(&Cartesian::from([1.5, 1.5])));
+        check!(!circle.is_point_inside(&Cartesian::from([2.0, 0.0])));
+        check!(!circle.is_point_inside(&Cartesian::from([0.0, 2.0])));
+        check!(!circle.is_point_inside(&Cartesian::from([1.5, 1.5])));
+
+        Ok(())
     }
 
     #[test]
-    fn distribution() {
-        let circle = Circle::with_radius(4.0.try_into().expect("test value is a positive real"));
+    fn distribution() -> anyhow::Result<()> {
+        let circle = Circle::with_radius(4.0.try_into()?);
         let mut rng = StdRng::seed_from_u64(4);
 
         let points: Vec<_> = (&circle).sample_iter(&mut rng).take(N).collect();
-        assert!(&points.iter().all(|p| circle.is_point_inside(p)));
-        assert!(&points.iter().any(|p| p.dot(p) > 3.9));
+        check!(&points.iter().all(|p| circle.is_point_inside(p)));
+        check!(&points.iter().any(|p| p.dot(p) > 3.9));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_scale_length() -> anyhow::Result<()> {
+        let circle = Circle::with_radius(4.0.try_into()?);
+
+        let scaled_circle = circle.scale_length(2.0.try_into()?);
+        check!(scaled_circle.radius.get() == 8.0);
+
+        let scaled_circle = circle.scale_length(0.5.try_into()?);
+        check!(scaled_circle.radius.get() == 2.0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_scale_volume() -> anyhow::Result<()> {
+        let circle = Circle::with_radius(4.0.try_into()?);
+
+        let scaled_circle = circle.scale_volume(4.0.try_into()?);
+        check!(scaled_circle.radius.get() == 8.0);
+
+        let scaled_circle = circle.scale_volume(0.25.try_into()?);
+        check!(scaled_circle.radius.get() == 2.0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_map_basic() -> anyhow::Result<()> {
+        let circle_a = Circle::with_radius(4.0.try_into()?);
+        let circle_b = Circle::with_radius(8.0.try_into()?);
+
+        check!(
+            circle_a.map_point(Cartesian::from([0.0, 0.0]), &circle_b)
+                == Ok(Cartesian::from([0.0, 0.0]))
+        );
+        check!(
+            circle_b.map_point(Cartesian::from([0.0, 0.0]), &circle_a)
+                == Ok(Cartesian::from([0.0, 0.0]))
+        );
+
+        check!(
+            circle_a.map_point(Cartesian::from([100.0, 0.0]), &circle_b)
+                == Err(Error::PointOutsideShape)
+        );
+        check!(
+            circle_b.map_point(Cartesian::from([0.0, -200.0]), &circle_a)
+                == Err(Error::PointOutsideShape)
+        );
+
+        check!(
+            circle_a.map_point(Cartesian::from([3.0, 0.0]), &circle_b)
+                == Ok(Cartesian::from([6.0, 0.0]))
+        );
+        check!(
+            circle_b.map_point(Cartesian::from([-6.0, 0.0]), &circle_a)
+                == Ok(Cartesian::from([-3.0, 0.0]))
+        );
+
+        check!(
+            circle_a.map_point(Cartesian::from([-1.0, 2.0]), &circle_b)
+                == Ok(Cartesian::from([-2.0, 4.0]))
+        );
+        check!(
+            circle_b.map_point(Cartesian::from([2.0, -4.0]), &circle_a)
+                == Ok(Cartesian::from([1.0, -2.0]))
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_map_surface() -> anyhow::Result<()> {
+        let mut rng = StdRng::seed_from_u64(3);
+        let uniform_radius = Uniform::new(1.0, 1000.0)?;
+        let uniform_angle = Uniform::new(0.0, 2.0 * PI)?;
+
+        for _ in 0..16384 {
+            let a = uniform_radius.sample(&mut rng);
+            let b = uniform_radius.sample(&mut rng);
+            let circle_a = Circle::with_radius(a.try_into()?);
+            let circle_b = Circle::with_radius(b.try_into()?);
+
+            // Test that points right on the boundary of one shape remain inside
+            // the other shape. If not implemented correctly, map_point might
+            // round  and place a point just outside the shape. This test fails
+            // without corner case handling in `map_point`.
+
+            let left = circle_a.map_point(Cartesian::from([(-a).next_up(), 0.0]), &circle_b)?;
+            check!(
+                circle_b.is_point_inside(&left),
+                "{left:?} should be inside {circle_b:?}"
+            );
+
+            let right = circle_a.map_point(Cartesian::from([a.next_down(), 0.0]), &circle_b)?;
+            check!(
+                circle_b.is_point_inside(&right),
+                "{right:?} should be inside {circle_b:?}"
+            );
+
+            let bottom = circle_a.map_point(Cartesian::from([0.0, (-a).next_up()]), &circle_b)?;
+            check!(
+                circle_b.is_point_inside(&bottom),
+                "{bottom:?} should be inside {circle_b:?}"
+            );
+
+            let top = circle_a.map_point(Cartesian::from([0.0, a.next_down()]), &circle_b)?;
+            check!(
+                circle_b.is_point_inside(&top),
+                "{top:?} should be inside {circle_b:?}"
+            );
+
+            for _ in 0..32 {
+                let theta = uniform_angle.sample(&mut rng);
+                let point = Cartesian::from([a * theta.cos(), b * theta.sin()]);
+
+                // `point` may be rounded in such a way that it falls outside the shape.
+                // Skip these cases. 32 iterations is sufficient to produce many interior
+                // points.
+                if !circle_a.is_point_inside(&point) {
+                    continue;
+                }
+
+                let mapped_point = circle_a.map_point(point, &circle_b)?;
+                check!(
+                    circle_b.is_point_inside(&mapped_point),
+                    "{mapped_point:?} should be inside {circle_b:?}"
+                );
+            }
+        }
+
+        Ok(())
     }
 }

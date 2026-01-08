@@ -4,6 +4,7 @@
 //! Implement [`Microstate`] and related types.
 
 use arrayvec::ArrayVec;
+use hoomd_geometry::MapPoint;
 use std::{cmp::Reverse, collections::BinaryHeap, fmt};
 
 use crate::{
@@ -62,7 +63,7 @@ struct VecWithTags<T> {
 }
 
 impl<T> VecWithTags<T> {
-    /// Construct an empty vector with tagged items.
+    /// Construct an empty vector of tagged items.
     fn new() -> Self {
         Self {
             items: Vec::new(),
@@ -1291,6 +1292,119 @@ where
                 &self.ghosts.items[index]
             }
         })
+    }
+}
+
+/// Manipulate the microstate as a whole.
+impl<P, B, S, X, C> Microstate<B, S, X, C>
+where
+    P: Copy,
+    B: Clone + Transform<S> + Position<Position = P>,
+    S: Clone + Position<Position = P> + Default,
+    C: Clone + Wrap<B> + Wrap<S> + GenerateGhosts<S> + MapPoint<P>,
+    X: Clone + PointUpdate<P, SiteKey>,
+{
+    /// Clone the microstate, mapping or wrapping bodies into a new boundary.
+    ///
+    /// The resulting microstate contains the same bodies and sites as the source.
+    /// All bodies and sites maintain the same index order and tags.
+    ///
+    /// `should_map_body` will be called on every body in the microstate. When
+    /// it returns `true`, `clone_with_boundary` will map the body's position
+    /// from `self.boundary` to `new_boundary` using [`MapPoint`]. When
+    /// `should_map_body` returns `false`, the `clone_with_boundary` wraps
+    /// the body's unmodified position into `new_boundary`. That wrap may fail,
+    /// especially in closed (or partially closed) boundary conditions.
+    ///
+    /// [`MapPoint`]: hoomd_geometry::MapPoint
+    ///
+    /// # Errors
+    ///
+    /// [`Error::UpdateBody`] when some body or site cannot be wrapped into the
+    /// new boundary.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_microstate::{
+    ///     Body, Microstate,
+    ///     boundary::Closed,
+    ///     property::{Point, Position},
+    /// };
+    /// use hoomd_vector::Cartesian;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///
+    /// let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
+    /// let microstate = Microstate::builder()
+    ///     .boundary(square)
+    ///     .bodies([Body::point(Cartesian::from([1.0, 2.0]))])
+    ///     .bodies([Body::point(Cartesian::from([3.0, 4.0]))])
+    ///     .try_build()?;
+    ///
+    /// let new_square = Closed(Rectangle::with_equal_edges(20.0.try_into()?));
+    ///
+    /// let new_microstate =
+    ///     microstate.clone_with_boundary(new_square, |body| body.tag > 0)?;
+    ///
+    /// assert_eq!(
+    ///     *new_microstate.bodies()[0].item.properties.position(),
+    ///     Cartesian::from([1.0, 2.0])
+    /// );
+    /// assert_eq!(
+    ///     *new_microstate.bodies()[1].item.properties.position(),
+    ///     Cartesian::from([6.0, 8.0])
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[allow(
+        clippy::missing_inline_in_public_items,
+        reason = "extremely expensive methods should not be inlined"
+    )]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "Panic would occur due to a bug in hoomd-rs."
+    )]
+    pub fn clone_with_boundary<F>(
+        &self,
+        new_boundary: C,
+        should_map_body: F,
+    ) -> Result<Microstate<B, S, X, C>, Error>
+    where
+        F: Fn(&Tagged<Body<B, S>>) -> bool,
+    {
+        // clone_with_boundary is used in Monte Carlo methods, such as box trial
+        // moves. Callers expect that any new microstate produced maintains
+        // the same body/site tag associations, including the same set of free
+        // tags as there may be external code that refers to specific bodies
+        // by tag. Therefore, this method cannot construct a new microstate and
+        // add bodies to it. A full clone is not strictly necessary to preserve
+        // tags, but it is the lowest effort approach.
+        let mut new_microstate = self.clone();
+
+        // MC methods require the clone as they keep the old microstate for
+        // rejected moves. MD methods do not need to clone.
+        // TODO: Refactor this code into a method like `set_boundary_and_update_bodies`.
+        // It would take a callable that updates the bodies so that MD methods could
+        // scale both position and velocity appropriately.
+
+        new_microstate.boundary = new_boundary;
+
+        for body_index in 0..new_microstate.bodies().len() {
+            let tagged_body = &new_microstate.bodies()[body_index];
+            let mut new_properties = tagged_body.item.properties.clone();
+            if should_map_body(tagged_body) {
+                *new_properties.position_mut() = self
+                    .boundary
+                    .map_point(*new_properties.position(), &new_microstate.boundary)
+                    .expect("body position should be inside the boundary");
+            }
+
+            new_microstate.update_body_properties(body_index, new_properties)?;
+        }
+
+        Ok(new_microstate)
     }
 }
 

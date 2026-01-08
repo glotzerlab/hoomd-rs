@@ -3,6 +3,10 @@
 
 //! Implement periodic boundary conditions.
 
+use std::fmt;
+
+use hoomd_geometry::{MapPoint, Scale, Volume};
+use hoomd_utility::valid::PositiveReal;
 use rand::{Rng, distr::Distribution};
 
 use super::{Error, MaximumAllowableInteractionRange};
@@ -115,6 +119,31 @@ impl<T> Periodic<T> {
     pub fn shape(&self) -> &T {
         &self.shape
     }
+
+    /// Access the boundary's maximum interaction range.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_microstate::boundary::Periodic;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let periodic =
+    ///     Periodic::new(2.5, Rectangle::with_equal_edges(10.0.try_into()?))?;
+    ///
+    /// assert_eq!(periodic.maximum_interaction_range(), 2.5);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[expect(
+        clippy::same_name_method,
+        reason = "MaximumInteractionRange is a trait in hoomd-interaction"
+    )]
+    #[inline]
+    pub fn maximum_interaction_range(&self) -> f64 {
+        self.maximum_interaction_range
+    }
 }
 
 impl<T, V> Distribution<V> for Periodic<T>
@@ -146,6 +175,186 @@ where
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> V {
         self.shape.sample(rng)
+    }
+}
+
+impl<T> Scale for Periodic<T>
+where
+    T: fmt::Debug + Scale + MaximumAllowableInteractionRange,
+{
+    /// Scale the wrapped shape.
+    ///
+    /// # Panics
+    ///
+    /// When scaling the wrapped shape, `scale_length` will panic if
+    /// the scaled maximum allowable interaction range is smaller than
+    /// `maximum_interaction_range`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::Rectangle};
+    /// use hoomd_microstate::boundary::Periodic;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let periodic =
+    ///     Periodic::new(2.5, Rectangle::with_equal_edges(10.0.try_into()?))?;
+    ///
+    /// let scaled_periodic = periodic.scale_length(0.5.try_into()?);
+    ///
+    /// assert_eq!(scaled_periodic.maximum_interaction_range(), 2.5);
+    /// assert_eq!(scaled_periodic.shape().edge_lengths[0].get(), 5.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// ```should_panic
+    /// use hoomd_geometry::{Scale, shape::Rectangle};
+    /// use hoomd_microstate::boundary::Periodic;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let periodic =
+    ///     Periodic::new(2.5, Rectangle::with_equal_edges(10.0.try_into()?))?;
+    ///
+    /// let scaled_periodic = periodic.scale_length(0.2.try_into()?);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_length(&self, v: PositiveReal) -> Self {
+        let new_shape = self.shape.scale_length(v);
+        assert!(
+            new_shape.maximum_allowable_interaction_range() >= self.maximum_interaction_range,
+            "The scaled periodic boundary {new_shape:?} is too small for the maximum interaction range {}",
+            self.maximum_interaction_range
+        );
+
+        Self {
+            shape: new_shape,
+            ..*self
+        }
+    }
+
+    /// Scale the wrapped shape.
+    ///
+    /// # Panics
+    ///
+    /// When scaling the wrapped shape, `scale_length` will panic if
+    /// the scaled maximum allowable interaction range is smaller than
+    /// `maximum_interaction_range`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hoomd_geometry::{Scale, shape::Rectangle};
+    /// use hoomd_microstate::boundary::Periodic;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let periodic =
+    ///     Periodic::new(2.5, Rectangle::with_equal_edges(10.0.try_into()?))?;
+    ///
+    /// let scaled_periodic = periodic.scale_volume(4.0.try_into()?);
+    ///
+    /// assert_eq!(scaled_periodic.maximum_interaction_range(), 2.5);
+    /// assert_eq!(scaled_periodic.shape().edge_lengths[0].get(), 20.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// ```should_panic
+    /// use hoomd_geometry::{Scale, shape::Rectangle};
+    /// use hoomd_microstate::boundary::Periodic;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let periodic =
+    ///     Periodic::new(2.5, Rectangle::with_equal_edges(10.0.try_into()?))?;
+    ///
+    /// let scaled_periodic = periodic.scale_volume(0.2.try_into()?);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn scale_volume(&self, v: PositiveReal) -> Self {
+        let new_shape = self.shape.scale_volume(v);
+        assert!(
+            new_shape.maximum_allowable_interaction_range() >= self.maximum_interaction_range,
+            "The scaled periodic boundary {new_shape:?} is too small for the maximum interaction range {}",
+            self.maximum_interaction_range
+        );
+
+        Self {
+            shape: new_shape,
+            ..*self
+        }
+    }
+}
+
+impl<P, T> MapPoint<P> for Periodic<T>
+where
+    T: MapPoint<P>,
+{
+    /// Map points in from the wrapped shape into another periodic boundary.
+    ///
+    /// # Errors
+    ///
+    /// [`hoomd_geometry::Error::PointOutsideShape`] when `point` is outside
+    /// `self.shape()`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::{MapPoint, shape::Rectangle};
+    /// use hoomd_microstate::boundary::Periodic;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let periodic_a =
+    ///     Periodic::new(2.5, Rectangle::with_equal_edges(10.0.try_into()?))?;
+    /// let periodic_b =
+    ///     Periodic::new(2.5, Rectangle::with_equal_edges(20.0.try_into()?))?;
+    ///
+    /// let mapped_point =
+    ///     periodic_a.map_point(Cartesian::from([-1.0, 1.0]), &periodic_b);
+    ///
+    /// assert_eq!(mapped_point, Ok(Cartesian::from([-2.0, 2.0])));
+    /// assert_eq!(
+    ///     periodic_a.map_point(Cartesian::from([-100.0, 1.0]), &periodic_b),
+    ///     Err(hoomd_geometry::Error::PointOutsideShape)
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn map_point(&self, point: P, other: &Self) -> Result<P, hoomd_geometry::Error> {
+        self.shape.map_point(point, &other.shape)
+    }
+}
+
+impl<T> Volume for Periodic<T>
+where
+    T: Volume,
+{
+    /// Volume of the wrapped shape.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hoomd_geometry::{Volume, shape::Rectangle};
+    /// use hoomd_microstate::boundary::Periodic;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let periodic =
+    ///     Periodic::new(2.5, Rectangle::with_equal_edges(10.0.try_into()?))?;
+    ///
+    /// let volume = periodic.volume();
+    ///
+    /// assert_eq!(volume, 100.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn volume(&self) -> f64 {
+        self.shape.volume()
     }
 }
 

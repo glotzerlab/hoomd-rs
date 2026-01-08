@@ -86,6 +86,7 @@ use super::{PointUpdate, PointsNearBall, WithSearchRadius};
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug)]
 pub struct VecCell<K, const D: usize> {
     /// The width of each cell.
     cell_width: PositiveReal,
