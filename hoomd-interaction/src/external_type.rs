@@ -170,6 +170,71 @@ where
 
         total
     }
+
+    /// Compute the difference in energy between two microstates.
+    ///
+    /// Returns `$ E_\mathrm{final} - E_\mathrm{initial} $`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_interaction::{External, TotalEnergy, external::Linear};
+    /// use hoomd_microstate::{Body, Microstate, property::Point};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate_a = Microstate::new();
+    /// microstate_a.extend_bodies([
+    ///     Body::point(Cartesian::from([1.0, 0.0])),
+    ///     Body::point(Cartesian::from([-1.0, 2.0])),
+    /// ])?;
+    ///
+    /// let mut microstate_b = Microstate::new();
+    /// microstate_b.extend_bodies([
+    ///     Body::point(Cartesian::from([1.0, 1.0])),
+    ///     Body::point(Cartesian::from([-1.0, 2.0])),
+    /// ])?;
+    ///
+    /// let linear = External(Linear {
+    ///     alpha: 1.0,
+    ///     plane_origin: Cartesian::default(),
+    ///     plane_normal: [0.0, 1.0].try_into()?,
+    /// });
+    ///
+    /// let delta_energy_total =
+    ///     linear.delta_energy_total(&microstate_a, &microstate_b);
+    /// assert_eq!(delta_energy_total, 1.0);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn delta_energy_total(
+        &self,
+        initial_microstate: &Microstate<B, S, X, C>,
+        final_microstate: &Microstate<B, S, X, C>,
+    ) -> f64 {
+        let mut energy_final = 0.0;
+        for site in final_microstate.sites() {
+            let one = self.0.site_energy(&site.properties);
+            if one == f64::INFINITY {
+                return one;
+            }
+            energy_final += one;
+        }
+
+        let mut energy_initial = 0.0;
+        if !E::is_only_infinite_or_zero() {
+            for site in initial_microstate.sites() {
+                let one = self.0.site_energy_initial(&site.properties);
+                if one == f64::INFINITY {
+                    return -one;
+                }
+                energy_initial += one;
+            }
+        }
+
+        energy_final - energy_initial
+    }
 }
 
 impl<P, B, S, X, C, E> DeltaEnergyOne<B, S, X, C> for External<E>
@@ -584,7 +649,7 @@ mod test_finite {
         }
 
         #[test]
-        fn delta_energy() {
+        fn delta_energy() -> anyhow::Result<()> {
             let cuboid = Rectangle::with_equal_edges(
                 4.0.try_into()
                     .expect("hard-coded constant should be positive"),
@@ -615,6 +680,13 @@ mod test_finite {
             check!(energy.delta_energy_one(&microstate, 0, &final_body) == 2.0);
             check!(energy.delta_energy_insert(&microstate, &final_body) == 6.0);
             check!(energy.delta_energy_remove(&microstate, 0) == -4.0);
+
+            let mut microstate_final = microstate.clone();
+            microstate_final.update_body_properties(0, final_body.properties)?;
+
+            check!(energy.delta_energy_total(&microstate, &microstate_final) == 2.0);
+
+            Ok(())
         }
     }
 }
@@ -793,7 +865,7 @@ mod test_infinite {
         }
 
         #[test]
-        fn delta_energy() {
+        fn delta_energy() -> anyhow::Result<()> {
             let cuboid = Rectangle::with_equal_edges(
                 4.0.try_into()
                     .expect("hard-coded constant should be positive"),
@@ -823,6 +895,19 @@ mod test_infinite {
             check!(energy.delta_energy_insert(&microstate, &final_body_0) == 0.0);
             check!(energy.delta_energy_insert(&microstate, &final_body_inf) == f64::INFINITY);
             check!(energy.delta_energy_remove(&microstate, 0) == 0.0);
+
+            let mut microstate_inf = microstate.clone();
+            microstate_inf.update_body_properties(0, final_body_inf.properties)?;
+
+            let mut microstate_0 = microstate.clone();
+            microstate_0.update_body_properties(0, final_body_0.properties)?;
+
+            check!(energy.delta_energy_total(&microstate_0, &microstate_0) == 0.0);
+            check!(energy.delta_energy_total(&microstate_0, &microstate_inf) == f64::INFINITY);
+            check!(energy.delta_energy_total(&microstate_inf, &microstate_0) == 0.0);
+            check!(energy.delta_energy_total(&microstate_inf, &microstate_inf) == f64::INFINITY);
+
+            Ok(())
         }
     }
 }

@@ -20,6 +20,7 @@ use hoomd_utility::valid::PositiveReal;
 
 mod hypercuboid;
 mod parallel_sweep;
+mod quick_compress;
 mod quick_insert;
 mod rotate;
 mod sweep;
@@ -28,6 +29,7 @@ mod uniform_in;
 
 pub use hypercuboid::HypercuboidCheckerboard;
 pub use parallel_sweep::ParallelSweep;
+pub use quick_compress::QuickCompress;
 pub use quick_insert::QuickInsert;
 pub use rotate::Rotate;
 pub use sweep::Sweep;

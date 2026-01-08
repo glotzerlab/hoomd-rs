@@ -16,7 +16,7 @@ use hoomd_microstate::{
 use hoomd_spatial::PointUpdate;
 
 /// Track the state of a given `QuickInsert` instance.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 enum State {
     /// Inserting bodies or performing trial moves to separate them.
     Running,
@@ -29,40 +29,37 @@ enum State {
 /// [`QuickInsert`] allows you to *quickly* insert many bodies into the microstate.
 /// It does so by *breaking detailed balance*, so you should use it only during
 /// the initialization phase of your simulation where you prepare a microstate
-/// for later equilibration. The [`QuickInsert`] protocol is an alternate to the
-/// `QuickCompress` protocol with the advantage that you can keep the boundary and
-/// any of your barriers fixed while randomly inserting particles. The disadvantage
-/// is that [`QuickInsert`] cannot achieve densities as high as `QuickCompress`.
+/// for later equilibration.
 ///
-/// [`QuickInsert`] works only with hard particle potentials that go to infinity
-/// when overlapping. It works best with the [`OverlapPenalty`] potential that
-/// allows sites to overlap a small amount and for trial moves to partially reduce
-/// that overlap.
+/// [`QuickInsert`]  works best with the [`OverlapPenalty`] potential that
+/// allows sites to overlap a small amount and for trial moves to partially
+/// reduce that overlap.
 ///
-/// As a **protocol**, [`QuickInsert`] is more than just a trial move. A
-/// [`QuickInsert`] instance stores internal state to track its progress. Therefore,
-/// you should only use a given [`QuickInsert`] on one [`Microstate`]. After
-/// initialization, a [`QuickInsert`] knows the *target* number of bodies it should
-/// add a distribution that places those bodies in the simulation boundary. New
+/// As a **algorithm**, [`QuickInsert`] is more than just a trial move, it
+/// stores internal state to track its progress. Therefore, you should only
+/// use a given [`QuickInsert`] on one [`Microstate`]. After initialization,
+/// a [`QuickInsert`] knows the *target* number of bodies it should add a
+/// distribution that places those bodies in the simulation boundary. New
 /// [`QuickInsert`] instances start in the running state.
 ///
 /// When you [`apply`] a running [`QuickInsert`] to a microstate, it:
 /// 1. Checks the total energy of the given Hamiltonian.
-/// 2. If the total energy is zero *and there are still bodies to insert*, generate
-///    a random body and attempt to insert it into the microstate. Reject any
-///    insertion that would result in an infinite energy. Accept in all other cases.
+/// 2. If the total energy is less than or equal to zero *and there are still
+///    bodies to insert*, generate a random body and attempt to insert it into
+///    the microstate. Reject any insertion that would result in an infinite
+///    energy. Accept in all other cases.
 /// 3. Repeat step 2 until inserted bodies overlap with others `allowed_overlaps`
 ///    times, the target number of bodies have been inserted, or a total of `target`
 ///    attempts have been made during this call, whichever comes first.
 ///
 /// When *both* `target` bodies have been inserted *and* the energy is
 /// 0, [`QuickInsert`] transitions to the complete state. When complete,
-/// [`is_complete`] returns `true` and [`apply`] does nothing.
+/// [`is_complete`] returns `true` and [`apply`] returns immediately.
 ///
 /// For spherical particles, [`QuickInsert`] combined with [`OverlapPenalty`]
 /// can achieve a packing fraction of 56% in 3D and 72% in 2D. You might achieve
 /// slightly higher densities if you are willing to run many steps, though
-/// `QuickCompress` is a better solution.
+/// [`QuickCompress`] is a better solution.
 ///
 /// The generic type names are:
 /// * `D`: The body distribution.
@@ -70,6 +67,7 @@ enum State {
 /// [`apply`]: Self::apply
 /// [`is_complete`]: Self::is_complete
 /// [`OverlapPenalty`]: hoomd_interaction::univariate::OverlapPenalty
+/// [`QuickCompress`]: crate::QuickCompress
 ///
 /// # Example
 ///
@@ -108,7 +106,7 @@ pub struct QuickInsert<D> {
 }
 
 impl<D> QuickInsert<D> {
-    /// Build a new quick insert protocol.
+    /// Build a new quick insert algorithm.
     ///
     /// After construction, the `QuickInsert` starts in a running state. On
     /// successive calls to `apply`, it will attempt to insert `target` bodies into
@@ -145,7 +143,7 @@ impl<D> QuickInsert<D> {
         }
     }
 
-    /// Check if the quick insert protocol is complete.
+    /// Check if the quick insert algorithm is complete.
     ///
     /// `QuickInsert` completes after it has inserted all `target` bodies **and**
     /// the total energy of the system is less than or equal to 0. When using the
@@ -208,7 +206,7 @@ impl<D> QuickInsert<D> {
         self.target
     }
 
-    /// Apply the quick insert protocol to a microstate.
+    /// Apply the quick insert algorithm to a microstate.
     ///
     /// Combine [`QuickInsert::apply`] with local trial moves that translate and/or
     /// rotate bodies by small amounts to relieve the stress caused by inserting
@@ -216,6 +214,7 @@ impl<D> QuickInsert<D> {
     ///
     /// # Example
     ///
+    /// Hard spheres
     /// ```
     /// use hoomd_geometry::shape::Rectangle;
     /// use hoomd_interaction::{
@@ -288,7 +287,7 @@ impl<D> QuickInsert<D> {
 
         let energy = hamiltonian.total_energy(microstate);
 
-        // The quick insert protocol is not complete until the energy has reached 0.
+        // The quick insert algorithm is not complete until the energy has reached 0.
         if energy <= 0.0 && self.inserted >= self.target {
             self.state = State::Complete;
             return count;

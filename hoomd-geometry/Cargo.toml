@@ -23,6 +23,8 @@ thiserror.workspace = true
 workspace = true
 
 [dev-dependencies]
+anyhow.workspace = true
+assert2.workspace = true
 approxim.workspace = true
 divan.workspace = true
 rstest.workspace = true

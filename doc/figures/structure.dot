@@ -88,6 +88,7 @@ digraph hoomd_rs {
         node [ shape=rectangle, fillcolor="#a6e3a1", style="filled"]
 
         QuickInsert
+        QuickCompress
         Rotate -> LocalTrial
         Translate -> LocalTrial
         UniformIn -> "Distribution<Body>"
@@ -99,6 +100,7 @@ digraph hoomd_rs {
         UniformIn [ URL="../api/hoomd_mc/struct.UniformIn.html" ]
         "Distribution<Body>" [ URL="https://docs.rs/rand/latest/rand/distr/trait.Distribution.html" ]
         QuickInsert [ URL="../api/hoomd_mc/struct.QuickInsert.html" ]
+        QuickCompress [ URL="../api/hoomd_mc/struct.QuickCompress.html" ]
         Rotate [ URL="../api/hoomd_mc/struct.Rotate.html" ]
         Translate [ URL="../api/hoomd_mc/struct.Translate.html" ]
         LocalTrial [ URL="../api/hoomd_mc/trait.LocalTrial.html" ]
@@ -162,6 +164,8 @@ digraph hoomd_rs {
         BoundingSphereRadius
         IntersectsAt
         IsPointInside
+        MapPoint
+        Scale
         SupportMapping
         Volume
 
@@ -175,6 +179,9 @@ digraph hoomd_rs {
         shapes -> IsPointInside
         shapes -> IntersectsAt
         shapes -> BoundingSphereRadius
+        shapes -> MapPoint
+        shapes -> Scale
+        Scale -> shapes [ style=dashed, arrowhead=empty ]
         SupportMapping -> Convex -> IntersectsAt
         Sphero -> SupportMapping [ dir = both ]
 
@@ -187,6 +194,8 @@ digraph hoomd_rs {
         BoundingSphereRadius [ URL="../api/hoomd_geometry/trait.BoundingSphereRadius.html" ]
         Volume [ URL="../api/hoomd_geometry/trait.Volume.html" ]
         IsPointInside [ URL="../api/hoomd_geometry/trait.IsPointInside.html" ]
+        MapPoint [ URL="../api/hoomd_geometry/trait.MapPoint.html" ]
+        Scale [ URL="../api/hoomd_geometry/trait.Scale.html" ]
         }
 
     subgraph hoomd_spatial {
@@ -217,9 +226,12 @@ digraph hoomd_rs {
         VecCell [ URL="../api/hoomd_spatial/struct.VecCell.html" ]
     }
 
-    Hamiltonian -> {QuickInsert, Sweep}
+    Scale -> QuickCompress
+    MapPoint -> QuickCompress
+    Hamiltonian -> {QuickInsert, QuickCompress, Sweep}
     Trial -> Microstate [ style=dashed, arrowhead=empty ]
     QuickInsert -> Microstate [ style=dashed, arrowhead=empty ]
+    QuickCompress -> Microstate [ style=dashed, arrowhead=empty ]
     Hamiltonian -> Microstate [ style=dashed, arrowhead=empty ]
     spatial -> Microstate
     IntersectsAt -> HardShape
