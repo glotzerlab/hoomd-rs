@@ -60,7 +60,7 @@ $ mdbook serve --open
 
 To build the API documentation from source and open it in your browser, execute:
 ```shell
-RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --locked --workspace --all-features --exclude benchmarks --exclude hoomd-examples --lib --no-deps --open
+RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --workspace --exclude benchmarks --exclude hoomd-examples --lib --no-deps --open
 ```
 You can omit the `--workspace` to build the documentation more quickly, but this
 skips `hoomd-bevy`.

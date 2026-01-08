@@ -17,7 +17,7 @@ build:
     - curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz" | tar -xvz --strip-components 2 --directory "${PATH%%:*}"
     - ls "${PATH%%:*}"
     # Build the API reference
-    - RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --locked --workspace
+    - RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --workspace --exclude benchmarks --exclude hoomd-examples --lib --no-deps
     # Build the WASM examples
     # - cargo run --locked -p build-wasm-doc-examples -- --reduce-size
     # Build the book
