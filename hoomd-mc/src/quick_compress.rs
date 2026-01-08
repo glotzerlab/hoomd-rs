@@ -68,7 +68,6 @@ enum State<C> {
 /// [`target_volume`]: Self::target_volume
 /// [`is_complete`]: Self::is_complete
 /// [`OverlapPenalty`]: hoomd_interaction::univariate::OverlapPenalty
-/// [`Microstate`]: hoomd_microstate::Microstate
 ///
 /// # Example
 ///
@@ -371,9 +370,6 @@ impl<C> QuickCompress<C> {
     /// [`target_volume`]: Self::target_volume
     /// [`maximum_delta`]: Self::maximum_delta
     /// [`maximum_energy_per_site`]: Self::maximum_energy_per_site
-    /// [`Wrap`]: hoomd_microstate::boundary::Wrap
-    /// [`MapPoint`]: hoomd_geometry::MapPoint
-    /// [`Scale`]: hoomd_geometry::Scale
     ///
     /// # Example
     ///

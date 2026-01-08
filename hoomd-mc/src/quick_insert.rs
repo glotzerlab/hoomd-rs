@@ -68,7 +68,6 @@ enum State {
 /// [`is_complete`]: Self::is_complete
 /// [`OverlapPenalty`]: hoomd_interaction::univariate::OverlapPenalty
 /// [`QuickCompress`]: crate::QuickCompress
-/// [`Microstate`]: hoomd_microstate::Microstate
 ///
 /// # Example
 ///
