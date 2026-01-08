@@ -51,3 +51,26 @@ fn gen_random(bencher: Bencher) {
         .counter(ItemsCount::from(1_u32))
         .bench_local(|| black_box(rng.random::<Versor>()));
 }
+
+#[divan::bench_group]
+mod quat_metric {
+    use super::{Bencher, Counter, ItemsCount, Rng, Versor, black_box, divan};
+    #[divan::bench]
+    fn arc_distance(bencher: Bencher) {
+        let mut rng = Counter::new(0, 0, 0).make_rng();
+
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| (rng.random::<Versor>(), rng.random::<Versor>()))
+            .bench_local_refs(|(l, r)| black_box(l.arc_distance(r)));
+    }
+    #[divan::bench]
+    fn half_euclidean_norm_squared(bencher: Bencher) {
+        let mut rng = Counter::new(0, 0, 0).make_rng();
+
+        bencher
+            .counter(ItemsCount::from(1_u32))
+            .with_inputs(|| (rng.random::<Versor>(), rng.random::<Versor>()))
+            .bench_local_refs(|(l, r)| black_box(l.half_euclidean_norm_squared(r)));
+    }
+}

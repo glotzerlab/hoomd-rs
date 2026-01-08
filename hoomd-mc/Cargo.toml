@@ -16,6 +16,7 @@ workspace = true
 [dependencies]
 itertools.workspace = true
 rand.workspace = true
+rand_distr.workspace = true
 rayon.workspace = true
 
 hoomd-geometry.workspace = true
