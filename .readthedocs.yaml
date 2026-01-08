@@ -4,9 +4,6 @@ build:
   tools:
     rust: "1.91"
   commands:
-    - rustup install 1.92.0
-    - rustup default 1.92.0
-    - rustup component list --installed
     # Install cargo binstall
     - mkdir -p "${PATH%%:*}"
     - curl -sSL "https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-gnu.tgz" | tar -xvz --directory "${PATH%%:*}"
@@ -20,7 +17,7 @@ build:
     - curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz" | tar -xvz --strip-components 2 --directory "${PATH%%:*}"
     - ls "${PATH%%:*}"
     # Build the API reference
-    - RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --locked --workspace --all-features --exclude benchmarks --exclude hoomd-examples --lib --no-deps
+    - RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --locked --workspace
     # Build the WASM examples
     # - cargo run --locked -p build-wasm-doc-examples -- --reduce-size
     # Build the book
