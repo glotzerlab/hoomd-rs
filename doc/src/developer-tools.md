@@ -58,12 +58,12 @@ $ mdbook serve --open
 
 ### rustdoc
 
-To build the API documentation from source and open it in your browser, execute:
+To build the API documentation from source, execute:
 ```shell
-RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --workspace --exclude benchmarks --exclude hoomd-examples --lib --no-deps --open
+./build_api_documentation.sh
 ```
-You can omit the `--workspace` to build the documentation more quickly, but this
-skips `hoomd-bevy`.
+Open `target/doc/hoomd-vector/index.html` in your web browser to view the
+documentation.
 
 ## WASM
 

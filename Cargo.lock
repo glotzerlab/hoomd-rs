@@ -2465,6 +2465,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "examples"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "bevy_egui",
+ "hoomd-bevy",
+ "hoomd-geometry",
+ "hoomd-gsd",
+ "hoomd-interaction",
+ "hoomd-manifold",
+ "hoomd-mc",
+ "hoomd-microstate",
+ "hoomd-simulation",
+ "hoomd-spatial",
+ "hoomd-utility",
+ "hoomd-vector",
+ "rand",
+]
+
+[[package]]
 name = "faer"
 version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3187,27 +3208,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hoomd-examples"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "bevy",
- "bevy_egui",
- "hoomd-bevy",
- "hoomd-geometry",
- "hoomd-gsd",
- "hoomd-interaction",
- "hoomd-manifold",
- "hoomd-mc",
- "hoomd-microstate",
- "hoomd-simulation",
- "hoomd-spatial",
- "hoomd-utility",
- "hoomd-vector",
- "rand",
-]
-
-[[package]]
 name = "hoomd-geometry"
 version = "0.0.0"
 dependencies = [
@@ -3669,9 +3669,9 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libc"
-version = "0.2.179"
+version = "0.2.180"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5a2d376baa530d1238d133232d15e239abad80d05838b4b59354e5268af431f"
+checksum = "bcc35a38544a891a5f7c865aca548a982ccb3b8650a5b06d0fd33a10283c56fc"
 
 [[package]]
 name = "libloading"

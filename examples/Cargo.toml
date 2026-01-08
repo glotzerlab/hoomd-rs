@@ -1,5 +1,5 @@
 [package]
-name = "hoomd-examples"
+name = "examples"
 categories.workspace = true
 description = "Collect examples that demonstrate how to use hoomd-rs."
 edition.workspace = true
@@ -39,9 +39,6 @@ anyhow.workspace = true
 bevy = { workspace = true, optional = true }
 bevy_egui = { workspace = true, optional = true }
 rand.workspace = true
-
-[package.metadata.docs.rs]
-all-features = true
 
 [[example]]
 name = "hello"
