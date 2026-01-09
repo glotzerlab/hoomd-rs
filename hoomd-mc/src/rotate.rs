@@ -3,7 +3,7 @@
 
 //! Implement Rotate
 
-use std::marker::PhantomData;
+use std::{fmt, marker::PhantomData};
 
 use hoomd_utility::valid::PositiveReal;
 
@@ -24,6 +24,7 @@ mod versor;
 /// in radians and the width of a Gaussian distribution centered on 0.
 ///
 /// [`Angle`]: hoomd_vector::Angle
+/// [`Versor`]: hoomd_vector::Versor
 /// [`maximum_rotation`]: Self::maximum_rotation
 ///
 /// The generic type names are:
@@ -84,5 +85,13 @@ impl<P> Rotate<P> {
     #[inline]
     pub fn maximum_rotation_mut(&mut self) -> &mut PositiveReal {
         &mut self.maximum_rotation
+    }
+}
+
+impl<P> fmt::Display for Rotate<P> {
+    /// Format a [`Rotate`] as `{maximum_rotation}`.
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.maximum_rotation.fmt(f)
     }
 }

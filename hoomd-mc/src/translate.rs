@@ -4,6 +4,7 @@
 //! Implement Translate
 
 use std::marker::PhantomData;
+use std::fmt;
 
 use hoomd_utility::valid::PositiveReal;
 
@@ -88,5 +89,13 @@ impl<P> Adjust for Translate<P> {
     #[inline]
     fn adjust(&mut self, factor: PositiveReal) {
         self.maximum_distance *= factor;
+    }
+}
+
+impl<P> fmt::Display for Translate<P> {
+    /// Format a [`Translate`] as `{maximum_distance}`.
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.maximum_distance.fmt(f)
     }
 }

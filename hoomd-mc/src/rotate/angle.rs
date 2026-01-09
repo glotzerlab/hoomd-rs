@@ -13,8 +13,7 @@ use hoomd_utility::valid::PositiveReal;
 use hoomd_microstate::property::Orientation;
 use hoomd_vector::Angle;
 
-use super::Rotate;
-use crate::{Adjust, LocalTrial};
+use crate::{Adjust, LocalTrial, Rotate};
 
 impl<B> LocalTrial<B> for Rotate<Angle>
 where

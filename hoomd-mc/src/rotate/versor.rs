@@ -11,8 +11,7 @@ use hoomd_utility::valid::PositiveReal;
 use hoomd_microstate::property::Orientation;
 use hoomd_vector::{Cartesian, InnerProduct, Quaternion, Rotation, Versor};
 
-use super::Rotate;
-use crate::{Adjust, LocalTrial};
+use crate::{Adjust, Rotate, LocalTrial};
 
 /// A normal distribution of random Versors, centered on a mean with
 /// some standard deviation.
