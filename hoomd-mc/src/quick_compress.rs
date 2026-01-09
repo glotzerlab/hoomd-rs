@@ -519,5 +519,3 @@ impl<C> QuickCompress<C> {
         }
     }
 }
-
-// TODO: test

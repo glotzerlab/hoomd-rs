@@ -67,7 +67,7 @@ impl Distribution<Versor> for VersorDisplacement {
             let v = s * v_factor;
 
             // We are normalized by construction, so call the tuple initializer
-            return (Quaternion::from([w, v[0], v[1], v[2]])).to_versor_unchecked(); // TODO: no need to re-normalize!
+            return (Quaternion::from([w, v[0], v[1], v[2]])).to_versor_unchecked();
         }
     }
 }
