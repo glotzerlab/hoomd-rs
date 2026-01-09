@@ -16,8 +16,8 @@ use rand::Rng;
 
 use std::ops::{Add, AddAssign};
 
-use hoomd_utility::valid::{OpenUnitIntervalNumber, PositiveReal};
 use hoomd_microstate::Microstate;
+use hoomd_utility::valid::{OpenUnitIntervalNumber, PositiveReal};
 
 mod hypercuboid;
 mod parallel_sweep;
@@ -26,8 +26,8 @@ mod quick_insert;
 mod rotate;
 mod sweep;
 mod translate;
-mod uniform_in;
 pub(crate) mod tune_local;
+mod uniform_in;
 
 pub use hypercuboid::HypercuboidCheckerboard;
 pub use parallel_sweep::ParallelSweep;
@@ -207,13 +207,13 @@ impl AddAssign for Count {
 
 impl Add for Count {
     type Output = Self;
-    
+
     #[inline]
     fn add(self, rhs: Self) -> Self {
         Count {
-        accepted: self.accepted + rhs.accepted,
-        rejected: self.rejected + rhs.rejected,
-    }
+            accepted: self.accepted + rhs.accepted,
+            rejected: self.rejected + rhs.rejected,
+        }
     }
 }
 
@@ -292,7 +292,7 @@ pub trait Adjust {
 /// their trial move size to achieve a desired acceptance ratio.
 /// The tuning is performed in the context of a given microstate,
 /// Hamiltonian, and macrostate **but the microstate is not modified**.
-pub trait Tune<P, B, S, X, C, L, H, MA> {    
+pub trait Tune<P, B, S, X, C, L, H, MA> {
     /// Tune the trial move maximum size to achieve a given acceptance ratio.
     ///
     /// Use [`tune_default`] unless you have a specific need to adjust the
@@ -304,14 +304,15 @@ pub trait Tune<P, B, S, X, C, L, H, MA> {
     /// `steps` iterations.
     ///
     /// [`tune_default`]: Tune::tune_default
-    fn tune(&mut self,
+    fn tune(
+        &mut self,
         microstate: &Microstate<B, S, X, C>,
         hamiltonian: &H,
         macrostate: &MA,
         target_acceptance: OpenUnitIntervalNumber,
         samples: usize,
         steps: usize,
-        );
+    );
 
     /// Tune the trial move maximum size with default parameters.
     ///
@@ -320,13 +321,20 @@ pub trait Tune<P, B, S, X, C, L, H, MA> {
     /// - `samples`: 8,000
     /// - `steps`: 32
     #[inline]
-    fn tune_default(&mut self,
+    fn tune_default(
+        &mut self,
         microstate: &Microstate<B, S, X, C>,
         hamiltonian: &H,
         macrostate: &MA,
-        ) {
-
-        self.tune(microstate, hamiltonian, macrostate, 0.2.try_into().expect("hard-coded constant should be valid"), 8_000, 32);
+    ) {
+        self.tune(
+            microstate,
+            hamiltonian,
+            macrostate,
+            0.2.try_into().expect("hard-coded constant should be valid"),
+            8_000,
+            32,
+        );
     }
 }
 
@@ -348,8 +356,10 @@ pub trait Tune<P, B, S, X, C, L, H, MA> {
     reason = "Panic would occur due to a bug in hoomd-rs."
 )]
 #[inline]
-pub fn tune<L>(local_trial: &mut L, target_acceptance: OpenUnitIntervalNumber, count: &Count) where
-L: Adjust {
+pub fn tune<L>(local_trial: &mut L, target_acceptance: OpenUnitIntervalNumber, count: &Count)
+where
+    L: Adjust,
+{
     const GAMMA: f64 = 1.5;
 
     if let Some(acceptance_ratio) = count.acceptance_ratio() {
@@ -404,7 +414,7 @@ mod tests {
             accepted: 100,
             rejected: 1_900,
         };
-        
+
         let mut local_trial = Translate::<Cartesian<2>>::with_maximum_distance(1.0.try_into()?);
         tune(&mut local_trial, 0.2.try_into()?, &low);
         check!(local_trial.maximum_distance().get() < 1.0);
@@ -413,11 +423,11 @@ mod tests {
             accepted: 0,
             rejected: 2_000,
         };
-        
+
         let mut local_trial = Translate::<Cartesian<2>>::with_maximum_distance(1.0.try_into()?);
         tune(&mut local_trial, 0.2.try_into()?, &zero);
         check!(local_trial.maximum_distance().get() < 1.0);
 
         Ok(())
-        }
     }
+}

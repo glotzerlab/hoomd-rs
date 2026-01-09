@@ -3,8 +3,7 @@
 
 //! Implement Translate
 
-use std::marker::PhantomData;
-use std::fmt;
+use std::{fmt, marker::PhantomData};
 
 use hoomd_utility::valid::PositiveReal;
 

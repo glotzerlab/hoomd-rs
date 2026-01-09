@@ -7,7 +7,7 @@ use rand::{Rng, seq::IndexedRandom};
 use rayon::prelude::*;
 use std::fmt::Display;
 
-use super::{Count, LocalTrial, Trial, Tune, Adjust, tune_local::tune_local_trial};
+use super::{Adjust, Count, LocalTrial, Trial, Tune, tune_local::tune_local_trial};
 use hoomd_interaction::DeltaEnergyOne;
 use hoomd_microstate::{
     Body, Microstate, SiteKey, Transform,
@@ -16,7 +16,7 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_spatial::PointUpdate;
-use hoomd_utility::valid::{PositiveReal, OpenUnitIntervalNumber};
+use hoomd_utility::valid::{OpenUnitIntervalNumber, PositiveReal};
 
 use crate::{Checkerboard, Cover};
 
@@ -432,14 +432,16 @@ where
     /// # Example
     ///
     /// ```
+    /// use hoomd_geometry::shape::Rectangle;
     /// use hoomd_interaction::{
-    /// MaximumInteractionRange, PairwiseCutoff,
-    /// pairwise::HardSphere,};
+    ///     MaximumInteractionRange, PairwiseCutoff, pairwise::HardSphere,
+    /// };
     /// use hoomd_mc::{ParallelSweep, Translate, Trial, Tune};
-    /// use hoomd_microstate::{Body, Microstate, property::Position, boundary::Periodic};
+    /// use hoomd_microstate::{
+    ///     Body, Microstate, boundary::Periodic, property::Position,
+    /// };
     /// use hoomd_simulation::macrostate::Isothermal;
     /// use hoomd_vector::Cartesian;
-    /// use hoomd_geometry::shape::Rectangle;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let square = Rectangle::with_equal_edges(10.0.try_into()?);
@@ -452,7 +454,7 @@ where
     /// microstate.add_body(Body::point(Cartesian::from([0.6, 0.6])))?;
     /// let d = 0.1;
     /// let translate = Translate::with_maximum_distance(d.try_into()?);
-    /// let mut translate_sweep = ParallelSweep::new(1.0.try_into()?, translate);;
+    /// let mut translate_sweep = ParallelSweep::new(1.0.try_into()?, translate);
     ///
     /// let hamiltonian = PairwiseCutoff(HardSphere { diameter: 1.0 });
     /// let macrostate = Isothermal { temperature: 1.0 };
@@ -465,15 +467,23 @@ where
     /// # }
     /// ```
     #[inline]
-    fn tune(&mut self,
+    fn tune(
+        &mut self,
         microstate: &Microstate<B, S, X, C>,
         hamiltonian: &H,
         macrostate: &MA,
         target_acceptance: OpenUnitIntervalNumber,
         samples: usize,
         steps: usize,
-        ) {
-        
-        tune_local_trial(&mut self.local_trial, microstate, hamiltonian, macrostate, target_acceptance, samples, steps);
-        }
+    ) {
+        tune_local_trial(
+            &mut self.local_trial,
+            microstate,
+            hamiltonian,
+            macrostate,
+            target_acceptance,
+            samples,
+            steps,
+        );
+    }
 }

@@ -10,7 +10,9 @@ use hoomd_geometry::{
     shape::{ConvexPolyhedron, Hypercuboid},
 };
 use hoomd_interaction::{PairwiseCutoff, pairwise::HardShape};
-use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial, Tune};
+use hoomd_mc::{
+    Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial, Tune,
+};
 use hoomd_microstate::{
     Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},
@@ -107,14 +109,11 @@ where
                 &self.hamiltonian,
                 &self.macrostate,
             );
-            self.rotate_count += self.rotate_sweep.apply(
-                &mut self.microstate,
-                &self.hamiltonian,
-                &self.macrostate,
-            );
+            self.rotate_count +=
+                self.rotate_sweep
+                    .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
         }
         self.microstate.increment_step();
-
 
         Ok(())
     }

@@ -3,14 +3,14 @@
 
 //! Implement Rotate for Angle
 
-use std::f64::consts::PI;
 use rand::{
     Rng,
     distr::{Distribution, Uniform},
 };
+use std::f64::consts::PI;
 
-use hoomd_utility::valid::PositiveReal;
 use hoomd_microstate::property::Orientation;
+use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Angle;
 
 use crate::{Adjust, LocalTrial, Rotate};
@@ -120,9 +120,7 @@ mod tests {
 
     #[test]
     fn test_adjust() -> anyhow::Result<()> {
-        let mut rotate = Rotate::<Angle>::with_maximum_rotation(
-            0.5.try_into()?
-        );
+        let mut rotate = Rotate::<Angle>::with_maximum_rotation(0.5.try_into()?);
 
         rotate.adjust(2.0.try_into()?);
         check!(rotate.maximum_rotation().get() == 1.0);
@@ -132,7 +130,7 @@ mod tests {
 
         rotate.adjust(10.0.try_into()?);
         check!(rotate.maximum_rotation().get() == PI);
-        
+
         Ok(())
     }
 }

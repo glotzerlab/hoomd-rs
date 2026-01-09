@@ -160,14 +160,16 @@ where
     /// # Example
     ///
     /// ```
+    /// use hoomd_geometry::shape::Rectangle;
     /// use hoomd_interaction::{
-    /// MaximumInteractionRange, PairwiseCutoff,
-    /// pairwise::HardSphere,};
+    ///     MaximumInteractionRange, PairwiseCutoff, pairwise::HardSphere,
+    /// };
     /// use hoomd_mc::{Sweep, Translate, Trial, Tune};
-    /// use hoomd_microstate::{Body, Microstate, property::Position, boundary::Periodic};
+    /// use hoomd_microstate::{
+    ///     Body, Microstate, boundary::Periodic, property::Position,
+    /// };
     /// use hoomd_simulation::macrostate::Isothermal;
     /// use hoomd_vector::Cartesian;
-    /// use hoomd_geometry::shape::Rectangle;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let square = Rectangle::with_equal_edges(2.2.try_into()?);
@@ -191,17 +193,25 @@ where
     /// # }
     /// ```
     #[inline]
-    fn tune(&mut self,
+    fn tune(
+        &mut self,
         microstate: &Microstate<B, S, X, C>,
         hamiltonian: &H,
         macrostate: &MA,
         target_acceptance: OpenUnitIntervalNumber,
         samples: usize,
         steps: usize,
-        ) {
-        
-        tune_local_trial(&mut self.0, microstate, hamiltonian, macrostate, target_acceptance, samples, steps);
-        }
+    ) {
+        tune_local_trial(
+            &mut self.0,
+            microstate,
+            hamiltonian,
+            macrostate,
+            target_acceptance,
+            samples,
+            steps,
+        );
+    }
 }
 
 #[cfg(test)]

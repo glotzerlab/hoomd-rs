@@ -3,8 +3,8 @@
 
 //! Implement local trial tune
 
-use rand::Rng;
 use log::{debug, trace};
+use rand::Rng;
 use std::fmt::Display;
 
 use super::{Adjust, Count, LocalTrial, tune};
@@ -19,15 +19,15 @@ use hoomd_spatial::PointUpdate;
 use hoomd_utility::valid::OpenUnitIntervalNumber;
 
 /// Tune local trial moves.
-pub(crate) fn tune_local_trial<P, B, S, X, C, L, H, MA>(local_trial: &mut L,
-        microstate: &Microstate<B, S, X, C>,
-        hamiltonian: &H,
-        macrostate: &MA,
-        target_acceptance: OpenUnitIntervalNumber,
-        samples: usize,
-        steps: usize,
-        )
-    where 
+pub(crate) fn tune_local_trial<P, B, S, X, C, L, H, MA>(
+    local_trial: &mut L,
+    microstate: &Microstate<B, S, X, C>,
+    hamiltonian: &H,
+    macrostate: &MA,
+    target_acceptance: OpenUnitIntervalNumber,
+    samples: usize,
+    steps: usize,
+) where
     P: Copy,
     B: Copy + Default + Transform<S> + Position<Position = P>,
     S: Copy + Default + Position<Position = P>,
@@ -36,7 +36,7 @@ pub(crate) fn tune_local_trial<P, B, S, X, C, L, H, MA>(local_trial: &mut L,
     H: DeltaEnergyOne<B, S, X, C>,
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     MA: Temperature,
-    {
+{
     let kt = macrostate.temperature();
     let mut rng = microstate.counter().make_rng();
     let mut trial = Body::<B, S>::default();
@@ -66,15 +66,18 @@ pub(crate) fn tune_local_trial<P, B, S, X, C, L, H, MA>(local_trial: &mut L,
                     }
                 }
                 Err(_) => count.rejected += 1,
-                }
             }
-
-        if let Some(acceptance_ratio) = count.acceptance_ratio() {
-            trace!("-- {step} / {steps}: {local_trial:.4} - {:.1}%", acceptance_ratio*100.0);
-            }
-
-        tune(local_trial, target_acceptance, &count);
         }
 
-        debug!("-- complete: {local_trial}");
+        if let Some(acceptance_ratio) = count.acceptance_ratio() {
+            trace!(
+                "-- {step} / {steps}: {local_trial:.4} - {:.1}%",
+                acceptance_ratio * 100.0
+            );
+        }
+
+        tune(local_trial, target_acceptance, &count);
     }
+
+    debug!("-- complete: {local_trial}");
+}

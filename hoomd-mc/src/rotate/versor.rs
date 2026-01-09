@@ -3,15 +3,15 @@
 
 //! Implement Rotate for Versor
 
-use std::f64::consts::PI;
 use rand::{Rng, distr::Distribution};
 use rand_distr::Normal;
+use std::f64::consts::PI;
 
-use hoomd_utility::valid::PositiveReal;
 use hoomd_microstate::property::Orientation;
+use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Quaternion, Rotation, Versor};
 
-use crate::{Adjust, Rotate, LocalTrial};
+use crate::{Adjust, LocalTrial, Rotate};
 
 /// A normal distribution of random Versors, centered on a mean with
 /// some standard deviation.
@@ -129,8 +129,10 @@ impl Adjust for Rotate<Versor> {
     fn adjust(&mut self, factor: PositiveReal) {
         self.maximum_rotation *= factor;
 
-        if self.maximum_rotation.get() > PI/2.0 {
-            self.maximum_rotation = (PI/2.0).try_into().expect("PI/2.0 should be a positive real");
+        if self.maximum_rotation.get() > PI / 2.0 {
+            self.maximum_rotation = (PI / 2.0)
+                .try_into()
+                .expect("PI/2.0 should be a positive real");
         }
     }
 }
@@ -138,9 +140,9 @@ impl Adjust for Rotate<Versor> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use assert2::check;
     use hoomd_microstate::property::OrientedPoint;
     use hoomd_vector::{Cartesian, Versor};
-    use assert2::check;
     use rand::{SeedableRng, rngs::StdRng};
     use rstest::*;
 
@@ -184,9 +186,7 @@ mod tests {
 
     #[test]
     fn test_adjust() -> anyhow::Result<()> {
-        let mut rotate = Rotate::<Versor>::with_maximum_rotation(
-            0.5.try_into()?
-        );
+        let mut rotate = Rotate::<Versor>::with_maximum_rotation(0.5.try_into()?);
 
         rotate.adjust(2.0.try_into()?);
         check!(rotate.maximum_rotation().get() == 1.0);
@@ -195,8 +195,8 @@ mod tests {
         check!(rotate.maximum_rotation().get() == 0.5);
 
         rotate.adjust(10.0.try_into()?);
-        check!(rotate.maximum_rotation().get() == PI/2.0);
-        
+        check!(rotate.maximum_rotation().get() == PI / 2.0);
+
         Ok(())
     }
 }
