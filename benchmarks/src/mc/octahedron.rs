@@ -10,7 +10,9 @@ use hoomd_geometry::{
     shape::{ConvexPolyhedron, Hypercuboid},
 };
 use hoomd_interaction::{PairwiseCutoff, pairwise::HardShape};
-use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Sweep, Translate, Trial};
+use hoomd_mc::{
+    Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial, Tune,
+};
 use hoomd_microstate::{
     Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},
@@ -35,9 +37,20 @@ pub struct Octahedron<X> {
     /// Translate moves (serial)
     translate_sweep: Sweep<Translate<Cartesian<3>>>,
 
+    /// Rotate moves (serial)
+    rotate_sweep: Sweep<Rotate<Versor>>,
+
     /// Translate moves (parallel)
     parallel_translate_sweep: ParallelSweep<
         Translate<Cartesian<3>>,
+        HypercuboidCheckerboard<3>,
+        OrientedPoint<Cartesian<3>, Versor>,
+        OrientedPoint<Cartesian<3>, Versor>,
+    >,
+
+    /// Rotate moves (parallel)
+    parallel_rotate_sweep: ParallelSweep<
+        Rotate<Versor>,
         HypercuboidCheckerboard<3>,
         OrientedPoint<Cartesian<3>, Versor>,
         OrientedPoint<Cartesian<3>, Versor>,
@@ -49,8 +62,11 @@ pub struct Octahedron<X> {
     /// Temperature set point.
     macrostate: Isothermal,
 
-    /// Track moves attempted during the benchmark period.
-    count: Count,
+    /// Track translate moves attempted during the benchmark period.
+    translate_count: Count,
+
+    /// Track rotate moves attempted during the benchmark period.
+    rotate_count: Count,
 
     /// Set to true to use the parallel translate moves.
     parallel: bool,
@@ -64,7 +80,8 @@ impl<X> Effort for Octahedron<X> {
 
     #[inline]
     fn effort(&self) -> f64 {
-        self.count.total() as f64 / self.microstate.bodies().len() as f64
+        let complete_count = self.translate_count + self.rotate_count;
+        complete_count.total() as f64 / self.microstate.bodies().len() as f64
     }
 }
 
@@ -76,21 +93,27 @@ where
     #[inline]
     fn advance(&mut self) -> anyhow::Result<()> {
         if self.parallel {
-            self.count += self.parallel_translate_sweep.apply(
+            self.translate_count += self.parallel_translate_sweep.apply(
+                &mut self.microstate,
+                &self.hamiltonian,
+                &self.macrostate,
+            );
+            self.rotate_count += self.parallel_rotate_sweep.apply(
                 &mut self.microstate,
                 &self.hamiltonian,
                 &self.macrostate,
             );
         } else {
-            self.count += self.translate_sweep.apply(
+            self.translate_count += self.translate_sweep.apply(
                 &mut self.microstate,
                 &self.hamiltonian,
                 &self.macrostate,
             );
+            self.rotate_count +=
+                self.rotate_sweep
+                    .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
         }
         self.microstate.increment_step();
-
-        // TODO: Rotate moves
 
         Ok(())
     }
@@ -111,7 +134,14 @@ where
         write!(
             f,
             "\nTranslate acceptance: {}",
-            self.count
+            self.translate_count
+                .acceptance_ratio()
+                .expect("there should be some trial moves")
+        )?;
+        write!(
+            f,
+            "\nRotate acceptance: {}",
+            self.rotate_count
                 .acceptance_ratio()
                 .expect("there should be some trial moves")
         )
@@ -142,8 +172,12 @@ where
         let sigma = 1.0;
 
         let translate = Translate::with_maximum_distance((sigma * 0.1).try_into()?);
-        let translate_sweep = Sweep(translate.clone());
-        let parallel_translate_sweep = ParallelSweep::new(sigma.try_into()?, translate);
+        let mut translate_sweep = Sweep(translate.clone());
+        let mut parallel_translate_sweep = ParallelSweep::new(sigma.try_into()?, translate);
+
+        let rotate = Rotate::with_maximum_rotation((0.1).try_into()?);
+        let mut rotate_sweep = Sweep(rotate.clone());
+        let mut parallel_rotate_sweep = ParallelSweep::new(sigma.try_into()?, rotate);
 
         let octahedron = ConvexPolyhedron::with_vertices(vec![
             [-0.5, 0.0, 0.0].into(),
@@ -162,13 +196,23 @@ where
             .bodies(microstate.bodies().iter().map(|b| b.item.clone()))
             .try_build()?;
 
+        let macrostate = Isothermal { temperature: 1.0 };
+
+        translate_sweep.tune_default(&microstate, &hamiltonian, &macrostate);
+        *parallel_translate_sweep.local_trial_mut() = translate_sweep.0.clone();
+        rotate_sweep.tune_default(&microstate, &hamiltonian, &macrostate);
+        *parallel_rotate_sweep.local_trial_mut() = rotate_sweep.0.clone();
+
         Ok(Self {
             microstate,
             translate_sweep,
+            rotate_sweep,
             parallel_translate_sweep,
+            parallel_rotate_sweep,
             hamiltonian,
-            macrostate: Isothermal { temperature: 1.0 },
-            count: Count::default(),
+            macrostate,
+            translate_count: Count::default(),
+            rotate_count: Count::default(),
             parallel,
         })
     }

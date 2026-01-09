@@ -544,44 +544,6 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     pub fn boundary(&self) -> &C {
         &self.boundary
     }
-
-    /// Get the boundary condition (mutable).
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_geometry::shape::Rectangle;
-    /// use hoomd_microstate::{Microstate, boundary::Closed};
-    /// # use hoomd_microstate::{Body, property::Point};
-    /// # use hoomd_vector::Cartesian;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    ///
-    /// let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
-    /// let mut microstate = Microstate::builder()
-    ///     .boundary(square)
-    /// # .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
-    ///     .try_build()?;
-    ///
-    /// microstate.boundary_mut().0.edge_lengths[0] = 11.0.try_into()?;
-    /// assert_eq!(microstate.boundary().0.edge_lengths[0].get(), 11.0);
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// TODO: Replace with setter. `boundary_mut` allows the caller to create an
-    /// invalid microstate by changing the boundary in such a way that sites may
-    /// be outside. Changing the boundary will also require regenerating ghost
-    /// sites. Just checking for a valid boundary on set will pose some difficulty
-    /// to the caller. To increase the boundary, the caller will need to set
-    /// the new boundary and then move the bodies. To decrease the boundary, the
-    /// caller will need to move the bodies and then set the boundary. Perhaps a
-    /// `set_boundary_and_update_bodies` method that does both simultaneously would
-    /// solve this? It could take a function that updates the bodies along with the
-    /// new boundary.
-    #[inline]
-    pub fn boundary_mut(&mut self) -> &mut C {
-        &mut self.boundary
-    }
 }
 
 /// Manage bodies in the microstate.

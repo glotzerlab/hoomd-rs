@@ -3,7 +3,7 @@
 
 //! Implement Rotate
 
-use std::marker::PhantomData;
+use std::{fmt, marker::PhantomData};
 
 use hoomd_utility::valid::PositiveReal;
 
@@ -16,12 +16,15 @@ mod versor;
 /// by a small amount. The [`maximum_rotation`] parameter sets the largest possible
 /// rotation.
 ///
-/// For the 2D [`Angle`], [`maximum_rotation`] is measured in radians and the
-/// rotation is uniformly chosen between `-maximum_rotation` and `maximum_rotation`.
+/// When proposing trial moves for [`Angle`], [`maximum_rotation`] is measured
+/// in radians and the rotation is uniformly chosen between `-maximum_rotation`
+/// and `maximum_rotation`.
 ///
-/// TODO: document 3d maximum.
+/// When proposing trial moves for [`Versor`], [`maximum_rotation`] is measured
+/// in radians and the width of a Gaussian distribution centered on 0.
 ///
 /// [`Angle`]: hoomd_vector::Angle
+/// [`Versor`]: hoomd_vector::Versor
 /// [`maximum_rotation`]: Self::maximum_rotation
 ///
 /// The generic type names are:
@@ -82,5 +85,13 @@ impl<P> Rotate<P> {
     #[inline]
     pub fn maximum_rotation_mut(&mut self) -> &mut PositiveReal {
         &mut self.maximum_rotation
+    }
+}
+
+impl<P> fmt::Display for Rotate<P> {
+    /// Format a [`Rotate`] as `{maximum_rotation}`.
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.maximum_rotation.fmt(f)
     }
 }

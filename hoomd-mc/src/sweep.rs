@@ -3,7 +3,9 @@
 
 //! Implement Sweep
 
-use super::{Count, LocalTrial, Trial};
+use rand::Rng;
+use std::fmt::Display;
+
 use hoomd_interaction::DeltaEnergyOne;
 use hoomd_microstate::{
     Body, Microstate, SiteKey, Transform,
@@ -12,8 +14,9 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_spatial::PointUpdate;
+use hoomd_utility::valid::OpenUnitIntervalNumber;
 
-use rand::Rng;
+use super::{Adjust, Count, LocalTrial, Trial, Tune, tune_local::tune_local_trial};
 
 /// Apply a local trial move to every body in the microstate.
 ///
@@ -133,6 +136,81 @@ where
 
         microstate.increment_substep();
         count
+    }
+}
+
+impl<P, B, S, X, C, L, H, MA> Tune<P, B, S, X, C, L, H, MA> for Sweep<L>
+where
+    P: Copy,
+    B: Copy + Default + Transform<S> + Position<Position = P>,
+    S: Copy + Default + Position<Position = P>,
+    X: PointUpdate<P, SiteKey>,
+    L: LocalTrial<B> + Adjust + Display,
+    H: DeltaEnergyOne<B, S, X, C>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    MA: Temperature,
+{
+    /// Tune the trial move maximum size to achieve a given acceptance ratio.
+    ///
+    /// Use [`tune_default`] unless you have a specific need to adjust the
+    /// tuning parameters.
+    ///
+    /// [`tune_default`]: Self::tune_default
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_interaction::{
+    ///     MaximumInteractionRange, PairwiseCutoff, pairwise::HardSphere,
+    /// };
+    /// use hoomd_mc::{Sweep, Translate, Trial, Tune};
+    /// use hoomd_microstate::{
+    ///     Body, Microstate, boundary::Periodic, property::Position,
+    /// };
+    /// use hoomd_simulation::macrostate::Isothermal;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let square = Rectangle::with_equal_edges(2.2.try_into()?);
+    /// let mut microstate = Microstate::builder()
+    ///     .boundary(Periodic::new(1.0, square)?)
+    ///     .try_build()?;
+    /// microstate.add_body(Body::point(Cartesian::from([-0.6, -0.6])))?;
+    /// microstate.add_body(Body::point(Cartesian::from([-0.6, 0.6])))?;
+    /// microstate.add_body(Body::point(Cartesian::from([0.6, -0.6])))?;
+    /// microstate.add_body(Body::point(Cartesian::from([0.6, 0.6])))?;
+    /// let d = 0.1;
+    /// let translate = Translate::with_maximum_distance(d.try_into()?);
+    /// let mut translate_sweep = Sweep(translate);
+    ///
+    /// let hamiltonian = PairwiseCutoff(HardSphere { diameter: 1.0 });
+    /// let macrostate = Isothermal { temperature: 1.0 };
+    ///
+    /// translate_sweep.tune_default(&microstate, &hamiltonian, &macrostate);
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn tune(
+        &mut self,
+        microstate: &Microstate<B, S, X, C>,
+        hamiltonian: &H,
+        macrostate: &MA,
+        target_acceptance: OpenUnitIntervalNumber,
+        samples: usize,
+        steps: usize,
+    ) {
+        tune_local_trial(
+            &mut self.0,
+            microstate,
+            hamiltonian,
+            macrostate,
+            target_acceptance,
+            samples,
+            steps,
+        );
     }
 }
 
