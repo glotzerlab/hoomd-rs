@@ -4,13 +4,13 @@
 //! Implements a three-dimensional representation of SO(3,1) on Minkowski
 //! space.
 
-use std::{f64::consts::PI, fmt};
-use serde::{Serialize, Deserialize};
 use num::complex::Complex;
 use rand::{
     Rng,
     distr::{Distribution, StandardUniform, Uniform},
 };
+use serde::{Deserialize, Serialize};
+use std::{f64::consts::PI, fmt};
 
 use crate::HyperbolicRotationMatrix;
 

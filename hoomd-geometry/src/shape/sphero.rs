@@ -3,7 +3,7 @@
 
 //! Implement [`Sphero`]
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{BoundingSphereRadius, SupportMapping};
 use hoomd_utility::valid::PositiveReal;

@@ -4,7 +4,7 @@
 //! Implement `QuickInsert`
 
 use rand::distr::Distribution;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::Count;
 use hoomd_interaction::{DeltaEnergyInsert, TotalEnergy};

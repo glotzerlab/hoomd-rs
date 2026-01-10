@@ -3,7 +3,7 @@
 
 //! Implement [`ApproximateShapeOverlap`].
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::AnisotropicEnergy;
 use crate::univariate::UnivariateEnergy;

@@ -3,7 +3,7 @@
 
 //! [`AngularMask`] and related data structures.
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::AnisotropicEnergy;
 use crate::univariate::UnivariateEnergy;

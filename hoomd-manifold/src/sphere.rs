@@ -3,13 +3,13 @@
 
 //! Implement vector and curved manifold types on a sphere.
 
-use std::f64::consts::PI;
 use approxim::{approx_derive::RelativeEq, assert_relative_eq};
 use rand::{
     Rng,
     distr::{Distribution, Uniform},
 };
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::f64::consts::PI;
 
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric};

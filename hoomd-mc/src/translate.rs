@@ -3,8 +3,8 @@
 
 //! Implement Translate
 
+use serde::{Deserialize, Serialize};
 use std::{fmt, marker::PhantomData};
-use serde::{Serialize, Deserialize};
 
 use hoomd_utility::valid::PositiveReal;
 

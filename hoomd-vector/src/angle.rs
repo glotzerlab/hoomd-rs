@@ -3,8 +3,8 @@
 
 //! Implement [`Angle`]
 
+use serde::{Deserialize, Serialize};
 use std::{f64::consts::PI, fmt};
-use serde::{Serialize, Deserialize};
 
 use approxim::approx_derive::RelativeEq;
 use rand::{

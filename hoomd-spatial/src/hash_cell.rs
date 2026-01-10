@@ -12,10 +12,10 @@
 
 //! Implement `HashCell`
 
-use serde::{Serialize, Deserialize};
+use rustc_hash::FxHashMap;
+use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::{array, cmp::Eq, fmt, hash::Hash, marker::PhantomData};
-use rustc_hash::FxHashMap;
 
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
@@ -28,10 +28,7 @@ use super::{PointUpdate, PointsNearBall, WithSearchRadius, vec_cell};
 /// derive(Serialize, Deserialize) functions correctly below.
 #[serde_as]
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub(crate) struct CellIndex<const D: usize>(
-    #[serde_as(as = "[_; D]")]
-    pub [i64; D]
-);
+pub(crate) struct CellIndex<const D: usize>(#[serde_as(as = "[_; D]")] pub [i64; D]);
 
 /// Bucket sort points into cubes with [`HashMap`]-backed storage
 ///
@@ -66,8 +63,9 @@ pub(crate) struct CellIndex<const D: usize>(
 /// ```
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct HashCell<K, const D: usize> where
-K: Eq + Hash
+pub struct HashCell<K, const D: usize>
+where
+    K: Eq + Hash,
 {
     /// The width of each cell.
     cell_width: PositiveReal,
@@ -417,8 +415,9 @@ where
 }
 
 /// Iterate over keys in the cell list around a given center cell.
-struct PointsIterator<'a, K, const D: usize> where
-K: Eq + Hash
+struct PointsIterator<'a, K, const D: usize>
+where
+    K: Eq + Hash,
 {
     /// Keys of the current cell iteration (None if the cell is empty)
     keys: Option<&'a Vec<K>>,
@@ -526,8 +525,9 @@ where
     }
 }
 
-impl<K, const D: usize> fmt::Display for HashCell<K, D> where
-K: Eq + Hash
+impl<K, const D: usize> fmt::Display for HashCell<K, D>
+where
+    K: Eq + Hash,
 {
     /// Summarize the contents of the cell list.
     ///

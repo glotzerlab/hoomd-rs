@@ -4,8 +4,8 @@
 //! Implement [`Hypersphere`]
 
 use rand::{Rng, distr::Distribution};
+use serde::{Deserialize, Serialize};
 use std::{array, f64::consts::PI, ops::Mul};
-use serde::{Serialize, Deserialize};
 
 use crate::{
     BoundingSphereRadius, Error, IntersectsAt, IsPointInside, MapPoint, Scale, SupportMapping,
@@ -13,7 +13,6 @@ use crate::{
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation, distribution::Ball};
-
 
 /// The (single, double, ...)-factorial function
 pub fn factorial(n: usize, ntuple: usize) -> usize {

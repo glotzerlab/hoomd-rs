@@ -26,7 +26,7 @@
 //! When you need additional macrostate parameters, use a custom type.
 //! Implement [`Temperature`] and/or [`Pressure`] for your type as needed.
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// Set the thermodynamic temperature of a system.
 ///

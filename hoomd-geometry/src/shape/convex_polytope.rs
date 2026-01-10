@@ -3,7 +3,7 @@
 
 //! N-Dimensional generalization of a convex polyhedron.
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{BoundingSphereRadius, Error, SupportMapping};
 use hoomd_utility::valid::PositiveReal;

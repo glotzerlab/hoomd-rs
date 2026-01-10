@@ -8,9 +8,9 @@ use rand::{
     Rng,
     distr::{Distribution, Uniform},
 };
-use std::{array, ops::Mul};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use std::{array, ops::Mul};
 
 use crate::{BoundingSphereRadius, Error, IsPointInside, MapPoint, Scale, SupportMapping, Volume};
 use hoomd_utility::valid::PositiveReal;

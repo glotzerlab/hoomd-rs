@@ -3,7 +3,7 @@
 
 //! Implement [`Boxcar`]
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::UnivariateEnergy;
 

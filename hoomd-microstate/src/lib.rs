@@ -147,7 +147,7 @@
 //!
 //! TODO: Implement spatial search, then document.
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 pub mod boundary;
@@ -156,7 +156,6 @@ pub mod property;
 
 pub use microstate::{Microstate, MicrostateBuilder, SiteKey, Tagged};
 use property::Point;
-
 
 /// Interactions in `hoomd-rs` apply between sites.
 ///

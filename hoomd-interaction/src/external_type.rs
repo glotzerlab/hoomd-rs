@@ -3,7 +3,7 @@
 
 //! Implement `External`
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SiteEnergy, TotalEnergy};
 use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Position};

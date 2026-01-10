@@ -4,8 +4,8 @@
 //! Implement Sweep
 
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
-use serde::{Serialize, Deserialize};
 
 use hoomd_interaction::DeltaEnergyOne;
 use hoomd_microstate::{

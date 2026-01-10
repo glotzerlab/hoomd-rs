@@ -1,9 +1,9 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use serde::{Serialize, Deserialize};
-use std::fmt;
+use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use std::fmt;
 
 use crate::{Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
 

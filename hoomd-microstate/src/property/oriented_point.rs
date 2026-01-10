@@ -3,7 +3,7 @@
 
 //! Implement `OrientedPoint`
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::{Orientation, Point, Position};
 use crate::Transform;

@@ -3,7 +3,7 @@
 
 //! Implement [`Linear`]
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use hoomd_microstate::property::Position;
 use hoomd_vector::{InnerProduct, Unit};

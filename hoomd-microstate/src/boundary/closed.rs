@@ -5,7 +5,7 @@
 
 use arrayvec::ArrayVec;
 use rand::{Rng, distr::Distribution};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::{Error, GenerateGhosts, MAX_GHOSTS, Wrap};
 use crate::property::Position;

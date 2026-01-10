@@ -3,7 +3,12 @@
 
 //! Implement vector types in Minkowski space.
 
-use serde::{Serialize, Deserialize};
+use approxim::{approx_derive::RelativeEq, assert_relative_eq};
+use rand::{
+    Rng,
+    distr::{Distribution, StandardUniform, Uniform},
+};
+use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::{
     array,
@@ -11,11 +16,6 @@ use std::{
     fmt,
     iter::zip,
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
-};
-use approxim::{approx_derive::RelativeEq, assert_relative_eq};
-use rand::{
-    Rng,
-    distr::{Distribution, StandardUniform, Uniform},
 };
 
 use crate::{Error, HyperbolicRotate};

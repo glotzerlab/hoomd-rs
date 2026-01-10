@@ -12,11 +12,11 @@
 
 //! Implement Checkerboard for Hypercuboids
 
-use std::array;
-use serde::{Serialize, Deserialize};
-use serde_with::serde_as;
 use itertools::izip;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use std::array;
 
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_microstate::boundary::{Closed, Periodic};

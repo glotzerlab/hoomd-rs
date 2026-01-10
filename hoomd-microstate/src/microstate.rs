@@ -4,8 +4,8 @@
 //! Implement [`Microstate`] and related types.
 
 use arrayvec::ArrayVec;
+use serde::{Deserialize, Serialize};
 use std::{cmp::Reverse, collections::BinaryHeap, fmt};
-use serde::{Serialize, Deserialize};
 
 use crate::{
     Body, Error, Site, Transform,
@@ -13,9 +13,9 @@ use crate::{
     property::Position,
 };
 
+use hoomd_geometry::MapPoint;
 use hoomd_rand::Counter;
 use hoomd_spatial::{AllPairs, PointUpdate, PointsNearBall};
-use hoomd_geometry::MapPoint;
 
 /// Either a primary site index or a ghost site index.
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]

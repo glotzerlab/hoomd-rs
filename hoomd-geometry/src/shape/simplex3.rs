@@ -3,9 +3,9 @@
 
 //! A tetrahedron in three dimensions. This struct should be viewed as a prototype for
 //! more complex geometries in addition to its standalone functionality.
-use std::{array, fmt};
-use serde::{Serialize, Deserialize};
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
+use std::{array, fmt};
 
 use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, Rotation, RotationMatrix};
 

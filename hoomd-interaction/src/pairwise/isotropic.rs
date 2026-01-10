@@ -3,7 +3,7 @@
 
 //! Implement Isotropic
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{MaximumInteractionRange, SitePairEnergy, univariate::UnivariateEnergy};
 use hoomd_microstate::property::Position;

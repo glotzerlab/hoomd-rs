@@ -2,11 +2,11 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Quaternion`] and related types.
+use serde::{Deserialize, Serialize};
 use std::{
     fmt,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
 };
-use serde::{Serialize, Deserialize};
 
 use approxim::approx_derive::RelativeEq;
 use rand::{

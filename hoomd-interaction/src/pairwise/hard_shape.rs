@@ -3,7 +3,7 @@
 
 //! Implement `HardShape`
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{MaximumInteractionRange, SitePairEnergy};
 use hoomd_geometry::{BoundingSphereRadius, IntersectsAt};

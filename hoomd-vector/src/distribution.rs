@@ -2,8 +2,8 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Random distributions of vectors.
+use serde::{Deserialize, Serialize};
 use std::array;
-use serde::{Serialize, Deserialize};
 
 use super::{Cartesian, InnerProduct};
 use hoomd_utility::valid::PositiveReal;

@@ -3,8 +3,8 @@
 
 //! Implement periodic boundary conditions.
 
+use serde::{Deserialize, Serialize};
 use std::fmt;
-use serde::{Serialize, Deserialize};
 
 use hoomd_geometry::{MapPoint, Scale, Volume};
 use hoomd_utility::valid::PositiveReal;

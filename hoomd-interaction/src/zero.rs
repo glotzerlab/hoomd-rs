@@ -3,7 +3,7 @@
 
 //! Implement `Zero`
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use hoomd_microstate::{Body, Microstate};
 

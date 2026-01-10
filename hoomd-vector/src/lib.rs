@@ -183,9 +183,9 @@ pub use angle::Angle;
 pub use cartesian::{Cartesian, RotationMatrix};
 pub use quaternion::{Quaternion, Versor};
 
+use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use thiserror::Error;
-use serde::{Serialize, Deserialize};
 
 /// Enumerate possible sources of error in fallible vector math operations.
 #[non_exhaustive]

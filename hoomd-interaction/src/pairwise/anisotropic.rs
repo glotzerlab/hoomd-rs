@@ -3,7 +3,7 @@
 
 //! Implement `Anisotropic`
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::AnisotropicEnergy;
 use crate::{MaximumInteractionRange, SitePairEnergy};

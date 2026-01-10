@@ -13,8 +13,8 @@
 //! TODO: Expand documentation.
 
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign};
-use serde::{Serialize, Deserialize};
 
 use hoomd_microstate::Microstate;
 use hoomd_utility::valid::{OpenUnitIntervalNumber, PositiveReal};

@@ -5,8 +5,8 @@
 
 use rand::{Rng, seq::IndexedRandom};
 use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
-use serde::{Serialize, Deserialize};
 
 use super::{Adjust, Count, LocalTrial, Trial, Tune, tune_local::tune_local_trial};
 use hoomd_interaction::DeltaEnergyOne;

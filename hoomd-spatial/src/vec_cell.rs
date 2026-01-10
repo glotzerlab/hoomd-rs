@@ -12,9 +12,9 @@
 
 //! Implement `VecCell`
 
-use std::{array, cmp::Eq, fmt, hash::Hash, iter, marker::PhantomData, mem};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use std::{array, cmp::Eq, fmt, hash::Hash, iter, marker::PhantomData, mem};
 
 use log::trace;
 use rustc_hash::FxHashMap;
@@ -92,9 +92,10 @@ use crate::hash_cell::CellIndex;
 /// ```
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct VecCell<K, const D: usize> where
-K: Eq + Hash
- {
+pub struct VecCell<K, const D: usize>
+where
+    K: Eq + Hash,
+{
     /// The width of each cell.
     cell_width: PositiveReal,
 
@@ -346,8 +347,9 @@ where
     }
 }
 
-impl<K, const D: usize> VecCell<K, D> where
-K: Eq + Hash
+impl<K, const D: usize> VecCell<K, D>
+where
+    K: Eq + Hash,
 {
     /// Compute the cell index given a position in space.
     #[inline]
@@ -615,8 +617,9 @@ where
 }
 
 /// Iterate over keys in the cell list around a given center cell.
-struct PointsIterator<'a, K, const D: usize> where
-K: Eq + Hash
+struct PointsIterator<'a, K, const D: usize>
+where
+    K: Eq + Hash,
 {
     /// Keys of the current cell iteration (None if the cell is empty)
     keys: Option<&'a Vec<K>>,
@@ -730,8 +733,9 @@ where
     }
 }
 
-impl<K, const D: usize> fmt::Display for VecCell<K, D> where
-K: Eq + Hash
+impl<K, const D: usize> fmt::Display for VecCell<K, D>
+where
+    K: Eq + Hash,
 {
     /// Summarize the contents of the cell list.
     ///

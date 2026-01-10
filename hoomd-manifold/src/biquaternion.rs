@@ -9,12 +9,12 @@ use rand::{
     Rng,
     distr::{Distribution, StandardUniform, Uniform},
 };
+use serde::{Deserialize, Serialize};
 use std::{
     array, fmt,
     iter::zip,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
 };
-use serde::{Serialize, Deserialize};
 
 use crate::{Error, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski};
 #[expect(unused_imports, reason = "Needed for doc link")]

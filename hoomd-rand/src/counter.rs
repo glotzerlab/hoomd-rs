@@ -4,7 +4,7 @@
 //! Helpers that enable consistent use of random numbers throughout hoomd-rs.
 
 use rand::Rng;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::SFC64;
 

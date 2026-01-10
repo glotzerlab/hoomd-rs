@@ -3,7 +3,7 @@
 
 //! Implement `QuickCompress`
 use rand::distr::{Distribution, Uniform};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use hoomd_geometry::{MapPoint, Scale, Volume};
 use hoomd_interaction::TotalEnergy;

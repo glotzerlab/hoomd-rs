@@ -3,7 +3,7 @@
 
 //! Implement [`EightEight`]
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::IsPointInside;
 use hoomd_manifold::Hyperbolic;

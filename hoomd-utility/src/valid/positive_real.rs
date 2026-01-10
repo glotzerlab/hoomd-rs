@@ -3,11 +3,11 @@
 
 //! Implement `PositiveReal`
 
+use serde::{Deserialize, Serialize};
 use std::{
     fmt,
     ops::{Div, DivAssign, Mul, MulAssign},
 };
-use serde::{Serialize, Deserialize};
 
 use crate::Error;
 

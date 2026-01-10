@@ -3,9 +3,9 @@
 
 //! Implement [`Hyperellipsoid`].
 
-use std::ops::Mul;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use std::ops::Mul;
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
@@ -15,7 +15,6 @@ use hoomd_linear_algebra::{
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMatrix};
-
 
 /// The geometry resulting from an Hypersphere that is scaled along the Cartesian axes.
 ///

@@ -5,7 +5,6 @@
 //!
 //! Requires the feature `extras`.
 
-use serde::{Serialize, Deserialize};
 use rand::{
     SeedableRng,
     rand_core::{
@@ -13,6 +12,7 @@ use rand::{
         block::{BlockRng64, BlockRngCore},
     },
 };
+use serde::{Deserialize, Serialize};
 
 use crate::util::read_le_u64;
 

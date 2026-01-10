@@ -3,7 +3,7 @@
 
 //! Implement `Convex`.
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     BoundingSphereRadius, IntersectsAt, SupportMapping,

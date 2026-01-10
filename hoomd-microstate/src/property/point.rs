@@ -3,7 +3,7 @@
 
 //! Implement Point
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::Position;
 use crate::Transform;

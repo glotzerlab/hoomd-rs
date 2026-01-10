@@ -3,7 +3,7 @@
 
 //! Implement [`Cylinder`]
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::Circle;
 use crate::Volume;

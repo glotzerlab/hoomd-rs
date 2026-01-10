@@ -3,7 +3,7 @@
 
 //! Implement [`Capsule`]
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, SupportMapping, Volume};

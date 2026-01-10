@@ -7,13 +7,12 @@ use rand::{
     Rng,
     distr::{Distribution, StandardUniform},
 };
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use hoomd_microstate::{
     Body,
     property::{OrientedPoint, Point},
 };
-
 
 /// Generate bodies uniformly in the given boundary condition.
 ///

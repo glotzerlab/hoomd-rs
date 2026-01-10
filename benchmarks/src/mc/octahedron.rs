@@ -3,7 +3,7 @@
 
 //! Benchmark hard octahedra Monte Carlo simulations.
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 use hoomd_geometry::{

@@ -3,7 +3,7 @@
 
 //! Implement [`WeeksChandlerAnderson`]
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::{LennardJones, UnivariateEnergy, UnivariateForce};
 

@@ -3,7 +3,7 @@
 
 //! Implement `PairwiseCutoff`
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use hoomd_microstate::{
     Body, Microstate, Site, SiteKey, Transform, boundary::Wrap, property::Position,

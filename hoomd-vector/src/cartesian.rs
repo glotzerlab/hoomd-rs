@@ -3,13 +3,13 @@
 
 //! Implement canonical vector types.
 
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 use std::{
     array, fmt,
     iter::{Sum, zip},
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-use serde::{Serialize, Deserialize};
-use serde_with::serde_as;
 
 use approxim::approx_derive::RelativeEq;
 use rand::{

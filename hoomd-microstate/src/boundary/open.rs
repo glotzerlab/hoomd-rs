@@ -4,7 +4,7 @@
 //! Implement Open
 
 use arrayvec::ArrayVec;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::{Error, GenerateGhosts, MAX_GHOSTS, Wrap};
 
