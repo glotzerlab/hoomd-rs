@@ -3,6 +3,7 @@
 
 //! Implement `PositiveReal`
 
+use serde::{Deserialize, Serialize};
 use std::{
     fmt,
     ops::{Div, DivAssign, Mul, MulAssign},
@@ -22,7 +23,7 @@ use crate::Error;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PositiveReal(f64);
 
 impl PositiveReal {

@@ -3,6 +3,7 @@
 
 //! Implement Translate
 
+use serde::{Deserialize, Serialize};
 use std::{fmt, marker::PhantomData};
 
 use hoomd_utility::valid::PositiveReal;
@@ -36,7 +37,7 @@ mod sphere;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Translate<P> {
     /// The maximum distance a body can be translated in one trial move.
     maximum_distance: PositiveReal,

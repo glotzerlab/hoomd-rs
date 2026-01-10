@@ -3,6 +3,8 @@
 
 //! Implement `External`
 
+use serde::{Deserialize, Serialize};
+
 use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SiteEnergy, TotalEnergy};
 use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Position};
 
@@ -82,6 +84,7 @@ use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Po
 ///     Ok(())
 /// }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct External<E>(pub E);
 
 impl<B, S, X, C, E> TotalEnergy<Microstate<B, S, X, C>> for External<E>

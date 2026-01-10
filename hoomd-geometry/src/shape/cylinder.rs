@@ -3,6 +3,8 @@
 
 //! Implement [`Cylinder`]
 
+use serde::{Deserialize, Serialize};
+
 use super::Circle;
 use crate::Volume;
 use hoomd_utility::valid::PositiveReal;
@@ -26,7 +28,7 @@ use hoomd_utility::valid::PositiveReal;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Cylinder {
     /// Radius of the [`Cylinder`]
     pub radius: PositiveReal,

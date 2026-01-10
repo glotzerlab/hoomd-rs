@@ -3,9 +3,12 @@
 
 //! Implement [`Linear`]
 
-use super::super::SiteEnergy;
+use serde::{Deserialize, Serialize};
+
 use hoomd_microstate::property::Position;
 use hoomd_vector::{InnerProduct, Unit};
+
+use super::super::SiteEnergy;
 
 /// Linear potential based on position.
 ///
@@ -33,7 +36,7 @@ use hoomd_vector::{InnerProduct, Unit};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Linear<V> {
     /// Interaction strength *(\[energy\] \[length\]^(-1))*.
     pub alpha: f64,

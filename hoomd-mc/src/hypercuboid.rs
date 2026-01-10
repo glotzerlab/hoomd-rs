@@ -12,10 +12,11 @@
 
 //! Implement Checkerboard for Hypercuboids
 
-use std::array;
-
 use itertools::izip;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use std::array;
 
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_microstate::boundary::{Closed, Periodic};
@@ -43,18 +44,22 @@ use crate::{Checkerboard, Cover};
 /// spaces (some completely outside the boundary) in these cases. However, the
 /// checkerboard is still valid and rayon's dynamic load balancing scheme should
 /// be able to handle the empty cells efficiently.
-#[derive(Clone, Debug)]
+#[serde_as]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HypercuboidCheckerboard<const N: usize> {
     /// Position of the 0,0,0 cell's lower left corner.
     origin: Cartesian<N>,
 
     /// Length of each axis aligned space edge.
+    #[serde_as(as = "[_; N]")]
     space_width: [f64; N],
 
     /// Number of spaces along each axis.
+    #[serde_as(as = "[_; N]")]
     shape: [usize; N],
 
     /// True when an axis is periodic.
+    #[serde_as(as = "[_; N]")]
     periodic: [bool; N],
 
     /// The set of all space indices, grouped by color.

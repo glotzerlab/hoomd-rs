@@ -3,6 +3,7 @@
 
 //! Implement Rotate
 
+use serde::{Deserialize, Serialize};
 use std::{fmt, marker::PhantomData};
 
 use hoomd_utility::valid::PositiveReal;
@@ -42,7 +43,7 @@ mod versor;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Rotate<O> {
     /// Limit the maximum rotation applied during a single trial move.
     maximum_rotation: PositiveReal,

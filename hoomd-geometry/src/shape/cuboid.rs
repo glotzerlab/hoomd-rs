@@ -3,16 +3,18 @@
 
 //! Implement [`Hypercuboid`]
 
-use crate::{BoundingSphereRadius, Error, IsPointInside, MapPoint, Scale, SupportMapping, Volume};
-use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::Cartesian;
-
 use itertools::multizip;
 use rand::{
     Rng,
     distr::{Distribution, Uniform},
 };
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 use std::{array, ops::Mul};
+
+use crate::{BoundingSphereRadius, Error, IsPointInside, MapPoint, Scale, SupportMapping, Volume};
+use hoomd_utility::valid::PositiveReal;
+use hoomd_vector::Cartesian;
 
 /// A shape with with all perpendicular angles made from axis-aligned edges.
 ///
@@ -92,9 +94,11 @@ use std::{array, ops::Mul};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[serde_as]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Hypercuboid<const N: usize> {
     /// The lengths of each edge of the cuboid.
+    #[serde_as(as = "[_; N]")]
     pub edge_lengths: [PositiveReal; N],
 }
 

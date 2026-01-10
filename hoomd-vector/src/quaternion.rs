@@ -2,6 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Quaternion`] and related types.
+use serde::{Deserialize, Serialize};
 use std::{
     fmt,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
@@ -154,7 +155,7 @@ use crate::{Cartesian, Cross, Error, InnerProduct, Rotate, Rotation, RotationMat
 /// a *= b;
 /// assert_eq!(a, [-10.0, 32.0, -30.0, -35.0].into());
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
 pub struct Quaternion {
     /// Scalar component
     pub scalar: f64,
@@ -503,7 +504,7 @@ impl SubAssign for Quaternion {
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
 pub struct Versor(Quaternion);
 
 impl Versor {

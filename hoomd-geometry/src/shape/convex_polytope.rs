@@ -3,6 +3,8 @@
 
 //! N-Dimensional generalization of a convex polyhedron.
 
+use serde::{Deserialize, Serialize};
+
 use crate::{BoundingSphereRadius, Error, SupportMapping};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct};
@@ -59,7 +61,7 @@ use hoomd_vector::{Cartesian, InnerProduct};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConvexPolytope<const N: usize> {
     /// The vertices of the shape.
     vertices: Vec<Cartesian<N>>,

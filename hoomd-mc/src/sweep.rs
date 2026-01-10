@@ -4,6 +4,7 @@
 //! Implement Sweep
 
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
 use hoomd_interaction::DeltaEnergyOne;
@@ -37,6 +38,7 @@ use super::{Adjust, Count, LocalTrial, Trial, Tune, tune_local::tune_local_trial
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Sweep<L>(pub L);
 
 impl<P, B, S, X, C, L, H, MA> Trial<Microstate<B, S, X, C>, H, MA> for Sweep<L>

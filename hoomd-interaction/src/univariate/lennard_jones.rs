@@ -3,6 +3,8 @@
 
 //! Implement [`LennardJones`]
 
+use serde::{Deserialize, Serialize};
+
 use super::{UnivariateEnergy, UnivariateForce};
 
 /// Potential with a steep repulsive core and an attractive well.
@@ -72,7 +74,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// lennard_jones.epsilon = 1.5;
 /// lennard_jones.sigma = 3.0;
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct LennardJones<const N: i32 = 12, const M: i32 = 6> {
     /// Energy scale *(\[energy\])*.
     pub epsilon: f64,

@@ -15,6 +15,7 @@ workspace = true
 
 [dependencies]
 thiserror.workspace = true
+serde.workspace = true
 
 [dev-dependencies]
 assert2.workspace = true

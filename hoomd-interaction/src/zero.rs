@@ -3,14 +3,17 @@
 
 //! Implement `Zero`
 
-use super::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, TotalEnergy};
+use serde::{Deserialize, Serialize};
 
 use hoomd_microstate::{Body, Microstate};
+
+use super::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, TotalEnergy};
 
 /// Set the energy of any system to 0.
 ///
 /// *hoomd-rs* uses [`Zero`] in minimal examples that demonstrate MC simulations.
 /// It returns 0 for all energies and delta energies.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Zero;
 
 impl<M> TotalEnergy<M> for Zero {

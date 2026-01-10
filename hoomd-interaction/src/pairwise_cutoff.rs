@@ -3,14 +3,17 @@
 
 //! Implement `PairwiseCutoff`
 
-use crate::{
-    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy,
-    TotalEnergy,
-};
+use serde::{Deserialize, Serialize};
+
 use hoomd_microstate::{
     Body, Microstate, Site, SiteKey, Transform, boundary::Wrap, property::Position,
 };
 use hoomd_spatial::PointsNearBall;
+
+use crate::{
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy,
+    TotalEnergy,
+};
 
 /// Short-ranged pairwise interactions between sites.
 ///
@@ -114,6 +117,7 @@ use hoomd_spatial::PointsNearBall;
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PairwiseCutoff<E>(pub E);
 
 impl<E> PairwiseCutoff<E> {

@@ -19,6 +19,8 @@ log.workspace = true
 rand.workspace = true
 rand_distr.workspace = true
 rayon.workspace = true
+serde.workspace = true
+serde_with.workspace = true
 
 hoomd-geometry.workspace = true
 hoomd-interaction.workspace = true

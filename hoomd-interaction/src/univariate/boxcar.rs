@@ -3,6 +3,8 @@
 
 //! Implement [`Boxcar`]
 
+use serde::{Deserialize, Serialize};
+
 use super::UnivariateEnergy;
 
 /// Constant valued potential in a given range of `r` (_not differentiable_).
@@ -54,7 +56,7 @@ use super::UnivariateEnergy;
 /// boxcar.left = 0.0;
 /// boxcar.right = 1.0;
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Boxcar {
     /// Energy scale *(\[energy\])*.
     pub epsilon: f64,

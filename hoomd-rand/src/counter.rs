@@ -3,8 +3,10 @@
 
 //! Helpers that enable consistent use of random numbers throughout hoomd-rs.
 
-use crate::SFC64;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
+
+use crate::SFC64;
 
 /// Conveniently construct counter based random number generators.
 ///
@@ -55,7 +57,7 @@ use rand::Rng;
 ///
 /// let r: f64 = rng.random();
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Counter {
     /// The current simulation step.
     step: u64,
