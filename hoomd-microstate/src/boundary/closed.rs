@@ -5,6 +5,7 @@
 
 use arrayvec::ArrayVec;
 use rand::{Rng, distr::Distribution};
+use serde::{Serialize, Deserialize};
 
 use super::{Error, GenerateGhosts, MAX_GHOSTS, Wrap};
 use crate::property::Position;
@@ -16,7 +17,7 @@ use hoomd_utility::valid::PositiveReal;
 /// [`Closed`] is a newtype that wraps a shape. It prevents bodies and sites from
 /// existing outside the shape. Bodies and sites are never wrapped, and there are no
 /// ghost sites.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Closed<T>(pub T);
 
 impl<BS, T, P> Wrap<BS> for Closed<T>

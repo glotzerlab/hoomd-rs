@@ -3,6 +3,8 @@
 
 //! Implement [`Sphero`]
 
+use serde::{Serialize, Deserialize};
+
 use crate::{BoundingSphereRadius, SupportMapping};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::InnerProduct;
@@ -57,7 +59,7 @@ use hoomd_vector::InnerProduct;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Sphero<S> {
     /// The shape to round.
     pub shape: S,

@@ -3,6 +3,7 @@
 
 //! Random distributions of vectors.
 use std::array;
+use serde::{Serialize, Deserialize};
 
 use super::{Cartesian, InnerProduct};
 use hoomd_utility::valid::PositiveReal;
@@ -29,7 +30,7 @@ use rand_distr::StandardNormal;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Ball {
     /// The radius of the ball *(\[length\])*.
     pub radius: PositiveReal,

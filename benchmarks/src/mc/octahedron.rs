@@ -3,6 +3,7 @@
 
 //! Benchmark hard octahedra Monte Carlo simulations.
 
+use serde::{Serialize, Deserialize};
 use std::fmt;
 
 use hoomd_geometry::{
@@ -25,6 +26,7 @@ use hoomd_vector::{Cartesian, Versor};
 use crate::Effort;
 
 /// The hard octahedra simulation.
+#[derive(Serialize, Deserialize)]
 pub struct Octahedron<X> {
     /// Simulation microstate
     microstate: Microstate<

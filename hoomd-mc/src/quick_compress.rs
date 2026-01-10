@@ -3,6 +3,7 @@
 
 //! Implement `QuickCompress`
 use rand::distr::{Distribution, Uniform};
+use serde::{Serialize, Deserialize};
 
 use hoomd_geometry::{MapPoint, Scale, Volume};
 use hoomd_interaction::TotalEnergy;
@@ -15,7 +16,7 @@ use hoomd_spatial::PointUpdate;
 use hoomd_utility::valid::{OpenUnitIntervalNumber, PositiveReal};
 
 /// Track the state of a given `QuickCompress` instance.
-#[derive(Default, Clone, Debug, PartialEq)]
+#[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
 enum State<C> {
     /// `apply` has not yet been called.
     #[default]
@@ -83,7 +84,7 @@ enum State<C> {
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct QuickCompress<C> {
     /// Final boundary volume after the compression algorithm completes.
     target_volume: PositiveReal,

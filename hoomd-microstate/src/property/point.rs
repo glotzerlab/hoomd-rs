@@ -3,6 +3,8 @@
 
 //! Implement Point
 
+use serde::{Serialize, Deserialize};
+
 use super::Position;
 use crate::Transform;
 use hoomd_manifold::{Hyperbolic, Minkowski, Spherical};
@@ -20,7 +22,7 @@ use hoomd_vector::Cartesian;
 ///
 /// let point = Point::new(Cartesian::from([1.0, -2.0, 3.0]));
 /// ```
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Point<P> {
     /// The location of the point in space.
     pub position: P,

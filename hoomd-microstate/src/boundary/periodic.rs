@@ -4,6 +4,7 @@
 //! Implement periodic boundary conditions.
 
 use std::fmt;
+use serde::{Serialize, Deserialize};
 
 use hoomd_geometry::{MapPoint, Scale, Volume};
 use hoomd_utility::valid::PositiveReal;
@@ -50,7 +51,7 @@ mod eighteight;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Periodic<T> {
     /// The largest interaction distance between two sites.
     maximum_interaction_range: f64,

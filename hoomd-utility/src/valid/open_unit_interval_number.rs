@@ -4,6 +4,7 @@
 //! Implement `OpenUnitIntervalNumber`
 
 use std::fmt;
+use serde::{Serialize, Deserialize};
 
 use crate::Error;
 
@@ -19,7 +20,7 @@ use crate::Error;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct OpenUnitIntervalNumber(f64);
 
 impl OpenUnitIntervalNumber {

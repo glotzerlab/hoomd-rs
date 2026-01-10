@@ -1,6 +1,8 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+use serde::{Serialize, Deserialize};
+use serde_with::serde_as;
 use std::ops::{Add, AddAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use crate::{GeneralMatrix, matrix::Matrix};
@@ -22,9 +24,11 @@ use crate::{GeneralMatrix, matrix::Matrix};
 /// assert_eq!(a[(1, 0)], 0.0);
 /// assert_eq!(a[(1, 1)], 3.0);
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[serde_as]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DiagonalMatrix<const N: usize> {
     /// The members of the diagonal of the matrix
+    #[serde_as(as = "[_; N]")]
     pub elements: [f64; N],
 }
 

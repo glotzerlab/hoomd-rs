@@ -3,6 +3,8 @@
 
 //! Implement `HardShape`
 
+use serde::{Serialize, Deserialize};
+
 use crate::{MaximumInteractionRange, SitePairEnergy};
 use hoomd_geometry::{BoundingSphereRadius, IntersectsAt};
 use hoomd_microstate::property::{Orientation, Position};
@@ -27,6 +29,7 @@ use hoomd_vector::{self, Metric, Rotate, Rotation, Vector};
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HardShape<G>(pub G);
 
 impl<S, G, V, R> SitePairEnergy<S> for HardShape<G>
@@ -123,6 +126,7 @@ where
 /// by the `diameter` field.
 ///
 /// [`PairwiseCutoff`]: crate::PairwiseCutoff
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HardSphere {
     /// The sphere's diameter.
     pub diameter: f64,

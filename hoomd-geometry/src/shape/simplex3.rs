@@ -4,9 +4,10 @@
 //! A tetrahedron in three dimensions. This struct should be viewed as a prototype for
 //! more complex geometries in addition to its standalone functionality.
 use std::{array, fmt};
+use serde::{Serialize, Deserialize};
+use itertools::Itertools;
 
 use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, Rotation, RotationMatrix};
-use itertools::Itertools;
 
 use crate::{IntersectsAt, SupportMapping, Volume};
 
@@ -66,7 +67,7 @@ use crate::{IntersectsAt, SupportMapping, Volume};
 /// assert_eq!(planar_tetrahedron.volume(), 0.0);
 /// assert_eq!(planar_tetrahedron.centroid(), [1.0, 1.0, 0.0].into());
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Simplex3 {
     /// Vertices of the simplex
     vertices: [Cartesian<3>; 4], // NOT public, to force orientation on construction

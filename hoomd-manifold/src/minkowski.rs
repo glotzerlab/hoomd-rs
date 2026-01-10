@@ -3,6 +3,8 @@
 
 //! Implement vector types in Minkowski space.
 
+use serde::{Serialize, Deserialize};
+use serde_with::serde_as;
 use std::{
     array,
     f64::consts::PI,
@@ -10,7 +12,6 @@ use std::{
     iter::zip,
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-
 use approxim::{approx_derive::RelativeEq, assert_relative_eq};
 use rand::{
     Rng,
@@ -86,12 +87,14 @@ use hoomd_vector::{Metric, Vector};
 /// assert_eq!(-3.0, x.distance_squared(&y));
 /// ```
 
-#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
+#[serde_as]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
 #[approx(epsilon_type = f64)]
 pub struct Minkowski<const N: usize> {
     /// The vector's coordinates.
     ///
     /// The final component is the one associated with a minus sign (-) in the metric.
+    #[serde_as(as = "[_; N]")]
     #[approx(into_iter)]
     pub coordinates: [f64; N],
 }
@@ -486,7 +489,7 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
 /// ```
 ///
 /// [`Metric`]: hoomd_vector::Metric
-#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
 pub struct Hyperbolic<const N: usize> {
     /// A point on the surface of the upper sheet of a two-sheeted hyperboloid.
     point: Minkowski<N>,
@@ -754,9 +757,11 @@ impl Metric for Hyperbolic<4> {
 ///     boost_matrix.hyperbolic_rotate(&minkowski_vector)
 /// }
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[serde_as]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HyperbolicRotationMatrix<const N: usize> {
     /// Rows of the rotation matrix.
+    #[serde_as(as = "[_; N]")]
     pub(crate) rows: [Minkowski<N>; N],
 }
 
@@ -933,6 +938,7 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HyperbolicDisk {
     /// Max distance away from point.
     pub disk_radius: PositiveReal,

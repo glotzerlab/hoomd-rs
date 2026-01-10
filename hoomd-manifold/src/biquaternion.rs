@@ -14,6 +14,7 @@ use std::{
     iter::zip,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
 };
+use serde::{Serialize, Deserialize};
 
 use crate::{Error, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski};
 #[expect(unused_imports, reason = "Needed for doc link")]
@@ -186,7 +187,7 @@ use hoomd_vector::Quaternion;
 /// ]);
 /// assert_eq!(Complex::new(20.0_f64, 0.0).sqrt(), q.norm());
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Biquaternion {
     /// Components of the biquaternion, in the order `[i,j,k,1]`.
     pub components: [Complex<f64>; 4],

@@ -3,6 +3,8 @@
 
 //! Implement [`Expanded`]
 
+use serde::{Serialize, Deserialize};
+
 use super::{UnivariateEnergy, UnivariateForce};
 
 /// Expand another potential.
@@ -31,7 +33,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 ///     expanded_lj.f.energy(1.0 - 0.75)
 /// );
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Expanded<F> {
     /// The original potential.
     pub f: F,

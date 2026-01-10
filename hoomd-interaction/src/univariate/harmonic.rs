@@ -3,6 +3,8 @@
 
 //! Implement [`Harmonic`]
 
+use serde::{Serialize, Deserialize};
+
 use super::{UnivariateEnergy, UnivariateForce};
 
 /// Quadratic potential well centered at a given separation distance.
@@ -40,7 +42,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// harmonic.k = 5.0;
 /// harmonic.r_0 = 1.0;
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Harmonic {
     /// Spring constant $`[\mathrm{energy}] [\mathrm{length}]^{-2}`$.
     pub k: f64,

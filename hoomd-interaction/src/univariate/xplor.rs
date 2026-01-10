@@ -3,6 +3,8 @@
 
 //! Implement [`WeeksChandlerAnderson`]
 
+use serde::{Serialize, Deserialize};
+
 use super::{UnivariateEnergy, UnivariateForce};
 
 /// Smoothly shift a potential (and its force) to 0 at some `r_cut`, beginning at `r_smooth`.
@@ -33,7 +35,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// let r_cut = 2.5 * sigma;
 /// let r_smooth = 1.5 * sigma;
 /// let xplor_lj = Xplor { f: LennardJones::<12,6> { epsilon, sigma }, r_cut, r_smooth };
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Xplor<F> {
     /// The original potential.
     pub f: F,

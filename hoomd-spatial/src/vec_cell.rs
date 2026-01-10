@@ -13,6 +13,8 @@
 //! Implement `VecCell`
 
 use std::{array, cmp::Eq, fmt, hash::Hash, iter, marker::PhantomData, mem};
+use serde::{Serialize, Deserialize};
+use serde_with::serde_as;
 
 use log::trace;
 use rustc_hash::FxHashMap;
@@ -21,6 +23,8 @@ use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
 use super::{PointUpdate, PointsNearBall, WithSearchRadius};
+
+use crate::hash_cell::CellIndex;
 
 /// Bucket sort points into cubes with [`Vec`]-backed storage
 ///
@@ -86,8 +90,11 @@ use super::{PointUpdate, PointsNearBall, WithSearchRadius};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug)]
-pub struct VecCell<K, const D: usize> {
+#[serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct VecCell<K, const D: usize> where
+K: Eq + Hash
+ {
     /// The width of each cell.
     cell_width: PositiveReal,
 
@@ -95,12 +102,13 @@ pub struct VecCell<K, const D: usize> {
     keys_map: Vec<Vec<K>>,
 
     /// A map from particle indices to cell indices.
-    cell_index: FxHashMap<K, [i64; D]>,
+    cell_index: FxHashMap<K, CellIndex<D>>,
 
     /// The shape of `keys_map` is `(half_extent * 2 + 1).powi(D)`.
     half_extent: u32,
 
     /// Pre-computed stencils.
+    #[serde_as(as = "Vec<Vec<[_; D]>>")]
     stencils: Vec<Vec<[i64; D]>>,
 }
 
@@ -338,7 +346,9 @@ where
     }
 }
 
-impl<K, const D: usize> VecCell<K, D> {
+impl<K, const D: usize> VecCell<K, D> where
+K: Eq + Hash
+{
     /// Compute the cell index given a position in space.
     #[inline]
     fn cell_index_from_position(&self, position: &Cartesian<D>) -> [i64; D] {
@@ -480,7 +490,7 @@ where
     #[inline]
     fn insert(&mut self, key: K, position: Cartesian<D>) {
         let cell_index = self.cell_index_from_position(&position);
-        let old_cell_index = self.cell_index.insert(key, cell_index);
+        let old_cell_index = self.cell_index.insert(key, CellIndex(cell_index));
         let map_index =
             Self::map_index_from_cell(self.half_extent, &cell_index).unwrap_or_else(|| {
                 let max_half_extent = cell_index
@@ -498,13 +508,13 @@ where
             });
 
         // This checks if old_cell_index is None or if it is different from the new cell index.
-        if old_cell_index != Some(cell_index) {
+        if old_cell_index != Some(CellIndex(cell_index)) {
             // Add the particle index to the new cell index vector.
             self.keys_map[map_index].push(key);
 
             if let Some(old_cell_index) = old_cell_index {
                 // If the particle was in a different cell, we need to remove it from the old cell.
-                let old_map_index = Self::map_index_from_cell(self.half_extent, &old_cell_index)
+                let old_map_index = Self::map_index_from_cell(self.half_extent, &old_cell_index.0)
                     .expect("cell_index and keys_map should agree");
                 let old_keys = &mut self.keys_map[old_map_index];
                 if let Some(pos) = old_keys.iter().position(|x| *x == key) {
@@ -529,7 +539,7 @@ where
     fn remove(&mut self, key: &K) {
         let cell_index = self.cell_index.remove(key);
         if let Some(cell_index) = cell_index {
-            let map_index = Self::map_index_from_cell(self.half_extent, &cell_index);
+            let map_index = Self::map_index_from_cell(self.half_extent, &cell_index.0);
             if let Some(map_index) = map_index {
                 let keys = &mut self.keys_map[map_index];
                 if let Some(idx) = keys.iter().position(|x| x == key) {
@@ -605,7 +615,9 @@ where
 }
 
 /// Iterate over keys in the cell list around a given center cell.
-struct PointsIterator<'a, K, const D: usize> {
+struct PointsIterator<'a, K, const D: usize> where
+K: Eq + Hash
+{
     /// Keys of the current cell iteration (None if the cell is empty)
     keys: Option<&'a Vec<K>>,
 
@@ -627,7 +639,7 @@ struct PointsIterator<'a, K, const D: usize> {
 
 impl<K, const D: usize> Iterator for PointsIterator<'_, K, D>
 where
-    K: Copy,
+    K: Copy + Eq + Hash,
 {
     type Item = K;
 
@@ -718,7 +730,9 @@ where
     }
 }
 
-impl<K, const D: usize> fmt::Display for VecCell<K, D> {
+impl<K, const D: usize> fmt::Display for VecCell<K, D> where
+K: Eq + Hash
+{
     /// Summarize the contents of the cell list.
     ///
     /// This is a slow operation. It is meant to be printed to logs only
@@ -836,7 +850,7 @@ mod tests {
 
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
 
-        assert!(cell_list.cell_index.get(&0) == Some(&[0, 0]));
+        assert!(cell_list.cell_index.get(&0) == Some(&CellIndex([0, 0])));
 
         let keys = cell_list.get_keys(&[0, 0]);
         assert!(keys.len() == 1);
@@ -851,9 +865,9 @@ mod tests {
         cell_list.insert(1, Cartesian::from([0.995, 0.897]));
         cell_list.insert(2, Cartesian::from([-0.125, 3.25]));
 
-        check!(cell_list.cell_index.get(&0) == Some(&[0, 0]));
-        check!(cell_list.cell_index.get(&1) == Some(&[0, 0]));
-        check!(cell_list.cell_index.get(&2) == Some(&[-1, 3]));
+        check!(cell_list.cell_index.get(&0) == Some(&CellIndex([0, 0])));
+        check!(cell_list.cell_index.get(&1) == Some(&CellIndex([0, 0])));
+        check!(cell_list.cell_index.get(&2) == Some(&CellIndex([-1, 3])));
 
         let keys = cell_list.get_keys(&[0, 0]);
         assert!(keys.len() == 2);
@@ -873,7 +887,7 @@ mod tests {
         cell_list.insert(0, Cartesian::from([0.25, 0.5]));
         cell_list.insert(0, Cartesian::from([0.5, 0.75]));
 
-        check!(cell_list.cell_index.get(&0) == Some(&[0, 0]));
+        check!(cell_list.cell_index.get(&0) == Some(&CellIndex([0, 0])));
 
         let keys = cell_list.get_keys(&[0, 0]);
         assert!(keys.len() == 1);
@@ -888,8 +902,8 @@ mod tests {
         cell_list.insert(1, Cartesian::from([0.25, 0.5]));
         cell_list.insert(1, Cartesian::from([-0.5, -0.75]));
 
-        check!(cell_list.cell_index.get(&0) == Some(&[0, 0]));
-        check!(cell_list.cell_index.get(&1) == Some(&[-1, -1]));
+        check!(cell_list.cell_index.get(&0) == Some(&CellIndex([0, 0])));
+        check!(cell_list.cell_index.get(&1) == Some(&CellIndex([-1, -1])));
 
         let keys = cell_list.get_keys(&[0, 0]);
         assert!(keys.len() == 1);
@@ -911,7 +925,7 @@ mod tests {
         cell_list.remove(&1);
         cell_list.remove(&2);
 
-        check!(cell_list.cell_index.get(&0) == Some(&[0, 0]));
+        check!(cell_list.cell_index.get(&0) == Some(&CellIndex([0, 0])));
         check!(cell_list.cell_index.get(&1) == None);
         check!(cell_list.cell_index.get(&2) == None);
 
@@ -1014,7 +1028,7 @@ mod tests {
         assert!(cell_list.cell_index.len() == reference.len());
         for (reference_key, reference_value) in reference.drain() {
             let value = cell_list.cell_index.get(&reference_key);
-            check!(value == Some(&reference_value));
+            check!(value == Some(&CellIndex(reference_value)));
 
             let keys = cell_list.get_keys(&reference_value);
             check!(keys.contains(&reference_key));

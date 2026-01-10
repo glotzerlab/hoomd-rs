@@ -3,6 +3,8 @@
 
 //! Implement Isotropic
 
+use serde::{Serialize, Deserialize};
+
 use crate::{MaximumInteractionRange, SitePairEnergy, univariate::UnivariateEnergy};
 use hoomd_microstate::property::Position;
 use hoomd_vector::Metric;
@@ -49,6 +51,7 @@ use hoomd_vector::Metric;
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Isotropic<E> {
     /// The site-site interaction.
     pub interaction: E,

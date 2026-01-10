@@ -3,6 +3,8 @@
 
 //! [`AngularMask`] and related data structures.
 
+use serde::{Serialize, Deserialize};
+
 use super::AnisotropicEnergy;
 use crate::univariate::UnivariateEnergy;
 use hoomd_vector::{InnerProduct, Rotate, Unit, Vector};
@@ -25,7 +27,7 @@ use hoomd_vector::{InnerProduct, Rotate, Unit, Vector};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Patch<V> {
     /// Vector pointing from the center of the particle to the center of the mask `[unitless]`.
     pub director: Unit<V>,
@@ -232,7 +234,7 @@ pub struct Patch<V> {
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AngularMask<E, V> {
     /// The original potential.
     pub isotropic: E,

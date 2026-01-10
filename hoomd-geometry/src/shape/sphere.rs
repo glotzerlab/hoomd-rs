@@ -2,6 +2,11 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Hypersphere`]
+
+use rand::{Rng, distr::Distribution};
+use std::{array, f64::consts::PI, ops::Mul};
+use serde::{Serialize, Deserialize};
+
 use crate::{
     BoundingSphereRadius, Error, IntersectsAt, IsPointInside, MapPoint, Scale, SupportMapping,
     Volume,
@@ -9,8 +14,6 @@ use crate::{
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation, distribution::Ball};
 
-use rand::{Rng, distr::Distribution};
-use std::{array, f64::consts::PI, ops::Mul};
 
 /// The (single, double, ...)-factorial function
 pub fn factorial(n: usize, ntuple: usize) -> usize {
@@ -77,7 +80,7 @@ pub(crate) fn sphere_volume_prefactor(n: usize) -> f64 {
 ///     &Versor::default()
 /// ));
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Hypersphere<const N: usize> {
     /// Radius of the sphere
     pub radius: PositiveReal,

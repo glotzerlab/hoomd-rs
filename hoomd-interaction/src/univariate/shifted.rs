@@ -3,6 +3,8 @@
 
 //! Implement [`Shifted`]
 
+use serde::{Serialize, Deserialize};
+
 use super::{UnivariateEnergy, UnivariateForce};
 
 /// Shift another potential to 0 at a given `r`.
@@ -51,7 +53,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// shifted_lj.r_shift = 3.0;
 /// shifted_lj.f.sigma = 1.2;
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Shifted<F> {
     /// The original potential.
     pub f: F,

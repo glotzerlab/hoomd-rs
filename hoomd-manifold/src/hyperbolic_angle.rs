@@ -5,7 +5,7 @@
 //! space.
 
 use std::{f64::consts::PI, fmt};
-
+use serde::{Serialize, Deserialize};
 use num::complex::Complex;
 use rand::{
     Rng,
@@ -90,7 +90,7 @@ use crate::HyperbolicRotationMatrix;
 ///
 /// The default value `HyperbolicAngle::Default` returns the tuple
 /// `(0.0,0.0,0.0)`, which corresponds to the identify transformation.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct HyperbolicAngle {
     /// Get the rotation angle in radians.
     pub angles: (f64, f64, f64),

@@ -13,8 +13,8 @@
 //! TODO: Expand documentation.
 
 use rand::Rng;
-
 use std::ops::{Add, AddAssign};
+use serde::{Serialize, Deserialize};
 
 use hoomd_microstate::Microstate;
 use hoomd_utility::valid::{OpenUnitIntervalNumber, PositiveReal};
@@ -126,7 +126,7 @@ pub trait LocalTrial<B> {
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Count {
     /// The number of accepted moves.
     pub accepted: u64,

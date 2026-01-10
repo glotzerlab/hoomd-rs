@@ -4,6 +4,7 @@
 //! Implement `QuickInsert`
 
 use rand::distr::Distribution;
+use serde::{Serialize, Deserialize};
 
 use super::Count;
 use hoomd_interaction::{DeltaEnergyInsert, TotalEnergy};
@@ -16,7 +17,7 @@ use hoomd_microstate::{
 use hoomd_spatial::PointUpdate;
 
 /// Track the state of a given `QuickInsert` instance.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 enum State {
     /// Inserting bodies or performing trial moves to separate them.
     Running,
@@ -88,6 +89,7 @@ enum State {
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct QuickInsert<D> {
     /// Sample random bodies to insert.
     distribution: D,

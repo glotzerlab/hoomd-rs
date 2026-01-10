@@ -147,6 +147,9 @@
 //!
 //! TODO: Implement spatial search, then document.
 
+use serde::{Serialize, Deserialize};
+use thiserror::Error;
+
 pub mod boundary;
 mod microstate;
 pub mod property;
@@ -154,7 +157,6 @@ pub mod property;
 pub use microstate::{Microstate, MicrostateBuilder, SiteKey, Tagged};
 use property::Point;
 
-use thiserror::Error;
 
 /// Interactions in `hoomd-rs` apply between sites.
 ///
@@ -193,7 +195,7 @@ use thiserror::Error;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Site<S> {
     /// Every site in a [`Microstate`] has a unique value in `site_tag`.
     pub site_tag: usize,
@@ -277,7 +279,7 @@ pub struct Site<S> {
 ///
 /// The [`property`] module documentation shows you how to define custom body
 /// and site property types.
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Body<B, S = B> {
     /// The body's degrees of freedom.
     pub properties: B,

@@ -3,6 +3,8 @@
 
 //! Implement `OverlapPenalty`.
 
+use serde::{Serialize, Deserialize};
+
 use super::UnivariateEnergy;
 
 /// Monotonically non-decreasing potential to push sites apart (*not differentiable*).
@@ -36,7 +38,7 @@ use super::UnivariateEnergy;
 ///
 /// let overlap_penalty = OverlapPenalty::default();
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct OverlapPenalty {
     /// Spring stiffness $`[\mathrm{energy}] [\mathrm{length}]^{-2}`$.
     pub k: f64,

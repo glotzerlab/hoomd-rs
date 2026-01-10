@@ -4,8 +4,8 @@
 //! Implement [`Microstate`] and related types.
 
 use arrayvec::ArrayVec;
-use hoomd_geometry::MapPoint;
 use std::{cmp::Reverse, collections::BinaryHeap, fmt};
+use serde::{Serialize, Deserialize};
 
 use crate::{
     Body, Error, Site, Transform,
@@ -15,9 +15,10 @@ use crate::{
 
 use hoomd_rand::Counter;
 use hoomd_spatial::{AllPairs, PointUpdate, PointsNearBall};
+use hoomd_geometry::MapPoint;
 
 /// Either a primary site index or a ghost site index.
-#[derive(Clone, Copy, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]
 #[expect(
     clippy::exhaustive_enums,
     reason = "There will only ever be primary and ghost sites."
@@ -31,7 +32,7 @@ pub enum SiteKey {
 }
 
 /// Track a unique identifier for an item in [`Microstate`].
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Tagged<T> {
     /// The unique identifier.
     pub tag: usize,
@@ -47,7 +48,7 @@ pub struct Tagged<T> {
 ///
 /// Items are removed using `swap_remove`. Removed tags are reused when adding new
 /// items.
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct VecWithTags<T> {
     /// Items in index order.
     items: Vec<T>,
@@ -179,7 +180,7 @@ impl<T> VecWithTags<T> {
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Microstate<B, S = B, X = AllPairs<SiteKey>, C = Open> {
     /// Total number of steps that this microstate has been advanced in a simulation model.
     step: u64,
@@ -1398,6 +1399,7 @@ where
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MicrostateBuilder<B, S = B, X = AllPairs<SiteKey>, C = Open> {
     /// The initial value for step in the resulting [`Microstate`].
     step: u64,

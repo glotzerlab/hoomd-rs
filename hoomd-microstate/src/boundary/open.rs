@@ -4,6 +4,7 @@
 //! Implement Open
 
 use arrayvec::ArrayVec;
+use serde::{Serialize, Deserialize};
 
 use super::{Error, GenerateGhosts, MAX_GHOSTS, Wrap};
 
@@ -11,7 +12,7 @@ use super::{Error, GenerateGhosts, MAX_GHOSTS, Wrap};
 ///
 /// Every point lies inside `Open` boundary conditions, bodies and sites
 /// are never wrapped, and there are no ghost sites.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Open;
 
 impl<P> Wrap<P> for Open {

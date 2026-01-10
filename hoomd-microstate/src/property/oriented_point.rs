@@ -1,7 +1,9 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement Point
+//! Implement `OrientedPoint`
+
+use serde::{Serialize, Deserialize};
 
 use super::{Orientation, Point, Position};
 use crate::Transform;
@@ -22,7 +24,7 @@ use hoomd_vector::{Rotate, Rotation, Vector};
 ///     orientation: Angle::from(1.2),
 /// };
 /// ```
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct OrientedPoint<V, R> {
     /// The location of the extended body in space.
     pub position: V,

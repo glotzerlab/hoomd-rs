@@ -6,6 +6,7 @@
 use rand::{Rng, seq::IndexedRandom};
 use rayon::prelude::*;
 use std::fmt::Display;
+use serde::{Serialize, Deserialize};
 
 use super::{Adjust, Count, LocalTrial, Trial, Tune, tune_local::tune_local_trial};
 use hoomd_interaction::DeltaEnergyOne;
@@ -21,7 +22,7 @@ use hoomd_utility::valid::{OpenUnitIntervalNumber, PositiveReal};
 use crate::{Checkerboard, Cover};
 
 /// Result of a trial move
-#[derive(Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 enum TrialStatus {
     /// The trial move was rejected by the Metropolis criterion.
     #[default]
@@ -38,7 +39,7 @@ enum TrialStatus {
 ///
 /// `ParallelSweep` generates and evaluates many body trial moves in parallel. `BodyTrial`
 /// stores both the trial and its status.
-#[derive(Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 struct BodyTrial<B, S> {
     /// The trial body configuration.
     body: Body<B, S>,
@@ -78,6 +79,7 @@ struct BodyTrial<B, S> {
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ParallelSweep<L, K, B, S> {
     /// The largest distance between any two interacting bodies.
     body_interaction_range: PositiveReal,
@@ -92,6 +94,7 @@ pub struct ParallelSweep<L, K, B, S> {
     spaces: Vec<Vec<usize>>,
 
     /// Cached storage of the body trial moves in each space.
+    #[serde(skip)]
     body_trials: Vec<BodyTrial<B, S>>,
 }
 

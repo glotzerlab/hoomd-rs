@@ -5,7 +5,7 @@
 //!
 //! Requires the feature `extras`.
 
-use crate::util::read_le_u64;
+use serde::{Serialize, Deserialize};
 use rand::{
     SeedableRng,
     rand_core::{
@@ -13,6 +13,9 @@ use rand::{
         block::{BlockRng64, BlockRngCore},
     },
 };
+
+use crate::util::read_le_u64;
+
 /// Key schedule constant C240.
 ///
 /// This increases the randomness of outputs when keys are mostly zero. C240 is the AES
@@ -23,7 +26,7 @@ const C240: u64 = 0x1_bd1_1bd_aa9_fc1_a22;
 const ROTATION_2X64: [u32; 8] = [16, 42, 12, 31, 16, 32, 24, 21];
 
 /// PRNG using the `ThreeFish` cipher with a reduced number of rounds for performance.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ThreeFry2x64Core<const R: usize> {
     /// Internal seed to initialize the PRNG.
     seed: [u64; 3],
