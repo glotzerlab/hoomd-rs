@@ -10,7 +10,7 @@ use hoomd_md::{
     ConstantVolume, ForceAndTorqueUpdate, ForceUpdate, RotationalMotion, TranslationalMotion,
     thermalize::{
         ComAngularMomentumRemover, ComMomentumRemover, RotationalThermalizer, Thermalizer,
-        TranslationalAngularMomentumModifier, TranslationalMomentumModifier,
+        TranslationalMomentumModifier,
         TranslationalThermalizer,
     },
     thermostat::{BussiThermostat, MTTKThermostat, NoThermostat},

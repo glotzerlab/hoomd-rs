@@ -15,7 +15,7 @@ use hoomd_interaction::{
 use hoomd_md::{
     ConstantVolume, ForceUpdate, TranslationalMotion, thermalize::{
         ComAngularMomentumRemover, ComMomentumRemover, RotationalThermalizer, Thermalizer,
-        TranslationalAngularMomentumModifier, TranslationalMomentumModifier,
+        TranslationalMomentumModifier,
         TranslationalThermalizer,
     }, thermostat::NoThermostat
 };

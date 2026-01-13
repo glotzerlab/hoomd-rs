@@ -269,18 +269,18 @@ where
 /// Following the Trotter decomposition of Liouvillian,
 /// [`MTTKThermostat`] integrate the $`\eta`$ and
 /// $`\xi`$ forward by half time step $`\frac{\delta t}{2}`$
-/// by the following procedure:
+/// via the following procedure:
 ///
 /// ```math
 /// \begin{align}
 ///
 /// &G_\mathrm{old} = \frac{1}{\tau^2} \left( \frac{k_B T_\mathrm{old}}{k_BT_\mathrm{setpoint}} - 1 \right) \\
-/// &\xi \left[ t+\frac{\delta t} {4} \right] = \xi[t] + G_\mathrm{old}\frac{\delta t}{4} \\
-/// &\alpha = \exp{\left[ -\xi\left[t+\frac{\delta t} {4} \right] \frac{dt}{2} \right]}  \quad\; \text{calculate rescaling factor} \\
+/// &\xi \left\{ t+\frac{\delta t} {4} \right\} = \xi \{ t \} + G_\mathrm{old}\frac{\delta t}{4} \\
+/// &\alpha = \exp\left[ -\xi \left\{ t+\frac{\delta t} {4} \right\} \frac{dt}{2} \right]  \quad\; \text{calculate rescaling factor} \\
 /// &k_B T_\mathrm{new} = k_B T_\mathrm{old} \times \alpha^2 \quad\quad\quad\; \text{adjust temperature} \\
-/// &\eta \left[ t+\frac{\delta t} {2} \right] = \eta[t] + \xi \left[ t+\frac{\delta t} {4} \right] \frac{\delta t}{2} \\
+/// &\eta \left\{ t+\frac{\delta t} {2} \right\} = \eta \{ t \} + \xi \left\{ t+\frac{\delta t} {4} \right\} \frac{\delta t}{2} \\
 /// &G_\mathrm{new} = \frac{1}{\tau^2} \left( \frac{k_B T_\mathrm{new} }{k_BT_\mathrm{setpoint}} - 1 \right) \\
-/// &\xi \left[ t+\frac{\delta t} {2} \right] = \xi \left[ t+\frac{\delta t} {4} \right] + G_\mathrm{new} \frac{\delta t}{4} \\
+/// &\xi \left\{ t+\frac{\delta t} {2} \right\} = \xi \left\{ t+\frac{\delta t} {4} \right\} + G_\mathrm{new} \frac{\delta t}{4} \\
 ///         
 /// \end{align}
 /// ```

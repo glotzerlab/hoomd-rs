@@ -46,18 +46,6 @@ pub trait TranslationalMomentumModifier<const N: usize, B, S, C> {
     fn modify(&self, microstate: &mut Microstate<B, S, C>);
 }
 
-/// Modify the angular momenta contributed from translational
-/// degrees-of-freedom of [`Microstate`].
-///
-/// Implement [`TranslationalAngularMomentumModifier`] on a custom type
-/// or use one of the provide method in
-/// [`thermalize`](crate::thermalize) in MD simulations.
-pub trait TranslationalAngularMomentumModifier<const N: usize, B, S, C> {
-    /// Modify the angular momenta contributed from translational
-    /// degrees-of-freedom.
-    fn modify(&self, microstate: &mut Microstate<B, S, C>);
-}
-
 /// Thermalize system's momenta
 /// according to Maxwell-Boltzmann distribtion.
 pub struct Thermalizer {
@@ -253,7 +241,7 @@ pub struct ComAngularMomentumRemover;
 /// is 0, it will set the corresponding $`\mathbf{\omega}_\mathrm{com}`$ component
 /// to 0, by assuming the system do not rotate with respect to the corresponding
 /// principal axis.
-impl<B, S, C> TranslationalAngularMomentumModifier<3, B, S, C> for ComAngularMomentumRemover
+impl<B, S, C> TranslationalMomentumModifier<3, B, S, C> for ComAngularMomentumRemover
 where
     B: Position<Position = Cartesian<3>>
         + Momentum<Vector = Cartesian<3>>
@@ -359,7 +347,7 @@ where
 /// and $`\mathbf{p}_{k,\; \mathrm{new}}`$ are the momentum vector before and after
 /// modification of $`k`$-th body, and $`m_k`$ is the mass of $`k`$-th body.
 ///
-impl<B, S, C> TranslationalAngularMomentumModifier<2, B, S, C> for ComAngularMomentumRemover
+impl<B, S, C> TranslationalMomentumModifier<2, B, S, C> for ComAngularMomentumRemover
 where
     B: Position<Position = Cartesian<2>>
         + Momentum<Vector = Cartesian<2>>
@@ -417,9 +405,9 @@ where
                 let mass = body_properties.mass();
 
                 let p_to_com = *position - com;
-
+                
                 momentum -=
-                    Cartesian::from([-p_to_com[1], p_to_com[0]]) * com_angular_velocity * *mass;
+                    p_to_com.perpendicular() * com_angular_velocity * *mass;
 
                 *body_properties.momentum_mut() = momentum;
 
@@ -438,7 +426,7 @@ pub struct ComMomentumRemover;
 /// `remove_com_momentum` modify the system's momentum by zeroing the
 /// center-of-mass momentum as
 /// ```math
-/// \mathbf{p}_{k,\; \mathrm{new}} = \mathbf{p}_{k,\; \mathrm{old}} - \frac{\sum_k \mathbf{p}_{k,\; \mathrm{old}}}{\sum_k m_k} m_k
+/// \mathbf{p}_{k,\; \mathrm{new}} = \mathbf{p}_{k,\; \mathrm{old}} - \frac{\sum_i \mathbf{p}_{i,\; \mathrm{old}}}{\sum_i m_i} m_k
 /// ```
 /// where $`k`$ is the index of each body in a system, $`\mathbf{p}_{k,\; \mathrm{old}}`$
 /// and $`\mathbf{p}_{k,\; \mathrm{new}}`$ are the momentum vector before and after
