@@ -85,16 +85,18 @@ impl EightEight {
         let theta =
             (point.coordinates()[1].atan2(point.coordinates()[0])).rem_euclid(PI / 4.0) - PI / 8.0;
         let boost = (point.coordinates()[2] / point.skirt()).acosh();
+        let (b_sinh, b_cosh) = (boost.sinh(), boost.cosh());
         let rho = point.skirt();
         let xi = Self::CUSP_TO_EDGE;
+        let (xi_sinh, xi_cosh) = (xi.sinh(), xi.cosh());
         // boost into frame where edge is the vertical diameter
         let edge_as_diameter: Hyperbolic<3> = Hyperbolic::<3>::from_minkowski_coordinates(
             Minkowski::from([
-                rho * (xi.cosh()) * (boost.sinh()) * (theta.cos())
-                    - rho * (xi.sinh()) * (boost.cosh()),
-                rho * (boost.sinh()) * (theta.sin()),
-                -rho * (xi.sinh()) * (boost.sinh()) * (theta.cos())
-                    + rho * (xi.cosh()) * (boost.cosh()),
+                rho * xi_cosh * b_sinh * (theta.cos())
+                    - rho * xi_sinh * b_cosh,
+                rho * b_sinh * (theta.sin()),
+                -rho * xi_sinh * b_sinh * (theta.cos())
+                    + rho * xi_cosh * b_cosh,
             ]),
             rho,
         );
@@ -128,6 +130,37 @@ impl EightEight {
             }
         }
         coords
+    }
+    /// Apply a lattice transformation to a point.
+    #[inline]
+    #[must_use]
+    pub fn gamma(eta: f64, theta: f64, point: &[f64; 3]) -> [f64; 3] {
+        let (eta_sinh_squared, two_eta_sinh, theta_sin, theta_cos) = ((eta.sinh()).powi(2), (2.0*eta).sinh(), theta.sin(), theta.cos());
+        [
+            (2.0 * (eta_sinh_squared) * ((theta_cos).powi(2)) + 1.0) * point[0]
+                + ((2.0 * theta).sin()) * (eta_sinh_squared) * point[1]
+                + (two_eta_sinh) * (theta_cos) * point[2],
+            ((2.0 * theta).sin()) * (eta_sinh_squared) * point[0]
+                + (2.0 * (eta_sinh_squared) * ((theta_sin).powi(2)) + 1.0) * point[1]
+                + (two_eta_sinh) * (theta_sin) * point[2],
+            (two_eta_sinh) * (theta_cos) * point[0]
+                + (two_eta_sinh) * (theta_sin) * point[1]
+                + ((2.0 * eta).cosh()) * point[2],
+        ]
+    }
+    /// Calculate the change in angle in the tangent bundle associated with a lattice
+    /// transformation.
+    #[inline]
+    #[must_use]
+    pub fn reorient(theta: f64, point: &[f64; 3]) -> f64 {
+        let (q_u, q_v) = (point[0] / (1.0 + point[2]), point[1] / (1.0 + point[2]));
+        let alpha = (1.0 + (PI / 4.0).cos()).sqrt();
+        let beta = (theta.cos()) * ((2.0 * ((PI / 4.0).cos())).sqrt());
+        let gamma = (theta.sin()) * ((2.0 * ((PI / 4.0).cos())).sqrt());
+        // let prefactor = 1.0/((b*v-c*u).powi(2)+(a+b*u+c*v).powi(2)).powi(2);
+        let p_x = alpha + beta * q_u + gamma * q_v;
+        let p_y = beta * q_v - gamma * q_u;
+        -2.0 * (p_y.atan2(p_x))
     }
     /// Cusp-to-vertex distance for the {8,8} tiling for Gauss curvature K = -1.
     pub const EIGHTEIGHT: f64 = 2.448_452_447_678_076;

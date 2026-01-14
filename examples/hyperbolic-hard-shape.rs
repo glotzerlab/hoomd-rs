@@ -102,10 +102,13 @@ struct HyperbolicPolygonSelfAssembly {
 
 const RHO: f64 = 1.0;
 const PARTICLE_NUMBER: usize = 20;
-const RADIUS: f64 = 0.1; // units of rapidity
+const START_RADIUS: f64 = 0.05; // units of rapidity
+const END_RADIUS: f64 = 0.5;
+const NUM_STEPS: u64 = 50_000;
 
 enum Phase {
     Initialize,
+    Crunch,
     Equilibrate,
 }
 
@@ -162,11 +165,11 @@ impl HyperbolicPolygonSelfAssembly {
     #[allow(unused_mut)]
     fn new() -> anyhow::Result<HyperbolicPolygonSelfAssembly> {
         let maximum_distance = 0.01;
-        let maximum_rotation = 0.0001;
+        let maximum_rotation = 0.01;
         let macrostate = Isothermal { temperature: 1.0 };
 
-        let square = HyperbolicConvexPolytope::<3>::regular(4, RADIUS, 1.0);
-        let hamiltonian = PairwiseCutoff(HardShape(square.clone()));
+        let end_square = HyperbolicConvexPolytope::<3>::regular(4, END_RADIUS, 1.0);
+        let hamiltonian = PairwiseCutoff(HardShape(end_square.clone()));
 
         let boundary = Periodic::new(0.6, EightEight { skirt: 1.0_f64 })?;
         //let allpairs = AllPairs
@@ -190,7 +193,7 @@ impl HyperbolicPolygonSelfAssembly {
 
         let lj: LennardJones = LennardJones {
             epsilon: 10.0,
-            sigma: RADIUS*2.0,
+            sigma: START_RADIUS*2.0,
         };
 
         let insert_hamiltonian = PairwiseCutoff(Isotropic {
@@ -227,7 +230,7 @@ impl HyperbolicPolygonSelfAssembly {
         );
 
         if self.quick_insert.is_complete() {
-            self.phase = Phase::Equilibrate;
+            self.phase = Phase::Crunch;
             println!(
                 "Initialization complete at step {}.",
                 self.microstate.step()
@@ -240,7 +243,7 @@ impl HyperbolicPolygonSelfAssembly {
             let step = self.microstate.step();
             return Err(anyhow!(
                 "{n} of {target} bodies inserted after {step} steps"
-            ));
+            )); 
         }
 
         Ok(())
@@ -253,6 +256,29 @@ impl Simulation for HyperbolicPolygonSelfAssembly {
         match self.phase {
             Phase::Initialize => {
                 self.initialize().context("failed to initialize")?
+            }
+            Phase::Crunch => {
+                let step = self.microstate.step();
+                let radius = (END_RADIUS - START_RADIUS)*((step as f64)/(NUM_STEPS as f64)) + START_RADIUS;
+
+                let crunch_square = HyperbolicConvexPolytope::<3>::regular(4, radius, 1.0);
+                let crunch_hamiltonian = PairwiseCutoff(HardShape(crunch_square.clone()));
+
+                self.translate_sweep.apply(
+                &mut self.microstate,
+                &crunch_hamiltonian,
+                &Isothermal { temperature: 1.0 },
+                );
+
+                self.rotate_sweep.apply(
+                &mut self.microstate,
+                &crunch_hamiltonian,
+                &Isothermal { temperature: 1.0 },
+                );
+
+                if step > NUM_STEPS {
+                    self.phase = Phase::Equilibrate;
+                }
             }
             Phase::Equilibrate => {
                 self.translate_sweep.apply(
@@ -288,6 +314,8 @@ fn sync_simulation(
     simulation: Res<HyperbolicPolygonSelfAssembly>,
 ) {
     let sites = simulation.microstate.sites();
+    let step = simulation.microstate.step();
+    let radius = if step <= NUM_STEPS {(END_RADIUS - START_RADIUS)*(step as f64/NUM_STEPS as f64) + START_RADIUS} else {END_RADIUS};
     representation::HyperbolicPolygon::sync(
         &mut commands,
         disk_assets,
@@ -295,7 +323,7 @@ fn sync_simulation(
         sites.iter().map(|site| {
             (
                 *site.properties.position.point(),
-                RADIUS,
+                radius,
                 site.properties.orientation.theta as f32,
             )
         }),
@@ -312,6 +340,8 @@ fn sync_ghosts(
     simulation: Res<HyperbolicPolygonSelfAssembly>,
 ) {
     let ghosts = simulation.microstate.ghosts();
+    let step = simulation.microstate.step();
+    let radius = if step <= NUM_STEPS {(END_RADIUS - START_RADIUS)*(step as f64/NUM_STEPS as f64) + START_RADIUS} else {END_RADIUS};
     representation::HyperbolicPolygon::sync(
         &mut commands,
         ghost_assets,
@@ -319,7 +349,7 @@ fn sync_ghosts(
         ghosts.iter().map(|site| {
             (
                 *site.properties.position.point(),
-                RADIUS,
+                radius,
                 site.properties.orientation.theta as f32,
             )
         }),

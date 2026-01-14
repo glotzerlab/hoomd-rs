@@ -165,21 +165,23 @@ impl OrientedHyperbolicPoint<3, Angle> {
         let theta = trial_rotation.sample(rng);
         let v1: f64 = trial_boost.sample(rng);
         let v = v1.sqrt() * max_boost;
+        let (v_sinh, eta_sinh, eta_cosh) = (v.sinh(), eta.sinh(), eta.cosh());
+        let (phi_sin, phi_cos) = (phi.sin(), phi.cos());
         let trial_coords = [
-            rho * v.sinh() * theta.cos(),
-            rho * v.sinh() * theta.sin(),
+            rho * v_sinh * theta.cos(),
+            rho * v_sinh * theta.sin(),
             rho * v.cosh(),
         ];
         let transformed_point = Minkowski::from([
-            trial_coords[0] * ((eta.cosh()) * ((phi.cos()).powi(2)) + (phi.sin()).powi(2))
-                + trial_coords[1] * (phi.sin()) * (phi.cos()) * ((eta.cosh()) - 1.0)
-                + trial_coords[2] * (eta.sinh()) * (phi.cos()),
-            trial_coords[0] * (phi.sin()) * (phi.cos()) * ((eta.cosh()) - 1.0)
-                + trial_coords[1] * ((eta.cosh()) * ((phi.sin()).powi(2)) + (phi.cos()).powi(2))
-                + trial_coords[2] * (eta.sinh()) * (phi.sin()),
-            trial_coords[0] * (eta.sinh()) * (phi.cos())
-                + trial_coords[1] * (eta.sinh()) * (phi.sin())
-                + trial_coords[2] * (eta.cosh()),
+            trial_coords[0] * (eta_cosh * (phi_cos.powi(2)) + phi_sin.powi(2))
+                + trial_coords[1] * phi_sin * phi_cos * (eta_cosh - 1.0)
+                + trial_coords[2] * eta_sinh * phi_cos,
+            trial_coords[0] * phi_sin * phi_cos * (eta_cosh - 1.0)
+                + trial_coords[1] * (eta_cosh * (phi_sin.powi(2)) + phi_cos.powi(2))
+                + trial_coords[2] * eta_sinh * phi_sin,
+            trial_coords[0] * eta_sinh * phi_cos
+                + trial_coords[1] * eta_sinh * phi_sin
+                + trial_coords[2] * eta_cosh,
         ]);
         (
             Hyperbolic::from_minkowski_coordinates(transformed_point, rho),
@@ -243,34 +245,36 @@ impl Transform<Point<Hyperbolic<3>>> for OrientedHyperbolicPoint<3, Angle> {
             Self::deck_transform(-body_pos_boost, body_pos_theta, self.position())
                 + body_angle_system;
         let site_pos = site_properties.position.coordinates();
+        let (body_pos_boost_cosh, body_pos_boost_sinh) = (body_pos_boost.cosh(), body_pos_boost.sinh());
+        let (bpb_cos, bpb_sin, diff_cos, diff_sin) = (body_pos_theta.cos(), body_pos_theta.sin(), (body_angle_body - body_pos_theta).cos(), (body_angle_body - body_pos_theta).sin());
         let transformed_point = Minkowski::from([
             site_pos[0]
-                * ((body_pos_boost.cosh())
-                    * (body_pos_theta.cos())
-                    * ((body_angle_body - body_pos_theta).cos())
-                    - ((body_angle_body - body_pos_theta).sin()) * (body_pos_theta).sin())
+                * (body_pos_boost_cosh
+                    * bpb_cos
+                    * diff_cos
+                    - diff_sin * (body_pos_theta).sin())
                 - site_pos[1]
-                    * ((body_pos_theta.sin()) * ((body_angle_body - body_pos_theta).cos())
-                        + (body_pos_boost.cosh())
-                            * (body_pos_theta.cos())
-                            * ((body_angle_body - body_pos_theta).sin()))
-                + site_pos[2] * (body_pos_boost.sinh()) * (body_pos_theta.cos()),
+                    * (bpb_sin * diff_cos
+                        + body_pos_boost_cosh
+                            * bpb_cos
+                            * diff_sin)
+                + site_pos[2] * body_pos_boost_sinh * bpb_cos,
             site_pos[0]
-                * ((body_pos_boost.cosh())
-                    * (body_pos_theta.sin())
-                    * ((body_angle_body - body_pos_theta).cos())
-                    + (body_pos_theta.cos()) * ((body_angle_body - body_pos_theta).sin()))
+                * (body_pos_boost_cosh
+                    * bpb_sin
+                    * diff_cos
+                    + bpb_cos * diff_sin)
                 + site_pos[1]
-                    * ((body_pos_theta.cos()) * ((body_angle_body - body_pos_theta).cos())
-                        - (body_pos_boost.cosh())
-                            * (body_pos_theta.sin())
-                            * ((body_angle_body - body_pos_theta).sin()))
-                + site_pos[2] * (body_pos_boost.sinh()) * (body_pos_theta.sin()),
-            site_pos[0] * (body_pos_boost.sinh()) * ((body_angle_body - body_pos_theta).cos())
+                    * (bpb_cos * diff_cos
+                        - body_pos_boost_cosh
+                            * bpb_sin
+                            * diff_sin)
+                + site_pos[2] * body_pos_boost_sinh * bpb_sin,
+            site_pos[0] * body_pos_boost_sinh * diff_cos
                 - site_pos[1]
-                    * (body_pos_boost.sinh())
-                    * ((body_angle_body - body_pos_theta).sin())
-                + site_pos[2] * (body_pos_boost.cosh()),
+                    * body_pos_boost_sinh
+                    * diff_sin
+                + site_pos[2] * body_pos_boost_cosh,
         ]);
         let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(transformed_point, skirt);
         Point::new(new_hyperbolic)
@@ -291,35 +295,37 @@ impl Transform<OrientedHyperbolicPoint<3, Angle>> for OrientedHyperbolicPoint<3,
         let body_angle_body =
             Self::deck_transform(-body_pos_boost, body_pos_theta, self.position())
                 + body_angle_system;
+        let (body_pos_boost_cosh, body_pos_boost_sinh) = (body_pos_boost.cosh(), body_pos_boost.sinh());
+        let (bpb_cos, bpb_sin, diff_cos, diff_sin) = (body_pos_theta.cos(), body_pos_theta.sin(), (body_angle_body - body_pos_theta).cos(), (body_angle_body - body_pos_theta).sin());
         let site_pos = site_properties.position.coordinates();
         let transformed_point = Minkowski::from([
             site_pos[0]
-                * ((body_pos_boost.cosh())
-                    * (body_pos_theta.cos())
-                    * ((body_angle_body - body_pos_theta).cos())
-                    - ((body_angle_body - body_pos_theta).sin()) * (body_pos_theta).sin())
+                * (body_pos_boost_cosh
+                    * bpb_cos
+                    * diff_cos
+                    - diff_sin * bpb_sin)
                 - site_pos[1]
-                    * ((body_pos_theta.sin()) * ((body_angle_body - body_pos_theta).cos())
-                        + (body_pos_boost.cosh())
-                            * (body_pos_theta.cos())
-                            * ((body_angle_body - body_pos_theta).sin()))
-                + site_pos[2] * (body_pos_boost.sinh()) * (body_pos_theta.cos()),
+                    * (bpb_sin * diff_cos
+                        + body_pos_boost_cosh
+                            * bpb_cos
+                            * diff_sin)
+                + site_pos[2] * body_pos_boost_sinh * bpb_cos,
             site_pos[0]
-                * ((body_pos_boost.cosh())
-                    * (body_pos_theta.sin())
-                    * ((body_angle_body - body_pos_theta).cos())
-                    + (body_pos_theta.cos()) * ((body_angle_body - body_pos_theta).sin()))
+                * (body_pos_boost_cosh
+                    * bpb_sin
+                    * diff_cos
+                    + bpb_cos * diff_sin)
                 + site_pos[1]
-                    * ((body_pos_theta.cos()) * ((body_angle_body - body_pos_theta).cos())
-                        - (body_pos_boost.cosh())
-                            * (body_pos_theta.sin())
-                            * ((body_angle_body - body_pos_theta).sin()))
-                + site_pos[2] * (body_pos_boost.sinh()) * (body_pos_theta.sin()),
-            site_pos[0] * (body_pos_boost.sinh()) * ((body_angle_body - body_pos_theta).cos())
+                    * (bpb_cos * diff_cos
+                        - body_pos_boost_cosh
+                            * bpb_sin
+                            * diff_sin)
+                + site_pos[2] * body_pos_boost_sinh * bpb_sin,
+            site_pos[0] * body_pos_boost_sinh * diff_cos
                 - site_pos[1]
-                    * (body_pos_boost.sinh())
-                    * ((body_angle_body - body_pos_theta).sin())
-                + site_pos[2] * (body_pos_boost.cosh()),
+                    * body_pos_boost_sinh
+                    * diff_sin
+                + site_pos[2] * body_pos_boost_cosh,
         ]);
         let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(transformed_point, skirt);
         let site_angle_system =

@@ -538,9 +538,10 @@ impl Hyperbolic<3> {
     #[inline]
     pub fn from_polar_coordinates(v: f64, theta: f64, skirt: f64) -> Hyperbolic<3> {
         let theta_mod = theta.rem_euclid(2.0 * PI);
+        let v_sinh = v.sinh();
         let point = Minkowski::from([
-            skirt * (v.sinh()) * (theta_mod.cos()),
-            skirt * (v.sinh()) * (theta_mod.sin()),
+            skirt * v_sinh * (theta_mod.cos()),
+            skirt * v_sinh * (theta_mod.sin()),
             skirt * (v.cosh()),
         ]);
         Hyperbolic::from_minkowski_coordinates(point, skirt)
@@ -554,10 +555,11 @@ impl Hyperbolic<4> {
     pub fn from_polar_coordinates(v: f64, theta: f64, phi: f64, skirt: f64) -> Hyperbolic<4> {
         let theta_mod = theta.rem_euclid(2.0 * PI);
         let phi_mod = phi.rem_euclid(PI);
+        let v_sinh = v.sinh();
         let point = Minkowski::from([
-            skirt * (v.sinh()) * (theta_mod.cos()),
-            skirt * (v.sinh()) * (theta_mod.sin()) * (phi_mod.cos()),
-            skirt * (v.sinh()) * (theta_mod.sin()) * (phi_mod.sin()),
+            skirt * v_sinh * (theta_mod.cos()),
+            skirt * v_sinh * (theta_mod.sin()) * (phi_mod.cos()),
+            skirt * v_sinh * (theta_mod.sin()) * (phi_mod.sin()),
             skirt * (v.cosh()),
         ]);
         Hyperbolic::from_minkowski_coordinates(point, skirt)
@@ -659,19 +661,23 @@ impl Metric for Hyperbolic<3> {
     /// ```
     /// This choice of metric furnishes a representation of 2-dimensional hyperbolic
     /// space with Gaussian curvature $`K = -1/\rho^2`$.
-    #[inline]
+    #[inline(always)]
     fn distance(&self, other: &Self) -> f64 {
-        assert_eq!(
+        /* assert_eq!(
             self.skirt, other.skirt,
-            "points must be on the same Hyperbolic"
-        );
-        let last_component = self.point.coordinates[2] * other.point.coordinates[2];
+            "points must be on the same Hyperboloid"
+        ); */
+        /* let last_component = self.point.coordinates[2] * other.point.coordinates[2];
         let arg = zip(
             self.point.coordinates[0..2].iter(),
             other.point.coordinates[0..2].iter(),
         )
         .fold(last_component, |product, x| product - (x.0 * x.1));
-        self.skirt * (arg / (self.skirt.powi(2))).acosh()
+        self.skirt * (arg / (self.skirt.powi(2))).acosh() */
+        let self_coords = self.point.coordinates; 
+        let other_coords = other.point.coordinates;
+        let skirt_inv_sq = (self.skirt * self.skirt).recip();
+        self.skirt * ((self_coords[2]*other_coords[2] - self_coords[0]*other_coords[0]- self_coords[1]*other_coords[1])*skirt_inv_sq).acosh()
     }
 
     #[inline]
@@ -961,21 +967,22 @@ impl Distribution<Hyperbolic<3>> for HyperbolicDisk {
         let theta = trial_rotation.sample(rng);
         let v1: f64 = trial_boost.sample(rng);
         let v = v1.sqrt() * max_boost;
+        let (v_sinh, eta_sinh, eta_cosh, phi_sin, phi_cos) = (v.sinh(), eta.sinh(), eta.cosh(), phi.sin(), phi.cos());
         let trial_coords = [
-            rho * v.sinh() * theta.cos(),
-            rho * v.sinh() * theta.sin(),
+            rho * v_sinh * theta.cos(),
+            rho * v_sinh * theta.sin(),
             rho * v.cosh(),
         ];
         let transformed_point = Minkowski::from([
-            trial_coords[0] * ((eta.cosh()) * ((phi.cos()).powi(2)) + (phi.sin()).powi(2))
-                + trial_coords[1] * (phi.sin()) * (phi.cos()) * ((eta.cosh()) - 1.0)
-                + trial_coords[2] * (eta.sinh()) * (phi.cos()),
-            trial_coords[0] * (phi.sin()) * (phi.cos()) * ((eta.cosh()) - 1.0)
-                + trial_coords[1] * ((eta.cosh()) * ((phi.sin()).powi(2)) + (phi.cos()).powi(2))
-                + trial_coords[2] * (eta.sinh()) * (phi.sin()),
-            trial_coords[0] * (eta.sinh()) * (phi.cos())
-                + trial_coords[1] * (eta.sinh()) * (phi.sin())
-                + trial_coords[2] * (eta.cosh()),
+            trial_coords[0] * (eta_cosh * (phi_cos.powi(2)) + phi_sin.powi(2))
+                + trial_coords[1] * phi_sin * phi_cos * (eta_cosh - 1.0)
+                + trial_coords[2] * eta_sinh * phi_cos,
+            trial_coords[0] * phi_sin * phi_cos * (eta_cosh - 1.0)
+                + trial_coords[1] * (eta_cosh * (phi_sin.powi(2)) + phi_cos.powi(2))
+                + trial_coords[2] * eta_sinh * phi_sin,
+            trial_coords[0] * eta_sinh * phi_cos
+                + trial_coords[1] * eta_sinh * phi_sin
+                + trial_coords[2] * eta_cosh,
         ]);
         Hyperbolic::from_minkowski_coordinates(transformed_point, rho)
     }

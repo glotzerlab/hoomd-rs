@@ -3,7 +3,7 @@
 use crate::BoundingSphereRadius;
 use hoomd_manifold::{Hyperbolic, Minkowski};
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::Angle;
+use hoomd_vector::{Angle, Metric};
 use robust::{Coord, orient2d};
 use std::f64::consts::PI;
 
@@ -113,16 +113,23 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
         x_j: &Hyperbolic<3>,
         r_j: &Angle,
     ) -> bool {
+        let d = x_i.distance(x_j);
+        if d > 2.0 * self.bounding_radius {
+            return false;
+        }
         let mut result = true;
         let mut v_count = 0_usize;
         let n = self.vertices.len();
         while result && (v_count < 2 * n) {
             if v_count < n {
-                let v_num = v_count % n;
+                let v_num = (v_count) % n;
                 let v_next = (v_num + 1) % n;
+                let v_next_next = (v_num + 2) % n;
                 // translate all vertices
+                // need to do this for every other vertex
                 let v_1 = Self::vertex_to_system_frame(&self.vertices[v_num], r_i, x_i);
                 let v_2 = Self::vertex_to_system_frame(&self.vertices[v_next], r_i, x_i);
+                let v_3 = Self::vertex_to_system_frame(&self.vertices[v_next_next], r_i, x_i);
                 let other = self
                     .vertices
                     .iter()
@@ -131,15 +138,15 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
                 let self_translated = Self::to_vertex_frame_oriented(
                     x_i,
                     r_i,
-                    v_num,
+                    v_next,
                     self.bounding_radius,
-                    &[v_1, v_2],
+                    &[v_1, v_2, v_3],
                     n,
                 );
                 let other_translated = Self::to_vertex_frame_oriented(
                     x_i,
                     r_i,
-                    v_num,
+                    v_next,
                     self.bounding_radius,
                     &other,
                     n,
@@ -172,17 +179,34 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
                     if orient2d(self_coord[0], self_coord[1], other_coord[counter]) >= 0.0 {
                         // break out of loop once one of the vertices is on the wrong side of the line
                         overlap = true;
+                        break;
                     }
                     counter += 1;
                 }
+                counter = 0_usize;
+                // if overlap is false, then no need to check next edge FIX THIS!
+                if overlap {
+                    overlap = false;
+                    while !overlap && (counter < other.len()) {
+                        if orient2d(self_coord[1], self_coord[2], other_coord[counter]) >= 0.0 {
+                            // break out of loop once one of the vertices is on the wrong side of the line
+                            overlap = true;
+                            break;
+                        }
+                        counter += 1;
+                    }
+                } 
                 result = overlap;
-                v_count += 1;
+                v_count += 2;
+                // need to add a check for when the counter moves onto the next square
             } else {
-                let v_num = v_count % n;
+                let v_num = (v_count) % n;
                 let v_next = (v_num + 1) % n;
+                let v_next_next = (v_num + 2) % n;
                 // translate all vertices
                 let v_1 = Self::vertex_to_system_frame(&self.vertices[v_num], r_j, x_j);
                 let v_2 = Self::vertex_to_system_frame(&self.vertices[v_next], r_j, x_j);
+                let v_3 = Self::vertex_to_system_frame(&self.vertices[v_next_next], r_j, x_j);
                 let other = self
                     .vertices
                     .iter()
@@ -191,15 +215,15 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
                 let self_translated = Self::to_vertex_frame_oriented(
                     x_j,
                     r_j,
-                    v_num,
+                    v_next,
                     self.bounding_radius,
-                    &[v_1, v_2],
+                    &[v_1, v_2, v_3],
                     n,
                 );
                 let other_translated = Self::to_vertex_frame_oriented(
                     x_j,
                     r_j,
-                    v_num,
+                    v_next,
                     self.bounding_radius,
                     &other,
                     n,
@@ -232,11 +256,23 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
                     if orient2d(self_coord[0], self_coord[1], other_coord[counter]) >= 0.0 {
                         // break out of loop once one of the vertices is on the wrong side of the line
                         overlap = true;
+                        break;
                     }
                     counter += 1;
                 }
+                counter = 0_usize;
+                if overlap {
+                    overlap = false;
+                    while !overlap && (counter < other.len()) {
+                        if orient2d(self_coord[1], self_coord[2], other_coord[counter]) >= 0.0 {
+                            // break out of loop once one of the vertices is on the wrong side of the line
+                            overlap = true;
+                        }
+                        counter += 1;
+                    }
+                }
                 result = overlap;
-                v_count += 1;
+                v_count += 2;
             }
         }
         result
@@ -269,32 +305,34 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
         let r = bounding_radius;
         let vertex_translate = |point: &Hyperbolic<3>| -> Hyperbolic<3> {
             let pt = point.point().coordinates;
+            let (eta_sinh, eta_cosh, r_sinh, r_cosh) = (eta.sinh(), eta.cosh(), r.sinh(), r.cosh());
+            let (alpha_cos, alpha_sin, theta_cos, theta_sin) = (alpha.cos(), alpha.sin(), theta.cos(), theta.sin());
             let translated = Minkowski::from([
-                ((eta.cosh()) * (r.cosh()) * (alpha.cos()) * (theta.cos())
-                    - (r.cosh()) * (alpha.sin()) * (theta.sin())
-                    + (eta.sinh()) * (r.sinh()) * (theta.cos()))
+                (eta_cosh * r_cosh * alpha_cos * theta_cos
+                    - r_cosh * alpha_sin * theta_sin
+                    + eta_sinh * r_sinh * theta_cos)
                     * pt[0]
-                    + ((eta.cosh()) * (r.cosh()) * (alpha.cos()) * (theta.sin())
-                        + (r.cosh()) * (alpha.sin()) * (theta.cos())
-                        + (eta.sinh()) * (r.sinh()) * (theta.sin()))
+                    + (eta_cosh * r_cosh * alpha_cos * theta_sin
+                        + r_cosh * alpha_sin * theta_cos
+                        + eta_sinh * r_sinh * theta_sin)
                         * pt[1]
-                    - ((eta.sinh()) * (r.cosh()) * (alpha.cos()) + (eta.cosh()) * (r.sinh()))
+                    - (eta_sinh * r_cosh * alpha_cos + eta_cosh * r_sinh)
                         * pt[2],
-                -((eta.cosh()) * (alpha.sin()) * (theta.cos()) + (alpha.cos()) * (theta.sin()))
+                -(eta_cosh * alpha_sin * theta_cos + alpha_cos * theta_sin)
                     * pt[0]
-                    + (-(eta.cosh()) * (alpha.sin()) * (theta.sin())
-                        + (alpha.cos()) * (theta.cos()))
+                    + (-eta_cosh * alpha_sin * theta_sin
+                        + alpha_cos * theta_cos)
                         * pt[1]
-                    + (eta.sinh()) * (alpha.sin()) * pt[2],
-                (-(eta.cosh()) * (r.sinh()) * (alpha.cos()) * (theta.cos())
-                    + (r.sinh()) * (alpha.sin()) * (theta.sin())
-                    - (eta.sinh()) * (r.cosh()) * (theta.cos()))
+                    + eta_sinh * alpha_sin * pt[2],
+                (-eta_cosh * r_sinh * alpha_cos * theta_cos
+                    + r_sinh * alpha_sin * theta_sin
+                    - eta_sinh * r_cosh * theta_cos)
                     * pt[0]
-                    - ((eta.cosh()) * (r.sinh()) * (alpha.cos()) * (theta.sin())
-                        + (r.sinh()) * (alpha.sin()) * (theta.cos())
-                        + (eta.sinh()) * (r.cosh()) * (theta.sin()))
+                    - (eta_cosh * r_sinh * alpha_cos * theta_sin
+                        + r_sinh * alpha_sin * theta_cos
+                        + eta_sinh * r_cosh * theta_sin)
                         * pt[1]
-                    + ((eta.sinh()) * (r.sinh()) * (alpha.cos()) + (eta.cosh()) * (r.cosh()))
+                    + (eta_sinh * r_sinh * alpha_cos + eta_cosh * r_cosh)
                         * pt[2],
             ]);
             Hyperbolic::from_minkowski_coordinates(translated, point.skirt())
@@ -356,16 +394,18 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
             .rem_euclid(2.0 * PI);
         let phi = body_angle_body - theta;
         let pt = vertex.point().coordinates;
+        let (nu_sinh, nu_cosh) = (nu.sinh(), nu.cosh());
+        let (theta_sin, theta_cos, phi_sin, phi_cos) = (theta.sin(), theta.cos(), phi.sin(), phi.cos());
         let transformed = Minkowski::from([
-            ((nu.cosh()) * (phi.cos()) * (theta.cos()) - (phi.sin()) * (theta.sin())) * pt[0]
-                - ((nu.cosh()) * (phi.sin()) * (theta.cos()) + (phi.cos()) * (theta.sin())) * pt[1]
-                + (nu.sinh()) * (theta.cos()) * pt[2],
-            ((nu.cosh()) * (phi.cos()) * (theta.sin()) + (phi.sin()) * (theta.cos())) * pt[0]
-                + (-(nu.cosh()) * (phi.sin()) * (theta.sin()) + (phi.cos()) * (theta.cos()))
+            (nu_cosh * phi_cos * theta_cos - phi_sin * theta_sin) * pt[0]
+                - (nu_cosh * phi_sin * theta_cos + phi_cos * theta_sin) * pt[1]
+                + nu_sinh * theta_cos * pt[2],
+            (nu_cosh * phi_cos * theta_sin + phi_sin * theta_cos) * pt[0]
+                + (-nu_cosh * phi_sin * theta_sin + phi_cos * theta_cos)
                     * pt[1]
-                + (nu.sinh()) * (theta.sin()) * pt[2],
-            (nu.sinh()) * (phi.cos()) * pt[0] - (nu.sinh()) * (phi.sin()) * pt[1]
-                + (nu.cosh()) * pt[2],
+                + nu_sinh * theta_sin * pt[2],
+            nu_sinh * phi_cos * pt[0] - nu_sinh * phi_sin * pt[1]
+                + nu_cosh * pt[2],
         ]);
         Hyperbolic::from_minkowski_coordinates(transformed, vertex.skirt())
     }

@@ -142,7 +142,6 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
             discard;
         }
     }
-    
 
     // Sample the scaled texture.
     let scaled_uv = in.uv * texture_scale - vec2<f32>(texture_scale) / 2.0 + vec2<f32>(0.5);
