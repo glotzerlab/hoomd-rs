@@ -134,6 +134,8 @@ fn execute_matching(
         || benchmark_matcher.matches("mc_2d_lennard_jones")
         || benchmark_matcher.matches("mc_2d_hexagon");
 
+    let needs_microstate_2d_hyperbolic = benchmark_matcher.matches("mc_2d_hyperbolic_ljg");
+
     let needs_microstate_3d = benchmark_matcher.matches("mc_3d_sphere")
         || benchmark_matcher.matches("mc_3d_lennard_jones")
         || benchmark_matcher.matches("mc_3d_octahedron");
@@ -148,7 +150,7 @@ fn execute_matching(
         None
     };
 
-    let maybe_microstate_2d_hyperbolic = if needs_microstate_2d {
+    let maybe_microstate_2d_hyperbolic = if needs_microstate_2d_hyperbolic {
         let boundary = Periodic::new(0.5, EightEight { skirt: 1.0_f64 })?;
         let mut microstate =
             Microstate::builder().boundary(boundary).try_build()?;

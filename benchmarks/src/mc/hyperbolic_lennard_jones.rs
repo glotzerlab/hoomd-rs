@@ -109,9 +109,9 @@ where
     where
         B: Position<Position = Hyperbolic<3>>,
     {
-        let maximum_interaction_range = 2.5;
+        let maximum_interaction_range = 0.5;
 
-        let translate = Translate::with_maximum_distance(0.35.try_into()?);
+        let translate = Translate::with_maximum_distance(0.01.try_into()?);
         let translate_sweep = Sweep(translate.clone());
 
         let hamiltonian = PairwiseCutoff(Isotropic {
