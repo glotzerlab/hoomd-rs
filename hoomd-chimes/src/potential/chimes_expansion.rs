@@ -70,7 +70,7 @@ assert_eq!(chimes2b.inner_smooth_r(), &0.02);
 ```
 */
 impl<F: Transformation, const N: usize> ChimesChebyshevExpansion<F, N> {
-    /// Construct a new [`ChimesChebyshevExpansion`] from a `Vec<f64>` 
+    /// Construct a new [`ChimesChebyshevExpansion`] from a `Vec<f64>`
     /// for coefficients.
     ///
     /// # Panics
@@ -80,7 +80,10 @@ impl<F: Transformation, const N: usize> ChimesChebyshevExpansion<F, N> {
     #[inline]
     #[must_use]
     pub fn new(trans_style: F, coeff: Vec<f64>, r_in: f64) -> Self {
-        assert!(N != 0, "ChimesChebyshevExpansion requires at least one coefficient");
+        assert!(
+            N != 0,
+            "ChimesChebyshevExpansion requires at least one coefficient"
+        );
         assert!(
             (coeff.len() == N),
             "Coefficient vector length {} does not match N = {}",
@@ -116,10 +119,10 @@ impl<F: Transformation, const N: usize> ChimesChebyshevExpansion<F, N> {
     }
 
     /// Sets the `ChIMES` coefficients.
-    /// 
+    ///
     /// Cannot change the maximun order set during
     /// initialization.
-    /// 
+    ///
     /// # Panics
     ///
     /// Will panic if trying to change the length of `coeff`.
@@ -316,7 +319,8 @@ mod tests {
             r_in,
         };
 
-        let chimes2b: ChimesChebyshevExpansion<MorseTransformation, 3> = ChimesChebyshevExpansion::new(morse_trans, coeff, r_in);
+        let chimes2b: ChimesChebyshevExpansion<MorseTransformation, 3> =
+            ChimesChebyshevExpansion::new(morse_trans, coeff, r_in);
         assert_eq!(chimes2b.energy(r_in), 1.0 + 2.0 + 3.0);
         assert_eq!(chimes2b.energy(r_out), -1.0 + 2.0 - 3.0);
     }

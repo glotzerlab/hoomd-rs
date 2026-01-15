@@ -67,7 +67,7 @@ the excution of `parse`. The `get_twob_chimes_potential` assemble the complete
 
 # Example
 ```
-use hoomd_chimes::parser::ChimesBuilder;
+use hoomd_chimes::builder::ChimesBuilder;
 
 // Maximum two-body order is 12 for the example parameter file.
 const N: usize = 12;
@@ -532,7 +532,7 @@ impl<const N: usize> ChimesBuilder<N> {
             type1: self.pair_data.0[pair_idx].clone(),
             type2: self.pair_data.1[pair_idx].clone(),
             chimes: chimes_2b_model,
-            penalty: penalty_fn
+            penalty: penalty_fn,
         };
 
         Ok(PairwiseCutoff(Isotropic {
@@ -784,7 +784,7 @@ mod tests {
 
     #[rstest]
     #[should_panic]
-    // Only find one pair type 
+    // Only find one pair type
     // but intend to access the pair type with index 1.
     fn invalid_pair_index() {
         const N: usize = 12;
@@ -794,6 +794,8 @@ mod tests {
         // This returns a Result, so we use `?` to propagate any errors
         let params = ChimesBuilder::<N>::parse(file_path).expect("Failed to parse parameter file");
 
-        let _ = params.get_twob_chimes_potential(1).expect("Error assembling ChIMES potential");
+        let _ = params
+            .get_twob_chimes_potential(1)
+            .expect("Error assembling ChIMES potential");
     }
 }
