@@ -424,6 +424,7 @@ dependencies = [
  "env_logger",
  "hoomd-geometry",
  "hoomd-interaction",
+ "hoomd-manifold",
  "hoomd-mc",
  "hoomd-microstate",
  "hoomd-rand",
