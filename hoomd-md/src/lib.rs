@@ -10,7 +10,7 @@
 
 //! Simulate molecular dynamics in systems of particles.
 
-pub mod thermalize;
+pub mod thermalizer;
 pub mod thermostat;
 pub mod methods;
 
