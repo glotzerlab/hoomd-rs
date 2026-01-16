@@ -1,26 +1,30 @@
-//! A simulation with a single particle 
+//! A simulation with a single particle
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    pairwise::{Isotropic, LennardJones, WeeksChandlerAnderson}, rigid::Rigid, CutoffPair
+    CutoffPair, External,
+    external::ConstantTorque,
+    pairwise::{Isotropic, LennardJones, WeeksChandlerAnderson},
+    rigid::Rigid,
 };
-use hoomd_md::{thermostat::NoThermostat, ConstantVolume, ForceAndTorqueUpdate, RotationalMotion, TranslationalMotion};
+use hoomd_md::{
+    ConstantVolume, ForceAndTorqueUpdate, RotationalMotion, TranslationalMotion,
+    thermostat::NoThermostat,
+};
 use hoomd_microstate::{
+    Body, Microstate, MicrostateBuilder,
     boundary::{Closed, Open, Periodic},
     property::{DynamicsPoint, Momentum, OrientedDynamicsPoint, Point, Position},
-    Body,
-    Microstate,
-    MicrostateBuilder
 };
-use hoomd_simulation::{Simulation};
+use hoomd_simulation::Simulation;
 use hoomd_vector::{Angle, Cartesian};
 
+use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
     representation::RectangularBoundary,
     representation::disk::{self, Disk},
 };
-use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 
 use anyhow::Context;
 use bevy::prelude::*;
@@ -33,13 +37,17 @@ struct Isoenergy {}
 /// The state of the swimming simulation, tracked as a resource by Bevy
 #[derive(Resource)]
 struct Dumbbell {
-    microstate: Microstate<OrientedDynamicsPoint<Cartesian<2>, Angle>, Point<Cartesian<2>>, Periodic<Rectangle>>,
+    microstate: Microstate<
+        OrientedDynamicsPoint<Cartesian<2>, Angle>,
+        Point<Cartesian<2>>,
+        Periodic<Rectangle>,
+    >,
 
     macrostate: Isoenergy,
-    
+
     thermostat: NoThermostat,
 
-    force: Rigid<CutoffPair<Isotropic<WeeksChandlerAnderson>>>,
+    force: Rigid<External<ConstantTorque<Cartesian<2>>>>,
 
     integrator: ConstantVolume,
 }
@@ -68,38 +76,18 @@ impl Dumbbell {
             sites: vec![
                 Point::new(Cartesian::from([-3.0, 0.0])),
                 Point::new(Cartesian::from([3.0, 0.0])),
-            ]
+            ],
         };
         microstate.add_body(dumbbell_body)?;
 
-        let swimmer_x = 0.0;
-        let swimmer_y = - (box_length / 2.0) * (4.0 / 5.0);
-        let swimmer_body = Body {
-            properties: OrientedDynamicsPoint {     // why does this have to be of the same Type as the dumbbell body?
-                position: Cartesian::from([swimmer_x, swimmer_y]),
-                momentum: Cartesian::from([0.0, 0.0]),
-                net_force: Cartesian::from([0.0, 0.0]),
-                mass: 1.0,
-                orientation: Angle::default(),
-                moment_of_inertia: 1.0,
-                angular_momentum: 0.0,
-                net_torque: 0.0,
-            },
-            sites: vec![Point::default()]
-        };
-        microstate.add_body(swimmer_body)?;
-
         // Model interactions (in this case, a pairwise Lennard-Jones)
-        let force = Rigid(CutoffPair {
-            r_cut: 6.0,
-            evaluator: Isotropic(WeeksChandlerAnderson {
-                epsilon: 1.0,
-                sigma: 1.0
-            })
-        });
-    
+        let force = Rigid(External(ConstantTorque {
+            alpha: 0.001,
+            direction: 1.0,
+        }));
+
         // Create an NVE macrostate
-        let macrostate = Isoenergy{};
+        let macrostate = Isoenergy {};
 
         // Create a constant-volume integrator
         let dt = 0.01;
@@ -107,13 +95,13 @@ impl Dumbbell {
 
         // Constant V integration requires a thermostat, even if it does nothing
         let thermostat = NoThermostat;
-    
+
         Ok(Dumbbell {
             microstate,
             macrostate,
             thermostat,
             force,
-            integrator
+            integrator,
         })
     }
 }
@@ -121,9 +109,6 @@ impl Dumbbell {
 impl Simulation for Dumbbell {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
-        // Read keyboard events and kick the swimmer appropriately
-        let swimmer_index = self.microstate.bodies().len() - 1;
-
         // Evolve the system forward using the integrator
         self.integrator.integrate_translation_step_one(
             &mut self.microstate,
@@ -193,9 +178,12 @@ fn main() -> anyhow::Result<()> {
     app.add_systems(
         Update,
         (
-            move_swimmer,
-            sync_simulation.run_if(resource_changed::<Dumbbell>).after(AdvanceSet),
-        ).chain(),
+            //move_swimmer,
+            sync_simulation
+                .run_if(resource_changed::<Dumbbell>)
+                .after(AdvanceSet),
+        )
+            .chain(),
     );
 
     app.run();
@@ -226,38 +214,4 @@ fn sync_simulation(
             )
         }),
     );
-}
-
-/// Move the swimmer
-fn move_swimmer(
-    mut simulation: ResMut<Dumbbell>,
-    kb_input: Res<ButtonInput<KeyCode>>,
-) {
-    // Configure the movement speed
-    let dp_x = 0.005;
-    let dp_y = 0.005;
-
-    // Clone the swimmer
-    let swimmer_index = simulation.microstate.bodies().len() - 1;
-    let mut swimmer_body_properties = simulation
-        .microstate
-        .bodies()[swimmer_index]
-        .item
-        .properties
-        .clone();
-
-    if kb_input.pressed(KeyCode::KeyW) {
-        *swimmer_body_properties.momentum_mut() += Cartesian::from([0.0, dp_y]);
-    }
-    if kb_input.pressed(KeyCode::KeyS) {
-        *swimmer_body_properties.momentum_mut() -= Cartesian::from([0.0, dp_y]);
-    }
-    if kb_input.pressed(KeyCode::KeyD) {
-        *swimmer_body_properties.momentum_mut() += Cartesian::from([dp_x, 0.0]);
-    }
-    if kb_input.pressed(KeyCode::KeyA) {
-        *swimmer_body_properties.momentum_mut() -= Cartesian::from([dp_x, 0.0]);
-    }
-
-    simulation.microstate.update_body_properties(swimmer_index, swimmer_body_properties);
 }

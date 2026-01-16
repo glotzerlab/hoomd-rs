@@ -5,8 +5,8 @@
 */
 
 // use hoomd_simulation::macrostate::{Isoenergy};
-use hoomd_interaction::{External, external::Linear, rigid::Rigid};
-use hoomd_md::{ConstantVolume, TranslationalMotion, thermostat::NoThermostat};
+use hoomd_interaction::{External, external::ConstantForce, rigid::Rigid};
+use hoomd_md::{ConstantVolume, ForceUpdate, TranslationalMotion, thermostat::NoThermostat};
 use hoomd_microstate::{
     Body, Microstate,
     property::{DynamicsPoint, Point},
@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     microstate.add_body(body)?;
 
     // Model interactions (in this case, just gravity)
-    let force = Rigid(External(Linear {
+    let force = Rigid(External(ConstantForce {
         alpha: -2.0,
         plane_origin: [0.0, 1.0].into(),
         plane_normal: [0.0, 1.0].try_into()?,
@@ -51,16 +51,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Simulation loop
     for timestep in 0..10 {
+        // Evolve the system forward using the integrator
         integrator.integrate_translation_step_one(
             &mut microstate,
-            &force,
             &mut thermostat,
             &macrostate,
         );
 
+        integrator
+            .update_force(&mut microstate, &force);
+
         integrator.integrate_translation_step_two(
             &mut microstate,
-            &force,
             &mut thermostat,
             &macrostate,
         );

@@ -5,7 +5,16 @@
 
 use std::ops::Add;
 
-use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, ExternalBodyTorque, ExternalSiteForce, NetBodyForce, NetBodyTorque, SiteEnergy, SiteForce, TotalEnergy};
+use crate::{
+    DeltaEnergyInsert,
+    DeltaEnergyOne,
+    DeltaEnergyRemove,
+    ExternalBodyTorque,
+    NetBodyTorque,
+    SiteEnergy,
+    SiteForceAndTorque,
+    TotalEnergy
+};
 use hoomd_microstate::{boundary::Wrap, property::{Orientation, Position}, Body, Microstate, Site, Transform};
 use hoomd_vector::{Rotate, RotationMatrix, Vector, WedgeProduct};
 
@@ -263,15 +272,32 @@ where
     }
 }
 
-impl<V, B, S, C, E> SiteForce<V, B, S, C> for External<E>
+impl<const N: usize, V, B, S, C, E, R> NetBodyTorque<N, V, B, S, C> for External<E>
 where
-    V: Vector + Default,
+    V: Vector + WedgeProduct,
+    B: Transform<S> + Orientation<Rotation = R> + Clone,
     S: Position<Position = V>,
-    E: ExternalSiteForce<V, S>,
+    E: ExternalBodyTorque<V, B>,
+    R: Rotate<V>,
+    RotationMatrix<N>: From<R>,
+    V::Bivector: Default + Add<Output = V::Bivector>,
 {
     #[inline]
-    fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V {
-        self.0.site_single_force(&site.properties)
+    fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V::Bivector {
+        let body_properties = microstate.bodies()[body_index].item.properties.clone();  // TODO: check if we need to clone here
+        self.0.body_single_torque(&body_properties)
+    }
+}
+
+impl<V, B, S, C, E> SiteForceAndTorque<V, B, S, C> for External<E>
+where
+    V: WedgeProduct,
+    E: SiteForceAndTorque<V, B, S, C>
+{
+    // TODO: does this even make sense?
+    #[inline]
+    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Bivector) {
+        self.0.net_force_and_torque_on_site(microstate, site)
     }
 }
 
@@ -294,7 +320,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::external::Linear;
+    use crate::external::ConstantForce;
     use hoomd_geometry::shape::Rectangle;
     use hoomd_microstate::{
         Body, Microstate, MicrostateBuilder,
@@ -412,7 +438,7 @@ mod tests {
 
             let plane_normal = Unit::<Cartesian<2>>::try_from([0.0, 1.0])
                 .expect("the hard-coded vector is not zero");
-            let energy = External(Linear {
+            let energy = External(ConstantForce {
                 plane_origin: [0.0, -1.0].into(),
                 plane_normal,
                 alpha: 4.0,

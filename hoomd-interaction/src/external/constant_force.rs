@@ -1,15 +1,15 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement [`Linear`]
+//! Implement [`ConstantForce`]
 
-use crate::{ExternalBodyTorque, ExternalSiteForce};
+use crate::{ExternalBodyTorque, ExternalSiteForce, SiteForceAndTorque};
 
 use super::super::SiteEnergy;
-use hoomd_microstate::property::{Mass, MomentOfInertia, Orientation, Position};
+use hoomd_microstate::{property::{Mass, MomentOfInertia, Orientation, Position}, Microstate, Site};
 use hoomd_vector::{InnerProduct, Rotate, Unit, Vector, WedgeProduct};
 
-/// Linear potential based on position.
+/// Constant force potential based on position.
 ///
 /// ```math
 /// U = \alpha \cdot \vec{n} \cdot ( \vec{r} - \vec{p} )
@@ -23,11 +23,11 @@ use hoomd_vector::{InnerProduct, Rotate, Unit, Vector, WedgeProduct};
 /// Basic usage:
 ///
 /// ```
-/// use hoomd_interaction::external::Linear;
+/// use hoomd_interaction::external::ConstantForce;
 /// use hoomd_vector::{Cartesian, Unit};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let linear = Linear {
+/// let linear = ConstantForce {
 ///     alpha: 2.0,
 ///     plane_origin: [0.0, -10.0].into(),
 ///     plane_normal: [0.0, 1.0].try_into()?,
@@ -36,7 +36,7 @@ use hoomd_vector::{InnerProduct, Rotate, Unit, Vector, WedgeProduct};
 /// # }
 /// ```
 #[derive(Clone, Debug, PartialEq)]
-pub struct Linear<V> {
+pub struct ConstantForce<V> {
     /// Interaction strength *(\[energy\] \[length\]^(-1))*.
     pub alpha: f64,
     /// Point on the plane where U=0 *(\[length\])*.
@@ -45,7 +45,7 @@ pub struct Linear<V> {
     pub plane_normal: Unit<V>,
 }
 
-impl<V> Linear<V>
+impl<V> ConstantForce<V>
 where
     V: InnerProduct,
 {
@@ -54,11 +54,11 @@ where
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::external::Linear;
+    /// use hoomd_interaction::external::ConstantForce;
     /// use hoomd_vector::{Cartesian, Unit};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let linear = Linear {
+    /// let linear = ConstantForce {
     ///     alpha: 2.0,
     ///     plane_origin: [0.0, -10.0].into(),
     ///     plane_normal: [0.0, 1.0].try_into()?,
@@ -89,7 +89,7 @@ where
     }
 }
 
-impl<S, P> SiteEnergy<S> for Linear<P>
+impl<S, P> SiteEnergy<S> for ConstantForce<P>
 where
     S: Position<Position = P>,
     P: InnerProduct,
@@ -100,7 +100,7 @@ where
     }
 }
 
-impl<V, S> ExternalSiteForce<V, S> for Linear<V>
+impl<V, S> ExternalSiteForce<V, S> for ConstantForce<V>
 where
     V: InnerProduct,
     S: Position<Position = V>,
@@ -111,15 +111,28 @@ where
     }
 }
 
-impl<V, B, R> ExternalBodyTorque<V, B> for Linear<V>
+impl<V, B, R> ExternalBodyTorque<V, B> for ConstantForce<V>
 where
-    V: Vector + WedgeProduct,
+    V: Vector + WedgeProduct + InnerProduct,
     B: Orientation<Rotation=R> + MomentOfInertia + Mass,
     R: Rotate<V>
 {
     #[inline]
     fn body_single_torque(&self, body_properties: &B) -> V::Bivector {
-        !todo()
+        todo!()
+    }
+}
+
+impl<V, B, S, C> SiteForceAndTorque<V, B, S, C> for ConstantForce<V>
+where
+    V: InnerProduct + WedgeProduct,
+    S: Position<Position = V>,
+    V::Bivector: Default
+{
+    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Bivector) {
+        let force = self.site_single_force(&site.properties);
+        let torque = V::Bivector::default();
+        (force, torque)
     }
 }
 
@@ -140,7 +153,7 @@ mod tests {
         let n = Unit::<Cartesian<2>>::try_from(plane_normal)
             .expect("hard-coded vector should have non-zero length");
 
-        let linear = Linear {
+        let linear = ConstantForce {
             plane_origin: plane_origin.into(),
             plane_normal: n,
             alpha,

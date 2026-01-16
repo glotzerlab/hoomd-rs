@@ -3,7 +3,7 @@
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
     CutoffPair, External, TotalEnergy,
-    external::Linear,
+    external::ConstantForce,
     pairwise::{Boxcar, Isotropic},
 };
 use hoomd_mc::{Sweep, Translate, Trial};
@@ -23,7 +23,7 @@ struct Fill {
         Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Rectangle>>,
     /// How sites interact with other sites and fields.
     hamiltonian: (
-        External<Linear<Cartesian<2>>>,
+        External<ConstantForce<Cartesian<2>>>,
         CutoffPair<Isotropic<Boxcar>>,
     ),
     /// Trial moves to apply.
@@ -54,7 +54,7 @@ impl Fill {
         // ANCHOR_END: microstate
 
         // ANCHOR: external
-        let linear = External(Linear {
+        let linear = External(ConstantForce {
             alpha,
             plane_origin: Cartesian::default(),
             plane_normal: [0.0, 1.0].try_into()?,

@@ -6,7 +6,7 @@ use std::f64::consts::PI;
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
     CutoffPair, External, TotalEnergy,
-    external::Linear,
+    external::ConstantForce,
     pairwise::{Boxcar, Isotropic},
 };
 use hoomd_mc::{LocalTrial, Sweep, Trial};
@@ -70,7 +70,7 @@ struct Tetronimoes {
     microstate: Microstate<BodyProperties, SiteProperties, Closed<Rectangle>>,
     /// How sites interact with other sites and fields.
     hamiltonian: (
-        External<Linear<PositionVector>>,
+        External<ConstantForce<PositionVector>>,
         CutoffPair<Isotropic<Boxcar>>,
     ),
     /// Trial moves to apply.
@@ -106,7 +106,7 @@ impl Tetronimoes {
         // ANCHOR_END: microstate
 
         // ANCHOR: hamiltonian
-        let linear = External(Linear {
+        let linear = External(ConstantForce {
             alpha,
             plane_origin: Cartesian::default(),
             plane_normal: [0.0, 1.0].try_into()?,

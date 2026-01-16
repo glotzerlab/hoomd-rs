@@ -30,7 +30,7 @@ pub use cutoff_pair::CutoffPair;
 pub use cutoff_pair_overlap::CutoffPairOverlap;
 pub use external_overlap::ExternalOverlap;
 pub use external_type::External;
-use hoomd_vector::{Rotate, RotationMatrix, Vector, WedgeProduct};
+use hoomd_vector::{Rotate, RotationMatrix, Vector, WedgeProduct, TensorProduct};
 pub use zero::Zero;
 
 pub mod rigid;
@@ -544,45 +544,31 @@ pub trait NetBodyForceAndTorque<const N: usize, V: WedgeProduct, B, S, C> {
     fn net_force_and_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> (V, V::Bivector);
 }
 
-
-/** Compute the force on a single site.
-
-The generic type names are:
-* `V`: The Vector type.
-* `B`: The Body properties type.
-* `S`: The Site properties type.
-* `C`: The boundary conditions type.
-
-TODO: Add intra-doc links.
+/** Compute the net force and virial on a body.
 */
-pub trait SiteForce<V: Vector, B, S, C> {
-    /** Compute the force.
-    
-    `microstate` describes the system configuration and `site` describes
-    a site for which the force is calculated.
+pub trait NetBodyForceAndVirial<V: TensorProduct, B, S, C> {
+    /** Compute the net force and virial on a body.
+    TODO
     */
     #[must_use]
-    fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V;
+    fn net_force_and_virial_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> (V, V::Tensor);
 }
 
-/** Compute the torque on a single site.
-
-The generic type names are:
-* `V`: The Vector type.
-* `B`: The Body properties type.
-* `S`: The Site properties type.
-* `C`: The boundary conditions type.
-
-TODO: Add intra-doc links.
+/** Compute the net force and virial on a site.
 */
-pub trait SiteTorque<V: WedgeProduct, B, S, C> {
-    /** Compute the torque.
-    
-    `microstate` describes the system configuration and `site` describes
-    a site for which the torque is calculated.
+pub trait SiteForceAndVirial<V: TensorProduct, B, S, C> {
+    /** Compute the net force and virial on a site.
+    TODO
     */
     #[must_use]
-    fn net_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V::Bivector;
+    fn net_force_and_virial_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Tensor);
+}
+
+/** TODO: Documentation */
+pub trait SiteForceAndTorque<V: WedgeProduct, B, S, C> {
+    /** TODO: Documentation */
+    #[must_use]
+    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Bivector);
 }
 
 /** Compute the non-pairwise force on a single site.
@@ -654,17 +640,21 @@ pub trait ExternalBodyTorque<V: WedgeProduct, B> {
 // TODO: More doc examples for all implementors.
 
 
-// TODO: Move this implementation elsewhere
-impl<V, B, S, C, E1, E2> SiteForce<V, B, S, C> for (E1, E2)
+impl<const N: usize, V, B, S, C, E1, E2, R> NetBodyTorque<N, V, B, S, C> for (E1, E2)
 where
-    E1: SiteForce<V, B, S, C>,
-    E2: SiteForce<V, B, S, C>,
-    V: Vector   // TODO: necessary?
+    V: Vector + WedgeProduct,
+    B: Transform<S> + Orientation<Rotation = R>,
+    S: Position<Position = V>,
+    E1: NetBodyTorque<N, V, B, S, C>,
+    E2: NetBodyTorque<N, V, B, S, C>,
+    R: Rotate<V>,
+    RotationMatrix<N>: From<R>,
+    V::Bivector: Default + Add<Output = V::Bivector>,
 {
     #[inline]
-    fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V {
-        self.0.net_force_on_site(microstate, site)
-            + self.1.net_force_on_site(microstate, site)
+    fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V::Bivector {
+        self.0.net_torque_on_body(microstate, body_index)
+            + self.1.net_torque_on_body(microstate, body_index)
     }
 }
 

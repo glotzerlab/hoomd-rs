@@ -2,9 +2,22 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `CutoffPair`
-use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, pairwise::IsotropicForce, NetBodyForce, SiteForce, SitePairEnergy, PairSiteForce, TotalEnergy};
+use std::ops::{AddAssign, Mul};
+
+use crate::{
+    pairwise::{Isotropic, IsotropicForce},
+    DeltaEnergyInsert,
+    DeltaEnergyOne,
+    DeltaEnergyRemove,
+    PairSiteForce,
+    SiteForceAndTorque,
+    SiteForceAndVirial,
+    SitePairEnergy,
+    TotalEnergy
+};
 use hoomd_microstate::{Body, Microstate, Site, Transform, boundary::Wrap, property::Position};
-use hoomd_vector::{Cartesian, InnerProduct, Vector, Metric};
+use hoomd_vector::{Cartesian, InnerProduct, Metric, TensorProduct, Vector, WedgeProduct};
+use hoomd_linear_algebra::GeneralMatrix;
 
 /// Short-ranged pairwise interactions between sites.
 ///
@@ -177,7 +190,28 @@ impl<E> CutoffPair<E> {
         } else {
             V::default()
         }
+    }
 
+    /// Compute the cutoff pairwise force and virial on one site from another site.
+    /// TODO: Add example.
+    ///
+    #[inline]
+    pub fn site_pair_force_and_virial<V, S>(&self, a: &Site<S>, b: &Site<S>) -> (V, V::Tensor)
+    where
+        E: PairSiteForce<V, S>,
+        S: Position<Position = V>,
+        V: Vector + Default + InnerProduct + Metric + TensorProduct,
+        V::Tensor: GeneralMatrix + AddAssign
+    {
+        let r = (a.properties.position()).distance(b.properties.position());
+        if r < self.r_cut && a.body_tag != b.body_tag {
+            let rvec = *a.properties.position() - *b.properties.position();
+            let force = self.evaluator.site_pair_force(&a.properties, &b.properties);
+            let virial = (force*0.5).tensor_product(&rvec);
+            (force, virial)
+        } else {
+            (V::default(), V::Tensor::zeros())
+        }
     }
 }
 
@@ -493,29 +527,65 @@ where
 /** Compute the net cutoff pairwise force on a single site.
 TODO: Add example.
 */
-impl<V, B, S, C, E> SiteForce<V, B, S, C> for CutoffPair<E>
+impl<V, B, S, C, E> SiteForceAndTorque<V, B, S, C> for CutoffPair<Isotropic<E>>
 where
-    V: Vector + Default + InnerProduct + Metric,
+    V: Vector + Default + InnerProduct + Metric + WedgeProduct,
     B: Transform<S>,
     S: Position<Position = V>,
-    E: PairSiteForce<V, S>,
+    E: IsotropicForce,
+    V::Bivector: Default,
 {
     #[inline]
-    fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V {
-        let mut total = V::default();
+    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, <V as WedgeProduct>::Bivector) {
+        // Calculate net force from all of the pairwise interactions
+        let mut total_force = V::default();
         for other_site in microstate
             .iter_sites_near(site.properties.position(), self.r_cut)
             .filter(|s| site.body_tag != s.body_tag)
         {
-            total += self
+            total_force += self
                 .evaluator
                 .site_pair_force(&site.properties, &other_site.properties);
         }
-        total
 
+        // Assume net torque is 0
+        let total_torque = V::Bivector::default();
+
+        (total_force, total_torque)
     }
 }
 
+/** Compute the net cutoff pairwise force and virial on a single site.
+ TODO: Add example.
+*/
+impl<V, B, S, C, E> SiteForceAndVirial<V, B, S, C> for CutoffPair<E>
+where
+    V: Vector + Default + InnerProduct + Metric + TensorProduct,
+    B: Transform<S>,
+    S: Position<Position = V>,
+    E: PairSiteForce<V, S>,
+    V::Tensor: GeneralMatrix + AddAssign
+{
+    #[inline]
+    fn net_force_and_virial_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Tensor) {
+        let mut total_force = V::default();
+        let mut total_virial = V::Tensor::zeros();
+        for other_site in microstate
+            .iter_sites_near(site.properties.position(), self.r_cut)
+            .filter(|s| site.body_tag != s.body_tag)
+        {   
+            let rvec = *site.properties.position() - *other_site.properties.position();
+            let force = self
+                .evaluator
+                .site_pair_force(&site.properties, &other_site.properties);
+            let virial = (force*0.5).tensor_product(&rvec);
+            total_force += force;
+            total_virial += virial;
+        }
+        (total_force, total_virial)
+
+    }
+}
 
 
 #[cfg(test)]
