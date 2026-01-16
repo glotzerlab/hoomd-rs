@@ -3,9 +3,12 @@
 
 //! Implement Translate
 
-use std::marker::PhantomData;
+use serde::{Deserialize, Serialize};
+use std::{fmt, marker::PhantomData};
 
 use hoomd_utility::valid::PositiveReal;
+
+use crate::Adjust;
 
 mod cartesian;
 mod hyperboloid;
@@ -34,6 +37,7 @@ mod sphere;
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Translate<P> {
     /// The maximum distance a body can be translated in one trial move.
     maximum_distance: PositiveReal,
@@ -77,5 +81,21 @@ impl<P> Translate<P> {
     #[inline]
     pub fn maximum_distance_mut(&mut self) -> &mut PositiveReal {
         &mut self.maximum_distance
+    }
+}
+
+impl<P> Adjust for Translate<P> {
+    /// Change the maximum trial move size by the given scale factor.
+    #[inline]
+    fn adjust(&mut self, factor: PositiveReal) {
+        self.maximum_distance *= factor;
+    }
+}
+
+impl<P> fmt::Display for Translate<P> {
+    /// Format a [`Translate`] as `{maximum_distance}`.
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.maximum_distance.fmt(f)
     }
 }

@@ -3,6 +3,8 @@
 
 //! Implement [`WeeksChandlerAnderson`]
 
+use serde::{Deserialize, Serialize};
+
 use super::{LennardJones, UnivariateEnergy, UnivariateForce};
 
 /// Potential with a steep repulsive core.
@@ -50,7 +52,7 @@ use super::{LennardJones, UnivariateEnergy, UnivariateForce};
 /// wca.epsilon = 1.5;
 /// wca.sigma = 3.0;
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct WeeksChandlerAnderson {
     /// Energy scale *(\[energy\])*.
     pub epsilon: f64,

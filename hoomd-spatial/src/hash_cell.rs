@@ -12,14 +12,23 @@
 
 //! Implement `HashCell`
 
-use std::{array, cmp::Eq, fmt, hash::Hash, marker::PhantomData};
-
 use rustc_hash::FxHashMap;
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use std::{array, cmp::Eq, fmt, hash::Hash, marker::PhantomData};
 
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
 use super::{PointUpdate, PointsNearBall, WithSearchRadius, vec_cell};
+
+/// Cell index.
+///
+/// serde cannot handle generic arrays. Store them in a newtype so that
+/// derive(Serialize, Deserialize) functions correctly below.
+#[serde_as]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub(crate) struct CellIndex<const D: usize>(#[serde_as(as = "[_; D]")] pub [i64; D]);
 
 /// Bucket sort points into cubes with [`HashMap`]-backed storage
 ///
@@ -52,17 +61,23 @@ use super::{PointUpdate, PointsNearBall, WithSearchRadius, vec_cell};
 /// # Ok(())
 /// # }
 /// ```
-pub struct HashCell<K, const D: usize> {
+#[serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct HashCell<K, const D: usize>
+where
+    K: Eq + Hash,
+{
     /// The width of each cell.
     cell_width: PositiveReal,
 
     /// A map from cell indices to cell contents.
-    particle_indices: FxHashMap<[i64; D], Vec<K>>,
+    particle_indices: FxHashMap<CellIndex<D>, Vec<K>>,
 
     /// A map from particle indices to cell indices.
-    cell_index: FxHashMap<K, [i64; D]>,
+    cell_index: FxHashMap<K, CellIndex<D>>,
 
     /// Pre-computed stencils.
+    #[serde_as(as = "Vec<Vec<[_; D]>>")]
     stencils: Vec<Vec<[i64; D]>>,
 }
 
@@ -286,7 +301,7 @@ where
     /// ```
     #[inline]
     fn insert(&mut self, key: K, position: Cartesian<D>) {
-        let cell_idx = self.cell_index_from_position(&position);
+        let cell_idx = CellIndex(self.cell_index_from_position(&position));
         let old_cell_index = self.cell_index.insert(key, cell_idx);
         // This checks if old_cell_index is None or if it is different from the new cell index.
         if old_cell_index != Some(cell_idx) {
@@ -400,7 +415,10 @@ where
 }
 
 /// Iterate over keys in the cell list around a given center cell.
-struct PointsIterator<'a, K, const D: usize> {
+struct PointsIterator<'a, K, const D: usize>
+where
+    K: Eq + Hash,
+{
     /// Keys of the current cell iteration (None if the cell is empty)
     keys: Option<&'a Vec<K>>,
 
@@ -422,7 +440,7 @@ struct PointsIterator<'a, K, const D: usize> {
 
 impl<K, const D: usize> Iterator for PointsIterator<'_, K, D>
 where
-    K: Copy,
+    K: Copy + Eq + Hash,
 {
     type Item = K;
 
@@ -446,7 +464,7 @@ where
 
             let cell_index =
                 array::from_fn(|i| self.center[i] + self.stencil[self.current_stencil][i]);
-            self.keys = self.cell_list.particle_indices.get(&cell_index);
+            self.keys = self.cell_list.particle_indices.get(&CellIndex(cell_index));
         }
     }
 }
@@ -497,7 +515,7 @@ where
         let stencil = &self.stencils[stencil_index];
 
         PointsIterator {
-            keys: self.particle_indices.get(&center),
+            keys: self.particle_indices.get(&CellIndex(center)),
             cell_list: self,
             index_in_current_cell: 0,
             current_stencil: 0,
@@ -507,7 +525,10 @@ where
     }
 }
 
-impl<K, const D: usize> fmt::Display for HashCell<K, D> {
+impl<K, const D: usize> fmt::Display for HashCell<K, D>
+where
+    K: Eq + Hash,
+{
     /// Summarize the contents of the cell list.
     ///
     /// This is a slow operation. It is meant to be printed to logs only
@@ -584,9 +605,9 @@ mod tests {
 
         cell_list.insert(0, Cartesian::from([0.125, 0.25]));
 
-        check!(cell_list.cell_index.get(&0) == Some(&[0, 0]));
+        check!(cell_list.cell_index.get(&0) == Some(&CellIndex([0, 0])));
 
-        let keys = cell_list.particle_indices.get(&[0, 0]);
+        let keys = cell_list.particle_indices.get(&CellIndex([0, 0]));
         let_assert!(Some(keys) = keys);
         check!(keys.len() == 1);
         check!(keys.contains(&0));
@@ -600,17 +621,17 @@ mod tests {
         cell_list.insert(1, Cartesian::from([0.995, 0.897]));
         cell_list.insert(2, Cartesian::from([-0.125, 3.25]));
 
-        check!(cell_list.cell_index.get(&0) == Some(&[0, 0]));
-        check!(cell_list.cell_index.get(&1) == Some(&[0, 0]));
-        check!(cell_list.cell_index.get(&2) == Some(&[-1, 3]));
+        check!(cell_list.cell_index.get(&0) == Some(&CellIndex([0, 0])));
+        check!(cell_list.cell_index.get(&1) == Some(&CellIndex([0, 0])));
+        check!(cell_list.cell_index.get(&2) == Some(&CellIndex([-1, 3])));
 
-        let keys = cell_list.particle_indices.get(&[0, 0]);
+        let keys = cell_list.particle_indices.get(&CellIndex([0, 0]));
         let_assert!(Some(keys) = keys);
         check!(keys.len() == 2);
         check!(keys.contains(&0));
         check!(keys.contains(&1));
 
-        let keys = cell_list.particle_indices.get(&[-1, 3]);
+        let keys = cell_list.particle_indices.get(&CellIndex([-1, 3]));
         let_assert!(Some(keys) = keys);
         check!(keys.len() == 1);
         check!(keys.contains(&2));
@@ -624,9 +645,9 @@ mod tests {
         cell_list.insert(0, Cartesian::from([0.25, 0.5]));
         cell_list.insert(0, Cartesian::from([0.5, 0.75]));
 
-        check!(cell_list.cell_index.get(&0) == Some(&[0, 0]));
+        check!(cell_list.cell_index.get(&0) == Some(&CellIndex([0, 0])));
 
-        let keys = cell_list.particle_indices.get(&[0, 0]);
+        let keys = cell_list.particle_indices.get(&CellIndex([0, 0]));
         let_assert!(Some(keys) = keys);
         check!(keys.len() == 1);
         check!(keys.contains(&0));
@@ -640,15 +661,15 @@ mod tests {
         cell_list.insert(1, Cartesian::from([0.25, 0.5]));
         cell_list.insert(1, Cartesian::from([-0.5, -0.75]));
 
-        check!(cell_list.cell_index.get(&0) == Some(&[0, 0]));
-        check!(cell_list.cell_index.get(&1) == Some(&[-1, -1]));
+        check!(cell_list.cell_index.get(&0) == Some(&CellIndex([0, 0])));
+        check!(cell_list.cell_index.get(&1) == Some(&CellIndex([-1, -1])));
 
-        let keys = cell_list.particle_indices.get(&[0, 0]);
+        let keys = cell_list.particle_indices.get(&CellIndex([0, 0]));
         let_assert!(Some(keys) = keys);
         check!(keys.len() == 1);
         check!(keys.contains(&0));
 
-        let keys = cell_list.particle_indices.get(&[-1, -1]);
+        let keys = cell_list.particle_indices.get(&CellIndex([-1, -1]));
         let_assert!(Some(keys) = keys);
         check!(keys.len() == 1);
         check!(keys.contains(&1));
@@ -665,16 +686,16 @@ mod tests {
         cell_list.remove(&1);
         cell_list.remove(&2);
 
-        check!(cell_list.cell_index.get(&0) == Some(&[0, 0]));
+        check!(cell_list.cell_index.get(&0) == Some(&CellIndex([0, 0])));
         check!(cell_list.cell_index.get(&1) == None);
         check!(cell_list.cell_index.get(&2) == None);
 
-        let keys = cell_list.particle_indices.get(&[0, 0]);
+        let keys = cell_list.particle_indices.get(&CellIndex([0, 0]));
         let_assert!(Some(keys) = keys);
         check!(keys.len() == 1);
         check!(keys.contains(&0));
 
-        let keys = cell_list.particle_indices.get(&[-1, 3]);
+        let keys = cell_list.particle_indices.get(&CellIndex([-1, 3]));
         let_assert!(Some(keys) = keys);
         assert!(keys.len() == 0);
     }
@@ -707,7 +728,7 @@ mod tests {
         cell_list.shrink_to_fit();
         check!(cell_list.particle_indices.len() == 1);
 
-        let keys = cell_list.particle_indices.get(&[0, 0]);
+        let keys = cell_list.particle_indices.get(&CellIndex([0, 0]));
         let_assert!(Some(keys) = keys);
         check!(keys.len() == 1);
         check!(keys.contains(&0));
@@ -753,9 +774,9 @@ mod tests {
         assert!(cell_list.cell_index.len() == reference.len());
         for (reference_key, reference_value) in reference.drain() {
             let value = cell_list.cell_index.get(&reference_key);
-            assert!(value == Some(&reference_value));
+            assert!(value == Some(&CellIndex(reference_value)));
 
-            let keys = cell_list.particle_indices.get(&reference_value);
+            let keys = cell_list.particle_indices.get(&CellIndex(reference_value));
             let_assert!(Some(keys) = keys);
             check!(keys.contains(&reference_key));
         }

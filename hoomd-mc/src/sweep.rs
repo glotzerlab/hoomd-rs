@@ -3,7 +3,10 @@
 
 //! Implement Sweep
 
-use super::{Count, LocalTrial, Trial};
+use rand::Rng;
+use serde::{Deserialize, Serialize};
+use std::fmt::Display;
+
 use hoomd_interaction::DeltaEnergyOne;
 use hoomd_microstate::{
     Body, Microstate, SiteKey, Transform,
@@ -12,45 +15,30 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::macrostate::Temperature;
 use hoomd_spatial::PointUpdate;
+use hoomd_utility::valid::OpenUnitIntervalNumber;
 
-use rand::Rng;
+use super::{Adjust, Count, LocalTrial, Trial, Tune, tune_local::tune_local_trial};
 
-/// Apply a local trial move to each body in the microstate.
+/// Apply a local trial move to every body in the microstate.
 ///
-/// Each trial move is accepted when:
-/// ```math
-/// r < \exp\left(\frac{-\Delta H}{kT}\right)
-/// ```
-/// where `r` is a random value uniformly distributed in `[0,1)`, $`\Delta H`$ is
-/// the change in energy computed by the given `hamiltonian` and $`kT`$ is the
-/// `temperature` given in `macrostate`.
+/// The first field in the tuple struct determines what trial moves `Sweep`
+/// attempts.
 ///
 /// # Example
 ///
 /// ```
-/// use hoomd_interaction::Zero;
-/// use hoomd_mc::{Sweep, Translate, Trial};
-/// use hoomd_microstate::{Body, Microstate, property::Position};
-/// use hoomd_simulation::macrostate::Isothermal;
+/// use hoomd_mc::{Sweep, Translate};
 /// use hoomd_vector::Cartesian;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let mut microstate = Microstate::new();
-/// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
 /// let d = 0.1;
-/// let translate = Translate::with_maximum_distance(d.try_into()?);
+/// let translate =
+///     Translate::<Cartesian<2>>::with_maximum_distance(d.try_into()?);
 /// let translate_sweep = Sweep(translate);
-///
-/// let hamiltonian = Zero;
-/// let macrostate = Isothermal { temperature: 1.0 };
-///
-/// for _ in 0..1_000 {
-///     translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
-///     microstate.increment_step();
-/// }
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Sweep<L>(pub L);
 
 impl<P, B, S, X, C, L, H, MA> Trial<Microstate<B, S, X, C>, H, MA> for Sweep<L>
@@ -66,9 +54,45 @@ where
 {
     type Count = Count;
 
+    /// Apply a local trial move to each body in the microstate.
+    ///
+    /// Each trial move is accepted when:
+    /// ```math
+    /// r < \exp\left(\frac{-\Delta H}{kT}\right)
+    /// ```
+    /// where `r` is a random value uniformly distributed in `[0,1)`, $`\Delta H`$ is
+    /// the change in energy computed by the given `hamiltonian` and $`kT`$ is the
+    /// `temperature` given in `macrostate`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_interaction::Zero;
+    /// use hoomd_mc::{Sweep, Translate, Trial};
+    /// use hoomd_microstate::{Body, Microstate, property::Position};
+    /// use hoomd_simulation::macrostate::Isothermal;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate = Microstate::new();
+    /// microstate.add_body(Body::point(Cartesian::from([0.0, 0.0])));
+    /// let d = 0.1;
+    /// let translate = Translate::with_maximum_distance(d.try_into()?);
+    /// let mut translate_sweep = Sweep(translate);
+    ///
+    /// let hamiltonian = Zero;
+    /// let macrostate = Isothermal { temperature: 1.0 };
+    ///
+    /// for _ in 0..1_000 {
+    ///     translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
+    ///     microstate.increment_step();
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     fn apply(
-        &self,
+        &mut self,
         microstate: &mut Microstate<B, S, X, C>,
         hamiltonian: &H,
         macrostate: &MA,
@@ -114,6 +138,81 @@ where
 
         microstate.increment_substep();
         count
+    }
+}
+
+impl<P, B, S, X, C, L, H, MA> Tune<P, B, S, X, C, L, H, MA> for Sweep<L>
+where
+    P: Copy,
+    B: Copy + Default + Transform<S> + Position<Position = P>,
+    S: Copy + Default + Position<Position = P>,
+    X: PointUpdate<P, SiteKey>,
+    L: LocalTrial<B> + Adjust + Display,
+    H: DeltaEnergyOne<B, S, X, C>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    MA: Temperature,
+{
+    /// Tune the trial move maximum size to achieve a given acceptance ratio.
+    ///
+    /// Use [`tune_default`] unless you have a specific need to adjust the
+    /// tuning parameters.
+    ///
+    /// [`tune_default`]: Self::tune_default
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_interaction::{
+    ///     MaximumInteractionRange, PairwiseCutoff, pairwise::HardSphere,
+    /// };
+    /// use hoomd_mc::{Sweep, Translate, Trial, Tune};
+    /// use hoomd_microstate::{
+    ///     Body, Microstate, boundary::Periodic, property::Position,
+    /// };
+    /// use hoomd_simulation::macrostate::Isothermal;
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let square = Rectangle::with_equal_edges(2.2.try_into()?);
+    /// let mut microstate = Microstate::builder()
+    ///     .boundary(Periodic::new(1.0, square)?)
+    ///     .try_build()?;
+    /// microstate.add_body(Body::point(Cartesian::from([-0.6, -0.6])))?;
+    /// microstate.add_body(Body::point(Cartesian::from([-0.6, 0.6])))?;
+    /// microstate.add_body(Body::point(Cartesian::from([0.6, -0.6])))?;
+    /// microstate.add_body(Body::point(Cartesian::from([0.6, 0.6])))?;
+    /// let d = 0.1;
+    /// let translate = Translate::with_maximum_distance(d.try_into()?);
+    /// let mut translate_sweep = Sweep(translate);
+    ///
+    /// let hamiltonian = PairwiseCutoff(HardSphere { diameter: 1.0 });
+    /// let macrostate = Isothermal { temperature: 1.0 };
+    ///
+    /// translate_sweep.tune_default(&microstate, &hamiltonian, &macrostate);
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn tune(
+        &mut self,
+        microstate: &Microstate<B, S, X, C>,
+        hamiltonian: &H,
+        macrostate: &MA,
+        target_acceptance: OpenUnitIntervalNumber,
+        samples: usize,
+        steps: usize,
+    ) {
+        tune_local_trial(
+            &mut self.0,
+            microstate,
+            hamiltonian,
+            macrostate,
+            target_acceptance,
+            samples,
+            steps,
+        );
     }
 }
 
@@ -174,7 +273,7 @@ mod tests {
             d.try_into()
                 .expect("hard-coded constant should be positive"),
         );
-        let translate_sweep = Sweep(translate);
+        let mut translate_sweep = Sweep(translate);
 
         let mut position_accumulator = Cartesian::default();
         let mut energy_accumulator = 0.0;
@@ -215,7 +314,7 @@ mod tests {
             .expect("the hard-coded bodies should be in the boundary");
         let hamiltonian = Zero;
         let translate = Right;
-        let translate_sweep = Sweep(translate);
+        let mut translate_sweep = Sweep(translate);
         let macrostate = Isothermal { temperature: 1.0 };
 
         // The first move to the right ends in the boundary and should be accepted.
@@ -253,7 +352,7 @@ mod tests {
             .expect("the hard-coded bodies should be in the boundary");
         let hamiltonian = Zero;
         let translate = Right;
-        let translate_sweep = Sweep(translate);
+        let mut translate_sweep = Sweep(translate);
         let macrostate = Isothermal { temperature: 1.0 };
 
         // The first move to the right ends in the boundary and should be accepted.

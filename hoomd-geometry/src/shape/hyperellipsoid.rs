@@ -3,6 +3,10 @@
 
 //! Implement [`Hyperellipsoid`].
 
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use std::ops::Mul;
+
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
 use hoomd_linear_algebra::{
@@ -11,8 +15,6 @@ use hoomd_linear_algebra::{
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMatrix};
-
-use std::ops::Mul;
 
 /// The geometry resulting from an Hypersphere that is scaled along the Cartesian axes.
 ///
@@ -48,9 +50,11 @@ use std::ops::Mul;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[serde_as]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Hyperellipsoid<const N: usize> {
     /// The principle semi-axes of the [`Hyperellipsoid`] along each Cartesian direction.
+    #[serde_as(as = "[_; N]")]
     semi_axes: [PositiveReal; N],
 
     /// The bounding sphere radius.

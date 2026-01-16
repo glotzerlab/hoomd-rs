@@ -2,6 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use rand::{RngCore, SeedableRng, rand_core::impls};
+use serde::{Deserialize, Serialize};
 
 use crate::util::read_le_u64;
 
@@ -40,7 +41,7 @@ use crate::util::read_le_u64;
 /// [Random Values]: https://rust-random.github.io/book/guide-values.html
 /// [PractRand]: https://pracrand.sourceforge.net
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SFC64 {
     /// The internal state of the PRNG.
     state: [u64; 3],
@@ -86,8 +87,12 @@ impl RngCore for SFC64 {
         self.step()
     }
     #[inline]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "the truncation is intended"
+    )]
     fn next_u32(&mut self) -> u32 {
-        impls::next_u32_via_fill(self)
+        self.step() as u32
     }
     #[inline]
     fn fill_bytes(&mut self, dst: &mut [u8]) {

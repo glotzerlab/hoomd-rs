@@ -3,14 +3,15 @@
 
 //! Implement `UniformIn`
 
-use hoomd_microstate::{
-    Body,
-    property::{OrientedPoint, Point},
-};
-
 use rand::{
     Rng,
     distr::{Distribution, StandardUniform},
+};
+use serde::{Deserialize, Serialize};
+
+use hoomd_microstate::{
+    Body,
+    property::{OrientedPoint, Point},
 };
 
 /// Generate bodies uniformly in the given boundary condition.
@@ -91,6 +92,7 @@ use rand::{
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct UniformIn<S, C> {
     /// Generate bodies inside this boundary.
     pub boundary: C,

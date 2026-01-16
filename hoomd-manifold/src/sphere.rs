@@ -3,13 +3,13 @@
 
 //! Implement vector and curved manifold types on a sphere.
 
-use std::f64::consts::PI;
-
 use approxim::{approx_derive::RelativeEq, assert_relative_eq};
 use rand::{
     Rng,
     distr::{Distribution, Uniform},
 };
+use serde::{Deserialize, Serialize};
+use std::f64::consts::PI;
 
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric};
@@ -23,7 +23,7 @@ use hoomd_vector::{Cartesian, InnerProduct, Metric};
 /// x_1^2 + x_2^2 + \cdots + x_{N+1}^1 = R^2
 /// ```
 /// for some radius $`R`$.
-#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
 pub struct Spherical<const N: usize> {
     /// a cartesian point living on the surface of an N-sphere
     point: Cartesian<N>,
@@ -229,6 +229,7 @@ impl Metric for Spherical<4> {
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SphericalDisk {
     /// Max distance away from point.
     pub disk_radius: PositiveReal,

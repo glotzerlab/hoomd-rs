@@ -3,6 +3,8 @@
 
 //! Implement canonical vector types.
 
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 use std::{
     array, fmt,
     iter::{Sum, zip},
@@ -88,10 +90,12 @@ use hoomd_linear_algebra::{MatMul, matrix::Matrix};
 ///         .into_iter()
 ///         .sum();
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
+#[serde_as]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
 #[approx(epsilon_type = f64)]
 pub struct Cartesian<const N: usize> {
     /// The vector's coordinates.
+    #[serde_as(as = "[_; N]")]
     #[approx(into_iter)]
     pub coordinates: [f64; N],
 }
@@ -563,9 +567,11 @@ impl<const N: usize> Sum for Cartesian<N> {
 /// [`Angle`](crate::Angle) and [`Versor`](crate::Versor) are representations of
 /// rotations that are often the most effective and numerically stable to
 /// manipulate.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[serde_as]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct RotationMatrix<const N: usize> {
     /// Rows of the rotation matrix.
+    #[serde_as(as = "[_; N]")]
     pub(crate) rows: [Cartesian<N>; N],
 }
 

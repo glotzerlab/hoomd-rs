@@ -9,6 +9,7 @@ use rand::{
     Rng,
     distr::{Distribution, StandardUniform, Uniform},
 };
+use serde::{Deserialize, Serialize};
 use std::{
     array, fmt,
     iter::zip,
@@ -186,7 +187,7 @@ use hoomd_vector::Quaternion;
 /// ]);
 /// assert_eq!(Complex::new(20.0_f64, 0.0).sqrt(), q.norm());
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Biquaternion {
     /// Components of the biquaternion, in the order `[i,j,k,1]`.
     pub components: [Complex<f64>; 4],

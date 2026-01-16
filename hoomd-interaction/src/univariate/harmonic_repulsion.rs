@@ -3,6 +3,8 @@
 
 //! Implement [`HarmonicRepulsion`]
 
+use serde::{Deserialize, Serialize};
+
 use super::{UnivariateEnergy, UnivariateForce};
 
 /// Repulsive half of a quadratic potential well.
@@ -63,7 +65,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// h_repulsion.a = 5.0;
 /// h_repulsion.r_cut = 0.75;
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HarmonicRepulsion {
     /// Potential strength $`[\mathrm{energy}] [\mathrm{length}]^{-1}`$.
     pub a: f64,
