@@ -657,21 +657,3 @@ where
             + self.1.net_torque_on_body(microstate, body_index)
     }
 }
-
-impl<const N: usize, V, B, S, C, E1, E2, R> NetBodyTorque<N, V, B, S, C> for (E1, E2)
-where
-    V: Vector + WedgeProduct,
-    B: Transform<S> + Orientation<Rotation = R>,
-    S: Position<Position = V>,
-    E1: NetBodyTorque<N, V, B, S, C>,
-    E2: NetBodyTorque<N, V, B, S, C>,
-    R: Rotate<V>,
-    RotationMatrix<N>: From<R>,
-    V::Bivector: Default + Add<Output = V::Bivector>,
-{
-    #[inline]
-    fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V::Bivector {
-        self.0.net_torque_on_body(microstate, body_index)
-            + self.1.net_torque_on_body(microstate, body_index)
-    }
-}
