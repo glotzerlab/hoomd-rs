@@ -993,6 +993,7 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     E: NetBodyTorque<2, Cartesian<2>, B, S, C>,
 {
+    #[inline]
     fn update_torque(&self, microstate: &mut Microstate<B, S, C>, evaluator: &E) {
         for body_index in 0..microstate.bodies().len() {
             // Get a copy of the body properties to modify
@@ -1020,6 +1021,7 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
     E: NetBodyTorque<3, Cartesian<3>, B, S, C>,
 {
+    #[inline]
     fn update_torque(&self, microstate: &mut Microstate<B, S, C>, evaluator: &E) {
         for body_index in 0..microstate.bodies().len() {
             // Get a copy of the body properties to modify
