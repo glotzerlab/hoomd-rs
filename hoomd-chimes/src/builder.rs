@@ -1,17 +1,16 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
-/*!
-Builder for constructing `ChIMES` potential from
-the `ChIMES` parameter file.
- */
-use std::error::Error;
-use std::{fmt, fs};
+//! Builder for constructing `ChIMES` potential from
+//! the `ChIMES` parameter file.
+use std::{error::Error, fmt, fs};
 
-use crate::potential::{
-    ChimesChebyshevExpansion, ChimesPenalty, ChimesSmoothing, ChimesTransformation,
-    ChimesTwobPotential, CubicSmooth, TersoffSmooth,
+use crate::{
+    potential::{
+        ChimesChebyshevExpansion, ChimesPenalty, ChimesSmoothing, ChimesTransformation,
+        ChimesTwobPotential, CubicSmooth, TersoffSmooth,
+    },
+    transformation::{DirectTransformation, InverseTransformation, MorseTransformation},
 };
-use crate::transformation::{DirectTransformation, InverseTransformation, MorseTransformation};
 use hoomd_interaction::{PairwiseCutoff, pairwise::Isotropic};
 
 /// Custom error for invalid format or data
@@ -41,43 +40,41 @@ impl fmt::Display for PotentialConstructionError {
 
 impl Error for PotentialConstructionError {}
 
-/**
-Builder for constructing `ChIMES` potential from
-the `ChIMES` parameter file.
-
-Given a known maximum two-body Chebyshev polynomial
-orders `N`, [`ChimesBuilder`] can be used to parse the
-potential parameter in the `ChIMES` parameter TXT file,
-as described in the Generating a `ChIMES` model
-writen in the [ChIMES-LSQ].
-
-The `parse` function perform the TXT file parsing
-given a `file_path`, pointing to the TXT file. The
-current implementation only parse out the two-body
-potential component.
-
-Given a valid `pair_idx`, representing one of
-the particle pair type recognized by [`ChimesBuilder`] during
-the excution of `parse`. The `get_twob_chimes_potential` assemble the complete
-`ChIMES` potential functional, wrapped in [`PairwiseCutoff`]
-, and return it.
-
-[ChIMES-LSQ]: <https://chimes-lsq.readthedocs.io/en/latest/lsq_input_file.html>
-
-
-# Example
-```
-use hoomd_chimes::builder::ChimesBuilder;
-
-// Maximum two-body order is 12 for the example parameter file.
-const N: usize = 12;
-let file_path = "./test-data/C-twobody.txt";
-
-let chimes_builder = ChimesBuilder::<N>::parse(file_path).expect("Failed to parse parameter file");
-let chimes_fn = chimes_builder.get_twob_chimes_potential(0).expect("Error assemling ChIMES potential");
-assert_eq!(chimes_fn.0.interaction.type1, String::from("C"));
-```
-*/
+/// Builder for constructing `ChIMES` potential from
+/// the `ChIMES` parameter file.
+///
+/// Given a known maximum two-body Chebyshev polynomial
+/// orders `N`, [`ChimesBuilder`] can be used to parse the
+/// potential parameter in the `ChIMES` parameter TXT file,
+/// as described in the Generating a `ChIMES` model
+/// writen in the [ChIMES-LSQ].
+///
+/// The `parse` function perform the TXT file parsing
+/// given a `file_path`, pointing to the TXT file. The
+/// current implementation only parse out the two-body
+/// potential component.
+///
+/// Given a valid `pair_idx`, representing one of
+/// the particle pair type recognized by [`ChimesBuilder`] during
+/// the excution of `parse`. The `get_twob_chimes_potential` assemble the complete
+/// `ChIMES` potential functional, wrapped in [`PairwiseCutoff`]
+/// , and return it.
+///
+/// [ChIMES-LSQ]: <https://chimes-lsq.readthedocs.io/en/latest/lsq_input_file.html>
+///
+///
+/// # Example
+/// ```
+/// use hoomd_chimes::builder::ChimesBuilder;
+///
+/// Maximum two-body order is 12 for the example parameter file.
+/// const N: usize = 12;
+/// let file_path = "./test-data/C-twobody.txt";
+///
+/// let chimes_builder = ChimesBuilder::<N>::parse(file_path).expect("Failed to parse parameter file");
+/// let chimes_fn = chimes_builder.get_twob_chimes_potential(0).expect("Error assemling ChIMES potential");
+/// assert_eq!(chimes_fn.0.interaction.type1, String::from("C"));
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct ChimesBuilder<const N: usize> {
     /// Chebyshev polynomial orders and related parameters from PAIRTYP.
@@ -442,7 +439,7 @@ impl<const N: usize> ChimesBuilder<N> {
                         let typej = type_data.0[jj].clone();
                         let typeij = typei + &typej;
 
-                        //let index_of_pair_match = pair_type_slow_map
+                        // let index_of_pair_match = pair_type_slow_map
                         //    .iter()
                         //    .position(|s| s.contains(&typeij))
                         //    .expect("Error finding pair type from the slow map");

@@ -1,73 +1,70 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`ChimesPenalty`]
- */
+//! Implement [`ChimesPenalty`]
 
 use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 
-/**
-Implement the penalty potential $`f_\mathrm{p}`$ of `ChIMES`
-potential, which must be used to prevent inter-particle
-distances fall below inner cut-off.
-
-The potential is defined as:
-
-```math
-f_p(r) =
-\begin{cases}
-&A_\mathrm{p} (r_\mathrm{in} + d_\mathrm{p} - r)^3 \text{, if } r < r_\mathrm{in} + d_\mathrm{p} \\
-&0 \text{, otherwise} \\
-\end{cases}
-```
-
-Where $`r_\mathrm{in}`$ is the inner distance cutoff, same as that
-defined in [`ChimesChebyshevExpansion`], $`A_\mathrm{p}`$ is the penalty strength
-, and $`d_\mathrm{p}`$ is a small distance to smooth activation of
-penalty potential.
-
-# Note:
-See equation 9 in <https://doi.org/10.1038/s41524-024-01497-y>.
-
-# Example:
-```
-use hoomd_chimes::transformation::MorseTransformation;
-use hoomd_chimes::potential::{ChimesChebyshevExpansion, TersoffSmooth, ChimesPenalty};
-use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
-
-// Main body of chimes potential
-let lambda = 1.5;
-let r_out = 3.0;
-let r_in = 1.0;
-let fo = 0.75;
-let coeff = vec![1.0, 2.0, 3.0];
-
-let morse_trans: MorseTransformation = MorseTransformation {
-    lambda,
-    r_out,
-    r_in,
-};
-
-let chimes2b_cheby: ChimesChebyshevExpansion<MorseTransformation, 3> =
-    ChimesChebyshevExpansion::new(morse_trans, coeff, r_in);
-
-let chimes2b = TersoffSmooth {
-    f: chimes2b_cheby,
-    r_out,
-    r_in,
-    fo,
-};
-
-// ChIMES penalty. Parameters are obtain from <https://doi.org/10.1038/s41524-024-01497-y>.
-let a = 1e+6;
-let dt = 0.02;
-
-let chimes_penalty = ChimesPenalty{r_in, a, dt};
-
-let r = 1.5;
-let chimes_energy = chimes_penalty.energy(r) + chimes2b.energy(r);
-```
-*/
+/// Implement the penalty potential $`f_\mathrm{p}`$ of `ChIMES`
+/// potential, which must be used to prevent inter-particle
+/// distances fall below inner cut-off.
+///
+/// The potential is defined as:
+///
+/// ```math
+/// f_p(r) =
+/// \begin{cases}
+/// &A_\mathrm{p} (r_\mathrm{in} + d_\mathrm{p} - r)^3 \text{, if } r < r_\mathrm{in} + d_\mathrm{p} \\
+/// &0 \text{, otherwise} \\
+/// \end{cases}
+/// ```
+///
+/// Where $`r_\mathrm{in}`$ is the inner distance cutoff, same as that
+/// defined in [`ChimesChebyshevExpansion`], $`A_\mathrm{p}`$ is the penalty strength
+/// , and $`d_\mathrm{p}`$ is a small distance to smooth activation of
+/// penalty potential.
+///
+/// # Note:
+/// See equation 9 in <https://doi.org/10.1038/s41524-024-01497-y>.
+///
+/// # Example:
+/// ```
+/// use hoomd_chimes::transformation::MorseTransformation;
+/// use hoomd_chimes::potential::{ChimesChebyshevExpansion, TersoffSmooth, ChimesPenalty};
+/// use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
+///
+/// Main body of chimes potential
+/// let lambda = 1.5;
+/// let r_out = 3.0;
+/// let r_in = 1.0;
+/// let fo = 0.75;
+/// let coeff = vec![1.0, 2.0, 3.0];
+///
+/// let morse_trans: MorseTransformation = MorseTransformation {
+/// lambda,
+/// r_out,
+/// r_in,
+/// };
+///
+/// let chimes2b_cheby: ChimesChebyshevExpansion<MorseTransformation, 3> =
+/// ChimesChebyshevExpansion::new(morse_trans, coeff, r_in);
+///
+/// let chimes2b = TersoffSmooth {
+/// f: chimes2b_cheby,
+/// r_out,
+/// r_in,
+/// fo,
+/// };
+///
+/// ChIMES penalty. Parameters are obtain from <https://doi.org/10.1038/s41524-024-01497-y>.
+/// let a = 1e+6;
+/// let dt = 0.02;
+///
+/// let chimes_penalty = ChimesPenalty{r_in, a, dt};
+///
+/// let r = 1.5;
+/// let chimes_energy = chimes_penalty.energy(r) + chimes2b.energy(r);
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct ChimesPenalty {
     /// Inner radial cut-off (`[length]`).

@@ -1,73 +1,72 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`TersoffSmooth`]
- */
+//! Implement [`TersoffSmooth`]
 
 use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 use std::f64::consts::PI; // Note: Becky's chimes uses hard coding value: 3.14159265359
 
-/**
-Implement the Tersoff style smoothing $`f_s`$ of `ChIMES`
-potential, for one plus two-body case:
-
-```math
-U(r) = f_s(r) \sum^{n}_{O=1} c_{O} T_{O}(s(r))
-```
-where:
-
-```math
-f_s(r) =
-\begin{cases}
-0 &\text{if } r > r_{\mathrm{out}} \\
-1 &\text{if } r < r_{\mathrm{in}} \\
-\frac{1}{2} +  \frac{1}{2}
-\sin{\left( \pi \left[ \frac{r-d_t}{r_\mathrm{out} - d_t}\right]
-+ \frac{\pi}{2}\right)} &\text{, otherwise}\\
-\end{cases}
-```
-
-```math
-d_t = r_{\mathrm{out}} * (1.0 - f_o)
-```
-
-Where `r_in` is the inner distance cutoff, same as that
-defined in [`ChimesChebyshevExpansion`], `r_out` is the outer distance cutoff
-, and `f_o` is the parameter with the value between 0 and 1
- to control the activation of smoothing.
-
-# Note:
-See equation 8 in <https://doi.org/10.1038/s41524-024-01497-y>.
-
-# Example:
-```
-use hoomd_chimes::transformation::MorseTransformation;
-use hoomd_chimes::potential::{ChimesChebyshevExpansion, TersoffSmooth};
-use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
-
-let lambda = 1.5;
-let r_out = 3.0;
-let r_in = 1.0;
-let fo = 0.75;
-let coeff = vec![1.0, 2.0, 3.0];
-
-let morse_trans: MorseTransformation = MorseTransformation {
-    lambda,
-    r_out,
-    r_in,
-};
-
-let chimes2b_cheby: ChimesChebyshevExpansion<MorseTransformation, 3> =
-    ChimesChebyshevExpansion::new(morse_trans, coeff, r_in);
-
-let chimes2b = TersoffSmooth {
-    f: chimes2b_cheby,
-    r_out,
-    r_in,
-    fo,
-};
-```
-*/
+/// Implement the Tersoff style smoothing $`f_s`$ of `ChIMES`
+/// potential, for one plus two-body case:
+///
+/// ```math
+/// U(r) = f_s(r) \sum^{n}_{O=1} c_{O} T_{O}(s(r))
+/// ```
+/// where:
+///
+/// ```math
+/// f_s(r) =
+/// \begin{cases}
+/// 0 &\text{if } r > r_{\mathrm{out}} \\
+/// 1 &\text{if } r < r_{\mathrm{in}} \\
+/// \frac{1}{2} +  \frac{1}{2}
+/// \sin{\left( \pi \left[ \frac{r-d_t}{r_\mathrm{out} - d_t}\right]
+/// + \frac{\pi}{2}\right)} &\text{, otherwise}\\
+/// \end{cases}
+/// ```
+///
+/// ```math
+/// d_t = r_{\mathrm{out}} * (1.0 - f_o)
+/// ```
+///
+/// Where `r_in` is the inner distance cutoff, same as that
+/// defined in [`ChimesChebyshevExpansion`], `r_out` is the outer distance cutoff
+/// , and `f_o` is the parameter with the value between 0 and 1
+/// to control the activation of smoothing.
+///
+/// # Note:
+/// See equation 8 in <https://doi.org/10.1038/s41524-024-01497-y>.
+///
+/// # Example:
+/// ```
+/// use hoomd_chimes::{
+///     potential::{ChimesChebyshevExpansion, TersoffSmooth},
+///     transformation::MorseTransformation,
+/// };
+/// use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
+///
+/// let lambda = 1.5;
+/// let r_out = 3.0;
+/// let r_in = 1.0;
+/// let fo = 0.75;
+/// let coeff = vec![1.0, 2.0, 3.0];
+///
+/// let morse_trans: MorseTransformation = MorseTransformation {
+///     lambda,
+///     r_out,
+///     r_in,
+/// };
+///
+/// let chimes2b_cheby: ChimesChebyshevExpansion<MorseTransformation, 3> =
+///     ChimesChebyshevExpansion::new(morse_trans, coeff, r_in);
+///
+/// let chimes2b = TersoffSmooth {
+///     f: chimes2b_cheby,
+///     r_out,
+///     r_in,
+///     fo,
+/// };
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct TersoffSmooth<F> {
     /// The [`ChimesChebyshevExpansion`] fucntion.

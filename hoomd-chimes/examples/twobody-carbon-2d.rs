@@ -1,8 +1,6 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
-/*!
-TODO
-*/
+//! TODO
 use hoomd_chimes::{builder::ChimesBuilder, potential::ChimesTwobPotential};
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
@@ -19,8 +17,10 @@ use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
-    representation::RectangularBoundary,
-    representation::disk::{self, Disk},
+    representation::{
+        RectangularBoundary,
+        disk::{self, Disk},
+    },
 };
 // ANCHOR_END: use
 
@@ -173,7 +173,7 @@ fn main() -> anyhow::Result<()> {
     app.add_systems(
         Update,
         (
-            //move_swimmer,
+            // move_swimmer,
             sync_simulation
                 .run_if(resource_changed::<Fill>)
                 .after(AdvanceSet),

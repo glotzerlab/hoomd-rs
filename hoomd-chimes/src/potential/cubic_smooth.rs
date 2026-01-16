@@ -1,56 +1,55 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`CubicSmooth`]
- */
+//! Implement [`CubicSmooth`]
 
 use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 
-/**
-Implement the cubic style smoothing $`f_s`$ of `ChIMES`
-potential, for one plus two-body case:
-
-```math
-U(r) = f_s(r) \sum^{n}_{O=1} c_{O} T_{O}(s(r))
-```
-where:
-
-```math
-f_s(r) = (1 - \frac{r}{r_\mathrm{out}})^3
-```
-
-Where `r_out` is the outer distance cutoff.
-
-# Note:
-See equation 7 in <https://doi.org/10.1038/s41524-024-01497-y>.
-
-# Example:
-```
-use hoomd_chimes::transformation::MorseTransformation;
-use hoomd_chimes::potential::{ChimesChebyshevExpansion, CubicSmooth};
-use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
-
-let lambda = 1.5;
-let r_out = 3.0;
-let r_in = 1.0;
-let fo = 0.75;
-let coeff = vec![1.0, 2.0, 3.0];
-
-let morse_trans: MorseTransformation = MorseTransformation {
-    lambda,
-    r_out,
-    r_in,
-};
-
-let chimes2b_cheby: ChimesChebyshevExpansion<MorseTransformation, 3> =
-    ChimesChebyshevExpansion::new(morse_trans, coeff, r_in);
-
-let chimes2b = CubicSmooth {
-    f: chimes2b_cheby,
-    r_out
-};
-```
-*/
+/// Implement the cubic style smoothing $`f_s`$ of `ChIMES`
+/// potential, for one plus two-body case:
+///
+/// ```math
+/// U(r) = f_s(r) \sum^{n}_{O=1} c_{O} T_{O}(s(r))
+/// ```
+/// where:
+///
+/// ```math
+/// f_s(r) = (1 - \frac{r}{r_\mathrm{out}})^3
+/// ```
+///
+/// Where `r_out` is the outer distance cutoff.
+///
+/// # Note:
+/// See equation 7 in <https://doi.org/10.1038/s41524-024-01497-y>.
+///
+/// # Example:
+/// ```
+/// use hoomd_chimes::{
+///     potential::{ChimesChebyshevExpansion, CubicSmooth},
+///     transformation::MorseTransformation,
+/// };
+/// use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
+///
+/// let lambda = 1.5;
+/// let r_out = 3.0;
+/// let r_in = 1.0;
+/// let fo = 0.75;
+/// let coeff = vec![1.0, 2.0, 3.0];
+///
+/// let morse_trans: MorseTransformation = MorseTransformation {
+///     lambda,
+///     r_out,
+///     r_in,
+/// };
+///
+/// let chimes2b_cheby: ChimesChebyshevExpansion<MorseTransformation, 3> =
+///     ChimesChebyshevExpansion::new(morse_trans, coeff, r_in);
+///
+/// let chimes2b = CubicSmooth {
+///     f: chimes2b_cheby,
+///     r_out,
+/// };
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct CubicSmooth<F> {
     /// The [`ChimesChebyshevExpansion`] fucntion.

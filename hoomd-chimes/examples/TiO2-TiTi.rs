@@ -1,14 +1,17 @@
-/*! This is an example
-*/
+//! This is an example
 #![expect(
     clippy::missing_docs_in_private_items,
     reason = "benches don't need public documentation"
 )]
-use hoomd_chimes::potential::{ChimesChebyshevExpansion, ChimesPenalty, TersoffSmooth};
-use hoomd_chimes::transformation::MorseTransformation;
+use hoomd_chimes::{
+    potential::{ChimesChebyshevExpansion, ChimesPenalty, TersoffSmooth},
+    transformation::MorseTransformation,
+};
 use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
-use std::fs::File;
-use std::io::{BufWriter, Write};
+use std::{
+    fs::File,
+    io::{BufWriter, Write},
+};
 
 fn main() -> std::io::Result<()> {
     run()

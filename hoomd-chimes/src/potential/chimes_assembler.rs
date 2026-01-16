@@ -1,13 +1,14 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implementations that enable dynamic switch between styles of
-`ChIMES` transformation and smoothing function. Also provide a
-assembler to construct complete `ChIMES` potential functional.
- */
-use crate::potential::{ChimesChebyshevExpansion, ChimesPenalty, CubicSmooth, TersoffSmooth};
-use crate::transformation::{
-    DirectTransformation, InverseTransformation, MorseTransformation, Transformation,
+//! Implementations that enable dynamic switch between styles of
+//! `ChIMES` transformation and smoothing function. Also provide a
+//! assembler to construct complete `ChIMES` potential functional.
+use crate::{
+    potential::{ChimesChebyshevExpansion, ChimesPenalty, CubicSmooth, TersoffSmooth},
+    transformation::{
+        DirectTransformation, InverseTransformation, MorseTransformation, Transformation,
+    },
 };
 use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
 

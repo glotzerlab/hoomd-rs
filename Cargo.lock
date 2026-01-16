@@ -3027,7 +3027,7 @@ dependencies = [
  "hoomd-microstate",
  "hoomd-simulation",
  "hoomd-vector",
- "itertools 0.14.0",
+ "itertools",
 ]
 
 [[package]]

@@ -1,30 +1,29 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`ChimesChebyshevExpansion`]
- */
-use crate::polynomial_basis::{Basis, Chebyshev};
-use crate::transformation::Transformation;
+//! Implement [`ChimesChebyshevExpansion`]
+use crate::{
+    polynomial_basis::{Basis, Chebyshev},
+    transformation::Transformation,
+};
 use hoomd_interaction::univariate::{UnivariateEnergy, UnivariateForce};
-/**
-Implement the calculation of Chebyshev expansion
-of `ChIMES` potential. It performs the
-sum of product between `ChIMES` coefficient
-and the corresponding Chebyshev polynomials as:
-
-```math
-U = \sum^{n}_{i=1} c_{i} T_{i}(s(r))
-```
-
-Where $`c_i`$ is the `ChIMES` coefficent, $`T_i`$ is the
-Chebyshev polynomials, and $`s`$ is the transformed
-distance between particles, given by [`Transformation`].
-
-# Note:
-* See equation 2 in <https://doi.org/10.1038/s41524-024-01497-y>.
-* Must be used with the [`TersoffSmooth`] and [`ChimesPenalty`]
-  to enable correct potential calculation.
- */
+/// Implement the calculation of Chebyshev expansion
+/// of `ChIMES` potential. It performs the
+/// sum of product between `ChIMES` coefficient
+/// and the corresponding Chebyshev polynomials as:
+///
+/// ```math
+/// U = \sum^{n}_{i=1} c_{i} T_{i}(s(r))
+/// ```
+///
+/// Where $`c_i`$ is the `ChIMES` coefficent, $`T_i`$ is the
+/// Chebyshev polynomials, and $`s`$ is the transformed
+/// distance between particles, given by [`Transformation`].
+///
+/// # Note:
+/// See equation 2 in <https://doi.org/10.1038/s41524-024-01497-y>.
+/// Must be used with the [`TersoffSmooth`] and [`ChimesPenalty`]
+/// to enable correct potential calculation.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ChimesChebyshevExpansion<F: Transformation, const N: usize> {
     /// Transformation style.
@@ -39,36 +38,42 @@ pub struct ChimesChebyshevExpansion<F: Transformation, const N: usize> {
     cheby: Chebyshev<N>,
 }
 
-/** Constructs a new [`ChimesChebyshevExpansion`] with the given transformation function,
-`ChIMES` coefficients, and inner distance cutoff.
-
-The Chebyshev polynomial order is set to `coeff.len() + 1`.
-The inner smoothing distance defaults to 0.01.
-
-# Arguments
-
-* `trans_style` - Transformation function implementing `Transformation`.
-* `coeff` - `ChIMES` coefficients (`[energy]`).
-* `r_in` - Inner radial cut-off (`[length]`).
-
-# Example
-```
-use hoomd_chimes::potential::ChimesChebyshevExpansion;
-use hoomd_chimes::transformation::MorseTransformation;
-
-let lambda = 1.5;
-let r_out = 3.0;
-let r_in = 1.0;
-let coeff = vec![1.0, 2.0, 3.0];
-let morse_trans = MorseTransformation { lambda, r_out, r_in };
-
-let mut chimes2b: ChimesChebyshevExpansion<MorseTransformation, 3> = ChimesChebyshevExpansion::new(morse_trans, coeff.clone(), r_in);
-assert_eq!(chimes2b.coeff(), &coeff);
-assert_eq!(chimes2b.r_in(), &1.0);
-chimes2b.set_inner_smooth_r(0.02);
-assert_eq!(chimes2b.inner_smooth_r(), &0.02);
-```
-*/
+/// Constructs a new [`ChimesChebyshevExpansion`] with the given transformation function,
+/// `ChIMES` coefficients, and inner distance cutoff.
+///
+/// The Chebyshev polynomial order is set to `coeff.len() + 1`.
+/// The inner smoothing distance defaults to 0.01.
+///
+/// # Arguments
+///
+/// `trans_style` - Transformation function implementing `Transformation`.
+/// `coeff` - `ChIMES` coefficients (`[energy]`).
+/// `r_in` - Inner radial cut-off (`[length]`).
+///
+/// # Example
+/// ```
+/// use hoomd_chimes::{
+///     potential::ChimesChebyshevExpansion,
+///     transformation::MorseTransformation,
+/// };
+///
+/// let lambda = 1.5;
+/// let r_out = 3.0;
+/// let r_in = 1.0;
+/// let coeff = vec![1.0, 2.0, 3.0];
+/// let morse_trans = MorseTransformation {
+///     lambda,
+///     r_out,
+///     r_in,
+/// };
+///
+/// let mut chimes2b: ChimesChebyshevExpansion<MorseTransformation, 3> =
+///     ChimesChebyshevExpansion::new(morse_trans, coeff.clone(), r_in);
+/// assert_eq!(chimes2b.coeff(), &coeff);
+/// assert_eq!(chimes2b.r_in(), &1.0);
+/// chimes2b.set_inner_smooth_r(0.02);
+/// assert_eq!(chimes2b.inner_smooth_r(), &0.02);
+/// ```
 impl<F: Transformation, const N: usize> ChimesChebyshevExpansion<F, N> {
     /// Construct a new [`ChimesChebyshevExpansion`] from a `Vec<f64>`
     /// for coefficients.

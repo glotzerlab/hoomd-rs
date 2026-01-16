@@ -1,16 +1,14 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`Chebyshev`]
- */
+//! Implement [`Chebyshev`]
 use super::Basis;
 use arrayvec::ArrayVec;
 
-/** Evaluates the Chebyshev polynomials and its derivatives
-  of the first kind $`T_i(s)`$ for orders $`i`$ equals 1 to
-  $`n`$, given coordinate $`s`$.
-
-*/
+/// Evaluates the Chebyshev polynomials and its derivatives
+/// of the first kind $`T_i(s)`$ for orders $`i`$ equals 1 to
+/// $`n`$, given coordinate $`s`$.
+///
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Chebyshev<const N: usize> {}
 
@@ -22,14 +20,13 @@ impl<const N: usize> Default for Chebyshev<N> {
 }
 
 impl<const N: usize> Chebyshev<N> {
-    /**  Creates a new `Chebyshev` instance with maximum order `N`.
-
-    The struct computes `Chebyshev` polynomials $`T_1(s)`$ to $`T_{N}(s)`$.
-
-    # Panics
-
-    Will panic if N = 0.
-    */
+    ///  Creates a new `Chebyshev` instance with maximum order `N`.
+    ///
+    /// The struct computes `Chebyshev` polynomials $`T_1(s)`$ to $`T_{N}(s)`$.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if N = 0.
     #[must_use]
     #[inline]
     pub fn new() -> Self {
@@ -39,30 +36,29 @@ impl<const N: usize> Chebyshev<N> {
 }
 
 impl<const N: usize> Basis<N> for Chebyshev<N> {
-    /** The `eval_cheby` fucntion returns a vector where
-    the `i`-th element is $`T_i(s)`$, computed using the
-    recurrence relation:
-
-    ```math
-    \begin{cases}
-    T_0(s) = 1 \\
-    T_1(s) = s \\
-    T_i(s) = 2s T_{i-1}(s) - T_{i-2}(s) \text{ for } i \geq 2 \\
-    \end{cases}
-    ```
-
-    # Examples
-
-    ```
-    use hoomd_chimes::polynomial_basis::{Basis, Chebyshev};
-
-    let cheby = Chebyshev::<3>::new();
-    let s = 0.5;
-    let tn = cheby.evaluate(&s);
-    // T_1=0.5, T_2=-0.5, T_3=-1.0
-    assert_eq!(tn.as_slice(), [0.5, -0.5, -1.0]);
-    ```
-    */
+    /// The `eval_cheby` fucntion returns a vector where
+    /// the `i`-th element is $`T_i(s)`$, computed using the
+    /// recurrence relation:
+    ///
+    /// ```math
+    /// \begin{cases}
+    /// T_0(s) = 1 \\
+    /// T_1(s) = s \\
+    /// T_i(s) = 2s T_{i-1}(s) - T_{i-2}(s) \text{ for } i \geq 2 \\
+    /// \end{cases}
+    /// ```
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hoomd_chimes::polynomial_basis::{Basis, Chebyshev};
+    ///
+    /// let cheby = Chebyshev::<3>::new();
+    /// let s = 0.5;
+    /// let tn = cheby.evaluate(&s);
+    /// T_1=0.5, T_2=-0.5, T_3=-1.0
+    /// assert_eq!(tn.as_slice(), [0.5, -0.5, -1.0]);
+    /// ```
     #[inline]
     fn evaluate(&self, s: &f64) -> ArrayVec<f64, N> {
         let mut tn = ArrayVec::<f64, N>::new();
@@ -80,44 +76,42 @@ impl<const N: usize> Basis<N> for Chebyshev<N> {
         tn
     }
 
-    /**
-    The fucntion returns a vector where the $`i`$-th element is
-    $`\frac{dT_i(s)}{ds}`$, by first, computing the Chebyshev
-    polynomials of the second kind $`U_i(s)`$ using the
-    recurrence relation:
-
-    ```math
-    \begin{cases}
-    U_0(s) = 1  \\
-    U_1(s) = 2s \\
-    U_i(s) = 2s U_{i-1}(s) - U_{i-2}(s) \text{ for } i \geq 2 \\
-    \end{cases}
-    ```
-
-    Then use the relation:
-
-    ```math
-    \frac{d T_i}{ds} = i \times U_{i-1}(s) ,
-    ```
-    Particularly
-
-    ```math
-    \frac{d T_1}{ds} = 1
-    ```
-
-    # Examples
-
-    ```
-    use hoomd_chimes::polynomial_basis::{Basis, Chebyshev};
-
-    let cheby = Chebyshev::<3>::new();
-    let s = 0.5;
-    let tnd = cheby.evaluate_derivative(&s);
-    // dT_1/ds=1, dT_2/ds=2, dT_3/ds=0.0
-
-    assert_eq!(tnd.as_slice(), [1.0, 2.0, 0.0]);
-    ```
-    */
+    /// The fucntion returns a vector where the $`i`$-th element is
+    /// $`\frac{dT_i(s)}{ds}`$, by first, computing the Chebyshev
+    /// polynomials of the second kind $`U_i(s)`$ using the
+    /// recurrence relation:
+    ///
+    /// ```math
+    /// \begin{cases}
+    /// U_0(s) = 1  \\
+    /// U_1(s) = 2s \\
+    /// U_i(s) = 2s U_{i-1}(s) - U_{i-2}(s) \text{ for } i \geq 2 \\
+    /// \end{cases}
+    /// ```
+    ///
+    /// Then use the relation:
+    ///
+    /// ```math
+    /// \frac{d T_i}{ds} = i \times U_{i-1}(s) ,
+    /// ```
+    /// Particularly
+    ///
+    /// ```math
+    /// \frac{d T_1}{ds} = 1
+    /// ```
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hoomd_chimes::polynomial_basis::{Basis, Chebyshev};
+    ///
+    /// let cheby = Chebyshev::<3>::new();
+    /// let s = 0.5;
+    /// let tnd = cheby.evaluate_derivative(&s);
+    /// dT_1/ds=1, dT_2/ds=2, dT_3/ds=0.0
+    ///
+    /// assert_eq!(tnd.as_slice(), [1.0, 2.0, 0.0]);
+    /// ```
     #[inline]
     fn evaluate_derivative(&self, s: &f64) -> ArrayVec<f64, N> {
         let mut tnd = ArrayVec::<f64, N>::new();

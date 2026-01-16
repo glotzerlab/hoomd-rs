@@ -1,54 +1,55 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`MorseTransformation`]
- */
+//! Implement [`MorseTransformation`]
 
 use super::Transformation;
-/**
-Calculate the morse transformation style.
-
-Given a distance $`r`$, the morse transformation are defined by:
-morse decaying factor $`\lambda`$, outer radial cutoff
-$`r_\mathrm{out}`$ , and inner radial cutoff $`r_\mathrm{in}`$.
-
-It calculates a coordinate $`s(r)`$ falls between [-1, 1]
-and its derivative $`\frac{ds(r)}{dr}`$ with respect to $`r`$.
-
-See equation 3 to 5 in
-<https://doi.org/10.1038/s41524-024-01497-y>.
-
-The morse transformation can be expressed as:
-
-```math
-    s(r) = (x(r) - x_\mathrm{avg}) / x_\mathrm{diff}
-```
-Where
-```math
-    \begin{align*}
-    x(r) &= \exp{(-r/\lambda)} \\
-    x_\mathrm{avg} &= 0.5(\exp{(-r_\mathrm{out}/\lambda)}
-      + \exp{(-r_\mathrm{in}/\lambda)}) \\
-    x_\mathrm{diff} &= 0.5|\exp{(-r_\mathrm{out}/\lambda)}
-      - \exp{(-r_\mathrm{in}/\lambda)}|
-    \end{align*}
-```
-
-The derivative is:
-```math
-\frac{ds(r)}{dr} = -\frac{x(r)}{\lambda x_\mathrm{diff}}
-```
-
-# Example
-```
-use hoomd_chimes::transformation::MorseTransformation;
-
-let lambda = 1.5;
-let r_out = 3.0;
-let r_in = 1.0;
-let morse_trans: MorseTransformation = MorseTransformation{lambda, r_out, r_in};
-```
-*/
+/// Calculate the morse transformation style.
+///
+/// Given a distance $`r`$, the morse transformation are defined by:
+/// morse decaying factor $`\lambda`$, outer radial cutoff
+/// $`r_\mathrm{out}`$ , and inner radial cutoff $`r_\mathrm{in}`$.
+///
+/// It calculates a coordinate $`s(r)`$ falls between [-1, 1]
+/// and its derivative $`\frac{ds(r)}{dr}`$ with respect to $`r`$.
+///
+/// See equation 3 to 5 in
+/// <https://doi.org/10.1038/s41524-024-01497-y>.
+///
+/// The morse transformation can be expressed as:
+///
+/// ```math
+/// s(r) = (x(r) - x_\mathrm{avg}) / x_\mathrm{diff}
+/// ```
+/// Where
+/// ```math
+/// \begin{align*}
+/// x(r) &= \exp{(-r/\lambda)} \\
+/// x_\mathrm{avg} &= 0.5(\exp{(-r_\mathrm{out}/\lambda)}
+/// + \exp{(-r_\mathrm{in}/\lambda)}) \\
+/// x_\mathrm{diff} &= 0.5|\exp{(-r_\mathrm{out}/\lambda)}
+/// - \exp{(-r_\mathrm{in}/\lambda)}|
+/// \end{align*}
+/// ```
+///
+/// The derivative is:
+/// ```math
+/// \frac{ds(r)}{dr} = -\frac{x(r)}{\lambda x_\mathrm{diff}}
+/// ```
+///
+/// # Example
+/// ```
+/// use hoomd_chimes::transformation::MorseTransformation;
+///
+/// let lambda = 1.5;
+/// let r_out = 3.0;
+/// let r_in = 1.0;
+/// let morse_trans: MorseTransformation = MorseTransformation {
+///     lambda,
+///     r_out,
+///     r_in,
+/// };
+/// ```
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MorseTransformation {

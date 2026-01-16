@@ -1,51 +1,49 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! Implement [`DirectTransformation`]
- */
+//! Implement [`DirectTransformation`]
 
 use super::Transformation;
-/**
-Calculate the direct transformation style.
-
-Given a distance $`r`$, the direct transformation is defined by:
-outer radial cutoff $`r_\mathrm{out}`$
-and inner radial cutoff $`r_\mathrm{in}`$.
-
-It calculates a coordinate $`s(r)`$ falls between [-1, 1]
-and its derivative $`\frac{ds(r)}{dr}`$ with respect to $`r`$.
-
-See equation 3 to 5 in
-<https://doi.org/10.1038/s41524-024-01497-y>.
-
-The direct transformation can be expressed as:
-
-```math
-    s(r) = (x(r) - x_\mathrm{avg}) / x_\mathrm{diff}
-```
-Where
-```math
-    \begin{align*}
-    x(r) &= r \\
-    x_\mathrm{avg} &= 0.5(r_\mathrm{out} + r_\mathrm{in}) \\
-    x_\mathrm{diff} &= 0.5|r_\mathrm{out} - r_\mathrm{in}|
-    \end{align*}
-```
-
-The derivative is:
-```math
-\frac{ds(r)}{dr} = \frac{1}{x_\mathrm{diff}}
-```
-
-# Example
-```
-use hoomd_chimes::transformation::DirectTransformation;
-
-let r_out = 3.0;
-let r_in = 1.0;
-let direct_trans: DirectTransformation = DirectTransformation{r_out, r_in};
-```
-*/
+/// Calculate the direct transformation style.
+///
+/// Given a distance $`r`$, the direct transformation is defined by:
+/// outer radial cutoff $`r_\mathrm{out}`$
+/// and inner radial cutoff $`r_\mathrm{in}`$.
+///
+/// It calculates a coordinate $`s(r)`$ falls between [-1, 1]
+/// and its derivative $`\frac{ds(r)}{dr}`$ with respect to $`r`$.
+///
+/// See equation 3 to 5 in
+/// <https://doi.org/10.1038/s41524-024-01497-y>.
+///
+/// The direct transformation can be expressed as:
+///
+/// ```math
+/// s(r) = (x(r) - x_\mathrm{avg}) / x_\mathrm{diff}
+/// ```
+/// Where
+/// ```math
+/// \begin{align*}
+/// x(r) &= r \\
+/// x_\mathrm{avg} &= 0.5(r_\mathrm{out} + r_\mathrm{in}) \\
+/// x_\mathrm{diff} &= 0.5|r_\mathrm{out} - r_\mathrm{in}|
+/// \end{align*}
+/// ```
+///
+/// The derivative is:
+/// ```math
+/// \frac{ds(r)}{dr} = \frac{1}{x_\mathrm{diff}}
+/// ```
+///
+/// # Example
+/// ```
+/// use hoomd_chimes::transformation::DirectTransformation;
+///
+/// let r_out = 3.0;
+/// let r_in = 1.0;
+/// let direct_trans: DirectTransformation =
+///     DirectTransformation { r_out, r_in };
+/// ```
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct DirectTransformation {

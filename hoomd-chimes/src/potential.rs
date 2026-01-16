@@ -1,8 +1,7 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-/*! `ChIMES` interatomic potential components.
- */
+//! `ChIMES` interatomic potential components.
 mod chimes_expansion;
 pub use chimes_expansion::ChimesChebyshevExpansion;
 
@@ -16,6 +15,4 @@ mod chimes_penalty;
 pub use chimes_penalty::ChimesPenalty;
 
 mod chimes_assembler;
-pub use chimes_assembler::ChimesSmoothing;
-pub use chimes_assembler::ChimesTransformation;
-pub use chimes_assembler::ChimesTwobPotential;
+pub use chimes_assembler::{ChimesSmoothing, ChimesTransformation, ChimesTwobPotential};
