@@ -3,6 +3,8 @@
 
 //! Implement `Anisotropic`
 
+use serde::{Deserialize, Serialize};
+
 use super::AnisotropicEnergy;
 use crate::{MaximumInteractionRange, SitePairEnergy};
 use hoomd_microstate::property::{Orientation, Position};
@@ -48,6 +50,7 @@ use hoomd_vector::{Rotate, Rotation, Vector};
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Anisotropic<E> {
     /// The site-site interaction.
     pub interaction: E,

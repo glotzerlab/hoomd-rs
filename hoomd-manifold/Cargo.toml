@@ -12,11 +12,14 @@ categories.workspace = true
 
 [dependencies]
 approxim.workspace = true
-thiserror.workspace = true
+num.workspace = true
 rand.workspace = true
+serde.workspace = true
+serde_with.workspace = true
+thiserror.workspace = true
+
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
-num.workspace = true
 
 [dev-dependencies]
 divan.workspace = true

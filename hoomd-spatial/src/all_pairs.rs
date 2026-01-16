@@ -3,10 +3,11 @@
 
 //! Implement `AllPairs`
 
+use rustc_hash::FxHashSet;
+use serde::{Deserialize, Serialize};
 use std::{fmt, hash::Hash};
 
 use hoomd_utility::valid::PositiveReal;
-use rustc_hash::FxHashSet;
 
 use super::{PointUpdate, PointsNearBall, WithSearchRadius};
 
@@ -18,8 +19,11 @@ use super::{PointUpdate, PointsNearBall, WithSearchRadius};
 ///
 /// [`VecCell`]: crate::VecCell
 /// [`HashCell`]: crate::HashCell
-#[derive(Clone)]
-pub struct AllPairs<K> {
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct AllPairs<K>
+where
+    K: Eq + Hash,
+{
     /// Store all keys currently in the spatial data.
     keys: FxHashSet<K>,
 }
@@ -96,7 +100,10 @@ where
     }
 }
 
-impl<K> fmt::Display for AllPairs<K> {
+impl<K> fmt::Display for AllPairs<K>
+where
+    K: Eq + Hash,
+{
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "AllPairs")

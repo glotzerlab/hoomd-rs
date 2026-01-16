@@ -3,6 +3,8 @@
 
 //! Implement `Convex`.
 
+use serde::{Deserialize, Serialize};
+
 use crate::{
     BoundingSphereRadius, IntersectsAt, SupportMapping,
     shape::{Circle, Sphere},
@@ -57,7 +59,7 @@ use hoomd_vector::{Cartesian, Metric, Rotate, Rotation, RotationMatrix};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Convex<S>(pub S);
 
 impl<V, S> SupportMapping<V> for Convex<S>

@@ -3,6 +3,7 @@
 
 //! Implement [`Angle`]
 
+use serde::{Deserialize, Serialize};
 use std::{f64::consts::PI, fmt};
 
 use approxim::approx_derive::RelativeEq;
@@ -74,7 +75,7 @@ use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
 /// let c = a.combine(&b);
 /// assert_eq!(c.theta, PI / 4.0);
 /// ```
-#[derive(Clone, Copy, Debug, Default, PartialEq, RelativeEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, RelativeEq, Serialize, Deserialize)]
 pub struct Angle {
     /// Rotation angle (radians).
     pub theta: f64,

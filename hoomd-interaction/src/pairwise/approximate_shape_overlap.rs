@@ -3,6 +3,8 @@
 
 //! Implement [`ApproximateShapeOverlap`].
 
+use serde::{Deserialize, Serialize};
+
 use super::AnisotropicEnergy;
 use crate::univariate::UnivariateEnergy;
 use hoomd_geometry::IntersectsAt;
@@ -46,6 +48,7 @@ use hoomd_vector::{InnerProduct, Rotate, Rotation};
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ApproximateShapeOverlap<E, A, B = A> {
     /// The site i's shape.
     pub shape_i: A,

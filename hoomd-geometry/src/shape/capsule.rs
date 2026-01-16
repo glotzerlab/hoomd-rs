@@ -3,6 +3,8 @@
 
 //! Implement [`Capsule`]
 
+use serde::{Deserialize, Serialize};
+
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, SupportMapping, Volume};
 use hoomd_utility::valid::PositiveReal;
@@ -66,7 +68,7 @@ use hoomd_vector::{Cartesian, InnerProduct};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Capsule<const N: usize> {
     /// Radius of of points that are considered enclosed in the shape.
     pub radius: PositiveReal,

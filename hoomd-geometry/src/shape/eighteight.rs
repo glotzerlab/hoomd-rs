@@ -3,6 +3,8 @@
 
 //! Implement [`EightEight`]
 
+use serde::{Deserialize, Serialize};
+
 use crate::IsPointInside;
 use hoomd_manifold::Hyperbolic;
 use std::f64::consts::PI;
@@ -13,7 +15,7 @@ use std::f64::consts::PI;
 /// two-dimensional hyperbolic space. The scaling of the octagon is set such
 /// that each of the angles is $` \frac{2\pi}{8} `$ so that eight equivalent
 /// octagons meet at each vertex.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EightEight {
     /// Skirt width of the Hyperbolic.
     pub skirt: f64,

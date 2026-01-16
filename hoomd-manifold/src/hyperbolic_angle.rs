@@ -4,13 +4,13 @@
 //! Implements a three-dimensional representation of SO(3,1) on Minkowski
 //! space.
 
-use std::{f64::consts::PI, fmt};
-
 use num::complex::Complex;
 use rand::{
     Rng,
     distr::{Distribution, StandardUniform, Uniform},
 };
+use serde::{Deserialize, Serialize};
+use std::{f64::consts::PI, fmt};
 
 use crate::HyperbolicRotationMatrix;
 
@@ -90,7 +90,7 @@ use crate::HyperbolicRotationMatrix;
 ///
 /// The default value `HyperbolicAngle::Default` returns the tuple
 /// `(0.0,0.0,0.0)`, which corresponds to the identify transformation.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct HyperbolicAngle {
     /// Get the rotation angle in radians.
     pub angles: (f64, f64, f64),

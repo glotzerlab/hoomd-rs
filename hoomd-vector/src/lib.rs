@@ -183,6 +183,7 @@ pub use angle::Angle;
 pub use cartesian::{Cartesian, RotationMatrix};
 pub use quaternion::{Quaternion, Versor};
 
+use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use thiserror::Error;
 
@@ -570,7 +571,7 @@ pub trait InnerProduct: Vector {
 }
 
 /// A [`Vector`] with magnitude 1.0.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Unit<V>(V);
 
 impl<V> Unit<V> {
