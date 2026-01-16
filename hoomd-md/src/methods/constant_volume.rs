@@ -13,7 +13,7 @@ use hoomd_microstate::{
 use hoomd_vector::{
     Angle, Cartesian, InnerProduct, Quaternion, Rotate, Vector, Versor,
 };
-use crate::{thermostat::Thermostat, TranslationalMotion, RotationalMotion, ForceUpdate, ForceAndTorqueUpdate, TorqueUpdate};
+use crate::{thermostat::Thermostat, methods::{TranslationalMotion, RotationalMotion, ForceUpdate, ForceAndTorqueUpdate, TorqueUpdate}};
 
 /// Evolve a system that is constrained to a constant volume.
 #[derive(Clone, Debug, PartialEq)]

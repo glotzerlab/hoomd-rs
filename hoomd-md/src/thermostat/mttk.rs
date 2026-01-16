@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 use hoomd_microstate::Microstate;
 use hoomd_simulation::macrostate::Temperature;
-use crate::Thermostat;
+use crate::thermostat::Thermostat;
 use rand_distr::{Distribution, Normal};
 
 /// [`MTTKThermostat`] implement the Nose-Hoover thermostat
