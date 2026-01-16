@@ -3,9 +3,11 @@
 
 //! Implement `External`
 
-use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, NetBodyForce, SiteForce, SiteEnergy, ExternalSiteForce, TotalEnergy};
-use hoomd_microstate::{boundary::Wrap, property::Position, Body, Microstate, Site, Transform};
-use hoomd_vector::Vector;
+use std::ops::Add;
+
+use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, ExternalBodyTorque, ExternalSiteForce, NetBodyForce, NetBodyTorque, SiteEnergy, SiteForce, TotalEnergy};
+use hoomd_microstate::{boundary::Wrap, property::{Orientation, Position}, Body, Microstate, Site, Transform};
+use hoomd_vector::{Rotate, RotationMatrix, Vector, WedgeProduct};
 
 /// Interactions between sites and external fields.
 ///
@@ -270,6 +272,22 @@ where
     #[inline]
     fn net_force_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> V {
         self.0.site_single_force(&site.properties)
+    }
+}
+
+impl<const N: usize, V, B, S, C, E, R> NetBodyTorque<N, V, B, S, C> for External<E>
+where
+    V: Vector + WedgeProduct,
+    B: Transform<S> + Orientation<Rotation = R> + Clone,
+    S: Position<Position = V>,
+    E: ExternalBodyTorque<V, B>,
+    R: Rotate<V>,
+    RotationMatrix<N>: From<R>,
+    V::Bivector: Default + Add<Output = V::Bivector>,
+{
+    fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V::Bivector {
+        let body_properties = microstate.bodies()[body_index].item.properties.clone();  // TODO: check if we need to clone here
+        self.0.body_single_torque(&body_properties)
     }
 }
 
