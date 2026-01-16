@@ -349,20 +349,79 @@ pub trait Vector:
 {
 }
 
-// TODO: add documentation
-pub trait WedgeProduct {
+/// Operate on elements of a wedge product space.
+/// 
+/// The [`WedgeProduct`] subtrait defines the wedge product method, which returns the bivector
+/// for two elements. In 2-D vector space, the bivector of two vectors is a scalar;
+/// in 3-D it is another 3-vector. In cartesian space, torque always takes the form
+/// of a bivector.
+/// TODO: confirm whether the elements must be vectors
+pub trait WedgeProduct: Vector {
     type Bivector;
-
+    /// Compute the wedge product between two elements.
+    /// 
+    /// ```math
+    /// \textbf{A}=\textbf{a}\wedge{\textbf{b}}
+    /// ```
+    /// 
+    /// # Example
+    /// ```
+    /// use hoomd_vector::{Cartesian, WedgeProduct}
+    /// 
+    /// # fn main() {
+    /// let a = Cartesian::from([1.0, 1.0]);
+    /// let b = Cartesian::from([0.0, 1.0]);
+    /// let c = Cartesian::from([1.0, 1.0, 1.0]);
+    /// let d = Cartesian::from([0.0, 1.0, 0.0]);
+    /// assert_eq!(a.cross(b), a.wedge_product(b));
+    /// assert+eq!(c.cross(d), c.wedge_product(d));
+    /// # }
+    /// ```
     fn wedge_product(&self, other: &Self) -> Self::Bivector;
 }
 
-pub trait TensorProduct {
+/// Operate on elements of a tensor product space.
+/// 
+/// The [`TensorProduct`] subtrait defines the tensor product method, which returns
+/// the tensor resulting from matrix-style multiplication of two elements.
+/// TODO: confirm whether the elements must be vectors
+pub trait TensorProduct: Vector {
     type Tensor;
-
+    /// Compute the tensor product between two elements.
+    /// 
+    /// ```math
+    /// a \otimes b = \begin{bmatrix} a_{0}
+    ///  \\ \vdots 
+    ///  \\ a_{n}
+    /// \end{bmatrix}
+    /// \begin{bmatrix}
+    /// b_{0} & \dots & b_{n}
+    /// \end{bmatrix}
+    /// =
+    /// \begin{bmatrix}
+    /// a_{0}b_{0} & \dots & a_{0}b_{n} \\
+    /// \vdots & \ddots & \vdots \\
+    /// a_{n}b_{0} & \dots & a_{n}b_{n}
+    /// \end{bmatrix}
+    /// ```
+    /// 
+    /// # Example
+    /// ```
+    /// use hoomd_vector::{Cartesian, Matrix, TensorProduct}
+    /// 
+    /// # fn main() {
+    /// let a = Cartesian::from([1.0, 1.0]);
+    /// let b = Cartesian::from([0.0, 1.0]);
+    /// let m = Matrix {
+    ///     rows: [[0.0, 1.0], [0.0, 1.0]]
+    /// }
+    /// assert_eq!(a.tensor_product(b), m)
+    /// # }
+    /// ```
     fn tensor_product(&self, other: &Self) -> Self::Tensor;
 }
 
-/// Operates on elements on a metric space.
+/// Operates on elements of a metric space.
 ///
 /// [`Metric`] implements a distance metric between points.
 pub trait Metric {
