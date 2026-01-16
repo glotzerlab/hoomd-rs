@@ -8,7 +8,7 @@ use hoomd_interaction::{
     rigid::Rigid,
 };
 use hoomd_md::{
-    ConstantVolume, ForceUpdate, TranslationalMotion, thermalize::{
+    ConstantVolume, ForceUpdate, TranslationalMotion, thermalizer::{
         ComAngularMomentumRemover, ComMomentumRemover, RotationalThermalizer, Thermalizer,
         TranslationalMomentumModifier,
         TranslationalThermalizer,

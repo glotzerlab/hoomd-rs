@@ -8,7 +8,7 @@ use hoomd_interaction::{
 };
 use hoomd_md::{
     ConstantVolume, ForceAndTorqueUpdate, ForceUpdate, RotationalMotion, TranslationalMotion,
-    thermalize::{
+    thermalizer::{
         ComAngularMomentumRemover, ComMomentumRemover, RotationalThermalizer, Thermalizer,
         TranslationalMomentumModifier,
         TranslationalThermalizer,
