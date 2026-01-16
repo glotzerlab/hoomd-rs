@@ -374,7 +374,7 @@ pub trait WedgeProduct: Vector {
     /// let c = Cartesian::from([1.0, 1.0, 1.0]);
     /// let d = Cartesian::from([0.0, 1.0, 0.0]);
     /// assert_eq!(a.cross(b), a.wedge_product(b));
-    /// assert+eq!(c.cross(d), c.wedge_product(d));
+    /// assert_eq!(c.cross(d), c.wedge_product(d));
     /// # }
     /// ```
     fn wedge_product(&self, other: &Self) -> Self::Bivector;
