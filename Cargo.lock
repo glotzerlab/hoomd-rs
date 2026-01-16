@@ -3297,29 +3297,8 @@ dependencies = [
  "hoomd-simulation",
  "hoomd-spatial",
  "hoomd-vector",
- "rand 0.9.2",
+ "rand",
  "rstest",
-]
-
-[[package]]
-name = "hoomd-examples"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "bevy",
- "bevy_egui",
- "hoomd-bevy",
- "hoomd-geometry",
- "hoomd-gsd",
- "hoomd-interaction",
- "hoomd-manifold",
- "hoomd-mc",
- "hoomd-microstate",
- "hoomd-simulation",
- "hoomd-spatial",
- "hoomd-utility",
- "hoomd-vector",
- "rand 0.9.2",
 ]
 
 [[package]]
