@@ -272,23 +272,6 @@ where
     }
 }
 
-impl<const N: usize, V, B, S, C, E, R> NetBodyTorque<N, V, B, S, C> for External<E>
-where
-    V: Vector + WedgeProduct,
-    B: Transform<S> + Orientation<Rotation = R> + Clone,
-    S: Position<Position = V>,
-    E: ExternalBodyTorque<V, B>,
-    R: Rotate<V>,
-    RotationMatrix<N>: From<R>,
-    V::Bivector: Default + Add<Output = V::Bivector>,
-{
-    #[inline]
-    fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V::Bivector {
-        let body_properties = microstate.bodies()[body_index].item.properties.clone();  // TODO: check if we need to clone here
-        self.0.body_single_torque(&body_properties)
-    }
-}
-
 impl<V, B, S, C, E> SiteForceAndTorque<V, B, S, C> for External<E>
 where
     V: WedgeProduct,
@@ -300,7 +283,6 @@ where
         self.0.net_force_and_torque_on_site(microstate, site)
     }
 }
-
 impl<const N: usize, V, B, S, C, E, R> NetBodyTorque<N, V, B, S, C> for External<E>
 where
     V: Vector + WedgeProduct,
@@ -311,6 +293,7 @@ where
     RotationMatrix<N>: From<R>,
     V::Bivector: Default + Add<Output = V::Bivector>,
 {
+    #[inline]
     fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V::Bivector {
         let body_properties = microstate.bodies()[body_index].item.properties.clone();  // TODO: check if we need to clone here
         self.0.body_single_torque(&body_properties)
