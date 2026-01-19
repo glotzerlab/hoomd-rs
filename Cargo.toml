@@ -102,9 +102,16 @@ wayland-sys = "0.31.8"
 version = "0.18.0"
 default-features = false
 
-# Include all 2d and 3d features, but NOT audio.
+# Include all 2d and 3d features, but NOT audio or gamepad support.
+# (gamepad requires libudev on Linux)
 features = ["default_app",
-            "default_platform",
+            "bevy_winit",
+            "default_font",
+            "multi_threaded",
+            "webgl2",
+            "x11",
+            "wayland",
+            "sysinfo_plugin",
             "2d_bevy_render",
             "3d_bevy_render",
             "ui_api",
@@ -230,8 +237,8 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.bevy_encase_derive]
 opt-level = 3
-[profile.dev.package.bevy_gilrs]
-opt-level = 3
+# [profile.dev.package.bevy_gilrs]
+# opt-level = 3
 [profile.dev.package.bevy_gizmos]
 opt-level = 3
 [profile.dev.package.bevy_gizmos_macros]
