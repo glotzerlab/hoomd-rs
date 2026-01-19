@@ -3708,6 +3708,7 @@ dependencies = [
  "hoomd-simulation",
  "hoomd-vector",
  "itertools 0.14.0",
+ "wayland-sys",
 ]
 
 [[package]]
@@ -6949,6 +6950,7 @@ checksum = "1e6dbfc3ac5ef974c92a2235805cc0114033018ae1290a72e474aa8b28cbbdfd"
 dependencies = [
  "dlib",
  "log",
+ "once_cell",
  "pkg-config",
 ]
 

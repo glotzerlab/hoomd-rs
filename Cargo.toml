@@ -96,6 +96,8 @@ thiserror = "2.0.12"
 
 # Bevy and bevy-adjacent dependencies
 bevy_egui = "0.39.0"
+wayland-sys = "0.31.8"
+
 [workspace.dependencies.bevy]
 version = "0.18.0"
 default-features = false
