@@ -23,7 +23,7 @@ struct Args {
     reduce_size: bool,
 
     /// Output location.
-    #[arg(long, default_value="doc/src")]
+    #[arg(long, default_value = "doc/src")]
     root: String,
 }
 
