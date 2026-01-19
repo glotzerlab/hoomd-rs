@@ -41,7 +41,7 @@ default-members = ["examples",
 [workspace.package]
 version = "0.0.0"
 edition = "2024"
-rust-version = "1.88"
+rust-version = "1.89"
 homepage = "https://glotzerlab.engin.umich.edu"
 repository = "https://github.com/glotzerlab/hoomd-rs"
 license = "BSD-3-Clause"
@@ -99,27 +99,16 @@ bevy_egui = "0.39.0"
 [workspace.dependencies.bevy]
 version = "0.18.0"
 default-features = false
-features = ["async_executor",
-            "bevy_asset",
-            "bevy_color",
-            "bevy_log",
-            "bevy_mesh_picking_backend",
-            "bevy_render",
-            "bevy_sprite_picking_backend",
-            "bevy_sprite_render",
-            "bevy_state",
-            "bevy_text",
-            "bevy_ui",
-            "bevy_ui_render",
-            "bevy_window",
-            "bevy_winit",
-            "default_font",
-            "multi_threaded",
-            "png",
-            "std",
-            "sysinfo_plugin",
-            "webgl2",
-            "x11",
+
+# Include all 2d and 3d features, but NOT audio.
+features = ["default_app",
+            "default_platform",
+            "2d_bevy_render",
+            "3d_bevy_render",
+            "ui_api",
+            "ui_bevy_render",
+            "scene",
+            "picking",
             "bevy_dev_tools"]
 
 [workspace.dependencies.bevy_diagnostic]
@@ -205,8 +194,10 @@ debug = true
 opt-level = 3
 [profile.dev.package.bevy_a11y]
 opt-level = 3
-# [profile.dev.package.bevy_animation]
-# opt-level = 3
+[profile.dev.package.bevy_android]
+opt-level = 3
+[profile.dev.package.bevy_animation]
+opt-level = 3
 [profile.dev.package.bevy_anti_alias]
 opt-level = 3
 [profile.dev.package.bevy_app]
@@ -225,6 +216,8 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.bevy_derive]
 opt-level = 3
+[profile.dev.package.bevy_dev_tools]
+opt-level = 3
 [profile.dev.package.bevy_diagnostic]
 opt-level = 3
 [profile.dev.package.bevy_ecs]
@@ -235,14 +228,16 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.bevy_encase_derive]
 opt-level = 3
-# [profile.dev.package.bevy_gilrs]
-# opt-level = 3
-# [profile.dev.package.bevy_gizmos]
-# opt-level = 3
+[profile.dev.package.bevy_gilrs]
+opt-level = 3
+[profile.dev.package.bevy_gizmos]
+opt-level = 3
 [profile.dev.package.bevy_gizmos_macros]
 opt-level = 3
-# [profile.dev.package.bevy_gltf]
-# opt-level = 3
+[profile.dev.package.bevy_gizmos_render]
+opt-level = 3
+[profile.dev.package.bevy_gltf]
+opt-level = 3
 [profile.dev.package.bevy_image]
 opt-level = 3
 [profile.dev.package.bevy_input]
@@ -263,11 +258,13 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.bevy_mikktspace]
 opt-level = 3
-# [profile.dev.package.bevy_pbr]
-# opt-level = 3
+[profile.dev.package.bevy_pbr]
+opt-level = 3
 [profile.dev.package.bevy_picking]
 opt-level = 3
 [profile.dev.package.bevy_platform]
+opt-level = 3
+[profile.dev.package.bevy_post_process]
 opt-level = 3
 [profile.dev.package.bevy_ptr]
 opt-level = 3
@@ -278,6 +275,12 @@ opt-level = 3
 [profile.dev.package.bevy_render]
 opt-level = 3
 [profile.dev.package.bevy_render_macros]
+opt-level = 3
+[profile.dev.package.bevy_scene]
+opt-level = 3
+[profile.dev.package.bevy_shader]
+opt-level = 3
+[profile.dev.package.bevy_sprite]
 opt-level = 3
 [profile.dev.package.bevy_sprite_render]
 opt-level = 3
