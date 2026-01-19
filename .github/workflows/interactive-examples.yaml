@@ -117,7 +117,7 @@ jobs:
   tests_complete:
     name: All
     if: always()
-    needs: [build, deploy]
+    needs: [build]
     runs-on: ubuntu-latest
 
     permissions:
