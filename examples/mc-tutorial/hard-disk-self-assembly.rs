@@ -66,7 +66,7 @@ impl HardDiskSelfAssembly {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
         let initial_packing_fraction = 0.4;
-        let target_packing_fraction = 1.0;
+        let target_packing_fraction = 0.7;
         let n_disks = 64_usize.pow(2);
         let maximum_distance = 0.07;
         let sigma = 1.0;
