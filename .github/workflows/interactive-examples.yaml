@@ -93,6 +93,9 @@ jobs:
     - name: Show web directory size
       run: du -hsc web/*
 
+    - name: Web directory contents
+      run: ls -lR web
+
     - name: Upload artifact
       uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
       with:
