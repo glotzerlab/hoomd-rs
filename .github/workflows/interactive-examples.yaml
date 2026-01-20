@@ -101,6 +101,7 @@ jobs:
     name: Deploy
 
     permissions:
+      contents: read
       pages: write
       id-token: write
 
