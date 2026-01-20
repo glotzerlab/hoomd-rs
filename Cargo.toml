@@ -179,7 +179,7 @@ rustdoc-args = [ "--html-in-header", "katex.html" ]
 # Optimize for size in wasm builds
 [profile.release-wasm]
 opt-level = 'z'
-lto = 'thin'  # TODO: Switch back to true after migrating to GitHub Pages for docs.
+lto = true
 codegen-units = 1
 inherits = "release"
 
