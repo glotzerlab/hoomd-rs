@@ -1,10 +1,8 @@
 name: Interactive Examples
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 on:
   pull_request:
@@ -119,7 +117,7 @@ jobs:
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
 
   tests_complete:
-    name: All
+    name: All WASM example builds
     if: always()
     needs: [build]
     runs-on: ubuntu-latest
