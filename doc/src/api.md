@@ -1,7 +1,5 @@
 # API Reference
 
-## Modules
-
 - [hoomd-bevy](api/hoomd_bevy/index.html)
 - [hoomd-gsd](api/hoomd_gsd/index.html)
 - [hoomd-geometry](api/hoomd_geometry/index.html)
@@ -15,19 +13,3 @@
 - [hoomd-spatial](api/hoomd_spatial/index.html)
 - [hoomd-utility](api/hoomd_utility/index.html)
 - [hoomd-vector](api/hoomd_vector/index.html)
-
-## Structure Overview
-
-<style>
-.ayu .hoomd-rs-structure{ content:url("images/structure-dark.svg"); }
-.navy .hoomd-rs-structure{ content:url("images/structure-dark.svg"); }
-.coal .hoomd-rs-structure{ content:url("images/structure-dark.svg"); }
-.frappe .hoomd-rs-structure{ content:url("images/structure-dark.svg"); }
-.macchiato .hoomd-rs-structure{ content:url("images/structure-dark.svg"); }
-.mocha .hoomd-rs-structure{ content:url("images/structure-dark.svg"); }
-</style>
-<a href="images/structure.svg">
-<img class="hoomd-rs-structure" alt="hoomd-rs types, traits, and their relations" src="images/structure.svg" />
-</a>
-
-[*Full-size structure with links to the documentation.*](images/structure.svg)
