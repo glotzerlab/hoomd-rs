@@ -112,7 +112,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/trunk'   
+    if: github.ref == 'refs/heads/trunk'
     steps:
       - name: Deploy
         id: deployment
