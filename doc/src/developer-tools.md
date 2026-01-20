@@ -118,4 +118,17 @@ via the `file://` URL.
 > **DO NOT COMMIT** the generated `.wasm` or `.js` files to the repository.
 > These will be compiled by CI when needed.
 
+> [!TIP]
+> You can locally test how an example will appear with:
+> ```js
+> import init from './{example-name}.js'
+> ```
+
+> [!IMPORTANT]
+> The import line must be
+> ```js
+> import init from 'https://glotzerlab.github.io/hoomd-rs/{example-directory}/{example-name}.js'
+> ```
+> to appear in the published documentation.
+
 [the WASM chapter in the bevy cheat book]: https://bevy-cheatbook.github.io/platforms/wasm.html
