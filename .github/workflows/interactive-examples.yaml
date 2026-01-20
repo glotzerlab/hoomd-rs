@@ -71,10 +71,6 @@ jobs:
         key: ${{ 'wasm32-unknown-unknown' }}-${{ hashFiles('Cargo.lock') }}
         cache-bin: false
 
-    - name: Setup Pages
-      id: pages
-      uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
-
     - name: Create output directory
       run: mkdir -p web
 
@@ -103,12 +99,19 @@ jobs:
 
   deploy:
     name: Deploy
+
+    permissions:
+      pages: write
+      id-token: write
+
+    needs: build
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/trunk'
+    if: github.ref == 'refs/heads/trunk'   
     steps:
       - name: Deploy
         id: deployment
@@ -119,11 +122,6 @@ jobs:
     if: always()
     needs: [build]
     runs-on: ubuntu-latest
-
-    permissions:
-      pages: write      # to deploy to Pages
-      id-token: write   # to verify the deployment originates from an appropriate source
-
     steps:
     - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
     - name: Done
