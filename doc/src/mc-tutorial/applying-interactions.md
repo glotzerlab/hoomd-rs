@@ -1,7 +1,7 @@
 # Applying Interactions
 
 <script type="module">
-import init from './applying-interactions.js'
+import init from 'https://glotzerlab.github.io/hoomd-rs/mc-tutorial/applying-interactions.js'
 {{#include ../../scripts/init-wasm-canvas.js}}
 </script>
 {{#include ../../scripts/canvas.html}}

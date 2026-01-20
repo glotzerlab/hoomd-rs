@@ -1,7 +1,7 @@
 # Custom Random Walk
 
 <script type="module">
-import init from './custom-random-walk.js'
+import init from 'https://glotzerlab.github.io/hoomd-rs/mc-tutorial/custom-random-walk.js'
 {{#include ../../scripts/init-wasm-canvas.js}}
 </script>
 {{#include ../../scripts/canvas.html}}

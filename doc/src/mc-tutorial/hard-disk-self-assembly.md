@@ -1,7 +1,7 @@
 # Hard Disk Self-Assembly
 
 <script type="module">
-import init from './hard-disk-self-assembly.js'
+import init from 'https://glotzerlab.github.io/hoomd-rs/mc-tutorial/hard-disk-self-assembly.js'
 {{#include ../../scripts/init-wasm-canvas.js}}
 </script>
 {{#include ../../scripts/canvas.html}}

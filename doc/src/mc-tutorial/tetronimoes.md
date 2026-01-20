@@ -1,7 +1,7 @@
 # Tetronimoes
 
 <script type="module">
-import init from './tetronimoes.js'
+import init from 'https://glotzerlab.github.io/hoomd-rs/mc-tutorial/tetronimoes.js'
 {{#include ../../scripts/init-wasm-canvas.js}}
 </script>
 {{#include ../../scripts/canvas.html}}
