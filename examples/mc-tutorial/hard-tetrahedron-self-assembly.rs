@@ -4,12 +4,10 @@ use anyhow::{Context, anyhow};
 
 use hoomd_geometry::{
     Convex, Volume,
-    shape::{Ellipse, Rectangle},
+    shape::{ConvexPolytope, Cuboid},
 };
 use hoomd_interaction::{
-    MaximumInteractionRange, PairwiseCutoff,
-    pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape},
-    univariate::OverlapPenalty,
+    MaximumInteractionRange, PairwiseCutoff, TotalEnergy, pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape}, univariate::OverlapPenalty
 };
 use hoomd_mc::{
     QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn,
@@ -18,29 +16,29 @@ use hoomd_microstate::{
     Microstate, SiteKey, boundary::Periodic, property::OrientedPoint,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
-use hoomd_spatial::VecCell;
-use hoomd_vector::{self, Angle, Cartesian};
+use hoomd_spatial::{AllPairs, VecCell};
+use hoomd_vector::{self, Versor, Cartesian};
 // ANCHOR_END: use
 
 // ANCHOR: type_aliases
-type PositionVector = Cartesian<2>;
-type Orientation = Angle;
+type PositionVector = Cartesian<3>;
+type Orientation = Versor;
 type BodyProperties = OrientedPoint<PositionVector, Orientation>;
 type SiteProperties = OrientedPoint<PositionVector, Orientation>;
 // ANCHOR_END: type_aliases
 
 #[cfg_attr(feature = "bevy", derive(Resource))]
 // ANCHOR: simulation_struct
-struct HardEllipseSelfAssembly {
+struct HardTetrahedronSelfAssembly {
     /// Positions and orientations of all the bodies in the simulation.
     microstate: Microstate<
         BodyProperties,
         SiteProperties,
-        VecCell<SiteKey, 2>,
-        Periodic<Rectangle>,
+        VecCell<SiteKey, 3>,
+        Periodic<Cuboid>,
     >,
     /// How sites interact with other sites and fields.
-    hamiltonian: PairwiseCutoff<HardShape<Convex<Ellipse>>>,
+    hamiltonian: PairwiseCutoff<HardShape<Convex<ConvexPolytope<3>>>>,
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<PositionVector>>,
     /// Trial moves to apply.
@@ -48,12 +46,12 @@ struct HardEllipseSelfAssembly {
     /// Temperature set point.
     macrostate: Isothermal,
     /// Quick compress algorithm.
-    quick_compress: QuickCompress<Periodic<Rectangle>>,
+    quick_compress: QuickCompress<Periodic<Cuboid>>,
     /// Quick insert algorithm.
-    quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Rectangle>>>,
+    quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Cuboid>>>,
     /// How sites interact when inserted and compressed.
     overlap_penalty_hamiltonian: PairwiseCutoff<
-        Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Convex<Ellipse>>>,
+        Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Convex<ConvexPolytope<3>>>>,
     >,
     /// The current phase of the simulation.
     phase: Phase,
@@ -68,46 +66,51 @@ enum Phase {
 // ANCHOR_END: phase
 
 // ANCHOR: simulation_new
-impl HardEllipseSelfAssembly {
+impl HardTetrahedronSelfAssembly {
     /// Construct a new hard ellipsoid self-assembly simulation.
-    fn new() -> anyhow::Result<HardEllipseSelfAssembly> {
+    fn new() -> anyhow::Result<HardTetrahedronSelfAssembly> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
-        let initial_packing_fraction = 0.4;
-        let target_packing_fraction = 0.7;
-        let n_bodies = 512;
-        let maximum_distance = 0.07;
-        let maximum_rotation = 0.3;
-        let sigma = 1.0;
-        let aspect = 5.0;
+        let initial_packing_fraction = 0.3;
+        // TODO: determine values for phi and N
+        let target_packing_fraction = 0.55; 
+        let n_bodies = 128;
+        let maximum_distance = 0.05;
+        let maximum_rotation = 0.05;
         let macrostate = Isothermal { temperature: 1.0 };
-        assert!(aspect >= 1.0);
         // ANCHOR_END: parameters
 
         // ANCHOR: hamiltonian
-        let ellipse = Ellipse::with_semi_axes([
-            (sigma / 2.0).try_into()?,
-            (sigma / aspect / 2.0).try_into()?,
-        ]);
-        let hamiltonian = PairwiseCutoff(HardShape(Convex(ellipse.clone())));
+        let a = 1.0f64;
+        let h = 6.0f64.sqrt()/3.0 * a;
+        let tetrahedron_volume = 1.0 / 12.0 * 2.0f64.sqrt() * a.powi(3);
+        
+        let tetrahedron = ConvexPolytope::with_vertices(vec![
+            [3.0f64.sqrt()/3.0 * a, 0.0, -h/4.0].into(),
+            [-3.0f64.sqrt()/6.0 * a, 0.5 * a, -h/4.0].into(),
+            [-3.0f64.sqrt()/6.0 * a, -0.5 * a, -h/4.0].into(),
+            [0.0, 0.0, 3.0 * h / 4.0].into(),
+        ])?;
+        let hamiltonian = PairwiseCutoff(HardShape(Convex(tetrahedron.clone())));
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: periodic
         let initial_box_volume =
-            n_bodies as f64 * ellipse.volume() / initial_packing_fraction;
-        let initial_box_edge_length = initial_box_volume.sqrt();
-        let square =
-            Rectangle::with_equal_edges(initial_box_edge_length.try_into()?);
-        let periodic_square =
-            Periodic::new(hamiltonian.0.maximum_interaction_range(), square)?;
+            n_bodies as f64 * tetrahedron_volume / initial_packing_fraction;
+        let initial_box_edge_length = initial_box_volume.cbrt();
+        let cube =
+            Cuboid::with_equal_edges(initial_box_edge_length.try_into()?);
+        let periodic_cube =
+            Periodic::new(hamiltonian.0.maximum_interaction_range(), cube)?;
         // ANCHOR_END: periodic
+
 
         // ANCHOR: microstate
         let vec_cell = VecCell::builder()
             .nominal_search_radius(hamiltonian.0.maximum_interaction_range().try_into()?)
             .build();
         let microstate = Microstate::builder()
-            .boundary(periodic_square)
+            .boundary(periodic_cube)
             .spatial_data(vec_cell)
             .try_build()?;
         // ANCHOR_END: microstate
@@ -132,7 +135,7 @@ impl HardEllipseSelfAssembly {
 
         // ANCHOR: quick_compress
         let target_box_volume =
-            n_bodies as f64 * ellipse.volume() / target_packing_fraction;
+            n_bodies as f64 * tetrahedron_volume / target_packing_fraction;
         let quick_compress =
             QuickCompress::with_target_volume(target_box_volume.try_into()?);
         // ANCHOR_END: quick_compress
@@ -140,11 +143,11 @@ impl HardEllipseSelfAssembly {
         // ANCHOR: overlap_penalty_hamiltonian
         let approximate_shape_overlap = Anisotropic {
             interaction: ApproximateShapeOverlap::new(
-                Convex(ellipse),
+                Convex(tetrahedron),
                 OverlapPenalty::default(),
                 0.01.try_into()?,
             ),
-            r_cut: sigma,
+            r_cut: hamiltonian.0.maximum_interaction_range(),
         };
 
         let overlap_penalty_hamiltonian =
@@ -152,7 +155,7 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: overlap_penalty_hamiltonian
 
         // ANCHOR: struct_initialize
-        Ok(HardEllipseSelfAssembly {
+        Ok(HardTetrahedronSelfAssembly {
             microstate,
             overlap_penalty_hamiltonian,
             hamiltonian,
@@ -168,7 +171,7 @@ impl HardEllipseSelfAssembly {
 // ANCHOR_END: struct_initialize
 
 // ANCHOR: impl_simulation
-impl Simulation for HardEllipseSelfAssembly {
+impl Simulation for HardTetrahedronSelfAssembly {
     // ANCHOR_END: impl_simulation
     // ANCHOR: advance
     /// Advance the simulation forward one step.
@@ -195,7 +198,7 @@ impl Simulation for HardEllipseSelfAssembly {
 // ANCHOR_END: step
 
 // ANCHOR: inherent_simulation
-impl HardEllipseSelfAssembly {
+impl HardTetrahedronSelfAssembly {
     // ANCHOR_END: inherent_simulation
     // ANCHOR: initialize
     fn initialize(&mut self) -> anyhow::Result<()> {
@@ -238,7 +241,7 @@ impl HardEllipseSelfAssembly {
         // ANCHOR_END: state_transition
 
         // ANCHOR: failed
-        if self.step() >= 20_000 {
+        if self.step() >= 40_000 {
             let n = self.microstate.bodies().len();
             let target_n = self.quick_insert.target();
             let volume = self.microstate.boundary().volume();
@@ -273,7 +276,7 @@ impl HardEllipseSelfAssembly {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
-    let mut simulation = HardEllipseSelfAssembly::new()?;
+    let mut simulation = HardTetrahedronSelfAssembly::new()?;
     // TODO: Write GSD file.
 
     for _ in 0..40_000 {
@@ -286,8 +289,8 @@ fn main() -> anyhow::Result<()> {
 // ANCHOR_END: all
 
 #[cfg(feature = "bevy")]
-mod hard_ellipse_self_assembly_interactive;
+mod hard_tetrahedron_self_assembly_interactive;
 #[cfg(feature = "bevy")]
 use bevy::prelude::Resource;
 #[cfg(feature = "bevy")]
-use hard_ellipse_self_assembly_interactive::main;
+use hard_tetrahedron_self_assembly_interactive::main;

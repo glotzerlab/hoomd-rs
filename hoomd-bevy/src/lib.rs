@@ -184,6 +184,15 @@ pub enum InitialCamera {
     /// * Left click and drag to pan.
     /// * Scroll to zoom.
     Orthographic2d(f32),
+
+    /// Three dimensional front down camera showing the xy plane.
+    ///
+    /// The single field sets the height of the visible area. The width is set
+    /// automatically based on the window dimensions.
+    ///
+    /// Controls:
+    /// * TODO
+    Orthographic3d(f32),
 }
 
 /// Store parameters that influence how the simulation is executed.
@@ -498,6 +507,25 @@ where
         commands.spawn((Camera2d, projection));
     }
 
+    /// Set up the 3D camera.
+    fn setup_camera_3d(mut commands: Commands, viewport_height: f32) {
+        let projection = Projection::Orthographic(OrthographicProjection {
+            scaling_mode: bevy::camera::ScalingMode::FixedVertical { viewport_height },
+            ..OrthographicProjection::default_3d()
+        });
+
+        commands.spawn((Camera3d::default(),
+            projection,
+            Transform::from_xyz(0.0, 0.0, -viewport_height*2.0).looking_at(Vec3::ZERO, Vec3::Y),
+));
+
+    commands.spawn((
+        DirectionalLight::default(),
+        Transform::from_xyz(-3.0, 3.0, -6.0).looking_at(Vec3::ZERO, Vec3::Y),
+    ));
+
+    }
+
     /// Keyboard controls for the 2d camera.
     ///
     /// `=` resets the camera to the default.
@@ -708,6 +736,11 @@ where
                 .add_systems(Startup, move |commands: Commands| {
                     Self::setup_camera_2d(commands, initial_viewport_height);
                 });
+            },
+            InitialCamera::Orthographic3d(initial_viewport_height) => {
+                app.add_systems(Startup, move |commands: Commands| {
+                    Self::setup_camera_3d(commands, initial_viewport_height);
+                });
             }
         }
 
@@ -811,6 +844,10 @@ where
                     InitialCamera::Orthographic2d(_) => {
                         ui.label("Click and drag to move the camera.");
                         ui.label("Scroll to zoom.");
+                    },
+                    InitialCamera::Orthographic3d(_) => {
+                        ui.label("TODO.");
+                        ui.label("TODO.");
                     }
                 }
 
