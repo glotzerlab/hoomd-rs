@@ -717,15 +717,18 @@ where
     R: Rotation + Rotate<V>,
 {
     let r_ab = *r_b - *r_a;
-    let r_a_inverted = o_a.inverted();
-    let v_ij = r_a_inverted.rotate(&r_ab);
-    let o_ij = o_b.combine(&r_a_inverted);
+    let o_a_inverted = o_a.inverted();
+    let v_ij = o_a_inverted.rotate(&r_ab);
+    let o_ij = o_a_inverted.combine(o_b);
     (v_ij, o_ij)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use approxim::assert_relative_eq;
+    use assert2::check;
+    use rand::{Rng, SeedableRng, rngs::StdRng};
 
     fn compute_add_generic<T>(a: T, b: T) -> T
     where
@@ -739,6 +742,64 @@ mod tests {
         let a = Cartesian::from([1.0, 2.0, 3.0]);
         let b = Cartesian::from([4.0, 5.0, 6.0]);
         let c = compute_add_generic(a, b);
-        assert_eq!(c, [5.0, 7.0, 9.0].into());
+        check!(c == [5.0, 7.0, 9.0].into());
+    }
+
+    #[test]
+    fn test_pair_system_to_local_2d() {
+        let mut rng = StdRng::seed_from_u64(1);
+
+        for _ in 0..1_000 {
+            let o_a: Angle = rng.random();
+            let o_b: Angle = rng.random();
+
+            let r_a: Cartesian<2> = rng.random();
+            let r_b: Cartesian<2> = rng.random();
+
+            let c_in_b: Cartesian<2> = rng.random();
+
+            // Test self-consistency by locating c in both a's and b's reference frames.
+            // Check that they are equivalent in the global frame.
+            let (v_ij, o_ij) = pair_system_to_local(&r_a, &o_a, &r_b, &o_b);
+            let c_in_a = v_ij + o_ij.rotate(&c_in_b);
+
+            assert_relative_eq!(r_a + o_a.rotate(&c_in_a),
+                r_b + o_b.rotate(&c_in_b),
+                epsilon = 4.0 * f64::EPSILON);
+
+            let (v_ji, o_ji) = pair_system_to_local(&r_b, &o_b, &r_a, &o_a);
+            assert_relative_eq!(v_ji + o_ji.rotate(&c_in_a),
+                c_in_b,
+                epsilon = 4.0 * f64::EPSILON);
+        }
+    }
+
+    #[test]
+    fn test_pair_system_to_local_3d() {
+        let mut rng = StdRng::seed_from_u64(1);
+
+        for _ in 0..1_000 {
+            let o_a: Versor = rng.random();
+            let o_b: Versor = rng.random();
+
+            let r_a: Cartesian<3> = rng.random();
+            let r_b: Cartesian<3> = rng.random();
+
+            let c_in_b: Cartesian<3> = rng.random();
+
+            // Test self-consistency by locating c in both a's and b's reference frames.
+            // Check that they are equivalent in the global frame.
+            let (v_ij, o_ij) = pair_system_to_local(&r_a, &o_a, &r_b, &o_b);
+            let c_in_a = v_ij + o_ij.rotate(&c_in_b);
+
+            assert_relative_eq!(r_a + o_a.rotate(&c_in_a),
+                r_b + o_b.rotate(&c_in_b),
+                epsilon = 10.0 * f64::EPSILON);
+
+            let (v_ji, o_ji) = pair_system_to_local(&r_b, &o_b, &r_a, &o_a);
+            assert_relative_eq!(v_ji + o_ji.rotate(&c_in_a),
+                c_in_b,
+                epsilon = 10.0 * f64::EPSILON);
+        }
     }
 }
