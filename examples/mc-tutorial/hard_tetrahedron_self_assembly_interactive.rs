@@ -1,5 +1,5 @@
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, InitialCamera, MUTED_COLOR, PRIMARY_COLOR, Settings,
+    AdvanceSet, HoomdBevyPlugin, InitialCamera, MUTED_COLOR, PRIMARY_COLOR_3D, Settings,
     representation::RectangularBoundary, representation::triangle_mesh,
 };
 
@@ -42,7 +42,7 @@ pub(crate) fn main() -> anyhow::Result<()> {
         Vec3::new(vertices[2][0] as f32, vertices[2][1] as f32, vertices[2][2] as f32),
         Vec3::new(vertices[3][0] as f32, vertices[3][1] as f32, vertices[3][2] as f32),
     ]};
-    let tetrahedron_material = StandardMaterial::from(PRIMARY_COLOR);
+    let tetrahedron_material = StandardMaterial::from(PRIMARY_COLOR_3D);
     
     app.add_systems(
         Startup,

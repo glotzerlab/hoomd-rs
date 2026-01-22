@@ -91,8 +91,11 @@ use hoomd_simulation::Simulation;
 
 pub mod representation;
 
-/// The default color for the primary representation.
+/// The default color for the primary representation (in 2D).
 pub const PRIMARY_COLOR: Color = Color::srgb(249.0 / 255.0, 203.0 / 255.0, 136.0 / 255.0);
+
+/// The default color for the primary representation (darkened for 3D lighting).
+pub const PRIMARY_COLOR_3D: Color = Color::srgb(0.836, 0.533, 0.211);
 
 /// The default color for a muted representation.
 pub const MUTED_COLOR: Color = Color::srgb(0.75, 0.75, 0.75);
@@ -518,12 +521,16 @@ where
             projection,
             Transform::from_xyz(0.0, 0.0, -viewport_height*2.0).looking_at(Vec3::ZERO, Vec3::Y),
 ));
-
     commands.spawn((
         DirectionalLight::default(),
         Transform::from_xyz(-3.0, 3.0, -6.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
+    }
+
+    /// Increase the brightness of the default ambient light.
+    fn setup_ambient_light(mut ambient_light: ResMut<GlobalAmbientLight>) {
+       ambient_light.brightness = 100.0;
     }
 
     /// Keyboard controls for the 2d camera.
@@ -740,7 +747,7 @@ where
             InitialCamera::Orthographic3d(initial_viewport_height) => {
                 app.add_systems(Startup, move |commands: Commands| {
                     Self::setup_camera_3d(commands, initial_viewport_height);
-                });
+                }).add_systems(Startup, Self::setup_ambient_light);
             }
         }
 
