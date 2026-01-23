@@ -763,14 +763,18 @@ mod tests {
             let (v_ij, o_ij) = pair_system_to_local(&r_a, &o_a, &r_b, &o_b);
             let c_in_a = v_ij + o_ij.rotate(&c_in_b);
 
-            assert_relative_eq!(r_a + o_a.rotate(&c_in_a),
+            assert_relative_eq!(
+                r_a + o_a.rotate(&c_in_a),
                 r_b + o_b.rotate(&c_in_b),
-                epsilon = 4.0 * f64::EPSILON);
+                epsilon = 4.0 * f64::EPSILON
+            );
 
             let (v_ji, o_ji) = pair_system_to_local(&r_b, &o_b, &r_a, &o_a);
-            assert_relative_eq!(v_ji + o_ji.rotate(&c_in_a),
+            assert_relative_eq!(
+                v_ji + o_ji.rotate(&c_in_a),
                 c_in_b,
-                epsilon = 4.0 * f64::EPSILON);
+                epsilon = 4.0 * f64::EPSILON
+            );
         }
     }
 
@@ -792,14 +796,18 @@ mod tests {
             let (v_ij, o_ij) = pair_system_to_local(&r_a, &o_a, &r_b, &o_b);
             let c_in_a = v_ij + o_ij.rotate(&c_in_b);
 
-            assert_relative_eq!(r_a + o_a.rotate(&c_in_a),
+            assert_relative_eq!(
+                r_a + o_a.rotate(&c_in_a),
                 r_b + o_b.rotate(&c_in_b),
-                epsilon = 10.0 * f64::EPSILON);
+                epsilon = 10.0 * f64::EPSILON
+            );
 
             let (v_ji, o_ji) = pair_system_to_local(&r_b, &o_b, &r_a, &o_a);
-            assert_relative_eq!(v_ji + o_ji.rotate(&c_in_a),
+            assert_relative_eq!(
+                v_ji + o_ji.rotate(&c_in_a),
                 c_in_b,
-                epsilon = 10.0 * f64::EPSILON);
+                epsilon = 10.0 * f64::EPSILON
+            );
         }
     }
 }

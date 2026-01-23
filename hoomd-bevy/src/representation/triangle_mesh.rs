@@ -88,8 +88,7 @@ impl<T: Send + Sync + 'static> TriangleMesh<T> {
                     commands.spawn((
                         Mesh3d(triangle_mesh_representation.mesh.clone()),
                         MeshMaterial3d(triangle_mesh_representation.material.clone()),
-                        Transform::from_translation(position)
-                            .with_rotation(rotation),
+                        Transform::from_translation(position).with_rotation(rotation),
                         Self {
                             marker: PhantomData,
                         },

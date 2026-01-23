@@ -517,20 +517,20 @@ where
             ..OrthographicProjection::default_3d()
         });
 
-        commands.spawn((Camera3d::default(),
+        commands.spawn((
+            Camera3d::default(),
             projection,
-            Transform::from_xyz(0.0, 0.0, -viewport_height*2.0).looking_at(Vec3::ZERO, Vec3::Y),
-));
-    commands.spawn((
-        DirectionalLight::default(),
-        Transform::from_xyz(-3.0, 3.0, -6.0).looking_at(Vec3::ZERO, Vec3::Y),
-    ));
-
+            Transform::from_xyz(0.0, 0.0, -viewport_height * 2.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ));
+        commands.spawn((
+            DirectionalLight::default(),
+            Transform::from_xyz(-3.0, 3.0, -6.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ));
     }
 
     /// Increase the brightness of the default ambient light.
     fn setup_ambient_light(mut ambient_light: ResMut<GlobalAmbientLight>) {
-       ambient_light.brightness = 100.0;
+        ambient_light.brightness = 150.0;
     }
 
     /// Keyboard controls for the 2d camera.
@@ -743,11 +743,12 @@ where
                 .add_systems(Startup, move |commands: Commands| {
                     Self::setup_camera_2d(commands, initial_viewport_height);
                 });
-            },
+            }
             InitialCamera::Orthographic3d(initial_viewport_height) => {
                 app.add_systems(Startup, move |commands: Commands| {
                     Self::setup_camera_3d(commands, initial_viewport_height);
-                }).add_systems(Startup, Self::setup_ambient_light);
+                })
+                .add_systems(Startup, Self::setup_ambient_light);
             }
         }
 
@@ -851,7 +852,7 @@ where
                     InitialCamera::Orthographic2d(_) => {
                         ui.label("Click and drag to move the camera.");
                         ui.label("Scroll to zoom.");
-                    },
+                    }
                     InitialCamera::Orthographic3d(_) => {
                         ui.label("TODO.");
                         ui.label("TODO.");

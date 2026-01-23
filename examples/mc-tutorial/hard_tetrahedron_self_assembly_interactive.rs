@@ -1,5 +1,5 @@
 use hoomd_bevy::{
-    AdvanceSet, HoomdBevyPlugin, InitialCamera, MUTED_COLOR, PRIMARY_COLOR_3D, Settings,
+    AdvanceSet, HoomdBevyPlugin, InitialCamera, PRIMARY_COLOR_3D, Settings,
     representation::RectangularBoundary, representation::triangle_mesh,
 };
 
@@ -13,12 +13,9 @@ use super::HardTetrahedronSelfAssembly;
 /// Mark the ellipse representation type.
 struct A;
 
-/// Mark the ghost representation type.
-struct Ghost;
-
 pub(crate) fn main() -> anyhow::Result<()> {
-    let simulation =
-        HardTetrahedronSelfAssembly::new().context("failed to setup simulation")?;
+    let simulation = HardTetrahedronSelfAssembly::new()
+        .context("failed to setup simulation")?;
     let vertices = simulation.hamiltonian.0.0.0.vertices().to_vec();
 
     let l =
@@ -36,28 +33,43 @@ pub(crate) fn main() -> anyhow::Result<()> {
     app.add_plugins(EguiPlugin::default());
     hoomd_bevy_plugin.build(&mut app);
 
-    let tetrahedron_mesh = Tetrahedron { vertices: [
-        Vec3::new(vertices[0][0] as f32, vertices[0][1] as f32, vertices[0][2] as f32),
-        Vec3::new(vertices[1][0] as f32, vertices[1][1] as f32, vertices[1][2] as f32),
-        Vec3::new(vertices[2][0] as f32, vertices[2][1] as f32, vertices[2][2] as f32),
-        Vec3::new(vertices[3][0] as f32, vertices[3][1] as f32, vertices[3][2] as f32),
-    ]};
+    let tetrahedron_mesh = Tetrahedron {
+        vertices: [
+            Vec3::new(
+                vertices[0][0] as f32,
+                vertices[0][1] as f32,
+                vertices[0][2] as f32,
+            ),
+            Vec3::new(
+                vertices[1][0] as f32,
+                vertices[1][1] as f32,
+                vertices[1][2] as f32,
+            ),
+            Vec3::new(
+                vertices[2][0] as f32,
+                vertices[2][1] as f32,
+                vertices[2][2] as f32,
+            ),
+            Vec3::new(
+                vertices[3][0] as f32,
+                vertices[3][1] as f32,
+                vertices[3][2] as f32,
+            ),
+        ],
+    };
     let tetrahedron_material = StandardMaterial::from(PRIMARY_COLOR_3D);
-    
+
     app.add_systems(
         Startup,
-        (move || (tetrahedron_mesh.mesh().build(), tetrahedron_material.clone()))
-        .pipe(triangle_mesh::TriangleMesh::<A>::setup),
+        (move || {
+            (
+                tetrahedron_mesh.mesh().build(),
+                tetrahedron_material.clone(),
+            )
+        })
+            .pipe(triangle_mesh::TriangleMesh::<A>::setup),
     );
-    // app.add_systems(
-    //     Startup,
-    //     (|| ellipse::MaterialParameters {
-    //         outline_width: 0.025,
-    //         background_color: MUTED_COLOR.into(),
-    //         ..default()
-    //     })
-    //     .pipe(ellipse::Ellipse::<Ghost>::setup),
-    // );
+
     // app.add_systems(
     //     Startup,
     //     (move || RectangularBoundary {
@@ -67,9 +79,10 @@ pub(crate) fn main() -> anyhow::Result<()> {
     //     })
     //     .pipe(RectangularBoundary::setup),
     // );
+
     app.add_systems(
         Update,
-        (sync_sites, /* sync_ghosts, sync_boundary */)
+        (sync_sites /* sync_boundary */,)
             .run_if(resource_changed::<HardTetrahedronSelfAssembly>)
             .after(AdvanceSet),
     );
@@ -83,11 +96,14 @@ pub(crate) fn main() -> anyhow::Result<()> {
 fn sync_sites(
     mut commands: Commands,
     site_representation: Res<triangle_mesh::Representation<A>>,
-    site_query: Query<(Entity, &mut Transform), With<triangle_mesh::TriangleMesh<A>>>,
+    site_query: Query<
+        (Entity, &mut Transform),
+        With<triangle_mesh::TriangleMesh<A>>,
+    >,
     simulation: Res<HardTetrahedronSelfAssembly>,
 ) {
     let sites = simulation.microstate.sites();
-    
+
     triangle_mesh::TriangleMesh::sync(
         &mut commands,
         site_representation,
@@ -104,40 +120,11 @@ fn sync_sites(
                     site.properties.orientation.get().vector[1] as f32,
                     site.properties.orientation.get().vector[2] as f32,
                     site.properties.orientation.get().scalar as f32,
-                    ),
+                ),
             )
         }),
     );
 }
-
-// /// Copy the current positions of simulation ghosts to bevy entities.
-// fn sync_ghosts(
-//     mut commands: Commands,
-//     ghost_representation: Res<ellipse::Representation<Ghost>>,
-//     ghost_query: Query<(Entity, &mut Transform), With<ellipse::Ellipse<Ghost>>>,
-//     simulation: Res<HardTetrahedronSelfAssembly>,
-// ) {
-//     let ghosts = simulation.microstate.ghosts();
-//     ellipse::Ellipse::sync(
-//         &mut commands,
-//         ghost_representation,
-//         ghost_query,
-//         ghosts.iter().map(|site| {
-//             (
-//                 Vec3::new(
-//                     site.properties.position[0] as f32,
-//                     site.properties.position[1] as f32,
-//                     0.0,
-//                 ),
-//                 site.properties.orientation.theta as f32,
-//                 (simulation.hamiltonian.0.0.0.semi_axes()[0].get() * 2.0)
-//                     as f32,
-//                 (simulation.hamiltonian.0.0.0.semi_axes()[1].get() * 2.0)
-//                     as f32,
-//             )
-//         }),
-//     );
-// }
 
 // /// Draw the simulation boundary at its current size.
 // fn sync_boundary(

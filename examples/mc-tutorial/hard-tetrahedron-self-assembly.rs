@@ -7,7 +7,9 @@ use hoomd_geometry::{
     shape::{ConvexPolytope, Cuboid},
 };
 use hoomd_interaction::{
-    MaximumInteractionRange, PairwiseCutoff, TotalEnergy, pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape}, univariate::OverlapPenalty
+    MaximumInteractionRange, PairwiseCutoff, TotalEnergy,
+    pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape},
+    univariate::OverlapPenalty,
 };
 use hoomd_mc::{
     QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn,
@@ -17,7 +19,7 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::{AllPairs, VecCell};
-use hoomd_vector::{self, Versor, Cartesian};
+use hoomd_vector::{self, Cartesian, Versor};
 // ANCHOR_END: use
 
 // ANCHOR: type_aliases
@@ -51,7 +53,9 @@ struct HardTetrahedronSelfAssembly {
     quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Cuboid>>>,
     /// How sites interact when inserted and compressed.
     overlap_penalty_hamiltonian: PairwiseCutoff<
-        Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Convex<ConvexPolytope<3>>>>,
+        Anisotropic<
+            ApproximateShapeOverlap<OverlapPenalty, Convex<ConvexPolytope<3>>>,
+        >,
     >,
     /// The current phase of the simulation.
     phase: Phase,
@@ -73,8 +77,8 @@ impl HardTetrahedronSelfAssembly {
         // ANCHOR: parameters
         let initial_packing_fraction = 0.3;
         // TODO: determine values for phi and N
-        let target_packing_fraction = 0.55; 
-        let n_bodies = 128;
+        let target_packing_fraction = 0.50;
+        let n_bodies = 656;
         let maximum_distance = 0.05;
         let maximum_rotation = 0.05;
         let macrostate = Isothermal { temperature: 1.0 };
@@ -82,16 +86,17 @@ impl HardTetrahedronSelfAssembly {
 
         // ANCHOR: hamiltonian
         let a = 1.0f64;
-        let h = 6.0f64.sqrt()/3.0 * a;
+        let h = 6.0f64.sqrt() / 3.0 * a;
         let tetrahedron_volume = 1.0 / 12.0 * 2.0f64.sqrt() * a.powi(3);
-        
+
         let tetrahedron = ConvexPolytope::with_vertices(vec![
-            [3.0f64.sqrt()/3.0 * a, 0.0, -h/4.0].into(),
-            [-3.0f64.sqrt()/6.0 * a, 0.5 * a, -h/4.0].into(),
-            [-3.0f64.sqrt()/6.0 * a, -0.5 * a, -h/4.0].into(),
+            [3.0f64.sqrt() / 3.0 * a, 0.0, -h / 4.0].into(),
+            [-3.0f64.sqrt() / 6.0 * a, 0.5 * a, -h / 4.0].into(),
+            [-3.0f64.sqrt() / 6.0 * a, -0.5 * a, -h / 4.0].into(),
             [0.0, 0.0, 3.0 * h / 4.0].into(),
         ])?;
-        let hamiltonian = PairwiseCutoff(HardShape(Convex(tetrahedron.clone())));
+        let hamiltonian =
+            PairwiseCutoff(HardShape(Convex(tetrahedron.clone())));
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: periodic
@@ -104,10 +109,11 @@ impl HardTetrahedronSelfAssembly {
             Periodic::new(hamiltonian.0.maximum_interaction_range(), cube)?;
         // ANCHOR_END: periodic
 
-
         // ANCHOR: microstate
         let vec_cell = VecCell::builder()
-            .nominal_search_radius(hamiltonian.0.maximum_interaction_range().try_into()?)
+            .nominal_search_radius(
+                hamiltonian.0.maximum_interaction_range().try_into()?,
+            )
             .build();
         let microstate = Microstate::builder()
             .boundary(periodic_cube)

@@ -92,7 +92,9 @@ impl HardDiskSelfAssembly {
 
         // ANCHOR: microstate
         let vec_cell = VecCell::builder()
-            .nominal_search_radius(hamiltonian.0.maximum_interaction_range().try_into()?)
+            .nominal_search_radius(
+                hamiltonian.0.maximum_interaction_range().try_into()?,
+            )
             .build();
         let mut microstate = Microstate::builder()
             .boundary(periodic_square)
