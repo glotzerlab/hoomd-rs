@@ -492,64 +492,92 @@ pub trait DeltaEnergyRemove<B, S, C> {
     ) -> f64;
 }
 
-/** Compute the net force on a single body.
-
-The generic type names are:
-* `V`: The Vector type.
-* `B`: The Body properties type.
-* `S`: The Site properties type.
-* `C`: The boundary conditions type.
-
-TODO: Add intra-doc links.
-*/
+/// Compute the net force on a single body.
+///
+/// The generic type names are:
+/// * `V`: The [`Cartesian`](hoomd_vector::Cartesian) type.
+/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 pub trait NetBodyForce<V, B, S, C> {
-    /** Compute the net force.
-    
-    `microstate` describes the system configuration and `body_index` specifies
-    the body within the system for which the net force is calculated.
-    */
+    /// Compute the net force.
+    ///
+    /// `microstate` describes the system configuration and `body_index` specifies
+    /// the body with index $`i`$ within the system for which the net force 
+    /// $`\mathbf{f}_i`$ is calculated.
+    /// 
+    /// Returns:
+    /// ```math
+    /// \mathbf{f}_i = \sum_j \mathbf{f}_{ij}
+    /// ```
+    /// Where $`j`$ is the force acting on the [`Site::properties`](hoomd_microstate::Site)
+    /// that constitutes the [`Body::properties`](hoomd_microstate::Body).
     #[must_use]
     fn net_force_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V;
 }
 
-/** Compute the net torque on a single body.
-
-The generic type names are:
-* `V`: The Vector type.
-* `B`: The Body properties type.
-* `S`: The Site properties type.
-* `C`: The boundary conditions type.
-
-TODO: Add intra-doc links.
-*/
+/// Compute the net torque on a single body.
+///
+/// The generic type names are:
+/// * `V:WedgeProduct`: The type produced via [`WedgeProduct`](hoomd_vector::WedgeProduct).
+/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 pub trait NetBodyTorque<const N: usize, V: WedgeProduct, B, S, C> {
-    /** Compute the net torque.
-    
-    `microstate` describes the system configuration and `body_index` specifies
-    the body within the system for which the net torque is calculated.
-    */
+    /// Compute the net force.
+    ///
+    /// `microstate` describes the system configuration and `body_index` specifies
+    /// the body with index $`i`$ within the system for which the net torque
+    /// $`\boldsymbol{\tau}_i`$ is calculated.
+    /// 
+    /// Returns:
+    /// ```math
+    /// \boldsymbol{\tau}_i = \sum_j \boldsymbol{\tau}_{ij}
+    /// ```
+    /// Where $`j`$ is the force acting on the [`Site::properties`](hoomd_microstate::Site)
+    /// that constitutes the [`Body::properties`](hoomd_microstate::Body).
     #[must_use]
     fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V::Bivector;
 }
 
-/** Compute the net force and torque on a single body.
-
-This double calculation should be more efficient than either of the individuals (TODO)
-*/
+/// Compute both the net force and torque on a single body.
+/// The force that is associate with the torque calculation will be reused
+/// to reduce calculation.
+///
+/// The generic type names are:
+/// * `V`: The [`Cartesian`](hoomd_vector::Cartesian) type.
+/// * `V:WedgeProduct`: The type produced via [`WedgeProduct`](hoomd_vector::WedgeProduct).
+/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 pub trait NetBodyForceAndTorque<const N: usize, V: WedgeProduct, B, S, C> {
-    /**
-    TODO
-    */
+    /// Compute the net force and torque.
+    ///
+    /// `microstate` describes the system configuration and `body_index` specifies
+    /// the body with index $`i`$ within the system for which the net force and torque
+    /// $`\mathbf{f}_i`$, $`\boldsymbol{\tau}_i`$ are calculated.
+    /// 
+    /// See [`NetBodyForce`] and [`NetBodyTorque`] for more details.
     #[must_use]
     fn net_force_and_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> (V, V::Bivector);
 }
 
-/** Compute the net force and virial on a body.
-*/
+/// Compute both the net force and virial on a single body.
+///
+/// The generic type names are:
+/// * `V`: The [`Cartesian`](hoomd_vector::Cartesian) type.
+/// * `V:TensorProduct`: The type produced via [`TensorProduct`](hoomd_vector::TensorProduct).
+/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 pub trait NetBodyForceAndVirial<V: TensorProduct, B, S, C> {
-    /** Compute the net force and virial on a body.
-    TODO
-    */
+    /// Compute the net force and virial.
+    ///
+    /// `microstate` describes the system configuration and `body_index` specifies
+    /// the body with index $`i`$ within the system for which the net force and torque
+    /// $`\mathbf{f}_i`$, $`\mathbf{W}_i`$ are calculated.
+    /// 
+    /// See [`NetBodyForce`] for more details.
     #[must_use]
     fn net_force_and_virial_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> (V, V::Tensor);
 }
@@ -571,75 +599,60 @@ pub trait SiteForceAndTorque<V: WedgeProduct, B, S, C> {
     fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Bivector);
 }
 
-/** Compute the non-pairwise force on a single site.
-
-The generic type names are:
-* `V`: The Vector type.
-* `S`: The Site properties type.
-
-TODO: Add intra-doc links.
-*/
+/// Compute the non-pairwise force on a single site.
+///
+/// The generic type names are:
+/// * `V`: The [`Cartesian`](hoomd_vector::Cartesian) type.
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 pub trait ExternalSiteForce<V, S> {
     /// Evaluate the force on a single site.
     fn site_single_force(&self, site_properties: &S) -> V;
 }
 
-/** Compute the non-pairwise torque on a single site.
- * 
-The generic type names are:
-* `V`: The Vector type.
-* `S`: The Site properties type.
-
-TODO: Add intra-doc links.
-*/
+/// Compute the non-pairwise torque on a single site.
+///
+/// The generic type names are:
+/// * `V:WedgeProduct`: The type produced via [`WedgeProduct`](hoomd_vector::WedgeProduct).
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 pub trait ExternalSiteTorque<V: WedgeProduct, S> {
     /// Evaluate the torque on a single site.
     fn site_single_torque(&self, site_properties: &S) -> V::Bivector;
 }
 
-/** Compute the pairwise force on one site from another site.
-
-The generic type names are:
-* `V`: The Vector type.
-* `S`: The Site properties type.
-
-TODO: Add intra-doc links.
-*/
+/// Compute the pairwise force on one site from another site.
+///
+/// The generic type names are:
+/// * `V`: The [`Cartesian`](hoomd_vector::Cartesian) type.
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 pub trait PairSiteForce<V, S> {
     /// Evaluate the force on site a from site b.
     fn site_pair_force(&self, a: &S, b: &S) -> V;
 }
 
-/** Compute the pairwise torque on one site from another site.
-
-The generic type names are:
-* `V`: The Vector type.
-* `S`: The Site properties type.
-
-TODO: Add intra-doc links.
-*/
+/// Compute the pairwise torque on one site from another site.
+///
+/// The generic type names are:
+/// * `V:WedgeProduct`: The type produced via [`WedgeProduct`](hoomd_vector::WedgeProduct).
+/// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 pub trait PairSiteTorque<V: WedgeProduct, S> {
     /// Evaluate the torque torque on site a from site b.
     fn site_pair_torque(&self, a: &S, b: &S) -> V::Bivector;
 }
 
-/** Compute the non-pairwise torque on a body.
- * 
-The generic type names are:
-* `V`: The Vector type.
-* `B`: The Body properties type.
-
-TODO: Add intra-doc links.
-*/
+/// Compute the non-pairwise torque on a body.
+///
+/// The generic type names are:
+/// * `V:WedgeProduct`: The type produced via [`WedgeProduct`](hoomd_vector::WedgeProduct).
+/// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 pub trait ExternalBodyTorque<V: WedgeProduct, B> {
     /// Evaluate the torque on a body.
     fn body_single_torque(&self, body_properties: &B) -> V::Bivector;
 }
 
 
-// TODO: More doc examples for all implementors.
-
-
+/// Sum two [`NetBodyTorque`] on a body.
+/// TODO: Should move it to other script.
+/// TODO: Add example in the doc. 
 impl<const N: usize, V, B, S, C, E1, E2, R> NetBodyTorque<N, V, B, S, C> for (E1, E2)
 where
     V: Vector + WedgeProduct,

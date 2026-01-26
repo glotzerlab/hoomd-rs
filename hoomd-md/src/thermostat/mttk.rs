@@ -5,7 +5,7 @@ use hoomd_simulation::macrostate::Temperature;
 use crate::thermostat::Thermostat;
 use rand_distr::{Distribution, Normal};
 
-/// [`MTTKThermostat`] implement the Nose-Hoover thermostat
+/// [`MTTKThermostat`] implement the Nos$`\text{\'e}`$-Hoover thermostat
 /// that adjsut temperture using non-Hamiltonian dynamics
 /// given a time constant $`\tau`$.
 ///
@@ -19,9 +19,9 @@ use rand_distr::{Distribution, Normal};
 /// thermostat velocity $`\xi`$, resulting in the extended
 /// Hamiltonian $`H`$
 /// ```math
-///    H = \frac{K}{\exp{(2\eta)}} + U
+///    H = K + U
 ///         + N k_BT_\mathrm{setpoint} \eta
-///         + N k_BT_\mathrm{setpoint} \frac{1}{2} (\xi\tau)^2
+///         +  \frac{1}{2} (N k_BT_\mathrm{setpoint} \tau^2)(\xi)^2
 /// ```
 /// Where $`K`$ is the kinetic energy of the system, $`U`$ is the
 /// potential energy of the system, $`N`$ is the degrees-of-freedom,
@@ -35,13 +35,19 @@ use rand_distr::{Distribution, Normal};
 /// ```math
 /// \begin{align}
 ///
-/// &G_\mathrm{old} = \frac{1}{\tau^2} \left( \frac{k_B T_\mathrm{old}}{k_BT_\mathrm{setpoint}} - 1 \right) \\
-/// &\xi \left\{ t+\frac{\delta t} {4} \right\} = \xi \{ t \} + G_\mathrm{old}\frac{\delta t}{4} \\
-/// &\alpha = \exp\left[ -\xi \left\{ t+\frac{\delta t} {4} \right\} \frac{dt}{2} \right]  \quad\; \text{calculate rescaling factor} \\
-/// &k_B T_\mathrm{new} = k_B T_\mathrm{old} \times \alpha^2 \quad\quad\quad\; \text{adjust temperature} \\
-/// &\eta \left\{ t+\frac{\delta t} {2} \right\} = \eta \{ t \} + \xi \left\{ t+\frac{\delta t} {4} \right\} \frac{\delta t}{2} \\
-/// &G_\mathrm{new} = \frac{1}{\tau^2} \left( \frac{k_B T_\mathrm{new} }{k_BT_\mathrm{setpoint}} - 1 \right) \\
-/// &\xi \left\{ t+\frac{\delta t} {2} \right\} = \xi \left\{ t+\frac{\delta t} {4} \right\} + G_\mathrm{new} \frac{\delta t}{4} \\
+/// &G_\mathrm{old} = \frac{1}{\tau^2} \left( \frac{k_B T_\mathrm{old}}{k_BT_\mathrm{setpoint}} - 1 \right) \\ \nonumber \\ 
+/// 
+/// &\xi \left\{ t+\frac{\delta t} {4} \right\} = \xi \{ t \} + G_\mathrm{old}\frac{\delta t}{4} \\ \nonumber \\ 
+/// 
+/// &\alpha = \exp\left[ -\xi \left\{ t+\frac{\delta t} {4} \right\} \frac{dt}{2} \right]  \quad\; \text{calculate rescaling factor} \\ \nonumber \\ 
+/// 
+/// &k_B T_\mathrm{new} = k_B T_\mathrm{old} \times \alpha^2 \quad\quad\quad\; \text{adjust temperature} \\ \nonumber \\ 
+/// 
+/// &\eta \left\{ t+\frac{\delta t} {2} \right\} = \eta \{ t \} + \xi \left\{ t+\frac{\delta t} {4} \right\} \frac{\delta t}{2} \\ \nonumber \\ 
+/// 
+/// &G_\mathrm{new} = \frac{1}{\tau^2} \left( \frac{k_B T_\mathrm{new} }{k_BT_\mathrm{setpoint}} - 1 \right) \\ \nonumber \\ 
+/// 
+/// &\xi \left\{ t+\frac{\delta t} {2} \right\} = \xi \left\{ t+\frac{\delta t} {4} \right\} + G_\mathrm{new} \frac{\delta t}{4}
 ///         
 /// \end{align}
 /// ```

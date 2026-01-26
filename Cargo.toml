@@ -72,6 +72,7 @@ itertools = "0.14.0"
 
 # Dependencies exposed via Public APIs.
 approxim = "0.6.6"
+arrayvec = { version = "0.7.6", features = ["serde"] }
 num = "0.4.3"
 rand = "0.9.2"
 rand_distr = "0.5.1"

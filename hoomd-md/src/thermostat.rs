@@ -10,10 +10,12 @@ use hoomd_microstate::Microstate;
 mod no_thermostat;
 mod mttk;
 mod bussi;
+mod nhc;
 
 pub use no_thermostat::NoThermostat;
 pub use mttk::MTTKThermostat;
 pub use bussi::BussiThermostat;
+pub use nhc::NHCThermostat;
 
 /// Adjust the temperature of a system for sampling
 /// the canonical distribution

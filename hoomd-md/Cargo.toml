@@ -21,6 +21,7 @@ hoomd-microstate.workspace = true
 hoomd-utility.workspace = true
 hoomd-vector.workspace = true
 hoomd-simulation.workspace = true
+arrayvec.workspace = true
 rand.workspace = true
 rand_distr.workspace = true
 bevy_egui.workspace = true
