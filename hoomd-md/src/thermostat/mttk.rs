@@ -127,18 +127,14 @@ impl MTTKThermostat {
     }
 }
 
-/// Integrate extra degrees-of-freedom and
-/// return the velocity rescaling factor, following
-/// Tuckerman's work <https://doi.org/10.1088/0305-4470/39/19/S18>
-/// in `integrate_step_one`.
-///
-/// `integrate_step_two` call `intergrate_step_one`,
-/// internally
 impl<B, S, C, M> Thermostat<B, S, C, M> for MTTKThermostat
 where
     B: Clone,
     M: Temperature,
 {
+    /// Integrate extra degrees-of-freedom and
+    /// return the velocity rescaling factor, following
+    /// Tuckerman's work <https://doi.org/10.1088/0305-4470/39/19/S18>.
     #[inline]
     fn integrate_step_one<P>(
         &mut self,
@@ -182,6 +178,7 @@ where
         rescaling_factor
     }
 
+    /// Call [`integrate_step_one`](MTTKThermostat::integrate_step_one) internally.
     #[inline]
     fn integrate_step_two<P>(
         &mut self,

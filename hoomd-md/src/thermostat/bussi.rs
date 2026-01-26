@@ -78,18 +78,14 @@ impl BussiThermostat {
         &self.cumu_energy_drift
     }
 }
-/// Calculate velocity rescaling factor following
-/// the Appendix in <https://doi.org/10.1063/1.2408420>
-/// in `integrate_step_one`.
-///
-/// `integrate_step_two` is a dummy method that
-/// performs no temperature adjustment as the Bussi thermostat
-/// requires only one step to finish temeperature adjustment.
+
 impl<B, S, C, M> Thermostat<B, S, C, M> for BussiThermostat
 where
     B: Clone,
     M: Temperature,
 {
+    /// Calculate velocity rescaling factor following
+    /// the Appendix in <https://doi.org/10.1063/1.2408420>.
     #[inline]
     fn integrate_step_one<P>(
         &mut self,
@@ -150,6 +146,9 @@ where
         rescaling_factor
     }
 
+    /// A dummy method that
+    /// performs no temperature adjustment as the Bussi thermostat
+    /// requires only one step to finish the temeperature adjustment.
     #[inline]
     fn integrate_step_two<P>(
         &mut self,

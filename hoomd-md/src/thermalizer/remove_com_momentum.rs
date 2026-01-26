@@ -15,14 +15,6 @@ use crate::thermalizer::TranslationalMomentumModifier;
 /// Remove the center-of-mass momentum.
 pub struct ComMomentumRemover;
 
-/// `remove_com_momentum` modify the system's momentum by zeroing the
-/// center-of-mass momentum as
-/// ```math
-/// \mathbf{p}_{k,\; \mathrm{new}} = \mathbf{p}_{k,\; \mathrm{old}} - \frac{\sum_i \mathbf{p}_{i,\; \mathrm{old}}}{\sum_i m_i} m_k
-/// ```
-/// where $`k`$ is the index of each body in a system, $`\mathbf{p}_{k,\; \mathrm{old}}`$
-/// and $`\mathbf{p}_{k,\; \mathrm{new}}`$ are the momentum vector before and after
-/// modification of $`k`$-th body, and $`m_k`$ is the mass of $`k`$-th body.
 impl<const N: usize, B, S, C> TranslationalMomentumModifier<N, B, S, C> for ComMomentumRemover
 where
     B: Position<Position = Cartesian<N>>
@@ -35,6 +27,15 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Remove the center-of-mass momentum.
+    ///
+    /// The function modifies the system's momentum by zeroing the
+    /// center-of-mass momentum as
+    /// ```math
+    /// \mathbf{p}_{k,\; \mathrm{new}} = \mathbf{p}_{k,\; \mathrm{old}} - \frac{\sum_i \mathbf{p}_{i,\; \mathrm{old}}}{\sum_i m_i} m_k
+    /// ```
+    /// where $`k`$ is the index of each body in a system, $`\mathbf{p}_{k,\; \mathrm{old}}`$
+    /// and $`\mathbf{p}_{k,\; \mathrm{new}}`$ are the momentum vector before and after
+    /// modification of $`k`$-th body, and $`m_k`$ is the mass of $`k`$-th body.
     fn modify(&self, microstate: &mut Microstate<B, S, C>) {
         let mut total_mass = 0.0;
         let mut total_momentum = Cartesian::<N>::default();

@@ -5,12 +5,15 @@ use crate::thermostat::Thermostat;
 
 /// [`NoThermostat`] implement the dummy method
 /// that performs no adjustment on the temperature
-/// for [`TranslationalMotion`] and [`RotationalMotion`]
+/// for [`TranslationalMotion`](crate::methods::TranslationalMotion) 
+/// and [`RotationalMotion`](crate::methods::RotationalMotion) 
 /// as they require an input of a [`Thermostat`] during
 /// integration.
 pub struct NoThermostat;
 
 impl<B, S, C, M> Thermostat<B, S, C, M> for NoThermostat {
+    /// Dummy method that performs no temperature
+    /// adjustment.
     #[inline]
     fn integrate_step_one<P>(
         &mut self,
@@ -25,7 +28,9 @@ impl<B, S, C, M> Thermostat<B, S, C, M> for NoThermostat {
         let (_, _) = compute_properties(&microstate);
         1.0
     }
-
+    
+    /// Dummy method that performs no temperature
+    /// adjustment.
     #[inline]
     fn integrate_step_two<P>(
         &mut self,

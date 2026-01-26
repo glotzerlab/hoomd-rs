@@ -9,30 +9,18 @@ use rand_distr::{Distribution, Normal};
 /// [`NHCThermostat`] implement the Nos$`\text{\'e}`$-Hoover chain thermostat
 /// that adjsut temperture using non-Hamiltonian dynamics
 /// given a time constant $`\tau`$.
-///
+/// 
+/// The generic type names are:
+/// * `N`: The length of thermostat chain. Must be larger than zero.
+/// When the `N` is one, the behaviour reduces to 
+/// [`MTTKThermostat`](crate::thermostat::MTTKThermostat).
+/// 
 /// It perform time integration on the
 /// extra degrees-of-freedom in the non-Hamiltonian
 /// equations of motion,
 /// which are designed to sample the canonical ensemble (nvt).
 ///
 /// TODO: Complete the documentation below.
-/// [`NHCThermostat`] store the extra degrees-of-freedom
-/// as the one-dimensional thermostat position $`\eta`$ and
-/// thermostat velocity $`\xi`$, resulting in the extended
-/// Hamiltonian $`H`$
-/// ```math
-///    H = K + U
-///         + N k_BT_\mathrm{setpoint} \eta
-///         + N k_BT_\mathrm{setpoint} \frac{1}{2} (\xi\tau)^2
-/// ```
-/// Where $`K`$ is the kinetic energy of the system, $`U`$ is the
-/// potential energy of the system, $`N`$ is the degrees-of-freedom,
-/// $`k_BT_\mathrm{setpoint}`$ is the temperature setpoint.
-///
-/// Following the Trotter decomposition of Liouvillian,
-/// [`NHCThermostat`] integrate the $`\eta`$ and
-/// $`\xi`$ forward by half time step $`\frac{\delta t}{2}`$
-/// via the following procedure:
 ///
 ///
 /// # Reference
@@ -45,9 +33,10 @@ use rand_distr::{Distribution, Normal};
 /// ```
 /// use hoomd_md::{thermostat::NHCThermostat};
 ///
+/// const N_CHAIN_LENGTH: usize = 10;
 /// let dt = 0.001;
 /// let tau = 100.0*dt;
-/// let thermostat = NHCThermostat::new(tau);
+/// let thermostat = NHCThermostat::<N_CHAIN_LENGTH>::new(tau);
 /// ```
 pub struct NHCThermostat<const N: usize> {
     /// Thermostat time constant (`[time]`).
@@ -125,18 +114,14 @@ impl<const N: usize> NHCThermostat<N> {
     }
 }
 
-/// Integrate extra degrees-of-freedom and
-/// return the velocity rescaling factor, following
-/// Tuckerman's work <https://doi.org/10.1088/0305-4470/39/19/S18>
-/// in `integrate_step_one`.
-///
-/// `integrate_step_two` call `intergrate_step_one`,
-/// internally
 impl<const N: usize, B, S, C, M> Thermostat<B, S, C, M> for NHCThermostat<N>
 where
     B: Clone,
     M: Temperature,
 {
+    /// Integrate extra degrees-of-freedom and
+    /// return the velocity rescaling factor, following
+    /// Tuckerman's work <https://doi.org/10.1088/0305-4470/39/19/S18>.
     #[inline]
     fn integrate_step_one<P>(
         &mut self,
@@ -220,6 +205,7 @@ where
         rescaling_factor
     }
 
+    /// Call [`integrate_step_one`](NHCThermostat::integrate_step_one) internally.
     #[inline]
     fn integrate_step_two<P>(
         &mut self,

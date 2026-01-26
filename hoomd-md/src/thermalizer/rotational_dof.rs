@@ -13,18 +13,6 @@ use rand_distr::{Distribution, Normal};
 use crate::thermalizer::{RotationalThermalizer, Thermalizer};
 
 
-/// `thermalize_rotation` thermalize two-dimensional
-/// system's rotational montion given $`k_BT`$ by
-/// drawing random angular momentum from Gaussians.
-/// Note that, in 2D, angular momentum is a scalar.
-///
-/// According to the Maxwell–Boltzmann statistics, angular momentum
-/// $`l`$ with the moment of inertia $`I`$ distributes
-/// as a Gaussian with the probability density function
-/// with mean of 0 and the standard deviation of $`\sqrt{I k_B}`$ as:
-/// ```math
-///    f(l) = \sqrt{ \frac{1}{2 \pi I k_B T} } \exp{\left( -\frac{l^2}{2 I k_B T} \right)}
-/// ```
 impl<B, S, C> RotationalThermalizer<2, B, S, C> for Thermalizer
 where
     B: Orientation<Rotation = Angle>
@@ -38,6 +26,19 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Draw random angular momentum from Gaussian.
+    ///
+    /// The function thermalizes the two-dimensional
+    /// system's rotational montion given $`k_BT`$ by
+    /// drawing random angular momentum from Gaussians.
+    /// Note that, in 2D, angular momentum is a scalar.
+    ///
+    /// According to the Maxwell–Boltzmann statistics, angular momentum
+    /// $`l`$ with the moment of inertia $`I`$ distributes
+    /// as a Gaussian with the probability density function
+    /// with mean of 0 and the standard deviation of $`\sqrt{I k_B}`$ as:
+    /// ```math
+    ///    f(l) = \sqrt{ \frac{1}{2 \pi I k_B T} } \exp{\left( -\frac{l^2}{2 I k_B T} \right)}
+    /// ```
     fn thermalize_rotation(&self, microstate: &mut Microstate<B, S, C>) {
         let mut rng = microstate.counter().make_rng();
 
@@ -59,17 +60,6 @@ where
     }
 }
 
-/// `thermalize_rotation` thermalize three-dimensional system's rotational montion given $`k_BT`$ by
-/// drawing random angular momentum from Gaussians.
-///
-/// According to the Maxwell–Boltzmann statistics, angular momentum
-/// $`l_i,\; i=x,y,z`$ with the moment of inertia $`I_{ij}`$ that carrys
-/// the pricipal components $`I_{ii},\; i=x,y,z`$ distributes
-/// as a Gaussian with the probability density function
-/// with mean of 0 and the standard deviation of $`\sqrt{I_{ii} k_B}`$ as:
-/// ```math
-///    f(l_i) = \sqrt{ \frac{1}{2 \pi I_{ii} k_B T} } \exp{\left( -\frac{l_i^2}{2 I_{ii} k_B T} \right)}
-/// ```
 impl<B, S, C> RotationalThermalizer<3, B, S, C> for Thermalizer
 where
     B: Orientation<Rotation = Versor>
@@ -83,6 +73,18 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Draw random angular momentum from Gaussian.
+    ///
+    /// The function thermalizes the three-dimensional system's rotational montion given $`k_BT`$ by
+    /// drawing random angular momentum from Gaussians.
+    ///
+    /// According to the Maxwell–Boltzmann statistics, angular momentum
+    /// $`l_i,\; i=x,y,z`$ with the moment of inertia $`I_{ij}`$ that carrys
+    /// the pricipal components $`I_{ii},\; i=x,y,z`$ distributes
+    /// as a Gaussian with the probability density function
+    /// with mean of 0 and the standard deviation of $`\sqrt{I_{ii} k_B}`$ as:
+    /// ```math
+    ///    f(l_i) = \sqrt{ \frac{1}{2 \pi I_{ii} k_B T} } \exp{\left( -\frac{l_i^2}{2 I_{ii} k_B T} \right)}
+    /// ```
     fn thermalize_rotation(&self, microstate: &mut Microstate<B, S, C>) {
         let mut rng = microstate.counter().make_rng();
 

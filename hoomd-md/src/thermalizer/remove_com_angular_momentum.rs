@@ -14,29 +14,7 @@ use crate::thermalizer::TranslationalMomentumModifier;
 
 /// Remove the center-of-mass angular momentum.
 pub struct ComAngularMomentumRemover;
-/// `remove_com_angular_momentum` modify the three-dimensional system's momentum by zeroing the
-/// center-of-mass (COM) angular momentum as
-/// ```math
-/// \mathbf{p}_{k,\; \mathrm{new}} = \mathbf{p}_{k,\; \mathrm{old}} - \left( \mathbf{\omega}_\mathrm{com} \times \mathbf{r}_{k,\; \mathrm{com}} \right) m_k
-/// ```
-/// where $`k`$ is the index of each body in a system,
-/// $`\mathbf{\omega}_\mathrm{com}`$ is the COM angular velocity vector,
-/// $`\mathbf{r}_{k,\; \mathrm{com}}`$ is the relative position vector
-/// point from COM to $`k`$-th body, $`\mathbf{p}_{k,\; \mathrm{old}}`$
-/// and $`\mathbf{p}_{k,\; \mathrm{new}}`$ are the momentum vector before and after
-/// modification of $`k`$-th body, and $`m_k`$ is the mass of $`k`$-th body.
-///
-/// The $`\mathbf{\omega}_\mathrm{com}`$ is obtained by solving
-/// the following linear system:
-/// ```math
-/// \mathbf{I}_\mathrm{com} \mathbf{\omega}_\mathrm{com} = \mathbf{L}_\mathrm{com}
-/// ```
-/// where $`\mathbf{I}_\mathrm{com}`$ is the COM moment-of-inertia matrix, and
-/// $`\mathbf{L}_\mathrm{com}`$ is the COM angular momentum.
-/// If the algorithm found one pricipal component of $`\mathbf{I}_\mathrm{com}`$
-/// is 0, it will set the corresponding $`\mathbf{\omega}_\mathrm{com}`$ component
-/// to 0, by assuming the system do not rotate with respect to the corresponding
-/// principal axis.
+
 impl<B, S, C> TranslationalMomentumModifier<3, B, S, C> for ComAngularMomentumRemover
 where
     B: Position<Position = Cartesian<3>>
@@ -49,6 +27,30 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Remove the center-of-mass angular momentum resulting from translational DOF.
+    /// 
+    /// The function modifies the three-dimensional system's momentum by zeroing the
+    /// center-of-mass (COM) angular momentum as
+    /// ```math
+    /// \mathbf{p}_{k,\; \mathrm{new}} = \mathbf{p}_{k,\; \mathrm{old}} - \left( \mathbf{\omega}_\mathrm{com} \times \mathbf{r}_{k,\; \mathrm{com}} \right) m_k
+    /// ```
+    /// where $`k`$ is the index of each body in a system,
+    /// $`\mathbf{\omega}_\mathrm{com}`$ is the COM angular velocity vector,
+    /// $`\mathbf{r}_{k,\; \mathrm{com}}`$ is the relative position vector
+    /// point from COM to $`k`$-th body, $`\mathbf{p}_{k,\; \mathrm{old}}`$
+    /// and $`\mathbf{p}_{k,\; \mathrm{new}}`$ are the momentum vector before and after
+    /// modification of $`k`$-th body, and $`m_k`$ is the mass of $`k`$-th body.
+    ///
+    /// The $`\mathbf{\omega}_\mathrm{com}`$ is obtained by solving
+    /// the following linear system:
+    /// ```math
+    /// \mathbf{I}_\mathrm{com} \mathbf{\omega}_\mathrm{com} = \mathbf{L}_\mathrm{com}
+    /// ```
+    /// where $`\mathbf{I}_\mathrm{com}`$ is the COM moment-of-inertia matrix, and
+    /// $`\mathbf{L}_\mathrm{com}`$ is the COM angular momentum.
+    /// If the algorithm found one pricipal component of $`\mathbf{I}_\mathrm{com}`$
+    /// is 0, it will set the corresponding $`\mathbf{\omega}_\mathrm{com}`$ component
+    /// to 0, by assuming the system do not rotate with respect to the corresponding
+    /// principal axis.
     fn modify(&self, microstate: &mut Microstate<B, S, C>) {
         let mut com = Cartesian::default();
         let mut total_mass = 0.0;
@@ -129,18 +131,6 @@ where
     }
 }
 
-/// `remove_com_angular_momentum` modify the two-dimensional system's momentum by zeroing the
-/// center-of-mass (COM) angular momentum as
-/// ```math
-/// \mathbf{p}_{k,\; \mathrm{new}} = \mathbf{p}_{k,\; \mathrm{old}} - \left( [-r_{k,\; \mathrm{com}}^{y}, r_{k,\; \mathrm{com}}^{x}] \right) \frac{l_\mathrm{com}}{I_\mathrm{com}} m_k
-/// ```
-/// where $`k`$ is the index of each body in a system,
-/// $`l_\mathrm{com}`$ is the COM angular momentum, $`I_\mathrm{com}`$ is the COM moment of inertia,
-/// $`r_{k,\; \mathrm{com}}^{i}`$ is the relative position vector component $`i`$
-/// pointing from COM to $`k`$-th body, $`\mathbf{p}_{k,\; \mathrm{old}}`$
-/// and $`\mathbf{p}_{k,\; \mathrm{new}}`$ are the momentum vector before and after
-/// modification of $`k`$-th body, and $`m_k`$ is the mass of $`k`$-th body.
-///
 impl<B, S, C> TranslationalMomentumModifier<2, B, S, C> for ComAngularMomentumRemover
 where
     B: Position<Position = Cartesian<2>>
@@ -153,6 +143,18 @@ where
     C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Remove the center-of-mass angular momentum resulting from translational DOF.
+    /// 
+    /// The function modifies the two-dimensional system's momentum by zeroing the
+    /// center-of-mass (COM) angular momentum as
+    /// ```math
+    /// \mathbf{p}_{k,\; \mathrm{new}} = \mathbf{p}_{k,\; \mathrm{old}} - \left( [-r_{k,\; \mathrm{com}}^{y}, r_{k,\; \mathrm{com}}^{x}] \right) \frac{l_\mathrm{com}}{I_\mathrm{com}} m_k
+    /// ```
+    /// where $`k`$ is the index of each body in a system,
+    /// $`l_\mathrm{com}`$ is the COM angular momentum, $`I_\mathrm{com}`$ is the COM moment of inertia,
+    /// $`r_{k,\; \mathrm{com}}^{i}`$ is the relative position vector component $`i`$
+    /// pointing from COM to $`k`$-th body, $`\mathbf{p}_{k,\; \mathrm{old}}`$
+    /// and $`\mathbf{p}_{k,\; \mathrm{new}}`$ are the momentum vector before and after
+    /// modification of $`k`$-th body, and $`m_k`$ is the mass of $`k`$-th body.
     fn modify(&self, microstate: &mut Microstate<B, S, C>) {
         let mut com = Cartesian::default();
         let mut total_mass = 0.0;
