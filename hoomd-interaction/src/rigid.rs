@@ -29,6 +29,35 @@ use hoomd_vector::{
 };
 use hoomd_linear_algebra::GeneralMatrix;
 
+/// Rigid intrabody interactions.
+///
+/// Given an evaluator that implements [`SiteForceAndTorque`] or [`SiteForceAndVirial`],
+/// [`Rigid`] provides methods for summing the forces, torques, or virials on every [`Site`] to
+/// determine net forces, torques, or virials on every [`Body`].
+/// 
+/// Use [`Rigid`] by wrapping it around [`CutoffPair`] or your own custom type.
+/// 
+/// # Example
+/// 
+/// ```
+/// use hoomd_interaction::{
+///     Rigid,
+///     CutoffPair,
+///     pairwise::{Isotropic, LennardJones},
+/// };
+///
+/// let lennard_jones: LennardJones = LennardJones {
+///     epsilon: 1.5,
+///     sigma: 2.0,
+/// };
+/// let evaluator = Isotropic(lennard_jones);
+/// let rigid = Rigid {
+///     CutoffPair {
+///         r_cut: 5.0,
+///         evaluator,
+///     }
+/// };
+/// ```
 pub struct Rigid<E>(pub E);
 
 impl<V, B, S, C, E> NetBodyForce<V, B, S, C> for Rigid<E>
