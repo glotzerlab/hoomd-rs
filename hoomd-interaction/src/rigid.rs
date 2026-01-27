@@ -211,6 +211,64 @@ where
     /// $`\alpha`$ in the body frame. The symbol $`\wedge`$ represents
     /// the [WedgeProduct], equivalent to [Cross] in three-dimension.
     /// 
+    /// # Example
+    /// ```
+    /// use hoomd_interaction::{
+    ///     CutoffPair, NetBodyForceAndTorque,
+    ///     pairwise::{Isotropic, LennardJones},
+    ///     rigid::Rigid
+    /// };
+    /// 
+    /// use hoomd_microstate::{
+    ///     Body, Microstate,
+    ///     boundary::Open,
+    ///     property::{OrientedPoint, Point},
+    /// };
+    /// use hoomd_vector::{Cartesian, Versor};
+    /// 
+    /// use approxim::assert_abs_diff_eq;
+    /// 
+    /// 
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate = Microstate::new();
+    /// microstate.extend_bodies([
+    ///     Body {
+    ///         properties: OrientedPoint {
+    ///             position: Cartesian::from([0.0, 3.0_f64.sqrt() / 2.0, 0.0]),
+    ///             orientation: Versor::default(),
+    ///         },
+    ///         sites: vec![Point {
+    ///             position: Cartesian::<3>::default(),
+    ///         }],
+    ///         },
+    ///     Body {
+    ///         properties: OrientedPoint {
+    ///             position: Cartesian::from([0.5, 0.0, 0.0]),
+    ///             orientation: Versor::default(),
+    ///         },
+    ///         sites: vec![Point {
+    ///             position: Cartesian::<3>::default(),
+    ///         }],
+    ///         },
+    /// ])?;
+    ///
+    /// let force = Rigid(CutoffPair {
+    ///     r_cut: 6.0,
+    ///     evaluator: Isotropic(LennardJones::<12, 6> {
+    ///         epsilon: 1.0,
+    ///         sigma: 2.0_f64.powf(-1.0 / 6.0),
+    ///     }),
+    /// });
+    ///
+    ///    
+    /// let (net_force, net_torque) = force.net_force_and_torque_on_body(&microstate, 0);
+    /// 
+    /// assert_abs_diff_eq!(net_force, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-13);
+    /// assert_abs_diff_eq!(net_torque, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-14);
+    /// # Ok(())
+    /// # }
+    /// ```
+    /// 
     /// # Note
     /// 
     /// The current implementation assumes the pure torque $`\boldsymbol{\tau}_{i, \alpha}`$ acting on the 
@@ -288,6 +346,72 @@ where
     /// $`i`$ and $`\mathbf{r}_{\mathrm{body}, \alpha}`$
     /// is the position of the constituent [`Site`](hoomd_microstate::Site) 
     /// $`\alpha`$ in the body frame.
+    /// 
+    /// # Example
+    /// ```
+    /// use hoomd_interaction::{
+    ///     CutoffPair, NetBodyForceAndVirial,
+    ///     pairwise::{Isotropic, LennardJones},
+    ///     rigid::Rigid
+    /// };
+    /// use hoomd_linear_algebra::{
+    ///     GeneralMatrix,
+    ///     matrix::Matrix,
+    /// };
+    /// 
+    /// use hoomd_microstate::{
+    ///     Body, Microstate,
+    ///     boundary::Open,
+    ///     property::{OrientedPoint, Point},
+    /// };
+    /// use hoomd_vector::{Cartesian, Versor};
+    /// 
+    /// use approxim::assert_abs_diff_eq;
+    /// 
+    /// 
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate = Microstate::new();
+    /// microstate.extend_bodies([
+    ///     Body {
+    ///         properties: OrientedPoint {
+    ///             position: Cartesian::from([0.0, 0.0, 0.0]),
+    ///             orientation: Versor::default(),
+    ///         },
+    ///         sites: vec![Point {
+    ///             position: Cartesian::<3>::default(),
+    ///         }],
+    ///         },
+    ///     Body {
+    ///         properties: OrientedPoint {
+    ///             position: Cartesian::from([1.0, 0.0, 0.0]),
+    ///             orientation: Versor::default(),
+    ///         },
+    ///         sites: vec![Point {
+    ///             position: Cartesian::<3>::default(),
+    ///         }],
+    ///         },
+    /// ])?;
+    ///
+    /// let force = Rigid(CutoffPair {
+    ///     r_cut: 6.0,
+    ///     evaluator: Isotropic(LennardJones::<12, 6> {
+    ///         epsilon: 1.0,
+    ///         sigma: 2.0_f64.powf(-1.0 / 6.0),
+    ///     }),
+    /// });
+    ///
+    ///    
+    /// let (net_force, net_virial) = force.net_force_and_virial_on_body(&microstate, 0);
+    /// 
+    /// assert_abs_diff_eq!(net_force, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-14);
+    /// assert_abs_diff_eq!(
+    ///     net_virial.rows[0][0],
+    ///     Matrix::<3, 3>::zeros().rows[0][0],
+    ///     epsilon = 1e-14
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     /// 
     /// # Note
     /// 
