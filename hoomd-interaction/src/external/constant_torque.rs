@@ -11,7 +11,30 @@ use crate::SiteForceAndTorque;
 use hoomd_microstate::{Microstate, Site};
 
 /// Constant torque potential.
-/// TODO: more documentation
+/// 
+/// `a` is the strength of the constant torque and
+/// `direction` is the direction to apply the 
+/// constant torque.
+/// 
+/// Apply a constant torque on each 
+/// [`Site`](hoomd_microstate::Site) in the system
+/// with zero force.
+/// 
+/// The force and torque are
+/// 
+/// ```math
+/// \begin{align}
+///     &\mathbf{f}_\alpha = 0 \\
+///     &\boldsymbol{\tau}_\alpha = a \mathbf{d}
+/// \end{align}
+/// ```
+/// Where $`a`$ is the strength of the constant torque and
+/// $`\mathbf{d}`$ is the direction to apply the 
+/// constant torque.
+/// 
+/// # Note
+/// In two-dimension, the `direction` is a scalar
+/// either +1 or -1.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConstantTorque<V: WedgeProduct> {
     /// Interaction strength *(\[energy\])*.
@@ -26,6 +49,7 @@ where
     V: WedgeProduct + Default,
     V::Bivector: Default + Mul<f64, Output = V::Bivector> + Clone
 {
+    /// Calculate the force and torque.
     #[inline]
     fn net_force_and_torque_on_site(&self, _microstate: &Microstate<B, S, C>, _site: &Site<S>) -> (V, V::Bivector) {
         let force = V::default();

@@ -277,7 +277,11 @@ where
     V: WedgeProduct,
     E: SiteForceAndTorque<V, B, S, C>
 {
-    // TODO: does this even make sense?
+    /// Calculate the net force and torque.
+    /// 
+    /// `microstate` describes the system configuration and the target `site` 
+    /// within the system for which the net force and torque
+    /// $`\mathbf{f}_\alpha`$, $`\boldsymbol{\tau}_{\alpha}`$ are calculated.
     #[inline]
     fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Bivector) {
         self.0.net_force_and_torque_on_site(microstate, site)
@@ -293,6 +297,11 @@ where
     RotationMatrix<N>: From<R>,
     V::Bivector: Default + Add<Output = V::Bivector>,
 {
+    /// Calculate the net torque.
+    /// 
+    /// `microstate` describes the system configuration and the target `site` 
+    /// within the system for which the net torque
+    /// $`\boldsymbol{\tau}_{\alpha}`$ is calculated.
     #[inline]
     fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V::Bivector {
         let body_properties = microstate.bodies()[body_index].item.properties.clone();  // TODO: check if we need to clone here

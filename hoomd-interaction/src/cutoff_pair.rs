@@ -172,10 +172,12 @@ impl<E> CutoffPair<E> {
         }
     }
 
-
-    /// Compute the cutoff pairwise force on one site from another site.
-    /// TODO: Add example.
-    ///
+    /// Calculate the pairwise force $`\mathbf{f}_{\alpha\beta}`$.
+    /// 
+    /// `a` and `b` represent the target [`Site`](hoomd_microstate::Site) $`\alpha`$
+    /// and the other [`Site`](hoomd_microstate::Site) $`\beta`$.
+    /// 
+    /// Call [`Isotropic::site_pair_force`](crate::pairwise::Isotropic) internally.
     #[inline]
     pub fn site_pair_force<V, S>(&self, a: &Site<S>, b: &Site<S>) -> V
     where
@@ -192,9 +194,21 @@ impl<E> CutoffPair<E> {
         }
     }
 
-    /// Compute the cutoff pairwise force and virial on one site from another site.
-    /// TODO: Add example.
-    ///
+    /// Calculate the pairwise force and virial 
+    /// $`\mathbf{f}_{\alpha\beta}`$ and $`\mathbf{W}_{\alpha\beta}`$.
+    /// 
+    /// `a` and `b` represent the target [`Site`](hoomd_microstate::Site) $`\alpha`$
+    /// and the other [`Site`](hoomd_microstate::Site) $`\beta`$.
+    /// 
+    /// Call [`Isotropic::site_pair_force`](crate::pairwise::Isotropic) internally
+    /// to get $`\mathbf{f}_{\alpha\beta}`$.
+    /// 
+    /// The function calculate the $`\mathbf{W}_{\alpha\beta}`$ via
+    /// 
+    /// ```math
+    /// \mathbf{W}_{\alpha\beta} = \frac{1}{2}\mathbf{f}_{\alpha \beta} \otimes \mathbf{r}_{\alpha \beta}
+    /// ```
+    /// 
     #[inline]
     pub fn site_pair_force_and_virial<V, S>(&self, a: &Site<S>, b: &Site<S>) -> (V, V::Tensor)
     where
@@ -524,9 +538,6 @@ where
     }
 }
 
-/** Compute the net cutoff pairwise force on a single site.
-TODO: Add example.
-*/
 impl<V, B, S, C, E> SiteForceAndTorque<V, B, S, C> for CutoffPair<Isotropic<E>>
 where
     V: Vector + Default + InnerProduct + Metric + WedgeProduct,
@@ -535,6 +546,32 @@ where
     E: IsotropicForce,
     V::Bivector: Default,
 {
+    /// Compute the net force and torque.
+    /// 
+    /// `microstate` describes the system configuration and the target `site` 
+    /// within the system for which the net force and torque
+    /// $`\mathbf{f}_\alpha`$, $`\boldsymbol{\tau}_\alpha`$ are calculated.
+    /// 
+    /// First, the force and torque $`\mathbf{f}_{\alpha \beta}`$, 
+    /// $`\boldsymbol{\tau}_{\alpha \beta}`$ exert by the other 
+    /// [`Site`](hoomd_microstate::Site) $`\beta`$ is calculated in 
+    /// the [`Isotropic::site_pair_force`](crate::pairwise::Isotropic).
+    /// 
+    /// Then, the net force and torque acting on each constituent [`Site`](hoomd_microstate::Site)
+    /// $`\alpha`$ are calculated in [`SiteForceAndTorque`](crate::cutoff_pair::CutoffPair).
+    /// 
+    /// ```math
+    /// \begin{align}
+    ///     &\mathbf{f}_{\alpha} = \sum_{\beta} \mathbf{f}_{\alpha \beta} \\
+    ///     &\boldsymbol{\tau}_{\alpha} = \sum_{\beta} \boldsymbol{\tau}_{\alpha \beta}
+    /// \end{align}
+    /// ```
+    /// 
+    /// # Note
+    /// 
+    /// The current implementation assumes no pure torque is produce between
+    /// [`Site`](hoomd_microstate::Site) $`\alpha`$ and $`\beta`$, meaning 
+    /// $`\boldsymbol{\tau}_{\alpha \beta}`$ is always zero.
     #[inline]
     fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, <V as WedgeProduct>::Bivector) {
         // Calculate net force from all of the pairwise interactions
@@ -555,9 +592,6 @@ where
     }
 }
 
-/** Compute the net cutoff pairwise force and virial on a single site.
- TODO: Add example.
-*/
 impl<V, B, S, C, E> SiteForceAndVirial<V, B, S, C> for CutoffPair<E>
 where
     V: Vector + Default + InnerProduct + Metric + TensorProduct,
@@ -566,6 +600,24 @@ where
     E: PairSiteForce<V, S>,
     V::Tensor: GeneralMatrix + AddAssign
 {
+    /// Calculate the net force and virial.
+    /// 
+    /// `microstate` describes the system configuration and the target `site` 
+    /// within the system for which the net force and torque
+    /// $`\mathbf{f}_\alpha`$, $`\mathbf{W}_{\alpha}`$ are calculated.
+    /// 
+    /// First, the force $`\mathbf{f}_{\alpha \beta}`$ exert by the other 
+    /// [`Site`](hoomd_microstate::Site) $`\beta`$ is calculated in 
+    /// the [`Isotropic::site_pair_force`](crate::pairwise::Isotropic).
+    /// 
+    /// Then, the net force and virial acting on each constituent [`Site`](hoomd_microstate::Site)
+    /// are calculated
+    /// ```math
+    /// \begin{align}
+    ///     &\mathbf{f}_{\alpha} = \sum_{\beta} \mathbf{f}_{\alpha \beta} \\
+    ///     &\mathbf{W}_{\alpha} = \frac{1}{2} \sum_{\beta} \mathbf{f}_{\alpha \beta} \otimes \mathbf{r}_{\alpha \beta}
+    /// \end{align}
+    /// ```
     #[inline]
     fn net_force_and_virial_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Tensor) {
         let mut total_force = V::default();

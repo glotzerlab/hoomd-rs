@@ -67,7 +67,24 @@ where
     S: Position<Position = V>,
     E: SiteForceAndTorque<V, B, S, C>,
 {
-    /// Sum the forces on the sites to get the net force on a body.
+    /// Compute the net force.
+    /// 
+    /// `microstate` describes the system configuration and `body_index` specifies
+    /// the body with index $`i`$ within the system for which the net force
+    /// $`\mathbf{f}_i`$ is calculated.
+    /// 
+    /// First, the net force acting on each constituent [`Site`](hoomd_microstate::Site)
+    /// $`\alpha`$ are calculated in [`CutoffPair::net_force_and_torque_on_site`](crate::cutoff_pair::CutoffPair)
+    /// and [`External::net_force_and_torque_on_site`](crate::External).
+    /// 
+    /// Then, the net force acting on the [`Body`](hoomd_microstate::Body)
+    /// $`i`$ are calculated
+    /// 
+    /// ```math
+    /// \begin{align}
+    ///     &\mathbf{f}_{i} = \sum_{\alpha} \mathbf{f}_{i, \alpha} \\
+    /// \end{align}
+    /// ``` 
     #[inline]
     fn net_force_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V {
         let mut total = V::default();
@@ -77,9 +94,6 @@ where
         }
         total
     }
-    // TODO: when doing this calculation for cutoff pairwise forces, consider
-    // whether to track which body/sites have been calculated already, which
-    // would prevent double-calculations.
 }
 
 impl<const N: usize, V, B, S, C, E, R> NetBodyTorque<N, V, B, S, C> for Rigid<E>
@@ -92,6 +106,36 @@ where
     RotationMatrix<N>: From<R>,
     V::Bivector: Default + AddAssign,
 {
+    /// Compute the net torque.
+    /// 
+    /// `microstate` describes the system configuration and `body_index` specifies
+    /// the body with index $`i`$ within the system for which the net torque
+    /// $`\boldsymbol{\tau}_i`$ is calculated.
+    /// 
+    /// First, the net force and torque acting on each constituent [`Site`](hoomd_microstate::Site)
+    /// $`\alpha`$ are calculated in [`CutoffPair::net_force_and_torque_on_site`](crate::cutoff_pair::CutoffPair).
+    /// and [`External::net_force_and_torque_on_site`](crate::External).
+    /// 
+    /// Then, the net force and torque acting on the [`Body`](hoomd_microstate::Body)
+    /// $`i`$ are calculated
+    /// 
+    /// ```math
+    /// \begin{align}
+    ///     &\boldsymbol{\tau}_{i} = \sum_{\alpha} q_i\mathbf{r}_{\mathrm{body}, \alpha}q_i^* \wedge \mathbf{f}_{i, \alpha} + \boldsymbol{\tau}_{i, \alpha}
+    /// \end{align}
+    /// ``` 
+    /// Where $`q_i`$ is the orientation of the [`Body`](hoomd_microstate::Body) 
+    /// $`i`$ and $`\mathbf{r}_{\mathrm{body}, \alpha}`$
+    /// is the position of the constituent [`Site`](hoomd_microstate::Site) 
+    /// $`\alpha`$ in the body frame. The symbol $`\wedge`$ represents
+    /// the [WedgeProduct], equivalent to [Cross] in three-dimension.
+    /// 
+    /// # Note
+    /// 
+    /// The current implementation assumes the pure torque $`\boldsymbol{\tau}_{i, \alpha}`$ acting on the 
+    /// constituent [`Site`](hoomd_microstate::Site) $`\alpha`$ 
+    /// (not contributed by the force) solely 
+    /// results from the external field in [`External`](crate::External).
     #[inline]
     fn net_torque_on_body(
         &self,
@@ -139,6 +183,40 @@ where
     RotationMatrix<N>: From<R>,
     V::Bivector: Default + AddAssign,
 {
+    /// Compute the net force and torque.
+    /// 
+    /// The force that is associate with the torque calculation will be reused
+    /// in this function to reduce the costs.
+    /// 
+    /// `microstate` describes the system configuration and `body_index` specifies
+    /// the body with index $`i`$ within the system for which the net force and torque
+    /// $`\mathbf{f}_i`$, $`\boldsymbol{\tau}_i`$ are calculated.
+    /// 
+    /// First, the net force acting on each constituent [`Site`](hoomd_microstate::Site)
+    /// $`\alpha`$ are calculated in [`CutoffPair::net_force_and_torque_on_site`](crate::cutoff_pair::CutoffPair).
+    /// and [`External::net_force_and_torque_on_site`](crate::External).
+    /// 
+    /// Then, the net force and torque acting on the [`Body`](hoomd_microstate::Body)
+    /// $`i`$ are calculated
+    /// 
+    /// ```math
+    /// \begin{align}
+    ///     &\mathbf{f}_{i} = \sum_{\alpha} \mathbf{f}_{i, \alpha} \\
+    ///     &\boldsymbol{\tau}_{i} = \sum_{\alpha} q_i\mathbf{r}_{\mathrm{body}, \alpha}q_i^* \wedge \mathbf{f}_{i, \alpha} + \boldsymbol{\tau}_{i, \alpha}
+    /// \end{align}
+    /// ``` 
+    /// Where $`q_i`$ is the orientation of the [`Body`](hoomd_microstate::Body) 
+    /// $`i`$ and $`\mathbf{r}_{\mathrm{body}, \alpha}`$
+    /// is the position of the constituent [`Site`](hoomd_microstate::Site) 
+    /// $`\alpha`$ in the body frame. The symbol $`\wedge`$ represents
+    /// the [WedgeProduct], equivalent to [Cross] in three-dimension.
+    /// 
+    /// # Note
+    /// 
+    /// The current implementation assumes the pure torque $`\boldsymbol{\tau}_{i, \alpha}`$ acting on the 
+    /// constituent [`Site`](hoomd_microstate::Site) $`\alpha`$ 
+    /// (not contributed by the force) solely 
+    /// results from the external field in [`External`](crate::External).
     #[inline]
     fn net_force_and_torque_on_body(
         &self,
@@ -186,7 +264,39 @@ where
     R: Rotate<V>,
     V::Tensor: GeneralMatrix + AddAssign + Sub<Output = V::Tensor>
 {
-    /// Sum the forces on the sites to get the net force on a body.
+    /// Compute the net force and virial.
+    ///
+    /// The virial calculation will reuse the results of force
+    /// calculation to reduce the costs. 
+    /// 
+    /// `microstate` describes the system configuration and `body_index` specifies
+    /// the body with index $`i`$ within the system for which the net force and torque
+    /// $`\mathbf{f}_i`$, $`\mathbf{W}_i`$ are calculated.
+    /// 
+    /// First, the total force and virial acting on each constituent [`Site`](hoomd_microstate::Site)
+    /// $`\alpha`$ are calculated in [`SiteForceAndVirial`](crate::cutoff_pair::CutoffPair).
+    /// 
+    /// Then, the net force and virial acting on the [`Body`](hoomd_microstate::Body)
+    /// $`i`$ are calculated
+    /// ```math
+    /// \begin{align}
+    ///     &\mathbf{f}_{i} = \sum_{\alpha} \mathbf{f}_{i, \alpha} \\
+    ///     &\mathbf{W}_{i} = \sum_{\alpha} \mathbf{W}_{i, \alpha} - \mathbf{f}_{i, \alpha} \otimes q_i\mathbf{r}_{\mathrm{body}, \alpha}q_i^*
+    /// \end{align}
+    /// ``` 
+    /// Where $`q_i`$ is the orientation of the [`Body`](hoomd_microstate::Body) 
+    /// $`i`$ and $`\mathbf{r}_{\mathrm{body}, \alpha}`$
+    /// is the position of the constituent [`Site`](hoomd_microstate::Site) 
+    /// $`\alpha`$ in the body frame.
+    /// 
+    /// # Note
+    /// 
+    /// Due to the rigid body constraint, the term $`- \mathbf{f}_{i, \alpha} \otimes q_i\mathbf{r}_{\mathrm{body}, \alpha}q_i^*`$ 
+    /// appear in the summand above represents the correction term to obtain 
+    /// the true net virial $`\mathbf{W}_{i}`$ following the Eq. 14, 23, 24 
+    /// and Algorithm 2 demonstrated in the [Glaser et al. 2019].
+    /// 
+    /// [Glaser et al. 2019]: https://doi.org/10.1016/j.commatsci.2019.109430
     #[inline]
     fn net_force_and_virial_on_body(
         &self,

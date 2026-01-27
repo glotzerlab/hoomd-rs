@@ -68,6 +68,15 @@ where
     P: Vector + InnerProduct + Metric,
     S: Position<Position = P>
 {
+    /// Calculate the pairwise force 
+    /// 
+    /// ```math
+    /// \begin{equation}
+    /// \mathbf{f}_{\alpha\beta} = -\nabla_{r_{\alpha\beta}} U(r_{\alpha\beta})
+    /// \end{equation}
+    /// ```
+    /// 
+    /// on [`Site`](hoomd_microstate::Site) $`\alpha`$ exerting by $`\beta`$.
     #[inline]
     fn site_pair_force(&self, a: &S, b: &S) -> P {
         let r = *a.position() - *b.position();

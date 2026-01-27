@@ -492,7 +492,7 @@ pub trait DeltaEnergyRemove<B, S, C> {
     ) -> f64;
 }
 
-/// Compute the net force on a single body.
+/// Compute the net force on a single [`Body::properties`](hoomd_microstate::Body).
 ///
 /// The generic type names are:
 /// * `V`: The [`Cartesian`](hoomd_vector::Cartesian) type.
@@ -501,22 +501,11 @@ pub trait DeltaEnergyRemove<B, S, C> {
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 pub trait NetBodyForce<V, B, S, C> {
     /// Compute the net force.
-    ///
-    /// `microstate` describes the system configuration and `body_index` specifies
-    /// the body with index $`i`$ within the system for which the net force 
-    /// $`\mathbf{f}_i`$ is calculated.
-    /// 
-    /// Returns:
-    /// ```math
-    /// \mathbf{f}_i = \sum_j \mathbf{f}_{ij}
-    /// ```
-    /// Where $`j`$ is the force acting on the [`Site::properties`](hoomd_microstate::Site)
-    /// that constitutes the [`Body::properties`](hoomd_microstate::Body).
     #[must_use]
     fn net_force_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V;
 }
 
-/// Compute the net torque on a single body.
+/// Compute the net torque on a single [`Body::properties`](hoomd_microstate::Body).
 ///
 /// The generic type names are:
 /// * `V:WedgeProduct`: The type produced via [`WedgeProduct`](hoomd_vector::WedgeProduct).
@@ -524,25 +513,12 @@ pub trait NetBodyForce<V, B, S, C> {
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 pub trait NetBodyTorque<const N: usize, V: WedgeProduct, B, S, C> {
-    /// Compute the net force.
-    ///
-    /// `microstate` describes the system configuration and `body_index` specifies
-    /// the body with index $`i`$ within the system for which the net torque
-    /// $`\boldsymbol{\tau}_i`$ is calculated.
-    /// 
-    /// Returns:
-    /// ```math
-    /// \boldsymbol{\tau}_i = \sum_j \boldsymbol{\tau}_{ij}
-    /// ```
-    /// Where $`j`$ is the force acting on the [`Site::properties`](hoomd_microstate::Site)
-    /// that constitutes the [`Body::properties`](hoomd_microstate::Body).
+    /// Compute the net torque.
     #[must_use]
     fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V::Bivector;
 }
 
-/// Compute both the net force and torque on a single body.
-/// The force that is associate with the torque calculation will be reused
-/// to reduce calculation.
+/// Compute both the net force and torque on a single [`Body::properties`](hoomd_microstate::Body).
 ///
 /// The generic type names are:
 /// * `V`: The [`Cartesian`](hoomd_vector::Cartesian) type.
@@ -552,17 +528,11 @@ pub trait NetBodyTorque<const N: usize, V: WedgeProduct, B, S, C> {
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 pub trait NetBodyForceAndTorque<const N: usize, V: WedgeProduct, B, S, C> {
     /// Compute the net force and torque.
-    ///
-    /// `microstate` describes the system configuration and `body_index` specifies
-    /// the body with index $`i`$ within the system for which the net force and torque
-    /// $`\mathbf{f}_i`$, $`\boldsymbol{\tau}_i`$ are calculated.
-    /// 
-    /// See [`NetBodyForce`] and [`NetBodyTorque`] for more details.
     #[must_use]
     fn net_force_and_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> (V, V::Bivector);
 }
 
-/// Compute both the net force and virial on a single body.
+/// Compute both the net force and virial on a single [`Body::properties`](hoomd_microstate::Body).
 ///
 /// The generic type names are:
 /// * `V`: The [`Cartesian`](hoomd_vector::Cartesian) type.
@@ -572,12 +542,6 @@ pub trait NetBodyForceAndTorque<const N: usize, V: WedgeProduct, B, S, C> {
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 pub trait NetBodyForceAndVirial<V: TensorProduct, B, S, C> {
     /// Compute the net force and virial.
-    ///
-    /// `microstate` describes the system configuration and `body_index` specifies
-    /// the body with index $`i`$ within the system for which the net force and torque
-    /// $`\mathbf{f}_i`$, $`\mathbf{W}_i`$ are calculated.
-    /// 
-    /// See [`NetBodyForce`] for more details.
     #[must_use]
     fn net_force_and_virial_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> (V, V::Tensor);
 }

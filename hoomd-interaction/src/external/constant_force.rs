@@ -129,6 +129,7 @@ where
     S: Position<Position = V>,
     V::Bivector: Default
 {
+    /// Calculate the force and torque.
     fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Bivector) {
         let force = self.site_single_force(&site.properties);
         let torque = V::Bivector::default();
