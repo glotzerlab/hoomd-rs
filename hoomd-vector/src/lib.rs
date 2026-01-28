@@ -187,7 +187,6 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let mut rng = StdRng::seed_from_u64(1);
-//! let vector: Cartesian<3> = rng.sample<Ball>;
 //! let ball = Ball {
 //!     radius: 3.0.try_into()?,
 //! };
