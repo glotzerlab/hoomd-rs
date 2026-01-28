@@ -45,8 +45,6 @@ impl Volume for Cylinder {
             * self.height.get()
     }
 }
-/// Precision below which cylinders are considered overlapping
-const _CYLINDER_OVERLAP_PRECISION_SQUARED: f64 = 1e-14;
 
 impl Cylinder {
     /// Determine whether two cylinders would intersect if they both had infinite length.
