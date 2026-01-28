@@ -183,7 +183,7 @@
 //!
 //! ```
 //! use hoomd_vector::{Cartesian, distribution::Ball};
-//! use rand::{Rng, SeedableRng, rngs::StdRng, distr::Distribution};
+//! use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let mut rng = StdRng::seed_from_u64(1);
