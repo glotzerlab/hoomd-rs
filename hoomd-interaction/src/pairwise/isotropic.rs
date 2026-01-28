@@ -12,8 +12,8 @@ use hoomd_vector::{InnerProduct, Vector, Metric};
 ///
 /// [`Isotropic`] is a newtype that provides a single implementation to compute
 /// pairwise properties. It fills the gap between traits like [`SitePairEnergy`]
-/// which operates on site properties and [`IsotropicEnergy`] which is a function
-/// only of the separation distance.
+/// and [`SitePairForce`] which operates on site properties and [`IsotropicEnergy`] 
+/// which is a function only of the separation distance.
 ///
 /// Use [`Isotropic`] with [`CutoffPair`](crate::CutoffPair) in MD and MC
 /// simulations.
@@ -23,10 +23,12 @@ use hoomd_vector::{InnerProduct, Vector, Metric};
 /// ```
 /// use hoomd_interaction::{
 ///     SitePairEnergy,
+///     SitePairForce,
 ///     pairwise::{Isotropic, LennardJones},
 /// };
 /// use hoomd_microstate::property::Point;
-/// use hoomd_vector::Cartesian;
+/// use hoomd_vector::Cartesian;    
+/// use approxim::assert_relative_eq;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let a = Point {
@@ -43,7 +45,13 @@ use hoomd_vector::{InnerProduct, Vector, Metric};
 /// let lennard_jones = Isotropic(lennard_jones);
 ///
 /// let energy = lennard_jones.site_pair_energy(&a, &b);
+/// let force_ab = lennard_jones.site_pair_force(&a, &b);
+/// let force_ba = lennard_jones.site_pair_force(&b, &a);
+/// 
 /// assert_eq!(energy, -1.5);
+/// assert_eq!(force_ab, -force_ba);
+/// assert_relative_eq!(force_ab, Cartesian::from([0.0, 0.0]), epsilon = 1e-14);
+/// 
 /// # Ok(())
 /// # }
 /// ```
