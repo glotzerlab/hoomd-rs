@@ -178,8 +178,8 @@
 //! ```
 //!
 //! The [`Ball`](crate::distribution::Ball) distribution samples vectors from
-//! the surface and interior of an `n-Ball`, the set of all points whose distance from
-//! the origin is in `[0, 1)`.
+//! the interior of an `n-Ball`, the set of all points whose distance from the origin is
+//! in `[0, 1)`.
 //!
 //! ```
 //! use hoomd_vector::{Cartesian, distribution::Ball};
