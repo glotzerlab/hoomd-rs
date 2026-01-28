@@ -9,7 +9,7 @@ use crate::{
     DeltaEnergyInsert,
     DeltaEnergyOne,
     DeltaEnergyRemove,
-    PairSiteForce,
+    SitePairForce,
     SiteForceAndTorque,
     SiteForceAndVirial,
     SitePairEnergy,
@@ -21,7 +21,8 @@ use hoomd_linear_algebra::GeneralMatrix;
 
 /// Short-ranged pairwise interactions between sites.
 ///
-/// Given an evaluator that implements [`SitePairEnergy`], [`CutoffPair`] represents:
+/// Given an evaluator that implements [`SitePairEnergy`] and [`SitePairForce`], 
+/// [`CutoffPair`] represents:
 ///
 /// ```math
 /// U_\mathrm{total} = \sum_{i=0}^{N-1}\sum_{j=i+1}^{N-1} U\left(s_i, s_j \right) \left[ \left|\vec{r}_j - \vec{r}_i\right| \lt r_\mathrm{cut} \right]\left[b_i \ne b_j\right]
@@ -35,8 +36,6 @@ use hoomd_linear_algebra::GeneralMatrix;
 /// by a distance less than `r_cut` and belong to different bodies.
 ///
 /// For the evaluator, use [`Anisotropic`], [`Isotropic`] or your own custom type.
-///
-/// TODO: Reword this when [`CutoffPair`] also implements `SitePairForce`.
 ///
 /// [`Anisotropic`]: crate::pairwise::Anisotropic
 /// [`Isotropic`]: crate::pairwise::Isotropic
@@ -178,10 +177,54 @@ impl<E> CutoffPair<E> {
     /// and the other [`Site`](hoomd_microstate::Site) $`\beta`$.
     /// 
     /// Call [`Isotropic::site_pair_force`](crate::pairwise::Isotropic) internally.
+    /// 
+    /// # Example
+    /// ```
+    /// use hoomd_interaction::{
+    ///     CutoffPair,
+    ///     pairwise::{Isotropic, LennardJones}
+    /// };
+    /// use hoomd_microstate::{
+    ///     Body, Microstate, Site, property::Point
+    /// };
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// use approxim::assert_abs_diff_eq;
+    ///
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate = Microstate::new();
+    /// microstate.extend_bodies([
+    ///     Body {
+    ///         properties: Point {position: Cartesian::from([0.0, 0.0, 0.0])},
+    ///         sites: vec![Point {position: Cartesian::<3>::default()}],
+    ///         },
+    ///     Body { 
+    ///         properties: Point {position: Cartesian::from([1.0, 0.0, 0.0])},
+    ///         sites: vec![Point {position: Cartesian::<3>::default()}],
+    ///         },
+    /// ])?;
+    ///
+    /// let force = CutoffPair {
+    ///     r_cut: 6.0,
+    ///     evaluator: Isotropic(LennardJones::<12, 6> {
+    ///         epsilon: 1.0,
+    ///         sigma: 2.0_f64.powf(-1.0 / 6.0),
+    /// })};
+    ///
+    /// let sites = microstate.sites();
+    /// let force_ab = force.site_pair_force(&sites[0], &sites[1]);
+    /// let force_ba = force.site_pair_force(&sites[1], &sites[0]);
+    ///
+    /// assert_abs_diff_eq!(force_ab, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-14);
+    /// assert_eq!(force_ab, -force_ba);
+    /// # Ok(())
+    /// # }
+    /// ```
     #[inline]
     pub fn site_pair_force<V, S>(&self, a: &Site<S>, b: &Site<S>) -> V
     where
-        E: PairSiteForce<V, S>,
+        E: SitePairForce<V, S>,
         S: Position<Position = V>,
         V: Vector + Default + InnerProduct + Metric,
     {
@@ -209,10 +252,61 @@ impl<E> CutoffPair<E> {
     /// \mathbf{W}_{\alpha\beta} = \frac{1}{2}\mathbf{f}_{\alpha \beta} \otimes \mathbf{r}_{\alpha \beta}
     /// ```
     /// 
+    /// # Example
+    /// ```
+    /// use hoomd_interaction::{
+    ///     CutoffPair,
+    ///     pairwise::{Isotropic, LennardJones}
+    /// };
+    /// use hoomd_microstate::{
+    ///     Body, Microstate, Site, property::Point
+    /// };
+    /// use hoomd_vector::Cartesian;
+    /// use hoomd_linear_algebra::{
+    ///     GeneralMatrix,
+    ///     matrix::Matrix,
+    /// };
+    /// use approxim::assert_abs_diff_eq;
+    ///
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate = Microstate::new();
+    /// microstate.extend_bodies([
+    ///     Body {
+    ///         properties: Point {position: Cartesian::from([0.0, 0.0, 0.0])},
+    ///         sites: vec![Point {position: Cartesian::<3>::default()}],
+    ///         },
+    ///     Body { 
+    ///         properties: Point {position: Cartesian::from([1.0, 0.0, 0.0])},
+    ///         sites: vec![Point {position: Cartesian::<3>::default()}],
+    ///         },
+    /// ])?;
+    ///
+    /// let force = CutoffPair {
+    ///     r_cut: 6.0,
+    ///     evaluator: Isotropic(LennardJones::<12, 6> {
+    ///         epsilon: 1.0,
+    ///         sigma: 2.0_f64.powf(-1.0 / 6.0),
+    /// })};
+    ///
+    /// let sites = microstate.sites();
+    /// let (force_ab, virial_ab) = force.site_pair_force_and_virial(&sites[0], &sites[1]);
+    /// let (force_ba, virial_ba) = force.site_pair_force_and_virial(&sites[1], &sites[0]);
+    ///
+    /// assert_abs_diff_eq!(force_ab, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-14);
+    /// assert_abs_diff_eq!(
+    ///     virial_ab.rows[0][0],
+    ///     0.0,
+    ///     epsilon = 1e-14
+    /// );
+    /// assert_eq!(force_ab, -force_ba);
+    /// assert_eq!(virial_ab, virial_ba);
+    /// # Ok(())
+    /// # }
     #[inline]
     pub fn site_pair_force_and_virial<V, S>(&self, a: &Site<S>, b: &Site<S>) -> (V, V::Tensor)
     where
-        E: PairSiteForce<V, S>,
+        E: SitePairForce<V, S>,
         S: Position<Position = V>,
         V: Vector + Default + InnerProduct + Metric + TensorProduct,
         V::Tensor: GeneralMatrix + AddAssign
@@ -567,6 +661,60 @@ where
     /// \end{align}
     /// ```
     /// 
+    /// # Example
+    /// ```
+    /// use hoomd_interaction::{
+    ///     CutoffPair,
+    ///     SiteForceAndTorque,
+    ///     pairwise::{Isotropic, LennardJones}
+    /// };
+    /// use hoomd_microstate::{
+    ///     Body, Microstate, Site, property::{Point, OrientedPoint}
+    /// };
+    /// use hoomd_vector::{Cartesian, Versor};
+    /// 
+    /// use approxim::assert_abs_diff_eq;
+    ///
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate = Microstate::new();
+    /// microstate.extend_bodies([
+    ///     Body {
+    ///         properties: OrientedPoint {
+    ///             position: Cartesian::from([0.0, 0.0, 0.0]),
+    ///             orientation: Versor::default(),
+    ///         },
+    ///         sites: vec![Point {
+    ///             position: Cartesian::from([0.0, 3.0_f64.sqrt() / 2.0, 0.0]),
+    ///         }],
+    ///         },
+    ///     Body {
+    ///         properties: OrientedPoint {
+    ///             position: Cartesian::from([0.5, 0.0, 0.0]),
+    ///             orientation: Versor::default(),
+    ///         },
+    ///         sites: vec![Point {
+    ///             position: Cartesian::<3>::default(),
+    ///         }],
+    ///         },
+    /// ])?;
+    ///
+    /// let force = CutoffPair {
+    ///     r_cut: 6.0,
+    ///     evaluator: Isotropic(LennardJones::<12, 6> {
+    ///         epsilon: 1.0,
+    ///         sigma: 2.0_f64.powf(-1.0 / 6.0),
+    /// })};
+    ///
+    /// let sites = microstate.sites();
+    /// let (force_on_zero, torque_on_zero) = force.net_force_and_torque_on_site(&microstate, &sites[0]);
+    ///
+    /// assert_abs_diff_eq!(force_on_zero, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-13);
+    /// assert_eq!(torque_on_zero,  Cartesian::from([0.0, 0.0, 0.0]));
+    /// # Ok(())
+    /// # }
+    /// ```
+    /// 
     /// # Note
     /// 
     /// The current implementation assumes no pure torque is produce between
@@ -597,7 +745,7 @@ where
     V: Vector + Default + InnerProduct + Metric + TensorProduct,
     B: Transform<S>,
     S: Position<Position = V>,
-    E: PairSiteForce<V, S>,
+    E: SitePairForce<V, S>,
     V::Tensor: GeneralMatrix + AddAssign
 {
     /// Calculate the net force and virial.
@@ -618,6 +766,51 @@ where
     ///     &\mathbf{W}_{\alpha} = \frac{1}{2} \sum_{\beta} \mathbf{f}_{\alpha \beta} \otimes \mathbf{r}_{\alpha \beta}
     /// \end{align}
     /// ```
+    /// 
+    /// # Example
+    /// ```
+    /// use hoomd_interaction::{
+    ///     CutoffPair,
+    ///     SiteForceAndVirial,
+    ///     pairwise::{Isotropic, LennardJones}
+    /// };
+    /// use hoomd_microstate::{
+    ///     Body, Microstate, Site, property::Point
+    /// };
+    /// use hoomd_vector::Cartesian;
+    /// 
+    /// use approxim::assert_abs_diff_eq;
+    ///
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate = Microstate::new();
+    /// microstate.extend_bodies([
+    ///     Body {
+    ///         properties: Point {position: Cartesian::from([0.0, 0.0, 0.0])},
+    ///         sites: vec![Point {position: Cartesian::<3>::default()}],
+    ///         },
+    ///     Body { 
+    ///         properties: Point {position: Cartesian::from([1.0, 0.0, 0.0])},
+    ///         sites: vec![Point {position: Cartesian::<3>::default()}],
+    ///         },
+    /// ])?;
+    ///
+    /// let force = CutoffPair {
+    ///     r_cut: 6.0,
+    ///     evaluator: Isotropic(LennardJones::<12, 6> {
+    ///         epsilon: 1.0,
+    ///         sigma: 2.0_f64.powf(-1.0 / 6.0),
+    /// })};
+    ///
+    /// let sites = microstate.sites();
+    /// let (force_on_zero, virial_on_zero) = force.net_force_and_virial_on_site(&microstate, &sites[0]);
+    /// let (force_on_one, virial_on_one) = force.net_force_and_virial_on_site(&microstate, &sites[1]);
+    ///
+    /// assert_abs_diff_eq!(force_on_zero, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-14);
+    /// assert_eq!(force_on_zero, -force_on_one);
+    /// assert_eq!(virial_on_zero, virial_on_one);
+    /// # Ok(())
+    /// # }
     #[inline]
     fn net_force_and_virial_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Tensor) {
         let mut total_force = V::default();

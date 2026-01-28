@@ -588,7 +588,7 @@ pub trait ExternalSiteTorque<V: WedgeProduct, S> {
 /// The generic type names are:
 /// * `V`: The [`Cartesian`](hoomd_vector::Cartesian) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-pub trait PairSiteForce<V, S> {
+pub trait SitePairForce<V, S> {
     /// Evaluate the force on site a from site b.
     fn site_pair_force(&self, a: &S, b: &S) -> V;
 }

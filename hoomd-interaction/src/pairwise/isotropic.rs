@@ -4,7 +4,7 @@
 //! Implement Isotropic
 
 use super::{IsotropicEnergy, IsotropicForce};
-use crate::{SitePairEnergy, PairSiteForce};
+use crate::{SitePairEnergy, SitePairForce};
 use hoomd_microstate::property::Position;
 use hoomd_vector::{InnerProduct, Vector, Metric};
 
@@ -62,7 +62,7 @@ where
     }
 }
 
-impl<P, S, E> PairSiteForce<P, S> for Isotropic<E>
+impl<P, S, E> SitePairForce<P, S> for Isotropic<E>
 where
     E: IsotropicForce,
     P: Vector + InnerProduct + Metric,
