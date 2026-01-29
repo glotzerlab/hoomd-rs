@@ -4,13 +4,11 @@
 //! Monte Carlo benchmarks
 
 mod hard_sphere;
-mod hyperbolic_lennard_jones;
 mod lennard_jones;
 mod octahedron;
 mod regular_polygon;
 
 pub use hard_sphere::HardSphereSim;
-pub use hyperbolic_lennard_jones::HyperbolicLennardJones;
 pub use lennard_jones::LennardJones;
 pub use octahedron::Octahedron;
 pub use regular_polygon::RegularPolygon;

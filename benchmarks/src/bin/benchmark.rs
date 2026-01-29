@@ -17,7 +17,6 @@ use parquet_derive::ParquetRecordWriter;
 
 use benchmarks::{Benchmark, Effort, mc};
 use hoomd_geometry::shape::EightEight;
-use hoomd_manifold::{Hyperbolic, HyperbolicDisk, Minkowski};
 use hoomd_microstate::{Body, Microstate, SiteKey, boundary::Periodic, property::OrientedPoint};
 use hoomd_simulation::Simulation;
 use hoomd_spatial::{AllPairs, VecCell};
