@@ -290,11 +290,11 @@ where
         // Using the double angle formulas, we can reduce these terms slightly
         let theta = Angle::from(*o_ij).theta;
         let (s_2t, c_2t) = (2.0 * theta).sin_cos();
-        let a_sq = self.semi_axes[0].get().powi(2);
-        let b_sq = self.semi_axes[1].get().powi(2);
+        let a = self.semi_axes[0].get();
+        let b = self.semi_axes[1].get();
 
-        let sum = 0.5 * (a_sq + b_sq);
-        let diff = 0.5 * (a_sq - b_sq);
+        let sum = 0.5 * f64::mul_add(a, a, b * b);
+        let diff = 0.5 * (a.powi(2) - b.powi(2));
 
         let a_inv = DiagonalMatrix {
             elements: other.semi_axes.map(|x| x.get().powi(2)),
@@ -319,7 +319,7 @@ where
 
         // d1 = tr(adj(A_inv) @ d).
         // Note the off diagonal terms would be 0 and are excluded
-        let d1 = adj_a_inv[(0, 0)] * d[(0, 0)] + adj_a_inv[(1, 1)] * d[(1, 1)];
+        let d1 = f64::mul_add(adj_a_inv[(0, 0)], d[(0, 0)], adj_a_inv[(1, 1)] * d[(1, 1)]);
 
         let q0 = adj_a_inv.compute_quadratic_form(&v_ij.coordinates);
 
