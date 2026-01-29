@@ -275,7 +275,7 @@ where
         // Recall that our ellipsoids do not overlap if there is a real root of Κ(λ) on
         // (0, 1). Rather than searching for such a root, we can instead query for its
         // existence analytically. We can show that K(λ) <= 0 if and only if its numerator
-        // polynomial P(λ) <= 0. P(λ) is a cubic polynomial:
+        // polynomial P(λ) <= 0. P(λ) is a $n+1$-degree (cubic) polynomial:
         //
         // P(λ) = c3 λ^3 + c2 λ^2 + c1 λ + c0
         //
@@ -296,16 +296,16 @@ where
         let sum = 0.5 * (a_sq + b_sq);
         let diff = 0.5 * (a_sq - b_sq);
 
-        let b_inv = Matrix22 {
+        let a_inv = DiagonalMatrix {
+            elements: other.semi_axes.map(|x| x.get().powi(2)),
+        };
+        // d = b_inv - a_inv
+        let d = Matrix22 {
             rows: [
-                [sum + diff * c_2t, diff * s_2t],
-                [diff * s_2t, sum - diff * c_2t],
+                [sum + diff * c_2t - a_inv[(0, 0)], diff * s_2t],
+                [diff * s_2t, sum - diff * c_2t - a_inv[(1, 1)]],
             ],
         };
-
-        let a_inv = Matrix22::with_diagonal(other.semi_axes.map(|x| x.get().powi(2)));
-
-        let d = b_inv - a_inv;
 
         let det_a_inv = a_inv[(0, 0)] * a_inv[(1, 1)];
         let det_b_inv_m_a_inv = d.determinant();
@@ -348,7 +348,7 @@ where
                 }
             }
         } else {
-            let delta = c2 * c2 - 3.0 * c3 * c1;
+            let delta = f64::mul_add(c2, c2, (-3.0 * c3) * c1);
             if delta >= 0.0 {
                 let sqrt_delta = delta.sqrt();
                 let l1 = (-c2 - sqrt_delta) / (3.0 * c3);
