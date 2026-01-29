@@ -288,27 +288,24 @@ where
         // {{Cos[θ]^2 a_sq + b_sq Sin[θ]^2, Cos[θ] (a_sq - b_sq) Sin[θ]},
         //  {Cos[θ] (a_sq - b_sq) Sin[θ], Cos[θ]^2 b_sq + a_sq Sin[θ]^2}}
         let theta = Angle::from(*o_ij).theta;
-        let (s, c) = theta.sin_cos();
-        // let (s_sq, c_sq) = (s.powi(2), c.powi(2));
+        let (sin, cos) = theta.sin_cos();
+        let (s_sq, c_sq) = (sin.powi(2), cos.powi(2));
         let a = self.semi_axes[0].get();
         let b = self.semi_axes[1].get();
-
-        // let sum = 0.5 * f64::mul_add(a, a, b * b);
-        // let diff = 0.5 * (a.powi(2) - b.powi(2));
 
         let a_inv = DiagonalMatrix {
             elements: other.semi_axes.map(|x| x.get().powi(2)),
         };
-        let diagonal = c * (a.powi(2) - b.powi(2)) * s;
+        let diagonal = cos * (a.powi(2) - b.powi(2)) * sin;
         let b_inv_m_a_inv = Matrix22 {
             rows: [
                 [
-                    c.powi(2) * a.powi(2) + b.powi(2) * s.powi(2) - a_inv[(0, 0)],
+                    c_sq * a.powi(2) + b.powi(2) * s_sq - a_inv[(0, 0)],
                     diagonal,
                 ],
                 [
                     diagonal,
-                    c.powi(2) * b.powi(2) + a.powi(2) * s.powi(2) - a_inv[(1, 1)],
+                    c_sq * b.powi(2) + a.powi(2) * s_sq - a_inv[(1, 1)],
                 ],
             ],
         };
@@ -317,10 +314,7 @@ where
         let det_b_inv_m_a_inv = b_inv_m_a_inv.determinant();
 
         let adj_a_inv = Matrix22 {
-            rows: [
-                [other.semi_axes[1].get().powi(2), 0.0],
-                [0.0, other.semi_axes[0].get().powi(2)],
-            ],
+            rows: [[a_inv[(1, 1)], 0.0], [0.0, a_inv[(0, 0)]]],
         };
 
         // d1 = tr(adj(A_inv) @ d).
