@@ -1,7 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`ApproximateShapeOverlap`].
+
+use serde::{Deserialize, Serialize};
 
 use super::AnisotropicEnergy;
 use crate::univariate::UnivariateEnergy;
@@ -46,6 +48,7 @@ use hoomd_vector::{InnerProduct, Rotate, Rotation};
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ApproximateShapeOverlap<E, A, B = A> {
     /// The site i's shape.
     pub shape_i: A,

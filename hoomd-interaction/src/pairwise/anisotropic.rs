@@ -1,7 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `Anisotropic`
+
+use serde::{Deserialize, Serialize};
 
 use super::AnisotropicEnergy;
 use crate::{MaximumInteractionRange, SitePairEnergy};
@@ -48,6 +50,7 @@ use hoomd_vector::{Rotate, Rotation, Vector};
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Anisotropic<E> {
     /// The site-site interaction.
     pub interaction: E,

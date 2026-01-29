@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Traits that describe system macrostates and types that implement them.
@@ -25,6 +25,8 @@
 //!
 //! When you need additional macrostate parameters, use a custom type.
 //! Implement [`Temperature`] and/or [`Pressure`] for your type as needed.
+
+use serde::{Deserialize, Serialize};
 
 /// Set the thermodynamic temperature of a system.
 ///
@@ -79,6 +81,7 @@ pub trait Pressure {
 ///
 /// let macrostate = Isothermal { temperature: 1.2 };
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Isothermal {
     /// The system's temperature $` ([\mathrm{energy}]) `$.
     pub temperature: f64,
@@ -107,6 +110,7 @@ impl Temperature for Isothermal {
 ///
 /// let macrostate = Isobaric { pressure: 0.4 };
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Isobaric {
     /// The system's pressure $` ([\mathrm{energy}] \cdot [\mathrm{length}]^{-D}) `$.
     pub pressure: f64,
@@ -129,6 +133,7 @@ pub struct Isobaric {
 ///
 /// let macrostate = Isothermal { temperature: 1.2 };
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct IsothermalIsobaric {
     /// Kinetic temperature of the system.
     pub temperature: f64,

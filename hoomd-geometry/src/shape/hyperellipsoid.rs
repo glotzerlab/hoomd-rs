@@ -1,7 +1,11 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Hyperellipsoid`].
+
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use std::ops::Mul;
 
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
@@ -11,8 +15,6 @@ use hoomd_linear_algebra::{
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMatrix};
-
-use std::ops::Mul;
 
 /// The geometry resulting from an Hypersphere that is scaled along the Cartesian axes.
 ///
@@ -48,9 +50,11 @@ use std::ops::Mul;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[serde_as]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Hyperellipsoid<const N: usize> {
     /// The principle semi-axes of the [`Hyperellipsoid`] along each Cartesian direction.
+    #[serde_as(as = "[_; N]")]
     semi_axes: [PositiveReal; N],
 
     /// The bounding sphere radius.
@@ -301,23 +305,36 @@ where
 
         // Golden section solver for minimizing K(λ)
         let (mut b, mut a) = (_ELLIPSOID_K_MAX_BOUND, _ELLIPSOID_K_MIN_BOUND);
-        while (b - a) > _ELLIPSOID_OVERLAP_PRECISION {
-            let c = b - (b - a) * _INV_PHI;
-            let d = a + (b - a) * _INV_PHI;
+        let mut c = b - (b - a) * _INV_PHI;
+        let mut d = a + (b - a) * _INV_PHI;
+        let mut k_c = k_lambda::<2, Matrix22>(&a_inv, &b_inv, c, v_ij);
+        if k_c <= 0.0 {
+            return false;
+        }
+        let mut k_d = k_lambda::<2, Matrix22>(&a_inv, &b_inv, d, v_ij);
+        if k_d <= 0.0 {
+            return false;
+        }
 
-            // Could reuse computed k values between loops for better performance?
-            let k_c = k_lambda::<2, Matrix22>(&a_inv, &b_inv, c, v_ij);
-            if k_c <= 0.0 {
-                return false;
-            }
-            let k_d = k_lambda::<2, Matrix22>(&a_inv, &b_inv, d, v_ij);
-            if k_d <= 0.0 {
-                return false;
-            }
+        while (b - a) > _ELLIPSOID_OVERLAP_PRECISION {
             if k_c < k_d {
                 b = d;
+                d = c;
+                k_d = k_c;
+                c = b - (b - a) * _INV_PHI;
+                k_c = k_lambda::<2, Matrix22>(&a_inv, &b_inv, c, v_ij);
+                if k_c <= 0.0 {
+                    return false;
+                }
             } else {
                 a = c;
+                c = d;
+                k_c = k_d;
+                d = a + (b - a) * _INV_PHI;
+                k_d = k_lambda::<2, Matrix22>(&a_inv, &b_inv, d, v_ij);
+                if k_d <= 0.0 {
+                    return false;
+                }
             }
         }
         true // If we did not detect a negative value of K(λ), the shapes overlap

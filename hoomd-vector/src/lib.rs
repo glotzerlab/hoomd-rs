@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![doc(
@@ -156,10 +156,13 @@
 //!
 //! `hoomd_vector` interoperates with [`rand`] to generate random vectors and rotations.
 //!
-//! The [`StandardUniform`](rand::distr::StandardUniform) distribution
-//! samples rotations uniformly from the set of all rotations and vectors from the
-//! `[-1,1]` hypercube.
+//! The [`StandardUniform`](rand::distr::StandardUniform) distribution randomly samples
+//! rotations uniformly from the set of all vectors or rotations.
 //!
+//! - Vectors are uniformly sampled from the `[-1,1]` hypercube
+//! - Angles are uniformly sampled from the half-open interval `[0, 2π)`
+//! - Versors are uniformly sampled from the surface of the `3-Sphere`, which doubly
+//!   covers `SO(3)`, the manifold of rotations in three dimensions.
 //!
 //! ```
 //! use hoomd_vector::{Angle, Cartesian, Versor};
@@ -167,9 +170,27 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let mut rng = StdRng::seed_from_u64(1);
-//! let angle: Angle = rng.random();
 //! let vector: Cartesian<3> = rng.random();
+//! let angle: Angle = rng.random();
 //! let versor: Versor = rng.random();
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! The [`Ball`](crate::distribution::Ball) distribution samples vectors from
+//! the interior of an `n-Ball`, the set of all points whose distance from the origin is
+//! in `[0, 1)`.
+//!
+//! ```
+//! use hoomd_vector::{Cartesian, distribution::Ball};
+//! use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let mut rng = StdRng::seed_from_u64(1);
+//! let ball = Ball {
+//!     radius: 3.0.try_into()?,
+//! };
+//! let v: Cartesian<3> = ball.sample(&mut rng);
 //! # Ok(())
 //! # }
 //! ```
@@ -183,6 +204,7 @@ pub use angle::Angle;
 pub use cartesian::{Cartesian, RotationMatrix};
 pub use quaternion::{Quaternion, Versor};
 
+use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use thiserror::Error;
 
@@ -570,7 +592,7 @@ pub trait InnerProduct: Vector {
 }
 
 /// A [`Vector`] with magnitude 1.0.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Unit<V>(V);
 
 impl<V> Unit<V> {

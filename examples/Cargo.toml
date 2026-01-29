@@ -1,5 +1,5 @@
 [package]
-name = "hoomd-examples"
+name = "examples"
 categories.workspace = true
 description = "Collect examples that demonstrate how to use hoomd-rs."
 edition.workspace = true
@@ -39,9 +39,6 @@ anyhow.workspace = true
 bevy = { workspace = true, optional = true }
 bevy_egui = { workspace = true, optional = true }
 rand.workspace = true
-
-[package.metadata.docs.rs]
-all-features = true
 
 [[example]]
 name = "hello"
@@ -83,8 +80,15 @@ path = "mc-tutorial/tetronimoes.rs"
 path = "mc-tutorial"
 
 [[example]]
-name = "hard-particle-self-assembly"
-path = "mc-tutorial/hard-particle-self-assembly.rs"
+name = "hard-disk-self-assembly"
+path = "mc-tutorial/hard-disk-self-assembly.rs"
 
-[package.metadata.example.hard-particle-self-assembly]
+[package.metadata.example.hard-disk-self-assembly]
+path = "mc-tutorial"
+
+[[example]]
+name = "hard-ellipse-self-assembly"
+path = "mc-tutorial/hard-ellipse-self-assembly.rs"
+
+[package.metadata.example.hard-ellipse-self-assembly]
 path = "mc-tutorial"

@@ -11,6 +11,12 @@ categories.workspace = true
 description = "Performant, general computational geometry methods in Rust."
 
 [dependencies]
+rand.workspace = true
+itertools.workspace = true
+serde.workspace = true
+serde_with.workspace = true
+thiserror.workspace = true
+
 hoomd-manifold.workspace = true
 hoomd-vector.workspace = true
 hoomd-linear-algebra.workspace = true
@@ -24,6 +30,8 @@ robust = "1.2.0"
 workspace = true
 
 [dev-dependencies]
+anyhow.workspace = true
+assert2.workspace = true
 approxim.workspace = true
 divan.workspace = true
 rstest.workspace = true

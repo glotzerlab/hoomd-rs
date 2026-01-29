@@ -1,7 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`EightEight`]
+
+use serde::{Deserialize, Serialize};
 
 use crate::IsPointInside;
 use hoomd_manifold::{Hyperbolic, Minkowski};
@@ -14,7 +16,7 @@ use std::f64::consts::PI;
 /// two-dimensional hyperbolic space. The scaling of the octagon is set such
 /// that each of the angles is $` \frac{2\pi}{8} `$ so that eight equivalent
 /// octagons meet at each vertex.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EightEight {
     /// Skirt width of the Hyperbolic.
     pub skirt: f64,

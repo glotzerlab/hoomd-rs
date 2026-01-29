@@ -14,10 +14,13 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-hoomd-vector.workspace = true
-hoomd-utility.workspace = true
 log.workspace = true
 rustc-hash.workspace = true
+serde.workspace = true
+serde_with.workspace = true
+
+hoomd-vector.workspace = true
+hoomd-utility.workspace = true
 
 [dev-dependencies]
 assert2.workspace = true

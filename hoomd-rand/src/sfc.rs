@@ -1,7 +1,8 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 use rand::{RngCore, SeedableRng, rand_core::impls};
+use serde::{Deserialize, Serialize};
 
 use crate::util::read_le_u64;
 
@@ -40,7 +41,7 @@ use crate::util::read_le_u64;
 /// [Random Values]: https://rust-random.github.io/book/guide-values.html
 /// [PractRand]: https://pracrand.sourceforge.net
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SFC64 {
     /// The internal state of the PRNG.
     state: [u64; 3],

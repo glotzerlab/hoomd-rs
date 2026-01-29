@@ -1,7 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`WeeksChandlerAnderson`]
+
+use serde::{Deserialize, Serialize};
 
 use super::{UnivariateEnergy, UnivariateForce};
 
@@ -33,7 +35,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// let r_cut = 2.5 * sigma;
 /// let r_smooth = 1.5 * sigma;
 /// let xplor_lj = Xplor { f: LennardJones::<12,6> { epsilon, sigma }, r_cut, r_smooth };
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Xplor<F> {
     /// The original potential.
     pub f: F,

@@ -60,7 +60,7 @@ pub(crate) fn main() -> anyhow::Result<()> {
     );
     app.add_systems(
         Update,
-        (sync_sites, sync_ghosts)
+        (sync_sites, sync_ghosts, sync_boundary)
             .run_if(resource_changed::<HardEllipseSelfAssembly>)
             .after(AdvanceSet),
     );
@@ -126,4 +126,16 @@ fn sync_ghosts(
             )
         }),
     );
+}
+
+/// Draw the simulation boundary at its current size.
+fn sync_boundary(
+    entity_rectangle: Single<(Entity, &RectangularBoundary)>,
+    children: Query<&Children>,
+    transforms: Query<&mut Transform>,
+    simulation: Res<HardEllipseSelfAssembly>,
+) {
+    let l =
+        simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
+    RectangularBoundary::sync(entity_rectangle, children, transforms, l, l);
 }

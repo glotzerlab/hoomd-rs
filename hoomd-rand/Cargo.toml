@@ -11,8 +11,9 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-rand.workspace = true
 clap.workspace = true
+rand.workspace = true
+serde.workspace = true
 
 [lints]
 workspace = true
@@ -28,9 +29,9 @@ extras = []
 [dev-dependencies]
 assert2.workspace = true
 approxim.workspace = true
-rstest.workspace = true
-divan.workspace = true
 chacha20 = { version = "=0.10.0-rc.0", default-features = false, features = ["rng"]}
+divan.workspace = true
+rstest.workspace = true
 
 [[bench]]
 name = "bench"

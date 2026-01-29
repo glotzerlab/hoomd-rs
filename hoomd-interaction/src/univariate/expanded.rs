@@ -1,7 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Expanded`]
+
+use serde::{Deserialize, Serialize};
 
 use super::{UnivariateEnergy, UnivariateForce};
 
@@ -31,7 +33,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 ///     expanded_lj.f.energy(1.0 - 0.75)
 /// );
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Expanded<F> {
     /// The original potential.
     pub f: F,

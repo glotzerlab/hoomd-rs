@@ -1,7 +1,8 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Random distributions of vectors.
+use serde::{Deserialize, Serialize};
 use std::array;
 
 use super::{Cartesian, InnerProduct};
@@ -29,7 +30,7 @@ use rand_distr::StandardNormal;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Ball {
     /// The radius of the ball *(\[length\])*.
     pub radius: PositiveReal,

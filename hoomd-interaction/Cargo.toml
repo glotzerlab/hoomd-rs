@@ -14,6 +14,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
+serde.workspace = true
 hoomd-manifold.workspace = true
 hoomd-microstate.workspace = true
 hoomd-vector.workspace = true
