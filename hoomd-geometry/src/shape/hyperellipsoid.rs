@@ -14,7 +14,7 @@ use hoomd_linear_algebra::{
     matrix::{DiagonalMatrix, Matrix22},
 };
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMatrix};
+use hoomd_vector::{Angle, Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMatrix};
 
 /// The geometry resulting from an Hypersphere that is scaled along the Cartesian axes.
 ///
@@ -229,6 +229,7 @@ impl<const N: usize> Volume for Hyperellipsoid<N> {
 impl<R> IntersectsAt<Hyperellipsoid<2>, Cartesian<2>, R> for Hyperellipsoid<2>
 where
     R: Rotation + Rotate<Cartesian<2>>,
+    Angle: From<R>,
     RotationMatrix<2>: From<R>,
 {
     #[inline]
@@ -281,49 +282,56 @@ where
         // Where the coefficients are derived from the determinants and adjoints of A^-1
         // and B^-1. Since P(0) > 0 and P(1) > 0, the ellipsoids are separated if and only
         // if P(λ) has a local minimum in (0, 1) where P(λ) <= 0.
-        let a_inv_diag = other.semi_axes.map(|x| x.get().powi(2));
 
-        let rot = RotationMatrix::<2>::from(*o_ij);
-        let rot_transpose = rot.inverted();
+        // b^-1 = R @ (B^-1) @ R.T, where B^-1 is in the local frame and ∴ diagonal
+        // Simplified, we get the following (provided B^-1=diag([a_sq, b_sq]))
+        // {{Cos[θ]^2 a_sq + b_sq Sin[θ]^2, Cos[θ] (a_sq - b_sq) Sin[θ]},
+        //  {Cos[θ] (a_sq - b_sq) Sin[θ], Cos[θ]^2 b_sq + a_sq Sin[θ]^2}}
+        // Using the double angle formulas, we can reduce these terms slightly
+        let theta = Angle::from(*o_ij).theta;
+        let (s_2t, c_2t) = (2.0 * theta).sin_cos();
+        let a_sq = self.semi_axes[0].get().powi(2);
+        let b_sq = self.semi_axes[1].get().powi(2);
 
-        let b_inv = Matrix22::from(rot)
-            .matmul(&DiagonalMatrix {
-                elements: self.semi_axes.map(|x| x.get().powi(2)),
-            })
-            .matmul(&Matrix22::from(rot_transpose));
+        let sum = 0.5 * (a_sq + b_sq);
+        let diff = 0.5 * (a_sq - b_sq);
 
-        let v_ij = &v_ij.coordinates;
-        let a_inv = Matrix22::with_diagonal(a_inv_diag);
-
-        let d = b_inv - a_inv;
-
-        let d0 = a_inv.determinant();
-        let d2 = d.determinant();
-
-        let adj_a_inv = Matrix22 {
+        let b_inv = Matrix22 {
             rows: [
-                [a_inv.rows[1][1], -a_inv.rows[0][1]],
-                [-a_inv.rows[1][0], a_inv.rows[0][0]],
+                [sum + diff * c_2t, diff * s_2t],
+                [diff * s_2t, sum - diff * c_2t],
             ],
         };
 
-        // d1 = tr(adj(A_inv) @ d)
-        let d1 = adj_a_inv.rows[0][0] * d.rows[0][0]
-            + adj_a_inv.rows[0][1] * d.rows[1][0]
-            + adj_a_inv.rows[1][0] * d.rows[0][1]
-            + adj_a_inv.rows[1][1] * d.rows[1][1];
+        let a_inv = Matrix22::with_diagonal(other.semi_axes.map(|x| x.get().powi(2)));
 
-        let q0 = adj_a_inv.compute_quadratic_form(v_ij);
+        let d = b_inv - a_inv;
+
+        let det_a_inv = a_inv[(0, 0)] * a_inv[(1, 1)];
+        let det_b_inv_m_a_inv = d.determinant();
+
+        let adj_a_inv = Matrix22 {
+            rows: [
+                [other.semi_axes[1].get().powi(2), 0.0],
+                [0.0, other.semi_axes[0].get().powi(2)],
+            ],
+        };
+
+        // d1 = tr(adj(A_inv) @ d).
+        // Note the off diagonal terms would be 0 and are excluded
+        let d1 = adj_a_inv[(0, 0)] * d[(0, 0)] + adj_a_inv[(1, 1)] * d[(1, 1)];
+
+        let q0 = adj_a_inv.compute_quadratic_form(&v_ij.coordinates);
 
         let adj_d = Matrix22 {
             rows: [[d.rows[1][1], -d.rows[0][1]], [-d.rows[1][0], d.rows[0][0]]],
         };
-        let q1 = adj_d.compute_quadratic_form(v_ij);
+        let q1 = adj_d.compute_quadratic_form(&v_ij.coordinates);
 
         let c3 = q1;
-        let c2 = d2 - q1 + q0;
+        let c2 = det_b_inv_m_a_inv - q1 + q0;
         let c1 = d1 - q0;
-        let c0 = d0;
+        let c0 = det_a_inv;
 
         // Find local extrema of P(λ) = c3*λ^3 + c2*λ^2 + c1*λ + c0
         // P'(lambda) = 3*c3*λ^2 + 2*c2*λ + c1
@@ -471,10 +479,10 @@ mod tests {
     #[rstest]
     fn test_random_sphere_ellipse_overlap() {
         let mut rng = StdRng::seed_from_u64(2);
-        for _ in 0..10_000 {
+        for _ in 0..100_000 {
             let (a, c): (f64, f64) = StdRng::random(&mut rng);
-            let a = a.try_into().expect("test value is a positive real");
-            let c = c.try_into().expect("test value is a positive real");
+            let a = (a * 5.0).try_into().expect("test value is a positive real");
+            let c = (c * 5.0).try_into().expect("test value is a positive real");
             let el0 = Ellipse::with_semi_axes([a, a]);
             let el1 = Ellipse::with_semi_axes([c, c]);
 
