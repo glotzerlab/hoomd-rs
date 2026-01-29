@@ -12,7 +12,7 @@ use hoomd_interaction::{
 use hoomd_manifold::{Hyperbolic, HyperbolicDisk, Minkowski};
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, boundary::Periodic, property::Point,
+    Body, Microstate, SiteKey, boundary::{Periodic, Open}, property::Point,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::AllPairs;
@@ -25,8 +25,8 @@ struct A;
 struct Ghost;
 
 const RHO: f64 = 1.0;
-const PARTICLE_NUMBER: usize = 200;
-const DIAMETER: f64 = 0.15; //in Hyperbolic metric
+const PARTICLE_NUMBER: usize = 100;
+const DIAMETER: f64 = 1.0; //in Hyperbolic metric
 
 fn main() -> anyhow::Result<()> {
     let simulation = Fill::new().context("failed to setup simulation")?;
@@ -71,7 +71,7 @@ struct Fill {
         Point<Hyperbolic<3>>,
         Point<Hyperbolic<3>>,
         AllPairs<SiteKey>,
-        Periodic<EightEight>,
+        Open,//Periodic<EightEight>,
     >,
     /// How sites interact with other sites and fields.
     hamiltonian: PairwiseCutoff<Isotropic<LennardJones>>,
@@ -84,11 +84,11 @@ struct Fill {
 impl Fill {
     /// Set up the hoomd simulation
     fn new() -> anyhow::Result<Fill> {
-        let boundary = Periodic::new(0.6, EightEight { skirt: 1.0_f64 })?;
+        //let boundary = Periodic::new(EightEight::CUSP_TO_EDGE, EightEight { skirt: 1.0_f64 })?;
         let mut microstate =
-            Microstate::builder().boundary(boundary).try_build()?;
+            Microstate::builder().boundary(Open).try_build()?;
 
-        let initial_spacing = 1.0;
+        let initial_spacing = 5.0;
         let mut rng = StdRng::seed_from_u64(23);
         let sample_disk = HyperbolicDisk {
             disk_radius: initial_spacing.try_into()?,
@@ -112,12 +112,12 @@ impl Fill {
 
         let lj: LennardJones = LennardJones {
             epsilon: 10.0,
-            sigma: 0.15,
+            sigma: 1.3618,
         };
 
         let pairwise_cutoff = PairwiseCutoff(Isotropic {
             interaction: lj,
-            r_cut: 0.5,
+            r_cut: 10.0,
         });
 
         let macrostate = Isothermal { temperature: 1.0 };
