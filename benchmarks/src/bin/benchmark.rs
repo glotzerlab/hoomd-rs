@@ -133,8 +133,6 @@ fn execute_matching(
         || benchmark_matcher.matches("mc_2d_lennard_jones")
         || benchmark_matcher.matches("mc_2d_hexagon");
 
-    let needs_microstate_2d_hyperbolic = benchmark_matcher.matches("mc_2d_hyperbolic_ljg");
-
     let needs_microstate_3d = benchmark_matcher.matches("mc_3d_sphere")
         || benchmark_matcher.matches("mc_3d_lennard_jones")
         || benchmark_matcher.matches("mc_3d_octahedron");
@@ -145,33 +143,6 @@ fn execute_matching(
             OrientedPoint<Cartesian<2>, Angle>,
             2,
         >(n, number_density)?)
-    } else {
-        None
-    };
-
-    let maybe_microstate_2d_hyperbolic = if needs_microstate_2d_hyperbolic {
-        let boundary = Periodic::new(0.5, EightEight { skirt: 1.0_f64 })?;
-        let mut microstate = Microstate::builder().boundary(boundary).try_build()?;
-
-        let initial_spacing = 1.5;
-        let mut rng = StdRng::seed_from_u64(23);
-        let sample_disk = HyperbolicDisk {
-            disk_radius: initial_spacing.try_into()?,
-            point: Hyperbolic::<3>::from_minkowski_coordinates(
-                Minkowski::from([
-                    0.00001,
-                    0.00001,
-                    f64::sqrt(2.0 * (0.00001_f64).powi(2) + 1.0),
-                ]),
-                1.0,
-            ),
-        };
-        for _n in 0..1_000 {
-            let new_point: Hyperbolic<3> =
-                Hyperbolic::from_minkowski_coordinates(*sample_disk.sample(&mut rng).point(), 1.0);
-            microstate.add_body(Body::point(new_point))?;
-        }
-        Some(microstate)
     } else {
         None
     };
@@ -197,15 +168,6 @@ fn execute_matching(
             microstate_2d,
             options.parallel_sweep || threads > 1,
         )?;
-        results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
-    }
-
-    let name = "mc_2d_hyperbolic_ljg";
-    if benchmark_matcher.matches(name) {
-        let microstate_2d = &maybe_microstate_2d_hyperbolic
-            .as_ref()
-            .expect("microstate_2d should be initialized");
-        let mut simulation = mc::HyperbolicLennardJones::<AllPairs<SiteKey>>::new(microstate_2d)?;
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
     }
 
