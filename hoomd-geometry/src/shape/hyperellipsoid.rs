@@ -287,22 +287,29 @@ where
         // Simplified, we get the following (provided B^-1=diag([a_sq, b_sq]))
         // {{Cos[θ]^2 a_sq + b_sq Sin[θ]^2, Cos[θ] (a_sq - b_sq) Sin[θ]},
         //  {Cos[θ] (a_sq - b_sq) Sin[θ], Cos[θ]^2 b_sq + a_sq Sin[θ]^2}}
-        // Using the double angle formulas, we can reduce these terms slightly
         let theta = Angle::from(*o_ij).theta;
-        let (s_2t, c_2t) = (2.0 * theta).sin_cos();
+        let (s, c) = theta.sin_cos();
+        // let (s_sq, c_sq) = (s.powi(2), c.powi(2));
         let a = self.semi_axes[0].get();
         let b = self.semi_axes[1].get();
 
-        let sum = 0.5 * f64::mul_add(a, a, b * b);
-        let diff = 0.5 * (a.powi(2) - b.powi(2));
+        // let sum = 0.5 * f64::mul_add(a, a, b * b);
+        // let diff = 0.5 * (a.powi(2) - b.powi(2));
 
         let a_inv = DiagonalMatrix {
             elements: other.semi_axes.map(|x| x.get().powi(2)),
         };
+        let diagonal = c * (a.powi(2) - b.powi(2)) * s;
         let b_inv_m_a_inv = Matrix22 {
             rows: [
-                [sum + diff * c_2t - a_inv[(0, 0)], diff * s_2t],
-                [diff * s_2t, sum - diff * c_2t - a_inv[(1, 1)]],
+                [
+                    c.powi(2) * a.powi(2) + b.powi(2) * s.powi(2) - a_inv[(0, 0)],
+                    diagonal,
+                ],
+                [
+                    diagonal,
+                    c.powi(2) * b.powi(2) + a.powi(2) * s.powi(2) - a_inv[(1, 1)],
+                ],
             ],
         };
 
@@ -356,7 +363,7 @@ where
         // Bézier Clipping check
         // Control points b0 = p0, b3 = p1, so all we need are b1 and b2
         let b1 = c0 + c1 / 3.0;
-        let b2 = c0 + (2.0 * c1 + c2) / 3.0;
+        let b2 = c0 + f64::mul_add(2.0, c1, c2) / 3.0;
 
         // Check if the hull is strictly separated from 0.
         // Since we know p0 and p1 have the same sign (from step 1),
@@ -507,6 +514,7 @@ mod tests {
     fn test_ellipse_overlap_along_axis(
         #[values([0.0, 0.0], [1.0,0.0], [1.999_999, 0.0], [2.000_001, 0.0], [2.1, 0.0])]
         v_ij: [f64; 2],
+        #[values(0.0, 2.0 * std::f64::consts::PI)] o_ij: f64,
     ) {
         let el0 = Ellipse::with_semi_axes([
             1.0.try_into().expect("test value is a positive real"),
@@ -518,8 +526,8 @@ mod tests {
         ]);
 
         assert_eq!(
-            el0.intersects_at(&el1, &v_ij.into(), &Angle::default()),
-            Convex(el0).intersects_at(&Convex(el1), &v_ij.into(), &Angle::default())
+            el0.intersects_at(&el1, &v_ij.into(), &Angle::from(o_ij)),
+            Convex(el0).intersects_at(&Convex(el1), &v_ij.into(), &Angle::from(o_ij))
         );
     }
     #[rstest]
