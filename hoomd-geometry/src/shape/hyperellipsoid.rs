@@ -226,17 +226,6 @@ impl<const N: usize> Volume for Hyperellipsoid<N> {
     }
 }
 
-/// The inverse of the Golden ratio, used for a golden section solver
-const _INV_PHI: f64 = 0.618_033_988_749_894_9_f64;
-/// Precision within which ellipsoids are considered to be overlapping.
-///
-/// This is 1000x more precise than HOOMD-Blue.
-const _ELLIPSOID_OVERLAP_PRECISION: f64 = 1e-9;
-/// Max bound of the root search for an ellipsoid characteristic polynomial.
-const _ELLIPSOID_K_MAX_BOUND: f64 = 1.0 - _ELLIPSOID_OVERLAP_PRECISION;
-/// Min bound of the root search for an ellipsoid characteristic polynomial.
-const _ELLIPSOID_K_MIN_BOUND: f64 = _ELLIPSOID_OVERLAP_PRECISION;
-
 impl<R> IntersectsAt<Hyperellipsoid<2>, Cartesian<2>, R> for Hyperellipsoid<2>
 where
     R: Rotation + Rotate<Cartesian<2>>,
@@ -283,13 +272,16 @@ where
         // closed form for the inverse.
         //
         // Recall that our ellipsoids do not overlap if there is a real root of Κ(λ) on
-        // (0, 1). Rather than searching for such a root, we can instead query for a
-        // negative element in the codomain. Our function is extremely well behaved
-        // (numerical instability notwithstanding), so we can use a simple golden section
-        // search for such an element. In most cases, we can exit within a single iteration
-        // although the method converges linearly in general. If the search does NOT find a
-        // negative element in the codomain, the ellipsoids intersect (within a tolerance).
-        let a_inv = other.semi_axes.map(|x| x.get().powi(2));
+        // (0, 1). Rather than searching for such a root, we can instead query for its
+        // existence analytically. We can show that K(λ) <= 0 if and only if its numerator
+        // polynomial P(λ) <= 0. P(λ) is a cubic polynomial:
+        //
+        // P(λ) = c3 λ^3 + c2 λ^2 + c1 λ + c0
+        //
+        // Where the coefficients are derived from the determinants and adjoints of A^-1
+        // and B^-1. Since P(0) > 0 and P(1) > 0, the ellipsoids are separated if and only
+        // if P(λ) has a local minimum in (0, 1) where P(λ) <= 0.
+        let a_inv_diag = other.semi_axes.map(|x| x.get().powi(2));
 
         let rot = RotationMatrix::<2>::from(*o_ij);
         let rot_transpose = rot.inverted();
@@ -301,43 +293,68 @@ where
             .matmul(&Matrix22::from(rot_transpose));
 
         let v_ij = &v_ij.coordinates;
-        let a_inv = Matrix22::with_diagonal(a_inv);
+        let a_inv = Matrix22::with_diagonal(a_inv_diag);
 
-        // Golden section solver for minimizing K(λ)
-        let (mut b, mut a) = (_ELLIPSOID_K_MAX_BOUND, _ELLIPSOID_K_MIN_BOUND);
-        let mut c = b - (b - a) * _INV_PHI;
-        let mut d = a + (b - a) * _INV_PHI;
-        let mut k_c = k_lambda::<2, Matrix22>(&a_inv, &b_inv, c, v_ij);
-        if k_c <= 0.0 {
-            return false;
-        }
-        let mut k_d = k_lambda::<2, Matrix22>(&a_inv, &b_inv, d, v_ij);
-        if k_d <= 0.0 {
-            return false;
-        }
+        let d = b_inv - a_inv;
 
-        while (b - a) > _ELLIPSOID_OVERLAP_PRECISION {
-            if k_c < k_d {
-                b = d;
-                d = c;
-                k_d = k_c;
-                c = b - (b - a) * _INV_PHI;
-                k_c = k_lambda::<2, Matrix22>(&a_inv, &b_inv, c, v_ij);
-                if k_c <= 0.0 {
-                    return false;
+        let d0 = a_inv.determinant();
+        let d2 = d.determinant();
+
+        let adj_a_inv = Matrix22 {
+            rows: [
+                [a_inv.rows[1][1], -a_inv.rows[0][1]],
+                [-a_inv.rows[1][0], a_inv.rows[0][0]],
+            ],
+        };
+
+        // d1 = tr(adj(A_inv) @ d)
+        let d1 = adj_a_inv.rows[0][0] * d.rows[0][0]
+            + adj_a_inv.rows[0][1] * d.rows[1][0]
+            + adj_a_inv.rows[1][0] * d.rows[0][1]
+            + adj_a_inv.rows[1][1] * d.rows[1][1];
+
+        let q0 = adj_a_inv.compute_quadratic_form(v_ij);
+
+        let adj_d = Matrix22 {
+            rows: [[d.rows[1][1], -d.rows[0][1]], [-d.rows[1][0], d.rows[0][0]]],
+        };
+        let q1 = adj_d.compute_quadratic_form(v_ij);
+
+        let c3 = q1;
+        let c2 = d2 - q1 + q0;
+        let c1 = d1 - q0;
+        let c0 = d0;
+
+        // Find local extrema of P(λ) = c3*λ^3 + c2*λ^2 + c1*λ + c0
+        // P'(lambda) = 3*c3*λ^2 + 2*c2*λ + c1
+        if c3.abs() < 1e-15 {
+            if c2.abs() > 1e-15 {
+                let l_star = -c1 / (2.0 * c2);
+                if (0.0..1.0).contains(&l_star) {
+                    let p_star = (c2 * l_star + c1) * l_star + c0;
+                    if p_star <= 0.0 {
+                        return false;
+                    }
                 }
-            } else {
-                a = c;
-                c = d;
-                k_c = k_d;
-                d = a + (b - a) * _INV_PHI;
-                k_d = k_lambda::<2, Matrix22>(&a_inv, &b_inv, d, v_ij);
-                if k_d <= 0.0 {
-                    return false;
+            }
+        } else {
+            let delta = c2 * c2 - 3.0 * c3 * c1;
+            if delta >= 0.0 {
+                let sqrt_delta = delta.sqrt();
+                let l1 = (-c2 - sqrt_delta) / (3.0 * c3);
+                let l2 = (-c2 + sqrt_delta) / (3.0 * c3);
+
+                for l in [l1, l2] {
+                    if (0.0..1.0).contains(&l) {
+                        let p = ((c3 * l + c2) * l + c1) * l + c0;
+                        if p <= 0.0 {
+                            return false;
+                        }
+                    }
                 }
             }
         }
-        true // If we did not detect a negative value of K(λ), the shapes overlap
+        true // If we did not detect a non-positive value of P(λ), the shapes overlap
     }
 
     #[inline]
