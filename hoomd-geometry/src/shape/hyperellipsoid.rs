@@ -333,6 +333,40 @@ where
         let c1 = d1 - q0;
         let c0 = det_a_inv;
 
+        // Early exit with an IVT check
+        let p0 = c0; // P(0) = c0
+        let p1 = c3 + c2 + c1 + c0; // P(1) = c3 + c2 + c1 + c0
+
+        // If endpoints have different signs we definitely have a root
+        if p0 * p1 <= 0.0 {
+            return false;
+        }
+
+        // Both endpoints are negative -- no overlap is possible
+        if (p0 < 0.0) & (p1 < 0.0) {
+            return false;
+        }
+
+        // Bézier Clipping check
+        // Control points b0 = p0, b3 = p1, so all we need are b1 and b2
+        let b1 = c0 + c1 / 3.0;
+        let b2 = c0 + (2.0 * c1 + c2) / 3.0;
+
+        // Check if the hull is strictly separated from 0.
+        // Since we know p0 and p1 have the same sign (from step 1),
+        // we just need to check if b1 and b2 share that sign.
+        if p0 > 0.0 {
+            // Entire hull is positive -> No root possible.
+            if b1 > 0.0 && b2 > 0.0 {
+                return true;
+            }
+        } else {
+            // Entire hull is negative -> No root possible.
+            if b1 < 0.0 && b2 < 0.0 {
+                return true;
+            }
+        }
+
         // Find local extrema of P(λ) = c3*λ^3 + c2*λ^2 + c1*λ + c0
         // P'(lambda) = 3*c3*λ^2 + 2*c2*λ + c1
         // Polynomial is effectively quadratic
@@ -342,7 +376,10 @@ where
                 let l_star = -c1 / (2.0 * c2);
                 if (0.0..1.0).contains(&l_star) {
                     let p_star = (c2 * l_star + c1) * l_star + c0;
-                    if p_star <= 0.0 {
+                    if p0 > 0.0 && p_star <= 0.0 {
+                        return false;
+                    }
+                    if p0 < 0.0 && p_star >= 0.0 {
                         return false;
                     }
                 }
@@ -357,7 +394,10 @@ where
                 for l in [l1, l2] {
                     if (0.0..1.0).contains(&l) {
                         let p = ((c3 * l + c2) * l + c1) * l + c0;
-                        if p <= 0.0 {
+                        if p0 > 0.0 && p <= 0.0 {
+                            return false;
+                        }
+                        if p0 < 0.0 && p >= 0.0 {
                             return false;
                         }
                     }
