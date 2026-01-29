@@ -299,8 +299,7 @@ where
         let a_inv = DiagonalMatrix {
             elements: other.semi_axes.map(|x| x.get().powi(2)),
         };
-        // d = b_inv - a_inv
-        let d = Matrix22 {
+        let b_inv_m_a_inv = Matrix22 {
             rows: [
                 [sum + diff * c_2t - a_inv[(0, 0)], diff * s_2t],
                 [diff * s_2t, sum - diff * c_2t - a_inv[(1, 1)]],
@@ -308,7 +307,7 @@ where
         };
 
         let det_a_inv = a_inv[(0, 0)] * a_inv[(1, 1)];
-        let det_b_inv_m_a_inv = d.determinant();
+        let det_b_inv_m_a_inv = b_inv_m_a_inv.determinant();
 
         let adj_a_inv = Matrix22 {
             rows: [
@@ -319,12 +318,19 @@ where
 
         // d1 = tr(adj(A_inv) @ d).
         // Note the off diagonal terms would be 0 and are excluded
-        let d1 = f64::mul_add(adj_a_inv[(0, 0)], d[(0, 0)], adj_a_inv[(1, 1)] * d[(1, 1)]);
+        let d1 = f64::mul_add(
+            adj_a_inv[(0, 0)],
+            b_inv_m_a_inv[(0, 0)],
+            adj_a_inv[(1, 1)] * b_inv_m_a_inv[(1, 1)],
+        );
 
         let q0 = adj_a_inv.compute_quadratic_form(&v_ij.coordinates);
 
         let adj_d = Matrix22 {
-            rows: [[d.rows[1][1], -d.rows[0][1]], [-d.rows[1][0], d.rows[0][0]]],
+            rows: [
+                [b_inv_m_a_inv.rows[1][1], -b_inv_m_a_inv.rows[0][1]],
+                [-b_inv_m_a_inv.rows[1][0], b_inv_m_a_inv.rows[0][0]],
+            ],
         };
         let q1 = adj_d.compute_quadratic_form(&v_ij.coordinates);
 
