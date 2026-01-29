@@ -327,7 +327,9 @@ where
 
         // Find local extrema of P(λ) = c3*λ^3 + c2*λ^2 + c1*λ + c0
         // P'(lambda) = 3*c3*λ^2 + 2*c2*λ + c1
+        // Polynomial is effectively quadratic
         if c3.abs() < 1e-15 {
+            // Polynomial is *not* effectively linear
             if c2.abs() > 1e-15 {
                 let l_star = -c1 / (2.0 * c2);
                 if (0.0..1.0).contains(&l_star) {
