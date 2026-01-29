@@ -92,11 +92,9 @@ impl EightEight {
         // boost into frame where edge is the vertical diameter
         let edge_as_diameter: Hyperbolic<3> = Hyperbolic::<3>::from_minkowski_coordinates(
             Minkowski::from([
-                rho * xi_cosh * b_sinh * (theta.cos())
-                    - rho * xi_sinh * b_cosh,
+                rho * xi_cosh * b_sinh * (theta.cos()) - rho * xi_sinh * b_cosh,
                 rho * b_sinh * (theta.sin()),
-                -rho * xi_sinh * b_sinh * (theta.cos())
-                    + rho * xi_cosh * b_cosh,
+                -rho * xi_sinh * b_sinh * (theta.cos()) + rho * xi_cosh * b_cosh,
             ]),
             rho,
         );
@@ -135,7 +133,12 @@ impl EightEight {
     #[inline]
     #[must_use]
     pub fn gamma(eta: f64, theta: f64, point: &[f64; 3]) -> [f64; 3] {
-        let (eta_sinh_squared, two_eta_sinh, theta_sin, theta_cos) = ((eta.sinh()).powi(2), (2.0*eta).sinh(), theta.sin(), theta.cos());
+        let (eta_sinh_squared, two_eta_sinh, theta_sin, theta_cos) = (
+            (eta.sinh()).powi(2),
+            (2.0 * eta).sinh(),
+            theta.sin(),
+            theta.cos(),
+        );
         [
             (2.0 * (eta_sinh_squared) * ((theta_cos).powi(2)) + 1.0) * point[0]
                 + ((2.0 * theta).sin()) * (eta_sinh_squared) * point[1]

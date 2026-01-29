@@ -195,7 +195,7 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
                         }
                         counter += 1;
                     }
-                } 
+                }
                 result = overlap;
                 v_count += 2;
                 // need to add a check for when the counter moves onto the next square
@@ -306,34 +306,28 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
         let vertex_translate = |point: &Hyperbolic<3>| -> Hyperbolic<3> {
             let pt = point.point().coordinates;
             let (eta_sinh, eta_cosh, r_sinh, r_cosh) = (eta.sinh(), eta.cosh(), r.sinh(), r.cosh());
-            let (alpha_cos, alpha_sin, theta_cos, theta_sin) = (alpha.cos(), alpha.sin(), theta.cos(), theta.sin());
+            let (alpha_cos, alpha_sin, theta_cos, theta_sin) =
+                (alpha.cos(), alpha.sin(), theta.cos(), theta.sin());
             let translated = Minkowski::from([
-                (eta_cosh * r_cosh * alpha_cos * theta_cos
-                    - r_cosh * alpha_sin * theta_sin
+                (eta_cosh * r_cosh * alpha_cos * theta_cos - r_cosh * alpha_sin * theta_sin
                     + eta_sinh * r_sinh * theta_cos)
                     * pt[0]
                     + (eta_cosh * r_cosh * alpha_cos * theta_sin
                         + r_cosh * alpha_sin * theta_cos
                         + eta_sinh * r_sinh * theta_sin)
                         * pt[1]
-                    - (eta_sinh * r_cosh * alpha_cos + eta_cosh * r_sinh)
-                        * pt[2],
-                -(eta_cosh * alpha_sin * theta_cos + alpha_cos * theta_sin)
-                    * pt[0]
-                    + (-eta_cosh * alpha_sin * theta_sin
-                        + alpha_cos * theta_cos)
-                        * pt[1]
+                    - (eta_sinh * r_cosh * alpha_cos + eta_cosh * r_sinh) * pt[2],
+                -(eta_cosh * alpha_sin * theta_cos + alpha_cos * theta_sin) * pt[0]
+                    + (-eta_cosh * alpha_sin * theta_sin + alpha_cos * theta_cos) * pt[1]
                     + eta_sinh * alpha_sin * pt[2],
-                (-eta_cosh * r_sinh * alpha_cos * theta_cos
-                    + r_sinh * alpha_sin * theta_sin
+                (-eta_cosh * r_sinh * alpha_cos * theta_cos + r_sinh * alpha_sin * theta_sin
                     - eta_sinh * r_cosh * theta_cos)
                     * pt[0]
                     - (eta_cosh * r_sinh * alpha_cos * theta_sin
                         + r_sinh * alpha_sin * theta_cos
                         + eta_sinh * r_cosh * theta_sin)
                         * pt[1]
-                    + (eta_sinh * r_sinh * alpha_cos + eta_cosh * r_cosh)
-                        * pt[2],
+                    + (eta_sinh * r_sinh * alpha_cos + eta_cosh * r_cosh) * pt[2],
             ]);
             Hyperbolic::from_minkowski_coordinates(translated, point.skirt())
         };
@@ -395,17 +389,16 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
         let phi = body_angle_body - theta;
         let pt = vertex.point().coordinates;
         let (nu_sinh, nu_cosh) = (nu.sinh(), nu.cosh());
-        let (theta_sin, theta_cos, phi_sin, phi_cos) = (theta.sin(), theta.cos(), phi.sin(), phi.cos());
+        let (theta_sin, theta_cos, phi_sin, phi_cos) =
+            (theta.sin(), theta.cos(), phi.sin(), phi.cos());
         let transformed = Minkowski::from([
             (nu_cosh * phi_cos * theta_cos - phi_sin * theta_sin) * pt[0]
                 - (nu_cosh * phi_sin * theta_cos + phi_cos * theta_sin) * pt[1]
                 + nu_sinh * theta_cos * pt[2],
             (nu_cosh * phi_cos * theta_sin + phi_sin * theta_cos) * pt[0]
-                + (-nu_cosh * phi_sin * theta_sin + phi_cos * theta_cos)
-                    * pt[1]
+                + (-nu_cosh * phi_sin * theta_sin + phi_cos * theta_cos) * pt[1]
                 + nu_sinh * theta_sin * pt[2],
-            nu_sinh * phi_cos * pt[0] - nu_sinh * phi_sin * pt[1]
-                + nu_cosh * pt[2],
+            nu_sinh * phi_cos * pt[0] - nu_sinh * phi_sin * pt[1] + nu_cosh * pt[2],
         ]);
         Hyperbolic::from_minkowski_coordinates(transformed, vertex.skirt())
     }

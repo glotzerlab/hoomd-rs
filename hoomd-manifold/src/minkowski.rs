@@ -663,21 +663,26 @@ impl Metric for Hyperbolic<3> {
     /// space with Gaussian curvature $`K = -1/\rho^2`$.
     #[inline(always)]
     fn distance(&self, other: &Self) -> f64 {
-        /* assert_eq!(
-            self.skirt, other.skirt,
-            "points must be on the same Hyperboloid"
-        ); */
-        /* let last_component = self.point.coordinates[2] * other.point.coordinates[2];
-        let arg = zip(
-            self.point.coordinates[0..2].iter(),
-            other.point.coordinates[0..2].iter(),
-        )
-        .fold(last_component, |product, x| product - (x.0 * x.1));
-        self.skirt * (arg / (self.skirt.powi(2))).acosh() */
-        let self_coords = self.point.coordinates; 
+        // assert_eq!(
+        // self.skirt, other.skirt,
+        // "points must be on the same Hyperboloid"
+        // );
+        // let last_component = self.point.coordinates[2] * other.point.coordinates[2];
+        // let arg = zip(
+        // self.point.coordinates[0..2].iter(),
+        // other.point.coordinates[0..2].iter(),
+        // )
+        // .fold(last_component, |product, x| product - (x.0 * x.1));
+        // self.skirt * (arg / (self.skirt.powi(2))).acosh()
+        let self_coords = self.point.coordinates;
         let other_coords = other.point.coordinates;
         let skirt_inv_sq = (self.skirt * self.skirt).recip();
-        self.skirt * ((self_coords[2]*other_coords[2] - self_coords[0]*other_coords[0]- self_coords[1]*other_coords[1])*skirt_inv_sq).acosh()
+        self.skirt
+            * ((self_coords[2] * other_coords[2]
+                - self_coords[0] * other_coords[0]
+                - self_coords[1] * other_coords[1])
+                * skirt_inv_sq)
+                .acosh()
     }
 
     #[inline]
@@ -967,7 +972,8 @@ impl Distribution<Hyperbolic<3>> for HyperbolicDisk {
         let theta = trial_rotation.sample(rng);
         let v1: f64 = trial_boost.sample(rng);
         let v = v1.sqrt() * max_boost;
-        let (v_sinh, eta_sinh, eta_cosh, phi_sin, phi_cos) = (v.sinh(), eta.sinh(), eta.cosh(), phi.sin(), phi.cos());
+        let (v_sinh, eta_sinh, eta_cosh, phi_sin, phi_cos) =
+            (v.sinh(), eta.sinh(), eta.cosh(), phi.sin(), phi.cos());
         let trial_coords = [
             rho * v_sinh * theta.cos(),
             rho * v_sinh * theta.sin(),

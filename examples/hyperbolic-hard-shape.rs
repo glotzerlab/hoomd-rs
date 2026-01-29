@@ -168,7 +168,8 @@ impl HyperbolicPolygonSelfAssembly {
         let maximum_rotation = 0.01;
         let macrostate = Isothermal { temperature: 1.0 };
 
-        let end_square = HyperbolicConvexPolytope::<3>::regular(4, END_RADIUS, 1.0);
+        let end_square =
+            HyperbolicConvexPolytope::<3>::regular(4, END_RADIUS, 1.0);
         let hamiltonian = PairwiseCutoff(HardShape(end_square.clone()));
 
         let boundary = Periodic::new(0.6, EightEight { skirt: 1.0_f64 })?;
@@ -193,7 +194,7 @@ impl HyperbolicPolygonSelfAssembly {
 
         let lj: LennardJones = LennardJones {
             epsilon: 10.0,
-            sigma: START_RADIUS*2.0,
+            sigma: START_RADIUS * 2.0,
         };
 
         let insert_hamiltonian = PairwiseCutoff(Isotropic {
@@ -243,7 +244,7 @@ impl HyperbolicPolygonSelfAssembly {
             let step = self.microstate.step();
             return Err(anyhow!(
                 "{n} of {target} bodies inserted after {step} steps"
-            )); 
+            ));
         }
 
         Ok(())
@@ -259,21 +260,25 @@ impl Simulation for HyperbolicPolygonSelfAssembly {
             }
             Phase::Crunch => {
                 let step = self.microstate.step();
-                let radius = (END_RADIUS - START_RADIUS)*((step as f64)/(NUM_STEPS as f64)) + START_RADIUS;
+                let radius = (END_RADIUS - START_RADIUS)
+                    * ((step as f64) / (NUM_STEPS as f64))
+                    + START_RADIUS;
 
-                let crunch_square = HyperbolicConvexPolytope::<3>::regular(4, radius, 1.0);
-                let crunch_hamiltonian = PairwiseCutoff(HardShape(crunch_square.clone()));
+                let crunch_square =
+                    HyperbolicConvexPolytope::<3>::regular(4, radius, 1.0);
+                let crunch_hamiltonian =
+                    PairwiseCutoff(HardShape(crunch_square.clone()));
 
                 self.translate_sweep.apply(
-                &mut self.microstate,
-                &crunch_hamiltonian,
-                &Isothermal { temperature: 1.0 },
+                    &mut self.microstate,
+                    &crunch_hamiltonian,
+                    &Isothermal { temperature: 1.0 },
                 );
 
                 self.rotate_sweep.apply(
-                &mut self.microstate,
-                &crunch_hamiltonian,
-                &Isothermal { temperature: 1.0 },
+                    &mut self.microstate,
+                    &crunch_hamiltonian,
+                    &Isothermal { temperature: 1.0 },
                 );
 
                 if step > NUM_STEPS {
@@ -315,7 +320,12 @@ fn sync_simulation(
 ) {
     let sites = simulation.microstate.sites();
     let step = simulation.microstate.step();
-    let radius = if step <= NUM_STEPS {(END_RADIUS - START_RADIUS)*(step as f64/NUM_STEPS as f64) + START_RADIUS} else {END_RADIUS};
+    let radius = if step <= NUM_STEPS {
+        (END_RADIUS - START_RADIUS) * (step as f64 / NUM_STEPS as f64)
+            + START_RADIUS
+    } else {
+        END_RADIUS
+    };
     representation::HyperbolicPolygon::sync(
         &mut commands,
         disk_assets,
@@ -341,7 +351,12 @@ fn sync_ghosts(
 ) {
     let ghosts = simulation.microstate.ghosts();
     let step = simulation.microstate.step();
-    let radius = if step <= NUM_STEPS {(END_RADIUS - START_RADIUS)*(step as f64/NUM_STEPS as f64) + START_RADIUS} else {END_RADIUS};
+    let radius = if step <= NUM_STEPS {
+        (END_RADIUS - START_RADIUS) * (step as f64 / NUM_STEPS as f64)
+            + START_RADIUS
+    } else {
+        END_RADIUS
+    };
     representation::HyperbolicPolygon::sync(
         &mut commands,
         ghost_assets,

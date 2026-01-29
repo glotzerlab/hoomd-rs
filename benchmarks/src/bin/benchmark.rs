@@ -18,14 +18,14 @@ use parquet_derive::ParquetRecordWriter;
 use benchmarks::{Benchmark, Effort, mc};
 use hoomd_geometry::shape::EightEight;
 use hoomd_manifold::{Hyperbolic, HyperbolicDisk, Minkowski};
-use hoomd_microstate::{SiteKey, property::OrientedPoint, Body, Microstate, boundary::Periodic,};
+use hoomd_microstate::{Body, Microstate, SiteKey, boundary::Periodic, property::OrientedPoint};
 use hoomd_simulation::Simulation;
-use hoomd_spatial::{VecCell, AllPairs};
+use hoomd_spatial::{AllPairs, VecCell};
 use hoomd_vector::{Angle, Cartesian, Versor};
 
+use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
 use rayon::ThreadPoolBuilder;
 use wildmatch::WildMatch;
-use rand::{SeedableRng, rngs::StdRng, distr::Distribution};
 
 /// Command line options.
 #[derive(Parser, Debug)]
@@ -152,8 +152,7 @@ fn execute_matching(
 
     let maybe_microstate_2d_hyperbolic = if needs_microstate_2d_hyperbolic {
         let boundary = Periodic::new(0.5, EightEight { skirt: 1.0_f64 })?;
-        let mut microstate =
-            Microstate::builder().boundary(boundary).try_build()?;
+        let mut microstate = Microstate::builder().boundary(boundary).try_build()?;
 
         let initial_spacing = 1.5;
         let mut rng = StdRng::seed_from_u64(23);
@@ -170,10 +169,7 @@ fn execute_matching(
         };
         for _n in 0..1_000 {
             let new_point: Hyperbolic<3> =
-                Hyperbolic::from_minkowski_coordinates(
-                    *sample_disk.sample(&mut rng).point(),
-                    1.0,
-                );
+                Hyperbolic::from_minkowski_coordinates(*sample_disk.sample(&mut rng).point(), 1.0);
             microstate.add_body(Body::point(new_point))?;
         }
         Some(microstate)
@@ -210,9 +206,7 @@ fn execute_matching(
         let microstate_2d = &maybe_microstate_2d_hyperbolic
             .as_ref()
             .expect("microstate_2d should be initialized");
-        let mut simulation = mc::HyperbolicLennardJones::<AllPairs<SiteKey>>::new(
-            microstate_2d,
-        )?;
+        let mut simulation = mc::HyperbolicLennardJones::<AllPairs<SiteKey>>::new(microstate_2d)?;
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
     }
 

@@ -12,7 +12,9 @@ use hoomd_interaction::{
 use hoomd_manifold::{Hyperbolic, HyperbolicDisk, Minkowski};
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
-    Body, Microstate, SiteKey, boundary::{Periodic, Open}, property::Point,
+    Body, Microstate, SiteKey,
+    boundary::Periodic,
+    property::Point,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::AllPairs;
@@ -71,7 +73,7 @@ struct Fill {
         Point<Hyperbolic<3>>,
         Point<Hyperbolic<3>>,
         AllPairs<SiteKey>,
-        Open,//Periodic<EightEight>,
+        Periodic<EightEight>,
     >,
     /// How sites interact with other sites and fields.
     hamiltonian: PairwiseCutoff<Isotropic<LennardJones>>,
@@ -84,9 +86,9 @@ struct Fill {
 impl Fill {
     /// Set up the hoomd simulation
     fn new() -> anyhow::Result<Fill> {
-        //let boundary = Periodic::new(EightEight::CUSP_TO_EDGE, EightEight { skirt: 1.0_f64 })?;
+        let boundary = Periodic::new(EightEight::CUSP_TO_EDGE, EightEight { skirt: 1.0_f64 })?;
         let mut microstate =
-            Microstate::builder().boundary(Open).try_build()?;
+            Microstate::builder().boundary(boundary).try_build()?;
 
         let initial_spacing = 5.0;
         let mut rng = StdRng::seed_from_u64(23);

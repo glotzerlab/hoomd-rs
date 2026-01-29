@@ -88,7 +88,7 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<EightEight> {
     /// # }
     /// ```
     #[inline]
-    #[expect(clippy::too_many_lines, reason="complicated function")]
+    #[expect(clippy::too_many_lines, reason = "complicated function")]
     fn wrap(&self, properties: Point<Hyperbolic<3>>) -> Result<Point<Hyperbolic<3>>, Error> {
         let mut properties = properties;
         let r = properties.position_mut();
@@ -115,15 +115,17 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<EightEight> {
                 EightEight::EIGHTEIGHT,
                 (nearest_vertex_number * PI / 4.0).rem_euclid(PI * 2.0),
             );
-            let (v_cosh, v_sinh, v_cos, v_sin) = ((-vertex_boost).cosh(), (-vertex_boost).sinh(), (-vertex_angle).cos(), (-vertex_angle).sin());
+            let (v_cosh, v_sinh, v_cos, v_sin) = (
+                (-vertex_boost).cosh(),
+                (-vertex_boost).sinh(),
+                (-vertex_angle).cos(),
+                (-vertex_angle).sin(),
+            );
             let transformed_point = Minkowski::from([
-                r.coordinates()[0] * v_cosh * v_cos
-                    - r.coordinates()[1] * v_cosh * v_sin
+                r.coordinates()[0] * v_cosh * v_cos - r.coordinates()[1] * v_cosh * v_sin
                     + r.coordinates()[2] * v_sinh,
-                r.coordinates()[0] * v_sin
-                    + r.coordinates()[1] * v_cos,
-                r.coordinates()[0] * v_sinh * v_cos
-                    - r.coordinates()[1] * v_sinh * v_sin
+                r.coordinates()[0] * v_sin + r.coordinates()[1] * v_cos,
+                r.coordinates()[0] * v_sinh * v_cos - r.coordinates()[1] * v_sinh * v_sin
                     + r.coordinates()[2] * v_cosh,
             ]);
             // get coords of point in transformed frame
@@ -138,57 +140,71 @@ impl Wrap<Point<Hyperbolic<3>>> for Periodic<EightEight> {
             match octant {
                 5.0 => {
                     let theta_1 = (nearest_vertex_number + 3.0).rem_euclid(8.0);
-                    wrapped = EightEight::gamma(eta,theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    wrapped =
+                        EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                 }
                 6.0 => {
                     let theta_1 = (nearest_vertex_number + 3.0).rem_euclid(8.0);
-                    let wrapped_1 = EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    let wrapped_1 =
+                        EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                     let theta_2 = (theta_1 + 3.0).rem_euclid(8.0);
-                    wrapped = EightEight::gamma(eta,theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
+                    wrapped = EightEight::gamma(eta, theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
                 }
                 7.0 => {
                     let theta_1 = (nearest_vertex_number + 3.0).rem_euclid(8.0);
-                    let wrapped_1 = EightEight::gamma(eta,theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    let wrapped_1 =
+                        EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                     let theta_2 = (theta_1 + 3.0).rem_euclid(8.0);
-                    let wrapped_2 = EightEight::gamma(eta,theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
+                    let wrapped_2 =
+                        EightEight::gamma(eta, theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
                     let theta_3 = (theta_2 + 3.0).rem_euclid(8.0);
                     wrapped = EightEight::gamma(eta, theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2);
                 }
                 3.0 => {
                     let theta_1 = (nearest_vertex_number + 4.0).rem_euclid(8.0);
-                    wrapped = EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    wrapped =
+                        EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                 }
                 2.0 => {
                     let theta_1 = (nearest_vertex_number + 4.0).rem_euclid(8.0);
-                    let wrapped_1 = EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    let wrapped_1 =
+                        EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                     let theta_2 = (theta_1 - 3.0).rem_euclid(8.0);
                     wrapped = EightEight::gamma(eta, theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
                 }
                 1.0 => {
                     let theta_1 = (nearest_vertex_number + 4.0).rem_euclid(8.0);
-                    let wrapped_1 = EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    let wrapped_1 =
+                        EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                     let theta_2 = (theta_1 - 3.0).rem_euclid(8.0);
-                    let wrapped_2 = EightEight::gamma(eta,theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
+                    let wrapped_2 =
+                        EightEight::gamma(eta, theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
                     let theta_3 = (theta_2 - 3.0).rem_euclid(8.0);
-                    wrapped = EightEight::gamma(eta,theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2);
+                    wrapped = EightEight::gamma(eta, theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2);
                 }
                 0.0 => {
                     if transformed_point.coordinates[1] >= 0.0 {
                         let theta_1 = (nearest_vertex_number + 4.0).rem_euclid(8.0);
-                        let wrapped_1 = EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                        let wrapped_1 =
+                            EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                         let theta_2 = (theta_1 - 3.0).rem_euclid(8.0);
-                        let wrapped_2 = EightEight::gamma(eta, theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
+                        let wrapped_2 =
+                            EightEight::gamma(eta, theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
                         let theta_3 = (theta_2 - 3.0).rem_euclid(8.0);
-                        let wrapped_3 = EightEight::gamma(eta,theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2);
+                        let wrapped_3 =
+                            EightEight::gamma(eta, theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2);
                         let theta_4 = (theta_3 - 3.0).rem_euclid(8.0);
-                        wrapped = EightEight::gamma(eta,theta_4 * PI / 4.0 + PI / 8.0, &wrapped_3);
+                        wrapped = EightEight::gamma(eta, theta_4 * PI / 4.0 + PI / 8.0, &wrapped_3);
                     } else {
                         let theta_1 = (nearest_vertex_number + 3.0).rem_euclid(8.0);
-                        let wrapped_1 = EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                        let wrapped_1 =
+                            EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                         let theta_2 = (theta_1 + 3.0).rem_euclid(8.0);
-                        let wrapped_2 = EightEight::gamma(eta,theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
+                        let wrapped_2 =
+                            EightEight::gamma(eta, theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
                         let theta_3 = (theta_2 + 3.0).rem_euclid(8.0);
-                        let wrapped_3 = EightEight::gamma(eta,theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2);
+                        let wrapped_3 =
+                            EightEight::gamma(eta, theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2);
                         let theta_4 = (theta_3 + 3.0).rem_euclid(8.0);
                         wrapped = EightEight::gamma(eta, theta_4 * PI / 4.0 + PI / 8.0, &wrapped_3);
                     }
@@ -241,15 +257,17 @@ impl Wrap<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> {
                 EightEight::EIGHTEIGHT,
                 (nearest_vertex_number * PI / 4.0).rem_euclid(PI * 2.0),
             );
-            let (v_cosh, v_sinh, v_cos, v_sin) = ((-vertex_boost).cosh(), (-vertex_boost).sinh(), (-vertex_angle).cos(), (-vertex_angle).sin());
+            let (v_cosh, v_sinh, v_cos, v_sin) = (
+                (-vertex_boost).cosh(),
+                (-vertex_boost).sinh(),
+                (-vertex_angle).cos(),
+                (-vertex_angle).sin(),
+            );
             let transformed_point = Minkowski::from([
-                r.coordinates()[0] * v_cosh * v_cos
-                    - r.coordinates()[1] * v_cosh * v_sin
+                r.coordinates()[0] * v_cosh * v_cos - r.coordinates()[1] * v_cosh * v_sin
                     + r.coordinates()[2] * v_sinh,
-                r.coordinates()[0] * v_sin
-                    + r.coordinates()[1] * v_cos,
-                r.coordinates()[0] * v_sinh * v_cos
-                    - r.coordinates()[1] * v_sinh * v_sin
+                r.coordinates()[0] * v_sin + r.coordinates()[1] * v_cos,
+                r.coordinates()[0] * v_sinh * v_cos - r.coordinates()[1] * v_sinh * v_sin
                     + r.coordinates()[2] * v_cosh,
             ]);
             // get coords of point in transformed frame
@@ -268,93 +286,125 @@ impl Wrap<OrientedHyperbolicPoint<3, Angle>> for Periodic<EightEight> {
             match octant {
                 5.0 => {
                     let theta_1 = (nearest_vertex_number + 3.0).rem_euclid(8.0);
-                    wrapped = EightEight::gamma(eta,theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
-                    relative_angle = EightEight::reorient(theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    wrapped =
+                        EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    relative_angle =
+                        EightEight::reorient(theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                 }
                 6.0 => {
                     let theta_1 = (nearest_vertex_number + 3.0).rem_euclid(8.0);
-                    let wrapped_1 = EightEight::gamma(eta,theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
-                    let relative_angle_1 = EightEight::reorient(theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    let wrapped_1 =
+                        EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    let relative_angle_1 =
+                        EightEight::reorient(theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                     let theta_2 = (theta_1 + 3.0).rem_euclid(8.0);
-                    wrapped = EightEight::gamma(eta,theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
+                    wrapped = EightEight::gamma(eta, theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
                     relative_angle =
-                        EightEight::reorient(theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1) + relative_angle_1;
+                        EightEight::reorient(theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1)
+                            + relative_angle_1;
                 }
                 7.0 => {
                     let theta_1 = (nearest_vertex_number + 3.0).rem_euclid(8.0);
-                    let wrapped_1 = EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
-                    let relative_angle_1 = EightEight::reorient(theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    let wrapped_1 =
+                        EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    let relative_angle_1 =
+                        EightEight::reorient(theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                     let theta_2 = (theta_1 + 3.0).rem_euclid(8.0);
-                    let wrapped_2 = EightEight::gamma(eta, theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
-                    let relative_angle_2 = EightEight::reorient(theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
+                    let wrapped_2 =
+                        EightEight::gamma(eta, theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
+                    let relative_angle_2 =
+                        EightEight::reorient(theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
                     let theta_3 = (theta_2 + 3.0).rem_euclid(8.0);
                     wrapped = EightEight::gamma(eta, theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2);
-                    relative_angle = EightEight::reorient(theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2)
-                        + relative_angle_1
-                        + relative_angle_2;
+                    relative_angle =
+                        EightEight::reorient(theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2)
+                            + relative_angle_1
+                            + relative_angle_2;
                 }
                 3.0 => {
                     let theta_1 = (nearest_vertex_number + 4.0).rem_euclid(8.0);
-                    wrapped = EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
-                    relative_angle = EightEight::reorient(theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    wrapped =
+                        EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    relative_angle =
+                        EightEight::reorient(theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                 }
                 2.0 => {
                     let theta_1 = (nearest_vertex_number + 4.0).rem_euclid(8.0);
-                    let wrapped_1 = EightEight::gamma(eta,theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
-                    let relative_angle_1 = EightEight::reorient(theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    let wrapped_1 =
+                        EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    let relative_angle_1 =
+                        EightEight::reorient(theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                     let theta_2 = (theta_1 - 3.0).rem_euclid(8.0);
                     wrapped = EightEight::gamma(eta, theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
                     relative_angle =
-                        EightEight::reorient(theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1) + relative_angle_1;
+                        EightEight::reorient(theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1)
+                            + relative_angle_1;
                 }
                 1.0 => {
                     let theta_1 = (nearest_vertex_number + 4.0).rem_euclid(8.0);
-                    let wrapped_1 = EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
-                    let relative_angle_1 = EightEight::reorient(theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    let wrapped_1 =
+                        EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                    let relative_angle_1 =
+                        EightEight::reorient(theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                     let theta_2 = (theta_1 - 3.0).rem_euclid(8.0);
-                    let wrapped_2 = EightEight::gamma(eta,theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
-                    let relative_angle_2 = EightEight::reorient(theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
+                    let wrapped_2 =
+                        EightEight::gamma(eta, theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
+                    let relative_angle_2 =
+                        EightEight::reorient(theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
                     let theta_3 = (theta_2 - 3.0).rem_euclid(8.0);
                     wrapped = EightEight::gamma(eta, theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2);
-                    relative_angle = EightEight::reorient(theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2)
-                        + relative_angle_1
-                        + relative_angle_2;
+                    relative_angle =
+                        EightEight::reorient(theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2)
+                            + relative_angle_1
+                            + relative_angle_2;
                 }
                 0.0 => {
                     if transformed_point.coordinates[1] >= 0.0 {
                         let theta_1 = (nearest_vertex_number + 4.0).rem_euclid(8.0);
-                        let wrapped_1 = EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                        let wrapped_1 =
+                            EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                         let relative_angle_1 =
                             EightEight::reorient(theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                         let theta_2 = (theta_1 - 3.0).rem_euclid(8.0);
-                        let wrapped_2 = EightEight::gamma(eta, theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
-                        let relative_angle_2 = EightEight::reorient(theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
+                        let wrapped_2 =
+                            EightEight::gamma(eta, theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
+                        let relative_angle_2 =
+                            EightEight::reorient(theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
                         let theta_3 = (theta_2 - 3.0).rem_euclid(8.0);
-                        let wrapped_3 = EightEight::gamma(eta, theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2);
-                        let relative_angle_3 = EightEight::reorient(theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2);
+                        let wrapped_3 =
+                            EightEight::gamma(eta, theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2);
+                        let relative_angle_3 =
+                            EightEight::reorient(theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2);
                         let theta_4 = (theta_3 - 3.0).rem_euclid(8.0);
                         wrapped = EightEight::gamma(eta, theta_4 * PI / 4.0 + PI / 8.0, &wrapped_3);
-                        relative_angle = EightEight::reorient(theta_4 * PI / 4.0 + PI / 8.0, &wrapped_3)
-                            + relative_angle_1
-                            + relative_angle_2
-                            + relative_angle_3;
+                        relative_angle =
+                            EightEight::reorient(theta_4 * PI / 4.0 + PI / 8.0, &wrapped_3)
+                                + relative_angle_1
+                                + relative_angle_2
+                                + relative_angle_3;
                     } else {
                         let theta_1 = (nearest_vertex_number + 3.0).rem_euclid(8.0);
-                        let wrapped_1 = EightEight::gamma(eta,theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
+                        let wrapped_1 =
+                            EightEight::gamma(eta, theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                         let relative_angle_1 =
                             EightEight::reorient(theta_1 * PI / 4.0 + PI / 8.0, r.coordinates());
                         let theta_2 = (theta_1 + 3.0).rem_euclid(8.0);
-                        let wrapped_2 = EightEight::gamma(eta, theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
-                        let relative_angle_2 = EightEight::reorient(theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
+                        let wrapped_2 =
+                            EightEight::gamma(eta, theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
+                        let relative_angle_2 =
+                            EightEight::reorient(theta_2 * PI / 4.0 + PI / 8.0, &wrapped_1);
                         let theta_3 = (theta_2 + 3.0).rem_euclid(8.0);
-                        let wrapped_3 = EightEight::gamma(eta, theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2);
-                        let relative_angle_3 = EightEight::reorient(theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2);
+                        let wrapped_3 =
+                            EightEight::gamma(eta, theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2);
+                        let relative_angle_3 =
+                            EightEight::reorient(theta_3 * PI / 4.0 + PI / 8.0, &wrapped_2);
                         let theta_4 = (theta_3 + 3.0).rem_euclid(8.0);
                         wrapped = EightEight::gamma(eta, theta_4 * PI / 4.0 + PI / 8.0, &wrapped_3);
-                        relative_angle = EightEight::reorient(theta_4 * PI / 4.0 + PI / 8.0, &wrapped_3)
-                            + relative_angle_1
-                            + relative_angle_2
-                            + relative_angle_3;
+                        relative_angle =
+                            EightEight::reorient(theta_4 * PI / 4.0 + PI / 8.0, &wrapped_3)
+                                + relative_angle_1
+                                + relative_angle_2
+                                + relative_angle_3;
                     }
                 }
                 _ => return Err(Error::CannotWrapProperties),
@@ -1188,7 +1238,8 @@ mod tests {
         let offset_boost = 0.3;
         let offset_angle = 0.1;
         let edge_boost: f64 = 2.448_452_447_678_076;
-        let point = Hyperbolic::<3>::from_polar_coordinates(edge_boost - offset_boost, offset_angle, 1.0);
+        let point =
+            Hyperbolic::<3>::from_polar_coordinates(edge_boost - offset_boost, offset_angle, 1.0);
         let point = Point::new(point);
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");

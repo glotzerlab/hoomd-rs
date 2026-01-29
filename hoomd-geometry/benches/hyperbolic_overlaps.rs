@@ -5,14 +5,13 @@
     clippy::missing_docs_in_private_items,
     reason = "benches don't need public documentation"
 )]
-#![expect(clippy::unwrap_used, reason = "benches can use unwrap where needed")]
 
 //! Benchmark hyperbolic overlaps
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_geometry::hyperbolic_overlap::{HyperbolicConvexPolytope, SeparatingPlanes};
 use hoomd_manifold::{Hyperbolic, HyperbolicDisk, Minkowski};
-use rand::{Rng, distr::Distribution, rngs::StdRng, SeedableRng};
+use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
 
 use hoomd_vector::Angle;
 
@@ -20,8 +19,10 @@ fn main() {
     divan::main();
 }
 
-const RHO : f64 = 1.0; 
-fn create_2d_oriented_point_pair<R: Rng>(rng: &mut R) -> (Hyperbolic<3>, Angle, Hyperbolic<3>, Angle) {
+const RHO: f64 = 1.0;
+fn create_2d_oriented_point_pair<R: Rng>(
+    rng: &mut R,
+) -> (Hyperbolic<3>, Angle, Hyperbolic<3>, Angle) {
     let initial_spacing = 1.4;
     let sample_disk = HyperbolicDisk {
         disk_radius: initial_spacing.try_into().expect("positive number"),
@@ -32,19 +33,13 @@ fn create_2d_oriented_point_pair<R: Rng>(rng: &mut R) -> (Hyperbolic<3>, Angle, 
                 f64::sqrt(2.0 * (0.00001_f64).powi(2) + RHO.powi(2)),
             ]),
             RHO,
-            ),
+        ),
     };
     (
-        Hyperbolic::from_minkowski_coordinates(
-                    *sample_disk.sample(rng).point(),
-                    RHO,
-                ),
+        Hyperbolic::from_minkowski_coordinates(*sample_disk.sample(rng).point(), RHO),
         rng.random(),
-        Hyperbolic::from_minkowski_coordinates(
-                    *sample_disk.sample(rng).point(),
-                    RHO,
-                ),
-        rng.random()
+        Hyperbolic::from_minkowski_coordinates(*sample_disk.sample(rng).point(), RHO),
+        rng.random(),
     )
 }
 
@@ -57,8 +52,6 @@ fn hyperbolic_polygon_overlap<const N: usize>(bencher: Bencher) {
 
     bencher
         .counter(ItemsCount::from(1_u32))
-        .with_inputs(|| {
-            create_2d_oriented_point_pair(&mut rng)
-        })
-        .bench_local_values(|(p0,r0, p1, r1)| black_box(n_gon.intersects_at(&p0, &r0, &p1, &r1)));
+        .with_inputs(|| create_2d_oriented_point_pair(&mut rng))
+        .bench_local_values(|(p0, r0, p1, r1)| black_box(n_gon.intersects_at(&p0, &r0, &p1, &r1)));
 }
