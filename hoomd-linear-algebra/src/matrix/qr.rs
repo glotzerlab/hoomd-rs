@@ -1,8 +1,15 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! General-purpose linear algebra functions on slices.
+//TODO: Figure out to handle fat matrices... Should I just multiple extra columns by reflectors? But we don't have space in the matrix to store them?
+//c.f. https://math.stackexchange.com/questions/3293263/why-should-qr-decomposition-not-be-possible-for-a-fat-matrix
+
+//TODO: Decide whether to return the taus or not. They can be calculated from the matrix, though it is more efficient to store them separately.
+// tau = 2 / ||u||^2 where u is the reflector vector with a leading 1.
+
 use super::Matrix;
+use crate::SquareMatrix;
+use std::cmp::min;
 
 /// .
 pub(super) fn qr_decomposition<const N: usize, const M: usize>(
@@ -15,23 +22,23 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(
     for i in 0..M {
         let mut tau = 0.;
         let mut beta = 0.;
-        if i <= (N - 1) {
-            let x_norm_2 = qr
-                .get_col_slice_iter(i, (i + 1)..N)
-                .map(|x| x * x)
-                .sum::<f64>();
-            if x_norm_2 != 0.0 {
-                let alpha = qr[(i, i)];
-                beta = -alpha.signum() * (x_norm_2 + alpha * alpha).sqrt();
-                //TODO: scale beta in extreme cases
-                tau = (beta - alpha) / beta;
-                for j in i + 1..N {
-                    qr[(j, i)] /= alpha - beta;
-                }
-                //TODO: unscale beta
-                qr[(i, i)] = 1.0; //Temporary. Rescale to beta later. Could be optimized out.
+
+        let x_norm_2 = qr
+            .get_col_slice_iter(i, (i + 1)..N)
+            .map(|x| x * x)
+            .sum::<f64>();
+        if x_norm_2 != 0.0 {
+            let alpha = qr[(i, i)];
+            beta = -alpha.signum() * (x_norm_2 + alpha * alpha).sqrt();
+            //TODO: scale beta in extreme cases
+            tau = (beta - alpha) / beta;
+            for j in i + 1..N {
+                qr[(j, i)] /= alpha - beta;
             }
+            //TODO: unscale beta
+            qr[(i, i)] = 1.0; //Temporary. Rescale to beta later. Could be optimized out.
         }
+
         if tau == 0.0 {
             //either in last column or remainder of column is zero
             taus.push(tau);
@@ -63,17 +70,34 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(
     (qr, taus)
 }
 
-fn get_Q() {
-    //TODO
-    unimplemented!()
+fn get_Q<const N: usize, const M: usize>(qr: &Matrix<N, M>, taus: Vec<f64>) -> Matrix<N, N> {
+    let mut q = Matrix::<N, N>::identity();
+    for (iter, &tau) in taus.iter().enumerate().rev() {
+        if tau == 0.0 {
+            continue;
+        }
+        let reflector: Matrix<N, 1> = Matrix::<N, 1>::from_rows(&[qr.get_col_slice_iter(i, i..N).collect()]);
+        for row in iter..M {
+            for col in iter..M{
+                Q[row, column] -= tau * reflector[row] * reflector[col]*;
+            }
+        }
+    }
+    q
 }
 
-fn get_R() {
-    //TODO
-    unimplemented!()
+fn get_R<const N: usize, const M: usize>(qr: &Matrix<N, M>) -> Matrix<N, M> {
+    let mut r = qr.clone();
+    for row in 1..N {
+        for col in 0..min(row, M) {
+            r[(row, col)] = 0.;
+        }
+    }
+    r
 }
 
 fn times_Q() {
+    //Note: Typically you shouldn't need to form Q explicitly!
     //TODO
     unimplemented!()
 }
@@ -100,8 +124,11 @@ fn qr_solve() {
 
 #[cfg(test)]
 mod tests {
+    use std::convert::identity;
+
     use super::Matrix;
-    use crate::matrix::test_utils::assert_matrixes_ulps_eq;
+    use crate::MatMul;
+    use crate::matrix::{qr::get_Q, qr::get_R, test_utils::assert_matrixes_ulps_eq};
 
     #[test]
     fn test_qr_square() {
@@ -117,29 +144,67 @@ mod tests {
 
     #[test]
     fn test_qr_tall() {
-        let (qr, taus) = super::qr_decomposition(&Matrix::<4, 3> {
+        let a = Matrix::<4, 3> {
             rows: [[-1., -1., 1.], [1., 3., 3.], [-1., -1., 5.], [1., 3., 7.]],
-        });
-
-        for row in 0..4 {
-            for col in 0..3 {
-                print!("{:8.4} ", qr[(row, col)]);
-            }
-            println!();
-        }
-
-        for element in taus {
-            println!("{:8.4} ", element);
-        }
+        };
+        let (qr, taus) = super::qr_decomposition(&a);
 
         let correct_answer = Matrix::<4, 3> {
             rows: [
-                [3., 4., 2.],
+                [2., 4., 2.],
                 [-1. / 3., -2., -8.],
                 [1. / 3., 1. / 5., -4.],
                 [-1. / 3., 2. / 5., 1. / 3.],
             ],
         };
+
         assert_matrixes_ulps_eq::<4, 3, _, _>(&correct_answer, &qr);
+
+        let q = get_Q(&qr, taus);
+        let r = get_R(&qr);
+
+        println!("Q:");
+        for row in 0..4 {
+            for col in 0..4 {
+                print!("{:8.2} ", q[(row, col)]);
+            }
+            println!();
+        }
+        println!("R:");
+        for row in 0..4 {
+            for col in 0..3 {
+                print!("{:8.2} ", r[(row, col)]);
+            }
+            println!();
+        }
+
+        assert_matrixes_ulps_eq::<4, 4, _, _>(&a, &q.matmul(&r));
+        //assert_matrixes_ulps_eq::<4, 4, _, _>(&a, &r.Q_times(&qr, &taus));
+        //assert_matrixes_ulps_eq::<4, 4, _, _>(&identity(x), &q.transpose().times_Q(&qr, &taus));
+        //assert_matrixes_ulps_eq::<4, 4, _, _>(&identity(x), &q.times_Q_T(&qr, &taus));
+        //assert_matrixes_ulps_eq::<4, 4, _, _>(&identity(x), &q.Q_T_times(&qr, &taus));
     }
 }
+
+// #[test]
+// fn test_qr_wide() {
+//     let (qr, taus) = super::qr_decomposition(&Matrix::<3, 4> {
+//         rows: [[-1., -1., 1., 0.], [1., 3., 3., 0.], [-1., -1., 5., 0.]],
+//     });
+
+//     for row in 0..3 {
+//         for col in 0..4 {
+//             print!("{:8.4} ", qr[(row, col)]);
+//         }
+//         println!();
+//     }
+
+//     let correct_answer = Matrix::<3, 4> {
+//         rows: [
+//             [2., 4., 2., 0.],
+//             [-1. / 3., -2., -8., 0.],
+//             [1. / 3., 1. / 5., -4., 0.],
+//         ],
+//     };
+//     assert_matrixes_ulps_eq::<3, 4, _, _>(&correct_answer, &qr);
+// }
