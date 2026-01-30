@@ -8,6 +8,7 @@
 // tau = 2 / ||u||^2 where u is the reflector vector with a leading 1.
 
 use super::Matrix;
+use crate::GeneralMatrix;
 use crate::SquareMatrix;
 use std::cmp::min;
 
@@ -70,21 +71,21 @@ pub(super) fn qr_decomposition<const N: usize, const M: usize>(
     (qr, taus)
 }
 
-fn get_Q<const N: usize, const M: usize>(qr: &Matrix<N, M>, taus: Vec<f64>) -> Matrix<N, N> {
-    let mut q = Matrix::<N, N>::identity();
-    for (iter, &tau) in taus.iter().enumerate().rev() {
-        if tau == 0.0 {
-            continue;
-        }
-        let reflector: Matrix<N, 1> = Matrix::<N, 1>::from_rows(&[qr.get_col_slice_iter(i, i..N).collect()]);
-        for row in iter..M {
-            for col in iter..M{
-                Q[row, column] -= tau * reflector[row] * reflector[col]*;
-            }
-        }
-    }
-    q
-}
+// fn get_Q<const N: usize, const M: usize>(qr: &Matrix<N, M>, taus: Vec<f64>) -> Matrix<N, N> {
+//     let mut q = Matrix::<N, N>::identity();
+//     for (iter, &tau) in taus.iter().enumerate().rev() {
+//         if tau == 0.0 {
+//             continue;
+//         }
+//         let reflector: Matrix<N, 1> = Matrix::<N, 1>::from_rows(&[qr.get_col_slice_iter(i, i..N).collect()]);
+//         for row in iter..M {
+//             for col in iter..M{
+//                 Q[row, column] -= tau * reflector[row] * reflector[col];
+//             }
+//         }
+//     }
+//     q
+// }
 
 fn get_R<const N: usize, const M: usize>(qr: &Matrix<N, M>) -> Matrix<N, M> {
     let mut r = qr.clone();
@@ -117,9 +118,39 @@ fn QT_times() {
     unimplemented!()
 }
 
-fn qr_solve() {
-    //TODO
-    unimplemented!()
+fn qr_solve<const N: usize, const M: usize>(a: &Matrix<N, M>, mut b: Matrix<M, 1>) -> Matrix<N, 1> {
+    // Solve Ax = b using the QR decomposition.
+    // Calculate Q^T b = H_n H_{n-1} ... H_{1} b = y
+    // H_i b = (I - tau u u^T) b = b - tau (u^T b) u = b - tau * alpha *  u
+    let (qr, taus) = super::qr_decomposition(&a);
+
+    let n = N.min(M);
+    for i in 0..n {
+        let u_iter = qr.get_col_slice_iter(i + 1, i..M);
+        let mut alpha = b[(i, 1)];
+        for (j, u_j) in u_iter.enumerate() {
+            alpha += u_j * b[(i + j + 1, 1)];
+        }
+        alpha *= taus[i];
+
+        b[(i, 1)] -= alpha; // implicit 1 component
+        let u_iter = qr.get_col_slice_iter(i, i..M);
+        for (j, u_j) in u_iter.enumerate() {
+            b[(i + j + 1, 1)] -= alpha * u_j;
+        }
+    }
+
+    // Solve Rx = y by back substitution
+    let mut x = Matrix::<N, 1>::zeros();
+    for row_id in n..0 {
+        let mut sum = 0.0;
+        let row = qr[(row_id, (row_id + 1)..M)].into_iter();
+        for (k, r_jk) in row.enumerate() {
+            sum += r_jk * x[(k + 1 + row_id, 1)];
+        }
+        x[(row_id, 1)] = (b[(row_id, 1)] - sum) / qr[(row_id, row_id)];
+    }
+    x
 }
 
 #[cfg(test)]
@@ -128,7 +159,7 @@ mod tests {
 
     use super::Matrix;
     use crate::MatMul;
-    use crate::matrix::{qr::get_Q, qr::get_R, test_utils::assert_matrixes_ulps_eq};
+    use crate::matrix::{qr::get_R, test_utils::assert_matrixes_ulps_eq};
 
     #[test]
     fn test_qr_square() {
@@ -160,7 +191,7 @@ mod tests {
 
         assert_matrixes_ulps_eq::<4, 3, _, _>(&correct_answer, &qr);
 
-        let q = get_Q(&qr, taus);
+        // let q = get_Q(&qr, taus);
         let r = get_R(&qr);
 
         println!("Q:");
