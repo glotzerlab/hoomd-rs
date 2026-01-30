@@ -8,7 +8,7 @@ use bevy::{
     asset::embedded_asset,
     prelude::*,
     reflect::TypePath,
-    render::{render_resource::AsBindGroup, storage::ShaderStorageBuffer},
+    render::render_resource::AsBindGroup,
     shader::ShaderRef,
     sprite_render::{AlphaMode2d, Material2d, Material2dPlugin},
 };
