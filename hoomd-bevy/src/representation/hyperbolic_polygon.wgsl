@@ -107,7 +107,7 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     //let c = pos2.x * cos(theta) + pos2.y * sin(theta);
     //let d = - pos2.x * sin(theta) + pos2.y * cos(theta);
 
-    let world_angle = in.angle; // orientation of the body in system frame 
+    let world_angle = in.angle; // orientation of the body in system frame
     let tau = acosh(1.0 + 2.0*dot(pos1, pos1)/(1.0 - dot(pos1,pos1)));
     let alpha = cosh(tau/2.0);
     let beta = -sinh(tau/2.0)*cos(theta);

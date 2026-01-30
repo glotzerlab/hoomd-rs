@@ -16,13 +16,11 @@ use parquet::{
 use parquet_derive::ParquetRecordWriter;
 
 use benchmarks::{Benchmark, Effort, mc};
-use hoomd_geometry::shape::EightEight;
-use hoomd_microstate::{Body, Microstate, SiteKey, boundary::Periodic, property::OrientedPoint};
+use hoomd_microstate::{SiteKey, property::OrientedPoint};
 use hoomd_simulation::Simulation;
-use hoomd_spatial::{AllPairs, VecCell};
+use hoomd_spatial::VecCell;
 use hoomd_vector::{Angle, Cartesian, Versor};
 
-use rand::{SeedableRng, distr::Distribution, rngs::StdRng};
 use rayon::ThreadPoolBuilder;
 use wildmatch::WildMatch;
 

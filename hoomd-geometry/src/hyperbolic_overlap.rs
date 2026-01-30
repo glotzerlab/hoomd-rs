@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 //! Implement Overlap Check for Hyperbolic Surfaces
 
 use crate::BoundingSphereRadius;
@@ -84,7 +87,7 @@ pub trait SeparatingPlanes<S, M, R> {
     /// Method works by iterating through adjacent vertices of `self`, constructing the
     /// hyperplane which pass through the two vertices, and checking if all the
     /// points of `other` are on the opposite side. If a separating plane exists, then
-    /// the two shapes do not overlap and the method returns `false`.  
+    /// the two shapes do not overlap and the method returns `false`.
     fn intersects_at(&self, x_i: &M, r_i: &R, x_j: &M, r_j: &R) -> bool;
     /// Translate vector of vertices to frame where query vertex is at origin.
     fn to_vertex_frame_oriented(

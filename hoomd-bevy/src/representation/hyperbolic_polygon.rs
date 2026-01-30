@@ -14,11 +14,9 @@ use bevy::{
 };
 #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
 use bevy::{
-    render::{
-        mesh::MeshVertexBufferLayoutRef,
-        render_resource::{RenderPipelineDescriptor, SpecializedMeshPipelineError},
-    },
-    sprite::Material2dKey,
+    mesh::MeshVertexBufferLayoutRef,
+    render::render_resource::{RenderPipelineDescriptor, SpecializedMeshPipelineError},
+    sprite_render::Material2dKey,
 };
 use hoomd_manifold::{Hyperbolic, Minkowski};
 use itertools::{
@@ -32,23 +30,7 @@ const SHADER_ASSET_PATH: &str = "embedded://hoomd_bevy/representation/hyperbolic
 /// skirt width of the Hyperbolic
 const RHO: f64 = 1.0;
 
-/// Represent an entity with a 2D disk in the xy plane.
-///
-/// The base representation has a diameter of 1.0. Provide a non-unit diameter in
-/// [`sync`] to render disks of different sizes. Nominally, the z coordinate of the
-/// disks should be set to 0. Choose a different value to control the back to front
-/// draw order.
-///
-/// All disks of the same type must have the same material. To display disks with
-/// different colors, outline widths, or textures, `setup` and `sync` multiple types
-/// of disks with different marker types.
-///
-/// To use:
-/// * Add [`setup`] to the `Startup` schedule.
-/// * Call [`sync`] in an `Update` schedule that runs after `AdvanceSet`.
-///
-/// [`setup`]: Self::setup
-/// [`sync`]: Self::sync
+/// Represent an entity with a 2D regular polygon in hyperbolic space.
 #[derive(Component)]
 pub struct HyperbolicPolygon<T> {
     /// Mark the type of the disk.
@@ -58,11 +40,11 @@ pub struct HyperbolicPolygon<T> {
 /// Assets that represent a Disk in the scene.
 #[derive(Resource)]
 pub struct HyperbolicPolygonAssets<T> {
-    /// The disk mesh.
+    /// The polygon mesh.
     mesh: Handle<Mesh>,
-    /// The disk material.
+    /// The polygon material.
     material: Handle<HyperbolicPolygonMaterial>,
-    /// Mark the type of the disk assets.
+    /// Mark the type of the polygon assets.
     marker: PhantomData<T>,
 }
 
@@ -73,19 +55,19 @@ pub(crate) fn build(app: &mut App) {
 }
 
 impl<T: Send + Sync + 'static> HyperbolicPolygon<T> {
-    /// Create assets to render disks.
+    /// Create assets to render polygons.
     pub fn setup(
         material: In<HyperbolicPolygonMaterialParameters>,
         mut commands: Commands,
-        #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))] mut buffers: ResMut<
-            Assets<ShaderStorageBuffer>,
-        >,
+        //#[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))] mut buffers: ResMut<
+        //    Assets<ShaderStorageBuffer>,
+        //>,
         mut meshes: ResMut<Assets<Mesh>>,
         mut materials: ResMut<Assets<HyperbolicPolygonMaterial>>,
         asset_server: Res<AssetServer>,
     ) {
-        #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
-        let n_sides = buffers.add(ShaderStorageBuffer::from([material.0.n_sides]));
+        //#[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
+        let n_sides = material.0.n_sides;
 
         let mesh = meshes.add(Rectangle::new(1.0, 1.0));
         let material = HyperbolicPolygonMaterial {
@@ -166,13 +148,7 @@ fn poincare(point: &Minkowski<3>, skirt: f64, radius: f64, angle: f32) -> ([f32;
     ([proj[0] as f32, proj[1] as f32, angle], rad_proj as f32)
 }
 
-/// Control how disks are rendered.
-///
-/// [`HyperbolicDiskMaterial`] mixes the texture (which defaults to fully transparent) with
-/// the background color using the texture alpha. It ignores the background alpha.
-///
-/// Control the draw order using the z coordinate. The draw order is non-deterministic
-/// for all disks at the same z value.
+/// Control how hyperbolic polygons are rendered.
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct HyperbolicPolygonMaterial {
     /// Color applied to the interior of the polygon.
@@ -196,9 +172,9 @@ pub struct HyperbolicPolygonMaterial {
     #[sampler(5)]
     pub texture: Option<Handle<Image>>,
     /// Color applied to the interior of the disk (indexed by disk % array size).
-    #[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
-    #[storage(6, read_only)]
-    pub n_sides: Handle<ShaderStorageBuffer>,
+    //#[cfg(not(all(target_arch = "wasm32", not(feature = "webgpu"))))]
+    #[uniform(6)]
+    pub n_sides: f32,
 }
 
 /// Material Parameters for hyperbolic polygon.
@@ -244,19 +220,6 @@ impl HyperbolicPolygonMaterialParameters {
         }
     }
 }
-
-// impl Default for HyperbolicPolygonMaterial {
-//    fn default() -> Self {
-//        Self {
-//            background_color: PRIMARY_COLOR.into(),
-//            outline_color: Color::linear_rgb(0.0, 0.0, 0.0).into(),
-//            outline_width: 0.005,
-//            texture: TRANSPARENT_IMAGE_HANDLE,
-//            texture_scale: 1.2,
-//            n_sides: 4.0 as f32,
-//        }
-//    }
-//}
 
 impl Material2d for HyperbolicPolygonMaterial {
     fn fragment_shader() -> ShaderRef {
