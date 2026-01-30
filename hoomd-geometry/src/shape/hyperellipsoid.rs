@@ -435,20 +435,6 @@ where
     }
 }
 
-/// Solve the characteristic equation of two ellipses.
-#[inline]
-fn k_lambda<const N: usize, M>(a_inv: &M, b_inv: &M, l: f64, v_ij: &[f64; N]) -> f64
-where
-    M: Invertible + Copy + QuadraticForm<N>,
-{
-    let m = *b_inv * ((1.0 - l).recip()) + (*a_inv * l.recip());
-
-    1.0 - m
-        .inverse()
-        .expect("Matrix is not invertible - overlap check would return NaN.")
-        .compute_quadratic_form(v_ij)
-}
-
 #[expect(
     clippy::used_underscore_binding,
     reason = "Used for const parameterization."
