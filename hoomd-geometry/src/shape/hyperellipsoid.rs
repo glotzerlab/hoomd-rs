@@ -10,7 +10,7 @@ use std::ops::Mul;
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
 use hoomd_linear_algebra::{
-    Invertible, MatMul, QuadraticForm,
+    QuadraticForm,
     matrix::{DiagonalMatrix, Matrix22},
 };
 use hoomd_utility::valid::PositiveReal;
@@ -317,6 +317,15 @@ where
             rows: [[a_inv[(1, 1)], 0.0], [0.0, a_inv[(0, 0)]]],
         };
 
+        let adj_b_inv_m_a_inv = Matrix22 {
+            rows: [
+                [b_inv_m_a_inv.rows[1][1], -b_inv_m_a_inv.rows[0][1]],
+                [-b_inv_m_a_inv.rows[1][0], b_inv_m_a_inv.rows[0][0]],
+            ],
+        };
+        let q0 = adj_a_inv.compute_quadratic_form(&v_ij.coordinates);
+        let q1 = adj_b_inv_m_a_inv.compute_quadratic_form(&v_ij.coordinates);
+
         // d1 = tr(adj(A_inv) @ d).
         // Note the off diagonal terms would be 0 and are excluded
         let d1 = f64::mul_add(
@@ -325,20 +334,7 @@ where
             adj_a_inv[(1, 1)] * b_inv_m_a_inv[(1, 1)],
         );
 
-        let q0 = adj_a_inv.compute_quadratic_form(&v_ij.coordinates);
-
-        let adj_d = Matrix22 {
-            rows: [
-                [b_inv_m_a_inv.rows[1][1], -b_inv_m_a_inv.rows[0][1]],
-                [-b_inv_m_a_inv.rows[1][0], b_inv_m_a_inv.rows[0][0]],
-            ],
-        };
-        let q1 = adj_d.compute_quadratic_form(&v_ij.coordinates);
-
-        let c3 = q1;
-        let c2 = det_b_inv_m_a_inv - q1 + q0;
-        let c1 = d1 - q0;
-        let c0 = det_a_inv;
+        let (c3, c2, c1, c0) = (q1, det_b_inv_m_a_inv - q1 + q0, d1 - q0, det_a_inv);
 
         // Early exit with an IVT check
         let p0 = c0; // P(0) = c0
