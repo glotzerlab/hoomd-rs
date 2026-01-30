@@ -252,18 +252,18 @@ where
         // $$
         //
         // The "natural" matrix form of an ellipse is $diag(1/axes_i**2)$. However, we must
-        // transform one of our matrixes for the intersection calculation. We choose B, as
+        // transform one of our matrixes for the intersection calculation. We choose A, as
         // it simplifies our future calculations. With R as the rotation matrix of o_ij:
         //
         // $$
-        // B = (R^-1).T @ diag(1/axes_B**2) @ R^-1
+        // A = (R^-1).T @ diag(1/axes_A**2) @ R^-1
         // $$
         // The inverse of a rotation matrix is its transpose, so this simplifies. However,
         // because we actually desire A_inverse and B_inverse (and A and B are diagonal),
         // we can simplify further:
         // $$
-        // A^-1 = diag(axes_A**2)
-        // B^-1 = R @ diag(axes_B**2) @ R^T
+        // A^-1 = R @ diag(axes_A**2) @ R^T
+        // B^-1 = diag(axes_B**2)
         // $$
         //
         // Both these results can be cached and reused for evaluation of [`k_lambda`].
@@ -290,11 +290,11 @@ where
         let theta = Angle::from(*o_ij).theta;
         let (sin, cos) = theta.sin_cos();
         let (s_sq, c_sq) = (sin.powi(2), cos.powi(2));
-        let a = self.semi_axes[0].get();
-        let b = self.semi_axes[1].get();
+        let a = other.semi_axes[0].get();
+        let b = other.semi_axes[1].get();
 
         let a_inv = DiagonalMatrix {
-            elements: other.semi_axes.map(|x| x.get().powi(2)),
+            elements: self.semi_axes.map(|x| x.get().powi(2)),
         };
         let diagonal = cos * (a.powi(2) - b.powi(2)) * sin;
         let b_inv_m_a_inv = Matrix22 {
@@ -557,8 +557,7 @@ mod tests {
         ]);
 
         assert_eq!(
-            // TODO: do we use the wrong rotation convention?
-            el1.intersects_at(&el0, &v_ij.into(), &Angle::from(o_ij)),
+            el0.intersects_at(&el1, &v_ij.into(), &Angle::from(o_ij)),
             does_overlap
         );
         assert_eq!(
@@ -600,8 +599,7 @@ mod tests {
         ]);
 
         assert_eq!(
-            // TODO: do we use the wrong rotation convention?
-            el1.intersects_at(&el0, &v_ij.into(), &Angle::from(o_ij)),
+            el0.intersects_at(&el1, &Cartesian::from(v_ij), &Angle::from(o_ij)),
             does_overlap
         );
         assert_eq!(
