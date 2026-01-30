@@ -12,12 +12,6 @@ use bevy::{
     shader::ShaderRef,
     sprite_render::{AlphaMode2d, Material2d, Material2dPlugin},
 };
-#[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
-use bevy::{
-    mesh::MeshVertexBufferLayoutRef,
-    render::render_resource::{RenderPipelineDescriptor, SpecializedMeshPipelineError},
-    sprite_render::Material2dKey,
-};
 use hoomd_manifold::{Hyperbolic, Minkowski};
 use itertools::{
     EitherOrBoth::{Both, Left, Right},
