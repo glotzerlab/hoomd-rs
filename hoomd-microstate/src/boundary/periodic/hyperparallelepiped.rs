@@ -4,11 +4,13 @@
 //! Implement periodic boundary conditions for cuboids in cartesian space.
 
 use crate::{
-    boundary::{GenerateGhosts, Error, MAX_GHOSTS, MaximumAllowableInteractionRange, Periodic, Wrap},
+    boundary::{
+        Error, GenerateGhosts, MAX_GHOSTS, MaximumAllowableInteractionRange, Periodic, Wrap,
+    },
     property::Position,
 };
 use hoomd_geometry::shape::Hyperparallelepiped;
-use hoomd_linear_algebra::{MatMul, matrix::Matrix33};
+use hoomd_linear_algebra::{MatMul, matrix::Matrix, matrix::Matrix33, matrix::qr};
 use hoomd_vector::{Cartesian, Cross, InnerProduct};
 use tinyvec::ArrayVec;
 
@@ -34,9 +36,9 @@ impl<const N: usize> MaximumAllowableInteractionRange for Hyperparallelepiped<N>
     }
 }
 
-impl<P> Wrap<P> for Periodic<Hyperparallelepiped<3>>
+impl<P, const N: usize> Wrap<P> for Periodic<Hyperparallelepiped<N>>
 where
-    P: Position<Vector = Cartesian<3>>,
+    P: Position<Vector = Cartesian<N>>,
 {
     /// Wrap any cartesian vector to the inside of the given hyperparallepiped.
     ///
@@ -70,29 +72,15 @@ where
         let mut properties = properties;
         let r = properties.position_mut();
 
-        let from_fractional = Matrix33 {
+        let a = Matrix::<N, N> {
             rows: self.shape.edge_vectors.map(|v| v.coordinates),
         }
         .transpose();
 
-        let to_fractional = Matrix33 {
-            rows: [
-                self.shape.edge_vectors[1]
-                    .cross(&self.shape.edge_vectors[2])
-                    .coordinates,
-                self.shape.edge_vectors[2]
-                    .cross(&self.shape.edge_vectors[0])
-                    .coordinates,
-                self.shape.edge_vectors[0]
-                    .cross(&self.shape.edge_vectors[1])
-                    .coordinates,
-            ],
-        } * from_fractional.determinant().recip(); //Todo: Switch to using inverse when available
+        let fractional = qr::qr_solve(&a, r.to_column_matrix());
 
-        let box_offset = to_fractional
-            .matmul(&r.to_column_matrix())
-            .map_elementwise(f64::round);
-        *r -= from_fractional.matmul(&box_offset).transpose().into();
+        let position_offset = a.matmul(&fractional.map_elementwise(f64::round));
+        *r -= Cartesian::from_col_matrix(position_offset);
 
         Ok(properties)
     }
@@ -110,23 +98,22 @@ where
     // /// Place periodic images of sites near the edge of the periodic boundary.
     // #[inline]
     fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
-        // let mut result = ArrayVec::new();
+        let mut result = ArrayVec::new();
 
-        // let r = site_properties.position();
-        // let max = self.shape.maximal_extents();
-        // let min = self.shape.minimal_extents();
+        let r = site_properties.position();
+        let max = self.shape.maximal_extents();
+        let min = self.shape.minimal_extents();
 
-        // if !self.shape.is_point_inside(r) {
-        //     return result;
-        // }
+        if !self.shape.is_point_inside(r) {
+            return result;
+        }
 
-        // let new_site = |x, y| {
-        //     let mut new_site = *site_properties;
-        //     new_site.position_mut()[0] += x * self.shape.edge_vectors[0].get();
-        //     new_site.position_mut()[1] += y * self.shape.edge_vectors[1].get();
-        //     new_site
-        // };
+        let new_site = |x, y| {
+            let mut new_site = *site_properties;
+            new_site.position_mut()[0] += x * self.shape.edge_vectors[0].get();
+            new_site.position_mut()[1] += y * self.shape.edge_vectors[1].get();
+            new_site
+        };
         todo!("Working on it!")
-        
     }
 }

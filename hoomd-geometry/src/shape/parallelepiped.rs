@@ -89,3 +89,4 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperparallelepiped<N> {
             })
     }
 }
+

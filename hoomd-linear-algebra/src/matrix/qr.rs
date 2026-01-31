@@ -118,7 +118,10 @@ fn QT_times() {
     unimplemented!()
 }
 
-fn qr_solve<const N: usize, const M: usize>(a: &Matrix<N, M>, mut b: Matrix<M, 1>) -> Matrix<N, 1> {
+pub fn qr_solve<const N: usize, const M: usize>(
+    a: &Matrix<N, M>,
+    mut b: Matrix<N, 1>,
+) -> Matrix<M, 1> {
     // Solve Ax = b using the QR decomposition.
     // Calculate Q^T b = H_n H_{n-1} ... H_{1} b = y
     // H_i b = (I - tau u u^T) b = b - tau (u^T b) u = b - tau * alpha *  u
@@ -141,7 +144,7 @@ fn qr_solve<const N: usize, const M: usize>(a: &Matrix<N, M>, mut b: Matrix<M, 1
     }
 
     // Solve Rx = y by back substitution
-    let mut x = Matrix::<N, 1>::zeros();
+    let mut x = Matrix::<M, 1>::zeros();
     for row_id in n..0 {
         let mut sum = 0.0;
         let row = qr[(row_id, (row_id + 1)..M)].into_iter();
@@ -159,7 +162,7 @@ mod tests {
 
     use super::Matrix;
     use crate::MatMul;
-    use crate::matrix::{qr::get_R, test_utils::assert_matrixes_ulps_eq};
+    use crate::matrix::{qr::get_R, qr::qr_solve, test_utils::assert_matrixes_ulps_eq};
 
     #[test]
     fn test_qr_square() {
@@ -192,28 +195,37 @@ mod tests {
         assert_matrixes_ulps_eq::<4, 3, _, _>(&correct_answer, &qr);
 
         // let q = get_Q(&qr, taus);
-        let r = get_R(&qr);
+        // let r = get_R(&qr);
 
-        println!("Q:");
-        for row in 0..4 {
-            for col in 0..4 {
-                print!("{:8.2} ", q[(row, col)]);
-            }
-            println!();
-        }
-        println!("R:");
-        for row in 0..4 {
-            for col in 0..3 {
-                print!("{:8.2} ", r[(row, col)]);
-            }
-            println!();
-        }
+        // println!("Q:");
+        // for row in 0..4 {
+        //     for col in 0..4 {
+        //         print!("{:8.2} ", q[(row, col)]);
+        //     }
+        //     println!();
+        // }
+        // println!("R:");
+        // for row in 0..4 {
+        //     for col in 0..3 {
+        //         print!("{:8.2} ", r[(row, col)]);
+        //     }
+        //     println!();
+        // }
 
-        assert_matrixes_ulps_eq::<4, 4, _, _>(&a, &q.matmul(&r));
+        // assert_matrixes_ulps_eq::<4, 4, _, _>(&a, &q.matmul(&r));
         //assert_matrixes_ulps_eq::<4, 4, _, _>(&a, &r.Q_times(&qr, &taus));
         //assert_matrixes_ulps_eq::<4, 4, _, _>(&identity(x), &q.transpose().times_Q(&qr, &taus));
         //assert_matrixes_ulps_eq::<4, 4, _, _>(&identity(x), &q.times_Q_T(&qr, &taus));
         //assert_matrixes_ulps_eq::<4, 4, _, _>(&identity(x), &q.Q_T_times(&qr, &taus));
+
+        let b = Matrix::<4, 1> {
+            rows: [[0.], [16.], [12.], [28.]],
+        };
+        let x_actual = Matrix::<3, 1> {
+            rows: [[1.0], [2.0], [3.0]],
+        };
+        let x = qr_solve(&a, b);
+        assert_matrixes_ulps_eq::<3, 1, _, _>(&x_actual, &x);
     }
 }
 
