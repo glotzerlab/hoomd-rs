@@ -58,7 +58,7 @@ impl<const N: usize> Spherical<N> {
     #[must_use]
     pub fn from_cartesian_coordinates(point: Cartesian<N>, radius: f64) -> Spherical<N> {
         let rad = point.norm();
-        assert_relative_eq!(rad, radius);
+        assert_relative_eq!(rad, radius, epsilon = 1e-6);
         Spherical { point, radius }
     }
 
@@ -250,34 +250,55 @@ impl<const N: usize> Default for Spherical<N> {
 }
 
 impl Distribution<Spherical<3>> for SphericalDisk {
-    /// Translates 3-dimensional cartesian vector named "point" along the
-    /// surface of a sphere by maximum distance of r.
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Spherical<3> {
         let radius = self.point.radius;
-        let max_trans = (self.disk_radius.get()) / radius;
-        let point = self.point;
-        let phi = point.point.coordinates[1].atan2(point.point.coordinates[0]);
-        let theta = (point.point.coordinates[2] / radius).acos();
-        let trial_zenith = Uniform::new(0.0, 1.0).expect("r is positive and real");
-        let trial_azimuth = Uniform::new(-PI, PI).expect("hard-coded distribution should be valid");
-        let azi = trial_azimuth.sample(rng);
-        let zeni_sample: f64 = trial_zenith.sample(rng);
-        let zeni = (zeni_sample).sqrt() * max_trans;
-        let trial_coords = [
-            radius * (zeni.sin()) * (azi.cos()),
-            radius * (zeni.sin()) * (azi.sin()),
-            radius * (zeni.cos()),
+        let max_angle = self.disk_radius.get() / radius;
+        let p = self.point.point.coordinates;
+        let p_norm = self.point.point.norm();
+        let p_hat = [p[0] / p_norm, p[1] / p_norm, p[2] / p_norm];
+        // Build an ON tangent frame (e1, e2) not parallel to p_hat
+        let tmp = if p_hat[2].abs() < 0.9 {
+            [0.0, 0.0, 1.0]
+        } else {
+            [1.0, 0.0, 0.0]
+        };
+
+        // e1 = normalized cross product of tmp and p_hat
+        let e1 = [
+            tmp[1] * p_hat[2] - tmp[2] * p_hat[1],
+            tmp[2] * p_hat[0] - tmp[0] * p_hat[2],
+            tmp[0] * p_hat[1] - tmp[1] * p_hat[0],
         ];
-        let transformed_point = Cartesian::from([
-            trial_coords[0] * (theta.cos()) * (phi.cos()) - trial_coords[1] * (phi.sin())
-                + trial_coords[2] * (theta.sin()) * (phi.cos()),
-            trial_coords[0] * (theta.cos()) * (phi.sin())
-                + trial_coords[1] * (phi.cos())
-                + trial_coords[2] * (theta.sin()) * (phi.sin()),
-            -trial_coords[0] * (theta.sin()) + trial_coords[2] * (theta.cos()),
-        ]);
-        Spherical::from_cartesian_coordinates(transformed_point, radius)
+        let e1_norm = (e1[0] * e1[0] + e1[1] * e1[1] + e1[2] * e1[2]).sqrt();
+        let e1 = [e1[0] / e1_norm, e1[1] / e1_norm, e1[2] / e1_norm];
+        // e2 = cross product of p_hat and e1
+        let e2 = [
+            p_hat[1] * e1[2] - p_hat[2] * e1[1],
+            p_hat[2] * e1[0] - p_hat[0] * e1[2],
+            p_hat[0] * e1[1] - p_hat[1] * e1[0],
+        ];
+        // sample direction in tangent plane: dir = cos(phi) * e1 + sin(phi) * e2
+        let phi = Uniform::new(0.0, 2.0 * PI)
+            .expect("u is positive")
+            .sample(rng);
+        let dir = [
+            phi.cos() * e1[0] + phi.sin() * e2[0],
+            phi.cos() * e1[1] + phi.sin() * e2[1],
+            phi.cos() * e1[2] + phi.sin() * e2[2],
+        ];
+        // sample geodesic distance with area weighting
+        let u: f64 = Uniform::new(0.0, 1.0).expect("u is positive").sample(rng);
+        let cos_theta = 1.0 - u * (1.0 - max_angle.cos());
+        let sin_theta = (cos_theta.acos()).sin();
+        // exponential map exp_p(v) = R\cos(v)*p_hat + R\sin(v)*v_hat
+        let new_point = [
+            radius * (cos_theta * p_hat[0] + sin_theta * dir[0]),
+            radius * (cos_theta * p_hat[1] + sin_theta * dir[1]),
+            radius * (cos_theta * p_hat[2] + sin_theta * dir[2]),
+        ];
+
+        Spherical::from_cartesian_coordinates(Cartesian::from(new_point), radius)
     }
 }
 
