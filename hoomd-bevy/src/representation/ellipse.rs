@@ -1,6 +1,11 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+#![allow(
+    clippy::missing_docs_in_private_items,
+    reason = "clippy reports a false positive errors in this file"
+)]
+
 //! An outlined ellipse.
 //!
 //! The [`Ellipse`] representation is a ellipse of pixels with a configurable
