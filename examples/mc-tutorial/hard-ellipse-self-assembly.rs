@@ -12,7 +12,8 @@ use hoomd_interaction::{
     univariate::OverlapPenalty,
 };
 use hoomd_mc::{
-    QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn,
+    QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, Tune,
+    UniformIn,
 };
 use hoomd_microstate::{
     Microstate, SiteKey, boundary::Periodic, property::OrientedPoint,
@@ -231,6 +232,17 @@ impl HardEllipseSelfAssembly {
 
         // ANCHOR: state_transition
         if self.quick_compress.is_complete() {
+            self.translate_sweep.tune_default(
+                &self.microstate,
+                &self.hamiltonian,
+                &self.macrostate,
+            );
+            self.rotate_sweep.tune_default(
+                &self.microstate,
+                &self.hamiltonian,
+                &self.macrostate,
+            );
+
             self.phase = Phase::Equilibrate;
             println!(
                 "Initialization complete at step {}.",

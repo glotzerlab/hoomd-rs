@@ -270,8 +270,9 @@ simulation steps. Pass a fixed `temperature=1.0` because the energy scale in
 After many steps, `QuickInsert` should add all the requested bodies,
 `QuickCompress` should achieve the target boundary volume, *and* all
 overlaps will be removed (the total energy of `overlap_penalty_hamiltonian` is 0).
-When all those are true `quick_compress.is_complete()` will return `true` and the
-simulation can proceed to the equilibrate phase:
+When all those are true `quick_compress.is_complete()` will return `true`. Before
+proceeding to the equilibrate phase, call `tune_default` to adjust the trial move sizes
+and achieve a 20% move acceptance rate:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-ellipse-self-assembly.rs:state_transition}}
 ```
