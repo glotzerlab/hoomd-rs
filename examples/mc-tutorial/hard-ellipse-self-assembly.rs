@@ -3,7 +3,7 @@
 use anyhow::{Context, anyhow};
 
 use hoomd_geometry::{
-    Convex, Volume,
+    Volume,
     shape::{Ellipse, Rectangle},
 };
 use hoomd_interaction::{
@@ -40,7 +40,7 @@ struct HardEllipseSelfAssembly {
         Periodic<Rectangle>,
     >,
     /// How sites interact with other sites and fields.
-    hamiltonian: PairwiseCutoff<HardShape<Convex<Ellipse>>>,
+    hamiltonian: PairwiseCutoff<HardShape<Ellipse>>,
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<PositionVector>>,
     /// Trial moves to apply.
@@ -53,7 +53,7 @@ struct HardEllipseSelfAssembly {
     quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Rectangle>>>,
     /// How sites interact when inserted and compressed.
     overlap_penalty_hamiltonian: PairwiseCutoff<
-        Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Convex<Ellipse>>>,
+        Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Ellipse>>,
     >,
     /// The current phase of the simulation.
     phase: Phase,
@@ -89,7 +89,7 @@ impl HardEllipseSelfAssembly {
             (sigma / 2.0).try_into()?,
             (sigma / aspect / 2.0).try_into()?,
         ]);
-        let hamiltonian = PairwiseCutoff(HardShape(Convex(ellipse.clone())));
+        let hamiltonian = PairwiseCutoff(HardShape(ellipse.clone()));
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: periodic
@@ -140,7 +140,7 @@ impl HardEllipseSelfAssembly {
         // ANCHOR: overlap_penalty_hamiltonian
         let approximate_shape_overlap = Anisotropic {
             interaction: ApproximateShapeOverlap::new(
-                Convex(ellipse),
+                ellipse,
                 OverlapPenalty::default(),
                 0.01.try_into()?,
             ),
