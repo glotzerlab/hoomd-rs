@@ -82,3 +82,10 @@ path = "mc-tutorial/hard-ellipse-self-assembly.rs"
 
 [package.metadata.example.hard-ellipse-self-assembly]
 path = "mc-tutorial"
+
+[[example]]
+name = "hard-tetrahedron-self-assembly"
+path = "mc-tutorial/hard-tetrahedron-self-assembly.rs"
+
+[package.metadata.example.hard-tetrahedron-self-assembly]
+path = "mc-tutorial"

@@ -3715,7 +3715,9 @@ dependencies = [
 name = "hoomd-vector"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "approxim",
+ "assert2",
  "divan",
  "hoomd-linear-algebra",
  "hoomd-rand",

@@ -25,6 +25,8 @@ hoomd-linear-algebra.workspace = true
 hoomd-utility.workspace = true
 
 [dev-dependencies]
+anyhow.workspace = true
+assert2.workspace = true
 divan.workspace = true
 paste.workspace = true
 rstest.workspace = true

@@ -48,7 +48,7 @@ jobs:
     #   run: rustup target install ${{ matrix.target }} --toolchain ${{ matrix.rust }}
     #   if: ${{ matrix.target != '' }}
     - name: Set default target
-      run: rustup default 1.92.0
+      run: rustup default 1.93.0
     - name: Check rust installation
       run: rustc -vV
     - name: Install cargo-binstall
