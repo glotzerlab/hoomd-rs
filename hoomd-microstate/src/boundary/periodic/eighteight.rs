@@ -31,7 +31,7 @@ impl MaximumAllowableInteractionRange for EightEight {
 }
 
 impl Wrap<Point<Hyperbolic<3>>> for Periodic<EightEight> {
-    /// Wrap a point on the Hyperbolic to the inside of the {8,8} tile.
+    /// Wrap a point in hyperbolic space to the inside of the {8,8} tile.
     ///
     /// Note that the function fails to wrap points that are outside the octagon
     /// and further than `EightEight::EDGE_LENGTH`/2 from any of the vertices. In
@@ -1212,7 +1212,7 @@ mod tests {
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
 
-        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, 8> = periodic.generate_ghosts(&point);
+        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, 12> = periodic.generate_ghosts(&point);
         let ghost_6 = ghost_array[6];
 
         let ans_6 = Hyperbolic::<3>::from_polar_coordinates(v + offset_boost, PI, 1.0);
@@ -1244,7 +1244,7 @@ mod tests {
         let periodic =
             Periodic::new(0.5, EightEight { skirt: 1.0_f64 }).expect("hard-coded positive number");
 
-        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, 8> = periodic.generate_ghosts(&point);
+        let ghost_array: ArrayVec<Point<Hyperbolic<3>>, 12> = periodic.generate_ghosts(&point);
 
         // check double transformations
         let ghost_2_poincare = ghost_array[2].position.to_poincare();

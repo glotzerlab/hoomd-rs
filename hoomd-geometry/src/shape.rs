@@ -37,3 +37,6 @@ pub use sphere::{Circle, Hypersphere, Sphere};
 
 mod sphero;
 pub use sphero::Sphero;
+
+mod twelvetwelve;
+pub use twelvetwelve::TwelveTwelve;
