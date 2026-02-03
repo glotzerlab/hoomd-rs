@@ -1,4 +1,4 @@
-# Hard Particle Self-Assembly
+# Hard Ellipse Self-Assembly
 
 <script type="module">
 import init from 'https://glotzerlab.github.io/hoomd-rs/mc-tutorial/hard-ellipse-self-assembly.js'
@@ -346,8 +346,8 @@ the generated `trajectory.gsd` in [Ovito] or another visualization tool:
 cargo run --release --example hard-ellipse-self-assembly
 ```
 
-The next section will explain how to run self-assembly simulations of patchy
-particles.
+The next section will explain how to run self-assembly simulations of hard
+tetrahedra.
 
 [Ovito]: https://www.ovito.org/
 

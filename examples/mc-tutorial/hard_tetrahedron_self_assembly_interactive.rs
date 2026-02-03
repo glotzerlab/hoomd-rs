@@ -67,7 +67,7 @@ pub(crate) fn main() -> anyhow::Result<()> {
                 tetrahedron_material.clone(),
             )
         })
-            .pipe(triangle_mesh::TriangleMesh::<A>::setup),
+        .pipe(triangle_mesh::TriangleMesh::<A>::setup),
     );
 
     // app.add_systems(
