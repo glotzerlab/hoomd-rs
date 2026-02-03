@@ -1,12 +1,11 @@
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, PRIMARY_COLOR_3D, Settings,
-    representation::RectangularBoundary, representation::triangle_mesh,
+    representation::triangle_mesh,
 };
 
 use anyhow::Context;
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
-use hoomd_vector::Cartesian;
 
 use super::HardTetrahedronSelfAssembly;
 
