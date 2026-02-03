@@ -334,39 +334,6 @@ impl SeparatingPlanes<HyperbolicConvexPolygon, Hyperbolic<3>, Angle> for Hyperbo
             ]);
             Hyperbolic::from_minkowski_coordinates(translated, point.skirt())
         };
-        // let phi = body_orientation.theta + 2.0 * PI * (vertex_num as f64) / (num_of_sides as f64);
-        // let theta = body_position.coordinates()[1].atan2(body_position.coordinates()[0]);
-        // let nu = (body_position.coordinates()[2] / body_position.skirt()).acosh();
-        // let ep = bounding_radius;
-        // let vertex_translate = |point: &Hyperbolic<3>| -> Hyperbolic<3> {
-        // let pt = point.point().coordinates;
-        // let translated = Minkowski::from([
-        // ((nu.cosh()) * (ep.cosh()) * (theta.cos()) * (phi.cos())
-        // - (ep.cosh()) * (theta.sin()) * (phi.sin())
-        // + (nu.sinh()) * (ep.sinh()) * (theta.cos()))
-        // pt[0]
-        // + ((nu.cosh()) * (ep.cosh()) * (theta.sin()) * (phi.cos())
-        // + (ep.cosh()) * (theta.cos()) * (phi.sin())
-        // + (nu.sinh()) * (ep.sinh()) * (theta.sin()))
-        // pt[1]
-        // + (-(nu.sinh()) * (ep.cosh()) * (phi.cos()) - (nu.cosh()) * (ep.sinh()))
-        // pt[2],
-        // (-(nu.cosh()) * (theta.cos()) * (phi.sin()) - (theta.sin()) * (phi.cos())) * pt[0]
-        // + (-(nu.cosh()) * (theta.sin()) * (phi.sin()) + (theta.cos()) * (phi.cos()))
-        // pt[1]
-        // + ((nu.sinh()) * (phi.sin())) * pt[2],
-        // (-(nu.cosh()) * (ep.sinh()) * (theta.cos()) * (phi.cos())
-        // + (ep.sinh()) * (theta.sin()) * (phi.sin())
-        // - (nu.sinh()) * (ep.cosh()) * (theta.cos()))
-        // pt[0]
-        // + (-(nu.cosh()) * ep.sinh() * theta.sin() * phi.cos()
-        // - ep.sinh() * theta.cos() * phi.sin()
-        // - nu.sinh() * ep.cosh() * theta.sin())
-        // pt[1]
-        // + ((nu.sinh()) * (ep.sinh()) * (phi.cos()) + (nu.cosh()) * (ep.cosh())) * pt[2],
-        // ]);
-        // Hyperbolic::from_minkowski_coordinates(translated, point.skirt())
-        // };
         points.iter().map(vertex_translate).collect::<Vec<_>>()
     }
     #[inline]
