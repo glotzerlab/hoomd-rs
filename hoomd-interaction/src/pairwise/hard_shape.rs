@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{MaximumInteractionRange, SitePairEnergy};
-use hoomd_geometry::{BoundingSphereRadius, IntersectsAt, hyperbolic_overlap::SeparatingPlanes};
+use hoomd_geometry::{BoundingSphereRadius, IntersectsAt};
 use hoomd_manifold::Hyperbolic;
 use hoomd_microstate::property::{Orientation, Position};
 use hoomd_vector::{self, Angle, Cartesian, Metric, Rotate, Rotation};
@@ -179,7 +179,7 @@ impl MaximumInteractionRange for HardSphere {
 impl<G, S> SitePairEnergy<S, Hyperbolic<3>> for HardShape<G>
 where
     S: Position<Position = Hyperbolic<3>> + Orientation<Rotation = Angle>,
-    G: SeparatingPlanes<G, Hyperbolic<3>, Angle>,
+    G: HyperbolicSeparatingPlanes<G, Hyperbolic<3>, Angle>,
 {
     /// Test whether two sites in two-dimensional hyperbolic space overlap.
     ///

@@ -117,7 +117,9 @@ use thiserror::Error;
 mod convex;
 pub use convex::Convex;
 
-pub mod hyperbolic_overlap;
+mod hyperbolic_overlap;
+pub use hyperbolic_overlap::SeparatingPlanes;
+
 pub mod shape;
 pub mod xenocollide;
 
