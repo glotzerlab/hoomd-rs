@@ -5,7 +5,10 @@ repos:
   - id: fix-license-header
     name: Fix license headers
     types_or: [rust]
-    exclude: .*examples/.*
+    exclude:
+      glob:
+        - examples/hello.rs
+        - examples/mc-tutorial/**
     args:
     - --license-file=LICENSE
     - --add=Part of hoomd-rs, released under the BSD 3-Clause License.
