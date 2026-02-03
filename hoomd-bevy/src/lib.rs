@@ -91,8 +91,11 @@ use hoomd_simulation::Simulation;
 
 pub mod representation;
 
-/// The default color for the primary representation.
+/// The default color for the primary representation (in 2D).
 pub const PRIMARY_COLOR: Color = Color::srgb(249.0 / 255.0, 203.0 / 255.0, 136.0 / 255.0);
+
+/// The default color for the primary representation (darkened for 3D lighting).
+pub const PRIMARY_COLOR_3D: Color = Color::srgb(0.836, 0.533, 0.211);
 
 /// The default color for a muted representation.
 pub const MUTED_COLOR: Color = Color::srgb(0.75, 0.75, 0.75);
@@ -184,6 +187,15 @@ pub enum InitialCamera {
     /// * Left click and drag to pan.
     /// * Scroll to zoom.
     Orthographic2d(f32),
+
+    /// Three dimensional front down camera showing the xy plane.
+    ///
+    /// The single field sets the height of the visible area. The width is set
+    /// automatically based on the window dimensions.
+    ///
+    /// Controls:
+    /// * TODO
+    Orthographic3d(f32),
 }
 
 /// Store parameters that influence how the simulation is executed.
@@ -498,6 +510,29 @@ where
         commands.spawn((Camera2d, projection));
     }
 
+    /// Set up the 3D camera.
+    fn setup_camera_3d(mut commands: Commands, viewport_height: f32) {
+        let projection = Projection::Orthographic(OrthographicProjection {
+            scaling_mode: bevy::camera::ScalingMode::FixedVertical { viewport_height },
+            ..OrthographicProjection::default_3d()
+        });
+
+        commands.spawn((
+            Camera3d::default(),
+            projection,
+            Transform::from_xyz(0.0, 0.0, -viewport_height * 2.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ));
+        commands.spawn((
+            DirectionalLight::default(),
+            Transform::from_xyz(-3.0, 3.0, -6.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ));
+    }
+
+    /// Increase the brightness of the default ambient light.
+    fn setup_ambient_light(mut ambient_light: ResMut<GlobalAmbientLight>) {
+        ambient_light.brightness = 150.0;
+    }
+
     /// Keyboard controls for the 2d camera.
     ///
     /// `=` resets the camera to the default.
@@ -709,6 +744,12 @@ where
                     Self::setup_camera_2d(commands, initial_viewport_height);
                 });
             }
+            InitialCamera::Orthographic3d(initial_viewport_height) => {
+                app.add_systems(Startup, move |commands: Commands| {
+                    Self::setup_camera_3d(commands, initial_viewport_height);
+                })
+                .add_systems(Startup, Self::setup_ambient_light);
+            }
         }
 
         #[cfg(not(target_arch = "wasm32"))]
@@ -811,6 +852,10 @@ where
                     InitialCamera::Orthographic2d(_) => {
                         ui.label("Click and drag to move the camera.");
                         ui.label("Scroll to zoom.");
+                    }
+                    InitialCamera::Orthographic3d(_) => {
+                        ui.label("TODO.");
+                        ui.label("TODO.");
                     }
                 }
 
