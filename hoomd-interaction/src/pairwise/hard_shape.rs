@@ -132,10 +132,10 @@ pub struct HardSphere {
     pub diameter: f64,
 }
 
-impl<S, V> SitePairEnergy<S, V> for HardSphere
+impl<S, P> SitePairEnergy<S, P> for HardSphere
 where
-    S: Position<Position = V>,
-    V: Metric,
+    S: Position<Position = P>,
+    P: Metric,
 {
     /// Compute the energy contribution from a pair of sites.
     ///

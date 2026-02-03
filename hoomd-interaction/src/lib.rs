@@ -235,6 +235,7 @@ pub trait SiteEnergy<S> {
 ///
 /// The generic type names are:
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `P`: The type of the site's `Position`.
 ///
 /// [`Isotropic`]: pairwise::Isotropic
 /// [`Anisotropic`]: pairwise::Anisotropic
@@ -409,7 +410,7 @@ pub trait SiteEnergy<S> {
 /// # Ok(())
 /// # }
 /// ```
-pub trait SitePairEnergy<S, V> {
+pub trait SitePairEnergy<S, P> {
     /// Evaluate the energy contribution from a pair of sites.
     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64;
 
