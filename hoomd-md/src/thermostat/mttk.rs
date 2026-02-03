@@ -2,6 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 use hoomd_microstate::Microstate;
 use hoomd_simulation::macrostate::Temperature;
+use hoomd_utility::valid::PositiveReal;
 use crate::thermostat::Thermostat;
 use rand_distr::{Distribution, Normal};
 
@@ -62,13 +63,16 @@ use rand_distr::{Distribution, Normal};
 /// ```
 /// use hoomd_md::{thermostat::MTTKThermostat};
 ///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let dt = 0.001;
 /// let tau = 100.0*dt;
-/// let thermostat = MTTKThermostat::new(tau);
+/// let thermostat = MTTKThermostat::new(tau.try_into()?);
+/// # Ok(())
+/// # }
 /// ```
 pub struct MTTKThermostat {
     /// Thermostat time constant (`[time]`).
-    tau: f64,
+    tau: PositiveReal,
     /// Thermostat velocity.
     xi: f64,
     /// Thermostat position. Refer to the log(s) in Nose-Hoover's EOS.
@@ -79,8 +83,7 @@ pub struct MTTKThermostat {
 
 impl MTTKThermostat {
     /// Constrcut MTTKThermostat.
-    pub fn new(tau: f64) -> Self {
-        assert!(tau > 0.0, "MTTKThermostat requires tau > 0");
+    pub fn new(tau: PositiveReal) -> Self {
         Self {
             tau: tau,
             xi: 0.0,
@@ -100,7 +103,7 @@ impl MTTKThermostat {
     {
         let kT_setpoint = macrostate.temperature();
         let mut rng = microstate.counter().make_rng();
-        let sigma = 1.0 / *dof / self.tau.powi(2);
+        let sigma = 1.0 / *dof / self.tau.get().powi(2);
 
         self.xi = Normal::new(0.0, sigma.sqrt()).unwrap().sample(&mut rng);
         self.energy = self.thermostat_energy(kT_setpoint, dof)
@@ -108,7 +111,7 @@ impl MTTKThermostat {
 
     /// Calculate thermostat energy.
     pub fn thermostat_energy(&self, kT_setpoint: &f64, dof: &f64) -> f64 {
-        dof * kT_setpoint * (self.eta + 0.5 * (self.xi * self.tau).powi(2))
+        dof * kT_setpoint * (self.eta + 0.5 * (self.xi * self.tau.get()).powi(2))
     }
 
     /// Get the energy of thermalstat.
@@ -153,7 +156,7 @@ where
         let kT_instantaneous = 2.0 / dof * ke;
 
         // Thermostat acceleration
-        let G = (kT_instantaneous / kT_setpoint - 1.0) / self.tau.powi(2);
+        let G = (kT_instantaneous / kT_setpoint - 1.0) / self.tau.get().powi(2);
 
         // Update thermostat velocity
         let xi_quater = self.xi + 0.25 * G * dt;
@@ -168,7 +171,7 @@ where
         self.eta += 0.5 * xi_quater * dt;
 
         // New thermostat acceleration
-        let G_new = (kT_instantaneous_new / kT_setpoint - 1.0) / self.tau.powi(2);
+        let G_new = (kT_instantaneous_new / kT_setpoint - 1.0) / self.tau.get().powi(2);
 
         // Update thermostat velocity
         self.xi = xi_quater + 0.25 * G_new * dt;

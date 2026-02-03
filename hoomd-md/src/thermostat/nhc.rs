@@ -3,6 +3,7 @@
 use arrayvec::ArrayVec;
 use hoomd_microstate::Microstate;
 use hoomd_simulation::macrostate::Temperature;
+use hoomd_utility::valid::PositiveReal;
 use crate::thermostat::Thermostat;
 use rand_distr::{Distribution, Normal};
 
@@ -20,9 +21,6 @@ use rand_distr::{Distribution, Normal};
 /// equations of motion,
 /// which are designed to sample the canonical ensemble (nvt).
 ///
-/// TODO: Complete the documentation below.
-///
-///
 /// # Reference
 /// [Tuckerman et al. 2006]
 ///
@@ -33,14 +31,17 @@ use rand_distr::{Distribution, Normal};
 /// ```
 /// use hoomd_md::{thermostat::NHCThermostat};
 ///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// const N_CHAIN_LENGTH: usize = 10;
 /// let dt = 0.001;
 /// let tau = 100.0*dt;
-/// let thermostat = NHCThermostat::<N_CHAIN_LENGTH>::new(tau);
+/// let thermostat = NHCThermostat::<N_CHAIN_LENGTH>::new(tau.try_into()?);
+/// # Ok(())
+/// # }
 /// ```
 pub struct NHCThermostat<const N: usize> {
     /// Thermostat time constant (`[time]`).
-    tau: f64,
+    tau: PositiveReal,
     /// Chain of thermostat velocity.
     xi_arr: ArrayVec::<f64, N>,
     /// Chain of thermostat position. Refer to the log(s) in Nose-Hoover's EOS.
@@ -55,8 +56,7 @@ pub struct NHCThermostat<const N: usize> {
 
 impl<const N: usize> NHCThermostat<N> {
     /// Constrcut NHCThermostat.
-    pub fn new(tau: f64) -> Self {
-        assert!(tau > 0.0, "NHCThermostat requires tau > 0");
+    pub fn new(tau: PositiveReal) -> Self {
         Self {
             tau: tau,
             xi_arr: ArrayVec::from([0.0; N]),
@@ -78,8 +78,8 @@ impl<const N: usize> NHCThermostat<N> {
     {
         let kT_setpoint = macrostate.temperature();
         let mut rng = microstate.counter().make_rng();
-        let sigma0 = 1.0 / (*dof).sqrt() / self.tau;
-        let sigma_other = 1.0 / self.tau;
+        let sigma0 = 1.0 / (*dof).sqrt() / self.tau.get();
+        let sigma_other = 1.0 / self.tau.get();
 
         self.xi_arr[0] = Normal::new(0.0, sigma0).unwrap().sample(&mut rng);
         for idx in 1..N {
@@ -88,7 +88,7 @@ impl<const N: usize> NHCThermostat<N> {
         self.energy = self.thermostat_energy(kT_setpoint, dof)
     }
 
-    /// Calculate thermostat chain energy.
+    /// Calculate thermostat energy.
     pub fn thermostat_energy(&self, kT_setpoint: &f64, dof: &f64) -> f64 {
         let mut energy = 0.0;
         energy += dof * kT_setpoint * self.eta_arr[0] + 0.5 * self.q_arr[0] * (self.xi_arr[0]).powi(2);
@@ -143,9 +143,9 @@ where
         let nkT_setpoint = dof * kT_setpoint;
 
         // Update chain of mass
-        self.q_arr[0] = nkT_setpoint * self.tau.powi(2);
+        self.q_arr[0] = nkT_setpoint * self.tau.get().powi(2);
         for idx in 1..N {
-            self.q_arr[idx] = kT_setpoint * self.tau.powi(2);
+            self.q_arr[idx] = kT_setpoint * self.tau.get().powi(2);
         }
 
         // Update the thermostat acceleration coupled to the real system

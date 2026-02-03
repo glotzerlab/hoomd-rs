@@ -87,7 +87,7 @@ where
         }
 
         let com_angular_momentum_matrix = com_angular_momentum.to_row_matrix();
-        // use svd to solve the omega in L = I * omega
+        // use svd to solve the omega in L = omega * I
         let (u, s, vt) = com_moment_of_inertia.svd();
         // If the system do not rotate w. r. t. the principle axis (I_principal=0),
         // set the omega component to 0 by setting the corresponding s^-1 to 0.
@@ -101,11 +101,11 @@ where
         if s[2] > 0.0 {
             s_inv_dense.rows[2][2] = 1.0 / s[2];
         }
-        // omega = L * u * s^-1 * vt (omage and L are row matrix)
+        // omega = L * v * s^-1 * u^t (omage and L are row matrix)
         let omega_tmp = com_angular_momentum_matrix
-            .matmul(&u)
+            .matmul(&vt.transpose())
             .matmul(&s_inv_dense)
-            .matmul(&vt);
+            .matmul(&u.transpose());
         let com_angular_velocity = Cartesian::from(omega_tmp.rows[0]);
 
         for body_index in 0..microstate.bodies().len() {

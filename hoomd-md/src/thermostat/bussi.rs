@@ -2,6 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 use hoomd_microstate::Microstate;
 use hoomd_simulation::macrostate::Temperature;
+use hoomd_utility::valid::PositiveReal;
 use crate::thermostat::Thermostat;
 use rand_distr::{Distribution, Gamma, Normal};
 
@@ -49,21 +50,23 @@ use rand_distr::{Distribution, Gamma, Normal};
 ///
 /// ```
 /// use hoomd_md::{thermostat::BussiThermostat};
-///
+///    
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let dt = 0.001;
 /// let tau = 100.0*dt;
-/// let thermostat = BussiThermostat::new(tau);
+/// let thermostat = BussiThermostat::new(tau.try_into()?);
+/// # Ok(())
+/// # }
 /// ```
 pub struct BussiThermostat {
     /// Thermostat time constant (`[time]`).
-    tau: f64,
+    tau: PositiveReal,
     /// Cumulative energy drift due to the thermostat. Useful for checking energy conservation.
     cumu_energy_drift: f64,
 }
 impl BussiThermostat {
     /// Constrcut BussiThermostat.
-    pub fn new(tau: f64) -> Self {
-        assert!(tau >= 0.0, "BussiThermostat requires tau >= 0");
+    pub fn new(tau: PositiveReal) -> Self {
         Self {
             tau: tau,
             cumu_energy_drift: 0.0,
@@ -119,8 +122,8 @@ where
         let mut time_decay_factor = 0.0;
 
         // normal case time decay factor.
-        if self.tau != 0.0 {
-            time_decay_factor = (-dt / self.tau).exp();
+        if self.tau.get() != 0.0 {
+            time_decay_factor = (-dt / self.tau.get()).exp();
         }
 
         // sample random number form standard normal distribution for the first dof.
