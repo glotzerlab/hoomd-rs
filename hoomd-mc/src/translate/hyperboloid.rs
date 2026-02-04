@@ -19,8 +19,8 @@ impl LocalTrial<Point<Hyperbolic<3>>> for Translate<Point<Hyperbolic<3>>> {
     /// use hoomd_manifold::{Hyperbolic, Minkowski};
     /// use hoomd_mc::{LocalTrial, Translate};
     /// use hoomd_microstate::property::{Point, Position};
-    /// use hoomd_vector::{Metric, Vector};
-    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    /// use hoomd_vector::Metric;
+    /// use rand::{SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(13);
@@ -34,7 +34,7 @@ impl LocalTrial<Point<Hyperbolic<3>>> for Translate<Point<Hyperbolic<3>>> {
     ///
     /// let new_body_properties = translate.propose(&mut rng, body_properties);
     ///
-    /// // Translation move keeps the point on the Hyperbolic
+    /// // Translation move keeps the point on the Hyperboloid
     /// assert_relative_eq!(
     ///     new_body_properties
     ///         .position()
@@ -125,5 +125,93 @@ impl LocalTrial<OrientedHyperbolicPoint<3, Angle>>
             rho,
         );
         trial
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use approxim::assert_relative_eq;
+    use hoomd_manifold::{Hyperbolic, Minkowski};
+    use hoomd_microstate::property::{OrientedHyperbolicPoint, Point, Position};
+    use hoomd_vector::{Angle, Metric};
+    use rand::{SeedableRng, rngs::StdRng};
+    use rstest::*;
+
+    /// Number of trial moves to test
+    const N: usize = 256;
+
+    #[rstest]
+    fn translate_hyperbolic_point(#[values(0.01,0.1,1.0)] d: f64) {
+
+        let mut rng = StdRng::seed_from_u64(42);
+        let rho: f64 = 1.0;
+        let body_properties = Point::new(Hyperbolic::from_minkowski_coordinates(
+            [1.0, 0.0, (1.0 + rho.powi(2)).sqrt()].into(),
+            rho,
+        ));
+        let translate = Translate::with_maximum_distance(d.try_into().expect("hard-coded positive real"));
+
+        for _ in 0..N {
+            let new_body_properties = translate.propose(&mut rng, body_properties);
+
+            // Translation move keeps the point on the Hyperboloid
+            assert_relative_eq!(
+                new_body_properties
+                    .position()
+                    .point()
+                    .distance_squared(&Minkowski::from([0.0, 0.0, 0.0])),
+                -(rho.powi(2)),
+                epsilon = 1e-12
+            );
+
+            // Translation move does not move the point more than a distance d
+            assert!(
+                d > new_body_properties.position().distance(
+                    &Hyperbolic::from_minkowski_coordinates(
+                        Minkowski::from([1.0, 0.0, (1.0 + rho.powi(2)).sqrt()]),
+                        rho
+                    )
+                )
+            );
+        }
+    }
+
+    #[rstest]
+    fn translate_oriented_hyperbolic_point(#[values(0.01,0.1,1.0)] d: f64) {
+
+        let mut rng = StdRng::seed_from_u64(42);
+        let rho: f64 = 1.0;
+        let body_properties = OrientedHyperbolicPoint {
+                position: Hyperbolic::from_minkowski_coordinates(
+                [1.0, 0.0, (1.0 + rho.powi(2)).sqrt()].into(),
+                rho),
+                orientation: Angle::from(0.0),
+                };
+        let translate = Translate::with_maximum_distance(d.try_into().expect("hard-coded positive real"));
+
+        for _ in 0..N {
+            let new_body_properties = translate.propose(&mut rng, body_properties);
+
+            // Translation move keeps the point on the Hyperboloid
+            assert_relative_eq!(
+                new_body_properties
+                    .position()
+                    .point()
+                    .distance_squared(&Minkowski::from([0.0, 0.0, 0.0])),
+                -(rho.powi(2)),
+                epsilon = 1e-12
+            );
+
+            // Translation move does not move the point more than a distance d
+            assert!(
+                d > new_body_properties.position().distance(
+                    &Hyperbolic::from_minkowski_coordinates(
+                        Minkowski::from([1.0, 0.0, (1.0 + rho.powi(2)).sqrt()]),
+                        rho
+                    )
+                )
+            );
+        }
     }
 }

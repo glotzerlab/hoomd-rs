@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{MaximumInteractionRange, SitePairEnergy};
-use hoomd_geometry::{BoundingSphereRadius, IntersectsAt};
+use hoomd_geometry::{BoundingSphereRadius, IntersectsAtGlobal};
 use hoomd_manifold::Hyperbolic;
 use hoomd_microstate::property::{Orientation, Position};
 use hoomd_vector::{self, Angle, Cartesian, Metric, Rotate, Rotation};
@@ -37,7 +37,7 @@ impl<S, G, const N: usize, R> SitePairEnergy<S, Cartesian<N>> for HardShape<G>
 where
     S: Position<Position = Cartesian<N>> + Orientation<Rotation = R>,
     R: Rotation + Rotate<Cartesian<N>>,
-    G: IntersectsAt<G, Cartesian<N>, R> + BoundingSphereRadius,
+    G: IntersectsAtGlobal<G, Cartesian<N>, R> + BoundingSphereRadius,
 {
     /// Compute the energy contribution from a pair of sites.
     ///
@@ -179,14 +179,14 @@ impl MaximumInteractionRange for HardSphere {
 impl<G, S> SitePairEnergy<S, Hyperbolic<3>> for HardShape<G>
 where
     S: Position<Position = Hyperbolic<3>> + Orientation<Rotation = Angle>,
-    G: HyperbolicSeparatingPlanes<G, Hyperbolic<3>, Angle>,
+    G: IntersectsAtGlobal<G, Hyperbolic<3>, Angle>,
 {
     /// Test whether two sites in two-dimensional hyperbolic space overlap.
     ///
     /// # Example
     ///
     /// ```
-    /// use hoomd_geometry::hyperbolic_overlap::HyperbolicConvexPolytope;
+    /// use hoomd_geometry::shape::HyperbolicConvexPolytope;
     /// use hoomd_interaction::{SitePairEnergy, pairwise::HardShape};
     /// use hoomd_manifold::Hyperbolic;
     /// use hoomd_microstate::property::OrientedHyperbolicPoint;
@@ -223,7 +223,7 @@ where
         let r_i = site_properties_i.orientation();
         let x_j = site_properties_j.position();
         let r_j = site_properties_j.orientation();
-        if self.0.intersects_at(x_i, r_i, x_j, r_j) {
+        if self.0.intersects_at_global(&self.0,x_i, r_i, x_j, r_j) {
             f64::INFINITY
         } else {
             0.0
