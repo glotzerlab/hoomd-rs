@@ -16,10 +16,12 @@ use std::f64::consts::PI;
 ///
 /// Construction and basic methods:
 /// ```
-/// use hoomd_geometry::{BoundingSphereRadius, shape::HyperbolicConvexPolytope};
+/// use hoomd_geometry::{
+///     BoundingSphereRadius, shape::HyperbolicConvexPolytope,
+/// };
 ///
 /// # fn main() -> Result<(), hoomd_geometry::Error> {
-/// let hyperbolic_square = HyperbolicConvexPolytope::<3>::regular(4, 0.5, 1.0);
+/// let hyperbolic_square = HyperbolicConvexPolytope::<3>::regular(4, 0.5);
 ///
 /// let bounding_radius = hyperbolic_square.bounding_sphere_radius();
 ///
@@ -29,17 +31,17 @@ use std::f64::consts::PI;
 /// ```
 ///
 /// Overlap check:
-/// /// ```
+/// ```
 /// use hoomd_geometry::shape::HyperbolicConvexPolytope;
 /// use hoomd_manifold::Hyperbolic;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let square = HyperbolicConvexPolytope::<3>::regular(4, 0.5, 1.0);
+/// let square = HyperbolicConvexPolytope::<3>::regular(4, 0.5);
 /// assert!(square.intersects_at_global(
 ///     &square,
 ///     &Hyperbolic::<3>::default(),
 ///     &Angle::default(),
-///     &Hyperbolic::<3>::from_polar_coordinates(0.49, 2.3, 1.0);,
+///     &Hyperbolic::<3>::from_polar_coordinates(0.49, 2.3);,
 ///     &Angle::from(0.4)
 /// ));
 ///
@@ -47,7 +49,7 @@ use std::f64::consts::PI;
 ///     &square,
 ///     &Hyperbolic::<3>::default(),
 ///     &Angle::default(),
-///     &Hyperbolic::<3>::from_polar_coordinates(3.0, 2.3, 1.0),
+///     &Hyperbolic::<3>::from_polar_coordinates(3.0, 2.3),
 ///     &Angle::from(orientation)
 /// ));
 /// #Ok(())
@@ -68,16 +70,6 @@ impl<const N: usize> HyperbolicConvexPolytope<N> {
     pub fn vertices(&self) -> &[Hyperbolic<N>] {
         &self.vertices
     }
-    /// Compute the bounding radius from a set of vertices.
-    #[inline]
-    #[must_use]
-    #[allow(dead_code, reason = "function useful to user")]
-    fn bounding_radius(vertices: &[Hyperbolic<N>]) -> f64 {
-        vertices
-            .iter()
-            .map(hoomd_manifold::Hyperbolic::distance_from_cusp)
-            .fold(0.0, f64::max)
-    }
 }
 
 impl<const N: usize> BoundingSphereRadius for HyperbolicConvexPolytope<N> {
@@ -94,7 +86,7 @@ impl<const N: usize> BoundingSphereRadius for HyperbolicConvexPolytope<N> {
 /// use hoomd_geometry::shape::HyperbolicConvexPolygon;
 ///
 /// # fn main() -> Result<(), hoomd_geometry::Error> {
-/// let hyperbolic_pentagon = HyperbolicConvexPolygon::regular(5, 1.0_f64, 1.0_f64);
+/// let hyperbolic_pentagon = HyperbolicConvexPolygon::regular(5, 1.0_f64);
 /// # Ok(())
 /// # }
 /// ```
@@ -105,12 +97,12 @@ impl HyperbolicConvexPolytope<3> {
     /// hyperbolic space.
     #[inline]
     #[must_use]
-    pub fn regular(n: usize, circumradius: f64, skirt: f64) -> HyperbolicConvexPolytope<3> {
+    pub fn regular(n: usize, circumradius: f64) -> HyperbolicConvexPolytope<3> {
         HyperbolicConvexPolytope {
             vertices: (0..n)
                 .map(|x| {
                     let theta = 2.0 * PI * (x as f64) / (n as f64);
-                    Hyperbolic::<3>::from_polar_coordinates(circumradius, theta, skirt)
+                    Hyperbolic::<3>::from_polar_coordinates(circumradius, theta)
                 })
                 .collect::<Vec<_>>(),
             bounding_radius: circumradius,
@@ -123,21 +115,21 @@ impl HyperbolicConvexPolytope<3> {
     ///
     /// # Example
     /// ```
+    /// use approxim::assert_relative_eq;
     /// use hoomd_geometry::shape::HyperbolicConvexPolytope;
     /// use std::f64::consts::PI;
-    /// use approxim::assert_relative_eq;
     ///
     /// let bounding_radius = 0.5;
-    /// let hyperbolic_square = HyperbolicConvexPolytope::<3>::regular(4, bounding_radius, 1.0);
+    /// let hyperbolic_square =
+    ///     HyperbolicConvexPolytope::<3>::regular(4, bounding_radius);
     ///
-    /// //calculation using hyperbolic trigonometry
-    /// let pi_fourths_distance = (((PI/4.0).cos())*(bounding_radius.tanh())).atanh();
+    /// // calculation using hyperbolic trigonometry
+    /// let pi_fourths_distance =
+    ///     (((PI / 4.0).cos()) * (bounding_radius.tanh())).atanh();
     ///
-    ///
-    /// let edge_distance = hyperbolic_square.edge_distance(PI/4.0);
+    /// let edge_distance = hyperbolic_square.edge_distance(PI / 4.0);
     ///
     /// assert_relative_eq!(pi_fourths_distance, edge_distance);
-    ///
     /// ```
     #[inline]
     #[must_use]
@@ -150,9 +142,12 @@ impl HyperbolicConvexPolytope<3> {
         arg.atanh()
     }
     #[inline]
+    /// Transform `points` to the frame where the `vertex_num`-th vertex of an
+    /// oriented hyperbolic polygon with with bounding radius `bounding_radius`
+    /// is at the origin.
     fn to_vertex_frame_oriented(
         body_position: &Hyperbolic<3>,
-        body_orientation: &Angle,
+        body_orientation: Angle,
         vertex_num: usize,
         bounding_radius: f64,
         points: &[Hyperbolic<3>],
@@ -201,18 +196,19 @@ impl HyperbolicConvexPolytope<3> {
                         * pt[1]
                     + (eta_sinh * r_sinh * alpha_cos + eta_cosh * r_cosh) * pt[2],
             ]);
-            Hyperbolic::from_minkowski_coordinates(translated, point.skirt())
+            Hyperbolic::from_minkowski_coordinates(translated)
         };
         points.iter().map(vertex_translate).collect::<Vec<_>>()
     }
+    /// Transform a vertex of a hyperbolic polygon into the system frame.
     #[inline]
     fn vertex_to_system_frame(
         vertex: &Hyperbolic<3>,
-        body_orientation: &Angle,
+        body_orientation: Angle,
         body_position: &Hyperbolic<3>,
     ) -> Hyperbolic<3> {
         let theta = body_position.coordinates()[1].atan2(body_position.coordinates()[0]);
-        let nu = (body_position.coordinates()[2] / body_position.skirt()).acosh();
+        let nu = (body_position.coordinates()[2]).acosh();
         let tau_over_two = -nu / 2.0;
         let poincare = body_position.to_poincare();
         let body_angle_body = (-2.0
@@ -239,22 +235,24 @@ impl HyperbolicConvexPolytope<3> {
                 + nu_sinh * theta_sin * pt[2],
             nu_sinh * phi_cos * pt[0] - nu_sinh * phi_sin * pt[1] + nu_cosh * pt[2],
         ]);
-        Hyperbolic::from_minkowski_coordinates(transformed, vertex.skirt())
+        Hyperbolic::from_minkowski_coordinates(transformed)
     }
 }
 
-impl IntersectsAtGlobal<HyperbolicConvexPolytope<3>, Hyperbolic<3>, Angle> for HyperbolicConvexPolytope<3> {
+impl IntersectsAtGlobal<HyperbolicConvexPolytope<3>, Hyperbolic<3>, Angle>
+    for HyperbolicConvexPolytope<3>
+{
     #[inline]
     #[allow(clippy::too_many_lines, reason = "complicated function")]
     fn intersects_at_global(
         &self,
         other: &HyperbolicConvexPolytope<3>,
-        x_i: &Hyperbolic<3>,
-        r_i: &Angle,
-        x_j: &Hyperbolic<3>,
-        r_j: &Angle,
+        r_self: &Hyperbolic<3>,
+        o_self: &Angle,
+        r_other: &Hyperbolic<3>,
+        o_other: &Angle,
     ) -> bool {
-        let d = x_i.distance(x_j);
+        let d = r_self.distance(r_other);
         if d > 2.0 * self.bounding_radius {
             return false;
         }
@@ -269,25 +267,26 @@ impl IntersectsAtGlobal<HyperbolicConvexPolytope<3>, Hyperbolic<3>, Angle> for H
                 let v_next_next = (v_num + 2) % n_self;
                 // translate all vertices
                 // need to do this for every other vertex
-                let v_1 = Self::vertex_to_system_frame(&self.vertices[v_num], r_i, x_i);
-                let v_2 = Self::vertex_to_system_frame(&self.vertices[v_next], r_i, x_i);
-                let v_3 = Self::vertex_to_system_frame(&self.vertices[v_next_next], r_i, x_i);
+                let v_1 = Self::vertex_to_system_frame(&self.vertices[v_num], *o_self, r_self);
+                let v_2 = Self::vertex_to_system_frame(&self.vertices[v_next], *o_self, r_self);
+                let v_3 =
+                    Self::vertex_to_system_frame(&self.vertices[v_next_next], *o_self, r_self);
                 let other_vertices = self
                     .vertices
                     .iter()
-                    .map(|vertex| Self::vertex_to_system_frame(vertex, r_j, x_j))
+                    .map(|vertex| Self::vertex_to_system_frame(vertex, *o_other, r_other))
                     .collect::<Vec<Hyperbolic<3>>>();
                 let self_translated = Self::to_vertex_frame_oriented(
-                    x_i,
-                    r_i,
+                    r_self,
+                    *o_self,
                     v_next,
                     self.bounding_radius,
                     &[v_1, v_2, v_3],
                     n_self,
                 );
                 let other_translated = Self::to_vertex_frame_oriented(
-                    x_i,
-                    r_i,
+                    r_self,
+                    *o_self,
                     v_next,
                     self.bounding_radius,
                     &other_vertices,
@@ -345,25 +344,26 @@ impl IntersectsAtGlobal<HyperbolicConvexPolytope<3>, Hyperbolic<3>, Angle> for H
                 let v_next = (v_num + 1) % n_other;
                 let v_next_next = (v_num + 2) % n_other;
                 // translate all vertices
-                let v_1 = Self::vertex_to_system_frame(&other.vertices[v_num], r_j, x_j);
-                let v_2 = Self::vertex_to_system_frame(&other.vertices[v_next], r_j, x_j);
-                let v_3 = Self::vertex_to_system_frame(&other.vertices[v_next_next], r_j, x_j);
+                let v_1 = Self::vertex_to_system_frame(&other.vertices[v_num], *o_other, r_other);
+                let v_2 = Self::vertex_to_system_frame(&other.vertices[v_next], *o_other, r_other);
+                let v_3 =
+                    Self::vertex_to_system_frame(&other.vertices[v_next_next], *o_other, r_other);
                 let other_vertices = self
                     .vertices
                     .iter()
-                    .map(|vertex| Self::vertex_to_system_frame(vertex, r_i, x_i))
+                    .map(|vertex| Self::vertex_to_system_frame(vertex, *o_self, r_self))
                     .collect::<Vec<Hyperbolic<3>>>();
                 let self_translated = Self::to_vertex_frame_oriented(
-                    x_j,
-                    r_j,
+                    r_other,
+                    *o_other,
                     v_next,
                     other.bounding_radius,
                     &[v_1, v_2, v_3],
                     n_other,
                 );
                 let other_translated = Self::to_vertex_frame_oriented(
-                    x_j,
-                    r_j,
+                    r_other,
+                    *o_other,
                     v_next,
                     other.bounding_radius,
                     &other_vertices,
@@ -432,7 +432,7 @@ mod tests {
     fn octagon_edges() {
         let center_dist = 1.528_570_919_480_998;
         let quarter_dist = 1.643_866_837_922_488;
-        let octagon = HyperbolicConvexPolytope::<3>::regular(8, EightEight::EIGHTEIGHT, 1.0);
+        let octagon = HyperbolicConvexPolytope::<3>::regular(8, EightEight::EIGHTEIGHT);
         assert_relative_eq!(
             center_dist,
             octagon.edge_distance(-3.0 * PI / 8.0),
@@ -453,7 +453,7 @@ mod tests {
     fn square_edges() {
         let center_dist = 0.602_080_559_268_716;
         let quarter_dist = 0.666_842_324_123_307;
-        let square = HyperbolicConvexPolytope::<3>::regular(4, 1.0, 1.0);
+        let square = HyperbolicConvexPolytope::<3>::regular(4, 1.0);
         assert_relative_eq!(center_dist, square.edge_distance(PI / 4.0), epsilon = 1e-12);
         assert_relative_eq!(
             quarter_dist,
@@ -462,25 +462,25 @@ mod tests {
         );
         assert_relative_eq!(1.0, square.edge_distance(PI / 2.0), epsilon = 1e-12);
     }
-     #[test]
+    #[test]
     fn center_at_oriented_vertex() {
-        let square = HyperbolicConvexPolytope::<3>::regular(4, 0.5, 1.0);
+        let square = HyperbolicConvexPolytope::<3>::regular(4, 0.5);
         let (boost, rotation, orientation) = (0.5, PI / 4.0, 0.4);
-        let body_position = Hyperbolic::<3>::from_polar_coordinates(boost, rotation, 1.0);
+        let body_position = Hyperbolic::<3>::from_polar_coordinates(boost, rotation);
         let square_system = square
             .vertices()
             .iter()
             .map(|v| {
                 HyperbolicConvexPolygon::vertex_to_system_frame(
                     v,
-                    &Angle::from(orientation),
+                    Angle::from(orientation),
                     &body_position,
                 )
             })
             .collect::<Vec<Hyperbolic<3>>>();
         let translated = HyperbolicConvexPolygon::to_vertex_frame_oriented(
             &body_position,
-            &Angle::from(orientation),
+            Angle::from(orientation),
             2_usize,
             0.5,
             &square_system,
@@ -492,11 +492,11 @@ mod tests {
     }
     #[test]
     fn no_square_overlap() {
-        let square = HyperbolicConvexPolytope::<3>::regular(4, 0.5, 1.0);
+        let square = HyperbolicConvexPolytope::<3>::regular(4, 0.5);
         let boost: f64 = 3.0;
         let rotation: f64 = 2.3;
         let orientation: f64 = 0.4;
-        let x_j = Hyperbolic::<3>::from_polar_coordinates(boost, rotation, 1.0);
+        let x_j = Hyperbolic::<3>::from_polar_coordinates(boost, rotation);
         assert!(!square.intersects_at_global(
             &square,
             &Hyperbolic::<3>::default(),
@@ -507,11 +507,11 @@ mod tests {
     }
     #[test]
     fn square_overlap() {
-        let square = HyperbolicConvexPolytope::<3>::regular(4, 0.5, 1.0);
+        let square = HyperbolicConvexPolytope::<3>::regular(4, 0.5);
         let boost: f64 = 0.49;
         let rotation: f64 = 2.3;
         let orientation: f64 = 0.4;
-        let x_j = Hyperbolic::<3>::from_polar_coordinates(boost, rotation, 1.0);
+        let x_j = Hyperbolic::<3>::from_polar_coordinates(boost, rotation);
         assert!(square.intersects_at_global(
             &square,
             &Hyperbolic::<3>::default(),
@@ -523,8 +523,8 @@ mod tests {
     #[test]
     fn overlap_translation_check() {
         let r_0 = 0.5;
-        let square = HyperbolicConvexPolytope::<3>::regular(4, r_0, 1.0);
-        let com = Hyperbolic::<3>::from_polar_coordinates(1.0, 0.0, 1.0);
+        let square = HyperbolicConvexPolytope::<3>::regular(4, r_0);
+        let com = Hyperbolic::<3>::from_polar_coordinates(1.0, 0.0);
         let distance = 2.0;
         let num_spaces: usize = 10;
         let num_trials: usize = 15;
@@ -546,7 +546,7 @@ mod tests {
                     original_center[1],
                     original_center[0] * (inch.sinh()) + original_center[2] * (inch.cosh()),
                 ]);
-                Hyperbolic::from_minkowski_coordinates(translated, 1.0)
+                Hyperbolic::from_minkowski_coordinates(translated)
             })
             .collect::<Vec<Hyperbolic<3>>>();
         // Check over overlaps
@@ -574,15 +574,15 @@ mod tests {
         let r_0 = 0.5;
         let boost: f64 = 0.339_203_554_136_322;
         let distance: f64 = 0.45;
-        let square = HyperbolicConvexPolytope::<3>::regular(4, r_0, 1.0);
+        let square = HyperbolicConvexPolytope::<3>::regular(4, r_0);
         let num_spaces: usize = 10;
         let num_trials: usize = 15;
         let spacing = 0.365_106_058_818_114;
         let trials = (0..num_trials)
             .map(|n| (n as f64) * spacing / (num_spaces as f64))
             .collect::<Vec<f64>>();
-        let center_1 = Hyperbolic::<3>::from_polar_coordinates(-boost, 0.0, 1.0);
-        let center_2 = Hyperbolic::<3>::from_polar_coordinates(distance, 0.0, 1.0);
+        let center_1 = Hyperbolic::<3>::from_polar_coordinates(-boost, 0.0);
+        let center_2 = Hyperbolic::<3>::from_polar_coordinates(distance, 0.0);
         // Check over overlaps
         for ep in trials.iter().take(num_spaces) {
             assert!(!square.intersects_at_global(

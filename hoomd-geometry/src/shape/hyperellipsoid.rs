@@ -409,7 +409,6 @@ where
         }
         true // If we did not detect a non-positive value of P(λ), the shapes overlap
     }
-
 }
 impl<R> IntersectsAtGlobal<Hyperellipsoid<2>, Cartesian<2>, R> for Hyperellipsoid<2>
 where

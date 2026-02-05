@@ -194,7 +194,7 @@ where
     /// use std::f64::consts::PI;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let square = HyperbolicConvexPolytope::<3>::regular(4, 1.0, 1.0);
+    /// let square = HyperbolicConvexPolytope::<3>::regular(4, 1.0);
     /// let hard_shape = HardShape(square);
     ///
     /// let a = OrientedHyperbolicPoint {
@@ -202,14 +202,14 @@ where
     ///     orientation: Angle::default(),
     /// };
     /// let b = OrientedHyperbolicPoint {
-    ///     position: Hyperbolic::<3>::from_polar_coordinates(3.0, 2.0, 1.0),
+    ///     position: Hyperbolic::<3>::from_polar_coordinates(3.0, 2.0),
     ///     orientation: Angle::from(0.4),
     /// };
     ///
     /// assert_eq!(hard_shape.site_pair_energy(&a, &b), 0.0);
     ///
     /// let c = OrientedHyperbolicPoint {
-    ///     position: Hyperbolic::<3>::from_polar_coordinates(0.49, 2.3, 1.0),
+    ///     position: Hyperbolic::<3>::from_polar_coordinates(0.49, 2.3),
     ///     orientation: Angle::from(0.4),
     /// };
     ///
@@ -223,7 +223,7 @@ where
         let r_i = site_properties_i.orientation();
         let x_j = site_properties_j.position();
         let r_j = site_properties_j.orientation();
-        if self.0.intersects_at_global(&self.0,x_i, r_i, x_j, r_j) {
+        if self.0.intersects_at_global(&self.0, x_i, r_i, x_j, r_j) {
             f64::INFINITY
         } else {
             0.0

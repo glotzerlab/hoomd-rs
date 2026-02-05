@@ -85,9 +85,8 @@ impl Transform<Point<Hyperbolic<3>>> for Point<Hyperbolic<3>> {
     #[inline]
     fn transform(&self, site_properties: &Point<Hyperbolic<3>>) -> Point<Hyperbolic<3>> {
         let body_pos = self.position.coordinates();
-        let skirt = self.position.skirt();
         let body_theta = body_pos[1].atan2(body_pos[0]);
-        let body_boost = (body_pos[2] / self.position.skirt()).acosh();
+        let body_boost = (body_pos[2]).acosh();
         let site_pos = site_properties.position.coordinates();
         let transformed_point = Minkowski::from([
             site_pos[0]
@@ -106,7 +105,7 @@ impl Transform<Point<Hyperbolic<3>>> for Point<Hyperbolic<3>> {
                 + site_pos[1] * (body_boost.sinh()) * (body_theta.sin())
                 + site_pos[2] * (body_boost.cosh()),
         ]);
-        let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(transformed_point, skirt);
+        let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(transformed_point);
         Point::new(new_hyperbolic)
     }
 }
@@ -124,12 +123,11 @@ impl Transform<Point<Hyperbolic<4>>> for Point<Hyperbolic<4>> {
     #[inline]
     fn transform(&self, site_properties: &Point<Hyperbolic<4>>) -> Point<Hyperbolic<4>> {
         let body_point = self.position.coordinates();
-        let skirt = self.position.skirt();
         let body_theta = (body_point[2].powi(2) + body_point[1].powi(2))
             .sqrt()
             .atan2(body_point[0]);
         let body_phi = body_point[2].atan2(body_point[1]);
-        let body_boost = (body_point[3] / self.position.skirt()).acosh();
+        let body_boost = (body_point[3]).acosh();
         let site_pos = site_properties.position.coordinates();
         let transformed_point = Minkowski::from([
             site_pos[0]
@@ -185,7 +183,7 @@ impl Transform<Point<Hyperbolic<4>>> for Point<Hyperbolic<4>> {
                 + site_pos[2] * (body_boost.sinh()) * (body_phi.sin()) * (body_theta.sin())
                 + site_pos[3] * (body_boost.cosh()),
         ]);
-        let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(transformed_point, skirt);
+        let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(transformed_point);
         Point::new(new_hyperbolic)
     }
 }
@@ -297,8 +295,8 @@ mod tests {
     fn transform_h2_point() {
         let boost: f64 = 1.3;
         let bump: f64 = 0.1;
-        let body = Point::new(Hyperbolic::<3>::from_polar_coordinates(boost, 0.0, 1.0));
-        let site = Point::new(Hyperbolic::<3>::from_polar_coordinates(bump, PI / 2.0, 1.0));
+        let body = Point::new(Hyperbolic::<3>::from_polar_coordinates(boost, 0.0));
+        let site = Point::new(Hyperbolic::<3>::from_polar_coordinates(bump, PI / 2.0));
         let transformed_site = body.transform(&site);
         assert_relative_eq!(
             *transformed_site.position().point(),
@@ -316,15 +314,8 @@ mod tests {
     fn transform_h3_point() {
         let boost: f64 = 1.4;
         let bump: f64 = 0.7;
-        let body = Point::new(Hyperbolic::<4>::from_polar_coordinates(
-            boost, 0.0, 0.0, 1.0,
-        ));
-        let site = Point::new(Hyperbolic::<4>::from_polar_coordinates(
-            bump,
-            PI / 2.0,
-            0.0,
-            1.0,
-        ));
+        let body = Point::new(Hyperbolic::<4>::from_polar_coordinates(boost, 0.0, 0.0));
+        let site = Point::new(Hyperbolic::<4>::from_polar_coordinates(bump, PI / 2.0, 0.0));
         let transformed_site = body.transform(&site);
         assert_relative_eq!(
             *transformed_site.position().point(),

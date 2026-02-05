@@ -27,10 +27,9 @@ use std::f64::consts::PI;
 /// use hoomd_vector::Angle;
 ///
 /// let point = OrientedHyperbolicPoint {
-///     position: Hyperbolic::from_minkowski_coordinates(
-///         Minkowski::from([0.0, 0.0, 1.0]),
-///         1.0_f64,
-///     ),
+///     position: Hyperbolic::from_minkowski_coordinates(Minkowski::from([
+///         0.0, 0.0, 1.0,
+///     ])),
 ///     orientation: Angle::from(2.39),
 /// };
 /// ```
@@ -53,15 +52,12 @@ impl OrientedHyperbolicPoint<3, Angle> {
         let x_0 = (1.0 + rad.powi(2)
             - ((1.0 + rad.powi(2)).powi(2) - 4.0 * (rad.powi(2)) * ((theta.cos()).powi(2))).sqrt())
             / (2.0 * rad * (theta.cos()));
-        let p = Hyperbolic::<3>::from_polar_coordinates(boost, theta, 1.0);
-        let intersect = Hyperbolic::<3>::from_minkowski_coordinates(
-            Minkowski::from([
-                2.0 * x_0 / (1.0 - x_0.powi(2)),
-                0.0,
-                (1.0 + x_0.powi(2)) / (1.0 - x_0.powi(2)),
-            ]),
-            1.0,
-        );
+        let p = Hyperbolic::<3>::from_polar_coordinates(boost, theta);
+        let intersect = Hyperbolic::<3>::from_minkowski_coordinates(Minkowski::from([
+            2.0 * x_0 / (1.0 - x_0.powi(2)),
+            0.0,
+            (1.0 + x_0.powi(2)) / (1.0 - x_0.powi(2)),
+        ]));
         let angle_change = Self::parallel_transport_angle(&p, &intersect);
         let end_boost = (intersect.coordinates()[2]).acosh();
         (end_boost, angle_change)
@@ -72,11 +68,11 @@ impl OrientedHyperbolicPoint<3, Angle> {
     #[inline]
     pub fn parallel_transport_angle(start: &Hyperbolic<3>, destination: &Hyperbolic<3>) -> f64 {
         let (b1, theta_1) = (
-            (start.coordinates()[2] / start.skirt()).acosh(),
+            (start.coordinates()[2]).acosh(),
             (start.coordinates()[1]).atan2(start.coordinates()[0]),
         );
         let (b2, theta_2) = (
-            (destination.coordinates()[2] / destination.skirt()).acosh(),
+            (destination.coordinates()[2]).acosh(),
             (destination.coordinates()[1]).atan2(destination.coordinates()[0]),
         );
         // rotate into non-pathological frame
@@ -84,12 +80,12 @@ impl OrientedHyperbolicPoint<3, Angle> {
         let phi_2 = (theta_2 - theta_1) / 2.0;
 
         let p = [
-            start.skirt() * (b1.sinh()) * (phi_1.cos()) / (1.0 + (b1.cosh())),
-            start.skirt() * (b1.sinh()) * (phi_1.sin()) / (1.0 + (b1.cosh())),
+            (b1.sinh()) * (phi_1.cos()) / (1.0 + (b1.cosh())),
+            (b1.sinh()) * (phi_1.sin()) / (1.0 + (b1.cosh())),
         ];
         let q = [
-            destination.skirt() * (b2.sinh()) * (phi_2.cos()) / (1.0 + (b2.cosh())),
-            destination.skirt() * (b2.sinh()) * (phi_2.sin()) / (1.0 + (b2.cosh())),
+            (b2.sinh()) * (phi_2.cos()) / (1.0 + (b2.cosh())),
+            (b2.sinh()) * (phi_2.sin()) / (1.0 + (b2.cosh())),
         ];
         let center = [
             ((p[0].powi(2) + p[1].powi(2) + 1.0) * q[1]
@@ -154,10 +150,9 @@ impl OrientedHyperbolicPoint<3, Angle> {
         disk: &HyperbolicDisk,
         rng: &mut R,
     ) -> (Hyperbolic<3>, f64, f64) {
-        let rho = disk.point.skirt();
-        let max_boost = (disk.disk_radius.get()) / rho;
+        let max_boost = disk.disk_radius.get();
         let point = disk.point;
-        let eta = (point.coordinates()[2] / rho).acosh();
+        let eta = (point.coordinates()[2]).acosh();
         let phi = point.coordinates()[1].atan2(point.coordinates()[0]);
         let trial_boost = Uniform::new(0.0, 1.0).expect("r is positive and real");
         let trial_rotation =
@@ -167,11 +162,7 @@ impl OrientedHyperbolicPoint<3, Angle> {
         let v = v1.sqrt() * max_boost;
         let (v_sinh, eta_sinh, eta_cosh) = (v.sinh(), eta.sinh(), eta.cosh());
         let (phi_sin, phi_cos) = (phi.sin(), phi.cos());
-        let trial_coords = [
-            rho * v_sinh * theta.cos(),
-            rho * v_sinh * theta.sin(),
-            rho * v.cosh(),
-        ];
+        let trial_coords = [v_sinh * theta.cos(), v_sinh * theta.sin(), v.cosh()];
         let transformed_point = Minkowski::from([
             trial_coords[0] * (eta_cosh * (phi_cos.powi(2)) + phi_sin.powi(2))
                 + trial_coords[1] * phi_sin * phi_cos * (eta_cosh - 1.0)
@@ -184,7 +175,7 @@ impl OrientedHyperbolicPoint<3, Angle> {
                 + trial_coords[2] * eta_cosh,
         ]);
         (
-            Hyperbolic::from_minkowski_coordinates(transformed_point, rho),
+            Hyperbolic::from_minkowski_coordinates(transformed_point),
             v,
             theta,
         )
@@ -208,13 +199,12 @@ impl Transform<Point<Hyperbolic<3>>> for OrientedHyperbolicPoint<3, Angle> {
     /// let body_orientation = PI / 2.0;
     /// let site_boost = 0.1;
     /// let body = OrientedHyperbolicPoint {
-    ///     position: Hyperbolic::<3>::from_polar_coordinates(body_boost, 0.0, 1.0),
+    ///     position: Hyperbolic::<3>::from_polar_coordinates(body_boost, 0.0),
     ///     orientation: Angle::from(body_orientation),
     /// };
     /// let site = Point::new(Hyperbolic::<3>::from_polar_coordinates(
     ///     site_boost,
     ///     -PI / 4.0,
-    ///     1.0,
     /// ));
     /// let transformed_site = body.transform(&site);
     /// assert_relative_eq!(
@@ -237,9 +227,8 @@ impl Transform<Point<Hyperbolic<3>>> for OrientedHyperbolicPoint<3, Angle> {
     #[inline]
     fn transform(&self, site_properties: &Point<Hyperbolic<3>>) -> Point<Hyperbolic<3>> {
         let body_pos = self.position.coordinates();
-        let skirt = self.position.skirt();
         let body_pos_theta = (body_pos[1].atan2(body_pos[0])).rem_euclid(2.0 * PI);
-        let body_pos_boost = (body_pos[2] / self.position.skirt()).acosh();
+        let body_pos_boost = body_pos[2].acosh();
         let body_angle_system = self.orientation.theta;
         let body_angle_body =
             Self::deck_transform(-body_pos_boost, body_pos_theta, self.position())
@@ -265,7 +254,7 @@ impl Transform<Point<Hyperbolic<3>>> for OrientedHyperbolicPoint<3, Angle> {
                 - site_pos[1] * body_pos_boost_sinh * diff_sin
                 + site_pos[2] * body_pos_boost_cosh,
         ]);
-        let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(transformed_point, skirt);
+        let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(transformed_point);
         Point::new(new_hyperbolic)
     }
 }
@@ -277,9 +266,8 @@ impl Transform<OrientedHyperbolicPoint<3, Angle>> for OrientedHyperbolicPoint<3,
         site_properties: &OrientedHyperbolicPoint<3, Angle>,
     ) -> OrientedHyperbolicPoint<3, Angle> {
         let body_pos = self.position.coordinates();
-        let skirt = self.position.skirt();
         let body_pos_theta = body_pos[1].atan2(body_pos[0]);
-        let body_pos_boost = (body_pos[2] / self.position.skirt()).acosh();
+        let body_pos_boost = body_pos[2].acosh();
         let body_angle_system = self.orientation.theta;
         let body_angle_body =
             Self::deck_transform(-body_pos_boost, body_pos_theta, self.position())
@@ -304,7 +292,7 @@ impl Transform<OrientedHyperbolicPoint<3, Angle>> for OrientedHyperbolicPoint<3,
                 - site_pos[1] * body_pos_boost_sinh * diff_sin
                 + site_pos[2] * body_pos_boost_cosh,
         ]);
-        let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(transformed_point, skirt);
+        let new_hyperbolic = Hyperbolic::from_minkowski_coordinates(transformed_point);
         let site_angle_system =
             Self::deck_transform(body_pos_boost, body_pos_theta, &site_properties.position)
                 + site_properties.orientation.theta
@@ -358,13 +346,12 @@ mod tests {
         let body_orientation = PI / 2.0;
         let site_boost = 0.1;
         let body = OrientedHyperbolicPoint {
-            position: Hyperbolic::<3>::from_polar_coordinates(body_boost, 0.0, 1.0),
+            position: Hyperbolic::<3>::from_polar_coordinates(body_boost, 0.0),
             orientation: Angle::from(body_orientation),
         };
         let site = Point::new(Hyperbolic::<3>::from_polar_coordinates(
             site_boost,
             -PI / 4.0,
-            1.0,
         ));
         let transformed_site = body.transform(&site);
         assert_relative_eq!(
@@ -412,8 +399,8 @@ mod tests {
 
     #[test]
     fn parallel_transport() {
-        let p1 = Hyperbolic::<3>::from_polar_coordinates(EightEight::EIGHTEIGHT, -PI / 4.0, 1.0);
-        let p2 = Hyperbolic::<3>::from_polar_coordinates(EightEight::EIGHTEIGHT, 0.0, 1.0);
+        let p1 = Hyperbolic::<3>::from_polar_coordinates(EightEight::EIGHTEIGHT, -PI / 4.0);
+        let p2 = Hyperbolic::<3>::from_polar_coordinates(EightEight::EIGHTEIGHT, 0.0);
         let del_angle = OrientedHyperbolicPoint::<3, Angle>::parallel_transport_angle(&p1, &p2);
         assert_relative_eq!(-PI / 2.0, del_angle, epsilon = 1e-12);
     }
@@ -432,17 +419,14 @@ mod tests {
     fn shortest_distance() {
         let offset_boost = 0.2;
         let v: f64 = 2.448_452_447_678_076;
-        let point = Hyperbolic::<3>::from_polar_coordinates(v - offset_boost, 0.01, 1.0);
+        let point = Hyperbolic::<3>::from_polar_coordinates(v - offset_boost, 0.01);
 
         // get nearest boundary point
-        let point_in_center = Hyperbolic::<3>::from_minkowski_coordinates(
-            Minkowski::from([
-                (v.cosh()) * point.coordinates()[0] - (v.sinh()) * point.coordinates()[2],
-                point.coordinates()[1],
-                -(v.sinh()) * point.coordinates()[0] + (v.cosh()) * point.coordinates()[2],
-            ]),
-            1.0,
-        );
+        let point_in_center = Hyperbolic::<3>::from_minkowski_coordinates(Minkowski::from([
+            (v.cosh()) * point.coordinates()[0] - (v.sinh()) * point.coordinates()[2],
+            point.coordinates()[1],
+            -(v.sinh()) * point.coordinates()[0] + (v.cosh()) * point.coordinates()[2],
+        ]));
         let (angle_c, boost_c) = (
             point_in_center.coordinates()[1].atan2(point_in_center.coordinates()[0]),
             (point_in_center.coordinates()[2]).acosh(),
@@ -451,37 +435,26 @@ mod tests {
             angle_c - 7.0 * PI / 8.0,
             boost_c,
         );
-        let intersection_o = Hyperbolic::<3>::from_minkowski_coordinates(
-            Minkowski::from([
-                (v.cosh()) * (int_o.sinh()) * ((7.0 * PI / 8.0).cos())
-                    + (v.sinh()) * (int_o.cosh()),
-                (int_o.sinh()) * ((7.0 * PI / 8.0).sin()),
-                (v.sinh()) * (int_o.sinh()) * ((7.0 * PI / 8.0).cos())
-                    + (v.cosh()) * (int_o.cosh()),
-            ]),
-            1.0,
-        );
+        let intersection_o = Hyperbolic::<3>::from_minkowski_coordinates(Minkowski::from([
+            (v.cosh()) * (int_o.sinh()) * ((7.0 * PI / 8.0).cos()) + (v.sinh()) * (int_o.cosh()),
+            (int_o.sinh()) * ((7.0 * PI / 8.0).sin()),
+            (v.sinh()) * (int_o.sinh()) * ((7.0 * PI / 8.0).cos()) + (v.cosh()) * (int_o.cosh()),
+        ]));
         let blip = 0.05;
-        let intersection_plus = Hyperbolic::<3>::from_minkowski_coordinates(
-            Minkowski::from([
-                (v.cosh()) * ((blip + int_o).sinh()) * ((7.0 * PI / 8.0).cos())
-                    + (v.sinh()) * ((blip + int_o).cosh()),
-                ((blip + int_o).sinh()) * ((7.0 * PI / 8.0).sin()),
-                (v.sinh()) * ((blip + int_o).sinh()) * ((7.0 * PI / 8.0).cos())
-                    + (v.cosh()) * ((blip + int_o).cosh()),
-            ]),
-            1.0,
-        );
-        let intersection_minus = Hyperbolic::<3>::from_minkowski_coordinates(
-            Minkowski::from([
-                (v.cosh()) * ((blip - int_o).sinh()) * ((7.0 * PI / 8.0).cos())
-                    + (v.sinh()) * ((blip - int_o).cosh()),
-                ((blip - int_o).sinh()) * ((7.0 * PI / 8.0).sin()),
-                (v.sinh()) * ((blip - int_o).sinh()) * ((7.0 * PI / 8.0).cos())
-                    + (v.cosh()) * ((blip - int_o).cosh()),
-            ]),
-            1.0,
-        );
+        let intersection_plus = Hyperbolic::<3>::from_minkowski_coordinates(Minkowski::from([
+            (v.cosh()) * ((blip + int_o).sinh()) * ((7.0 * PI / 8.0).cos())
+                + (v.sinh()) * ((blip + int_o).cosh()),
+            ((blip + int_o).sinh()) * ((7.0 * PI / 8.0).sin()),
+            (v.sinh()) * ((blip + int_o).sinh()) * ((7.0 * PI / 8.0).cos())
+                + (v.cosh()) * ((blip + int_o).cosh()),
+        ]));
+        let intersection_minus = Hyperbolic::<3>::from_minkowski_coordinates(Minkowski::from([
+            (v.cosh()) * ((blip - int_o).sinh()) * ((7.0 * PI / 8.0).cos())
+                + (v.sinh()) * ((blip - int_o).cosh()),
+            ((blip - int_o).sinh()) * ((7.0 * PI / 8.0).sin()),
+            (v.sinh()) * ((blip - int_o).sinh()) * ((7.0 * PI / 8.0).cos())
+                + (v.cosh()) * ((blip - int_o).cosh()),
+        ]));
         assert!(point.distance(&intersection_plus) > point.distance(&intersection_o));
         assert!(point.distance(&intersection_minus) > point.distance(&intersection_o));
     }

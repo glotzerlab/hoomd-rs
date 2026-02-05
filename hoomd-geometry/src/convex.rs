@@ -107,7 +107,7 @@ where
     R: Rotate<Cartesian<2>> + Rotation,
     RotationMatrix<2>: From<R>,
 {
-        #[inline]
+    #[inline]
     fn intersects_at_global(
         &self,
         other: &Convex<A>,
