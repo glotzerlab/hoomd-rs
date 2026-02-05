@@ -3,16 +3,16 @@
 
 //! Benchmark hard sphere Monte Carlo simulations.
 
-use std::{f64::consts::PI, fmt, fs::{File, self}, io::{Write, self}};
+use std::{fmt, fs::{File, self}, io::{Write, self}};
 
 use anyhow::Context;
 use hoomd_geometry::{Volume, shape::{Hypercuboid, Hypersphere}};
 use hoomd_interaction::{MaximumInteractionRange, PairwiseCutoff, pairwise::{HardSphere, Isotropic}, univariate::{Expanded, OverlapPenalty}};
 use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Sweep, Translate, Trial, Tune};
 use hoomd_microstate::{
-    Body, Microstate, SiteKey,
+    Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},
-    property::{Point, Position},
+    property::Point,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
@@ -149,7 +149,6 @@ where
                 _ => return Err(error).with_context(|| format!("Could not read {cache_filename}")),
             },
         }
-
 
         let translate = Translate::with_maximum_distance((sigma * 0.24).try_into()?);
         let mut translate_sweep = Sweep(translate.clone());
