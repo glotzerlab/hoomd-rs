@@ -126,7 +126,7 @@ impl ConvexPolytope<2> {
         ConvexPolytope {
             vertices: (0..n)
                 .map(|x| {
-                    let theta = std::f64::consts::PI * (x as f64) / (n as f64);
+                    let theta = 2.0 * std::f64::consts::PI * (x as f64) / (n as f64);
                     Cartesian::from([0.5 * f64::cos(theta), 0.5 * f64::sin(theta)])
                 })
                 .collect::<Vec<_>>(),
