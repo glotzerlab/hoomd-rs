@@ -155,11 +155,6 @@ where
             },
         }
 
-        let translate = Translate::with_maximum_distance(0.35.try_into()?);
-        let mut translate_sweep = Sweep(translate.clone());
-        let mut parallel_translate_sweep =
-            ParallelSweep::new(maximum_interaction_range.try_into()?, translate);
-
         let hamiltonian = PairwiseCutoff(Isotropic {
             interaction: univariate::LennardJones {
                 epsilon: 1.0,
@@ -167,6 +162,12 @@ where
             },
             r_cut: maximum_interaction_range,
         });
+
+        let translate = Translate::with_maximum_distance(0.35.try_into()?);
+        let mut translate_sweep = Sweep(translate.clone());
+        let mut parallel_translate_sweep =
+            ParallelSweep::new(hamiltonian.0.maximum_interaction_range().try_into()?, translate);
+
         let overlap_penalty = Isotropic {
             interaction: Expanded {
                 delta: 1.0,

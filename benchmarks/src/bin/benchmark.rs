@@ -19,7 +19,7 @@ use benchmarks::{Benchmark, Effort, mc};
 use hoomd_microstate::{SiteKey, property::OrientedPoint};
 use hoomd_simulation::Simulation;
 use hoomd_spatial::VecCell;
-use hoomd_vector::{Angle, Cartesian, Versor};
+use hoomd_vector::{Cartesian, Versor};
 
 use rayon::ThreadPoolBuilder;
 use wildmatch::WildMatch;
@@ -127,23 +127,9 @@ fn execute_matching(
         benchmark_time: Duration::from_secs_f64(options.benchmark_time),
     };
 
-    let needs_microstate_2d = benchmark_matcher.matches("mc_2d_sphere")
-        || benchmark_matcher.matches("mc_2d_lennard_jones")
-        || benchmark_matcher.matches("mc_2d_hexagon");
-
     let needs_microstate_3d = benchmark_matcher.matches("mc_3d_sphere")
         || benchmark_matcher.matches("mc_3d_lennard_jones")
         || benchmark_matcher.matches("mc_3d_octahedron");
-
-    let maybe_microstate_2d = if needs_microstate_2d {
-        Some(benchmarks::place_hard_hyperspheres::<
-            OrientedPoint<Cartesian<2>, Angle>,
-            OrientedPoint<Cartesian<2>, Angle>,
-            2,
-        >(n, number_density)?)
-    } else {
-        None
-    };
 
     let name = "mc_2d_sphere";
     if benchmark_matcher.matches(name) {
@@ -165,11 +151,8 @@ fn execute_matching(
 
     let name = "mc_2d_hexagon";
     if benchmark_matcher.matches(name) {
-        let microstate_2d = &maybe_microstate_2d
-            .as_ref()
-            .expect("microstate_2d should be initialized");
         let mut simulation = mc::RegularPolygon::<VecCell<SiteKey, 2>>::new(
-            microstate_2d,
+            n,
             options.parallel_sweep || threads > 1,
         )?;
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);

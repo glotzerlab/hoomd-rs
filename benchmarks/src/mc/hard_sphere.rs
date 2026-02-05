@@ -150,11 +150,12 @@ where
             },
         }
 
+        let hamiltonian = PairwiseCutoff(HardSphere { diameter: sigma });
+
         let translate = Translate::with_maximum_distance((sigma * 0.24).try_into()?);
         let mut translate_sweep = Sweep(translate.clone());
-        let mut parallel_translate_sweep = ParallelSweep::new(sigma.try_into()?, translate.clone());
+        let mut parallel_translate_sweep = ParallelSweep::new(hamiltonian.0.maximum_interaction_range().try_into()?, translate.clone());
 
-        let hamiltonian = PairwiseCutoff(HardSphere { diameter: sigma });
         let overlap_penalty = Isotropic {
             interaction: Expanded {
                 delta: sigma,
@@ -163,9 +164,9 @@ where
             r_cut: sigma,
         };
 
-        let insert_hamiltonian = PairwiseCutoff(overlap_penalty);
+        let overlap_penalty_hamiltonian = PairwiseCutoff(overlap_penalty);
 
-        let microstate = place_single_site_point_bodies(n, number_density, hamiltonian.0.maximum_interaction_range(), &insert_hamiltonian)?;
+        let microstate = place_single_site_point_bodies(n, number_density, hamiltonian.0.maximum_interaction_range(), &overlap_penalty_hamiltonian)?;
 
         translate_sweep.tune_default(&microstate, &hamiltonian, &Isothermal { temperature: 1.0 });
         *parallel_translate_sweep.local_trial_mut().maximum_distance_mut() = *translate_sweep.0.maximum_distance();

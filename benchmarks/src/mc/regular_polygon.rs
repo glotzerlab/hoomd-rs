@@ -3,14 +3,15 @@
 
 //! Benchmark hard polygon Monte Carlo simulations.
 
-use std::fmt;
+use std::{fmt, fs::{self, File}, io::{self, Write}};
 
+use anyhow::Context;
 use hoomd_geometry::{
     Convex,
     shape::{ConvexPolygon, Hypercuboid},
 };
-use hoomd_interaction::{PairwiseCutoff, pairwise::HardShape};
-use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial};
+use hoomd_interaction::{MaximumInteractionRange, PairwiseCutoff, pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape}, univariate::OverlapPenalty};
+use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial, Tune};
 use hoomd_microstate::{
     Microstate, SiteKey,
     boundary::{GenerateGhosts, Periodic},
@@ -19,10 +20,13 @@ use hoomd_microstate::{
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
 use hoomd_vector::{Angle, Cartesian};
+use log::debug;
+use serde::{Deserialize, Serialize};
 
-use crate::Effort;
+use crate::{Effort, place::place_single_site_orientable_bodies};
 
 /// The hard polygon simulation.
+#[derive(Serialize, Deserialize)]
 pub struct RegularPolygon<X> {
     /// Simulation microstate
     microstate: Microstate<
@@ -151,7 +155,10 @@ impl<X> RegularPolygon<X>
 where
     X: PointsNearBall<Cartesian<2>, SiteKey>
         + PointUpdate<Cartesian<2>, SiteKey>
-        + WithSearchRadius,
+        + WithSearchRadius        + Clone
+        + for<'a> Deserialize<'a>
+        + Serialize,
+
     Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>,
 {
     /// Construct a new polygon simulation
@@ -159,50 +166,80 @@ where
     /// # Errors
     /// Returns an error when the microstate cannot be constructed.
     #[inline]
-    pub fn new<X2>(
-        microstate: &Microstate<
-            OrientedPoint<Cartesian<2>, Angle>,
-            OrientedPoint<Cartesian<2>, Angle>,
-            X2,
-            Periodic<Hypercuboid<2>>,
-        >,
+    pub fn new(
+        n: usize,
         parallel: bool,
     ) -> anyhow::Result<Self> {
-        let sigma = 1.0;
-        let maximum_rotation = 0.5;
+        let macrostate = Isothermal { temperature: 1.0 };
+        let initial_maximum_rotation = 0.5;
+        let packing_fraction = 0.60;
+        let hexagon_area = 3.0 * 3.0f64.sqrt() / 2.0 * 0.5 * 0.5;
+        let number_density = packing_fraction / hexagon_area;
+        let cache_filename = format!("mc_2d_hexagon_{packing_fraction}_{n}.postcard");
 
-        let translate = Translate::with_maximum_distance((sigma * 0.6).try_into()?);
-        let translate_sweep = Sweep(translate.clone());
-        let parallel_translate_sweep = ParallelSweep::new(sigma.try_into()?, translate);
+        match fs::read(&cache_filename) {
+            Ok(bytes) => {
+                debug!("Reading cache '{cache_filename}'.");
 
-        let rotate = Rotate::with_maximum_rotation(maximum_rotation.try_into()?);
-        let rotate_sweep = Sweep(rotate.clone());
-        let parallel_rotate_sweep = ParallelSweep::new(sigma.try_into()?, rotate);
+                let mut result: Self = postcard::from_bytes(&bytes).with_context(|| format!("Could not read {cache_filename}"))?;
+                // The cache may have been generated with a different value of parallel.
+                result.parallel = parallel;
+                return Ok(result)
+            }
+            Err(error) => match error.kind() {
+                io::ErrorKind::NotFound => (),
+                _ => return Err(error).with_context(|| format!("Could not read {cache_filename}")),
+            },
+        }
 
-        let big_hexagon = ConvexPolygon::regular(6);
-        let hexagon =
-            ConvexPolygon::with_vertices(big_hexagon.vertices().iter().map(|v| *v / 2.0))?;
+        let hexagon = ConvexPolygon::regular(6);
 
-        let hamiltonian = PairwiseCutoff(HardShape(Convex(hexagon)));
+        let hamiltonian = PairwiseCutoff(HardShape(Convex(hexagon.clone())));
 
-        let cell_list = X::with_search_radius(sigma.try_into()?);
-        let microstate = Microstate::builder()
-            .spatial_data(cell_list)
-            .boundary(microstate.boundary().clone())
-            .bodies(microstate.bodies().iter().map(|b| b.item.clone()))
-            .try_build()?;
+        let translate = Translate::with_maximum_distance(0.2.try_into()?);
+        let mut translate_sweep = Sweep(translate.clone());
+        let mut parallel_translate_sweep = ParallelSweep::new(hamiltonian.0.maximum_interaction_range().try_into()?, translate);
 
-        Ok(Self {
+        let rotate = Rotate::with_maximum_rotation(initial_maximum_rotation.try_into()?);
+        let mut rotate_sweep = Sweep(rotate.clone());
+        let mut parallel_rotate_sweep = ParallelSweep::new(hamiltonian.0.maximum_interaction_range().try_into()?, rotate);
+
+        let approximate_shape_overlap = Anisotropic {
+            interaction: ApproximateShapeOverlap::new(
+                Convex(hexagon),
+                OverlapPenalty::default(),
+                0.01.try_into()?,
+            ),
+            r_cut: hamiltonian.0.maximum_interaction_range(),
+        };
+        let overlap_penalty_hamiltonian =
+            PairwiseCutoff(approximate_shape_overlap);
+
+        let microstate = place_single_site_orientable_bodies(n, number_density, hamiltonian.0.maximum_interaction_range(), &overlap_penalty_hamiltonian)?;
+
+        translate_sweep.tune_default(&microstate, &hamiltonian, &Isothermal { temperature: 1.0 });
+        *parallel_translate_sweep.local_trial_mut().maximum_distance_mut() = *translate_sweep.0.maximum_distance();
+
+        rotate_sweep.tune_default(&microstate, &hamiltonian, &Isothermal { temperature: 1.0 });
+        *parallel_rotate_sweep.local_trial_mut().maximum_rotation_mut() = *rotate_sweep.0.maximum_rotation();
+
+        let simulation = Self {
             microstate,
             translate_sweep,
-            parallel_translate_sweep,
             rotate_sweep,
+            parallel_translate_sweep,
             parallel_rotate_sweep,
             hamiltonian,
-            macrostate: Isothermal { temperature: 1.0 },
+            macrostate,
             translate_count: Count::default(),
             rotate_count: Count::default(),
             parallel,
-        })
+        };
+
+        let out_bytes: Vec<u8> = postcard::to_stdvec(&simulation)?;
+        let mut file = File::create(cache_filename)?;
+        file.write_all(&out_bytes)?;
+
+        Ok(simulation)
     }
 }
