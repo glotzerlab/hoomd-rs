@@ -151,7 +151,7 @@ fn execute_matching(
             .as_ref()
             .expect("microstate_2d should be initialized");
         let mut simulation = mc::HardSphereSim::<2, VecCell<SiteKey, 2>>::new(
-            microstate_2d,
+            n,
             options.parallel_sweep || threads > 1,
         )?;
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
@@ -193,11 +193,8 @@ fn execute_matching(
 
     let name = "mc_3d_sphere";
     if benchmark_matcher.matches(name) {
-        let microstate_3d = &maybe_microstate_3d
-            .as_ref()
-            .expect("microstate_3d should be initialized");
         let mut simulation = mc::HardSphereSim::<3, VecCell<SiteKey, 3>>::new(
-            microstate_3d,
+            n,
             options.parallel_sweep || threads > 1,
         )?;
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);

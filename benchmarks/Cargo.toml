@@ -19,6 +19,7 @@ workspace = true
 [dependencies]
 parquet.workspace = true
 parquet_derive.workspace = true
+postcard.workspace = true
 rayon.workspace = true
 
 hoomd-geometry.workspace = true
