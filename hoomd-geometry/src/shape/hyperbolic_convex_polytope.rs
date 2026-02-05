@@ -32,8 +32,9 @@ use std::f64::consts::PI;
 ///
 /// Overlap check:
 /// ```
-/// use hoomd_geometry::shape::HyperbolicConvexPolytope;
+/// use hoomd_geometry::{IntersectsAtGlobal, shape::HyperbolicConvexPolytope};
 /// use hoomd_manifold::Hyperbolic;
+/// use hoomd_vector::Angle;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let square = HyperbolicConvexPolytope::<3>::regular(4, 0.5);
@@ -41,7 +42,7 @@ use std::f64::consts::PI;
 ///     &square,
 ///     &Hyperbolic::<3>::default(),
 ///     &Angle::default(),
-///     &Hyperbolic::<3>::from_polar_coordinates(0.49, 2.3);,
+///     &Hyperbolic::<3>::from_polar_coordinates(0.49, 2.3),
 ///     &Angle::from(0.4)
 /// ));
 ///
@@ -50,10 +51,10 @@ use std::f64::consts::PI;
 ///     &Hyperbolic::<3>::default(),
 ///     &Angle::default(),
 ///     &Hyperbolic::<3>::from_polar_coordinates(3.0, 2.3),
-///     &Angle::from(orientation)
+///     &Angle::from(0.2)
 /// ));
-/// #Ok(())
-/// #}
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct HyperbolicConvexPolytope<const N: usize> {
