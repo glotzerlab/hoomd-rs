@@ -172,8 +172,8 @@ where
     ) -> anyhow::Result<Self> {
         let macrostate = Isothermal { temperature: 1.0 };
         let initial_maximum_rotation = 0.5;
-        let packing_fraction = 0.60;
-        let hexagon_area = 3.0 * 3.0f64.sqrt() / 2.0 * 0.5 * 0.5;
+        let packing_fraction = 0.8;
+        let hexagon_area = 3.0 * 3.0f64.sqrt() / 2.0 * 0.25;
         let number_density = packing_fraction / hexagon_area;
         let cache_filename = format!("mc_2d_hexagon_{packing_fraction}_{n}.postcard");
 
@@ -193,7 +193,6 @@ where
         }
 
         let hexagon = ConvexPolygon::regular(6);
-
         let hamiltonian = PairwiseCutoff(HardShape(Convex(hexagon.clone())));
 
         let translate = Translate::with_maximum_distance(0.2.try_into()?);
