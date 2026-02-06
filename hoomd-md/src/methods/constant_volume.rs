@@ -57,6 +57,7 @@ use crate::{thermostat::Thermostat, methods::{TranslationalMotion, RotationalMot
 /// 
 /// [Tuckerman et al. 2006]: <https://doi.org/10.1088/0305-4470/39/19/S18>
 /// [Miller et al. 2002]: <https://doi.org/10.1063/1.1473654>
+#[doc(alias("nve", "nvt"))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct ConstantVolume {
     /// The size of a timestep.
@@ -335,13 +336,13 @@ where
     /// Next, the [`AngularMomentum`] $`\mathbf{l}`$ and [`NetTorque`] $`\boldsymbol{\tau}`$ in 
     /// the body frame are converted into the quaternion form: $`\mathbf{p}^{(4)}`$ and $`\mathbf{f}^{(4)}`$ , 
     /// using [`Orientation`] quaternion $`\mathbf{q}=(q_0, q_1, q_2, q_3)`$. To clarify, starting from this
-    /// section, variables being labeled by a superscript $`^{*}`$ represents the old varialbes that
+    /// section, variables being labeled by a superscript $`^{'}`$ represents the old varialbes that
     /// being produce in the previous step. Besides, we express the calculation as matrix-vector 
     /// algebra instead of quaternion algebra for simpilicity:
     /// ```math
     /// \begin{align}
     ///
-    /// &\mathbf{p}^{(4)} = 2S(\mathbf{q}) \mathbf{l}^{(4)*},\; \mathbf{l}^{(4)*}=(0, l_x^*, l_y^*, l_z^*) \\
+    /// &\mathbf{p}^{(4)} = 2S(\mathbf{q}) \mathbf{l}^{(4) '},\; \mathbf{l}^{(4) '}=(0, l_x^{'}, l_y^{'}, l_z^{'}) \\
     /// &\mathbf{f}^{(4)} = 2S(\mathbf{q}) \boldsymbol{\tau}^{(4)},\; \boldsymbol{\tau}^{(4)}=(0, \tau_x, \tau_y, \tau_z)\\
     ///         
     /// \end{align}
@@ -369,7 +370,7 @@ where
     /// ```math
     /// \begin{align}
     ///
-    /// \mathbf{p}^{(4)} = \mathbf{p}^{(4)*} + \frac{\delta t}{2} \mathbf{f}^{(4)}
+    /// \mathbf{p}^{(4)} = \mathbf{p}^{(4) '} + \frac{\delta t}{2} \mathbf{f}^{(4)}
     ///         
     /// \end{align} 
     /// ```
@@ -381,25 +382,25 @@ where
     /// ```math
     /// \begin{align}
     /// 
-    /// &\phi_3 = \frac{1}{4 I_{33}} \mathrm{dot} \left( \mathbf{p}^{(4)*}, P_3 \mathbf{q}^* \right) \\
-    /// &\mathbf{q} = \cos{(\phi_3 \delta t / 2)} \mathbf{q}^* +  \sin{(\phi_3 \delta t / 2)} P_3 \mathbf{q}^* \nonumber \\
-    /// &\mathbf{p}^{(4)} = \cos{(\phi_3 \delta t / 2)} \mathbf{p}^{(4)*} +  \sin{(\phi_3 \delta t / 2)} P_3 \mathbf{p}^{(4)*} \nonumber \\ \nonumber \\
+    /// &\phi_3 = \frac{1}{4 I_{33}} \mathrm{dot} \left( \mathbf{p}^{(4) '}, P_3 \mathbf{q}^{'} \right) \\
+    /// &\mathbf{q} = \cos{(\phi_3 \delta t / 2)} \mathbf{q}^{'} +  \sin{(\phi_3 \delta t / 2)} P_3 \mathbf{q}^{'} \nonumber \\
+    /// &\mathbf{p}^{(4)} = \cos{(\phi_3 \delta t / 2)} \mathbf{p}^{(4) '} +  \sin{(\phi_3 \delta t / 2)} P_3 \mathbf{p}^{(4) '} \nonumber \\ \nonumber \\
     /// 
-    /// &\phi_2 = \frac{1}{4 I_{22}} \mathrm{dot} \left( \mathbf{p}^{(4)*}, P_2 \mathbf{q}^* \right) \\
-    /// &\mathbf{q} = \cos{(\phi_2 \delta t / 2)} \mathbf{q}^* +  \sin{(\phi_2 \delta t / 2)} P_2 \mathbf{q}^* \nonumber \\
-    /// &\mathbf{p}^{(4)} = \cos{(\phi_2 \delta t / 2)} \mathbf{p}^{(4)*} +  \sin{(\phi_2 \delta t / 2)} P_2 \mathbf{p}^{(4)*} \nonumber \\ \nonumber \\
+    /// &\phi_2 = \frac{1}{4 I_{22}} \mathrm{dot} \left( \mathbf{p}^{(4) '}, P_2 \mathbf{q}^{'} \right) \\
+    /// &\mathbf{q} = \cos{(\phi_2 \delta t / 2)} \mathbf{q}^{'} +  \sin{(\phi_2 \delta t / 2)} P_2 \mathbf{q}^{'} \nonumber \\
+    /// &\mathbf{p}^{(4)} = \cos{(\phi_2 \delta t / 2)} \mathbf{p}^{(4) '} +  \sin{(\phi_2 \delta t / 2)} P_2 \mathbf{p}^{(4) '} \nonumber \\ \nonumber \\
     /// 
-    /// &\phi_1 = \frac{1}{4 I_{11}} \mathrm{dot} \left( \mathbf{p}^{(4)*}, P_1 \mathbf{q}^* \right) \\
-    /// &\mathbf{q} = \cos{(\phi_1 \delta t)} \mathbf{q}^* +  \sin{(\phi_1 \delta t)} P_1 \mathbf{q}^* \nonumber \\
-    /// &\mathbf{p}^{(4)} = \cos{(\phi_1 \delta t)} \mathbf{p}^{(4)*} +  \sin{(\phi_1 \delta t)} P_1 \mathbf{p}^{(4)*} \nonumber  \nonumber \\ \nonumber \\
+    /// &\phi_1 = \frac{1}{4 I_{11}} \mathrm{dot} \left( \mathbf{p}^{(4) '}, P_1 \mathbf{q}^{'} \right) \\
+    /// &\mathbf{q} = \cos{(\phi_1 \delta t)} \mathbf{q}^{'} +  \sin{(\phi_1 \delta t)} P_1 \mathbf{q}^{'} \nonumber \\
+    /// &\mathbf{p}^{(4)} = \cos{(\phi_1 \delta t)} \mathbf{p}^{(4) '} +  \sin{(\phi_1 \delta t)} P_1 \mathbf{p}^{(4) '} \nonumber  \nonumber \\ \nonumber \\
     ///
-    /// &\phi_2 = \frac{1}{4 I_{22}} \mathrm{dot} \left( \mathbf{p}^{(4)*}, P_2 \mathbf{q}^* \right) \\
-    /// &\mathbf{q} = \cos{(\phi_2 \delta t / 2)} \mathbf{q}^* +  \sin{(\phi_2 \delta t / 2)} P_2 \mathbf{q}^* \nonumber \\
-    /// &\mathbf{p}^{(4)} = \cos{(\phi_2 \delta t / 2)} \mathbf{p}^{(4)*} +  \sin{(\phi_2 \delta t / 2)} P_2 \mathbf{p}^{(4)*} \nonumber  \nonumber \\ \nonumber \\
+    /// &\phi_2 = \frac{1}{4 I_{22}} \mathrm{dot} \left( \mathbf{p}^{(4) '}, P_2 \mathbf{q}^{'} \right) \\
+    /// &\mathbf{q} = \cos{(\phi_2 \delta t / 2)} \mathbf{q}^{'} +  \sin{(\phi_2 \delta t / 2)} P_2 \mathbf{q}^{'} \nonumber \\
+    /// &\mathbf{p}^{(4)} = \cos{(\phi_2 \delta t / 2)} \mathbf{p}^{(4) '} +  \sin{(\phi_2 \delta t / 2)} P_2 \mathbf{p}^{(4) '} \nonumber  \nonumber \\ \nonumber \\
     ///
-    /// &\phi_3 = \frac{1}{4 I_{33}} \mathrm{dot} \left( \mathbf{p}^{(4)*}, P_3 \mathbf{q}^* \right) \\
-    /// &\mathbf{q} \left\{ t + \delta t \right\} = \cos{(\phi_3 \delta t / 2)} \mathbf{q}^* +  \sin{(\phi_3 \delta t / 2)} P_3 \mathbf{q}^* \nonumber \\
-    /// &\mathbf{p}^{(4)} \left\{ t + \frac{\delta t}{2} \right\} = \cos{(\phi_3 \delta t / 2)} \mathbf{p}^{(4)*} +  \sin{(\phi_3 \delta t / 2)} P_3 \mathbf{p}^{(4)*} \nonumber    \nonumber \\ \nonumber \\
+    /// &\phi_3 = \frac{1}{4 I_{33}} \mathrm{dot} \left( \mathbf{p}^{(4) '}, P_3 \mathbf{q}^{'} \right) \\
+    /// &\mathbf{q} \left\{ t + \delta t \right\} = \cos{(\phi_3 \delta t / 2)} \mathbf{q}^{'} +  \sin{(\phi_3 \delta t / 2)} P_3 \mathbf{q}^{'} \nonumber \\
+    /// &\mathbf{p}^{(4)} \left\{ t + \frac{\delta t}{2} \right\} = \cos{(\phi_3 \delta t / 2)} \mathbf{p}^{(4) '} +  \sin{(\phi_3 \delta t / 2)} P_3 \mathbf{p}^{(4) '} \nonumber    \nonumber \\ \nonumber \\
     /// \end{align} 
     /// ```
     /// Where $`I_{kk}`$ are the principal compoenets of moment of inertia, and $`P_k`$ are the permuation matrices, such that $`P_1q=(-q_1, q_0, q_3, -q_2)`$, $`P_2q=(-q_2, -q_3, q_0, q_1)`$, 
@@ -411,7 +412,7 @@ where
     /// ```math
     /// \begin{align}
     ///
-    /// &\mathbf{l}^{(4)} = \frac{1}{2}S(\mathbf{q}^*)^T \mathbf{p}^{(4)*},\; \mathbf{l}^{(4)}=(0, l_x, l_y, l_z)
+    /// &\mathbf{l}^{(4)} = \frac{1}{2}S(\mathbf{q}^{'})^T \mathbf{p}^{(4) '},\; \mathbf{l}^{(4)}=(0, l_x, l_y, l_z)
     ///         
     /// \end{align}
     /// ```
