@@ -78,7 +78,7 @@ impl SupportMapping<Cartesian<3>> for Simplex3 {
     #[inline]
     fn support_mapping(&self, n: &Cartesian<3>) -> Cartesian<3> {
         #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
-        use std::arch::aarch64::float64x2x3_t;
+        use std::arch::aarch64::{float64x2_t, float64x2x3_t};
 
         /// Compute the dot product of two vectors stored as ``float64x2x3_t``
         ///
@@ -97,7 +97,10 @@ impl SupportMapping<Cartesian<3>> for Simplex3 {
         }
 
         unsafe {
-            use std::arch::aarch64::*;
+            use std::arch::aarch64::{
+                vandq_u32, vceqq_f64, vcombine_u32, vdupq_n_f64, vld1q_u32, vld3q_dup_f64,
+                vld3q_f64, vmaxq_f64, vmaxvq_u32, vmovn_u64, vpmaxqd_f64,
+            };
             let vertices = self.vertices[0].coordinates.as_ptr();
             let n = vld3q_dup_f64(n.coordinates.as_ptr());
             let ab = vld3q_f64(vertices);
