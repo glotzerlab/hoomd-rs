@@ -100,6 +100,7 @@ where
     where
         P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
     {
+        #![allow(non_snake_case)]
         let kT_setpoint = macrostate.temperature();
 
         let (ke, dof) = compute_properties(&microstate);

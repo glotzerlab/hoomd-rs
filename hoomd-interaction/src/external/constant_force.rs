@@ -106,7 +106,7 @@ where
     S: Position<Position = V>,
 {
     #[inline]
-    fn site_single_force(&self, site_properties: &S) -> V {
+    fn site_single_force(&self, _site_properties: &S) -> V {
         self.force()
     }
 }
@@ -118,7 +118,7 @@ where
     R: Rotate<V>
 {
     #[inline]
-    fn body_single_torque(&self, body_properties: &B) -> V::Bivector {
+    fn body_single_torque(&self, _body_properties: &B) -> V::Bivector {
         todo!()
     }
 }
@@ -130,7 +130,7 @@ where
     V::Bivector: Default
 {
     /// Calculate the force and torque.
-    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Bivector) {
+    fn net_force_and_torque_on_site(&self, _microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Bivector) {
         let force = self.site_single_force(&site.properties);
         let torque = V::Bivector::default();
         (force, torque)

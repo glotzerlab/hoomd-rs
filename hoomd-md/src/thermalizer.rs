@@ -49,6 +49,7 @@ pub trait TranslationalMomentumModifier<const N: usize, B, S, C> {
 
 /// Thermalize system's momenta
 /// according to Maxwell-Boltzmann distribtion.
+#[allow(non_snake_case)]
 pub struct Thermalizer {
     /// The desired temperature
     pub kT: f64,

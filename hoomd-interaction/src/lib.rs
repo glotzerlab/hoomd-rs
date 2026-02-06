@@ -12,7 +12,7 @@
 //!
 //! TODO: Expand documentation.
 
-use std::ops::{Add, AddAssign};
+use std::ops::Add;
 
 use hoomd_microstate::{property::{Orientation, Position}, Body, Microstate, Site, Transform};
 

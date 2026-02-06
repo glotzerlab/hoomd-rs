@@ -5,7 +5,7 @@
 
 use std::ops::Mul;
 
-use hoomd_vector::{Unit, WedgeProduct};
+use hoomd_vector::WedgeProduct;
 
 use crate::SiteForceAndTorque;
 use hoomd_microstate::{Microstate, Site};
