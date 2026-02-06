@@ -89,10 +89,8 @@ impl SupportMapping<Cartesian<3>> for Simplex3 {
         #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
         #[inline]
         fn neon_dot(left: float64x2x3_t, right: float64x2x3_t) -> float64x2_t {
-            use std::arch::aarch64::vmulq_f64;
-
             unsafe {
-                use std::arch::aarch64::{vaddq_f64, vaddvq_f64, vfmaq_f64, vpaddd_f64};
+                use std::arch::aarch64::{vaddq_f64, vfmaq_f64, vmulq_f64};
 
                 let x = vmulq_f64(left.0, right.0);
                 let y = vmulq_f64(left.1, right.1);
@@ -101,10 +99,7 @@ impl SupportMapping<Cartesian<3>> for Simplex3 {
         }
 
         unsafe {
-            use std::arch::aarch64::{
-                vandq_u32, vceqq_f64, vcombine_u32, vdupq_n_f64, vld1q_u32, vld3q_f64, vmaxq_f64,
-                vmaxvq_u32, vmovn_u64, vmulq_f32, vmulq_u32, vpmaxq_f64, vpmaxqd_f64,
-            };
+            use std::arch::aarch64::*;
             let vertices = self.vertices[0].coordinates.as_ptr();
             let n = vld3q_dup_f64(n.coordinates.as_ptr());
             let ab = vld3q_f64(vertices);
