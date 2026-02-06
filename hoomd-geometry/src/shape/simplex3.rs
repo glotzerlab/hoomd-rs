@@ -94,13 +94,9 @@ impl SupportMapping<Cartesian<3>> for Simplex3 {
             unsafe {
                 use std::arch::aarch64::{vaddq_f64, vaddvq_f64, vfmaq_f64, vpaddd_f64};
 
-                // TODO: vfmaq
                 let x = vmulq_f64(left.0, right.0);
                 let y = vmulq_f64(left.1, right.1);
-                let z = vmulq_f64(left.2, right.2);
-                vaddq_f64(vaddq_f64(x, y), z)
-
-                // return vaddvq_f64();
+                vfmaq_f64(vaddq_f64(x, y), left.2, right.2)
             }
         }
 
@@ -112,7 +108,7 @@ impl SupportMapping<Cartesian<3>> for Simplex3 {
             let vertices = self.vertices[0].coordinates.as_ptr();
             let n = vld3q_dup_f64(n.coordinates.as_ptr());
             let ab = vld3q_f64(vertices);
-            let cd = vld3q_f64(vertices.add(2 * 3));
+            let cd = vld3q_f64(vertices.add(6));
             let ab_dot_n = neon_dot(ab, n);
             let cd_dot_n = neon_dot(cd, n);
 
