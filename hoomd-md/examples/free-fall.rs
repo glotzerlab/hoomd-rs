@@ -1,8 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
-// Part of hoomd-rs, released under the BSD 3-Clause License.
-
-/*! Simple example of a falling body with MD.
-*/
+//! Simple example of a falling body with MD.
 
 #![allow(non_snake_case)]
 

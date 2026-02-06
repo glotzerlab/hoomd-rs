@@ -1,4 +1,5 @@
-//! A simulation with a single particle
+//! A simulation with a single particle that is a dumbbell subjected to an external
+//! constant torque
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{

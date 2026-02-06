@@ -1,4 +1,4 @@
-//! A simulation with a single particle
+//! A simulation of triangular bodies interacting through a LJ potential.
 
 #![allow(non_snake_case)]
 

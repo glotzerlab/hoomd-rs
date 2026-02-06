@@ -1,4 +1,5 @@
-//! A simulation with a single particle 
+//! A simulation with a single particle that is a dumbbell that can interact
+//! with a user-controllable particle that is a point.
 
 #![allow(non_snake_case)]
 #![allow(unused_must_use)]

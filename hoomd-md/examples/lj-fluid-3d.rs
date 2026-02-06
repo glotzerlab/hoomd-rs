@@ -1,10 +1,5 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
-// Part of hoomd-rs, released under the BSD 3-Clause License.
-
-/*! Example of three-dimensional LJ fluid
-    copied from the lj_fluid.py in hoomd-validation repo,
-    using second param_list (line 62 - 69 in lj_fluid.py).
-*/
+//! Example of three-dimensional LJ fluid copied from the lj_fluid.py in
+//! hoomd-validation repo, using second param_list (line 62 - 69 in lj_fluid.py).
 
 #![allow(non_snake_case)]
 #![allow(unused_must_use)]
