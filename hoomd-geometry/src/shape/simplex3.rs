@@ -74,6 +74,60 @@ pub struct Simplex3 {
 }
 
 impl SupportMapping<Cartesian<3>> for Simplex3 {
+    #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+    #[inline]
+    fn support_mapping(&self, n: &Cartesian<3>) -> Cartesian<3> {
+        #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+        use std::arch::aarch64::float64x2_t;
+        use std::arch::aarch64::float64x2x3_t;
+        use std::arch::aarch64::vld3q_dup_f64;
+
+        /// Compute the dot product of two vectors stored as ``float64x2x3_t``
+        ///
+        /// These packed structs should be formatted as [[x0 x1] [y0 y1] [z0 z1]]
+        /// Returns [x0 * y0 * z0; x1 * y1 * z1]
+        #[cfg(all(target_arch = "aarch64", target_feature = "neon"))]
+        #[inline]
+        fn neon_dot(left: float64x2x3_t, right: float64x2x3_t) -> float64x2_t {
+            use std::arch::aarch64::vmulq_f64;
+
+            unsafe {
+                use std::arch::aarch64::{vaddq_f64, vaddvq_f64, vfmaq_f64, vpaddd_f64};
+
+                // TODO: vfmaq
+                let x = vmulq_f64(left.0, right.0);
+                let y = vmulq_f64(left.1, right.1);
+                let z = vmulq_f64(left.2, right.2);
+                vaddq_f64(vaddq_f64(x, y), z)
+
+                // return vaddvq_f64();
+            }
+        }
+
+        unsafe {
+            use std::arch::aarch64::{
+                vandq_u32, vceqq_f64, vcombine_u32, vdupq_n_f64, vld1q_u32, vld3q_f64, vmaxq_f64,
+                vmaxvq_u32, vmovn_u64, vmulq_f32, vmulq_u32, vpmaxq_f64, vpmaxqd_f64,
+            };
+            let vertices = self.vertices[0].coordinates.as_ptr();
+            let n = vld3q_dup_f64(n.coordinates.as_ptr());
+            let ab = vld3q_f64(vertices);
+            let cd = vld3q_f64(vertices.add(2 * 3));
+            let ab_dot_n = neon_dot(ab, n);
+            let cd_dot_n = neon_dot(cd, n);
+
+            // Get the max: (vpmaxqd_f64(vmaxq_f64(ab, cd)) -> f64), or vpmaxq_f64?
+            let max_dot = vdupq_n_f64(vpmaxqd_f64(vmaxq_f64(ab_dot_n, cd_dot_n)));
+            // Then, compare to dots to find index
+            let is_max_ab = vmovn_u64(vceqq_f64(max_dot, ab_dot_n));
+            let is_max_cd = vmovn_u64(vceqq_f64(max_dot, cd_dot_n));
+            // Combine two u32x2 into one u32x4
+            let mask_all = vcombine_u32(is_max_ab, is_max_cd);
+            let indices = vld1q_u32([0, 1, 2, 3].as_ptr());
+            self.vertices[vmaxvq_u32(vandq_u32(mask_all, indices)) as usize]
+        }
+    }
+    #[cfg(not(all(target_arch = "aarch64", target_feature = "neon")))]
     #[inline]
     fn support_mapping(&self, n: &Cartesian<3>) -> Cartesian<3> {
         let dots = self.vertices.map(|v| v.dot(n));
