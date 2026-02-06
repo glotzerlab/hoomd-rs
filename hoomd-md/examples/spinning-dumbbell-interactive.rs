@@ -2,9 +2,8 @@
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    CutoffPair, External,
+    External,
     external::ConstantTorque,
-    pairwise::{Isotropic, LennardJones, WeeksChandlerAnderson},
     rigid::Rigid,
 };
 use hoomd_md::{
@@ -18,13 +17,13 @@ use hoomd_md::{
 };
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder,
-    boundary::{Closed, Open, Periodic},
-    property::{DynamicsPoint, Momentum, OrientedDynamicsPoint, Point, Position},
+    boundary::Periodic,
+    property::{OrientedDynamicsPoint, Point},
 };
 use hoomd_simulation::Simulation;
 use hoomd_vector::{Angle, Cartesian};
 
-use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
+use bevy_egui::EguiPlugin;
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
     representation::RectangularBoundary,

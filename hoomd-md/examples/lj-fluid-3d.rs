@@ -6,6 +6,9 @@
     using second param_list (line 62 - 69 in lj_fluid.py).
 */
 
+#![allow(non_snake_case)]
+#![allow(unused_must_use)]
+
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{
     CutoffPair, TotalEnergy,
@@ -19,7 +22,7 @@ use hoomd_md::{
         TranslationalMotion,
     },
     thermalizer::{
-        ComAngularMomentumRemover, ComMomentumRemover, RotationalThermalizer, Thermalizer,
+        ComAngularMomentumRemover, ComMomentumRemover, Thermalizer,
         TranslationalMomentumModifier,
         TranslationalThermalizer,
     }, thermostat::NoThermostat
@@ -157,7 +160,7 @@ impl Simulation for System {
             println!("==============={:}===============", self.step());
             let ke = self.integrator.get_translational_kinetic_energy();
             let dof = self.integrator.get_translational_dof();
-            let n = (dof / 3.0 + 1.0);
+            let n = dof / 3.0 + 1.0;
 
             let kT = 2.0 * ke / dof;
             let pe = self.force.0.total_energy(&self.microstate);

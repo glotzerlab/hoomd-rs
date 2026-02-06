@@ -1,5 +1,7 @@
 //! A simulation with a single particle swimming through a Lennard-Jones fluid.
 
+#![allow(non_snake_case)]
+
 use bevy_egui::EguiPlugin;
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
@@ -14,7 +16,7 @@ use hoomd_md::{
         TranslationalMotion,
     },
     thermalizer::{
-        ComAngularMomentumRemover, ComMomentumRemover, RotationalThermalizer, Thermalizer,
+        ComAngularMomentumRemover, ComMomentumRemover, Thermalizer,
         TranslationalMomentumModifier,
         TranslationalThermalizer,
     }, thermostat::BussiThermostat
@@ -22,11 +24,11 @@ use hoomd_md::{
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder,
     boundary::Periodic,
-    property::{DynamicsPoint, NetForce, Point, Position},
+    property::{DynamicsPoint, NetForce, Point},
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, Metric};
+use hoomd_vector::Cartesian;
 
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
@@ -42,7 +44,7 @@ struct A;
 
 /// The state of the swimming simulation, tracked as a resource by Bevy
 #[derive(Resource)]
-struct LJG_sqaure {
+struct LJGSquare {
     // microstate: Microstate<DynamicsPoint<Cartesian<2>>, Point<Cartesian<2>>, Closed<Rectangle>>,
     microstate: Microstate<DynamicsPoint<Cartesian<2>>, Point<Cartesian<2>>, Periodic<Rectangle>>,
 
@@ -55,10 +57,11 @@ struct LJG_sqaure {
     integrator: ConstantVolume,
 }
 
-impl LJG_sqaure {
+impl LJGSquare {
     /// Construct a new swimming simulation.
-    fn new() -> anyhow::Result<LJG_sqaure> {
+    fn new() -> anyhow::Result<LJGSquare> {
         let box_length = 16.0;
+        #[allow(non_snake_case)]
         let kT_init = 0.15;
 
         // LJG potential
@@ -139,7 +142,7 @@ impl LJG_sqaure {
         // Constant T integration
         let thermostat = BussiThermostat::new(tau);
 
-        Ok(LJG_sqaure {
+        Ok(LJGSquare {
             microstate,
             macrostate,
             thermostat,
@@ -149,7 +152,7 @@ impl LJG_sqaure {
     }
 }
 
-impl Simulation for LJG_sqaure {
+impl Simulation for LJGSquare {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
         // Evolve the system forward using the integrator
@@ -199,7 +202,7 @@ impl Simulation for LJG_sqaure {
 }
 
 fn main() -> anyhow::Result<()> {
-    let mut simulation = LJG_sqaure::new().context("failed to setup simulation")?;
+    let simulation = LJGSquare::new().context("failed to setup simulation")?;
     let l = simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
 
     let hoomd_bevy_plugin = HoomdBevyPlugin {
@@ -232,7 +235,7 @@ fn main() -> anyhow::Result<()> {
         (
             //move_swimmer,
             sync_simulation
-                .run_if(resource_changed::<LJG_sqaure>)
+                .run_if(resource_changed::<LJGSquare>)
                 .after(AdvanceSet),
         )
             .chain(),
@@ -248,7 +251,7 @@ fn sync_simulation(
     mut commands: Commands,
     disk_representation: Res<disk::Representation<A>>,
     query: Query<(Entity, &mut Transform), With<Disk<A>>>,
-    simulation: Res<LJG_sqaure>,
+    simulation: Res<LJGSquare>,
 ) {
     let sites = simulation.microstate.sites();
     Disk::sync(

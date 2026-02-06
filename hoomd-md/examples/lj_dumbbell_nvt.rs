@@ -4,6 +4,9 @@
 /*! Simple example of three-dimensional rods simualtion with MD.
 */
 
+#![allow(non_snake_case)]
+#![allow(unused_must_use)]
+
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{
     CutoffPair, TotalEnergy,

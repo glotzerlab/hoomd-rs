@@ -52,7 +52,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     // Create an NVE macrostate
-    struct Isoenergy {};
+    struct Isoenergy {}
     
     let macrostate = Isoenergy{};
 

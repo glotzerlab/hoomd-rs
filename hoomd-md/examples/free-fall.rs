@@ -4,6 +4,8 @@
 /*! Simple example of a falling body with MD.
 */
 
+#![allow(non_snake_case)]
+
 // use hoomd_simulation::macrostate::{Isoenergy};
 use hoomd_interaction::{External, external::ConstantForce, rigid::Rigid};
 use hoomd_md::{
@@ -45,7 +47,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }));
 
     // Create an NVE macrostate
-    struct Isoenergy {};
+    struct Isoenergy {}
 
     let macrostate = Isoenergy {};
 

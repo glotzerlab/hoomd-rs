@@ -1,16 +1,17 @@
 //! A simulation with a single particle
 
-use hoomd_geometry::shape::{Hypercuboid, Rectangle};
+#![allow(non_snake_case)]
+
+use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
     CutoffPair, TotalEnergy,
-    pairwise::{Isotropic, LennardJones, WeeksChandlerAnderson},
+    pairwise::{Isotropic, LennardJones},
     rigid::Rigid,
 };
 use hoomd_md::{
     methods::{
         ConstantVolume,
         ForceAndTorqueUpdate,
-        ForceUpdate,
         RotationalMotion,
         TranslationalMotion,
     },
@@ -19,18 +20,18 @@ use hoomd_md::{
         TranslationalMomentumModifier,
         TranslationalThermalizer,
     },
-    thermostat::{BussiThermostat, MTTKThermostat, NoThermostat},
+    thermostat::BussiThermostat,
 };
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder,
-    boundary::{Closed, Open, Periodic},
-    property::{DynamicsPoint, Momentum, OrientedDynamicsPoint, Point, Position},
+    boundary::Periodic,
+    property::{OrientedDynamicsPoint, Point},
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Angle, Cartesian, Quaternion, Versor};
+use hoomd_vector::{Angle, Cartesian};
 
-use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
+use bevy_egui::EguiPlugin;
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
     representation::RectangularBoundary,
