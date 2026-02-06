@@ -6,7 +6,14 @@
 
 // use hoomd_simulation::macrostate::{Isoenergy};
 use hoomd_interaction::{External, external::ConstantForce, rigid::Rigid};
-use hoomd_md::{ConstantVolume, ForceUpdate, TranslationalMotion, thermostat::NoThermostat};
+use hoomd_md::{
+    thermostat::NoThermostat,
+    methods::{
+        ConstantVolume,
+        ForceUpdate,
+        TranslationalMotion
+    }
+};
 use hoomd_microstate::{
     Body, Microstate,
     property::{DynamicsPoint, Point},

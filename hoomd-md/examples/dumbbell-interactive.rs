@@ -2,12 +2,21 @@
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    pairwise::{Isotropic, LennardJones, WeeksChandlerAnderson}, rigid::Rigid, CutoffPair
+    pairwise::{Isotropic, WeeksChandlerAnderson}, rigid::Rigid, CutoffPair
 };
-use hoomd_md::{thermostat::NoThermostat, ConstantVolume, ForceAndTorqueUpdate, RotationalMotion, TranslationalMotion};
+use hoomd_md::{
+    thermostat::NoThermostat,
+    methods::{
+        ConstantVolume,
+        ForceAndTorqueUpdate,
+        RotationalMotion,
+        TranslationalMotion
+    }
+};
+
 use hoomd_microstate::{
-    boundary::{Closed, Open, Periodic},
-    property::{DynamicsPoint, Momentum, OrientedDynamicsPoint, Point, Position},
+    boundary::{Periodic},
+    property::{Momentum, OrientedDynamicsPoint, Point},
     Body,
     Microstate,
     MicrostateBuilder

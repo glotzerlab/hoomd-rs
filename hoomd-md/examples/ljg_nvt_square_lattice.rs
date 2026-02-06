@@ -8,7 +8,12 @@ use hoomd_interaction::{
     rigid::Rigid,
 };
 use hoomd_md::{
-    ConstantVolume, ForceUpdate, TranslationalMotion, thermalizer::{
+    methods::{
+        ConstantVolume,
+        ForceUpdate,
+        TranslationalMotion,
+    },
+    thermalizer::{
         ComAngularMomentumRemover, ComMomentumRemover, RotationalThermalizer, Thermalizer,
         TranslationalMomentumModifier,
         TranslationalThermalizer,
@@ -20,6 +25,7 @@ use hoomd_microstate::{
     property::{DynamicsPoint, NetForce, Point, Position},
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
+use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Metric};
 
 use hoomd_bevy::{
@@ -127,7 +133,7 @@ impl LJG_sqaure {
 
         // Create a constant-volume integrator
         let dt = 0.005;
-        let tau = 50.0 * dt;
+        let tau = PositiveReal::try_from(50.0 * dt)?;
         let integrator = ConstantVolume::new(dt);
 
         // Constant T integration

@@ -4,7 +4,14 @@ use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
     pairwise::{Isotropic, LennardJones}, rigid::Rigid, CutoffPair
 };
-use hoomd_md::{ConstantVolume, ForceUpdate, TranslationalMotion, thermostat::NoThermostat};
+use hoomd_md::{
+    methods::{
+        ConstantVolume,
+        ForceUpdate,
+        TranslationalMotion,
+    },
+    thermostat::NoThermostat
+};
 use hoomd_microstate::{
     boundary::{Closed, Periodic}, property::{DynamicsPoint, Momentum, Point, Position}, Body, Microstate, MicrostateBuilder
 };

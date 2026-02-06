@@ -8,7 +8,12 @@ use hoomd_interaction::{
     rigid::Rigid,
 };
 use hoomd_md::{
-    ConstantVolume, ForceAndTorqueUpdate, RotationalMotion, TranslationalMotion,
+    methods::{
+        ConstantVolume,
+        ForceAndTorqueUpdate,
+        RotationalMotion,
+        TranslationalMotion,
+    },
     thermostat::NoThermostat,
 };
 use hoomd_microstate::{

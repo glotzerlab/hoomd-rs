@@ -7,7 +7,13 @@ use hoomd_interaction::{
     rigid::Rigid,
 };
 use hoomd_md::{
-    ConstantVolume, ForceAndTorqueUpdate, ForceUpdate, RotationalMotion, TranslationalMotion,
+    methods::{
+        ConstantVolume,
+        ForceAndTorqueUpdate,
+        ForceUpdate,
+        RotationalMotion,
+        TranslationalMotion,
+    },
     thermalizer::{
         ComAngularMomentumRemover, ComMomentumRemover, RotationalThermalizer, Thermalizer,
         TranslationalMomentumModifier,
@@ -21,6 +27,7 @@ use hoomd_microstate::{
     property::{DynamicsPoint, Momentum, OrientedDynamicsPoint, Point, Position},
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
+use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Angle, Cartesian, Quaternion, Versor};
 
 use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
@@ -125,7 +132,7 @@ impl System {
         // NVT simulation,
         // Notice that the thermostats for translational
         // and rotational dof are separated.
-        let tau = 50.0 * dt;
+        let tau = PositiveReal::try_from(50.0 * dt)?;
         let thermostat = (BussiThermostat::new(tau), BussiThermostat::new(tau));
 
         Ok(System {

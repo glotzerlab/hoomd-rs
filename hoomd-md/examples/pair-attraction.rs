@@ -7,7 +7,13 @@
 use hoomd_vector::Cartesian;
 use hoomd_microstate::{Microstate, Body, property::{Point, DynamicsPoint}};
 use hoomd_interaction::{pairwise::{Isotropic, LennardJones}, rigid::Rigid, CutoffPair};
-use hoomd_md::{ConstantVolume, ForceUpdate, TranslationalMotion, thermostat::NoThermostat};
+use hoomd_md::{
+    methods::{
+        ConstantVolume,
+        ForceUpdate,
+        TranslationalMotion,
+    },
+    thermostat::NoThermostat};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create a microstate with two bodies, each with a single site
