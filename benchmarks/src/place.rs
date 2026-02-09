@@ -79,7 +79,7 @@ where
     while !quick_compress.is_complete() {
         if quick_insert.is_complete() {
             quick_compress.apply(&mut microstate, overlap_penalty_hamiltonian, |_| true);
-        } else {    
+        } else {
             quick_insert.apply(&mut microstate, overlap_penalty_hamiltonian);
         }
 
@@ -171,7 +171,7 @@ where
     while !quick_compress.is_complete() {
         if quick_insert.is_complete() {
             quick_compress.apply(&mut microstate, insert_hamiltonian, |_| true);
-        } else {    
+        } else {
             quick_insert.apply(&mut microstate, insert_hamiltonian);
         }
 
