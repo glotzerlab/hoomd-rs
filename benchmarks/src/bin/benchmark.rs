@@ -172,19 +172,15 @@ fn execute_matching(
 
     let name = "mc_3d_octahedron";
     if benchmark_matcher.matches(name) {
-        let mut simulation = mc::Octahedron::<VecCell<SiteKey, 3>>::new(
-            n,
-            options.parallel_sweep || threads > 1,
-        )?;
+        let mut simulation =
+            mc::Octahedron::<VecCell<SiteKey, 3>>::new(n, options.parallel_sweep || threads > 1)?;
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
     }
 
     let name = "mc_3d_ellipsoid";
     if benchmark_matcher.matches(name) {
-        let mut simulation = mc::EllipsoidSim::<VecCell<SiteKey, 3>>::new(
-            n,
-            options.parallel_sweep || threads > 1,
-        )?;
+        let mut simulation =
+            mc::EllipsoidSim::<VecCell<SiteKey, 3>>::new(n, options.parallel_sweep || threads > 1)?;
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
     }
 

@@ -6,13 +6,21 @@
 use anyhow::Context;
 use log::debug;
 use serde::{Deserialize, Serialize};
-use std::{fmt, fs::{self, File}, io::{self, Write}};
+use std::{
+    fmt,
+    fs::{self, File},
+    io::{self, Write},
+};
 
 use hoomd_geometry::{
     Convex,
     shape::{ConvexPolyhedron, Hypercuboid},
 };
-use hoomd_interaction::{MaximumInteractionRange, PairwiseCutoff, pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape}, univariate::OverlapPenalty};
+use hoomd_interaction::{
+    MaximumInteractionRange, PairwiseCutoff,
+    pairwise::{Anisotropic, ApproximateShapeOverlap, HardShape},
+    univariate::OverlapPenalty,
+};
 use hoomd_mc::{
     Count, HypercuboidCheckerboard, ParallelSweep, Rotate, Sweep, Translate, Trial, Tune,
 };
@@ -156,7 +164,8 @@ impl<X> Octahedron<X>
 where
     X: PointsNearBall<Cartesian<3>, SiteKey>
         + PointUpdate<Cartesian<3>, SiteKey>
-        + WithSearchRadius        + Clone
+        + WithSearchRadius
+        + Clone
         + for<'a> Deserialize<'a>
         + Serialize,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
@@ -166,14 +175,11 @@ where
     /// # Errors
     /// Returns an error when the microstate cannot be constructed.
     #[inline]
-    pub fn new(
-        n: usize,
-        parallel: bool,
-    ) -> anyhow::Result<Self> {
+    pub fn new(n: usize, parallel: bool) -> anyhow::Result<Self> {
         let macrostate = Isothermal { temperature: 1.0 };
         let packing_fraction = 0.55;
         let a = 2.0f64.sqrt() / 2.0;
-        let octahedron_volume = 1.0/3.0 * 2.0f64.sqrt() * a.powi(3);
+        let octahedron_volume = 1.0 / 3.0 * 2.0f64.sqrt() * a.powi(3);
         let number_density = packing_fraction / octahedron_volume;
         let cache_filename = format!("mc_3d_octahedron_{packing_fraction}_{n}.postcard");
 
@@ -181,10 +187,11 @@ where
             Ok(bytes) => {
                 debug!("Reading cache '{cache_filename}'.");
 
-                let mut result: Self = postcard::from_bytes(&bytes).with_context(|| format!("Could not read {cache_filename}"))?;
+                let mut result: Self = postcard::from_bytes(&bytes)
+                    .with_context(|| format!("Could not read {cache_filename}"))?;
                 // The cache may have been generated with a different value of parallel.
                 result.parallel = parallel;
-                return Ok(result)
+                return Ok(result);
             }
             Err(error) => match error.kind() {
                 io::ErrorKind::NotFound => (),
@@ -204,11 +211,17 @@ where
 
         let translate = Translate::with_maximum_distance(0.05.try_into()?);
         let mut translate_sweep = Sweep(translate.clone());
-        let mut parallel_translate_sweep = ParallelSweep::new(hamiltonian.0.maximum_interaction_range().try_into()?, translate);
+        let mut parallel_translate_sweep = ParallelSweep::new(
+            hamiltonian.0.maximum_interaction_range().try_into()?,
+            translate,
+        );
 
         let rotate = Rotate::with_maximum_rotation((0.03).try_into()?);
         let mut rotate_sweep = Sweep(rotate.clone());
-        let mut parallel_rotate_sweep = ParallelSweep::new(hamiltonian.0.maximum_interaction_range().try_into()?, rotate);
+        let mut parallel_rotate_sweep = ParallelSweep::new(
+            hamiltonian.0.maximum_interaction_range().try_into()?,
+            rotate,
+        );
 
         let approximate_shape_overlap = Anisotropic {
             interaction: ApproximateShapeOverlap::new(
@@ -218,16 +231,24 @@ where
             ),
             r_cut: hamiltonian.0.maximum_interaction_range(),
         };
-        let overlap_penalty_hamiltonian =
-            PairwiseCutoff(approximate_shape_overlap);
+        let overlap_penalty_hamiltonian = PairwiseCutoff(approximate_shape_overlap);
 
-        let microstate = place_single_site_orientable_bodies(n, number_density, hamiltonian.0.maximum_interaction_range(), &overlap_penalty_hamiltonian)?;
+        let microstate = place_single_site_orientable_bodies(
+            n,
+            number_density,
+            hamiltonian.0.maximum_interaction_range(),
+            &overlap_penalty_hamiltonian,
+        )?;
 
         translate_sweep.tune_default(&microstate, &hamiltonian, &Isothermal { temperature: 1.0 });
-        *parallel_translate_sweep.local_trial_mut().maximum_distance_mut() = *translate_sweep.0.maximum_distance();
+        *parallel_translate_sweep
+            .local_trial_mut()
+            .maximum_distance_mut() = *translate_sweep.0.maximum_distance();
 
         rotate_sweep.tune_default(&microstate, &hamiltonian, &Isothermal { temperature: 1.0 });
-        *parallel_rotate_sweep.local_trial_mut().maximum_rotation_mut() = *rotate_sweep.0.maximum_rotation();
+        *parallel_rotate_sweep
+            .local_trial_mut()
+            .maximum_rotation_mut() = *rotate_sweep.0.maximum_rotation();
 
         let simulation = Self {
             microstate,

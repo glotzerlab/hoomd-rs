@@ -8,10 +8,10 @@ use log::{debug, trace};
 use rand::distr::Distribution;
 
 use hoomd_geometry::{Volume, shape::Hypercuboid};
-use hoomd_interaction::{
-    DeltaEnergyInsert, DeltaEnergyOne, TotalEnergy
+use hoomd_interaction::{DeltaEnergyInsert, DeltaEnergyOne, TotalEnergy};
+use hoomd_mc::{
+    LocalTrial, QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn,
 };
-use hoomd_mc::{LocalTrial, QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn};
 use hoomd_microstate::{
     Body, Microstate, SiteKey, Transform,
     boundary::{GenerateGhosts, Periodic},
@@ -44,8 +44,8 @@ where
         + WithSearchRadius
         + Clone,
     H: DeltaEnergyInsert<B, S, X, Periodic<Hypercuboid<D>>>
-     + DeltaEnergyOne<B, S, X, Periodic<Hypercuboid<D>>>
-     + TotalEnergy<Microstate<B, S, X,Periodic<Hypercuboid<D>>>>,
+        + DeltaEnergyOne<B, S, X, Periodic<Hypercuboid<D>>>
+        + TotalEnergy<Microstate<B, S, X, Periodic<Hypercuboid<D>>>>,
 {
     let initial_number_density = 0.7 * number_density;
     let initial_box_length = (n as f64 / initial_number_density).powf(1.0 / (D as f64));
@@ -73,8 +73,7 @@ where
         template_sites: vec![S::default()],
     };
     let mut quick_insert = QuickInsert::new(distribution, n);
-    let mut quick_compress =
-        QuickCompress::with_target_volume(final_box_volume.try_into()?);
+    let mut quick_compress = QuickCompress::with_target_volume(final_box_volume.try_into()?);
 
     while !quick_compress.is_complete() {
         if quick_insert.is_complete() {
@@ -123,7 +122,11 @@ pub fn place_single_site_orientable_bodies<B, S, R, const D: usize, H, X>(
     insert_hamiltonian: &H,
 ) -> anyhow::Result<Microstate<B, S, X, Periodic<Hypercuboid<D>>>>
 where
-    B: Default + Position<Position = Cartesian<D>> + Orientation<Rotation = R> + Transform<S> + Copy,
+    B: Default
+        + Position<Position = Cartesian<D>>
+        + Orientation<Rotation = R>
+        + Transform<S>
+        + Copy,
     S: Default + Position<Position = Cartesian<D>> + Copy,
     UniformIn<S, Periodic<Hypercuboid<D>>>: Distribution<Body<B, S>>,
     Periodic<Hypercuboid<D>>: GenerateGhosts<S> + Volume,
@@ -133,8 +136,8 @@ where
         + WithSearchRadius
         + Clone,
     H: DeltaEnergyInsert<B, S, X, Periodic<Hypercuboid<D>>>
-     + DeltaEnergyOne<B, S, X, Periodic<Hypercuboid<D>>>
-     + TotalEnergy<Microstate<B, S, X,Periodic<Hypercuboid<D>>>>,
+        + DeltaEnergyOne<B, S, X, Periodic<Hypercuboid<D>>>
+        + TotalEnergy<Microstate<B, S, X, Periodic<Hypercuboid<D>>>>,
 {
     let initial_number_density = 0.7 * number_density;
     let initial_box_length = (n as f64 / initial_number_density).powf(1.0 / (D as f64));
@@ -165,8 +168,7 @@ where
         template_sites: vec![S::default()],
     };
     let mut quick_insert = QuickInsert::new(distribution, n);
-    let mut quick_compress =
-        QuickCompress::with_target_volume(final_box_volume.try_into()?);
+    let mut quick_compress = QuickCompress::with_target_volume(final_box_volume.try_into()?);
 
     while !quick_compress.is_complete() {
         if quick_insert.is_complete() {

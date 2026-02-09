@@ -3,11 +3,22 @@
 
 //! Benchmark Lennard Jones Monte Carlo simulations.
 
-use std::{fmt, fs::{self, File}, io::{self, Write}};
+use std::{
+    fmt,
+    fs::{self, File},
+    io::{self, Write},
+};
 
 use anyhow::Context;
-use hoomd_geometry::{Volume, shape::{Hypercuboid, Hypersphere}};
-use hoomd_interaction::{MaximumInteractionRange, PairwiseCutoff, pairwise::Isotropic, univariate::{self, Expanded, OverlapPenalty}};
+use hoomd_geometry::{
+    Volume,
+    shape::{Hypercuboid, Hypersphere},
+};
+use hoomd_interaction::{
+    MaximumInteractionRange, PairwiseCutoff,
+    pairwise::Isotropic,
+    univariate::{self, Expanded, OverlapPenalty},
+};
 use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Sweep, Translate, Trial, Tune};
 use hoomd_microstate::{
     Microstate, SiteKey,
@@ -117,7 +128,8 @@ impl<const D: usize, X> LennardJones<D, X>
 where
     X: PointsNearBall<Cartesian<D>, SiteKey>
         + PointUpdate<Cartesian<D>, SiteKey>
-        + WithSearchRadius        + Clone
+        + WithSearchRadius
+        + Clone
         + for<'a> Deserialize<'a>
         + Serialize,
     Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
@@ -127,11 +139,7 @@ where
     /// # Errors
     /// Returns an error when the microstate cannot be constructed.
     #[inline]
-    pub fn new(
-        n: usize,
-        parallel: bool,
-    ) -> anyhow::Result<Self>
-    {
+    pub fn new(n: usize, parallel: bool) -> anyhow::Result<Self> {
         let macrostate = Isothermal { temperature: 1.0 };
         let maximum_interaction_range = 2.5;
 
@@ -144,10 +152,11 @@ where
             Ok(bytes) => {
                 debug!("Reading cache '{cache_filename}'.");
 
-                let mut result: Self = postcard::from_bytes(&bytes).with_context(|| format!("Could not read {cache_filename}"))?;
+                let mut result: Self = postcard::from_bytes(&bytes)
+                    .with_context(|| format!("Could not read {cache_filename}"))?;
                 // The cache may have been generated with a different value of parallel.
                 result.parallel = parallel;
-                return Ok(result)
+                return Ok(result);
             }
             Err(error) => match error.kind() {
                 io::ErrorKind::NotFound => (),
@@ -165,8 +174,10 @@ where
 
         let translate = Translate::with_maximum_distance(0.35.try_into()?);
         let mut translate_sweep = Sweep(translate.clone());
-        let mut parallel_translate_sweep =
-            ParallelSweep::new(hamiltonian.0.maximum_interaction_range().try_into()?, translate);
+        let mut parallel_translate_sweep = ParallelSweep::new(
+            hamiltonian.0.maximum_interaction_range().try_into()?,
+            translate,
+        );
 
         let overlap_penalty = Isotropic {
             interaction: Expanded {
@@ -178,10 +189,17 @@ where
 
         let insert_hamiltonian = PairwiseCutoff(overlap_penalty);
 
-        let microstate = place_single_site_point_bodies(n, number_density, hamiltonian.0.maximum_interaction_range(), &insert_hamiltonian)?;
+        let microstate = place_single_site_point_bodies(
+            n,
+            number_density,
+            hamiltonian.0.maximum_interaction_range(),
+            &insert_hamiltonian,
+        )?;
 
         translate_sweep.tune_default(&microstate, &hamiltonian, &macrostate);
-        *parallel_translate_sweep.local_trial_mut().maximum_distance_mut() = *translate_sweep.0.maximum_distance();
+        *parallel_translate_sweep
+            .local_trial_mut()
+            .maximum_distance_mut() = *translate_sweep.0.maximum_distance();
 
         let simulation = Self {
             microstate,

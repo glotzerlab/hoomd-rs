@@ -3,11 +3,22 @@
 
 //! Benchmark hard sphere Monte Carlo simulations.
 
-use std::{fmt, fs::{File, self}, io::{Write, self}};
+use std::{
+    fmt,
+    fs::{self, File},
+    io::{self, Write},
+};
 
 use anyhow::Context;
-use hoomd_geometry::{Volume, shape::{Hypercuboid, Hypersphere}};
-use hoomd_interaction::{MaximumInteractionRange, PairwiseCutoff, pairwise::{HardSphere, Isotropic}, univariate::{Expanded, OverlapPenalty}};
+use hoomd_geometry::{
+    Volume,
+    shape::{Hypercuboid, Hypersphere},
+};
+use hoomd_interaction::{
+    MaximumInteractionRange, PairwiseCutoff,
+    pairwise::{HardSphere, Isotropic},
+    univariate::{Expanded, OverlapPenalty},
+};
 use hoomd_mc::{Count, HypercuboidCheckerboard, ParallelSweep, Sweep, Translate, Trial, Tune};
 use hoomd_microstate::{
     Microstate, SiteKey,
@@ -127,8 +138,7 @@ where
     /// # Errors
     /// Returns an error when the microstate cannot be constructed.
     #[inline]
-    pub fn new(n: usize, parallel: bool) -> anyhow::Result<Self>
-    {
+    pub fn new(n: usize, parallel: bool) -> anyhow::Result<Self> {
         let sigma = 1.0;
         let packing_fraction = 0.50;
         let sphere = Hypersphere::<D>::with_radius(0.5.try_into()?);
@@ -139,10 +149,11 @@ where
             Ok(bytes) => {
                 debug!("Reading cache '{cache_filename}'.");
 
-                let mut result: Self = postcard::from_bytes(&bytes).with_context(|| format!("Could not read {cache_filename}"))?;
+                let mut result: Self = postcard::from_bytes(&bytes)
+                    .with_context(|| format!("Could not read {cache_filename}"))?;
                 // The cache may have been generated with a different value of parallel.
                 result.parallel = parallel;
-                return Ok(result)
+                return Ok(result);
             }
             Err(error) => match error.kind() {
                 io::ErrorKind::NotFound => (),
@@ -154,7 +165,10 @@ where
 
         let translate = Translate::with_maximum_distance((sigma * 0.24).try_into()?);
         let mut translate_sweep = Sweep(translate.clone());
-        let mut parallel_translate_sweep = ParallelSweep::new(hamiltonian.0.maximum_interaction_range().try_into()?, translate.clone());
+        let mut parallel_translate_sweep = ParallelSweep::new(
+            hamiltonian.0.maximum_interaction_range().try_into()?,
+            translate.clone(),
+        );
 
         let overlap_penalty = Isotropic {
             interaction: Expanded {
@@ -166,10 +180,17 @@ where
 
         let overlap_penalty_hamiltonian = PairwiseCutoff(overlap_penalty);
 
-        let microstate = place_single_site_point_bodies(n, number_density, hamiltonian.0.maximum_interaction_range(), &overlap_penalty_hamiltonian)?;
+        let microstate = place_single_site_point_bodies(
+            n,
+            number_density,
+            hamiltonian.0.maximum_interaction_range(),
+            &overlap_penalty_hamiltonian,
+        )?;
 
         translate_sweep.tune_default(&microstate, &hamiltonian, &Isothermal { temperature: 1.0 });
-        *parallel_translate_sweep.local_trial_mut().maximum_distance_mut() = *translate_sweep.0.maximum_distance();
+        *parallel_translate_sweep
+            .local_trial_mut()
+            .maximum_distance_mut() = *translate_sweep.0.maximum_distance();
 
         let simulation = Self {
             microstate,
