@@ -11,7 +11,7 @@
     },
     {
       "matchManagers": ["cargo"],
-      "matchPackageNames": ["rand", "chacha20"],
+      "matchPackageNames": ["rand", "rand_distr", "chacha20"],
       "groupName": "rand"
     }
   ]
