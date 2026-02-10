@@ -8,6 +8,11 @@
       "matchManagers": ["cargo"],
       "matchPackageNames": ["bevy*"],
       "groupName": "bevy"
+    },
+    {
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["rand", "chacha20"],
+      "groupName": "rand"
     }
   ]
 }
