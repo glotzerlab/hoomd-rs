@@ -102,7 +102,7 @@ where
     /// assert!(energy >= 100.0);
     ///
     /// let c = OrientedPoint {
-    ///     position: Cartesian::from([0.8, 0.0]),
+    ///     position: Cartesian::from([0.9, 0.0]),
     ///     orientation: Angle::default(),
     /// };
     ///
