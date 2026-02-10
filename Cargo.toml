@@ -124,11 +124,6 @@ features = ["default_app",
 [workspace.dependencies.bevy_diagnostic]
 version = "0.18.0"
 
-[workspace.dependencies.bevy_math]
-version = "0.18.0"
-default-features = false
-features = ["std", "curve"]
-
 [workspace.dependencies.bevy_winit]
 version = "0.18.0"
 
