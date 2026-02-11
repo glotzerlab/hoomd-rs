@@ -16,6 +16,7 @@ tetrahedra **self-assemble** into a quasicrystal: [10.1038/nature08641].
 [10.1038/nature08641]: http://doi.org/10.1038/nature08641
 
 * Objectives:
+  * Explain how to model system of hard convex polytopes.
   * Demonstrate the self-assembly of hard tetrahedra.
 * File: `hoomd-rs/examples/mc-tutorial/hard-tetrahedron-self-assembly.rs`
 * Run (interactively):
@@ -66,7 +67,7 @@ that tetrahedra can be placed easily in the microstate. During the `Initialize`
 phase, the microstate will be compressed until it reaches the packing fraction
 `target_packing_fraction`. `n_bodies` is the number of tetrahedra to add,
 `maximum_distance` is the largest distance a translation trial move can
-take, `maximum_rotation`controls the size of the a rotation trial moves, and
+take, `maximum_rotation`controls the size of the rotation trial moves, and
 `macrostate` holds the temperature set point (in units of energy).
 
 ### Hamiltonian
@@ -90,8 +91,7 @@ remaining code.
 ## Conclusion
 
 This tutorial showed you how to perform hard tetrahedron self-assembly simulations
-using a shape overlap potential, periodic boundary conditions, and `QuickInsert`
-to add bodies.
+using a shape overlap potential.
 
 Navigate to the top of the page and refresh to see the simulation in action
 again. Notice that tetrahedra are first added in a large batch. Once all the
@@ -117,4 +117,4 @@ particles.
 ## Complete Code
 
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/hard-ellipse-self-assembly.rs:all}}
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-tetrahedron-self-assembly.rs:all}}

@@ -40,14 +40,14 @@ impl PatchyParticleSelfAssembly {
         let maximum_rotation = 0.04;
         let sigma = 1.0;
         let patch_interaction_range = 1.12;
-        let patch_angle = 37.0f64.to_radians();
+        let patch_half_angle = 37.0f64.to_radians();
         let patch_energy = -5.8;
         let macrostate = Isothermal { temperature: 1.0 };
         // ANCHOR_END: parameters
 
-        // ANCHOR: hard_sphere
-        let hard_sphere = PairwiseCutoff(HardSphere { diameter: sigma });
-        // ANCHOR_END: hard_sphere
+        // ANCHOR: hard_disk
+        let hard_disk = HardSphere { diameter: sigma };
+        // ANCHOR_END: hard_disk
 
         // ANCHOR: patch
         let boxcar = Boxcar {
@@ -57,16 +57,16 @@ impl PatchyParticleSelfAssembly {
         };
         let masks = [Patch {
             director: [0.0, 1.0].try_into()?,
-            cos_delta: patch_angle.cos(),
+            cos_delta: patch_half_angle.cos(),
         },Patch {
             director: [0.0, -1.0].try_into()?,
-            cos_delta: patch_angle.cos(),
+            cos_delta: patch_half_angle.cos(),
         }];
-        let angular_mask = PairwiseCutoff(Anisotropic { interaction: AngularMask::new(boxcar, masks), r_cut: patch_interaction_range });
+        let angular_mask = Anisotropic { interaction: AngularMask::new(boxcar, masks), r_cut: patch_interaction_range };
         // ANCHOR_END: patch
 
         // ANCHOR: hamiltonian
-        let hamiltonian = (hard_sphere, angular_mask);
+        let hamiltonian = PairwiseCutoff((hard_disk, angular_mask));
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: compress_hamiltonian
@@ -91,11 +91,11 @@ impl PatchyParticleSelfAssembly {
         let square =
             Rectangle::with_equal_edges(initial_box_edge_length.try_into()?);
         let periodic_square =
-            Periodic::new(hamiltonian.1.0.maximum_interaction_range(), square)?;
+            Periodic::new(hamiltonian.0.maximum_interaction_range(), square)?;
 
         let vec_cell = VecCell::builder()
             .nominal_search_radius(
-                hamiltonian.1.0.maximum_interaction_range().try_into()?,
+                hamiltonian.0.maximum_interaction_range().try_into()?,
             )
             .build();
         let microstate = Microstate::builder()
@@ -146,7 +146,7 @@ struct PatchyParticleSelfAssembly {
         Periodic<Rectangle>,
     >,
     /// How sites interact with other sites and fields.
-    hamiltonian: (PairwiseCutoff<HardSphere>, PairwiseCutoff<Anisotropic<AngularMask<Boxcar, PositionVector>>>), 
+    hamiltonian: PairwiseCutoff<(HardSphere, Anisotropic<AngularMask<Boxcar, PositionVector>>)>, 
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<PositionVector>>,
     /// Trial moves to apply.
