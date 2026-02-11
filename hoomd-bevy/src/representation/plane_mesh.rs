@@ -1,9 +1,9 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! A 3D mesh
+//! A 2D mesh
 //!
-//! The [`TriangleMesh`] representation places a bevy `Mesh3d` at each site.
+//! The [`PlaneMesh`] representation places a bevy `Mesh2d` at each site.
 
 use bevy::prelude::*;
 use itertools::{
@@ -12,7 +12,7 @@ use itertools::{
 };
 use std::marker::PhantomData;
 
-/// Represent each entity with a triangle mesh in 3D.
+/// Represent each entity with a triangle mesh in 2D.
 ///
 /// Each entity is an instanced copy of the given mesh. Provide the position and
 /// orientation of each mesh to [`sync`](Self::sync).
@@ -25,7 +25,7 @@ use std::marker::PhantomData;
 /// * Add [`setup`](Self::setup) to the `Startup` schedule.
 /// * Call [`sync`](Self::sync) in an `Update` schedule that runs after `AdvanceSet`.
 #[derive(Component)]
-pub struct TriangleMesh<T> {
+pub struct PlaneMesh<T> {
     /// Mark the type of the disk.
     marker: PhantomData<T>,
 }
@@ -36,7 +36,7 @@ pub struct Representation<T> {
     /// The mesh.
     mesh: Handle<Mesh>,
     /// The material.
-    material: Handle<StandardMaterial>,
+    material: Handle<ColorMaterial>,
     /// Mark the type of the triangle mesh assets.
     marker: PhantomData<T>,
 }
@@ -44,18 +44,18 @@ pub struct Representation<T> {
 impl<T> Representation<T> {
     /// Get the material
     #[must_use]
-    pub fn material(&self) -> &Handle<StandardMaterial> {
+    pub fn material(&self) -> &Handle<ColorMaterial> {
         &self.material
     }
 }
 
-impl<T: Send + Sync + 'static> TriangleMesh<T> {
+impl<T: Send + Sync + 'static> PlaneMesh<T> {
     /// Create assets to render instanced triangle meshes.
     pub fn setup(
-        mesh_material: In<(Mesh, StandardMaterial)>,
+        mesh_material: In<(Mesh, ColorMaterial)>,
         mut commands: Commands,
         mut meshes: ResMut<Assets<Mesh>>,
-        mut materials: ResMut<Assets<StandardMaterial>>,
+        mut materials: ResMut<Assets<ColorMaterial>>,
     ) {
         let (mesh, material) = mesh_material.0;
         let mesh = meshes.add(mesh);
@@ -71,24 +71,24 @@ impl<T: Send + Sync + 'static> TriangleMesh<T> {
     /// Copy the current positions of simulation particles to bevy entities.
     pub fn sync<I>(
         commands: &mut Commands,
-        triangle_mesh_representation: Res<Representation<T>>,
+        plane_mesh_representation: Res<Representation<T>>,
         query: Query<(Entity, &mut Transform), With<Self>>,
         triangle_meshes: I,
     ) where
-        I: IntoIterator<Item = (Vec3, Quat)>,
+        I: IntoIterator<Item = (Vec3, f32)>,
     {
         for item in &mut query.into_iter().zip_longest(triangle_meshes) {
             match item {
-                Both((_, mut transform), (position, rotation)) => {
+                Both((_, mut transform), (position, theta)) => {
                     transform.translation = position;
-                    transform.rotation = rotation;
+                    transform.rotation = Quat::from_rotation_z(theta);
                 }
                 Left((entity, _)) => commands.entity(entity).despawn(),
-                Right((position, rotation)) => {
+                Right((position, theta)) => {
                     commands.spawn((
-                        Mesh3d(triangle_mesh_representation.mesh.clone()),
-                        MeshMaterial3d(triangle_mesh_representation.material.clone()),
-                        Transform::from_translation(position).with_rotation(rotation),
+                        Mesh2d(plane_mesh_representation.mesh.clone()),
+                        MeshMaterial2d(plane_mesh_representation.material.clone()),
+                        Transform::from_translation(position).with_rotation(Quat::from_rotation_z(theta)),
                         Self {
                             marker: PhantomData,
                         },

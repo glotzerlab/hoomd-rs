@@ -94,3 +94,10 @@ path = "mc-tutorial/hard-tetrahedron-self-assembly.rs"
 
 [package.metadata.example.hard-tetrahedron-self-assembly]
 path = "mc-tutorial"
+
+[[example]]
+name = "patchy-particle-self-assembly"
+path = "mc-tutorial/patchy-particle-self-assembly.rs"
+                    
+[package.metadata.example.patchy-particle-self-assembly]
+path = "mc-tutorial"

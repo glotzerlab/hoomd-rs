@@ -32,7 +32,7 @@ type SiteProperties = OrientedPoint<PositionVector, Orientation>;
 
 // ANCHOR: simulation_new
 impl HardTetrahedronSelfAssembly {
-    /// Construct a new hard ellipsoid self-assembly simulation.
+    /// Construct a new hard tetrahedron self-assembly simulation.
     fn new() -> anyhow::Result<HardTetrahedronSelfAssembly> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters

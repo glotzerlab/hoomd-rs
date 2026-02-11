@@ -9,7 +9,7 @@ use bevy_egui::EguiPlugin;
 
 use super::HardTetrahedronSelfAssembly;
 
-/// Mark the ellipse representation type.
+/// Mark the tetrahedron representation type.
 struct A;
 
 pub(crate) fn main() -> anyhow::Result<()> {
@@ -69,19 +69,9 @@ pub(crate) fn main() -> anyhow::Result<()> {
         .pipe(triangle_mesh::TriangleMesh::<A>::setup),
     );
 
-    // app.add_systems(
-    //     Startup,
-    //     (move || RectangularBoundary {
-    //         width: l,
-    //         height: l,
-    //         ..default()
-    //     })
-    //     .pipe(RectangularBoundary::setup),
-    // );
-
     app.add_systems(
         Update,
-        (sync_sites /* sync_boundary */,)
+        (sync_sites,)
             .run_if(resource_changed::<HardTetrahedronSelfAssembly>)
             .after(AdvanceSet),
     );
@@ -124,15 +114,3 @@ fn sync_sites(
         }),
     );
 }
-
-// /// Draw the simulation boundary at its current size.
-// fn sync_boundary(
-//     entity_rectangle: Single<(Entity, &RectangularBoundary)>,
-//     children: Query<&Children>,
-//     transforms: Query<&mut Transform>,
-//     simulation: Res<HardEllipseSelfAssembly>,
-// ) {
-//     let l =
-//         simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
-//     RectangularBoundary::sync(entity_rectangle, children, transforms, l, l);
-// }
