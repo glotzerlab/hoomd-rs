@@ -8,10 +8,15 @@ use hoomd_geometry::{
 };
 use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff,
-    pairwise::{AngularMask, Anisotropic, HardSphere, Isotropic, angular_mask::Patch},
+    pairwise::{
+        AngularMask, Anisotropic, HardSphere, Isotropic, angular_mask::Patch,
+    },
     univariate::{Boxcar, Expanded, OverlapPenalty},
 };
-use hoomd_mc::{QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, Tune, UniformIn};
+use hoomd_mc::{
+    QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, Tune,
+    UniformIn,
+};
 use hoomd_microstate::{
     Microstate, SiteKey, boundary::Periodic, property::OrientedPoint,
 };
@@ -55,14 +60,20 @@ impl PatchyParticleSelfAssembly {
             left: 0.0,
             right: patch_interaction_range,
         };
-        let masks = [Patch {
-            director: [0.0, 1.0].try_into()?,
-            cos_delta: patch_half_angle.cos(),
-        },Patch {
-            director: [0.0, -1.0].try_into()?,
-            cos_delta: patch_half_angle.cos(),
-        }];
-        let angular_mask = Anisotropic { interaction: AngularMask::new(boxcar, masks), r_cut: patch_interaction_range };
+        let masks = [
+            Patch {
+                director: [0.0, 1.0].try_into()?,
+                cos_delta: patch_half_angle.cos(),
+            },
+            Patch {
+                director: [0.0, -1.0].try_into()?,
+                cos_delta: patch_half_angle.cos(),
+            },
+        ];
+        let angular_mask = Anisotropic {
+            interaction: AngularMask::new(boxcar, masks),
+            r_cut: patch_interaction_range,
+        };
         // ANCHOR_END: patch
 
         // ANCHOR: hamiltonian
@@ -146,7 +157,10 @@ struct PatchyParticleSelfAssembly {
         Periodic<Rectangle>,
     >,
     /// How sites interact with other sites and fields.
-    hamiltonian: PairwiseCutoff<(HardSphere, Anisotropic<AngularMask<Boxcar, PositionVector>>)>, 
+    hamiltonian: PairwiseCutoff<(
+        HardSphere,
+        Anisotropic<AngularMask<Boxcar, PositionVector>>,
+    )>,
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<PositionVector>>,
     /// Trial moves to apply.
@@ -173,7 +187,9 @@ impl Simulation for PatchyParticleSelfAssembly {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
         match self.phase {
-            Phase::Initialize => self.initialize().context("failed to initialize")?,
+            Phase::Initialize => {
+                self.initialize().context("failed to initialize")?
+            }
             Phase::Equilibrate => self.equilibrate(),
         }
 

@@ -1,7 +1,9 @@
 use std::f64::consts::PI;
 
 use hoomd_bevy::{
-    AdvanceSet, HIGHLIGHT_COLOR, HoomdBevyPlugin, InitialCamera, MUTED_COLOR, Settings, representation::{RectangularBoundary, disk, plane_mesh}
+    AdvanceSet, HIGHLIGHT_COLOR, HoomdBevyPlugin, InitialCamera, MUTED_COLOR,
+    Settings,
+    representation::{RectangularBoundary, disk, plane_mesh},
 };
 
 use anyhow::Context;
@@ -23,12 +25,16 @@ struct Bottom;
 struct Ghost;
 
 pub(crate) fn main() -> anyhow::Result<()> {
-    let simulation =
-        PatchyParticleSelfAssembly::new().context("failed to setup simulation")?;
+    let simulation = PatchyParticleSelfAssembly::new()
+        .context("failed to setup simulation")?;
 
     let inner_radius = (simulation.hamiltonian.0.0.diameter / 2.0) as f32;
-    let outer_radius = (simulation.hamiltonian.0.1.interaction.isotropic.right / 2.0) as f32;
-    let angle = (simulation.hamiltonian.0.1.interaction.masks_i[0].cos_delta.acos() * 2.0) as f32;
+    let outer_radius =
+        (simulation.hamiltonian.0.1.interaction.isotropic.right / 2.0) as f32;
+    let angle = (simulation.hamiltonian.0.1.interaction.masks_i[0]
+        .cos_delta
+        .acos()
+        * 2.0) as f32;
 
     let l =
         simulation.microstate.boundary().shape().edge_lengths[1].get() as f32;
@@ -46,33 +52,23 @@ pub(crate) fn main() -> anyhow::Result<()> {
     hoomd_bevy_plugin.build(&mut app);
 
     let ring_mesh = Ring::new(
-            CircularSector::new(outer_radius, angle),
-            CircularSector::new(inner_radius, angle),
-        );
+        CircularSector::new(outer_radius, angle),
+        CircularSector::new(inner_radius, angle),
+    );
     let ring_material_top = ColorMaterial::from(HIGHLIGHT_COLOR);
     let ring_material_bottom = ColorMaterial::from(HIGHLIGHT_COLOR);
 
     app.add_systems(
         Startup,
-        (move || {
-            (
-                ring_mesh.clone().mesh().build(),
-                ring_material_top.clone(),
-            )
-        })
-        .pipe(plane_mesh::PlaneMesh::<Top>::setup),
+        (move || (ring_mesh.clone().mesh().build(), ring_material_top.clone()))
+            .pipe(plane_mesh::PlaneMesh::<Top>::setup),
     );
     app.add_systems(
         Startup,
-        (move || {
-            (
-                ring_mesh.mesh().build(),
-                ring_material_bottom.clone(),
-            )
-        })
-        .pipe(plane_mesh::PlaneMesh::<Bottom>::setup),
+        (move || (ring_mesh.mesh().build(), ring_material_bottom.clone()))
+            .pipe(plane_mesh::PlaneMesh::<Bottom>::setup),
     );
-    
+
     app.add_systems(
         Startup,
         (|| disk::MaterialParameters::default()).pipe(disk::Disk::<A>::setup),
@@ -96,7 +92,13 @@ pub(crate) fn main() -> anyhow::Result<()> {
     );
     app.add_systems(
         Update,
-        (sync_sites, sync_rings_top, sync_rings_bottom, sync_ghosts, sync_boundary)
+        (
+            sync_sites,
+            sync_rings_top,
+            sync_rings_bottom,
+            sync_ghosts,
+            sync_boundary,
+        )
             .run_if(resource_changed::<PatchyParticleSelfAssembly>)
             .after(AdvanceSet),
     );
@@ -135,7 +137,10 @@ fn sync_sites(
 fn sync_rings_top(
     mut commands: Commands,
     site_representation: Res<plane_mesh::Representation<Top>>,
-    site_query: Query<(Entity, &mut Transform), With<plane_mesh::PlaneMesh<Top>>>,
+    site_query: Query<
+        (Entity, &mut Transform),
+        With<plane_mesh::PlaneMesh<Top>>,
+    >,
     simulation: Res<PatchyParticleSelfAssembly>,
 ) {
     let sites = simulation.microstate.sites();
@@ -161,7 +166,10 @@ fn sync_rings_top(
 fn sync_rings_bottom(
     mut commands: Commands,
     site_representation: Res<plane_mesh::Representation<Bottom>>,
-    site_query: Query<(Entity, &mut Transform), With<plane_mesh::PlaneMesh<Bottom>>>,
+    site_query: Query<
+        (Entity, &mut Transform),
+        With<plane_mesh::PlaneMesh<Bottom>>,
+    >,
     simulation: Res<PatchyParticleSelfAssembly>,
 ) {
     let sites = simulation.microstate.sites();

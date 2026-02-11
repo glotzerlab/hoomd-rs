@@ -15,8 +15,8 @@
 
 pub mod disk;
 pub mod ellipse;
-pub mod surface_mesh;
 pub mod plane_mesh;
+pub mod surface_mesh;
 
 pub(crate) mod rectangular_boundary;
 pub use rectangular_boundary::RectangularBoundary;

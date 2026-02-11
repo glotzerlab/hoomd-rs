@@ -88,7 +88,8 @@ impl<T: Send + Sync + 'static> PlaneMesh<T> {
                     commands.spawn((
                         Mesh2d(plane_mesh_representation.mesh.clone()),
                         MeshMaterial2d(plane_mesh_representation.material.clone()),
-                        Transform::from_translation(position).with_rotation(Quat::from_rotation_z(theta)),
+                        Transform::from_translation(position)
+                            .with_rotation(Quat::from_rotation_z(theta)),
                         Self {
                             marker: PhantomData,
                         },
