@@ -93,14 +93,6 @@ Assign all the model parameters in one code block so that they are easy to modif
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:parameters}}
 ```
 
-#### Microstate
-
-Use the `VecCell` spatial data structure, confine the bodies and sites inside of a
-closed square, and start with no bodies in the microstate:
-```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:microstate}}
-```
-
 #### Hamiltonian
 
 Use the same Hamiltonian as the [Applying Interactions] tutorial:
@@ -109,6 +101,14 @@ Use the same Hamiltonian as the [Applying Interactions] tutorial:
 ```
 
 These interactions are applied to the *sites* in the microstate.
+
+#### Microstate
+
+Use the `VecCell` spatial data structure, confine the bodies and sites inside of a
+closed square, and start with no bodies in the microstate:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:microstate}}
+```
 
 #### Trial Moves
 

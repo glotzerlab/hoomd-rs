@@ -1286,6 +1286,16 @@ mod tests_finite {
     }
 }
 
+impl<E> MaximumInteractionRange for PairwiseCutoff<E>
+where
+    E: MaximumInteractionRange,
+{
+    #[inline]
+    fn maximum_interaction_range(&self) -> f64 {
+        self.0.maximum_interaction_range()
+    }
+}
+
 #[cfg(test)]
 mod test_infinite {
     use super::*;

@@ -66,11 +66,11 @@ impl HardTetrahedronSelfAssembly {
         let cube =
             Cuboid::with_equal_edges(initial_box_edge_length.try_into()?);
         let periodic_cube =
-            Periodic::new(hamiltonian.0.maximum_interaction_range(), cube)?;
+            Periodic::new(hamiltonian.maximum_interaction_range(), cube)?;
 
         let vec_cell = VecCell::builder()
             .nominal_search_radius(
-                hamiltonian.0.maximum_interaction_range().try_into()?,
+                hamiltonian.maximum_interaction_range().try_into()?,
             )
             .build();
         let microstate = Microstate::builder()
@@ -103,7 +103,7 @@ impl HardTetrahedronSelfAssembly {
                 OverlapPenalty::default(),
                 0.01.try_into()?,
             ),
-            r_cut: hamiltonian.0.maximum_interaction_range(),
+            r_cut: hamiltonian.maximum_interaction_range(),
         };
 
         let overlap_penalty_hamiltonian =

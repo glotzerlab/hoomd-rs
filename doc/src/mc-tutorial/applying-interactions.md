@@ -226,7 +226,9 @@ data structure to efficiently compute the pairwise interactions.
 ```
 
 Set the *nominal search radius* to the same value as the `r_cut` used with
-`PairwiseCutoff`.
+`PairwiseCutoff`. To aid you in choosing the right search radius,
+the `maximum_interaction_range()` computes the maximum interaction
+range needed for all terms in the Hamiltonian.
 
 Construct the `Microstate` with the square boundary and `vec_cell` spatial data:
 ```rust,ignore

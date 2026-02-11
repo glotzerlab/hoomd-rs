@@ -5,7 +5,10 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, SiteEnergy, TotalEnergy};
+use crate::{
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SiteEnergy,
+    TotalEnergy,
+};
 use hoomd_microstate::{Body, Microstate, Transform, boundary::Wrap, property::Position};
 
 /// Interactions between sites and external fields.
@@ -536,6 +539,14 @@ where
             });
 
         -energy_initial
+    }
+}
+
+impl<E> MaximumInteractionRange for External<E> {
+    #[inline]
+    fn maximum_interaction_range(&self) -> f64 {
+        // External interactions are not applied between pairs of particles.
+        0.0
     }
 }
 

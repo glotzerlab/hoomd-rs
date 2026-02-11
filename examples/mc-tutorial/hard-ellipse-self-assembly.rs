@@ -100,13 +100,13 @@ impl HardEllipseSelfAssembly {
         let square =
             Rectangle::with_equal_edges(initial_box_edge_length.try_into()?);
         let periodic_square =
-            Periodic::new(hamiltonian.0.maximum_interaction_range(), square)?;
+            Periodic::new(hamiltonian.maximum_interaction_range(), square)?;
         // ANCHOR_END: periodic
 
         // ANCHOR: microstate
         let vec_cell = VecCell::builder()
             .nominal_search_radius(
-                hamiltonian.0.maximum_interaction_range().try_into()?,
+                hamiltonian.maximum_interaction_range().try_into()?,
             )
             .build();
         let microstate = Microstate::builder()

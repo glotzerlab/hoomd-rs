@@ -102,11 +102,11 @@ impl PatchyParticleSelfAssembly {
         let square =
             Rectangle::with_equal_edges(initial_box_edge_length.try_into()?);
         let periodic_square =
-            Periodic::new(hamiltonian.0.maximum_interaction_range(), square)?;
+            Periodic::new(hamiltonian.maximum_interaction_range(), square)?;
 
         let vec_cell = VecCell::builder()
             .nominal_search_radius(
-                hamiltonian.0.maximum_interaction_range().try_into()?,
+                hamiltonian.maximum_interaction_range().try_into()?,
             )
             .build();
         let microstate = Microstate::builder()
