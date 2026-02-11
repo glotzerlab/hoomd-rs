@@ -5,11 +5,44 @@
 
 use crate::{MaximumInteractionRange, SitePairEnergy};
 
+/// Sum two site pair energy terms.
+///
+/// Use a tuple to combine two site pair energy terms and evaluate them efficiently
+/// in one loop over neighbors by `PairwiseCutoff`.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_interaction::{PairwiseCutoff, pairwise::{AngularMask, Anisotropic, HardSphere, angular_mask::Patch},
+/// univariate::Boxcar};
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+///
+/// let hard_disk = HardSphere { diameter: 1.0 };
+///
+/// let patch_interaction_range = 1.12;
+/// let boxcar = Boxcar {
+///     epsilon: -5.8,
+///     left: 0.0,
+///     right: patch_interaction_range,
+/// };
+/// let masks = [Patch {
+///     director: [0.0, 1.0].try_into()?,
+///     cos_delta: 37.0_f64.cos(),
+/// },Patch {
+///     director: [0.0, -1.0].try_into()?,
+///     cos_delta: 37.0_f64.cos(),
+/// }];
+/// let angular_mask = Anisotropic { interaction: AngularMask::new(boxcar, masks), r_cut: patch_interaction_range };
+///
+/// let hamiltonian = PairwiseCutoff((hard_disk, angular_mask));
+/// # Ok(())
+/// # }
+/// ```
 impl <A, B, S> SitePairEnergy<S> for (A, B) where
 A: SitePairEnergy<S>,
 B: SitePairEnergy<S>,
 {
-    /// TODO: Docs and example
     #[inline]
     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
         let site_pair_energy_a = self.0.site_pair_energy(site_properties_i, site_properties_j);
