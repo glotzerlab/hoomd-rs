@@ -15,7 +15,7 @@
 
 pub mod disk;
 pub mod ellipse;
-pub mod triangle_mesh;
+pub mod surface_mesh;
 pub mod plane_mesh;
 
 pub(crate) mod rectangular_boundary;

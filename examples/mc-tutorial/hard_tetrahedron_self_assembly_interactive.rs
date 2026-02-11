@@ -1,6 +1,6 @@
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, PRIMARY_COLOR_3D, Settings,
-    representation::triangle_mesh,
+    representation::surface_mesh,
 };
 
 use anyhow::Context;
@@ -66,7 +66,7 @@ pub(crate) fn main() -> anyhow::Result<()> {
                 tetrahedron_material.clone(),
             )
         })
-        .pipe(triangle_mesh::TriangleMesh::<A>::setup),
+        .pipe(surface_mesh::SurfaceMesh::<A>::setup),
     );
 
     app.add_systems(
@@ -84,16 +84,16 @@ pub(crate) fn main() -> anyhow::Result<()> {
 /// Copy the current positions of simulation sites to bevy entities.
 fn sync_sites(
     mut commands: Commands,
-    site_representation: Res<triangle_mesh::Representation<A>>,
+    site_representation: Res<surface_mesh::Representation<A>>,
     site_query: Query<
         (Entity, &mut Transform),
-        With<triangle_mesh::TriangleMesh<A>>,
+        With<surface_mesh::SurfaceMesh<A>>,
     >,
     simulation: Res<HardTetrahedronSelfAssembly>,
 ) {
     let sites = simulation.microstate.sites();
 
-    triangle_mesh::TriangleMesh::sync(
+    surface_mesh::SurfaceMesh::sync(
         &mut commands,
         site_representation,
         site_query,
