@@ -45,14 +45,14 @@ impl HardTetrahedronSelfAssembly {
         // ANCHOR_END: parameters
 
         // ANCHOR: hamiltonian
-        let a = 1.0f64;
-        let h = 6.0f64.sqrt() / 3.0 * a;
-        let tetrahedron_volume = 1.0 / 12.0 * 2.0f64.sqrt() * a.powi(3);
+        let a = 1.0_f64;
+        let h = 6.0_f64.sqrt() / 3.0 * a;
+        let tetrahedron_volume = 1.0 / 12.0 * 2.0_f64.sqrt() * a.powi(3);
 
         let tetrahedron = ConvexPolyhedron::with_vertices(vec![
-            [3.0f64.sqrt() / 3.0 * a, 0.0, -h / 4.0].into(),
-            [-3.0f64.sqrt() / 6.0 * a, 0.5 * a, -h / 4.0].into(),
-            [-3.0f64.sqrt() / 6.0 * a, -0.5 * a, -h / 4.0].into(),
+            [3.0_f64.sqrt() / 3.0 * a, 0.0, -h / 4.0].into(),
+            [-3.0_f64.sqrt() / 6.0 * a, 0.5 * a, -h / 4.0].into(),
+            [-3.0_f64.sqrt() / 6.0 * a, -0.5 * a, -h / 4.0].into(),
             [0.0, 0.0, 3.0 * h / 4.0].into(),
         ])?;
         let hamiltonian =

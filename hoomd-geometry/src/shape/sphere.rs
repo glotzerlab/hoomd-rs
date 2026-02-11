@@ -610,8 +610,8 @@ mod tests {
         check!(circle.is_point_inside(&Cartesian::from([0.0, -1.0])));
         check!(circle.is_point_inside(&Cartesian::from([1.0, 0.0])));
         check!(circle.is_point_inside(&Cartesian::from([-1.0, 0.0])));
-        check!(circle.is_point_inside(&Cartesian::from([2.0f64.next_down(), 0.0])));
-        check!(circle.is_point_inside(&Cartesian::from([0.0, 2.0f64.next_down()])));
+        check!(circle.is_point_inside(&Cartesian::from([2.0_f64.next_down(), 0.0])));
+        check!(circle.is_point_inside(&Cartesian::from([0.0, 2.0_f64.next_down()])));
 
         check!(!circle.is_point_inside(&Cartesian::from([2.0, 0.0])));
         check!(!circle.is_point_inside(&Cartesian::from([0.0, 2.0])));

@@ -178,8 +178,8 @@ where
     pub fn new(n: usize, parallel: bool) -> anyhow::Result<Self> {
         let macrostate = Isothermal { temperature: 1.0 };
         let packing_fraction = 0.55;
-        let a = 2.0f64.sqrt() / 2.0;
-        let octahedron_volume = 1.0 / 3.0 * 2.0f64.sqrt() * a.powi(3);
+        let a = 2.0_f64.sqrt() / 2.0;
+        let octahedron_volume = 1.0 / 3.0 * 2.0_f64.sqrt() * a.powi(3);
         let number_density = packing_fraction / octahedron_volume;
         let cache_filename = format!("mc_3d_octahedron_{packing_fraction}_{n}.postcard");
 

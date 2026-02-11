@@ -45,7 +45,7 @@ impl PatchyParticleSelfAssembly {
         let maximum_rotation = 0.04;
         let sigma = 1.0;
         let patch_interaction_range = 1.12;
-        let patch_half_angle = 37.0f64.to_radians();
+        let patch_half_angle = 37.0_f64.to_radians();
         let patch_energy = -5.8;
         let macrostate = Isothermal { temperature: 1.0 };
         // ANCHOR_END: parameters
