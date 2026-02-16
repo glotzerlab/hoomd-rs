@@ -6,7 +6,7 @@
 use super::Position;
 use crate::Transform;
 use hoomd_manifold::{Hyperbolic, Minkowski, Spherical};
-use hoomd_vector::{Cartesian, Quaternion, Versor};
+use hoomd_vector::{Cartesian, Quaternion};
 use std::ops::Mul;
 
 /// A position in space and nothing more.

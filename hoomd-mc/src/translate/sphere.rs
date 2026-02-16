@@ -8,7 +8,7 @@ use rand::{Rng, distr::Distribution};
 use crate::{LocalTrial, Translate};
 use hoomd_manifold::{Spherical, SphericalDisk};
 use hoomd_microstate::property::{Point, Position};
-use hoomd_vector::{InnerProduct, Quaternion, Versor};
+use hoomd_vector::InnerProduct;
 
 impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
     /// Propose local trial moves for a body on the surface of a sphere
