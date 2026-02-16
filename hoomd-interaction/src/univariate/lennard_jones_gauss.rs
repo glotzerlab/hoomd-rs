@@ -1,7 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`LennardJonesGauss`]
+
+use serde::{Deserialize, Serialize};
 
 use super::{UnivariateEnergy, UnivariateForce};
 
@@ -54,7 +56,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// lennard_jones_gauss.sigma_squared = 0.02;
 /// lennard_jones_gauss.r_0 = 3.2;
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct LennardJonesGauss {
     /// Scale of Gaussian, in units of energy
     pub epsilon: f64,

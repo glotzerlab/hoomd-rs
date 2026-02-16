@@ -1,16 +1,19 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `PairwiseCutoff`
+
+use serde::{Deserialize, Serialize};
+
+use hoomd_microstate::{
+    Body, Microstate, Site, SiteKey, Transform, boundary::Wrap, property::Position,
+};
+use hoomd_spatial::PointsNearBall;
 
 use crate::{
     DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy,
     TotalEnergy,
 };
-use hoomd_microstate::{
-    Body, Microstate, Site, SiteKey, Transform, boundary::Wrap, property::Position,
-};
-use hoomd_spatial::PointsNearBall;
 
 /// Short-ranged pairwise interactions between sites.
 ///
@@ -114,6 +117,7 @@ use hoomd_spatial::PointsNearBall;
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PairwiseCutoff<E>(pub E);
 
 impl<E> PairwiseCutoff<E> {
@@ -442,9 +446,92 @@ where
         total
     }
 
-    // TODO: TotalEnergy needs a delta_energy method that takes an initial and final microstate
-    // so that it can call `site_pair_energy_initial` (or skip the evaluation entirely
-    // for infinite-only potentials) on the initial state.
+    /// Compute the difference in energy between two microstates.
+    ///
+    /// Returns `$ E_\mathrm{final} - E_\mathrm{initial} $`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_interaction::{
+    ///     PairwiseCutoff, SitePairEnergy, TotalEnergy, pairwise::Isotropic,
+    ///     univariate::LennardJones,
+    /// };
+    /// use hoomd_microstate::{
+    ///     Body, Microstate,
+    ///     property::{Point, Position},
+    /// };
+    /// use hoomd_vector::{Cartesian, InnerProduct};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate_a = Microstate::new();
+    /// microstate_a.extend_bodies([
+    ///     Body::point(Cartesian::from([0.0, 0.0])),
+    ///     Body::point(Cartesian::from([1.0, 0.0])),
+    /// ])?;
+    ///
+    /// let mut microstate_b = Microstate::new();
+    /// microstate_b.extend_bodies([
+    ///     Body::point(Cartesian::from([0.0, 0.0])),
+    ///     Body::point(Cartesian::from([5.0, 0.0])),
+    /// ])?;
+    ///
+    /// let lennard_jones: LennardJones = LennardJones {
+    ///     epsilon: 1.5,
+    ///     sigma: 1.0 / 2.0_f64.powf(1.0 / 6.0),
+    /// };
+    /// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+    ///     interaction: lennard_jones,
+    ///     r_cut: 2.5,
+    /// });
+    ///
+    /// let delta_energy_total =
+    ///     pairwise_cutoff.delta_energy_total(&microstate_a, &microstate_b);
+    /// assert_eq!(delta_energy_total, 1.5);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn delta_energy_total(
+        &self,
+        initial_microstate: &Microstate<B, S, X, C>,
+        final_microstate: &Microstate<B, S, X, C>,
+    ) -> f64 {
+        let mut energy_final = 0.0;
+
+        for site_i in final_microstate.sites() {
+            let one = self.filtered_site_energy(
+                final_microstate,
+                &site_i.properties,
+                |site_j| site_i.site_tag < site_j.site_tag && site_i.body_tag != site_j.body_tag,
+                E::site_pair_energy,
+            );
+            if one == f64::INFINITY {
+                return one;
+            }
+            energy_final += one;
+        }
+
+        let mut energy_initial = 0.0;
+        if !E::is_only_infinite_or_zero() {
+            for site_i in initial_microstate.sites() {
+                let one = self.filtered_site_energy(
+                    initial_microstate,
+                    &site_i.properties,
+                    |site_j| {
+                        site_i.site_tag < site_j.site_tag && site_i.body_tag != site_j.body_tag
+                    },
+                    E::site_pair_energy_initial,
+                );
+                if one == f64::INFINITY {
+                    return -one;
+                }
+                energy_initial += one;
+            }
+        }
+
+        energy_final - energy_initial
+    }
 }
 
 impl<P, B, S, X, C, E> DeltaEnergyOne<B, S, X, C> for PairwiseCutoff<E>
@@ -989,6 +1076,11 @@ mod tests_finite {
                     - pairwise_cutoff.total_energy(&microstate_initial);
 
                 assert_relative_eq!(delta_energy_one, delta_energy_total, epsilon = 1e-10);
+                assert_relative_eq!(
+                    pairwise_cutoff.delta_energy_total(&microstate_initial, &microstate_final),
+                    delta_energy_total,
+                    epsilon = 1e-10
+                );
             }
 
             Ok(())
@@ -1443,6 +1535,35 @@ mod test_infinite {
             // That infinity should be ignored, resulting in a delta E of 0
             // when the body is moved into a non-overlapping state.
             check!(hard_ellipse.delta_energy_one(&microstate, 1, &new_body_b) == 0.0);
+
+            Ok(())
+        }
+
+        #[test]
+        fn delta_energy_total() -> anyhow::Result<()> {
+            let mut microstate_0 = Microstate::new();
+            microstate_0.extend_bodies([
+                Body::point(Cartesian::from([0.0, 0.0])),
+                Body::point(Cartesian::from([0.0, 1.125])),
+            ])?;
+
+            let mut microstate_inf = Microstate::new();
+            microstate_inf.extend_bodies([
+                Body::point(Cartesian::from([0.0, 0.0])),
+                Body::point(Cartesian::from([0.0, 0.875])),
+            ])?;
+
+            let pairwise_cutoff = PairwiseCutoff(HardSphere { diameter: 1.0 });
+
+            check!(pairwise_cutoff.delta_energy_total(&microstate_0, &microstate_0) == 0.0);
+            check!(
+                pairwise_cutoff.delta_energy_total(&microstate_0, &microstate_inf) == f64::INFINITY
+            );
+            check!(pairwise_cutoff.delta_energy_total(&microstate_inf, &microstate_0) == 0.0);
+            check!(
+                pairwise_cutoff.delta_energy_total(&microstate_inf, &microstate_inf)
+                    == f64::INFINITY
+            );
 
             Ok(())
         }

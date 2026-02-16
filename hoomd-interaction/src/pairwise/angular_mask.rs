@@ -1,7 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! [`AngularMask`] and related data structures.
+
+use serde::{Deserialize, Serialize};
 
 use super::AnisotropicEnergy;
 use crate::univariate::UnivariateEnergy;
@@ -25,7 +27,7 @@ use hoomd_vector::{InnerProduct, Rotate, Unit, Vector};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Patch<V> {
     /// Vector pointing from the center of the particle to the center of the mask `[unitless]`.
     pub director: Unit<V>,
@@ -232,7 +234,7 @@ pub struct Patch<V> {
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AngularMask<E, V> {
     /// The original potential.
     pub isotropic: E,

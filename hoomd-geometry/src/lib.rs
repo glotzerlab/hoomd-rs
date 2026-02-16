@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![doc(
@@ -371,6 +371,71 @@ pub trait IsPointInside<V> {
     fn is_point_inside(&self, point: &V) -> bool;
 }
 
+/// Produce a new shape by uniform scaling.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_geometry::{Scale, shape::Sphere};
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let sphere = Sphere {
+///     radius: 5.0.try_into()?,
+/// };
+///
+/// let scaled_sphere = sphere.scale_length(0.5.try_into()?);
+///
+/// assert_eq!(scaled_sphere.radius.get(), 2.5);
+/// # Ok(())
+/// # }
+/// ```
+pub trait Scale {
+    /// Produce a new shape by uniformly scaling length.
+    #[must_use]
+    fn scale_length(&self, v: PositiveReal) -> Self;
+
+    /// Produce a new shape by uniformly scaling volume.
+    #[must_use]
+    fn scale_volume(&self, v: PositiveReal) -> Self;
+}
+
+/// Map a point from one shape to another.
+///
+/// # Example
+///
+/// ```
+/// use hoomd_geometry::{MapPoint, shape::Circle};
+/// use hoomd_vector::Cartesian;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let closed_a = Circle {
+///     radius: 10.0.try_into()?,
+/// };
+/// let closed_b = Circle {
+///     radius: 20.0.try_into()?,
+/// };
+///
+/// let mapped_point =
+///     closed_a.map_point(Cartesian::from([-1.0, 1.0]), &closed_b);
+///
+/// assert_eq!(mapped_point, Ok(Cartesian::from([-2.0, 2.0])));
+/// assert_eq!(
+///     closed_a.map_point(Cartesian::from([-100.0, 1.0]), &closed_b),
+///     Err(hoomd_geometry::Error::PointOutsideShape)
+/// );
+/// # Ok(())
+/// # }
+/// ```
+pub trait MapPoint<P> {
+    /// Map a point from one boundary to another.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::PointOutsideShape`] when `point` is outside the shape
+    /// `self`.
+    fn map_point(&self, point: P, other: &Self) -> Result<P, Error>;
+}
+
 /// Enumerate possible sources of error in fallible geometry methods.
 #[non_exhaustive]
 #[derive(Error, PartialEq, Debug)]
@@ -378,4 +443,8 @@ pub enum Error {
     /// Polytopes require at least one vertex.
     #[error("a ConvexPolytope must have at least one vertex")]
     DegeneratePolytope,
+
+    /// The point is outside the shape.
+    #[error("cannot map a point that is outside the shape")]
+    PointOutsideShape,
 }

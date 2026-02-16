@@ -14,3 +14,4 @@ mc_*.json
 .Rhistory
 *.Rmd
 *.html
+*.postcard

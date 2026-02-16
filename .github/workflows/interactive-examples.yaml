@@ -1,0 +1,127 @@
+name: Interactive Examples
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+  push:
+    branches:
+    - trunk
+
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CARGO_TERM_COLOR: always
+  CLICOLOR: 1
+
+jobs:
+  start_action_runners:
+    name: Start
+    uses: glotzerlab/jetstream2-admin/.github/workflows/start.yaml@f6746b0a76c06e45cc1b0c5e32576dfa2c7d2d8c # v1.5.1
+    secrets: inherit
+    with:
+      number: 1
+
+  build:
+    name: Build
+    runs-on: [self-hosted, jetstream2, CPU]
+
+    steps:
+    # These steps are needed on self-hosted runners and can be removed on GitHub runners
+    - name: Clean workspace
+      run: ( shopt -s dotglob nullglob; rm -rf ./* )
+    - name: Add cargo PATH
+      run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+    - name: Checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    # This code is needed on GitHub Hosted runners, disable for now while we use private runners.
+    # - name: Update rust
+    #   run: rustup install ${{ matrix.rust }} --no-self-update
+    # - name: Install target
+    #   run: rustup target install ${{ matrix.target }} --toolchain ${{ matrix.rust }}
+    #   if: ${{ matrix.target != '' }}
+    - name: Set default target
+      run: rustup default 1.93.0
+    - name: Check rust installation
+      run: rustc -vV
+    - name: Install cargo-binstall
+      run: curl -sSL "https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-gnu.tgz" | tar -xvz --directory "$HOME/.cargo/bin"
+    - name: Install wasm-bindgen
+      run: cargo binstall wasm-bindgen-cli@0.2.108 --no-confirm --disable-strategies=compile --disable-telemetry
+    - name: Install binaryen
+      run: curl -sSL "https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz" | tar -xvz --strip-components 2 --directory "$HOME/.cargo/bin"
+
+    # rust-cache already includes a Cargo.lock hash in the key. However, it
+    # eagerly restores caches with previous Cargo.lock files. This causes
+    # multiple builds to be cached in target/ increasing the cache usage
+    # dramatically. Add the Cargo.lock hash again in the key portion to
+    # prevent this restoration.
+    - name: Cache
+      uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2.8.2
+      with:
+        key: ${{ 'wasm32-unknown-unknown' }}-${{ hashFiles('Cargo.lock') }}
+        cache-bin: false
+
+    - name: Create output directory
+      run: mkdir -p web
+
+    - name: Build examples
+      run: >
+        cargo run
+        --locked
+        -p build-wasm-doc-examples
+        --
+        --reduce-size
+        --root web
+
+    - name: Show target directory size
+      run: du -hsc target/*
+
+    - name: Show web directory size
+      run: du -hsc web/*
+
+    - name: Web directory contents
+      run: ls -lR web
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
+      with:
+        path: ./web
+
+  deploy:
+    name: Deploy
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    needs: build
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/trunk'
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
+
+  tests_complete:
+    name: All WASM example builds
+    if: always()
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+    - run: jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
+    - name: Done
+      run: exit 0

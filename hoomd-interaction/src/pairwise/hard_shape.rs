@@ -1,7 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `HardShape`
+
+use serde::{Deserialize, Serialize};
 
 use crate::{MaximumInteractionRange, SitePairEnergy};
 use hoomd_geometry::{BoundingSphereRadius, IntersectsAt};
@@ -27,6 +29,7 @@ use hoomd_vector::{self, Metric, Rotate, Rotation, Vector};
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HardShape<G>(pub G);
 
 impl<S, G, V, R> SitePairEnergy<S> for HardShape<G>
@@ -123,6 +126,7 @@ where
 /// by the `diameter` field.
 ///
 /// [`PairwiseCutoff`]: crate::PairwiseCutoff
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HardSphere {
     /// The sphere's diameter.
     pub diameter: f64,

@@ -21,11 +21,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: Configure Rust
-      uses: dtolnay/rust-toolchain@0b1efabc08b657293548b77fb76cc02d26091c7e
+      uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
       with:
-        toolchain: 1.90.0
+        toolchain: 1.93.0
         targets: wasm32-unknown-unknown
         components: clippy
     - name: Cache
@@ -107,9 +107,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: Configure Rust
-      uses: dtolnay/rust-toolchain@0b1efabc08b657293548b77fb76cc02d26091c7e
+      uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
       with:
         toolchain: nightly-2025-09-17
         components: rustfmt
@@ -119,9 +119,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: prek
-      uses: glotzerlab/workflows/prek@2245be9e78600bf7846aaf9555da322446f46110 # 0.11.0
+      uses: glotzerlab/workflows/prek@204dc7c0f82720090703712694b7cab761aacaa0 # 0.13.0
 
   # This job is used to provide a single requirement for branch merge conditions.
   tests_complete:

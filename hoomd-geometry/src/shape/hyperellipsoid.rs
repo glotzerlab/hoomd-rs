@@ -1,18 +1,20 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Hyperellipsoid`].
 
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use std::ops::Mul;
+
 use super::sphere::sphere_volume_prefactor;
 use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
 use hoomd_linear_algebra::{
-    Invertible, MatMul, QuadraticForm,
+    QuadraticForm,
     matrix::{DiagonalMatrix, Matrix22},
 };
 use hoomd_utility::valid::PositiveReal;
-use hoomd_vector::{Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMatrix};
-
-use std::ops::Mul;
+use hoomd_vector::{Angle, Cartesian, InnerProduct, Metric, Rotate, Rotation, RotationMatrix};
 
 /// The geometry resulting from an Hypersphere that is scaled along the Cartesian axes.
 ///
@@ -48,9 +50,11 @@ use std::ops::Mul;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[serde_as]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Hyperellipsoid<const N: usize> {
     /// The principle semi-axes of the [`Hyperellipsoid`] along each Cartesian direction.
+    #[serde_as(as = "[_; N]")]
     semi_axes: [PositiveReal; N],
 
     /// The bounding sphere radius.
@@ -222,20 +226,10 @@ impl<const N: usize> Volume for Hyperellipsoid<N> {
     }
 }
 
-/// The inverse of the Golden ratio, used for a golden section solver
-const _INV_PHI: f64 = 0.618_033_988_749_894_9_f64;
-/// Precision within which ellipsoids are considered to be overlapping.
-///
-/// This is 1000x more precise than HOOMD-Blue.
-const _ELLIPSOID_OVERLAP_PRECISION: f64 = 1e-9;
-/// Max bound of the root search for an ellipsoid characteristic polynomial.
-const _ELLIPSOID_K_MAX_BOUND: f64 = 1.0 - _ELLIPSOID_OVERLAP_PRECISION;
-/// Min bound of the root search for an ellipsoid characteristic polynomial.
-const _ELLIPSOID_K_MIN_BOUND: f64 = _ELLIPSOID_OVERLAP_PRECISION;
-
 impl<R> IntersectsAt<Hyperellipsoid<2>, Cartesian<2>, R> for Hyperellipsoid<2>
 where
     R: Rotation + Rotate<Cartesian<2>>,
+    Angle: From<R>,
     RotationMatrix<2>: From<R>,
 {
     #[inline]
@@ -258,18 +252,18 @@ where
         // $$
         //
         // The "natural" matrix form of an ellipse is $diag(1/axes_i**2)$. However, we must
-        // transform one of our matrixes for the intersection calculation. We choose B, as
+        // transform one of our matrixes for the intersection calculation. We choose A, as
         // it simplifies our future calculations. With R as the rotation matrix of o_ij:
         //
         // $$
-        // B = (R^-1).T @ diag(1/axes_B**2) @ R^-1
+        // A = (R^-1).T @ diag(1/axes_A**2) @ R^-1
         // $$
         // The inverse of a rotation matrix is its transpose, so this simplifies. However,
         // because we actually desire A_inverse and B_inverse (and A and B are diagonal),
         // we can simplify further:
         // $$
-        // A^-1 = diag(axes_A**2)
-        // B^-1 = R @ diag(axes_B**2) @ R^T
+        // A^-1 = R @ diag(axes_A**2) @ R^T
+        // B^-1 = diag(axes_B**2)
         // $$
         //
         // Both these results can be cached and reused for evaluation of [`k_lambda`].
@@ -279,48 +273,141 @@ where
         // closed form for the inverse.
         //
         // Recall that our ellipsoids do not overlap if there is a real root of Κ(λ) on
-        // (0, 1). Rather than searching for such a root, we can instead query for a
-        // negative element in the codomain. Our function is extremely well behaved
-        // (numerical instability notwithstanding), so we can use a simple golden section
-        // search for such an element. In most cases, we can exit within a single iteration
-        // although the method converges linearly in general. If the search does NOT find a
-        // negative element in the codomain, the ellipsoids intersect (within a tolerance).
-        let a_inv = other.semi_axes.map(|x| x.get().powi(2));
+        // (0, 1). Rather than searching for such a root, we can instead query for its
+        // existence analytically. We can show that K(λ) <= 0 if and only if its numerator
+        // polynomial P(λ) <= 0. P(λ) is a $n+1$-degree (cubic) polynomial:
+        //
+        // P(λ) = c3 λ^3 + c2 λ^2 + c1 λ + c0
+        //
+        // Where the coefficients are derived from the determinants and adjoints of A^-1
+        // and B^-1. Since P(0) > 0 and P(1) > 0, the ellipsoids are separated if and only
+        // if P(λ) has a local minimum in (0, 1) where P(λ) <= 0.
 
-        let rot = RotationMatrix::<2>::from(*o_ij);
-        let rot_transpose = rot.inverted();
+        // b^-1 = R @ (B^-1) @ R.T, where B^-1 is in the local frame and ∴ diagonal
+        // Simplified, we get the following (provided B^-1=diag([a_sq, b_sq]))
+        // {{Cos[θ]^2 a_sq + b_sq Sin[θ]^2, Cos[θ] (a_sq - b_sq) Sin[θ]},
+        //  {Cos[θ] (a_sq - b_sq) Sin[θ], Cos[θ]^2 b_sq + a_sq Sin[θ]^2}}
+        let theta = Angle::from(*o_ij).theta;
+        let (sin, cos) = theta.sin_cos();
+        let (s_sq, c_sq) = (sin.powi(2), cos.powi(2));
+        let a = other.semi_axes[0].get();
+        let b = other.semi_axes[1].get();
 
-        let b_inv = Matrix22::from(rot)
-            .matmul(&DiagonalMatrix {
-                elements: self.semi_axes.map(|x| x.get().powi(2)),
-            })
-            .matmul(&Matrix22::from(rot_transpose));
+        let a_inv = DiagonalMatrix {
+            elements: self.semi_axes.map(|x| x.get().powi(2)),
+        };
+        let diagonal = cos * (a.powi(2) - b.powi(2)) * sin;
+        let b_inv_m_a_inv = Matrix22 {
+            rows: [
+                [
+                    c_sq * a.powi(2) + b.powi(2) * s_sq - a_inv[(0, 0)],
+                    diagonal,
+                ],
+                [
+                    diagonal,
+                    c_sq * b.powi(2) + a.powi(2) * s_sq - a_inv[(1, 1)],
+                ],
+            ],
+        };
 
-        let v_ij = &v_ij.coordinates;
-        let a_inv = Matrix22::with_diagonal(a_inv);
+        let det_a_inv = a_inv[(0, 0)] * a_inv[(1, 1)];
+        let det_b_inv_m_a_inv = b_inv_m_a_inv.determinant();
 
-        // Golden section solver for minimizing K(λ)
-        let (mut b, mut a) = (_ELLIPSOID_K_MAX_BOUND, _ELLIPSOID_K_MIN_BOUND);
-        while (b - a) > _ELLIPSOID_OVERLAP_PRECISION {
-            let c = b - (b - a) * _INV_PHI;
-            let d = a + (b - a) * _INV_PHI;
+        let adj_a_inv = Matrix22 {
+            rows: [[a_inv[(1, 1)], 0.0], [0.0, a_inv[(0, 0)]]],
+        };
 
-            // Could reuse computed k values between loops for better performance?
-            let k_c = k_lambda::<2, Matrix22>(&a_inv, &b_inv, c, v_ij);
-            if k_c <= 0.0 {
-                return false;
+        let adj_b_inv_m_a_inv = Matrix22 {
+            rows: [
+                [b_inv_m_a_inv.rows[1][1], -b_inv_m_a_inv.rows[0][1]],
+                [-b_inv_m_a_inv.rows[1][0], b_inv_m_a_inv.rows[0][0]],
+            ],
+        };
+        let q0 = adj_a_inv.compute_quadratic_form(&v_ij.coordinates);
+        let q1 = adj_b_inv_m_a_inv.compute_quadratic_form(&v_ij.coordinates);
+
+        // d1 = tr(adj(A_inv) @ d).
+        // Note the off diagonal terms would be 0 and are excluded
+        let d1 = f64::mul_add(
+            adj_a_inv[(0, 0)],
+            b_inv_m_a_inv[(0, 0)],
+            adj_a_inv[(1, 1)] * b_inv_m_a_inv[(1, 1)],
+        );
+
+        let (c3, c2, c1, c0) = (q1, det_b_inv_m_a_inv - q1 + q0, d1 - q0, det_a_inv);
+
+        // Early exit with an IVT check
+        let p0 = c0; // P(0) = c0
+        let p1 = c3 + c2 + c1 + c0; // P(1) = c3 + c2 + c1 + c0
+
+        // If endpoints have different signs we definitely have a root
+        if p0 * p1 <= 0.0 {
+            return false;
+        }
+
+        // Both endpoints are negative -- no overlap is possible
+        if (p0 < 0.0) & (p1 < 0.0) {
+            return false;
+        }
+
+        // Bézier Clipping check
+        // Control points b0 = p0, b3 = p1, so all we need are b1 and b2
+        let b1 = c0 + c1 / 3.0;
+        let b2 = c0 + f64::mul_add(2.0, c1, c2) / 3.0;
+
+        // Check if the hull is strictly separated from 0.
+        // Since we know p0 and p1 have the same sign (from step 1),
+        // we just need to check if b1 and b2 share that sign.
+        if p0 > 0.0 {
+            // Entire hull is positive -> No root possible.
+            if b1 > 0.0 && b2 > 0.0 {
+                return true;
             }
-            let k_d = k_lambda::<2, Matrix22>(&a_inv, &b_inv, d, v_ij);
-            if k_d <= 0.0 {
-                return false;
-            }
-            if k_c < k_d {
-                b = d;
-            } else {
-                a = c;
+        } else {
+            // Entire hull is negative -> No root possible.
+            if b1 < 0.0 && b2 < 0.0 {
+                return true;
             }
         }
-        true // If we did not detect a negative value of K(λ), the shapes overlap
+
+        // Find local extrema of P(λ) = c3*λ^3 + c2*λ^2 + c1*λ + c0
+        // P'(lambda) = 3*c3*λ^2 + 2*c2*λ + c1
+        // Polynomial is effectively quadratic
+        if c3.abs() < 1e-15 {
+            // Polynomial is *not* effectively linear
+            if c2.abs() > 1e-15 {
+                let l_star = -c1 / (2.0 * c2);
+                if (0.0..1.0).contains(&l_star) {
+                    let p_star = (c2 * l_star + c1) * l_star + c0;
+                    if p0 > 0.0 && p_star <= 0.0 {
+                        return false;
+                    }
+                    if p0 < 0.0 && p_star >= 0.0 {
+                        return false;
+                    }
+                }
+            }
+        } else {
+            let delta = f64::mul_add(c2, c2, (-3.0 * c3) * c1);
+            if delta >= 0.0 {
+                let sqrt_delta = delta.sqrt();
+                let l1 = (-c2 - sqrt_delta) / (3.0 * c3);
+                let l2 = (-c2 + sqrt_delta) / (3.0 * c3);
+
+                for l in [l1, l2] {
+                    if (0.0..1.0).contains(&l) {
+                        let p = ((c3 * l + c2) * l + c1) * l + c0;
+                        if p0 > 0.0 && p <= 0.0 {
+                            return false;
+                        }
+                        if p0 < 0.0 && p >= 0.0 {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        true // If we did not detect a non-positive value of P(λ), the shapes overlap
     }
 
     #[inline]
@@ -342,20 +429,6 @@ where
 
         self.intersects_at(other, &v_ij, &o_ij)
     }
-}
-
-/// Solve the characteristic equation of two ellipses.
-#[inline]
-fn k_lambda<const N: usize, M>(a_inv: &M, b_inv: &M, l: f64, v_ij: &[f64; N]) -> f64
-where
-    M: Invertible + Copy + QuadraticForm<N>,
-{
-    let m = *b_inv * ((1.0 - l).recip()) + (*a_inv * l.recip());
-
-    1.0 - m
-        .inverse()
-        .expect("Matrix is not invertible - overlap check would return NaN.")
-        .compute_quadratic_form(v_ij)
 }
 
 #[expect(
@@ -417,6 +490,7 @@ mod tests {
     fn test_ellipse_overlap_along_axis(
         #[values([0.0, 0.0], [1.0,0.0], [1.999_999, 0.0], [2.000_001, 0.0], [2.1, 0.0])]
         v_ij: [f64; 2],
+        #[values(0.0, 2.0 * std::f64::consts::PI)] o_ij: f64,
     ) {
         let el0 = Ellipse::with_semi_axes([
             1.0.try_into().expect("test value is a positive real"),
@@ -428,17 +502,119 @@ mod tests {
         ]);
 
         assert_eq!(
-            el0.intersects_at(&el1, &v_ij.into(), &Angle::default()),
-            Convex(el0).intersects_at(&Convex(el1), &v_ij.into(), &Angle::default())
+            el0.intersects_at(&el1, &v_ij.into(), &Angle::from(o_ij)),
+            Convex(el0).intersects_at(&Convex(el1), &v_ij.into(), &Angle::from(o_ij))
         );
     }
+    // This data was generated by root finding in mathematica, and cases have been
+    // visually verified. I tried to annotate why the cases are named as they are, but
+    // to be totally honest they don't fully describe the system. "large" gaps indicate
+    // spacing of ~1e-1 and "small" gaps indicate <1e-3. Much smaller than this and my
+    // mathematica script starts to disagree with rust, but I will note that xenocollide
+    // and our custom implementation DO agree in all tested cases.
+    #[rstest]
+    #[case::small_gap_nearly_axis_aligned([1.0595, 1.9480], [0.8127, 1.8536], [1.8784, 0.0441], 3.1083, false)]
+    #[case::large_gap_near_45_degrees([1.1006, 1.7573], [1.1109, 0.5128], [0.5199, -2.8111], 0.8937, false)]
+    #[case::oblate([1.6074, 0.8916], [1.7323, 1.4077], [2.3685, 1.5793], 2.0076, false)]
+    #[case::oblate_near_spherical_modest_gap([1.1498, 0.6598], [1.4868, 1.4980], [2.4987, 0.9798], 3.0069, false)]
+    #[case::oblate_near_spherical_overlap([1.1498, 0.6598], [1.4868, 1.4980], [2.3453, 0.9196], 3.0069, true)]
+    #[case::very_oblate_modest_gap([1.9115, 0.5322], [1.8442, 1.3827], [-0.5431, -2.2782], 2.6297, false)]
+    #[case::very_oblate_modest_overlap([1.9115, 0.5322], [1.8442, 1.3827], [-0.4628, -1.9416], 2.6297, true)]
+    #[case::nearly_orthogonal_large_gap([0.7574, 1.5755], [0.6234, 1.5001], [2.0806, -1.1887], 1.6139, false)]
+    #[case::nearly_orthogonal_overlap([0.7574, 1.5755], [0.6234, 1.5001], [1.9758, -1.1289], 1.6139, true)]
+    #[case::nothing_special([0.6577, 1.0500], [1.4852, 1.0473], [-0.3930, -2.2628], 0.5831, false)]
+    #[case::nothing_special_overlaps([0.6577, 1.0500], [1.4852, 1.0473], [-0.3812, -2.1947], 0.5831, true)]
+    #[case::quite_close([0.6166, 1.4486], [1.4183, 0.9930], [-1.7161, -1.0606], 2.6675, false)]
+    #[case::quite_close_overlaps([0.6166, 1.4486], [1.4183, 0.9930], [-1.6661, -1.0297], 2.6675, true)]
+    #[case::near_sphere_very_close([1.1526, 1.9197], [1.8130, 1.7356], [2.8098, -0.8908], 1.4848, false)]
+    #[case::near_sphere_overlaps_very_close([1.1526, 1.9197], [1.8130, 1.7356], [2.7958, -0.8864], 1.4848, true)]
+    #[case::near_matching_oblate_small_gap([1.4806, 0.6951], [0.6211, 1.8280], [2.5104, -0.5142], 0.6163, false)]
+    #[case::near_matching_oblate_overlaps([1.4806, 0.6951], [0.6211, 1.8280], [2.4964, -0.5114], 0.6163, true)]
+    #[case::size_disparity_very_small_gap([1.0641, 0.7902], [1.7608, 0.6606], [0.4238, 1.5632], 0.2742, false)]
+    #[case::size_disparity_overlaps([1.0641, 0.7902], [1.7608, 0.6606], [0.4206, 1.5515], 0.2742, true)]
+    #[case::very_skinny_nearly_orthogonal_very_close([0.2442, 7.1313], [9.5758, 0.9664], [-6.7470, 7.7818], 0.0056, false)]
+    #[case::very_skinny_nearly_orthogonal_very_close([0.2442, 7.1313], [9.5758, 0.9664], [-6.7367, 7.7700], 0.0056, true)]
+    #[case::very_skinny_very_close([6.7374, 0.2257], [6.6506, 1.9512], [-9.0568, -1.4038], -0.2483, false)]
+    #[case::very_skinny_overlap([6.7374, 0.2257], [6.6506, 1.9512], [-8.9931, -1.3939], -0.2483, false)]
+    #[case::nearly_orthogonal([4.1355, 7.7023], [1.0113, 7.0499], [-5.0217, 3.9708], -0.0012, false)]
+    #[case::nearly_orthogonal_overlaps([4.1355, 7.7023], [1.0113, 7.0499], [-5.0070, 3.9591], -0.0012, true)]
+    #[case::big_sphere_very_close([0.7540, 2.0375], [6.5678, 6.8224], [4.9170, 6.6840], 0.1307, false)]
+    #[case::big_sphere_overlap([0.7540, 2.0375], [6.5678, 6.8224], [4.9041, 6.6665], 0.1307, true)]
+    fn test_ellipse_overlap_known_cases(
+        #[case] e0: [f64; 2],
+        #[case] e1: [f64; 2],
+        #[case] v_ij: [f64; 2],
+        #[case] o_ij: f64,
+        #[case] does_overlap: bool,
+    ) {
+        let el0 = Ellipse::with_semi_axes([
+            e0[0].try_into().expect("test value is a positive real"),
+            e0[1].try_into().expect("test value is a positive real"),
+        ]);
+        let el1 = Ellipse::with_semi_axes([
+            e1[0].try_into().expect("test value is a positive real"),
+            e1[1].try_into().expect("test value is a positive real"),
+        ]);
+
+        assert_eq!(
+            el0.intersects_at(&el1, &v_ij.into(), &Angle::from(o_ij)),
+            does_overlap
+        );
+        assert_eq!(
+            Convex(el0).intersects_at(&Convex(el1), &v_ij.into(), &Angle::from(o_ij)),
+            does_overlap
+        );
+    }
+
+    #[rstest]
+    #[case::six_one_aligned([4.2952, -2.1351], -0.0880, false)]
+    #[case::six_one_aligned([4.2597, -2.1174], -0.0880, false)]
+    #[case::six_one_aligned([-1.9937, -2.1883], -0.2352, false)]
+    #[case::six_one_aligned([-1.9787, -2.1719], -0.2352, true)]
+    #[case::six_one_aligned([-0.7759, 2.0001], 0.0095, false)]
+    #[case::six_one_aligned([-0.7688, 1.9816], 0.0095, true)]
+    #[case::six_one_aligned([2.1407, 1.9930], -0.1539, true)]
+    #[case::six_one_aligned([6.4962, -1.7588], 0.0426, false)]
+    #[case::six_one_aligned([6.2927, -1.7037], 0.0426, false)]
+    #[case::six_one_aligned([2.0187, -3.0287], -0.3221, false)]
+    #[case::six_one_aligned([-5.9183, -1.3618], -0.2930, false)]
+    #[case::six_one_aligned([1.0047, -2.0353], 0.0426, false)]
+    #[case::six_one_aligned([0.9783, -1.9817], 0.0426, true)]
+    #[case::six_one_aligned([11.2492, 0.8228], 0.0199, false)]
+    #[case::six_one_aligned([11.0, 0.8208], 0.0199, true)]
+    #[case::tip_to_tail([-11.9985, -0.0165], 0.0085, false)]
+    #[case::tip_to_tail([-11.9864, -0.0165], 0.0085, true)]
+    fn test_ellipse_overlap_likely_cases(
+        #[case] v_ij: [f64; 2],
+        #[case] o_ij: f64,
+        #[case] does_overlap: bool,
+    ) {
+        let el0 = Ellipse::with_semi_axes([
+            6.0.try_into().expect("test value is a positive real"),
+            1.0.try_into().expect("test value is a positive real"),
+        ]);
+        let el1 = Ellipse::with_semi_axes([
+            6.0.try_into().expect("test value is a positive real"),
+            1.0.try_into().expect("test value is a positive real"),
+        ]);
+
+        assert_eq!(
+            el0.intersects_at(&el1, &Cartesian::from(v_ij), &Angle::from(o_ij)),
+            does_overlap
+        );
+        assert_eq!(
+            Convex(el0).intersects_at(&Convex(el1), &v_ij.into(), &Angle::from(o_ij)),
+            does_overlap
+        );
+    }
+
     #[rstest]
     fn test_random_sphere_ellipse_overlap() {
         let mut rng = StdRng::seed_from_u64(2);
-        for _ in 0..10_000 {
+        for _ in 0..100_000 {
             let (a, c): (f64, f64) = StdRng::random(&mut rng);
-            let a = a.try_into().expect("test value is a positive real");
-            let c = c.try_into().expect("test value is a positive real");
+            let a = (a * 5.0).try_into().expect("test value is a positive real");
+            let c = (c * 5.0).try_into().expect("test value is a positive real");
             let el0 = Ellipse::with_semi_axes([a, a]);
             let el1 = Ellipse::with_semi_axes([c, c]);
 

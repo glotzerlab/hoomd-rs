@@ -1,7 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `Convex`.
+
+use serde::{Deserialize, Serialize};
 
 use crate::{
     BoundingSphereRadius, IntersectsAt, SupportMapping,
@@ -57,7 +59,7 @@ use hoomd_vector::{Cartesian, Metric, Rotate, Rotation, RotationMatrix};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Convex<S>(pub S);
 
 impl<V, S> SupportMapping<V> for Convex<S>

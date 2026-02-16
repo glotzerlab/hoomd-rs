@@ -1,4 +1,4 @@
-name: test
+name: Test
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -40,15 +40,15 @@ jobs:
           # TODO: Include Mac and Windows tests after the project made public.
           # - macos-14
         rust:
-          - 1.88.0
-          - 1.90.0
+          - 1.89.0
+          - 1.93.0
         target:
          - ''
 
         include:
         # Add a WASM build.
         - os: ubuntu-24.04
-          rust: 1.90.0
+          rust: 1.93.0
           target: wasm32-unknown-unknown
 
     steps:
@@ -59,7 +59,7 @@ jobs:
       run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
     - name: Checkout
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     # This code is needed on GitHub Hosted runners, disable for now while we use private runners.
     # - name: Update rust
     #   run: rustup install ${{ matrix.rust }} --no-self-update

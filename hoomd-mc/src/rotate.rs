@@ -1,13 +1,15 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement Rotate
 
-use std::marker::PhantomData;
+use serde::{Deserialize, Serialize};
+use std::{fmt, marker::PhantomData};
 
 use hoomd_utility::valid::PositiveReal;
 
 mod angle;
+mod versor;
 
 /// Change the orientation of a body by a small amount.
 ///
@@ -15,12 +17,15 @@ mod angle;
 /// by a small amount. The [`maximum_rotation`] parameter sets the largest possible
 /// rotation.
 ///
-/// For the 2D [`Angle`], [`maximum_rotation`] is measured in radians and the
-/// rotation is uniformly chosen between `-maximum_rotation` and `maximum_rotation`.
+/// When proposing trial moves for [`Angle`], [`maximum_rotation`] is measured
+/// in radians and the rotation is uniformly chosen between `-maximum_rotation`
+/// and `maximum_rotation`.
 ///
-/// TODO: document 3d maximum.
+/// When proposing trial moves for [`Versor`], [`maximum_rotation`] is measured
+/// in radians and the width of a Gaussian distribution centered on 0.
 ///
 /// [`Angle`]: hoomd_vector::Angle
+/// [`Versor`]: hoomd_vector::Versor
 /// [`maximum_rotation`]: Self::maximum_rotation
 ///
 /// The generic type names are:
@@ -38,7 +43,7 @@ mod angle;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Rotate<O> {
     /// Limit the maximum rotation applied during a single trial move.
     maximum_rotation: PositiveReal,
@@ -81,5 +86,13 @@ impl<P> Rotate<P> {
     #[inline]
     pub fn maximum_rotation_mut(&mut self) -> &mut PositiveReal {
         &mut self.maximum_rotation
+    }
+}
+
+impl<P> fmt::Display for Rotate<P> {
+    /// Format a [`Rotate`] as `{maximum_rotation}`.
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.maximum_rotation.fmt(f)
     }
 }

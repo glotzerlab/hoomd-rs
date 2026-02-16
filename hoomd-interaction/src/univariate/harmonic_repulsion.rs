@@ -1,7 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`HarmonicRepulsion`]
+
+use serde::{Deserialize, Serialize};
 
 use super::{UnivariateEnergy, UnivariateForce};
 
@@ -63,7 +65,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// h_repulsion.a = 5.0;
 /// h_repulsion.r_cut = 0.75;
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HarmonicRepulsion {
     /// Potential strength $`[\mathrm{energy}] [\mathrm{length}]^{-1}`$.
     pub a: f64,

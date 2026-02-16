@@ -1,7 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Boxcar`]
+
+use serde::{Deserialize, Serialize};
 
 use super::UnivariateEnergy;
 
@@ -54,7 +56,7 @@ use super::UnivariateEnergy;
 /// boxcar.left = 0.0;
 /// boxcar.right = 1.0;
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Boxcar {
     /// Energy scale *(\[energy\])*.
     pub epsilon: f64,

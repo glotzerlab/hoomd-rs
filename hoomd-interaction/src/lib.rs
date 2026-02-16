@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![doc(
@@ -30,9 +30,9 @@ pub use zero::Zero;
 /// Compute the total energy of a potential applied to the microstate.
 ///
 /// The `TotalEnergy` trait describes a type that can compute the energy of a
-/// given microstate. Depending on the type, `total_energy` might compute the total
-/// potential energy of the system or a single term, such as the Lennard-Jones
-/// potential energy.
+/// given microstate. Depending on the type, `total_energy` might compute the
+/// total potential energy of the whole Hamiltonian or a single term, such as
+/// the Lennard-Jones potential energy.
 ///
 /// # Example
 ///
@@ -74,6 +74,15 @@ pub trait TotalEnergy<M> {
     /// Compute the energy.
     #[must_use]
     fn total_energy(&self, microstate: &M) -> f64;
+
+    /// Compute the difference in energy between two microstates.
+    ///
+    /// Returns `$ E_\mathrm{final} - E_\mathrm{initial} $`.
+    #[inline]
+    #[must_use]
+    fn delta_energy_total(&self, initial_microstate: &M, final_microstate: &M) -> f64 {
+        self.total_energy(final_microstate) - self.total_energy(initial_microstate)
+    }
 }
 
 /// Compute the energy contribution of a single site.

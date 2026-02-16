@@ -1,16 +1,17 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement vector and curved manifold types on a sphere.
 
 use std::f64::consts::PI;
 use std::ops::Mul;
-
 use approxim::{approx_derive::RelativeEq, assert_relative_eq};
 use rand::{
     Rng,
     distr::{Distribution, Uniform},
 };
+use serde::{Deserialize, Serialize};
+use std::f64::consts::PI;
 
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Metric, Quaternion, Rotate, Versor};
@@ -24,7 +25,7 @@ use hoomd_vector::{Cartesian, InnerProduct, Metric, Quaternion, Rotate, Versor};
 /// x_1^2 + x_2^2 + \cdots + x_{N+1}^1 = R^2
 /// ```
 /// for some radius $`R`$.
-#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
 pub struct Spherical<const N: usize> {
     /// a cartesian point living on the surface of an N-sphere
     point: Cartesian<N>,
@@ -297,11 +298,13 @@ impl Metric for Spherical<4> {
 /// # Ok(())
 /// # }
 /// ```
-pub struct SphericalDisk<const N: usize> {
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SphericalDisk {
     /// Max distance away from point.
     pub disk_radius: PositiveReal,
     /// The center of the disk.
-    pub point: Spherical<N>,
+    pub point: Spherical<3>,
 }
 
 impl<const N: usize> Default for Spherical<N> {
