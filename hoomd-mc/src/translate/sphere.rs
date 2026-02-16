@@ -116,7 +116,6 @@ impl LocalTrial<Point<Spherical<4>>> for Translate<Point<Spherical<4>>> {
         let (sn, cs) = (displacement.sin(), displacement.cos());
         let vec = Cartesian::<4>::from(std::array::from_fn(|_| rng.sample(StandardNormal)));
         let proj = vec.dot(trial.position.point());
-        println!("proj: {:}", proj);
         let tangent = Cartesian::from([
             vec[0] - proj * trial.position.coordinates()[0],
             vec[1] - proj * trial.position.coordinates()[1],
@@ -124,7 +123,6 @@ impl LocalTrial<Point<Spherical<4>>> for Translate<Point<Spherical<4>>> {
             vec[3] - proj * trial.position.coordinates()[3],
         ]);
         let (unit, _norm) = tangent.to_unit().expect("cannot be null");
-        println!("new unit vector: {:?}", unit);
         let new = Cartesian::from([
             trial.position.coordinates()[0] * cs + unit.get().coordinates[0]*sn,
             trial.position.coordinates()[1] * cs + unit.get().coordinates[1]*sn,
