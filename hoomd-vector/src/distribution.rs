@@ -44,8 +44,7 @@ impl<const N: usize> Distribution<Cartesian<N>> for Ball {
         if N == 2 {
             // Rejection sampling is fastest in 2D
             loop {
-                let mut coordinates_01 = [0.0; N];
-                rng.fill(&mut coordinates_01);
+                let coordinates_01: [f64; N] = array::from_fn(|_| rng.random());
 
                 let v = Cartesian {
                     coordinates: array::from_fn(|i| (coordinates_01[i] * 2.0 - 1.0) * r),
