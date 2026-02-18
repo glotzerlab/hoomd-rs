@@ -213,6 +213,24 @@ is dropped, which occurs automatically when `main()` returns:
 {{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:exit}}
 ```
 
+## Conclusion
+
+This tutorial showed you how to perform patchy particle self-assembly
+simulations using a shape overlap potential with attractive patches.
+
+Navigate to the top of the page and refresh to see the simulation in action
+again. Notice that the disks quickly form random chains and clusters. Over
+time, hexagons will appear and the kagome structure will begin to grow. After
+a few hundred thousand timesteps, several distinct grains will appear. Run
+the simulation long enough, and the system will equilibrate to a single large
+crystal as shown in [10.1039/D2SM01593E].
+
+You can also run the example in batch mode and then open
+the generated `trajectory.gsd` in [Ovito] or another visualization tool:
+```shell
+cargo run --release --example patchy-particle-self-assembly
+```
+
 ### Visualize the Log
 
 Open the log and plot it using the tool of your choice. It will look something
@@ -242,23 +260,6 @@ like this:
     .catch(console.error);
 </script>
 
-## Conclusion
-
-This tutorial showed you how to perform patchy particle self-assembly
-simulations using a shape overlap potential with attractive patches.
-
-Navigate to the top of the page and refresh to see the simulation in action
-again. Notice that the disks quickly form random chains and clusters. Over
-time, hexagons will appear and the kagome structure will begin to grow. After
-a few hundred thousand timesteps, several distinct grains will appear. Run
-the simulation long enough, and the system will equilibrate to a single large
-crystal as shown in [10.1039/D2SM01593E].
-
-You can also run the example in batch mode and then open
-the generated `trajectory.gsd` in [Ovito] or another visualization tool:
-```shell
-cargo run --release --example patchy-particle-self-assembly
-```
 
 [Ovito]: https://www.ovito.org/
 

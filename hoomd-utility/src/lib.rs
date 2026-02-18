@@ -12,7 +12,5 @@
 //!
 //! Common utility code used by other hoomd-rs crates and user code.
 
-pub mod valid;
 pub mod data;
-
-
+pub mod valid;

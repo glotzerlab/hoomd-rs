@@ -23,7 +23,6 @@ pub enum Error {
     Parquet(#[from] parquet::errors::ParquetError),
 }
 
-
 /// Write log records to a Parquet data file.
 ///
 /// Use `ParquetLogger` to open a parquet file and write one log record at a
@@ -39,14 +38,14 @@ pub enum Error {
 ///
 /// # Example
 /// ```
-/// use parquet_derive::ParquetRecordWriter;
 /// use hoomd_utility::data::ParquetLogger;
+/// use parquet_derive::ParquetRecordWriter;
 ///
 /// #[derive(ParquetRecordWriter)]
 /// pub struct LogRecord {
 ///     /// The simulation step.
 ///     step: u64,
-/// 
+///
 ///     /// Total system potential energy.
 ///     potential_energy: f64,
 /// }
@@ -55,22 +54,23 @@ pub enum Error {
 /// # use tempfile::tempdir;
 /// # let tmp_dir = tempdir().expect("temp dir should be created");
 /// # let path = tmp_dir.path().join("log.parquet");
-///  // let path = "log.parquet";
-///  let mut parquet_logger = ParquetLogger::<LogRecord>::create(path)?;
-///            parquet_logger.log(LogRecord {
-///                step: 0,
-///                potential_energy: 1.0,
-///            })?;
-///            parquet_logger.log(LogRecord {
-///                step: 1,
-///                potential_energy: 2.0,
-///            })?;
-///  
+/// // let path = "log.parquet";
+/// let mut parquet_logger = ParquetLogger::<LogRecord>::create(path)?;
+/// parquet_logger.log(LogRecord {
+///     step: 0,
+///     potential_energy: 1.0,
+/// })?;
+/// parquet_logger.log(LogRecord {
+///     step: 1,
+///     potential_energy: 2.0,
+/// })?;
+///
 /// # Ok(())
 /// # }
 /// ```
-pub struct ParquetLogger<T> where
-for<'a> &'a [T]: RecordWriter<T>
+pub struct ParquetLogger<T>
+where
+    for<'a> &'a [T]: RecordWriter<T>,
 {
     /// Parquet writer.
     writer: SerializedFileWriter<File>,
@@ -82,8 +82,9 @@ for<'a> &'a [T]: RecordWriter<T>
     maximum_buffer_size: usize,
 }
 
-impl<T> ParquetLogger<T> where
-for<'a> &'a [T]: RecordWriter<T>,
+impl<T> ParquetLogger<T>
+where
+    for<'a> &'a [T]: RecordWriter<T>,
 {
     /// Create a new parquet file.
     ///
@@ -107,8 +108,8 @@ for<'a> &'a [T]: RecordWriter<T>,
     /// # use tempfile::tempdir;
     /// # let tmp_dir = tempdir().expect("temp dir should be created");
     /// # let path = tmp_dir.path().join("log.parquet");
-    ///  // let path = "log.parquet";
-    ///  let mut parquet_logger = ParquetLogger::<LogRecord>::create(path)?;
+    /// // let path = "log.parquet";
+    /// let mut parquet_logger = ParquetLogger::<LogRecord>::create(path)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -120,7 +121,11 @@ for<'a> &'a [T]: RecordWriter<T>,
         let log_file = File::create(path)?;
         let writer = SerializedFileWriter::new(log_file, schema, props)?;
 
-        Ok(Self { writer, buffer, maximum_buffer_size: 2_usize.pow(17) })
+        Ok(Self {
+            writer,
+            buffer,
+            maximum_buffer_size: 2_usize.pow(17),
+        })
     }
 
     /// Log a record to the file.
@@ -140,14 +145,14 @@ for<'a> &'a [T]: RecordWriter<T>,
     ///
     /// # Example
     /// ```
-    /// use parquet_derive::ParquetRecordWriter;
     /// use hoomd_utility::data::ParquetLogger;
+    /// use parquet_derive::ParquetRecordWriter;
     ///
     /// #[derive(ParquetRecordWriter)]
     /// pub struct LogRecord {
     ///     /// The simulation step.
     ///     step: u64,
-    /// 
+    ///
     ///     /// Total system potential energy.
     ///     potential_energy: f64,
     /// }
@@ -156,17 +161,17 @@ for<'a> &'a [T]: RecordWriter<T>,
     /// # use tempfile::tempdir;
     /// # let tmp_dir = tempdir().expect("temp dir should be created");
     /// # let path = tmp_dir.path().join("log.parquet");
-    ///  // let path = "log.parquet";
-    ///  let mut parquet_logger = ParquetLogger::<LogRecord>::create(path)?;
-    ///            parquet_logger.log(LogRecord {
-    ///                step: 0,
-    ///                potential_energy: 1.0,
-    ///            })?;
-    ///            parquet_logger.log(LogRecord {
-    ///                step: 1,
-    ///                potential_energy: 2.0,
-    ///            })?;
-    ///  
+    /// // let path = "log.parquet";
+    /// let mut parquet_logger = ParquetLogger::<LogRecord>::create(path)?;
+    /// parquet_logger.log(LogRecord {
+    ///     step: 0,
+    ///     potential_energy: 1.0,
+    /// })?;
+    /// parquet_logger.log(LogRecord {
+    ///     step: 1,
+    ///     potential_energy: 2.0,
+    /// })?;
+    ///
     /// # Ok(())
     /// # }
     /// ```
@@ -211,20 +216,21 @@ for<'a> &'a [T]: RecordWriter<T>,
     /// [`Error`]: enum@crate::data::Error
     #[inline]
     pub fn sync(&mut self) -> Result<(), Error> {
-    if !self.buffer.is_empty() {
-        let mut row_group = self.writer.next_row_group()?;
-        self.buffer.as_slice().write_to_row_group(&mut row_group)?;
-        row_group.close()?;
-        self.buffer.clear();
-        self.writer.flush()?;
-    }
-    Ok(())
+        if !self.buffer.is_empty() {
+            let mut row_group = self.writer.next_row_group()?;
+            self.buffer.as_slice().write_to_row_group(&mut row_group)?;
+            row_group.close()?;
+            self.buffer.clear();
+            self.writer.flush()?;
+        }
+        Ok(())
     }
 }
 
 /// Synchronize the buffer and close the parquet file.
-impl<T> Drop for ParquetLogger<T> where
-for<'a> &'a [T]: RecordWriter<T> 
+impl<T> Drop for ParquetLogger<T>
+where
+    for<'a> &'a [T]: RecordWriter<T>,
 {
     #[inline]
     fn drop(&mut self) {

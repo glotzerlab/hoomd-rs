@@ -69,7 +69,10 @@ impl TryFrom<f64> for PositiveReal {
     /// use hoomd_utility::valid::PositiveReal;
     ///
     /// let result = PositiveReal::try_from(-1.0);
-    /// assert!(matches!(result, Err(hoomd_utility::valid::Error::NotPositive(_))));
+    /// assert!(matches!(
+    ///     result,
+    ///     Err(hoomd_utility::valid::Error::NotPositive(_))
+    /// ));
     /// ```
     ///
     /// # Errors

@@ -7,6 +7,8 @@ use hoomd_geometry::{
     Volume,
     shape::{Circle, Rectangle},
 };
+#[cfg(not(feature = "bevy"))]
+use hoomd_interaction::TotalEnergy;
 use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff,
     pairwise::{
@@ -23,11 +25,9 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
-use hoomd_vector::{Angle, Cartesian};
-#[cfg(not(feature = "bevy"))]
-use hoomd_interaction::TotalEnergy;
 #[cfg(not(feature = "bevy"))]
 use hoomd_utility::data::ParquetLogger;
+use hoomd_vector::{Angle, Cartesian};
 // ANCHOR_END: use
 
 // ANCHOR: type_aliases
@@ -298,9 +298,11 @@ pub struct LogRecord {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
-// ANCHOR_END: main
+    // ANCHOR_END: main
     // ANCHOR: log_open
-    let mut parquet_logger = ParquetLogger::<LogRecord>::create("patchy-particle-self-assembly.parquet")?;
+    let mut parquet_logger = ParquetLogger::<LogRecord>::create(
+        "patchy-particle-self-assembly.parquet",
+    )?;
     // ANCHOR_END: log_open
 
     // ANCHOR: run_simulation
@@ -315,7 +317,9 @@ fn main() -> anyhow::Result<()> {
         if simulation.step().is_multiple_of(1000) {
             parquet_logger.log(LogRecord {
                 step: simulation.microstate.step(),
-                potential_energy: simulation.hamiltonian.total_energy(&simulation.microstate),
+                potential_energy: simulation
+                    .hamiltonian
+                    .total_energy(&simulation.microstate),
             })?;
         }
     }
