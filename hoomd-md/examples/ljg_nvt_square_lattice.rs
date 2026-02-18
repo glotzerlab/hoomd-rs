@@ -8,19 +8,21 @@ use hoomd_interaction::{
     rigid::Rigid,
 };
 use hoomd_md::{
-    ConstantVolume, ForceUpdate, TranslationalMotion, thermalizer::{
-        ComAngularMomentumRemover, ComMomentumRemover, RotationalThermalizer, Thermalizer,
+    methods::{ConstantVolume, ForceUpdate, TranslationalMotion},
+    thermalizer::{
+        ComAngularMomentumRemover, ComMomentumRemover, Thermalizer,
         TranslationalMomentumModifier,
         TranslationalThermalizer,
-    }, thermostat::BussiThermostat
+    },
+    thermostat::BussiThermostat,
 };
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder,
     boundary::Periodic,
-    property::{DynamicsPoint, NetForce, Point, Position},
+    property::{DynamicsPoint, NetForce, Point},
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
-use hoomd_vector::{Cartesian, Metric};
+use hoomd_vector::Cartesian;
 
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
@@ -131,7 +133,7 @@ impl LJG_sqaure {
         let integrator = ConstantVolume::new(dt);
 
         // Constant T integration
-        let thermostat = BussiThermostat::new(tau);
+        let thermostat = BussiThermostat::new(tau.try_into()?);
 
         Ok(LJG_sqaure {
             microstate,

@@ -11,13 +11,13 @@ use hoomd_interaction::{
     rigid::Rigid,
 };
 use hoomd_md::{
-    ConstantVolume, ForceAndTorqueUpdate, RotationalMotion, TranslationalMotion,
+    methods::{ConstantVolume, ForceAndTorqueUpdate, RotationalMotion, TranslationalMotion},
     thermalizer::{
         ComAngularMomentumRemover, ComMomentumRemover, RotationalThermalizer, Thermalizer,
         TranslationalMomentumModifier,
         TranslationalThermalizer,
     },
-    thermostat::{BussiThermostat, MTTKThermostat},
+    thermostat::{BussiThermostat, MTTKThermostat, NHCThermostat},
 };
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder,
@@ -39,7 +39,7 @@ struct System {
 
     macrostate: Isothermal,
 
-    thermostat: (BussiThermostat, BussiThermostat),
+    thermostat: (NHCThermostat<3>, NHCThermostat<3>),
 
     force: Rigid<CutoffPair<Isotropic<LennardJones>>>,
 
@@ -120,7 +120,8 @@ impl System {
         // Notice that the thermostats for translational
         // and rotational dof are separated.
         let tau = 50.0 * dt;
-        let thermostat = (BussiThermostat::new(tau), BussiThermostat::new(tau));
+        //let thermostat = (BussiThermostat::new(tau), BussiThermostat::new(tau));
+        let thermostat = (NHCThermostat::<3>::new(tau.try_into()?), NHCThermostat::<3>::new(tau.try_into()?));
 
         Ok(System {
             microstate,
