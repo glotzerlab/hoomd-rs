@@ -8,7 +8,7 @@ use std::array;
 use super::{Cartesian, InnerProduct};
 use hoomd_utility::valid::PositiveReal;
 
-use rand::{Rng, distr::Distribution};
+use rand::{Rng, RngExt, distr::Distribution};
 use rand_distr::StandardNormal;
 
 /// A uniform distribution of all points inside or on a sphere with radius `r`.
