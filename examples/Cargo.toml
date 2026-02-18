@@ -38,6 +38,9 @@ hoomd-vector.workspace = true
 anyhow.workspace = true
 bevy = { workspace = true, optional = true }
 bevy_egui = { workspace = true, optional = true }
+thiserror.workspace = true
+parquet.workspace = true
+parquet_derive.workspace = true
 rand.workspace = true
 
 [[example]]

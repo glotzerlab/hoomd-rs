@@ -38,7 +38,7 @@ and two attractive patches. This system self-assembles the Kagome structure
 ## Type Aliases
 
 Create type aliases for your model's *vector*, *body properties*, and *site
-properties* types so that you don't need to repeat the full nested generic type
+properties* types so that you don't need to repeat the full generic type
 names throughout the code:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:type_aliases}}
@@ -132,12 +132,56 @@ term to allow the system to arrange randomly without being hindered by the patch
 ## Initialization and Simulation
 
 See the [Hard Ellipse Self-Assembly] tutorial for a complete explanation of
-remaining code.
+remaining initialization and simulation code.
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:remainder}}
 ```
 
 [Hard Ellipse Self-Assembly]: hard-ellipse-self-assembly.md
+
+## Implement `main()` and Log Potential Energy
+
+### Log Record
+
+You can monitor the equilibration process by plotting the system's potential
+energy as a function of simulation step. Define a struct that records all
+quantities of interest.
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-ellipse-self-assembly.rs:log_record}}
+```
+
+*hoomd-rs* has no built-in logging capability. There are many Rust crates you
+could use to write log files with just a few lines of code. Choose the one
+that best suits your needs. This tutorial writes the log to a [parquet] file.
+Parquet is a binary column-oriented format that preserves the full precision
+of every record value and can be read/written efficiently. It is supported by R,
+pandas, MATLAB, and many other tools.
+
+[parquet]: https://parquet.apache.org/
+
+### `main()`
+
+The `main()` function executes when your binary in batch mode:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-ellipse-self-assembly.rs:main}}
+```
+
+### Open the Log File
+
+### Simulation Steps
+
+To run the simulation, construct the `PatchyParticleSelfAssembly` simulation model.
+Then call `advance()` many times:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-ellipse-self-assembly.rs:main}}
+```
+
+Write the sites to a GSD file periodically so that you can inspect the results
+of the simulation.
+
+> [!NOTE]
+> This `main()` function runs in batch mode. There is a different `main()` (not
+> shown here) used in the interactive example.
 
 ## Conclusion
 
