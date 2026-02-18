@@ -11,7 +11,7 @@ use chacha20::ChaCha8Rng;
 use divan::{Bencher, black_box, counter::ItemsCount};
 use hoomd_rand::SFC64;
 use rand::{
-    Rng,
+    RngExt,
     rand_core::{Rng, SeedableRng},
 };
 
