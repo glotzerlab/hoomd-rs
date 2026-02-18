@@ -120,7 +120,7 @@ impl SeedableRng for SFC64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::SeedableRng;
+    use rand::{Rng, SeedableRng};
     use rstest::rstest;
 
     // To generate test data:
