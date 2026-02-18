@@ -37,7 +37,7 @@ tetrahedra **self-assemble** into a quasicrystal: [10.1038/nature08641].
 ## Type Aliases
 
 Create type aliases for your model's *vector*, *body properties*, and *site
-properties* types so that you don't need to repeat the full nested generic type
+properties* types so that you don't need to repeat the full generic type
 names throughout the code:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-tetrahedron-self-assembly.rs:type_aliases}}
@@ -81,12 +81,27 @@ Wrap it in the `Convex` newtype for use with the `HardShape` Hamiltonian:
 ## Initialization and Simulation
 
 See the [Hard Ellipse Self-Assembly] tutorial for a complete explanation of
-remaining code.
+remaining initialization and simulation code.
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-tetrahedron-self-assembly.rs:remainder}}
 ```
 
 [Hard Ellipse Self-Assembly]: hard-ellipse-self-assembly.md
+
+## Implement `main()`
+
+To run the simulation, construct the `HardTetrahedronSelfAssembly` simulation model.
+Then call `advance()` many times:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-ellipse-self-assembly.rs:main}}
+```
+
+Write the sites to a GSD file periodically so that you can inspect the results
+of the simulation.
+
+> [!NOTE]
+> This `main()` function runs in batch mode. There is a different `main()` (not
+> shown here) used in the interactive example.
 
 ## Conclusion
 
