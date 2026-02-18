@@ -21,6 +21,10 @@ struct Args {
     /// Optimize for size.
     #[arg(long)]
     reduce_size: bool,
+
+    /// Output location.
+    #[arg(long, default_value = "doc/src")]
+    root: String,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -92,7 +96,7 @@ fn build_examples(table: &Table, args: &Args) -> anyhow::Result<()> {
                 "package.metadata.example.{name}.path is not a string"
             ))?;
 
-        let path = format!("doc/src/{subpath}");
+        let path = format!("{}/{subpath}", args.root);
         let target_wasm = format!("./target/wasm32-unknown-unknown/{profile}/examples/{name}.wasm");
 
         let status = Command::new("wasm-bindgen")

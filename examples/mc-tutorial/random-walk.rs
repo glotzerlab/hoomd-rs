@@ -2,7 +2,7 @@
 // ANCHOR: use
 use hoomd_interaction::Zero;
 use hoomd_mc::{Sweep, Translate, Trial};
-use hoomd_microstate::{Body, MicrostateBuilder};
+use hoomd_microstate::{Body, Microstate};
 use hoomd_simulation::macrostate::Isothermal;
 use hoomd_vector::Cartesian;
 // ANCHOR_END: use
@@ -11,7 +11,7 @@ use hoomd_vector::Cartesian;
 fn main() -> anyhow::Result<()> {
     // ANCHOR_END: main
     // ANCHOR: microstate
-    let mut microstate = MicrostateBuilder::new()
+    let mut microstate = Microstate::builder()
         .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
         .try_build()?;
     // ANCHOR_END: microstate
@@ -21,7 +21,7 @@ fn main() -> anyhow::Result<()> {
     // ANCHOR_END: local_trial
 
     // ANCHOR: sweep
-    let translate_sweep = Sweep(translate);
+    let mut translate_sweep = Sweep(translate);
     // ANCHOR_END: sweep
 
     // ANCHOR: hamiltonian

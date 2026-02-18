@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Traits that describe boundary conditions and a selection of types that implement them.
@@ -20,8 +20,8 @@
 //! [`Closed`]. To implement a custom periodic boundary, create your custom
 //! type and implement both [`Wrap`] and [`GenerateGhosts`] for it.
 
+use arrayvec::ArrayVec;
 use thiserror::Error;
-use tinyvec::ArrayVec;
 
 mod closed;
 mod open;
@@ -113,7 +113,7 @@ pub trait GenerateGhosts<S> {
     /// interactions with other sites in the given [`maximum_interaction_range`].
     ///
     /// [`maximum_interaction_range`]: Self::maximum_interaction_range
-    fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]>;
+    fn generate_ghosts(&self, _site_properties: &S) -> ArrayVec<S, MAX_GHOSTS>;
 }
 
 /// Compute the largest value of the maximum interaction range.

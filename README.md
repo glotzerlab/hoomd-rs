@@ -21,8 +21,8 @@ capabilities that [HOOMD-blue] cannot, such as:
 * Custom MC trial moves and acceptance criteria.
 * Custom simulation box geometries (*including non-periodic simulation boxes*).
 * Custom visual representations of simulation elements.
-* Build command line applications on *all the platforms* that [Rust] supports.
-* Run real-time interactive simulations for Linux, Mac, the web, and Windows *natively*.
+* Build native command line applications on *Linux*, *macOS*, and *Windows*.
+* Run real-time interactive simulations on desktop platforms or embedded in a web page.
 
 **hoomd-rs** _does not_ come with batteries included. It provides built-in
 implementations only for the most commonly used methods. At the same time,
@@ -57,7 +57,7 @@ use hoomd_simulation::macrostate::Isothermal;
 use hoomd_vector::Cartesian;
 
 fn main() -> anyhow::Result<()> {
-    let mut microstate = MicrostateBuilder::new()
+    let mut microstate = Microstate::builder()
         .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
         .try_build()?;
 

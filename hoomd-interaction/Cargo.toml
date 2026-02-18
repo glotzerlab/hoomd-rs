@@ -15,12 +15,16 @@ workspace = true
 
 [dependencies]
 hoomd-linear-algebra.workspace = true
+serde.workspace = true
 hoomd-microstate.workspace = true
 hoomd-vector.workspace = true
 hoomd-geometry.workspace = true
+hoomd-spatial.workspace = true
 hoomd-utility.workspace = true
 
 [dev-dependencies]
+anyhow.workspace = true
+assert2.workspace = true
 approxim.workspace = true
 divan.workspace = true
 rstest.workspace = true

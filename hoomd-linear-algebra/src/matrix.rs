@@ -1,15 +1,16 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
+
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use std::fmt;
+
+use crate::{Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
 
 /// ``std::ops`` implementations for [`Matrix`]
 mod ops;
 
 pub use crate::diagonal::DiagonalMatrix;
-
-use std::fmt;
-
-/// A lightweight representation of a diagonal matrix.
-use crate::{Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix};
 
 /// A matrix with N rows and M columns, allocated on the stack.
 ///
@@ -21,9 +22,11 @@ use crate::{Full, GeneralMatrix, Invertible, MatMul, QuadraticForm, SquareMatrix
 ///     rows: [[-1.0, 4.0, -6.0], [2.0, -3.0, 1.0]],
 /// };
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[serde_as]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Matrix<const N: usize, const M: usize> {
     /// The elements of the matrix
+    #[serde_as(as = "[[_; M]; N]")]
     pub rows: [[f64; M]; N],
 }
 /// A 2x2 matrix, allocated on the stack.

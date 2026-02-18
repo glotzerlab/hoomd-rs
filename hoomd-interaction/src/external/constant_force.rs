@@ -1,21 +1,25 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`ConstantForce`]
 
 use crate::{ExternalBodyTorque, ExternalSiteForce, SiteForceAndTorque};
 
-use super::super::SiteEnergy;
+
+use serde::{Deserialize, Serialize};
+
 use hoomd_microstate::{property::{Mass, MomentOfInertia, Orientation, Position}, Microstate, Site};
 use hoomd_vector::{InnerProduct, Rotate, Unit, Vector, WedgeProduct};
 
-/// Constant force potential based on position.
+use super::super::SiteEnergy;
+
+/// Linear potential based on position.
 ///
 /// ```math
 /// U = \alpha \cdot \vec{n} \cdot ( \vec{r} - \vec{p} )
 /// ```
 ///
-/// Computes a linear external potential at a point in space relative to the plane
+/// Computes a Linear external potential at a point in space relative to the plane
 /// origin `p`, plane normal `n`, and the interaction strength `alpha`.
 ///
 /// # Example
@@ -23,11 +27,11 @@ use hoomd_vector::{InnerProduct, Rotate, Unit, Vector, WedgeProduct};
 /// Basic usage:
 ///
 /// ```
-/// use hoomd_interaction::external::ConstantForce;
+/// use hoomd_interaction::external::Linear;
 /// use hoomd_vector::{Cartesian, Unit};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let linear = ConstantForce {
+/// let Linear = Linear {
 ///     alpha: 2.0,
 ///     plane_origin: [0.0, -10.0].into(),
 ///     plane_normal: [0.0, 1.0].try_into()?,
@@ -35,7 +39,7 @@ use hoomd_vector::{InnerProduct, Rotate, Unit, Vector, WedgeProduct};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConstantForce<V> {
     /// Interaction strength *(\[energy\] \[length\]^(-1))*.
     pub alpha: f64,
@@ -54,11 +58,11 @@ where
     /// # Example
     ///
     /// ```
-    /// use hoomd_interaction::external::ConstantForce;
+    /// use hoomd_interaction::external::Linear;
     /// use hoomd_vector::{Cartesian, Unit};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let linear = ConstantForce {
+    /// let linear = Linear {
     ///     alpha: 2.0,
     ///     plane_origin: [0.0, -10.0].into(),
     ///     plane_normal: [0.0, 1.0].try_into()?,
@@ -89,7 +93,7 @@ where
     }
 }
 
-impl<S, P> SiteEnergy<S> for ConstantForce<P>
+impl<S, P> SiteEnergy<S> for Linear<P>
 where
     S: Position<Position = P>,
     P: InnerProduct,

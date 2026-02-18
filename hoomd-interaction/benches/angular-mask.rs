@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![expect(
@@ -12,8 +12,9 @@ use divan::{self, Bencher, black_box, counter::ItemsCount};
 use rand::{Rng, SeedableRng, rngs::StdRng};
 use std::f64::consts::PI;
 
-use hoomd_interaction::pairwise::{
-    AngularMask, AnisotropicEnergy, LennardJones, angular_mask::Patch,
+use hoomd_interaction::{
+    pairwise::{AngularMask, AnisotropicEnergy, angular_mask::Patch},
+    univariate::LennardJones,
 };
 use hoomd_vector::{Angle, Cartesian, Versor};
 

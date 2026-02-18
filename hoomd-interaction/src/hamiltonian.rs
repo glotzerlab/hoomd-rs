@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `*Energy` for varying lengths of tuples.
@@ -6,15 +6,18 @@
 use super::{DeltaEnergyInsert, DeltaEnergyOne, TotalEnergy};
 use hoomd_microstate::{Body, Microstate};
 
+// TODO: Implement tuple that sums two SiteEnergy terms and produces another
+// SiteEnergy. It should take into account only_infinite_or_zero and _initial
+// properly.
+
 /// Sum two delta energy terms.
 ///
 /// # Example
 ///
 /// ```
 /// use hoomd_interaction::{
-///     CutoffPair, DeltaEnergyOne, External,
-///     external::Linear,
-///     pairwise::{Boxcar, Isotropic},
+///     DeltaEnergyOne, External, PairwiseCutoff, external::Linear,
+///     pairwise::Isotropic, univariate::Boxcar,
 /// };
 /// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;
@@ -33,11 +36,10 @@ use hoomd_microstate::{Body, Microstate};
 ///     left,
 ///     right,
 /// };
-/// let evaluator = Isotropic(boxcar);
-/// let cutoff_pair = CutoffPair {
+/// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+///     interaction: boxcar,
 ///     r_cut: right,
-///     evaluator,
-/// };
+/// });
 ///
 /// let linear = External(Linear {
 ///     alpha: 10.0,
@@ -45,7 +47,7 @@ use hoomd_microstate::{Body, Microstate};
 ///     plane_normal: [0.0, 1.0].try_into()?,
 /// });
 ///
-/// let hamiltonian = (cutoff_pair, linear);
+/// let hamiltonian = (pairwise_cutoff, linear);
 ///
 /// let delta_energy = hamiltonian.delta_energy_one(
 ///     &microstate,
@@ -56,15 +58,15 @@ use hoomd_microstate::{Body, Microstate};
 /// # Ok(())
 /// # }
 /// ```
-impl<B, S, C, E1, E2> DeltaEnergyOne<B, S, C> for (E1, E2)
+impl<B, S, X, C, E1, E2> DeltaEnergyOne<B, S, X, C> for (E1, E2)
 where
-    E1: DeltaEnergyOne<B, S, C>,
-    E2: DeltaEnergyOne<B, S, C>,
+    E1: DeltaEnergyOne<B, S, X, C>,
+    E2: DeltaEnergyOne<B, S, X, C>,
 {
     #[inline]
     fn delta_energy_one(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<B, S, X, C>,
         body_index: usize,
         final_body: &Body<B, S>,
     ) -> f64 {
@@ -86,9 +88,8 @@ where
 ///
 /// ```
 /// use hoomd_interaction::{
-///     CutoffPair, External, TotalEnergy,
-///     external::Linear,
-///     pairwise::{Boxcar, Isotropic},
+///     External, PairwiseCutoff, TotalEnergy, external::Linear,
+///     pairwise::Isotropic, univariate::Boxcar,
 /// };
 /// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;
@@ -107,11 +108,10 @@ where
 ///     left,
 ///     right,
 /// };
-/// let evaluator = Isotropic(boxcar);
-/// let cutoff_pair = CutoffPair {
+/// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+///     interaction: boxcar,
 ///     r_cut: right,
-///     evaluator,
-/// };
+/// });
 ///
 /// let linear = External(Linear {
 ///     alpha: 1.0,
@@ -119,7 +119,7 @@ where
 ///     plane_normal: [0.0, 1.0].try_into()?,
 /// });
 ///
-/// let hamiltonian = (cutoff_pair, linear);
+/// let hamiltonian = (pairwise_cutoff, linear);
 ///
 /// let total_energy = hamiltonian.total_energy(&microstate);
 /// assert_eq!(total_energy, 10.0);
@@ -147,9 +147,8 @@ where
 ///
 /// ```
 /// use hoomd_interaction::{
-///     CutoffPair, DeltaEnergyInsert, External,
-///     external::Linear,
-///     pairwise::{Boxcar, Isotropic},
+///     DeltaEnergyInsert, External, PairwiseCutoff, external::Linear,
+///     pairwise::Isotropic, univariate::Boxcar,
 /// };
 /// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;
@@ -165,11 +164,10 @@ where
 ///     left,
 ///     right,
 /// };
-/// let evaluator = Isotropic(boxcar);
-/// let cutoff_pair = CutoffPair {
+/// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+///     interaction: boxcar,
 ///     r_cut: right,
-///     evaluator,
-/// };
+/// });
 ///
 /// let linear = External(Linear {
 ///     alpha: 1.0,
@@ -177,7 +175,7 @@ where
 ///     plane_normal: [0.0, 1.0].try_into()?,
 /// });
 ///
-/// let hamiltonian = (cutoff_pair, linear);
+/// let hamiltonian = (pairwise_cutoff, linear);
 ///
 /// let new_body = Body::point(Cartesian::from([1.0, 4.0]));
 /// let delta_energy = hamiltonian.delta_energy_insert(&microstate, &new_body);
@@ -185,15 +183,15 @@ where
 /// # Ok(())
 /// # }
 /// ```
-impl<B, S, C, E1, E2> DeltaEnergyInsert<B, S, C> for (E1, E2)
+impl<B, S, X, C, E1, E2> DeltaEnergyInsert<B, S, X, C> for (E1, E2)
 where
-    E1: DeltaEnergyInsert<B, S, C>,
-    E2: DeltaEnergyInsert<B, S, C>,
+    E1: DeltaEnergyInsert<B, S, X, C>,
+    E2: DeltaEnergyInsert<B, S, X, C>,
 {
     #[inline]
     fn delta_energy_insert(
         &self,
-        initial_microstate: &Microstate<B, S, C>,
+        initial_microstate: &Microstate<B, S, X, C>,
         new_body: &Body<B, S>,
     ) -> f64 {
         let mut total = self.0.delta_energy_insert(initial_microstate, new_body);

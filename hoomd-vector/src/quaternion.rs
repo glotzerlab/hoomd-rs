@@ -1,7 +1,8 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Quaternion`] and related types.
+use serde::{Deserialize, Serialize};
 use std::{
     fmt,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign},
@@ -10,8 +11,9 @@ use std::{
 use approxim::approx_derive::RelativeEq;
 use rand::{
     Rng,
-    distr::{Distribution, StandardUniform, Uniform},
+    distr::{Distribution, StandardUniform},
 };
+use rand_distr::StandardNormal;
 
 use crate::{Cartesian, Cross, Error, InnerProduct, Rotate, Rotation, RotationMatrix, Unit};
 
@@ -153,7 +155,7 @@ use crate::{Cartesian, Cross, Error, InnerProduct, Rotate, Rotation, RotationMat
 /// a *= b;
 /// assert_eq!(a, [-10.0, 32.0, -30.0, -35.0].into());
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
 pub struct Quaternion {
     /// Scalar component
     pub scalar: f64,
@@ -502,10 +504,15 @@ impl SubAssign for Quaternion {
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq, RelativeEq)]
+#[derive(Clone, Copy, Debug, PartialEq, RelativeEq, Serialize, Deserialize)]
 pub struct Versor(Quaternion);
 
 impl Versor {
+    /// Take the dot product of the Versor as an element of $`\mathbb{R}^4`$.
+    #[inline]
+    fn dot_as_cartesian(&self, other: &Self) -> f64 {
+        self.get().scalar * other.get().scalar + self.get().vector.dot(&other.get().vector)
+    }
     /// Create a [`Versor`] that rotates by an angle (in radians)
     /// counterclockwise about an axis.
     ///
@@ -578,6 +585,32 @@ impl Versor {
         let Versor(quaternion) = self;
 
         Versor(quaternion.conjugate())
+    }
+
+    /// A metric quantifying the angle (in radians) of the spherical arc separating two Versors.
+    ///
+    /// $`d : \mathbb{H} \times \mathbb{H} \to \mathbb{R}^+, \quad d(q_0, q_1) = \arccos(|q_0 \cdot q_1|)`$
+    ///
+    /// This value always lies in the range $`[0, \pi]`$, and is symmetric: while there
+    /// are multiple arcs separating a pair of quaternions, this metric always chooses
+    /// the shortest.
+    #[inline]
+    #[must_use]
+    pub fn arc_distance(&self, other: &Self) -> f64 {
+        self.dot_as_cartesian(other).acos()
+    }
+    /// A fast metric on Versors representing elements of SO(3).
+    ///
+    /// $`d : \mathbb{H} \times \mathbb{H} \to \mathbb{R}^+, \quad d(q_0, q_1) = 1 - |q_0 \cdot q_1 |`$
+    ///
+    /// This has less geometric meaning than the [`arc_distance`](Versor::arc_distance) metric. However, it
+    /// is much faster while still obeying the triangle inequality and the axiom
+    /// $`d(q_0, q_1) = d(q_1, q_0)`$. This metric always lies in the range
+    /// $`[0, 1]`$, and is symmetric such that $`d(q, q)`$ = $`d(q, -q)`$.
+    #[inline]
+    #[must_use]
+    pub fn half_euclidean_norm_squared(&self, other: &Self) -> f64 {
+        1.0 - self.dot_as_cartesian(other)
     }
 }
 
@@ -779,29 +812,15 @@ impl Distribution<Versor> for StandardUniform {
     /// ```
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Versor {
-        // Algorithm from: https://stackoverflow.com/questions/31600717/how-to-generate-a-random-quaternion-quickly
-        let uniform = Uniform::new(-1.0, 1.0).expect("hard-coded distribution should be valid");
+        // See method 19 from: https://extremelearning.com.au/how-to-generate-uniformly-random-points-on-n-spheres-and-n-balls/
+        let scalar = rng.sample::<f64, _>(StandardNormal);
+        let vector = Cartesian::<3>::from(std::array::from_fn(|_| rng.sample(StandardNormal)));
 
-        let (u, v) = loop {
-            let u: f64 = uniform.sample(rng);
-            let v: f64 = uniform.sample(rng);
-            if u * u + v * v < 1.0 {
-                break (u, v);
-            }
-        };
+        let norm = (vector.norm_squared() + (scalar * scalar)).sqrt();
 
-        let (x, y) = loop {
-            let x: f64 = uniform.sample(rng);
-            let y: f64 = uniform.sample(rng);
-            if x * x + y * y < 1.0 {
-                break (x, y);
-            }
-        };
-
-        let scale = ((1.0 - (x * x + y * y)) / (u * u + v * v)).sqrt();
         Versor(Quaternion {
-            scalar: x,
-            vector: [y, scale * u, scale * v].into(),
+            scalar: scalar / norm,
+            vector: vector / norm,
         })
     }
 }

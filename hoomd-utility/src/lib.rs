@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![doc(
@@ -12,7 +12,6 @@
 //!
 //! Common utility code used by many other hoomd-rs crates.
 
-pub mod random;
 pub mod valid;
 
 use thiserror::Error;
@@ -28,4 +27,8 @@ pub enum Error {
     /// A finite value is required.
     #[error("{0} is not finite")]
     NotFinite(f64),
+
+    /// An value in (0,1) is required.
+    #[error("{0} is not in (0,1)")]
+    NotInOpenUnitInterval(f64),
 }

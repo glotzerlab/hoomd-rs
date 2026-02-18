@@ -1,16 +1,19 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `Zero`
 
-use super::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, TotalEnergy};
+use serde::{Deserialize, Serialize};
 
 use hoomd_microstate::{Body, Microstate};
+
+use super::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, TotalEnergy};
 
 /// Set the energy of any system to 0.
 ///
 /// *hoomd-rs* uses [`Zero`] in minimal examples that demonstrate MC simulations.
 /// It returns 0 for all energies and delta energies.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Zero;
 
 impl<M> TotalEnergy<M> for Zero {
@@ -20,11 +23,11 @@ impl<M> TotalEnergy<M> for Zero {
     }
 }
 
-impl<B, S, C> DeltaEnergyOne<B, S, C> for Zero {
+impl<B, S, X, C> DeltaEnergyOne<B, S, X, C> for Zero {
     #[inline]
     fn delta_energy_one(
         &self,
-        _initial_microstate: &Microstate<B, S, C>,
+        _initial_microstate: &Microstate<B, S, X, C>,
         _body_index: usize,
         _final_body: &Body<B, S>,
     ) -> f64 {
@@ -32,22 +35,22 @@ impl<B, S, C> DeltaEnergyOne<B, S, C> for Zero {
     }
 }
 
-impl<B, S, C> DeltaEnergyInsert<B, S, C> for Zero {
+impl<B, S, X, C> DeltaEnergyInsert<B, S, X, C> for Zero {
     #[inline]
     fn delta_energy_insert(
         &self,
-        _initial_microstate: &Microstate<B, S, C>,
+        _initial_microstate: &Microstate<B, S, X, C>,
         _new_body: &Body<B, S>,
     ) -> f64 {
         0.0
     }
 }
 
-impl<B, S, C> DeltaEnergyRemove<B, S, C> for Zero {
+impl<B, S, X, C> DeltaEnergyRemove<B, S, X, C> for Zero {
     #[inline]
     fn delta_energy_remove(
         &self,
-        _initial_microstate: &Microstate<B, S, C>,
+        _initial_microstate: &Microstate<B, S, X, C>,
         _body_index: usize,
     ) -> f64 {
         0.0

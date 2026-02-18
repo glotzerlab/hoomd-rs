@@ -1,7 +1,7 @@
 # Tetronimoes
 
 <script type="module">
-import init from './tetronimoes.js'
+import init from 'https://glotzerlab.github.io/hoomd-rs/mc-tutorial/tetronimoes.js'
 {{#include ../../scripts/init-wasm-canvas.js}}
 </script>
 {{#include ../../scripts/canvas.html}}
@@ -95,8 +95,8 @@ Assign all the model parameters in one code block so that they are easy to modif
 
 #### Microstate
 
-Confine the bodies and sites inside of a closed square. Start with no bodies in
-the microstate.
+Use the `VecCell` spatial data structure, confine the bodies and sites inside of a
+closed square, and start with no bodies in the microstate:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:microstate}}
 ```
@@ -207,7 +207,7 @@ Navigate to the top of the page and refresh to see the simulation in
 action again. Notice how the randomly generated tetronimoes fall to the
 bottom while randomly rotating.
 
-Alternately, you can run the example in batch mode and then open
+You can also run the example in batch mode and then open
 the generated `trajectory.gsd` in [Ovito] or another visualization tool:
 ```shell
 cargo run --release --example tetronimoes

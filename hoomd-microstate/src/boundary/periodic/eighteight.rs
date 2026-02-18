@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement periodic boundary conditions for the {8,8} tiling of hyperbolic
@@ -7,8 +7,8 @@
 //! Specifically, `Periodic<EightEight>` identifies opposite edges of the
 //! octagon to implement the Bolza surface.
 
+use arrayvec::ArrayVec;
 use std::f64::consts::PI;
-use tinyvec::ArrayVec;
 
 use crate::{
     boundary::{
@@ -199,7 +199,7 @@ where
     #[expect(clippy::too_many_lines, reason = "complicated function")]
     #[expect(clippy::cast_possible_truncation, reason = "truncating float to usize")]
     #[expect(clippy::cast_sign_loss, reason = "hard-coded positive numbers")]
-    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<[S; MAX_GHOSTS]> {
+    fn generate_ghosts(&self, site_properties: &S) -> ArrayVec<S, MAX_GHOSTS> {
         let mut result = ArrayVec::new();
         let r = site_properties.position();
 
@@ -507,7 +507,7 @@ mod tests {
 
     #[test]
     fn wraps_to_opposite_edge() {
-        let mut rng = rand::rng();
+        let mut rng = StdRng::seed_from_u64(1);
         let side = f64::from(rng.random_range(0..8));
         let boost = 1.6;
         let offset = PI / 8.0;
@@ -586,7 +586,7 @@ mod tests {
     }
     #[test]
     fn ghost_near_side() {
-        let mut rng = rand::rng();
+        let mut rng = StdRng::seed_from_u64(1);
         let side = f64::from(rng.random_range(0..8));
         let offset = 0.1;
         let boost = 1.528_570_919_480_998 - offset;

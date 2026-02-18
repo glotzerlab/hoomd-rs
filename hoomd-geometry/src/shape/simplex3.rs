@@ -1,12 +1,13 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! A tetrahedron in three dimensions. This struct should be viewed as a prototype for
 //! more complex geometries in addition to its standalone functionality.
+use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use std::{array, fmt};
 
-use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, RotationMatrix};
-use itertools::Itertools;
+use hoomd_vector::{Cartesian, Cross, InnerProduct, Rotate, Rotation, RotationMatrix};
 
 use crate::{IntersectsAt, SupportMapping, Volume};
 
@@ -66,7 +67,7 @@ use crate::{IntersectsAt, SupportMapping, Volume};
 /// assert_eq!(planar_tetrahedron.volume(), 0.0);
 /// assert_eq!(planar_tetrahedron.centroid(), [1.0, 1.0, 0.0].into());
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Simplex3 {
     /// Vertices of the simplex
     vertices: [Cartesian<3>; 4], // NOT public, to force orientation on construction
@@ -303,8 +304,9 @@ fn check_edge_is_separating(aff_a: &[f64; 4], aff_b: &[f64; 4], ma: u8, mb: u8) 
     true
 }
 
-impl<R: Rotate<Cartesian<3>> + Copy> IntersectsAt<Simplex3, Cartesian<3>, R> for Simplex3
+impl<R> IntersectsAt<Simplex3, Cartesian<3>, R> for Simplex3
 where
+    R: Rotation + Rotate<Cartesian<3>>,
     RotationMatrix<3>: From<R>,
 {
     /// Original C code of algorithm:

@@ -1,5 +1,10 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
+
+#![allow(
+    clippy::missing_docs_in_private_items,
+    reason = "clippy reports a false positive errors in this file"
+)]
 
 //! An outlined circle.
 //!
@@ -8,22 +13,18 @@
 
 use bevy::{
     asset::embedded_asset,
+    mesh::MeshTag,
     prelude::*,
     reflect::TypePath,
-    render::{
-        mesh::MeshTag,
-        render_resource::{AsBindGroup, ShaderRef},
-        storage::ShaderStorageBuffer,
-    },
-    sprite::{AlphaMode2d, Material2d, Material2dPlugin},
+    render::{render_resource::AsBindGroup, storage::ShaderStorageBuffer},
+    shader::ShaderRef,
+    sprite_render::{AlphaMode2d, Material2d, Material2dPlugin},
 };
 #[cfg(all(target_arch = "wasm32", not(feature = "webgpu")))]
 use bevy::{
-    render::{
-        mesh::MeshVertexBufferLayoutRef,
-        render_resource::{RenderPipelineDescriptor, SpecializedMeshPipelineError},
-    },
-    sprite::Material2dKey,
+    mesh::MeshVertexBufferLayoutRef,
+    render::render_resource::{RenderPipelineDescriptor, SpecializedMeshPipelineError},
+    sprite_render::Material2dKey,
 };
 use itertools::{
     EitherOrBoth::{Both, Left, Right},
@@ -42,10 +43,6 @@ const SHADER_ASSET_PATH: &str = "embedded://hoomd_bevy/representation/disk.wgsl"
 /// in [`sync`](Self::sync) to render disks of different sizes. Nominally, the z
 /// coordinate of the disks should be set to 0. Choose a different value to control
 /// the back to front draw order.
-///
-/// All disks of the same type must have the same material. To display disks with
-/// different color pallets, outline widths, or textures, call `setup` and `sync`
-/// multiple types of disks with different marker types.
 ///
 /// To use:
 /// * Add [`setup`](Self::setup) to the `Startup` schedule.

@@ -14,16 +14,23 @@ version.workspace = true
 workspace = true
 
 [dependencies]
+approxim.workspace = true
 rand.workspace = true
+rand_distr.workspace = true
+serde.workspace = true
+serde_with.workspace = true
 thiserror.workspace = true
+
 hoomd-linear-algebra.workspace = true
 hoomd-utility.workspace = true
-approxim.workspace = true
 
 [dev-dependencies]
+anyhow.workspace = true
+assert2.workspace = true
 divan.workspace = true
 paste.workspace = true
 rstest.workspace = true
+hoomd-rand.workspace = true
 
 [[bench]]
 name = "cartesian"

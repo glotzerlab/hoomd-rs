@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![doc(
@@ -53,7 +53,7 @@
 //! `doc-example` Make examples suitable for display in a web browser.
 //! `webgpu` Compile for the WebGPU platform when building for the wasm32 target.
 
-use std::ops::Range;
+use std::{ops::Range, time::Duration};
 
 use anyhow::Context;
 use bevy::{
@@ -62,6 +62,7 @@ use bevy::{
         common_conditions::{input_just_released, input_pressed},
         mouse::MouseWheel,
     },
+    platform::time::Instant,
     prelude::*,
     time::common_conditions::once_after_delay,
     window::PrimaryWindow,
@@ -84,15 +85,17 @@ use bevy_egui::{
     input::{egui_wants_any_keyboard_input, egui_wants_any_pointer_input},
 };
 #[cfg(not(target_arch = "wasm32"))]
-use bevy_winit::WinitWindows;
-use web_time::{Duration, Instant};
+use bevy_winit::WINIT_WINDOWS;
 
 use hoomd_simulation::Simulation;
 
 pub mod representation;
 
-/// The default color for the primary representation.
+/// The default color for the primary representation (in 2D).
 pub const PRIMARY_COLOR: Color = Color::srgb(249.0 / 255.0, 203.0 / 255.0, 136.0 / 255.0);
+
+/// The default color for the primary representation (darkened for 3D lighting).
+pub const PRIMARY_COLOR_3D: Color = Color::srgb(0.836, 0.533, 0.211);
 
 /// The default color for a muted representation.
 pub const MUTED_COLOR: Color = Color::srgb(0.75, 0.75, 0.75);
@@ -161,11 +164,15 @@ struct OptionsWindowState(bool);
 pub struct ParametersWindowState(pub bool);
 
 /// Reset the camera to the default.
-#[derive(Event)]
+#[derive(Message)]
 struct ResetCamera;
 
+/// Quit the application.
+#[derive(Message)]
+struct Quit;
+
 /// Advance the simulation one step.
-#[derive(Event)]
+#[derive(Message)]
 struct AdvanceSimulation;
 
 /// Configure the initial camera view and set how the camera will be controlled.
@@ -180,6 +187,15 @@ pub enum InitialCamera {
     /// * Left click and drag to pan.
     /// * Scroll to zoom.
     Orthographic2d(f32),
+
+    /// Three dimensional front down camera showing the xy plane.
+    ///
+    /// The single field sets the height of the visible area. The width is set
+    /// automatically based on the window dimensions.
+    ///
+    /// Controls:
+    /// * TODO
+    Orthographic3d(f32),
 }
 
 /// Store parameters that influence how the simulation is executed.
@@ -280,7 +296,7 @@ where
     /// Bevy system that advances the simulation forward one step.
     fn step_simulation(
         mut diagnostics: Diagnostics,
-        mut exit: EventWriter<AppExit>,
+        mut exit: MessageWriter<AppExit>,
         simulation: ResMut<Sim>,
         time: Res<Time>,
         mut accumulated_steps: Local<f32>,
@@ -321,8 +337,8 @@ where
     /// Advance the simulation one step
     fn advance_simulation(
         simulation: ResMut<Sim>,
-        mut exit: EventWriter<AppExit>,
-        mut event: EventReader<AdvanceSimulation>,
+        mut exit: MessageWriter<AppExit>,
+        mut event: MessageReader<AdvanceSimulation>,
     ) {
         let simulation = simulation.into_inner();
         for _ in event.read() {
@@ -445,13 +461,13 @@ where
     /// `frame_budget_fraction` settings.
     #[cfg(not(target_arch = "wasm32"))]
     fn set_frame_budget(
-        winit: NonSend<WinitWindows>,
         windows: Query<Entity, With<Window>>,
         settings: Res<Settings>,
         mut frame_budget: ResMut<FrameBudget>,
     ) {
         // adapted from: https://github.com/aevyrie/bevy_framepace/blob/main/src/lib.rs
-        let new_frame_budget = match Self::detect_frame_time(winit, windows.iter()) {
+
+        let new_frame_budget = match Self::detect_frame_time(windows.iter()) {
             Some(frame_time) => {
                 Duration::from_secs_f32(frame_time.as_secs_f32() * settings.frame_budget_fraction)
             }
@@ -466,40 +482,62 @@ where
 
     /// Detect the minimum frame time for all windows.
     #[cfg(not(target_arch = "wasm32"))]
-    fn detect_frame_time(
-        winit: NonSend<WinitWindows>,
-        windows: impl Iterator<Item = Entity>,
-    ) -> Option<Duration> {
-        let best_framerate = {
-            f64::from(
-                windows
-                    .filter_map(|e| winit.get_window(e))
-                    .filter_map(|w| w.current_monitor())
-                    .filter_map(|monitor| monitor.refresh_rate_millihertz())
-                    .min()?,
-            ) / 1000.0
-                - 0.5
-        };
+    fn detect_frame_time(windows: impl Iterator<Item = Entity>) -> Option<Duration> {
+        WINIT_WINDOWS.with_borrow(|winit| {
+            let best_framerate = {
+                f64::from(
+                    windows
+                        .filter_map(|e| winit.get_window(e))
+                        .filter_map(|w| w.current_monitor())
+                        .filter_map(|monitor| monitor.refresh_rate_millihertz())
+                        .min()?,
+                ) / 1000.0
+                    - 0.5
+            };
 
-        let best_frame_time = Duration::from_secs_f64(1.0 / best_framerate);
-        Some(best_frame_time)
+            let best_frame_time = Duration::from_secs_f64(1.0 / best_framerate);
+            Some(best_frame_time)
+        })
     }
 
     /// Set up the 2D camera.
     fn setup_camera_2d(mut commands: Commands, viewport_height: f32) {
         let projection = Projection::Orthographic(OrthographicProjection {
-            scaling_mode: bevy::render::camera::ScalingMode::FixedVertical { viewport_height },
+            scaling_mode: bevy::camera::ScalingMode::FixedVertical { viewport_height },
             ..OrthographicProjection::default_2d()
         });
 
         commands.spawn((Camera2d, projection));
     }
 
+    /// Set up the 3D camera.
+    fn setup_camera_3d(mut commands: Commands, viewport_height: f32) {
+        let projection = Projection::Orthographic(OrthographicProjection {
+            scaling_mode: bevy::camera::ScalingMode::FixedVertical { viewport_height },
+            ..OrthographicProjection::default_3d()
+        });
+
+        commands.spawn((
+            Camera3d::default(),
+            projection,
+            Transform::from_xyz(0.0, 0.0, -viewport_height * 2.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ));
+        commands.spawn((
+            DirectionalLight::default(),
+            Transform::from_xyz(-3.0, 3.0, -6.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ));
+    }
+
+    /// Increase the brightness of the default ambient light.
+    fn setup_ambient_light(mut ambient_light: ResMut<GlobalAmbientLight>) {
+        ambient_light.brightness = 150.0;
+    }
+
     /// Keyboard controls for the 2d camera.
     ///
     /// `=` resets the camera to the default.
     fn camera_reset_2d(
-        mut reset_camera: EventReader<ResetCamera>,
+        mut reset_camera: MessageReader<ResetCamera>,
         camera: Single<(&mut Transform, &mut Projection), With<Camera2d>>,
         mut control: ResMut<CameraControl2d>,
     ) {
@@ -514,6 +552,15 @@ where
         }
 
         reset_camera.clear();
+    }
+
+    /// Quit.
+    fn quit(mut quit: MessageReader<Quit>, mut exit: MessageWriter<AppExit>) {
+        if !quit.is_empty() {
+            exit.write(AppExit::Success);
+        }
+
+        quit.clear();
     }
 
     /// Left click and drag to pan the 2D camera.
@@ -581,7 +628,7 @@ where
             With<Camera2d>,
         >,
         settings: Res<Settings>,
-        mut scroll: EventReader<MouseWheel>,
+        mut scroll: MessageReader<MouseWheel>,
         window: Single<&Window, With<PrimaryWindow>>,
     ) {
         let (camera, global_transform, mut transform, projection) = camera.into_inner();
@@ -662,12 +709,14 @@ where
             .add_systems(Update, Self::step_simulation.in_set(AdvanceSet))
             .add_systems(
                 Update,
-                Self::advance_simulation.run_if(on_event::<AdvanceSimulation>),
+                Self::advance_simulation.run_if(on_message::<AdvanceSimulation>),
             )
             .add_systems(Update, Self::update_debug_text.after(AdvanceSet))
             .add_systems(EguiPrimaryContextPass, Self::ui_system)
-            .add_event::<ResetCamera>()
-            .add_event::<AdvanceSimulation>();
+            .add_message::<ResetCamera>()
+            .add_message::<AdvanceSimulation>()
+            .add_message::<Quit>()
+            .add_systems(Update, Self::quit.run_if(on_message::<Quit>));
 
         match initial_camera {
             InitialCamera::Orthographic2d(initial_viewport_height) => {
@@ -683,17 +732,23 @@ where
                 .add_systems(
                     Update,
                     Self::camera_mouse_zoom_control_2d
-                        .run_if(on_event::<MouseWheel>)
+                        .run_if(on_message::<MouseWheel>)
                         .in_set(MouseInputSet),
                 )
                 .add_systems(
                     Update,
-                    Self::camera_reset_2d.run_if(on_event::<ResetCamera>),
+                    Self::camera_reset_2d.run_if(on_message::<ResetCamera>),
                 )
                 .insert_resource(CameraControl2d::default())
                 .add_systems(Startup, move |commands: Commands| {
                     Self::setup_camera_2d(commands, initial_viewport_height);
                 });
+            }
+            InitialCamera::Orthographic3d(initial_viewport_height) => {
+                app.add_systems(Startup, move |commands: Commands| {
+                    Self::setup_camera_3d(commands, initial_viewport_height);
+                })
+                .add_systems(Startup, Self::setup_ambient_light);
             }
         }
 
@@ -741,9 +796,9 @@ where
         mut settings: ResMut<Settings>,
         window: Single<&Window, With<PrimaryWindow>>,
         mut debug_text: Single<&mut Visibility, (With<DebugText>, Without<OverlayRoot>)>,
-        #[cfg(not(target_arch = "wasm32"))] mut exit: EventWriter<AppExit>,
-        mut reset_camera: EventWriter<ResetCamera>,
-        mut advance_simulation: EventWriter<AdvanceSimulation>,
+        #[cfg(not(target_arch = "wasm32"))] mut quit: MessageWriter<Quit>,
+        mut reset_camera: MessageWriter<ResetCamera>,
+        mut advance_simulation: MessageWriter<AdvanceSimulation>,
     ) -> Result {
         let advance_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::N);
         let options_shortcut = egui::KeyboardShortcut::new(egui::Modifiers::NONE, egui::Key::M);
@@ -797,6 +852,10 @@ where
                     InitialCamera::Orthographic2d(_) => {
                         ui.label("Click and drag to move the camera.");
                         ui.label("Scroll to zoom.");
+                    }
+                    InitialCamera::Orthographic3d(_) => {
+                        ui.label("TODO.");
+                        ui.label("TODO.");
                     }
                 }
 
@@ -864,7 +923,9 @@ where
 
             #[cfg(not(target_arch = "wasm32"))]
             if ui.button("⊗ Quit (q)").clicked() {
-                exit.write(AppExit::Success);
+                // Sending AppExit messages in this system causes deadlocks.
+                // Send a quit message that defers AppExit until later.
+                quit.write(Quit);
             }
         });
 
@@ -892,7 +953,7 @@ where
 
                 #[cfg(not(target_arch = "wasm32"))]
                 if context.input_mut(|i| i.consume_shortcut(&quit_shortcut)) {
-                    exit.write(AppExit::Success);
+                    quit.write(Quit);
                 }
                 #[cfg(not(target_arch = "wasm32"))]
                 if context.input_mut(|i| i.consume_shortcut(&screenshot_shortcut)) {

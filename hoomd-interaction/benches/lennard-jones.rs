@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![expect(
@@ -11,7 +11,7 @@
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
-use hoomd_interaction::pairwise::{IsotropicEnergy, IsotropicForce, LennardJones};
+use hoomd_interaction::univariate::{LennardJones, UnivariateEnergy, UnivariateForce};
 
 fn main() {
     divan::main();

@@ -23,9 +23,7 @@ For more details, including instructions for a native Windows installation, see
 the [Rust installation documentation] (make sure you install the 64-bit build).
 
 > [!TIP]
-> *hoomd-rs* works very well with *native* builds on all platforms. You can use
-> WSL for command line applications, but is much slower and takes significantly
-> more steps to configure. WSL doesn't work at all for the interactive examples.
+> *hoomd-rs* works very well with *native* builds on all platforms.
 
 ## Using *hoomd-rs* in your application
 
@@ -86,20 +84,22 @@ and molecular dynamics simulations using *hoomd-rs*.
 > to troubleshoot problems with your code, but they run **very slowly**. When
 > your code is working, build in **release** mode and it will run much faster:
 > ```shell
-> $ cargo run --release
+> $ RUSTFLAGS="-C target-cpu=native" cargo run --release
 > ```
 
 
 > [!NOTE]
 > On HPC platforms, you should run:
 > ```shell
-> $ cargo build --release
+> $ RUSTFLAGS="-C target-cpu=native" cargo build --release
 > ```
-> on the login node and and then use the executable placed in the
-> `target/release` directory in your submitted job scripts.
+> one (preferably in an interactive compute job) and and then use the
+> executable placed in the `target/release` directory in your submitted job
+> scripts.
 >
 > Unlike scripting languages (e.g. Python), saving changes to `main.rs` will
-> not take effect until you run `cargo build --release` again.
+> not take effect until you run
+> `RUSTFLAGS="-C target-cpu=native" cargo build --release` again.
 
 
 [Rust]: https://www.rust-lang.org/

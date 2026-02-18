@@ -2,15 +2,15 @@
 // ANCHOR: use
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    CutoffPair, External, TotalEnergy,
-    external::ConstantForce,
-    pairwise::{Boxcar, Isotropic},
+    External, PairwiseCutoff, TotalEnergy, external::ConstantForce,
+    pairwise::Isotropic, univariate::Boxcar,
 };
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder, boundary::Closed, property::Point,
+    Body, Microstate, SiteKey, boundary::Closed, property::Point,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
+use hoomd_spatial::VecCell;
 use hoomd_vector::Cartesian;
 // ANCHOR_END: use
 
@@ -19,12 +19,16 @@ use hoomd_vector::Cartesian;
 // ANCHOR: simulation_struct
 struct Fill {
     /// Positions of all the bodies in the simulation.
-    microstate:
-        Microstate<Point<Cartesian<2>>, Point<Cartesian<2>>, Closed<Rectangle>>,
+    microstate: Microstate<
+        Point<Cartesian<2>>,
+        Point<Cartesian<2>>,
+        VecCell<SiteKey, 2>,
+        Closed<Rectangle>,
+    >,
     /// How sites interact with other sites and fields.
     hamiltonian: (
         External<ConstantForce<Cartesian<2>>>,
-        CutoffPair<Isotropic<Boxcar>>,
+        PairwiseCutoff<Isotropic<Boxcar>>,
     ),
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<Cartesian<2>>>,
@@ -47,12 +51,6 @@ impl Fill {
         let macrostate = Isothermal { temperature: 1.0 };
         // ANCHOR_END: parameters
 
-        // ANCHOR: microstate
-        let square = Rectangle::with_equal_edges(box_length.try_into()?);
-        let microstate =
-            MicrostateBuilder::with_boundary(Closed(square)).try_build()?;
-        // ANCHOR_END: microstate
-
         // ANCHOR: external
         let linear = External(ConstantForce {
             alpha,
@@ -67,15 +65,14 @@ impl Fill {
             left: 0.0,
             right: sigma,
         };
-        let isotropic = Isotropic(boxcar);
-        let cutoff_pair = CutoffPair {
+        let pairwise_cutoff = PairwiseCutoff(Isotropic {
+            interaction: boxcar,
             r_cut: sigma,
-            evaluator: isotropic,
-        };
+        });
         // ANCHOR_END: pair
 
         // ANCHOR: hamiltonian
-        let hamiltonian = (linear, cutoff_pair);
+        let hamiltonian = (linear, pairwise_cutoff);
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: sweep
@@ -83,6 +80,21 @@ impl Fill {
             Translate::with_maximum_distance(maximum_distance.try_into()?);
         let translate_sweep = Sweep(translate);
         // ANCHOR_END: sweep
+
+        // ANCHOR: boundary
+        let square = Rectangle::with_equal_edges(box_length.try_into()?);
+        // ANCHOR_END: boundary
+        // ANCHOR: spatial_data
+        let vec_cell = VecCell::builder()
+            .nominal_search_radius(sigma.try_into()?)
+            .build();
+        // ANCHOR_END: spatial_data
+        // ANCHOR: microstate
+        let microstate = Microstate::builder()
+            .spatial_data(vec_cell)
+            .boundary(Closed(square))
+            .try_build()?;
+        // ANCHOR_END: microstate
 
         // ANCHOR: initialize_struct
         Ok(Fill {
