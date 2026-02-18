@@ -9,7 +9,7 @@
 //! Benchmark Minkowski Vector
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
-use rand::{Rng, SeedableRng, rngs::StdRng};
+use rand::{RngExt, SeedableRng, rngs::StdRng};
 
 use hoomd_manifold::{
     Hyperbolic, HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
