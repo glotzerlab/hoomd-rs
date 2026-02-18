@@ -3,6 +3,8 @@
 
 //! Implement `External`
 
+use std::ops::Add;
+
 use serde::{Deserialize, Serialize};
 use crate::{
     DeltaEnergyInsert,
