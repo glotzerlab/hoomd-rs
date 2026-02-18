@@ -65,7 +65,7 @@ hoomd-vector = { path = "hoomd-vector", version = "0.0.0"}
 hoomd-rand = { path = "hoomd-rand", version = "0.0.0"}
 
 # Common dev dependencies
-assert2 = "=0.3.16"
+assert2 = "=0.3.18"
 divan = "=0.1.21"
 paste = "=1.0.15"
 rstest = "=0.26.1"
