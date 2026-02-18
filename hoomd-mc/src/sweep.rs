@@ -3,7 +3,7 @@
 
 //! Implement Sweep
 
-use rand::Rng;
+use rand::RngExt;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
