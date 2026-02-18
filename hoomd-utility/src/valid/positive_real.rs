@@ -9,7 +9,7 @@ use std::{
     ops::{Div, DivAssign, Mul, MulAssign},
 };
 
-use crate::Error;
+use super::Error;
 
 /// A f64 value that is not +/- inf, nan, or a value <= 0.
 ///
@@ -69,7 +69,7 @@ impl TryFrom<f64> for PositiveReal {
     /// use hoomd_utility::valid::PositiveReal;
     ///
     /// let result = PositiveReal::try_from(-1.0);
-    /// assert!(matches!(result, Err(hoomd_utility::Error::NotPositive(_))));
+    /// assert!(matches!(result, Err(hoomd_utility::valid::Error::NotPositive(_))));
     /// ```
     ///
     /// # Errors

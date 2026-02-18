@@ -2754,7 +2754,10 @@ dependencies = [
  "hoomd-spatial",
  "hoomd-utility",
  "hoomd-vector",
+ "parquet",
+ "parquet_derive",
  "rand",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -3707,6 +3710,8 @@ name = "hoomd-utility"
 version = "0.0.0"
 dependencies = [
  "assert2",
+ "parquet",
+ "parquet_derive",
  "serde",
  "thiserror 2.0.18",
 ]

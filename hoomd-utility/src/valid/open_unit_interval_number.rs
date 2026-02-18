@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-use crate::Error;
+use super::Error;
 
 /// A f64 value in the interval (0,1)
 ///
@@ -68,7 +68,7 @@ impl TryFrom<f64> for OpenUnitIntervalNumber {
     /// let result = OpenUnitIntervalNumber::try_from(2.0);
     /// assert!(matches!(
     ///     result,
-    ///     Err(hoomd_utility::Error::NotInOpenUnitInterval(_))
+    ///     Err(hoomd_utility::valid::Error::NotInOpenUnitInterval(_))
     /// ));
     /// ```
     ///
