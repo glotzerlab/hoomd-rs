@@ -118,6 +118,7 @@ impl<const R: usize> TryRng for ThreeFry2x64Rng<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::Rng;
 
     // Data generated from the Random123 ThreeFry2x64_rN
 
