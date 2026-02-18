@@ -3713,6 +3713,7 @@ dependencies = [
  "parquet",
  "parquet_derive",
  "serde",
+ "tempfile",
  "thiserror 2.0.18",
 ]
 

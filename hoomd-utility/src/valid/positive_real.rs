@@ -74,8 +74,8 @@ impl TryFrom<f64> for PositiveReal {
     ///
     /// # Errors
     ///
-    /// `[Error::NotFinite]` when `v` is not finite.
-    /// `[Error::NotPositive]` when `v` is not a positive value
+    /// [`Error::NotFinite`] when `v` is not finite.
+    /// [`Error::NotPositive`] when `v` is not a positive value
     #[inline]
     fn try_from(v: f64) -> Result<PositiveReal, Error> {
         if !v.is_finite() {

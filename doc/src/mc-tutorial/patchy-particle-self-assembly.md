@@ -10,7 +10,7 @@ import init from 'https://glotzerlab.github.io/hoomd-rs/mc-tutorial/patchy-parti
 
 There are many ways you can model **anisotropic bodies** in *hoomd-rs*.
 This tutorial shows you how to represents **sites** that have a hard core
-and two attractive patches. This system self-assembles the Kagome structure
+and two attractive patches. This system self-assembles the kagome structure
 ([10.1039/C0SM01494J]) using the optimal parameters given in [10.1039/D2SM01593E].
 
 [10.1039/C0SM01494J]: http://doi.org/10.1039/C0SM01494J
@@ -18,6 +18,7 @@ and two attractive patches. This system self-assembles the Kagome structure
 
 * Objectives:
   * Explain how to model systems of hard core particles with attractive patches.
+  * Show how to log the system potential energy as a function of simulation step.
   * Demonstrate the self-assembly of patchy particles.
 * File: `hoomd-rs/examples/mc-tutorial/patchy-particle-self-assembly.rs`
 * Run (interactively):
@@ -114,15 +115,15 @@ The former performs two loops over nearby sites and adds the results together
 terms in the loop body ($` \sum U^A_{ij} + U^B_{ij} `$).
 
 > [!TIP]
-> Always list hard shape potentials first in the tuple. If the hard shape
-> overlaps, *hoomd-rs* can assume that the move will be rejected and skip the
+> Always list hard shape potentials first in the tuple. If the hard shapes
+> overlap, *hoomd-rs* can assume that the move will be rejected and skip the
 > computation of the following terms.
 
 [Applying Interactions]: applying-interactions.md
 
 #### Overlap Penalty Hamiltonian
 
-This example uses the `overlap_penalty_hamiltonian` when inserting disks randomly
+This example uses `overlap_penalty_hamiltonian` when inserting disks randomly
 and compressing the system to the target packing fraction. Use only the hard core
 term to allow the system to arrange randomly without being hindered by the patches:
 ```rust,ignore
@@ -139,15 +140,18 @@ remaining initialization and simulation code.
 
 [Hard Ellipse Self-Assembly]: hard-ellipse-self-assembly.md
 
-## Implement `main()` and Log Potential Energy
+## Log Potential Energy in Batch Mode
+
+When running simulations in batch mode, you often want to write a **log** file
+for later analysis. In this system of patchy particles, the total system
+potential energy indicates how many bonds have formed and therefore what
+fraction of the system is part of the kagome structure.
 
 ### Log Record
 
-You can monitor the equilibration process by plotting the system's potential
-energy as a function of simulation step. Define a struct that records all
-quantities of interest.
+Define a struct that records all quantities of interest:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/hard-ellipse-self-assembly.rs:log_record}}
+{{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:log_record}}
 ```
 
 *hoomd-rs* has no built-in logging capability. There are many Rust crates you
@@ -163,25 +167,80 @@ pandas, MATLAB, and many other tools.
 
 The `main()` function executes when your binary in batch mode:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/hard-ellipse-self-assembly.rs:main}}
+{{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:main}}
 ```
 
+> [!NOTE]
+> This `main()` function runs in batch mode. There is a different `main()` (not
+> shown here) used in the interactive example.
+
 ### Open the Log File
+
+`ParquetLogger` from the `hoomd_utility` crate helps you write [parquet] files
+with only a few lines of code. Use it to create a new parquet file:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:main}}
+```
 
 ### Simulation Steps
 
 To run the simulation, construct the `PatchyParticleSelfAssembly` simulation model.
 Then call `advance()` many times:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/hard-ellipse-self-assembly.rs:main}}
+{{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:run_simulation}}
 ```
 
 Write the sites to a GSD file periodically so that you can inspect the results
 of the simulation.
 
+### Write Log Records
+
+On desired simulation steps, construct a `LogRecord` and add it to the
+log file with `parquet_logger.log`:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:write_log}}
+```
+
 > [!NOTE]
-> This `main()` function runs in batch mode. There is a different `main()` (not
-> shown here) used in the interactive example.
+> Log records will not immediately appear in the file. `ParquetLogger` buffers
+> log records in memory and writes them in batches.
+
+### Exit `main()`
+
+`ParquetWriter` writes remaining buffered log entries and closes the file when it
+is dropped, which occurs automatically when `main()` returns:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:exit}}
+```
+
+### Visualize the Log
+
+Open the log and plot it using the tool of your choice. It will look something
+like this:
+<script src="https://cdn.jsdelivr.net/npm/vega@6"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-lite@6"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-embed@7"></script>
+
+<div id="vis" style="width: 100%"></div>
+
+<script type="text/javascript">
+  var spec = {
+    $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
+    description: 'Potential energy versus step for patchy particle self-assembly.',
+    data: {"name": "data", "url": "patchy-particle-self-assembly.csv"} ,
+    width: "container",
+    mark: { type: 'line'},
+    encoding: {
+      x: {field: 'step', type: 'quantitative'},
+      y: {field: 'potential_energy', type: 'quantitative'},
+    },
+  };
+  vegaEmbed('#vis', spec, {theme: 'dark', actions: false} )
+    .then(function (result) {
+      // Access the Vega view instance (https://vega.github.io/vega/docs/api/view/) as result.view
+    })
+    .catch(console.error);
+</script>
 
 ## Conclusion
 
@@ -190,7 +249,7 @@ simulations using a shape overlap potential with attractive patches.
 
 Navigate to the top of the page and refresh to see the simulation in action
 again. Notice that the disks quickly form random chains and clusters. Over
-time, hexagons will appear and the Kagome structure will begin to grow. After
+time, hexagons will appear and the kagome structure will begin to grow. After
 a few hundred thousand timesteps, several distinct grains will appear. Run
 the simulation long enough, and the system will equilibrate to a single large
 crystal as shown in [10.1039/D2SM01593E].

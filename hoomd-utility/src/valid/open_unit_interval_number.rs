@@ -74,8 +74,8 @@ impl TryFrom<f64> for OpenUnitIntervalNumber {
     ///
     /// # Errors
     ///
-    /// `[Error::NotFinite]` when `v` is not finite.
-    /// `[Error::NotInOpenUnitInterval]` when `v` is not in (0,1).
+    /// [`Error::NotFinite`] when `v` is not finite.
+    /// [`Error::NotInOpenUnitInterval`] when `v` is not in (0,1).
     #[inline]
     fn try_from(v: f64) -> Result<OpenUnitIntervalNumber, Error> {
         if !v.is_finite() {

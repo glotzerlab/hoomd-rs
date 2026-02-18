@@ -24,17 +24,10 @@ use hoomd_microstate::{
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
 use hoomd_vector::{Angle, Cartesian};
-// #[cfg(not(feature = "bevy"))]
+#[cfg(not(feature = "bevy"))]
 use hoomd_interaction::TotalEnergy;
-use thiserror::Error;
 #[cfg(not(feature = "bevy"))]
 use hoomd_utility::data::ParquetLogger;
-
-use parquet::{
-    file::{properties::WriterProperties, writer::SerializedFileWriter},
-    record::RecordWriter,
-};
-use std::{fs::File, io, path::Path, sync::Arc};
 // ANCHOR_END: use
 
 // ANCHOR: type_aliases
@@ -301,33 +294,6 @@ pub struct LogRecord {
 }
 // ANCHOR_END: log_record
 
-/// Enumerate possible sources of error when writing log files.
-#[non_exhaustive]
-#[derive(Error, Debug)]
-pub enum Error {
-    /// Encountered an IO error.
-    #[error("I/O error")]
-    IO(#[from] io::Error),
-
-    /// Encountered an IO error.
-    #[error("Parquet error")]
-    Parquet(#[from] parquet::errors::ParquetError),
-}
-
-// impl RecordWriter<LogRecord> for Vec<LogRecord> {
-//     fn write_to_row_group<W: std::io::Write + Send>(
-//         &self,
-//         row_group_writer: &mut parquet::file::writer::SerializedRowGroupWriter<W>,
-//     ) -> Result<(), parquet::errors::ParquetError> {
-//         todo!()
-//     }
-
-//     fn schema(&self) -> Result<parquet::schema::types::TypePtr, parquet::errors::ParquetError> {
-//         todo!()
-//     }
-// }
-
-
 // Remove the cfg(not(...)) line when using this code outside the hoomd-rs/examples directory.
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
@@ -341,7 +307,7 @@ fn main() -> anyhow::Result<()> {
     let mut simulation = PatchyParticleSelfAssembly::new()?;
     // TODO: Write GSD file.
 
-    for _ in 0..2001 {
+    for _ in 0..2_000_000 {
         simulation.advance()?;
         // ANCHOR_END: run_simulation
 
