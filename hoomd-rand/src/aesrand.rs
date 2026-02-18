@@ -62,7 +62,7 @@ impl Generator for AESRandCore {
     type Output = [u64; 4];
 
     #[inline]
-    fn generate(&mut self, results: &mut Self::Output) {
+    fn generate(&mut self, output: &mut Self::Output) {
         // SAFETY: As long as the +aes feature is enabled
         let data = unsafe { self.gen_array() };
         // SAFETY: As long as size_of::<[uint8x16_t; 2]>() == 32
