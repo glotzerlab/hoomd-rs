@@ -265,7 +265,7 @@ impl Distribution<Angle> for StandardUniform {
 mod tests {
     use super::*;
     use approxim::assert_relative_eq;
-    use rand::{SeedableRng, rngs::StdRng};
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::*;
     use std::f64::consts::PI;
 

@@ -989,7 +989,7 @@ mod tests {
     use super::*;
     use approxim::assert_relative_eq;
     use paste::paste;
-    use rand::{SeedableRng, rngs::StdRng};
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
 
     // Parameterize a test function over an array of vector lengths
     macro_rules! parameterize_vector_length {

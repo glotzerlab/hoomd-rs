@@ -749,7 +749,7 @@ mod tests {
     use super::*;
     use approxim::assert_relative_eq;
     use assert2::check;
-    use rand::{Rng, SeedableRng, rngs::StdRng};
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
 
     fn compute_add_generic<T>(a: T, b: T) -> T
     where

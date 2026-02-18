@@ -269,7 +269,7 @@ mod tests {
     use super::*;
     use crate::{HyperbolicRotate, HyperbolicRotationMatrix, Minkowski};
     use approxim::assert_relative_eq;
-    use rand::{SeedableRng, rngs::StdRng};
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
     use std::f64::consts::PI;
 
