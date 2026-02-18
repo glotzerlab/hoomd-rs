@@ -8,8 +8,8 @@ use std::arch::aarch64::{
 };
 
 use rand::{
-    RngCore, SeedableRng,
-    rand_core::block::{BlockRng64, BlockRngCore},
+    Rng, SeedableRng,
+    rand_core::block::{BlockRng64, BlockRng},
 };
 
 /// PRNG using the AES block cipher as an [invertible random mapping](https://www.pcg-random.org/posts/random-invertible-mapping-statistics.html).
@@ -53,7 +53,7 @@ impl AESRandCore {
     }
 }
 
-impl BlockRngCore for AESRandCore {
+impl BlockRng for AESRandCore {
     type Item = u64;
     type Results = [u64; 4];
 
@@ -89,7 +89,7 @@ impl SeedableRng for AESRand {
     }
 }
 
-impl RngCore for AESRand {
+impl Rng for AESRand {
     #[inline]
     fn next_u64(&mut self) -> u64 {
         self.0.next_u64()

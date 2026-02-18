@@ -8,8 +8,8 @@
 use rand::{
     SeedableRng,
     rand_core::{
-        RngCore,
-        block::{BlockRng64, BlockRngCore},
+        Rng,
+        block::{BlockRng64, BlockRng},
     },
 };
 use serde::{Deserialize, Serialize};
@@ -39,7 +39,7 @@ pub(crate) fn mix2x64(state: &mut [u64; 2], round_key: u32) {
     state[0] = state[0].wrapping_add(state[1]);
     state[1] = state[1].rotate_left(round_key) ^ state[0];
 }
-impl<const R: usize> BlockRngCore for ThreeFry2x64Core<R> {
+impl<const R: usize> BlockRng for ThreeFry2x64Core<R> {
     type Item = u64;
     type Results = [u64; 2];
 
@@ -98,7 +98,7 @@ impl<const R: usize> ThreeFry2x64Rng<R> {
         self.0.core.counter = [0, stream];
     }
 }
-impl<const R: usize> RngCore for ThreeFry2x64Rng<R> {
+impl<const R: usize> Rng for ThreeFry2x64Rng<R> {
     #[inline]
     fn next_u64(&mut self) -> u64 {
         self.0.next_u64()

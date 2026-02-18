@@ -12,7 +12,7 @@ use divan::{Bencher, black_box, counter::ItemsCount};
 use hoomd_rand::SFC64;
 use rand::{
     Rng,
-    rand_core::{RngCore, SeedableRng},
+    rand_core::{Rng, SeedableRng},
 };
 
 fn main() {
@@ -24,7 +24,7 @@ const SEED: u64 = 42;
 /// Time to first generated value
 #[divan::bench_group(sample_count = 1000)]
 mod latency {
-    use super::{Bencher, ChaCha8Rng, RngCore, SEED, SFC64, SeedableRng, black_box};
+    use super::{Bencher, ChaCha8Rng, Rng, SEED, SFC64, SeedableRng, black_box};
     #[cfg(feature = "extras")]
     use hoomd_rand::ThreeFry2x64Rng;
 
@@ -77,7 +77,7 @@ mod latency {
 /// Measure the time to generate a particular quantitity of data.
 #[divan::bench_group]
 mod throughput {
-    use super::{Bencher, ChaCha8Rng, RngCore, SEED, SFC64, SeedableRng, black_box};
+    use super::{Bencher, ChaCha8Rng, Rng, SEED, SFC64, SeedableRng, black_box};
     use divan::counter::BytesCount;
     #[cfg(feature = "extras")]
     use hoomd_rand::ThreeFry2x64Rng;

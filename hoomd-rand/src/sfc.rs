@@ -1,7 +1,7 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use rand::{RngCore, SeedableRng, rand_core::impls};
+use rand::{Rng, SeedableRng, rand_core::impls};
 use serde::{Deserialize, Serialize};
 
 use crate::util::read_le_u64;
@@ -33,7 +33,7 @@ use crate::util::read_le_u64;
 ///
 /// ## Generation
 ///
-/// The generators implements [`RngCore`] and thus also `Rng`.
+/// The generators implements [`Rng`] and thus also `Rng`.
 /// See also the [Random Values] chapter in the Rust Rand book.
 ///
 /// [portable]: https://rust-random.github.io/book/crate-reprod.html
@@ -81,7 +81,7 @@ impl SFC64 {
     }
 }
 
-impl RngCore for SFC64 {
+impl Rng for SFC64 {
     #[inline]
     fn next_u64(&mut self) -> u64 {
         self.step()
