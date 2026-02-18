@@ -1,7 +1,10 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-use rand::{Rng, SeedableRng, rand_core::impls};
+use core::convert::Infallible;
+
+use rand::SeedableRng;
+use rand_core::{TryRng, utils};
 use serde::{Deserialize, Serialize};
 
 use crate::util::read_le_u64;
@@ -81,22 +84,24 @@ impl SFC64 {
     }
 }
 
-impl Rng for SFC64 {
+impl TryRng for SFC64 {
+    type Error = Infallible;
+
     #[inline]
-    fn next_u64(&mut self) -> u64 {
-        self.step()
+    fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
+        Ok(self.step())
     }
     #[inline]
     #[expect(
         clippy::cast_possible_truncation,
         reason = "the truncation is intended"
     )]
-    fn next_u32(&mut self) -> u32 {
-        self.step() as u32
+    fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
+        Ok(self.step() as u32)
     }
     #[inline]
-    fn fill_bytes(&mut self, dst: &mut [u8]) {
-        impls::fill_bytes_via_next(self, dst);
+    fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), Self::Error> {
+        utils::fill_bytes_via_next_word(dst, || Ok(self.step()))
     }
 }
 impl SeedableRng for SFC64 {

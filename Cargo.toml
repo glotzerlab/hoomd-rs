@@ -92,6 +92,7 @@ approxim = "0.6.6"
 arrayvec = { version = "0.7.6", features = ["serde"] }
 num = { version = "0.4.3", features = ["serde"] }
 rand = { version = "0.10.0", default-features=false, features = ["std", "std_rng"] }
+rand_core = "0.10.0"
 rand_distr = "0.6.0"
 thiserror = "2.0.12"
 

@@ -171,6 +171,7 @@ impl Counter {
 mod tests {
     use super::*;
     use assert2::check;
+    use rand::RngExt;
 
     /// Number of stream elements to sample.
     const N: usize = 256;

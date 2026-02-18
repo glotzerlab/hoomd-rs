@@ -13,6 +13,7 @@ categories.workspace = true
 [dependencies]
 clap.workspace = true
 rand.workspace = true
+rand_core.workspace = true
 serde.workspace = true
 
 [lints]
