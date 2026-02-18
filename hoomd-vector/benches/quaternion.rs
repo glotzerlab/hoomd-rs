@@ -10,7 +10,7 @@
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_rand::Counter;
-use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
+use rand::{RngExt, SeedableRng, rngs::StdRng};
 
 use hoomd_vector::{Cartesian, Rotate, RotationMatrix, Versor};
 
