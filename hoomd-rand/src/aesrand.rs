@@ -101,6 +101,10 @@ impl TryRng for AESRand {
         Ok(self.0.next_word())
     }
     #[inline]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "the truncation is intended"
+    )]
     fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
         Ok(self.0.next_word() as u32)
     }
