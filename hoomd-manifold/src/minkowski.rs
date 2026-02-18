@@ -430,7 +430,7 @@ impl<const N: usize> Distribution<Minkowski<N>> for StandardUniform {
     /// # Example
     /// ```
     /// use hoomd_manifold::Minkowski;
-    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    /// use rand::{RngExt, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(1);
@@ -911,7 +911,7 @@ impl<const N: usize> HyperbolicRotate<Minkowski<N>> for HyperbolicRotationMatrix
 ///     HyperbolicRotationMatrix, Minkowski,
 /// };
 /// use hoomd_vector::Metric;
-/// use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
+/// use rand::{RngExt, SeedableRng, distr::Distribution, rngs::StdRng};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut rng = StdRng::seed_from_u64(12);

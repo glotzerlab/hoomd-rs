@@ -230,7 +230,7 @@ impl Distribution<HyperbolicAngle> for StandardUniform {
     ///     HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
     /// };
     /// use hoomd_vector::{Metric, Vector};
-    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    /// use rand::{RngExt, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(1);
