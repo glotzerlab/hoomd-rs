@@ -11,7 +11,10 @@ use core::convert::Infallible;
 
 use rand::{
     SeedableRng,
-    rand_core::{TryRng, block::{BlockRng, Generator}},
+    rand_core::{
+        TryRng,
+        block::{BlockRng, Generator},
+    },
 };
 
 /// PRNG using the AES block cipher as an [invertible random mapping](https://www.pcg-random.org/posts/random-invertible-mapping-statistics.html).
