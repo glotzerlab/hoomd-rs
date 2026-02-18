@@ -58,7 +58,7 @@ The `new()` method constructs a new simulation model:
 
 ### Parameters
 
-Assign all the model parameters in one code block so that they are easy to modify:
+Assign all the model parameters in one code block:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:parameters}}
 ```
@@ -259,9 +259,6 @@ the generated `trajectory.gsd` in [Ovito] or another visualization tool:
 ```shell
 cargo run --release --example patchy-particle-self-assembly
 ```
-
-The next section will explain how to model interactions between sites with
-different types.
 
 [Ovito]: https://www.ovito.org/
 

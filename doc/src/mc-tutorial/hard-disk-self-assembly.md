@@ -69,7 +69,7 @@ The `new()` method constructs a new simulation model:
 
 #### Parameters
 
-Assign all the model parameters in one code block so that they are easy to modify:
+Assign all the model parameters in one code block:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-disk-self-assembly.rs:parameters}}
 ```
@@ -326,9 +326,6 @@ the generated `trajectory.gsd` in [Ovito] or another visualization tool:
 ```shell
 cargo run --release --example hard-particle-self-assembly
 ```
-
-The next section will explain how to run self-assembly simulations of hard
-ellipses.
 
 [Ovito]: https://www.ovito.org/
 

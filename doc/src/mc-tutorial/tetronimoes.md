@@ -88,7 +88,7 @@ The `new()` method constructs a new simulation model:
 
 #### Parameters
 
-Assign all the model parameters in one code block so that they are easy to modify:
+Assign all the model parameters in one code block:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:parameters}}
 ```
@@ -212,9 +212,6 @@ the generated `trajectory.gsd` in [Ovito] or another visualization tool:
 ```shell
 cargo run --release --example tetronimoes
 ```
-
-The next section will explain how to run self-assembly simulations of hard
-particles.
 
 [Applying Interactions]: applying-interactions.md
 [Custom Random Walk]: custom-random-walk.md

@@ -159,9 +159,7 @@ should  see output similar to:
 
 Notice the particle moves a little bit on every step. Run the simulation for
 many steps and notice that the particles can move without bounds. By default,
-a **Microstate** has **open** boundary conditions. The next section will show
-you how to apply custom boundary conditions and custom trial moves to the random
-walk.
+a **Microstate** has **open** boundary conditions.
 
 [The Rust Programming Language]: https://doc.rust-lang.org/stable/book/
 [`hoomd-interaction`]: ../api/hoomd_interaction/index.html
