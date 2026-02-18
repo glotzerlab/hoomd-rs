@@ -4,9 +4,16 @@ use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
     pairwise::{Isotropic, LennardJones}, rigid::Rigid, CutoffPair
 };
-use hoomd_md::{ConstantVolume, ForceUpdate, TranslationalMotion, thermostat::NoThermostat};
+use hoomd_md::{
+    methods::{
+        ConstantVolume,
+        ForceUpdate,
+        TranslationalMotion,
+    },
+    thermostat::NoThermostat
+};
 use hoomd_microstate::{
-    boundary::{Closed, Periodic}, property::{DynamicsPoint, Momentum, Point, Position}, Body, Microstate, MicrostateBuilder
+    boundary::{Periodic}, property::{DynamicsPoint, Momentum, Point}, Body, Microstate, MicrostateBuilder
 };
 use hoomd_simulation::{Simulation};
 use hoomd_vector::Cartesian;
@@ -16,7 +23,7 @@ use hoomd_bevy::{
     representation::RectangularBoundary,
     representation::disk::{self, Disk},
 };
-use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
+use bevy_egui::EguiPlugin;
 
 use anyhow::Context;
 use bevy::prelude::*;
@@ -120,10 +127,7 @@ impl Swim {
 
 impl Simulation for Swim {
     /// Advance the simulation forward one step.
-    fn advance(&mut self) -> anyhow::Result<()> {
-        // Read keyboard events and kick the swimmer appropriately
-        let swimmer_index = self.microstate.bodies().len() - 1;
-        
+    fn advance(&mut self) -> anyhow::Result<()> {        
         // Evolve the system forward using the integrator
         self.integrator.integrate_translation_step_one(
             &mut self.microstate,
@@ -247,5 +251,6 @@ fn move_swimmer(
         *swimmer_body_properties.momentum_mut() -= Cartesian::from([dp_x, 0.0]);
     }
 
+    #[allow(unused_must_use)]
     simulation.microstate.update_body_properties(swimmer_index, swimmer_body_properties);
 }

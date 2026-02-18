@@ -1,25 +1,30 @@
-//! A simulation with a single particle
+//! A simulation with a single particle that is a dumbbell subjected to an external
+//! constant torque
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    CutoffPair, External,
+    External,
     external::ConstantTorque,
-    pairwise::{Isotropic, LennardJones, WeeksChandlerAnderson},
     rigid::Rigid,
 };
 use hoomd_md::{
-    ConstantVolume, ForceAndTorqueUpdate, RotationalMotion, TranslationalMotion,
+    methods::{
+        ConstantVolume,
+        ForceAndTorqueUpdate,
+        RotationalMotion,
+        TranslationalMotion,
+    },
     thermostat::NoThermostat,
 };
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder,
-    boundary::{Closed, Open, Periodic},
-    property::{DynamicsPoint, Momentum, OrientedDynamicsPoint, Point, Position},
+    boundary::Periodic,
+    property::{OrientedDynamicsPoint, Point},
 };
 use hoomd_simulation::Simulation;
 use hoomd_vector::{Angle, Cartesian};
 
-use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
+use bevy_egui::EguiPlugin;
 use hoomd_bevy::{
     AdvanceSet, HoomdBevyPlugin, InitialCamera, Settings,
     representation::RectangularBoundary,

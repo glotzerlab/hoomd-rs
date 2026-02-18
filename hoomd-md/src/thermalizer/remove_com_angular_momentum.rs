@@ -70,7 +70,7 @@ where
         let mut com_moment_of_inertia = Matrix::<3, 3>::zeros();
         for body_index in 0..microstate.bodies().len() {
             // Get the important information from the body
-            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+            let body_properties = microstate.bodies()[body_index].item.properties.clone();
 
             let position = body_properties.position();
             let momentum = body_properties.momentum();
@@ -175,7 +175,7 @@ where
 
         for body_index in 0..microstate.bodies().len() {
             // Get the important information from the body
-            let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
+            let body_properties = microstate.bodies()[body_index].item.properties.clone();
 
             let position = body_properties.position();
             let momentum = body_properties.momentum();

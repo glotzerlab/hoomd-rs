@@ -1,13 +1,26 @@
-//! A simulation with a single particle 
+//! A simulation with a single particle that is a dumbbell that can interact
+//! with a user-controllable particle that is a point.
+
+#![allow(non_snake_case)]
+#![allow(unused_must_use)]
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    pairwise::{Isotropic, LennardJones, WeeksChandlerAnderson}, rigid::Rigid, CutoffPair
+    pairwise::{Isotropic, WeeksChandlerAnderson}, rigid::Rigid, CutoffPair
 };
-use hoomd_md::{thermostat::NoThermostat, ConstantVolume, ForceAndTorqueUpdate, RotationalMotion, TranslationalMotion};
+use hoomd_md::{
+    thermostat::NoThermostat,
+    methods::{
+        ConstantVolume,
+        ForceAndTorqueUpdate,
+        RotationalMotion,
+        TranslationalMotion
+    }
+};
+
 use hoomd_microstate::{
-    boundary::{Closed, Open, Periodic},
-    property::{DynamicsPoint, Momentum, OrientedDynamicsPoint, Point, Position},
+    boundary::{Periodic},
+    property::{Momentum, OrientedDynamicsPoint, Point},
     Body,
     Microstate,
     MicrostateBuilder
@@ -20,7 +33,7 @@ use hoomd_bevy::{
     representation::RectangularBoundary,
     representation::disk::{self, Disk},
 };
-use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
+use bevy_egui::EguiPlugin;
 
 use anyhow::Context;
 use bevy::prelude::*;
@@ -121,9 +134,6 @@ impl Dumbbell {
 impl Simulation for Dumbbell {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
-        // Read keyboard events and kick the swimmer appropriately
-        let swimmer_index = self.microstate.bodies().len() - 1;
-
         // Evolve the system forward using the integrator
         self.integrator.integrate_translation_step_one(
             &mut self.microstate,

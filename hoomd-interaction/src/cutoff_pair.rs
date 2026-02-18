@@ -2,7 +2,7 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `CutoffPair`
-use std::ops::{AddAssign, Mul};
+use std::ops::AddAssign;
 
 use crate::{
     pairwise::{Isotropic, IsotropicForce},
@@ -16,7 +16,7 @@ use crate::{
     TotalEnergy
 };
 use hoomd_microstate::{Body, Microstate, Site, Transform, boundary::Wrap, property::Position};
-use hoomd_vector::{Cartesian, InnerProduct, Metric, TensorProduct, Vector, WedgeProduct};
+use hoomd_vector::{InnerProduct, Metric, TensorProduct, Vector, WedgeProduct};
 use hoomd_linear_algebra::GeneralMatrix;
 
 /// Short-ranged pairwise interactions between sites.

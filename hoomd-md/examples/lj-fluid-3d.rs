@@ -1,10 +1,8 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
-// Part of hoomd-rs, released under the BSD 3-Clause License.
+//! Example of three-dimensional LJ fluid copied from the lj_fluid.py in
+//! hoomd-validation repo, using second param_list (line 62 - 69 in lj_fluid.py).
 
-/*! Example of three-dimensional LJ fluid
-    copied from the lj_fluid.py in hoomd-validation repo,
-    using second param_list (line 62 - 69 in lj_fluid.py).
-*/
+#![allow(non_snake_case)]
+#![allow(unused_must_use)]
 
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{
@@ -13,8 +11,13 @@ use hoomd_interaction::{
     rigid::Rigid,
 };
 use hoomd_md::{
-    ConstantVolume, ForceUpdate, TranslationalMotion, thermalizer::{
-        ComAngularMomentumRemover, ComMomentumRemover, RotationalThermalizer, Thermalizer,
+    methods::{
+        ConstantVolume,
+        ForceUpdate,
+        TranslationalMotion,
+    },
+    thermalizer::{
+        ComAngularMomentumRemover, ComMomentumRemover, Thermalizer,
         TranslationalMomentumModifier,
         TranslationalThermalizer,
     }, thermostat::NoThermostat
@@ -152,7 +155,7 @@ impl Simulation for System {
             println!("==============={:}===============", self.step());
             let ke = self.integrator.get_translational_kinetic_energy();
             let dof = self.integrator.get_translational_dof();
-            let n = (dof / 3.0 + 1.0);
+            let n = dof / 3.0 + 1.0;
 
             let kT = 2.0 * ke / dof;
             let pe = self.force.0.total_energy(&self.microstate);

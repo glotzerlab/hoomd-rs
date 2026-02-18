@@ -1,23 +1,27 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
-// Part of hoomd-rs, released under the BSD 3-Clause License.
+//! Simple example of three-dimensional rods simualtion with MD.
 
-/*! Simple example of three-dimensional rods simualtion with MD.
-*/
+#![allow(non_snake_case)]
+#![allow(unused_must_use)]
 
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{
     CutoffPair, TotalEnergy,
-    pairwise::{Isotropic, LennardJones, WeeksChandlerAnderson},
+    pairwise::{Isotropic, LennardJones},
     rigid::Rigid,
 };
 use hoomd_md::{
-    methods::{ConstantVolume, ForceAndTorqueUpdate, RotationalMotion, TranslationalMotion},
+    methods::{
+        ConstantVolume,
+        ForceAndTorqueUpdate,
+        RotationalMotion,
+        TranslationalMotion,
+    },
     thermalizer::{
         ComAngularMomentumRemover, ComMomentumRemover, RotationalThermalizer, Thermalizer,
         TranslationalMomentumModifier,
         TranslationalThermalizer,
     },
-    thermostat::{BussiThermostat, MTTKThermostat, NHCThermostat},
+    thermostat::{BussiThermostat},
 };
 use hoomd_microstate::{
     Body, Microstate, MicrostateBuilder,
@@ -25,6 +29,7 @@ use hoomd_microstate::{
     property::{OrientedDynamicsPoint, Point},
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
+use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Versor};
 
 use anyhow::Context;
@@ -119,9 +124,8 @@ impl System {
         // NVT simulation,
         // Notice that the thermostats for translational
         // and rotational dof are separated.
-        let tau = 50.0 * dt;
-        //let thermostat = (BussiThermostat::new(tau), BussiThermostat::new(tau));
-        let thermostat = (NHCThermostat::<3>::new(tau.try_into()?), NHCThermostat::<3>::new(tau.try_into()?));
+        let tau = PositiveReal::try_from(50.0 * dt)?;
+        let thermostat = (BussiThermostat::new(tau), BussiThermostat::new(tau));
 
         Ok(System {
             microstate,

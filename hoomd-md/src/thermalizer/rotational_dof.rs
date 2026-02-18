@@ -1,5 +1,8 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
+
+#![allow(non_snake_case)]
+
 use hoomd_microstate::{
     Microstate, Transform,
     boundary::{GenerateGhosts, Wrap},
