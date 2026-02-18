@@ -32,6 +32,7 @@ assert2.workspace = true
 approxim.workspace = true
 chacha20 = { version = "=0.10.0", default-features = false, features = ["rng"]}
 divan.workspace = true
+rand_sfc = "0.2.0"
 rstest.workspace = true
 
 [[bench]]

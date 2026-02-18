@@ -14,6 +14,7 @@ use rand::{
     RngExt,
     rand_core::{Rng, SeedableRng},
 };
+use rand_sfc::Sfc64 as CratesIoSfc64;
 
 fn main() {
     divan::main();
@@ -24,7 +25,7 @@ const SEED: u64 = 42;
 /// Time to first generated value
 #[divan::bench_group(sample_count = 1000)]
 mod latency {
-    use super::{Bencher, ChaCha8Rng, Rng, SEED, SFC64, SeedableRng, black_box};
+    use super::{Bencher, ChaCha8Rng, CratesIoSfc64, Rng, SEED, SFC64, SeedableRng, black_box};
     #[cfg(feature = "extras")]
     use hoomd_rand::ThreeFry2x64Rng;
 
@@ -60,6 +61,14 @@ mod latency {
         });
     }
 
+    #[divan::bench]
+    fn rand_sfc64(bencher: Bencher) {
+        let mut rng = CratesIoSfc64::seed_from_u64(SEED);
+        bencher.bench_local(|| {
+            black_box(rng.next_u64());
+        });
+    }
+
     #[cfg(all(
         target_arch = "aarch64",
         target_feature = "neon",
@@ -77,7 +86,7 @@ mod latency {
 /// Measure the time to generate a particular quantitity of data.
 #[divan::bench_group]
 mod throughput {
-    use super::{Bencher, ChaCha8Rng, Rng, SEED, SFC64, SeedableRng, black_box};
+    use super::{Bencher, ChaCha8Rng, CratesIoSfc64, Rng, SEED, SFC64, SeedableRng, black_box};
     use divan::counter::BytesCount;
     #[cfg(feature = "extras")]
     use hoomd_rand::ThreeFry2x64Rng;
@@ -113,6 +122,15 @@ mod throughput {
     #[divan::bench(counters = [BytesCount::new(SIZE)])]
     fn sfc64(bencher: Bencher) {
         let mut rng = SFC64::seed_from_u64(SEED);
+        let mut buffer = vec![0u8; SIZE];
+        bencher.bench_local(|| {
+            rng.fill_bytes(black_box(&mut buffer));
+        });
+    }
+
+    #[divan::bench(counters = [BytesCount::new(SIZE)])]
+    fn rand_sfc64(bencher: Bencher) {
+        let mut rng = CratesIoSfc64::seed_from_u64(SEED);
         let mut buffer = vec![0u8; SIZE];
         bencher.bench_local(|| {
             rng.fill_bytes(black_box(&mut buffer));
