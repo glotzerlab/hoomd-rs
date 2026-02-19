@@ -4,9 +4,9 @@
 #![allow(non_snake_case)]
 #![allow(unused_must_use)]
 
-use hoomd_geometry::shape::Rectangle;
+use hoomd_geometry::shape::{Hypercuboid, Rectangle};
 use hoomd_interaction::{
-    pairwise::{Isotropic, WeeksChandlerAnderson}, rigid::Rigid, CutoffPair
+    pairwise::Isotropic, rigid::Rigid, PairwiseCutoff, univariate::WeeksChandlerAnderson
 };
 use hoomd_md::{
     thermostat::NoThermostat,
@@ -19,13 +19,10 @@ use hoomd_md::{
 };
 
 use hoomd_microstate::{
-    boundary::{Periodic},
-    property::{Momentum, OrientedDynamicsPoint, Point},
-    Body,
-    Microstate,
-    MicrostateBuilder
+    Body, Microstate, MicrostateBuilder, SiteKey, boundary::Periodic, property::{Momentum, OrientedDynamicsPoint, Point}
 };
 use hoomd_simulation::{Simulation};
+use hoomd_spatial::AllPairs;
 use hoomd_vector::{Angle, Cartesian};
 
 use hoomd_bevy::{
@@ -46,13 +43,18 @@ struct Isoenergy {}
 /// The state of the swimming simulation, tracked as a resource by Bevy
 #[derive(Resource)]
 struct Dumbbell {
-    microstate: Microstate<OrientedDynamicsPoint<Cartesian<2>, Angle>, Point<Cartesian<2>>, Periodic<Rectangle>>,
-
+    microstate: Microstate<
+        OrientedDynamicsPoint<Cartesian<2>, Angle>,
+        Point<Cartesian<2>>,
+        AllPairs<SiteKey>,
+        Periodic<Rectangle>
+    >,
+    
     macrostate: Isoenergy,
     
     thermostat: NoThermostat,
 
-    force: Rigid<CutoffPair<Isotropic<WeeksChandlerAnderson>>>,
+    force: Rigid<PairwiseCutoff<Isotropic<WeeksChandlerAnderson>>>,
 
     integrator: ConstantVolume,
 }
@@ -65,7 +67,9 @@ impl Dumbbell {
         let square = Rectangle::with_equal_edges(box_length.try_into()?);
         // let boundary = Closed(square);
         let boundary = Periodic::new(2.5, square)?;
-        let mut microstate = MicrostateBuilder::with_boundary(boundary).try_build()?;
+        let mut microstate = Microstate::builder()
+            .boundary(boundary)
+            .try_build()?;
 
         let dumbbell_body = Body {
             properties: OrientedDynamicsPoint {
@@ -103,13 +107,17 @@ impl Dumbbell {
         microstate.add_body(swimmer_body)?;
 
         // Model interactions (in this case, a pairwise Lennard-Jones)
-        let force = Rigid(CutoffPair {
-            r_cut: 6.0,
-            evaluator: Isotropic(WeeksChandlerAnderson {
-                epsilon: 1.0,
-                sigma: 1.0
-            })
-        });
+        let force = Rigid(
+            PairwiseCutoff(
+                Isotropic {
+                    interaction: WeeksChandlerAnderson {
+                        epsilon: 1.0,
+                        sigma: 1.0
+                    },
+                    r_cut: 6.0
+                }
+            )
+        );
     
         // Create an NVE macrostate
         let macrostate = Isoenergy{};
