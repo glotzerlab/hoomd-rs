@@ -379,6 +379,7 @@ pub trait Vector:
 /// of a bivector.
 /// TODO: confirm whether the elements must be vectors
 pub trait WedgeProduct: Vector {
+    /// Type of the resulting [bivector](https://en.wikipedia.org/wiki/Bivector).
     type Bivector;
     /// Compute the wedge product between two elements.
     /// 
@@ -408,6 +409,7 @@ pub trait WedgeProduct: Vector {
 /// the tensor resulting from matrix-style multiplication of two elements.
 /// TODO: confirm whether the elements must be vectors
 pub trait TensorProduct: Vector {
+    /// Type of the resulting tensor.
     type Tensor;
     /// Compute the tensor product between two elements.
     /// 
