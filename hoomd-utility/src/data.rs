@@ -103,6 +103,16 @@ where
     /// # Example
     /// ```
     /// use hoomd_utility::data::ParquetLogger;
+    /// use parquet_derive::ParquetRecordWriter;
+    ///
+    /// #[derive(ParquetRecordWriter)]
+    /// pub struct LogRecord {
+    ///     /// The simulation step.
+    ///     step: u64,
+    ///
+    ///     /// Total system potential energy.
+    ///     potential_energy: f64,
+    /// }
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # use tempfile::tempdir;
