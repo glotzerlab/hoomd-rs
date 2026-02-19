@@ -45,7 +45,7 @@ impl<const R: usize> Generator for ThreeFry2x64Core<R> {
     type Output = [u64; 2];
 
     #[inline]
-    fn generate(&mut self, results: &mut Self::Output) {
+    fn generate(&mut self, output: &mut Self::Output) {
         (0..R).for_each(|d| {
             if d % 4 == 0 {
                 let s = d / 4;
@@ -59,7 +59,7 @@ impl<const R: usize> Generator for ThreeFry2x64Core<R> {
             self.counter[0] = self.counter[0].wrapping_add(self.seed[s % 3]);
             self.counter[1] = self.counter[1].wrapping_add(self.seed[(s + 1) % 3] + s as u64);
         }
-        *results = self.counter;
+        *output = self.counter;
     }
 }
 
@@ -107,12 +107,17 @@ impl<const R: usize> TryRng for ThreeFry2x64Rng<R> {
         Ok(self.0.next_word())
     }
     #[inline]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "the truncation is intended"
+    )]
     fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
         Ok(self.0.next_word() as u32)
     }
     #[inline]
     fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), Self::Error> {
-        Ok(self.0.fill_bytes(dst))
+        self.0.fill_bytes(dst);
+        Ok(())
     }
 }
 #[cfg(test)]
