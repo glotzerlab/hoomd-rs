@@ -2,12 +2,11 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 use hoomd_linear_algebra::{GeneralMatrix, MatMul, matrix::Matrix};
 use hoomd_microstate::{
-    Microstate, Transform,
-    boundary::{GenerateGhosts, Wrap},
-    property::{
+    Microstate, SiteKey, Transform, boundary::{GenerateGhosts, Wrap}, property::{
         Mass, Momentum, NetForce, Position,
-    },
+    }
 };
+use hoomd_spatial::PointUpdate;
 use hoomd_vector::{Cartesian, InnerProduct, TensorProduct, WedgeProduct};
 use crate::thermalizer::TranslationalMomentumModifier;
 
@@ -24,7 +23,7 @@ where
         + Transform<S>
         + Clone,
     S: Position<Position = Cartesian<3>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<3>, SiteKey>,
 {
     /// Remove the center-of-mass angular momentum resulting from translational DOF.
     /// 
@@ -140,7 +139,7 @@ where
         + Transform<S>
         + Clone,
     S: Position<Position = Cartesian<2>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<2>, SiteKey>,
 {
     /// Remove the center-of-mass angular momentum resulting from translational DOF.
     /// 

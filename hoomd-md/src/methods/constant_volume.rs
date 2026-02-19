@@ -5,17 +5,16 @@
 
 use hoomd_interaction::{NetBodyForce, NetBodyForceAndTorque, NetBodyTorque};
 use hoomd_microstate::{
-    Microstate, Transform,
-    boundary::{GenerateGhosts, Wrap},
-    property::{
+    Microstate, SiteKey, Transform, boundary::{GenerateGhosts, Wrap}, property::{
         AngularMomentum, Mass, MomentOfInertia, Momentum, NetForce, NetTorque, Orientation,
         Position,
-    },
+    }
 };
 use hoomd_vector::{
     Angle, Cartesian, InnerProduct, Quaternion, Rotate, Vector, Versor,
 };
 use crate::{thermostat::Thermostat, methods::{TranslationalMotion, RotationalMotion, ForceUpdate, ForceAndTorqueUpdate, TorqueUpdate}};
+use hoomd_spatial::PointUpdate;
 
 /// Perform time integration on the [`Microstate`] with the volume constraining
 /// to a constant using Velocity Verlet algorithm.
@@ -126,7 +125,7 @@ where
         + Transform<S>
         + Clone,
     S: Position<Position = V> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<V, SiteKey>,
     T: Thermostat<B, S, C, M>,
 {
     /// Perform the first-half integration on translational degrees-of-freedom
@@ -318,7 +317,7 @@ where
         + Position<Position = Cartesian<3>> // TODO: should this be required?
         + Clone,
     S: Position<Position = Cartesian<3>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<3>, SiteKey>,
     T: Thermostat<B, S, C, M>,
 {
     /// Perform the first-half integration on rotational degrees-of-freedom
@@ -823,7 +822,7 @@ where
         + Position<Position = Cartesian<2>> // TODO: should this be required?
         + Clone,
     S: Position<Position = Cartesian<2>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<2>, SiteKey>,
     T: Thermostat<B, S, C, M>,
 {
     /// Perform the first-half integration on rotational 
@@ -1022,7 +1021,7 @@ where
     V: Default + Vector + InnerProduct,
     B: Position<Position = V> + NetForce<Vector = V> + Transform<S> + Clone,
     S: Position<Position = V> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<V, SiteKey>,
     E: NetBodyForce<V, B, S, C>,
 {
     /// Perform the [`NetForce`] update in [`Microstate`] using its 
@@ -1060,7 +1059,7 @@ where
         + Position<Position = Cartesian<2>> // TODO: should this be required?
         + Clone,
     S: Position<Position = Cartesian<2>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<2>, SiteKey>,
     E: NetBodyTorque<2, Cartesian<2>, B, S, C>,
 {
     /// Perform the [`NetTorque`] update in [`Microstate`] using its 
@@ -1098,7 +1097,7 @@ where
         + Position<Position = Cartesian<3>> // TODO: should this be required?
         + Clone,
     S: Position<Position = Cartesian<3>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<3>, SiteKey>,
     E: NetBodyTorque<3, Cartesian<3>, B, S, C>,
 {
     /// Perform the [`NetTorque`] update in [`Microstate`] using its 
@@ -1139,7 +1138,7 @@ where
         + Position<Position = Cartesian<2>> // TODO: should this be required?
         + Clone,
     S: Position<Position = Cartesian<2>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<2>, SiteKey>,
     E: NetBodyForceAndTorque<2, Cartesian<2>, B, S, C>,
 {
     /// Perform the [`NetForce`] and [`NetTorque`] update in [`Microstate`] using its 
@@ -1182,7 +1181,7 @@ where
         + Position<Position = Cartesian<3>> // TODO: should this be required?
         + Clone,
     S: Position<Position = Cartesian<3>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<3>, SiteKey>,
     E: NetBodyForceAndTorque<3, Cartesian<3>, B, S, C>,
 {
     /// Perform the [`NetForce`] and [`NetTorque`] update in [`Microstate`] using its 

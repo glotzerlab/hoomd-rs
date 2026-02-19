@@ -1,13 +1,12 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 use hoomd_microstate::{
-    Microstate, Transform,
-    boundary::{GenerateGhosts, Wrap},
-    property::{
+    Microstate, SiteKey, Transform, boundary::{GenerateGhosts, Wrap}, property::{
         Mass, Momentum, NetForce, 
         Position,
-    },
+    }
 };
+use hoomd_spatial::PointUpdate;
 use hoomd_vector::Cartesian;
 use crate::thermalizer::TranslationalMomentumModifier;
 
@@ -24,7 +23,7 @@ where
         + Transform<S>
         + Clone,
     S: Position<Position = Cartesian<N>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<N>, SiteKey>,
 {
     /// Remove the center-of-mass momentum.
     ///

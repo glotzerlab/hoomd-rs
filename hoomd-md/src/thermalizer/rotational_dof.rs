@@ -4,13 +4,12 @@
 #![allow(non_snake_case)]
 
 use hoomd_microstate::{
-    Microstate, Transform,
-    boundary::{GenerateGhosts, Wrap},
-    property::{
+    Microstate, SiteKey, Transform, boundary::{GenerateGhosts, Wrap}, property::{
         AngularMomentum, MomentOfInertia, NetTorque, Orientation,
         Position,
-    },
+    }
 };
+use hoomd_spatial::PointUpdate;
 use hoomd_vector::{Angle, Cartesian, Versor};
 use rand_distr::{Distribution, Normal};
 use crate::thermalizer::{RotationalThermalizer, Thermalizer};
@@ -26,7 +25,7 @@ where
         + Transform<S>
         + Clone,
     S: Position<Position = Cartesian<2>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<2>, SiteKey>,
 {
     /// Draw random angular momentum from Gaussian.
     ///
@@ -73,7 +72,7 @@ where
         + Transform<S>
         + Clone,
     S: Position<Position = Cartesian<3>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<3>, SiteKey>,
 {
     /// Draw random angular momentum from Gaussian.
     ///

@@ -177,14 +177,13 @@ impl<E> PairwiseCutoff<E> {
     #[inline]
     pub fn site_pair_force<V, S>(&self, a: &Site<S>, b: &Site<S>) -> V
     where
-        E: SitePairForce<V, S>,
+        E: SitePairForce<V, S> + MaximumInteractionRange,
         S: Position<Position = V>,
         V: Vector + Default + InnerProduct + Metric,
     {
         let r = (a.properties.position()).distance(b.properties.position());
-        if r < self.r_cut && a.body_tag != b.body_tag {
-            self.evaluator
-                .site_pair_force(&a.properties, &b.properties)
+        if r < self.0.maximum_interaction_range() && a.body_tag != b.body_tag {
+            self.0.site_pair_force(&a.properties, &b.properties)
         } else {
             V::default()
         }
@@ -259,15 +258,15 @@ impl<E> PairwiseCutoff<E> {
     #[inline]
     pub fn site_pair_force_and_virial<V, S>(&self, a: &Site<S>, b: &Site<S>) -> (V, V::Tensor)
     where
-        E: SitePairForce<V, S>,
+        E: SitePairForce<V, S> + MaximumInteractionRange,
         S: Position<Position = V>,
         V: Vector + Default + InnerProduct + Metric + TensorProduct,
         V::Tensor: GeneralMatrix + AddAssign
     {
         let r = (a.properties.position()).distance(b.properties.position());
-        if r < self.r_cut && a.body_tag != b.body_tag {
+        if r < self.0.maximum_interaction_range() && a.body_tag != b.body_tag {
             let rvec = *a.properties.position() - *b.properties.position();
-            let force = self.evaluator.site_pair_force(&a.properties, &b.properties);
+            let force = self.0.site_pair_force(&a.properties, &b.properties);
             let virial = (force*0.5).tensor_product(&rvec);
             (force, virial)
         } else {
@@ -504,8 +503,9 @@ where
     V: Vector + Default + InnerProduct + Metric + WedgeProduct,
     B: Transform<S>,
     S: Position<Position = V>,
-    E: UnivariateForce,
+    E: UnivariateForce + MaximumInteractionRange,
     V::Bivector: Default,
+    C: PointsNearBall<V, SiteKey>,
 {
     /// Compute the net force and torque.
     /// 
@@ -592,12 +592,11 @@ where
         // Calculate net force from all of the pairwise interactions
         let mut total_force = V::default();
         for other_site in microstate
-            .iter_sites_near(site.properties.position(), self.r_cut)
+            .iter_sites_near(site.properties.position(), self.0.maximum_interaction_range())
+            .into_iter()
             .filter(|s| site.body_tag != s.body_tag)
         {
-            total_force += self
-                .evaluator
-                .site_pair_force(&site.properties, &other_site.properties);
+            total_force += self.0.site_pair_force(&site.properties, &other_site.properties);
         }
 
         // Assume net torque is 0
@@ -612,8 +611,9 @@ where
     V: Vector + Default + InnerProduct + Metric + TensorProduct,
     B: Transform<S>,
     S: Position<Position = V>,
-    E: SitePairForce<V, S>,
-    V::Tensor: GeneralMatrix + AddAssign
+    E: SitePairForce<V, S> + MaximumInteractionRange,
+    V::Tensor: GeneralMatrix + AddAssign,
+    C: PointsNearBall<V, SiteKey>,
 {
     /// Calculate the net force and virial.
     /// 
@@ -683,13 +683,12 @@ where
         let mut total_force = V::default();
         let mut total_virial = V::Tensor::zeros();
         for other_site in microstate
-            .iter_sites_near(site.properties.position(), self.r_cut)
+            .iter_sites_near(site.properties.position(), self.0.maximum_interaction_range())
+            .into_iter()
             .filter(|s| site.body_tag != s.body_tag)
         {   
             let rvec = *site.properties.position() - *other_site.properties.position();
-            let force = self
-                .evaluator
-                .site_pair_force(&site.properties, &other_site.properties);
+            let force = self.0.site_pair_force(&site.properties, &other_site.properties);
             let virial = (force*0.5).tensor_product(&rvec);
             total_force += force;
             total_virial += virial;

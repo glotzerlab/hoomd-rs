@@ -3768,6 +3768,7 @@ dependencies = [
  "hoomd-linear-algebra",
  "hoomd-microstate",
  "hoomd-simulation",
+ "hoomd-spatial",
  "hoomd-utility",
  "hoomd-vector",
  "rand",

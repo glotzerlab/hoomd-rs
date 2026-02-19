@@ -93,7 +93,7 @@ where
     }
 }
 
-impl<S, P> SiteEnergy<S> for Linear<P>
+impl<S, P> SiteEnergy<S> for ConstantForce<P>
 where
     S: Position<Position = P>,
     P: InnerProduct,

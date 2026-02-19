@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{MaximumInteractionRange, SitePairEnergy, univariate::UnivariateEnergy};
+use crate::{MaximumInteractionRange, SitePairEnergy, SitePairForce, univariate::{UnivariateEnergy, UnivariateForce}};
 use hoomd_microstate::property::Position;
 use hoomd_vector::{InnerProduct, Vector, Metric};
 
@@ -94,7 +94,7 @@ impl<E> MaximumInteractionRange for Isotropic<E> {
 
 impl<P, S, E> SitePairForce<P, S> for Isotropic<E>
 where
-    E: IsotropicForce,
+    E: UnivariateForce,
     P: Vector + InnerProduct + Metric,
     S: Position<Position = P>
 {
@@ -111,6 +111,6 @@ where
     fn site_pair_force(&self, a: &S, b: &S) -> P {
         let r = *a.position() - *b.position();
         let distance = r.norm();
-        r * self.0.force(distance) / distance
+        r * self.interaction.force(distance) / distance
     }
 }

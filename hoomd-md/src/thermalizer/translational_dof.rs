@@ -1,12 +1,11 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 use hoomd_microstate::{
-    Microstate, Transform,
-    boundary::{GenerateGhosts, Wrap},
-    property::{
+    Microstate, SiteKey, Transform, boundary::{GenerateGhosts, Wrap}, property::{
         Mass, Momentum, NetForce, Position,
-    },
+    }
 };
+use hoomd_spatial::PointUpdate;
 use hoomd_vector::Cartesian;
 use rand_distr::{Distribution, Normal};
 use crate::thermalizer::{TranslationalThermalizer, Thermalizer};
@@ -21,7 +20,7 @@ where
         + Transform<S>
         + Clone,
     S: Position<Position = Cartesian<N>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<N>, SiteKey>,
 {
     /// Draw random momentum from Gaussian.
     /// 
