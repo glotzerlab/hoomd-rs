@@ -13,7 +13,7 @@
 //! Implement Checkerboard for Hypercuboids
 
 use itertools::izip;
-use rand::Rng;
+use rand::{Rng, RngExt};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::array;
@@ -293,8 +293,7 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         let (space_width, shape) =
             Self::compute_dimensions(edge_lengths, interaction_range, periodic);
 
-        let mut offset = [0.0; N];
-        rng.fill(&mut offset);
+        let offset: [f64; N] = array::from_fn(|_| rng.random());
 
         let origin = Cartesian {
             coordinates: array::from_fn(|i| {
@@ -327,8 +326,7 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         let (space_width, shape) =
             Self::compute_dimensions(edge_lengths, interaction_range, periodic);
 
-        let mut offset = [0.0; N];
-        rng.fill(&mut offset);
+        let offset: [f64; N] = array::from_fn(|_| rng.random());
 
         let origin = Cartesian {
             coordinates: array::from_fn(|i| {

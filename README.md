@@ -83,11 +83,9 @@ fn main() -> anyhow::Result<()> {
 ```
 
 The [examples] directory contains many files that demonstrate how to use
-**hoomd-rs**. To see them in action, navigate to the relevant tutorial in the
-[hoomd-rs documentation].
-
-The documentation also describes [how to build the examples] on your desktop,
-in case you want to modify any of them and see the results.
+**hoomd-rs**. To see them live in your browser, navigate to the relevant
+tutorial in the [hoomd-rs documentation]. The documentation also describes [how
+to build the examples] on your desktop.
 
 [HOOMD-blue]: https://hoomd-blue.readthedocs.io
 [Rust]: https://www.rust-lang.org/

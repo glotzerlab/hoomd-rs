@@ -197,7 +197,7 @@ mod tests {
         shape::{Circle, Cylinder, Hypersphere},
     };
     use hoomd_vector::{Angle, Versor};
-    use rand::{Rng, SeedableRng};
+    use rand::{RngExt, SeedableRng};
 
     use super::*;
     use approxim::assert_relative_eq;

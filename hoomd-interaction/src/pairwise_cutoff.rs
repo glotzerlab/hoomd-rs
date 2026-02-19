@@ -825,7 +825,7 @@ mod tests_finite {
 
     use approxim::assert_relative_eq;
     use rand::{
-        Rng, SeedableRng,
+        RngExt, SeedableRng,
         distr::{Distribution, Uniform},
         rngs::StdRng,
     };

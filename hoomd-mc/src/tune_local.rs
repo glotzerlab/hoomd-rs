@@ -4,7 +4,7 @@
 //! Implement local trial tune
 
 use log::{debug, trace};
-use rand::Rng;
+use rand::RngExt;
 use std::fmt::Display;
 
 use super::{Adjust, Count, LocalTrial, tune};

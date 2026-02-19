@@ -688,7 +688,7 @@ impl Distribution<UnitBiquaternion> for StandardUniform {
     /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{Biquaternion, UnitBiquaternion};
     /// use num::complex::Complex;
-    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    /// use rand::{RngExt, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(1);
