@@ -247,13 +247,16 @@ like this:
     description: 'Potential energy versus step for patchy particle self-assembly.',
     data: {"name": "data", "url": "patchy-particle-self-assembly.csv"} ,
     width: "container",
-    mark: { type: 'line'},
+    mark: { type: 'line', tooltip: true},
     encoding: {
       x: {field: 'step', type: 'quantitative'},
       y: {field: 'potential_energy', type: 'quantitative'},
     },
   };
-  vegaEmbed('#vis', spec, {theme: 'dark', actions: false} )
+  var tooltipOptions = {
+    theme: 'dark'
+  };
+  vegaEmbed('#vis', spec, {theme: 'dark', actions: false, tooltip: tooltipOptions} )
     .then(function (result) {
       // Access the Vega view instance (https://vega.github.io/vega/docs/api/view/) as result.view
     })
