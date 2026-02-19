@@ -22,9 +22,9 @@ pub use remove_com_angular_momentum::ComAngularMomentumRemover;
 /// Implement [`TranslationalThermalizer`] on a custom type
 /// or use one of the provide method in
 /// [`thermalizer`](crate::thermalizer) in MD simulations.
-pub trait TranslationalThermalizer<const N: usize, B, S, C> {
+pub trait TranslationalThermalizer<const N: usize, B, S, X, C> {
     /// Thermalize the rotational motion.
-    fn thermalize_translation(&self, microstate: &mut Microstate<B, S, C>);
+    fn thermalize_translation(&self, microstate: &mut Microstate<B, S, X, C>);
 }
 
 /// Thermalize the rotational motion of [`Microstate`].
@@ -32,9 +32,9 @@ pub trait TranslationalThermalizer<const N: usize, B, S, C> {
 /// Implement [`RotationalThermalizer`] on a custom type
 /// or use one of the provide method in
 /// [`thermalizer`](crate::thermalizer) in MD simulations.
-pub trait RotationalThermalizer<const N: usize, B, S, C> {
+pub trait RotationalThermalizer<const N: usize, B, S, X, C> {
     /// Thermalize the rotational motion.
-    fn thermalize_rotation(&self, microstate: &mut Microstate<B, S, C>);
+    fn thermalize_rotation(&self, microstate: &mut Microstate<B, S, X, C>);
 }
 
 /// Modify the translational momenta of [`Microstate`].
@@ -42,9 +42,9 @@ pub trait RotationalThermalizer<const N: usize, B, S, C> {
 /// Implement [`TranslationalMomentumModifier`] on a custom type
 /// or use one of the provide method in
 /// [`thermalizer`](crate::thermalizer) in MD simulations.
-pub trait TranslationalMomentumModifier<const N: usize, B, S, C> {
+pub trait TranslationalMomentumModifier<const N: usize, B, S, X, C> {
     /// Modify the translational momenta.
-    fn modify(&self, microstate: &mut Microstate<B, S, C>);
+    fn modify(&self, microstate: &mut Microstate<B, S, X, C>);
 }
 
 /// Thermalize system's momenta

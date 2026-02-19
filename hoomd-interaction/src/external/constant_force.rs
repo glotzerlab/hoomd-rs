@@ -127,14 +127,14 @@ where
     }
 }
 
-impl<V, B, S, C> SiteForceAndTorque<V, B, S, C> for ConstantForce<V>
+impl<V, B, S, X, C> SiteForceAndTorque<V, B, S, X, C> for ConstantForce<V>
 where
     V: InnerProduct + WedgeProduct,
     S: Position<Position = V>,
     V::Bivector: Default
 {
     /// Calculate the force and torque.
-    fn net_force_and_torque_on_site(&self, _microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Bivector) {
+    fn net_force_and_torque_on_site(&self, _microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector) {
         let force = self.site_single_force(&site.properties);
         let torque = V::Bivector::default();
         (force, torque)

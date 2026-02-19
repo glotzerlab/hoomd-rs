@@ -58,12 +58,12 @@ use hoomd_vector::{Rotate, RotationMatrix, TensorProduct, Vector, WedgeProduct};
 /// ```
 pub struct Rigid<E>(pub E);
 
-impl<V, B, S, C, E> NetBodyForce<V, B, S, C> for Rigid<E>
+impl<V, B, S, X, C, E> NetBodyForce<V, B, S, X, C> for Rigid<E>
 where
     V: Vector + Default + WedgeProduct,
     B: Transform<S>,
     S: Position<Position = V>,
-    E: SiteForceAndTorque<V, B, S, C>,
+    E: SiteForceAndTorque<V, B, S, X, C>,
 {
     /// Compute the net force.
     ///
@@ -145,7 +145,7 @@ where
     /// # }
     /// ```
     #[inline]
-    fn net_force_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V {
+    fn net_force_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> V {
         let mut total = V::default();
         for site in microstate.iter_body_sites(body_index) {
             let (f_on_site, _) = self.0.net_force_and_torque_on_site(microstate, site);
@@ -155,12 +155,12 @@ where
     }
 }
 
-impl<const N: usize, V, B, S, C, E, R> NetBodyTorque<N, V, B, S, C> for Rigid<E>
+impl<const N: usize, V, B, S, X, C, E, R> NetBodyTorque<N, V, B, S, X, C> for Rigid<E>
 where
     V: Vector + WedgeProduct,
     B: Transform<S> + Orientation<Rotation = R>,
     S: Position<Position = V>,
-    E: SiteForceAndTorque<V, B, S, C>,
+    E: SiteForceAndTorque<V, B, S, X, C>,
     R: Rotate<V>,
     RotationMatrix<N>: From<R>,
     V::Bivector: Default + AddAssign,
@@ -254,7 +254,7 @@ where
     #[inline]
     fn net_torque_on_body(
         &self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         body_index: usize,
     ) -> V::Bivector {
         let mut total = V::Bivector::default();
@@ -288,12 +288,12 @@ where
     }
 }
 
-impl<const N: usize, V, B, S, C, E, R> NetBodyForceAndTorque<N, V, B, S, C> for Rigid<E>
+impl<const N: usize, V, B, S, X, C, E, R> NetBodyForceAndTorque<N, V, B, S, X, C> for Rigid<E>
 where
     V: Vector + WedgeProduct + Default,
     B: Transform<S> + Orientation<Rotation = R>,
     S: Position<Position = V>,
-    E: SiteForceAndTorque<V, B, S, C>,
+    E: SiteForceAndTorque<V, B, S, X, C>,
     R: Rotate<V>,
     RotationMatrix<N>: From<R>,
     V::Bivector: Default + AddAssign,
@@ -392,7 +392,7 @@ where
     #[inline]
     fn net_force_and_torque_on_body(
         &self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         body_index: usize,
     ) -> (V, <V as WedgeProduct>::Bivector) {
         let mut total_force = V::default();
@@ -427,12 +427,12 @@ where
     }
 }
 
-impl<V, B, S, C, E, R> NetBodyForceAndVirial<V, B, S, C> for Rigid<E>
+impl<V, B, S, X, C, E, R> NetBodyForceAndVirial<V, B, S, X, C> for Rigid<E>
 where
     V: Vector + Default + TensorProduct,
     B: Transform<S> + Orientation<Rotation = R>,
     S: Position<Position = V>,
-    E: SiteForceAndVirial<V, B, S, C>,
+    E: SiteForceAndVirial<V, B, S, X, C>,
     R: Rotate<V>,
     V::Tensor: GeneralMatrix + AddAssign + Sub<Output = V::Tensor>,
 {
@@ -538,7 +538,7 @@ where
     #[inline]
     fn net_force_and_virial_on_body(
         &self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         body_index: usize,
     ) -> (V, V::Tensor) {
         let mut total_force = V::default();

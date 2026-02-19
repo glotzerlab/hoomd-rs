@@ -498,14 +498,14 @@ impl<E> PairwiseCutoff<E> {
     }
 }
 
-impl<V, B, S, C, E> SiteForceAndTorque<V, B, S, C> for PairwiseCutoff<Isotropic<E>>
+impl<V, B, S, X, C, E> SiteForceAndTorque<V, B, S, X, C> for PairwiseCutoff<Isotropic<E>>
 where
     V: Vector + Default + InnerProduct + Metric + WedgeProduct,
     B: Transform<S>,
     S: Position<Position = V>,
     E: UnivariateForce,
     V::Bivector: Default,
-    C: PointsNearBall<V, SiteKey>,
+    X: PointsNearBall<V, SiteKey>,
 {
     /// Compute the net force and torque.
     /// 
@@ -588,7 +588,7 @@ where
     /// [`Site`](hoomd_microstate::Site) $`\alpha`$ and $`\beta`$, meaning 
     /// $`\boldsymbol{\tau}_{\alpha \beta}`$ is always zero.
     #[inline]
-    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, <V as WedgeProduct>::Bivector) {
+    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, <V as WedgeProduct>::Bivector) {
         // Calculate net force from all of the pairwise interactions
         let mut total_force = V::default();
         for other_site in microstate
@@ -606,14 +606,14 @@ where
     }
 }
 
-impl<V, B, S, C, E> SiteForceAndVirial<V, B, S, C> for PairwiseCutoff<E>
+impl<V, B, S, X, C, E> SiteForceAndVirial<V, B, S, X, C> for PairwiseCutoff<E>
 where
     V: Vector + Default + InnerProduct + Metric + TensorProduct,
     B: Transform<S>,
     S: Position<Position = V>,
     E: SitePairForce<V, S> + MaximumInteractionRange,
     V::Tensor: GeneralMatrix + AddAssign,
-    C: PointsNearBall<V, SiteKey>,
+    X: PointsNearBall<V, SiteKey>,
 {
     /// Calculate the net force and virial.
     /// 
@@ -679,7 +679,7 @@ where
     /// # Ok(())
     /// # }
     #[inline]
-    fn net_force_and_virial_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Tensor) {
+    fn net_force_and_virial_on_site(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Tensor) {
         let mut total_force = V::default();
         let mut total_virial = V::Tensor::zeros();
         for other_site in microstate

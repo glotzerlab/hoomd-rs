@@ -24,30 +24,30 @@ pub use nhc::NHCThermostat;
 /// Implement [`Thermostat`] or use one of the
 /// provided method in [`thermostat`](crate::thermostat)
 /// in MD simulations.
-pub trait Thermostat<B, S, C, M> {
+pub trait Thermostat<B, S, X, C, M> {
     /// Integrate the thermostat dof foward, and return
     /// Note that translation and rotation are assumed to have identical math
     /// behind their scaling factors.
     fn integrate_step_one<P>(
         &mut self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         macrostate: &M,
         dt: &f64,
         compute_properties: P,
     ) -> f64
     where
-        P: FnMut(&Microstate<B, S, C>) -> (f64, f64);
+        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64);
 
     /// The scaling factor for velocities in the second half-step.
     /// Note that translation and rotation are assumed to have identical math
     /// behind their scaling factors.
     fn integrate_step_two<P>(
         &mut self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         macrostate: &M,
         dt: &f64,
         compute_properties: P,
     ) -> f64
     where
-        P: FnMut(&Microstate<B, S, C>) -> (f64, f64);
+        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64);
 }

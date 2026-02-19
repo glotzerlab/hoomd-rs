@@ -14,7 +14,7 @@ use crate::thermalizer::TranslationalMomentumModifier;
 /// Remove the center-of-mass momentum.
 pub struct ComMomentumRemover;
 
-impl<const N: usize, B, S, C> TranslationalMomentumModifier<N, B, S, C> for ComMomentumRemover
+impl<const N: usize, B, S, X, C> TranslationalMomentumModifier<N, B, S, X, C> for ComMomentumRemover
 where
     B: Position<Position = Cartesian<N>>
         + Momentum<Vector = Cartesian<N>>
@@ -23,7 +23,8 @@ where
         + Transform<S>
         + Clone,
     S: Position<Position = Cartesian<N>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<N>, SiteKey>,
+    X: PointUpdate<Cartesian<N>, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Remove the center-of-mass momentum.
     ///
@@ -35,7 +36,7 @@ where
     /// where $`k`$ is the index of each body in a system, $`\mathbf{p}_{k,\; \mathrm{old}}`$
     /// and $`\mathbf{p}_{k,\; \mathrm{new}}`$ are the momentum vector before and after
     /// modification of $`k`$-th body, and $`m_k`$ is the mass of $`k`$-th body.
-    fn modify(&self, microstate: &mut Microstate<B, S, C>) {
+    fn modify(&self, microstate: &mut Microstate<B, S, X, C>) {
         let mut total_mass = 0.0;
         let mut total_momentum = Cartesian::<N>::default();
 

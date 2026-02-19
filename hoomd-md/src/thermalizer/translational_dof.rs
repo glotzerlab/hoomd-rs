@@ -11,7 +11,7 @@ use rand_distr::{Distribution, Normal};
 use crate::thermalizer::{TranslationalThermalizer, Thermalizer};
 
 
-impl<const N: usize, B, S, C> TranslationalThermalizer<N, B, S, C> for Thermalizer
+impl<const N: usize, B, S, X, C> TranslationalThermalizer<N, B, S, X, C> for Thermalizer
 where
     B: Position<Position = Cartesian<N>>
         + Momentum<Vector = Cartesian<N>>
@@ -20,7 +20,8 @@ where
         + Transform<S>
         + Clone,
     S: Position<Position = Cartesian<N>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<N>, SiteKey>,
+    X: PointUpdate<Cartesian<N>, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Draw random momentum from Gaussian.
     /// 
@@ -42,7 +43,7 @@ where
     /// ```math
     ///    f_\mathrm{Maxwell-Boltzmann}(p) = \left[ \frac{1}{2 m \pi k_B T} \right]^\frac{3}{2} (4 \pi p^2) \exp{\left( -\frac{p^2}{2 m k_B T} \right)}
     /// ```
-    fn thermalize_translation(&self, microstate: &mut Microstate<B, S, C>) {
+    fn thermalize_translation(&self, microstate: &mut Microstate<B, S, X, C>) {
         let mut rng = microstate.counter().make_rng();
 
         for body_index in 0..microstate.bodies().len() {

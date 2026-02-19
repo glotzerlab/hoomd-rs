@@ -82,7 +82,7 @@ impl BussiThermostat {
     }
 }
 
-impl<B, S, C, M> Thermostat<B, S, C, M> for BussiThermostat
+impl<B, S, X, C, M> Thermostat<B, S, X, C, M> for BussiThermostat
 where
     B: Clone,
     M: Temperature,
@@ -92,13 +92,13 @@ where
     #[inline]
     fn integrate_step_one<P>(
         &mut self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         macrostate: &M,
         dt: &f64,
         mut compute_properties: P,
     ) -> f64
     where
-        P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
+        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64),
     {
         #![allow(non_snake_case)]
         let kT_setpoint = macrostate.temperature();
@@ -156,13 +156,13 @@ where
     #[inline]
     fn integrate_step_two<P>(
         &mut self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         _macrostate: &M,
         _dt: &f64,
         mut compute_properties: P,
     ) -> f64
     where
-        P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
+        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64),
     {
         let (_, _) = compute_properties(&microstate);
         1.0

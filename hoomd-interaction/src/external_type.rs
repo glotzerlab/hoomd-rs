@@ -560,10 +560,10 @@ where
     }
 }
 
-impl<V, B, S, C, E> SiteForceAndTorque<V, B, S, C> for External<E>
+impl<V, B, S, X, C, E> SiteForceAndTorque<V, B, S, X, C> for External<E>
 where
     V: WedgeProduct,
-    E: SiteForceAndTorque<V, B, S, C>
+    E: SiteForceAndTorque<V, B, S, X, C>
 {
     /// Calculate the net force and torque.
     /// 
@@ -571,11 +571,11 @@ where
     /// within the system for which the net force and torque
     /// $`\mathbf{f}_\alpha`$, $`\boldsymbol{\tau}_{\alpha}`$ are calculated.
     #[inline]
-    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Bivector) {
+    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector) {
         self.0.net_force_and_torque_on_site(microstate, site)
     }
 }
-impl<const N: usize, V, B, S, C, E, R> NetBodyTorque<N, V, B, S, C> for External<E>
+impl<const N: usize, V, B, S, X, C, E, R> NetBodyTorque<N, V, B, S, X, C> for External<E>
 where
     V: Vector + WedgeProduct,
     B: Transform<S> + Orientation<Rotation = R> + Clone,
@@ -591,7 +591,7 @@ where
     /// within the system for which the net torque
     /// $`\boldsymbol{\tau}_{\alpha}`$ is calculated.
     #[inline]
-    fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V::Bivector {
+    fn net_torque_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> V::Bivector {
         let body_properties = microstate.bodies()[body_index].item.properties.clone();  // TODO: check if we need to clone here
         self.0.body_single_torque(&body_properties)
     }

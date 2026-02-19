@@ -96,9 +96,9 @@ impl MTTKThermostat {
     }
 
     /// Choose random initial values for the thermostat momentum.
-    pub fn thermalize<B, S, C, M>(
+    pub fn thermalize<B, S, X, C, M>(
         &mut self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         macrostate: &M,
         dof: &f64,
     ) where
@@ -133,7 +133,7 @@ impl MTTKThermostat {
     }
 }
 
-impl<B, S, C, M> Thermostat<B, S, C, M> for MTTKThermostat
+impl<B, S, X, C, M> Thermostat<B, S, X, C, M> for MTTKThermostat
 where
     B: Clone,
     M: Temperature,
@@ -144,13 +144,13 @@ where
     #[inline]
     fn integrate_step_one<P>(
         &mut self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         macrostate: &M,
         dt: &f64,
         mut compute_properties: P,
     ) -> f64
     where
-        P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
+        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64),
     {
         let kT_setpoint = macrostate.temperature();
 
@@ -188,13 +188,13 @@ where
     #[inline]
     fn integrate_step_two<P>(
         &mut self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         macrostate: &M,
         dt: &f64,
         mut compute_properties: P,
     ) -> f64
     where
-        P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
+        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64),
     {
         self.integrate_step_one(microstate, macrostate, &dt, &mut compute_properties)
     }

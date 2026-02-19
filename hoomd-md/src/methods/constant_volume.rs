@@ -115,7 +115,7 @@ impl ConstantVolume {
     }
 }
 
-impl<V, B, S, C, T, M> TranslationalMotion<B, S, C, T, M> for ConstantVolume
+impl<V, B, S, X, C, T, M> TranslationalMotion<B, S, X, C, T, M> for ConstantVolume
 where
     V: Default + Vector + InnerProduct,
     B: Position<Position = V>
@@ -125,8 +125,9 @@ where
         + Transform<S>
         + Clone,
     S: Position<Position = V> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<V, SiteKey>,
-    T: Thermostat<B, S, C, M>,
+    X: PointUpdate<V, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    T: Thermostat<B, S, X, C, M>,
 {
     /// Perform the first-half integration on translational degrees-of-freedom
     /// , advancing the [`Microstate`] and possibly the [`Thermostat`] state forward as 
@@ -149,12 +150,12 @@ where
     #[inline]
     fn integrate_translation_step_one(
         &mut self,
-        microstate: &mut Microstate<B, S, C>,
+        microstate: &mut Microstate<B, S, X, C>,
         thermostat: &mut T,
         macrostate: &M,
     ) {
         // Closure for calculating (ke, dof) in the Thermostat
-        let mut compute_properties = |microstate: &Microstate<B, S, C>| -> (f64, f64) {
+        let mut compute_properties = |microstate: &Microstate<B, S, X, C>| -> (f64, f64) {
             let integrator_ke = &mut self.translational_kinetic_energy;
             let integrator_dof = &mut self.translational_dof;
             let mut ke = 0.0;
@@ -231,12 +232,12 @@ where
     #[inline]
     fn integrate_translation_step_two(
         &mut self,
-        microstate: &mut Microstate<B, S, C>,
+        microstate: &mut Microstate<B, S, X, C>,
         thermostat: &mut T,
         macrostate: &M,
     ) {
         // Closure for calculating (ke, dof) in the Thermostat
-        let mut compute_properties = |microstate: &Microstate<B, S, C>| -> (f64, f64) {
+        let mut compute_properties = |microstate: &Microstate<B, S, X, C>| -> (f64, f64) {
             let integrator_ke = &mut self.translational_kinetic_energy;
             let integrator_dof = &mut self.translational_dof;
             let mut ke = 0.0;
@@ -307,7 +308,7 @@ where
     }
 }
 
-impl<B, S, C, T, M> RotationalMotion<3, B, S, C, T, M> for ConstantVolume
+impl<B, S, X, C, T, M> RotationalMotion<3, B, S, X, C, T, M> for ConstantVolume
 where
     B: Orientation<Rotation = Versor>
         + AngularMomentum<AngularMomentum = Cartesian<3>>
@@ -317,8 +318,9 @@ where
         + Position<Position = Cartesian<3>> // TODO: should this be required?
         + Clone,
     S: Position<Position = Cartesian<3>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<3>, SiteKey>,
-    T: Thermostat<B, S, C, M>,
+    X: PointUpdate<Cartesian<3>, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    T: Thermostat<B, S, X, C, M>,
 {
     /// Perform the first-half integration on rotational degrees-of-freedom
     /// for three-dimensional system, advancing the [`Microstate`] and possibly 
@@ -421,12 +423,12 @@ where
     #[allow(clippy::too_many_lines)]
     fn integrate_rotation_step_one(
         &mut self,
-        microstate: &mut Microstate<B, S, C>,
+        microstate: &mut Microstate<B, S, X, C>,
         thermostat: &mut T,
         macrostate: &M,
     ) {
         // Closure for calculating (ke, dof) in the Thermostat
-        let mut compute_properties = |microstate: &Microstate<B, S, C>| -> (f64, f64) {
+        let mut compute_properties = |microstate: &Microstate<B, S, X, C>| -> (f64, f64) {
             let integrator_ke = &mut self.rotational_kinetic_energy;
             let integrator_dof = &mut self.rotational_dof;
             let mut ke = 0.0;
@@ -661,12 +663,12 @@ where
     #[inline]
     fn integrate_rotation_step_two(
         &mut self,
-        microstate: &mut Microstate<B, S, C>,
+        microstate: &mut Microstate<B, S, X, C>,
         thermostat: &mut T,
         macrostate: &M,
     ) {
         // Closure for calculating (ke, dof) in the Thermostat
-        let mut compute_properties = |microstate: &Microstate<B, S, C>| -> (f64, f64) {
+        let mut compute_properties = |microstate: &Microstate<B, S, X, C>| -> (f64, f64) {
             let integrator_ke = &mut self.rotational_kinetic_energy;
             let integrator_dof = &mut self.rotational_dof;
             let mut ke = 0.0;
@@ -812,7 +814,7 @@ where
 /// * `E`: The interaction [`evaluator`]() type.
 /// * `T`: The [`Thermostat`]() type.
 /// * `M`: The [`macrostate`](crate::macrostate) type.
-impl<B, S, C, T, M> RotationalMotion<2, B, S, C, T, M> for ConstantVolume
+impl<B, S, X, C, T, M> RotationalMotion<2, B, S, X, C, T, M> for ConstantVolume
 where
     B: Orientation<Rotation = Angle>
         + AngularMomentum<AngularMomentum = f64>
@@ -822,8 +824,9 @@ where
         + Position<Position = Cartesian<2>> // TODO: should this be required?
         + Clone,
     S: Position<Position = Cartesian<2>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<2>, SiteKey>,
-    T: Thermostat<B, S, C, M>,
+    X: PointUpdate<Cartesian<2>, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    T: Thermostat<B, S, X, C, M>,
 {
     /// Perform the first-half integration on rotational 
     /// degrees-of-freedom for two-dimensional system, 
@@ -846,12 +849,12 @@ where
     #[inline]
     fn integrate_rotation_step_one(
         &mut self,
-        microstate: &mut Microstate<B, S, C>,
+        microstate: &mut Microstate<B, S, X, C>,
         thermostat: &mut T,
         macrostate: &M,
     ) {
         // Closure for calculating (ke, dof) in the Thermostat
-        let mut compute_properties = |microstate: &Microstate<B, S, C>| -> (f64, f64) {
+        let mut compute_properties = |microstate: &Microstate<B, S, X, C>| -> (f64, f64) {
             let integrator_ke = &mut self.rotational_kinetic_energy;
             let integrator_dof = &mut self.rotational_dof;
             let mut ke = 0.0;
@@ -936,12 +939,12 @@ where
     #[inline]
     fn integrate_rotation_step_two(
         &mut self,
-        microstate: &mut Microstate<B, S, C>,
+        microstate: &mut Microstate<B, S, X, C>,
         thermostat: &mut T,
         macrostate: &M,
     ) {
         // Closure for calculating (ke, dof) in the Thermostat
-        let mut compute_properties = |microstate: &Microstate<B, S, C>| -> (f64, f64) {
+        let mut compute_properties = |microstate: &Microstate<B, S, X, C>| -> (f64, f64) {
             let integrator_ke = &mut self.rotational_kinetic_energy;
             let integrator_dof = &mut self.rotational_dof;
             let mut ke = 0.0;
@@ -1016,13 +1019,14 @@ where
     }
 }
 
-impl<V, B, S, C, E> ForceUpdate<B, S, C, E> for ConstantVolume
+impl<V, B, S, X, C, E> ForceUpdate<B, S, X, C, E> for ConstantVolume
 where
     V: Default + Vector + InnerProduct,
     B: Position<Position = V> + NetForce<Vector = V> + Transform<S> + Clone,
     S: Position<Position = V> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<V, SiteKey>,
-    E: NetBodyForce<V, B, S, C>,
+    X: PointUpdate<V, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    E: NetBodyForce<V, B, S, X, C>,
 {
     /// Perform the [`NetForce`] update in [`Microstate`] using its 
     /// [`Body`](hoomd_microstate::Body::properties) and [`rigid`](hoomd_interaction::rigid).
@@ -1035,7 +1039,7 @@ where
     /// [`integrate_rotation_step_two`](ConstantVolume::integrate_rotation_step_two), to enable
     /// correct time integration. 
     #[inline]
-    fn update_force(&self, microstate: &mut Microstate<B, S, C>, evaluator: &E) {
+    fn update_force(&self, microstate: &mut Microstate<B, S, X, C>, evaluator: &E) {
         for body_index in 0..microstate.bodies().len() {
             // Get a copy of the body properties to modify
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
@@ -1052,15 +1056,16 @@ where
     }
 }
 
-impl<B, S, C, E> TorqueUpdate<2, B, S, C, E> for ConstantVolume
+impl<B, S, X, C, E> TorqueUpdate<2, B, S, X, C, E> for ConstantVolume
 where
     B: NetTorque<NetTorque = f64>
         + Transform<S>
         + Position<Position = Cartesian<2>> // TODO: should this be required?
         + Clone,
     S: Position<Position = Cartesian<2>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<2>, SiteKey>,
-    E: NetBodyTorque<2, Cartesian<2>, B, S, C>,
+    X: PointUpdate<Cartesian<2>, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    E: NetBodyTorque<2, Cartesian<2>, B, S, X, C>,
 {
     /// Perform the [`NetTorque`] update in [`Microstate`] using its 
     /// [`Body`](hoomd_microstate::Body::properties) and [`rigid`](hoomd_interaction::rigid).
@@ -1073,7 +1078,7 @@ where
     /// [`integrate_rotation_step_two`](ConstantVolume::integrate_rotation_step_two), to enable
     /// correct time integration. 
     #[inline]
-    fn update_torque(&self, microstate: &mut Microstate<B, S, C>, evaluator: &E) {
+    fn update_torque(&self, microstate: &mut Microstate<B, S, X, C>, evaluator: &E) {
         for body_index in 0..microstate.bodies().len() {
             // Get a copy of the body properties to modify
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
@@ -1090,15 +1095,16 @@ where
     }
 }
 
-impl<B, S, C, E> TorqueUpdate<3, B, S, C, E> for ConstantVolume
+impl<B, S, X, C, E> TorqueUpdate<3, B, S, X, C, E> for ConstantVolume
 where
     B: NetTorque<NetTorque = Cartesian<3>>
         + Transform<S>
         + Position<Position = Cartesian<3>> // TODO: should this be required?
         + Clone,
     S: Position<Position = Cartesian<3>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<3>, SiteKey>,
-    E: NetBodyTorque<3, Cartesian<3>, B, S, C>,
+    X: PointUpdate<Cartesian<3>, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    E: NetBodyTorque<3, Cartesian<3>, B, S, X, C>,
 {
     /// Perform the [`NetTorque`] update in [`Microstate`] using its 
     /// [`Body`](hoomd_microstate::Body::properties) and [`rigid`](hoomd_interaction::rigid).
@@ -1111,7 +1117,7 @@ where
     /// [`integrate_rotation_step_two`](ConstantVolume::integrate_rotation_step_two), to enable
     /// correct time integration. 
     #[inline]
-    fn update_torque(&self, microstate: &mut Microstate<B, S, C>, evaluator: &E) {
+    fn update_torque(&self, microstate: &mut Microstate<B, S, X, C>, evaluator: &E) {
         for body_index in 0..microstate.bodies().len() {
             // Get a copy of the body properties to modify
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
@@ -1129,7 +1135,7 @@ where
 }
 
 // Impl for both translation and rotation
-impl<B, S, C, E> ForceAndTorqueUpdate<2, B, S, C, E> for ConstantVolume
+impl<B, S, X, C, E> ForceAndTorqueUpdate<2, B, S, X, C, E> for ConstantVolume
 where
     B: Orientation<Rotation = Angle>
         + NetForce<Vector = Cartesian<2>>
@@ -1138,8 +1144,9 @@ where
         + Position<Position = Cartesian<2>> // TODO: should this be required?
         + Clone,
     S: Position<Position = Cartesian<2>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<2>, SiteKey>,
-    E: NetBodyForceAndTorque<2, Cartesian<2>, B, S, C>,
+    X: PointUpdate<Cartesian<2>, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    E: NetBodyForceAndTorque<2, Cartesian<2>, B, S, X, C>,
 {
     /// Perform the [`NetForce`] and [`NetTorque`] update in [`Microstate`] using its 
     /// [`Body`](hoomd_microstate::Body::properties) and [`rigid`](hoomd_interaction::rigid).
@@ -1152,7 +1159,7 @@ where
     /// [`integrate_rotation_step_two`](ConstantVolume::integrate_rotation_step_two), to enable
     /// correct time integration. 
     #[inline]
-    fn update_force_and_torque(&self, microstate: &mut Microstate<B, S, C>, evaluator: &E) {
+    fn update_force_and_torque(&self, microstate: &mut Microstate<B, S, X, C>, evaluator: &E) {
         for body_index in 0..microstate.bodies().len() {
             // Get a copy of the body properties to modify
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();
@@ -1172,7 +1179,7 @@ where
 }
 
 // Impl for both translation and rotation
-impl<B, S, C, E> ForceAndTorqueUpdate<3, B, S, C, E> for ConstantVolume
+impl<B, S, X, C, E> ForceAndTorqueUpdate<3, B, S, X, C, E> for ConstantVolume
 where
     B: Orientation<Rotation = Versor>
         + NetForce<Vector = Cartesian<3>>
@@ -1181,8 +1188,9 @@ where
         + Position<Position = Cartesian<3>> // TODO: should this be required?
         + Clone,
     S: Position<Position = Cartesian<3>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<3>, SiteKey>,
-    E: NetBodyForceAndTorque<3, Cartesian<3>, B, S, C>,
+    X: PointUpdate<Cartesian<3>, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
+    E: NetBodyForceAndTorque<3, Cartesian<3>, B, S, X, C>,
 {
     /// Perform the [`NetForce`] and [`NetTorque`] update in [`Microstate`] using its 
     /// [`Body`](hoomd_microstate::Body::properties) and [`rigid`](hoomd_interaction::rigid).
@@ -1195,7 +1203,7 @@ where
     /// [`integrate_rotation_step_two`](ConstantVolume::integrate_rotation_step_two), to enable
     /// correct time integration. 
     #[inline]
-    fn update_force_and_torque(&self, microstate: &mut Microstate<B, S, C>, evaluator: &E) {
+    fn update_force_and_torque(&self, microstate: &mut Microstate<B, S, X, C>, evaluator: &E) {
         for body_index in 0..microstate.bodies().len() {
             // Get a copy of the body properties to modify
             let mut body_properties = microstate.bodies()[body_index].item.properties.clone();

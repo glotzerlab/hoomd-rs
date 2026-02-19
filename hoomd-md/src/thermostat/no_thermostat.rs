@@ -11,19 +11,19 @@ use crate::thermostat::Thermostat;
 /// integration.
 pub struct NoThermostat;
 
-impl<B, S, C, M> Thermostat<B, S, C, M> for NoThermostat {
+impl<B, S, X, C, M> Thermostat<B, S, X, C, M> for NoThermostat {
     /// Dummy method that performs no temperature
     /// adjustment.
     #[inline]
     fn integrate_step_one<P>(
         &mut self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         _macrostate: &M,
         _dt: &f64,
         mut compute_properties: P,
     ) -> f64
     where
-        P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
+        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64),
     {
         let (_, _) = compute_properties(&microstate);
         1.0
@@ -34,13 +34,13 @@ impl<B, S, C, M> Thermostat<B, S, C, M> for NoThermostat {
     #[inline]
     fn integrate_step_two<P>(
         &mut self,
-        microstate: &Microstate<B, S, C>,
+        microstate: &Microstate<B, S, X, C>,
         _macrostate: &M,
         _dt: &f64,
         mut compute_properties: P,
     ) -> f64
     where
-        P: FnMut(&Microstate<B, S, C>) -> (f64, f64),
+        P: FnMut(&Microstate<B, S, X, C>) -> (f64, f64),
     {
         let (_, _) = compute_properties(&microstate);
         1.0

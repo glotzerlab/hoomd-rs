@@ -14,7 +14,7 @@ use crate::thermalizer::TranslationalMomentumModifier;
 /// Remove the center-of-mass angular momentum.
 pub struct ComAngularMomentumRemover;
 
-impl<B, S, C> TranslationalMomentumModifier<3, B, S, C> for ComAngularMomentumRemover
+impl<B, S, X, C> TranslationalMomentumModifier<3, B, S, X, C> for ComAngularMomentumRemover
 where
     B: Position<Position = Cartesian<3>>
         + Momentum<Vector = Cartesian<3>>
@@ -23,7 +23,8 @@ where
         + Transform<S>
         + Clone,
     S: Position<Position = Cartesian<3>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<3>, SiteKey>,
+    X: PointUpdate<Cartesian<3>, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Remove the center-of-mass angular momentum resulting from translational DOF.
     /// 
@@ -50,7 +51,7 @@ where
     /// is 0, it will set the corresponding $`\mathbf{\omega}_\mathrm{com}`$ component
     /// to 0, by assuming the system do not rotate with respect to the corresponding
     /// principal axis.
-    fn modify(&self, microstate: &mut Microstate<B, S, C>) {
+    fn modify(&self, microstate: &mut Microstate<B, S, X, C>) {
         let mut com = Cartesian::default();
         let mut total_mass = 0.0;
 
@@ -130,7 +131,7 @@ where
     }
 }
 
-impl<B, S, C> TranslationalMomentumModifier<2, B, S, C> for ComAngularMomentumRemover
+impl<B, S, X, C> TranslationalMomentumModifier<2, B, S, X, C> for ComAngularMomentumRemover
 where
     B: Position<Position = Cartesian<2>>
         + Momentum<Vector = Cartesian<2>>
@@ -139,7 +140,8 @@ where
         + Transform<S>
         + Clone,
     S: Position<Position = Cartesian<2>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<2>, SiteKey>,
+    X: PointUpdate<Cartesian<2>, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Remove the center-of-mass angular momentum resulting from translational DOF.
     /// 
@@ -154,7 +156,7 @@ where
     /// pointing from COM to $`k`$-th body, $`\mathbf{p}_{k,\; \mathrm{old}}`$
     /// and $`\mathbf{p}_{k,\; \mathrm{new}}`$ are the momentum vector before and after
     /// modification of $`k`$-th body, and $`m_k`$ is the mass of $`k`$-th body.
-    fn modify(&self, microstate: &mut Microstate<B, S, C>) {
+    fn modify(&self, microstate: &mut Microstate<B, S, X, C>) {
         let mut com = Cartesian::default();
         let mut total_mass = 0.0;
 

@@ -15,7 +15,7 @@ use rand_distr::{Distribution, Normal};
 use crate::thermalizer::{RotationalThermalizer, Thermalizer};
 
 
-impl<B, S, C> RotationalThermalizer<2, B, S, C> for Thermalizer
+impl<B, S, X, C> RotationalThermalizer<2, B, S, X, C> for Thermalizer
 where
     B: Orientation<Rotation = Angle>
         + AngularMomentum<AngularMomentum = f64>
@@ -25,7 +25,8 @@ where
         + Transform<S>
         + Clone,
     S: Position<Position = Cartesian<2>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<2>, SiteKey>,
+    X: PointUpdate<Cartesian<2>, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Draw random angular momentum from Gaussian.
     ///
@@ -41,7 +42,7 @@ where
     /// ```math
     ///    f(l) = \sqrt{ \frac{1}{2 \pi I k_B T} } \exp{\left( -\frac{l^2}{2 I k_B T} \right)}
     /// ```
-    fn thermalize_rotation(&self, microstate: &mut Microstate<B, S, C>) {
+    fn thermalize_rotation(&self, microstate: &mut Microstate<B, S, X, C>) {
         let mut rng = microstate.counter().make_rng();
 
         for body_index in 0..microstate.bodies().len() {
@@ -62,7 +63,7 @@ where
     }
 }
 
-impl<B, S, C> RotationalThermalizer<3, B, S, C> for Thermalizer
+impl<B, S, X, C> RotationalThermalizer<3, B, S, X, C> for Thermalizer
 where
     B: Orientation<Rotation = Versor>
         + AngularMomentum<AngularMomentum = Cartesian<3>>
@@ -72,7 +73,8 @@ where
         + Transform<S>
         + Clone,
     S: Position<Position = Cartesian<3>> + Default,
-    C: Wrap<B> + Wrap<S> + GenerateGhosts<S> + PointUpdate<Cartesian<3>, SiteKey>,
+    X: PointUpdate<Cartesian<3>, SiteKey>,
+    C: Wrap<B> + Wrap<S> + GenerateGhosts<S>,
 {
     /// Draw random angular momentum from Gaussian.
     ///
@@ -87,7 +89,7 @@ where
     /// ```math
     ///    f(l_i) = \sqrt{ \frac{1}{2 \pi I_{ii} k_B T} } \exp{\left( -\frac{l_i^2}{2 I_{ii} k_B T} \right)}
     /// ```
-    fn thermalize_rotation(&self, microstate: &mut Microstate<B, S, C>) {
+    fn thermalize_rotation(&self, microstate: &mut Microstate<B, S, X, C>) {
         let mut rng = microstate.counter().make_rng();
 
         for body_index in 0..microstate.bodies().len() {

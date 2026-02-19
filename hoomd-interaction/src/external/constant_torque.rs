@@ -44,14 +44,14 @@ pub struct ConstantTorque<V: WedgeProduct> {
     pub direction: V::Bivector,
 }
 
-impl<V, B, S, C> SiteForceAndTorque<V, B, S, C> for ConstantTorque<V>
+impl<V, B, S, X, C> SiteForceAndTorque<V, B, S, X, C> for ConstantTorque<V>
 where
     V: WedgeProduct + Default,
     V::Bivector: Default + Mul<f64, Output = V::Bivector> + Clone
 {
     /// Calculate the force and torque.
     #[inline]
-    fn net_force_and_torque_on_site(&self, _microstate: &Microstate<B, S, C>, _site: &Site<S>) -> (V, V::Bivector) {
+    fn net_force_and_torque_on_site(&self, _microstate: &Microstate<B, S, X, C>, _site: &Site<S>) -> (V, V::Bivector) {
         let force = V::default();
         let torque = self.direction.clone() * self.alpha;
         (force, torque)

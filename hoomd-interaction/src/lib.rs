@@ -557,10 +557,10 @@ pub trait DeltaEnergyRemove<B, S, X, C> {
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
-pub trait NetBodyForce<V, B, S, C> {
+pub trait NetBodyForce<V, B, S, X, C> {
     /// Compute the net force.
     #[must_use]
-    fn net_force_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V;
+    fn net_force_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> V;
 }
 
 /// Compute the net torque on a single [`Body::properties`](hoomd_microstate::Body).
@@ -570,10 +570,10 @@ pub trait NetBodyForce<V, B, S, C> {
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
-pub trait NetBodyTorque<const N: usize, V: WedgeProduct, B, S, C> {
+pub trait NetBodyTorque<const N: usize, V: WedgeProduct, B, S, X, C> {
     /// Compute the net torque.
     #[must_use]
-    fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V::Bivector;
+    fn net_torque_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> V::Bivector;
 }
 
 /// Compute both the net force and torque on a single [`Body::properties`](hoomd_microstate::Body).
@@ -584,10 +584,10 @@ pub trait NetBodyTorque<const N: usize, V: WedgeProduct, B, S, C> {
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
-pub trait NetBodyForceAndTorque<const N: usize, V: WedgeProduct, B, S, C> {
+pub trait NetBodyForceAndTorque<const N: usize, V: WedgeProduct, B, S, X, C> {
     /// Compute the net force and torque.
     #[must_use]
-    fn net_force_and_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> (V, V::Bivector);
+    fn net_force_and_torque_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> (V, V::Bivector);
 }
 
 /// Compute both the net force and virial on a single [`Body::properties`](hoomd_microstate::Body).
@@ -598,27 +598,27 @@ pub trait NetBodyForceAndTorque<const N: usize, V: WedgeProduct, B, S, C> {
 /// * `B`: The [`Body::properties`](hoomd_microstate::Body) type.
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
-pub trait NetBodyForceAndVirial<V: TensorProduct, B, S, C> {
+pub trait NetBodyForceAndVirial<V: TensorProduct, B, S, X, C> {
     /// Compute the net force and virial.
     #[must_use]
-    fn net_force_and_virial_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> (V, V::Tensor);
+    fn net_force_and_virial_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> (V, V::Tensor);
 }
 
 /** Compute the net force and virial on a site.
 */
-pub trait SiteForceAndVirial<V: TensorProduct, B, S, C> {
+pub trait SiteForceAndVirial<V: TensorProduct, B, S, X, C> {
     /** Compute the net force and virial on a site.
     TODO
     */
     #[must_use]
-    fn net_force_and_virial_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Tensor);
+    fn net_force_and_virial_on_site(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Tensor);
 }
 
 /** TODO: Documentation */
-pub trait SiteForceAndTorque<V: WedgeProduct, B, S, C> {
+pub trait SiteForceAndTorque<V: WedgeProduct, B, S, X, C> {
     /** TODO: Documentation */
     #[must_use]
-    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, C>, site: &Site<S>) -> (V, V::Bivector);
+    fn net_force_and_torque_on_site(&self, microstate: &Microstate<B, S, X, C>, site: &Site<S>) -> (V, V::Bivector);
 }
 
 /// Compute the non-pairwise force on a single site.
@@ -675,19 +675,19 @@ pub trait ExternalBodyTorque<V: WedgeProduct, B> {
 /// Sum two [`NetBodyTorque`] on a body.
 /// TODO: Should move it to other script.
 /// TODO: Add example in the doc. 
-impl<const N: usize, V, B, S, C, E1, E2, R> NetBodyTorque<N, V, B, S, C> for (E1, E2)
+impl<const N: usize, V, B, S, X, C, E1, E2, R> NetBodyTorque<N, V, B, S, X, C> for (E1, E2)
 where
     V: Vector + WedgeProduct,
     B: Transform<S> + Orientation<Rotation = R>,
     S: Position<Position = V>,
-    E1: NetBodyTorque<N, V, B, S, C>,
-    E2: NetBodyTorque<N, V, B, S, C>,
+    E1: NetBodyTorque<N, V, B, S, X, C>,
+    E2: NetBodyTorque<N, V, B, S, X, C>,
     R: Rotate<V>,
     RotationMatrix<N>: From<R>,
     V::Bivector: Default + Add<Output = V::Bivector>,
 {
     #[inline]
-    fn net_torque_on_body(&self, microstate: &Microstate<B, S, C>, body_index: usize) -> V::Bivector {
+    fn net_torque_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> V::Bivector {
         self.0.net_torque_on_body(microstate, body_index)
             + self.1.net_torque_on_body(microstate, body_index)
     }
