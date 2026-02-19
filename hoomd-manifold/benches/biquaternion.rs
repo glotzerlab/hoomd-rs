@@ -9,7 +9,7 @@
 //! Benchmark Biquaternion
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
-use rand::{Rng, SeedableRng, rngs::StdRng};
+use rand::{RngExt, SeedableRng, rngs::StdRng};
 
 use hoomd_manifold::{HyperbolicRotate, HyperbolicRotationMatrix, Minkowski, UnitBiquaternion};
 

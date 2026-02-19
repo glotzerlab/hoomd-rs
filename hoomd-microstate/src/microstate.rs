@@ -1700,6 +1700,7 @@ mod tests {
     mod open {
         use super::*;
         use assert2::{assert, check};
+        use rand::RngExt;
 
         fn create_body<R: Rng>(rng: &mut R) -> Body<Point<Cartesian<2>>> {
             let mut body = Body::point(rng.random::<Cartesian<2>>() * MAX_INITIAL_BODY_COORDINATE);
@@ -1956,6 +1957,7 @@ mod tests {
     mod periodic {
         use super::*;
         use assert2::{assert, check};
+        use rand::RngExt;
 
         fn create_body<R: Rng>(
             rng: &mut R,

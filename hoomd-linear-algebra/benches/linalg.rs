@@ -9,7 +9,7 @@
 //! Benchmark Matrix
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
-use rand::{Rng, SeedableRng, rngs::StdRng};
+use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
 
 use hoomd_linear_algebra::{Invertible, MatMul, matrix::Matrix};
 

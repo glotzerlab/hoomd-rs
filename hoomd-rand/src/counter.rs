@@ -48,7 +48,7 @@ use crate::SFC64;
 ///
 /// ```
 /// use hoomd_rand::Counter;
-/// use rand::Rng;
+/// use rand::{Rng, RngExt};
 ///
 /// # let step = 100_000;
 /// # let substep = 10;
@@ -145,7 +145,7 @@ impl Counter {
     ///
     /// ```
     /// use hoomd_rand::Counter;
-    /// use rand::Rng;
+    /// use rand::{Rng, RngExt};
     ///
     /// let step = 100_000;
     /// let substep = 10;
@@ -171,6 +171,7 @@ impl Counter {
 mod tests {
     use super::*;
     use assert2::check;
+    use rand::RngExt;
 
     /// Number of stream elements to sample.
     const N: usize = 256;
