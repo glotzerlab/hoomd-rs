@@ -2,7 +2,7 @@
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    pairwise::{Isotropic, LennardJones}, rigid::Rigid, CutoffPair
+    pairwise::Isotropic, univariate::LennardJones, rigid::Rigid, PairwiseCutoff
 };
 use hoomd_md::{
     methods::{
@@ -13,9 +13,10 @@ use hoomd_md::{
     thermostat::NoThermostat
 };
 use hoomd_microstate::{
-    boundary::{Periodic}, property::{DynamicsPoint, Momentum, Point}, Body, Microstate, MicrostateBuilder
+    Body, Microstate, SiteKey, boundary::Periodic, property::{DynamicsPoint, Momentum, Point}
 };
 use hoomd_simulation::{Simulation};
+use hoomd_spatial::AllPairs;
 use hoomd_vector::Cartesian;
 
 use hoomd_bevy::{
@@ -37,13 +38,18 @@ struct Isoenergy {}
 #[derive(Resource)]
 struct Swim {
     // microstate: Microstate<DynamicsPoint<Cartesian<2>>, Point<Cartesian<2>>, Closed<Rectangle>>,
-    microstate: Microstate<DynamicsPoint<Cartesian<2>>, Point<Cartesian<2>>, Periodic<Rectangle>>,
+    microstate: Microstate<
+        DynamicsPoint<Cartesian<2>>,
+        Point<Cartesian<2>>,
+        AllPairs<SiteKey>,
+        Periodic<Rectangle>
+    >,
 
     macrostate: Isoenergy,
     
     thermostat: NoThermostat,
 
-    force: Rigid<CutoffPair<Isotropic<LennardJones<12, 6>>>>,
+    force: Rigid<PairwiseCutoff<Isotropic<LennardJones<12, 6>>>>,
 
     integrator: ConstantVolume,
 }
@@ -57,7 +63,7 @@ impl Swim {
         let square = Rectangle::with_equal_edges(box_length.try_into()?);
         // let boundary = Closed(square);
         let boundary = Periodic::new(2.5, square)?;
-        let mut builder = MicrostateBuilder::with_boundary(boundary);
+        let mut builder = Microstate::builder().boundary(boundary);
 
         let (n_rows, n_columns) = (5, 5);
         let space = 3.0;
@@ -97,13 +103,17 @@ impl Swim {
         let microstate = builder.try_build()?;
      
         // Model interactions (in this case, a pairwise Lennard-Jones)
-        let force = Rigid(CutoffPair {
-            r_cut: 6.0,
-            evaluator: Isotropic(LennardJones::<12,6> {
-                epsilon: 0.01,
-                sigma: 1.0
-            })
-        });
+        let force = Rigid(
+            PairwiseCutoff(
+                Isotropic {
+                    interaction: LennardJones::<12,6> {
+                        epsilon: 0.01,
+                        sigma: 1.0
+                    },
+                    r_cut: 6.0,
+                }
+            )
+        );
     
         // Create an NVE macrostate
         let macrostate = Isoenergy{};

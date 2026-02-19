@@ -5,8 +5,8 @@
 use bevy_egui::EguiPlugin;
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    CutoffPair, NetBodyForce, TotalEnergy,
-    pairwise::{Isotropic, LennardJonesGauss},
+    PairwiseCutoff, NetBodyForce, TotalEnergy,
+    pairwise::Isotropic, univariate::LennardJonesGauss,
     rigid::Rigid,
 };
 use hoomd_md::{
@@ -22,11 +22,10 @@ use hoomd_md::{
     }, thermostat::BussiThermostat
 };
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder,
-    boundary::Periodic,
-    property::{DynamicsPoint, NetForce, Point},
+    Body, Microstate, SiteKey, boundary::Periodic, property::{DynamicsPoint, NetForce, Point}
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
+use hoomd_spatial::AllPairs;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::Cartesian;
 
@@ -46,13 +45,18 @@ struct A;
 #[derive(Resource)]
 struct LJGSquare {
     // microstate: Microstate<DynamicsPoint<Cartesian<2>>, Point<Cartesian<2>>, Closed<Rectangle>>,
-    microstate: Microstate<DynamicsPoint<Cartesian<2>>, Point<Cartesian<2>>, Periodic<Rectangle>>,
+    microstate: Microstate<
+        DynamicsPoint<Cartesian<2>>,
+        Point<Cartesian<2>>,
+        AllPairs<SiteKey>,
+        Periodic<Rectangle>,
+    >,
 
     macrostate: Isothermal,
 
     thermostat: BussiThermostat,
 
-    force: Rigid<CutoffPair<Isotropic<LennardJonesGauss>>>,
+    force: Rigid<PairwiseCutoff<Isotropic<LennardJonesGauss>>>,
 
     integrator: ConstantVolume,
 }
@@ -65,21 +69,25 @@ impl LJGSquare {
         let kT_init = 0.15;
 
         // LJG potential
-        let force = Rigid(CutoffPair {
-            r_cut: 3.0,
-            evaluator: Isotropic(LennardJonesGauss {
-                epsilon: 0.75,
-                sigma_squared: 0.02,
-                r_0: 1.41,
-                scale: 1.0,
-            }),
-        });
+        let force = Rigid(
+            PairwiseCutoff(
+                Isotropic {
+                    interaction: LennardJonesGauss {
+                        epsilon: 0.75,
+                        sigma_squared: 0.02,
+                        r_0: 1.41,
+                        scale: 1.0,
+                    },
+                    r_cut: 3.0,
+                }
+            )
+        );
 
         // Create a microstate with a grid of bodies and a swimmer (final body)
         let square = Rectangle::with_equal_edges(box_length.try_into()?);
         // let boundary = Closed(square);
         let boundary = Periodic::new(2.5, square)?;
-        let mut builder = MicrostateBuilder::with_boundary(boundary);
+        let mut builder = Microstate::builder().boundary(boundary);
 
         let (n_rows, n_columns) = (10, 10);
         let space = 1.0;

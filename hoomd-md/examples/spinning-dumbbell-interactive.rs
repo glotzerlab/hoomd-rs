@@ -17,11 +17,10 @@ use hoomd_md::{
     thermostat::NoThermostat,
 };
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder,
-    boundary::Periodic,
-    property::{OrientedDynamicsPoint, Point},
+    Body, Microstate, SiteKey, boundary::Periodic, property::{OrientedDynamicsPoint, Point}
 };
 use hoomd_simulation::Simulation;
+use hoomd_spatial::AllPairs;
 use hoomd_vector::{Angle, Cartesian};
 
 use bevy_egui::EguiPlugin;
@@ -45,6 +44,7 @@ struct Dumbbell {
     microstate: Microstate<
         OrientedDynamicsPoint<Cartesian<2>, Angle>,
         Point<Cartesian<2>>,
+        AllPairs<SiteKey>,
         Periodic<Rectangle>,
     >,
 
@@ -65,7 +65,7 @@ impl Dumbbell {
         let square = Rectangle::with_equal_edges(box_length.try_into()?);
         // let boundary = Closed(square);
         let boundary = Periodic::new(2.5, square)?;
-        let mut microstate = MicrostateBuilder::with_boundary(boundary).try_build()?;
+        let mut microstate = Microstate::builder().boundary(boundary);
 
         let dumbbell_body = Body {
             properties: OrientedDynamicsPoint {

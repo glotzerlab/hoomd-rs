@@ -6,8 +6,8 @@
 
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{
-    CutoffPair, TotalEnergy,
-    pairwise::{Isotropic, LennardJones, Xplor},
+    PairwiseCutoff, TotalEnergy,
+    pairwise::Isotropic, univariate::{LennardJones, Xplor},
     rigid::Rigid,
 };
 use hoomd_md::{
@@ -23,25 +23,28 @@ use hoomd_md::{
     }, thermostat::NoThermostat
 };
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder,
-    boundary::Periodic,
-    property::{DynamicsPoint, Point},
+    Body, Microstate, SiteKey, boundary::Periodic, property::{DynamicsPoint, Point}
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
+use hoomd_spatial::AllPairs;
 use hoomd_vector::Cartesian;
 
 use anyhow::Context;
 
 /// The state of the swimming simulation, tracked as a resource by Bevy
 struct System {
-    microstate:
-        Microstate<DynamicsPoint<Cartesian<3>>, Point<Cartesian<3>>, Periodic<Hypercuboid<3>>>,
+    microstate: Microstate<
+        DynamicsPoint<Cartesian<3>>,
+        Point<Cartesian<3>>,
+        AllPairs<SiteKey>,
+        Periodic<Hypercuboid<3>>
+    >,
 
     macrostate: Isothermal,
 
     thermostat: NoThermostat,
 
-    force: Rigid<CutoffPair<Isotropic<Xplor<LennardJones>>>>,
+    force: Rigid<PairwiseCutoff<Isotropic<Xplor<LennardJones>>>>,
 
     integrator: ConstantVolume,
 }
@@ -57,7 +60,7 @@ impl System {
 
         let cube = Hypercuboid::<3>::with_equal_edges(box_length.try_into()?);
         let boundary = Periodic::new(6.0, cube)?;
-        let mut builder = MicrostateBuilder::with_boundary(boundary);
+        let mut builder = Microstate::builder().boundary(boundary);
 
         let space = box_length / n;
         assert!(
@@ -87,17 +90,21 @@ impl System {
         let mut microstate = builder.try_build()?;
 
         // Model interactions (in this case, a pairwise Lennard-Jones)
-        let force = Rigid(CutoffPair {
-            r_cut: 2.0_f64.powf(1.0 / 6.0),
-            evaluator: Isotropic(Xplor {
-                f: LennardJones::<12, 6> {
-                    epsilon: 1.0,
-                    sigma: 1.0,
-                },
-                r_cut: 2.0_f64.powf(1.0 / 6.0),
-                r_smooth: 2.0,
-            }),
-        });
+        let force = Rigid(
+            PairwiseCutoff(
+                Isotropic {
+                    interaction: Xplor {
+                        f: LennardJones::<12, 6> {
+                            epsilon: 1.0,
+                            sigma: 1.0,
+                        },
+                        r_cut: 2.0_f64.powf(1.0 / 6.0),
+                        r_smooth: 2.0,
+                    },
+                    r_cut: 2.0_f64.powf(1.0 / 6.0),
+                }
+            )
+        );
 
         // Randomize the momenta of system.
         let thermalizer = Thermalizer { kT: kT_init };

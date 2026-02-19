@@ -5,8 +5,8 @@
 
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{
-    CutoffPair, TotalEnergy,
-    pairwise::{Isotropic, LennardJones},
+    PairwiseCutoff, TotalEnergy,
+    pairwise::Isotropic, univariate::LennardJones,
     rigid::Rigid,
 };
 use hoomd_md::{
@@ -24,11 +24,10 @@ use hoomd_md::{
     thermostat::{BussiThermostat},
 };
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder,
-    boundary::Periodic,
-    property::{OrientedDynamicsPoint, Point},
+    Body, Microstate, SiteKey, boundary::Periodic, property::{OrientedDynamicsPoint, Point}
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
+use hoomd_spatial::AllPairs;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Versor};
 
@@ -39,6 +38,7 @@ struct System {
     microstate: Microstate<
         OrientedDynamicsPoint<Cartesian<3>, Versor>,
         Point<Cartesian<3>>,
+        AllPairs<SiteKey>,
         Periodic<Hypercuboid<3>>,
     >,
 
@@ -46,7 +46,7 @@ struct System {
 
     thermostat: (BussiThermostat, BussiThermostat),
 
-    force: Rigid<CutoffPair<Isotropic<LennardJones>>>,
+    force: Rigid<PairwiseCutoff<Isotropic<LennardJones>>>,
 
     integrator: ConstantVolume,
 }
@@ -59,7 +59,7 @@ impl System {
 
         let cube = Hypercuboid::<3>::with_equal_edges(box_length.try_into()?);
         let boundary = Periodic::new(6.0, cube)?;
-        let mut builder = MicrostateBuilder::with_boundary(boundary);
+        let mut builder = Microstate::builder().boundary(boundary);
 
         let (nx, ny, nz) = (5, 5, 5);
         let space = 2.1;
@@ -93,13 +93,17 @@ impl System {
         let mut microstate = builder.try_build()?;
 
         // Model interactions (in this case, a pairwise Lennard-Jones)
-        let force = Rigid(CutoffPair {
-            r_cut: 6.0, // 2.0_f64.powf(1.0/6.0),
-            evaluator: Isotropic(LennardJones {
-                epsilon: 0.5,
-                sigma: 1.0,
-            }),
-        });
+        let force = Rigid(
+            PairwiseCutoff(
+                Isotropic {
+                    interaction: LennardJones {
+                        epsilon: 0.5,
+                        sigma: 1.0,
+                    },
+                    r_cut: 6.0
+                }
+            )
+        );
 
         // Randomize the momenta of system.
         let thermalizer = Thermalizer { kT: kT_init };

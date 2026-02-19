@@ -2,7 +2,7 @@
 
 use hoomd_vector::Cartesian;
 use hoomd_microstate::{Microstate, Body, property::{Point, DynamicsPoint}};
-use hoomd_interaction::{pairwise::{Isotropic, LennardJones}, rigid::Rigid, CutoffPair};
+use hoomd_interaction::{pairwise::Isotropic, univariate::LennardJones, rigid::Rigid, PairwiseCutoff};
 use hoomd_md::{
     methods::{
         ConstantVolume,
@@ -39,13 +39,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
     // Model interactions (in this case, a pairwise Lennard-Jones)
-    let force = Rigid(CutoffPair {
-        r_cut: 6.0,
-        evaluator: Isotropic(LennardJones::<12,6> {
-            epsilon: 1.0,
-            sigma: 1.0
-        })
-    });
+    let force = Rigid(
+        PairwiseCutoff(
+            Isotropic {
+                interaction: LennardJones::<12,6> {
+                    epsilon: 1.0,
+                    sigma: 1.0
+                },
+                r_cut: 6.0,
+            }
+        )
+    );
 
     // Create an NVE macrostate
     struct Isoenergy {}

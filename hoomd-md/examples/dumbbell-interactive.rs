@@ -4,7 +4,7 @@
 #![allow(non_snake_case)]
 #![allow(unused_must_use)]
 
-use hoomd_geometry::shape::{Hypercuboid, Rectangle};
+use hoomd_geometry::shape::{Rectangle};
 use hoomd_interaction::{
     pairwise::Isotropic, rigid::Rigid, PairwiseCutoff, univariate::WeeksChandlerAnderson
 };
@@ -19,7 +19,7 @@ use hoomd_md::{
 };
 
 use hoomd_microstate::{
-    Body, Microstate, MicrostateBuilder, SiteKey, boundary::Periodic, property::{Momentum, OrientedDynamicsPoint, Point}
+    Body, Microstate, SiteKey, boundary::Periodic, property::{Momentum, OrientedDynamicsPoint, Point}
 };
 use hoomd_simulation::{Simulation};
 use hoomd_spatial::AllPairs;
