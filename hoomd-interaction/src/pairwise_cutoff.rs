@@ -503,7 +503,7 @@ where
     V: Vector + Default + InnerProduct + Metric + WedgeProduct,
     B: Transform<S>,
     S: Position<Position = V>,
-    E: UnivariateForce + MaximumInteractionRange,
+    E: UnivariateForce,
     V::Bivector: Default,
     C: PointsNearBall<V, SiteKey>,
 {
