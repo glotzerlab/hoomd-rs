@@ -44,7 +44,7 @@ struct System {
 
     macrostate: Isothermal,
 
-    thermostat: (BussiThermostat, BussiThermostat),
+    thermostat: (NHCThermostat<3>, NHCThermostat<3>),
 
     force: Rigid<PairwiseCutoff<Isotropic<LennardJones>>>,
 

@@ -19,7 +19,8 @@ use hoomd_md::{
         ComAngularMomentumRemover, ComMomentumRemover, Thermalizer,
         TranslationalMomentumModifier,
         TranslationalThermalizer,
-    }, thermostat::BussiThermostat
+    },
+    thermostat::BussiThermostat,
 };
 use hoomd_microstate::{
     Body, Microstate, SiteKey, boundary::Periodic, property::{DynamicsPoint, NetForce, Point}
@@ -148,7 +149,7 @@ impl LJGSquare {
         let integrator = ConstantVolume::new(dt);
 
         // Constant T integration
-        let thermostat = BussiThermostat::new(tau);
+        let thermostat = BussiThermostat::new(tau.try_into()?);
 
         Ok(LJGSquare {
             microstate,
