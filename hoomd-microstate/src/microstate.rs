@@ -1241,7 +1241,7 @@ where
         clippy::missing_panics_doc,
         reason = "Will panic only due to a bug in hoomd-rs."
     )]
-    pub fn iter_sites_near(&self, point: &P, r: f64) -> impl IntoIterator<Item = &Site<S>> {
+    pub fn iter_sites_near(&self, point: &P, r: f64) -> impl Iterator<Item = &Site<S>> {
         let potential_sites = self.spatial_data.points_near_ball(point, r);
         potential_sites.map(|k| match k {
             SiteKey::Primary(tag) => {
