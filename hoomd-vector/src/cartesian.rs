@@ -53,7 +53,7 @@ use hoomd_linear_algebra::{MatMul, matrix::Matrix};
 ///
 /// ```
 /// use hoomd_vector::Cartesian;
-/// use rand::{Rng, SeedableRng, rngs::StdRng};
+/// use rand::{RngExt, SeedableRng, rngs::StdRng};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut rng = StdRng::seed_from_u64(1);
@@ -457,7 +457,7 @@ impl<const N: usize> Distribution<Cartesian<N>> for StandardUniform {
     ///
     /// ```
     /// use hoomd_vector::Cartesian;
-    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    /// use rand::{RngExt, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(1);

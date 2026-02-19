@@ -42,7 +42,7 @@ use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
 /// Create a random [`Angle`] from the uniform distribution over all rotations:
 /// ```
 /// use hoomd_vector::Angle;
-/// use rand::{Rng, SeedableRng, rngs::StdRng};
+/// use rand::{RngExt, SeedableRng, rngs::StdRng};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut rng = StdRng::seed_from_u64(1);
@@ -246,7 +246,7 @@ impl Distribution<Angle> for StandardUniform {
     ///
     /// ```
     /// use hoomd_vector::Angle;
-    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    /// use rand::{RngExt, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(1);

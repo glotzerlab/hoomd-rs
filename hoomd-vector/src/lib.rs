@@ -166,7 +166,7 @@
 //!
 //! ```
 //! use hoomd_vector::{Angle, Cartesian, Versor};
-//! use rand::{Rng, SeedableRng, rngs::StdRng};
+//! use rand::{RngExt, SeedableRng, rngs::StdRng};
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let mut rng = StdRng::seed_from_u64(1);
