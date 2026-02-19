@@ -13,7 +13,6 @@ categories.workspace = true
 [dependencies]
 clap.workspace = true
 rand.workspace = true
-rand_core.workspace = true
 serde.workspace = true
 
 [lints]
@@ -32,7 +31,7 @@ assert2.workspace = true
 approxim.workspace = true
 chacha20 = { version = "=0.10.0", default-features = false, features = ["rng"]}
 divan.workspace = true
-rand_sfc = "0.2.0"
+rand_sfc.workspace = true
 rstest.workspace = true
 
 [[bench]]

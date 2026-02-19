@@ -3699,7 +3699,6 @@ dependencies = [
  "clap",
  "divan",
  "rand 0.10.0",
- "rand_core 0.10.0",
  "rand_sfc",
  "rstest",
  "serde",

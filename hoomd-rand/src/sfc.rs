@@ -3,8 +3,8 @@
 
 use core::convert::Infallible;
 
-use rand::SeedableRng;
-use rand_core::{TryRng, utils};
+use rand::{SeedableRng,
+    rand_core::{TryRng, utils}};
 use serde::{Deserialize, Serialize};
 
 use crate::util::read_le_u64;
