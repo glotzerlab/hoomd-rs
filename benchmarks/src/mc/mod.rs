@@ -3,11 +3,13 @@
 
 //! Monte Carlo benchmarks
 
+mod ellipsoid;
 mod hard_sphere;
 mod lennard_jones;
 mod octahedron;
 mod regular_polygon;
 
+pub use ellipsoid::EllipsoidSim;
 pub use hard_sphere::HardSphereSim;
 pub use lennard_jones::LennardJones;
 pub use octahedron::Octahedron;

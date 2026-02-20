@@ -3,7 +3,7 @@
 
 //! Implement Sweep
 
-use rand::Rng;
+use rand::RngExt;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
@@ -226,6 +226,7 @@ mod tests {
     use hoomd_microstate::{boundary::Closed, property::Point};
     use hoomd_simulation::macrostate::Isothermal;
     use hoomd_vector::{Cartesian, InnerProduct};
+    use rand::Rng;
     use rstest::*;
 
     const K: f64 = 2.0;

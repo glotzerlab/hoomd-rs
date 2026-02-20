@@ -23,7 +23,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: Configure Rust
-      uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561
+      uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
       with:
         toolchain: 1.93.0
         targets: wasm32-unknown-unknown
@@ -109,7 +109,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: Configure Rust
-      uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561
+      uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
       with:
         toolchain: nightly-2025-09-17
         components: rustfmt
@@ -121,7 +121,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: prek
-      uses: glotzerlab/workflows/prek@e36c0a178af95ce1d2741b7373c0ea2270b4a812 # 0.12.0
+      uses: glotzerlab/workflows/prek@204dc7c0f82720090703712694b7cab761aacaa0 # 0.13.0
 
   # This job is used to provide a single requirement for branch merge conditions.
   tests_complete:

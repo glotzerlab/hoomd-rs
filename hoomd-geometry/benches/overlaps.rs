@@ -19,7 +19,7 @@ use hoomd_geometry::{
     xenocollide::{collide2d, collide3d},
 };
 use hoomd_vector::{Angle, Cartesian, Versor};
-use rand::{Rng, SeedableRng, rngs::StdRng};
+use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
 
 #[inline(never)]
 fn asm_collide3d() {

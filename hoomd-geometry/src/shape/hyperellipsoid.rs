@@ -450,7 +450,7 @@ mod tests {
     };
     use approxim::assert_relative_eq;
     use hoomd_vector::Angle;
-    use rand::{Rng, SeedableRng, rngs::StdRng};
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::*;
     use std::marker::PhantomData;
 

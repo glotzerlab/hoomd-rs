@@ -10,7 +10,7 @@
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
 use hoomd_rand::Counter;
-use rand::{Rng, SeedableRng, rngs::StdRng};
+use rand::{RngExt, SeedableRng, rngs::StdRng};
 
 use hoomd_vector::{Cartesian, Rotate, RotationMatrix, Versor};
 
@@ -54,7 +54,7 @@ fn gen_random(bencher: Bencher) {
 
 #[divan::bench_group]
 mod quat_metric {
-    use super::{Bencher, Counter, ItemsCount, Rng, Versor, black_box, divan};
+    use super::{Bencher, Counter, ItemsCount, RngExt, Versor, black_box, divan};
     #[divan::bench]
     fn arc_distance(bencher: Bencher) {
         let mut rng = Counter::new(0, 0, 0).make_rng();

@@ -86,7 +86,7 @@ where
     ///         OverlapPenalty::default(),
     ///         0.01.try_into()?,
     ///     ),
-    ///     r_cut: 2.0,
+    ///     r_cut: 1.0,
     /// };
     ///
     /// let a = OrientedPoint {
@@ -94,7 +94,7 @@ where
     ///     orientation: Angle::default(),
     /// };
     /// let b = OrientedPoint {
-    ///     position: Cartesian::from([1.2, 0.0]),
+    ///     position: Cartesian::from([0.6, 0.0]),
     ///     orientation: Angle::default(),
     /// };
     ///
@@ -102,7 +102,7 @@ where
     /// assert!(energy >= 100.0);
     ///
     /// let c = OrientedPoint {
-    ///     position: Cartesian::from([1.6, 0.0]),
+    ///     position: Cartesian::from([0.9, 0.0]),
     ///     orientation: Angle::default(),
     /// };
     ///
@@ -111,7 +111,7 @@ where
     /// assert!(energy < f64::INFINITY);
     ///
     /// let d = OrientedPoint {
-    ///     position: Cartesian::from([2.0, 0.0]),
+    ///     position: Cartesian::from([1.0, 0.0]),
     ///     orientation: Angle::default(),
     /// };
     ///

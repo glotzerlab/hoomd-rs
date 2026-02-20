@@ -1,18 +1,20 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Benchmark hard polygon Monte Carlo simulations.
+//! Benchmark hard ellipsoid Monte Carlo simulations.
 
+use anyhow::Context;
+use log::debug;
+use serde::{Deserialize, Serialize};
 use std::{
     fmt,
     fs::{self, File},
     io::{self, Write},
 };
 
-use anyhow::Context;
 use hoomd_geometry::{
-    Convex,
-    shape::{ConvexPolygon, Hypercuboid},
+    Convex, Volume,
+    shape::{Hypercuboid, Hyperellipsoid},
 };
 use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff,
@@ -29,47 +31,45 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
-use hoomd_vector::{Angle, Cartesian};
-use log::debug;
-use serde::{Deserialize, Serialize};
+use hoomd_vector::{Cartesian, Versor};
 
 use crate::{Effort, place::place_single_site_orientable_bodies};
 
-/// The hard polygon simulation.
+/// The hard octahedra simulation.
 #[derive(Serialize, Deserialize)]
-pub struct RegularPolygon<X> {
+pub struct EllipsoidSim<X> {
     /// Simulation microstate
     microstate: Microstate<
-        OrientedPoint<Cartesian<2>, Angle>,
-        OrientedPoint<Cartesian<2>, Angle>,
+        OrientedPoint<Cartesian<3>, Versor>,
+        OrientedPoint<Cartesian<3>, Versor>,
         X,
-        Periodic<Hypercuboid<2>>,
+        Periodic<Hypercuboid<3>>,
     >,
 
     /// Translate moves (serial)
-    translate_sweep: Sweep<Translate<Cartesian<2>>>,
+    translate_sweep: Sweep<Translate<Cartesian<3>>>,
+
+    /// Rotate moves (serial)
+    rotate_sweep: Sweep<Rotate<Versor>>,
 
     /// Translate moves (parallel)
     parallel_translate_sweep: ParallelSweep<
-        Translate<Cartesian<2>>,
-        HypercuboidCheckerboard<2>,
-        OrientedPoint<Cartesian<2>, Angle>,
-        OrientedPoint<Cartesian<2>, Angle>,
+        Translate<Cartesian<3>>,
+        HypercuboidCheckerboard<3>,
+        OrientedPoint<Cartesian<3>, Versor>,
+        OrientedPoint<Cartesian<3>, Versor>,
     >,
-
-    /// Rotate moves (serial)
-    rotate_sweep: Sweep<Rotate<Angle>>,
 
     /// Rotate moves (parallel)
     parallel_rotate_sweep: ParallelSweep<
-        Rotate<Angle>,
-        HypercuboidCheckerboard<2>,
-        OrientedPoint<Cartesian<2>, Angle>,
-        OrientedPoint<Cartesian<2>, Angle>,
+        Rotate<Versor>,
+        HypercuboidCheckerboard<3>,
+        OrientedPoint<Cartesian<3>, Versor>,
+        OrientedPoint<Cartesian<3>, Versor>,
     >,
 
-    /// Hard polygon interaction.
-    hamiltonian: PairwiseCutoff<HardShape<Convex<ConvexPolygon>>>,
+    /// Hard octahedra interaction.
+    hamiltonian: PairwiseCutoff<HardShape<Convex<Hyperellipsoid<3>>>>,
 
     /// Temperature set point.
     macrostate: Isothermal,
@@ -84,7 +84,7 @@ pub struct RegularPolygon<X> {
     parallel: bool,
 }
 
-impl<X> Effort for RegularPolygon<X> {
+impl<X> Effort for EllipsoidSim<X> {
     #[inline]
     fn units() -> String {
         "sweep".to_string()
@@ -92,15 +92,15 @@ impl<X> Effort for RegularPolygon<X> {
 
     #[inline]
     fn effort(&self) -> f64 {
-        (self.translate_count.total() + self.rotate_count.total()) as f64
-            / self.microstate.bodies().len() as f64
+        let complete_count = self.translate_count + self.rotate_count;
+        complete_count.total() as f64 / self.microstate.bodies().len() as f64
     }
 }
 
-impl<X> Simulation for RegularPolygon<X>
+impl<X> Simulation for EllipsoidSim<X>
 where
-    X: PointsNearBall<Cartesian<2>, SiteKey> + PointUpdate<Cartesian<2>, SiteKey> + Sync,
-    Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>,
+    X: PointsNearBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey> + Sync,
+    Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
     #[inline]
     fn advance(&mut self) -> anyhow::Result<()> {
@@ -125,7 +125,6 @@ where
                 self.rotate_sweep
                     .apply(&mut self.microstate, &self.hamiltonian, &self.macrostate);
         }
-
         self.microstate.increment_step();
 
         Ok(())
@@ -137,7 +136,7 @@ where
     }
 }
 
-impl<X> fmt::Display for RegularPolygon<X>
+impl<X> fmt::Display for EllipsoidSim<X>
 where
     X: fmt::Display,
 {
@@ -161,28 +160,28 @@ where
     }
 }
 
-impl<X> RegularPolygon<X>
+impl<X> EllipsoidSim<X>
 where
-    X: PointsNearBall<Cartesian<2>, SiteKey>
-        + PointUpdate<Cartesian<2>, SiteKey>
+    X: PointsNearBall<Cartesian<3>, SiteKey>
+        + PointUpdate<Cartesian<3>, SiteKey>
         + WithSearchRadius
         + Clone
         + for<'a> Deserialize<'a>
         + Serialize,
-    Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>,
+    Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
-    /// Construct a new polygon simulation
+    /// Construct a new hard octahedra simulation
     ///
     /// # Errors
     /// Returns an error when the microstate cannot be constructed.
     #[inline]
     pub fn new(n: usize, parallel: bool) -> anyhow::Result<Self> {
         let macrostate = Isothermal { temperature: 1.0 };
-        let initial_maximum_rotation = 0.5;
-        let packing_fraction = 0.8;
-        let hexagon_area = 3.0 * 3.0f64.sqrt() / 2.0 * 0.25;
-        let number_density = packing_fraction / hexagon_area;
-        let cache_filename = format!("mc_2d_hexagon_{packing_fraction}_{n}.postcard");
+        let packing_fraction = 0.5;
+        let ellipsoid =
+            Hyperellipsoid::with_semi_axes([2.5.try_into()?, 0.5.try_into()?, 0.5.try_into()?]);
+        let number_density = packing_fraction / ellipsoid.volume();
+        let cache_filename = format!("mc_3d_ellipsoid_{packing_fraction}_{n}.postcard");
 
         match fs::read(&cache_filename) {
             Ok(bytes) => {
@@ -200,17 +199,16 @@ where
             },
         }
 
-        let hexagon = ConvexPolygon::regular(6);
-        let hamiltonian = PairwiseCutoff(HardShape(Convex(hexagon.clone())));
+        let hamiltonian = PairwiseCutoff(HardShape(Convex(ellipsoid.clone())));
 
-        let translate = Translate::with_maximum_distance(0.2.try_into()?);
+        let translate = Translate::with_maximum_distance(0.05.try_into()?);
         let mut translate_sweep = Sweep(translate.clone());
         let mut parallel_translate_sweep = ParallelSweep::new(
             hamiltonian.0.maximum_interaction_range().try_into()?,
             translate,
         );
 
-        let rotate = Rotate::with_maximum_rotation(initial_maximum_rotation.try_into()?);
+        let rotate = Rotate::with_maximum_rotation((0.03).try_into()?);
         let mut rotate_sweep = Sweep(rotate.clone());
         let mut parallel_rotate_sweep = ParallelSweep::new(
             hamiltonian.0.maximum_interaction_range().try_into()?,
@@ -219,7 +217,7 @@ where
 
         let approximate_shape_overlap = Anisotropic {
             interaction: ApproximateShapeOverlap::new(
-                Convex(hexagon),
+                Convex(ellipsoid),
                 OverlapPenalty::default(),
                 0.01.try_into()?,
             ),
