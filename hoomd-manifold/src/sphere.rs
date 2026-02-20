@@ -63,8 +63,8 @@ impl<const N: usize> Spherical<N> {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let x = Cartesian::from([0.5_f64.sqrt(), 0.0, -(0.5_f64.sqrt())]);
-    /// let projection = Spherical::from_cartesian_coordinates(x)
-    ///     .stereographic_projection();
+    /// let projection =
+    ///     Spherical::from_cartesian_coordinates(x).stereographic_projection();
     /// assert_eq!(
     ///     [1.0 / (2.0_f64.sqrt() + 1.0), 0.0],
     ///     [projection[0], projection[1]]
@@ -78,9 +78,7 @@ impl<const N: usize> Spherical<N> {
         (0..N - 1)
             .collect::<Vec<usize>>()
             .iter()
-            .map(|i| {
-                self.point.coordinates[*i] / (1.0 - self.point.coordinates[N - 1])
-            })
+            .map(|i| self.point.coordinates[*i] / (1.0 - self.point.coordinates[N - 1]))
             .collect::<Vec<f64>>()
     }
 }
@@ -187,16 +185,13 @@ impl Metric for Spherical<4> {
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut rng = StdRng::seed_from_u64(12);
 ///
-/// let sample_disk = SphericalDisk {
-///     disk_radius: 0.5_f64.try_into()?,
-///     point: Spherical::<3>::from_cartesian_coordinates(
-///         Cartesian::from([
-///             0.01,
-///             0.01,
-///             -(1.0 - 2.0 * (0.01_f64).powi(2)).sqrt(),
-///         ])
-///     ),
-/// };
+/// let sample_disk =
+///     SphericalDisk {
+///         disk_radius: 0.5_f64.try_into()?,
+///         point: Spherical::<3>::from_cartesian_coordinates(Cartesian::from(
+///             [0.01, 0.01, -(1.0 - 2.0 * (0.01_f64).powi(2)).sqrt()],
+///         )),
+///     };
 /// let random_point: Spherical<3> = sample_disk.sample(&mut rng);
 ///
 /// let disk = SphericalDisk {
@@ -223,9 +218,7 @@ impl<const N: usize> Default for Spherical<N> {
     fn default() -> Self {
         let mut zero = Cartesian::<N>::default();
         zero.coordinates[N - 1] = 1.0;
-        Spherical {
-            point: zero
-        }
+        Spherical { point: zero }
     }
 }
 

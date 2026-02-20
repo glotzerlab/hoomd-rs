@@ -672,7 +672,7 @@ mod tests {
     use approxim::assert_relative_eq;
     use hoomd_manifold::{Hyperbolic, HyperbolicDisk};
     use hoomd_vector::Metric;
-    use rand::{Rng, SeedableRng, distr::Distribution, rngs::StdRng};
+    use rand::{RngExt, SeedableRng, distr::Distribution, rngs::StdRng};
     use std::f64::consts::PI;
 
     #[test]

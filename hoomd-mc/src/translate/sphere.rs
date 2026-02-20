@@ -58,9 +58,8 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
         };
         *trial.position_mut() = disk.sample(rng);
         let rescale = 1.0 / trial.position().point().norm();
-        *trial.position_mut() = Spherical::from_cartesian_coordinates(
-            *trial.position().point() * rescale
-        );
+        *trial.position_mut() =
+            Spherical::from_cartesian_coordinates(*trial.position().point() * rescale);
         trial
     }
 }

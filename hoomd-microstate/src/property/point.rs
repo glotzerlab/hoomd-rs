@@ -351,11 +351,7 @@ mod tests {
         let theta = PI / 5.0;
         let blip = PI / 10.0;
         let body = Point::new(Spherical::<4>::from_polar_coordinates(theta, 0.0, 0.0));
-        let site = Point::new(Spherical::<4>::from_polar_coordinates(
-            blip,
-            PI / 2.0,
-            0.0,
-        ));
+        let site = Point::new(Spherical::<4>::from_polar_coordinates(blip, PI / 2.0, 0.0));
         let transformed_site = body.transform(&site);
         assert_relative_eq!(
             *transformed_site.position().point(),
