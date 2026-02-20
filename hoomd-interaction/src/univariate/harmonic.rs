@@ -1,7 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Harmonic`]
+
+use serde::{Deserialize, Serialize};
 
 use super::{UnivariateEnergy, UnivariateForce};
 
@@ -40,7 +42,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// harmonic.k = 5.0;
 /// harmonic.r_0 = 1.0;
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Harmonic {
     /// Spring constant $`[\mathrm{energy}] [\mathrm{length}]^{-2}`$.
     pub k: f64,

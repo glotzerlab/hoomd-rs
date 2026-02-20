@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![expect(
@@ -12,10 +12,11 @@
 
 //! Implement Checkerboard for Hypercuboids
 
-use std::array;
-
 use itertools::izip;
-use rand::Rng;
+use rand::{Rng, RngExt};
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use std::array;
 
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_microstate::boundary::{Closed, Periodic};
@@ -43,18 +44,22 @@ use crate::{Checkerboard, Cover};
 /// spaces (some completely outside the boundary) in these cases. However, the
 /// checkerboard is still valid and rayon's dynamic load balancing scheme should
 /// be able to handle the empty cells efficiently.
-#[derive(Clone, Debug)]
+#[serde_as]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HypercuboidCheckerboard<const N: usize> {
     /// Position of the 0,0,0 cell's lower left corner.
     origin: Cartesian<N>,
 
     /// Length of each axis aligned space edge.
+    #[serde_as(as = "[_; N]")]
     space_width: [f64; N],
 
     /// Number of spaces along each axis.
+    #[serde_as(as = "[_; N]")]
     shape: [usize; N],
 
     /// True when an axis is periodic.
+    #[serde_as(as = "[_; N]")]
     periodic: [bool; N],
 
     /// The set of all space indices, grouped by color.
@@ -288,8 +293,7 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         let (space_width, shape) =
             Self::compute_dimensions(edge_lengths, interaction_range, periodic);
 
-        let mut offset = [0.0; N];
-        rng.fill(&mut offset);
+        let offset: [f64; N] = array::from_fn(|_| rng.random());
 
         let origin = Cartesian {
             coordinates: array::from_fn(|i| {
@@ -322,8 +326,7 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
         let (space_width, shape) =
             Self::compute_dimensions(edge_lengths, interaction_range, periodic);
 
-        let mut offset = [0.0; N];
-        rng.fill(&mut offset);
+        let offset: [f64; N] = array::from_fn(|_| rng.random());
 
         let origin = Cartesian {
             coordinates: array::from_fn(|i| {

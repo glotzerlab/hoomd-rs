@@ -1,7 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`WeeksChandlerAnderson`]
+
+use serde::{Deserialize, Serialize};
 
 use super::{LennardJones, UnivariateEnergy, UnivariateForce};
 
@@ -50,7 +52,7 @@ use super::{LennardJones, UnivariateEnergy, UnivariateForce};
 /// wca.epsilon = 1.5;
 /// wca.sigma = 3.0;
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct WeeksChandlerAnderson {
     /// Energy scale *(\[energy\])*.
     pub epsilon: f64,

@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Biquaternion`] and a four-dimensional matrix representation
@@ -9,6 +9,7 @@ use rand::{
     Rng,
     distr::{Distribution, StandardUniform, Uniform},
 };
+use serde::{Deserialize, Serialize};
 use std::{
     array, fmt,
     iter::zip,
@@ -186,7 +187,7 @@ use hoomd_vector::Quaternion;
 /// ]);
 /// assert_eq!(Complex::new(20.0_f64, 0.0).sqrt(), q.norm());
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Biquaternion {
     /// Components of the biquaternion, in the order `[i,j,k,1]`.
     pub components: [Complex<f64>; 4],
@@ -687,7 +688,7 @@ impl Distribution<UnitBiquaternion> for StandardUniform {
     /// use approxim::assert_relative_eq;
     /// use hoomd_manifold::{Biquaternion, UnitBiquaternion};
     /// use num::complex::Complex;
-    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    /// use rand::{RngExt, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(1);

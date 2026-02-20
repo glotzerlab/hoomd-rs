@@ -1,16 +1,16 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implements a three-dimensional representation of SO(3,1) on Minkowski
 //! space.
-
-use std::{f64::consts::PI, fmt};
 
 use num::complex::Complex;
 use rand::{
     Rng,
     distr::{Distribution, StandardUniform, Uniform},
 };
+use serde::{Deserialize, Serialize};
+use std::{f64::consts::PI, fmt};
 
 use crate::HyperbolicRotationMatrix;
 
@@ -90,7 +90,7 @@ use crate::HyperbolicRotationMatrix;
 ///
 /// The default value `HyperbolicAngle::Default` returns the tuple
 /// `(0.0,0.0,0.0)`, which corresponds to the identify transformation.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct HyperbolicAngle {
     /// Get the rotation angle in radians.
     pub angles: (f64, f64, f64),
@@ -230,7 +230,7 @@ impl Distribution<HyperbolicAngle> for StandardUniform {
     ///     HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
     /// };
     /// use hoomd_vector::{Metric, Vector};
-    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    /// use rand::{RngExt, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(1);
@@ -269,7 +269,7 @@ mod tests {
     use super::*;
     use crate::{HyperbolicRotate, HyperbolicRotationMatrix, Minkowski};
     use approxim::assert_relative_eq;
-    use rand::{SeedableRng, rngs::StdRng};
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::rstest;
     use std::f64::consts::PI;
 

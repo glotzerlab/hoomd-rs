@@ -1,6 +1,6 @@
 // ANCHOR: all
 // ANCHOR: use
-use rand::{Rng, seq::IndexedRandom};
+use rand::{Rng, RngExt, seq::IndexedRandom};
 use std::f64::consts::PI;
 
 use hoomd_geometry::shape::Rectangle;

@@ -1,9 +1,10 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Microstate`] and related types.
 
 use arrayvec::ArrayVec;
+use serde::{Deserialize, Serialize};
 use std::{cmp::Reverse, collections::BinaryHeap, fmt};
 
 use crate::{
@@ -12,11 +13,12 @@ use crate::{
     property::Position,
 };
 
+use hoomd_geometry::MapPoint;
 use hoomd_rand::Counter;
 use hoomd_spatial::{AllPairs, PointUpdate, PointsNearBall};
 
 /// Either a primary site index or a ghost site index.
-#[derive(Clone, Copy, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]
 #[expect(
     clippy::exhaustive_enums,
     reason = "There will only ever be primary and ghost sites."
@@ -30,7 +32,7 @@ pub enum SiteKey {
 }
 
 /// Track a unique identifier for an item in [`Microstate`].
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Tagged<T> {
     /// The unique identifier.
     pub tag: usize,
@@ -46,7 +48,7 @@ pub struct Tagged<T> {
 ///
 /// Items are removed using `swap_remove`. Removed tags are reused when adding new
 /// items.
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct VecWithTags<T> {
     /// Items in index order.
     items: Vec<T>,
@@ -62,7 +64,7 @@ struct VecWithTags<T> {
 }
 
 impl<T> VecWithTags<T> {
-    /// Construct an empty vector with tagged items.
+    /// Construct an empty vector of tagged items.
     fn new() -> Self {
         Self {
             items: Vec::new(),
@@ -178,7 +180,7 @@ impl<T> VecWithTags<T> {
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Microstate<B, S = B, X = AllPairs<SiteKey>, C = Open> {
     /// Total number of steps that this microstate has been advanced in a simulation model.
     step: u64,
@@ -542,44 +544,6 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     #[inline]
     pub fn boundary(&self) -> &C {
         &self.boundary
-    }
-
-    /// Get the boundary condition (mutable).
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hoomd_geometry::shape::Rectangle;
-    /// use hoomd_microstate::{Microstate, boundary::Closed};
-    /// # use hoomd_microstate::{Body, property::Point};
-    /// # use hoomd_vector::Cartesian;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    ///
-    /// let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
-    /// let mut microstate = Microstate::builder()
-    ///     .boundary(square)
-    /// # .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
-    ///     .try_build()?;
-    ///
-    /// microstate.boundary_mut().0.edge_lengths[0] = 11.0.try_into()?;
-    /// assert_eq!(microstate.boundary().0.edge_lengths[0].get(), 11.0);
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// TODO: Replace with setter. `boundary_mut` allows the caller to create an
-    /// invalid microstate by changing the boundary in such a way that sites may
-    /// be outside. Changing the boundary will also require regenerating ghost
-    /// sites. Just checking for a valid boundary on set will pose some difficulty
-    /// to the caller. To increase the boundary, the caller will need to set
-    /// the new boundary and then move the bodies. To decrease the boundary, the
-    /// caller will need to move the bodies and then set the boundary. Perhaps a
-    /// `set_boundary_and_update_bodies` method that does both simultaneously would
-    /// solve this? It could take a function that updates the bodies along with the
-    /// new boundary.
-    #[inline]
-    pub fn boundary_mut(&mut self) -> &mut C {
-        &mut self.boundary
     }
 }
 
@@ -1277,7 +1241,7 @@ where
         clippy::missing_panics_doc,
         reason = "Will panic only due to a bug in hoomd-rs."
     )]
-    pub fn iter_sites_near(&self, point: &P, r: f64) -> impl IntoIterator<Item = &Site<S>> {
+    pub fn iter_sites_near(&self, point: &P, r: f64) -> impl Iterator<Item = &Site<S>> {
         let potential_sites = self.spatial_data.points_near_ball(point, r);
         potential_sites.map(|k| match k {
             SiteKey::Primary(tag) => {
@@ -1291,6 +1255,119 @@ where
                 &self.ghosts.items[index]
             }
         })
+    }
+}
+
+/// Manipulate the microstate as a whole.
+impl<P, B, S, X, C> Microstate<B, S, X, C>
+where
+    P: Copy,
+    B: Clone + Transform<S> + Position<Position = P>,
+    S: Clone + Position<Position = P> + Default,
+    C: Clone + Wrap<B> + Wrap<S> + GenerateGhosts<S> + MapPoint<P>,
+    X: Clone + PointUpdate<P, SiteKey>,
+{
+    /// Clone the microstate, mapping or wrapping bodies into a new boundary.
+    ///
+    /// The resulting microstate contains the same bodies and sites as the source.
+    /// All bodies and sites maintain the same index order and tags.
+    ///
+    /// `should_map_body` will be called on every body in the microstate. When
+    /// it returns `true`, `clone_with_boundary` will map the body's position
+    /// from `self.boundary` to `new_boundary` using [`MapPoint`]. When
+    /// `should_map_body` returns `false`, the `clone_with_boundary` wraps
+    /// the body's unmodified position into `new_boundary`. That wrap may fail,
+    /// especially in closed (or partially closed) boundary conditions.
+    ///
+    /// [`MapPoint`]: hoomd_geometry::MapPoint
+    ///
+    /// # Errors
+    ///
+    /// [`Error::UpdateBody`] when some body or site cannot be wrapped into the
+    /// new boundary.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::Rectangle;
+    /// use hoomd_microstate::{
+    ///     Body, Microstate,
+    ///     boundary::Closed,
+    ///     property::{Point, Position},
+    /// };
+    /// use hoomd_vector::Cartesian;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///
+    /// let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
+    /// let microstate = Microstate::builder()
+    ///     .boundary(square)
+    ///     .bodies([Body::point(Cartesian::from([1.0, 2.0]))])
+    ///     .bodies([Body::point(Cartesian::from([3.0, 4.0]))])
+    ///     .try_build()?;
+    ///
+    /// let new_square = Closed(Rectangle::with_equal_edges(20.0.try_into()?));
+    ///
+    /// let new_microstate =
+    ///     microstate.clone_with_boundary(new_square, |body| body.tag > 0)?;
+    ///
+    /// assert_eq!(
+    ///     *new_microstate.bodies()[0].item.properties.position(),
+    ///     Cartesian::from([1.0, 2.0])
+    /// );
+    /// assert_eq!(
+    ///     *new_microstate.bodies()[1].item.properties.position(),
+    ///     Cartesian::from([6.0, 8.0])
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[allow(
+        clippy::missing_inline_in_public_items,
+        reason = "extremely expensive methods should not be inlined"
+    )]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "Panic would occur due to a bug in hoomd-rs."
+    )]
+    pub fn clone_with_boundary<F>(
+        &self,
+        new_boundary: C,
+        should_map_body: F,
+    ) -> Result<Microstate<B, S, X, C>, Error>
+    where
+        F: Fn(&Tagged<Body<B, S>>) -> bool,
+    {
+        // clone_with_boundary is used in Monte Carlo methods, such as box trial
+        // moves. Callers expect that any new microstate produced maintains
+        // the same body/site tag associations, including the same set of free
+        // tags as there may be external code that refers to specific bodies
+        // by tag. Therefore, this method cannot construct a new microstate and
+        // add bodies to it. A full clone is not strictly necessary to preserve
+        // tags, but it is the lowest effort approach.
+        let mut new_microstate = self.clone();
+
+        // MC methods require the clone as they keep the old microstate for
+        // rejected moves. MD methods do not need to clone.
+        // TODO: Refactor this code into a method like `set_boundary_and_update_bodies`.
+        // It would take a callable that updates the bodies so that MD methods could
+        // scale both position and velocity appropriately.
+
+        new_microstate.boundary = new_boundary;
+
+        for body_index in 0..new_microstate.bodies().len() {
+            let tagged_body = &new_microstate.bodies()[body_index];
+            let mut new_properties = tagged_body.item.properties.clone();
+            if should_map_body(tagged_body) {
+                *new_properties.position_mut() = self
+                    .boundary
+                    .map_point(*new_properties.position(), &new_microstate.boundary)
+                    .expect("body position should be inside the boundary");
+            }
+
+            new_microstate.update_body_properties(body_index, new_properties)?;
+        }
+
+        Ok(new_microstate)
     }
 }
 
@@ -1322,6 +1399,7 @@ where
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MicrostateBuilder<B, S = B, X = AllPairs<SiteKey>, C = Open> {
     /// The initial value for step in the resulting [`Microstate`].
     step: u64,
@@ -1622,6 +1700,7 @@ mod tests {
     mod open {
         use super::*;
         use assert2::{assert, check};
+        use rand::RngExt;
 
         fn create_body<R: Rng>(rng: &mut R) -> Body<Point<Cartesian<2>>> {
             let mut body = Body::point(rng.random::<Cartesian<2>>() * MAX_INITIAL_BODY_COORDINATE);
@@ -1878,6 +1957,7 @@ mod tests {
     mod periodic {
         use super::*;
         use assert2::{assert, check};
+        use rand::RngExt;
 
         fn create_body<R: Rng>(
             rng: &mut R,

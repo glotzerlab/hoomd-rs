@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Graphical elements that depict the simulation microstate.
@@ -15,9 +15,16 @@
 
 pub mod disk;
 pub mod ellipse;
+pub mod triangle_mesh;
 
 pub(crate) mod rectangular_boundary;
 pub use rectangular_boundary::RectangularBoundary;
 
 pub(crate) mod hyperbolic_disk;
 pub use hyperbolic_disk::{HyperbolicDisk, HyperbolicDiskAssets, HyperbolicDiskMaterial};
+
+pub(crate) mod hyperbolic_polygon;
+pub use hyperbolic_polygon::{
+    HyperbolicPolygon, HyperbolicPolygonAssets, HyperbolicPolygonMaterial,
+    HyperbolicPolygonMaterialParameters,
+};

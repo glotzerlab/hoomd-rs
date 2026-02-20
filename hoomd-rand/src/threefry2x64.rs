@@ -1,18 +1,23 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! PRNG using the `ThreeFish` cipher with a reduced number of rounds for performance.
 //!
 //! Requires the feature `extras`.
 
-use crate::util::read_le_u64;
+use core::convert::Infallible;
+
 use rand::{
     SeedableRng,
     rand_core::{
-        RngCore,
-        block::{BlockRng64, BlockRngCore},
+        TryRng,
+        block::{BlockRng, Generator},
     },
 };
+use serde::{Deserialize, Serialize};
+
+use crate::util::read_le_u64;
+
 /// Key schedule constant C240.
 ///
 /// This increases the randomness of outputs when keys are mostly zero. C240 is the AES
@@ -23,7 +28,7 @@ const C240: u64 = 0x1_bd1_1bd_aa9_fc1_a22;
 const ROTATION_2X64: [u32; 8] = [16, 42, 12, 31, 16, 32, 24, 21];
 
 /// PRNG using the `ThreeFish` cipher with a reduced number of rounds for performance.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ThreeFry2x64Core<const R: usize> {
     /// Internal seed to initialize the PRNG.
     seed: [u64; 3],
@@ -36,12 +41,11 @@ pub(crate) fn mix2x64(state: &mut [u64; 2], round_key: u32) {
     state[0] = state[0].wrapping_add(state[1]);
     state[1] = state[1].rotate_left(round_key) ^ state[0];
 }
-impl<const R: usize> BlockRngCore for ThreeFry2x64Core<R> {
-    type Item = u64;
-    type Results = [u64; 2];
+impl<const R: usize> Generator for ThreeFry2x64Core<R> {
+    type Output = [u64; 2];
 
     #[inline]
-    fn generate(&mut self, results: &mut Self::Results) {
+    fn generate(&mut self, output: &mut Self::Output) {
         (0..R).for_each(|d| {
             if d % 4 == 0 {
                 let s = d / 4;
@@ -55,7 +59,7 @@ impl<const R: usize> BlockRngCore for ThreeFry2x64Core<R> {
             self.counter[0] = self.counter[0].wrapping_add(self.seed[s % 3]);
             self.counter[1] = self.counter[1].wrapping_add(self.seed[(s + 1) % 3] + s as u64);
         }
-        *results = self.counter;
+        *output = self.counter;
     }
 }
 
@@ -65,14 +69,14 @@ impl<const R: usize> SeedableRng for ThreeFry2x64Rng<R> {
     fn from_seed(seed: Self::Seed) -> Self {
         let seed = &mut seed.as_slice();
         let (k0, k1) = (read_le_u64(seed), read_le_u64(seed));
-        Self(BlockRng64::new(ThreeFry2x64Core {
+        Self(BlockRng::new(ThreeFry2x64Core {
             seed: [k0, k1, C240 ^ k0 ^ k1],
             counter: [0u64, 0u64],
         }))
     }
     #[inline]
     fn seed_from_u64(state: u64) -> Self {
-        Self(BlockRng64::new(ThreeFry2x64Core {
+        Self(BlockRng::new(ThreeFry2x64Core {
             seed: [0, state, C240 ^ state],
             counter: [0u64, 0u64],
         }))
@@ -80,7 +84,7 @@ impl<const R: usize> SeedableRng for ThreeFry2x64Rng<R> {
 }
 
 /// Reduced-round Threefish based cypher, originally described in the Random123 paper.
-pub struct ThreeFry2x64Rng<const R: usize>(BlockRng64<ThreeFry2x64Core<R>>);
+pub struct ThreeFry2x64Rng<const R: usize>(BlockRng<ThreeFry2x64Core<R>>);
 impl<const R: usize> ThreeFry2x64Rng<R> {
     /// Set the full 128 bytes of the counter to a stream.
     #[inline]
@@ -95,23 +99,31 @@ impl<const R: usize> ThreeFry2x64Rng<R> {
         self.0.core.counter = [0, stream];
     }
 }
-impl<const R: usize> RngCore for ThreeFry2x64Rng<R> {
+impl<const R: usize> TryRng for ThreeFry2x64Rng<R> {
+    type Error = Infallible;
+
     #[inline]
-    fn next_u64(&mut self) -> u64 {
-        self.0.next_u64()
+    fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
+        Ok(self.0.next_word())
     }
     #[inline]
-    fn next_u32(&mut self) -> u32 {
-        self.0.next_u32()
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "the truncation is intended"
+    )]
+    fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
+        Ok(self.0.next_word() as u32)
     }
     #[inline]
-    fn fill_bytes(&mut self, dst: &mut [u8]) {
+    fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), Self::Error> {
         self.0.fill_bytes(dst);
+        Ok(())
     }
 }
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::Rng;
 
     // Data generated from the Random123 ThreeFry2x64_rN
 

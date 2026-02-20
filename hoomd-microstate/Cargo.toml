@@ -14,15 +14,18 @@ version.workspace = true
 workspace = true
 
 [dependencies]
+arrayvec.workspace = true
+rand.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+robust.workspace = true
+
 hoomd-geometry.workspace = true
 hoomd-manifold.workspace = true
 hoomd-spatial.workspace = true
 hoomd-utility.workspace = true
 hoomd-rand.workspace = true
 hoomd-vector.workspace = true
-arrayvec.workspace = true
-rand.workspace = true
-thiserror.workspace = true
 
 [dev-dependencies]
 assert2.workspace = true

@@ -1,12 +1,15 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `HardShape`
 
+use serde::{Deserialize, Serialize};
+
 use crate::{MaximumInteractionRange, SitePairEnergy};
-use hoomd_geometry::{BoundingSphereRadius, IntersectsAt};
+use hoomd_geometry::{BoundingSphereRadius, IntersectsAtGlobal};
+use hoomd_manifold::Hyperbolic;
 use hoomd_microstate::property::{Orientation, Position};
-use hoomd_vector::{self, Metric, Rotate, Rotation, Vector};
+use hoomd_vector::{self, Angle, Cartesian, Metric, Rotate, Rotation};
 
 /// Infinite energy when sites overlap, 0 when they don't (*not differentiable*).
 ///
@@ -27,14 +30,14 @@ use hoomd_vector::{self, Metric, Rotate, Rotation, Vector};
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HardShape<G>(pub G);
 
-impl<S, G, V, R> SitePairEnergy<S> for HardShape<G>
+impl<S, G, const N: usize, R> SitePairEnergy<S, Cartesian<N>> for HardShape<G>
 where
-    S: Position<Position = V> + Orientation<Rotation = R>,
-    V: Vector,
-    R: Rotation + Rotate<V>,
-    G: IntersectsAt<G, V, R> + BoundingSphereRadius,
+    S: Position<Position = Cartesian<N>> + Orientation<Rotation = R>,
+    R: Rotation + Rotate<Cartesian<N>>,
+    G: IntersectsAtGlobal<G, Cartesian<N>, R> + BoundingSphereRadius,
 {
     /// Compute the energy contribution from a pair of sites.
     ///
@@ -123,15 +126,16 @@ where
 /// by the `diameter` field.
 ///
 /// [`PairwiseCutoff`]: crate::PairwiseCutoff
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HardSphere {
     /// The sphere's diameter.
     pub diameter: f64,
 }
 
-impl<S, V> SitePairEnergy<S> for HardSphere
+impl<S, P> SitePairEnergy<S, P> for HardSphere
 where
-    S: Position<Position = V>,
-    V: Metric,
+    S: Position<Position = P>,
+    P: Metric,
 {
     /// Compute the energy contribution from a pair of sites.
     ///
@@ -169,5 +173,60 @@ impl MaximumInteractionRange for HardSphere {
     #[inline]
     fn maximum_interaction_range(&self) -> f64 {
         self.diameter
+    }
+}
+
+impl<G, S> SitePairEnergy<S, Hyperbolic<3>> for HardShape<G>
+where
+    S: Position<Position = Hyperbolic<3>> + Orientation<Rotation = Angle>,
+    G: IntersectsAtGlobal<G, Hyperbolic<3>, Angle>,
+{
+    /// Test whether two sites in two-dimensional hyperbolic space overlap.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_geometry::shape::HyperbolicConvexPolytope;
+    /// use hoomd_interaction::{SitePairEnergy, pairwise::HardShape};
+    /// use hoomd_manifold::Hyperbolic;
+    /// use hoomd_microstate::property::OrientedHyperbolicPoint;
+    /// use hoomd_vector::Angle;
+    /// use std::f64::consts::PI;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let square = HyperbolicConvexPolytope::<3>::regular(4, 1.0);
+    /// let hard_shape = HardShape(square);
+    ///
+    /// let a = OrientedHyperbolicPoint {
+    ///     position: Hyperbolic::<3>::default(),
+    ///     orientation: Angle::default(),
+    /// };
+    /// let b = OrientedHyperbolicPoint {
+    ///     position: Hyperbolic::<3>::from_polar_coordinates(3.0, 2.0),
+    ///     orientation: Angle::from(0.4),
+    /// };
+    ///
+    /// assert_eq!(hard_shape.site_pair_energy(&a, &b), 0.0);
+    ///
+    /// let c = OrientedHyperbolicPoint {
+    ///     position: Hyperbolic::<3>::from_polar_coordinates(0.49, 2.3),
+    ///     orientation: Angle::from(0.4),
+    /// };
+    ///
+    /// assert_eq!(hard_shape.site_pair_energy(&a, &c), f64::INFINITY);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64 {
+        let x_i = site_properties_i.position();
+        let r_i = site_properties_i.orientation();
+        let x_j = site_properties_j.position();
+        let r_j = site_properties_j.orientation();
+        if self.0.intersects_at_global(&self.0, x_i, r_i, x_j, r_j) {
+            f64::INFINITY
+        } else {
+            0.0
+        }
     }
 }

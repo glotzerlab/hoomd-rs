@@ -1,12 +1,12 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Zetterling`]
 
 use super::{UnivariateEnergy, UnivariateForce};
 
-/// `Zetterling` computes the oscillating pair potential between every pair of 
-/// particles in the simulation state. 
+/// `Zetterling` computes the oscillating pair potential between every pair of
+/// particles in the simulation state.
 /// ```math
 /// U(r) = \epsilon \frac{\exp(\alpha r/\ell)\cos(2k_Fr/\ell)}{(r/\ell)^3} + \beta\left(\frac{\sigma \ell}{r}\right)^n
 /// ```
@@ -34,7 +34,9 @@ impl UnivariateEnergy for Zetterling {
         let sigma_ell_r = self.sigma * self.ell / r;
         let r_ell = r / self.ell;
 
-        self.epsilon * ((self.alpha * r_ell).exp()) * ((2.0 * self.kf * r_ell).cos()) / (r_ell.powi(3)) + self.beta * (sigma_ell_r.powf(self.n))
+        self.epsilon * ((self.alpha * r_ell).exp()) * ((2.0 * self.kf * r_ell).cos())
+            / (r_ell.powi(3))
+            + self.beta * (sigma_ell_r.powf(self.n))
     }
 }
 
@@ -48,9 +50,13 @@ impl UnivariateForce for Zetterling {
         let exp = (self.alpha * r_ell).exp();
 
         let first = -self.epsilon * self.alpha * (self.ell.powi(2)) * exp * cos * (r_inv.powi(3));
-        let second = self.epsilon * 2.0 * self.kf * (self.ell.powi(2)) * exp * sin * (r_inv.powi(3));
+        let second =
+            self.epsilon * 2.0 * self.kf * (self.ell.powi(2)) * exp * sin * (r_inv.powi(3));
         let third = 3.0 * self.epsilon * (self.ell.powi(3)) * exp * cos * (r_inv.powi(4));
-        let fourth = self.beta * self.n * ((self.sigma * self.ell).powf(self.n)) * (r_inv.powf(self.n+1.0));
+        let fourth = self.beta
+            * self.n
+            * ((self.sigma * self.ell).powf(self.n))
+            * (r_inv.powf(self.n + 1.0));
 
         first + second + third + fourth
     }

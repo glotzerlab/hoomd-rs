@@ -1,14 +1,16 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `OverlapPenalty`.
+
+use serde::{Deserialize, Serialize};
 
 use super::UnivariateEnergy;
 
 /// Monotonically non-decreasing potential to push sites apart (*not differentiable*).
 ///
 /// [`OverlapPenalty`] is specifically designed to work with the `QuickInsert`
-/// and `QuickCompress` protocols to quickly prepare states with non-overlapping
+/// and `QuickCompress` algorithms to quickly prepare states with non-overlapping
 /// particles. Combine it with [`ApproximateShapeOverlap`] to compute an energy that
 /// penalizes hard particle overlaps.
 ///
@@ -36,7 +38,7 @@ use super::UnivariateEnergy;
 ///
 /// let overlap_penalty = OverlapPenalty::default();
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct OverlapPenalty {
     /// Spring stiffness $`[\mathrm{energy}] [\mathrm{length}]^{-2}`$.
     pub k: f64,

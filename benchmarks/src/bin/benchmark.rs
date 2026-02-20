@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Command line tool that benchmarks hoomd-rs performance.
@@ -16,10 +16,9 @@ use parquet::{
 use parquet_derive::ParquetRecordWriter;
 
 use benchmarks::{Benchmark, Effort, mc};
-use hoomd_microstate::{SiteKey, property::OrientedPoint};
+use hoomd_microstate::SiteKey;
 use hoomd_simulation::Simulation;
 use hoomd_spatial::VecCell;
-use hoomd_vector::{Angle, Cartesian, Versor};
 
 use rayon::ThreadPoolBuilder;
 use wildmatch::WildMatch;
@@ -121,37 +120,15 @@ fn execute_matching(
     options: &Options,
 ) -> anyhow::Result<()> {
     let benchmark_matcher = WildMatch::new(&options.benchmarks);
-    let number_density = 0.8;
     let benchmark = Benchmark {
         warmup_time: Duration::from_secs_f64(options.warmup_time),
         benchmark_time: Duration::from_secs_f64(options.benchmark_time),
     };
 
-    let needs_microstate_2d = benchmark_matcher.matches("mc_2d_sphere")
-        || benchmark_matcher.matches("mc_2d_lennard_jones")
-        || benchmark_matcher.matches("mc_2d_hexagon");
-
-    let needs_microstate_3d = benchmark_matcher.matches("mc_3d_sphere")
-        || benchmark_matcher.matches("mc_3d_lennard_jones")
-        || benchmark_matcher.matches("mc_3d_octahedron");
-
-    let maybe_microstate_2d = if needs_microstate_2d {
-        Some(benchmarks::place_hard_hyperspheres::<
-            OrientedPoint<Cartesian<2>, Angle>,
-            OrientedPoint<Cartesian<2>, Angle>,
-            2,
-        >(n, number_density)?)
-    } else {
-        None
-    };
-
     let name = "mc_2d_sphere";
     if benchmark_matcher.matches(name) {
-        let microstate_2d = &maybe_microstate_2d
-            .as_ref()
-            .expect("microstate_2d should be initialized");
         let mut simulation = mc::HardSphereSim::<2, VecCell<SiteKey, 2>>::new(
-            microstate_2d,
+            n,
             options.parallel_sweep || threads > 1,
         )?;
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
@@ -159,11 +136,8 @@ fn execute_matching(
 
     let name = "mc_2d_lennard_jones";
     if benchmark_matcher.matches(name) {
-        let microstate_2d = &maybe_microstate_2d
-            .as_ref()
-            .expect("microstate_2d should be initialized");
         let mut simulation = mc::LennardJones::<2, VecCell<SiteKey, 2>>::new(
-            microstate_2d,
+            n,
             options.parallel_sweep || threads > 1,
         )?;
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
@@ -171,33 +145,17 @@ fn execute_matching(
 
     let name = "mc_2d_hexagon";
     if benchmark_matcher.matches(name) {
-        let microstate_2d = &maybe_microstate_2d
-            .as_ref()
-            .expect("microstate_2d should be initialized");
         let mut simulation = mc::RegularPolygon::<VecCell<SiteKey, 2>>::new(
-            microstate_2d,
+            n,
             options.parallel_sweep || threads > 1,
         )?;
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
     }
 
-    let maybe_microstate_3d = if needs_microstate_3d {
-        Some(benchmarks::place_hard_hyperspheres::<
-            OrientedPoint<Cartesian<3>, Versor>,
-            OrientedPoint<Cartesian<3>, Versor>,
-            3,
-        >(n, number_density)?)
-    } else {
-        None
-    };
-
     let name = "mc_3d_sphere";
     if benchmark_matcher.matches(name) {
-        let microstate_3d = &maybe_microstate_3d
-            .as_ref()
-            .expect("microstate_3d should be initialized");
         let mut simulation = mc::HardSphereSim::<3, VecCell<SiteKey, 3>>::new(
-            microstate_3d,
+            n,
             options.parallel_sweep || threads > 1,
         )?;
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
@@ -205,11 +163,8 @@ fn execute_matching(
 
     let name = "mc_3d_lennard_jones";
     if benchmark_matcher.matches(name) {
-        let microstate_3d = &maybe_microstate_3d
-            .as_ref()
-            .expect("microstate_3d should be initialized");
         let mut simulation = mc::LennardJones::<3, VecCell<SiteKey, 3>>::new(
-            microstate_3d,
+            n,
             options.parallel_sweep || threads > 1,
         )?;
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
@@ -217,13 +172,15 @@ fn execute_matching(
 
     let name = "mc_3d_octahedron";
     if benchmark_matcher.matches(name) {
-        let microstate_3d = &maybe_microstate_3d
-            .as_ref()
-            .expect("microstate_3d should be initialized");
-        let mut simulation = mc::Octahedron::<VecCell<SiteKey, 3>>::new(
-            microstate_3d,
-            options.parallel_sweep || threads > 1,
-        )?;
+        let mut simulation =
+            mc::Octahedron::<VecCell<SiteKey, 3>>::new(n, options.parallel_sweep || threads > 1)?;
+        results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
+    }
+
+    let name = "mc_3d_ellipsoid";
+    if benchmark_matcher.matches(name) {
+        let mut simulation =
+            mc::EllipsoidSim::<VecCell<SiteKey, 3>>::new(n, options.parallel_sweep || threads > 1)?;
         results.push(execute(&mut simulation, &benchmark, name, n, threads)?);
     }
 

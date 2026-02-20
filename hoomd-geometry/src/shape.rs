@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Geometric representations of common shapes in N-dimensional space.
@@ -12,7 +12,7 @@
 //! encodes the dimensionality.
 
 mod capsule;
-pub use capsule::Capsule;
+pub use capsule::{Capsule, Spherocylinder};
 
 mod convex_polytope;
 pub use convex_polytope::{ConvexPolygon, ConvexPolyhedron, ConvexPolytope};
@@ -25,6 +25,9 @@ pub use cylinder::Cylinder;
 
 mod eighteight;
 pub use eighteight::EightEight;
+
+mod hyperbolic_convex_polytope;
+pub use hyperbolic_convex_polytope::{HyperbolicConvexPolygon, HyperbolicConvexPolytope};
 
 mod hyperellipsoid;
 pub use hyperellipsoid::{Ellipse, Ellipsoid, Hyperellipsoid};

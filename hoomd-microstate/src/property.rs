@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Traits that describe body and/or site properties a a selection types that implement them.
@@ -115,6 +115,9 @@ pub use point::Point;
 
 mod oriented_point;
 pub use oriented_point::OrientedPoint;
+
+mod oriented_hyperbolic_point;
+pub use oriented_hyperbolic_point::OrientedHyperbolicPoint;
 
 /// Locate sites and bodies.
 ///

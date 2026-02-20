@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 #![doc(
@@ -30,9 +30,9 @@ pub use zero::Zero;
 /// Compute the total energy of a potential applied to the microstate.
 ///
 /// The `TotalEnergy` trait describes a type that can compute the energy of a
-/// given microstate. Depending on the type, `total_energy` might compute the total
-/// potential energy of the system or a single term, such as the Lennard-Jones
-/// potential energy.
+/// given microstate. Depending on the type, `total_energy` might compute the
+/// total potential energy of the whole Hamiltonian or a single term, such as
+/// the Lennard-Jones potential energy.
 ///
 /// # Example
 ///
@@ -74,6 +74,15 @@ pub trait TotalEnergy<M> {
     /// Compute the energy.
     #[must_use]
     fn total_energy(&self, microstate: &M) -> f64;
+
+    /// Compute the difference in energy between two microstates.
+    ///
+    /// Returns `$ E_\mathrm{final} - E_\mathrm{initial} $`.
+    #[inline]
+    #[must_use]
+    fn delta_energy_total(&self, initial_microstate: &M, final_microstate: &M) -> f64 {
+        self.total_energy(final_microstate) - self.total_energy(initial_microstate)
+    }
 }
 
 /// Compute the energy contribution of a single site.
@@ -226,6 +235,7 @@ pub trait SiteEnergy<S> {
 ///
 /// The generic type names are:
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
+/// * `P`: The type of the site's `Position`.
 ///
 /// [`Isotropic`]: pairwise::Isotropic
 /// [`Anisotropic`]: pairwise::Anisotropic
@@ -248,7 +258,7 @@ pub trait SiteEnergy<S> {
 ///     epsilon: f64,
 /// }
 ///
-/// impl<S> SitePairEnergy<S> for Custom
+/// impl<S> SitePairEnergy<S, Cartesian<2>> for Custom
 /// where
 ///     S: Position<Position = Cartesian<2>>,
 /// {
@@ -334,7 +344,9 @@ pub trait SiteEnergy<S> {
 ///
 /// struct PolydisperseCircleOverlap;
 ///
-/// impl SitePairEnergy<CircleSiteProperties> for PolydisperseCircleOverlap {
+/// impl SitePairEnergy<CircleSiteProperties, Cartesian<2>>
+///     for PolydisperseCircleOverlap
+/// {
 ///     fn site_pair_energy(
 ///         &self,
 ///         a: &CircleSiteProperties,
@@ -398,7 +410,7 @@ pub trait SiteEnergy<S> {
 /// # Ok(())
 /// # }
 /// ```
-pub trait SitePairEnergy<S> {
+pub trait SitePairEnergy<S, P> {
     /// Evaluate the energy contribution from a pair of sites.
     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64;
 

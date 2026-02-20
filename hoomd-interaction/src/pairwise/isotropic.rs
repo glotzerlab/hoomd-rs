@@ -1,7 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement Isotropic
+
+use serde::{Deserialize, Serialize};
 
 use crate::{MaximumInteractionRange, SitePairEnergy, univariate::UnivariateEnergy};
 use hoomd_microstate::property::Position;
@@ -49,6 +51,7 @@ use hoomd_vector::Metric;
 /// # Ok(())
 /// # }
 /// ```
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Isotropic<E> {
     /// The site-site interaction.
     pub interaction: E,
@@ -56,7 +59,7 @@ pub struct Isotropic<E> {
     pub r_cut: f64,
 }
 
-impl<P, S, E> SitePairEnergy<S> for Isotropic<E>
+impl<S, P, E> SitePairEnergy<S, P> for Isotropic<E>
 where
     S: Position<Position = P>,
     P: Metric,

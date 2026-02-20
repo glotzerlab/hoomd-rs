@@ -1,10 +1,12 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Helpers that enable consistent use of random numbers throughout hoomd-rs.
 
-use crate::SFC64;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
+
+use crate::SFC64;
 
 /// Conveniently construct counter based random number generators.
 ///
@@ -46,7 +48,7 @@ use rand::Rng;
 ///
 /// ```
 /// use hoomd_rand::Counter;
-/// use rand::Rng;
+/// use rand::{Rng, RngExt};
 ///
 /// # let step = 100_000;
 /// # let substep = 10;
@@ -55,7 +57,7 @@ use rand::Rng;
 ///
 /// let r: f64 = rng.random();
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Counter {
     /// The current simulation step.
     step: u64,
@@ -143,7 +145,7 @@ impl Counter {
     ///
     /// ```
     /// use hoomd_rand::Counter;
-    /// use rand::Rng;
+    /// use rand::{Rng, RngExt};
     ///
     /// let step = 100_000;
     /// let substep = 10;
@@ -169,6 +171,7 @@ impl Counter {
 mod tests {
     use super::*;
     use assert2::check;
+    use rand::RngExt;
 
     /// Number of stream elements to sample.
     const N: usize = 256;

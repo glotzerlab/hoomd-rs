@@ -1,13 +1,14 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Random distributions of vectors.
+use serde::{Deserialize, Serialize};
 use std::array;
 
 use super::{Cartesian, InnerProduct};
 use hoomd_utility::valid::PositiveReal;
 
-use rand::{Rng, distr::Distribution};
+use rand::{Rng, RngExt, distr::Distribution};
 use rand_distr::StandardNormal;
 
 /// A uniform distribution of all points inside or on a sphere with radius `r`.
@@ -29,7 +30,7 @@ use rand_distr::StandardNormal;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Ball {
     /// The radius of the ball *(\[length\])*.
     pub radius: PositiveReal,
@@ -43,8 +44,7 @@ impl<const N: usize> Distribution<Cartesian<N>> for Ball {
         if N == 2 {
             // Rejection sampling is fastest in 2D
             loop {
-                let mut coordinates_01 = [0.0; N];
-                rng.fill(&mut coordinates_01);
+                let coordinates_01: [f64; N] = array::from_fn(|_| rng.random());
 
                 let v = Cartesian {
                     coordinates: array::from_fn(|i| (coordinates_01[i] * 2.0 - 1.0) * r),

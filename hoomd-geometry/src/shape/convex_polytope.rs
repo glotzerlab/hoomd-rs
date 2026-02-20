@@ -1,7 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! N-Dimensional generalization of a convex polyhedron.
+
+use serde::{Deserialize, Serialize};
 
 use crate::{BoundingSphereRadius, Error, SupportMapping};
 use hoomd_utility::valid::PositiveReal;
@@ -59,7 +61,7 @@ use hoomd_vector::{Cartesian, InnerProduct};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConvexPolytope<const N: usize> {
     /// The vertices of the shape.
     vertices: Vec<Cartesian<N>>,
@@ -106,7 +108,7 @@ pub type ConvexPolygon = ConvexPolytope<2>;
 pub type ConvexPolyhedron = ConvexPolytope<3>;
 
 impl ConvexPolytope<2> {
-    /// Create a regular *n*-gon with *n* vertices and circumradius one.
+    /// Create a regular *n*-gon with *n* vertices and circumradius 0.5.
     ///
     /// # Example
     /// ```
@@ -124,11 +126,11 @@ impl ConvexPolytope<2> {
         ConvexPolytope {
             vertices: (0..n)
                 .map(|x| {
-                    let theta = std::f64::consts::PI * (x as f64) / (n as f64);
-                    Cartesian::from([f64::cos(theta), f64::sin(theta)])
+                    let theta = 2.0 * std::f64::consts::PI * (x as f64) / (n as f64);
+                    Cartesian::from([0.5 * f64::cos(theta), 0.5 * f64::sin(theta)])
                 })
                 .collect::<Vec<_>>(),
-            bounding_radius: 1.0
+            bounding_radius: 0.5
                 .try_into()
                 .expect("hard-coded constant should be positive"),
         }
@@ -258,8 +260,8 @@ mod tests {
 
     #[rstest]
     fn test_bounding_radius_regular_polygons(#[values(1, 3, 8, 64)] n: usize) {
-        assert_eq!(ConvexPolygon::regular(n).bounding_radius.get(), 1.0);
-        assert_eq!(ConvexPolytope::regular(n).bounding_radius.get(), 1.0);
+        assert_eq!(ConvexPolygon::regular(n).bounding_radius.get(), 0.5);
+        assert_eq!(ConvexPolytope::regular(n).bounding_radius.get(), 0.5);
     }
 
     #[test]

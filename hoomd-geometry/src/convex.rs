@@ -1,10 +1,12 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement `Convex`.
 
+use serde::{Deserialize, Serialize};
+
 use crate::{
-    BoundingSphereRadius, IntersectsAt, SupportMapping,
+    BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, SupportMapping,
     shape::{Circle, Sphere},
     xenocollide::{collide2d, collide3d},
 };
@@ -57,7 +59,7 @@ use hoomd_vector::{Cartesian, Metric, Rotate, Rotation, RotationMatrix};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Convex<S>(pub S);
 
 impl<V, S> SupportMapping<V> for Convex<S>
@@ -96,7 +98,15 @@ where
 
         self_circle.intersects_at(&other_circle, v_ij, o_ij) && collide2d(self, other, v_ij, o_ij)
     }
+}
 
+impl<A, B, R> IntersectsAtGlobal<Convex<A>, Cartesian<2>, R> for Convex<B>
+where
+    A: SupportMapping<Cartesian<2>> + BoundingSphereRadius,
+    B: SupportMapping<Cartesian<2>> + BoundingSphereRadius,
+    R: Rotate<Cartesian<2>> + Rotation,
+    RotationMatrix<2>: From<R>,
+{
     #[inline]
     fn intersects_at_global(
         &self,
@@ -132,7 +142,15 @@ where
 
         self_sphere.intersects_at(&other_sphere, v_ij, o_ij) && collide3d(self, other, v_ij, o_ij)
     }
+}
 
+impl<A, B, R> IntersectsAtGlobal<Convex<A>, Cartesian<3>, R> for Convex<B>
+where
+    A: SupportMapping<Cartesian<3>> + BoundingSphereRadius,
+    B: SupportMapping<Cartesian<3>> + BoundingSphereRadius,
+    R: Rotate<Cartesian<3>> + Rotation + PartialEq,
+    RotationMatrix<3>: From<R>,
+{
     #[inline]
     fn intersects_at_global(
         &self,

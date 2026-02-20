@@ -1,8 +1,9 @@
-// Copyright (c) 2024-2025 The Regents of the University of Michigan.
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Implement [`Angle`]
 
+use serde::{Deserialize, Serialize};
 use std::{f64::consts::PI, fmt};
 
 use approxim::approx_derive::RelativeEq;
@@ -41,7 +42,7 @@ use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
 /// Create a random [`Angle`] from the uniform distribution over all rotations:
 /// ```
 /// use hoomd_vector::Angle;
-/// use rand::{Rng, SeedableRng, rngs::StdRng};
+/// use rand::{RngExt, SeedableRng, rngs::StdRng};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut rng = StdRng::seed_from_u64(1);
@@ -74,7 +75,7 @@ use crate::{Cartesian, Rotate, Rotation, RotationMatrix};
 /// let c = a.combine(&b);
 /// assert_eq!(c.theta, PI / 4.0);
 /// ```
-#[derive(Clone, Copy, Debug, Default, PartialEq, RelativeEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, RelativeEq, Serialize, Deserialize)]
 pub struct Angle {
     /// Rotation angle (radians).
     pub theta: f64,
@@ -245,7 +246,7 @@ impl Distribution<Angle> for StandardUniform {
     ///
     /// ```
     /// use hoomd_vector::Angle;
-    /// use rand::{Rng, SeedableRng, rngs::StdRng};
+    /// use rand::{RngExt, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(1);
@@ -264,7 +265,7 @@ impl Distribution<Angle> for StandardUniform {
 mod tests {
     use super::*;
     use approxim::assert_relative_eq;
-    use rand::{SeedableRng, rngs::StdRng};
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::*;
     use std::f64::consts::PI;
 
