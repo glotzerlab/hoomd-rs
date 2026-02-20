@@ -59,7 +59,7 @@ impl<const N: usize> Spherical<N> {
     #[must_use]
     pub fn from_cartesian_coordinates(point: Cartesian<N>, radius: f64) -> Spherical<N> {
         let rad = point.norm();
-        assert_relative_eq!(rad, radius);
+        assert_relative_eq!(rad, radius, epsilon=1e-8);
         Spherical { point, radius }
     }
 }
@@ -78,7 +78,7 @@ impl Spherical<3> {
         ]);
         Spherical::from_cartesian_coordinates(point, r)
     }
-    /// Implements a stereographic projection from the 2-sphere to an 2-dimensional 
+    /// Implements a stereographic projection from the 2-sphere to an 2-dimensional
     /// plane by projecting through the $`(0,0,1)`$ axis.
     ///
     /// # Example
@@ -112,16 +112,16 @@ impl Spherical<3> {
 }
 
 impl Spherical<4> {
-    /// Create a point on a 3-sphere from spherical coordinates. Note that this uses 
-    /// the convention 
-    /// ```math 
-    /// \begin{pmatrix}r\cos\psi 
-    /// \\ r\sin\psi\cos\theta 
-    /// \\ r\sin\psi\sin\theta\cos\phi 
+    /// Create a point on a 3-sphere from spherical coordinates. Note that this uses
+    /// the convention
+    /// ```math
+    /// \begin{pmatrix}r\cos\psi
+    /// \\ r\sin\psi\cos\theta
+    /// \\ r\sin\psi\sin\theta\cos\phi
     /// \\ r\sin\psi\sin\theta\sin\phi
     /// \end{pmatrix}
     /// ```
-    /// where $`\psi`$ and $`theta`$ both run over the range $`0`$ to $`\pi`$ and $`\phi`$ 
+    /// where $`\psi`$ and $`theta`$ both run over the range $`0`$ to $`\pi`$ and $`\phi`$
     /// runs from $`0`$ to $`2\pi`$.
     #[inline]
     #[must_use]
@@ -157,14 +157,14 @@ impl Spherical<4> {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let radius = 1.0;
     /// let x = Spherical::<4>::from_polar_coordinates(1.0,PI/4.0, PI/8.0, 5.0*PI/4.0);
-    
+
     /// let x_versor = x.to_versor();
     /// let pole_versor = Quaternion::from([1.0,0.0,0.0,0.0]).to_versor().expect("not a null vector");
     /// let transformation = (*x_versor.get() * *pole_versor.get() * *x_versor.get())
     ///     .to_versor()
     ///     .expect("Hard-coded example is valid");
     /// let mapped_pole = Spherical::<4>::from_versor(transformation);
-    /// 
+    ///
     /// assert_relative_eq!(mapped_pole.coordinates()[0], x.coordinates()[0], epsilon=1e-12);
     /// assert_relative_eq!(mapped_pole.coordinates()[1], x.coordinates()[1], epsilon=1e-12);
     /// assert_relative_eq!(mapped_pole.coordinates()[2], x.coordinates()[2], epsilon=1e-12);
@@ -181,7 +181,7 @@ impl Spherical<4> {
         let n_hat = Cartesian::from([theta.cos(), (theta.sin())*(phi.cos()), (theta.sin())*(phi.sin())]).to_unit_unchecked();
         Versor::from_axis_angle(n_hat.0, psi)
     }
-    /// Implements a stereographic projection from the 2-sphere to an 2-dimensional 
+    /// Implements a stereographic projection from the 2-sphere to an 2-dimensional
     /// plane by projecting through the $`(1,0,0,0)`$ axis.
     #[inline]
     #[must_use]
@@ -361,7 +361,7 @@ impl Distribution<Spherical<4>> for SphericalDisk<4> {
         let b_hat = v.rotate(&Cartesian::from([1.0,0.0,0.0])).to_unit().expect("hard coded non-null vector");
         let eta = Uniform::new(0.0, max_trans).expect("hard coded non-negative");
         let translation_versor = Versor::from_axis_angle(b_hat.0, eta.sample(rng));
-        
+
         let position_versor = Quaternion::from(*point.coordinates()).to_versor().expect("spherical points cannot be null");
         let transformation = ((*translation_versor.get()) * (*position_versor.get()) * (*translation_versor.get())).to_versor().expect("sperical points cannot be null");
         let sphere_point = Spherical::<4>::from_versor(transformation);

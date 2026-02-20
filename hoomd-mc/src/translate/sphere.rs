@@ -51,17 +51,15 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: Point<Spherical<3>>) -> Point<Spherical<3>> {
         let mut trial = body_properties;
         let displacement = (self.maximum_distance().get())*rng.sample::<f64, _>(StandardNormal);
-        let (sn, cs) = (displacement.sin(), displacement.cos());
+        let (sn, cs) = ((displacement.abs()).sin(), (displacement.abs()).cos());
         let vec = Cartesian::<3>::from(std::array::from_fn(|_| rng.sample(StandardNormal)));
         let proj = vec.dot(trial.position.point());
-        println!("proj: {:}", proj);
         let tangent = Cartesian::from([
             vec[0] - proj * trial.position.coordinates()[0],
             vec[1] - proj * trial.position.coordinates()[1],
             vec[2] - proj * trial.position.coordinates()[2],
         ]);
         let (unit, _norm) = tangent.to_unit().expect("cannot be null");
-        println!("new unit vector: {:?}", unit);
         let new = Cartesian::from([
             trial.position.coordinates()[0] * cs + unit.get().coordinates[0]*sn,
             trial.position.coordinates()[1] * cs + unit.get().coordinates[1]*sn,
@@ -75,7 +73,7 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
 
 impl LocalTrial<Point<Spherical<4>>> for Translate<Point<Spherical<4>>> {
     /// Propose local trial moves for a body on the surface of a 3-sphere
-    /// 
+    ///
     /// # Example
     /// ```
     /// use approxim::assert_relative_eq;
@@ -113,7 +111,7 @@ impl LocalTrial<Point<Spherical<4>>> for Translate<Point<Spherical<4>>> {
     fn propose<R: Rng>(&self, rng: &mut R, body_properties: Point<Spherical<4>>) -> Point<Spherical<4>> {
         let mut trial = body_properties;
         let displacement = (self.maximum_distance().get())*rng.sample::<f64, _>(StandardNormal);
-        let (sn, cs) = (displacement.sin(), displacement.cos());
+        let (sn, cs) = ((displacement.abs()).sin(), (displacement.abs()).cos());
         let vec = Cartesian::<4>::from(std::array::from_fn(|_| rng.sample(StandardNormal)));
         let proj = vec.dot(trial.position.point());
         let tangent = Cartesian::from([
