@@ -19,15 +19,13 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
     /// use hoomd_manifold::{Spherical, SphericalDisk};
     /// use hoomd_mc::{LocalTrial, Translate};
     /// use hoomd_microstate::property::{Point, Position};
-    /// use hoomd_vector::{Cartesian, Metric, Vector};
+    /// use hoomd_vector::{Cartesian, InnerProduct, Metric, Vector};
     /// use rand::{Rng, SeedableRng, rngs::StdRng};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut rng = StdRng::seed_from_u64(14);
-    /// let radius: f64 = 2.0;
     /// let initial_point = Point::new(Spherical::from_cartesian_coordinates(
-    ///     [2.0_f64.sqrt(), 2.0_f64.sqrt(), 0.0].into(),
-    ///     2.0_f64,
+    ///     [0.5_f64.sqrt(), 0.5_f64.sqrt(), 0.0].into(),
     /// ));
     /// let d = 0.1;
     /// let translate = Translate::with_maximum_distance(d.try_into()?);
@@ -35,7 +33,8 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
     /// let new_body_properties = translate.propose(&mut rng, initial_point);
     ///
     /// // Translation move keeps point on the surface of the sphere
-    /// assert_eq!(new_body_properties.position().radius(), radius,);
+    /// let new_body_radius = new_body_properties.position.point().norm();
+    /// assert_eq!(new_body_radius, 1.0);
     ///
     /// // Translation move does not translate the point more than a distance d away
     /// assert!(
@@ -58,10 +57,9 @@ impl LocalTrial<Point<Spherical<3>>> for Translate<Point<Spherical<3>>> {
             point: *trial.position_mut(),
         };
         *trial.position_mut() = disk.sample(rng);
-        let rescale = trial.position().radius() / trial.position().point().norm();
+        let rescale = 1.0 / trial.position().point().norm();
         *trial.position_mut() = Spherical::from_cartesian_coordinates(
-            *trial.position().point() * rescale,
-            trial.position().radius(),
+            *trial.position().point() * rescale
         );
         trial
     }
