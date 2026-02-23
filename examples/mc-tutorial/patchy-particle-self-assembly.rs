@@ -52,9 +52,9 @@ impl PatchyParticleSelfAssembly {
         let patch_interaction_range = 1.12;
         let patch_half_angle = 37.0_f64.to_radians();
         let patch_energy = -5.8;
-        let initial_temperature = 1.2;
+        let initial_temperature = 1.1;
         let final_temperature = 1.0;
-        let ramp_steps = 500_000;
+        let ramp_steps = 200_000;
         let macrostate = Isothermal {
             temperature: initial_temperature,
         };
