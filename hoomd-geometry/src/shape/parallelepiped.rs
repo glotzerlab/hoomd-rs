@@ -1,15 +1,20 @@
 // Copyright (c) 2024-2025 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
+use hoomd_linear_algebra::{
+    GeneralMatrix, SquareMatrix,
+    matrix::{Matrix, qr},
+};
 // use crate::{BoundingSphereRadius, SupportMapping, Volume};
 use hoomd_vector::{Cartesian, InnerProduct};
 
-use crate::SupportMapping;
+use crate::{IsPointInside, SupportMapping};
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Hyperparallelepiped<const N: usize> {
     /// The lengths of each edge of the cuboid.
     pub edge_vectors: [Cartesian<N>; N],
+    pub _qr: Option<Matrix<N, N>>,
 }
 
 pub type Parallelogram = Hyperparallelepiped<2>;
@@ -22,11 +27,22 @@ impl<const N: usize> Default for Hyperparallelepiped<N> {
             edge_vectors: std::array::from_fn(|i| {
                 std::array::from_fn(|j| if i == j { 1. } else { 0. }).into()
             }),
+            _qr: None,
         }
     }
 }
 
 impl<const N: usize> Hyperparallelepiped<N> {
+    pub fn calc_qr(mut self) {
+        //bundle up vtors
+        self._qr = Some(
+            Matrix::<N, N> {
+                rows: self.edge_vectors.map(|v| v.coordinates),
+            }
+            .transpose(),
+        );
+    }
+
     #[inline]
     #[must_use]
     /// Determine the maximal extents of the cuboid along each Cartesian axis.
@@ -90,3 +106,43 @@ impl<const N: usize> SupportMapping<Cartesian<N>> for Hyperparallelepiped<N> {
     }
 }
 
+impl<const N: usize> IsPointInside<Cartesian<N>> for Hyperparallelepiped<N> {
+    /// Check if a cartesian vector is inside a hyperparallelepiped.
+    ///
+    /// By conventions typically used in periodic boundary conditions, points
+    /// exactly at the minimal extent are inside the shape but points exactly
+    /// on the maximal extent are not:
+    /// ```math
+    /// -\frac{L_x}{2} \le x \lt \frac{L_x}{2}
+    /// ```
+    /// ```math
+    /// -\frac{L_y}{2} \le y \lt \frac{L_y}{2}
+    /// ```
+    /// ... and so on
+    ///
+    /// ```
+    /// use hoomd_geometry::{IsPointInside, shape::Hyperparallelepiped};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let cuboid = Hyperparallelepiped { //TODO
+    ///     edge_lengths: [6.0.try_into()?, 8.0.try_into()?],
+    /// };
+    ///
+    /// assert!(cuboid.is_point_inside(&[2.5, -3.5].into()));
+    /// assert!(!cuboid.is_point_inside(&[4.0, -3.5].into()));
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    fn is_point_inside(&self, point: &Cartesian<N>) -> bool {
+        let fractional = qr::qr_solve(
+            &self._qr.as_ref().expect("_qr attribute is not computed"),
+            point.to_column_matrix(),
+        );
+
+        fractional
+            .rows
+            .into_iter()
+            .all(|x| -1.0 / 2.0 <= x[0] && x[0] < 1.0 / 2.0)
+    }
+}
