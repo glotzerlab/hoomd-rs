@@ -39,22 +39,15 @@ use hoomd_vector::{Rotate, RotationMatrix, TensorProduct, Vector, WedgeProduct};
 ///
 /// ```
 /// use hoomd_interaction::{
-///     Rigid,
-///     CutoffPair,
-///     pairwise::{Isotropic, LennardJones},
+///     rigid::Rigid, PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones,
 /// };
 ///
 /// let lennard_jones: LennardJones = LennardJones {
 ///     epsilon: 1.5,
 ///     sigma: 2.0,
 /// };
-/// let evaluator = Isotropic(lennard_jones);
-/// let rigid = Rigid {
-///     CutoffPair {
-///         r_cut: 5.0,
-///         evaluator,
-///     }
-/// };
+/// let evaluator = Isotropic{ interaction: lennard_jones, r_cut: 2.0*6.0};
+/// let rigid = Rigid(PairwiseCutoff(evaluator));
 /// ```
 pub struct Rigid<E>(pub E);
 
@@ -87,9 +80,7 @@ where
     /// # Example
     /// ```
     /// use hoomd_interaction::{
-    ///     CutoffPair, NetBodyForce,
-    ///     pairwise::{Isotropic, LennardJones},
-    ///     rigid::Rigid
+    ///     rigid::Rigid, PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones, NetBodyForce
     /// };
     /// use hoomd_linear_algebra::{
     ///     GeneralMatrix,
@@ -129,13 +120,14 @@ where
     ///         },
     /// ])?;
     ///
-    /// let force = Rigid(CutoffPair {
-    ///     r_cut: 6.0,
-    ///     evaluator: Isotropic(LennardJones::<12, 6> {
-    ///         epsilon: 1.0,
-    ///         sigma: 2.0_f64.powf(-1.0 / 6.0),
-    ///     }),
-    /// });
+    /// let force = Rigid(PairwiseCutoff(
+    ///     Isotropic{ 
+    ///         interaction: LennardJones::<12, 6> {
+    ///                 epsilon: 1.0,
+    ///                 sigma: 2.0_f64.powf(-1.0 / 6.0),
+    ///         }, 
+    ///         r_cut: 6.0,
+    /// }));
     ///
     ///    
     /// let net_force = force.net_force_on_body(&microstate, 0);
@@ -192,9 +184,7 @@ where
     /// # Example
     /// ```
     /// use hoomd_interaction::{
-    ///     CutoffPair, NetBodyTorque,
-    ///     pairwise::{Isotropic, LennardJones},
-    ///     rigid::Rigid
+    ///     rigid::Rigid, PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones, NetBodyTorque
     /// };
     ///
     /// use hoomd_microstate::{
@@ -230,14 +220,15 @@ where
     ///         },
     /// ])?;
     ///
-    /// let force = Rigid(CutoffPair {
-    ///     r_cut: 6.0,
-    ///     evaluator: Isotropic(LennardJones::<12, 6> {
-    ///         epsilon: 1.0,
-    ///         sigma: 2.0_f64.powf(-1.0 / 6.0),
-    ///     }),
-    /// });
-    ///
+    /// let force = Rigid(PairwiseCutoff(
+    ///     Isotropic{ 
+    ///         interaction: LennardJones::<12, 6> {
+    ///                 epsilon: 1.0,
+    ///                 sigma: 2.0_f64.powf(-1.0 / 6.0),
+    ///         }, 
+    ///         r_cut: 6.0,
+    /// }));
+    /// 
     /// let net_torque = force.net_torque_on_body(&microstate, 0);
     ///
     /// assert_abs_diff_eq!(net_torque, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-14);
@@ -329,9 +320,7 @@ where
     /// # Example
     /// ```
     /// use hoomd_interaction::{
-    ///     CutoffPair, NetBodyForceAndTorque,
-    ///     pairwise::{Isotropic, LennardJones},
-    ///     rigid::Rigid
+    ///     rigid::Rigid, PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones, NetBodyForceAndTorque
     /// };
     ///
     /// use hoomd_microstate::{
@@ -367,13 +356,14 @@ where
     ///         },
     /// ])?;
     ///
-    /// let force = Rigid(CutoffPair {
-    ///     r_cut: 6.0,
-    ///     evaluator: Isotropic(LennardJones::<12, 6> {
-    ///         epsilon: 1.0,
-    ///         sigma: 2.0_f64.powf(-1.0 / 6.0),
-    ///     }),
-    /// });
+    /// let force = Rigid(PairwiseCutoff(
+    ///     Isotropic{ 
+    ///         interaction: LennardJones::<12, 6> {
+    ///                 epsilon: 1.0,
+    ///                 sigma: 2.0_f64.powf(-1.0 / 6.0),
+    ///         }, 
+    ///         r_cut: 6.0,
+    /// }));
     ///
     /// let (net_force, net_torque) = force.net_force_and_torque_on_body(&microstate, 0);
     ///
@@ -464,9 +454,7 @@ where
     /// # Example
     /// ```
     /// use hoomd_interaction::{
-    ///     CutoffPair, NetBodyForceAndVirial,
-    ///     pairwise::{Isotropic, LennardJones},
-    ///     rigid::Rigid
+    ///     rigid::Rigid, PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones, NetBodyForceAndVirial
     /// };
     /// use hoomd_linear_algebra::{
     ///     GeneralMatrix,
@@ -506,15 +494,15 @@ where
     ///         },
     /// ])?;
     ///
-    /// let force = Rigid(CutoffPair {
-    ///     r_cut: 6.0,
-    ///     evaluator: Isotropic(LennardJones::<12, 6> {
-    ///         epsilon: 1.0,
-    ///         sigma: 2.0_f64.powf(-1.0 / 6.0),
-    ///     }),
-    /// });
+    /// let force = Rigid(PairwiseCutoff(
+    ///     Isotropic{ 
+    ///         interaction: LennardJones::<12, 6> {
+    ///                 epsilon: 1.0,
+    ///                 sigma: 2.0_f64.powf(-1.0 / 6.0),
+    ///         }, 
+    ///         r_cut: 6.0,
+    /// }));
     ///
-    ///    
     /// let (net_force, net_virial) = force.net_force_and_virial_on_body(&microstate, 0);
     ///
     /// assert_abs_diff_eq!(net_force, Cartesian::from([0.0, 0.0, 0.0]), epsilon = 1e-14);

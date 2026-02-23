@@ -134,8 +134,7 @@ impl<E> PairwiseCutoff<E> {
     /// # Example
     /// ```
     /// use hoomd_interaction::{
-    ///     PairwiseCutoff,
-    ///     pairwise::{Isotropic, LennardJones}
+    ///     PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones,
     /// };
     /// use hoomd_microstate::{
     ///     Body, Microstate, Site, property::Point
@@ -158,12 +157,13 @@ impl<E> PairwiseCutoff<E> {
     ///         },
     /// ])?;
     ///
-    /// let force = PairwiseCutoff {
-    ///     r_cut: 6.0,
-    ///     evaluator: Isotropic(LennardJones::<12, 6> {
-    ///         epsilon: 1.0,
-    ///         sigma: 2.0_f64.powf(-1.0 / 6.0),
-    /// })};
+    /// let force = PairwiseCutoff(
+    ///     Isotropic{
+    ///         interaction: LennardJones::<12, 6> {
+    ///             epsilon: 1.0,
+    ///             sigma: 2.0_f64.powf(-1.0 / 6.0)},
+    ///         r_cut: 6.0
+    /// });
     ///
     /// let sites = microstate.sites();
     /// let force_ab = force.site_pair_force(&sites[0], &sites[1]);
@@ -207,8 +207,7 @@ impl<E> PairwiseCutoff<E> {
     /// # Example
     /// ```
     /// use hoomd_interaction::{
-    ///     PairwiseCutoff,
-    ///     pairwise::{Isotropic, LennardJones}
+    ///     PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones,
     /// };
     /// use hoomd_microstate::{
     ///     Body, Microstate, Site, property::Point
@@ -234,12 +233,13 @@ impl<E> PairwiseCutoff<E> {
     ///         },
     /// ])?;
     ///
-    /// let force = PairwiseCutoff {
-    ///     r_cut: 6.0,
-    ///     evaluator: Isotropic(LennardJones::<12, 6> {
-    ///         epsilon: 1.0,
-    ///         sigma: 2.0_f64.powf(-1.0 / 6.0),
-    /// })};
+    /// let force = PairwiseCutoff(
+    ///     Isotropic{
+    ///         interaction: LennardJones::<12, 6> {
+    ///             epsilon: 1.0,
+    ///             sigma: 2.0_f64.powf(-1.0 / 6.0)},
+    ///         r_cut: 6.0
+    /// });
     ///
     /// let sites = microstate.sites();
     /// let (force_ab, virial_ab) = force.site_pair_force_and_virial(&sites[0], &sites[1]);
@@ -531,9 +531,7 @@ where
     /// # Example
     /// ```
     /// use hoomd_interaction::{
-    ///     PairwiseCutoff,
-    ///     SiteForceAndTorque,
-    ///     pairwise::{Isotropic, LennardJones}
+    ///     PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones, SiteForceAndTorque
     /// };
     /// use hoomd_microstate::{
     ///     Body, Microstate, Site, property::{Point, OrientedPoint}
@@ -566,12 +564,13 @@ where
     ///         },
     /// ])?;
     ///
-    /// let force = PairwiseCutoff {
-    ///     r_cut: 6.0,
-    ///     evaluator: Isotropic(LennardJones::<12, 6> {
-    ///         epsilon: 1.0,
-    ///         sigma: 2.0_f64.powf(-1.0 / 6.0),
-    /// })};
+    /// let force = PairwiseCutoff(
+    ///     Isotropic{
+    ///         interaction: LennardJones::<12, 6> {
+    ///             epsilon: 1.0,
+    ///             sigma: 2.0_f64.powf(-1.0 / 6.0)},
+    ///         r_cut: 6.0
+    /// });
     ///
     /// let sites = microstate.sites();
     /// let (force_on_zero, torque_on_zero) = force.net_force_and_torque_on_site(&microstate, &sites[0]);
@@ -637,9 +636,7 @@ where
     /// # Example
     /// ```
     /// use hoomd_interaction::{
-    ///     PairwiseCutoff,
-    ///     SiteForceAndVirial,
-    ///     pairwise::{Isotropic, LennardJones}
+    ///     PairwiseCutoff, pairwise::Isotropic, univariate::LennardJones, SiteForceAndVirial
     /// };
     /// use hoomd_microstate::{
     ///     Body, Microstate, Site, property::Point
@@ -662,12 +659,13 @@ where
     ///         },
     /// ])?;
     ///
-    /// let force = PairwiseCutoff {
-    ///     r_cut: 6.0,
-    ///     evaluator: Isotropic(LennardJones::<12, 6> {
-    ///         epsilon: 1.0,
-    ///         sigma: 2.0_f64.powf(-1.0 / 6.0),
-    /// })};
+    /// let force = PairwiseCutoff(
+    ///     Isotropic{
+    ///         interaction: LennardJones::<12, 6> {
+    ///             epsilon: 1.0,
+    ///             sigma: 2.0_f64.powf(-1.0 / 6.0)},
+    ///         r_cut: 6.0
+    /// });
     ///
     /// let sites = microstate.sites();
     /// let (force_on_zero, virial_on_zero) = force.net_force_and_virial_on_site(&microstate, &sites[0]);
