@@ -55,7 +55,9 @@ impl PatchyParticleSelfAssembly {
         let initial_temperature = 1.2;
         let final_temperature = 1.0;
         let ramp_steps = 500_000;
-        let macrostate = Isothermal { temperature: initial_temperature };
+        let macrostate = Isothermal {
+            temperature: initial_temperature,
+        };
         // ANCHOR_END: parameters
 
         // ANCHOR: hard_disk
@@ -205,13 +207,15 @@ enum Phase {
 impl Simulation for PatchyParticleSelfAssembly {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
-        self.macrostate.temperature = if self.microstate.step() >= self.ramp_steps {
+        self.macrostate.temperature = if self.microstate.step()
+            >= self.ramp_steps
+        {
             self.final_temperature
         } else {
             let x = self.microstate.step() as f64 / self.ramp_steps as f64;
             (1.0 - x) * self.initial_temperature + x * self.final_temperature
         };
-        
+
         // ANCHOR_END: simulation
         // ANCHOR: remainder_simulation
         match self.phase {
@@ -225,7 +229,6 @@ impl Simulation for PatchyParticleSelfAssembly {
 
         Ok(())
     }
-
 
     /// Get the current simulation step.
     fn step(&self) -> u64 {

@@ -138,7 +138,7 @@ term to allow the system to arrange randomly without being hindered by the patch
 ### More Initialization
 
 See the [Hard Ellipse Self-Assembly] tutorial for a complete explanation of
-remaining initialization code (see also the [complete code] below). 
+remaining initialization code (see also the [complete code] below).
 
 [Hard Ellipse Self-Assembly]: hard-ellipse-self-assembly.md
 [complete code]: #complete-code
