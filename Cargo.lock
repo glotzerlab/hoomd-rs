@@ -249,7 +249,7 @@ dependencies = [
  "objc2-foundation 0.3.2",
  "parking_lot",
  "percent-encoding",
- "windows-sys 0.52.0",
+ "windows-sys 0.60.2",
  "x11rb",
 ]
 
@@ -436,7 +436,7 @@ dependencies = [
  "hoomd-spatial",
  "hoomd-vector",
  "log",
- "parquet",
+ "parquet 57.3.0",
  "parquet_derive",
  "postcard",
  "rand 0.10.0",
@@ -2708,7 +2708,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2765,7 +2765,7 @@ dependencies = [
  "hoomd-spatial",
  "hoomd-utility",
  "hoomd-vector",
- "parquet",
+ "parquet 57.3.0",
  "parquet_derive",
  "rand 0.10.0",
  "thiserror 2.0.18",
@@ -3734,7 +3734,7 @@ name = "hoomd-utility"
 version = "0.0.0"
 dependencies = [
  "assert2",
- "parquet",
+ "parquet 57.3.0",
  "parquet_derive",
  "serde",
  "tempfile",
@@ -4475,7 +4475,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4992,12 +4992,32 @@ dependencies = [
 ]
 
 [[package]]
-name = "parquet_derive"
-version = "57.3.0"
+name = "parquet"
+version = "58.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7357c16a52f9cb7a8617f5fc0ad08e6780df22880ec288c923aea8c51b34e6d"
+checksum = "3f491d0ef1b510194426ee67ddc18a9b747ef3c42050c19322a2cd2e1666c29b"
 dependencies = [
- "parquet",
+ "ahash",
+ "bytes",
+ "chrono",
+ "half",
+ "hashbrown 0.16.1",
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+ "paste",
+ "seq-macro",
+ "thrift",
+ "twox-hash",
+]
+
+[[package]]
+name = "parquet_derive"
+version = "58.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7788ed996d053a0455ef1748d3ac280b10a6661e639e994a8e0ec06c187342d7"
+dependencies = [
+ "parquet 58.0.0",
  "proc-macro2",
  "quote",
  "syn 2.0.116",
@@ -5638,7 +5658,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.11.0",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6099,7 +6119,7 @@ dependencies = [
  "getrandom 0.4.1",
  "once_cell",
  "rustix 1.1.3",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -7030,7 +7050,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
