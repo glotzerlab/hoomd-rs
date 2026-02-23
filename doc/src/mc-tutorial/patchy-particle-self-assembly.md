@@ -12,13 +12,17 @@ There are many ways you can model **anisotropic bodies** in *hoomd-rs*.
 This tutorial shows you how to represents **sites** that have a hard core
 and two attractive patches. This system self-assembles the kagome structure
 ([10.1039/C0SM01494J]) using the optimal parameters given in [10.1039/D2SM01593E].
+The tutorial also uses a temperature ramp to improve the quality of the
+self-assembled structures and logs the temperature and potential energy
+for further analysis.
 
 [10.1039/C0SM01494J]: http://doi.org/10.1039/C0SM01494J
 [10.1039/D2SM01593E]: http://doi.org/10.1039/D2SM01593E
 
 * Objectives:
   * Explain how to model systems of hard core particles with attractive patches.
-  * Show how to log the system potential energy as a function of simulation step.
+  * Describe how to vary system parameters as a function of step.
+  * Show how to log the system potential energy and temperature as a function of simulation step.
   * Demonstrate the self-assembly of patchy particles.
 * File: `hoomd-rs/examples/mc-tutorial/patchy-particle-self-assembly.rs`
 * Run (interactively):
@@ -69,12 +73,13 @@ that disks can be placed easily in the microstate. During the `Initialize`
 phase, the microstate will be compressed until it reaches the packing
 fraction `target_packing_fraction`. `n_disks` is the number of disks to add,
 `maximum_distance` is the largest distance a translation trial move can take,
-and `maximum_rotation`controls the size of the rotation trial moves. `sigma`
-is the disk diameter, `patch_interaction_range` is largest distance at which
-the attractive interaction applies, `patch_half_angle` is the half open angle
-of the patch, `patch_energy` is the potential energy of a pair of particles when
-their patches align, and `macrostate` holds the temperature set point (in units
-of energy).
+and `maximum_rotation`controls the size of the rotation trial moves. `sigma` is
+the disk diameter, `patch_interaction_range` is largest distance at which the
+attractive interaction applies, `patch_half_angle` is the half open angle of the
+patch, and `patch_energy` is the potential energy of a pair of particles when
+their patches align. `initial_temperature` sets the temperature at step 0,
+`final_temperature` sets the temperature at step `ramp_steps`, and `macrostate`
+holds the current temperature set point (in units of energy).
 
 ### Hamiltonian
 
@@ -94,7 +99,7 @@ Use `AngularMask` combined with `Boxcar` to compute the patch interactions
 detailed in [10.1039/C0SM01494J]. The `Boxcar` isotropic potential places an
 attractive well at all distances less than `patch_interaction_range`.
 `AngularMask` modulates that potential with oriented patches.
-Place two patches, one facing up and one facing down in the site's local
+Place two patches, one directed up and one directed down in the site's local
 frame.
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:patch}}
@@ -111,8 +116,8 @@ faster to use one `PairwiseCutoff` that operates on a tuple:
 ```
 
 The former performs two loops over nearby sites and adds the results together
-($` \sum U^A_{ij} + \sum U^B_{ij} `$) while the latter performs one loop and adds
-terms in the loop body ($` \sum U^A_{ij} + U^B_{ij} `$).
+$`\left( \sum U^A_{ij} + \sum U^B_{ij} \right)`$ while the latter performs one loop and adds
+terms in the loop body $`\left( \sum U^A_{ij} + U^B_{ij} \right)`$.
 
 > [!TIP]
 > Always list hard shape potentials first in the tuple. If the hard shapes
@@ -130,17 +135,27 @@ term to allow the system to arrange randomly without being hindered by the patch
 {{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:compress_hamiltonian}}
 ```
 
-## Initialization and Simulation
+### More Initialization
 
 See the [Hard Ellipse Self-Assembly] tutorial for a complete explanation of
-remaining initialization and simulation code.
-```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:remainder}}
-```
+remaining initialization code (see also the [complete code] below). 
 
 [Hard Ellipse Self-Assembly]: hard-ellipse-self-assembly.md
+[complete code]: #complete-code
 
-## Log Potential Energy in Batch Mode
+## Implement `Simulation`
+
+To implement the temperature ramp, modify `macrostate` at the start of
+`advance()`.  This code implements a linear ramp from `initial_temperature` to
+`final_temperature` as a function of the current simulation step:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:simulation}}
+```
+
+The remainder of the simulation code is identical to that in the
+[Hard Ellipse Self-Assembly] tutorial (see also the [complete code] below).
+
+## Log the Potential Energy and Temperature
 
 When running simulations in batch mode, you often want to write a **log** file
 for later analysis. In this system of patchy particles, the total system
@@ -154,12 +169,12 @@ Define a struct that records all quantities of interest:
 {{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:log_record}}
 ```
 
-*hoomd-rs* has no built-in logging capability. There are many Rust crates you
-could use to write log files with just a few lines of code. Choose the one
-that best suits your needs. This tutorial writes the log to a [parquet] file.
-Parquet is a binary column-oriented format that preserves the full precision
-of every record value and can be read/written efficiently. It is supported by R,
-pandas, MATLAB, and many other tools.
+This tutorial writes the log to a [parquet] file (you may choose any file format
+you like in your own projects). Parquet is a binary, column-oriented format
+that preserves the full precision of every record value and can be written and read
+efficiently. It is supported by R, pandas, MATLAB, and many other tools.
+`#[derive(ParquetRecordWriter)]` generates code that writes each field of the
+struct to a column with the same name.
 
 [parquet]: https://parquet.apache.org/
 
@@ -176,10 +191,10 @@ The `main()` function executes when your binary in batch mode:
 
 ### Open the Log File
 
-`ParquetLogger` from the `hoomd_utility` crate helps you write [parquet] files
-with only a few lines of code. Use it to create a new parquet file:
+`ParquetLogger` from the `hoomd_utility` crate helps you write [parquet] files.
+Use it to create a new parquet file:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:main}}
+{{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:log_open}}
 ```
 
 ### Simulation Steps
@@ -195,8 +210,8 @@ of the simulation.
 
 ### Write Log Records
 
-On desired simulation steps, construct a `LogRecord` and add it to the
-log file with `parquet_logger.log`:
+On desired simulation steps, construct a `LogRecord` and call `parquet_logger.log`
+to add it to the log file:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:write_log}}
 ```
@@ -207,7 +222,7 @@ log file with `parquet_logger.log`:
 
 ### Exit `main()`
 
-`ParquetWriter` writes remaining buffered log entries and closes the file when it
+`ParquetWriter` writes all buffered log entries and closes the file when it
 is dropped, which occurs automatically when `main()` returns:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:exit}}
@@ -220,8 +235,7 @@ simulations using a shape overlap potential with attractive patches.
 
 Navigate to the top of the page and refresh to see the simulation in action
 again. Notice that the disks quickly form random chains and clusters. Over
-time, hexagons will appear and the kagome structure will begin to grow. After
-a few hundred thousand timesteps, several distinct grains will appear. Run
+time, hexagons will appear and the kagome structure will begin to grow. Run
 the simulation long enough, and the system will equilibrate to a single large
 crystal as shown in [10.1039/D2SM01593E].
 
@@ -231,10 +245,8 @@ the generated `trajectory.gsd` in [Ovito] or another visualization tool:
 cargo run --release --example patchy-particle-self-assembly
 ```
 
-### Visualize the Log
-
-Open the log and plot it using the tool of your choice. It will look something
-like this:
+Open the log file `patchy-particle-self-assembly.parquet` and plot it using the
+tool of your choice. It will look something like this:
 <script src="https://cdn.jsdelivr.net/npm/vega@6"></script>
 <script src="https://cdn.jsdelivr.net/npm/vega-lite@6"></script>
 <script src="https://cdn.jsdelivr.net/npm/vega-embed@7"></script>
@@ -246,12 +258,32 @@ like this:
     $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
     description: 'Potential energy versus step for patchy particle self-assembly.',
     data: {"name": "data", "url": "patchy-particle-self-assembly.csv"} ,
+    "vconcat": [{
     width: "container",
+    height: 200,
+    "layer": [{
     mark: { type: 'line', tooltip: true},
     encoding: {
       x: {field: 'step', type: 'quantitative'},
       y: {field: 'potential_energy', type: 'quantitative'},
-    },
+    }},
+    {
+    mark: { type: 'line', tooltip: true},
+    encoding: {
+      x: {field: 'step', type: 'quantitative'},
+      y: {field: 'no_ramp', type: 'quantitative'},
+    }},
+
+    ]},
+    {
+    width: "container",
+    height: 200,
+    mark: { type: 'line', tooltip: true},
+    encoding: {
+      x: {field: 'step', type: 'quantitative'},
+      y: {field: 'temperature', type: 'quantitative'},
+    }}
+    ],
   };
   var tooltipOptions = {
     theme: 'dark'

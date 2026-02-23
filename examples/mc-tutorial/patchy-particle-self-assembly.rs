@@ -52,7 +52,10 @@ impl PatchyParticleSelfAssembly {
         let patch_interaction_range = 1.12;
         let patch_half_angle = 37.0_f64.to_radians();
         let patch_energy = -5.8;
-        let macrostate = Isothermal { temperature: 1.0 };
+        let initial_temperature = 1.2;
+        let final_temperature = 1.0;
+        let ramp_steps = 500_000;
+        let macrostate = Isothermal { temperature: initial_temperature };
         // ANCHOR_END: parameters
 
         // ANCHOR: hard_disk
@@ -97,7 +100,7 @@ impl PatchyParticleSelfAssembly {
         let overlap_penalty_hamiltonian = PairwiseCutoff(overlap_penalty);
         // ANCHOR_END: compress_hamiltonian
 
-        // ANCHOR: remainder
+        // ANCHOR: remainder_initialize
         let circle = Circle {
             radius: (sigma / 2.0).try_into()?,
         };
@@ -148,6 +151,9 @@ impl PatchyParticleSelfAssembly {
             quick_compress,
             macrostate,
             phase: Phase::Initialize,
+            initial_temperature,
+            final_temperature,
+            ramp_steps,
         })
     }
 }
@@ -181,16 +187,33 @@ struct PatchyParticleSelfAssembly {
         PairwiseCutoff<Isotropic<Expanded<OverlapPenalty>>>,
     /// The current phase of the simulation.
     phase: Phase,
+    /// Temperature at step 0.
+    initial_temperature: f64,
+    /// Temperature at step `ramp_steps`.
+    final_temperature: f64,
+    /// Number of steps to ramp temperature.
+    ramp_steps: u64,
 }
 
 enum Phase {
     Initialize,
     Equilibrate,
 }
+// ANCHOR_END: remainder_initialize
 
+// ANCHOR: simulation
 impl Simulation for PatchyParticleSelfAssembly {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
+        self.macrostate.temperature = if self.microstate.step() >= self.ramp_steps {
+            self.final_temperature
+        } else {
+            let x = self.microstate.step() as f64 / self.ramp_steps as f64;
+            (1.0 - x) * self.initial_temperature + x * self.final_temperature
+        };
+        
+        // ANCHOR_END: simulation
+        // ANCHOR: remainder_simulation
         match self.phase {
             Phase::Initialize => {
                 self.initialize().context("failed to initialize")?
@@ -202,6 +225,7 @@ impl Simulation for PatchyParticleSelfAssembly {
 
         Ok(())
     }
+
 
     /// Get the current simulation step.
     fn step(&self) -> u64 {
@@ -280,7 +304,7 @@ impl PatchyParticleSelfAssembly {
         );
     }
 }
-// ANCHOR_END: remainder
+// ANCHOR_END: remainder_simulation
 
 // ANCHOR: log_record
 /// A single entry in the log.
@@ -291,6 +315,9 @@ pub struct LogRecord {
 
     /// Total system potential energy.
     potential_energy: f64,
+
+    /// Temperature.
+    temperature: f64,
 }
 // ANCHOR_END: log_record
 
@@ -309,7 +336,7 @@ fn main() -> anyhow::Result<()> {
     let mut simulation = PatchyParticleSelfAssembly::new()?;
     // TODO: Write GSD file.
 
-    for _ in 0..2_000_000 {
+    for _ in 0..1_000_000 {
         simulation.advance()?;
         // ANCHOR_END: run_simulation
 
@@ -320,6 +347,7 @@ fn main() -> anyhow::Result<()> {
                 potential_energy: simulation
                     .hamiltonian
                     .total_energy(&simulation.microstate),
+                temperature: simulation.macrostate.temperature,
             })?;
         }
     }
