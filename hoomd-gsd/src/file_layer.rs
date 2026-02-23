@@ -272,7 +272,7 @@ mod private {
 /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
 /// gsd_file.write_scalars(
 ///     "configuration/box",
-///     &[10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0],
+///     &[10.0_f32, 20.0, 15.0, 0.0, 0.0, 0.0],
 /// )?;
 /// gsd_file.end_frame()?;
 /// gsd_file.sync_all()?;
@@ -1399,7 +1399,7 @@ impl GsdFile {
     /// # let tmp_dir = tempdir().expect("temp dir should be created");
     /// # let path = tmp_dir.path().join("test.gsd");
     /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-    /// gsd_file.write_scalars("configuration/step", &[100_000u64])?;
+    /// gsd_file.write_scalars("configuration/step", &[100_000_u64])?;
     /// gsd_file.end_frame()?;
     /// gsd_file.sync_all()?;
     ///
@@ -1471,14 +1471,14 @@ impl GsdFile {
     /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
     /// gsd_file.write_scalars(
     ///     "configuration/box",
-    ///     &[10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0],
+    ///     &[10.0_f32, 20.0, 15.0, 0.0, 0.0, 0.0],
     /// )?;
     /// gsd_file.end_frame()?;
     /// gsd_file.sync_all()?;
     ///
     /// let box_iter = gsd_file.iter_scalars::<f32>(0, "configuration/box")?;
     /// let box_vec = box_iter.collect::<Vec<_>>();
-    /// assert_eq!(box_vec, vec![10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0]);
+    /// assert_eq!(box_vec, vec![10.0_f32, 20.0, 15.0, 0.0, 0.0, 0.0]);
     /// # Ok(())
     /// # }
     /// ```
@@ -1538,7 +1538,7 @@ impl GsdFile {
     /// # use tempfile::tempdir;
     /// # let tmp_dir = tempdir().expect("temp dir should be created");
     /// # let path = tmp_dir.path().join("test.gsd");
-    /// let position = vec![[5.0f32, 3.0, -4.0], [-2.0, 3.0, -6.0]];
+    /// let position = vec![[5.0_f32, 3.0, -4.0], [-2.0, 3.0, -6.0]];
     ///
     /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
     /// gsd_file.write_arrays("particles/position", &position)?;
@@ -1705,7 +1705,7 @@ impl GsdFile {
     /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
     /// gsd_file.write_scalars(
     ///     "configuration/box",
-    ///     &[10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0],
+    ///     &[10.0_f32, 20.0, 15.0, 0.0, 0.0, 0.0],
     /// )?;
     /// gsd_file.end_frame()?;
     /// # Ok(())
@@ -1764,7 +1764,7 @@ impl GsdFile {
     /// # use tempfile::tempdir;
     /// # let tmp_dir = tempdir().expect("temp dir should be created");
     /// # let path = tmp_dir.path().join("test.gsd");
-    /// let position = vec![[5.0f32, 3.0, -4.0], [-2.0, 3.0, -6.0]];
+    /// let position = vec![[5.0_f32, 3.0, -4.0], [-2.0, 3.0, -6.0]];
     ///
     /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
     /// gsd_file.write_arrays("particles/position", &position)?;
@@ -1949,13 +1949,13 @@ impl GsdFile {
     /// # let tmp_dir = tempdir().expect("temp dir should be created");
     /// # let path = tmp_dir.path().join("test.gsd");
     /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-    /// gsd_file.write_scalars("configuration/step", &[100_000u64])?;
+    /// gsd_file.write_scalars("configuration/step", &[100_000_u64])?;
     /// gsd_file.end_frame()?;
     ///
-    /// gsd_file.write_scalars("configuration/step", &[200_000u64])?;
+    /// gsd_file.write_scalars("configuration/step", &[200_000_u64])?;
     /// gsd_file.end_frame()?;
     ///
-    /// gsd_file.write_scalars("configuration/step", &[300_000u64])?;
+    /// gsd_file.write_scalars("configuration/step", &[300_000_u64])?;
     /// gsd_file.end_frame()?;
     /// # Ok(())
     /// # }
@@ -1993,13 +1993,13 @@ impl GsdFile {
     /// # let tmp_dir = tempdir().expect("temp dir should be created");
     /// # let path = tmp_dir.path().join("test.gsd");
     /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-    /// gsd_file.write_scalars("configuration/step", &[100_000u64])?;
+    /// gsd_file.write_scalars("configuration/step", &[100_000_u64])?;
     /// gsd_file.end_frame()?;
     ///
-    /// gsd_file.write_scalars("configuration/step", &[200_000u64])?;
+    /// gsd_file.write_scalars("configuration/step", &[200_000_u64])?;
     /// gsd_file.end_frame()?;
     ///
-    /// gsd_file.write_scalars("configuration/step", &[300_000u64])?;
+    /// gsd_file.write_scalars("configuration/step", &[300_000_u64])?;
     /// gsd_file.end_frame()?;
     /// gsd_file.sync_all()?;
     ///
@@ -2026,13 +2026,13 @@ impl GsdFile {
     /// # use tempfile::tempdir;
     /// # let tmp_dir = tempdir().expect("temp dir should be created");
     /// # let path = tmp_dir.path().join("test.gsd");
-    /// let position = vec![[5.0f32, 3.0, -4.0], [-2.0, 3.0, -6.0]];
+    /// let position = vec![[5.0_f32, 3.0, -4.0], [-2.0, 3.0, -6.0]];
     ///
     /// let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-    /// gsd_file.write_scalars("configuration/step", &[100_000u64])?;
+    /// gsd_file.write_scalars("configuration/step", &[100_000_u64])?;
     /// gsd_file.write_scalars(
     ///     "configuration/box",
-    ///     &[10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0],
+    ///     &[10.0_f32, 20.0, 15.0, 0.0, 0.0, 0.0],
     /// )?;
     /// gsd_file.write_arrays("particles/position", &position)?;
     /// gsd_file.end_frame()?;
@@ -2794,7 +2794,7 @@ mod tests {
             .expect("write should succeed");
 
         gsd_file
-            .write_arrays("c", &[[1u64, 2, 3], [4, 5, 6]])
+            .write_arrays("c", &[[1_u64, 2, 3], [4, 5, 6]])
             .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
 
@@ -2919,10 +2919,10 @@ mod tests {
             GsdFile::create(path.clone(), "a", "s", (1, 0)).expect("gsd file should be created");
 
         gsd_file
-            .write_scalars("a", &[1u64])
+            .write_scalars("a", &[1_u64])
             .expect("write should succeed");
         gsd_file
-            .write_arrays("b", &[[1u64, 2], [3, 4]])
+            .write_arrays("b", &[[1_u64, 2], [3, 4]])
             .expect("write should succeed");
         gsd_file.end_frame().expect("write should succeed");
         gsd_file.sync_all().expect("write should succeed");

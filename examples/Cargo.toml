@@ -38,6 +38,9 @@ hoomd-vector.workspace = true
 anyhow.workspace = true
 bevy = { workspace = true, optional = true }
 bevy_egui = { workspace = true, optional = true }
+thiserror.workspace = true
+parquet.workspace = true
+parquet_derive.workspace = true
 rand.workspace = true
 
 [[example]]
@@ -93,4 +96,11 @@ name = "hard-tetrahedron-self-assembly"
 path = "mc-tutorial/hard-tetrahedron-self-assembly.rs"
 
 [package.metadata.example.hard-tetrahedron-self-assembly]
+path = "mc-tutorial"
+
+[[example]]
+name = "patchy-particle-self-assembly"
+path = "mc-tutorial/patchy-particle-self-assembly.rs"
+
+[package.metadata.example.patchy-particle-self-assembly]
 path = "mc-tutorial"

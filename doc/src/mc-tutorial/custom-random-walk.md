@@ -254,9 +254,6 @@ the generated `trajectory.gsd` in [Ovito] or another visualization tool:
 cargo run --release --example custom-random-walk
 ```
 
-The next section shows how to use the Hamiltonian to describe how the bodies
-interact with each other and with an external field.
-
 [The Rust Programming Language]: https://doc.rust-lang.org/stable/book/
 [Random Walk]: random-walk.md
 [`rand`]: https://docs.rs/rand

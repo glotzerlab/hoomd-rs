@@ -17,7 +17,7 @@
   - [Hard Disk Self-Assembly](mc-tutorial/hard-disk-self-assembly.md)
   - [Hard Ellipse Self-Assembly](mc-tutorial/hard-ellipse-self-assembly.md)
   - [Hard Tetrahedron Self-Assembly](mc-tutorial/hard-tetrahedron-self-assembly.md)
-  - [Patchy Particle Self-Assembly]()
+  - [Patchy Particle Self-Assembly](mc-tutorial/patchy-particle-self-assembly.md)
   - [Modeling Binary Systems]()
   - [Modeling Polydisperse Systems]()
 

@@ -11,6 +11,7 @@ pub use angular_mask::AngularMask;
 
 mod anisotropic;
 mod approximate_shape_overlap;
+mod double;
 mod hard_shape;
 mod isotropic;
 

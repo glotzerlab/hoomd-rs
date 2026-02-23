@@ -16,6 +16,7 @@ tetrahedra **self-assemble** into a quasicrystal: [10.1038/nature08641].
 [10.1038/nature08641]: http://doi.org/10.1038/nature08641
 
 * Objectives:
+  * Explain how to model system of hard convex polytopes.
   * Demonstrate the self-assembly of hard tetrahedra.
 * File: `hoomd-rs/examples/mc-tutorial/hard-tetrahedron-self-assembly.rs`
 * Run (interactively):
@@ -36,7 +37,7 @@ tetrahedra **self-assemble** into a quasicrystal: [10.1038/nature08641].
 ## Type Aliases
 
 Create type aliases for your model's *vector*, *body properties*, and *site
-properties* types so that you don't need to repeat the full nested generic type
+properties* types so that you don't need to repeat the full generic type
 names throughout the code:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-tetrahedron-self-assembly.rs:type_aliases}}
@@ -55,7 +56,7 @@ The `new()` method constructs a new simulation model:
 
 ### Parameters
 
-Assign all the model parameters in one code block so that they are easy to modify:
+Assign all the model parameters in one code block:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-tetrahedron-self-assembly.rs:parameters}}
 ```
@@ -66,7 +67,7 @@ that tetrahedra can be placed easily in the microstate. During the `Initialize`
 phase, the microstate will be compressed until it reaches the packing fraction
 `target_packing_fraction`. `n_bodies` is the number of tetrahedra to add,
 `maximum_distance` is the largest distance a translation trial move can
-take, `maximum_rotation`controls the size of the a rotation trial moves, and
+take, `maximum_rotation`controls the size of the rotation trial moves, and
 `macrostate` holds the temperature set point (in units of energy).
 
 ### Hamiltonian
@@ -80,18 +81,32 @@ Wrap it in the `Convex` newtype for use with the `HardShape` Hamiltonian:
 ## Initialization and Simulation
 
 See the [Hard Ellipse Self-Assembly] tutorial for a complete explanation of
-remaining code.
+remaining initialization and simulation code.
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-tetrahedron-self-assembly.rs:remainder}}
 ```
 
 [Hard Ellipse Self-Assembly]: hard-ellipse-self-assembly.md
 
+## Implement `main()`
+
+To run the simulation, construct the `HardTetrahedronSelfAssembly` simulation model.
+Then call `advance()` many times:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-ellipse-self-assembly.rs:main}}
+```
+
+Write the sites to a GSD file periodically so that you can inspect the results
+of the simulation.
+
+> [!NOTE]
+> This `main()` function runs in batch mode. There is a different `main()` (not
+> shown here) used in the interactive example.
+
 ## Conclusion
 
 This tutorial showed you how to perform hard tetrahedron self-assembly simulations
-using a shape overlap potential, periodic boundary conditions, and `QuickInsert`
-to add bodies.
+using a shape overlap potential.
 
 Navigate to the top of the page and refresh to see the simulation in action
 again. Notice that tetrahedra are first added in a large batch. Once all the
@@ -109,12 +124,9 @@ the generated `trajectory.gsd` in [Ovito] or another visualization tool:
 cargo run --release --example hard-tetrahedron-self-assembly
 ```
 
-The next section will explain how to run self-assembly simulations of patchy
-particles.
-
 [Ovito]: https://www.ovito.org/
 
 ## Complete Code
 
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/hard-ellipse-self-assembly.rs:all}}
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-tetrahedron-self-assembly.rs:all}}

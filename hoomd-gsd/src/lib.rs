@@ -51,13 +51,13 @@
 //! # use tempfile::tempdir;
 //! # let tmp_dir = tempdir().expect("temp dir should be created");
 //! # let path = tmp_dir.path().join("test.gsd");
-//! let position = vec![[5.0f32, 3.0, -4.0], [-2.0, 3.0, -6.0]];
+//! let position = vec![[5.0_f32, 3.0, -4.0], [-2.0, 3.0, -6.0]];
 //!
 //! let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-//! gsd_file.write_scalars("configuration/step", &[100_000u64])?;
+//! gsd_file.write_scalars("configuration/step", &[100_000_u64])?;
 //! gsd_file.write_scalars(
 //!     "configuration/box",
-//!     &[10.0f32, 20.0, 15.0, 0.0, 0.0, 0.0],
+//!     &[10.0_f32, 20.0, 15.0, 0.0, 0.0, 0.0],
 //! )?;
 //! gsd_file.write_arrays("particles/position", &position)?;
 //! gsd_file.end_frame()?;

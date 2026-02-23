@@ -2765,7 +2765,10 @@ dependencies = [
  "hoomd-spatial",
  "hoomd-utility",
  "hoomd-vector",
+ "parquet",
+ "parquet_derive",
  "rand 0.10.0",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -3731,7 +3734,10 @@ name = "hoomd-utility"
 version = "0.0.0"
 dependencies = [
  "assert2",
+ "parquet",
+ "parquet_derive",
  "serde",
+ "tempfile",
  "thiserror 2.0.18",
 ]
 
@@ -3955,9 +3961,9 @@ dependencies = [
 
 [[package]]
 name = "inventory"
-version = "0.3.21"
+version = "0.3.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc61209c082fbeb19919bee74b176221b27223e27b65d781eb91af24eb1fb46e"
+checksum = "009ae045c87e7082cb72dab0ccd01ae075dd00141ddc108f43a0ea150a9e7227"
 dependencies = [
  "rustversion",
 ]

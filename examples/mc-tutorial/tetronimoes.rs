@@ -5,8 +5,8 @@ use std::f64::consts::PI;
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    External, PairwiseCutoff, TotalEnergy, external::Linear,
-    pairwise::Isotropic, univariate::Boxcar,
+    External, MaximumInteractionRange, PairwiseCutoff, TotalEnergy,
+    external::Linear, pairwise::Isotropic, univariate::Boxcar,
 };
 use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{
@@ -100,17 +100,6 @@ impl Tetronimoes {
         let sigma = 1.0;
         // ANCHOR_END: parameters
 
-        // ANCHOR: microstate
-        let vec_cell = VecCell::builder()
-            .nominal_search_radius(sigma.try_into()?)
-            .build();
-        let square = Rectangle::with_equal_edges(box_height.try_into()?);
-        let microstate = Microstate::builder()
-            .spatial_data(vec_cell)
-            .boundary(Closed(square))
-            .try_build()?;
-        // ANCHOR_END: microstate
-
         // ANCHOR: hamiltonian
         let linear = External(Linear {
             alpha,
@@ -130,6 +119,19 @@ impl Tetronimoes {
 
         let hamiltonian = (linear, pairwise_cutoff);
         // ANCHOR_END: hamiltonian
+
+        // ANCHOR: microstate
+        let vec_cell = VecCell::builder()
+            .nominal_search_radius(
+                hamiltonian.maximum_interaction_range().try_into()?,
+            )
+            .build();
+        let square = Rectangle::with_equal_edges(box_height.try_into()?);
+        let microstate = Microstate::builder()
+            .spatial_data(vec_cell)
+            .boundary(Closed(square))
+            .try_build()?;
+        // ANCHOR_END: microstate
 
         // ANCHOR: trial_moves
         let sweep = Sweep(DiscreteRotateOrTranslate);

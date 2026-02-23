@@ -2,8 +2,8 @@
 // ANCHOR: use
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    External, PairwiseCutoff, TotalEnergy, external::Linear,
-    pairwise::Isotropic, univariate::Boxcar,
+    External, MaximumInteractionRange, PairwiseCutoff, TotalEnergy,
+    external::Linear, pairwise::Isotropic, univariate::Boxcar,
 };
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
@@ -86,7 +86,9 @@ impl Fill {
         // ANCHOR_END: boundary
         // ANCHOR: spatial_data
         let vec_cell = VecCell::builder()
-            .nominal_search_radius(sigma.try_into()?)
+            .nominal_search_radius(
+                hamiltonian.maximum_interaction_range().try_into()?,
+            )
             .build();
         // ANCHOR_END: spatial_data
         // ANCHOR: microstate

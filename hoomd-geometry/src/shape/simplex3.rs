@@ -324,7 +324,7 @@ where
         // Edge difference vectors for tetrahedron p
         let mut edge_vectors_p = [Cartesian::<3>::default(); 5];
         let mut masks = [0u8; 4];
-        let mut affs = [[0f64; 4]; 4];
+        let mut affs = [[0_f64; 4]; 4];
 
         edge_vectors_p[0] = self.vertices[1] - self.vertices[0];
         edge_vectors_p[1] = self.vertices[2] - self.vertices[0];

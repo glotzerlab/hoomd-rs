@@ -3,7 +3,7 @@
 
 //! A 3D mesh
 //!
-//! The [`Mesh3D`] representation is a 3D triangular mesh.
+//! The [`SurfaceMesh`] representation places a bevy `Mesh3d` at each site.
 
 use bevy::prelude::*;
 use itertools::{
@@ -12,7 +12,7 @@ use itertools::{
 };
 use std::marker::PhantomData;
 
-/// Represent an entity with a triangle mesh in 3D.
+/// Represent each entity with a triangle mesh in 3D.
 ///
 /// Each entity is an instanced copy of the given mesh. Provide the position and
 /// orientation of each mesh to [`sync`](Self::sync).
@@ -25,7 +25,7 @@ use std::marker::PhantomData;
 /// * Add [`setup`](Self::setup) to the `Startup` schedule.
 /// * Call [`sync`](Self::sync) in an `Update` schedule that runs after `AdvanceSet`.
 #[derive(Component)]
-pub struct TriangleMesh<T> {
+pub struct SurfaceMesh<T> {
     /// Mark the type of the disk.
     marker: PhantomData<T>,
 }
@@ -49,7 +49,7 @@ impl<T> Representation<T> {
     }
 }
 
-impl<T: Send + Sync + 'static> TriangleMesh<T> {
+impl<T: Send + Sync + 'static> SurfaceMesh<T> {
     /// Create assets to render instanced triangle meshes.
     pub fn setup(
         mesh_material: In<(Mesh, StandardMaterial)>,

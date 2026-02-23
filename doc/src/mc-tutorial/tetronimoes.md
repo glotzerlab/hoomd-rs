@@ -35,7 +35,7 @@ and you get something very interesting.
 ## Type Aliases
 
 Create type aliases for your model's *vector*, *body properties*, and *site
-properties* types so that you don't need to repeat the full nested generic type
+properties* types so that you don't need to repeat the full generic type
 names throughout the code:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:type_aliases}}
@@ -88,17 +88,9 @@ The `new()` method constructs a new simulation model:
 
 #### Parameters
 
-Assign all the model parameters in one code block so that they are easy to modify:
+Assign all the model parameters in one code block:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:parameters}}
-```
-
-#### Microstate
-
-Use the `VecCell` spatial data structure, confine the bodies and sites inside of a
-closed square, and start with no bodies in the microstate:
-```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:microstate}}
 ```
 
 #### Hamiltonian
@@ -109,6 +101,14 @@ Use the same Hamiltonian as the [Applying Interactions] tutorial:
 ```
 
 These interactions are applied to the *sites* in the microstate.
+
+#### Microstate
+
+Use the `VecCell` spatial data structure, confine the bodies and sites inside of a
+closed square, and start with no bodies in the microstate:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:microstate}}
+```
 
 #### Trial Moves
 
@@ -212,9 +212,6 @@ the generated `trajectory.gsd` in [Ovito] or another visualization tool:
 ```shell
 cargo run --release --example tetronimoes
 ```
-
-The next section will explain how to run self-assembly simulations of hard
-particles.
 
 [Applying Interactions]: applying-interactions.md
 [Custom Random Walk]: custom-random-walk.md
