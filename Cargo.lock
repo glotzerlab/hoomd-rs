@@ -2843,6 +2843,7 @@ dependencies = [
  "hoomd-interaction",
  "hoomd-manifold",
  "hoomd-mc",
+ "hoomd-md",
  "hoomd-microstate",
  "hoomd-simulation",
  "hoomd-spatial",

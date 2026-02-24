@@ -59,6 +59,7 @@ hoomd-interaction = { path = "hoomd-interaction", version = "0.0.0"}
 hoomd-linear-algebra = { path = "hoomd-linear-algebra", version = "0.0.0"}
 hoomd-manifold = { path = "hoomd-manifold", version = "0.0.0"}
 hoomd-mc = { path = "hoomd-mc", version = "0.0.0"}
+hoomd-md = { path = "hoomd-md", version = "0.0.0"}
 hoomd-microstate = { path = "hoomd-microstate", version = "0.0.0"}
 hoomd-simulation = { path = "hoomd-simulation", version = "0.0.0"}
 hoomd-spatial = { path = "hoomd-spatial", version = "0.0.0"}

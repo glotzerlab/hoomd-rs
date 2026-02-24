@@ -29,6 +29,7 @@ hoomd-gsd.workspace = true
 hoomd-interaction.workspace = true
 hoomd-manifold.workspace = true
 hoomd-mc.workspace = true
+hoomd-md.workspace = true
 hoomd-microstate.workspace = true
 hoomd-simulation.workspace = true
 hoomd-spatial.workspace = true
@@ -94,3 +95,10 @@ path = "mc-tutorial/hard-tetrahedron-self-assembly.rs"
 
 [package.metadata.example.hard-tetrahedron-self-assembly]
 path = "mc-tutorial"
+
+[[example]]
+name = "nve-lj-fluid"
+path = "md-tutorial/nve-lj-fluid.rs"
+
+[package.metadata.example.nve-lj-fluid]
+path = "md-tutorial"
