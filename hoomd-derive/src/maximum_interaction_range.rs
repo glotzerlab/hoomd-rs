@@ -13,11 +13,11 @@ pub(crate) fn maximum_interaction_range(input: &DeriveInput) -> TokenStream {
     match input.data {
         Data::Struct(_) => {
             quote! {
-                    impl #impl_generics ::hoomd_interaction::MaximumInteractionRange for #name #ty_generics #where_clause {
-                        fn maximum_interaction_range(&self) -> f64 {
-                            self.maximum_interaction_range
-                        }
+                impl #impl_generics ::hoomd_interaction::MaximumInteractionRange for #name #ty_generics #where_clause {
+                    fn maximum_interaction_range(&self) -> f64 {
+                        self.maximum_interaction_range
                     }
+                }
             }.into()
         },
         Data::Enum(_) | Data::Union(_) => {

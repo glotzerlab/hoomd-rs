@@ -24,9 +24,9 @@ mod pairwise_cutoff;
 mod zero;
 
 pub use external_type::External;
+pub use hoomd_derive::MaximumInteractionRange;
 pub use pairwise_cutoff::PairwiseCutoff;
 pub use zero::Zero;
-pub use hoomd_derive::MaximumInteractionRange;
 
 /// Compute the total energy of a potential applied to the microstate.
 ///
@@ -283,7 +283,10 @@ pub trait SiteEnergy<S> {
 ///     Body::point(Cartesian::from([0.0, 1.0])),
 /// ])?;
 ///
-/// let custom = Custom { epsilon: 1.0, maximum_interaction_range: 2.5 };
+/// let custom = Custom {
+///     epsilon: 1.0,
+///     maximum_interaction_range: 2.5,
+/// };
 /// let site_pair_energy = custom.site_pair_energy(
 ///     &microstate.sites()[0].properties,
 ///     &microstate.sites()[1].properties,

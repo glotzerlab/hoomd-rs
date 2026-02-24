@@ -1,6 +1,9 @@
 //! TODO
 
-#![allow(clippy::missing_inline_in_public_items, reason = "No need to inline macros")]
+#![allow(
+    clippy::missing_inline_in_public_items,
+    reason = "No need to inline macros"
+)]
 
 use proc_macro::TokenStream;
 use syn::{DeriveInput, parse_macro_input};
@@ -29,5 +32,3 @@ pub fn position_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     position::position(input)
 }
-
-

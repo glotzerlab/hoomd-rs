@@ -94,7 +94,7 @@ pub use point::Point;
 mod oriented_point;
 pub use oriented_point::OrientedPoint;
 
-pub use hoomd_derive::{Position, Orientation};
+pub use hoomd_derive::{Orientation, Position};
 
 /// Locate sites and bodies.
 ///

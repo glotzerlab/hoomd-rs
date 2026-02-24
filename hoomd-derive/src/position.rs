@@ -11,33 +11,34 @@ pub(crate) fn position(input: DeriveInput) -> TokenStream {
     let name = &input.ident;
 
     let position_type = match input.data {
-
         Data::Struct(data) => {
             if let Ok(type_) = get_position_type(&data.fields) {
                 type_
             } else {
-            return quote_spanned! {
-                name.span() =>
-                compile_error!("derive(Position) requires a field named position.");
-            }.into()                    
+                return quote_spanned! {
+                    name.span() =>
+                    compile_error!("derive(Position) requires a field named position.");
+                }
+                .into();
             }
-        },
+        }
         Data::Enum(_) | Data::Union(_) => {
             return quote_spanned! {
                 name.span() =>
                 compile_error!("derive(Position) applies only to struct types.");
-            }.into()
-        },
-        };
-    
+            }
+            .into();
+        }
+    };
+
     let generated = quote! {
         impl #impl_generics ::hoomd_microstate::property::Position for #name #ty_generics #where_clause {
             type Position = #position_type;
-            
+
             fn position(&self) -> &Self::Position {
                 &self.position
             }
-            
+
             fn position_mut(&mut self) -> &mut Self::Position {
                 &mut self.position
             }
@@ -49,7 +50,9 @@ pub(crate) fn position(input: DeriveInput) -> TokenStream {
 /// Get the type of the field named `position`.
 fn get_position_type(fields: &Fields) -> Result<Type, ()> {
     for field in fields {
-        if let Some(ref ident) = field.ident && ident == "position" {
+        if let Some(ref ident) = field.ident
+            && ident == "position"
+        {
             return Ok(field.ty.clone());
         }
     }

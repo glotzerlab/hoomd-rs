@@ -11,33 +11,34 @@ pub(crate) fn orientation(input: DeriveInput) -> TokenStream {
     let name = &input.ident;
 
     let orientation_type = match input.data {
-
         Data::Struct(data) => {
             if let Ok(type_) = get_orientation_type(&data.fields) {
                 type_
             } else {
-            return quote_spanned! {
-                name.span() =>
-                compile_error!("derive(Orientation) requires a field named orientation.");
-            }.into()                    
+                return quote_spanned! {
+                    name.span() =>
+                    compile_error!("derive(Orientation) requires a field named orientation.");
+                }
+                .into();
             }
-        },
+        }
         Data::Enum(_) | Data::Union(_) => {
             return quote_spanned! {
                 name.span() =>
                 compile_error!("derive(Orientation) applies only to struct types.");
-            }.into()
-        },
-        };
-    
+            }
+            .into();
+        }
+    };
+
     let generated = quote! {
         impl #impl_generics ::hoomd_microstate::property::Orientation for #name #ty_generics #where_clause {
             type orientation = #orientation_type;
-            
+
             fn orientation(&self) -> &Self::orientation {
                 &self.orientation
             }
-            
+
             fn orientation_mut(&mut self) -> &mut Self::orientation {
                 &mut self.orientation
             }
@@ -49,7 +50,9 @@ pub(crate) fn orientation(input: DeriveInput) -> TokenStream {
 /// Get the type of the field named `orientation`.
 fn get_orientation_type(fields: &Fields) -> Result<Type, ()> {
     for field in fields {
-        if let Some(ref ident) = field.ident && ident == "orientation" {
+        if let Some(ref ident) = field.ident
+            && ident == "orientation"
+        {
             return Ok(field.ty.clone());
         }
     }
