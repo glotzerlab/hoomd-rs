@@ -18,8 +18,9 @@
   - [Hard Ellipse Self-Assembly](mc-tutorial/hard-ellipse-self-assembly.md)
   - [Hard Tetrahedron Self-Assembly](mc-tutorial/hard-tetrahedron-self-assembly.md)
   - [Patchy Particle Self-Assembly](mc-tutorial/patchy-particle-self-assembly.md)
-  - [Modeling Binary Systems]()
-  - [Modeling Polydisperse Systems]()
+  - [Type-dependent Interactions](mc-tutorial/type-dependent-interactions.md)
+  - [Binary Hard Shapes]()
+  - [Polydisperse Interactions]()
 
 # Reference
 

@@ -71,9 +71,21 @@ impl Transform<SiteProperties> for BodyProperties {
 }
 // ANCHOR_END: site_properties
 
-// ANCHOR: interaction
-struct SitePairInteraction;
+// ANCHOR: interaction_type
+struct SitePairInteraction {
+    lj_aa: LennardJones<12, 6>,
+    wca_ab: WeeksChandlerAnderson,
+    maximum_interaction_range: f64,
+}
 
+impl MaximumInteractionRange for SitePairInteraction {
+    fn maximum_interaction_range(&self) -> f64 {
+        self.maximum_interaction_range
+    }
+}
+// ANCHOR_END: interaction_type
+
+// ANCHOR: interaction_impl
 impl SitePairEnergy<SiteProperties> for SitePairInteraction {
     fn site_pair_energy(
         &self,
@@ -85,30 +97,15 @@ impl SitePairEnergy<SiteProperties> for SitePairInteraction {
             .distance(&site_properties_j.position);
 
         match (site_properties_i.type_, site_properties_j.type_) {
-            (Type::A, Type::A) => LennardJones::<12, 6> {
-                epsilon: 2.0,
-                sigma: 1.0,
-            }
-            .energy(r),
-            (Type::A, Type::B) | (Type::B, Type::A) => WeeksChandlerAnderson {
-                epsilon: 1.0,
-                sigma: 1.0,
-            }
-            .energy(r),
+            (Type::A, Type::A) => self.lj_aa.energy(r),
+            (Type::A, Type::B) | (Type::B, Type::A) => self.wca_ab.energy(r),
             (Type::B, Type::B) => {
                 1.0 / r.powi(12) - f64::exp(-1.0 / 2.0 * r.powi(2))
             }
         }
     }
 }
-// ANCHOR_END: interaction
-// ANCHOR: maximum_interaction_range
-impl MaximumInteractionRange for SitePairInteraction {
-    fn maximum_interaction_range(&self) -> f64 {
-        2.5
-    }
-}
-// ANCHOR_END: maximum_interaction_range
+// ANCHOR_END: interaction_impl
 
 // ANCHOR: simulation_new
 impl TypeDependentInteractions {
@@ -125,7 +122,19 @@ impl TypeDependentInteractions {
         // ANCHOR_END: parameters
 
         // ANCHOR: hamiltonian
-        let hamiltonian = PairwiseCutoff(SitePairInteraction);
+        let lj_aa = LennardJones {
+            epsilon: 2.0,
+            sigma: 1.0,
+        };
+        let wca_ab = WeeksChandlerAnderson {
+            epsilon: 1.0,
+            sigma: 1.0,
+        };
+        let hamiltonian = PairwiseCutoff(SitePairInteraction {
+            lj_aa,
+            wca_ab,
+            maximum_interaction_range: 2.5,
+        });
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: compress_hamiltonian
@@ -170,7 +179,8 @@ impl TypeDependentInteractions {
                 ..SiteProperties::default()
             }],
         };
-        let quick_insert_b = QuickInsert::new(distribution, n_disks - quick_insert_a.target());
+        let quick_insert_b =
+            QuickInsert::new(distribution, n_disks - quick_insert_a.target());
         // ANCHOR_END: quick_insert
 
         let vec_cell = VecCell::builder()
@@ -328,7 +338,7 @@ fn main() -> anyhow::Result<()> {
 
     for _ in 0..1_000_000 {
         simulation.advance()?;
-        }
+    }
 
     Ok(())
 }
