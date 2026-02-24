@@ -24,6 +24,7 @@ doc-example = ["bevy", "hoomd-bevy/doc-example"]
 
 [dependencies]
 hoomd-bevy = { workspace =  true, optional = true }
+hoomd-derive.workspace = true
 hoomd-geometry.workspace = true
 hoomd-gsd.workspace = true
 hoomd-interaction.workspace = true

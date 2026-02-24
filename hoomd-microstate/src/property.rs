@@ -45,34 +45,11 @@
 //! use hoomd_microstate::property::{Orientation, Position};
 //! use hoomd_vector::{Cartesian, Versor};
 //!
+//! #[derive(Position, Orientation)]
 //! struct Custom {
 //!     position: Cartesian<3>,
 //!     orientation: Versor,
 //!     custom: f64,
-//! }
-//!
-//! impl Orientation for Custom {
-//!     type Rotation = Versor;
-//!
-//!     fn orientation(&self) -> &Versor {
-//!         &self.orientation
-//!     }
-//!
-//!     fn orientation_mut(&mut self) -> &mut Versor {
-//!         &mut self.orientation
-//!     }
-//! }
-//!
-//! impl Position for Custom {
-//!     type Position = Cartesian<3>;
-//!
-//!     fn position(&self) -> &Cartesian<3> {
-//!         &self.position
-//!     }
-//!
-//!     fn position_mut(&mut self) -> &mut Cartesian<3> {
-//!         &mut self.position
-//!     }
 //! }
 //! ```
 //!
@@ -90,6 +67,7 @@
 //! };
 //! use hoomd_vector::{Cartesian, Rotate, Rotation, Versor};
 //!
+//! #[derive(Position, Orientation)]
 //! struct Custom {
 //!     position: Cartesian<3>,
 //!     orientation: Versor,
@@ -115,6 +93,8 @@ pub use point::Point;
 
 mod oriented_point;
 pub use oriented_point::OrientedPoint;
+
+pub use hoomd_derive::{Position, Orientation};
 
 /// Locate sites and bodies.
 ///

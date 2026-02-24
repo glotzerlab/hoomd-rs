@@ -42,23 +42,12 @@ enum Type {
 // ANCHOR_END: type
 
 // ANCHOR: site_properties
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Position)]
 struct SiteProperties {
     /// The site's position
     position: PositionVector,
     /// The site's type
     type_: Type,
-}
-
-impl Position for SiteProperties {
-    type Position = PositionVector;
-    fn position(&self) -> &PositionVector {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Self::Position {
-        &mut self.position
-    }
 }
 
 impl Transform<SiteProperties> for BodyProperties {
@@ -72,16 +61,11 @@ impl Transform<SiteProperties> for BodyProperties {
 // ANCHOR_END: site_properties
 
 // ANCHOR: interaction_type
+#[derive(MaximumInteractionRange)]
 struct SitePairInteraction {
     lj_aa: LennardJones<12, 6>,
     wca_ab: WeeksChandlerAnderson,
     maximum_interaction_range: f64,
-}
-
-impl MaximumInteractionRange for SitePairInteraction {
-    fn maximum_interaction_range(&self) -> f64 {
-        self.maximum_interaction_range
-    }
 }
 // ANCHOR_END: interaction_type
 
