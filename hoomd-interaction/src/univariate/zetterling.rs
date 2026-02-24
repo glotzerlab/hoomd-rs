@@ -8,7 +8,7 @@ use super::{UnivariateEnergy, UnivariateForce};
 /// `Zetterling` computes the oscillating pair potential between every pair of
 /// particles in the simulation state.
 /// ```math
-/// U(r) = \epsilon \frac{\exp(\alpha r/\ell)\cos(2k_Fr/\ell)}{(r/\ell)^3} + \beta\left(\frac{\sigma \ell}{r}\right)^n
+/// U(r) = \epsilon \frac{\exp(\alpha r/\ell)\cos(2k_Fr/\ell)}{(r/\ell)^3} + \beta\left(\frac{\sigma \ell}{r}\right)^n + v_0
 /// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct Zetterling {
@@ -26,6 +26,8 @@ pub struct Zetterling {
     pub n: f64,
     /// The length scale of the distances *(\[length\])*
     pub ell: f64,
+    /// The energy offset, chosen so the truncated potential is continuous *(\[energy]\)*
+    pub v_0: f64,
 }
 
 impl UnivariateEnergy for Zetterling {
@@ -37,6 +39,7 @@ impl UnivariateEnergy for Zetterling {
         self.epsilon * ((self.alpha * r_ell).exp()) * ((2.0 * self.kf * r_ell).cos())
             / (r_ell.powi(3))
             + self.beta * (sigma_ell_r.powf(self.n))
+            + self.v_0
     }
 }
 
@@ -44,19 +47,19 @@ impl UnivariateForce for Zetterling {
     #[inline]
     fn force(&self, r: f64) -> f64 {
         let r_ell = r / self.ell;
-        let r_inv = r.recip();
+        let r_ell_inv = self.ell / r;
         let cos = (2.0 * self.kf * r_ell).cos();
         let sin = (2.0 * self.kf * r_ell).sin();
         let exp = (self.alpha * r_ell).exp();
 
-        let first = -self.epsilon * self.alpha * (self.ell.powi(2)) * exp * cos * (r_inv.powi(3));
+        let first = -self.epsilon * self.alpha * exp * cos * (r_ell_inv.powi(3));
         let second =
-            self.epsilon * 2.0 * self.kf * (self.ell.powi(2)) * exp * sin * (r_inv.powi(3));
-        let third = 3.0 * self.epsilon * (self.ell.powi(3)) * exp * cos * (r_inv.powi(4));
+            self.epsilon * 2.0 * self.kf * exp * sin * (r_ell_inv.powi(3));
+        let third = 3.0 * self.epsilon * exp * cos * (r_ell_inv.powi(4));
         let fourth = self.beta
             * self.n
-            * ((self.sigma * self.ell).powf(self.n))
-            * (r_inv.powf(self.n + 1.0));
+            * (self.sigma.powf(self.n))
+            * (r_ell_inv.powf(self.n + 1.0));
 
         first + second + third + fourth
     }
@@ -77,6 +80,7 @@ mod tests {
             sigma: 1.0,
             n: 18.0,
             ell: 1.0,
+            v_0: 0.0,
         };
 
         let (u_1, r_1) = (-0.742_644_124_392_870, 1.130_547_632_166_212);
@@ -95,6 +99,7 @@ mod tests {
             sigma: 1.0,
             n: 14.5,
             ell: 1.0,
+            v_0: 0.0,
         };
 
         let (u_1, r_1) = (-0.883_354_387_732_971, 1.132_662_993_677_647);
