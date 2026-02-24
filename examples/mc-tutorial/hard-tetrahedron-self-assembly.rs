@@ -143,7 +143,7 @@ struct HardTetrahedronSelfAssembly {
     /// Quick compress algorithm.
     quick_compress: QuickCompress<Periodic<Cuboid>>,
     /// Quick insert algorithm.
-    quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Cuboid>>>,
+    quick_insert: QuickInsert<UniformIn<SiteProperties, Periodic<Cuboid>>>,
     /// How sites interact when inserted and compressed.
     overlap_penalty_hamiltonian: PairwiseCutoff<
         Anisotropic<
