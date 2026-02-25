@@ -5,7 +5,7 @@ use anyhow::{Context, anyhow};
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_interaction::{
     PairwiseCutoff, TotalEnergy,
-    pairwise::Isotropic, univariate::{LennardJones, Shifted},
+    pairwise::Isotropic, univariate::LennardJones,
     rigid::Rigid,
 };
 use hoomd_md::{
@@ -18,7 +18,7 @@ use hoomd_md::{
         ComAngularMomentumRemover, ComMomentumRemover, Thermalizer,
         TranslationalMomentumModifier,
         TranslationalThermalizer,
-    }, thermostat::BussiThermostat
+    }, thermostat::{BussiThermostat, NoThermostat}
 };
 use hoomd_microstate::{
     Body, Microstate, SiteKey, boundary::Periodic, property::{DynamicsPoint, Point}
@@ -40,13 +40,19 @@ struct LJFluid {
         Periodic<Hypercuboid<3>>
     >,
     /// How sites interact with other sites.
-    force: Rigid<PairwiseCutoff<Isotropic<Shifted<LennardJones>>>>,
+    force: Rigid<PairwiseCutoff<Isotropic<LennardJones>>>,
     /// Constant volume MD integrator to sample the NVT and NVE ensemble.
     integrator: ConstantVolume,
-    /// Thermostat to control the temperature at the Equilibrate phase.
+    /// Thermostat to control the temperature of the isotherm.
     thermostat: BussiThermostat,
     /// Temperature set point.
     macrostate: Isothermal,
+    /// Steps to prepare the isotherm in the Equilibrate phase.
+    eq_step: u64,
+    /// The long range energy correction to the truncated LJ potential of each particle.
+    energy_lrc: f64,
+    /// The current simulation state.
+    phase: Phase,
 }
 // ANCHOR_END: simulation_struct
 
@@ -63,15 +69,16 @@ impl LJFluid {
     fn new() -> anyhow::Result<LJFluid> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
-        let kT_init = 0.851;
+        let eq_step = 100_000;
+        let kt = 0.85;
         let density = 0.776;
         let n: f64 = 8.0;
         let box_volume = n.powi(3) / density;
         let box_length = box_volume.cbrt();      
-        let macrostate = Isothermal { temperature: kT_init }; 
+        let macrostate = Isothermal { temperature: kt }; 
         let epsilon = 1.0;
         let sigma = 1.0;
-        let r_cut = 4.0 * sigma;
+        let r_cut = 3.0 * sigma;
         let dt = 0.005;
         let tau_thermostat = 50.0 * dt;
         // ANCHOR_END: parameters
@@ -124,21 +131,27 @@ impl LJFluid {
         let force = Rigid(
             PairwiseCutoff(
                 Isotropic {
-                    interaction: Shifted {
-                        f: LennardJones::<12, 6> {
+                    interaction: LennardJones::<12, 6> {
                             epsilon: epsilon,
                             sigma: sigma,
                         },
-                        r_shift: r_cut,
-                    },
+
                     r_cut: r_cut,
                 }
             )
         );
         // ANCHOR_END: pair_force
 
+        // ANCHOR: energy_lrc
+        let lj1 = 4.0 * epsilon * sigma.powi(12);
+        let lj2 = 4.0 * epsilon * sigma.powi(6);
+        let inv_r_cut_3 = 1.0 / r_cut.powi(3);
+        let inv_r_cut_9 = 1.0 / r_cut.powi(9);
+        let energy_lrc = 2.0 * std::f64::consts::PI * density * (lj1 / 9.0 * inv_r_cut_9 - lj2 / 3.0 * inv_r_cut_3);
+        // ANCHOR_END: energy_lrc
+
         // ANCHOR: particle_momenta
-        let thermalizer = Thermalizer { kT: kT_init };
+        let thermalizer = Thermalizer { kT: kt };
         thermalizer.thermalize_translation(&mut microstate);
 
         let angular_remover = ComAngularMomentumRemover {};
@@ -153,7 +166,7 @@ impl LJFluid {
 
         // ANCHOR: thermostat
         let thermostat = BussiThermostat::new(tau_thermostat.try_into()?);
-        // ANCHOR: thermostat
+        // ANCHOR_END: thermostat
 
         // ANCHOR: struct_initialize
         Ok(LJFluid {
@@ -162,6 +175,9 @@ impl LJFluid {
             integrator,
             thermostat,
             macrostate,
+            eq_step,
+            energy_lrc,
+            phase: Phase::Equilibrate,
         })
     }
 }
@@ -175,6 +191,13 @@ impl Simulation for LJFluid {
     // ANCHOR: advance
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
+        match self.phase {
+            Phase::Equilibrate => self.nvt(),
+            Phase::SampleNVE => self.nve()
+        }
+
+        self.microstate.increment_step();
+
         Ok(())
     }
     // ANCHOR_END: advance
@@ -187,6 +210,87 @@ impl Simulation for LJFluid {
 }
 // ANCHOR_END: step
 
+// ANCHOR: dummy_nve_macrostate
+struct Isoenergy {}
+// ANCHOR_END: dummy_nve_macrostate
+
+// ANCHOR: simulation_protocol
+impl LJFluid {
+// ANCHOR_END: simulation_protocol
+    // ANCHOR: nvt
+    fn nvt(&mut self) {
+        // ANCHOR_end: nvt
+
+        // ANCHOR: state_transition
+        if self.step() >= self.eq_step {
+            self.phase = Phase::SampleNVE;
+            println!(
+                "Isotherm preparation finished at step {}.",
+                self.microstate.step()
+            );
+            return;
+        }
+        // ANCHOR_END: state_transition
+
+        // ANCHOR: first_half_integration
+        self.integrator.integrate_translation_step_one(
+            &mut self.microstate,
+            &mut self.thermostat,
+            &self.macrostate,
+        );
+        // ANCHOR_END: first_half_integration
+
+        // ANCHOR: update_force
+        self.integrator
+            .update_force(&mut self.microstate, &self.force);
+        // ANCHOR_END: update_force
+
+        // ANCHOR: second_half_integration
+        self.integrator.integrate_translation_step_two(
+            &mut self.microstate,
+            &mut self.thermostat,
+            &self.macrostate,
+        );
+        // ANCHOR_END: second_half_integration
+    }
+
+    // ANCHOR: nve
+    fn nve(&mut self) {
+        if self.step() % 10_000 == 0 {
+            let pe = self.force.0.total_energy(&self.microstate);
+            let n = self.microstate.bodies().len();
+            let pe_per_particle = pe / n as f64;
+
+            let ke = self.integrator.get_translational_kinetic_energy();
+            let dof = self.integrator.get_translational_dof();
+            let kt = 2.0 * ke / dof;
+
+            println!(
+                "NVE, Step {}, Temperature {}, Potential energy (w/ LRC) per particle {}" ,
+                self.microstate.step() - self.eq_step,
+                kt,
+                pe_per_particle + self.energy_lrc
+            );
+        }
+
+        self.integrator.integrate_translation_step_one(
+            &mut self.microstate,
+            &mut NoThermostat {},
+            &Isoenergy {},
+        );
+
+        self.integrator
+            .update_force(&mut self.microstate, &self.force);
+
+        self.integrator.integrate_translation_step_two(
+            &mut self.microstate,
+            &mut NoThermostat {},
+            &Isoenergy {},
+        );
+    }
+}
+// ANCHOR_END: nve
+
 // Remove the cfg(not(...)) line when using this code outside the hoomd-rs/examples directory.
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
@@ -194,7 +298,7 @@ fn main() -> anyhow::Result<()> {
     let mut simulation = LJFluid::new()?;
     // TODO: Write GSD file.
 
-    for _ in 0..100_000 {
+    for _ in 0..500_000 {
         simulation.advance()?;
     }
 
