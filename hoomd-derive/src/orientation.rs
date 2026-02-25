@@ -33,13 +33,13 @@ pub(crate) fn orientation(input: DeriveInput) -> TokenStream {
 
     let generated = quote! {
         impl #impl_generics ::hoomd_microstate::property::Orientation for #name #ty_generics #where_clause {
-            type orientation = #orientation_type;
+            type Rotation = #orientation_type;
 
-            fn orientation(&self) -> &Self::orientation {
+            fn orientation(&self) -> &Self::Rotation {
                 &self.orientation
             }
 
-            fn orientation_mut(&mut self) -> &mut Self::orientation {
+            fn orientation_mut(&mut self) -> &mut Self::Rotation {
                 &mut self.orientation
             }
         }

@@ -55,11 +55,64 @@
 //!
 //! ## Transformations
 //!
-//!
 //! Implement `Transform` to take sites from the body frame to the system frame.
 //! Typically, this involves transforming position and orientation while leaving
-//! all other fields unchanged:
+//! all other fields unchanged. The three most common implementations of `Transform`
+//! follow. All these examples are in 3D. To convert to 2D, replace `Cartesian<3>`
+//! with `Cartesian<2>` and `Versor` with `Angle`.
 //!
+//! Non-oriented bodies and sites (i.e. point particles or non-rotating rigid bodies):
+//! ```
+//! use hoomd_microstate::{
+//!     Transform,
+//!     property::{Point, Position},
+//! };
+//! use hoomd_vector::Cartesian;
+//!
+//! #[derive(Position)]
+//! struct Custom {
+//!     position: Cartesian<3>,
+//!     custom: f64,
+//! }
+//!
+//! impl Transform<Custom> for Point<Cartesian<3>> {
+//!     fn transform(&self, site_properties: &Custom) -> Custom {
+//!         Custom {
+//!             position: self.position + site_properties.position,
+//!             ..*site_properties
+//!         }
+//!     }
+//! }
+//! ```
+//!
+//! Oriented bodies and non-oriented sites (i.e. rotating rigid bodies with
+//! isotropic site-site interactions):
+//! ```
+//! use hoomd_microstate::{
+//!     Transform,
+//!     property::{OrientedPoint, Position},
+//! };
+//! use hoomd_vector::{Cartesian, Rotate, Rotation, Versor};
+//!
+//! #[derive(Position)]
+//! struct Custom {
+//!     position: Cartesian<3>,
+//!     custom: f64,
+//! }
+//!
+//! impl Transform<Custom> for OrientedPoint<Cartesian<3>, Versor> {
+//!     fn transform(&self, site_properties: &Custom) -> Custom {
+//!         Custom {
+//!             position: self.position
+//!                 + self.orientation.rotate(&site_properties.position),
+//!             ..*site_properties
+//!         }
+//!     }
+//! }
+//! ```
+//!
+//! Oriented bodies and oriented sites (i.e. rotating rigid bodies with
+//! anisotropic site-site interactions):
 //! ```
 //! use hoomd_microstate::{
 //!     Transform,

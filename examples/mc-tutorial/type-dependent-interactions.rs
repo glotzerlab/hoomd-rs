@@ -33,7 +33,7 @@ type BodyProperties = Point<PositionVector>;
 // ANCHOR_END: type_aliases
 
 // ANCHOR: type
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Default, PartialEq)]
 enum Type {
     #[default]
     A,
@@ -42,14 +42,16 @@ enum Type {
 // ANCHOR_END: type
 
 // ANCHOR: site_properties
-#[derive(Clone, Copy, Debug, Default, Position)]
+#[derive(Clone, Copy, Default, Position)]
 struct SiteProperties {
     /// The site's position
     position: PositionVector,
     /// The site's type
     type_: Type,
 }
+// ANCHOR_END: site_properties
 
+// ANCHOR: site_transform
 impl Transform<SiteProperties> for BodyProperties {
     fn transform(&self, site_properties: &SiteProperties) -> SiteProperties {
         SiteProperties {
@@ -58,7 +60,7 @@ impl Transform<SiteProperties> for BodyProperties {
         }
     }
 }
-// ANCHOR_END: site_properties
+// ANCHOR_END: site_transform
 
 // ANCHOR: interaction_type
 #[derive(MaximumInteractionRange)]
@@ -100,8 +102,8 @@ impl TypeDependentInteractions {
         let initial_packing_fraction = 0.3;
         let target_packing_fraction = 0.5;
         let n_disks = 512;
-        let sigma = 1.0;
         let maximum_distance = 0.07;
+        let sigma = 1.0;
         let macrostate = Isothermal { temperature: 1.0 };
         // ANCHOR_END: parameters
 
