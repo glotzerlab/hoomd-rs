@@ -77,14 +77,16 @@ Assign all the model parameters in one code block:
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-ellipse-self-assembly.rs:parameters}}
 ```
 
-`initial_packing_fraction` is the volume of the ellipses divided by the volume of
-the simulation boundary in the initial state. Choose this value so that ellipses can
-be placed easily in the microstate. During the `Initialize` phase, the microstate
-will be compressed until it reaches the packing fraction `target_packing_fraction`.
-`n_bodies` is the number of ellipses to add, `maximum_distance` is the largest distance
-a translation trial move can take, `maximum_rotation` is the largest angle possible in
-a rotation trial move, `sigma` is the major axis of the ellipse, `aspect` is the ellipse
-aspect ratio and `macrostate` holds the temperature set point (in units of energy).
+`initial_packing_fraction` is the volume of the ellipses divided by the volume
+of the simulation boundary in the initial state. Choose this value so that
+ellipses can be placed easily in the microstate. During the `Initialize`
+phase, the microstate will be compressed until it reaches the packing fraction
+`target_packing_fraction`. `n_bodies` is the number of ellipses to add,
+`maximum_distance` is the largest distance a translation trial move can take
+(initially), `maximum_rotation` is the largest angle possible in a rotation
+trial move (initially), `sigma` is the major axis of the ellipse, `aspect` is
+the ellipse aspect ratio and `macrostate` holds the temperature set point (in
+units of energy).
 
 To ensure that `sigma` is the major axis, `aspect` must be greater than or equal
 to 1.0.

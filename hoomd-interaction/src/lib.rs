@@ -24,6 +24,7 @@ mod pairwise_cutoff;
 mod zero;
 
 pub use external_type::External;
+pub use hoomd_derive::MaximumInteractionRange;
 pub use pairwise_cutoff::PairwiseCutoff;
 pub use zero::Zero;
 
@@ -253,8 +254,10 @@ pub trait SiteEnergy<S> {
 /// };
 /// use hoomd_vector::{Cartesian, InnerProduct};
 ///
+/// #[derive(MaximumInteractionRange)]
 /// struct Custom {
 ///     epsilon: f64,
+///     maximum_interaction_range: f64,
 /// }
 ///
 /// impl<S> SitePairEnergy<S> for Custom
@@ -273,12 +276,6 @@ pub trait SiteEnergy<S> {
 ///     }
 /// }
 ///
-/// impl MaximumInteractionRange for Custom {
-///     fn maximum_interaction_range(&self) -> f64 {
-///         2.5
-///     }
-/// }
-///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let mut microstate = Microstate::new();
 /// microstate.extend_bodies([
@@ -286,7 +283,10 @@ pub trait SiteEnergy<S> {
 ///     Body::point(Cartesian::from([0.0, 1.0])),
 /// ])?;
 ///
-/// let custom = Custom { epsilon: 1.0 };
+/// let custom = Custom {
+///     epsilon: 1.0,
+///     maximum_interaction_range: 2.5,
+/// };
 /// let site_pair_energy = custom.site_pair_energy(
 ///     &microstate.sites()[0].properties,
 ///     &microstate.sites()[1].properties,
@@ -311,22 +311,10 @@ pub trait SiteEnergy<S> {
 /// use hoomd_utility::valid::PositiveReal;
 /// use hoomd_vector::{self, Angle, Cartesian};
 ///
-/// #[derive(Default)]
+/// #[derive(Default, Position)]
 /// struct CircleSiteProperties {
 ///     position: Cartesian<2>,
 ///     radius: PositiveReal,
-/// }
-///
-/// impl Position for CircleSiteProperties {
-///     type Position = Cartesian<2>;
-///
-///     fn position(&self) -> &Cartesian<2> {
-///         &self.position
-///     }
-///
-///     fn position_mut(&mut self) -> &mut Cartesian<2> {
-///         &mut self.position
-///     }
 /// }
 ///
 /// impl Transform<CircleSiteProperties> for Point<Cartesian<2>> {

@@ -1,0 +1,21 @@
+[package]
+name = "hoomd-derive"
+categories.workspace = true
+description = "Derive macros."
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "2.0.117"
+quote = "1.0.44"

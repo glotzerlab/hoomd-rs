@@ -51,7 +51,7 @@ struct HardEllipseSelfAssembly {
     /// Quick compress algorithm.
     quick_compress: QuickCompress<Periodic<Rectangle>>,
     /// Quick insert algorithm.
-    quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Rectangle>>>,
+    quick_insert: QuickInsert<UniformIn<SiteProperties, Periodic<Rectangle>>>,
     /// How sites interact when inserted and compressed.
     overlap_penalty_hamiltonian: PairwiseCutoff<
         Anisotropic<ApproximateShapeOverlap<OverlapPenalty, Ellipse>>,

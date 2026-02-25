@@ -39,7 +39,7 @@ type SiteProperties = OrientedPoint<PositionVector, Orientation>;
 
 // ANCHOR: simulation_new
 impl PatchyParticleSelfAssembly {
-    /// Construct a new hard disk self-assembly simulation.
+    /// Construct a new patchy particle self-assembly simulation.
     fn new() -> anyhow::Result<PatchyParticleSelfAssembly> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
@@ -181,7 +181,7 @@ struct PatchyParticleSelfAssembly {
     /// Temperature set point.
     macrostate: Isothermal,
     /// Quick insert algorithm.
-    quick_insert: QuickInsert<UniformIn<BodyProperties, Periodic<Rectangle>>>,
+    quick_insert: QuickInsert<UniformIn<SiteProperties, Periodic<Rectangle>>>,
     /// Quick compress algorithm
     quick_compress: QuickCompress<Periodic<Rectangle>>,
     /// How sites interact during compression.

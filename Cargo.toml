@@ -4,6 +4,7 @@ resolver = "3"
 members = ["benchmarks",
            "examples",
            "hoomd-bevy",
+           "hoomd-derive",
            "hoomd-geometry",
            "hoomd-gsd",
            "hoomd-interaction",
@@ -24,6 +25,7 @@ members = ["benchmarks",
 # The `hoomd-bevy` crate depends on `bevy` which takes a long time to download
 # and compile.
 default-members = ["examples",
+                   "hoomd-derive",
                    "hoomd-geometry",
                    "hoomd-gsd",
                    "hoomd-interaction",
@@ -51,6 +53,7 @@ categories = ["science"]
 [workspace.dependencies]
 # Subcrates
 hoomd-bevy = { path = "hoomd-bevy", version = "0.0.0" }
+hoomd-derive = { path = "hoomd-derive", version = "0.0.0" }
 hoomd-geometry = { path = "hoomd-geometry", version = "0.0.0"}
 hoomd-gsd = { path = "hoomd-gsd", version = "0.0.0"}
 hoomd-interaction = { path = "hoomd-interaction", version = "0.0.0"}

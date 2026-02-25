@@ -19,6 +19,7 @@ rand.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 
+hoomd-derive.workspace = true
 hoomd-geometry.workspace = true
 hoomd-manifold.workspace = true
 hoomd-spatial.workspace = true
