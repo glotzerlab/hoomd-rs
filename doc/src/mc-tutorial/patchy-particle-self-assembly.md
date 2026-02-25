@@ -72,14 +72,15 @@ of the simulation boundary in the initial state. Choose this value so
 that disks can be placed easily in the microstate. During the `Initialize`
 phase, the microstate will be compressed until it reaches the packing
 fraction `target_packing_fraction`. `n_disks` is the number of disks to add,
-`maximum_distance` is the largest distance a translation trial move can take,
-and `maximum_rotation`controls the size of the rotation trial moves. `sigma` is
-the disk diameter, `patch_interaction_range` is largest distance at which the
-attractive interaction applies, `patch_half_angle` is the half open angle of the
-patch, and `patch_energy` is the potential energy of a pair of particles when
-their patches align. `initial_temperature` sets the temperature at step 0,
-`final_temperature` sets the temperature at step `ramp_steps`, and `macrostate`
-holds the current temperature set point (in units of energy).
+`maximum_distance` is the largest distance a translation trial move can take
+(initially), and `maximum_rotation`controls the size of the rotation trial moves
+(initially). `sigma` is the disk diameter, `patch_interaction_range` is largest
+distance at which the attractive interaction applies, `patch_half_angle` is
+the half open angle of the patch, and `patch_energy` is the potential energy
+of a pair of particles when their patches align. `initial_temperature` sets
+the temperature at step 0, `final_temperature` sets the temperature at step
+`ramp_steps`, and `macrostate` holds the current temperature set point (in units
+of energy).
 
 ### Hamiltonian
 

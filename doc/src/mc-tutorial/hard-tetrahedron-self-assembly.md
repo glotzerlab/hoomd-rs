@@ -66,9 +66,10 @@ volume of the simulation boundary in the initial state. Choose this value so
 that tetrahedra can be placed easily in the microstate. During the `Initialize`
 phase, the microstate will be compressed until it reaches the packing fraction
 `target_packing_fraction`. `n_bodies` is the number of tetrahedra to add,
-`maximum_distance` is the largest distance a translation trial move can
-take, `maximum_rotation`controls the size of the rotation trial moves, and
-`macrostate` holds the temperature set point (in units of energy).
+`maximum_distance` is the largest distance a translation trial move can take
+(initially), `maximum_rotation`controls the size of the rotation trial moves
+(initially), and `macrostate` holds the temperature set point (in units of
+energy).
 
 ### Hamiltonian
 
@@ -81,12 +82,10 @@ Wrap it in the `Convex` newtype for use with the `HardShape` Hamiltonian:
 ## Initialization and Simulation
 
 See the [Hard Ellipse Self-Assembly] tutorial for a complete explanation of
-remaining initialization and simulation code.
-```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/hard-tetrahedron-self-assembly.rs:remainder}}
-```
+remaining initialization and simulation code (see also the [complete code] below).
 
 [Hard Ellipse Self-Assembly]: hard-ellipse-self-assembly.md
+[complete code]: #complete-code
 
 ## Implement `main()`
 
