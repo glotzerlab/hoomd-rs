@@ -8,17 +8,17 @@ import init from 'https://glotzerlab.github.io/hoomd-rs/mc-tutorial/type-depende
 
 ## Overview
 
-Some models label each site with **types** and apply interactions as a function
-of type. For example, you can model coarse-grained phase separation with
-attractive *A-A* and *B-B* interactions and purely repulsive *A-B* interactions.
-This tutorial shows you how to assign **types** to sites and compute
-type-dependent pairwise interactions.
+Some models label each site with a **site type** and apply interactions as
+a function of the site type. For example, you can model coarse-grained phase
+separation with attractive *A-A* and *B-B* interactions and purely repulsive
+*A-B* interactions. This tutorial shows you how to define **site types** and
+compute type-dependent pairwise interactions.
 
 * Objectives:
-  * Show how to use an `enum` to name all the site types.
-  * Define a custom **site properties** struct that includes the type.
+  * Show how to use an `enum` to name the possible **site types**.
+  * Define a custom **site properties** struct that includes the **site type**.
   * Show how to compute type-dependent pairwise interactions.
-  * Demonstrate phase separation of *A* and *B* types.
+  * Demonstrate phase separation of *A* and *B* **site types**.
 * File: `hoomd-rs/examples/mc-tutorial/type-dependent-interactions.rs`
 * Run (interactively):
   ```shell
@@ -43,20 +43,21 @@ don't need to repeat the full generic type names throughout the code:
 {{#rustdoc_include ../../../examples/mc-tutorial/type-dependent-interactions.rs:type_aliases}}
 ```
 
-The **sites** are in this tutorial are placed at points in space and assigned a type.
-Therefore, use `Point` for the **body** properties.
+The **sites** are in this tutorial are placed at points in space and assigned a site
+type. Therefore, use `Point` for the **body** properties.
 
 ## Site Properties
 
 You might be familiar with simulation tools where you assign types to sites
 based on a numerical index or string name. In *hoomd-rs*, you can assign
-type (and any other site-specific parameter(s)) using any Rust datatype.
+the **site type** (and any other site-specific parameter(s)) using any Rust
+datatype.
 
-### Type `enum`
+### SiteType `enum`
 
-Using an enum ensures that every site *always* has a well-defined type. If you
-fail to assign a type or set an invalid one, Rust will issue an error *at compile
-time*. In this example, `Type` enumerates all the site types:
+Using an enum ensures that every site *always* has a well-defined **site type**.
+If you fail to assign a type or set an invalid one, Rust will issue an error *at
+compile time*. In this example, `SiteType` enumerates all the site types:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/type-dependent-interactions.rs:type}}
 ```
@@ -67,7 +68,7 @@ Previous tutorials used one of the built-in structures (`Point` or
 `OrientedPoint`) to represent the **site properties**. These types are limited
 as they represent only a site's position (or position and orientation). This
 tutorial defines a new `SiteProperties` struct that gives each site a position
-in space and a given **type** (named `type_` because `type` is a Rust keyword):
+in space and a given **site type**:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/type-dependent-interactions.rs:site_properties}}
 ```
@@ -126,17 +127,16 @@ and compute the type-dependent interactions:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/type-dependent-interactions.rs:interaction_impl}}
 ```
-This example uses isotropic interactions that depend only on the distance between
-the two sites and their types. Use Rust's `match` expression to compute the desired
-potential for every combination of types. Rust will produce a helpful compile error
-should you miss one or more cases. You can compute interactions
-that are not included in `hoomd-interaction` by writing the expression
-directly, as demonstrated in the B-B case.
+First, compute the distance between the two sites. Then use Rust's `match`
+expression to compute the desired potential as a function of the two **site
+types**. Rust will produce a compile error should you miss one or more cases.
+You can compute interactions that are not included in `hoomd-interaction` by
+writing the expression directly, as demonstrated in the B-B case.
 
 > [!IMPORTANT]
 > Ensure that `site_pair_energy(i,j)` computes the same energy as
 > `site_pair_energy(j,i)`. Rust does not enforce this symmetry and *hoomd-rs*
-> cannot detect the problem.
+> cannot detect when there is a problem.
 
 ## Construct the Simulation Model
 
@@ -173,7 +173,7 @@ form the system's Hamiltonian:
 
 Even though `SitePairInteraction` treats all sites as points with well-defined
 potentials at all distances $` r \ne 0 `$, it is helpful to place sites where
-$` r \ge \sigma `$. It can take many steps to relax high energy states.
+$` r \ge \sigma `$ as it can take many steps to relax high energy states.
 Use the hard disk `OverlapPenalty` as a Hamiltonian when initializing:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/type-dependent-interactions.rs:compress_hamiltonian}}
@@ -188,19 +188,18 @@ Place all bodies in periodic square boundary conditions at the chosen packing fr
 
 ### Place A and B bodies with `QuickInsert`
 
-One `QuickInsert` randomly places a number of copies of the given template body.
-Use one `QuickInsert` to place half of the bodies with type *A* and a second
-`QuickInsert` to place the remainder with type *B*:
+Use one `QuickInsert` to place half of the bodies with **site type** *A* and a
+second to place the remainder with **site type** *B*:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/type-dependent-interactions.rs:quick_insert}}
 ```
 
 ## Initialization and Simulation
 
-The remaining initialization and simulation code is very similar to that
-in the [Hard Ellipse Self-Assembly] tutorial. The differences are that
-rotation moves are not present here, and there are two `quick_insert`
-methods to apply instead of one (see also the [complete code] below).
+The remaining initialization and simulation code is very similar to that in the
+[Hard Ellipse Self-Assembly] tutorial. The differences are that rotation moves
+are not present here and there are two `quick_insert` methods to apply instead
+of one (see also the [complete code] below).
 
 [Hard Ellipse Self-Assembly]: hard-ellipse-self-assembly.md
 [complete code]: #complete-code

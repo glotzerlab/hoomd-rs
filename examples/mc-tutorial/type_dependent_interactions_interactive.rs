@@ -8,7 +8,7 @@ use anyhow::Context;
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 
-use super::{Type, TypeDependentInteractions};
+use super::{SiteType, TypeDependentInteractions};
 
 /// Mark the circle representation type.
 struct A;
@@ -93,7 +93,7 @@ fn sync_a_sites(
         site_query,
         sites
             .iter()
-            .filter(|s| s.properties.type_ == Type::A)
+            .filter(|s| s.properties.site_type == SiteType::A)
             .map(|site| {
                 (
                     Vec3::new(
@@ -121,7 +121,7 @@ fn sync_b_sites(
         site_query,
         sites
             .iter()
-            .filter(|s| s.properties.type_ == Type::B)
+            .filter(|s| s.properties.site_type == SiteType::B)
             .map(|site| {
                 (
                     Vec3::new(

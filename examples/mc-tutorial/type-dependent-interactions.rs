@@ -34,7 +34,7 @@ type BodyProperties = Point<PositionVector>;
 
 // ANCHOR: type
 #[derive(Clone, Copy, Default, PartialEq)]
-enum Type {
+enum SiteType {
     #[default]
     A,
     B,
@@ -44,10 +44,10 @@ enum Type {
 // ANCHOR: site_properties
 #[derive(Clone, Copy, Default, Position)]
 struct SiteProperties {
-    /// The site's position
+    /// The site's position.
     position: PositionVector,
-    /// The site's type
-    type_: Type,
+    /// The site's type.
+    site_type: SiteType,
 }
 // ANCHOR_END: site_properties
 
@@ -82,10 +82,12 @@ impl SitePairEnergy<SiteProperties> for SitePairInteraction {
             .position
             .distance(&site_properties_j.position);
 
-        match (site_properties_i.type_, site_properties_j.type_) {
-            (Type::A, Type::A) => self.lj_aa.energy(r),
-            (Type::A, Type::B) | (Type::B, Type::A) => self.wca_ab.energy(r),
-            (Type::B, Type::B) => {
+        match (site_properties_i.site_type, site_properties_j.site_type) {
+            (SiteType::A, SiteType::A) => self.lj_aa.energy(r),
+            (SiteType::A, SiteType::B) | (SiteType::B, SiteType::A) => {
+                self.wca_ab.energy(r)
+            }
+            (SiteType::B, SiteType::B) => {
                 1.0 / r.powi(12) - f64::exp(-1.0 / 2.0 * r.powi(2))
             }
         }
@@ -152,7 +154,7 @@ impl TypeDependentInteractions {
         let distribution = UniformIn {
             boundary: periodic_square.clone(),
             template_sites: vec![SiteProperties {
-                type_: Type::A,
+                site_type: SiteType::A,
                 ..SiteProperties::default()
             }],
         };
@@ -161,7 +163,7 @@ impl TypeDependentInteractions {
         let distribution = UniformIn {
             boundary: periodic_square.clone(),
             template_sites: vec![SiteProperties {
-                type_: Type::B,
+                site_type: SiteType::B,
                 ..SiteProperties::default()
             }],
         };
