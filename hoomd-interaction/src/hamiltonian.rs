@@ -201,5 +201,3 @@ where
         total
     }
 }
-
-// FUTURE: Expand macros for 1,2,3,4,... types using macros. Add more unit tests at that time.

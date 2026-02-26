@@ -38,10 +38,12 @@ pub(crate) fn position(input: DeriveInput) -> TokenStream {
         impl #impl_generics ::hoomd_microstate::property::Position for #name #ty_generics #where_clause {
             type Position = #position_type;
 
+            #[inline]
             fn position(&self) -> &Self::Position {
                 &self.position
             }
 
+            #[inline]
             fn position_mut(&mut self) -> &mut Self::Position {
                 &mut self.position
             }

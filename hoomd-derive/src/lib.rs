@@ -11,10 +11,18 @@
 use proc_macro::TokenStream;
 use syn::{DeriveInput, parse_macro_input};
 
+mod delta_energy_one;
 mod maximum_interaction_range;
 mod orientation;
 mod position;
 mod total_energy;
+
+/// TODO
+#[proc_macro_derive(DeltaEnergyOne)]
+pub fn delta_energy_one_derive(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    delta_energy_one::delta_energy_one(input).into()
+}
 
 /// TODO
 #[proc_macro_derive(MaximumInteractionRange)]

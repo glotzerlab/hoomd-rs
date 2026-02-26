@@ -17,6 +17,7 @@ pub(crate) fn maximum_interaction_range(input: &DeriveInput) -> TokenStream {
         Data::Struct(_) => {
             quote! {
                 impl #impl_generics ::hoomd_interaction::MaximumInteractionRange for #name #ty_generics #where_clause {
+                    #[inline]
                     fn maximum_interaction_range(&self) -> f64 {
                         self.maximum_interaction_range
                     }

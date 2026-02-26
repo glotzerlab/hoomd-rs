@@ -38,10 +38,12 @@ pub(crate) fn orientation(input: DeriveInput) -> TokenStream {
         impl #impl_generics ::hoomd_microstate::property::Orientation for #name #ty_generics #where_clause {
             type Rotation = #orientation_type;
 
+            #[inline]
             fn orientation(&self) -> &Self::Rotation {
                 &self.orientation
             }
 
+            #[inline]
             fn orientation_mut(&mut self) -> &mut Self::Rotation {
                 &mut self.orientation
             }
