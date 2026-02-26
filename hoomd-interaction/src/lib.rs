@@ -19,13 +19,12 @@ pub mod pairwise;
 pub mod univariate;
 
 mod external_type;
-mod hamiltonian;
 mod pairwise_cutoff;
 mod zero;
 
 pub use external_type::External;
 pub use hoomd_derive::{
-    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, TotalEnergy,
+    SitePairEnergy, DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, TotalEnergy,
 };
 pub use pairwise_cutoff::PairwiseCutoff;
 pub use zero::Zero;
@@ -450,6 +449,27 @@ pub trait SiteEnergy<S> {
 /// assert_eq!(total_energy, f64::INFINITY);
 /// # Ok(())
 /// # }
+/// ```
+///
+/// # Derive macro
+///
+/// Use the [`SitePairEnergy`](macro@SitePairEnergy) derive macro to
+/// automatically implement the `SitePairEnergy` trait on a type.
+/// The implemented `site_pair_energy` sums the result of `site_pair_energy`
+/// over all fields. The implementation returns early when any one field returns
+/// infinity. The implemented `site_pair_energy_initial` behaves similarly.
+/// The derived `is_only_infinite_or_zero` returns true only when all fields
+/// also return true for the same method.
+///
+/// ```
+/// use hoomd_interaction::{MaximumInteractionRange, SitePairEnergy, pairwise::{HardSphere, AngularMask, Anisotropic}, univariate::Boxcar};
+/// use hoomd_vector::Cartesian;
+///
+/// #[derive(MaximumInteractionRange, SitePairEnergy)]
+/// struct SitePairInteraction {
+///     hard_disk: HardSphere,
+///     angular_mask: Anisotropic::<AngularMask<Boxcar, Cartesian<2>>>,
+/// }
 /// ```
 pub trait SitePairEnergy<S> {
     /// Evaluate the energy contribution from a pair of sites.

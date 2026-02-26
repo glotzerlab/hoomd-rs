@@ -127,8 +127,8 @@ microstate. The crate also implements commonly used energies, such as external
 potentials and cutoff pair potentials. Users can write custom types that
 implement the `TotalEnergy` trait.
 
-Tuples of types that implement `TotalEnergy` (and similar traits) sum the
-contributions from all elements of the tuple.
+Derive macros for `TotalEnergy` (and similar traits) sum the contributions from
+all fields of the struct.
 
 ### Forces and torques
 

@@ -10,11 +10,9 @@ use hoomd_geometry::{
 #[cfg(not(feature = "bevy"))]
 use hoomd_interaction::TotalEnergy;
 use hoomd_interaction::{
-    MaximumInteractionRange, PairwiseCutoff,
-    pairwise::{
+    MaximumInteractionRange, PairwiseCutoff, SitePairEnergy, pairwise::{
         AngularMask, Anisotropic, HardSphere, Isotropic, angular_mask::Patch,
-    },
-    univariate::{Boxcar, Expanded, OverlapPenalty},
+    }, univariate::{Boxcar, Expanded, OverlapPenalty}
 };
 use hoomd_mc::{
     QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, Tune,
@@ -38,6 +36,12 @@ type SiteProperties = OrientedPoint<PositionVector, Orientation>;
 // ANCHOR_END: type_aliases
 
 // ANCHOR: simulation_new
+#[derive(MaximumInteractionRange, SitePairEnergy)]
+struct SitePairInteraction {
+    hard_disk: HardSphere,
+    angular_mask: Anisotropic::<AngularMask<Boxcar, PositionVector>>,
+}
+
 impl PatchyParticleSelfAssembly {
     /// Construct a new patchy particle self-assembly simulation.
     fn new() -> anyhow::Result<PatchyParticleSelfAssembly> {
@@ -87,7 +91,7 @@ impl PatchyParticleSelfAssembly {
         // ANCHOR_END: patch
 
         // ANCHOR: hamiltonian
-        let hamiltonian = PairwiseCutoff((hard_disk, angular_mask));
+        let hamiltonian = PairwiseCutoff(SitePairInteraction {hard_disk, angular_mask});
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: compress_hamiltonian
@@ -170,10 +174,7 @@ struct PatchyParticleSelfAssembly {
         Periodic<Rectangle>,
     >,
     /// How sites interact with other sites and fields.
-    hamiltonian: PairwiseCutoff<(
-        HardSphere,
-        Anisotropic<AngularMask<Boxcar, PositionVector>>,
-    )>,
+    hamiltonian: PairwiseCutoff<SitePairInteraction>,
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<PositionVector>>,
     /// Trial moves to apply.

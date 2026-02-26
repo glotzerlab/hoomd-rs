@@ -28,10 +28,10 @@ pub(crate) fn main() -> anyhow::Result<()> {
     let simulation = PatchyParticleSelfAssembly::new()
         .context("failed to setup simulation")?;
 
-    let inner_radius = (simulation.hamiltonian.0.0.diameter / 2.0) as f32;
+    let inner_radius = (simulation.hamiltonian.0.hard_disk.diameter / 2.0) as f32;
     let outer_radius =
-        (simulation.hamiltonian.0.1.interaction.isotropic.right / 2.0) as f32;
-    let angle = (simulation.hamiltonian.0.1.interaction.masks_i[0]
+        (simulation.hamiltonian.0.angular_mask.interaction.isotropic.right / 2.0) as f32;
+    let angle = (simulation.hamiltonian.0.angular_mask.interaction.masks_i[0]
         .cos_delta
         .acos()
         * 2.0) as f32;

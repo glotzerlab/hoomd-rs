@@ -17,6 +17,7 @@ mod delta_energy_remove;
 mod maximum_interaction_range;
 mod orientation;
 mod position;
+mod site_pair_energy;
 mod total_energy;
 
 /// Automatically implement the `hoomd_interaction::DeltaEnergyInsert` trait.
@@ -101,6 +102,23 @@ pub fn orientation_derive(input: TokenStream) -> TokenStream {
 pub fn position_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     position::position(input)
+}
+
+/// Automatically implement the `hoomd_interaction::SitePairEnergy` trait.
+///
+/// The implemented `site_pair_energy` sums the result of `site_pair_energy`
+/// over all fields. The implementation returns early when any one field returns
+/// infinity. The implemented `site_pair_energy_initial` behaves similarly.
+/// The derived `is_only_infinite_or_zero` returns true only when all fields
+/// also return true for the same method.
+///
+/// Valid on:
+/// * Structs with named fields.
+/// * Tuple structs.
+#[proc_macro_derive(SitePairEnergy)]
+pub fn site_pair_energy_derive(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    site_pair_energy::site_pair_energy(input).into()
 }
 
 /// Automatically implement the `hoomd_interaction::TotalEnergy` trait.
