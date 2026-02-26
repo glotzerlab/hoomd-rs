@@ -24,7 +24,8 @@ mod zero;
 
 pub use external_type::External;
 pub use hoomd_derive::{
-    SitePairEnergy, DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, TotalEnergy,
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy,
+    TotalEnergy,
 };
 pub use pairwise_cutoff::PairwiseCutoff;
 pub use zero::Zero;
@@ -119,7 +120,10 @@ pub use zero::Zero;
 ///     plane_normal: [0.0, 1.0].try_into()?,
 /// });
 ///
-/// let hamiltonian = Hamiltonian { pairwise_cutoff, linear };
+/// let hamiltonian = Hamiltonian {
+///     pairwise_cutoff,
+///     linear,
+/// };
 ///
 /// let total_energy = hamiltonian.total_energy(&microstate);
 /// assert_eq!(total_energy, 10.0);
@@ -462,13 +466,17 @@ pub trait SiteEnergy<S> {
 /// also return true for the same method.
 ///
 /// ```
-/// use hoomd_interaction::{MaximumInteractionRange, SitePairEnergy, pairwise::{HardSphere, AngularMask, Anisotropic}, univariate::Boxcar};
+/// use hoomd_interaction::{
+///     MaximumInteractionRange, SitePairEnergy,
+///     pairwise::{AngularMask, Anisotropic, HardSphere},
+///     univariate::Boxcar,
+/// };
 /// use hoomd_vector::Cartesian;
 ///
 /// #[derive(MaximumInteractionRange, SitePairEnergy)]
 /// struct SitePairInteraction {
 ///     hard_disk: HardSphere,
-///     angular_mask: Anisotropic::<AngularMask<Boxcar, Cartesian<2>>>,
+///     angular_mask: Anisotropic<AngularMask<Boxcar, Cartesian<2>>>,
 /// }
 /// ```
 pub trait SitePairEnergy<S> {
@@ -522,13 +530,15 @@ pub trait SitePairEnergy<S> {
 /// The former case is intended for use with custom site pair potentials and
 /// the latter is intended for use with multi-term Hamiltonian types.
 /// ```
+/// use hoomd_interaction::{
+///     External, MaximumInteractionRange, PairwiseCutoff, external::Linear,
+/// };
 /// use hoomd_vector::Cartesian;
-/// use hoomd_interaction::{External, MaximumInteractionRange, PairwiseCutoff, external::Linear};
 ///
 /// #[derive(MaximumInteractionRange)]
 /// struct SitePairInteraction {
-///    // ...
-///    maximum_interaction_range: f64,
+///     // ...
+///     maximum_interaction_range: f64,
 /// }
 ///
 /// #[derive(MaximumInteractionRange)]
@@ -601,7 +611,10 @@ pub trait MaximumInteractionRange {
 ///     plane_normal: [0.0, 1.0].try_into()?,
 /// });
 ///
-/// let hamiltonian = Hamiltonian { pairwise_cutoff, linear };
+/// let hamiltonian = Hamiltonian {
+///     pairwise_cutoff,
+///     linear,
+/// };
 ///
 /// let delta_energy = hamiltonian.delta_energy_one(
 ///     &microstate,
@@ -690,7 +703,10 @@ pub trait DeltaEnergyOne<B, S, X, C> {
 ///     plane_normal: [0.0, 1.0].try_into()?,
 /// });
 ///
-/// let hamiltonian = Hamiltonian { pairwise_cutoff, linear };
+/// let hamiltonian = Hamiltonian {
+///     pairwise_cutoff,
+///     linear,
+/// };
 ///
 /// let new_body = Body::point(Cartesian::from([1.0, 4.0]));
 /// let delta_energy = hamiltonian.delta_energy_insert(&microstate, &new_body);
@@ -738,8 +754,11 @@ pub trait DeltaEnergyInsert<B, S, X, C> {
 /// The sum short circuits and returns `f64::INFINITY` when any one field
 /// returns infinity.
 /// ```
+/// use hoomd_interaction::{
+///     DeltaEnergyRemove, External, PairwiseCutoff, external::Linear,
+///     pairwise::Isotropic, univariate::Boxcar,
+/// };
 /// use hoomd_vector::Cartesian;
-/// use hoomd_interaction::{External, DeltaEnergyRemove, PairwiseCutoff, external::Linear, pairwise::Isotropic, univariate::Boxcar};
 ///
 /// #[derive(DeltaEnergyRemove)]
 /// struct Hamiltonian {

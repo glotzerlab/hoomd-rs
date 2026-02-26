@@ -10,9 +10,11 @@ use hoomd_geometry::{
 #[cfg(not(feature = "bevy"))]
 use hoomd_interaction::TotalEnergy;
 use hoomd_interaction::{
-    MaximumInteractionRange, PairwiseCutoff, SitePairEnergy, pairwise::{
+    MaximumInteractionRange, PairwiseCutoff, SitePairEnergy,
+    pairwise::{
         AngularMask, Anisotropic, HardSphere, Isotropic, angular_mask::Patch,
-    }, univariate::{Boxcar, Expanded, OverlapPenalty}
+    },
+    univariate::{Boxcar, Expanded, OverlapPenalty},
 };
 use hoomd_mc::{
     QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, Tune,
@@ -35,13 +37,15 @@ type BodyProperties = OrientedPoint<PositionVector, Orientation>;
 type SiteProperties = OrientedPoint<PositionVector, Orientation>;
 // ANCHOR_END: type_aliases
 
-// ANCHOR: simulation_new
+// ANCHOR: site_pair_interaction
 #[derive(MaximumInteractionRange, SitePairEnergy)]
 struct SitePairInteraction {
     hard_disk: HardSphere,
-    angular_mask: Anisotropic::<AngularMask<Boxcar, PositionVector>>,
+    angular_mask: Anisotropic<AngularMask<Boxcar, PositionVector>>,
 }
+// ANCHOR_END: site_pair_interaction
 
+// ANCHOR: simulation_new
 impl PatchyParticleSelfAssembly {
     /// Construct a new patchy particle self-assembly simulation.
     fn new() -> anyhow::Result<PatchyParticleSelfAssembly> {
@@ -91,7 +95,10 @@ impl PatchyParticleSelfAssembly {
         // ANCHOR_END: patch
 
         // ANCHOR: hamiltonian
-        let hamiltonian = PairwiseCutoff(SitePairInteraction {hard_disk, angular_mask});
+        let hamiltonian = PairwiseCutoff(SitePairInteraction {
+            hard_disk,
+            angular_mask,
+        });
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: compress_hamiltonian

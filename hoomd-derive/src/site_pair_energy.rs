@@ -20,15 +20,13 @@ pub(crate) fn site_pair_energy(input: DeriveInput) -> TokenStream {
             };
         }
     };
-    
+
     let mut generics = input.generics.clone();
     let s_ident = Ident::new("__S", Span::call_site());
-    generics.params = [
-        GenericParam::Type(s_ident.into()),
-    ]
-    .into_iter()
-    .chain(generics.params)
-    .collect();
+    generics.params = [GenericParam::Type(s_ident.into())]
+        .into_iter()
+        .chain(generics.params)
+        .collect();
 
     let field_types = data.fields.iter().map(|f| f.ty.clone());
     if let Some(previous_where_clause) = generics.where_clause {
@@ -70,7 +68,7 @@ pub(crate) fn site_pair_energy(input: DeriveInput) -> TokenStream {
             fn is_only_infinite_or_zero() -> bool {
                 #is_only_infinite_or_zero
             }
-            
+
         }
     };
     generated
