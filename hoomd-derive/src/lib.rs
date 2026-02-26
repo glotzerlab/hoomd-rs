@@ -14,6 +14,7 @@ use syn::{DeriveInput, parse_macro_input};
 mod maximum_interaction_range;
 mod orientation;
 mod position;
+mod total_energy;
 
 /// TODO
 #[proc_macro_derive(MaximumInteractionRange)]
@@ -34,4 +35,11 @@ pub fn orientation_derive(input: TokenStream) -> TokenStream {
 pub fn position_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     position::position(input)
+}
+
+/// TODO
+#[proc_macro_derive(TotalEnergy)]
+pub fn total_energy_derive(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    total_energy::total_energy(input).into()
 }
