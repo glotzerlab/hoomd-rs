@@ -179,7 +179,10 @@ cutoff to 0 at a given distance `r_cut`.
 
 ## Type dependent parameters
 
-TODO: Sketch out how enums and `SiteEnergy`/`SitePairEnergy` work with match expressions.
+Users should implement custom site and site pair interaction types.
+The "Type-dependent Interactions" tutorial demonstrates best practices
+for this approach (use an `enum` for the site type and a `match` in
+the `SitePairEnergy` implementation).
 
 ## Cutoff potentials, spatial data structures, and periodic boundary conditions
 

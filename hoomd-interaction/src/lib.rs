@@ -82,14 +82,50 @@ pub use zero::Zero;
 /// are named in the struct definition). The sum short circuits and returns
 /// `f64::INFINITY` when any one field returns infinity.
 /// ```
+/// use hoomd_interaction::{
+///     External, PairwiseCutoff, TotalEnergy, external::Linear,
+///     pairwise::Isotropic, univariate::Boxcar,
+/// };
+/// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;
-/// use hoomd_interaction::{External, TotalEnergy, PairwiseCutoff, external::Linear, pairwise::Isotropic, univariate::Boxcar};
 ///
 /// #[derive(TotalEnergy)]
 /// struct Hamiltonian {
 ///     linear: External<Linear<Cartesian<2>>>,
 ///     pairwise_cutoff: PairwiseCutoff<Isotropic<Boxcar>>,
 /// }
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut microstate = Microstate::new();
+/// microstate.extend_bodies([
+///     Body::point(Cartesian::from([0.0, 4.0])),
+///     Body::point(Cartesian::from([1.0, 4.0])),
+/// ])?;
+///
+/// let epsilon = 2.0;
+/// let (left, right) = (0.0, 1.5);
+/// let boxcar = Boxcar {
+///     epsilon,
+///     left,
+///     right,
+/// };
+/// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+///     interaction: boxcar,
+///     r_cut: right,
+/// });
+///
+/// let linear = External(Linear {
+///     alpha: 1.0,
+///     plane_origin: Cartesian::default(),
+///     plane_normal: [0.0, 1.0].try_into()?,
+/// });
+///
+/// let hamiltonian = Hamiltonian { pairwise_cutoff, linear };
+///
+/// let total_energy = hamiltonian.total_energy(&microstate);
+/// assert_eq!(total_energy, 10.0);
+/// # Ok(())
+/// # }
 /// ```
 pub trait TotalEnergy<M> {
     /// Compute the energy.
@@ -507,14 +543,54 @@ pub trait MaximumInteractionRange {
 /// The sum short circuits and returns `f64::INFINITY` when any one field
 /// returns infinity.
 /// ```
+/// use hoomd_interaction::{
+///     DeltaEnergyOne, External, PairwiseCutoff, external::Linear,
+///     pairwise::Isotropic, univariate::Boxcar,
+/// };
+/// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;
-/// use hoomd_interaction::{External, DeltaEnergyOne, PairwiseCutoff, external::Linear, pairwise::Isotropic, univariate::Boxcar};
 ///
 /// #[derive(DeltaEnergyOne)]
 /// struct Hamiltonian {
 ///     linear: External<Linear<Cartesian<2>>>,
 ///     pairwise_cutoff: PairwiseCutoff<Isotropic<Boxcar>>,
 /// }
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut microstate = Microstate::new();
+/// microstate.extend_bodies([
+///     Body::point(Cartesian::from([0.0, 0.0])),
+///     Body::point(Cartesian::from([1.0, 0.0])),
+/// ])?;
+///
+/// let epsilon = 2.0;
+/// let (left, right) = (0.0, 1.5);
+/// let boxcar = Boxcar {
+///     epsilon,
+///     left,
+///     right,
+/// };
+/// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+///     interaction: boxcar,
+///     r_cut: right,
+/// });
+///
+/// let linear = External(Linear {
+///     alpha: 10.0,
+///     plane_origin: Cartesian::default(),
+///     plane_normal: [0.0, 1.0].try_into()?,
+/// });
+///
+/// let hamiltonian = Hamiltonian { pairwise_cutoff, linear };
+///
+/// let delta_energy = hamiltonian.delta_energy_one(
+///     &microstate,
+///     0,
+///     &Body::point([-1.0, 0.0].into()),
+/// );
+/// assert_eq!(delta_energy, -2.0);
+/// # Ok(())
+/// # }
 /// ```
 pub trait DeltaEnergyOne<B, S, X, C> {
     /// Compute the change in energy.
@@ -559,14 +635,48 @@ pub trait DeltaEnergyOne<B, S, X, C> {
 /// The sum short circuits and returns `f64::INFINITY` when any one field
 /// returns infinity.
 /// ```
+/// use hoomd_interaction::{
+///     DeltaEnergyInsert, External, PairwiseCutoff, external::Linear,
+///     pairwise::Isotropic, univariate::Boxcar,
+/// };
+/// use hoomd_microstate::{Body, Microstate, property::Point};
 /// use hoomd_vector::Cartesian;
-/// use hoomd_interaction::{External, DeltaEnergyInsert, PairwiseCutoff, external::Linear, pairwise::Isotropic, univariate::Boxcar};
 ///
 /// #[derive(DeltaEnergyInsert)]
 /// struct Hamiltonian {
 ///     linear: External<Linear<Cartesian<2>>>,
 ///     pairwise_cutoff: PairwiseCutoff<Isotropic<Boxcar>>,
 /// }
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut microstate = Microstate::new();
+/// microstate.extend_bodies([Body::point(Cartesian::from([0.0, 4.0]))])?;
+///
+/// let epsilon = 2.0;
+/// let (left, right) = (0.0, 1.5);
+/// let boxcar = Boxcar {
+///     epsilon,
+///     left,
+///     right,
+/// };
+/// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+///     interaction: boxcar,
+///     r_cut: right,
+/// });
+///
+/// let linear = External(Linear {
+///     alpha: 1.0,
+///     plane_origin: Cartesian::default(),
+///     plane_normal: [0.0, 1.0].try_into()?,
+/// });
+///
+/// let hamiltonian = Hamiltonian { pairwise_cutoff, linear };
+///
+/// let new_body = Body::point(Cartesian::from([1.0, 4.0]));
+/// let delta_energy = hamiltonian.delta_energy_insert(&microstate, &new_body);
+/// assert_eq!(delta_energy, 6.0);
+/// # Ok(())
+/// # }
 /// ```
 pub trait DeltaEnergyInsert<B, S, X, C> {
     /// Compute the change in energy.
