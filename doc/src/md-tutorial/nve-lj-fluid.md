@@ -131,3 +131,85 @@ We define two phases:
 
 - `Equilibrate`: NVT simulation that equilibrates the system.
 - `SampleNVE`: production NVE run.
+
+## Implement Simulation
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:impl_simulation}}
+```
+
+### Advance the simulation
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:advance}}
+```
+
+### NVT equilibration phase
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:nvt}}
+```
+We run velocity Verlet with the thermostat for `eq_step` steps, then switch to NVE.
+
+#### First-half integration
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:first_half_integration}}
+```
+
+#### Force update
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:update_force}}
+```
+
+#### Second-half integration
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:second_half_integration}}
+```
+
+#### Simulation Phase Shifting
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:state_transition}}
+```
+
+### NVE production phase
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:nve}}
+```
+In the production phase we:
+
+- Disable the thermostat (pass `NoThermostat`)
+- Use a dummy macrostate `Isoenergy` (not used in NVE)
+- Print temperature and potential energy every 10,000 steps
+
+### Compute thermodynamic properties
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:properties}}
+```
+We calculate:
+
+- Potential energy per particle including long-range correction.
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:potetial_energy}}
+```
+- Instantaneous temperature from translational kinetic energy.
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:current_temeprature}}
+```
+
+## Implement `main()`
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:main}}
+```
+We run a fixed 500,000 total steps of MD simulation.
+
+## Conclusion
+You have now seen how to:
+
+- Initialize a dense Lennard-Jones fluid on an simple cubic lattice
+- Use velocity Verlet integration (`ConstantVolume`)
+- Equilibrate in the NVT ensemble with the Bussi thermostat
+- Switch to pure NVE production
+- Apply standard momentum removal
+- Compute and print basic thermodynamic observables
+- Include the long-range correction for truncated LJ potentials
+
+Navigate to the top of the page and refresh to see the simulation in action (if Bevy visualization is enabled).
+
+You can also run the example in batch mode and analyze the printed output or extend it to write GSD/XTC trajectory files.
