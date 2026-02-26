@@ -73,6 +73,24 @@ pub use zero::Zero;
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Derive macro
+///
+/// Use the [`TotalEnergy`](macro@TotalEnergy) derive macro to automatically implement
+/// the `TotalEnergy` trait on a type. The derived implementation sums the result of
+/// `total_energy` over all fields in the struct (in the order in which fields
+/// are named in the struct definition). The sum short circuits and returns
+/// `f64::INFINITY` when any one field returns infinity.
+/// ```
+/// use hoomd_vector::Cartesian;
+/// use hoomd_interaction::{External, TotalEnergy, PairwiseCutoff, external::Linear, pairwise::Isotropic, univariate::Boxcar};
+///
+/// #[derive(TotalEnergy)]
+/// struct Hamiltonian {
+///     linear: External<Linear<Cartesian<2>>>,
+///     pairwise_cutoff: PairwiseCutoff<Isotropic<Boxcar>>,
+/// }
+/// ```
 pub trait TotalEnergy<M> {
     /// Compute the energy.
     #[must_use]
@@ -434,15 +452,41 @@ pub trait SitePairEnergy<S> {
 /// Largest distance between two sites where the pairwise interaction may be non-zero.
 ///
 /// [`PairwiseCutoff`] uses the provided maximum interaction range to
-/// efficiently compute only the needed interactions. All types that
-/// implement `SitePair*` traits must also implement
-/// [`MaximumInteractionRange`].
+/// efficiently compute only the needed interactions. All types that implement
+/// `SitePair*` traits must also implement [`MaximumInteractionRange`].
+///
+/// # Derive macro
+///
+/// Use the [`MaximumInteractionRange`](macro@MaximumInteractionRange) derive macro to
+/// automatically implement the `MaximumInteractionRange` trait on a type.
+///
+/// When the type has a field named `maximum_interaction_range`, the derived implementation
+/// returns it. When there is no such field, the derived implementation takes
+/// the maximum of the `maximum_interaction_range` over all fields in the struct.
+/// The former case is intended for use with custom site pair potentials and
+/// the latter is intended for use with multi-term Hamiltonian types.
+/// ```
+/// use hoomd_vector::Cartesian;
+/// use hoomd_interaction::{External, MaximumInteractionRange, PairwiseCutoff, external::Linear};
+///
+/// #[derive(MaximumInteractionRange)]
+/// struct SitePairInteraction {
+///    // ...
+///    maximum_interaction_range: f64,
+/// }
+///
+/// #[derive(MaximumInteractionRange)]
+/// struct Hamiltonian {
+///     linear: External<Linear<Cartesian<2>>>,
+///     pairwise_cutoff: PairwiseCutoff<SitePairInteraction>,
+/// }
+/// ```
 pub trait MaximumInteractionRange {
     /// The largest distance between two sites where the pairwise interaction may be non-zero.
     fn maximum_interaction_range(&self) -> f64;
 }
 
-/// Compute the change energy as a function of a single modified body.
+/// Compute the change in energy as a function of a single modified body.
 ///
 /// Some trial moves apply to a single body at a time and use a Hamiltonian that
 /// implements `DeltaEnergyOne` to efficiently compute the change in energy.
@@ -453,6 +497,25 @@ pub trait MaximumInteractionRange {
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 ///
 /// See the [Implementors](#implementors) section below for examples.
+///
+/// # Derive macro
+///
+/// Use the [`DeltaEnergyOne`](macro@DeltaEnergyOne) derive macro to
+/// automatically implement the `DeltaEnergyOne` trait on a type. The derived
+/// implementation sums the result of `delta_energy_one` over all fields in the
+/// struct (in the order in which fields are named in the struct definition).
+/// The sum short circuits and returns `f64::INFINITY` when any one field
+/// returns infinity.
+/// ```
+/// use hoomd_vector::Cartesian;
+/// use hoomd_interaction::{External, DeltaEnergyOne, PairwiseCutoff, external::Linear, pairwise::Isotropic, univariate::Boxcar};
+///
+/// #[derive(DeltaEnergyOne)]
+/// struct Hamiltonian {
+///     linear: External<Linear<Cartesian<2>>>,
+///     pairwise_cutoff: PairwiseCutoff<Isotropic<Boxcar>>,
+/// }
+/// ```
 pub trait DeltaEnergyOne<B, S, X, C> {
     /// Compute the change in energy.
     ///
@@ -474,7 +537,7 @@ pub trait DeltaEnergyOne<B, S, X, C> {
     ) -> f64;
 }
 
-/// Compute the change energy when a single body is inserted.
+/// Compute the change in energy when a single body is inserted.
 ///
 /// Some trial moves insert a single body at a time and use a Hamiltonian that
 /// implements `DeltaEnergyInsert` to efficiently compute the change in energy.
@@ -486,6 +549,25 @@ pub trait DeltaEnergyOne<B, S, X, C> {
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 ///
 /// See the [Implementors](#implementors) section below for examples.
+///
+/// # Derive macro
+///
+/// Use the [`DeltaEnergyInsert`](macro@DeltaEnergyInsert) derive macro to
+/// automatically implement the `DeltaEnergyInsert` trait on a type. The derived
+/// implementation sums the result of `delta_energy_insert` over all fields in the
+/// struct (in the order in which fields are named in the struct definition).
+/// The sum short circuits and returns `f64::INFINITY` when any one field
+/// returns infinity.
+/// ```
+/// use hoomd_vector::Cartesian;
+/// use hoomd_interaction::{External, DeltaEnergyInsert, PairwiseCutoff, external::Linear, pairwise::Isotropic, univariate::Boxcar};
+///
+/// #[derive(DeltaEnergyInsert)]
+/// struct Hamiltonian {
+///     linear: External<Linear<Cartesian<2>>>,
+///     pairwise_cutoff: PairwiseCutoff<Isotropic<Boxcar>>,
+/// }
+/// ```
 pub trait DeltaEnergyInsert<B, S, X, C> {
     /// Compute the change in energy.
     ///
@@ -505,7 +587,7 @@ pub trait DeltaEnergyInsert<B, S, X, C> {
     ) -> f64;
 }
 
-/// Compute the change energy when a single body is removed.
+/// Compute the change in energy when a single body is removed.
 ///
 /// Some trial moves remove a single body at a time and use a Hamiltonian that
 /// implements `DeltaEnergyRemove` to efficiently compute the change in energy.
@@ -516,6 +598,25 @@ pub trait DeltaEnergyInsert<B, S, X, C> {
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 ///
 /// See the [Implementors](#implementors) section below for examples.
+///
+/// # Derive macro
+///
+/// Use the [`DeltaEnergyRemove`](macro@DeltaEnergyRemove) derive macro to
+/// automatically implement the `DeltaEnergyRemove` trait on a type. The derived
+/// implementation sums the result of `delta_energy_remove` over all fields in the
+/// struct (in the order in which fields are named in the struct definition).
+/// The sum short circuits and returns `f64::INFINITY` when any one field
+/// returns infinity.
+/// ```
+/// use hoomd_vector::Cartesian;
+/// use hoomd_interaction::{External, DeltaEnergyRemove, PairwiseCutoff, external::Linear, pairwise::Isotropic, univariate::Boxcar};
+///
+/// #[derive(DeltaEnergyRemove)]
+/// struct Hamiltonian {
+///     linear: External<Linear<Cartesian<2>>>,
+///     pairwise_cutoff: PairwiseCutoff<Isotropic<Boxcar>>,
+/// }
+/// ```
 pub trait DeltaEnergyRemove<B, S, X, C> {
     /// Compute the change in energy.
     ///

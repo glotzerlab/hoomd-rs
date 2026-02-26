@@ -162,6 +162,20 @@ pub use hoomd_derive::{Orientation, Position};
 /// # Units
 ///
 /// Position vectors have units of *\[length\]*.
+///
+/// # Derive macro
+///
+/// Use the [`Position`](macro@Position) derive macro to automatically implement
+/// the `Position` trait on a type. The type **must** have a field named `position`.
+/// ```
+/// use hoomd_microstate::property::Position;
+/// use hoomd_vector::Cartesian;
+///
+/// #[derive(Position)]
+/// struct Custom {
+///     position: Cartesian<3>,
+/// }
+/// ```
 pub trait Position {
     /// Every position is located in this vector space.
     type Position;
@@ -186,6 +200,20 @@ pub trait Position {
 /// The units of [`Orientation`] depend on the representation chosen for `R`.
 /// For example, [`hoomd_vector::Angle`] has units of radians while
 /// [`hoomd_vector::Versor`] is unitless.
+///
+/// # Derive macro
+///
+/// Use the [`Orientation`](macro@Orientation) derive macro to automatically implement
+/// the `Orientation` trait on a type. The type **must** have a field named `orientation`.
+/// ```
+/// use hoomd_microstate::property::Orientation;
+/// use hoomd_vector::Versor;
+///
+/// #[derive(Orientation)]
+/// struct Custom {
+///     orientation: Versor,
+/// }
+/// ```
 pub trait Orientation {
     /// Type that can express the orientation of a body or site.
     type Rotation;

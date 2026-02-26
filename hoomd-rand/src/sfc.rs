@@ -38,7 +38,7 @@ use crate::util::read_le_u64;
 ///
 /// ## Generation
 ///
-/// The generators implements [`Rng`] and thus also `Rng`.
+/// The generators implements [`TryRng`] and thus also `Rng`.
 /// See also the [Random Values] chapter in the Rust Rand book.
 ///
 /// [portable]: https://rust-random.github.io/book/crate-reprod.html
