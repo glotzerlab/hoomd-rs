@@ -70,7 +70,7 @@ fn total_energy_sum(fields: &Fields) -> TokenStream {
             });
             
             quote! {
-                let mut total = 0.0;
+                let mut total = 0.0_f64;
                 #(
                 total = total + #terms;
 
@@ -90,7 +90,7 @@ fn total_energy_sum(fields: &Fields) -> TokenStream {
             });
 
             quote! {
-                let mut total = 0.0;
+                let mut total = 0.0_f64;
                 #(
                 total = total + #terms;
 
@@ -102,7 +102,7 @@ fn total_energy_sum(fields: &Fields) -> TokenStream {
             }
         }
         Fields::Unit => {
-            quote!(0.0)
+            quote!(0.0_f64)
         }
     }
 }

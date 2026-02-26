@@ -1,15 +1,15 @@
 // Copyright (c) 2024-2026 The Regents of the University of Michigan.
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
-//! Implement the derive(DeltaEnergyOne) macro
+//! Implement the derive(DeltaEnergyRemove) macro
 
 
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{Data, DeriveInput, Fields, GenericParam, Ident, Index, parse_quote, spanned::Spanned};
 
-/// Implement the derive(DeltaEnergyOne) macro.
-pub(crate) fn delta_energy_one(input: DeriveInput) -> TokenStream {
+/// Implement the derive(DeltaEnergyRemove) macro.
+pub(crate) fn delta_energy_remove(input: DeriveInput) -> TokenStream {
     let name = &input.ident;
 
     let data = match input.data {
@@ -17,7 +17,7 @@ pub(crate) fn delta_energy_one(input: DeriveInput) -> TokenStream {
         Data::Enum(_) | Data::Union(_) => {
             return quote_spanned! {
                 name.span() =>
-                compile_error!("derive(DeltaEnergyOne) applies only to struct types.");
+                compile_error!("derive(DeltaEnergyRemove) applies only to struct types.");
             }
         }
     };
@@ -43,11 +43,11 @@ pub(crate) fn delta_energy_one(input: DeriveInput) -> TokenStream {
         let predicates = previous_where_clause.predicates;
         generics.where_clause = Some(parse_quote!(where
             #predicates,
-            #(#field_types: ::hoomd_interaction::DeltaEnergyOne<__B, __S, __X, __C>),*
+            #(#field_types: ::hoomd_interaction::DeltaEnergyRemove<__B, __S, __X, __C>),*
             ));
     } else {
         generics.where_clause = Some(parse_quote!(where
-            #(#field_types: ::hoomd_interaction::DeltaEnergyOne<__B, __S, __X, __C>),*));
+            #(#field_types: ::hoomd_interaction::DeltaEnergyRemove<__B, __S, __X, __C>),*));
     }
 
     let (impl_generics, _, where_clause) = generics.split_for_impl();
@@ -55,13 +55,12 @@ pub(crate) fn delta_energy_one(input: DeriveInput) -> TokenStream {
     let (_, ty_generics, _) = input.generics.split_for_impl();
     
     let generated = quote! {
-        impl #impl_generics ::hoomd_interaction::DeltaEnergyOne<__B, __S, __X, __C> for #name #ty_generics #where_clause {
+        impl #impl_generics ::hoomd_interaction::DeltaEnergyRemove<__B, __S, __X, __C> for #name #ty_generics #where_clause {
             #[inline]
-            fn delta_energy_one(
+            fn delta_energy_remove(
                 &self,
                 initial_microstate: &::hoomd_microstate::Microstate<__B, __S, __X, __C>,
                 body_index: usize,
-                final_body: &::hoomd_microstate::Body<__B, __S>,
             ) -> f64 {
                 #sum
             }
@@ -77,8 +76,8 @@ fn delta_energy_one_sum(fields: &Fields) -> TokenStream {
             let terms = fields.named.iter().map(|f| {
                 let name = &f.ident;
                 quote_spanned! {f.span()=>
-                    ::hoomd_interaction::DeltaEnergyOne::delta_energy_one(&self.#name,
-                        initial_microstate, body_index, final_body)
+                    ::hoomd_interaction::DeltaEnergyRemove::delta_energy_remove(&self.#name,
+                        initial_microstate, body_index)
                 }
             });
             
@@ -98,8 +97,8 @@ fn delta_energy_one_sum(fields: &Fields) -> TokenStream {
             let terms = fields.unnamed.iter().enumerate().map(|(i, f)| {
                 let index = Index::from(i);
                 quote_spanned! {f.span()=>
-                    ::hoomd_interaction::DeltaEnergyOne::delta_energy_one(&self.#index,
-                        initial_microstate, body_index, final_body)
+                    ::hoomd_interaction::DeltaEnergyRemove::delta_energy_remove(&self.#index,
+                        initial_microstate, body_index)
                 }
             });
 

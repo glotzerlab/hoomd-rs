@@ -24,7 +24,7 @@ mod pairwise_cutoff;
 mod zero;
 
 pub use external_type::External;
-pub use hoomd_derive::{DeltaEnergyOne, MaximumInteractionRange, TotalEnergy};
+pub use hoomd_derive::{DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, TotalEnergy};
 pub use pairwise_cutoff::PairwiseCutoff;
 pub use zero::Zero;
 
