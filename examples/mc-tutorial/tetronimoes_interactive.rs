@@ -78,7 +78,7 @@ fn ui_system(
         ui.horizontal(|ui| {
             ui.add(
                 egui::Slider::new(
-                    &mut simulation.hamiltonian.0.0.alpha,
+                    &mut simulation.hamiltonian.linear.0.alpha,
                     0.0..=2.0,
                 )
                 .text("alpha")

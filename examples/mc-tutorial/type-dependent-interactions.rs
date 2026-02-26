@@ -7,10 +7,12 @@ use hoomd_geometry::{
     shape::{Circle, Rectangle},
 };
 use hoomd_interaction::{
-    MaximumInteractionRange, PairwiseCutoff, SitePairEnergy, pairwise::Isotropic, univariate::{
+    MaximumInteractionRange, PairwiseCutoff, SitePairEnergy,
+    pairwise::Isotropic,
+    univariate::{
         Expanded, LennardJones, OverlapPenalty, UnivariateEnergy,
         WeeksChandlerAnderson,
-    }
+    },
 };
 use hoomd_mc::{
     QuickCompress, QuickInsert, Sweep, Translate, Trial, Tune, UniformIn,

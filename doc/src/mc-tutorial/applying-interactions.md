@@ -164,7 +164,7 @@ will use to evaluate the change in energy $`\Delta E`$ of a trial move.
 
 ### The Hamiltonian
 
-To sum the external and pair energies, place them in a tuple:
+To sum the external and pair energies, place them in a struct:
 ```math
 H = U_\mathrm{external} + U_\mathrm{pair}
 ```
@@ -172,26 +172,28 @@ H = U_\mathrm{external} + U_\mathrm{pair}
 {{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:hamiltonian}}
 ```
 
-In *hoomd-rs*, tuples of types that each implement traits like `DeltaEnergyOne`
-also implement `DeltaEnergyOne` by summing over the elements. In this example,
-`translate_sweep.apply()` calls `hamiltonian.delta_energy_one()` to evaluate
-$` \Delta E `$ when needed.
+See [The Hamiltonian Type] for the definition of this struct and instructions
+on how to derive implementations of traits like `DeltaEnergyOne` as a sum
+over the struct's fields. In this example, `translate_sweep.apply()` calls
+`hamiltonian.delta_energy_one()` to evaluate $` \Delta E `$ when needed.
+
+[The Hamiltonian Type]: #the-hamiltonian-type
 
 You can use `hamiltonian` to compute properties of the system:
 * `hamiltonian.total_energy(&microstate)` - The total energy of the system.
-* `hamiltonian.0.total_energy(&microstate)` - The total external energy term.
-* `hamiltonian.0.0.site_energy(&site.properties)` - The contribution of a single site to the
+* `hamiltonian.linear.total_energy(&microstate)` - The total external energy term.
+* `hamiltonian.linear.0.site_energy(&site.properties)` - The contribution of a single site to the
   external energy.
-* `hamiltonian.1.total_energy(&microstate)` - The total pair energy term.
-* `hamiltonian.1.site_pair_energy(&site_i, &site_j)` - The contribution of a
+* `hamiltonian.pairwise_cutoff.total_energy(&microstate)` - The total pair energy term.
+* `hamiltonian.pairwise_cutoff.site_pair_energy(&site_i, &site_j)` - The contribution of a
   pair of sites to the pair energy.
 
 The types `External` and `Isotropic` are single element tuples.
 To access the parameters of the inner types, you need access the elements of
 these tuples:
-* `hamiltonian.0.0.alpha` - Strength of the linear external potential.
-* `hamiltonian.1.0.r_cut` - Maximum cutoff radius of of the pair potential.
-* `hamiltonian.1.0.interaction.epsilon` - Strength of the pairwise step potential.
+* `hamiltonian.linear.0.alpha` - Strength of the linear external potential.
+* `hamiltonian.pairwise_cutoff.0.r_cut` - Maximum cutoff radius of of the pair potential.
+* `hamiltonian.pairwise_cutoff.0.interaction.epsilon` - Strength of the pairwise step potential.
 
 Due to Rust's ownership model, you *cannot* use names like `boxcar.epsilon`
 to refer to parameters after constructing `hamiltonian`. You can read
@@ -240,6 +242,24 @@ Construct the `Microstate` with the square boundary and `vec_cell` spatial data:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:initialize_struct}}
 ```
+
+## The Hamiltonian Type
+
+The Hamiltonian of the system must be represented by a single type. To sum
+terms from multiple types (`External` and `PairwiseCutoff` here), define a struct
+with one field for each term in the Hamiltonian:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:hamiltonian_struct}}
+```
+`derive([TotalEnergy, DeltaEnergyOne])` implements those traits for the
+`Hamiltonian` type where the result is the sum of the corresponding trait
+over all the struct's fields. `derive([MaximumInteractionRange)]` similarly
+determines the maximum of all the maximum interaction ranges over all the
+struct's fields.
+
+> [!TIP]
+> When there is only one term in your Hamiltonian (e.g. `pairwise_cutoff`),
+> you can use it directly as `hamiltonian` without the need for a new struct.
 
 ## Implement `Simulation`
 

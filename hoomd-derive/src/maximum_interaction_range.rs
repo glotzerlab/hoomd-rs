@@ -19,8 +19,9 @@ pub(crate) fn maximum_interaction_range(input: DeriveInput) -> TokenStream {
             return quote_spanned! {
                 name.span() =>
                 compile_error!("derive(MaximumInteractionRange) applies only to struct types.");
-            }.into()
-        },
+            }
+            .into();
+        }
     };
 
     if has_maximum_interaction_range(&data.fields) {
@@ -40,9 +41,9 @@ pub(crate) fn maximum_interaction_range(input: DeriveInput) -> TokenStream {
         if let Some(previous_where_clause) = generics.where_clause {
             let predicates = previous_where_clause.predicates;
             generics.where_clause = Some(parse_quote!(where
-                #predicates,
-                #(#field_types: ::hoomd_interaction::MaximumInteractionRange),*
-                ));
+            #predicates,
+            #(#field_types: ::hoomd_interaction::MaximumInteractionRange),*
+            ));
         } else {
             generics.where_clause = Some(parse_quote!(where
                 #(#field_types: ::hoomd_interaction::MaximumInteractionRange),*));
@@ -82,7 +83,7 @@ fn maximum_interaction_range_max(fields: &Fields) -> TokenStream {
                     ::hoomd_interaction::MaximumInteractionRange::maximum_interaction_range(&self.#name)
                 }
             });
-            
+
             quote! {
                 let mut total = 0.0_f64;
                 #(total = total.max(#terms);)*
