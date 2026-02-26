@@ -134,7 +134,7 @@ pub trait TotalEnergy<M> {
 
     /// Compute the difference in energy between two microstates.
     ///
-    /// Returns `$ E_\mathrm{final} - E_\mathrm{initial} $`.
+    /// Returns $` E_\mathrm{final} - E_\mathrm{initial} `$.
     #[inline]
     #[must_use]
     fn delta_energy_total(&self, initial_microstate: &M, final_microstate: &M) -> f64 {
