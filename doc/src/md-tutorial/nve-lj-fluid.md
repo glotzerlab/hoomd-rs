@@ -1,0 +1,133 @@
+# NVE Simulation of a Lennard-Jones Fluid
+
+<script type="module">
+import init from 'https://glotzerlab.github.io/hoomd-rs/md-tutorial/nve-lj-fluid.js'
+{{#include ../../scripts/init-wasm-canvas.js}}
+</script>
+{{#include ../../scripts/canvas.html}}
+
+
+## Overview
+
+This tutorial demonstrates how to set up and run a **classical NVE (microcanonical) simulation** of a Lennard-Jones (LJ) fluid using the molecular dynamics (MD) modules of `hoomd-rs`.
+
+We will:
+
+- Create a cubic periodic box filled with Lennard-Jones particles
+- Use the velocity Verlet integrator (`ConstantVolume`)
+- Apply the Bussi thermostat during equilibration (NVT phase)
+- Switch to pure NVE integration after equilibration
+- Include long-range correction (LRC) for the truncated LJ potential
+- Remove center-of-mass momentum and angular momentum drift
+- Print basic thermodynamic quantities every 10,000 steps during production
+
+* Objective: Learn how to combine integrators, thermostats, force computation, and momentum correction in an MD workflow.
+* File: `hoomd-rs/examples/md-tutorial/nve-lj-fluid.rs`
+* Run (interactively – if Bevy visualization is enabled):
+  ```shell
+  cargo run --release --features "bevy" --example nve-lj-fluid
+
+## Dynamic Bodies and Sites
+Following the **Applying-Interactions** tutorial in the `mc-tutorial`, we again use point particles in the three-dimension with each **body** now has extended properties to perform MD simulation, including the momentum, mass and net force. Specifically, that means
+each **body** has `DynamicsPoint<Cartesian<3>>` for its **body properties** type (`B`),
+and a single **site** at the origin (*in the body reference frame*) which has
+`Point<Cartesian<3>>` for its **site properties** (`S`) type.
+### Note
+- `DynamicsPoint<Cartesian<3>>`: contains position, momentum, net force, and mass
+- `Point<Cartesian<3>>`: just position (single site at the origin of the body frame)
+
+The `DynamicsPoint` type is provided by [`hoomd-microstate`] and is the most common choice when doing classical MD with point particles or rigid bodies without internal degrees of freedom.
+
+## Use Declarations
+
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:use}}
+```
+
+## The Simulation Model
+
+Here is the type that holds the simulation model:
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:simulation_struct}}
+```
+
+## Construct the Simulation Model
+
+The `new()` method constructs a new simulation model:
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:simulation_new}}
+```
+
+### Parameters
+
+Assign all the model parameters in one code block so that they are easy to modify:
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:parameters}}
+```
+
+Here, we choose to use reduced Lennard-Jones units: $`\epsilon=1`$, $`\sigma=1`$, $`m = 1`$ => temperature is in units of $`\epsilon/k_BT`$, time in units of $`\sigma \sqrt{(m/\epsilon)}`$. 
+
+We will initialize a system with `nxnxn` particles and then run  `eq_steps` in the NVT ensemble to equilibrate the system at $`T^*=`$ `kt` at the fixed number density $`\rho=`$ `density`, followed by a production run in the NVE ensemble. We use a time step of $`\delta t = `$ `dt` and a temperature damping time constant of $`\tau=`$ `tau_thermostat` for the thermostating. The LJ potential is truncated at the `r_cut`.
+
+### Boundary and spatial data structure
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:boundary}}
+```
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:spatial_data}}
+```
+> [!IMPORTANT]
+> The nominal search radius passed to `VecCell::builder()` must be at least as large as the largest cutoff used in any pairwise interaction.
+Here we use `r_cut`, so we set the search radius accordingly. In *hoomd-rs*, it is *YOUR responsibility* to determine the appropriate `r_cut`.
+
+### Lennard-Jones potential
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:pair_force}}
+```
+We use the 12-6 LJ potential truncated at `r_cut` and wrapped in `PairwiseCutoff` and `Rigid`. 
+
+Although there are no rigid bodies here, `Rigid` is the standard wrapper when sites belong to bodies and when net force calculation on each **body** is needed. `Rigid` type sums over all forces acting on **sites** that constitutes the **body**.
+
+### Long-range correction (LRC)
+Because we truncate the LJ potential, we add the standard mean-field long-range correction to the potential energy per particle:
+
+The correction can be calculated as:
+```math
+U_\mathrm{LRC} = \frac{1}{2} 4 \pi \rho \int_{r_\mathrm{cut}}^{\infty} r^2 U_\mathrm{LJ}(r) dr
+```
+where $`\rho`$ is the number density `density`.
+
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:energy_lrc}}
+```
+
+### Initialize positions
+We initialize the particle position as a simple cubic crystal with the lattice constant of `space`, which will result in the number density `density`.
+
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:particle_positions}}
+```
+
+### Initialize momentums
+We first draw random momentums from the Maxwell–Boltzmann distribution at temperature `kt`, then remove center-of-mass linear and angular momentum to avoid net drift of the system.
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:particle_momenta}}
+```
+
+### Integrator and thermostat
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:integrator}}
+```
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:thermostat}}
+```
+We use the Bussi (stochastic velocity rescaling) thermostat during the equilibration phase.
+
+### Simulation phase tracking
+```rust,ignore
+{{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:phase}}
+```
+We define two phases:
+
+- `Equilibrate`: NVT simulation that equilibrates the system.
+- `SampleNVE`: production NVE run.

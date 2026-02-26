@@ -217,6 +217,24 @@ struct Isoenergy {}
 // ANCHOR: simulation_protocol
 impl LJFluid {
 // ANCHOR_END: simulation_protocol
+
+    // ANCHOR: properties
+    fn calculate_properties(&mut self) -> (f64, f64) {
+        // ANCHOR_END: properties
+        // ANCHOR: potetial_energy
+        let pe = self.force.0.total_energy(&self.microstate);
+        let n = self.microstate.bodies().len();
+        let pe_per_particle = pe / n as f64 + self.energy_lrc;
+        // ANCHOR_END: potetial_energy
+
+        // ANCHOR: current_temeprature
+        let ke = self.integrator.get_translational_kinetic_energy();
+        let dof = self.integrator.get_translational_dof();
+        let kt = 2.0 * ke / dof;
+        (pe_per_particle, kt)
+    }
+    // ANCHOR_END: current_temeprature
+
     // ANCHOR: nvt
     fn nvt(&mut self) {
         // ANCHOR_end: nvt
@@ -257,19 +275,13 @@ impl LJFluid {
     // ANCHOR: nve
     fn nve(&mut self) {
         if self.step() % 10_000 == 0 {
-            let pe = self.force.0.total_energy(&self.microstate);
-            let n = self.microstate.bodies().len();
-            let pe_per_particle = pe / n as f64;
-
-            let ke = self.integrator.get_translational_kinetic_energy();
-            let dof = self.integrator.get_translational_dof();
-            let kt = 2.0 * ke / dof;
+            let (pe, kt) = self.calculate_properties();
 
             println!(
                 "NVE, Step {}, Temperature {}, Potential energy (w/ LRC) per particle {}" ,
                 self.microstate.step() - self.eq_step,
                 kt,
-                pe_per_particle + self.energy_lrc
+                pe
             );
         }
 
@@ -306,10 +318,3 @@ fn main() -> anyhow::Result<()> {
 }
 // ANCHOR_END: main
 // ANCHOR_END: all
-
-#[cfg(feature = "bevy")]
-mod applying_interactions_interactive;
-#[cfg(feature = "bevy")]
-use applying_interactions_interactive::main;
-#[cfg(feature = "bevy")]
-use bevy::prelude::Resource;
