@@ -1,7 +1,7 @@
 //! Test derive(Orientation)
 
-use hoomd_microstate::property::Orientation;
 use assert2::check;
+use hoomd_microstate::property::Orientation;
 
 // Compile error
 // #[derive(Orientation)]

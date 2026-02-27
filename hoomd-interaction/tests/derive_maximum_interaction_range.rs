@@ -1,12 +1,12 @@
 //! Test derive(MaximumInteractionRange)
 
+use assert2::check;
 use hoomd_interaction::{
     MaximumInteractionRange, SitePairEnergy,
     pairwise::{AngularMask, Anisotropic, HardSphere},
     univariate::Boxcar,
 };
 use hoomd_vector::Cartesian;
-use assert2::check;
 
 // Compile error
 // #[derive(MaximumInteractionRange)]
@@ -69,7 +69,11 @@ struct CombinedNamed {
 
 #[test]
 fn combined_named() {
-    let combined_named = CombinedNamed { one: One, two: Two, three: Three};
+    let combined_named = CombinedNamed {
+        one: One,
+        two: Two,
+        three: Three,
+    };
     check!(combined_named.maximum_interaction_range() == 3.0);
 }
 
@@ -82,7 +86,6 @@ fn combined_unnamed() {
     check!(combined_unnamed.maximum_interaction_range() == 3.0);
 }
 
-
 #[derive(MaximumInteractionRange)]
 struct SitePair {
     maximum_interaction_range: f64,
@@ -90,7 +93,9 @@ struct SitePair {
 
 #[test]
 fn site_pair() {
-    let site_pair = SitePair { maximum_interaction_range: 5.0, };
+    let site_pair = SitePair {
+        maximum_interaction_range: 5.0,
+    };
     check!(site_pair.maximum_interaction_range() == 5.0);
 }
 

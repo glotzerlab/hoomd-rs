@@ -1,7 +1,7 @@
 //! Test derive(Position)
 
-use hoomd_microstate::property::Position;
 use assert2::check;
+use hoomd_microstate::property::Position;
 
 // Compile error
 // #[derive(Position)]
