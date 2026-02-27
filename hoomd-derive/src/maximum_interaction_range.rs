@@ -19,8 +19,7 @@ pub(crate) fn maximum_interaction_range(input: DeriveInput) -> TokenStream {
             return quote_spanned! {
                 name.span() =>
                 compile_error!("derive(MaximumInteractionRange) applies only to struct types.");
-            }
-            .into();
+            };
         }
     };
 

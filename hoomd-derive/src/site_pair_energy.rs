@@ -183,15 +183,10 @@ fn is_only_infinite_or_zero(fields: &Fields) -> TokenStream {
             let terms = fields.named.iter().map(|f| {
                 let ty = &f.ty;
                 quote_spanned! {f.span()=>
-                    #ty::is_only_infinite_or_zero()
+                    <#ty as ::hoomd_interaction::SitePairEnergy<__S>>::is_only_infinite_or_zero()
                 }
             });
 
-            // quote! {
-            //     let mut result = true;
-            //     #(result = result && #terms;)*
-            //     result
-            // }
             quote! {
                 #(#terms)&&*
             }

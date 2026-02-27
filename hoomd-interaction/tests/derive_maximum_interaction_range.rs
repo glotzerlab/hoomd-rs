@@ -1,6 +1,11 @@
 //! Test derive(MaximumInteractionRange)
 
-use hoomd_interaction::MaximumInteractionRange;
+use hoomd_interaction::{
+    MaximumInteractionRange, SitePairEnergy,
+    pairwise::{AngularMask, Anisotropic, HardSphere},
+    univariate::Boxcar,
+};
+use hoomd_vector::Cartesian;
 use assert2::check;
 
 // Compile error
@@ -87,4 +92,15 @@ struct SitePair {
 fn site_pair() {
     let site_pair = SitePair { maximum_interaction_range: 5.0, };
     check!(site_pair.maximum_interaction_range() == 5.0);
+}
+
+// Test that the derive macro doesn't have issues with Anisotropic<AngularMask...
+// In some contexts, it needs to be used as Anisotropic::<AngularMask..., but cargo fmt
+// removes the :: when not needed.
+
+#[allow(dead_code, reason = "The test passes if it compiles")]
+#[derive(MaximumInteractionRange, SitePairEnergy)]
+struct SitePairInteraction {
+    hard_disk: HardSphere,
+    angular_mask: Anisotropic<AngularMask<Boxcar, Cartesian<2>>>,
 }
