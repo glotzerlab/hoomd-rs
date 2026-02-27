@@ -54,12 +54,12 @@
 //! let position = vec![[5.0_f32, 3.0, -4.0], [-2.0, 3.0, -6.0]];
 //!
 //! let mut gsd_file = GsdFile::create_new(path, "example", "hoomd", (1, 4))?;
-//! gsd_file.write_scalars("configuration/step", &[100_000_u64])?;
+//! gsd_file.write_scalars("configuration/step", [100_000_u64])?;
 //! gsd_file.write_scalars(
 //!     "configuration/box",
-//!     &[10.0_f32, 20.0, 15.0, 0.0, 0.0, 0.0],
+//!     [10.0_f32, 20.0, 15.0, 0.0, 0.0, 0.0],
 //! )?;
-//! gsd_file.write_arrays("particles/position", &position)?;
+//! gsd_file.write_arrays("particles/position", position.iter().copied())?;
 //! gsd_file.end_frame()?;
 //! # Ok(())
 //! # }
@@ -83,3 +83,4 @@
 //! when mapping vectors from `hoomd-vector`.
 
 pub mod file_layer;
+pub mod hoomd;

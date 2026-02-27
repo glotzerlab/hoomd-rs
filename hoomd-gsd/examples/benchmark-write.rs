@@ -47,7 +47,7 @@ fn benchmark(
     let t1 = Instant::now();
     for _ in 0..n_frames {
         for name in &names {
-            gsd_file.write_scalars(name, &data)?;
+            gsd_file.write_scalars(name, data.iter().copied() )?;
         }
         gsd_file.end_frame()?;
     }
