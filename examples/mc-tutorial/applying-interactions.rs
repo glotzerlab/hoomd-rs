@@ -12,6 +12,10 @@ use hoomd_microstate::{
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
 use hoomd_vector::Cartesian;
+#[cfg(not(feature = "bevy"))]
+use hoomd_gsd::hoomd::HoomdGsdFile;
+#[cfg(not(feature = "bevy"))]
+use hoomd_microstate::AppendMicrostate;
 // ANCHOR_END: use
 
 // Remove the cfg_attr(...) line when using this code outside the hoomd-rs/examples directory.
@@ -163,10 +167,14 @@ impl Simulation for Fill {
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
     let mut simulation = Fill::new()?;
-    // TODO: Write GSD file.
+    let mut hoomd_gsd_file = HoomdGsdFile::create("applying-interactions.gsd")?;
 
     for _ in 0..100_000 {
         simulation.advance()?;
+
+        if simulation.step().is_multiple_of(1_000) {
+            hoomd_gsd_file.append_microstate(&simulation.microstate)?;
+        }
     }
 
     Ok(())

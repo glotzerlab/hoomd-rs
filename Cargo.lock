@@ -3598,6 +3598,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "clap",
+ "hoomd-vector",
  "itertools",
  "memmap2",
  "tempfile",
@@ -3691,6 +3692,7 @@ dependencies = [
  "divan",
  "hoomd-derive",
  "hoomd-geometry",
+ "hoomd-gsd",
  "hoomd-manifold",
  "hoomd-rand",
  "hoomd-spatial",

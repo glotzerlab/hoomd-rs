@@ -18,6 +18,8 @@ itertools.workspace = true
 memmap2 = "0.9.5"
 thiserror.workspace = true
 
+hoomd-vector.workspace = true
+
 [dev-dependencies]
 anyhow.workspace = true
 clap.workspace = true

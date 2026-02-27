@@ -11,7 +11,7 @@
 set -euo pipefail
 
 export RUSTDOCFLAGS="--html-in-header katex.html"
-for package in derive gsd linear-algebra simulation utility rand vector manifold spatial \
+for package in derive linear-algebra simulation utility rand vector gsd manifold spatial \
                geometry microstate interaction mc bevy
 do
   cargo doc --package hoomd-$package --lib --no-deps

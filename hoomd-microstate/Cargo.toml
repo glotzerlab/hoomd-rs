@@ -21,6 +21,7 @@ thiserror.workspace = true
 
 hoomd-derive.workspace = true
 hoomd-geometry.workspace = true
+hoomd-gsd.workspace = true
 hoomd-manifold.workspace = true
 hoomd-spatial.workspace = true
 hoomd-utility.workspace = true

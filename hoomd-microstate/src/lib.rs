@@ -146,10 +146,17 @@
 //! ## Spatial searches
 //!
 //! TODO: Implement spatial search, then document.
+//!
+//! ## I/O
+//!
+//! TODO.
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use hoomd_gsd::hoomd::{AppendError, Frame};
+
+mod append;
 pub mod boundary;
 mod microstate;
 pub mod property;
@@ -367,4 +374,8 @@ pub enum Error {
     /// Failed to update a body in a [`Microstate`].
     #[error("failed to update body (tag={0})")]
     UpdateBody(usize, #[source] boundary::Error),
+}
+
+pub trait AppendMicrostate<B, S, X, C> {
+    fn append_microstate(&mut self, microstate: &Microstate<B, S, X, C>) -> Result<Frame<'_>, AppendError>;
 }

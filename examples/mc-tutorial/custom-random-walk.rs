@@ -12,6 +12,10 @@ use hoomd_microstate::{
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::AllPairs;
 use hoomd_vector::{Cartesian, Metric};
+#[cfg(not(feature = "bevy"))]
+use hoomd_gsd::hoomd::HoomdGsdFile;
+#[cfg(not(feature = "bevy"))]
+use hoomd_microstate::AppendMicrostate;
 // ANCHOR_END: use
 
 // ANCHOR: boundary_struct
@@ -149,10 +153,14 @@ impl Simulation for CustomRandomWalk {
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
     let mut simulation = CustomRandomWalk::new()?;
-    // TODO: Write GSD file.
+    let mut hoomd_gsd_file = HoomdGsdFile::create("custom-random-walk.gsd")?;
 
-    for _ in 0..100_000 {
+    for _ in 0..1_000_000 {
         simulation.advance()?;
+
+        if simulation.step().is_multiple_of(100_000) {
+            hoomd_gsd_file.append_microstate(&simulation.microstate);
+        }
     }
 
     Ok(())
