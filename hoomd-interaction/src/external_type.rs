@@ -179,7 +179,7 @@ where
 
     /// Compute the difference in energy between two microstates.
     ///
-    /// Returns `$ E_\mathrm{final} - E_\mathrm{initial} $`.
+    /// Returns $` E_\mathrm{final} - E_\mathrm{initial} `$.
     ///
     /// # Example
     ///

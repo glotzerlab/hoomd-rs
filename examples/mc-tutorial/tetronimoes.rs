@@ -5,8 +5,8 @@ use std::f64::consts::PI;
 
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    External, MaximumInteractionRange, PairwiseCutoff, TotalEnergy,
-    external::Linear, pairwise::Isotropic, univariate::Boxcar,
+    DeltaEnergyOne, External, MaximumInteractionRange, PairwiseCutoff,
+    TotalEnergy, external::Linear, pairwise::Isotropic, univariate::Boxcar,
 };
 use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{
@@ -74,16 +74,19 @@ struct Tetronimoes {
         Closed<Rectangle>,
     >,
     /// How sites interact with other sites and fields.
-    hamiltonian: (
-        External<Linear<PositionVector>>,
-        PairwiseCutoff<Isotropic<Boxcar>>,
-    ),
+    hamiltonian: Hamiltonian,
     /// Trial moves to apply.
     sweep: Sweep<DiscreteRotateOrTranslate>,
     /// Temperature set point.
     macrostate: Isothermal,
     /// Tetronimo shapes.
     template_sites: Vec<Vec<Point<PositionVector>>>,
+}
+
+#[derive(TotalEnergy, DeltaEnergyOne, MaximumInteractionRange)]
+struct Hamiltonian {
+    linear: External<Linear<Cartesian<2>>>,
+    pairwise_cutoff: PairwiseCutoff<Isotropic<Boxcar>>,
 }
 // ANCHOR_END: simulation_struct
 
@@ -117,7 +120,10 @@ impl Tetronimoes {
             r_cut: sigma,
         });
 
-        let hamiltonian = (linear, pairwise_cutoff);
+        let hamiltonian = Hamiltonian {
+            linear,
+            pairwise_cutoff,
+        };
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: microstate
@@ -230,7 +236,7 @@ impl Simulation for Tetronimoes {
         // ANCHOR_END: apply
 
         // ANCHOR: reset
-        if self.hamiltonian.1.total_energy(&self.microstate) > 20_000.0 {
+        if self.hamiltonian.linear.total_energy(&self.microstate) > 20_000.0 {
             self.microstate.clear();
         }
 

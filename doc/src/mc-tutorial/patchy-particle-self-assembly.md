@@ -53,6 +53,18 @@ The **sites** are in this tutorial are represented by disks with both
 position and orientation. Therefore, use `OrientedPoint` for both the **body**
 and **site** properties. Use `Angle` to represent rotations in 2D.
 
+## Site Pair Interaction
+
+The `SitePairInteraction` type combines a hard disk overlap with attractive
+patches:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:site_pair_interaction}}
+```
+Use the provided derive macros to implement the traits `MaximumInteractionRange`
+and `SitePairEnergy` so that this type may be used with `PairwiseCutoff`.
+
+The [Hamiltonian](#hamiltonian) section explains each term in more detail.
+
 ## Construct the Simulation Model
 
 The `new()` method constructs a new simulation model:
@@ -109,9 +121,10 @@ frame.
 #### Combined Pairwise Potential
 
 The full Hamiltonian of the system is the sum of these two pairwise interaction terms.
-You could use `hamiltonian = (PairwiseCutoff(hard_disk), PairwiseCutoff(angular_mask))`
+You could use `hamiltonian = Hamiltonian { hard_disk, angular_mask }`
 to add the terms (as demonstrated in [Applying Interactions]), but it is slightly
-faster to use one `PairwiseCutoff` that operates on a tuple:
+faster to use one `PairwiseCutoff` on a type that holds multiple
+site pair interactions:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/patchy-particle-self-assembly.rs:hamiltonian}}
 ```
@@ -121,7 +134,7 @@ $`\left( \sum U^A_{ij} + \sum U^B_{ij} \right)`$ while the latter performs one l
 terms in the loop body $`\left( \sum U^A_{ij} + U^B_{ij} \right)`$.
 
 > [!TIP]
-> Always list hard shape potentials first in the tuple. If the hard shapes
+> Always list hard shape potentials first in struct. If the hard shapes
 > overlap, *hoomd-rs* can assume that the move will be rejected and skip the
 > computation of the following terms.
 

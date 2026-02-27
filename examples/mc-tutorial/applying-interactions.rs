@@ -2,8 +2,8 @@
 // ANCHOR: use
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    External, MaximumInteractionRange, PairwiseCutoff, TotalEnergy,
-    external::Linear, pairwise::Isotropic, univariate::Boxcar,
+    DeltaEnergyOne, External, MaximumInteractionRange, PairwiseCutoff,
+    TotalEnergy, external::Linear, pairwise::Isotropic, univariate::Boxcar,
 };
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
@@ -26,10 +26,7 @@ struct Fill {
         Closed<Rectangle>,
     >,
     /// How sites interact with other sites and fields.
-    hamiltonian: (
-        External<Linear<Cartesian<2>>>,
-        PairwiseCutoff<Isotropic<Boxcar>>,
-    ),
+    hamiltonian: Hamiltonian,
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<Cartesian<2>>>,
     /// Temperature set point.
@@ -72,7 +69,10 @@ impl Fill {
         // ANCHOR_END: pair
 
         // ANCHOR: hamiltonian
-        let hamiltonian = (linear, pairwise_cutoff);
+        let hamiltonian = Hamiltonian {
+            linear,
+            pairwise_cutoff,
+        };
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: sweep
@@ -109,6 +109,14 @@ impl Fill {
 }
 // ANCHOR_END: initialize_struct
 
+// ANCHOR: hamiltonian_struct
+#[derive(TotalEnergy, DeltaEnergyOne, MaximumInteractionRange)]
+struct Hamiltonian {
+    linear: External<Linear<Cartesian<2>>>,
+    pairwise_cutoff: PairwiseCutoff<Isotropic<Boxcar>>,
+}
+// ANCHOR_END: hamiltonian_struct
+
 // ANCHOR: impl_simulation
 impl Simulation for Fill {
     // ANCHOR_END: impl_simulation
@@ -134,7 +142,7 @@ impl Simulation for Fill {
         // ANCHOR_END: apply
 
         // ANCHOR: reset
-        if self.hamiltonian.1.total_energy(&self.microstate) > 20_000.0 {
+        if self.hamiltonian.linear.total_energy(&self.microstate) > 20_000.0 {
             self.microstate.clear();
         }
 

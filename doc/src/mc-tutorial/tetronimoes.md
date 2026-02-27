@@ -74,7 +74,8 @@ moves because the result is more visually interesting.
 
 ## The Simulation Model
 
-Here is the type that holds the simulation model:
+Here is the type that holds the simulation model along with the corresponding
+Hamiltonian:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:simulation_struct}}
 ```

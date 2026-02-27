@@ -19,12 +19,14 @@ pub mod pairwise;
 pub mod univariate;
 
 mod external_type;
-mod hamiltonian;
 mod pairwise_cutoff;
 mod zero;
 
 pub use external_type::External;
-pub use hoomd_derive::MaximumInteractionRange;
+pub use hoomd_derive::{
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, MaximumInteractionRange, SitePairEnergy,
+    TotalEnergy,
+};
 pub use pairwise_cutoff::PairwiseCutoff;
 pub use zero::Zero;
 
@@ -71,6 +73,63 @@ pub use zero::Zero;
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Derive macro
+///
+/// Use the [`TotalEnergy`](macro@TotalEnergy) derive macro to automatically implement
+/// the `TotalEnergy` trait on a type. The derived implementation sums the result of
+/// `total_energy` over all fields in the struct (in the order in which fields
+/// are named in the struct definition). The sum short circuits and returns
+/// `f64::INFINITY` when any one field returns infinity.
+/// ```
+/// use hoomd_interaction::{
+///     External, PairwiseCutoff, TotalEnergy, external::Linear,
+///     pairwise::Isotropic, univariate::Boxcar,
+/// };
+/// use hoomd_microstate::{Body, Microstate, property::Point};
+/// use hoomd_vector::Cartesian;
+///
+/// #[derive(TotalEnergy)]
+/// struct Hamiltonian {
+///     linear: External<Linear<Cartesian<2>>>,
+///     pairwise_cutoff: PairwiseCutoff<Isotropic<Boxcar>>,
+/// }
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut microstate = Microstate::new();
+/// microstate.extend_bodies([
+///     Body::point(Cartesian::from([0.0, 4.0])),
+///     Body::point(Cartesian::from([1.0, 4.0])),
+/// ])?;
+///
+/// let epsilon = 2.0;
+/// let (left, right) = (0.0, 1.5);
+/// let boxcar = Boxcar {
+///     epsilon,
+///     left,
+///     right,
+/// };
+/// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+///     interaction: boxcar,
+///     r_cut: right,
+/// });
+///
+/// let linear = External(Linear {
+///     alpha: 1.0,
+///     plane_origin: Cartesian::default(),
+///     plane_normal: [0.0, 1.0].try_into()?,
+/// });
+///
+/// let hamiltonian = Hamiltonian {
+///     pairwise_cutoff,
+///     linear,
+/// };
+///
+/// let total_energy = hamiltonian.total_energy(&microstate);
+/// assert_eq!(total_energy, 10.0);
+/// # Ok(())
+/// # }
+/// ```
 pub trait TotalEnergy<M> {
     /// Compute the energy.
     #[must_use]
@@ -78,7 +137,7 @@ pub trait TotalEnergy<M> {
 
     /// Compute the difference in energy between two microstates.
     ///
-    /// Returns `$ E_\mathrm{final} - E_\mathrm{initial} $`.
+    /// Returns $` E_\mathrm{final} - E_\mathrm{initial} `$.
     #[inline]
     #[must_use]
     fn delta_energy_total(&self, initial_microstate: &M, final_microstate: &M) -> f64 {
@@ -395,6 +454,31 @@ pub trait SiteEnergy<S> {
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Derive macro
+///
+/// Use the [`SitePairEnergy`](macro@SitePairEnergy) derive macro to
+/// automatically implement the `SitePairEnergy` trait on a type.
+/// The implemented `site_pair_energy` sums the result of `site_pair_energy`
+/// over all fields. The implementation returns early when any one field returns
+/// infinity. The implemented `site_pair_energy_initial` behaves similarly.
+/// The derived `is_only_infinite_or_zero` returns true only when all fields
+/// also return true for the same method.
+///
+/// ```
+/// use hoomd_interaction::{
+///     MaximumInteractionRange, SitePairEnergy,
+///     pairwise::{AngularMask, Anisotropic, HardSphere},
+///     univariate::Boxcar,
+/// };
+/// use hoomd_vector::Cartesian;
+///
+/// #[derive(MaximumInteractionRange, SitePairEnergy)]
+/// struct SitePairInteraction {
+///     hard_disk: HardSphere,
+///     angular_mask: Anisotropic<AngularMask<Boxcar, Cartesian<2>>>,
+/// }
+/// ```
 pub trait SitePairEnergy<S> {
     /// Evaluate the energy contribution from a pair of sites.
     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64;
@@ -432,15 +516,43 @@ pub trait SitePairEnergy<S> {
 /// Largest distance between two sites where the pairwise interaction may be non-zero.
 ///
 /// [`PairwiseCutoff`] uses the provided maximum interaction range to
-/// efficiently compute only the needed interactions. All types that
-/// implement `SitePair*` traits must also implement
-/// [`MaximumInteractionRange`].
+/// efficiently compute only the needed interactions. All types that implement
+/// `SitePair*` traits must also implement [`MaximumInteractionRange`].
+///
+/// # Derive macro
+///
+/// Use the [`MaximumInteractionRange`](macro@MaximumInteractionRange) derive macro to
+/// automatically implement the `MaximumInteractionRange` trait on a type.
+///
+/// When the type has a field named `maximum_interaction_range`, the derived implementation
+/// returns it. When there is no such field, the derived implementation takes
+/// the maximum of the `maximum_interaction_range` over all fields in the struct.
+/// The former case is intended for use with custom site pair potentials and
+/// the latter is intended for use with multi-term Hamiltonian types.
+/// ```
+/// use hoomd_interaction::{
+///     External, MaximumInteractionRange, PairwiseCutoff, external::Linear,
+/// };
+/// use hoomd_vector::Cartesian;
+///
+/// #[derive(MaximumInteractionRange)]
+/// struct SitePairInteraction {
+///     // ...
+///     maximum_interaction_range: f64,
+/// }
+///
+/// #[derive(MaximumInteractionRange)]
+/// struct Hamiltonian {
+///     linear: External<Linear<Cartesian<2>>>,
+///     pairwise_cutoff: PairwiseCutoff<SitePairInteraction>,
+/// }
+/// ```
 pub trait MaximumInteractionRange {
     /// The largest distance between two sites where the pairwise interaction may be non-zero.
     fn maximum_interaction_range(&self) -> f64;
 }
 
-/// Compute the change energy as a function of a single modified body.
+/// Compute the change in energy as a function of a single modified body.
 ///
 /// Some trial moves apply to a single body at a time and use a Hamiltonian that
 /// implements `DeltaEnergyOne` to efficiently compute the change in energy.
@@ -451,6 +563,68 @@ pub trait MaximumInteractionRange {
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 ///
 /// See the [Implementors](#implementors) section below for examples.
+///
+/// # Derive macro
+///
+/// Use the [`DeltaEnergyOne`](macro@DeltaEnergyOne) derive macro to
+/// automatically implement the `DeltaEnergyOne` trait on a type. The derived
+/// implementation sums the result of `delta_energy_one` over all fields in the
+/// struct (in the order in which fields are named in the struct definition).
+/// The sum short circuits and returns `f64::INFINITY` when any one field
+/// returns infinity.
+/// ```
+/// use hoomd_interaction::{
+///     DeltaEnergyOne, External, PairwiseCutoff, external::Linear,
+///     pairwise::Isotropic, univariate::Boxcar,
+/// };
+/// use hoomd_microstate::{Body, Microstate, property::Point};
+/// use hoomd_vector::Cartesian;
+///
+/// #[derive(DeltaEnergyOne)]
+/// struct Hamiltonian {
+///     linear: External<Linear<Cartesian<2>>>,
+///     pairwise_cutoff: PairwiseCutoff<Isotropic<Boxcar>>,
+/// }
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut microstate = Microstate::new();
+/// microstate.extend_bodies([
+///     Body::point(Cartesian::from([0.0, 0.0])),
+///     Body::point(Cartesian::from([1.0, 0.0])),
+/// ])?;
+///
+/// let epsilon = 2.0;
+/// let (left, right) = (0.0, 1.5);
+/// let boxcar = Boxcar {
+///     epsilon,
+///     left,
+///     right,
+/// };
+/// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+///     interaction: boxcar,
+///     r_cut: right,
+/// });
+///
+/// let linear = External(Linear {
+///     alpha: 10.0,
+///     plane_origin: Cartesian::default(),
+///     plane_normal: [0.0, 1.0].try_into()?,
+/// });
+///
+/// let hamiltonian = Hamiltonian {
+///     pairwise_cutoff,
+///     linear,
+/// };
+///
+/// let delta_energy = hamiltonian.delta_energy_one(
+///     &microstate,
+///     0,
+///     &Body::point([-1.0, 0.0].into()),
+/// );
+/// assert_eq!(delta_energy, -2.0);
+/// # Ok(())
+/// # }
+/// ```
 pub trait DeltaEnergyOne<B, S, X, C> {
     /// Compute the change in energy.
     ///
@@ -472,7 +646,7 @@ pub trait DeltaEnergyOne<B, S, X, C> {
     ) -> f64;
 }
 
-/// Compute the change energy when a single body is inserted.
+/// Compute the change in energy when a single body is inserted.
 ///
 /// Some trial moves insert a single body at a time and use a Hamiltonian that
 /// implements `DeltaEnergyInsert` to efficiently compute the change in energy.
@@ -484,6 +658,62 @@ pub trait DeltaEnergyOne<B, S, X, C> {
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 ///
 /// See the [Implementors](#implementors) section below for examples.
+///
+/// # Derive macro
+///
+/// Use the [`DeltaEnergyInsert`](macro@DeltaEnergyInsert) derive macro to
+/// automatically implement the `DeltaEnergyInsert` trait on a type. The derived
+/// implementation sums the result of `delta_energy_insert` over all fields in the
+/// struct (in the order in which fields are named in the struct definition).
+/// The sum short circuits and returns `f64::INFINITY` when any one field
+/// returns infinity.
+/// ```
+/// use hoomd_interaction::{
+///     DeltaEnergyInsert, External, PairwiseCutoff, external::Linear,
+///     pairwise::Isotropic, univariate::Boxcar,
+/// };
+/// use hoomd_microstate::{Body, Microstate, property::Point};
+/// use hoomd_vector::Cartesian;
+///
+/// #[derive(DeltaEnergyInsert)]
+/// struct Hamiltonian {
+///     linear: External<Linear<Cartesian<2>>>,
+///     pairwise_cutoff: PairwiseCutoff<Isotropic<Boxcar>>,
+/// }
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut microstate = Microstate::new();
+/// microstate.extend_bodies([Body::point(Cartesian::from([0.0, 4.0]))])?;
+///
+/// let epsilon = 2.0;
+/// let (left, right) = (0.0, 1.5);
+/// let boxcar = Boxcar {
+///     epsilon,
+///     left,
+///     right,
+/// };
+/// let pairwise_cutoff = PairwiseCutoff(Isotropic {
+///     interaction: boxcar,
+///     r_cut: right,
+/// });
+///
+/// let linear = External(Linear {
+///     alpha: 1.0,
+///     plane_origin: Cartesian::default(),
+///     plane_normal: [0.0, 1.0].try_into()?,
+/// });
+///
+/// let hamiltonian = Hamiltonian {
+///     pairwise_cutoff,
+///     linear,
+/// };
+///
+/// let new_body = Body::point(Cartesian::from([1.0, 4.0]));
+/// let delta_energy = hamiltonian.delta_energy_insert(&microstate, &new_body);
+/// assert_eq!(delta_energy, 6.0);
+/// # Ok(())
+/// # }
+/// ```
 pub trait DeltaEnergyInsert<B, S, X, C> {
     /// Compute the change in energy.
     ///
@@ -503,7 +733,7 @@ pub trait DeltaEnergyInsert<B, S, X, C> {
     ) -> f64;
 }
 
-/// Compute the change energy when a single body is removed.
+/// Compute the change in energy when a single body is removed.
 ///
 /// Some trial moves remove a single body at a time and use a Hamiltonian that
 /// implements `DeltaEnergyRemove` to efficiently compute the change in energy.
@@ -514,6 +744,28 @@ pub trait DeltaEnergyInsert<B, S, X, C> {
 /// * `C`: The [`boundary`](hoomd_microstate::boundary) condition type.
 ///
 /// See the [Implementors](#implementors) section below for examples.
+///
+/// # Derive macro
+///
+/// Use the [`DeltaEnergyRemove`](macro@DeltaEnergyRemove) derive macro to
+/// automatically implement the `DeltaEnergyRemove` trait on a type. The derived
+/// implementation sums the result of `delta_energy_remove` over all fields in the
+/// struct (in the order in which fields are named in the struct definition).
+/// The sum short circuits and returns `f64::INFINITY` when any one field
+/// returns infinity.
+/// ```
+/// use hoomd_interaction::{
+///     DeltaEnergyRemove, External, PairwiseCutoff, external::Linear,
+///     pairwise::Isotropic, univariate::Boxcar,
+/// };
+/// use hoomd_vector::Cartesian;
+///
+/// #[derive(DeltaEnergyRemove)]
+/// struct Hamiltonian {
+///     linear: External<Linear<Cartesian<2>>>,
+///     pairwise_cutoff: PairwiseCutoff<Isotropic<Boxcar>>,
+/// }
+/// ```
 pub trait DeltaEnergyRemove<B, S, X, C> {
     /// Compute the change in energy.
     ///
