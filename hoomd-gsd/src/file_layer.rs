@@ -193,9 +193,6 @@ pub enum WriteError {
     Encode(String, u64, #[source] EncodeError),
 }
 
-// FUTURE: Replace ArrayChunks with itertools implementation when available
-// FUTURE: Replace ArrayChunks with std library implementation when iter_array_chunks is stabilized
-
 /// Iterate over arrays of size M
 struct ArrayChunks<I, const M: usize> {
     /// The iterator over scalars
@@ -1723,19 +1720,20 @@ impl GsdFile {
     where
         T: Type,
         I: IntoIterator<Item = T>,
-        I::IntoIter: ExactSizeIterator,
     {
         let data = data.into_iter();
 
         self.write_details(
             name,
-            data.len() as u64,
             1,
             T::gsd_data_type(),
-            |buffer: &mut Vec<u8>| {
+            |buffer: &mut Vec<u8>| -> u64 {
+                let mut len = 0;
                 for value in data {
                     value.append_ne_bytes(buffer);
+                    len += 1;
                 }
+                len
             },
         )
         .map_err(|e| WriteError::Encode(name.into(), self.buffer_frame, e))
@@ -1787,7 +1785,6 @@ impl GsdFile {
     where
         T: Type,
         I: IntoIterator<Item = [T; M]>,
-        I::IntoIter: ExactSizeIterator,
     {
         if M == 0 {
             return Err(WriteError::Encode(
@@ -1807,15 +1804,17 @@ impl GsdFile {
 
         self.write_details(
             name,
-            data.len() as u64,
             columns,
             T::gsd_data_type(),
-            |buffer: &mut Vec<u8>| {
+            |buffer: &mut Vec<u8>| -> u64 {
+                let mut len = 0;
                 for element in data {
+                    len += 1;
                     for value in element {
                         value.append_ne_bytes(buffer);
                     }
                 }
+                len
             },
         )
         .map_err(|e| WriteError::Encode(name.into(), self.buffer_frame, e))
@@ -1858,56 +1857,40 @@ impl GsdFile {
     pub fn write_string(&mut self, name: &str, data: &str) -> Result<(), WriteError> {
         let data = data.as_bytes();
 
-        self.write_details(name, data.len() as u64, 1, 11, |buffer: &mut Vec<u8>| {
+        self.write_details(name, 1, 11, |buffer: &mut Vec<u8>| -> u64 {
             buffer.extend(data);
+            data.len() as u64
         })
         .map_err(|e| WriteError::Encode(name.into(), self.buffer_frame, e))
     }
 
     /// Common code used in all write_ methods.
+    ///
+    /// The `append` callable must return the number of rows added to the buffer.
     fn write_details<F>(
         &mut self,
         name: &str,
-        rows: u64,
         columns: u32,
         data_type: u8,
         append: F,
     ) -> Result<(), EncodeError>
     where
-        F: FnOnce(&mut Vec<u8>),
+        F: FnOnce(&mut Vec<u8>) -> u64,
     {
         if self.mode != Mode::Write {
             return Err(EncodeError::NotWritable);
         }
 
+        let location =  self.file_len + self.data_buffer.len() as u64;
+
         let id = self.get_id(name)?;
 
-        // write_scalars doesn't actually write any data to the file itself. For
-        // performance, it buffers all writes. Above, `get_id` appended any
-        // new names to `self.name_list.buffer`. Now, `write_scalars` needs to
-        // construct the index entry and put the bytes of the array in the data
-        // buffer. `sync_all` will write the data buffer first, so all index
-        // entries can be constructed with the known location:
-        // file_len + currently buffered bytes.
-        let index_entry = IndexEntry {
-            frame: self.buffer_frame,
-            n: rows,
-            m: columns,
-            location: self.file_len + self.data_buffer.len() as u64,
-            id,
-            data_type,
-            flags: 0,
-        };
-
-        if !self.index.frame_names.insert(index_entry.id) {
+        if !self.index.frame_names.insert(id) {
             return Err(EncodeError::DuplicateChunkName(
                 name.into(),
                 self.buffer_frame,
             ));
         }
-
-        self.index.buffer.push(index_entry);
-        self.index.pending += 1;
 
         // This implementation is a departure from the GSD C implementation
         // which would eagerly write large arrays directly to the file before
@@ -1920,7 +1903,27 @@ impl GsdFile {
         // buffer, but flushes the buffer first in, first out. That way, no
         // index entries need to be patched up. When the buffer is flushed here,
         // we do need to flag to `end_frame` that `sync_all` needs to be called.
-        append(&mut self.data_buffer);
+        let rows = append(&mut self.data_buffer);
+
+        // write_* doesn't actually write any data to the file itself. For
+        // performance, it buffers all writes. Above, `get_id` appended any
+        // new names to `self.name_list.buffer`. Now, `write_scalars` needs to
+        // construct the index entry and put the bytes of the array in the data
+        // buffer. `sync_all` will write the data buffer first, so all index
+        // entries can be constructed with the known location:
+        // file_len + currently buffered bytes.
+        let index_entry = IndexEntry {
+            frame: self.buffer_frame,
+            n: rows,
+            m: columns,
+            location,
+            id,
+            data_type,
+            flags: 0,
+        };
+
+        self.index.buffer.push(index_entry);
+        self.index.pending += 1;
 
         if self.data_buffer.len() >= self.maximum_write_buffer_size {
             self.flush_data()?;
