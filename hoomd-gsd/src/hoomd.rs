@@ -23,7 +23,7 @@ pub enum AppendError {
     /// This data chunk does not match the dimensions of those previously written.
     #[error("The length of data chunk {0} does not match those previously written")]
     InconsistentLength(String),
-    
+
     /// Write to the file.
     #[error("cannot write to the file")]
     Write(#[from] WriteError),
@@ -38,7 +38,6 @@ pub enum AppendError {
 }
 
 impl HoomdGsdFile {
-    
     /// Overwrite an existing HOOMD GSD file (or create a new file).
     ///
     /// Creates a GSD file at the given path, overwriting any file that may already
@@ -66,9 +65,7 @@ impl HoomdGsdFile {
     /// * The file is corrupt, unreadable, or there is an I/O error (see
     ///   [`DecodeError`]).
     #[inline]
-    pub fn create<P: AsRef<Path>>(
-        path: P,
-    ) -> Result<Self, OpenError> {
+    pub fn create<P: AsRef<Path>>(path: P) -> Result<Self, OpenError> {
         let version = env!("CARGO_PKG_VERSION");
         let application = format!("hoomd-rs {version}");
         let gsd_file = GsdFile::create(path, &application, "hoomd", (1, 4))?;
@@ -87,80 +84,97 @@ impl HoomdGsdFile {
 }
 
 impl Frame<'_> {
-    pub fn configuration_dimensions(mut self, dimensions: u8) -> Result<Self, AppendError>
-    {
-    let chunk_name = "configuration/dimensions";
+    pub fn configuration_dimensions(self, dimensions: u8) -> Result<Self, AppendError> {
+        let chunk_name = "configuration/dimensions";
 
-    if dimensions < 2 || dimensions > 3 {
-        return Err(AppendError::InvalidDimensions(dimensions));
+        if dimensions < 2 || dimensions > 3 {
+            return Err(AppendError::InvalidDimensions(dimensions));
+        }
+
+        self.hoomd_gsd_file
+            .gsd_file
+            .write_scalars(chunk_name, [dimensions])?;
+
+        Ok(self)
     }
 
-    self.hoomd_gsd_file.gsd_file.write_scalars(chunk_name, [dimensions])?;
-    
-    Ok(self)
+    pub fn configuration_box(self, values: [f64; 6]) -> Result<Self, AppendError> {
+        let chunk_name = "configuration/box";
+
+        let values: [f32; 6] = array::from_fn(|i| values[i] as f32);
+        self.hoomd_gsd_file
+            .gsd_file
+            .write_scalars(chunk_name, values)?;
+
+        Ok(self)
     }
 
-    pub fn configuration_box(mut self, values: [f64; 6]) -> Result<Self, AppendError>
-    {
-    let chunk_name = "configuration/box";
+    fn validate_and_write_position_n<T>(
+        &mut self,
+        data: &Vec<T>,
+        chunk_name: &str,
+    ) -> Result<(), AppendError> {
+        if let Some(n) = self.particles_n {
+            if data.len() != n as usize {
+                return Err(AppendError::InconsistentLength(chunk_name.to_string()));
+            }
+        } else {
+            let n = data
+                .len()
+                .try_into()
+                .map_err(|e| AppendError::ChunkTooLarge(data.len(), chunk_name.to_string(), e))?;
+            self.hoomd_gsd_file
+                .gsd_file
+                .write_scalars("particles/N", [n])?;
+            self.particles_n = Some(n);
+        }
 
-    let values: [f32; 6] = array::from_fn(|i| values[i] as f32);
-    self.hoomd_gsd_file.gsd_file.write_scalars(chunk_name, values)?;
-    
-    Ok(self)
+        Ok(())
     }
 
     pub fn particles_position<I>(mut self, position: I) -> Result<Self, AppendError>
     where
         I: IntoIterator<Item = Cartesian<3>>,
-        I::IntoIter: ExactSizeIterator,
     {
-    let chunk_name = "particles/position";
-    let iter = position.into_iter();
+        let chunk_name = "particles/position";
+        let data = position
+            .into_iter()
+            .map(|v| -> [f32; 3] { array::from_fn(|i| v[i] as f32) })
+            .collect();
 
-    if let Some(n) = self.particles_n {
-        if iter.len() != n as usize {
-            return Err(AppendError::InconsistentLength(chunk_name.to_string()));
-        }
-    } else {
-        let n = iter.len().try_into().map_err(|e|
-            AppendError::ChunkTooLarge(iter.len(), chunk_name.to_string(), e))?;
-        self.hoomd_gsd_file.gsd_file.write_scalars("particles/N", [n])?;
-        self.particles_n = Some(n);
-    }
-    
-    self.hoomd_gsd_file.gsd_file.write_arrays(chunk_name,
-        iter.map(|v| -> [f32; 3] { array::from_fn(|i| v[i] as f32)}))?;
-    
-    Ok(self)
+        self.validate_and_write_position_n(&data, chunk_name)?;
+
+        self.hoomd_gsd_file
+            .gsd_file
+            .write_arrays(chunk_name, data)?;
+
+        Ok(self)
     }
 
     pub fn particles_orientation<I>(mut self, orientation: I) -> Result<Self, AppendError>
     where
         I: IntoIterator<Item = Versor>,
-        I::IntoIter: ExactSizeIterator,
     {
-    let chunk_name = "particles/orientation";
-    let iter = orientation.into_iter();
+        let chunk_name = "particles/orientation";
+        let data = orientation
+            .into_iter()
+            .map(|v| {
+                [
+                    v.get().scalar as f32,
+                    v.get().vector[0] as f32,
+                    v.get().vector[1] as f32,
+                    v.get().vector[2] as f32,
+                ]
+            })
+            .collect();
 
-    if let Some(n) = self.particles_n {
-        if iter.len() != n as usize {
-            return Err(AppendError::InconsistentLength(chunk_name.to_string()));
-        }
-    } else {
-        let n = iter.len().try_into().map_err(|e|
-            AppendError::ChunkTooLarge(iter.len(), chunk_name.to_string(), e))?;
-        self.hoomd_gsd_file.gsd_file.write_scalars("particles/N", [n])?;
-        self.particles_n = Some(n);
-    }
-    
-    self.hoomd_gsd_file.gsd_file.write_arrays(chunk_name,
-        iter.map(|v| {
-            [v.get().scalar as f32, v.get().vector[0] as f32, v.get().vector[1] as f32, v.get().vector[2] as f32]
-        }
-            ))?;
-   
-    Ok(self)
+        self.validate_and_write_position_n(&data, chunk_name)?;
+
+        self.hoomd_gsd_file
+            .gsd_file
+            .write_arrays(chunk_name, data)?;
+
+        Ok(self)
     }
 }
 
