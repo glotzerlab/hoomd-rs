@@ -1723,19 +1723,14 @@ impl GsdFile {
     {
         let data = data.into_iter();
 
-        self.write_details(
-            name,
-            1,
-            T::gsd_data_type(),
-            |buffer: &mut Vec<u8>| -> u64 {
-                let mut len = 0;
-                for value in data {
-                    value.append_ne_bytes(buffer);
-                    len += 1;
-                }
-                len
-            },
-        )
+        self.write_details(name, 1, T::gsd_data_type(), |buffer: &mut Vec<u8>| -> u64 {
+            let mut len = 0;
+            for value in data {
+                value.append_ne_bytes(buffer);
+                len += 1;
+            }
+            len
+        })
         .map_err(|e| WriteError::Encode(name.into(), self.buffer_frame, e))
     }
 
@@ -1881,7 +1876,7 @@ impl GsdFile {
             return Err(EncodeError::NotWritable);
         }
 
-        let location =  self.file_len + self.data_buffer.len() as u64;
+        let location = self.file_len + self.data_buffer.len() as u64;
 
         let id = self.get_id(name)?;
 

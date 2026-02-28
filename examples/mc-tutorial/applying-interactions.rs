@@ -1,21 +1,21 @@
 // ANCHOR: all
 // ANCHOR: use
 use hoomd_geometry::shape::Rectangle;
+#[cfg(not(feature = "bevy"))]
+use hoomd_gsd::hoomd::HoomdGsdFile;
 use hoomd_interaction::{
     DeltaEnergyOne, External, MaximumInteractionRange, PairwiseCutoff,
     TotalEnergy, external::Linear, pairwise::Isotropic, univariate::Boxcar,
 };
 use hoomd_mc::{Sweep, Translate, Trial};
+#[cfg(not(feature = "bevy"))]
+use hoomd_microstate::AppendMicrostate;
 use hoomd_microstate::{
     Body, Microstate, SiteKey, boundary::Closed, property::Point,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
 use hoomd_vector::Cartesian;
-#[cfg(not(feature = "bevy"))]
-use hoomd_gsd::hoomd::HoomdGsdFile;
-#[cfg(not(feature = "bevy"))]
-use hoomd_microstate::AppendMicrostate;
 // ANCHOR_END: use
 
 // Remove the cfg_attr(...) line when using this code outside the hoomd-rs/examples directory.

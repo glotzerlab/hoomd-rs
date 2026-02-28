@@ -377,5 +377,8 @@ pub enum Error {
 }
 
 pub trait AppendMicrostate<B, S, X, C> {
-    fn append_microstate(&mut self, microstate: &Microstate<B, S, X, C>) -> Result<Frame<'_>, AppendError>;
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<B, S, X, C>,
+    ) -> Result<Frame<'_>, AppendError>;
 }

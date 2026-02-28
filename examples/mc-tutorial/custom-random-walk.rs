@@ -4,18 +4,18 @@ use rand::{Rng, seq::IndexedRandom};
 use std::iter;
 
 use hoomd_geometry::IsPointInside;
+#[cfg(not(feature = "bevy"))]
+use hoomd_gsd::hoomd::HoomdGsdFile;
 use hoomd_interaction::Zero;
 use hoomd_mc::{LocalTrial, Sweep, Trial};
+#[cfg(not(feature = "bevy"))]
+use hoomd_microstate::AppendMicrostate;
 use hoomd_microstate::{
     Body, Microstate, SiteKey, boundary::Closed, property::Point,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::AllPairs;
 use hoomd_vector::{Cartesian, Metric};
-#[cfg(not(feature = "bevy"))]
-use hoomd_gsd::hoomd::HoomdGsdFile;
-#[cfg(not(feature = "bevy"))]
-use hoomd_microstate::AppendMicrostate;
 // ANCHOR_END: use
 
 // ANCHOR: boundary_struct
