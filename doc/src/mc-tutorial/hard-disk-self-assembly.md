@@ -294,20 +294,36 @@ Equilibration never ends in this tutorial. In your own simulations, you might
 transition to a production phase after a certain number of steps and eventually
 complete the simulation.
 
-## Implement `main()`
+## Execute the Simulation in Batch Mode
+
+### Implement `main()`
 
 To run the simulation, construct the `HardDiskSelfAssembly` simulation model.
-Then call `advance()` many times:
+Then call `advance()` many times and write the sites to a GSD file periodically so that
+you can inspect the results of the simulation:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-disk-self-assembly.rs:main}}
 ```
 
-Write the sites to a GSD file periodically so that you can inspect the results
-of the simulation.
+See [Applying Interactions](applying-interactions.md) for a step-by-step explanation
+of this code.
 
 > [!NOTE]
 > This `main()` function runs in batch mode. There is a different `main()` (not
 > shown here) used in the interactive example.
+
+### Run the Simulation
+
+In a terminal, execute the following command to run the simulation in batch mode:
+```shell
+cargo run --release --example hard-particle-self-assembly
+```
+
+### Visualize the Simulation Results
+
+Open the generated `tetronimoes.gsd` in [Ovito] or another visualization
+tool to see the simulation results. [Ovito] will render the disks as spheres
+with the expected diameter of 1 by default.
 
 ## Conclusion
 
@@ -320,12 +336,6 @@ again. Notice that the disks start on an evenly spaced grid and are quickly
 scaled to a higher packing fraction. The many grain boundaries are caused by the
 quick compression. Over time, local trial moves will heal these grain boundaries
 leaving a single crystal.
-
-You can also run the example in batch mode and then open
-the generated `trajectory.gsd` in [Ovito] or another visualization tool:
-```shell
-cargo run --release --example hard-particle-self-assembly
-```
 
 [Ovito]: https://www.ovito.org/
 

@@ -363,13 +363,6 @@ If you would like to monitor the simulation progress, you can use `println!`
 [`log`]: https://docs.rs/log/latest/log/
 [`env_logger`]: https://docs.rs/env_logger/latest/env_logger/
 
-> [!CAUTION]
-> Increase the GSD period in production simulations! Writing one frame every
-> 1,000 steps, while appropriate for this quick example, will result in
-> **MASSIVE** files in typical simulations. A $` 10^8 `$ step simulation would
-> result in 100,000 highly correlated frames. The resulting file would be about
-> 100 GiB at typical simulation sizes.
-
 > [!NOTE]
 > This `main()` function runs in batch mode. There is a different `main()` (not
 > shown here) used in the interactive example. The interactive example does *not*
@@ -385,7 +378,7 @@ cargo run --release --example applying-interactions
 ### Visualize the Simulation Results
 
 Open the generated `applying-interactions.gsd` in [Ovito] or another visualization
-tool to see the simulation results. [Ovito] will render the disk as spheres
+tool to see the simulation results. [Ovito] will render the disks as spheres
 with the expected diameter of 1 by default.
 
 ## Conclusion

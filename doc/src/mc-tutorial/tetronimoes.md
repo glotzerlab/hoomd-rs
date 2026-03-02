@@ -198,7 +198,6 @@ you can inspect the results of the simulation:
 See [Applying Interactions](applying-interactions.md) for a step-by-step explanation
 of this code.
 
-
 > [!NOTE]
 > This `main()` function runs in batch mode. There is a different `main()` (not
 > shown here) used in the interactive example. The interactive example does *not*
@@ -214,7 +213,7 @@ cargo run --release --example tetronimoes
 ### Visualize the Simulation Results
 
 Open the generated `tetronimoes.gsd` in [Ovito] or another visualization
-tool to see the simulation results. [Ovito] will render the disk as spheres
+tool to see the simulation results. [Ovito] will render the disks as spheres
 with the expected diameter of 1 by default.
 
 ## Conclusion
