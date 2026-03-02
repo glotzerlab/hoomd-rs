@@ -167,11 +167,17 @@ impl Simulation for Fill {
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
     let mut simulation = Fill::new()?;
+    // ANCHOR_END: main
+    // ANCHOR: create_gsd
     let mut hoomd_gsd_file = HoomdGsdFile::create("applying-interactions.gsd")?;
+    // ANCHOR_END: create_gsd
 
+    // ANCHOR: advance
     for _ in 0..100_000 {
         simulation.advance()?;
+        // ANCHOR_END: advance
 
+        // ANCHOR: append_microstate
         if simulation.step().is_multiple_of(1_000) {
             hoomd_gsd_file.append_microstate(&simulation.microstate)?;
         }
@@ -179,7 +185,7 @@ fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
-// ANCHOR_END: main
+// ANCHOR_END: append_microstate
 // ANCHOR_END: all
 
 #[cfg(feature = "bevy")]

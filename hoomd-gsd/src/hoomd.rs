@@ -109,9 +109,9 @@ impl Frame<'_> {
         Ok(self)
     }
 
-    fn validate_and_write_position_n<T>(
+    fn validate_particles_chunk<T>(
         &mut self,
-        data: &Vec<T>,
+        data: &[T],
         chunk_name: &str,
     ) -> Result<(), AppendError> {
         if let Some(n) = self.particles_n {
@@ -137,12 +137,12 @@ impl Frame<'_> {
         I: IntoIterator<Item = Cartesian<3>>,
     {
         let chunk_name = "particles/position";
-        let data = position
+        let data: Vec<_> = position
             .into_iter()
             .map(|v| -> [f32; 3] { array::from_fn(|i| v[i] as f32) })
             .collect();
 
-        self.validate_and_write_position_n(&data, chunk_name)?;
+        self.validate_particles_chunk(&data, chunk_name)?;
 
         self.hoomd_gsd_file
             .gsd_file
@@ -156,7 +156,7 @@ impl Frame<'_> {
         I: IntoIterator<Item = Versor>,
     {
         let chunk_name = "particles/orientation";
-        let data = orientation
+        let data: Vec<_> = orientation
             .into_iter()
             .map(|v| {
                 [
@@ -168,7 +168,7 @@ impl Frame<'_> {
             })
             .collect();
 
-        self.validate_and_write_position_n(&data, chunk_name)?;
+        self.validate_particles_chunk(&data, chunk_name)?;
 
         self.hoomd_gsd_file
             .gsd_file

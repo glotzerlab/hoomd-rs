@@ -228,8 +228,8 @@ Then call `advance()` many times:
 {{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:main}}
 ```
 
-Write the sites to a GSD file periodically so that you can inspect the results
-of the simulation.
+Later tutorials will show how you can write simulation trajectories and
+log properties of the simulation to files.
 
 > [!NOTE]
 > This `main()` function runs in batch mode. There is a different `main()` (not

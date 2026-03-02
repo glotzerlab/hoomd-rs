@@ -4,12 +4,8 @@ use rand::{Rng, seq::IndexedRandom};
 use std::iter;
 
 use hoomd_geometry::IsPointInside;
-#[cfg(not(feature = "bevy"))]
-use hoomd_gsd::hoomd::HoomdGsdFile;
 use hoomd_interaction::Zero;
 use hoomd_mc::{LocalTrial, Sweep, Trial};
-#[cfg(not(feature = "bevy"))]
-use hoomd_microstate::AppendMicrostate;
 use hoomd_microstate::{
     Body, Microstate, SiteKey, boundary::Closed, property::Point,
 };
@@ -153,20 +149,14 @@ impl Simulation for CustomRandomWalk {
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
     let mut simulation = CustomRandomWalk::new()?;
-    let mut hoomd_gsd_file = HoomdGsdFile::create("custom-random-walk.gsd")?;
-
     for _ in 0..1_000_000 {
         simulation.advance()?;
-
-        if simulation.step().is_multiple_of(100_000) {
-            hoomd_gsd_file.append_microstate(&simulation.microstate);
-        }
     }
 
     Ok(())
 }
-// ANCHOR_END: main
 // ANCHOR_END: all
+// ANCHOR_END: main
 
 #[cfg(feature = "bevy")]
 mod custom_random_walk_interactive;

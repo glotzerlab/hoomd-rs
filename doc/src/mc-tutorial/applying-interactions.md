@@ -318,20 +318,74 @@ microstate when total pairwise energy exceeds a threshold:
 {{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:step}}
 ```
 
-## Implement `main()`
+## Execute the Simulation in Batch Mode
 
-To run the simulation, construct the `Fill` simulation model.
-Then call `advance()` many times:
+Visual, interactive simulations are great for teaching and quickly testing
+new models. They are less practical when you scale your workflow to run thousands
+of simulations on HPC resources. For that, you need to run in batch mode and
+write the simulation results to one or more files.
+
+### Construct the Simulation Model
+
+To run the simulation, construct the `Fill` simulation model:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:main}}
 ```
 
-Write the sites to a GSD file periodically so that you can inspect the results
-of the simulation.
+### Create a GSD Trajectory
+
+A [GSD] file stores the positions of the sites in frames. Each frame is a snapshot
+of the simulation state at a specific step in the simulation. Start by creating
+a new [GSD] file:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:create_gsd}}
+```
+
+[GSD]: https://gsd.readthedocs.io
+
+### Advance the Simulation
+
+Call `advance()` many times in the main loop:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:advance}}
+```
+
+### Write Frames to the GSD File
+
+Call `append_microstate` to write to the GSD file periodically:
+```rust,ignore
+{{#rustdoc_include ../../../examples/mc-tutorial/applying-interactions.rs:append_microstate}}
+```
+
+If you would like to monitor the simulation progress, you can use `println!`
+(or [`log`] and [`env_logger`]) to write any output you like.
+
+[`log`]: https://docs.rs/log/latest/log/
+[`env_logger`]: https://docs.rs/env_logger/latest/env_logger/
+
+> [!CAUTION]
+> Increase the GSD period in production simulations! Writing one frame every
+> 1,000 steps, while appropriate for this quick example, will result in
+> **MASSIVE** files in typical simulations. A $` 10^8 `$ step simulation would
+> result in 100,000 highly correlated frames. The resulting file would be about
+> 100 GiB at typical simulation sizes.
 
 > [!NOTE]
 > This `main()` function runs in batch mode. There is a different `main()` (not
-> shown here) used in the interactive example.
+> shown here) used in the interactive example. The interactive example does *not*
+> write the GSD file.
+
+### Run the Simulation
+
+In a terminal, execute the following command to run the simulation in batch mode:
+```shell
+cargo run --release --example applying-interactions
+```
+
+### Visualize the Simulation Results
+
+Open the generated `applying-interactions.gsd` in [Ovito] or another visualization
+tool to see the simulation results.
 
 ## Conclusion
 
@@ -342,12 +396,6 @@ Navigate to the top of the page and refresh to see the simulation in
 action again. Notice how the disks fall to the bottom of the boundary and do
 not overlap, except when newly added. Wait long enough and you will see the
 simulation clear the bodies.
-
-You can also run the example in batch mode and then open
-the generated `trajectory.gsd` in [Ovito] or another visualization tool:
-```shell
-cargo run --release --example applying-interactions
-```
 
 [API documentation]: ../api.md
 [`hoomd-microstate`]: ../api/hoomd_microstate/index.html
