@@ -184,20 +184,38 @@ Apply the custom trial move to each body in the microstate:
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:step}}
 ```
 
-## Implement `main()`
+## Execute the Simulation in Batch Mode
 
-To run the simulation, construct the `Tetronimoes` simulation model.
-Then call `advance()` many times:
+### Implement `main()`
+
+To run the simulation, construct the `Tetronimoes` simulation model. Then call
+`advance()` many times and write the sites to a GSD file periodically so that
+you can inspect the results of the simulation:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/tetronimoes.rs:main}}
 ```
 
-Write the sites to a GSD file periodically so that you can inspect the results
-of the simulation.
+See [Applying Interactions](applying-interactions.md) for a step-by-step explanation
+of this code.
+
 
 > [!NOTE]
 > This `main()` function runs in batch mode. There is a different `main()` (not
-> shown here) used in the interactive example.
+> shown here) used in the interactive example. The interactive example does *not*
+> write the GSD file.
+
+### Run the Simulation
+
+In a terminal, execute the following command to run the simulation in batch mode:
+```shell
+cargo run --release --example tetronimoes
+```
+
+### Visualize the Simulation Results
+
+Open the generated `tetronimoes.gsd` in [Ovito] or another visualization
+tool to see the simulation results. [Ovito] will render the disk as spheres
+with the expected diameter of 1 by default.
 
 ## Conclusion
 
@@ -207,12 +225,6 @@ can be translated and rotated by trial moves.
 Navigate to the top of the page and refresh to see the simulation in
 action again. Notice how the randomly generated tetronimoes fall to the
 bottom while randomly rotating.
-
-You can also run the example in batch mode and then open
-the generated `trajectory.gsd` in [Ovito] or another visualization tool:
-```shell
-cargo run --release --example tetronimoes
-```
 
 [Applying Interactions]: applying-interactions.md
 [Custom Random Walk]: custom-random-walk.md

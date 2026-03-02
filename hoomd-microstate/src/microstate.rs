@@ -131,6 +131,11 @@ impl<T> VecWithTags<T> {
     fn is_empty(&self) -> bool {
         self.items.is_empty()
     }
+
+    /// Iterate over items in tag order.
+    fn iter_tag_order(&self) -> impl Iterator<Item = &T> {
+        self.indices.iter().filter_map(|opt_i| opt_i.map(|i| &self.items[i]))
+    }
 }
 
 /// Store and manage all the degrees of freedom of a single microstate in phase space.
@@ -1203,6 +1208,11 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
             &self.sites.items[self.sites.indices[*site_tag]
                 .expect("bodies_sites and site_indices should be consistent")]
         })
+    }
+
+    #[inline]
+    pub fn iter_sites_tag_order(&self) -> impl Iterator<Item = &Site<S>> {
+        self.sites.iter_tag_order()
     }
 
     /// Get the spatial data structure.

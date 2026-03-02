@@ -1,15 +1,11 @@
 // ANCHOR: all
 // ANCHOR: use
 use hoomd_geometry::shape::Rectangle;
-#[cfg(not(feature = "bevy"))]
-use hoomd_gsd::hoomd::HoomdGsdFile;
 use hoomd_interaction::{
     DeltaEnergyOne, External, MaximumInteractionRange, PairwiseCutoff,
     TotalEnergy, external::Linear, pairwise::Isotropic, univariate::Boxcar,
 };
 use hoomd_mc::{Sweep, Translate, Trial};
-#[cfg(not(feature = "bevy"))]
-use hoomd_microstate::AppendMicrostate;
 use hoomd_microstate::{
     Body, Microstate, SiteKey, boundary::Closed, property::Point,
 };
@@ -166,6 +162,9 @@ impl Simulation for Fill {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
+    use hoomd_microstate::AppendMicrostate;
+    use hoomd_gsd::hoomd::HoomdGsdFile;
+
     let mut simulation = Fill::new()?;
     // ANCHOR_END: main
     // ANCHOR: create_gsd

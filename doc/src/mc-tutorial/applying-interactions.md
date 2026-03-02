@@ -385,11 +385,12 @@ cargo run --release --example applying-interactions
 ### Visualize the Simulation Results
 
 Open the generated `applying-interactions.gsd` in [Ovito] or another visualization
-tool to see the simulation results.
+tool to see the simulation results. [Ovito] will render the disk as spheres
+with the expected diameter of 1 by default.
 
 ## Conclusion
 
-Now you know how to define interactions in your simulation model via the
+This tutorial showed you how to define interactions in your simulation model via the
 Hamiltonian.
 
 Navigate to the top of the page and refresh to see the simulation in
