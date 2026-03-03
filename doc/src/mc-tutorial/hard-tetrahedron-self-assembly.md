@@ -120,7 +120,7 @@ visualization tool to see the simulation results. To render the tetrahedra in
 [Ovito], import this [modifier snippet] (use the copy button to copy the entire
 text to your clipboard):
 ```
-{"description": "OVITO Modifier Snippet: Edit types (Particle Type)", "payload": "AAAHBnjafVU9aBRBFH57ufN+kzOJotHCExtJEaNBUBI5Y7wiRcgRzyA2YbI7uRvduz129xIOLCysBEVS2UgKwUIt0tgFUkkgpQpWgmhhYRGwMwg6b/bNZXNu8uDdzL7v/c17M+/yb9+/yfzZvgvQug4AKckDMAvzMA0VuRagDC44UtojOQ8B5WAMRuAiXJa/oyQzAsalJ0bfKVpjxI9ofUBrDnXKrtPkrt+W+xFoApPxfBBggg0cPLggM9gvK8jM2lKTS4tL/6EeFM6uqrwPttKEZ0oY9BGXnDZCaAKzVIIjaofbZGeX0rYoSnfbZroFWSyFQWeOU+xe2qP/vo5nrPKQUdzJXGu+/JzpXiV4FKMGdZ2Uv/2Sx8nTGFUWPafLzPWFaXNPfpw6tCADkk8eEnFQF0EF1HSMgiId1+2EumpCLaSHqe6Q7g9d7c0P7Vfvsvnzxa+BYHO7sHFleOB38Vsgn1gH48uLrY9arvU3u/Q31v7uTrPHaxPPAH5+2porfn/+ZPjM03E4lOLUOAjdUE1J6o6+xd1yo8uXlsN+P9jLWJn0s9wSPrcq7abqhrpWccL6PKflmjz0DjquTpg1Xhcms0s2r/OGv7Dg1ZjlrFCxg0dUZ54XBQxJUZPf9vgM92pTju24UVrnlNYNZt5fYiafatm2aFRLDbZocytK/3RNVGu2ZP8WGpasKo+M3qv8RiH9y9bKHLNEK9Kuzz0QGowILcUPNZ5WIfG0WFgj1MaEQsLNz/PoIyLWa0YVC5Fcg9V5pImz0uBudwsRSShnOk2UxNFJeMhkl4VHDZbnia8a9NoQywhLisWS4G74iv2iOzSE9SzJu6Vu1oxjac0kKeAbzelBgEpBEntYxRWsUbWpbBhTYfjis5QUmWkIh0XmJvPZ7OI9bvrBLIzpyZVEZF54wVRUYpxXqVBuWh0HV3qOL1WYW+U+na6T2KTpi2UejqEe2ejef42i+dD/C9IutZ1eZOwqjfo7NKTwIOs0srHOrxH8B4RtGuo="}
+{"description": "OVITO Modifier Snippet: Edit types (Particle Type)", "payload": "AAAHKXjafVU9TBRBFH573HG/cAL+oYVnaAwFosTEBMyJeAUFgeBJYUOG3eF2de/2srsHucTCwspEY6hsDIWJjRY2diRUhoTERkysTIwWFhYYO4mJzpt9cyzrwiTvZu5972/ee/O2+Prdq9yf7TsAresAkBHUD7OwANNQFXsJ5sAFR3C7BBUhWAUYgxG4BFfE7yjxtIBw6+qn/xnaE0QPab9PewFl5lynyV2/Lc4j0AQm/PlggQ42cPDgoojgIK8kImsLSS40Lv+HelA6vybjPlxLLbxTSqM/SUFZLYSmMErJ6JYnPKY7p4zSRVY2qpuLMvKYCo3unCTfPXRG+71os/yzo1DseDomaFAr7+auNV98ykV3AfZhFEGeJ2X9AMbJ8hhlGj1l55jrW7rNPfHnzJEJGhB0+giPx1VSpEO1TpBTXCdVeaEui2KG5DDUXZL9rrK/+aH98m2+eKH8JWBsbpc2rg73/y5/DfgTb0D7/HxrR/GV/GZEfmP97940e7Q+8RTgx8et+fK3Z4+Hzz0ZhyNXkgoJoY5VK03VShAW5WsRW4oPB+1gLRM6yee5YfncqLabshqyzZKE9XpOy9V56F10TJ3STV63dGZXbF7nDX9x0TOZ4axSsoNHVWeeFwcMClaT3/b4DPfMKcd23DipISl1g+n3lpnOp1q2bTVqlQZbsrkRJ3/WtGqmLci/hYoVo8ZjvfdIu3FI34qxOs8MqxWr1+seCg3EuBbsBwrPSpd4W0ysFipjSiLhzHYHbsL9UOTxt0asR4/LHyKFBqvzWBVntcHdaFURSUljKnLkJNFIeA7lVyyPai5iTK5p9AARy1mGYFvLFnfDXfeL2moQU1wR7SabbcYxlGSaBPAxF9RsQKEgiH2s6lqsUbMpk+hTYjgk8hQUqSkIR1DuJvPZ7NJdrvvBuJQIjrU0IguWFwzOhJpxmVBsShxHW3aeL1eZW+M+3a4T2KTuWys87EO+u9H9z5FcC6FPEK496gR6pIlp+hqYNLfwIjs01THP7xH8BwoEH1E="}
 ```
 
 Alternately, you can:
@@ -138,6 +138,9 @@ or use [modifier templates].
 [save the session state]: https://docs.ovito.org/usage/miscellaneous.html#usage-saving-loading-scene
 [modifier templates]: https://docs.ovito.org/reference/app_settings/modifier_templates.html#modifier-templates
 [modifier snippet]: https://docs.ovito.org/advanced_topics/modifier_snippets.html#modifier-snippets
+
+Render with Tachyon, and you should see something like:
+![Hard tetrahedron self-assembly rendered with Ovito](hard-tetrahedron-self-assembly.png)
 
 ## Conclusion
 

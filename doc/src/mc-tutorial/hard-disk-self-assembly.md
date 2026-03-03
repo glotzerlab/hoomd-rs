@@ -325,6 +325,9 @@ Open the generated `tetronimoes.gsd` in [Ovito] or another visualization
 tool to see the simulation results. [Ovito] will render the disks as spheres
 with the expected diameter of 1 by default.
 
+Render with Tachyon, and you should see something like:
+![Hard disk self-assembly rendered with Ovito](hard-disk-self-assembly.png)
+
 ## Conclusion
 
 This tutorial showed you how to perform hard disk self-assembly simulations

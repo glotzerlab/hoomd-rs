@@ -381,6 +381,9 @@ Open the generated `applying-interactions.gsd` in [Ovito] or another visualizati
 tool to see the simulation results. [Ovito] will render the disks as spheres
 with the expected diameter of 1 by default.
 
+Render with Tachyon, and you should see something like:
+![Applying interactions rendered with Ovito](applying-interactions.png)
+
 ## Conclusion
 
 This tutorial showed you how to define interactions in your simulation model via the

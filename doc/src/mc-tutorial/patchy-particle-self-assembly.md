@@ -335,6 +335,9 @@ the [Edit types] modifier in the cloned pipeline and change the site color.
 [modifier snippet]: https://docs.ovito.org/advanced_topics/modifier_snippets.html#modifier-snippets
 [clone the pipeline]: https://www.ovito.org/docs/current/advanced_topics/clone_pipeline.html
 
+Adjust the colors, render with Tachyon, and you should see something like:
+![Patchy particle self-assembly rendered with Ovito](patchy-particle-self-assembly.png)
+
 ## Conclusion
 
 This tutorial showed you how to perform patchy particle self-assembly

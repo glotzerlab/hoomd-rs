@@ -361,6 +361,9 @@ or use [modifier templates].
 [modifier templates]: https://docs.ovito.org/reference/app_settings/modifier_templates.html#modifier-templates
 [modifier snippet]: https://docs.ovito.org/advanced_topics/modifier_snippets.html#modifier-snippets
 
+Render with Tachyon, and you should see something like:
+![Hard ellipse self-assembly rendered with Ovito](hard-ellipse-self-assembly.png)
+
 ## Conclusion
 
 This tutorial showed you how to perform hard-ellipse self-assembly simulations
