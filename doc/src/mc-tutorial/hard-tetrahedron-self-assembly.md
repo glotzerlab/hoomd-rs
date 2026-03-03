@@ -87,20 +87,58 @@ remaining initialization and simulation code (see also the [complete code] below
 [Hard Ellipse Self-Assembly]: hard-ellipse-self-assembly.md
 [complete code]: #complete-code
 
-## Implement `main()`
+## Execute the Simulation in Batch Mode
+
+### Implement `main()`
 
 To run the simulation, construct the `HardTetrahedronSelfAssembly` simulation model.
-Then call `advance()` many times:
+Then call `advance()` many times and write the sites to a GSD file periodically so that
+you can inspect the results of the simulation:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-ellipse-self-assembly.rs:main}}
 ```
 
-Write the sites to a GSD file periodically so that you can inspect the results
-of the simulation.
+See [Applying Interactions](applying-interactions.md) for a step-by-step explanation
+of this code.
 
 > [!NOTE]
 > This `main()` function runs in batch mode. There is a different `main()` (not
-> shown here) used in the interactive example.
+> shown here) used in the interactive example. The interactive example does *not*
+> write the GSD file.
+
+### Run the Simulation
+
+In a terminal, execute the following command to run the simulation in batch mode:
+```shell
+cargo run --release --example hard-tetrahedron-self-assembly
+```
+
+### Visualize the Simulation Results
+
+Open the generated `hard-tetrahedron-self-assembly.gsd` in [Ovito] or another
+visualization tool to see the simulation results. To render the tetrahedra in
+[Ovito], set the *Particles* [Radius scaling] to 200% and import this [modifier
+snippet] (use the copy button to copy the entire text to your clipboard):
+```
+{"description": "OVITO Modifier Snippet: Edit types (Particle Type)", "payload": "AAAHBnjafVU9aBRBFH57ufN+kzOJotHCExtJEaNBUBI5Y7wiRcgRzyA2YbI7uRvduz129xIOLCysBEVS2UgKwUIt0tgFUkkgpQpWgmhhYRGwMwg6b/bNZXNu8uDdzL7v/c17M+/yb9+/yfzZvgvQug4AKckDMAvzMA0VuRagDC44UtojOQ8B5WAMRuAiXJa/oyQzAsalJ0bfKVpjxI9ofUBrDnXKrtPkrt+W+xFoApPxfBBggg0cPLggM9gvK8jM2lKTS4tL/6EeFM6uqrwPttKEZ0oY9BGXnDZCaAKzVIIjaofbZGeX0rYoSnfbZroFWSyFQWeOU+xe2qP/vo5nrPKQUdzJXGu+/JzpXiV4FKMGdZ2Uv/2Sx8nTGFUWPafLzPWFaXNPfpw6tCADkk8eEnFQF0EF1HSMgiId1+2EumpCLaSHqe6Q7g9d7c0P7Vfvsvnzxa+BYHO7sHFleOB38Vsgn1gH48uLrY9arvU3u/Q31v7uTrPHaxPPAH5+2porfn/+ZPjM03E4lOLUOAjdUE1J6o6+xd1yo8uXlsN+P9jLWJn0s9wSPrcq7abqhrpWccL6PKflmjz0DjquTpg1Xhcms0s2r/OGv7Dg1ZjlrFCxg0dUZ54XBQxJUZPf9vgM92pTju24UVrnlNYNZt5fYiafatm2aFRLDbZocytK/3RNVGu2ZP8WGpasKo+M3qv8RiH9y9bKHLNEK9Kuzz0QGowILcUPNZ5WIfG0WFgj1MaEQsLNz/PoIyLWa0YVC5Fcg9V5pImz0uBudwsRSShnOk2UxNFJeMhkl4VHDZbnia8a9NoQywhLisWS4G74iv2iOzSE9SzJu6Vu1oxjac0kKeAbzelBgEpBEntYxRWsUbWpbBhTYfjis5QUmWkIh0XmJvPZ7OI9bvrBLIzpyZVEZF54wVRUYpxXqVBuWh0HV3qOL1WYW+U+na6T2KTpi2UejqEe2ejef42i+dD/C9IutZ1eZOwqjfo7NKTwIOs0srHOrxH8B4RtGuo="}
+```
+
+Alternately, you can:
+1) Download [tetrahedron.obj].
+2) Add an [Edit types] modification to the Ovito pipeline.
+3) Set *Property Name* to [Aspherical Shape].
+4) Choose the "Mesh/user-defined" *shape*.
+5) Click *Load geometry file...* and choose `tetrahedron.obj`.
+To save time when visualizing many similar systems, you can [save the session state]
+or use [modifier templates].
+
+[Ovito]: https://www.ovito.org/
+[Radius scaling]: https://www.ovito.org/docs/current/reference/pipelines/visual_elements/particles.html#universal-settings
+[Edit types]: https://www.ovito.org/docs/current/reference/pipelines/modifiers/edit_types.html
+[tetrahedron.obj]: tetrahedron.obj
+[save the session state]: https://docs.ovito.org/usage/miscellaneous.html#usage-saving-loading-scene
+[modifier templates]: https://docs.ovito.org/reference/app_settings/modifier_templates.html#modifier-templates
+[modifier snippet]: https://docs.ovito.org/advanced_topics/modifier_snippets.html#modifier-snippets
 
 ## Conclusion
 
@@ -116,14 +154,6 @@ particle overlap Hamiltonian. Watch the simulation long enough and you should
 see dimers and pentamers form. These motifs organize to form a quasicrystal,
 but only after very long simulation times with at least 4096 tetrahedra:
 [10.1038/nature08641].
-
-You can also run the example in batch mode and then open
-the generated `trajectory.gsd` in [Ovito] or another visualization tool:
-```shell
-cargo run --release --example hard-tetrahedron-self-assembly
-```
-
-[Ovito]: https://www.ovito.org/
 
 ## Complete Code
 
