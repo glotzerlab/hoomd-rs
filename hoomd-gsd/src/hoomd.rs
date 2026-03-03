@@ -3,7 +3,7 @@ use thiserror::Error;
 
 use hoomd_vector::{Cartesian, Versor};
 
-use crate::file_layer::{GsdFile, OpenError, WriteError};
+use crate::file_layer::{GsdFile, OpenError, Type, WriteError};
 
 const MAX_NAME_LENGTH: usize = 64;
 
@@ -184,9 +184,7 @@ impl Frame<'_> {
         I: IntoIterator<Item = u32>,
     {
         let chunk_name = "particles/typeid";
-        let data: Vec<_> = type_id
-            .into_iter()
-            .collect();
+        let data: Vec<_> = type_id.into_iter().collect();
 
         self.validate_particles_chunk(&data, chunk_name)?;
 
@@ -207,13 +205,57 @@ impl Frame<'_> {
 
         assert!(max_len < MAX_NAME_LENGTH, "type name length too long");
 
+        self.hoomd_gsd_file.gsd_file.write_arrays(
+            chunk_name,
+            types.into_iter().map(|s| -> [u8; MAX_NAME_LENGTH] {
+                array::from_fn(|i| if i < s.len() { s.as_bytes()[i] } else { 0 })
+            }),
+        )?;
+
+        Ok(self)
+    }
+
+    pub fn log_scalar<'a, T>(mut self, name: &'a str, scalar: T) -> Result<Self, AppendError>
+    where
+        T: Type,
+    {
+        let chunk_name = ["log", name].join("/");
+
         self.hoomd_gsd_file
             .gsd_file
-            .write_arrays(chunk_name,
-            types.into_iter().map(|s| -> [u8; MAX_NAME_LENGTH] {
-                array::from_fn(|i| if i < s.len() { s.as_bytes()[i] } else { 0 })                                                
-                })
-            )?;
+            .write_scalars(&chunk_name, [scalar])?;
+
+        Ok(self)
+    }
+
+    pub fn log_scalars<'a, T, I>(mut self, name: &'a str, scalars: I) -> Result<Self, AppendError>
+    where
+        T: Type,
+        I: IntoIterator<Item = T>,
+    {
+        let chunk_name = ["log", name].join("/");
+
+        self.hoomd_gsd_file
+            .gsd_file
+            .write_scalars(&chunk_name, scalars)?;
+
+        Ok(self)
+    }
+
+    pub fn log_arrays<'a, T, I, const M: usize>(
+        mut self,
+        name: &'a str,
+        arrays: I,
+    ) -> Result<Self, AppendError>
+    where
+        T: Type,
+        I: IntoIterator<Item = [T; M]>,
+    {
+        let chunk_name = ["log", name].join("/");
+
+        self.hoomd_gsd_file
+            .gsd_file
+            .write_arrays(&chunk_name, arrays)?;
 
         Ok(self)
     }
