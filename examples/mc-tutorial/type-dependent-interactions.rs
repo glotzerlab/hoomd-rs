@@ -1,10 +1,12 @@
 // ANCHOR: all
 // ANCHOR: use
 use anyhow::{Context, anyhow};
+use strum_macros::{EnumString, VariantNames};
+use strum::VariantNames;
 
 use hoomd_geometry::{
     Volume,
-    shape::{Circle, Rectangle},
+    shape::{Circle, Hypercuboid, Rectangle},
 };
 use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff, SitePairEnergy,
@@ -25,6 +27,8 @@ use hoomd_microstate::{
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
 use hoomd_vector::{Cartesian, Metric};
+use hoomd_microstate::AppendMicrostate;
+use hoomd_gsd::hoomd::HoomdGsdFile;
 // ANCHOR_END: use
 
 // ANCHOR: type_aliases
@@ -33,7 +37,7 @@ type BodyProperties = Point<PositionVector>;
 // ANCHOR_END: type_aliases
 
 // ANCHOR: type
-#[derive(Clone, Copy, Default, PartialEq)]
+#[derive(Clone, Copy, Default, PartialEq, VariantNames)]
 enum SiteType {
     #[default]
     A,
@@ -318,18 +322,49 @@ impl TypeDependentInteractions {
     }
 }
 
+// ANCHOR: append_microstate
+impl<X> AppendMicrostate<BodyProperties, SiteProperties, X, Periodic<Hypercuboid<2>>> for HoomdGsdFile {
+    #[inline]
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<BodyProperties, SiteProperties, X, Periodic<Hypercuboid<2>>>,
+    ) -> Result<hoomd_gsd::hoomd::Frame<'_>, hoomd_gsd::hoomd::AppendError> {
+        self.append_frame(microstate.step())?
+            .configuration_box(microstate.boundary().shape().to_gsd_box())?
+            .configuration_dimensions(2)?
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.position)
+                    .map(|p| [p[0], p[1], 0.0].into()),
+            )?
+            .particles_type_id(microstate.iter_sites_tag_order()
+                .map(|s| s.properties.site_type as u32))?
+            .particles_types(SiteType::VARIANTS.iter().copied())
+    }
+}
+// ANCHOR_END: append_microstate
+
 // Remove the cfg(not(...)) line when using this code outside the hoomd-rs/examples directory.
 #[cfg(not(feature = "bevy"))]
+// ANCHOR: main
 fn main() -> anyhow::Result<()> {
     let mut simulation = TypeDependentInteractions::new()?;
-    // TODO: Write GSD file.
+    let mut hoomd_gsd_file = HoomdGsdFile::create("type-dependent-interactions.gsd")?;
 
-    for _ in 0..1_000_000 {
+    for _ in 0..100_000 {
         simulation.advance()?;
+
+        if simulation.step().is_multiple_of(10_000) {
+            hoomd_gsd_file.append_microstate(&simulation.microstate)?;
+            // ANCHOR_END: main
+            // ANCHOR: log_gsd
+        }
     }
 
     Ok(())
 }
+// ANCHOR_END: log_gsd
 // ANCHOR_END: all
 
 #[cfg(feature = "bevy")]

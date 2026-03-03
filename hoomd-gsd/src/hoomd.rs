@@ -1,9 +1,11 @@
-use std::{array, num::TryFromIntError, path::Path};
+use std::{array, iter, num::TryFromIntError, path::Path};
 use thiserror::Error;
 
 use hoomd_vector::{Cartesian, Versor};
 
 use crate::file_layer::{GsdFile, OpenError, WriteError};
+
+const MAX_NAME_LENGTH: usize = 64;
 
 pub struct HoomdGsdFile {
     gsd_file: GsdFile,
@@ -173,6 +175,45 @@ impl Frame<'_> {
         self.hoomd_gsd_file
             .gsd_file
             .write_arrays(chunk_name, data)?;
+
+        Ok(self)
+    }
+
+    pub fn particles_type_id<I>(mut self, type_id: I) -> Result<Self, AppendError>
+    where
+        I: IntoIterator<Item = u32>,
+    {
+        let chunk_name = "particles/typeid";
+        let data: Vec<_> = type_id
+            .into_iter()
+            .collect();
+
+        self.validate_particles_chunk(&data, chunk_name)?;
+
+        self.hoomd_gsd_file
+            .gsd_file
+            .write_scalars(chunk_name, data)?;
+
+        Ok(self)
+    }
+
+    pub fn particles_types<'a, I>(mut self, types: I) -> Result<Self, AppendError>
+    where
+        I: IntoIterator<Item = &'a str>,
+    {
+        let chunk_name = "particles/types";
+        let types: Vec<_> = types.into_iter().map(str::to_string).collect();
+        let max_len = types.iter().map(String::len).fold(0, Ord::max);
+
+        assert!(max_len < MAX_NAME_LENGTH, "type name length too long");
+
+        self.hoomd_gsd_file
+            .gsd_file
+            .write_arrays(chunk_name,
+            types.into_iter().map(|s| -> [u8; MAX_NAME_LENGTH] {
+                array::from_fn(|i| if i < s.len() { s.as_bytes()[i] } else { 0 })                                                
+                })
+            )?;
 
         Ok(self)
     }
