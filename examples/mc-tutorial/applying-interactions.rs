@@ -162,8 +162,8 @@ impl Simulation for Fill {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
-    use hoomd_microstate::AppendMicrostate;
     use hoomd_gsd::hoomd::HoomdGsdFile;
+    use hoomd_microstate::AppendMicrostate;
 
     let mut simulation = Fill::new()?;
     // ANCHOR_END: main

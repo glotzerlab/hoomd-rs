@@ -134,7 +134,9 @@ impl<T> VecWithTags<T> {
 
     /// Iterate over items in tag order.
     fn iter_tag_order(&self) -> impl Iterator<Item = &T> {
-        self.indices.iter().filter_map(|opt_i| opt_i.map(|i| &self.items[i]))
+        self.indices
+            .iter()
+            .filter_map(|opt_i| opt_i.map(|i| &self.items[i]))
     }
 }
 

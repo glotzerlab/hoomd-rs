@@ -364,8 +364,7 @@ impl Hypercuboid<2> {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let rectangle = Rectangle {
-    ///     edge_lengths: [10.0.try_into()?,
-    ///                    15.0.try_into()?],
+    ///     edge_lengths: [10.0.try_into()?, 15.0.try_into()?],
     /// };
     ///
     /// let gsd_box = rectangle.to_gsd_box();
@@ -376,7 +375,14 @@ impl Hypercuboid<2> {
     #[inline]
     #[must_use]
     pub fn to_gsd_box(&self) -> [f64; 6] {
-        [self.edge_lengths[0].get(), self.edge_lengths[1].get(), 0.0, 0.0, 0.0, 0.0]
+        [
+            self.edge_lengths[0].get(),
+            self.edge_lengths[1].get(),
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ]
     }
 }
 
@@ -390,9 +396,7 @@ impl Hypercuboid<3> {
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let rectangle = Cuboid {
-    ///     edge_lengths: [10.0.try_into()?,
-    ///                    15.0.try_into()?,
-    ///                    20.0.try_into()?],
+    ///     edge_lengths: [10.0.try_into()?, 15.0.try_into()?, 20.0.try_into()?],
     /// };
     ///
     /// let gsd_box = rectangle.to_gsd_box();
@@ -403,7 +407,14 @@ impl Hypercuboid<3> {
     #[inline]
     #[must_use]
     pub fn to_gsd_box(&self) -> [f64; 6] {
-        [self.edge_lengths[0].get(), self.edge_lengths[1].get(), self.edge_lengths[2].get(), 0.0, 0.0, 0.0]
+        [
+            self.edge_lengths[0].get(),
+            self.edge_lengths[1].get(),
+            self.edge_lengths[2].get(),
+            0.0,
+            0.0,
+            0.0,
+        ]
     }
 }
 

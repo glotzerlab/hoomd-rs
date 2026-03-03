@@ -44,7 +44,9 @@ impl<B, X> AppendMicrostate<B, Point<Cartesian<2>>, X, Periodic<Hypercuboid<2>>>
     }
 }
 
-impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<2>, Angle>, X, Closed<Hypercuboid<2>>> for HoomdGsdFile {
+impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<2>, Angle>, X, Closed<Hypercuboid<2>>>
+    for HoomdGsdFile
+{
     #[inline]
     fn append_microstate(
         &mut self,
@@ -63,12 +65,21 @@ impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<2>, Angle>, X, Closed<Hyp
                 microstate
                     .iter_sites_tag_order()
                     .map(|s| s.properties.orientation.theta)
-                    .map(|a| Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().expect("hard-coded vector can be normalized"), a)),
+                    .map(|a| {
+                        Versor::from_axis_angle(
+                            [0.0, 0.0, 1.0]
+                                .try_into()
+                                .expect("hard-coded vector can be normalized"),
+                            a,
+                        )
+                    }),
             )
     }
 }
 
-impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<2>, Angle>, X, Periodic<Hypercuboid<2>>> for HoomdGsdFile {
+impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<2>, Angle>, X, Periodic<Hypercuboid<2>>>
+    for HoomdGsdFile
+{
     #[inline]
     fn append_microstate(
         &mut self,
@@ -87,7 +98,14 @@ impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<2>, Angle>, X, Periodic<H
                 microstate
                     .iter_sites_tag_order()
                     .map(|s| s.properties.orientation.theta)
-                    .map(|a| Versor::from_axis_angle([0.0, 0.0, 1.0].try_into().expect("hard-coded vector can be normalized"), a)),
+                    .map(|a| {
+                        Versor::from_axis_angle(
+                            [0.0, 0.0, 1.0]
+                                .try_into()
+                                .expect("hard-coded vector can be normalized"),
+                            a,
+                        )
+                    }),
             )
     }
 }
@@ -104,7 +122,7 @@ impl<B, X> AppendMicrostate<B, Point<Cartesian<3>>, X, Closed<Hypercuboid<3>>> f
             .particles_position(
                 microstate
                     .iter_sites_tag_order()
-                    .map(|s| s.properties.position)
+                    .map(|s| s.properties.position),
             )
     }
 }
@@ -121,12 +139,14 @@ impl<B, X> AppendMicrostate<B, Point<Cartesian<3>>, X, Periodic<Hypercuboid<3>>>
             .particles_position(
                 microstate
                     .iter_sites_tag_order()
-                    .map(|s| s.properties.position)
+                    .map(|s| s.properties.position),
             )
     }
 }
 
-impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Closed<Hypercuboid<3>>> for HoomdGsdFile {
+impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Closed<Hypercuboid<3>>>
+    for HoomdGsdFile
+{
     #[inline]
     fn append_microstate(
         &mut self,
@@ -138,21 +158,28 @@ impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Closed<Hy
             .particles_position(
                 microstate
                     .iter_sites_tag_order()
-                    .map(|s| s.properties.position)
+                    .map(|s| s.properties.position),
             )?
             .particles_orientation(
                 microstate
                     .iter_sites_tag_order()
-                    .map(|s| s.properties.orientation)
+                    .map(|s| s.properties.orientation),
             )
     }
 }
 
-impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<Hypercuboid<3>>> for HoomdGsdFile {
+impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<Hypercuboid<3>>>
+    for HoomdGsdFile
+{
     #[inline]
     fn append_microstate(
         &mut self,
-        microstate: &Microstate<B, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<Hypercuboid<3>>>,
+        microstate: &Microstate<
+            B,
+            OrientedPoint<Cartesian<3>, Versor>,
+            X,
+            Periodic<Hypercuboid<3>>,
+        >,
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
             .configuration_box(microstate.boundary().shape().to_gsd_box())?
@@ -160,12 +187,12 @@ impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<
             .particles_position(
                 microstate
                     .iter_sites_tag_order()
-                    .map(|s| s.properties.position)
+                    .map(|s| s.properties.position),
             )?
             .particles_orientation(
                 microstate
                     .iter_sites_tag_order()
-                    .map(|s| s.properties.orientation)
+                    .map(|s| s.properties.orientation),
             )
     }
 }

@@ -332,10 +332,10 @@ pub struct LogRecord {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
-    use hoomd_interaction::TotalEnergy;
-    use hoomd_utility::data::ParquetLogger;
-    use hoomd_microstate::AppendMicrostate;
     use hoomd_gsd::hoomd::HoomdGsdFile;
+    use hoomd_interaction::TotalEnergy;
+    use hoomd_microstate::AppendMicrostate;
+    use hoomd_utility::data::ParquetLogger;
     // ANCHOR_END: main
     // ANCHOR: log_open
     let mut parquet_logger = ParquetLogger::<LogRecord>::create(
@@ -345,7 +345,8 @@ fn main() -> anyhow::Result<()> {
 
     // ANCHOR: run_simulation
     let mut simulation = PatchyParticleSelfAssembly::new()?;
-    let mut hoomd_gsd_file = HoomdGsdFile::create("patchy-particle-self-assembly.gsd")?;
+    let mut hoomd_gsd_file =
+        HoomdGsdFile::create("patchy-particle-self-assembly.gsd")?;
 
     for _ in 0..1_000_000 {
         simulation.advance()?;

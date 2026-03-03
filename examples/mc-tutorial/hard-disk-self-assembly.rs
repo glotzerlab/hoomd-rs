@@ -243,11 +243,12 @@ impl HardDiskSelfAssembly {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
-    use hoomd_microstate::AppendMicrostate;
     use hoomd_gsd::hoomd::HoomdGsdFile;
+    use hoomd_microstate::AppendMicrostate;
 
     let mut simulation = HardDiskSelfAssembly::new()?;
-    let mut hoomd_gsd_file = HoomdGsdFile::create("hard-disk-self-assembly.gsd")?;
+    let mut hoomd_gsd_file =
+        HoomdGsdFile::create("hard-disk-self-assembly.gsd")?;
 
     for _ in 0..100_000 {
         simulation.advance()?;
