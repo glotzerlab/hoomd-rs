@@ -1,4 +1,4 @@
-use std::{array, iter, num::TryFromIntError, path::Path};
+use std::{array, num::TryFromIntError, path::Path};
 use thiserror::Error;
 
 use hoomd_vector::{Cartesian, Versor};
@@ -89,6 +89,7 @@ impl Frame<'_> {
     pub fn configuration_dimensions(self, dimensions: u8) -> Result<Self, AppendError> {
         let chunk_name = "configuration/dimensions";
 
+        // TODO: Replace with enum to make infallible.
         if dimensions < 2 || dimensions > 3 {
             return Err(AppendError::InvalidDimensions(dimensions));
         }
@@ -195,7 +196,7 @@ impl Frame<'_> {
         Ok(self)
     }
 
-    pub fn particles_types<'a, I>(mut self, types: I) -> Result<Self, AppendError>
+    pub fn particles_types<'a, I>(self, types: I) -> Result<Self, AppendError>
     where
         I: IntoIterator<Item = &'a str>,
     {
@@ -215,7 +216,7 @@ impl Frame<'_> {
         Ok(self)
     }
 
-    pub fn log_scalar<'a, T>(mut self, name: &'a str, scalar: T) -> Result<Self, AppendError>
+    pub fn log_scalar<T>(self, name: &str, scalar: T) -> Result<Self, AppendError>
     where
         T: Type,
     {
@@ -228,7 +229,7 @@ impl Frame<'_> {
         Ok(self)
     }
 
-    pub fn log_scalars<'a, T, I>(mut self, name: &'a str, scalars: I) -> Result<Self, AppendError>
+    pub fn log_scalars<T, I>(self, name: &str, scalars: I) -> Result<Self, AppendError>
     where
         T: Type,
         I: IntoIterator<Item = T>,
@@ -242,9 +243,9 @@ impl Frame<'_> {
         Ok(self)
     }
 
-    pub fn log_arrays<'a, T, I, const M: usize>(
-        mut self,
-        name: &'a str,
+    pub fn log_arrays<T, I, const M: usize>(
+        self,
+        name: &str,
         arrays: I,
     ) -> Result<Self, AppendError>
     where

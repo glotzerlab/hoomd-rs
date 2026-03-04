@@ -76,6 +76,7 @@
 //! [HOOMD-blue]: https://hoomd-blue.readthedocs.io
 //! [Ovito]: https://www.ovito.org
 //!
+//! TODO: Document `hoomd` module.
 //! At this time, the `hoomd-gsd` crate does not provide any high level API for
 //! reading or writing the HOOMD schema. See the code examples throughout the
 //! [`file_layer`] module for minimal examples that write files with the HOOMD

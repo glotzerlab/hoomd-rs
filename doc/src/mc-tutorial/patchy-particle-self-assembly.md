@@ -329,7 +329,6 @@ the [Edit types] modifier in the cloned pipeline and change the site color.
 [Ovito]: https://www.ovito.org/
 [patchy-particle.obj]: patchy-particle.obj
 [Edit types]: https://www.ovito.org/docs/current/reference/pipelines/modifiers/edit_types.html
-[tetrahedron.obj]: tetrahedron.obj
 [save the session state]: https://docs.ovito.org/usage/miscellaneous.html#usage-saving-loading-scene
 [modifier templates]: https://docs.ovito.org/reference/app_settings/modifier_templates.html#modifier-templates
 [modifier snippet]: https://docs.ovito.org/advanced_topics/modifier_snippets.html#modifier-snippets
