@@ -149,7 +149,29 @@
 //!
 //! ## I/O
 //!
-//! TODO.
+//! Use [`HoomdGsdFile`] and [`AppendMicrostate`] to write to GSD
+//! files that can be read by the [Ovito], [HOOMD-blue],
+//! the [GSD Python package], and other applications. There is currently no
+//! high-level API to *read* a GSD file and produce a [`Microstate`]. You can
+//! implement your own solution using the low level [`GsdFile`].
+//!
+//! [`GsdFile`]: hoomd_gsd::file_layer::GsdFile
+//! [`HoomdGsdFile`]: hoomd_gsd::hoomd::HoomdGsdFile
+//! [GSD Python package]: https://gsd.readthedocs.io
+//! [HOOMD-blue]: https://hoomd-blue.readthedocs.io
+//! [Ovito]: https://www.ovito.org
+//!
+//! [`Microstate`] derives the [serde] `Serialize` and `Deserialize` traits,
+//! along with all other types in *hoomd-rs*. You can use [serde] to read and
+//! write entire `Simulation` models. Use [serde] serialized files (in a
+//! format of your choice, [postcard] is a good starting point) to save the
+//! simulation state and continue running where it left off. The format is *NOT*
+//! well-defined for long-term use. It **will** change from one simulation model
+//! to the next, and *may* change with each major release of *hoomd-rs*. Share
+//! your simulation **code** along with GSD **data** with the community.
+//!
+//! [serde]: https://serde.rs/
+//! [postcard]: https://docs.rs/postcard/latest/postcard/
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -376,7 +398,95 @@ pub enum Error {
     UpdateBody(usize, #[source] boundary::Error),
 }
 
+/// Write a frame to a GSD file with the contents of a microstate.
+///
+/// # Basic usage
+///
+/// `hoomd-microstate` implements [`AppendMicrostate`] for typical combinations
+/// of [`Point`]/[`OrientedPoint`] site types with commonly used boundary
+/// conditions. The provided implementations write all *sites* to the GSD
+/// file.
+///
+/// [`OrientedPoint`]: crate::property::OrientedPoint
+///
+/// ```
+/// use hoomd_geometry::shape::Rectangle;
+/// use hoomd_microstate::{
+///     AppendMicrostate, Body, Microstate, boundary::Closed, property::Point,
+/// };
+/// use hoomd_vector::Cartesian;
+/// use hoomd_gsd::hoomd::HoomdGsdFile;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # use tempfile::tempdir;
+/// # let tmp_dir = tempdir().expect("temp dir should be created");
+/// # let path = tmp_dir.path().join("test.gsd");
+/// let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
+///
+/// let microstate = Microstate::builder()
+///     .boundary(square)
+///     .bodies([
+///         Body::point(Cartesian::from([1.0, 0.0])),
+///         Body::point(Cartesian::from([-1.0, 2.0])),
+///     ])
+///     .try_build()?;
+///
+/// // let path = "file.gsd";
+/// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
+/// hoomd_gsd_file.append_microstate(&microstate)?;
+/// # Ok(())
+/// # }
+/// ```
+///
+/// # Writing additional data chunks
+///
+/// `append_microstate` returns the GSD [`Frame`] so you can add data chunks to
+/// the frame, such as log values.
+/// ```
+/// use hoomd_geometry::shape::Rectangle;
+/// use hoomd_microstate::{
+///     AppendMicrostate, Body, Microstate, boundary::Closed, property::Point,
+/// };
+/// use hoomd_vector::Cartesian;
+/// use hoomd_gsd::hoomd::HoomdGsdFile;
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # use tempfile::tempdir;
+/// # let tmp_dir = tempdir().expect("temp dir should be created");
+/// # let path = tmp_dir.path().join("test.gsd");
+/// let square = Closed(Rectangle::with_equal_edges(10.0.try_into()?));
+///
+/// let microstate = Microstate::builder()
+///     .boundary(square)
+///     .bodies([
+///         Body::point(Cartesian::from([1.0, 0.0])),
+///         Body::point(Cartesian::from([-1.0, 2.0])),
+///     ])
+///     .try_build()?;
+///
+/// // let path = "file.gsd";
+/// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
+/// hoomd_gsd_file.append_microstate(&microstate)?
+///    .log_scalar("height", 10.0_f64)?
+///     .log_scalars("energy", [1.0_f64, 2.0, 3.0])?;
+/// # Ok(())
+/// # }
+/// ```
+///
+/// # Custom implementations
+///
+/// You can implement [`AppendMicrostate`] for your custom site type and/or
+/// boundary condition. Your implementation could choose to write bodies
+/// instead of sites. See the "Type-dependent Interactions" tutorial for a complete
+/// example.
 pub trait AppendMicrostate<B, S, X, C> {
+    /// Append the contents of the microstate as a frame in a GSD file.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`AppendError`] when any of the following occur:
+    /// * The file is not opened in a write mode.
+    /// * An I/O error writing to the file.
     fn append_microstate(
         &mut self,
         microstate: &Microstate<B, S, X, C>,

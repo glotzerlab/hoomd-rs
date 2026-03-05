@@ -22,7 +22,7 @@
 //!
 //! # HOOMD schema
 //!
-//! Use [`HoomdGsdFile`] to create and write to GSD files with the HOOMD schema that can
+//! Use [`HoomdGsdFile`] to write to GSD files with the HOOMD schema that can
 //! be read by the [Ovito], [HOOMD-blue], the [GSD Python package], and other applications.
 //!
 //! [`HoomdGsdFile`]: hoomd::HoomdGsdFile

@@ -1,3 +1,5 @@
+//! Implement `AppendMicrostate` for built-in site and boundary types.
+
 use hoomd_geometry::shape::Hypercuboid;
 use hoomd_gsd::hoomd::{AppendError, Dimensions, Frame, HoomdGsdFile};
 use hoomd_vector::{Angle, Cartesian, Versor};

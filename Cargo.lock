@@ -3704,6 +3704,7 @@ dependencies = [
  "rand 0.10.0",
  "rstest",
  "serde",
+ "tempfile",
  "thiserror 2.0.18",
 ]
 

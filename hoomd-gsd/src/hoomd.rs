@@ -497,6 +497,7 @@ impl Frame<'_> {
     /// Returns an [`AppendError`] when any of the following occur:
     /// * The file is not opened in a write mode.
     /// * An I/O error writing to the file.
+    /// * *N* does not match a previous `particles_*` data chunk in this frame.
     #[expect(clippy::cast_possible_truncation, reason = "truncating to match the GSD specification")]
     pub fn particles_position<I>(mut self, position: I) -> Result<Self, AppendError>
     where
@@ -547,6 +548,7 @@ impl Frame<'_> {
     /// Returns an [`AppendError`] when any of the following occur:
     /// * The file is not opened in a write mode.
     /// * An I/O error writing to the file.
+    /// * *N* does not match a previous `particles_*` data chunk in this frame.
     #[expect(clippy::cast_possible_truncation, reason = "truncating to match the GSD specification")]
     pub fn particles_orientation<I>(mut self, orientation: I) -> Result<Self, AppendError>
     where
@@ -600,6 +602,7 @@ impl Frame<'_> {
     /// Returns an [`AppendError`] when any of the following occur:
     /// * The file is not opened in a write mode.
     /// * An I/O error writing to the file.
+    /// * *N* does not match a previous `particles_*` data chunk in this frame.
     pub fn particles_type_id<I>(mut self, type_id: I) -> Result<Self, AppendError>
     where
         I: IntoIterator<Item = u32>,
@@ -685,7 +688,7 @@ impl Frame<'_> {
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
     /// hoomd_gsd_file
     ///     .append_frame(1000)?
-    ///     .log_scalar("height", 10.0)?;
+    ///     .log_scalar("height", 10.0_f64)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -725,7 +728,7 @@ impl Frame<'_> {
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
     /// hoomd_gsd_file
     ///     .append_frame(1000)?
-    ///     .log_scalars("energy", [1.0, 2.0, 3.0])?;
+    ///     .log_scalars("energy", [1.0_f64, 2.0, 3.0])?;
     /// # Ok(())
     /// # }
     /// ```
@@ -811,3 +814,5 @@ impl Drop for Frame<'_> {
         }
     }
 }
+
+// TODO: Test HoomdGsdFile
