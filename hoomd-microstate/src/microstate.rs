@@ -2246,4 +2246,5 @@ mod tests {
     }
 
     // TODO: Test iter_sites_near: with and without periodic boundaries
+    // TODO: Test iter_sites_tag_order
 }

@@ -8,7 +8,7 @@ use hoomd_geometry::{
     Volume,
     shape::{Circle, Hypercuboid, Rectangle},
 };
-use hoomd_gsd::hoomd::HoomdGsdFile;
+use hoomd_gsd::hoomd::{Dimensions, HoomdGsdFile};
 use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff, SitePairEnergy,
     pairwise::Isotropic,
@@ -344,7 +344,7 @@ impl<X>
     {
         self.append_frame(microstate.step())?
             .configuration_box(microstate.boundary().shape().to_gsd_box())?
-            .configuration_dimensions(2)?
+            .configuration_dimensions(Dimensions::Two)?
             .particles_position(
                 microstate
                     .iter_sites_tag_order()

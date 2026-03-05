@@ -1,5 +1,5 @@
 use hoomd_geometry::shape::Hypercuboid;
-use hoomd_gsd::hoomd::{AppendError, Frame, HoomdGsdFile};
+use hoomd_gsd::hoomd::{AppendError, Dimensions, Frame, HoomdGsdFile};
 use hoomd_vector::{Angle, Cartesian, Versor};
 
 use crate::{
@@ -16,7 +16,7 @@ impl<B, X> AppendMicrostate<B, Point<Cartesian<2>>, X, Closed<Hypercuboid<2>>> f
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
             .configuration_box(microstate.boundary().0.to_gsd_box())?
-            .configuration_dimensions(2)?
+            .configuration_dimensions(Dimensions::Two)?
             .particles_position(
                 microstate
                     .iter_sites_tag_order()
@@ -34,7 +34,7 @@ impl<B, X> AppendMicrostate<B, Point<Cartesian<2>>, X, Periodic<Hypercuboid<2>>>
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
             .configuration_box(microstate.boundary().shape().to_gsd_box())?
-            .configuration_dimensions(2)?
+            .configuration_dimensions(Dimensions::Two)?
             .particles_position(
                 microstate
                     .iter_sites_tag_order()
@@ -54,7 +54,7 @@ impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<2>, Angle>, X, Closed<Hyp
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
             .configuration_box(microstate.boundary().0.to_gsd_box())?
-            .configuration_dimensions(2)?
+            .configuration_dimensions(Dimensions::Two)?
             .particles_position(
                 microstate
                     .iter_sites_tag_order()
@@ -87,7 +87,7 @@ impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<2>, Angle>, X, Periodic<H
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
             .configuration_box(microstate.boundary().shape().to_gsd_box())?
-            .configuration_dimensions(2)?
+            .configuration_dimensions(Dimensions::Two)?
             .particles_position(
                 microstate
                     .iter_sites_tag_order()
@@ -118,7 +118,7 @@ impl<B, X> AppendMicrostate<B, Point<Cartesian<3>>, X, Closed<Hypercuboid<3>>> f
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
             .configuration_box(microstate.boundary().0.to_gsd_box())?
-            .configuration_dimensions(3)?
+            .configuration_dimensions(Dimensions::Three)?
             .particles_position(
                 microstate
                     .iter_sites_tag_order()
@@ -135,7 +135,7 @@ impl<B, X> AppendMicrostate<B, Point<Cartesian<3>>, X, Periodic<Hypercuboid<3>>>
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
             .configuration_box(microstate.boundary().shape().to_gsd_box())?
-            .configuration_dimensions(3)?
+            .configuration_dimensions(Dimensions::Three)?
             .particles_position(
                 microstate
                     .iter_sites_tag_order()
@@ -154,7 +154,7 @@ impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Closed<Hy
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
             .configuration_box(microstate.boundary().0.to_gsd_box())?
-            .configuration_dimensions(3)?
+            .configuration_dimensions(Dimensions::Three)?
             .particles_position(
                 microstate
                     .iter_sites_tag_order()
@@ -183,7 +183,7 @@ impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<
     ) -> Result<Frame<'_>, AppendError> {
         self.append_frame(microstate.step())?
             .configuration_box(microstate.boundary().shape().to_gsd_box())?
-            .configuration_dimensions(3)?
+            .configuration_dimensions(Dimensions::Three)?
             .particles_position(
                 microstate
                     .iter_sites_tag_order()
