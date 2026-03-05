@@ -20,7 +20,7 @@ use hoomd_interaction::{
 use hoomd_mc::{
     QuickCompress, QuickInsert, Sweep, Translate, Trial, Tune, UniformIn,
 };
-use hoomd_microstate::AppendMicrostate;
+use hoomd_microstate::{AppendMicrostate, Site};
 use hoomd_microstate::{
     Microstate, SiteKey, Transform,
     boundary::Periodic,
@@ -397,7 +397,7 @@ fn main() -> anyhow::Result<()> {
 }
 // ANCHOR_END: log_gsd
 
-#[cfg(not(feature = "bevy"))]
+#[allow(dead_code, reason = "site_energy is used in the batch mode main()")]
 // ANCHOR: site_energy
 fn site_energy(
     simulation: &TypeDependentInteractions,
