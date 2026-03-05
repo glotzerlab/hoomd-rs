@@ -20,7 +20,7 @@ use hoomd_interaction::{
 use hoomd_mc::{
     QuickCompress, QuickInsert, Sweep, Translate, Trial, Tune, UniformIn,
 };
-use hoomd_microstate::{AppendMicrostate, Site};
+use hoomd_microstate::AppendMicrostate;
 use hoomd_microstate::{
     Microstate, SiteKey, Transform,
     boundary::Periodic,
