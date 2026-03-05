@@ -1220,7 +1220,7 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     /// [`AppendMicrostate`]: crate::AppendMicrostate
     ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// use hoomd_microstate::{Body, Microstate};
     /// use hoomd_vector::Cartesian;
@@ -1236,10 +1236,14 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
     /// microstate.remove_body(0);
     /// microstate.add_body(Body::point(Cartesian::from([3.0, 1.0])))?;
     ///
-    /// let positions_tag_order: Vec<_> = microstate.iter_sites_tag_order()
+    /// let positions_tag_order: Vec<_> = microstate
+    ///     .iter_sites_tag_order()
     ///     .map(|s| s.properties.position)
     ///     .collect();
-    /// assert_eq!(positions_tag_order, vec![[3.0, 1.0].into(), [-1.0, 2.0].into()]);
+    /// assert_eq!(
+    ///     positions_tag_order,
+    ///     vec![[3.0, 1.0].into(), [-1.0, 2.0].into()]
+    /// );
     ///
     /// # Ok(())
     /// # }

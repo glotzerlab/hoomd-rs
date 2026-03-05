@@ -1,8 +1,16 @@
+// Copyright (c) 2024-2026 The Regents of the University of Michigan.
+// Part of hoomd-rs, released under the BSD 3-Clause License.
+
 //! Write HOOMD schema GSD files.
 //!
-//! Use [`HoomdGsdFile`] to write GSD files with the HOOMD schema. 
+//! Use [`HoomdGsdFile`] to write GSD files with the HOOMD schema.
 
-use std::{array, num::TryFromIntError, path::Path, time::{Duration, Instant}};
+use std::{
+    array,
+    num::TryFromIntError,
+    path::Path,
+    time::{Duration, Instant},
+};
 use thiserror::Error;
 
 use hoomd_vector::{Cartesian, Versor};
@@ -13,7 +21,7 @@ use crate::file_layer::{EncodeError, GsdFile, Mode, OpenError, Type, WriteError}
 const MAX_NAME_LENGTH: usize = 64;
 
 /// Default delay between automatic calls to `sync_all`.
-const DEFAULT_AUTO_SYNC_DELAY: Duration = Duration::new(10,0);
+const DEFAULT_AUTO_SYNC_DELAY: Duration = Duration::new(10, 0);
 
 /// Create and write to GSD files with the HOOMD schema.
 ///
@@ -45,7 +53,10 @@ const DEFAULT_AUTO_SYNC_DELAY: Duration = Duration::new(10,0);
 /// hoomd_gsd_file
 ///     .append_frame(2000)?
 ///     .configuration_box([105.0, 48.0, 72.0, 0.0, 0.0, 0.0])?
-///     .particles_position([[2.0, 3.0, -1.0].into(), [18.0, 4.0, -6.0].into()]);
+///     .particles_position([
+///         [2.0, 3.0, -1.0].into(),
+///         [18.0, 4.0, -6.0].into(),
+///     ]);
 /// # Ok(())
 /// # }
 /// ```
@@ -168,7 +179,11 @@ impl HoomdGsdFile {
 
         let auto_sync_delay = DEFAULT_AUTO_SYNC_DELAY;
         let last_auto_sync = Instant::now();
-        Ok(Self { gsd_file, auto_sync_delay, last_auto_sync })
+        Ok(Self {
+            gsd_file,
+            auto_sync_delay,
+            last_auto_sync,
+        })
     }
 
     /// Create a new HOOMD GSD file.
@@ -208,7 +223,11 @@ impl HoomdGsdFile {
 
         let auto_sync_delay = DEFAULT_AUTO_SYNC_DELAY;
         let last_auto_sync = Instant::now();
-        Ok(Self { gsd_file, auto_sync_delay, last_auto_sync })
+        Ok(Self {
+            gsd_file,
+            auto_sync_delay,
+            last_auto_sync,
+        })
     }
 
     /// Open an existing HOOMD GSD file in write mode.
@@ -242,7 +261,11 @@ impl HoomdGsdFile {
 
         let auto_sync_delay = DEFAULT_AUTO_SYNC_DELAY;
         let last_auto_sync = Instant::now();
-        Ok(Self { gsd_file, auto_sync_delay, last_auto_sync })
+        Ok(Self {
+            gsd_file,
+            auto_sync_delay,
+            last_auto_sync,
+        })
     }
 
     /// Write buffered data to the filesystem.
@@ -275,7 +298,7 @@ impl HoomdGsdFile {
     /// for a single frame (see the example):
     ///
     /// # Ownership
-    /// 
+    ///
     /// The returned [`Frame`] holds a mutable reference to this
     /// [`HoomdGsdFile`], so the compiler forces you to complete writing the
     /// frame and drop the [`Frame`] (either implicitly or explicitly) before
@@ -298,7 +321,7 @@ impl HoomdGsdFile {
     /// # Ok(())
     /// # }
     /// ```
-    /// 
+    ///
     /// # Errors
     ///
     /// Returns a [`WriteError`] when any of the following occur:
@@ -318,8 +341,8 @@ impl HoomdGsdFile {
     /// # Example
     ///
     /// ```
-    /// use std::time::Duration;
     /// use hoomd_gsd::hoomd::HoomdGsdFile;
+    /// use std::time::Duration;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # use tempfile::tempdir;
     /// # let tmp_dir = tempdir().expect("temp dir should be created");
@@ -328,7 +351,7 @@ impl HoomdGsdFile {
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
     /// let auto_sync_delay = hoomd_gsd_file.auto_sync_delay();
     ///
-    /// assert_eq!(*auto_sync_delay, Duration::new(10,0));
+    /// assert_eq!(*auto_sync_delay, Duration::new(10, 0));
     /// # Ok(())
     /// # }
     /// ```
@@ -343,15 +366,15 @@ impl HoomdGsdFile {
     /// # Example
     ///
     /// ```
-    /// use std::time::Duration;
     /// use hoomd_gsd::hoomd::HoomdGsdFile;
+    /// use std::time::Duration;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # use tempfile::tempdir;
     /// # let tmp_dir = tempdir().expect("temp dir should be created");
     /// # let path = tmp_dir.path().join("test.gsd");
     /// // let path = "file.gsd";
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
-    /// *hoomd_gsd_file.auto_sync_delay_mut() = Duration::new(60,0);
+    /// *hoomd_gsd_file.auto_sync_delay_mut() = Duration::new(60, 0);
     /// # Ok(())
     /// # }
     /// ```
@@ -432,7 +455,10 @@ impl Frame<'_> {
     /// Returns an [`AppendError`] when any of the following occur:
     /// * The file is not opened in a write mode.
     /// * An I/O error writing to the file.
-    #[expect(clippy::cast_possible_truncation, reason = "truncating to match the GSD specification")]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "truncating to match the GSD specification"
+    )]
     pub fn configuration_box(self, values: [f64; 6]) -> Result<Self, AppendError> {
         let chunk_name = "configuration/box";
 
@@ -485,9 +511,10 @@ impl Frame<'_> {
     /// # let path = tmp_dir.path().join("test.gsd");
     /// // let path = "file.gsd";
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
-    /// hoomd_gsd_file
-    ///     .append_frame(1000)?
-    ///     .particles_position([[2.0, 3.0, -1.0].into(), [18.0, 4.0, -6.0].into()])?;
+    /// hoomd_gsd_file.append_frame(1000)?.particles_position([
+    ///     [2.0, 3.0, -1.0].into(),
+    ///     [18.0, 4.0, -6.0].into(),
+    /// ])?;
     /// # Ok(())
     /// # }
     /// ```
@@ -498,7 +525,10 @@ impl Frame<'_> {
     /// * The file is not opened in a write mode.
     /// * An I/O error writing to the file.
     /// * *N* does not match a previous `particles_*` data chunk in this frame.
-    #[expect(clippy::cast_possible_truncation, reason = "truncating to match the GSD specification")]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "truncating to match the GSD specification"
+    )]
     pub fn particles_position<I>(mut self, position: I) -> Result<Self, AppendError>
     where
         I: IntoIterator<Item = Cartesian<3>>,
@@ -535,10 +565,10 @@ impl Frame<'_> {
     /// # let path = tmp_dir.path().join("test.gsd");
     /// // let path = "file.gsd";
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
-    /// hoomd_gsd_file
-    ///     .append_frame(1000)?
-    ///     .particles_orientation([Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, 1.2),
-    ///                             Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, -0.3)])?;
+    /// hoomd_gsd_file.append_frame(1000)?.particles_orientation([
+    ///     Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, 1.2),
+    ///     Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, -0.3),
+    /// ])?;
     /// # Ok(())
     /// # }
     /// ```
@@ -549,7 +579,10 @@ impl Frame<'_> {
     /// * The file is not opened in a write mode.
     /// * An I/O error writing to the file.
     /// * *N* does not match a previous `particles_*` data chunk in this frame.
-    #[expect(clippy::cast_possible_truncation, reason = "truncating to match the GSD specification")]
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "truncating to match the GSD specification"
+    )]
     pub fn particles_orientation<I>(mut self, orientation: I) -> Result<Self, AppendError>
     where
         I: IntoIterator<Item = Versor>,
@@ -769,8 +802,7 @@ impl Frame<'_> {
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
     /// hoomd_gsd_file
     ///     .append_frame(1000)?
-    ///     .log_arrays("points", [[1.0, 2.0, 3.0],
-    ///                            [4.0, 5.0, 6.0]])?;
+    ///     .log_arrays("points", [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])?;
     /// # Ok(())
     /// # }
     /// ```

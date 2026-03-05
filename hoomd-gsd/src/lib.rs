@@ -31,7 +31,7 @@
 //! [Ovito]: https://www.ovito.org
 //!
 //! Create a new GSD file with the hoomd schema:
-//! 
+//!
 //! ```
 //! use hoomd_gsd::hoomd::HoomdGsdFile;
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -46,7 +46,7 @@
 //!
 //! Call [`append_frame`] to add a new frame to file. Chain any number of method calls
 //! On the return value of [`append_frame`] to write those data chunks to the frame:
-//!  
+//!
 //! ```
 //! use hoomd_gsd::hoomd::HoomdGsdFile;
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -80,7 +80,10 @@
 //! hoomd_gsd_file
 //!     .append_frame(2000)?
 //!     .configuration_box([105.0, 48.0, 72.0, 0.0, 0.0, 0.0])?
-//!     .particles_position([[2.0, 3.0, -1.0].into(), [18.0, 4.0, -6.0].into()]);
+//!     .particles_position([
+//!         [2.0, 3.0, -1.0].into(),
+//!         [18.0, 4.0, -6.0].into(),
+//!     ]);
 //! # Ok(())
 //! # }
 //! ```

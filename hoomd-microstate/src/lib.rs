@@ -411,11 +411,11 @@ pub enum Error {
 ///
 /// ```
 /// use hoomd_geometry::shape::Rectangle;
+/// use hoomd_gsd::hoomd::HoomdGsdFile;
 /// use hoomd_microstate::{
 ///     AppendMicrostate, Body, Microstate, boundary::Closed, property::Point,
 /// };
 /// use hoomd_vector::Cartesian;
-/// use hoomd_gsd::hoomd::HoomdGsdFile;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # use tempfile::tempdir;
@@ -444,11 +444,11 @@ pub enum Error {
 /// the frame, such as log values.
 /// ```
 /// use hoomd_geometry::shape::Rectangle;
+/// use hoomd_gsd::hoomd::HoomdGsdFile;
 /// use hoomd_microstate::{
 ///     AppendMicrostate, Body, Microstate, boundary::Closed, property::Point,
 /// };
 /// use hoomd_vector::Cartesian;
-/// use hoomd_gsd::hoomd::HoomdGsdFile;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # use tempfile::tempdir;
@@ -466,8 +466,9 @@ pub enum Error {
 ///
 /// // let path = "file.gsd";
 /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
-/// hoomd_gsd_file.append_microstate(&microstate)?
-///    .log_scalar("height", 10.0_f64)?
+/// hoomd_gsd_file
+///     .append_microstate(&microstate)?
+///     .log_scalar("height", 10.0_f64)?
 ///     .log_scalars("energy", [1.0_f64, 2.0, 3.0])?;
 /// # Ok(())
 /// # }
