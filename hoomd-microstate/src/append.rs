@@ -201,3 +201,5 @@ impl<B, X> AppendMicrostate<B, OrientedPoint<Cartesian<3>, Versor>, X, Periodic<
             )
     }
 }
+
+// TODO: Test append_microstate

@@ -22,5 +22,6 @@ hoomd-vector.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
+assert2.workspace = true
 clap.workspace = true
 tempfile.workspace = true

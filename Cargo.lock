@@ -3669,6 +3669,7 @@ name = "hoomd-gsd"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "assert2",
  "clap",
  "hoomd-vector",
  "itertools",
