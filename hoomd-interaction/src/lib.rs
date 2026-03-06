@@ -295,7 +295,6 @@ pub trait SiteEnergy<S> {
 ///
 /// The generic type names are:
 /// * `S`: The [`Site::properties`](hoomd_microstate::Site) type.
-/// * `P`: The type of the site's `Position`.
 ///
 /// [`Isotropic`]: pairwise::Isotropic
 /// [`Anisotropic`]: pairwise::Anisotropic
@@ -320,7 +319,7 @@ pub trait SiteEnergy<S> {
 ///     maximum_interaction_range: f64,
 /// }
 ///
-/// impl<S> SitePairEnergy<S, Cartesian<2>> for Custom
+/// impl<S> SitePairEnergy<S> for Custom
 /// where
 ///     S: Position<Position = Cartesian<2>>,
 /// {
@@ -391,7 +390,7 @@ pub trait SiteEnergy<S> {
 ///
 /// struct PolydisperseCircleOverlap;
 ///
-/// impl SitePairEnergy<CircleSiteProperties, Cartesian<2>>
+/// impl SitePairEnergy<CircleSiteProperties>
 ///     for PolydisperseCircleOverlap
 /// {
 ///     fn site_pair_energy(
@@ -482,7 +481,7 @@ pub trait SiteEnergy<S> {
 ///     angular_mask: Anisotropic<AngularMask<Boxcar, Cartesian<2>>>,
 /// }
 /// ```
-pub trait SitePairEnergy<S, P> {
+pub trait SitePairEnergy<S> {
     /// Evaluate the energy contribution from a pair of sites.
     fn site_pair_energy(&self, site_properties_i: &S, site_properties_j: &S) -> f64;
 

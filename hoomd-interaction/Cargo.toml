@@ -17,7 +17,6 @@ workspace = true
 serde.workspace = true
 
 hoomd-derive.workspace = true
-hoomd-manifold.workspace = true
 hoomd-microstate.workspace = true
 hoomd-vector.workspace = true
 hoomd-geometry.workspace = true

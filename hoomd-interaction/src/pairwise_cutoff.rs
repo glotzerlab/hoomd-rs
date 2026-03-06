@@ -168,9 +168,9 @@ impl<E> PairwiseCutoff<E> {
     /// # }
     /// ```
     #[inline]
-    pub fn site_pair_energy<S, P>(&self, site_i: &Site<S>, site_j: &Site<S>) -> f64
+    pub fn site_pair_energy<S>(&self, site_i: &Site<S>, site_j: &Site<S>) -> f64
     where
-        E: SitePairEnergy<S, P>,
+        E: SitePairEnergy<S>,
     {
         if site_i.body_tag == site_j.body_tag {
             return 0.0;
@@ -182,7 +182,7 @@ impl<E> PairwiseCutoff<E> {
 
     /// Compute the filtered energy contribution of a single site (`AllPairs` specialization)
     #[inline(always)]
-    fn filtered_site_energy_all<B, S, X, C, F, F2, P>(
+    fn filtered_site_energy_all<B, S, X, C, F, F2>(
         &self,
         microstate: &Microstate<B, S, X, C>,
         site_i_properties: &S,
@@ -190,7 +190,7 @@ impl<E> PairwiseCutoff<E> {
         site_pair_energy: F2,
     ) -> f64
     where
-        E: SitePairEnergy<S, P>,
+        E: SitePairEnergy<S>,
         F: Fn(&Site<S>) -> bool,
         F2: Fn(&E, &S, &S) -> f64,
     {
@@ -220,7 +220,7 @@ impl<E> PairwiseCutoff<E> {
         site_pair_energy: F2,
     ) -> f64
     where
-        E: SitePairEnergy<S, P> + MaximumInteractionRange,
+        E: SitePairEnergy<S> + MaximumInteractionRange,
         S: Position<Position = P>,
         X: PointsNearBall<P, SiteKey>,
         F: Fn(&Site<S>) -> bool,
@@ -255,7 +255,7 @@ impl<E> PairwiseCutoff<E> {
         site_pair_energy: F2,
     ) -> f64
     where
-        E: SitePairEnergy<S, P> + MaximumInteractionRange,
+        E: SitePairEnergy<S> + MaximumInteractionRange,
         S: Position<Position = P>,
         X: PointsNearBall<P, SiteKey>,
         F: Fn(&Site<S>) -> bool,
@@ -282,7 +282,7 @@ impl<E> PairwiseCutoff<E> {
         filter: F,
     ) -> f64
     where
-        E: SitePairEnergy<S, P> + MaximumInteractionRange,
+        E: SitePairEnergy<S> + MaximumInteractionRange,
         B: Transform<S>,
         S: Position<Position = P>,
         X: PointsNearBall<P, SiteKey>,
@@ -320,7 +320,7 @@ impl<E> PairwiseCutoff<E> {
         filter: F,
     ) -> f64
     where
-        E: SitePairEnergy<S, P> + MaximumInteractionRange,
+        E: SitePairEnergy<S> + MaximumInteractionRange,
         S: Position<Position = P>,
         X: PointsNearBall<P, SiteKey>,
         F: Fn(&Site<S>) -> bool,
@@ -347,7 +347,7 @@ impl<E> PairwiseCutoff<E> {
 
 impl<P, B, S, X, C, E> TotalEnergy<Microstate<B, S, X, C>> for PairwiseCutoff<E>
 where
-    E: SitePairEnergy<S, P> + MaximumInteractionRange,
+    E: SitePairEnergy<S> + MaximumInteractionRange,
     S: Position<Position = P>,
     X: PointsNearBall<P, SiteKey>,
 {
@@ -536,7 +536,7 @@ where
 
 impl<P, B, S, X, C, E> DeltaEnergyOne<B, S, X, C> for PairwiseCutoff<E>
 where
-    E: SitePairEnergy<S, P> + MaximumInteractionRange,
+    E: SitePairEnergy<S> + MaximumInteractionRange,
     B: Transform<S>,
     S: Position<Position = P>,
     X: PointsNearBall<P, SiteKey>,
@@ -645,7 +645,7 @@ where
 
 impl<P, B, S, X, C, E> DeltaEnergyInsert<B, S, X, C> for PairwiseCutoff<E>
 where
-    E: SitePairEnergy<S, P> + MaximumInteractionRange,
+    E: SitePairEnergy<S> + MaximumInteractionRange,
     B: Transform<S>,
     S: Position<Position = P>,
     X: PointsNearBall<P, SiteKey>,
@@ -729,7 +729,7 @@ where
 
 impl<P, B, S, X, C, E> DeltaEnergyRemove<B, S, X, C> for PairwiseCutoff<E>
 where
-    E: SitePairEnergy<S, P> + MaximumInteractionRange,
+    E: SitePairEnergy<S> + MaximumInteractionRange,
     S: Position<Position = P>,
     X: PointsNearBall<P, SiteKey>,
 {
