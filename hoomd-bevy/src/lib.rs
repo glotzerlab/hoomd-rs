@@ -685,6 +685,7 @@ where
         representation::disk::build(app);
         representation::ellipse::build(app);
         representation::hyperbolic_disk::build(app);
+        representation::hyperbolic_polygon::build(app);
 
         embedded_asset!(app, "logo.png");
 

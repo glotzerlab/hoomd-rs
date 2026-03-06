@@ -147,6 +147,9 @@ pub use point::Point;
 mod oriented_point;
 pub use oriented_point::OrientedPoint;
 
+mod oriented_hyperbolic_point;
+pub use oriented_hyperbolic_point::OrientedHyperbolicPoint;
+
 pub use hoomd_derive::{Orientation, Position};
 
 /// Locate sites and bodies.

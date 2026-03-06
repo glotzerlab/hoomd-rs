@@ -3658,6 +3658,7 @@ dependencies = [
  "hoomd-vector",
  "itertools",
  "rand 0.10.0",
+ "robust",
  "rstest",
  "serde",
  "serde_with",
@@ -3774,6 +3775,7 @@ dependencies = [
  "itertools",
  "log",
  "rand 0.10.0",
+ "robust",
  "rstest",
  "serde",
  "tempfile",
@@ -5643,6 +5645,12 @@ name = "renderdoc-sys"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
+
+[[package]]
+name = "robust"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e27ee8bb91ca0adcf0ecb116293afa12d393f9c2b9b9cd54d33e8078fe19839"
 
 [[package]]
 name = "ron"

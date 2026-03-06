@@ -6,9 +6,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{MaximumInteractionRange, SitePairEnergy};
-use hoomd_geometry::{BoundingSphereRadius, IntersectsAt};
+use hoomd_geometry::{BoundingSphereRadius, IntersectsAtGlobal};
 use hoomd_microstate::property::{Orientation, Position};
-use hoomd_vector::{self, Metric, Rotate, Rotation, Vector};
+use hoomd_vector::Metric;
 
 /// Infinite energy when sites overlap, 0 when they don't (*not differentiable*).
 ///
@@ -32,12 +32,10 @@ use hoomd_vector::{self, Metric, Rotate, Rotation, Vector};
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HardShape<G>(pub G);
 
-impl<S, G, V, R> SitePairEnergy<S> for HardShape<G>
+impl<G, S, R, P> SitePairEnergy<S> for HardShape<G>
 where
-    S: Position<Position = V> + Orientation<Rotation = R>,
-    V: Vector,
-    R: Rotation + Rotate<V>,
-    G: IntersectsAt<G, V, R> + BoundingSphereRadius,
+    S: Position<Position = P> + Orientation<Rotation = R>,
+    G: IntersectsAtGlobal<G, P, R>,
 {
     /// Compute the energy contribution from a pair of sites.
     ///
@@ -132,10 +130,10 @@ pub struct HardSphere {
     pub diameter: f64,
 }
 
-impl<S, V> SitePairEnergy<S> for HardSphere
+impl<S, P> SitePairEnergy<S> for HardSphere
 where
-    S: Position<Position = V>,
-    V: Metric,
+    S: Position<Position = P>,
+    P: Metric,
 {
     /// Compute the energy contribution from a pair of sites.
     ///

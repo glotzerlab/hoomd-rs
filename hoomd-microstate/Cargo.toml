@@ -18,6 +18,7 @@ arrayvec.workspace = true
 rand.workspace = true
 serde.workspace = true
 thiserror.workspace = true
+robust.workspace = true
 
 hoomd-derive.workspace = true
 hoomd-geometry.workspace = true
