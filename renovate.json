@@ -18,6 +18,11 @@
       "matchManagers": ["cargo"],
       "matchPackageNames": ["rand", "rand_distr", "chacha20"],
       "groupName": "rand"
+    },
+    {
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["wayland-*"],
+      "groupName": "wayland"
     }
   ]
 }
