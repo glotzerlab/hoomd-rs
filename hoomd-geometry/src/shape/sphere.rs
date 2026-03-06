@@ -8,7 +8,8 @@ use serde::{Deserialize, Serialize};
 use std::{array, f64::consts::PI, ops::Mul};
 
 use crate::{
-    BoundingSphereRadius, Error, IntersectsAt, IntersectsAtGlobal, IsPointInside, MapPoint, Scale, SupportMapping, Volume
+    BoundingSphereRadius, Error, IntersectsAt, IntersectsAtGlobal, IsPointInside, MapPoint, Scale,
+    SupportMapping, Volume,
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation, distribution::Ball};
