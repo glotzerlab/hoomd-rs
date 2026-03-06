@@ -850,8 +850,8 @@ impl Drop for Frame<'_> {
 #[cfg(test)]
 mod test {
     use assert2::{assert, check};
-    use tempfile::tempdir;
     use std::thread;
+    use tempfile::tempdir;
 
     use super::*;
     use hoomd_vector::Versor;
@@ -865,8 +865,7 @@ mod test {
         check!(*hoomd_gsd_file.gsd_file.mode() == Mode::Write);
         drop(hoomd_gsd_file);
 
-        let gsd_file =
-            GsdFile::open(path.clone(), Mode::Read)?;
+        let gsd_file = GsdFile::open(path.clone(), Mode::Read)?;
         check!(gsd_file.application().starts_with("hoomd-rs"));
         check!(gsd_file.schema() == "hoomd");
         check!(gsd_file.schema_version() == (1, 4));
@@ -884,8 +883,7 @@ mod test {
         check!(*hoomd_gsd_file.gsd_file.mode() == Mode::Write);
         drop(hoomd_gsd_file);
 
-        let gsd_file =
-            GsdFile::open(path.clone(), Mode::Read)?;
+        let gsd_file = GsdFile::open(path.clone(), Mode::Read)?;
         check!(gsd_file.application().starts_with("hoomd-rs"));
         check!(gsd_file.schema() == "hoomd");
         check!(gsd_file.schema_version() == (1, 4));
@@ -924,15 +922,15 @@ mod test {
         let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
         check!(*hoomd_gsd_file.auto_sync_delay() == DEFAULT_AUTO_SYNC_DELAY);
 
-        *hoomd_gsd_file.auto_sync_delay_mut() = Duration::new(20,0);
-        check!(*hoomd_gsd_file.auto_sync_delay() == Duration::new(20,0));
+        *hoomd_gsd_file.auto_sync_delay_mut() = Duration::new(20, 0);
+        check!(*hoomd_gsd_file.auto_sync_delay() == Duration::new(20, 0));
 
         let previous_auto_sync = hoomd_gsd_file.last_auto_sync;
 
         thread::sleep(Duration::from_millis(40));
         hoomd_gsd_file.sync_all()?;
 
-        check!(previous_auto_sync != hoomd_gsd_file.last_auto_sync); 
+        check!(previous_auto_sync != hoomd_gsd_file.last_auto_sync);
 
         Ok(())
     }
@@ -942,8 +940,7 @@ mod test {
         let tmp_dir = tempdir()?;
         let path = tmp_dir.path().join("test.gsd");
         let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
-        hoomd_gsd_file
-            .append_frame(0)?;
+        hoomd_gsd_file.append_frame(0)?;
         hoomd_gsd_file
             .append_frame(1)?
             .configuration_dimensions(Dimensions::Two)?;
@@ -952,8 +949,7 @@ mod test {
             .configuration_dimensions(Dimensions::Two)?;
         drop(hoomd_gsd_file);
 
-        let gsd_file =
-            GsdFile::open(path.clone(), Mode::Read)?;
+        let gsd_file = GsdFile::open(path.clone(), Mode::Read)?;
         check!(gsd_file.find_chunk(0, "configuration/dimensions") == None);
 
         let data = gsd_file.iter_scalars::<u8>(1, "configuration/dimensions")?;
@@ -961,7 +957,7 @@ mod test {
 
         let data = gsd_file.iter_scalars::<u8>(2, "configuration/dimensions")?;
         itertools::assert_equal(data, [2]);
-        
+
         Ok(())
     }
 
@@ -970,20 +966,18 @@ mod test {
         let tmp_dir = tempdir()?;
         let path = tmp_dir.path().join("test.gsd");
         let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
-        hoomd_gsd_file
-            .append_frame(0)?;
+        hoomd_gsd_file.append_frame(0)?;
         hoomd_gsd_file
             .append_frame(1)?
             .configuration_box([1.0, 2.0, 3.0, 4.0, 5.0, 6.0])?;
         drop(hoomd_gsd_file);
 
-        let gsd_file =
-            GsdFile::open(path.clone(), Mode::Read)?;
+        let gsd_file = GsdFile::open(path.clone(), Mode::Read)?;
         check!(gsd_file.find_chunk(0, "configuration/box") == None);
 
         let data = gsd_file.iter_scalars::<f32>(1, "configuration/box")?;
         itertools::assert_equal(data, [1.0_f32, 2.0, 3.0, 4.0, 5.0, 6.0]);
-        
+
         Ok(())
     }
 
@@ -992,15 +986,15 @@ mod test {
         let tmp_dir = tempdir()?;
         let path = tmp_dir.path().join("test.gsd");
         let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
-        hoomd_gsd_file
-            .append_frame(0)?;
-        hoomd_gsd_file
-            .append_frame(1)?
-            .particles_position([[1.0, 2.0, 4.0].into(), [3.0, 4.0, 8.0].into(), [5.0, 6.0, 16.0].into()])?;
+        hoomd_gsd_file.append_frame(0)?;
+        hoomd_gsd_file.append_frame(1)?.particles_position([
+            [1.0, 2.0, 4.0].into(),
+            [3.0, 4.0, 8.0].into(),
+            [5.0, 6.0, 16.0].into(),
+        ])?;
         drop(hoomd_gsd_file);
 
-        let gsd_file =
-            GsdFile::open(path.clone(), Mode::Read)?;
+        let gsd_file = GsdFile::open(path.clone(), Mode::Read)?;
         check!(gsd_file.find_chunk(0, "particles/position") == None);
         check!(gsd_file.find_chunk(0, "particles/N") == None);
 
@@ -1008,7 +1002,7 @@ mod test {
         itertools::assert_equal(data, [[1.0, 2.0, 4.0], [3.0, 4.0, 8.0], [5.0, 6.0, 16.0]]);
         let data = gsd_file.iter_scalars::<u32>(1, "particles/N")?;
         itertools::assert_equal(data, [3_u32]);
-        
+
         Ok(())
     }
 
@@ -1017,23 +1011,28 @@ mod test {
         let tmp_dir = tempdir()?;
         let path = tmp_dir.path().join("test.gsd");
         let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
-        hoomd_gsd_file
-            .append_frame(0)?;
+        hoomd_gsd_file.append_frame(0)?;
         hoomd_gsd_file
             .append_frame(1)?
             .particles_orientation([Versor::default(); 3])?;
         drop(hoomd_gsd_file);
 
-        let gsd_file =
-            GsdFile::open(path.clone(), Mode::Read)?;
+        let gsd_file = GsdFile::open(path.clone(), Mode::Read)?;
         check!(gsd_file.find_chunk(0, "particles/orientation") == None);
         check!(gsd_file.find_chunk(0, "particles/N") == None);
 
         let data = gsd_file.iter_arrays::<f32, 4>(1, "particles/orientation")?;
-        itertools::assert_equal(data, [[1.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]]);
+        itertools::assert_equal(
+            data,
+            [
+                [1.0, 0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0, 0.0],
+            ],
+        );
         let data = gsd_file.iter_scalars::<u32>(1, "particles/N")?;
         itertools::assert_equal(data, [3_u32]);
-        
+
         Ok(())
     }
 
@@ -1042,15 +1041,13 @@ mod test {
         let tmp_dir = tempdir()?;
         let path = tmp_dir.path().join("test.gsd");
         let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
-        hoomd_gsd_file
-            .append_frame(0)?;
+        hoomd_gsd_file.append_frame(0)?;
         hoomd_gsd_file
             .append_frame(1)?
             .particles_type_id([0, 1, 1, 2])?;
         drop(hoomd_gsd_file);
 
-        let gsd_file =
-            GsdFile::open(path.clone(), Mode::Read)?;
+        let gsd_file = GsdFile::open(path.clone(), Mode::Read)?;
         check!(gsd_file.find_chunk(0, "particles/typeid") == None);
         check!(gsd_file.find_chunk(0, "particles/N") == None);
 
@@ -1058,7 +1055,7 @@ mod test {
         itertools::assert_equal(data, [0_u32, 1, 1, 2]);
         let data = gsd_file.iter_scalars::<u32>(1, "particles/N")?;
         itertools::assert_equal(data, [4_u32]);
-        
+
         Ok(())
     }
 
@@ -1080,18 +1077,18 @@ mod test {
         let tmp_dir = tempdir()?;
         let path = tmp_dir.path().join("test.gsd");
         let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
-        hoomd_gsd_file
-            .append_frame(0)?;
+        hoomd_gsd_file.append_frame(0)?;
         hoomd_gsd_file
             .append_frame(1)?
             .particles_types(["A", "B", "linker"])?;
         drop(hoomd_gsd_file);
 
-        let gsd_file =
-            GsdFile::open(path.clone(), Mode::Read)?;
+        let gsd_file = GsdFile::open(path.clone(), Mode::Read)?;
         check!(gsd_file.find_chunk(0, "particles/types") == None);
 
-        let data: Vec<_> = gsd_file.iter_arrays::<u8, 64>(1, "particles/types")?.collect();
+        let data: Vec<_> = gsd_file
+            .iter_arrays::<u8, 64>(1, "particles/types")?
+            .collect();
         assert!(data.len() == 3);
         check!(data[0][0] == "A".as_bytes()[0]);
         check!(data[0][1] == 0);
@@ -1101,7 +1098,7 @@ mod test {
 
         check!(data[2][0..6] == *"linker".as_bytes());
         check!(data[0][6] == 0);
-        
+
         Ok(())
     }
 
@@ -1110,20 +1107,18 @@ mod test {
         let tmp_dir = tempdir()?;
         let path = tmp_dir.path().join("test.gsd");
         let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
-        hoomd_gsd_file
-            .append_frame(0)?;
+        hoomd_gsd_file.append_frame(0)?;
         hoomd_gsd_file
             .append_frame(1)?
             .log_scalar("test", 4.2_f64)?;
         drop(hoomd_gsd_file);
 
-        let gsd_file =
-            GsdFile::open(path.clone(), Mode::Read)?;
+        let gsd_file = GsdFile::open(path.clone(), Mode::Read)?;
         check!(gsd_file.find_chunk(0, "log/test") == None);
 
         let data = gsd_file.iter_scalars::<f64>(1, "log/test")?;
         itertools::assert_equal(data, [4.2_f64]);
-        
+
         Ok(())
     }
 
@@ -1132,20 +1127,18 @@ mod test {
         let tmp_dir = tempdir()?;
         let path = tmp_dir.path().join("test.gsd");
         let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
-        hoomd_gsd_file
-            .append_frame(0)?;
+        hoomd_gsd_file.append_frame(0)?;
         hoomd_gsd_file
             .append_frame(1)?
             .log_scalars("test", [4.2_f64, 8.4])?;
         drop(hoomd_gsd_file);
 
-        let gsd_file =
-            GsdFile::open(path.clone(), Mode::Read)?;
+        let gsd_file = GsdFile::open(path.clone(), Mode::Read)?;
         check!(gsd_file.find_chunk(0, "log/test") == None);
 
         let data = gsd_file.iter_scalars::<f64>(1, "log/test")?;
         itertools::assert_equal(data, [4.2_f64, 8.4]);
-        
+
         Ok(())
     }
 
@@ -1154,20 +1147,18 @@ mod test {
         let tmp_dir = tempdir()?;
         let path = tmp_dir.path().join("test.gsd");
         let mut hoomd_gsd_file = HoomdGsdFile::create(path.clone())?;
-        hoomd_gsd_file
-            .append_frame(0)?;
+        hoomd_gsd_file.append_frame(0)?;
         hoomd_gsd_file
             .append_frame(1)?
             .log_arrays("test", [[4.2_f64, 8.4], [1.0, 2.0]])?;
         drop(hoomd_gsd_file);
 
-        let gsd_file =
-            GsdFile::open(path.clone(), Mode::Read)?;
+        let gsd_file = GsdFile::open(path.clone(), Mode::Read)?;
         check!(gsd_file.find_chunk(0, "log/test") == None);
 
         let data = gsd_file.iter_arrays::<f64, 2>(1, "log/test")?;
         itertools::assert_equal(data, [[4.2_f64, 8.4], [1.0, 2.0]]);
-        
+
         Ok(())
     }
 }
