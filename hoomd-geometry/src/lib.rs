@@ -269,6 +269,7 @@ where
     ///
     /// [`pair_system_to_local`]: hoomd_vector::pair_system_to_local
     fn intersects_at(&self, other: &S, v_ij: &V, o_ij: &R) -> bool;
+
     /// Approximate the amount of overlap between two shapes.
     ///
     /// Move `other` in along `v_ij` until the shapes no longer overlap. Return the

@@ -8,8 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::{array, f64::consts::PI, ops::Mul};
 
 use crate::{
-    BoundingSphereRadius, Error, IntersectsAt, IsPointInside, MapPoint, Scale, SupportMapping,
-    Volume,
+    BoundingSphereRadius, Error, IntersectsAt, IntersectsAtGlobal, IsPointInside, MapPoint, Scale, SupportMapping, Volume
 };
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation, distribution::Ball};
@@ -231,6 +230,25 @@ impl<const N: usize> Volume for Hypersphere<N> {
                 .radius
                 .get()
                 .powi(N.try_into().expect("Dimension should not overflow i32!"))
+    }
+}
+
+impl<const N: usize, R> IntersectsAtGlobal<Hypersphere<N>, Cartesian<N>, R> for Hypersphere<N>
+where
+    R: Rotation + Rotate<Cartesian<N>>,
+{
+    #[inline]
+    fn intersects_at_global(
+        &self,
+        other: &Hypersphere<N>,
+        r_self: &Cartesian<N>,
+        o_self: &R,
+        r_other: &Cartesian<N>,
+        o_other: &R,
+    ) -> bool {
+        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(r_self, o_self, r_other, o_other);
+
+        self.intersects_at(other, &v_ij, &o_ij)
     }
 }
 
