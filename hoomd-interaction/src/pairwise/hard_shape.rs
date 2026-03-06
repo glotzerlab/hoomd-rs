@@ -173,4 +173,3 @@ impl MaximumInteractionRange for HardSphere {
         self.diameter
     }
 }
-
