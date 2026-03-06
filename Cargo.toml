@@ -4,6 +4,7 @@ resolver = "3"
 members = ["benchmarks",
            "examples",
            "hoomd-bevy",
+           "hoomd-derive",
            "hoomd-geometry",
            "hoomd-gsd",
            "hoomd-interaction",
@@ -24,6 +25,7 @@ members = ["benchmarks",
 # The `hoomd-bevy` crate depends on `bevy` which takes a long time to download
 # and compile.
 default-members = ["examples",
+                   "hoomd-derive",
                    "hoomd-geometry",
                    "hoomd-gsd",
                    "hoomd-interaction",
@@ -51,6 +53,7 @@ categories = ["science"]
 [workspace.dependencies]
 # Subcrates
 hoomd-bevy = { path = "hoomd-bevy", version = "0.0.0" }
+hoomd-derive = { path = "hoomd-derive", version = "0.0.0" }
 hoomd-geometry = { path = "hoomd-geometry", version = "0.0.0"}
 hoomd-gsd = { path = "hoomd-gsd", version = "0.0.0"}
 hoomd-interaction = { path = "hoomd-interaction", version = "0.0.0"}
@@ -70,7 +73,9 @@ divan = "=0.1.21"
 paste = "=1.0.15"
 rand_sfc = "=0.2.0"
 rstest = "=0.26.1"
-tempfile = "=3.25.0"
+tempfile = "=3.26.0"
+strum = "0.28.0"
+strum_macros = "0.28.0"
 
 # Dependencies used internally
 clap = {version = "4.5.48", features = ["derive"]}
@@ -85,8 +90,8 @@ robust = "1.2.0"
 rustc-hash = "2.1.1"
 serde_with = "3.16.1"
 wildmatch = "2.4.0"
-parquet = { version = "57.0.0", default-features=false }
-parquet_derive = { version = "57.0.0", default-features=false }
+parquet = { version = "58.0.0", default-features=false }
+parquet_derive = { version = "58.0.0", default-features=false }
 
 # Dependencies exposed via Public APIs.
 anyhow = "1.0.100"

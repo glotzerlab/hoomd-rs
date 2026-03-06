@@ -24,6 +24,7 @@ doc-example = ["bevy", "hoomd-bevy/doc-example"]
 
 [dependencies]
 hoomd-bevy = { workspace =  true, optional = true }
+hoomd-derive.workspace = true
 hoomd-geometry.workspace = true
 hoomd-gsd.workspace = true
 hoomd-interaction.workspace = true
@@ -38,7 +39,12 @@ hoomd-vector.workspace = true
 anyhow.workspace = true
 bevy = { workspace = true, optional = true }
 bevy_egui = { workspace = true, optional = true }
+thiserror.workspace = true
+parquet.workspace = true
+parquet_derive.workspace = true
 rand.workspace = true
+strum.workspace = true
+strum_macros.workspace = true
 
 [[example]]
 name = "hello"
@@ -88,4 +94,18 @@ name = "hard-tetrahedron-self-assembly"
 path = "mc-tutorial/hard-tetrahedron-self-assembly.rs"
 
 [package.metadata.example.hard-tetrahedron-self-assembly]
+path = "mc-tutorial"
+
+[[example]]
+name = "patchy-particle-self-assembly"
+path = "mc-tutorial/patchy-particle-self-assembly.rs"
+
+[package.metadata.example.patchy-particle-self-assembly]
+path = "mc-tutorial"
+
+[[example]]
+name = "type-dependent-interactions"
+path = "mc-tutorial/type-dependent-interactions.rs"
+
+[package.metadata.example.type-dependent-interactions]
 path = "mc-tutorial"

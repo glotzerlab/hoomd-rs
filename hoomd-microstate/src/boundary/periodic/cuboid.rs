@@ -354,7 +354,7 @@ mod tests {
             let point = Point::new([-10.0, -10.0].into());
             assert_eq!(periodic.wrap(point), Ok(point));
 
-            let point = Point::new([10.0f64.next_down(), 10.0f64.next_down()].into());
+            let point = Point::new([10.0_f64.next_down(), 10.0_f64.next_down()].into());
             assert_eq!(periodic.wrap(point), Ok(point));
 
             let point = Point::new([10.0, 10.0].into());
@@ -531,9 +531,9 @@ mod tests {
 
             let point = Point::new(
                 [
-                    10.0f64.next_down(),
-                    10.0f64.next_down(),
-                    10.0f64.next_down(),
+                    10.0_f64.next_down(),
+                    10.0_f64.next_down(),
+                    10.0_f64.next_down(),
                 ]
                 .into(),
             );

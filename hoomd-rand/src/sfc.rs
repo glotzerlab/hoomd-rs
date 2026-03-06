@@ -38,7 +38,7 @@ use crate::util::read_le_u64;
 ///
 /// ## Generation
 ///
-/// The generators implements [`Rng`] and thus also `Rng`.
+/// The generators implements [`TryRng`] and thus also `Rng`.
 /// See also the [Random Values] chapter in the Rust Rand book.
 ///
 /// [portable]: https://rust-random.github.io/book/crate-reprod.html
@@ -169,7 +169,7 @@ mod tests {
 
     #[rstest::fixture]
     fn large_uniform_sample() -> Vec<u64> {
-        const N: u32 = 2u32.pow(23);
+        const N: u32 = 2_u32.pow(23);
         let mut rng = SFC64::initialize(456_981, 0xcafe, 9_345_663_908, 123_456_789);
         (0..N).map(|_| rng.next_u64()).collect::<Vec<_>>()
     }
@@ -207,7 +207,7 @@ mod tests {
     #[test]
     fn test_sfc64_deep() {
         let mut rng = SFC64::seed_from_u64(0);
-        (0..(2u64.pow(17) - 1)).for_each(|_| {
+        (0..(2_u64.pow(17) - 1)).for_each(|_| {
             rng.next_u64();
         });
         assert_eq!(rng.next_u64(), 4_977_758_738_274_538_201);

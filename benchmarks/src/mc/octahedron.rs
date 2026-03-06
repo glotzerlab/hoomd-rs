@@ -178,8 +178,8 @@ where
     pub fn new(n: usize, parallel: bool) -> anyhow::Result<Self> {
         let macrostate = Isothermal { temperature: 1.0 };
         let packing_fraction = 0.55;
-        let a = 2.0f64.sqrt() / 2.0;
-        let octahedron_volume = 1.0 / 3.0 * 2.0f64.sqrt() * a.powi(3);
+        let a = 2.0_f64.sqrt() / 2.0;
+        let octahedron_volume = 1.0 / 3.0 * 2.0_f64.sqrt() * a.powi(3);
         let number_density = packing_fraction / octahedron_volume;
         let cache_filename = format!("mc_3d_octahedron_{packing_fraction}_{n}.postcard");
 
@@ -212,16 +212,14 @@ where
         let translate = Translate::with_maximum_distance(0.05.try_into()?);
         let mut translate_sweep = Sweep(translate.clone());
         let mut parallel_translate_sweep = ParallelSweep::new(
-            hamiltonian.0.maximum_interaction_range().try_into()?,
+            hamiltonian.maximum_interaction_range().try_into()?,
             translate,
         );
 
         let rotate = Rotate::with_maximum_rotation((0.03).try_into()?);
         let mut rotate_sweep = Sweep(rotate.clone());
-        let mut parallel_rotate_sweep = ParallelSweep::new(
-            hamiltonian.0.maximum_interaction_range().try_into()?,
-            rotate,
-        );
+        let mut parallel_rotate_sweep =
+            ParallelSweep::new(hamiltonian.maximum_interaction_range().try_into()?, rotate);
 
         let approximate_shape_overlap = Anisotropic {
             interaction: ApproximateShapeOverlap::new(
@@ -229,14 +227,14 @@ where
                 OverlapPenalty::default(),
                 0.01.try_into()?,
             ),
-            r_cut: hamiltonian.0.maximum_interaction_range(),
+            r_cut: hamiltonian.maximum_interaction_range(),
         };
         let overlap_penalty_hamiltonian = PairwiseCutoff(approximate_shape_overlap);
 
         let microstate = place_single_site_orientable_bodies(
             n,
             number_density,
-            hamiltonian.0.maximum_interaction_range(),
+            hamiltonian.maximum_interaction_range(),
             &overlap_penalty_hamiltonian,
         )?;
 

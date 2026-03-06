@@ -11,6 +11,11 @@
     },
     {
       "matchManagers": ["cargo"],
+      "matchPackageNames": ["parquet*"],
+      "groupName": "parquet"
+    },
+    {
+      "matchManagers": ["cargo"],
       "matchPackageNames": ["rand", "rand_distr", "chacha20"],
       "groupName": "rand"
     }

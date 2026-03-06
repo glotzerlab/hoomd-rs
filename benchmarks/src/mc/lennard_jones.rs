@@ -175,7 +175,7 @@ where
         let translate = Translate::with_maximum_distance(0.35.try_into()?);
         let mut translate_sweep = Sweep(translate.clone());
         let mut parallel_translate_sweep = ParallelSweep::new(
-            hamiltonian.0.maximum_interaction_range().try_into()?,
+            hamiltonian.maximum_interaction_range().try_into()?,
             translate,
         );
 
@@ -192,7 +192,7 @@ where
         let microstate = place_single_site_point_bodies(
             n,
             number_density,
-            hamiltonian.0.maximum_interaction_range(),
+            hamiltonian.maximum_interaction_range(),
             &insert_hamiltonian,
         )?;
 

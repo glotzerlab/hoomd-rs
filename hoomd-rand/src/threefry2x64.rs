@@ -71,14 +71,14 @@ impl<const R: usize> SeedableRng for ThreeFry2x64Rng<R> {
         let (k0, k1) = (read_le_u64(seed), read_le_u64(seed));
         Self(BlockRng::new(ThreeFry2x64Core {
             seed: [k0, k1, C240 ^ k0 ^ k1],
-            counter: [0u64, 0u64],
+            counter: [0_u64, 0_u64],
         }))
     }
     #[inline]
     fn seed_from_u64(state: u64) -> Self {
         Self(BlockRng::new(ThreeFry2x64Core {
             seed: [0, state, C240 ^ state],
-            counter: [0u64, 0u64],
+            counter: [0_u64, 0_u64],
         }))
     }
 }
