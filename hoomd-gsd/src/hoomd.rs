@@ -848,7 +848,7 @@ impl Drop for Frame<'_> {
 }
 
 #[cfg(test)]
-mod test_finite {
+mod test {
     use assert2::{assert, check};
     use tempfile::tempdir;
     use std::thread;

@@ -3771,6 +3771,7 @@ dependencies = [
  "hoomd-spatial",
  "hoomd-utility",
  "hoomd-vector",
+ "itertools",
  "log",
  "rand 0.10.0",
  "rstest",
