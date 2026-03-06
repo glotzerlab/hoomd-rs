@@ -212,7 +212,7 @@ impl<E> PairwiseCutoff<E> {
 
     /// Compute the filtered energy contribution of a single site (spatial data specialization)
     #[inline(always)]
-    fn filtered_site_energy_spatial<B, S, X, C, F, F2, P>(
+    fn filtered_site_energy_spatial<P, B, S, X, C, F, F2>(
         &self,
         microstate: &Microstate<B, S, X, C>,
         site_i_properties: &S,
@@ -247,7 +247,7 @@ impl<E> PairwiseCutoff<E> {
 
     /// Compute the filtered energy contribution of a single site.
     #[inline(always)]
-    fn filtered_site_energy<B, S, X, C, F, F2, P>(
+    fn filtered_site_energy<P, B, S, X, C, F, F2>(
         &self,
         microstate: &Microstate<B, S, X, C>,
         site_i_properties: &S,
@@ -275,7 +275,7 @@ impl<E> PairwiseCutoff<E> {
 
     /// Compute the final energy of a body in the microstate.
     #[inline(always)]
-    fn filtered_body_energy_final<B, S, X, C, F, P>(
+    fn filtered_body_energy_final<P, B, S, X, C, F>(
         &self,
         microstate: &Microstate<B, S, X, C>,
         body: &Body<B, S>,
@@ -313,7 +313,7 @@ impl<E> PairwiseCutoff<E> {
 
     /// Compute the initial energy of a body in the microstate.
     #[inline(always)]
-    fn filtered_body_energy_initial<B, S, X, C, F, P>(
+    fn filtered_body_energy_initial<P, B, S, X, C, F>(
         &self,
         microstate: &Microstate<B, S, X, C>,
         body_index: usize,
