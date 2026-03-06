@@ -43,6 +43,8 @@ thiserror.workspace = true
 parquet.workspace = true
 parquet_derive.workspace = true
 rand.workspace = true
+strum.workspace = true
+strum_macros.workspace = true
 
 [[example]]
 name = "hello"

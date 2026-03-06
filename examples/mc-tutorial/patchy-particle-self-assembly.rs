@@ -7,8 +7,6 @@ use hoomd_geometry::{
     Volume,
     shape::{Circle, Rectangle},
 };
-#[cfg(not(feature = "bevy"))]
-use hoomd_interaction::TotalEnergy;
 use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff, SitePairEnergy,
     pairwise::{
@@ -25,8 +23,6 @@ use hoomd_microstate::{
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
-#[cfg(not(feature = "bevy"))]
-use hoomd_utility::data::ParquetLogger;
 use hoomd_vector::{Angle, Cartesian};
 // ANCHOR_END: use
 
@@ -336,6 +332,10 @@ pub struct LogRecord {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
+    use hoomd_gsd::hoomd::HoomdGsdFile;
+    use hoomd_interaction::TotalEnergy;
+    use hoomd_microstate::AppendMicrostate;
+    use hoomd_utility::data::ParquetLogger;
     // ANCHOR_END: main
     // ANCHOR: log_open
     let mut parquet_logger = ParquetLogger::<LogRecord>::create(
@@ -345,10 +345,15 @@ fn main() -> anyhow::Result<()> {
 
     // ANCHOR: run_simulation
     let mut simulation = PatchyParticleSelfAssembly::new()?;
-    // TODO: Write GSD file.
+    let mut hoomd_gsd_file =
+        HoomdGsdFile::create("patchy-particle-self-assembly.gsd")?;
 
     for _ in 0..1_000_000 {
         simulation.advance()?;
+
+        if simulation.step().is_multiple_of(10_000) {
+            hoomd_gsd_file.append_microstate(&simulation.microstate)?;
+        }
         // ANCHOR_END: run_simulation
 
         // ANCHOR: write_log

@@ -228,8 +228,8 @@ Then call `advance()` many times:
 {{#rustdoc_include ../../../examples/mc-tutorial/custom-random-walk.rs:main}}
 ```
 
-Write the sites to a GSD file periodically so that you can inspect the results
-of the simulation.
+Later tutorials will show how you can write simulation trajectories and
+log properties of the simulation to files.
 
 > [!NOTE]
 > This `main()` function runs in batch mode. There is a different `main()` (not
@@ -237,7 +237,7 @@ of the simulation.
 
 ## Conclusion
 
-Now you know how to customize the random walk simulation with new
+This tutorial showed you how to customize the random walk simulation with new
 boundary conditions and apply your own trial moves to the points in it. Rust
 compiles your customizations into machine code and can inline them into the main
 simulation loop. This means that your custom simulations run *just as fast* as

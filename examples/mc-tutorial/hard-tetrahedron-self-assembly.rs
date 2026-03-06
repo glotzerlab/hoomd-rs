@@ -257,11 +257,19 @@ impl HardTetrahedronSelfAssembly {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
+    use hoomd_gsd::hoomd::HoomdGsdFile;
+    use hoomd_microstate::AppendMicrostate;
+
     let mut simulation = HardTetrahedronSelfAssembly::new()?;
-    // TODO: Write GSD file.
+    let mut hoomd_gsd_file =
+        HoomdGsdFile::create("hard-tetrahedron-self-assembly.gsd")?;
 
     for _ in 0..40_000 {
         simulation.advance()?;
+
+        if simulation.step().is_multiple_of(10_000) {
+            hoomd_gsd_file.append_microstate(&simulation.microstate)?;
+        }
     }
 
     Ok(())

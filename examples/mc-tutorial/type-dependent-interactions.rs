@@ -1,11 +1,14 @@
 // ANCHOR: all
 // ANCHOR: use
 use anyhow::{Context, anyhow};
+use strum::VariantNames;
+use strum_macros::VariantNames;
 
 use hoomd_geometry::{
     Volume,
-    shape::{Circle, Rectangle},
+    shape::{Circle, Hypercuboid, Rectangle},
 };
+use hoomd_gsd::hoomd::{Dimensions, HoomdGsdFile};
 use hoomd_interaction::{
     MaximumInteractionRange, PairwiseCutoff, SitePairEnergy,
     pairwise::Isotropic,
@@ -17,6 +20,7 @@ use hoomd_interaction::{
 use hoomd_mc::{
     QuickCompress, QuickInsert, Sweep, Translate, Trial, Tune, UniformIn,
 };
+use hoomd_microstate::{AppendMicrostate, Site};
 use hoomd_microstate::{
     Microstate, SiteKey, Transform,
     boundary::Periodic,
@@ -33,7 +37,7 @@ type BodyProperties = Point<PositionVector>;
 // ANCHOR_END: type_aliases
 
 // ANCHOR: type
-#[derive(Clone, Copy, Default, PartialEq)]
+#[derive(Clone, Copy, Default, PartialEq, VariantNames)]
 enum SiteType {
     #[default]
     A,
@@ -318,18 +322,98 @@ impl TypeDependentInteractions {
     }
 }
 
+// ANCHOR: append_microstate
+impl<X>
+    AppendMicrostate<
+        BodyProperties,
+        SiteProperties,
+        X,
+        Periodic<Hypercuboid<2>>,
+    > for HoomdGsdFile
+{
+    #[inline]
+    fn append_microstate(
+        &mut self,
+        microstate: &Microstate<
+            BodyProperties,
+            SiteProperties,
+            X,
+            Periodic<Hypercuboid<2>>,
+        >,
+    ) -> Result<hoomd_gsd::hoomd::Frame<'_>, hoomd_gsd::hoomd::AppendError>
+    {
+        self.append_frame(microstate.step())?
+            .configuration_box(microstate.boundary().shape().to_gsd_box())?
+            .configuration_dimensions(Dimensions::Two)?
+            .particles_position(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.position)
+                    .map(|p| [p[0], p[1], 0.0].into()),
+            )?
+            .particles_type_id(
+                microstate
+                    .iter_sites_tag_order()
+                    .map(|s| s.properties.site_type as u32),
+            )?
+            .particles_types(SiteType::VARIANTS.iter().copied())
+    }
+}
+// ANCHOR_END: append_microstate
+
 // Remove the cfg(not(...)) line when using this code outside the hoomd-rs/examples directory.
 #[cfg(not(feature = "bevy"))]
+// ANCHOR: main
 fn main() -> anyhow::Result<()> {
-    let mut simulation = TypeDependentInteractions::new()?;
-    // TODO: Write GSD file.
+    use hoomd_interaction::TotalEnergy;
 
-    for _ in 0..1_000_000 {
+    let mut simulation = TypeDependentInteractions::new()?;
+    let mut hoomd_gsd_file =
+        HoomdGsdFile::create("type-dependent-interactions.gsd")?;
+
+    for _ in 0..100_000 {
         simulation.advance()?;
+        // ANCHOR_END: main
+
+        // ANCHOR: log_gsd
+        if simulation.step().is_multiple_of(10_000) {
+            hoomd_gsd_file
+                .append_microstate(&simulation.microstate)?
+                .log_scalar(
+                    "potential_energy",
+                    simulation.hamiltonian.total_energy(&simulation.microstate),
+                )?
+                .log_scalars(
+                    "particles/site_energy",
+                    simulation
+                        .microstate
+                        .iter_sites_tag_order()
+                        .map(|s| site_energy(&simulation, s)),
+                )?;
+        }
     }
 
     Ok(())
 }
+// ANCHOR_END: log_gsd
+
+#[allow(dead_code, reason = "site_energy is used in the batch mode main()")]
+// ANCHOR: site_energy
+fn site_energy(
+    simulation: &TypeDependentInteractions,
+    site: &Site<SiteProperties>,
+) -> f64 {
+    use hoomd_interaction::DeltaEnergyRemove;
+
+    let body_index = simulation.microstate.body_indices()[site.body_tag]
+        .expect("site's parent body should be in the microstate");
+
+    -simulation
+        .hamiltonian
+        .delta_energy_remove(&simulation.microstate, body_index)
+}
+// ANCHOR_END: site_energy
+
 // ANCHOR_END: all
 
 #[cfg(feature = "bevy")]

@@ -965,7 +965,7 @@ impl Matrix<3, 3> {
 }
 /// Macro to generate impls for a given row size `N` and multiple column sizes `M`.
 macro_rules! impl_copy_for_m {
-    ($N:literal, $($M:literal),+) => { $(#[doc(hidden)]impl Copy for Matrix<$N, $M> {})+ };
+    ($N:literal, $($M:literal),+) => { $(impl Copy for Matrix<$N, $M> {})+ };
 }
 /// Implement Copy for matrices of an input size `N`, `M`
 macro_rules! impl_copy_for_n_m {

@@ -124,7 +124,7 @@ indicate that this step is complete:
 
 ### Produce Output
 
-To see some output, print the coordinates of the point at each step:
+Print the coordinates of the point at each step:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/random-walk.rs:print}}
 ```

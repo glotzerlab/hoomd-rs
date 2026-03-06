@@ -311,20 +311,58 @@ Equilibration never ends in this tutorial. In your own simulations, you might
 transition to a production phase after a certain number of steps and eventually
 complete the simulation.
 
-## Implement `main()`
+## Execute the Simulation in Batch Mode
+
+### Implement `main()`
 
 To run the simulation, construct the `HardEllipseSelfAssembly` simulation model.
-Then call `advance()` many times:
+Then call `advance()` many times and write the sites to a GSD file periodically so that
+you can inspect the results of the simulation:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-ellipse-self-assembly.rs:main}}
 ```
 
-Write the sites to a GSD file periodically so that you can inspect the results
-of the simulation.
+See [Applying Interactions](applying-interactions.md) for a step-by-step explanation
+of this code.
 
 > [!NOTE]
 > This `main()` function runs in batch mode. There is a different `main()` (not
-> shown here) used in the interactive example.
+> shown here) used in the interactive example. The interactive example does *not*
+> write the GSD file.
+
+### Run the Simulation
+
+In a terminal, execute the following command to run the simulation in batch mode:
+```shell
+cargo run --release --example hard-ellipse-self-assembly
+```
+
+### Visualize the Simulation Results
+
+Open the generated `hard-ellipse-self-assembly.gsd` in [Ovito] or another
+visualization tool to see the simulation results. To render the ellipses in
+[Ovito], import this [modifier snippet] (use the copy button to copy the entire
+text to your clipboard):
+```
+{"description": "OVITO Modifier Snippet: Compute property (Aspherical Shape)", "payload": "AAAC6njahVLNSsNAEP4a21p/aP0BFS8WEfQgpUW8K+rBg1q0FO0ttts00GbDZgP6BD6BV/GuB1/Ciw/iUwg6m0yaiIoD3+zm29mZLzNbeX59mv546wDhHoASYQFnaOMYLVqraEJBEjtBqCC2WeyghgZ2ydeZy8UwC174e5uQJ2wQqthHAB8DCMroogsbQ2IviLGJFxRjEZa4loXLyF9FvsPsOq9Fqluj+smu8W2XZ1hIrUCYM7c/M5Ye54zeO9ZdlqH2Q91U0hdK3yLzi+WuHPnSE54+tUciyB7NiBtfiSBwpTfmjdZSTwyFY2vzh4+5jLRFT7jO4Fqqox8XLZZkmfg1wvIB1Q21SDSdyJ7bd4WKa0RhZhJbTVtptzsUwR/xh6mWAt9bNTNn3vWcTOYiR6yY3v2SYZLPN43I/wvmOdyMoZQpk6SZJ0ydi37LVo7QaQPplYzfV2Rt7lAy33ceQpHnbPb3ceKomQ/GfQEXHnuD"}
+```
+Alternately, you can:
+1) Add a [Compute Property] modification to the pipeline.
+2) Set *Property Name* to [Aspherical Shape].
+3) Set X=0.5, Y=0.1, Z=0.1.
+To save time when visualizing many similar systems, you can [save the session state]
+or use [modifier templates].
+
+
+[Ovito]: https://www.ovito.org/
+[Compute Property]: https://docs.ovito.org/reference/pipelines/modifiers/compute_property.html#particles-modifiers-compute-property
+[Aspherical Shape]: https://docs.ovito.org/advanced_topics/aspherical_particles.html
+[save the session state]: https://docs.ovito.org/usage/miscellaneous.html#usage-saving-loading-scene
+[modifier templates]: https://docs.ovito.org/reference/app_settings/modifier_templates.html#modifier-templates
+[modifier snippet]: https://docs.ovito.org/advanced_topics/modifier_snippets.html#modifier-snippets
+
+Render with Tachyon, and you should see something like:
+![Hard ellipse self-assembly rendered with Ovito](hard-ellipse-self-assembly.png)
 
 ## Conclusion
 
@@ -341,14 +379,6 @@ particle overlap Hamiltonian. Watch the simulation long enough and you should
 see domains form where all the ellipses point in roughly the same direction
 while at the same time there is no translational order. This is the nematic
 phase.
-
-You can also run the example in batch mode and then open
-the generated `trajectory.gsd` in [Ovito] or another visualization tool:
-```shell
-cargo run --release --example hard-ellipse-self-assembly
-```
-
-[Ovito]: https://www.ovito.org/
 
 ## Complete Code
 

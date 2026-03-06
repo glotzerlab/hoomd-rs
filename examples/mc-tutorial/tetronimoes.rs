@@ -236,7 +236,7 @@ impl Simulation for Tetronimoes {
         // ANCHOR_END: apply
 
         // ANCHOR: reset
-        if self.hamiltonian.linear.total_energy(&self.microstate) > 20_000.0 {
+        if self.hamiltonian.linear.total_energy(&self.microstate) > 100.0 {
             self.microstate.clear();
         }
 
@@ -256,11 +256,18 @@ impl Simulation for Tetronimoes {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
-    let mut simulation = Tetronimoes::new()?;
-    // TODO: Write GSD file.
+    use hoomd_gsd::hoomd::HoomdGsdFile;
+    use hoomd_microstate::AppendMicrostate;
 
-    for _ in 0..20_000 {
+    let mut simulation = Tetronimoes::new()?;
+    let mut hoomd_gsd_file = HoomdGsdFile::create("tetronimoes.gsd")?;
+
+    for _ in 0..100_000 {
         simulation.advance()?;
+
+        if simulation.step().is_multiple_of(1_000) {
+            hoomd_gsd_file.append_microstate(&simulation.microstate)?;
+        }
     }
 
     Ok(())
