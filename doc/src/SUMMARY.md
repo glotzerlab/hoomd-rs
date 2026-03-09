@@ -28,3 +28,4 @@
 - [Notation](notation.md)
 - [Developer Tools](developer-tools.md)
 - [Logo](logo.md)
+- [Credits](credits.md)
