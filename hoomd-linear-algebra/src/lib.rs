@@ -166,6 +166,13 @@
 //! * [`Singular value decomposition (2x2)`](matrix::Matrix22::svd)
 //! * [`Singular value decomposition (3x3)`](matrix::Matrix33::svd)
 //! * [`Quadratic form`](QuadraticForm)
+//!
+//! # Complete documentation
+//!
+//! `hoomd-linear-algebra` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 
 use std::ops::{Add, AddAssign, Index, Mul, MulAssign, Neg, Sub, SubAssign};
 

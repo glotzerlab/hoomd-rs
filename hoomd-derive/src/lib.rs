@@ -2,6 +2,13 @@
 // Part of hoomd-rs, released under the BSD 3-Clause License.
 
 //! Derive macros for traits from a variety of hoomd-rs crates.
+//!
+//! # Complete documentation
+//!
+//! `hoomd-derive` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 
 #![allow(
     clippy::missing_inline_in_public_items,

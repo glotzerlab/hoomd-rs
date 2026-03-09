@@ -74,6 +74,14 @@
 //!
 //! [`Isotropic`]: pairwise::Isotropic
 //! [`HardShape`]: pairwise::HardShape
+//!
+//! # Complete documentation
+//!
+//! `hoomd-interaction` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
+
 
 use hoomd_microstate::{Body, Microstate};
 

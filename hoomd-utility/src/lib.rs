@@ -11,6 +11,13 @@
 //! Utilities
 //!
 //! Common utility code used by other hoomd-rs crates and user code.
+//!
+//! # Complete documentation
+//!
+//! `hoomd-utility` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 
 pub mod data;
 pub mod valid;

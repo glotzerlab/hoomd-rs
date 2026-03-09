@@ -76,6 +76,13 @@
 //! in the simulation boundary. You could write your own distribution for custom
 //! behavior. [`QuickCompress`] compresses the simulation boundary until it
 //! reaches a target volume. 
+//!
+//! # Complete documentation
+//!
+//! `hoomd-mc` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 
 use rand::Rng;
 use serde::{Deserialize, Serialize};

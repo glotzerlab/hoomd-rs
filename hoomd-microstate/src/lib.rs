@@ -177,6 +177,13 @@
 //!
 //! [serde]: https://serde.rs/
 //! [postcard]: https://docs.rs/postcard/latest/postcard/
+//!
+//! # Complete documentation
+//!
+//! `hoomd-microstate` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
