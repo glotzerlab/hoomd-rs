@@ -133,7 +133,7 @@
 //! It is kept in sync with every body insertion, removal, and update. Callers
 //! can query the spatial data directly with [`spatial_data`] and efficiently iterate
 //! over all sites near a point in space with [`iter_sites_near`].
-//! 
+//!
 //! [`spatial_data`]: Microstate::spatial_data
 //! [`iter_sites_near`]: Microstate::iter_sites_near
 //!

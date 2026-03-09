@@ -82,7 +82,6 @@
 //!
 //! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 
-
 use hoomd_microstate::{Body, Microstate};
 
 pub mod external;

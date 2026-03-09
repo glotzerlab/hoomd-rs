@@ -75,7 +75,7 @@
 //! The [`UniformIn`] distribution randomly places a template body anywhere
 //! in the simulation boundary. You could write your own distribution for custom
 //! behavior. [`QuickCompress`] compresses the simulation boundary until it
-//! reaches a target volume. 
+//! reaches a target volume.
 //!
 //! # Complete documentation
 //!
