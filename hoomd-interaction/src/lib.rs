@@ -10,7 +10,70 @@
 
 //! Particle interactions and physical models that apply to microstates.
 //!
-//! TODO: Expand documentation.
+//! # Hamiltonian
+//!
+//! A type that describes a Hamiltonian (or a single term in a multi-part Hamiltonian)
+//! implements one or more of the following traits: [`TotalEnergy`], [`DeltaEnergyOne`],
+//! [`DeltaEnergyInsert`], and [`DeltaEnergyRemove`]. Given a microstate, the
+//! [`total_energy`] method computes the total energy of the Hamiltonian. The various
+//! `delta_energy_*` methods compute the *change* in total energy when updating, inserting,
+//! or removing a body. Total energy computations *typically* cost $` O(N) `$ while
+//! `delta_energy` methods typically cost $` O(1) `$. These costs may vary based
+//! on the specific interaction type and/or the microstate's spatial data structure.
+//!
+//! As a convenience, most Hamiltonian types also implement [`MaximumInteractionRange`],
+//! so that callers can easily determine the maximum site-site interaction range in a
+//! given model.
+//!
+//! All the Hamiltonian traits can be automatically derived using a `#[derive()]` macro
+//! of the same name. The derived implementation sums over all the fields in the struct.
+//!
+//! [`total_energy`]: TotalEnergy::total_energy
+//!
+//! # Univariate interactions
+//!
+//! Many interaction potentials are a function of one variable, typically the
+//! distance between two sites but sometimes the distance between a site and
+//! surface, or an angle. `hoomd-interaction` implements the most commonly
+//! used univariate potentials, such as [`LennardJones`] in [`univariate`].
+//! These types are not Hamiltonian terms on their own, but can be combined
+//! with other types to create interaction models.
+//!
+//! To implement your own univariate interactions, implement the
+//! [`UnivariateEnergy`] and/or [`UnivariateForce`] traits.
+//!
+//! [`LennardJones`]: univariate::LennardJones
+//! [`UnivariateEnergy`]: univariate::UnivariateEnergy
+//! [`UnivariateForce`]: univariate::UnivariateForce
+//!
+//! # Interactions between sites and external objects
+//!
+//! The [`SiteEnergy`] trait describes a type that computes the contribution
+//! of a single site to the total energy as a function only of that site's
+//! properties along with fixed external parameters. The [`External`] type
+//! implements all the Hamiltonian traits. It applies the wrapped [`SiteEnergy`]
+//! to all the sites in the microstate. See [`external`] for a list of built-in
+//! [`SiteEnergy`] implementations.
+//!
+//! # Interactions between all pairs of sites
+//!
+//! The [`SitePairEnergy`] trait describes a type that computes the energy
+//! that a pair of sites contributes to the Hamiltonian as a function of
+//! the properties of the two sites. The [`PairwiseCutoff`] type implements
+//! all the Hamiltonian traits. It applies the wrapped [`SitePairEnergy`]
+//! to all pairs of sites that are within the maximum interaction range.
+//!
+//! The [`pairwise`] module provides numerous types that implement
+//! [`SitePairEnergy`], including [`Isotropic`] (which wraps any
+//! univariate potential), [`HardShape`] (which wraps a shape from
+//! [`hoomd_geometry`], and many others.
+//!
+//! # Zero
+//!
+//! [`Zero`] implements all Hamiltonian traits and represents `$ H=0 $`.
+//!
+//! [`Isotropic`]: pairwise::Isotropic
+//! [`HardShape`]: pairwise::HardShape
 
 use hoomd_microstate::{Body, Microstate};
 
