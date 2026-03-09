@@ -1013,6 +1013,7 @@ pub fn add_default_plugins(app: &mut App) {
             primary_window: Some(Window {
                 canvas: Some("#hoomd-example".into()),
                 fit_canvas_to_parent: true,
+                focused: false,
                 ..default()
             }),
             ..default()
