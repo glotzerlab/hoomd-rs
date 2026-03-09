@@ -52,6 +52,13 @@
 //!
 //! `doc-example` Make examples suitable for display in a web browser.
 //! `webgpu` Compile for the WebGPU platform when building for the wasm32 target.
+//!
+//! # Complete documentation
+//!
+//! `hoomd-bevy` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 
 use std::{ops::Range, time::Duration};
 
@@ -1006,6 +1013,7 @@ pub fn add_default_plugins(app: &mut App) {
             primary_window: Some(Window {
                 canvas: Some("#hoomd-example".into()),
                 fit_canvas_to_parent: true,
+                focused: false,
                 ..default()
             }),
             ..default()

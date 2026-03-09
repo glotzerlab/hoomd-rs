@@ -21,10 +21,12 @@
   - [Type-dependent Interactions](mc-tutorial/type-dependent-interactions.md)
   - [Binary Hard Shapes]()
   - [Polydisperse Interactions]()
+- [Topics](topics.md)
 
 # Reference
 
 - [API Reference](api.md)
 - [Notation](notation.md)
-- [Developer Tools](developer-tools.md)
+- [Development](development.md)
 - [Logo](logo.md)
+- [Credits](credits.md)

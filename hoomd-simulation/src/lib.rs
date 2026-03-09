@@ -27,6 +27,13 @@
 //!
 //! let macrostate = Isothermal { temperature: 1.2 };
 //! ```
+//!
+//! # Complete documentation
+//!
+//! `hoomd-simulation` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 
 pub mod macrostate;
 

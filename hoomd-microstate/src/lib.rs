@@ -127,6 +127,16 @@
 //! module implements standard types and explains how you can provide custom
 //! implementations.
 //!
+//! ## Spatial searches
+//!
+//! `Microstate` maintains a internal spatial data structure (see [`hoomd_spatial`]).
+//! It is kept in sync with every body insertion, removal, and update. Callers
+//! can query the spatial data directly with [`spatial_data`] and efficiently iterate
+//! over all sites near a point in space with [`iter_sites_near`].
+//!
+//! [`spatial_data`]: Microstate::spatial_data
+//! [`iter_sites_near`]: Microstate::iter_sites_near
+//!
 //! ## Ghost sites
 //!
 //! Periodic boundary conditions place **ghost sites** within a given **maximum
@@ -139,13 +149,8 @@
 //! be empty.
 //!
 //! [`ghosts`]: Microstate::ghosts
-//! [`iter_sites_near`]: Microstate::iter_sites_near
 //! [`Open`]: crate::boundary::Open
 //! [`Closed`]: crate::boundary::Closed
-//!
-//! ## Spatial searches
-//!
-//! TODO: Implement spatial search, then document.
 //!
 //! ## I/O
 //!
@@ -172,6 +177,13 @@
 //!
 //! [serde]: https://serde.rs/
 //! [postcard]: https://docs.rs/postcard/latest/postcard/
+//!
+//! # Complete documentation
+//!
+//! `hoomd-microstate` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;

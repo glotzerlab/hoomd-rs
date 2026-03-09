@@ -136,6 +136,13 @@
 //! ```
 //! Each array in the file in stored in a specific type. `write_scalars` and
 //! `write_arrays` automatically infer that type from the argument given.
+//!
+//! # Complete documentation
+//!
+//! `hoomd-gsd` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 
 pub mod file_layer;
 pub mod hoomd;
