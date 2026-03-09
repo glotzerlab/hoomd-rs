@@ -204,7 +204,20 @@ Here are the traits that the `*Properties` types may have:
 
 ## Topology
 
-TODO: Describe how topology will be stored.
+`Microstate` will *not* store topology. There are simply too many different
+types of topology to support them all, and a each new custom potential might
+need another new topology. In *hoomd-rs*, it will be the *interaction's*
+responsibility to store the topology most appropriate to it. What is a list
+of bonds if not a set of parameters for the harmonic bond interaction?
+In this way, every potential can store the topology in a way that is best
+for it. That may be a hash map of tag tuples, a vector of vectors, or
+some other data type.
+
+The biggest disadvantage to this approach is that site insertion and removal
+in `Microstate` now occurs separately from bond insertion and removal in
+the interaction type. When a user removes a site from the microstate, the
+interaction may still store a bond that references the old site. This is a
+potential for error that users will simply have to deal with.
 
 ## Ghost sites
 
@@ -458,11 +471,6 @@ Open questions in this design:
    than the HOOMD-blue situation because these delta vectors do not need to
    wrapped, and the majority of the sites will have no ghosts.
 
-   I think that pair lists with tags is the only viable solution. It also
-   provides a schematic of a solution for bonds (which will also be stored as
-   pairs of tags). TODO: update the above documentation to reflect the actual
-   design after thinking more on this and prototyping the solution.
-
 2) Applying forces and torques across boundaries: In MD, the *i, j* force
    typically needs to be computed only once for *i < j*. The force is applied
    to *i* and the negative of the force to *j*. Site *i* will always be in the
@@ -473,7 +481,7 @@ Open questions in this design:
    impose a twist (more generally, anything other than a translation), then
    the force will also need to be transformed. Somehow, the boundary condition
    implementation will need to be able to compute that. It is unclear how
-   at this time - JAA. The easy solution is to not use the Newton's third law
+   at this time. The easy solution is to not use the Newton's third law
    optimization and compute both the *i, j* and *j, i* force in the primary
    image. But that would halve performance and still require some way to handle
    body centers that are across the box.
@@ -493,9 +501,11 @@ after calling the provided Fn.
 
 ## Linked spatial data structures
 
-TODO: Discuss how Microstate owns a Cell list (and a pair list?) so that it can
-keep them always up to date. These should be optional as some algorithms will
-require both data structures, some will need only one, and others will need none
-at all. For example, MC will use the cell list while MD will use the pair list.
-There also should be a way to efficiently clone a Microstate without its spatial
-data structures (for example when writing the microstate out to a file).
+`Microstate` owns a spatial data structure so that it can always keep it
+up to date. The spatial data structure itself is implemented separately in
+`hoomd-spatial` which includes an `AllPairs` no-op implementation that allows
+simulations in spaces where spatial data structures are not trivial.
+
+While the spatial data structure is accessible directly by `spatial_data`,
+`Microstate` also implements `iter_sites_near` which uses the spatial data
+to efficiently iterate over all sites near a given point in space.

@@ -784,5 +784,3 @@ pub trait DeltaEnergyRemove<B, S, X, C> {
         body_index: usize,
     ) -> f64;
 }
-
-// TODO: More doc examples for all implementors.

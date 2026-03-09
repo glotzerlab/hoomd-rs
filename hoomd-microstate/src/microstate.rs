@@ -1396,9 +1396,6 @@ where
 
         // MC methods require the clone as they keep the old microstate for
         // rejected moves. MD methods do not need to clone.
-        // TODO: Refactor this code into a method like `set_boundary_and_update_bodies`.
-        // It would take a callable that updates the bodies so that MD methods could
-        // scale both position and velocity appropriately.
 
         new_microstate.boundary = new_boundary;
 
