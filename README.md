@@ -57,7 +57,7 @@ is HOOMD-blue or hoomd-rs faster on the same CPU?
 - [freud](https://freud.readthedocs.io/):
   Analyze simulation results with the **freud** Python library.
 - [signac](https://signac.readthedocs.io/):
-  Manage your workflow with **signac**.
+  Manage your workspace with **signac**.
 - [row](https://row.readthedocs.io):
   Automate your HPC workflow using **row**.
 
