@@ -70,7 +70,7 @@
 //!
 //! # Zero
 //!
-//! [`Zero`] implements all Hamiltonian traits and represents `$ H=0 $`.
+//! [`Zero`] implements all Hamiltonian traits and represents $` H=0 `$.
 //!
 //! [`Isotropic`]: pairwise::Isotropic
 //! [`HardShape`]: pairwise::HardShape
