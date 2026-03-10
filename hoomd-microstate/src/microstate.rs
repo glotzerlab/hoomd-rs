@@ -218,6 +218,9 @@ pub struct Microstate<B, S = B, X = AllPairs<SiteKey>, C = Open> {
 
     /// Spatial data structure.
     spatial_data: X,
+
+    /// Temporary buffer for wrapped site properties
+    wrapped_site_properties: Vec<S>,
 }
 
 impl<B, S> Default for Microstate<B, S, AllPairs<SiteKey>, Open> {
@@ -265,6 +268,7 @@ impl<B, S> Microstate<B, S, AllPairs<SiteKey>, Open> {
             sites_ghosts: Vec::new(),
             boundary: Open,
             spatial_data: AllPairs::default(),
+            wrapped_site_properties: Vec::new(),
         }
     }
 
@@ -568,14 +572,13 @@ where
     /// Given a site in the boundary, update that site's ghosts to be consistent
     /// with that site's properties. This may require adding or removing ghosts.
     fn update_site_ghosts(
-        sites: &VecWithTags<Site<S>>,
+        site: &Site<S>,
         site_index: usize,
         boundary: &C,
         sites_ghosts: &mut [ArrayVec<usize, MAX_GHOSTS>],
         ghosts: &mut VecWithTags<Site<S>>,
         spatial_data: &mut X,
     ) {
-        let site = &sites.items[site_index];
         let new_ghosts = boundary.generate_ghosts(&site.properties);
         let ghost_tags = &mut sites_ghosts[site_index];
 
@@ -621,7 +624,7 @@ where
             let site_index = self.sites.indices[*site_tag]
                 .expect("bodies_sites and site_indices should be consistent");
             Self::update_site_ghosts(
-                &self.sites,
+                &self.sites.items[site_index],
                 site_index,
                 &self.boundary,
                 &mut self.sites_ghosts,
@@ -911,28 +914,31 @@ where
         // to be a performance bottleneck, we could alternately implement a
         // staging Vec (would require allocation/deallocation per update or a
         // reusable scratch storage).
+        self.wrapped_site_properties.clear();
         for s in &body.item.sites {
-            self.boundary
+            let wrapped = self.boundary
                 .wrap(new_body_properties.transform(s))
                 .map_err(|e| Error::UpdateBody(body.tag, e))?;
+            self.wrapped_site_properties.push(wrapped);
         }
 
         body.item.properties = new_body_properties;
 
         // Update site properties
-        for (i, site_tag) in self.bodies_sites[body_index].iter().enumerate() {
+        for ((i, site_tag), site_properties) in self.bodies_sites[body_index].iter().enumerate().zip(self.wrapped_site_properties.drain(..)) {
             let site_index = self.sites.indices[*site_tag]
                 .expect("bodies_sites and site_indices should be consistent");
-            let site_properties = self
-                .boundary
-                .wrap(body.item.properties.transform(&body.item.sites[i]))
-                .expect("sites should be validated as wrappable prior to this loop");
             self.spatial_data
                 .insert(SiteKey::Primary(*site_tag), *site_properties.position());
             self.sites.items[site_index].properties = site_properties;
-        }
 
-        self.update_body_site_ghosts(body_index);
+            Self::update_site_ghosts(&self.sites.items[site_index],
+                site_index,
+                &self.boundary,
+                &mut self.sites_ghosts,
+                &mut self.ghosts,
+                &mut self.spatial_data);
+        }
 
         Ok(())
     }
@@ -1669,6 +1675,7 @@ impl<B, S, X, C> MicrostateBuilder<B, S, X, C> {
             ghosts: VecWithTags::new(),
             sites_ghosts: Vec::new(),
             spatial_data: self.spatial_data,
+            wrapped_site_properties: Vec::new(),
         };
 
         microstate.spatial_data.clear();
