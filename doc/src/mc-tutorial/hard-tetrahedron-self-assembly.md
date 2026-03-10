@@ -95,7 +95,7 @@ To run the simulation, construct the `HardTetrahedronSelfAssembly` simulation mo
 Then call `advance()` many times and write the sites to a GSD file periodically so that
 you can inspect the results of the simulation:
 ```rust,ignore
-{{#rustdoc_include ../../../examples/mc-tutorial/hard-ellipse-self-assembly.rs:main}}
+{{#rustdoc_include ../../../examples/mc-tutorial/hard-tetrahedron-self-assembly.rs:main}}
 ```
 
 See [Applying Interactions](applying-interactions.md) for a step-by-step explanation
