@@ -76,10 +76,12 @@ where
     let mut quick_compress = QuickCompress::with_target_volume(final_box_volume.try_into()?);
 
     while !quick_compress.is_complete() {
-        if quick_insert.is_complete() {
-            quick_compress.apply(&mut microstate, overlap_penalty_hamiltonian, |_| true);
-        } else {
-            quick_insert.apply(&mut microstate, overlap_penalty_hamiltonian);
+        if microstate.step().is_multiple_of(20) {
+            if quick_insert.is_complete() {
+                quick_compress.apply(&mut microstate, overlap_penalty_hamiltonian, |_| true);
+            } else {
+                quick_insert.apply(&mut microstate, overlap_penalty_hamiltonian);
+            }
         }
 
         translate_sweep.apply(&mut microstate, overlap_penalty_hamiltonian, &macrostate);
@@ -157,7 +159,7 @@ where
         .boundary(boundary)
         .try_build()?;
 
-    let translate = Translate::with_maximum_distance(0.1.try_into()?);
+    let translate = Translate::with_maximum_distance(0.03.try_into()?);
     let mut translate_sweep = Sweep(translate);
 
     let rotate = Rotate::with_maximum_rotation(0.1.try_into()?);
@@ -171,10 +173,12 @@ where
     let mut quick_compress = QuickCompress::with_target_volume(final_box_volume.try_into()?);
 
     while !quick_compress.is_complete() {
-        if quick_insert.is_complete() {
-            quick_compress.apply(&mut microstate, insert_hamiltonian, |_| true);
-        } else {
-            quick_insert.apply(&mut microstate, insert_hamiltonian);
+        if microstate.step().is_multiple_of(20) {
+            if quick_insert.is_complete() {
+                quick_compress.apply(&mut microstate, insert_hamiltonian, |_| true);
+            } else {
+                quick_insert.apply(&mut microstate, insert_hamiltonian);
+            }
         }
 
         translate_sweep.apply(&mut microstate, insert_hamiltonian, &macrostate);
