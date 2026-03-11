@@ -28,7 +28,7 @@ use hoomd_microstate::{
     property::OrientedPoint,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
-use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
+use hoomd_spatial::{IndexFromPosition, PointUpdate, PointsNearBall, WithSearchRadius};
 use hoomd_vector::{Angle, Cartesian};
 use log::debug;
 use serde::{Deserialize, Serialize};
@@ -99,11 +99,16 @@ impl<X> Effort for RegularPolygon<X> {
 
 impl<X> Simulation for RegularPolygon<X>
 where
-    X: PointsNearBall<Cartesian<2>, SiteKey> + PointUpdate<Cartesian<2>, SiteKey> + Sync,
-    Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>,
+    X: PointsNearBall<Cartesian<2>, SiteKey> + PointUpdate<Cartesian<2>, SiteKey> + Sync +
+    IndexFromPosition<Cartesian<2>>,
+    Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>
 {
     #[inline]
     fn advance(&mut self) -> anyhow::Result<()> {
+        // if self.microstate.step().is_multiple_of(300) {
+        //     self.microstate.sort();
+        // }
+
         if self.parallel {
             self.translate_count += self.parallel_translate_sweep.apply(
                 &mut self.microstate,

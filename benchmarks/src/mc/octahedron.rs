@@ -30,7 +30,7 @@ use hoomd_microstate::{
     property::OrientedPoint,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
-use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
+use hoomd_spatial::{IndexFromPosition, PointUpdate, PointsNearBall, WithSearchRadius};
 use hoomd_vector::{Cartesian, Versor};
 
 use crate::{Effort, place::place_single_site_orientable_bodies};
@@ -99,11 +99,15 @@ impl<X> Effort for Octahedron<X> {
 
 impl<X> Simulation for Octahedron<X>
 where
-    X: PointsNearBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey> + Sync,
+    X: PointsNearBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey> + Sync + IndexFromPosition<Cartesian<3>>,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
     #[inline]
     fn advance(&mut self) -> anyhow::Result<()> {
+        // if self.microstate.step().is_multiple_of(300) {
+        //     self.microstate.sort();
+        // }
+
         if self.parallel {
             self.translate_count += self.parallel_translate_sweep.apply(
                 &mut self.microstate,
@@ -167,7 +171,8 @@ where
         + WithSearchRadius
         + Clone
         + for<'a> Deserialize<'a>
-        + Serialize + Sync,
+        + Serialize + Sync
+        + IndexFromPosition<Cartesian<3>>,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
     /// Construct a new hard octahedra simulation

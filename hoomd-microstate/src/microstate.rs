@@ -5,7 +5,7 @@
 
 use arrayvec::ArrayVec;
 use serde::{Deserialize, Serialize};
-use std::{cmp::Reverse, collections::BinaryHeap, fmt};
+use std::{cmp::Reverse, collections::BinaryHeap, fmt, mem};
 
 use crate::{
     Body, Error, Site, Transform,
@@ -15,7 +15,7 @@ use crate::{
 
 use hoomd_geometry::MapPoint;
 use hoomd_rand::Counter;
-use hoomd_spatial::{AllPairs, PointUpdate, PointsNearBall};
+use hoomd_spatial::{AllPairs, IndexFromPosition, PointUpdate, PointsNearBall};
 
 /// Either a primary site index or a ghost site index.
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]
@@ -121,7 +121,6 @@ impl<T> VecWithTags<T> {
     }
 
     /// Number of items stored.
-    #[cfg(test)]
     fn len(&self) -> usize {
         self.items.len()
     }
@@ -1416,6 +1415,38 @@ where
         }
 
         Ok(new_microstate)
+    }
+}
+
+impl<P, B, S, X, C, L> Microstate<B, S, X, C>
+where
+    S: Position<Position = P>,
+    X: IndexFromPosition<P, L = L>,
+    L: Ord,
+    Site<S>: Copy,
+{
+    #[inline]
+    pub fn sort(&mut self) {
+        let mut sort_order = (0..self.sites.len()).collect::<Vec<_>>();
+        sort_order.sort_by_key(|&i| self.spatial_data.index_from_position(self.sites.items[i].properties.position()));
+
+        let mut new_sites_items = Vec::new();
+        let mut new_sites_tags = Vec::new();
+        let mut new_sites_ghosts = Vec::new();
+        
+        for index in sort_order {
+            new_sites_items.push(self.sites.items[index]);
+            new_sites_tags.push(self.sites.tags[index]);
+            new_sites_ghosts.push(self.sites_ghosts[index].clone());
+        }
+
+        for (index,tag) in new_sites_tags.iter().enumerate() {
+            self.sites.indices[*tag] = Some(index);
+        }
+
+        mem::replace(&mut self.sites.items, new_sites_items);
+        mem::replace(&mut self.sites.tags, new_sites_tags);
+        mem::replace(&mut self.sites_ghosts, new_sites_ghosts);
     }
 }
 

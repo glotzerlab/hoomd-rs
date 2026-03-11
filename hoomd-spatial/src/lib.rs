@@ -165,3 +165,12 @@ pub trait WithSearchRadius {
     /// Construct a spatial data structure that can search *at least* as far as the given radius.
     fn with_search_radius(radius: PositiveReal) -> Self;
 }
+
+/// Locate the index of a given point.
+///
+/// This is used by `Microstate` to sort for cache coherency.
+pub trait IndexFromPosition<P> {
+    type L: Ord;
+
+    fn index_from_position(&self, position: &P) -> Self::L;
+}
