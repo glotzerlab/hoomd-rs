@@ -91,6 +91,7 @@ pub struct ParallelSweep<L, K, B, S> {
     checkerboard: K,
 
     /// Cached storage of the body indices assigned to each space.
+    #[serde(skip)]
     spaces: Vec<Vec<usize>>,
 
     /// Cached storage of the body trial moves in each space.
@@ -389,7 +390,7 @@ where
         let kt = macrostate.temperature();
 
         self.update_checkerboard(microstate);
-
+    
         let mut count = Self::Count::default();
 
         while count.total() < microstate.bodies().len() as u64 {
