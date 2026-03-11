@@ -168,7 +168,7 @@ where
         + WithSearchRadius
         + Clone
         + for<'a> Deserialize<'a>
-        + Serialize,
+        + Serialize + Sync,
     Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>,
 {
     /// Construct a new polygon simulation

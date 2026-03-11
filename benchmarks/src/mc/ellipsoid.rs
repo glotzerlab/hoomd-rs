@@ -167,7 +167,7 @@ where
         + WithSearchRadius
         + Clone
         + for<'a> Deserialize<'a>
-        + Serialize,
+        + Serialize + Sync,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
     /// Construct a new hard octahedra simulation
