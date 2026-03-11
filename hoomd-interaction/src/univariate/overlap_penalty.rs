@@ -56,7 +56,7 @@ impl Default for OverlapPenalty {
     /// The default values are tuned for use with `QuickInsert` and `QuickCompress`
     /// applied to systems of spherical particles with diameter approximately 1.
     ///
-    /// * $`k = 1000`$
+    /// * $`k = 10,000`$
     /// * $`d_\mathrm{max} = 0.2`$
     /// * $`\varepsilon_\mathrm{shoulder} = 100`$
     ///
@@ -73,7 +73,7 @@ impl Default for OverlapPenalty {
     #[inline]
     fn default() -> Self {
         Self {
-            k: 1000.0,
+            k: 10_000.0,
             maximum_allowed_overlap: 0.2,
             epsilon_shoulder: 100.0,
         }
