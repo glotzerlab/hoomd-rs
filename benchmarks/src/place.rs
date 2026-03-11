@@ -141,7 +141,7 @@ where
         + DeltaEnergyOne<B, S, X, Periodic<Hypercuboid<D>>>
         + TotalEnergy<Microstate<B, S, X, Periodic<Hypercuboid<D>>>> + MaximumInteractionRange + Sync,
 {
-    let initial_number_density = 0.7 * number_density;
+    let initial_number_density = 0.5 * number_density;
     let initial_box_length = (n as f64 / initial_number_density).powf(1.0 / (D as f64));
     let final_box_volume = n as f64 / number_density;
     let macrostate = Isothermal { temperature: 1.0 };
@@ -175,7 +175,7 @@ where
     let mut quick_compress = QuickCompress::with_target_volume(final_box_volume.try_into()?);
 
     while !quick_compress.is_complete() {
-        if microstate.step().is_multiple_of(20) {
+        if microstate.step().is_multiple_of(10) {
             if quick_insert.is_complete() {
                 quick_compress.apply(&mut microstate, insert_hamiltonian, |_| true);
             } else {
