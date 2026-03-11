@@ -6,7 +6,7 @@ use std::f64::consts::PI;
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
     DeltaEnergyOne, External, MaximumInteractionRange, PairwiseCutoff,
-    TotalEnergy, external::Linear, pairwise::Isotropic, univariate::Boxcar,
+    TotalEnergy, external::ConstantForce, pairwise::Isotropic, univariate::Boxcar,
 };
 use hoomd_mc::{LocalTrial, Sweep, Trial};
 use hoomd_microstate::{
@@ -85,7 +85,7 @@ struct Tetronimoes {
 
 #[derive(TotalEnergy, DeltaEnergyOne, MaximumInteractionRange)]
 struct Hamiltonian {
-    linear: External<Linear<Cartesian<2>>>,
+    linear: External<ConstantForce<Cartesian<2>>>,
     pairwise_cutoff: PairwiseCutoff<Isotropic<Boxcar>>,
 }
 // ANCHOR_END: simulation_struct
