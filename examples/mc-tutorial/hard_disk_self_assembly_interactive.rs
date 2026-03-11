@@ -84,7 +84,7 @@ fn sync_sites(
                     site.properties.position[1] as f32,
                     0.0,
                 ),
-                1.0f32,
+                1.0_f32,
             )
         }),
     );
@@ -109,7 +109,7 @@ fn sync_ghosts(
                     site.properties.position[1] as f32,
                     0.0,
                 ),
-                1.0f32,
+                1.0_f32,
             )
         }),
     );

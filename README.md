@@ -28,7 +28,7 @@ capabilities that [HOOMD-blue] cannot, such as:
 implementations only for the most commonly used methods. At the same time,
 **hoomd-rs** makes it straightforward to customize everything about the
 simulation while maintaining a high level of performance. Through the use of
-generics, [Rust] will inline your custom code inside the innermost simulation
+generics, [Rust] will inline your custom code all the way to the innermost simulation
 loops and _compile it to machine code_. In contrast, [HOOMD-blue] offers limited
 opportunities for user customization with Python scripts that are _interpreted_
 at runtime.
@@ -45,49 +45,28 @@ is HOOMD-blue or hoomd-rs faster on the same CPU?
 ## Resources
 
 * [Documentation]: Tutorial and full Rust API reference guide.
+* [hoomd-rs discussion board](https://github.com/glotzerlab/hoomd-rs/discussions/):
+  Ask the **hoomd-rs** user community for help.
+
+## Related tools
+
+- [Ovito](https://www.ovito.org/):
+  Visualize simulation trajectories with **Ovito**.
+- [gsd](https://gsd.readthedocs.io):
+  Read simulation trajectories with the **gsd** Python library.
+- [freud](https://freud.readthedocs.io/):
+  Analyze simulation results with the **freud** Python library.
+- [signac](https://signac.readthedocs.io/):
+  Manage your workspace with **signac**.
+- [row](https://row.readthedocs.io):
+  Automate your HPC workflow using **row**.
 
 ## Examples
 
-Random walk:
-```rust
-use hoomd_interaction::Zero;
-use hoomd_mc::{Sweep, Translate, Trial};
-use hoomd_microstate::{Body, MicrostateBuilder};
-use hoomd_simulation::macrostate::Isothermal;
-use hoomd_vector::Cartesian;
-
-fn main() -> anyhow::Result<()> {
-    let mut microstate = Microstate::builder()
-        .bodies([Body::point(Cartesian::from([0.0, 0.0]))])
-        .try_build()?;
-
-    let translate = Translate {
-        maximum_distance: 0.15.try_into()?,
-    };
-
-    let translate_sweep = Sweep(translate);
-
-    let hamiltonian = Zero;
-
-    let macrostate = Isothermal { temperature: 1.0 };
-
-    for _ in 0..100 {
-        translate_sweep.apply(&mut microstate, &hamiltonian, &macrostate);
-        microstate.increment_step();
-
-        println!("{}", microstate.sites()[0].properties.position);
-    }
-
-    Ok(())
-}
-```
-
 The [examples] directory contains many files that demonstrate how to use
-**hoomd-rs**. To see them in action, navigate to the relevant tutorial in the
-[hoomd-rs documentation].
-
-The documentation also describes [how to build the examples] on your desktop,
-in case you want to modify any of them and see the results.
+**hoomd-rs**. To see them live in your browser, navigate to the relevant
+tutorial in the [hoomd-rs documentation]. The documentation also describes [how
+to build the examples] on your desktop.
 
 [HOOMD-blue]: https://hoomd-blue.readthedocs.io
 [Rust]: https://www.rust-lang.org/
@@ -97,3 +76,7 @@ in case you want to modify any of them and see the results.
 [Documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 [hoomd-rs documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 [how to build the examples]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com/examples.html
+
+## License
+
+**hoomd-rs** is available under the [3-clause BSD license](LICENSE).

@@ -26,6 +26,9 @@ pub use cylinder::Cylinder;
 mod eighteight;
 pub use eighteight::EightEight;
 
+mod hyperbolic_convex_polytope;
+pub use hyperbolic_convex_polytope::{HyperbolicConvexPolygon, HyperbolicConvexPolytope};
+
 mod hyperellipsoid;
 pub use hyperellipsoid::{Ellipse, Ellipsoid, Hyperellipsoid};
 

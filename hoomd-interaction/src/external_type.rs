@@ -14,7 +14,8 @@ use crate::{
     NetBodyTorque,
     SiteEnergy,
     SiteForceAndTorque,
-    TotalEnergy
+    TotalEnergy,
+    MaximumInteractionRange
 };
 use hoomd_microstate::{boundary::Wrap, property::{Orientation, Position}, Body, Microstate, Site, Transform};
 use hoomd_vector::{Rotate, RotationMatrix, Vector, WedgeProduct};
@@ -187,7 +188,7 @@ where
 
     /// Compute the difference in energy between two microstates.
     ///
-    /// Returns `$ E_\mathrm{final} - E_\mathrm{initial} $`.
+    /// Returns $` E_\mathrm{final} - E_\mathrm{initial} `$.
     ///
     /// # Example
     ///
@@ -575,6 +576,7 @@ where
         self.0.net_force_and_torque_on_site(microstate, site)
     }
 }
+
 impl<const N: usize, V, B, S, X, C, E, R> NetBodyTorque<N, V, B, S, X, C> for External<E>
 where
     V: Vector + WedgeProduct,
@@ -594,6 +596,14 @@ where
     fn net_torque_on_body(&self, microstate: &Microstate<B, S, X, C>, body_index: usize) -> V::Bivector {
         let body_properties = microstate.bodies()[body_index].item.properties.clone();  // TODO: check if we need to clone here
         self.0.body_single_torque(&body_properties)
+    }
+}
+
+impl<E> MaximumInteractionRange for External<E> {
+    #[inline]
+    fn maximum_interaction_range(&self) -> f64 {
+        // External interactions are not applied between pairs of particles.
+        0.0
     }
 }
 

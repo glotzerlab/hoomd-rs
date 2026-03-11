@@ -35,7 +35,7 @@ conditions** to model the behavior of the bulk material.
 ## Type Aliases
 
 Create type aliases for your model's *vector*, *body properties*, and *site
-properties* types so that you don't need to repeat the full nested generic type
+properties* types so that you don't need to repeat the full generic type
 names throughout the code:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-disk-self-assembly.rs:type_aliases}}
@@ -69,7 +69,7 @@ The `new()` method constructs a new simulation model:
 
 #### Parameters
 
-Assign all the model parameters in one code block so that they are easy to modify:
+Assign all the model parameters in one code block:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-disk-self-assembly.rs:parameters}}
 ```
@@ -294,20 +294,39 @@ Equilibration never ends in this tutorial. In your own simulations, you might
 transition to a production phase after a certain number of steps and eventually
 complete the simulation.
 
-## Implement `main()`
+## Execute the Simulation in Batch Mode
+
+### Implement `main()`
 
 To run the simulation, construct the `HardDiskSelfAssembly` simulation model.
-Then call `advance()` many times:
+Then call `advance()` many times and write the sites to a GSD file periodically so that
+you can inspect the results of the simulation:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-disk-self-assembly.rs:main}}
 ```
 
-Write the sites to a GSD file periodically so that you can inspect the results
-of the simulation.
+See [Applying Interactions](applying-interactions.md) for a step-by-step explanation
+of this code.
 
 > [!NOTE]
 > This `main()` function runs in batch mode. There is a different `main()` (not
 > shown here) used in the interactive example.
+
+### Run the Simulation
+
+In a terminal, execute the following command to run the simulation in batch mode:
+```shell
+cargo run --release --example hard-particle-self-assembly
+```
+
+### Visualize the Simulation Results
+
+Open the generated `tetronimoes.gsd` in [Ovito] or another visualization
+tool to see the simulation results. [Ovito] will render the disks as spheres
+with the expected diameter of 1 by default.
+
+Render with Tachyon, and you should see something like:
+![Hard disk self-assembly rendered with Ovito](hard-disk-self-assembly.png)
 
 ## Conclusion
 
@@ -320,15 +339,6 @@ again. Notice that the disks start on an evenly spaced grid and are quickly
 scaled to a higher packing fraction. The many grain boundaries are caused by the
 quick compression. Over time, local trial moves will heal these grain boundaries
 leaving a single crystal.
-
-You can also run the example in batch mode and then open
-the generated `trajectory.gsd` in [Ovito] or another visualization tool:
-```shell
-cargo run --release --example hard-particle-self-assembly
-```
-
-The next section will explain how to run self-assembly simulations of hard
-ellipses.
 
 [Ovito]: https://www.ovito.org/
 

@@ -1,7 +1,7 @@
 [package]
 name = "hoomd-simulation"
 categories.workspace = true
-description = "Define simulation models in hoodm-rs."
+description = "Define simulation models in hoomd-rs."
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true

@@ -8,7 +8,7 @@ use serde_with::serde_as;
 use std::ops::Mul;
 
 use super::sphere::sphere_volume_prefactor;
-use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
+use crate::{BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, SupportMapping, Volume};
 use hoomd_linear_algebra::{
     QuadraticForm,
     matrix::{DiagonalMatrix, Matrix22},
@@ -409,7 +409,13 @@ where
         }
         true // If we did not detect a non-positive value of P(λ), the shapes overlap
     }
-
+}
+impl<R> IntersectsAtGlobal<Hyperellipsoid<2>, Cartesian<2>, R> for Hyperellipsoid<2>
+where
+    R: Rotation + Rotate<Cartesian<2>>,
+    Angle: From<R>,
+    RotationMatrix<2>: From<R>,
+{
     #[inline]
     fn intersects_at_global(
         &self,
@@ -444,7 +450,7 @@ mod tests {
     };
     use approxim::assert_relative_eq;
     use hoomd_vector::Angle;
-    use rand::{Rng, SeedableRng, rngs::StdRng};
+    use rand::{RngExt, SeedableRng, rngs::StdRng};
     use rstest::*;
     use std::marker::PhantomData;
 

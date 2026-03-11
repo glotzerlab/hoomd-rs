@@ -39,9 +39,7 @@ the microstate.
 `DeltaEnergy` and friends are defined as traits so that users can implement
 custom interactions in their MC simulations. `hoomd_mc` will implement these
 traits for very commonly used interactions (e.g. cutoff pair potentials) in the
-`hoomd_interaction` crate. `hoomd_mc` should also implement some solution for
-summing several `DeltaEnergy` types together, for example via an implementation
-on a tuple of different types, each implementing the appropriate traits.
+`hoomd_interaction` crate.
 
 ### Handling infinite energies
 

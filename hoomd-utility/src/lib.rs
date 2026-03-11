@@ -10,25 +10,14 @@
 
 //! Utilities
 //!
-//! Common utility code used by many other hoomd-rs crates.
+//! Common utility code used by other hoomd-rs crates and user code.
+//!
+//! # Complete documentation
+//!
+//! `hoomd-utility` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 
+pub mod data;
 pub mod valid;
-
-use thiserror::Error;
-
-/// Enumerate possible sources of error in fallible utility methods.
-#[non_exhaustive]
-#[derive(Error, PartialEq, Debug)]
-pub enum Error {
-    /// A positive value greater than 0 is required.
-    #[error("{0} is not greater than 0")]
-    NotPositive(f64),
-
-    /// A finite value is required.
-    #[error("{0} is not finite")]
-    NotFinite(f64),
-
-    /// An value in (0,1) is required.
-    #[error("{0} is not in (0,1)")]
-    NotInOpenUnitInterval(f64),
-}

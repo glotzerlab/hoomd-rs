@@ -29,6 +29,13 @@
 //! [`PointsNearBall::points_near_ball`] takes a position and a radius
 //! and returns an iterator that will yield all of the inserted points within
 //! the given ball. It *may* yield additional points that you need to filter out.
+//!
+//! # Complete documentation
+//!
+//! `hoomd-spatial` is is a part of *hoomd-rs*. Read the [complete documentation]
+//! for more information.
+//!
+//! [complete documentation]: https://glotzerlab-hoomd-rs.readthedocs-hosted.com
 
 use hoomd_utility::valid::PositiveReal;
 

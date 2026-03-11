@@ -12,7 +12,7 @@ use hoomd_rand::Counter;
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, Cross, InnerProduct, distribution::Ball};
 use rand::{
-    Rng, SeedableRng,
+    Rng, RngExt, SeedableRng,
     distr::{Distribution, Uniform},
     rngs::StdRng,
 };

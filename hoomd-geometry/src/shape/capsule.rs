@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::sphere::sphere_volume_prefactor;
-use crate::{BoundingSphereRadius, IntersectsAt, SupportMapping, Volume};
+use crate::{BoundingSphereRadius, IntersectsAt, IntersectsAtGlobal, SupportMapping, Volume};
 use hoomd_utility::valid::PositiveReal;
 use hoomd_vector::{Cartesian, InnerProduct, Rotate, Rotation};
 
@@ -133,6 +133,25 @@ fn axis_aligned_cartesian<const N: usize>(h: f64) -> Cartesian<N> {
     Cartesian::from(std::array::from_fn(|i| if i == (N - 1) { h } else { 0.0 }))
 }
 
+impl<const N: usize, R> IntersectsAtGlobal<Capsule<N>, Cartesian<N>, R> for Capsule<N>
+where
+    R: Rotation + Rotate<Cartesian<N>>,
+{
+    #[inline]
+    fn intersects_at_global(
+        &self,
+        other: &Capsule<N>,
+        r_self: &Cartesian<N>,
+        o_self: &R,
+        r_other: &Cartesian<N>,
+        o_other: &R,
+    ) -> bool {
+        let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(r_self, o_self, r_other, o_other);
+
+        self.intersects_at(other, &v_ij, &o_ij)
+    }
+}
+
 impl<const N: usize, R> IntersectsAt<Capsule<N>, Cartesian<N>, R> for Capsule<N>
 where
     R: Rotate<Cartesian<N>> + Rotation,
@@ -197,7 +216,7 @@ mod tests {
         shape::{Circle, Cylinder, Hypersphere},
     };
     use hoomd_vector::{Angle, Versor};
-    use rand::{Rng, SeedableRng};
+    use rand::{RngExt, SeedableRng};
 
     use super::*;
     use approxim::assert_relative_eq;

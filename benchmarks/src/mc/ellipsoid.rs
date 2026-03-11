@@ -204,16 +204,14 @@ where
         let translate = Translate::with_maximum_distance(0.05.try_into()?);
         let mut translate_sweep = Sweep(translate.clone());
         let mut parallel_translate_sweep = ParallelSweep::new(
-            hamiltonian.0.maximum_interaction_range().try_into()?,
+            hamiltonian.maximum_interaction_range().try_into()?,
             translate,
         );
 
         let rotate = Rotate::with_maximum_rotation((0.03).try_into()?);
         let mut rotate_sweep = Sweep(rotate.clone());
-        let mut parallel_rotate_sweep = ParallelSweep::new(
-            hamiltonian.0.maximum_interaction_range().try_into()?,
-            rotate,
-        );
+        let mut parallel_rotate_sweep =
+            ParallelSweep::new(hamiltonian.maximum_interaction_range().try_into()?, rotate);
 
         let approximate_shape_overlap = Anisotropic {
             interaction: ApproximateShapeOverlap::new(
@@ -221,14 +219,14 @@ where
                 OverlapPenalty::default(),
                 0.01.try_into()?,
             ),
-            r_cut: hamiltonian.0.maximum_interaction_range(),
+            r_cut: hamiltonian.maximum_interaction_range(),
         };
         let overlap_penalty_hamiltonian = PairwiseCutoff(approximate_shape_overlap);
 
         let microstate = place_single_site_orientable_bodies(
             n,
             number_density,
-            hamiltonian.0.maximum_interaction_range(),
+            hamiltonian.maximum_interaction_range(),
             &overlap_penalty_hamiltonian,
         )?;
 

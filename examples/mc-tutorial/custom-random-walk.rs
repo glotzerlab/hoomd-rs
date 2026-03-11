@@ -149,16 +149,14 @@ impl Simulation for CustomRandomWalk {
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
     let mut simulation = CustomRandomWalk::new()?;
-    // TODO: Write GSD file.
-
-    for _ in 0..100_000 {
+    for _ in 0..1_000_000 {
         simulation.advance()?;
     }
 
     Ok(())
 }
-// ANCHOR_END: main
 // ANCHOR_END: all
+// ANCHOR_END: main
 
 #[cfg(feature = "bevy")]
 mod custom_random_walk_interactive;

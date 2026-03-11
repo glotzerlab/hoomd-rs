@@ -785,7 +785,7 @@ where
 mod tests {
     use assert2::{assert, check};
     use rand::{
-        Rng, SeedableRng,
+        RngExt, SeedableRng,
         distr::{Distribution, Uniform},
         rngs::StdRng,
     };

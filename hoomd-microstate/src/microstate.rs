@@ -131,6 +131,13 @@ impl<T> VecWithTags<T> {
     fn is_empty(&self) -> bool {
         self.items.is_empty()
     }
+
+    /// Iterate over items in tag order.
+    fn iter_tag_order(&self) -> impl Iterator<Item = &T> {
+        self.indices
+            .iter()
+            .filter_map(|opt_i| opt_i.map(|i| &self.items[i]))
+    }
 }
 
 /// Store and manage all the degrees of freedom of a single microstate in phase space.
@@ -277,9 +284,9 @@ impl<B, S> Microstate<B, S, AllPairs<SiteKey>, Open> {
     /// ```
     /// use hoomd_geometry::shape::Rectangle;
     /// use hoomd_microstate::{
-    ///     Body, Microstate, SiteKey, boundary::Closed, property::Point,
+    ///     Body, Microstate, boundary::Closed, property::Point,
     /// };
-    /// use hoomd_spatial::{AllPairs, VecCell};
+    /// use hoomd_spatial::VecCell;
     /// use hoomd_vector::Cartesian;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -1205,6 +1212,47 @@ impl<B, S, X, C> Microstate<B, S, X, C> {
         })
     }
 
+    /// Iterate over all sites in monotonically increasing tag order.
+    ///
+    /// `iter_sites_tag_order` is especially useful when implementing
+    /// [`AppendMicrostate`], as GSD files must be written in tag order.
+    ///
+    /// [`AppendMicrostate`]: crate::AppendMicrostate
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_microstate::{Body, Microstate};
+    /// use hoomd_vector::Cartesian;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut microstate = Microstate::builder()
+    ///     .bodies([
+    ///         Body::point(Cartesian::from([1.0, 0.0])),
+    ///         Body::point(Cartesian::from([-1.0, 2.0])),
+    ///     ])
+    ///     .try_build()?;
+    ///
+    /// microstate.remove_body(0);
+    /// microstate.add_body(Body::point(Cartesian::from([3.0, 1.0])))?;
+    ///
+    /// let positions_tag_order: Vec<_> = microstate
+    ///     .iter_sites_tag_order()
+    ///     .map(|s| s.properties.position)
+    ///     .collect();
+    /// assert_eq!(
+    ///     positions_tag_order,
+    ///     vec![[3.0, 1.0].into(), [-1.0, 2.0].into()]
+    /// );
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    pub fn iter_sites_tag_order(&self) -> impl Iterator<Item = &Site<S>> {
+        self.sites.iter_tag_order()
+    }
+
     /// Get the spatial data structure.
     #[inline]
     pub fn spatial_data(&self) -> &X {
@@ -1241,7 +1289,7 @@ where
         clippy::missing_panics_doc,
         reason = "Will panic only due to a bug in hoomd-rs."
     )]
-    pub fn iter_sites_near(&self, point: &P, r: f64) -> impl IntoIterator<Item = &Site<S>> {
+    pub fn iter_sites_near(&self, point: &P, r: f64) -> impl Iterator<Item = &Site<S>> {
         let potential_sites = self.spatial_data.points_near_ball(point, r);
         potential_sites.map(|k| match k {
             SiteKey::Primary(tag) => {
@@ -1348,9 +1396,6 @@ where
 
         // MC methods require the clone as they keep the old microstate for
         // rejected moves. MD methods do not need to clone.
-        // TODO: Refactor this code into a method like `set_boundary_and_update_bodies`.
-        // It would take a callable that updates the bodies so that MD methods could
-        // scale both position and velocity appropriately.
 
         new_microstate.boundary = new_boundary;
 
@@ -1700,6 +1745,7 @@ mod tests {
     mod open {
         use super::*;
         use assert2::{assert, check};
+        use rand::RngExt;
 
         fn create_body<R: Rng>(rng: &mut R) -> Body<Point<Cartesian<2>>> {
             let mut body = Body::point(rng.random::<Cartesian<2>>() * MAX_INITIAL_BODY_COORDINATE);
@@ -1956,6 +2002,7 @@ mod tests {
     mod periodic {
         use super::*;
         use assert2::{assert, check};
+        use rand::RngExt;
 
         fn create_body<R: Rng>(
             rng: &mut R,

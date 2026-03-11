@@ -4,7 +4,7 @@
 //! Implement `UniformIn`
 
 use rand::{
-    Rng,
+    Rng, RngExt,
     distr::{Distribution, StandardUniform},
 };
 use serde::{Deserialize, Serialize};

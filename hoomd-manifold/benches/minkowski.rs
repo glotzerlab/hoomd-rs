@@ -9,7 +9,7 @@
 //! Benchmark Minkowski Vector
 
 use divan::{self, Bencher, black_box, counter::ItemsCount};
-use rand::{Rng, SeedableRng, rngs::StdRng};
+use rand::{Rng, RngExt, SeedableRng, rngs::StdRng};
 
 use hoomd_manifold::{
     Hyperbolic, HyperbolicAngle, HyperbolicRotate, HyperbolicRotationMatrix, Minkowski,
@@ -47,8 +47,8 @@ fn hyperbolic_distance_vec3(bencher: Bencher) {
         .with_inputs(|| create_random_hyperbolic_pair::<_>(&mut rng))
         .bench_local_values(|(a, b)| {
             black_box(
-                Hyperbolic::from_minkowski_coordinates(a, 1.0)
-                    .distance(&Hyperbolic::from_minkowski_coordinates(b, 1.0)),
+                Hyperbolic::from_minkowski_coordinates(a)
+                    .distance(&Hyperbolic::from_minkowski_coordinates(b)),
             )
         });
 }
@@ -61,9 +61,7 @@ fn to_poincare_vec3(bencher: Bencher) {
     bencher
         .counter(ItemsCount::from(1_u32))
         .with_inputs(|| create_random_hyperbolic::<_>(&mut rng))
-        .bench_local_values(|a| {
-            black_box(Hyperbolic::from_minkowski_coordinates(a, 1.0).to_poincare())
-        });
+        .bench_local_values(|a| black_box(Hyperbolic::from_minkowski_coordinates(a).to_poincare()));
 }
 
 #[cfg(not(target_arch = "wasm32"))]

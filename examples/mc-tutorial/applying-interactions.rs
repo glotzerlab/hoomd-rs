@@ -2,8 +2,8 @@
 // ANCHOR: use
 use hoomd_geometry::shape::Rectangle;
 use hoomd_interaction::{
-    External, PairwiseCutoff, TotalEnergy, external::ConstantForce,
-    pairwise::Isotropic, univariate::Boxcar,
+    DeltaEnergyOne, External, MaximumInteractionRange, PairwiseCutoff,
+    TotalEnergy, external::ConstantForce, pairwise::Isotropic, univariate::Boxcar,
 };
 use hoomd_mc::{Sweep, Translate, Trial};
 use hoomd_microstate::{
@@ -26,10 +26,7 @@ struct Fill {
         Closed<Rectangle>,
     >,
     /// How sites interact with other sites and fields.
-    hamiltonian: (
-        External<ConstantForce<Cartesian<2>>>,
-        PairwiseCutoff<Isotropic<Boxcar>>,
-    ),
+    hamiltonian: Hamiltonian,
     /// Trial moves to apply.
     translate_sweep: Sweep<Translate<Cartesian<2>>>,
     /// Temperature set point.
@@ -72,7 +69,10 @@ impl Fill {
         // ANCHOR_END: pair
 
         // ANCHOR: hamiltonian
-        let hamiltonian = (linear, pairwise_cutoff);
+        let hamiltonian = Hamiltonian {
+            linear,
+            pairwise_cutoff,
+        };
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: sweep
@@ -86,7 +86,9 @@ impl Fill {
         // ANCHOR_END: boundary
         // ANCHOR: spatial_data
         let vec_cell = VecCell::builder()
-            .nominal_search_radius(sigma.try_into()?)
+            .nominal_search_radius(
+                hamiltonian.maximum_interaction_range().try_into()?,
+            )
             .build();
         // ANCHOR_END: spatial_data
         // ANCHOR: microstate
@@ -106,6 +108,14 @@ impl Fill {
     }
 }
 // ANCHOR_END: initialize_struct
+
+// ANCHOR: hamiltonian_struct
+#[derive(TotalEnergy, DeltaEnergyOne, MaximumInteractionRange)]
+struct Hamiltonian {
+    linear: External<ConstantForce<Cartesian<2>>>,
+    pairwise_cutoff: PairwiseCutoff<Isotropic<Boxcar>>,
+}
+// ANCHOR_END: hamiltonian_struct
 
 // ANCHOR: impl_simulation
 impl Simulation for Fill {
@@ -132,7 +142,7 @@ impl Simulation for Fill {
         // ANCHOR_END: apply
 
         // ANCHOR: reset
-        if self.hamiltonian.1.total_energy(&self.microstate) > 20_000.0 {
+        if self.hamiltonian.linear.total_energy(&self.microstate) > 20_000.0 {
             self.microstate.clear();
         }
 
@@ -152,16 +162,29 @@ impl Simulation for Fill {
 #[cfg(not(feature = "bevy"))]
 // ANCHOR: main
 fn main() -> anyhow::Result<()> {
-    let mut simulation = Fill::new()?;
-    // TODO: Write GSD file.
+    use hoomd_gsd::hoomd::HoomdGsdFile;
+    use hoomd_microstate::AppendMicrostate;
 
+    let mut simulation = Fill::new()?;
+    // ANCHOR_END: main
+    // ANCHOR: create_gsd
+    let mut hoomd_gsd_file = HoomdGsdFile::create("applying-interactions.gsd")?;
+    // ANCHOR_END: create_gsd
+
+    // ANCHOR: advance
     for _ in 0..100_000 {
         simulation.advance()?;
+        // ANCHOR_END: advance
+
+        // ANCHOR: append_microstate
+        if simulation.step().is_multiple_of(1_000) {
+            hoomd_gsd_file.append_microstate(&simulation.microstate)?;
+        }
     }
 
     Ok(())
 }
-// ANCHOR_END: main
+// ANCHOR_END: append_microstate
 // ANCHOR_END: all
 
 #[cfg(feature = "bevy")]
