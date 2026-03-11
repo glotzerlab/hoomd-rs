@@ -298,7 +298,7 @@ dependencies = [
  "assert2-macros",
  "diff",
  "terminal_size",
- "unicode-width",
+ "unicode-width 0.2.2",
  "yansi",
 ]
 
@@ -2466,12 +2466,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "darling_core"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9865a50f7c335f53564bb694ef660825eb8610e0a53d3e11bf1b0d3df31e03b0"
+dependencies = [
+ "ident_case",
+ "proc-macro2",
+ "quote",
+ "strsim",
+ "syn 2.0.117",
+]
+
+[[package]]
 name = "darling_macro"
 version = "0.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d38308df82d1080de0afee5d069fa14b0326a88c14f15c5ccda35b4a6c414c81"
 dependencies = [
  "darling_core 0.21.3",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
+name = "darling_macro"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac3984ec7bd6cfa798e62b4a642426a5be0e68f9401cfc2a01e3fa9ea2fcdb8d"
+dependencies = [
+ "darling_core 0.23.0",
  "quote",
  "syn 2.0.117",
 ]
@@ -2910,8 +2934,8 @@ dependencies = [
  "parquet",
  "parquet_derive",
  "rand 0.10.0",
- "strum",
- "strum_macros",
+ "strum 0.28.0",
+ "strum_macros 0.28.0",
  "thiserror 2.0.18",
 ]
 
@@ -3729,7 +3753,7 @@ dependencies = [
  "hoomd-manifold",
  "hoomd-utility",
  "hoomd-vector",
- "itertools",
+ "itertools 0.14.0",
  "rand 0.10.0",
  "robust",
  "rstest",
@@ -3746,7 +3770,7 @@ dependencies = [
  "assert2",
  "clap",
  "hoomd-vector",
- "itertools",
+ "itertools 0.14.0",
  "memmap2",
  "tempfile",
  "thiserror 2.0.18",
@@ -3848,8 +3872,8 @@ dependencies = [
  "hoomd-spatial",
  "hoomd-utility",
  "hoomd-vector",
- "rand",
- "rand_distr",
+ "rand 0.10.0",
+ "rand_distr 0.6.0",
  "ratatui",
  "rstest",
 ]
@@ -3871,7 +3895,7 @@ dependencies = [
  "hoomd-spatial",
  "hoomd-utility",
  "hoomd-vector",
- "itertools",
+ "itertools 0.14.0",
  "log",
  "rand 0.10.0",
  "robust",
@@ -4151,7 +4175,7 @@ dependencies = [
  "indoc",
  "proc-macro2",
  "quote",
- "syn 2.0.116",
+ "syn 2.0.117",
 ]
 
 [[package]]
@@ -5643,8 +5667,8 @@ dependencies = [
  "itertools 0.13.0",
  "lru",
  "paste",
- "strum",
- "strum_macros",
+ "strum 0.26.3",
+ "strum_macros 0.26.4",
  "unicode-segmentation",
  "unicode-truncate",
  "unicode-width 0.1.14",
@@ -6308,9 +6332,31 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "strum"
+version = "0.26.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8fec0f0aef304996cf250b31b5a10dee7980c85da9d759361292b8bca5a18f06"
+dependencies = [
+ "strum_macros 0.26.4",
+]
+
+[[package]]
+name = "strum"
 version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9628de9b8791db39ceda2b119bbe13134770b56c138ec1d3af810d045c04f9bd"
+
+[[package]]
+name = "strum_macros"
+version = "0.26.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c6bee85a5a24955dc440386795aa378cd9cf82acd5f764469152d2270e581be"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn 2.0.117",
+]
 
 [[package]]
 name = "strum_macros"
