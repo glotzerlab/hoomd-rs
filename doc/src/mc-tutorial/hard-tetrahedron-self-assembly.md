@@ -78,6 +78,10 @@ Wrap it in the `Convex` newtype for use with the `HardShape` Hamiltonian:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/hard-tetrahedron-self-assembly.rs:hamiltonian}}
 ```
+[Coxeter] is one of many tools you can use to construct the vertices of a
+convex polyhedron.
+
+[Coxeter]: https://coxeter.readthedocs.io
 
 ## Initialization and Simulation
 
@@ -141,6 +145,13 @@ or use [modifier templates].
 
 Render with Tachyon, and you should see something like:
 ![Hard tetrahedron self-assembly rendered with Ovito](hard-tetrahedron-self-assembly.png)
+
+> [!TIP]
+> Use [Coxeter], [Blender], [OnShape], or any modeling tool you prefer to
+> create `.obj` files that best represent your model's sites.
+
+[Blender]: https://www.blender.org
+[OnShape]: https://www.onshape.com
 
 ## Conclusion
 

@@ -6,6 +6,7 @@ words = [
     "biquaternions",
     "cdots",
     "circumsphere",
+    "coxeter",
     "dyn",
     "egui",
     "frenkel",
