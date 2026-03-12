@@ -108,7 +108,7 @@ where
     #[inline]
     fn advance(&mut self) -> anyhow::Result<()> {
         if self.microstate.step().is_multiple_of(300) {
-            self.microstate.sort();
+            self.microstate.sort_sites();
         }
 
         if self.parallel {
@@ -201,7 +201,7 @@ where
                     .with_context(|| format!("Could not read {cache_filename}"))?;
                 // The cache may have been generated with a different value of parallel.
                 result.parallel = parallel;
-                result.microstate.sort();
+                result.microstate.sort_sites();
                 return Ok(result);
             }
             Err(error) => match error.kind() {
@@ -241,7 +241,7 @@ where
             hamiltonian.maximum_interaction_range(),
             &overlap_penalty_hamiltonian,
         )?;
-        microstate.sort();
+        microstate.sort_sites();
 
         translate_sweep.tune_default(&microstate, &hamiltonian, &Isothermal { temperature: 1.0 });
         *parallel_translate_sweep

@@ -170,7 +170,13 @@ pub trait WithSearchRadius {
 ///
 /// This is used by `Microstate` to sort for cache coherency.
 pub trait IndexFromPosition<P> {
-    type L: Ord;
+    /// Orderable type based on the site's position.
+    type Location: Ord;
 
-    fn index_from_position(&self, position: &P) -> Self::L;
+    /// Determine the location of a site based on its position.
+    ///
+    /// Many positions can map to the same location. The ideal
+    /// mapping will place points close together in physical space
+    /// close together in the ordering.
+    fn location_from_position(&self, position: &P) -> Self::Location;
 }

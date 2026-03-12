@@ -1423,16 +1423,26 @@ where
 impl<P, B, S, X, C, L> Microstate<B, S, X, C>
 where
     S: Position<Position = P>,
-    X: IndexFromPosition<P, L = L>,
+    X: IndexFromPosition<P, Location = L>,
     L: Ord,
     Site<S>: Copy,
 {
+    /// Sort the sites spatially.
+    ///
+    /// `sort_sites` reorders the sites in memory based on their spatial location.
+    /// `PairwiseCutoff` interactions compute in less them when the sites are sorted
+    /// because the interacting sites are more likely to be nearby in memory.
+    ///
+    /// CPUs have large caches. Typical simulations start to see benefits from sorting
+    /// when there are more than 100,000 sites. `sort` is a quick operation, so there
+    /// is no harm in sorting the microstate every few hundred steps regardless of the
+    /// system size.
     #[inline]
-    pub fn sort(&mut self) {
+    pub fn sort_sites(&mut self) {
         let mut sort_order = (0..self.sites.len()).collect::<Vec<_>>();
         sort_order.sort_by_key(|&i| {
             self.spatial_data
-                .index_from_position(self.sites.items[i].properties.position())
+                .location_from_position(self.sites.items[i].properties.position())
         });
 
         let mut new_sites_items = Vec::new();
@@ -1449,9 +1459,9 @@ where
             self.sites.indices[*tag] = Some(index);
         }
 
-        mem::replace(&mut self.sites.items, new_sites_items);
-        mem::replace(&mut self.sites.tags, new_sites_tags);
-        mem::replace(&mut self.sites_ghosts, new_sites_ghosts);
+        let _ = mem::replace(&mut self.sites.items, new_sites_items);
+        let _ = mem::replace(&mut self.sites.tags, new_sites_tags);
+        let _ = mem::replace(&mut self.sites_ghosts, new_sites_ghosts);
     }
 }
 

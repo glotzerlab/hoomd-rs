@@ -781,10 +781,10 @@ impl<K, const D: usize> IndexFromPosition<Cartesian<D>> for VecCell<K, D>
 where
     K: Eq + Hash,
 {
-    type L = [i64; D];
+    type Location = [i64; D];
 
     #[inline]
-    fn index_from_position(&self, position: &Cartesian<D>) -> Self::L {
+    fn location_from_position(&self, position: &Cartesian<D>) -> Self::Location {
         self.cell_index_from_position(position)
     }
 }
