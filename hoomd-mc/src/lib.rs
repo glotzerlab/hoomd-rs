@@ -442,6 +442,19 @@ where
     }
 }
 
+/// Sample random bodies.
+///
+/// The [`BodyDistribution`] trait describes a type that samples bodies randomly
+/// from a given distribution. [`BodyDistribution`] is used by [`QuickInsert`]
+/// to add new *n* bodies to the microstate. When sampling, [`QuickInsert`] passes
+/// the index (in $` [0,n) `$) of the body it is attempting to add. Implementations
+/// can use this index to e.g. place bodies with a given stoichiometry or
+/// polydispersity.
+pub trait BodyDistribution<Y> {
+    /// Sample a body from the distribution with the given index.
+    fn sample<R: Rng + ?Sized>(&self, index: usize, rng: &mut R) -> Y;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
