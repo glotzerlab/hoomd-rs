@@ -4,7 +4,7 @@
 //! Test derive(DeltaEnergyInsert)
 
 use hoomd_interaction::{
-    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, External, TotalEnergy, external::Linear,
+    DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, External, TotalEnergy, external::ConstantForce,
 };
 use hoomd_microstate::{Body, Microstate};
 use hoomd_vector::Cartesian;
@@ -48,9 +48,9 @@ fn unit() -> anyhow::Result<()> {
 
 #[derive(DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, TotalEnergy)]
 struct CombinedNamed {
-    one: External<Linear<Cartesian<2>>>,
-    two: External<Linear<Cartesian<2>>>,
-    three: External<Linear<Cartesian<2>>>,
+    one: External<ConstantForce<Cartesian<2>>>,
+    two: External<ConstantForce<Cartesian<2>>>,
+    three: External<ConstantForce<Cartesian<2>>>,
 }
 
 #[test]
@@ -61,17 +61,17 @@ fn combined_named() -> anyhow::Result<()> {
         Body::point(Cartesian::from([0.0, 1.0])),
     ])?;
 
-    let one = External(Linear {
+    let one = External(ConstantForce {
         alpha: 1.0,
         plane_origin: Cartesian::default(),
         plane_normal: [1.0, 0.0].try_into()?,
     });
-    let two = External(Linear {
+    let two = External(ConstantForce {
         alpha: 2.0,
         plane_origin: Cartesian::default(),
         plane_normal: [0.0, -1.0].try_into()?,
     });
-    let three = External(Linear {
+    let three = External(ConstantForce {
         alpha: 3.0,
         plane_origin: Cartesian::default(),
         plane_normal: [1.0, 0.0].try_into()?,
@@ -93,9 +93,9 @@ fn combined_named() -> anyhow::Result<()> {
 
 #[derive(DeltaEnergyInsert, DeltaEnergyOne, DeltaEnergyRemove, TotalEnergy)]
 struct CombinedUnnamed(
-    External<Linear<Cartesian<2>>>,
-    External<Linear<Cartesian<2>>>,
-    External<Linear<Cartesian<2>>>,
+    External<ConstantForce<Cartesian<2>>>,
+    External<ConstantForce<Cartesian<2>>>,
+    External<ConstantForce<Cartesian<2>>>,
 );
 
 #[test]
@@ -106,17 +106,17 @@ fn combined_unnamed() -> anyhow::Result<()> {
         Body::point(Cartesian::from([0.0, 1.0])),
     ])?;
 
-    let one = External(Linear {
+    let one = External(ConstantForce {
         alpha: 1.0,
         plane_origin: Cartesian::default(),
         plane_normal: [1.0, 0.0].try_into()?,
     });
-    let two = External(Linear {
+    let two = External(ConstantForce {
         alpha: 2.0,
         plane_origin: Cartesian::default(),
         plane_normal: [0.0, -1.0].try_into()?,
     });
-    let three = External(Linear {
+    let three = External(ConstantForce {
         alpha: 3.0,
         plane_origin: Cartesian::default(),
         plane_normal: [1.0, 0.0].try_into()?,
