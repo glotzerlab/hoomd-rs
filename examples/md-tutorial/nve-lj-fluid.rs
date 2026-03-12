@@ -69,7 +69,7 @@ impl LJFluid {
     fn new() -> anyhow::Result<LJFluid> {
         // ANCHOR_END: simulation_new
         // ANCHOR: parameters
-        let eq_step = 100_000;
+        let eq_step = 50_000;
         let kt = 0.85;
         let density = 0.776;
         let n: f64 = 8.0;
@@ -310,7 +310,7 @@ fn main() -> anyhow::Result<()> {
     let mut simulation = LJFluid::new()?;
     // TODO: Write GSD file.
 
-    for _ in 0..500_000 {
+    for _ in 0..100_000 {
         simulation.advance()?;
     }
 

@@ -9,7 +9,7 @@ import init from 'https://glotzerlab.github.io/hoomd-rs/md-tutorial/nve-lj-fluid
 
 ## Overview
 
-This tutorial demonstrates how to set up and run a **classical NVE (microcanonical) simulation** of a Lennard-Jones (LJ) fluid using the molecular dynamics (MD) modules of `hoomd-rs`.
+This tutorial demonstrates how to set up and run a **classical microcanonical (NVE) simulation** of a Lennard-Jones (LJ) fluid using the molecular dynamics (MD) modules of `hoomd-rs`.
 
 We will:
 
@@ -197,7 +197,17 @@ We calculate:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/md-tutorial/nve-lj-fluid.rs:main}}
 ```
-We run a fixed 500,000 total steps of MD simulation.
+We run a fixed 100,000 total steps of MD simulation.
+
+Should see output similar to:
+```
+Isotherm preparation finished at step 50000.
+NVE, Step 10000, Temperature 0.8747741585945321, Potential energy (w/ LRC) per particle -5.481555101132949
+NVE, Step 20000, Temperature 0.890226773983914, Potential energy (w/ LRC) per particle -5.50325224785257
+NVE, Step 30000, Temperature 0.8838402378487593, Potential energy (w/ LRC) per particle -5.493167294987841
+NVE, Step 40000, Temperature 0.8942898500494086, Potential energy (w/ LRC) per particle -5.509090715545137
+...
+```
 
 ## Conclusion
 You have now seen how to:
@@ -212,4 +222,4 @@ You have now seen how to:
 
 Navigate to the top of the page and refresh to see the simulation in action (if Bevy visualization is enabled).
 
-You can also run the example in batch mode and analyze the printed output or extend it to write GSD/XTC trajectory files.
+You can also run the example in batch mode and analyze the printed output or extend it to write GSD trajectory files.
