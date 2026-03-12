@@ -77,7 +77,7 @@ impl<const N: usize> Default for HypercuboidCheckerboard<N> {
             space_width: [1.0; N],
             shape: [2; N],
             periodic: [false; N],
-            space_indices_by_color: Vec::new(),
+            space_indices_by_color: Self::construct_space_indices_by_color([2; N]),
         }
     }
 }
@@ -334,7 +334,7 @@ impl<const N: usize> HypercuboidCheckerboard<N> {
             }),
         };
 
-        if shape != self.shape {
+        if shape != self.shape || self.space_indices_by_color.is_empty() {
             self.space_indices_by_color = Self::construct_space_indices_by_color(shape);
             self.shape = shape;
         }
@@ -522,7 +522,37 @@ mod tests {
     }
 
     #[test]
-    fn test_construct_space_indices_by_color_3d() {
+    fn test_construct_space_indices_by_color_3d_222() {
+        let space_indices_by_color =
+            HypercuboidCheckerboard::<3>::construct_space_indices_by_color([2, 2, 2]);
+
+        assert!(space_indices_by_color.len() == 8);
+        assert!(space_indices_by_color[0].len() == 1);
+        check!(space_indices_by_color[0][0] == 0);
+
+        assert!(space_indices_by_color[1].len() == 1);
+        check!(space_indices_by_color[1][0] == 1);
+
+        assert!(space_indices_by_color[2].len() == 1);
+        check!(space_indices_by_color[2][0] == 2);
+
+        assert!(space_indices_by_color[3].len() == 1);
+        check!(space_indices_by_color[3][0] == 3);
+
+        assert!(space_indices_by_color[4].len() == 1);
+        check!(space_indices_by_color[4][0] == 4);
+
+        assert!(space_indices_by_color[5].len() == 1);
+        check!(space_indices_by_color[5][0] == 5);
+
+        assert!(space_indices_by_color[6].len() == 1);
+        check!(space_indices_by_color[6][0] == 6);
+
+        assert!(space_indices_by_color[7].len() == 1);
+        check!(space_indices_by_color[7][0] == 7);
+    }
+    #[test]
+    fn test_construct_space_indices_by_color_3d_general() {
         let space_indices_by_color =
             HypercuboidCheckerboard::<3>::construct_space_indices_by_color([2, 6, 4]);
 

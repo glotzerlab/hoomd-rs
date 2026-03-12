@@ -28,7 +28,7 @@ use hoomd_microstate::{
     property::OrientedPoint,
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
-use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
+use hoomd_spatial::{IndexFromPosition, PointUpdate, PointsNearBall, WithSearchRadius};
 use hoomd_vector::{Angle, Cartesian};
 use log::debug;
 use serde::{Deserialize, Serialize};
@@ -99,11 +99,18 @@ impl<X> Effort for RegularPolygon<X> {
 
 impl<X> Simulation for RegularPolygon<X>
 where
-    X: PointsNearBall<Cartesian<2>, SiteKey> + PointUpdate<Cartesian<2>, SiteKey> + Sync,
+    X: PointsNearBall<Cartesian<2>, SiteKey>
+        + PointUpdate<Cartesian<2>, SiteKey>
+        + Sync
+        + IndexFromPosition<Cartesian<2>>,
     Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>,
 {
     #[inline]
     fn advance(&mut self) -> anyhow::Result<()> {
+        if self.microstate.step().is_multiple_of(300) {
+            self.microstate.sort_sites();
+        }
+
         if self.parallel {
             self.translate_count += self.parallel_translate_sweep.apply(
                 &mut self.microstate,
@@ -168,7 +175,9 @@ where
         + WithSearchRadius
         + Clone
         + for<'a> Deserialize<'a>
-        + Serialize,
+        + Serialize
+        + Sync
+        + IndexFromPosition<Cartesian<2>>,
     Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>,
 {
     /// Construct a new polygon simulation
@@ -192,6 +201,7 @@ where
                     .with_context(|| format!("Could not read {cache_filename}"))?;
                 // The cache may have been generated with a different value of parallel.
                 result.parallel = parallel;
+                result.microstate.sort_sites();
                 return Ok(result);
             }
             Err(error) => match error.kind() {
@@ -225,12 +235,13 @@ where
         };
         let overlap_penalty_hamiltonian = PairwiseCutoff(approximate_shape_overlap);
 
-        let microstate = place_single_site_orientable_bodies(
+        let mut microstate = place_single_site_orientable_bodies(
             n,
             number_density,
             hamiltonian.maximum_interaction_range(),
             &overlap_penalty_hamiltonian,
         )?;
+        microstate.sort_sites();
 
         translate_sweep.tune_default(&microstate, &hamiltonian, &Isothermal { temperature: 1.0 });
         *parallel_translate_sweep

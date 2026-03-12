@@ -235,7 +235,7 @@ use property::Point;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Site<S> {
     /// Every site in a [`Microstate`] has a unique value in `site_tag`.
     pub site_tag: usize,

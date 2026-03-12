@@ -5,7 +5,7 @@
 
 use arrayvec::ArrayVec;
 use serde::{Deserialize, Serialize};
-use std::{cmp::Reverse, collections::BinaryHeap, fmt};
+use std::{cmp::Reverse, collections::BinaryHeap, fmt, mem};
 
 use crate::{
     Body, Error, Site, Transform,
@@ -15,7 +15,7 @@ use crate::{
 
 use hoomd_geometry::MapPoint;
 use hoomd_rand::Counter;
-use hoomd_spatial::{AllPairs, PointUpdate, PointsNearBall};
+use hoomd_spatial::{AllPairs, IndexFromPosition, PointUpdate, PointsNearBall};
 
 /// Either a primary site index or a ghost site index.
 #[derive(Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]
@@ -121,7 +121,6 @@ impl<T> VecWithTags<T> {
     }
 
     /// Number of items stored.
-    #[cfg(test)]
     fn len(&self) -> usize {
         self.items.len()
     }
@@ -568,14 +567,13 @@ where
     /// Given a site in the boundary, update that site's ghosts to be consistent
     /// with that site's properties. This may require adding or removing ghosts.
     fn update_site_ghosts(
-        sites: &VecWithTags<Site<S>>,
+        site: &Site<S>,
         site_index: usize,
         boundary: &C,
         sites_ghosts: &mut [ArrayVec<usize, MAX_GHOSTS>],
         ghosts: &mut VecWithTags<Site<S>>,
         spatial_data: &mut X,
     ) {
-        let site = &sites.items[site_index];
         let new_ghosts = boundary.generate_ghosts(&site.properties);
         let ghost_tags = &mut sites_ghosts[site_index];
 
@@ -621,7 +619,7 @@ where
             let site_index = self.sites.indices[*site_tag]
                 .expect("bodies_sites and site_indices should be consistent");
             Self::update_site_ghosts(
-                &self.sites,
+                &self.sites.items[site_index],
                 site_index,
                 &self.boundary,
                 &mut self.sites_ghosts,
@@ -907,10 +905,9 @@ where
 
         // An unknown site in the body might not wrap into the boundary.
         // Check that they do first before starting to modify internal data
-        // structures. This wraps every site twice on update. Should that prove
-        // to be a performance bottleneck, we could alternately implement a
-        // staging Vec (would require allocation/deallocation per update or a
-        // reusable scratch storage).
+        // structures. This wraps every site twice on update. Testing
+        // shows that caching/reusing the results of the first wrap
+        // does not change performance at all.
         for s in &body.item.sites {
             self.boundary
                 .wrap(new_body_properties.transform(s))
@@ -930,9 +927,16 @@ where
             self.spatial_data
                 .insert(SiteKey::Primary(*site_tag), *site_properties.position());
             self.sites.items[site_index].properties = site_properties;
-        }
 
-        self.update_body_site_ghosts(body_index);
+            Self::update_site_ghosts(
+                &self.sites.items[site_index],
+                site_index,
+                &self.boundary,
+                &mut self.sites_ghosts,
+                &mut self.ghosts,
+                &mut self.spatial_data,
+            );
+        }
 
         Ok(())
     }
@@ -1413,6 +1417,51 @@ where
         }
 
         Ok(new_microstate)
+    }
+}
+
+impl<P, B, S, X, C, L> Microstate<B, S, X, C>
+where
+    S: Position<Position = P>,
+    X: IndexFromPosition<P, Location = L>,
+    L: Ord,
+    Site<S>: Copy,
+{
+    /// Sort the sites spatially.
+    ///
+    /// `sort_sites` reorders the sites in memory based on their spatial location.
+    /// `PairwiseCutoff` interactions compute in less them when the sites are sorted
+    /// because the interacting sites are more likely to be nearby in memory.
+    ///
+    /// CPUs have large caches. Typical simulations start to see benefits from sorting
+    /// when there are more than 100,000 sites. `sort` is a quick operation, so there
+    /// is no harm in sorting the microstate every few hundred steps regardless of the
+    /// system size.
+    #[inline]
+    pub fn sort_sites(&mut self) {
+        let mut sort_order = (0..self.sites.len()).collect::<Vec<_>>();
+        sort_order.sort_by_key(|&i| {
+            self.spatial_data
+                .location_from_position(self.sites.items[i].properties.position())
+        });
+
+        let mut new_sites_items = Vec::new();
+        let mut new_sites_tags = Vec::new();
+        let mut new_sites_ghosts = Vec::new();
+
+        for index in sort_order {
+            new_sites_items.push(self.sites.items[index]);
+            new_sites_tags.push(self.sites.tags[index]);
+            new_sites_ghosts.push(self.sites_ghosts[index].clone());
+        }
+
+        for (index, tag) in new_sites_tags.iter().enumerate() {
+            self.sites.indices[*tag] = Some(index);
+        }
+
+        let _ = mem::replace(&mut self.sites.items, new_sites_items);
+        let _ = mem::replace(&mut self.sites.tags, new_sites_tags);
+        let _ = mem::replace(&mut self.sites_ghosts, new_sites_ghosts);
     }
 }
 
