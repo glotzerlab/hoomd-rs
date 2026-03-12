@@ -10,7 +10,8 @@ use rand::distr::Distribution;
 use hoomd_geometry::{Volume, shape::Hypercuboid};
 use hoomd_interaction::{DeltaEnergyInsert, DeltaEnergyOne, MaximumInteractionRange, TotalEnergy};
 use hoomd_mc::{
-    LocalTrial, ParallelSweep, QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn
+    LocalTrial, ParallelSweep, QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial,
+    UniformIn,
 };
 use hoomd_microstate::{
     Body, Microstate, SiteKey, Transform,
@@ -128,7 +129,9 @@ where
         + Position<Position = Cartesian<D>>
         + Orientation<Rotation = R>
         + Transform<S>
-        + Copy + Send + Sync,
+        + Copy
+        + Send
+        + Sync,
     S: Default + Position<Position = Cartesian<D>> + Copy + Send + Sync,
     UniformIn<S, Periodic<Hypercuboid<D>>>: Distribution<Body<B, S>>,
     Periodic<Hypercuboid<D>>: GenerateGhosts<S> + Volume,
@@ -136,10 +139,13 @@ where
     X: PointsNearBall<Cartesian<D>, SiteKey>
         + PointUpdate<Cartesian<D>, SiteKey>
         + WithSearchRadius
-        + Clone + Sync,
+        + Clone
+        + Sync,
     H: DeltaEnergyInsert<B, S, X, Periodic<Hypercuboid<D>>>
         + DeltaEnergyOne<B, S, X, Periodic<Hypercuboid<D>>>
-        + TotalEnergy<Microstate<B, S, X, Periodic<Hypercuboid<D>>>> + MaximumInteractionRange + Sync,
+        + TotalEnergy<Microstate<B, S, X, Periodic<Hypercuboid<D>>>>
+        + MaximumInteractionRange
+        + Sync,
 {
     let initial_number_density = 0.5 * number_density;
     let initial_box_length = (n as f64 / initial_number_density).powf(1.0 / (D as f64));
@@ -160,12 +166,16 @@ where
         .try_build()?;
 
     let translate = Translate::with_maximum_distance(0.03.try_into()?);
-    let mut translate_sweep = ParallelSweep::new(insert_hamiltonian.maximum_interaction_range().try_into()?,
-        translate);
+    let mut translate_sweep = ParallelSweep::new(
+        insert_hamiltonian.maximum_interaction_range().try_into()?,
+        translate,
+    );
 
     let rotate = Rotate::with_maximum_rotation(0.1.try_into()?);
-    let mut rotate_sweep = ParallelSweep::new(insert_hamiltonian.maximum_interaction_range().try_into()?,
-        rotate);
+    let mut rotate_sweep = ParallelSweep::new(
+        insert_hamiltonian.maximum_interaction_range().try_into()?,
+        rotate,
+    );
 
     let distribution = UniformIn {
         boundary: microstate.boundary().clone(),

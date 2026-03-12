@@ -99,8 +99,10 @@ impl<X> Effort for EllipsoidSim<X> {
 
 impl<X> Simulation for EllipsoidSim<X>
 where
-    X: PointsNearBall<Cartesian<3>, SiteKey> + PointUpdate<Cartesian<3>, SiteKey> + Sync +
-    IndexFromPosition<Cartesian<3>>,
+    X: PointsNearBall<Cartesian<3>, SiteKey>
+        + PointUpdate<Cartesian<3>, SiteKey>
+        + Sync
+        + IndexFromPosition<Cartesian<3>>,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {
     #[inline]
@@ -172,7 +174,8 @@ where
         + WithSearchRadius
         + Clone
         + for<'a> Deserialize<'a>
-        + Serialize + Sync
+        + Serialize
+        + Sync
         + IndexFromPosition<Cartesian<3>>,
     Periodic<Hypercuboid<3>>: GenerateGhosts<OrientedPoint<Cartesian<3>, Versor>>,
 {

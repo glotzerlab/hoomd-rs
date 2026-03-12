@@ -99,9 +99,11 @@ impl<X> Effort for RegularPolygon<X> {
 
 impl<X> Simulation for RegularPolygon<X>
 where
-    X: PointsNearBall<Cartesian<2>, SiteKey> + PointUpdate<Cartesian<2>, SiteKey> + Sync +
-    IndexFromPosition<Cartesian<2>>,
-    Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>
+    X: PointsNearBall<Cartesian<2>, SiteKey>
+        + PointUpdate<Cartesian<2>, SiteKey>
+        + Sync
+        + IndexFromPosition<Cartesian<2>>,
+    Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>,
 {
     #[inline]
     fn advance(&mut self) -> anyhow::Result<()> {
@@ -173,7 +175,8 @@ where
         + WithSearchRadius
         + Clone
         + for<'a> Deserialize<'a>
-        + Serialize + Sync
+        + Serialize
+        + Sync
         + IndexFromPosition<Cartesian<2>>,
     Periodic<Hypercuboid<2>>: GenerateGhosts<OrientedPoint<Cartesian<2>, Angle>>,
 {

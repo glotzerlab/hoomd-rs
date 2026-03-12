@@ -928,12 +928,14 @@ where
                 .insert(SiteKey::Primary(*site_tag), *site_properties.position());
             self.sites.items[site_index].properties = site_properties;
 
-            Self::update_site_ghosts(&self.sites.items[site_index],
+            Self::update_site_ghosts(
+                &self.sites.items[site_index],
                 site_index,
                 &self.boundary,
                 &mut self.sites_ghosts,
                 &mut self.ghosts,
-                &mut self.spatial_data);
+                &mut self.spatial_data,
+            );
         }
 
         Ok(())
@@ -1428,19 +1430,22 @@ where
     #[inline]
     pub fn sort(&mut self) {
         let mut sort_order = (0..self.sites.len()).collect::<Vec<_>>();
-        sort_order.sort_by_key(|&i| self.spatial_data.index_from_position(self.sites.items[i].properties.position()));
+        sort_order.sort_by_key(|&i| {
+            self.spatial_data
+                .index_from_position(self.sites.items[i].properties.position())
+        });
 
         let mut new_sites_items = Vec::new();
         let mut new_sites_tags = Vec::new();
         let mut new_sites_ghosts = Vec::new();
-        
+
         for index in sort_order {
             new_sites_items.push(self.sites.items[index]);
             new_sites_tags.push(self.sites.tags[index]);
             new_sites_ghosts.push(self.sites_ghosts[index].clone());
         }
 
-        for (index,tag) in new_sites_tags.iter().enumerate() {
+        for (index, tag) in new_sites_tags.iter().enumerate() {
             self.sites.indices[*tag] = Some(index);
         }
 

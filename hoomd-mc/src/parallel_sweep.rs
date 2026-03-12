@@ -390,7 +390,7 @@ where
         let kt = macrostate.temperature();
 
         self.update_checkerboard(microstate);
-    
+
         let mut count = Self::Count::default();
 
         while count.total() < microstate.bodies().len() as u64 {

@@ -77,8 +77,10 @@ impl<const D: usize, X> Effort for LennardJones<D, X> {
 
 impl<const D: usize, X> Simulation for LennardJones<D, X>
 where
-    X: PointsNearBall<Cartesian<D>, SiteKey> + PointUpdate<Cartesian<D>, SiteKey> + Sync+
-    IndexFromPosition<Cartesian<D>>,
+    X: PointsNearBall<Cartesian<D>, SiteKey>
+        + PointUpdate<Cartesian<D>, SiteKey>
+        + Sync
+        + IndexFromPosition<Cartesian<D>>,
     Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
     #[inline]
@@ -136,7 +138,8 @@ where
         + WithSearchRadius
         + Clone
         + for<'a> Deserialize<'a>
-        + Serialize + Sync
+        + Serialize
+        + Sync
         + IndexFromPosition<Cartesian<D>>,
     Periodic<Hypercuboid<D>>: GenerateGhosts<Point<Cartesian<D>>>,
 {
