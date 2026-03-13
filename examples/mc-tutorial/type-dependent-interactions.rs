@@ -6,7 +6,7 @@ use strum_macros::VariantNames;
 
 use hoomd_geometry::{
     Volume,
-    shape::{Circle, Hypercuboid, Rectangle},
+    shape::{Circle, Rectangle},
 };
 use hoomd_gsd::hoomd::{Dimensions, HoomdGsdFile};
 use hoomd_interaction::{
@@ -328,7 +328,7 @@ impl<X>
         BodyProperties,
         SiteProperties,
         X,
-        Periodic<Hypercuboid<2>>,
+        Periodic<Rectangle>,
     > for HoomdGsdFile
 {
     #[inline]
@@ -338,7 +338,7 @@ impl<X>
             BodyProperties,
             SiteProperties,
             X,
-            Periodic<Hypercuboid<2>>,
+            Periodic<Rectangle>,
         >,
     ) -> Result<hoomd_gsd::hoomd::Frame<'_>, hoomd_gsd::hoomd::AppendError>
     {

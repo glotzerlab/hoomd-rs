@@ -5,6 +5,7 @@ notable tutorials on that topic.
 
 * [Bodies and sites](mc-tutorial/applying-interactions.html#bodies-and-sites)
 * [Compress to a target volume](mc-tutorial/hard-disk-self-assembly.html#quickly-compress-the-microstate)
+* [Custom body distributions](mc-tutorial/polydisperse-hard-disk-model##body-distribution)
 * [Custom boundary condition](mc-tutorial/custom-random-walk.html#custom-boundary-condition)
 * Custom trial move: [Translation](mc-tutorial/custom-random-walk.html#custom-trial-move), [translation and rotation](mc-tutorial/tetronimoes.html#custom-trial-move)
 * [Custom site properties](mc-tutorial/type-dependent-interactions.html#define-siteproperties)

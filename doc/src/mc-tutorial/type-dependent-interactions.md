@@ -43,8 +43,8 @@ don't need to repeat the full generic type names throughout the code:
 {{#rustdoc_include ../../../examples/mc-tutorial/type-dependent-interactions.rs:type_aliases}}
 ```
 
-The **sites** are in this tutorial are placed at points in space and assigned a site
-type. Therefore, use `Point` for the **body** properties.
+The **sites** are in this tutorial are placed at points in space and interact via
+an isotropic interaction. Therefore, use `Point` for the **body** properties.
 
 ## Site Properties
 
