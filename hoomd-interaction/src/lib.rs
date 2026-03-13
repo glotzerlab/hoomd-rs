@@ -429,7 +429,6 @@ pub trait SiteEnergy<S> {
 ///
 /// Implement a custom site overlap method:
 /// ```
-/// use hoomd_geometry::{IntersectsAt, shape::Circle};
 /// use hoomd_interaction::{
 ///     MaximumInteractionRange, PairwiseCutoff, SitePairEnergy, TotalEnergy,
 /// };
@@ -438,7 +437,7 @@ pub trait SiteEnergy<S> {
 ///     property::{Point, Position},
 /// };
 /// use hoomd_utility::valid::PositiveReal;
-/// use hoomd_vector::{self, Angle, Cartesian};
+/// use hoomd_vector::{Cartesian, Metric};
 ///
 /// #[derive(Default, Position)]
 /// struct CircleSiteProperties {
@@ -453,12 +452,15 @@ pub trait SiteEnergy<S> {
 ///     ) -> CircleSiteProperties {
 ///         CircleSiteProperties {
 ///             position: self.position + site_properties.position,
-///             radius: site_properties.radius,
+///             ..*site_properties
 ///         }
 ///     }
 /// }
 ///
-/// struct PolydisperseCircleOverlap;
+/// #[derive(MaximumInteractionRange)]
+/// struct PolydisperseCircleOverlap {
+///     maximum_interaction_range: f64,
+/// }
 ///
 /// impl SitePairEnergy<CircleSiteProperties> for PolydisperseCircleOverlap {
 ///     fn site_pair_energy(
@@ -466,15 +468,9 @@ pub trait SiteEnergy<S> {
 ///         a: &CircleSiteProperties,
 ///         b: &CircleSiteProperties,
 ///     ) -> f64 {
-///         let circle_a = Circle { radius: a.radius };
-///         let circle_b = Circle { radius: b.radius };
-///         let (v_ij, o_ij) = hoomd_vector::pair_system_to_local(
-///             a.position(),
-///             &Angle::default(),
-///             b.position(),
-///             &Angle::default(),
-///         );
-///         if circle_a.intersects_at(&circle_b, &v_ij, &o_ij) {
+///         let r = a.position().distance(b.position());
+///
+///         if r < a.radius.get() + b.radius.get() {
 ///             f64::INFINITY
 ///         } else {
 ///             0.0
@@ -484,11 +480,13 @@ pub trait SiteEnergy<S> {
 ///     fn is_only_infinite_or_zero() -> bool {
 ///         true
 ///     }
-/// }
 ///
-/// impl MaximumInteractionRange for PolydisperseCircleOverlap {
-///     fn maximum_interaction_range(&self) -> f64 {
-///         1.5
+///     fn site_pair_energy_initial(
+///         &self,
+///         _a: &CircleSiteProperties,
+///         _b: &CircleSiteProperties,
+///     ) -> f64 {
+///         0.0
 ///     }
 /// }
 ///
@@ -511,14 +509,16 @@ pub trait SiteEnergy<S> {
 ///     },
 /// ])?;
 ///
-/// let overlap = PolydisperseCircleOverlap;
+/// let overlap = PolydisperseCircleOverlap {
+///     maximum_interaction_range: 1.5,
+/// };
 /// let site_pair_energy = overlap.site_pair_energy(
 ///     &microstate.sites()[0].properties,
 ///     &microstate.sites()[1].properties,
 /// );
 /// assert_eq!(site_pair_energy, f64::INFINITY);
 ///
-/// let pairwise_cutoff = PairwiseCutoff(PolydisperseCircleOverlap);
+/// let pairwise_cutoff = PairwiseCutoff(overlap);
 /// let total_energy = pairwise_cutoff.total_energy(&microstate);
 /// assert_eq!(total_energy, f64::INFINITY);
 /// # Ok(())

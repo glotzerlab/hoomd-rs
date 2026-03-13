@@ -109,3 +109,10 @@ path = "mc-tutorial/type-dependent-interactions.rs"
 
 [package.metadata.example.type-dependent-interactions]
 path = "mc-tutorial"
+
+[[example]]
+name = "polydisperse-hard-disk-model"
+path = "mc-tutorial/polydisperse-hard-disk-model.rs"
+
+[package.metadata.example.polydisperse-hard-disk-model]
+path = "mc-tutorial"

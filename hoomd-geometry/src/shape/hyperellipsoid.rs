@@ -346,7 +346,7 @@ where
         }
 
         // Both endpoints are negative -- no overlap is possible
-        if (p0 < 0.0) & (p1 < 0.0) {
+        if (p0 < 0.0) && (p1 < 0.0) {
             return false;
         }
 

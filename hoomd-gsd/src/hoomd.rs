@@ -102,6 +102,7 @@ pub enum Dimensions {
 ///
 /// # Particles
 ///
+/// * [`particles_diameter`](Self::particles_diameter)
 /// * [`particles_position`](Self::particles_position)
 /// * [`particles_orientation`](Self::particles_orientation)
 /// * [`particles_type_id`](Self::particles_type_id)
@@ -700,6 +701,53 @@ impl Frame<'_> {
                 array::from_fn(|i| if i < s.len() { s.as_bytes()[i] } else { 0 })
             }),
         )?;
+
+        Ok(self)
+    }
+
+    /// Write [`particles/diameter`] to the current frame in the GSD file.
+    ///
+    /// [`particles/diameter`]: https://gsd.readthedocs.io/en/v4.2.0/schema-hoomd.html#chunk-particles-diameter
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hoomd_gsd::hoomd::HoomdGsdFile;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # use tempfile::tempdir;
+    /// # let tmp_dir = tempdir().expect("temp dir should be created");
+    /// # let path = tmp_dir.path().join("test.gsd");
+    /// // let path = "file.gsd";
+    /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
+    /// hoomd_gsd_file
+    ///     .append_frame(1000)?
+    ///     .particles_diameter([1.0, 0.5, 0.25, 2.0])?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`AppendError`] when any of the following occur:
+    /// * The file is not opened in a write mode.
+    /// * An I/O error writing to the file.
+    /// * *N* does not match a previous `particles_*` data chunk in this frame.
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "truncating to match the GSD specification"
+    )]
+    pub fn particles_diameter<I>(mut self, diameter: I) -> Result<Self, AppendError>
+    where
+        I: IntoIterator<Item = f64>,
+    {
+        let chunk_name = "particles/diameter";
+        let data: Vec<_> = diameter.into_iter().map(|x| x as f32).collect();
+
+        self.validate_particles_chunk(&data, chunk_name)?;
+
+        self.hoomd_gsd_file
+            .gsd_file
+            .write_scalars(chunk_name, data)?;
 
         Ok(self)
     }
