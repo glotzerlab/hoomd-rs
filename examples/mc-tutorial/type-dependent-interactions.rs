@@ -323,13 +323,8 @@ impl TypeDependentInteractions {
 }
 
 // ANCHOR: append_microstate
-impl<X>
-    AppendMicrostate<
-        BodyProperties,
-        SiteProperties,
-        X,
-        Periodic<Rectangle>,
-    > for HoomdGsdFile
+impl<X> AppendMicrostate<BodyProperties, SiteProperties, X, Periodic<Rectangle>>
+    for HoomdGsdFile
 {
     #[inline]
     fn append_microstate(

@@ -468,22 +468,26 @@ pub trait SiteEnergy<S> {
 ///         a: &CircleSiteProperties,
 ///         b: &CircleSiteProperties,
 ///     ) -> f64 {
-///        let r = a.position().distance(b.position());
-///    
-///        if r < a.radius.get() + b.radius.get() {
-///            f64::INFINITY
-///        } else {
-///            0.0
-///        }
+///         let r = a.position().distance(b.position());
+///
+///         if r < a.radius.get() + b.radius.get() {
+///             f64::INFINITY
+///         } else {
+///             0.0
+///         }
 ///     }
 ///
 ///     fn is_only_infinite_or_zero() -> bool {
 ///         true
 ///     }
 ///
-///    fn site_pair_energy_initial(&self, _a: &CircleSiteProperties, _b: &CircleSiteProperties) -> f64 {
-///        0.0
-///    }
+///     fn site_pair_energy_initial(
+///         &self,
+///         _a: &CircleSiteProperties,
+///         _b: &CircleSiteProperties,
+///     ) -> f64 {
+///         0.0
+///     }
 /// }
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -505,7 +509,9 @@ pub trait SiteEnergy<S> {
 ///     },
 /// ])?;
 ///
-/// let overlap = PolydisperseCircleOverlap { maximum_interaction_range: 1.5 };
+/// let overlap = PolydisperseCircleOverlap {
+///     maximum_interaction_range: 1.5,
+/// };
 /// let site_pair_energy = overlap.site_pair_energy(
 ///     &microstate.sites()[0].properties,
 ///     &microstate.sites()[1].properties,

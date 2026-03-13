@@ -2,17 +2,27 @@
 // ANCHOR: use
 use anyhow::{Context, anyhow};
 use hoomd_gsd::hoomd::{Dimensions, HoomdGsdFile};
-use rand::{SeedableRng, distr::{Distribution, Uniform}, rngs::StdRng};
+use rand::{
+    SeedableRng,
+    distr::{Distribution, Uniform},
+    rngs::StdRng,
+};
 
 use hoomd_geometry::{
-    Volume, shape::{Circle, Rectangle}
+    Volume,
+    shape::{Circle, Rectangle},
 };
 use hoomd_interaction::{
-    MaximumInteractionRange, PairwiseCutoff, SitePairEnergy, univariate::{Expanded, OverlapPenalty, UnivariateEnergy}
+    MaximumInteractionRange, PairwiseCutoff, SitePairEnergy,
+    univariate::{Expanded, OverlapPenalty, UnivariateEnergy},
 };
-use hoomd_mc::{BodyDistribution, QuickCompress, QuickInsert, Sweep, Translate, Trial, Tune};
+use hoomd_mc::{
+    BodyDistribution, QuickCompress, QuickInsert, Sweep, Translate, Trial, Tune,
+};
 use hoomd_microstate::{
-    AppendMicrostate, Body, Microstate, SiteKey, Transform, boundary::Periodic, property::{Point, Position}
+    AppendMicrostate, Body, Microstate, SiteKey, Transform,
+    boundary::Periodic,
+    property::{Point, Position},
 };
 use hoomd_simulation::{Simulation, macrostate::Isothermal};
 use hoomd_spatial::VecCell;
@@ -55,13 +65,9 @@ struct SitePairInteraction {
 
 // ANCHOR: interaction_impl
 impl SitePairEnergy<SiteProperties> for SitePairInteraction {
-    fn site_pair_energy(
-        &self,
-        a: &SiteProperties,
-        b: &SiteProperties,
-    ) -> f64 {
+    fn site_pair_energy(&self, a: &SiteProperties, b: &SiteProperties) -> f64 {
         let r = a.position().distance(b.position());
-    
+
         if r < a.radius.get() + b.radius.get() {
             f64::INFINITY
         } else {
@@ -94,18 +100,14 @@ struct SitePairOverlapPenalty {
 
 // ANCHOR: overlap_penalty_impl
 impl SitePairEnergy<SiteProperties> for SitePairOverlapPenalty {
-    fn site_pair_energy(
-        &self,
-        a: &SiteProperties,
-        b: &SiteProperties,
-    ) -> f64 {
-        let r = a.position().distance(b.position());        
+    fn site_pair_energy(&self, a: &SiteProperties, b: &SiteProperties) -> f64 {
+        let r = a.position().distance(b.position());
         let pair_interaction = Expanded {
-                        delta: a.radius.get() + b.radius.get(),
-                        f: OverlapPenalty::default(),
-                    };
+            delta: a.radius.get() + b.radius.get(),
+            f: OverlapPenalty::default(),
+        };
         pair_interaction.energy(r)
-        }
+    }
 }
 // ANCHOR_END: overlap_penalty_impl
 
@@ -114,31 +116,34 @@ struct PolydisperseBodyDistribution {
     /// Radius of each disk to insert into the microstate.
     radii: Vec<PositiveReal>,
     /// Simulation boundary.
-    boundary: Periodic<Rectangle>
+    boundary: Periodic<Rectangle>,
 }
 // ANCHOR_END: body_distribution_type
 
 // ANCHOR: body_distribution_impl
-impl BodyDistribution<Body<BodyProperties, SiteProperties>> for PolydisperseBodyDistribution {
-    fn sample<R: rand::Rng + ?Sized>(&self, index: usize, rng: &mut R) -> Body<BodyProperties, SiteProperties> {
+impl BodyDistribution<Body<BodyProperties, SiteProperties>>
+    for PolydisperseBodyDistribution
+{
+    fn sample<R: rand::Rng + ?Sized>(
+        &self,
+        index: usize,
+        rng: &mut R,
+    ) -> Body<BodyProperties, SiteProperties> {
         let properties = Point {
             position: self.boundary.sample(rng),
         };
-        let sites = vec![SiteProperties { position: Cartesian::default(),
-            radius: self.radii[index]}];
-        Body { properties, sites }        
+        let sites = vec![SiteProperties {
+            position: Cartesian::default(),
+            radius: self.radii[index],
+        }];
+        Body { properties, sites }
     }
 }
 // ANCHOR_END: body_distribution_impl
 
 // ANCHOR: append_microstate
-impl<X>
-    AppendMicrostate<
-        BodyProperties,
-        SiteProperties,
-        X,
-        Periodic<Rectangle>,
-    > for HoomdGsdFile
+impl<X> AppendMicrostate<BodyProperties, SiteProperties, X, Periodic<Rectangle>>
+    for HoomdGsdFile
 {
     #[inline]
     fn append_microstate(
@@ -196,21 +201,23 @@ impl PolydisperseHardDiskModel {
 
         // ANCHOR: particle_area
         let total_particle_area = radii.iter().fold(0.0, |total, r| {
-            let circle = Circle {
-                radius: *r,
-            };
+            let circle = Circle { radius: *r };
             total + circle.volume()
         });
         // ANCHOR_END: particle_area
-            
+
         // ANCHOR: hamiltonian
-        let hamiltonian = PairwiseCutoff(SitePairInteraction { maximum_interaction_range: maximum_radius * 2.0 });
-        let overlap_penalty_hamiltonian = PairwiseCutoff(SitePairOverlapPenalty { maximum_interaction_range: maximum_radius * 2.0 });
+        let hamiltonian = PairwiseCutoff(SitePairInteraction {
+            maximum_interaction_range: maximum_radius * 2.0,
+        });
+        let overlap_penalty_hamiltonian =
+            PairwiseCutoff(SitePairOverlapPenalty {
+                maximum_interaction_range: maximum_radius * 2.0,
+            });
         // ANCHOR_END: hamiltonian
 
         // ANCHOR: microstate
-        let initial_box_volume =
-            total_particle_area / initial_packing_fraction;
+        let initial_box_volume = total_particle_area / initial_packing_fraction;
         let initial_box_edge_length = initial_box_volume.sqrt();
         let square =
             Rectangle::with_equal_edges(initial_box_edge_length.try_into()?);
@@ -241,8 +248,7 @@ impl PolydisperseHardDiskModel {
             Translate::with_maximum_distance(maximum_distance.try_into()?);
         let translate_sweep = Sweep(translate);
 
-        let target_box_volume =
-            total_particle_area / target_packing_fraction;
+        let target_box_volume = total_particle_area / target_packing_fraction;
         let quick_compress =
             QuickCompress::with_target_volume(target_box_volume.try_into()?);
 
@@ -295,7 +301,9 @@ impl Simulation for PolydisperseHardDiskModel {
     /// Advance the simulation forward one step.
     fn advance(&mut self) -> anyhow::Result<()> {
         match self.phase {
-            Phase::Initialize => self.initialize().context("failed to initialize")?,
+            Phase::Initialize => {
+                self.initialize().context("failed to initialize")?
+            }
             Phase::Equilibrate => self.equilibrate(),
         }
 
