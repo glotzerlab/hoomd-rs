@@ -97,10 +97,9 @@ the disks overlap and 0 when they do not.
 
 ### Special Methods for Hard Shapes
 
-When implementing hard potentials (potentials that always result of
-a value of 0 or infinity), you should implement two additional methods.
-`site_pair_energy_initial` should return 0 and `is_only_infinite_or_zero`
-should return `true`:
+Hard potentials (potentials that always result of a value of 0 or infinity)
+should implement two additional methods. `site_pair_energy_initial` should
+return 0 and `is_only_infinite_or_zero` should return `true`:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/polydisperse-hard-disk-model.rs:infinite_zero}}
 ```
@@ -109,16 +108,18 @@ should return `true`:
 > Your simulations will run correctly without these methods (the default
 > `site_pair_energy_initial` calls `site_pair_energy` and the default
 > `is_only_infinite_or_zero` returns `false`). However, these implementations
-> allow *hoomd-rs* to make several optimizations that make hard shape simulations
-> execute faster. Specifically, there is no need to compute the energy of the
-> initial state before a trial move as it will *always* be zero.
+> will make hard shape simulations execute faster. There is no need to compute
+> the energy of the initial state before a trial move as it will *always* be
+> zero for a hard potential. Even if the initial energy were infinity, a trial
+> move with an initial infinite energy and a finite final energy would always
+> be accepted.
 
 ## Site-site Overlap Penalty
 
 ### Define `SitePairOverlapPenalty`
 
 To use `QuickInsert` and `QuickCompress` we need to define *another* site-site
-interaction potential. This one will use `OverlapPenalty` to allow partially
+interaction potential. This one uses `OverlapPenalty` to allow partially
 overlapping sites during initialization:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/polydisperse-hard-disk-model.rs:overlap_penalty_type}}
@@ -129,7 +130,7 @@ As with `SitePairInteraction`, this type also needs to have a maximum interactio
 
 As in [Hard Disk Self-Assembly], you can use an `Expanded<OverlapPenalty>` to compute
 the overlap penalty shifted to the surface of the disks. When the disks are
-polydisperse, you need to set `delta` as the sum of the radii unique to each
+polydisperse, you need to set `delta` to the sum of the radii unique to each
 pair interaction:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/polydisperse-hard-disk-model.rs:overlap_penalty_impl}}
@@ -141,8 +142,8 @@ pair interaction:
 
 `QuickInsert` randomly draws bodies from a distribution and places them in
 the microstate. [Hard Ellipse Self-Assembly] and similar tutorials use the
-`UniformIn` distribution which randomizes the body's position (and possibly
-orientation) but keeps all the other body and site properties fixed.
+`UniformIn` distribution which randomizes the body's position (and orientation
+when present) but keeps all the other body and site properties fixed.
 
 ### Define `PolydisperseBodyDistribution`
 
@@ -152,7 +153,7 @@ Define a custom distribution type that samples bodies whose sites have random ra
 ```
 
 > [!WARNING]
-> You cannot simply draw a new random radius each time. If you did, the larger
+> You cannot simply draw a new random radius for each sample. If you did, the larger
 > sites would be more likely to overlap with existing ones and `QuickInsert`
 > would strongly bias toward placing smaller sites.
 
@@ -200,9 +201,9 @@ divided by the area of the simulation boundary in the initial state. Choose
 this value so that disks can be placed easily in the microstate. During the
 `Initialize` phase, the microstate will be compressed until it reaches the
 packing fraction `target_packing_fraction`. `n_disks` is the number of disks
-to add, `maximum_distance` is the largest distance a translation trial move
-can take (initially), `sigma` is the disk diameter, and `macrostate` holds the
-current temperature set point (in units of energy).
+to add, `maximum_distance` is the largest distance a translation trial move can
+take (initially), and `macrostate` holds the current temperature set point (in
+units of energy).
 
 ### Precompute the Radii
 
@@ -214,15 +215,16 @@ Place the sampled radii in a `Vec`.
 
 > [!TIP]
 > This example uses a uniform distribution for simplicity. A normal distribution
-> would likely be more appropriate for a research project.
+> would likely be more appropriate for production use.
 
 ### Particle Area
 
-To compute the volume of the simulation boundary given a packing fraction,
-sum the area of all sites:
+Sum the area of all sites:
 ```rust,ignore
 {{#rustdoc_include ../../../examples/mc-tutorial/polydisperse-hard-disk-model.rs:particle_area}}
 ```
+This value will later be used to compute the total area of the simulation boundary
+from the packing fraction.
 
 ### Hamiltonian
 
@@ -233,7 +235,7 @@ Hamiltonian using the `SitePairOverlapPenalty` implemented above:
 {{#rustdoc_include ../../../examples/mc-tutorial/polydisperse-hard-disk-model.rs:hamiltonian}}
 ```
 With a uniform distribution, the maximum interaction range between
-any two sites is twice the maximum radius of an individual site.
+any two sites is twice the maximum radius of any individual site.
 
 > [!TIP]
 > If you use a normal distribution, you need to compute this maximum.
