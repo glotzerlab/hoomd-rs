@@ -9,7 +9,8 @@ use log::{debug, trace};
 use hoomd_geometry::{Volume, shape::Hypercuboid};
 use hoomd_interaction::{DeltaEnergyInsert, DeltaEnergyOne, MaximumInteractionRange, TotalEnergy};
 use hoomd_mc::{
-    BodyDistribution, LocalTrial, ParallelSweep, QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn
+    BodyDistribution, LocalTrial, ParallelSweep, QuickCompress, QuickInsert, Rotate, Sweep,
+    Translate, Trial, UniformIn,
 };
 use hoomd_microstate::{
     Body, Microstate, SiteKey, Transform,
