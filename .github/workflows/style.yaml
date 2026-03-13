@@ -25,7 +25,7 @@ jobs:
     - name: Configure Rust
       uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
       with:
-        toolchain: 1.93.0
+        toolchain: 1.94.0
         targets: wasm32-unknown-unknown
         components: clippy
     - name: Cache
