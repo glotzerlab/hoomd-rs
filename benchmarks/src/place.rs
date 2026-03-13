@@ -5,13 +5,11 @@
 
 use hoomd_spatial::{PointUpdate, PointsNearBall, WithSearchRadius};
 use log::{debug, trace};
-use rand::distr::Distribution;
 
 use hoomd_geometry::{Volume, shape::Hypercuboid};
 use hoomd_interaction::{DeltaEnergyInsert, DeltaEnergyOne, MaximumInteractionRange, TotalEnergy};
 use hoomd_mc::{
-    LocalTrial, ParallelSweep, QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial,
-    UniformIn,
+    BodyDistribution, LocalTrial, ParallelSweep, QuickCompress, QuickInsert, Rotate, Sweep, Translate, Trial, UniformIn
 };
 use hoomd_microstate::{
     Body, Microstate, SiteKey, Transform,
@@ -38,7 +36,7 @@ pub fn place_single_site_point_bodies<B, S, const D: usize, H, X>(
 where
     B: Default + Position<Position = Cartesian<D>> + Transform<S> + Copy,
     S: Default + Position<Position = Cartesian<D>> + Copy,
-    UniformIn<S, Periodic<Hypercuboid<D>>>: Distribution<Body<B, S>>,
+    UniformIn<S, Periodic<Hypercuboid<D>>>: BodyDistribution<Body<B, S>>,
     Periodic<Hypercuboid<D>>: GenerateGhosts<S> + Volume,
     X: PointsNearBall<Cartesian<D>, SiteKey>
         + PointUpdate<Cartesian<D>, SiteKey>
@@ -133,7 +131,7 @@ where
         + Send
         + Sync,
     S: Default + Position<Position = Cartesian<D>> + Copy + Send + Sync,
-    UniformIn<S, Periodic<Hypercuboid<D>>>: Distribution<Body<B, S>>,
+    UniformIn<S, Periodic<Hypercuboid<D>>>: BodyDistribution<Body<B, S>>,
     Periodic<Hypercuboid<D>>: GenerateGhosts<S> + Volume,
     Rotate<R>: LocalTrial<B> + Clone + Sync,
     X: PointsNearBall<Cartesian<D>, SiteKey>
