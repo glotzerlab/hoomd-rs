@@ -732,6 +732,10 @@ impl Frame<'_> {
     /// * The file is not opened in a write mode.
     /// * An I/O error writing to the file.
     /// * *N* does not match a previous `particles_*` data chunk in this frame.
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "truncating to match the GSD specification"
+    )]
     pub fn particles_diameter<I>(mut self, diameter: I) -> Result<Self, AppendError>
     where
         I: IntoIterator<Item = f64>,
