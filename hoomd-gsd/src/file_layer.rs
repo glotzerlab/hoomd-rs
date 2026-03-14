@@ -951,7 +951,13 @@ impl GsdFile {
     ///   [`DecodeError`]).
     #[inline]
     pub fn open<P: AsRef<Path>>(path: P, mode: Mode) -> Result<Self, OpenError> {
-        let file = File::open(&path).map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
+        let file = File::options()
+            .read(true)
+            .write(mode == Mode::Write)
+            .create(false)
+            .truncate(false)
+            .open(&path)
+            .map_err(|e| OpenError::IO(path.as_ref().into(), e))?;
         GsdFile::from_file(file, mode).map_err(|e| OpenError::Decode(path.as_ref().into(), e))
     }
 
@@ -1823,7 +1829,7 @@ impl GsdFile {
     ///
     /// <div class="warning">
     ///
-    /// Dropping a [`GsdFile`] will also drop any pending data chunks in inc* omplete
+    /// Dropping a [`GsdFile`] will also drop any pending data chunks in incomplete
     /// frames.
     ///
     /// </div>
@@ -2383,6 +2389,20 @@ mod tests {
             Err(OpenError::IO(_, _))
         ));
 
+        Ok(())
+    }
+
+    #[test]
+    fn open_write() -> anyhow::Result<()> {
+        let tmp_dir = tempdir()?;
+        let path = tmp_dir.path().join("test.gsd");
+        GsdFile::create_new(path.clone(), "application", "schema", (12, 42))?;
+
+        let mut gsd_file = GsdFile::open(path.clone(), Mode::Write)?;
+        gsd_file.write_scalars("a", [1])?;
+        gsd_file.end_frame()?;
+        gsd_file.sync_all()?;
+        
         Ok(())
     }
 
