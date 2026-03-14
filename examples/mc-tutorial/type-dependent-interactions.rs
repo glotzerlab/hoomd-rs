@@ -384,7 +384,8 @@ fn main() -> anyhow::Result<()> {
                         .microstate
                         .iter_sites_tag_order()
                         .map(|s| site_energy(&simulation, s)),
-                )?;
+                )?
+                .end()?;
         }
     }
 
