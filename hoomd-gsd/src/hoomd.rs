@@ -927,7 +927,7 @@ impl Frame<'_> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn end(mut self) -> Result<(), AppendError> {        
+    pub fn end(mut self) -> Result<(), AppendError> {
         self.hoomd_gsd_file.gsd_file.end_frame()?;
         if self.hoomd_gsd_file.last_auto_sync.elapsed() >= self.hoomd_gsd_file.auto_sync_delay {
             self.hoomd_gsd_file.sync_all()?;

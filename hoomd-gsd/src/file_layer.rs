@@ -2402,7 +2402,7 @@ mod tests {
         gsd_file.write_scalars("a", [1])?;
         gsd_file.end_frame()?;
         gsd_file.sync_all()?;
-        
+
         Ok(())
     }
 
