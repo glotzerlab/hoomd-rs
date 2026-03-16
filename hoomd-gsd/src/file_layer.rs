@@ -1889,18 +1889,25 @@ impl GsdFile {
         F: FnOnce(&mut Vec<u8>) -> u64,
     {
         if self.mode != Mode::Write {
-            return Err(WriteError::Encode(name.into(), self.buffer_frame, EncodeError::NotWritable));
+            return Err(WriteError::Encode(
+                name.into(),
+                self.buffer_frame,
+                EncodeError::NotWritable,
+            ));
         }
 
         let location = self.file_len + self.data_buffer.len() as u64;
 
-        let id = self.get_id(name).map_err(|e| WriteError::Encode(name.into(), self.buffer_frame, e))?;
+        let id = self
+            .get_id(name)
+            .map_err(|e| WriteError::Encode(name.into(), self.buffer_frame, e))?;
 
         if !self.index.frame_names.insert(id) {
-            return Err(WriteError::Encode(name.into(), self.buffer_frame, EncodeError::DuplicateChunkName(
+            return Err(WriteError::Encode(
                 name.into(),
                 self.buffer_frame,
-            )));
+                EncodeError::DuplicateChunkName(name.into(), self.buffer_frame),
+            ));
         }
 
         // This implementation is a departure from the GSD C implementation
@@ -1937,7 +1944,8 @@ impl GsdFile {
         self.index.pending += 1;
 
         if self.data_buffer.len() >= self.maximum_write_buffer_size {
-            self.flush_data().map_err(|e| WriteError::Sync(name.into(), self.buffer_frame, e))?;
+            self.flush_data()
+                .map_err(|e| WriteError::Sync(name.into(), self.buffer_frame, e))?;
             self.data_buffer_flushed = true;
         }
 

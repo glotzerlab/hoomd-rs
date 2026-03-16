@@ -496,7 +496,10 @@ impl Frame<'_> {
     ) -> Result<(), AppendError> {
         if let Some(n) = self.particles_n {
             if data.len() != n as usize {
-                return Err(AppendError::InconsistentLength(chunk_name.to_string(), "particles".to_string()));
+                return Err(AppendError::InconsistentLength(
+                    chunk_name.to_string(),
+                    "particles".to_string(),
+                ));
             }
         } else {
             let n = data
@@ -528,11 +531,13 @@ impl Frame<'_> {
     /// # let path = tmp_dir.path().join("test.gsd");
     /// // let path = "file.gsd";
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
-    /// hoomd_gsd_file.append_frame(1_000)?.particles_position([
-    ///     [2.0, 3.0, -1.0].into(),
-    ///     [18.0, 4.0, -6.0].into(),
-    /// ])?
-    /// .end()?;
+    /// hoomd_gsd_file
+    ///     .append_frame(1_000)?
+    ///     .particles_position([
+    ///         [2.0, 3.0, -1.0].into(),
+    ///         [18.0, 4.0, -6.0].into(),
+    ///     ])?
+    ///     .end()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -583,11 +588,13 @@ impl Frame<'_> {
     /// # let path = tmp_dir.path().join("test.gsd");
     /// // let path = "file.gsd";
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
-    /// hoomd_gsd_file.append_frame(1_000)?.particles_orientation([
-    ///     Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, 1.2),
-    ///     Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, -0.3),
-    /// ])?
-    /// .end()?;
+    /// hoomd_gsd_file
+    ///     .append_frame(1_000)?
+    ///     .particles_orientation([
+    ///         Versor::from_axis_angle([0.0, 0.0, 1.0].try_into()?, 1.2),
+    ///         Versor::from_axis_angle([0.0, 1.0, 0.0].try_into()?, -0.3),
+    ///     ])?
+    ///     .end()?;
     /// # Ok(())
     /// # }
     /// ```
@@ -925,9 +932,7 @@ impl Frame<'_> {
     /// # let path = tmp_dir.path().join("test.gsd");
     /// // let path = "file.gsd";
     /// let mut hoomd_gsd_file = HoomdGsdFile::create(path)?;
-    /// hoomd_gsd_file
-    ///     .append_frame(1_000)?
-    ///     .end()?;
+    /// hoomd_gsd_file.append_frame(1_000)?.end()?;
     /// # Ok(())
     /// # }
     /// ```

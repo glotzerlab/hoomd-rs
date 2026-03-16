@@ -38,11 +38,10 @@ fn create_unique_file<P: AsRef<Path>>(path: P) -> io::Result<File> {
 
         match File::create_new(numbered_path) {
             Ok(file) => return Ok(file),
-            Err(error) => {
-                match error.kind() {
-                    io::ErrorKind::AlreadyExists => (),
-                    _ => return Err(error),
-            }}
+            Err(error) => match error.kind() {
+                io::ErrorKind::AlreadyExists => (),
+                _ => return Err(error),
+            },
         }
 
         index += 1;
@@ -338,10 +337,10 @@ where
 mod tests {
     use std::fs;
 
+    use super::*;
+    use assert2::check;
     use parquet_derive::ParquetRecordWriter;
     use tempfile::tempdir;
-    use assert2::check;
-    use super::*;
 
     #[derive(ParquetRecordWriter)]
     struct LogRecord {
@@ -349,7 +348,7 @@ mod tests {
     }
 
     #[test]
-    fn test_create_unique() -> anyhow::Result<()> {            
+    fn test_create_unique() -> anyhow::Result<()> {
         let tmp_dir = tempdir()?;
         let path = tmp_dir.path().join("test.parquet");
         let _ = ParquetLogger::create_unique(path.clone())?;
