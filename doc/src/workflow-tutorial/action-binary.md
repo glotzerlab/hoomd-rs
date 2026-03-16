@@ -115,7 +115,7 @@ Try adding `-v`, `-vv`, or `-q` to the command and see how the output changes.
 Notice that `main` returns an `anyhow::Result` and checks for errors with `?`.
 In this way, any errors that occur in methods called by main (or methods
 called by those methods, or ...) will propagate all the way to the top,
-unless then are recovered from. When `main` 
+unless then are recovered from. When `main`
 
 To see an error message, execute:
 ```shell

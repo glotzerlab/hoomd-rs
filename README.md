@@ -68,7 +68,7 @@ to run the examples locally.
 - [row]: Automate your HPC workflow using **row**.
 
 [row]: https://row.readthedocs.io
-[signac]: https://signac.readthedocs.io/ 
+[signac]: https://signac.readthedocs.io/
 [HOOMD-blue]: https://hoomd-blue.readthedocs.io
 [Rust]: https://www.rust-lang.org/
 [Template workflow]: https://github.com/glotzerlab/hoomd-workflow/

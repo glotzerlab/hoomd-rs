@@ -24,7 +24,7 @@ Resources:
 - [Download the template]
 
 [hoomd-rs discussion board]: https://github.com/glotzerlab/hoomd-rs/discussions
-[hoomd-workflow repository]: https://github.com/glotzerlab/hoomd-workflow 
+[hoomd-workflow repository]: https://github.com/glotzerlab/hoomd-workflow
 [Create a GitHub repository from the template]: https://github.com/new?template_name=hoomd-workflow&template_owner=glotzerlab
 [Download the template]: https://github.com/glotzerlab/hoomd-workflow/archive/refs/heads/trunk.zip
 [gist]: https://www.geeksforgeeks.org/git/what-is-github-gist/

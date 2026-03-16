@@ -38,7 +38,7 @@ compute nodes may not have the network access needed to build and
 many parallel builds might conflict.
 
 Use `cargo build --release` to build the binary once and then you can
-run it with `target/release/action`. 
+run it with `target/release/action`.
 
 > [!WARNING]
 > You *must rerun* `cargo build --release` any time you change one of your
